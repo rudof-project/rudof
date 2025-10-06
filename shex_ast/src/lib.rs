@@ -27,6 +27,7 @@ pub use shexr::*;
 
 type CResult<T> = Result<T, Box<SchemaIRError>>;
 type Cond = MatchCond<Pred, Node, ShapeLabelIdx>;
+type Expr = rbe::RbeTable<Pred, Node, ShapeLabelIdx>;
 
 #[cfg(test)]
 mod tests {

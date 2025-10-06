@@ -500,7 +500,7 @@ impl Engine {
                 shape.preds().iter().map(|p| p.to_string()).join(", "),
                 values.iter().map(|(p, v)| format!("{p} {v}")).join(", ")
             );
-            let result_iter = shape.rbe_table().matches(values)?;
+            let result_iter = shape.triple_expr().matches(values)?;
             let mut errors = Vec::new();
             for result in result_iter {
                 trace!("Result: {:?}", result);

@@ -142,6 +142,7 @@ fn main() -> Result<()> {
         Some(Command::Shex {
             schema,
             schema_format,
+            shape,
             result_schema_format,
             show_dependencies,
             base,
@@ -167,6 +168,7 @@ fn main() -> Result<()> {
             run_shex(
                 schema,
                 schema_format,
+                shape,
                 base,
                 result_schema_format,
                 output,

@@ -10,9 +10,10 @@ use anyhow::{Result, bail};
 use iri_s::IriS;
 use iri_s::mime_type::MimeType;
 use rudof_lib::{InputSpec, Rudof, RudofConfig, RudofError, ShExFormatter};
-use shex_ast::shapemap::ResultShapeMap;
+use shex_ast::shapemap::{ResultShapeMap, ShapeSelector};
 use shex_ast::{Schema, ShExFormat};
 use srdf::{RDFFormat, ReaderMode};
+use std::collections::HashMap;
 use std::env;
 use std::io::{self, Write};
 use std::path::PathBuf;
@@ -24,6 +25,7 @@ use url::Url;
 pub fn run_shex(
     input: &InputSpec,
     schema_format: &CliShExFormat,
+    shape: &Option<String>,
     base: &Option<IriS>,
     result_schema_format: &CliShExFormat,
     output: &Option<PathBuf>,
@@ -35,16 +37,26 @@ pub fn run_shex(
     config: &RudofConfig,
 ) -> Result<()> {
     let begin = Instant::now();
-    let (writer, color) = get_writer(output, force_overwrite)?;
+    let (mut writer, color) = get_writer(output, force_overwrite)?;
     let mut rudof = Rudof::new(config);
 
     parse_shex_schema_rudof(&mut rudof, input, schema_format, base, reader_mode, config)?;
+    if let Some(shape_label) = shape {
+        let shape_selector = parse_shape_selector(shape_label)?;
+        show_shape_shex_schema_rudof(
+            &rudof,
+            &shape_selector,
+            result_schema_format,
+            &mut *writer,
+            color.clone(),
+        )?;
+    }
     if show_schema {
-        show_shex_schema_rudof(&rudof, result_schema_format, writer, color)?;
+        show_shex_schema_rudof(&rudof, result_schema_format, &mut *writer, color)?;
     }
     if show_time {
         let elapsed = begin.elapsed();
-        let _ = writeln!(io::stderr(), "elapsed: {:.03?} sec", elapsed.as_secs_f64());
+        let _ = writeln!(io::stdout(), "elapsed: {:.03?} sec", elapsed.as_secs_f64());
     }
     if compile && config.show_ir() {
         if let Some(shex_ir) = rudof.get_shex_ir() {
@@ -53,12 +65,12 @@ pub fn run_shex(
             writeln!(io::stdout(), "{shex_ir}")?;
 
             if config.show_extends() {
-                // show_extends_table(&mut io::stderr(), shex_ir.count_extends())?;
+                show_extends_table(&mut io::stderr(), shex_ir.count_extends())?;
             }
 
             if config.show_imports() {
                 writeln!(
-                    io::stderr(),
+                    &mut writer,
                     "Local shapes: {}/Total shapes {}",
                     shex_ir.local_shapes_count(),
                     shex_ir.total_shapes_count()
@@ -67,73 +79,36 @@ pub fn run_shex(
             if config.show_shapes() {
                 for (label, source, _expr) in shex_ir.shapes() {
                     writeln!(
-                        io::stdout(),
+                        &mut writer,
                         "{label}{}",
-                        if shex_ir.imported_schemas().len() > 1 {
-                            format!(" from {}", source)
-                        } else {
+                        if shex_ir.imported_schemas().is_empty() {
                             String::new()
+                        } else {
+                            format!(" from {}", source)
                         }
                     )?;
                 }
             }
             if config.show_dependencies() {
-                writeln!(io::stdout(), "\nDependencies:")?;
+                writeln!(&mut writer, "\nDependencies:")?;
                 for (source, posneg, target) in shex_ir.dependencies() {
                     writeln!(io::stdout(), "{source}-{posneg}->{target}")?;
                 }
-                writeln!(io::stdout(), "---end dependencies\n")?;
+                writeln!(&mut writer, "---end dependencies\n")?;
             }
         } else {
             bail!("Internal error: Schema was not compiled to IR")
         }
         Ok(())
     } else {
-        bail!("Couldn't obtain ShEx")
+        Ok(())
     }
 }
-
-// TODO: Replace by show_schema_rudof
-/*pub(crate) fn show_shex_schema(
-    schema: &SchemaJson,
-    result_schema_format: &CliShExFormat,
-    mut writer: Box<dyn Write>,
-    color: ColorSupport,
-) -> Result<()> {
-    match result_schema_format {
-        CliShExFormat::Internal => {
-            writeln!(writer, "{schema:?}")?;
-            Ok(())
-        }
-        CliShExFormat::ShExC => {
-            let formatter = match color {
-                ColorSupport::NoColor => ShExFormatter::default().without_colors(),
-                ColorSupport::WithColor => ShExFormatter::default(),
-            };
-            let str = formatter.format_schema(schema);
-            writeln!(writer, "{str}")?;
-            Ok(())
-        }
-        CliShExFormat::ShExJ => {
-            let str = serde_json::to_string_pretty(&schema)?;
-            writeln!(writer, "{str}")?;
-            Ok(())
-        }
-        CliShExFormat::Simple => {
-            let mut simplified = SimpleReprSchema::new();
-            simplified.from_schema(schema);
-            let str = serde_json::to_string_pretty(&simplified)?;
-            writeln!(writer, "{str}")?;
-            Ok(())
-        }
-        _ => bail!("Not implemented conversion to {result_schema_format} yet"),
-    }
-} */
 
 pub fn show_shex_schema_rudof(
     rudof: &Rudof,
     result_schema_format: &CliShExFormat,
-    mut writer: Box<dyn Write>,
+    mut writer: &mut dyn Write,
     color: ColorSupport,
 ) -> Result<()> {
     let shex_format = shex_format_convert(result_schema_format);
@@ -142,6 +117,22 @@ pub fn show_shex_schema_rudof(
         ColorSupport::WithColor => ShExFormatter::default(),
     };
     rudof.serialize_current_shex(&shex_format, &formatter, &mut writer)?;
+    Ok(())
+}
+
+pub fn show_shape_shex_schema_rudof(
+    rudof: &Rudof,
+    shape: &ShapeSelector,
+    result_schema_format: &CliShExFormat,
+    mut writer: &mut dyn Write,
+    color: ColorSupport,
+) -> Result<()> {
+    let shex_format = shex_format_convert(result_schema_format);
+    let formatter = match color {
+        ColorSupport::NoColor => ShExFormatter::default().without_colors(),
+        ColorSupport::WithColor => ShExFormatter::default(),
+    };
+    rudof.serialize_shape_current_shex(shape, &shex_format, &formatter, &mut writer)?;
     Ok(())
 }
 
@@ -211,7 +202,7 @@ fn get_base(config: &RudofConfig, base: &Option<IriS>) -> Result<IriS, RudofErro
     }
 }
 
-/*fn show_extends_table<R: Write>(
+fn show_extends_table<R: Write>(
     writer: &mut R,
     extends_count: HashMap<usize, usize>,
 ) -> Result<()> {
@@ -219,7 +210,7 @@ fn get_base(config: &RudofConfig, base: &Option<IriS>) -> Result<IriS, RudofErro
         writeln!(writer, "Shapes with {key} extends = {value}")?;
     }
     Ok(())
-}*/
+}
 
 pub fn shex_format_convert(shex_format: &CliShExFormat) -> ShExFormat {
     match shex_format {

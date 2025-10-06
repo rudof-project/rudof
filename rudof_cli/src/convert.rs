@@ -37,10 +37,12 @@ pub fn run_convert(
         (InputConvertMode::ShEx, OutputConvertMode::ShEx) => {
             let shex_format = format.to_shex_format()?;
             let output_format = result_format.to_shex_format()?;
+            let shape = None;
             // config.shex_without_showing_stats();
             run_shex(
                 input,
                 &shex_format,
+                &shape,
                 base,
                 &output_format,
                 output,

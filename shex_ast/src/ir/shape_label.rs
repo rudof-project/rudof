@@ -1,6 +1,6 @@
 use crate::{BNode, SchemaJsonError, ShapeExprLabel};
 use iri_s::{IriS, IriSError};
-use prefixmap::IriRefError;
+use prefixmap::{PrefixMap, PrefixMapError};
 use serde::Serialize;
 use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
@@ -39,6 +39,19 @@ impl ShapeLabel {
     pub fn from_iri_str(s: &str) -> Result<ShapeLabel, IriSError> {
         let iri = IriS::from_str(s)?;
         Ok(ShapeLabel::Iri(iri))
+    }
+
+    pub fn from_shape_expr_label(
+        label: &ShapeExprLabel,
+        prefixmap: &PrefixMap,
+    ) -> Result<ShapeLabel, PrefixMapError> {
+        match label {
+            ShapeExprLabel::IriRef { value } => {
+                Ok(ShapeLabel::Iri(value.get_iri_prefixmap(prefixmap)?))
+            }
+            ShapeExprLabel::BNode { value } => Ok(ShapeLabel::BNode(value.clone())),
+            ShapeExprLabel::Start => Ok(ShapeLabel::Start),
+        }
     }
 }
 
@@ -85,24 +98,4 @@ impl Serialize for ShapeLabel {
             ShapeLabel::Start => serializer.serialize_str("Start"),
         }
     }
-}
-
-impl TryFrom<ShapeExprLabel> for ShapeLabel {
-    fn try_from(label: ShapeExprLabel) -> Result<Self, Self::Error> {
-        match label {
-            ShapeExprLabel::IriRef { value } => Ok(ShapeLabel::Iri(value.get_iri()?)),
-            ShapeExprLabel::BNode { value } => Ok(ShapeLabel::BNode(value)),
-            ShapeExprLabel::Start => Ok(ShapeLabel::Start),
-        }
-    }
-
-    type Error = IriRefError;
-}
-
-impl TryFrom<&ShapeExprLabel> for ShapeLabel {
-    fn try_from(label: &ShapeExprLabel) -> Result<Self, Self::Error> {
-        ShapeLabel::try_from(label.clone())
-    }
-
-    type Error = IriRefError;
 }

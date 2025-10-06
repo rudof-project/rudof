@@ -3,8 +3,8 @@ use super::{
     node_constraint::NodeConstraint,
     shape::Shape,
 };
-use crate::{Pred, ShapeLabelIdx, ir::schema_ir::SchemaIR};
-use std::{collections::HashMap, fmt::Display};
+use crate::{Expr, Pred, ShapeLabelIdx, ir::schema_ir::SchemaIR};
+use std::{collections::HashMap, fmt::Display, vec};
 
 #[derive(Debug, PartialEq, Clone, Default)]
 pub enum ShapeExpr {
@@ -42,6 +42,31 @@ impl ShapeExpr {
             ShapeExpr::Shape(_s) => vec![],
             ShapeExpr::External {} => vec![],
             ShapeExpr::Ref { idx } => vec![*idx],
+            ShapeExpr::Empty => vec![],
+        }
+    }
+
+    pub fn get_triple_exprs(&self, schema: &SchemaIR) -> Vec<Expr> {
+        match self {
+            ShapeExpr::ShapeOr { .. } => Vec::new(), // Should be an error? extending from OR
+            ShapeExpr::ShapeAnd { exprs, .. } => exprs
+                .iter()
+                .flat_map(|e| {
+                    let info = schema.find_shape_idx(e).unwrap();
+                    info.expr().get_triple_exprs(schema)
+                })
+                .collect(),
+            ShapeExpr::ShapeNot { .. } => Vec::new(), /*schema
+            .find_shape_idx(expr)
+            .map(|info| info.expr().get_triple_exprs(schema))
+            .unwrap_or_default() */
+            ShapeExpr::NodeConstraint(_nc) => vec![],
+            ShapeExpr::Shape(s) => vec![s.triple_expr().clone()],
+            ShapeExpr::External {} => vec![],
+            ShapeExpr::Ref { idx } => {
+                let info = schema.find_shape_idx(idx).unwrap();
+                info.expr().get_triple_exprs(schema)
+            }
             ShapeExpr::Empty => vec![],
         }
     }

@@ -9,6 +9,11 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum RudofError {
+    #[error(transparent)]
+    IOErro(#[from] io::Error),
+    #[error("Invalid shape label {label}: {error}")]
+    InvalidShapeLabel { label: String, error: String },
+
     #[error("Error obtaining current directory: {error}")]
     CurrentDirError { error: String },
 
