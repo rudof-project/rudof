@@ -94,10 +94,7 @@ where
         trace!(
             "Checking if RbeTable {} matches [{}]",
             &self,
-            values
-                .iter()
-                .map(|(k, v)| format!("({k} {v})"))
-                .join(", ")
+            values.iter().map(|(k, v)| format!("({k} {v})")).join(", ")
         );
         let mut pairs_found = 0;
         let mut candidates = Vec::new();

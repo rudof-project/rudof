@@ -1,10 +1,10 @@
-use shex_ast::ast::{ShapeDecl, ShapeExpr, TripleExpr};
-use crate::{Result, DataGeneratorError};
-use crate::unified_constraints::{UnifiedConstraintModel, UnifiedConstraint};
 use crate::converters::{ShExToUnified, ShaclToUnified};
+use crate::unified_constraints::{UnifiedConstraint, UnifiedConstraintModel};
+use crate::{DataGeneratorError, Result};
+use shex_ast::ast::{ShapeDecl, ShapeExpr, TripleExpr};
+use shex_compact::ShExParser;
 use std::collections::HashMap;
 use std::path::Path;
-use shex_compact::ShExParser;
 
 /// Shape analysis and dependency information
 #[derive(Debug, Clone)]
@@ -63,19 +63,22 @@ impl ShapeProcessor {
     /// Extract shapes from a ShEx file asynchronously
     pub async fn extract_shapes<P: AsRef<Path>>(&mut self, shex_path: P) -> Result<Vec<ShapeDecl>> {
         let path = shex_path.as_ref().to_path_buf();
-        
+
         // Parse ShEx file in a blocking task to avoid blocking the async runtime
         let shapes = tokio::task::spawn_blocking(move || {
-            let schema = ShExParser::parse_buf(&path, None)
-                .map_err(|e| DataGeneratorError::ShexParsing(format!("Failed to parse ShEx: {e}")))?;
-            
-            schema.shapes()
-                .ok_or_else(|| DataGeneratorError::ShexParsing("No shapes found in schema".to_string()))
-        }).await??;
+            let schema = ShExParser::parse_buf(&path, None).map_err(|e| {
+                DataGeneratorError::ShexParsing(format!("Failed to parse ShEx: {e}"))
+            })?;
+
+            schema.shapes().ok_or_else(|| {
+                DataGeneratorError::ShexParsing("No shapes found in schema".to_string())
+            })
+        })
+        .await??;
 
         // Process shapes to extract dependencies and properties
         self.process_shapes(&shapes).await?;
-        
+
         Ok(shapes)
     }
 
@@ -85,23 +88,26 @@ impl ShapeProcessor {
         self.dependency_graph.clear();
 
         // Process each shape in parallel
-        let shape_futures: Vec<_> = shapes.iter()
+        let shape_futures: Vec<_> = shapes
+            .iter()
             .map(|shape| self.process_single_shape(shape))
             .collect();
 
-        let processed_shapes: Result<Vec<ShapeInfo>> = futures::future::try_join_all(shape_futures).await;
+        let processed_shapes: Result<Vec<ShapeInfo>> =
+            futures::future::try_join_all(shape_futures).await;
         let processed_shapes = processed_shapes?;
 
         // Build the dependency graph
         for shape_info in processed_shapes {
             let shape_id = shape_info.declaration.id.to_string();
-            
+
             // Extract dependencies
-            let dependencies: Vec<String> = shape_info.dependencies
+            let dependencies: Vec<String> = shape_info
+                .dependencies
                 .iter()
                 .map(|dep| dep.target_shape.clone())
                 .collect();
-            
+
             self.dependency_graph.insert(shape_id.clone(), dependencies);
             self.shapes.insert(shape_id, shape_info);
         }
@@ -116,7 +122,11 @@ impl ShapeProcessor {
 
         if let ShapeExpr::Shape(s) = &shape.shape_expr {
             if let Some(expr) = &s.expression {
-                Self::extract_dependencies_and_properties(&expr.te, &mut dependencies, &mut properties);
+                Self::extract_dependencies_and_properties(
+                    &expr.te,
+                    &mut dependencies,
+                    &mut properties,
+                );
             }
         }
 
@@ -139,7 +149,13 @@ impl ShapeProcessor {
                     Self::extract_dependencies_and_properties(&e.te, dependencies, properties);
                 }
             }
-            TripleExpr::TripleConstraint { predicate, value_expr, min, max, .. } => {
+            TripleExpr::TripleConstraint {
+                predicate,
+                value_expr,
+                min,
+                max,
+                ..
+            } => {
                 let property_iri = predicate.to_string();
                 let (min_card, max_card) = match (*min, *max) {
                     (None, None) => (Some(1), Some(1)), // Default cardinality is (1,1)
@@ -188,7 +204,9 @@ impl ShapeProcessor {
                             // Other shape expressions - treat as generic string property
                             properties.push(PropertyInfo {
                                 property_iri,
-                                datatype: Some("http://www.w3.org/2001/XMLSchema#string".to_string()),
+                                datatype: Some(
+                                    "http://www.w3.org/2001/XMLSchema#string".to_string(),
+                                ),
                                 shape_ref: None,
                                 min_cardinality: min_card,
                                 max_cardinality: max_card,
@@ -251,11 +269,14 @@ impl ShapeProcessor {
     /// Auto-detect schema format and load
     pub async fn load_schema_auto<P: AsRef<Path>>(&mut self, path: P) -> Result<()> {
         let path_str = path.as_ref().to_string_lossy();
-        
+
         // Simple format detection based on file extension
         if path_str.ends_with(".shex") {
             self.load_shex_schema(path).await
-        } else if path_str.ends_with(".ttl") || path_str.ends_with(".rdf") || path_str.ends_with(".nt") {
+        } else if path_str.ends_with(".ttl")
+            || path_str.ends_with(".rdf")
+            || path_str.ends_with(".nt")
+        {
             // Assume SHACL for RDF formats
             self.load_shacl_schema(path).await
         } else {
@@ -284,11 +305,11 @@ fn topological_sort(graph: &HashMap<String, Vec<String>>) -> Result<Vec<String>>
         result: &mut Vec<String>,
     ) -> Result<()> {
         if temp_visited.contains(node) {
-            return Err(DataGeneratorError::GraphGeneration(
-                format!("Circular dependency detected involving shape: {node}")
-            ));
+            return Err(DataGeneratorError::GraphGeneration(format!(
+                "Circular dependency detected involving shape: {node}"
+            )));
         }
-        
+
         if visited.contains(node) {
             return Ok(());
         }

@@ -1,8 +1,8 @@
-use std::collections::HashMap;
-use srdf::{NeighsRDF, RDFFormat, ReaderMode, SRDFGraph};
 use data_generator::{DataGenerator, GeneratorConfig};
-use tempfile::NamedTempFile;
+use srdf::{NeighsRDF, RDFFormat, ReaderMode, SRDFGraph};
+use std::collections::HashMap;
 use std::io::Write;
+use tempfile::NamedTempFile;
 
 /// Test that ShEx cardinality constraints are respected in generated data
 #[tokio::test]
@@ -21,23 +21,31 @@ ex:PersonShape {
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
     write!(schema_file, "{shex_schema}").unwrap();
-    
+
     let output_file = NamedTempFile::new().unwrap();
-    
+
     // Configure generator
     let mut config = GeneratorConfig::default();
     config.generation.entity_count = 10;
     config.output.path = output_file.path().to_path_buf();
-    
+
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator.load_shex_schema(schema_file.path()).await.unwrap();
+    generator
+        .load_shex_schema(schema_file.path())
+        .await
+        .unwrap();
     generator.generate().await.unwrap();
-    
+
     // Parse generated data
-    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
-        .expect("Failed to parse generated RDF");
-    
+    let graph = SRDFGraph::from_path(
+        output_file.path(),
+        &RDFFormat::Turtle,
+        None,
+        &ReaderMode::Strict,
+    )
+    .expect("Failed to parse generated RDF");
+
     // Verify cardinality constraints
     verify_shex_cardinality(&graph);
 }
@@ -70,23 +78,31 @@ async fn test_shacl_cardinality_constraints() {
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
     write!(schema_file, "{shacl_schema}").unwrap();
-    
+
     let output_file = NamedTempFile::new().unwrap();
-    
+
     // Configure generator
     let mut config = GeneratorConfig::default();
     config.generation.entity_count = 10;
     config.output.path = output_file.path().to_path_buf();
-    
+
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator.load_shacl_schema(schema_file.path()).await.unwrap();
+    generator
+        .load_shacl_schema(schema_file.path())
+        .await
+        .unwrap();
     generator.generate().await.unwrap();
-    
+
     // Parse generated data
-    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
-        .expect("Failed to parse generated RDF");
-    
+    let graph = SRDFGraph::from_path(
+        output_file.path(),
+        &RDFFormat::Turtle,
+        None,
+        &ReaderMode::Strict,
+    )
+    .expect("Failed to parse generated RDF");
+
     // Verify cardinality constraints
     verify_shacl_cardinality(&graph);
 }
@@ -131,23 +147,31 @@ async fn test_datatype_constraints() {
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
     write!(schema_file, "{shacl_schema}").unwrap();
-    
+
     let output_file = NamedTempFile::new().unwrap();
-    
+
     // Configure generator
     let mut config = GeneratorConfig::default();
     config.generation.entity_count = 5;
     config.output.path = output_file.path().to_path_buf();
-    
+
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator.load_shacl_schema(schema_file.path()).await.unwrap();
+    generator
+        .load_shacl_schema(schema_file.path())
+        .await
+        .unwrap();
     generator.generate().await.unwrap();
-    
+
     // Parse generated data
-    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
-        .expect("Failed to parse generated RDF");
-    
+    let graph = SRDFGraph::from_path(
+        output_file.path(),
+        &RDFFormat::Turtle,
+        None,
+        &ReaderMode::Strict,
+    )
+    .expect("Failed to parse generated RDF");
+
     // Verify datatype constraints
     verify_datatypes(&graph);
 }
@@ -155,7 +179,7 @@ async fn test_datatype_constraints() {
 /// Test that value constraints (length, range) are respected
 #[tokio::test]
 async fn test_value_constraints() {
-    // Create a SHACL schema with value constraints  
+    // Create a SHACL schema with value constraints
     let shacl_schema = r#"
     @prefix sh: <http://www.w3.org/ns/shacl#> .
     @prefix ex: <http://example.org/> .
@@ -180,23 +204,31 @@ async fn test_value_constraints() {
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
     write!(schema_file, "{shacl_schema}").unwrap();
-    
+
     let output_file = NamedTempFile::new().unwrap();
-    
+
     // Configure generator
     let mut config = GeneratorConfig::default();
     config.generation.entity_count = 5;
     config.output.path = output_file.path().to_path_buf();
-    
+
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator.load_shacl_schema(schema_file.path()).await.unwrap();
+    generator
+        .load_shacl_schema(schema_file.path())
+        .await
+        .unwrap();
     generator.generate().await.unwrap();
-    
+
     // Parse generated data
-    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
-        .expect("Failed to parse generated RDF");
-    
+    let graph = SRDFGraph::from_path(
+        output_file.path(),
+        &RDFFormat::Turtle,
+        None,
+        &ReaderMode::Strict,
+    )
+    .expect("Failed to parse generated RDF");
+
     // Verify value constraints
     verify_value_constraints(&graph);
 }
@@ -220,23 +252,31 @@ ex:PersonShape {
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
     write!(schema_file, "{shex_schema}").unwrap();
-    
+
     let output_file = NamedTempFile::new().unwrap();
-    
+
     // Configure generator
     let mut config = GeneratorConfig::default();
     config.generation.entity_count = 5;
     config.output.path = output_file.path().to_path_buf();
-    
+
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator.load_shex_schema(schema_file.path()).await.unwrap();
+    generator
+        .load_shex_schema(schema_file.path())
+        .await
+        .unwrap();
     generator.generate().await.unwrap();
-    
+
     // Parse generated data
-    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
-        .expect("Failed to parse generated RDF");
-    
+    let graph = SRDFGraph::from_path(
+        output_file.path(),
+        &RDFFormat::Turtle,
+        None,
+        &ReaderMode::Strict,
+    )
+    .expect("Failed to parse generated RDF");
+
     // Verify datatype constraints (reuse the same verification function)
     verify_datatypes(&graph);
 }
@@ -244,7 +284,7 @@ ex:PersonShape {
 /// Test that ShEx value constraints are respected
 #[tokio::test]
 async fn test_shex_value_constraints() {
-    // Create a ShEx schema with basic value constraints  
+    // Create a ShEx schema with basic value constraints
     let shex_schema = r#"
 PREFIX ex: <http://example.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -258,23 +298,31 @@ ex:PersonShape {
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
     write!(schema_file, "{shex_schema}").unwrap();
-    
+
     let output_file = NamedTempFile::new().unwrap();
-    
+
     // Configure generator
     let mut config = GeneratorConfig::default();
     config.generation.entity_count = 5;
     config.output.path = output_file.path().to_path_buf();
-    
+
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator.load_shex_schema(schema_file.path()).await.unwrap();
+    generator
+        .load_shex_schema(schema_file.path())
+        .await
+        .unwrap();
     generator.generate().await.unwrap();
-    
+
     // Parse generated data
-    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
-        .expect("Failed to parse generated RDF");
-    
+    let graph = SRDFGraph::from_path(
+        output_file.path(),
+        &RDFFormat::Turtle,
+        None,
+        &ReaderMode::Strict,
+    )
+    .expect("Failed to parse generated RDF");
+
     // Verify value constraints (reuse the same verification function)
     verify_value_constraints(&graph);
 }
@@ -283,13 +331,13 @@ ex:PersonShape {
 
 fn verify_shex_cardinality(graph: &SRDFGraph) {
     let mut entity_properties: HashMap<String, HashMap<String, Vec<String>>> = HashMap::new();
-    
+
     // Collect properties for each entity
     for triple in graph.triples().unwrap() {
         let subject_str = triple.subject.to_string();
         let predicate_str = triple.predicate.to_string();
         let object_str = triple.object.to_string();
-        
+
         entity_properties
             .entry(subject_str)
             .or_default()
@@ -297,28 +345,39 @@ fn verify_shex_cardinality(graph: &SRDFGraph) {
             .or_default()
             .push(object_str);
     }
-    
+
     // Verify cardinality constraints for ShEx
     for (entity, properties) in entity_properties {
         if let Some(names) = properties.get("http://example.org/name") {
-            assert_eq!(names.len(), 1, "Entity {} should have exactly 1 name, found {}", entity, names.len());
+            assert_eq!(
+                names.len(),
+                1,
+                "Entity {} should have exactly 1 name, found {}",
+                entity,
+                names.len()
+            );
         }
-        
+
         if let Some(emails) = properties.get("http://example.org/email") {
-            assert!(emails.len() <= 3, "Entity {} should have at most 3 emails, found {}", entity, emails.len());
+            assert!(
+                emails.len() <= 3,
+                "Entity {} should have at most 3 emails, found {}",
+                entity,
+                emails.len()
+            );
         }
     }
 }
 
 fn verify_shacl_cardinality(graph: &SRDFGraph) {
     let mut entity_properties: HashMap<String, HashMap<String, Vec<String>>> = HashMap::new();
-    
+
     // Collect properties for each entity
     for triple in graph.triples().unwrap() {
         let subject_str = triple.subject.to_string();
         let predicate_str = triple.predicate.to_string();
         let object_str = triple.object.to_string();
-        
+
         entity_properties
             .entry(subject_str)
             .or_default()
@@ -326,15 +385,26 @@ fn verify_shacl_cardinality(graph: &SRDFGraph) {
             .or_default()
             .push(object_str);
     }
-    
+
     // Verify cardinality constraints for SHACL
     for (entity, properties) in entity_properties {
         if let Some(names) = properties.get("http://example.org/name") {
-            assert_eq!(names.len(), 1, "Entity {} should have exactly 1 name, found {}", entity, names.len());
+            assert_eq!(
+                names.len(),
+                1,
+                "Entity {} should have exactly 1 name, found {}",
+                entity,
+                names.len()
+            );
         }
-        
+
         if let Some(emails) = properties.get("http://example.org/email") {
-            assert!(emails.len() <= 3, "Entity {} should have at most 3 emails, found {}", entity, emails.len());
+            assert!(
+                emails.len() <= 3,
+                "Entity {} should have at most 3 emails, found {}",
+                entity,
+                emails.len()
+            );
         }
     }
 }
@@ -345,27 +415,39 @@ fn verify_datatypes(graph: &SRDFGraph) {
         if let oxrdf::Term::Literal(lit) = literal {
             let predicate_str = triple.predicate.as_str();
             let datatype = lit.datatype().as_str();
-            
+
             match predicate_str {
                 "http://example.org/name" => {
-                    assert_eq!(datatype, "http://www.w3.org/2001/XMLSchema#string",
-                        "Name should be xsd:string");
+                    assert_eq!(
+                        datatype, "http://www.w3.org/2001/XMLSchema#string",
+                        "Name should be xsd:string"
+                    );
                 }
                 "http://example.org/age" => {
-                    assert_eq!(datatype, "http://www.w3.org/2001/XMLSchema#integer",
-                        "Age should be xsd:integer");
+                    assert_eq!(
+                        datatype, "http://www.w3.org/2001/XMLSchema#integer",
+                        "Age should be xsd:integer"
+                    );
                     // Verify it's actually a valid integer
-                    lit.value().parse::<i32>().expect("Age should be valid integer");
+                    lit.value()
+                        .parse::<i32>()
+                        .expect("Age should be valid integer");
                 }
                 "http://example.org/height" => {
-                    assert_eq!(datatype, "http://www.w3.org/2001/XMLSchema#decimal", 
-                        "Height should be xsd:decimal");
+                    assert_eq!(
+                        datatype, "http://www.w3.org/2001/XMLSchema#decimal",
+                        "Height should be xsd:decimal"
+                    );
                     // Verify it's actually a valid decimal
-                    lit.value().parse::<f64>().expect("Height should be valid decimal");
+                    lit.value()
+                        .parse::<f64>()
+                        .expect("Height should be valid decimal");
                 }
                 "http://example.org/birthDate" => {
-                    assert_eq!(datatype, "http://www.w3.org/2001/XMLSchema#date",
-                        "Birth date should be xsd:date");
+                    assert_eq!(
+                        datatype, "http://www.w3.org/2001/XMLSchema#date",
+                        "Birth date should be xsd:date"
+                    );
                 }
                 _ => {}
             }
@@ -380,7 +462,7 @@ fn verify_value_constraints(graph: &SRDFGraph) {
         if let oxrdf::Term::Literal(lit) = literal {
             let predicate_str = triple.predicate.as_str();
             let value = lit.value();
-            
+
             match predicate_str {
                 "http://example.org/name" => {
                     // Just verify it's a string - no length constraints since they're not supported

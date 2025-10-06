@@ -1,7 +1,7 @@
-use data_generator::{DataGenerator, GeneratorConfig};
 use clap::{Arg, Command};
+use data_generator::{DataGenerator, GeneratorConfig};
 use std::path::PathBuf;
-use tracing::{info, error};
+use tracing::{error, info};
 
 #[tokio::main]
 async fn main() {
@@ -20,7 +20,7 @@ async fn main() {
                 .short('c')
                 .value_name("CONFIG_FILE")
                 .help("Configuration file (TOML or JSON)")
-                .value_parser(clap::value_parser!(PathBuf))
+                .value_parser(clap::value_parser!(PathBuf)),
         )
         .arg(
             Arg::new("schema")
@@ -29,7 +29,7 @@ async fn main() {
                 .value_name("SCHEMA_FILE")
                 .help("Schema file (ShEx or SHACL - format auto-detected)")
                 .required(true)
-                .value_parser(clap::value_parser!(PathBuf))
+                .value_parser(clap::value_parser!(PathBuf)),
         )
         .arg(
             Arg::new("output")
@@ -37,7 +37,7 @@ async fn main() {
                 .short('o')
                 .value_name("OUTPUT_FILE")
                 .help("Output file path")
-                .value_parser(clap::value_parser!(PathBuf))
+                .value_parser(clap::value_parser!(PathBuf)),
         )
         .arg(
             Arg::new("entities")
@@ -45,14 +45,14 @@ async fn main() {
                 .short('n')
                 .value_name("COUNT")
                 .help("Number of entities to generate")
-                .value_parser(clap::value_parser!(usize))
+                .value_parser(clap::value_parser!(usize)),
         )
         .arg(
             Arg::new("seed")
                 .long("seed")
                 .value_name("SEED")
                 .help("Random seed for reproducible generation")
-                .value_parser(clap::value_parser!(u64))
+                .value_parser(clap::value_parser!(u64)),
         )
         .arg(
             Arg::new("parallel")
@@ -60,7 +60,7 @@ async fn main() {
                 .short('p')
                 .value_name("THREADS")
                 .help("Number of parallel threads")
-                .value_parser(clap::value_parser!(usize))
+                .value_parser(clap::value_parser!(usize)),
         )
         .get_matches();
 
@@ -101,7 +101,7 @@ async fn main() {
 
     // Set up tokio runtime with configured thread count
     let mut runtime_builder = tokio::runtime::Builder::new_multi_thread();
-    
+
     if let Some(threads) = config.parallel.worker_threads {
         runtime_builder.worker_threads(threads);
     }
@@ -113,7 +113,7 @@ async fn main() {
 
     // Create and run the generator
     let start_time = std::time::Instant::now();
-    
+
     match DataGenerator::new(config) {
         Ok(mut generator) => {
             // Use auto-detection to support both ShEx and SHACL schemas
@@ -135,9 +135,10 @@ async fn main() {
 /// Load configuration from file
 async fn load_config(config_path: &PathBuf) -> data_generator::Result<GeneratorConfig> {
     if !config_path.exists() {
-        return Err(data_generator::DataGeneratorError::Config(
-            format!("Configuration file does not exist: {}", config_path.display())
-        ));
+        return Err(data_generator::DataGeneratorError::Config(format!(
+            "Configuration file does not exist: {}",
+            config_path.display()
+        )));
     }
 
     match config_path.extension().and_then(|s| s.to_str()) {

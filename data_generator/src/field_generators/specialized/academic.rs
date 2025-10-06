@@ -1,5 +1,5 @@
-use crate::field_generators::{FieldGenerator, GenerationContext};
 use crate::Result;
+use crate::field_generators::{FieldGenerator, GenerationContext};
 
 pub struct AcademicGenerator;
 
@@ -8,7 +8,9 @@ impl FieldGenerator for AcademicGenerator {
         Ok("Academic Course 101".to_string())
     }
 
-    fn name(&self) -> &str { "academic" }
+    fn name(&self) -> &str {
+        "academic"
+    }
     fn supported_datatypes(&self) -> Vec<String> {
         vec!["http://www.w3.org/2001/XMLSchema#string".to_string()]
     }

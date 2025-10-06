@@ -1,13 +1,16 @@
 use crate::unified_constraints::{
-    UnifiedConstraintModel, UnifiedShape, UnifiedPropertyConstraint,
-    UnifiedConstraint, NodeKind, Value
+    NodeKind, UnifiedConstraint, UnifiedConstraintModel, UnifiedPropertyConstraint, UnifiedShape,
+    Value,
 };
-use crate::{Result, DataGeneratorError};
-use shacl_ast::{Schema as ShaclSchema, shape::Shape as ShaclShape, node_shape::NodeShape, property_shape::PropertyShape, component::Component};
+use crate::{DataGeneratorError, Result};
+use shacl_ast::{
+    Schema as ShaclSchema, component::Component, node_shape::NodeShape,
+    property_shape::PropertyShape, shape::Shape as ShaclShape,
+};
 use shacl_rdf::rdf_to_shacl::ShaclParser;
-use srdf::{SRDFGraph, RDFFormat, ReaderMode};
-use std::path::Path;
+use srdf::{RDFFormat, ReaderMode, SRDFGraph};
 use std::fs;
+use std::path::Path;
 
 pub struct ShaclToUnified;
 
@@ -18,33 +21,43 @@ impl Default for ShaclToUnified {
 }
 
 impl ShaclToUnified {
-    pub async fn convert_file<P: AsRef<Path>>(&self, shacl_path: P) -> Result<UnifiedConstraintModel> {
+    pub async fn convert_file<P: AsRef<Path>>(
+        &self,
+        shacl_path: P,
+    ) -> Result<UnifiedConstraintModel> {
         let path = shacl_path.as_ref().to_path_buf();
-        
+
         let schema_data = tokio::task::spawn_blocking(move || {
             fs::read_to_string(&path)
                 .map_err(|e| DataGeneratorError::Config(format!("Failed to read SHACL file: {e}")))
-        }).await??;
+        })
+        .await??;
 
         self.convert_schema(schema_data).await
     }
 
     pub async fn convert_schema(&self, schema_data: String) -> Result<UnifiedConstraintModel> {
         let schema = tokio::task::spawn_blocking(move || {
-            // Parse RDF data 
-            let graph = SRDFGraph::from_str(&schema_data, &RDFFormat::Turtle, None, &ReaderMode::Strict)
-                .map_err(|e| DataGeneratorError::Config(format!("Failed to parse RDF: {e}")))?;
-            
+            // Parse RDF data
+            let graph =
+                SRDFGraph::from_str(&schema_data, &RDFFormat::Turtle, None, &ReaderMode::Strict)
+                    .map_err(|e| DataGeneratorError::Config(format!("Failed to parse RDF: {e}")))?;
+
             // Parse SHACL schema from RDF
             let mut parser = ShaclParser::new(graph);
-            parser.parse()
+            parser
+                .parse()
                 .map_err(|e| DataGeneratorError::Config(format!("Failed to parse SHACL: {e}")))
-        }).await??;
+        })
+        .await??;
 
         self.convert_shacl_schema(&schema).await
     }
 
-    async fn convert_shacl_schema(&self, schema: &ShaclSchema<SRDFGraph>) -> Result<UnifiedConstraintModel> {
+    async fn convert_shacl_schema(
+        &self,
+        schema: &ShaclSchema<SRDFGraph>,
+    ) -> Result<UnifiedConstraintModel> {
         let mut model = UnifiedConstraintModel::new();
 
         // Get all shapes from the schema
@@ -58,12 +71,18 @@ impl ShaclToUnified {
         Ok(model)
     }
 
-    fn convert_node_shape(&self, node_shape: &NodeShape<SRDFGraph>, schema: &ShaclSchema<SRDFGraph>) -> UnifiedShape {
+    fn convert_node_shape(
+        &self,
+        node_shape: &NodeShape<SRDFGraph>,
+        schema: &ShaclSchema<SRDFGraph>,
+    ) -> UnifiedShape {
         let shape_id = node_shape.id().to_string();
         let mut properties = Vec::new();
-        
+
         // Extract target class if available
-        let target_class = node_shape.targets().first()
+        let target_class = node_shape
+            .targets()
+            .first()
             .and_then(|target| match target {
                 shacl_ast::target::Target::TargetClass(tc) => Some(tc.to_string()),
                 _ => None,
@@ -90,10 +109,13 @@ impl ShaclToUnified {
         }
     }
 
-    fn convert_property_shape(&self, prop_shape: &PropertyShape<SRDFGraph>) -> Option<UnifiedPropertyConstraint> {
+    fn convert_property_shape(
+        &self,
+        prop_shape: &PropertyShape<SRDFGraph>,
+    ) -> Option<UnifiedPropertyConstraint> {
         let property_iri = prop_shape.path().to_string();
         let mut constraints = Vec::new();
-        
+
         // Extract cardinality from components
         let (min_cardinality, max_cardinality) = self.extract_cardinality(prop_shape.components());
 
@@ -105,7 +127,7 @@ impl ShaclToUnified {
         // If no datatype constraint found, default to string
         if constraints.is_empty() {
             constraints.push(UnifiedConstraint::Datatype(
-                "http://www.w3.org/2001/XMLSchema#string".to_string()
+                "http://www.w3.org/2001/XMLSchema#string".to_string(),
             ));
         }
 
@@ -151,7 +173,9 @@ impl ShaclToUnified {
                     shacl_ast::node_kind::NodeKind::BlankNode => NodeKind::BlankNode,
                     shacl_ast::node_kind::NodeKind::Literal => NodeKind::Literal,
                     shacl_ast::node_kind::NodeKind::BlankNodeOrIri => NodeKind::BlankNodeOrIRI,
-                    shacl_ast::node_kind::NodeKind::BlankNodeOrLiteral => NodeKind::BlankNodeOrLiteral,
+                    shacl_ast::node_kind::NodeKind::BlankNodeOrLiteral => {
+                        NodeKind::BlankNodeOrLiteral
+                    }
                     shacl_ast::node_kind::NodeKind::IRIOrLiteral => NodeKind::IRIOrLiteral,
                 };
                 constraints.push(UnifiedConstraint::NodeKind(unified_nk));
@@ -186,7 +210,8 @@ impl ShaclToUnified {
                 constraints.push(UnifiedConstraint::HasValue(unified_val));
             }
             Component::In { values } => {
-                let unified_vals: Vec<Value> = values.iter()
+                let unified_vals: Vec<Value> = values
+                    .iter()
                     .map(|v| self.convert_value_to_unified_value(v))
                     .collect();
                 constraints.push(UnifiedConstraint::In(unified_vals));
@@ -203,13 +228,19 @@ impl ShaclToUnified {
 
     fn convert_literal_to_value(&self, literal: &srdf::SLiteral) -> Value {
         // Simple conversion - in practice you'd want more sophisticated handling
-        Value::Literal(literal.lexical_form().to_string(), Some(literal.datatype().to_string()))
+        Value::Literal(
+            literal.lexical_form().to_string(),
+            Some(literal.datatype().to_string()),
+        )
     }
 
     fn convert_value_to_unified_value(&self, value: &shacl_ast::value::Value) -> Value {
         match value {
             shacl_ast::value::Value::Iri(iri) => Value::IRI(iri.to_string()),
-            shacl_ast::value::Value::Literal(lit) => Value::Literal(lit.lexical_form().to_string(), Some(lit.datatype().to_string())),
+            shacl_ast::value::Value::Literal(lit) => Value::Literal(
+                lit.lexical_form().to_string(),
+                Some(lit.datatype().to_string()),
+            ),
         }
     }
 }

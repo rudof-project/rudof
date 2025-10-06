@@ -1,19 +1,22 @@
 use data_generator::GeneratorConfig;
-use tempfile::NamedTempFile;
 use std::io::Write;
+use tempfile::NamedTempFile;
 
 /// Test that the basic DataGenerator can be created and configured
 #[tokio::test]
 async fn test_basic_generator_creation() {
     // Test that we can create a config and generator
     let output_file = NamedTempFile::new().unwrap();
-    
+
     let mut config = GeneratorConfig::default();
     config.generation.entity_count = 3;
     config.output.path = output_file.path().to_path_buf();
-    
+
     let generator = data_generator::DataGenerator::new(config);
-    assert!(generator.is_ok(), "Should be able to create a DataGenerator");
+    assert!(
+        generator.is_ok(),
+        "Should be able to create a DataGenerator"
+    );
 }
 
 /// Test that ShEx schemas can be loaded
@@ -32,18 +35,18 @@ ex:PersonShape {
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
     writeln!(schema_file, "{shex_schema}").unwrap();
-    
+
     let output_file = NamedTempFile::new().unwrap();
-    
+
     // Configure generator
     let mut config = GeneratorConfig::default();
     config.generation.entity_count = 2;
     config.output.path = output_file.path().to_path_buf();
-    
+
     // Test schema loading
     let mut generator = data_generator::DataGenerator::new(config).unwrap();
     let result = generator.load_shex_schema(schema_file.path()).await;
-    
+
     assert!(result.is_ok(), "Should be able to load ShEx schema");
 }
 
@@ -69,18 +72,18 @@ ex:PersonShape a sh:NodeShape ;
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
     writeln!(schema_file, "{shacl_schema}").unwrap();
-    
+
     let output_file = NamedTempFile::new().unwrap();
-    
+
     // Configure generator
     let mut config = GeneratorConfig::default();
     config.generation.entity_count = 2;
     config.output.path = output_file.path().to_path_buf();
-    
+
     // Test schema loading
     let mut generator = data_generator::DataGenerator::new(config).unwrap();
     let result = generator.load_shacl_schema(schema_file.path()).await;
-    
+
     assert!(result.is_ok(), "Should be able to load SHACL schema");
 }
 
@@ -106,21 +109,24 @@ ex:PersonShape a sh:NodeShape ;
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
     writeln!(schema_file, "{shacl_schema}").unwrap();
-    
+
     let output_file = NamedTempFile::new().unwrap();
-    
+
     // Configure generator
     let mut config = GeneratorConfig::default();
     config.generation.entity_count = 2;
     config.output.path = output_file.path().to_path_buf();
-    
+
     // Generate data
     let mut generator = data_generator::DataGenerator::new(config).unwrap();
-    generator.load_shacl_schema(schema_file.path()).await.unwrap();
+    generator
+        .load_shacl_schema(schema_file.path())
+        .await
+        .unwrap();
     let result = generator.generate().await;
-    
+
     assert!(result.is_ok(), "Should be able to generate data");
-    
+
     // Verify output file exists and has content
     assert!(output_file.path().exists(), "Output file should exist");
     let content = std::fs::read_to_string(output_file.path()).unwrap();

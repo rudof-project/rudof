@@ -1,9 +1,9 @@
-use std::collections::HashMap;
-use srdf::{NeighsRDF, RDFFormat, ReaderMode, SRDFGraph};
-use data_generator::{DataGenerator, GeneratorConfig};
 use data_generator::config::OutputFormat;
-use tempfile::NamedTempFile;
+use data_generator::{DataGenerator, GeneratorConfig};
+use srdf::{NeighsRDF, RDFFormat, ReaderMode, SRDFGraph};
+use std::collections::HashMap;
 use std::io::Write;
+use tempfile::NamedTempFile;
 
 /// Debug test to see what datatypes are actually being generated
 #[tokio::test]
@@ -22,16 +22,16 @@ async fn debug_shex_datatype_generation() {
 
     let mut schema_file = NamedTempFile::new().unwrap();
     write!(schema_file, "{shex_schema}").unwrap();
-    
+
     let output_file = NamedTempFile::new().unwrap();
-    
+
     let mut config = GeneratorConfig::default();
     config.generation.entity_count = 3;
     config.output.path = output_file.path().to_path_buf();
     config.output.format = OutputFormat::Turtle;
-    
+
     let mut generator = DataGenerator::new(config).unwrap();
-    
+
     // Try to load the schema
     match generator.load_shex_schema(schema_file.path()).await {
         Ok(_) => println!("ShEx schema loaded successfully"),
@@ -40,7 +40,7 @@ async fn debug_shex_datatype_generation() {
             return;
         }
     }
-    
+
     // Try to generate data
     match generator.generate().await {
         Ok(_) => println!("Data generation completed"),
@@ -49,26 +49,38 @@ async fn debug_shex_datatype_generation() {
             return;
         }
     }
-    
+
     // Read the generated content
     let content = std::fs::read_to_string(output_file.path()).unwrap();
     println!("Generated content:");
     println!("{content}");
-    
+
     // Parse and analyze the generated RDF
-    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
-        .expect("Failed to parse generated RDF");
-    
+    let graph = SRDFGraph::from_path(
+        output_file.path(),
+        &RDFFormat::Turtle,
+        None,
+        &ReaderMode::Strict,
+    )
+    .expect("Failed to parse generated RDF");
+
     let mut datatype_counts = HashMap::new();
     let mut all_triples = Vec::new();
-    
+
     for triple in graph.triples().unwrap() {
-        all_triples.push(format!("{} {} {}", triple.subject, triple.predicate, triple.object));
-         match &triple.object {
+        all_triples.push(format!(
+            "{} {} {}",
+            triple.subject, triple.predicate, triple.object
+        ));
+        match &triple.object {
             oxrdf::Term::Literal(lit) => {
                 let datatype = lit.datatype().to_string();
                 *datatype_counts.entry(datatype).or_insert(0) += 1;
-                println!("Found literal: {} with datatype: {}", lit.value(), lit.datatype());
+                println!(
+                    "Found literal: {} with datatype: {}",
+                    lit.value(),
+                    lit.datatype()
+                );
             }
             oxrdf::Term::NamedNode(node) => {
                 println!("Found named node: {node}");
@@ -82,12 +94,12 @@ async fn debug_shex_datatype_generation() {
             }
         }
     }
-    
+
     println!("All triples generated:");
     for triple in all_triples {
         println!("  {triple}");
     }
-    
+
     println!("Datatype counts: {datatype_counts:?}");
 }
 
@@ -123,16 +135,16 @@ async fn debug_shacl_datatype_generation() {
 
     let mut schema_file = NamedTempFile::new().unwrap();
     write!(schema_file, "{shacl_schema}").unwrap();
-    
+
     let output_file = NamedTempFile::new().unwrap();
-    
+
     let mut config = GeneratorConfig::default();
     config.generation.entity_count = 3;
     config.output.path = output_file.path().to_path_buf();
     config.output.format = OutputFormat::Turtle;
-    
+
     let mut generator = DataGenerator::new(config).unwrap();
-    
+
     // Try to load the schema
     match generator.load_shacl_schema(schema_file.path()).await {
         Ok(_) => println!("SHACL schema loaded successfully"),
@@ -141,7 +153,7 @@ async fn debug_shacl_datatype_generation() {
             return;
         }
     }
-    
+
     // Try to generate data
     match generator.generate().await {
         Ok(_) => println!("Data generation completed"),
@@ -150,27 +162,39 @@ async fn debug_shacl_datatype_generation() {
             return;
         }
     }
-    
+
     // Read the generated content
     let content = std::fs::read_to_string(output_file.path()).unwrap();
     println!("Generated SHACL content:");
     println!("{content}");
-    
+
     // Parse and analyze the generated RDF
-    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
-        .expect("Failed to parse generated RDF");
-    
+    let graph = SRDFGraph::from_path(
+        output_file.path(),
+        &RDFFormat::Turtle,
+        None,
+        &ReaderMode::Strict,
+    )
+    .expect("Failed to parse generated RDF");
+
     let mut datatype_counts = HashMap::new();
     let mut all_triples = Vec::new();
-    
+
     for triple in graph.triples().unwrap() {
-        all_triples.push(format!("{} {} {}", triple.subject, triple.predicate, triple.object));
-        
+        all_triples.push(format!(
+            "{} {} {}",
+            triple.subject, triple.predicate, triple.object
+        ));
+
         match &triple.object {
             oxrdf::Term::Literal(lit) => {
                 let datatype = lit.datatype().to_string();
                 *datatype_counts.entry(datatype).or_insert(0) += 1;
-                println!("Found literal: {} with datatype: {}", lit.value(), lit.datatype());
+                println!(
+                    "Found literal: {} with datatype: {}",
+                    lit.value(),
+                    lit.datatype()
+                );
             }
             oxrdf::Term::NamedNode(node) => {
                 println!("Found named node: {node}");
@@ -184,11 +208,11 @@ async fn debug_shacl_datatype_generation() {
             }
         }
     }
-    
+
     println!("All triples generated:");
     for triple in all_triples {
         println!("  {triple}");
     }
-    
+
     println!("Datatype counts: {datatype_counts:?}");
 }

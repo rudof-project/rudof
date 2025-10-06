@@ -582,7 +582,7 @@ fn run_generate(
 
     // Create tokio runtime
     let runtime = tokio::runtime::Runtime::new()?;
-    
+
     runtime.block_on(async {
         // Load or create configuration
         let mut config = if let Some(config_path) = config_file {
@@ -597,15 +597,15 @@ fn run_generate(
 
         // Apply CLI overrides
         config.generation.entity_count = entity_count;
-        
+
         if let Some(output_path) = output {
             config.output.path = output_path.clone();
         }
-        
+
         if let Some(seed_value) = seed {
             config.generation.seed = Some(seed_value);
         }
-        
+
         if let Some(threads) = parallel {
             config.parallel.worker_threads = Some(threads);
         }
@@ -627,7 +627,10 @@ fn run_generate(
                 bail!("Schema from URL is not supported yet: {}", url)
             }
             InputSpec::Str(s) => {
-                bail!("Schema from string is not supported for data generation: {}", s)
+                bail!(
+                    "Schema from string is not supported for data generation: {}",
+                    s
+                )
             }
         };
 

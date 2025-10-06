@@ -1,4 +1,3 @@
-
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -68,7 +67,7 @@ impl UnifiedConstraintModel {
 
     pub fn add_shape(&mut self, shape: UnifiedShape) {
         let shape_id = shape.id.clone();
-        
+
         // Extract dependencies from shape properties
         let mut deps = Vec::new();
         for prop in &shape.properties {
@@ -78,7 +77,7 @@ impl UnifiedConstraintModel {
                 }
             }
         }
-        
+
         self.dependencies.insert(shape_id.clone(), deps);
         self.shapes.insert(shape_id, shape);
     }

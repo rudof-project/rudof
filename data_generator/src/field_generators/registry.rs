@@ -1,5 +1,5 @@
 use crate::field_generators::{FieldGenerator, FieldGeneratorFactory};
-use crate::{Result, DataGeneratorError};
+use crate::{DataGeneratorError, Result};
 use std::collections::HashMap;
 
 /// Registry for managing field generators
@@ -27,12 +27,12 @@ impl FieldGeneratorRegistry {
     /// Register a field generator instance
     pub fn register_generator(&mut self, generator: Box<dyn FieldGenerator>) {
         let name = generator.name().to_string();
-        
+
         // Register mappings for supported datatypes
         for datatype in generator.supported_datatypes() {
             self.datatype_mappings.insert(datatype, name.clone());
         }
-        
+
         self.generators.insert(name, generator);
     }
 
@@ -44,30 +44,31 @@ impl FieldGeneratorRegistry {
 
     /// Get a generator by name
     pub fn get_generator(&self, name: &str) -> Result<&dyn FieldGenerator> {
-        self.generators.get(name)
+        self.generators
+            .get(name)
             .map(|g| g.as_ref())
-            .ok_or_else(|| DataGeneratorError::FieldGeneration(
-                format!("Generator '{name}' not found")
-            ))
+            .ok_or_else(|| {
+                DataGeneratorError::FieldGeneration(format!("Generator '{name}' not found"))
+            })
     }
 
     /// Get the default generator for a datatype
     pub fn get_default_generator(&self, datatype: &str) -> Result<&dyn FieldGenerator> {
-        let generator_name = self.datatype_mappings.get(datatype)
-            .ok_or_else(|| DataGeneratorError::FieldGeneration(
-                format!("No generator found for datatype '{datatype}'")
-            ))?;
-        
+        let generator_name = self.datatype_mappings.get(datatype).ok_or_else(|| {
+            DataGeneratorError::FieldGeneration(format!(
+                "No generator found for datatype '{datatype}'"
+            ))
+        })?;
+
         self.get_generator(generator_name)
     }
 
     /// Create a generator instance from a factory
     pub fn create_generator(&self, name: &str) -> Result<Box<dyn FieldGenerator>> {
-        let factory = self.factories.get(name)
-            .ok_or_else(|| DataGeneratorError::FieldGeneration(
-                format!("Factory for generator '{name}' not found")
-            ))?;
-        
+        let factory = self.factories.get(name).ok_or_else(|| {
+            DataGeneratorError::FieldGeneration(format!("Factory for generator '{name}' not found"))
+        })?;
+
         factory.create()
     }
 
@@ -75,7 +76,7 @@ impl FieldGeneratorRegistry {
     pub fn register_default_generators(&mut self) -> Result<()> {
         use crate::field_generators::basic::*;
         use crate::field_generators::pattern::PatternGenerator;
-        
+
         self.register_generator(Box::new(StringGenerator));
         self.register_generator(Box::new(IntegerGenerator));
         self.register_generator(Box::new(DecimalGenerator));
@@ -84,7 +85,7 @@ impl FieldGeneratorRegistry {
         self.register_generator(Box::new(DateTimeGenerator));
         self.register_generator(Box::new(UriGenerator));
         self.register_generator(Box::new(PatternGenerator));
-        
+
         Ok(())
     }
 

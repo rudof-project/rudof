@@ -2,12 +2,11 @@ use crate::data_format::DataFormat;
 use crate::dctap_format::DCTapFormat;
 use crate::result_compare_format::ResultCompareFormat;
 use crate::{
-    CliShaclFormat, DCTapResultFormat, GenerateSchemaFormat, InputCompareFormat,
-    InputCompareMode, InputConvertFormat, InputConvertMode, OutputConvertFormat,
-    OutputConvertMode, QueryType, RDFReaderMode, RdfConfigFormat, RdfConfigResultFormat,
-    ResultDataFormat, ResultQueryFormat, ResultServiceFormat, ResultShExValidationFormat,
-    ResultShaclValidationFormat, ResultValidationFormat, ShExFormat, ShapeMapFormat,
-    ShowNodeMode, ValidationMode,
+    CliShaclFormat, DCTapResultFormat, GenerateSchemaFormat, InputCompareFormat, InputCompareMode,
+    InputConvertFormat, InputConvertMode, OutputConvertFormat, OutputConvertMode, QueryType,
+    RDFReaderMode, RdfConfigFormat, RdfConfigResultFormat, ResultDataFormat, ResultQueryFormat,
+    ResultServiceFormat, ResultShExValidationFormat, ResultShaclValidationFormat,
+    ResultValidationFormat, ShExFormat, ShapeMapFormat, ShowNodeMode, ValidationMode,
 };
 use clap::{Parser, Subcommand};
 use iri_s::IriS;
@@ -1343,10 +1342,7 @@ pub enum Command {
         )]
         result_format: DataFormat,
 
-        #[arg(
-            long = "seed",
-            value_name = "Random seed for reproducible generation"
-        )]
+        #[arg(long = "seed", value_name = "Random seed for reproducible generation")]
         seed: Option<u64>,
 
         #[arg(

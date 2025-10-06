@@ -124,7 +124,7 @@ pub struct OutputConfig {
 pub enum OutputFormat {
     Turtle,
     NTriples,
-    // NOTE: Only Turtle and NTriples are supported. 
+    // NOTE: Only Turtle and NTriples are supported.
     // JsonLd and RdfXml removed to avoid serialization issues.
 }
 
@@ -197,15 +197,17 @@ impl OutputConfig {
 
         // Calculate optimal file count based on dataset size
         let optimal_count = match total_triples {
-            0..=1000 => 1,                           // Small datasets: single file
-            1001..=5000 => cpu_count.min(4),         // Small-medium: up to 4 files
-            5001..=50000 => (cpu_count * 2).min(8),  // Medium: up to 2x CPU cores, max 8
-            _ => (cpu_count * 2).min(16),            // Large: up to 2x CPU cores, max 16
+            0..=1000 => 1,                          // Small datasets: single file
+            1001..=5000 => cpu_count.min(4),        // Small-medium: up to 4 files
+            5001..=50000 => (cpu_count * 2).min(8), // Medium: up to 2x CPU cores, max 8
+            _ => (cpu_count * 2).min(16),           // Large: up to 2x CPU cores, max 16
         };
 
         tracing::info!(
             "Auto-detected optimal parallel file count: {} (CPU cores: {}, triples: {})",
-            optimal_count, cpu_count, total_triples
+            optimal_count,
+            cpu_count,
+            total_triples
         );
 
         optimal_count
@@ -236,7 +238,12 @@ impl GeneratorConfig {
     }
 
     /// Merge with command-line overrides
-    pub fn merge_cli_overrides(&mut self, entity_count: Option<usize>, output_path: Option<PathBuf>, seed: Option<u64>) {
+    pub fn merge_cli_overrides(
+        &mut self,
+        entity_count: Option<usize>,
+        output_path: Option<PathBuf>,
+        seed: Option<u64>,
+    ) {
         if let Some(count) = entity_count {
             self.generation.entity_count = count;
         }
@@ -252,13 +259,13 @@ impl GeneratorConfig {
     pub fn validate(&self) -> Result<()> {
         if self.generation.entity_count == 0 {
             return Err(crate::DataGeneratorError::Config(
-                "entity_count must be greater than 0".to_string()
+                "entity_count must be greater than 0".to_string(),
             ));
         }
 
         if self.parallel.batch_size == 0 {
             return Err(crate::DataGeneratorError::Config(
-                "batch_size must be greater than 0".to_string()
+                "batch_size must be greater than 0".to_string(),
             ));
         }
 
@@ -267,7 +274,7 @@ impl GeneratorConfig {
             let total: f64 = weights.values().sum();
             if total <= 0.0 {
                 return Err(crate::DataGeneratorError::Config(
-                    "Weighted distribution weights must sum to a positive value".to_string()
+                    "Weighted distribution weights must sum to a positive value".to_string(),
                 ));
             }
         }

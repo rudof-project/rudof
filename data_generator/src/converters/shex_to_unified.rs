@@ -1,11 +1,10 @@
 use crate::unified_constraints::{
-    UnifiedConstraintModel, UnifiedShape, UnifiedPropertyConstraint, 
-    UnifiedConstraint, NodeKind
+    NodeKind, UnifiedConstraint, UnifiedConstraintModel, UnifiedPropertyConstraint, UnifiedShape,
 };
-use crate::{Result, DataGeneratorError};
-use shex_ast::ast::{ShapeDecl, ShapeExpr, TripleExpr, NodeConstraint};
-use shex_compact::ShExParser;
+use crate::{DataGeneratorError, Result};
 use iri_s::IriS;
+use shex_ast::ast::{NodeConstraint, ShapeDecl, ShapeExpr, TripleExpr};
+use shex_compact::ShExParser;
 use std::path::Path;
 
 pub struct ShExToUnified;
@@ -17,16 +16,22 @@ impl Default for ShExToUnified {
 }
 
 impl ShExToUnified {
-    pub async fn convert_file<P: AsRef<Path>>(&self, shex_path: P) -> Result<UnifiedConstraintModel> {
+    pub async fn convert_file<P: AsRef<Path>>(
+        &self,
+        shex_path: P,
+    ) -> Result<UnifiedConstraintModel> {
         let path = shex_path.as_ref().to_path_buf();
-        
+
         let shapes = tokio::task::spawn_blocking(move || {
-            let schema = ShExParser::parse_buf(&path, None)
-                .map_err(|e| DataGeneratorError::ShexParsing(format!("Failed to parse ShEx: {e}")))?;
-            
-            schema.shapes()
-                .ok_or_else(|| DataGeneratorError::ShexParsing("No shapes found in schema".to_string()))
-        }).await??;
+            let schema = ShExParser::parse_buf(&path, None).map_err(|e| {
+                DataGeneratorError::ShexParsing(format!("Failed to parse ShEx: {e}"))
+            })?;
+
+            schema.shapes().ok_or_else(|| {
+                DataGeneratorError::ShexParsing("No shapes found in schema".to_string())
+            })
+        })
+        .await??;
 
         self.convert_shapes(&shapes).await
     }
@@ -35,12 +40,15 @@ impl ShExToUnified {
         let shapes = tokio::task::spawn_blocking(move || {
             // Create a default base IRI for parsing
             let default_base = IriS::new_unchecked("http://example.org/");
-            let schema = ShExParser::parse(&schema_data, None, &default_base)
-                .map_err(|e| DataGeneratorError::ShexParsing(format!("Failed to parse ShEx: {e}")))?;
-            
-            schema.shapes()
-                .ok_or_else(|| DataGeneratorError::ShexParsing("No shapes found in schema".to_string()))
-        }).await??;
+            let schema = ShExParser::parse(&schema_data, None, &default_base).map_err(|e| {
+                DataGeneratorError::ShexParsing(format!("Failed to parse ShEx: {e}"))
+            })?;
+
+            schema.shapes().ok_or_else(|| {
+                DataGeneratorError::ShexParsing("No shapes found in schema".to_string())
+            })
+        })
+        .await??;
 
         self.convert_shapes(&shapes).await
     }
@@ -74,14 +82,24 @@ impl ShExToUnified {
         }
     }
 
-    fn extract_properties(&self, expr: &TripleExpr, properties: &mut Vec<UnifiedPropertyConstraint>) {
+    fn extract_properties(
+        &self,
+        expr: &TripleExpr,
+        properties: &mut Vec<UnifiedPropertyConstraint>,
+    ) {
         match expr {
             TripleExpr::EachOf { expressions, .. } | TripleExpr::OneOf { expressions, .. } => {
                 for e in expressions {
                     self.extract_properties(&e.te, properties);
                 }
             }
-            TripleExpr::TripleConstraint { predicate, value_expr, min, max, .. } => {
+            TripleExpr::TripleConstraint {
+                predicate,
+                value_expr,
+                min,
+                max,
+                ..
+            } => {
                 let property_iri = predicate.to_string();
                 let (min_card, max_card) = self.convert_cardinality(*min, *max);
                 let mut constraints = Vec::new();
@@ -97,14 +115,14 @@ impl ShExToUnified {
                         _ => {
                             // Default to string for other cases
                             constraints.push(UnifiedConstraint::Datatype(
-                                "http://www.w3.org/2001/XMLSchema#string".to_string()
+                                "http://www.w3.org/2001/XMLSchema#string".to_string(),
                             ));
                         }
                     }
                 } else {
                     // No value expression - default to string
                     constraints.push(UnifiedConstraint::Datatype(
-                        "http://www.w3.org/2001/XMLSchema#string".to_string()
+                        "http://www.w3.org/2001/XMLSchema#string".to_string(),
                     ));
                 }
 
@@ -121,7 +139,11 @@ impl ShExToUnified {
         }
     }
 
-    fn convert_node_constraint(&self, node_constraint: &NodeConstraint, constraints: &mut Vec<UnifiedConstraint>) {
+    fn convert_node_constraint(
+        &self,
+        node_constraint: &NodeConstraint,
+        constraints: &mut Vec<UnifiedConstraint>,
+    ) {
         // Convert datatype
         if let Some(dt) = node_constraint.datatype() {
             constraints.push(UnifiedConstraint::Datatype(dt.to_string()));
@@ -142,15 +164,19 @@ impl ShExToUnified {
         // TODO: Add proper facet and value extraction when needed
     }
 
-    fn convert_cardinality(&self, min: Option<i32>, max: Option<i32>) -> (Option<u32>, Option<u32>) {
+    fn convert_cardinality(
+        &self,
+        min: Option<i32>,
+        max: Option<i32>,
+    ) -> (Option<u32>, Option<u32>) {
         let min_card = match min {
             None => Some(1), // Default min cardinality is 1
             Some(m) if m >= 0 => Some(m as u32),
             Some(_) => Some(0), // Negative values become 0
         };
-        
+
         let max_card = max.and_then(|m| if m >= 0 { Some(m as u32) } else { None });
-        
+
         (min_card, max_card)
     }
 }

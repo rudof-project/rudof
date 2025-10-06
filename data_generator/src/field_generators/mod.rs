@@ -1,16 +1,16 @@
-pub mod traits;
 pub mod basic;
-pub mod specialized;
-pub mod registry;
 pub mod pattern;
+pub mod registry;
+pub mod specialized;
+pub mod traits;
 
-pub use traits::{FieldGenerator, FieldGeneratorFactory};
 pub use registry::FieldGeneratorRegistry;
+pub use traits::{FieldGenerator, FieldGeneratorFactory};
 
-use crate::config::{FieldGeneratorConfig, DataQuality};
 use crate::Result;
-use std::collections::HashMap;
+use crate::config::{DataQuality, FieldGeneratorConfig};
 use serde_json::Value;
+use std::collections::HashMap;
 
 /// Context for field generation
 #[derive(Debug, Clone)]
@@ -66,14 +66,11 @@ pub struct FieldGenerationManager {
 impl FieldGenerationManager {
     pub fn new(config: FieldGeneratorConfig) -> Result<Self> {
         let mut registry = FieldGeneratorRegistry::new();
-        
+
         // Register default generators
         registry.register_default_generators()?;
-        
-        Ok(Self {
-            registry,
-            config,
-        })
+
+        Ok(Self { registry, config })
     }
 
     /// Generate a field value based on the context
@@ -82,12 +79,12 @@ impl FieldGenerationManager {
         if let Some(prop_config) = self.config.properties.get(&context.property) {
             let generator = self.registry.get_generator(&prop_config.generator)?;
             let mut gen_context = context.clone();
-            
+
             // Merge property-specific parameters
             for (key, value) in &prop_config.parameters {
                 gen_context.parameters.insert(key.clone(), value.clone());
             }
-            
+
             return generator.generate(&gen_context);
         }
 
@@ -95,12 +92,12 @@ impl FieldGenerationManager {
         if let Some(datatype_config) = self.config.datatypes.get(&context.datatype) {
             let generator = self.registry.get_generator(&datatype_config.generator)?;
             let mut gen_context = context.clone();
-            
+
             // Merge datatype-specific parameters
             for (key, value) in &datatype_config.parameters {
                 gen_context.parameters.insert(key.clone(), value.clone());
             }
-            
+
             return generator.generate(&gen_context);
         }
 
@@ -110,14 +107,17 @@ impl FieldGenerationManager {
     }
 
     /// Generate multiple field values in parallel
-    pub async fn generate_fields_parallel(&self, contexts: Vec<GenerationContext>) -> Result<Vec<String>> {
+    pub async fn generate_fields_parallel(
+        &self,
+        contexts: Vec<GenerationContext>,
+    ) -> Result<Vec<String>> {
         use rayon::prelude::*;
-        
+
         let results: Result<Vec<String>> = contexts
             .into_par_iter()
             .map(|context| self.generate_field(&context))
             .collect();
-        
+
         results
     }
 }

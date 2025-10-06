@@ -2,8 +2,7 @@ use clap::ValueEnum;
 use serde::Deserialize;
 use std::fmt;
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Deserialize)]
-#[derive(Default)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Deserialize, Default)]
 pub enum GenerateSchemaFormat {
     /// Automatically detect format from file extension
     #[value(name = "auto")]
@@ -28,4 +27,3 @@ impl fmt::Display for GenerateSchemaFormat {
         }
     }
 }
-
