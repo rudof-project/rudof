@@ -25,6 +25,7 @@ shapes_converter = { workspace = true, features = ["rdf-star"] }
 shacl_validation = { workspace = true, features = ["rdf-star"] }
 sparql_service = { workspace = true }
 rudof_lib = { workspace = true }
+data_generator = { path = "../data_generator" }
 
 serde.workspace = true
 serde_json = { workspace = true }
@@ -40,3 +41,4 @@ supports-color = { workspace = true }
 either = "1.13"
 reqwest = { version = "0.12" }
 url = { workspace = true }
+tokio = { version = "1.0", features = ["rt", "rt-multi-thread"] }

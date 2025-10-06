@@ -754,6 +754,74 @@ pub enum Command {
         )]
         force_overwrite: bool,
     },
+
+    /// Generate synthetic RDF data from ShEx or SHACL schemas
+    Generate {
+        #[arg(
+            short = 's',
+            long = "schema",
+            value_name = "Schema file (ShEx or SHACL)"
+        )]
+        schema: InputSpec,
+
+        #[arg(
+            short = 'f',
+            long = "schema-format",
+            value_name = "Schema format",
+            default_value_t = GenerateSchemaFormat::Auto
+        )]
+        schema_format: GenerateSchemaFormat,
+
+        #[arg(
+            short = 'n',
+            long = "entities",
+            value_name = "Number of entities to generate",
+            default_value_t = 10
+        )]
+        entity_count: usize,
+
+        #[arg(
+            short = 'o',
+            long = "output-file",
+            value_name = "Output file name, default = terminal"
+        )]
+        output: Option<PathBuf>,
+
+        #[arg(
+            short = 'r',
+            long = "result-format",
+            value_name = "Output RDF format",
+            default_value_t = DataFormat::Turtle
+        )]
+        result_format: DataFormat,
+
+        #[arg(
+            long = "seed",
+            value_name = "Random seed for reproducible generation"
+        )]
+        seed: Option<u64>,
+
+        #[arg(
+            short = 'p',
+            long = "parallel",
+            value_name = "Number of parallel threads"
+        )]
+        parallel: Option<usize>,
+
+        #[arg(
+            short = 'c',
+            long = "config",
+            value_name = "Configuration file (TOML or JSON)"
+        )]
+        config: Option<PathBuf>,
+
+        #[arg(
+            long = "force-overwrite",
+            value_name = "Force overwrite mode",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
+    },
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
@@ -1013,6 +1081,25 @@ impl Display for ValidationMode {
         match self {
             ValidationMode::ShEx => write!(dest, "shex"),
             ValidationMode::SHACL => write!(dest, "shacl"),
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
+#[clap(rename_all = "lower")]
+pub enum GenerateSchemaFormat {
+    #[default]
+    Auto,
+    ShEx,
+    SHACL,
+}
+
+impl Display for GenerateSchemaFormat {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            GenerateSchemaFormat::Auto => write!(dest, "auto"),
+            GenerateSchemaFormat::ShEx => write!(dest, "shex"),
+            GenerateSchemaFormat::SHACL => write!(dest, "shacl"),
         }
     }
 }
