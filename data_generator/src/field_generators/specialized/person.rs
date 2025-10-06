@@ -17,7 +17,7 @@ impl FieldGenerator for PersonGenerator {
         } else if context.property.contains("fullName") || context.property.contains("name") {
             let first = generate_first_name(&mut rng, &context.locale);
             let last = generate_last_name(&mut rng, &context.locale);
-            Ok(format!("{} {}", first, last))
+            Ok(format!("{first} {last}"))
         } else if context.property.contains("email") {
             Ok(generate_person_email(&mut rng, &context.locale))
         } else if context.property.contains("phone") {
@@ -28,7 +28,7 @@ impl FieldGenerator for PersonGenerator {
             // Fallback to generic person name
             let first = generate_first_name(&mut rng, &context.locale);
             let last = generate_last_name(&mut rng, &context.locale);
-            Ok(format!("{} {}", first, last))
+            Ok(format!("{first} {last}"))
         }
     }
 
@@ -97,9 +97,9 @@ fn generate_person_email(rng: &mut impl Rng, locale: &str) -> String {
     
     if rng.gen_bool(0.2) {
         let number = rng.gen_range(1..100);
-        format!("{}{}{}{number}@{}", first, separator, last, domain)
+        format!("{first}{separator}{last}{number}@{domain}")
     } else {
-        format!("{}{}{separator}{}@{}", first, separator, last, domain)
+        format!("{first}{separator}{separator}{last}@{domain}")
     }
 }
 
@@ -109,7 +109,7 @@ fn generate_phone_number(rng: &mut impl Rng, locale: &str) -> String {
             // Spanish phone number format
             let prefix = rng.gen_range(600..800);
             let number = rng.gen_range(100000..1000000);
-            format!("+34 {} {}", prefix, number)
+            format!("+34 {prefix} {number}")
         },
         "fr" => {
             // French phone number format
@@ -127,7 +127,7 @@ fn generate_phone_number(rng: &mut impl Rng, locale: &str) -> String {
             let area = rng.gen_range(200..1000);
             let exchange = rng.gen_range(200..1000);
             let number = rng.gen_range(1000..10000);
-            format!("({}) {}-{}", area, exchange, number)
+            format!("({area}) {exchange}-{number}")
         }
     }
 }
@@ -138,19 +138,19 @@ fn generate_address(rng: &mut impl Rng, locale: &str) -> String {
             let streets = ["Calle Mayor", "Avenida de la Constitución", "Plaza España", "Calle Real"];
             let street = streets.choose(rng).unwrap();
             let number = rng.gen_range(1..200);
-            format!("{} {}", street, number)
+            format!("{street} {number}")
         },
         "fr" => {
             let streets = ["Rue de la Paix", "Avenue des Champs", "Boulevard Saint-Germain", "Place de la République"];
             let street = streets.choose(rng).unwrap();
             let number = rng.gen_range(1..200);
-            format!("{} {}", number, street)
+            format!("{number} {street}")
         },
         _ => {
             let streets = ["Main Street", "Oak Avenue", "Pine Road", "Elm Street", "First Avenue"];
             let street = streets.choose(rng).unwrap();
             let number = rng.gen_range(100..9999);
-            format!("{} {}", number, street)
+            format!("{number} {street}")
         }
     }
 }

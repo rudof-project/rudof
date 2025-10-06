@@ -78,7 +78,7 @@ impl OutputWriter {
         
         // Get optimal file count (either user-specified or auto-detected)
         let optimal_file_count = self.config.get_optimal_file_count(total_triples);
-        let chunk_size = (total_triples + optimal_file_count - 1) / optimal_file_count;
+        let chunk_size = total_triples.div_ceil(optimal_file_count);
 
         if chunk_size == 0 {
             // No triples to write
@@ -171,9 +171,9 @@ impl OutputWriter {
         let manifest_path = self.config.path.with_extension("manifest.txt");
         let mut manifest_content = String::new();
         
-        manifest_content.push_str(&format!("# Data Generator Parallel Output Manifest\n"));
+        manifest_content.push_str("# Data Generator Parallel Output Manifest\n");
         manifest_content.push_str(&format!("# Generated on: {}\n", chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC")));
-        manifest_content.push_str(&format!("# Total parallel files: {}\n\n", actual_file_count));
+        manifest_content.push_str(&format!("# Total parallel files: {actual_file_count}\n\n"));
 
         for i in 0..actual_file_count {
             let file_path = self.get_parallel_file_path(i);

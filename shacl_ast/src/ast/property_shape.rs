@@ -288,7 +288,7 @@ impl<RDF: Rdf> PropertyShape<RDF> {
 impl<RDF: Rdf> Display for PropertyShape<RDF> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Some(severity) = self.severity() {
-            write!(f, "{} ", severity)?;
+            write!(f, "{severity} ")?;
         }
         writeln!(f, "{{")?;
         writeln!(f, "       PropertyShape")?;

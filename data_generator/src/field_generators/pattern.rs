@@ -95,7 +95,7 @@ impl PatternGenerator {
             let year = rng.gen_range(1980..=2024);
             let month = rng.gen_range(1..=12);
             let day = rng.gen_range(1..=28); // Safe day range
-            return Ok(format!("{:04}-{:02}-{:02}", year, month, day));
+            return Ok(format!("{year:04}-{month:02}-{day:02}"));
         }
         
         if pattern.contains("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}") {
@@ -246,10 +246,10 @@ impl PatternGenerator {
                                 if last_char.is_ascii_digit() {
                                     result.push_str(&rng.gen_range(0..10).to_string());
                                 } else if last_char.is_ascii_uppercase() {
-                                    let ch = ('A' as u8 + rng.gen_range(0..26)) as char;
+                                    let ch = (b'A' + rng.gen_range(0..26)) as char;
                                     result.push(ch);
                                 } else if last_char.is_ascii_lowercase() {
-                                    let ch = ('a' as u8 + rng.gen_range(0..26)) as char;
+                                    let ch = (b'a' + rng.gen_range(0..26)) as char;
                                     result.push(ch);
                                 } else {
                                     result.push(last_char);
@@ -270,10 +270,10 @@ impl PatternGenerator {
                             if last_char.is_ascii_digit() {
                                 result.push_str(&rng.gen_range(0..10).to_string());
                             } else if last_char.is_ascii_uppercase() {
-                                let ch = ('A' as u8 + rng.gen_range(0..26)) as char;
+                                let ch = (b'A' + rng.gen_range(0..26)) as char;
                                 result.push(ch);
                             } else if last_char.is_ascii_lowercase() {
-                                let ch = ('a' as u8 + rng.gen_range(0..26)) as char;
+                                let ch = (b'a' + rng.gen_range(0..26)) as char;
                                 result.push(ch);
                             } else {
                                 result.push(last_char);
@@ -290,10 +290,10 @@ impl PatternGenerator {
                             if last_char.is_ascii_digit() {
                                 result.push_str(&rng.gen_range(0..10).to_string());
                             } else if last_char.is_ascii_uppercase() {
-                                let ch = ('A' as u8 + rng.gen_range(0..26)) as char;
+                                let ch = (b'A' + rng.gen_range(0..26)) as char;
                                 result.push(ch);
                             } else if last_char.is_ascii_lowercase() {
-                                let ch = ('a' as u8 + rng.gen_range(0..26)) as char;
+                                let ch = (b'a' + rng.gen_range(0..26)) as char;
                                 result.push(ch);
                             } else {
                                 result.push(last_char);
@@ -322,7 +322,7 @@ impl PatternGenerator {
         
         if result.is_empty() {
             return Err(DataGeneratorError::FieldGeneration(
-                format!("Could not generate string from pattern: {}", pattern)
+                format!("Could not generate string from pattern: {pattern}")
             ));
         }
         
@@ -338,17 +338,17 @@ impl PatternGenerator {
         }
         
         if char_class.contains("a-z") {
-            let ch = ('a' as u8 + rng.gen_range(0..26)) as char;
+            let ch = (b'a' + rng.gen_range(0..26)) as char;
             return Some(ch);
         }
         
         if char_class.contains("A-Z") {
-            let ch = ('A' as u8 + rng.gen_range(0..26)) as char;
+            let ch = (b'A' + rng.gen_range(0..26)) as char;
             return Some(ch);
         }
         
         if char_class.contains("0-9") {
-            let ch = ('0' as u8 + rng.gen_range(0..10)) as char;
+            let ch = (b'0' + rng.gen_range(0..10)) as char;
             return Some(ch);
         }
         

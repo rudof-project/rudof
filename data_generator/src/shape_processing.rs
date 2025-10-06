@@ -43,14 +43,20 @@ pub struct ShapeProcessor {
     shacl_converter: ShaclToUnified,
 }
 
+impl Default for ShapeProcessor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ShapeProcessor {
     pub fn new() -> Self {
         Self {
             shapes: HashMap::new(),
             dependency_graph: HashMap::new(),
             unified_model: None,
-            shex_converter: ShExToUnified::default(),
-            shacl_converter: ShaclToUnified::default(),
+            shex_converter: ShExToUnified,
+            shacl_converter: ShaclToUnified,
         }
     }
 
@@ -110,7 +116,7 @@ impl ShapeProcessor {
 
         if let ShapeExpr::Shape(s) = &shape.shape_expr {
             if let Some(expr) = &s.expression {
-                self.extract_dependencies_and_properties(&expr.te, &mut dependencies, &mut properties);
+                Self::extract_dependencies_and_properties(&expr.te, &mut dependencies, &mut properties);
             }
         }
 
@@ -123,7 +129,6 @@ impl ShapeProcessor {
 
     /// Recursively extract dependencies and properties from a triple expression
     fn extract_dependencies_and_properties(
-        &self,
         expr: &TripleExpr,
         dependencies: &mut Vec<ShapeDependency>,
         properties: &mut Vec<PropertyInfo>,
@@ -131,7 +136,7 @@ impl ShapeProcessor {
         match expr {
             TripleExpr::EachOf { expressions, .. } | TripleExpr::OneOf { expressions, .. } => {
                 for e in expressions {
-                    self.extract_dependencies_and_properties(&e.te, dependencies, properties);
+                    Self::extract_dependencies_and_properties(&e.te, dependencies, properties);
                 }
             }
             TripleExpr::TripleConstraint { predicate, value_expr, min, max, .. } => {
@@ -280,7 +285,7 @@ fn topological_sort(graph: &HashMap<String, Vec<String>>) -> Result<Vec<String>>
     ) -> Result<()> {
         if temp_visited.contains(node) {
             return Err(DataGeneratorError::GraphGeneration(
-                format!("Circular dependency detected involving shape: {}", node)
+                format!("Circular dependency detected involving shape: {node}")
             ));
         }
         

@@ -93,7 +93,7 @@ impl FieldGenerator for DecimalGenerator {
             .unwrap_or(2) as usize;
         
         let value = rng.gen_range(min..=max);
-        Ok(format!("{:.precision$}", value, precision = precision))
+        Ok(format!("{value:.precision$}"))
     }
 
     fn name(&self) -> &str {
@@ -148,7 +148,7 @@ impl FieldGenerator for DateGenerator {
         let month = rng.gen_range(1..=12);
         let day = rng.gen_range(1..=28); // Simplified to avoid month-specific validation
         
-        Ok(format!("{:04}-{:02}-{:02}", year, month, day))
+        Ok(format!("{year:04}-{month:02}-{day:02}"))
     }
 
     fn name(&self) -> &str {
@@ -182,7 +182,7 @@ impl FieldGenerator for DateTimeGenerator {
         let minute = rng.gen_range(0..=59);
         let second = rng.gen_range(0..=59);
         
-        Ok(format!("{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z", year, month, day, hour, minute, second))
+        Ok(format!("{year:04}-{month:02}-{day:02}T{hour:02}:{minute:02}:{second:02}Z"))
     }
 
     fn name(&self) -> &str {
@@ -208,7 +208,7 @@ impl FieldGenerator for UriGenerator {
         let path = paths.choose(&mut rng).unwrap();
         let id = rng.gen_range(1..10000);
         
-        Ok(format!("http://{}/{}/{}", domain, path, id))
+        Ok(format!("http://{domain}/{path}/{id}"))
     }
 
     fn name(&self) -> &str {
@@ -238,7 +238,7 @@ fn generate_name(rng: &mut impl Rng, locale: &str) -> String {
     let first = first_names.choose(rng).unwrap();
     let last = last_names.choose(rng).unwrap();
     
-    format!("{} {}", first, last)
+    format!("{first} {last}")
 }
 
 fn generate_title(rng: &mut impl Rng, locale: &str) -> String {
@@ -257,7 +257,7 @@ fn generate_title(rng: &mut impl Rng, locale: &str) -> String {
     let adj = adjectives.choose(rng).unwrap();
     let noun = nouns.choose(rng).unwrap();
     
-    format!("{} {}", adj, noun)
+    format!("{adj} {noun}")
 }
 
 fn generate_description(rng: &mut impl Rng, _locale: &str) -> String {
@@ -281,9 +281,9 @@ fn generate_email(rng: &mut impl Rng) -> String {
     let number = rng.gen_range(1..1000);
     
     if rng.gen_bool(0.3) {
-        format!("{}{}@{}", prefix, number, domain)
+        format!("{prefix}{number}@{domain}")
     } else {
-        format!("{}@{}", prefix, domain)
+        format!("{prefix}@{domain}")
     }
 }
 
@@ -292,5 +292,5 @@ fn generate_generic_string(rng: &mut impl Rng, _locale: &str) -> String {
     let word = words.choose(rng).unwrap();
     let number = rng.gen_range(1..1000);
     
-    format!("{}{:03}", word, number)
+    format!("{word}{number:03}")
 }

@@ -418,7 +418,7 @@ impl TryFrom<&str> for NumericLiteral {
         } else if let Ok(d) = Decimal::from_str_exact(value) {
             return Ok(NumericLiteral::Decimal(d));
         }
-        Err(format!("Cannot parse '{}' as NumericLiteral", value))
+        Err(format!("Cannot parse '{value}' as NumericLiteral"))
     }
 }
 

@@ -28,7 +28,7 @@ impl Display for ShExFormat {
         match self {
             ShExFormat::ShExC => write!(f, "ShExC"),
             ShExFormat::ShExJ => write!(f, "ShExJ"),
-            ShExFormat::RDFFormat(rdf_format) => write!(f, "{}", rdf_format),
+            ShExFormat::RDFFormat(rdf_format) => write!(f, "{rdf_format}"),
         }
     }
 }

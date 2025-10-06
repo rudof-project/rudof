@@ -152,7 +152,7 @@ impl ParallelGenerator {
             let shapes_guard = shapes.read().await;
             shapes_guard.get(shape_id)
                 .ok_or_else(|| DataGeneratorError::GraphGeneration(
-                    format!("Shape not found: {}", shape_id)
+                    format!("Shape not found: {shape_id}")
                 ))?
                 .clone()
         };
@@ -215,7 +215,7 @@ impl ParallelGenerator {
             for value_idx in 0..num_values {
                 if let Some(shape_ref) = &property_info.shape_ref {
                     // Object property with shape reference - generate nested entity
-                    let nested_entity_iri = format!("{}-{}-{}", shape_ref, entity_index, value_idx);
+                    let nested_entity_iri = format!("{shape_ref}-{entity_index}-{value_idx}");
                     let nested_entity_node = NamedNode::new_unchecked(&nested_entity_iri);
                     
                     // Add triple linking to nested entity
@@ -239,7 +239,7 @@ impl ParallelGenerator {
                     let mut context = GenerationContext::new(
                         property_info.property_iri.clone(),
                         datatype.clone(),
-                        format!("{}-{}", entity_iri, value_idx),
+                        format!("{entity_iri}-{value_idx}"),
                     );
 
                     // Add constraint parameters to context
@@ -507,40 +507,32 @@ impl ParallelGenerator {
         
         for constraint in constraints {
             match constraint {
-                UnifiedConstraint::MinInclusive(value) => {
-                    if let crate::unified_constraints::Value::Literal(val, _) = value {
-                        if let Ok(i) = val.parse::<i64>() {
-                            params.insert("min".to_string(), json!(i));
-                        } else if let Ok(f) = val.parse::<f64>() {
-                            params.insert("min".to_string(), json!(f));
-                        }
+                UnifiedConstraint::MinInclusive(crate::unified_constraints::Value::Literal(val, _)) => {
+                    if let Ok(i) = val.parse::<i64>() {
+                        params.insert("min".to_string(), json!(i));
+                    } else if let Ok(f) = val.parse::<f64>() {
+                        params.insert("min".to_string(), json!(f));
                     }
                 }
-                UnifiedConstraint::MaxInclusive(value) => {
-                    if let crate::unified_constraints::Value::Literal(val, _) = value {
-                        if let Ok(i) = val.parse::<i64>() {
-                            params.insert("max".to_string(), json!(i));
-                        } else if let Ok(f) = val.parse::<f64>() {
-                            params.insert("max".to_string(), json!(f));
-                        }
+                UnifiedConstraint::MaxInclusive(crate::unified_constraints::Value::Literal(val, _)) => {
+                    if let Ok(i) = val.parse::<i64>() {
+                        params.insert("max".to_string(), json!(i));
+                    } else if let Ok(f) = val.parse::<f64>() {
+                        params.insert("max".to_string(), json!(f));
                     }
                 }
-                UnifiedConstraint::MinExclusive(value) => {
-                    if let crate::unified_constraints::Value::Literal(val, _) = value {
-                        if let Ok(i) = val.parse::<i64>() {
-                            params.insert("min".to_string(), json!(i + 1));
-                        } else if let Ok(f) = val.parse::<f64>() {
-                            params.insert("min".to_string(), json!(f + 0.001));
-                        }
+                UnifiedConstraint::MinExclusive(crate::unified_constraints::Value::Literal(val, _)) => {
+                    if let Ok(i) = val.parse::<i64>() {
+                        params.insert("min".to_string(), json!(i + 1));
+                    } else if let Ok(f) = val.parse::<f64>() {
+                        params.insert("min".to_string(), json!(f + 0.001));
                     }
                 }
-                UnifiedConstraint::MaxExclusive(value) => {
-                    if let crate::unified_constraints::Value::Literal(val, _) = value {
-                        if let Ok(i) = val.parse::<i64>() {
-                            params.insert("max".to_string(), json!(i - 1));
-                        } else if let Ok(f) = val.parse::<f64>() {
-                            params.insert("max".to_string(), json!(f - 0.001));
-                        }
+                UnifiedConstraint::MaxExclusive(crate::unified_constraints::Value::Literal(val, _)) => {
+                    if let Ok(i) = val.parse::<i64>() {
+                        params.insert("max".to_string(), json!(i - 1));
+                    } else if let Ok(f) = val.parse::<f64>() {
+                        params.insert("max".to_string(), json!(f - 0.001));
                     }
                 }
                 UnifiedConstraint::MinLength(len) => {

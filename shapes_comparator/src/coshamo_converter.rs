@@ -208,7 +208,7 @@ impl CoShaMoConverter {
                     }
                 }
                 ShapeExpr::Shape(s) => Err(ComparatorError::NotImplemented {
-                    feature: format!("Shape as ValueExpr, shape: {:?}", s),
+                    feature: format!("Shape as ValueExpr, shape: {s:?}"),
                 }),
                 ShapeExpr::ShapeOr { .. } => Err(ComparatorError::NotImplemented {
                     feature: "ShapeOr as ValueExpr".to_string(),

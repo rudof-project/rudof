@@ -566,6 +566,7 @@ fn schema_format_to_shacl_format(f: &CliShExFormat) -> Result<CliShaclFormat> {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run_generate(
     schema: &InputSpec,
     schema_format: &GenerateSchemaFormat,

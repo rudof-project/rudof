@@ -96,7 +96,7 @@ where
             &self,
             values
                 .iter()
-                .map(|(k, v)| format!("({} {})", k, v))
+                .map(|(k, v)| format!("({k} {v})"))
                 .join(", ")
         );
         let mut pairs_found = 0;

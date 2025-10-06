@@ -39,7 +39,7 @@ impl Display for GraphCollection {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Id: {}", self.id)?;
         for graph in &self.collection {
-            writeln!(f, "\nGraph: {}", graph)?;
+            writeln!(f, "\nGraph: {graph}")?;
         }
         Ok(())
     }

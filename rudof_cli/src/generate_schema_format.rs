@@ -3,9 +3,11 @@ use serde::Deserialize;
 use std::fmt;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Deserialize)]
+#[derive(Default)]
 pub enum GenerateSchemaFormat {
     /// Automatically detect format from file extension
     #[value(name = "auto")]
+    #[default]
     Auto,
 
     /// ShEx format
@@ -27,8 +29,3 @@ impl fmt::Display for GenerateSchemaFormat {
     }
 }
 
-impl Default for GenerateSchemaFormat {
-    fn default() -> Self {
-        GenerateSchemaFormat::Auto
-    }
-}

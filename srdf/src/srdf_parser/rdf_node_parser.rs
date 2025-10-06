@@ -2488,7 +2488,7 @@ where
                                 Err(_err) => match inverse_path(rdf) {
                                     Ok(inverse) => Ok(inverse),
                                     Err(err) => Err(RDFParseError::Custom {
-                                        msg: format!("Error parsing SHACL Path: {}", err),
+                                        msg: format!("Error parsing SHACL Path: {err}"),
                                     }),
                                 },
                             },

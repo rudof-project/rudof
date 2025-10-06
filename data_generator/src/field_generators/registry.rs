@@ -9,6 +9,12 @@ pub struct FieldGeneratorRegistry {
     datatype_mappings: HashMap<String, String>,
 }
 
+impl Default for FieldGeneratorRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FieldGeneratorRegistry {
     pub fn new() -> Self {
         Self {
@@ -41,7 +47,7 @@ impl FieldGeneratorRegistry {
         self.generators.get(name)
             .map(|g| g.as_ref())
             .ok_or_else(|| DataGeneratorError::FieldGeneration(
-                format!("Generator '{}' not found", name)
+                format!("Generator '{name}' not found")
             ))
     }
 
@@ -49,7 +55,7 @@ impl FieldGeneratorRegistry {
     pub fn get_default_generator(&self, datatype: &str) -> Result<&dyn FieldGenerator> {
         let generator_name = self.datatype_mappings.get(datatype)
             .ok_or_else(|| DataGeneratorError::FieldGeneration(
-                format!("No generator found for datatype '{}'", datatype)
+                format!("No generator found for datatype '{datatype}'")
             ))?;
         
         self.get_generator(generator_name)
@@ -59,7 +65,7 @@ impl FieldGeneratorRegistry {
     pub fn create_generator(&self, name: &str) -> Result<Box<dyn FieldGenerator>> {
         let factory = self.factories.get(name)
             .ok_or_else(|| DataGeneratorError::FieldGeneration(
-                format!("Factory for generator '{}' not found", name)
+                format!("Factory for generator '{name}' not found")
             ))?;
         
         factory.create()

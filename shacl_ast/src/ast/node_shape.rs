@@ -172,7 +172,7 @@ impl<RDF: Rdf> NodeShape<RDF> {
 impl<RDF: Rdf> Display for NodeShape<RDF> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Some(severity) = self.severity() {
-            write!(f, "{} ", severity)?;
+            write!(f, "{severity} ")?;
         }
         writeln!(f, "{{")?;
         for target in self.targets.iter() {
