@@ -4,8 +4,8 @@ use crate::shape_processing::ShapeInfo;
 use crate::unified_constraints::UnifiedConstraint;
 use crate::{Result, DataGeneratorError};
 use srdf::srdf_graph::SRDFGraph;
-use srdf::SRDFBuilder;
-use oxrdf::{NamedNode, Subject, Term, Triple, Literal};
+use srdf::BuildRDF;
+use oxrdf::{NamedNode, NamedOrBlankNode, Term, Triple, Literal};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -198,7 +198,7 @@ impl ParallelGenerator {
 
         // Add type triple
         triples.push(Triple::new(
-            Subject::NamedNode(entity_node.clone()),
+            NamedOrBlankNode::NamedNode(entity_node.clone()),
             NamedNode::new_unchecked("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
             Term::NamedNode(NamedNode::new_unchecked(shape_id)),
         ));
@@ -220,7 +220,7 @@ impl ParallelGenerator {
                     
                     // Add triple linking to nested entity
                     triples.push(Triple::new(
-                        Subject::NamedNode(entity_node.clone()),
+                        NamedOrBlankNode::NamedNode(entity_node.clone()),
                         NamedNode::new_unchecked(&property_info.property_iri),
                         Term::NamedNode(nested_entity_node.clone()),
                     ));
@@ -254,7 +254,7 @@ impl ParallelGenerator {
                     let literal_term = self.create_typed_literal(&literal_value, datatype)?;
 
                     triples.push(Triple::new(
-                        Subject::NamedNode(entity_node.clone()),
+                        NamedOrBlankNode::NamedNode(entity_node.clone()),
                         NamedNode::new_unchecked(&property_info.property_iri),
                         literal_term,
                     ));
@@ -386,7 +386,7 @@ impl ParallelGenerator {
             // Create relationship triples
             for to_iri in selected_targets {
                 let triple = Triple::new(
-                    Subject::NamedNode(NamedNode::new_unchecked(from_iri)),
+                    NamedOrBlankNode::NamedNode(NamedNode::new_unchecked(from_iri)),
                     NamedNode::new_unchecked(&dependency.property),
                     Term::NamedNode(NamedNode::new_unchecked(to_iri)),
                 );
@@ -460,7 +460,7 @@ impl ParallelGenerator {
 
         // Add type triple for nested entity
         triples.push(Triple::new(
-            Subject::NamedNode(entity_node.clone()),
+            NamedOrBlankNode::NamedNode(entity_node.clone()),
             NamedNode::new_unchecked("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
             Term::NamedNode(NamedNode::new_unchecked(shape_id)),
         ));
@@ -490,7 +490,7 @@ impl ParallelGenerator {
                     let literal_term = self.create_typed_literal(&literal_value, datatype)?;
 
                     triples.push(Triple::new(
-                        Subject::NamedNode(entity_node.clone()),
+                        NamedOrBlankNode::NamedNode(entity_node.clone()),
                         NamedNode::new_unchecked(&property_info.property_iri),
                         literal_term,
                     ));

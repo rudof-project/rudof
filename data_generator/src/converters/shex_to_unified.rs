@@ -5,6 +5,7 @@ use crate::unified_constraints::{
 use crate::{Result, DataGeneratorError};
 use shex_ast::ast::{ShapeDecl, ShapeExpr, TripleExpr, NodeConstraint};
 use shex_compact::ShExParser;
+use iri_s::IriS;
 use std::path::Path;
 
 pub struct ShExToUnified;
@@ -32,7 +33,9 @@ impl ShExToUnified {
 
     pub async fn convert_schema(&self, schema_data: String) -> Result<UnifiedConstraintModel> {
         let shapes = tokio::task::spawn_blocking(move || {
-            let schema = ShExParser::parse(&schema_data, None)
+            // Create a default base IRI for parsing
+            let default_base = IriS::new_unchecked("http://example.org/");
+            let schema = ShExParser::parse(&schema_data, None, &default_base)
                 .map_err(|e| DataGeneratorError::ShexParsing(format!("Failed to parse ShEx: {e}")))?;
             
             schema.shapes()

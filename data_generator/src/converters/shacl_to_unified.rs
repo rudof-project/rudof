@@ -3,7 +3,8 @@ use crate::unified_constraints::{
     UnifiedConstraint, NodeKind, Value
 };
 use crate::{Result, DataGeneratorError};
-use shacl_ast::{Schema as ShaclSchema, shape::Shape as ShaclShape, node_shape::NodeShape, property_shape::PropertyShape, component::Component, ShaclParser};
+use shacl_ast::{Schema as ShaclSchema, shape::Shape as ShaclShape, node_shape::NodeShape, property_shape::PropertyShape, component::Component};
+use shacl_rdf::rdf_to_shacl::ShaclParser;
 use srdf::{SRDFGraph, RDFFormat, ReaderMode};
 use std::path::Path;
 use std::fs;
@@ -43,7 +44,7 @@ impl ShaclToUnified {
         self.convert_shacl_schema(&schema).await
     }
 
-    async fn convert_shacl_schema(&self, schema: &ShaclSchema) -> Result<UnifiedConstraintModel> {
+    async fn convert_shacl_schema(&self, schema: &ShaclSchema<SRDFGraph>) -> Result<UnifiedConstraintModel> {
         let mut model = UnifiedConstraintModel::new();
 
         // Get all shapes from the schema
@@ -57,7 +58,7 @@ impl ShaclToUnified {
         Ok(model)
     }
 
-    fn convert_node_shape(&self, node_shape: &NodeShape, schema: &ShaclSchema) -> UnifiedShape {
+    fn convert_node_shape(&self, node_shape: &NodeShape<SRDFGraph>, schema: &ShaclSchema<SRDFGraph>) -> UnifiedShape {
         let shape_id = node_shape.id().to_string();
         let mut properties = Vec::new();
         
@@ -77,8 +78,8 @@ impl ShaclToUnified {
             }
         }
 
-        // Get closed information from components
-        let closed = *node_shape.is_closed();
+        // Get closed information from components (currently not available in AST)
+        let closed = false; // TODO: Extract from components when available
         let _ignored_properties: Vec<String> = Vec::new(); // TODO: Handle ignored properties
 
         UnifiedShape {
@@ -89,7 +90,7 @@ impl ShaclToUnified {
         }
     }
 
-    fn convert_property_shape(&self, prop_shape: &PropertyShape) -> Option<UnifiedPropertyConstraint> {
+    fn convert_property_shape(&self, prop_shape: &PropertyShape<SRDFGraph>) -> Option<UnifiedPropertyConstraint> {
         let property_iri = prop_shape.path().to_string();
         let mut constraints = Vec::new();
         
@@ -200,15 +201,15 @@ impl ShaclToUnified {
         }
     }
 
-    fn convert_literal_to_value(&self, literal: &srdf::literal::Literal) -> Value {
+    fn convert_literal_to_value(&self, literal: &srdf::SLiteral) -> Value {
         // Simple conversion - in practice you'd want more sophisticated handling
-        Value::Literal(literal.lexical_form(), Some(literal.datatype().to_string()))
+        Value::Literal(literal.lexical_form().to_string(), Some(literal.datatype().to_string()))
     }
 
     fn convert_value_to_unified_value(&self, value: &shacl_ast::value::Value) -> Value {
         match value {
             shacl_ast::value::Value::Iri(iri) => Value::IRI(iri.to_string()),
-            shacl_ast::value::Value::Literal(lit) => Value::Literal(lit.lexical_form(), Some(lit.datatype().to_string())),
+            shacl_ast::value::Value::Literal(lit) => Value::Literal(lit.lexical_form().to_string(), Some(lit.datatype().to_string())),
         }
     }
 }

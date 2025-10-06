@@ -1,7 +1,7 @@
 use crate::config::OutputConfig;
 use crate::{Result, DataGeneratorError};
 use srdf::srdf_graph::SRDFGraph;
-use srdf::{RDFFormat, SRDFBuilder, Query, Triple};
+use srdf::{RDFFormat, BuildRDF, NeighsRDF};
 use std::fs::File;
 use std::path::PathBuf;
 
@@ -241,7 +241,6 @@ pub struct GenerationStatistics {
 
 impl GenerationStatistics {
     pub fn from_graph(graph: &SRDFGraph) -> Self {
-        use srdf::Query;
         use std::collections::HashSet;
         
         let total_triples = graph.len();
@@ -255,15 +254,15 @@ impl GenerationStatistics {
         // Iterate through all triples to collect statistics
         if let Ok(triples) = graph.triples() {
             for triple in triples {
-                subjects.insert(triple.subj().to_string());
-                let pred_str = triple.pred().to_string();
+                subjects.insert(triple.subject.to_string());
+                let pred_str = triple.predicate.to_string();
                 predicates.insert(pred_str.clone());
-                objects.insert(triple.obj().to_string());
+                objects.insert(triple.object.to_string());
                 
                 // Count shape types (look for rdf:type triples)
                 // The predicate comes with angle brackets around it
                 if pred_str == "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>" {
-                    let shape_type = triple.obj().to_string();
+                    let shape_type = triple.object.to_string();
                     // Remove angle brackets if present
                     let shape_type = shape_type.trim_start_matches('<').trim_end_matches('>');
                     *shape_counts.entry(shape_type.to_string()).or_insert(0) += 1;

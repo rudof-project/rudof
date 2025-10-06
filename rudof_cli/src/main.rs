@@ -20,15 +20,16 @@ use rudof_cli::CliShaclFormat;
 use rudof_cli::ShExFormat as CliShExFormat;
 use rudof_cli::cli::{Cli, Command};
 use rudof_cli::data::run_data;
+use rudof_cli::data_format::DataFormat;
 use rudof_cli::node::run_node;
 use rudof_cli::query::run_query;
 use rudof_cli::rdf_config::run_rdf_config;
 use rudof_cli::run_compare;
 use rudof_cli::{
-    ValidationMode, run_convert, run_dctap, run_service, run_shacl, run_shapemap, run_shex,
-    run_validate_shacl, run_validate_shex,
+    GenerateSchemaFormat, ValidationMode, run_convert, run_dctap, run_service, run_shacl,
+    run_shapemap, run_shex, run_validate_shacl, run_validate_shex,
 };
-use rudof_lib::RudofConfig;
+use rudof_lib::{InputSpec, RudofConfig};
 use std::io;
 use std::path::PathBuf;
 use std::result::Result::Ok;
@@ -565,7 +566,7 @@ fn schema_format_to_shacl_format(f: &CliShExFormat) -> Result<CliShaclFormat> {
 
 fn run_generate(
     schema: &InputSpec,
-    schema_format: &cli::GenerateSchemaFormat,
+    schema_format: &GenerateSchemaFormat,
     entity_count: usize,
     output: &Option<PathBuf>,
     result_format: &DataFormat,
@@ -632,13 +633,13 @@ fn run_generate(
 
         // Load schema based on format
         match schema_format {
-            cli::GenerateSchemaFormat::Auto => {
+            GenerateSchemaFormat::Auto => {
                 generator.load_schema_auto(&schema_path).await?;
             }
-            cli::GenerateSchemaFormat::ShEx => {
+            GenerateSchemaFormat::ShEx => {
                 generator.load_shex_schema(&schema_path).await?;
             }
-            cli::GenerateSchemaFormat::SHACL => {
+            GenerateSchemaFormat::SHACL => {
                 generator.load_shacl_schema(&schema_path).await?;
             }
         }

@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use srdf::{RDFFormat, ReaderMode, SRDFGraph, Query, Literal};
+use srdf::{Literal, NeighsRDF, RDFFormat, ReaderMode, SRDFGraph};
 use data_generator::{DataGenerator, GeneratorConfig};
 use data_generator::config::OutputFormat;
 use tempfile::NamedTempFile;
