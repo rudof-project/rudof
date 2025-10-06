@@ -1,20 +1,20 @@
 use clap::ValueEnum;
 use prefixmap::PrefixMap;
-use shacl_ast::compiled::schema::SchemaIR;
+use shacl_ir::compiled::schema::SchemaIR;
 use sparql_service::RdfData;
+use srdf::NeighsRDF;
 use srdf::RDFFormat;
-use srdf::Rdf;
 use srdf::SRDFSparql;
 use std::fmt::Debug;
 use std::path::Path;
 
-use crate::engine::native::NativeEngine;
-use crate::engine::sparql::SparqlEngine;
-use crate::engine::Engine;
-use crate::shape::Validate;
+use crate::shacl_engine::engine::Engine;
+use crate::shacl_engine::native::NativeEngine;
+use crate::shacl_engine::sparql::SparqlEngine;
+use crate::shape_validation::Validate;
+use crate::store::Store;
 use crate::store::graph::Graph;
 use crate::store::sparql::Endpoint;
-use crate::store::Store;
 use crate::validate_error::ValidateError;
 use crate::validation_report::report::ValidationReport;
 
@@ -25,10 +25,10 @@ use crate::validation_report::report::ValidationReport;
 /// implementing SHACL. Thus, by choosing your preferred SHACL Validation Mode,
 /// the user can select which engine is used for the validation.
 pub enum ShaclValidationMode {
-    /// We use a Rust native engine in an imperative manner (performance)
+    /// Rust native engine using functions implemented with Rust native code
     #[default]
     Native,
-    /// We use a  SPARQL-based engine, which is declarative
+    /// SPARQL-based engine using SPARQL queries to validate the data
     Sparql,
 }
 
@@ -38,7 +38,7 @@ pub enum ShaclValidationMode {
 /// Validation algorithm. For this, first, the validation report is initiliazed
 /// to empty, and, for each shape in the schema, the target nodes are
 /// selected, and then, each validator for each constraint is applied.
-pub trait ShaclProcessor<S: Rdf + Debug> {
+pub trait ShaclProcessor<S: NeighsRDF + Debug> {
     fn store(&self) -> &S;
     fn runner(&self) -> &dyn Engine<S>;
 
@@ -49,13 +49,13 @@ pub trait ShaclProcessor<S: Rdf + Debug> {
     /// # Arguments
     ///
     /// * `shapes_graph` - A compiled SHACL shapes graph
-    fn validate(&self, shapes_graph: &SchemaIR<S>) -> Result<ValidationReport, ValidateError> {
+    fn validate(&self, shapes_graph: &SchemaIR) -> Result<ValidationReport, ValidateError> {
         // we initialize the validation report to empty
         let mut validation_results = Vec::new();
 
         // for each shape in the schema that has at least one target
         for (_, shape) in shapes_graph.iter_with_targets() {
-            println!("ShaclProcessor.validate with shape {}", shape.id());
+            tracing::debug!("ShaclProcessor.validate with shape {}", shape.id());
             let results = shape.validate(self.store(), self.runner(), None, Some(shape))?;
             validation_results.extend(results);
         }

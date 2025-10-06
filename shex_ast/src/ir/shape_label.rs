@@ -1,10 +1,11 @@
+use crate::{BNode, SchemaJsonError, ShapeExprLabel};
 use iri_s::{IriS, IriSError};
+use prefixmap::IriRefError;
 use serde::Serialize;
 use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
 
-use crate::BNode;
-
+/// Shape labels can be IRIs, Blank nodes or the special `Start` label
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
 pub enum ShapeLabel {
     Iri(IriS),
@@ -18,6 +19,21 @@ impl ShapeLabel {
     }
     pub fn from_bnode(bn: BNode) -> ShapeLabel {
         ShapeLabel::BNode(bn)
+    }
+
+    pub fn from_object(obj: &srdf::Object) -> Result<ShapeLabel, SchemaJsonError> {
+        match obj {
+            srdf::Object::Iri(iri) => Ok(ShapeLabel::Iri(iri.clone())),
+            srdf::Object::BlankNode(bnode_id) => Ok(ShapeLabel::BNode(BNode::new(bnode_id))),
+            srdf::Object::Literal(_) => Err(SchemaJsonError::InvalidShapeLabel {
+                value: obj.to_string(),
+                error: "Literal cannot be a ShapeLabel".to_string(),
+            }),
+            srdf::Object::Triple { .. } => Err(SchemaJsonError::InvalidShapeLabel {
+                value: obj.to_string(),
+                error: "Triple cannot be a ShapeLabel".to_string(),
+            }),
+        }
     }
 
     pub fn from_iri_str(s: &str) -> Result<ShapeLabel, IriSError> {
@@ -45,10 +61,8 @@ impl TryFrom<&str> for ShapeLabel {
             Ok(ShapeLabel::Start)
         } else if let Ok(iri) = IriS::from_str(s) {
             Ok(ShapeLabel::Iri(iri))
-        } else if let Ok(bnode) = BNode::try_from(s) {
-            Ok(ShapeLabel::BNode(bnode))
         } else {
-            Err(ShapeLabelError::InvalidStr(s.to_string()))
+            Ok(ShapeLabel::BNode(BNode::from(s)))
         }
     }
 }
@@ -71,4 +85,24 @@ impl Serialize for ShapeLabel {
             ShapeLabel::Start => serializer.serialize_str("Start"),
         }
     }
+}
+
+impl TryFrom<ShapeExprLabel> for ShapeLabel {
+    fn try_from(label: ShapeExprLabel) -> Result<Self, Self::Error> {
+        match label {
+            ShapeExprLabel::IriRef { value } => Ok(ShapeLabel::Iri(value.get_iri()?)),
+            ShapeExprLabel::BNode { value } => Ok(ShapeLabel::BNode(value)),
+            ShapeExprLabel::Start => Ok(ShapeLabel::Start),
+        }
+    }
+
+    type Error = IriRefError;
+}
+
+impl TryFrom<&ShapeExprLabel> for ShapeLabel {
+    fn try_from(label: &ShapeExprLabel) -> Result<Self, Self::Error> {
+        ShapeLabel::try_from(label.clone())
+    }
+
+    type Error = IriRefError;
 }

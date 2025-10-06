@@ -1,6 +1,6 @@
 use iri_s::IriS;
 use prefixmap::IriRef;
-use shex_ast::{IriOrStr, SemAct, ShapeExpr, ShapeExprLabel};
+use shex_ast::{SemAct, ShapeExpr, ShapeExprLabel};
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum ShExStatement<'a> {
@@ -12,7 +12,7 @@ pub(crate) enum ShExStatement<'a> {
         iri: IriS,
     },
     ImportDecl {
-        iri: IriOrStr,
+        iri: IriRef,
     },
     StartActions {
         actions: Vec<SemAct>,
@@ -112,11 +112,13 @@ impl Default for Cardinality {
     }
 }
 
+#[derive(PartialEq, Debug)]
 pub(crate) enum NumericLength {
     TotalDigits,
     FractionDigits,
 }
 
+#[derive(PartialEq, Debug)]
 pub(crate) enum NumericRange {
     MinInclusive,
     MinExclusive,
@@ -124,6 +126,7 @@ pub(crate) enum NumericRange {
     MaxExclusive,
 }
 
+#[derive(PartialEq, Debug)]
 pub(crate) struct SenseFlags {
     pub(crate) inverse: Option<bool>,
     pub(crate) negated: Option<bool>,

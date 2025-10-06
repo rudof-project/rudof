@@ -1,54 +1,89 @@
-use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
-use crate::engine::native::NativeEngine;
-use crate::engine::sparql::SparqlEngine;
-use crate::engine::Engine;
+use crate::constraints::constraint_error::ConstraintError;
 use crate::helpers::constraint::validate_with;
+use crate::iteration_strategy::ValueNodeIteration;
+use crate::shacl_engine::Engine;
+use crate::shacl_engine::native::NativeEngine;
+use crate::shacl_engine::sparql::SparqlEngine;
 use crate::validation_report::result::ValidationResult;
-use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
-use shacl_ast::compiled::component::CompiledComponent;
-use shacl_ast::compiled::component::Datatype;
-use shacl_ast::compiled::shape::CompiledShape;
-use srdf::Iri;
+use shacl_ir::compiled::component_ir::ComponentIR;
+use shacl_ir::compiled::component_ir::Datatype;
+use shacl_ir::compiled::shape::ShapeIR;
 use srdf::Literal as _;
-use srdf::Query;
-use srdf::Rdf;
-use srdf::Sparql;
+use srdf::NeighsRDF;
+use srdf::QueryRDF;
+use srdf::SHACLPath;
+use srdf::SLiteral;
 use std::fmt::Debug;
+use tracing::debug;
 
-impl<S: Rdf + Debug> Validator<S> for Datatype<S> {
+impl<R: NeighsRDF + Debug> Validator<R> for Datatype {
     fn validate(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
-        _: &S,
-        _: impl Engine<S>,
-        value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape<S>>,
+        component: &ComponentIR,
+        shape: &ShapeIR,
+        _: &R,
+        _: impl Engine<R>,
+        value_nodes: &ValueNodes<R>,
+        _source_shape: Option<&ShapeIR>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        let datatype = |value_node: &S::Term| {
-            let tmp: Result<S::Literal, _> = value_node.clone().try_into();
-            if let Ok(literal) = tmp {
-                return literal.datatype() != self.datatype().as_str();
+        let check = |value_node: &R::Term| {
+            debug!(
+                "sh:datatype: Checking {value_node} as datatype {}",
+                self.datatype()
+            );
+            if let Ok(literal) = R::term_as_literal(value_node) {
+                match TryInto::<SLiteral>::try_into(literal.clone()) {
+                    Ok(SLiteral::WrongDatatypeLiteral {
+                        lexical_form,
+                        datatype,
+                        error,
+                    }) => {
+                        debug!(
+                            "Wrong datatype for value node: {value_node}. Expected datatype: {datatype}, found: {lexical_form}. Error: {error}"
+                        );
+                        true
+                    }
+                    Ok(_slit) => literal.datatype() != self.datatype().as_str(),
+                    Err(_) => {
+                        debug!("Failed to convert literal to SLiteral: {literal}");
+                        true
+                    }
+                }
+            } else {
+                true
             }
-            true
         };
 
-        validate_with(component, shape, value_nodes, ValueNodeIteration, datatype)
+        let message = format!(
+            "Datatype constraint not satisfied. Expected datatype: {}",
+            self.datatype()
+        );
+        validate_with(
+            component,
+            shape,
+            value_nodes,
+            ValueNodeIteration,
+            check,
+            &message,
+            maybe_path,
+        )
     }
 }
 
-impl<S: Query + Debug + 'static> NativeValidator<S> for Datatype<S> {
+impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Datatype {
     fn validate_native(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape<S>>,
+        source_shape: Option<&ShapeIR>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -57,18 +92,20 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Datatype<S> {
             NativeEngine,
             value_nodes,
             source_shape,
+            maybe_path,
         )
     }
 }
 
-impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Datatype<S> {
+impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for Datatype {
     fn validate_sparql(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape<S>>,
+        source_shape: Option<&ShapeIR>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -77,6 +114,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Datatype<S> {
             SparqlEngine,
             value_nodes,
             source_shape,
+            maybe_path,
         )
     }
 }

@@ -2,8 +2,8 @@ use colored::*;
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use pretty::{Arena, DocAllocator, DocBuilder};
-use shex_ast::{object_value::ObjectValue, BNode, ShapeExprLabel};
-use srdf::{literal::Literal, numeric_literal::NumericLiteral};
+use shex_ast::{BNode, ShapeExprLabel, object_value::ObjectValue};
+use srdf::{SLiteral, numeric_literal::NumericLiteral};
 use std::borrow::Cow;
 
 pub(crate) fn pp_object_value<'a, A>(
@@ -13,12 +13,14 @@ pub(crate) fn pp_object_value<'a, A>(
 ) -> DocBuilder<'a, Arena<'a, A>, A> {
     match v {
         ObjectValue::IriRef(i) => pp_iri_ref(i, doc, prefixmap),
-        ObjectValue::Literal(Literal::BooleanLiteral(_value)) => {
+        ObjectValue::Literal(SLiteral::BooleanLiteral(_value)) => {
             todo!()
         }
-        ObjectValue::Literal(Literal::NumericLiteral(num)) => pp_numeric_literal(num, doc),
-        ObjectValue::Literal(Literal::DatatypeLiteral { .. }) => todo!(),
-        ObjectValue::Literal(Literal::StringLiteral { .. }) => todo!(),
+        ObjectValue::Literal(SLiteral::NumericLiteral(num)) => pp_numeric_literal(num, doc),
+        ObjectValue::Literal(SLiteral::DatatypeLiteral { .. }) => todo!(),
+        ObjectValue::Literal(SLiteral::WrongDatatypeLiteral { .. }) => todo!(),
+        ObjectValue::Literal(SLiteral::DatetimeLiteral { .. }) => todo!(),
+        ObjectValue::Literal(SLiteral::StringLiteral { .. }) => todo!(),
     }
 }
 
@@ -50,6 +52,18 @@ fn pp_numeric_literal<'a, A>(
         NumericLiteral::Integer(n) => doc.text(n.to_string()),
         NumericLiteral::Decimal(decimal) => doc.text(decimal.to_string()),
         NumericLiteral::Double(d) => doc.text(d.to_string()),
+        NumericLiteral::Long(l) => doc.text(l.to_string()),
+        NumericLiteral::Float(n) => doc.text(n.to_string()),
+        NumericLiteral::Byte(n) => doc.text(n.to_string()),
+        NumericLiteral::Short(n) => doc.text(n.to_string()),
+        NumericLiteral::NonNegativeInteger(n) => doc.text(n.to_string()),
+        NumericLiteral::UnsignedLong(n) => doc.text(n.to_string()),
+        NumericLiteral::UnsignedInt(n) => doc.text(n.to_string()),
+        NumericLiteral::UnsignedShort(n) => doc.text(n.to_string()),
+        NumericLiteral::UnsignedByte(n) => doc.text(n.to_string()),
+        NumericLiteral::PositiveInteger(n) => doc.text(n.to_string()),
+        NumericLiteral::NegativeInteger(n) => doc.text(n.to_string()),
+        NumericLiteral::NonPositiveInteger(n) => doc.text(n.to_string()),
     }
 }
 

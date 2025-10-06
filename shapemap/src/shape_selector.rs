@@ -11,6 +11,10 @@ pub enum ShapeSelector {
 }
 
 impl ShapeSelector {
+    pub fn label(label: ShapeExprLabel) -> ShapeSelector {
+        ShapeSelector::Label(label)
+    }
+
     pub fn iri_unchecked(str: &str) -> ShapeSelector {
         ShapeSelector::Label(ShapeExprLabel::iri_unchecked(str))
     }

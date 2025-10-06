@@ -1,7 +1,7 @@
 //! A set whose elements can be repeated. The set tracks how many times each element appears
 //!
 use hashbag::{HashBag, SetIter};
-use serde::{de::SeqAccess, ser::SerializeSeq, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de::SeqAccess, ser::SerializeSeq};
 use std::{
     fmt::{self, Debug, Display},
     hash::{Hash, Hasher},
@@ -57,7 +57,7 @@ where
         let v: Vec<String> = self
             .bag
             .set_iter()
-            .map(|(t, n)| format!("{}/{}", t, n))
+            .map(|(t, n)| format!("{t}/{n}"))
             .collect();
         write!(f, "Bag [{}]", v.join(", "))
     }
@@ -77,7 +77,7 @@ where
         let v: Vec<String> = self
             .bag
             .set_iter()
-            .map(|(t, n)| format!("{:?}/{}", t, n))
+            .map(|(t, n)| format!("{t:?}/{n}"))
             .collect();
         write!(f, "Bag [{}]", v.join(", "))
     }

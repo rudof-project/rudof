@@ -55,6 +55,8 @@ The output would be something like:
 </rdf:RDF>
 ```
 
+It is possible to convert RDF data to a visual representation using the options `svg`, `png` or `plantuml` (see [RDF visualization](##RDF-visualization) section).
+
 ## Obtaining information about an RDF data located remotely
 
 It is also possible to get RDF data from files which are remotely available through URIs like:
@@ -74,6 +76,27 @@ rudof data user.ttl simple.ttl -r rdfxml -o output.rdf
 ```
 
 > It is possible to serialize the files using a different format, like `ntriples`, `rdfxml`, etc.
+
+## RDF visualization
+
+It is possible to generate a visual representation of simple RDF graphs by using the `--result-format` option and selecting a visual format like `svg` or `png`.
+
+The visualization is leveraged on PlantUML so it is necessary to have the PlantUML binary downloaded and available through the `PLANTUML` variable. 
+
+Another alternative is to use the `plantuml`  result format to generate an intermediate file and pass that file to some PlantUML processor. 
+
+As an example, the following command generates a `plantuml` file:
+
+```sh
+rudof data examples/simple.ttl -r plantuml -o file.plantuml
+```
+
+If you have PLANT_UML available you can use directly:
+
+```sh
+rudof data examples/simple.ttl -r svg -o file.svg
+```
+
 
 ## RDF Config file
 

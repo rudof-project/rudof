@@ -1,10 +1,9 @@
-use std::fmt::Display;
-
 use crate::{Association, NodeSelector, ShapeSelector};
 use prefixmap::PrefixMap;
 use serde::Serialize;
-use shex_ast::{object_value::ObjectValue, ShapeExprLabel};
-use srdf::Query;
+use shex_ast::{Node, ShapeExprLabel, ir::shape_label::ShapeLabel, object_value::ObjectValue};
+use srdf::NeighsRDF;
+use std::fmt::Display;
 
 #[derive(Debug, Default, PartialEq, Clone, Serialize)]
 pub struct QueryShapeMap {
@@ -50,9 +49,23 @@ impl QueryShapeMap {
         rdf: &'a S,
     ) -> impl Iterator<Item = (&'a ObjectValue, &'a ShapeExprLabel)> + 'a
     where
-        S: Query,
+        S: NeighsRDF,
     {
         self.iter().flat_map(|assoc| assoc.iter_node_shape(rdf))
+    }
+
+    pub fn from_node_shape(
+        node: &Node,
+        shape: &ShapeLabel,
+    ) -> Result<Self, shex_ast::SchemaJsonError> {
+        let mut sm = QueryShapeMap::new();
+        let object_value: ObjectValue = node.try_into()?;
+        let shape: ShapeExprLabel = shape.into();
+        sm.add_association(
+            NodeSelector::Node(object_value),
+            ShapeSelector::label(shape),
+        );
+        Ok(sm)
     }
 }
 

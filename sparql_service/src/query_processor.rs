@@ -1,5 +1,5 @@
 use prefixmap::PrefixMap;
-use srdf::{Query, QuerySolutions};
+use srdf::{NeighsRDF, QuerySolutions};
 
 use crate::RdfData;
 
@@ -19,7 +19,7 @@ impl QueryProcessor {
         Some(self.rdf_data.prefixmap_in_memory())
     }
 
-    pub fn query_select<S: Query>(_str: &str) -> QuerySolutions<S> {
+    pub fn query_select<S: NeighsRDF>(_str: &str) -> QuerySolutions<S> {
         todo!()
     }
 }

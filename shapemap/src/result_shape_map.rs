@@ -7,9 +7,9 @@ use crate::ShapemapError;
 use crate::ValidationStatus;
 use prefixmap::PrefixMap;
 use serde::ser::{SerializeMap, SerializeSeq};
-use shex_ast::{ir::shape_label::ShapeLabel, Node};
-use std::collections::hash_map::Entry;
+use shex_ast::{Node, ir::shape_label::ShapeLabel};
 use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::io::Error;
@@ -75,7 +75,7 @@ impl ResultShapeMap {
         node: Node,
         shape_label: ShapeLabel,
         status: ValidationStatus,
-    ) -> Result<(), ShapemapError> {
+    ) -> Result<(), Box<ShapemapError>> {
         let _cn = node.clone();
         let _sl = shape_label.clone();
         match self.result.entry(node) {
@@ -177,11 +177,11 @@ impl ResultShapeMap {
                                 ),
                             ) => todo!(),
                         };
-                        Ok(())
+                        ok()
                     }
                     Entry::Vacant(v) => {
                         v.insert(status);
-                        Ok(())
+                        ok()
                     }
                 }
             }
@@ -189,10 +189,10 @@ impl ResultShapeMap {
                 let mut map = HashMap::new();
                 map.insert(shape_label, status);
                 v.insert(map);
-                Ok(())
+                ok()
             }
         }?;
-        Ok(())
+        ok()
     }
 
     pub fn get_info(&self, node: &Node, label: &ShapeLabel) -> Option<ValidationStatus> {
@@ -252,6 +252,10 @@ impl ResultShapeMap {
     }
 }
 
+fn ok() -> Result<(), Box<ShapemapError>> {
+    Ok(())
+}
+
 fn show_node(node: &Node, prefixmap: &PrefixMap) -> String {
     match node.as_object() {
         Object::Iri(iri) => prefixmap.qualify(iri),
@@ -302,7 +306,10 @@ impl Display for ResultShapeMap {
                         None => ColoredString::from(node_label),
                         Some(color) => node_label.color(color),
                     };
-                    write!(f, "{node_label} -> Inconsistent, conformant: {conformant}, non-conformant: {inconformant}")?
+                    write!(
+                        f,
+                        "{node_label} -> Inconsistent, conformant: {conformant}, non-conformant: {inconformant}"
+                    )?
                 }
             }
         }

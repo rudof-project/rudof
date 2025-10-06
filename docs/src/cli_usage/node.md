@@ -1,6 +1,6 @@
 # Information about RDF nodes
 
-`rudof` can be used to play obtain information about RDF nodes.
+`rudof` can be used to obtain information about nodes in an RDF graph.
 
 For example, it is possible to show information about a an RDF node in a graph.
 Given the following RDF graph:

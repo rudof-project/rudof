@@ -103,6 +103,10 @@ impl ShEx2HtmlConfig {
             Some(s) => s.clone(),
         }
     }
+
+    pub fn plantuml_path(&self) -> PathBuf {
+        self.shex2uml_config().plantuml_path()
+    }
 }
 
 #[derive(Error, Debug)]

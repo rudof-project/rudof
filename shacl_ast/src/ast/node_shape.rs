@@ -1,21 +1,25 @@
-use crate::{
-    component::Component, message_map::MessageMap, severity::Severity, target::Target, SH_CLOSED,
-    SH_DEACTIVATED, SH_DESCRIPTION, SH_GROUP, SH_INFO_STR, SH_NAME, SH_NODE_SHAPE, SH_PROPERTY,
-    SH_SEVERITY, SH_VIOLATION_STR, SH_WARNING_STR,
+use crate::shacl_vocab::{
+    sh_description, sh_group, sh_info, sh_name, sh_node_shape, sh_property, sh_severity,
+    sh_violation, sh_warning,
 };
-use iri_s::iri;
-use srdf::{RDFNode, SRDFBuilder};
+use crate::{component::Component, message_map::MessageMap, severity::Severity, target::Target};
+use crate::{sh_debug, sh_trace};
+use iri_s::IriS;
+use srdf::{BuildRDF, RDFNode, Rdf};
+use std::collections::HashSet;
 use std::fmt::Display;
 
-#[derive(Debug, Clone)]
-pub struct NodeShape {
+#[derive(Debug)]
+pub struct NodeShape<RDF: Rdf>
+where
+    RDF::Term: Clone,
+{
     id: RDFNode,
     components: Vec<Component>,
-    targets: Vec<Target>,
+    targets: Vec<Target<RDF>>,
     property_shapes: Vec<RDFNode>,
-    closed: bool,
+    // closed: bool,
     // ignored_properties: Vec<IriRef>,
-    deactivated: bool,
     // message: MessageMap,
     severity: Option<Severity>,
     name: MessageMap,
@@ -24,16 +28,15 @@ pub struct NodeShape {
     // source_iri: Option<IriRef>,
 }
 
-impl NodeShape {
+impl<RDF: Rdf> NodeShape<RDF> {
     pub fn new(id: RDFNode) -> Self {
         NodeShape {
             id,
             components: Vec::new(),
             targets: Vec::new(),
             property_shapes: Vec::new(),
-            closed: false,
+            // closed: false,
             // ignored_properties: Vec::new(),
-            deactivated: false,
             // message: MessageMap::new(),
             severity: None,
             name: MessageMap::new(),
@@ -43,13 +46,18 @@ impl NodeShape {
         }
     }
 
-    pub fn with_targets(mut self, targets: Vec<Target>) -> Self {
+    pub fn with_targets(mut self, targets: Vec<Target<RDF>>) -> Self {
         self.targets = targets;
         self
     }
 
-    pub fn set_targets(&mut self, targets: Vec<Target>) {
+    pub fn set_targets(&mut self, targets: Vec<Target<RDF>>) {
         self.targets = targets;
+    }
+
+    pub fn with_severity(mut self, severity: Option<Severity>) -> Self {
+        self.severity = severity;
+        self
     }
 
     pub fn with_property_shapes(mut self, property_shapes: Vec<RDFNode>) -> Self {
@@ -62,21 +70,30 @@ impl NodeShape {
         self
     }
 
-    pub fn with_closed(mut self, closed: bool) -> Self {
-        self.closed = closed;
-        self
-    }
-
     pub fn id(&self) -> &RDFNode {
         &self.id
     }
 
-    pub fn is_closed(&self) -> &bool {
-        &self.closed
+    pub fn is_deactivated(&self) -> bool {
+        for component in &self.components {
+            if let Component::Deactivated(true) = component {
+                return true;
+            }
+        }
+        false
     }
 
-    pub fn is_deactivated(&self) -> &bool {
-        &self.deactivated
+    pub fn closed_component(&self) -> (bool, HashSet<IriS>) {
+        for component in &self.components {
+            if let Component::Closed {
+                is_closed,
+                ignored_properties,
+            } = component
+            {
+                return (*is_closed, ignored_properties.clone());
+            }
+        }
+        (false, HashSet::new())
     }
 
     pub fn severity(&self) -> Option<Severity> {
@@ -87,7 +104,7 @@ impl NodeShape {
         &self.components
     }
 
-    pub fn targets(&self) -> &Vec<Target> {
+    pub fn targets(&self) -> &Vec<Target<RDF>> {
         &self.targets
     }
 
@@ -96,27 +113,27 @@ impl NodeShape {
     }
 
     // TODO: this is a bit ugly
-    pub fn write<RDF>(&self, rdf: &mut RDF) -> Result<(), RDF::Err>
+    pub fn write<B>(&self, rdf: &mut B) -> Result<(), B::Err>
     where
-        RDF: SRDFBuilder,
+        B: BuildRDF,
     {
-        let id: RDF::Subject = self.id.clone().try_into().map_err(|_| unreachable!())?;
-        rdf.add_type(id.clone(), SH_NODE_SHAPE.clone())?;
+        let id: B::Subject = self.id.clone().try_into().map_err(|_| unreachable!())?;
+        rdf.add_type(id.clone(), sh_node_shape().clone())?;
 
         self.name.iter().try_for_each(|(lang, value)| {
-            let literal: RDF::Literal = match lang {
+            let literal: B::Literal = match lang {
                 Some(_) => todo!(),
                 None => value.clone().into(),
             };
-            rdf.add_triple(id.clone(), SH_NAME.clone(), literal)
+            rdf.add_triple(id.clone(), sh_name().clone(), literal)
         })?;
 
         self.description.iter().try_for_each(|(lang, value)| {
-            let literal: RDF::Literal = match lang {
+            let literal: B::Literal = match lang {
                 Some(_) => todo!(),
                 None => value.clone().into(),
             };
-            rdf.add_triple(id.clone(), SH_DESCRIPTION.clone(), literal)
+            rdf.add_triple(id.clone(), sh_description().clone(), literal)
         })?;
 
         self.components
@@ -128,46 +145,36 @@ impl NodeShape {
             .try_for_each(|target| target.write(&self.id, rdf))?;
 
         self.property_shapes.iter().try_for_each(|property_shape| {
-            rdf.add_triple(id.clone(), SH_PROPERTY.clone(), property_shape.clone())
+            rdf.add_triple(id.clone(), sh_property().clone(), property_shape.clone())
         })?;
 
-        if self.deactivated {
-            let literal: RDF::Literal = "true".to_string().into();
-
-            rdf.add_triple(id.clone(), SH_DEACTIVATED.clone(), literal)?;
-        }
-
         if let Some(group) = &self.group {
-            rdf.add_triple(id.clone(), SH_GROUP.clone(), group.clone())?;
+            rdf.add_triple(id.clone(), sh_group().clone(), group.clone())?;
         }
 
         if let Some(severity) = &self.severity {
             let pred = match severity {
-                Severity::Violation => iri!(SH_VIOLATION_STR),
-                Severity::Info => iri!(SH_INFO_STR),
-                Severity::Warning => iri!(SH_WARNING_STR),
-                Severity::Generic(iri) => iri.get_iri().unwrap(),
+                Severity::Trace => sh_trace(),
+                Severity::Debug => sh_debug(),
+                Severity::Violation => sh_violation(),
+                Severity::Info => sh_info(),
+                Severity::Warning => sh_warning(),
+                Severity::Generic(iri) => &iri.get_iri().unwrap(),
             };
 
-            rdf.add_triple(id.clone(), SH_SEVERITY.clone(), pred.clone())?;
-        }
-
-        if self.closed {
-            let literal: RDF::Literal = "true".to_string().into();
-
-            rdf.add_triple(id.clone(), SH_CLOSED.clone(), literal)?;
+            rdf.add_triple(id.clone(), sh_severity().clone(), pred.clone())?;
         }
 
         Ok(())
     }
 }
 
-impl Display for NodeShape {
+impl<RDF: Rdf> Display for NodeShape<RDF> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "{{")?;
-        if self.closed {
-            writeln!(f, "       closed: {}", self.closed)?
+        if let Some(severity) = self.severity() {
+            write!(f, "{} ", severity)?;
         }
+        writeln!(f, "{{")?;
         for target in self.targets.iter() {
             writeln!(f, "       {target}")?
         }
@@ -179,5 +186,33 @@ impl Display for NodeShape {
         }
         write!(f, "}}")?;
         Ok(())
+    }
+}
+
+impl<RDF: Rdf> Clone for NodeShape<RDF> {
+    fn clone(&self) -> Self {
+        Self {
+            id: self.id.clone(),
+            components: self.components.clone(),
+            targets: self.targets.clone(),
+            property_shapes: self.property_shapes.clone(),
+            severity: self.severity.clone(),
+            name: self.name.clone(),
+            description: self.description.clone(),
+            group: self.group.clone(),
+        }
+    }
+}
+
+impl<RDF: Rdf> PartialEq for NodeShape<RDF> {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+            && self.components == other.components
+            && self.targets == other.targets
+            && self.property_shapes == other.property_shapes
+            && self.severity == other.severity
+            && self.name == other.name
+            && self.description == other.description
+            && self.group == other.group
     }
 }

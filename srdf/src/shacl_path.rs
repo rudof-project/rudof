@@ -27,18 +27,76 @@ impl SHACLPath {
             _ => None,
         }
     }
+
+    pub fn sequence(paths: Vec<SHACLPath>) -> Self {
+        SHACLPath::Sequence { paths }
+    }
+
+    pub fn alternative(paths: Vec<SHACLPath>) -> Self {
+        SHACLPath::Alternative { paths }
+    }
+
+    pub fn inverse(path: SHACLPath) -> Self {
+        SHACLPath::Inverse {
+            path: Box::new(path),
+        }
+    }
+
+    pub fn zero_or_more(path: SHACLPath) -> Self {
+        SHACLPath::ZeroOrMore {
+            path: Box::new(path),
+        }
+    }
+
+    pub fn one_or_more(path: SHACLPath) -> Self {
+        SHACLPath::OneOrMore {
+            path: Box::new(path),
+        }
+    }
+
+    pub fn zero_or_one(path: SHACLPath) -> Self {
+        SHACLPath::ZeroOrOne {
+            path: Box::new(path),
+        }
+    }
 }
 
 impl Display for SHACLPath {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             SHACLPath::Predicate { pred } => write!(f, "{pred}"),
-            SHACLPath::Alternative { .. } => todo!(),
-            SHACLPath::Sequence { .. } => todo!(),
-            SHACLPath::Inverse { .. } => todo!(),
-            SHACLPath::ZeroOrMore { .. } => todo!(),
-            SHACLPath::OneOrMore { .. } => todo!(),
-            SHACLPath::ZeroOrOne { .. } => todo!(),
+            SHACLPath::Alternative { paths } => {
+                write!(
+                    f,
+                    "({})",
+                    paths
+                        .iter()
+                        .map(|p| format!("{p}"))
+                        .collect::<Vec<String>>()
+                        .join(" | ")
+                )
+            }
+            SHACLPath::Sequence { paths } => write!(
+                f,
+                "({})",
+                paths
+                    .iter()
+                    .map(|p| format!("{p}"))
+                    .collect::<Vec<String>>()
+                    .join(" / ")
+            ),
+            SHACLPath::Inverse { path } => {
+                write!(f, "^({})", path)
+            }
+            SHACLPath::ZeroOrMore { path } => {
+                write!(f, "({})*", path)
+            }
+            SHACLPath::OneOrMore { path } => {
+                write!(f, "({})+", path)
+            }
+            SHACLPath::ZeroOrOne { path } => {
+                write!(f, "({})?", path)
+            }
         }
     }
 }

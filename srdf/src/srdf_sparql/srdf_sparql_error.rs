@@ -8,6 +8,9 @@ use crate::SparqlVars;
 
 #[derive(Error, Debug)]
 pub enum SRDFSparqlError {
+    #[error("Unsupported format for CONSTRUCT query: {format:?}")]
+    UnsupportedConstructFormat { format: String },
+
     #[error("HTTP Request error: {e:?}")]
     HTTPRequestError { e: reqwest::Error },
 

@@ -1,81 +1,13 @@
-use std::str::FromStr;
-use std::{fmt, result};
-
+use crate::iri_exclusion::IriExclusion;
+use crate::language_exclusion::LanguageExclusion;
+use crate::literal_exclusion::LiteralExclusion;
+use prefixmap::IriRef;
 use serde::de::{MapAccess, Visitor};
 use serde::ser::SerializeMap;
-use serde::{de, Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize, Serializer, de};
 use srdf::lang::Lang;
-
-use prefixmap::IriRef;
-
-#[derive(Debug, PartialEq, Clone, Deserialize)]
-pub enum LiteralExclusion {
-    Literal(String),
-    LiteralStem(String),
-}
-
-impl Serialize for LiteralExclusion {
-    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            LiteralExclusion::Literal(lit) => serializer.serialize_str(lit.as_str()),
-            LiteralExclusion::LiteralStem(stem) => {
-                let mut map = serializer.serialize_map(Some(2))?;
-                map.serialize_entry("type", "LiteralStem")?;
-                map.serialize_entry("stem", stem)?;
-                map.end()
-            }
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Clone, Deserialize)]
-pub enum IriExclusion {
-    Iri(IriRef),
-    IriStem(IriRef),
-}
-
-impl Serialize for IriExclusion {
-    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            IriExclusion::Iri(iri) => serializer.serialize_str(iri.to_string().as_str()),
-            IriExclusion::IriStem(stem) => {
-                let mut map = serializer.serialize_map(Some(2))?;
-                map.serialize_entry("type", "IriStem")?;
-                map.serialize_entry("stem", stem)?;
-                map.end()
-            }
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum LanguageExclusion {
-    Language(Lang),
-    LanguageStem(Lang),
-}
-
-impl Serialize for LanguageExclusion {
-    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            LanguageExclusion::Language(lang) => serializer.serialize_str(&lang.to_string()),
-            LanguageExclusion::LanguageStem(stem) => {
-                let mut map = serializer.serialize_map(Some(2))?;
-                map.serialize_entry("type", "LanguageStem")?;
-                map.serialize_entry("stem", stem)?;
-                map.end()
-            }
-        }
-    }
-}
+use std::str::FromStr;
+use std::{fmt, result};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Exclusion {
@@ -141,7 +73,10 @@ impl Exclusion {
             match e {
                 Exclusion::LanguageExclusion(le) => lang_excs.push(le),
                 Exclusion::Untyped(s) => {
-                    lang_excs.push(LanguageExclusion::Language(Lang::new_unchecked(s)))
+                    let lang = Lang::new(&s).map_err(|_e| SomeNoIriExclusion {
+                        exc: Exclusion::Untyped(s.clone()),
+                    })?;
+                    lang_excs.push(LanguageExclusion::Language(lang))
                 }
                 other => return Err(SomeNoIriExclusion { exc: other }),
             }
@@ -279,17 +214,22 @@ impl<'de> Deserialize<'de> for Exclusion {
                         Some(StemValue::Language(lang)) => Ok(Exclusion::LanguageExclusion(
                             LanguageExclusion::LanguageStem(lang),
                         )),
-                        Some(StemValue::Literal(l)) => Ok(Exclusion::LanguageExclusion(
-                            LanguageExclusion::LanguageStem(Lang::new_unchecked(l)),
-                        )),
+                        Some(StemValue::Literal(l)) => {
+                            let lang = Lang::new(&l).map_err(|e| {
+                                de::Error::custom(format!("Invalid language tag {l} in stem: {e}"))
+                            })?;
+                            Ok(Exclusion::LanguageExclusion(
+                                LanguageExclusion::LanguageStem(lang),
+                            ))
+                        }
                         Some(_) => Err(de::Error::custom(format!(
                             "Stem {stem:?} must be a language"
                         ))),
                         None => Err(de::Error::missing_field("stem")),
                     },
                     Some(ExclusionType::IriStem) => match stem {
-                        Some(StemValue::Iri(iri)) => {
-                            Ok(Exclusion::IriExclusion(IriExclusion::IriStem(iri)))
+                        Some(StemValue::Iri(iri_ref)) => {
+                            Ok(Exclusion::IriExclusion(IriExclusion::IriStem(iri_ref)))
                         }
                         Some(_) => Err(de::Error::custom(format!("Stem {stem:?} must be an IRI"))),
                         None => Err(de::Error::missing_field("stem")),

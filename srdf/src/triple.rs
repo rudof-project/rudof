@@ -1,43 +1,74 @@
+use std::fmt::Debug;
 use std::fmt::Display;
 
+use crate::Iri;
 use crate::Rdf;
+use crate::Subject;
+use crate::Term;
 
-pub struct Triple<S>
+pub trait Triple<S, P, O>: Debug + Clone + Display
 where
-    S: Rdf + ?Sized,
+    S: Subject,
+    P: Iri,
+    O: Term,
 {
-    subj: S::Subject,
-    pred: S::IRI,
-    obj: S::Term,
-}
+    fn new(subj: impl Into<S>, pred: impl Into<P>, obj: impl Into<O>) -> Self;
 
-impl<S> Triple<S>
-where
-    S: Rdf,
-{
-    pub fn new(subj: S::Subject, pred: S::IRI, obj: S::Term) -> Self {
-        Triple { subj, pred, obj }
+    fn subj(&self) -> &S;
+    fn pred(&self) -> &P;
+    fn obj(&self) -> &O;
+
+    fn into_components(self) -> (S, P, O);
+
+    fn into_subject(self) -> S {
+        self.into_components().0
     }
 
-    pub fn subj(&self) -> S::Subject {
+    fn into_predicate(self) -> P {
+        self.into_components().1
+    }
+
+    fn into_object(self) -> O {
+        self.into_components().2
+    }
+}
+
+pub struct STriple<R>
+where
+    R: Rdf,
+{
+    subj: R::Subject,
+    pred: R::IRI,
+    obj: R::Term,
+}
+
+impl<R> STriple<R>
+where
+    R: Rdf,
+{
+    pub fn new(subj: R::Subject, pred: R::IRI, obj: R::Term) -> Self {
+        STriple { subj, pred, obj }
+    }
+
+    pub fn subj(&self) -> R::Subject {
         self.subj.clone()
     }
 
-    pub fn pred(&self) -> S::IRI {
+    pub fn pred(&self) -> R::IRI {
         self.pred.clone()
     }
 
-    pub fn obj(&self) -> S::Term {
+    pub fn obj(&self) -> R::Term {
         self.obj.clone()
     }
 
-    pub fn cnv<T: Rdf>(self) -> Triple<T>
+    pub fn cnv<T: Rdf>(self) -> STriple<T>
     where
-        T::Subject: From<S::Subject>,
-        T::Term: From<S::Term>,
-        T::IRI: From<S::IRI>,
+        T::Subject: From<R::Subject>,
+        T::Term: From<R::Term>,
+        T::IRI: From<R::IRI>,
     {
-        Triple {
+        STriple {
             subj: T::Subject::from(self.subj),
             pred: T::IRI::from(self.pred),
             obj: T::Term::from(self.obj),
@@ -45,9 +76,9 @@ where
     }
 }
 
-impl<S> Display for Triple<S>
+impl<R> Display for STriple<R>
 where
-    S: Rdf,
+    R: Rdf,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "<{},{},{}>", self.subj, self.pred, self.obj)

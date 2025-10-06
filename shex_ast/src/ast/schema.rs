@@ -1,6 +1,6 @@
-use crate::ast::{serde_string_or_struct::*, SchemaJsonError};
-use crate::ShapeExprLabel;
-use iri_s::IriS;
+use crate::ast::{SchemaJsonError, serde_string_or_struct::*};
+use crate::{BNode, ShapeExprLabel};
+use iri_s::{IriS, iri};
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use std::{fs, io};
 use tracing::debug;
 
-use super::{IriOrStr, SemAct, ShapeDecl, ShapeExpr};
+use super::{SemAct, ShapeDecl, ShapeExpr};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 pub struct Schema {
@@ -19,7 +19,7 @@ pub struct Schema {
     type_: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    imports: Option<Vec<IriOrStr>>,
+    imports: Option<Vec<IriRef>>,
 
     #[serde(
         default,
@@ -47,7 +47,7 @@ pub struct Schema {
 }
 
 impl Schema {
-    pub fn new() -> Schema {
+    pub fn new(source_iri: &IriS) -> Schema {
         Schema {
             context: "http://www.w3.org/ns/shex.jsonld".to_string(),
             type_: "Schema".to_string(),
@@ -57,16 +57,16 @@ impl Schema {
             shapes: None,
             prefixmap: None,
             base: None,
-            source_iri: IriS::new_unchecked("http://default/"),
+            source_iri: source_iri.clone(),
         }
     }
 
     /// Returns the list of import declared in the Schema
-    pub fn imports(&self) -> Vec<IriOrStr> {
+    pub fn imports(&self) -> Vec<IriRef> {
         if let Some(imports) = &self.imports {
             imports.to_vec()
         } else {
-            let is: Vec<IriOrStr> = Vec::new();
+            let is: Vec<IriRef> = Vec::new();
             is
         }
     }
@@ -92,7 +92,7 @@ impl Schema {
         Ok(schema)
     }
 
-    pub fn with_import(mut self, i: IriOrStr) -> Self {
+    pub fn with_import(mut self, i: IriRef) -> Self {
         match self.imports {
             None => self.imports = Some(vec![i]),
             Some(ref mut imports) => imports.push(i),
@@ -200,9 +200,12 @@ impl Schema {
         Ok(schema)
     }
 
-    pub fn parse_schema_name(schema_name: &String, base: &Path) -> Result<Schema, SchemaJsonError> {
+    pub fn parse_schema_name(
+        schema_name: &String,
+        folder: &Path,
+    ) -> Result<Schema, SchemaJsonError> {
         let json_path = Path::new(&schema_name);
-        let mut attempt = PathBuf::from(base);
+        let mut attempt = PathBuf::from(folder);
         attempt.push(json_path);
         Self::parse_schema_buf(&attempt)
     }
@@ -229,6 +232,28 @@ impl Schema {
 
     pub fn get_type(&self) -> String {
         self.type_.clone()
+    }
+
+    pub fn find_shape(&self, label: &str) -> Result<Option<ShapeExpr>, SchemaJsonError> {
+        let label: ShapeExprLabel = if label == "START" {
+            ShapeExprLabel::Start
+        } else if let Some(bnode_label) = label.strip_prefix("_:") {
+            ShapeExprLabel::BNode {
+                value: BNode::new(bnode_label),
+            }
+        } else {
+            ShapeExprLabel::IriRef {
+                value: IriRef::try_from(label).map_err(|e| SchemaJsonError::InvalidIriRef {
+                    label: label.to_string(),
+                    error: e.to_string(),
+                })?,
+            }
+        };
+        match label {
+            ShapeExprLabel::IriRef { value } => self.find_shape_by_iri_ref(&value),
+            ShapeExprLabel::BNode { value: _ } => todo!(),
+            ShapeExprLabel::Start => todo!(),
+        }
     }
 
     pub fn find_shape_by_label(
@@ -274,7 +299,7 @@ impl Schema {
 
 impl Default for Schema {
     fn default() -> Self {
-        Self::new()
+        Self::new(&iri!("http://default/"))
     }
 }
 
@@ -319,6 +344,45 @@ mod tests {
             ],
             "@context": "http://www.w3.org/ns/shex.jsonld"
           }
+        "#;
+
+        let schema: Schema = serde_json::from_str(str).unwrap();
+        let serialized = serde_json::to_string_pretty(&schema).unwrap();
+        let schema_after_serialization = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(schema, schema_after_serialization);
+    }
+
+    #[test]
+    fn test_deser_nplus1() {
+        let str = r#"
+        {
+  "@context": "http://www.w3.org/ns/shex.jsonld",
+  "type": "Schema",
+  "shapes": [
+    {
+      "type": "ShapeDecl",
+      "id": "http://a.example.org/S",
+      "shapeExpr": {
+      "type": "Shape",
+      "expression": {
+        "type": "EachOf",
+        "expressions": [
+          {
+            "type": "TripleConstraint",
+            "predicate": "http://a.example/a",
+            "min": 0,
+            "max": -1
+          },
+          {
+            "type": "TripleConstraint",
+            "predicate": "http://a.example/a"
+          }
+        ]
+      }
+    }
+    }
+  ]
+}
         "#;
 
         let schema: Schema = serde_json::from_str(str).unwrap();

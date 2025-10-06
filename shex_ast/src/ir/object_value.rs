@@ -1,12 +1,11 @@
-use std::fmt::Display;
-
 use iri_s::IriS;
-use srdf::{literal::Literal, Object};
+use srdf::{Object, SLiteral};
+use std::fmt::Display;
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum ObjectValue {
     IriRef(IriS),
-    ObjectLiteral(Literal),
+    ObjectLiteral(SLiteral),
 }
 
 impl ObjectValue {
@@ -17,11 +16,7 @@ impl ObjectValue {
                 _ => false,
             },
             ObjectValue::ObjectLiteral(literal_expected) => match object {
-                Object::Literal(lit) => {
-                    // We compare lexical forms and datatypes because some parsed literals are not optimized as primitive literals (like integers)
-                    literal_expected.datatype() == lit.datatype()
-                        && literal_expected.lexical_form() == lit.lexical_form()
-                }
+                Object::Literal(lit) => lit.match_literal(literal_expected),
                 _ => false,
             },
         }

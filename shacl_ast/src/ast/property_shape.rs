@@ -1,20 +1,22 @@
+use std::collections::HashSet;
 use std::fmt::Display;
 
-use iri_s::iri;
-use srdf::{numeric_literal::NumericLiteral, RDFNode, SHACLPath, SRDFBuilder};
-
-use crate::{
-    component::Component, message_map::MessageMap, severity::Severity, target::Target,
-    SH_DEACTIVATED, SH_DESCRIPTION, SH_GROUP, SH_INFO_STR, SH_NAME, SH_ORDER, SH_PATH,
-    SH_PROPERTY_SHAPE, SH_SEVERITY, SH_VIOLATION_STR, SH_WARNING_STR,
+use crate::shacl_vocab::{
+    sh_deactivated, sh_description, sh_group, sh_info, sh_name, sh_order, sh_path,
+    sh_property_shape, sh_severity, sh_violation, sh_warning,
 };
+use crate::{component::Component, message_map::MessageMap, severity::Severity, target::Target};
+use crate::{sh_debug, sh_trace};
+use iri_s::IriS;
+use srdf::Rdf;
+use srdf::{BuildRDF, RDFNode, SHACLPath, numeric_literal::NumericLiteral};
 
-#[derive(Debug, Clone)]
-pub struct PropertyShape {
+#[derive(Debug)]
+pub struct PropertyShape<RDF: Rdf> {
     id: RDFNode,
     path: SHACLPath,
     components: Vec<Component>,
-    targets: Vec<Target>,
+    targets: Vec<Target<RDF>>,
     property_shapes: Vec<RDFNode>,
     closed: bool,
     // ignored_properties: Vec<IriRef>,
@@ -29,7 +31,7 @@ pub struct PropertyShape {
     // annotations: Vec<(IriRef, RDFNode)>,
 }
 
-impl PropertyShape {
+impl<RDF: Rdf> PropertyShape<RDF> {
     pub fn new(id: RDFNode, path: SHACLPath) -> Self {
         PropertyShape {
             id,
@@ -70,7 +72,25 @@ impl PropertyShape {
         self
     }
 
-    pub fn with_targets(mut self, targets: Vec<Target>) -> Self {
+    pub fn with_severity_option(mut self, severity: Option<Severity>) -> Self {
+        self.severity = severity;
+        self
+    }
+
+    pub fn closed_component(&self) -> (bool, HashSet<IriS>) {
+        for component in &self.components {
+            if let Component::Closed {
+                is_closed,
+                ignored_properties,
+            } = component
+            {
+                return (*is_closed, ignored_properties.clone());
+            }
+        }
+        (false, HashSet::new())
+    }
+
+    pub fn with_targets(mut self, targets: Vec<Target<RDF>>) -> Self {
         self.targets = targets;
         self
     }
@@ -127,7 +147,7 @@ impl PropertyShape {
         &self.components
     }
 
-    pub fn targets(&self) -> &Vec<Target> {
+    pub fn targets(&self) -> &Vec<Target<RDF>> {
         &self.targets
     }
 
@@ -177,47 +197,59 @@ impl PropertyShape {
     // }
 
     // TODO: this is a bit ugly
-    pub fn write<RDF>(&self, rdf: &mut RDF) -> Result<(), RDF::Err>
+    pub fn write<B>(&self, rdf: &mut B) -> Result<(), B::Err>
     where
-        RDF: SRDFBuilder,
+        B: BuildRDF,
     {
-        let id: RDF::Subject = self.id.clone().try_into().map_err(|_| unreachable!())?;
-        rdf.add_type(id.clone(), SH_PROPERTY_SHAPE.clone())?;
+        let id: B::Subject = self.id.clone().try_into().map_err(|_| unreachable!())?;
+        rdf.add_type(id.clone(), sh_property_shape().clone())?;
 
         self.name.iter().try_for_each(|(lang, value)| {
-            let literal: RDF::Literal = match lang {
+            let literal: B::Literal = match lang {
                 Some(_) => todo!(),
                 None => value.clone().into(),
             };
-            rdf.add_triple(id.clone(), SH_NAME.clone(), literal)
+            rdf.add_triple(id.clone(), sh_name().clone(), literal)
         })?;
 
         self.description.iter().try_for_each(|(lang, value)| {
-            let literal: RDF::Literal = match lang {
+            let literal: B::Literal = match lang {
                 Some(_) => todo!(),
                 None => value.clone().into(),
             };
-            rdf.add_triple(id.clone(), SH_DESCRIPTION.clone(), literal)
+            rdf.add_triple(id.clone(), sh_description().clone(), literal)
         })?;
 
         if let Some(order) = self.order.clone() {
-            let literal: RDF::Literal = match order {
+            let literal: B::Literal = match order {
                 NumericLiteral::Decimal(_) => todo!(),
                 NumericLiteral::Double(float) => float.into(),
+                NumericLiteral::Float(float) => float.into(),
                 NumericLiteral::Integer(int) => {
                     let i: i128 = int.try_into().unwrap();
                     i.into()
                 }
+                NumericLiteral::Long(_) => todo!(),
+                NumericLiteral::Byte(_) => todo!(),
+                NumericLiteral::Short(_) => todo!(),
+                NumericLiteral::NonNegativeInteger(_) => todo!(),
+                NumericLiteral::UnsignedLong(_) => todo!(),
+                NumericLiteral::UnsignedInt(_) => todo!(),
+                NumericLiteral::UnsignedShort(_) => todo!(),
+                NumericLiteral::UnsignedByte(_) => todo!(),
+                NumericLiteral::PositiveInteger(_) => todo!(),
+                NumericLiteral::NegativeInteger(_) => todo!(),
+                NumericLiteral::NonPositiveInteger(_) => todo!(),
             };
-            rdf.add_triple(id.clone(), SH_ORDER.clone(), literal)?;
+            rdf.add_triple(id.clone(), sh_order().clone(), literal)?;
         }
 
         if let Some(group) = &self.group {
-            rdf.add_triple(id.clone(), SH_GROUP.clone(), group.clone())?;
+            rdf.add_triple(id.clone(), sh_group().clone(), group.clone())?;
         }
 
         if let SHACLPath::Predicate { pred } = &self.path {
-            rdf.add_triple(id.clone(), SH_PATH.clone(), pred.clone())?;
+            rdf.add_triple(id.clone(), sh_path().clone(), pred.clone())?;
         } else {
             unimplemented!()
         }
@@ -231,28 +263,33 @@ impl PropertyShape {
             .try_for_each(|target| target.write(&self.id, rdf))?;
 
         if self.deactivated {
-            let literal: RDF::Literal = "true".to_string().into();
+            let literal: B::Literal = "true".to_string().into();
 
-            rdf.add_triple(id.clone(), SH_DEACTIVATED.clone(), literal)?;
+            rdf.add_triple(id.clone(), sh_deactivated().clone(), literal)?;
         }
 
         if let Some(severity) = &self.severity {
             let pred = match severity {
-                Severity::Violation => iri!(SH_VIOLATION_STR),
-                Severity::Info => iri!(SH_INFO_STR),
-                Severity::Warning => iri!(SH_WARNING_STR),
-                Severity::Generic(iri) => iri.get_iri().unwrap(),
+                Severity::Trace => sh_trace(),
+                Severity::Debug => sh_debug(),
+                Severity::Violation => sh_violation(),
+                Severity::Info => sh_info(),
+                Severity::Warning => sh_warning(),
+                Severity::Generic(iri) => &iri.get_iri().unwrap(),
             };
 
-            rdf.add_triple(id.clone(), SH_SEVERITY.clone(), pred.clone())?;
+            rdf.add_triple(id.clone(), sh_severity().clone(), pred.clone())?;
         }
 
         Ok(())
     }
 }
 
-impl Display for PropertyShape {
+impl<RDF: Rdf> Display for PropertyShape<RDF> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(severity) = self.severity() {
+            write!(f, "{} ", severity)?;
+        }
         writeln!(f, "{{")?;
         writeln!(f, "       PropertyShape")?;
         writeln!(f, "       path: {}", self.path)?;
@@ -270,5 +307,41 @@ impl Display for PropertyShape {
         }
         write!(f, "}}")?;
         Ok(())
+    }
+}
+
+impl<RDF: Rdf> Clone for PropertyShape<RDF> {
+    fn clone(&self) -> Self {
+        Self {
+            id: self.id.clone(),
+            path: self.path.clone(),
+            components: self.components.clone(),
+            targets: self.targets.clone(),
+            property_shapes: self.property_shapes.clone(),
+            closed: self.closed,
+            deactivated: self.deactivated,
+            severity: self.severity.clone(),
+            name: self.name.clone(),
+            description: self.description.clone(),
+            order: self.order.clone(),
+            group: self.group.clone(),
+        }
+    }
+}
+
+impl<RDF: Rdf> PartialEq for PropertyShape<RDF> {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+            && self.path == other.path
+            && self.components == other.components
+            && self.targets == other.targets
+            && self.property_shapes == other.property_shapes
+            && self.closed == other.closed
+            && self.deactivated == other.deactivated
+            && self.severity == other.severity
+            && self.name == other.name
+            && self.description == other.description
+            && self.order == other.order
+            && self.group == other.group
     }
 }

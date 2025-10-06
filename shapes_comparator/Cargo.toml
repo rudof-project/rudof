@@ -1,0 +1,23 @@
+[package]
+name = "shapes_comparator"
+version = "0.1.117"
+authors.workspace = true
+description.workspace = true
+edition.workspace = true
+license.workspace = true
+documentation = "https://docs.rs/shapes_comparator"
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+iri_s.workspace = true
+prefixmap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sparql_service.workspace = true
+shacl_ast.workspace = true
+shex_ast.workspace = true
+shex_validation.workspace = true
+srdf.workspace = true
+thiserror.workspace = true
+tracing = { workspace = true }

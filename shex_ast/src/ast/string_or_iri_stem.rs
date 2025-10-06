@@ -1,11 +1,8 @@
-use std::{result, str::FromStr};
-
-use crate::ast::serde_string_or_struct::*;
-
-use serde::{Deserialize, Serialize, Serializer};
-use void::Void;
-
 use super::serde_string_or_struct::SerializeStringOrStruct;
+use crate::ast::serde_string_or_struct::*;
+use serde::{Deserialize, Serialize, Serializer};
+use std::{result, str::FromStr};
+use thiserror::Error;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(untagged)]
@@ -15,11 +12,17 @@ pub enum StringOrIriStem {
 }
 
 impl FromStr for StringOrIriStem {
-    type Err = Void;
+    type Err = StringOrIriStemError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(StringOrIriStem::String(s.to_string()))
     }
+}
+
+#[derive(Debug, Error)]
+pub enum StringOrIriStemError {
+    #[error("Invalid StringOrIriStem")]
+    InvalidStringOrIriStem,
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]

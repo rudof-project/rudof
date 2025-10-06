@@ -1,9 +1,10 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
+use iri_s::iri;
 use shex_compact::ShExParser;
 use tracing::debug;
 
 fn parse(str: &str) -> usize {
-    let schema = ShExParser::parse(str, None).unwrap();
+    let schema = ShExParser::parse(str, None, &iri!("http://default/")).unwrap();
     schema.shapes().unwrap().len()
 }
 

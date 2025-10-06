@@ -5,6 +5,7 @@ use std::{
 
 use prefixmap::{IriRef, PrefixMapError};
 use shex_ast::{Schema, SchemaJsonError, ShapeExprLabel};
+use srdf::UmlConverterError;
 use thiserror::Error;
 
 use crate::ShEx2UmlError;
@@ -14,7 +15,13 @@ use super::{HtmlShape, Name, NodeId};
 #[derive(Error, Debug)]
 pub enum ShEx2HtmlError {
     #[error("Shape {iri} not found in schema {schema:?}")]
-    ShapeNotFound { iri: IriRef, schema: Schema },
+    ShapeNotFound { iri: IriRef, schema: Box<Schema> },
+
+    #[error(transparent)]
+    UmlConverterError {
+        #[from]
+        err: UmlConverterError,
+    },
 
     #[error("No local referece for shape name: {name:?}")]
     NoLocalRefName { name: Name },
@@ -22,16 +29,16 @@ pub enum ShEx2HtmlError {
     #[error("Shape reference {sref} not found in schema {schema:?}")]
     ShapeRefNotFound {
         sref: ShapeExprLabel,
-        schema: Schema,
+        schema: Box<Schema>,
     },
 
     #[error("No shapes found in schema to convert to SPARQL. Schema\n{schema:?}")]
-    NoShapes { schema: Schema },
+    NoShapes { schema: Box<Schema> },
 
     #[error(
         "No shape found to convert to SPARQL because list of shapes is empty. Schema\n{schema:?}"
     )]
-    EmptyShapes { schema: Schema },
+    EmptyShapes { schema: Box<Schema> },
 
     #[error(transparent)]
     SchemaError {
@@ -84,7 +91,9 @@ pub enum ShEx2HtmlError {
     #[error("Wrong cardinality: ({min},{max})")]
     WrongCardinality { min: i32, max: i32 },
 
-    #[error("Adding component: {component:?} to nodeId {node_id} fails because that node already contains shape: {shape:?}")]
+    #[error(
+        "Adding component: {component:?} to nodeId {node_id} fails because that node already contains shape: {shape:?}"
+    )]
     AddingComponentNodeIdHasShape {
         node_id: NodeId,
         shape: Box<HtmlShape>,

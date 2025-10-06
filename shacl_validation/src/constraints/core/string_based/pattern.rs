@@ -1,48 +1,61 @@
-use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
+use crate::constraints::constraint_error::ConstraintError;
 use crate::helpers::constraint::validate_ask_with;
 use crate::helpers::constraint::validate_with;
+use crate::iteration_strategy::ValueNodeIteration;
 use crate::validation_report::result::ValidationResult;
-use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
-use shacl_ast::compiled::component::CompiledComponent;
-use shacl_ast::compiled::component::Pattern;
-use shacl_ast::compiled::shape::CompiledShape;
-use srdf::Query;
-use srdf::Sparql;
+use shacl_ir::compiled::component_ir::ComponentIR;
+use shacl_ir::compiled::component_ir::Pattern;
+use shacl_ir::compiled::shape::ShapeIR;
+use srdf::NeighsRDF;
+use srdf::QueryRDF;
+use srdf::SHACLPath;
 use srdf::Term;
 use std::fmt::Debug;
 
-impl<S: Query + Debug + 'static> NativeValidator<S> for Pattern {
+impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Pattern {
     fn validate_native<'a>(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         _: &S,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape<S>>,
+        _source_shape: Option<&ShapeIR>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        let pattern = |value_node: &S::Term| {
+        let pattern_check = |value_node: &S::Term| {
             if value_node.is_blank_node() {
                 true
             } else {
-                todo!()
+                let lexical_form = value_node.lexical_form();
+                !self.match_str(lexical_form.as_str())
             }
         };
-        validate_with(component, shape, value_nodes, ValueNodeIteration, pattern)
+        let message = format!("Pattern({}) not satisfied", self.pattern());
+        validate_with(
+            component,
+            shape,
+            value_nodes,
+            ValueNodeIteration,
+            pattern_check,
+            &message,
+            maybe_path,
+        )
     }
 }
 
-impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Pattern {
+impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Pattern {
     fn validate_sparql(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape<S>>,
+        _source_shape: Option<&ShapeIR>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let flags = self.flags().clone();
         let pattern = self.pattern().clone();
@@ -58,6 +71,15 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Pattern {
             },
         };
 
-        validate_ask_with(component, shape, store, value_nodes, query)
+        let message = format!("Pattern({}) not satisfied", self.pattern());
+        validate_ask_with(
+            component,
+            shape,
+            store,
+            value_nodes,
+            query,
+            &message,
+            maybe_path,
+        )
     }
 }

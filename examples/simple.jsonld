@@ -1,0 +1,36 @@
+{
+    "@context": {
+        "ex": "http://example.org/",
+        "xsd": "http://www.w3.org/2001/XMLSchema#",
+        "ex:name": {
+            "@type": "xsd:string"
+        },
+        "ex:birthdate": {
+            "@type": "xsd:date"
+        },
+        "ex:knows": {
+            "@type": "@id"
+        },
+        "ex:enrolledIn": {
+            "@type": "@id"
+        }
+    },
+    "@graph": [
+        {
+            "@id": "http://example.org/a",
+            "ex:name": "Alice",
+            "ex:birthdate": "1990-05-02",
+            "ex:enrolledIn": "http://example.org/cs101"
+        },
+        {
+            "@id": "http://example.org/b",
+            "ex:name": "Robert",
+            "ex:knows": "http://example.org/a",
+            "ex:enrolledIn": "http://example.org/cs101"
+        },
+        {
+            "@id": "http://example.org/cs101",
+            "ex:name": "Computer Science"
+        }
+    ]
+}

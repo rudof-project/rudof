@@ -1,0 +1,18 @@
+prefix :       <http://example.org/> 
+prefix sh:     <http://www.w3.org/ns/shacl#> 
+prefix xsd:    <http://www.w3.org/2001/XMLSchema#> 
+prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
+
+:Shape
+	a sh:PropertyShape ;
+	sh:targetNode :ok1, :ok2, :ko1, :ko2 ;
+	sh:path _:1 ;
+    sh:datatype xsd:string .
+
+_:1 sh:alternativePath (:p :q ) .
+
+:ok1 :p "Hi"; :q 23 .
+:ok2 :p 23; :q "Hi" .
+
+:ko1 :p 23; :q 42 .
+:ko2 :q 13  .

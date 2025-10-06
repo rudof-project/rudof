@@ -87,7 +87,7 @@ impl<R: io::Read> TapReader<R> {
         }
     }*/
 
-    pub fn shapes(&mut self) -> ShapesIter<R> {
+    pub fn shapes(&mut self) -> ShapesIter<'_, R> {
         ShapesIter::new(self)
     }
 
@@ -383,7 +383,9 @@ impl<R: io::Read> TapReader<R> {
                     statement.set_value_constraint(&ValueConstraint::pattern(str.as_str()));
                 }
                 _ => {
-                    debug!("Not implemented handling of value constraint type: {value_constraint_type:?}, It is just ignored")
+                    debug!(
+                        "Not implemented handling of value constraint type: {value_constraint_type:?}, It is just ignored"
+                    )
                 }
             }
         };
@@ -509,11 +511,7 @@ fn parse_values(str: &str, delimiter: char) -> Result<Vec<Value>> {
 
 fn strip_whitespace(str: &str) -> Option<&str> {
     let s = str.trim();
-    if s.is_empty() {
-        None
-    } else {
-        Some(s)
-    }
+    if s.is_empty() { None } else { Some(s) }
 }
 
 fn get_strs(str: &str) -> impl Iterator<Item = &str> {

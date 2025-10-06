@@ -1,8 +1,8 @@
 use super::shape_expr::ShapeExpr;
-use crate::ast::deserialize_string_or_struct;
-use crate::ast::serialize_string_or_struct;
 use crate::Annotation;
 use crate::ShapeExprLabel;
+use crate::ast::deserialize_string_or_struct;
+use crate::ast::serialize_string_or_struct;
 use prefixmap::Deref;
 use prefixmap::DerefError;
 use serde::{Deserialize, Serialize};
@@ -30,6 +30,10 @@ fn default_abstract() -> bool {
 }
 
 impl ShapeDecl {
+    pub fn id(&self) -> &ShapeExprLabel {
+        &self.id
+    }
+
     pub fn new(label: ShapeExprLabel, shape_expr: ShapeExpr, is_abstract: bool) -> Self {
         ShapeDecl {
             type_: "ShapeDecl".to_string(),

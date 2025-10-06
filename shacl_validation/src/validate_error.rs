@@ -1,6 +1,6 @@
 // use oxiri::IriParseError;
-use shacl_ast::compiled::compiled_shacl_error::CompiledShaclError;
-use shacl_ast::shacl_parser_error::ShaclParserError;
+use shacl_ir::compiled::compiled_shacl_error::CompiledShaclError;
+use shacl_rdf::rdf_to_shacl::shacl_parser_error::ShaclParserError;
 use sparql_service::RdfDataError;
 use srdf::RDFParseError;
 use srdf::SRDFGraphError;
@@ -12,6 +12,18 @@ use crate::helpers::helper_error::SRDFError;
 
 #[derive(Error, Debug)]
 pub enum ValidateError {
+    #[error("Obtaining rdfs:subClassOf of {term}: {error}")]
+    SubClassOf { term: String, error: String },
+
+    #[error("Obtaining instances of {term}: {error}")]
+    InstanceOf { term: String, error: String },
+
+    #[error("Obtaining objects for focus node {focus_node} and shacl path: {shacl_path}: {error}")]
+    ObjectsSHACLPath {
+        focus_node: String,
+        shacl_path: String,
+        error: String,
+    },
     #[error("Error during the SPARQL operation")]
     SRDF,
     #[error("TargetNode cannot be a Blank Node")]
@@ -28,22 +40,39 @@ pub enum ValidateError {
     //IriParse(#[from] IriParseError),
     #[error("Error during some I/O operation")]
     IO(#[from] std::io::Error),
+
     #[error("Error loading the Shapes")]
     Shapes(#[from] RDFParseError),
+
     #[error("Error creating the SPARQL endpoint")]
     SPARQLCreation,
+
     #[error("Error during the SPARQL operation")]
     Sparql(#[from] SPARQLError),
+
     #[error("Implicit class not found")]
     ImplicitClassNotFound,
+
     #[error("The provided mode is not supported for the {} structure", ._0)]
     UnsupportedMode(String),
+
     #[error(transparent)]
     SrdfHelper(#[from] SRDFError),
-    #[error("Error during the compilation of the Schema, {}", ._0)] // TODO: move to store
-    CompiledShacl(#[from] CompiledShaclError),
+
+    #[error("TargetClass error: {msg}")]
+    TargetClassError { msg: String },
+
+    #[error("Error during the compilation of the Schema, {error}")]
+    CompiledShacl { error: Box<CompiledShaclError> },
+
     #[error("Not yet implemented: {msg}")]
     NotImplemented { msg: String },
+
     #[error(transparent)]
     RdfDataError(#[from] RdfDataError),
+
+    #[error(
+        "Error obtaining triples with subject {subject} during validation: {error}, checking CLOSED"
+    )]
+    TriplesWithSubject { subject: String, error: String },
 }

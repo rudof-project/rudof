@@ -1,0 +1,15 @@
+prefix : <http://example.org/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+:a :name "Alice" ;
+   :birthdate "1990-05-02"^^xsd:date ;
+   :enrolledIn :cs101 {| 
+     :start "2020-09-01"^^xsd:date ;
+     :end "2023-06-30"^^xsd:date ;
+     |}.
+
+:b :name "Bob", "Robert" .
+
+:cs101 :name "Introduction to Computer Science" .
+
+<< :cs101 :disciplines :computer_science >> :accordingTo :a .

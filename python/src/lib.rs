@@ -1,9 +1,11 @@
 #![allow(clippy::useless_conversion)]
 
 use pyo3::prelude::*;
-
+mod pyrudof_config;
 mod pyrudof_lib;
-use crate::pyrudof_lib::*;
+
+pub use crate::pyrudof_config::*;
+pub use crate::pyrudof_lib::*;
 
 // Rudof Python bindings
 #[pymodule]
@@ -11,11 +13,13 @@ pub mod pyrudof {
     use super::*;
 
     #[pymodule_export]
-    use super::{
-        PyDCTAP, PyDCTapFormat, PyQuerySolution, PyQuerySolutions, PyRDFFormat, PyReaderMode,
-        PyRudof, PyRudofConfig, PyRudofError, PyShExFormat, PyShExFormatter, PyShaclFormat,
-        PyShaclValidationMode, PyShapeMapFormat, PyShapeMapFormatter, PyShapesGraphSource,
-        PyUmlGenerationMode, PyValidationReport, PyValidationStatus,
+    pub use super::{
+        PyCompareSchemaFormat, PyCompareSchemaMode, PyDCTAP, PyDCTapFormat, PyMie,
+        PyQueryResultFormat, PyQuerySolution, PyQuerySolutions, PyRDFFormat, PyReaderMode, PyRudof,
+        PyRudofConfig, PyRudofError, PyServiceDescription, PyServiceDescriptionFormat,
+        PyShExFormat, PyShExFormatter, PyShaclFormat, PyShaclValidationMode, PyShapeMapFormat,
+        PyShapeMapFormatter, PyShapesGraphSource, PyUmlGenerationMode, PyValidationReport,
+        PyValidationStatus,
     };
 
     #[pymodule_init]

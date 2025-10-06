@@ -1,15 +1,35 @@
-use iri_s::IriSError;
+use iri_s::{IriS, IriSError};
 use prefixmap::{IriRef, PrefixMapError};
 use srdf::lang::Lang;
 use thiserror::Error;
 
 use super::shape_label::ShapeLabel;
 use crate::ast::TripleExprLabel;
-use crate::{ast, Node};
+use crate::{Node, ShExFormat, ast};
 use srdf::numeric_literal::NumericLiteral;
 
 #[derive(Error, Debug, Clone)]
 pub enum SchemaIRError {
+    #[error("Pattern  /{regex}/{} trying to match node {node}", flags.as_deref().unwrap_or(""))]
+    PatternNodeNotLiteral {
+        node: String,
+        regex: String,
+        flags: Option<String>,
+    },
+
+    #[error("Invalid regex /{regex}")]
+    InvalidRegex { regex: String },
+
+    #[error("Error matching /{regex}/{flags} with {lexical_form}")]
+    PatternError {
+        regex: String,
+        flags: String,
+        lexical_form: String,
+    },
+
+    #[error("Error creating language tag: {lang}: {err}")]
+    LangTagError { lang: String, err: String },
+
     #[error("Parsing {str:?} as IRI")]
     Str2IriError { str: String },
 
@@ -17,10 +37,10 @@ pub enum SchemaIRError {
     IriParseError { str: String, err: IriSError },
 
     #[error("SchemaJson Error")]
-    SchemaJsonError(#[from] ast::SchemaJsonError),
+    SchemaJsonError { source: Box<ast::SchemaJsonError> },
 
     #[error("Duplicated triple expression label in schema: {label:?}")]
-    DuplicatedTripleExprLabel { label: TripleExprLabel },
+    DuplicatedTripleExprLabel { label: Box<TripleExprLabel> },
 
     #[error("Converting min value {min} must be positive")]
     MinLessZero { min: i32 },
@@ -40,14 +60,26 @@ pub enum SchemaIRError {
     #[error("NodeKind NonLiteral but found {node}")]
     NodeKindNonLiteral { node: Node },
 
-    #[error("Datatype expected {expected} but found {found} for literal with lexical form {lexical_form}")]
+    #[error(
+        "Datatype expected {expected} but found {found} for literal with lexical form {lexical_form}"
+    )]
     DatatypeDontMatch {
         found: IriRef,
         expected: IriRef,
         lexical_form: String,
     },
 
-    #[error("Datatype expected {expected} but found no literal {node}")]
+    #[error(
+        "Datatype expected {expected} but found a wrong datatype with lexical form {lexical_form} and declared datatype {datatype}: {error}"
+    )]
+    WrongDatatypeLiteralMatch {
+        lexical_form: String,
+        datatype: IriRef,
+        error: String,
+        expected: IriRef,
+    },
+
+    #[error("Datatype expected {expected} but found literal {node} which has datatype: {}", (*node).datatype().map(|d| d.to_string()).unwrap_or("None".to_string()))]
     DatatypeNoLiteral {
         expected: Box<IriRef>,
         node: Box<Node>,
@@ -55,6 +87,36 @@ pub enum SchemaIRError {
 
     #[error("Datatype expected {expected} but found String literal {lexical_form}")]
     DatatypeDontMatchString {
+        expected: IriRef,
+        lexical_form: String,
+    },
+
+    #[error("Datatype expected {expected} but found Integer literal {lexical_form}")]
+    DatatypeDontMatchInteger {
+        expected: IriRef,
+        lexical_form: String,
+    },
+
+    #[error("Datatype expected {expected} but found decimal literal {lexical_form}")]
+    DatatypeDontMatchDecimal {
+        expected: IriRef,
+        lexical_form: String,
+    },
+
+    #[error("Datatype expected {expected} but found float literal {lexical_form}")]
+    DatatypeDontMatchFloat {
+        expected: IriRef,
+        lexical_form: String,
+    },
+
+    #[error("Datatype expected {expected} but found long literal {lexical_form}")]
+    DatatypeDontMatchLong {
+        expected: IriRef,
+        lexical_form: String,
+    },
+
+    #[error("Datatype expected {expected} but found double literal {lexical_form}")]
+    DatatypeDontMatchDouble {
         expected: IriRef,
         lexical_form: String,
     },
@@ -93,6 +155,41 @@ pub enum SchemaIRError {
         node: String,
     },
 
+    #[error("TotalDigits of {node} = {found} doesn't match {expected}")]
+    TotalDigitsError {
+        expected: usize,
+        found: NumericLiteral,
+        node: String,
+    },
+
+    #[error("FractionDigits of {node} = {found} doesn't match {expected}")]
+    FractionDigitsError {
+        expected: usize,
+        found: NumericLiteral,
+        node: String,
+    },
+
+    #[error("NumericValue of {node} = {found} doesn't match minExclusive of {expected}")]
+    MinExclusiveError {
+        expected: NumericLiteral,
+        found: NumericLiteral,
+        node: String,
+    },
+
+    #[error("NumericValue of {node} = {found} doesn't match maxExclusive of {expected}")]
+    MaxExclusiveError {
+        expected: NumericLiteral,
+        found: NumericLiteral,
+        node: String,
+    },
+
+    #[error("NumericValue of {node} = {found} doesn't match maxInclusive of {expected}")]
+    MaxInclusiveError {
+        expected: NumericLiteral,
+        found: NumericLiteral,
+        node: String,
+    },
+
     #[error("Node {node} is not a numeric literal")]
     NonNumeric { node: String },
 
@@ -117,4 +214,19 @@ pub enum SchemaIRError {
 
     #[error("Internal: {msg}")]
     Internal { msg: String },
+
+    #[error("Dereferencing import IRI {iri}: {error}")]
+    DereferencingIri { iri: IriS, error: String },
+
+    #[error("Parsing ShExC format from iri: {iri}: {error}")]
+    ShExCError { error: String, iri: IriS },
+
+    #[error("Parsing ShExJ format from iri: {iri}: {error}")]
+    ShExJError { error: String, iri: IriS },
+
+    #[error("Error importing Schema from iri: {iri}: {}", errors.iter().map(|(format, error)| format!("\nFor {format}: {error}")).collect::<Vec<_>>().join(""))]
+    SchemaFromIriRotatingFormats {
+        iri: IriS,
+        errors: Box<Vec<(ShExFormat, Box<SchemaIRError>)>>,
+    },
 }

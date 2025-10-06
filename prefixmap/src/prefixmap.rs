@@ -1,6 +1,6 @@
 use colored::*;
-use indexmap::map::Iter;
 use indexmap::IndexMap;
+use indexmap::map::Iter;
 use iri_s::*;
 use serde::{Deserialize, Serialize};
 
@@ -9,7 +9,7 @@ use std::str::FromStr;
 use std::{collections::HashMap, fmt};
 
 /// Contains declarations of prefix maps which are used in TURTLE, SPARQL and ShEx
-#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Default)]
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq, Default)]
 #[serde(transparent)]
 pub struct PrefixMap {
     /// Proper prefix map associations of an alias `String` to an `IriS`
@@ -60,6 +60,7 @@ impl PrefixMap {
         self
     }
 
+    /// Disable all rich qualifying (colors and hyperlinks)
     pub fn without_rich_qualifying(self) -> Self {
         self.with_hyperlink(false)
             .with_qualify_localname_color(None)
@@ -81,10 +82,12 @@ impl PrefixMap {
         Ok(())
     }
 
+    /// Finds an IRI associated with an alias
     pub fn find(&self, str: &str) -> Option<&IriS> {
         self.map.get(str)
     }
 
+    /// Creates a prefix map from a hashmap of &str to &str
     pub fn from_hashmap(hm: &HashMap<&str, &str>) -> Result<PrefixMap, PrefixMapError> {
         let mut pm = PrefixMap::new();
         for (a, s) in hm.iter() {
@@ -95,7 +98,7 @@ impl PrefixMap {
     }
 
     /// Return an iterator over the key-value pairs of the ("map, in their order
-    pub fn iter(&self) -> Iter<String, IriS> {
+    pub fn iter(&self) -> Iter<'_, String, IriS> {
         self.map.iter()
     }
 
@@ -239,13 +242,13 @@ impl PrefixMap {
     ///     ("schema", "http://schema.org/")])
     /// )?;
     /// let a = IriS::from_str("http://example.org/a")?;
-    /// assert_eq!(pm.qualify(&a), Some(":a"));
+    /// assert_eq!(pm.qualify_optional(&a), Some(":a".to_string()));
     ///
     /// let knows = IriS::from_str("http://schema.org/knows")?;
-    /// assert_eq!(pm.qualify(&knows), Some("schema:knows"));
+    /// assert_eq!(pm.qualify_optional(&knows), Some("schema:knows".to_string()));
     ///
     /// let other = IriS::from_str("http://other.org/foo")?;
-    /// assert_eq!(pm.qualify(&other), None);
+    /// assert_eq!(pm.qualify_optional(&other), None);
     /// # Ok::<(), PrefixMapError>(())
     /// ```
     pub fn qualify_optional(&self, iri: &IriS) -> Option<String> {
@@ -272,15 +275,12 @@ impl PrefixMap {
                 Some(color) => ":".color(color),
                 None => ColoredString::from(":"),
             };
-            Some(format!(
-                "{}{}{}",
-                prefix_colored, semicolon_colored, rest_colored
-            ))
+            Some(format!("{prefix_colored}{semicolon_colored}{rest_colored}"))
         } else {
             None
         };
         if self.hyperlink {
-            str.map(|s| format!("\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\", s.as_str(), s))
+            str.map(|s| format!("\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\", iri.as_str(), s))
         } else {
             str
         }
@@ -299,13 +299,13 @@ impl PrefixMap {
     ///     ("schema", "http://schema.org/")])
     /// )?;
     /// let a = IriS::from_str("http://example.org/a")?;
-    /// assert_eq!(pm.qualify(&a), ":a");
+    /// assert_eq!(pm.qualify_and_length(&a), (":a".to_string(), 2));
     ///
     /// let knows = IriS::from_str("http://schema.org/knows")?;
-    /// assert_eq!(pm.qualify(&knows), "schema:knows");
+    /// assert_eq!(pm.qualify_and_length(&knows), ("schema:knows".to_string(),12));
     ///
     /// let other = IriS::from_str("http://other.org/foo")?;
-    /// assert_eq!(pm.qualify(&other), "<http://other.org/foo>");
+    /// assert_eq!(pm.qualify_and_length(&other), ("<http://other.org/foo>".to_string(), 22));
     /// # Ok::<(), PrefixMapError>(())
     /// ```
     pub fn qualify_and_length(&self, iri: &IriS) -> (String, usize) {
@@ -334,12 +334,12 @@ impl PrefixMap {
             };
             let length = prefix_colored.len() + 1 + rest_colored.len();
             (
-                format!("{}{}{}", prefix_colored, semicolon_colored, rest_colored),
+                format!("{prefix_colored}{semicolon_colored}{rest_colored}"),
                 length,
             )
         } else {
             let length = format!("{iri}").len();
-            (format!("<{iri}>"), length)
+            (format!("<{iri}>"), length + 2)
         };
         if self.hyperlink {
             (
@@ -483,6 +483,10 @@ impl PrefixMap {
             self.insert(alias, iri)?
         }
         Ok(())
+    }
+
+    pub fn aliases(&self) -> impl Iterator<Item = &String> {
+        self.map.keys()
     }
 }
 

@@ -1,6 +1,6 @@
 [package]
 name = "shacl_validation"
-version = "0.1.70"
+version = "0.1.116"
 readme = "README.md"
 license.workspace = true
 authors.workspace = true
@@ -11,25 +11,30 @@ keywords.workspace = true
 categories.workspace = true
 edition.workspace = true
 
-[features]
-rdf-star = ["srdf/rdf-star"]
+#[features]
+#rdf-star = ["srdf/rdf-star"]
 
 [dependencies]
 srdf = { workspace = true }
 shacl_ast = { workspace = true }
+shacl_rdf = { workspace = true }
+shacl_ir = { workspace = true }
 iri_s = { workspace = true }
 prefixmap = { workspace = true }
 sparql_service = { workspace = true }
 
-thiserror = { workspace = true } # needed for the definition of errors
-lazy_static = "1"                # needed for the definition of the vocab
-const_format = "0.2"             # needed for the definition of the vocab
-indoc = "2"                      # needed for the definition of SPARQL queries
-# oxiri = "0.2.0-alpha.2" # TODO: can be removed? (needed for the use of the stores )
+thiserror = { workspace = true }                   # needed for the definition of errors
+lazy_static = "1"                                  # needed for the definition of the vocab
+const_format = "0.2"                               # needed for the definition of the vocab
+indoc = "2"                                        # needed for the definition of SPARQL queries
 clap = { workspace = true }                        # needed for creating the ValueEnums (ensuring compatibility with clap)
 serde = { version = "1.0", features = ["derive"] } # needed for the config thing
-toml = { workspace = true }                   # needed for the config thing
+toml = { workspace = true }                        # needed for the config thing
 colored = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+anyhow.workspace = true
 
 [dev-dependencies]
 oxrdf.workspace = true
+tracing-test = "0.2.5"

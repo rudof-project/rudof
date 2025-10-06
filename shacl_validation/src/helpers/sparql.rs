@@ -1,10 +1,8 @@
+use super::helper_error::SPARQLError;
+use srdf::QueryRDF;
 use std::collections::HashSet;
 
-use srdf::Sparql;
-
-use super::helper_error::SPARQLError;
-
-pub fn select<S: Sparql>(
+pub fn select<S: QueryRDF>(
     store: &S,
     query_str: String,
     index: &str,
@@ -16,7 +14,7 @@ pub fn select<S: Sparql>(
             return Err(SPARQLError::Query {
                 query: query_str.to_string(),
                 error: format!("{e}"),
-            })
+            });
         }
     };
     for solution in query.iter() {

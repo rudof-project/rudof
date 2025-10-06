@@ -1,0 +1,22 @@
+prefix :       <http://example.org/> 
+prefix sh:     <http://www.w3.org/ns/shacl#> 
+prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
+prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#>
+prefix schema: <http://schema.org/>
+
+:Researcher a sh:NodeShape ; 
+ sh:targetClass :Human ;
+ sh:property [ sh:path rdfs:label ; 
+               sh:datatype xsd:string; 
+               sh:minCount 1 ; sh:maxCount 1 ] ;
+ sh:property [ sh:path :birthDate ; sh:datatype xsd:date;
+                                    sh:maxCount 1 ] ;
+ sh:property [ sh:path :birthPlace ; 
+               sh:node :Place; sh:maxCount 1 ] ;
+ sh:property [ 
+    sh:path :employer ; 
+    sh:node :Organization 
+] .
+
+:Place a sh:NodeShape .
+:Organization a sh:NodeShape .

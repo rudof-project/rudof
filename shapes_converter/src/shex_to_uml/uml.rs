@@ -7,9 +7,9 @@ use super::UmlEntry;
 use super::UmlError;
 use super::UmlLink;
 use super::ValueConstraint;
-use std::collections::hash_map::*;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::collections::hash_map::*;
 use std::hash::Hash;
 use std::io::Write;
 
@@ -147,6 +147,7 @@ impl Uml {
         writer: &mut W,
     ) -> Result<(), UmlError> {
         writeln!(writer, "@startuml")?;
+        self.preamble(writer, config)?;
         for (node_id, component) in self.components.iter() {
             component2plantuml(node_id, component, config, writer)?;
         }
@@ -167,6 +168,9 @@ impl Uml {
         target_node: &NodeId,
     ) -> Result<(), UmlError> {
         writeln!(writer, "@startuml")?;
+        self.preamble(writer, config)?;
+
+        // Keep track of serialized components to avoid serializing them twice
         let mut serialized_components = HashSet::new();
 
         // For all components in schema, check if they are neighbours with target_node
@@ -195,6 +199,28 @@ impl Uml {
         writeln!(writer, "@enduml")?;
         Ok(())
     }
+
+    fn preamble(&self, writer: &mut impl Write, config: &ShEx2UmlConfig) -> Result<(), UmlError> {
+        writeln!(writer, "hide empty members")?;
+
+        writeln!(writer, "skinparam linetype ortho")?;
+
+        // Hide the class attribute icon
+        writeln!(writer, "hide circles")?;
+
+        writeln!(
+            writer,
+            "skinparam shadowing {}",
+            config.shadowing.unwrap_or_default()
+        )?;
+
+        // The following parameters should be taken from the ocnfig file...
+        writeln!(writer, "skinparam class {{")?;
+        writeln!(writer, " BorderColor Black")?;
+        writeln!(writer, " ArrowColor Black")?;
+        writeln!(writer, "}}")?;
+        Ok(())
+    }
 }
 
 fn component2plantuml<W: Write>(
@@ -221,14 +247,18 @@ fn component2plantuml<W: Write>(
             };
             writeln!(
                 writer,
-                "class \"{}\" as {} <<(S,#FF7700)>> {} {{ ",
-                name, node_id, href
+                "class \"{name}\" as {node_id} <<(S,#FF7700)>> {href} {{ "
             )?;
             for entry in class.entries() {
                 entry2plantuml(entry, config, writer)?;
             }
             writeln!(writer, "}}")?;
         }
+        UmlComponent::Or { exprs: _ } => {
+            writeln!(writer, "class \"OR\" as {node_id} {{}}")?;
+        }
+        UmlComponent::Not { expr: _ } => todo!(),
+        UmlComponent::And { exprs: _ } => todo!(),
     }
     Ok(())
 }
@@ -254,7 +284,7 @@ fn entry2plantuml<W: Write>(
     let property = name2plantuml(&entry.name, config);
     let value_constraint = value_constraint2plantuml(&entry.value_constraint, config);
     let card = card2plantuml(&entry.card);
-    writeln!(writer, "{} : {} {}", property, value_constraint, card)?;
+    writeln!(writer, "{property} : {value_constraint} {card}")?;
     writeln!(writer, "--")?;
     Ok(())
 }
@@ -270,7 +300,7 @@ fn name2plantuml(name: &Name, config: &ShEx2UmlConfig) -> String {
         name.name()
     };
     if let Some(href) = name.href() {
-        format!("[[{href} {}]]", str)
+        format!("[[{href} {str}]]")
     } else {
         name.name()
     }

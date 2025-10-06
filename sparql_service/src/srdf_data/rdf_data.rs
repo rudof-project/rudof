@@ -1,32 +1,35 @@
 use super::RdfDataError;
 use colored::*;
 use iri_s::IriS;
-use oxigraph::sparql::Query as OxQuery;
-use oxigraph::sparql::QueryResults;
+use oxigraph::sparql::{QueryResults, SparqlEvaluator};
 use oxigraph::store::Store;
 use oxrdf::{
-    BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, Subject as OxSubject,
-    Term as OxTerm, Triple as OxTriple,
+    BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode,
+    NamedOrBlankNode as OxSubject, Term as OxTerm, Triple as OxTriple,
 };
-use oxrdfio::RdfFormat;
+use oxrdfio::{JsonLdProfileSet, RdfFormat};
 use prefixmap::PrefixMap;
+use serde::Serialize;
+use serde::ser::SerializeStruct;
 use sparesults::QuerySolution as SparQuerySolution;
 use srdf::FocusRDF;
-use srdf::Query;
+use srdf::NeighsRDF;
+use srdf::QueryRDF;
 use srdf::QuerySolution;
 use srdf::QuerySolutions;
+use srdf::RDF_TYPE_STR;
 use srdf::RDFFormat;
 use srdf::Rdf;
 use srdf::ReaderMode;
-use srdf::SRDFBuilder;
 use srdf::SRDFGraph;
 use srdf::SRDFSparql;
-use srdf::Sparql;
 use srdf::VarName;
-use srdf::RDF_TYPE_STR;
+use srdf::matcher::Matcher;
+use srdf::{BuildRDF, QueryResultFormat};
 use std::fmt::Debug;
 use std::io;
 use std::str::FromStr;
+use tracing::trace;
 
 /// Generic abstraction that represents RDF Data which can be  behind SPARQL endpoints or an in-memory graph or both
 /// The triples in RdfData are taken as the union of the triples of the endpoints and the in-memory graph
@@ -43,6 +46,18 @@ pub struct RdfData {
 
     /// In-memory Store used to access the graph using SPARQL queries
     store: Option<Store>,
+}
+
+impl Serialize for RdfData {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut state = serializer.serialize_struct("RdfData", 2)?;
+        state.serialize_field("endpoints", &self.endpoints)?;
+        state.serialize_field("graph", &self.graph)?;
+        state.end()
+    }
 }
 
 impl Debug for RdfData {
@@ -69,10 +84,18 @@ impl RdfData {
     /// By default, the RDF Data Store is not initialized as it is expensive and is only required for SPARQL queries
     pub fn check_store(&mut self) -> Result<(), RdfDataError> {
         if let Some(graph) = &self.graph {
+            trace!("Checking RDF store, graph exists, length: {}", graph.len());
             if self.store.is_none() {
+                trace!("Initializing RDF store from in-memory graph");
                 let store = Store::new()?;
-                store.bulk_loader().load_quads(graph.quads())?;
-                self.store = Some(store)
+                let mut loader = store.bulk_loader();
+                loader.load_quads(graph.quads())?;
+                loader.commit()?;
+                self.store = Some(store);
+                trace!(
+                    "RDF store initialized with length: {:?}",
+                    self.store.as_ref().map(|s| s.len())
+                );
             }
         }
         Ok(())
@@ -104,6 +127,17 @@ impl RdfData {
     /// Cleans the in-memory graph
     pub fn clean_graph(&mut self) {
         self.graph = None
+    }
+
+    pub fn from_str(
+        data: &str,
+        format: &RDFFormat,
+        base: Option<&str>,
+        reader_mode: &ReaderMode,
+    ) -> Result<RdfData, RdfDataError> {
+        let mut rdf_data = Self::new();
+        rdf_data.merge_from_reader(data.as_bytes(), format, base, reader_mode)?;
+        Ok(rdf_data)
     }
 
     /// Merge the in-memory graph with the graph read from a reader
@@ -154,12 +188,12 @@ impl RdfData {
     }
 
     pub fn show_blanknode(&self, bn: &OxBlankNode) -> String {
-        let str: String = format!("{}", bn);
+        let str: String = format!("{bn}");
         format!("{}", str.green())
     }
 
     pub fn show_literal(&self, lit: &OxLiteral) -> String {
-        let str: String = format!("{}", lit);
+        let str: String = format!("{lit}");
         format!("{}", str.red())
     }
 
@@ -169,18 +203,31 @@ impl RdfData {
         writer: &mut W,
     ) -> Result<(), RdfDataError> {
         if let Some(graph) = &self.graph {
-            graph
-                .serialize(format, writer)
-                .map_err(|e| RdfDataError::Serializing {
-                    format: *format,
-                    error: format!("{e}"),
-                })?
+            BuildRDF::serialize(graph, format, writer).map_err(|e| RdfDataError::Serializing {
+                format: *format,
+                error: format!("{e}"),
+            })?
         }
         for e in self.endpoints.iter() {
             writeln!(writer, "Endpoint {}", e.iri())?
         }
         Ok(())
     }
+
+    /*fn triples_with_subject(
+        &self,
+        subject: &OxSubject,
+    ) -> Result<impl Iterator<OxTriple>, RdfDataError> {
+        let graph_triples = self
+            .graph
+            .iter()
+            .flat_map(|g| g.triples_with_subject(subject.clone()));
+        let endpoints_triples = self
+            .endpoints
+            .iter()
+            .flat_map(|e| e.triples_with_subject(subject.clone()));
+        Ok(graph_triples.chain(endpoints_triples))
+    }*/
 }
 
 impl Default for RdfData {
@@ -220,8 +267,6 @@ impl Rdf for RdfData {
         match subj {
             OxSubject::BlankNode(bn) => self.show_blanknode(bn),
             OxSubject::NamedNode(n) => self.qualify_iri(n),
-            // #[cfg(feature = "rdf-star")]
-            OxSubject::Triple(_) => unimplemented!(),
         }
     }
 
@@ -257,15 +302,39 @@ impl Rdf for RdfData {
     }
 }
 
-impl Sparql for RdfData {
+impl QueryRDF for RdfData {
+    fn query_construct(
+        &self,
+        query_str: &str,
+        format: &QueryResultFormat,
+    ) -> Result<String, RdfDataError>
+    where
+        Self: Sized,
+    {
+        let mut str = String::new();
+        if let Some(_store) = &self.store {
+            tracing::debug!("Querying in-memory store (we ignore it by now");
+        }
+        for endpoint in &self.endpoints {
+            let new_str = endpoint.query_construct(query_str, format)?;
+            str.push_str(&new_str);
+        }
+        Ok(str)
+    }
+
     fn query_select(&self, query_str: &str) -> Result<QuerySolutions<RdfData>, RdfDataError>
     where
         Self: Sized,
     {
         let mut sols: QuerySolutions<RdfData> = QuerySolutions::empty();
-        let query = OxQuery::parse(query_str, None)?;
         if let Some(store) = &self.store {
-            let new_sol = store.query(query)?;
+            trace!("Querying in-memory store of length: {:?}", store.len());
+
+            let new_sol = SparqlEvaluator::new()
+                .parse_query(query_str)?
+                .on_store(store)
+                .execute()?;
+            trace!("Got results from in-memory store");
             let sol = cnv_query_results(new_sol)?;
             sols.extend(sol)
         }
@@ -292,7 +361,11 @@ fn cnv_query_results(
 ) -> Result<Vec<QuerySolution<RdfData>>, RdfDataError> {
     let mut results = Vec::new();
     if let QueryResults::Solutions(solutions) = query_results {
+        trace!("Converting query solutions");
+        let mut counter = 0;
         for solution in solutions {
+            counter += 1;
+            trace!("Converting solution {counter}");
             let result = cnv_query_solution(solution?);
             results.push(result)
         }
@@ -322,6 +395,9 @@ fn _cnv_rdf_format(rdf_format: RDFFormat) -> RdfFormat {
         RDFFormat::TriG => RdfFormat::TriG,
         RDFFormat::N3 => RdfFormat::N3,
         RDFFormat::NQuads => RdfFormat::NQuads,
+        RDFFormat::JsonLd => RdfFormat::JsonLd {
+            profile: JsonLdProfileSet::empty(),
+        },
     }
 }
 
@@ -329,11 +405,40 @@ fn _rdf_type() -> OxNamedNode {
     OxNamedNode::new_unchecked(RDF_TYPE_STR)
 }
 
-impl Query for RdfData {
+impl NeighsRDF for RdfData {
     fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
-        let endpoints_triples = self.endpoints.iter().flat_map(Query::triples).flatten();
-        let graph_triples = self.graph.iter().flat_map(Query::triples).flatten();
-        Ok(endpoints_triples.chain(graph_triples))
+        let graph_triples = self.graph.iter().flat_map(NeighsRDF::triples).flatten();
+        let endpoints_triples = self.endpoints.iter().flat_map(NeighsRDF::triples).flatten();
+        Ok(graph_triples.chain(endpoints_triples))
+    }
+
+    fn triples_matching<S, P, O>(
+        &self,
+        subject: S,
+        predicate: P,
+        object: O,
+    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err>
+    where
+        S: Matcher<Self::Subject> + Clone,
+        P: Matcher<Self::IRI> + Clone,
+        O: Matcher<Self::Term> + Clone,
+    {
+        let s1 = subject.clone();
+        let p1 = predicate.clone();
+        let o1 = object.clone();
+        let graph_triples = self
+            .graph
+            .iter()
+            .flat_map(move |g| NeighsRDF::triples_matching(g, s1.clone(), p1.clone(), o1.clone()))
+            .flatten();
+        let endpoints_triples = self
+            .endpoints
+            .iter()
+            .flat_map(move |e| {
+                NeighsRDF::triples_matching(e, subject.clone(), predicate.clone(), object.clone())
+            })
+            .flatten();
+        Ok(graph_triples.chain(endpoints_triples))
     }
 }
 
@@ -347,47 +452,80 @@ impl FocusRDF for RdfData {
     }
 }
 
-impl SRDFBuilder for RdfData {
+impl BuildRDF for RdfData {
     fn empty() -> Self {
-        todo!()
+        RdfData::new()
     }
 
     fn add_base(&mut self, _base: &Option<IriS>) -> Result<(), Self::Err> {
-        todo!()
+        self.graph
+            .as_mut()
+            .map(|g| g.add_base(_base))
+            .unwrap_or(Ok(()))
+            .map_err(|e| RdfDataError::SRDFGraphError { err: e })
     }
 
-    fn add_prefix(&mut self, _alias: &str, _iri: &IriS) -> Result<(), Self::Err> {
-        todo!()
+    fn add_prefix(&mut self, alias: &str, iri: &IriS) -> Result<(), Self::Err> {
+        self.graph
+            .as_mut()
+            .map(|g| g.add_prefix(alias, iri))
+            .unwrap_or(Ok(()))
+            .map_err(|e| RdfDataError::SRDFGraphError { err: e })
     }
 
-    fn add_prefix_map(&mut self, _prefix_map: PrefixMap) -> Result<(), Self::Err> {
-        todo!()
+    fn add_prefix_map(&mut self, prefix_map: PrefixMap) -> Result<(), Self::Err> {
+        self.graph
+            .as_mut()
+            .map(|g| g.add_prefix_map(prefix_map))
+            .unwrap_or(Ok(()))
+            .map_err(|e| RdfDataError::SRDFGraphError { err: e })
     }
 
-    fn add_triple<S, P, O>(&mut self, _subj: S, _pred: P, _obj: O) -> Result<(), Self::Err>
+    fn add_triple<S, P, O>(&mut self, subj: S, pred: P, obj: O) -> Result<(), Self::Err>
     where
         S: Into<Self::Subject>,
         P: Into<Self::IRI>,
         O: Into<Self::Term>,
     {
-        todo!()
+        match self.graph {
+            Some(ref mut graph) => {
+                graph
+                    .add_triple(subj, pred, obj)
+                    .map_err(|e| RdfDataError::SRDFGraphError { err: e })?;
+                Ok(())
+            }
+            None => {
+                let mut graph = SRDFGraph::new();
+                graph.add_triple(subj, pred, obj)?;
+                self.graph = Some(graph);
+                Ok(())
+            }
+        }
     }
 
-    fn remove_triple<S, P, O>(&mut self, _subj: S, _pred: P, _obj: O) -> Result<(), Self::Err>
+    fn remove_triple<S, P, O>(&mut self, subj: S, pred: P, obj: O) -> Result<(), Self::Err>
     where
         S: Into<Self::Subject>,
         P: Into<Self::IRI>,
         O: Into<Self::Term>,
     {
-        todo!()
+        self.graph
+            .as_mut()
+            .map(|g| g.remove_triple(subj, pred, obj))
+            .unwrap_or(Ok(()))
+            .map_err(|e| RdfDataError::SRDFGraphError { err: e })
     }
 
-    fn add_type<S, T>(&mut self, _node: S, _type_: T) -> Result<(), Self::Err>
+    fn add_type<S, T>(&mut self, node: S, type_: T) -> Result<(), Self::Err>
     where
         S: Into<Self::Subject>,
         T: Into<Self::Term>,
     {
-        todo!()
+        self.graph
+            .as_mut()
+            .map(|g| g.add_type(node, type_))
+            .unwrap_or(Ok(()))
+            .map_err(|e| RdfDataError::SRDFGraphError { err: e })
     }
 
     fn serialize<W: std::io::Write>(
@@ -396,7 +534,7 @@ impl SRDFBuilder for RdfData {
         writer: &mut W,
     ) -> Result<(), Self::Err> {
         if let Some(graph) = &self.graph {
-            graph.serialize(format, writer)?;
+            BuildRDF::serialize(graph, format, writer)?;
             Ok::<(), Self::Err>(())
         } else {
             Ok(())
@@ -415,5 +553,39 @@ impl SRDFBuilder for RdfData {
             }
             None => Err(RdfDataError::BNodeNoGraph),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use iri_s::iri;
+
+    use super::*;
+
+    #[test]
+    fn test_rdf_data_from_str() {
+        let data = "<http://example.org/subject> <http://example.org/predicate> <http://example.org/object> .";
+        let rdf_data = RdfData::from_str(data, &RDFFormat::NTriples, None, &ReaderMode::Lax);
+        assert!(rdf_data.is_ok());
+        let rdf_data = rdf_data.unwrap();
+        assert!(rdf_data.graph.is_some());
+        assert_eq!(rdf_data.graph.unwrap().triples().unwrap().count(), 1);
+    }
+
+    #[test]
+    fn test_build_rdf_data() {
+        let mut rdf_data = RdfData::new();
+        rdf_data
+            .add_prefix("ex", &IriS::from_str("http://example.org/").unwrap())
+            .unwrap();
+        rdf_data
+            .add_triple(
+                iri!("http://example.org/alice"),
+                iri!("http://example.org/knows"),
+                iri!("http://example.org/bob"),
+            )
+            .unwrap();
+        assert!(rdf_data.graph.is_some());
+        assert_eq!(rdf_data.graph.unwrap().triples().unwrap().count(), 1);
     }
 }

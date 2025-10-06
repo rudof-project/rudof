@@ -1,9 +1,11 @@
-use crate::{Query, RDFParseError};
+use tracing::debug;
+
+use crate::{NeighsRDF, RDFError, RDFNodeParse, RDFParseError, SHACLPath, shacl_path_parse};
 
 /// Represents RDF graphs that contain a focus node
 ///
 /// The trait contains methods to get the focus node and to set its value
-pub trait FocusRDF: Query {
+pub trait FocusRDF: NeighsRDF {
     /// Set the value of the focus node
     fn set_focus(&mut self, focus: &Self::Term);
 
@@ -24,13 +26,29 @@ pub trait FocusRDF: Query {
             None => Err(RDFParseError::NoFocusNode),
             Some(term) => {
                 let subject =
-                    term.clone()
-                        .try_into()
-                        .map_err(|_| RDFParseError::ExpectedSubject {
-                            node: format!("{term}"),
-                        })?;
+                    Self::term_as_subject(term).map_err(|_| RDFParseError::ExpectedSubject {
+                        node: format!("{term}"),
+                        context: "get_focus_as_subject".to_string(),
+                    })?;
                 Ok(subject)
             }
+        }
+    }
+
+    fn get_path_for(
+        &mut self,
+        subject: &Self::Term,
+        predicate: &Self::IRI,
+    ) -> Result<Option<SHACLPath>, RDFError> {
+        match self.objects_for(subject, predicate)?.into_iter().next() {
+            Some(term) => match shacl_path_parse(term.clone()).parse_impl(self) {
+                Ok(path) => Ok(Some(path)),
+                Err(e) => {
+                    debug!("Error parsing PATH from report...{e}");
+                    Ok(None)
+                }
+            },
+            None => Ok(None),
         }
     }
 }

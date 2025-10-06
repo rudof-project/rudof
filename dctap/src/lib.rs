@@ -45,14 +45,3 @@ pub use crate::tap_shape::*;
 pub use crate::tap_statement::*;
 pub use crate::value_constraint::*;
 pub use dctap::*;
-
-/// DCTAP available formats
-#[derive(Debug, Default, PartialEq)]
-pub enum DCTAPFormat {
-    #[default]
-    CSV,
-    XLSX,
-    XLSB,
-    XLSM,
-    XLS,
-}

@@ -1,35 +1,37 @@
 use std::ops::Not;
 
-use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
-use crate::engine::native::NativeEngine;
-use crate::engine::sparql::SparqlEngine;
-use crate::engine::Engine;
+use crate::constraints::constraint_error::ConstraintError;
 use crate::focus_nodes::FocusNodes;
 use crate::helpers::constraint::validate_with;
-use crate::shape::Validate;
+use crate::iteration_strategy::ValueNodeIteration;
+use crate::shacl_engine::Engine;
+use crate::shacl_engine::native::NativeEngine;
+use crate::shacl_engine::sparql::SparqlEngine;
+use crate::shape_validation::Validate;
 use crate::validation_report::result::ValidationResult;
-use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
-use shacl_ast::compiled::component::CompiledComponent;
-use shacl_ast::compiled::component::Or;
-use shacl_ast::compiled::shape::CompiledShape;
-use srdf::Query;
-use srdf::Rdf;
-use srdf::Sparql;
+use shacl_ir::compiled::component_ir::ComponentIR;
+use shacl_ir::compiled::component_ir::Or;
+use shacl_ir::compiled::shape::ShapeIR;
+use srdf::NeighsRDF;
+use srdf::QueryRDF;
+use srdf::SHACLPath;
 use std::fmt::Debug;
+use tracing::debug;
 
-impl<S: Rdf + Debug> Validator<S> for Or<S> {
+impl<S: NeighsRDF + Debug> Validator<S> for Or {
     fn validate(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &S,
         engine: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape<S>>,
+        _source_shape: Option<&ShapeIR>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let or = |value_node: &S::Term| {
             self.shapes()
@@ -38,28 +40,41 @@ impl<S: Rdf + Debug> Validator<S> for Or<S> {
                     match shape.validate(
                         store,
                         &engine,
-                        Some(&FocusNodes::new(std::iter::once(value_node.clone()))),
+                        Some(&FocusNodes::from_iter(std::iter::once(value_node.clone()))),
                         Some(shape),
                     ) {
                         Ok(validation_results) => validation_results.is_empty(),
-                        Err(_) => false,
+                        Err(err) => {
+                            debug!("Or: Error validating {value_node} with shape {shape}: {err}");
+                            true
+                        }
                     }
                 })
                 .not()
         };
 
-        validate_with(component, shape, value_nodes, ValueNodeIteration, or)
+        let message = "OR not satisfied".to_string();
+        validate_with(
+            component,
+            shape,
+            value_nodes,
+            ValueNodeIteration,
+            or,
+            &message,
+            maybe_path,
+        )
     }
 }
 
-impl<S: Query + Debug + 'static> NativeValidator<S> for Or<S> {
+impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Or {
     fn validate_native(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape<S>>,
+        source_shape: Option<&ShapeIR>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -68,18 +83,20 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Or<S> {
             NativeEngine,
             value_nodes,
             source_shape,
+            maybe_path,
         )
     }
 }
 
-impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Or<S> {
+impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for Or {
     fn validate_sparql(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape<S>>,
+        source_shape: Option<&ShapeIR>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -88,6 +105,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Or<S> {
             SparqlEngine,
             value_nodes,
             source_shape,
+            maybe_path,
         )
     }
 }

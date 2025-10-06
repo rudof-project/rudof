@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{tap_statement::TapStatement, ExtendsId};
+use crate::{ExtendsId, tap_statement::TapStatement};
 use crate::{ShapeId, TapReaderWarning};
 use serde::{Deserialize, Serialize};
 

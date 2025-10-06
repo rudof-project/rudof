@@ -6,8 +6,10 @@ use std::fmt::Debug;
 use std::fmt::Display;
 use std::vec::IntoIter;
 use tracing::debug;
+use tracing::trace;
 
 use crate::Bag;
+use crate::EmptyIter;
 use crate::Key;
 use crate::MatchCond;
 use crate::Pending;
@@ -15,11 +17,10 @@ use crate::RbeError;
 use crate::Ref;
 use crate::Value;
 // use crate::RbeError;
+use crate::Component;
 use crate::rbe::Rbe;
-use crate::rbe1::Rbe as Rbe1;
 use crate::rbe_error;
 use crate::values::Values;
-use crate::Component;
 
 #[derive(Default, PartialEq, Eq, Clone)]
 pub struct RbeTable<K, V, R>
@@ -55,6 +56,14 @@ where
         RbeTable::default()
     }
 
+    pub fn get_condition(&self, c: &Component) -> Option<&MatchCond<K, V, R>> {
+        self.component_cond.get(c)
+    }
+
+    pub fn get_key(&self, c: &Component) -> Option<&K> {
+        self.component_key.get(c)
+    }
+
     pub fn add_component(&mut self, k: K, cond: &MatchCond<K, V, R>) -> Component {
         let c = Component::from(self.component_counter);
         let key = k.clone();
@@ -82,6 +91,14 @@ where
         &self,
         values: Vec<(K, V)>,
     ) -> Result<MatchTableIter<K, V, R>, RbeError<K, V, R>> {
+        trace!(
+            "Checking if RbeTable {} matches [{}]",
+            &self,
+            values
+                .iter()
+                .map(|(k, v)| format!("({} {})", k, v))
+                .join(", ")
+        );
         let mut pairs_found = 0;
         let mut candidates = Vec::new();
         let cs_empty = IndexSet::new();
@@ -100,14 +117,26 @@ where
 
         if candidates.is_empty() || pairs_found == 0 {
             debug!(
-                "No candidates for rbe: {:?}, candidates: {:?}, pairs_found: {pairs_found}",
+                "No candidates for rbe: {}, candidates: {:?}, pairs_found: {pairs_found}",
                 self.rbe, candidates,
             );
-            Ok(MatchTableIter::Empty(EmptyIter {
-                is_first: true,
-                rbe: cnv_rbe(&self.rbe, self),
-                values: Values::from(&values),
-            }))
+            if self.rbe.nullable() {
+                trace!("Rbe is nullable and no candidates...should be sucessful");
+
+                Ok(MatchTableIter::Empty(EmptyIter::new(
+                    &self.rbe,
+                    self,
+                    &Values::from(&values),
+                )))
+            } else {
+                let result = Ok(MatchTableIter::Empty(EmptyIter::new(
+                    &self.rbe,
+                    self,
+                    &Values::from(&values),
+                )));
+                trace!("Result of matches: {:?}", result);
+                result
+            }
         } else {
             debug!("Candidates not empty rbe: {:?}", self.rbe);
             let _: Vec<_> = candidates
@@ -128,7 +157,7 @@ where
         }
     }
 
-    pub fn components(&self) -> ComponentsIter<K, V, R> {
+    pub fn components(&self) -> ComponentsIter<'_, K, V, R> {
         ComponentsIter {
             current: 0,
             table: self,
@@ -252,132 +281,53 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         let next_state = self.state.next();
-        // debug!("state in IterCartesianProduct {:?}", self.state);
         match next_state {
             None => {
                 if self.is_first {
-                    debug!("Should be internal error? No more candidates");
-                    debug!("RBE: {}", self.rbe);
+                    trace!("Should be internal error? No more candidates");
+                    trace!("RBE: {}", self.rbe);
                     None
                 } else {
-                    debug!("No more candidates");
+                    trace!("No more candidates");
                     None
                 }
             }
             Some(vs) => {
                 for (k, v, c, cond) in &vs {
-                    debug!("Next state: ({k} {v}) should match component {c} with cond: {cond})");
+                    trace!("Next state: ({k} {v}) should match component {c} with cond: {cond})");
                 }
                 let mut pending: Pending<V, R> = Pending::new();
                 for (_k, v, _, cond) in &vs {
                     match cond.matches(v) {
                         Ok(new_pending) => {
-                            debug!("Condition passed: {cond} with value: {v}, new pending: {new_pending}");
+                            trace!(
+                                "Condition passed: {cond} with value: {v}, new pending: {new_pending}"
+                            );
                             pending.merge(new_pending);
-                            debug!("Pending merged: {pending}");
+                            trace!("Pending merged: {pending}");
                         }
                         Err(err) => {
-                            debug!("Failed condition: {cond} with value: {v}");
+                            trace!("Failed condition: {cond} with value: {v}");
                             return Some(Err(err));
                         }
                     }
                 }
-                debug!("Pending after checking conditions: {pending}");
+                trace!("Pending after checking conditions: {pending}");
                 let bag = Bag::from_iter(vs.into_iter().map(|(_, _, c, _)| c));
                 match self.rbe.match_bag(&bag, self.open) {
                     Ok(()) => {
-                        debug!("Rbe {} matches bag {}", self.rbe, bag);
+                        trace!("Rbe {} matches bag {}", self.rbe, bag);
                         self.is_first = false;
                         Some(Ok(pending))
                     }
                     Err(err) => {
-                        debug!("### Skipped error: {err}!!!!\n");
+                        trace!("### Skipped error: {err}!!!!\n");
                         self.next()
                     }
                 }
             }
         }
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct EmptyIter<K, V, R>
-where
-    K: Key,
-    V: Value,
-    R: Ref,
-{
-    is_first: bool,
-    rbe: Rbe1<K, V, R>,
-    values: Values<K, V>,
-}
-
-impl<K, V, R> Iterator for EmptyIter<K, V, R>
-where
-    K: Key,
-    V: Value,
-    R: Ref,
-{
-    type Item = Result<Pending<V, R>, rbe_error::RbeError<K, V, R>>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.is_first {
-            self.is_first = false;
-            Some(Err(RbeError::EmptyCandidates {
-                rbe: Box::new(self.rbe.clone()),
-                values: self.values.clone(),
-            }))
-        } else {
-            None
-        }
-    }
-}
-
-fn cnv_rbe<K, V, R>(rbe: &Rbe<Component>, table: &RbeTable<K, V, R>) -> Rbe1<K, V, R>
-where
-    K: Key,
-    V: Value,
-    R: Ref,
-{
-    match rbe {
-        Rbe::Empty => Rbe1::Empty,
-        Rbe::And { values } => {
-            let values1 = values.iter().map(|c| cnv_rbe(c, table)).collect();
-            Rbe1::And { exprs: values1 }
-        }
-        Rbe::Or { values } => {
-            let values1 = values.iter().map(|c| cnv_rbe(c, table)).collect();
-            Rbe1::Or { exprs: values1 }
-        }
-        Rbe::Symbol { value, card } => {
-            let key = cnv_key(value, table);
-            let cond = cnv_cond(value, table);
-            Rbe1::Symbol {
-                key,
-                cond,
-                card: (*card).clone(),
-            }
-        }
-        _ => todo!(),
-    }
-}
-
-fn cnv_cond<K, V, R>(c: &Component, table: &RbeTable<K, V, R>) -> MatchCond<K, V, R>
-where
-    K: Key,
-    V: Value,
-    R: Ref,
-{
-    table.component_cond.get(c).unwrap().clone()
-}
-
-fn cnv_key<K, V, R>(c: &Component, table: &RbeTable<K, V, R>) -> K
-where
-    K: Key,
-    V: Value,
-    R: Ref,
-{
-    table.component_key.get(c).unwrap().clone()
 }
 
 impl<K, V, R> Display for RbeTable<K, V, R>
@@ -387,20 +337,23 @@ where
     R: Ref + Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "RBE: {}", self.rbe)?;
-        writeln!(f, "Keys:")?;
-        for (k, c) in self.key_components.iter() {
-            write!(f, " {k} -> [")?;
-            for c in c.iter() {
-                write!(f, " {c}")?;
-            }
-            writeln!(f, " ]")?;
-        }
-        writeln!(f, "Components:")?;
-        for (c, cond) in self.component_cond.iter() {
-            let k = self.component_key.get(c).unwrap();
-            writeln!(f, " {c} -> {k} {cond}")?;
-        }
+        write!(f, "RBE [{}]", self.rbe)?;
+        write!(
+            f,
+            ", Keys: [{}]",
+            self.key_components
+                .iter()
+                .map(|(k, c)| format!("{k} -> {{{}}}", c.iter().map(|c| c.to_string()).join(" ")))
+                .join(", ")
+        )?;
+        write!(
+            f,
+            ", conds: [{}]",
+            self.component_cond
+                .iter()
+                .map(|(c, cond)| format!("{c} -> {cond}"))
+                .join(", ")
+        )?;
         Ok(())
     }
 }

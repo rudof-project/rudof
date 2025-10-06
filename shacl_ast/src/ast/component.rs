@@ -1,29 +1,32 @@
-use crate::{
-    node_kind::NodeKind, value::Value, SH_AND_STR, SH_CLASS_STR, SH_CLOSED_STR, SH_DATATYPE_STR,
-    SH_DISJOINT_STR, SH_EQUALS_STR, SH_FLAGS_STR, SH_HAS_VALUE_STR, SH_IGNORED_PROPERTIES_STR,
-    SH_IN_STR, SH_IRI_STR, SH_LANGUAGE_IN_STR, SH_LESS_THAN_OR_EQUALS_STR, SH_LESS_THAN_STR,
-    SH_MAX_COUNT_STR, SH_MAX_EXCLUSIVE_STR, SH_MAX_INCLUSIVE_STR, SH_MAX_LENGTH_STR,
-    SH_MIN_COUNT_STR, SH_MIN_EXCLUSIVE_STR, SH_MIN_INCLUSIVE_STR, SH_MIN_LENGTH_STR, SH_NODE_STR,
-    SH_NOT_STR, SH_OR_STR, SH_PATTERN_STR, SH_QUALIFIED_MAX_COUNT_STR, SH_QUALIFIED_MIN_COUNT_STR,
+use crate::SH_DEACTIVATED_STR;
+use crate::shacl_vocab::{
+    SH_AND_STR, SH_CLASS_STR, SH_CLOSED_STR, SH_DATATYPE_STR, SH_DISJOINT_STR, SH_EQUALS_STR,
+    SH_FLAGS_STR, SH_HAS_VALUE_STR, SH_IGNORED_PROPERTIES_STR, SH_IN_STR, SH_IRI_STR,
+    SH_LANGUAGE_IN_STR, SH_LESS_THAN_OR_EQUALS_STR, SH_LESS_THAN_STR, SH_MAX_COUNT_STR,
+    SH_MAX_EXCLUSIVE_STR, SH_MAX_INCLUSIVE_STR, SH_MAX_LENGTH_STR, SH_MIN_COUNT_STR,
+    SH_MIN_EXCLUSIVE_STR, SH_MIN_INCLUSIVE_STR, SH_MIN_LENGTH_STR, SH_NODE_STR, SH_NOT_STR,
+    SH_OR_STR, SH_PATTERN_STR, SH_QUALIFIED_MAX_COUNT_STR, SH_QUALIFIED_MIN_COUNT_STR,
     SH_QUALIFIED_VALUE_SHAPE_STR, SH_UNIQUE_LANG_STR, SH_XONE_STR,
 };
-use iri_s::{iri, IriS};
+use crate::{node_kind::NodeKind, value::Value};
+use iri_s::{IriS, iri};
 use itertools::Itertools;
 use prefixmap::IriRef;
-use srdf::{lang::Lang, literal::Literal, RDFNode, SRDFBuilder};
+use srdf::{BuildRDF, RDFNode, SLiteral, lang::Lang};
+use std::collections::HashSet;
 use std::fmt::Display;
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Component {
     Class(RDFNode),
     Datatype(IriRef),
     NodeKind(NodeKind),
     MinCount(isize),
     MaxCount(isize),
-    MinExclusive(Literal),
-    MaxExclusive(Literal),
-    MinInclusive(Literal),
-    MaxInclusive(Literal),
+    MinExclusive(SLiteral),
+    MaxExclusive(SLiteral),
+    MinInclusive(SLiteral),
+    MaxInclusive(SLiteral),
     MinLength(isize),
     MaxLength(isize),
     Pattern {
@@ -52,7 +55,7 @@ pub enum Component {
     },
     Closed {
         is_closed: bool,
-        ignored_properties: Vec<IriRef>,
+        ignored_properties: HashSet<IriS>,
     },
     Node {
         shape: RDFNode,
@@ -65,16 +68,18 @@ pub enum Component {
     },
     QualifiedValueShape {
         shape: RDFNode,
-        qualified_min_count: Option<isize>,
-        qualified_max_count: Option<isize>,
-        qualified_value_shapes_disjoint: Option<bool>,
+        q_min_count: Option<isize>,
+        q_max_count: Option<isize>,
+        disjoint: Option<bool>,
+        siblings: Vec<RDFNode>,
     },
+    Deactivated(bool),
 }
 
 impl Component {
     pub fn write<RDF>(&self, rdf_node: &RDFNode, rdf: &mut RDF) -> Result<(), RDF::Err>
     where
-        RDF: SRDFBuilder,
+        RDF: BuildRDF,
     {
         match self {
             Self::Class(rdf_node) => {
@@ -117,9 +122,9 @@ impl Component {
                 Self::write_integer(*value, SH_MAX_LENGTH_STR, rdf_node, rdf)?;
             }
             Self::Pattern { pattern, flags } => {
-                Self::write_literal(&Literal::str(pattern), SH_PATTERN_STR, rdf_node, rdf)?;
+                Self::write_literal(&SLiteral::str(pattern), SH_PATTERN_STR, rdf_node, rdf)?;
                 if let Some(flags) = flags {
-                    Self::write_literal(&Literal::str(flags), SH_FLAGS_STR, rdf_node, rdf)?;
+                    Self::write_literal(&SLiteral::str(flags), SH_FLAGS_STR, rdf_node, rdf)?;
                 }
             }
             Self::UniqueLang(value) => {
@@ -128,7 +133,7 @@ impl Component {
             Self::LanguageIn { langs } => {
                 langs.iter().try_for_each(|lang| {
                     Self::write_literal(
-                        &Literal::str(&lang.to_string()),
+                        &SLiteral::str(&lang.to_string()),
                         SH_LANGUAGE_IN_STR,
                         rdf_node,
                         rdf,
@@ -172,7 +177,8 @@ impl Component {
                 Self::write_boolean(*is_closed, SH_CLOSED_STR, rdf_node, rdf)?;
 
                 ignored_properties.iter().try_for_each(|iri| {
-                    Self::write_iri(iri, SH_IGNORED_PROPERTIES_STR, rdf_node, rdf)
+                    let iri_ref = IriRef::Iri(iri.clone());
+                    Self::write_iri(&iri_ref, SH_IGNORED_PROPERTIES_STR, rdf_node, rdf)
                 })?;
             }
             Self::Node { shape } => {
@@ -184,7 +190,7 @@ impl Component {
                 }
                 Value::Literal(literal) => {
                     Self::write_literal(
-                        &Literal::str(&literal.to_string()),
+                        &SLiteral::str(&literal.to_string()),
                         SH_HAS_VALUE_STR,
                         rdf_node,
                         rdf,
@@ -192,21 +198,26 @@ impl Component {
                 }
             },
             Self::In { values } => {
+                // TODO: Review this code
                 values.iter().try_for_each(|value| match value {
-                    Value::Iri(iri) => Self::write_iri(iri, SH_HAS_VALUE_STR, rdf_node, rdf),
+                    Value::Iri(iri) => Self::write_iri(iri, SH_IN_STR, rdf_node, rdf),
                     Value::Literal(literal) => Self::write_literal(
-                        &Literal::str(&literal.to_string()),
-                        SH_HAS_VALUE_STR,
+                        &SLiteral::str(&literal.to_string()),
+                        SH_IN_STR,
                         rdf_node,
                         rdf,
                     ),
                 })?;
             }
+            Self::Deactivated(value) => {
+                Self::write_boolean(*value, SH_DEACTIVATED_STR, rdf_node, rdf)?;
+            }
             Self::QualifiedValueShape {
                 shape,
-                qualified_min_count,
-                qualified_max_count,
-                qualified_value_shapes_disjoint,
+                q_min_count,
+                q_max_count,
+                disjoint,
+                ..
             } => {
                 Self::write_term(
                     &shape.clone().into(),
@@ -215,15 +226,15 @@ impl Component {
                     rdf,
                 )?;
 
-                if let Some(value) = qualified_min_count {
+                if let Some(value) = q_min_count {
                     Self::write_integer(*value, SH_QUALIFIED_MIN_COUNT_STR, rdf_node, rdf)?;
                 }
 
-                if let Some(value) = qualified_max_count {
+                if let Some(value) = q_max_count {
                     Self::write_integer(*value, SH_QUALIFIED_MAX_COUNT_STR, rdf_node, rdf)?;
                 }
 
-                if let Some(value) = qualified_value_shapes_disjoint {
+                if let Some(value) = disjoint {
                     Self::write_boolean(*value, SH_QUALIFIED_MAX_COUNT_STR, rdf_node, rdf)?;
                 }
             }
@@ -238,7 +249,7 @@ impl Component {
         rdf: &mut RDF,
     ) -> Result<(), RDF::Err>
     where
-        RDF: SRDFBuilder,
+        RDF: BuildRDF,
     {
         let value: i128 = value.try_into().unwrap();
         let literal: RDF::Literal = value.into();
@@ -252,20 +263,20 @@ impl Component {
         rdf: &mut RDF,
     ) -> Result<(), RDF::Err>
     where
-        RDF: SRDFBuilder,
+        RDF: BuildRDF,
     {
         let literal: RDF::Literal = value.into();
         Self::write_term(&literal.into(), predicate, rdf_node, rdf)
     }
 
     fn write_literal<RDF>(
-        value: &Literal,
+        value: &SLiteral,
         predicate: &str,
         rdf_node: &RDFNode,
         rdf: &mut RDF,
     ) -> Result<(), RDF::Err>
     where
-        RDF: SRDFBuilder,
+        RDF: BuildRDF,
     {
         let literal: RDF::Literal = value.lexical_form().into();
         Self::write_term(&literal.into(), predicate, rdf_node, rdf)
@@ -278,7 +289,7 @@ impl Component {
         rdf: &mut RDF,
     ) -> Result<(), RDF::Err>
     where
-        RDF: SRDFBuilder,
+        RDF: BuildRDF,
     {
         Self::write_term(
             &value.get_iri().unwrap().clone().into(),
@@ -295,10 +306,17 @@ impl Component {
         rdf: &mut RDF,
     ) -> Result<(), RDF::Err>
     where
-        RDF: SRDFBuilder,
+        RDF: BuildRDF,
     {
         let node: RDF::Subject = rdf_node.clone().try_into().map_err(|_| unreachable!())?;
         rdf.add_triple(node, iri!(predicate), value.clone())
+    }
+
+    pub fn closed(is_closed: bool, ignored_properties: HashSet<IriS>) -> Self {
+        Component::Closed {
+            is_closed,
+            ignored_properties,
+        }
     }
 }
 
@@ -321,11 +339,11 @@ impl Display for Component {
                 None => write!(f, "pattern({pattern})"),
             },
             Component::UniqueLang(ul) => write!(f, "uniqueLang({ul})"),
-            Component::LanguageIn { .. } => todo!(), // write!(f, "languageIn({langs})"),
+            Component::LanguageIn { .. } => todo!(),
             Component::Equals(e) => write!(f, "equals({e})"),
             Component::Disjoint(d) => write!(f, "disjoint({d})"),
-            Component::LessThan(lt) => write!(f, "uniqueLang({lt})"),
-            Component::LessThanOrEquals(lte) => write!(f, "uniqueLang({lte})"),
+            Component::LessThan(lt) => write!(f, "lessThan({lt})"),
+            Component::LessThanOrEquals(lte) => write!(f, "lessThanOrEquals({lte})"),
             Component::Or { shapes } => {
                 let str = shapes.iter().map(|s| s.to_string()).join(" ");
                 write!(f, "or [{str}]")
@@ -341,14 +359,48 @@ impl Display for Component {
                 let str = shapes.iter().map(|s| s.to_string()).join(" ");
                 write!(f, "xone [{str}]")
             }
-            Component::Closed { .. } => todo!(),
+            Component::Closed {
+                is_closed,
+                ignored_properties,
+            } => {
+                write!(
+                    f,
+                    "closed({is_closed}{})",
+                    if ignored_properties.is_empty() {
+                        "".to_string()
+                    } else {
+                        format!(
+                            ", Ignored props: [{}]",
+                            ignored_properties.iter().map(|p| p.to_string()).join(", ")
+                        )
+                    }
+                )
+            }
             Component::Node { shape } => write!(f, "node({shape})"),
             Component::HasValue { value } => write!(f, "hasValue({value})"),
             Component::In { values } => {
                 let str = values.iter().map(|v| v.to_string()).join(" ");
                 write!(f, "In [{str}]")
             }
-            Component::QualifiedValueShape { .. } => todo!(),
+            Component::QualifiedValueShape {
+                shape,
+                q_max_count,
+                q_min_count,
+                disjoint,
+                siblings,
+            } => write!(
+                f,
+                "QualifiedValueShape(shape: {shape}, qualified_min_count: {q_min_count:?}, qualified_max_count: {q_max_count:?}, qualified_value_shapes_disjoint: {disjoint:?}{})",
+                if siblings.is_empty() {
+                    "".to_string()
+                } else {
+                    format!(
+                        ", siblings: [{}]",
+                        siblings.iter().map(|s| s.to_string()).join(", ")
+                    )
+                }
+            ),
+            Component::Deactivated(b) => write!(f, "deactivated({b})"),
         }
     }
 }
@@ -385,6 +437,7 @@ impl From<Component> for IriS {
             Component::QualifiedValueShape { .. } => {
                 IriS::new_unchecked(SH_QUALIFIED_VALUE_SHAPE_STR)
             }
+            Component::Deactivated(_) => IriS::new_unchecked(SH_DEACTIVATED_STR),
         }
     }
 }

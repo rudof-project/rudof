@@ -2,7 +2,6 @@ use iri_s::{IriS, IriSError};
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::str::FromStr;
-use void::Void;
 
 /// IriOrStr represents either an IRI or a String.
 /// This enum is used mainly for parsing ShEx schemas which contain an import declaration
@@ -48,7 +47,7 @@ impl Display for IriOrStr {
             IriOrStr::String(s) => s,
             IriOrStr::IriS(iri_s) => iri_s.as_str(),
         };
-        write!(f, "{}", str)
+        write!(f, "{str}")
     }
 }
 
@@ -62,9 +61,8 @@ impl From<IriOrStr> for String {
     }
 }
 
-impl TryFrom<String> for IriOrStr {
-    type Error = Void;
-    fn try_from(s: String) -> Result<Self, Self::Error> {
-        Ok(IriOrStr::String(s))
+impl From<String> for IriOrStr {
+    fn from(s: String) -> Self {
+        IriOrStr::String(s)
     }
 }

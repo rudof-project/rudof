@@ -1,16 +1,16 @@
-use crate::shapemap_grammar::shapemap_statement;
+use crate::ParseError;
+use crate::Span;
 use crate::shapemap_grammar::ShapeMapStatement;
+use crate::shapemap_grammar::shapemap_statement;
 use crate::shapemap_grammar::{node_selector, shape_spec};
 use crate::shex_grammar::iri;
 use crate::tws0;
-use crate::ParseError;
-use crate::Span;
 use nom::Err;
 use prefixmap::IriRef;
 use prefixmap::PrefixMap;
-use shapemap::query_shape_map::QueryShapeMap;
 use shapemap::NodeSelector;
 use shapemap::ShapeSelector;
+use shapemap::query_shape_map::QueryShapeMap;
 use std::fs;
 use std::path::Path;
 use tracing::debug;
@@ -123,7 +123,7 @@ impl ShapeMapStatementIterator<'_> {
             }),
             Err(Err::Incomplete(_)) => Ok(ShapeMapStatementIterator { src, done: false }),
             Err(e) => Err(ParseError::Custom {
-                msg: format!("cannot start parsing. Error: {}", e),
+                msg: format!("cannot start parsing. Error: {e}"),
             }),
         }
     }

@@ -2,7 +2,7 @@ use std::{result, str::FromStr};
 
 use crate::ast::serde_string_or_struct::*;
 use serde::{Deserialize, Serialize, Serializer};
-use void::Void;
+use thiserror::Error;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(transparent)]
@@ -14,6 +14,12 @@ pub struct StringOrLiteralStemWrapper {
     s: StringOrLiteralStem,
 }
 
+impl StringOrLiteralStemWrapper {
+    pub fn inner(&self) -> &StringOrLiteralStem {
+        &self.s
+    }
+}
+
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(untagged)]
 pub enum StringOrLiteralStem {
@@ -22,7 +28,7 @@ pub enum StringOrLiteralStem {
 }
 
 impl FromStr for StringOrLiteralStemWrapper {
-    type Err = Void;
+    type Err = StringOrLiteralStemError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(StringOrLiteralStemWrapper {
@@ -32,11 +38,17 @@ impl FromStr for StringOrLiteralStemWrapper {
 }
 
 impl FromStr for StringOrLiteralStem {
-    type Err = Void;
+    type Err = StringOrLiteralStemError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(StringOrLiteralStem::String(s.to_string()))
     }
+}
+
+#[derive(Debug, Error)]
+pub enum StringOrLiteralStemError {
+    #[error("Invalid StringOrLiteralStem")]
+    InvalidStringOrLiteralStem,
 }
 
 impl SerializeStringOrStruct for StringOrLiteralStem {

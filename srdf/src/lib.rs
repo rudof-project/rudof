@@ -7,43 +7,79 @@
 //! - [`RDFNodeParse`]: RDF graphs that can be parsed
 pub mod async_srdf;
 pub mod bnode;
+pub mod iri;
+pub mod iri_or_blanknode;
 pub mod lang;
 pub mod literal;
+pub mod matcher;
 pub mod neighs;
+pub mod neighs_rdf;
 pub mod numeric_literal;
 pub mod object;
-pub mod query_srdf;
+pub mod oxrdf_impl;
+pub mod query_rdf;
+pub mod query_result_format;
 pub mod rdf;
 pub mod rdf_data_config;
 pub mod rdf_format;
+pub mod rdf_visualizer;
+pub mod regex;
 pub mod shacl_path;
-pub mod srdf;
-pub mod srdf_basic;
+pub mod sliteral;
+pub mod sparql_query;
 pub mod srdf_builder;
+pub mod srdf_error;
 pub mod srdf_graph;
 pub mod srdf_parser;
 pub mod srdf_sparql;
-// pub mod triple;
-pub mod matcher;
+pub mod subject;
+pub mod term;
+pub mod triple;
+pub mod uml_converter;
 pub mod vocab;
+pub mod xsd_datetime;
 
 pub use crate::async_srdf::*;
 pub use crate::neighs::*;
-pub use crate::query_srdf::*;
+pub use crate::neighs_rdf::*;
+pub use crate::query_rdf::*;
+pub use crate::rdf::*;
 pub use crate::rdf_data_config::*;
-pub use crate::srdf::*;
-pub use crate::srdf_basic::*;
 pub use bnode::*;
+pub use iri::*;
+pub use iri_or_blanknode::*;
+pub use literal::*;
 pub use object::*;
-pub use rdf::*;
+pub use oxrdf_impl::*;
+pub use query_result_format::*;
 pub use rdf_format::*;
+pub use regex::*;
 pub use shacl_path::*;
+pub use sliteral::*;
+pub use sparql_query::*;
 pub use srdf_builder::*;
+pub use srdf_error::*;
 pub use srdf_graph::*;
 pub use srdf_parser::*;
 pub use srdf_sparql::*;
-// pub use triple::*;
+pub use subject::*;
+pub use term::*;
+pub use triple::*;
+pub use uml_converter::*;
 pub use vocab::*;
+pub use xsd_datetime::*;
+
+/// Concrete representation of RDF nodes, which are equivalent to objects
+pub type RDFNode = Object;
+
+/// Concrete representation of the kind of RDF terms, which can be IRIs, blank nodes, literals or triples
+#[derive(PartialEq)]
+pub enum TermKind {
+    Iri,
+    BlankNode,
+    Literal,
+    Triple,
+}
 
 /// Creates an integer literal
 ///
@@ -177,3 +213,24 @@ macro_rules! combine_parsers {
         combine_vec($first, combine_parsers!($($rest),+))
     }
 }
+
+/// Convenience macro over [`opaque`][].
+/// This macro can be useful to combine parsers which can have some underlying different opaque types
+/// In this way, we can avoid some compiler performance problems when using `combine_parsers!` over a large number of parsers that are implemented as `impl RDFNodeParse`
+///  
+#[macro_export]
+macro_rules! opaque {
+    ($e: expr) => {
+        $crate::opaque!($e,);
+    };
+    ($e: expr,) => {
+        opaque(move |f: &mut dyn FnMut(&mut dyn RDFNodeParse<_, Output = _>)| f(&mut $e))
+    };
+}
+
+/// Alias over `Opaque` where the function can be a plain function pointer
+pub type FnOpaque<RDF, O> =
+    Opaque<fn(&mut dyn FnMut(&mut dyn RDFNodeParse<RDF, Output = O>)), RDF, O>;
+
+/// Name of Environment variable where we search for plantuml JAR
+pub const PLANTUML: &str = "PLANTUML";

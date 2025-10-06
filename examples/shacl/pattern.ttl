@@ -1,0 +1,16 @@
+prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+prefix sh: <http://www.w3.org/ns/shacl#>
+prefix : <http://example.org/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+:Pattern a sh:NodeShape ;
+  sh:targetNode :ok, :ko ;
+  sh:property [
+    sh:path :p ;
+    sh:datatype xsd:string ;
+    sh:pattern "^[A-Z|a-z|0-9]{4}$" ;
+  ] .
+
+:ok :p "Good" .
+:ko :p "Bad" .
+ 

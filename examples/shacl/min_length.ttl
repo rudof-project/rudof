@@ -1,0 +1,20 @@
+@prefix :     <http://example.org/> .
+@prefix ex:     <http://example.org/> .
+@prefix sh:     <http://www.w3.org/ns/shacl#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+        
+ex:PasswordShape
+	a sh:NodeShape ;
+	sh:targetNode :ok1, :ok2, :ok3, :ko1, :ko2, :ko3 ;
+	sh:property [
+		sh:path ex:password ;
+		sh:minLength 2 ;
+		sh:maxLength 4 ;
+	] .
+
+:ok1 ex:password "12" .
+:ok2 ex:password "123" .
+:ok3 ex:password "1234" .	
+:ko1 ex:password "12345" .
+:ko2 ex:password "1" .
+:ko3 ex:password 123 .	

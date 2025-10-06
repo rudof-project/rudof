@@ -14,18 +14,36 @@ and conversions between different RDF data modeling formalisms.
 
 The code can be used as a Rust library
 but it also contains a binary called `rudof`
-which can be used as an RDF playground.
+which can be used as an RDF playground. 
 
 We provide binaries for Linux, Windows, Mac and Docker
 (see [releases](https://github.com/rudof-project/rudof/releases)),
 as well as Python bindings.
 
+- [Documentation](https://rudof-project.github.io/rudof/)
+- [Introduction to rudof as a Jupyter lab](https://colab.research.google.com/drive/1XuxohKDNn4UsuRKokyjH2bAlZEyyYhnl)
 - [Installation](https://github.com/rudof-project/rudof?tab=readme-ov-file#installation)
 - [List of issues](https://github.com/rudof-project/rudof/issues)
 - [Discussion](https://github.com/rudof-project/rudof/discussions)
 - [FAQ](https://github.com/rudof-project/rudof/wiki/FAQ)
 - [How to guides](https://github.com/rudof-project/rudof/wiki/How%E2%80%90to-guides)
 - [Roadmap](https://github.com/rudof-project/rudof/issues/1)
+
+## Features
+
+`rudof` currently supports the following:
+
+- RDF and RDF 1.2 parsing, conversion and visualization.
+- SPARQL querying to RDF data and endpoints
+- Parsing SPARQL service description
+- ShEx
+- SHACL
+- DCTAP
+
+Future features we are planning to add:
+
+- rdf-config
+- LinkML
 
 ## Installation
 
@@ -408,7 +426,7 @@ Options:
       --reader-mode <RDF Reader mode>
           RDF Reader mode [default: strict] [possible values: lax, strict]
   -x, --export-mode <Result mode>
-          [possible values: sparql, shex, uml, html]
+          [possible valueS: QueryRDF, shex, uml, html]
   -h, --help
           Print help
 ```

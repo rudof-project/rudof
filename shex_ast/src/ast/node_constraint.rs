@@ -3,8 +3,8 @@ use std::fmt;
 use prefixmap::{Deref, DerefError, IriRef};
 // use log::debug;
 use serde::{
-    de::{self, MapAccess, Visitor},
     Deserialize, Serialize, Serializer,
+    de::{self, MapAccess, Visitor},
 };
 use srdf::numeric_literal::NumericLiteral;
 
@@ -366,7 +366,7 @@ impl<'de> Deserialize<'de> for NodeConstraint {
                                 _ => {
                                     return Err(de::Error::custom(format!(
                                         "Unexpected value for `nodeKind`: {value}"
-                                    )))
+                                    )));
                                 }
                             }
                         }

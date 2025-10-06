@@ -1,0 +1,54 @@
+prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+prefix sh: <http://www.w3.org/ns/shacl#>
+prefix : <http://example.org/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+:genderShape
+	a sh:NodeShape ;
+	sh:targetNode # :ok1, :ok2, :ko1, 
+        :ko2 ;
+	# sh:property _:two_parents ;
+    sh:property _:female_parent ;
+    sh:property _:male_parent . 
+
+_:two_parents sh:path :parent ;
+	sh:minCount 2 ;
+	sh:maxCount 2 .
+
+_:female_parent 
+    sh:path :parent ;
+    sh:qualifiedValueShape :femaleShape ;
+    sh:qualifiedMinCount 1 ;
+    sh:qualifiedValueShapesDisjoint true .
+
+_:male_parent 
+    sh:path :parent ;
+    sh:qualifiedValueShape :maleShape ;
+    sh:qualifiedMinCount 1 ;
+    sh:qualifiedValueShapesDisjoint true .
+
+:maleShape
+    sh:path :gender ;
+	sh:in ( :male :female ) ;
+    sh:minCount 1 .
+
+:femaleShape
+    sh:path :gender ;
+	sh:in ( :male :female );
+    sh:minCount 1 .
+
+:ok1 :parent :p1f, :p1m . 
+:p1f :gender :female . 
+:p1m :gender :male .
+
+:ok2 :parent :p2o, :p2m .
+:p2o :gender :female .
+:p2m :gender :other .
+
+:ko1 :parent :p1o, :p1m .
+:p1o :gender :other .
+:p1m :gender :male .
+
+:ko2 :parent :pko22 .
+:pko21 :gender :female .
+:pko22 :gender :female ; :gender :male .

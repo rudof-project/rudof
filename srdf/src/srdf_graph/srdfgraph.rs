@@ -1,10 +1,14 @@
 use crate::async_srdf::AsyncSRDF;
-use crate::{FocusRDF, Query, RDFFormat, Rdf, SRDFBuilder, RDF_TYPE_STR};
+use crate::matcher::Matcher;
+use crate::{BuildRDF, FocusRDF, NeighsRDF, RDF_TYPE_STR, RDFFormat, Rdf};
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
-use oxrdfio::{RdfFormat, RdfSerializer};
+use oxjsonld::JsonLdParser;
+use oxrdfio::{JsonLdProfileSet, RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
+use serde::Serialize;
+use serde::ser::SerializeStruct;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{self, BufReader, Write};
@@ -15,11 +19,11 @@ use tracing::debug;
 use crate::srdfgraph_error::SRDFGraphError;
 use oxrdf::{
     BlankNode as OxBlankNode, Graph, GraphName, Literal as OxLiteral, NamedNode as OxNamedNode,
-    NamedNodeRef, Quad, Subject as OxSubject, SubjectRef, Term as OxTerm, TermRef,
-    Triple as OxTriple, TripleRef,
+    NamedNodeRef, NamedOrBlankNode as OxSubject, NamedOrBlankNodeRef as OxSubjectRef, Quad,
+    Term as OxTerm, TermRef, Triple as OxTriple, TripleRef,
 };
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
-use prefixmap::{prefixmap::*, PrefixMapError};
+use prefixmap::{PrefixMapError, prefixmap::*};
 
 #[derive(Debug, Default, Clone)]
 pub struct SRDFGraph {
@@ -28,6 +32,19 @@ pub struct SRDFGraph {
     pm: PrefixMap,
     base: Option<IriS>,
     bnode_counter: usize,
+}
+
+impl Serialize for SRDFGraph {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut state = serializer.serialize_struct("SRDFGraph", 4)?;
+        state.serialize_field("triples_count", &self.graph.len())?;
+        state.serialize_field("prefixmap", &self.pm)?;
+        state.serialize_field("base", &self.base)?;
+        state.end()
+    }
 }
 
 impl SRDFGraph {
@@ -84,9 +101,9 @@ impl SRDFGraph {
                     match triple_result {
                         Err(e) => {
                             if reader_mode.is_strict() {
-                                return Err(SRDFGraphError::TurtleError {
-                                    data: "Reading n-quads".to_string(),
-                                    turtle_error: e,
+                                return Err(SRDFGraphError::NTriplesError {
+                                    data: "Reading N-Triples".to_string(),
+                                    error: e.to_string(),
                                 });
                             } else {
                                 debug!("Error captured: {e:?}")
@@ -104,10 +121,18 @@ impl SRDFGraph {
                 for triple_result in reader.by_ref() {
                     match triple_result {
                         Err(e) => {
-                            debug!("Error captured: {e:?}")
+                            if reader_mode.is_strict() {
+                                return Err(SRDFGraphError::RDFXMLError {
+                                    data: "Reading RDF/XML".to_string(),
+                                    error: e.to_string(),
+                                });
+                            } else {
+                                debug!("Error captured: {e:?}")
+                            }
                         }
                         Ok(t) => {
-                            self.graph.insert(t.as_ref());
+                            let triple_ref = cnv_triple(&t);
+                            self.graph.insert(triple_ref);
                         }
                     }
                 }
@@ -120,7 +145,35 @@ impl SRDFGraph {
                 for triple_result in reader.by_ref() {
                     match triple_result {
                         Err(e) => {
-                            debug!("Error captured: {e:?}")
+                            if reader_mode.is_strict() {
+                                return Err(SRDFGraphError::NQuadsError {
+                                    data: "Reading NQuads".to_string(),
+                                    error: e.to_string(),
+                                });
+                            } else {
+                                debug!("NQuads Error captured in Lax mode: {e:?}")
+                            }
+                        }
+                        Ok(t) => {
+                            self.graph.insert(t.as_ref());
+                        }
+                    }
+                }
+            }
+            RDFFormat::JsonLd => {
+                let parser = JsonLdParser::new();
+                let mut reader = parser.for_reader(read);
+                for triple_result in reader.by_ref() {
+                    match triple_result {
+                        Err(e) => {
+                            if reader_mode.is_strict() {
+                                return Err(SRDFGraphError::JsonLDError {
+                                    data: "Reading JSON-LD".to_string(),
+                                    error: e.to_string(),
+                                });
+                            } else {
+                                debug!("JSON-LD Error captured in Lax mode: {e:?}")
+                            }
                         }
                         Ok(t) => {
                             self.graph.insert(t.as_ref());
@@ -155,12 +208,12 @@ impl SRDFGraph {
     }
 
     pub fn show_blanknode(&self, bn: &OxBlankNode) -> String {
-        let str: String = format!("{}", bn);
+        let str: String = format!("{bn}");
         format!("{}", str.green())
     }
 
     pub fn show_literal(&self, lit: &OxLiteral) -> String {
-        let str: String = format!("{}", lit);
+        let str: String = format!("{lit}");
         format!("{}", str.red())
     }
 
@@ -184,11 +237,11 @@ impl SRDFGraph {
         obj: O,
     ) -> Result<(), SRDFGraphError>
     where
-        S: Into<SubjectRef<'a>>,
+        S: Into<OxSubjectRef<'a>>,
         P: Into<NamedNodeRef<'a>>,
         O: Into<TermRef<'a>>,
     {
-        let subj: SubjectRef<'a> = subj.into();
+        let subj: OxSubjectRef<'a> = subj.into();
         let pred: NamedNodeRef<'a> = pred.into();
         let obj: TermRef<'a> = obj.into();
         let triple = TripleRef::new(subj, pred, obj);
@@ -231,12 +284,12 @@ impl SRDFGraph {
     pub fn parse_data(
         data: &String,
         format: &RDFFormat,
-        base: &Path,
+        folder: &Path,
+        base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<SRDFGraph, SRDFGraphError> {
-        let mut attempt = PathBuf::from(base);
+        let mut attempt = PathBuf::from(folder);
         attempt.push(data);
-        let base = Some("base:://");
         let data_path = &attempt;
         let graph = Self::from_path(data_path, format, base, reader_mode)?;
         Ok(graph)
@@ -270,8 +323,6 @@ impl Rdf for SRDFGraph {
         match subj {
             OxSubject::BlankNode(bn) => self.show_blanknode(bn),
             OxSubject::NamedNode(n) => self.qualify_iri(n),
-            #[cfg(feature = "rdf-star")]
-            OxSubject::Triple(_) => unimplemented!(),
         }
     }
 
@@ -280,7 +331,6 @@ impl Rdf for SRDFGraph {
             OxTerm::BlankNode(bn) => self.show_blanknode(bn),
             OxTerm::Literal(lit) => self.show_literal(lit),
             OxTerm::NamedNode(n) => self.qualify_iri(n),
-            #[cfg(feature = "rdf-star")]
             OxTerm::Triple(_) => unimplemented!(),
         }
     }
@@ -290,9 +340,47 @@ impl Rdf for SRDFGraph {
     }
 }
 
-impl Query for SRDFGraph {
+impl NeighsRDF for SRDFGraph {
     fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
         Ok(self.graph.iter().map(TripleRef::into_owned))
+    }
+
+    // Optimized version for triples with a specific subject
+    fn triples_with_subject(
+        &self,
+        subject: Self::Subject,
+    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
+        // Collect the triples into a Vec to avoid the lifetime dependency on subject
+        let triples: Vec<_> = self
+            .graph
+            .triples_for_subject(&subject)
+            .map(TripleRef::into_owned)
+            .collect();
+        Ok(triples.into_iter())
+    }
+
+    fn triples_matching<S, P, O>(
+        &self,
+        subject: S,
+        predicate: P,
+        object: O,
+    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err>
+    where
+        S: Matcher<Self::Subject>,
+        P: Matcher<Self::IRI>,
+        O: Matcher<Self::Term>,
+    {
+        // TODO: Implement this function in a way that it does not retrieve all triples
+        let triples = self.triples()?.filter_map(move |triple| {
+            match subject == triple.subject
+                && predicate == triple.predicate
+                && object == triple.object
+            {
+                true => Some(triple),
+                false => None,
+            }
+        });
+        Ok(triples)
     }
 }
 
@@ -360,7 +448,7 @@ impl FocusRDF for SRDFGraph {
     }
 }
 
-impl SRDFBuilder for SRDFGraph {
+impl BuildRDF for SRDFGraph {
     fn add_base(&mut self, base: &Option<IriS>) -> Result<(), Self::Err> {
         self.base.clone_from(base);
         Ok(())
@@ -454,6 +542,9 @@ fn cnv_rdf_format(rdf_format: &RDFFormat) -> RdfFormat {
         RDFFormat::TriG => RdfFormat::TriG,
         RDFFormat::N3 => RdfFormat::N3,
         RDFFormat::NQuads => RdfFormat::NQuads,
+        RDFFormat::JsonLd => RdfFormat::JsonLd {
+            profile: JsonLdProfileSet::empty(),
+        },
     }
 }
 
@@ -462,7 +553,7 @@ fn rdf_type() -> OxNamedNode {
 }
 
 fn triple_to_quad(t: TripleRef, graph_name: GraphName) -> Quad {
-    let subj: oxrdf::Subject = t.subject.into();
+    let subj: oxrdf::NamedOrBlankNode = t.subject.into();
     let pred: oxrdf::NamedNode = t.predicate.into();
     let obj: oxrdf::Term = t.object.into();
     Quad::new(subj, pred, obj, graph_name)
@@ -485,16 +576,25 @@ impl ReaderMode {
     }
 }
 
+fn cnv_triple(t: &OxTriple) -> TripleRef<'_> {
+    TripleRef::new(
+        OxSubjectRef::from(&t.subject),
+        NamedNodeRef::from(&t.predicate),
+        TermRef::from(&t.object),
+    )
+}
+
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
-
+    use crate::neighs_rdf::NeighsRDF;
     use iri_s::IriS;
     use oxrdf::Literal as OxLiteral;
     use oxrdf::NamedNode as OxNamedNode;
-    use oxrdf::Subject as OxSubject;
+    use oxrdf::NamedOrBlankNode as OxSubject;
     use oxrdf::Term as OxTerm;
+    use std::collections::HashSet;
 
+    use crate::PResult;
     use crate::iri;
     use crate::matcher::Any;
     use crate::not;
@@ -508,12 +608,11 @@ mod tests {
     use crate::rdf_parser;
     use crate::satisfy;
     use crate::set_focus;
-    use crate::PResult;
-    use crate::Query as _;
+    // use crate::Query as _;
+    use crate::BuildRDF;
     use crate::RDFFormat;
     use crate::RDFNodeParse as _;
     use crate::RDFParseError;
-    use crate::SRDFBuilder;
     use crate::Triple;
 
     use super::ReaderMode;
@@ -879,8 +978,9 @@ mod tests {
     #[test]
     fn test_iri() {
         let graph = SRDFGraph::default();
-        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-        assert_eq!(iri().parse(&x, graph).unwrap(), x)
+        let x = OxNamedNode::new_unchecked("http://example.org/x");
+        let x_iri = IriS::from_named_node(&x);
+        assert_eq!(iri().parse(&x_iri, graph).unwrap(), x)
     }
 
     #[test]

@@ -1,5 +1,10 @@
 use iri_s::IriS;
 // use nom::AsBytes;
+use crate::ParseError;
+use crate::Span;
+use crate::grammar_structs::ShExStatement;
+use crate::shex_statement;
+use crate::tws0;
 use nom::Err;
 use prefixmap::Deref;
 use shex_ast::Schema;
@@ -7,12 +12,6 @@ use std::fs;
 use std::io;
 use std::path::Path;
 use tracing::debug;
-
-use crate::grammar_structs::ShExStatement;
-use crate::shex_statement;
-use crate::tws0;
-use crate::ParseError;
-use crate::Span;
 
 // This code is inspired from:
 // https://github.com/vandenoever/rome/blob/master/src/io/turtle/parser.rs
@@ -29,8 +28,8 @@ impl ShExParser<'_> {
     /// Parse a ShEx schema that uses [ShEx compact syntax](https://shex.io/shex-semantics/index.html#shexc)
     ///
     /// `base` is an optional IRI that acts as the base for relative IRIs
-    pub fn parse(src: &str, base: Option<IriS>) -> Result<Schema> {
-        let mut schema = Schema::new().with_base(base);
+    pub fn parse(src: &str, base: Option<IriS>, source_iri: &IriS) -> Result<Schema> {
+        let mut schema = Schema::new(source_iri).with_base(base);
         let mut parser = ShExParser {
             shex_statement_iterator: StatementIterator::new(Span::new(src))?,
         };
@@ -69,18 +68,25 @@ impl ShExParser<'_> {
     }
 
     pub fn parse_buf(path: &Path, base: Option<IriS>) -> Result<Schema> {
+        let source_iri = IriS::from_path(path).map_err(|e| ParseError::Custom {
+            msg: format!("Cannot convert path to IRI: {e}"),
+        })?;
         let data = fs::read_to_string(path)?;
-        let schema = ShExParser::parse(&data, base)?;
+        let schema = ShExParser::parse(&data, base, &source_iri)?;
         Ok(schema)
     }
 
-    pub fn from_reader<R: io::Read>(mut reader: R, base: Option<IriS>) -> Result<Schema> {
+    pub fn from_reader<R: io::Read>(
+        mut reader: R,
+        base: Option<IriS>,
+        source_iri: &IriS,
+    ) -> Result<Schema> {
         let mut v = Vec::new();
         reader.read_to_end(&mut v)?;
         let s = String::from_utf8(v).map_err(|e| ParseError::Utf8Error {
             error: format!("{e}"),
         })?;
-        Self::parse(s.as_str(), base)
+        Self::parse(s.as_str(), base, source_iri)
     }
 }
 
@@ -98,7 +104,7 @@ impl StatementIterator<'_> {
             }),
             Err(Err::Incomplete(_)) => Ok(StatementIterator { src, done: false }),
             Err(e) => Err(ParseError::Custom {
-                msg: format!("cannot start parsing. Error: {}", e),
+                msg: format!("cannot start parsing. Error: {e}"),
             }),
         }
     }
@@ -143,17 +149,11 @@ impl<'a> Iterator for StatementIterator<'a> {
             }
             Err(e) => {
                 r = Some(Err(ParseError::Custom {
-                    msg: format!("error parsing whitespace. Error: {}", e),
+                    msg: format!("error parsing whitespace. Error: {e}"),
                 }));
                 self.done = true;
             }
         }
-
-        /*if r.is_none() && !self.src.is_empty() {
-            r = Some(Err(ParseError::Custom {
-                msg: format!("trailing bytes {}", self.src),
-            }));
-        }*/
         r
     }
 }
@@ -163,6 +163,7 @@ mod tests {
     use shex_ast::{Shape, ShapeExpr, ShapeExprLabel};
 
     use super::*;
+    use iri_s::iri;
 
     #[test]
     fn test_prefix() {
@@ -170,8 +171,8 @@ mod tests {
  prefix e: <http://example.org/>
  e:S {}
  "#;
-        let schema = ShExParser::parse(str, None).unwrap();
-        let mut expected = Schema::new();
+        let schema = ShExParser::parse(str, None, &iri!("http://default/")).unwrap();
+        let mut expected = Schema::new(&iri!("http://default/"));
         expected
             .add_prefix("e", &IriS::new_unchecked("http://example.org/"))
             .unwrap();

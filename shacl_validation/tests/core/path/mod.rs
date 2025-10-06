@@ -1,8 +1,8 @@
 use shacl_validation::shacl_processor::ShaclValidationMode;
 // use shacl_validation::Subsetting;
 
-use crate::test;
 use crate::TestSuiteError;
+use crate::test;
 
 const PATH: &str = "tests/data-shapes/data-shapes-test-suite/tests/core/path/";
 
@@ -107,20 +107,17 @@ fn path_unused_001_shapes() -> Result<(), TestSuiteError> {
 #[test]
 fn path_unused_001() -> Result<(), TestSuiteError> {
     let path = format!("{}/{}.ttl", PATH, "path-unused-001");
-    // test(path, ShaclValidationMode::Native, Subsetting::None)
     test(path, ShaclValidationMode::Native)
 }
 
 #[test]
 fn path_zero_or_more_001() -> Result<(), TestSuiteError> {
     let path = format!("{}/{}.ttl", PATH, "path-zeroOrMore-001");
-    // test(path, ShaclValidationMode::Native, Subsetting::None)
     test(path, ShaclValidationMode::Native)
 }
 
 #[test]
 fn path_zero_or_one_001() -> Result<(), TestSuiteError> {
     let path = format!("{}/{}.ttl", PATH, "path-zeroOrOne-001");
-    // test(path, ShaclValidationMode::Native, Subsetting::None)
     test(path, ShaclValidationMode::Native)
 }

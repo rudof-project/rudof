@@ -1,11 +1,13 @@
-use shex_ast::{ir::shape_label::ShapeLabel, Node};
+use shex_ast::{Node, ir::shape_label::ShapeLabel};
 use thiserror::Error;
 
 use crate::ValidationStatus;
 
 #[derive(Error, Debug)]
 pub enum ShapemapError {
-    #[error("Trying to create an inconsistent status on node {node} and shape {label}. Old status: {old_status}, new status: {new_status}")]
+    #[error(
+        "Trying to create an inconsistent status on node {node} and shape {label}. Old status: {old_status}, new status: {new_status}"
+    )]
     InconsistentStatus {
         node: Box<Node>,
         label: Box<ShapeLabel>,

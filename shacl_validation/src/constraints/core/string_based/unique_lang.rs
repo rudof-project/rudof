@@ -1,72 +1,95 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
-use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
-use crate::engine::native::NativeEngine;
-use crate::engine::sparql::SparqlEngine;
-use crate::engine::Engine;
-use crate::helpers::constraint::validate_with;
+use crate::constraints::constraint_error::ConstraintError;
+use crate::shacl_engine::Engine;
+use crate::shacl_engine::native::NativeEngine;
+use crate::shacl_engine::sparql::SparqlEngine;
 use crate::validation_report::result::ValidationResult;
-use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
-use shacl_ast::compiled::component::CompiledComponent;
-use shacl_ast::compiled::component::UniqueLang;
-use shacl_ast::compiled::shape::CompiledShape;
-use srdf::Query;
-use srdf::Rdf;
-use srdf::Sparql;
+use shacl_ir::compiled::component_ir::ComponentIR;
+use shacl_ir::compiled::component_ir::UniqueLang;
+use shacl_ir::compiled::shape::ShapeIR;
+use srdf::Literal;
+use srdf::NeighsRDF;
+use srdf::Object;
+use srdf::QueryRDF;
+use srdf::SHACLPath;
+use std::collections::HashMap;
 use std::fmt::Debug;
+use tracing::debug;
 
-impl<S: Rdf + Debug> Validator<S> for UniqueLang {
+impl<S: NeighsRDF + Debug> Validator<S> for UniqueLang {
     fn validate(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         _: &S,
         _: impl Engine<S>,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape<S>>,
+        _source_shape: Option<&ShapeIR>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
+        // If unique_lang is not activated, just return without any check
         if !self.unique_lang() {
             return Ok(Default::default());
         }
-
-        let langs: Rc<RefCell<Vec<_>>> = Rc::new(RefCell::new(Vec::new()));
-
-        let unique_lang = |value_node: &S::Term| {
-            let tmp: Result<S::Literal, _> = value_node.clone().try_into();
-            if let Ok(lang) = tmp {
-                let lang = lang.clone();
-                let mut langs_borrowed = langs.borrow_mut();
-                match langs_borrowed.contains(&lang) {
-                    true => return true,
-                    false => langs_borrowed.push(lang),
+        let mut validation_results = Vec::new();
+        // Collect langs
+        // println!("Value nodes: {}", value_nodes);
+        for (_focus_node, focus_nodes) in value_nodes.iter() {
+            let mut langs_map: HashMap<String, Vec<S::Term>> = HashMap::new();
+            for node in focus_nodes.iter() {
+                if let Ok(lit) = S::term_as_literal(node) {
+                    // println!("Literal: {:?}", lit);
+                    if let Some(lang) = lit.lang() {
+                        // println!("Lang: {:?}", lang);
+                        langs_map
+                            .entry(lang.to_string())
+                            .or_default()
+                            .push(node.clone());
+                    }
                 }
             }
-            false
-        };
-
-        validate_with(
-            component,
-            shape,
-            value_nodes,
-            ValueNodeIteration,
-            unique_lang,
-        )
+            for (key, nodes) in langs_map {
+                if nodes.len() > 1 {
+                    // If there are multiple nodes with the same language, report a violation
+                    debug!(
+                        "Duplicated lang: {}, nodes {:?}",
+                        key,
+                        nodes.iter().map(|n| n.to_string()).collect::<Vec<_>>()
+                    );
+                    let component = Object::iri(component.into());
+                    let message = format!(
+                        "Unique lang failed for lang {} with values: {}",
+                        key,
+                        nodes
+                            .iter()
+                            .map(|n| n.to_string())
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    );
+                    let validation_result =
+                        ValidationResult::new(shape.id().clone(), component, shape.severity())
+                            .with_message(message.as_str())
+                            .with_path(maybe_path.clone());
+                    validation_results.push(validation_result);
+                }
+            }
+        }
+        Ok(validation_results)
     }
 }
 
-impl<S: Query + Debug + 'static> NativeValidator<S> for UniqueLang {
+impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for UniqueLang {
     fn validate_native(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape<S>>,
+        source_shape: Option<&ShapeIR>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -75,18 +98,20 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for UniqueLang {
             NativeEngine,
             value_nodes,
             source_shape,
+            maybe_path,
         )
     }
 }
 
-impl<S: Sparql + Debug + 'static> SparqlValidator<S> for UniqueLang {
+impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for UniqueLang {
     fn validate_sparql(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape<S>>,
+        source_shape: Option<&ShapeIR>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -95,6 +120,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for UniqueLang {
             SparqlEngine,
             value_nodes,
             source_shape,
+            maybe_path,
         )
     }
 }

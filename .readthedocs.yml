@@ -2,12 +2,20 @@ version: 2
 
 sphinx:
   builder: html
+  configuration: python/docs/conf.py
 
 build:
   os: ubuntu-22.04
+  # The following code could be replaced by "tools/rust: 1.87" 
+  # But it seems the latest version supported by readthedocs is 1.86
+  jobs:
+    pre_build:
+      - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+      - export PATH="$HOME/.cargo/bin:$PATH"
+      - ~/.cargo/bin/rustup toolchain install 1.87.0
+      - ~/.cargo/bin/rustup default 1.87.0
   tools:
     python: "3"
-    rust: latest
   apt_packages:
     - clang
 

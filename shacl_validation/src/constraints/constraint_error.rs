@@ -1,3 +1,4 @@
+use srdf::RDFError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -10,4 +11,7 @@ pub enum ConstraintError {
 
     #[error("Expected IRI but found {term}")]
     ExpectedIri { term: String },
+
+    #[error(transparent)]
+    RDFError(#[from] RDFError),
 }

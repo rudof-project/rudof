@@ -1,6 +1,6 @@
 [package]
 name = "rudof_cli"
-version = "0.1.71"
+version = "0.1.117"
 authors.workspace = true
 description.workspace = true
 documentation = "https://rudof-project.github.io/rudof"
@@ -14,31 +14,28 @@ path = "src/main.rs"
 name = "rudof"
 
 [dependencies]
-shex_ast = { workspace = true }
-srdf = { workspace = true, features = ["rdf-star"] }
-prefixmap = { workspace = true }
-iri_s = { workspace = true }
-shapemap = { workspace = true }
-shacl_ast = { workspace = true, features = ["rdf-star"] }
-dctap = { workspace = true }
-shapes_converter = { workspace = true, features = ["rdf-star"] }
-shacl_validation = { workspace = true, features = ["rdf-star"] }
-sparql_service = { workspace = true }
-rudof_lib = { workspace = true }
+anyhow.workspace = true 
+clap.workspace = true 
+clientele.workspace = true 
 data_generator = { path = "../data_generator" }
-
+dctap.workspace = true 
+iri_s.workspace = true 
+oxrdf.workspace = true 
+prefixmap.workspace = true 
+regex.workspace = true
+rdf_config.workspace = true 
+rudof_lib.workspace = true 
 serde.workspace = true
-serde_json = { workspace = true }
-anyhow = { workspace = true }
-thiserror = { workspace = true }
-clap = { workspace = true }
-clientele = "0.2"
-oxrdf = { workspace = true }
-regex = "^1.10"
-tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
-supports-color = { workspace = true }
-either = "1.13"
-reqwest = { version = "0.12" }
-url = { workspace = true }
-tokio = { version = "1.0", features = ["rt", "rt-multi-thread"] }
+serde_json.workspace = true 
+shacl_validation.workspace = true 
+shapes_comparator.workspace = true 
+shapes_converter.workspace = true 
+shacl_ast.workspace = true 
+shex_ast.workspace = true 
+sparql_service.workspace = true 
+srdf.workspace = true 
+supports-color.workspace = true 
+thiserror.workspace = true 
+tracing.workspace = true 
+tracing-subscriber.workspace = true 
+url.workspace = true

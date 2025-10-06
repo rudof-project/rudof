@@ -1,7 +1,6 @@
 use const_format::concatcp;
 use iri_s::IriS;
-
-use lazy_static::lazy_static;
+use iri_s::iri_once;
 
 pub const RDF: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
 pub const RDFS: &str = "http://www.w3.org/2000/01/rdf-schema#";
@@ -17,17 +16,31 @@ pub const XSD_BOOLEAN_STR: &str = concatcp!(XSD, "boolean");
 pub const XSD_INTEGER_STR: &str = concatcp!(XSD, "integer");
 pub const XSD_DECIMAL_STR: &str = concatcp!(XSD, "decimal");
 pub const XSD_DOUBLE_STR: &str = concatcp!(XSD, "double");
+pub const SH_STR: &str = "http://www.w3.org/ns/shacl#";
 
-lazy_static! {
-    pub static ref RDF_TYPE: IriS = IriS::new_unchecked(RDF_TYPE_STR);
-    pub static ref RDF_FIRST: IriS = IriS::new_unchecked(RDF_FIRST_STR);
-    pub static ref RDF_REST: IriS = IriS::new_unchecked(RDF_REST_STR);
-    pub static ref RDF_NIL: IriS = IriS::new_unchecked(RDF_NIL_STR);
-    pub static ref RDFS_LABEL: IriS = IriS::new_unchecked(RDFS_LABEL_STR);
-    pub static ref RDFS_SUBCLASS_OF: IriS = IriS::new_unchecked(RDFS_SUBCLASS_OF_STR);
-    pub static ref RDFS_CLASS: IriS = IriS::new_unchecked(RDFS_CLASS_STR);
-    pub static ref XSD_BOOLEAN: IriS = IriS::new_unchecked(XSD_BOOLEAN_STR);
-    pub static ref XSD_INTEGER: IriS = IriS::new_unchecked(XSD_INTEGER_STR);
-    pub static ref XSD_DECIMAL: IriS = IriS::new_unchecked(XSD_DECIMAL_STR);
-    pub static ref XSD_DOUBLE: IriS = IriS::new_unchecked(XSD_DOUBLE_STR);
-}
+// The following constants are required for SHACL Path parsing
+pub const SH_ALTERNATIVE_PATH_STR: &str = concatcp!(SH_STR, "alternativePath");
+pub const SH_ZERO_OR_ONE_PATH_STR: &str = concatcp!(SH_STR, "zeroOrOnePath");
+pub const SH_ZERO_OR_MORE_PATH_STR: &str = concatcp!(SH_STR, "zeroOrMorePath");
+pub const SH_ONE_OR_MORE_PATH_STR: &str = concatcp!(SH_STR, "oneOrMorePath");
+pub const SH_INVERSE_PATH_STR: &str = concatcp!(SH_STR, "inversePath");
+
+iri_once!(rdf_type, RDF_TYPE_STR);
+iri_once!(rdf_first, RDF_FIRST_STR);
+iri_once!(rdf_rest, RDF_REST_STR);
+iri_once!(rdf_nil, RDF_NIL_STR);
+
+iri_once!(rdfs_label, RDFS_LABEL_STR);
+iri_once!(rdfs_subclass_of, RDFS_SUBCLASS_OF_STR);
+iri_once!(rdfs_class, RDFS_CLASS_STR);
+
+iri_once!(xsd_boolean, XSD_BOOLEAN_STR);
+iri_once!(xsd_integer, XSD_INTEGER_STR);
+iri_once!(xsd_decimal, XSD_DECIMAL_STR);
+iri_once!(xsd_double, XSD_DOUBLE_STR);
+
+iri_once!(sh_alternative_path, SH_ALTERNATIVE_PATH_STR);
+iri_once!(sh_zero_or_one_path, SH_ZERO_OR_ONE_PATH_STR);
+iri_once!(sh_zero_or_more_path, SH_ZERO_OR_MORE_PATH_STR);
+iri_once!(sh_one_or_more_path, SH_ONE_OR_MORE_PATH_STR);
+iri_once!(sh_inverse_path, SH_INVERSE_PATH_STR);

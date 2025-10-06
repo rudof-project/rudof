@@ -5,11 +5,12 @@ use crate::{
     ShapeExprLabel, ValueSetValue,
 };
 use iri_s::IriS;
+use iri_s::iri;
 use prefixmap::IriRef;
-use srdf::rdf_parser;
-use srdf::srdf_parser::*;
 use srdf::FocusRDF;
 use srdf::RDFParseError;
+use srdf::rdf_parser;
+use srdf::srdf_parser::*;
 use srdf::{Object, RDFParser};
 
 type Result<A> = std::result::Result<A, ShExRError>;
@@ -45,21 +46,27 @@ where
     }
 
     fn schema() -> impl RDFNodeParse<RDF, Output = Schema> {
-        property_value(&sx_shapes()).then(|ref node| {
+        property_value(&sx_shapes()).then(move |ref node| {
             set_focus(node)
                 .and(parse_rdf_list::<RDF, _>(Self::shape_decl()))
-                .map(|(_, vs)| Schema::new().with_shapes(Some(vs)))
+                .map(|(_, vs)| Schema::new(&iri!("http://default/")).with_shapes(Some(vs)))
         })
     }
 
     fn term_to_shape_label(term: &RDF::Term) -> Result<ShapeExprLabel> {
-        let object = term.clone().into();
+        let object = term
+            .clone()
+            .try_into()
+            .map_err(|_| ShExRError::TermToRDFNodeFailed {
+                term: term.to_string(),
+            })?;
         match object {
             Object::Iri(iri) => Ok(ShapeExprLabel::iri(iri)),
             Object::BlankNode(bnode) => Ok(ShapeExprLabel::bnode(BNode::new(bnode.as_str()))),
             Object::Literal(lit) => Err(ShExRError::ShapeExprLabelLiteral {
                 term: lit.to_string(),
             }),
+            Object::Triple { .. } => todo!(),
         }
     }
 
@@ -292,5 +299,5 @@ fn object_value<RDF>() -> impl RDFNodeParse<RDF, Output = ObjectValue>
 where
     RDF: FocusRDF,
 {
-    iri().map(|ref iri| ObjectValue::IriRef(IriRef::Iri(iri.clone())))
+    iri().map(|iri: RDF::IRI| ObjectValue::IriRef(IriRef::Iri(iri.into())))
 }

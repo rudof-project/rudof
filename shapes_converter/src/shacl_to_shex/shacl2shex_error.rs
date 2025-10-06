@@ -1,5 +1,4 @@
-use shacl_ast::node_shape::NodeShape;
-use srdf::literal::Literal;
+use srdf::SLiteral;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -8,16 +7,16 @@ pub enum Shacl2ShExError {
     NotImplemented { msg: String },
 
     #[error("Shacl2ShEx error: Feature not implemented: {literal}")]
-    RDFNode2LabelLiteral { literal: Literal },
+    RDFNode2LabelLiteral { literal: SLiteral },
 
     #[error("Not expected node shape: {node_shape:?}")]
-    NotExpectedNodeShape { node_shape: Box<NodeShape> },
+    NotExpectedNodeShape { node_shape: String },
 
-    #[error("Unexpected blank node in target class declaration: {bnode:?}")]
+    #[error("Unexpected blank node in target class declaration: {bnode}")]
     UnexpectedBlankNodeForTargetClass { bnode: String },
 
-    #[error("Unexpected literal in target class declaration: {literal:?}")]
-    UnexpectedLiteralForTargetClass { literal: Literal },
+    #[error("Unexpected literal in target class declaration: {literal}")]
+    UnexpectedLiteralForTargetClass { literal: SLiteral },
 }
 
 impl Shacl2ShExError {

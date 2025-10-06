@@ -6,5 +6,6 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
    :enrolledIn :cs101 .
 
 :b :name "Bob", "Robert" .
+:a :knows :b .
 
 :cs101 :name "Computer Science" .   

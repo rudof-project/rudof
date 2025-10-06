@@ -1,6 +1,6 @@
 [package]
 name = "shapes_converter"
-version = "0.1.60"
+version = "0.1.117"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shapes_converter"
@@ -9,14 +9,15 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
-[features]
-rdf-star = [
-    "spargebra/rdf-star",
-    "srdf/rdf-star",
-]
+#[features]
+#rdf-star = [
+#    "spargebra/rdf-star",
+#    "srdf/rdf-star",
+#]
 
 [dependencies]
 iri_s.workspace = true
+mie.workspace = true
 dctap.workspace = true
 srdf.workspace = true
 shacl_ast.workspace = true
@@ -27,10 +28,11 @@ shacl_validation.workspace = true
 prefixmap.workspace = true
 serde.workspace = true
 toml = "0.8"
-chrono = "0.4.38"
-
-spargebra = "0.3.0-alpha.5"
+chrono = "0.4.42"
+rdf_config.workspace = true
+spargebra.workspace = true
 thiserror = "2.0"
 tracing = { workspace = true }
-minijinja = { version = "2.0.3", features = ["loader"] }
-tempfile = "3.10.1"
+minijinja = { version = "2.12.0", features = ["loader"] }
+tempfile.workspace = true
+sparql_service.workspace = true

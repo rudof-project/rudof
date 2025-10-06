@@ -1,22 +1,23 @@
+use super::{
+    ObjectValue, iri_ref_or_wildcard::IriRefOrWildcard, string_or_wildcard::StringOrWildcard,
+};
 use crate::LangOrWildcard;
-use crate::{Exclusion, IriExclusion, LanguageExclusion, LiteralExclusion};
+use crate::exclusion::Exclusion;
+use crate::iri_exclusion::IriExclusion;
+use crate::language_exclusion::LanguageExclusion;
+use crate::literal_exclusion::LiteralExclusion;
 use iri_s::IriSError;
 use prefixmap::{Deref, DerefError, IriRef};
 use rust_decimal::Decimal;
 use serde::ser::SerializeMap;
 use serde::{
-    de::{self, MapAccess, Unexpected, Visitor},
     Deserialize, Serialize, Serializer,
+    de::{self, MapAccess, Unexpected, Visitor},
 };
-
+use srdf::SLiteral;
 use srdf::lang::Lang;
-use srdf::literal::Literal;
 use std::{fmt, result, str::FromStr};
 use thiserror::Error;
-
-use super::{
-    iri_ref_or_wildcard::IriRefOrWildcard, string_or_wildcard::StringOrWildcard, ObjectValue,
-};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum ValueSetValue {
@@ -38,7 +39,7 @@ pub enum ValueSetValue {
         language_tag: Lang,
     },
     LanguageStem {
-        stem: Lang,
+        stem: LangOrWildcard,
     },
     LanguageStemRange {
         stem: LangOrWildcard,
@@ -54,7 +55,7 @@ impl ValueSetValue {
     }
 
     pub fn string_literal(value: &str, lang: Option<Lang>) -> ValueSetValue {
-        let ov = ObjectValue::Literal(Literal::StringLiteral {
+        let ov = ObjectValue::Literal(SLiteral::StringLiteral {
             lexical_form: value.to_string(),
             lang,
         });
@@ -75,7 +76,9 @@ impl ValueSetValue {
     }
 
     pub fn language_stem(lang: Lang) -> ValueSetValue {
-        ValueSetValue::LanguageStem { stem: lang }
+        ValueSetValue::LanguageStem {
+            stem: LangOrWildcard::lang(lang),
+        }
     }
 
     pub fn literal_stem(stem: String) -> ValueSetValue {
@@ -345,9 +348,12 @@ impl Stem {
     fn as_lang_or_wildcard(&self) -> Result<LangOrWildcard, StemError> {
         match self {
             Stem::Str(s) => {
+                if s.is_empty() {
+                    return Ok(LangOrWildcard::Wildcard);
+                }
                 let lang =
-                    FromStr::from_str(s).map_err(|_| StemError::NoLang { str: s.clone() })?;
-                Ok(lang)
+                    Lang::new(s.as_str()).map_err(|_e| StemError::NoLang { str: s.clone() })?;
+                Ok(LangOrWildcard::Lang(lang))
             }
             Stem::Wildcard => Ok(LangOrWildcard::Wildcard),
         }
@@ -557,7 +563,6 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                                 return Err(de::Error::duplicate_field("type"));
                             }
                             let value: String = map.next_value()?;
-
                             let parsed_type_ =
                                 ValueSetValueType::parse(value.as_str()).map_err(|e| {
                                     de::Error::custom(format!(
@@ -673,16 +678,31 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                                     "LanguageStem: stem is not a language: {e:?}"
                                 ))
                             })?;
+                            if stem.is_empty() {
+                                return Ok(ValueSetValue::LanguageStem {
+                                    stem: LangOrWildcard::wildcard(),
+                                });
+                            }
+                            let lang = Lang::new(&stem).map_err(|e| {
+                                de::Error::custom(format!(
+                                    "LanguageStem: stem is not a valid language tag: {e:?}"
+                                ))
+                            })?;
                             Ok(ValueSetValue::LanguageStem {
-                                stem: Lang::new_unchecked(stem),
+                                stem: LangOrWildcard::Lang(lang),
                             })
                         }
                         None => Err(de::Error::missing_field("stem")),
                     },
                     Some(ValueSetValueType::Language) => match language_tag {
-                        Some(language_tag) => Ok(ValueSetValue::Language {
-                            language_tag: Lang::new_unchecked(language_tag),
-                        }),
+                        Some(language_tag) => {
+                            let lang = Lang::new(&language_tag).map_err(|e| {
+                                de::Error::custom(format!(
+                                    "LanguageStem: stem is not a valid language tag: {e:?}"
+                                ))
+                            })?;
+                            Ok(ValueSetValue::Language { language_tag: lang })
+                        }
                         None => Err(de::Error::missing_field("languageTag")),
                     },
                     Some(ValueSetValueType::IriStem) => match stem {
@@ -741,26 +761,40 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                     },
                     Some(ValueSetValueType::Other(iri)) => match value {
                         Some(v) => match language_tag {
-                            Some(lang) => Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
-                                Literal::StringLiteral {
-                                    lexical_form: v,
-                                    lang: Some(Lang::new_unchecked(lang)),
-                                },
-                            ))),
+                            Some(lang) => {
+                                let lang = Lang::new(&lang).map_err(|e| {
+                                    de::Error::custom(format!(
+                                        "Can't parse language tag {lang} for literal: Error {e}"
+                                    ))
+                                })?;
+                                Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
+                                    SLiteral::StringLiteral {
+                                        lexical_form: v,
+                                        lang: Some(lang),
+                                    },
+                                )))
+                            }
                             None => Ok(ValueSetValue::datatype_literal(&v, &iri)),
                         },
                         None => Err(de::Error::missing_field("value")),
                     },
                     None => match value {
                         Some(lexical_form) => match language {
-                            Some(language) => Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
-                                Literal::StringLiteral {
-                                    lexical_form,
-                                    lang: Some(Lang::new_unchecked(language)),
-                                },
-                            ))),
+                            Some(language) => {
+                                let lang = Lang::new(&language).map_err(|e| {
+                                    de::Error::custom(format!(
+                                        "Can't parse language tag {language} for literal: Error {e}"
+                                    ))
+                                })?;
+                                Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
+                                    SLiteral::StringLiteral {
+                                        lexical_form,
+                                        lang: Some(lang),
+                                    },
+                                )))
+                            }
                             None => Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
-                                Literal::StringLiteral {
+                                SLiteral::StringLiteral {
                                     lexical_form,
                                     lang: None,
                                 },

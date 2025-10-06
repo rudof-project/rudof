@@ -1,10 +1,12 @@
+use iri_s::MimeType;
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::str::FromStr;
 
 use crate::RDFParseError;
 
 /// Posible RDF formats
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Default, Serialize, Deserialize)]
 pub enum RDFFormat {
     #[default]
     Turtle,
@@ -13,6 +15,23 @@ pub enum RDFFormat {
     TriG,
     N3,
     NQuads,
+    JsonLd,
+}
+
+impl RDFFormat {}
+
+impl MimeType for RDFFormat {
+    fn mime_type(&self) -> &'static str {
+        match self {
+            RDFFormat::Turtle => "text/turtle",
+            RDFFormat::NTriples => "application/n-triples",
+            RDFFormat::RDFXML => "application/rdf+xml",
+            RDFFormat::TriG => "application/trig",
+            RDFFormat::N3 => "text/n3",
+            RDFFormat::NQuads => "application/n-quads",
+            RDFFormat::JsonLd => "application/ld+json",
+        }
+    }
 }
 
 impl FromStr for RDFFormat {
@@ -27,7 +46,7 @@ impl FromStr for RDFFormat {
             "n3" => Ok(RDFFormat::N3),
             "nq" => Ok(RDFFormat::NQuads),
             _ => Err(RDFParseError::SRDFError {
-                err: format!("Format {} not supported", s).to_string(),
+                err: format!("Format {s} not supported").to_string(),
             }),
         }
     }
@@ -42,6 +61,7 @@ impl Display for RDFFormat {
             RDFFormat::TriG => write!(f, "TriG"),
             RDFFormat::N3 => write!(f, "N3"),
             RDFFormat::NQuads => write!(f, "NQuads"),
+            RDFFormat::JsonLd => write!(f, "JSONLD"),
         }
     }
 }

@@ -5,12 +5,13 @@ use pretty::{Arena, DocAllocator, DocBuilder, RefDoc};
 use rust_decimal::Decimal;
 /// This file converts ShEx AST to ShEx compact syntax
 use shex_ast::{
-    value_set_value::ValueSetValue, Annotation, BNode, IriOrStr, NodeConstraint, NodeKind,
-    NumericFacet, ObjectValue, Pattern, Schema, SemAct, Shape, ShapeDecl, ShapeExpr,
-    ShapeExprLabel, StringFacet, TripleExpr, XsFacet,
+    Annotation, BNode, NodeConstraint, NodeKind, NumericFacet, ObjectValue, Pattern, Schema,
+    SemAct, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel, StringFacet, TripleExpr, XsFacet,
+    value_set_value::ValueSetValue,
 };
-use srdf::{lang::Lang, literal::Literal, numeric_literal::NumericLiteral};
+use srdf::{SLiteral, lang::Lang, numeric_literal::NumericLiteral};
 use std::{borrow::Cow, io, marker::PhantomData};
+use tracing::trace;
 
 use crate::pp_object_value;
 
@@ -219,7 +220,7 @@ where
             .append(self.opt_pp(self.schema.shapes(), self.pp_shape_decls()))
     }
 
-    fn pp_imports(&self, imports: Vec<IriOrStr>) -> DocBuilder<'a, Arena<'a, A>, A> {
+    fn pp_imports(&self, imports: Vec<IriRef>) -> DocBuilder<'a, Arena<'a, A>, A> {
         if imports.is_empty() {
             self.doc.nil()
         } else {
@@ -228,7 +229,7 @@ where
                 docs.push(
                     self.keyword("import")
                         .append(self.space())
-                        .append(self.pp_iri_or_str(import)),
+                        .append(self.pp_iri_ref(&import)),
                 )
             }
             self.doc
@@ -237,12 +238,12 @@ where
         }
     }
 
-    fn pp_iri_or_str(&self, iri_or_str: IriOrStr) -> DocBuilder<'a, Arena<'a, A>, A> {
+    /*fn pp_iri_or_str(&self, iri_or_str: IriOrStr) -> DocBuilder<'a, Arena<'a, A>, A> {
         match iri_or_str {
             IriOrStr::IriS(iri) => self.pp_iri(&iri),
             IriOrStr::String(str) => self.pp_str(format!("<{}>", str.as_str()).as_str()),
         }
-    }
+    }*/
 
     fn pp_shape_decls(
         &self,
@@ -284,6 +285,7 @@ where
             ShapeExpr::NodeConstraint(nc) => self.pp_node_constraint(nc),
             ShapeExpr::External => self.pp_external(),
             ShapeExpr::ShapeAnd { shape_exprs } => {
+                trace!("Displaying ShapeExpr::ShapeAnd");
                 let mut docs = Vec::new();
                 for sew in shape_exprs {
                     docs.push(self.pp_shape_expr(&sew.se))
@@ -507,17 +509,23 @@ where
         }
     }
 
-    fn pp_literal(&self, literal: &Literal) -> DocBuilder<'a, Arena<'a, A>, A> {
+    fn pp_literal(&self, literal: &SLiteral) -> DocBuilder<'a, Arena<'a, A>, A> {
         match literal {
-            Literal::StringLiteral { lexical_form, lang } => {
+            SLiteral::StringLiteral { lexical_form, lang } => {
                 self.pp_string_literal(lexical_form, lang)
             }
-            Literal::DatatypeLiteral {
+            SLiteral::DatatypeLiteral {
                 lexical_form: _,
                 datatype: _,
             } => todo!(),
-            Literal::NumericLiteral(lit) => self.pp_numeric_literal(lit),
-            Literal::BooleanLiteral(_) => todo!(),
+            SLiteral::WrongDatatypeLiteral {
+                lexical_form: _,
+                datatype: _,
+                error: _,
+            } => todo!(),
+            SLiteral::NumericLiteral(lit) => self.pp_numeric_literal(lit),
+            SLiteral::BooleanLiteral(_) => todo!(),
+            SLiteral::DatetimeLiteral(_xsd_date_time) => todo!(),
         }
     }
 
@@ -693,7 +701,19 @@ where
         match value {
             NumericLiteral::Integer(n) => self.pp_isize(n),
             NumericLiteral::Decimal(d) => self.pp_decimal(d),
-            NumericLiteral::Double(d) => self.pp_double(d), // TODO: Review
+            NumericLiteral::Double(d) => self.pp_double(d),
+            NumericLiteral::Long(l) => self.pp_isize(l),
+            NumericLiteral::Float(f) => self.pp_float(f),
+            NumericLiteral::Byte(b) => self.pp_byte(b),
+            NumericLiteral::Short(s) => self.pp_short(s),
+            NumericLiteral::NonNegativeInteger(n) => self.pp_non_negative_integer(n),
+            NumericLiteral::UnsignedLong(u) => self.pp_unsigned_long(u),
+            NumericLiteral::UnsignedInt(u) => self.pp_unsigned_int(u),
+            NumericLiteral::UnsignedShort(u) => self.pp_unsigned_short(u),
+            NumericLiteral::UnsignedByte(n) => self.pp_unsigned_byte(n),
+            NumericLiteral::PositiveInteger(n) => self.pp_positive_integer(n),
+            NumericLiteral::NegativeInteger(n) => self.pp_negative_integer(n),
+            NumericLiteral::NonPositiveInteger(n) => self.pp_non_positive_integer(n),
         }
     }
 
@@ -710,6 +730,50 @@ where
     }
 
     fn pp_double(&self, value: &f64) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(value.to_string())
+    }
+
+    fn pp_float(&self, value: &f64) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(value.to_string())
+    }
+
+    fn pp_byte(&self, value: &i8) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(value.to_string())
+    }
+
+    fn pp_short(&self, value: &i16) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(value.to_string())
+    }
+
+    fn pp_non_negative_integer(&self, value: &u128) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(value.to_string())
+    }
+
+    fn pp_unsigned_long(&self, value: &u64) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(value.to_string())
+    }
+
+    fn pp_unsigned_int(&self, value: &u32) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(value.to_string())
+    }
+
+    fn pp_unsigned_short(&self, value: &u16) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(value.to_string())
+    }
+
+    fn pp_unsigned_byte(&self, value: &u8) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(value.to_string())
+    }
+
+    fn pp_positive_integer(&self, value: &u128) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(value.to_string())
+    }
+
+    fn pp_negative_integer(&self, value: &i128) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(value.to_string())
+    }
+
+    fn pp_non_positive_integer(&self, value: &i128) -> DocBuilder<'a, Arena<'a, A>, A> {
         self.doc.text(value.to_string())
     }
 
@@ -820,9 +884,9 @@ where
         self.doc.text(self.prefixmap.qualify(iri))
     }
 
-    fn pp_str(&self, str: &str) -> DocBuilder<'a, Arena<'a, A>, A> {
+    /*fn pp_str(&self, str: &str) -> DocBuilder<'a, Arena<'a, A>, A> {
         self.doc.text(str.to_string())
-    }
+    }*/
 
     fn opt_pp<V>(
         &self,
@@ -895,10 +959,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    use iri_s::IriS;
-    use prefixmap::PrefixMap;
-
     use super::*;
+    use iri_s::IriS;
+    use iri_s::iri;
+    use prefixmap::PrefixMap;
 
     #[test]
     fn empty_schema() {
@@ -907,7 +971,7 @@ mod tests {
             .unwrap();
         pm.insert("schema", &IriS::new_unchecked("https://schema.org/"))
             .unwrap();
-        let schema = Schema::new().with_prefixmap(Some(pm));
+        let schema = Schema::new(&iri!("http://default/")).with_prefixmap(Some(pm));
         let s = ShExFormatter::default()
             .without_colors()
             .format_schema(&schema);

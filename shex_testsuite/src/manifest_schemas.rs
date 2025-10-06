@@ -1,16 +1,13 @@
+use crate::context_entry_value::ContextEntryValue;
 use crate::manifest::Manifest;
 use crate::manifest_error::ManifestError;
-use std::collections::HashMap;
-use std::fmt;
-use std::path::{Path, PathBuf};
-
-use crate::context_entry_value::ContextEntryValue;
 use iri_s::IriS;
-use serde::de::{self};
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 // use serde_derive::{Serialize};
 use shex_ast::ast::Schema as SchemaJson;
-use shex_compact::ShExParser;
+use shex_ast::compact::ShExParser;
 use tracing::debug;
 use url::Url;
 
@@ -72,6 +69,7 @@ pub struct SchemasEntry {
     ttl: String,
 }
 
+/* Commented as Clippy detected it was never constructed?
 #[derive(Deserialize, Serialize, Debug)]
 struct Action {
     schema: String,
@@ -79,6 +77,7 @@ struct Action {
     data: String,
     focus: Option<Focus>,
 }
+
 
 #[derive(Deserialize, Serialize, Debug)]
 struct ExtensionResult {
@@ -133,9 +132,9 @@ impl<'de> Deserialize<'de> for Focus {
         deserializer.deserialize_any(FocusVisitor {})
     }
 }
-
+*/
 impl ManifestSchemas {
-    pub fn run(&self, base: &Path, _debug: u8) -> Result<(), ManifestError> {
+    pub fn run(&self, base: &Path, _debug: u8) -> Result<(), Box<ManifestError>> {
         for entry in self.map.values() {
             entry.run(base)?
         }
@@ -144,33 +143,33 @@ impl ManifestSchemas {
 }
 
 impl SchemasEntry {
-    pub fn run(&self, base: &Path) -> Result<(), ManifestError> {
+    pub fn run(&self, base: &Path) -> Result<(), Box<ManifestError>> {
         debug!(
             "Running entry: {} with json: {}, shex: {}, base: {:?}",
             self.id, self.json, self.shex, base
         );
         let schema_parsed = SchemaJson::parse_schema_name(&self.json, base).map_err(|e| {
-            ManifestError::SchemaJsonError {
+            Box::new(ManifestError::SchemaJsonError {
                 error: Box::new(e),
                 entry_name: self.name.to_string(),
-            }
+            })
         })?;
         debug!("Passed schema parsing from JSON");
 
         let schema_serialized = serde_json::to_string_pretty(&schema_parsed).map_err(|e| {
-            ManifestError::SchemaSerializationError {
-                schema_parsed: schema_parsed.clone(),
+            Box::new(ManifestError::SchemaSerializationError {
+                schema_parsed: Box::new(schema_parsed.clone()),
                 error: e,
-            }
+            })
         })?;
         debug!("Passed schema serialization to a String");
 
         let schema_parsed_after_serialization =
             serde_json::from_str::<shex_ast::ast::Schema>(&schema_serialized).map_err(|e| {
                 ManifestError::SchemaParsingAfterSerialization {
-                    schema_name: self.name.to_string(),
-                    schema_parsed: schema_parsed.clone(),
-                    schema_serialized: schema_serialized.clone(),
+                    schema_name: Box::new(self.name.to_string()),
+                    schema_parsed: Box::new(schema_parsed.clone()),
+                    schema_serialized: Box::new(schema_serialized.clone()),
                     error: e,
                 }
             })?;
@@ -179,7 +178,7 @@ impl SchemasEntry {
         let schema_serialized_after =
             serde_json::to_string_pretty(&schema_parsed_after_serialization).map_err(|e| {
                 ManifestError::SchemaSerializationError2nd {
-                    schema_parsed: schema_parsed_after_serialization.clone(),
+                    schema_parsed: Box::new(schema_parsed_after_serialization.clone()),
                     error: e,
                 }
             })?;
@@ -203,7 +202,12 @@ impl SchemasEntry {
                     base: base_absolute.as_os_str().to_os_string(),
                 })?;
             let base_iri = IriS::new_unchecked(base_url.as_str());
-            let mut shexc_schema_parsed = ShExParser::parse_buf(&shex_buf, Some(base_iri))?;
+            let mut shexc_schema_parsed = ShExParser::parse_buf(&shex_buf, Some(base_iri))
+                .map_err(|e| ManifestError::ShExCParsingError {
+                    error: Box::new(e),
+                    entry_name: Box::new(self.name.to_string()),
+                    shex_path: Box::new(shex_buf.clone()),
+                })?;
 
             // We remove base, prefixmap and source_iri for comparisons
             shexc_schema_parsed = shexc_schema_parsed.with_base(None).with_prefixmap(None);
@@ -212,20 +216,20 @@ impl SchemasEntry {
                 debug!("Schema JSON parsed == Schema ShExC parsed");
                 Ok(())
             } else {
-                Err(ManifestError::ShExSchemaDifferent {
-                    json_schema_parsed: schema_parsed,
-                    schema_serialized,
-                    shexc_schema_parsed,
-                })
+                Err(Box::new(ManifestError::ShExSchemaDifferent {
+                    json_schema_parsed: Box::new(schema_parsed),
+                    schema_serialized: Box::new(schema_serialized),
+                    shexc_schema_parsed: Box::new(shexc_schema_parsed),
+                }))
             }
         } else {
             debug!("Schemas in JSON are different");
-            Err(ManifestError::SchemasDifferent {
-                schema_parsed,
-                schema_serialized: schema_serialized.clone(),
-                schema_parsed_after_serialization,
-                schema_serialized_after,
-            })
+            Err(Box::new(ManifestError::SchemasDifferent {
+                schema_parsed: Box::new(schema_parsed),
+                schema_serialized: Box::new(schema_serialized.clone()),
+                schema_parsed_after_serialization: Box::new(schema_parsed_after_serialization),
+                schema_serialized_after: Box::new(schema_serialized_after),
+            }))
         }
     }
 }
@@ -243,11 +247,11 @@ impl Manifest for ManifestSchemas {
         self.entry_names.clone() // iter().map(|n| n.clone()).collect()
     }
 
-    fn run_entry(&self, name: &str, base: &Path) -> Result<(), ManifestError> {
+    fn run_entry(&self, name: &str, base: &Path) -> Result<(), Box<ManifestError>> {
         match self.map.get(name) {
-            None => Err(ManifestError::NotFoundEntry {
+            None => Err(Box::new(ManifestError::NotFoundEntry {
                 name: name.to_string(),
-            }),
+            })),
             Some(entry) => entry.run(base),
         }
     }

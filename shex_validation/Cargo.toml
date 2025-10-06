@@ -1,6 +1,6 @@
 [package]
 name = "shex_validation"
-version = "0.1.71"
+version = "0.1.117"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shex_validation"
@@ -9,16 +9,16 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
-[features]
-default = []
+#[features]
+#default = []
 
 [dependencies]
 iri_s.workspace = true
 rbe.workspace = true
 srdf.workspace = true
 shex_ast.workspace = true
-shex_compact.workspace = true
-shapemap.workspace = true
+# shex_compact.workspace = true
+# shapemap.workspace = true
 prefixmap.workspace = true
 thiserror = "2.0"
 serde.workspace = true
@@ -28,4 +28,4 @@ itertools.workspace = true
 indexmap = { version = "2" }
 either = "1"
 toml = "0.8"
-url = "2.2.2"
+url = "2.5.7"

@@ -1,6 +1,6 @@
 [package]
 name = "shacl_ast"
-version = "0.1.70"
+version = "0.1.117"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shacl_ast"
@@ -9,18 +9,18 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
-[features]
-rdf-star = [
-    # "oxrdf/rdf-star", 
-    "srdf/rdf-star",
-]
+#[features]
+#rdf-star = [
+# "oxrdf/rdf-star", 
+#    "srdf/rdf-star",
+#]
 
 [dependencies]
 srdf.workspace = true
 iri_s.workspace = true
 prefixmap.workspace = true
 thiserror = "2.0"
-lazy_static = "1"
 const_format = "0.2"
 itertools = "0.14"
+regex.workspace = true
 oxrdf = { workspace = true, features = ["oxsdatatypes"] }

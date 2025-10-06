@@ -1,6 +1,6 @@
 [package]
 name = "iri_s"
-version = "0.1.69"
+version = "0.1.117"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/iri_s"
@@ -9,13 +9,15 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
-[features]
-rdf-star = [ "oxrdf/rdf-star" ]
-
 [dependencies]
-oxrdf = { version = "0.2.0-alpha.5" }
-oxiri = "0.2.3-alpha.1"
-reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+oxrdf.workspace = true
+oxiri.workspace = true
+reqwest = { version = "0.12", default-features = false, features = [
+    "blocking",
+    "json",
+    "native-tls-vendored",
+] }
 serde.workspace = true
-thiserror = "2.0"
-url = { workspace = true }
+thiserror.workspace = true
+url.workspace = true
+tracing.workspace = true

@@ -17,8 +17,7 @@ pub struct Shape {
     annotations: Vec<Annotation>,
     preds: Vec<Pred>,
     extends: Vec<ShapeLabelIdx>,
-    references: HashMap<Pred, Vec<ShapeLabelIdx>>,
-    display: String,
+    // references: HashMap<Pred, Vec<ShapeLabelIdx>>,
 }
 
 impl Shape {
@@ -31,8 +30,7 @@ impl Shape {
         annotations: Vec<Annotation>,
         preds: Vec<Pred>,
         extends: Vec<ShapeLabelIdx>,
-        references: HashMap<Pred, Vec<ShapeLabelIdx>>,
-        display: String,
+        // references: HashMap<Pred, Vec<ShapeLabelIdx>>,
     ) -> Self {
         Shape {
             closed,
@@ -42,8 +40,7 @@ impl Shape {
             annotations,
             preds,
             extends,
-            references,
-            display,
+            // references,
         }
     }
 
@@ -51,8 +48,8 @@ impl Shape {
         self.preds.clone()
     }
 
-    pub fn references(&self) -> &HashMap<Pred, Vec<ShapeLabelIdx>> {
-        &self.references
+    pub fn references(&self) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
+        self.get_value_expr_references()
     }
 
     pub fn rbe_table(&self) -> &RbeTable<Pred, Node, ShapeLabelIdx> {
@@ -82,6 +79,20 @@ impl Shape {
             }
         }
     }
+
+    fn get_value_expr_references(&self) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
+        let mut result: HashMap<Pred, Vec<ShapeLabelIdx>> = HashMap::new();
+        for (_component, pred, cond) in self.rbe_table.components() {
+            match cond {
+                rbe::MatchCond::Single(_single_cond) => {}
+                rbe::MatchCond::And(_match_conds) => {}
+                rbe::MatchCond::Ref(r) => {
+                    result.entry(pred.clone()).or_default().push(r);
+                }
+            }
+        }
+        result
+    }
 }
 
 impl Display for Shape {
@@ -106,8 +117,16 @@ impl Display for Shape {
             self.preds.iter().join(",")
         };
         write!(f, "Shape {extends}{closed}{extra} ")?;
-        writeln!(f, "Preds: {}", preds)?;
-        writeln!(f, "{}", self.rbe_table)?;
+        write!(f, "Preds: {preds}")?;
+        write!(f, ", Rbe: {}", self.rbe_table)?;
+        write!(
+            f,
+            ", References: [{}]",
+            self.references()
+                .iter()
+                .map(|(p, ls)| format!("{}->{}", p, ls.iter().join(" ")))
+                .join(", ")
+        )?;
         Ok(())
     }
 }

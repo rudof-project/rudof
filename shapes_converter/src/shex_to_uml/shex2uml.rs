@@ -1,24 +1,17 @@
-use std::{
-    fs::File,
-    io::{self, Write},
-    process::Command,
-};
+use std::io::Write;
 
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
 use shex_ast::{
     Annotation, ObjectValue, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr, ValueSetValue,
 };
-use tracing::debug;
+use srdf::{UmlConverter, UmlConverterError, UmlGenerationMode};
 
 use crate::{
     find_annotation, object_value2string,
     shex_to_uml::{ShEx2UmlConfig, ShEx2UmlError, Uml},
 };
 
-use super::{
-    Name, NodeId, UmlCardinality, UmlClass, UmlComponent, UmlEntry, ValueConstraint, PLANTUML,
-};
-use tempfile::TempDir;
+use super::{Name, NodeId, UmlCardinality, UmlClass, UmlComponent, UmlEntry, ValueConstraint};
 
 pub struct ShEx2Uml {
     config: ShEx2UmlConfig,
@@ -39,84 +32,28 @@ impl ShEx2Uml {
         &self,
         writer: &mut W,
         mode: &UmlGenerationMode,
-    ) -> Result<(), ShEx2UmlError> {
+    ) -> Result<(), UmlConverterError> {
         match mode {
             UmlGenerationMode::AllNodes => {
-                self.current_uml.as_plantuml_all(&self.config, writer)?;
+                self.current_uml
+                    .as_plantuml_all(&self.config, writer)
+                    .map_err(|e| UmlConverterError::UmlError {
+                        error: e.to_string(),
+                    })?;
                 Ok(())
             }
             UmlGenerationMode::Neighs(str) => {
                 if let Some(node_id) = self.current_uml.get_node(str) {
                     self.current_uml
-                        .as_plantuml_neighs(&self.config, writer, &node_id)?;
+                        .as_plantuml_neighs(&self.config, writer, &node_id)
+                        .map_err(|e| UmlConverterError::UmlError {
+                            error: e.to_string(),
+                        })?;
                     Ok(())
                 } else {
-                    Err(ShEx2UmlError::NotFoundLabel { name: str.clone() })
+                    Err(UmlConverterError::NotFoundLabel { name: str.clone() })
                 }
             }
-        }
-    }
-
-    /// Converts the current UML to an image
-    pub fn as_image<W: Write>(
-        &self,
-        writer: &mut W,
-        image_format: ImageFormat,
-        mode: &UmlGenerationMode,
-    ) -> Result<(), ShEx2UmlError> {
-        let tempdir = TempDir::new().map_err(|e| ShEx2UmlError::TempFileError { err: e })?;
-        let tempdir_path = tempdir.path();
-        let tempfile_path = tempdir_path.join("temp.uml");
-        let tempfile_name = tempfile_path.display().to_string();
-        let mut tempfile =
-            File::create(tempfile_path).map_err(|e| ShEx2UmlError::CreatingTempUMLFile {
-                tempfile_name: tempfile_name.clone(),
-                error: e,
-            })?;
-        self.as_plantuml(&mut tempfile, mode)?;
-        /*self.current_uml
-        .as_plantuml(&self.config, &mut tempfile, mode)?;*/
-        debug!("ShEx contents stored in temporary file:{}", tempfile_name);
-
-        let (out_param, out_file_name) = match image_format {
-            ImageFormat::PNG => ("-png", tempdir_path.join("temp.png")),
-            ImageFormat::SVG => ("-svg", tempdir_path.join("temp.svg")),
-        };
-        if let Some(plantuml_path) = &self.config.plantuml_path {
-            let mut command = Command::new("java");
-            command
-                .arg("-jar")
-                .arg(plantuml_path)
-                .arg("-o")
-                .arg(tempdir_path.to_string_lossy().to_string())
-                .arg(out_param)
-                .arg(tempfile_name);
-            let command_name = format!("{:?}", &command);
-            debug!("PLANTUML COMMAND:\n{command_name}");
-            let result = command.output();
-            match result {
-                Ok(_) => {
-                    let mut temp_file = File::open(out_file_name.as_path()).map_err(|e| {
-                        ShEx2UmlError::CantOpenGeneratedTempFile {
-                            generated_name: out_file_name.display().to_string(),
-                            error: e,
-                        }
-                    })?;
-                    copy(&mut temp_file, writer).map_err(|e| ShEx2UmlError::CopyingTempFile {
-                        temp_name: out_file_name.display().to_string(),
-                        error: e,
-                    })?;
-                    Ok(())
-                }
-                Err(e) => Err(ShEx2UmlError::PlantUMLCommandError {
-                    command: command_name,
-                    error: e,
-                }),
-            }
-        } else {
-            Err(ShEx2UmlError::NoPlantUMLPath {
-                env_name: PLANTUML.to_string(),
-            })
         }
     }
 
@@ -152,8 +89,18 @@ impl ShEx2Uml {
     ) -> Result<UmlComponent, ShEx2UmlError> {
         match shape_expr {
             ShapeExpr::Shape(shape) => self.shape2component(name, shape, current_node_id),
-            _ => Err(ShEx2UmlError::NotImplemented {
-                msg: "Complex shape expressions are not implemented yet".to_string(),
+            ShapeExpr::ShapeOr { shape_exprs } => {
+                let cs: Vec<_> = shape_exprs
+                    .iter()
+                    .flat_map(|se| {
+                        let c = self.shape_expr2component(name, &se.se, current_node_id)?;
+                        Ok::<UmlComponent, ShEx2UmlError>(c)
+                    })
+                    .collect();
+                Ok(UmlComponent::or(cs.into_iter()))
+            }
+            other => Err(ShEx2UmlError::NotImplemented {
+                msg: format!("Complex shape expressions are not implemented yet\nShape: {other:?}"),
             }),
         }
     }
@@ -348,12 +295,12 @@ fn value_set2value_constraint(
             ValueSetValue::ObjectValue(ObjectValue::Literal(lit)) => {
                 return Err(ShEx2UmlError::not_implemented(
                     format!("value_set2value_constraint with literal value: {lit:?}").as_str(),
-                ))
+                ));
             }
             _ => {
                 return Err(ShEx2UmlError::not_implemented(
                     format!("value_set2value_constraint with value: {value:?}").as_str(),
-                ))
+                ));
             }
         }
     }
@@ -393,11 +340,6 @@ fn mk_card(min: &Option<i32>, max: &Option<i32>) -> Result<UmlCardinality, ShEx2
     }
 }
 
-fn copy<W: Write>(file: &mut File, writer: &mut W) -> Result<(), io::Error> {
-    io::copy(file, writer)?;
-    Ok(())
-}
-
 fn mk_name(
     iri: &IriRef,
     annotations: &Option<Vec<Annotation>>,
@@ -422,28 +364,13 @@ fn get_label(
     Ok(None)
 }
 
-pub enum ImageFormat {
-    SVG,
-    PNG,
-}
-
-#[derive(Debug, Clone, Default)]
-pub enum UmlGenerationMode {
-    /// Show all nodes
-    #[default]
-    AllNodes,
-
-    /// Show only the neighbours of a node
-    Neighs(String),
-}
-
-impl UmlGenerationMode {
-    pub fn all() -> UmlGenerationMode {
-        UmlGenerationMode::AllNodes
-    }
-
-    pub fn neighs(node: &str) -> UmlGenerationMode {
-        UmlGenerationMode::Neighs(node.to_string())
+impl UmlConverter for ShEx2Uml {
+    fn as_plantuml<W: Write>(
+        &self,
+        writer: &mut W,
+        mode: &UmlGenerationMode,
+    ) -> Result<(), UmlConverterError> {
+        self.as_plantuml(writer, mode)
     }
 }
 
@@ -453,8 +380,8 @@ mod tests {
     // use shex_compact::ShExParser;
 
     /*    #[test]
-        fn test_simple() {
-            let shex_str = "\
+    fn test_simple() {
+        let shex_str = "\
     prefix : <http://example.org/>
     prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
@@ -467,12 +394,12 @@ mod tests {
     :Course {
       :name xsd:string
     }";
-            let mut expected_uml = Uml::new();
-            expected_uml.add_label(Name::new(":Person", Some("http://example.org/Person")));
-            expected_uml.add_label(Name::new(":Course", Some("http://example.org/Course")));
-            let shex = ShExParser::parse(shex_str, None).unwrap();
-            let converter = ShEx2Uml::new(ShEx2UmlConfig::default());
-            let converted_uml = converter.convert(&shex).unwrap();
-            assert_eq!(converted_uml, expected_uml);
-        } */
+        let mut expected_uml = Uml::new();
+        expected_uml.add_label(Name::new(":Person", Some("http://example.org/Person")));
+        expected_uml.add_label(Name::new(":Course", Some("http://example.org/Course")));
+        let shex = ShExParser::parse(shex_str, None).unwrap();
+        let converter = ShEx2Uml::new(ShEx2UmlConfig::default());
+        let converted_uml = converter.convert(&shex).unwrap();
+        assert_eq!(converted_uml, expected_uml);
+    } */
 }

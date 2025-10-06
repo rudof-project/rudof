@@ -1,0 +1,28 @@
+[package]
+name = "shacl_rdf"
+version = "0.1.116"
+authors.workspace = true
+description.workspace = true
+documentation = "https://docs.rs/shacl_rdf"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+#[features]
+#rdf-star = [
+# "oxrdf/rdf-star", 
+#    "srdf/rdf-star",
+#]
+
+[dependencies]
+const_format.workspace = true
+iri_s.workspace = true
+itertools.workspace = true
+oxrdf = { workspace = true, features = ["oxsdatatypes"] }
+prefixmap.workspace = true
+regex.workspace = true
+shacl_ast.workspace = true
+srdf.workspace = true
+thiserror.workspace = true
+tracing.workspace = true

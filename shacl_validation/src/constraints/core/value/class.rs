@@ -1,62 +1,79 @@
-use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
+use crate::constraints::constraint_error::ConstraintError;
 use crate::helpers::constraint::validate_ask_with;
 use crate::helpers::constraint::validate_with;
-use crate::helpers::srdf::get_objects_for;
+use crate::iteration_strategy::ValueNodeIteration;
 use crate::validation_report::result::ValidationResult;
-use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
-use shacl_ast::compiled::component::Class;
-use shacl_ast::compiled::component::CompiledComponent;
-use shacl_ast::compiled::shape::CompiledShape;
-use srdf::Query;
-use srdf::Sparql;
+use shacl_ir::compiled::component_ir::Class;
+use shacl_ir::compiled::component_ir::ComponentIR;
+use shacl_ir::compiled::shape::ShapeIR;
+use srdf::NeighsRDF;
+use srdf::QueryRDF;
+use srdf::SHACLPath;
 use srdf::Term;
-use srdf::RDFS_SUBCLASS_OF;
-use srdf::RDF_TYPE;
+use srdf::rdf_type;
+use srdf::rdfs_subclass_of;
 use std::fmt::Debug;
 
-impl<S: Query + 'static> NativeValidator<S> for Class<S> {
+impl<S: NeighsRDF + 'static> NativeValidator<S> for Class {
     fn validate_native(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape<S>>,
+        _source_shape: Option<&ShapeIR>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let class = |value_node: &S::Term| {
             if value_node.is_literal() {
                 return true;
             }
+            let class_term = &S::object_as_term(self.class_rule());
 
-            let is_class_valid = get_objects_for(store, value_node, &RDF_TYPE.clone().into())
+            let is_class_valid = store
+                .objects_for(value_node, &rdf_type().clone().into())
                 .unwrap_or_default()
                 .iter()
                 .any(|ctype| {
-                    ctype == self.class_rule()
-                        || get_objects_for(store, ctype, &RDFS_SUBCLASS_OF.clone().into())
+                    ctype == class_term
+                        || store
+                            .objects_for(ctype, &rdfs_subclass_of().clone().into())
                             .unwrap_or_default()
-                            .contains(self.class_rule())
+                            .contains(class_term)
                 });
 
             !is_class_valid
         };
 
-        validate_with(component, shape, value_nodes, ValueNodeIteration, class)
+        let message = format!(
+            "Class constraint not satisfied for class {}",
+            self.class_rule()
+        );
+        validate_with(
+            component,
+            shape,
+            value_nodes,
+            ValueNodeIteration,
+            class,
+            &message,
+            maybe_path,
+        )
     }
 }
 
-impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Class<S> {
+impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Class {
     fn validate_sparql(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape<S>>,
+        _source_shape: Option<&ShapeIR>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let class_value = self.class_rule().clone();
 
@@ -69,6 +86,18 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Class<S> {
             }
         };
 
-        validate_ask_with(component, shape, store, value_nodes, query)
+        let message = format!(
+            "Class constraint not satisfied for class {}",
+            self.class_rule()
+        );
+        validate_ask_with(
+            component,
+            shape,
+            store,
+            value_nodes,
+            query,
+            &message,
+            maybe_path,
+        )
     }
 }

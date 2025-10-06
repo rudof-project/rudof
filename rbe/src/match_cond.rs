@@ -1,5 +1,5 @@
-use crate::{rbe_error::RbeError, Pending};
 use crate::{Key, Ref, Value};
+use crate::{Pending, rbe_error::RbeError};
 use core::hash::Hash;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
@@ -20,6 +20,14 @@ where
     And(Vec<MatchCond<K, V, R>>),
     // Or(Vec<MatchCond<K, V, R>>),
     // Not(Box<MatchCond<K, V, R>>),
+}
+
+unsafe impl<K, V, R> Sync for MatchCond<K, V, R>
+where
+    K: Key,
+    V: Value,
+    R: Ref,
+{
 }
 
 impl<K, V, R> MatchCond<K, V, R>
@@ -44,14 +52,11 @@ where
         match self {
             MatchCond::Single(single) => single.matches(value),
             MatchCond::Ref(r) => Ok(Pending::from_pair(value.clone(), r.clone())),
-            /*MatchCond::And(vs) => vs.iter().try_fold(Pending::new(), |mut current, c| {
+            MatchCond::And(vs) => vs.iter().try_fold(Pending::new(), |mut current, c| {
                 let new_pending = c.matches(value)?;
                 current.merge(new_pending);
                 Ok(current)
-            }), */
-            _ => {
-                todo!()
-            }
+            }),
         }
     }
 
@@ -61,7 +66,7 @@ where
 
     pub fn simple(
         name: &str,
-        cond: impl Fn(&V) -> Result<Pending<V, R>, RbeError<K, V, R>> + Clone + 'static,
+        cond: impl Fn(&V) -> Result<Pending<V, R>, RbeError<K, V, R>> + Clone + 'static + Sync,
     ) -> Self {
         MatchCond::single(SingleCond::new().with_name(name).with_cond(cond))
     }
@@ -123,17 +128,25 @@ where
     cond: Vec<Box<dyn Cond<K, V, R>>>,
 }
 
-/// We use trait objects instead of function pointers because we need to
-/// capture some values in the condition closure.
-/// This pattern is inspired by the answer in this thread:
-/// https://users.rust-lang.org/t/how-to-clone-a-boxed-closure/31035
-trait Cond<K, V, R>
+unsafe impl<K, V, R> Sync for SingleCond<K, V, R>
 where
     K: Key,
     V: Value,
     R: Ref,
 {
-    fn clone_box(&self) -> Box<dyn Cond<K, V, R>>;
+}
+
+/// We use trait objects instead of function pointers because we need to
+/// capture some values in the condition closure.
+/// This pattern is inspired by the answer in this thread:
+/// https://users.rust-lang.org/t/how-to-clone-a-boxed-closure/31035
+trait Cond<K, V, R>: Sync
+where
+    K: Key,
+    V: Value,
+    R: Ref,
+{
+    fn clone_box(&self) -> Box<dyn Cond<K, V, R> + Sync>;
     fn call(&self, v: &V) -> Result<Pending<V, R>, RbeError<K, V, R>>;
 }
 
@@ -142,9 +155,9 @@ where
     K: Key,
     V: Value,
     R: Ref,
-    F: 'static + Fn(&V) -> Result<Pending<V, R>, RbeError<K, V, R>> + Clone,
+    F: 'static + Fn(&V) -> Result<Pending<V, R>, RbeError<K, V, R>> + Clone + Sync,
 {
-    fn clone_box(&self) -> Box<dyn Cond<K, V, R>> {
+    fn clone_box(&self) -> Box<dyn Cond<K, V, R> + Sync> {
         Box::new(self.clone())
     }
 
@@ -230,7 +243,7 @@ where
 
     pub fn with_cond(
         mut self,
-        cond: impl Fn(&V) -> Result<Pending<V, R>, RbeError<K, V, R>> + Clone + 'static,
+        cond: impl Fn(&V) -> Result<Pending<V, R>, RbeError<K, V, R>> + Clone + 'static + Sync,
     ) -> Self {
         self.cond.push(Box::new(cond));
         self
@@ -354,9 +367,11 @@ mod tests {
             })
         }
 
-        assert!(cond_name("foo".to_string())
-            .matches(&"baz".to_string())
-            .is_err());
+        assert!(
+            cond_name("foo".to_string())
+                .matches(&"baz".to_string())
+                .is_err()
+        );
     }
 
     #[test]

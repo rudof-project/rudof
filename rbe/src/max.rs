@@ -1,9 +1,9 @@
-use serde::de;
-use serde::de::Visitor;
 use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serialize;
 use serde::Serializer;
+use serde::de;
+use serde::de::Visitor;
 use std::fmt;
 
 /// Represents a max cardinality which can be a fixed integer or `Unbounded`
@@ -104,8 +104,7 @@ impl Visitor<'_> for MaxVisitor {
     {
         if value < -1 {
             Err(E::custom(format!(
-                "value of type i64 {} should be -1 or positive",
-                value
+                "value of type i64 {value} should be -1 or positive"
             )))
         } else {
             match value {

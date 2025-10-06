@@ -1,13 +1,15 @@
 use dctap::TapConfig;
 use serde::{Deserialize, Serialize};
+use shapes_comparator::ComparatorConfig;
 use shapes_converter::{
     ShEx2HtmlConfig, ShEx2SparqlConfig, ShEx2UmlConfig, Shacl2ShExConfig, Tap2ShExConfig,
 };
 use shex_validation::{ShExConfig, ValidatorConfig};
 use sparql_service::ServiceConfig;
-use srdf::RdfDataConfig;
+use srdf::{PLANTUML, RdfDataConfig};
+use std::env;
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 use crate::RudofError;
@@ -26,6 +28,8 @@ pub struct RudofConfig {
     tap: Option<TapConfig>,
     shex2sparql: Option<ShEx2SparqlConfig>,
     service: Option<ServiceConfig>,
+    plantuml_path: Option<PathBuf>,
+    comparator: Option<ComparatorConfig>,
 }
 
 impl RudofConfig {
@@ -78,6 +82,13 @@ impl RudofConfig {
         }
     }
 
+    pub fn comparator_config(&self) -> ComparatorConfig {
+        match self.comparator {
+            None => ComparatorConfig::new(),
+            Some(ref cfg) => cfg.clone(),
+        }
+    }
+
     pub fn shex_config(&self) -> ShExConfig {
         match &self.shex {
             None => ShExConfig::default(),
@@ -86,15 +97,15 @@ impl RudofConfig {
     }
 
     pub fn show_extends(&self) -> bool {
-        self.shex_config().show_extends.unwrap_or(true)
+        self.shex_config().show_extends.unwrap_or(false)
     }
 
     pub fn show_imports(&self) -> bool {
-        self.shex_config().show_extends.unwrap_or(true)
+        self.shex_config().show_extends.unwrap_or(false)
     }
 
     pub fn show_shapes(&self) -> bool {
-        self.shex_config().show_shapes.unwrap_or(true)
+        self.shex_config().show_shapes.unwrap_or(false)
     }
 
     pub fn show_dependencies(&self) -> bool {
@@ -150,13 +161,39 @@ impl RudofConfig {
             Some(rdf_data_config) => rdf_data_config.automatic_base.unwrap_or(true),
         }
     }
+
+    pub fn shex_without_showing_stats(&mut self) {
+        if let Some(shex_config) = &mut self.shex {
+            shex_config.without_showing_stats();
+        } else {
+            let mut shex_config = ShExConfig::default();
+            shex_config.without_showing_stats();
+            self.shex = Some(shex_config);
+        }
+    }
+
+    pub fn with_plantuml_path<P: AsRef<Path>>(mut self, path: P) -> Self {
+        self.plantuml_path = Some(path.as_ref().to_owned());
+        self
+    }
+
+    pub fn plantuml_path(&self) -> PathBuf {
+        if let Some(path) = &self.plantuml_path {
+            path.to_owned()
+        } else {
+            match env::var(PLANTUML) {
+                Ok(value) => Path::new(value.as_str()).to_path_buf(),
+                Err(_) => env::current_dir().unwrap(),
+            }
+        }
+    }
 }
 
 impl FromStr for RudofConfig {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        toml::from_str(s).map_err(|e| format!("Failed to parse RudofConfig: {}", e))
+        toml::from_str(s).map_err(|e| format!("Failed to parse RudofConfig: {e}"))
     }
 }
 

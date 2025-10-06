@@ -1,8 +1,8 @@
 use shacl_validation::shacl_processor::ShaclValidationMode;
 // use shacl_validation::Subsetting;
 
-use crate::test;
 use crate::TestSuiteError;
+use crate::test;
 
 const PATH: &str = "tests/data-shapes/data-shapes-test-suite/tests/core/node/";
 
@@ -58,6 +58,7 @@ fn closed_002() -> Result<(), TestSuiteError> {
 #[test]
 fn datatype_001() -> Result<(), TestSuiteError> {
     let path = format!("{}/{}.ttl", PATH, "datatype-001");
+    println!("Trace...");
     // test(path, ShaclValidationMode::Native, Subsetting::None)
     test(path, ShaclValidationMode::Native)
 }

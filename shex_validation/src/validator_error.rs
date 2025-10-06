@@ -2,10 +2,11 @@ use std::fmt::Display;
 
 use prefixmap::PrefixMapError;
 use rbe::RbeError;
+use serde::Serialize;
 use shex_ast::ir::preds::Preds;
 use shex_ast::ir::shape::Shape;
 use shex_ast::ir::shape_expr::ShapeExpr;
-use shex_ast::{ir::shape_label::ShapeLabel, Node, Pred, ShapeExprLabel, ShapeLabelIdx};
+use shex_ast::{Node, Pred, ShapeExprLabel, ShapeLabelIdx, ir::shape_label::ShapeLabel};
 use srdf::Object;
 use thiserror::Error;
 
@@ -13,6 +14,15 @@ use crate::Reasons;
 
 #[derive(Error, Debug, Clone)]
 pub enum ValidatorError {
+    #[error("Creating shapemap from node {node} and shape {shape} failed with errors: {error}")]
+    NodeShapeError {
+        node: String,
+        shape: String,
+        error: String,
+    },
+    #[error("Converting Term to RDFNode failed pending {term}")]
+    TermToRDFNodeFailed { term: String },
+
     #[error("Failed pending: RBE passed, but pending references failed")]
     FailedPending {
         failed_pending: Vec<(Node, ShapeLabelIdx)>,
@@ -43,7 +53,9 @@ pub enum ValidatorError {
     #[error("Failed regular expression")]
     RbeFailed(),
 
-    #[error("Closed shape but found properties {remainder:?} which are not part of shape declared properties: {declared:?}")]
+    #[error(
+        "Closed shape but found properties {remainder:?} which are not part of shape declared properties: {declared:?}"
+    )]
     ClosedShapeWithRemainderPreds { remainder: Preds, declared: Preds },
 
     #[error(transparent)]
@@ -60,24 +72,24 @@ pub enum ValidatorError {
 
     #[error("And error: shape expression {shape_expr} failed for node {node}: {errors}")]
     ShapeAndError {
-        shape_expr: ShapeExpr,
-        node: Node,
+        shape_expr: ShapeLabelIdx,
+        node: Box<Node>,
         errors: ValidatorErrors,
     },
 
     #[error("OR error: shape expression {shape_expr} failed for node {node}: all branches failed")]
     ShapeOrError {
-        shape_expr: ShapeExpr,
-        node: Node,
-        errors: Vec<(ShapeExpr, ValidatorErrors)>,
+        shape_expr: Box<ShapeExpr>,
+        node: Box<Node>,
+        errors: Vec<(ShapeLabelIdx, ValidatorErrors)>,
     },
 
     #[error(
         "Shape Not error: failed for node {node} because it passed {shape_expr} with {reasons}"
     )]
     ShapeNotError {
-        shape_expr: ShapeExpr,
-        node: Node,
+        shape_expr: Box<ShapeExpr>,
+        node: Box<Node>,
         reasons: Reasons,
     },
 
@@ -113,13 +125,13 @@ pub enum ValidatorError {
 
     #[error("Shape fails for node {node} with shape {shape}")]
     ShapeFails {
-        node: Node,
-        shape: Shape,
+        node: Box<Node>,
+        shape: Box<Shape>,
         errors: Vec<ValidatorError>,
     },
 
     #[error("ShapeRef fails for node {node} with idx: {idx}")]
-    ShapeRefFailed { node: Node, idx: ShapeLabelIdx },
+    ShapeRefFailed { node: Box<Node>, idx: ShapeLabelIdx },
 }
 
 #[derive(Debug, Clone)]
@@ -139,5 +151,14 @@ impl Display for ValidatorErrors {
             writeln!(f, "  {err}")?;
         }
         Ok(())
+    }
+}
+
+impl Serialize for ValidatorError {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(self.to_string().as_str())
     }
 }

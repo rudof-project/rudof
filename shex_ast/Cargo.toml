@@ -1,6 +1,6 @@
 [package]
 name = "shex_ast"
-version = "0.1.71"
+version = "0.1.117"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shex_ast"
@@ -10,20 +10,24 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-srdf.workspace = true
+const_format.workspace = true
+colored.workspace = true
+lazy-regex.workspace = true
+pretty.workspace = true
 iri_s.workspace = true
-rbe.workspace = true
-prefixmap.workspace = true
-serde.workspace = true
 itertools.workspace = true
-void = "1"
-thiserror = "2.0"
-lazy_static = "1"
-rust_decimal = "1.32"
-regex = "1.10"
+nom.workspace = true
+nom_locate.workspace = true
+petgraph.workspace = true
+prefixmap.workspace = true
+rbe.workspace = true
+regex.workspace = true
+rust_decimal.workspace = true
+serde.workspace = true
 serde_json.workspace = true
-const_format = "0.2"
+srdf.workspace = true
+thiserror.workspace = true
+toml.workspace = true
 tracing.workspace = true
-petgraph = "0.8"
 
 [dev-dependencies]

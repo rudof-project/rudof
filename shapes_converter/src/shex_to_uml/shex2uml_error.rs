@@ -2,6 +2,7 @@ use std::io;
 
 use prefixmap::{IriRef, PrefixMapError};
 use shex_ast::{Schema, SchemaJsonError, ShapeExprLabel};
+use srdf::UmlConverterError;
 use thiserror::Error;
 
 use super::UmlError;
@@ -9,21 +10,21 @@ use super::UmlError;
 #[derive(Error, Debug)]
 pub enum ShEx2UmlError {
     #[error("Shape {iri} not found in schema {schema:?}")]
-    ShapeNotFound { iri: IriRef, schema: Schema },
+    ShapeNotFound { iri: IriRef, schema: Box<Schema> },
 
     #[error("Shape reference {sref} not found in schema {schema:?}")]
     ShapeRefNotFound {
         sref: ShapeExprLabel,
-        schema: Schema,
+        schema: Box<Schema>,
     },
 
     #[error("No shapes found in schema to convert to SPARQL. Schema\n{schema:?}")]
-    NoShapes { schema: Schema },
+    NoShapes { schema: Box<Schema> },
 
     #[error(
         "No shape found to convert to SPARQL because list of shapes is empty. Schema\n{schema:?}"
     )]
-    EmptyShapes { schema: Schema },
+    EmptyShapes { schema: Box<Schema> },
 
     #[error(transparent)]
     SchemaError {
@@ -38,6 +39,12 @@ pub enum ShEx2UmlError {
     },
 
     #[error(transparent)]
+    UmlConverterError {
+        #[from]
+        err: UmlConverterError,
+    },
+
+    #[error(transparent)]
     PrefixMapError {
         #[from]
         err: PrefixMapError,
@@ -49,19 +56,25 @@ pub enum ShEx2UmlError {
     #[error("Wrong cardinality: ({min},{max})")]
     WrongCardinality { min: i32, max: i32 },
 
-    #[error("Not found environment variable: {env_name}, which should point to the folder where the external tool PlantUML is located")]
+    #[error(
+        "Not found environment variable: {env_name}, which should point to the folder where the external tool PlantUML is located"
+    )]
     NoPlantUMLPath { env_name: String },
 
     #[error("Error launching command: {command:?}\nError: {error} ")]
     PlantUMLCommandError { command: String, error: io::Error },
 
-    #[error("Can't open generated temporary file used from PlantUML. Temporary file name: {generated_name}, error: {error:?}")]
+    #[error(
+        "Can't open generated temporary file used from PlantUML. Temporary file name: {generated_name}, error: {error:?}"
+    )]
     CantOpenGeneratedTempFile {
         generated_name: String,
         error: io::Error,
     },
 
-    #[error("Can't create temporary file for UML content. Temporary file name: {tempfile_name}, error: {error:?}")]
+    #[error(
+        "Can't create temporary file for UML content. Temporary file name: {tempfile_name}, error: {error:?}"
+    )]
     CreatingTempUMLFile {
         tempfile_name: String,
         error: io::Error,
@@ -75,6 +88,12 @@ pub enum ShEx2UmlError {
 
     #[error("Not found label: {name}")]
     NotFoundLabel { name: String },
+
+    #[error("Error flushing temporary UML file: {tempfile_name}, error: {error:?}")]
+    FlushingTempUMLFile {
+        tempfile_name: String,
+        error: io::Error,
+    },
 }
 
 impl ShEx2UmlError {

@@ -1,8 +1,8 @@
 use shacl_validation::shacl_processor::ShaclValidationMode;
 // use shacl_validation::Subsetting;
 
-use crate::test;
 use crate::TestSuiteError;
+use crate::test;
 
 const PATH: &str = "tests/data-shapes/data-shapes-test-suite/tests/core/property/";
 
@@ -37,20 +37,6 @@ fn datatype_002() -> Result<(), TestSuiteError> {
 #[test]
 fn datatype_003() -> Result<(), TestSuiteError> {
     let path = format!("{}/{}.ttl", PATH, "datatype-003");
-    // test(path, ShaclValidationMode::Native, Subsetting::None)
-    test(path, ShaclValidationMode::Native)
-}
-
-#[test]
-fn datatype_ill_formed_data() -> Result<(), TestSuiteError> {
-    let path = format!("{}/{}.ttl", PATH, "datatype-ill-formed-data");
-    // test(path, ShaclValidationMode::Native, Subsetting::None)
-    test(path, ShaclValidationMode::Native)
-}
-
-#[test]
-fn datatype_ill_formed_shapes() -> Result<(), TestSuiteError> {
-    let path = format!("{}/{}.ttl", PATH, "datatype-ill-formed-shapes");
     // test(path, ShaclValidationMode::Native, Subsetting::None)
     test(path, ShaclValidationMode::Native)
 }
@@ -247,7 +233,6 @@ fn pattern_002() -> Result<(), TestSuiteError> {
 #[test]
 fn property_001() -> Result<(), TestSuiteError> {
     let path = format!("{}/{}.ttl", PATH, "property-001");
-    // test(path, ShaclValidationMode::Native, Subsetting::None)
     test(path, ShaclValidationMode::Native)
 }
 

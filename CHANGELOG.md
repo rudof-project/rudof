@@ -1,6 +1,257 @@
 # CHANGE LOG
+This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.com/).
 
-## Current changes without release yet
+## [Unreleased]
+### Added
+### Fixed
+### Changed
+### Removed
+
+## 0.1.117
+### Added
+- Support for imports in ShEx
+
+### Changed
+- We moved the contents of ShEx Compact crate to ShEX AST because when we resolve imports, we need to parse the imported ShEx schema so there it is necessary to know which formats we are importing
+
+### Removed
+- crates `shex_compact` and `shapemap` will no longer be published as independent crates and will instead be part of `shex_ast`. 
+
+
+## 0.1.116
+### Added
+- ShEx validation now supports (min/max)(In/Ex)clusive, stems and stem ranges for IRIs, literals and languages 
+- Added support for Start in validation
+- ShEx testsuite status: Passed: 1053, Failed: 91, Skipped: 22, Not implemented: 0
+
+### Fixed
+- Several errors in ShEx validation
+- Issue #338 about empty shapes
+- Issue #309 about IRI ranges
+
+## 0.1.115
+### Added
+- `run_query_endpoint` in pyrudof and rudof
+
+### Fixed
+- `read_shacl` in pyrudof which was trying to read from string instead of from a file
+
+## 0.1.113
+### Added
+- More support for SPARQL queries in rudof and pyrudof
+- We had several issues and published several minor releases 
+
+## 0.1.108
+### Fixed
+- We found a problem with SPARQL queries that were returning no results
+- Repaired problem with xsd:dateTime
+
+
+
+## 0.1.107
+### Added
+- Added the possibility to read different elements from file paths or URLs. We removed the suffix `_path` for all the methods that read from those inputs. We keep only the `_str` suffix for methods that read from a string. For example, `read_data(input, ...)` allows the input to be a URL, a file path or stdin (which can be useful in linux pipes), while `read_data_str(input, ...)` requires the input to be a string.
+- Added `read_shapemap(input,...)` which was required by issue #329.
+
+### Fixed
+- We found a issue when validating datatype literals because we were not handling 
+### Changed
+
+
+### Removed
+
+## 0.1.105
+### Added
+### Fixed
+### Changed
+- Updated dependency on oxigraph to 0.5.0 solving issue #335
+
+### Removed
+
+## 0.1.104
+### Added
+- Added more information to MIE files
+
+### Fixed
+- Tried to improve the error message when parsing ShEx files that have an undeclared alias according to issue #331
+
+### Changed
+
+### Removed
+
+
+## 0.1.103
+### Added
+
+### Fixed
+- GraphCollection in service description contains a collection of named graphs (before was a collection of graph descriptions)
+- The parser now parses also the available graphs
+
+### Changed
+
+
+### Removed
+
+## 0.1.102
+### Added
+- Comparison between schemas
+- Added documentation about comparison between schemas
+- Published Windows amd-64 Python wheel 
+- Added parsed title in SPARQL service description from property dcterms:title
+
+### Fixed
+- Cleaned and Clippied the code that we did in a hurry during Biohackathon 
+
+### Changed
+- The behavour of `base` which was assumed to be None by default and now can be passed as a command line option.
+
+### Removed
+
+
+## 0.1.93
+### Added
+### Fixed
+- Repaired a problem with the parser with case insensitive keywords like IRI, BnodE, etc.
+- Repaired python bindings
+
+### Changed
+### Removed
+
+## 0.1.92
+### Added
+
+This release has been created during the [Biohackathon 2025](https://2025.biohackathon.org/) where we have been adding several features by quick demands of the attendees. It is possible that not all the features have been thoroughly tested, but those features are demanded by users and we plan to improve them in future releases.
+- Initial support for comparing 2 schemas
+- Initial support to read rdf_config files
+
+### Fixed
+### Changed
+### Removed
+
+## 0.1.90
+### Added
+- Added serialize_current_shex to pyrudof
+- Added read_service_description, serialize_service_description to rudof_lib and pyrudof
+- Added data2plantuml_file to pyrudof
+
+### Fixed
+### Changed
+- from_reader in ServiceDescription now accepts a `io::Read` instead of a `BufRead`.
+- Refactored run_service to be based on rudof lib
+
+### Removed
+
+
+## 0.1.89
+### Added
+
+- Added support for SHACL Paths, sh:uniqueLang, flags in sh:pattern, sh:qualifiedValueShape
+- Added support for severities and printing validation results with colors
+
+### Fixed
+- Error in sh:hasValue when the value was a literal
+- sh:lessThan and sh:lessThanOrEquals now return the expected errors
+
+### Changed
+### Removed
+
+
+## 0.1.88
+### Added
+
+Support for lessThan, lessThanOrEquals, equals and disjoint 
+### Fixed
+### Changed
+### Removed
+
+## 0.1.87
+### Added
+- Support for SHACL validation of: deactivated, closed, ignoredProperties
+
+### Fixed
+
+- Error with datatype test from SHACL validation
+
+### Changed
+- Command line interface for `shacl` option now suppports information from RDF data or Schema to have an interface similar to `shacl-validate`
+
+## v0.1.86
+### Added
+### Fixed
+### Changed
+- Updated dependency on py03 to use 0.25.1, it required adding Sync to Cond trait
+### Removed
+
+
+## v0.1.84
+### Added
+- Support for JSON-LD oslving issue #295
+### Fixed
+### Changed
+### Removed
+
+## v0.1.83 - 2025-08-21
+
+### Added
+
+Method `data2plantuml` to rudof Python bindings
+
+### Fixed
+
+Issue #312 changing the behaviour of RDF/XML and NQuads parsers which were generating empty RDF graphs for incorrect RDF files instead of raising an error. Those empty RDf graphs didn't raise violations when they were validated.
+
+### Changed
+### Removed
+
+## [v0.1.82] - 2025-08-20
+### Added
+- Updated oxigraph dependencies to 0.5.0-beta.2 which supports RDF 1.2
+- Remove the feature `rdf-star` replacing `rdf-star` by `rdf-12`.
+- Some examples with RDF 1.2 features
+- Visualization of RDF graphs leveraging on PlantUML
+
+### Fixed
+
+### Changed
+- Started implementing deactivated
+- Added an UMLConverter trait to handle both ShEx2UML and RDF2UML
+
+### Removed
+
+## [v0.1.81] - 2025-07-13 
+
+Repaired a bug that was found when obtaining the neighbours of a node in an endpoint. 
+
+## [v0.1.80] - 2025-07-11
+
+- Added the possibility to convert between ShEx to ShEx (with different formats) and SHACL to SHACL (with different formats) to the `convert` command in the command line.
+- Refactor the SHACL Intermediate representation
+- Added support to language ValueSetValue in ShEx, i.e. constraints like `[ @en ]` (issue #304)
+
+## [v0.1.79] - 2025-06-30
+
+- Internal refactor in SHACL validator to use SHACL Internal Representation with an independent representation from the `Rdf` trait which allows it to be applied to different implementations of the `Rdf` trait. 
+
+## [v0.1.77] - 2025-06-24
+
+- Added support for (min/max)(in/ex)clusive
+- Repaired bug in minLength
+- Solved typo in documentation
+
+## [v0.1.72] - 2025-06-14
+
+- Removed dependency on lazy_static!
+- Added `shacl_rdf` and `shacl_ir` crates
+- Created a folder `oxrdf_impl` that contains the implementations for the traits defined at the top level using the `oxrdf` library
+- Renamed internal srdf traits and files. Some conventions, we will prepend `S` to the concrete structs or enums defined by SRDF, so instead of `Literal` we use `SLiteral`, keeping `Literal` for the trait name.
+   - file `srdf_basic.rs` => `rdf.rs`
+   - trait `Query` => `NeighsRDF`
+   - trait `Sparql` => `QueryRDF`
+   - trait `SRDFBuilder` => `BuildRDF`
+   - struct `Literal` => `SLiteral`
+   - struct `Triple` => `STriple`
+   
+
 
 ## [v0.1.71] - 2025-05-28
 

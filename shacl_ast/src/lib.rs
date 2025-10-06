@@ -4,15 +4,9 @@
 //!
 
 #![deny(rust_2018_idioms)]
-// The recursion limit is increased because the default one (128) is not enough for the big lazy_static declaration in the SHACL vocabulary definition
-#![recursion_limit = "256"]
 pub mod ast;
-pub mod compiled;
-pub mod converter;
 pub mod shacl_vocab;
-
 pub use ast::*;
-pub use converter::*;
 pub use shacl_vocab::*;
 
 /// SHACL Formats supported. Mostly RDF formats
@@ -27,4 +21,21 @@ pub enum ShaclFormat {
     TriG,
     N3,
     NQuads,
+    JsonLd,
+}
+
+impl ShaclFormat {
+    /// Returns the MIME type for the SHACL format
+    pub fn mime_type(&self) -> &str {
+        match self {
+            ShaclFormat::Internal => "application/shacl+json",
+            ShaclFormat::Turtle => "text/turtle",
+            ShaclFormat::NTriples => "application/n-triples",
+            ShaclFormat::RDFXML => "application/rdf+xml",
+            ShaclFormat::TriG => "application/trig",
+            ShaclFormat::N3 => "text/n3",
+            ShaclFormat::NQuads => "application/n-quads",
+            ShaclFormat::JsonLd => "application/ld+json",
+        }
+    }
 }

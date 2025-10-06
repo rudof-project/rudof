@@ -1,0 +1,40 @@
+prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+prefix sh: <http://www.w3.org/ns/shacl#>
+prefix : <http://example.org/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix owl: <http://www.w3.org/2002/07/owl#>
+
+:ko1 
+ # rdfs:comment owl:Thing ;
+ # rdfs:comment 42 ;
+ # rdfs:comment "A string" ;
+  rdfs:comment "none"^^xsd:boolean .
+
+:TestShape
+  rdf:type sh:NodeShape ;
+  rdfs:label "Test shape" ;
+  sh:property :TestShape-comment ;
+  sh:targetNode # :ok1,
+                :ko1 ;
+.
+
+:TestShape-comment
+  sh:path rdfs:comment ;
+  sh:or ( # _:str _:html _:lang 
+    _:bool ) ;
+.
+
+_:str sh:datatype xsd:string .
+_:html sh:datatype rdf:HTML .
+_:lang sh:datatype rdf:langString .
+_:bool sh:datatype xsd:boolean .
+
+
+:ok1
+  rdf:type rdfs:Resource ;
+  rdfs:comment "<div>HTML</div>"^^rdf:HTML ;
+  rdfs:comment "A language string"@en ;
+  rdfs:comment "A string" ;
+  rdfs:label "Valid resource1" ;
+.

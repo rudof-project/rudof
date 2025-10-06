@@ -1,42 +1,44 @@
-use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
-use crate::engine::native::NativeEngine;
-use crate::engine::sparql::SparqlEngine;
-use crate::engine::Engine;
+use crate::constraints::constraint_error::ConstraintError;
+use crate::shacl_engine::Engine;
+use crate::shacl_engine::native::NativeEngine;
+use crate::shacl_engine::sparql::SparqlEngine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
-use shacl_ast::compiled::component::Closed;
-use shacl_ast::compiled::component::CompiledComponent;
-use shacl_ast::compiled::shape::CompiledShape;
-use srdf::Query;
-use srdf::Rdf;
-use srdf::Sparql;
+use shacl_ir::compiled::component_ir::Closed;
+use shacl_ir::compiled::component_ir::ComponentIR;
+use shacl_ir::compiled::shape::ShapeIR;
+use srdf::NeighsRDF;
+use srdf::QueryRDF;
+use srdf::SHACLPath;
 use std::fmt::Debug;
 
-impl<S: Rdf + Debug> Validator<S> for Closed<S> {
+impl<S: NeighsRDF + Debug> Validator<S> for Closed {
     fn validate(
         &self,
-        _component: &CompiledComponent<S>,
-        _shape: &CompiledShape<S>,
+        _component: &ComponentIR,
+        _shape: &ShapeIR,
         _store: &S,
         _engine: impl Engine<S>,
         _value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape<S>>,
+        _source_shape: Option<&ShapeIR>,
+        _maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented("Closed".to_string()))
     }
 }
 
-impl<S: Query + Debug + 'static> NativeValidator<S> for Closed<S> {
+impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Closed {
     fn validate_native(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape<S>>,
+        source_shape: Option<&ShapeIR>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -45,18 +47,20 @@ impl<S: Query + Debug + 'static> NativeValidator<S> for Closed<S> {
             NativeEngine,
             value_nodes,
             source_shape,
+            maybe_path,
         )
     }
 }
 
-impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Closed<S> {
+impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for Closed {
     fn validate_sparql(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&CompiledShape<S>>,
+        source_shape: Option<&ShapeIR>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -65,6 +69,7 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for Closed<S> {
             SparqlEngine,
             value_nodes,
             source_shape,
+            maybe_path,
         )
     }
 }

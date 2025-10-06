@@ -8,7 +8,7 @@ pub enum PrefixMapError {
     #[error(transparent)]
     IriSError(#[from] IriSError),
 
-    #[error("Prefix '{prefix}' not found in PrefixMap '{prefixmap}'")]
+    #[error("Alias '{prefix}' not found in prefix map\nAvailable aliases: [{}]", prefixmap.aliases().cloned().collect::<Vec<_>>().join(", "))]
     PrefixNotFound {
         prefix: String,
         prefixmap: PrefixMap,

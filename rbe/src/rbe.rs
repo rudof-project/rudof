@@ -1,4 +1,4 @@
-use crate::{deriv_error::DerivError, deriv_n, Bag, Cardinality, Max, Min};
+use crate::{Bag, Cardinality, Max, Min, deriv_error::DerivError, deriv_n};
 use core::hash::Hash;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -7,10 +7,11 @@ use std::fmt::{Debug, Display};
 //use log::debug;
 use itertools::cloned;
 
+/*
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 struct Pending<A> {
     pending: A,
-}
+}*/
 
 /// Implementation of Regular Bag Expressions
 #[derive(Clone, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -183,7 +184,7 @@ where
         current
     }
 
-    fn nullable(&self) -> NullableResult {
+    pub fn nullable(&self) -> NullableResult {
         match &self {
             Rbe::Fail { .. } => false,
             Rbe::Empty => true,

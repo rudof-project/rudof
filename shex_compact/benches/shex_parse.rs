@@ -1,4 +1,5 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
+use iri_s::iri;
 use pprof::criterion::{Output, PProfProfiler};
 use shex_compact::ShExParser;
 
@@ -9,7 +10,7 @@ fn parse() {
        <b> [ 2 ];
        <c> [ 3 ]
     }"#;
-    ShExParser::parse(str, None).unwrap();
+    ShExParser::parse(str, None, &iri!("http://default/")).unwrap();
 }
 
 fn shex_parse_benchmark(c: &mut Criterion) {

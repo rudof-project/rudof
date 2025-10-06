@@ -1,7 +1,7 @@
 use std::io;
 
 use oxigraph::{
-    sparql::{EvaluationError, SparqlSyntaxError},
+    sparql::{QueryEvaluationError, SparqlSyntaxError},
     store::StorageError,
 };
 use thiserror::Error;
@@ -46,9 +46,12 @@ pub enum RdfDataError {
     #[error(transparent)]
     SparqlEvaluationError {
         #[from]
-        err: EvaluationError,
+        err: QueryEvaluationError,
     },
 
     #[error("Trying to create a BNode on RDF data without a graph")]
     BNodeNoGraph,
+
+    #[error("Store not initialized")]
+    StoreNotInitialized,
 }

@@ -1,69 +1,75 @@
-use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
+use crate::constraints::constraint_error::ConstraintError;
 use crate::helpers::constraint::validate_ask_with;
 use crate::helpers::constraint::validate_with;
+use crate::iteration_strategy::ValueNodeIteration;
 use crate::validation_report::result::ValidationResult;
-use crate::value_nodes::ValueNodeIteration;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
-use shacl_ast::compiled::component::CompiledComponent;
-use shacl_ast::compiled::component::MinLength;
-use shacl_ast::compiled::shape::CompiledShape;
+use shacl_ir::compiled::component_ir::ComponentIR;
+use shacl_ir::compiled::component_ir::MinLength;
+use shacl_ir::compiled::shape::ShapeIR;
 use srdf::Iri as _;
 use srdf::Literal as _;
-use srdf::Query;
-use srdf::Sparql;
+use srdf::NeighsRDF;
+use srdf::QueryRDF;
+use srdf::SHACLPath;
 use srdf::Term;
 use std::fmt::Debug;
 
-impl<S: Query + Debug + 'static> NativeValidator<S> for MinLength {
+impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinLength {
     fn validate_native<'a>(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
-        _: &S,
+        component: &ComponentIR,
+        shape: &ShapeIR,
+        _store: &S,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape<S>>,
+        _source_shape: Option<&ShapeIR>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let min_length = |value_node: &S::Term| {
             if value_node.is_blank_node() {
                 true
             } else if value_node.is_iri() {
-                let iri: S::IRI = match value_node.clone().try_into() {
+                let iri: S::IRI = match S::term_as_iri(value_node) {
                     Ok(iri) => iri,
                     Err(_) => todo!(),
                 };
-                iri.as_str().len() > self.min_length() as usize
+                iri.as_str().len() < self.min_length() as usize
             } else if value_node.is_literal() {
-                let literal: S::Literal = match value_node.clone().try_into() {
+                let literal: S::Literal = match S::term_as_literal(value_node) {
                     Ok(literal) => literal,
                     Err(_) => todo!(),
                 };
-                literal.lexical_form().len() > self.min_length() as usize
+                literal.lexical_form().len() < self.min_length() as usize
             } else {
-                todo!()
+                true
             }
         };
 
+        let message = format!("MinLength({}) not satisfied", self.min_length());
         validate_with(
             component,
             shape,
             value_nodes,
             ValueNodeIteration,
             min_length,
+            &message,
+            maybe_path,
         )
     }
 }
 
-impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MinLength {
+impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MinLength {
     fn validate_sparql(
         &self,
-        component: &CompiledComponent<S>,
-        shape: &CompiledShape<S>,
+        component: &ComponentIR,
+        shape: &ShapeIR,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&CompiledShape<S>>,
+        _source_shape: Option<&ShapeIR>,
+        maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let min_length_value = self.min_length();
 
@@ -74,6 +80,15 @@ impl<S: Sparql + Debug + 'static> SparqlValidator<S> for MinLength {
             }
         };
 
-        validate_ask_with(component, shape, store, value_nodes, query)
+        let message = format!("MinLength({min_length_value}) not satisfied");
+        validate_ask_with(
+            component,
+            shape,
+            store,
+            value_nodes,
+            query,
+            &message,
+            maybe_path,
+        )
     }
 }

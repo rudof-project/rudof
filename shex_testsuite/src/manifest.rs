@@ -1,7 +1,7 @@
 use crate::manifest_error::ManifestError;
 use crate::manifest_run_mode::ManifestRunMode;
 use crate::manifest_run_result::ManifestRunResult;
-use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::Path;
 
 pub trait Manifest {
@@ -11,7 +11,7 @@ pub trait Manifest {
 
     fn entry_names(&self) -> Vec<String>;
 
-    fn run_entry(&self, name: &str, base: &Path) -> Result<(), ManifestError>;
+    fn run_entry(&self, name: &str, base: &Path) -> Result<(), Box<ManifestError>>;
 
     fn should_run_entry_name(
         &self,
@@ -44,7 +44,7 @@ pub trait Manifest {
                         result.add_passed(entry_name.to_string());
                     }
                     Ok(Err(e)) => {
-                        result.add_failed(entry_name.to_string(), e);
+                        result.add_failed(entry_name.to_string(), *e);
                         if mode == ManifestRunMode::FailFirstError {
                             return result;
                         }

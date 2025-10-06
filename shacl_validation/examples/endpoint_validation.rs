@@ -1,14 +1,15 @@
 use std::io::Cursor;
 
+use anyhow::*;
 use prefixmap::PrefixMap;
+use shacl_ir::schema::SchemaIR;
 use shacl_validation::shacl_processor::EndpointValidation;
 use shacl_validation::shacl_processor::ShaclProcessor as _;
 use shacl_validation::shacl_processor::ShaclValidationMode;
 use shacl_validation::store::ShaclDataManager;
-use shacl_validation::validate_error::ValidateError;
 use srdf::RDFFormat;
 
-fn main() -> Result<(), ValidateError> {
+fn main() -> Result<()> {
     let shacl = r#"
         @prefix ex:  <http://example.org/> .
         @prefix wd:  <http://www.wikidata.org/entity/> .
@@ -27,7 +28,7 @@ fn main() -> Result<(), ValidateError> {
             ] .
     "#;
 
-    let schema = ShaclDataManager::load(Cursor::new(shacl), RDFFormat::Turtle, None)?;
+    let schema: SchemaIR = ShaclDataManager::load(Cursor::new(shacl), RDFFormat::Turtle, None)?;
 
     let endpoint_validation = EndpointValidation::new(
         "https://query.wikidata.org/sparql",

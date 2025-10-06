@@ -1,11 +1,11 @@
 use core::fmt;
 
-use serde::de;
-use serde::de::Visitor;
 use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serialize;
 use serde::Serializer;
+use serde::de;
+use serde::de::Visitor;
 
 /// Represents a min cardinality which must be a 0 or positive integer.
 #[derive(PartialEq, Eq, Hash, PartialOrd, Debug, Clone, Copy)]
@@ -74,8 +74,7 @@ impl Visitor<'_> for MinVisitor {
     {
         if value < -1 {
             Err(E::custom(format!(
-                "value of type i8 {} should be -1 or positive",
-                value
+                "value of type i8 {value} should be -1 or positive"
             )))
         } else {
             let n = Min::from(value);
@@ -89,8 +88,7 @@ impl Visitor<'_> for MinVisitor {
     {
         if value < -1 {
             Err(E::custom(format!(
-                "value of type i32 {} should be -1 or positive",
-                value
+                "value of type i32 {value} should be -1 or positive"
             )))
         } else {
             Ok(Min::from(value))
@@ -103,8 +101,7 @@ impl Visitor<'_> for MinVisitor {
     {
         if value < -1 {
             Err(E::custom(format!(
-                "value of type i64 {} should be -1 or positive",
-                value
+                "value of type i64 {value} should be -1 or positive"
             )))
         } else {
             Ok(Min::from(value))

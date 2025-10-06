@@ -1,16 +1,18 @@
 use crate::{
-    tap_config::TapConfig,
-    tap_error::TapError,
     // TapReader,
     TapReaderBuilder,
     TapShape,
+    tap_config::TapConfig,
+    tap_error::TapError,
 };
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, io, path::Path};
 use tracing::{debug, info};
 
+/* Removed as it seems we never use it
 #[derive(Debug, Serialize, Deserialize)]
 struct TapShapeId(String);
+*/
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct DCTap {
