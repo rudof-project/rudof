@@ -1,3 +1,6 @@
+#![allow(clippy::regex_creation_in_loops)]
+#![allow(clippy::manual_strip)]
+
 use data_generator::{DataGenerator, GeneratorConfig};
 use data_generator::config::{PropertyConfig, DatatypeConfig};
 use data_generator::field_generators::pattern::PatternGenerator;
@@ -23,11 +26,11 @@ async fn test_pattern_generator_phone_numbers() {
     
     for _ in 0..10 {
         let result = generator.generate(&context).unwrap();
-        println!("Generated phone: {}", result);
+        println!("Generated phone: {result}");
         
         // Validate format: XXX-XXX-XXXX where X is a digit
         let phone_regex = Regex::new(r"^\d{3}-\d{3}-\d{4}$").unwrap();
-        assert!(phone_regex.is_match(&result), "Phone number should match XXX-XXX-XXXX format: {}", result);
+        assert!(phone_regex.is_match(&result), "Phone number should match XXX-XXX-XXXX format: {result}");
         
         // Validate parts
         let parts: Vec<&str> = result.split('-').collect();
@@ -38,7 +41,7 @@ async fn test_pattern_generator_phone_numbers() {
         
         // Ensure all parts are numeric
         for part in parts {
-            assert!(part.chars().all(|c| c.is_ascii_digit()), "All parts should be numeric: {}", part);
+            assert!(part.chars().all(|c| c.is_ascii_digit()), "All parts should be numeric: {part}");
         }
     }
 }
@@ -57,11 +60,11 @@ async fn test_pattern_generator_international_phone() {
     
     for _ in 0..5 {
         let result = generator.generate(&context).unwrap();
-        println!("Generated international phone: {}", result);
+        println!("Generated international phone: {result}");
         
         // Validate format: +1-XXX-XXX-XXXX
         let intl_phone_regex = Regex::new(r"^\+1-\d{3}-\d{3}-\d{4}$").unwrap();
-        assert!(intl_phone_regex.is_match(&result), "International phone should match +1-XXX-XXX-XXXX format: {}", result);
+        assert!(intl_phone_regex.is_match(&result), "International phone should match +1-XXX-XXX-XXXX format: {result}");
         assert!(result.starts_with("+1-"), "Should start with +1-");
     }
 }
@@ -80,7 +83,7 @@ async fn test_pattern_generator_email() {
     
     for _ in 0..10 {
         let result = generator.generate(&context).unwrap();
-        println!("Generated email: {}", result);
+        println!("Generated email: {result}");
         
         // Basic email validation
         assert!(result.contains("@"), "Email should contain @");
@@ -108,19 +111,19 @@ async fn test_pattern_generator_student_id() {
     
     for _ in 0..10 {
         let result = generator.generate(&context).unwrap();
-        println!("Generated student ID: {}", result);
+        println!("Generated student ID: {result}");
         
         // Validate format: 2-3 uppercase letters followed by 4-6 digits
         let id_regex = Regex::new(r"^[A-Z]{2,3}\d{4,6}$").unwrap();
-        assert!(id_regex.is_match(&result), "Student ID should match pattern: {}", result);
+        assert!(id_regex.is_match(&result), "Student ID should match pattern: {result}");
         
         // Check letter and digit counts
         let letters: String = result.chars().filter(|c| c.is_alphabetic()).collect();
         let digits: String = result.chars().filter(|c| c.is_numeric()).collect();
         
-        assert!(letters.len() >= 2 && letters.len() <= 3, "Should have 2-3 letters: {}", letters);
-        assert!(digits.len() >= 4 && digits.len() <= 6, "Should have 4-6 digits: {}", digits);
-        assert!(letters.chars().all(|c| c.is_uppercase()), "Letters should be uppercase: {}", letters);
+        assert!(letters.len() >= 2 && letters.len() <= 3, "Should have 2-3 letters: {letters}");
+        assert!(digits.len() >= 4 && digits.len() <= 6, "Should have 4-6 digits: {digits}");
+        assert!(letters.chars().all(|c| c.is_uppercase()), "Letters should be uppercase: {letters}");
     }
 }
 
@@ -138,11 +141,11 @@ async fn test_pattern_generator_date() {
     
     for _ in 0..5 {
         let result = generator.generate(&context).unwrap();
-        println!("Generated date: {}", result);
+        println!("Generated date: {result}");
         
         // Validate format: YYYY-MM-DD
         let date_regex = Regex::new(r"^\d{4}-\d{2}-\d{2}$").unwrap();
-        assert!(date_regex.is_match(&result), "Date should match YYYY-MM-DD format: {}", result);
+        assert!(date_regex.is_match(&result), "Date should match YYYY-MM-DD format: {result}");
         
         let parts: Vec<&str> = result.split('-').collect();
         assert_eq!(parts.len(), 3, "Date should have 3 parts");
@@ -151,9 +154,9 @@ async fn test_pattern_generator_date() {
         let month: i32 = parts[1].parse().unwrap();
         let day: i32 = parts[2].parse().unwrap();
         
-        assert!(year >= 1980 && year <= 2024, "Year should be reasonable: {}", year);
-        assert!(month >= 1 && month <= 12, "Month should be 1-12: {}", month);
-        assert!(day >= 1 && day <= 31, "Day should be 1-31: {}", day);
+        assert!((1980..=2024).contains(&year), "Year should be reasonable: {year}");
+        assert!((1..=12).contains(&month), "Month should be 1-12: {month}");
+        assert!((1..=31).contains(&day), "Day should be 1-31: {day}");
     }
 }
 
@@ -171,18 +174,18 @@ async fn test_pattern_generator_ip_address() {
     
     for _ in 0..5 {
         let result = generator.generate(&context).unwrap();
-        println!("Generated IP: {}", result);
+        println!("Generated IP: {result}");
         
         // Validate format: X.X.X.X where X is 1-3 digits
         let ip_regex = Regex::new(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$").unwrap();
-        assert!(ip_regex.is_match(&result), "IP should match IPv4 format: {}", result);
+        assert!(ip_regex.is_match(&result), "IP should match IPv4 format: {result}");
         
         let octets: Vec<&str> = result.split('.').collect();
         assert_eq!(octets.len(), 4, "IP should have 4 octets");
         
         for octet in octets {
             let value: i32 = octet.parse().unwrap();
-            assert!(value >= 0 && value <= 255, "Octet should be 0-255: {}", value);
+            assert!((0..=255).contains(&value), "Octet should be 0-255: {value}");
         }
     }
 }
@@ -201,11 +204,11 @@ async fn test_pattern_generator_url() {
     
     for _ in 0..5 {
         let result = generator.generate(&context).unwrap();
-        println!("Generated URL: {}", result);
+        println!("Generated URL: {result}");
         
         // Validate basic URL structure
         assert!(result.starts_with("http://") || result.starts_with("https://"), 
-                "URL should start with http:// or https://: {}", result);
+                "URL should start with http:// or https://: {result}");
         assert!(result.contains("."), "URL should contain domain separator");
         
         // Extract domain part
@@ -233,7 +236,7 @@ async fn test_pattern_generator_heuristics() {
     );
     
     let phone_result = generator.generate(&phone_context).unwrap();
-    println!("Heuristic phone: {}", phone_result);
+    println!("Heuristic phone: {phone_result}");
     assert!(phone_result.contains("-"), "Phone heuristic should generate dash-separated format");
     
     // Test email heuristic
@@ -244,7 +247,7 @@ async fn test_pattern_generator_heuristics() {
     );
     
     let email_result = generator.generate(&email_context).unwrap();
-    println!("Heuristic email: {}", email_result);
+    println!("Heuristic email: {email_result}");
     assert!(email_result.contains("@"), "Email heuristic should generate @ symbol");
     assert!(email_result.contains("."), "Email heuristic should generate domain");
     
@@ -256,7 +259,7 @@ async fn test_pattern_generator_heuristics() {
     );
     
     let url_result = generator.generate(&url_context).unwrap();
-    println!("Heuristic URL: {}", url_result);
+    println!("Heuristic URL: {url_result}");
     assert!(url_result.starts_with("https://"), "URL heuristic should generate https://");
     
     // Test ID heuristic
@@ -267,7 +270,7 @@ async fn test_pattern_generator_heuristics() {
     );
     
     let id_result = generator.generate(&id_context).unwrap();
-    println!("Heuristic ID: {}", id_result);
+    println!("Heuristic ID: {id_result}");
     assert!(id_result.starts_with("ID"), "ID heuristic should generate ID prefix");
 }
 
@@ -321,7 +324,7 @@ async fn test_pattern_generator_integration_config() {
     context.parameters.insert("pattern".to_string(), json!("\\d{3}-\\d{3}-\\d{4}"));
     
     let phone_result = pattern_gen.generate(&context).unwrap();
-    println!("Generated phone in integration test: {}", phone_result);
+    println!("Generated phone in integration test: {phone_result}");
     assert!(phone_result.contains("-"), "Should contain phone dashes");
     
     // Test email heuristic
@@ -331,7 +334,7 @@ async fn test_pattern_generator_integration_config() {
         "test_subject".to_string(),
     );
     let email_result = pattern_gen.generate(&email_context).unwrap();
-    println!("Generated email in integration test: {}", email_result);
+    println!("Generated email in integration test: {email_result}");
     assert!(email_result.contains("@"), "Should contain email @ symbol");
 }
 
@@ -368,7 +371,7 @@ ex:PersonShape a sh:NodeShape ;
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
-    writeln!(schema_file, "{}", shacl_schema).unwrap();
+    writeln!(schema_file, "{shacl_schema}").unwrap();
     
     let output_file = NamedTempFile::new().unwrap();
     
@@ -397,7 +400,7 @@ ex:PersonShape a sh:NodeShape ;
     // Verify output
     let output_content = std::fs::read_to_string(output_file.path()).unwrap();
     assert!(!output_content.is_empty(), "Output file should not be empty");
-    println!("Generated SHACL RDF:\n{}", output_content);
+    println!("Generated SHACL RDF:\n{output_content}");
 }
 
 /// Test error handling for invalid patterns
@@ -418,7 +421,7 @@ async fn test_pattern_generator_error_handling() {
     
     let value = result.unwrap();
     assert!(!value.is_empty(), "Should generate some fallback value");
-    println!("Fallback for complex pattern: {}", value);
+    println!("Fallback for complex pattern: {value}");
 }
 
 /// Test pattern generator with multiple iterations for randomness
@@ -447,7 +450,7 @@ async fn test_pattern_generator_randomness() {
     // All values should match the pattern
     let phone_regex = Regex::new(r"^\d{3}-\d{3}-\d{4}$").unwrap();
     for value in &generated_values {
-        assert!(phone_regex.is_match(value), "All generated values should match pattern: {}", value);
+        assert!(phone_regex.is_match(value), "All generated values should match pattern: {value}");
     }
     
     println!("Generated {} unique phone numbers out of 50 attempts", generated_values.len());

@@ -74,7 +74,7 @@ async fn test_shacl_data_generation() -> Result<()> {
     assert!(!content.is_empty(), "Output file should not be empty");
     
     println!("Generated SHACL-based data:");
-    println!("{}", content);
+    println!("{content}");
     
     Ok(())
 }
@@ -101,7 +101,7 @@ async fn test_shacl_auto_detection() -> Result<()> {
     assert!(!content.is_empty(), "Output file should not be empty");
     
     println!("Generated data using auto-detection:");
-    println!("{}", content);
+    println!("{content}");
     
     Ok(())
 }

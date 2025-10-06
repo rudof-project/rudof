@@ -210,7 +210,7 @@ Select * where {
         let converted_query = ShEx2Sparql::new(&ShEx2SparqlConfig::default())
             .convert(&schema, None)
             .unwrap();
-        let converted_query_str = format!("{}", converted_query);
+        let converted_query_str = format!("{converted_query}");
         let converted_query_parsed = SparqlParser::new()
             .parse_query(converted_query_str.as_str())
             .unwrap();

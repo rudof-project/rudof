@@ -62,14 +62,14 @@ parallel_fields = true
     // Verify output settings
     assert_eq!(config.output.path.to_string_lossy(), "test_output.ttl");
     assert_eq!(config.output.format, OutputFormat::Turtle);
-    assert_eq!(config.output.compress, false);
-    assert_eq!(config.output.write_stats, true);
+    assert!(!config.output.compress);
+    assert!(config.output.write_stats);
     
     // Verify parallel settings
     assert_eq!(config.parallel.worker_threads, Some(4));
     assert_eq!(config.parallel.batch_size, 50);
-    assert_eq!(config.parallel.parallel_shapes, true);
-    assert_eq!(config.parallel.parallel_fields, true);
+    assert!(config.parallel.parallel_shapes);
+    assert!(config.parallel.parallel_fields);
 }
 
 #[tokio::test]
@@ -126,14 +126,14 @@ async fn test_configuration_loading_json() {
     
     // Verify output settings
     assert_eq!(config.output.format, OutputFormat::NTriples);
-    assert_eq!(config.output.compress, true);
-    assert_eq!(config.output.write_stats, false);
+    assert!(config.output.compress);
+    assert!(!config.output.write_stats);
     
     // Verify parallel settings
     assert_eq!(config.parallel.worker_threads, None); // Auto-detect
     assert_eq!(config.parallel.batch_size, 25);
-    assert_eq!(config.parallel.parallel_shapes, false);
-    assert_eq!(config.parallel.parallel_fields, true);
+    assert!(!config.parallel.parallel_shapes);
+    assert!(config.parallel.parallel_fields);
 }
 
 #[tokio::test]
@@ -151,13 +151,13 @@ async fn test_default_configuration() {
     
     assert_eq!(config.output.path.to_string_lossy(), "output.ttl");
     assert_eq!(config.output.format, OutputFormat::Turtle);
-    assert_eq!(config.output.compress, false);
-    assert_eq!(config.output.write_stats, true);
+    assert!(!config.output.compress);
+    assert!(config.output.write_stats);
     
     assert_eq!(config.parallel.worker_threads, None);
     assert_eq!(config.parallel.batch_size, 100);
-    assert_eq!(config.parallel.parallel_shapes, true);
-    assert_eq!(config.parallel.parallel_fields, true);
+    assert!(config.parallel.parallel_shapes);
+    assert!(config.parallel.parallel_fields);
 }
 
 #[tokio::test]

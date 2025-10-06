@@ -1,3 +1,5 @@
+#![allow(clippy::regex_creation_in_loops)]
+
 use data_generator::field_generators::pattern::PatternGenerator;
 use data_generator::field_generators::{FieldGenerator, GenerationContext};
 use std::collections::HashSet;
@@ -20,21 +22,21 @@ async fn test_pattern_with_length_constraints() {
     
     for _ in 0..10 {
         let result = generator.generate(&context).unwrap();
-        println!("Generated constrained string: {}", result);
+        println!("Generated constrained string: {result}");
         
         // Validate pattern compliance (license plate format)
         let pattern_regex = Regex::new(r"^[A-Z]{3}\d{3}$").unwrap();
-        assert!(pattern_regex.is_match(&result), "Should match license plate pattern: {}", result);
+        assert!(pattern_regex.is_match(&result), "Should match license plate pattern: {result}");
         
         // Should be exactly 6 characters for this pattern
-        assert_eq!(result.len(), 6, "Should be exactly 6 characters: {}", result);
+        assert_eq!(result.len(), 6, "Should be exactly 6 characters: {result}");
         
         // Validate structure
         let letters = &result[0..3];
-        assert!(letters.chars().all(|c| c.is_ascii_uppercase()), "First 3 should be uppercase: {}", letters);
+        assert!(letters.chars().all(|c| c.is_ascii_uppercase()), "First 3 should be uppercase: {letters}");
         
         let digits = &result[3..6];
-        assert!(digits.chars().all(|c| c.is_ascii_digit()), "Last 3 should be digits: {}", digits);
+        assert!(digits.chars().all(|c| c.is_ascii_digit()), "Last 3 should be digits: {digits}");
     }
 }
 
@@ -55,20 +57,20 @@ async fn test_pattern_with_enumeration() {
     for _ in 0..10 {
         let result = generator.generate(&context).unwrap();
         generated_values.insert(result.clone());
-        println!("Generated numeric code: {}", result);
+        println!("Generated numeric code: {result}");
         
         // Should be exactly 3 digits
-        assert_eq!(result.len(), 3, "Should be 3 digits: {}", result);
-        assert!(result.chars().all(|c| c.is_ascii_digit()), "Should be all digits: {}", result);
+        assert_eq!(result.len(), 3, "Should be 3 digits: {result}");
+        assert!(result.chars().all(|c| c.is_ascii_digit()), "Should be all digits: {result}");
         
         // Should be a valid number (pattern \d{3} allows 000-999, including leading zeros)
         let num: u32 = result.parse().unwrap();
-        assert!(num <= 999, "Should be a 3-digit pattern (000-999): {}", num);
+        assert!(num <= 999, "Should be a 3-digit pattern (000-999): {num}");
     }
     
     // Should generate variety from enumeration
     assert!(generated_values.len() > 1, "Should generate variety from enumeration");
-    println!("Generated enumerated values: {:?}", generated_values);
+    println!("Generated enumerated values: {generated_values:?}");
 }
 
 /// Test pattern generator with different datatype contexts
@@ -85,10 +87,10 @@ async fn test_pattern_with_different_datatypes() {
     token_context.parameters.insert("pattern".to_string(), json!("[A-Za-z0-9_-]+"));
     
     let token_result = generator.generate(&token_context).unwrap();
-    println!("Generated token: {}", token_result);
+    println!("Generated token: {token_result}");
     
     let token_regex = Regex::new(r"^[A-Za-z0-9_-]+$").unwrap();
-    assert!(token_regex.is_match(&token_result), "Token should match pattern: {}", token_result);
+    assert!(token_regex.is_match(&token_result), "Token should match pattern: {token_result}");
     
     // Test with custom datatype (should still work)
     let mut custom_context = GenerationContext::new(
@@ -99,10 +101,10 @@ async fn test_pattern_with_different_datatypes() {
     custom_context.parameters.insert("pattern".to_string(), json!("CUSTOM-\\d{4}"));
     
     let custom_result = generator.generate(&custom_context).unwrap();
-    println!("Generated custom type: {}", custom_result);
+    println!("Generated custom type: {custom_result}");
     
     let custom_regex = Regex::new(r"^CUSTOM-\d{4}$").unwrap();
-    assert!(custom_regex.is_match(&custom_result), "Custom should match pattern: {}", custom_result);
+    assert!(custom_regex.is_match(&custom_result), "Custom should match pattern: {custom_result}");
 }
 
 /// Test pattern generator with SHACL-like patterns (configuration-based)
@@ -121,14 +123,14 @@ async fn test_pattern_shacl_constraint_integration() {
     let mut generated_results = Vec::new();
     for (prop_name, pattern) in shacl_patterns {
         let mut context = GenerationContext::new(
-            format!("http://example.org/{}", prop_name),
+            format!("http://example.org/{prop_name}"),
             "http://www.w3.org/2001/XMLSchema#string".to_string(),
             "test_subject".to_string(),
         );
         context.parameters.insert("pattern".to_string(), json!(pattern));
         
         let result = generator.generate(&context).unwrap();
-        println!("Generated SHACL {} pattern: {}", prop_name, result);
+        println!("Generated SHACL {prop_name} pattern: {result}");
         generated_results.push((prop_name, result));
     }
     
@@ -139,18 +141,18 @@ async fn test_pattern_shacl_constraint_integration() {
     for (prop_name, result) in &generated_results {
         match *prop_name {
             "productCode" => {
-                assert!(result.starts_with("PROD-"), "Product code should start with PROD-: {}", result);
-                assert!(result.len() >= 10, "Product code should have proper length: {}", result);
+                assert!(result.starts_with("PROD-"), "Product code should start with PROD-: {result}");
+                assert!(result.len() >= 10, "Product code should have proper length: {result}");
             },
             "serialNumber" => {
-                assert!(result.contains("-"), "Serial number should contain hyphens: {}", result);
+                assert!(result.contains("-"), "Serial number should contain hyphens: {result}");
                 let parts: Vec<&str> = result.split('-').collect();
-                assert!(parts.len() >= 3, "Serial number should have multiple parts: {}", result);
+                assert!(parts.len() >= 3, "Serial number should have multiple parts: {result}");
             },
             "category" => {
                 assert!(result.chars().all(|c| c.is_ascii_uppercase() || c.is_ascii_alphabetic()), 
-                        "Category should be letters: {}", result);
-                assert!(result.len() >= 3 && result.len() <= 8, "Category should be 3-8 chars: {}", result);
+                        "Category should be letters: {result}");
+                assert!(result.len() >= 3 && result.len() <= 8, "Category should be 3-8 chars: {result}");
             },
             _ => {}
         }
@@ -182,7 +184,7 @@ async fn test_pattern_shex_cardinality_integration() {
     // Generate multiple phone numbers
     for (name, pattern) in phone_patterns {
         let mut context = GenerationContext::new(
-            format!("http://example.org/{}", name),
+            format!("http://example.org/{name}"),
             "http://www.w3.org/2001/XMLSchema#string".to_string(),
             "test_subject".to_string(),
         );
@@ -196,7 +198,7 @@ async fn test_pattern_shex_cardinality_integration() {
     // Generate multiple tags
     for (name, pattern) in tag_patterns {
         let mut context = GenerationContext::new(
-            format!("http://example.org/{}", name),
+            format!("http://example.org/{name}"),
             "http://www.w3.org/2001/XMLSchema#string".to_string(),
             "test_subject".to_string(),
         );
@@ -213,11 +215,11 @@ async fn test_pattern_shex_cardinality_integration() {
     // Validate phone number formats
     for (name, result) in &all_results {
         if name.contains("Phone") || name.contains("Contacts") {
-            assert!(result.contains("-"), "Phone numbers should contain hyphens: {}", result);
-            assert_eq!(result.len(), 12, "Phone numbers should be 12 chars: {}", result);
+            assert!(result.contains("-"), "Phone numbers should contain hyphens: {result}");
+            assert_eq!(result.len(), 12, "Phone numbers should be 12 chars: {result}");
         } else if name.contains("Tag") {
-            assert!(result.chars().all(|c| c.is_ascii_uppercase()), "Tags should be uppercase: {}", result);
-            assert!(result.len() >= 2 && result.len() <= 5, "Tags should be 2-5 chars: {}", result);
+            assert!(result.chars().all(|c| c.is_ascii_uppercase()), "Tags should be uppercase: {result}");
+            assert!(result.len() >= 2 && result.len() <= 5, "Tags should be 2-5 chars: {result}");
         }
     }
 }
@@ -247,7 +249,7 @@ async fn test_pattern_generator_robustness() {
     ];
     
     for (pattern, description) in test_cases {
-        println!("Testing {}: '{}'", description, pattern);
+        println!("Testing {description}: '{pattern}'");
         
         let mut context = GenerationContext::new(
             "http://example.org/malformed".to_string(),
@@ -261,11 +263,11 @@ async fn test_pattern_generator_robustness() {
         // Should handle gracefully (either generate fallback or reasonable error)
         match result {
             Ok(value) => {
-                assert!(!value.is_empty(), "Should generate non-empty fallback for {}: '{}'", description, pattern);
-                println!("  -> Generated fallback: '{}'", value);
+                assert!(!value.is_empty(), "Should generate non-empty fallback for {description}: '{pattern}'");
+                println!("  -> Generated fallback: '{value}'");
             }
             Err(e) => {
-                println!("  -> Error (acceptable): {}", e);
+                println!("  -> Error (acceptable): {e}");
                 // Errors are acceptable for malformed patterns
             }
         }
@@ -290,7 +292,7 @@ async fn test_pattern_generator_complex_integration() {
     let mut generated_results = Vec::new();
     for (prop_name, pattern) in complex_patterns {
         let mut context = GenerationContext::new(
-            format!("http://example.org/{}", prop_name),
+            format!("http://example.org/{prop_name}"),
             "http://www.w3.org/2001/XMLSchema#string".to_string(),
             "test_subject".to_string(),
         );
@@ -308,20 +310,20 @@ async fn test_pattern_generator_complex_integration() {
     for (prop_name, result) in &generated_results {
         match *prop_name {
             "organizationId" => {
-                assert!(result.starts_with("ORG-"), "Organization ID should start with ORG-: {}", result);
-                assert!(result.len() >= 11, "Organization ID should have proper length: {}", result);
+                assert!(result.starts_with("ORG-"), "Organization ID should start with ORG-: {result}");
+                assert!(result.len() >= 11, "Organization ID should have proper length: {result}");
             },
             "employeeId" => {
-                assert!(result.starts_with("EMP-"), "Employee ID should start with EMP-: {}", result);
-                assert!(result.len() >= 9, "Employee ID should have proper length: {}", result);
+                assert!(result.starts_with("EMP-"), "Employee ID should start with EMP-: {result}");
+                assert!(result.len() >= 9, "Employee ID should have proper length: {result}");
             },
             "email" => {
-                assert!(result.contains("@"), "Email should contain @: {}", result);
-                assert!(result.contains("."), "Email should contain .: {}", result);
+                assert!(result.contains("@"), "Email should contain @: {result}");
+                assert!(result.contains("."), "Email should contain .: {result}");
             },
             "phone" => {
-                assert!(result.contains("-"), "Phone should contain -: {}", result);
-                assert_eq!(result.len(), 12, "Phone should be exactly 12 chars: {}", result);
+                assert!(result.contains("-"), "Phone should contain -: {result}");
+                assert_eq!(result.len(), 12, "Phone should be exactly 12 chars: {result}");
             },
             _ => {}
         }
@@ -350,7 +352,7 @@ async fn test_pattern_generator_consistency() {
     // All should match the pattern
     let pattern_regex = Regex::new(r"^[A-Z]{2}\d{4}$").unwrap();
     for result in &results {
-        assert!(pattern_regex.is_match(result), "All results should match pattern: {}", result);
+        assert!(pattern_regex.is_match(result), "All results should match pattern: {result}");
     }
     
     // Should have reasonable variety
@@ -370,25 +372,23 @@ async fn test_pattern_generator_memory_efficiency() {
     let generator = PatternGenerator;
     
     // Create many contexts and generate values to test memory efficiency
-    let patterns = vec![
-        "\\d{3}-\\d{3}-\\d{4}",
+    let patterns = ["\\d{3}-\\d{3}-\\d{4}",
         "[A-Z]{2,4}\\d{3,5}",
         "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}",
         "https?://[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}",
-        "#[0-9A-Fa-f]{6}",
-    ];
+        "#[0-9A-Fa-f]{6}"];
     
     for (i, pattern) in patterns.iter().enumerate() {
         for j in 0..100 {
             let mut context = GenerationContext::new(
-                format!("http://example.org/prop{}-{}", i, j),
+                format!("http://example.org/prop{i}-{j}"),
                 "http://www.w3.org/2001/XMLSchema#string".to_string(),
-                format!("subject_{}", j),
+                format!("subject_{j}"),
             );
             context.parameters.insert("pattern".to_string(), json!(pattern));
             
             let result = generator.generate(&context);
-            assert!(result.is_ok(), "Should generate successfully for pattern {}: {}", i, pattern);
+            assert!(result.is_ok(), "Should generate successfully for pattern {i}: {pattern}");
             
             let value = result.unwrap();
             assert!(!value.is_empty(), "Should generate non-empty value");

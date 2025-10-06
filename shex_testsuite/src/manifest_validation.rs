@@ -152,8 +152,8 @@ impl<'de> Deserialize<'de> for Focus {
 impl Display for Focus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Focus::Single(str) => write!(f, "{}", str),
-            Focus::Typed(str, str_type) => write!(f, "{}^^{}", str, str_type),
+            Focus::Single(str) => write!(f, "{str}"),
+            Focus::Typed(str, str_type) => write!(f, "{str}^^{str_type}"),
         }
     }
 }

@@ -21,7 +21,7 @@ ex:PersonShape {
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
-    writeln!(schema_file, "{}", shex_schema).unwrap();
+    writeln!(schema_file, "{shex_schema}").unwrap();
     
     let output_file = NamedTempFile::new().unwrap();
     
@@ -36,7 +36,7 @@ ex:PersonShape {
     generator.generate().await.unwrap();
     
     // Parse generated data
-    let graph = SRDFGraph::from_path(&output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
     
     // Verify that generated triples respect datatypes
@@ -86,7 +86,7 @@ ex:PersonShape a sh:NodeShape ;
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
-    writeln!(schema_file, "{}", shacl_schema).unwrap();
+    writeln!(schema_file, "{shacl_schema}").unwrap();
     
     let output_file = NamedTempFile::new().unwrap();
     
@@ -101,7 +101,7 @@ ex:PersonShape a sh:NodeShape ;
     generator.generate().await.unwrap();
     
     // Parse generated data
-    let graph = SRDFGraph::from_path(&output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
     
     // Verify that generated triples respect datatypes
@@ -145,7 +145,7 @@ ex:PersonShape a sh:NodeShape ;
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
-    writeln!(schema_file, "{}", shacl_schema).unwrap();
+    writeln!(schema_file, "{shacl_schema}").unwrap();
     
     let output_file = NamedTempFile::new().unwrap();
     
@@ -160,7 +160,7 @@ ex:PersonShape a sh:NodeShape ;
     generator.generate().await.unwrap();
     
     // Parse generated data
-    let graph = SRDFGraph::from_path(&output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
     
     // Count properties per entity to verify cardinality
@@ -172,7 +172,7 @@ ex:PersonShape a sh:NodeShape ;
         
         entity_properties
             .entry(subject_str)
-            .or_insert_with(HashMap::new)
+            .or_default()
             .entry(predicate_str)
             .and_modify(|count| *count += 1)
             .or_insert(1);
@@ -213,7 +213,7 @@ ex:PersonShape a sh:NodeShape ;
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
-    writeln!(schema_file, "{}", shacl_schema).unwrap();
+    writeln!(schema_file, "{shacl_schema}").unwrap();
     
     let output_file = NamedTempFile::new().unwrap();
     
@@ -228,7 +228,7 @@ ex:PersonShape a sh:NodeShape ;
     generator.generate().await.unwrap();
     
     // Parse generated data
-    let graph = SRDFGraph::from_path(&output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
     
     // Verify that data was generated
@@ -237,7 +237,7 @@ ex:PersonShape a sh:NodeShape ;
     
     // Count how many name properties were generated
     let name_count = triples.iter().filter(|t| {
-        t.predicate.to_string() == "<http://example.org/name>"
+        t.predicate == "<http://example.org/name>"
     }).count();
     
     assert!(name_count > 0, "Should have generated at least one name property");

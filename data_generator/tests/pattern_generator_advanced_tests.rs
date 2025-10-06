@@ -17,21 +17,21 @@ async fn test_pattern_generator_alphanumeric_patterns() {
     );
     context.parameters.insert("pattern".to_string(), json!("[A-Z]{3}\\d{3}"));
     
+    let license_regex = Regex::new(r"^[A-Z]{3}\d{3}$").unwrap();
     for _ in 0..10 {
         let result = generator.generate(&context).unwrap();
-        println!("Generated license plate: {}", result);
+        println!("Generated license plate: {result}");
         
-        let license_regex = Regex::new(r"^[A-Z]{3}\d{3}$").unwrap();
-        assert!(license_regex.is_match(&result), "License plate should match AAA123 format: {}", result);
+        assert!(license_regex.is_match(&result), "License plate should match AAA123 format: {result}");
         assert_eq!(result.len(), 6, "License plate should be exactly 6 characters");
         
         // First 3 should be uppercase letters
         let letters = &result[0..3];
-        assert!(letters.chars().all(|c| c.is_ascii_uppercase()), "First 3 should be uppercase letters: {}", letters);
+        assert!(letters.chars().all(|c| c.is_ascii_uppercase()), "First 3 should be uppercase letters: {letters}");
         
         // Last 3 should be digits
         let numbers = &result[3..6];
-        assert!(numbers.chars().all(|c| c.is_ascii_digit()), "Last 3 should be digits: {}", numbers);
+        assert!(numbers.chars().all(|c| c.is_ascii_digit()), "Last 3 should be digits: {numbers}");
     }
 }
 
@@ -51,26 +51,27 @@ async fn test_pattern_generator_optional_groups() {
     let mut with_ext_count = 0;
     let mut without_ext_count = 0;
     
+    let ext_regex = Regex::new(r"^\d{3}-\d{3}-\d{4} ext\. \d{1,4}$").unwrap();
+    let base_regex = Regex::new(r"^\d{3}-\d{3}-\d{4}$").unwrap();
+    
     for _ in 0..20 {
         let result = generator.generate(&context).unwrap();
-        println!("Generated phone with optional ext: {}", result);
+        println!("Generated phone with optional ext: {result}");
         
         if result.contains(" ext. ") {
             with_ext_count += 1;
             // Validate full pattern with extension
-            let ext_regex = Regex::new(r"^\d{3}-\d{3}-\d{4} ext\. \d{1,4}$").unwrap();
-            assert!(ext_regex.is_match(&result), "Phone with extension should match pattern: {}", result);
+            assert!(ext_regex.is_match(&result), "Phone with extension should match pattern: {result}");
         } else {
             without_ext_count += 1;
             // Validate base pattern without extension
-            let base_regex = Regex::new(r"^\d{3}-\d{3}-\d{4}$").unwrap();
-            assert!(base_regex.is_match(&result), "Phone without extension should match base pattern: {}", result);
+            assert!(base_regex.is_match(&result), "Phone without extension should match base pattern: {result}");
         }
     }
     
     // Should generate both variants (allowing for randomness)
     assert!(with_ext_count > 0 || without_ext_count > 15, "Should generate some variety in optional groups");
-    println!("Generated {} with extension, {} without extension", with_ext_count, without_ext_count);
+    println!("Generated {with_ext_count} with extension, {without_ext_count} without extension");
 }
 
 /// Test pattern generator with character classes and ranges
@@ -86,18 +87,18 @@ async fn test_pattern_generator_character_classes() {
     );
     context.parameters.insert("pattern".to_string(), json!("#[0-9A-Fa-f]{6}"));
     
+    let hex_regex = Regex::new(r"^#[0-9A-Fa-f]{6}$").unwrap();
     for _ in 0..10 {
         let result = generator.generate(&context).unwrap();
-        println!("Generated hex color: {}", result);
+        println!("Generated hex color: {result}");
         
-        let hex_regex = Regex::new(r"^#[0-9A-Fa-f]{6}$").unwrap();
-        assert!(hex_regex.is_match(&result), "Hex color should match #RRGGBB format: {}", result);
+        assert!(hex_regex.is_match(&result), "Hex color should match #RRGGBB format: {result}");
         assert_eq!(result.len(), 7, "Hex color should be 7 characters including #");
         assert!(result.starts_with("#"), "Should start with #");
         
         // Validate hex characters
         let hex_part = &result[1..];
-        assert!(hex_part.chars().all(|c| c.is_ascii_hexdigit()), "All characters after # should be hex: {}", hex_part);
+        assert!(hex_part.chars().all(|c| c.is_ascii_hexdigit()), "All characters after # should be hex: {hex_part}");
     }
 }
 
@@ -114,12 +115,12 @@ async fn test_pattern_generator_anchors() {
     );
     context.parameters.insert("pattern".to_string(), json!("^PROD-\\d{4}-[A-Z]{2}$"));
     
+    let prod_regex = Regex::new(r"^PROD-\d{4}-[A-Z]{2}$").unwrap();
     for _ in 0..5 {
         let result = generator.generate(&context).unwrap();
-        println!("Generated product code: {}", result);
+        println!("Generated product code: {result}");
         
-        let prod_regex = Regex::new(r"^PROD-\d{4}-[A-Z]{2}$").unwrap();
-        assert!(prod_regex.is_match(&result), "Product code should match PROD-XXXX-YY format: {}", result);
+        assert!(prod_regex.is_match(&result), "Product code should match PROD-XXXX-YY format: {result}");
         assert!(result.starts_with("PROD-"), "Should start with PROD-");
         assert_eq!(result.len(), 12, "Product code should be 12 characters total");
     }
@@ -138,12 +139,12 @@ async fn test_pattern_generator_special_characters() {
     );
     context.parameters.insert("pattern".to_string(), json!("\\d{3}-\\d{2}-\\d{4}"));
     
+    let ssn_regex = Regex::new(r"^\d{3}-\d{2}-\d{4}$").unwrap();
     for _ in 0..5 {
         let result = generator.generate(&context).unwrap();
-        println!("Generated SSN: {}", result);
+        println!("Generated SSN: {result}");
         
-        let ssn_regex = Regex::new(r"^\d{3}-\d{2}-\d{4}$").unwrap();
-        assert!(ssn_regex.is_match(&result), "SSN should match XXX-XX-XXXX format: {}", result);
+        assert!(ssn_regex.is_match(&result), "SSN should match XXX-XX-XXXX format: {result}");
         
         let parts: Vec<&str> = result.split('-').collect();
         assert_eq!(parts.len(), 3, "SSN should have 3 parts");
@@ -167,17 +168,17 @@ async fn test_pattern_generator_escape_sequences() {
     // Pattern for version numbers like "v1.2.3"
     context.parameters.insert("pattern".to_string(), json!("v\\d+\\.\\d+\\.\\d+"));
     
+    let version_regex = Regex::new(r"^v\d+\.\d+\.\d+$").unwrap();
     for _ in 0..5 {
         let result = generator.generate(&context).unwrap();
-        println!("Generated version: {}", result);
+        println!("Generated version: {result}");
         
-        let version_regex = Regex::new(r"^v\d+\.\d+\.\d+$").unwrap();
-        assert!(version_regex.is_match(&result), "Version should match vX.Y.Z format: {}", result);
+        assert!(version_regex.is_match(&result), "Version should match vX.Y.Z format: {result}");
         assert!(result.starts_with("v"), "Should start with v");
         
         // Count dots
         let dot_count = result.matches('.').count();
-        assert_eq!(dot_count, 2, "Should have exactly 2 dots: {}", result);
+        assert_eq!(dot_count, 2, "Should have exactly 2 dots: {result}");
     }
 }
 
@@ -207,11 +208,10 @@ async fn test_pattern_generator_performance() {
     let duration = start.elapsed();
     let per_generation = duration.as_nanos() / iterations as u128;
     
-    println!("Generated {} patterns in {:?} (avg: {}ns per generation)", 
-             iterations, duration, per_generation);
+    println!("Generated {iterations} patterns in {duration:?} (avg: {per_generation}ns per generation)");
     
     // Performance should be reasonable (less than 1ms per generation)
-    assert!(per_generation < 1_000_000, "Generation should be fast: {}ns per generation", per_generation);
+    assert!(per_generation < 1_000_000, "Generation should be fast: {per_generation}ns per generation");
 }
 
 /// Test pattern generator with edge case patterns
@@ -240,7 +240,7 @@ async fn test_pattern_generator_edge_cases() {
     
     let quant_result = generator.generate(&quant_context).unwrap();
     assert_eq!(quant_result.len(), 5, "Should generate exactly 5 digits");
-    assert!(quant_result.chars().all(|c| c.is_ascii_digit()), "Should be all digits: {}", quant_result);
+    assert!(quant_result.chars().all(|c| c.is_ascii_digit()), "Should be all digits: {quant_result}");
     
     // Test pattern with alternation (simplified)
     let mut alt_context = GenerationContext::new(
@@ -251,7 +251,7 @@ async fn test_pattern_generator_edge_cases() {
     alt_context.parameters.insert("pattern".to_string(), json!("(cat|dog)"));
     
     let alt_result = generator.generate(&alt_context).unwrap();
-    println!("Alternation result: {}", alt_result);
+    println!("Alternation result: {alt_result}");
     // Note: Our current implementation may not handle alternation perfectly,
     // but should generate something reasonable
     assert!(!alt_result.is_empty(), "Should generate non-empty result for alternation");
@@ -270,12 +270,12 @@ async fn test_pattern_generator_case_sensitivity() {
     );
     context.parameters.insert("pattern".to_string(), json!("[A-Z]{2}[a-z]{2}\\d{2}"));
     
+    let mixed_regex = Regex::new(r"^[A-Z]{2}[a-z]{2}\d{2}$").unwrap();
     for _ in 0..5 {
         let result = generator.generate(&context).unwrap();
-        println!("Generated mixed case: {}", result);
+        println!("Generated mixed case: {result}");
         
-        let mixed_regex = Regex::new(r"^[A-Z]{2}[a-z]{2}\d{2}$").unwrap();
-        assert!(mixed_regex.is_match(&result), "Should match mixed case pattern: {}", result);
+        assert!(mixed_regex.is_match(&result), "Should match mixed case pattern: {result}");
         assert_eq!(result.len(), 6, "Should be exactly 6 characters");
         
         // Validate case requirements
@@ -284,11 +284,11 @@ async fn test_pattern_generator_case_sensitivity() {
         let digit_part = &result[4..6];
         
         assert!(upper_part.chars().all(|c| c.is_ascii_uppercase()), 
-                "First 2 should be uppercase: {}", upper_part);
+                "First 2 should be uppercase: {upper_part}");
         assert!(lower_part.chars().all(|c| c.is_ascii_lowercase()), 
-                "Next 2 should be lowercase: {}", lower_part);
+                "Next 2 should be lowercase: {lower_part}");
         assert!(digit_part.chars().all(|c| c.is_ascii_digit()), 
-                "Last 2 should be digits: {}", digit_part);
+                "Last 2 should be digits: {digit_part}");
     }
 }
 
@@ -306,10 +306,10 @@ async fn test_pattern_generator_real_world_patterns() {
     isbn_context.parameters.insert("pattern".to_string(), json!("\\d{1}-\\d{3}-\\d{5}-\\d{1}"));
     
     let isbn_result = generator.generate(&isbn_context).unwrap();
-    println!("Generated ISBN-10: {}", isbn_result);
+    println!("Generated ISBN-10: {isbn_result}");
     
     let isbn_regex = Regex::new(r"^\d{1}-\d{3}-\d{5}-\d{1}$").unwrap();
-    assert!(isbn_regex.is_match(&isbn_result), "ISBN should match X-XXX-XXXXX-X format: {}", isbn_result);
+    assert!(isbn_regex.is_match(&isbn_result), "ISBN should match X-XXX-XXXXX-X format: {isbn_result}");
     
     // Test UUID-like pattern (simplified)
     let mut uuid_context = GenerationContext::new(
@@ -320,15 +320,15 @@ async fn test_pattern_generator_real_world_patterns() {
     uuid_context.parameters.insert("pattern".to_string(), json!("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"));
     
     let uuid_result = generator.generate(&uuid_context).unwrap();
-    println!("Generated UUID-like: {}", uuid_result);
+    println!("Generated UUID-like: {uuid_result}");
     
     let uuid_regex = Regex::new(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$").unwrap();
-    assert!(uuid_regex.is_match(&uuid_result), "UUID should match standard format: {}", uuid_result);
+    assert!(uuid_regex.is_match(&uuid_result), "UUID should match standard format: {uuid_result}");
     assert_eq!(uuid_result.len(), 36, "UUID should be 36 characters total");
     
     // Count dashes
     let dash_count = uuid_result.matches('-').count();
-    assert_eq!(dash_count, 4, "UUID should have exactly 4 dashes: {}", uuid_result);
+    assert_eq!(dash_count, 4, "UUID should have exactly 4 dashes: {uuid_result}");
 }
 
 /// Test pattern generator fallback behavior
@@ -345,7 +345,7 @@ async fn test_pattern_generator_fallback_behavior() {
     empty_context.parameters.insert("pattern".to_string(), json!(""));
     
     let empty_result = generator.generate(&empty_context).unwrap();
-    println!("Empty pattern fallback: {}", empty_result);
+    println!("Empty pattern fallback: {empty_result}");
     assert!(!empty_result.is_empty(), "Should generate fallback for empty pattern");
     
     // Test with no pattern parameter - should use heuristics
@@ -356,7 +356,7 @@ async fn test_pattern_generator_fallback_behavior() {
     );
     
     let no_pattern_result = generator.generate(&no_pattern_context).unwrap();
-    println!("No pattern fallback: {}", no_pattern_result);
+    println!("No pattern fallback: {no_pattern_result}");
     assert!(!no_pattern_result.is_empty(), "Should generate fallback for no pattern");
     assert!(no_pattern_result.contains("@"), "Email heuristic should work without pattern");
 }
@@ -393,17 +393,17 @@ async fn test_pattern_generator_comprehensive_coverage() {
         
         match pattern_gen.generate(&context) {
             Ok(result) => {
-                println!("Generated {} ({}): {}", description, pattern, result);
-                assert!(!result.is_empty(), "Generated value should not be empty for {}", description);
+                println!("Generated {description} ({pattern}): {result}");
+                assert!(!result.is_empty(), "Generated value should not be empty for {description}");
                 generated_count += 1;
             }
             Err(e) => {
-                println!("Failed to generate {} ({}): {}", description, pattern, e);
+                println!("Failed to generate {description} ({pattern}): {e}");
                 // For this comprehensive test, we allow some patterns to fail gracefully
             }
         }
     }
     
-    println!("Successfully generated {} out of {} pattern types", generated_count, total_patterns);
+    println!("Successfully generated {generated_count} out of {total_patterns} pattern types");
     assert!(generated_count >= 8, "Should successfully generate at least 8 out of 10 pattern types");
 }

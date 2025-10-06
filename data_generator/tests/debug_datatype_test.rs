@@ -21,7 +21,7 @@ async fn debug_shex_datatype_generation() {
     "#;
 
     let mut schema_file = NamedTempFile::new().unwrap();
-    write!(schema_file, "{}", shex_schema).unwrap();
+    write!(schema_file, "{shex_schema}").unwrap();
     
     let output_file = NamedTempFile::new().unwrap();
     
@@ -36,7 +36,7 @@ async fn debug_shex_datatype_generation() {
     match generator.load_shex_schema(schema_file.path()).await {
         Ok(_) => println!("ShEx schema loaded successfully"),
         Err(e) => {
-            println!("ShEx schema loading failed: {:?}", e);
+            println!("ShEx schema loading failed: {e:?}");
             return;
         }
     }
@@ -45,7 +45,7 @@ async fn debug_shex_datatype_generation() {
     match generator.generate().await {
         Ok(_) => println!("Data generation completed"),
         Err(e) => {
-            println!("Data generation failed: {:?}", e);
+            println!("Data generation failed: {e:?}");
             return;
         }
     }
@@ -53,10 +53,10 @@ async fn debug_shex_datatype_generation() {
     // Read the generated content
     let content = std::fs::read_to_string(output_file.path()).unwrap();
     println!("Generated content:");
-    println!("{}", content);
+    println!("{content}");
     
     // Parse and analyze the generated RDF
-    let graph = SRDFGraph::from_path(&output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
     
     let mut datatype_counts = HashMap::new();
@@ -71,10 +71,10 @@ async fn debug_shex_datatype_generation() {
                 println!("Found literal: {} with datatype: {}", lit.value(), lit.datatype());
             }
             oxrdf::Term::NamedNode(node) => {
-                println!("Found named node: {}", node);
+                println!("Found named node: {node}");
             }
             oxrdf::Term::BlankNode(blank) => {
-                println!("Found blank node: {}", blank);
+                println!("Found blank node: {blank}");
             }
             #[allow(unreachable_patterns)]
             _ => {
@@ -85,10 +85,10 @@ async fn debug_shex_datatype_generation() {
     
     println!("All triples generated:");
     for triple in all_triples {
-        println!("  {}", triple);
+        println!("  {triple}");
     }
     
-    println!("Datatype counts: {:?}", datatype_counts);
+    println!("Datatype counts: {datatype_counts:?}");
 }
 
 /// Debug test for SHACL datatype generation
@@ -122,7 +122,7 @@ async fn debug_shacl_datatype_generation() {
     "#;
 
     let mut schema_file = NamedTempFile::new().unwrap();
-    write!(schema_file, "{}", shacl_schema).unwrap();
+    write!(schema_file, "{shacl_schema}").unwrap();
     
     let output_file = NamedTempFile::new().unwrap();
     
@@ -137,7 +137,7 @@ async fn debug_shacl_datatype_generation() {
     match generator.load_shacl_schema(schema_file.path()).await {
         Ok(_) => println!("SHACL schema loaded successfully"),
         Err(e) => {
-            println!("SHACL schema loading failed: {:?}", e);
+            println!("SHACL schema loading failed: {e:?}");
             return;
         }
     }
@@ -146,7 +146,7 @@ async fn debug_shacl_datatype_generation() {
     match generator.generate().await {
         Ok(_) => println!("Data generation completed"),
         Err(e) => {
-            println!("Data generation failed: {:?}", e);
+            println!("Data generation failed: {e:?}");
             return;
         }
     }
@@ -154,10 +154,10 @@ async fn debug_shacl_datatype_generation() {
     // Read the generated content
     let content = std::fs::read_to_string(output_file.path()).unwrap();
     println!("Generated SHACL content:");
-    println!("{}", content);
+    println!("{content}");
     
     // Parse and analyze the generated RDF
-    let graph = SRDFGraph::from_path(&output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
     
     let mut datatype_counts = HashMap::new();
@@ -173,10 +173,10 @@ async fn debug_shacl_datatype_generation() {
                 println!("Found literal: {} with datatype: {}", lit.value(), lit.datatype());
             }
             oxrdf::Term::NamedNode(node) => {
-                println!("Found named node: {}", node);
+                println!("Found named node: {node}");
             }
             oxrdf::Term::BlankNode(blank) => {
-                println!("Found blank node: {}", blank);
+                println!("Found blank node: {blank}");
             }
             #[allow(unreachable_patterns)]
             _ => {
@@ -187,8 +187,8 @@ async fn debug_shacl_datatype_generation() {
     
     println!("All triples generated:");
     for triple in all_triples {
-        println!("  {}", triple);
+        println!("  {triple}");
     }
     
-    println!("Datatype counts: {:?}", datatype_counts);
+    println!("Datatype counts: {datatype_counts:?}");
 }

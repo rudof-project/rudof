@@ -23,7 +23,7 @@ pub struct Manifest {
 impl Manifest {
     pub fn new(path: &Path) -> Result<Self, TestSuiteError> {
         let base = match Path::new(path).canonicalize()?.to_str() {
-            Some(path) => format!("file:/{}", path),
+            Some(path) => format!("file:/{path}"),
             None => panic!("Path not found!!"),
         };
 

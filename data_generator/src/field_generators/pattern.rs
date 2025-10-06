@@ -409,7 +409,7 @@ mod tests {
         context.parameters.insert("pattern".to_string(), json!("\\d{3}-\\d{3}-\\d{4}"));
         
         let result = generator.generate(&context).unwrap();
-        println!("Generated phone: {}", result);
+        println!("Generated phone: {result}");
         
         // Check format: XXX-XXX-XXXX
         let parts: Vec<&str> = result.split('-').collect();
@@ -430,7 +430,7 @@ mod tests {
         context.parameters.insert("pattern".to_string(), json!("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"));
         
         let result = generator.generate(&context).unwrap();
-        println!("Generated email: {}", result);
+        println!("Generated email: {result}");
         
         assert!(result.contains("@"));
         assert!(result.contains("."));
@@ -446,7 +446,7 @@ mod tests {
         );
         
         let result = generator.generate(&context).unwrap();
-        println!("Generated heuristic phone: {}", result);
+        println!("Generated heuristic phone: {result}");
         
         // Should generate phone-like format
         assert!(result.contains("-"));

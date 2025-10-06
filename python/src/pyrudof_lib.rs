@@ -1539,7 +1539,7 @@ fn cnv_err(e: RudofError) -> PyErr {
 
 fn cnv_comparator_err(e: ComparatorError) -> PyErr {
     println!("ComparatorError: {e}");
-    let e: PyRudofError = PyRudofError::str(format!("{}", e));
+    let e: PyRudofError = PyRudofError::str(format!("{e}"));
     let e: PyErr = e.into();
     e
 }

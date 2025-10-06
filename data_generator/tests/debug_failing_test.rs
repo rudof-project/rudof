@@ -20,7 +20,7 @@ ex:PersonShape {
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
-    writeln!(schema_file, "{}", shex_schema).unwrap();
+    writeln!(schema_file, "{shex_schema}").unwrap();
     
     let output_file = NamedTempFile::new().unwrap();
     
@@ -35,12 +35,12 @@ ex:PersonShape {
     generator.generate().await.unwrap();
     
     // Parse generated data
-    let graph = SRDFGraph::from_path(&output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
     
     // Read the generated file content
     let content = std::fs::read_to_string(output_file.path()).unwrap();
-    println!("Generated RDF content:\n{}", content);
+    println!("Generated RDF content:\n{content}");
     
     // Verify that generated triples respect datatypes
     let mut datatype_counts = HashMap::new();
@@ -55,7 +55,7 @@ ex:PersonShape {
         }
     }
     
-    println!("Datatype counts: {:?}", datatype_counts);
+    println!("Datatype counts: {datatype_counts:?}");
     
     // Should have string, integer, and boolean literals
     if !datatype_counts.contains_key("http://www.w3.org/2001/XMLSchema#string") {

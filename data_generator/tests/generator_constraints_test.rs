@@ -20,7 +20,7 @@ ex:PersonShape {
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
-    write!(schema_file, "{}", shex_schema).unwrap();
+    write!(schema_file, "{shex_schema}").unwrap();
     
     let output_file = NamedTempFile::new().unwrap();
     
@@ -35,7 +35,7 @@ ex:PersonShape {
     generator.generate().await.unwrap();
     
     // Parse generated data
-    let graph = SRDFGraph::from_path(&output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
     
     // Verify cardinality constraints
@@ -69,7 +69,7 @@ async fn test_shacl_cardinality_constraints() {
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
-    write!(schema_file, "{}", shacl_schema).unwrap();
+    write!(schema_file, "{shacl_schema}").unwrap();
     
     let output_file = NamedTempFile::new().unwrap();
     
@@ -84,7 +84,7 @@ async fn test_shacl_cardinality_constraints() {
     generator.generate().await.unwrap();
     
     // Parse generated data
-    let graph = SRDFGraph::from_path(&output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
     
     // Verify cardinality constraints
@@ -130,7 +130,7 @@ async fn test_datatype_constraints() {
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
-    write!(schema_file, "{}", shacl_schema).unwrap();
+    write!(schema_file, "{shacl_schema}").unwrap();
     
     let output_file = NamedTempFile::new().unwrap();
     
@@ -145,7 +145,7 @@ async fn test_datatype_constraints() {
     generator.generate().await.unwrap();
     
     // Parse generated data
-    let graph = SRDFGraph::from_path(&output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
     
     // Verify datatype constraints
@@ -179,7 +179,7 @@ async fn test_value_constraints() {
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
-    write!(schema_file, "{}", shacl_schema).unwrap();
+    write!(schema_file, "{shacl_schema}").unwrap();
     
     let output_file = NamedTempFile::new().unwrap();
     
@@ -194,7 +194,7 @@ async fn test_value_constraints() {
     generator.generate().await.unwrap();
     
     // Parse generated data
-    let graph = SRDFGraph::from_path(&output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
     
     // Verify value constraints
@@ -219,7 +219,7 @@ ex:PersonShape {
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
-    write!(schema_file, "{}", shex_schema).unwrap();
+    write!(schema_file, "{shex_schema}").unwrap();
     
     let output_file = NamedTempFile::new().unwrap();
     
@@ -234,7 +234,7 @@ ex:PersonShape {
     generator.generate().await.unwrap();
     
     // Parse generated data
-    let graph = SRDFGraph::from_path(&output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
     
     // Verify datatype constraints (reuse the same verification function)
@@ -257,7 +257,7 @@ ex:PersonShape {
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
-    write!(schema_file, "{}", shex_schema).unwrap();
+    write!(schema_file, "{shex_schema}").unwrap();
     
     let output_file = NamedTempFile::new().unwrap();
     
@@ -272,7 +272,7 @@ ex:PersonShape {
     generator.generate().await.unwrap();
     
     // Parse generated data
-    let graph = SRDFGraph::from_path(&output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
     
     // Verify value constraints (reuse the same verification function)
@@ -341,7 +341,7 @@ fn verify_shacl_cardinality(graph: &SRDFGraph) {
 
 fn verify_datatypes(graph: &SRDFGraph) {
     for triple in graph.triples().unwrap() {
-        let literal = oxrdf::Term::from(triple.object.clone());
+        let literal = triple.object.clone();
         if let oxrdf::Term::Literal(lit) = literal {
             let predicate_str = triple.predicate.as_str();
             let datatype = lit.datatype().as_str();
@@ -376,7 +376,7 @@ fn verify_datatypes(graph: &SRDFGraph) {
 fn verify_value_constraints(graph: &SRDFGraph) {
     // Only verify that basic datatypes are respected (no range/length constraints since they're not supported)
     for triple in graph.triples().unwrap() {
-        let literal = oxrdf::Term::from(triple.object.clone());
+        let literal = triple.object.clone();
         if let oxrdf::Term::Literal(lit) = literal {
             let predicate_str = triple.predicate.as_str();
             let value = lit.value();

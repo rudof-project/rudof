@@ -31,7 +31,7 @@ ex:PersonShape {
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
-    writeln!(schema_file, "{}", shex_schema).unwrap();
+    writeln!(schema_file, "{shex_schema}").unwrap();
     
     let output_file = NamedTempFile::new().unwrap();
     
@@ -68,7 +68,7 @@ ex:PersonShape a sh:NodeShape ;
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
-    writeln!(schema_file, "{}", shacl_schema).unwrap();
+    writeln!(schema_file, "{shacl_schema}").unwrap();
     
     let output_file = NamedTempFile::new().unwrap();
     
@@ -105,7 +105,7 @@ ex:PersonShape a sh:NodeShape ;
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
-    writeln!(schema_file, "{}", shacl_schema).unwrap();
+    writeln!(schema_file, "{shacl_schema}").unwrap();
     
     let output_file = NamedTempFile::new().unwrap();
     

@@ -22,7 +22,7 @@ ex:PersonShape {
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
-    writeln!(schema_file, "{}", shex_schema).unwrap();
+    writeln!(schema_file, "{shex_schema}").unwrap();
     
     let output_file = NamedTempFile::new().unwrap();
     
@@ -37,7 +37,7 @@ ex:PersonShape {
     generator.generate().await.unwrap();
     
     // Parse generated data
-    let graph = SRDFGraph::from_path(&output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
     
     // Verify that generated triples respect datatypes
@@ -91,7 +91,7 @@ ex:PersonShape a sh:NodeShape ;
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
-    writeln!(schema_file, "{}", shacl_schema).unwrap();
+    writeln!(schema_file, "{shacl_schema}").unwrap();
     
     let output_file = NamedTempFile::new().unwrap();
     
@@ -106,7 +106,7 @@ ex:PersonShape a sh:NodeShape ;
     generator.generate().await.unwrap();
     
     // Parse generated data
-    let graph = SRDFGraph::from_path(&output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
     
     // Verify that generated triples respect datatypes
@@ -148,7 +148,7 @@ ex:PersonShape {
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
-    writeln!(schema_file, "{}", shex_schema).unwrap();
+    writeln!(schema_file, "{shex_schema}").unwrap();
     
     let output_file = NamedTempFile::new().unwrap();
     
@@ -163,7 +163,7 @@ ex:PersonShape {
     generator.generate().await.unwrap();
     
     // Parse generated data
-    let graph = SRDFGraph::from_path(&output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
     
     // Count properties per entity to verify cardinality
@@ -175,7 +175,7 @@ ex:PersonShape {
         
         entity_properties
             .entry(subject)
-            .or_insert_with(HashMap::new)
+            .or_default()
             .entry(predicate)
             .and_modify(|count| *count += 1)
             .or_insert(1);
@@ -231,7 +231,7 @@ ex:PersonShape a sh:NodeShape ;
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
-    writeln!(schema_file, "{}", shacl_schema).unwrap();
+    writeln!(schema_file, "{shacl_schema}").unwrap();
     
     let output_file = NamedTempFile::new().unwrap();
     
@@ -246,7 +246,7 @@ ex:PersonShape a sh:NodeShape ;
     generator.generate().await.unwrap();
     
     // Parse generated data
-    let graph = SRDFGraph::from_path(&output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
     
     // Count properties per entity to verify cardinality
@@ -258,7 +258,7 @@ ex:PersonShape a sh:NodeShape ;
         
         entity_properties
             .entry(subject)
-            .or_insert_with(HashMap::new)
+            .or_default()
             .entry(predicate)
             .and_modify(|count| *count += 1)
             .or_insert(1);
@@ -278,7 +278,7 @@ ex:PersonShape a sh:NodeShape ;
         
         // Each entity should have 2-5 hobbies
         if let Some(&hobby_count) = properties.get("http://example.org/hobby") {
-            assert!(hobby_count >= 2 && hobby_count <= 5, "Entity should have 2-5 hobbies");
+            assert!((2..=5).contains(&hobby_count), "Entity should have 2-5 hobbies");
         }
     }
 }
@@ -305,7 +305,7 @@ ex:AddressShape {
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
-    writeln!(schema_file, "{}", shex_schema).unwrap();
+    writeln!(schema_file, "{shex_schema}").unwrap();
     
     let output_file = NamedTempFile::new().unwrap();
     
@@ -386,7 +386,7 @@ ex:AddressShape a sh:NodeShape ;
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
-    writeln!(schema_file, "{}", shacl_schema).unwrap();
+    writeln!(schema_file, "{shacl_schema}").unwrap();
     
     let output_file = NamedTempFile::new().unwrap();
     
@@ -459,7 +459,7 @@ ex:PersonShape a sh:NodeShape ;
 
     // Create temporary files
     let mut schema_file = NamedTempFile::new().unwrap();
-    writeln!(schema_file, "{}", shacl_schema).unwrap();
+    writeln!(schema_file, "{shacl_schema}").unwrap();
     
     let output_file = NamedTempFile::new().unwrap();
     
@@ -490,21 +490,21 @@ ex:PersonShape a sh:NodeShape ;
                 if let oxrdf::Term::Literal(literal) = object {
                     let value = literal.lexical_form();
                     assert!(value.len() >= 2 && value.len() <= 50, 
-                           "Name length should be between 2 and 50 characters, got: {}", value);
+                           "Name length should be between 2 and 50 characters, got: {value}");
                 }
             }
             "http://example.org/age" => {
                 if let oxrdf::Term::Literal(literal) = object {
                     let value: i32 = literal.lexical_form().parse().unwrap();
-                    assert!(value >= 0 && value <= 150, 
-                           "Age should be between 0 and 150, got: {}", value);
+                    assert!((0..=150).contains(&value), 
+                           "Age should be between 0 and 150, got: {value}");
                 }
             }
             "http://example.org/status" => {
                 if let oxrdf::Term::Literal(literal) = object {
                     let value = literal.lexical_form();
                     assert!(["active", "inactive", "pending"].contains(&value),
-                           "Status should be one of active/inactive/pending, got: {}", value);
+                           "Status should be one of active/inactive/pending, got: {value}");
                 }
             }
             _ => {}
