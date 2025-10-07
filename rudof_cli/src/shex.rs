@@ -84,7 +84,7 @@ pub fn run_shex(
                         if shex_ir.imported_schemas().is_empty() {
                             String::new()
                         } else {
-                            format!(" from {}", source)
+                            format!(" from {source}")
                         }
                     )?;
                 }

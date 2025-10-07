@@ -96,7 +96,7 @@ impl Display for CompiledSeverity {
             CompiledSeverity::Violation => write!(f, "Violation"),
             CompiledSeverity::Warning => write!(f, "Warning"),
             CompiledSeverity::Info => write!(f, "Info"),
-            CompiledSeverity::Generic(iri) => write!(f, "Generic({})", iri),
+            CompiledSeverity::Generic(iri) => write!(f, "Generic({iri})"),
         }
     }
 }

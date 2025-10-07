@@ -59,7 +59,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                                 self.shape().id(),
                                 results
                                     .iter()
-                                    .map(|r| format!(" {:?}", r))
+                                    .map(|r| format!(" {r:?}"))
                                     .collect::<Vec<String>>()
                                     .join(", ")
                             );

@@ -80,7 +80,7 @@ impl ShapeExpr {
                         .map(|info| info.expr().references(schema))
                         .unwrap_or_default();
                     for (p, v) in refs {
-                        acc.entry(p).or_insert_with(Vec::new).extend(v);
+                        acc.entry(p).or_default().extend(v);
                     }
                     acc
                 })
@@ -92,7 +92,7 @@ impl ShapeExpr {
                         .map(|info| info.expr().references(schema))
                         .unwrap_or_default();
                     for (p, v) in refs {
-                        acc.entry(p).or_insert_with(Vec::new).extend(v);
+                        acc.entry(p).or_default().extend(v);
                     }
                     acc
                 })

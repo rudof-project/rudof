@@ -21,6 +21,7 @@
 - [validate](./cli_usage/validate.md)
 - [convert](./cli_usage/convert.md)
 - [compare](./cli_usage/compare.md)
+- [generate](./cli_usage/generate.md)
 
 # `rudof` as a library
 

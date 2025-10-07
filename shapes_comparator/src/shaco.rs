@@ -84,19 +84,19 @@ impl Display for ShaCo {
         if !self.equal_properties.is_empty() {
             writeln!(f, " Equal properties:")?;
             for (property, equals) in self.equal_properties.iter() {
-                writeln!(f, "  - {}: {}", property, equals)?;
+                writeln!(f, "  - {property}: {equals}")?;
             }
         }
         if !self.properties1.is_empty() {
             writeln!(f, " Properties in shape 1 that are not in shape 2:")?;
             for (property, descr) in self.properties1.iter() {
-                writeln!(f, "  - {}: {}", property, descr)?;
+                writeln!(f, "  - {property}: {descr}")?;
             }
         }
         if !self.properties2.is_empty() {
             writeln!(f, " Properties in shape 2 that are not in shape 1:")?;
             for (property, descr) in self.properties2.iter() {
-                writeln!(f, "  - {}: {}", property, descr)?;
+                writeln!(f, "  - {property}: {descr}")?;
             }
         }
         Ok(())

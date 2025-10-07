@@ -1,0 +1,35 @@
+prefix : <http://example.org/> 
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+prefix schema: <http://schema.org/>
+
+start = @:User 
+
+:User {
+  schema:name   xsd:string             ;
+  schema:email  xsd:string           ? ;
+  :age          xsd:integer          ? ;
+  :knows        @:User               * ;
+  :status       [ :Active :Waiting ] ? ;
+}
+
+:Person {
+  schema:name     xsd:string           ;
+  schema:email    xsd:string         ? ;
+  :birthDate      xsd:date           ? ;
+  :enrolledIn     @:Course           * ;
+  :address        @:Address          ? ;
+}
+
+:Course {
+  schema:name   xsd:string             ;
+  :courseCode   xsd:string           ? ;
+  :credits      xsd:integer          ? ;
+  :instructor   @:Person             ? ;
+}
+
+:Address {
+  :street       xsd:string             ;
+  :city         xsd:string             ;
+  :postalCode   xsd:string           ? ;
+  :country      xsd:string             ;
+}

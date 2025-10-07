@@ -38,7 +38,7 @@ impl Display for Severity {
             Severity::Violation => write!(f, "Violation"),
             Severity::Warning => write!(f, "Warning"),
             Severity::Info => write!(f, "Info"),
-            Severity::Generic(iri_ref) => write!(f, "Severity({})", iri_ref),
+            Severity::Generic(iri_ref) => write!(f, "Severity({iri_ref})"),
         }
     }
 }

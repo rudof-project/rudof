@@ -80,14 +80,14 @@ mod tests {
         /// The given group name is assigned to all loaded tests.
         pub fn load_slice(&mut self, group_name: &str, data: &[u8]) -> Result<()> {
             let data = std::str::from_utf8(data)
-                .with_context(|| format!("data in {} is not valid UTF-8", group_name))?;
+                .with_context(|| format!("data in {group_name} is not valid UTF-8"))?;
             let mut index = 1;
             let mut tests: RbeTests = serde_json::from_str(data)
-                .with_context(|| format!("error decoding JSON for '{}'", group_name))?;
+                .with_context(|| format!("error decoding JSON for '{group_name}'"))?;
             for t in &mut tests.tests {
                 t.set_group(group_name.to_string());
                 if t.name().is_empty() {
-                    t.set_name(format!("{}", index));
+                    t.set_name(format!("{index}"));
                     index += 1;
                 }
                 t.set_full_name(format!("{}/{}", t.group(), t.name()));
@@ -120,7 +120,7 @@ mod tests {
         let mut rbe_tests = RbeTests::default();
         rbe_tests.with_tests(ts);
         let serialized = serde_json::to_string_pretty(&rbe_tests).unwrap();
-        println!("Serialized: {}", serialized);
+        println!("Serialized: {serialized}");
         assert_eq!(serialized.is_empty(), false);
     }
 

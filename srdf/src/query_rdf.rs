@@ -89,7 +89,7 @@ impl<S: Rdf> Serialize for QuerySolution<S> {
         let mut map = serializer.serialize_map(Some(self.variables.len()))?;
         for (i, var) in self.variables.iter().enumerate() {
             if let Some(value) = &self.values[i] {
-                let str = format!("{}", value);
+                let str = format!("{value}");
                 map.serialize_entry(&var.str, &str)?;
             }
         }

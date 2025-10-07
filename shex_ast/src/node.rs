@@ -114,7 +114,7 @@ impl TryFrom<&Node> for ObjectValue {
             srdf::Object::BlankNode(bnode_id) => {
                 Err(crate::SchemaJsonError::InvalidNodeInObjectValue {
                     node: node.to_string(),
-                    error: format!("Blank node _:{}", bnode_id),
+                    error: format!("Blank node _:{bnode_id}"),
                 })
             }
             srdf::Object::Triple { .. } => Err(SchemaJsonError::InvalidNodeInObjectValue {

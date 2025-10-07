@@ -32,7 +32,7 @@ impl RdfConfigModel {
                     })?;
             }
             RdfConfigFormat::Internal => {
-                write!(writer, "{}", self).map_err(|e| RdfConfigError::WritingRdfConfigError {
+                write!(writer, "{self}").map_err(|e| RdfConfigError::WritingRdfConfigError {
                     error: e.to_string(),
                 })?;
             }
