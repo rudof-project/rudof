@@ -1,7 +1,6 @@
 use super::dependency_graph::{DependencyGraph, PosNeg};
 use super::shape_expr::ShapeExpr;
 use super::shape_label::ShapeLabel;
-use crate::ir::dependency_graph;
 use crate::ir::inheritance_graph::InheritanceGraph;
 use crate::ir::shape_expr_info::ShapeExprInfo;
 use crate::ir::source_idx::SourceIdx;
@@ -128,12 +127,12 @@ impl SchemaIR {
     ) -> Option<HashMap<Option<ShapeLabelIdx>, Vec<Expr>>> {
         if let Some(info) = self.find_shape_idx(idx) {
             let mut result = HashMap::new();
-            let current_exprs = info.expr().get_triple_exprs(&self);
+            let current_exprs = info.expr().get_triple_exprs(self);
             result.insert(None, current_exprs);
             trace!("Checking parents of {idx}: {:?}", self.parents(idx));
             for e in &self.parents(idx) {
                 let shape_expr = self.find_shape_idx(e).unwrap();
-                let exprs = shape_expr.expr().get_triple_exprs(&self);
+                let exprs = shape_expr.expr().get_triple_exprs(self);
                 result.insert(Some(*e), exprs);
             }
             Some(result)

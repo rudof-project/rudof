@@ -1,6 +1,5 @@
 use super::node_constraint::NodeConstraint;
 use crate::ir::annotation::Annotation;
-use crate::ir::dependency_graph;
 use crate::ir::object_value::ObjectValue;
 use crate::ir::schema_ir::SchemaIR;
 use crate::ir::sem_act::SemAct;

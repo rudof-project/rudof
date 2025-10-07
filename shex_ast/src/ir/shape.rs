@@ -3,13 +3,9 @@ use super::{
     dependency_graph::{DependencyGraph, PosNeg},
     sem_act::SemAct,
 };
-use crate::{Expr, Pred, ShapeLabelIdx, ir::schema_ir::SchemaIR};
+use crate::{Expr, Pred, ShapeLabelIdx};
 use itertools::Itertools;
-use std::{
-    collections::{HashMap, hash_map::Entry},
-    fmt::Display,
-};
-use tracing::trace;
+use std::{collections::HashMap, fmt::Display};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Shape {
