@@ -50,6 +50,7 @@ authors = [
 ]
 
 [workspace.dependencies]
+data_generator = { version = "0.1.118", path = "./data_generator" }
 dctap = { version = "0.1.111", path = "./dctap" }
 iri_s = { version = "0.1.90", path = "./iri_s" }
 lazy-regex = "3.4"
@@ -78,6 +79,7 @@ shex_testsuite = { version = "0.1.108", path = "./shex_testsuite" }
 shex_validation = { version = "0.1.111", path = "./shex_validation" }
 sparql_service = { version = "0.1.111", path = "./sparql_service" }
 srdf = { version = "0.1.111", path = "./srdf" }
+
 
 # [dependencies]
 anyhow = "1.0"
