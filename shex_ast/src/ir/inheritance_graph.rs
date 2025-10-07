@@ -1,68 +1,67 @@
 use std::fmt::Display;
 
 use crate::ShapeLabelIdx;
+use petgraph::algo::toposort;
 use petgraph::graphmap::GraphMap;
-use petgraph::visit::EdgeRef;
 use petgraph::visit::IntoEdgeReferences;
+use petgraph::visit::{Dfs, EdgeRef, Reversed};
+use tracing::trace;
 
 #[derive(Debug, Default, Clone)]
-pub struct DependencyGraph {
-    graph: GraphMap<ShapeLabelIdx, PosNeg, petgraph::Directed>,
+pub struct InheritanceGraph {
+    graph: GraphMap<ShapeLabelIdx, (), petgraph::Directed>,
 }
 
-impl DependencyGraph {
+impl InheritanceGraph {
     pub fn new() -> Self {
         Self::default()
     }
 
-    pub fn add_edge(&mut self, from: ShapeLabelIdx, to: ShapeLabelIdx, pos_neg: PosNeg) {
-        self.graph.add_edge(from, to, pos_neg);
+    pub fn add_edge(&mut self, from: ShapeLabelIdx, to: ShapeLabelIdx) {
+        self.graph.add_edge(from, to, ());
     }
 
-    pub fn neg_cycles(&self) -> Vec<Vec<(ShapeLabelIdx, ShapeLabelIdx, Vec<ShapeLabelIdx>)>> {
-        let mut result = Vec::new();
-        let scc = petgraph::algo::tarjan_scc(&self.graph);
-        for component in &scc {
-            let mut neg_cycle = Vec::new();
-            for node in component.iter().as_slice() {
-                let edges = self
-                    .graph
-                    .edges_directed(*node, petgraph::Direction::Outgoing);
-                for edge in edges {
-                    if component.contains(&edge.target()) && edge.weight().is_neg() {
-                        let mut shapes = Vec::new();
-                        for node in component.iter() {
-                            shapes.push(*node);
-                        }
-                        let target = edge.target();
-                        neg_cycle.push((*node, target, shapes));
-                        break;
-                    }
-                }
-            }
-            if !neg_cycle.is_empty() {
-                result.push(neg_cycle);
+    pub fn has_cycles(&self) -> bool {
+        match toposort(&self.graph, None) {
+            Ok(_order) => false,
+            Err(cycle_node) => {
+                trace!("Cycle detected at node {:?}", cycle_node.node_id());
+                true
             }
         }
-        result
     }
 
-    pub fn has_neg_cycle(&self) -> bool {
-        let neg_cycles = self.neg_cycles();
-        !neg_cycles.is_empty()
-    }
+    /// In an inheritance graph, these are the nodes that extend the given node
+    pub fn descendants(&self, node: &ShapeLabelIdx) -> Vec<ShapeLabelIdx> {
+        let mut dfs = Dfs::new(Reversed(&self.graph), *node);
+        let mut ancestors = Vec::new();
 
-    pub fn all_edges(&self) -> DependencyGraphIter<'_> {
-        DependencyGraphIter {
-            inner: self.graph.all_edges(),
+        while let Some(nx) = dfs.next(Reversed(&self.graph)) {
+            if nx != *node {
+                ancestors.push(nx);
+            }
         }
+        ancestors
+    }
+
+    /// In an inheritance graph these are the ndoes that are extended by the given node
+    pub fn parents(&self, node: &ShapeLabelIdx) -> Vec<ShapeLabelIdx> {
+        let mut dfs = Dfs::new(&self.graph, *node);
+        let mut parents = Vec::new();
+
+        while let Some(nx) = dfs.next(&self.graph) {
+            if nx != *node {
+                parents.push(nx);
+            }
+        }
+        parents
     }
 }
 
-impl Display for DependencyGraph {
+impl Display for InheritanceGraph {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for (source, target, posneg) in self.graph.edge_references() {
-            writeln!(f, "{} -{}-> {} ", source, posneg, target,)?;
+        for (source, target, _) in self.graph.edge_references() {
+            writeln!(f, "{} -> {} ", source, target,)?;
         }
         Ok(())
     }
