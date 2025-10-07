@@ -11,16 +11,17 @@
 - [node](./cli_usage/node.md)
 - [data](./cli_usage/data.md)
 - [query](./cli_usage/sparql.md)
-- [dctap](./cli_usage/dctap.md)
 - [shex](./cli_usage/shex.md)
 - [shacl](./cli_usage/shacl.md)
 - [shapemap](./cli_usage/shapemap.md)
+- [dctap](./cli_usage/dctap.md)
 - [service](./cli_usage/service.md)
 - [shex-validate](./cli_usage/shex_validate.md)
 - [shacl-validate](./cli_usage/shacl_validate.md)
 - [validate](./cli_usage/validate.md)
 - [convert](./cli_usage/convert.md)
 - [compare](./cli_usage/compare.md)
+- [generate](./cli_usage/generate.md)
 
 # `rudof` as a library
 
