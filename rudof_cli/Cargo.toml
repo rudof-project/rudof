@@ -17,7 +17,7 @@ name = "rudof"
 anyhow.workspace = true 
 clap.workspace = true 
 clientele.workspace = true 
-data_generator = { path = "../data_generator" }
+data_generator.workspace = true
 dctap.workspace = true 
 iri_s.workspace = true 
 oxrdf.workspace = true 
