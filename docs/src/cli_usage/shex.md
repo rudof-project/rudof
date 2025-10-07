@@ -1,7 +1,6 @@
 # ShEx
 
-[ShEX](https://shex.io/shex-semantics/) is a language for validating and describing RDF data.
-In `rudof` there exist several supported operations regarding ShEx, namely, obtaining information about the ShEx schema, or validating an RDF graph using ShEx.
+The command `shex` can be used to obtain information about [ShEx](https://shex.io/) schemas.
 
 For executing the examples in this page we assume you have a file called `user.shex` in your folder with the following contents:
 
@@ -30,7 +29,34 @@ curl -o user.shex https://raw.githubusercontent.com/rudof-project/rudof/refs/hea
 You can obtain information about a ShEx schema using the following command:
 
 ```sh
-rudof shex -s user.shex
+rudof shex -s examples/user.shex
+```
+
+## Checking if the schema is well formed
+
+In ShEx, there are some [requirements](https://shex.io/shex-semantics/index.html#schema-requirements) that the schemas have to meet before validating. For example, for schemas that have recursive shapes and negations, it is required that there are no cycles with negative references, i.e. the schemas should have stratified negation. An example of a non-stratified schema could be:
+
+```shex
+prefix :       <http://example.org/> 
+
+:S {
+    :p NOT @:S + 
+}
+```
+
+If you try to check that schema with rudof, it informs about the error:
+
+```sh
+$ rudof shex -s examples/shex/non_stratified.shex
+Error: Negation cycle error on :S
+```
+
+## Obtaining information about a shape
+
+Sometimes, it can be useful to obtain information about a specific shape in a schema:
+
+```
+$ rudof shex -s examples/shex/figures.shex -l ":ColouredFigure"
 ```
 
 ## Conversion between ShEx formats

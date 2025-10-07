@@ -10,7 +10,7 @@ use shex_ast::compact::ShExParser;
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::shape_label::ShapeLabel;
 use shex_ast::shapemap::{NodeSelector, ShapeSelector};
-use shex_ast::{ResolveMethod, ShExFormat};
+use shex_ast::{ResolveMethod, ShExFormat, ShapeLabelIdx};
 // use shex_validation::SchemaWithoutImports;
 use srdf::rdf_visualizer::visual_rdf_graph::VisualRDFGraph;
 use srdf::{FocusRDF, SRDFGraph, SparqlQuery};
@@ -406,9 +406,12 @@ impl Rudof {
                             label: shape_expr_label.to_string(),
                             error: format!("{e}"),
                         })?;
-                if let Some((_idx, shape_expr)) = shex.find_label(&shape_label) {
+                if let Some((idx, shape_expr)) = shex.find_label(&shape_label) {
                     writeln!(writer, "# Shape {shape_label}")?;
-                    write!(writer, "  {shape_expr}")?
+                    write!(writer, "  {shape_expr}")?;
+                    trace!("Show triple expressions with extends");
+                    writeln!(writer, "  # Triple expressions with extends:")?;
+                    show_triple_exprs(idx, shex, writer)?;
                 } else {
                     write!(writer, "Shape {shape_label} not found in schema")?;
                 }
@@ -1210,6 +1213,46 @@ fn shacl_format2rdf_format(shacl_format: &ShaclFormat) -> Result<RDFFormat> {
         ShaclFormat::Turtle => Ok(RDFFormat::Turtle),
         ShaclFormat::Internal => Err(RudofError::NoInternalFormatForRDF),
         ShaclFormat::JsonLd => Ok(RDFFormat::JsonLd),
+    }
+}
+
+pub fn show_triple_exprs(
+    idx: &ShapeLabelIdx,
+    schema: &SchemaIR,
+    writer: &mut impl io::Write,
+) -> Result<()> {
+    if let Some(triple_exprs) = schema.get_triple_exprs(idx) {
+        if let Some(current) = triple_exprs.get(&None) {
+            writeln!(
+                writer,
+                "    Current -> {}",
+                current
+                    .iter()
+                    .map(|t| t.to_string())
+                    .collect::<Vec<String>>()
+                    .join(", ")
+            )?;
+        } else {
+            writeln!(writer, "    Current -> None?")?;
+        }
+        if triple_exprs.len() > 1 {
+            for (label, exprs) in triple_exprs.iter().filter(|(k, _)| k.is_some()) {
+                writeln!(
+                    writer,
+                    "    {} -> {}",
+                    label.as_ref().unwrap(),
+                    exprs
+                        .iter()
+                        .map(|t| t.to_string())
+                        .collect::<Vec<String>>()
+                        .join(", ")
+                )?;
+            }
+        }
+        Ok(())
+    } else {
+        trace!("No triple expressions for shape {idx}");
+        Ok(())
     }
 }
 
