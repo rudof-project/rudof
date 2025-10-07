@@ -278,16 +278,16 @@ impl Display for Mie {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "MIE")?;
         if let Some(title) = &self.schema_info.title {
-            writeln!(f, " Title: {}", title)?;
+            writeln!(f, " Title: {title}")?;
         }
         if let Some(desc) = &self.schema_info.description {
-            writeln!(f, " Description: {}", desc)?;
+            writeln!(f, " Description: {desc}")?;
         }
         if let Some(endpoint) = &self.schema_info.endpoint {
-            writeln!(f, " Endpoint: {}", endpoint)?;
+            writeln!(f, " Endpoint: {endpoint}")?;
         }
         if let Some(base_uri) = &self.schema_info.base_uri {
-            writeln!(f, " Base URI: {}", base_uri)?;
+            writeln!(f, " Base URI: {base_uri}")?;
         }
         if !self.schema_info.graphs.is_empty() {
             writeln!(f, " Graphs: {:?}", self.schema_info.graphs)?;
@@ -295,7 +295,7 @@ impl Display for Mie {
         if !self.prefixes.is_empty() {
             writeln!(f, " Prefixes:")?;
             for (prefix, uri) in &self.prefixes {
-                writeln!(f, "  - {}: {}", prefix, uri)?;
+                writeln!(f, "  - {prefix}: {uri}")?;
             }
         }
         if !self.shape_expressions.is_empty() {
@@ -303,34 +303,34 @@ impl Display for Mie {
             for (name, shape_expr) in &self.shape_expressions {
                 writeln!(f, "  - {}: {}", name, shape_expr.shape_expr)?;
                 if let Some(desc) = &shape_expr.description {
-                    writeln!(f, "      Description: {}", desc)?;
+                    writeln!(f, "      Description: {desc}")?;
                 }
             }
         }
         if !self.sample_rdf_entries.is_empty() {
             writeln!(f, " Sample RDF Entries:")?;
             for (name, rdf_example) in &self.sample_rdf_entries {
-                writeln!(f, "  - {}: [RDF data omitted]", name)?;
+                writeln!(f, "  - {name}: [RDF data omitted]")?;
                 if let Some(desc) = &rdf_example.description {
-                    writeln!(f, "      Description: {}", desc)?;
+                    writeln!(f, "      Description: {desc}")?;
                 }
             }
         }
         if !self.sparql_query_examples.is_empty() {
             writeln!(f, " SPARQL Query Examples:")?;
             for (name, query_example) in &self.sparql_query_examples {
-                writeln!(f, "  - {}: [SPARQL query omitted]", name)?;
+                writeln!(f, "  - {name}: [SPARQL query omitted]")?;
                 if let Some(desc) = &query_example.description {
-                    writeln!(f, "      Description: {}", desc)?;
+                    writeln!(f, "      Description: {desc}")?;
                 }
             }
         }
         if !self.cross_references.is_empty() {
             writeln!(f, " Cross References:")?;
             for (name, cross_ref) in &self.cross_references {
-                writeln!(f, "  - {}: [SPARQL query omitted]", name)?;
+                writeln!(f, "  - {name}: [SPARQL query omitted]")?;
                 if let Some(desc) = &cross_ref.description {
-                    writeln!(f, "      Description: {}", desc)?;
+                    writeln!(f, "      Description: {desc}")?;
                 }
             }
         }
@@ -383,7 +383,7 @@ mod tests {
         let mut str = String::new();
         let mut emitter = YamlEmitter::new(&mut str);
         emitter.dump(&mie.to_yaml()).unwrap();
-        println!("YAML Output:\n{}", str);
+        println!("YAML Output:\n{str}");
         assert_eq!(mie.schema_info.title.unwrap(), "Example Schema");
     }
 }

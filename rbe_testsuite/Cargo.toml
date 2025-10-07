@@ -1,6 +1,6 @@
 [package]
 name = "rbe_testsuite"
-version = "0.1.90"
+version = "0.1.118"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/rbe_testsuite"

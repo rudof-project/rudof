@@ -501,7 +501,7 @@ impl AST2IR {
 
                 ast::ShapeExpr::Ref(sref) => {
                     let idx = self.ref2idx(sref, compiled_schema)?;
-                    Ok((mk_cond_ref(idx), format!("ShapeRef {}", sref)))
+                    Ok((mk_cond_ref(idx), format!("ShapeRef {sref}")))
                 }
                 ast::ShapeExpr::Shape { .. } => {
                     // TODO: avoid recompiling the same shape expression?
@@ -510,7 +510,7 @@ impl AST2IR {
                     let se = self.compile_shape_expr(se, &idx, compiled_schema, source_iri)?;
                     compiled_schema.replace_shape(&idx, se.clone());
                     trace!("Returning SHAPE cond with idx {idx}");
-                    Ok((mk_cond_ref(idx), format!("Shape {}", idx)))
+                    Ok((mk_cond_ref(idx), format!("Shape {idx}")))
                 }
                 ast::ShapeExpr::ShapeAnd { shape_exprs } => {
                     let mut ands = Vec::new();
@@ -573,7 +573,7 @@ impl AST2IR {
                         source_iri,
                     )?;
                     compiled_schema.replace_shape(&idx_shape_expr, se.clone());
-                    let display = format!("NOT {}", idx_shape_expr);
+                    let display = format!("NOT {idx_shape_expr}");
                     let not_se = ShapeExpr::ShapeNot {
                         expr: idx_shape_expr,
                     };

@@ -3,13 +3,15 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ## [Unreleased]
 ### Added
+- Support to visualize a single shape in a ShEx schema with the option `--label` in CLI (issue 341)
+
 ### Fixed
 ### Changed
 ### Removed
 
 ## 0.1.118
 ### Added
-- Support to visualize a single shape in a ShEx schema with the option `--label` in CLI
+- Support for `generate` integrating the code from `data_generator` (Diego)
 
 ### Changed
 ### Removed

@@ -27,7 +27,7 @@ impl<R: Rdf> Display for ValueNodes<R> {
             if i > 0 {
                 write!(f, ", ")?;
             }
-            write!(f, "{} -> {}", node, vnodes)?;
+            write!(f, "{node} -> {vnodes}")?;
         }
         write!(f, "]")
     }

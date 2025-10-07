@@ -214,7 +214,7 @@ impl Display for ServiceDescription {
         let result = self.result_format.iter().map(|l| l.to_string()).join(", ");
         writeln!(f, "  result_format: [{result}]")?;
         if let Some(default_ds) = &self.default_dataset {
-            writeln!(f, "  default_dataset: {}", default_ds)?;
+            writeln!(f, "  default_dataset: {default_ds}")?;
         } else {
             writeln!(f, "  default_dataset: None")?;
         }

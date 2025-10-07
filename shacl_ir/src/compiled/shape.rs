@@ -28,7 +28,7 @@ impl ShapeIR {
 
     pub fn show_severity(&self) -> String {
         if let Some(severity) = self.severity().into() {
-            format!("(severity: {})", severity)
+            format!("(severity: {severity})")
         } else {
             "(severity: Violation)".to_string()
         }
@@ -148,14 +148,14 @@ impl Display for ShapeIR {
         if components.peek().is_some() {
             writeln!(f, " Components:")?;
             for component in components {
-                writeln!(f, "  - {}", component)?;
+                writeln!(f, "  - {component}")?;
             }
         }
         let mut targets = self.targets().iter().peekable();
         if targets.peek().is_some() {
             writeln!(f, " Targets:")?;
             for target in targets {
-                writeln!(f, "  - {}", target)?;
+                writeln!(f, "  - {target}")?;
             }
         }
         let mut property_shapes = self.property_shapes().iter().peekable();

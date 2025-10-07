@@ -834,9 +834,9 @@ impl Display for ComponentIR {
             ComponentIR::Xone(xone) => write!(f, " {xone}"),
             ComponentIR::Node(node) => write!(f, " {node}"),
             ComponentIR::HasValue(value) => write!(f, " HasValue({value})"),
-            ComponentIR::In(vs) => write!(f, " {}", vs),
+            ComponentIR::In(vs) => write!(f, " {vs}"),
             ComponentIR::QualifiedValueShape(qvs) => {
-                write!(f, " {}", qvs)
+                write!(f, " {qvs}")
             }
         }
     }
@@ -994,7 +994,7 @@ impl Display for In {
             .map(|v| format!("{v}"))
             .collect::<Vec<_>>()
             .join(", ");
-        write!(f, "In: [{}]", values)
+        write!(f, "In: [{values}]")
     }
 }
 
@@ -1053,6 +1053,6 @@ impl Display for LanguageIn {
             .map(|l| l.to_string())
             .collect::<Vec<_>>()
             .join(", ");
-        write!(f, "LanguageIn: [{}]", langs)
+        write!(f, "LanguageIn: [{langs}]")
     }
 }

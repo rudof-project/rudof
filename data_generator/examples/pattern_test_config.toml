@@ -1,0 +1,124 @@
+# Configuration for testing pattern-based field generation
+# This configuration demonstrates the new pattern generator capabilities
+
+[generation]
+entity_count = 100                     # Generate 100 entities for testing
+seed = 12345                          # Fixed seed for consistent results
+entity_distribution = "Equal"         # Distribute entities equally
+cardinality_strategy = "Balanced"     # Balanced cardinality
+
+[field_generators.default]
+locale = "en"                         # English locale
+quality = "Medium"                    # Medium quality data
+
+# ============================================================================
+# PATTERN-BASED GENERATORS - Demonstrate regex pattern generation
+# ============================================================================
+
+# Email with regex pattern (will auto-extract from schema or use this config)
+[field_generators.properties."http://example.org/email"]
+generator = "pattern"
+[field_generators.properties."http://example.org/email".parameters]
+pattern = "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
+
+# Phone number with pattern
+[field_generators.properties."http://example.org/phone"]
+generator = "pattern"
+[field_generators.properties."http://example.org/phone".parameters]
+pattern = "\\d{3}-\\d{3}-\\d{4}"
+
+# Student ID with pattern
+[field_generators.properties."http://example.org/studentId"]
+generator = "pattern"
+[field_generators.properties."http://example.org/studentId".parameters]
+pattern = "[A-Z]{2,3}\\d{4,6}"
+
+# Website URL with pattern
+[field_generators.properties."http://example.org/website"]
+generator = "pattern"
+[field_generators.properties."http://example.org/website".parameters]
+pattern = "https?://[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
+
+# Birth date as string with pattern
+[field_generators.properties."http://example.org/birthDate"]
+generator = "pattern"
+[field_generators.properties."http://example.org/birthDate".parameters]
+pattern = "\\d{4}-\\d{2}-\\d{2}"
+
+# IP address with pattern
+[field_generators.properties."http://example.org/ipAddress"]
+generator = "pattern"
+[field_generators.properties."http://example.org/ipAddress".parameters]
+pattern = "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}"
+
+# Name property uses heuristic generation (no pattern specified)
+[field_generators.properties."http://example.org/name"]
+generator = "pattern"  # Will use heuristic generation based on property name
+parameters = {}
+
+# ============================================================================
+# ADDITIONAL PATTERN EXAMPLES (commented out)
+# ============================================================================
+
+# US phone number with country code
+# [field_generators.properties."http://example.org/usPhone"]
+# generator = "pattern"
+# [field_generators.properties."http://example.org/usPhone".parameters]
+# pattern = "\\+1-\\d{3}-\\d{3}-\\d{4}"
+
+# Social Security Number
+# [field_generators.properties."http://example.org/ssn"]
+# generator = "pattern"
+# [field_generators.properties."http://example.org/ssn".parameters]
+# pattern = "\\d{3}-\\d{2}-\\d{4}"
+
+# License plate
+# [field_generators.properties."http://example.org/licensePlate"]
+# generator = "pattern"
+# [field_generators.properties."http://example.org/licensePlate".parameters]
+# pattern = "[A-Z]{3}\\d{3}"
+
+# Credit card number (simplified)
+# [field_generators.properties."http://example.org/creditCard"]
+# generator = "pattern"
+# [field_generators.properties."http://example.org/creditCard".parameters]
+# pattern = "\\d{4}-\\d{4}-\\d{4}-\\d{4}"
+
+# Postal code (US ZIP)
+# [field_generators.properties."http://example.org/zipCode"]
+# generator = "pattern"
+# [field_generators.properties."http://example.org/zipCode".parameters]
+# pattern = "\\d{5}(-\\d{4})?"
+
+[output]
+path = "pattern_test_data.ttl"        # Output file for pattern testing
+format = "Turtle"                     # Turtle format for readability
+compress = false                      # No compression for testing
+write_stats = true                    # Include generation statistics
+
+[parallel]
+worker_threads = 2                    # Light threading for testing
+batch_size = 50                       # Small batches
+parallel_shapes = true               # Enable shape parallelism
+parallel_fields = true              # Enable field parallelism
+
+# ============================================================================
+# USAGE INSTRUCTIONS
+# ============================================================================
+# 
+# To test pattern generation:
+# 1. Use with the pattern_schema.shex file:
+#    cargo run -p data_generator -- --config pattern_test_config.toml --schema pattern_schema.shex
+#
+# 2. Or test with any existing schema - patterns from config will be used:
+#    cargo run -p data_generator -- --config pattern_test_config.toml --schema examples/simple.shex
+#
+# 3. Check the output file (pattern_test_data.ttl) to verify pattern compliance
+#
+# Expected output examples:
+# - Email: user42@example.com, admin123@test.org
+# - Phone: 555-123-4567, 800-555-9999  
+# - Student ID: AB1234, XYZ123456
+# - Website: https://example.com, http://test.org
+# - Birth date: 1985-03-15, 2001-12-25
+# - IP address: 192.168.1.100, 10.0.0.1

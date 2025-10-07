@@ -72,7 +72,7 @@ impl<S: srdf::Rdf> Display for FocusNodes<S> {
             if i > 0 {
                 write!(f, ", ")?;
             }
-            write!(f, "{}", node)?;
+            write!(f, "{node}")?;
         }
         write!(f, "]")
     }

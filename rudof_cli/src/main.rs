@@ -1,5 +1,6 @@
 extern crate anyhow;
 extern crate clap;
+extern crate data_generator;
 extern crate dctap;
 extern crate iri_s;
 extern crate oxrdf;
@@ -19,15 +20,16 @@ use rudof_cli::CliShaclFormat;
 use rudof_cli::ShExFormat as CliShExFormat;
 use rudof_cli::cli::{Cli, Command};
 use rudof_cli::data::run_data;
+use rudof_cli::data_format::DataFormat;
 use rudof_cli::node::run_node;
 use rudof_cli::query::run_query;
 use rudof_cli::rdf_config::run_rdf_config;
 use rudof_cli::run_compare;
 use rudof_cli::{
-    ValidationMode, run_convert, run_dctap, run_service, run_shacl, run_shapemap, run_shex,
-    run_validate_shacl, run_validate_shex,
+    GenerateSchemaFormat, ValidationMode, run_convert, run_dctap, run_service, run_shacl,
+    run_shapemap, run_shex, run_validate_shacl, run_validate_shex,
 };
-use rudof_lib::RudofConfig;
+use rudof_lib::{InputSpec, RudofConfig};
 use std::io;
 use std::path::PathBuf;
 use std::result::Result::Ok;
@@ -503,6 +505,27 @@ fn main() -> Result<()> {
                 *force_overwrite,
             )
         }
+        Some(Command::Generate {
+            schema,
+            schema_format,
+            entity_count,
+            output,
+            result_format,
+            seed,
+            parallel,
+            config,
+            force_overwrite,
+        }) => run_generate(
+            schema,
+            schema_format,
+            *entity_count,
+            output,
+            result_format,
+            *seed,
+            *parallel,
+            config,
+            *force_overwrite,
+        ),
         None => {
             bail!("Command not specified, type `--help` to see list of commands")
         }
@@ -541,4 +564,97 @@ fn schema_format_to_shacl_format(f: &CliShExFormat) -> Result<CliShaclFormat> {
         CliShExFormat::JSON => Ok(CliShaclFormat::JsonLd),
         CliShExFormat::JSONLD => Ok(CliShaclFormat::JsonLd),
     }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn run_generate(
+    schema: &InputSpec,
+    schema_format: &GenerateSchemaFormat,
+    entity_count: usize,
+    output: &Option<PathBuf>,
+    result_format: &DataFormat,
+    seed: Option<u64>,
+    parallel: Option<usize>,
+    config_file: &Option<PathBuf>,
+    _force_overwrite: bool,
+) -> Result<()> {
+    use data_generator::{DataGenerator, GeneratorConfig};
+
+    // Create tokio runtime
+    let runtime = tokio::runtime::Runtime::new()?;
+
+    runtime.block_on(async {
+        // Load or create configuration
+        let mut config = if let Some(config_path) = config_file {
+            if config_path.extension().and_then(|s| s.to_str()) == Some("toml") {
+                GeneratorConfig::from_toml_file(config_path)?
+            } else {
+                GeneratorConfig::from_json_file(config_path)?
+            }
+        } else {
+            GeneratorConfig::default()
+        };
+
+        // Apply CLI overrides
+        config.generation.entity_count = entity_count;
+
+        if let Some(output_path) = output {
+            config.output.path = output_path.clone();
+        }
+
+        if let Some(seed_value) = seed {
+            config.generation.seed = Some(seed_value);
+        }
+
+        if let Some(threads) = parallel {
+            config.parallel.worker_threads = Some(threads);
+        }
+
+        // Determine output format (only Turtle and NTriples are supported)
+        use data_generator::config::OutputFormat;
+        config.output.format = match result_format {
+            DataFormat::Turtle | DataFormat::TriG | DataFormat::N3 => OutputFormat::Turtle,
+            _ => OutputFormat::NTriples,
+        };
+
+        // Get schema path
+        let schema_path = match schema {
+            InputSpec::Path(path) => path.clone(),
+            InputSpec::Stdin => {
+                bail!("Schema from stdin is not supported for data generation")
+            }
+            InputSpec::Url(url) => {
+                bail!("Schema from URL is not supported yet: {}", url)
+            }
+            InputSpec::Str(s) => {
+                bail!(
+                    "Schema from string is not supported for data generation: {}",
+                    s
+                )
+            }
+        };
+
+        // Create generator
+        let mut generator = DataGenerator::new(config)?;
+
+        // Load schema based on format
+        match schema_format {
+            GenerateSchemaFormat::Auto => {
+                generator.load_schema_auto(&schema_path).await?;
+            }
+            GenerateSchemaFormat::ShEx => {
+                generator.load_shex_schema(&schema_path).await?;
+            }
+            GenerateSchemaFormat::SHACL => {
+                generator.load_shacl_schema(&schema_path).await?;
+            }
+        }
+
+        // Generate data
+        generator.generate().await?;
+
+        Ok::<(), anyhow::Error>(())
+    })?;
+
+    Ok(())
 }

@@ -133,11 +133,11 @@ impl ValueConstraint {
 impl Display for ValueConstraint {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ValueConstraint::Datatype(iri_s) => write!(f, "{}", iri_s),
+            ValueConstraint::Datatype(iri_s) => write!(f, "{iri_s}"),
             ValueConstraint::Other => write!(f, "other"),
             ValueConstraint::Any => write!(f, "_"),
-            ValueConstraint::Ref(r) => write!(f, "@{}", r),
-            ValueConstraint::NodeKind(nk) => write!(f, "nodekind({})", nk),
+            ValueConstraint::Ref(r) => write!(f, "@{r}"),
+            ValueConstraint::NodeKind(nk) => write!(f, "nodekind({nk})"),
         }
     }
 }
@@ -155,8 +155,8 @@ impl Display for CoShaMo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Common Shape Model:")?;
         for (property, descr) in self.constraints.iter() {
-            writeln!(f, "- Property: {}", property)?;
-            writeln!(f, "{}", descr)?;
+            writeln!(f, "- Property: {property}")?;
+            writeln!(f, "{descr}")?;
         }
         Ok(())
     }
