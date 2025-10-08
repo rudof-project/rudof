@@ -2,7 +2,7 @@ use crate::converters::{ShExToUnified, ShaclToUnified};
 use crate::unified_constraints::{UnifiedConstraint, UnifiedConstraintModel};
 use crate::{DataGeneratorError, Result};
 use shex_ast::ast::{ShapeDecl, ShapeExpr, TripleExpr};
-use shex_compact::ShExParser;
+use shex_ast::compact::ShExParser;
 use std::collections::HashMap;
 use std::path::Path;
 

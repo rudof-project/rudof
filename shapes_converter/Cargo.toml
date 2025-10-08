@@ -22,7 +22,6 @@ dctap.workspace = true
 srdf.workspace = true
 shacl_ast.workspace = true
 shex_ast.workspace = true
-shex_compact.workspace = true
 shex_validation.workspace = true
 shacl_validation.workspace = true
 prefixmap.workspace = true

@@ -1,13 +1,14 @@
 use super::dependency_graph::{DependencyGraph, PosNeg};
 use super::shape_expr::ShapeExpr;
 use super::shape_label::ShapeLabel;
+use crate::ir::inheritance_graph::InheritanceGraph;
 use crate::ir::shape_expr_info::ShapeExprInfo;
 use crate::ir::source_idx::SourceIdx;
 use crate::{
     CResult, SchemaIRError, ShapeExprLabel, ShapeLabelIdx, ast::Schema as SchemaJson,
     ir::ast2ir::AST2IR,
 };
-use crate::{Pred, ResolveMethod};
+use crate::{Expr, Pred, ResolveMethod};
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use std::collections::hash_map::Entry;
@@ -29,6 +30,8 @@ pub struct SchemaIR {
     local_shapes_counter: usize,
     total_shapes_counter: usize,
     imported_schemas: Vec<IriS>,
+    dependency_graph: DependencyGraph,
+    inheritance_graph: InheritanceGraph,
 }
 
 impl SchemaIR {
@@ -44,6 +47,8 @@ impl SchemaIR {
             total_shapes_counter: 0,
             local_shapes_counter: 0,
             imported_schemas: Vec::new(),
+            dependency_graph: DependencyGraph::new(),
+            inheritance_graph: InheritanceGraph::new(),
         }
     }
 
@@ -110,6 +115,43 @@ impl SchemaIR {
 
     pub fn imported_schemas(&self) -> &Vec<IriS> {
         &self.imported_schemas
+    }
+
+    pub fn parents(&self, idx: &ShapeLabelIdx) -> Vec<ShapeLabelIdx> {
+        self.inheritance_graph.parents(idx)
+    }
+
+    pub fn get_triple_exprs(
+        &self,
+        idx: &ShapeLabelIdx,
+    ) -> Option<HashMap<Option<ShapeLabelIdx>, Vec<Expr>>> {
+        if let Some(info) = self.find_shape_idx(idx) {
+            let mut result = HashMap::new();
+            let current_exprs = info.expr().get_triple_exprs(self);
+            result.insert(None, current_exprs);
+            trace!("Checking parents of {idx}: {:?}", self.parents(idx));
+            for e in &self.parents(idx) {
+                let shape_expr = self.find_shape_idx(e).unwrap();
+                let exprs = shape_expr.expr().get_triple_exprs(self);
+                result.insert(Some(*e), exprs);
+            }
+            Some(result)
+        } else {
+            None
+        }
+    }
+
+    pub fn get_preds_extends(&self, idx: &ShapeLabelIdx) -> HashSet<Pred> {
+        let mut preds = HashSet::new();
+        if let Some(info) = self.find_shape_idx(idx) {
+            preds.extend(info.expr().preds(self));
+            for e in &self.parents(idx) {
+                if let Some(parent_info) = self.find_shape_idx(e) {
+                    preds.extend(parent_info.expr().preds(self));
+                }
+            }
+        }
+        preds
     }
 
     pub fn count_extends(&self) -> HashMap<usize, usize> {
@@ -314,18 +356,38 @@ impl SchemaIR {
     /// A well formed schema should not have any cyclic reference that involve a negation
     pub fn has_neg_cycle(&self) -> bool {
         let dep_graph = self.dependency_graph();
-        trace!("Dependency graph: {dep_graph:?}");
+        trace!("Dependency graph: {dep_graph}");
         dep_graph.has_neg_cycle()
     }
 
-    pub(crate) fn dependency_graph(&self) -> DependencyGraph {
+    /// Returns the dependency graph.
+    pub fn dependency_graph(&self) -> &DependencyGraph {
+        &self.dependency_graph
+    }
+
+    pub(crate) fn build_dependency_graph(&mut self) {
         let mut dep_graph = DependencyGraph::new();
         let mut visited = Vec::new();
         for (idx, info) in self.shapes.iter() {
             info.expr()
                 .add_edges(*idx, &mut dep_graph, PosNeg::pos(), self, &mut visited);
         }
-        dep_graph
+        self.dependency_graph = dep_graph
+    }
+
+    pub(crate) fn build_inheritance_graph(&mut self) {
+        let mut inheritance_graph = InheritanceGraph::new();
+        for (idx, info) in self.shapes.iter() {
+            match info.expr() {
+                ShapeExpr::Shape(shape) => {
+                    for e in shape.extends() {
+                        inheritance_graph.add_edge(*idx, *e);
+                    }
+                }
+                _ => continue,
+            }
+        }
+        self.inheritance_graph = inheritance_graph
     }
 
     pub fn dependencies(&self) -> Vec<(ShapeLabel, PosNeg, ShapeLabel)> {
@@ -385,6 +447,8 @@ impl Display for SchemaIR {
                 info.expr()
             )?;
         }
+        writeln!(dest, "Dependency graph: {}", self.dependency_graph())?;
+        writeln!(dest, "Inheritance graph: {}", self.inheritance_graph)?;
         writeln!(dest, "---end of schema IR")?;
         Ok(())
     }

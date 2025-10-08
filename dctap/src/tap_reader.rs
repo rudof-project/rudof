@@ -1,20 +1,8 @@
+use crate::reader_range::ReaderRange;
 use crate::tap_error::Result;
 use crate::{
-    BasicNodeType,
-    DatatypeId,
-    NodeType,
-    PlaceholderResolver,
-    PropertyId,
-    // ReaderRange,
-    ShapeId,
-    TapConfig,
-    TapError,
-    TapReaderState,
-    TapReaderWarning,
-    TapShape,
-    TapStatement,
-    Value,
-    ValueConstraint,
+    BasicNodeType, DatatypeId, NodeType, PlaceholderResolver, PropertyId, ShapeId, TapConfig,
+    TapError, TapReaderState, TapReaderWarning, TapShape, TapStatement, Value, ValueConstraint,
     ValueConstraintType,
 };
 use csv::{Position, Reader as CsvReader, StringRecord};
@@ -24,7 +12,7 @@ use std::io::{self};
 
 enum StringRecordReader<R> {
     CsvReader(CsvReader<R>),
-    // RangeReader(ReaderRange<R>),
+    RangeReader(ReaderRange<R>),
 }
 
 impl<R: io::Read> StringRecordReader<R> {
@@ -32,30 +20,31 @@ impl<R: io::Read> StringRecordReader<R> {
         StringRecordReader::CsvReader(reader)
     }
 
-    /*pub fn new_range_reader(range: ReaderRange<R>) -> StringRecordReader<R> {
+    pub fn new_range_reader(range: ReaderRange<R>) -> StringRecordReader<R> {
         StringRecordReader::RangeReader(range)
-    }*/
+    }
 
     pub fn read_record(&mut self, record: &mut StringRecord) -> Result<bool> {
         match self {
             StringRecordReader::CsvReader(reader) => {
                 let b = reader.read_record(record)?;
                 Ok(b)
-            } /*StringRecordReader::RangeReader(reader_range) => {
-                  if let Some(rcd) = reader_range.next_record() {
-                      *record = rcd;
-                      Ok(true)
-                  } else {
-                      Ok(false)
-                  }
-              }*/
+            }
+            StringRecordReader::RangeReader(reader_range) => {
+                if let Some(rcd) = reader_range.next_record() {
+                    *record = rcd;
+                    Ok(true)
+                } else {
+                    Ok(false)
+                }
+            }
         }
     }
 
     pub fn position(&mut self) -> &Position {
         match self {
             StringRecordReader::CsvReader(reader) => reader.position(),
-            // StringRecordReader::RangeReader(range) => range.position(),
+            StringRecordReader::RangeReader(range) => range.position(),
         }
     }
 }
@@ -75,7 +64,7 @@ impl<R: io::Read> TapReader<R> {
         }
     }
 
-    /*pub fn new_range_reader(
+    pub fn new_range_reader(
         reader: ReaderRange<R>,
         state: TapReaderState,
         config: &TapConfig,
@@ -85,7 +74,7 @@ impl<R: io::Read> TapReader<R> {
             state,
             config: config.clone(),
         }
-    }*/
+    }
 
     pub fn shapes(&mut self) -> ShapesIter<'_, R> {
         ShapesIter::new(self)

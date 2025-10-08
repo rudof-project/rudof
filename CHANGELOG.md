@@ -3,7 +3,15 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ## [Unreleased]
 ### Added
+### Fixed
+### Changed
+### Removed
+
+## v0.1.119
+### Added
 - Support to visualize a single shape in a ShEx schema with the option `--label` in CLI (issue 341)
+- Restored support for Excel files in DCTAP
+- Added support to export validation results as lists of tuples (node, shape, validatioStatus) in Python
 
 ### Fixed
 ### Changed

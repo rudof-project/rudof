@@ -27,7 +27,6 @@ type Result<T> = std::result::Result<T, ValidatorError>;
 type Atom = atom::Atom<(Node, ShapeLabelIdx)>;
 type NegAtom = (Node, ShapeLabelIdx);
 type PosAtom = (Node, ShapeLabelIdx);
-// type Rule = rule::Rule<(Node, ShapeLabelIdx)>;
 type Neighs = (Vec<(Pred, Node)>, Vec<Pred>);
 type ValidationResult = Either<Vec<ValidatorError>, Vec<Reason>>;
 
@@ -298,7 +297,7 @@ impl Engine {
         );
         if let Some(info) = schema.find_shape_idx(idx) {
             let se = info.expr();
-            let result = self.check_node_shape_expr(node, se, schema, rdf, typing)?;
+            let result = self.check_node_shape_expr(idx, node, se, schema, rdf, typing)?;
             tracing::debug!("Result of {node}@{idx} is: {}", show_result(&result),);
             Ok(result)
         } else {
@@ -308,6 +307,7 @@ impl Engine {
 
     pub(crate) fn check_node_shape_expr(
         &self,
+        idx: &ShapeLabelIdx,
         node: &Node,
         se: &ShapeExpr,
         schema: &SchemaIR,
@@ -407,7 +407,7 @@ impl Engine {
                 if shape.extends().is_empty() {
                     self.check_node_shape(node, shape, schema, rdf, typing)
                 } else {
-                    self.check_node_shape_extends(node, shape, schema, rdf, typing)
+                    self.check_node_shape_extends(idx, node, shape, schema, rdf, typing)
                 }
             }
             ShapeExpr::External {} => {
@@ -508,249 +508,84 @@ impl Engine {
 
     pub(crate) fn check_node_shape_extends(
         &self,
+        idx: &ShapeLabelIdx,
         node: &Node,
         shape: &Shape,
-        _schema: &SchemaIR,
+        schema: &SchemaIR,
         rdf: &impl NeighsRDF,
         typing: &mut HashSet<(Node, ShapeLabelIdx)>,
     ) -> Result<ValidationResult> {
         tracing::debug!("Checking node {node} with shape {shape} that has extends");
-        let (values, remainder) = self.neighs(node, shape.preds_extends(), rdf)?;
+        let preds_extends = Vec::from_iter(schema.get_preds_extends(idx));
+        trace!(
+            "Predicates in this shape with extends: [{}]",
+            preds_extends.iter().map(|p| p.to_string()).join(", ")
+        );
+        let (values, remainder) = self.neighs(node, preds_extends, rdf)?;
         if shape.is_closed() && !remainder.is_empty() {
             trace!("Closed shape with remainder preds: {remainder:?}");
-            fail(ValidatorError::ClosedShapeWithRemainderPreds {
+            return fail(ValidatorError::ClosedShapeWithRemainderPreds {
                 remainder: Preds::new(remainder),
                 declared: Preds::new(shape.preds().into_iter().collect()),
-            })
-        } else {
-            trace!(
-                "Neighs of {node:?} for predicates [{}]: [{}]",
-                shape.preds().iter().map(|p| p.to_string()).join(", "),
-                values.iter().map(|(p, v)| format!("{p} {v}")).join(", ")
-            );
-            let result_iter = shape.triple_expr().matches(values)?;
-            let mut errors = Vec::new();
-            for result in result_iter {
-                trace!("Result: {:?}", result);
-                match result {
-                    Ok(pending_values) => {
-                        let mut failed_pending = Vec::new();
-                        // Check if all pending values are in typing
-                        for (n, idx) in pending_values.iter() {
-                            let pair = (n.clone(), *idx);
-                            if !typing.contains(&pair) {
-                                failed_pending.push(pair)
-                                // TODO: if (stop_at_first) break
-                                // We don't need to compute all the failed pending values once we find the first pair
-                            }
-                        }
-                        if failed_pending.is_empty() {
-                            return pass(Reason::ShapePassed {
-                                node: node.clone(),
-                                shape: Box::new(shape.clone()),
-                            });
-                        } else {
-                            errors.push(ValidatorError::FailedPending {
-                                failed_pending: failed_pending.clone(),
-                            })
+            });
+        }
+        trace!(
+            "Neighs of {node} [{}]",
+            values.iter().map(|(p, v)| format!("{p} {v}")).join(", ")
+        );
+        let triple_exprs = schema.get_triple_exprs(idx).unwrap();
+        trace!(
+            "Candidate triple exprs of {node} [{}]",
+            triple_exprs
+                .iter()
+                .map(|(maybe_label, te)| format!(
+                    "{maybe_label:?} -> {}",
+                    te.iter().map(|p| p.to_string()).join(", ")
+                ))
+                .join("| ")
+        );
+
+        let result_iter = shape.triple_expr().matches(values)?;
+        let mut errors = Vec::new();
+        for result in result_iter {
+            trace!("Result: {:?}", result);
+            match result {
+                Ok(pending_values) => {
+                    let mut failed_pending = Vec::new();
+                    // Check if all pending values are in typing
+                    for (n, idx) in pending_values.iter() {
+                        let pair = (n.clone(), *idx);
+                        if !typing.contains(&pair) {
+                            failed_pending.push(pair)
+                            // TODO: if (stop_at_first) break
+                            // We don't need to compute all the failed pending values once we find the first pair
                         }
                     }
-                    Err(err) => {
-                        debug!("Result with error: {err}");
-                        return fail(ValidatorError::RbeError(err));
+                    if failed_pending.is_empty() {
+                        return pass(Reason::ShapePassed {
+                            node: node.clone(),
+                            shape: Box::new(shape.clone()),
+                        });
+                    } else {
+                        errors.push(ValidatorError::FailedPending {
+                            failed_pending: failed_pending.clone(),
+                        })
                     }
                 }
+                Err(err) => {
+                    debug!("Result with error: {err}");
+                    return fail(ValidatorError::RbeError(err));
+                }
             }
-            tracing::debug!("Shape didn't pass for node {node} with shape {shape}");
-            fail(ValidatorError::ShapeFails {
-                node: Box::new(node.clone()),
-                shape: Box::new(shape.clone()),
-                errors,
-            })
         }
+        tracing::debug!("Shape didn't pass for node {node} with shape {shape}");
+        fail(ValidatorError::ShapeFails {
+            node: Box::new(node.clone()),
+            shape: Box::new(shape.clone()),
+            errors,
+        })
     }
 
-    /*     pub(crate) fn check_node_shape_expr_old<S>(
-            &mut self,
-            node: &Node,
-            se: &ShapeExpr,
-            rdf: &S,
-            schema: &SchemaIR,
-        ) -> Result<Either<Vec<ValidatorError>, Vec<Reason>>>
-        where
-            S: NeighsRDF,
-        {
-            debug!(
-                "Step {}. Checking node {node} with shape_expr: {se}",
-                self.step_counter
-            );
-            match se {
-                ShapeExpr::NodeConstraint(nc) => match nc.cond().matches(node) {
-                    Ok(_pending) => {
-                        // TODO: Add pending to pending nodes
-                        // I think this is not needed because node constraints will not generate pending nodes
-                        Ok(Either::Right(vec![Reason::NodeConstraintPassed {
-                            node: node.clone(),
-                            nc: nc.clone(),
-                        }]))
-                    }
-                    Err(err) => Ok(Either::Left(vec![ValidatorError::RbeError(err)])),
-                },
-                ShapeExpr::Ref { idx } => {
-                    // TODO: Should we remove the next
-                    self.add_pending(node.clone(), *idx);
-                    if let Some((_maybe_label, se)) = schema.find_shape_idx(idx) {
-                        self.check_node_shape_expr_old(node, se, rdf, schema)
-                    } else {
-                        Ok(Either::Left(vec![ValidatorError::ShapeExprNotFound {
-                            idx: *idx,
-                        }]))
-                    }
-                }
-                ShapeExpr::ShapeAnd { exprs, .. } => {
-                    let mut reasons_collection = Vec::new();
-                    for e in exprs {
-                        let result = self.check_node_shape_expr_old(node, e, rdf, schema)?;
-                        match result {
-                            Either::Left(errors) => {
-                                return Ok(Either::Left(vec![ValidatorError::ShapeAndError {
-                                    shape_expr: Box::new(e.clone()),
-                                    node: Box::new(node.clone()),
-                                    errors: ValidatorErrors::new(errors),
-                                }]));
-                            }
-                            Either::Right(reasons) => {
-                                reasons_collection.push(reasons);
-                            }
-                        }
-                    }
-                    Ok(Either::Right(vec![Reason::ShapeAndPassed {
-                        node: node.clone(),
-                        se: se.clone(),
-                        reasons: reasons_collection,
-                    }]))
-                }
-                ShapeExpr::ShapeNot { expr, .. } => {
-                    let result = self.check_node_shape_expr_old(node, expr, rdf, schema)?;
-                    match result {
-                        Either::Left(errors) => Ok(Either::Right(vec![Reason::ShapeNotPassed {
-                            node: node.clone(),
-                            shape_expr: se.clone(),
-                            errors_evidences: ValidatorErrors::new(errors),
-                        }])),
-                        Either::Right(reasons) => {
-                            Ok(Either::Left(vec![ValidatorError::ShapeNotError {
-                                node: Box::new(node.clone()),
-                                shape_expr: Box::new(se.clone()),
-                                reasons: Reasons::new(reasons),
-                            }]))
-                        }
-                    }
-                }
-                ShapeExpr::ShapeOr { exprs, .. } => {
-                    let mut errors_collection = Vec::new();
-                    for e in exprs {
-                        let result = self.check_node_shape_expr_old(node, e, rdf, schema)?;
-                        match result {
-                            Either::Left(errors) => {
-                                errors_collection.push((e.clone(), ValidatorErrors::new(errors)));
-                            }
-                            Either::Right(reasons) => {
-                                return Ok(Either::Right(vec![Reason::ShapeOrPassed {
-                                    shape_expr: e.clone(),
-                                    node: node.clone(),
-                                    reasons: Reasons::new(reasons),
-                                }]));
-                            }
-                        }
-                    }
-                    Ok(Either::Left(vec![ValidatorError::ShapeOrError {
-                        shape_expr: Box::new(se.clone()),
-                        node: Box::new(node.clone()),
-                        errors: errors_collection.clone(),
-                    }]))
-                }
-                ShapeExpr::Shape(shape) => self.check_node_shape_old(node, shape, rdf),
-                ShapeExpr::Empty => Ok(Either::Right(Vec::new())),
-                ShapeExpr::External {} => Ok(Either::Right(Vec::new())),
-            }
-        }
-
-        fn check_node_shape_old<S>(
-            &mut self,
-            node: &Node,
-            shape: &Shape,
-            rdf: &S,
-        ) -> Result<Either<Vec<ValidatorError>, Vec<Reason>>>
-        where
-            S: NeighsRDF,
-        {
-            let (values, remainder) = self.neighs(node, shape.preds(), rdf)?;
-            if shape.is_closed() && !remainder.is_empty() {
-                let errs = vec![ValidatorError::ClosedShapeWithRemainderPreds {
-                    remainder: Preds::new(remainder),
-                    declared: Preds::new(shape.preds().into_iter().collect()),
-                }];
-                return Ok(Either::Left(errs));
-            };
-            debug!("Neighs of {node:?}: {values:?}");
-            let mut result_iter = shape.rbe_table().matches(values)?;
-            let mut current_err = None;
-            let counter = self.step_counter;
-            let mut found = false;
-            let mut iter_count = 0;
-
-            // Search for the first result which is not an err
-            while let Some(next_result) = result_iter.next() {
-                iter_count += 1;
-                match next_result {
-                    Ok(pending_values) => {
-                        debug!("Found result, iteration {iter_count}");
-                        for (p, v) in pending_values.iter() {
-                            debug!("Step {counter}: Value in pending: {p}/{v}");
-                            let pos_atom = ((*p).clone(), *v);
-                            let atom = Atom::pos(&pos_atom);
-                            if self.is_processing(&atom) {
-                                let pred = p.clone();
-                                debug!(
-                                    "Step {counter} Adding ok: {}/{v} because it was already processed",
-                                    &pred
-                                );
-                                self.add_ok(pred, *v);
-                            } else {
-                                self.insert_pending(&atom);
-                            }
-                        }
-                        // We keep alternative match iterators which will be recovered in case of failure
-                        self.alternative_match_iterators.push(result_iter);
-                        found = true;
-                        break;
-                    }
-                    Err(err) => {
-                        debug!("Result with error {err} at iteration {iter_count}");
-                        current_err = Some(err);
-                    }
-                }
-            }
-            if !found {
-                let errs = match current_err {
-                    Some(rbe_err) => vec![ValidatorError::RbeError(rbe_err)],
-                    None => {
-                        debug!(
-                            "No value found for node/shape where node = {node}, shape = {shape:?}. Current_err = empty"
-                        );
-                        Vec::new()
-                    }
-                };
-                Ok(Either::Left(errs))
-            } else {
-                Ok(Either::Right(vec![Reason::ShapePassed {
-                    node: node.clone(),
-                    shape: Box::new(shape.clone()),
-                }]))
-            }
-        }
-    */
     fn cnv_iri<S>(&self, iri: S::IRI) -> Pred
     where
         S: NeighsRDF,

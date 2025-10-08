@@ -4,7 +4,7 @@ use crate::unified_constraints::{
 use crate::{DataGeneratorError, Result};
 use iri_s::IriS;
 use shex_ast::ast::{NodeConstraint, ShapeDecl, ShapeExpr, TripleExpr};
-use shex_compact::ShExParser;
+use shex_ast::compact::ShExParser;
 use std::path::Path;
 
 pub struct ShExToUnified;

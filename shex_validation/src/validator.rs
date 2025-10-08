@@ -1,8 +1,8 @@
 use crate::Reason;
 use crate::ValidatorConfig;
 use crate::atom;
+use crate::engine::Engine;
 use crate::validator_error::*;
-use crate::validator_runner::Engine;
 use prefixmap::IriRef;
 use prefixmap::PrefixMap;
 use serde_json::Value;
@@ -72,10 +72,6 @@ impl Validator {
         })
     }
 
-    /*pub fn reset_result_map(&mut self) {
-        self.runner.reset()
-    }*/
-
     pub fn schema(&self) -> &SchemaIR {
         &self.schema
     }
@@ -100,21 +96,6 @@ impl Validator {
         engine.validate_pending(rdf, schema)?;
         let result = self.result_map(&mut engine, maybe_nodes_prefixmap, maybe_shapes_prefixmap)?;
         Ok(result)
-
-        /*let shapemap = QueryShapeMap::from_node_shape(node, shape).map_err(|e| {
-            ValidatorError::NodeShapeError {
-                node: node.to_string(),
-                shape: shape.to_string(),
-                error: e.to_string(),
-            }
-        })?;
-        self.validate_shapemap2(
-            &shapemap,
-            rdf,
-            schema,
-            maybe_nodes_prefixmap,
-            maybe_shapes_prefixmap,
-        )*/
     }
 
     fn get_shape_expr_label(
@@ -129,24 +110,6 @@ impl Validator {
                 error: format!("{error}"),
             })
     }
-
-    /*pub fn validate_shapemap<S>(
-        &self,
-        shapemap: &QueryShapeMap,
-        rdf: &S,
-        schema: &SchemaIR,
-        maybe_nodes_prefixmap: &Option<PrefixMap>,
-        maybe_shapes_prefixmap: &Option<PrefixMap>,
-    ) -> Result<ResultShapeMap>
-    where
-        S: NeighsRDF,
-    {
-        let mut engine = Engine::new(&self.config);
-        self.fill_pending(&mut engine, shapemap, rdf, schema)?;
-        self.loop_validating(&mut engine, rdf, schema)?;
-        let result = self.result_map(&mut engine, maybe_nodes_prefixmap, maybe_shapes_prefixmap)?;
-        Ok(result)
-    } */
 
     pub fn validate_shapemap2<S>(
         &self,
@@ -198,59 +161,6 @@ impl Validator {
         }
     }
 
-    /*fn loop_validating<S>(&self, engine: &mut Engine, rdf: &S, schema: &SchemaIR) -> Result<()>
-    where
-        S: NeighsRDF,
-    {
-        while engine.no_end_steps() && engine.more_pending() {
-            engine.new_step();
-            let atom = engine.pop_pending().unwrap();
-            debug!("Processing atom: {}", show(&atom));
-            engine.add_processing(&atom);
-            let passed = self.check_node_atom(engine, &atom, rdf, schema)?;
-            engine.remove_processing(&atom);
-            match passed {
-                Either::Right(reasons) => {
-                    engine.add_checked_pos(atom, reasons);
-                }
-                Either::Left(errors) => {
-                    engine.add_checked_neg(atom.negated(), errors);
-                }
-            }
-        }
-        Ok(())
-    }
-
-    pub fn check_node_atom<S>(
-        &self,
-        engine: &mut Engine,
-        atom: &Atom,
-        rdf: &S,
-        schema: &SchemaIR,
-    ) -> Result<Either<Vec<ValidatorError>, Vec<Reason>>>
-    where
-        S: NeighsRDF,
-    {
-        let (node, idx) = atom.get_value();
-        let se = find_shape_idx(idx, &self.schema);
-        match atom {
-            Atom::Pos { .. } => todo!(), // engine.check_node_shape_expr(node, se, rdf, schema),
-            Atom::Neg { .. } => {
-                // Check if a node doesn't conform to a shape expr
-                todo!()
-            }
-        }
-    } */
-
-    /*     fn get_idx(&self, shape: &ShapeLabel) -> Result<ShapeLabelIdx> {
-        match self.schema.find_label(shape) {
-            Some((idx, _se)) => Ok(*idx),
-            None => Err(ValidatorError::NotFoundShapeLabel {
-                shape: (*shape).clone(),
-            }),
-        }
-    } */
-
     fn get_shape_label(&self, idx: &ShapeLabelIdx) -> Result<&ShapeLabel> {
         let info = self.schema.find_shape_idx(idx).unwrap();
         match info.label() {
@@ -279,10 +189,8 @@ impl Validator {
             match atom {
                 Atom::Pos(pa) => {
                     let reasons = engine.find_reasons(pa);
-                    let status = ValidationStatus::conformant(
-                        show_reasons(&reasons),
-                        json_reasons(&reasons),
-                    );
+                    let json_reasons = json_reasons(&reasons)?;
+                    let status = ValidationStatus::conformant(show_reasons(&reasons), json_reasons);
                     // result.add_ok()
                     result
                         .add_result((*node).clone(), label.clone(), status)
@@ -294,10 +202,9 @@ impl Validator {
                 }
                 Atom::Neg(na) => {
                     let errors = engine.find_errors(na);
-                    let status = ValidationStatus::non_conformant(
-                        show_errors(&errors),
-                        json_errors(&errors),
-                    );
+                    let json_errors = json_errors(&errors)?;
+                    let status =
+                        ValidationStatus::non_conformant(show_errors(&errors), json_errors);
                     result
                         .add_result((*node).clone(), label.clone(), status)
                         .map_err(|e| ValidatorError::AddingNonConformantError {
@@ -345,15 +252,37 @@ fn show_errors(errors: &[ValidatorError]) -> String {
     result
 }
 
-fn json_errors(errors: &[ValidatorError]) -> Value {
-    // let vs = vec!["todo", "errors"];
-    let vs: Vec<_> = errors.iter().map(|e| e.to_string()).collect();
-    vs.into()
+fn json_errors(errors: &[ValidatorError]) -> Result<Value> {
+    let vs: Result<Vec<_>> = errors
+        .iter()
+        .map(|err| {
+            serde_json::to_value(err).map_err(|e| ValidatorError::ErrorSerializationError {
+                source_error: err.to_string(),
+                error: e.to_string(),
+            })
+        })
+        .collect();
+    let vs = vs?;
+    let vs = Value::Array(vs);
+    Ok(vs)
 }
 
-fn json_reasons(reasons: &[Reason]) -> Value {
-    let value = Value::Array(reasons.iter().map(|reason| reason.as_json()).collect());
-    value
+fn json_reasons(reasons: &[Reason]) -> Result<Value> {
+    let rs: Result<Vec<_>> = reasons
+        .iter()
+        .map(|reason| {
+            let r = reason
+                .as_json()
+                .map_err(|e| ValidatorError::ReasonSerializationError {
+                    reason: reason.to_string(),
+                    error: format!("{e}"),
+                })?;
+            Ok(r)
+        })
+        .collect();
+    let vs = rs?;
+    let value = Value::Array(vs);
+    Ok(value)
 }
 
 fn show_reasons(reasons: &[Reason]) -> String {

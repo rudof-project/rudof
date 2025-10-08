@@ -3,12 +3,9 @@ use super::{
     dependency_graph::{DependencyGraph, PosNeg},
     sem_act::SemAct,
 };
-use crate::{Expr, Pred, ShapeLabelIdx, ir::schema_ir::SchemaIR};
+use crate::{Expr, Pred, ShapeLabelIdx};
 use itertools::Itertools;
-use std::{
-    collections::{HashMap, HashSet, hash_map::Entry},
-    fmt::Display,
-};
+use std::{collections::HashMap, fmt::Display};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Shape {
@@ -53,12 +50,6 @@ impl Shape {
         self.preds.clone()
     }
 
-    pub fn preds_extends(&self, schema: &SchemaIR) -> HashSet<Pred> {
-        let mut preds = HashSet::from_iter(self.preds().iter().cloned());
-        for e in &schema.parents(&self) {}
-        preds
-    }
-
     pub fn references(&self) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
         self.get_value_expr_references()
     }
@@ -73,21 +64,36 @@ impl Shape {
         self.closed
     }
 
+    /*pub fn ascendants(&self) -> Vec<ShapeLabelIdx> {
+        self.extends.clone()
+    }*/
+
+    /*
     /// Obtain the RBE tables that are affected by the current shape
     /// If there are no extends, it will only contain a value pointing None to the rbe_table
     /// It there are extends, each value of the HashMap will be a pair from the label of the extended shape to its rbe table
-    /*pub fn get_triple_exprs(&self, schema: &SchemaIR) -> HashMap<Option<ShapeLabelIdx>, Vec<Expr>> {
+    pub fn get_triple_exprs(&self, schema: &SchemaIR) -> HashMap<Option<ShapeLabelIdx>, Vec<Expr>> {
+        trace!("Getting triple exprs for shape: {:?}", self);
         let main_triple_expr = self.expr.clone();
         let mut result = HashMap::new();
         result.insert(None, vec![main_triple_expr]);
-        for e in &self.extends {
+        for e in &schema.parents(self) {
+            trace!("get_triple_exprs({e})");
             match result.entry(Some(*e)) {
                 Entry::Vacant(v) => {
+                    trace!("Vacant. Inserting expr for {e}");
                     let info = schema.find_shape_idx(e).unwrap();
+                    trace!("In {e}: info.expr = {}", info.expr(),);
                     let exprs = info.expr().get_triple_exprs(schema);
+                    trace!(
+                        "In {e}, Result of get_triple_exprs({}) = {:?}",
+                        info.expr(),
+                        exprs
+                    );
                     v.insert(exprs);
                 }
-                Entry::Occupied(_o) => {
+                Entry::Occupied(o) => {
+                    trace!("In {e}, occupied with value {o:?}...nothing to do");
                     // Ignore and don't insert anything here for diamond shapes...
                     // o.into_mut().extend(exprs);
                 }

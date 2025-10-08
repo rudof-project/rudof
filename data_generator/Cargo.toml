@@ -19,7 +19,6 @@ shacl_ast = { workspace = true }
 shacl_rdf = { workspace = true }
 iri_s = { workspace = true }
 prefixmap = { workspace = true }
-shex_compact = { workspace = true }
 oxrdf = { workspace = true, features = ["oxsdatatypes"] }
 
 # CLI and configuration

@@ -49,6 +49,8 @@ impl AST2IR {
         compiled_schema.set_local_shapes_counter(local_shapes);
         compiled_schema.set_imported_schemas(visited);
         compiled_schema.increment_total_shapes(local_shapes);
+        compiled_schema.build_dependency_graph();
+        compiled_schema.build_inheritance_graph();
         Ok(())
     }
 

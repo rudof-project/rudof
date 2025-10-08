@@ -13,13 +13,17 @@ pub mod shape_selector;
 #[allow(clippy::module_inception)]
 pub mod shapemap;
 
+pub mod conformant_info;
+pub mod non_conformant_info;
 pub mod shapemap_config;
 pub mod shapemap_error;
 pub mod shapemap_state;
 pub mod validation_status;
 
 pub use association::*;
+pub use conformant_info::*;
 pub use node_selector::*;
+pub use non_conformant_info::*;
 pub use query_shape_map::*;
 pub use result_shape_map::*;
 pub use shape_selector::*;

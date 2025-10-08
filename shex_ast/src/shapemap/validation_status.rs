@@ -3,6 +3,8 @@ use std::fmt::Display;
 use serde::Serialize;
 use serde_json::Value;
 
+use crate::shapemap::{ConformantInfo, NonConformantInfo};
+
 /// Represents the current status of validation
 #[derive(Debug, PartialEq, Clone, Serialize)]
 pub enum ValidationStatus {
@@ -26,17 +28,11 @@ impl ValidationStatus {
     }
 
     pub fn conformant(reason: String, value: Value) -> ValidationStatus {
-        ValidationStatus::Conformant(ConformantInfo {
-            reason,
-            app_info: value,
-        })
+        ValidationStatus::Conformant(ConformantInfo::new(reason, value))
     }
 
     pub fn non_conformant(reason: String, value: Value) -> ValidationStatus {
-        ValidationStatus::NonConformant(NonConformantInfo {
-            reason,
-            app_info: value,
-        })
+        ValidationStatus::NonConformant(NonConformantInfo::new(reason, value))
     }
 
     pub fn pending() -> ValidationStatus {
@@ -54,16 +50,26 @@ impl ValidationStatus {
 
     pub fn app_info(&self) -> Value {
         match self {
-            ValidationStatus::Conformant(conformant_info) => conformant_info.app_info.clone(),
+            ValidationStatus::Conformant(conformant_info) => {
+                serde_json::json!({
+                    "status": "conformant",
+                    "reason": conformant_info.reason(),
+                    "info": conformant_info.app_info()
+                })
+            }
             ValidationStatus::NonConformant(non_conformant_info) => {
-                non_conformant_info.app_info.clone()
+                serde_json::json!({
+                    "status": "nonconformant",
+                    "reason": non_conformant_info.reason(),
+                    "info": non_conformant_info.app_info()
+                })
             }
             ValidationStatus::Pending => serde_json::json!({ "status": "pending" }),
             ValidationStatus::Inconsistent(conformant, non_conformant) => {
                 serde_json::json!({
                     "status": "inconsistent",
-                    "conformant": conformant.app_info,
-                    "non_conformant": non_conformant.app_info
+                    "conformant": conformant.app_info(),
+                    "non_conformant": non_conformant.app_info()
                 })
             }
         }
@@ -71,15 +77,16 @@ impl ValidationStatus {
 
     pub fn reason(&self) -> String {
         match self {
-            ValidationStatus::Conformant(conformant_info) => conformant_info.reason.clone(),
+            ValidationStatus::Conformant(conformant_info) => conformant_info.reason().to_string(),
             ValidationStatus::NonConformant(non_conformant_info) => {
-                non_conformant_info.reason.clone()
+                non_conformant_info.reason().to_string()
             }
             ValidationStatus::Pending => "Pending".to_string(),
             ValidationStatus::Inconsistent(conformant, non_conformant) => {
                 format!(
                     "Conformant: {}, Non-conformant: {}",
-                    conformant.reason, non_conformant.reason
+                    conformant.reason(),
+                    non_conformant.reason()
                 )
             }
         }
@@ -105,38 +112,5 @@ impl Display for ValidationStatus {
                 )
             }
         }
-    }
-}
-#[derive(Debug, PartialEq, Clone, Serialize)]
-pub struct ConformantInfo {
-    reason: String,
-    app_info: Value,
-}
-
-impl ConformantInfo {
-    pub fn merge(&self, other: ConformantInfo) -> ConformantInfo {
-        let merged_reason = format!("{}\n{}", self.reason, other.reason);
-        ConformantInfo {
-            reason: merged_reason,
-            app_info: self.app_info.clone(),
-        }
-    }
-}
-
-impl Display for ConformantInfo {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.reason)
-    }
-}
-
-#[derive(Debug, PartialEq, Clone, Serialize)]
-pub struct NonConformantInfo {
-    reason: String,
-    app_info: Value,
-}
-
-impl Display for NonConformantInfo {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.reason)
     }
 }

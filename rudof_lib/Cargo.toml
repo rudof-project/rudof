@@ -9,9 +9,6 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
-#[features]
-#rdf-star = ["oxrdf/rdf-star"]
-
 [dependencies]
 dctap.workspace = true
 either.workspace = true
@@ -26,12 +23,10 @@ shacl_ast.workspace = true
 shacl_rdf.workspace = true
 shacl_ir.workspace = true
 shacl_validation.workspace = true
-# shapemap.workspace = true
 shapes_comparator.workspace = true
 shapes_converter.workspace = true
 shex_ast.workspace = true
 shex_validation.workspace = true
-# shex_compact.workspace = true
 spargebra.workspace = true
 sparql_service.workspace = true
 srdf.workspace = true

@@ -1,12 +1,10 @@
-use std::fmt::Display;
-
-use serde::Serialize;
+use crate::ValidatorErrors;
+use serde::{Serialize, ser::SerializeMap};
 use shex_ast::{
     Node, ShapeLabelIdx,
     ir::{node_constraint::NodeConstraint, shape::Shape, shape_expr::ShapeExpr},
 };
-
-use crate::ValidatorErrors;
+use std::fmt::Display;
 
 /// Reason represents justifications about why a node conforms to some shape
 #[derive(Debug, Clone)]
@@ -94,78 +92,8 @@ impl Display for Reason {
 }
 
 impl Reason {
-    pub fn as_json(&self) -> serde_json::Value {
-        match self {
-            Reason::NodeConstraintPassed { node, nc } => {
-                serde_json::json!({
-                    "type": "NodeConstraintPassed",
-                    "node": node.to_string(),
-                    "constraint": nc.to_string()
-                })
-            }
-            Reason::ShapeAndPassed { node, se, reasons } => {
-                serde_json::json!({
-                    "type": "ShapeAndPassed",
-                    "node": node.to_string(),
-                    "shape_expr": se.to_string(),
-                    "reasons": reasons.iter().map(|r| {
-                        r.iter().map(|reason| reason.as_json()).collect::<Vec<_>>()
-                    }).collect::<Vec<_>>()
-                })
-            }
-            Reason::ShapePassed { node, shape } => {
-                serde_json::json!({
-                    "type": "ShapePassed",
-                    "node": node.to_string(),
-                    "shape": shape.to_string()
-                })
-            }
-            Reason::ShapeOrPassed {
-                node,
-                shape_expr,
-                reasons: _,
-            } => {
-                serde_json::json!({
-                        "type": "ShapeOrPassed",
-                        "node": node.to_string(),
-                        "shape_expr": shape_expr.to_string(),
-                        /*"reasons": reasons.iter().map(|reason| {
-                    reason.as_json()
-                }).collect::<Vec<_>>()*/
-                    })
-            }
-            Reason::ShapeNotPassed {
-                node,
-                shape_expr,
-                errors_evidences: _,
-            } => {
-                serde_json::json!({
-                        "type": "ShapeNotPassed",
-                        "node": node.to_string(),
-                        "shape_expr": shape_expr.to_string(),
-                        /*"errors_evidences": errors_evidences.iter().map(|reason| {
-                    reason.as_json()
-                }).collect::<Vec<_>>() */
-                    })
-            }
-            Reason::ExternalPassed { node } => serde_json::json!({
-                "type": "ExternalPassed",
-                "node": node.to_string()
-            }),
-            Reason::EmptyPassed { node } => {
-                serde_json::json!({
-                    "type": "EmptyPassed",
-                    "node": node.to_string()
-                })
-            }
-            Reason::ShapeRefPassed { node, idx } => {
-                serde_json::json!({
-                    "type": "ShapeRefPassed",
-                    "node": node.to_string(),
-                    "idx": idx.to_string()
-                })
-            }
-        }
+    pub fn as_json(&self) -> Result<serde_json::Value, serde_json::Error> {
+        serde_json::to_value(self)
     }
 }
 
@@ -194,6 +122,8 @@ impl Serialize for Reason {
     where
         S: serde::Serializer,
     {
-        serializer.serialize_str(format!("{self}").as_str())
+        let mut map = serializer.serialize_map(Some(1))?;
+        map.serialize_entry("reason", &self.to_string())?;
+        map.end()
     }
 }

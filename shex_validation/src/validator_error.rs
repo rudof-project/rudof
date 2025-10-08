@@ -3,6 +3,7 @@ use std::fmt::Display;
 use prefixmap::PrefixMapError;
 use rbe::RbeError;
 use serde::Serialize;
+use serde::ser::SerializeMap;
 use shex_ast::ir::preds::Preds;
 use shex_ast::ir::shape::Shape;
 use shex_ast::ir::shape_expr::ShapeExpr;
@@ -22,6 +23,12 @@ pub enum ValidatorError {
     },
     #[error("Converting Term to RDFNode failed pending {term}")]
     TermToRDFNodeFailed { term: String },
+
+    #[error("Serialization of reason failed: {reason} with error: {error}")]
+    ReasonSerializationError { reason: String, error: String },
+
+    #[error("Serialization of error failed: {source_error} with error: {error}")]
+    ErrorSerializationError { source_error: String, error: String },
 
     #[error("Failed pending: RBE passed, but pending references failed")]
     FailedPending {
@@ -134,7 +141,18 @@ pub enum ValidatorError {
     ShapeRefFailed { node: Box<Node>, idx: ShapeLabelIdx },
 }
 
-#[derive(Debug, Clone)]
+impl Serialize for ValidatorError {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut map = serializer.serialize_map(Some(1))?;
+        map.serialize_entry("error", &self.to_string())?;
+        map.end()
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct ValidatorErrors {
     errs: Vec<ValidatorError>,
 }
@@ -151,14 +169,5 @@ impl Display for ValidatorErrors {
             writeln!(f, "  {err}")?;
         }
         Ok(())
-    }
-}
-
-impl Serialize for ValidatorError {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_str(self.to_string().as_str())
     }
 }

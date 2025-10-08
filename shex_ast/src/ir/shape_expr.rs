@@ -4,7 +4,11 @@ use super::{
     shape::Shape,
 };
 use crate::{Expr, Pred, ShapeLabelIdx, ir::schema_ir::SchemaIR};
-use std::{collections::HashMap, fmt::Display, vec};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::Display,
+    vec,
+};
 
 #[derive(Debug, PartialEq, Clone, Default)]
 pub enum ShapeExpr {
@@ -111,6 +115,68 @@ impl ShapeExpr {
             }
             ShapeExpr::Empty => HashMap::new(),
         }
+    }
+
+    /// Get the predicates used in this shape expression.
+    /// For ShapeOr, ShapeAnd and ShapeNot, it will recursively get the predicates from
+    /// the referenced shapes.
+    /// For Shape, it will get the predicates from the shape.
+    /// For NodeConstraint and External, it will return an empty set.
+    /// For Ref, it will get the predicates from the referenced shape.
+    /// For Empty, it will return an empty set.
+    /// This will used the direct predicates of the shape, not the ones from extends.
+    /// To get the predicates including extends, use the method preds_extends of `SchemaIR`
+    pub fn preds(&self, schema: &SchemaIR) -> HashSet<Pred> {
+        let mut visited = HashSet::new();
+        self.preds_visited(schema, &mut visited)
+    }
+
+    fn preds_visited(
+        &self,
+        schema: &SchemaIR,
+        visited: &mut HashSet<ShapeLabelIdx>,
+    ) -> HashSet<Pred> {
+        let mut preds = HashSet::new();
+        match self {
+            ShapeExpr::ShapeOr { exprs, .. } => {
+                for e in exprs {
+                    let info = schema.find_shape_idx(e).unwrap();
+                    visited.insert(*e);
+                    let expr = info.expr();
+                    preds.extend(expr.preds_visited(schema, visited));
+                }
+            }
+            ShapeExpr::ShapeAnd { exprs, .. } => {
+                for e in exprs {
+                    let info = schema.find_shape_idx(e).unwrap();
+                    visited.insert(*e);
+                    let expr = info.expr();
+                    preds.extend(expr.preds_visited(schema, visited));
+                }
+            }
+            ShapeExpr::ShapeNot { expr, .. } => {
+                let info = schema.find_shape_idx(expr).unwrap();
+                visited.insert(*expr);
+                let expr = info.expr();
+                preds.extend(expr.preds_visited(schema, visited));
+            }
+            ShapeExpr::NodeConstraint(_nc) => {}
+            ShapeExpr::Shape(s) => {
+                preds.extend(s.preds());
+            }
+            ShapeExpr::External {} => {}
+            ShapeExpr::Ref { idx } => {
+                if visited.contains(idx) {
+                    return preds;
+                }
+                visited.insert(*idx);
+                let info = schema.find_shape_idx(idx).unwrap();
+                let expr = info.expr();
+                preds.extend(expr.preds(schema));
+            }
+            ShapeExpr::Empty => {}
+        }
+        preds
     }
 
     /// Adds PosNeg edges to the dependency graph.

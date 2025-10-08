@@ -1,11 +1,11 @@
 use std::fmt::Display;
 
 use crate::ShapeLabelIdx;
-use petgraph::dot::{Config, Dot};
 use petgraph::graphmap::GraphMap;
 use petgraph::visit::EdgeRef;
+use petgraph::visit::IntoEdgeReferences;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct DependencyGraph {
     graph: GraphMap<ShapeLabelIdx, PosNeg, petgraph::Directed>,
 }
@@ -61,11 +61,10 @@ impl DependencyGraph {
 
 impl Display for DependencyGraph {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{:?}",
-            Dot::with_config(&self.graph, &[Config::GraphContentOnly])
-        )
+        for (source, target, posneg) in self.graph.edge_references() {
+            writeln!(f, "{} -{}-> {} ", source, posneg, target,)?;
+        }
+        Ok(())
     }
 }
 
