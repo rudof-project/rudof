@@ -1,17 +1,20 @@
 #![allow(unsafe_op_in_unsafe_fn)]
 //! This is a wrapper of the methods provided by `rudof_lib`
 //!
+use crate::PyRudofConfig;
 use pyo3::{
-    Py, PyErr, PyRef, PyRefMut, PyResult, Python, exceptions::PyValueError, pyclass, pymethods,
+    Bound, Py, PyAny, PyErr, PyRef, PyRefMut, PyResult, Python, exceptions::PyValueError, pyclass,
+    pymethods,
 };
+use pythonize::pythonize;
 use rudof_lib::{
     CoShaMo, ComparatorError, CompareSchemaFormat, CompareSchemaMode, DCTAP, DCTAPFormat,
     InputSpec, InputSpecError, InputSpecReader, Mie, MimeType, PrefixMap, QueryResultFormat,
     QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat, RdfData, ReaderMode, ResultShapeMap,
     Rudof, RudofError, ServiceDescription, ServiceDescriptionFormat, ShExFormat, ShExFormatter,
-    ShExSchema, ShaCo, ShaclFormat, ShaclSchemaIR, ShaclValidationMode, ShapeMapFormat,
+    ShExSchema, ShaCo, ShaclFormat, ShaclSchemaIR, ShaclValidationMode, ShapeLabel, ShapeMapFormat,
     ShapeMapFormatter, ShapesGraphSource, UmlGenerationMode, ValidationReport, ValidationStatus,
-    VarName, iri,
+    VarName, iri, srdf::Object,
 };
 use std::{
     ffi::OsStr,
@@ -20,8 +23,6 @@ use std::{
     path::Path,
     str::FromStr,
 };
-
-use crate::PyRudofConfig;
 
 /// Main class to handle `rudof` features.
 /// There should  be only one instance of `rudof` per program.
@@ -1414,6 +1415,14 @@ impl PyQuerySolutions {
         self.inner.count()
     }
 
+    /// Converts the solutions to a list of solutions
+    pub fn to_list(&self) -> Vec<PyQuerySolution> {
+        self.inner
+            .iter()
+            .map(|qs| PyQuerySolution { inner: qs.clone() })
+            .collect()
+    }
+
     /// Returns an iterator over the solutions
     /// This allows to iterate over the solutions in a for loop
     fn __iter__(slf: PyRef<'_, Self>) -> PyResult<Py<QuerySolutionIter>> {
@@ -1457,6 +1466,26 @@ pub struct PyResultShapeMap {
 
 #[pymethods]
 impl PyResultShapeMap {
+    /// Returns a list of tuples (node, shape, status) in the ResultShapeMap
+    pub fn to_list(&self) -> Vec<(PyNode, PyShapeLabel, PyValidationStatus)> {
+        self.inner
+            .iter()
+            .map(|(node, shape, status)| {
+                (
+                    PyNode {
+                        inner: node.as_object().clone(),
+                    },
+                    PyShapeLabel {
+                        inner: shape.clone(),
+                    },
+                    PyValidationStatus {
+                        inner: status.clone(),
+                    },
+                )
+            })
+            .collect()
+    }
+
     /// Convert a ResultShapeMap to a String
     pub fn show(&self) -> String {
         let result = &self.inner;
@@ -1486,6 +1515,38 @@ impl PyValidationReport {
     }
 }
 
+/// RDF Node
+/// It can be converted to a String
+#[pyclass(frozen, name = "Node")]
+pub struct PyNode {
+    inner: Object,
+}
+
+#[pymethods]
+impl PyNode {
+    /// Convert Node to a String
+    pub fn show(&self) -> String {
+        let result = &self.inner;
+        format!("{result}")
+    }
+}
+
+/// RDF Node
+/// It can be converted to a String
+#[pyclass(frozen, name = "ShapeLabel")]
+pub struct PyShapeLabel {
+    inner: ShapeLabel,
+}
+
+#[pymethods]
+impl PyShapeLabel {
+    /// Convert ShapeLabel to a String
+    pub fn show(&self) -> String {
+        let result = &self.inner;
+        result.to_string()
+    }
+}
+
 /// Status of a validation
 /// It can be converted to a String
 #[pyclass(frozen, name = "ValidationStatus")]
@@ -1499,6 +1560,26 @@ impl PyValidationStatus {
     pub fn show(&self) -> String {
         let result = &self.inner;
         format!("{result}")
+    }
+
+    /// Returns true if the status is Conformant, false otherwise
+    pub fn is_conformant(&self) -> bool {
+        matches!(self.inner, ValidationStatus::Conformant(_))
+    }
+
+    /// Returns a natural language explanation for the reason of this status
+    pub fn reason(&self) -> String {
+        self.inner.reason().to_string()
+    }
+
+    /// Returns a JSON representation of the reason of this status
+    /// NOTE: The current JSON structure is subject to change
+    pub fn as_json<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        let value = self.inner.app_info();
+        let any = pythonize(py, &value).map_err(|e| {
+            PyRudofError::str(format!("Error converting appinfo to Python Object: {e}"))
+        })?;
+        Ok(any)
     }
 }
 

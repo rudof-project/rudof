@@ -6,7 +6,7 @@ use super::{
 use crate::{Expr, Pred, ShapeLabelIdx, ir::schema_ir::SchemaIR};
 use itertools::Itertools;
 use std::{
-    collections::{HashMap, hash_map::Entry},
+    collections::{HashMap, HashSet, hash_map::Entry},
     fmt::Display,
 };
 
@@ -53,6 +53,12 @@ impl Shape {
         self.preds.clone()
     }
 
+    pub fn preds_extends(&self, schema: &SchemaIR) -> HashSet<Pred> {
+        let mut preds = HashSet::from_iter(self.preds().iter().cloned());
+        for e in &schema.parents(&self) {}
+        preds
+    }
+
     pub fn references(&self) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
         self.get_value_expr_references()
     }
@@ -70,7 +76,7 @@ impl Shape {
     /// Obtain the RBE tables that are affected by the current shape
     /// If there are no extends, it will only contain a value pointing None to the rbe_table
     /// It there are extends, each value of the HashMap will be a pair from the label of the extended shape to its rbe table
-    pub fn get_triple_exprs(&self, schema: &SchemaIR) -> HashMap<Option<ShapeLabelIdx>, Vec<Expr>> {
+    /*pub fn get_triple_exprs(&self, schema: &SchemaIR) -> HashMap<Option<ShapeLabelIdx>, Vec<Expr>> {
         let main_triple_expr = self.expr.clone();
         let mut result = HashMap::new();
         result.insert(None, vec![main_triple_expr]);
@@ -88,7 +94,7 @@ impl Shape {
             }
         }
         result
-    }
+    }*/
 
     pub fn show_short(&self) -> String {
         let closed = if self.closed { "CLOSED" } else { "" };

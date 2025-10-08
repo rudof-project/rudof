@@ -7,7 +7,6 @@ use either::Either;
 use indexmap::IndexSet;
 use iri_s::iri;
 use itertools::Itertools;
-// use rbe::MatchTableIter;
 use shex_ast::Node;
 use shex_ast::Pred;
 use shex_ast::ShapeLabelIdx;
@@ -35,11 +34,7 @@ type ValidationResult = Either<Vec<ValidatorError>, Vec<Reason>>;
 #[derive(Debug, Clone)]
 pub struct Engine {
     checked: IndexSet<Atom>,
-    // processing: IndexSet<Atom>,
     pending: IndexSet<Atom>,
-    //rules: Vec<Rule>,
-    // alternative_match_iterators: Vec<MatchTableIter<Pred, Node, ShapeLabelIdx>>,
-    // alternatives: Vec<ResultMap<Node, ShapeLabelIdx>>,
     config: ValidatorConfig,
     step_counter: usize,
     reasons: HashMap<PosAtom, Vec<Reason>>,
@@ -50,9 +45,7 @@ impl Engine {
     pub fn new(config: &ValidatorConfig) -> Engine {
         Engine {
             checked: IndexSet::new(),
-            // processing: IndexSet::new(),
             pending: IndexSet::new(),
-            // alternative_match_iterators: Vec::new(),
             config: config.clone(),
             step_counter: 0,
             reasons: HashMap::new(),
@@ -64,14 +57,6 @@ impl Engine {
         let config = self.config.clone();
         *self = Engine::new(&config);
     }
-
-    /*pub(crate) fn add_processing(&mut self, atom: &Atom) {
-        self.processing.insert((*atom).clone());
-    }
-
-    pub(crate) fn remove_processing(&mut self, atom: &Atom) {
-        self.processing.swap_remove(atom);
-    }*/
 
     pub(crate) fn validate_pending(
         &mut self,
@@ -155,24 +140,6 @@ impl Engine {
         self.config.set_max_steps(max_steps);
     }
 
-    /*pub(crate) fn is_processing(&self, atom: &Atom) -> bool {
-        self.processing.contains(atom)
-    }*/
-
-    /*pub(crate) fn get_result(&self, atom: &Atom) -> ResultValue {
-        if self.checked.contains(atom) {
-            ResultValue::Ok
-        } else if self.checked.contains(&atom.negated()) {
-            ResultValue::Failed
-        } else if self.pending.contains(atom) {
-            ResultValue::Pending
-        } else if self.processing.contains(atom) {
-            ResultValue::Processing
-        } else {
-            ResultValue::Unknown
-        }
-    }*/
-
     pub fn new_step(&mut self) {
         self.step_counter += 1;
     }
@@ -191,11 +158,6 @@ impl Engine {
                 vacant.insert(vec![err]);
             }
         }
-    }
-
-    pub fn get_shape_expr(&self, _idx: ShapeLabelIdx) -> &ShapeExpr {
-        // self.config.get_shape_expr(idx)
-        todo!()
     }
 
     pub fn more_pending(&self) -> bool {
@@ -218,10 +180,6 @@ impl Engine {
     pub fn max_steps(&self) -> usize {
         self.config.max_steps()
     }
-
-    /*     pub(crate) fn no_end_steps(&self) -> bool {
-        self.steps() < self.max_steps()
-    } */
 
     pub(crate) fn find_errors(&self, na: &NegAtom) -> Vec<ValidatorError> {
         match self.errors.get(na) {
@@ -445,7 +403,13 @@ impl Engine {
                     Err(err) => fail(ValidatorError::RbeError(err)),
                 }
             }
-            ShapeExpr::Shape(shape) => self.check_node_shape(node, shape, schema, rdf, typing),
+            ShapeExpr::Shape(shape) => {
+                if shape.extends().is_empty() {
+                    self.check_node_shape(node, shape, schema, rdf, typing)
+                } else {
+                    self.check_node_shape_extends(node, shape, schema, rdf, typing)
+                }
+            }
             ShapeExpr::External {} => {
                 debug!("External shape expression encountered for node {node} with shape {se}");
                 pass(Reason::ExternalPassed { node: node.clone() })
@@ -486,8 +450,72 @@ impl Engine {
         rdf: &impl NeighsRDF,
         typing: &mut HashSet<(Node, ShapeLabelIdx)>,
     ) -> Result<ValidationResult> {
-        tracing::debug!("Checking node {node} with shape {shape}");
+        tracing::debug!("Checking node {node} with shape {shape} [No extends]");
         let (values, remainder) = self.neighs(node, shape.preds(), rdf)?;
+        if shape.is_closed() && !remainder.is_empty() {
+            trace!("Closed shape with remainder preds: {remainder:?}");
+            fail(ValidatorError::ClosedShapeWithRemainderPreds {
+                remainder: Preds::new(remainder),
+                declared: Preds::new(shape.preds().into_iter().collect()),
+            })
+        } else {
+            trace!(
+                "Neighs of {node:?} for predicates [{}]: [{}]",
+                shape.preds().iter().map(|p| p.to_string()).join(", "),
+                values.iter().map(|(p, v)| format!("{p} {v}")).join(", ")
+            );
+            let result_iter = shape.triple_expr().matches(values)?;
+            let mut errors = Vec::new();
+            for result in result_iter {
+                trace!("Result: {:?}", result);
+                match result {
+                    Ok(pending_values) => {
+                        let mut failed_pending = Vec::new();
+                        // Check if all pending values are in typing
+                        for (n, idx) in pending_values.iter() {
+                            let pair = (n.clone(), *idx);
+                            if !typing.contains(&pair) {
+                                failed_pending.push(pair)
+                                // TODO: if (stop_at_first) break
+                                // We don't need to compute all the failed pending values once we find the first pair
+                            }
+                        }
+                        if failed_pending.is_empty() {
+                            return pass(Reason::ShapePassed {
+                                node: node.clone(),
+                                shape: Box::new(shape.clone()),
+                            });
+                        } else {
+                            errors.push(ValidatorError::FailedPending {
+                                failed_pending: failed_pending.clone(),
+                            })
+                        }
+                    }
+                    Err(err) => {
+                        debug!("Result with error: {err}");
+                        return fail(ValidatorError::RbeError(err));
+                    }
+                }
+            }
+            tracing::debug!("Shape didn't pass for node {node} with shape {shape}");
+            fail(ValidatorError::ShapeFails {
+                node: Box::new(node.clone()),
+                shape: Box::new(shape.clone()),
+                errors,
+            })
+        }
+    }
+
+    pub(crate) fn check_node_shape_extends(
+        &self,
+        node: &Node,
+        shape: &Shape,
+        _schema: &SchemaIR,
+        rdf: &impl NeighsRDF,
+        typing: &mut HashSet<(Node, ShapeLabelIdx)>,
+    ) -> Result<ValidationResult> {
+        tracing::debug!("Checking node {node} with shape {shape} that has extends");
+        let (values, remainder) = self.neighs(node, shape.preds_extends(), rdf)?;
         if shape.is_closed() && !remainder.is_empty() {
             trace!("Closed shape with remainder preds: {remainder:?}");
             fail(ValidatorError::ClosedShapeWithRemainderPreds {
@@ -745,7 +773,11 @@ impl Engine {
         Ok(Node::from(obj))
     }
 
-    fn neighs<S>(&self, node: &Node, preds: Vec<Pred>, rdf: &S) -> Result<Neighs>
+    /// Get the neighbours of a node for a list of predicates
+    /// Returns a tuple (values, remainder) where:
+    /// - values is a list of pairs (pred, obj) where obj is an object of the node for the given pred
+    /// - remainder is a list of predicates for which there are no objects
+    pub(crate) fn neighs<S>(&self, node: &Node, preds: Vec<Pred>, rdf: &S) -> Result<Neighs>
     where
         S: NeighsRDF,
     {

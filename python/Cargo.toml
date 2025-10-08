@@ -21,10 +21,8 @@ crate-type = ["cdylib"]
 
 [dependencies]
 rudof_lib.workspace = true
-
-[dependencies.pyo3]
-version = "0.26.0"
-features = ["abi3-py37", "extension-module"]
+pyo3 = { version = "0.26.0", features = ["abi3-py37", "extension-module"]}
+pythonize = { version = "0.26.0" }
 
 [package.metadata.maturin]
 include = ["pyrudof.pyi"]

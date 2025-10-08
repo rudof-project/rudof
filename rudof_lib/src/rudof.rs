@@ -8,10 +8,10 @@ use shapes_comparator::CoShaMoConverter;
 use shapes_converter::{ShEx2Uml, Tap2ShEx};
 use shex_ast::compact::ShExParser;
 use shex_ast::ir::schema_ir::SchemaIR;
-use shex_ast::ir::shape_label::ShapeLabel;
 use shex_ast::shapemap::{NodeSelector, ShapeSelector};
 use shex_ast::{ResolveMethod, ShExFormat};
 // use shex_validation::SchemaWithoutImports;
+use srdf::QueryRDF;
 use srdf::rdf_visualizer::visual_rdf_graph::VisualRDFGraph;
 use srdf::{FocusRDF, SRDFGraph, SparqlQuery};
 use std::fmt::Debug;
@@ -34,15 +34,16 @@ pub use shacl_validation::validation_report::report::ValidationReport;
 pub use shapes_comparator::{
     CoShaMo, ComparatorError, CompareSchemaFormat, CompareSchemaMode, ShaCo,
 };
+pub use shex_ast::Node;
 pub use shex_ast::compact::{
     ShExFormatter, ShapeMapParser, ShapemapFormatter as ShapeMapFormatter,
 };
+pub use shex_ast::ir::shape_label::ShapeLabel;
 pub use shex_ast::shapemap::{QueryShapeMap, ResultShapeMap, ShapeMapFormat, ValidationStatus};
 pub use shex_validation::Validator as ShExValidator;
 pub use shex_validation::ValidatorConfig;
 pub use sparql_service::ServiceDescription;
 pub use sparql_service::ServiceDescriptionFormat;
-use srdf::QueryRDF;
 pub use srdf::QueryResultFormat;
 pub use srdf::{QuerySolution, QuerySolutions, RDFFormat, ReaderMode, SRDFSparql, VarName};
 
