@@ -1,6 +1,8 @@
 # ShEx
 
-The command `shex` can be used to obtain information about [ShEx](https://shex.io/) schemas.
+The command `shex` can be used to obtain information about [ShEx](https://shex.io/) schemas. 
+
+> For ShEx validation, you can use the `shex-validate` or `validate` commands
 
 For executing the examples in this page we assume you have a file called `user.shex` in your folder with the following contents:
 

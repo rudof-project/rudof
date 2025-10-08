@@ -14,10 +14,10 @@ iri_s.workspace = true
 prefixmap.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-sparql_service.workspace = true
 shacl_ast.workspace = true
 shex_ast.workspace = true
 shex_validation.workspace = true
+sparql_service.workspace = true
 srdf.workspace = true
 thiserror.workspace = true
 tracing = { workspace = true }

@@ -16,22 +16,22 @@ repository.workspace = true
 #]
 
 [dependencies]
+chrono = "0.4.42"
+dctap.workspace = true
 iri_s.workspace = true
 mie.workspace = true
-dctap.workspace = true
-srdf.workspace = true
+minijinja = { version = "2.12.0", features = ["loader"] }
+prefixmap.workspace = true
+rdf_config.workspace = true
+serde.workspace = true
 shacl_ast.workspace = true
+shacl_validation.workspace = true
 shex_ast.workspace = true
 shex_validation.workspace = true
-shacl_validation.workspace = true
-prefixmap.workspace = true
-serde.workspace = true
-toml = "0.8"
-chrono = "0.4.42"
-rdf_config.workspace = true
 spargebra.workspace = true
-thiserror = "2.0"
-tracing = { workspace = true }
-minijinja = { version = "2.12.0", features = ["loader"] }
-tempfile.workspace = true
 sparql_service.workspace = true
+srdf.workspace = true
+tempfile.workspace = true
+thiserror = "2.0"
+toml = "0.8"
+tracing = { workspace = true }

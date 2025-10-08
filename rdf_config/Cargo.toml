@@ -10,15 +10,15 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-thiserror.workspace = true
+hashlink = { version = "0.10" }
+indexmap = { version = "2" }
+itertools.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+thiserror.workspace = true
 toml = "0.8"
-itertools.workspace = true
-indexmap = { version = "2"}
 tracing = { workspace = true }
 yaml-rust2 = { version = "0.10" }
-hashlink = { version = "0.10" }
 
 [dev-dependencies]
 indoc = "2"

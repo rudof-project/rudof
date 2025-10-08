@@ -10,16 +10,16 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-const_format.workspace = true
 colored.workspace = true
-lazy-regex.workspace = true
-pretty.workspace = true
+const_format.workspace = true
 iri_s.workspace = true
 itertools.workspace = true
+lazy-regex.workspace = true
 nom.workspace = true
 nom_locate.workspace = true
 petgraph.workspace = true
 prefixmap.workspace = true
+pretty.workspace = true
 rbe.workspace = true
 regex.workspace = true
 rust_decimal.workspace = true

@@ -1,19 +1,20 @@
 [workspace]
 resolver = "2"
 members = [
+    "data_generator",
     "dctap",
     "iri_s",
     "mie",
-    "python",
     "prefixmap",
+    "python",
     "rbe",
     "rbe_testsuite",
     "rdf_config",
-    "rudof_lib",
     "rudof_cli",
+    "rudof_lib",
     "shacl_ast",
-    "shacl_rdf",
     "shacl_ir",
+    "shacl_rdf",
     "shacl_validation",
     "shapes_comparator",
     "shapes_converter",
@@ -22,17 +23,11 @@ members = [
     "shex_validation",
     "sparql_service",
     "srdf",
-    "data_generator",
 ]
 
 exclude = ["shex_compact_winnow"]
 
-default-members = [
-    "rudof_cli",
-    # "shacl_ast",
-    # "shacl_validation",
-    # "srdf",
-]
+default-members = ["rudof_cli"]
 
 [workspace.package]
 edition = "2021"
@@ -50,14 +45,37 @@ authors = [
 ]
 
 [workspace.dependencies]
+
+# [dependencies]
+anyhow = "1.0"
+async-trait = "0.1.89"
 calamine = { version = "0.31" }
+clap = { version = "4.2.1", features = ["derive"] }
+clientele = "0.2"
+colored = "3"
+const_format = "0.2"
+csv = "1.3.1"
 data_generator = { version = "0.1.118", path = "./data_generator" }
 dctap = { version = "0.1.111", path = "./dctap" }
+either = { version = "1.13" }
+indexmap = "2.1"
 iri_s = { version = "0.1.90", path = "./iri_s" }
+itertools = "0.14"
 lazy-regex = "3.4"
 mie = { version = "0.1.104", path = "./mie" }
 nom = "7"
 nom_locate = "4"
+oxigraph = { version = "0.5.0", default-features = false, features = [
+    "rdf-12",
+] }
+oxilangtag = { version = "0.1.5", features = ["serde"] }
+oxiri = { version = "0.2.11" }
+oxjsonld = { version = "0.2.0", features = ["rdf-12"] }
+oxrdf = { version = "0.3.0", features = ["oxsdatatypes", "rdf-12"] }
+oxrdfio = { version = "0.2.0", features = ["rdf-12"] }
+oxrdfxml = { version = "0.2.0" }
+oxsdatatypes = "0.2.2"
+oxttl = { version = "0.2.0", features = ["rdf-12"] }
 petgraph = { version = "0.8" }
 prefixmap = { version = "0.1.104", path = "./prefixmap" }
 pretty = { version = "0.12" }
@@ -65,8 +83,14 @@ pyrudof = { version = "0.1.110", path = "./python" }
 rbe = { version = "0.1.111", path = "./rbe" }
 rbe_testsuite = { version = "0.1.90", path = "./rbe_testsuite" }
 rdf_config = { version = "0.1.102", path = "./rdf_config" }
+regex = "1.11"
+reqwest = { version = "0.12", features = ["blocking", "json"] }
 rudof_cli = { version = "0.1.111", path = "./rudof_cli" }
 rudof_lib = { version = "0.1.110", path = "./rudof_lib" }
+rust_decimal = "1.38"
+rust_decimal_macros = "1.38"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1.0"
 shacl_ast = { version = "0.1.106", path = "./shacl_ast" }
 shacl_ir = { version = "0.1.90", path = "./shacl_ir" }
 shacl_rdf = { version = "0.1.90", path = "./shacl_rdf" }
@@ -76,45 +100,15 @@ shapes_converter = { version = "0.1.111", path = "./shapes_converter" }
 shex_ast = { version = "0.1.111", path = "./shex_ast" }
 shex_testsuite = { version = "0.1.108", path = "./shex_testsuite" }
 shex_validation = { version = "0.1.111", path = "./shex_validation" }
-sparql_service = { version = "0.1.111", path = "./sparql_service" }
-srdf = { version = "0.1.111", path = "./srdf" }
-
-
-# [dependencies]
-anyhow = "1.0"
-async-trait = "0.1.89"
-clap = { version = "4.2.1", features = ["derive"] }
-clientele = "0.2"
-colored = "3"
-const_format = "0.2"
-csv = "1.3.1"
-either = { version = "1.13" }
-indexmap = "2.1"
-itertools = "0.14"
-oxsdatatypes = "0.2.2"
-oxigraph = { version = "0.5.0", default-features = false, features = [
-    "rdf-12",
-] }
-oxiri = { version = "0.2.11" }
-oxilangtag = { version = "0.1.5", features = ["serde"] }
-oxjsonld = { version = "0.2.0", features = ["rdf-12"] }
-oxrdf = { version = "0.3.0", features = ["oxsdatatypes", "rdf-12"] }
-oxrdfio = { version = "0.2.0", features = ["rdf-12"] }
-oxrdfxml = { version = "0.2.0" }
-oxttl = { version = "0.2.0", features = ["rdf-12"] }
-regex = "1.11"
-reqwest = { version = "0.12", features = ["blocking", "json"] }
-rust_decimal = "1.38"
-rust_decimal_macros = "1.38"
 sparesults = { version = "0.3.0", features = ["sparql-12"] }
 spargebra = { version = "0.4.0", features = ["sparql-12"] }
+sparql_service = { version = "0.1.111", path = "./sparql_service" }
+srdf = { version = "0.1.111", path = "./srdf" }
 supports-color = "3.0.0"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1.0"
-toml = "0.9"
 tempfile = "3.10.1"
 thiserror = "2.0"
 tokio = { version = "1.0", features = ["rt", "rt-multi-thread"] }
+toml = "0.9"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-test = "0.2.5"

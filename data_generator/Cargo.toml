@@ -12,39 +12,39 @@ categories.workspace = true
 authors.workspace = true
 
 [dependencies]
-# Core RDF and ShEx/SHACL dependencies
-srdf = { workspace = true }
-shex_ast = { workspace = true }
-shacl_ast = { workspace = true }
-shacl_rdf = { workspace = true }
-iri_s = { workspace = true }
-prefixmap = { workspace = true }
-oxrdf = { workspace = true, features = ["oxsdatatypes"] }
+anyhow = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
 
 # CLI and configuration
 clap = { version = "4.0", features = ["derive"] }
-serde = { version = "1.0", features = ["derive"] }
-toml = "0.8"
-serde_json = "1.0"
-
-# Async and parallelism
-tokio = { version = "1.0", features = ["full"] }
-rayon = "1.7"
 futures = "0.3"
+iri_s = { workspace = true }
+oxrdf = { workspace = true, features = ["oxsdatatypes"] }
+prefixmap = { workspace = true }
 
 # Data generation and utilities
 rand = "0.8"
+rayon = "1.7"
 rust_decimal = "1.28"
-uuid = { version = "1.0", features = ["v4"] }
-chrono = { version = "0.4", features = ["serde"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+shacl_ast = { workspace = true }
+shacl_rdf = { workspace = true }
+shex_ast = { workspace = true }
+# Core RDF and ShEx/SHACL dependencies
+srdf = { workspace = true }
+thiserror = "1.0"
+
+# Async and parallelism
+tokio = { version = "1.0", features = ["full"] }
+toml = "0.8"
 
 # Logging and error handling
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-anyhow = "1.0"
-thiserror = "1.0"
+uuid = { version = "1.0", features = ["v4"] }
 
 [dev-dependencies]
-tempfile = "3.0"
 regex = "1.0"
+tempfile = "3.0"
 tokio-test = "0.4"

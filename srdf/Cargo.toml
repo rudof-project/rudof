@@ -19,33 +19,32 @@ repository.workspace = true
 
 [dependencies]
 async-trait.workspace = true
+colored.workspace = true
 const_format = "0.2"
 iri_s.workspace = true
 itertools.workspace = true
 oxilangtag.workspace = true
-oxttl.workspace = true
-oxrdfio.workspace = true
-oxrdf.workspace = true
-oxrdfxml.workspace = true
-oxjsonld.workspace = true
 oxiri.workspace = true
+oxjsonld.workspace = true
+oxrdf.workspace = true
+oxrdfio.workspace = true
+oxrdfxml.workspace = true
 oxsdatatypes.workspace = true
+oxttl.workspace = true
 prefixmap.workspace = true
+regex.workspace = true
 reqwest.workspace = true
 rust_decimal.workspace = true
 rust_decimal_macros.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-toml.workspace = true
+sparesults.workspace = true
+spargebra.workspace = true
 tempfile.workspace = true
 thiserror.workspace = true
-spargebra.workspace = true
-sparesults.workspace = true
-colored.workspace = true
-url.workspace = true
-regex.workspace = true
+toml.workspace = true
 tracing.workspace = true
-
+url.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true

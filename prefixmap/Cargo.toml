@@ -10,8 +10,8 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-iri_s.workspace = true
-indexmap = { version = "2", features = ["serde"] }
-thiserror.workspace = true
 colored.workspace = true
+indexmap = { version = "2", features = ["serde"] }
+iri_s.workspace = true
 serde.workspace = true
+thiserror.workspace = true

@@ -10,19 +10,19 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
+anyhow = "1.0"
+clap.workspace = true
 iri_s.workspace = true
 prefixmap.workspace = true
-# shapemap.workspace = true
-srdf.workspace = true
+serde.workspace = true
+serde_json = { workspace = true }
 shex_ast.workspace = true
 # shex_compact.workspace = true
 shex_validation.workspace = true
-serde.workspace = true
-serde_json = { workspace = true }
-toml = "0.8"
-anyhow = "1.0"
+# shapemap.workspace = true
+srdf.workspace = true
 thiserror = "2.0"
-clap.workspace = true
-url.workspace = true
+toml = "0.8"
 tracing.workspace = true
 tracing-subscriber.workspace = true
+url.workspace = true

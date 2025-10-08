@@ -15,14 +15,14 @@ homepage = "https://rudof-project.github.io/rudof"
 keywords = ["rdf", "linked-data", "semantic-web", "shex", "shacl"]
 edition = "2024"
 
+[package.metadata.maturin]
+include = ["pyrudof.pyi"]
+
 [lib]
 name = "pyrudof"
 crate-type = ["cdylib"]
 
 [dependencies]
-rudof_lib.workspace = true
-pyo3 = { version = "0.26.0", features = ["abi3-py37", "extension-module"]}
+pyo3 = { version = "0.26.0", features = ["abi3-py37", "extension-module"] }
 pythonize = { version = "0.26.0" }
-
-[package.metadata.maturin]
-include = ["pyrudof.pyi"]
+rudof_lib.workspace = true

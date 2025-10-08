@@ -10,13 +10,13 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-thiserror.workspace = true
-hashbag = { version = "0.1.12"}
+hashbag = { version = "0.1.12" }
+indexmap = { version = "2" }
+itertools.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+thiserror.workspace = true
 toml = "0.8"
-itertools.workspace = true
-indexmap = { version = "2"}
 tracing = { workspace = true }
 
 [dev-dependencies]
