@@ -72,7 +72,7 @@ impl UnifiedConstraintModel {
         let mut deps = Vec::new();
         for prop in &shape.properties {
             for constraint in &prop.constraints {
-                if let UnifiedConstraint::ShapeReference(ref target_shape) = constraint {
+                if let UnifiedConstraint::ShapeReference(target_shape) = constraint {
                     deps.push(target_shape.clone());
                 }
             }

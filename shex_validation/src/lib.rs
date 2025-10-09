@@ -1,11 +1,11 @@
 //! ShEx validation
 //!
 //!
-mod result_value;
-// mod validation_state;
 pub mod atom;
 pub mod engine;
+pub mod k_partitions;
 pub mod reason;
+mod result_value;
 pub mod rule;
 pub mod schema_without_imports;
 pub mod schema_without_imports_error;
@@ -18,6 +18,7 @@ pub mod validator_error;
 
 pub use crate::atom::*;
 pub use crate::engine::*;
+pub use crate::k_partitions::*;
 pub use crate::reason::*;
 pub use crate::result_value::*;
 pub use crate::rule::*;

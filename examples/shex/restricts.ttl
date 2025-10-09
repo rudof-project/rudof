@@ -1,4 +1,6 @@
 prefix :       <http://example.org/>
 prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
 
-:x :p "A", "B", "C", "S" .
+:ok :p "B", 3, "S" .
+
+:ko1 :p "B", 10, "S" .

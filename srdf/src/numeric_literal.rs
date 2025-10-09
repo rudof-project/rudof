@@ -534,7 +534,7 @@ mod tests {
     fn test_deserialize_integer() {
         let str = r#"23"#;
         let deser: NumericLiteral = serde_json::from_str(str).unwrap();
-        let expected = NumericLiteral::decimal(dec![23]);
+        let expected = NumericLiteral::integer(23);
         assert_eq!(deser, expected);
     }
 

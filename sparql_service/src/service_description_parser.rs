@@ -64,7 +64,7 @@ where
                                 let sl = supported_language.clone();
                                 let iri = iri.clone();
                                 move |feature| {
-                                    optional(default_dataset(&focus)).then({
+                                    optional(default_dataset(focus.clone())).then({
                                         // TODO: There is something ugly here with so many clone()'s...refactor!!
                                         let focus = focus.clone();
                                         let iri = iri.clone();
@@ -76,7 +76,7 @@ where
                                             let sl = sl.clone();
                                             let result_format = result_format.clone();
                                             let feature = feature.clone();
-                                            available_graphs(&focus).then({
+                                            available_graphs(focus.clone()).then({
                                                 move |ags| {
                                                     let focus = focus.clone();
                                                     let iri = iri.clone();
@@ -85,7 +85,7 @@ where
                                                     let feature = feature.clone();
                                                     let ags = ags.clone();
                                                     let default_ds = default_ds.clone();
-                                                    title(&focus).then(move |title| {
+                                                    title(focus).then(move |title| {
                                                         let mut sd = ServiceDescription::new()
                                                             .with_endpoint(iri.clone())
                                                             .with_available_graphs(ags.clone())
@@ -98,7 +98,7 @@ where
                                                         sd.add_result_formats(
                                                             result_format.clone(),
                                                         );
-                                                        ok(&sd)
+                                                        ok(sd)
                                                     })
                                                 }
                                             })
@@ -114,25 +114,25 @@ where
     }
 }
 
-pub fn title<RDF>(focus: &IriOrBlankNode) -> impl RDFNodeParse<RDF, Output = Option<String>>
+pub fn title<RDF>(focus: IriOrBlankNode) -> impl RDFNodeParse<RDF, Output = Option<String>>
 where
     RDF: FocusRDF + 'static,
 {
-    set_focus_iri_or_bnode(focus).with(optional(property_string(dct_title())))
+    set_focus_iri_or_bnode(focus).with(optional(property_string(dct_title().clone())))
 }
 
 pub fn endpoint<RDF>() -> impl RDFNodeParse<RDF, Output = Option<IriS>>
 where
     RDF: FocusRDF + 'static,
 {
-    optional(property_iri(sd_endpoint()))
+    optional(property_iri(sd_endpoint().clone()))
 }
 
 pub fn feature<RDF>() -> impl RDFNodeParse<RDF, Output = HashSet<Feature>>
 where
     RDF: FocusRDF,
 {
-    property_values_iri(sd_feature()).flat_map(|ref iris| {
+    property_values_iri(sd_feature().clone()).flat_map(|ref iris| {
         let features = get_features(iris)?;
         Ok(features)
     })
@@ -142,7 +142,7 @@ pub fn result_format<RDF>() -> impl RDFNodeParse<RDF, Output = HashSet<SparqlRes
 where
     RDF: FocusRDF,
 {
-    property_values_iri(sd_result_format()).flat_map(|ref iris| {
+    property_values_iri(sd_result_format().clone()).flat_map(|ref iris| {
         let result_format = get_result_formats(iris)?;
         Ok(result_format)
     })
@@ -152,7 +152,7 @@ pub fn supported_language<RDF>() -> impl RDFNodeParse<RDF, Output = HashSet<Supp
 where
     RDF: FocusRDF,
 {
-    property_values_iri(sd_supported_language()).flat_map(|ref iris| {
+    property_values_iri(sd_supported_language().clone()).flat_map(|ref iris| {
         let langs = get_supported_languages(iris)?;
         Ok(langs)
     })
@@ -223,7 +223,7 @@ fn feature_iri(iri: &IriS) -> PResult<Feature> {
 }
 
 pub fn available_graphs<RDF>(
-    node: &IriOrBlankNode,
+    node: IriOrBlankNode,
 ) -> impl RDFNodeParse<RDF, Output = Vec<GraphCollection>>
 where
     RDF: FocusRDF + 'static,
@@ -245,24 +245,24 @@ where
     })
 }
 
-pub fn default_dataset<RDF>(node: &IriOrBlankNode) -> impl RDFNodeParse<RDF, Output = Dataset>
+pub fn default_dataset<RDF>(node: IriOrBlankNode) -> impl RDFNodeParse<RDF, Output = Dataset>
 where
     RDF: FocusRDF + 'static,
 {
     set_focus_iri_or_bnode(node)
-        .with(property_iri_or_bnode(sd_default_dataset()).then(|node_ds| dataset(node_ds)))
+        .with(property_iri_or_bnode(sd_default_dataset().clone()).then(|node_ds| dataset(node_ds)))
 }
 
 pub fn dataset<RDF>(node_ds: IriOrBlankNode) -> impl RDFNodeParse<RDF, Output = Dataset>
 where
     RDF: FocusRDF + 'static,
 {
-    set_focus_iri_or_bnode(&node_ds).with(
+    set_focus_iri_or_bnode(node_ds.clone()).with(
         get_focus_iri_or_bnode()
-            .and(optional(default_graph(&node_ds)))
-            .and(named_graphs(&node_ds))
+            .and(optional(default_graph(node_ds.clone())))
+            .and(named_graphs(node_ds))
             .then(|((focus, dg), named_gs)| {
-                ok(&Dataset::new(&focus)
+                ok(Dataset::new(&focus)
                     .with_default_graph(dg)
                     .with_named_graphs(named_gs))
             }),
@@ -270,29 +270,31 @@ where
 }
 
 pub fn default_graph<RDF>(
-    focus: &IriOrBlankNode,
+    focus: IriOrBlankNode,
 ) -> impl RDFNodeParse<RDF, Output = GraphDescription>
 where
     RDF: FocusRDF + 'static,
 {
     trace!("parsing default_graph with focus={focus}");
-    set_focus_iri_or_bnode(focus)
-        .with(property_iri_or_bnode(sd_default_graph()).then(|node| graph_description(&node)))
+    set_focus_iri_or_bnode(focus).with(
+        property_iri_or_bnode(sd_default_graph().clone())
+            .then(|node| graph_description(node.clone())),
+    )
 }
 
 pub fn graph_description<RDF>(
-    node: &IriOrBlankNode,
+    node: IriOrBlankNode,
 ) -> impl RDFNodeParse<RDF, Output = GraphDescription>
 where
     RDF: FocusRDF + 'static,
 {
     trace!("parsing graph_description: focus={node}");
-    set_focus_iri_or_bnode(node).with(
+    set_focus_iri_or_bnode(node.clone()).with(
         get_focus_iri_or_bnode()
-            .and(parse_void_triples(node))
-            .and(parse_void_classes(node))
-            .and(parse_void_class_partition(node))
-            .and(parse_void_property_partition(node))
+            .and(parse_void_triples(node.clone()))
+            .and(parse_void_classes(node.clone()))
+            .and(parse_void_class_partition(node.clone()))
+            .and(parse_void_property_partition(node.clone()))
             .map(
                 |((((focus, triples), classes), class_partition), property_partition)| {
                     let d = GraphDescription::new(&focus)
@@ -308,7 +310,7 @@ where
 }
 
 pub fn named_graphs<RDF>(
-    focus: &IriOrBlankNode,
+    focus: IriOrBlankNode,
 ) -> impl RDFNodeParse<RDF, Output = Vec<NamedGraphDescription>>
 where
     RDF: FocusRDF + 'static,
@@ -321,11 +323,11 @@ pub fn named_graph<RDF>() -> impl RDFNodeParse<RDF, Output = NamedGraphDescripti
 where
     RDF: FocusRDF + 'static,
 {
-    get_focus_iri_or_bnode().then(|focus| named_graph_description(&focus))
+    get_focus_iri_or_bnode().then(|focus| named_graph_description(focus))
 }
 
 fn named_graph_description<RDF>(
-    focus: &IriOrBlankNode,
+    focus: IriOrBlankNode,
 ) -> impl RDFNodeParse<RDF, Output = NamedGraphDescription>
 where
     RDF: FocusRDF + 'static,
@@ -349,7 +351,7 @@ fn name<RDF>() -> impl RDFNodeParse<RDF, Output = IriS>
 where
     RDF: FocusRDF + 'static,
 {
-    property_iri(sd_name())
+    property_iri(sd_name().clone())
 }
 
 fn graph<RDF>() -> impl RDFNodeParse<RDF, Output = GraphDescription>
@@ -358,30 +360,30 @@ where
 {
     get_focus_iri_or_bnode().then(|focus| {
         trace!("Parsing graph at = {focus}, parsing it...");
-        graph_description(&focus)
+        graph_description(focus)
     })
 }
 
 pub fn parse_void_triples<RDF>(
-    node: &IriOrBlankNode,
+    node: IriOrBlankNode,
 ) -> impl RDFNodeParse<RDF, Output = Option<NumericLiteral>>
 where
     RDF: FocusRDF,
 {
-    set_focus_iri_or_bnode(node).with(optional(property_number(void_triples())))
+    set_focus_iri_or_bnode(node).with(optional(property_number(void_triples().clone())))
 }
 
 pub fn parse_void_classes<RDF>(
-    node: &IriOrBlankNode,
+    node: IriOrBlankNode,
 ) -> impl RDFNodeParse<RDF, Output = Option<NumericLiteral>>
 where
     RDF: FocusRDF,
 {
-    set_focus_iri_or_bnode(node).with(optional(property_number(void_classes())))
+    set_focus_iri_or_bnode(node).with(optional(property_number(void_classes().clone())))
 }
 
 pub fn parse_void_class_partition<RDF>(
-    node: &IriOrBlankNode,
+    node: IriOrBlankNode,
 ) -> impl RDFNodeParse<RDF, Output = Vec<ClassPartition>>
 where
     RDF: FocusRDF + 'static,
@@ -393,7 +395,7 @@ where
 }
 
 pub fn parse_void_property_partition<RDF>(
-    node: &IriOrBlankNode,
+    node: IriOrBlankNode,
 ) -> impl RDFNodeParse<RDF, Output = Vec<PropertyPartition>>
 where
     RDF: FocusRDF + 'static,
@@ -411,8 +413,8 @@ where
     trace!("parsing class_partition");
     get_focus_iri_or_bnode().then(move |focus| {
         trace!("parsing class_partition with focus={focus}");
-        ok(&focus)
-            .and(property_iri(void_class()))
+        ok(focus)
+            .and(property_iri(void_class().clone()))
             .and(parse_property_values(void_property(), property_partition()))
             .map(|((focus, class), property_partition)| {
                 ClassPartition::new(&class)
@@ -427,8 +429,8 @@ where
     RDF: FocusRDF + 'static,
 {
     get_focus_iri_or_bnode()
-        .and(property_iri(void_property()).map(|p| p.clone()))
-        .and(optional(property_number(void_triples())))
+        .and(property_iri(void_property().clone()).map(|p| p.clone()))
+        .and(optional(property_number(void_triples().clone())))
         .map(|((focus, property), triples)| {
             PropertyPartition::new(&property)
                 .with_id(&focus)

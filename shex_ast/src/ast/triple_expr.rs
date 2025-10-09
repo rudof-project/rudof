@@ -575,7 +575,7 @@ impl SerializeStringOrStruct for TripleExpr {
         S: Serializer,
     {
         match &self {
-            TripleExpr::TripleExprRef(ref r) => r.serialize(serializer),
+            TripleExpr::TripleExprRef(r) => r.serialize(serializer),
             _ => self.serialize(serializer),
         }
     }

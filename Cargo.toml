@@ -30,7 +30,7 @@ exclude = ["shex_compact_winnow"]
 default-members = ["rudof_cli"]
 
 [workspace.package]
-edition = "2021"
+edition = "2024"
 license = "MIT OR Apache-2.0"
 description = "RDF data shapes implementation in Rust"
 repository = "https://github.com/rudof-project/rudof"

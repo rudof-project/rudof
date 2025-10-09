@@ -195,7 +195,7 @@ impl CoShaMoConverter {
         }
         if let Some(value_expr) = value_expr {
             match value_expr.as_ref() {
-                ShapeExpr::NodeConstraint(ref nc) => {
+                ShapeExpr::NodeConstraint(nc) => {
                     if let Some(datatype) = &nc.datatype() {
                         let iri_s = self.get_iri(datatype)?;
                         Ok(ValueConstraint::datatype(iri_s))

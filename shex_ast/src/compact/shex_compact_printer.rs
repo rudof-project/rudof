@@ -906,7 +906,7 @@ where
     ) -> DocBuilder<'a, Arena<'a, A>, A> {
         match maybe {
             None => self.doc.nil(),
-            Some(ref v) => pp(v, self),
+            Some(v) => pp(v, self),
         }
     }
 

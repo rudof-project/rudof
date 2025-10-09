@@ -7,6 +7,7 @@ use either::Either;
 use indexmap::IndexSet;
 use iri_s::iri;
 use itertools::Itertools;
+use shex_ast::Expr;
 use shex_ast::Node;
 use shex_ast::Pred;
 use shex_ast::ShapeLabelIdx;
@@ -29,6 +30,7 @@ type NegAtom = (Node, ShapeLabelIdx);
 type PosAtom = (Node, ShapeLabelIdx);
 type Neighs = (Vec<(Pred, Node)>, Vec<Pred>);
 type ValidationResult = Either<Vec<ValidatorError>, Vec<Reason>>;
+type Typing = HashSet<(Node, ShapeLabelIdx)>;
 
 #[derive(Debug, Clone)]
 pub struct Engine {
@@ -405,7 +407,7 @@ impl Engine {
             }
             ShapeExpr::Shape(shape) => {
                 if shape.extends().is_empty() {
-                    self.check_node_shape(node, shape, schema, rdf, typing)
+                    self.check_node_shape(idx, node, shape, schema, rdf, typing)
                 } else {
                     self.check_node_shape_extends(idx, node, shape, schema, rdf, typing)
                 }
@@ -425,7 +427,7 @@ impl Engine {
         idx: &ShapeLabelIdx,
         typing: &mut HashSet<(Node, ShapeLabelIdx)>,
     ) -> Result<ValidationResult> {
-        tracing::debug!("Checking node {node} with shape ref {idx}");
+        debug!("Checking node {node} with shape ref {idx}");
         {
             // If the node is already in the typing, we can return true
             if typing.contains(&(node.clone(), *idx)) {
@@ -444,13 +446,14 @@ impl Engine {
 
     pub(crate) fn check_node_shape(
         &self,
+        idx: &ShapeLabelIdx,
         node: &Node,
         shape: &Shape,
         _schema: &SchemaIR,
         rdf: &impl NeighsRDF,
-        typing: &mut HashSet<(Node, ShapeLabelIdx)>,
+        typing: &mut Typing,
     ) -> Result<ValidationResult> {
-        tracing::debug!("Checking node {node} with shape {shape} [No extends]");
+        debug!("check_node_shape: node = {node}, shape = {idx} [No extends]");
         let (values, remainder) = self.neighs(node, shape.preds(), rdf)?;
         if shape.is_closed() && !remainder.is_empty() {
             trace!("Closed shape with remainder preds: {remainder:?}");
@@ -459,50 +462,7 @@ impl Engine {
                 declared: Preds::new(shape.preds().into_iter().collect()),
             })
         } else {
-            trace!(
-                "Neighs of {node:?} for predicates [{}]: [{}]",
-                shape.preds().iter().map(|p| p.to_string()).join(", "),
-                values.iter().map(|(p, v)| format!("{p} {v}")).join(", ")
-            );
-            let result_iter = shape.triple_expr().matches(values)?;
-            let mut errors = Vec::new();
-            for result in result_iter {
-                trace!("Result: {:?}", result);
-                match result {
-                    Ok(pending_values) => {
-                        let mut failed_pending = Vec::new();
-                        // Check if all pending values are in typing
-                        for (n, idx) in pending_values.iter() {
-                            let pair = (n.clone(), *idx);
-                            if !typing.contains(&pair) {
-                                failed_pending.push(pair)
-                                // TODO: if (stop_at_first) break
-                                // We don't need to compute all the failed pending values once we find the first pair
-                            }
-                        }
-                        if failed_pending.is_empty() {
-                            return pass(Reason::ShapePassed {
-                                node: node.clone(),
-                                shape: Box::new(shape.clone()),
-                            });
-                        } else {
-                            errors.push(ValidatorError::FailedPending {
-                                failed_pending: failed_pending.clone(),
-                            })
-                        }
-                    }
-                    Err(err) => {
-                        debug!("Result with error: {err}");
-                        return fail(ValidatorError::RbeError(err));
-                    }
-                }
-            }
-            tracing::debug!("Shape didn't pass for node {node} with shape {shape}");
-            fail(ValidatorError::ShapeFails {
-                node: Box::new(node.clone()),
-                shape: Box::new(shape.clone()),
-                errors,
-            })
+            check_expr_neigh(shape.triple_expr(), &values, node, shape, typing)
         }
     }
 
@@ -515,7 +475,7 @@ impl Engine {
         rdf: &impl NeighsRDF,
         typing: &mut HashSet<(Node, ShapeLabelIdx)>,
     ) -> Result<ValidationResult> {
-        tracing::debug!("Checking node {node} with shape {shape} that has extends");
+        debug!("check_node_shape_extends: node={node}, shape={idx}");
         let preds_extends = Vec::from_iter(schema.get_preds_extends(idx));
         trace!(
             "Predicates in this shape with extends: [{}]",
@@ -534,55 +494,78 @@ impl Engine {
             values.iter().map(|(p, v)| format!("{p} {v}")).join(", ")
         );
         let triple_exprs = schema.get_triple_exprs(idx).unwrap();
-        trace!(
+        debug!(
             "Candidate triple exprs of {node} [{}]",
             triple_exprs
                 .iter()
                 .map(|(maybe_label, te)| format!(
-                    "{maybe_label:?} -> {}",
-                    te.iter().map(|p| p.to_string()).join(", ")
+                    "{} -> [{}]",
+                    maybe_label
+                        .map(|l| l.to_string())
+                        .unwrap_or("[]".to_string()),
+                    te.iter().map(|p| p.show_rbe_simplified()).join(", ")
                 ))
                 .join("| ")
         );
 
-        let result_iter = shape.triple_expr().matches(values)?;
-        let mut errors = Vec::new();
-        for result in result_iter {
-            trace!("Result: {:?}", result);
-            match result {
-                Ok(pending_values) => {
-                    let mut failed_pending = Vec::new();
-                    // Check if all pending values are in typing
-                    for (n, idx) in pending_values.iter() {
-                        let pair = (n.clone(), *idx);
-                        if !typing.contains(&pair) {
-                            failed_pending.push(pair)
-                            // TODO: if (stop_at_first) break
-                            // We don't need to compute all the failed pending values once we find the first pair
-                        }
-                    }
-                    if failed_pending.is_empty() {
-                        return pass(Reason::ShapePassed {
-                            node: node.clone(),
-                            shape: Box::new(shape.clone()),
-                        });
-                    } else {
-                        errors.push(ValidatorError::FailedPending {
-                            failed_pending: failed_pending.clone(),
-                        })
-                    }
+        let parts_iter = crate::partitions_iter(&values, &triple_exprs);
+        for (npart, partition) in parts_iter.enumerate() {
+            debug!("Partition {npart}: {}", show_partition(&partition));
+            let mut ok_partition = true;
+            for (maybe_label, rbes, neighs_subset) in partition.iter() {
+                debug!(
+                    " Part {npart}| Trying component: {}, neighs [{}] ",
+                    maybe_label
+                        .map(|l| l.to_string())
+                        .unwrap_or("[]".to_string()),
+                    neighs_subset
+                        .iter()
+                        .map(|(p, v)| format!("{p} {v}"))
+                        .join(", ")
+                );
+                let result = check_exprs_neigh(rbes, neighs_subset, node, shape, typing)?;
+                if result.is_right() {
+                    // TODO: Accumulate reasons from each triple expr
+                    debug!(
+                        " Part {npart}| Success component {}: neighs {}",
+                        maybe_label
+                            .map(|l| l.to_string())
+                            .unwrap_or("[]".to_string()),
+                        neighs_subset
+                            .iter()
+                            .map(|(p, v)| format!("{p} {v}"))
+                            .join(", ")
+                    );
+                } else {
+                    ok_partition = false;
+                    debug!(
+                        " Part {npart}| Failed component {}: neighs {}",
+                        maybe_label
+                            .map(|l| l.to_string())
+                            .unwrap_or("[]".to_string()),
+                        neighs_subset
+                            .iter()
+                            .map(|(p, v)| format!("{p} {v}"))
+                            .join(", ")
+                    );
+                    break;
                 }
-                Err(err) => {
-                    debug!("Result with error: {err}");
-                    return fail(ValidatorError::RbeError(err));
-                }
+                // If the partition failed, we search another one
+            }
+            if ok_partition {
+                debug!(" Part {npart}| Partition succeeded",);
+                return pass(Reason::ShapeExtendsPassed {
+                    node: node.clone(),
+                    shape: shape.clone(),
+                    reasons: Reasons::new(vec![]), // TODO: Collect reasons from each triple expr
+                });
             }
         }
-        tracing::debug!("Shape didn't pass for node {node} with shape {shape}");
+        debug!(" Failed shape {idx}. All partitions failed",);
         fail(ValidatorError::ShapeFails {
             node: Box::new(node.clone()),
             shape: Box::new(shape.clone()),
-            errors,
+            errors: Vec::new(),
         })
     }
 
@@ -694,4 +677,105 @@ fn show_result(result: &Either<Vec<ValidatorError>, Vec<Reason>>) -> String {
             reasons.iter().map(|r| r.to_string()).join(", ")
         ),
     }
+}
+
+fn check_exprs_neigh(
+    exprs: &Vec<Expr>,
+    neighs: &Vec<(Pred, Node)>,
+    node: &Node,
+    shape: &Shape,
+    typing: &Typing,
+) -> Result<ValidationResult> {
+    for rbe in exprs.iter() {
+        let result = check_expr_neigh(rbe, neighs, node, shape, typing)?;
+        if result.is_left() {
+            return fail(ValidatorError::ShapeFails {
+                node: Box::new(node.clone()),
+                shape: Box::new(shape.clone()),
+                errors: result.left().unwrap().clone(),
+            });
+        }
+    }
+    pass(Reason::ShapePassed {
+        node: node.clone(),
+        shape: Box::new(shape.clone()),
+    })
+}
+
+fn check_expr_neigh(
+    expr: &Expr,
+    neighs: &Vec<(Pred, Node)>,
+    node: &Node,
+    shape: &Shape,
+    typing: &Typing,
+) -> Result<ValidationResult> {
+    debug!(
+        "Checking expr {} with neighs: [{}]",
+        expr,
+        neighs.iter().map(|(p, o)| format!("{p} {o}")).join(", ")
+    );
+    let result_iter = expr.matches(neighs.clone())?;
+    let mut errors = Vec::new();
+    for result in result_iter {
+        debug!(
+            "Result of {expr} with neighs: {}: {:?}",
+            neighs.iter().map(|(p, o)| format!("{p} {o}")).join(", "),
+            result
+        );
+        match result {
+            Ok(pending_values) => {
+                let mut failed_pending = Vec::new();
+                // Check if all pending values are in typing
+                for (n, idx) in pending_values.iter() {
+                    let pair = (n.clone(), *idx);
+                    if !typing.contains(&pair) {
+                        failed_pending.push(pair)
+                        // TODO: if (stop_at_first) break
+                        // We don't need to compute all the failed pending values once we find the first pair
+                    }
+                }
+                if failed_pending.is_empty() {
+                    return pass(Reason::ShapePassed {
+                        node: node.clone(),
+                        shape: Box::new(shape.clone()),
+                    });
+                } else {
+                    errors.push(ValidatorError::FailedPending {
+                        failed_pending: failed_pending.clone(),
+                    })
+                }
+            }
+            Err(err) => {
+                debug!("Result with error: {err}");
+                return fail(ValidatorError::RbeError(err));
+            }
+        }
+    }
+    debug!(
+        "expr failed {expr} with neighs: [{}]",
+        neighs.iter().map(|(p, o)| format!("{p} {o}")).join(", ")
+    );
+    fail(ValidatorError::ShapeFails {
+        node: Box::new(node.clone()),
+        shape: Box::new(shape.clone()),
+        errors,
+    })
+}
+
+fn show_partition(
+    partition: &Vec<(Option<ShapeLabelIdx>, Vec<Expr>, Vec<(Pred, Node)>)>,
+) -> String {
+    partition
+        .iter()
+        .map(|(maybe_label, _rbes, neighs_subset)| {
+            let label_str = maybe_label
+                .map(|l| l.to_string())
+                .unwrap_or("[]".to_string());
+            let neighs_str = neighs_subset
+                .iter()
+                .map(|(p, o)| format!("{p} {o}"))
+                .join(", ");
+            format!("{} -> [{}]", label_str, neighs_str)
+        })
+        .join(" | ")
 }

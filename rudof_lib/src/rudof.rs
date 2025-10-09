@@ -1079,7 +1079,7 @@ impl Rudof {
                 shapemap.add_association(node, shape);
                 self.shapemap = Some(shapemap)
             }
-            Some(ref mut sm) => {
+            Some(sm) => {
                 sm.add_association(node, shape);
             }
         };

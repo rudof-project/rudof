@@ -57,7 +57,7 @@ impl SerializeStringOrStruct for StringOrLiteralStem {
         S: Serializer,
     {
         match &self {
-            StringOrLiteralStem::String(ref r) => r.serialize(serializer),
+            StringOrLiteralStem::String(r) => r.serialize(serializer),
             _ => self.serialize(serializer),
         }
     }

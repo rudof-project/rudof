@@ -41,7 +41,7 @@ impl SerializeStringOrStruct for StringOrIriStem {
         S: Serializer,
     {
         match &self {
-            StringOrIriStem::String(ref r) => r.serialize(serializer),
+            StringOrIriStem::String(r) => r.serialize(serializer),
             _ => self.serialize(serializer),
         }
     }

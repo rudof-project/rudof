@@ -77,7 +77,7 @@ impl SerializeStringOrStruct for ShapeExpr {
         S: Serializer,
     {
         match &self {
-            ShapeExpr::Ref(ref r) => r.serialize(serializer),
+            ShapeExpr::Ref(r) => r.serialize(serializer),
             _ => self.serialize(serializer),
         }
     }

@@ -1,3 +1,15 @@
+use crate::Bag;
+use crate::Component;
+use crate::EmptyIter;
+use crate::Key;
+use crate::MatchCond;
+use crate::Pending;
+use crate::RbeError;
+use crate::Ref;
+use crate::Value;
+use crate::rbe::Rbe;
+use crate::rbe_error;
+use crate::values::Values;
 use indexmap::IndexMap;
 use indexmap::IndexSet;
 use itertools::*;
@@ -7,20 +19,6 @@ use std::fmt::Display;
 use std::vec::IntoIter;
 use tracing::debug;
 use tracing::trace;
-
-use crate::Bag;
-use crate::EmptyIter;
-use crate::Key;
-use crate::MatchCond;
-use crate::Pending;
-use crate::RbeError;
-use crate::Ref;
-use crate::Value;
-// use crate::RbeError;
-use crate::Component;
-use crate::rbe::Rbe;
-use crate::rbe_error;
-use crate::values::Values;
 
 #[derive(Default, PartialEq, Eq, Clone)]
 pub struct RbeTable<K, V, R>
@@ -62,6 +60,10 @@ where
 
     pub fn get_key(&self, c: &Component) -> Option<&K> {
         self.component_key.get(c)
+    }
+
+    pub fn keys(&self) -> impl Iterator<Item = &K> {
+        self.key_components.keys()
     }
 
     pub fn add_component(&mut self, k: K, cond: &MatchCond<K, V, R>) -> Component {
@@ -136,13 +138,13 @@ where
             }
         } else {
             debug!("Candidates not empty rbe: {:?}", self.rbe);
-            let _: Vec<_> = candidates
-                .iter()
-                .zip(0..)
-                .map(|(candidate, n)| {
-                    debug!("Candidate {n}: {}", show_candidate(candidate));
-                })
-                .collect();
+            /*let _: Vec<_> = candidates
+            .iter()
+            .zip(0..)
+            .map(|(candidate, n)| {
+                debug!("Candidate {n}: {}", show_candidate(candidate));
+            })
+            .collect();*/
             let mp = candidates.into_iter().multi_cartesian_product();
             Ok(MatchTableIter::NonEmpty(IterCartesianProduct {
                 is_first: true,
@@ -159,6 +161,25 @@ where
             current: 0,
             table: self,
         }
+    }
+
+    pub fn find_cond(&self, key: &K) -> Option<&MatchCond<K, V, R>> {
+        self.key_components.get(key).and_then(|cs| {
+            if let Some(c) = cs.iter().next() {
+                self.component_cond.get(c)
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn show_rbe_simplified(&self) -> String {
+        let mut result = String::new();
+        for k in self.key_components.keys() {
+            let cond = self.find_cond(k).unwrap();
+            result.insert_str(result.len(), format!("{} -> {}", k, cond).as_str());
+        }
+        result
     }
 }
 
@@ -246,8 +267,8 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
-            MatchTableIter::Empty(ref mut e) => e.next(),
-            MatchTableIter::NonEmpty(ref mut cp) => cp.next(),
+            MatchTableIter::Empty(e) => e.next(),
+            MatchTableIter::NonEmpty(cp) => cp.next(),
         }
     }
 }
@@ -290,18 +311,18 @@ where
                 }
             }
             Some(vs) => {
-                for (k, v, c, cond) in &vs {
-                    trace!("Next state: ({k} {v}) should match component {c} with cond: {cond})");
-                }
+                //for (k, v, c, cond) in &vs {
+                // trace!("Next state: ({k} {v}) should match component {c} with cond: {cond})");
+                //}
                 let mut pending: Pending<V, R> = Pending::new();
                 for (_k, v, _, cond) in &vs {
                     match cond.matches(v) {
                         Ok(new_pending) => {
-                            trace!(
-                                "Condition passed: {cond} with value: {v}, new pending: {new_pending}"
-                            );
+                            //trace!(
+                            //    "Condition passed: {cond} with value: {v}, new pending: {new_pending}"
+                            //);
                             pending.merge(new_pending);
-                            trace!("Pending merged: {pending}");
+                            // trace!("Pending merged: {pending}");
                         }
                         Err(err) => {
                             trace!("Failed condition: {cond} with value: {v}");
@@ -309,7 +330,7 @@ where
                         }
                     }
                 }
-                trace!("Pending after checking conditions: {pending}");
+                // trace!("Pending after checking conditions: {pending}");
                 let bag = Bag::from_iter(vs.into_iter().map(|(_, _, c, _)| c));
                 match self.rbe.match_bag(&bag, self.open) {
                     Ok(()) => {
@@ -356,7 +377,7 @@ where
 }
 
 #[allow(clippy::type_complexity)]
-fn show_candidate<K, V, R>(candidate: &[(K, V, Component, MatchCond<K, V, R>)]) -> String
+pub fn show_candidate<K, V, R>(candidate: &[(K, V, Component, MatchCond<K, V, R>)]) -> String
 where
     K: Key + Display,
     V: Value + Display,

@@ -103,7 +103,7 @@ macro_rules! int {
 ///
 /// #[macro_use]
 /// use iri_s::IriS;
-/// use srdf::{rdf_parser, RDFParser, RDF, RDFFormat, FocusRDF, satisfy, ReaderMode, RDFNodeParse, Query, Rdf, property_value, rdf_list, set_focus, parse_property_value_as_list};
+/// use srdf::{rdf_parser, RDFParser, RDF, RDFFormat, FocusRDF, satisfy, ReaderMode, RDFNodeParse, Rdf, property_value, rdf_list, set_focus};
 /// use srdf::srdf_graph::SRDFGraph;
 ///
 /// rdf_parser!{
@@ -144,7 +144,8 @@ macro_rules! rdf_parser {
  };
 }
 
-/// Auxiliary macro that is invoked from `rdf_parser` which supports different templates
+/// Auxiliary macro that is invoked from `rdf_parser`
+/// Supports different templates
 #[macro_export]
 macro_rules! combine_rdf_parser_impl {
     (
@@ -160,7 +161,7 @@ macro_rules! combine_rdf_parser_impl {
         $(#[$derive])*
         $struct_vis struct $type_name<$($type_params)*>
             where
-             $input_type : $crate::FocusRDF,
+             $input_type : $crate::FocusRDF + 'static,
              $($where_clause)*
         {
             $(pub $arg : $arg_type,)*
@@ -169,7 +170,7 @@ macro_rules! combine_rdf_parser_impl {
 
         impl <$($type_params)*> $crate::RDFNodeParse<$input_type> for $type_name<$($type_params)*>
             where
-                $input_type : $crate::FocusRDF,
+                $input_type : $crate::FocusRDF + 'static,
                 $($where_clause)*
         {
 
@@ -193,7 +194,7 @@ macro_rules! combine_rdf_parser_impl {
                 $($arg : $arg_type),*
             ) -> $type_name<$($type_params)*>
             where
-                $input_type: $crate::FocusRDF,
+                $input_type: $crate::FocusRDF + 'static,
                 $($where_clause)*
         {
             $type_name {

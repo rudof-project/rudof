@@ -9,6 +9,11 @@ use std::fmt::Display;
 /// Reason represents justifications about why a node conforms to some shape
 #[derive(Debug, Clone)]
 pub enum Reason {
+    ShapeExtendsPassed {
+        node: Node,
+        shape: Shape,
+        reasons: Reasons,
+    },
     NodeConstraintPassed {
         node: Node,
         nc: NodeConstraint,
@@ -87,6 +92,14 @@ impl Display for Reason {
             Reason::ShapeRefPassed { node, idx } => {
                 write!(f, "ShapeRef passed. Node {node}, idx: {idx}")
             }
+            Reason::ShapeExtendsPassed {
+                node,
+                shape,
+                reasons,
+            } => write!(
+                f,
+                "Shape extends passed. Node {node}, shape: {shape}, reasons: {reasons}"
+            ),
         }
     }
 }

@@ -149,7 +149,7 @@ impl RdfData {
         reader_mode: &ReaderMode,
     ) -> Result<(), RdfDataError> {
         match &mut self.graph {
-            Some(ref mut graph) => graph
+            Some(graph) => graph
                 .merge_from_reader(read, format, base, reader_mode)
                 .map_err(|e| RdfDataError::SRDFGraphError { err: e }),
             None => {

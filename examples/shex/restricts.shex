@@ -1,0 +1,16 @@
+prefix :       <http://example.org/>
+prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
+
+:A { 
+  :p xsd:integer ;
+} AND {
+  :p MAXINCLUSIVE 5  
+}
+
+:B extends @:A {
+  :p [ "B"   ]
+}
+
+:S extends @:B extends @:A {
+  :p [ "S" ]
+}
