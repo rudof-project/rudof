@@ -125,7 +125,7 @@ impl AST2IR {
                     let label = self.shape_expr_label_to_shape_label(&shape_decl.id)?;
                     let idx = compiled_schema.add_shape(label, ShapeExpr::Empty, source_iri);
                     if shape_decl.is_abstract {
-                        compiled_schema.add_abstract_shape(idx.clone());
+                        compiled_schema.add_abstract_shape(idx);
                     }
                     self.shape_decls_counter += 1;
                     shape_labels_counter += 1;
