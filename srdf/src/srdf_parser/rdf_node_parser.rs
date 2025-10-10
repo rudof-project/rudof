@@ -1722,7 +1722,6 @@ where
     RDF: FocusRDF + 'static,
 {
     get_focus().flat_map(|term: RDF::Term| {
-        
         term_to_iri_or_blanknode::<RDF>(&term).map_err(|e| {
             trace!("Error converting term to IRI or BlankNode: {}", e);
             RDFParseError::ExpectedIriOrBlankNode {
