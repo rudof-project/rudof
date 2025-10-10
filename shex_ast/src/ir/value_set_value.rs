@@ -99,18 +99,16 @@ impl ValueSetValue {
                     for ex in exclusions {
                         match ex {
                             IriExclusion::Iri(iri) => {
-                                if let Object::Iri(iri_s) = object {
-                                    if iri_s.as_str() == iri.as_str() {
+                                if let Object::Iri(iri_s) = object
+                                    && iri_s.as_str() == iri.as_str() {
                                         return false;
                                     }
-                                }
                             }
                             IriExclusion::IriStem(stem) => {
-                                if let Object::Iri(iri_s) = object {
-                                    if iri_s.as_str().starts_with(stem.as_str()) {
+                                if let Object::Iri(iri_s) = object
+                                    && iri_s.as_str().starts_with(stem.as_str()) {
                                         return false;
                                     }
-                                }
                             }
                         }
                     }
@@ -194,22 +192,18 @@ impl ValueSetValue {
                                     lang: Some(l),
                                     ..
                                 }) = object
-                                {
-                                    if l == lang {
+                                    && l == lang {
                                         return false;
                                     }
-                                }
                             }
                             LanguageExclusion::LanguageStem(stem) => {
                                 if let Object::Literal(SLiteral::StringLiteral {
                                     lang: Some(l),
                                     ..
                                 }) = object
-                                {
-                                    if l.as_str().starts_with(stem.as_str()) {
+                                    && l.as_str().starts_with(stem.as_str()) {
                                         return false;
                                     }
-                                }
                             }
                         }
                     }
