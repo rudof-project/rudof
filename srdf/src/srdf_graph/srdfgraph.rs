@@ -642,10 +642,10 @@ mod tests {
         :x :p 1, 2, 3, 2 .
     "#;
 
-    const DUMMY_GRAPH_4: &str = r#"
+    /*const DUMMY_GRAPH_4: &str = r#"
         prefix : <http://example.org/>
         :x :p 1, 2, 3 .
-    "#;
+    "#;*/
 
     const DUMMY_GRAPH_5: &str = r#"
         prefix : <http://example.org/>
