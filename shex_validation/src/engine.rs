@@ -298,18 +298,40 @@ impl Engine {
             typing.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
         );
         if let Some(info) = schema.find_shape_idx(idx) {
-            let se = info.expr();
-            let result = self.check_node_shape_expr(idx, node, se, schema, rdf, typing)?;
-            tracing::debug!("Result of {node}@{idx} is: {}", show_result(&result),);
-            if result.is_right() {
-                Ok(result)
-            } else {
+            if schema.is_abstract(idx) {
                 let descendants_result = self.check_descendants(node, idx, schema, rdf, typing)?;
                 if descendants_result.is_right() {
                     Ok(descendants_result)
                 } else {
                     // Indicate that the main shape and its descendants failed
+                    Ok(Either::Left(vec![ValidatorError::AbstractShapeError {
+                        idx: *idx,
+                        node: Box::new(node.clone()),
+                        errors: ValidatorErrors::new(descendants_result.left().unwrap().to_vec()),
+                    }]))
+                }
+            } else {
+                let se = info.expr();
+                let result = self.check_node_shape_expr(idx, node, se, schema, rdf, typing)?;
+                tracing::debug!("Result of {node}@{idx} is: {}", show_result(&result),);
+                if result.is_right() {
                     Ok(result)
+                } else {
+                    let descendants_result =
+                        self.check_descendants(node, idx, schema, rdf, typing)?;
+                    if descendants_result.is_right() {
+                        Ok(descendants_result)
+                    } else {
+                        // Indicate that the main shape and its descendants failed
+                        let errors_descendants = descendants_result.left().unwrap();
+                        let errors_result = result.left().unwrap();
+                        let all_errors = errors_result
+                            .iter()
+                            .cloned()
+                            .chain(errors_descendants.iter().cloned())
+                            .collect::<Vec<_>>();
+                        Ok(Either::Left(all_errors))
+                    }
                 }
             }
         } else {

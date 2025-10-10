@@ -62,6 +62,9 @@ subgraph rudof
  shex_validation-->rbe;
  dctap-->prefixmap;
  dctap --> iri_s;
+
+ shapes_comparator-->shex_ast;
+ shapes_comparator-->shacl_ast;
  shapes_converter-->shacl_ast;
  shapes_converter-->shex_ast;
  shapes_converter-->dctap;
@@ -71,6 +74,8 @@ subgraph rudof
  rudof_lib --> shex_validation ;
  rudof_lib --> shacl_validation ;
  rudof_lib --> shapes_converter ;
+ rudof_lib --> sparql_service ;
+ rudof_lib --> shapes_comparator ;
 end
 subgraph external dependencies
  oxigraph[<a href='https://crates.io/crates/oxigraph'>oxigraph</a>] ;
@@ -83,15 +88,14 @@ end
 - [ShEx Validation algorithm](https://docs.rs/shex_validation/).
 - [ShEx Compact syntax parser](https://docs.rs/shex_compact), a ShEx Compact syntax parser that follows the [ShEx compact grammar](https://shex.io/shex-semantics/index.html#shexc).
 - [ShEx AST](https://docs.rs/shex_ast), that represents the [ShEx Abstract syntax](https://shex.io/shex-semantics/index.html#shape-expressions-shexj) based on ShExJ (JSON-LD).
-- [ShapeMap](https://docs.rs/shapemap/), a [ShapeMap](https://shexspec.github.io/shape-map/) implementation.
 - [SRDF](https://docs.rs/srdf), a Simple RDF Interface in Rust.
 - [PrefixMap](https://docs.rs/prefixmap): Turtle based prefixMap representation
 - [Conversions between different RDF data modelling technologies](https://docs.rs/shapes_convert).
+- [Comparator between shapes](https://docs.rs/shapes_comparator).
 - [SHACL AST](https://docs.rs/shacl_ast), that represents the [SHACL core abstract syntax](https://www.w3.org/TR/shacl).
 - [SHACL Validation algorithm](https://docs.rs/shacl_validation/).
 - [RBE](https://docs.rs/rbe), Regular Bag Expressions.
 - [ShEx testsuite](https://docs.rs/shex_testsuite/), the Code in charge of checking the [ShEx testsuite](https://shexspec.github.io/test-suite/).
-- [SHACL testsuite](https://docs.rs/shacl_testsuite/), the Code in charge of checking the [SHACL testsuite](https://w3c.github.io/data-shapes/data-shapes-test-suite/).
 
 ## Related projects
 
@@ -107,6 +111,7 @@ An incomplete list of projects which are related to `rudof` is the following:
 
 - [Jose Emilio Labra Gayo](https://labra.weso.es/)
 - [Ángel Iglesias Préstamo](http://angelip2303.github.io/)
+- [Diego Martín Fernández](https://github.com/DiegoMfer)
 - [Marc-Antoine Arnaud](https://luminvent.com/)
 - [Jonas Smedegaard](http://dr.jones.dk/blog/)
 - [Full list of contributors](https://github.com/rudof-project/rudof/graphs/contributors)

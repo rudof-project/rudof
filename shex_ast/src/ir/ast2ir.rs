@@ -120,10 +120,13 @@ impl AST2IR {
         let mut shape_labels_counter = 0;
         match &schema_ast.shapes() {
             None => {}
-            Some(sds) => {
-                for sd in sds {
-                    let label = self.shape_expr_label_to_shape_label(&sd.id)?;
-                    compiled_schema.add_shape(label, ShapeExpr::Empty, source_iri);
+            Some(shape_decls) => {
+                for shape_decl in shape_decls {
+                    let label = self.shape_expr_label_to_shape_label(&shape_decl.id)?;
+                    let idx = compiled_schema.add_shape(label, ShapeExpr::Empty, source_iri);
+                    if shape_decl.is_abstract {
+                        compiled_schema.add_abstract_shape(idx.clone());
+                    }
                     self.shape_decls_counter += 1;
                     shape_labels_counter += 1;
                 }

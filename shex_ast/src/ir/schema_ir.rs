@@ -32,6 +32,7 @@ pub struct SchemaIR {
     imported_schemas: Vec<IriS>,
     dependency_graph: DependencyGraph,
     inheritance_graph: InheritanceGraph,
+    abstract_shapes: HashSet<ShapeLabelIdx>,
 }
 
 impl SchemaIR {
@@ -49,6 +50,7 @@ impl SchemaIR {
             imported_schemas: Vec::new(),
             dependency_graph: DependencyGraph::new(),
             inheritance_graph: InheritanceGraph::new(),
+            abstract_shapes: HashSet::new(),
         }
     }
 
@@ -56,8 +58,16 @@ impl SchemaIR {
         self.prefixmap = prefixmap.clone().unwrap_or_default();
     }
 
+    pub fn add_abstract_shape(&mut self, idx: ShapeLabelIdx) {
+        self.abstract_shapes.insert(idx);
+    }
+
     pub fn prefixmap(&self) -> PrefixMap {
         self.prefixmap.clone()
+    }
+
+    pub fn is_abstract(&self, idx: &ShapeLabelIdx) -> bool {
+        self.abstract_shapes.contains(idx)
     }
 
     pub fn set_local_shapes_counter(&mut self, counter: usize) {

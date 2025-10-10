@@ -15,6 +15,15 @@ use crate::Reasons;
 
 #[derive(Error, Debug, Clone)]
 pub enum ValidatorError {
+    #[error(
+        "Shape {idx} is abstract and cannot be used in validation for node {node}. Descendants failed with errors: {errors}"
+    )]
+    AbstractShapeError {
+        idx: ShapeLabelIdx,
+        node: Box<Node>,
+        errors: ValidatorErrors,
+    },
+
     #[error("Error in descendant {desc} of shape {current} for node {node}: {errors}")]
     DescendantShapeError {
         current: ShapeLabelIdx,
