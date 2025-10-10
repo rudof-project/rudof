@@ -262,42 +262,42 @@ impl<R: io::Read> TapReader<R> {
     }
 
     fn read_property_label(&self, statement: &mut TapStatement, rcd: &StringRecord) {
-        if let Some(str) = self.state.headers().property_label(rcd) {
-            if let Some(clean_str) = strip_whitespace(&str) {
-                let without_new_line = str::replace(clean_str, "\n", " ");
-                statement.set_property_label(without_new_line.as_str());
-            }
+        if let Some(str) = self.state.headers().property_label(rcd)
+            && let Some(clean_str) = strip_whitespace(&str)
+        {
+            let without_new_line = str::replace(clean_str, "\n", " ");
+            statement.set_property_label(without_new_line.as_str());
         }
     }
 
     fn read_note(&self, statement: &mut TapStatement, rcd: &StringRecord) {
-        if let Some(str) = self.state.headers().note(rcd) {
-            if !str.is_empty() {
-                statement.set_note(&str);
-            }
+        if let Some(str) = self.state.headers().note(rcd)
+            && !str.is_empty()
+        {
+            statement.set_note(&str);
         }
     }
 
     fn read_extends_id(&mut self, rcd: &StringRecord, line: u64) {
-        if let Some(str) = self.state.headers().extends_id(rcd) {
-            if let Some(clean_str) = strip_whitespace(&str) {
-                let shape_id = ShapeId::new(clean_str, line);
-                self.state.current_shape().add_extends_id(&shape_id, line);
-            }
+        if let Some(str) = self.state.headers().extends_id(rcd)
+            && let Some(clean_str) = strip_whitespace(&str)
+        {
+            let shape_id = ShapeId::new(clean_str, line);
+            self.state.current_shape().add_extends_id(&shape_id, line);
         }
     }
 
     fn read_extends_label(&mut self, rcd: &StringRecord, pos: &Position) {
-        if let Some(str) = self.state.headers().extends_label(rcd) {
-            if !str.is_empty() {
-                match self
-                    .state
-                    .current_shape()
-                    .add_extends_label(&str, pos.line())
-                {
-                    Ok(()) => (),
-                    Err(warning) => self.state.add_warning(warning),
-                }
+        if let Some(str) = self.state.headers().extends_label(rcd)
+            && !str.is_empty()
+        {
+            match self
+                .state
+                .current_shape()
+                .add_extends_label(&str, pos.line())
+            {
+                Ok(()) => (),
+                Err(warning) => self.state.add_warning(warning),
             }
         }
     }
@@ -308,11 +308,11 @@ impl<R: io::Read> TapReader<R> {
         rcd: &StringRecord,
         pos: &Position,
     ) {
-        if let Some(str) = self.state.headers().value_datatype(rcd) {
-            if let Some(clean_str) = strip_whitespace(&str) {
-                let datatype_id = DatatypeId::new(clean_str, pos.line());
-                statement.set_value_datatype(&datatype_id);
-            }
+        if let Some(str) = self.state.headers().value_datatype(rcd)
+            && let Some(clean_str) = strip_whitespace(&str)
+        {
+            let datatype_id = DatatypeId::new(clean_str, pos.line());
+            statement.set_value_datatype(&datatype_id);
         }
     }
 
@@ -345,11 +345,11 @@ impl<R: io::Read> TapReader<R> {
     }
 
     fn read_value_shape(&self, statement: &mut TapStatement, rcd: &StringRecord, line: u64) {
-        if let Some(str) = self.state.headers().value_shape(rcd) {
-            if let Some(clean_str) = strip_whitespace(&str) {
-                let shape_id = ShapeId::new(clean_str, line);
-                statement.set_value_shape(&shape_id);
-            }
+        if let Some(str) = self.state.headers().value_shape(rcd)
+            && let Some(clean_str) = strip_whitespace(&str)
+        {
+            let shape_id = ShapeId::new(clean_str, line);
+            statement.set_value_shape(&shape_id);
         }
     }
 

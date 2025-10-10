@@ -120,14 +120,10 @@ impl ShapeProcessor {
         let mut dependencies = Vec::new();
         let mut properties = Vec::new();
 
-        if let ShapeExpr::Shape(s) = &shape.shape_expr {
-            if let Some(expr) = &s.expression {
-                Self::extract_dependencies_and_properties(
-                    &expr.te,
-                    &mut dependencies,
-                    &mut properties,
-                );
-            }
+        if let ShapeExpr::Shape(s) = &shape.shape_expr
+            && let Some(expr) = &s.expression
+        {
+            Self::extract_dependencies_and_properties(&expr.te, &mut dependencies, &mut properties);
         }
 
         Ok(ShapeInfo {

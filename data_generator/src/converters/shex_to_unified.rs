@@ -68,10 +68,10 @@ impl ShExToUnified {
         let shape_id = shape_decl.id.to_string();
         let mut properties = Vec::new();
 
-        if let ShapeExpr::Shape(s) = &shape_decl.shape_expr {
-            if let Some(expr) = &s.expression {
-                self.extract_properties(&expr.te, &mut properties);
-            }
+        if let ShapeExpr::Shape(s) = &shape_decl.shape_expr
+            && let Some(expr) = &s.expression
+        {
+            self.extract_properties(&expr.te, &mut properties);
         }
 
         UnifiedShape {

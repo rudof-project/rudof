@@ -301,10 +301,61 @@ impl Engine {
             let se = info.expr();
             let result = self.check_node_shape_expr(idx, node, se, schema, rdf, typing)?;
             tracing::debug!("Result of {node}@{idx} is: {}", show_result(&result),);
-            Ok(result)
+            if result.is_right() {
+                Ok(result)
+            } else {
+                let descendants_result = self.check_descendants(node, idx, schema, rdf, typing)?;
+                if descendants_result.is_right() {
+                    Ok(descendants_result)
+                } else {
+                    // Indicate that the main shape and its descendants failed
+                    Ok(result)
+                }
+            }
         } else {
             Err(ValidatorError::ShapeExprNotFound { idx: *idx })
         }
+    }
+
+    fn check_descendants(
+        &self,
+        node: &Node,
+        idx: &ShapeLabelIdx,
+        schema: &SchemaIR,
+        rdf: &impl NeighsRDF,
+        typing: &mut HashSet<(Node, ShapeLabelIdx)>,
+    ) -> Result<ValidationResult> {
+        let descendants = schema.descendants(idx);
+        let mut errors_collection = Vec::new();
+        for desc in descendants {
+            match self.check_node_idx(node, &desc, schema, rdf, typing)? {
+                Either::Left(errors) => {
+                    trace!(
+                        "Descendant {desc} failed for node {node}\nErrors: {}\nTyping: {}",
+                        errors.iter().map(|err| format!("{err}")).join(", "),
+                        typing.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
+                    );
+                    errors_collection.push(ValidatorError::DescendantShapeError {
+                        current: *idx,
+                        desc,
+                        node: Box::new(node.clone()),
+                        errors: ValidatorErrors::new(errors),
+                    });
+                }
+                Either::Right(reasons) => {
+                    return Ok(Either::Right(vec![Reason::DescendantShapePassed {
+                        node: node.clone(),
+                        shape: *idx,
+                        reasons: Reasons::new(reasons.clone()),
+                    }]));
+                }
+            }
+        }
+        Ok(Either::Left(vec![ValidatorError::DescendantsShapeError {
+            idx: *idx,
+            node: Box::new(node.clone()),
+            errors: ValidatorErrors::new(errors_collection),
+        }]))
     }
 
     pub(crate) fn check_node_shape_expr(
@@ -344,7 +395,7 @@ impl Engine {
                 }
                 Ok(Either::Right(vec![Reason::ShapeAndPassed {
                     node: node.clone(),
-                    se: se.clone(),
+                    se: Box::new(se.clone()),
                     reasons: reasons_collection,
                 }]))
             }
@@ -556,7 +607,7 @@ impl Engine {
                 debug!(" Part {npart}| Partition succeeded",);
                 return pass(Reason::ShapeExtendsPassed {
                     node: node.clone(),
-                    shape: shape.clone(),
+                    shape: Box::new(shape.clone()),
                     reasons: Reasons::new(vec![]), // TODO: Collect reasons from each triple expr
                 });
             }
@@ -680,8 +731,8 @@ fn show_result(result: &Either<Vec<ValidatorError>, Vec<Reason>>) -> String {
 }
 
 fn check_exprs_neigh(
-    exprs: &Vec<Expr>,
-    neighs: &Vec<(Pred, Node)>,
+    exprs: &[Expr],
+    neighs: &[(Pred, Node)],
     node: &Node,
     shape: &Shape,
     typing: &Typing,
@@ -704,7 +755,7 @@ fn check_exprs_neigh(
 
 fn check_expr_neigh(
     expr: &Expr,
-    neighs: &Vec<(Pred, Node)>,
+    neighs: &[(Pred, Node)],
     node: &Node,
     shape: &Shape,
     typing: &Typing,
@@ -714,7 +765,7 @@ fn check_expr_neigh(
         expr,
         neighs.iter().map(|(p, o)| format!("{p} {o}")).join(", ")
     );
-    let result_iter = expr.matches(neighs.clone())?;
+    let result_iter = expr.matches(neighs.to_vec())?;
     let mut errors = Vec::new();
     for result in result_iter {
         debug!(
@@ -762,9 +813,9 @@ fn check_expr_neigh(
     })
 }
 
-fn show_partition(
-    partition: &Vec<(Option<ShapeLabelIdx>, Vec<Expr>, Vec<(Pred, Node)>)>,
-) -> String {
+type PartitionInfo = (Option<ShapeLabelIdx>, Vec<Expr>, Vec<(Pred, Node)>);
+
+fn show_partition(partition: &[PartitionInfo]) -> String {
     partition
         .iter()
         .map(|(maybe_label, _rbes, neighs_subset)| {

@@ -29,16 +29,16 @@ fn apply<S: Rdf, I: IterationStrategy<S>>(
             let shape_id = shape.id();
             let source = Some(shape_id);
             let value = iteration_strategy.to_object(item);
-            if let Ok(condition) = evaluator(item) {
-                if condition {
-                    return Some(
-                        ValidationResult::new(focus, component, shape.severity())
-                            .with_source(source.cloned())
-                            .with_message(message)
-                            .with_path(maybe_path.clone())
-                            .with_value(value),
-                    );
-                }
+            if let Ok(condition) = evaluator(item)
+                && condition
+            {
+                return Some(
+                    ValidationResult::new(focus, component, shape.severity())
+                        .with_source(source.cloned())
+                        .with_message(message)
+                        .with_path(maybe_path.clone())
+                        .with_value(value),
+                );
             }
             None
         })

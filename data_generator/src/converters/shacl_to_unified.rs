@@ -90,10 +90,10 @@ impl ShaclToUnified {
 
         // Process property shapes
         for prop_ref in node_shape.property_shapes() {
-            if let Some(ShaclShape::PropertyShape(prop_shape)) = schema.get_shape(prop_ref) {
-                if let Some(unified_prop) = self.convert_property_shape(prop_shape) {
-                    properties.push(unified_prop);
-                }
+            if let Some(ShaclShape::PropertyShape(prop_shape)) = schema.get_shape(prop_ref)
+                && let Some(unified_prop) = self.convert_property_shape(prop_shape)
+            {
+                properties.push(unified_prop);
             }
         }
 

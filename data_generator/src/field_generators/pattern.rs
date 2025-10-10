@@ -8,10 +8,10 @@ pub struct PatternGenerator;
 impl FieldGenerator for PatternGenerator {
     fn generate(&self, context: &GenerationContext) -> Result<String> {
         // Check if a pattern parameter is provided
-        if let Some(pattern_value) = context.parameters.get("pattern") {
-            if let Some(pattern) = pattern_value.as_str() {
-                return self.generate_from_pattern(pattern);
-            }
+        if let Some(pattern_value) = context.parameters.get("pattern")
+            && let Some(pattern) = pattern_value.as_str()
+        {
+            return self.generate_from_pattern(pattern);
         }
 
         // Fallback to heuristic-based generation based on property name

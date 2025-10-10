@@ -7,6 +7,10 @@
 
 use rbe::{Key, RbeTable, Ref, Value};
 use std::collections::{HashMap, HashSet};
+
+pub type Partitions<T, K, V, R> = Vec<Partition<T, K, V, R>>;
+pub type Partition<T, K, V, R> = (T, Vec<RbeTable<K, V, R>>, Vec<(K, V)>);
+
 pub struct KPartitionIteratorMultiPredicate<T, F> {
     items: Vec<T>,
     k: usize,
@@ -79,95 +83,11 @@ where
     }
 }
 
-/*
-pub struct KPartitionIteratorMap<T, U, V, F> {
-    items: Vec<T>,
-    k: usize,
-    current: Option<Vec<usize>>,
-    predicates: Vec<F>,
-    exprs: HashMap<U, V>,
-}
-
-impl<T, U, V, F> KPartitionIteratorMap<T, U, V, F>
-where
-    T: Clone,
-    V: Clone,
-    U: std::hash::Hash + Eq + Clone,
-    F: Fn(&Vec<T>) -> bool,
-{
-    pub fn new(items: Vec<T>, map: HashMap<U, V>, f: F) -> Self {
-        let k = map.len();
-        let current = if items.is_empty() {
-            None
-        } else {
-            Some(vec![0; items.len()])
-        };
-        let con
-        Self {
-            items,
-            k,
-            current,
-            predicates: map
-                .values()
-                .map(|v| {
-                    let v = v.clone();
-                    move |subset: &Vec<T>| (|s: &Vec<T>, v: &V| (f)(s, v))(subset, &v)
-                })
-                .collect(),
-            exprs: map,
-        }
-    }
-}
-
-impl<T: Clone, F> Iterator for KPartitionIteratorMultiPredicate<T, F>
-where
-    F: Fn(&Vec<T>) -> bool,
-{
-    type Item = Vec<Vec<T>>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            let assignment = self.current.as_ref()?;
-
-            // Build current partition
-            let mut partitions = vec![Vec::new(); self.k];
-            for (item, &partition_idx) in self.items.iter().zip(assignment.iter()) {
-                partitions[partition_idx].push(item.clone());
-            }
-
-            // Increment to next assignment
-            let mut next_assignment = assignment.clone();
-            let mut carry = true;
-            for digit in next_assignment.iter_mut() {
-                if carry {
-                    *digit += 1;
-                    if *digit < self.k {
-                        carry = false;
-                    } else {
-                        *digit = 0;
-                    }
-                }
-            }
-
-            self.current = if carry { None } else { Some(next_assignment) };
-
-            // Check each subset with its corresponding predicate
-            let all_valid = partitions
-                .iter()
-                .zip(self.predicates.iter())
-                .all(|(subset, predicate)| predicate(subset));
-
-            if all_valid {
-                return Some(partitions);
-            }
-        }
-    }
-}
-*/
+/// Creates an iterator of all possible combinations of neighbours that can be assigned to eash triple expression in the `triple_exprs` map
 pub fn partitions_iter<'a, T, K, V, R>(
-    neighs: &'a Vec<(K, V)>,
+    neighs: &'a [(K, V)],
     exprs: &'a HashMap<T, Vec<RbeTable<K, V, R>>>,
-) -> impl Iterator<Item = Vec<(T, Vec<RbeTable<K, V, R>>, Vec<(K, V)>)>> + 'a
+) -> impl Iterator<Item = Partitions<T, K, V, R>> + 'a
 where
     K: Key,
     V: Value,
@@ -175,14 +95,13 @@ where
     T: std::hash::Hash + Eq + Clone,
 {
     let conditions = build_conditions(exprs).collect::<Vec<_>>();
-    let iter_partitions = KPartitionIteratorMultiPredicate::new(neighs.clone(), conditions);
+    let iter_partitions = KPartitionIteratorMultiPredicate::new(neighs.to_owned(), conditions);
     iter_partitions.map(|partition| {
-        let vs = partition
+        partition
             .into_iter()
             .zip(exprs.iter())
             .map(|(subset, (key, rbes))| (key.clone(), rbes.clone(), subset))
-            .collect();
-        vs
+            .collect()
     })
 }
 

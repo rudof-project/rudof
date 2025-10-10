@@ -121,6 +121,10 @@ impl SchemaIR {
         self.inheritance_graph.parents(idx)
     }
 
+    pub fn descendants(&self, idx: &ShapeLabelIdx) -> Vec<ShapeLabelIdx> {
+        self.inheritance_graph.descendants(idx)
+    }
+
     pub fn get_triple_exprs(
         &self,
         idx: &ShapeLabelIdx,

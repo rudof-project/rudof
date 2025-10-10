@@ -15,6 +15,20 @@ use crate::Reasons;
 
 #[derive(Error, Debug, Clone)]
 pub enum ValidatorError {
+    #[error("Error in descendant {desc} of shape {current} for node {node}: {errors}")]
+    DescendantShapeError {
+        current: ShapeLabelIdx,
+        desc: ShapeLabelIdx,
+        node: Box<Node>,
+        errors: ValidatorErrors,
+    },
+
+    #[error("All descendants of shape {idx} failed for node {node}: {errors}")]
+    DescendantsShapeError {
+        idx: ShapeLabelIdx,
+        node: Box<Node>,
+        errors: ValidatorErrors,
+    },
     #[error("Creating shapemap from node {node} and shape {shape} failed with errors: {error}")]
     NodeShapeError {
         node: String,
