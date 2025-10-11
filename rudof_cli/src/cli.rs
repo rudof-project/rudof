@@ -6,7 +6,8 @@ use crate::{
     InputConvertFormat, InputConvertMode, OutputConvertFormat, OutputConvertMode, QueryType,
     RDFReaderMode, RdfConfigFormat, RdfConfigResultFormat, ResultDataFormat, ResultQueryFormat,
     ResultServiceFormat, ResultShExValidationFormat, ResultShaclValidationFormat,
-    ResultValidationFormat, ShExFormat, ShapeMapFormat, ShowNodeMode, ValidationMode,
+    ResultValidationFormat, ShExFormat, ShapeMapFormat, ShowNodeMode, SortByResultShapeMap,
+    ValidationMode,
 };
 use clap::{Parser, Subcommand};
 use iri_s::IriS;
@@ -48,6 +49,7 @@ pub enum Command {
             short = 'f',
             long = "format",
             value_name = "FORMAT",
+            ignore_case = true,
             help = "ShapeMap format, default = compact",
             default_value_t = ShapeMapFormat::Compact
         )]
@@ -56,6 +58,7 @@ pub enum Command {
         #[arg(
             short = 'r',
             long = "result-format",
+            ignore_case = true,
             value_name = "FORMAT",
             help = "Result shapemap format, default = compact",
             default_value_t = ShapeMapFormat::Compact
@@ -93,6 +96,7 @@ pub enum Command {
             short = 'f',
             long = "format",
             value_name = "FORMAT",
+            ignore_case = true,
             help = "Schema format (ShExC, ShExJ, Turtle, ...), default = ShExC",
             default_value_t = ShExFormat::ShExC
         )]
@@ -101,6 +105,7 @@ pub enum Command {
         #[arg(
             short = 'r',
             long = "result-format",
+            ignore_case = true,
             value_name = "FORMAT",
             help = "Result schema format, default = ShExJ",
             default_value_t = ShExFormat::ShExJ
@@ -147,6 +152,7 @@ pub enum Command {
         #[arg(
             long = "reader-mode",
             value_name = "MODE", 
+            ignore_case = true,
             help = "RDF Reader mode (strict or lax)",
             default_value_t = RDFReaderMode::default(),
             value_enum
@@ -191,6 +197,7 @@ pub enum Command {
 
         #[arg(short = 'M', long = "mode", 
             value_name = "MODE",
+            ignore_case = true,
             help = "Validation mode (ShEx or SHACL)",
             default_value_t = ValidationMode::ShEx
         )]
@@ -207,6 +214,7 @@ pub enum Command {
         #[arg(
             short = 'f',
             long = "schema-format",
+            ignore_case = true,
             value_name = "FORMAT",
             help = "Schema format"
         )]
@@ -223,6 +231,7 @@ pub enum Command {
         #[arg(
             long = "shapemap-format",
             value_name = "FORMAT", 
+            ignore_case = true,
             help = "ShapeMap format",
             default_value_t = ShapeMapFormat::Compact,
         )]
@@ -233,6 +242,16 @@ pub enum Command {
 
         #[arg(long = "base-schema", value_name = "IRI", help = "Base IRI for Schema")]
         base_schema: Option<IriS>,
+
+        #[arg(
+            long = "sort_by",
+            value_name = "SORT_MODE",
+            ignore_case = true,
+            help = "Sort result by (default = node)",
+            default_value_t = SortByResultShapeMap::Node,
+            value_enum
+        )]
+        sort_by: SortByResultShapeMap,
 
         #[arg(
             short = 'n',
@@ -255,6 +274,7 @@ pub enum Command {
             short = 't',
             long = "data-format",
             value_name = "FORMAT", 
+            ignore_case = true,
             help = "RDF Data format (default = turtle)",
             default_value_t = DataFormat::Turtle
         )]
@@ -281,6 +301,7 @@ pub enum Command {
             short = 'S',
             long = "shacl-mode",
             value_name = "MODE",
+            ignore_case = true,
             help = "SHACL validation mode (default = native)",
             default_value_t = ShaclValidationMode::Native,
             value_enum
@@ -291,6 +312,7 @@ pub enum Command {
         #[arg(
             long = "reader-mode",
             value_name = "MODE", help = "RDF Reader mode",
+            ignore_case = true,
             default_value_t = RDFReaderMode::default(),
             value_enum
         )]
@@ -299,6 +321,7 @@ pub enum Command {
         #[arg(
             short = 'r',
             long = "result-format",
+            ignore_case = true,
             value_name = "FORMAT", help = "Ouput result format, default = compact",
             default_value_t = ResultValidationFormat::Compact
         )]
@@ -345,6 +368,7 @@ pub enum Command {
         #[arg(
             short = 'f',
             long = "schema-format",
+            ignore_case = true,
             value_name = "FORMAT",
             help = "ShEx Schema format"
         )]
@@ -361,6 +385,7 @@ pub enum Command {
         #[arg(
             long = "shapemap-format",
             value_name = "FORMAT", 
+            ignore_case = true,
             help = "ShapeMap format",
             default_value_t = ShapeMapFormat::Compact,
         )]
@@ -375,6 +400,16 @@ pub enum Command {
         node: Option<String>,
 
         #[arg(
+            long = "sort_by",
+            value_name = "SORT_MODE",
+            ignore_case = true,
+            help = "Sort result by (default = node)",
+            default_value_t = SortByResultShapeMap::Node,
+            value_enum
+        )]
+        sort_by: SortByResultShapeMap,
+
+        #[arg(
             short = 'l',
             long = "shape-label",
             value_name = "LABEL",
@@ -386,6 +421,7 @@ pub enum Command {
         #[arg(
             short = 't',
             long = "data-format",
+            ignore_case = true,
             value_name = "FORMAT", 
             help = "RDF Data format",
             default_value_t = DataFormat::Turtle
@@ -410,6 +446,7 @@ pub enum Command {
         #[arg(
             long = "reader-mode",
             value_name = "MODE", 
+            ignore_case = true,
             help = "RDF Reader mode",
             default_value_t = RDFReaderMode::default(),
             value_enum
@@ -428,6 +465,7 @@ pub enum Command {
             short = 'r',
             long = "result-format",
             value_name = "FORMAT", 
+            ignore_case = true,
             help = "Ouput result format",
             default_value_t = ResultShExValidationFormat::Compact
         )]
@@ -467,6 +505,7 @@ pub enum Command {
             short = 't',
             long = "data-format",
             value_name = "FORMAT", 
+            ignore_case = true,
             help= "RDF Data format",
             default_value_t = DataFormat::Turtle
         )]
@@ -483,6 +522,7 @@ pub enum Command {
         #[arg(
             long = "reader-mode",
             value_name = "MODE", 
+            ignore_case = true,
             help = "RDF Reader mode",
             default_value_t = RDFReaderMode::default(),
             value_enum
@@ -500,6 +540,7 @@ pub enum Command {
         #[arg(
             short = 'f',
             long = "shapes-format",
+            ignore_case = true,
             value_name = "FORMAT",
             help = "Shapes file format"
         )]
@@ -525,6 +566,7 @@ pub enum Command {
             short = 'm',
             long = "mode",
             value_name = "MODE", 
+            ignore_case = true,
             help = "Execution mode",
             default_value_t = ShaclValidationMode::Native,
             value_enum
@@ -534,6 +576,7 @@ pub enum Command {
         #[arg(
             short = 'r',
             long = "result-format",
+            ignore_case = true,
             value_name = "FORMAT", 
             help = "Ouput result format",
             default_value_t = ResultShaclValidationFormat::Compact
@@ -574,6 +617,7 @@ pub enum Command {
             short = 't',
             long = "data-format",
             value_name = "FORMAT", 
+            ignore_case = true,
             help = "RDF Data format",
             default_value_t = DataFormat::Turtle
         )]
@@ -586,6 +630,7 @@ pub enum Command {
         #[arg(
             long = "reader-mode",
             value_name = "MODE", 
+            ignore_case = true,
             help = "RDF Reader mode",
             default_value_t = RDFReaderMode::default(),
             value_enum
@@ -595,6 +640,7 @@ pub enum Command {
         #[arg(
             short = 'r',
             long = "result-format",
+            ignore_case = true,
             value_name = "FORMAT", 
             help = "Ouput result format",
             default_value_t = ResultDataFormat::Turtle
@@ -642,6 +688,7 @@ pub enum Command {
         #[arg(
             short = 't',
             long = "data-format",
+            ignore_case = true,
             value_name = "FORMAT",
             help = "RDF Data format",
             default_value_t = DataFormat::Turtle
@@ -663,6 +710,7 @@ pub enum Command {
         #[arg(
             long = "reader-mode",
             value_name = "MODE", 
+            ignore_case = true,
             help = "RDF Reader mode",
             default_value_t = RDFReaderMode::default(),
             value_enum
@@ -672,6 +720,7 @@ pub enum Command {
         #[arg(
             short = 'm',
             long = "show-node-mode",
+            ignore_case = true,
             value_name = "MODE", 
             help = "Mode used to show the node information",
             default_value_t = ShowNodeMode::Outgoing
@@ -722,6 +771,7 @@ pub enum Command {
         #[arg(
             short = 't',
             long = "data-format",
+            ignore_case = true,
             value_name = "FORMAT", 
             help = "RDF Data format",
             default_value_t = DataFormat::Turtle
@@ -732,6 +782,7 @@ pub enum Command {
         #[arg(
             long = "reader-mode",
             value_name = "MODE", 
+            ignore_case = true,
             help = "RDF Reader mode",
             default_value_t = RDFReaderMode::default(),
             value_enum
@@ -757,6 +808,7 @@ pub enum Command {
         #[arg(
             short = 'f',
             long = "shapes-format",
+            ignore_case = true,
             value_name = "FORMAT",
             help = "Shapes file format"
         )]
@@ -779,6 +831,7 @@ pub enum Command {
         #[arg(
             short = 'r',
             long = "result-shapes-format",
+            ignore_case = true,
             value_name = "FORMAT", 
             help = "Result shapes format",
             default_value_t = CliShaclFormat::Internal
@@ -824,6 +877,7 @@ pub enum Command {
         #[arg(
             short = 'f',
             long = "format",
+            ignore_case = true,
             value_name = "FORMAT", 
             help = "DCTap file format",
             default_value_t = DCTapFormat::CSV
@@ -833,6 +887,7 @@ pub enum Command {
         #[arg(
             short = 'r',
             long = "result-format",
+            ignore_case = true,
             value_name = "FORMAT", 
             help = "Ouput results format",
             default_value_t = DCTapResultFormat::Internal
@@ -878,6 +933,7 @@ pub enum Command {
         #[arg(
             short = 'm',
             long = "input-mode",
+            ignore_case = true,
             value_name = "MODE",
             help = "Input mode"
         )]
@@ -901,6 +957,7 @@ pub enum Command {
         #[arg(
             short = 'f',
             long = "format",
+            ignore_case = true,
             value_name = "FORMAT", 
             help = "Input file format",
             default_value_t = InputConvertFormat::ShExC
@@ -918,6 +975,7 @@ pub enum Command {
         #[arg(
             short = 'r',
             long = "result-format",
+            ignore_case = true,
             value_name = "FORMAT", 
             help = "Result format",
             default_value_t = OutputConvertFormat::Default
@@ -952,6 +1010,7 @@ pub enum Command {
         #[arg(
             long = "reader-mode",
             value_name = "MODE", 
+            ignore_case = true,
             help = "RDF Reader mode",
             default_value_t = RDFReaderMode::default(),
             value_enum
@@ -961,6 +1020,7 @@ pub enum Command {
         #[arg(
             short = 'x',
             long = "export-mode",
+            ignore_case = true,
             value_name = "MODE",
             help = "Result mode for conversion"
         )]
@@ -983,6 +1043,7 @@ pub enum Command {
 
         #[arg(long = "mode1", 
          value_name = "MODE", 
+         ignore_case = true,
          help = "Input mode first schema", 
          default_value_t = InputCompareMode::default())]
         input_mode1: InputCompareMode,
@@ -990,6 +1051,7 @@ pub enum Command {
         #[arg(
             long = "mode2",
             value_name = "MODE",
+            ignore_case = true,
             help = "Input mode second schema",
             default_value_t = InputCompareMode::default()
         )]
@@ -1019,6 +1081,7 @@ pub enum Command {
         #[arg(
             long = "format1",
             value_name = "FORMAT", 
+            ignore_case = true,
             help = "File format 1",
             default_value_t = InputCompareFormat::default()
         )]
@@ -1027,6 +1090,7 @@ pub enum Command {
         #[arg(
             long = "format2",
             value_name = "FORMAT", 
+            ignore_case = true,
             help = "File format 2",
             default_value_t = InputCompareFormat::default()
         )]
@@ -1042,6 +1106,7 @@ pub enum Command {
             short = 'r',
             long = "result-format",
             value_name = "FORMAT", 
+            ignore_case = true,
             help = "Result format",
             default_value_t = ResultCompareFormat::default()
         )]
@@ -1081,6 +1146,7 @@ pub enum Command {
         #[arg(
             long = "reader-mode",
             value_name = "MODE", 
+            ignore_case = true,
             help = "RDF Reader mode",
             default_value_t = RDFReaderMode::default(),
             value_enum
@@ -1105,6 +1171,7 @@ pub enum Command {
             short = 'r',
             long = "result-format",
             value_name = "FORMAT", 
+            ignore_case = true,
             help = "Output result rdf-config format",
             default_value_t = RdfConfigResultFormat::default()
         )]
@@ -1114,6 +1181,7 @@ pub enum Command {
             short = 'f',
             long = "format",
             value_name = "FORMAT",
+            ignore_case = true,
             help = "rdf-config format",
             default_value_t = RdfConfigFormat::default()
         )]
@@ -1158,6 +1226,7 @@ pub enum Command {
         #[arg(
             short = 'f',
             long = "format",
+            ignore_case = true,
             value_name = "FORMAT",
             help = "SPARQL service format",
             default_value_t = DataFormat::Turtle
@@ -1175,6 +1244,7 @@ pub enum Command {
         #[arg(
             short = 'r',
             long = "result-format",
+            ignore_case = true,
             value_name = "FORMAT", 
             help = "Output result service format",
             default_value_t = ResultServiceFormat::JSON
@@ -1219,6 +1289,7 @@ pub enum Command {
         #[arg(
             short = 't',
             long = "data-format",
+            ignore_case = true,
             value_name = "FORMAT",
             help = "RDF Data format",
             default_value_t = DataFormat::Turtle
@@ -1235,6 +1306,7 @@ pub enum Command {
 
         #[arg(long = "query-type", 
             value_name = "TYPE", 
+            ignore_case = true,
             help = "Query type (SELECT, ASK, CONSTRUCT, DESCRIBE)", 
             default_value_t = QueryType::Select,
             value_enum
@@ -1245,6 +1317,7 @@ pub enum Command {
         #[arg(
             long = "reader-mode",
             value_name = "MODE", 
+            ignore_case = true,
             help = "RDF Reader mode",
             default_value_t = RDFReaderMode::default(),
             value_enum
@@ -1278,6 +1351,7 @@ pub enum Command {
         #[arg(
             short = 'r',
             long = "result-format",
+            ignore_case = true,
             value_name = "FORMAT", 
             help = "Result query format",
             default_value_t = ResultQueryFormat::Internal
@@ -1314,6 +1388,7 @@ pub enum Command {
         #[arg(
             short = 'f',
             long = "schema-format",
+            ignore_case = true,
             value_name = "Schema format",
             default_value_t = GenerateSchemaFormat::Auto
         )]
@@ -1337,6 +1412,7 @@ pub enum Command {
         #[arg(
             short = 'r',
             long = "result-format",
+            ignore_case = true,
             value_name = "Output RDF format",
             default_value_t = DataFormat::Turtle
         )]

@@ -14,7 +14,7 @@ use crate::SchemaJsonError;
 
 impl Value for Node {}
 
-#[derive(PartialEq, Eq, Hash, Debug, Default, Clone)]
+#[derive(PartialEq, Eq, Hash, Debug, Default, Clone, PartialOrd, Ord)]
 pub struct Node {
     node: Object,
 }

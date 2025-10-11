@@ -14,6 +14,7 @@ pub enum ResultShExValidationFormat {
     N3,
     NQuads,
     Compact,
+    Details,
     Json,
 }
 
@@ -21,7 +22,8 @@ impl ResultShExValidationFormat {
     pub fn to_shapemap_format(&self) -> Result<ShapeMapFormat> {
         match self {
             ResultShExValidationFormat::Compact => Ok(ShapeMapFormat::Compact),
-            ResultShExValidationFormat::Json => Ok(ShapeMapFormat::Internal),
+            ResultShExValidationFormat::Details => Ok(ShapeMapFormat::Details),
+            ResultShExValidationFormat::Json => Ok(ShapeMapFormat::Json),
             _ => bail!(
                 "Conversion to ShapeMapFormat not supported for {self}. \
                  Use a different format or implement conversion."
@@ -41,6 +43,7 @@ impl Display for ResultShExValidationFormat {
             ResultShExValidationFormat::NQuads => write!(dest, "nquads"),
             ResultShExValidationFormat::Compact => write!(dest, "compact"),
             ResultShExValidationFormat::Json => write!(dest, "json"),
+            ResultShExValidationFormat::Details => write!(dest, "details"),
         }
     }
 }

@@ -1,5 +1,5 @@
-use data_generator::config::OutputFormat;
-use data_generator::{DataGenerator, GeneratorConfig};
+use rudof_generate::config::OutputFormat;
+use rudof_generate::{DataGenerator, GeneratorConfig};
 use srdf::{NeighsRDF, RDFFormat, ReaderMode, SRDFGraph};
 use std::collections::HashMap;
 use std::io::Write;

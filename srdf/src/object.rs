@@ -225,3 +225,61 @@ impl PartialOrd for Object {
         }
     }
 }
+
+impl Ord for Object {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match (self, other) {
+            (Object::Iri(a), Object::Iri(b)) => a.cmp(b),
+            (Object::BlankNode(a), Object::BlankNode(b)) => a.cmp(b),
+            (Object::Literal(a), Object::Literal(b)) => a.cmp(b),
+            (Object::Iri(_), _) => std::cmp::Ordering::Less,
+            (Object::BlankNode(_), Object::Iri(_)) => std::cmp::Ordering::Greater,
+            (Object::BlankNode(_), Object::Literal(_)) => std::cmp::Ordering::Less,
+            (Object::Literal(_), _) => std::cmp::Ordering::Greater,
+            (
+                Object::BlankNode(_),
+                Object::Triple {
+                    subject,
+                    predicate,
+                    object,
+                },
+            ) => todo!(),
+            (
+                Object::Triple {
+                    subject,
+                    predicate,
+                    object,
+                },
+                Object::Iri(iri_s),
+            ) => todo!(),
+            (
+                Object::Triple {
+                    subject,
+                    predicate,
+                    object,
+                },
+                Object::BlankNode(_),
+            ) => todo!(),
+            (
+                Object::Triple {
+                    subject,
+                    predicate,
+                    object,
+                },
+                Object::Literal(sliteral),
+            ) => todo!(),
+            (
+                Object::Triple {
+                    subject: subject1,
+                    predicate: predicate1,
+                    object: object1,
+                },
+                Object::Triple {
+                    subject: subject2,
+                    predicate: predicate2,
+                    object: object2,
+                },
+            ) => todo!(),
+        }
+    }
+}

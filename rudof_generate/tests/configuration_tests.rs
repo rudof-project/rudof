@@ -1,4 +1,4 @@
-use data_generator::config::{
+use rudof_generate::config::{
     CardinalityStrategy, DataQuality, DatatypeConfig, EntityDistribution, GeneratorConfig,
     OutputFormat, PropertyConfig,
 };

@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "data_generator",
+    "rudof_generate",
     "dctap",
     "iri_s",
     "mie",
@@ -49,15 +49,17 @@ authors = [
 # [dependencies]
 anyhow = "1.0"
 async-trait = "0.1.89"
+chrono = { version = "0.4", features = ["serde"] }
 calamine = { version = "0.31" }
 clap = { version = "4.2.1", features = ["derive"] }
 clientele = "0.2"
 colored = "3"
 const_format = "0.2"
 csv = "1.3.1"
-data_generator = { version = "0.1.118", path = "./data_generator" }
+rudof_generate = { version = "0.1.118", path = "./rudof_generate" }
 dctap = { version = "0.1.111", path = "./dctap" }
 either = { version = "1.13" }
+futures = "0.3"
 indexmap = "2.1"
 iri_s = { version = "0.1.90", path = "./iri_s" }
 itertools = "0.14"
@@ -80,6 +82,8 @@ petgraph = { version = "0.8" }
 prefixmap = { version = "0.1.104", path = "./prefixmap" }
 pretty = { version = "0.12" }
 pyrudof = { version = "0.1.110", path = "./python" }
+rand = "0.8"
+rayon = "1.7"
 rbe = { version = "0.1.111", path = "./rbe" }
 rbe_testsuite = { version = "0.1.90", path = "./rbe_testsuite" }
 rdf_config = { version = "0.1.102", path = "./rdf_config" }
@@ -105,14 +109,19 @@ spargebra = { version = "0.4.0", features = ["sparql-12"] }
 sparql_service = { version = "0.1.111", path = "./sparql_service" }
 srdf = { version = "0.1.111", path = "./srdf" }
 supports-color = "3.0.0"
+tabled = { version = "0.20.0", features = ["ansi" ] }
 tempfile = "3.10.1"
 thiserror = "2.0"
 tokio = { version = "1.0", features = ["rt", "rt-multi-thread"] }
+tokio-test = "0.4"
 toml = "0.9"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-test = "0.2.5"
 url = "2.2.2"
+uuid = { version = "1.0", features = ["v4"] }
+
+
 
 [patch.crates-io]
 # use fork fixing zip dependency until PR is merged

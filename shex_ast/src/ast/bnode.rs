@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Hash, Eq, Clone)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
 pub struct BNode {
     value: String,
 }

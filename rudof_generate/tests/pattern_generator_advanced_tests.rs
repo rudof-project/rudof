@@ -1,5 +1,5 @@
-use data_generator::field_generators::pattern::PatternGenerator;
-use data_generator::field_generators::{FieldGenerator, GenerationContext};
+use rudof_generate::field_generators::pattern::PatternGenerator;
+use rudof_generate::field_generators::{FieldGenerator, GenerationContext};
 use regex::Regex;
 use serde_json::json;
 use std::time::Instant;

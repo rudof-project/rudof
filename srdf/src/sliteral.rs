@@ -529,6 +529,15 @@ impl PartialOrd for SLiteral {
     }
 }
 
+impl Ord for SLiteral {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match self.partial_cmp(other) {
+            Some(ordering) => ordering,
+            None => panic!("Cannot compare literals {self} and {other}"),
+        }
+    }
+}
+
 impl Display for SLiteral {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.display_qualified(f, &PrefixMap::basic())

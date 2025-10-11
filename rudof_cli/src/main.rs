@@ -1,11 +1,11 @@
 extern crate anyhow;
 extern crate clap;
-extern crate data_generator;
 extern crate dctap;
 extern crate iri_s;
 extern crate oxrdf;
 extern crate prefixmap;
 extern crate regex;
+extern crate rudof_generate;
 extern crate serde_json;
 extern crate shacl_ast;
 extern crate shapes_converter;
@@ -199,6 +199,7 @@ fn main() -> Result<()> {
             max_steps,
             shacl_validation_mode,
             result_format,
+            sort_by,
             output,
             config,
             force_overwrite,
@@ -222,6 +223,7 @@ fn main() -> Result<()> {
                         shapemap_format,
                         cli.debug,
                         &result_shex_format,
+                        sort_by,
                         output,
                         &config,
                         *force_overwrite,
@@ -272,6 +274,7 @@ fn main() -> Result<()> {
             output,
             config,
             force_overwrite,
+            sort_by,
         }) => {
             let config = get_config(config)?;
             run_validate_shex(
@@ -289,6 +292,7 @@ fn main() -> Result<()> {
                 shapemap_format,
                 cli.debug,
                 result_format,
+                sort_by,
                 output,
                 &config,
                 *force_overwrite,
@@ -578,7 +582,7 @@ fn run_generate(
     config_file: &Option<PathBuf>,
     _force_overwrite: bool,
 ) -> Result<()> {
-    use data_generator::{DataGenerator, GeneratorConfig};
+    use rudof_generate::{DataGenerator, GeneratorConfig};
 
     // Create tokio runtime
     let runtime = tokio::runtime::Runtime::new()?;
@@ -611,7 +615,7 @@ fn run_generate(
         }
 
         // Determine output format (only Turtle and NTriples are supported)
-        use data_generator::config::OutputFormat;
+        use rudof_generate::config::OutputFormat;
         config.output.format = match result_format {
             DataFormat::Turtle | DataFormat::TriG | DataFormat::N3 => OutputFormat::Turtle,
             _ => OutputFormat::NTriples,

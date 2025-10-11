@@ -46,6 +46,10 @@ pub struct ShapemapConfig {
     #[serde(skip)]
     ok_color: Option<Color>,
 
+    ok_text: Option<String>,
+
+    fail_text: Option<String>,
+
     #[serde(skip)]
     fail_color: Option<Color>,
 
@@ -61,11 +65,27 @@ impl Default for ShapemapConfig {
             ok_color: Some(Color::Green),
             fail_color: Some(Color::Red),
             pending_color: Some(Color::Magenta),
+            ok_text: Some("OK".to_string()),
+            fail_text: Some("FAIL".to_string()),
         }
     }
 }
 
 impl ShapemapConfig {
+    pub fn ok_text(&self) -> String {
+        match &self.ok_text {
+            None => "OK".to_string(),
+            Some(t) => t.clone(),
+        }
+    }
+
+    pub fn fail_text(&self) -> String {
+        match &self.fail_text {
+            None => "FAIL".to_string(),
+            Some(t) => t.clone(),
+        }
+    }
+
     pub fn ok_color(&self) -> Option<Color> {
         self.ok_color
     }

@@ -1,0 +1,18 @@
+prefix :       <http://example.org/>
+prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
+
+abstract :A { 
+  :p [ "A" ] ;
+}
+
+:B extends @:A {
+  :p [ "B" ]
+}
+
+:C extends @:A {
+  :p [ "C" ]
+}
+
+:S extends @:B extends @:C {
+  :p [ "S" ]
+}

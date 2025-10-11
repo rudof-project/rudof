@@ -36,6 +36,7 @@ pub mod shapemap_format;
 pub mod shex;
 pub mod shex_format;
 pub mod show_mode;
+pub mod sort_by_result_shape_map;
 pub mod validation_mode;
 pub mod writer;
 
@@ -68,4 +69,5 @@ pub use shapemap_format::*;
 pub use shex::*;
 pub use shex_format::*;
 pub use show_mode::*;
+pub use sort_by_result_shape_map::*;
 pub use validation_mode::*;

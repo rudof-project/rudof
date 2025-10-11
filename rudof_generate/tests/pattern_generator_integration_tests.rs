@@ -1,8 +1,8 @@
 #![allow(clippy::regex_creation_in_loops)]
 
-use data_generator::field_generators::pattern::PatternGenerator;
-use data_generator::field_generators::{FieldGenerator, GenerationContext};
 use regex::Regex;
+use rudof_generate::field_generators::pattern::PatternGenerator;
+use rudof_generate::field_generators::{FieldGenerator, GenerationContext};
 use serde_json::json;
 use std::collections::HashSet;
 

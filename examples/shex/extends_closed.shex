@@ -1,0 +1,15 @@
+prefix :       <http://example.org/>
+prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
+
+:A { 
+  :p xsd:string ;
+}
+
+:B extends @:A CLOSED {
+    :p [ "B" ]
+}
+
+:C extends @:A CLOSED { } AND {
+    :p [ "C" ]
+}
+

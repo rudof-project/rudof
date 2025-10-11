@@ -1,0 +1,8 @@
+prefix :       <http://example.org/>
+prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
+
+:ok_s :p "A", "B", "C", "S" .   # Should pass as S
+:ok_b :p "A", "B" .             # Should pass as B
+:ok_c :p "A", "C" .             # Should pass as C
+:ko_a :p "A" .                  # Should fail as A because it is abstract
+:ko_s :p "A", "B", "C" .        # Should fail as S because it has no "S"

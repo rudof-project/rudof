@@ -1,5 +1,5 @@
 use clap::{Arg, Command};
-use data_generator::{DataGenerator, GeneratorConfig};
+use rudof_generate::{DataGenerator, GeneratorConfig};
 use std::path::PathBuf;
 use tracing::{error, info};
 
@@ -11,7 +11,7 @@ async fn main() {
         .init();
 
     // Parse command line arguments
-    let matches = Command::new("data_generator")
+    let matches = Command::new("rudof_generate")
         .about("Generate synthetic RDF data from ShEx or SHACL schemas")
         .version("0.1.0")
         .arg(
@@ -133,9 +133,9 @@ async fn main() {
 }
 
 /// Load configuration from file
-async fn load_config(config_path: &PathBuf) -> data_generator::Result<GeneratorConfig> {
+async fn load_config(config_path: &PathBuf) -> rudof_generate::Result<GeneratorConfig> {
     if !config_path.exists() {
-        return Err(data_generator::DataGeneratorError::Config(format!(
+        return Err(rudof_generate::DataGeneratorError::Config(format!(
             "Configuration file does not exist: {}",
             config_path.display()
         )));

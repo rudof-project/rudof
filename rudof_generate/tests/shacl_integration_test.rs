@@ -1,5 +1,5 @@
-use data_generator::config::GeneratorConfig;
-use data_generator::{DataGenerator, Result};
+use rudof_generate::config::GeneratorConfig;
+use rudof_generate::{DataGenerator, Result};
 use std::path::PathBuf;
 use tempfile::TempDir;
 

@@ -1,10 +1,10 @@
 #![allow(clippy::regex_creation_in_loops)]
 #![allow(clippy::manual_strip)]
 
-use data_generator::config::{DatatypeConfig, PropertyConfig};
-use data_generator::field_generators::pattern::PatternGenerator;
-use data_generator::field_generators::{FieldGenerator, GenerationContext};
-use data_generator::{DataGenerator, GeneratorConfig};
+use rudof_generate::config::{DatatypeConfig, PropertyConfig};
+use rudof_generate::field_generators::pattern::PatternGenerator;
+use rudof_generate::field_generators::{FieldGenerator, GenerationContext};
+use rudof_generate::{DataGenerator, GeneratorConfig};
 use regex::Regex;
 use serde_json::json;
 use std::collections::HashMap;

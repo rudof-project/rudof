@@ -6,7 +6,7 @@ use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
 
 /// Shape labels can be IRIs, Blank nodes or the special `Start` label
-#[derive(PartialEq, Eq, Hash, Debug, Clone)]
+#[derive(PartialEq, Eq, Hash, Debug, Clone, PartialOrd, Ord)]
 pub enum ShapeLabel {
     Iri(IriS),
     BNode(BNode),

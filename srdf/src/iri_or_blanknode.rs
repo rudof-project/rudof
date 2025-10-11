@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{Object, RDFError};
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, PartialOrd, Ord)]
 pub enum IriOrBlankNode {
     BlankNode(String),
     Iri(IriS),

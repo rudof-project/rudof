@@ -1,10 +1,10 @@
-use crate::ShExFormat as CliShExFormat;
 use crate::data::get_data_rudof;
 use crate::data_format::DataFormat;
 use crate::node_selector::{parse_node_selector, parse_shape_selector, start};
 use crate::writer::get_writer;
 use crate::{ColorSupport, shapemap_format_convert};
 use crate::{ResultShExValidationFormat, ShapeMapFormat as CliShapeMapFormat};
+use crate::{ShExFormat as CliShExFormat, SortByResultShapeMap};
 use anyhow::Context;
 use anyhow::{Result, bail};
 use iri_s::IriS;
@@ -237,6 +237,7 @@ pub fn run_validate_shex(
     shapemap_format: &CliShapeMapFormat,
     _debug: u8,
     result_format: &ResultShExValidationFormat,
+    sort_by: &SortByResultShapeMap,
     output: &Option<PathBuf>,
     config: &RudofConfig,
     force_overwrite: bool,
@@ -300,7 +301,7 @@ pub fn run_validate_shex(
         };
         let result = rudof.validate_shex()?;
         let shapemap_format = result_format.to_shapemap_format()?;
-        write_result_shapemap(writer, &shapemap_format, result)?;
+        write_result_shapemap(writer, &shapemap_format, result, sort_by)?;
         Ok(())
     } else {
         bail!("No ShEx schema specified")
@@ -311,17 +312,36 @@ fn write_result_shapemap(
     mut writer: Box<dyn Write + 'static>,
     format: &CliShapeMapFormat,
     result: ResultShapeMap,
+    sort_by: &SortByResultShapeMap,
 ) -> Result<()> {
     match format {
         CliShapeMapFormat::Compact => {
             writeln!(writer, "Result:")?;
-            result.show_minimal(writer)?;
+            result.show_as_table(writer, cnv_sort_mode(sort_by), false)?;
         }
         CliShapeMapFormat::Internal => {
             let str = serde_json::to_string_pretty(&result)
-                .context(format!("Error converting Result to JSON: {result}"))?;
+                .context(format!("Error converting Result to JSON"))?;
             writeln!(writer, "{str}")?;
+        }
+        CliShapeMapFormat::Json => {
+            let str = serde_json::to_string_pretty(&result)
+                .context(format!("Error converting Result to JSON"))?;
+            writeln!(writer, "{str}")?;
+        }
+        CliShapeMapFormat::Details => {
+            writeln!(writer, "Result:")?;
+            result.show_as_table(writer, cnv_sort_mode(sort_by), true)?;
         }
     }
     Ok(())
+}
+
+fn cnv_sort_mode(sort_by: &SortByResultShapeMap) -> shex_ast::shapemap::result_shape_map::SortMode {
+    match sort_by {
+        SortByResultShapeMap::Node => shex_ast::shapemap::result_shape_map::SortMode::Node,
+        SortByResultShapeMap::Shape => shex_ast::shapemap::result_shape_map::SortMode::Shape,
+        SortByResultShapeMap::Status => shex_ast::shapemap::result_shape_map::SortMode::Status,
+        SortByResultShapeMap::Details => shex_ast::shapemap::result_shape_map::SortMode::Details,
+    }
 }

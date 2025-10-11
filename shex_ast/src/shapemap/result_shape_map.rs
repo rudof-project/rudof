@@ -1,4 +1,5 @@
 use colored::*;
+use itertools::Itertools;
 use serde::Serialize;
 use srdf::Object;
 
@@ -10,10 +11,11 @@ use prefixmap::PrefixMap;
 use serde::ser::{SerializeMap, SerializeSeq};
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
-use std::fmt::Display;
-use std::fmt::Formatter;
+// use std::fmt::Display;
+// use std::fmt::Formatter;
 use std::io::Error;
 use std::io::Write;
+use tabled::{builder::Builder, settings::Style};
 
 /// Contains a map of the results obtained after applying ShEx validation
 #[derive(Debug, PartialEq, Default, Clone)]
@@ -30,6 +32,14 @@ impl ResultShapeMap {
 
     pub fn ok_color(&self) -> Option<Color> {
         self.config.ok_color()
+    }
+
+    pub fn ok_text(&self) -> String {
+        self.config.ok_text()
+    }
+
+    pub fn fail_text(&self) -> String {
+        self.config.fail_text()
     }
 
     pub fn fail_color(&self) -> Option<Color> {
@@ -210,44 +220,92 @@ impl ResultShapeMap {
         })
     }
 
-    pub fn show_minimal(&self, mut writer: Box<dyn Write + 'static>) -> Result<(), Error> {
-        for (node, label, status) in self.iter() {
-            let node_label = format!(
-                "{}@{}",
-                show_node(node, &self.nodes_prefixmap()),
-                show_shapelabel(label, &self.shapes_prefixmap())
-            );
-            match status {
-                ValidationStatus::Conformant(_conformant_info) => {
-                    let node_label = match self.ok_color() {
-                        None => ColoredString::from(node_label),
-                        Some(color) => node_label.color(color),
-                    };
-                    writeln!(writer, "{node_label} -> OK")?;
-                }
-                ValidationStatus::NonConformant(_non_conformant_info) => {
-                    let node_label = match self.fail_color() {
-                        None => ColoredString::from(node_label),
-                        Some(color) => node_label.color(color),
-                    };
-                    writeln!(writer, "{node_label} -> Fail")?;
-                }
-                ValidationStatus::Pending => {
-                    let node_label = match self.pending_color() {
-                        None => ColoredString::from(node_label),
-                        Some(color) => node_label.color(color),
-                    };
-                    writeln!(writer, "{node_label} -> Pending")?
-                }
-                ValidationStatus::Inconsistent(_conformant, _inconformant) => {
-                    let node_label = match self.pending_color() {
-                        None => ColoredString::from(node_label),
-                        Some(color) => node_label.color(color),
-                    };
-                    writeln!(writer, "{node_label} -> Inconsistent")?
+    pub fn show_as_table(
+        &self,
+        mut writer: Box<dyn Write + 'static>,
+        sort_mode: SortMode,
+        with_details: bool,
+    ) -> Result<(), Error> {
+        let mut builder = Builder::default();
+        if with_details {
+            builder.push_record(["Node", "Shape", "Status", "Details"]);
+        } else {
+            builder.push_record(["Node", "Shape", "Status"]);
+        }
+
+        let cmp = match sort_mode {
+            SortMode::Node => {
+                |a: &(&Node, &ShapeLabel, &ValidationStatus),
+                 b: &(&Node, &ShapeLabel, &ValidationStatus)| {
+                    a.0.cmp(b.0).then(a.1.cmp(b.1))
                 }
             }
+            SortMode::Shape => {
+                |a: &(&Node, &ShapeLabel, &ValidationStatus),
+                 b: &(&Node, &ShapeLabel, &ValidationStatus)| {
+                    a.1.cmp(b.1).then(a.0.cmp(b.0))
+                }
+            }
+            SortMode::Status => {
+                |a: &(&Node, &ShapeLabel, &ValidationStatus),
+                 b: &(&Node, &ShapeLabel, &ValidationStatus)| {
+                    a.2.code()
+                        .cmp(&b.2.code())
+                        .then(a.0.cmp(b.0))
+                        .then(a.1.cmp(b.1))
+                }
+            }
+            SortMode::Details => {
+                |a: &(&Node, &ShapeLabel, &ValidationStatus),
+                 b: &(&Node, &ShapeLabel, &ValidationStatus)| {
+                    a.2.reason()
+                        .cmp(&b.2.reason())
+                        .then(a.0.cmp(b.0))
+                        .then(a.1.cmp(b.1))
+                }
+            }
+        };
+
+        for (node, label, status) in self.iter().sorted_by(cmp) {
+            let node_label = show_node(node, &self.nodes_prefixmap());
+            let shape_label = show_shapelabel(label, &self.shapes_prefixmap());
+            let details;
+            let status_label;
+            match status {
+                ValidationStatus::Conformant(conformant_info) => {
+                    details = conformant_info.to_string();
+                    status_label = match self.ok_color() {
+                        None => ColoredString::from(self.ok_text()),
+                        Some(color) => self.ok_text().color(color).to_owned(),
+                    };
+                }
+                ValidationStatus::NonConformant(non_conformant_info) => {
+                    details = non_conformant_info.to_string();
+                    status_label = match self.fail_color() {
+                        None => ColoredString::from(self.fail_text()),
+                        Some(color) => self.fail_text().color(color).to_owned(),
+                    };
+                }
+                ValidationStatus::Pending => {
+                    details = "".to_owned();
+                    status_label = "Pending".color(self.pending_color().unwrap()).to_owned();
+                }
+                ValidationStatus::Inconsistent(ci, nci) => {
+                    details = format!("Conformant: {ci}, Non-conformant: {nci}");
+                    status_label = "Inconsistent"
+                        .color(self.pending_color().unwrap())
+                        .to_owned();
+                }
+            };
+            if with_details {
+                builder.push_record([node_label, shape_label, status_label.to_string(), details]);
+            } else {
+                builder.push_record([node_label, shape_label, status_label.to_string()]);
+            }
         }
+        let mut table = builder.build();
+        table.with(Style::modern_rounded());
+        writeln!(writer, "{table}")?;
         Ok(())
     }
 }
@@ -271,7 +329,7 @@ fn show_shapelabel(shapelabel: &ShapeLabel, prefixmap: &PrefixMap) -> String {
     }
 }
 
-impl Display for ResultShapeMap {
+/*impl Display for ResultShapeMap {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         for (node, label, status) in self.iter() {
             let node_label = format!(
@@ -315,7 +373,7 @@ impl Display for ResultShapeMap {
         }
         Ok(())
     }
-}
+}*/
 
 struct ResultSerializer<'a> {
     node: &'a Node,
@@ -354,4 +412,11 @@ impl Serialize for ResultShapeMap {
         }
         seq.end()
     }
+}
+
+pub enum SortMode {
+    Node,
+    Shape,
+    Status,
+    Details,
 }

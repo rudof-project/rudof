@@ -7,6 +7,8 @@ use clap::ValueEnum;
 pub enum ShapeMapFormat {
     Compact,
     Internal,
+    Json,
+    Details,
 }
 
 impl Display for ShapeMapFormat {
@@ -14,6 +16,8 @@ impl Display for ShapeMapFormat {
         match self {
             ShapeMapFormat::Compact => write!(dest, "compact"),
             ShapeMapFormat::Internal => write!(dest, "internal"),
+            ShapeMapFormat::Json => write!(dest, "json"),
+            ShapeMapFormat::Details => write!(dest, "details"),
         }
     }
 }

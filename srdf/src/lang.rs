@@ -4,7 +4,7 @@ use oxilangtag::LanguageTag;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-#[derive(Eq, Debug, Serialize, Deserialize, Clone)]
+#[derive(Eq, Debug, Serialize, Deserialize, Clone, PartialOrd, Ord)]
 pub struct Lang {
     lang: LanguageTag<String>,
 }

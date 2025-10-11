@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Hash, Eq, Clone)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
 #[serde(try_from = "&str", into = "String")]
 pub enum IriRef {
     Iri(IriS),
