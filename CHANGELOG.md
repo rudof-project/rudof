@@ -11,6 +11,7 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Added
 - Visualization of results of ShEx validation as nice tables leveraging on [tabled](https://docs.rs/tabled/latest/tabled/) crate
 - Option to sort the results of ShEx validation by either node, shape, status
+- Pretty prints the results of SPARQL queries as tables
 - Added option to show results of ShEx validation with details
 
 ### Fixed

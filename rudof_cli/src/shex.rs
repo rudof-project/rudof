@@ -2,7 +2,7 @@ use crate::data::get_data_rudof;
 use crate::data_format::DataFormat;
 use crate::node_selector::{parse_node_selector, parse_shape_selector, start};
 use crate::writer::get_writer;
-use crate::{ColorSupport, shapemap_format_convert};
+use crate::{ColorSupport, shapemap_format_convert, terminal_width};
 use crate::{ResultShExValidationFormat, ShapeMapFormat as CliShapeMapFormat};
 use crate::{ShExFormat as CliShExFormat, SortByResultShapeMap};
 use anyhow::Context;
@@ -317,7 +317,7 @@ fn write_result_shapemap(
     match format {
         CliShapeMapFormat::Compact => {
             writeln!(writer, "Result:")?;
-            result.show_as_table(writer, cnv_sort_mode(sort_by), false)?;
+            result.show_as_table(writer, cnv_sort_mode(sort_by), false, terminal_width())?;
         }
         CliShapeMapFormat::Internal => {
             let str = serde_json::to_string_pretty(&result)
@@ -331,7 +331,7 @@ fn write_result_shapemap(
         }
         CliShapeMapFormat::Details => {
             writeln!(writer, "Result:")?;
-            result.show_as_table(writer, cnv_sort_mode(sort_by), true)?;
+            result.show_as_table(writer, cnv_sort_mode(sort_by), true, terminal_width())?;
         }
     }
     Ok(())

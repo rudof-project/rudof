@@ -37,6 +37,7 @@ pub mod shex;
 pub mod shex_format;
 pub mod show_mode;
 pub mod sort_by_result_shape_map;
+pub mod terminal_width;
 pub mod validation_mode;
 pub mod writer;
 
@@ -70,4 +71,5 @@ pub use shex::*;
 pub use shex_format::*;
 pub use show_mode::*;
 pub use sort_by_result_shape_map::*;
+pub use terminal_width::*;
 pub use validation_mode::*;

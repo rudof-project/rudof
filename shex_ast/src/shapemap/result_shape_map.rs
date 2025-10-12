@@ -5,6 +5,7 @@ use srdf::Object;
 use tabled::settings::Modify;
 use tabled::settings::Width;
 use tabled::settings::object::Segment;
+use tabled::settings::width;
 use tracing::info;
 
 use crate::shapemap::ShapemapConfig;
@@ -229,9 +230,8 @@ impl ResultShapeMap {
         mut writer: Box<dyn Write + 'static>,
         sort_mode: SortMode,
         with_details: bool,
+        terminal_width: usize,
     ) -> Result<(), Error> {
-        info!("Terminal width detected as {}", terminal_width());
-
         let mut builder = Builder::default();
         if with_details {
             builder.push_record(["Node", "Shape", "Status", "Details"]);
@@ -311,7 +311,7 @@ impl ResultShapeMap {
         }
         let mut table = builder.build();
         table.with(Style::modern_rounded());
-        table.with(Modify::new(Segment::all()).with(Width::wrap(terminal_width())));
+        table.with(Modify::new(Segment::all()).with(Width::wrap(terminal_width)));
         writeln!(writer, "{table}")?;
         Ok(())
     }
@@ -380,26 +380,4 @@ pub enum SortMode {
     Shape,
     Status,
     Details,
-}
-
-// TODO: move this code to some utility module?
-use crossterm::terminal;
-
-const MAX_TERMINAL_WIDTH: usize = 150;
-const DEFAULT_TERMINAL_WIDTH: usize = 80;
-
-pub fn terminal_width() -> usize {
-    if let Ok((cols, _)) = terminal::size() {
-        return sanitize_width(cols as usize);
-    } else {
-        DEFAULT_TERMINAL_WIDTH
-    }
-}
-
-fn sanitize_width(width: usize) -> usize {
-    match width {
-        w if w > MAX_TERMINAL_WIDTH => MAX_TERMINAL_WIDTH,
-        w if w < 40 => DEFAULT_TERMINAL_WIDTH,
-        w => w,
-    }
 }
