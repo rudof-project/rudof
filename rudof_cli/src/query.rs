@@ -6,8 +6,9 @@ use anyhow::{Result, bail};
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 use rudof_lib::{InputSpec, RdfData, Rudof, RudofConfig};
-use srdf::{QueryResultFormat, QuerySolution, ReaderMode, VarName};
+use srdf::{QueryResultFormat, QuerySolution, QuerySolutions, ReaderMode, VarName};
 use std::{io::Write, path::PathBuf};
+use tabled::{builder::Builder, settings::Style};
 use tracing::trace;
 
 #[allow(clippy::too_many_arguments)]
@@ -44,15 +45,7 @@ pub fn run_query(
         QueryType::Select => {
             trace!("Running SELECT query");
             let results = rudof.run_query_select(&mut reader)?;
-            let mut results_iter = results.iter().peekable();
-            if let Some(first) = results_iter.peek() {
-                show_variables(&mut writer, first.variables())?;
-                for result in results_iter {
-                    show_result(&mut writer, result, &rudof.nodes_prefixmap())?
-                }
-            } else {
-                write!(writer, "No results")?;
-            }
+            show_results(&mut writer, &results, &rudof, result_query_format)?;
         }
         QueryType::Construct => {
             let query_format = cnv_query_format(result_query_format);
@@ -71,7 +64,60 @@ pub fn run_query(
     Ok(())
 }
 
-fn show_variables<'a, W: Write>(
+fn show_results(
+    mut writer: &mut dyn Write,
+    results: &QuerySolutions<RdfData>,
+    rudof: &Rudof,
+    result_query_format: &CliResultQueryFormat,
+) -> Result<()> {
+    match result_query_format {
+        CliResultQueryFormat::Internal => {
+            let mut results_iter = results.iter().peekable();
+            if let Some(first) = results_iter.peek() {
+                let mut builder = Builder::default();
+                let variables = first
+                    .variables()
+                    .map(|v| format!("{v}"))
+                    .collect::<Vec<_>>();
+                builder.push_record(variables);
+                for result in results_iter {
+                    let mut record = Vec::new();
+                    for (idx, _variable) in result.variables().enumerate() {
+                        let str = match result.find_solution(idx) {
+                            Some(term) => match term {
+                                oxrdf::Term::NamedNode(named_node) => {
+                                    let (str, _length) = rudof
+                                        .nodes_prefixmap()
+                                        .qualify_and_length(&IriS::from_named_node(named_node));
+                                    format!("{str}")
+                                }
+                                oxrdf::Term::BlankNode(blank_node) => format!("{blank_node}"),
+                                oxrdf::Term::Literal(literal) => format!("{literal}"),
+                                oxrdf::Term::Triple(triple) => format!("{triple}"),
+                            },
+                            None => String::new(),
+                        };
+                        record.push(str);
+                    }
+                    builder.push_record(record);
+                }
+
+                let mut table = builder.build();
+                table.with(Style::modern_rounded());
+                // table.with(Modify::new(Segment::all()).with(Width::wrap(terminal_width())));
+                writeln!(writer, "{table}")?;
+            } else {
+                write!(writer, "No results")?;
+            }
+        }
+        _ => {
+            todo!()
+        }
+    }
+    Ok(())
+}
+
+/*fn show_variables<'a, W: Write>(
     writer: &mut W,
     vars: impl Iterator<Item = &'a VarName>,
 ) -> Result<()> {
@@ -81,7 +127,7 @@ fn show_variables<'a, W: Write>(
     }
     writeln!(writer)?;
     Ok(())
-}
+}*/
 
 fn show_result<W: Write>(
     writer: &mut W,

@@ -7,6 +7,16 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.1.120
+### Added
+- Visualization of results of ShEx validation as nice tables leveraging on [tabled](https://docs.rs/tabled/latest/tabled/) crate
+- Option to sort the results of ShEx validation by either node, shape, status
+- Added option to show results of ShEx validation with details
+
+### Fixed
+### Changed
+### Removed
+
 ## v0.1.119
 ### Added
 - Support to visualize a single shape in a ShEx schema with the option `--label` in CLI (issue 341)

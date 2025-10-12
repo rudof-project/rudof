@@ -2,6 +2,10 @@ use colored::*;
 use itertools::Itertools;
 use serde::Serialize;
 use srdf::Object;
+use tabled::settings::Modify;
+use tabled::settings::Width;
+use tabled::settings::object::Segment;
+use tracing::info;
 
 use crate::shapemap::ShapemapConfig;
 use crate::shapemap::ShapemapError;
@@ -226,6 +230,8 @@ impl ResultShapeMap {
         sort_mode: SortMode,
         with_details: bool,
     ) -> Result<(), Error> {
+        info!("Terminal width detected as {}", terminal_width());
+
         let mut builder = Builder::default();
         if with_details {
             builder.push_record(["Node", "Shape", "Status", "Details"]);
@@ -305,6 +311,7 @@ impl ResultShapeMap {
         }
         let mut table = builder.build();
         table.with(Style::modern_rounded());
+        table.with(Modify::new(Segment::all()).with(Width::wrap(terminal_width())));
         writeln!(writer, "{table}")?;
         Ok(())
     }
@@ -328,52 +335,6 @@ fn show_shapelabel(shapelabel: &ShapeLabel, prefixmap: &PrefixMap) -> String {
         ShapeLabel::Start => "Start".to_owned(),
     }
 }
-
-/*impl Display for ResultShapeMap {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-        for (node, label, status) in self.iter() {
-            let node_label = format!(
-                "{}@{}",
-                show_node(node, &self.nodes_prefixmap()),
-                show_shapelabel(label, &self.shapes_prefixmap())
-            );
-            match status {
-                ValidationStatus::Conformant(conformant_info) => {
-                    let node_label = match self.ok_color() {
-                        None => ColoredString::from(node_label),
-                        Some(color) => node_label.color(color),
-                    };
-                    write!(f, "{node_label} -> OK, reason: {conformant_info}")?;
-                }
-                ValidationStatus::NonConformant(non_conformant_info) => {
-                    let node_label = match self.fail_color() {
-                        None => ColoredString::from(node_label),
-                        Some(color) => node_label.color(color),
-                    };
-                    write!(f, "{node_label} -> Fail, reason: {non_conformant_info}")?;
-                }
-                ValidationStatus::Pending => {
-                    let node_label = match self.pending_color() {
-                        None => ColoredString::from(node_label),
-                        Some(color) => node_label.color(color),
-                    };
-                    write!(f, "{node_label} -> Pending")?
-                }
-                ValidationStatus::Inconsistent(conformant, inconformant) => {
-                    let node_label = match self.pending_color() {
-                        None => ColoredString::from(node_label),
-                        Some(color) => node_label.color(color),
-                    };
-                    write!(
-                        f,
-                        "{node_label} -> Inconsistent, conformant: {conformant}, non-conformant: {inconformant}"
-                    )?
-                }
-            }
-        }
-        Ok(())
-    }
-}*/
 
 struct ResultSerializer<'a> {
     node: &'a Node,
@@ -419,4 +380,26 @@ pub enum SortMode {
     Shape,
     Status,
     Details,
+}
+
+// TODO: move this code to some utility module?
+use crossterm::terminal;
+
+const MAX_TERMINAL_WIDTH: usize = 150;
+const DEFAULT_TERMINAL_WIDTH: usize = 80;
+
+pub fn terminal_width() -> usize {
+    if let Ok((cols, _)) = terminal::size() {
+        return sanitize_width(cols as usize);
+    } else {
+        DEFAULT_TERMINAL_WIDTH
+    }
+}
+
+fn sanitize_width(width: usize) -> usize {
+    match width {
+        w if w > MAX_TERMINAL_WIDTH => MAX_TERMINAL_WIDTH,
+        w if w < 40 => DEFAULT_TERMINAL_WIDTH,
+        w => w,
+    }
 }

@@ -35,6 +35,7 @@ shex_ast.workspace = true
 sparql_service.workspace = true 
 srdf.workspace = true 
 supports-color.workspace = true 
+tabled.workspace = true
 thiserror.workspace = true 
 tokio.workspace = true 
 tracing.workspace = true 
