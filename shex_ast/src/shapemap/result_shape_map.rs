@@ -5,8 +5,6 @@ use srdf::Object;
 use tabled::settings::Modify;
 use tabled::settings::Width;
 use tabled::settings::object::Segment;
-use tabled::settings::width;
-use tracing::info;
 
 use crate::shapemap::ShapemapConfig;
 use crate::shapemap::ShapemapError;
@@ -16,8 +14,6 @@ use prefixmap::PrefixMap;
 use serde::ser::{SerializeMap, SerializeSeq};
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
-// use std::fmt::Display;
-// use std::fmt::Formatter;
 use std::io::Error;
 use std::io::Write;
 use tabled::{builder::Builder, settings::Style};

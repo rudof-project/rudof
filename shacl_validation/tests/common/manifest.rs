@@ -56,7 +56,7 @@ impl Manifest {
     ) -> Result<HashSet<OxTerm>, TestSuiteError> {
         let mut entry_terms = HashSet::new();
 
-        let mf_entries: NamedNode = shacl_validation_vocab::MF_ENTRIES.clone().into();
+        let mf_entries: NamedNode = shacl_validation_vocab::mf_entries().clone().into();
         let entry_subject = store
             .triples_matching(subject, mf_entries, Any)?
             .map(Triple::into_object)
@@ -95,7 +95,7 @@ impl Manifest {
         for entry in &self.entries {
             let entry: OxSubject = entry.clone().try_into()?;
 
-            let mf_action: NamedNode = shacl_validation_vocab::MF_ACTION.clone().into();
+            let mf_action: NamedNode = shacl_validation_vocab::mf_action().clone().into();
             let action: OxSubject = self
                 .store
                 .triples_matching(entry.clone(), mf_action, Any)?
@@ -104,7 +104,7 @@ impl Manifest {
                 .unwrap()
                 .try_into()?;
 
-            let mf_result: NamedNode = shacl_validation_vocab::MF_RESULT.clone().into();
+            let mf_result: NamedNode = shacl_validation_vocab::mf_result().clone().into();
             let results = self
                 .store
                 .triples_matching(entry, mf_result, Any)?
@@ -114,7 +114,7 @@ impl Manifest {
 
             let report = ValidationReport::parse(&mut self.store, results)?;
 
-            let sht_data_graph: NamedNode = shacl_validation_vocab::SHT_DATA_GRAPH.clone().into();
+            let sht_data_graph: NamedNode = shacl_validation_vocab::sht_data_graph().clone().into();
             let data_graph_iri = self
                 .store
                 .triples_matching(action.clone(), sht_data_graph, Any)?
@@ -123,7 +123,7 @@ impl Manifest {
                 .unwrap();
 
             let sht_shapes_graph: NamedNode =
-                shacl_validation_vocab::SHT_SHAPES_GRAPH.clone().into();
+                shacl_validation_vocab::sht_shapes_graph().clone().into();
             let shapes_graph_iri = self
                 .store
                 .triples_matching(action, sht_shapes_graph, Any)?

@@ -246,7 +246,26 @@ impl Rdf for RdfData {
     type Err = RdfDataError;
 
     fn prefixmap(&self) -> std::option::Option<PrefixMap> {
-        self.graph.as_ref().map(|g| g.prefixmap())
+        match &self.graph {
+            Some(g) => Some(g.prefixmap()),
+            None => {
+                if self.endpoints.is_empty() {
+                    None
+                } else {
+                    let mut pm = PrefixMap::new();
+                    for e in &self.endpoints {
+                        match pm.merge(e.prefixmap().clone()) {
+                            Ok(_) => {}
+                            Err(e) => {
+                                eprintln!("Warning: cannot merge prefixmap from endpoint: {}", e);
+                                return None;
+                            }
+                        }
+                    }
+                    Some(pm)
+                }
+            }
+        }
     }
 
     fn qualify_iri(&self, node: &Self::IRI) -> String {

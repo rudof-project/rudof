@@ -5,7 +5,14 @@ use prefixmap::PrefixMap;
 use shacl_ast::shacl_vocab::{sh, sh_conforms, sh_result, sh_validation_report};
 use shacl_ir::severity::CompiledSeverity;
 use srdf::{BuildRDF, FocusRDF, Object, Rdf, SHACLPath};
-use std::fmt::{Debug, Display};
+use std::{
+    fmt::{Debug, Display},
+    io::{Error, Write},
+};
+use tabled::{
+    builder::Builder,
+    settings::{Modify, Style, Width, object::Segment},
+};
 
 #[derive(Debug, Clone)]
 pub struct ValidationReport {
@@ -157,6 +164,98 @@ impl ValidationReport {
         }
         Ok(())
     }
+
+    pub fn show_as_table(
+        &self,
+        mut writer: Box<dyn Write + 'static>,
+        _sort_mode: SortModeReport,
+        with_details: bool,
+        terminal_width: usize,
+    ) -> Result<(), Error> {
+        let mut builder = Builder::default();
+        if with_details {
+            builder.push_record([
+                "Severity",
+                "Node",
+                "Component",
+                "Path",
+                "Value",
+                "Source shape",
+                "Details",
+            ]);
+        } else {
+            builder.push_record([
+                "Severity",
+                "node",
+                "Component",
+                "Path",
+                "value",
+                "Source shape",
+            ]);
+        }
+        if self.results.is_empty() {
+            let str = "No Errors found";
+            if self.display_with_colors {
+                if let Some(ok_color) = self.ok_color {
+                    write!(writer, "{}", str.color(ok_color))?;
+                } else {
+                    write!(writer, "{str}")?;
+                }
+            } else {
+                write!(writer, "{str}")?;
+            }
+            Ok(())
+        } else {
+            let shacl_prefixmap = if self.display_with_colors {
+                PrefixMap::basic()
+            } else {
+                PrefixMap::basic()
+                    .with_hyperlink(true)
+                    .without_default_colors()
+            };
+            for result in self.results.iter() {
+                let severity_str = show_severity(result.severity(), &shacl_prefixmap);
+                let severity = if self.display_with_colors {
+                    let color = calculate_color(result.severity(), self);
+                    severity_str.color(color)
+                } else {
+                    ColoredString::from(severity_str)
+                };
+                let node = show_object(result.focus_node(), &self.nodes_prefixmap);
+                let component = show_object(result.component(), &shacl_prefixmap);
+                let path = show_path_opt("path", result.path(), &self.shapes_prefixmap);
+                let source =
+                    show_object_opt("source shape", result.source(), &self.shapes_prefixmap);
+                let value = show_object_opt("value", result.value(), &self.nodes_prefixmap);
+                let details = result.message().unwrap_or("").to_string();
+                if with_details {
+                    builder.push_record([
+                        &severity.to_string(),
+                        &node,
+                        &component,
+                        &path,
+                        &value,
+                        &source,
+                        &details,
+                    ]);
+                } else {
+                    builder.push_record([
+                        &severity.to_string(),
+                        &node,
+                        &component,
+                        &path,
+                        &value,
+                        &source,
+                    ]);
+                }
+            }
+            let mut table = builder.build();
+            table.with(Style::modern_rounded());
+            table.with(Modify::new(Segment::all()).with(Width::wrap(terminal_width)));
+            writeln!(writer, "{table}")?;
+            Ok(())
+        }
+    }
 }
 
 impl Default for ValidationReport {
@@ -269,14 +368,15 @@ fn show_object_opt(msg: &str, object: Option<&Object>, shacl_prefixmap: &PrefixM
     }
 }
 
-fn show_path_opt(msg: &str, object: Option<&SHACLPath>, shacl_prefixmap: &PrefixMap) -> String {
+fn show_path_opt(_msg: &str, object: Option<&SHACLPath>, shacl_prefixmap: &PrefixMap) -> String {
     match object {
         None => String::new(),
         Some(SHACLPath::Predicate { pred }) => {
             let path = shacl_prefixmap.qualify(pred);
-            format!(" {msg}: {path},")
+            format!("{path},")
         }
-        Some(path) => format!(" {msg}: _:{path:?},"),
+        // TODO: handle other SHACLPath cases
+        Some(path) => format!("{path},"),
     }
 }
 
@@ -289,4 +389,13 @@ fn calculate_color(severity: &CompiledSeverity, report: &ValidationReport) -> Co
         CompiledSeverity::Trace => report.trace_color.unwrap_or(Color::Cyan),
         CompiledSeverity::Generic(_) => Color::White,
     }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
+pub enum SortModeReport {
+    #[default]
+    Node,
+    Constraint,
+    Status,
+    Details,
 }

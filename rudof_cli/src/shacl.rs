@@ -1,7 +1,10 @@
+use std::fmt::Display;
+use std::fmt::Formatter;
 use std::io::Write;
 use std::path::PathBuf;
 
 use anyhow::bail;
+use clap::ValueEnum;
 use iri_s::IriS;
 use rudof_lib::InputSpec;
 use rudof_lib::Rudof;
@@ -10,6 +13,7 @@ use rudof_lib::ShaclValidationMode;
 use rudof_lib::ShapesGraphSource;
 use rudof_lib::ValidationReport;
 use shacl_ast::ShaclFormat;
+use shacl_validation::validation_report::report::SortModeReport;
 use srdf::RDFFormat;
 use srdf::ReaderMode;
 use srdf::SRDFGraph;
@@ -22,6 +26,7 @@ use crate::ResultShaclValidationFormat;
 use crate::data::get_base;
 use crate::data::get_data_rudof;
 use crate::data_format::DataFormat;
+use crate::terminal_width;
 use crate::writer::get_writer;
 use anyhow::Result;
 use iri_s::mime_type::MimeType;
@@ -174,7 +179,12 @@ pub fn run_validate_shacl(
     } else {
         rudof.validate_shacl(&mode, &ShapesGraphSource::current_data())
     }?;
-    write_validation_report(writer, result_format, validation_report)?;
+    write_validation_report(
+        writer,
+        result_format,
+        validation_report,
+        &SortByShaclValidationReport::default(),
+    )?;
     Ok(())
 }
 
@@ -182,10 +192,13 @@ fn write_validation_report(
     mut writer: Box<dyn Write + 'static>,
     format: &ResultShaclValidationFormat,
     report: ValidationReport,
+    sort_by: &SortByShaclValidationReport,
 ) -> Result<()> {
+    let terminal_width = terminal_width();
     match format {
         ResultShaclValidationFormat::Compact => {
-            writeln!(writer, "Validation report: {report}")?;
+            report.show_as_table(writer, SortModeReport::default(), true, terminal_width)?;
+            Ok(())
         }
         ResultShaclValidationFormat::Json => {
             bail!("Generation of JSON for SHACl validation report is not implemented yet")
@@ -199,9 +212,9 @@ fn write_validation_report(
             report.to_rdf(&mut rdf_writer)?;
             let rdf_format = result_format_to_rdf_format(format)?;
             rdf_writer.serialize(&rdf_format, &mut writer)?;
+            Ok(())
         }
     }
-    Ok(())
 }
 
 fn result_format_to_rdf_format(result_format: &ResultShaclValidationFormat) -> Result<RDFFormat> {
@@ -213,5 +226,32 @@ fn result_format_to_rdf_format(result_format: &ResultShaclValidationFormat) -> R
         ResultShaclValidationFormat::N3 => Ok(RDFFormat::N3),
         ResultShaclValidationFormat::NQuads => Ok(RDFFormat::NQuads),
         _ => bail!("Unsupported result format {result_format}"),
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
+#[clap(rename_all = "lower")]
+pub enum SortByShaclValidationReport {
+    #[default]
+    Severity,
+    Node,
+    Component,
+    Value,
+    Path,
+    SourceShape,
+    Details,
+}
+
+impl Display for SortByShaclValidationReport {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            SortByShaclValidationReport::Severity => write!(dest, "severity"),
+            SortByShaclValidationReport::Node => write!(dest, "node"),
+            SortByShaclValidationReport::Component => write!(dest, "component"),
+            SortByShaclValidationReport::Value => write!(dest, "value"),
+            SortByShaclValidationReport::Path => write!(dest, "path"),
+            SortByShaclValidationReport::SourceShape => write!(dest, "sourceShape"),
+            SortByShaclValidationReport::Details => write!(dest, "details"),
+        }
     }
 }

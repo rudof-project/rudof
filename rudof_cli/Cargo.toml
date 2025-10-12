@@ -17,6 +17,7 @@ name = "rudof"
 anyhow.workspace = true 
 clap.workspace = true 
 clientele.workspace = true 
+crossterm.workspace = true
 dctap.workspace = true 
 iri_s.workspace = true 
 oxrdf.workspace = true 

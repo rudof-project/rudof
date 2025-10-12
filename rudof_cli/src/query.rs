@@ -6,7 +6,7 @@ use anyhow::{Result, bail};
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 use rudof_lib::{InputSpec, RdfData, Rudof, RudofConfig};
-use srdf::{QueryResultFormat, QuerySolution, QuerySolutions, ReaderMode, VarName};
+use srdf::{QueryResultFormat, QuerySolution, QuerySolutions, ReaderMode};
 use std::{io::Write, path::PathBuf};
 use tabled::{builder::Builder, settings::Style};
 use tracing::trace;
@@ -38,8 +38,7 @@ pub fn run_query(
         config,
         false,
     )?;
-    rudof.serialize_data(&srdf::RDFFormat::Turtle, &mut writer)?;
-    println!("Data serialized...starting query");
+    // rudof.serialize_data(&srdf::RDFFormat::Turtle, &mut writer)?;
     let mut reader = query.open_read(None, "Query")?;
     match query_type {
         QueryType::Select => {
@@ -65,7 +64,7 @@ pub fn run_query(
 }
 
 fn show_results(
-    mut writer: &mut dyn Write,
+    writer: &mut dyn Write,
     results: &QuerySolutions<RdfData>,
     rudof: &Rudof,
     result_query_format: &CliResultQueryFormat,
@@ -75,22 +74,24 @@ fn show_results(
             let mut results_iter = results.iter().peekable();
             if let Some(first) = results_iter.peek() {
                 let mut builder = Builder::default();
-                let variables = first
-                    .variables()
-                    .map(|v| format!("{v}"))
-                    .collect::<Vec<_>>();
+                let mut variables = Vec::new();
+                variables.push("".to_string()); // First column = index
+                variables.extend(
+                    first
+                        .variables()
+                        .map(|v| format!("{v}"))
+                        .collect::<Vec<_>>(),
+                );
                 builder.push_record(variables);
-                for result in results_iter {
+                for (idx, result) in results_iter.enumerate() {
                     let mut record = Vec::new();
+                    record.push(format!("{}", idx + 1)); // First column = index
                     for (idx, _variable) in result.variables().enumerate() {
                         let str = match result.find_solution(idx) {
                             Some(term) => match term {
-                                oxrdf::Term::NamedNode(named_node) => {
-                                    let (str, _length) = rudof
-                                        .nodes_prefixmap()
-                                        .qualify_and_length(&IriS::from_named_node(named_node));
-                                    format!("{str}")
-                                }
+                                oxrdf::Term::NamedNode(named_node) => rudof
+                                    .nodes_prefixmap()
+                                    .qualify(&IriS::from_named_node(named_node)),
                                 oxrdf::Term::BlankNode(blank_node) => format!("{blank_node}"),
                                 oxrdf::Term::Literal(literal) => format!("{literal}"),
                                 oxrdf::Term::Triple(triple) => format!("{triple}"),
@@ -104,7 +105,6 @@ fn show_results(
 
                 let mut table = builder.build();
                 table.with(Style::modern_rounded());
-                // table.with(Modify::new(Segment::all()).with(Width::wrap(terminal_width())));
                 writeln!(writer, "{table}")?;
             } else {
                 write!(writer, "No results")?;
@@ -129,7 +129,7 @@ fn show_results(
     Ok(())
 }*/
 
-fn show_result<W: Write>(
+/*fn show_result<W: Write>(
     writer: &mut W,
     result: &QuerySolution<RdfData>,
     prefixmap: &PrefixMap,
@@ -152,7 +152,7 @@ fn show_result<W: Write>(
     }
     writeln!(writer)?;
     Ok(())
-}
+}*/
 
 fn cnv_query_format(format: &CliResultQueryFormat) -> QueryResultFormat {
     match format {

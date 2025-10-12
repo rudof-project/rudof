@@ -239,45 +239,45 @@ impl Ord for Object {
             (
                 Object::BlankNode(_),
                 Object::Triple {
-                    subject,
-                    predicate,
-                    object,
+                    subject: _,
+                    predicate: _,
+                    object: _,
                 },
             ) => todo!(),
             (
                 Object::Triple {
-                    subject,
-                    predicate,
-                    object,
+                    subject: _,
+                    predicate: _,
+                    object: _,
                 },
-                Object::Iri(iri_s),
+                Object::Iri(_iri_s),
             ) => todo!(),
             (
                 Object::Triple {
-                    subject,
-                    predicate,
-                    object,
+                    subject: _,
+                    predicate: _,
+                    object: _,
                 },
                 Object::BlankNode(_),
             ) => todo!(),
             (
                 Object::Triple {
-                    subject,
-                    predicate,
-                    object,
+                    subject: _,
+                    predicate: _,
+                    object: _,
                 },
-                Object::Literal(sliteral),
+                Object::Literal(_sliteral),
             ) => todo!(),
             (
                 Object::Triple {
-                    subject: subject1,
-                    predicate: predicate1,
-                    object: object1,
+                    subject: _subject1,
+                    predicate: _predicate1,
+                    object: _object1,
                 },
                 Object::Triple {
-                    subject: subject2,
-                    predicate: predicate2,
-                    object: object2,
+                    subject: _subject2,
+                    predicate: _predicate2,
+                    object: _object2,
                 },
             ) => todo!(),
         }

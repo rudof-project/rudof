@@ -12,6 +12,7 @@ use shex_ast::shapemap::{NodeSelector, ShapeSelector};
 use shex_ast::{ResolveMethod, ShExFormat, ShapeLabelIdx};
 // use shex_validation::SchemaWithoutImports;
 use srdf::QueryRDF;
+use srdf::Rdf;
 use srdf::rdf_visualizer::visual_rdf_graph::VisualRDFGraph;
 use srdf::{FocusRDF, SRDFGraph, SparqlQuery};
 use std::fmt::Debug;
@@ -1125,7 +1126,7 @@ impl Rudof {
 
     /// Returns the RDF data prefixmap
     pub fn nodes_prefixmap(&self) -> PrefixMap {
-        self.rdf_data.prefixmap_in_memory()
+        self.rdf_data.prefixmap().unwrap_or_default()
     }
 
     /// Returns the shapes prefixmap

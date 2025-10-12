@@ -57,11 +57,11 @@ crossterm = "0.27"
 colored = "3"
 const_format = "0.2"
 csv = "1.3.1"
-rudof_generate = { version = "0.1.118", path = "./rudof_generate" }
 dctap = { version = "0.1.111", path = "./dctap" }
 either = { version = "1.13" }
 futures = "0.3"
 indexmap = "2.1"
+indoc = "2"
 iri_s = { version = "0.1.90", path = "./iri_s" }
 itertools = "0.14"
 lazy-regex = "3.4"
@@ -91,6 +91,7 @@ rdf_config = { version = "0.1.102", path = "./rdf_config" }
 regex = "1.11"
 reqwest = { version = "0.12", features = ["blocking", "json"] }
 rudof_cli = { version = "0.1.111", path = "./rudof_cli" }
+rudof_generate = { version = "0.1.118", path = "./rudof_generate" }
 rudof_lib = { version = "0.1.110", path = "./rudof_lib" }
 rust_decimal = "1.38"
 rust_decimal_macros = "1.38"

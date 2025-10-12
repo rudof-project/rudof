@@ -16,24 +16,23 @@ edition.workspace = true
 
 [dependencies]
 anyhow.workspace = true
-clap = { workspace = true }                        # needed for creating the ValueEnums (ensuring compatibility with clap)
-colored = { workspace = true }
-const_format = "0.2"                               # needed for the definition of the vocab
-indoc = "2"                                        # needed for the definition of SPARQL queries
-iri_s = { workspace = true }
-lazy_static = "1"                                  # needed for the definition of the vocab
-prefixmap = { workspace = true }
-serde = { version = "1.0", features = ["derive"] } # needed for the config thing
-shacl_ast = { workspace = true }
-shacl_ir = { workspace = true }
-shacl_rdf = { workspace = true }
-sparql_service = { workspace = true }
-srdf = { workspace = true }
-
-thiserror = { workspace = true }                   # needed for the definition of errors
-toml = { workspace = true }                        # needed for the config thing
+clap.workspace = true
+colored.workspace = true 
+const_format.workspace = true
+indoc.workspace = true
+iri_s.workspace = true 
+prefixmap.workspace = true 
+serde.workspace = true
+shacl_ast.workspace = true 
+shacl_ir.workspace = true 
+shacl_rdf.workspace = true 
+sparql_service.workspace = true 
+srdf.workspace = true 
+tabled.workspace = true
+thiserror.workspace = true
+toml.workspace = true
 tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
+tracing-subscriber.workspace = true 
 
 [dev-dependencies]
 oxrdf.workspace = true
