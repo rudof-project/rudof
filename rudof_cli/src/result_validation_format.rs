@@ -13,6 +13,7 @@ pub enum ResultValidationFormat {
     N3,
     NQuads,
     Compact,
+    Details,
     Json,
 }
 
@@ -26,6 +27,7 @@ impl ResultValidationFormat {
             ResultValidationFormat::N3 => ResultShExValidationFormat::N3,
             ResultValidationFormat::NQuads => ResultShExValidationFormat::NQuads,
             ResultValidationFormat::Compact => ResultShExValidationFormat::Compact,
+            ResultValidationFormat::Details => ResultShExValidationFormat::Details,
             ResultValidationFormat::Json => ResultShExValidationFormat::Json,
         }
     }
@@ -39,6 +41,7 @@ impl ResultValidationFormat {
             ResultValidationFormat::N3 => ResultShaclValidationFormat::N3,
             ResultValidationFormat::NQuads => ResultShaclValidationFormat::NQuads,
             ResultValidationFormat::Compact => ResultShaclValidationFormat::Compact,
+            ResultValidationFormat::Details => ResultShaclValidationFormat::Details,
             ResultValidationFormat::Json => ResultShaclValidationFormat::Json,
         }
     }
@@ -55,6 +58,7 @@ impl Display for ResultValidationFormat {
             ResultValidationFormat::NQuads => write!(dest, "nquads"),
             ResultValidationFormat::Compact => write!(dest, "compact"),
             ResultValidationFormat::Json => write!(dest, "json"),
+            ResultValidationFormat::Details => write!(dest, "details"),
         }
     }
 }

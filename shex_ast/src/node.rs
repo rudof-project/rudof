@@ -1,5 +1,6 @@
 use iri_s::IriS;
 use prefixmap::IriRef;
+use prefixmap::PrefixMapError;
 use rbe::Value;
 use serde::Serialize;
 use srdf::Object;
@@ -74,6 +75,13 @@ impl Node {
     pub fn parse(str: &str, base: Option<&str>) -> Result<Node, RDFError> {
         let obj = Object::parse(str, base)?;
         Ok(Node { node: obj })
+    }
+
+    pub fn show_qualified(
+        &self,
+        prefixmap: &prefixmap::PrefixMap,
+    ) -> Result<String, PrefixMapError> {
+        self.node.show_qualified(prefixmap)
     }
 }
 

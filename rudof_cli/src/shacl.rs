@@ -149,6 +149,7 @@ pub fn run_validate_shacl(
     mode: ShaclValidationMode,
     _debug: u8,
     result_format: &ResultShaclValidationFormat,
+    sort_by: &SortByShaclValidationReport,
     output: &Option<PathBuf>,
     config: &RudofConfig,
     force_overwrite: bool,
@@ -179,12 +180,7 @@ pub fn run_validate_shacl(
     } else {
         rudof.validate_shacl(&mode, &ShapesGraphSource::current_data())
     }?;
-    write_validation_report(
-        writer,
-        result_format,
-        validation_report,
-        &SortByShaclValidationReport::default(),
-    )?;
+    write_validation_report(writer, result_format, validation_report, sort_by)?;
     Ok(())
 }
 
@@ -195,9 +191,27 @@ fn write_validation_report(
     sort_by: &SortByShaclValidationReport,
 ) -> Result<()> {
     let terminal_width = terminal_width();
+    let sort_mode = cnv_sort_mode_report(sort_by);
     match format {
+        ResultShaclValidationFormat::Minimal => {
+            if report.conforms() {
+                writeln!(writer, "Conforms")?;
+            } else {
+                writeln!(
+                    writer,
+                    "Does not conform, {} violations, {} warnings",
+                    report.count_violations(),
+                    report.count_warnings()
+                )?;
+            }
+            Ok(())
+        }
         ResultShaclValidationFormat::Compact => {
-            report.show_as_table(writer, SortModeReport::default(), true, terminal_width)?;
+            report.show_as_table(writer, sort_mode, false, terminal_width)?;
+            Ok(())
+        }
+        ResultShaclValidationFormat::Details => {
+            report.show_as_table(writer, sort_mode, true, terminal_width)?;
             Ok(())
         }
         ResultShaclValidationFormat::Json => {
@@ -214,6 +228,18 @@ fn write_validation_report(
             rdf_writer.serialize(&rdf_format, &mut writer)?;
             Ok(())
         }
+    }
+}
+
+fn cnv_sort_mode_report(sort_by: &SortByShaclValidationReport) -> SortModeReport {
+    match sort_by {
+        SortByShaclValidationReport::Severity => SortModeReport::Severity,
+        SortByShaclValidationReport::Node => SortModeReport::Node,
+        SortByShaclValidationReport::Component => SortModeReport::Component,
+        SortByShaclValidationReport::Value => SortModeReport::Value,
+        SortByShaclValidationReport::Path => SortModeReport::Path,
+        SortByShaclValidationReport::SourceShape => SortModeReport::Source,
+        SortByShaclValidationReport::Details => SortModeReport::Details,
     }
 }
 

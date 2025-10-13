@@ -22,6 +22,16 @@ impl IriOrBlankNode {
     pub fn iri(iri: &IriS) -> IriOrBlankNode {
         IriOrBlankNode::Iri(iri.clone())
     }
+
+    pub fn show_qualified(
+        &self,
+        prefixmap: &prefixmap::PrefixMap,
+    ) -> Result<String, prefixmap::PrefixMapError> {
+        match self {
+            IriOrBlankNode::BlankNode(bnode) => Ok(format!("_:{bnode}")),
+            IriOrBlankNode::Iri(iri) => Ok(prefixmap.qualify(iri)),
+        }
+    }
 }
 
 impl Display for IriOrBlankNode {

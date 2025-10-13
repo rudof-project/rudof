@@ -101,6 +101,27 @@ impl Object {
             _ => None,
         }
     }
+
+    pub fn show_qualified(
+        &self,
+        prefixmap: &prefixmap::PrefixMap,
+    ) -> Result<String, prefixmap::PrefixMapError> {
+        match self {
+            Object::Iri(iri) => Ok(prefixmap.qualify(iri)),
+            Object::BlankNode(bnode) => Ok(format!("_:{bnode}")),
+            Object::Literal(lit) => Ok(lit.to_string()),
+            Object::Triple {
+                subject,
+                predicate,
+                object,
+            } => Ok(format!(
+                "<< {} {} {} >>",
+                subject.show_qualified(prefixmap)?,
+                prefixmap.qualify(predicate),
+                object.show_qualified(prefixmap)?
+            )),
+        }
+    }
 }
 
 impl From<IriS> for Object {
@@ -217,12 +238,7 @@ impl Debug for Object {
 
 impl PartialOrd for Object {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        match (self, other) {
-            (Object::Iri(a), Object::Iri(b)) => a.partial_cmp(b),
-            (Object::BlankNode(a), Object::BlankNode(b)) => a.partial_cmp(b),
-            (Object::Literal(a), Object::Literal(b)) => a.partial_cmp(b),
-            _ => None,
-        }
+        Some(self.cmp(other))
     }
 }
 

@@ -1,17 +1,11 @@
 use crate::{Bag, Cardinality, Max, Min, deriv_error::DerivError, deriv_n};
 use core::hash::Hash;
+use itertools::cloned;
+use pretty::{Arena, DocAllocator, DocBuilder, RefDoc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fmt;
 use std::fmt::{Debug, Display};
-//use log::debug;
-use itertools::cloned;
-
-/*
-#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
-struct Pending<A> {
-    pending: A,
-}*/
 
 /// Implementation of Regular Bag Expressions
 #[derive(Clone, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -422,6 +416,46 @@ where
             Max::Unbounded => false,
             Max::IntMax(max) => min.value > *max,
         }
+    }
+
+    pub fn map<B>(&self, f: &dyn Fn(&A) -> B) -> Rbe<B>
+    where
+        B: Hash + Eq + Display,
+    {
+        match &self {
+            Rbe::Fail { error } => panic!("Cannot map over Fail: {error}"),
+            Rbe::Empty => Rbe::Empty,
+            Rbe::Symbol { value, card } => Rbe::Symbol {
+                value: f(value),
+                card: card.clone(),
+            },
+            Rbe::And { values } => Rbe::And {
+                values: values.iter().map(|v| v.map(f)).collect(),
+            },
+            Rbe::Or { values } => Rbe::Or {
+                values: values.iter().map(|v| v.map(f)).collect(),
+            },
+            Rbe::Star { value } => Rbe::Star {
+                value: Box::new(value.map(f)),
+            },
+            Rbe::Plus { value } => Rbe::Plus {
+                value: Box::new(value.map(f)),
+            },
+            Rbe::Repeat { value, card } => Rbe::Repeat {
+                value: Box::new(value.map(f)),
+                card: card.clone(),
+            },
+        }
+    }
+
+    pub fn pretty(&self, width: usize) -> String {
+        let doc = self.pp_rbe();
+        doc.pretty(width).to_string()
+    }
+
+    fn pp_rbe(&self) -> DocBuilder<'a, Arena<'a>, A> {
+        let arena = Arena::new();
+        self.pp_rbe_a(&arena)
     }
 }
 

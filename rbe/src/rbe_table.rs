@@ -138,20 +138,12 @@ where
             }
         } else {
             debug!("Candidates not empty rbe: {:?}", self.rbe);
-            /*let _: Vec<_> = candidates
-            .iter()
-            .zip(0..)
-            .map(|(candidate, n)| {
-                debug!("Candidate {n}: {}", show_candidate(candidate));
-            })
-            .collect();*/
             let mp = candidates.into_iter().multi_cartesian_product();
             Ok(MatchTableIter::NonEmpty(IterCartesianProduct {
                 is_first: true,
                 state: mp,
                 rbe: self.rbe.clone(),
                 open: self.open,
-                // controlled: self.controlled.clone()
             }))
         }
     }
@@ -173,13 +165,28 @@ where
         })
     }
 
+    pub fn show_rbe_table<SK, SV>(&self, show_key: SK, show_value: SV) -> String
+    where
+        SK: Fn(&K) -> String,
+        SV: Fn(&V) -> String,
+    {
+        let rbe_str = self.rbe.map(&|c| {
+            let key = self.component_key.get(&c).unwrap();
+            let cond = self.component_cond.get(c).unwrap();
+            format!("{} {}", show_key(key), cond.show(&show_key, &show_value))
+        });
+        rbe_str.to_string()
+    }
+
     pub fn show_rbe_simplified(&self) -> String {
-        let mut result = String::new();
-        for k in self.key_components.keys() {
-            let cond = self.find_cond(k).unwrap();
-            result.insert_str(result.len(), format!("{} -> {}", k, cond).as_str());
-        }
-        result
+        self.key_components
+            .keys()
+            .map(|k| {
+                let cond = self.find_cond(k).unwrap();
+                format!("{} {}", k, cond)
+            })
+            .collect::<Vec<_>>()
+            .join(", ")
     }
 }
 

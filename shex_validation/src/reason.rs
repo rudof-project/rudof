@@ -1,10 +1,14 @@
 use crate::ValidatorErrors;
+use prefixmap::{PrefixMap, PrefixMapError};
+use ptree::{TreeBuilder, write_tree};
 use serde::{Serialize, ser::SerializeMap};
 use shex_ast::{
     Node, ShapeLabelIdx,
-    ir::{node_constraint::NodeConstraint, shape::Shape, shape_expr::ShapeExpr},
+    ir::{
+        node_constraint::NodeConstraint, schema_ir::SchemaIR, shape::Shape, shape_expr::ShapeExpr,
+    },
 };
-use std::fmt::Display;
+use std::{fmt::Display, io};
 
 /// Reason represents justifications about why a node conforms to some shape
 #[derive(Debug, Clone)]
@@ -49,12 +53,133 @@ pub enum Reason {
     ShapePassed {
         node: Node,
         shape: Box<Shape>,
+        idx: ShapeLabelIdx,
     },
     ShapeRefPassed {
         node: Node,
         idx: ShapeLabelIdx,
     },
 }
+
+impl Reason {
+    fn build_tree(
+        &self,
+        tb: &mut TreeBuilder,
+        nodes_prefixmap: &PrefixMap,
+        schema: &SchemaIR,
+    ) -> Result<(), PrefixMapError> {
+        match self {
+            Reason::NodeConstraintPassed { .. } => Ok(()),
+            Reason::ShapeAndPassed { reasons, .. } => {
+                tb.begin_child("reasons".to_string());
+                for reason in reasons {
+                    for r in reason {
+                        r.build_tree(tb, nodes_prefixmap, schema)?;
+                    }
+                }
+                tb.end_child();
+                Ok(())
+            }
+            Reason::ShapeOrPassed { reasons, .. } => {
+                tb.begin_child("reasons".to_string());
+                for reason in reasons.iter() {
+                    reason.build_tree(tb, nodes_prefixmap, schema)?;
+                }
+                tb.end_child();
+                Ok(())
+            }
+            _ => Ok(()),
+        }
+    }
+
+    pub fn root_qualified(
+        &self,
+        nodes_prefixmap: &PrefixMap,
+        schema: &SchemaIR,
+    ) -> Result<String, PrefixMapError> {
+        match self {
+            Reason::NodeConstraintPassed { node, nc } => Ok(format!(
+                "Node constraint passed. Node: {}, Constraint: {nc}",
+                node.show_qualified(nodes_prefixmap)?,
+            )),
+            Reason::ShapeAndPassed { node, se, .. } => {
+                let s = format!(
+                    "AND passed. Node {}, and: {}",
+                    node.show_qualified(nodes_prefixmap)?,
+                    (*se).show_qualified(&schema.prefixmap())?
+                );
+                Ok(s)
+            }
+            Reason::ShapePassed { node, idx, .. } => {
+                let se_str = schema.show_shape_idx(idx);
+                Ok(format!(
+                    "Shape passed. Node {}, shape {}: {}",
+                    node.show_qualified(nodes_prefixmap)?,
+                    idx,
+                    se_str
+                ))
+            }
+            _ => Ok(format!("{self}",)),
+        }
+    }
+
+    pub fn write_qualified<W: io::Write>(
+        &self,
+        nodes_prefixmap: &PrefixMap,
+        schema: &SchemaIR,
+        writer: &mut W,
+    ) -> Result<(), PrefixMapError> {
+        let root_str = self.root_qualified(nodes_prefixmap, schema)?;
+        let mut tb = TreeBuilder::new(root_str);
+        self.build_tree(&mut tb, nodes_prefixmap, schema)?;
+        write_tree(&tb.build(), writer).map_err(|e| PrefixMapError::IOError {
+            error: e.to_string(),
+        })?;
+        Ok(())
+    }
+
+    pub fn show_qualified(
+        &self,
+        nodes_prefixmap: &PrefixMap,
+        schema: &SchemaIR,
+    ) -> Result<String, PrefixMapError> {
+        let mut v = Vec::new();
+        self.write_qualified(nodes_prefixmap, schema, &mut v)?;
+        let s = String::from_utf8(v).map_err(|e| PrefixMapError::IOError {
+            error: e.to_string(),
+        })?;
+        Ok(s)
+    }
+}
+
+/*impl TreeItem for Reason {
+    type Child = Reason;
+
+    fn children(&self) -> std::borrow::Cow<[Self::Child]> {
+        match self {
+            Reason::ShapeAndPassed { reasons, .. } => {
+                let v: Vec<Reason> = reasons.iter().flatten().cloned().collect();
+                std::borrow::Cow::Owned(v)
+            }
+            Reason::DescendantShapePassed { reasons, .. } => {
+                std::borrow::Cow::Owned(reasons.reasons.clone())
+            }
+            Reason::ShapeExtendsPassed { reasons, .. } => {
+                std::borrow::Cow::Owned(reasons.reasons.clone())
+            }
+            _ => std::borrow::Cow::Borrowed(&[]),
+        }
+    }
+
+    fn write_self<W: std::io::Write>(
+        &self,
+        f: &mut W,
+        _prefix: &str,
+        _last: bool,
+    ) -> std::io::Result<()> {
+        write!(f, "{}")
+    }
+}*/
 
 impl Display for Reason {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -73,8 +198,8 @@ impl Display for Reason {
                 }
                 Ok(())
             }
-            Reason::ShapePassed { node, shape } => {
-                write!(f, "Shape passed. Node {node}, shape: {shape}")
+            Reason::ShapePassed { node, shape, idx } => {
+                write!(f, "Shape passed. Node {node}, shape {idx}: {shape}")
             }
             Reason::ShapeOrPassed {
                 node,
@@ -131,6 +256,10 @@ pub struct Reasons {
 impl Reasons {
     pub fn new(reasons: Vec<Reason>) -> Reasons {
         Reasons { reasons }
+    }
+
+    pub fn iter(&self) -> std::slice::Iter<'_, Reason> {
+        self.reasons.iter()
     }
 }
 

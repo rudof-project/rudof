@@ -1,7 +1,7 @@
 use clap::ValueEnum;
 use std::fmt::{Display, Formatter};
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
 #[clap(rename_all = "lower")]
 pub enum ResultShaclValidationFormat {
     Turtle,
@@ -10,7 +10,10 @@ pub enum ResultShaclValidationFormat {
     TriG,
     N3,
     NQuads,
+    Minimal,
     Compact,
+    #[default]
+    Details,
     Json,
 }
 
@@ -24,6 +27,8 @@ impl Display for ResultShaclValidationFormat {
             ResultShaclValidationFormat::N3 => write!(dest, "n3"),
             ResultShaclValidationFormat::NQuads => write!(dest, "nquads"),
             ResultShaclValidationFormat::Compact => write!(dest, "compact"),
+            ResultShaclValidationFormat::Minimal => write!(dest, "minimal"),
+            ResultShaclValidationFormat::Details => write!(dest, "details"),
             ResultShaclValidationFormat::Json => write!(dest, "json"),
         }
     }

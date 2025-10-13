@@ -13,15 +13,17 @@ use rudof_lib::{
     QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat, RdfData, ReaderMode, ResultShapeMap,
     Rudof, RudofError, ServiceDescription, ServiceDescriptionFormat, ShExFormat, ShExFormatter,
     ShExSchema, ShaCo, ShaclFormat, ShaclSchemaIR, ShaclValidationMode, ShapeLabel, ShapeMapFormat,
-    ShapeMapFormatter, ShapesGraphSource, UmlGenerationMode, ValidationReport, ValidationStatus,
-    VarName, iri, srdf::Object,
+    ShapeMapFormatter, ShapesGraphSource, SortMode, UmlGenerationMode, ValidationReport,
+    ValidationStatus, VarName, iri, srdf::Object,
 };
 use std::{
     ffi::OsStr,
+    fmt::Display,
     fs::File,
-    io::{BufReader, BufWriter},
+    io::{BufReader, BufWriter, Write},
     path::Path,
     str::FromStr,
+    sync::{Arc, Mutex},
 };
 
 /// Main class to handle `rudof` features.
@@ -871,6 +873,35 @@ impl From<&PyReaderMode> for ReaderMode {
     }
 }
 
+/// Declares a `SortModeResultMap` for sort mode for `ResultShapeMap`
+#[pyclass(eq, eq_int, name = "SortModeResultMap")]
+#[derive(PartialEq, Clone)]
+pub enum PySortModeResultMap {
+    Node,
+    Shape,
+    Status,
+    Details,
+}
+
+#[pymethods]
+impl PySortModeResultMap {
+    #[new]
+    pub fn __init__(py: Python<'_>) -> Self {
+        py.detach(|| PySortModeResultMap::Node)
+    }
+}
+
+impl From<&PySortModeResultMap> for SortMode {
+    fn from(mode: &PySortModeResultMap) -> Self {
+        match mode {
+            PySortModeResultMap::Node => Self::Node,
+            PySortModeResultMap::Shape => Self::Shape,
+            PySortModeResultMap::Status => Self::Status,
+            PySortModeResultMap::Details => Self::Details,
+        }
+    }
+}
+
 /// RDF Data format
 #[allow(clippy::upper_case_acronyms)]
 #[pyclass(eq, eq_int, name = "RDFFormat")]
@@ -1487,9 +1518,48 @@ impl PyResultShapeMap {
     }
 
     /// Convert a ResultShapeMap to a String
-    pub fn show(&self) -> String {
-        let result = &self.inner;
-        format!("{result}")
+    pub fn show_as_table(
+        &self,
+        sort_mode: &PySortModeResultMap,
+        with_details: bool,
+        terminal_width: usize,
+    ) -> PyResult<String> {
+        let capture = CaptureWriter::new();
+        let capture_clone = capture.clone();
+        let boxed: Box<dyn Write> = Box::new(capture);
+        self.inner
+            .show_as_table(boxed, sort_mode.into(), with_details, terminal_width)
+            .map_err(|e| {
+                PyRudofError::str(format!("Error converting ResultShapeMap to table: {e}"))
+            })?;
+        let result = capture_clone.to_string();
+        Ok(result)
+    }
+}
+
+#[derive(Clone)]
+struct CaptureWriter(Arc<Mutex<Vec<u8>>>);
+
+impl CaptureWriter {
+    fn new() -> Self {
+        Self(Arc::new(Mutex::new(Vec::new())))
+    }
+}
+
+impl Display for CaptureWriter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let buffer = self.0.lock().unwrap();
+        write!(f, "{}", String::from_utf8_lossy(&buffer).into_owned())
+    }
+}
+
+impl Write for CaptureWriter {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.0.lock().unwrap().write(buf)
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        self.0.lock().unwrap().flush()
     }
 }
 

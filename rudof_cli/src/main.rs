@@ -18,6 +18,8 @@ use anyhow::*;
 use clap::Parser;
 use rudof_cli::CliShaclFormat;
 use rudof_cli::ShExFormat as CliShExFormat;
+use rudof_cli::SortByResultShapeMap;
+use rudof_cli::SortByShaclValidationReport;
 use rudof_cli::cli::{Cli, Command};
 use rudof_cli::data::run_data;
 use rudof_cli::data_format::DataFormat;
@@ -208,6 +210,7 @@ fn main() -> Result<()> {
             match validation_mode {
                 ValidationMode::ShEx => {
                     let result_shex_format = result_format.to_shex_result_format();
+                    let sort_by = cnv_sort_by_validate_result_map(sort_by);
                     run_validate_shex(
                         schema,
                         schema_format,
@@ -223,7 +226,7 @@ fn main() -> Result<()> {
                         shapemap_format,
                         cli.debug,
                         &result_shex_format,
-                        sort_by,
+                        &sort_by,
                         output,
                         &config,
                         *force_overwrite,
@@ -238,6 +241,7 @@ fn main() -> Result<()> {
                         }
                     }?;
                     let result_shacl_validation = result_format.to_shacl_result_format();
+                    let sort_by = cnv_sort_by_validate_report(sort_by);
                     run_validate_shacl(
                         schema,
                         &shacl_format,
@@ -250,6 +254,7 @@ fn main() -> Result<()> {
                         *shacl_validation_mode,
                         cli.debug,
                         &result_shacl_validation,
+                        &sort_by,
                         output,
                         &config,
                         *force_overwrite,
@@ -309,6 +314,7 @@ fn main() -> Result<()> {
             endpoint,
             mode,
             result_format,
+            sort_by,
             output,
             force_overwrite,
             config,
@@ -327,6 +333,7 @@ fn main() -> Result<()> {
                 *mode,
                 cli.debug,
                 result_format,
+                sort_by,
                 output,
                 &config,
                 *force_overwrite,
@@ -661,4 +668,24 @@ fn run_generate(
     })?;
 
     Ok(())
+}
+
+fn cnv_sort_by_validate_result_map(
+    s: &rudof_cli::sort_by_validate::SortByValidate,
+) -> SortByResultShapeMap {
+    match s {
+        rudof_cli::sort_by_validate::SortByValidate::Node => SortByResultShapeMap::Node,
+        rudof_cli::sort_by_validate::SortByValidate::Details => SortByResultShapeMap::Details,
+    }
+}
+
+fn cnv_sort_by_validate_report(
+    s: &rudof_cli::sort_by_validate::SortByValidate,
+) -> SortByShaclValidationReport {
+    match s {
+        rudof_cli::sort_by_validate::SortByValidate::Node => SortByShaclValidationReport::Node,
+        rudof_cli::sort_by_validate::SortByValidate::Details => {
+            SortByShaclValidationReport::Details
+        }
+    }
 }

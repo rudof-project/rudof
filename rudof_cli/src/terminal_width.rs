@@ -5,7 +5,7 @@ const DEFAULT_TERMINAL_WIDTH: usize = 80;
 
 pub fn terminal_width() -> usize {
     if let Ok((cols, _)) = terminal::size() {
-        return sanitize_width(cols as usize);
+        sanitize_width(cols as usize)
     } else {
         DEFAULT_TERMINAL_WIDTH
     }

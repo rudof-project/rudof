@@ -241,7 +241,7 @@ impl ValidationEntry {
                 let node = parse_node(entry.node(), base)?;
                 let shape = parse_shape(entry.shape())?;
                 let result = validator
-                    .validate_node_shape(&node, &shape, &graph, &schema, &None, &None)
+                    .validate_node_shape(&node, &shape, &graph, &schema, &None)
                     .map_err(|e| Box::new(ManifestError::ValidationError(e)))?;
 
                 let partial_status = result.get_info(&node, &shape).unwrap();
@@ -259,7 +259,7 @@ impl ValidationEntry {
             trace!("Focus node: {}, shape: {}", node, shape);
 
             let result = validator
-                .validate_node_shape(&node, &shape, &graph, &schema, &None, &None)
+                .validate_node_shape(&node, &shape, &graph, &schema, &None)
                 .map_err(|e| Box::new(ManifestError::ValidationError(e)))?;
             let validation_status = result.get_info(&node, &shape).unwrap();
             if validation_status.is_conformant() {

@@ -70,6 +70,14 @@ where
     ) -> Self {
         MatchCond::single(SingleCond::new().with_name(name).with_cond(cond))
     }
+
+    pub fn show<SK, SV>(&self, show_key: SK, show_value: SV) -> String
+    where
+        SK: Fn(&K) -> String,
+        SV: Fn(&V) -> String,
+    {
+        format!("{}", self)
+    }
 }
 
 impl<K, V, R> Display for MatchCond<K, V, R>

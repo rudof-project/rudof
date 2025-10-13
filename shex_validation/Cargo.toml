@@ -13,19 +13,18 @@ repository.workspace = true
 #default = []
 
 [dependencies]
-either = "1"
-indexmap = { version = "2" }
+either.workspace = true # "1"
+indexmap.workspace = true # { version = "2" }
 iri_s.workspace = true
 itertools.workspace = true
-# shex_compact.workspace = true
-# shapemap.workspace = true
 prefixmap.workspace = true
+ptree.workspace = true
 rbe.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 shex_ast.workspace = true
 srdf.workspace = true
-thiserror = "2.0"
-toml = "0.8"
+thiserror.workspace = true 
+toml.workspace = true
 tracing.workspace = true
-url = "2.5.7"
+url.workspace = true

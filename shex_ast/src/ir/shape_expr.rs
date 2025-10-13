@@ -234,6 +234,37 @@ impl ShapeExpr {
             ShapeExpr::Empty => {}
         }
     }
+
+    // TODO: Improve the visualization of shape expressions
+    pub fn show_qualified(
+        &self,
+        _prefixmap: &prefixmap::PrefixMap,
+    ) -> Result<String, prefixmap::PrefixMapError> {
+        match self {
+            ShapeExpr::ShapeOr { exprs, .. } => Ok(format!(
+                "OR({})",
+                exprs
+                    .iter()
+                    .map(|e| e.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )),
+            ShapeExpr::ShapeAnd { exprs, .. } => Ok(format!(
+                "AND({})",
+                exprs
+                    .iter()
+                    .map(|e| e.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )),
+            ShapeExpr::ShapeNot { expr, .. } => Ok(format!("NOT {}", expr.to_string())),
+            ShapeExpr::NodeConstraint(nc) => Ok(nc.to_string()),
+            ShapeExpr::Shape(shape) => Ok(shape.to_string()),
+            ShapeExpr::External {} => Ok("External".to_string()),
+            ShapeExpr::Ref { idx } => Ok(format!("@{}", idx)),
+            ShapeExpr::Empty => Ok("{}".to_string()),
+        }
+    }
 }
 
 impl Display for ShapeExpr {

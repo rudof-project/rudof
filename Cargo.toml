@@ -60,6 +60,7 @@ csv = "1.3.1"
 dctap = { version = "0.1.111", path = "./dctap" }
 either = { version = "1.13" }
 futures = "0.3"
+hashbag = { version = "0.1.12" }
 indexmap = "2.1"
 indoc = "2"
 iri_s = { version = "0.1.90", path = "./iri_s" }
@@ -79,6 +80,7 @@ oxrdfio = { version = "0.2.0", features = ["rdf-12"] }
 oxrdfxml = { version = "0.2.0" }
 oxsdatatypes = "0.2.2"
 oxttl = { version = "0.2.0", features = ["rdf-12"] }
+ptree = { version = "0.5" }
 petgraph = { version = "0.8" }
 prefixmap = { version = "0.1.104", path = "./prefixmap" }
 pretty = { version = "0.12" }

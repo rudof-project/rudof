@@ -7,6 +7,7 @@ use either::Either;
 use indexmap::IndexSet;
 use iri_s::iri;
 use itertools::Itertools;
+use prefixmap::PrefixMap;
 use shex_ast::Expr;
 use shex_ast::Node;
 use shex_ast::Pred;
@@ -279,7 +280,7 @@ impl Engine {
             } else {
                 "Failed to prove"
             },
-            show_result(&result),
+            show_result(&result, &rdf.prefixmap().unwrap_or_default(), &schema)?,
             hyp.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
         );
         Ok(result)
@@ -313,7 +314,10 @@ impl Engine {
             } else {
                 let se = info.expr();
                 let result = self.check_node_shape_expr(idx, node, se, schema, rdf, typing)?;
-                tracing::debug!("Result of {node}@{idx} is: {}", show_result(&result),);
+                tracing::debug!(
+                    "Result of {node}@{idx} is: {}",
+                    show_result(&result, &rdf.prefixmap().unwrap_or_default(), &schema)?,
+                );
                 if result.is_right() {
                     Ok(result)
                 } else {
@@ -535,7 +539,7 @@ impl Engine {
                 declared: Preds::new(shape.preds().into_iter().collect()),
             })
         } else {
-            check_expr_neigh(shape.triple_expr(), &values, node, shape, typing)
+            check_expr_neigh(shape.triple_expr(), &values, node, shape, idx, typing)
         }
     }
 
@@ -596,7 +600,7 @@ impl Engine {
                         .map(|(p, v)| format!("{p} {v}"))
                         .join(", ")
                 );
-                let result = check_exprs_neigh(rbes, neighs_subset, node, shape, typing)?;
+                let result = check_exprs_neigh(rbes, neighs_subset, node, shape, idx, typing)?;
                 if result.is_right() {
                     // TODO: Accumulate reasons from each triple expr
                     debug!(
@@ -635,9 +639,10 @@ impl Engine {
             }
         }
         debug!(" Failed shape {idx}. All partitions failed",);
-        fail(ValidatorError::ShapeFails {
+        fail(ValidatorError::ShapeFailed {
             node: Box::new(node.clone()),
             shape: Box::new(shape.clone()),
+            idx: *idx,
             errors: Vec::new(),
         })
     }
@@ -739,16 +744,34 @@ fn fail(err: ValidatorError) -> Result<ValidationResult> {
     Ok(Either::Left(vec![err]))
 }
 
-fn show_result(result: &Either<Vec<ValidatorError>, Vec<Reason>>) -> String {
+fn show_result(
+    result: &Either<Vec<ValidatorError>, Vec<Reason>>,
+    nodes_prefixmap: &PrefixMap,
+    schema: &SchemaIR,
+) -> Result<String> {
     match result {
-        Either::Left(errors) => format!(
-            "False with errors: {}",
-            errors.iter().map(|e| e.to_string()).join(", ")
-        ),
-        Either::Right(reasons) => format!(
-            "True with reasons: {}",
-            reasons.iter().map(|r| r.to_string()).join(", ")
-        ),
+        Either::Left(errors) => {
+            let es: Vec<Result<String>> = errors
+                .iter()
+                .map(|e| {
+                    e.show_qualified(nodes_prefixmap, schema)
+                        .map_err(|e| ValidatorError::PrefixMapError(e))
+                })
+                .collect();
+            let vs: Vec<String> = es.into_iter().collect::<Result<Vec<_>>>()?;
+            Ok(vs.join(", "))
+        }
+        Either::Right(reasons) => {
+            let rs: Vec<Result<String>> = reasons
+                .iter()
+                .map(|r| {
+                    r.show_qualified(nodes_prefixmap, schema)
+                        .map_err(|e| ValidatorError::PrefixMapError(e))
+                })
+                .collect();
+            let vs: Vec<String> = rs.into_iter().collect::<Result<Vec<_>>>()?;
+            Ok(vs.join(", "))
+        }
     }
 }
 
@@ -757,14 +780,16 @@ fn check_exprs_neigh(
     neighs: &[(Pred, Node)],
     node: &Node,
     shape: &Shape,
+    idx: &ShapeLabelIdx,
     typing: &Typing,
 ) -> Result<ValidationResult> {
     for rbe in exprs.iter() {
-        let result = check_expr_neigh(rbe, neighs, node, shape, typing)?;
+        let result = check_expr_neigh(rbe, neighs, node, shape, idx, typing)?;
         if result.is_left() {
-            return fail(ValidatorError::ShapeFails {
+            return fail(ValidatorError::ShapeFailed {
                 node: Box::new(node.clone()),
                 shape: Box::new(shape.clone()),
+                idx: *idx,
                 errors: result.left().unwrap().clone(),
             });
         }
@@ -772,6 +797,7 @@ fn check_exprs_neigh(
     pass(Reason::ShapePassed {
         node: node.clone(),
         shape: Box::new(shape.clone()),
+        idx: *idx,
     })
 }
 
@@ -780,6 +806,7 @@ fn check_expr_neigh(
     neighs: &[(Pred, Node)],
     node: &Node,
     shape: &Shape,
+    idx: &ShapeLabelIdx,
     typing: &Typing,
 ) -> Result<ValidationResult> {
     debug!(
@@ -811,6 +838,7 @@ fn check_expr_neigh(
                     return pass(Reason::ShapePassed {
                         node: node.clone(),
                         shape: Box::new(shape.clone()),
+                        idx: *idx,
                     });
                 } else {
                     errors.push(ValidatorError::FailedPending {
@@ -828,9 +856,10 @@ fn check_expr_neigh(
         "expr failed {expr} with neighs: [{}]",
         neighs.iter().map(|(p, o)| format!("{p} {o}")).join(", ")
     );
-    fail(ValidatorError::ShapeFails {
+    fail(ValidatorError::ShapeFailed {
         node: Box::new(node.clone()),
         shape: Box::new(shape.clone()),
+        idx: *idx,
         errors,
     })
 }

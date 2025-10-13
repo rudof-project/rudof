@@ -84,7 +84,6 @@ impl Validator {
         rdf: &S,
         schema: &SchemaIR,
         maybe_nodes_prefixmap: &Option<PrefixMap>,
-        maybe_shapes_prefixmap: &Option<PrefixMap>,
     ) -> Result<ResultShapeMap>
     where
         S: NeighsRDF,
@@ -94,7 +93,7 @@ impl Validator {
         let idx = self.get_shape_expr_label(&shape_expr_label, schema)?;
         engine.add_pending(node.clone(), idx);
         engine.validate_pending(rdf, schema)?;
-        let result = self.result_map(&mut engine, maybe_nodes_prefixmap, maybe_shapes_prefixmap)?;
+        let result = self.result_map(&mut engine, maybe_nodes_prefixmap)?;
         Ok(result)
     }
 
@@ -117,7 +116,6 @@ impl Validator {
         rdf: &S,
         schema: &SchemaIR,
         maybe_nodes_prefixmap: &Option<PrefixMap>,
-        maybe_shapes_prefixmap: &Option<PrefixMap>,
     ) -> Result<ResultShapeMap>
     where
         S: NeighsRDF,
@@ -125,7 +123,7 @@ impl Validator {
         let mut engine = Engine::new(&self.config);
         self.fill_pending(&mut engine, shapemap, rdf, schema)?;
         engine.validate_pending(rdf, schema)?;
-        let result = self.result_map(&mut engine, maybe_nodes_prefixmap, maybe_shapes_prefixmap)?;
+        let result = self.result_map(&mut engine, maybe_nodes_prefixmap)?;
         Ok(result)
     }
 
@@ -173,16 +171,14 @@ impl Validator {
         &self,
         engine: &mut Engine,
         maybe_nodes_prefixmap: &Option<PrefixMap>,
-        maybe_shapes_prefixmap: &Option<PrefixMap>,
     ) -> Result<ResultShapeMap> {
-        let mut result = match (maybe_nodes_prefixmap, maybe_shapes_prefixmap) {
-            (None, None) => ResultShapeMap::new(),
-            (Some(npm), None) => ResultShapeMap::new().with_nodes_prefixmap(npm),
-            (None, Some(spm)) => ResultShapeMap::new().with_shapes_prefixmap(spm),
-            (Some(npm), Some(spm)) => ResultShapeMap::new()
-                .with_nodes_prefixmap(npm)
-                .with_shapes_prefixmap(spm),
+        let nodes_prefixmap = match maybe_nodes_prefixmap {
+            Some(pm) => pm.clone(),
+            None => PrefixMap::default(),
         };
+        let mut result = ResultShapeMap::new()
+            .with_nodes_prefixmap(&nodes_prefixmap)
+            .with_shapes_prefixmap(&self.schema.prefixmap());
         for atom in &engine.checked() {
             let (node, idx) = atom.get_value();
             let label = self.get_shape_label(idx)?;
@@ -190,7 +186,8 @@ impl Validator {
                 Atom::Pos(pa) => {
                     let reasons = engine.find_reasons(pa);
                     let json_reasons = json_reasons(&reasons)?;
-                    let status = ValidationStatus::conformant(show_reasons(&reasons), json_reasons);
+                    let str_reasons = show_reasons(&reasons, &nodes_prefixmap, &self.schema)?;
+                    let status = ValidationStatus::conformant(str_reasons, json_reasons);
                     // result.add_ok()
                     result
                         .add_result((*node).clone(), label.clone(), status)
@@ -285,12 +282,36 @@ fn json_reasons(reasons: &[Reason]) -> Result<Value> {
     Ok(value)
 }
 
-fn show_reasons(reasons: &[Reason]) -> String {
+fn show_reasons(
+    reasons: &[Reason],
+    nodes_prefixmap: &PrefixMap,
+    schema: &SchemaIR,
+) -> Result<String> {
     let mut result = String::new();
-    for (reason, idx) in reasons.iter().enumerate() {
-        result.push_str(format!("Reason #{idx}: {reason}\n").as_str());
+    match reasons.len() {
+        0 => {
+            result.push_str("No detailed reason provided.\n");
+            return Ok(result);
+        }
+        1 => {
+            result.push_str(
+                format!("{}", reasons[0].show_qualified(nodes_prefixmap, schema)?).as_str(),
+            );
+            return Ok(result);
+        }
+        _ => {
+            for (idx, reason) in reasons.iter().enumerate() {
+                result.push_str(
+                    format!(
+                        "Reason #{idx}: {}\n",
+                        reason.show_qualified(nodes_prefixmap, schema)?
+                    )
+                    .as_str(),
+                );
+            }
+        }
     }
-    result
+    Ok(result)
 }
 
 /*

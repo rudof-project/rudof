@@ -1,10 +1,11 @@
 use super::result::ValidationResult;
 use super::validation_report_error::ReportError;
 use colored::*;
+use iri_s::IriS;
 use prefixmap::PrefixMap;
 use shacl_ast::shacl_vocab::{sh, sh_conforms, sh_result, sh_validation_report};
 use shacl_ir::severity::CompiledSeverity;
-use srdf::{BuildRDF, FocusRDF, Object, Rdf, SHACLPath};
+use srdf::{BuildRDF, FocusRDF, IriOrBlankNode, Object, Rdf, SHACLPath};
 use std::{
     fmt::{Debug, Display},
     io::{Error, Write},
@@ -96,6 +97,20 @@ impl ValidationReport {
 
     pub fn conforms(&self) -> bool {
         self.results.is_empty()
+    }
+
+    pub fn count_violations(&self) -> usize {
+        self.results
+            .iter()
+            .filter(|r| r.severity() == &CompiledSeverity::Violation)
+            .count()
+    }
+
+    pub fn count_warnings(&self) -> usize {
+        self.results
+            .iter()
+            .filter(|r| r.severity() == &CompiledSeverity::Warning)
+            .count()
     }
 
     pub fn to_rdf<RDF>(&self, rdf_writer: &mut RDF) -> Result<(), ReportError>
@@ -223,10 +238,9 @@ impl ValidationReport {
                 };
                 let node = show_object(result.focus_node(), &self.nodes_prefixmap);
                 let component = show_object(result.component(), &shacl_prefixmap);
-                let path = show_path_opt("path", result.path(), &self.shapes_prefixmap);
-                let source =
-                    show_object_opt("source shape", result.source(), &self.shapes_prefixmap);
-                let value = show_object_opt("value", result.value(), &self.nodes_prefixmap);
+                let path = show_path_opt(result.path(), &self.shapes_prefixmap);
+                let source = show_object_opt(result.source(), &self.shapes_prefixmap);
+                let value = show_object_opt(result.value(), &self.nodes_prefixmap);
                 let details = result.message().unwrap_or("").to_string();
                 if with_details {
                     builder.push_record([
@@ -331,9 +345,9 @@ impl Display for ValidationReport {
                     show_object(result.focus_node(), &self.nodes_prefixmap),
                     show_object(result.component(), &shacl_prefixmap),
                     result.message().unwrap_or(""),
-                    show_path_opt("path", result.path(), &self.shapes_prefixmap),
-                    show_object_opt("source shape", result.source(), &self.shapes_prefixmap),
-                    show_object_opt("value", result.value(), &self.nodes_prefixmap)
+                    show_path_opt(result.path(), &self.shapes_prefixmap),
+                    show_object_opt(result.source(), &self.shapes_prefixmap),
+                    show_object_opt(result.value(), &self.nodes_prefixmap)
                 );
                 writeln!(f, "{msg}")?;
             }
@@ -355,20 +369,37 @@ fn show_object(object: &Object, shacl_prefixmap: &PrefixMap) -> String {
     }
 }
 
-fn show_object_opt(msg: &str, object: Option<&Object>, shacl_prefixmap: &PrefixMap) -> String {
-    match object {
-        None => String::new(),
-        Some(Object::Iri(iri_s)) => {
-            let iri_str = shacl_prefixmap.qualify(iri_s);
-            format!(" {msg}: {iri_str},")
-        }
-        Some(Object::BlankNode(node)) => format!(" {msg}: _:{node},"),
-        Some(Object::Literal(literal)) => format!(" {msg}: {literal},"),
-        Some(Object::Triple { .. }) => todo!(),
+fn show_iri(iri: &IriS, prefixmap: &PrefixMap) -> String {
+    prefixmap.qualify(iri)
+}
+
+fn show_subject(subject: &IriOrBlankNode, prefixmap: &PrefixMap) -> String {
+    match subject {
+        IriOrBlankNode::Iri(iri_s) => prefixmap.qualify(iri_s),
+        IriOrBlankNode::BlankNode(node) => format!("_:{node}"),
     }
 }
 
-fn show_path_opt(_msg: &str, object: Option<&SHACLPath>, shacl_prefixmap: &PrefixMap) -> String {
+fn show_object_opt(object: Option<&Object>, shacl_prefixmap: &PrefixMap) -> String {
+    match object {
+        None => String::new(),
+        Some(Object::Iri(iri_s)) => shacl_prefixmap.qualify(iri_s),
+        Some(Object::BlankNode(node)) => format!("_:{node}"),
+        Some(Object::Literal(literal)) => format!("{literal}"),
+        Some(Object::Triple {
+            subject,
+            predicate,
+            object,
+        }) => format!(
+            "<<{} {} {}>>",
+            show_subject(subject, shacl_prefixmap),
+            show_iri(predicate, shacl_prefixmap),
+            show_object(object, shacl_prefixmap)
+        ),
+    }
+}
+
+fn show_path_opt(object: Option<&SHACLPath>, shacl_prefixmap: &PrefixMap) -> String {
     match object {
         None => String::new(),
         Some(SHACLPath::Predicate { pred }) => {
@@ -395,7 +426,11 @@ fn calculate_color(severity: &CompiledSeverity, report: &ValidationReport) -> Co
 pub enum SortModeReport {
     #[default]
     Node,
-    Constraint,
-    Status,
+    Severity,
+    Shape,
+    Component,
+    Source,
+    Path,
+    Value,
     Details,
 }
