@@ -71,7 +71,7 @@ where
         MatchCond::single(SingleCond::new().with_name(name).with_cond(cond))
     }
 
-    pub fn show<SK, SV>(&self, show_key: SK, show_value: SV) -> String
+    pub fn show<SK, SV>(&self, _show_key: SK, _show_value: SV) -> String
     where
         SK: Fn(&K) -> String,
         SV: Fn(&V) -> String,

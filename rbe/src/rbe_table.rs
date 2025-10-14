@@ -171,7 +171,7 @@ where
         SV: Fn(&V) -> String,
     {
         let rbe_str = self.rbe.map(&|c| {
-            let key = self.component_key.get(&c).unwrap();
+            let key = self.component_key.get(c).unwrap();
             let cond = self.component_cond.get(c).unwrap();
             format!("{} {}", show_key(key), cond.show(&show_key, &show_value))
         });
