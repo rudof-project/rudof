@@ -438,8 +438,11 @@ impl SchemaIR {
                     );
                 }
                 None => {
-                    result
-                        .push_str(self.show_shape_expr(info.expr(), width).to_string().as_str());
+                    result.push_str(
+                        self.show_shape_expr(info.expr(), width)
+                            .to_string()
+                            .as_str(),
+                    );
                 }
             }
         } else {

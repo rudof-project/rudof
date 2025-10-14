@@ -450,7 +450,7 @@ where
 
     pub fn pretty(&self, width: usize) -> String {
         let pretty_printer = RbePrettyPrinter::new();
-        
+
         pretty_printer.print(self, width)
     }
 }

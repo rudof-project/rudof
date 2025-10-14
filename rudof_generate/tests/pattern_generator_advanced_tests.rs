@@ -1,6 +1,6 @@
+use regex::Regex;
 use rudof_generate::field_generators::pattern::PatternGenerator;
 use rudof_generate::field_generators::{FieldGenerator, GenerationContext};
-use regex::Regex;
 use serde_json::json;
 use std::time::Instant;
 
