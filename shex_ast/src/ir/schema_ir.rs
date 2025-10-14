@@ -439,7 +439,7 @@ impl SchemaIR {
                 }
                 None => {
                     result
-                        .push_str(format!("{}", self.show_shape_expr(info.expr(), width)).as_str());
+                        .push_str(self.show_shape_expr(info.expr(), width).to_string().as_str());
                 }
             }
         } else {

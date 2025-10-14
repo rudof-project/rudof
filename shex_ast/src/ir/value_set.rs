@@ -1,5 +1,4 @@
 use srdf::Object;
-use std::fmt::Display;
 
 use super::value_set_value::ValueSetValue;
 

@@ -1,6 +1,5 @@
 use iri_s::IriS;
 use prefixmap::IriRef;
-use prefixmap::PrefixMapError;
 use rbe::Value;
 use serde::Serialize;
 use srdf::Object;

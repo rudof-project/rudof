@@ -645,7 +645,7 @@ fn node_constraint2match_cond(
         .as_ref()
         .map(|dt| datatype2match_cond(dt, prefixmap))
         .transpose()?;
-    let c3 = xs_facet.as_ref().map(|xs| xs_facets2match_cond(xs));
+    let c3 = xs_facet.as_ref().map(xs_facets2match_cond);
     let c4 = values
         .as_ref()
         .map(|vs| valueset2match_cond(vs.clone(), prefixmap));
@@ -739,7 +739,7 @@ fn mk_cond_datatype(datatype: &IriS, prefixmap: &PrefixMap) -> Cond {
     let dt = datatype.clone();
     MatchCond::single(
         SingleCond::new()
-            .with_name(format!("{}", prefixmap.qualify(&dt)).as_str())
+            .with_name(prefixmap.qualify(&dt).to_string().as_str())
             .with_cond(move |value: &Node| match check_node_datatype(value, &dt) {
                 Ok(_) => Ok(Pending::new()),
                 Err(err) => Err(RbeError::MsgError {
@@ -929,7 +929,7 @@ fn mk_cond_value_set(value_set: ValueSet, prefixmap: &PrefixMap) -> Cond {
     let cloned_prefixmap = prefixmap.clone();
     MatchCond::single(
         SingleCond::new()
-            .with_name(value_set.show_qualified(&prefixmap).as_str())
+            .with_name(value_set.show_qualified(prefixmap).as_str())
             .with_cond(move |node: &Node| {
                 if value_set.check_value(node.as_object()) {
                     Ok(Pending::empty())
