@@ -28,6 +28,7 @@ impl TriplePattern {
                 let iri = prefixmap.resolve_prefix_local(prefix, local)?;
                 iri.to_string()
             }
+            IriRef::RelativeIri(_) => todo!(),
         };
         write!(formatter, "{} {} {} .", self.subj, pred_str, self.obj)
             .map_err(PrefixMapError::FormatError)?;

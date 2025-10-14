@@ -21,6 +21,9 @@ pub enum DerefError {
 
     #[error(transparent)]
     UnderefError(#[from] IriRefError),
+
+    #[error("Cannot obtain IRI from relative IriRef {str} without a base IRI")]
+    NoBaseIriForRelative { str: String },
 }
 
 pub trait Deref {

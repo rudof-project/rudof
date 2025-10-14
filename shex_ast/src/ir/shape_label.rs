@@ -44,10 +44,11 @@ impl ShapeLabel {
     pub fn from_shape_expr_label(
         label: &ShapeExprLabel,
         prefixmap: &PrefixMap,
+        base: Option<&IriS>,
     ) -> Result<ShapeLabel, PrefixMapError> {
         match label {
             ShapeExprLabel::IriRef { value } => {
-                Ok(ShapeLabel::Iri(value.get_iri_prefixmap(prefixmap)?))
+                Ok(ShapeLabel::Iri(value.get_iri_prefixmap(prefixmap, base)?))
             }
             ShapeExprLabel::BNode { value } => Ok(ShapeLabel::BNode(value.clone())),
             ShapeExprLabel::Start => Ok(ShapeLabel::Start),

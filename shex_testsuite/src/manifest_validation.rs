@@ -176,7 +176,10 @@ fn parse_schema(
     let new_schema_name =
         change_extension(schema.to_string(), ".shex".to_string(), ".json".to_string());
 
-    debug!("schema: {}, new_schema_name: {}", schema, new_schema_name);
+    debug!(
+        "Before parsing schema: {}, new_schema_name: {}",
+        schema, new_schema_name
+    );
     SchemaJson::parse_schema_name(&new_schema_name, folder).map_err(|e| {
         Box::new(ManifestError::SchemaJsonError {
             error: Box::new(e),
@@ -200,6 +203,7 @@ impl ValidationEntry {
 
         let schema = parse_schema(&self.action.schema, folder, base, &self.name)?;
         trace!("Schema obtained from: {}", self.action.schema);
+        trace!("Schema: {}", schema);
 
         trace!("Entry action: {:?}", self.action);
 

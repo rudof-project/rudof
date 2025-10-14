@@ -404,6 +404,7 @@ impl SLiteral {
                 IriRef::Prefixed { prefix, local } => {
                     write!(f, "\"{lexical_form}\"^^{prefix}:{local}")
                 }
+                IriRef::RelativeIri(_) => todo!(),
             },
             SLiteral::NumericLiteral(n) => write!(f, "{n}"),
             SLiteral::BooleanLiteral(true) => write!(f, "true"),
@@ -418,6 +419,7 @@ impl SLiteral {
                 IriRef::Prefixed { prefix, local } => {
                     write!(f, "\"{lexical_form}\"^^{prefix}:{local}")
                 }
+                IriRef::RelativeIri(_) => todo!(),
             },
         }
     }

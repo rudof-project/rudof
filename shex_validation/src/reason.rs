@@ -7,6 +7,7 @@ use shex_ast::{
     ir::{
         node_constraint::NodeConstraint, schema_ir::SchemaIR, shape::Shape, shape_expr::ShapeExpr,
     },
+    shapemap::ConformantInfo,
 };
 use std::{fmt::Display, io};
 
@@ -58,6 +59,7 @@ pub enum Reason {
     ShapeRefPassed {
         node: Node,
         idx: ShapeLabelIdx,
+        info: Box<ConformantInfo>,
     },
 }
 
@@ -222,8 +224,8 @@ impl Display for Reason {
             ),
             Reason::ExternalPassed { node } => write!(f, "Shape External passed for node {node}"),
             Reason::EmptyPassed { node } => write!(f, "Shape External passed for node {node}"),
-            Reason::ShapeRefPassed { node, idx } => {
-                write!(f, "ShapeRef passed. Node {node}, idx: {idx}")
+            Reason::ShapeRefPassed { node, idx, info } => {
+                write!(f, "ShapeRef passed. Node {node}, idx: {idx}: {info}")
             }
             Reason::ShapeExtendsPassed {
                 node,

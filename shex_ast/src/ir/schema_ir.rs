@@ -221,6 +221,7 @@ impl SchemaIR {
                             })?;
                     Ok::<ShapeLabel, SchemaIRError>(ShapeLabel::iri(iri))
                 }
+                IriRef::RelativeIri(_) => todo!(),
             },
             ShapeExprLabel::BNode { value } => {
                 let label = ShapeLabel::from_bnode((*value).clone());

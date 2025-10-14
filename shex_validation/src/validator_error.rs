@@ -8,6 +8,7 @@ use shex_ast::ir::preds::Preds;
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::shape::Shape;
 use shex_ast::ir::shape_expr::ShapeExpr;
+use shex_ast::shapemap::{ConformantInfo, NonConformantInfo};
 use shex_ast::{Node, Pred, ShapeExprLabel, ShapeLabelIdx, ir::shape_label::ShapeLabel};
 use srdf::Object;
 use thiserror::Error;
@@ -61,6 +62,19 @@ pub enum ValidatorError {
     #[error("References failed: Shape pattern matches, but references failed: {}", failed_pending.iter().map(|(n, s)| format!("({n}, {s})")).collect::<Vec<_>>().join(", "))]
     FailedPending {
         failed_pending: Vec<(Node, ShapeLabelIdx)>,
+    },
+
+    #[error("ShapeRef pending for node {node} with idx: {idx}")]
+    ShapeRefPending { node: Box<Node>, idx: ShapeLabelIdx },
+
+    #[error(
+        "ShapeRef inconsistent for node {node} with idx: {idx}: conformant_info: {conformant_info:?}, non_conformant_info: {non_conformant_info:?}"
+    )]
+    ShapeRefInconsistent {
+        node: Box<Node>,
+        idx: ShapeLabelIdx,
+        conformant_info: Box<ConformantInfo>,
+        non_conformant_info: Box<NonConformantInfo>,
     },
     #[error("Negation cycle error: {neg_cycles:?}")]
     NegCycleError {
@@ -167,7 +181,11 @@ pub enum ValidatorError {
     },
 
     #[error("ShapeRef fails for node {node} with idx: {idx}")]
-    ShapeRefFailed { node: Box<Node>, idx: ShapeLabelIdx },
+    ShapeRefFailed {
+        node: Box<Node>,
+        idx: ShapeLabelIdx,
+        info: Box<NonConformantInfo>,
+    },
 }
 
 impl ValidatorError {

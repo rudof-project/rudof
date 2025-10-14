@@ -789,6 +789,7 @@ where
                 .text(prefix.clone())
                 .append(self.doc.text(":"))
                 .append(self.doc.text(local.clone())),
+            IriRef::RelativeIri(_) => todo!(),
         }
     }
 

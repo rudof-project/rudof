@@ -149,6 +149,7 @@ impl PrefixMap {
                 Ok(iri)
             }
             IriRef::Iri(iri) => Ok(iri.clone()),
+            IriRef::RelativeIri(_) => todo!(),
         }
     }
 

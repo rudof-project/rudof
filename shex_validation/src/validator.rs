@@ -16,6 +16,7 @@ use shex_ast::shapemap::ResultShapeMap;
 use shex_ast::shapemap::ValidationStatus;
 use shex_ast::shapemap::query_shape_map::QueryShapeMap;
 use srdf::NeighsRDF;
+use srdf::Object;
 use tracing::trace;
 
 type Result<T> = std::result::Result<T, ValidatorError>;
@@ -154,6 +155,7 @@ impl Validator {
                 let iri = rdf.resolve_prefix_local(prefix, local)?;
                 Ok(Node::iri(iri.clone()))
             }
+            ObjectValue::IriRef(IriRef::RelativeIri(_)) => todo!(),
             ObjectValue::Literal(lit) => Ok(Node::literal(lit.clone())),
         }
     }
@@ -191,7 +193,7 @@ impl Validator {
                         &self.schema,
                         self.config.width(),
                     )?;
-                    let status = ValidationStatus::conformant(str_reasons, json_reasons);
+                    let status = ValidationStatus::conformant(&str_reasons, &json_reasons);
                     // result.add_ok()
                     result
                         .add_result((*node).clone(), label.clone(), status)
@@ -205,7 +207,7 @@ impl Validator {
                     let errors = engine.find_errors(na);
                     let json_errors = json_errors(&errors)?;
                     let status =
-                        ValidationStatus::non_conformant(show_errors(&errors), json_errors);
+                        ValidationStatus::non_conformant(&show_errors(&errors), &json_errors);
                     result
                         .add_result((*node).clone(), label.clone(), status)
                         .map_err(|e| ValidatorError::AddingNonConformantError {
@@ -241,20 +243,20 @@ impl Validator {
     se
 }*/
 
-fn show_errors(errors: &[ValidatorError]) -> String {
-    let mut result = String::new();
+fn show_errors(errors: &[ValidatorError]) -> Vec<String> {
+    let mut result = Vec::new();
     if errors.len() == 1 {
-        result.push_str(format!("Error {}\n", errors.first().unwrap()).as_str());
+        result.push(format!("Error {}\n", errors.first().unwrap()));
     } else {
         for (idx, err) in errors.iter().enumerate() {
-            result.push_str(format!("Error #{idx}: {err}\n").as_str());
+            result.push(format!("Error #{idx}: {err}\n"));
         }
     }
     result
 }
 
-fn json_errors(errors: &[ValidatorError]) -> Result<Value> {
-    let vs: Result<Vec<_>> = errors
+fn json_errors(errors: &[ValidatorError]) -> Result<Vec<Value>> {
+    errors
         .iter()
         .map(|err| {
             serde_json::to_value(err).map_err(|e| ValidatorError::ErrorSerializationError {
@@ -262,14 +264,11 @@ fn json_errors(errors: &[ValidatorError]) -> Result<Value> {
                 error: e.to_string(),
             })
         })
-        .collect();
-    let vs = vs?;
-    let vs = Value::Array(vs);
-    Ok(vs)
+        .collect()
 }
 
-fn json_reasons(reasons: &[Reason]) -> Result<Value> {
-    let rs: Result<Vec<_>> = reasons
+fn json_reasons(reasons: &[Reason]) -> Result<Vec<Value>> {
+    reasons
         .iter()
         .map(|reason| {
             let r = reason
@@ -280,10 +279,7 @@ fn json_reasons(reasons: &[Reason]) -> Result<Value> {
                 })?;
             Ok(r)
         })
-        .collect();
-    let vs = rs?;
-    let value = Value::Array(vs);
-    Ok(value)
+        .collect()
 }
 
 fn show_reasons(
@@ -291,27 +287,24 @@ fn show_reasons(
     nodes_prefixmap: &PrefixMap,
     schema: &SchemaIR,
     width: usize,
-) -> Result<String> {
-    let mut result = String::new();
+) -> Result<Vec<String>> {
+    let mut result = Vec::new();
     match reasons.len() {
         0 => {
-            result.push_str("No detailed reason provided.\n");
+            result.push("No detailed reason provided.\n".to_string());
             return Ok(result);
         }
         1 => {
             let str = reasons[0].show_qualified(nodes_prefixmap, schema, width)?;
-            result.push_str(&str);
+            result.push(str);
             return Ok(result);
         }
         _ => {
             for (idx, reason) in reasons.iter().enumerate() {
-                result.push_str(
-                    format!(
-                        "Reason #{idx}: {}\n",
-                        reason.show_qualified(nodes_prefixmap, schema, width)?
-                    )
-                    .as_str(),
-                );
+                result.push(format!(
+                    "Reason #{idx}: {}",
+                    reason.show_qualified(nodes_prefixmap, schema, width)?
+                ));
             }
         }
     }

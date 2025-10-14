@@ -1,9 +1,7 @@
-use std::fmt::Display;
-
+use crate::shapemap::{ConformantInfo, NonConformantInfo};
 use serde::Serialize;
 use serde_json::Value;
-
-use crate::shapemap::{ConformantInfo, NonConformantInfo};
+use std::fmt::Display;
 
 /// Represents the current status of validation
 #[derive(Debug, PartialEq, Clone, Serialize)]
@@ -27,12 +25,12 @@ impl ValidationStatus {
         matches!(self, ValidationStatus::Pending)
     }
 
-    pub fn conformant(reason: String, value: Value) -> ValidationStatus {
-        ValidationStatus::Conformant(ConformantInfo::new(reason, value))
+    pub fn conformant(reasons: &[String], values: &[Value]) -> ValidationStatus {
+        ValidationStatus::Conformant(ConformantInfo::new(reasons, values))
     }
 
-    pub fn non_conformant(reason: String, value: Value) -> ValidationStatus {
-        ValidationStatus::NonConformant(NonConformantInfo::new(reason, value))
+    pub fn non_conformant(errors: &[String], values: &[Value]) -> ValidationStatus {
+        ValidationStatus::NonConformant(NonConformantInfo::new(errors, values))
     }
 
     pub fn pending() -> ValidationStatus {
@@ -88,6 +86,43 @@ impl ValidationStatus {
                     conformant.reason(),
                     non_conformant.reason()
                 )
+            }
+        }
+    }
+
+    pub fn merge(&mut self, other: ValidationStatus) {
+        match (&self, other) {
+            (ValidationStatus::Conformant(c1), ValidationStatus::Conformant(c2)) => {
+                *self = ValidationStatus::Conformant(c1.clone().merge(c2))
+            }
+            (ValidationStatus::NonConformant(nc1), ValidationStatus::NonConformant(nc2)) => {
+                *self = ValidationStatus::NonConformant(nc1.clone().merge(nc2));
+            }
+            (ValidationStatus::Pending, _v) => *self = ValidationStatus::Pending,
+            (_v, ValidationStatus::Pending) => *self = ValidationStatus::Pending,
+            (ValidationStatus::Conformant(c), ValidationStatus::NonConformant(nc)) => {
+                *self = ValidationStatus::Inconsistent(c.clone(), nc.clone())
+            }
+            (ValidationStatus::NonConformant(nc), ValidationStatus::Conformant(c)) => {
+                *self = ValidationStatus::Inconsistent(c.clone(), nc.clone())
+            }
+            (ValidationStatus::Inconsistent(c1, nc1), ValidationStatus::Inconsistent(c2, nc2)) => {
+                *self = ValidationStatus::Inconsistent(
+                    c1.clone().merge(c2.clone()),
+                    nc1.clone().merge(nc2.clone()),
+                )
+            }
+            (ValidationStatus::Inconsistent(c, nc), ValidationStatus::Conformant(c2)) => {
+                *self = ValidationStatus::Inconsistent(c.clone().merge(c2.clone()), nc.clone())
+            }
+            (ValidationStatus::Inconsistent(c, nc), ValidationStatus::NonConformant(nc2)) => {
+                *self = ValidationStatus::Inconsistent(c.clone(), nc.clone().merge(nc2.clone()))
+            }
+            (ValidationStatus::Conformant(c), ValidationStatus::Inconsistent(c2, nc2)) => {
+                *self = ValidationStatus::Inconsistent(c.clone().merge(c2.clone()), nc2.clone());
+            }
+            (ValidationStatus::NonConformant(nc), ValidationStatus::Inconsistent(c2, nc2)) => {
+                *self = ValidationStatus::Inconsistent(c2.clone(), nc.clone().merge(nc2.clone()));
             }
         }
     }

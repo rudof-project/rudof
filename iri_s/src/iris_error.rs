@@ -54,4 +54,14 @@ pub enum IriSError {
         url: String,
         error: String,
     },
+
+    #[error("Invalid prefixed IRI `{iri_ref}` with prefix `{prefix}` and local part `{local}`")]
+    InvalidPrefixedIri {
+        prefix: String,
+        local: String,
+        iri_ref: String,
+    },
+
+    #[error("Invalid IRIRef `{iri_ref}`")]
+    InvalidIriRef { iri_ref: String },
 }

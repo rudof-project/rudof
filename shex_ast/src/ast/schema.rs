@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::{fs, io};
-use tracing::debug;
+use tracing::{debug, trace};
 
 use super::{SemAct, ShapeDecl, ShapeExpr};
 
@@ -149,6 +149,13 @@ impl Schema {
                     let str = format!("{prefix}{local}");
                     IriS::new_unchecked(str.as_str())
                 }
+                IriRef::RelativeIri(str) => {
+                    if let Some(base) = &self.base {
+                        base.resolve_str(str).unwrap()
+                    } else {
+                        IriS::new_unchecked(str.as_str())
+                    }
+                }
             },
         }
     }
@@ -176,6 +183,7 @@ impl Schema {
     }
 
     pub fn parse_schema_buf(path: &Path) -> Result<Schema, SchemaJsonError> {
+        trace!("Parsing schema from path: {}", path.display());
         let schema = {
             let schema_str =
                 fs::read_to_string(path).map_err(|e| SchemaJsonError::ReadingPathError {

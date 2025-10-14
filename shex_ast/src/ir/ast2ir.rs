@@ -65,7 +65,9 @@ impl AST2IR {
     ) -> CResult<(usize, usize)> {
         let mut total_imported = 0;
         for import in schema_ast.imports() {
-            let import_iri = cnv_iri_ref(&import, &compiled_schema.prefixmap())?;
+            trace!("Importing schema from {import}");
+            let import_iri = cnv_iri_ref(&import, &compiled_schema.prefixmap(), base)?;
+            trace!("Resolved import IRI: {import_iri}");
             if !visited_sources.contains(&import_iri) {
                 visited_sources.push(import_iri.clone());
                 let imported_schema = self.resolve(&import_iri, base)?;
@@ -83,9 +85,9 @@ impl AST2IR {
         trace!("Compiling schema to IR");
         compiled_schema.set_prefixmap(schema_ast.prefixmap());
         trace!("Collecting shape labels...");
-        let local = self.collect_shape_labels(schema_ast, compiled_schema, source_iri)?;
+        let local = self.collect_shape_labels(schema_ast, compiled_schema, source_iri, base)?;
         trace!("Collecting shape expressions...");
-        self.collect_shape_exprs(schema_ast, compiled_schema, source_iri)?;
+        self.collect_shape_exprs(schema_ast, compiled_schema, source_iri, base)?;
         trace!(
             "Schema compilation completed with {} shapes. {local}/{total_imported}",
             compiled_schema.shapes_counter()
@@ -104,18 +106,19 @@ impl AST2IR {
         Ok(new_schema)
     }
 
-    pub fn compile_import(&self, import: &IriRef, compiled_schema: &mut SchemaIR) -> CResult<()> {
-        let iri = cnv_iri_ref(import, &compiled_schema.prefixmap())?;
+    /*pub fn compile_import(&self, import: &IriRef, compiled_schema: &mut SchemaIR) -> CResult<()> {
+        let iri = cnv_iri_ref(import, &compiled_schema.prefixmap(), base)?;
         debug!("Importing schema from {iri}");
         // TODO
         Ok(())
-    }
+    }*/
 
     pub fn collect_shape_labels(
         &mut self,
         schema_ast: &SchemaAST,
         compiled_schema: &mut SchemaIR,
         source_iri: &IriS,
+        base: &Option<IriS>,
     ) -> CResult<usize> {
         let mut shape_labels_counter = 0;
         match &schema_ast.shapes() {
@@ -136,7 +139,7 @@ impl AST2IR {
             let start_label = ShapeLabel::Start;
             let idx = compiled_schema.add_shape(start_label.clone(), ShapeExpr::Empty, source_iri);
             let start_compiled =
-                self.compile_shape_expr(shape_expr_start, &idx, compiled_schema, source_iri)?;
+                self.compile_shape_expr(shape_expr_start, &idx, compiled_schema, source_iri, base)?;
             compiled_schema.replace_shape(&idx, start_compiled);
             self.shape_decls_counter += 1;
             shape_labels_counter += 1;
@@ -149,13 +152,15 @@ impl AST2IR {
         schema_ast: &SchemaAST,
         compiled_schema: &mut SchemaIR,
         source_iri: &IriS,
+        base: &Option<IriS>,
     ) -> CResult<()> {
         match &schema_ast.shapes() {
             None => Ok(()),
             Some(sds) => {
                 for sd in sds {
                     let idx = self.get_shape_label_idx(&sd.id, compiled_schema)?;
-                    let se = self.compile_shape_decl(sd, &idx, compiled_schema, source_iri)?;
+                    let se =
+                        self.compile_shape_decl(sd, &idx, compiled_schema, source_iri, base)?;
                     compiled_schema.replace_shape(&idx, se)
                 }
                 Ok(())
@@ -189,8 +194,9 @@ impl AST2IR {
         idx: &ShapeLabelIdx,
         compiled_schema: &mut SchemaIR,
         source_iri: &IriS,
+        base: &Option<IriS>,
     ) -> CResult<ShapeExpr> {
-        let se = self.compile_shape_expr(&sd.shape_expr, idx, compiled_schema, source_iri)?;
+        let se = self.compile_shape_expr(&sd.shape_expr, idx, compiled_schema, source_iri, base)?;
         Ok(se)
     }
 
@@ -209,6 +215,7 @@ impl AST2IR {
         idx: &ShapeLabelIdx,
         compiled_schema: &mut SchemaIR,
         source_iri: &IriS,
+        base: &Option<IriS>,
     ) -> CResult<ShapeExpr> {
         let result: ShapeExpr = match se {
             ast::ShapeExpr::Ref(se_ref) => {
@@ -226,6 +233,7 @@ impl AST2IR {
                         &internal_idx,
                         compiled_schema,
                         source_iri,
+                        base,
                     )?;
                     compiled_schema.replace_shape(&internal_idx, se.clone());
                     cnv.push(internal_idx);
@@ -245,6 +253,7 @@ impl AST2IR {
                         &internal_idx,
                         compiled_schema,
                         source_iri,
+                        base,
                     )?;
                     compiled_schema.replace_shape(&internal_idx, se.clone());
                     cnv.push(internal_idx);
@@ -257,21 +266,31 @@ impl AST2IR {
             ast::ShapeExpr::ShapeNot { shape_expr: sew } => {
                 trace!("Compiling ShapeNot with {sew:?} and index {idx}");
                 let internal_idx = compiled_schema.new_index(source_iri);
-                let se =
-                    self.compile_shape_expr(&sew.se, &internal_idx, compiled_schema, source_iri)?;
+                let se = self.compile_shape_expr(
+                    &sew.se,
+                    &internal_idx,
+                    compiled_schema,
+                    source_iri,
+                    base,
+                )?;
                 compiled_schema.replace_shape(&internal_idx, se.clone());
                 let not_se = ShapeExpr::ShapeNot { expr: internal_idx };
                 compiled_schema.replace_shape(idx, not_se.clone());
                 Ok(not_se)
             }
             ast::ShapeExpr::Shape(shape) => {
-                let new_extra = self.cnv_extra(&shape.extra, &compiled_schema.prefixmap())?;
+                let new_extra = self.cnv_extra(&shape.extra, &compiled_schema.prefixmap(), base)?;
                 let rbe_table = match &shape.expression {
                     None => RbeTable::new(),
                     Some(tew) => {
                         let mut table = RbeTable::new();
-                        let rbe =
-                            self.triple_expr2rbe(&tew.te, compiled_schema, &mut table, source_iri)?;
+                        let rbe = self.triple_expr2rbe(
+                            &tew.te,
+                            compiled_schema,
+                            &mut table,
+                            source_iri,
+                            base,
+                        )?;
                         table.with_rbe(rbe);
                         table
                     }
@@ -304,6 +323,7 @@ impl AST2IR {
                     &nc.xs_facet(),
                     &nc.values(),
                     &compiled_schema.prefixmap(),
+                    base,
                 )?;
                 let node_constraint = NodeConstraint::new(nc.clone(), cond, display);
                 Ok(ShapeExpr::NodeConstraint(node_constraint))
@@ -322,15 +342,16 @@ impl AST2IR {
         xs_facet: &Option<Vec<ast::XsFacet>>,
         values: &Option<Vec<ast::ValueSetValue>>,
         prefixmap: &PrefixMap,
+        base: &Option<IriS>,
     ) -> CResult<(Cond, String)> {
         let maybe_value_set = match values {
             Some(vs) => {
-                let value_set = create_value_set(vs, prefixmap)?;
+                let value_set = create_value_set(vs, prefixmap, base)?;
                 Some(value_set)
             }
             None => None,
         };
-        node_constraint2match_cond(nk, dt, xs_facet, &maybe_value_set, prefixmap)
+        node_constraint2match_cond(nk, dt, xs_facet, &maybe_value_set, prefixmap, base)
     }
 
     fn cnv_closed(closed: &Option<bool>) -> bool {
@@ -340,11 +361,16 @@ impl AST2IR {
         }
     }
 
-    fn cnv_extra(&self, extra: &Option<Vec<IriRef>>, prefixmap: &PrefixMap) -> CResult<Vec<Pred>> {
+    fn cnv_extra(
+        &self,
+        extra: &Option<Vec<IriRef>>,
+        prefixmap: &PrefixMap,
+        base: &Option<IriS>,
+    ) -> CResult<Vec<Pred>> {
         if let Some(extra) = extra {
             let mut vs = Vec::new();
             for iri in extra {
-                let nm = cnv_iri_ref(iri, prefixmap)?;
+                let nm = cnv_iri_ref(iri, prefixmap, base)?;
                 vs.push(Pred::new(nm));
             }
             Ok(vs)
@@ -377,6 +403,7 @@ impl AST2IR {
         compiled_schema: &mut SchemaIR,
         current_table: &mut RbeTable<Pred, Node, ShapeLabelIdx>,
         source_iri: &IriS,
+        base: &Option<IriS>,
     ) -> CResult<Rbe<Component>> {
         match triple_expr {
             ast::TripleExpr::EachOf {
@@ -389,8 +416,13 @@ impl AST2IR {
             } => {
                 let mut cs = Vec::new();
                 for e in expressions {
-                    let c =
-                        self.triple_expr2rbe(&e.te, compiled_schema, current_table, source_iri)?;
+                    let c = self.triple_expr2rbe(
+                        &e.te,
+                        compiled_schema,
+                        current_table,
+                        source_iri,
+                        base,
+                    )?;
                     cs.push(c)
                 }
                 let card = self.cnv_min_max(min, max)?;
@@ -406,8 +438,13 @@ impl AST2IR {
             } => {
                 let mut cs = Vec::new();
                 for e in expressions {
-                    let c =
-                        self.triple_expr2rbe(&e.te, compiled_schema, current_table, source_iri)?;
+                    let c = self.triple_expr2rbe(
+                        &e.te,
+                        compiled_schema,
+                        current_table,
+                        source_iri,
+                        base,
+                    )?;
                     cs.push(c)
                 }
                 let card = self.cnv_min_max(min, max)?;
@@ -428,7 +465,7 @@ impl AST2IR {
                 let max = self.cnv_max(max)?;
                 let iri = Self::cnv_predicate(predicate)?;
                 let (cond, _display) =
-                    self.value_expr2match_cond(value_expr, compiled_schema, source_iri)?;
+                    self.value_expr2match_cond(value_expr, compiled_schema, source_iri, base)?;
                 let c = current_table.add_component(iri, &cond);
                 trace!("triple_expr2rbe: TripleConstraint: added component {c:?} to RBE table");
                 Ok(Rbe::symbol(c, min.value, max))
@@ -447,6 +484,7 @@ impl AST2IR {
                     "Cannot convert prefixed {prefix}:{local} to predicate without context"
                 ),
             })),
+            IriRef::RelativeIri(str) => todo!(),
         }
     }
 
@@ -494,6 +532,7 @@ impl AST2IR {
         ve: &Option<Box<ast::ShapeExpr>>,
         compiled_schema: &mut SchemaIR,
         source_iri: &IriS,
+        base: &Option<IriS>,
     ) -> CResult<(Cond, String)> {
         if let Some(se) = ve.as_deref() {
             match se {
@@ -503,6 +542,7 @@ impl AST2IR {
                     &nc.xs_facet(),
                     &nc.values(),
                     &compiled_schema.prefixmap(),
+                    base,
                 ),
 
                 ast::ShapeExpr::Ref(sref) => {
@@ -513,7 +553,8 @@ impl AST2IR {
                     // TODO: avoid recompiling the same shape expression?
                     // I think this code should be reviewed....
                     let idx = compiled_schema.new_index(source_iri);
-                    let se = self.compile_shape_expr(se, &idx, compiled_schema, source_iri)?;
+                    let se =
+                        self.compile_shape_expr(se, &idx, compiled_schema, source_iri, base)?;
                     compiled_schema.replace_shape(&idx, se.clone());
                     trace!("Returning SHAPE cond with idx {idx}");
                     Ok((mk_cond_ref(idx), format!("Shape {idx}")))
@@ -527,6 +568,7 @@ impl AST2IR {
                             &idx_se,
                             compiled_schema,
                             source_iri,
+                            base,
                         )?;
                         compiled_schema.replace_shape(&idx_se, se.clone());
                         ands.push(idx_se);
@@ -550,8 +592,13 @@ impl AST2IR {
                     let mut ors = Vec::new();
                     for se in shape_exprs {
                         let idx_se = compiled_schema.new_index(source_iri);
-                        let se =
-                            self.compile_shape_expr(&se.se, &idx_se, compiled_schema, source_iri)?;
+                        let se = self.compile_shape_expr(
+                            &se.se,
+                            &idx_se,
+                            compiled_schema,
+                            source_iri,
+                            base,
+                        )?;
                         compiled_schema.replace_shape(&idx_se, se.clone());
                         ors.push(idx_se);
                     }
@@ -577,6 +624,7 @@ impl AST2IR {
                         &idx_shape_expr,
                         compiled_schema,
                         source_iri,
+                        base,
                     )?;
                     compiled_schema.replace_shape(&idx_shape_expr, se.clone());
                     let display = format!("NOT {idx_shape_expr}");
@@ -630,6 +678,9 @@ fn iri_ref2iri_s(iri_ref: &IriRef) -> IriS {
         IriRef::Prefixed { prefix, local } => {
             panic!("Compiling schema...found prefixed iri: {prefix}:{local}")
         }
+        IriRef::RelativeIri(str) => {
+            panic!("Compiling schema...found relative iri: {str}")
+        }
     }
 }
 
@@ -639,11 +690,12 @@ fn node_constraint2match_cond(
     xs_facet: &Option<Vec<ast::XsFacet>>,
     values: &Option<ValueSet>,
     prefixmap: &PrefixMap,
+    base: &Option<IriS>,
 ) -> CResult<(Cond, String)> {
     let c1: Option<(Cond, String)> = node_kind.as_ref().map(node_kind2match_cond);
     let c2 = datatype
         .as_ref()
-        .map(|dt| datatype2match_cond(dt, prefixmap))
+        .map(|dt| datatype2match_cond(dt, prefixmap, base))
         .transpose()?;
     let c3 = xs_facet.as_ref().map(xs_facets2match_cond);
     let c4 = values
@@ -660,8 +712,12 @@ fn node_kind2match_cond(nodekind: &ast::NodeKind) -> (Cond, String) {
     )
 }
 
-fn datatype2match_cond(datatype: &IriRef, prefixmap: &PrefixMap) -> CResult<(Cond, String)> {
-    let iri = cnv_iri_ref(datatype, prefixmap)?;
+fn datatype2match_cond(
+    datatype: &IriRef,
+    prefixmap: &PrefixMap,
+    base: &Option<IriS>,
+) -> CResult<(Cond, String)> {
+    let iri = cnv_iri_ref(datatype, prefixmap, base)?;
     let cond = mk_cond_datatype(&iri, prefixmap);
     let str = cond.to_string();
     Ok((cond, str))
@@ -922,6 +978,7 @@ fn iri_ref_2_shape_label(id: &IriRef) -> CResult<ShapeLabel> {
                 local: local.clone(),
             }))
         }
+        IriRef::RelativeIri(str) => panic!("Cannot convert relative IRI {str} to ShapeLabel"),
     }
 }
 
@@ -945,23 +1002,31 @@ fn mk_cond_value_set(value_set: ValueSet, prefixmap: &PrefixMap) -> Cond {
     )
 }
 
-fn create_value_set(values: &Vec<ast::ValueSetValue>, prefixmap: &PrefixMap) -> CResult<ValueSet> {
+fn create_value_set(
+    values: &Vec<ast::ValueSetValue>,
+    prefixmap: &PrefixMap,
+    base: &Option<IriS>,
+) -> CResult<ValueSet> {
     let mut vs = ValueSet::new();
     for v in values {
-        let cvalue = cnv_value(v, prefixmap)?;
+        let cvalue = cnv_value(v, prefixmap, base)?;
         vs.add_value(cvalue)
     }
     Ok(vs)
 }
 
-fn cnv_value(v: &ast::ValueSetValue, prefixmap: &PrefixMap) -> CResult<ValueSetValue> {
+fn cnv_value(
+    v: &ast::ValueSetValue,
+    prefixmap: &PrefixMap,
+    base: &Option<IriS>,
+) -> CResult<ValueSetValue> {
     match &v {
         ast::ValueSetValue::IriStem { stem, .. } => {
-            let cnv_stem = cnv_iri_ref(stem, prefixmap)?;
+            let cnv_stem = cnv_iri_ref(stem, prefixmap, base)?;
             Ok(ValueSetValue::IriStem { stem: cnv_stem })
         }
         ast::ValueSetValue::ObjectValue(ovw) => {
-            let ov = cnv_object_value(ovw, prefixmap)?;
+            let ov = cnv_object_value(ovw, prefixmap, base)?;
             Ok(ValueSetValue::ObjectValue(ov))
         }
         ast::ValueSetValue::Language { language_tag, .. } => Ok(ValueSetValue::Language {
@@ -976,7 +1041,7 @@ fn cnv_value(v: &ast::ValueSetValue, prefixmap: &PrefixMap) -> CResult<ValueSetV
             Ok(ValueSetValue::LiteralStemRange { stem, exclusions })
         }
         ast::ValueSetValue::IriStemRange { stem, exclusions } => {
-            let stem = cnv_iriref_or_wildcard(stem, prefixmap)?;
+            let stem = cnv_iriref_or_wildcard(stem, prefixmap, base)?;
             let exclusions = cnv_iri_exclusions(exclusions)?;
             Ok(ValueSetValue::IriStemRange { stem, exclusions })
         }
@@ -1023,10 +1088,11 @@ fn cnv_string_or_wildcard(
 fn cnv_iriref_or_wildcard(
     stem: &ast::IriRefOrWildcard,
     prefixmap: &PrefixMap,
+    base: &Option<IriS>,
 ) -> CResult<crate::ir::value_set_value::IriOrWildcard> {
     match stem {
         ast::IriRefOrWildcard::IriRef(iri) => {
-            let cnv_iri = cnv_iri_ref(iri, prefixmap)?;
+            let cnv_iri = cnv_iri_ref(iri, prefixmap, base)?;
             Ok(crate::ir::value_set_value::IriOrWildcard::Iri(cnv_iri))
         }
         ast::IriRefOrWildcard::Wildcard => {
@@ -1167,10 +1233,14 @@ fn cnv_language_exclusion(
     }
 }
 
-fn cnv_object_value(ov: &ast::ObjectValue, prefixmap: &PrefixMap) -> CResult<ObjectValue> {
+fn cnv_object_value(
+    ov: &ast::ObjectValue,
+    prefixmap: &PrefixMap,
+    base: &Option<IriS>,
+) -> CResult<ObjectValue> {
     match ov {
         ast::ObjectValue::IriRef(ir) => {
-            let iri = cnv_iri_ref(ir, prefixmap)?;
+            let iri = cnv_iri_ref(ir, prefixmap, base)?;
             Ok(ObjectValue::IriRef(iri))
         }
         ast::ObjectValue::Literal(lit) => Ok(ObjectValue::ObjectLiteral(lit.clone())),
@@ -1499,19 +1569,18 @@ fn todo<A>(str: &str) -> CResult<A> {
     }))*/
 }
 
-fn cnv_iri_ref(iri: &IriRef, prefixmap: &PrefixMap) -> Result<IriS, Box<SchemaIRError>> {
-    match iri {
-        IriRef::Iri(iri) => Ok(iri.clone()),
-        IriRef::Prefixed { prefix, local } => {
-            prefixmap.resolve_prefix_local(prefix, local).map_err(|e| {
-                Box::new(SchemaIRError::CnvIriRefError {
-                    prefix: prefix.clone(),
-                    local: local.clone(),
-                    error: e.to_string(),
-                })
+fn cnv_iri_ref(
+    iri: &IriRef,
+    prefixmap: &PrefixMap,
+    base: &Option<IriS>,
+) -> Result<IriS, Box<SchemaIRError>> {
+    iri.get_iri_prefixmap(prefixmap, base.as_ref())
+        .map_err(|e| {
+            Box::new(SchemaIRError::CnvIriRefError {
+                iri_ref: iri.to_string(),
+                error: e.to_string(),
             })
-        }
-    }
+        })
 }
 
 pub fn find_schema_rotating_formats(

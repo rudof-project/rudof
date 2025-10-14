@@ -78,6 +78,7 @@ fn pp_iri_ref<'a, A>(
             .text(prefix.clone())
             .append(doc.text(":"))
             .append(doc.text(local.clone())),
+        IriRef::RelativeIri(_) => todo!(),
     }
 }
 

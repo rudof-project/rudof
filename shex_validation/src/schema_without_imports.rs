@@ -201,6 +201,7 @@ pub fn resolve_iri_ref(
             })?;
             Ok(iri)
         }
+        IriRef::RelativeIri(_) => todo!(),
     }
 }
 

@@ -18,4 +18,7 @@ pub enum PrefixMapError {
 
     #[error("IO Error: {error}")]
     IOError { error: String },
+
+    #[error("Cannot obtain IRI from relative IriRef {str} without a base IRI")]
+    RelativeIriNoBase { str: String },
 }

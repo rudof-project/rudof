@@ -230,12 +230,8 @@ pub enum SchemaIRError {
         errors: Box<Vec<(ShExFormat, Box<SchemaIRError>)>>,
     },
 
-    #[error("Error converting IriRef {prefix}:{local} to Iri: {error}")]
-    CnvIriRefError {
-        prefix: String,
-        local: String,
-        error: String,
-    },
+    #[error("Error converting IriRef {iri_ref} to Iri: {error}")]
+    CnvIriRefError { iri_ref: String, error: String },
 
     #[error("Checking literal datatype. Error converting IriRef {iri_ref} to Iri: {error}")]
     CheckLiteralDatatypeCnvIriRef2IriError { iri_ref: IriRef, error: String },
