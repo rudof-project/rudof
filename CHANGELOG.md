@@ -13,6 +13,7 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 - Option to sort the results of ShEx validation by either node, shape, status
 - Pretty prints the results of SPARQL queries as tables
 - Added option to show results of ShEx validation with details
+- Started to pretty print results: reasons already have pretty print qualifying IRIs, pending validation errors
 
 ### Fixed
 ### Changed
