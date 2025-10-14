@@ -7,7 +7,7 @@ use crate::{
     RDFReaderMode, RdfConfigFormat, RdfConfigResultFormat, ResultDataFormat, ResultQueryFormat,
     ResultServiceFormat, ResultShExValidationFormat, ResultShaclValidationFormat,
     ResultValidationFormat, ShExFormat, ShapeMapFormat, ShowNodeMode, SortByResultShapeMap,
-    ValidationMode,
+    SortByShaclValidationReport, SortByValidate, ValidationMode,
 };
 use clap::{Parser, Subcommand};
 use iri_s::IriS;
@@ -248,10 +248,10 @@ pub enum Command {
             value_name = "SORT_MODE",
             ignore_case = true,
             help = "Sort result by (default = node)",
-            default_value_t = SortByResultShapeMap::Node,
+            default_value_t = SortByValidate::default(),
             value_enum
         )]
-        sort_by: SortByResultShapeMap,
+        sort_by: SortByValidate,
 
         #[arg(
             short = 'n',
@@ -467,7 +467,7 @@ pub enum Command {
             value_name = "FORMAT", 
             ignore_case = true,
             help = "Ouput result format",
-            default_value_t = ResultShExValidationFormat::Compact
+            default_value_t = ResultShExValidationFormat::default()
         )]
         result_format: ResultShExValidationFormat,
 
@@ -579,9 +579,19 @@ pub enum Command {
             ignore_case = true,
             value_name = "FORMAT", 
             help = "Ouput result format",
-            default_value_t = ResultShaclValidationFormat::Compact
+            default_value_t = ResultShaclValidationFormat::default()
         )]
         result_format: ResultShaclValidationFormat,
+
+        #[arg(
+            long = "sort_by",
+            value_name = "SORT_MODE",
+            ignore_case = true,
+            help = "Sort result by",
+            default_value_t = SortByShaclValidationReport::default(),
+            value_enum
+        )]
+        sort_by: SortByShaclValidationReport,
 
         #[arg(
             short = 'o',

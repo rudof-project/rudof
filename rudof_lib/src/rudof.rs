@@ -1,3 +1,36 @@
+// These are the structs that are publicly re-exported
+pub use dctap::{DCTAPFormat, DCTap as DCTAP};
+pub use iri_s::iri;
+pub use mie::Mie;
+pub use prefixmap::PrefixMap;
+pub use shacl_ast::ShaclFormat;
+pub use shacl_ast::ast::Schema as ShaclSchema;
+pub use shacl_ir::compiled::schema::SchemaIR as ShaclSchemaIR;
+pub use shacl_validation::shacl_processor::ShaclValidationMode;
+pub use shacl_validation::validation_report::report::ValidationReport;
+pub use shapes_comparator::{
+    CoShaMo, ComparatorError, CompareSchemaFormat, CompareSchemaMode, ShaCo,
+};
+pub use shex_ast::Node;
+pub use shex_ast::Schema as ShExSchema;
+pub use shex_ast::compact::{
+    ShExFormatter, ShapeMapParser, ShapemapFormatter as ShapeMapFormatter,
+};
+pub use shex_ast::ir::shape_label::ShapeLabel;
+pub use shex_ast::shapemap::{
+    QueryShapeMap, ResultShapeMap, ShapeMapFormat, SortMode, ValidationStatus,
+};
+pub use shex_validation::Validator as ShExValidator;
+pub use shex_validation::ValidatorConfig;
+pub use sparql_service::RdfData;
+pub use sparql_service::ServiceDescription;
+pub use sparql_service::ServiceDescriptionFormat;
+pub use srdf::QueryResultFormat;
+pub use srdf::UmlGenerationMode;
+pub use srdf::{QuerySolution, QuerySolutions, RDFFormat, ReaderMode, SRDFSparql, VarName};
+
+pub type Result<T> = result::Result<T, RudofError>;
+
 use crate::{InputSpec, RudofConfig, RudofError, ShapesGraphSource, UrlSpec};
 use iri_s::IriS;
 use rdf_config::RdfConfigModel;
@@ -23,37 +56,6 @@ use std::str::FromStr;
 use std::{env, io, result};
 use tracing::trace;
 use url::Url;
-
-// These are the structs that are publicly re-exported
-pub use dctap::{DCTAPFormat, DCTap as DCTAP};
-pub use iri_s::iri;
-pub use mie::Mie;
-pub use prefixmap::PrefixMap;
-pub use shacl_ast::ShaclFormat;
-pub use shacl_validation::shacl_processor::ShaclValidationMode;
-pub use shacl_validation::validation_report::report::ValidationReport;
-pub use shapes_comparator::{
-    CoShaMo, ComparatorError, CompareSchemaFormat, CompareSchemaMode, ShaCo,
-};
-pub use shex_ast::Node;
-pub use shex_ast::compact::{
-    ShExFormatter, ShapeMapParser, ShapemapFormatter as ShapeMapFormatter,
-};
-pub use shex_ast::ir::shape_label::ShapeLabel;
-pub use shex_ast::shapemap::{QueryShapeMap, ResultShapeMap, ShapeMapFormat, ValidationStatus};
-pub use shex_validation::Validator as ShExValidator;
-pub use shex_validation::ValidatorConfig;
-pub use sparql_service::ServiceDescription;
-pub use sparql_service::ServiceDescriptionFormat;
-pub use srdf::QueryResultFormat;
-pub use srdf::{QuerySolution, QuerySolutions, RDFFormat, ReaderMode, SRDFSparql, VarName};
-
-pub type Result<T> = result::Result<T, RudofError>;
-pub use shacl_ast::ast::Schema as ShaclSchema;
-pub use shacl_ir::compiled::schema::SchemaIR as ShaclSchemaIR;
-pub use shex_ast::Schema as ShExSchema;
-pub use sparql_service::RdfData;
-pub use srdf::UmlGenerationMode;
 
 /// This represents the public API to interact with `rudof`
 #[derive(Debug)]
@@ -1022,7 +1024,6 @@ impl Rudof {
                             &self.rdf_data,
                             &schema,
                             &Some(self.rdf_data.prefixmap_in_memory()),
-                            &None, // TODO!! Get schema prefix map
                         )
                         .map_err(|e| RudofError::ShExValidatorError {
                             schema: schema_str.clone(),
@@ -1142,30 +1143,6 @@ impl Rudof {
     pub fn get_rdf_data(&self) -> &RdfData {
         &self.rdf_data
     }
-
-    /*/// Obtains the current `shex_schema` after resolving import declarations
-    ///
-    /// If the import declarations in the current schema have not been resolved, it resolves them
-    pub fn shex_schema_without_imports(&mut self) -> Result<SchemaWithoutImports> {
-        match &self.resolved_shex_schema {
-            None => match &self.shex_schema {
-                Some(schema) => {
-                    let schema_resolved = SchemaWithoutImports::resolve_imports(
-                        schema,
-                        &Some(schema.source_iri()),
-                        Some(&ResolveMethod::default()),
-                    )
-                    .map_err(|e| RudofError::ResolvingImportsShExSchema {
-                        error: format!("{e}"),
-                    })?;
-                    self.resolved_shex_schema = Some(schema_resolved.clone());
-                    Ok(schema_resolved)
-                }
-                None => Err(RudofError::NoShExSchemaForResolvingImports),
-            },
-            Some(resolved_schema) => Ok(resolved_schema.clone()),
-        }
-    }*/
 
     #[allow(clippy::too_many_arguments)]
     pub fn get_coshamo(

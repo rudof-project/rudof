@@ -1,5 +1,4 @@
 use srdf::Object;
-use std::fmt::Display;
 
 use super::value_set_value::ValueSetValue;
 
@@ -24,9 +23,20 @@ impl ValueSet {
     pub fn values(&self) -> &Vec<ValueSetValue> {
         &self.values
     }
+
+    // TODO: Take into account width to split the value set in lines
+    pub fn show_qualified(&self, prefixmap: &prefixmap::PrefixMap) -> String {
+        let mut s = String::from("[");
+        for v in &self.values {
+            s.push_str(&v.show_qualified(prefixmap));
+            s.push(' ');
+        }
+        s.push(']');
+        s
+    }
 }
 
-impl Display for ValueSet {
+/*impl Display for ValueSet {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[")?;
         for v in &self.values {
@@ -35,4 +45,4 @@ impl Display for ValueSet {
         write!(f, "]")?;
         Ok(())
     }
-}
+}*/

@@ -13,7 +13,7 @@ use crate::{SchemaIRError, ShapeLabelIdx, ast, ast::Schema as SchemaAST};
 use crate::{ShapeExprLabel, ast::iri_exclusion::IriExclusion};
 use core::panic;
 use iri_s::IriS;
-use prefixmap::IriRef;
+use prefixmap::{IriRef, PrefixMap};
 use rbe::{Cardinality, Pending, RbeError, SingleCond};
 use rbe::{Component, MatchCond, Max, Min, RbeTable, rbe::Rbe};
 use srdf::Object;
@@ -65,7 +65,7 @@ impl AST2IR {
     ) -> CResult<(usize, usize)> {
         let mut total_imported = 0;
         for import in schema_ast.imports() {
-            let import_iri = cnv_iri_ref(&import)?;
+            let import_iri = cnv_iri_ref(&import, &compiled_schema.prefixmap())?;
             if !visited_sources.contains(&import_iri) {
                 visited_sources.push(import_iri.clone());
                 let imported_schema = self.resolve(&import_iri, base)?;
@@ -104,8 +104,8 @@ impl AST2IR {
         Ok(new_schema)
     }
 
-    pub fn compile_import(&self, import: &IriRef, _compiled_schema: &mut SchemaIR) -> CResult<()> {
-        let iri = cnv_iri_ref(import)?;
+    pub fn compile_import(&self, import: &IriRef, compiled_schema: &mut SchemaIR) -> CResult<()> {
+        let iri = cnv_iri_ref(import, &compiled_schema.prefixmap())?;
         debug!("Importing schema from {iri}");
         // TODO
         Ok(())
@@ -265,7 +265,7 @@ impl AST2IR {
                 Ok(not_se)
             }
             ast::ShapeExpr::Shape(shape) => {
-                let new_extra = self.cnv_extra(&shape.extra)?;
+                let new_extra = self.cnv_extra(&shape.extra, &compiled_schema.prefixmap())?;
                 let rbe_table = match &shape.expression {
                     None => RbeTable::new(),
                     Some(tew) => {
@@ -303,6 +303,7 @@ impl AST2IR {
                     &nc.datatype(),
                     &nc.xs_facet(),
                     &nc.values(),
+                    &compiled_schema.prefixmap(),
                 )?;
                 let node_constraint = NodeConstraint::new(nc.clone(), cond, display);
                 Ok(ShapeExpr::NodeConstraint(node_constraint))
@@ -320,15 +321,16 @@ impl AST2IR {
         dt: &Option<IriRef>,
         xs_facet: &Option<Vec<ast::XsFacet>>,
         values: &Option<Vec<ast::ValueSetValue>>,
+        prefixmap: &PrefixMap,
     ) -> CResult<(Cond, String)> {
         let maybe_value_set = match values {
             Some(vs) => {
-                let value_set = create_value_set(vs)?;
+                let value_set = create_value_set(vs, prefixmap)?;
                 Some(value_set)
             }
             None => None,
         };
-        node_constraint2match_cond(nk, dt, xs_facet, &maybe_value_set)
+        node_constraint2match_cond(nk, dt, xs_facet, &maybe_value_set, prefixmap)
     }
 
     fn cnv_closed(closed: &Option<bool>) -> bool {
@@ -338,11 +340,11 @@ impl AST2IR {
         }
     }
 
-    fn cnv_extra(&self, extra: &Option<Vec<IriRef>>) -> CResult<Vec<Pred>> {
+    fn cnv_extra(&self, extra: &Option<Vec<IriRef>>, prefixmap: &PrefixMap) -> CResult<Vec<Pred>> {
         if let Some(extra) = extra {
             let mut vs = Vec::new();
             for iri in extra {
-                let nm = cnv_iri_ref(iri)?;
+                let nm = cnv_iri_ref(iri, prefixmap)?;
                 vs.push(Pred::new(nm));
             }
             Ok(vs)
@@ -500,6 +502,7 @@ impl AST2IR {
                     &nc.datatype(),
                     &nc.xs_facet(),
                     &nc.values(),
+                    &compiled_schema.prefixmap(),
                 ),
 
                 ast::ShapeExpr::Ref(sref) => {
@@ -635,11 +638,17 @@ fn node_constraint2match_cond(
     datatype: &Option<IriRef>,
     xs_facet: &Option<Vec<ast::XsFacet>>,
     values: &Option<ValueSet>,
+    prefixmap: &PrefixMap,
 ) -> CResult<(Cond, String)> {
     let c1: Option<(Cond, String)> = node_kind.as_ref().map(node_kind2match_cond);
-    let c2 = datatype.as_ref().map(datatype2match_cond).transpose()?;
+    let c2 = datatype
+        .as_ref()
+        .map(|dt| datatype2match_cond(dt, prefixmap))
+        .transpose()?;
     let c3 = xs_facet.as_ref().map(xs_facets2match_cond);
-    let c4 = values.as_ref().map(|vs| valueset2match_cond(vs.clone()));
+    let c4 = values
+        .as_ref()
+        .map(|vs| valueset2match_cond(vs.clone(), prefixmap));
     let os = vec![c1, c2, c3, c4];
     Ok(options2match_cond(os))
 }
@@ -651,9 +660,11 @@ fn node_kind2match_cond(nodekind: &ast::NodeKind) -> (Cond, String) {
     )
 }
 
-fn datatype2match_cond(datatype: &IriRef) -> CResult<(Cond, String)> {
-    //let iri = cnv_iri_ref(datatype)?;
-    Ok((mk_cond_datatype(datatype), format!("datatype({datatype})")))
+fn datatype2match_cond(datatype: &IriRef, prefixmap: &PrefixMap) -> CResult<(Cond, String)> {
+    let iri = cnv_iri_ref(datatype, prefixmap)?;
+    let cond = mk_cond_datatype(&iri, prefixmap);
+    let str = cond.to_string();
+    Ok((cond, str))
 }
 
 fn xs_facets2match_cond(xs_facets: &Vec<ast::XsFacet>) -> (Cond, String) {
@@ -691,14 +702,14 @@ fn numeric_facet_to_match_cond(nf: &ast::NumericFacet) -> Cond {
     }
 }
 
-fn valueset2match_cond(vs: ValueSet) -> (Cond, String) {
+fn valueset2match_cond(vs: ValueSet, prefixmap: &PrefixMap) -> (Cond, String) {
     (
-        mk_cond_value_set(vs.clone()),
+        mk_cond_value_set(vs.clone(), prefixmap),
         format!(
-            "valueset({})",
+            "[{}]",
             vs.values()
                 .iter()
-                .map(|v| v.to_string())
+                .map(|v| v.show_qualified(prefixmap))
                 .collect::<Vec<_>>()
                 .join(", ")
         ),
@@ -724,11 +735,11 @@ fn mk_cond_ref(idx: ShapeLabelIdx) -> Cond {
     MatchCond::ref_(idx)
 }
 
-fn mk_cond_datatype(datatype: &IriRef) -> Cond {
+fn mk_cond_datatype(datatype: &IriS, prefixmap: &PrefixMap) -> Cond {
     let dt = datatype.clone();
     MatchCond::single(
         SingleCond::new()
-            .with_name(format!("datatype({dt})").as_str())
+            .with_name(prefixmap.qualify(&dt).to_string().as_str())
             .with_cond(move |value: &Node| match check_node_datatype(value, &dt) {
                 Ok(_) => Ok(Pending::new()),
                 Err(err) => Err(RbeError::MsgError {
@@ -914,39 +925,43 @@ fn iri_ref_2_shape_label(id: &IriRef) -> CResult<ShapeLabel> {
     }
 }
 
-fn mk_cond_value_set(value_set: ValueSet) -> Cond {
+fn mk_cond_value_set(value_set: ValueSet, prefixmap: &PrefixMap) -> Cond {
+    let cloned_prefixmap = prefixmap.clone();
     MatchCond::single(
         SingleCond::new()
-            .with_name(format!("{value_set}").as_str())
+            .with_name(value_set.show_qualified(prefixmap).as_str())
             .with_cond(move |node: &Node| {
                 if value_set.check_value(node.as_object()) {
                     Ok(Pending::empty())
                 } else {
                     Err(RbeError::MsgError {
-                        msg: format!("Values failed: {node} not in {value_set}"),
+                        msg: format!(
+                            "Values failed: {node} not in {}",
+                            value_set.show_qualified(&cloned_prefixmap)
+                        ),
                     })
                 }
             }),
     )
 }
 
-fn create_value_set(values: &Vec<ast::ValueSetValue>) -> CResult<ValueSet> {
+fn create_value_set(values: &Vec<ast::ValueSetValue>, prefixmap: &PrefixMap) -> CResult<ValueSet> {
     let mut vs = ValueSet::new();
     for v in values {
-        let cvalue = cnv_value(v)?;
+        let cvalue = cnv_value(v, prefixmap)?;
         vs.add_value(cvalue)
     }
     Ok(vs)
 }
 
-fn cnv_value(v: &ast::ValueSetValue) -> CResult<ValueSetValue> {
+fn cnv_value(v: &ast::ValueSetValue, prefixmap: &PrefixMap) -> CResult<ValueSetValue> {
     match &v {
         ast::ValueSetValue::IriStem { stem, .. } => {
-            let cnv_stem = cnv_iri_ref(stem)?;
+            let cnv_stem = cnv_iri_ref(stem, prefixmap)?;
             Ok(ValueSetValue::IriStem { stem: cnv_stem })
         }
         ast::ValueSetValue::ObjectValue(ovw) => {
-            let ov = cnv_object_value(ovw)?;
+            let ov = cnv_object_value(ovw, prefixmap)?;
             Ok(ValueSetValue::ObjectValue(ov))
         }
         ast::ValueSetValue::Language { language_tag, .. } => Ok(ValueSetValue::Language {
@@ -961,7 +976,7 @@ fn cnv_value(v: &ast::ValueSetValue) -> CResult<ValueSetValue> {
             Ok(ValueSetValue::LiteralStemRange { stem, exclusions })
         }
         ast::ValueSetValue::IriStemRange { stem, exclusions } => {
-            let stem = cnv_iriref_or_wildcard(stem)?;
+            let stem = cnv_iriref_or_wildcard(stem, prefixmap)?;
             let exclusions = cnv_iri_exclusions(exclusions)?;
             Ok(ValueSetValue::IriStemRange { stem, exclusions })
         }
@@ -1007,10 +1022,11 @@ fn cnv_string_or_wildcard(
 
 fn cnv_iriref_or_wildcard(
     stem: &ast::IriRefOrWildcard,
+    prefixmap: &PrefixMap,
 ) -> CResult<crate::ir::value_set_value::IriOrWildcard> {
     match stem {
         ast::IriRefOrWildcard::IriRef(iri) => {
-            let cnv_iri = cnv_iri_ref(iri)?;
+            let cnv_iri = cnv_iri_ref(iri, prefixmap)?;
             Ok(crate::ir::value_set_value::IriOrWildcard::Iri(cnv_iri))
         }
         ast::IriRefOrWildcard::Wildcard => {
@@ -1151,10 +1167,10 @@ fn cnv_language_exclusion(
     }
 }
 
-fn cnv_object_value(ov: &ast::ObjectValue) -> CResult<ObjectValue> {
+fn cnv_object_value(ov: &ast::ObjectValue, prefixmap: &PrefixMap) -> CResult<ObjectValue> {
     match ov {
         ast::ObjectValue::IriRef(ir) => {
-            let iri = cnv_iri_ref(ir)?;
+            let iri = cnv_iri_ref(ir, prefixmap)?;
             Ok(ObjectValue::IriRef(iri))
         }
         ast::ObjectValue::Literal(lit) => Ok(ObjectValue::ObjectLiteral(lit.clone())),
@@ -1208,7 +1224,7 @@ fn check_node_node_kind(node: &Node, nk: &ast::NodeKind) -> CResult<()> {
     }
 }
 
-fn check_node_datatype(node: &Node, dt: &IriRef) -> CResult<()> {
+fn check_node_datatype(node: &Node, dt: &IriS) -> CResult<()> {
     let object = node.as_checked_object().map_err(|e| {
         Box::new(SchemaIRError::Internal {
             msg: format!("check_node_datatype: as_checked_object error: {e}"),
@@ -1228,7 +1244,7 @@ fn check_node_datatype(node: &Node, dt: &IriRef) -> CResult<()> {
 
 // Check that the literal has the expected datatype
 // It assumes that the literal has been checked and in case of wrong datatype it is a WrongDatatypeLiteral
-fn check_literal_datatype(sliteral: &SLiteral, dt: &IriRef, node: &Node) -> CResult<()> {
+fn check_literal_datatype(sliteral: &SLiteral, expected: &IriS, node: &Node) -> CResult<()> {
     let checked_literal = sliteral.as_checked_literal().map_err(|e| {
         Box::new(SchemaIRError::Internal {
             msg: format!("check_literal_datatype: as_checked_literal error: {e}"),
@@ -1240,18 +1256,24 @@ fn check_literal_datatype(sliteral: &SLiteral, dt: &IriRef, node: &Node) -> CRes
             datatype,
             error,
         } => Err(Box::new(SchemaIRError::WrongDatatypeLiteralMatch {
-            datatype: dt.clone(),
+            datatype: datatype.clone(),
             error: error.clone(),
-            expected: datatype.clone(),
+            expected: expected.clone(),
             lexical_form: lexical_form.to_string(),
         })),
         _ => {
             let node_dt = checked_literal.datatype();
-            if &node_dt == dt {
+            let node_dt_iri = node_dt.get_iri().map_err(|e| {
+                Box::new(SchemaIRError::CheckLiteralDatatypeCnvIriRef2IriError {
+                    iri_ref: node_dt.clone(),
+                    error: e.to_string(),
+                })
+            })?;
+            if &node_dt_iri == expected {
                 Ok(())
             } else {
                 Err(Box::new(SchemaIRError::DatatypeDontMatch {
-                    expected: dt.clone(),
+                    expected: expected.clone(),
                     found: node_dt,
                     lexical_form: node.to_string(),
                 }))
@@ -1477,12 +1499,18 @@ fn todo<A>(str: &str) -> CResult<A> {
     }))*/
 }
 
-fn cnv_iri_ref(iri: &IriRef) -> Result<IriS, Box<SchemaIRError>> {
+fn cnv_iri_ref(iri: &IriRef, prefixmap: &PrefixMap) -> Result<IriS, Box<SchemaIRError>> {
     match iri {
         IriRef::Iri(iri) => Ok(iri.clone()),
-        _ => Err(Box::new(SchemaIRError::Internal {
-            msg: format!("Cannot convert {iri} to Iri"),
-        })),
+        IriRef::Prefixed { prefix, local } => {
+            prefixmap.resolve_prefix_local(prefix, local).map_err(|e| {
+                Box::new(SchemaIRError::CnvIriRefError {
+                    prefix: prefix.clone(),
+                    local: local.clone(),
+                    error: e.to_string(),
+                })
+            })
+        }
     }
 }
 

@@ -29,11 +29,8 @@ impl TriplePattern {
                 iri.to_string()
             }
         };
-        write!(formatter, "{} {} {} .", self.subj, pred_str, self.obj).map_err(|e| {
-            PrefixMapError::FormatError {
-                error: format!("{e}"),
-            }
-        })?;
+        write!(formatter, "{} {} {} .", self.subj, pred_str, self.obj)
+            .map_err(PrefixMapError::FormatError)?;
         Ok(())
     }
 }

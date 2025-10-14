@@ -1,10 +1,11 @@
 use std::fmt::Display;
 
-use prefixmap::PrefixMapError;
+use prefixmap::{PrefixMap, PrefixMapError};
 use rbe::RbeError;
 use serde::Serialize;
 use serde::ser::SerializeMap;
 use shex_ast::ir::preds::Preds;
+use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::shape::Shape;
 use shex_ast::ir::shape_expr::ShapeExpr;
 use shex_ast::{Node, Pred, ShapeExprLabel, ShapeLabelIdx, ir::shape_label::ShapeLabel};
@@ -38,6 +39,10 @@ pub enum ValidatorError {
         node: Box<Node>,
         errors: ValidatorErrors,
     },
+
+    #[error("Shape {idx} is abstract and has no descendants")]
+    AbstractShapeNoDescendants { idx: ShapeLabelIdx },
+
     #[error("Creating shapemap from node {node} and shape {shape} failed with errors: {error}")]
     NodeShapeError {
         node: String,
@@ -53,7 +58,7 @@ pub enum ValidatorError {
     #[error("Serialization of error failed: {source_error} with error: {error}")]
     ErrorSerializationError { source_error: String, error: String },
 
-    #[error("Failed pending: RBE passed, but pending references failed")]
+    #[error("References failed: Shape pattern matches, but references failed: {}", failed_pending.iter().map(|(n, s)| format!("({n}, {s})")).collect::<Vec<_>>().join(", "))]
     FailedPending {
         failed_pending: Vec<(Node, ShapeLabelIdx)>,
     },
@@ -153,15 +158,26 @@ pub enum ValidatorError {
     #[error("Shape not found for index {idx}")]
     ShapeExprNotFound { idx: ShapeLabelIdx },
 
-    #[error("Shape fails for node {node} with shape {shape}")]
-    ShapeFails {
+    #[error("Shape {idx} failed for node {node} with errors {}", errors.iter().map(|e| e.to_string()).collect::<Vec<_>>().join(", "))]
+    ShapeFailed {
         node: Box<Node>,
         shape: Box<Shape>,
+        idx: ShapeLabelIdx,
         errors: Vec<ValidatorError>,
     },
 
     #[error("ShapeRef fails for node {node} with idx: {idx}")]
     ShapeRefFailed { node: Box<Node>, idx: ShapeLabelIdx },
+}
+
+impl ValidatorError {
+    pub fn show_qualified(
+        &self,
+        _nodes_prefixmap: &PrefixMap,
+        _schema: &SchemaIR,
+    ) -> Result<String, PrefixMapError> {
+        Ok(format!("{self}"))
+    }
 }
 
 impl Serialize for ValidatorError {

@@ -75,6 +75,10 @@ impl Node {
         let obj = Object::parse(str, base)?;
         Ok(Node { node: obj })
     }
+
+    pub fn show_qualified(&self, prefixmap: &prefixmap::PrefixMap) -> String {
+        self.node.show_qualified(prefixmap)
+    }
 }
 
 impl Display for Node {

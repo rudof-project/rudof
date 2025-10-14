@@ -1,6 +1,5 @@
 use clap::ValueEnum;
-use clientele::envs::windows;
-use std::fmt::{Display, Formatter, write};
+use std::fmt::{Display, Formatter};
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
 #[clap(rename_all = "lower")]

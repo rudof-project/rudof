@@ -4,9 +4,8 @@ use crate::{
 };
 use anyhow::{Result, bail};
 use iri_s::IriS;
-use prefixmap::PrefixMap;
 use rudof_lib::{InputSpec, RdfData, Rudof, RudofConfig};
-use srdf::{QueryResultFormat, QuerySolution, QuerySolutions, ReaderMode};
+use srdf::{QueryResultFormat, QuerySolutions, ReaderMode};
 use std::{io::Write, path::PathBuf};
 use tabled::{builder::Builder, settings::Style};
 use tracing::trace;

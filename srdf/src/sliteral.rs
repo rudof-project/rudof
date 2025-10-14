@@ -24,7 +24,7 @@ pub enum SLiteral {
     },
     DatatypeLiteral {
         lexical_form: String,
-        datatype: IriRef,
+        datatype: IriRef, // TODO: We should change this to IriS
     },
     NumericLiteral(NumericLiteral),
     DatetimeLiteral(XsdDateTime),
@@ -470,6 +470,7 @@ impl Default for SLiteral {
 // numeric literals are compared based on their numeric value, and boolean literals are compared as true >
 // See: https://www.w3.org/TR/sparql11-query/#OperatorMapping
 // Numeric arguments are promoted as necessary to fit the expected types for that function or operator.
+#[allow(clippy::non_canonical_partial_ord_impl)]
 impl PartialOrd for SLiteral {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         match self {
@@ -529,6 +530,11 @@ impl PartialOrd for SLiteral {
     }
 }
 
+// TODO: We implement Ord only for literals that can be compared
+// This is a temporary solution to be able to compare literal when we sort the results of validation
+// The problematic cases are f64 NaN and literals with different datatypes
+// A better solution would be to define a total order for all literals
+// See: https://www.w3.org/TR/sparql11-query/#OperatorMapping
 impl Ord for SLiteral {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         match self.partial_cmp(other) {

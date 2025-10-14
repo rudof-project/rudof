@@ -2,13 +2,14 @@ use super::dependency_graph::{DependencyGraph, PosNeg};
 use super::shape_expr::ShapeExpr;
 use super::shape_label::ShapeLabel;
 use crate::ir::inheritance_graph::InheritanceGraph;
+use crate::ir::shape::Shape;
 use crate::ir::shape_expr_info::ShapeExprInfo;
 use crate::ir::source_idx::SourceIdx;
 use crate::{
     CResult, SchemaIRError, ShapeExprLabel, ShapeLabelIdx, ast::Schema as SchemaJson,
     ir::ast2ir::AST2IR,
 };
-use crate::{Expr, Pred, ResolveMethod};
+use crate::{Expr, Node, Pred, ResolveMethod};
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use std::collections::hash_map::Entry;
@@ -420,6 +421,94 @@ impl SchemaIR {
             }
         }
         deps
+    }
+
+    pub fn show_shape_idx(&self, idx: &ShapeLabelIdx, width: usize) -> String {
+        let mut result = String::new();
+        if let Some(info) = self.find_shape_idx(idx) {
+            match info.label() {
+                Some(label) => {
+                    result.push_str(
+                        format!(
+                            "{} = {}",
+                            self.show_label(label),
+                            self.show_shape_expr(info.expr(), width)
+                        )
+                        .as_str(),
+                    );
+                }
+                None => {
+                    result
+                        .push_str(self.show_shape_expr(info.expr(), width).to_string().as_str());
+                }
+            }
+        } else {
+            result.push_str(format!("ShapeLabelIdx {idx} not found").as_str());
+        }
+        result
+    }
+
+    pub fn show_shape_expr(&self, se: &ShapeExpr, width: usize) -> String {
+        match se {
+            ShapeExpr::ShapeOr { exprs } => format!(
+                "({})",
+                exprs
+                    .iter()
+                    .map(|e| self.show_shape_idx(e, width))
+                    .collect::<Vec<_>>()
+                    .join(" OR ")
+            ),
+            ShapeExpr::ShapeAnd { exprs } => format!(
+                "({})",
+                exprs
+                    .iter()
+                    .map(|e| self.show_shape_idx(e, width))
+                    .collect::<Vec<_>>()
+                    .join(" AND ")
+            ),
+            ShapeExpr::ShapeNot { expr } => format!("NOT ({})", self.show_shape_idx(expr, width)),
+            ShapeExpr::NodeConstraint(nc) => format!("{nc}"),
+            ShapeExpr::Shape(shape) => self.show_shape(shape, width),
+            ShapeExpr::External {} => "EXTERNAL".to_string(),
+            ShapeExpr::Ref { idx } => format!("@{}", idx),
+            ShapeExpr::Empty => "{}".to_string(),
+        }
+    }
+
+    fn show_shape(&self, shape: &Shape, width: usize) -> String {
+        let extends = if shape.extends().is_empty() {
+            "".to_string()
+        } else {
+            format!(
+                " {}",
+                shape
+                    .extends()
+                    .iter()
+                    .map(|e| format!("EXTENDS @{}", e))
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            )
+        };
+        let closed = if shape.is_closed() { " CLOSED " } else { "" };
+        let extra = if shape.extra().is_empty() {
+            "".to_string()
+        } else {
+            format!(
+                " EXTRA {}",
+                shape
+                    .extra()
+                    .iter()
+                    .map(|e| self.prefixmap.qualify(e.iri()))
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            )
+        };
+        let show_pred = |p: &Pred| self.prefixmap.qualify(p.iri());
+        let show_cond = |node: &Node| node.show_qualified(&self.prefixmap()).to_string();
+        let rbe = shape
+            .triple_expr()
+            .show_rbe_table(show_pred, show_cond, width);
+        format!("{extends}{closed}{extra}{{{rbe}}}")
     }
 }
 

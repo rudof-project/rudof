@@ -1,7 +1,7 @@
 prefix : <http://example.org/>
 prefix schema: <http://schema.org/>
 
-:a schema:name  23 ;
+:a schema:name  "Alice" ;
    schema:knows :a, :b  .
 
 :b schema:name  "Bob"   ;

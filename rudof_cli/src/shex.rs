@@ -321,12 +321,12 @@ fn write_result_shapemap(
         }
         CliShapeMapFormat::Internal => {
             let str = serde_json::to_string_pretty(&result)
-                .context(format!("Error converting Result to JSON"))?;
+                .context("Error converting Result to JSON".to_string())?;
             writeln!(writer, "{str}")?;
         }
         CliShapeMapFormat::Json => {
             let str = serde_json::to_string_pretty(&result)
-                .context(format!("Error converting Result to JSON"))?;
+                .context("Error converting Result to JSON".to_string())?;
             writeln!(writer, "{str}")?;
         }
         CliShapeMapFormat::Details => {
