@@ -65,8 +65,8 @@ impl Reason {
     fn build_tree(
         &self,
         tb: &mut TreeBuilder,
-        nodes_prefixmap: &PrefixMap,
-        schema: &SchemaIR,
+        _nodes_prefixmap: &PrefixMap,
+        _schema: &SchemaIR,
     ) -> Result<(), PrefixMapError> {
         match self {
             Reason::NodeConstraintPassed { .. } => Ok(()),
@@ -74,7 +74,7 @@ impl Reason {
                 tb.begin_child("reasons".to_string());
                 for reason in reasons {
                     for r in reason {
-                        r.build_tree(tb, nodes_prefixmap, schema)?;
+                        r.build_tree(tb, _nodes_prefixmap, _schema)?;
                     }
                 }
                 tb.end_child();
@@ -83,7 +83,7 @@ impl Reason {
             Reason::ShapeOrPassed { reasons, .. } => {
                 tb.begin_child("reasons".to_string());
                 for reason in reasons.iter() {
-                    reason.build_tree(tb, nodes_prefixmap, schema)?;
+                    reason.build_tree(tb, _nodes_prefixmap, _schema)?;
                 }
                 tb.end_child();
                 Ok(())
@@ -96,25 +96,26 @@ impl Reason {
         &self,
         nodes_prefixmap: &PrefixMap,
         schema: &SchemaIR,
+        width: usize,
     ) -> Result<String, PrefixMapError> {
         match self {
             Reason::NodeConstraintPassed { node, nc } => Ok(format!(
                 "Node constraint passed. Node: {}, Constraint: {nc}",
-                node.show_qualified(nodes_prefixmap)?,
+                node.show_qualified(nodes_prefixmap),
             )),
             Reason::ShapeAndPassed { node, se, .. } => {
                 let s = format!(
                     "AND passed. Node {}, and: {}",
-                    node.show_qualified(nodes_prefixmap)?,
-                    (*se).show_qualified(&schema.prefixmap())?
+                    node.show_qualified(nodes_prefixmap),
+                    schema.show_shape_expr(se, width)
                 );
                 Ok(s)
             }
             Reason::ShapePassed { node, idx, .. } => {
-                let se_str = schema.show_shape_idx(idx);
+                let se_str = schema.show_shape_idx(idx, width);
                 Ok(format!(
                     "Shape passed. Node {}, shape {}: {}",
-                    node.show_qualified(nodes_prefixmap)?,
+                    node.show_qualified(nodes_prefixmap),
                     idx,
                     se_str
                 ))
@@ -127,9 +128,10 @@ impl Reason {
         &self,
         nodes_prefixmap: &PrefixMap,
         schema: &SchemaIR,
+        width: usize,
         writer: &mut W,
     ) -> Result<(), PrefixMapError> {
-        let root_str = self.root_qualified(nodes_prefixmap, schema)?;
+        let root_str = self.root_qualified(nodes_prefixmap, schema, width)?;
         let mut tb = TreeBuilder::new(root_str);
         self.build_tree(&mut tb, nodes_prefixmap, schema)?;
         write_tree(&tb.build(), writer).map_err(|e| PrefixMapError::IOError {
@@ -142,9 +144,10 @@ impl Reason {
         &self,
         nodes_prefixmap: &PrefixMap,
         schema: &SchemaIR,
+        width: usize,
     ) -> Result<String, PrefixMapError> {
         let mut v = Vec::new();
-        self.write_qualified(nodes_prefixmap, schema, &mut v)?;
+        self.write_qualified(nodes_prefixmap, schema, width, &mut v)?;
         let s = String::from_utf8(v).map_err(|e| PrefixMapError::IOError {
             error: e.to_string(),
         })?;

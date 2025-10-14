@@ -39,6 +39,10 @@ pub enum ValidatorError {
         node: Box<Node>,
         errors: ValidatorErrors,
     },
+
+    #[error("Shape {idx} is abstract and has no descendants")]
+    AbstractShapeNoDescendants { idx: ShapeLabelIdx },
+
     #[error("Creating shapemap from node {node} and shape {shape} failed with errors: {error}")]
     NodeShapeError {
         node: String,
@@ -54,7 +58,7 @@ pub enum ValidatorError {
     #[error("Serialization of error failed: {source_error} with error: {error}")]
     ErrorSerializationError { source_error: String, error: String },
 
-    #[error("Failed pending: RBE passed, but pending references failed")]
+    #[error("References failed: Shape pattern matches, but references failed: {}", failed_pending.iter().map(|(n, s)| format!("({n}, {s})")).collect::<Vec<_>>().join(", "))]
     FailedPending {
         failed_pending: Vec<(Node, ShapeLabelIdx)>,
     },

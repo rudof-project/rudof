@@ -1,4 +1,5 @@
 use iri_s::IriS;
+use prefixmap::PrefixMap;
 use srdf::{Object, SLiteral};
 use std::fmt::Display;
 
@@ -19,6 +20,13 @@ impl ObjectValue {
                 Object::Literal(lit) => lit.match_literal(literal_expected),
                 _ => false,
             },
+        }
+    }
+
+    pub fn show_qualified(&self, prefixmap: &PrefixMap) -> String {
+        match self {
+            ObjectValue::IriRef(iri) => prefixmap.qualify(iri),
+            ObjectValue::ObjectLiteral(lit) => lit.to_string(),
         }
     }
 }

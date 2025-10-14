@@ -65,7 +65,7 @@ pub enum SchemaIRError {
     )]
     DatatypeDontMatch {
         found: IriRef,
-        expected: IriRef,
+        expected: IriS,
         lexical_form: String,
     },
 
@@ -76,12 +76,12 @@ pub enum SchemaIRError {
         lexical_form: String,
         datatype: IriRef,
         error: String,
-        expected: IriRef,
+        expected: IriS,
     },
 
     #[error("Datatype expected {expected} but found literal {node} which has datatype: {}", (*node).datatype().map(|d| d.to_string()).unwrap_or("None".to_string()))]
     DatatypeNoLiteral {
-        expected: Box<IriRef>,
+        expected: Box<IriS>,
         node: Box<Node>,
     },
 
@@ -229,4 +229,14 @@ pub enum SchemaIRError {
         iri: IriS,
         errors: Box<Vec<(ShExFormat, Box<SchemaIRError>)>>,
     },
+
+    #[error("Error converting IriRef {prefix}:{local} to Iri: {error}")]
+    CnvIriRefError {
+        prefix: String,
+        local: String,
+        error: String,
+    },
+
+    #[error("Checking literal datatype. Error converting IriRef {iri_ref} to Iri: {error}")]
+    CheckLiteralDatatypeCnvIriRef2IriError { iri_ref: IriRef, error: String },
 }

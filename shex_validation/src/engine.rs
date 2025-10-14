@@ -23,6 +23,7 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::hash_map::Entry;
 use tracing::debug;
+use tracing::info;
 use tracing::trace;
 
 type Result<T> = std::result::Result<T, ValidatorError>;
@@ -261,11 +262,20 @@ impl Engine {
         let candidates = self.dep(node, label, schema, rdf)?;
         let cleaned_candidates: HashSet<_> = candidates.difference(&hyp_as_set).cloned().collect();
         for (n1, l1) in cleaned_candidates {
+            // TODO: Change structure to collect errors and reasons instead of using a HashSet
             match self.prove(&n1, &l1, hyp, schema, rdf)? {
-                Either::Right(_rs) => {
+                Either::Right(rs) => {
+                    debug!(
+                        "Proved {n1}@{l1} while proving {node}@{label}: {}",
+                        rs.iter().map(|r| format!("{r}")).join(", ")
+                    );
                     matched.insert((n1.clone(), l1));
                 }
-                Either::Left(_errors) => {
+                Either::Left(errors) => {
+                    debug!(
+                        "Failed to prove {n1}@{l1} while proving {node}@{label}: {}",
+                        errors.iter().map(|e| format!("{e}")).join(", ")
+                    );
                     // Should we collect errors here?
                 }
             }
@@ -280,7 +290,12 @@ impl Engine {
             } else {
                 "Failed to prove"
             },
-            show_result(&result, &rdf.prefixmap().unwrap_or_default(), &schema)?,
+            show_result(
+                &result,
+                &rdf.prefixmap().unwrap_or_default(),
+                schema,
+                self.config.width()
+            )?,
             hyp.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
         );
         Ok(result)
@@ -300,7 +315,12 @@ impl Engine {
         );
         if let Some(info) = schema.find_shape_idx(idx) {
             if schema.is_abstract(idx) {
-                let descendants_result = self.check_descendants(node, idx, schema, rdf, typing)?;
+                let descendants = schema.descendants(idx);
+                if descendants.is_empty() {
+                    return Err(ValidatorError::AbstractShapeNoDescendants { idx: *idx });
+                }
+                let descendants_result =
+                    self.check_descendants(node, idx, descendants, schema, rdf, typing)?;
                 if descendants_result.is_right() {
                     Ok(descendants_result)
                 } else {
@@ -316,13 +336,23 @@ impl Engine {
                 let result = self.check_node_shape_expr(idx, node, se, schema, rdf, typing)?;
                 tracing::debug!(
                     "Result of {node}@{idx} is: {}",
-                    show_result(&result, &rdf.prefixmap().unwrap_or_default(), &schema)?,
+                    show_result(
+                        &result,
+                        &rdf.prefixmap().unwrap_or_default(),
+                        schema,
+                        self.config.width()
+                    )?,
                 );
                 if result.is_right() {
                     Ok(result)
                 } else {
+                    let descendants = schema.descendants(idx);
+                    if descendants.is_empty() {
+                        return Ok(result);
+                    }
+                    // If the shape has descendants, check them too
                     let descendants_result =
-                        self.check_descendants(node, idx, schema, rdf, typing)?;
+                        self.check_descendants(node, idx, descendants, schema, rdf, typing)?;
                     if descendants_result.is_right() {
                         Ok(descendants_result)
                     } else {
@@ -347,11 +377,11 @@ impl Engine {
         &self,
         node: &Node,
         idx: &ShapeLabelIdx,
+        descendants: Vec<ShapeLabelIdx>,
         schema: &SchemaIR,
         rdf: &impl NeighsRDF,
         typing: &mut HashSet<(Node, ShapeLabelIdx)>,
     ) -> Result<ValidationResult> {
-        let descendants = schema.descendants(idx);
         let mut errors_collection = Vec::new();
         for desc in descendants {
             match self.check_node_idx(node, &desc, schema, rdf, typing)? {
@@ -748,6 +778,7 @@ fn show_result(
     result: &Either<Vec<ValidatorError>, Vec<Reason>>,
     nodes_prefixmap: &PrefixMap,
     schema: &SchemaIR,
+    width: usize,
 ) -> Result<String> {
     match result {
         Either::Left(errors) => {
@@ -755,7 +786,7 @@ fn show_result(
                 .iter()
                 .map(|e| {
                     e.show_qualified(nodes_prefixmap, schema)
-                        .map_err(|e| ValidatorError::PrefixMapError(e))
+                        .map_err(ValidatorError::PrefixMapError)
                 })
                 .collect();
             let vs: Vec<String> = es.into_iter().collect::<Result<Vec<_>>>()?;
@@ -765,8 +796,8 @@ fn show_result(
             let rs: Vec<Result<String>> = reasons
                 .iter()
                 .map(|r| {
-                    r.show_qualified(nodes_prefixmap, schema)
-                        .map_err(|e| ValidatorError::PrefixMapError(e))
+                    r.show_qualified(nodes_prefixmap, schema, width)
+                        .map_err(ValidatorError::PrefixMapError)
                 })
                 .collect();
             let vs: Vec<String> = rs.into_iter().collect::<Result<Vec<_>>>()?;
@@ -824,26 +855,38 @@ fn check_expr_neigh(
         );
         match result {
             Ok(pending_values) => {
-                let mut failed_pending = Vec::new();
-                // Check if all pending values are in typing
-                for (n, idx) in pending_values.iter() {
-                    let pair = (n.clone(), *idx);
-                    if !typing.contains(&pair) {
-                        failed_pending.push(pair)
-                        // TODO: if (stop_at_first) break
-                        // We don't need to compute all the failed pending values once we find the first pair
+                if !pending_values.is_empty() {
+                    info!("Pending values: {:?}", pending_values);
+                    let mut failed_pending = Vec::new();
+                    // Check if all pending values are in typing
+                    for (n, idx) in pending_values.iter() {
+                        let pair = (n.clone(), *idx);
+                        if !typing.contains(&pair) {
+                            failed_pending.push(pair)
+                            // TODO: if (stop_at_first) break
+                            // We don't need to compute all the failed pending values once we find the first pair
+                        }
                     }
-                }
-                if failed_pending.is_empty() {
+                    if failed_pending.is_empty() {
+                        return pass(Reason::ShapePassed {
+                            node: node.clone(),
+                            shape: Box::new(shape.clone()),
+                            idx: *idx,
+                        });
+                    } else {
+                        trace!("Failed pending values: {:?}", failed_pending);
+                        errors.push(ValidatorError::FailedPending {
+                            failed_pending: failed_pending.clone(),
+                        })
+                    }
+                } else {
+                    // No Pending values
+                    info!("No pending values");
                     return pass(Reason::ShapePassed {
                         node: node.clone(),
                         shape: Box::new(shape.clone()),
                         idx: *idx,
                     });
-                } else {
-                    errors.push(ValidatorError::FailedPending {
-                        failed_pending: failed_pending.clone(),
-                    })
                 }
             }
             Err(err) => {
@@ -853,8 +896,9 @@ fn check_expr_neigh(
         }
     }
     debug!(
-        "expr failed {expr} with neighs: [{}]",
-        neighs.iter().map(|(p, o)| format!("{p} {o}")).join(", ")
+        "expr failed {expr} with neighs: [{}], errors: [{}]",
+        neighs.iter().map(|(p, o)| format!("{p} {o}")).join(", "),
+        errors.iter().map(|e| format!("{e}")).join(", ")
     );
     fail(ValidatorError::ShapeFailed {
         node: Box::new(node.clone()),

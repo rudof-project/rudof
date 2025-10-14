@@ -165,7 +165,7 @@ where
         })
     }
 
-    pub fn show_rbe_table<SK, SV>(&self, show_key: SK, show_value: SV) -> String
+    pub fn show_rbe_table<SK, SV>(&self, show_key: SK, show_value: SV, width: usize) -> String
     where
         SK: Fn(&K) -> String,
         SV: Fn(&V) -> String,
@@ -175,7 +175,7 @@ where
             let cond = self.component_cond.get(c).unwrap();
             format!("{} {}", show_key(key), cond.show(&show_key, &show_value))
         });
-        rbe_str.to_string()
+        rbe_str.pretty(width)
     }
 
     pub fn show_rbe_simplified(&self) -> String {
@@ -293,7 +293,6 @@ where
     state: State<K, V, R>,
     rbe: Rbe<Component>,
     open: bool,
-    // controlled: HashSet<K>
 }
 
 impl<K, V, R> Iterator for IterCartesianProduct<K, V, R>

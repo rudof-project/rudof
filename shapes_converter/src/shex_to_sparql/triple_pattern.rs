@@ -30,7 +30,7 @@ impl TriplePattern {
             }
         };
         write!(formatter, "{} {} {} .", self.subj, pred_str, self.obj)
-            .map_err(|e| PrefixMapError::FormatError(e))?;
+            .map_err(PrefixMapError::FormatError)?;
         Ok(())
     }
 }

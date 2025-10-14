@@ -1,7 +1,7 @@
+use crate::RbePrettyPrinter;
 use crate::{Bag, Cardinality, Max, Min, deriv_error::DerivError, deriv_n};
 use core::hash::Hash;
 use itertools::cloned;
-use pretty::{Arena, DocAllocator, DocBuilder, RefDoc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fmt;
@@ -449,13 +449,9 @@ where
     }
 
     pub fn pretty(&self, width: usize) -> String {
-        let doc = self.pp_rbe();
-        doc.pretty(width).to_string()
-    }
-
-    fn pp_rbe(&self) -> DocBuilder<'a, Arena<'a>, A> {
-        let arena = Arena::new();
-        self.pp_rbe_a(&arena)
+        let pretty_printer = RbePrettyPrinter::new();
+        let s = pretty_printer.print(self, width);
+        s
     }
 }
 

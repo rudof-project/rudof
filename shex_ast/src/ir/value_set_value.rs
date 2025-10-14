@@ -1,6 +1,7 @@
 use super::object_value::ObjectValue;
 use crate::ir::exclusion::{IriExclusion, LanguageExclusion, LiteralExclusion};
 use iri_s::IriS;
+use prefixmap::PrefixMap;
 use srdf::SLiteral;
 use srdf::{Object, lang::Lang};
 use std::fmt::Display;
@@ -215,6 +216,79 @@ impl ValueSetValue {
                 true
             }
             ValueSetValue::ObjectValue(v) => v.match_value(object),
+        }
+    }
+
+    pub fn show_qualified(&self, prefixmap: &PrefixMap) -> String {
+        match self {
+            ValueSetValue::IriStem { stem } => format!("{}~", prefixmap.qualify(stem)),
+            ValueSetValue::IriStemRange { stem, exclusions } => {
+                let mut s = match stem {
+                    IriOrWildcard::Iri(iri) => prefixmap.qualify(iri),
+                    IriOrWildcard::Wildcard { type_: _ } => "*".to_string(),
+                };
+                s.push('~');
+                if let Some(exclusions) = exclusions {
+                    s.push_str(" - ");
+                    let mut first = true;
+                    for ex in exclusions {
+                        if !first {
+                            s.push(' ');
+                        }
+                        s.push_str(&ex.to_string());
+                        first = false;
+                    }
+                }
+                s
+            }
+            ValueSetValue::LiteralStem { stem } => {
+                format!("{stem}~")
+            }
+            ValueSetValue::LiteralStemRange { stem, exclusions } => {
+                let mut s = match stem {
+                    StringOrWildcard::String(s) => s.clone(),
+                    StringOrWildcard::Wildcard { type_: _ } => "*".to_string(),
+                };
+                s.push('~');
+                if let Some(exclusions) = exclusions {
+                    s.push_str(" - ");
+                    let mut first = true;
+                    for ex in exclusions {
+                        if !first {
+                            s.push(' ');
+                        }
+                        s.push_str(&ex.to_string());
+                        first = false;
+                    }
+                }
+                s
+            }
+            ValueSetValue::Language { language_tag } => {
+                format!("@{}", language_tag)
+            }
+            ValueSetValue::LanguageStem { stem } => {
+                format!("@{stem}~")
+            }
+            ValueSetValue::LanguageStemRange { stem, exclusions } => {
+                let mut s = match stem {
+                    LangOrWildcard::Lang(lang) => lang.to_string(),
+                    LangOrWildcard::Wildcard { type_: _ } => "*".to_string(),
+                };
+                s.push('~');
+                if let Some(exclusions) = exclusions {
+                    s.push_str(" - ");
+                    let mut first = true;
+                    for ex in exclusions {
+                        if !first {
+                            s.push_str(", ");
+                        }
+                        s.push_str(&ex.to_string());
+                        first = false;
+                    }
+                }
+                s
+            }
+            ValueSetValue::ObjectValue(object_value) => object_value.show_qualified(prefixmap),
         }
     }
 }

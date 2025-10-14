@@ -6,6 +6,8 @@ use std::path::Path;
 
 use crate::{MAX_STEPS, ShExConfig, ValidatorError};
 
+const DEFAULT_WIDTH: usize = 80;
+
 /// This struct can be used to customize the behavour of ShEx validators
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 
@@ -22,7 +24,11 @@ pub struct ValidatorConfig {
     /// Configuration of Shapemaps
     pub shapemap: Option<ShapemapConfig>,
 
+    /// Whether to check the negation requirement (default: true)
     pub check_negation_requirement: Option<bool>,
+
+    /// Width for pretty printing
+    pub width: Option<usize>,
 }
 
 impl Default for ValidatorConfig {
@@ -33,6 +39,7 @@ impl Default for ValidatorConfig {
             shex: Some(ShExConfig::default()),
             shapemap: Some(ShapemapConfig::default()),
             check_negation_requirement: Some(true),
+            width: Some(80),
         }
     }
 }
@@ -88,6 +95,13 @@ impl ValidatorConfig {
         match &self.shapemap {
             None => ShapemapConfig::default(),
             Some(sc) => sc.clone(),
+        }
+    }
+
+    pub fn width(&self) -> usize {
+        match self.width {
+            None => DEFAULT_WIDTH,
+            Some(w) => w,
         }
     }
 }

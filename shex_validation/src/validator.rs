@@ -10,12 +10,11 @@ use shex_ast::Node;
 use shex_ast::ShapeExprLabel;
 use shex_ast::ShapeLabelIdx;
 use shex_ast::ir::schema_ir::SchemaIR;
+use shex_ast::ir::shape_label::ShapeLabel;
+use shex_ast::object_value::ObjectValue;
 use shex_ast::shapemap::ResultShapeMap;
 use shex_ast::shapemap::ValidationStatus;
 use shex_ast::shapemap::query_shape_map::QueryShapeMap;
-// use shex_ast::ir::shape_expr::ShapeExpr;
-use shex_ast::ir::shape_label::ShapeLabel;
-use shex_ast::object_value::ObjectValue;
 use srdf::NeighsRDF;
 use tracing::trace;
 
@@ -186,7 +185,12 @@ impl Validator {
                 Atom::Pos(pa) => {
                     let reasons = engine.find_reasons(pa);
                     let json_reasons = json_reasons(&reasons)?;
-                    let str_reasons = show_reasons(&reasons, &nodes_prefixmap, &self.schema)?;
+                    let str_reasons = show_reasons(
+                        &reasons,
+                        &nodes_prefixmap,
+                        &self.schema,
+                        self.config.width(),
+                    )?;
                     let status = ValidationStatus::conformant(str_reasons, json_reasons);
                     // result.add_ok()
                     result
@@ -286,6 +290,7 @@ fn show_reasons(
     reasons: &[Reason],
     nodes_prefixmap: &PrefixMap,
     schema: &SchemaIR,
+    width: usize,
 ) -> Result<String> {
     let mut result = String::new();
     match reasons.len() {
@@ -294,9 +299,8 @@ fn show_reasons(
             return Ok(result);
         }
         1 => {
-            result.push_str(
-                format!("{}", reasons[0].show_qualified(nodes_prefixmap, schema)?).as_str(),
-            );
+            let str = reasons[0].show_qualified(nodes_prefixmap, schema, width)?;
+            result.push_str(&str);
             return Ok(result);
         }
         _ => {
@@ -304,7 +308,7 @@ fn show_reasons(
                 result.push_str(
                     format!(
                         "Reason #{idx}: {}\n",
-                        reason.show_qualified(nodes_prefixmap, schema)?
+                        reason.show_qualified(nodes_prefixmap, schema, width)?
                     )
                     .as_str(),
                 );

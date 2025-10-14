@@ -24,7 +24,7 @@ pub enum SLiteral {
     },
     DatatypeLiteral {
         lexical_form: String,
-        datatype: IriRef,
+        datatype: IriRef, // TODO: We should change this to IriS
     },
     NumericLiteral(NumericLiteral),
     DatetimeLiteral(XsdDateTime),

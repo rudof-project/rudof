@@ -102,24 +102,21 @@ impl Object {
         }
     }
 
-    pub fn show_qualified(
-        &self,
-        prefixmap: &prefixmap::PrefixMap,
-    ) -> Result<String, prefixmap::PrefixMapError> {
+    pub fn show_qualified(&self, prefixmap: &prefixmap::PrefixMap) -> String {
         match self {
-            Object::Iri(iri) => Ok(prefixmap.qualify(iri)),
-            Object::BlankNode(bnode) => Ok(format!("_:{bnode}")),
-            Object::Literal(lit) => Ok(lit.to_string()),
+            Object::Iri(iri) => prefixmap.qualify(iri),
+            Object::BlankNode(bnode) => format!("_:{bnode}"),
+            Object::Literal(lit) => lit.to_string(),
             Object::Triple {
                 subject,
                 predicate,
                 object,
-            } => Ok(format!(
+            } => format!(
                 "<< {} {} {} >>",
-                subject.show_qualified(prefixmap)?,
+                subject.show_qualified(prefixmap),
                 prefixmap.qualify(predicate),
-                object.show_qualified(prefixmap)?
-            )),
+                object.show_qualified(prefixmap)
+            ),
         }
     }
 }

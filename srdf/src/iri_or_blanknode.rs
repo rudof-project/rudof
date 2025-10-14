@@ -23,13 +23,10 @@ impl IriOrBlankNode {
         IriOrBlankNode::Iri(iri.clone())
     }
 
-    pub fn show_qualified(
-        &self,
-        prefixmap: &prefixmap::PrefixMap,
-    ) -> Result<String, prefixmap::PrefixMapError> {
+    pub fn show_qualified(&self, prefixmap: &prefixmap::PrefixMap) -> String {
         match self {
-            IriOrBlankNode::BlankNode(bnode) => Ok(format!("_:{bnode}")),
-            IriOrBlankNode::Iri(iri) => Ok(prefixmap.qualify(iri)),
+            IriOrBlankNode::BlankNode(bnode) => format!("_:{bnode}"),
+            IriOrBlankNode::Iri(iri) => prefixmap.qualify(iri),
         }
     }
 }

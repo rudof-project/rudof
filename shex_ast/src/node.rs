@@ -77,10 +77,7 @@ impl Node {
         Ok(Node { node: obj })
     }
 
-    pub fn show_qualified(
-        &self,
-        prefixmap: &prefixmap::PrefixMap,
-    ) -> Result<String, PrefixMapError> {
+    pub fn show_qualified(&self, prefixmap: &prefixmap::PrefixMap) -> String {
         self.node.show_qualified(prefixmap)
     }
 }
