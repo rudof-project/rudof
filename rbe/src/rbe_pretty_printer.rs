@@ -6,6 +6,12 @@ use std::fmt::Display;
 
 pub struct RbePrettyPrinter {}
 
+impl Default for RbePrettyPrinter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RbePrettyPrinter {
     pub fn new() -> Self {
         RbePrettyPrinter {}

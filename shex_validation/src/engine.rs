@@ -23,7 +23,6 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::hash_map::Entry;
 use tracing::debug;
-use tracing::info;
 use tracing::trace;
 
 type Result<T> = std::result::Result<T, ValidatorError>;
@@ -856,7 +855,6 @@ fn check_expr_neigh(
         match result {
             Ok(pending_values) => {
                 if !pending_values.is_empty() {
-                    info!("Pending values: {:?}", pending_values);
                     let mut failed_pending = Vec::new();
                     // Check if all pending values are in typing
                     for (n, idx) in pending_values.iter() {
@@ -881,7 +879,6 @@ fn check_expr_neigh(
                     }
                 } else {
                     // No Pending values
-                    info!("No pending values");
                     return pass(Reason::ShapePassed {
                         node: node.clone(),
                         shape: Box::new(shape.clone()),
