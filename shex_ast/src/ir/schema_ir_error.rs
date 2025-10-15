@@ -69,6 +69,14 @@ pub enum SchemaIRError {
         lexical_form: String,
     },
 
+    #[error("Finding content from iris. Errors: {errors:?}")]
+    FindingContentFromIrisError {
+        errors: Box<Vec<Box<SchemaIRError>>>,
+    },
+
+    #[error("Generating candidates from iri {iri}: {error}")]
+    CandidatesError { iri: IriS, error: String },
+
     #[error(
         "Datatype expected {expected} but found a wrong datatype with lexical form {lexical_form} and declared datatype {datatype}: {error}"
     )]

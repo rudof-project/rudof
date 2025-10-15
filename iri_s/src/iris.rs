@@ -10,7 +10,6 @@ use serde::de;
 use serde::de::Visitor;
 use std::fmt;
 use std::str::FromStr;
-use tracing::trace;
 use url::Url;
 
 use crate::IriSError;
@@ -241,6 +240,13 @@ impl IriS {
             None => IriS::from_str(str),
         }
     }
+
+    pub fn from_str_base_iri(str: &str, base_iri: &Option<IriS>) -> Result<IriS, IriSError> {
+        match base_iri {
+            Some(base_iri) => base_iri.resolve_str(str),
+            None => IriS::from_str(str),
+        }
+    }
 }
 
 impl fmt::Display for IriS {
@@ -268,14 +274,15 @@ impl FromStr for IriS {
     type Err = IriSError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let iri = NamedNode::new(s).map_err(|e| {
-            trace!("Error parsing IRI from str: {s}, error: {e}");
+        /*let iri = NamedNode::new(s).map_err(|e| {
+            trace!("from_str({s}): Namednode error parsing IRI from str, error: {e}");
             IriSError::IriParseError {
                 str: s.to_string(),
                 err: e.to_string(),
             }
         })?;
-        Ok(IriS { iri })
+        Ok(IriS { iri })*/
+        Ok(IriS::new_unchecked(s))
     }
 }
 

@@ -20,9 +20,10 @@ use srdf::SLiteral;
 use srdf::srdf_graph::SRDFGraph;
 use std::collections::HashMap;
 use std::fmt::{self, Display};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use tracing::{debug, trace};
+use url::Url;
 
 #[derive(Deserialize, Debug)]
 #[serde(from = "ManifestValidationJson")]
@@ -168,16 +169,11 @@ fn change_extension(name: String, old_extension: String, new_extension: String) 
 }
 
 fn parse_schema(
-    schema: &String,
-    folder: &Path,
+    path: &Path,
     _base: Option<&str>,
     entry_name: &String,
 ) -> Result<SchemaJson, Box<ManifestError>> {
-    let new_schema_name =
-        change_extension(schema.to_string(), ".shex".to_string(), ".json".to_string());
-
-    debug!("schema: {}, new_schema_name: {}", schema, new_schema_name);
-    SchemaJson::parse_schema_name(&new_schema_name, folder).map_err(|e| {
+    SchemaJson::parse_schema(&path).map_err(|e| {
         Box::new(ManifestError::SchemaJsonError {
             error: Box::new(e),
             entry_name: entry_name.to_string(),
@@ -187,30 +183,42 @@ fn parse_schema(
 
 impl ValidationEntry {
     pub fn run(&self, folder: &Path) -> Result<(), Box<ManifestError>> {
-        let base = Some("base:://");
+        let path_absolute =
+            folder
+                .canonicalize()
+                .map_err(|err| ManifestError::AbsolutePathError {
+                    base: folder.to_string_lossy().to_string().into(),
+                    error: err,
+                })?;
+        let path_iri = path_to_iri(&path_absolute)?;
+        let base_str = Some(path_iri.as_str());
+
         let graph = SRDFGraph::parse_data(
             &self.action.data,
             &RDFFormat::Turtle,
             folder,
-            base,
+            base_str,
             &srdf::ReaderMode::Strict,
         )
         .map_err(|e| Box::new(ManifestError::SRDFError(e)))?;
         trace!("Data obtained from: {}", self.action.data);
 
-        let schema = parse_schema(&self.action.schema, folder, base, &self.name)?;
+        let path_schema = get_path_schema(&self.action.schema, folder);
+        trace!("Path schema: {}", path_schema.display());
+        let schema = parse_schema(&path_schema, base_str, &self.name)?;
         trace!("Schema obtained from: {}", self.action.schema);
 
         trace!("Entry action: {:?}", self.action);
 
-        trace!("Compiling schema...");
         let mut compiler = AST2IR::new(&ResolveMethod::default());
         let mut compiled_schema = SchemaIR::new();
+        let base_iri = path_to_iri(&path_schema)?;
+        trace!("Compiling schema, base: {base_iri}");
         compiler
             .compile(
                 &schema,
-                &IriS::from_path(folder).unwrap(),
-                &None,
+                &base_iri,
+                &Some(base_iri.clone()),
                 &mut compiled_schema,
             )
             .map_err(|e| Box::new(ManifestError::SchemaIRError(e)))?;
@@ -238,10 +246,10 @@ impl ValidationEntry {
                 }
             })?;
             for entry in manifest_map.entries() {
-                let node = parse_node(entry.node(), base)?;
+                let node = parse_node(entry.node(), base_str)?;
                 let shape = parse_shape(entry.shape())?;
                 let result = validator
-                    .validate_node_shape(&node, &shape, &graph, &schema, &None)
+                    .validate_node_shape(&node, &shape, &graph, &schema, &Some(graph.prefixmap()))
                     .map_err(|e| Box::new(ManifestError::ValidationError(e)))?;
 
                 let partial_status = result.get_info(&node, &shape).unwrap();
@@ -254,12 +262,12 @@ impl ValidationEntry {
         }
         if let Some(focus) = &self.action.focus {
             trace!("Focus: {}", focus);
-            let node = parse_focus(focus, base)?;
+            let node = parse_focus(focus, base_str)?;
             let shape = parse_maybe_shape(&self.action.shape)?;
             trace!("Focus node: {}, shape: {}", node, shape);
 
             let result = validator
-                .validate_node_shape(&node, &shape, &graph, &schema, &None)
+                .validate_node_shape(&node, &shape, &graph, &schema, &Some(graph.prefixmap()))
                 .map_err(|e| Box::new(ManifestError::ValidationError(e)))?;
             let validation_status = result.get_info(&node, &shape).unwrap();
             if validation_status.is_conformant() {
@@ -368,6 +376,31 @@ fn parse_type(str: &str) -> Result<ValidationType, Box<ManifestError>> {
             value: str.to_string(),
         })),
     }
+}
+
+fn path_to_iri(path: &Path) -> Result<IriS, ManifestError> {
+    trace!("Converting path to IRI: {}", path.display());
+    let canonical = path
+        .canonicalize()
+        .map_err(|err| ManifestError::AbsolutePathError {
+            base: path.to_string_lossy().to_string().into(),
+            error: err,
+        })?;
+    let url = Url::from_file_path(canonical).map_err(|_| ManifestError::FromFilePath {
+        path: path.to_path_buf(),
+    })?;
+    let iri = IriS::new_unchecked(url.as_str());
+    trace!("IRI converted: {iri}");
+    Ok(iri)
+}
+
+fn get_path_schema(schema: &String, folder: &Path) -> PathBuf {
+    let new_schema_name =
+        change_extension(schema.to_string(), ".shex".to_string(), ".json".to_string());
+    let json_path = Path::new(&new_schema_name);
+    let mut attempt = PathBuf::from(folder);
+    attempt.push(json_path);
+    attempt
 }
 
 #[derive(Debug, PartialEq)]

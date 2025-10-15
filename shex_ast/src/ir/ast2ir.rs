@@ -12,7 +12,7 @@ use crate::{CResult, Cond, Node, Pred, ResolveMethod, ShExFormat, ShExParser, ir
 use crate::{SchemaIRError, ShapeLabelIdx, ast, ast::Schema as SchemaAST};
 use crate::{ShapeExprLabel, ast::iri_exclusion::IriExclusion};
 use core::panic;
-use iri_s::IriS;
+use iri_s::{IriS, IriSError};
 use prefixmap::{IriRef, PrefixMap};
 use rbe::{Cardinality, Pending, RbeError, SingleCond};
 use rbe::{Component, MatchCond, Max, Min, RbeTable, rbe::Rbe};
@@ -44,6 +44,10 @@ impl AST2IR {
         compiled_schema: &mut SchemaIR,
     ) -> CResult<()> {
         let mut visited = Vec::new();
+        trace!(
+            "Compiling schema from {source_iri}. Base: {}",
+            base.as_ref().map(|b| b.as_str()).unwrap_or("None")
+        );
         let (local_shapes, _total_shapes) =
             self.compile_visited(schema_ast, source_iri, compiled_schema, &mut visited, base)?;
         compiled_schema.set_local_shapes_counter(local_shapes);
@@ -65,10 +69,13 @@ impl AST2IR {
     ) -> CResult<(usize, usize)> {
         let mut total_imported = 0;
         for import in schema_ast.imports() {
+            trace!("Resolving import {import:?} with base: {base:?}");
             let import_iri = cnv_iri_ref(&import, &compiled_schema.prefixmap())?;
+            trace!("Import IRI resolved to {import_iri}");
             if !visited_sources.contains(&import_iri) {
                 visited_sources.push(import_iri.clone());
-                let imported_schema = self.resolve(&import_iri, base)?;
+                // For imported schemas, the base is the source IRI of the schema that imports them
+                let imported_schema = self.resolve(&import_iri, &Some(source_iri.clone()))?;
                 let (_local, total) = self.compile_visited(
                     &imported_schema,
                     &import_iri,
@@ -1521,6 +1528,7 @@ pub fn find_schema_rotating_formats(
 ) -> Result<SchemaAST, Box<SchemaIRError>> {
     let mut errors = Vec::new();
     for format in &formats {
+        trace!("Trying format {format} for IRI {iri} with base {base:?}");
         match get_schema_from_iri(iri, format, base) {
             Err(e) => {
                 errors.push((format.clone(), e));
@@ -1539,14 +1547,15 @@ pub fn get_schema_from_iri(
     format: &ShExFormat,
     base: &Option<IriS>,
 ) -> Result<SchemaAST, Box<SchemaIRError>> {
+    let candidates = candidates(iri, base, format).map_err(|e| {
+        Box::new(SchemaIRError::CandidatesError {
+            iri: iri.clone(),
+            error: e.to_string(),
+        })
+    })?;
     match format {
         ShExFormat::ShExC => {
-            let content = iri.dereference(base).map_err(|e| {
-                Box::new(SchemaIRError::DereferencingIri {
-                    iri: iri.clone(),
-                    error: e.to_string(),
-                })
-            })?;
+            let content = find_content_from_iris(candidates, base)?;
             let schema = ShExParser::parse(content.as_str(), None, iri).map_err(|e| {
                 Box::new(SchemaIRError::ShExCError {
                     iri: iri.clone(),
@@ -1556,7 +1565,8 @@ pub fn get_schema_from_iri(
             Ok(schema)
         }
         ShExFormat::ShExJ => {
-            let schema = SchemaAST::from_iri(iri).map_err(|e| {
+            let content = find_content_from_iris(candidates, base)?;
+            let schema = SchemaAST::from_reader(content.as_bytes()).map_err(|e| {
                 Box::new(SchemaIRError::ShExJError {
                     iri: iri.clone(),
                     error: e.to_string(),
@@ -1568,4 +1578,64 @@ pub fn get_schema_from_iri(
             todo!()
         }
     }
+}
+
+pub fn candidates(
+    iri: &IriS,
+    base: &Option<IriS>,
+    format: &ShExFormat,
+) -> Result<Vec<IriS>, IriSError> {
+    let mut candidates = vec![iri.clone()];
+    let extended_iris: Result<Vec<IriS>, IriSError> = format
+        .extensions()
+        .into_iter()
+        .map(|ext| {
+            let ext_iri = format!("{}.{ext}", iri.as_str());
+            IriS::from_str_base_iri(&ext_iri, base)
+        })
+        .collect();
+    let extended = extended_iris?;
+    candidates.extend(extended);
+    Ok(candidates)
+}
+
+fn find_content_from_iris(
+    iris: Vec<IriS>,
+    base: &Option<IriS>,
+) -> Result<String, Box<SchemaIRError>> {
+    find_first_ok(iris, |iri| get_content(iri, base))
+        .map_err(|errs| {
+            Box::new(SchemaIRError::FindingContentFromIrisError {
+                errors: Box::new(errs),
+            })
+        })
+        .map(|(content, _)| content)
+}
+
+fn get_content(iri: IriS, base: &Option<IriS>) -> Result<String, Box<SchemaIRError>> {
+    iri.dereference(base).map_err(|e| {
+        Box::new(SchemaIRError::DereferencingIri {
+            iri: iri.clone(),
+            error: e.to_string(),
+        })
+    })
+}
+
+/// Applies function `f` to each element of `vec` in order, returning the first `Ok` result
+/// along with a vector of all errors encountered before that point.
+/// If all applications of `f` result in `Err`, returns a vector of all errors.
+fn find_first_ok<A, B, E, F>(vec: Vec<A>, f: F) -> Result<(B, Vec<E>), Vec<E>>
+where
+    F: Fn(A) -> Result<B, E>,
+{
+    let mut errors = Vec::new();
+
+    for item in vec {
+        match f(item) {
+            Ok(b) => return Ok((b, errors)),
+            Err(e) => errors.push(e),
+        }
+    }
+    // If we get here, all items resulted in errors
+    Err(errors)
 }

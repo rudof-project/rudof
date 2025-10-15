@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::{fs, io};
-use tracing::debug;
+use tracing::{debug, trace};
 
 use super::{SemAct, ShapeDecl, ShapeExpr};
 
@@ -175,13 +175,15 @@ impl Schema {
         }
     }
 
-    pub fn parse_schema_buf(path: &Path) -> Result<Schema, SchemaJsonError> {
+    pub fn parse_schema(path: &Path) -> Result<Schema, SchemaJsonError> {
+        trace!("Parsing SchemaJson from path: {}", path.display());
         let schema = {
             let schema_str =
                 fs::read_to_string(path).map_err(|e| SchemaJsonError::ReadingPathError {
                     path_name: path.display().to_string(),
                     error: e.to_string(),
                 })?;
+            trace!("SchemaJson read from {}: {}", path.display(), schema_str);
             serde_json::from_str::<Schema>(&schema_str).map_err(|e| SchemaJsonError::JsonError {
                 path_name: path.display().to_string(),
                 error: e.to_string(),
@@ -207,7 +209,7 @@ impl Schema {
         let json_path = Path::new(&schema_name);
         let mut attempt = PathBuf::from(folder);
         attempt.push(json_path);
-        Self::parse_schema_buf(&attempt)
+        Self::parse_schema(&attempt)
     }
 
     pub fn base(&self) -> Option<IriS> {

@@ -18,7 +18,19 @@ pub enum RDFFormat {
     JsonLd,
 }
 
-impl RDFFormat {}
+impl RDFFormat {
+    pub fn extensions(&self) -> Vec<&'static str> {
+        match self {
+            RDFFormat::Turtle => vec!["ttl", "turtle"],
+            RDFFormat::NTriples => vec!["nt"],
+            RDFFormat::RDFXML => vec!["rdf", "xml"],
+            RDFFormat::TriG => vec!["trig"],
+            RDFFormat::N3 => vec!["n3"],
+            RDFFormat::NQuads => vec!["nq", "nquads"],
+            RDFFormat::JsonLd => vec!["jsonld", "json-ld", "json"],
+        }
+    }
+}
 
 impl MimeType for RDFFormat {
     fn mime_type(&self) -> &'static str {

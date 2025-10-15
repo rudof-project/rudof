@@ -13,6 +13,16 @@ pub enum ShExFormat {
     RDFFormat(RDFFormat),
 }
 
+impl ShExFormat {
+    pub fn extensions(&self) -> Vec<&'static str> {
+        match self {
+            ShExFormat::ShExC => vec!["shex", "shexc"],
+            ShExFormat::ShExJ => vec!["json", "shexj"],
+            ShExFormat::RDFFormat(rdf_format) => rdf_format.extensions(),
+        }
+    }
+}
+
 impl MimeType for ShExFormat {
     fn mime_type(&self) -> &'static str {
         match self {

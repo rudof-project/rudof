@@ -9,6 +9,9 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ManifestError {
+    #[error("Error converting path {path} to file URL")]
+    FromFilePath { path: PathBuf },
+
     #[error("Error parsing ShExC for entry {entry_name} from file {shex_path}. Error: {error:?}")]
     ShExCParsingError {
         error: Box<ParseError>,
