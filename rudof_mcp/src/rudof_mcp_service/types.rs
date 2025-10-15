@@ -11,13 +11,27 @@ pub struct ExamplePromptArgs {
 pub struct LoadRdfDataRequest {
     /// RDF data to load
     pub rdf_data: String,
-    /// RDF format, e.g., "turtle", "jsonld"
+    /// RDF format (e.g. "turtle", "jsonld")
     pub format: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ExportRdfDataRequest {
-    /// RDF format, e.g., "turtle", "jsonld"
+    /// RDF format (e.g. "turtle", "jsonld")
+    pub format: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct LoadRdfDataResponse {
+    /// Serialized RDF data as a string
+    pub message: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct ExportRdfDataResponse {
+    /// Serialized RDF data as a string
+    pub data: String,
+    /// Format used for serialization (e.g. "turtle", "jsonld")
     pub format: String,
 }
 
