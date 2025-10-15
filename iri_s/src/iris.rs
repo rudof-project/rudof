@@ -274,15 +274,14 @@ impl FromStr for IriS {
     type Err = IriSError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        /*let iri = NamedNode::new(s).map_err(|e| {
-            trace!("from_str({s}): Namednode error parsing IRI from str, error: {e}");
+        let iri = NamedNode::new(s).map_err(|e| {
+            // trace!("from_str({s}): Namednode error parsing IRI from str, error: {e}");
             IriSError::IriParseError {
                 str: s.to_string(),
                 err: e.to_string(),
             }
         })?;
-        Ok(IriS { iri })*/
-        Ok(IriS::new_unchecked(s))
+        Ok(IriS { iri })
     }
 }
 

@@ -36,6 +36,9 @@ pub enum SchemaIRError {
     #[error("Parsing {str} as IRI: {err:?}")]
     IriParseError { str: String, err: IriSError },
 
+    #[error("Import IRI error: {error}")]
+    ImportIriError { error: String },
+
     #[error("SchemaJson Error")]
     SchemaJsonError { source: Box<ast::SchemaJsonError> },
 

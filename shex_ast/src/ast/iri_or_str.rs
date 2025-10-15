@@ -1,4 +1,5 @@
 use iri_s::{IriS, IriSError};
+use prefixmap::IriRef;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::str::FromStr;
@@ -10,7 +11,7 @@ use std::str::FromStr;
 #[serde(try_from = "String", into = "String")]
 pub enum IriOrStr {
     String(String),
-    IriS(IriS),
+    IriRef(IriRef),
 }
 
 impl IriOrStr {
@@ -19,24 +20,30 @@ impl IriOrStr {
     }
 
     pub fn iri(iri: IriS) -> IriOrStr {
-        IriOrStr::IriS(iri)
+        IriOrStr::IriRef(IriRef::iri(iri))
     }
 
     /// Converts a `Iri`` represented as a `String` into an parsed Iri represented by a `IriS`
     /// `base` is useful to obtain an absolute Iri
-    pub fn resolve(&mut self, base: Option<IriS>) -> Result<IriOrStr, IriSError> {
+    pub fn resolve(&self, base: &Option<IriS>) -> Result<IriS, IriSError> {
         match self {
             IriOrStr::String(s) => match base {
                 None => {
                     let iri = IriS::from_str(s.as_str())?;
-                    Ok(IriOrStr::IriS(iri))
+                    Ok(iri)
                 }
                 Some(base) => {
-                    let iri = base.clone().extend(s)?;
-                    Ok(IriOrStr::IriS(iri))
+                    let iri = base.resolve_str(s)?;
+                    Ok(iri)
                 }
             },
-            IriOrStr::IriS(_) => Ok(self.clone()),
+            IriOrStr::IriRef(iri_ref) => match iri_ref {
+                IriRef::Iri(iri_s) => Ok(iri_s.clone()),
+                IriRef::Prefixed {
+                    prefix: _,
+                    local: _,
+                } => todo!(),
+            },
         }
     }
 }
@@ -44,8 +51,8 @@ impl IriOrStr {
 impl Display for IriOrStr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let str = match self {
-            IriOrStr::String(s) => s,
-            IriOrStr::IriS(iri_s) => iri_s.as_str(),
+            IriOrStr::String(s) => s.clone(),
+            IriOrStr::IriRef(iri_ref) => iri_ref.to_string(),
         };
         write!(f, "{str}")
     }
@@ -56,7 +63,7 @@ impl From<IriOrStr> for String {
     fn from(val: IriOrStr) -> Self {
         match val {
             IriOrStr::String(s) => s,
-            IriOrStr::IriS(iri_s) => iri_s.as_str().to_string(),
+            IriOrStr::IriRef(iri) => iri.to_string(),
         }
     }
 }

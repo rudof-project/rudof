@@ -56,7 +56,7 @@ impl SchemaWithoutImports {
             Some(m) => m.clone(),
         };
         let mut visited = Vec::new();
-        let mut pending: Vec<_> = schema.imports();
+        let mut pending: Vec<_> = Vec::new(); // schema.imports();
         let mut map = HashMap::new();
         let mut local_shapes_counter = 0;
         if let Some(shapes) = schema.shapes() {
@@ -122,11 +122,11 @@ impl SchemaWithoutImports {
                     ResolveMethod::ByGuessingExtension => todo!(),
                     ResolveMethod::ByContentNegotiation => todo!(),
                 }?;
-                for i in new_schema.imports() {
+                /*for i in new_schema.imports() {
                     if !visited.contains(&i) {
                         pending.push(i.clone())
                     }
-                }
+                }*/
                 if let Some(shapes) = new_schema.shapes() {
                     for decl in shapes {
                         Self::add_shape_decl(map, decl, &candidate_iri)?;

@@ -173,7 +173,7 @@ fn parse_schema(
     _base: Option<&str>,
     entry_name: &String,
 ) -> Result<SchemaJson, Box<ManifestError>> {
-    SchemaJson::parse_schema(&path).map_err(|e| {
+    SchemaJson::parse_schema(path).map_err(|e| {
         Box::new(ManifestError::SchemaJsonError {
             error: Box::new(e),
             entry_name: entry_name.to_string(),
@@ -378,14 +378,14 @@ fn parse_type(str: &str) -> Result<ValidationType, Box<ManifestError>> {
     }
 }
 
-fn path_to_iri(path: &Path) -> Result<IriS, ManifestError> {
+fn path_to_iri(path: &Path) -> Result<IriS, Box<ManifestError>> {
     trace!("Converting path to IRI: {}", path.display());
-    let canonical = path
-        .canonicalize()
-        .map_err(|err| ManifestError::AbsolutePathError {
+    let canonical = path.canonicalize().map_err(|err| {
+        Box::new(ManifestError::AbsolutePathError {
             base: path.to_string_lossy().to_string().into(),
             error: err,
-        })?;
+        })
+    })?;
     let url = Url::from_file_path(canonical).map_err(|_| ManifestError::FromFilePath {
         path: path.to_path_buf(),
     })?;

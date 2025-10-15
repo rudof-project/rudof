@@ -1,6 +1,6 @@
 use crate::ast::{SchemaJsonError, serde_string_or_struct::*};
-use crate::{BNode, ShapeExprLabel};
-use iri_s::{IriS, iri};
+use crate::{BNode, IriOrStr, ShapeExprLabel};
+use iri_s::{IriS, IriSError, iri};
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
@@ -19,7 +19,7 @@ pub struct Schema {
     type_: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    imports: Option<Vec<IriRef>>,
+    imports: Option<Vec<IriOrStr>>,
 
     #[serde(
         default,
@@ -61,13 +61,22 @@ impl Schema {
         }
     }
 
-    /// Returns the list of import declared in the Schema
-    pub fn imports(&self) -> Vec<IriRef> {
+    pub fn imports(&self) -> Option<Vec<IriOrStr>> {
+        self.imports.clone()
+    }
+
+    /// Returns the list of imports declared in the Schema
+    pub fn imports_resolved(&self, base: &Option<IriS>) -> Result<Vec<IriS>, IriSError> {
         if let Some(imports) = &self.imports {
-            imports.to_vec()
+            let rs: Result<Vec<IriS>, IriSError> = imports
+                .iter()
+                .map(|i| i.resolve(base))
+                .collect::<Result<Vec<_>, _>>();
+            let is = rs?;
+            Ok(is)
         } else {
-            let is: Vec<IriRef> = Vec::new();
-            is
+            let is: Vec<IriS> = Vec::new();
+            Ok(is)
         }
     }
 
@@ -93,9 +102,10 @@ impl Schema {
     }
 
     pub fn with_import(mut self, i: IriRef) -> Self {
+        let iri = IriOrStr::IriRef(i);
         match self.imports {
-            None => self.imports = Some(vec![i]),
-            Some(ref mut imports) => imports.push(i),
+            None => self.imports = Some(vec![iri]),
+            Some(ref mut imports) => imports.push(iri),
         }
         self
     }

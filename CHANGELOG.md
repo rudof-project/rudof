@@ -7,6 +7,14 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## [Unreleased]
+### Added
+### Fixed
+### Changed
+- The import in ShEx schemas supports `IriOrStr` in order to handle relative IRIs. Now the base IRI that is passed is the current folder. 
+
+### Removed
+
 ## v0.1.120
 ### Added
 - Visualization of results of ShEx validation as nice tables leveraging on [tabled](https://docs.rs/tabled/latest/tabled/) crate

@@ -1,8 +1,11 @@
 /// This file converts ShEx AST to ShEx compact syntax
-use crate::ast::{
-    Annotation, BNode, NodeConstraint, NodeKind, NumericFacet, ObjectValue, Pattern, Schema,
-    SemAct, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel, StringFacet, TripleExpr, XsFacet,
-    value_set_value::ValueSetValue,
+use crate::{
+    IriOrStr,
+    ast::{
+        Annotation, BNode, NodeConstraint, NodeKind, NumericFacet, ObjectValue, Pattern, Schema,
+        SemAct, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel, StringFacet, TripleExpr, XsFacet,
+        value_set_value::ValueSetValue,
+    },
 };
 use colored::*;
 use iri_s::IriS;
@@ -214,36 +217,34 @@ where
     fn pp_schema(&self) -> DocBuilder<'a, Arena<'a, A>, A> {
         self.opt_pp(self.schema.prefixmap(), self.pp_prefix_map())
             .append(self.opt_pp(self.schema.base(), self.pp_base()))
-            .append(self.pp_imports(self.schema.imports()))
+            .append(self.opt_pp(self.schema.imports(), self.pp_imports()))
             .append(self.opt_pp(self.schema.start_actions(), self.pp_actions()))
             .append(self.opt_pp(self.schema.start(), self.pp_start()))
             .append(self.opt_pp(self.schema.shapes(), self.pp_shape_decls()))
     }
 
-    fn pp_imports(&self, imports: Vec<IriRef>) -> DocBuilder<'a, Arena<'a, A>, A> {
-        if imports.is_empty() {
-            self.doc.nil()
-        } else {
-            let mut docs = Vec::new();
-            for import in imports {
-                docs.push(
-                    self.keyword("import")
-                        .append(self.space())
-                        .append(self.pp_iri_ref(&import)),
-                )
+    fn pp_imports(
+        &self,
+    ) -> impl Fn(&Vec<IriOrStr>, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A>
+    {
+        move |imports, printer| {
+            if imports.is_empty() {
+                self.doc.nil()
+            } else {
+                let mut docs = Vec::new();
+                for import in imports {
+                    docs.push(
+                        self.keyword("import")
+                            .append(self.space())
+                            .append(printer.pp_iri_or_str(import)),
+                    )
+                }
+                self.doc
+                    .intersperse(docs, self.doc.hardline())
+                    .append(self.doc.hardline())
             }
-            self.doc
-                .intersperse(docs, self.doc.hardline())
-                .append(self.doc.hardline())
         }
     }
-
-    /*fn pp_iri_or_str(&self, iri_or_str: IriOrStr) -> DocBuilder<'a, Arena<'a, A>, A> {
-        match iri_or_str {
-            IriOrStr::IriS(iri) => self.pp_iri(&iri),
-            IriOrStr::String(str) => self.pp_str(format!("<{}>", str.as_str()).as_str()),
-        }
-    }*/
 
     fn pp_shape_decls(
         &self,
@@ -789,6 +790,13 @@ where
                 .text(prefix.clone())
                 .append(self.doc.text(":"))
                 .append(self.doc.text(local.clone())),
+        }
+    }
+
+    fn pp_iri_or_str(&self, iri_or_str: &IriOrStr) -> DocBuilder<'a, Arena<'a, A>, A> {
+        match iri_or_str {
+            IriOrStr::IriRef(iri) => self.pp_iri_ref(iri),
+            IriOrStr::String(str) => self.pp_string(str.as_str()),
         }
     }
 

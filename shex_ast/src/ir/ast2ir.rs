@@ -68,9 +68,14 @@ impl AST2IR {
         base: &Option<IriS>,
     ) -> CResult<(usize, usize)> {
         let mut total_imported = 0;
-        for import in schema_ast.imports() {
-            trace!("Resolving import {import:?} with base: {base:?}");
-            let import_iri = cnv_iri_ref(&import, &compiled_schema.prefixmap())?;
+        let imports = schema_ast.imports_resolved(base).map_err(|e| {
+            Box::new(SchemaIRError::ImportIriError {
+                error: e.to_string(),
+            })
+        })?;
+        for import_iri in imports {
+            // trace!("Resolving import {import:?} with base: {base:?}");
+            // let import_iri = cnv_iri_ref(&import, &compiled_schema.prefixmap())?;
             trace!("Import IRI resolved to {import_iri}");
             if !visited_sources.contains(&import_iri) {
                 visited_sources.push(import_iri.clone());
