@@ -98,6 +98,15 @@ For example:
 ```sh
 cargo run -- validate examples/user.ttl --schema examples/user.shex --shapemap examples/user.sm
 ```
+#### Troubleshooting
+If the example doesn’t work as expected, here are a few things you can try:
+- **Use the --release flag** to compile in release mode, which can resolve some build issues and improve performance:
+
+```sh
+cargo run -- validate examples/user.ttl --schema examples/user.shex --shapemap examples/user.sm
+```
+
+- **Run the command inside WSL** (Windows Subsystem for Linux). If you're using Windows, compiling the project in WSL can help resolve environment-related issues, as Rust tends to compile more reliably and efficiently in Linux-based systems.
 
 ### Compiling from source and installing the binary (Debian)
 
