@@ -32,3 +32,4 @@ thiserror = "2.0"
 serde_json.workspace = true
 toml = "0.8"
 oxrdf = { workspace = true, features = ["oxsdatatypes"] }
+anyhow = { workspace = true }

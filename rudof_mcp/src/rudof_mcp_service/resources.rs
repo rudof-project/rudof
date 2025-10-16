@@ -9,6 +9,7 @@ use crate::rudof_mcp_service::errors::{self, codes};
 
 // Resource URIs
 pub const RDF_FORMATS_URI: &str = "rudof://rdf_formats";
+pub const NODE_MODES_URI: &str = "rudof://node_modes";
 
 /// Return the list of available resources
 pub async fn list_resources(_request: Option<PaginatedRequestParam>, _ctx: RequestContext<RoleServer>) -> Result<ListResourcesResult, McpError> {
@@ -32,6 +33,13 @@ pub async fn read_resource(request: ReadResourceRequestParam, _ctx: RequestConte
             });
 
             Ok(ReadResourceResult { contents: vec![ResourceContents::text(formats.to_string(), uri.clone())] })
+        }
+        NODE_MODES_URI => {
+            let modes = json!({
+                "modes": ["incoming", "outgoing", "both"],
+                "default": "both",
+            });
+            Ok(ReadResourceResult { contents: vec![ResourceContents::text(modes.to_string(), uri.clone())] })
         }
 
         _ => Err(errors::resource_not_found(codes::RESOURCE_NOT_FOUND, Some(json!({ "uri": uri })))),

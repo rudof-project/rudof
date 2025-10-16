@@ -33,6 +33,7 @@ pub mod shex_format;
 pub mod show_mode;
 pub mod validation_mode;
 pub mod writer;
+pub mod node_formatter;
 
 pub use cli_shacl_format::*;
 pub use color_support::*;

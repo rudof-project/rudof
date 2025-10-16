@@ -6,7 +6,9 @@ pub mod rudof;
 pub mod rudof_config;
 pub mod rudof_error;
 pub mod shapes_graph_source;
+pub mod node_info;
 
+pub use shex_compact::ShapeMapParser;
 pub use oxrdf;
 pub use rudof::*;
 pub use rudof_config::*;
