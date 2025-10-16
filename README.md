@@ -21,7 +21,7 @@ We provide binaries for Linux, Windows, Mac and Docker
 as well as Python bindings.
 
 - [Documentation](https://rudof-project.github.io/rudof/)
-- [Introduction to rudof as a Jupyter lab](https://colab.research.google.com/drive/1XuxohKDNn4UsuRKokyjH2bAlZEyyYhnl)
+- [Using rudof as Jupyter notebooks](https://rudof-project.github.io/tutorials)
 - [Installation](https://github.com/rudof-project/rudof?tab=readme-ov-file#installation)
 - [List of issues](https://github.com/rudof-project/rudof/issues)
 - [Discussion](https://github.com/rudof-project/rudof/discussions)

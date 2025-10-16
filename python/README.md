@@ -2,7 +2,7 @@
 
 The Python bindings for [rudof](https://rudof-project.github.io/) are called `pyrudof`. They are available at [pypi](https://pypi.org/project/pyrudof/).
 
-For more information, you can access the [readthedocs documentation](https://pyrudof.readthedocs.io/en/latest/).
+For more information, you can access the [readthedocs documentation](https://pyrudof.readthedocs.io/en/latest/). We keep several tutorials about rudof as Jupyter notebooks in: [https://rudof-project.github.io/tutorials].
 
 After compiling and installing this module, a Python library  called `pyrudof` should be available.  
 

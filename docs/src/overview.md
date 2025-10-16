@@ -1,7 +1,7 @@
 # Overview
 
 `rudof` is a library that implements [Shape Expressions](https://shex.io/), [SHACL](https://www.w3.org/TR/shacl/), [DCTAP](https://www.dublincore.org/specifications/dctap/) and other technologies in the [RDF](https://www.w3.org/RDF/) ecosystem.
-The library is implemented in [Rust](https://www.rust-lang.org/) and it also provides Python bindings.
+The library is implemented in [Rust](https://www.rust-lang.org/) and it also provides [Python bindings](https://pyrudof.readthedocs.io/en/stable/).
 
 `rudof` can be used as a command line tool or can be embedded as a library using [`cargo`](https://crates.io/).
 It can be used to validate RDF data represented with different syntaxes like Turtle, NTriples, to name a few.
