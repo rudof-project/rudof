@@ -5,7 +5,6 @@ use srdf::Literal;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::SHACLPath;
-use srdf::lang::Lang;
 use std::fmt::Debug;
 
 use crate::constraints::NativeValidator;
@@ -34,7 +33,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for LanguageIn {
         let language_in = |value_node: &S::Term| {
             if let Ok(literal) = S::term_as_literal(value_node) {
                 return match literal.lang() {
-                    Some(lang) => !self.langs().contains(&Lang::new_unchecked(lang)),
+                    Some(lang) => !self.langs().contains(&lang),
                     None => true,
                 };
             }

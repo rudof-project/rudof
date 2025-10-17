@@ -1,14 +1,16 @@
 [workspace]
 resolver = "2"
 members = [
+    "rudof_generate",
     "dctap",
+    "iri_s",
+    "mie",
+    "prefixmap",
+    "python",
     "rbe",
     "rbe_testsuite",
-    "iri_s",
-    "prefixmap",
-    "srdf",
-    "shex_ast",
-    "shex_compact",
+    "rdf_config",
+    "rudof_cli",
     "rudof_lib",
     "rudof_cli",
     "rudof_mcp",
@@ -16,25 +18,24 @@ members = [
     "shex_validation",
     "shapemap",
     "shacl_ast",
-    "shacl_rdf",
     "shacl_ir",
+    "shacl_rdf",
     "shacl_validation",
+    "shapes_comparator",
     "shapes_converter",
+    "shex_ast",
+    "shex_testsuite",
+    "shex_validation",
     "sparql_service",
-    "python",
+    "srdf",
 ]
 
 exclude = ["shex_compact_winnow"]
 
-default-members = [
-    "rudof_cli",
-    # "shacl_ast",
-    # "shacl_validation",
-    # "srdf",
-]
+default-members = ["rudof_cli"]
 
 [workspace.package]
-edition = "2021"
+edition = "2024"
 license = "MIT OR Apache-2.0"
 description = "RDF data shapes implementation in Rust"
 repository = "https://github.com/rudof-project/rudof"
@@ -72,39 +73,86 @@ pyrudof = { version = "0.1.86", path = "./python" }
 rudof_mcp = { version = "0.0.1", path = "./rudof_mcp" }
 
 # [dependencies]
-# External dependencies
 anyhow = "1.0"
+async-trait = "0.1.89"
+calamine = { version = "0.31" }
+chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4.2.1", features = ["derive"] }
+clientele = "0.2"
+crossterm = "0.27"
 colored = "3"
 const_format = "0.2"
+csv = "1.3.1"
+dctap = { version = "0.1.111", path = "./dctap" }
+either = { version = "1.13" }
+futures = "0.3"
+hashbag = { version = "0.1.12" }
 indexmap = "2.1"
-oxsdatatypes = "0.2.2"
-oxiri = { version = "0.2.11" }
-oxigraph = { version = "0.5.0-beta.2", default-features = false, features = [
+indoc = "2"
+iri_s = { version = "0.1.90", path = "./iri_s" }
+itertools = "0.14"
+lazy-regex = "3.4"
+mie = { version = "0.1.104", path = "./mie" }
+nom = "7"
+nom_locate = "4"
+oxigraph = { version = "0.5.0", default-features = false, features = [
     "rdf-12",
 ] }
-oxrdf = { version = "0.3.0-beta.2", features = ["oxsdatatypes", "rdf-12"] }
-oxrdfio = { version = "0.2.0-beta.2", features = ["rdf-12"] }
-oxrdfxml = { version = "0.2.0-beta.2" }
-oxttl = { version = "0.2.0-beta.2", features = ["rdf-12"] }
-oxjsonld = { version = "0.2.0-beta.2", features = ["rdf-12"] }
-sparesults = { version = "0.3.0-beta.2", features = ["sparql-12"] }
-spargebra = { version = "0.4.0-beta.2", features = ["sparql-12"] }
 oxilangtag = { version = "0.1.5", features = ["serde"] }
-
+oxiri = { version = "0.2.11" }
+oxjsonld = { version = "0.2.0", features = ["rdf-12"] }
+oxrdf = { version = "0.3.0", features = ["oxsdatatypes", "rdf-12"] }
+oxrdfio = { version = "0.2.0", features = ["rdf-12"] }
+oxrdfxml = { version = "0.2.0" }
+oxsdatatypes = "0.2.2"
+oxttl = { version = "0.2.0", features = ["rdf-12"] }
+ptree = { version = "0.5" }
+petgraph = { version = "0.8" }
+prefixmap = { version = "0.1.104", path = "./prefixmap" }
+pretty = { version = "0.12" }
+pyrudof = { version = "0.1.110", path = "./python" }
+rand = "0.8"
+rayon = "1.7"
+rbe = { version = "0.1.111", path = "./rbe" }
+rbe_testsuite = { version = "0.1.90", path = "./rbe_testsuite" }
+rdf_config = { version = "0.1.102", path = "./rdf_config" }
 regex = "1.11"
-supports-color = "3.0.0"
+reqwest = { version = "0.12", features = ["blocking", "json"] }
+rudof_cli = { version = "0.1.111", path = "./rudof_cli" }
+rudof_generate = { version = "0.1.118", path = "./rudof_generate" }
+rudof_lib = { version = "0.1.110", path = "./rudof_lib" }
+rust_decimal = "1.38"
+rust_decimal_macros = "1.38"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0"
-toml = "0.8"
+shacl_ast = { version = "0.1.106", path = "./shacl_ast" }
+shacl_ir = { version = "0.1.90", path = "./shacl_ir" }
+shacl_rdf = { version = "0.1.90", path = "./shacl_rdf" }
+shacl_validation = { version = "0.1.90", path = "./shacl_validation" }
+shapes_comparator = { version = "0.1.111", path = "./shapes_comparator" }
+shapes_converter = { version = "0.1.111", path = "./shapes_converter" }
+shex_ast = { version = "0.1.111", path = "./shex_ast" }
+shex_testsuite = { version = "0.1.108", path = "./shex_testsuite" }
+shex_validation = { version = "0.1.111", path = "./shex_validation" }
+sparesults = { version = "0.3.0", features = ["sparql-12"] }
+spargebra = { version = "0.4.0", features = ["sparql-12"] }
+sparql_service = { version = "0.1.111", path = "./sparql_service" }
+srdf = { version = "0.1.111", path = "./srdf" }
+supports-color = "3.0.0"
+tabled = { version = "0.20.0", features = ["ansi" ] }
+tempfile = "3.10.1"
+term_size = "0.3.2"
 thiserror = "2.0"
+tokio = { version = "1.0", features = ["rt", "rt-multi-thread"] }
+tokio-test = "0.4"
+toml = "0.9"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-url = "2.2.2"
-itertools = "0.14"
-lazy_static = "1"
 tracing-test = "0.2.5"
-tempfile = "3.10.1"
+url = "2.2.2"
+uuid = { version = "1.0", features = ["v4"] }
+
+
 
 [patch.crates-io]
 # use fork fixing zip dependency until PR is merged

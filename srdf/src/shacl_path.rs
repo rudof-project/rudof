@@ -86,16 +86,16 @@ impl Display for SHACLPath {
                     .join(" / ")
             ),
             SHACLPath::Inverse { path } => {
-                write!(f, "^({})", path)
+                write!(f, "^({path})")
             }
             SHACLPath::ZeroOrMore { path } => {
-                write!(f, "({})*", path)
+                write!(f, "({path})*")
             }
             SHACLPath::OneOrMore { path } => {
-                write!(f, "({})+", path)
+                write!(f, "({path})+")
             }
             SHACLPath::ZeroOrOne { path } => {
-                write!(f, "({})?", path)
+                write!(f, "({path})?")
             }
         }
     }

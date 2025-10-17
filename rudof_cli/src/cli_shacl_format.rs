@@ -1,7 +1,7 @@
 use clap::ValueEnum;
 use std::fmt::{Display, Formatter};
 
-use crate::mime_type::MimeType;
+use iri_s::mime_type::MimeType;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
 #[clap(rename_all = "lower")]
@@ -14,18 +14,20 @@ pub enum CliShaclFormat {
     TriG,
     N3,
     NQuads,
+    JsonLd,
 }
 
 impl MimeType for CliShaclFormat {
-    fn mime_type(&self) -> String {
+    fn mime_type(&self) -> &'static str {
         match self {
-            CliShaclFormat::Turtle => "text/turtle".to_string(),
-            CliShaclFormat::NTriples => "application/n-triples".to_string(),
-            CliShaclFormat::RDFXML => "application/rdf+xml".to_string(),
-            CliShaclFormat::TriG => "application/trig".to_string(),
-            CliShaclFormat::N3 => "text/n3".to_string(),
-            CliShaclFormat::NQuads => "application/n-quads".to_string(),
-            CliShaclFormat::Internal => "text/turtle".to_string(),
+            CliShaclFormat::Turtle => "text/turtle",
+            CliShaclFormat::NTriples => "application/n-triples",
+            CliShaclFormat::RDFXML => "application/rdf+xml",
+            CliShaclFormat::TriG => "application/trig",
+            CliShaclFormat::N3 => "text/n3",
+            CliShaclFormat::NQuads => "application/n-quads",
+            CliShaclFormat::Internal => "text/turtle",
+            CliShaclFormat::JsonLd => "application/ld+json",
         }
     }
 }
@@ -40,6 +42,7 @@ impl Display for CliShaclFormat {
             CliShaclFormat::TriG => write!(dest, "trig"),
             CliShaclFormat::N3 => write!(dest, "n3"),
             CliShaclFormat::NQuads => write!(dest, "nquads"),
+            CliShaclFormat::JsonLd => write!(dest, "jsonld"),
         }
     }
 }

@@ -1,24 +1,22 @@
 use crate::Reason;
 use crate::ValidatorConfig;
 use crate::atom;
+use crate::engine::Engine;
 use crate::validator_error::*;
-use crate::validator_runner::Engine;
-use either::Either;
 use prefixmap::IriRef;
 use prefixmap::PrefixMap;
 use serde_json::Value;
-use shapemap::ResultShapeMap;
-use shapemap::ValidationStatus;
-use shapemap::query_shape_map::QueryShapeMap;
 use shex_ast::Node;
 use shex_ast::ShapeExprLabel;
 use shex_ast::ShapeLabelIdx;
 use shex_ast::ir::schema_ir::SchemaIR;
-use shex_ast::ir::shape_expr::ShapeExpr;
 use shex_ast::ir::shape_label::ShapeLabel;
 use shex_ast::object_value::ObjectValue;
+use shex_ast::shapemap::ResultShapeMap;
+use shex_ast::shapemap::ValidationStatus;
+use shex_ast::shapemap::query_shape_map::QueryShapeMap;
 use srdf::NeighsRDF;
-use tracing::debug;
+use tracing::trace;
 
 type Result<T> = std::result::Result<T, ValidatorError>;
 type Atom = atom::Atom<(Node, ShapeLabelIdx)>;
@@ -31,8 +29,11 @@ pub struct Validator {
 
 impl Validator {
     pub fn new(schema: SchemaIR, config: &ValidatorConfig) -> Result<Validator> {
+        trace!("Creating Validator...");
         if config.check_negation_requirement.unwrap_or(true) && schema.has_neg_cycle() {
+            trace!("Checking negation cycles...");
             let neg_cycles = schema.neg_cycles();
+            trace!("Negation cycles: {neg_cycles:?}");
             let mut neg_cycles_displayed = Vec::new();
             for cycle in neg_cycles.iter() {
                 let mut cycle_displayed = Vec::new();
@@ -64,16 +65,11 @@ impl Validator {
                 neg_cycles: neg_cycles_displayed,
             });
         }
-        // let engine = Engine::new(config);
         Ok(Validator {
             schema,
             config: config.clone(),
         })
     }
-
-    /*pub fn reset_result_map(&mut self) {
-        self.runner.reset()
-    }*/
 
     pub fn schema(&self) -> &SchemaIR {
         &self.schema
@@ -87,17 +83,16 @@ impl Validator {
         rdf: &S,
         schema: &SchemaIR,
         maybe_nodes_prefixmap: &Option<PrefixMap>,
-        maybe_shapes_prefixmap: &Option<PrefixMap>,
     ) -> Result<ResultShapeMap>
     where
         S: NeighsRDF,
     {
-        let idx = self.get_idx(shape)?;
         let mut engine = Engine::new(&self.config);
+        let shape_expr_label: ShapeExprLabel = shape.into();
+        let idx = self.get_shape_expr_label(&shape_expr_label, schema)?;
         engine.add_pending(node.clone(), idx);
-        debug!("Before while loop: ${}@{}", node, idx);
-        self.loop_validating(&mut engine, rdf, schema)?;
-        let result = self.result_map(&mut engine, maybe_nodes_prefixmap, maybe_shapes_prefixmap)?;
+        engine.validate_pending(rdf, schema)?;
+        let result = self.result_map(&mut engine, maybe_nodes_prefixmap)?;
         Ok(result)
     }
 
@@ -114,31 +109,12 @@ impl Validator {
             })
     }
 
-    pub fn validate_shapemap<S>(
-        &self,
-        shapemap: &QueryShapeMap,
-        rdf: &S,
-        schema: &SchemaIR,
-        maybe_nodes_prefixmap: &Option<PrefixMap>,
-        maybe_shapes_prefixmap: &Option<PrefixMap>,
-    ) -> Result<ResultShapeMap>
-    where
-        S: NeighsRDF,
-    {
-        let mut engine = Engine::new(&self.config);
-        self.fill_pending(&mut engine, shapemap, rdf, schema)?;
-        self.loop_validating(&mut engine, rdf, schema)?;
-        let result = self.result_map(&mut engine, maybe_nodes_prefixmap, maybe_shapes_prefixmap)?;
-        Ok(result)
-    }
-
     pub fn validate_shapemap2<S>(
         &self,
         shapemap: &QueryShapeMap,
         rdf: &S,
         schema: &SchemaIR,
         maybe_nodes_prefixmap: &Option<PrefixMap>,
-        maybe_shapes_prefixmap: &Option<PrefixMap>,
     ) -> Result<ResultShapeMap>
     where
         S: NeighsRDF,
@@ -146,7 +122,7 @@ impl Validator {
         let mut engine = Engine::new(&self.config);
         self.fill_pending(&mut engine, shapemap, rdf, schema)?;
         engine.validate_pending(rdf, schema)?;
-        let result = self.result_map(&mut engine, maybe_nodes_prefixmap, maybe_shapes_prefixmap)?;
+        let result = self.result_map(&mut engine, maybe_nodes_prefixmap)?;
         Ok(result)
     }
 
@@ -182,62 +158,9 @@ impl Validator {
         }
     }
 
-    fn loop_validating<S>(&self, engine: &mut Engine, rdf: &S, schema: &SchemaIR) -> Result<()>
-    where
-        S: NeighsRDF,
-    {
-        while engine.no_end_steps() && engine.more_pending() {
-            engine.new_step();
-            let atom = engine.pop_pending().unwrap();
-            debug!("Processing atom: {}", show(&atom));
-            engine.add_processing(&atom);
-            let passed = self.check_node_atom(engine, &atom, rdf, schema)?;
-            engine.remove_processing(&atom);
-            match passed {
-                Either::Right(reasons) => {
-                    engine.add_checked_pos(atom, reasons);
-                }
-                Either::Left(errors) => {
-                    engine.add_checked_neg(atom.negated(), errors);
-                }
-            }
-        }
-        Ok(())
-    }
-
-    pub fn check_node_atom<S>(
-        &self,
-        engine: &mut Engine,
-        atom: &Atom,
-        rdf: &S,
-        schema: &SchemaIR,
-    ) -> Result<Either<Vec<ValidatorError>, Vec<Reason>>>
-    where
-        S: NeighsRDF,
-    {
-        let (node, idx) = atom.get_value();
-        let se = find_shape_idx(idx, &self.schema);
-        match atom {
-            Atom::Pos { .. } => engine.check_node_shape_expr_old(node, se, rdf, schema),
-            Atom::Neg { .. } => {
-                // Check if a node doesn't conform to a shape expr
-                todo!()
-            }
-        }
-    }
-
-    fn get_idx(&self, shape: &ShapeLabel) -> Result<ShapeLabelIdx> {
-        match self.schema.find_label(shape) {
-            Some((idx, _se)) => Ok(*idx),
-            None => Err(ValidatorError::NotFoundShapeLabel {
-                shape: (*shape).clone(),
-            }),
-        }
-    }
-
     fn get_shape_label(&self, idx: &ShapeLabelIdx) -> Result<&ShapeLabel> {
-        let (label, _se) = self.schema.find_shape_idx(idx).unwrap();
-        match label {
+        let info = self.schema.find_shape_idx(idx).unwrap();
+        match info.label() {
             Some(label) => Ok(label),
             None => Err(ValidatorError::NotFoundShapeLabelWithIndex { idx: *idx }),
         }
@@ -247,26 +170,28 @@ impl Validator {
         &self,
         engine: &mut Engine,
         maybe_nodes_prefixmap: &Option<PrefixMap>,
-        maybe_shapes_prefixmap: &Option<PrefixMap>,
     ) -> Result<ResultShapeMap> {
-        let mut result = match (maybe_nodes_prefixmap, maybe_shapes_prefixmap) {
-            (None, None) => ResultShapeMap::new(),
-            (Some(npm), None) => ResultShapeMap::new().with_nodes_prefixmap(npm),
-            (None, Some(spm)) => ResultShapeMap::new().with_shapes_prefixmap(spm),
-            (Some(npm), Some(spm)) => ResultShapeMap::new()
-                .with_nodes_prefixmap(npm)
-                .with_shapes_prefixmap(spm),
+        let nodes_prefixmap = match maybe_nodes_prefixmap {
+            Some(pm) => pm.clone(),
+            None => PrefixMap::default(),
         };
+        let mut result = ResultShapeMap::new()
+            .with_nodes_prefixmap(&nodes_prefixmap)
+            .with_shapes_prefixmap(&self.schema.prefixmap());
         for atom in &engine.checked() {
             let (node, idx) = atom.get_value();
             let label = self.get_shape_label(idx)?;
             match atom {
                 Atom::Pos(pa) => {
                     let reasons = engine.find_reasons(pa);
-                    let status = ValidationStatus::conformant(
-                        show_reasons(&reasons),
-                        json_reasons(&reasons),
-                    );
+                    let json_reasons = json_reasons(&reasons)?;
+                    let str_reasons = show_reasons(
+                        &reasons,
+                        &nodes_prefixmap,
+                        &self.schema,
+                        self.config.width(),
+                    )?;
+                    let status = ValidationStatus::conformant(str_reasons, json_reasons);
                     // result.add_ok()
                     result
                         .add_result((*node).clone(), label.clone(), status)
@@ -278,10 +203,9 @@ impl Validator {
                 }
                 Atom::Neg(na) => {
                     let errors = engine.find_errors(na);
-                    let status = ValidationStatus::non_conformant(
-                        show_errors(&errors),
-                        json_errors(&errors),
-                    );
+                    let json_errors = json_errors(&errors)?;
+                    let status =
+                        ValidationStatus::non_conformant(show_errors(&errors), json_errors);
                     result
                         .add_result((*node).clone(), label.clone(), status)
                         .map_err(|e| ValidatorError::AddingNonConformantError {
@@ -312,10 +236,10 @@ impl Validator {
     }
 }
 
-fn find_shape_idx<'a>(idx: &'a ShapeLabelIdx, schema: &'a SchemaIR) -> &'a ShapeExpr {
+/*fn find_shape_idx<'a>(idx: &'a ShapeLabelIdx, schema: &'a SchemaIR) -> &'a ShapeExpr {
     let (_label, se) = schema.find_shape_idx(idx).unwrap();
     se
-}
+}*/
 
 fn show_errors(errors: &[ValidatorError]) -> String {
     let mut result = String::new();
@@ -329,31 +253,78 @@ fn show_errors(errors: &[ValidatorError]) -> String {
     result
 }
 
-fn json_errors(errors: &[ValidatorError]) -> Value {
-    // let vs = vec!["todo", "errors"];
-    let vs: Vec<_> = errors.iter().map(|e| e.to_string()).collect();
-    vs.into()
+fn json_errors(errors: &[ValidatorError]) -> Result<Value> {
+    let vs: Result<Vec<_>> = errors
+        .iter()
+        .map(|err| {
+            serde_json::to_value(err).map_err(|e| ValidatorError::ErrorSerializationError {
+                source_error: err.to_string(),
+                error: e.to_string(),
+            })
+        })
+        .collect();
+    let vs = vs?;
+    let vs = Value::Array(vs);
+    Ok(vs)
 }
 
-fn json_reasons(reasons: &[Reason]) -> Value {
-    let value = Value::Array(reasons.iter().map(|reason| reason.as_json()).collect());
-    value
+fn json_reasons(reasons: &[Reason]) -> Result<Value> {
+    let rs: Result<Vec<_>> = reasons
+        .iter()
+        .map(|reason| {
+            let r = reason
+                .as_json()
+                .map_err(|e| ValidatorError::ReasonSerializationError {
+                    reason: reason.to_string(),
+                    error: format!("{e}"),
+                })?;
+            Ok(r)
+        })
+        .collect();
+    let vs = rs?;
+    let value = Value::Array(vs);
+    Ok(value)
 }
 
-fn show_reasons(reasons: &[Reason]) -> String {
+fn show_reasons(
+    reasons: &[Reason],
+    nodes_prefixmap: &PrefixMap,
+    schema: &SchemaIR,
+    width: usize,
+) -> Result<String> {
     let mut result = String::new();
-    for (reason, idx) in reasons.iter().enumerate() {
-        result.push_str(format!("Reason #{idx}: {reason}\n").as_str());
+    match reasons.len() {
+        0 => {
+            result.push_str("No detailed reason provided.\n");
+            return Ok(result);
+        }
+        1 => {
+            let str = reasons[0].show_qualified(nodes_prefixmap, schema, width)?;
+            result.push_str(&str);
+            return Ok(result);
+        }
+        _ => {
+            for (idx, reason) in reasons.iter().enumerate() {
+                result.push_str(
+                    format!(
+                        "Reason #{idx}: {}\n",
+                        reason.show_qualified(nodes_prefixmap, schema, width)?
+                    )
+                    .as_str(),
+                );
+            }
+        }
     }
-    result
+    Ok(result)
 }
 
+/*
 fn show(atom: &Atom) -> String {
     match atom {
         Atom::Pos((node, idx)) => format!("+({node},{idx})"),
         Atom::Neg((node, idx)) => format!("!({node},{idx})"),
     }
-}
+}*/
 
 #[cfg(test)]
 mod tests {}

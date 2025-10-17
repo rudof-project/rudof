@@ -1,0 +1,62 @@
+# High-performance parallel configuration for large datasets
+
+[generation]
+entity_count = 5000                   # Generate large dataset
+seed = 98765                          # Use different seed
+entity_distribution = "Equal"        # Distribute entities equally across shapes
+cardinality_strategy = "Random"      # Use random cardinality strategy
+
+[field_generators.default]
+locale = "en"                         # Generate English text
+quality = "High"                      # High quality data
+
+# Configure specific data types
+[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#integer"]
+generator = "integer"
+[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#integer".parameters]
+min = 1
+max = 10000
+
+[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#decimal"]
+generator = "decimal"
+[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#decimal".parameters]
+min = 0.0
+max = 1000.0
+precision = 2
+
+[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#date"]
+generator = "date"
+[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#date".parameters]
+start_year = 1980
+end_year = 2024
+
+[field_generators.datatypes."http://www.w3.org/2001/XMLSchema#string"]
+generator = "string"
+parameters = {}
+
+# Configure specific properties
+[field_generators.properties."http://example.org/name"]
+generator = "string"
+parameters = {}
+
+[field_generators.properties."http://schema.org/name"]
+generator = "string"
+parameters = {}
+
+[field_generators.properties."http://schema.org/email"]
+generator = "string"
+parameters = {}
+
+[output]
+path = "parallel_data.ttl"           # Output file name
+format = "Turtle"                    # Use Turtle format
+compress = false                     # Don't compress output
+write_stats = true                   # Include generation statistics
+parallel_writing = true             # Enable parallel writing
+parallel_file_count = 8             # Use 8 parallel files
+
+[parallel]
+worker_threads = 8                   # Use 8 parallel threads for better performance
+batch_size = 250                     # Process entities in larger batches
+parallel_shapes = true              # Process shapes in parallel
+parallel_fields = true              # Generate fields in parallel

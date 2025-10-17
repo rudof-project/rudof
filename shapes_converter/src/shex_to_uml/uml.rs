@@ -147,6 +147,7 @@ impl Uml {
         writer: &mut W,
     ) -> Result<(), UmlError> {
         writeln!(writer, "@startuml")?;
+        self.preamble(writer, config)?;
         for (node_id, component) in self.components.iter() {
             component2plantuml(node_id, component, config, writer)?;
         }
@@ -167,6 +168,9 @@ impl Uml {
         target_node: &NodeId,
     ) -> Result<(), UmlError> {
         writeln!(writer, "@startuml")?;
+        self.preamble(writer, config)?;
+
+        // Keep track of serialized components to avoid serializing them twice
         let mut serialized_components = HashSet::new();
 
         // For all components in schema, check if they are neighbours with target_node
@@ -193,6 +197,28 @@ impl Uml {
             }
         }
         writeln!(writer, "@enduml")?;
+        Ok(())
+    }
+
+    fn preamble(&self, writer: &mut impl Write, config: &ShEx2UmlConfig) -> Result<(), UmlError> {
+        writeln!(writer, "hide empty members")?;
+
+        writeln!(writer, "skinparam linetype ortho")?;
+
+        // Hide the class attribute icon
+        writeln!(writer, "hide circles")?;
+
+        writeln!(
+            writer,
+            "skinparam shadowing {}",
+            config.shadowing.unwrap_or_default()
+        )?;
+
+        // The following parameters should be taken from the ocnfig file...
+        writeln!(writer, "skinparam class {{")?;
+        writeln!(writer, " BorderColor Black")?;
+        writeln!(writer, " ArrowColor Black")?;
+        writeln!(writer, "}}")?;
         Ok(())
     }
 }
@@ -228,6 +254,11 @@ fn component2plantuml<W: Write>(
             }
             writeln!(writer, "}}")?;
         }
+        UmlComponent::Or { exprs: _ } => {
+            writeln!(writer, "class \"OR\" as {node_id} {{}}")?;
+        }
+        UmlComponent::Not { expr: _ } => todo!(),
+        UmlComponent::And { exprs: _ } => todo!(),
     }
     Ok(())
 }

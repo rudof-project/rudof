@@ -3,7 +3,7 @@ use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use pretty::{Arena, DocAllocator, DocBuilder};
 use shex_ast::{BNode, ShapeExprLabel, object_value::ObjectValue};
-use srdf::{literal::SLiteral, numeric_literal::NumericLiteral};
+use srdf::{SLiteral, numeric_literal::NumericLiteral};
 use std::borrow::Cow;
 
 pub(crate) fn pp_object_value<'a, A>(
@@ -52,6 +52,18 @@ fn pp_numeric_literal<'a, A>(
         NumericLiteral::Integer(n) => doc.text(n.to_string()),
         NumericLiteral::Decimal(decimal) => doc.text(decimal.to_string()),
         NumericLiteral::Double(d) => doc.text(d.to_string()),
+        NumericLiteral::Long(l) => doc.text(l.to_string()),
+        NumericLiteral::Float(n) => doc.text(n.to_string()),
+        NumericLiteral::Byte(n) => doc.text(n.to_string()),
+        NumericLiteral::Short(n) => doc.text(n.to_string()),
+        NumericLiteral::NonNegativeInteger(n) => doc.text(n.to_string()),
+        NumericLiteral::UnsignedLong(n) => doc.text(n.to_string()),
+        NumericLiteral::UnsignedInt(n) => doc.text(n.to_string()),
+        NumericLiteral::UnsignedShort(n) => doc.text(n.to_string()),
+        NumericLiteral::UnsignedByte(n) => doc.text(n.to_string()),
+        NumericLiteral::PositiveInteger(n) => doc.text(n.to_string()),
+        NumericLiteral::NegativeInteger(n) => doc.text(n.to_string()),
+        NumericLiteral::NonPositiveInteger(n) => doc.text(n.to_string()),
     }
 }
 

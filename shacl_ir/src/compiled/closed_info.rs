@@ -103,7 +103,7 @@ fn defined_properties<R: Rdf>(
             schema
                 .get_shape(property_shape_ref)
                 .ok_or_else(|| ShaclError::ShapeNotFound {
-                    shape: property_shape_ref.clone(),
+                    shape: Box::new(property_shape_ref.clone()),
                 })?;
         match property_shape {
             Shape::PropertyShape(ps) => {
@@ -112,7 +112,7 @@ fn defined_properties<R: Rdf>(
             }
             _ => {
                 return Err(ShaclError::ShapeNotFound {
-                    shape: property_shape_ref.clone(),
+                    shape: Box::new(property_shape_ref.clone()),
                 });
             }
         }
@@ -130,7 +130,7 @@ fn defined_properties_property_shape<R: Rdf>(
             schema
                 .get_shape(property_shape_ref)
                 .ok_or_else(|| ShaclError::ShapeNotFound {
-                    shape: property_shape_ref.clone(),
+                    shape: Box::new(property_shape_ref.clone()),
                 })?;
         match property_shape {
             Shape::PropertyShape(ps) => {
@@ -139,7 +139,7 @@ fn defined_properties_property_shape<R: Rdf>(
             }
             _ => {
                 return Err(ShaclError::ShapeNotFound {
-                    shape: property_shape_ref.clone(),
+                    shape: Box::new(property_shape_ref.clone()),
                 });
             }
         }

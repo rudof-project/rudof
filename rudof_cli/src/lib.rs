@@ -2,22 +2,27 @@
 pub mod cli;
 pub mod cli_shacl_format;
 pub mod color_support;
+pub mod compare;
 pub mod convert;
 pub mod data;
 pub mod data_format;
 pub mod dctap;
 pub mod dctap_format;
 pub mod dctap_result_format;
+pub mod generate_schema_format;
+pub mod input_compare_format;
+pub mod input_compare_mode;
 pub mod input_convert_format;
 pub mod input_convert_mode;
-pub mod input_spec;
-pub mod mime_type;
 pub mod node;
 pub mod node_selector;
 pub mod output_convert_format;
 pub mod output_convert_mode;
 pub mod query;
+pub mod query_type;
+pub mod rdf_config;
 pub mod rdf_reader_mode;
+pub mod result_compare_format;
 pub mod result_data_format;
 pub mod result_query_format;
 pub mod result_service_format;
@@ -31,21 +36,28 @@ pub mod shapemap_format;
 pub mod shex;
 pub mod shex_format;
 pub mod show_mode;
+pub mod sort_by_result_shape_map;
+pub mod sort_by_validate;
+pub mod terminal_width;
 pub mod validation_mode;
 pub mod writer;
 pub mod node_formatter;
 
 pub use cli_shacl_format::*;
 pub use color_support::*;
+pub use compare::*;
 pub use convert::*;
 pub use dctap::*;
 pub use dctap_result_format::*;
+pub use generate_schema_format::*;
+pub use input_compare_format::*;
+pub use input_compare_mode::*;
 pub use input_convert_format::*;
 pub use input_convert_mode::*;
-pub use input_spec::*;
-use iri_s::IriS;
 pub use output_convert_format::*;
 pub use output_convert_mode::*;
+pub use query_type::*;
+pub use rdf_config::*;
 pub use rdf_reader_mode::*;
 pub use result_data_format::*;
 pub use result_query_format::*;
@@ -60,10 +72,7 @@ pub use shapemap_format::*;
 pub use shex::*;
 pub use shex_format::*;
 pub use show_mode::*;
+pub use sort_by_result_shape_map::*;
+pub use sort_by_validate::*;
+pub use terminal_width::*;
 pub use validation_mode::*;
-
-fn base_convert(base: &Option<IriS>) -> Option<&str> {
-    base.as_ref().map(|iri| iri.as_str())
-}
-
-// pub const PLANTUML: &str = "PLANTUML";

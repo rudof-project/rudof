@@ -1,8 +1,7 @@
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
 use std::{result, str::FromStr};
-use void::Void;
-
+use thiserror::Error;
 #[derive(Debug, PartialEq, Clone)]
 pub enum StringOrWildcard {
     String(String),
@@ -10,11 +9,17 @@ pub enum StringOrWildcard {
 }
 
 impl FromStr for StringOrWildcard {
-    type Err = Void;
+    type Err = StringOrWildcardError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(StringOrWildcard::String(s.to_string()))
     }
+}
+
+#[derive(Debug, Error)]
+pub enum StringOrWildcardError {
+    #[error("Invalid StringOrWildcard")]
+    InvalidStringOrWildcard,
 }
 
 impl Serialize for StringOrWildcard {

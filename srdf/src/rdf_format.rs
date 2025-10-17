@@ -1,10 +1,12 @@
+use iri_s::MimeType;
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::str::FromStr;
 
 use crate::RDFParseError;
 
 /// Posible RDF formats
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Default, Serialize, Deserialize)]
 pub enum RDFFormat {
     #[default]
     Turtle,
@@ -17,31 +19,29 @@ pub enum RDFFormat {
 }
 
 impl RDFFormat {
-    /// Get the file extension for the RDF format
-    pub fn file_extension(&self) -> &str {
+    pub fn extensions(&self) -> Vec<&'static str> {
         match self {
-            RDFFormat::Turtle => "ttl",
-            RDFFormat::NTriples => "nt",
-            RDFFormat::RDFXML => "rdf",
-            RDFFormat::TriG => "trig",
-            RDFFormat::N3 => "n3",
-            RDFFormat::NQuads => "nq",
-            RDFFormat::JsonLd => "jsonld",
+            RDFFormat::Turtle => vec!["ttl", "turtle"],
+            RDFFormat::NTriples => vec!["nt"],
+            RDFFormat::RDFXML => vec!["rdf", "xml"],
+            RDFFormat::TriG => vec!["trig"],
+            RDFFormat::N3 => vec!["n3"],
+            RDFFormat::NQuads => vec!["nq", "nquads"],
+            RDFFormat::JsonLd => vec!["jsonld", "json-ld", "json"],
         }
     }
+}
 
-    pub fn from_file_extension(ext: &str) -> Result<RDFFormat, RDFParseError> {
-        match ext {
-            "ttl" => Ok(RDFFormat::Turtle),
-            "nt" => Ok(RDFFormat::NTriples),
-            "rdf" => Ok(RDFFormat::RDFXML),
-            "trig" => Ok(RDFFormat::TriG),
-            "n3" => Ok(RDFFormat::N3),
-            "nq" => Ok(RDFFormat::NQuads),
-            "jsonld" => Ok(RDFFormat::JsonLd),
-            _ => Err(RDFParseError::SRDFError {
-                err: format!("File extension {ext} not supported").to_string(),
-            }),
+impl MimeType for RDFFormat {
+    fn mime_type(&self) -> &'static str {
+        match self {
+            RDFFormat::Turtle => "text/turtle",
+            RDFFormat::NTriples => "application/n-triples",
+            RDFFormat::RDFXML => "application/rdf+xml",
+            RDFFormat::TriG => "application/trig",
+            RDFFormat::N3 => "text/n3",
+            RDFFormat::NQuads => "application/n-quads",
+            RDFFormat::JsonLd => "application/ld+json",
         }
     }
 }

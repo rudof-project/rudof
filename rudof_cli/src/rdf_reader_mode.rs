@@ -11,8 +11,8 @@ pub enum RDFReaderMode {
     Strict,
 }
 
-impl From<RDFReaderMode> for ReaderMode {
-    fn from(value: RDFReaderMode) -> Self {
+impl From<&RDFReaderMode> for ReaderMode {
+    fn from(value: &RDFReaderMode) -> Self {
         match value {
             RDFReaderMode::Strict => ReaderMode::Strict,
             RDFReaderMode::Lax => ReaderMode::Lax,

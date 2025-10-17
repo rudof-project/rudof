@@ -1,6 +1,6 @@
 [package]
 name = "shacl_validation"
-version = "0.1.90"
+version = "0.1.120"
 readme = "README.md"
 license.workspace = true
 authors.workspace = true
@@ -15,25 +15,24 @@ edition.workspace = true
 #rdf-star = ["srdf/rdf-star"]
 
 [dependencies]
-srdf = { workspace = true }
-shacl_ast = { workspace = true }
-shacl_rdf = { workspace = true }
-shacl_ir = { workspace = true }
-iri_s = { workspace = true }
-prefixmap = { workspace = true }
-sparql_service = { workspace = true }
-
-thiserror = { workspace = true }                   # needed for the definition of errors
-lazy_static = "1"                                  # needed for the definition of the vocab
-const_format = "0.2"                               # needed for the definition of the vocab
-indoc = "2"                                        # needed for the definition of SPARQL queries
-clap = { workspace = true }                        # needed for creating the ValueEnums (ensuring compatibility with clap)
-serde = { version = "1.0", features = ["derive"] } # needed for the config thing
-toml = { workspace = true }                        # needed for the config thing
-colored = { workspace = true }
-tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
 anyhow.workspace = true
+clap.workspace = true
+colored.workspace = true 
+const_format.workspace = true
+indoc.workspace = true
+iri_s.workspace = true 
+prefixmap.workspace = true 
+serde.workspace = true
+shacl_ast.workspace = true 
+shacl_ir.workspace = true 
+shacl_rdf.workspace = true 
+sparql_service.workspace = true 
+srdf.workspace = true 
+tabled.workspace = true
+thiserror.workspace = true
+toml.workspace = true
+tracing = { workspace = true }
+tracing-subscriber.workspace = true 
 
 [dev-dependencies]
 oxrdf.workspace = true

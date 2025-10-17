@@ -1,19 +1,21 @@
 use crate::PrefixMap;
 use iri_s::IriSError;
-use serde::Serialize;
 use thiserror::Error;
 
-#[derive(Debug, Error, Clone, Serialize)]
+#[derive(Debug, Error, Clone)]
 pub enum PrefixMapError {
     #[error(transparent)]
     IriSError(#[from] IriSError),
 
-    #[error("Prefix '{prefix}' not found in PrefixMap '{prefixmap}'")]
+    #[error("Alias '{prefix}' not found in prefix map\nAvailable aliases: [{}]", prefixmap.aliases().cloned().collect::<Vec<_>>().join(", "))]
     PrefixNotFound {
         prefix: String,
         prefixmap: PrefixMap,
     },
 
-    #[error("Format error: {error}")]
-    FormatError { error: String },
+    #[error(transparent)]
+    FormatError(#[from] std::fmt::Error),
+
+    #[error("IO Error: {error}")]
+    IOError { error: String },
 }

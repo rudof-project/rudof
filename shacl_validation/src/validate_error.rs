@@ -62,8 +62,8 @@ pub enum ValidateError {
     #[error("TargetClass error: {msg}")]
     TargetClassError { msg: String },
 
-    #[error("Error during the compilation of the Schema, {}", ._0)] // TODO: move to store
-    CompiledShacl(#[from] CompiledShaclError),
+    #[error("Error during the compilation of the Schema, {error}")]
+    CompiledShacl { error: Box<CompiledShaclError> },
 
     #[error("Not yet implemented: {msg}")]
     NotImplemented { msg: String },

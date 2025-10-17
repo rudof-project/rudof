@@ -1,11 +1,10 @@
 use iri_s::IriS;
 use serde::{Deserialize, Serialize};
+use shex_ast::ShExFormat;
 use srdf::RdfDataConfig;
 use std::io::Read;
 use std::path::Path;
 use thiserror::Error;
-
-use crate::ShExFormat;
 
 /// ShEx configuration on main
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Default)]
@@ -117,7 +116,7 @@ impl Default for ShExConfig {
             check_well_formed: Some(true),
             rdf_config_shex: Some(RdfDataConfig::default()),
             shex_format: Some(ShExFormat::ShExC),
-            base: Some(IriS::new_unchecked("base://")),
+            base: None,
         }
     }
 }

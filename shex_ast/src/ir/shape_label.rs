@@ -1,11 +1,12 @@
+use crate::{BNode, SchemaJsonError, ShapeExprLabel};
 use iri_s::{IriS, IriSError};
+use prefixmap::{PrefixMap, PrefixMapError};
 use serde::Serialize;
 use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
 
-use crate::BNode;
-
-#[derive(PartialEq, Eq, Hash, Debug, Clone)]
+/// Shape labels can be IRIs, Blank nodes or the special `Start` label
+#[derive(PartialEq, Eq, Hash, Debug, Clone, PartialOrd, Ord)]
 pub enum ShapeLabel {
     Iri(IriS),
     BNode(BNode),
@@ -20,9 +21,37 @@ impl ShapeLabel {
         ShapeLabel::BNode(bn)
     }
 
+    pub fn from_object(obj: &srdf::Object) -> Result<ShapeLabel, SchemaJsonError> {
+        match obj {
+            srdf::Object::Iri(iri) => Ok(ShapeLabel::Iri(iri.clone())),
+            srdf::Object::BlankNode(bnode_id) => Ok(ShapeLabel::BNode(BNode::new(bnode_id))),
+            srdf::Object::Literal(_) => Err(SchemaJsonError::InvalidShapeLabel {
+                value: obj.to_string(),
+                error: "Literal cannot be a ShapeLabel".to_string(),
+            }),
+            srdf::Object::Triple { .. } => Err(SchemaJsonError::InvalidShapeLabel {
+                value: obj.to_string(),
+                error: "Triple cannot be a ShapeLabel".to_string(),
+            }),
+        }
+    }
+
     pub fn from_iri_str(s: &str) -> Result<ShapeLabel, IriSError> {
         let iri = IriS::from_str(s)?;
         Ok(ShapeLabel::Iri(iri))
+    }
+
+    pub fn from_shape_expr_label(
+        label: &ShapeExprLabel,
+        prefixmap: &PrefixMap,
+    ) -> Result<ShapeLabel, PrefixMapError> {
+        match label {
+            ShapeExprLabel::IriRef { value } => {
+                Ok(ShapeLabel::Iri(value.get_iri_prefixmap(prefixmap)?))
+            }
+            ShapeExprLabel::BNode { value } => Ok(ShapeLabel::BNode(value.clone())),
+            ShapeExprLabel::Start => Ok(ShapeLabel::Start),
+        }
     }
 }
 

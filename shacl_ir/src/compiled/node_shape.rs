@@ -94,7 +94,7 @@ impl NodeShapeIR {
     pub fn compile<S: Rdf>(
         shape: Box<NodeShape<S>>,
         schema: &Schema<S>,
-    ) -> Result<Self, CompiledShaclError> {
+    ) -> Result<Self, Box<CompiledShaclError>> {
         let id = shape.id().clone();
         let deactivated = shape.is_deactivated().to_owned();
         let severity = CompiledSeverity::compile(shape.severity())?;
@@ -119,7 +119,8 @@ impl NodeShapeIR {
             property_shapes.push(shape);
         }
 
-        let closed_info = ClosedInfo::get_closed_info_node_shape(&shape, schema)?;
+        let closed_info = ClosedInfo::get_closed_info_node_shape(&shape, schema)
+            .map_err(|e| Box::new(CompiledShaclError::ShaclError { source: e }))?;
 
         let compiled_node_shape = NodeShapeIR::new(
             id,

@@ -1,12 +1,9 @@
-use std::fmt::Display;
-
+use super::compiled_shacl_error::CompiledShaclError;
 use iri_s::IriS;
+use shacl_ast::severity::Severity;
 use shacl_ast::shacl_vocab::{sh_info, sh_violation, sh_warning};
 use shacl_ast::{sh_debug, sh_trace};
-
-use shacl_ast::severity::Severity;
-
-use super::compiled_shacl_error::CompiledShaclError;
+use std::fmt::Display;
 
 #[derive(Hash, Clone, PartialEq, Eq, Debug)]
 pub enum CompiledSeverity {
@@ -40,9 +37,12 @@ impl CompiledSeverity {
                     Severity::Warning => CompiledSeverity::Warning,
                     Severity::Info => CompiledSeverity::Info,
                     Severity::Generic(iri_ref) => {
-                        let iri = iri_ref
-                            .get_iri()
-                            .map_err(|_| CompiledShaclError::IriRefConversion)?;
+                        let iri = iri_ref.get_iri().map_err(|e| {
+                            CompiledShaclError::IriRefConversion {
+                                iri_ref: iri_ref.to_string(),
+                                err: e.to_string(),
+                            }
+                        })?;
                         CompiledSeverity::Generic(iri)
                     }
                 };
@@ -96,7 +96,7 @@ impl Display for CompiledSeverity {
             CompiledSeverity::Violation => write!(f, "Violation"),
             CompiledSeverity::Warning => write!(f, "Warning"),
             CompiledSeverity::Info => write!(f, "Info"),
-            CompiledSeverity::Generic(iri) => write!(f, "Generic({})", iri),
+            CompiledSeverity::Generic(iri) => write!(f, "Generic({iri})"),
         }
     }
 }

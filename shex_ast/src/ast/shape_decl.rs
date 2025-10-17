@@ -30,6 +30,10 @@ fn default_abstract() -> bool {
 }
 
 impl ShapeDecl {
+    pub fn id(&self) -> &ShapeExprLabel {
+        &self.id
+    }
+
     pub fn new(label: ShapeExprLabel, shape_expr: ShapeExpr, is_abstract: bool) -> Self {
         ShapeDecl {
             type_: "ShapeDecl".to_string(),

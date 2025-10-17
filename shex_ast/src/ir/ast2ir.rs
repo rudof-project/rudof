@@ -1,6 +1,4 @@
-use std::collections::HashMap;
-
-use crate::ShapeExprLabel;
+use super::node_constraint::NodeConstraint;
 use crate::ir::annotation::Annotation;
 use crate::ir::object_value::ObjectValue;
 use crate::ir::schema_ir::SchemaIR;
@@ -10,80 +8,166 @@ use crate::ir::shape_expr::ShapeExpr;
 use crate::ir::shape_label::ShapeLabel;
 use crate::ir::value_set::ValueSet;
 use crate::ir::value_set_value::ValueSetValue;
-use crate::{CResult, Cond, Node, Pred, ir};
-use crate::{SchemaIRError, ShapeLabelIdx, ast, ast::Schema as SchemaJson};
-use iri_s::IriS;
-use lazy_static::lazy_static;
-use prefixmap::IriRef;
+use crate::{CResult, Cond, Node, Pred, ResolveMethod, ShExFormat, ShExParser, ir};
+use crate::{SchemaIRError, ShapeLabelIdx, ast, ast::Schema as SchemaAST};
+use crate::{ShapeExprLabel, ast::iri_exclusion::IriExclusion};
+use core::panic;
+use iri_s::{IriS, IriSError};
+use prefixmap::{IriRef, PrefixMap};
 use rbe::{Cardinality, Pending, RbeError, SingleCond};
 use rbe::{Component, MatchCond, Max, Min, RbeTable, rbe::Rbe};
 use srdf::Object;
-use srdf::literal::SLiteral;
-use tracing::debug;
-
-use super::node_constraint::NodeConstraint;
-
-lazy_static! {
-    static ref XSD_STRING: IriRef = IriRef::Iri(IriS::new_unchecked(
-        "http://www.w3.org/2001/XMLSchema#string"
-    ));
-    static ref RDF_LANG_STRING: IriRef = IriRef::Iri(IriS::new_unchecked(
-        "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString"
-    ));
-}
+use srdf::SLiteral;
+use srdf::numeric_literal::NumericLiteral;
+use tracing::{debug, trace};
 
 #[derive(Debug, Default)]
 /// AST2IR compile a Schema in AST (JSON) to IR (Intermediate Representation).
 pub struct AST2IR {
     shape_decls_counter: usize,
+    resolve_method: ResolveMethod,
 }
 
 impl AST2IR {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(resolve_method: &ResolveMethod) -> Self {
+        Self {
+            resolve_method: resolve_method.clone(),
+            shape_decls_counter: 0,
+        }
     }
 
     pub fn compile(
         &mut self,
-        schema_json: &SchemaJson,
+        schema_ast: &SchemaAST,
+        source_iri: &IriS,
+        base: &Option<IriS>,
         compiled_schema: &mut SchemaIR,
     ) -> CResult<()> {
-        // debug!("Compiling schema_json: {compiled_schema:?}");
-        compiled_schema.set_prefixmap(schema_json.prefixmap());
-        self.collect_shape_labels(schema_json, compiled_schema)?;
-        self.collect_shape_exprs(schema_json, compiled_schema)?;
+        let mut visited = Vec::new();
+        trace!(
+            "Compiling schema from {source_iri}. Base: {}",
+            base.as_ref().map(|b| b.as_str()).unwrap_or("None")
+        );
+        let (local_shapes, _total_shapes) =
+            self.compile_visited(schema_ast, source_iri, compiled_schema, &mut visited, base)?;
+        compiled_schema.set_local_shapes_counter(local_shapes);
+        compiled_schema.set_imported_schemas(visited);
+        compiled_schema.increment_total_shapes(local_shapes);
+        compiled_schema.build_dependency_graph();
+        compiled_schema.build_inheritance_graph();
+        Ok(())
+    }
+
+    // Returns the number of local shapes compiled
+    fn compile_visited(
+        &mut self,
+        schema_ast: &SchemaAST,
+        source_iri: &IriS,
+        compiled_schema: &mut SchemaIR,
+        visited_sources: &mut Vec<IriS>,
+        base: &Option<IriS>,
+    ) -> CResult<(usize, usize)> {
+        let mut total_imported = 0;
+        let imports = schema_ast.imports_resolved(base).map_err(|e| {
+            Box::new(SchemaIRError::ImportIriError {
+                error: e.to_string(),
+            })
+        })?;
+        for import_iri in imports {
+            // trace!("Resolving import {import:?} with base: {base:?}");
+            // let import_iri = cnv_iri_ref(&import, &compiled_schema.prefixmap())?;
+            trace!("Import IRI resolved to {import_iri}");
+            if !visited_sources.contains(&import_iri) {
+                visited_sources.push(import_iri.clone());
+                // For imported schemas, the base is the source IRI of the schema that imports them
+                let imported_schema = self.resolve(&import_iri, &Some(source_iri.clone()))?;
+                let (_local, total) = self.compile_visited(
+                    &imported_schema,
+                    &import_iri,
+                    compiled_schema,
+                    visited_sources,
+                    base,
+                )?;
+                compiled_schema.increment_total_shapes(total);
+                total_imported += total;
+            }
+        }
+        trace!("Compiling schema to IR");
+        compiled_schema.set_prefixmap(schema_ast.prefixmap());
+        trace!("Collecting shape labels...");
+        let local = self.collect_shape_labels(schema_ast, compiled_schema, source_iri)?;
+        trace!("Collecting shape expressions...");
+        self.collect_shape_exprs(schema_ast, compiled_schema, source_iri)?;
+        trace!(
+            "Schema compilation completed with {} shapes. {local}/{total_imported}",
+            compiled_schema.shapes_counter()
+        );
+        Ok((local, total_imported + local))
+    }
+
+    fn resolve(&self, iri: &IriS, base: &Option<IriS>) -> CResult<SchemaAST> {
+        let new_schema = match &self.resolve_method {
+            ResolveMethod::RotatingFormats(formats) => {
+                find_schema_rotating_formats(iri, formats.clone(), base)
+            }
+            ResolveMethod::ByGuessingExtension => todo!(),
+            ResolveMethod::ByContentNegotiation => todo!(),
+        }?;
+        Ok(new_schema)
+    }
+
+    pub fn compile_import(&self, import: &IriRef, compiled_schema: &mut SchemaIR) -> CResult<()> {
+        let iri = cnv_iri_ref(import, &compiled_schema.prefixmap())?;
+        debug!("Importing schema from {iri}");
+        // TODO
         Ok(())
     }
 
     pub fn collect_shape_labels(
         &mut self,
-        schema_json: &SchemaJson,
+        schema_ast: &SchemaAST,
         compiled_schema: &mut SchemaIR,
-    ) -> CResult<()> {
-        match &schema_json.shapes() {
-            None => Ok(()),
-            Some(sds) => {
-                for sd in sds {
-                    let label = self.shape_expr_label_to_shape_label(&sd.id)?;
-                    compiled_schema.add_shape(label, ShapeExpr::Empty);
+        source_iri: &IriS,
+    ) -> CResult<usize> {
+        let mut shape_labels_counter = 0;
+        match &schema_ast.shapes() {
+            None => {}
+            Some(shape_decls) => {
+                for shape_decl in shape_decls {
+                    let label = self.shape_expr_label_to_shape_label(&shape_decl.id)?;
+                    let idx = compiled_schema.add_shape(label, ShapeExpr::Empty, source_iri);
+                    if shape_decl.is_abstract {
+                        compiled_schema.add_abstract_shape(idx);
+                    }
                     self.shape_decls_counter += 1;
+                    shape_labels_counter += 1;
                 }
-                Ok(())
             }
         }
+        if let Some(shape_expr_start) = &schema_ast.start() {
+            let start_label = ShapeLabel::Start;
+            let idx = compiled_schema.add_shape(start_label.clone(), ShapeExpr::Empty, source_iri);
+            let start_compiled =
+                self.compile_shape_expr(shape_expr_start, &idx, compiled_schema, source_iri)?;
+            compiled_schema.replace_shape(&idx, start_compiled);
+            self.shape_decls_counter += 1;
+            shape_labels_counter += 1;
+        }
+        Ok(shape_labels_counter)
     }
 
     pub fn collect_shape_exprs(
         &mut self,
-        schema_json: &SchemaJson,
+        schema_ast: &SchemaAST,
         compiled_schema: &mut SchemaIR,
+        source_iri: &IriS,
     ) -> CResult<()> {
-        match &schema_json.shapes() {
+        match &schema_ast.shapes() {
             None => Ok(()),
             Some(sds) => {
                 for sd in sds {
                     let idx = self.get_shape_label_idx(&sd.id, compiled_schema)?;
-                    let se = self.compile_shape_decl(sd, &idx, compiled_schema)?;
+                    let se = self.compile_shape_decl(sd, &idx, compiled_schema, source_iri)?;
                     compiled_schema.replace_shape(&idx, se)
                 }
                 Ok(())
@@ -116,8 +200,10 @@ impl AST2IR {
         sd: &ast::ShapeDecl,
         idx: &ShapeLabelIdx,
         compiled_schema: &mut SchemaIR,
+        source_iri: &IriS,
     ) -> CResult<ShapeExpr> {
-        self.compile_shape_expr(&sd.shape_expr, idx, compiled_schema)
+        let se = self.compile_shape_expr(&sd.shape_expr, idx, compiled_schema, source_iri)?;
+        Ok(se)
     }
 
     fn ref2idx(
@@ -134,6 +220,7 @@ impl AST2IR {
         se: &ast::ShapeExpr,
         idx: &ShapeLabelIdx,
         compiled_schema: &mut SchemaIR,
+        source_iri: &IriS,
     ) -> CResult<ShapeExpr> {
         let result: ShapeExpr = match se {
             ast::ShapeExpr::Ref(se_ref) => {
@@ -142,77 +229,72 @@ impl AST2IR {
                 Ok::<ShapeExpr, SchemaIRError>(se)
             }
             ast::ShapeExpr::ShapeOr { shape_exprs: ses } => {
+                tracing::debug!("Compiling ShapeOr with {ses:?}");
                 let mut cnv = Vec::new();
                 for sew in ses {
-                    let se = self.compile_shape_expr(&sew.se, idx, compiled_schema)?;
-                    cnv.push(se);
+                    let internal_idx = compiled_schema.new_index(source_iri);
+                    let se = self.compile_shape_expr(
+                        &sew.se,
+                        &internal_idx,
+                        compiled_schema,
+                        source_iri,
+                    )?;
+                    compiled_schema.replace_shape(&internal_idx, se.clone());
+                    cnv.push(internal_idx);
                 }
-                let display = match compiled_schema.find_shape_idx(idx) {
-                    None => "internal OR".to_string(),
-                    Some((Some(label), _)) => compiled_schema.show_label(label),
-                    Some((None, _)) => "internal OR with some se".to_string(),
-                };
-
-                Ok(ShapeExpr::ShapeOr {
-                    exprs: cnv,
-                    display,
-                })
+                let result = ShapeExpr::ShapeOr { exprs: cnv };
+                compiled_schema.replace_shape(idx, result.clone());
+                tracing::debug!("ShapeOr result: {result:?}");
+                Ok(result)
             }
             ast::ShapeExpr::ShapeAnd { shape_exprs: ses } => {
-                // tracing::debug!("Compiling ShapeAnd with {ses:?}");
+                tracing::debug!("Compiling ShapeAnd with {ses:?}");
                 let mut cnv = Vec::new();
                 for sew in ses {
-                    let se = self.compile_shape_expr(&sew.se, idx, compiled_schema)?;
-                    cnv.push(se);
+                    let internal_idx = compiled_schema.new_index(source_iri);
+                    let se = self.compile_shape_expr(
+                        &sew.se,
+                        &internal_idx,
+                        compiled_schema,
+                        source_iri,
+                    )?;
+                    compiled_schema.replace_shape(&internal_idx, se.clone());
+                    cnv.push(internal_idx);
                 }
-                let display = match compiled_schema.find_shape_idx(idx) {
-                    None => "internal AND".to_string(),
-                    Some((Some(label), _)) => compiled_schema.show_label(label),
-                    Some((None, _)) => "internal AND with some se".to_string(),
-                };
-                let result = ShapeExpr::ShapeAnd {
-                    exprs: cnv,
-                    display,
-                };
-                // tracing::debug!("ShapeAnd result: {result:?}");
+                let result = ShapeExpr::ShapeAnd { exprs: cnv };
+                compiled_schema.replace_shape(idx, result.clone());
+                tracing::debug!("ShapeAnd result: {result:?}");
                 Ok(result)
             }
             ast::ShapeExpr::ShapeNot { shape_expr: sew } => {
-                let se = self.compile_shape_expr(&sew.se, idx, compiled_schema)?;
-                let display = match compiled_schema.find_shape_idx(idx) {
-                    None => "internal NOT".to_string(),
-                    Some((Some(label), _)) => compiled_schema.show_label(label),
-                    Some((None, _)) => "internal NOT with some shape expr".to_string(),
-                };
-                Ok(ShapeExpr::ShapeNot {
-                    expr: Box::new(se),
-                    display,
-                })
+                trace!("Compiling ShapeNot with {sew:?} and index {idx}");
+                let internal_idx = compiled_schema.new_index(source_iri);
+                let se =
+                    self.compile_shape_expr(&sew.se, &internal_idx, compiled_schema, source_iri)?;
+                compiled_schema.replace_shape(&internal_idx, se.clone());
+                let not_se = ShapeExpr::ShapeNot { expr: internal_idx };
+                compiled_schema.replace_shape(idx, not_se.clone());
+                Ok(not_se)
             }
             ast::ShapeExpr::Shape(shape) => {
-                let new_extra = self.cnv_extra(&shape.extra)?;
+                let new_extra = self.cnv_extra(&shape.extra, &compiled_schema.prefixmap())?;
                 let rbe_table = match &shape.expression {
                     None => RbeTable::new(),
                     Some(tew) => {
                         let mut table = RbeTable::new();
-                        let rbe = self.triple_expr2rbe(&tew.te, compiled_schema, &mut table)?;
+                        let rbe =
+                            self.triple_expr2rbe(&tew.te, compiled_schema, &mut table, source_iri)?;
                         table.with_rbe(rbe);
                         table
                     }
                 };
                 let preds = Self::get_preds_shape(shape);
-                let references = self.get_references_shape(shape, compiled_schema);
+                // let references = self.get_references_shape(shape, compiled_schema);
                 let extends = shape
                     .extends()
                     .iter()
                     .map(|s| self.ref2idx(s, compiled_schema))
                     .collect::<CResult<Vec<_>>>()?;
-
-                let display = match compiled_schema.find_shape_idx(idx) {
-                    None => "internal".to_string(),
-                    Some((Some(label), _)) => compiled_schema.show_label(label),
-                    Some((None, _)) => "internal with shape expr:".to_string(),
-                };
 
                 let shape = Shape::new(
                     Self::cnv_closed(&shape.closed),
@@ -222,31 +304,26 @@ impl AST2IR {
                     Self::cnv_annotations(&shape.annotations),
                     preds,
                     extends,
-                    references,
-                    display,
+                    // references,
                 );
                 Ok(ShapeExpr::Shape(Box::new(shape)))
             }
             ast::ShapeExpr::NodeConstraint(nc) => {
-                let cond = Self::cnv_node_constraint(
+                let (cond, display) = Self::cnv_node_constraint(
                     self,
                     &nc.node_kind(),
                     &nc.datatype(),
                     &nc.xs_facet(),
                     &nc.values(),
+                    &compiled_schema.prefixmap(),
                 )?;
-                let display = match compiled_schema.find_shape_idx(idx) {
-                    None => "internal NodeConstraint".to_string(),
-                    Some((Some(label), _)) => compiled_schema.show_label(label),
-                    Some((None, _)) => "internal NodeConstraint with some shape expr".to_string(),
-                };
                 let node_constraint = NodeConstraint::new(nc.clone(), cond, display);
                 Ok(ShapeExpr::NodeConstraint(node_constraint))
             }
             ast::ShapeExpr::External => Ok(ShapeExpr::External {}),
         }?;
         //compiled_schema.replace_shape(idx, result.clone());
-        // println!("Replacing {idx} with {result}");
+        trace!("Result of compilation: {result}");
         Ok(result)
     }
 
@@ -256,15 +333,16 @@ impl AST2IR {
         dt: &Option<IriRef>,
         xs_facet: &Option<Vec<ast::XsFacet>>,
         values: &Option<Vec<ast::ValueSetValue>>,
-    ) -> CResult<Cond> {
+        prefixmap: &PrefixMap,
+    ) -> CResult<(Cond, String)> {
         let maybe_value_set = match values {
             Some(vs) => {
-                let value_set = create_value_set(vs)?;
+                let value_set = create_value_set(vs, prefixmap)?;
                 Some(value_set)
             }
             None => None,
         };
-        node_constraint2match_cond(nk, dt, xs_facet, &maybe_value_set)
+        node_constraint2match_cond(nk, dt, xs_facet, &maybe_value_set, prefixmap)
     }
 
     fn cnv_closed(closed: &Option<bool>) -> bool {
@@ -274,11 +352,11 @@ impl AST2IR {
         }
     }
 
-    fn cnv_extra(&self, extra: &Option<Vec<IriRef>>) -> CResult<Vec<Pred>> {
+    fn cnv_extra(&self, extra: &Option<Vec<IriRef>>, prefixmap: &PrefixMap) -> CResult<Vec<Pred>> {
         if let Some(extra) = extra {
             let mut vs = Vec::new();
             for iri in extra {
-                let nm = cnv_iri_ref(iri)?;
+                let nm = cnv_iri_ref(iri, prefixmap)?;
                 vs.push(Pred::new(nm));
             }
             Ok(vs)
@@ -310,6 +388,7 @@ impl AST2IR {
         triple_expr: &ast::TripleExpr,
         compiled_schema: &mut SchemaIR,
         current_table: &mut RbeTable<Pred, Node, ShapeLabelIdx>,
+        source_iri: &IriS,
     ) -> CResult<Rbe<Component>> {
         match triple_expr {
             ast::TripleExpr::EachOf {
@@ -322,7 +401,8 @@ impl AST2IR {
             } => {
                 let mut cs = Vec::new();
                 for e in expressions {
-                    let c = self.triple_expr2rbe(&e.te, compiled_schema, current_table)?;
+                    let c =
+                        self.triple_expr2rbe(&e.te, compiled_schema, current_table, source_iri)?;
                     cs.push(c)
                 }
                 let card = self.cnv_min_max(min, max)?;
@@ -338,7 +418,8 @@ impl AST2IR {
             } => {
                 let mut cs = Vec::new();
                 for e in expressions {
-                    let c = self.triple_expr2rbe(&e.te, compiled_schema, current_table)?;
+                    let c =
+                        self.triple_expr2rbe(&e.te, compiled_schema, current_table, source_iri)?;
                     cs.push(c)
                 }
                 let card = self.cnv_min_max(min, max)?;
@@ -358,24 +439,26 @@ impl AST2IR {
                 let min = self.cnv_min(min)?;
                 let max = self.cnv_max(max)?;
                 let iri = Self::cnv_predicate(predicate)?;
-                let cond = self.value_expr2match_cond(value_expr, compiled_schema)?;
+                let (cond, _display) =
+                    self.value_expr2match_cond(value_expr, compiled_schema, source_iri)?;
                 let c = current_table.add_component(iri, &cond);
+                trace!("triple_expr2rbe: TripleConstraint: added component {c:?} to RBE table");
                 Ok(Rbe::symbol(c, min.value, max))
             }
-            ast::TripleExpr::TripleExprRef(r) => Err(SchemaIRError::Todo {
+            ast::TripleExpr::TripleExprRef(r) => Err(Box::new(SchemaIRError::Todo {
                 msg: format!("TripleExprRef {r:?}"),
-            }),
+            })),
         }
     }
 
     fn cnv_predicate(predicate: &IriRef) -> CResult<Pred> {
         match predicate {
             IriRef::Iri(iri) => Ok(Pred::from(iri.clone())),
-            IriRef::Prefixed { prefix, local } => Err(SchemaIRError::Internal {
+            IriRef::Prefixed { prefix, local } => Err(Box::new(SchemaIRError::Internal {
                 msg: format!(
                     "Cannot convert prefixed {prefix}:{local} to predicate without context"
                 ),
-            }),
+            })),
         }
     }
 
@@ -403,7 +486,7 @@ impl AST2IR {
 
     fn cnv_min(&self, min: &Option<i32>) -> CResult<Min> {
         match min {
-            Some(min) if *min < 0 => Err(SchemaIRError::MinLessZero { min: *min }),
+            Some(min) if *min < 0 => Err(Box::new(SchemaIRError::MinLessZero { min: *min })),
             Some(min) => Ok(Min::from(*min)),
             None => Ok(Min::from(1)),
         }
@@ -412,7 +495,7 @@ impl AST2IR {
     fn cnv_max(&self, max: &Option<i32>) -> CResult<Max> {
         match *max {
             Some(-1) => Ok(Max::Unbounded),
-            Some(max) if max < -1 => Err(SchemaIRError::MaxIncorrect { max }),
+            Some(max) if max < -1 => Err(Box::new(SchemaIRError::MaxIncorrect { max })),
             Some(max) => Ok(Max::from(max)),
             None => Ok(Max::from(1)),
         }
@@ -422,7 +505,8 @@ impl AST2IR {
         &self,
         ve: &Option<Box<ast::ShapeExpr>>,
         compiled_schema: &mut SchemaIR,
-    ) -> CResult<Cond> {
+        source_iri: &IriS,
+    ) -> CResult<(Cond, String)> {
         if let Some(se) = ve.as_deref() {
             match se {
                 ast::ShapeExpr::NodeConstraint(nc) => self.cnv_node_constraint(
@@ -430,45 +514,101 @@ impl AST2IR {
                     &nc.datatype(),
                     &nc.xs_facet(),
                     &nc.values(),
+                    &compiled_schema.prefixmap(),
                 ),
 
                 ast::ShapeExpr::Ref(sref) => {
                     let idx = self.ref2idx(sref, compiled_schema)?;
-                    Ok(mk_cond_ref(idx))
+                    Ok((mk_cond_ref(idx), format!("ShapeRef {sref}")))
                 }
-                ast::ShapeExpr::Shape { .. } => todo("value_expr2match_cond: Shape"),
-                ast::ShapeExpr::ShapeAnd { .. } => todo("value_expr2match_cond: ShapeOr"),
-                ast::ShapeExpr::ShapeOr { .. } => todo("value_expr2match_cond: ShapeOr"),
+                ast::ShapeExpr::Shape { .. } => {
+                    // TODO: avoid recompiling the same shape expression?
+                    // I think this code should be reviewed....
+                    let idx = compiled_schema.new_index(source_iri);
+                    let se = self.compile_shape_expr(se, &idx, compiled_schema, source_iri)?;
+                    compiled_schema.replace_shape(&idx, se.clone());
+                    trace!("Returning SHAPE cond with idx {idx}");
+                    Ok((mk_cond_ref(idx), format!("Shape {idx}")))
+                }
+                ast::ShapeExpr::ShapeAnd { shape_exprs } => {
+                    let mut ands = Vec::new();
+                    for shape_expr in shape_exprs {
+                        let idx_se = compiled_schema.new_index(source_iri);
+                        let se = self.compile_shape_expr(
+                            &shape_expr.se,
+                            &idx_se,
+                            compiled_schema,
+                            source_iri,
+                        )?;
+                        compiled_schema.replace_shape(&idx_se, se.clone());
+                        ands.push(idx_se);
+                    }
+                    let and_se = ShapeExpr::ShapeAnd {
+                        exprs: ands.clone(),
+                    };
+                    let idx_and = compiled_schema.new_index(source_iri);
+                    compiled_schema.replace_shape(&idx_and, and_se);
+                    trace!("Returning AND cond with idx {idx_and}");
+                    let display = format!(
+                        "AND({})",
+                        ands.iter()
+                            .map(|i| i.to_string())
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    );
+                    Ok((mk_cond_ref(idx_and), display))
+                }
+                ast::ShapeExpr::ShapeOr { shape_exprs } => {
+                    let mut ors = Vec::new();
+                    for se in shape_exprs {
+                        let idx_se = compiled_schema.new_index(source_iri);
+                        let se =
+                            self.compile_shape_expr(&se.se, &idx_se, compiled_schema, source_iri)?;
+                        compiled_schema.replace_shape(&idx_se, se.clone());
+                        ors.push(idx_se);
+                    }
+                    let or_se = ShapeExpr::ShapeOr { exprs: ors.clone() };
+                    let display = format!(
+                        "OR({})",
+                        ors.iter()
+                            .map(|i| i.to_string())
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    );
+                    let idx_or = compiled_schema.new_index(source_iri);
+                    compiled_schema.replace_shape(&idx_or, or_se);
+                    Ok((mk_cond_ref(idx_or), display))
+                }
                 ast::ShapeExpr::ShapeNot { shape_expr } => {
-                    let new_idx = compiled_schema.new_index();
-                    let se = self.compile_shape_expr(&shape_expr.se, &new_idx, compiled_schema)?;
-                    let display = match compiled_schema.find_shape_idx(&new_idx) {
-                        None => "internal NOT".to_string(),
-                        Some((Some(label), _)) => compiled_schema.show_label(label),
-                        Some((None, _)) => "internal NOT with some shape expr".to_string(),
-                    };
+                    let idx_shape_expr = compiled_schema.new_index(source_iri);
+                    trace!(
+                        "value_expr2matchcond: Compiling ShapeNot with {shape_expr:?}, idx_shape_expr {idx_shape_expr}"
+                    );
+                    let se = self.compile_shape_expr(
+                        &shape_expr.se,
+                        &idx_shape_expr,
+                        compiled_schema,
+                        source_iri,
+                    )?;
+                    compiled_schema.replace_shape(&idx_shape_expr, se.clone());
+                    let display = format!("NOT {idx_shape_expr}");
                     let not_se = ShapeExpr::ShapeNot {
-                        expr: Box::new(se),
-                        display,
+                        expr: idx_shape_expr,
                     };
-                    compiled_schema.replace_shape(&new_idx, not_se);
-                    Ok(mk_cond_ref(new_idx))
+                    let idx_not = compiled_schema.new_index(source_iri);
+                    compiled_schema.replace_shape(&idx_not, not_se);
+                    trace!("Returning NOT cond with idx {idx_not}");
+                    Ok((mk_cond_ref(idx_not), display))
                 }
                 ast::ShapeExpr::External => todo("value_expr2match_cond: ShapeExternal"),
             }
         } else {
-            Ok(MatchCond::single(SingleCond::new().with_name(".")))
+            Ok((
+                MatchCond::single(SingleCond::new().with_name(".")),
+                ".".to_string(),
+            ))
         }
     }
-
-    /* #[allow(dead_code)]
-    fn shape_expr2match_cond(
-        &self,
-        _se: schema_json::ShapeExpr,
-        _compiled_schema: &mut SchemaIR,
-    ) -> CResult<Cond> {
-        todo("shape_expr2match_cond")
-    }*/
 
     fn get_preds_shape(shape: &ast::Shape) -> Vec<Pred> {
         match shape.triple_expr() {
@@ -494,71 +634,6 @@ impl AST2IR {
             ast::TripleExpr::TripleExprRef(_) => todo!(),
         }
     }
-
-    fn get_references_shape(
-        &self,
-        shape: &ast::Shape,
-        schema: &SchemaIR,
-    ) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
-        match shape.triple_expr() {
-            None => HashMap::new(),
-            Some(te) => self.get_references_triple_expr(&te, schema),
-        }
-    }
-
-    fn get_references_triple_expr(
-        &self,
-        te: &ast::TripleExpr,
-        schema: &SchemaIR,
-    ) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
-        match te {
-            ast::TripleExpr::EachOf { expressions, .. } => {
-                expressions.iter().fold(HashMap::new(), |mut acc, te| {
-                    let refs = self.get_references_triple_expr(&te.te, schema);
-                    for (pred, idxs) in refs {
-                        acc.entry(pred).or_default().extend(idxs);
-                    }
-                    acc
-                })
-            }
-            ast::TripleExpr::OneOf { expressions, .. } => {
-                expressions.iter().fold(HashMap::new(), |mut acc, te| {
-                    let refs = self.get_references_triple_expr(&te.te, schema);
-                    for (pred, idxs) in refs {
-                        acc.entry(pred).or_default().extend(idxs);
-                    }
-                    acc
-                })
-            }
-            ast::TripleExpr::TripleConstraint {
-                predicate,
-                value_expr,
-                ..
-            } => {
-                let pred = iri_ref2iri_s(predicate);
-                match value_expr {
-                    Some(ve) => match ve.as_ref() {
-                        ast::ShapeExpr::Ref(sref) => {
-                            let label =
-                                self.shape_expr_label_to_shape_label(sref)
-                                    .unwrap_or_else(|_| {
-                                        panic!("Convert shape label to IR label {sref}")
-                                    });
-                            let idx = schema.get_shape_label_idx(&label).unwrap_or_else(|_| {
-                                panic!("Failed to get shape label index for {label}")
-                            });
-                            let mut map = HashMap::new();
-                            map.insert(Pred::new(pred), vec![idx]);
-                            map
-                        }
-                        _ => HashMap::new(),
-                    },
-                    None => HashMap::new(),
-                }
-            }
-            ast::TripleExpr::TripleExprRef(_) => todo!(),
-        }
-    }
 }
 
 fn iri_ref2iri_s(iri_ref: &IriRef) -> IriS {
@@ -575,30 +650,41 @@ fn node_constraint2match_cond(
     datatype: &Option<IriRef>,
     xs_facet: &Option<Vec<ast::XsFacet>>,
     values: &Option<ValueSet>,
-) -> CResult<Cond> {
-    let c1: Option<Cond> = node_kind.as_ref().map(node_kind2match_cond);
-    let c2 = datatype.as_ref().map(datatype2match_cond).transpose()?;
+    prefixmap: &PrefixMap,
+) -> CResult<(Cond, String)> {
+    let c1: Option<(Cond, String)> = node_kind.as_ref().map(node_kind2match_cond);
+    let c2 = datatype
+        .as_ref()
+        .map(|dt| datatype2match_cond(dt, prefixmap))
+        .transpose()?;
     let c3 = xs_facet.as_ref().map(xs_facets2match_cond);
-    let c4 = values.as_ref().map(|vs| valueset2match_cond(vs.clone()));
+    let c4 = values
+        .as_ref()
+        .map(|vs| valueset2match_cond(vs.clone(), prefixmap));
     let os = vec![c1, c2, c3, c4];
     Ok(options2match_cond(os))
 }
 
-fn node_kind2match_cond(nodekind: &ast::NodeKind) -> Cond {
-    mk_cond_nodekind(nodekind.clone())
+fn node_kind2match_cond(nodekind: &ast::NodeKind) -> (Cond, String) {
+    (
+        mk_cond_nodekind(nodekind.clone()),
+        format!("nodekind({nodekind})"),
+    )
 }
 
-fn datatype2match_cond(datatype: &IriRef) -> CResult<Cond> {
-    //let iri = cnv_iri_ref(datatype)?;
-    Ok(mk_cond_datatype(datatype))
+fn datatype2match_cond(datatype: &IriRef, prefixmap: &PrefixMap) -> CResult<(Cond, String)> {
+    let iri = cnv_iri_ref(datatype, prefixmap)?;
+    let cond = mk_cond_datatype(&iri, prefixmap);
+    let str = cond.to_string();
+    Ok((cond, str))
 }
 
-fn xs_facets2match_cond(xs_facets: &Vec<ast::XsFacet>) -> Cond {
+fn xs_facets2match_cond(xs_facets: &Vec<ast::XsFacet>) -> (Cond, String) {
     let mut conds = Vec::new();
     for xs_facet in xs_facets {
         conds.push(xs_facet2match_cond(xs_facet))
     }
-    MatchCond::And(conds)
+    (MatchCond::And(conds), format!("xs_facets({xs_facets:?})"))
 }
 
 fn xs_facet2match_cond(xs_facet: &ast::XsFacet) -> Cond {
@@ -619,25 +705,41 @@ fn string_facet_to_match_cond(sf: &ast::StringFacet) -> Cond {
 
 fn numeric_facet_to_match_cond(nf: &ast::NumericFacet) -> Cond {
     match nf {
-        ast::NumericFacet::MinInclusive(_min) => todo!(),
-        ast::NumericFacet::MinExclusive(_) => todo!(),
-        ast::NumericFacet::MaxInclusive(_) => todo!(),
-        ast::NumericFacet::MaxExclusive(_) => todo!(),
-        ast::NumericFacet::TotalDigits(_) => todo!(),
-        ast::NumericFacet::FractionDigits(_) => todo!(),
+        ast::NumericFacet::MinInclusive(min) => mk_cond_min_inclusive(min.clone()),
+        ast::NumericFacet::MinExclusive(min) => mk_cond_min_exclusive(min.clone()),
+        ast::NumericFacet::MaxInclusive(max) => mk_cond_max_inclusive(max.clone()),
+        ast::NumericFacet::MaxExclusive(max) => mk_cond_max_exclusive(max.clone()),
+        ast::NumericFacet::TotalDigits(td) => mk_cond_total_digits(*td),
+        ast::NumericFacet::FractionDigits(fd) => mk_cond_fraction_digits(*fd),
     }
 }
 
-fn valueset2match_cond(vs: ValueSet) -> Cond {
-    mk_cond_value_set(vs)
+fn valueset2match_cond(vs: ValueSet, prefixmap: &PrefixMap) -> (Cond, String) {
+    (
+        mk_cond_value_set(vs.clone(), prefixmap),
+        format!(
+            "[{}]",
+            vs.values()
+                .iter()
+                .map(|v| v.show_qualified(prefixmap))
+                .collect::<Vec<_>>()
+                .join(", ")
+        ),
+    )
 }
 
-fn options2match_cond<T: IntoIterator<Item = Option<Cond>>>(os: T) -> Cond {
-    let vec: Vec<Cond> = os.into_iter().flatten().collect();
+fn options2match_cond<T: IntoIterator<Item = Option<(Cond, String)>>>(os: T) -> (Cond, String) {
+    let vec: Vec<(Cond, String)> = os.into_iter().flatten().collect();
     match &vec[..] {
-        [] => MatchCond::empty(),
-        [c] => c.clone(),
-        _ => MatchCond::And(vec),
+        [] => (MatchCond::empty(), ".".to_string()),
+        [(c, s)] => (c.clone(), s.clone()),
+        _ => (
+            MatchCond::And(vec.iter().map(|(c, _)| c.clone()).collect()),
+            vec.iter()
+                .map(|(_, s)| s.clone())
+                .collect::<Vec<_>>()
+                .join(" AND "),
+        ),
     }
 }
 
@@ -645,11 +747,11 @@ fn mk_cond_ref(idx: ShapeLabelIdx) -> Cond {
     MatchCond::ref_(idx)
 }
 
-fn mk_cond_datatype(datatype: &IriRef) -> Cond {
+fn mk_cond_datatype(datatype: &IriS, prefixmap: &PrefixMap) -> Cond {
     let dt = datatype.clone();
     MatchCond::single(
         SingleCond::new()
-            .with_name(format!("datatype({dt})").as_str())
+            .with_name(prefixmap.qualify(&dt).to_string().as_str())
             .with_cond(move |value: &Node| match check_node_datatype(value, &dt) {
                 Ok(_) => Ok(Pending::new()),
                 Err(err) => Err(RbeError::MsgError {
@@ -669,6 +771,102 @@ fn mk_cond_length(len: usize) -> Cond {
                     msg: format!("Length error: {err}"),
                 }),
             }),
+    )
+}
+
+fn mk_cond_min_inclusive(min: NumericLiteral) -> Cond {
+    let min_str = min.to_string();
+    MatchCond::single(
+        SingleCond::new()
+            .with_name(format!("minInclusive({min_str})").as_str())
+            .with_cond(
+                move |value: &Node| match check_node_min_inclusive(value, min.clone()) {
+                    Ok(_) => Ok(Pending::new()),
+                    Err(err) => Err(RbeError::MsgError {
+                        msg: format!("MinInclusive: {err}"),
+                    }),
+                },
+            ),
+    )
+}
+
+fn mk_cond_min_exclusive(min: NumericLiteral) -> Cond {
+    let min_str = min.to_string();
+    MatchCond::single(
+        SingleCond::new()
+            .with_name(format!("minExclusive({min_str})").as_str())
+            .with_cond(
+                move |value: &Node| match check_node_min_exclusive(value, min.clone()) {
+                    Ok(_) => Ok(Pending::new()),
+                    Err(err) => Err(RbeError::MsgError {
+                        msg: format!("MinExclusive: {err}"),
+                    }),
+                },
+            ),
+    )
+}
+
+fn mk_cond_total_digits(total: usize) -> Cond {
+    let total_str = total.to_string();
+    MatchCond::single(
+        SingleCond::new()
+            .with_name(format!("totalDigits({total_str})").as_str())
+            .with_cond(
+                move |value: &Node| match check_node_total_digits(value, total) {
+                    Ok(_) => Ok(Pending::new()),
+                    Err(err) => Err(RbeError::MsgError {
+                        msg: format!("MaxExclusive: {err}"),
+                    }),
+                },
+            ),
+    )
+}
+
+fn mk_cond_fraction_digits(total: usize) -> Cond {
+    let total_str = total.to_string();
+    MatchCond::single(
+        SingleCond::new()
+            .with_name(format!("fractionDigits({total_str})").as_str())
+            .with_cond(
+                move |value: &Node| match check_node_fraction_digits(value, total) {
+                    Ok(_) => Ok(Pending::new()),
+                    Err(err) => Err(RbeError::MsgError {
+                        msg: format!("MaxExclusive: {err}"),
+                    }),
+                },
+            ),
+    )
+}
+
+fn mk_cond_max_exclusive(max: NumericLiteral) -> Cond {
+    let max_str = max.to_string();
+    MatchCond::single(
+        SingleCond::new()
+            .with_name(format!("maxExclusive({max_str})").as_str())
+            .with_cond(
+                move |value: &Node| match check_node_max_exclusive(value, max.clone()) {
+                    Ok(_) => Ok(Pending::new()),
+                    Err(err) => Err(RbeError::MsgError {
+                        msg: format!("MaxExclusive: {err}"),
+                    }),
+                },
+            ),
+    )
+}
+
+fn mk_cond_max_inclusive(max: NumericLiteral) -> Cond {
+    let max_str = max.to_string();
+    MatchCond::single(
+        SingleCond::new()
+            .with_name(format!("maxInclusive({max_str})").as_str())
+            .with_cond(
+                move |value: &Node| match check_node_max_inclusive(value, max.clone()) {
+                    Ok(_) => Ok(Pending::new()),
+                    Err(err) => Err(RbeError::MsgError {
+                        msg: format!("MaxInclusive: {err}"),
+                    }),
+                },
+            ),
     )
 }
 
@@ -730,46 +928,52 @@ fn mk_cond_pattern(regex: &str, flags: Option<&str>) -> Cond {
 fn iri_ref_2_shape_label(id: &IriRef) -> CResult<ShapeLabel> {
     match id {
         IriRef::Iri(iri) => Ok(ShapeLabel::Iri(iri.clone())),
-        IriRef::Prefixed { prefix, local } => Err(SchemaIRError::IriRef2ShapeLabelError {
-            prefix: prefix.clone(),
-            local: local.clone(),
-        }),
+        IriRef::Prefixed { prefix, local } => {
+            Err(Box::new(SchemaIRError::IriRef2ShapeLabelError {
+                prefix: prefix.clone(),
+                local: local.clone(),
+            }))
+        }
     }
 }
 
-fn mk_cond_value_set(value_set: ValueSet) -> Cond {
+fn mk_cond_value_set(value_set: ValueSet, prefixmap: &PrefixMap) -> Cond {
+    let cloned_prefixmap = prefixmap.clone();
     MatchCond::single(
         SingleCond::new()
-            .with_name(format!("{value_set}").as_str())
+            .with_name(value_set.show_qualified(prefixmap).as_str())
             .with_cond(move |node: &Node| {
                 if value_set.check_value(node.as_object()) {
                     Ok(Pending::empty())
                 } else {
                     Err(RbeError::MsgError {
-                        msg: format!("Values failed: {node} not in {value_set}"),
+                        msg: format!(
+                            "Values failed: {node} not in {}",
+                            value_set.show_qualified(&cloned_prefixmap)
+                        ),
                     })
                 }
             }),
     )
 }
 
-fn create_value_set(values: &Vec<ast::ValueSetValue>) -> CResult<ValueSet> {
+fn create_value_set(values: &Vec<ast::ValueSetValue>, prefixmap: &PrefixMap) -> CResult<ValueSet> {
     let mut vs = ValueSet::new();
     for v in values {
-        let cvalue = cnv_value(v)?;
+        let cvalue = cnv_value(v, prefixmap)?;
         vs.add_value(cvalue)
     }
     Ok(vs)
 }
 
-fn cnv_value(v: &ast::ValueSetValue) -> CResult<ValueSetValue> {
+fn cnv_value(v: &ast::ValueSetValue, prefixmap: &PrefixMap) -> CResult<ValueSetValue> {
     match &v {
         ast::ValueSetValue::IriStem { stem, .. } => {
-            let cnv_stem = cnv_iri_ref(stem)?;
+            let cnv_stem = cnv_iri_ref(stem, prefixmap)?;
             Ok(ValueSetValue::IriStem { stem: cnv_stem })
         }
         ast::ValueSetValue::ObjectValue(ovw) => {
-            let ov = cnv_object_value(ovw)?;
+            let ov = cnv_object_value(ovw, prefixmap)?;
             Ok(ValueSetValue::ObjectValue(ov))
         }
         ast::ValueSetValue::Language { language_tag, .. } => Ok(ValueSetValue::Language {
@@ -783,15 +987,33 @@ fn cnv_value(v: &ast::ValueSetValue) -> CResult<ValueSetValue> {
             let exclusions = cnv_literal_exclusions(exclusions)?;
             Ok(ValueSetValue::LiteralStemRange { stem, exclusions })
         }
-        ast::ValueSetValue::IriStemRange {
-            stem: _,
-            exclusions: _,
-        } => todo!(),
-        ast::ValueSetValue::LanguageStem { stem: _ } => todo!(),
-        ast::ValueSetValue::LanguageStemRange {
-            stem: _,
-            exclusions: _,
-        } => todo!(),
+        ast::ValueSetValue::IriStemRange { stem, exclusions } => {
+            let stem = cnv_iriref_or_wildcard(stem, prefixmap)?;
+            let exclusions = cnv_iri_exclusions(exclusions)?;
+            Ok(ValueSetValue::IriStemRange { stem, exclusions })
+        }
+        ast::ValueSetValue::LanguageStem { stem } => {
+            let stem = cnv_lang_or_wildcard(stem)?;
+            Ok(ValueSetValue::LanguageStem { stem })
+        }
+        ast::ValueSetValue::LanguageStemRange { stem, exclusions } => {
+            let stem = cnv_lang_or_wildcard(stem)?;
+            let exclusions = cnv_lang_exclusions(exclusions)?;
+            Ok(ValueSetValue::LanguageStemRange { stem, exclusions })
+        }
+    }
+}
+
+fn cnv_lang_or_wildcard(
+    stem: &ast::LangOrWildcard,
+) -> CResult<crate::ir::value_set_value::LangOrWildcard> {
+    match stem {
+        ast::LangOrWildcard::Lang(s) => {
+            Ok(crate::ir::value_set_value::LangOrWildcard::Lang(s.clone()))
+        }
+        ast::LangOrWildcard::Wildcard => Ok(crate::ir::value_set_value::LangOrWildcard::Wildcard {
+            type_: "Lang wildcard".to_string(),
+        }),
     }
 }
 
@@ -804,6 +1026,23 @@ fn cnv_string_or_wildcard(
         ),
         ast::StringOrWildcard::Wildcard => {
             Ok(crate::ir::value_set_value::StringOrWildcard::Wildcard {
+                type_: "".to_string(),
+            })
+        }
+    }
+}
+
+fn cnv_iriref_or_wildcard(
+    stem: &ast::IriRefOrWildcard,
+    prefixmap: &PrefixMap,
+) -> CResult<crate::ir::value_set_value::IriOrWildcard> {
+    match stem {
+        ast::IriRefOrWildcard::IriRef(iri) => {
+            let cnv_iri = cnv_iri_ref(iri, prefixmap)?;
+            Ok(crate::ir::value_set_value::IriOrWildcard::Iri(cnv_iri))
+        }
+        ast::IriRefOrWildcard::Wildcard => {
+            Ok(crate::ir::value_set_value::IriOrWildcard::Wildcard {
                 type_: "".to_string(),
             })
         }
@@ -827,7 +1066,7 @@ fn cnv_string_or_wildcard(
 }*/
 
 fn cnv_literal_exclusions(
-    exclusions: &Option<Vec<ast::LiteralExclusion>>,
+    exclusions: &Option<Vec<ast::literal_exclusion::LiteralExclusion>>,
 ) -> CResult<Option<Vec<ir::exclusion::LiteralExclusion>>> {
     match exclusions {
         None => Ok(None),
@@ -835,6 +1074,38 @@ fn cnv_literal_exclusions(
             let mut rs = Vec::new();
             for ex in exs {
                 let cnv_ex = cnv_literal_exclusion(ex)?;
+                rs.push(cnv_ex);
+            }
+            Ok(Some(rs))
+        }
+    }
+}
+
+fn cnv_iri_exclusions(
+    exclusions: &Option<Vec<ast::iri_exclusion::IriExclusion>>,
+) -> CResult<Option<Vec<ir::exclusion::IriExclusion>>> {
+    match exclusions {
+        None => Ok(None),
+        Some(exs) => {
+            let mut rs = Vec::new();
+            for ex in exs {
+                let cnv_ex = cnv_iri_exclusion(ex)?;
+                rs.push(cnv_ex);
+            }
+            Ok(Some(rs))
+        }
+    }
+}
+
+fn cnv_lang_exclusions(
+    exclusions: &Option<Vec<ast::language_exclusion::LanguageExclusion>>,
+) -> CResult<Option<Vec<ir::exclusion::LanguageExclusion>>> {
+    match exclusions {
+        None => Ok(None),
+        Some(exs) => {
+            let mut rs = Vec::new();
+            for ex in exs {
+                let cnv_ex = cnv_language_exclusion(ex)?;
                 rs.push(cnv_ex);
             }
             Ok(Some(rs))
@@ -870,207 +1141,156 @@ fn cnv_string_or_literalstem(sl: &ast::StringOrLiteralStemWrapper) -> CResult<St
 }*/
 
 fn cnv_literal_exclusion(
-    le: &ast::LiteralExclusion,
+    le: &ast::literal_exclusion::LiteralExclusion,
 ) -> CResult<crate::ir::exclusion::LiteralExclusion> {
     match le {
-        ast::LiteralExclusion::Literal(s) => Ok(crate::ir::exclusion::LiteralExclusion::Literal(
-            s.to_string(),
-        )),
-        ast::LiteralExclusion::LiteralStem(s) => Ok(
+        ast::literal_exclusion::LiteralExclusion::Literal(s) => Ok(
+            crate::ir::exclusion::LiteralExclusion::Literal(s.to_string()),
+        ),
+        ast::literal_exclusion::LiteralExclusion::LiteralStem(s) => Ok(
             crate::ir::exclusion::LiteralExclusion::LiteralStem(s.to_string()),
         ),
     }
 }
 
-/*
-fn cnv_node_kind(_nk: &ast::NodeKind) -> CResult<NodeKind> {
-    todo!()
-}
-
-fn cnv_xs_facet(_xsf: &ast::XsFacet) -> CResult<XsFacet> {
-    todo!()
-}
-
-fn cnv_vec<A, B, F>(vs: Vec<A>, func: F) -> CResult<Vec<B>>
-where
-    F: Fn(&A) -> CResult<B>,
-{
-    let mut rs = Vec::new();
-    for v in vs {
-        let b = func(&v)?;
-        rs.push(b);
-    }
-    Ok(rs)
-}
-
-fn cnv_opt_vec<A, B, F>(maybe_vs: &Option<Vec<A>>, func: F) -> CResult<Option<Vec<B>>>
-where
-    F: Fn(&A) -> CResult<B>,
-{
-    match maybe_vs {
-        None => Ok(None),
-        Some(vs) => {
-            let mut rs = Vec::new();
-            for v in vs {
-                match func(v) {
-                    Err(err) => return Err(err),
-                    Ok(result) => {
-                        rs.push(result);
-                    }
-                }
-            }
-            Ok(Some(rs))
+fn cnv_iri_exclusion(le: &IriExclusion) -> CResult<crate::ir::exclusion::IriExclusion> {
+    match le {
+        ast::iri_exclusion::IriExclusion::Iri(s) => {
+            let iri_s = iri_ref2iri_s(s);
+            Ok(crate::ir::exclusion::IriExclusion::Iri(iri_s))
+        }
+        ast::iri_exclusion::IriExclusion::IriStem(s) => {
+            let iri_s = iri_ref2iri_s(s);
+            Ok(crate::ir::exclusion::IriExclusion::IriStem(iri_s))
         }
     }
 }
 
-fn cnv_opt<A, B, F>(maybe_vs: &Option<A>, func: F) -> CResult<Option<B>>
-where
-    F: Fn(&A) -> CResult<B>,
-{
-    match maybe_vs {
-        None => Ok(None),
-        Some(vs) => match func(vs) {
-            Err(err) => Err(err),
-            Ok(v) => Ok(Some(v)),
-        },
+fn cnv_language_exclusion(
+    le: &ast::language_exclusion::LanguageExclusion,
+) -> CResult<crate::ir::exclusion::LanguageExclusion> {
+    match le {
+        ast::language_exclusion::LanguageExclusion::Language(s) => {
+            Ok(crate::ir::exclusion::LanguageExclusion::Language(s.clone()))
+        }
+        ast::language_exclusion::LanguageExclusion::LanguageStem(s) => Ok(
+            crate::ir::exclusion::LanguageExclusion::LanguageStem(s.clone()),
+        ),
     }
 }
 
-fn cnv_string_or_wildcard(_sw: &ast::StringOrWildcard) -> CResult<StringOrWildcard> {
-    todo!()
-}
-
-fn cnv_string_or_literalstem(
-    _sl: &ast::StringOrLiteralStemWrapper,
-) -> CResult<StringOrLiteralStem> {
-    todo!()
-}
-*/
-
-fn cnv_object_value(ov: &ast::ObjectValue) -> CResult<ObjectValue> {
+fn cnv_object_value(ov: &ast::ObjectValue, prefixmap: &PrefixMap) -> CResult<ObjectValue> {
     match ov {
         ast::ObjectValue::IriRef(ir) => {
-            let iri = cnv_iri_ref(ir)?;
+            let iri = cnv_iri_ref(ir, prefixmap)?;
             Ok(ObjectValue::IriRef(iri))
         }
         ast::ObjectValue::Literal(lit) => Ok(ObjectValue::ObjectLiteral(lit.clone())),
     }
 }
 
-/*fn cnv_lang(lang: &String) -> CResult<Lang> {
-    Ok(Lang::new(lang.as_str()))
-}*/
-
-/*fn check_node_maybe_node_kind(node: &Node, nodekind: &Option<ast::NodeKind>) -> CResult<()> {
-    match nodekind {
-        None => Ok(()),
-        Some(nk) => check_node_node_kind(node, &nk),
-    }
-}*/
-
 fn check_pattern(node: &Node, regex: &str, flags: Option<&str>) -> CResult<()> {
-    match node.as_object() {
-        Object::Literal(SLiteral::StringLiteral { lexical_form, .. }) => {
-            if let Ok(re) = regex::Regex::new(regex) {
-                if re.is_match(lexical_form) {
-                    Ok(())
-                } else {
-                    Err(SchemaIRError::PatternError {
-                        regex: regex.to_string(),
-                        flags: flags.unwrap_or("").to_string(),
-                        lexical_form: lexical_form.clone(),
-                    })
-                }
-            } else {
-                Err(SchemaIRError::InvalidRegex {
-                    regex: regex.to_string(),
-                })
-            }
-        }
-        _ => Err(SchemaIRError::PatternNodeNotLiteral {
+    let lexical_form = match node.as_object() {
+        Object::Literal(lit) => Ok(lit.lexical_form()),
+        Object::BlankNode(b) => Ok(b.clone()),
+        _ => Err(Box::new(SchemaIRError::PatternNodeNotLiteral {
             node: node.to_string(),
             regex: regex.to_string(),
             flags: flags.map(|f| f.to_string()),
-        }),
+        })),
+    }?;
+    if let Ok(re) = regex::Regex::new(regex) {
+        if re.is_match(&lexical_form) {
+            Ok(())
+        } else {
+            Err(Box::new(SchemaIRError::PatternError {
+                regex: regex.to_string(),
+                flags: flags.unwrap_or("").to_string(),
+                lexical_form: lexical_form.clone(),
+            }))
+        }
+    } else {
+        Err(Box::new(SchemaIRError::InvalidRegex {
+            regex: regex.to_string(),
+        }))
     }
 }
 
 fn check_node_node_kind(node: &Node, nk: &ast::NodeKind) -> CResult<()> {
     match (nk, node.as_object()) {
         (ast::NodeKind::Iri, Object::Iri { .. }) => Ok(()),
-        (ast::NodeKind::Iri, _) => Err(SchemaIRError::NodeKindIri { node: node.clone() }),
+        (ast::NodeKind::Iri, _) => Err(Box::new(SchemaIRError::NodeKindIri { node: node.clone() })),
         (ast::NodeKind::BNode, Object::BlankNode(_)) => Ok(()),
-        (ast::NodeKind::BNode, _) => Err(SchemaIRError::NodeKindBNode { node: node.clone() }),
+        (ast::NodeKind::BNode, _) => Err(Box::new(SchemaIRError::NodeKindBNode {
+            node: node.clone(),
+        })),
         (ast::NodeKind::Literal, Object::Literal(_)) => Ok(()),
-        (ast::NodeKind::Literal, _) => Err(SchemaIRError::NodeKindLiteral { node: node.clone() }),
+        (ast::NodeKind::Literal, _) => Err(Box::new(SchemaIRError::NodeKindLiteral {
+            node: node.clone(),
+        })),
         (ast::NodeKind::NonLiteral, Object::BlankNode(_)) => Ok(()),
         (ast::NodeKind::NonLiteral, Object::Iri { .. }) => Ok(()),
-        (ast::NodeKind::NonLiteral, _) => {
-            Err(SchemaIRError::NodeKindNonLiteral { node: node.clone() })
+        (ast::NodeKind::NonLiteral, _) => Err(Box::new(SchemaIRError::NodeKindNonLiteral {
+            node: node.clone(),
+        })),
+    }
+}
+
+fn check_node_datatype(node: &Node, dt: &IriS) -> CResult<()> {
+    let object = node.as_checked_object().map_err(|e| {
+        Box::new(SchemaIRError::Internal {
+            msg: format!("check_node_datatype: as_checked_object error: {e}"),
+        })
+    })?;
+    trace!("check_node_datatype: {object:?} datatype: {dt}");
+    match object {
+        Object::Literal(sliteral) => check_literal_datatype(&sliteral, dt, node),
+        Object::Iri(_) | Object::BlankNode(_) | Object::Triple { .. } => {
+            Err(Box::new(SchemaIRError::DatatypeNoLiteral {
+                expected: Box::new(dt.clone()),
+                node: Box::new(node.clone()),
+            }))
         }
     }
 }
 
-/*
-fn check_node_maybe_datatype(node: &Node, datatype: &Option<IriRef>) -> CResult<()> {
-    match datatype {
-        None => Ok(()),
-        Some(dt) => check_node_datatype(node, dt),
-    }
-}
-*/
-
-fn check_node_datatype(node: &Node, dt: &IriRef) -> CResult<()> {
-    debug!("check_node_datatype: {node:?} datatype: {dt}");
-    match node.as_object() {
-        Object::Literal(SLiteral::DatatypeLiteral {
-            ref datatype,
+// Check that the literal has the expected datatype
+// It assumes that the literal has been checked and in case of wrong datatype it is a WrongDatatypeLiteral
+fn check_literal_datatype(sliteral: &SLiteral, expected: &IriS, node: &Node) -> CResult<()> {
+    let checked_literal = sliteral.as_checked_literal().map_err(|e| {
+        Box::new(SchemaIRError::Internal {
+            msg: format!("check_literal_datatype: as_checked_literal error: {e}"),
+        })
+    })?;
+    match checked_literal {
+        SLiteral::WrongDatatypeLiteral {
             lexical_form,
-        }) => {
-            if dt == datatype {
+            datatype,
+            error,
+        } => Err(Box::new(SchemaIRError::WrongDatatypeLiteralMatch {
+            datatype: datatype.clone(),
+            error: error.clone(),
+            expected: expected.clone(),
+            lexical_form: lexical_form.to_string(),
+        })),
+        _ => {
+            let node_dt = checked_literal.datatype();
+            let node_dt_iri = node_dt.get_iri().map_err(|e| {
+                Box::new(SchemaIRError::CheckLiteralDatatypeCnvIriRef2IriError {
+                    iri_ref: node_dt.clone(),
+                    error: e.to_string(),
+                })
+            })?;
+            if &node_dt_iri == expected {
                 Ok(())
             } else {
-                Err(SchemaIRError::DatatypeDontMatch {
-                    expected: dt.clone(),
-                    found: datatype.clone(),
-                    lexical_form: lexical_form.clone(),
-                })
+                Err(Box::new(SchemaIRError::DatatypeDontMatch {
+                    expected: expected.clone(),
+                    found: node_dt,
+                    lexical_form: node.to_string(),
+                }))
             }
         }
-        Object::Literal(SLiteral::StringLiteral {
-            lexical_form,
-            lang: None,
-        }) => {
-            debug!("StringLiteral...{}", *dt);
-            if *dt == *XSD_STRING {
-                debug!("datatype cond passes");
-                Ok(())
-            } else {
-                debug!("datatype cond fails: {}!={}", dt, *XSD_STRING);
-                Err(SchemaIRError::DatatypeDontMatchString {
-                    expected: dt.clone(),
-                    lexical_form: lexical_form.clone(),
-                })
-            }
-        }
-        Object::Literal(SLiteral::StringLiteral {
-            lexical_form,
-            lang: Some(lang),
-        }) => {
-            if *dt == *RDF_LANG_STRING {
-                Ok(())
-            } else {
-                Err(SchemaIRError::DatatypeDontMatchLangString {
-                    lexical_form: lexical_form.clone(),
-                    lang: Box::new(lang.clone()),
-                })
-            }
-        }
-        _ => Err(SchemaIRError::DatatypeNoLiteral {
-            expected: Box::new(dt.clone()),
-            node: Box::new(node.clone()),
-        }),
     }
 }
 
@@ -1080,11 +1300,179 @@ fn check_node_length(node: &Node, len: usize) -> CResult<()> {
     if node_length == len {
         Ok(())
     } else {
-        Err(SchemaIRError::LengthError {
+        Err(Box::new(SchemaIRError::LengthError {
             expected: len,
             found: node_length,
             node: format!("{node}"),
+        }))
+    }
+}
+
+fn check_node_min_inclusive(node: &Node, min: NumericLiteral) -> CResult<()> {
+    trace!("check_node_min_inclusive: {node:?} min_inclusive: {min}");
+    let node_object = node.as_checked_object().map_err(|e| {
+        Box::new(SchemaIRError::Internal {
+            msg: format!("check_node_min_inclusive: as_checked_object error: {e}"),
         })
+    })?;
+    let node_num = node_object.numeric_value().ok_or_else(|| {
+        Box::new(SchemaIRError::Internal {
+            msg: "check_node_min_inclusive: as_numeric error".to_string(),
+        })
+    })?;
+    if !node_num.less_than(&min) {
+        Ok(())
+    } else {
+        Err(Box::new(SchemaIRError::MinInclusiveError {
+            expected: min.clone(),
+            found: node_num,
+            node: node.to_string(),
+        }))
+    }
+}
+
+fn check_node_min_exclusive(node: &Node, min: NumericLiteral) -> CResult<()> {
+    trace!("check_node_min_exclusive: {node:?} min_exclusive: {min}");
+    let node_object = node.as_checked_object().map_err(|e| {
+        Box::new(SchemaIRError::Internal {
+            msg: format!("check_node_min_exclusive: as_checked_object error: {e}"),
+        })
+    })?;
+    let node_num = node_object.numeric_value().ok_or_else(|| {
+        Box::new(SchemaIRError::Internal {
+            msg: "check_node_min_exclusive: as_numeric error".to_string(),
+        })
+    })?;
+    if !node_num.less_than_or_eq(&min) {
+        Ok(())
+    } else {
+        Err(Box::new(SchemaIRError::MinExclusiveError {
+            expected: min.clone(),
+            found: node_num,
+            node: node.to_string(),
+        }))
+    }
+}
+
+fn check_node_total_digits(node: &Node, total: usize) -> CResult<()> {
+    trace!("check_node_total_digits: {node:?} total: {total}");
+    let node_object = node.as_checked_object().map_err(|e| {
+        Box::new(SchemaIRError::Internal {
+            msg: format!("check_node_total_digits: as_checked_object error: {e}"),
+        })
+    })?;
+    let node_num = node_object.numeric_value().ok_or_else(|| {
+        Box::new(SchemaIRError::Internal {
+            msg: "check_node_total_digits: as_numeric error".to_string(),
+        })
+    })?;
+    if let Some(num_digits) = node_num.total_digits() {
+        trace!("check_node_total_digits: node total digits: {num_digits}");
+        if num_digits <= total {
+            trace!("check_node_total_digits: OK {num_digits} <= {total} node [{node_num}]");
+            Ok(())
+        } else {
+            trace!("check_node_total_digits: Failed {num_digits} > {total} node [{node_num}]");
+            Err(Box::new(SchemaIRError::TotalDigitsError {
+                expected: total,
+                found: node_num,
+                node: node.to_string(),
+            }))
+        }
+    } else {
+        trace!("check_node_total_digits: node has no total digits");
+        Err(Box::new(SchemaIRError::TotalDigitsError {
+            expected: total,
+            found: node_num,
+            node: node.to_string(),
+        }))
+    }
+}
+
+fn check_node_fraction_digits(node: &Node, fd: usize) -> CResult<()> {
+    trace!("check_node_fraction_digits: {node:?} total: {fd}");
+    let node_object = node.as_checked_object().map_err(|e| {
+        Box::new(SchemaIRError::Internal {
+            msg: format!("check_node_fraction_digits: as_checked_object error: {e}"),
+        })
+    })?;
+    let node_num = node_object.numeric_value().ok_or_else(|| {
+        Box::new(SchemaIRError::Internal {
+            msg: "check_node_fraction_digits: as_numeric error".to_string(),
+        })
+    })?;
+    if let Some(num_fd) = node_num.fraction_digits() {
+        trace!("check_node_fraction_digits: node fraction digits: {num_fd}");
+        if num_fd <= fd {
+            trace!(
+                "check_node_fraction_digits: OK {fd:?} > Fraction digits of {node_num:?} = {num_fd}",
+            );
+            Ok(())
+        } else {
+            trace!(
+                "check_node_fraction_digits: Failed {fd} <= fraction digits of {node_num} {num_fd}",
+            );
+            Err(Box::new(SchemaIRError::FractionDigitsError {
+                expected: fd,
+                found: node_num,
+                node: node.to_string(),
+            }))
+        }
+    } else {
+        trace!("check_node_fraction_digits: node has no fraction digits");
+        Err(Box::new(SchemaIRError::FractionDigitsError {
+            expected: fd,
+            found: node_num,
+            node: node.to_string(),
+        }))
+    }
+}
+
+fn check_node_max_exclusive(node: &Node, max: NumericLiteral) -> CResult<()> {
+    trace!("check_node_max_exclusive: {node:?} max_exclusive: {max:?}");
+    let node_object = node.as_checked_object().map_err(|e| {
+        Box::new(SchemaIRError::Internal {
+            msg: format!("check_node_max_exclusive: as_checked_object error: {e}"),
+        })
+    })?;
+    let node_num = node_object.numeric_value().ok_or_else(|| {
+        Box::new(SchemaIRError::Internal {
+            msg: "check_node_min_exclusive: as_numeric error".to_string(),
+        })
+    })?;
+    if node_num.less_than(&max) {
+        trace!("check_node_max_exclusive: OK {node_num:?} < {max:?}");
+        Ok(())
+    } else {
+        trace!("check_node_max_exclusive: Failed {node_num} not less than {max}");
+        Err(Box::new(SchemaIRError::MinExclusiveError {
+            expected: max.clone(),
+            found: node_num,
+            node: node.to_string(),
+        }))
+    }
+}
+
+fn check_node_max_inclusive(node: &Node, max: NumericLiteral) -> CResult<()> {
+    trace!("check_node_max_inclusive: {node:?} max_inclusive: {max}");
+    let node_object = node.as_checked_object().map_err(|e| {
+        Box::new(SchemaIRError::Internal {
+            msg: format!("check_node_max_inclusive: as_checked_object error: {e}"),
+        })
+    })?;
+    let node_num = node_object.numeric_value().ok_or_else(|| {
+        Box::new(SchemaIRError::Internal {
+            msg: "check_node_max_inclusive: as_numeric error".to_string(),
+        })
+    })?;
+    if node_num.less_than_or_eq(&max) {
+        Ok(())
+    } else {
+        Err(Box::new(SchemaIRError::MaxInclusiveError {
+            expected: max.clone(),
+            found: node_num,
+            node: node.to_string(),
+        }))
     }
 }
 
@@ -1094,11 +1482,11 @@ fn check_node_min_length(node: &Node, len: usize) -> CResult<()> {
     if node_length >= len {
         Ok(())
     } else {
-        Err(SchemaIRError::MinLengthError {
+        Err(Box::new(SchemaIRError::MinLengthError {
             expected: len,
             found: node_length,
             node: format!("{node}"),
-        })
+        }))
     }
 }
 
@@ -1108,50 +1496,151 @@ fn check_node_max_length(node: &Node, len: usize) -> CResult<()> {
     if node_length <= len {
         Ok(())
     } else {
-        Err(SchemaIRError::MaxLengthError {
+        Err(Box::new(SchemaIRError::MaxLengthError {
             expected: len,
             found: node_length,
             node: format!("{node}"),
-        })
+        }))
     }
 }
-
-/*
-fn check_node_min_inclusive(node: &Node, min: &NumericLiteral) -> CResult<()> {
-    debug!("check_node_min_inclusive: {node:?} min: {min}");
-    if let Some(node_number) = node.numeric_value() {
-        if node_number.less_than(min) {
-            Ok(())
-        } else {
-            Err(SchemaIRError::MinInclusiveError {
-                expected: min.clone(),
-                found: node_number,
-                node: format!("{node}"),
-            })
-        }
-    } else {
-        Err(SchemaIRError::NonNumeric {
-            node: format!("{node}"),
-        })
-    }
-}
-*/
-
-/*fn check_node_xs_facets(node: &Object, xs_facets: &Vec<XsFacet>) -> CResult<()> {
-    Ok(()) // todo!()
-}*/
 
 fn todo<A>(str: &str) -> CResult<A> {
-    Err(SchemaIRError::Todo {
+    panic!("TODO: {str}");
+    /*Err(Box::new(SchemaIRError::Todo {
         msg: str.to_string(),
+    }))*/
+}
+
+fn cnv_iri_ref(iri: &IriRef, prefixmap: &PrefixMap) -> Result<IriS, Box<SchemaIRError>> {
+    match iri {
+        IriRef::Iri(iri) => Ok(iri.clone()),
+        IriRef::Prefixed { prefix, local } => {
+            prefixmap.resolve_prefix_local(prefix, local).map_err(|e| {
+                Box::new(SchemaIRError::CnvIriRefError {
+                    prefix: prefix.clone(),
+                    local: local.clone(),
+                    error: e.to_string(),
+                })
+            })
+        }
+    }
+}
+
+pub fn find_schema_rotating_formats(
+    iri: &IriS,
+    formats: Vec<ShExFormat>,
+    base: &Option<IriS>,
+) -> Result<SchemaAST, Box<SchemaIRError>> {
+    let mut errors = Vec::new();
+    for format in &formats {
+        trace!("Trying format {format} for IRI {iri} with base {base:?}");
+        match get_schema_from_iri(iri, format, base) {
+            Err(e) => {
+                errors.push((format.clone(), e));
+            }
+            Ok(schema) => return Ok(schema),
+        }
+    }
+    Err(Box::new(SchemaIRError::SchemaFromIriRotatingFormats {
+        iri: iri.clone(),
+        errors: Box::new(errors),
+    }))
+}
+
+pub fn get_schema_from_iri(
+    iri: &IriS,
+    format: &ShExFormat,
+    base: &Option<IriS>,
+) -> Result<SchemaAST, Box<SchemaIRError>> {
+    let candidates = candidates(iri, base, format).map_err(|e| {
+        Box::new(SchemaIRError::CandidatesError {
+            iri: iri.clone(),
+            error: e.to_string(),
+        })
+    })?;
+    match format {
+        ShExFormat::ShExC => {
+            let content = find_content_from_iris(candidates, base)?;
+            let schema = ShExParser::parse(content.as_str(), None, iri).map_err(|e| {
+                Box::new(SchemaIRError::ShExCError {
+                    iri: iri.clone(),
+                    error: e.to_string(),
+                })
+            })?;
+            Ok(schema)
+        }
+        ShExFormat::ShExJ => {
+            let content = find_content_from_iris(candidates, base)?;
+            let schema = SchemaAST::from_reader(content.as_bytes()).map_err(|e| {
+                Box::new(SchemaIRError::ShExJError {
+                    iri: iri.clone(),
+                    error: e.to_string(),
+                })
+            })?;
+            Ok(schema)
+        }
+        ShExFormat::RDFFormat(_) => {
+            todo!()
+        }
+    }
+}
+
+pub fn candidates(
+    iri: &IriS,
+    base: &Option<IriS>,
+    format: &ShExFormat,
+) -> Result<Vec<IriS>, IriSError> {
+    let mut candidates = vec![iri.clone()];
+    let extended_iris: Result<Vec<IriS>, IriSError> = format
+        .extensions()
+        .into_iter()
+        .map(|ext| {
+            let ext_iri = format!("{}.{ext}", iri.as_str());
+            IriS::from_str_base_iri(&ext_iri, base)
+        })
+        .collect();
+    let extended = extended_iris?;
+    candidates.extend(extended);
+    Ok(candidates)
+}
+
+fn find_content_from_iris(
+    iris: Vec<IriS>,
+    base: &Option<IriS>,
+) -> Result<String, Box<SchemaIRError>> {
+    find_first_ok(iris, |iri| get_content(iri, base))
+        .map_err(|errs| {
+            Box::new(SchemaIRError::FindingContentFromIrisError {
+                errors: Box::new(errs),
+            })
+        })
+        .map(|(content, _)| content)
+}
+
+fn get_content(iri: IriS, base: &Option<IriS>) -> Result<String, Box<SchemaIRError>> {
+    iri.dereference(base).map_err(|e| {
+        Box::new(SchemaIRError::DereferencingIri {
+            iri: iri.clone(),
+            error: e.to_string(),
+        })
     })
 }
 
-fn cnv_iri_ref(iri: &IriRef) -> Result<IriS, SchemaIRError> {
-    match iri {
-        IriRef::Iri(iri) => Ok(iri.clone()),
-        _ => Err(SchemaIRError::Internal {
-            msg: format!("Cannot convert {iri} to Iri"),
-        }),
+/// Applies function `f` to each element of `vec` in order, returning the first `Ok` result
+/// along with a vector of all errors encountered before that point.
+/// If all applications of `f` result in `Err`, returns a vector of all errors.
+fn find_first_ok<A, B, E, F>(vec: Vec<A>, f: F) -> Result<(B, Vec<E>), Vec<E>>
+where
+    F: Fn(A) -> Result<B, E>,
+{
+    let mut errors = Vec::new();
+
+    for item in vec {
+        match f(item) {
+            Ok(b) => return Ok((b, errors)),
+            Err(e) => errors.push(e),
+        }
     }
+    // If we get here, all items resulted in errors
+    Err(errors)
 }

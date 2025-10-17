@@ -9,10 +9,12 @@
 // pub mod iri;
 pub mod iris;
 pub mod iris_error;
+pub mod mime_type;
 
 // pub use iri::*;
 pub use iris::*;
 pub use iris_error::*;
+pub use mime_type::*;
 
 /// ```
 ///

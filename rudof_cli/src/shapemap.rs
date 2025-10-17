@@ -1,17 +1,17 @@
 use std::path::PathBuf;
 
 use crate::ColorSupport;
-use crate::InputSpec;
 use crate::ShapeMapFormat as CliShapeMapFormat;
 use crate::writer::get_writer;
 use anyhow::Result;
+use rudof_lib::InputSpec;
 use rudof_lib::Rudof;
 use rudof_lib::RudofConfig;
 use rudof_lib::ShapeMapFormatter;
-use shapemap::ShapeMapFormat;
+use shex_ast::shapemap::ShapeMapFormat;
 
 pub fn run_shapemap(
-    shapemap: &InputSpec,
+    input: &InputSpec,
     shapemap_format: &CliShapeMapFormat,
     result_format: &CliShapeMapFormat,
     output: &Option<PathBuf>,
@@ -20,7 +20,7 @@ pub fn run_shapemap(
     let (mut writer, color) = get_writer(output, force_overwrite)?;
     let mut rudof = Rudof::new(&RudofConfig::new());
     let shapemap_format = shapemap_format_convert(shapemap_format);
-    rudof.read_shapemap(shapemap.open_read(None, "ShapeMap")?, &shapemap_format)?;
+    rudof.read_shapemap(input.open_read(None, "ShapeMap")?, &shapemap_format)?;
     let result_format = shapemap_format_convert(result_format);
     let formatter = match color {
         ColorSupport::WithColor => ShapeMapFormatter::default(),
@@ -34,5 +34,7 @@ pub fn shapemap_format_convert(shapemap_format: &CliShapeMapFormat) -> ShapeMapF
     match shapemap_format {
         CliShapeMapFormat::Compact => ShapeMapFormat::Compact,
         CliShapeMapFormat::Internal => ShapeMapFormat::JSON,
+        CliShapeMapFormat::Json => ShapeMapFormat::JSON,
+        CliShapeMapFormat::Details => ShapeMapFormat::Compact,
     }
 }

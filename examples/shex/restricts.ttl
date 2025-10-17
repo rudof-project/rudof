@@ -1,0 +1,6 @@
+prefix :       <http://example.org/>
+prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
+
+:ok :p "B", 3, "S" .
+
+:ko1 :p "B", 10, "S" .

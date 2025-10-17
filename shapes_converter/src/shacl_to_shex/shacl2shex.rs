@@ -1,5 +1,6 @@
 use super::{Shacl2ShExConfig, Shacl2ShExError};
 use iri_s::IriS;
+use iri_s::iri;
 use prefixmap::IriRef;
 use shacl_ast::{
     Schema as ShaclSchema, component::Component, node_shape::NodeShape,
@@ -22,7 +23,7 @@ impl Shacl2ShEx {
     pub fn new(config: &Shacl2ShExConfig) -> Shacl2ShEx {
         Shacl2ShEx {
             config: config.clone(),
-            current_shex: ShExSchema::new(),
+            current_shex: ShExSchema::new(&iri!("http://default/")),
         }
     }
 
@@ -32,7 +33,8 @@ impl Shacl2ShEx {
 
     pub fn convert<RDF: Rdf>(&mut self, schema: &ShaclSchema<RDF>) -> Result<(), Shacl2ShExError> {
         let prefixmap = schema.prefix_map().without_rich_qualifying();
-        self.current_shex = ShExSchema::new().with_prefixmap(Some(prefixmap));
+        self.current_shex =
+            ShExSchema::new(&iri!("http://default/")).with_prefixmap(Some(prefixmap));
         for (_, shape) in schema.iter() {
             match &shape {
                 shacl_ast::shape::Shape::NodeShape(ns) => {

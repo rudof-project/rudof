@@ -28,7 +28,7 @@ where
 
 impl<RDF> RDFParser<RDF>
 where
-    RDF: FocusRDF,
+    RDF: FocusRDF + 'static,
 {
     pub fn new(rdf: RDF) -> RDFParser<RDF> {
         RDFParser { rdf }
@@ -91,13 +91,13 @@ where
         }
     }
 
-    pub fn predicate_values(&mut self, pred: &IriS) -> Result<HashSet<RDF::Term>, RDFParseError> {
+    pub fn predicate_values(&mut self, pred: IriS) -> Result<HashSet<RDF::Term>, RDFParseError> {
         let mut p = property_values(pred);
         let vs = p.parse_impl(&mut self.rdf)?;
         Ok(vs)
     }
 
-    pub fn predicate_value(&mut self, pred: &IriS) -> Result<RDF::Term, RDFParseError>
+    pub fn predicate_value(&mut self, pred: IriS) -> Result<RDF::Term, RDFParseError>
     where
         RDF: FocusRDF,
     {
@@ -105,13 +105,13 @@ where
     }
 
     pub fn get_rdf_type(&mut self) -> Result<RDF::Term, RDFParseError> {
-        let value = self.predicate_value(rdf_type())?;
+        let value = self.predicate_value(rdf_type().clone())?;
         Ok(value)
     }
 
     pub fn parse_list_for_predicate(
         &mut self,
-        pred: &IriS,
+        pred: IriS,
     ) -> Result<Vec<RDF::Term>, RDFParseError> {
         let list_node = self.predicate_value(pred)?;
         self.rdf.set_focus(&list_node);

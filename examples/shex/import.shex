@@ -1,0 +1,16 @@
+prefix : <http://example.org/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+import <examples/shex/base.shex>
+
+Start = :Company 
+
+:Company {
+    :name xsd:string ;
+    :employee @:Person * ;
+    :address @_:Address
+}
+
+_:Address {
+    :postalCode xsd:string
+}

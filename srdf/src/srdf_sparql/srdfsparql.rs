@@ -1,6 +1,6 @@
-use crate::SRDFSparqlError;
 use crate::matcher::{Any, Matcher};
 use crate::{AsyncSRDF, NeighsRDF, QueryRDF, QuerySolution, QuerySolutions, Rdf, VarName};
+use crate::{QueryResultFormat, SRDFSparqlError};
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
@@ -10,12 +10,10 @@ use oxrdf::{
 };
 use prefixmap::PrefixMap;
 use regex::Regex;
+use serde::Serialize;
+use serde::ser::SerializeStruct;
 use sparesults::QuerySolution as OxQuerySolution;
 use std::{collections::HashSet, fmt::Display, str::FromStr};
-
-#[cfg(target_family = "wasm")]
-#[derive(Debug, Clone)]
-struct Client();
 
 #[cfg(not(target_family = "wasm"))]
 pub use reqwest::blocking::Client;
@@ -28,15 +26,36 @@ pub struct SRDFSparql {
     endpoint_iri: IriS,
     prefixmap: PrefixMap,
     client: Client,
+    client_construct_turtle: Client,
+    client_construct_rdfxml: Client,
+    client_construct_jsonld: Client,
+}
+
+impl Serialize for SRDFSparql {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut state = serializer.serialize_struct("SRDFSparql", 2)?;
+        state.serialize_field("endpoint_iri", &self.endpoint_iri)?;
+        state.serialize_field("prefixmap", &self.prefixmap)?;
+        state.end()
+    }
 }
 
 impl SRDFSparql {
     pub fn new(iri: &IriS, prefixmap: &PrefixMap) -> Result<SRDFSparql> {
         let client = sparql_client()?;
+        let client_construct_turtle = sparql_client_construct_turtle()?;
+        let client_construct_jsonld = sparql_client_construct_jsonld()?;
+        let client_construct_rdfxml = sparql_client_construct_rdfxml()?;
         Ok(SRDFSparql {
             endpoint_iri: iri.clone(),
             prefixmap: prefixmap.clone(),
             client,
+            client_construct_turtle,
+            client_construct_rdfxml,
+            client_construct_jsonld,
         })
     }
 
@@ -80,10 +99,16 @@ impl FromStr for SRDFSparql {
         if let Some(iri_str) = re_iri.captures(s) {
             let iri_s = IriS::from_str(&iri_str[1])?;
             let client = sparql_client()?;
+            let client_construct_turtle = sparql_client_construct_turtle()?;
+            let client_construct_rdfxml = sparql_client_construct_rdfxml()?;
+            let client_construct_jsonld = sparql_client_construct_jsonld()?;
             Ok(SRDFSparql {
                 endpoint_iri: iri_s,
                 prefixmap: PrefixMap::new(),
                 client,
+                client_construct_turtle,
+                client_construct_rdfxml,
+                client_construct_jsonld,
             })
         } else {
             match s.to_lowercase().as_str() {
@@ -150,7 +175,7 @@ impl AsyncSRDF for SRDFSparql {
 
     async fn get_predicates_subject(&self, subject: &OxSubject) -> Result<HashSet<OxNamedNode>> {
         let query = format!(r#"select ?pred where {{ {subject} ?pred ?obj . }}"#);
-        let solutions = make_sparql_query(query.as_str(), &self.client, &self.endpoint_iri)?;
+        let solutions = make_sparql_query_select(query.as_str(), &self.client, &self.endpoint_iri)?;
         let mut results = HashSet::new();
         for solution in solutions {
             let n = get_iri_solution(solution, "pred")?;
@@ -243,14 +268,27 @@ impl NeighsRDF for SRDFSparql {
 }
 
 impl QueryRDF for SRDFSparql {
+    fn query_construct(&self, query: &str, format: &QueryResultFormat) -> Result<String> {
+        let client = match format {
+            QueryResultFormat::Turtle => Ok(&self.client_construct_turtle),
+            QueryResultFormat::RdfXml => Ok(&self.client_construct_rdfxml),
+            QueryResultFormat::JsonLd => Ok(&self.client_construct_jsonld),
+            _ => Err(SRDFSparqlError::UnsupportedConstructFormat {
+                format: format.to_string(),
+            }),
+        }?;
+        let str = make_sparql_query_construct(query, client, &self.endpoint_iri, format)?;
+        Ok(str)
+    }
+
     fn query_select(&self, query: &str) -> Result<QuerySolutions<Self>> {
-        let solutions = make_sparql_query(query, &self.client, &self.endpoint_iri)?;
+        let solutions = make_sparql_query_select(query, &self.client, &self.endpoint_iri)?;
         let qs: Vec<QuerySolution<SRDFSparql>> = solutions.iter().map(cnv_query_solution).collect();
         Ok(QuerySolutions::new(qs))
     }
 
     fn query_ask(&self, query: &str) -> Result<bool> {
-        make_sparql_query(query, &self.client, &self.endpoint_iri)?
+        make_sparql_query_select(query, &self.client, &self.endpoint_iri)?
             .first()
             .and_then(|query_solution| query_solution.get(0))
             .and_then(|term| match term {
@@ -297,6 +335,49 @@ fn sparql_client() -> Result<Client> {
     Ok(client)
 }
 
+#[cfg(not(target_family = "wasm"))]
+fn sparql_client_construct_turtle() -> Result<Client> {
+    use reqwest::header::{self, ACCEPT, USER_AGENT};
+
+    let mut headers = header::HeaderMap::new();
+    headers.insert(ACCEPT, header::HeaderValue::from_static("text/turtle"));
+    headers.insert(USER_AGENT, header::HeaderValue::from_static("rudof"));
+    let client = reqwest::blocking::Client::builder()
+        .default_headers(headers)
+        .build()?;
+    Ok(client)
+}
+
+fn sparql_client_construct_jsonld() -> Result<Client> {
+    use reqwest::header::{self, ACCEPT, USER_AGENT};
+
+    let mut headers = header::HeaderMap::new();
+    headers.insert(
+        ACCEPT,
+        header::HeaderValue::from_static("application/ld+json"),
+    );
+    headers.insert(USER_AGENT, header::HeaderValue::from_static("rudof"));
+    let client = reqwest::blocking::Client::builder()
+        .default_headers(headers)
+        .build()?;
+    Ok(client)
+}
+
+fn sparql_client_construct_rdfxml() -> Result<Client> {
+    use reqwest::header::{self, ACCEPT, USER_AGENT};
+
+    let mut headers = header::HeaderMap::new();
+    headers.insert(
+        ACCEPT,
+        header::HeaderValue::from_static("application/rdf+xml"),
+    );
+    headers.insert(USER_AGENT, header::HeaderValue::from_static("rudof"));
+    let client = reqwest::blocking::Client::builder()
+        .default_headers(headers)
+        .build()?;
+    Ok(client)
+}
+
 #[cfg(target_family = "wasm")]
 fn make_sparql_query(
     _query: &str,
@@ -309,7 +390,7 @@ fn make_sparql_query(
 }
 
 #[cfg(not(target_family = "wasm"))]
-fn make_sparql_query(
+fn make_sparql_query_select(
     query: &str,
     client: &Client,
     endpoint_iri: &IriS,
@@ -333,6 +414,34 @@ fn make_sparql_query(
     } else {
         Err(SRDFSparqlError::ParsingBody { body })
     }
+}
+
+#[cfg(not(target_family = "wasm"))]
+fn make_sparql_query_construct(
+    query: &str,
+    client: &Client,
+    endpoint_iri: &IriS,
+    _format: &QueryResultFormat,
+) -> Result<String> {
+    use reqwest::blocking::Response;
+    // use sparesults::{QueryResultsFormat, QueryResultsParser, ReaderQueryResultsParserOutput};
+    use url::Url;
+
+    let url = Url::parse_with_params(endpoint_iri.as_str(), &[("query", query)])?;
+    tracing::debug!("Making SPARQL query: {}", url);
+    let response: Response = client.get(url).send()?;
+    tracing::debug!("status: {}", &response.status());
+    match &response.headers().get("Content-Type") {
+        Some(ct) => match ct.to_str() {
+            Ok(s) => tracing::debug!("Content-Type: {}", s),
+            Err(e) => tracing::debug!("Content-Type: <invalid>: {}", e),
+        },
+        None => todo!(),
+    }
+    let bytes = response.bytes()?;
+    tracing::debug!("body length: {}", &bytes.len());
+    let body = bytes.iter().map(|b| *b as char).collect::<String>();
+    Ok(body)
 }
 
 #[derive(Debug)]

@@ -1,6 +1,6 @@
 [package]
 name = "shacl_ir"
-version = "0.1.90"
+version = "0.1.120"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shacl_ir"
@@ -15,12 +15,12 @@ repository.workspace = true
 #]
 
 [dependencies]
-srdf.workspace = true
 iri_s.workspace = true
+itertools.workspace = true
+oxrdf = { workspace = true, features = ["oxsdatatypes"] }
+prefixmap.workspace = true
+regex.workspace = true
 shacl_ast.workspace = true
 shacl_rdf.workspace = true
-prefixmap.workspace = true
+srdf.workspace = true
 thiserror.workspace = true
-itertools.workspace = true
-regex.workspace = true
-oxrdf = { workspace = true, features = ["oxsdatatypes"] }

@@ -7,6 +7,165 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## [Unreleased]
+### Added
+### Fixed
+### Changed
+- The import in ShEx schemas supports `IriOrStr` in order to handle relative IRIs. Now the base IRI that is passed is the current folder. 
+
+### Removed
+
+## v0.1.120
+### Added
+- Visualization of results of ShEx validation as nice tables leveraging on [tabled](https://docs.rs/tabled/latest/tabled/) crate
+- Option to sort the results of ShEx validation by either node, shape, status
+- Pretty prints the results of SPARQL queries as tables
+- Added option to show results of ShEx validation with details
+- Started to pretty print results: reasons already have pretty print qualifying IRIs, pending validation errors
+
+### Fixed
+### Changed
+### Removed
+
+## v0.1.119
+### Added
+- Support to visualize a single shape in a ShEx schema with the option `--label` in CLI (issue 341)
+- Restored support for Excel files in DCTAP
+- Added support to export validation results as lists of tuples (node, shape, validatioStatus) in Python
+
+### Fixed
+### Changed
+### Removed
+
+## 0.1.118
+### Added
+- Support for `generate` integrating the code from `data_generator` (Diego)
+
+### Changed
+### Removed
+
+
+## 0.1.117
+### Added
+- Support for imports in ShEx
+
+### Changed
+- We moved the contents of ShEx Compact crate to ShEX AST because when we resolve imports, we need to parse the imported ShEx schema so there it is necessary to know which formats we are importing
+
+### Removed
+- crates `shex_compact` and `shapemap` will no longer be published as independent crates and will instead be part of `shex_ast`. 
+
+
+## 0.1.116
+### Added
+- ShEx validation now supports (min/max)(In/Ex)clusive, stems and stem ranges for IRIs, literals and languages 
+- Added support for Start in validation
+- ShEx testsuite status: Passed: 1053, Failed: 91, Skipped: 22, Not implemented: 0
+
+### Fixed
+- Several errors in ShEx validation
+- Issue #338 about empty shapes
+- Issue #309 about IRI ranges
+
+## 0.1.115
+### Added
+- `run_query_endpoint` in pyrudof and rudof
+
+### Fixed
+- `read_shacl` in pyrudof which was trying to read from string instead of from a file
+
+## 0.1.113
+### Added
+- More support for SPARQL queries in rudof and pyrudof
+- We had several issues and published several minor releases 
+
+## 0.1.108
+### Fixed
+- We found a problem with SPARQL queries that were returning no results
+- Repaired problem with xsd:dateTime
+
+
+
+## 0.1.107
+### Added
+- Added the possibility to read different elements from file paths or URLs. We removed the suffix `_path` for all the methods that read from those inputs. We keep only the `_str` suffix for methods that read from a string. For example, `read_data(input, ...)` allows the input to be a URL, a file path or stdin (which can be useful in linux pipes), while `read_data_str(input, ...)` requires the input to be a string.
+- Added `read_shapemap(input,...)` which was required by issue #329.
+
+### Fixed
+- We found a issue when validating datatype literals because we were not handling 
+### Changed
+
+
+### Removed
+
+## 0.1.105
+### Added
+### Fixed
+### Changed
+- Updated dependency on oxigraph to 0.5.0 solving issue #335
+
+### Removed
+
+## 0.1.104
+### Added
+- Added more information to MIE files
+
+### Fixed
+- Tried to improve the error message when parsing ShEx files that have an undeclared alias according to issue #331
+
+### Changed
+
+### Removed
+
+
+## 0.1.103
+### Added
+
+### Fixed
+- GraphCollection in service description contains a collection of named graphs (before was a collection of graph descriptions)
+- The parser now parses also the available graphs
+
+### Changed
+
+
+### Removed
+
+## 0.1.102
+### Added
+- Comparison between schemas
+- Added documentation about comparison between schemas
+- Published Windows amd-64 Python wheel 
+- Added parsed title in SPARQL service description from property dcterms:title
+
+### Fixed
+- Cleaned and Clippied the code that we did in a hurry during Biohackathon 
+
+### Changed
+- The behavour of `base` which was assumed to be None by default and now can be passed as a command line option.
+
+### Removed
+
+
+## 0.1.93
+### Added
+### Fixed
+- Repaired a problem with the parser with case insensitive keywords like IRI, BnodE, etc.
+- Repaired python bindings
+
+### Changed
+### Removed
+
+## 0.1.92
+### Added
+
+This release has been created during the [Biohackathon 2025](https://2025.biohackathon.org/) where we have been adding several features by quick demands of the attendees. It is possible that not all the features have been thoroughly tested, but those features are demanded by users and we plan to improve them in future releases.
+- Initial support for comparing 2 schemas
+- Initial support to read rdf_config files
+
+### Fixed
+### Changed
+### Removed
+
 ## 0.1.90
 ### Added
 - Added serialize_current_shex to pyrudof

@@ -1,14 +1,39 @@
 use iri_s::IriSError;
-use shapemap::ValidationStatus;
+use shex_ast::compact::ParseError;
+use shex_ast::shapemap::ValidationStatus;
 use shex_ast::{Schema, SchemaIRError, ast::SchemaJsonError};
-use shex_compact::ParseError;
 use shex_validation::ValidatorError;
-use srdf::srdf_graph::SRDFGraphError;
-use std::{ffi::OsString, io};
+use srdf::{RDFError, srdf_graph::SRDFGraphError};
+use std::{ffi::OsString, io, path::PathBuf};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ManifestError {
+    #[error("Error converting path {path} to file URL")]
+    FromFilePath { path: PathBuf },
+
+    #[error("Error parsing ShExC for entry {entry_name} from file {shex_path}. Error: {error:?}")]
+    ShExCParsingError {
+        error: Box<ParseError>,
+        entry_name: Box<String>,
+        shex_path: Box<PathBuf>,
+    },
+    #[error("Reading Manifest Map from {map:?} for entry {entry:?}. Error: {error}")]
+    ReadingShapeMap {
+        entry: String,
+        map: std::path::PathBuf,
+        error: String,
+    },
+
+    #[error("Parsing ShapeLabel: {value}. Error: {error:?}")]
+    ParsingShapeLabel { value: String, error: String },
+
+    #[error("Reading manifest map for entry {entry:?}. Error: {error}")]
+    ParsingManifestMap { entry: String, error: String },
+
+    #[error("Parsing focus node: {value}. Error: {error:?}")]
+    ParsingFocusNode { value: String, error: Box<RDFError> },
+
     #[error("Obtaining absolute path for {base:?}: {error:?}")]
     AbsolutePathError { base: OsString, error: io::Error },
 
@@ -57,15 +82,22 @@ pub enum ManifestError {
     #[error("Parsing validation type: Unknown value: {value}")]
     ParsingValidationType { value: String },
 
-    #[error("Expected faiure but obtained {value} for {entry}")]
+    #[error(
+        "Expected Failure for entry {entry} but obtained passed status [{}]\nFailure status: [{}]",
+       passed_status.iter().map(|s| s.code()).collect::<Vec<_>>().join(", "),
+       failed_status.iter().map(|s| s.code()).collect::<Vec<_>>().join(", "))]
     ExpectedFailureButObtained {
-        value: Box<ValidationStatus>,
+        failed_status: Vec<ValidationStatus>,
+        passed_status: Vec<ValidationStatus>,
         entry: String,
     },
 
-    #[error("Expected OK but obtained {value} for {entry}")]
+    #[error("Expected OK for {entry} but failed. Failed status are: [{}]\nPassed status are: [{}]", 
+       failed_status.iter().map(|s| s.code()).collect::<Vec<_>>().join(", "), 
+       passed_status.iter().map(|s| s.code()).collect::<Vec<_>>().join(", "))]
     ExpectedOkButObtained {
-        value: Box<ValidationStatus>,
+        failed_status: Vec<ValidationStatus>,
+        passed_status: Vec<ValidationStatus>,
         entry: Box<String>,
     },
 
@@ -111,4 +143,7 @@ pub enum ManifestError {
         schema_serialized: Box<String>,
         error: serde_json::Error,
     },
+
+    #[error("Error converting ShapeExprLabel to ShapeLabel for entry {entry}. Error: {error}")]
+    IriRefError { error: String, entry: String },
 }

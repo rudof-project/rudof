@@ -1,6 +1,6 @@
 [package]
 name = "shapes_converter"
-version = "0.1.90"
+version = "0.1.120"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shapes_converter"
@@ -16,21 +16,22 @@ repository.workspace = true
 #]
 
 [dependencies]
-iri_s.workspace = true
+chrono = "0.4.42"
 dctap.workspace = true
-srdf.workspace = true
-shacl_ast.workspace = true
-shex_ast.workspace = true
-shex_compact.workspace = true
-shex_validation.workspace = true
-shacl_validation.workspace = true
+iri_s.workspace = true
+mie.workspace = true
+minijinja = { version = "2.12.0", features = ["loader"] }
 prefixmap.workspace = true
+rdf_config.workspace = true
 serde.workspace = true
-toml = "0.8"
-chrono = "0.4.38"
-
+shacl_ast.workspace = true
+shacl_validation.workspace = true
+shex_ast.workspace = true
+shex_validation.workspace = true
 spargebra.workspace = true
-thiserror = "2.0"
-tracing = { workspace = true }
-minijinja = { version = "2.0.3", features = ["loader"] }
+sparql_service.workspace = true
+srdf.workspace = true
 tempfile.workspace = true
+thiserror = "2.0"
+toml = "0.8"
+tracing = { workspace = true }

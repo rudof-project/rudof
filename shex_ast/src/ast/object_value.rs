@@ -7,20 +7,29 @@ use serde::{
     Deserialize, Serialize, Serializer,
     de::{self, MapAccess, Visitor},
 };
+use srdf::SLiteral;
 use srdf::lang::Lang;
-use srdf::literal::SLiteral;
 use srdf::numeric_literal::NumericLiteral;
 use std::fmt;
 use std::{result, str::FromStr};
 
-use crate::ast::DATETIME_STR;
+use crate::Node;
+use crate::ast::{
+    BYTE_STR, DATETIME_STR, FLOAT_STR, LONG_STR, NEGATIVE_INTEGER_STR, NON_NEGATIVE_INTEGER_STR,
+    NON_POSITIVE_INTEGER_STR, POSITIVE_INTEGER_STR, SHORT_STR, UNSIGNED_BYTE_STR, UNSIGNED_INT_STR,
+    UNSIGNED_LONG_STR, UNSIGNED_SHORT_STR,
+};
 
 use super::{BOOLEAN_STR, DECIMAL_STR, DOUBLE_STR, INTEGER_STR};
 
+/// An object value can be either an IRI reference or a literal
+/// It is used in various places in ShEx, for example in ValueSetValue, or as focus node in ShapeMap
+/// It is similar to srdf::Object but does not include blank nodes
 #[derive(Debug, PartialEq, Clone)]
 pub enum ObjectValue {
     IriRef(IriRef),
     Literal(SLiteral),
+    // TODO: consider adding Triples
 }
 
 impl ObjectValue {
@@ -165,6 +174,18 @@ fn get_type_str(n: &NumericLiteral) -> &str {
         NumericLiteral::Integer(_) => INTEGER_STR,
         NumericLiteral::Double(_) => DOUBLE_STR,
         NumericLiteral::Decimal(_) => DECIMAL_STR,
+        NumericLiteral::Long(_) => LONG_STR,
+        NumericLiteral::Float(_) => FLOAT_STR,
+        NumericLiteral::Byte(_) => BYTE_STR,
+        NumericLiteral::Short(_) => SHORT_STR,
+        NumericLiteral::NonNegativeInteger(_) => NON_NEGATIVE_INTEGER_STR,
+        NumericLiteral::UnsignedLong(_) => UNSIGNED_LONG_STR,
+        NumericLiteral::UnsignedInt(_) => UNSIGNED_INT_STR,
+        NumericLiteral::UnsignedShort(_) => UNSIGNED_SHORT_STR,
+        NumericLiteral::UnsignedByte(_) => UNSIGNED_BYTE_STR,
+        NumericLiteral::PositiveInteger(_) => POSITIVE_INTEGER_STR,
+        NumericLiteral::NegativeInteger(_) => NEGATIVE_INTEGER_STR,
+        NumericLiteral::NonPositiveInteger(_) => NON_POSITIVE_INTEGER_STR,
     }
 }
 
@@ -334,20 +355,34 @@ impl<'de> Deserialize<'de> for ObjectValue {
                     },
                     Some(ObjectValueType::Other(iri)) => match value {
                         Some(v) => match language_tag {
-                            Some(lang) => Ok(ObjectValue::Literal(SLiteral::StringLiteral {
-                                lexical_form: v,
-                                lang: Some(Lang::new_unchecked(&lang)),
-                            })),
+                            Some(lang) => {
+                                let lang = Lang::new(&lang).map_err(|e| {
+                                    de::Error::custom(format!(
+                                        "Invalid language tag {lang} in object value: {e}"
+                                    ))
+                                })?;
+                                Ok(ObjectValue::Literal(SLiteral::StringLiteral {
+                                    lexical_form: v,
+                                    lang: Some(lang),
+                                }))
+                            }
                             None => Ok(ObjectValue::datatype_literal(&v, &iri)),
                         },
                         None => Err(de::Error::missing_field("value")),
                     },
                     None => match value {
                         Some(lexical_form) => match language {
-                            Some(language) => Ok(ObjectValue::Literal(SLiteral::StringLiteral {
-                                lexical_form,
-                                lang: Some(Lang::new_unchecked(&language)),
-                            })),
+                            Some(language) => {
+                                let language = Lang::new(&language).map_err(|e| {
+                                    de::Error::custom(format!(
+                                        "Invalid language tag {language} in object value: {e}"
+                                    ))
+                                })?;
+                                Ok(ObjectValue::Literal(SLiteral::StringLiteral {
+                                    lexical_form,
+                                    lang: Some(language),
+                                }))
+                            }
                             None => Ok(ObjectValue::Literal(SLiteral::StringLiteral {
                                 lexical_form,
                                 lang: None,
@@ -371,5 +406,24 @@ impl<'de> Deserialize<'de> for ObjectValue {
 
         const FIELDS: &[&str] = &["value", "type", "languageTag"];
         deserializer.deserialize_any(ObjectValueVisitor)
+    }
+}
+
+impl From<&ObjectValue> for srdf::Object {
+    fn from(value: &ObjectValue) -> Self {
+        match value {
+            ObjectValue::IriRef(iri_ref) => {
+                let iri = iri_ref.get_iri().unwrap(); // Should not fail, as it was already deref'ed
+                srdf::Object::from(iri)
+            }
+            ObjectValue::Literal(literal) => literal.into(),
+        }
+    }
+}
+
+impl From<&ObjectValue> for Node {
+    fn from(value: &ObjectValue) -> Self {
+        let obj: srdf::Object = value.into();
+        Node::from(obj)
     }
 }

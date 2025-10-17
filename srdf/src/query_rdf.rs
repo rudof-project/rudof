@@ -1,6 +1,7 @@
+use serde::Serialize;
 use std::fmt::Display;
 
-use crate::Rdf;
+use crate::{QueryResultFormat, Rdf};
 
 /// Represents RDF that supports SPARQL-like queries
 pub trait QueryRDF: Rdf {
@@ -9,11 +10,20 @@ pub trait QueryRDF: Rdf {
     where
         Self: Sized;
 
+    /// SPARQL CONSTRUCT query
+    fn query_construct(
+        &self,
+        query: &str,
+        result_format: &QueryResultFormat,
+    ) -> Result<String, Self::Err>
+    where
+        Self: Sized;
+
     /// SPARQL ASK query    
     fn query_ask(&self, query: &str) -> Result<bool, Self::Err>;
 }
 
-#[derive(PartialEq, Eq, Debug, Clone, Hash)]
+#[derive(PartialEq, Eq, Debug, Clone, Hash, Serialize)]
 pub struct VarName {
     str: String,
 }
@@ -68,6 +78,23 @@ impl<S: Rdf> VariableSolutionIndex<S> for &VarName {
 pub struct QuerySolution<S: Rdf> {
     variables: Vec<VarName>,
     values: Vec<Option<S::Term>>,
+}
+
+impl<S: Rdf> Serialize for QuerySolution<S> {
+    fn serialize<Ser>(&self, serializer: Ser) -> Result<Ser::Ok, Ser::Error>
+    where
+        Ser: serde::Serializer,
+    {
+        use serde::ser::SerializeMap;
+        let mut map = serializer.serialize_map(Some(self.variables.len()))?;
+        for (i, var) in self.variables.iter().enumerate() {
+            if let Some(value) = &self.values[i] {
+                let str = format!("{value}");
+                map.serialize_entry(&var.str, &str)?;
+            }
+        }
+        map.end()
+    }
 }
 
 impl<S: Rdf> QuerySolution<S> {
@@ -127,7 +154,7 @@ impl<S: Rdf, V: Into<Vec<VarName>>, T: Into<Vec<Option<S::Term>>>> From<(V, T)>
 }
 
 /// Represent a list of query solutions
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct QuerySolutions<S: Rdf> {
     solutions: Vec<QuerySolution<S>>,
 }
@@ -153,6 +180,21 @@ impl<S: Rdf> QuerySolutions<S> {
 
     pub fn count(&self) -> usize {
         self.solutions.len()
+    }
+}
+
+impl<S: Rdf + serde::Serialize> QuerySolutions<S> {
+    pub fn as_json(&self) -> String {
+        serde_json::to_string_pretty(&self).unwrap_or_else(|_| "[]".to_string())
+    }
+}
+
+impl<S: Rdf> Display for QuerySolutions<S> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for solution in &self.solutions {
+            writeln!(f, "{}", solution.show())?;
+        }
+        Ok(())
     }
 }
 

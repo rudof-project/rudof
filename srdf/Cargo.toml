@@ -1,6 +1,6 @@
 [package]
 name = "srdf"
-version = "0.1.90"
+version = "0.1.120"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/srdf"
@@ -18,35 +18,34 @@ repository.workspace = true
 #]
 
 [dependencies]
-iri_s.workspace = true
-prefixmap.workspace = true
-async-trait = "0.1.68"
-serde.workspace = true
-toml.workspace = true
-tempfile.workspace = true
-
-thiserror.workspace = true
-rust_decimal = "1.32"
-rust_decimal_macros = "1.32"
+async-trait.workspace = true
+colored.workspace = true
 const_format = "0.2"
-lazy_static = "1"
+iri_s.workspace = true
 itertools.workspace = true
-
-oxttl.workspace = true
-oxrdfio.workspace = true
-oxrdf.workspace = true
-oxrdfxml.workspace = true
-oxjsonld.workspace = true
 oxilangtag.workspace = true
 oxiri.workspace = true
+oxjsonld.workspace = true
+oxrdf.workspace = true
+oxrdfio.workspace = true
+oxrdfxml.workspace = true
 oxsdatatypes.workspace = true
-sparesults.workspace = true
-colored.workspace = true
-reqwest = { version = "0.12", features = ["blocking", "json"] }
-url.workspace = true
+oxttl.workspace = true
+prefixmap.workspace = true
 regex.workspace = true
+reqwest.workspace = true
+rust_decimal.workspace = true
+rust_decimal_macros.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sparesults.workspace = true
+spargebra.workspace = true
+tempfile.workspace = true
+thiserror.workspace = true
+toml.workspace = true
 tracing.workspace = true
+url.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true
-tokio = { version = "1.38", features = ["full"] }
+tokio = { version = "1.47", features = ["full"] }

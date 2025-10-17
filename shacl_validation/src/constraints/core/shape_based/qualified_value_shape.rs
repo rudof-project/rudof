@@ -59,7 +59,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                                 self.shape().id(),
                                 results
                                     .iter()
-                                    .map(|r| format!(" {:?}", r))
+                                    .map(|r| format!(" {r:?}"))
                                     .collect::<Vec<String>>()
                                     .join(", ")
                             );
@@ -100,37 +100,31 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                     valid_counter += 1
                 }
             }
-            if let Some(min_count) = self.qualified_min_count() {
-                if valid_counter < min_count {
-                    let message = format!(
-                        "QualifiedValueShape: only {valid_counter} nodes conform to shape {}, which is less than minCount: {min_count}. Focus node: {focus_node}",
-                        self.shape().id()
-                    );
-                    let validation_result = ValidationResult::new(
-                        shape.id().clone(),
-                        component.clone(),
-                        shape.severity(),
-                    )
-                    .with_message(message.as_str())
-                    .with_path(maybe_path.clone());
-                    validation_results.insert(validation_result);
-                }
+            if let Some(min_count) = self.qualified_min_count()
+                && valid_counter < min_count
+            {
+                let message = format!(
+                    "QualifiedValueShape: only {valid_counter} nodes conform to shape {}, which is less than minCount: {min_count}. Focus node: {focus_node}",
+                    self.shape().id()
+                );
+                let validation_result =
+                    ValidationResult::new(shape.id().clone(), component.clone(), shape.severity())
+                        .with_message(message.as_str())
+                        .with_path(maybe_path.clone());
+                validation_results.insert(validation_result);
             }
-            if let Some(max_count) = self.qualified_max_count() {
-                if valid_counter > max_count {
-                    let message = format!(
-                        "QualifiedValueShape: {valid_counter} nodes conform to shape {}, which is greater than maxCount: {max_count}. Focus node: {focus_node}",
-                        self.shape().id()
-                    );
-                    let validation_result = ValidationResult::new(
-                        shape.id().clone(),
-                        component.clone(),
-                        shape.severity(),
-                    )
-                    .with_message(message.as_str())
-                    .with_path(maybe_path.clone());
-                    validation_results.insert(validation_result);
-                }
+            if let Some(max_count) = self.qualified_max_count()
+                && valid_counter > max_count
+            {
+                let message = format!(
+                    "QualifiedValueShape: {valid_counter} nodes conform to shape {}, which is greater than maxCount: {max_count}. Focus node: {focus_node}",
+                    self.shape().id()
+                );
+                let validation_result =
+                    ValidationResult::new(shape.id().clone(), component.clone(), shape.severity())
+                        .with_message(message.as_str())
+                        .with_path(maybe_path.clone());
+                validation_results.insert(validation_result);
             }
         }
         Ok(validation_results.iter().cloned().collect())

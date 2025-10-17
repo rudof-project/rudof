@@ -1,0 +1,13 @@
+PREFIX : <http://a.example/#>
+PREFIX fhir: <http://hl7.org/ns/fhir#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+:lie fhir:component :lieA, :lieB, :lieC .
+:lieA fhir:code "systolic"; fhir:value 110 .
+:lieB fhir:code "diastolic"; fhir:value 70 .
+:lieC fhir:code "posture"; fhir:value "reclined" .
+
+:sit fhir:component :sitA, :sitB, :sitC .
+:sitA fhir:code "systolic"; fhir:value 110 .
+:sitB fhir:code "diastolic"; fhir:value 70 .
+:sitC fhir:code "posture"; fhir:value "sitting" .

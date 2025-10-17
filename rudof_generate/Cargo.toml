@@ -1,0 +1,49 @@
+[package]
+name = "rudof_generate"
+version = "0.1.120"
+readme = "README.md"
+edition.workspace = true
+license.workspace = true
+description.workspace = true
+repository.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
+authors.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+chrono.workspace = true
+
+# CLI and configuration
+clap.workspace = true
+futures.workspace = true
+iri_s = { workspace = true }
+oxrdf = { workspace = true, features = ["oxsdatatypes"] }
+prefixmap = { workspace = true }
+
+# Data generation and utilities
+rand.workspace = true
+rayon.workspace = true
+rust_decimal.workspace = true 
+serde.workspace = true 
+serde_json.workspace = true
+shacl_ast.workspace = true
+shacl_rdf.workspace = true 
+shex_ast.workspace = true 
+srdf.workspace = true 
+thiserror.workspace = true
+
+# Async and parallelism
+tokio = { version = "1.0", features = ["full"] }
+toml.workspace = true
+
+# Logging and error handling
+tracing.workspace = true
+tracing-subscriber.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+regex.workspace = true
+tempfile.workspace = true
+tokio-test.workspace = true

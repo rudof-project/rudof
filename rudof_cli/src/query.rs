@@ -1,24 +1,25 @@
-use std::{io::Write, path::PathBuf};
-
-use iri_s::IriS;
-use prefixmap::PrefixMap;
-use rudof_lib::{RdfData, Rudof, RudofConfig};
-use srdf::{QuerySolution, VarName};
-
 use crate::{
-    InputSpec, RDFReaderMode, ResultQueryFormat, data::get_data_rudof, data_format::DataFormat,
-    writer::get_writer,
+    QueryType, ResultQueryFormat as CliResultQueryFormat, data::get_data_rudof,
+    data_format::DataFormat, writer::get_writer,
 };
-use anyhow::Result;
+use anyhow::{Result, bail};
+use iri_s::IriS;
+use rudof_lib::{InputSpec, RdfData, Rudof, RudofConfig};
+use srdf::{QueryResultFormat, QuerySolutions, ReaderMode};
+use std::{io::Write, path::PathBuf};
+use tabled::{builder::Builder, settings::Style};
+use tracing::trace;
 
 #[allow(clippy::too_many_arguments)]
 pub fn run_query(
     data: &Vec<InputSpec>,
     data_format: &DataFormat,
+    base: &Option<IriS>,
     endpoint: &Option<String>,
-    reader_mode: &RDFReaderMode,
+    reader_mode: &ReaderMode,
     query: &InputSpec,
-    _result_query_format: &ResultQueryFormat,
+    query_type: &QueryType,
+    result_query_format: &CliResultQueryFormat,
     output: &Option<PathBuf>,
     config: &RudofConfig,
     _debug: u8,
@@ -30,26 +31,92 @@ pub fn run_query(
         &mut rudof,
         data,
         data_format,
+        base,
         endpoint,
         reader_mode,
         config,
         false,
     )?;
+    // rudof.serialize_data(&srdf::RDFFormat::Turtle, &mut writer)?;
     let mut reader = query.open_read(None, "Query")?;
-    let results = rudof.run_query(&mut reader)?;
-    let mut results_iter = results.iter().peekable();
-    if let Some(first) = results_iter.peek() {
-        show_variables(&mut writer, first.variables())?;
-        for result in results_iter {
-            show_result(&mut writer, result, &rudof.nodes_prefixmap())?
+    match query_type {
+        QueryType::Select => {
+            trace!("Running SELECT query");
+            let results = rudof.run_query_select(&mut reader)?;
+            show_results(&mut writer, &results, &rudof, result_query_format)?;
         }
-    } else {
-        write!(writer, "No results")?;
+        QueryType::Construct => {
+            let query_format = cnv_query_format(result_query_format);
+            let str = rudof.run_query_construct(&mut reader, &query_format)?;
+            writeln!(writer, "{str}")?;
+        }
+        QueryType::Ask => {
+            // let bool = rudof.run_query_ask(&mut reader)?;
+            // writeln!(writer, "{bool}")?;
+            bail!("Not yet implemented ASK queries");
+        }
+        QueryType::Describe => {
+            bail!("Not yet implemented DESCRIBE queries");
+        }
     }
     Ok(())
 }
 
-fn show_variables<'a, W: Write>(
+fn show_results(
+    writer: &mut dyn Write,
+    results: &QuerySolutions<RdfData>,
+    rudof: &Rudof,
+    result_query_format: &CliResultQueryFormat,
+) -> Result<()> {
+    match result_query_format {
+        CliResultQueryFormat::Internal => {
+            let mut results_iter = results.iter().peekable();
+            if let Some(first) = results_iter.peek() {
+                let mut builder = Builder::default();
+                let mut variables = Vec::new();
+                variables.push("".to_string()); // First column = index
+                variables.extend(
+                    first
+                        .variables()
+                        .map(|v| format!("{v}"))
+                        .collect::<Vec<_>>(),
+                );
+                builder.push_record(variables);
+                for (idx, result) in results_iter.enumerate() {
+                    let mut record = Vec::new();
+                    record.push(format!("{}", idx + 1)); // First column = index
+                    for (idx, _variable) in result.variables().enumerate() {
+                        let str = match result.find_solution(idx) {
+                            Some(term) => match term {
+                                oxrdf::Term::NamedNode(named_node) => rudof
+                                    .nodes_prefixmap()
+                                    .qualify(&IriS::from_named_node(named_node)),
+                                oxrdf::Term::BlankNode(blank_node) => format!("{blank_node}"),
+                                oxrdf::Term::Literal(literal) => format!("{literal}"),
+                                oxrdf::Term::Triple(triple) => format!("{triple}"),
+                            },
+                            None => String::new(),
+                        };
+                        record.push(str);
+                    }
+                    builder.push_record(record);
+                }
+
+                let mut table = builder.build();
+                table.with(Style::modern_rounded());
+                writeln!(writer, "{table}")?;
+            } else {
+                write!(writer, "No results")?;
+            }
+        }
+        _ => {
+            todo!()
+        }
+    }
+    Ok(())
+}
+
+/*fn show_variables<'a, W: Write>(
     writer: &mut W,
     vars: impl Iterator<Item = &'a VarName>,
 ) -> Result<()> {
@@ -59,9 +126,9 @@ fn show_variables<'a, W: Write>(
     }
     writeln!(writer)?;
     Ok(())
-}
+}*/
 
-fn show_result<W: Write>(
+/*fn show_result<W: Write>(
     writer: &mut W,
     result: &QuerySolution<RdfData>,
     prefixmap: &PrefixMap,
@@ -84,4 +151,18 @@ fn show_result<W: Write>(
     }
     writeln!(writer)?;
     Ok(())
+}*/
+
+fn cnv_query_format(format: &CliResultQueryFormat) -> QueryResultFormat {
+    match format {
+        CliResultQueryFormat::Internal => QueryResultFormat::Turtle,
+        CliResultQueryFormat::NTriples => QueryResultFormat::NTriples,
+        CliResultQueryFormat::JsonLd => QueryResultFormat::JsonLd,
+        CliResultQueryFormat::RdfXml => QueryResultFormat::RdfXml,
+        CliResultQueryFormat::Csv => QueryResultFormat::Csv,
+        CliResultQueryFormat::TriG => QueryResultFormat::TriG,
+        CliResultQueryFormat::N3 => QueryResultFormat::N3,
+        CliResultQueryFormat::NQuads => QueryResultFormat::NQuads,
+        CliResultQueryFormat::Turtle => QueryResultFormat::Turtle,
+    }
 }

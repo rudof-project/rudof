@@ -20,8 +20,9 @@ use crate::node_formatter::format_node_info_list;
 pub fn run_node(
     data: &Vec<InputSpec>,
     data_format: &DataFormat,
+    base: &Option<IriS>,
     endpoint: &Option<String>,
-    reader_mode: &RDFReaderMode,
+    reader_mode: &ReaderMode,
     node_str: &str,
     predicates: &Vec<String>,
     show_node_mode: &ShowNodeMode,
@@ -38,6 +39,7 @@ pub fn run_node(
         &mut rudof,
         data,
         data_format,
+        base,
         endpoint,
         reader_mode,
         config,

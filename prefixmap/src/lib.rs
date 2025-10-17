@@ -37,12 +37,14 @@ pub mod deref;
 pub mod iri_ref;
 pub mod prefixmap;
 pub mod prefixmap_error;
+pub mod qdisplay;
 
 pub use crate::prefixmap::*;
 pub use alias::*;
 pub use deref::*;
 pub use iri_ref::*;
 pub use prefixmap_error::*;
+pub use qdisplay::*;
 
 #[cfg(test)]
 mod tests {

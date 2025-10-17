@@ -1,3 +1,13 @@
+use crate::BlankNode;
+use crate::Iri;
+use crate::Literal;
+use crate::SLiteral;
+use crate::Subject;
+use crate::Term;
+use crate::TermKind;
+use crate::Triple;
+use crate::lang::Lang;
+use crate::matcher::Matcher;
 use oxrdf::BlankNode as OxBlankNode;
 use oxrdf::Literal as OxLiteral;
 use oxrdf::NamedNode as OxNamedNode;
@@ -5,15 +15,6 @@ use oxrdf::NamedOrBlankNode as OxSubject;
 use oxrdf::NamedOrBlankNodeRef as OxSubjectRef;
 use oxrdf::Term as OxTerm;
 use oxrdf::Triple as OxTriple;
-
-use crate::BlankNode;
-use crate::Iri;
-use crate::Literal;
-use crate::Subject;
-use crate::Term;
-use crate::TermKind;
-use crate::Triple;
-use crate::matcher::Matcher;
 
 impl Subject for OxSubject {
     fn kind(&self) -> TermKind {
@@ -81,12 +82,16 @@ impl Literal for OxLiteral {
         self.value()
     }
 
-    fn lang(&self) -> Option<&str> {
-        self.language()
+    fn lang(&self) -> Option<Lang> {
+        self.language().and_then(|lang| Lang::new(lang).ok())
     }
 
     fn datatype(&self) -> &str {
         self.datatype().as_str()
+    }
+
+    fn as_sliteral(&self) -> Option<SLiteral> {
+        todo!()
     }
 }
 

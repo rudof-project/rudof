@@ -1,11 +1,15 @@
 use std::fmt::{Debug, Display};
 
+use crate::IriOrBlankNode;
 use crate::RDFError;
-use crate::literal::SLiteral;
+use crate::SLiteral;
+use crate::lang::Lang;
 use crate::numeric_literal::NumericLiteral;
 use crate::triple::Triple;
 use iri_s::IriS;
+use prefixmap::IriRef;
 use serde::{Deserialize, Serialize};
+use tracing::trace;
 
 /// Concrete representation of RDF objects which can be IRIs, Blank nodes, literals or triples
 ///
@@ -64,6 +68,56 @@ impl Object {
 
     pub fn boolean(b: bool) -> Object {
         Object::Literal(SLiteral::boolean(b))
+    }
+
+    pub fn datatype(&self) -> Option<IriRef> {
+        match self {
+            Object::Literal(lit) => Some(lit.datatype()),
+            _ => None,
+        }
+    }
+
+    pub fn parse(str: &str, base: Option<&str>) -> Result<Object, RDFError> {
+        if let Some(bnode_id) = str.strip_prefix("_:") {
+            trace!("Parsing blank node id: {bnode_id} from str: {str}");
+            Ok(Object::bnode(bnode_id.to_string()))
+        } else if str.starts_with('"') {
+            trace!("Pending parsing literal from str: {str}");
+            todo!()
+        } else {
+            let iri = IriS::from_str_base(str, base).map_err(|e| RDFError::ParsingIri {
+                iri: str.to_string(),
+                error: e.to_string(),
+            })?;
+            Ok(Object::iri(iri))
+        }
+    }
+
+    pub fn lang(&self) -> Option<&Lang> {
+        match self {
+            Object::Literal(SLiteral::StringLiteral {
+                lang: Some(lang), ..
+            }) => Some(lang),
+            _ => None,
+        }
+    }
+
+    pub fn show_qualified(&self, prefixmap: &prefixmap::PrefixMap) -> String {
+        match self {
+            Object::Iri(iri) => prefixmap.qualify(iri),
+            Object::BlankNode(bnode) => format!("_:{bnode}"),
+            Object::Literal(lit) => lit.to_string(),
+            Object::Triple {
+                subject,
+                predicate,
+                object,
+            } => format!(
+                "<< {} {} {} >>",
+                subject.show_qualified(prefixmap),
+                prefixmap.qualify(predicate),
+                object.show_qualified(prefixmap)
+            ),
+        }
     }
 }
 
@@ -157,7 +211,7 @@ impl Display for Object {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Object::Iri(iri) => write!(f, "{iri}"),
-            Object::BlankNode(bnode) => write!(f, "_{bnode}"),
+            Object::BlankNode(bnode) => write!(f, "_:{bnode}"),
             Object::Literal(lit) => write!(f, "{lit}"),
             Object::Triple { .. } => todo!(),
         }
@@ -181,46 +235,64 @@ impl Debug for Object {
 
 impl PartialOrd for Object {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Object {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         match (self, other) {
-            (Object::Iri(a), Object::Iri(b)) => a.partial_cmp(b),
-            (Object::BlankNode(a), Object::BlankNode(b)) => a.partial_cmp(b),
-            (Object::Literal(a), Object::Literal(b)) => a.partial_cmp(b),
-            _ => None,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
-pub enum IriOrBlankNode {
-    BlankNode(String),
-    Iri(IriS),
-}
-
-impl IriOrBlankNode {
-    pub fn length(&self) -> usize {
-        match self {
-            IriOrBlankNode::BlankNode(label) => label.len(),
-            IriOrBlankNode::Iri(iri) => iri.as_str().len(),
-        }
-    }
-}
-
-impl From<IriOrBlankNode> for oxrdf::NamedOrBlankNode {
-    fn from(value: IriOrBlankNode) -> Self {
-        match value {
-            IriOrBlankNode::Iri(iri) => oxrdf::NamedNode::new_unchecked(iri.as_str()).into(),
-            IriOrBlankNode::BlankNode(bnode) => oxrdf::BlankNode::new_unchecked(bnode).into(),
-        }
-    }
-}
-
-impl From<oxrdf::NamedOrBlankNode> for IriOrBlankNode {
-    fn from(value: oxrdf::NamedOrBlankNode) -> Self {
-        match value {
-            oxrdf::NamedOrBlankNode::NamedNode(iri) => IriOrBlankNode::Iri(iri.into()),
-            oxrdf::NamedOrBlankNode::BlankNode(bnode) => {
-                IriOrBlankNode::BlankNode(bnode.into_string())
-            }
+            (Object::Iri(a), Object::Iri(b)) => a.cmp(b),
+            (Object::BlankNode(a), Object::BlankNode(b)) => a.cmp(b),
+            (Object::Literal(a), Object::Literal(b)) => a.cmp(b),
+            (Object::Iri(_), _) => std::cmp::Ordering::Less,
+            (Object::BlankNode(_), Object::Iri(_)) => std::cmp::Ordering::Greater,
+            (Object::BlankNode(_), Object::Literal(_)) => std::cmp::Ordering::Less,
+            (Object::Literal(_), _) => std::cmp::Ordering::Greater,
+            (
+                Object::BlankNode(_),
+                Object::Triple {
+                    subject: _,
+                    predicate: _,
+                    object: _,
+                },
+            ) => todo!(),
+            (
+                Object::Triple {
+                    subject: _,
+                    predicate: _,
+                    object: _,
+                },
+                Object::Iri(_iri_s),
+            ) => todo!(),
+            (
+                Object::Triple {
+                    subject: _,
+                    predicate: _,
+                    object: _,
+                },
+                Object::BlankNode(_),
+            ) => todo!(),
+            (
+                Object::Triple {
+                    subject: _,
+                    predicate: _,
+                    object: _,
+                },
+                Object::Literal(_sliteral),
+            ) => todo!(),
+            (
+                Object::Triple {
+                    subject: _subject1,
+                    predicate: _predicate1,
+                    object: _object1,
+                },
+                Object::Triple {
+                    subject: _subject2,
+                    predicate: _predicate2,
+                    object: _object2,
+                },
+            ) => todo!(),
         }
     }
 }

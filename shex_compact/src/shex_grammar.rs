@@ -1,11 +1,13 @@
 use crate::grammar_structs::{
     Cardinality, NumericLength, NumericRange, Qualifier, SenseFlags, ShExStatement,
 };
+use crate::token_tws_no_case;
 use crate::{
     IRes, Span, map_error, shex_parser_error::ParseError as ShExParseError, tag_no_case_tws, token,
     token_tws, traced, tws0,
 };
 use iri_s::IriS;
+use lazy_regex::{Lazy, regex};
 use nom::{
     Err, InputTake,
     branch::alt,
@@ -17,23 +19,21 @@ use nom::{
     multi::{count, fold_many0, many0, many1},
     sequence::{delimited, pair, preceded, tuple},
 };
+use nom_locate::LocatedSpan;
+use prefixmap::IriRef;
 use regex::Regex;
-use shex_ast::IriOrStr;
+// use shex_ast::IriOrStr;
 use shex_ast::iri_ref_or_wildcard::IriRefOrWildcard;
 use shex_ast::string_or_wildcard::StringOrWildcard;
 use shex_ast::{
-    Annotation, BNode, IriExclusion, LangOrWildcard, LanguageExclusion, LiteralExclusion,
-    NodeConstraint, NodeKind, NumericFacet, Pattern, SemAct, Shape, ShapeExpr, ShapeExprLabel,
-    StringFacet, TripleExpr, TripleExprLabel, XsFacet, object_value::ObjectValue,
-    value_set_value::ValueSetValue,
+    Annotation, BNode, LangOrWildcard, NodeConstraint, NodeKind, NumericFacet, Pattern, SemAct,
+    Shape, ShapeExpr, ShapeExprLabel, StringFacet, TripleExpr, TripleExprLabel, XsFacet,
+    iri_exclusion::IriExclusion, language_exclusion::LanguageExclusion,
+    literal_exclusion::LiteralExclusion, object_value::ObjectValue, value_set_value::ValueSetValue,
 };
+use srdf::{RDF_TYPE_STR, SLiteral, lang::Lang, numeric_literal::NumericLiteral};
 use std::{collections::VecDeque, fmt::Debug, num::ParseIntError};
 use thiserror::Error;
-
-use lazy_regex::{Lazy, regex};
-use nom_locate::LocatedSpan;
-use prefixmap::IriRef;
-use srdf::{RDF_TYPE_STR, lang::Lang, literal::SLiteral, numeric_literal::NumericLiteral};
 
 /// `[1] shexDoc ::= directive* ((notStartAction | startActions) statement*)?`
 pub(crate) fn shex_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement<'a>> {
@@ -45,61 +45,6 @@ pub(crate) fn shex_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExState
         ),
     )
 }
-
-/*
-fn empty(i: Span) -> IRes<ShExStatement> {
-    let (i, _) = tws0(i)?;
-    Ok((i, ShExStatement::Empty))
-}
-*/
-
-/*pub(crate) fn shex_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Vec<ShExStatement>> {
-    traced("shex_statement", move |i| {
-        let (i, (ds, _, maybe_sts)) = tuple((directives, tws0, opt(rest_shex_statements)))(i)?;
-        let mut result = Vec::new();
-        result.extend(ds);
-        match maybe_sts {
-            None => {}
-            Some(sts) => {
-                result.extend(sts);
-            }
-        }
-        Ok((i, result))
-    })
-}
-
-/// From [1] rest_shex_statements = ((notStartAction | startActions) statement*)
-fn rest_shex_statements(i: Span) -> IRes<Vec<ShExStatement>> {
-    let (i, (s, _, ss, _)) = tuple((
-        alt((not_start_action, start_actions)),
-        tws0,
-        statements,
-        tws0,
-    ))(i)?;
-    let mut rs = vec![s];
-    rs.extend(ss);
-    Ok((i, rs))
-}
-
-fn directives(i: Span) -> IRes<Vec<ShExStatement>> {
-    let (i, vs) = many1(
-        //tuple((
-            directive
-        //    ,
-        //    tws0
-        //))
-    )(i)?;
-    // let mut rs = Vec::new();
-    /*for v in vs {
-        let (d, _) = v;
-        rs.push(d);
-    }*/
-    Ok((i, vs))
-}
-
-fn statements(i: Span) -> IRes<Vec<ShExStatement>> {
-    many0(statement)(i)
-} */
 
 /// `[2] directive ::= baseDecl | prefixDecl | importDecl`
 fn directive(i: Span) -> IRes<ShExStatement> {
@@ -147,15 +92,15 @@ fn prefix_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement<'a>> {
 }
 
 /// `[4½] importDecl ::= "IMPORT" IRIREF`
+/// I think we could allow also prefixed names in import declarations...
 fn import_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement<'a>> {
     traced(
         "import_decl",
         map_error(
             move |i| {
-                let (i, (_, _, iri_or_str)) =
-                    tuple((tag_no_case("IMPORT"), tws0, cut(iri_ref_or_str)))(i)?;
-                tracing::debug!("grammar: Import {iri_or_str:?}");
-                Ok((i, ShExStatement::ImportDecl { iri: iri_or_str }))
+                let (i, (_, _, iri)) = tuple((tag_no_case("IMPORT"), tws0, cut(iri)))(i)?;
+                tracing::debug!("grammar: Import {iri:?}");
+                Ok((i, ShExStatement::ImportDecl { iri }))
             },
             || ShExParseError::ExpectedImportDecl,
         ),
@@ -566,9 +511,9 @@ fn string_facets(i: Span) -> IRes<NodeConstraint> {
 /// `[26] nonLiteralKind ::= "IRI" | "BNODE" | "NONLITERAL"`
 fn non_literal_kind(i: Span) -> IRes<NodeKind> {
     alt((
-        map(token_tws("IRI"), |_| NodeKind::Iri),
-        map(token_tws("BNODE"), |_| NodeKind::BNode),
-        map(token_tws("NONLITERAL"), |_| NodeKind::NonLiteral),
+        map(token_tws_no_case("IRI"), |_| NodeKind::Iri),
+        map(token_tws_no_case("BNODE"), |_| NodeKind::BNode),
+        map(token_tws_no_case("NONLITERAL"), |_| NodeKind::NonLiteral),
     ))(i)
 }
 
@@ -1324,13 +1269,13 @@ fn language_range2<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ValueSetValue> {
                 let (i, (_, _, exclusions)) =
                     tuple((token_tws("@"), token_tws("~"), language_exclusions))(i)?;
                 let v = if exclusions.is_empty() {
-                    ValueSetValue::LanguageStem {
-                        // TODO: why is this empty?
-                        stem: Lang::new_unchecked(""),
+                    ValueSetValue::LanguageStemRange {
+                        stem: LangOrWildcard::wildcard(),
+                        exclusions: None,
                     }
                 } else {
                     ValueSetValue::LanguageStemRange {
-                        stem: LangOrWildcard::Lang(Lang::new_unchecked("")),
+                        stem: LangOrWildcard::wildcard(),
                         exclusions: Some(exclusions),
                     }
                 };
@@ -1470,21 +1415,21 @@ fn raw_numeric_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NumericLiteral>
     map_error(
         move |i| {
             alt((
+                integer_literal(),
                 map(double, NumericLiteral::decimal_from_f64),
                 decimal,
-                raw_integer_literal(),
             ))(i)
         },
         || ShExParseError::NumericLiteral,
     )
 }
 
-fn raw_integer_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NumericLiteral> {
+/*fn raw_integer_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NumericLiteral> {
     map_error(
         move |i| map(integer(), NumericLiteral::decimal_from_i128)(i),
         || ShExParseError::IntegerLiteral,
     )
-}
+}*/
 
 fn integer_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NumericLiteral> {
     map_error(
@@ -1683,7 +1628,13 @@ fn lang_tag(i: Span) -> IRes<Lang> {
         token("@"),
         recognize(tuple((alpha1, many0(preceded(token("-"), alphanumeric1))))),
     )(i)?;
-    Ok((i, Lang::new_unchecked(*lang_str.fragment())))
+    let lang = Lang::new(*lang_str.fragment()).map_err(|_| {
+        let e = ShExParseError::InvalidLangTag {
+            lang: lang_str.fragment().to_string(),
+        };
+        Err::Error(e.at(lang_str))
+    })?;
+    Ok((i, lang))
 }
 
 /// `[61] predicate ::= iri | RDF_TYPE`
@@ -1847,15 +1798,12 @@ fn rest_range<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Option<i32>> {
 
 /// From rest_range, integer_or_star = INTEGER | "*"
 fn integer_or_star(i: Span) -> IRes<i32> {
-    alt((
-        map(integer(), |n| n as i32),
-        (map(token_tws("*"), |_| (-1))),
-    ))(i)
+    alt((map(integer(), |n| n as i32), (map(token_tws("*"), |_| -1))))(i)
 }
 
 /// `[69] <RDF_TYPE> ::= "a"`
 fn rdf_type(i: Span) -> IRes<IriRef> {
-    let (i, _) = tag_no_case("a")(i)?;
+    let (i, _) = tag("a")(i)?;
     let rdf_type: IriRef = IriRef::iri(IriS::new_unchecked(RDF_TYPE_STR));
     Ok((i, rdf_type))
 }
@@ -2197,6 +2145,7 @@ fn iri_ref(i: Span) -> IRes<IriS> {
     Ok((i, IriS::new_unchecked(str.as_str())))
 }
 
+/*
 /// `[18t] <IRIREF> ::= "<" ([^#0000- <>\"{}|^`\\] | UCHAR)* ">"`
 /// iri_chars = ([^#0000- <>\"{}|^`\\] | UCHAR)*
 fn iri_ref_or_str(i: Span) -> IRes<IriOrStr> {
@@ -2207,7 +2156,7 @@ fn iri_ref_or_str(i: Span) -> IRes<IriOrStr> {
         char('>'),
     )(i)?;
     Ok((i, IriOrStr::new(str.as_str())))
-}
+}*/
 
 /// `iri_chars = ([^#0000- <>\"{}|^`\\] | UCHAR)*`
 fn iri_chars(i: Span) -> IRes<String> {

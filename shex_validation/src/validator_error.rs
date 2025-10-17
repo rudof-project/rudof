@@ -1,9 +1,11 @@
 use std::fmt::Display;
 
-use prefixmap::PrefixMapError;
+use prefixmap::{PrefixMap, PrefixMapError};
 use rbe::RbeError;
 use serde::Serialize;
+use serde::ser::SerializeMap;
 use shex_ast::ir::preds::Preds;
+use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::shape::Shape;
 use shex_ast::ir::shape_expr::ShapeExpr;
 use shex_ast::{Node, Pred, ShapeExprLabel, ShapeLabelIdx, ir::shape_label::ShapeLabel};
@@ -14,10 +16,49 @@ use crate::Reasons;
 
 #[derive(Error, Debug, Clone)]
 pub enum ValidatorError {
+    #[error(
+        "Shape {idx} is abstract and cannot be used in validation for node {node}. Descendants failed with errors: {errors}"
+    )]
+    AbstractShapeError {
+        idx: ShapeLabelIdx,
+        node: Box<Node>,
+        errors: ValidatorErrors,
+    },
+
+    #[error("Error in descendant {desc} of shape {current} for node {node}: {errors}")]
+    DescendantShapeError {
+        current: ShapeLabelIdx,
+        desc: ShapeLabelIdx,
+        node: Box<Node>,
+        errors: ValidatorErrors,
+    },
+
+    #[error("All descendants of shape {idx} failed for node {node}: {errors}")]
+    DescendantsShapeError {
+        idx: ShapeLabelIdx,
+        node: Box<Node>,
+        errors: ValidatorErrors,
+    },
+
+    #[error("Shape {idx} is abstract and has no descendants")]
+    AbstractShapeNoDescendants { idx: ShapeLabelIdx },
+
+    #[error("Creating shapemap from node {node} and shape {shape} failed with errors: {error}")]
+    NodeShapeError {
+        node: String,
+        shape: String,
+        error: String,
+    },
     #[error("Converting Term to RDFNode failed pending {term}")]
     TermToRDFNodeFailed { term: String },
 
-    #[error("Failed pending: RBE passed, but pending references failed")]
+    #[error("Serialization of reason failed: {reason} with error: {error}")]
+    ReasonSerializationError { reason: String, error: String },
+
+    #[error("Serialization of error failed: {source_error} with error: {error}")]
+    ErrorSerializationError { source_error: String, error: String },
+
+    #[error("References failed: Shape pattern matches, but references failed: {}", failed_pending.iter().map(|(n, s)| format!("({n}, {s})")).collect::<Vec<_>>().join(", "))]
     FailedPending {
         failed_pending: Vec<(Node, ShapeLabelIdx)>,
     },
@@ -66,7 +107,7 @@ pub enum ValidatorError {
 
     #[error("And error: shape expression {shape_expr} failed for node {node}: {errors}")]
     ShapeAndError {
-        shape_expr: Box<ShapeExpr>,
+        shape_expr: ShapeLabelIdx,
         node: Box<Node>,
         errors: ValidatorErrors,
     },
@@ -75,7 +116,7 @@ pub enum ValidatorError {
     ShapeOrError {
         shape_expr: Box<ShapeExpr>,
         node: Box<Node>,
-        errors: Vec<(ShapeExpr, ValidatorErrors)>,
+        errors: Vec<(ShapeLabelIdx, ValidatorErrors)>,
     },
 
     #[error(
@@ -117,10 +158,11 @@ pub enum ValidatorError {
     #[error("Shape not found for index {idx}")]
     ShapeExprNotFound { idx: ShapeLabelIdx },
 
-    #[error("Shape fails for node {node} with shape {shape}")]
-    ShapeFails {
+    #[error("Shape {idx} failed for node {node} with errors {}", errors.iter().map(|e| e.to_string()).collect::<Vec<_>>().join(", "))]
+    ShapeFailed {
         node: Box<Node>,
         shape: Box<Shape>,
+        idx: ShapeLabelIdx,
         errors: Vec<ValidatorError>,
     },
 
@@ -128,7 +170,28 @@ pub enum ValidatorError {
     ShapeRefFailed { node: Box<Node>, idx: ShapeLabelIdx },
 }
 
-#[derive(Debug, Clone)]
+impl ValidatorError {
+    pub fn show_qualified(
+        &self,
+        _nodes_prefixmap: &PrefixMap,
+        _schema: &SchemaIR,
+    ) -> Result<String, PrefixMapError> {
+        Ok(format!("{self}"))
+    }
+}
+
+impl Serialize for ValidatorError {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut map = serializer.serialize_map(Some(1))?;
+        map.serialize_entry("error", &self.to_string())?;
+        map.end()
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct ValidatorErrors {
     errs: Vec<ValidatorError>,
 }
@@ -145,14 +208,5 @@ impl Display for ValidatorErrors {
             writeln!(f, "  {err}")?;
         }
         Ok(())
-    }
-}
-
-impl Serialize for ValidatorError {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_str(self.to_string().as_str())
     }
 }

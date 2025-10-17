@@ -9,7 +9,7 @@ use std::str::FromStr;
 use std::{collections::HashMap, fmt};
 
 /// Contains declarations of prefix maps which are used in TURTLE, SPARQL and ShEx
-#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Default)]
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq, Default)]
 #[serde(transparent)]
 pub struct PrefixMap {
     /// Proper prefix map associations of an alias `String` to an `IriS`
@@ -60,6 +60,7 @@ impl PrefixMap {
         self
     }
 
+    /// Disable all rich qualifying (colors and hyperlinks)
     pub fn without_rich_qualifying(self) -> Self {
         self.with_hyperlink(false)
             .with_qualify_localname_color(None)
@@ -81,10 +82,12 @@ impl PrefixMap {
         Ok(())
     }
 
+    /// Finds an IRI associated with an alias
     pub fn find(&self, str: &str) -> Option<&IriS> {
         self.map.get(str)
     }
 
+    /// Creates a prefix map from a hashmap of &str to &str
     pub fn from_hashmap(hm: &HashMap<&str, &str>) -> Result<PrefixMap, PrefixMapError> {
         let mut pm = PrefixMap::new();
         for (a, s) in hm.iter() {
@@ -480,6 +483,10 @@ impl PrefixMap {
             self.insert(alias, iri)?
         }
         Ok(())
+    }
+
+    pub fn aliases(&self) -> impl Iterator<Item = &String> {
+        self.map.keys()
     }
 }
 

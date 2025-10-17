@@ -15,15 +15,13 @@ use shacl_ast::{
 };
 use srdf::{FnOpaque, rdf_type, rdfs_class};
 use srdf::{
-    FocusRDF, Iri as _, PResult, RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath,
-    Term, Triple, combine_parsers, combine_parsers_vec, combine_vec, get_focus, has_type,
-    instances_of, lang::Lang, literal::SLiteral, matcher::Any, not, object, ok, opaque, optional,
-    parse_property_values, property_bool, property_iris, property_objects, property_value,
-    property_values, property_values_bool, property_values_int, property_values_iri,
-    property_values_literal, property_values_non_empty, property_values_string, rdf_list, term,
-};
-use srdf::{
-    Literal, Object, property_integer, property_iri, property_string, property_value_as_list,
+    FocusRDF, Iri as _, Object, PResult, RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf,
+    SHACLPath, SLiteral, Term, Triple, combine_parsers, combine_parsers_vec, combine_vec,
+    get_focus, has_type, instances_of, lang::Lang, matcher::Any, not, object, ok, opaque, optional,
+    parse_property_values, property_bool, property_integer, property_iri, property_iris,
+    property_objects, property_string, property_value, property_value_as_list, property_values,
+    property_values_bool, property_values_int, property_values_iri, property_values_literal,
+    property_values_non_empty, property_values_string, rdf_list, term,
 };
 use srdf::{set_focus, shacl_path_parse};
 use std::collections::{HashMap, HashSet};
@@ -341,13 +339,13 @@ where
         sh_qualified_value_shape().clone().into()
     }
 
-    fn shape<'a>(state: &'a mut State) -> impl RDFNodeParse<RDF, Output = Shape<RDF>> + 'a
+    fn shape(state: &mut State) -> impl RDFNodeParse<RDF, Output = Shape<RDF>>
     where
-        RDF: FocusRDF + 'a,
+        RDF: FocusRDF + 'static,
     {
         node_shape()
-            .then(move |ns| ok(&Shape::NodeShape(Box::new(ns))))
-            .or(property_shape(state).then(|ps| ok(&Shape::PropertyShape(Box::new(ps)))))
+            .then(move |ns| ok(Shape::NodeShape(Box::new(ns))))
+            .or(property_shape(state).then(|ps| ok(Shape::PropertyShape(Box::new(ps)))))
     }
 }
 
@@ -412,21 +410,19 @@ where
     ])
 }
 
-fn property_shape<'a, RDF>(
-    _state: &'a mut State,
-) -> impl RDFNodeParse<RDF, Output = PropertyShape<RDF>> + 'a
+fn property_shape<RDF>(_state: &mut State) -> impl RDFNodeParse<RDF, Output = PropertyShape<RDF>>
 where
-    RDF: FocusRDF + 'a,
+    RDF: FocusRDF + 'static,
 {
     get_focus().then(move |focus: RDF::Term| {
         optional(has_type(sh_property_shape().clone()))
             .with(
                 object()
                     .and(path())
-                    .then(move |(id, path)| ok(&PropertyShape::new(id, path))),
+                    .then(move |(id, path)| ok(PropertyShape::new(id, path))),
             )
             // The following line is required because the path parser moves the focus node
-            .then(move |ps| set_focus(&focus.clone()).with(ok(&ps)))
+            .then(move |ps| set_focus(&focus.clone()).with(ok(ps)))
             .then(|ns| optional(severity()).flat_map(move |sev| Ok(ns.clone().with_severity(sev))))
             .then(|ps| targets().flat_map(move |ts| Ok(ps.clone().with_targets(ts))))
             .then(|ps| {
@@ -450,9 +446,9 @@ fn node_shape<RDF>() -> impl RDFNodeParse<RDF, Output = NodeShape<RDF>>
 where
     RDF: FocusRDF,
 {
-    not(property_values_non_empty(sh_path())).with(
+    not(property_values_non_empty(sh_path().clone())).with(
         object()
-            .then(move |t: RDFNode| ok(&NodeShape::new(t)))
+            .then(move |t: RDFNode| ok(NodeShape::new(t)))
             .then(|ns| optional(severity()).flat_map(move |sev| Ok(ns.clone().with_severity(sev))))
             .then(|ns| targets().flat_map(move |ts| Ok(ns.clone().with_targets(ts))))
             .then(|ns| {
@@ -463,16 +459,18 @@ where
 }
 
 fn severity<RDF: FocusRDF>() -> FnOpaque<RDF, Severity> {
-    opaque!(property_iri(sh_severity()).map(|iri| match iri.as_str() {
-        "http://www.w3.org/ns/shacl#Violation" => Severity::Violation,
-        "http://www.w3.org/ns/shacl#Warning" => Severity::Warning,
-        "http://www.w3.org/ns/shacl#Info" => Severity::Info,
-        _ => Severity::Generic(IriRef::iri(iri)),
-    }))
+    opaque!(
+        property_iri(sh_severity().clone()).map(|iri| match iri.as_str() {
+            "http://www.w3.org/ns/shacl#Violation" => Severity::Violation,
+            "http://www.w3.org/ns/shacl#Warning" => Severity::Warning,
+            "http://www.w3.org/ns/shacl#Info" => Severity::Info,
+            _ => Severity::Generic(IriRef::iri(iri)),
+        })
+    )
 }
 
 fn property_shapes<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<RDFNode>> {
-    property_objects(sh_property()).map(|ps| ps.into_iter().collect())
+    property_objects(sh_property().clone()).map(|ps| ps.into_iter().collect())
 }
 
 fn parse_xone_values<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Component> {
@@ -508,17 +506,17 @@ fn parse_node_value<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Componen
 }
 
 fn qualified_value_shape_disjoint_parser<RDF: FocusRDF>() -> FnOpaque<RDF, Option<bool>> {
-    opaque!(optional(
-        property_bool(sh_qualified_value_shapes_disjoint())
-    ))
+    opaque!(optional(property_bool(
+        sh_qualified_value_shapes_disjoint().clone()
+    )))
 }
 
 fn qualified_min_count_parser<RDF: FocusRDF>() -> FnOpaque<RDF, Option<isize>> {
-    opaque!(optional(property_integer(sh_qualified_min_count())))
+    opaque!(optional(property_integer(sh_qualified_min_count().clone())))
 }
 
 fn qualified_max_count_parser<RDF: FocusRDF>() -> FnOpaque<RDF, Option<isize>> {
-    opaque!(optional(property_integer(sh_qualified_max_count())))
+    opaque!(optional(property_integer(sh_qualified_max_count().clone())))
 }
 
 fn parse_qualified_value_shape<RDF: FocusRDF>(
@@ -741,7 +739,7 @@ fn path<RDF>() -> impl RDFNodeParse<RDF, Output = SHACLPath>
 where
     RDF: FocusRDF,
 {
-    property_value(sh_path()).then(shacl_path_parse)
+    property_value(sh_path().clone()).then(shacl_path_parse)
 }
 
 fn targets<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Target<RDF>>>
@@ -761,7 +759,7 @@ fn closed<RDF>() -> impl RDFNodeParse<RDF, Output = bool>
 where
     RDF: FocusRDF,
 {
-    property_bool(sh_closed())
+    property_bool(sh_closed().clone())
 }
 
 /*opaque! {
@@ -788,7 +786,7 @@ where
     RDF: FocusRDF,
 {
     opaque!(
-        property_values_int(sh_min_count())
+        property_values_int(sh_min_count().clone())
             .map(|ns| ns.iter().map(|n| Component::MinCount(*n)).collect())
     )
 }
@@ -799,7 +797,7 @@ where
     RDF: FocusRDF,
 {
     opaque!(
-        property_values_int(sh_max_count())
+        property_values_int(sh_max_count().clone())
             .map(|ns| ns.iter().map(|n| Component::MaxCount(*n)).collect())
     )
 }
@@ -809,7 +807,7 @@ where
     RDF: FocusRDF,
 {
     opaque!(
-        property_values_int(sh_min_length())
+        property_values_int(sh_min_length().clone())
             .map(|ns| ns.iter().map(|n| Component::MinLength(*n)).collect())
     )
 }
@@ -819,7 +817,7 @@ where
     RDF: FocusRDF,
 {
     opaque!(
-        property_values_bool(sh_deactivated())
+        property_values_bool(sh_deactivated().clone())
             .map(|ns| ns.iter().map(|n| Component::Deactivated(*n)).collect())
     )
 }
@@ -839,7 +837,7 @@ where
     RDF: FocusRDF,
 {
     opaque!(
-        optional(property_value_as_list(sh_ignored_properties())).flat_map(|is| {
+        optional(property_value_as_list(sh_ignored_properties().clone())).flat_map(|is| {
             match is {
                 None => Ok(HashSet::new()),
                 Some(vs) => {
@@ -867,14 +865,13 @@ fn min_inclusive<RDF>() -> FnOpaque<RDF, Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    opaque!(property_values_literal(sh_min_inclusive()).map(|ns| {
-        ns.iter()
-            .map(|n: &<RDF as Rdf>::Literal| {
-                let lit: SLiteral = n.as_literal();
-                Component::MinInclusive(lit)
-            })
-            .collect()
-    }))
+    opaque!(
+        property_values_literal(sh_min_inclusive().clone()).map(|ns| {
+            ns.iter()
+                .map(|lit| Component::MinInclusive(lit.clone()))
+                .collect()
+        })
+    )
 }
 
 fn min_exclusive<RDF>() -> FnOpaque<RDF, Vec<Component>>
@@ -882,14 +879,13 @@ fn min_exclusive<RDF>() -> FnOpaque<RDF, Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    opaque!(property_values_literal(sh_min_exclusive()).map(|ns| {
-        ns.iter()
-            .map(|n: &<RDF as Rdf>::Literal| {
-                let lit: SLiteral = n.as_literal();
-                Component::MinExclusive(lit)
-            })
-            .collect()
-    }))
+    opaque!(
+        property_values_literal(sh_min_exclusive().clone()).map(|ns| {
+            ns.iter()
+                .map(|lit| Component::MinExclusive(lit.clone()))
+                .collect()
+        })
+    )
 }
 
 fn max_inclusive<RDF>() -> FnOpaque<RDF, Vec<Component>>
@@ -897,14 +893,13 @@ fn max_inclusive<RDF>() -> FnOpaque<RDF, Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    opaque!(property_values_literal(sh_max_inclusive()).map(|ns| {
-        ns.iter()
-            .map(|n: &<RDF as Rdf>::Literal| {
-                let lit: SLiteral = n.as_literal();
-                Component::MaxInclusive(lit)
-            })
-            .collect()
-    }))
+    opaque!(
+        property_values_literal(sh_max_inclusive().clone()).map(|ns| {
+            ns.iter()
+                .map(|lit| Component::MaxInclusive(lit.clone()))
+                .collect()
+        })
+    )
 }
 
 fn max_exclusive<RDF>() -> FnOpaque<RDF, Vec<Component>>
@@ -912,21 +907,20 @@ fn max_exclusive<RDF>() -> FnOpaque<RDF, Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    opaque!(property_values_literal(sh_max_exclusive()).map(|ns| {
-        ns.iter()
-            .map(|n: &<RDF as Rdf>::Literal| {
-                let lit: SLiteral = n.as_literal();
-                Component::MaxExclusive(lit)
-            })
-            .collect()
-    }))
+    opaque!(
+        property_values_literal(sh_max_exclusive().clone()).map(|ns| {
+            ns.iter()
+                .map(|lit| Component::MaxExclusive(lit.clone()))
+                .collect()
+        })
+    )
 }
 
 fn equals<RDF>() -> FnOpaque<RDF, Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    opaque!(property_values_iri(sh_equals()).map(|ns| {
+    opaque!(property_values_iri(sh_equals().clone()).map(|ns| {
         ns.iter()
             .map(|n| {
                 let iri: IriRef = IriRef::iri(n.clone());
@@ -940,7 +934,7 @@ fn disjoint<RDF>() -> FnOpaque<RDF, Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    opaque!(property_values_iri(sh_disjoint()).map(|ns| {
+    opaque!(property_values_iri(sh_disjoint().clone()).map(|ns| {
         ns.iter()
             .map(|n| {
                 let iri: IriRef = IriRef::iri(n.clone());
@@ -954,7 +948,7 @@ fn less_than<RDF>() -> FnOpaque<RDF, Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    opaque!(property_values_iri(sh_less_than()).map(|ns| {
+    opaque!(property_values_iri(sh_less_than().clone()).map(|ns| {
         ns.iter()
             .map(|n| {
                 let iri: IriRef = IriRef::iri(n.clone());
@@ -968,14 +962,16 @@ fn less_than_or_equals<RDF>() -> FnOpaque<RDF, Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    opaque!(property_values_iri(sh_less_than_or_equals()).map(|ns| {
-        ns.iter()
-            .map(|n| {
-                let iri: IriRef = IriRef::iri(n.clone());
-                Component::LessThanOrEquals(iri)
-            })
-            .collect()
-    }))
+    opaque!(
+        property_values_iri(sh_less_than_or_equals().clone()).map(|ns| {
+            ns.iter()
+                .map(|n| {
+                    let iri: IriRef = IriRef::iri(n.clone());
+                    Component::LessThanOrEquals(iri)
+                })
+                .collect()
+        })
+    )
 }
 
 fn max_length<RDF>() -> FnOpaque<RDF, Vec<Component>>
@@ -984,7 +980,7 @@ where
     RDF: FocusRDF,
 {
     opaque!(
-        property_values_int(sh_max_length())
+        property_values_int(sh_max_length().clone())
             .map(|ns| ns.iter().map(|n| Component::MaxLength(*n)).collect())
     )
 }
@@ -993,7 +989,7 @@ fn datatype<RDF>() -> FnOpaque<RDF, Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    opaque!(property_values_iri(sh_datatype()).map(|ns| {
+    opaque!(property_values_iri(sh_datatype().clone()).map(|ns| {
         ns.iter()
             .map(|iri| Component::Datatype(IriRef::iri(iri.clone())))
             .collect()
@@ -1006,7 +1002,7 @@ where
     RDF: FocusRDF,
 {
     opaque!(
-        property_objects(sh_class())
+        property_objects(sh_class().clone())
             .map(|ns| ns.iter().map(|n| Component::Class(n.clone())).collect())
     )
 }
@@ -1016,7 +1012,7 @@ fn node_kind<RDF>() -> FnOpaque<RDF, Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    opaque!(property_values(sh_node_kind()).flat_map(|ns| {
+    opaque!(property_values(sh_node_kind().clone()).flat_map(|ns| {
         let nks: Vec<_> = ns
             .iter()
             .flat_map(|term| {
@@ -1057,7 +1053,7 @@ fn language_in<RDF: FocusRDF>() -> FnOpaque<RDF, Vec<Component>> {
 
 fn pattern<RDF: FocusRDF>() -> FnOpaque<RDF, Vec<Component>> {
     opaque!(optional(flags()).then(move |maybe_flags| {
-        property_values_string(sh_pattern()).flat_map(move |strs| match strs.len() {
+        property_values_string(sh_pattern().clone()).flat_map(move |strs| match strs.len() {
             0 => Ok(Vec::new()),
             1 => {
                 let pattern = strs.first().unwrap().clone();
@@ -1070,7 +1066,7 @@ fn pattern<RDF: FocusRDF>() -> FnOpaque<RDF, Vec<Component>> {
 }
 
 fn flags<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = String> {
-    property_string(sh_flags())
+    property_string(sh_flags().clone())
 }
 
 fn parse_in_values<RDF>() -> impl RDFNodeParse<RDF, Output = Component>
@@ -1122,7 +1118,14 @@ where
         Ok(Value::Iri(IriRef::Iri(iri_s)))
     } else if let Ok(literal) = RDF::term_as_literal(term) {
         let literal: RDF::Literal = literal;
-        Ok(Value::Literal(literal.as_literal()))
+        let slit: SLiteral =
+            literal
+                .clone()
+                .try_into()
+                .map_err(|_e| RDFParseError::LiteralToSLiteralFailed {
+                    literal: literal.to_string(),
+                })?;
+        Ok(Value::Literal(slit))
     } else {
         println!("Unexpected code in term_to_value: {term}: {msg}");
         todo!()
@@ -1196,7 +1199,7 @@ where
     RDF: FocusRDF,
 {
     opaque!(
-        property_objects(sh_qualified_value_shape())
+        property_objects(sh_qualified_value_shape().clone())
             .then(|qvs| { parse_qualified_value_shape::<RDF>(qvs) })
     )
 }
@@ -1228,29 +1231,31 @@ fn targets_class<RDF>() -> FnOpaque<RDF, Vec<Target<RDF>>>
 where
     RDF: FocusRDF,
 {
-    opaque!(property_iris(sh_target_class()).flat_map(move |ts| {
-        let result = ts
-            .into_iter()
-            .map(|iri| Target::TargetClass(RDFNode::iri(iri)))
-            .collect();
-        Ok(result)
-    }))
+    opaque!(
+        property_iris(sh_target_class().clone()).flat_map(move |ts| {
+            let result = ts
+                .into_iter()
+                .map(|iri| Target::TargetClass(RDFNode::iri(iri)))
+                .collect();
+            Ok(result)
+        })
+    )
 }
 
 fn targets_node<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Target<RDF>>>
 where
     RDF: FocusRDF,
 {
-    property_objects(sh_target_node()).flat_map(move |ts| {
+    property_objects(sh_target_node().clone()).flat_map(move |ts| {
         let result = ts.into_iter().map(Target::TargetNode).collect();
         Ok(result)
     })
 }
 
 fn targets_implicit_class<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Target<R>>> {
-    instances_of(rdfs_class())
-        .and(instances_of(sh_property_shape()))
-        .and(instances_of(sh_node_shape()))
+    instances_of(rdfs_class().clone())
+        .and(instances_of(sh_property_shape().clone()))
+        .and(instances_of(sh_node_shape().clone()))
         .and(get_focus())
         .flat_map(
             move |(((class, property_shapes), node_shapes), focus): (_, R::Term)| {
@@ -1275,7 +1280,7 @@ fn targets_implicit_class<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Ta
 }
 
 fn targets_objects_of<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Target<R>>> {
-    property_values_iri(sh_target_objects_of()).flat_map(move |ts| {
+    property_values_iri(sh_target_objects_of().clone()).flat_map(move |ts| {
         let result = ts
             .into_iter()
             .map(|t: IriS| Target::TargetObjectsOf(t.into()))
@@ -1285,7 +1290,7 @@ fn targets_objects_of<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Target
 }
 
 fn targets_subjects_of<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Target<R>>> {
-    property_values_iri(sh_target_subjects_of()).flat_map(move |ts| {
+    property_values_iri(sh_target_subjects_of().clone()).flat_map(move |ts| {
         let result = ts
             .into_iter()
             .map(|t: IriS| Target::TargetSubjectsOf(t.into()))
@@ -1299,7 +1304,7 @@ where
     RDF: FocusRDF,
 {
     opaque!(
-        property_values_bool(sh_unique_lang())
+        property_values_bool(sh_unique_lang().clone())
             .map(|ns| ns.iter().map(|n| Component::UniqueLang(*n)).collect())
     )
 }
@@ -1345,8 +1350,8 @@ mod tests {
         match shape.components().first().unwrap() {
             crate::rdf_to_shacl::shacl_parser::Component::LanguageIn { langs } => {
                 assert_eq!(langs.len(), 2);
-                assert_eq!(langs[0], Lang::new_unchecked("en"));
-                assert_eq!(langs[1], Lang::new_unchecked("fr"));
+                assert_eq!(langs[0], Lang::new("en").unwrap());
+                assert_eq!(langs[1], Lang::new("fr").unwrap());
             }
             _ => panic!("Shape has not a LanguageIn component"),
         }

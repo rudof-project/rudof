@@ -1,0 +1,49 @@
+BASE <http://a.example/>
+
+PREFIX : <http://hl7.org/ns/fhir>
+PREFIX fhir: <http://hl7.org/ns/fhir#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+<#Observation> CLOSED {
+  fhir:code .? ;
+  fhir:component CLOSED {
+    fhir:code . ;
+    fhir:value .
+  }*
+}
+
+# -- super-classes --
+ABSTRACT <#Vital> EXTENDS @<#Observation> CLOSED { }
+ABSTRACT <#PostureVital> EXTENDS @<#Vital> EXTENDS @<#Posture> CLOSED { }
+ABSTRACT <#ReclinedVital> EXTENDS @<#PostureVital> EXTENDS @<#Reclined> CLOSED { }
+# ABSTRACT <#ReclinedVital> EXTENDS @<#PostureVital> CLOSED { } AND @<#Reclined>
+
+# -- BP --
+<#BP> EXTENDS @<#Vital> CLOSED { } AND CLOSED {
+  fhir:component { fhir:code ["systolic"] } ;
+  fhir:component { fhir:code ["diastolic"] }
+}
+
+<#PostureBP> EXTENDS @<#BP> EXTENDS @<#PostureVital> CLOSED { }
+<#ReclinedBP> EXTENDS @<#BP> EXTENDS @<#ReclinedVital> CLOSED { }
+
+# -- Pulse --
+<#Pulse> EXTENDS @<#Vital> CLOSED { } AND {
+    fhir:code ["pulse"]
+}
+<#PosturePulse> EXTENDS @<#Pulse> EXTENDS @<#PostureVital> CLOSED { }
+<#ReclinedPulse> EXTENDS @<#Pulse> EXTENDS @<#ReclinedVital> CLOSED { }
+
+# -- postures --
+<#Posture> {
+  fhir:component {
+    fhir:code ["posture"]
+  }
+}
+
+<#Reclined> EXTENDS @<#Posture> CLOSED { } AND {
+  fhir:component CLOSED {
+    fhir:code ["posture"] ;
+    fhir:value ["reclined"]
+  }
+}

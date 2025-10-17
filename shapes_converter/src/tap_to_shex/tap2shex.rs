@@ -1,12 +1,12 @@
 //! Struct that converts DCTAP to ShEx schemas
 //!
 //!
-
 use dctap::{
     DCTap, DatatypeId, ExtendsId, PropertyId, ShapeId, TapShape, TapStatement, Value,
     ValueConstraint,
 };
 use iri_s::IriS;
+use iri_s::iri;
 use prefixmap::IriRef;
 use shex_ast::{
     Annotation, NodeConstraint, ObjectValue, Schema, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel,
@@ -19,7 +19,7 @@ pub struct Tap2ShEx {
 }
 
 impl Tap2ShEx {
-    pub fn new(config: &Tap2ShExConfig) -> Tap2ShEx {
+    pub fn new(config: &Tap2ShExConfig) -> Self {
         Tap2ShEx {
             config: config.clone(),
         }
@@ -28,7 +28,8 @@ impl Tap2ShEx {
     // TODO: Added the following to make clippy happy...should we refactor Tap2ShExError ?
     #[allow(clippy::result_large_err)]
     pub fn convert(&self, tap: &DCTap) -> Result<Schema, Tap2ShExError> {
-        let mut schema = Schema::new().with_prefixmap(Some(self.config.prefixmap()));
+        let mut schema =
+            Schema::new(&iri!("http://default/")).with_prefixmap(Some(self.config.prefixmap()));
         for tap_shape in tap.shapes() {
             let shape_decl = tapshape_to_shape(tap_shape, &self.config)?;
             schema.add_shape_decl(&shape_decl)

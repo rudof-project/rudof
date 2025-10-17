@@ -1,0 +1,8 @@
+prefix :       <http://example.org/>
+prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
+
+:ok_b :p "A", "B" .             # Should pass as B
+:ko_b :p "A", "B"; :q "C" .     # Should fail as B
+:ok_c :p "C" .             # Should pass as C
+:ko_c1 :p "A", "C" . 
+:ko_c2 :p "C"; :q "?" .

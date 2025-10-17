@@ -1,6 +1,6 @@
 [package]
 name = "rudof_cli"
-version = "0.1.90"
+version = "0.1.120"
 authors.workspace = true
 description.workspace = true
 documentation = "https://rudof-project.github.io/rudof"
@@ -14,30 +14,33 @@ path = "src/main.rs"
 name = "rudof"
 
 [dependencies]
-shex_ast = { workspace = true }
-srdf = { workspace = true }
-prefixmap = { workspace = true }
-iri_s = { workspace = true }
-shapemap = { workspace = true }
-shacl_ast = { workspace = true }
-dctap = { workspace = true }
-shapes_converter = { workspace = true }
-shacl_validation = { workspace = true }
-sparql_service = { workspace = true }
-rudof_lib = { workspace = true }
-rudof_mcp = { workspace = true }
+anyhow.workspace = true 
+clap.workspace = true 
+clientele.workspace = true 
+crossterm.workspace = true
+dctap.workspace = true 
+iri_s.workspace = true 
+oxrdf.workspace = true 
+prefixmap.workspace = true 
+rdf_config.workspace = true 
+regex.workspace = true
+rudof_generate.workspace = true
+rudof_lib.workspace = true
+rudof_mcp.workspace = true
 
 serde.workspace = true
-serde_json = { workspace = true }
-anyhow = { workspace = true }
-thiserror = { workspace = true }
-clap = { workspace = true }
-clientele = "0.2"
-oxrdf = { workspace = true }
-regex = "^1.10"
-tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
-supports-color = { workspace = true }
-either = "1.13"
-reqwest = { version = "0.12" }
-url = { workspace = true }
+serde_json.workspace = true 
+shacl_ast.workspace = true 
+shacl_validation.workspace = true 
+shapes_comparator.workspace = true 
+shapes_converter.workspace = true 
+shex_ast.workspace = true 
+sparql_service.workspace = true 
+srdf.workspace = true 
+supports-color.workspace = true 
+tabled.workspace = true
+thiserror.workspace = true 
+tokio.workspace = true 
+tracing.workspace = true 
+tracing-subscriber.workspace = true 
+url.workspace = true

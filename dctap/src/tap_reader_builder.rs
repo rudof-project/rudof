@@ -1,17 +1,19 @@
+use crate::reader_range::ReaderRange;
 use crate::{
     // ReaderRange,
     TapConfig,
-    //TapError,
+    TapError,
     TapReader,
     TapReaderState,
 };
 use crate::{tap_error::Result, tap_headers::TapHeaders};
-// use calamine::{open_workbook, Reader as XlsxReader, Xlsx};
+use calamine::{Reader as XlsxReader, Xlsx, open_workbook};
 use csv::ReaderBuilder;
 use std::fs::File;
 // use indexmap::IndexSet;
 use std::io::{
     self,
+    BufReader,
     // BufReader
 };
 use std::path::Path;
@@ -94,7 +96,7 @@ impl TapReaderBuilder {
         Ok(TapReader::new_csv_reader(reader, state, config))
     }
 
-    /*     pub fn from_excel<R: io::Read, P: AsRef<Path>>(
+    pub fn from_excel<R: io::Read, P: AsRef<Path>>(
         path: P,
         sheet_name: Option<&str>,
         config: &TapConfig,
@@ -135,5 +137,5 @@ impl TapReaderBuilder {
                 path: path_name.clone(),
             })
         }
-    } */
+    }
 }

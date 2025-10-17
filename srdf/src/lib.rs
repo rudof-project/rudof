@@ -8,6 +8,7 @@
 pub mod async_srdf;
 pub mod bnode;
 pub mod iri;
+pub mod iri_or_blanknode;
 pub mod lang;
 pub mod literal;
 pub mod matcher;
@@ -17,12 +18,15 @@ pub mod numeric_literal;
 pub mod object;
 pub mod oxrdf_impl;
 pub mod query_rdf;
+pub mod query_result_format;
 pub mod rdf;
 pub mod rdf_data_config;
 pub mod rdf_format;
 pub mod rdf_visualizer;
 pub mod regex;
 pub mod shacl_path;
+pub mod sliteral;
+pub mod sparql_query;
 pub mod srdf_builder;
 pub mod srdf_error;
 pub mod srdf_graph;
@@ -43,14 +47,16 @@ pub use crate::rdf::*;
 pub use crate::rdf_data_config::*;
 pub use bnode::*;
 pub use iri::*;
+pub use iri_or_blanknode::*;
 pub use literal::*;
 pub use object::*;
 pub use oxrdf_impl::*;
+pub use query_result_format::*;
 pub use rdf_format::*;
 pub use regex::*;
-pub use uml_converter::*;
-
 pub use shacl_path::*;
+pub use sliteral::*;
+pub use sparql_query::*;
 pub use srdf_builder::*;
 pub use srdf_error::*;
 pub use srdf_graph::*;
@@ -59,6 +65,7 @@ pub use srdf_sparql::*;
 pub use subject::*;
 pub use term::*;
 pub use triple::*;
+pub use uml_converter::*;
 pub use vocab::*;
 pub use xsd_datetime::*;
 
@@ -96,7 +103,7 @@ macro_rules! int {
 ///
 /// #[macro_use]
 /// use iri_s::IriS;
-/// use srdf::{rdf_parser, RDFParser, RDF, RDFFormat, FocusRDF, satisfy, ReaderMode, RDFNodeParse, Query, Rdf, property_value, rdf_list, set_focus, parse_property_value_as_list};
+/// use srdf::{rdf_parser, RDFParser, RDF, RDFFormat, FocusRDF, satisfy, ReaderMode, RDFNodeParse, Rdf, property_value, rdf_list, set_focus};
 /// use srdf::srdf_graph::SRDFGraph;
 ///
 /// rdf_parser!{
@@ -137,7 +144,8 @@ macro_rules! rdf_parser {
  };
 }
 
-/// Auxiliary macro that is invoked from `rdf_parser` which supports different templates
+/// Auxiliary macro that is invoked from `rdf_parser`
+/// Supports different templates
 #[macro_export]
 macro_rules! combine_rdf_parser_impl {
     (
@@ -153,7 +161,7 @@ macro_rules! combine_rdf_parser_impl {
         $(#[$derive])*
         $struct_vis struct $type_name<$($type_params)*>
             where
-             $input_type : $crate::FocusRDF,
+             $input_type : $crate::FocusRDF + 'static,
              $($where_clause)*
         {
             $(pub $arg : $arg_type,)*
@@ -162,7 +170,7 @@ macro_rules! combine_rdf_parser_impl {
 
         impl <$($type_params)*> $crate::RDFNodeParse<$input_type> for $type_name<$($type_params)*>
             where
-                $input_type : $crate::FocusRDF,
+                $input_type : $crate::FocusRDF + 'static,
                 $($where_clause)*
         {
 
@@ -186,7 +194,7 @@ macro_rules! combine_rdf_parser_impl {
                 $($arg : $arg_type),*
             ) -> $type_name<$($type_params)*>
             where
-                $input_type: $crate::FocusRDF,
+                $input_type: $crate::FocusRDF + 'static,
                 $($where_clause)*
         {
             $type_name {

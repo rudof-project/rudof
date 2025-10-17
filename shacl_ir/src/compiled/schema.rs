@@ -38,13 +38,13 @@ impl SchemaIR {
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
-    ) -> Result<SchemaIR, CompiledShaclError> {
+    ) -> Result<SchemaIR, Box<CompiledShaclError>> {
         let mut rdf = SRDFGraph::new();
         rdf.merge_from_reader(read, format, base, reader_mode)
-            .map_err(CompiledShaclError::RdfGraphError)?;
+            .map_err(|e| CompiledShaclError::RdfGraphError { err: Box::new(e) })?;
         let schema = ShaclParser::new(rdf)
             .parse()
-            .map_err(CompiledShaclError::ShaclParserError)?;
+            .map_err(|e| CompiledShaclError::ShaclParserError { err: Box::new(e) })?;
         let schema_ir: SchemaIR = schema.try_into()?;
         Ok(schema_ir)
     }
@@ -54,7 +54,7 @@ impl SchemaIR {
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
-    ) -> Result<SchemaIR, CompiledShaclError> {
+    ) -> Result<SchemaIR, Box<CompiledShaclError>> {
         Self::from_reader(std::io::Cursor::new(&data), format, base, reader_mode)
     }
 
@@ -81,7 +81,7 @@ impl SchemaIR {
         self.shapes.get(sref)
     }
 
-    pub fn compile<RDF: Rdf>(schema: &Schema<RDF>) -> Result<SchemaIR, CompiledShaclError> {
+    pub fn compile<RDF: Rdf>(schema: &Schema<RDF>) -> Result<SchemaIR, Box<CompiledShaclError>> {
         let mut shapes = HashMap::default();
 
         for (rdf_node, shape) in schema.iter() {
@@ -99,7 +99,7 @@ impl SchemaIR {
 }
 
 impl<RDF: Rdf> TryFrom<Schema<RDF>> for SchemaIR {
-    type Error = CompiledShaclError;
+    type Error = Box<CompiledShaclError>;
 
     fn try_from(schema: Schema<RDF>) -> Result<Self, Self::Error> {
         Self::compile(&schema)
@@ -107,7 +107,7 @@ impl<RDF: Rdf> TryFrom<Schema<RDF>> for SchemaIR {
 }
 
 impl<RDF: Rdf> TryFrom<&Schema<RDF>> for SchemaIR {
-    type Error = CompiledShaclError;
+    type Error = Box<CompiledShaclError>;
 
     fn try_from(schema: &Schema<RDF>) -> Result<Self, Self::Error> {
         Self::compile(schema)

@@ -1,6 +1,6 @@
 [package]
 name = "shacl_rdf"
-version = "0.1.90"
+version = "0.1.120"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shacl_rdf"
@@ -19,7 +19,6 @@ repository.workspace = true
 const_format.workspace = true
 iri_s.workspace = true
 itertools.workspace = true
-lazy_static.workspace = true
 oxrdf = { workspace = true, features = ["oxsdatatypes"] }
 prefixmap.workspace = true
 regex.workspace = true

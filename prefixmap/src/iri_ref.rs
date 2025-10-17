@@ -1,35 +1,47 @@
-use std::{fmt::Display, str::FromStr};
-
 use crate::PrefixMap;
-use crate::{Deref, DerefError};
+use crate::{Deref, DerefError, PrefixMapError};
 use iri_s::{IriS, IriSError};
+use serde::de::Visitor;
 use serde::{Deserialize, Serialize};
+use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Hash, Eq, Clone)]
-#[serde(try_from = "&str", into = "String")]
+#[derive(Serialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
+#[serde(into = "String")]
 pub enum IriRef {
     Iri(IriS),
     Prefixed { prefix: String, local: String },
 }
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone)]
 #[error("Cannot obtain IRI from prefixed name IriRef {prefix}:{local}")]
-pub struct Underef {
+pub struct IriRefError {
     prefix: String,
     local: String,
 }
 
 impl IriRef {
-    pub fn get_iri(&self) -> Result<IriS, Underef> {
+    /// Tries to get the IRI, returns an error if it is a prefixed name
+    /// Usually you want to use get_iri_prefixmap instead
+    pub fn get_iri(&self) -> Result<IriS, IriRefError> {
         match self {
             IriRef::Iri(iri) => Ok(iri.clone()),
-            IriRef::Prefixed { prefix, local } => Err(Underef {
+            IriRef::Prefixed { prefix, local } => Err(IriRefError {
                 prefix: prefix.clone(),
                 local: local.clone(),
             }),
         }
     }
+
+    /// Gets the IRI, resolving prefixed names using the provided PrefixMap
+    pub fn get_iri_prefixmap(&self, prefixmap: &PrefixMap) -> Result<IriS, PrefixMapError> {
+        match self {
+            IriRef::Iri(iri) => Ok(iri.clone()),
+            IriRef::Prefixed { prefix, local } => prefixmap.resolve_prefix_local(prefix, local),
+        }
+    }
+
+    /// Creates a prefixed name IriRef from the given prefix and local part
     pub fn prefixed(prefix: &str, local: &str) -> IriRef {
         IriRef::Prefixed {
             prefix: prefix.to_string(),
@@ -37,6 +49,7 @@ impl IriRef {
         }
     }
 
+    /// Creates an IriRef from an IriS
     pub fn iri(iri: IriS) -> IriRef {
         IriRef::Iri(iri)
     }
@@ -62,7 +75,13 @@ impl Deref for IriRef {
                     local: local.clone(),
                 }),
                 Some(prefixmap) => {
-                    let iri = prefixmap.resolve_prefix_local(prefix, local)?;
+                    let iri = prefixmap.resolve_prefix_local(prefix, local).map_err(|e| {
+                        DerefError::DerefPrefixMapError {
+                            alias: prefix.to_string(),
+                            local: local.to_string(),
+                            error: Box::new(e),
+                        }
+                    })?;
                     Ok(IriRef::Iri(iri))
                 }
             },
@@ -120,5 +139,44 @@ impl Display for IriRef {
             IriRef::Prefixed { prefix, local } => write!(f, "{prefix}:{local}")?,
         }
         Ok(())
+    }
+}
+
+struct IriRefVisitor;
+
+impl<'de> Visitor<'de> for IriRefVisitor {
+    type Value = IriRef;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a valid IRI or a prefixed name")
+    }
+
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        match IriRef::from_str(v) {
+            Ok(iri_ref) => Ok(iri_ref),
+            Err(_) => {
+                // Try to parse as prefixed name
+                let parts: Vec<&str> = v.splitn(2, ':').collect();
+                if parts.len() == 2 {
+                    let prefix = parts[0].to_string();
+                    let local = parts[1].to_string();
+                    Ok(IriRef::Prefixed { prefix, local })
+                } else {
+                    Err(E::custom(format!("Invalid IRI or prefixed name: {}", v)))
+                }
+            }
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for IriRef {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_str(IriRefVisitor)
     }
 }

@@ -1,9 +1,8 @@
-use prefixmap::IriRef;
-use shex_ast::{Schema, Shape, ShapeExpr, TripleExpr};
-
 use crate::shex_to_sparql::{
     SelectQuery, ShEx2SparqlConfig, ShEx2SparqlError, TriplePattern, Var, VarBuilder,
 };
+use prefixmap::IriRef;
+use shex_ast::{Schema, Shape, ShapeExpr, TripleExpr};
 
 pub struct ShEx2Sparql {
     config: ShEx2SparqlConfig,
@@ -185,7 +184,7 @@ fn var_from_predicate(predicate: &IriRef, schema: &Schema, var_builder: &mut Var
 #[cfg(test)]
 mod tests {
     use super::*;
-    use shex_compact::ShExParser;
+    use iri_s::iri;
     use spargebra::SparqlParser;
 
     #[test]
@@ -198,7 +197,8 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
   :name xsd:string ;
   :knows @<Person> 
 }";
-        let schema = ShExParser::parse(shex_str, None).unwrap();
+        let schema =
+            shex_ast::compact::ShExParser::parse(shex_str, None, &iri!("http://default/")).unwrap();
         let query_str = "\
 prefix : <http://example.org/>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -211,7 +211,7 @@ Select * where {
         let converted_query = ShEx2Sparql::new(&ShEx2SparqlConfig::default())
             .convert(&schema, None)
             .unwrap();
-        let converted_query_str = format!("{}", converted_query);
+        let converted_query_str = format!("{converted_query}");
         let converted_query_parsed = SparqlParser::new()
             .parse_query(converted_query_str.as_str())
             .unwrap();

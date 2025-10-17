@@ -9,8 +9,9 @@ use oxrdf::{
 };
 use oxrdfio::{JsonLdProfileSet, RdfFormat};
 use prefixmap::PrefixMap;
+use serde::Serialize;
+use serde::ser::SerializeStruct;
 use sparesults::QuerySolution as SparQuerySolution;
-use srdf::BuildRDF;
 use srdf::FocusRDF;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
@@ -24,9 +25,11 @@ use srdf::SRDFGraph;
 use srdf::SRDFSparql;
 use srdf::VarName;
 use srdf::matcher::Matcher;
+use srdf::{BuildRDF, QueryResultFormat};
 use std::fmt::Debug;
 use std::io;
 use std::str::FromStr;
+use tracing::trace;
 
 /// Generic abstraction that represents RDF Data which can be  behind SPARQL endpoints or an in-memory graph or both
 /// The triples in RdfData are taken as the union of the triples of the endpoints and the in-memory graph
@@ -43,6 +46,18 @@ pub struct RdfData {
 
     /// In-memory Store used to access the graph using SPARQL queries
     store: Option<Store>,
+}
+
+impl Serialize for RdfData {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut state = serializer.serialize_struct("RdfData", 2)?;
+        state.serialize_field("endpoints", &self.endpoints)?;
+        state.serialize_field("graph", &self.graph)?;
+        state.end()
+    }
 }
 
 impl Debug for RdfData {
@@ -69,10 +84,18 @@ impl RdfData {
     /// By default, the RDF Data Store is not initialized as it is expensive and is only required for SPARQL queries
     pub fn check_store(&mut self) -> Result<(), RdfDataError> {
         if let Some(graph) = &self.graph {
+            trace!("Checking RDF store, graph exists, length: {}", graph.len());
             if self.store.is_none() {
+                trace!("Initializing RDF store from in-memory graph");
                 let store = Store::new()?;
-                store.bulk_loader().load_quads(graph.quads())?;
-                self.store = Some(store)
+                let mut loader = store.bulk_loader();
+                loader.load_quads(graph.quads())?;
+                loader.commit()?;
+                self.store = Some(store);
+                trace!(
+                    "RDF store initialized with length: {:?}",
+                    self.store.as_ref().map(|s| s.len())
+                );
             }
         }
         Ok(())
@@ -126,7 +149,7 @@ impl RdfData {
         reader_mode: &ReaderMode,
     ) -> Result<(), RdfDataError> {
         match &mut self.graph {
-            Some(ref mut graph) => graph
+            Some(graph) => graph
                 .merge_from_reader(read, format, base, reader_mode)
                 .map_err(|e| RdfDataError::SRDFGraphError { err: e }),
             None => {
@@ -180,12 +203,10 @@ impl RdfData {
         writer: &mut W,
     ) -> Result<(), RdfDataError> {
         if let Some(graph) = &self.graph {
-            graph
-                .serialize(format, writer)
-                .map_err(|e| RdfDataError::Serializing {
-                    format: *format,
-                    error: format!("{e}"),
-                })?
+            BuildRDF::serialize(graph, format, writer).map_err(|e| RdfDataError::Serializing {
+                format: *format,
+                error: format!("{e}"),
+            })?
         }
         for e in self.endpoints.iter() {
             writeln!(writer, "Endpoint {}", e.iri())?
@@ -225,7 +246,26 @@ impl Rdf for RdfData {
     type Err = RdfDataError;
 
     fn prefixmap(&self) -> std::option::Option<PrefixMap> {
-        self.graph.as_ref().map(|g| g.prefixmap())
+        match &self.graph {
+            Some(g) => Some(g.prefixmap()),
+            None => {
+                if self.endpoints.is_empty() {
+                    None
+                } else {
+                    let mut pm = PrefixMap::new();
+                    for e in &self.endpoints {
+                        match pm.merge(e.prefixmap().clone()) {
+                            Ok(_) => {}
+                            Err(e) => {
+                                eprintln!("Warning: cannot merge prefixmap from endpoint: {}", e);
+                                return None;
+                            }
+                        }
+                    }
+                    Some(pm)
+                }
+            }
+        }
     }
 
     fn qualify_iri(&self, node: &Self::IRI) -> String {
@@ -282,16 +322,38 @@ impl Rdf for RdfData {
 }
 
 impl QueryRDF for RdfData {
+    fn query_construct(
+        &self,
+        query_str: &str,
+        format: &QueryResultFormat,
+    ) -> Result<String, RdfDataError>
+    where
+        Self: Sized,
+    {
+        let mut str = String::new();
+        if let Some(_store) = &self.store {
+            tracing::debug!("Querying in-memory store (we ignore it by now");
+        }
+        for endpoint in &self.endpoints {
+            let new_str = endpoint.query_construct(query_str, format)?;
+            str.push_str(&new_str);
+        }
+        Ok(str)
+    }
+
     fn query_select(&self, query_str: &str) -> Result<QuerySolutions<RdfData>, RdfDataError>
     where
         Self: Sized,
     {
         let mut sols: QuerySolutions<RdfData> = QuerySolutions::empty();
         if let Some(store) = &self.store {
+            trace!("Querying in-memory store of length: {:?}", store.len());
+
             let new_sol = SparqlEvaluator::new()
                 .parse_query(query_str)?
                 .on_store(store)
                 .execute()?;
+            trace!("Got results from in-memory store");
             let sol = cnv_query_results(new_sol)?;
             sols.extend(sol)
         }
@@ -318,7 +380,11 @@ fn cnv_query_results(
 ) -> Result<Vec<QuerySolution<RdfData>>, RdfDataError> {
     let mut results = Vec::new();
     if let QueryResults::Solutions(solutions) = query_results {
+        trace!("Converting query solutions");
+        let mut counter = 0;
         for solution in solutions {
+            counter += 1;
+            trace!("Converting solution {counter}");
             let result = cnv_query_solution(solution?);
             results.push(result)
         }
@@ -393,22 +459,6 @@ impl NeighsRDF for RdfData {
             .flatten();
         Ok(graph_triples.chain(endpoints_triples))
     }
-
-    //TODO: implement optimizations for triples_with_subject and similar methods!
-    /*fn triples_with_object<O: srdf::matcher::Matcher<Self::Term>>(
-        &self,
-        object: O,
-    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
-        let graph_triples = self
-            .graph
-            .iter()
-            .flat_map(|g| g.triples_with_object(object.clone()));
-        let endpoints_triples = self
-            .endpoints
-            .iter()
-            .flat_map(|e| e.triples_with_object(object.clone()));
-        Ok(graph_triples.chain(endpoints_triples))
-    }*/
 }
 
 impl FocusRDF for RdfData {
@@ -503,7 +553,7 @@ impl BuildRDF for RdfData {
         writer: &mut W,
     ) -> Result<(), Self::Err> {
         if let Some(graph) = &self.graph {
-            graph.serialize(format, writer)?;
+            BuildRDF::serialize(graph, format, writer)?;
             Ok::<(), Self::Err>(())
         } else {
             Ok(())

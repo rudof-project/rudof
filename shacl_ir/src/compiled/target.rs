@@ -43,17 +43,17 @@ impl CompiledTarget {
 impl Display for CompiledTarget {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CompiledTarget::Node(node) => write!(f, "TargetNode({})", node),
-            CompiledTarget::Class(node) => write!(f, "TargetClass({})", node),
-            CompiledTarget::SubjectsOf(iri) => write!(f, "TargetSubjectsOf({})", iri),
-            CompiledTarget::ObjectsOf(iri) => write!(f, "TargetObjectsOf({})", iri),
-            CompiledTarget::ImplicitClass(node) => write!(f, "TargetImplicitClass({})", node),
-            CompiledTarget::WrongTargetNode(node) => write!(f, "WrongTargetNode({})", node),
-            CompiledTarget::WrongTargetClass(node) => write!(f, "WrongTargetClass({})", node),
-            CompiledTarget::WrongSubjectsOf(node) => write!(f, "WrongSubjectsOf({})", node),
-            CompiledTarget::WrongObjectsOf(node) => write!(f, "WrongObjectsOf({})", node),
+            CompiledTarget::Node(node) => write!(f, "TargetNode({node})"),
+            CompiledTarget::Class(node) => write!(f, "TargetClass({node})"),
+            CompiledTarget::SubjectsOf(iri) => write!(f, "TargetSubjectsOf({iri})"),
+            CompiledTarget::ObjectsOf(iri) => write!(f, "TargetObjectsOf({iri})"),
+            CompiledTarget::ImplicitClass(node) => write!(f, "TargetImplicitClass({node})"),
+            CompiledTarget::WrongTargetNode(node) => write!(f, "WrongTargetNode({node})"),
+            CompiledTarget::WrongTargetClass(node) => write!(f, "WrongTargetClass({node})"),
+            CompiledTarget::WrongSubjectsOf(node) => write!(f, "WrongSubjectsOf({node})"),
+            CompiledTarget::WrongObjectsOf(node) => write!(f, "WrongObjectsOf({node})"),
             CompiledTarget::WrongImplicitClass(node) => {
-                write!(f, "WrongImplicitClass({})", node)
+                write!(f, "WrongImplicitClass({node})")
             }
         }
     }

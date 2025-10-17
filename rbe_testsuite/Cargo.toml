@@ -1,6 +1,6 @@
 [package]
 name = "rbe_testsuite"
-version = "0.1.90"
+version = "0.1.120"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/rbe_testsuite"
@@ -8,12 +8,12 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+anyhow.workspace = true
 rbe.workspace = true
 serde.workspace = true
-anyhow.workspace = true
 tracing.workspace = true 
 
 [dev-dependencies]
 indoc = "2"
-serde_json.workspace = true
 pretty_assertions = "1.4.1"
+serde_json.workspace = true

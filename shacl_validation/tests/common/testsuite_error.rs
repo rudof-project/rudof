@@ -8,6 +8,9 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum TestSuiteError {
+    #[error("Error compiling shapes: {error}")]
+    TestShapesCompilation { error: String },
+
     #[error(transparent)]
     ReportParsing(#[from] ReportError),
 

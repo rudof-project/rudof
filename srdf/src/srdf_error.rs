@@ -2,11 +2,34 @@ use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum RDFError {
+    #[error("Error with language tag '{language}' in literal '{literal}': {error}")]
+    LanguageTagError {
+        literal: String,
+        language: String,
+        error: String,
+    },
+
+    #[error("Error obtaining IRI from IriRef: {iri_ref}")]
+    IriRefError { iri_ref: String },
+
+    #[error("RDF error parsing iri {iri}: {error}")]
+    ParsingIri { iri: String, error: String },
+
     #[error("Conversion error {msg}")]
     ConversionError { msg: String },
 
     #[error("Converting Object {object} to RDF term")]
     ObjectAsTerm { object: String },
+
+    #[error("Expected IRI or BlankNode, found literal: {literal}")]
+    ExpectedIriOrBlankNodeFoundLiteral { literal: String },
+
+    #[error("Expected IRI or BlankNode, found triple term ({subject},{predicate},{object})")]
+    ExpectedIriOrBlankNodeFoundTriple {
+        subject: String,
+        predicate: String,
+        object: String,
+    },
 
     #[error("Converting term {term} to IRI")]
     TermAsIri { term: String },

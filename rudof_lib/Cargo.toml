@@ -1,6 +1,6 @@
 [package]
 name = "rudof_lib"
-version = "0.1.90"
+version = "0.1.120"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/rudof_lib"
@@ -9,27 +9,30 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
-#[features]
-#rdf-star = ["oxrdf/rdf-star"]
-
 [dependencies]
-srdf.workspace = true
+dctap.workspace = true
+either.workspace = true
 iri_s.workspace = true
+mie.workspace = true
+oxrdf = { workspace = true, features = ["oxsdatatypes"] }
+prefixmap.workspace = true
+rdf_config.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
 shacl_ast.workspace = true
-shacl_rdf.workspace = true
 shacl_ir.workspace = true
+shacl_rdf.workspace = true
 shacl_validation.workspace = true
+shapes_comparator.workspace = true
+shapes_converter.workspace = true
 shex_ast.workspace = true
 shex_validation.workspace = true
-shex_compact.workspace = true
+spargebra.workspace = true
 sparql_service.workspace = true
-shapemap.workspace = true
-prefixmap.workspace = true
-shapes_converter.workspace = true
-dctap.workspace = true
-serde.workspace = true
+srdf.workspace = true
 thiserror = "2.0"
-serde_json.workspace = true
 toml = "0.8"
-oxrdf = { workspace = true, features = ["oxsdatatypes"] }
+tracing.workspace = true
+url.workspace = true
 anyhow = { workspace = true }

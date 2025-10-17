@@ -224,10 +224,22 @@ impl<RDF: Rdf> PropertyShape<RDF> {
             let literal: B::Literal = match order {
                 NumericLiteral::Decimal(_) => todo!(),
                 NumericLiteral::Double(float) => float.into(),
+                NumericLiteral::Float(float) => float.into(),
                 NumericLiteral::Integer(int) => {
                     let i: i128 = int.try_into().unwrap();
                     i.into()
                 }
+                NumericLiteral::Long(_) => todo!(),
+                NumericLiteral::Byte(_) => todo!(),
+                NumericLiteral::Short(_) => todo!(),
+                NumericLiteral::NonNegativeInteger(_) => todo!(),
+                NumericLiteral::UnsignedLong(_) => todo!(),
+                NumericLiteral::UnsignedInt(_) => todo!(),
+                NumericLiteral::UnsignedShort(_) => todo!(),
+                NumericLiteral::UnsignedByte(_) => todo!(),
+                NumericLiteral::PositiveInteger(_) => todo!(),
+                NumericLiteral::NegativeInteger(_) => todo!(),
+                NumericLiteral::NonPositiveInteger(_) => todo!(),
             };
             rdf.add_triple(id.clone(), sh_order().clone(), literal)?;
         }
@@ -276,7 +288,7 @@ impl<RDF: Rdf> PropertyShape<RDF> {
 impl<RDF: Rdf> Display for PropertyShape<RDF> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Some(severity) = self.severity() {
-            write!(f, "{} ", severity)?;
+            write!(f, "{severity} ")?;
         }
         writeln!(f, "{{")?;
         writeln!(f, "       PropertyShape")?;

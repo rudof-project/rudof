@@ -11,10 +11,14 @@ use shex_testsuite::{
     manifest_validation::ManifestValidation,
 };
 use std::fmt::Debug;
+use std::io;
 use std::{
     fs,
     path::{Path, PathBuf},
 };
+use tracing_subscriber::prelude::*;
+use tracing_subscriber::{filter::EnvFilter, fmt};
+
 use tracing::debug;
 
 #[derive(Parser, Debug)]
@@ -96,6 +100,20 @@ fn parse_manifest(manifest_str: String, mode: ManifestMode) -> Result<Box<dyn Ma
 }
 
 fn main() -> Result<()> {
+    let fmt_layer = fmt::layer()
+        .with_file(true)
+        .with_target(false)
+        .with_line_number(true)
+        .with_writer(io::stderr)
+        .without_time();
+    // Attempts to get the value of RUST_LOG which can be info, debug, trace, If unset, it uses "info"
+    let filter_layer = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("info"))
+        .unwrap();
+    tracing_subscriber::registry()
+        .with(filter_layer)
+        .with(fmt_layer)
+        .init();
     let cli = Cli::parse();
 
     let manifest_path = Path::new(&cli.manifest_filename);
@@ -163,7 +181,13 @@ fn print_failed(result: &ManifestRunResult) {
 
 fn print_failed_simple(result: &ManifestRunResult) {
     println!("--- Failed ---");
-    for (name, _) in &result.failed {
+    let mut sorted_names = result
+        .failed
+        .iter()
+        .map(|(name, _)| name)
+        .collect::<Vec<&String>>();
+    sorted_names.sort();
+    for name in &sorted_names {
         println!("{name}");
     }
 }

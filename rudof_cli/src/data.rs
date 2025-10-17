@@ -4,22 +4,24 @@ use std::str::FromStr;
 
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use rudof_lib::{Rudof, RudofConfig};
+use rudof_lib::{InputSpec, Rudof, RudofConfig};
 use srdf::rdf_visualizer::visual_rdf_graph::VisualRDFGraph;
-use srdf::{ImageFormat, RDFFormat, UmlGenerationMode};
+use srdf::{ImageFormat, RDFFormat, ReaderMode, UmlGenerationMode};
 
 use crate::writer::get_writer;
-use crate::{RDFReaderMode, input_spec::InputSpec};
-use crate::{data_format::DataFormat, mime_type::MimeType, result_data_format::ResultDataFormat};
+use crate::{data_format::DataFormat, result_data_format::ResultDataFormat};
 use anyhow::{Result, bail};
+use iri_s::mime_type::MimeType;
 use srdf::UmlConverter;
 
+#[allow(clippy::too_many_arguments)]
 pub fn get_data_rudof(
     rudof: &mut Rudof,
     data: &Vec<InputSpec>,
     data_format: &DataFormat,
+    base: &Option<IriS>,
     endpoint: &Option<String>,
-    reader_mode: &RDFReaderMode,
+    reader_mode: &ReaderMode,
     config: &RudofConfig,
     allow_no_data: bool,
 ) -> Result<()> {
@@ -34,14 +36,10 @@ pub fn get_data_rudof(
         }
         (false, None) => {
             let rdf_format = data_format2rdf_format(data_format);
-            let reader_mode = match &reader_mode {
-                RDFReaderMode::Lax => srdf::ReaderMode::Lax,
-                RDFReaderMode::Strict => srdf::ReaderMode::Strict,
-            };
             for d in data {
-                let data_reader = d.open_read(Some(&data_format.mime_type()), "RDF data")?;
-                let base = get_base(d, config)?;
-                rudof.read_data(data_reader, &rdf_format, base.as_deref(), &reader_mode)?;
+                let data_reader = d.open_read(Some(data_format.mime_type()), "RDF data")?;
+                let base = get_base(d, config, base)?;
+                rudof.read_data(data_reader, &rdf_format, base.as_deref(), reader_mode)?;
             }
             Ok(())
         }
@@ -77,30 +75,39 @@ pub fn data_format2rdf_format(data_format: &DataFormat) -> RDFFormat {
     }
 }
 
-pub fn get_base(input: &InputSpec, config: &RudofConfig) -> Result<Option<String>> {
-    let base = match config.rdf_data_base() {
-        Some(base) => Some(base.to_string()),
-        None => {
-            if config.automatic_base() {
-                let base = input.guess_base()?;
-                Some(base)
-            } else {
-                None
+pub fn get_base(
+    input: &InputSpec,
+    config: &RudofConfig,
+    base: &Option<IriS>,
+) -> Result<Option<String>> {
+    if let Some(base) = base {
+        Ok(Some(base.to_string()))
+    } else {
+        let base = match config.rdf_data_base() {
+            Some(base) => Some(base.to_string()),
+            None => {
+                if config.automatic_base() {
+                    let base = input.guess_base()?;
+                    Some(base)
+                } else {
+                    None
+                }
             }
-        }
-    };
-    Ok(base)
+        };
+        Ok(base)
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
 pub fn run_data(
     data: &Vec<InputSpec>,
     data_format: &DataFormat,
+    base: &Option<IriS>,
     debug: u8,
     output: &Option<PathBuf>,
     result_format: &ResultDataFormat,
     force_overwrite: bool,
-    reader_mode: &RDFReaderMode,
+    reader_mode: &ReaderMode,
     config: &RudofConfig,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
@@ -112,6 +119,7 @@ pub fn run_data(
         &mut rudof,
         data,
         data_format,
+        base,
         &None,
         reader_mode,
         config,

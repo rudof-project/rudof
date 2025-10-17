@@ -1,11 +1,19 @@
 use super::result::ValidationResult;
 use super::validation_report_error::ReportError;
 use colored::*;
+use iri_s::IriS;
 use prefixmap::PrefixMap;
 use shacl_ast::shacl_vocab::{sh, sh_conforms, sh_result, sh_validation_report};
 use shacl_ir::severity::CompiledSeverity;
-use srdf::{BuildRDF, FocusRDF, Object, Rdf, SHACLPath};
-use std::fmt::{Debug, Display};
+use srdf::{BuildRDF, FocusRDF, IriOrBlankNode, Object, Rdf, SHACLPath};
+use std::{
+    fmt::{Debug, Display},
+    io::{Error, Write},
+};
+use tabled::{
+    builder::Builder,
+    settings::{Modify, Style, Width, object::Segment},
+};
 
 #[derive(Debug, Clone)]
 pub struct ValidationReport {
@@ -91,6 +99,20 @@ impl ValidationReport {
         self.results.is_empty()
     }
 
+    pub fn count_violations(&self) -> usize {
+        self.results
+            .iter()
+            .filter(|r| r.severity() == &CompiledSeverity::Violation)
+            .count()
+    }
+
+    pub fn count_warnings(&self) -> usize {
+        self.results
+            .iter()
+            .filter(|r| r.severity() == &CompiledSeverity::Warning)
+            .count()
+    }
+
     pub fn to_rdf<RDF>(&self, rdf_writer: &mut RDF) -> Result<(), ReportError>
     where
         RDF: BuildRDF + Sized,
@@ -156,6 +178,97 @@ impl ValidationReport {
             }
         }
         Ok(())
+    }
+
+    pub fn show_as_table(
+        &self,
+        mut writer: Box<dyn Write + 'static>,
+        _sort_mode: SortModeReport,
+        with_details: bool,
+        terminal_width: usize,
+    ) -> Result<(), Error> {
+        let mut builder = Builder::default();
+        if with_details {
+            builder.push_record([
+                "Severity",
+                "Node",
+                "Component",
+                "Path",
+                "Value",
+                "Source shape",
+                "Details",
+            ]);
+        } else {
+            builder.push_record([
+                "Severity",
+                "node",
+                "Component",
+                "Path",
+                "value",
+                "Source shape",
+            ]);
+        }
+        if self.results.is_empty() {
+            let str = "No Errors found";
+            if self.display_with_colors {
+                if let Some(ok_color) = self.ok_color {
+                    write!(writer, "{}", str.color(ok_color))?;
+                } else {
+                    write!(writer, "{str}")?;
+                }
+            } else {
+                write!(writer, "{str}")?;
+            }
+            Ok(())
+        } else {
+            let shacl_prefixmap = if self.display_with_colors {
+                PrefixMap::basic()
+            } else {
+                PrefixMap::basic()
+                    .with_hyperlink(true)
+                    .without_default_colors()
+            };
+            for result in self.results.iter() {
+                let severity_str = show_severity(result.severity(), &shacl_prefixmap);
+                let severity = if self.display_with_colors {
+                    let color = calculate_color(result.severity(), self);
+                    severity_str.color(color)
+                } else {
+                    ColoredString::from(severity_str)
+                };
+                let node = show_object(result.focus_node(), &self.nodes_prefixmap);
+                let component = show_object(result.component(), &shacl_prefixmap);
+                let path = show_path_opt(result.path(), &self.shapes_prefixmap);
+                let source = show_object_opt(result.source(), &self.shapes_prefixmap);
+                let value = show_object_opt(result.value(), &self.nodes_prefixmap);
+                let details = result.message().unwrap_or("").to_string();
+                if with_details {
+                    builder.push_record([
+                        &severity.to_string(),
+                        &node,
+                        &component,
+                        &path,
+                        &value,
+                        &source,
+                        &details,
+                    ]);
+                } else {
+                    builder.push_record([
+                        &severity.to_string(),
+                        &node,
+                        &component,
+                        &path,
+                        &value,
+                        &source,
+                    ]);
+                }
+            }
+            let mut table = builder.build();
+            table.with(Style::modern_rounded());
+            table.with(Modify::new(Segment::all()).with(Width::wrap(terminal_width)));
+            writeln!(writer, "{table}")?;
+            Ok(())
+        }
     }
 }
 
@@ -232,9 +345,9 @@ impl Display for ValidationReport {
                     show_object(result.focus_node(), &self.nodes_prefixmap),
                     show_object(result.component(), &shacl_prefixmap),
                     result.message().unwrap_or(""),
-                    show_path_opt("path", result.path(), &self.shapes_prefixmap),
-                    show_object_opt("source shape", result.source(), &self.shapes_prefixmap),
-                    show_object_opt("value", result.value(), &self.nodes_prefixmap)
+                    show_path_opt(result.path(), &self.shapes_prefixmap),
+                    show_object_opt(result.source(), &self.shapes_prefixmap),
+                    show_object_opt(result.value(), &self.nodes_prefixmap)
                 );
                 writeln!(f, "{msg}")?;
             }
@@ -256,27 +369,45 @@ fn show_object(object: &Object, shacl_prefixmap: &PrefixMap) -> String {
     }
 }
 
-fn show_object_opt(msg: &str, object: Option<&Object>, shacl_prefixmap: &PrefixMap) -> String {
-    match object {
-        None => String::new(),
-        Some(Object::Iri(iri_s)) => {
-            let iri_str = shacl_prefixmap.qualify(iri_s);
-            format!(" {msg}: {iri_str},")
-        }
-        Some(Object::BlankNode(node)) => format!(" {msg}: _:{node},"),
-        Some(Object::Literal(literal)) => format!(" {msg}: {literal},"),
-        Some(Object::Triple { .. }) => todo!(),
+fn show_iri(iri: &IriS, prefixmap: &PrefixMap) -> String {
+    prefixmap.qualify(iri)
+}
+
+fn show_subject(subject: &IriOrBlankNode, prefixmap: &PrefixMap) -> String {
+    match subject {
+        IriOrBlankNode::Iri(iri_s) => prefixmap.qualify(iri_s),
+        IriOrBlankNode::BlankNode(node) => format!("_:{node}"),
     }
 }
 
-fn show_path_opt(msg: &str, object: Option<&SHACLPath>, shacl_prefixmap: &PrefixMap) -> String {
+fn show_object_opt(object: Option<&Object>, shacl_prefixmap: &PrefixMap) -> String {
+    match object {
+        None => String::new(),
+        Some(Object::Iri(iri_s)) => shacl_prefixmap.qualify(iri_s),
+        Some(Object::BlankNode(node)) => format!("_:{node}"),
+        Some(Object::Literal(literal)) => format!("{literal}"),
+        Some(Object::Triple {
+            subject,
+            predicate,
+            object,
+        }) => format!(
+            "<<{} {} {}>>",
+            show_subject(subject, shacl_prefixmap),
+            show_iri(predicate, shacl_prefixmap),
+            show_object(object, shacl_prefixmap)
+        ),
+    }
+}
+
+fn show_path_opt(object: Option<&SHACLPath>, shacl_prefixmap: &PrefixMap) -> String {
     match object {
         None => String::new(),
         Some(SHACLPath::Predicate { pred }) => {
             let path = shacl_prefixmap.qualify(pred);
-            format!(" {msg}: {path},")
+            format!("{path},")
         }
-        Some(path) => format!(" {msg}: _:{path:?},"),
+        // TODO: handle other SHACLPath cases
+        Some(path) => format!("{path},"),
     }
 }
 
@@ -289,4 +420,17 @@ fn calculate_color(severity: &CompiledSeverity, report: &ValidationReport) -> Co
         CompiledSeverity::Trace => report.trace_color.unwrap_or(Color::Cyan),
         CompiledSeverity::Generic(_) => Color::White,
     }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
+pub enum SortModeReport {
+    #[default]
+    Node,
+    Severity,
+    Shape,
+    Component,
+    Source,
+    Path,
+    Value,
+    Details,
 }
