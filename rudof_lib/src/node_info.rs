@@ -4,8 +4,8 @@ use prefixmap::IriRef;
 use shex_ast::ObjectValue;
 use srdf::NeighsRDF;
 use std::collections::HashMap;
-use shapemap::{NodeSelector, ShapeSelector};
 
+use crate::shapemap::{NodeSelector, ShapeSelector};
 use crate::ShapeMapParser;
 
 // Core data structure representing node information

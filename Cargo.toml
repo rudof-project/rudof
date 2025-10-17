@@ -12,11 +12,7 @@ members = [
     "rdf_config",
     "rudof_cli",
     "rudof_lib",
-    "rudof_cli",
     "rudof_mcp",
-    "shex_testsuite",
-    "shex_validation",
-    "shapemap",
     "shacl_ast",
     "shacl_ir",
     "shacl_rdf",
@@ -50,27 +46,6 @@ authors = [
 ]
 
 [workspace.dependencies]
-iri_s = { version = "0.1.82", path = "./iri_s" }
-dctap = { version = "0.1.86", path = "./dctap" }
-rbe = { version = "0.1.86", path = "./rbe" }
-rbe_testsuite = { version = "0.1.62", path = "./rbe_testsuite" }
-prefixmap = { version = "0.1.82", path = "./prefixmap" }
-srdf = { version = "0.1.86", path = "./srdf" }
-shex_ast = { version = "0.1.86", path = "./shex_ast" }
-shapemap = { version = "0.1.86", path = "./shapemap" }
-shex_compact = { version = "0.1.82", path = "./shex_compact" }
-shacl_ast = { version = "0.1.82", path = "./shacl_ast" }
-shacl_rdf = { version = "0.1.82", path = "./shacl_rdf" }
-shacl_ir = { version = "0.1.82", path = "./shacl_ir" }
-sparql_service = { version = "0.1.84", path = "./sparql_service" }
-shacl_validation = { version = "0.1.86", path = "./shacl_validation" }
-shex_validation = { version = "0.1.86", path = "./shex_validation" }
-shapes_converter = { version = "0.1.86", path = "./shapes_converter" }
-rudof_lib = { version = "0.1.86", path = "./rudof_lib" }
-rudof_cli = { version = "0.1.86", path = "./rudof_cli" }
-shex_testsuite = { version = "0.1.62", path = "./shex_testsuite" }
-pyrudof = { version = "0.1.86", path = "./python" }
-rudof_mcp = { version = "0.0.1", path = "./rudof_mcp" }
 
 # [dependencies]
 anyhow = "1.0"
@@ -151,6 +126,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-test = "0.2.5"
 url = "2.2.2"
 uuid = { version = "1.0", features = ["v4"] }
+rudof_mcp = { version = "0.0.1", path = "./rudof_mcp" }
 
 
 

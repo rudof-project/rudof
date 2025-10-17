@@ -11,7 +11,6 @@ pub mod node_info;
 
 pub use input_spec::*;
 pub use iri_s::*;
-pub use shex_compact::ShapeMapParser;
 pub use oxrdf;
 pub use rudof::*;
 pub use rudof_config::*;
@@ -19,5 +18,5 @@ pub use rudof_error::*;
 pub use shacl_ir;
 pub use shacl_validation;
 pub use shapes_graph_source::*;
-pub use shex_ast::ShExFormat;
+pub use shex_ast::*;
 pub use srdf;

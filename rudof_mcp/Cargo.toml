@@ -21,4 +21,3 @@ tracing.workspace = true
 tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
 prefixmap = { workspace = true }
 shex_ast = { workspace = true }
-shapemap = { workspace = true }
