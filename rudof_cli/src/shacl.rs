@@ -18,8 +18,8 @@ use srdf::RDFFormat;
 use srdf::ReaderMode;
 use srdf::SRDFGraph;
 use tracing::Level;
-use tracing::debug;
 use tracing::enabled;
+use tracing::trace;
 
 use crate::CliShaclFormat;
 use crate::ResultShaclValidationFormat;
@@ -77,8 +77,8 @@ pub fn run_shacl(
     rudof.serialize_shacl(&shacl_format, &mut writer)?;
     if enabled!(Level::DEBUG) {
         match rudof.get_shacl_ir() {
-            Some(ir) => debug!("SHACL IR: {}", ir),
-            None => debug!("No SHACL IR available"),
+            Some(ir) => trace!("SHACL IR: {}", ir),
+            None => trace!("No SHACL IR available"),
         }
     }
     Ok(())

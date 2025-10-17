@@ -18,7 +18,7 @@ use srdf::QueryRDF;
 use srdf::SHACLPath;
 use std::collections::HashSet;
 use std::fmt::Debug;
-use tracing::debug;
+use tracing::trace;
 
 impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
     fn validate(
@@ -46,7 +46,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                         .validate(store, &engine, Some(&focus_nodes), Some(self.shape()));
                 let mut is_valid = match inner_results {
                     Err(e) => {
-                        debug!(
+                        trace!(
                             "Error validating node {node} with shape {}: {e}",
                             self.shape().id()
                         );
@@ -54,7 +54,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                     }
                     Ok(results) => {
                         if !results.is_empty() {
-                            debug!(
+                            trace!(
                                 "Node doesn't conform to shape {}, results: {}",
                                 self.shape().id(),
                                 results
@@ -65,7 +65,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                             );
                             false
                         } else {
-                            debug!(
+                            trace!(
                                 "Node {node} initially conforms to shape {}",
                                 self.shape().id()
                             );
@@ -75,9 +75,9 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                 };
                 if !self.siblings().is_empty() && is_valid {
                     // If there are siblings, check that none of them validate
-                    debug!("Checking siblings for node {node}: {:?}", self.siblings());
+                    trace!("Checking siblings for node {node}: {:?}", self.siblings());
                     for sibling in self.siblings().iter() {
-                        debug!("Checking {node} with sibling shape: {}", sibling.id());
+                        trace!("Checking {node} with sibling shape: {}", sibling.id());
                         let sibling_results = self.shape().validate(
                             store,
                             &engine,
@@ -86,7 +86,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                         );
                         let sibling_is_valid =
                             sibling_results.is_ok() && sibling_results.unwrap().is_empty();
-                        debug!(
+                        trace!(
                             "Result of node {node} with sibling shape {}: {sibling_is_valid}",
                             sibling.id()
                         );

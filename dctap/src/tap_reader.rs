@@ -6,7 +6,7 @@ use crate::{
     ValueConstraintType,
 };
 use csv::{Position, Reader as CsvReader, StringRecord};
-use tracing::debug;
+use tracing::trace;
 // use indexmap::IndexSet;
 use std::io::{self};
 
@@ -194,7 +194,7 @@ impl<R: io::Read> TapReader<R> {
                         // TODO!, there is a property label and an empty property id
                         // Generate new property based on property label?
                         // If we don't do nothing here, it generates from empty_property_placeholder
-                        debug!(
+                        trace!(
                             "Empty property id and empty property label at line {}",
                             pos.line()
                         );
@@ -202,7 +202,7 @@ impl<R: io::Read> TapReader<R> {
                             .add_warning(TapReaderWarning::EmptyProperty { line: pos.line() });
                         None
                     } else {
-                        debug!(
+                        trace!(
                             "Empty property id with property label {str_label} at line {}",
                             pos.line()
                         );
@@ -372,7 +372,7 @@ impl<R: io::Read> TapReader<R> {
                     statement.set_value_constraint(&ValueConstraint::pattern(str.as_str()));
                 }
                 _ => {
-                    debug!(
+                    trace!(
                         "Not implemented handling of value constraint type: {value_constraint_type:?}, It is just ignored"
                     )
                 }
@@ -400,7 +400,7 @@ impl<R: io::Read> TapReader<R> {
                     "MAXINCLUSIVE" => Ok(ValueConstraintType::MinInclusive),
                     "MAXEXCLUSIVE" => Ok(ValueConstraintType::MaxExclusive),
                     _ => {
-                        debug!("UnexpectedValueConstraintType: {str}");
+                        trace!("UnexpectedValueConstraintType: {str}");
                         Ok(ValueConstraintType::Unknown {
                             value: str.clone(),
                             line: pos.line(),

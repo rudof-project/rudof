@@ -9,7 +9,7 @@ use shacl_ir::compiled::property_shape::PropertyShapeIR;
 use shacl_ir::compiled::shape::ShapeIR;
 use srdf::{NeighsRDF, Object, Rdf, SHACLPath, Triple};
 use std::{collections::HashSet, fmt::Debug};
-use tracing::debug;
+use tracing::trace;
 
 /// Validate RDF data using SHACL
 pub trait Validate<S: Rdf> {
@@ -30,7 +30,7 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
         targets: Option<&FocusNodes<S>>,
         source_shape: Option<&ShapeIR>,
     ) -> Result<Vec<ValidationResult>, ValidateError> {
-        debug!("Shape.validate with shape {}", self.id());
+        trace!("Shape.validate with shape {}", self.id());
 
         // Skip validation if it is deactivated
         if self.deactivated() {
@@ -42,12 +42,12 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
             Some(targets) => targets.to_owned(),
             None => self.focus_nodes(store, runner),
         };
-        debug!("Focus nodes for shape {}: {focus_nodes}", self.id());
+        trace!("Focus nodes for shape {}: {focus_nodes}", self.id());
 
         // ValueNodes = set of nodes that are going to be used during validation.
         // This set of nodes is obtained from the set of focus nodes
         let value_nodes = self.value_nodes(store, &focus_nodes, runner)?;
-        debug!("Value nodes for shape {}: {value_nodes}", self.id());
+        trace!("Value nodes for shape {}: {value_nodes}", self.id());
 
         // 3. Check each of the components
         let component_validation_results = self.components().iter().flat_map(move |component| {
@@ -186,7 +186,7 @@ impl<S: NeighsRDF> ValueNodesOps<S> for PropertyShapeIR {
             match runner.path(store, self, focus_node) {
                 Ok(ts) => Some((focus_node.clone(), ts)),
                 Err(e) => {
-                    debug!(
+                    trace!(
                         "Error calculating nodes for focus node {} with path {}: {}",
                         focus_node,
                         self.path(),

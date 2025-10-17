@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use tracing::trace;
+
 use crate::iri::Iri;
 use crate::rdf_visualizer::REIFIES;
 use crate::{
@@ -66,7 +68,7 @@ impl VisualRDFNode {
         show_if_predicate: bool,
         _graph: &VisualRDFGraph,
     ) -> Result<String, RdfVisualizerError> {
-        println!("Converting node {self} with node id {node_id} to plantuml");
+        trace!("Converting node {self} with node id {node_id} to plantuml");
         match self {
             VisualRDFNode::Iri { label, url } => Ok(format!(
                 "rectangle \"[[{url} {label}]]\" <<uri>> as {node_id}"

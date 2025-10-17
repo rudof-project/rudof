@@ -15,7 +15,7 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
 };
-use tracing::debug;
+use tracing::trace;
 
 #[allow(clippy::too_many_arguments)]
 pub fn run_convert(
@@ -255,7 +255,7 @@ fn run_shex2html<P: AsRef<Path>>(
     config: &RudofConfig,
     reader_mode: &ReaderMode,
 ) -> Result<()> {
-    debug!("Starting shex2html");
+    trace!("Starting shex2html");
     let schema_format = format.to_shex_format()?;
     let mut rudof = Rudof::new(config);
 
@@ -266,11 +266,11 @@ fn run_shex2html<P: AsRef<Path>>(
             .clone()
             .with_target_folder(output_folder.as_ref());
         let landing_page = config.landing_page().to_string_lossy().to_string();
-        debug!("Landing page will be generated at {landing_page}\nStarted converter...");
+        trace!("Landing page will be generated at {landing_page}\nStarted converter...");
         let mut converter = ShEx2Html::new(config);
         converter.convert(schema)?;
         converter.export_schema()?;
-        debug!("HTML pages generated at {}", landing_page);
+        trace!("HTML pages generated at {}", landing_page);
     } else {
         bail!("No ShEx schema")
     }
@@ -284,14 +284,14 @@ fn run_tap2html<P: AsRef<Path>>(
     output_folder: P,
     config: &RudofConfig,
 ) -> Result<()> {
-    debug!("Starting tap2html");
+    trace!("Starting tap2html");
     let mut rudof = Rudof::new(config);
     let dctap_format = format.to_dctap_format()?;
     parse_dctap(&mut rudof, input, &dctap_format)?;
     if let Some(dctap) = rudof.get_dctap() {
         let converter_tap = Tap2ShEx::new(&config.tap2shex_config());
         let shex = converter_tap.convert(dctap)?;
-        debug!(
+        trace!(
             "Converted ShEx: {}",
             ShExFormatter::default().format_schema(&shex)
         );
@@ -303,12 +303,12 @@ fn run_tap2html<P: AsRef<Path>>(
             .landing_page()
             .to_string_lossy()
             .to_string();
-        debug!("Landing page {landing_page}\nConverter...");
+        trace!("Landing page {landing_page}\nConverter...");
         let mut converter = ShEx2Html::new(shex2html_config);
         converter.convert(&shex)?;
         // debug!("Converted HTMLSchema: {:?}", converter.current_html());
         converter.export_schema()?;
-        debug!("HTML pages generated at {}", landing_page);
+        trace!("HTML pages generated at {}", landing_page);
         Ok(())
     } else {
         bail!("Internal error: no DCTAP")

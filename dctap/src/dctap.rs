@@ -8,7 +8,7 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, io, path::Path};
-use tracing::{debug, info};
+use tracing::{info, trace};
 
 /* Removed as it seems we never use it
 #[derive(Debug, Serialize, Deserialize)]
@@ -57,7 +57,7 @@ impl DCTap {
 
     pub fn from_reader<R: io::Read>(reader: R, config: &TapConfig) -> Result<DCTap, TapError> {
         let mut dctap = DCTap::new();
-        debug!("DCTap parsed: {:?}", dctap);
+        trace!("DCTap parsed: {:?}", dctap);
         let mut tap_reader = TapReaderBuilder::from_reader(reader, config)?;
         for maybe_shape in tap_reader.shapes() {
             let shape = maybe_shape?;
@@ -72,7 +72,7 @@ impl DCTap {
         config: &TapConfig,
     ) -> Result<DCTap, TapError> {
         let mut dctap = DCTap::new();
-        debug!("DCTap parsed: {:?}", dctap);
+        trace!("DCTap parsed: {:?}", dctap);
         let mut tap_reader: TapReader<io::Empty> =
             TapReaderBuilder::from_excel(path, sheet_name, config)?;
         for maybe_shape in tap_reader.shapes() {

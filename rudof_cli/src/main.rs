@@ -58,7 +58,7 @@ fn main() -> Result<()> {
         .with(fmt_layer)
         .init();
 
-    tracing::debug!("rudof running...");
+    tracing::trace!("rudof running...");
 
     // Expand wildcards and @argfiles:
     let args = clientele::args_os()?;

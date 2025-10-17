@@ -25,7 +25,7 @@ use srdf::{
 };
 use srdf::{set_focus, shacl_path_parse};
 use std::collections::{HashMap, HashSet};
-use tracing::debug;
+use tracing::trace;
 
 /// Result type for the ShaclParser
 type Result<A> = std::result::Result<A, ShaclParserError>;
@@ -582,26 +582,26 @@ where
                 if let Some(disjoint) = maybe_disjoint {
                     match disjoint {
                         Object::Literal(SLiteral::BooleanLiteral(true)) => {
-                            debug!(
+                            trace!(
                                 "QualifiedValueShapeSiblings: Focus node {focus} has disjoint=true"
                             );
                             let qvs = rdf
                                 .objects_for(focus, &into_iri::<RDF>(sh_qualified_value_shape()))?;
                             if qvs.is_empty() {
-                                debug!(
+                                trace!(
                                     "Focus node {focus} has disjoint=true but no qualifiedValueShape"
                                 );
                             } else {
-                                debug!("QVS of focus node {focus}: {qvs:?}");
+                                trace!("QVS of focus node {focus}: {qvs:?}");
                                 let ps =
                                     rdf.subjects_for(&into_iri::<RDF>(sh_property()), focus)?;
-                                debug!("Property parents of focus node {focus}: {ps:?}");
+                                trace!("Property parents of focus node {focus}: {ps:?}");
                                 for property_parent in ps {
                                     let candidate_siblings = rdf.objects_for_shacl_path(
                                         &property_parent,
                                         &self.property_qualified_value_shape_path,
                                     )?;
-                                    debug!("Candidate siblings: {candidate_siblings:?}");
+                                    trace!("Candidate siblings: {candidate_siblings:?}");
                                     for sibling in candidate_siblings {
                                         if !qvs.contains(&sibling) {
                                             let sibling_node = RDF::term_as_object(&sibling)?;
@@ -613,7 +613,7 @@ where
                         }
                         Object::Literal(SLiteral::BooleanLiteral(false)) => {}
                         _ => {
-                            debug!(
+                            trace!(
                                 "Value of disjoint: {disjoint} is not boolean (Should we raise an error here?)"
                             );
                         }

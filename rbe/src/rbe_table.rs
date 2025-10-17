@@ -17,7 +17,6 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::vec::IntoIter;
-use tracing::debug;
 use tracing::trace;
 
 #[derive(Default, PartialEq, Eq, Clone)]
@@ -115,7 +114,7 @@ where
         }
 
         if candidates.is_empty() || pairs_found == 0 {
-            debug!(
+            trace!(
                 "No candidates for rbe: {}, candidates: {:?}, pairs_found: {pairs_found}",
                 self.rbe, candidates,
             );
@@ -137,7 +136,7 @@ where
                 result
             }
         } else {
-            debug!("Candidates not empty rbe: {:?}", self.rbe);
+            trace!("Candidates not empty rbe: {:?}", self.rbe);
             let mp = candidates.into_iter().multi_cartesian_product();
             Ok(MatchTableIter::NonEmpty(IterCartesianProduct {
                 is_first: true,

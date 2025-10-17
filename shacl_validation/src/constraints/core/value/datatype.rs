@@ -18,7 +18,7 @@ use srdf::QueryRDF;
 use srdf::SHACLPath;
 use srdf::SLiteral;
 use std::fmt::Debug;
-use tracing::debug;
+use tracing::trace;
 
 impl<R: NeighsRDF + Debug> Validator<R> for Datatype {
     fn validate(
@@ -32,7 +32,7 @@ impl<R: NeighsRDF + Debug> Validator<R> for Datatype {
         maybe_path: Option<SHACLPath>,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let check = |value_node: &R::Term| {
-            debug!(
+            trace!(
                 "sh:datatype: Checking {value_node} as datatype {}",
                 self.datatype()
             );
@@ -43,14 +43,14 @@ impl<R: NeighsRDF + Debug> Validator<R> for Datatype {
                         datatype,
                         error,
                     }) => {
-                        debug!(
+                        trace!(
                             "Wrong datatype for value node: {value_node}. Expected datatype: {datatype}, found: {lexical_form}. Error: {error}"
                         );
                         true
                     }
                     Ok(_slit) => literal.datatype() != self.datatype().as_str(),
                     Err(_) => {
-                        debug!("Failed to convert literal to SLiteral: {literal}");
+                        trace!("Failed to convert literal to SLiteral: {literal}");
                         true
                     }
                 }

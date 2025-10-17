@@ -1,8 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 use std::io::Write;
-
-use tracing::debug;
+use tracing::trace;
 
 use crate::rdf_visualizer::rdf_visualizer_config::RDFVisualizationConfig;
 use crate::rdf_visualizer::rdf_visualizer_error::RdfVisualizerError;
@@ -171,8 +170,8 @@ impl VisualRDFGraph {
         _mode: &UmlGenerationMode,
     ) -> Result<(), RdfVisualizerError> {
         let style = self.config.get_style();
-        println!("Visual graph: {self}");
-        println!("Starting conversion...");
+        trace!("Visual graph: {self}");
+        trace!("Starting conversion...");
         writeln!(writer, "@startuml\n")?;
         writeln!(writer, "{}", style.as_uml())?;
 
@@ -180,12 +179,12 @@ impl VisualRDFGraph {
         for (node, node_id) in &self.nodes_map {
             let show_node = self.show_node(node);
             let node_uml = node.as_plantuml(*node_id, show_node, self)?;
-            debug!("Node {node_id}: {node_uml}");
+            trace!("Node {node_id}: {node_uml}");
             writeln!(writer, "{node_uml}\n")?;
         }
         // Add edges
         for (source, edge, target) in &self.edges {
-            debug!("Edge {source} --> {target}: {edge}");
+            trace!("Edge {source} --> {target}: {edge}");
             writeln!(
                 writer,
                 "{source} --> {target} : {}\n",
