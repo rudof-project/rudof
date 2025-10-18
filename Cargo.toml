@@ -81,7 +81,6 @@ oxrdfio = { version = "0.2.0", features = ["rdf-12"] }
 oxrdfxml = { version = "0.2.0" }
 oxsdatatypes = "0.2.2"
 oxttl = { version = "0.2.0", features = ["rdf-12"] }
-ptree = { version = "0.5" }
 petgraph = { version = "0.8" }
 prefixmap = { version = "0.1.104", path = "./prefixmap" }
 pretty = { version = "0.12" }
@@ -117,6 +116,7 @@ supports-color = "3.0.0"
 tabled = { version = "0.20.0", features = ["ansi" ] }
 tempfile = "3.10.1"
 term_size = "0.3.2"
+termtree = { version = "0.4" }
 thiserror = "2.0"
 tokio = { version = "1.0", features = ["rt", "rt-multi-thread"] }
 tokio-test = "0.4"

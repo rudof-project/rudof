@@ -18,12 +18,12 @@ indexmap.workspace = true # { version = "2" }
 iri_s.workspace = true
 itertools.workspace = true
 prefixmap.workspace = true
-ptree.workspace = true
 rbe.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 shex_ast.workspace = true
 srdf.workspace = true
+termtree.workspace = true
 thiserror.workspace = true 
 toml.workspace = true
 tracing.workspace = true

@@ -18,7 +18,6 @@ itertools.workspace = true
 lazy-regex.workspace = true
 nom.workspace = true
 nom_locate.workspace = true
-ptree.workspace = true
 petgraph.workspace = true
 prefixmap.workspace = true
 pretty.workspace = true

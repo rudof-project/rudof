@@ -1,6 +1,6 @@
 use crate::ValidatorErrors;
 use prefixmap::{PrefixMap, PrefixMapError};
-use ptree::{TreeBuilder, write_tree};
+use termtree::Tree;
 use serde::{Serialize, ser::SerializeMap};
 use shex_ast::{
     Node, ShapeLabelIdx,
@@ -64,28 +64,28 @@ pub enum Reason {
 impl Reason {
     fn build_tree(
         &self,
-        tb: &mut TreeBuilder,
+        tree: &mut Tree<String>,
         _nodes_prefixmap: &PrefixMap,
         _schema: &SchemaIR,
     ) -> Result<(), PrefixMapError> {
         match self {
             Reason::NodeConstraintPassed { .. } => Ok(()),
             Reason::ShapeAndPassed { reasons, .. } => {
-                tb.begin_child("reasons".to_string());
+                let mut reasons_tree = Tree::new("reasons".to_string());
                 for reason in reasons {
                     for r in reason {
-                        r.build_tree(tb, _nodes_prefixmap, _schema)?;
+                        r.build_tree(&mut reasons_tree, _nodes_prefixmap, _schema)?;
                     }
                 }
-                tb.end_child();
+                tree.leaves.push(reasons_tree);
                 Ok(())
             }
             Reason::ShapeOrPassed { reasons, .. } => {
-                tb.begin_child("reasons".to_string());
+                let mut reasons_tree = Tree::new("reasons".to_string());
                 for reason in reasons.iter() {
-                    reason.build_tree(tb, _nodes_prefixmap, _schema)?;
+                    reason.build_tree(&mut reasons_tree, _nodes_prefixmap, _schema)?;
                 }
-                tb.end_child();
+                tree.leaves.push(reasons_tree);
                 Ok(())
             }
             _ => Ok(()),
@@ -132,9 +132,9 @@ impl Reason {
         writer: &mut W,
     ) -> Result<(), PrefixMapError> {
         let root_str = self.root_qualified(nodes_prefixmap, schema, width)?;
-        let mut tb = TreeBuilder::new(root_str);
-        self.build_tree(&mut tb, nodes_prefixmap, schema)?;
-        write_tree(&tb.build(), writer).map_err(|e| PrefixMapError::IOError {
+        let mut tree = Tree::new(root_str);
+        self.build_tree(&mut tree, nodes_prefixmap, schema)?;
+        write!(writer, "{}", tree).map_err(|e| PrefixMapError::IOError {
             error: e.to_string(),
         })?;
         Ok(())
