@@ -25,7 +25,9 @@ prefixmap.workspace = true
 rdf_config.workspace = true 
 regex.workspace = true
 rudof_generate.workspace = true
-rudof_lib.workspace = true 
+rudof_lib.workspace = true
+rudof_mcp.workspace = true
+
 serde.workspace = true
 serde_json.workspace = true 
 shacl_ast.workspace = true 

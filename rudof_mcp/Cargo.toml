@@ -1,0 +1,23 @@
+[package]
+name = "rudof_mcp"
+version = "0.0.1"
+edition = "2024"
+
+[dependencies]
+anyhow.workspace = true
+axum = "0.8.4"
+clap.workspace = true
+clientele = "0.3.8"
+reqwest = { version = "0.12.23", features = ["json"] }
+rmcp = { version = "0.6.3", features = [ "client", "server", "transport-io", "transport-streamable-http-server" ] }
+rmcp-macros = "0.6.3"
+rudof_lib.workspace = true
+schemars = "1.0.4"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.143"
+tokio = { version = "1.47.1", features = ["full"] }
+tokio-util = "0.7.16"
+tracing.workspace = true
+tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
+prefixmap = { workspace = true }
+shex_ast = { workspace = true }

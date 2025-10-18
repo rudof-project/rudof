@@ -35,6 +35,35 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum Command {
+    /// Export rudof as an MCP server
+    Mcp {
+        /// Port to bind the MCP server, default = 8000
+        #[arg(
+            short = 'p',
+            long = "port",
+            value_name = "Port number",
+            default_value_t = String::from("8000")
+        )]
+        port: String,
+
+        /// Route name to bind the MCP server, default = rudof
+        #[arg(
+            short = 'n',
+            long = "route-name",
+            value_name = "Route name",
+            default_value_t = String::from("rudof")
+        )]
+        route_name: String,
+
+        /// Host address to bind the MCP server, default = 127.0.0.1
+        #[arg(
+            long = "host",
+            value_name = "Host address",
+            default_value_t = String::from("127.0.0.1")
+        )]
+        host: String,
+    },
+
     /// Show information about ShEx ShapeMaps
     Shapemap {
         #[arg(
