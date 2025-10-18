@@ -15,6 +15,7 @@ pub mod input_compare_mode;
 pub mod input_convert_format;
 pub mod input_convert_mode;
 pub mod node;
+pub mod node_formatter;
 pub mod node_selector;
 pub mod output_convert_format;
 pub mod output_convert_mode;
