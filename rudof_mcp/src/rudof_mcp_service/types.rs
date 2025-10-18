@@ -42,7 +42,7 @@ pub struct NodeInfoRequest {
     /// Optional list of predicates to filter outgoing arcs
     pub predicates: Option<Vec<String>>,
     /// Optional mode: "incoming", "outgoing", or "both" (default "both")
-    pub mode: Option<String>,  
+    pub mode: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -70,7 +70,3 @@ pub struct NodePredicateSubjects {
     /// List of qualified subject terms that point to the node via this predicate.
     pub subjects: Vec<String>,
 }
-
-
-
-

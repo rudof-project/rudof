@@ -27,7 +27,11 @@ pub async fn run_mcp(route_name: &str, port: &str, host: &str) -> Result<()> {
         port,
     };
 
-    tracing::info!("Starting MCP server at {}/{}", cfg.bind_address(), cfg.route_name);
+    tracing::info!(
+        "Starting MCP server at {}/{}",
+        cfg.bind_address(),
+        cfg.route_name
+    );
 
     let service = StreamableHttpService::new(
         || Ok(RudofMcpService::new()),

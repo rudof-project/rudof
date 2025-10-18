@@ -5,7 +5,7 @@ use std::io::Write;
 
 use rudof_lib::node_info::NodeInfo;
 
-// Format a single node's information to a writer 
+// Format a single node's information to a writer
 pub fn format_node_info<S: NeighsRDF, W: Write>(
     node_info: &NodeInfo<S>,
     rdf: &S,

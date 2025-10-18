@@ -3,11 +3,11 @@
 //!
 #![deny(rust_2018_idioms)]
 pub mod input_spec;
+pub mod node_info;
 pub mod rudof;
 pub mod rudof_config;
 pub mod rudof_error;
 pub mod shapes_graph_source;
-pub mod node_info;
 
 pub use input_spec::*;
 pub use iri_s::*;

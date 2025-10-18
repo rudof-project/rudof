@@ -1,8 +1,8 @@
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-use rmcp::handler::server::router::{tool::ToolRouter, prompt::PromptRouter};
-use crate::rudof_mcp_service::{tools, prompts};
+use crate::rudof_mcp_service::{prompts, tools};
+use rmcp::handler::server::router::{prompt::PromptRouter, tool::ToolRouter};
 use rudof_lib::{Rudof, RudofConfig};
 
 #[derive(Clone)]
@@ -22,3 +22,8 @@ impl RudofMcpService {
     }
 }
 
+impl Default for RudofMcpService {
+    fn default() -> Self {
+        Self::new()
+    }
+}

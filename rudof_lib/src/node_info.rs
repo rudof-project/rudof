@@ -5,8 +5,8 @@ use shex_ast::ObjectValue;
 use srdf::NeighsRDF;
 use std::collections::HashMap;
 
-use crate::shapemap::{NodeSelector, ShapeSelector};
 use crate::ShapeMapParser;
+use crate::shapemap::{NodeSelector, ShapeSelector};
 
 // Core data structure representing node information
 #[derive(Debug, Clone)]
@@ -104,16 +104,19 @@ fn get_outgoing_arcs<S: NeighsRDF>(
         let map = rdf
             .outgoing_arcs(subject.clone())
             .map_err(|e| anyhow!("Error obtaining outgoing arcs of {subject}: {e}"))?;
-        
-        let map_vec = map.into_iter()
+
+        let map_vec = map
+            .into_iter()
             .map(|(k, v)| (k, v.into_iter().collect()))
             .collect();
         Ok(map_vec)
     } else {
         let preds = convert_predicates(predicates, rdf)?;
-        let (map, _) = rdf.outgoing_arcs_from_list(subject, &preds)
+        let (map, _) = rdf
+            .outgoing_arcs_from_list(subject, &preds)
             .map_err(|e| anyhow!("Error obtaining outgoing arcs of {subject}: {e}"))?;
-        let map_vec = map.into_iter()
+        let map_vec = map
+            .into_iter()
             .map(|(k, v)| (k, v.into_iter().collect()))
             .collect();
         Ok(map_vec)
@@ -129,8 +132,9 @@ fn get_incoming_arcs<S: NeighsRDF>(
     let map = rdf
         .incoming_arcs(object.clone())
         .map_err(|e| anyhow!("Can't get incoming arcs of node {subject}: {e}"))?;
-    
-    let map_vec = map.into_iter()
+
+    let map_vec = map
+        .into_iter()
         .map(|(k, v)| (k, v.into_iter().collect()))
         .collect();
     Ok(map_vec)
@@ -160,7 +164,7 @@ where
     }
 }
 
-// Convert predicate strings to IRI objects 
+// Convert predicate strings to IRI objects
 // Handles both full IRIs and prefixed names
 pub fn convert_predicates<S>(predicates: &[String], rdf: &S) -> Result<Vec<S::IRI>>
 where

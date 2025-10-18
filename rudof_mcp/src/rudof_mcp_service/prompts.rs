@@ -1,11 +1,6 @@
 use rmcp::{
-    handler::server::wrapper::Parameters,
-    model::*,
-    prompt,
-    prompt_router,
-    service::RequestContext,
-    RoleServer,
-    ErrorData as McpError,
+    ErrorData as McpError, RoleServer, handler::server::wrapper::Parameters, model::*, prompt,
+    prompt_router, service::RequestContext,
 };
 
 use crate::rudof_mcp_service::types::*;
@@ -19,12 +14,19 @@ impl super::RudofMcpService {
         Parameters(args): Parameters<ExamplePromptArgs>,
         _ctx: RequestContext<RoleServer>,
     ) -> Result<Vec<PromptMessage>, McpError> {
-        let prompt = format!("This is an example prompt with your message here: '{}'", args.message);
-        Ok(vec![PromptMessage { role: PromptMessageRole::User, content: PromptMessageContent::text(prompt) }])
+        let prompt = format!(
+            "This is an example prompt with your message here: '{}'",
+            args.message
+        );
+        Ok(vec![PromptMessage {
+            role: PromptMessageRole::User,
+            content: PromptMessageContent::text(prompt),
+        }])
     }
 }
 
 /// Public wrapper to expose the generated prompt router
-pub fn prompt_router_public() -> rmcp::handler::server::router::prompt::PromptRouter<super::RudofMcpService> {
+pub fn prompt_router_public()
+-> rmcp::handler::server::router::prompt::PromptRouter<super::RudofMcpService> {
     super::RudofMcpService::prompt_router()
 }

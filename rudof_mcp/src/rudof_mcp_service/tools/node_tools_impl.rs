@@ -1,13 +1,15 @@
-use serde_json::json;
+use crate::rudof_mcp_service::{errors::*, service::*, types::*};
 use rmcp::{
-    handler::server::{wrapper::Parameters},
-    model::{CallToolResult, Content},
     ErrorData as McpError,
+    handler::server::wrapper::Parameters,
+    model::{CallToolResult, Content},
 };
-use crate::rudof_mcp_service::{types::*, service::*, errors::*};
-use rudof_lib::{node_info::*, srdf::{NeighsRDF, Iri, Term, Subject}};
+use rudof_lib::{
+    node_info::*,
+    srdf::{Iri, NeighsRDF, Subject, Term},
+};
+use serde_json::json;
 
-    
 // Formats an IRI/NamedNode as a plain string (no colors, no prefixing).
 // Uses Iri's standard Display implementation (likely the full IRI).
 fn format_iri_no_color<I: Iri>(iri: &I) -> String {
@@ -31,7 +33,10 @@ fn format_subject_no_color<S: Subject>(subject: &S) -> String {
 fn format_node_info_text<S: NeighsRDF>(node_info: &NodeInfo<S>) -> String {
     let mut out = String::new();
 
-    out.push_str(&format!("Information about {}\n", node_info.subject_qualified));
+    out.push_str(&format!(
+        "Information about {}\n",
+        node_info.subject_qualified
+    ));
 
     // Outgoing arcs
     if !node_info.outgoing.is_empty() {
@@ -71,7 +76,7 @@ fn format_node_info_text<S: NeighsRDF>(node_info: &NodeInfo<S>) -> String {
     }
 
     out
-}    
+}
 
 // Convert NodeInfo to structured JSON response
 fn node_info_to_response<S: NeighsRDF>(node_info: &NodeInfo<S>) -> NodeInfoResponse {
@@ -80,8 +85,8 @@ fn node_info_to_response<S: NeighsRDF>(node_info: &NodeInfo<S>) -> NodeInfoRespo
         .iter()
         .map(|(p, objs)| {
             let pred_q = format_iri_no_color(p);
-                
-            let obj_qs = objs.iter().map(|o| format_term_no_color(o)).collect();
+
+            let obj_qs = objs.iter().map(format_term_no_color).collect();
             NodePredicateObjects {
                 predicate: pred_q,
                 objects: obj_qs,
@@ -94,8 +99,8 @@ fn node_info_to_response<S: NeighsRDF>(node_info: &NodeInfo<S>) -> NodeInfoRespo
         .iter()
         .map(|(p, subs)| {
             let pred_q = format_iri_no_color(p);
-                
-            let sub_qs = subs.iter().map(|s| format_subject_no_color(s)).collect();
+
+            let sub_qs = subs.iter().map(format_subject_no_color).collect();
             NodePredicateSubjects {
                 predicate: pred_q,
                 subjects: sub_qs,
@@ -110,36 +115,50 @@ fn node_info_to_response<S: NeighsRDF>(node_info: &NodeInfo<S>) -> NodeInfoRespo
     }
 }
 
-pub async fn node_info_impl(service: &RudofMcpService, Parameters(NodeInfoRequest { node, predicates, mode }): Parameters<NodeInfoRequest>) -> Result<CallToolResult, McpError> {
+pub async fn node_info_impl(
+    service: &RudofMcpService,
+    Parameters(NodeInfoRequest {
+        node,
+        predicates,
+        mode,
+    }): Parameters<NodeInfoRequest>,
+) -> Result<CallToolResult, McpError> {
     let rudof = service.rudof.lock().await;
     let rdf = rudof.get_rdf_data();
 
     let node_selector = parse_node_selector(&node).map_err(|e| {
-        invalid_request(codes::INVALID_NODE_SELECTOR, Some(json!({ "node": node, "error": e.to_string() })))
+        invalid_request(
+            codes::INVALID_NODE_SELECTOR,
+            Some(json!({ "node": node, "error": e.to_string() })),
+        )
     })?;
 
     let mode_str = mode.as_deref().unwrap_or("both");
-    let options = NodeInfoOptions::from_mode_str(mode_str).map_err(|_| {
-        invalid_request(codes::INVALID_MODE, Some(json!({ "mode": mode_str })))
-    })?;
+    let options = NodeInfoOptions::from_mode_str(mode_str)
+        .map_err(|_| invalid_request(codes::INVALID_MODE, Some(json!({ "mode": mode_str }))))?;
 
     let pred_list: Vec<String> = predicates.unwrap_or_default();
     let node_infos = get_node_info(rdf, node_selector, &pred_list, options).map_err(|e| {
-        internal_error(codes::RDF_ARC_QUERY_ERROR, Some(json!({ "error": e.to_string() })))
+        internal_error(
+            codes::RDF_ARC_QUERY_ERROR,
+            Some(json!({ "error": e.to_string() })),
+        )
     })?;
 
-    let node_info = node_infos.first().ok_or_else(|| {
-        internal_error(codes::NODE_NOT_FOUND, Some(json!({ "node": node })))
-    })?;
+    let node_info = node_infos
+        .first()
+        .ok_or_else(|| internal_error(codes::NODE_NOT_FOUND, Some(json!({ "node": node }))))?;
 
     let text_output = format_node_info_text(node_info);
     let response = node_info_to_response(node_info);
     let structured = serde_json::to_value(&response).map_err(|e| {
-        internal_error(codes::SERIALIZE_DATA_ERROR, Some(json!({ "error": e.to_string() })))
+        internal_error(
+            codes::SERIALIZE_DATA_ERROR,
+            Some(json!({ "error": e.to_string() })),
+        )
     })?;
 
     let mut result = CallToolResult::success(vec![Content::text(text_output)]);
     result.structured_content = Some(structured);
     Ok(result)
 }
-
