@@ -217,6 +217,7 @@ ex:PersonShape a sh:NodeShape ;
 }
 
 /// Test that basic constraints are correctly passed from schema to generated data
+#[allow(clippy::cmp_owned)]
 #[tokio::test]
 async fn test_constraint_pipeline_verification() {
     // Create a simple SHACL schema
