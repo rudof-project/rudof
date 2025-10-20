@@ -1,12 +1,9 @@
 // use clap::{Parser, Subcommand, ValueEnum};
-use std::path::PathBuf;
-use std::str::FromStr;
-
 use iri_s::IriS;
-use prefixmap::PrefixMap;
 use rudof_lib::{InputSpec, Rudof, RudofConfig};
 use srdf::rdf_visualizer::visual_rdf_graph::VisualRDFGraph;
 use srdf::{ImageFormat, RDFFormat, ReaderMode, UmlGenerationMode};
+use std::path::PathBuf;
 
 use crate::writer::get_writer;
 use crate::{data_format::DataFormat, result_data_format::ResultDataFormat};
@@ -44,17 +41,9 @@ pub fn get_data_rudof(
             Ok(())
         }
         (true, Some(endpoint)) => {
-            let (endpoint_iri, prefixmap) =
-                if let Some(endpoint_descr) = config.rdf_data_config().find_endpoint(endpoint) {
-                    (
-                        endpoint_descr.query_url().clone(),
-                        endpoint_descr.prefixmap().clone(),
-                    )
-                } else {
-                    let iri = IriS::from_str(endpoint.as_str())?;
-                    (iri, PrefixMap::basic())
-                };
-            rudof.add_endpoint(&endpoint_iri, &prefixmap)?;
+            let (new_endpoint, _sparql) = rudof.get_endpoint(endpoint)?;
+            // rudof.add_endpoint(&endpoint, &endpoint, PrefixMap::new())?;
+            rudof.use_endpoint(new_endpoint.as_str())?;
             Ok(())
         }
         (false, Some(_)) => {
@@ -111,7 +100,7 @@ pub fn run_data(
     config: &RudofConfig,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let mut rudof = Rudof::new(config);
+    let mut rudof = Rudof::new(config)?;
     if debug > 0 {
         println!("Config: {config:?}")
     }

@@ -12,10 +12,10 @@ pub struct Endpoint {
 }
 
 impl Endpoint {
-    pub fn new(iri: &str, prefixmap: &PrefixMap) -> Result<Self, ValidateError> {
+    pub fn new(iri: &str, prefixmap: &PrefixMap) -> Result<Self, Box<ValidateError>> {
         match SRDFSparql::new(&IriS::new_unchecked(iri), prefixmap) {
             Ok(store) => Ok(Self { store }),
-            Err(_) => Err(ValidateError::SPARQLCreation),
+            Err(_) => Err(Box::new(ValidateError::SPARQLCreation)),
         }
     }
 

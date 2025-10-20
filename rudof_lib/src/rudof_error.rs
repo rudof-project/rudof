@@ -9,8 +9,12 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum RudofError {
+    #[error("Error configuring RDF data: {error}")]
+    RdfDataConfigError { error: String },
+
     #[error(transparent)]
     IOErro(#[from] io::Error),
+
     #[error("Invalid shape label {label}: {error}")]
     InvalidShapeLabel { label: String, error: String },
 
@@ -265,6 +269,9 @@ pub enum RudofError {
 
     #[error("Serializing SHACL to internal representation: {error}")]
     SerializingSHACLInternal { error: String },
+
+    #[error("PrefixMap error: {error}")]
+    PrefixMapError { error: String },
 
     #[error("Writing SHACL {shacl}: {error}")]
     WritingSHACL { shacl: String, error: String },

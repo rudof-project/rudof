@@ -9,9 +9,15 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ## [Unreleased]
 ### Added
+- `mcp` command now starts rudof as an MCP server. First contribution by @samuel-bustamante
+- Solved issue #349 to replave dependency on ptree for termtree
+- Started to have a list of known SPARQL endpoints identified by key like `wikidata`, `dbpedia`, etc.
+
 ### Fixed
+
 ### Changed
 - The import in ShEx schemas supports `IriOrStr` in order to handle relative IRIs. Now the base IRI that is passed is the current folder. 
+- Changed initialization of rudof to return a potential error in case there is some problem with RudofConfig
 
 ### Removed
 

@@ -50,6 +50,15 @@ pub enum ValidateError {
     #[error("Error during the SPARQL operation")]
     Sparql(#[from] SPARQLError),
 
+    #[error("Error during the SPARQL operation: {msg}, source: {source}")]
+    SparqlError { msg: String, source: SPARQLError },
+
+    #[error("Constraint error in component {component}: {source}")]
+    ConstraintError {
+        component: String,
+        source: ConstraintError,
+    },
+
     #[error("Implicit class not found")]
     ImplicitClassNotFound,
 

@@ -27,4 +27,4 @@ SELECT ?person ?name WHERE {
 }
 """)
 
-print(results.as_json())
+print(results.show())

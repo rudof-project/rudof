@@ -47,7 +47,7 @@ pub fn run_shacl(
     config: &RudofConfig,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let mut rudof = Rudof::new(config);
+    let mut rudof = Rudof::new(config)?;
     get_data_rudof(
         &mut rudof,
         data,
@@ -96,7 +96,7 @@ pub fn run_shacl_convert(
     config: &RudofConfig,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let mut rudof = Rudof::new(config);
+    let mut rudof = Rudof::new(config)?;
     let mime_type = input_format.mime_type();
     let reader = input.open_read(Some(mime_type), "SHACL shapes")?;
     let input_format = shacl_format_convert(*input_format)?;
@@ -155,7 +155,7 @@ pub fn run_validate_shacl(
     force_overwrite: bool,
 ) -> Result<()> {
     let (writer, _color) = get_writer(output, force_overwrite)?;
-    let mut rudof = Rudof::new(config);
+    let mut rudof = Rudof::new(config)?;
     get_data_rudof(
         &mut rudof,
         data,

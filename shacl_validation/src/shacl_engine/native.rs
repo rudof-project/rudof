@@ -29,31 +29,43 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
-    ) -> Result<Vec<ValidationResult>, ValidateError> {
+    ) -> Result<Vec<ValidationResult>, Box<ValidateError>> {
         tracing::debug!("NativeEngine, evaluate with shape {}", shape.id());
         let shacl_component = ShaclComponent::new(component);
         let validator = shacl_component.deref();
-        Ok(validator.validate_native(
-            component,
-            shape,
-            store,
-            value_nodes,
-            source_shape,
-            maybe_path,
-        )?)
+        let result = validator
+            .validate_native(
+                component,
+                shape,
+                store,
+                value_nodes,
+                source_shape,
+                maybe_path,
+            )
+            .map_err(|e| {
+                Box::new(ValidateError::ConstraintError {
+                    component: component.to_string(),
+                    source: e,
+                })
+            })?;
+        Ok(result)
     }
 
     /// https://www.w3.org/TR/shacl/#targetNode
-    fn target_node(&self, _: &S, node: &RDFNode) -> Result<FocusNodes<S>, ValidateError> {
+    fn target_node(&self, _: &S, node: &RDFNode) -> Result<FocusNodes<S>, Box<ValidateError>> {
         let node: S::Term = node.clone().into();
         if node.is_blank_node() {
-            Err(ValidateError::TargetNodeBlankNode)
+            Err(Box::new(ValidateError::TargetNodeBlankNode))
         } else {
             Ok(FocusNodes::from_iter(std::iter::once(node.clone())))
         }
     }
 
-    fn target_class(&self, store: &S, class: &RDFNode) -> Result<FocusNodes<S>, ValidateError> {
+    fn target_class(
+        &self,
+        store: &S,
+        class: &RDFNode,
+    ) -> Result<FocusNodes<S>, Box<ValidateError>> {
         // TODO: this should not be necessary, check in others triples_matching calls
         let cls: S::Term = class.clone().into();
         let focus_nodes = store
@@ -70,7 +82,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
         &self,
         store: &S,
         predicate: &IriS,
-    ) -> Result<FocusNodes<S>, ValidateError> {
+    ) -> Result<FocusNodes<S>, Box<ValidateError>> {
         let pred: S::IRI = predicate.clone().into();
         let subjects = store
             .triples_with_predicate(pred)
@@ -85,7 +97,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
         &self,
         store: &S,
         predicate: &IriS,
-    ) -> Result<FocusNodes<S>, ValidateError> {
+    ) -> Result<FocusNodes<S>, Box<ValidateError>> {
         let pred: S::IRI = predicate.clone().into();
         let objects = store
             .triples_with_predicate(pred)
@@ -98,7 +110,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
         &self,
         store: &S,
         subject: &RDFNode,
-    ) -> Result<FocusNodes<S>, ValidateError> {
+    ) -> Result<FocusNodes<S>, Box<ValidateError>> {
         // TODO: Replace by shacl_instances_of
         let term: S::Term = subject.clone().into();
         let targets = store

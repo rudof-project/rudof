@@ -69,7 +69,7 @@ impl RdfDataConfig {
         Ok(config)
     }
 
-    pub fn find_endpoint(&self, str: &str) -> Option<&EndpointDescription> {
+    /*pub fn find_endpoint(&self, str: &str) -> Option<&EndpointDescription> {
         match &self.endpoints {
             None => None,
             Some(map) => match map.get(str) {
@@ -77,7 +77,7 @@ impl RdfDataConfig {
                 None => None,
             },
         }
-    }
+    }*/
 
     pub fn rdf_visualization_config(&self) -> RDFVisualizationConfig {
         self.rdf_visualization.clone().unwrap_or_default()

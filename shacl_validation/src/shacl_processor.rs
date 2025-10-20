@@ -49,7 +49,7 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug> {
     /// # Arguments
     ///
     /// * `shapes_graph` - A compiled SHACL shapes graph
-    fn validate(&self, shapes_graph: &SchemaIR) -> Result<ValidationReport, ValidateError> {
+    fn validate(&self, shapes_graph: &SchemaIR) -> Result<ValidationReport, Box<ValidateError>> {
         // we initialize the validation report to empty
         let mut validation_results = Vec::new();
 
@@ -157,11 +157,9 @@ impl GraphValidation {
         data_format: RDFFormat,
         base: Option<&str>,
         mode: ShaclValidationMode,
-    ) -> Result<Self, ValidateError> {
-        Ok(GraphValidation {
-            store: Graph::from_path(data, data_format, base)?,
-            mode,
-        })
+    ) -> Result<Self, Box<ValidateError>> {
+        let store = Graph::from_path(data, data_format, base)?;
+        Ok(GraphValidation { store, mode })
     }
 
     pub fn from_graph(graph: Graph, mode: ShaclValidationMode) -> GraphValidation {
@@ -193,7 +191,7 @@ impl EndpointValidation {
         iri: &str,
         prefixmap: &PrefixMap,
         mode: ShaclValidationMode,
-    ) -> Result<Self, ValidateError> {
+    ) -> Result<Self, Box<ValidateError>> {
         Ok(EndpointValidation {
             store: Endpoint::new(iri, prefixmap)?,
             mode,
@@ -203,11 +201,9 @@ impl EndpointValidation {
     pub fn from_sparql(
         sparql: SRDFSparql,
         mode: ShaclValidationMode,
-    ) -> Result<Self, ValidateError> {
-        Ok(EndpointValidation {
-            store: Endpoint::from_sparql(sparql),
-            mode,
-        })
+    ) -> Result<Self, Box<ValidateError>> {
+        let store = Endpoint::from_sparql(sparql);
+        Ok(EndpointValidation { store, mode })
     }
 }
 

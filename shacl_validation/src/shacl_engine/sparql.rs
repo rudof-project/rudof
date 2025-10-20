@@ -28,25 +28,33 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
-    ) -> Result<Vec<ValidationResult>, ValidateError> {
+    ) -> Result<Vec<ValidationResult>, Box<ValidateError>> {
         let shacl_component = ShaclComponent::new(component);
         let validator = shacl_component.deref();
-        Ok(validator.validate_sparql(
-            component,
-            shape,
-            store,
-            value_nodes,
-            source_shape,
-            maybe_path,
-        )?)
+        let result = validator
+            .validate_sparql(
+                component,
+                shape,
+                store,
+                value_nodes,
+                source_shape,
+                maybe_path,
+            )
+            .map_err(|e| {
+                Box::new(ValidateError::ConstraintError {
+                    component: component.to_string(),
+                    source: e,
+                })
+            })?;
+        Ok(result)
     }
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     /// in SG then { t } is a target from any data graph for s in SG.
-    fn target_node(&self, store: &S, node: &RDFNode) -> Result<FocusNodes<S>, ValidateError> {
+    fn target_node(&self, store: &S, node: &RDFNode) -> Result<FocusNodes<S>, Box<ValidateError>> {
         let node: S::Term = node.clone().into();
         if node.is_blank_node() {
-            return Err(ValidateError::TargetNodeBlankNode);
+            return Err(Box::new(ValidateError::TargetNodeBlankNode));
         }
 
         let query = formatdoc! {"
@@ -56,17 +64,26 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
             }}
         ", node};
 
-        select(store, query, "this")?;
+        select(store, query, "this").map_err(|e| {
+            Box::new(ValidateError::SparqlError {
+                msg: "target_node".to_string(),
+                source: e,
+            })
+        })?;
 
-        Err(ValidateError::NotImplemented {
+        Err(Box::new(ValidateError::NotImplemented {
             msg: "target_node".to_string(),
-        })
+        }))
     }
 
-    fn target_class(&self, store: &S, class: &RDFNode) -> Result<FocusNodes<S>, ValidateError> {
+    fn target_class(
+        &self,
+        store: &S,
+        class: &RDFNode,
+    ) -> Result<FocusNodes<S>, Box<ValidateError>> {
         let class: S::Term = class.clone().into();
         if !class.is_iri() {
-            return Err(ValidateError::TargetClassNotIri);
+            return Err(Box::new(ValidateError::TargetClassNotIri));
         }
 
         let query = formatdoc! {"
@@ -79,18 +96,23 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
             }}
         ", class};
 
-        select(store, query, "this")?;
+        select(store, query, "this").map_err(|e| {
+            Box::new(ValidateError::SparqlError {
+                msg: "target_class".to_string(),
+                source: e,
+            })
+        })?;
 
-        Err(ValidateError::NotImplemented {
+        Err(Box::new(ValidateError::NotImplemented {
             msg: "target_class".to_string(),
-        })
+        }))
     }
 
     fn target_subject_of(
         &self,
         store: &S,
         predicate: &IriS,
-    ) -> Result<FocusNodes<S>, ValidateError> {
+    ) -> Result<FocusNodes<S>, Box<ValidateError>> {
         let query = formatdoc! {"
             SELECT DISTINCT ?this
             WHERE {{
@@ -98,18 +120,23 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
             }}
         ", predicate};
 
-        select(store, query, "this")?;
+        select(store, query, "this").map_err(|e| {
+            Box::new(ValidateError::SparqlError {
+                msg: "target_subject_of".to_string(),
+                source: e,
+            })
+        })?;
 
-        Err(ValidateError::NotImplemented {
+        Err(Box::new(ValidateError::NotImplemented {
             msg: "target_subject_of".to_string(),
-        })
+        }))
     }
 
     fn target_object_of(
         &self,
         store: &S,
         predicate: &IriS,
-    ) -> Result<FocusNodes<S>, ValidateError> {
+    ) -> Result<FocusNodes<S>, Box<ValidateError>> {
         let query = formatdoc! {"
             SELECT DISTINCT ?this
             WHERE {{
@@ -117,21 +144,26 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
             }}
         ", predicate};
 
-        select(store, query, "this")?;
+        select(store, query, "this").map_err(|e| {
+            Box::new(ValidateError::SparqlError {
+                msg: "target_object_of".to_string(),
+                source: e,
+            })
+        })?;
 
-        Err(ValidateError::NotImplemented {
+        Err(Box::new(ValidateError::NotImplemented {
             msg: "target_object_of".to_string(),
-        })
+        }))
     }
 
     fn implicit_target_class(
         &self,
         _store: &S,
         _shape: &RDFNode,
-    ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
+    ) -> Result<FocusNodes<S>, Box<ValidateError>> {
+        Err(Box::new(ValidateError::NotImplemented {
             msg: "implicit_target_class".to_string(),
-        })
+        }))
     }
 
     /*fn predicate(

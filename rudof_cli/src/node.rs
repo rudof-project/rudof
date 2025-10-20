@@ -27,7 +27,7 @@ pub fn run_node(
     force_overwrite: bool,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let mut rudof = Rudof::new(config);
+    let mut rudof = Rudof::new(config)?;
 
     get_data_rudof(
         &mut rudof,

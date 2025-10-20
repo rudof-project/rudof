@@ -10,17 +10,32 @@ use srdf::{RDFFormat, SRDFGraphError, SRDFSparqlError};
 
 #[derive(Debug, Error)]
 pub enum RdfDataError {
+    #[error("Error extending query solutions for query '{query}': {error}")]
+    ExtendingQuerySolutionsError { query: String, error: String },
+
+    #[error("Error extending query solutions for query '{query} for endpoint {endpoint}': {error}")]
+    ExtendingQuerySolutionsErrorEndpoint {
+        query: String,
+        error: String,
+        endpoint: String,
+    },
+
     #[error(transparent)]
     SRDFSparqlError {
         #[from]
         err: SRDFSparqlError,
     },
 
-    #[error(transparent)]
-    SRDFGraphError {
-        #[from]
-        err: SRDFGraphError,
+    #[error("Failed to create SPARQL endpoint {name} with {url}: {err}")]
+    SRDFSparqlFromEndpointDescriptionError {
+        name: String,
+        url: String,
+        #[source]
+        err: Box<SRDFSparqlError>,
     },
+
+    #[error("RDF graph error: {err}")]
+    SRDFGraphError { err: Box<SRDFGraphError> },
 
     #[error(transparent)]
     IOError {

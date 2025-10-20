@@ -84,6 +84,9 @@ pub enum RDFError {
         predicate: String,
         error: String,
     },
+
+    #[error("Writing query results in table: {error}")]
+    WritingTableError { error: String },
 }
 
 impl RDFError {

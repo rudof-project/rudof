@@ -1,7 +1,10 @@
+use prefixmap::{PrefixMap, PrefixMapError};
 use serde::Serialize;
 use std::fmt::Display;
+use std::io::Write;
+use tabled::{builder::Builder, settings::Style};
 
-use crate::{QueryResultFormat, Rdf};
+use crate::{Object, QueryResultFormat, RDFError, Rdf};
 
 /// Represents RDF that supports SPARQL-like queries
 pub trait QueryRDF: Rdf {
@@ -157,21 +160,36 @@ impl<S: Rdf, V: Into<Vec<VarName>>, T: Into<Vec<Option<S::Term>>>> From<(V, T)>
 #[derive(Debug, Clone, Serialize)]
 pub struct QuerySolutions<S: Rdf> {
     solutions: Vec<QuerySolution<S>>,
+    prefixmap: PrefixMap,
 }
 
 impl<S: Rdf> QuerySolutions<S> {
     pub fn empty() -> QuerySolutions<S> {
         QuerySolutions {
             solutions: Vec::new(),
+            prefixmap: PrefixMap::new(),
         }
     }
 
-    pub fn new(solutions: Vec<QuerySolution<S>>) -> QuerySolutions<S> {
-        QuerySolutions { solutions }
+    pub fn prefixmap(&self) -> &PrefixMap {
+        &self.prefixmap
     }
 
-    pub fn extend(&mut self, solutions: Vec<QuerySolution<S>>) {
-        self.solutions.extend(solutions)
+    pub fn new(solutions: Vec<QuerySolution<S>>, prefixmap: PrefixMap) -> QuerySolutions<S> {
+        QuerySolutions {
+            solutions,
+            prefixmap: prefixmap.clone(),
+        }
+    }
+
+    pub fn extend(
+        &mut self,
+        solutions: Vec<QuerySolution<S>>,
+        prefixmap: PrefixMap,
+    ) -> Result<(), PrefixMapError> {
+        self.solutions.extend(solutions);
+        self.prefixmap.merge(prefixmap)?;
+        Ok(())
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &QuerySolution<S>> {
@@ -180,6 +198,62 @@ impl<S: Rdf> QuerySolutions<S> {
 
     pub fn count(&self) -> usize {
         self.solutions.len()
+    }
+
+    pub fn write_table(&self, writer: &mut dyn Write) -> Result<(), RDFError> {
+        let mut results_iter = self.iter().peekable();
+        if let Some(first) = results_iter.peek() {
+            let mut builder = Builder::default();
+            let mut variables = Vec::new();
+            variables.push("".to_string()); // First column = index
+            variables.extend(
+                first
+                    .variables()
+                    .map(|v| format!("{v}"))
+                    .collect::<Vec<_>>(),
+            );
+            builder.push_record(variables);
+            for (idx, result) in results_iter.enumerate() {
+                let mut record = Vec::new();
+                record.push(format!("{}", idx + 1)); // First column = index
+                for (idx, _variable) in result.variables().enumerate() {
+                    let str = match result.find_solution(idx) {
+                        Some(term) => {
+                            let object = S::term_as_object(term)?;
+                            match object {
+                                Object::Iri(iri) => self.prefixmap.qualify(&iri),
+                                Object::BlankNode(blank_node) => blank_node.to_string(),
+                                Object::Literal(literal) => literal.to_string(),
+                                Object::Triple {
+                                    subject,
+                                    predicate,
+                                    object,
+                                } => format!(
+                                    "<<{} {} {}>>",
+                                    subject.show_qualified(&self.prefixmap),
+                                    self.prefixmap.qualify(&predicate),
+                                    object.show_qualified(&self.prefixmap)
+                                ),
+                            }
+                        }
+                        None => String::new(),
+                    };
+                    record.push(str);
+                }
+                builder.push_record(record);
+            }
+
+            let mut table = builder.build();
+            table.with(Style::modern_rounded());
+            writeln!(writer, "{table}").map_err(|e| RDFError::WritingTableError {
+                error: format!("{e}"),
+            })?;
+        } else {
+            write!(writer, "No results").map_err(|e| RDFError::WritingTableError {
+                error: format!("{e}"),
+            })?;
+        }
+        Ok(())
     }
 }
 

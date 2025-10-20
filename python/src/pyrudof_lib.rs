@@ -9,18 +9,18 @@ use pyo3::{
 use pythonize::pythonize;
 use rudof_lib::{
     CoShaMo, ComparatorError, CompareSchemaFormat, CompareSchemaMode, DCTAP, DCTAPFormat,
-    InputSpec, InputSpecError, InputSpecReader, Mie, MimeType, PrefixMap, QueryResultFormat,
-    QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat, RdfData, ReaderMode, ResultShapeMap,
-    Rudof, RudofError, ServiceDescription, ServiceDescriptionFormat, ShExFormat, ShExFormatter,
+    InputSpec, InputSpecError, InputSpecReader, Mie, MimeType, QueryResultFormat, QueryShapeMap,
+    QuerySolution, QuerySolutions, RDFFormat, RdfData, ReaderMode, ResultShapeMap, Rudof,
+    RudofError, ServiceDescription, ServiceDescriptionFormat, ShExFormat, ShExFormatter,
     ShExSchema, ShaCo, ShaclFormat, ShaclSchemaIR, ShaclValidationMode, ShapeLabel, ShapeMapFormat,
     ShapeMapFormatter, ShapesGraphSource, SortMode, UmlGenerationMode, ValidationReport,
-    ValidationStatus, VarName, iri, srdf::Object,
+    ValidationStatus, VarName, srdf::Object,
 };
 use std::{
     ffi::OsStr,
     fmt::Display,
     fs::File,
-    io::{BufReader, BufWriter, Write},
+    io::{BufReader, BufWriter, Cursor, Write},
     path::Path,
     str::FromStr,
     sync::{Arc, Mutex},
@@ -41,9 +41,8 @@ pub struct PyRudof {
 impl PyRudof {
     #[new]
     pub fn __init__(config: &PyRudofConfig) -> PyResult<Self> {
-        Ok(Self {
-            inner: Rudof::new(&config.inner),
-        })
+        let rudof = Rudof::new(&config.inner).map_err(PyRudofError::from)?;
+        Ok(Self { inner: rudof })
     }
 
     pub fn update_config(&mut self, config: &PyRudofConfig) {
@@ -824,11 +823,12 @@ impl PyRudof {
         Ok(str)
     }
 
+    /*
     /// Adds an endpoint to the current RDF Data
     #[pyo3(signature = (endpoint))]
     pub fn add_endpoint(&mut self, endpoint: &str) -> PyResult<()> {
         // TODO: Check if it is in the RDF Data Config endpoints...
-        let config = self.inner.config();
+        /*let config = self.inner.config();
         let (endpoint_iri, prefixmap) =
             if let Some(endpoint_descr) = config.rdf_data_config().find_endpoint(endpoint) {
                 (
@@ -838,10 +838,21 @@ impl PyRudof {
             } else {
                 let iri = iri!(endpoint);
                 (iri, PrefixMap::basic())
-            };
-        self.inner
-            .add_endpoint(&endpoint_iri, &prefixmap)
-            .map_err(cnv_err)
+            }; */
+        self.inner.add_endpoint(&endpoint_str).map_err(cnv_err)
+    }*/
+
+    /// Uses an endpoint for next queries
+    #[pyo3(signature = (endpoint))]
+    pub fn use_endpoint(&mut self, endpoint: &str) -> PyResult<()> {
+        self.inner.use_endpoint(endpoint).map_err(cnv_err)
+    }
+
+    /// Stop using an endpoint for next queries
+    #[pyo3(signature = (endpoint))]
+    pub fn dont_use_endpoint(&mut self, endpoint: &str) -> PyResult<()> {
+        self.inner.dont_use_endpoint(endpoint);
+        Ok(())
     }
 }
 
@@ -1432,8 +1443,13 @@ pub struct PyQuerySolutions {
 #[pymethods]
 impl PyQuerySolutions {
     /// Converts the solutions to a String
-    pub fn show(&self) -> String {
-        format!("Solutions: {:?}", self.inner)
+    pub fn show(&self) -> Result<String, PyRudofError> {
+        let mut writer = Cursor::new(Vec::new());
+        self.inner.write_table(&mut writer).map_err(|e| {
+            PyRudofError::str(format!("Error converting QuerySolutions to table: {e}"))
+        })?;
+        let result = String::from_utf8(writer.into_inner()).expect("Invalid UTF-8");
+        Ok(result)
     }
 
     /// Converts the solutions to a JSON string
@@ -1681,7 +1697,7 @@ impl From<RudofError> for PyRudofError {
     }
 }
 
-fn cnv_err(e: RudofError) -> PyErr {
+pub(crate) fn cnv_err(e: RudofError) -> PyErr {
     println!("RudofError: {e}");
     let e: PyRudofError = e.into();
     let e: PyErr = e.into();

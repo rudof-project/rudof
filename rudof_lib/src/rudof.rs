@@ -60,19 +60,46 @@ use url::Url;
 /// This represents the public API to interact with `rudof`
 #[derive(Debug)]
 pub struct Rudof {
+    /// Version of Rudof
     version: String,
+
+    /// Current configuration
     config: RudofConfig,
+
+    /// Current RDF Data
     rdf_data: RdfData,
+
+    /// Current SHACL Schema
     shacl_schema: Option<ShaclSchema<RdfData>>,
+
+    /// Current SHACL Schema Internal Representation
     shacl_schema_ir: Option<ShaclSchemaIR>,
+
+    /// Current ShEx Schema
     shex_schema: Option<ShExSchema>,
+
+    /// ShEx Schema Internal Representation
     shex_schema_ir: Option<SchemaIR>,
+
+    /// Current ShEx validator. It holds the compiled schema and the validator which can be reused several times if needed
     shex_validator: Option<ShExValidator>,
+
+    /// Current ShEx Schema
     shapemap: Option<QueryShapeMap>,
+
+    /// Current DCTAP
     dctap: Option<DCTAP>,
+
+    /// Current ShEx validation results
     shex_results: Option<ResultShapeMap>,
+
+    /// Current SPARQL Query
     sparql_query: Option<SparqlQuery>,
+
+    /// Current Service Description
     service_description: Option<ServiceDescription>,
+
+    /// Current rdf_config model
     rdf_config: Option<RdfConfigModel>,
 }
 
@@ -82,8 +109,13 @@ unsafe impl Send for Rudof {}
 
 impl Rudof {
     /// Create a new instance of Rudof with the given configuration
-    pub fn new(config: &RudofConfig) -> Rudof {
-        Rudof {
+    pub fn new(config: &RudofConfig) -> Result<Rudof> {
+        let rdf_data = RdfData::new()
+            .with_rdf_data_config(&config.rdf_data_config())
+            .map_err(|e| RudofError::RdfDataConfigError {
+                error: format!("{e}"),
+            })?;
+        Ok(Rudof {
             version: env!("CARGO_PKG_VERSION").to_string(),
             config: config.clone(),
             shex_schema: None,
@@ -91,14 +123,14 @@ impl Rudof {
             shacl_schema: None,
             shacl_schema_ir: None,
             shex_validator: None,
-            rdf_data: RdfData::new(),
+            rdf_data,
             shapemap: None,
             dctap: None,
             shex_results: None,
             sparql_query: None,
             service_description: None,
             rdf_config: None,
-        }
+        })
     }
 
     /// Get the current configuration
@@ -109,6 +141,26 @@ impl Rudof {
     /// Get the current version of Rudof
     pub fn get_version(&self) -> &str {
         &self.version
+    }
+
+    /// Use one endpoint by its name or URL in the next queries
+    pub fn use_endpoint(&mut self, name: &str) -> Result<()> {
+        let (name, sparql_endpoint) = self.get_endpoint(name)?;
+        self.rdf_data.use_endpoint(&name, sparql_endpoint);
+        Ok(())
+    }
+
+    /// Stop using an endpoint by its name in the next queries
+    pub fn dont_use_endpoint(&mut self, name: &str) {
+        self.rdf_data.dont_use_endpoint(name);
+    }
+
+    /// Get the list of endpoints to use in the queries
+    pub fn endpoints_to_use(&self) -> Vec<(String, SRDFSparql)> {
+        self.rdf_data
+            .endpoints_to_use()
+            .map(|(name, endpoint)| (name.to_string(), endpoint.clone()))
+            .collect::<Vec<_>>()
     }
 
     /// Update the current configuration
@@ -215,6 +267,15 @@ impl Rudof {
     /// Get the current shapemap
     pub fn get_shapemap(&self) -> Option<&QueryShapeMap> {
         self.shapemap.as_ref()
+    }
+
+    /// List the registered SPARQL endpoints
+    pub fn list_endpoints(&self) -> Vec<(String, IriS)> {
+        self.rdf_data
+            .endpoints()
+            .iter()
+            .map(|(name, endpoint)| (name.clone(), endpoint.iri().clone()))
+            .collect()
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -605,25 +666,27 @@ impl Rudof {
 
     /// Run a SPARQL query against a remote endpoint
     /// - `query` is the SPARQL query to be executed
-    /// - `endpoint` is the URL of the SPARQL endpoint
+    /// - `endpoint` is the name or the URL of the SPARQL endpoint
+    ///   Rudof keeps a cache of endpoints registered with some common names like `wikidata`, `dbpedia`, etc. to make it easier to use them. `
     ///   Returns the results as QuerySolutions
     pub fn run_query_endpoint(
         &mut self,
         query: &str,
         endpoint: &str,
     ) -> Result<QuerySolutions<RdfData>> {
-        let iri_endpoint =
-            IriS::from_str(endpoint).map_err(|e| RudofError::InvalidEndpointIri {
-                endpoint: endpoint.to_string(),
-                error: format!("{e}"),
-            })?;
-        let sparql_endpoint = SRDFSparql::new(&iri_endpoint, &PrefixMap::new()).map_err(|e| {
-            RudofError::InvalidEndpoint {
-                endpoint: endpoint.to_string(),
-                error: format!("{e}"),
-            }
-        })?;
-        let rdf_data = RdfData::from_endpoint(sparql_endpoint);
+        /*let iri_endpoint =
+        IriS::from_str(endpoint).map_err(|e| RudofError::InvalidEndpointIri {
+            endpoint: endpoint.to_string(),
+            error: format!("{e}"),
+        })?;*/
+        let (name, sparql_endpoint) =
+            self.get_endpoint(endpoint)
+                .map_err(|e| RudofError::InvalidEndpoint {
+                    endpoint: endpoint.to_string(),
+                    error: format!("{e}"),
+                })?;
+
+        let rdf_data = RdfData::from_endpoint(name.as_str(), sparql_endpoint);
         let solutions =
             rdf_data
                 .query_select(query)
@@ -633,6 +696,33 @@ impl Rudof {
                     error: format!("{e}"),
                 })?;
         Ok(solutions)
+    }
+
+    /// Get an endpoint by its name or URL
+    /// - `name` is the name or URL of the SPARQL endpoint
+    ///   Returns the corresponding `SRDFSparql` instance if found or creates a new one if `name` is a valid URL
+    ///   If a new endpoint is created, its name will be the same as the URL
+    ///   It sets the endpoint for its usage in the next queries
+    pub fn get_endpoint(&self, name: &str) -> Result<(String, SRDFSparql)> {
+        // First, try to find the endpoint by its name in the registered endpoints
+        match self.rdf_data.find_endpoint(name) {
+            Some(endpoint) => Ok((name.to_string(), endpoint)),
+            None => {
+                // If not found, try to parse the name as an IRI
+                let iri = IriS::from_str(name).map_err(|e| RudofError::InvalidEndpointIri {
+                    endpoint: name.to_string(),
+                    error: format!("{e}"),
+                })?;
+                // Create a new SRDFSparql instance with the given IRI
+                let endpoint = SRDFSparql::new(&iri, &PrefixMap::new()).map_err(|e| {
+                    RudofError::InvalidEndpoint {
+                        endpoint: name.to_string(),
+                        error: format!("{e}"),
+                    }
+                })?;
+                Ok((name.to_string(), endpoint))
+            }
+        }
     }
 
     /// Reads a `DCTAP` and replaces the current one
@@ -1038,14 +1128,18 @@ impl Rudof {
     }
 
     /// Adds an endpoint to the current RDF data
-    pub fn add_endpoint(&mut self, iri: &IriS, prefixmap: &PrefixMap) -> Result<()> {
+    /// - `name` is the name of the endpoint
+    /// - `iri` is the IRI of the endpoint
+    /// - `prefixmap` is the prefix map to be used with the endpoint
+    ///   If an endpoint with the same name already exists, it is replaced
+    pub fn add_endpoint(&mut self, name: &str, iri: &IriS, prefixmap: &PrefixMap) -> Result<()> {
         let sparql_endpoint =
             SRDFSparql::new(iri, prefixmap).map_err(|e| RudofError::AddingEndpointError {
                 iri: iri.clone(),
                 error: format!("{e}"),
             })?;
 
-        self.rdf_data.add_endpoint(sparql_endpoint);
+        self.rdf_data.add_endpoint(name, sparql_endpoint);
         Ok(())
     }
 
@@ -1273,7 +1367,7 @@ mod tests {
         :U [ 2 ]
         "#;
         let shapemap = r#":x@:S"#;
-        let mut rudof = Rudof::new(&RudofConfig::default());
+        let mut rudof = Rudof::new(&RudofConfig::default()).unwrap();
         rudof
             .read_data(
                 data.as_bytes(),
@@ -1306,7 +1400,7 @@ mod tests {
         let data = r#"<http://example/x> <http://example/p> 23 ."#;
         let shex = r#"<http://example/S> { <http://example/p> . }"#;
         let shapemap = r#"<http://example/x>@<http://example/S>"#;
-        let mut rudof = Rudof::new(&RudofConfig::default());
+        let mut rudof = Rudof::new(&RudofConfig::default()).unwrap();
         rudof
             .read_data(
                 data.as_bytes(),
@@ -1339,7 +1433,7 @@ mod tests {
         let data = r#"<http://example/x> <http://example/other> 23 ."#;
         let shex = r#"<http://example/S> { <http://example/p> . }"#;
         let shapemap = r#"<http://example/x>@<http://example/S>"#;
-        let mut rudof = Rudof::new(&RudofConfig::default());
+        let mut rudof = Rudof::new(&RudofConfig::default()).unwrap();
         rudof
             .read_data(
                 data.as_bytes(),
@@ -1385,7 +1479,7 @@ mod tests {
                 sh:datatype xsd:integer ;
             ] .
              "#;
-        let mut rudof = Rudof::new(&RudofConfig::default());
+        let mut rudof = Rudof::new(&RudofConfig::default()).unwrap();
         rudof
             .read_data(
                 data.as_bytes(),
@@ -1430,7 +1524,7 @@ mod tests {
                 sh:datatype xsd:integer ;
             ] .
              "#;
-        let mut rudof = Rudof::new(&RudofConfig::default());
+        let mut rudof = Rudof::new(&RudofConfig::default()).unwrap();
         rudof
             .read_data(
                 data.as_bytes(),
@@ -1474,7 +1568,7 @@ mod tests {
                 sh:datatype xsd:integer ;
             ] .
              "#;
-        let mut rudof = Rudof::new(&RudofConfig::default());
+        let mut rudof = Rudof::new(&RudofConfig::default()).unwrap();
         rudof
             .read_data(
                 data.as_bytes(),
@@ -1509,7 +1603,7 @@ mod tests {
                 sh:datatype xsd:integer ;
             ] .
              "#;
-        let mut rudof = Rudof::new(&RudofConfig::default());
+        let mut rudof = Rudof::new(&RudofConfig::default()).unwrap();
         rudof
             .read_data(
                 data.as_bytes(),

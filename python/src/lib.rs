@@ -1,9 +1,11 @@
 #![allow(clippy::useless_conversion)]
 
 use pyo3::prelude::*;
+mod py_prefixmap;
 mod pyrudof_config;
 mod pyrudof_lib;
 
+pub use crate::py_prefixmap::*;
 pub use crate::pyrudof_config::*;
 pub use crate::pyrudof_lib::*;
 

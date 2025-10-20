@@ -17,7 +17,7 @@ pub fn run_dctap(
     force_overwrite: bool,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let mut rudof = Rudof::new(config);
+    let mut rudof = Rudof::new(config)?;
     parse_dctap(&mut rudof, input, format)?;
     if let Some(dctap) = rudof.get_dctap() {
         match result_format {
