@@ -12,6 +12,7 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 - `mcp` command now starts rudof as an MCP server. First contribution by @samuel-bustamante
 - Solved issue #349 to replave dependency on ptree for termtree
 - Started to have a list of known SPARQL endpoints identified by key like `wikidata`, `dbpedia`, etc.
+- show_table() to SPARQL query results (QueryResults) in rudof and pyrudof
 
 ### Fixed
 
