@@ -1,6 +1,6 @@
 [package]
 name = "pyrudof"
-version = "0.1.120"
+version = "0.1.121"
 documentation = "https://rudof-project.github.io/rudof/"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
