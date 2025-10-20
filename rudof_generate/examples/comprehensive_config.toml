@@ -468,7 +468,7 @@ parallel_fields = true              # Generate field values in parallel
 # cargo run -p data_generator -- --config this_config.toml --schema your_schema.ttl
 # 
 # Override config values from command line:
-# cargo run -p data_generator -- --config this_config.toml --schema schema.shex --entities 5000 --output override.ttl
+# cargo run -p data_generator -- --config this_config.toml --schema schema.shex --entities 5000 --output-file override.ttl
 #
 # Pattern generator testing examples:
 # cargo run -p data_generator -- --config pattern_test_config.toml --schema pattern_schema.shex

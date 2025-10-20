@@ -20,29 +20,29 @@ You can use these commands to test the application. Execute them from the root f
 
 ```bash
 # Generate data from SHACL schema (auto-detected by .ttl extension)
-cargo run -p data_generator -- --schema examples/simple_shacl.ttl --output shacl_data.ttl --entities 100
+cargo run -p data_generator -- --schema examples/simple_shacl.ttl --output-file shacl_data.ttl --entities 100
 
 # Generate with specific seed for reproducible SHACL data
-cargo run -p data_generator -- --schema examples/simple_shacl.ttl --output shacl_reproducible.ttl --entities 50 --seed 12345
+cargo run -p data_generator -- --schema examples/simple_shacl.ttl --output-file shacl_reproducible.ttl --entities 50 --seed 12345
 
 # Generate from complex SHACL schema with more entities
-cargo run -p data_generator -- --schema examples/shacl/node_shacl.ttl --output complex_shacl_data.ttl --entities 200
+cargo run -p data_generator -- --schema examples/shacl/node_shacl.ttl --output-file complex_shacl_data.ttl --entities 200
 
 # Use parallel processing for large SHACL datasets
-cargo run -p data_generator -- --schema examples/simple_shacl.ttl --output large_shacl_data.ttl --entities 5000 --parallel 8
+cargo run -p data_generator -- --schema examples/simple_shacl.ttl --output-file large_shacl_data.ttl --entities 5000 --parallel 8
 ```
 
 ### ShEx Examples
 
 ```bash
 # Generate data from ShEx schema (auto-detected by .shex extension)
-cargo run -p data_generator -- --schema examples/simple.shex --output shex_data.ttl --entities 100
+cargo run -p data_generator -- --schema examples/simple.shex --output-file shex_data.ttl --entities 100
 
 # Generate with configuration file and ShEx schema
 cargo run -p data_generator -- --config data_generator/examples/simple_config.toml --schema data_generator/examples/schema.shex
 
 # Generate with inline parameters using example ShEx schema
-cargo run -p data_generator -- --schema data_generator/examples/schema.shex --output quick_shex_data.ttl --entities 100
+cargo run -p data_generator -- --schema data_generator/examples/schema.shex --output-file quick_shex_data.ttl --entities 100
 
 # Generate with custom seed for reproducible ShEx results
 cargo run -p data_generator -- --schema data_generator/examples/schema.shex --entities 50 --seed 12345
@@ -149,10 +149,10 @@ data_generator --config my_config.toml --schema your_schema_file
 data_generator --config config.toml --schema schema_file
 
 # Generate with inline parameters from SHACL schema
-data_generator --schema schema.ttl --output data.ttl --entities 1000
+data_generator --schema schema.ttl --output-file data.ttl --entities 1000
 
 # Generate with inline parameters from ShEx schema
-data_generator --schema schema.shex --output data.ttl --entities 1000
+data_generator --schema schema.shex --output-file data.ttl --entities 1000
 
 # Generate with custom seed for reproducible results
 data_generator --schema schema_file --entities 500 --seed 12345
@@ -317,7 +317,7 @@ data_generator --config config.json --schema schema.ttl
 data_generator --config config.json --schema schema.shex
 
 # Override config with command line (works with both formats)
-data_generator --config config.toml --schema schema_file --entities 5000 --output override.ttl
+data_generator --config config.toml --schema schema_file --entities 5000 --output-file override.ttl
 ```
 
 ### Parallel Writing Examples
