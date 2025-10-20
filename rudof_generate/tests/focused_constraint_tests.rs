@@ -270,7 +270,7 @@ ex:PersonShape a sh:NodeShape ;
     // Count how many name properties were generated
     let name_count = triples
         .iter()
-        .filter(|t| t.predicate.to_string() == "<http://example.org/name>")
+        .filter(|t| t.predicate == "<http://example.org/name>")
         .count();
 
     assert!(
