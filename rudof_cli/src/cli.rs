@@ -1,4 +1,3 @@
-use crate::data_format::DataFormat;
 use crate::dctap_format::DCTapFormat;
 use crate::result_compare_format::ResultCompareFormat;
 use crate::{
@@ -11,7 +10,7 @@ use crate::{
 };
 use clap::{Parser, Subcommand};
 use iri_s::IriS;
-use rudof_lib::InputSpec;
+use rudof_lib::{InputSpec, data_format::DataFormat};
 use shacl_validation::shacl_processor::ShaclValidationMode;
 use std::path::PathBuf;
 

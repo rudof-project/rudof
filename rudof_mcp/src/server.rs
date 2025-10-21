@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 use rmcp::transport::streamable_http_server::{
     StreamableHttpService, session::local::LocalSessionManager,
@@ -35,7 +37,7 @@ pub async fn run_mcp(route_name: &str, port: &str, host: &str) -> Result<()> {
 
     let service = StreamableHttpService::new(
         || Ok(RudofMcpService::new()),
-        LocalSessionManager::default().into(),
+        Arc::new(LocalSessionManager::default()),
         Default::default(),
     );
 

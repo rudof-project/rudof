@@ -1,5 +1,5 @@
-use crate::rudof_mcp_service::resources;
 use crate::rudof_mcp_service::service::RudofMcpService;
+use crate::rudof_mcp_service::{resource_templates, resources};
 use rmcp::{ErrorData as McpError, RoleServer, ServerHandler, model::*, service::RequestContext};
 
 impl ServerHandler for RudofMcpService {
@@ -57,24 +57,21 @@ impl ServerHandler for RudofMcpService {
     async fn read_resource(
         &self,
         ReadResourceRequestParam { uri }: ReadResourceRequestParam,
-        context: RequestContext<RoleServer>,
+        _context: RequestContext<RoleServer>,
     ) -> Result<ReadResourceResult, McpError> {
         // Delegate read handling to resources module
         let req = ReadResourceRequestParam { uri };
-        resources::read_resource(req, context).await
+        resources::read_resource(&self, req).await
     }
 
-    // Return an empty list of resource templates
-    // (Not implemented)
+    // Return a list of available resource templates
     async fn list_resource_templates(
         &self,
         _request: Option<PaginatedRequestParam>,
-        _: RequestContext<RoleServer>,
+        context: RequestContext<RoleServer>,
     ) -> Result<ListResourceTemplatesResult, McpError> {
-        Ok(ListResourceTemplatesResult {
-            next_cursor: None,
-            resource_templates: Vec::new(),
-        })
+        // Delegate to resource_templates module
+        resource_templates::list_resource_templates(_request, context).await
     }
 
     // Handle MCP initialization, logging HTTP context if available, and return server info

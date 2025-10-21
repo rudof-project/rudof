@@ -29,6 +29,20 @@ impl From<DataFormat> for RDFFormat {
     }
 }
 
+impl From<RDFFormat> for DataFormat {
+    fn from(val: RDFFormat) -> Self {
+        match val {
+            RDFFormat::Turtle => DataFormat::Turtle,
+            RDFFormat::NTriples => DataFormat::NTriples,
+            RDFFormat::RDFXML => DataFormat::RDFXML,
+            RDFFormat::TriG => DataFormat::TriG,
+            RDFFormat::N3 => DataFormat::N3,
+            RDFFormat::NQuads => DataFormat::NQuads,
+            RDFFormat::JsonLd => DataFormat::JsonLd,
+        }
+    }
+}
+
 impl Display for DataFormat {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {

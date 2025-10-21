@@ -1,13 +1,15 @@
 use anyhow::*;
 use iri_s::IriS;
 use rudof_lib::node_info::{NodeInfoOptions, get_node_info};
-use rudof_lib::{InputSpec, Rudof, RudofConfig};
+use rudof_lib::{
+    InputSpec, Rudof, RudofConfig, data_format::DataFormat, data_utils::get_data_rudof,
+};
 use srdf::ReaderMode;
 use std::path::PathBuf;
 
 use crate::{
-    ShowNodeMode, data::get_data_rudof, data_format::DataFormat,
-    node_formatter::format_node_info_list, node_selector::parse_node_selector, writer::get_writer,
+    ShowNodeMode, node_formatter::format_node_info_list, node_selector::parse_node_selector,
+    writer::get_writer,
 };
 
 #[allow(clippy::too_many_arguments)]

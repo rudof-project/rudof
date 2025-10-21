@@ -1,6 +1,5 @@
 use crate::ValidatorErrors;
 use prefixmap::{PrefixMap, PrefixMapError};
-use termtree::Tree;
 use serde::{Serialize, ser::SerializeMap};
 use shex_ast::{
     Node, ShapeLabelIdx,
@@ -9,6 +8,7 @@ use shex_ast::{
     },
 };
 use std::{fmt::Display, io};
+use termtree::Tree;
 
 /// Reason represents justifications about why a node conforms to some shape
 #[derive(Debug, Clone)]

@@ -1,58 +1,86 @@
 use crate::rudof_mcp_service::errors::{self, codes};
-use rmcp::{ErrorData as McpError, RoleServer, model::*, service::RequestContext};
+use rmcp::{
+    ErrorData as McpError, RoleServer,
+    model::{
+        ListResourcesResult, PaginatedRequestParam, RawResource, ReadResourceRequestParam,
+        ReadResourceResult, Resource as AnnotatedResource, ResourceContents,
+    },
+    service::RequestContext,
+};
 use serde_json::json;
+use std::str::FromStr;
 
-// Resource URIs
-pub const RDF_FORMATS_URI: &str = "rudof://rdf_formats";
-pub const NODE_MODES_URI: &str = "rudof://node_modes";
+use crate::rudof_mcp_service::service::RudofMcpService;
+use rudof_lib::RDFFormat;
 
-/// Return the list of available resources
+// Return the list of available resources
 pub async fn list_resources(
     _request: Option<PaginatedRequestParam>,
     _ctx: RequestContext<RoleServer>,
 ) -> Result<ListResourcesResult, McpError> {
-    let r1 = RawResource::new(RDF_FORMATS_URI, "RDF Formats").no_annotation();
+    let current_rdf_graph_resource = AnnotatedResource {
+        raw: RawResource {
+            uri: "rdf://graph".to_string(),
+            name: "Current RDF Graph".to_string(),
+            description: Some("The RDF dataset currently loaded into memory.".to_string()),
+            mime_type: Some("text/turtle".to_string()),
+            title: Some("Current RDF Graph".to_string()),
+            size: None,
+            icons: None,
+        },
+        annotations: None,
+    };
+
     Ok(ListResourcesResult {
-        resources: vec![r1],
+        resources: vec![current_rdf_graph_resource],
         next_cursor: None,
     })
 }
 
-/// Read a resource by URI and return the MCP read result
+// Read a resource by URI and return the MCP read result
 pub async fn read_resource(
+    service: &RudofMcpService,
     request: ReadResourceRequestParam,
-    _ctx: RequestContext<RoleServer>,
 ) -> Result<ReadResourceResult, McpError> {
     let uri = request.uri;
     match uri.as_str() {
-        RDF_FORMATS_URI => {
-            let formats = json!({
-                "formats": [
-                    { "name": "Turtle", "media_type": "text/turtle", "extensions": ["ttl"] },
-                    { "name": "RDF/XML", "media_type": "application/rdf+xml", "extensions": ["rdf", "xml"] },
-                    { "name": "N-Triples", "media_type": "application/n-triples", "extensions": ["nt"] },
-                    { "name": "JSON-LD", "media_type": "application/ld+json", "extensions": ["jsonld", "json"] }
-                ],
-                "default": "Turtle",
-            });
-
-            Ok(ReadResourceResult {
-                contents: vec![ResourceContents::text(formats.to_string(), uri.clone())],
-            })
-        }
-        NODE_MODES_URI => {
-            let modes = json!({
-                "modes": ["incoming", "outgoing", "both"],
-                "default": "both",
-            });
-            Ok(ReadResourceResult {
-                contents: vec![ResourceContents::text(modes.to_string(), uri.clone())],
-            })
-        }
+        "rdf://graph" => get_current_rdf_graph_resource(service, &uri).await,
 
         _ => Err(errors::resource_not_found(
             codes::RESOURCE_NOT_FOUND,
             Some(json!({ "uri": uri })),
         )),
     }
+}
+
+async fn get_current_rdf_graph_resource(
+    service: &RudofMcpService,
+    uri: &String,
+) -> Result<ReadResourceResult, McpError> {
+    let rudof = service.rudof.lock().await;
+
+    let format = RDFFormat::from_str("turtle").map_err(|e| {
+        errors::internal_error(
+            codes::SERIALIZE_DATA_ERROR,
+            Some(json!({ "error": e.to_string() })),
+        )
+    })?;
+    let mut buf = Vec::new();
+    rudof.serialize_data(&format, &mut buf).map_err(|e| {
+        errors::internal_error(
+            codes::SERIALIZE_DATA_ERROR,
+            Some(json!({ "error": e.to_string() })),
+        )
+    })?;
+
+    let graph_text = String::from_utf8(buf).map_err(|e| {
+        errors::internal_error(
+            codes::UTF8_CONVERSION_ERROR,
+            Some(json!({ "error": e.to_string() })),
+        )
+    })?;
+
+    Ok(ReadResourceResult {
+        contents: vec![ResourceContents::text(graph_text, uri)],
+    })
 }

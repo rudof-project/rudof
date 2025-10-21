@@ -1,4 +1,4 @@
-use crate::rudof_mcp_service::{service::RudofMcpService, types::*};
+use crate::rudof_mcp_service::service::RudofMcpService;
 use rmcp::{
     ErrorData as McpError, handler::server::router::tool::ToolRouter,
     handler::server::wrapper::Parameters, model::CallToolResult, tool, tool_router,
@@ -24,7 +24,7 @@ impl RudofMcpService {
 
     #[tool(
         name = "export_rdf_data",
-        description = "Serialize and return the current RDF datastore in the requested format"
+        description = "Serialize and return the server's RDF datastore in the requested format"
     )]
     pub async fn export_rdf_data(
         &self,
@@ -32,6 +32,42 @@ impl RudofMcpService {
     ) -> Result<CallToolResult, McpError> {
         // Delegates the call to the function in data_tools_impl.rs
         export_rdf_data_impl(self, params).await
+    }
+
+    #[tool(
+        name = "load_rdf_data_from_sources",
+        description = "Load RDF data from remote sources (URLs, files) or SPARQL endpoint into the server's datastore"
+    )]
+    pub async fn load_rdf_data_from_sources(
+        &self,
+        params: Parameters<LoadRdfDataFromSourcesRequest>,
+    ) -> Result<CallToolResult, McpError> {
+        // Delegates the call to the function in data_tools_impl.rs
+        load_rdf_data_from_sources_impl(self, params).await
+    }
+
+    #[tool(
+        name = "export_plantuml",
+        description = "Generate a PlantUML diagram of the server's RDF datastore"
+    )]
+    pub async fn export_plantuml(
+        &self,
+        params: Parameters<EmptyRequest>,
+    ) -> Result<CallToolResult, McpError> {
+        // Delegates the call to the function in data_tools_impl.rs
+        export_plantuml_impl(self, params).await
+    }
+
+    #[tool(
+        name = "export_image",
+        description = "Generate an image (SVG or PNG) visualization of the server's RDF datastore"
+    )]
+    pub async fn export_image(
+        &self,
+        params: Parameters<ExportImageRequest>,
+    ) -> Result<CallToolResult, McpError> {
+        // Delegates the call to the function in data_tools_impl.rs
+        export_image_impl(self, params).await
     }
 
     #[tool(
@@ -69,6 +105,33 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
             }
             "export_rdf_data" => {
                 tool.title = Some("Export RDF data".to_string());
+                tool.annotations = Some(
+                    rmcp::model::ToolAnnotations::new()
+                        .read_only(true)
+                        .destructive(false)
+                        .idempotent(true),
+                );
+            }
+            "load_rdf_data_from_sources" => {
+                tool.title = Some("Load RDF data from sources".to_string());
+                tool.annotations = Some(
+                    rmcp::model::ToolAnnotations::new()
+                        .read_only(false)
+                        .destructive(false)
+                        .idempotent(false),
+                );
+            }
+            "export_plantuml" => {
+                tool.title = Some("Export PlantUML diagram".to_string());
+                tool.annotations = Some(
+                    rmcp::model::ToolAnnotations::new()
+                        .read_only(true)
+                        .destructive(false)
+                        .idempotent(true),
+                );
+            }
+            "export_image" => {
+                tool.title = Some("Export RDF image visualization".to_string());
                 tool.annotations = Some(
                     rmcp::model::ToolAnnotations::new()
                         .read_only(true)
@@ -165,14 +228,12 @@ mod tests {
     async fn test_export_rdf_data_success() {
         let service = create_test_service();
 
-        // First load some data
         let load_req = LoadRdfDataRequest {
             rdf_data: SAMPLE_TURTLE.to_string(),
             format: "turtle".to_string(),
         };
         let _ = service.load_rdf_data(Parameters(load_req)).await.unwrap();
 
-        // Then export it
         let export_req = ExportRdfDataRequest {
             format: "turtle".to_string(),
         };
@@ -200,17 +261,97 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_node_info_success() {
+    async fn test_load_rdf_data_from_sources_invalid_format() {
         let service = create_test_service();
 
-        // Load test data
+        let request = LoadRdfDataFromSourcesRequest {
+            data: vec!["file://some/path".to_string()],
+            data_format: "invalid_format".to_string(),
+            base: None,
+            endpoint: None,
+        };
+
+        let result = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await;
+
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_load_rdf_data_from_sources_empty_sources() {
+        let service = create_test_service();
+
+        let request = LoadRdfDataFromSourcesRequest {
+            data: vec![],
+            data_format: "turtle".to_string(),
+            base: None,
+            endpoint: None,
+        };
+
+        let result = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await;
+
+        assert!(
+            result.is_err(),
+            "Expected an error for empty sources, got success: {:?}",
+            result
+        );
+        let err = result.unwrap_err();
+        assert_eq!(
+            err.message, "rdf_load_error",
+            "Expected 'rdf_load_error', got: {:?}",
+            err.message
+        );
+    }
+
+    #[tokio::test]
+    async fn test_export_plantuml_success() {
+        let service = create_test_service();
+
         let load_req = LoadRdfDataRequest {
             rdf_data: SAMPLE_TURTLE.to_string(),
             format: "turtle".to_string(),
         };
         let _ = service.load_rdf_data(Parameters(load_req)).await.unwrap();
 
-        // Query node info
+        let result = service.export_plantuml(Parameters(EmptyRequest {})).await;
+
+        assert!(result.is_ok());
+        let call_result = result.unwrap();
+        assert!(call_result.structured_content.is_some());
+
+        if let Some(text) = call_result.content[0].as_text() {
+            assert!(text.text.contains("@startuml"));
+            assert!(text.text.contains("Alice"));
+        } else {
+            panic!("Expected Text content");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_export_image_invalid_format() {
+        let service = create_test_service();
+
+        let request = ExportImageRequest {
+            image_format: "JPG".to_string(),
+        };
+        let result = service.export_image(Parameters(request)).await;
+
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_node_info_success() {
+        let service = create_test_service();
+
+        let load_req = LoadRdfDataRequest {
+            rdf_data: SAMPLE_TURTLE.to_string(),
+            format: "turtle".to_string(),
+        };
+        let _ = service.load_rdf_data(Parameters(load_req)).await.unwrap();
+
         let node_req = NodeInfoRequest {
             node: "<http://example.org/alice>".to_string(),
             predicates: None,
@@ -229,14 +370,12 @@ mod tests {
     async fn test_node_info_not_found() {
         let service = create_test_service();
 
-        // Load test data
         let load_req = LoadRdfDataRequest {
             rdf_data: SAMPLE_TURTLE.to_string(),
             format: "turtle".to_string(),
         };
         let _ = service.load_rdf_data(Parameters(load_req)).await.unwrap();
 
-        // Query non-existent node
         let node_req = NodeInfoRequest {
             node: "http://example.org/nonexistent".to_string(),
             predicates: None,
@@ -340,6 +479,9 @@ mod tests {
         assert!(!tools.is_empty());
         assert!(tools.iter().any(|t| t.name == "load_rdf_data"));
         assert!(tools.iter().any(|t| t.name == "export_rdf_data"));
+        assert!(tools.iter().any(|t| t.name == "load_rdf_data_from_sources"));
+        assert!(tools.iter().any(|t| t.name == "export_plantuml"));
+        assert!(tools.iter().any(|t| t.name == "export_image"));
         assert!(tools.iter().any(|t| t.name == "node_info"));
     }
 
@@ -349,38 +491,58 @@ mod tests {
 
         assert!(!tools.is_empty());
 
-        // Check load_rdf_data annotations
         let load_tool = tools.iter().find(|t| t.name == "load_rdf_data");
         assert!(load_tool.is_some());
-        let load_tool = load_tool.unwrap();
-        assert_eq!(load_tool.title, Some("Load RDF data".to_string()));
-        assert!(load_tool.annotations.is_some());
+        assert_eq!(load_tool.unwrap().title, Some("Load RDF data".to_string()));
 
-        // Check export_rdf_data annotations
         let export_tool = tools.iter().find(|t| t.name == "export_rdf_data");
         assert!(export_tool.is_some());
-        let export_tool = export_tool.unwrap();
-        assert_eq!(export_tool.title, Some("Export RDF data".to_string()));
+        assert_eq!(
+            export_tool.unwrap().title,
+            Some("Export RDF data".to_string())
+        );
 
-        // Check node_info annotations
+        let load_sources_tool = tools
+            .iter()
+            .find(|t| t.name == "load_rdf_data_from_sources");
+        assert!(load_sources_tool.is_some());
+        assert_eq!(
+            load_sources_tool.unwrap().title,
+            Some("Load RDF data from sources".to_string())
+        );
+
+        let plantuml_tool = tools.iter().find(|t| t.name == "export_plantuml");
+        assert!(plantuml_tool.is_some());
+        assert_eq!(
+            plantuml_tool.unwrap().title,
+            Some("Export PlantUML diagram".to_string())
+        );
+
+        let image_tool = tools.iter().find(|t| t.name == "export_image");
+        assert!(image_tool.is_some());
+        assert_eq!(
+            image_tool.unwrap().title,
+            Some("Export RDF image visualization".to_string())
+        );
+
         let node_tool = tools.iter().find(|t| t.name == "node_info");
         assert!(node_tool.is_some());
-        let node_tool = node_tool.unwrap();
-        assert_eq!(node_tool.title, Some("Inspect RDF Node".to_string()));
+        assert_eq!(
+            node_tool.unwrap().title,
+            Some("Inspect RDF Node".to_string())
+        );
     }
 
     #[tokio::test]
     async fn test_load_and_export_roundtrip() {
         let service = create_test_service();
 
-        // Load data
         let load_req = LoadRdfDataRequest {
             rdf_data: SAMPLE_TURTLE.to_string(),
             format: "turtle".to_string(),
         };
         let _ = service.load_rdf_data(Parameters(load_req)).await.unwrap();
 
-        // Export in same format
         let export_req = ExportRdfDataRequest {
             format: "turtle".to_string(),
         };
@@ -389,7 +551,6 @@ mod tests {
         assert!(result.is_ok());
         let call_result = result.unwrap();
 
-        // Verify content is not empty
         if let Some(text) = call_result.content[0].as_text() {
             assert!(!text.text.is_empty());
             assert!(text.text.contains("alice") || text.text.contains("Alice"));
@@ -402,14 +563,12 @@ mod tests {
     async fn test_multiple_format_export() {
         let service = create_test_service();
 
-        // Load data in turtle
         let load_req = LoadRdfDataRequest {
             rdf_data: SAMPLE_TURTLE.to_string(),
             format: "turtle".to_string(),
         };
         let _ = service.load_rdf_data(Parameters(load_req)).await.unwrap();
 
-        // Try exporting in different formats
         let formats = vec!["turtle", "ntriples", "rdf/xml", "json"];
 
         for fmt in formats {

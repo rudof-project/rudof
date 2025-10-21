@@ -1,11 +1,12 @@
 use std::path::PathBuf;
 
-use crate::data::data_format2rdf_format;
 use crate::writer::get_writer;
-use crate::{RDFReaderMode, ResultServiceFormat, data_format::DataFormat};
+use crate::{RDFReaderMode, ResultServiceFormat};
 use anyhow::Result;
 use iri_s::mime_type::MimeType;
-use rudof_lib::{InputSpec, Rudof, RudofConfig};
+use rudof_lib::{
+    InputSpec, Rudof, RudofConfig, data_format::DataFormat, data_utils::data_format2rdf_format,
+};
 use sparql_service::ServiceDescriptionFormat;
 
 pub fn run_service(
