@@ -111,7 +111,7 @@ impl EndpointDescription {
     }
 
     pub fn prefixmap(&self) -> PrefixMap {
-        self.prefixmap.clone().unwrap_or(PrefixMap::new())
+        self.prefixmap.clone().unwrap_or_default()
     }
 
     pub fn with_prefixmap(mut self, prefixmap: PrefixMap) -> Self {
