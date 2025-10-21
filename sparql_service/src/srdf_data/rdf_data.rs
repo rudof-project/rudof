@@ -134,6 +134,7 @@ impl RdfData {
     // Cleans the values of endpoints and graph
     pub fn clean_all(&mut self) {
         self.endpoints.clear();
+        self.use_endpoints.clear();
         self.graph = None
     }
 
@@ -267,6 +268,18 @@ impl RdfData {
     pub fn find_endpoint(&self, name: &str) -> Option<SRDFSparql> {
         self.endpoints.get(name).cloned()
     }
+
+    /// Gets all the triples from the in-memory graph and the endpoints
+    /// This operation can be very expensive if the endpoints contain a lot of data
+    pub fn all_triples(&self) -> Result<impl Iterator<Item = OxTriple>, RdfDataError> {
+        let graph_triples = self.graph.iter().flat_map(NeighsRDF::triples).flatten();
+        let endpoints_triples = self
+            .use_endpoints
+            .iter()
+            .flat_map(|(_name, e)| NeighsRDF::triples(e))
+            .flatten();
+        Ok(graph_triples.chain(endpoints_triples))
+    }
 }
 
 impl Serialize for RdfData {
@@ -309,11 +322,11 @@ impl Rdf for RdfData {
         match &self.graph {
             Some(g) => Some(g.prefixmap()),
             None => {
-                if self.endpoints.is_empty() {
+                if self.use_endpoints.is_empty() {
                     None
                 } else {
                     let mut pm = PrefixMap::new();
-                    for e in self.endpoints.values() {
+                    for e in self.use_endpoints.values() {
                         match pm.merge(e.prefixmap().clone()) {
                             Ok(_) => {}
                             Err(e) => {
@@ -333,7 +346,7 @@ impl Rdf for RdfData {
         if let Some(graph) = &self.graph {
             graph.prefixmap().qualify(&iri)
         } else {
-            for (_name, e) in self.endpoints.iter() {
+            for (_name, e) in self.use_endpoints.iter() {
                 if let Some(qualified) = e.prefixmap().qualify_optional(&iri) {
                     return qualified;
                 }
@@ -368,7 +381,7 @@ impl Rdf for RdfData {
             let iri = graph.prefixmap().resolve_prefix_local(prefix, local)?;
             Ok(iri.clone())
         } else {
-            for (_name, e) in self.endpoints.iter() {
+            for (_name, e) in self.use_endpoints.iter() {
                 if let Ok(iri) = e.prefixmap().resolve_prefix_local(prefix, local) {
                     return Ok(iri.clone());
                 }
@@ -498,12 +511,14 @@ fn _rdf_type() -> OxNamedNode {
 impl NeighsRDF for RdfData {
     fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
         let graph_triples = self.graph.iter().flat_map(NeighsRDF::triples).flatten();
-        let endpoints_triples = self
-            .endpoints
+        // We ignore the triples from the endpoints for now as it can be very expensive
+        /*let endpoints_triples = self
+            .use_endpoints
             .iter()
             .flat_map(|(_name, e)| NeighsRDF::triples(e))
             .flatten();
-        Ok(graph_triples.chain(endpoints_triples))
+        Ok(graph_triples.chain(endpoints_triples))*/
+        Ok(graph_triples)
     }
 
     fn triples_matching<S, P, O>(
@@ -526,7 +541,7 @@ impl NeighsRDF for RdfData {
             .flat_map(move |g| NeighsRDF::triples_matching(g, s1.clone(), p1.clone(), o1.clone()))
             .flatten();
         let endpoints_triples = self
-            .endpoints
+            .use_endpoints
             .iter()
             .flat_map(move |(_name, e)| {
                 NeighsRDF::triples_matching(e, subject.clone(), predicate.clone(), object.clone())

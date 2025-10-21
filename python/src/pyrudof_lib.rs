@@ -512,14 +512,14 @@ impl PyRudof {
     /// Raises: RudofError if there is an error generating the UML
     #[pyo3(signature = ())]
     pub fn data2plantuml(&self) -> PyResult<String> {
-        let mut v = Vec::new();
+        let mut writer = Cursor::new(Vec::new());
         self.inner
-            .data2plant_uml(&mut v)
+            .data2plant_uml(&mut writer)
             .map_err(|e| RudofError::RDF2PlantUmlError {
                 error: format!("Error generating UML for current RDF data: {e}"),
             })
             .map_err(cnv_err)?;
-        let str = String::from_utf8(v)
+        let str = String::from_utf8(writer.into_inner())
             .map_err(|e| RudofError::RDF2PlantUmlError {
                 error: format!("RDF2PlantUML: Error converting generated vector to UML: {e}"),
             })
