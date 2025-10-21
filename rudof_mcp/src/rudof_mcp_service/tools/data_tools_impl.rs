@@ -90,7 +90,7 @@ pub async fn load_rdf_data_impl(
 
     match RDFFormat::from_str(&format) {
         Ok(parsed_data_format) => {
-            let parsed_format: RDFFormat = parsed_data_format.into();
+            let parsed_format: RDFFormat = parsed_data_format;
 
             rudof
                 .read_data(

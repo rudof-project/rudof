@@ -21,7 +21,7 @@ pub async fn explore_rdf_node_prompt_impl(
 ) -> Result<GetPromptResult, McpError> {
     let node_example = args.node;
     let mode_value = args.mode.unwrap_or_else(|| "both".to_string());
-    let predicates_list = args.predicates.unwrap_or_else(|| vec![]);
+    let predicates_list = args.predicates.unwrap_or_else(std::vec::Vec::new);
     let predicates_display = if predicates_list.is_empty() {
         "[]".to_string()
     } else {

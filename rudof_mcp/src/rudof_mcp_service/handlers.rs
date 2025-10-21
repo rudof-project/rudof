@@ -61,7 +61,7 @@ impl ServerHandler for RudofMcpService {
     ) -> Result<ReadResourceResult, McpError> {
         // Delegate read handling to resources module
         let req = ReadResourceRequestParam { uri };
-        resources::read_resource(&self, req).await
+        resources::read_resource(self, req).await
     }
 
     // Return a list of available resource templates
