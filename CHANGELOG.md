@@ -12,6 +12,10 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 - default_config.toml is now read at compile time and contains a default config file with some endpoints like dbpedia, wikidata, uniprot, etc. 
 - added list_endpoints to PyRudof
 - Improved visualization of node information using termtree, now it shows the incoming/outgoing using arrow glyphs
+- node_info in Python bindings
+
+### Changed
+- Moved node_formatter from rudof_cli to rudof_lib so it can be reused by Python bindings, CLI and MCP 
 
 ### Fixed
 - A problem with node information that was showing extra `<` and `>` characters
