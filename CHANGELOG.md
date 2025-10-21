@@ -13,6 +13,8 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 - added list_endpoints to PyRudof
 - Improved visualization of node information using termtree
 
+### Removed
+- folder shex_compact_winnow which was no longer used
 
 ## v0.1.121
 ### Added
