@@ -7,6 +7,12 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.1.122
+### Added
+- default_config.toml is now read at compile time and contains a default config file with some endpoints like dbpedia, wikidata, uniprot, etc. 
+- added list_endpoints to PyRudof
+
+
 ## v0.1.121
 ### Added
 - `mcp` command now starts rudof as an MCP server. First contribution by @samuel-bustamante
