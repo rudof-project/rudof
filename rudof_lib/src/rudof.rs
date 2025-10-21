@@ -170,7 +170,7 @@ impl Rudof {
 
     /// Resets the current RDF Data
     pub fn reset_data(&mut self) {
-        self.rdf_data = RdfData::new()
+        self.rdf_data.reset()
     }
 
     /// Resets the current DCTAP
@@ -270,6 +270,14 @@ impl Rudof {
     }
 
     /// List the registered SPARQL endpoints
+    pub fn list_use_endpoints(&self) -> Vec<(String, IriS)> {
+        self.rdf_data
+            .use_endpoints()
+            .iter()
+            .map(|(name, endpoint)| (name.clone(), endpoint.iri().clone()))
+            .collect()
+    }
+
     pub fn list_endpoints(&self) -> Vec<(String, IriS)> {
         self.rdf_data
             .endpoints()
@@ -753,8 +761,9 @@ impl Rudof {
             match format {
                 DCTAPFormat::CSV => {
                     let dctap = DCTAP::from_path(path, &self.config.tap_config()).map_err(|e| {
-                        RudofError::DCTAPReaderCSV {
+                        RudofError::DCTAPReader {
                             path: path_name,
+                            format: format.to_string(),
                             error: format!("{e}"),
                         }
                     })?;
@@ -1138,7 +1147,6 @@ impl Rudof {
                 iri: iri.clone(),
                 error: format!("{e}"),
             })?;
-
         self.rdf_data.add_endpoint(name, sparql_endpoint);
         Ok(())
     }

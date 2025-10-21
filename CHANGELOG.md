@@ -7,7 +7,14 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
-## v0.1.122
+## v0.1.125
+### Added
+- `list_use_endpoints` and `list_endpoints` to rudof and pyrudof
+
+### Changed
+- The behavior of `reset_all()` only clears the use_endpoints but keeps the list of available endpoints
+
+## v0.1.124
 ### Added
 - default_config.toml is now read at compile time and contains a default config file with some endpoints like dbpedia, wikidata, uniprot, etc. 
 - added list_endpoints to PyRudof

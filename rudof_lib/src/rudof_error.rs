@@ -320,8 +320,12 @@ pub enum RudofError {
     #[error("Serializing ShEx: {error}")]
     SerializingShacl { error: String },
 
-    #[error("DCTAP reader from path {path} in CSV format: {error}")]
-    DCTAPReaderCSV { error: String, path: String },
+    #[error("DCTAP reader error. Path {path}, format {format}: {error}")]
+    DCTAPReader {
+        error: String,
+        format: String,
+        path: String,
+    },
 
     #[error("DCTAP reader from path {path}: {error}")]
     ReadingDCTAPPath { error: String, path: String },
@@ -329,7 +333,7 @@ pub enum RudofError {
     #[error("DCTAP reader in CSV format: {error}")]
     DCTAPReaderCSVReader { error: String },
 
-    #[error("DCTAP reader from path {path} in CSV format: {error}")]
+    #[error("DCTAP reader from path {path} in format {format}: {error}")]
     DCTAPReaderPathXLS {
         error: String,
         path: String,

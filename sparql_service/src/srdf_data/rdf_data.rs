@@ -64,6 +64,14 @@ impl RdfData {
         }
     }
 
+    pub fn reset(&mut self) {
+        // We keep the available list of endpoints but we clear the used ones
+        self.use_endpoints.clear();
+        self.graph = None;
+        self.store = None;
+        self.focus = None;
+    }
+
     pub fn with_rdf_data_config(
         mut self,
         rdf_data_config: &srdf::RdfDataConfig,
@@ -197,6 +205,10 @@ impl RdfData {
             .entry(name.to_string())
             .and_modify(|e| *e = endpoint.clone())
             .or_insert(endpoint);
+    }
+
+    pub fn use_endpoints(&self) -> &HashMap<String, SRDFSparql> {
+        &self.use_endpoints
     }
 
     pub fn endpoints(&self) -> &HashMap<String, SRDFSparql> {
