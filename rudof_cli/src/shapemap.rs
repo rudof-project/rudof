@@ -18,7 +18,8 @@ pub fn run_shapemap(
     force_overwrite: bool,
 ) -> Result<()> {
     let (mut writer, color) = get_writer(output, force_overwrite)?;
-    let mut rudof = Rudof::new(&RudofConfig::new())?;
+    let rudof_config = RudofConfig::new()?;
+    let mut rudof = Rudof::new(&rudof_config)?;
     let shapemap_format = shapemap_format_convert(shapemap_format);
     rudof.read_shapemap(input.open_read(None, "ShapeMap")?, &shapemap_format)?;
     let result_format = shapemap_format_convert(result_format);

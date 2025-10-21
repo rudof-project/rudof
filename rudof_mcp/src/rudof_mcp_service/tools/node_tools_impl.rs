@@ -6,6 +6,7 @@ use rmcp::{
 };
 use rudof_lib::{
     node_info::*,
+    parse_node_selector,
     srdf::{Iri, NeighsRDF, Subject, Term},
 };
 use serde_json::json;
@@ -138,7 +139,7 @@ pub async fn node_info_impl(
         .map_err(|_| invalid_request(codes::INVALID_MODE, Some(json!({ "mode": mode_str }))))?;
 
     let pred_list: Vec<String> = predicates.unwrap_or_default();
-    let node_infos = get_node_info(rdf, node_selector, &pred_list, options).map_err(|e| {
+    let node_infos = get_node_info(rdf, node_selector, &pred_list, &options).map_err(|e| {
         internal_error(
             codes::RDF_ARC_QUERY_ERROR,
             Some(json!({ "error": e.to_string() })),

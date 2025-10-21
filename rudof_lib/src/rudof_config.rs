@@ -17,7 +17,7 @@ const DEFAULT_CONFIG: &str = include_str!("default_config.toml");
 
 /// `rudof_config` describes the configuration of Rudof
 ///
-#[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Default)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 pub struct RudofConfig {
     rdf_data: Option<RdfDataConfig>,
     shex: Option<ShExConfig>,
@@ -34,8 +34,8 @@ pub struct RudofConfig {
 }
 
 impl RudofConfig {
-    pub fn new() -> RudofConfig {
-        RudofConfig::default()
+    pub fn new() -> Result<RudofConfig, RudofError> {
+        RudofConfig::default_config()
     }
 
     /// Returns the default config which is read from the embedded default_config.toml

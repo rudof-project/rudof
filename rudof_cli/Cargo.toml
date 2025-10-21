@@ -38,7 +38,6 @@ sparql_service.workspace = true
 srdf.workspace = true 
 supports-color.workspace = true 
 tabled.workspace = true
-termtree.workspace = true
 thiserror.workspace = true 
 tokio.workspace = true 
 tracing.workspace = true 

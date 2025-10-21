@@ -1,11 +1,15 @@
 prefix : <http://example.org/>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
-:a :name "Alice" ;
-   :birthdate "1990-05-02"^^xsd:date ;
-   :enrolledIn :cs101 .
+:a :name       "Alice" ;
+   :birthdate  "1990-05-02"^^xsd:date ;
+   :enrolledIn :cs101 ;
+   :knows      :b, :c .
 
-:b :name "Bob", "Robert" .
-:a :knows :b .
+:b :name "Bob", "Robert"; 
+   :knows :c .
+
+:c :name "Charlie" ;
+   :knows :a, :b .
 
 :cs101 :name "Computer Science" .   

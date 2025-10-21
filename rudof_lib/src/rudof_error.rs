@@ -9,6 +9,35 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum RudofError {
+    #[error("Error resolving node {node}: {error}")]
+    NodeResolveError { node: String, error: String },
+    #[error("Error parsing IRI reference {iri}: {error}")]
+    IriRefParseError { iri: String, error: String },
+    #[error("Error resolving predicate {predicate}: {error}")]
+    PredicateResolveError { predicate: String, error: String },
+    #[error("Node {node} is a literal, expected an IRI or a blank node")]
+    LiteralNotSubject { node: String },
+    #[error("Node {node} is not a subject in the RDF data")]
+    NodeNotSubject { node: String },
+    #[error("Error obtaining incoming arcs for object {object}: {error}")]
+    IncomingArcs { object: String, error: String },
+    #[error("Error obtaining outgoing arcs for subject {subject}: {error}")]
+    OutgoingArcs { subject: String, error: String },
+    #[error("Invalid mode: {mode}. Expected one of: {expected}")]
+    InvalidMode { mode: String, expected: String },
+    #[error("Error parsing node selector {node_selector}: {error}")]
+    NodeSelectorParseError {
+        node_selector: String,
+        error: String,
+    },
+    #[error("Error parsing shape selector {shape_selector}: {error}")]
+    ShapeSelectorParseError {
+        shape_selector: String,
+        error: String,
+    },
+    #[error("Error formatting node info: {error}")]
+    NodeInfoFormatError { error: String },
+
     #[error("Reading Rudof config: {error}\nContent:\n{str}")]
     RudofConfigFromStrError { str: String, error: String },
 

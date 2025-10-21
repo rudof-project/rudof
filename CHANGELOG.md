@@ -11,7 +11,10 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Added
 - default_config.toml is now read at compile time and contains a default config file with some endpoints like dbpedia, wikidata, uniprot, etc. 
 - added list_endpoints to PyRudof
-- Improved visualization of node information using termtree
+- Improved visualization of node information using termtree, now it shows the incoming/outgoing using arrow glyphs
+
+### Fixed
+- A problem with node information that was showing extra `<` and `>` characters
 
 ### Removed
 - folder shex_compact_winnow which was no longer used

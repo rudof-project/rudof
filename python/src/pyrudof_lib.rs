@@ -14,7 +14,8 @@ use rudof_lib::{
     RudofError, ServiceDescription, ServiceDescriptionFormat, ShExFormat, ShExFormatter,
     ShExSchema, ShaCo, ShaclFormat, ShaclSchemaIR, ShaclValidationMode, ShapeLabel, ShapeMapFormat,
     ShapeMapFormatter, ShapesGraphSource, SortMode, UmlGenerationMode, ValidationReport,
-    ValidationStatus, VarName, srdf::Object,
+    ValidationStatus, VarName, format_node_info_list, node_info::get_node_info,
+    parse_node_selector, srdf::Object,
 };
 use std::{
     ffi::OsStr,
@@ -72,6 +73,36 @@ impl PyRudof {
     #[pyo3(signature = ())]
     pub fn reset_shapemap(&mut self) {
         self.inner.reset_shapemap();
+    }
+
+    #[pyo3(signature = (node_selector, predicates, show_outgoing = true, show_incoming = false))]
+    pub fn node_info(
+        &mut self,
+        node_selector: &str,
+        predicates: Vec<String>,
+        show_outgoing: bool,
+        show_incoming: bool,
+    ) -> PyResult<String> {
+        let node_selector = parse_node_selector(node_selector).map_err(cnv_err)?;
+        let options = rudof_lib::node_info::NodeInfoOptions {
+            show_outgoing,
+            show_incoming,
+        };
+        let data = self.inner.get_rdf_data();
+        let node_infos =
+            get_node_info(data, node_selector, &predicates, &options).map_err(cnv_err)?;
+
+        let mut buffer = Vec::new();
+        {
+            let mut writer = BufWriter::new(&mut buffer);
+            format_node_info_list(&node_infos, data, &mut writer, &options).map_err(cnv_err)?;
+        }
+        let str = String::from_utf8(buffer)
+            .map_err(|e| RudofError::Utf8Error {
+                error: e.to_string(),
+            })
+            .map_err(cnv_err)?;
+        Ok(str)
     }
 
     /// Resets the current SHACL shapes graph
@@ -1229,15 +1260,6 @@ impl PyServiceDescription {
             .map_err(cnv_err)?;
         Ok(str)
     }
-
-    /*     /// Converts the schema to JSON
-    pub fn as_json(&self) -> PyResult<String> {
-        let str =  self
-            .inner
-            .as_json()
-            .map_err(|e| PyRudofError::str(e.to_string()))?;
-        Ok(str)
-    } */
 }
 
 /// [DCTAP](https://www.dublincore.org/specifications/dctap/) representation

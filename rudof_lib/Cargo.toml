@@ -40,6 +40,7 @@ shex_validation.workspace = true
 spargebra.workspace = true
 sparql_service.workspace = true
 srdf.workspace = true
+termtree.workspace = true
 thiserror = "2.0"
 toml = "0.8"
 tracing.workspace = true

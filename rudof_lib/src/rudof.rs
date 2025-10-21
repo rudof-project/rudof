@@ -1367,7 +1367,7 @@ mod tests {
         :U [ 2 ]
         "#;
         let shapemap = r#":x@:S"#;
-        let mut rudof = Rudof::new(&RudofConfig::default()).unwrap();
+        let mut rudof = Rudof::new(&RudofConfig::default_config().unwrap()).unwrap();
         rudof
             .read_data(
                 data.as_bytes(),
@@ -1400,7 +1400,7 @@ mod tests {
         let data = r#"<http://example/x> <http://example/p> 23 ."#;
         let shex = r#"<http://example/S> { <http://example/p> . }"#;
         let shapemap = r#"<http://example/x>@<http://example/S>"#;
-        let mut rudof = Rudof::new(&RudofConfig::default()).unwrap();
+        let mut rudof = Rudof::new(&RudofConfig::default_config().unwrap()).unwrap();
         rudof
             .read_data(
                 data.as_bytes(),
@@ -1433,7 +1433,7 @@ mod tests {
         let data = r#"<http://example/x> <http://example/other> 23 ."#;
         let shex = r#"<http://example/S> { <http://example/p> . }"#;
         let shapemap = r#"<http://example/x>@<http://example/S>"#;
-        let mut rudof = Rudof::new(&RudofConfig::default()).unwrap();
+        let mut rudof = Rudof::new(&RudofConfig::default_config().unwrap()).unwrap();
         rudof
             .read_data(
                 data.as_bytes(),
@@ -1479,7 +1479,7 @@ mod tests {
                 sh:datatype xsd:integer ;
             ] .
              "#;
-        let mut rudof = Rudof::new(&RudofConfig::default()).unwrap();
+        let mut rudof = Rudof::new(&RudofConfig::default_config().unwrap()).unwrap();
         rudof
             .read_data(
                 data.as_bytes(),
@@ -1524,7 +1524,7 @@ mod tests {
                 sh:datatype xsd:integer ;
             ] .
              "#;
-        let mut rudof = Rudof::new(&RudofConfig::default()).unwrap();
+        let mut rudof = Rudof::new(&RudofConfig::new().unwrap()).unwrap();
         rudof
             .read_data(
                 data.as_bytes(),
@@ -1568,7 +1568,7 @@ mod tests {
                 sh:datatype xsd:integer ;
             ] .
              "#;
-        let mut rudof = Rudof::new(&RudofConfig::default()).unwrap();
+        let mut rudof = Rudof::new(&RudofConfig::new().unwrap()).unwrap();
         rudof
             .read_data(
                 data.as_bytes(),
@@ -1603,7 +1603,7 @@ mod tests {
                 sh:datatype xsd:integer ;
             ] .
              "#;
-        let mut rudof = Rudof::new(&RudofConfig::default()).unwrap();
+        let mut rudof = Rudof::new(&RudofConfig::new().unwrap()).unwrap();
         rudof
             .read_data(
                 data.as_bytes(),
