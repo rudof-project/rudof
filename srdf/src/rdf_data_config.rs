@@ -94,7 +94,7 @@ impl Default for RdfDataConfig {
 pub struct EndpointDescription {
     query_url: IriS,
     update_url: Option<IriS>,
-    prefixmap: PrefixMap,
+    prefixmap: Option<PrefixMap>,
 }
 
 impl EndpointDescription {
@@ -102,7 +102,7 @@ impl EndpointDescription {
         EndpointDescription {
             query_url: IriS::new_unchecked(str),
             update_url: None,
-            prefixmap: PrefixMap::new(),
+            prefixmap: None,
         }
     }
 
@@ -110,17 +110,17 @@ impl EndpointDescription {
         &self.query_url
     }
 
-    pub fn prefixmap(&self) -> &PrefixMap {
-        &self.prefixmap
+    pub fn prefixmap(&self) -> PrefixMap {
+        self.prefixmap.clone().unwrap_or(PrefixMap::new())
     }
 
     pub fn with_prefixmap(mut self, prefixmap: PrefixMap) -> Self {
-        self.prefixmap = prefixmap;
+        self.prefixmap = Some(prefixmap);
         self
     }
 
     pub fn add_prefixmap(&mut self, prefixmap: PrefixMap) {
-        self.prefixmap = prefixmap;
+        self.prefixmap = Some(prefixmap);
     }
 }
 
@@ -132,7 +132,7 @@ impl FromStr for EndpointDescription {
         Ok(EndpointDescription {
             query_url: iri,
             update_url: None,
-            prefixmap: PrefixMap::new(),
+            prefixmap: None,
         })
     }
 }

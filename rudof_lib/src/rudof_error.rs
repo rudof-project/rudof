@@ -9,6 +9,9 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum RudofError {
+    #[error("Reading Rudof config: {error}\nContent:\n{str}")]
+    RudofConfigFromStrError { str: String, error: String },
+
     #[error("Error configuring RDF data: {error}")]
     RdfDataConfigError { error: String },
 

@@ -456,6 +456,18 @@ impl PyRudof {
         Ok(())
     }
 
+    /// Lists the known SPARQL endpoints
+    /// Returns: A list of tuples (name, url) of the known SPARQL endpoints
+    /// Raises: RudofError if there is an error obtaining the list of endpoints
+    pub fn list_endpoints(&self) -> PyResult<Vec<(String, String)>> {
+        let mut result = Vec::new();
+        let endpoints = self.inner.list_endpoints();
+        for (name, url) in endpoints {
+            result.push((name, url.to_string()));
+        }
+        Ok(result)
+    }
+
     /// Resets the current ShEx validation results
     /// Returns: None
     /// Raises: None

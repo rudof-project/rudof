@@ -1,3 +1,4 @@
+use crate::RudofError;
 use dctap::TapConfig;
 use serde::{Deserialize, Serialize};
 use shapes_comparator::ComparatorConfig;
@@ -12,7 +13,7 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
-use crate::RudofError;
+const DEFAULT_CONFIG: &str = include_str!("../../config/default_config.toml");
 
 /// `rudof_config` describes the configuration of Rudof
 ///
@@ -34,7 +35,11 @@ pub struct RudofConfig {
 
 impl RudofConfig {
     pub fn new() -> RudofConfig {
-        Self::default()
+        RudofConfig::default()
+    }
+
+    pub fn default_config() -> Result<RudofConfig, RudofError> {
+        RudofConfig::from_str(DEFAULT_CONFIG)
     }
 
     pub fn with_rdf_data_config(mut self, rdf_data_config: RdfDataConfig) -> Self {
@@ -190,10 +195,13 @@ impl RudofConfig {
 }
 
 impl FromStr for RudofConfig {
-    type Err = String;
+    type Err = RudofError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        toml::from_str(s).map_err(|e| format!("Failed to parse RudofConfig: {e}"))
+        toml::from_str(s).map_err(|e| RudofError::RudofConfigFromStrError {
+            str: s.to_string(),
+            error: e.to_string(),
+        })
     }
 }
 

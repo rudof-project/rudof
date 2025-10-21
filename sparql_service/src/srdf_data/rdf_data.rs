@@ -53,27 +53,6 @@ pub struct RdfData {
     store: Option<Store>,
 }
 
-impl Serialize for RdfData {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let mut state = serializer.serialize_struct("RdfData", 2)?;
-        state.serialize_field("endpoints", &self.endpoints)?;
-        state.serialize_field("graph", &self.graph)?;
-        state.end()
-    }
-}
-
-impl Debug for RdfData {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("RdfData")
-            .field("endpoints", &self.endpoints)
-            .field("graph", &self.graph)
-            .finish()
-    }
-}
-
 impl RdfData {
     pub fn new() -> RdfData {
         RdfData {
@@ -94,7 +73,7 @@ impl RdfData {
             for (name, endpoint_description) in endpoints.iter() {
                 let sparql_endpoint = SRDFSparql::new(
                     endpoint_description.query_url(),
-                    endpoint_description.prefixmap(),
+                    &endpoint_description.prefixmap(),
                 )
                 .map_err(|e| {
                     RdfDataError::SRDFSparqlFromEndpointDescriptionError {
@@ -275,6 +254,27 @@ impl RdfData {
 
     pub fn find_endpoint(&self, name: &str) -> Option<SRDFSparql> {
         self.endpoints.get(name).cloned()
+    }
+}
+
+impl Serialize for RdfData {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut state = serializer.serialize_struct("RdfData", 2)?;
+        state.serialize_field("endpoints", &self.endpoints)?;
+        state.serialize_field("graph", &self.graph)?;
+        state.end()
+    }
+}
+
+impl Debug for RdfData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RdfData")
+            .field("endpoints", &self.endpoints)
+            .field("graph", &self.graph)
+            .finish()
     }
 }
 
