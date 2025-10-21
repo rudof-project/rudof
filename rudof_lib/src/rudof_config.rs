@@ -13,7 +13,7 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
-const DEFAULT_CONFIG: &str = include_str!("../../config/default_config.toml");
+const DEFAULT_CONFIG: &str = include_str!("default_config.toml");
 
 /// `rudof_config` describes the configuration of Rudof
 ///
@@ -25,8 +25,8 @@ pub struct RudofConfig {
     shex2uml: Option<ShEx2UmlConfig>,
     shex2html: Option<ShEx2HtmlConfig>,
     shacl2shex: Option<Shacl2ShExConfig>,
-    tap2shex: Option<Tap2ShExConfig>,
     tap: Option<TapConfig>,
+    tap2shex: Option<Tap2ShExConfig>,
     shex2sparql: Option<ShEx2SparqlConfig>,
     service: Option<ServiceConfig>,
     plantuml_path: Option<PathBuf>,
@@ -38,6 +38,7 @@ impl RudofConfig {
         RudofConfig::default()
     }
 
+    /// Returns the default config which is read from the embedded default_config.toml
     pub fn default_config() -> Result<RudofConfig, RudofError> {
         RudofConfig::from_str(DEFAULT_CONFIG)
     }

@@ -326,7 +326,7 @@ impl Rdf for RdfData {
                     return qualified;
                 }
             }
-            format!("<{node}>")
+            format!("{node}")
         }
     }
 

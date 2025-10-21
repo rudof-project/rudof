@@ -27,7 +27,6 @@ regex.workspace = true
 rudof_generate.workspace = true
 rudof_lib.workspace = true
 rudof_mcp.workspace = true
-
 serde.workspace = true
 serde_json.workspace = true 
 shacl_ast.workspace = true 
@@ -39,6 +38,7 @@ sparql_service.workspace = true
 srdf.workspace = true 
 supports-color.workspace = true 
 tabled.workspace = true
+termtree.workspace = true
 thiserror.workspace = true 
 tokio.workspace = true 
 tracing.workspace = true 

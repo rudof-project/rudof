@@ -8,6 +8,15 @@ edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
+include = [
+    "Cargo.toml", 
+    "src/**/*.rs", 
+    "README.md", 
+    "LICENSE-MIT", 
+    "LICENSE-APACHE", 
+    "src/default_config.toml"
+]
+
 
 [dependencies]
 dctap.workspace = true

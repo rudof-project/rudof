@@ -1,7 +1,7 @@
-// Formatting logic for CLI output
 use anyhow::*;
 use srdf::NeighsRDF;
 use std::io::Write;
+use termtree::Tree;
 
 use rudof_lib::node_info::NodeInfo;
 
@@ -11,49 +11,51 @@ pub fn format_node_info<S: NeighsRDF, W: Write>(
     rdf: &S,
     writer: &mut W,
 ) -> Result<()> {
-    writeln!(writer, "Information about {}", node_info.subject_qualified)?;
+    writeln!(writer, "Outgoing arcs")?;
+    let mut tree =
+        Tree::new(node_info.subject_qualified.to_string()).with_glyphs(outgoing_glyphs());
 
-    // Show outgoing arcs
     if !node_info.outgoing.is_empty() {
-        writeln!(writer, "Outgoing arcs")?;
-        writeln!(writer, "{}", node_info.subject_qualified)?;
-
         let mut preds: Vec<_> = node_info.outgoing.keys().collect();
         preds.sort();
 
         for pred in preds {
-            writeln!(writer, " -{}-> ", rdf.qualify_iri(pred))?;
+            let pred_str = rdf.qualify_iri(pred);
             if let Some(objs) = node_info.outgoing.get(pred) {
                 for o in objs {
-                    writeln!(writer, "      {}", rdf.qualify_term(o))?;
+                    tree.leaves.push(
+                        Tree::new(format!("─ {} ─► {}", pred_str, rdf.qualify_term(o)))
+                            .with_glyphs(outgoing_glyphs()),
+                    );
                 }
-            } else {
-                bail!("Not found values for {pred} in map")
             }
         }
     }
+    writeln!(writer, "{}", tree)?;
 
     // Show incoming arcs
     if !node_info.incoming.is_empty() {
         writeln!(writer, "Incoming arcs")?;
         let object: S::Term = node_info.subject.clone().into();
-        writeln!(writer, "{}", rdf.qualify_term(&object))?;
+        let mut tree =
+            Tree::new(rdf.qualify_term(&object).to_string()).with_glyphs(incoming_glyphs());
 
         let mut preds: Vec<_> = node_info.incoming.keys().collect();
         preds.sort();
 
         for pred in preds {
-            writeln!(writer, "  <-{}-", rdf.qualify_iri(pred))?;
+            let pred_str = rdf.qualify_iri(pred).to_string();
             if let Some(subjs) = node_info.incoming.get(pred) {
                 for s in subjs {
-                    writeln!(writer, "      {}", rdf.qualify_subject(s))?;
+                    tree.leaves.push(
+                        Tree::new(format!("─ {} ◄─ {}", pred_str, rdf.qualify_subject(s)))
+                            .with_glyphs(incoming_glyphs()),
+                    );
                 }
-            } else {
-                bail!("Not found values for {pred} in map")
             }
         }
     }
-
+    writeln!(writer, "{}", tree)?;
     Ok(())
 }
 
@@ -67,4 +69,26 @@ pub fn format_node_info_list<S: NeighsRDF, W: Write>(
         format_node_info(node_info, rdf, writer)?;
     }
     Ok(())
+}
+
+fn outgoing_glyphs() -> termtree::GlyphPalette {
+    termtree::GlyphPalette {
+        middle_item: "├",
+        last_item: "└",
+        item_indent: "──",
+        middle_skip: "│",
+        last_skip: "",
+        skip_indent: "   ",
+    }
+}
+
+fn incoming_glyphs() -> termtree::GlyphPalette {
+    termtree::GlyphPalette {
+        middle_item: "├",
+        last_item: "└",
+        item_indent: "──",
+        middle_skip: "│",
+        last_skip: "",
+        skip_indent: "   ",
+    }
 }

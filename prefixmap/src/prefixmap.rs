@@ -238,7 +238,7 @@ impl PrefixMap {
         if let Some(qualified) = self.qualify_optional(iri) {
             qualified
         } else {
-            format!("<{iri}>")
+            format!("{iri}")
         }
     }
 

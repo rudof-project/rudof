@@ -15,3 +15,4 @@ indexmap = { version = "2", features = ["serde"] }
 iri_s.workspace = true
 serde.workspace = true
 thiserror.workspace = true
+tracing.workspace = true
