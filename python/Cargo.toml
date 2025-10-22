@@ -23,7 +23,7 @@ name = "pyrudof"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.26", features = ["abi3-py37", "extension-module"] }
+pyo3 = { version = "0.26", features = ["abi3-py37", "extension-module", "experimental-inspect"] }
 pythonize = { version = "0.26.0" }
 rudof_lib.workspace = true
 tracing.workspace = true

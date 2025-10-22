@@ -22,6 +22,8 @@ rudof.read_shapemap_str("""
 """)
 
 results = rudof.validate_shex()
+print(results.show_as_table())
+
 for (node, shape, status) in results.to_list():
     print(f"Node: {node.show()}")
     print(f"Shape: {shape.show()}")
