@@ -16,6 +16,13 @@ impl PyPrefixMap {
         format!("{result}")
     }
 
+    /// Add a prefix mapping
+    /// # Arguments
+    /// * `prefix` - The prefix to add
+    /// * `iri` - The IRI corresponding to the prefix
+    #[pyo3(signature = (prefix, iri),
+        text_signature = "(prefix, iri)"
+    )]
     pub fn add_prefix(&mut self, prefix: &str, iri: &str) -> PyResult<()> {
         self.inner
             .add_prefix(prefix.to_string(), iri.to_string())

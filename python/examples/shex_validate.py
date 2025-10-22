@@ -1,4 +1,4 @@
-from pyrudof import Rudof, RudofConfig, ShExFormat, RDFFormat, ReaderMode, ShapeMapFormat
+from pyrudof import Rudof, RudofConfig
 
 rudof = Rudof(RudofConfig())
 

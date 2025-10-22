@@ -7,7 +7,7 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
    :knows      :b, :c .
 
 :b :name "Bob", "Robert"; 
-   :knows :c .
+   :knows :c, :a .
 
 :c :name "Charlie" ;
    :knows :a, :b .

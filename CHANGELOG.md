@@ -8,9 +8,12 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Removed
 
 ## v0.1.127
+### Added
+- Added `data` tools to MCP server
 - Added option to show node info without colors
 
 ## v0.1.126
+
 ### Fixed
 - Issue with dctap2uml which was using all the triples in all endpoints for the generation!
 
