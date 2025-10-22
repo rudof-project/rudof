@@ -60,7 +60,8 @@ dctap = { version = "0.1.111", path = "./dctap" }
 either = { version = "1.13" }
 futures = "0.3"
 hashbag = { version = "0.1.12" }
-indexmap = "2.1"
+hashlink = { version = "0.10" }
+indexmap = { version = "2", features = ["serde"] }
 indoc = "2"
 iri_s = { version = "0.1.90", path = "./iri_s" }
 itertools = "0.14"
@@ -68,7 +69,7 @@ lazy-regex = "3.4"
 mie = { version = "0.1.104", path = "./mie" }
 nom = "7"
 nom_locate = "4"
-oxigraph = { version = "0.5.0", default-features = false, features = [
+oxigraph = { version = "0.5.1", default-features = false, features = [
     "rdf-12",
 ] }
 oxilangtag = { version = "0.1.5", features = ["serde"] }
@@ -117,7 +118,7 @@ tempfile = "3.10.1"
 term_size = "0.3.2"
 termtree = { version = "0.4" }
 thiserror = "2.0"
-tokio = { version = "1.0", features = ["rt", "rt-multi-thread"] }
+tokio = { version = "1.4", features = ["rt", "rt-multi-thread"] }
 tokio-test = "0.4"
 toml = "0.9"
 tracing = "0.1"
@@ -125,7 +126,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-test = "0.2.5"
 url = "2.2.2"
 uuid = { version = "1.0", features = ["v4"] }
-
+yaml-rust2 = { version = "0.10" }
 
 
 [patch.crates-io]

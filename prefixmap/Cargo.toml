@@ -11,7 +11,7 @@ repository.workspace = true
 
 [dependencies]
 colored.workspace = true
-indexmap = { version = "2", features = ["serde"] }
+indexmap.workspace = true
 iri_s.workspace = true
 serde.workspace = true
 thiserror.workspace = true

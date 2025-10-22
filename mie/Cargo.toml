@@ -10,11 +10,11 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-hashlink = { version = "0.10" }
+hashlink.workspace = true
 iri_s.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
-tracing = { workspace = true }
-yaml-rust2 = { version = "0.10" }
+tracing.workspace = true 
+yaml-rust2.workspace = true
 
