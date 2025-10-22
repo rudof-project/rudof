@@ -7,6 +7,10 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.1.128
+### Added
+- text_signature to pyrudof methods
+
 ## v0.1.127
 ### Added
 - Added `data` tools to MCP server
