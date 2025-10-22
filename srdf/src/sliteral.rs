@@ -1,3 +1,4 @@
+use std::fmt;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::hash::Hash;
@@ -11,6 +12,7 @@ use iri_s::IriS;
 use prefixmap::{Deref, DerefError, IriRef, PrefixMap};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize, Serializer};
+use tracing::info;
 use tracing::trace;
 
 /// Concrete representation of RDF literals
@@ -44,6 +46,29 @@ pub enum SLiteral {
 }
 
 impl SLiteral {
+    /// Returns a string representation of the literal using the given prefixmap to qualify the datatype IRI
+    pub fn show_qualified(&self, prefixmap: &PrefixMap) -> String {
+        info!("Showing qualified literal: {self:?} with prefixmap: {prefixmap:?}");
+        // NOTE: I am not sure if there is a simpler way to do the following
+        struct Helper<'a> {
+            literal: &'a SLiteral,
+            prefixmap: &'a PrefixMap,
+        }
+
+        impl<'a> Display for Helper<'a> {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                self.literal.display_qualified(f, self.prefixmap)
+            }
+        }
+        format!(
+            "{}",
+            Helper {
+                literal: self,
+                prefixmap,
+            }
+        )
+    }
+
     /// Returns a literal after checking that the lexical form matches the declared datatype
     /// This can be useful to validate datatypes that are wrong like `"hello"^^xsd:integer`
     pub fn as_checked_literal(&self) -> Result<SLiteral, RDFError> {

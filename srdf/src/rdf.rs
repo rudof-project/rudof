@@ -1,11 +1,3 @@
-use std::cmp::Ordering;
-use std::fmt::Display;
-
-use iri_s::IriS;
-use prefixmap::PrefixMap;
-use prefixmap::PrefixMapError;
-use rust_decimal::Decimal;
-
 use crate::BlankNode;
 use crate::Iri;
 use crate::IriOrBlankNode;
@@ -18,6 +10,12 @@ use crate::Term;
 use crate::Triple;
 use crate::lang::Lang;
 use crate::matcher::Matcher;
+use iri_s::IriS;
+use prefixmap::PrefixMap;
+use prefixmap::PrefixMapError;
+use rust_decimal::Decimal;
+use std::cmp::Ordering;
+use std::fmt::Display;
 
 pub trait Rdf: Sized {
     type Subject: Subject

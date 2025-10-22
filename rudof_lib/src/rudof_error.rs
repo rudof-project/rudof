@@ -9,6 +9,10 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum RudofError {
+    #[error("Error qualifying object {object}: {error}")]
+    QualifyObject { object: String, error: String },
+    #[error("Error qualifying subject {subject}: {error}")]
+    QualifySubject { subject: String, error: String },
     #[error("Error resolving node {node}: {error}")]
     NodeResolveError { node: String, error: String },
     #[error("Error parsing IRI reference {iri}: {error}")]

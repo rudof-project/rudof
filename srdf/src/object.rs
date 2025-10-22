@@ -9,6 +9,7 @@ use crate::triple::Triple;
 use iri_s::IriS;
 use prefixmap::IriRef;
 use serde::{Deserialize, Serialize};
+use tracing::info;
 use tracing::trace;
 
 /// Concrete representation of RDF objects which can be IRIs, Blank nodes, literals or triples
@@ -103,10 +104,11 @@ impl Object {
     }
 
     pub fn show_qualified(&self, prefixmap: &prefixmap::PrefixMap) -> String {
+        info!("Showing qualified object: {self:?} with prefixmap: {prefixmap:?}");
         match self {
             Object::Iri(iri) => prefixmap.qualify(iri),
             Object::BlankNode(bnode) => format!("_:{bnode}"),
-            Object::Literal(lit) => lit.to_string(),
+            Object::Literal(lit) => lit.show_qualified(prefixmap),
             Object::Triple {
                 subject,
                 predicate,
