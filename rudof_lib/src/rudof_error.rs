@@ -361,4 +361,19 @@ pub enum RudofError {
 
     #[error("Reading Service Description from path {path}: {error}")]
     ReadingServiceDescriptionPath { path: String, error: String },
+
+    #[error("None of `data` or `endpoint` parameters have been specified for validation")]
+    MissingDataAndEndpoint,
+
+    #[error("Only one of 'data' or 'endpoint' supported at the same time")]
+    BothDataAndEndpointSpecified,
+
+    #[error("Invalid image format: {format}. Must be 'SVG' or 'PNG'")]
+    InvalidImageFormat { format: String },
+
+    #[error("Error reading RDF data: {error}")]
+    RDFDataReadError { error: String },
+
+    #[error("Error using endpoint {endpoint}: {error}")]
+    EndpointUseError { endpoint: String, error: String },
 }

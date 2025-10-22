@@ -3,18 +3,23 @@ use serde_json::Value;
 
 // Canonical error codes used by this MCP server implementation.
 pub mod codes {
+    // GENERAL Errors
     pub const RESOURCE_NOT_FOUND: &str = "resource_not_found";
-    pub const INVALID_FORMAT: &str = "invalid_format";
-    pub const INTERNAL_ERROR: &str = "internal_error";
-    pub const RDF_LOAD_ERROR: &str = "rdf_load_error";
     pub const SERIALIZE_DATA_ERROR: &str = "serialize_data_error";
+
+    // DATA Errors
+    pub const INVALID_FORMAT: &str = "invalid_format";
+    pub const RDF_LOAD_ERROR: &str = "rdf_load_error";
     pub const UTF8_CONVERSION_ERROR: &str = "utf8_conversion_error";
+    pub const INVALID_BASE_IRI: &str = "invalid_base_iri";
+    pub const INVALID_DATA_SPEC: &str = "invalid_data_spec";
+    pub const VISUALIZATION_ERROR: &str = "visualization_error";
+
+    // NODE Errors
     pub const INVALID_NODE_SELECTOR: &str = "invalid_node_selector";
-    pub const UNKNOWN_PREFIX: &str = "unknown_prefix";
-    pub const INVALID_PREDICATE: &str = "invalid_predicate";
-    pub const RDF_ARC_QUERY_ERROR: &str = "rdf_arc_query_error";
-    pub const INVALID_MODE: &str = "invalid_mode";
     pub const NODE_NOT_FOUND: &str = "node_not_found";
+    pub const INVALID_MODE: &str = "invalid_mode";
+    pub const RDF_ARC_QUERY_ERROR: &str = "rdf_arc_query_error";
 }
 
 // Create an `McpError::resource_not_found` with optional structured data.

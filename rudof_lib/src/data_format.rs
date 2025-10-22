@@ -3,6 +3,7 @@ use iri_s::mime_type::MimeType;
 use srdf::RDFFormat;
 use std::fmt::{Display, Formatter};
 
+// Represents the various RDF data serialization formats
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 #[clap(rename_all = "lower")]
 pub enum DataFormat {
@@ -15,6 +16,7 @@ pub enum DataFormat {
     JsonLd,
 }
 
+// Converts a `DataFormat` into the corresponding `RDFFormat` from the `srdf` crate.
 impl From<DataFormat> for RDFFormat {
     fn from(val: DataFormat) -> Self {
         match val {
@@ -29,6 +31,22 @@ impl From<DataFormat> for RDFFormat {
     }
 }
 
+// Converts an `RDFFormat` from the `srdf` crate into the corresponding `DataFormat`.
+impl From<RDFFormat> for DataFormat {
+    fn from(val: RDFFormat) -> Self {
+        match val {
+            RDFFormat::Turtle => DataFormat::Turtle,
+            RDFFormat::NTriples => DataFormat::NTriples,
+            RDFFormat::RDFXML => DataFormat::RDFXML,
+            RDFFormat::TriG => DataFormat::TriG,
+            RDFFormat::N3 => DataFormat::N3,
+            RDFFormat::NQuads => DataFormat::NQuads,
+            RDFFormat::JsonLd => DataFormat::JsonLd,
+        }
+    }
+}
+
+// Provides a string representation of the data format for display purposes.
 impl Display for DataFormat {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
@@ -43,6 +61,7 @@ impl Display for DataFormat {
     }
 }
 
+// Provides the MIME type for each `DataFormat`.
 impl MimeType for DataFormat {
     fn mime_type(&self) -> &'static str {
         match self {

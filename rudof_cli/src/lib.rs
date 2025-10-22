@@ -5,7 +5,6 @@ pub mod color_support;
 pub mod compare;
 pub mod convert;
 pub mod data;
-pub mod data_format;
 pub mod dctap;
 pub mod dctap_format;
 pub mod dctap_result_format;

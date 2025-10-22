@@ -1,5 +1,3 @@
-use crate::data::get_data_rudof;
-use crate::data_format::DataFormat;
 use crate::writer::get_writer;
 use crate::{ColorSupport, shapemap_format_convert, terminal_width};
 use crate::{ResultShExValidationFormat, ShapeMapFormat as CliShapeMapFormat};
@@ -9,8 +7,8 @@ use anyhow::{Result, bail};
 use iri_s::IriS;
 use iri_s::mime_type::MimeType;
 use rudof_lib::{
-    InputSpec, Rudof, RudofConfig, RudofError, ShExFormatter, parse_node_selector,
-    parse_shape_selector, start,
+    InputSpec, Rudof, RudofConfig, RudofError, ShExFormatter, data::get_data_rudof,
+    data_format::DataFormat, parse_node_selector, parse_shape_selector, start,
 };
 use shex_ast::shapemap::{ResultShapeMap, ShapeSelector};
 use shex_ast::{Schema, ShExFormat};

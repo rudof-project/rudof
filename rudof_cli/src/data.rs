@@ -1,90 +1,13 @@
-// use clap::{Parser, Subcommand, ValueEnum};
-use crate::writer::get_writer;
-use crate::{data_format::DataFormat, result_data_format::ResultDataFormat};
-use anyhow::{Result, bail};
+use anyhow::Result;
 use iri_s::IriS;
-use iri_s::mime_type::MimeType;
-use rudof_lib::{InputSpec, Rudof, RudofConfig};
+use rudof_lib::{InputSpec, Rudof, RudofConfig, data::get_data_rudof, data_format::DataFormat};
 use srdf::UmlConverter;
 use srdf::rdf_visualizer::visual_rdf_graph::VisualRDFGraph;
 use srdf::{ImageFormat, RDFFormat, ReaderMode, UmlGenerationMode};
 use std::path::PathBuf;
 
-#[allow(clippy::too_many_arguments)]
-pub fn get_data_rudof(
-    rudof: &mut Rudof,
-    data: &Vec<InputSpec>,
-    data_format: &DataFormat,
-    base: &Option<IriS>,
-    endpoint: &Option<String>,
-    reader_mode: &ReaderMode,
-    config: &RudofConfig,
-    allow_no_data: bool,
-) -> Result<()> {
-    match (data.is_empty(), endpoint) {
-        (true, None) => {
-            if allow_no_data {
-                rudof.reset_data();
-                Ok(())
-            } else {
-                bail!("None of `data` or `endpoint` parameters have been specified for validation")
-            }
-        }
-        (false, None) => {
-            let rdf_format = data_format2rdf_format(data_format);
-            for d in data {
-                let data_reader = d.open_read(Some(data_format.mime_type()), "RDF data")?;
-                let base = get_base(d, config, base)?;
-                rudof.read_data(data_reader, &rdf_format, base.as_deref(), reader_mode)?;
-            }
-            Ok(())
-        }
-        (true, Some(endpoint)) => {
-            let (new_endpoint, _sparql) = rudof.get_endpoint(endpoint)?;
-            // rudof.add_endpoint(&endpoint, &endpoint, PrefixMap::new())?;
-            rudof.use_endpoint(new_endpoint.as_str())?;
-            Ok(())
-        }
-        (false, Some(_)) => {
-            bail!("Only one of 'data' or 'endpoint' supported at the same time at this moment")
-        }
-    }
-}
-
-pub fn data_format2rdf_format(data_format: &DataFormat) -> RDFFormat {
-    match data_format {
-        DataFormat::N3 => RDFFormat::N3,
-        DataFormat::NQuads => RDFFormat::NQuads,
-        DataFormat::NTriples => RDFFormat::NTriples,
-        DataFormat::RDFXML => RDFFormat::RDFXML,
-        DataFormat::TriG => RDFFormat::TriG,
-        DataFormat::Turtle => RDFFormat::Turtle,
-        DataFormat::JsonLd => RDFFormat::JsonLd,
-    }
-}
-
-pub fn get_base(
-    input: &InputSpec,
-    config: &RudofConfig,
-    base: &Option<IriS>,
-) -> Result<Option<String>> {
-    if let Some(base) = base {
-        Ok(Some(base.to_string()))
-    } else {
-        let base = match config.rdf_data_base() {
-            Some(base) => Some(base.to_string()),
-            None => {
-                if config.automatic_base() {
-                    let base = input.guess_base()?;
-                    Some(base)
-                } else {
-                    None
-                }
-            }
-        };
-        Ok(base)
-    }
-}
+use crate::result_data_format::ResultDataFormat;
+use crate::writer::get_writer;
 
 #[allow(clippy::too_many_arguments)]
 pub fn run_data(
@@ -103,6 +26,7 @@ pub fn run_data(
     if debug > 0 {
         println!("Config: {config:?}")
     }
+
     get_data_rudof(
         &mut rudof,
         data,
@@ -113,18 +37,13 @@ pub fn run_data(
         config,
         false,
     )?;
+
     match check_result_format(result_format) {
         CheckResultFormat::RDFFormat(rdf_format) => {
             rudof.get_rdf_data().serialize(&rdf_format, &mut writer)?;
         }
         CheckResultFormat::VisualFormat(VisualFormat::PlantUML) => {
             rudof.data2plant_uml(&mut writer)?;
-
-            /*match visual_format {
-                VisualFormat::PlantUML => uml,
-                VisualFormat::SVG => todo!(),
-                VisualFormat::PNG => todo!(),
-            }*/
         }
         CheckResultFormat::VisualFormat(VisualFormat::SVG)
         | CheckResultFormat::VisualFormat(VisualFormat::PNG) => {
@@ -147,16 +66,16 @@ pub fn run_data(
     Ok(())
 }
 
-enum CheckResultFormat {
-    RDFFormat(RDFFormat),
-    VisualFormat(VisualFormat),
-}
-
 #[allow(clippy::upper_case_acronyms)]
 enum VisualFormat {
     PlantUML,
     SVG,
     PNG,
+}
+
+enum CheckResultFormat {
+    RDFFormat(RDFFormat),
+    VisualFormat(VisualFormat),
 }
 
 fn check_result_format(format: &ResultDataFormat) -> CheckResultFormat {

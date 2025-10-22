@@ -1,10 +1,9 @@
-use crate::{
-    QueryType, ResultQueryFormat as CliResultQueryFormat, data::get_data_rudof,
-    data_format::DataFormat, writer::get_writer,
-};
+use crate::{QueryType, ResultQueryFormat as CliResultQueryFormat, writer::get_writer};
 use anyhow::{Result, bail};
 use iri_s::IriS;
-use rudof_lib::{InputSpec, RdfData, Rudof, RudofConfig};
+use rudof_lib::{
+    InputSpec, RdfData, Rudof, RudofConfig, data::get_data_rudof, data_format::DataFormat,
+};
 use srdf::{QueryResultFormat, QuerySolutions, ReaderMode};
 use std::{io::Write, path::PathBuf};
 use tracing::trace;

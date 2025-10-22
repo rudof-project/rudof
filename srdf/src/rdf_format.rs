@@ -1,9 +1,8 @@
+use crate::RDFParseError;
 use iri_s::MimeType;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::str::FromStr;
-
-use crate::RDFParseError;
 
 /// Posible RDF formats
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Default, Serialize, Deserialize)]
