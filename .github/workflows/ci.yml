@@ -87,34 +87,34 @@ jobs:
         with:
           command: test
 
-  # coverage:
-  #   name: Code Coverage
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout sources
-  #       uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 0
-  #         submodules: recursive
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
 
-  #     - name: Install stable toolchain
-  #       uses: actions-rs/toolchain@v1
-  #       with:
-  #         profile: minimal
-  #         toolchain: stable
-  #         override: true
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
 
-  #     - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@v2
 
-  #     - name: Install cargo-tarpaulin
-  #       run: cargo install cargo-tarpaulin
+      - name: Install cargo-tarpaulin
+        run: cargo install cargo-tarpaulin
 
-  #     - name: Generate coverage
-  #       run: cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out xml --out lcov --output-name coverage
+      - name: Generate coverage
+        run: cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out xml --out lcov --output-name coverage
 
-  #     - name: Publish to Coveralls
-  #       uses: coverallsapp/github-action@v2
-  #       with:
-  #         github-token: ${{ secrets.GITHUB_TOKEN }}
-  #         path-to-lcov: coverage.lcov
+      - name: Publish to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: coverage.lcov
 
