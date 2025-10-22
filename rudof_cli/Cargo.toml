@@ -1,6 +1,6 @@
 [package]
 name = "rudof_cli"
-version = "0.1.124"
+version = "0.1.127"
 authors.workspace = true
 description.workspace = true
 documentation = "https://rudof-project.github.io/rudof"
