@@ -96,16 +96,22 @@ jobs:
         with:
           fetch-depth: 0
           submodules: recursive
-      
-      - name: Install Python
+
+      - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.11"  
+          python-version: "3.11"
 
       - name: Install Python dev packages
-        run: sudo apt-get update && sudo apt-get install -y python3-dev python3-pip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3.11-dev python3-pip
+          python -m pip install --upgrade pip setuptools wheel
 
-      - name: Install stable toolchain
+      - name: Configure PyO3
+        run: echo "PYTHON_SYS_EXECUTABLE=$(which python3)" >> $GITHUB_ENV
+
+      - name: Install stable Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -113,9 +119,6 @@ jobs:
           override: true
 
       - uses: Swatinem/rust-cache@v2
-
-      - name: Set Python executable for PyO3
-        run: echo "PYTHON_SYS_EXECUTABLE=$(which python3)" >> $GITHUB_ENV
 
       - name: Install cargo-tarpaulin
         run: cargo install cargo-tarpaulin
