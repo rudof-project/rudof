@@ -6,10 +6,8 @@ use rmcp::{
 };
 use rudof_lib::{
     InputSpec, RDFFormat, ReaderMode,
+    data::{export_rdf_to_image, get_data_rudof, parse_image_format, parse_optional_base_iri},
     data_format::DataFormat,
-    data::{
-        export_rdf_to_image, get_data_rudof, parse_image_format, parse_optional_base_iri,
-    },
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};

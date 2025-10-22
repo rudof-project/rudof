@@ -2,7 +2,7 @@ use anyhow::*;
 use iri_s::IriS;
 use rudof_lib::node_info::{NodeInfoOptions, get_node_info};
 use rudof_lib::{
-    InputSpec, Rudof, RudofConfig, data_format::DataFormat, data::get_data_rudof,
+    InputSpec, Rudof, RudofConfig, data::get_data_rudof, data_format::DataFormat,
     format_node_info_list, parse_node_selector,
 };
 use srdf::ReaderMode;
