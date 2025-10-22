@@ -4,7 +4,7 @@ name: Code Coverage
 
 jobs:
     coverage:
-        name: Code Coverage
+        name: Coverage
         runs-on: ubuntu-latest
         steps:
             - name: Checkout sources
@@ -12,20 +12,6 @@ jobs:
               with:
                 fetch-depth: 0
                 submodules: recursive
-
-            - name: Setup Python
-              uses: actions/setup-python@v4
-              with:
-                python-version: "3.10"
-
-            - name: Install Python dev packages
-              run: |
-                sudo apt-get update
-                sudo apt-get install -y python3-dev python3-pip
-                python3 -m pip install --upgrade pip setuptools wheel
-
-            - name: Configure PyO3
-              run: echo "PYTHON_SYS_EXECUTABLE=$(which python3)" >> $GITHUB_ENV
 
             - name: Install stable Rust toolchain
               uses: actions-rs/toolchain@v1
@@ -40,7 +26,7 @@ jobs:
               run: cargo install cargo-tarpaulin
 
             - name: Generate coverage
-              run: cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out xml --out lcov
+              run: cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out xml --out lcov --exclude "python/*"
 
             - name: Publish to Coveralls
               uses: coverallsapp/github-action@v2
