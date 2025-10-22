@@ -5,7 +5,7 @@ use crate::{RDFReaderMode, ResultServiceFormat};
 use anyhow::Result;
 use iri_s::mime_type::MimeType;
 use rudof_lib::{
-    InputSpec, Rudof, RudofConfig, data_format::DataFormat, data_utils::data_format2rdf_format,
+    InputSpec, Rudof, RudofConfig, data_format::DataFormat, data::data_format2rdf_format,
 };
 use sparql_service::ServiceDescriptionFormat;
 

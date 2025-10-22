@@ -1,12 +1,11 @@
 use anyhow::Result;
 use iri_s::IriS;
 use rudof_lib::{
-    InputSpec, Rudof, RudofConfig, data_format::DataFormat, data_utils::get_data_rudof,
+    InputSpec, Rudof, RudofConfig, data_format::DataFormat, data::get_data_rudof,
 };
 use srdf::UmlConverter;
 use srdf::rdf_visualizer::visual_rdf_graph::VisualRDFGraph;
 use srdf::{ImageFormat, RDFFormat, ReaderMode, UmlGenerationMode};
-use std::path::PathBuf;
 use std::path::PathBuf;
 
 use crate::result_data_format::ResultDataFormat;

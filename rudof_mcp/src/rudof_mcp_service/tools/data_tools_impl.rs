@@ -7,7 +7,7 @@ use rmcp::{
 use rudof_lib::{
     InputSpec, RDFFormat, ReaderMode,
     data_format::DataFormat,
-    data_utils::{
+    data::{
         export_rdf_to_image, get_data_rudof, parse_image_format, parse_optional_base_iri,
     },
 };

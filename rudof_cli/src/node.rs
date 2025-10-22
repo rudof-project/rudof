@@ -1,8 +1,10 @@
 use anyhow::*;
 use iri_s::IriS;
 use rudof_lib::node_info::{NodeInfoOptions, get_node_info};
-use rudof_lib::{InputSpec, Rudof, RudofConfig, format_node_info_list, parse_node_selector,
-    data_format::DataFormat, data_utils::get_data_rudof};
+use rudof_lib::{
+    InputSpec, Rudof, RudofConfig, data_format::DataFormat, data::get_data_rudof,
+    format_node_info_list, parse_node_selector,
+};
 use srdf::ReaderMode;
 use std::path::PathBuf;
 

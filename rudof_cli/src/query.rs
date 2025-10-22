@@ -2,7 +2,7 @@ use crate::{QueryType, ResultQueryFormat as CliResultQueryFormat, writer::get_wr
 use anyhow::{Result, bail};
 use iri_s::IriS;
 use rudof_lib::{
-    InputSpec, RdfData, Rudof, RudofConfig, data_format::DataFormat, data_utils::get_data_rudof,
+    InputSpec, RdfData, Rudof, RudofConfig, data_format::DataFormat, data::get_data_rudof,
 };
 use srdf::{QueryResultFormat, QuerySolutions, ReaderMode};
 use std::{io::Write, path::PathBuf};

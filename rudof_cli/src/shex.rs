@@ -6,8 +6,10 @@ use anyhow::Context;
 use anyhow::{Result, bail};
 use iri_s::IriS;
 use iri_s::mime_type::MimeType;
-use rudof_lib::{InputSpec, Rudof, RudofConfig, RudofError, ShExFormatter, parse_node_selector,
-    parse_shape_selector, start, data_format::DataFormat, data_utils::get_data_rudof};
+use rudof_lib::{
+    InputSpec, Rudof, RudofConfig, RudofError, ShExFormatter, data_format::DataFormat,
+    data::get_data_rudof, parse_node_selector, parse_shape_selector, start,
+};
 use shex_ast::shapemap::{ResultShapeMap, ShapeSelector};
 use shex_ast::{Schema, ShExFormat};
 use srdf::{RDFFormat, ReaderMode};

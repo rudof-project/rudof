@@ -2,7 +2,6 @@
 use anyhow::{Result, bail};
 use iri_s::IriS;
 use iri_s::mime_type::MimeType;
-use prefixmap::PrefixMap;
 use srdf::{
     ImageFormat, RDFFormat, ReaderMode, UmlConverter, UmlGenerationMode,
     rdf_visualizer::visual_rdf_graph::VisualRDFGraph,
@@ -60,18 +59,15 @@ pub fn get_data_rudof(
     config: &RudofConfig,
     allow_no_data: bool,
 ) -> Result<()> {
-    // Check for the specific "no data, no endpoint" case
-    if data.is_empty() && endpoint.is_none() {
-        if allow_no_data {
-            rudof.reset_data();
-            return Ok(());
-        } else {
-            bail!("None of `data` or `endpoint` parameters have been specified for validation")
-        }
-    }
-
     match (data.is_empty(), endpoint) {
-        // Case 1: Load from one or more data sources (Files/URLs)
+        (true, None) => {
+            if allow_no_data {
+                rudof.reset_data();
+                Ok(())
+            } else {
+                bail!("None of `data` or `endpoint` parameters have been specified for validation")
+            }
+        }
         (false, None) => {
             let rdf_format = data_format2rdf_format(data_format);
             for d in data {
@@ -81,25 +77,14 @@ pub fn get_data_rudof(
             }
             Ok(())
         }
-        // Case 2: Add SPARQL Endpoint
         (true, Some(endpoint)) => {
-            let (endpoint_iri, prefixmap) =
-                if let Some(endpoint_descr) = config.rdf_data_config().find_endpoint(endpoint) {
-                    (
-                        endpoint_descr.query_url().clone(),
-                        endpoint_descr.prefixmap().clone(),
-                    )
-                } else {
-                    let iri = IriS::from_str(endpoint.as_str())?;
-                    (iri, PrefixMap::basic())
-                };
-            rudof.add_endpoint(&endpoint_iri, &prefixmap)?;
+            let (new_endpoint, _sparql) = rudof.get_endpoint(endpoint)?;
+            // rudof.add_endpoint(&endpoint, &endpoint, PrefixMap::new())?;
+            rudof.use_endpoint(new_endpoint.as_str())?;
             Ok(())
         }
-        // Disallowed cases
-        (true, None) => bail!("One of `data` or `endpoint` must be specified"),
         (false, Some(_)) => {
-            bail!("Only one of 'data' or 'endpoint' supported at the same time")
+            bail!("Only one of 'data' or 'endpoint' supported at the same time at this moment")
         }
     }
 }
