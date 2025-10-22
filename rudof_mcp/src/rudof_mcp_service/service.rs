@@ -14,8 +14,11 @@ pub struct RudofMcpService {
 
 impl RudofMcpService {
     pub fn new() -> Self {
+        // TODO: Check and protect against possible initialization errors
+        let rudof_config = RudofConfig::new().unwrap();
+        let rudof = Rudof::new(&rudof_config).unwrap();
         Self {
-            rudof: Arc::new(Mutex::new(Rudof::new(&RudofConfig::new()))),
+            rudof: Arc::new(Mutex::new(rudof)),
             tool_router: tools::tool_router_public(),
             prompt_router: prompts::prompt_router_public(),
         }

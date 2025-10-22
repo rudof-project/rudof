@@ -42,7 +42,17 @@ impl PrefixMap {
         PrefixMap::default()
     }
 
-    /// Change ("color when qualifying a IRI
+    /// Returns the number of prefix associations in the prefixmap
+    pub fn len(&self) -> usize {
+        self.map.len()
+    }
+
+    /// Returns true if the prefixmap is empty
+    pub fn is_empty(&self) -> bool {
+        self.map.is_empty()
+    }
+
+    /// Change color when qualifying a IRI
     pub fn with_qualify_prefix_color(mut self, color: Option<Color>) -> Self {
         self.qualify_prefix_color = color;
         self
@@ -66,6 +76,12 @@ impl PrefixMap {
             .with_qualify_localname_color(None)
             .with_qualify_prefix_color(None)
             .with_qualify_semicolon_color(None)
+    }
+
+    pub fn add_prefix(&mut self, prefix: String, iri: String) -> Result<(), PrefixMapError> {
+        let iri_s = IriS::from_str(&iri)?;
+        self.insert(&prefix, &iri_s)?;
+        Ok(())
     }
 
     /// Inserts an alias association to an IRI
@@ -222,7 +238,7 @@ impl PrefixMap {
         if let Some(qualified) = self.qualify_optional(iri) {
             qualified
         } else {
-            format!("<{iri}>")
+            format!("{iri}")
         }
     }
 

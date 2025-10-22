@@ -1,3 +1,4 @@
+use crate::RudofError;
 use dctap::TapConfig;
 use serde::{Deserialize, Serialize};
 use shapes_comparator::ComparatorConfig;
@@ -12,11 +13,11 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
-use crate::RudofError;
+const DEFAULT_CONFIG: &str = include_str!("default_config.toml");
 
 /// `rudof_config` describes the configuration of Rudof
 ///
-#[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Default)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 pub struct RudofConfig {
     rdf_data: Option<RdfDataConfig>,
     shex: Option<ShExConfig>,
@@ -24,8 +25,8 @@ pub struct RudofConfig {
     shex2uml: Option<ShEx2UmlConfig>,
     shex2html: Option<ShEx2HtmlConfig>,
     shacl2shex: Option<Shacl2ShExConfig>,
-    tap2shex: Option<Tap2ShExConfig>,
     tap: Option<TapConfig>,
+    tap2shex: Option<Tap2ShExConfig>,
     shex2sparql: Option<ShEx2SparqlConfig>,
     service: Option<ServiceConfig>,
     plantuml_path: Option<PathBuf>,
@@ -33,8 +34,13 @@ pub struct RudofConfig {
 }
 
 impl RudofConfig {
-    pub fn new() -> RudofConfig {
-        Self::default()
+    pub fn new() -> Result<RudofConfig, RudofError> {
+        RudofConfig::default_config()
+    }
+
+    /// Returns the default config which is read from the embedded default_config.toml
+    pub fn default_config() -> Result<RudofConfig, RudofError> {
+        RudofConfig::from_str(DEFAULT_CONFIG)
     }
 
     pub fn with_rdf_data_config(mut self, rdf_data_config: RdfDataConfig) -> Self {
@@ -190,10 +196,13 @@ impl RudofConfig {
 }
 
 impl FromStr for RudofConfig {
-    type Err = String;
+    type Err = RudofError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        toml::from_str(s).map_err(|e| format!("Failed to parse RudofConfig: {e}"))
+        toml::from_str(s).map_err(|e| RudofError::RudofConfigFromStrError {
+            str: s.to_string(),
+            error: e.to_string(),
+        })
     }
 }
 

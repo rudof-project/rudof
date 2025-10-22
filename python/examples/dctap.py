@@ -1,0 +1,21 @@
+from pyrudof import Rudof, RudofConfig
+
+dctap = """
+shapeID,propertyID,propertyLabel,mandatory,repeatable,valueNodeType,valueDataType,valueConstraint,valueConstraintType,valueShape,note,severity
+BookShape,dct:title,Title,TRUE,FALSE,Literal,rdf:langString,,,,,Violation
+BookShape,dct:creator,Author,FALSE,TRUE,IRI BNODE,,,,AuthorShape,,Warning
+BookShape,sdo:isbn,ISBN-13,FALSE,FALSE,Literal,xsd:string,,,,"Just the 13 numbers, no spaces or separators.",Violation
+BookShape,rdf:type,Type,TRUE,FALSE,IRI,,sdo:Book,,,,Warning
+AuthorShape,rdf:type,Type,TRUE,TRUE,IRI,,foaf:Person,,,,Warning
+AuthorShape,foaf:givenName,Given name,FALSE,TRUE,Literal,xsd:string,,,,,
+AuthorShape,foaf:familyName,Family name,FALSE,TRUE,Literal,xsd:string,,,,,
+"""
+
+rudof = Rudof(RudofConfig())
+
+rudof.read_dctap_str(dctap)
+
+dctap_read = rudof.get_dctap()
+
+print(f"DCTAP read: {dctap_read}")
+

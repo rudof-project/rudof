@@ -1,8 +1,14 @@
 from pyrudof import Rudof, RudofConfig, RDFFormat 
+config = RudofConfig()
+rudof = Rudof(config)
 
-data_str = """prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+print(config)
+data_str = """
 prefix : <http://example.org/>
-
+:a :name "Alice" .
+"""
+data_str1 = """prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+prefix : <http://example.org/>
 :alice :name "Alice" ; 
   :birthdate "1980-03-02"^^xsd:date ; 
   :enrolledIn :cs101 ;
@@ -16,15 +22,10 @@ prefix : <http://example.org/>
 :cs101 :name "Computer Science 101"; 
   :student :alice, :bob .
 """
-rudof = Rudof(RudofConfig())
 
 rudof.read_data_str(data_str)
 
-results = rudof.run_query_str("""
-PREFIX : <http://example.org/>
-SELECT ?person ?name WHERE {
-  ?person :name ?name .
-}
-""")
-
-print(results.show())
+print("RDF Data in PlantUML format:")
+uml = rudof.data2plantuml()
+print("Finished conversion to UML.")
+print(uml)

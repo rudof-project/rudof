@@ -13,7 +13,7 @@ pub fn run_rdf_config(
     force_overwrite: bool,
 ) -> anyhow::Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let mut rudof = Rudof::new(config);
+    let mut rudof = Rudof::new(config)?;
     let reader = input.open_read(None, "rdf-config")?;
     rudof.read_rdf_config(reader, input.to_string())?;
     if let Some(rdf_config) = rudof.get_rdf_config() {

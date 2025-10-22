@@ -38,7 +38,7 @@ CONSTRUCT WHERE {
 }
 """
 rudof = Rudof(RudofConfig())
-rudof.add_endpoint(endpoint)
+rudof.use_endpoint(endpoint)
 
 result = rudof.run_query_construct_str(sparql_query, QueryResultFormat.Turtle)
 

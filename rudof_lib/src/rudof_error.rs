@@ -9,8 +9,44 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum RudofError {
+    #[error("Error resolving node {node}: {error}")]
+    NodeResolveError { node: String, error: String },
+    #[error("Error parsing IRI reference {iri}: {error}")]
+    IriRefParseError { iri: String, error: String },
+    #[error("Error resolving predicate {predicate}: {error}")]
+    PredicateResolveError { predicate: String, error: String },
+    #[error("Node {node} is a literal, expected an IRI or a blank node")]
+    LiteralNotSubject { node: String },
+    #[error("Node {node} is not a subject in the RDF data")]
+    NodeNotSubject { node: String },
+    #[error("Error obtaining incoming arcs for object {object}: {error}")]
+    IncomingArcs { object: String, error: String },
+    #[error("Error obtaining outgoing arcs for subject {subject}: {error}")]
+    OutgoingArcs { subject: String, error: String },
+    #[error("Invalid mode: {mode}. Expected one of: {expected}")]
+    InvalidMode { mode: String, expected: String },
+    #[error("Error parsing node selector {node_selector}: {error}")]
+    NodeSelectorParseError {
+        node_selector: String,
+        error: String,
+    },
+    #[error("Error parsing shape selector {shape_selector}: {error}")]
+    ShapeSelectorParseError {
+        shape_selector: String,
+        error: String,
+    },
+    #[error("Error formatting node info: {error}")]
+    NodeInfoFormatError { error: String },
+
+    #[error("Reading Rudof config: {error}\nContent:\n{str}")]
+    RudofConfigFromStrError { str: String, error: String },
+
+    #[error("Error configuring RDF data: {error}")]
+    RdfDataConfigError { error: String },
+
     #[error(transparent)]
     IOErro(#[from] io::Error),
+
     #[error("Invalid shape label {label}: {error}")]
     InvalidShapeLabel { label: String, error: String },
 
@@ -266,6 +302,9 @@ pub enum RudofError {
     #[error("Serializing SHACL to internal representation: {error}")]
     SerializingSHACLInternal { error: String },
 
+    #[error("PrefixMap error: {error}")]
+    PrefixMapError { error: String },
+
     #[error("Writing SHACL {shacl}: {error}")]
     WritingSHACL { shacl: String, error: String },
 
@@ -281,8 +320,12 @@ pub enum RudofError {
     #[error("Serializing ShEx: {error}")]
     SerializingShacl { error: String },
 
-    #[error("DCTAP reader from path {path} in CSV format: {error}")]
-    DCTAPReaderCSV { error: String, path: String },
+    #[error("DCTAP reader error. Path {path}, format {format}: {error}")]
+    DCTAPReader {
+        error: String,
+        format: String,
+        path: String,
+    },
 
     #[error("DCTAP reader from path {path}: {error}")]
     ReadingDCTAPPath { error: String, path: String },
@@ -290,7 +333,7 @@ pub enum RudofError {
     #[error("DCTAP reader in CSV format: {error}")]
     DCTAPReaderCSVReader { error: String },
 
-    #[error("DCTAP reader from path {path} in CSV format: {error}")]
+    #[error("DCTAP reader from path {path} in format {format}: {error}")]
     DCTAPReaderPathXLS {
         error: String,
         path: String,

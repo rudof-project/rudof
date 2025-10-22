@@ -22,8 +22,9 @@ impl ShaclDataManager {
         reader: R,
         rdf_format: RDFFormat,
         base: Option<&str>,
-    ) -> Result<SchemaIR, ValidateError> {
-        let rdf = SRDFGraph::from_reader(reader, &rdf_format, base, &ReaderMode::default())?;
+    ) -> Result<SchemaIR, Box<ValidateError>> {
+        let rdf = SRDFGraph::from_reader(reader, &rdf_format, base, &ReaderMode::default())
+            .map_err(|e| Box::new(ValidateError::Graph(e)))?;
         match ShaclParser::new(rdf).parse() {
             Ok(schema) => {
                 let schema_compiled = schema.try_into().map_err(|e: Box<CompiledShaclError>| {
@@ -33,7 +34,7 @@ impl ShaclDataManager {
                 })?;
                 Ok(schema_compiled)
             }
-            Err(error) => Err(ValidateError::ShaclParser(error)),
+            Err(error) => Err(Box::new(ValidateError::ShaclParser(error))),
         }
     }
 }

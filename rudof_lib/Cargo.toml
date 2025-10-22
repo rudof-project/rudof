@@ -1,6 +1,6 @@
 [package]
 name = "rudof_lib"
-version = "0.1.120"
+version = "0.1.126"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/rudof_lib"
@@ -8,6 +8,15 @@ edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
+include = [
+    "Cargo.toml", 
+    "src/**/*.rs", 
+    "README.md", 
+    "LICENSE-MIT", 
+    "LICENSE-APACHE", 
+    "src/default_config.toml"
+]
+
 
 [dependencies]
 dctap.workspace = true
@@ -31,6 +40,7 @@ shex_validation.workspace = true
 spargebra.workspace = true
 sparql_service.workspace = true
 srdf.workspace = true
+termtree.workspace = true
 thiserror = "2.0"
 toml = "0.8"
 tracing.workspace = true

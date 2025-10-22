@@ -1,6 +1,6 @@
 [package]
 name = "prefixmap"
-version = "0.1.120"
+version = "0.1.123"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/prefixmap"
@@ -15,3 +15,4 @@ indexmap = { version = "2", features = ["serde"] }
 iri_s.workspace = true
 serde.workspace = true
 thiserror.workspace = true
+tracing.workspace = true

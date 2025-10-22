@@ -217,6 +217,7 @@ ex:PersonShape a sh:NodeShape ;
 }
 
 /// Test that basic constraints are correctly passed from schema to generated data
+#[allow(clippy::cmp_owned)]
 #[tokio::test]
 async fn test_constraint_pipeline_verification() {
     // Create a simple SHACL schema
@@ -270,7 +271,7 @@ ex:PersonShape a sh:NodeShape ;
     // Count how many name properties were generated
     let name_count = triples
         .iter()
-        .filter(|t| t.predicate == "<http://example.org/name>")
+        .filter(|t| t.predicate.to_string() == "<http://example.org/name>".to_string())
         .count();
 
     assert!(

@@ -8,6 +8,9 @@ use crate::SparqlVars;
 
 #[derive(Error, Debug)]
 pub enum SRDFSparqlError {
+    #[error("SPARQL parse error: {error}, query:\n{query_str}")]
+    SPARQLParseError { query_str: String, error: String },
+
     #[error("Unsupported format for CONSTRUCT query: {format:?}")]
     UnsupportedConstructFormat { format: String },
 
@@ -29,7 +32,7 @@ pub enum SRDFSparqlError {
     },
 
     #[error("Unknown name for endpoint: {name}")]
-    UnknownEndpontName { name: String },
+    UnknownEndpointName { name: String },
 
     #[error("Error parsing body: {body}")]
     ParsingBody { body: String },

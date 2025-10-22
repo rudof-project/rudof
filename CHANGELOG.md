@@ -7,11 +7,47 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
-## [Unreleased]
-### Added
+## v0.1.126
 ### Fixed
+- Issue with dctap2uml which was using all the triples in all endpoints for the generation!
+
+## v0.1.125
+### Added
+- `list_use_endpoints` and `list_endpoints` to rudof and pyrudof
+
+### Changed
+- The behavior of `reset_all()` only clears the use_endpoints but keeps the list of available endpoints
+
+## v0.1.124
+### Added
+- default_config.toml is now read at compile time and contains a default config file with some endpoints like dbpedia, wikidata, uniprot, etc. 
+- added list_endpoints to PyRudof
+- Improved visualization of node information using termtree, now it shows the incoming/outgoing using arrow glyphs
+- node_info in Python bindings
+
+### Changed
+- Moved node_formatter from rudof_cli to rudof_lib so it can be reused by Python bindings, CLI and MCP 
+
+### Fixed
+- A problem with node information that was showing extra `<` and `>` characters
+
+### Removed
+- folder shex_compact_winnow which was no longer used
+
+## v0.1.121
+### Added
+- `mcp` command now starts rudof as an MCP server. First contribution by @samuel-bustamante
+- Solved issue #349 to replave dependency on ptree for termtree
+- Started to have a list of known SPARQL endpoints identified by key like `wikidata`, `dbpedia`, etc.
+- show_table() to SPARQL query results (QueryResults) in rudof and pyrudof
+- Solves issue #351
+- Solves issue #349 thanks to patch made by @jonassmedegaard
+
+### Fixed
+
 ### Changed
 - The import in ShEx schemas supports `IriOrStr` in order to handle relative IRIs. Now the base IRI that is passed is the current folder. 
+- Changed initialization of rudof to return a potential error in case there is some problem with RudofConfig
 
 ### Removed
 

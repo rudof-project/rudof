@@ -556,7 +556,10 @@ fn get_config(config: &Option<PathBuf>) -> Result<RudofConfig> {
                 config_path.display()
             )),
         },
-        None => Ok(RudofConfig::default()),
+        None => {
+            let config = RudofConfig::default_config()?;
+            Ok(config)
+        }
     }
 }
 

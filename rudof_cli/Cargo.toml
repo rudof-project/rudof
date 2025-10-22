@@ -1,6 +1,6 @@
 [package]
 name = "rudof_cli"
-version = "0.1.120"
+version = "0.1.124"
 authors.workspace = true
 description.workspace = true
 documentation = "https://rudof-project.github.io/rudof"
@@ -27,7 +27,6 @@ regex.workspace = true
 rudof_generate.workspace = true
 rudof_lib.workspace = true
 rudof_mcp.workspace = true
-
 serde.workspace = true
 serde_json.workspace = true 
 shacl_ast.workspace = true 

@@ -21,13 +21,13 @@ pub trait Engine<S: NeighsRDF> {
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
-    ) -> Result<Vec<ValidationResult>, ValidateError>;
+    ) -> Result<Vec<ValidationResult>, Box<ValidateError>>;
 
     fn focus_nodes(
         &self,
         store: &S,
         targets: &[CompiledTarget],
-    ) -> Result<FocusNodes<S>, ValidateError> {
+    ) -> Result<FocusNodes<S>, Box<ValidateError>> {
         let targets_iter: Vec<FocusNodes<S>> = targets
             .iter()
             .flat_map(|target| match target {
@@ -49,31 +49,35 @@ pub trait Engine<S: NeighsRDF> {
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     /// in SG then { t } is a target from any data graph for s in SG.
-    fn target_node(&self, store: &S, node: &RDFNode) -> Result<FocusNodes<S>, ValidateError>;
+    fn target_node(&self, store: &S, node: &RDFNode) -> Result<FocusNodes<S>, Box<ValidateError>>;
 
-    fn target_class(&self, store: &S, class: &RDFNode) -> Result<FocusNodes<S>, ValidateError>;
+    fn target_class(&self, store: &S, class: &RDFNode)
+    -> Result<FocusNodes<S>, Box<ValidateError>>;
 
     fn target_subject_of(
         &self,
         store: &S,
         predicate: &IriS,
-    ) -> Result<FocusNodes<S>, ValidateError>;
+    ) -> Result<FocusNodes<S>, Box<ValidateError>>;
 
-    fn target_object_of(&self, store: &S, predicate: &IriS)
-    -> Result<FocusNodes<S>, ValidateError>;
+    fn target_object_of(
+        &self,
+        store: &S,
+        predicate: &IriS,
+    ) -> Result<FocusNodes<S>, Box<ValidateError>>;
 
     fn implicit_target_class(
         &self,
         store: &S,
         shape: &RDFNode,
-    ) -> Result<FocusNodes<S>, ValidateError>;
+    ) -> Result<FocusNodes<S>, Box<ValidateError>>;
 
     fn path(
         &self,
         store: &S,
         shape: &PropertyShapeIR,
         focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError> {
+    ) -> Result<FocusNodes<S>, Box<ValidateError>> {
         let nodes = store
             .objects_for_shacl_path(focus_node, shape.path())
             .map_err(|e| ValidateError::ObjectsSHACLPath {

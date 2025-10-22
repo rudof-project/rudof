@@ -1,0 +1,153 @@
+[rdf_data]
+base = "http://example.org/"
+
+# Wikidata endpoint
+[rdf_data.endpoints.wikidata]
+query_url = "https://query.wikidata.org/sparql"
+
+[rdf_data.endpoints.wikidata.prefixmap]
+bd = "http://www.bigdata.com/rdf#"
+cc = "http://creativecommons.org/ns#"
+dct = "http://purl.org/dc/terms/"
+geo = "http://www.opengis.net/ont/geosparql#"
+hint = "http://www.bigdata.com/queryHints#"
+ontolex = "http://www.w3.org/ns/lemon/ontolex#"
+owl = "http://www.w3.org/2002/07/owl#"
+prov = "http://www.w3.org/ns/prov#"
+rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+rdfs = "http://www.w3.org/2000/01/rdf-schema#"
+schema = "http://schema.org/"
+skos = "http://www.w3.org/2004/02/skos/core#"
+xsd = "http://www.w3.org/2001/XMLSchema#"
+p = "http://www.wikidata.org/prop/"
+pq = "http://www.wikidata.org/prop/qualifier/"
+pqn = "http://www.wikidata.org/prop/qualifier/value-normalized/"
+pqv = "http://www.wikidata.org/prop/qualifier/value/"
+pr = "http://www.wikidata.org/prop/reference/"
+prn = "http://www.wikidata.org/prop/reference/value-normalized/"
+prv = "http://www.wikidata.org/prop/reference/value/"
+psv = "http://www.wikidata.org/prop/statement/value/"
+ps = "http://www.wikidata.org/prop/statement/"
+psn = "http://www.wikidata.org/prop/statement/value-normalized/"
+wd = "http://www.wikidata.org/entity/"
+wdata = "http://www.wikidata.org/wiki/Special:EntityData/"
+wdno = "http://www.wikidata.org/prop/novalue/"
+wdref = "http://www.wikidata.org/reference/"
+wds = "http://www.wikidata.org/entity/statement/"
+wdt = "http://www.wikidata.org/prop/direct/"
+wdtn = "http://www.wikidata.org/prop/direct-normalized/"
+wdv = "http://www.wikidata.org/value/"
+wikibase = "http://wikiba.se/ontology#"
+
+[rdf_data.endpoints.dbpedia]
+query_url = "http://dbpedia.org/sparql"
+
+[rdf_data.endpoints.dbpedia.prefixmap]
+dbc = "http://dbpedia.org/class/"
+dbo = "http://dbpedia.org/ontology/"
+dbp = "http://dbpedia.org/property/"
+dbr = "http://dbpedia.org/resource/"
+foaf = "http://xmlns.com/foaf/0.1/"
+geo = "http://www.w3.org/2003/01/geo/wgs84_pos#"
+xsd = "http://www.w3.org/2001/XMLSchema#"
+
+[rdf_data.endpoints.uniprot]
+query_url = "https://sparql.uniprot.org/sparql"
+
+[rdf_data.endpoints.uniprot.prefixmap]
+formats = "http://www.w3.org/ns/formats/"
+rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+rdfs = "http://www.w3.org/2000/01/rdf-schema#"
+sd = "http://www.w3.org/ns/sparql-service-description#"
+taxon = "http://purl.uniprot.org/taxonomy/"
+up = "http://purl.uniprot.org/core/"
+void = "https://sparql.uniprot.org/.well-known/void#"
+
+# Configuration about ShEx
+[shex]
+show_imports = true
+show_shapes = true
+show_extends = true
+show_dependencies = false
+show_ir = false
+# shex_format = ShExC  
+check_well_formed = true        # Check is schema is well formed
+base = "http://base/"           # Base IRI to resolve relative IRIs 
+
+# [shex_validator]
+
+# Configuration for RDF data readers of ShExR
+# [shex_validator.rdf_data]
+
+# Configuration of ShEx schemas for validation
+# [shex_validator.shex]
+
+# [shex_validator.shapemap]
+
+shex_validator.check_negation_requirement = true
+
+# Default width for pretty printing results of validation
+shex_validator.width = 80 
+
+# [shex2uml]
+# shex2uml.plantuml_path = "path/to/plantuml.jar" 
+# annotation_label = "iri"
+# replace_iri_by_label = false
+# shadowing = false
+# [shex2uml.shex] # ShExConfig
+
+# [shex2html]
+# landing_page_name = "Name for landing page"
+# shape_template_name = "Name of template file"
+# css_file_name = "CSS file name" (Optional)
+title = "Title"
+# target_folder = "default/target/folder"
+# color_property_name = ""
+# replace_iri_by_label = true/false
+# annotation_label = "iri"
+# embed_svg_schema = true/false
+# embed_svg_shape = true/false
+# [shex2html.shex2uml] # ShEx2UMLConfig
+# [shex2html.shex] # ShExConfig
+
+# [shacl2shex]
+# starting_shapes_mode = NonBNodes 
+# embed_bnodes = true/false (embed blank nodes in ShEx schema)
+# [shacl2shex.shacl] # ShaclConfig
+# add_target_class = true/false # if true, add rdf:type for sh:targetClass declarations
+
+# [tap]
+# delimiter = ','
+# quote = '"'
+# flexible = true/false
+picklist_delimiter = '|' 
+# [tap.property_place_holders]
+# empty_property_placeholder = "stem"
+
+
+
+# Configuration about DCTAP to ShEx converter
+[tap2shex]
+base_iri = "http://example.org/"
+
+[tap2shex.prefixmap]
+dct = "http://purl.org/dc/terms/"
+rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+foaf = "http://xmlns.com/foaf/0.1/"
+xsd = "http://www.w3.org/2001/XMLSchema#"
+sdo = "https://schema.org/"
+ex = "http://example.org/"
+
+# [tap2shex.prefix_cc]
+
+# [shex2sparql]
+
+# [service]
+base = "http://base/"
+
+# Visualizations require the plantuml.jar file which is usually available at: https://github.com/plantuml/plantuml/releases
+# plantuml_path = "path/to/plantuml.jar" 
+
+# [comparator]
+# ignore_value_constraints = true|false
+# [comparator.prefixes_equivalences]

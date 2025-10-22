@@ -1,12 +1,11 @@
 // Shared core logic for node information
-use anyhow::*;
+use crate::shapemap::NodeSelector;
+use crate::{RudofError, ShapeMapParser, format_node_info};
 use prefixmap::IriRef;
 use shex_ast::ObjectValue;
 use srdf::NeighsRDF;
 use std::collections::HashMap;
-
-use crate::ShapeMapParser;
-use crate::shapemap::{NodeSelector, ShapeSelector};
+use std::io::Write;
 
 // Core data structure representing node information
 #[derive(Debug, Clone)]
@@ -15,6 +14,19 @@ pub struct NodeInfo<S: NeighsRDF> {
     pub subject_qualified: String,
     pub outgoing: HashMap<S::IRI, Vec<S::Term>>,
     pub incoming: HashMap<S::IRI, Vec<S::Subject>>,
+}
+
+impl<S: NeighsRDF> NodeInfo<S> {
+    pub fn write<W: Write>(
+        &self,
+        rdf: &S,
+        options: &NodeInfoOptions,
+        writer: &mut W,
+    ) -> Result<(), RudofError> {
+        format_node_info(self, rdf, writer, options).map_err(|e| RudofError::NodeInfoFormatError {
+            error: e.to_string(),
+        })
+    }
 }
 
 // Options for what information to retrieve about a node
@@ -46,12 +58,15 @@ impl NodeInfoOptions {
         }
     }
 
-    pub fn from_mode_str(mode: &str) -> Result<Self> {
+    pub fn from_mode_str(mode: &str) -> Result<Self, RudofError> {
         match mode {
             "outgoing" => Ok(Self::outgoing()),
             "incoming" => Ok(Self::incoming()),
             "both" => Ok(Self::both()),
-            _ => bail!("Invalid mode: {mode}. Must be 'outgoing', 'incoming', or 'both'"),
+            _ => Err(RudofError::InvalidMode {
+                mode: mode.to_string(),
+                expected: "outgoing, incoming, both".to_string(),
+            }),
         }
     }
 }
@@ -63,8 +78,8 @@ pub fn get_node_info<S: NeighsRDF>(
     rdf: &S,
     node_selector: NodeSelector,
     predicates: &[String],
-    options: NodeInfoOptions,
-) -> Result<Vec<NodeInfo<S>>> {
+    options: &NodeInfoOptions,
+) -> Result<Vec<NodeInfo<S>>, RudofError> {
     let mut results = Vec::new();
 
     for node in node_selector.iter_node(rdf) {
@@ -99,11 +114,14 @@ fn get_outgoing_arcs<S: NeighsRDF>(
     rdf: &S,
     subject: &S::Subject,
     predicates: &[String],
-) -> Result<HashMap<S::IRI, Vec<S::Term>>> {
+) -> Result<HashMap<S::IRI, Vec<S::Term>>, RudofError> {
     if predicates.is_empty() {
         let map = rdf
             .outgoing_arcs(subject.clone())
-            .map_err(|e| anyhow!("Error obtaining outgoing arcs of {subject}: {e}"))?;
+            .map_err(|e| RudofError::OutgoingArcs {
+                subject: rdf.qualify_subject(subject),
+                error: e.to_string(),
+            })?;
 
         let map_vec = map
             .into_iter()
@@ -112,9 +130,12 @@ fn get_outgoing_arcs<S: NeighsRDF>(
         Ok(map_vec)
     } else {
         let preds = convert_predicates(predicates, rdf)?;
-        let (map, _) = rdf
-            .outgoing_arcs_from_list(subject, &preds)
-            .map_err(|e| anyhow!("Error obtaining outgoing arcs of {subject}: {e}"))?;
+        let (map, _) =
+            rdf.outgoing_arcs_from_list(subject, &preds)
+                .map_err(|e| RudofError::OutgoingArcs {
+                    subject: rdf.qualify_subject(subject),
+                    error: e.to_string(),
+                })?;
         let map_vec = map
             .into_iter()
             .map(|(k, v)| (k, v.into_iter().collect()))
@@ -127,11 +148,14 @@ fn get_outgoing_arcs<S: NeighsRDF>(
 fn get_incoming_arcs<S: NeighsRDF>(
     rdf: &S,
     subject: &S::Subject,
-) -> Result<HashMap<S::IRI, Vec<S::Subject>>> {
+) -> Result<HashMap<S::IRI, Vec<S::Subject>>, RudofError> {
     let object: S::Term = subject.clone().into();
     let map = rdf
         .incoming_arcs(object.clone())
-        .map_err(|e| anyhow!("Can't get incoming arcs of node {subject}: {e}"))?;
+        .map_err(|e| RudofError::IncomingArcs {
+            object: rdf.qualify_term(&object),
+            error: e.to_string(),
+        })?;
 
     let map_vec = map
         .into_iter()
@@ -142,7 +166,7 @@ fn get_incoming_arcs<S: NeighsRDF>(
 
 // Convert an ObjectValue (node) to a Subject
 // This handles both full IRIs and prefixed names
-pub fn node_to_subject<S>(node: &ObjectValue, rdf: &S) -> Result<S::Subject>
+pub fn node_to_subject<S>(node: &ObjectValue, rdf: &S) -> Result<S::Subject, RudofError>
 where
     S: NeighsRDF,
 {
@@ -151,22 +175,28 @@ where
             let term: S::Term = match iri_ref {
                 IriRef::Iri(iri_s) => iri_s.clone().into(),
                 IriRef::Prefixed { prefix, local } => {
-                    let iri_s = rdf.resolve_prefix_local(prefix, local)?;
+                    let iri_s = rdf.resolve_prefix_local(prefix, local).map_err(|e| {
+                        RudofError::NodeResolveError {
+                            node: iri_ref.to_string(),
+                            error: e.to_string(),
+                        }
+                    })?;
                     iri_s.into()
                 }
             };
-            S::term_as_subject(&term)
-                .map_err(|_| anyhow!("node_to_subject: Can't convert term {term} to subject"))
+            S::term_as_subject(&term).map_err(|_| RudofError::NodeNotSubject {
+                node: rdf.qualify_term(&term),
+            })
         }
-        ObjectValue::Literal(lit) => {
-            bail!("Node must be an IRI, but found a literal {lit}")
-        }
+        ObjectValue::Literal(lit) => Err(RudofError::LiteralNotSubject {
+            node: lit.to_string(),
+        }),
     }
 }
 
 // Convert predicate strings to IRI objects
 // Handles both full IRIs and prefixed names
-pub fn convert_predicates<S>(predicates: &[String], rdf: &S) -> Result<Vec<S::IRI>>
+pub fn convert_predicates<S>(predicates: &[String], rdf: &S) -> Result<Vec<S::IRI>, RudofError>
 where
     S: NeighsRDF,
 {
@@ -174,9 +204,12 @@ where
     for s in predicates {
         let iri_ref = parse_iri_ref(s)?;
         let iri_s = match iri_ref {
-            IriRef::Prefixed { prefix, local } => {
-                rdf.resolve_prefix_local(prefix.as_str(), local.as_str())?
-            }
+            IriRef::Prefixed { prefix, local } => rdf
+                .resolve_prefix_local(prefix.as_str(), local.as_str())
+                .map_err(|e| RudofError::PredicateResolveError {
+                    predicate: s.clone(),
+                    error: e.to_string(),
+                })?,
             IriRef::Iri(iri) => iri,
         };
         vs.push(iri_s.into())
@@ -186,24 +219,9 @@ where
 
 // Parse an IRI reference string
 // This uses ShapeMapParser to handle both full IRIs and prefixed names
-pub fn parse_iri_ref(iri: &str) -> Result<IriRef> {
-    ShapeMapParser::parse_iri_ref(iri)
-        .map_err(|e| anyhow!("Failed to parse IRI reference '{iri}': {e}"))
-}
-
-// Parses a string representation into a NodeSelector.
-pub fn parse_node_selector(node_str: &str) -> Result<NodeSelector> {
-    let ns = ShapeMapParser::parse_node_selector(node_str)?;
-    Ok(ns)
-}
-
-// Creates and returns a new, default, or initial ShapeSelector.
-pub fn start() -> ShapeSelector {
-    ShapeSelector::start()
-}
-
-// Parses a string representation into a ShapeSelector.
-pub fn parse_shape_selector(label_str: &str) -> Result<ShapeSelector> {
-    let selector = ShapeMapParser::parse_shape_selector(label_str)?;
-    Ok(selector)
+pub fn parse_iri_ref(iri: &str) -> Result<IriRef, RudofError> {
+    ShapeMapParser::parse_iri_ref(iri).map_err(|e| RudofError::IriRefParseError {
+        iri: iri.to_string(),
+        error: e.to_string(),
+    })
 }

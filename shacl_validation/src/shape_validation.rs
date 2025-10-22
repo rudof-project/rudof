@@ -19,7 +19,7 @@ pub trait Validate<S: Rdf> {
         runner: &dyn Engine<S>,
         targets: Option<&FocusNodes<S>>,
         source_shape: Option<&ShapeIR>,
-    ) -> Result<Vec<ValidationResult>, ValidateError>;
+    ) -> Result<Vec<ValidationResult>, Box<ValidateError>>;
 }
 
 impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
@@ -29,7 +29,7 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
         runner: &dyn Engine<S>,
         targets: Option<&FocusNodes<S>>,
         source_shape: Option<&ShapeIR>,
-    ) -> Result<Vec<ValidationResult>, ValidateError> {
+    ) -> Result<Vec<ValidationResult>, Box<ValidateError>> {
         trace!("Shape.validate with shape {}", self.id());
 
         // Skip validation if it is deactivated
@@ -141,7 +141,7 @@ pub trait ValueNodesOps<S: Rdf> {
         store: &S,
         focus_nodes: &FocusNodes<S>,
         runner: &dyn Engine<S>,
-    ) -> Result<ValueNodes<S>, ValidateError>;
+    ) -> Result<ValueNodes<S>, Box<ValidateError>>;
 }
 
 impl<S: NeighsRDF> ValueNodesOps<S> for ShapeIR {
@@ -150,7 +150,7 @@ impl<S: NeighsRDF> ValueNodesOps<S> for ShapeIR {
         store: &S,
         focus_nodes: &FocusNodes<S>,
         runner: &dyn Engine<S>,
-    ) -> Result<ValueNodes<S>, ValidateError> {
+    ) -> Result<ValueNodes<S>, Box<ValidateError>> {
         match self {
             ShapeIR::NodeShape(ns) => ns.value_nodes(store, focus_nodes, runner),
             ShapeIR::PropertyShape(ps) => ps.value_nodes(store, focus_nodes, runner),
@@ -164,7 +164,7 @@ impl<S: Rdf> ValueNodesOps<S> for NodeShapeIR {
         _: &S,
         focus_nodes: &FocusNodes<S>,
         _: &dyn Engine<S>,
-    ) -> Result<ValueNodes<S>, ValidateError> {
+    ) -> Result<ValueNodes<S>, Box<ValidateError>> {
         let value_nodes = focus_nodes.iter().map(|focus_node| {
             (
                 focus_node.clone(),
@@ -181,7 +181,7 @@ impl<S: NeighsRDF> ValueNodesOps<S> for PropertyShapeIR {
         store: &S,
         focus_nodes: &FocusNodes<S>,
         runner: &dyn Engine<S>,
-    ) -> Result<ValueNodes<S>, ValidateError> {
+    ) -> Result<ValueNodes<S>, Box<ValidateError>> {
         let value_nodes = focus_nodes.iter().filter_map(|focus_node| {
             match runner.path(store, self, focus_node) {
                 Ok(ts) => Some((focus_node.clone(), ts)),

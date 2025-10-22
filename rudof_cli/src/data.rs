@@ -7,6 +7,7 @@ use srdf::UmlConverter;
 use srdf::rdf_visualizer::visual_rdf_graph::VisualRDFGraph;
 use srdf::{ImageFormat, RDFFormat, ReaderMode, UmlGenerationMode};
 use std::path::PathBuf;
+use std::path::PathBuf;
 
 use crate::result_data_format::ResultDataFormat;
 use crate::writer::get_writer;
@@ -24,7 +25,7 @@ pub fn run_data(
     config: &RudofConfig,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let mut rudof = Rudof::new(config);
+    let mut rudof = Rudof::new(config)?;
     if debug > 0 {
         println!("Config: {config:?}")
     }

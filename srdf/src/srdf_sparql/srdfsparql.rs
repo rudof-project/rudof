@@ -13,6 +13,7 @@ use regex::Regex;
 use serde::Serialize;
 use serde::ser::SerializeStruct;
 use sparesults::QuerySolution as OxQuerySolution;
+use std::hash::Hash;
 use std::{collections::HashSet, fmt::Display, str::FromStr};
 
 #[cfg(not(target_family = "wasm"))]
@@ -30,6 +31,20 @@ pub struct SRDFSparql {
     client_construct_rdfxml: Client,
     client_construct_jsonld: Client,
 }
+
+impl PartialEq for SRDFSparql {
+    fn eq(&self, other: &Self) -> bool {
+        self.endpoint_iri == other.endpoint_iri
+    }
+}
+
+impl Hash for SRDFSparql {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.endpoint_iri.hash(state);
+    }
+}
+
+impl Eq for SRDFSparql {}
 
 impl Serialize for SRDFSparql {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
@@ -113,7 +128,7 @@ impl FromStr for SRDFSparql {
         } else {
             match s.to_lowercase().as_str() {
                 "wikidata" => SRDFSparql::wikidata(),
-                name => Err(SRDFSparqlError::UnknownEndpontName {
+                name => Err(SRDFSparqlError::UnknownEndpointName {
                     name: name.to_string(),
                 }),
             }
@@ -284,7 +299,7 @@ impl QueryRDF for SRDFSparql {
     fn query_select(&self, query: &str) -> Result<QuerySolutions<Self>> {
         let solutions = make_sparql_query_select(query, &self.client, &self.endpoint_iri)?;
         let qs: Vec<QuerySolution<SRDFSparql>> = solutions.iter().map(cnv_query_solution).collect();
-        Ok(QuerySolutions::new(qs))
+        Ok(QuerySolutions::new(qs, self.prefixmap.clone()))
     }
 
     fn query_ask(&self, query: &str) -> Result<bool> {
@@ -391,14 +406,26 @@ fn make_sparql_query(
 
 #[cfg(not(target_family = "wasm"))]
 fn make_sparql_query_select(
-    query: &str,
+    query_str: &str,
     client: &Client,
     endpoint_iri: &IriS,
 ) -> Result<Vec<OxQuerySolution>> {
     use sparesults::{QueryResultsFormat, QueryResultsParser, ReaderQueryResultsParserOutput};
+    // use spargebra::SparqlParser;
     use url::Url;
+    // We could parse the query to ensure it's valid SPARQL
+    // In principle we could run the query without this step, but arsing the query is useful to get the prefixmap
+    /*let mut sparql_parser = SparqlParser::new();
+    let query =
+        sparql_parser
+            .parse_query(query_str)
+            .map_err(|e| SRDFSparqlError::SPARQLParseError {
+                query_str: query_str.to_string(),
+                error: e.to_string(),
+            })?;
+    let parser_state = sparql_parser.get_state(); */
 
-    let url = Url::parse_with_params(endpoint_iri.as_str(), &[("query", query)])?;
+    let url = Url::parse_with_params(endpoint_iri.as_str(), &[("query", query_str)])?;
     tracing::debug!("Making SPARQL query: {}", url);
     let body = client.get(url).send()?.text()?;
     let mut results = Vec::new();

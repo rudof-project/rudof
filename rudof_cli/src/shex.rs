@@ -1,4 +1,3 @@
-use crate::node_selector::{parse_node_selector, parse_shape_selector, start};
 use crate::writer::get_writer;
 use crate::{ColorSupport, shapemap_format_convert, terminal_width};
 use crate::{ResultShExValidationFormat, ShapeMapFormat as CliShapeMapFormat};
@@ -7,10 +6,8 @@ use anyhow::Context;
 use anyhow::{Result, bail};
 use iri_s::IriS;
 use iri_s::mime_type::MimeType;
-use rudof_lib::{
-    InputSpec, Rudof, RudofConfig, RudofError, ShExFormatter, data_format::DataFormat,
-    data_utils::get_data_rudof,
-};
+use rudof_lib::{InputSpec, Rudof, RudofConfig, RudofError, ShExFormatter, parse_node_selector,
+    parse_shape_selector, start, data_format::DataFormat, data_utils::get_data_rudof};
 use shex_ast::shapemap::{ResultShapeMap, ShapeSelector};
 use shex_ast::{Schema, ShExFormat};
 use srdf::{RDFFormat, ReaderMode};
@@ -39,7 +36,7 @@ pub fn run_shex(
 ) -> Result<()> {
     let begin = Instant::now();
     let (mut writer, color) = get_writer(output, force_overwrite)?;
-    let mut rudof = Rudof::new(config);
+    let mut rudof = Rudof::new(config)?;
 
     parse_shex_schema_rudof(&mut rudof, input, schema_format, base, reader_mode, config)?;
     if let Some(shape_label) = shape {
@@ -244,7 +241,7 @@ pub fn run_validate_shex(
     force_overwrite: bool,
 ) -> Result<()> {
     if let Some(schema) = schema {
-        let mut rudof = Rudof::new(config);
+        let mut rudof = Rudof::new(config)?;
         let (writer, _color) = get_writer(output, force_overwrite)?;
         let schema_format = schema_format.unwrap_or_default();
         let schema_reader = schema.open_read(Some(schema_format.mime_type()), "ShEx Schema")?;

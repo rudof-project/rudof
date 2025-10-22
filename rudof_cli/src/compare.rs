@@ -34,7 +34,7 @@ pub fn run_compare(
     let mut reader1 = input1.open_read(Some(format1.mime_type()), "Compare1")?;
     let mut reader2 = input2.open_read(Some(format2.mime_type()), "Compare2")?;
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let mut rudof = Rudof::new(config);
+    let mut rudof = Rudof::new(config)?;
     let coshamo1 = get_coshamo(
         &mut rudof,
         mode1,

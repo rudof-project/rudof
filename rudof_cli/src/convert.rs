@@ -161,7 +161,7 @@ fn run_shacl2shex(
         InputConvertFormat::Turtle => Ok(CliShaclFormat::Turtle),
         _ => Err(anyhow!("Can't obtain SHACL format from {format}")),
     }?;
-    let mut rudof = Rudof::new(config);
+    let mut rudof = Rudof::new(config)?;
     add_shacl_schema_rudof(&mut rudof, input, &schema_format, base, reader_mode, config)?;
     let shacl_schema = rudof.get_shacl().unwrap();
     let mut converter = Shacl2ShEx::new(&config.shacl2shex_config());
@@ -192,7 +192,7 @@ fn run_shex2uml(
     reader_mode: &ReaderMode,
 ) -> Result<()> {
     let schema_format = format.to_shex_format()?;
-    let mut rudof = Rudof::new(config);
+    let mut rudof = Rudof::new(config)?;
     parse_shex_schema_rudof(&mut rudof, input, &schema_format, base, reader_mode, config)?;
     let mut converter = ShEx2Uml::new(&config.shex2uml_config());
     if let Some(schema) = rudof.get_shex() {
@@ -257,7 +257,7 @@ fn run_shex2html<P: AsRef<Path>>(
 ) -> Result<()> {
     trace!("Starting shex2html");
     let schema_format = format.to_shex_format()?;
-    let mut rudof = Rudof::new(config);
+    let mut rudof = Rudof::new(config)?;
 
     parse_shex_schema_rudof(&mut rudof, input, &schema_format, base, reader_mode, config)?;
     if let Some(schema) = rudof.get_shex() {
@@ -285,7 +285,7 @@ fn run_tap2html<P: AsRef<Path>>(
     config: &RudofConfig,
 ) -> Result<()> {
     trace!("Starting tap2html");
-    let mut rudof = Rudof::new(config);
+    let mut rudof = Rudof::new(config)?;
     let dctap_format = format.to_dctap_format()?;
     parse_dctap(&mut rudof, input, &dctap_format)?;
     if let Some(dctap) = rudof.get_dctap() {
@@ -328,7 +328,7 @@ fn run_shex2sparql(
     reader_mode: &ReaderMode,
 ) -> Result<()> {
     let schema_format = format.to_shex_format()?;
-    let mut rudof = Rudof::new(config);
+    let mut rudof = Rudof::new(config)?;
     parse_shex_schema_rudof(&mut rudof, input, &schema_format, base, reader_mode, config)?;
     if let Some(schema) = rudof.get_shex() {
         let converter = ShEx2Sparql::new(&config.shex2sparql_config());
@@ -347,7 +347,7 @@ fn run_tap2shex(
     config: &RudofConfig,
     force_overwrite: bool,
 ) -> Result<()> {
-    let mut rudof = Rudof::new(config);
+    let mut rudof = Rudof::new(config)?;
     let tap_format = match format {
         InputConvertFormat::CSV => Ok(CliDCTapFormat::CSV),
         InputConvertFormat::Xlsx => Ok(CliDCTapFormat::XLSX),
@@ -375,7 +375,7 @@ fn run_tap2uml(
     config: &RudofConfig,
     force_overwrite: bool,
 ) -> Result<()> {
-    let mut rudof = Rudof::new(config);
+    let mut rudof = Rudof::new(config)?;
     let tap_format = match format {
         InputConvertFormat::CSV => Ok(CliDCTapFormat::CSV),
         InputConvertFormat::Xlsx => Ok(CliDCTapFormat::XLSX),

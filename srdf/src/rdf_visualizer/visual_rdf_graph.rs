@@ -40,7 +40,7 @@ impl VisualRDFGraph {
             error: e.to_string(),
         })?;
         for triple in triples {
-            let (subject, predicate, object) = triple.into_components();
+            let (subject, predicate, object) = triple.clone().into_components();
             graph.create_triple(rdf, subject, predicate, object)?;
         }
         Ok(graph)

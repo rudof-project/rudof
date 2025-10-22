@@ -1,16 +1,12 @@
 use anyhow::*;
 use iri_s::IriS;
 use rudof_lib::node_info::{NodeInfoOptions, get_node_info};
-use rudof_lib::{
-    InputSpec, Rudof, RudofConfig, data_format::DataFormat, data_utils::get_data_rudof,
-};
+use rudof_lib::{InputSpec, Rudof, RudofConfig, format_node_info_list, parse_node_selector,
+    data_format::DataFormat, data_utils::get_data_rudof};
 use srdf::ReaderMode;
 use std::path::PathBuf;
 
-use crate::{
-    ShowNodeMode, node_formatter::format_node_info_list, node_selector::parse_node_selector,
-    writer::get_writer,
-};
+use crate::{ShowNodeMode, writer::get_writer};
 
 #[allow(clippy::too_many_arguments)]
 pub fn run_node(
@@ -29,7 +25,7 @@ pub fn run_node(
     force_overwrite: bool,
 ) -> Result<()> {
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let mut rudof = Rudof::new(config);
+    let mut rudof = Rudof::new(config)?;
 
     get_data_rudof(
         &mut rudof,
@@ -52,7 +48,7 @@ pub fn run_node(
         ShowNodeMode::Both => NodeInfoOptions::both(),
     };
 
-    let node_infos = get_node_info(data, node_selector, predicates, options)?;
-    format_node_info_list(&node_infos, data, &mut writer)?;
+    let node_infos = get_node_info(data, node_selector, predicates, &options)?;
+    format_node_info_list(&node_infos, data, &mut writer, &options)?;
     Ok(())
 }

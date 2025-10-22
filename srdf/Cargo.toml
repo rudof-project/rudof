@@ -1,6 +1,6 @@
 [package]
 name = "srdf"
-version = "0.1.120"
+version = "0.1.126"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/srdf"
@@ -41,6 +41,7 @@ serde_json.workspace = true
 sparesults.workspace = true
 spargebra.workspace = true
 tempfile.workspace = true
+tabled.workspace = true
 thiserror.workspace = true
 toml.workspace = true
 tracing.workspace = true

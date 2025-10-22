@@ -1,6 +1,6 @@
 [package]
 name = "pyrudof"
-version = "0.1.120"
+version = "0.1.126"
 documentation = "https://rudof-project.github.io/rudof/"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
@@ -26,3 +26,4 @@ crate-type = ["cdylib"]
 pyo3 = { version = "0.26.0", features = ["abi3-py37", "extension-module"] }
 pythonize = { version = "0.26.0" }
 rudof_lib.workspace = true
+tracing.workspace = true

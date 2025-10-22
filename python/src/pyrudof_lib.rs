@@ -9,18 +9,19 @@ use pyo3::{
 use pythonize::pythonize;
 use rudof_lib::{
     CoShaMo, ComparatorError, CompareSchemaFormat, CompareSchemaMode, DCTAP, DCTAPFormat,
-    InputSpec, InputSpecError, InputSpecReader, Mie, MimeType, PrefixMap, QueryResultFormat,
-    QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat, RdfData, ReaderMode, ResultShapeMap,
-    Rudof, RudofError, ServiceDescription, ServiceDescriptionFormat, ShExFormat, ShExFormatter,
+    InputSpec, InputSpecError, InputSpecReader, Mie, MimeType, QueryResultFormat, QueryShapeMap,
+    QuerySolution, QuerySolutions, RDFFormat, RdfData, ReaderMode, ResultShapeMap, Rudof,
+    RudofError, ServiceDescription, ServiceDescriptionFormat, ShExFormat, ShExFormatter,
     ShExSchema, ShaCo, ShaclFormat, ShaclSchemaIR, ShaclValidationMode, ShapeLabel, ShapeMapFormat,
     ShapeMapFormatter, ShapesGraphSource, SortMode, UmlGenerationMode, ValidationReport,
-    ValidationStatus, VarName, iri, srdf::Object,
+    ValidationStatus, VarName, format_node_info_list, node_info::get_node_info,
+    parse_node_selector, srdf::Object,
 };
 use std::{
     ffi::OsStr,
     fmt::Display,
     fs::File,
-    io::{BufReader, BufWriter, Write},
+    io::{BufReader, BufWriter, Cursor, Write},
     path::Path,
     str::FromStr,
     sync::{Arc, Mutex},
@@ -41,9 +42,8 @@ pub struct PyRudof {
 impl PyRudof {
     #[new]
     pub fn __init__(config: &PyRudofConfig) -> PyResult<Self> {
-        Ok(Self {
-            inner: Rudof::new(&config.inner),
-        })
+        let rudof = Rudof::new(&config.inner).map_err(PyRudofError::from)?;
+        Ok(Self { inner: rudof })
     }
 
     pub fn update_config(&mut self, config: &PyRudofConfig) {
@@ -73,6 +73,36 @@ impl PyRudof {
     #[pyo3(signature = ())]
     pub fn reset_shapemap(&mut self) {
         self.inner.reset_shapemap();
+    }
+
+    #[pyo3(signature = (node_selector, predicates, show_outgoing = true, show_incoming = false))]
+    pub fn node_info(
+        &mut self,
+        node_selector: &str,
+        predicates: Vec<String>,
+        show_outgoing: bool,
+        show_incoming: bool,
+    ) -> PyResult<String> {
+        let node_selector = parse_node_selector(node_selector).map_err(cnv_err)?;
+        let options = rudof_lib::node_info::NodeInfoOptions {
+            show_outgoing,
+            show_incoming,
+        };
+        let data = self.inner.get_rdf_data();
+        let node_infos =
+            get_node_info(data, node_selector, &predicates, &options).map_err(cnv_err)?;
+
+        let mut buffer = Vec::new();
+        {
+            let mut writer = BufWriter::new(&mut buffer);
+            format_node_info_list(&node_infos, data, &mut writer, &options).map_err(cnv_err)?;
+        }
+        let str = String::from_utf8(buffer)
+            .map_err(|e| RudofError::Utf8Error {
+                error: e.to_string(),
+            })
+            .map_err(cnv_err)?;
+        Ok(str)
     }
 
     /// Resets the current SHACL shapes graph
@@ -457,6 +487,18 @@ impl PyRudof {
         Ok(())
     }
 
+    /// Lists the known SPARQL endpoints
+    /// Returns: A list of tuples (name, url) of the known SPARQL endpoints
+    /// Raises: RudofError if there is an error obtaining the list of endpoints
+    pub fn list_endpoints(&self) -> PyResult<Vec<(String, String)>> {
+        let mut result = Vec::new();
+        let endpoints = self.inner.list_endpoints();
+        for (name, url) in endpoints {
+            result.push((name, url.to_string()));
+        }
+        Ok(result)
+    }
+
     /// Resets the current ShEx validation results
     /// Returns: None
     /// Raises: None
@@ -470,14 +512,14 @@ impl PyRudof {
     /// Raises: RudofError if there is an error generating the UML
     #[pyo3(signature = ())]
     pub fn data2plantuml(&self) -> PyResult<String> {
-        let mut v = Vec::new();
+        let mut writer = Cursor::new(Vec::new());
         self.inner
-            .data2plant_uml(&mut v)
+            .data2plant_uml(&mut writer)
             .map_err(|e| RudofError::RDF2PlantUmlError {
                 error: format!("Error generating UML for current RDF data: {e}"),
             })
             .map_err(cnv_err)?;
-        let str = String::from_utf8(v)
+        let str = String::from_utf8(writer.into_inner())
             .map_err(|e| RudofError::RDF2PlantUmlError {
                 error: format!("RDF2PlantUML: Error converting generated vector to UML: {e}"),
             })
@@ -824,11 +866,12 @@ impl PyRudof {
         Ok(str)
     }
 
+    /*
     /// Adds an endpoint to the current RDF Data
     #[pyo3(signature = (endpoint))]
     pub fn add_endpoint(&mut self, endpoint: &str) -> PyResult<()> {
         // TODO: Check if it is in the RDF Data Config endpoints...
-        let config = self.inner.config();
+        /*let config = self.inner.config();
         let (endpoint_iri, prefixmap) =
             if let Some(endpoint_descr) = config.rdf_data_config().find_endpoint(endpoint) {
                 (
@@ -838,10 +881,21 @@ impl PyRudof {
             } else {
                 let iri = iri!(endpoint);
                 (iri, PrefixMap::basic())
-            };
-        self.inner
-            .add_endpoint(&endpoint_iri, &prefixmap)
-            .map_err(cnv_err)
+            }; */
+        self.inner.add_endpoint(&endpoint_str).map_err(cnv_err)
+    }*/
+
+    /// Uses an endpoint for next queries
+    #[pyo3(signature = (endpoint))]
+    pub fn use_endpoint(&mut self, endpoint: &str) -> PyResult<()> {
+        self.inner.use_endpoint(endpoint).map_err(cnv_err)
+    }
+
+    /// Stop using an endpoint for next queries
+    #[pyo3(signature = (endpoint))]
+    pub fn dont_use_endpoint(&mut self, endpoint: &str) -> PyResult<()> {
+        self.inner.dont_use_endpoint(endpoint);
+        Ok(())
     }
 }
 
@@ -1206,15 +1260,6 @@ impl PyServiceDescription {
             .map_err(cnv_err)?;
         Ok(str)
     }
-
-    /*     /// Converts the schema to JSON
-    pub fn as_json(&self) -> PyResult<String> {
-        let str =  self
-            .inner
-            .as_json()
-            .map_err(|e| PyRudofError::str(e.to_string()))?;
-        Ok(str)
-    } */
 }
 
 /// [DCTAP](https://www.dublincore.org/specifications/dctap/) representation
@@ -1432,8 +1477,13 @@ pub struct PyQuerySolutions {
 #[pymethods]
 impl PyQuerySolutions {
     /// Converts the solutions to a String
-    pub fn show(&self) -> String {
-        format!("Solutions: {:?}", self.inner)
+    pub fn show(&self) -> Result<String, PyRudofError> {
+        let mut writer = Cursor::new(Vec::new());
+        self.inner.write_table(&mut writer).map_err(|e| {
+            PyRudofError::str(format!("Error converting QuerySolutions to table: {e}"))
+        })?;
+        let result = String::from_utf8(writer.into_inner()).expect("Invalid UTF-8");
+        Ok(result)
     }
 
     /// Converts the solutions to a JSON string
@@ -1681,7 +1731,7 @@ impl From<RudofError> for PyRudofError {
     }
 }
 
-fn cnv_err(e: RudofError) -> PyErr {
+pub(crate) fn cnv_err(e: RudofError) -> PyErr {
     println!("RudofError: {e}");
     let e: PyRudofError = e.into();
     let e: PyErr = e.into();
