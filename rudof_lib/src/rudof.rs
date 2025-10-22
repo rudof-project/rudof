@@ -139,7 +139,7 @@ impl Rudof {
     }
 
     /// Get the current version of Rudof
-    pub fn get_version(&self) -> &str {
+    pub fn version(&self) -> &str {
         &self.version
     }
 
@@ -350,15 +350,12 @@ impl Rudof {
     /// Generate a PlantUML representation of RDF Data
     ///
     pub fn data2plant_uml<W: io::Write>(&self, writer: &mut W) -> Result<()> {
-        println!("data2plantuml: obtaining config");
         let config = self.config.rdf_data_config().rdf_visualization_config();
-        println!("data2plantuml: converter in rudof lib");
         let converter = VisualRDFGraph::from_rdf(&self.rdf_data, config).map_err(|e| {
             RudofError::RDF2PlantUmlError {
                 error: format!("{e}"),
             }
         })?;
-        println!("converter.as_plantuml...");
         converter
             .as_plantuml(writer, &UmlGenerationMode::AllNodes)
             .map_err(|e| RudofError::RDF2PlantUmlErrorAsPlantUML {

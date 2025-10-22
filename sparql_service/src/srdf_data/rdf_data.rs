@@ -244,7 +244,15 @@ impl RdfData {
     }
 
     pub fn show_literal(&self, lit: &OxLiteral) -> String {
-        let str: String = format!("{lit}");
+        let str = match lit.clone().destruct() {
+            (value, None, None, None) => format!("\"{}\"", value),
+            (value, Some(dt), None, None) => format!("\"{}\"^^{}", value, self.qualify_iri(&dt)),
+            (value, _, Some(lang), None) => format!("\"{}\"@{}", value, lang),
+            (value, _, Some(lang), Some(direction)) => {
+                format!("\"{}\"@{}{}", value, lang, direction)
+            }
+            _ => panic!("Unexpected literal structure <{}>", lit),
+        };
         format!("{}", str.red())
     }
 

@@ -1,11 +1,14 @@
 // Shared core logic for node information
 use crate::shapemap::NodeSelector;
-use crate::{RudofError, ShapeMapParser, format_node_info};
+use crate::{RudofError, ShapeMapParser};
+use iri_s::IriS;
 use prefixmap::IriRef;
 use shex_ast::ObjectValue;
 use srdf::NeighsRDF;
 use std::collections::HashMap;
 use std::io::Write;
+use termtree::Tree;
+use tracing::info;
 
 // Core data structure representing node information
 #[derive(Debug, Clone)]
@@ -34,6 +37,7 @@ impl<S: NeighsRDF> NodeInfo<S> {
 pub struct NodeInfoOptions {
     pub show_outgoing: bool,
     pub show_incoming: bool,
+    pub show_colors: bool,
 }
 
 impl NodeInfoOptions {
@@ -41,6 +45,7 @@ impl NodeInfoOptions {
         Self {
             show_outgoing: true,
             show_incoming: false,
+            show_colors: true,
         }
     }
 
@@ -48,6 +53,7 @@ impl NodeInfoOptions {
         Self {
             show_outgoing: false,
             show_incoming: true,
+            show_colors: true,
         }
     }
 
@@ -55,6 +61,7 @@ impl NodeInfoOptions {
         Self {
             show_outgoing: true,
             show_incoming: true,
+            show_colors: true,
         }
     }
 
@@ -84,7 +91,7 @@ pub fn get_node_info<S: NeighsRDF>(
 
     for node in node_selector.iter_node(rdf) {
         let subject = node_to_subject(node, rdf)?;
-        let subject_qualified = rdf.qualify_subject(&subject);
+        let subject_qualified = qualify_subject(rdf, &subject, options)?;
 
         let outgoing = if options.show_outgoing {
             get_outgoing_arcs(rdf, &subject, predicates)?
@@ -224,4 +231,141 @@ pub fn parse_iri_ref(iri: &str) -> Result<IriRef, RudofError> {
         iri: iri.to_string(),
         error: e.to_string(),
     })
+}
+
+// Format a single node's information to a writer
+pub fn format_node_info<S: NeighsRDF, W: Write>(
+    node_info: &NodeInfo<S>,
+    rdf: &S,
+    writer: &mut W,
+    options: &NodeInfoOptions,
+) -> Result<(), RudofError> {
+    if options.show_outgoing && !node_info.outgoing.is_empty() {
+        writeln!(writer, "Outgoing arcs")?;
+        let mut outgoing_tree =
+            Tree::new(node_info.subject_qualified.to_string()).with_glyphs(outgoing_glyphs());
+        let mut preds: Vec<_> = node_info.outgoing.keys().collect();
+        preds.sort();
+
+        for pred in preds {
+            let pred_str = qualify_iri(rdf, pred, options);
+            if let Some(objs) = node_info.outgoing.get(pred) {
+                for o in objs {
+                    let obj_str = qualify_object(rdf, o, options)?;
+                    outgoing_tree.leaves.push(
+                        Tree::new(format!("─ {} ─► {}", pred_str, obj_str))
+                            .with_glyphs(outgoing_glyphs()),
+                    );
+                }
+            }
+        }
+        writeln!(writer, "{}", outgoing_tree)?;
+    }
+
+    if options.show_incoming && !node_info.incoming.is_empty() {
+        writeln!(writer, "Incoming arcs")?;
+        let subject: S::Subject = node_info.subject.clone();
+        let subject_str = qualify_subject(rdf, &subject, options)?;
+        let node_str = format!("{}\n▲", subject_str);
+        let mut incoming_tree = Tree::new(node_str).with_glyphs(incoming_glyphs());
+
+        let mut preds: Vec<_> = node_info.incoming.keys().collect();
+        preds.sort();
+
+        for pred in preds {
+            let pred_str = qualify_iri(rdf, pred, options);
+            if let Some(subjs) = node_info.incoming.get(pred) {
+                for s in subjs {
+                    let subj_str = qualify_subject(rdf, s, options)?;
+                    incoming_tree.leaves.push(
+                        Tree::new(format!("─ {} ── {}", pred_str, subj_str))
+                            .with_glyphs(incoming_glyphs()),
+                    );
+                }
+            }
+        }
+        writeln!(writer, "{}", incoming_tree)?;
+    }
+    Ok(())
+}
+
+fn qualify_iri<S: NeighsRDF>(rdf: &S, iri: &S::IRI, options: &NodeInfoOptions) -> String {
+    if options.show_colors {
+        rdf.qualify_iri(iri)
+    } else {
+        let prefixmap = rdf.prefixmap().unwrap_or_default().clone();
+        let iri_s: IriS = iri.clone().into();
+        prefixmap.without_colors().qualify(&iri_s)
+    }
+}
+
+fn qualify_subject<S: NeighsRDF>(
+    rdf: &S,
+    subject: &S::Subject,
+    options: &NodeInfoOptions,
+) -> Result<String, RudofError> {
+    if options.show_colors {
+        Ok(rdf.qualify_subject(subject))
+    } else {
+        let prefixmap = rdf.prefixmap().unwrap_or_default().clone();
+        let subject_term: S::Term = S::subject_as_term(subject);
+        let node = S::term_as_object(&subject_term).map_err(|e| RudofError::QualifySubject {
+            subject: subject.to_string(),
+            error: e.to_string(),
+        })?;
+        Ok(node.show_qualified(&prefixmap.without_colors()))
+    }
+}
+
+fn qualify_object<S: NeighsRDF>(
+    rdf: &S,
+    object: &S::Term,
+    options: &NodeInfoOptions,
+) -> Result<String, RudofError> {
+    info!("Qualifying object: {object}");
+    if options.show_colors {
+        Ok(rdf.qualify_term(object))
+    } else {
+        let prefixmap = rdf.prefixmap().unwrap_or_default().clone();
+        let node = S::term_as_object(object).map_err(|e| RudofError::QualifyObject {
+            object: object.to_string(),
+            error: e.to_string(),
+        })?;
+        Ok(node.show_qualified(&prefixmap.without_colors()))
+    }
+}
+
+// Format multiple node information results
+pub fn format_node_info_list<S: NeighsRDF, W: Write>(
+    node_infos: &[NodeInfo<S>],
+    rdf: &S,
+    writer: &mut W,
+    options: &NodeInfoOptions,
+) -> Result<(), RudofError> {
+    for node_info in node_infos {
+        format_node_info(node_info, rdf, writer, options)?;
+    }
+    Ok(())
+}
+
+fn outgoing_glyphs() -> termtree::GlyphPalette {
+    termtree::GlyphPalette {
+        middle_item: "├",
+        last_item: "└",
+        item_indent: "──",
+        middle_skip: "│",
+        last_skip: "",
+        skip_indent: "   ",
+    }
+}
+
+fn incoming_glyphs() -> termtree::GlyphPalette {
+    termtree::GlyphPalette {
+        middle_item: "├",
+        last_item: "└",
+        item_indent: "──",
+        middle_skip: "│",
+        last_skip: "",
+        skip_indent: "   ",
+    }
 }

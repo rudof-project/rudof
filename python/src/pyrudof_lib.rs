@@ -14,8 +14,10 @@ use rudof_lib::{
     RudofError, ServiceDescription, ServiceDescriptionFormat, ShExFormat, ShExFormatter,
     ShExSchema, ShaCo, ShaclFormat, ShaclSchemaIR, ShaclValidationMode, ShapeLabel, ShapeMapFormat,
     ShapeMapFormatter, ShapesGraphSource, SortMode, UmlGenerationMode, ValidationReport,
-    ValidationStatus, VarName, format_node_info_list, node_info::get_node_info,
-    parse_node_selector, srdf::Object,
+    ValidationStatus, VarName,
+    node_info::{format_node_info_list, get_node_info},
+    parse_node_selector,
+    srdf::Object,
 };
 use std::{
     ffi::OsStr,
@@ -75,18 +77,26 @@ impl PyRudof {
         self.inner.reset_shapemap();
     }
 
-    #[pyo3(signature = (node_selector, predicates, show_outgoing = true, show_incoming = false))]
+    /// Obtains information about a node in the RDF data
+    /// Parameters:
+    /// node_selector: String containing the node selector
+    /// predicates: List of predicates to take into account, if it is empty, it takes into account all predicates
+    /// show_outgoing: Boolean indicating whether to show outgoing edges
+    /// show_incoming: Boolean indicating whether to show incoming edges
+    #[pyo3(signature = (node_selector, predicates = Vec::new(), show_outgoing = true, show_incoming = false, show_colors = true))]
     pub fn node_info(
         &mut self,
         node_selector: &str,
         predicates: Vec<String>,
         show_outgoing: bool,
         show_incoming: bool,
+        show_colors: bool,
     ) -> PyResult<String> {
         let node_selector = parse_node_selector(node_selector).map_err(cnv_err)?;
         let options = rudof_lib::node_info::NodeInfoOptions {
             show_outgoing,
             show_incoming,
+            show_colors,
         };
         let data = self.inner.get_rdf_data();
         let node_infos =
@@ -292,7 +302,7 @@ impl PyRudof {
 
     /// Get the current version of Rudof
     pub fn get_version(&self) -> PyResult<String> {
-        Ok(self.inner.get_version().to_string())
+        Ok(self.inner.version().to_string())
     }
 
     /// Reads a SPARQL query from a String and stores it as the current query

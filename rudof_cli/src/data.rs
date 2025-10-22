@@ -1,15 +1,14 @@
 // use clap::{Parser, Subcommand, ValueEnum};
-use iri_s::IriS;
-use rudof_lib::{InputSpec, Rudof, RudofConfig};
-use srdf::rdf_visualizer::visual_rdf_graph::VisualRDFGraph;
-use srdf::{ImageFormat, RDFFormat, ReaderMode, UmlGenerationMode};
-use std::path::PathBuf;
-
 use crate::writer::get_writer;
 use crate::{data_format::DataFormat, result_data_format::ResultDataFormat};
 use anyhow::{Result, bail};
+use iri_s::IriS;
 use iri_s::mime_type::MimeType;
+use rudof_lib::{InputSpec, Rudof, RudofConfig};
 use srdf::UmlConverter;
+use srdf::rdf_visualizer::visual_rdf_graph::VisualRDFGraph;
+use srdf::{ImageFormat, RDFFormat, ReaderMode, UmlGenerationMode};
+use std::path::PathBuf;
 
 #[allow(clippy::too_many_arguments)]
 pub fn get_data_rudof(
