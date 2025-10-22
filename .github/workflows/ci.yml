@@ -110,11 +110,11 @@ jobs:
         run: cargo install cargo-tarpaulin
 
       - name: Generate coverage
-        run: cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out xml --out lcov --output-name coverage
+        run: cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out xml --out lcov
 
       - name: Publish to Coveralls
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: coverage.lcov
+          path-to-lcov: info.lcov
 
