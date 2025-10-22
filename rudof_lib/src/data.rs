@@ -1,5 +1,4 @@
 // Shared core logic for data management
-use anyhow::{Result, bail};
 use iri_s::IriS;
 use iri_s::mime_type::MimeType;
 use srdf::{
@@ -8,7 +7,7 @@ use srdf::{
 };
 use std::str::FromStr;
 
-use crate::{InputSpec, Rudof, RudofConfig, data_format::DataFormat};
+use crate::{InputSpec, Rudof, RudofConfig, RudofError, data_format::DataFormat};
 
 // Converts a rudof_lib DataFormat into a srdf RDFFormat.
 pub fn data_format2rdf_format(data_format: &DataFormat) -> RDFFormat {
@@ -28,7 +27,7 @@ pub fn get_base(
     input: &InputSpec,
     config: &RudofConfig,
     base: &Option<IriS>,
-) -> Result<Option<String>> {
+) -> Result<Option<String>, RudofError> {
     if let Some(base) = base {
         Ok(Some(base.to_string()))
     } else {
@@ -36,7 +35,10 @@ pub fn get_base(
             Some(base) => Some(base.to_string()),
             None => {
                 if config.automatic_base() {
-                    let base = input.guess_base()?;
+                    let base = input.guess_base().map_err(|e| RudofError::BaseIriError {
+                        str: "automatic base".to_string(),
+                        error: e.to_string(),
+                    })?;
                     Some(base)
                 } else {
                     None
@@ -58,20 +60,24 @@ pub fn get_data_rudof(
     reader_mode: &ReaderMode,
     config: &RudofConfig,
     allow_no_data: bool,
-) -> Result<()> {
+) -> Result<(), RudofError> {
     match (data.is_empty(), endpoint) {
         (true, None) => {
             if allow_no_data {
                 rudof.reset_data();
                 Ok(())
             } else {
-                bail!("None of `data` or `endpoint` parameters have been specified for validation")
+                Err(RudofError::MissingDataAndEndpoint)
             }
         }
         (false, None) => {
             let rdf_format = data_format2rdf_format(data_format);
             for d in data {
-                let data_reader = d.open_read(Some(data_format.mime_type()), "RDF data")?;
+                let data_reader = d
+                    .open_read(Some(data_format.mime_type()), "RDF data")
+                    .map_err(|e| RudofError::RDFDataReadError {
+                        error: e.to_string(),
+                    })?;
                 let base = get_base(d, config, base)?;
                 rudof.read_data(data_reader, &rdf_format, base.as_deref(), reader_mode)?;
             }
@@ -83,48 +89,59 @@ pub fn get_data_rudof(
             rudof.use_endpoint(new_endpoint.as_str())?;
             Ok(())
         }
-        (false, Some(_)) => {
-            bail!("Only one of 'data' or 'endpoint' supported at the same time at this moment")
-        }
+        (false, Some(_)) => Err(RudofError::BothDataAndEndpointSpecified),
     }
 }
 
 /// Parses an optional base IRI string into an Option<IriS>.
-pub fn parse_optional_base_iri(base_str: Option<String>) -> Result<Option<IriS>> {
+pub fn parse_optional_base_iri(base_str: Option<String>) -> Result<Option<IriS>, RudofError> {
     base_str
-        .map(|s| IriS::from_str(&s))
+        .map(|s| {
+            IriS::from_str(&s).map_err(|e| RudofError::BaseIriError {
+                str: s.clone(),
+                error: e.to_string(),
+            })
+        })
         .transpose()
-        .map_err(|e| anyhow::anyhow!("Invalid base IRI: {}", e))
 }
 
 /// Converts a case-insensitive image format string ("SVG" or "PNG") into ImageFormat.
-pub fn parse_image_format(image_format_str: &str) -> Result<ImageFormat> {
+pub fn parse_image_format(image_format_str: &str) -> Result<ImageFormat, RudofError> {
     match image_format_str.to_uppercase().as_str() {
         "SVG" => Ok(ImageFormat::SVG),
         "PNG" => Ok(ImageFormat::PNG),
-        _ => bail!(
-            "Invalid image format: {}. Must be 'SVG' or 'PNG'.",
-            image_format_str
-        ),
+        _ => Err(RudofError::InvalidImageFormat {
+            format: image_format_str.to_string(),
+        }),
     }
 }
 
 /// Executes the full visualization and image generation logic.
 /// Returns the generated image data as a Vec<u8>.
-pub fn export_rdf_to_image(rudof: &Rudof, image_format: ImageFormat) -> Result<Vec<u8>> {
+pub fn export_rdf_to_image(
+    rudof: &Rudof,
+    image_format: ImageFormat,
+) -> Result<Vec<u8>, RudofError> {
     let rdf = rudof.get_rdf_data();
     let config = rudof.config();
     let mut v = Vec::new();
 
     let uml_converter =
-        VisualRDFGraph::from_rdf(rdf, config.rdf_data_config().rdf_visualization_config())?;
+        VisualRDFGraph::from_rdf(rdf, config.rdf_data_config().rdf_visualization_config())
+            .map_err(|e| RudofError::RDF2PlantUmlError {
+                error: e.to_string(),
+            })?;
 
-    uml_converter.as_image(
-        &mut v,
-        image_format,
-        &UmlGenerationMode::all(),
-        config.plantuml_path(),
-    )?;
+    uml_converter
+        .as_image(
+            &mut v,
+            image_format,
+            &UmlGenerationMode::all(),
+            config.plantuml_path(),
+        )
+        .map_err(|e| RudofError::RDF2PlantUmlErrorAsPlantUML {
+            error: e.to_string(),
+        })?;
 
     Ok(v)
 }
