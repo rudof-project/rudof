@@ -295,10 +295,8 @@ impl PyRudof {
     }
 
     /// Run the current query on the current RDF data if it is a CONSTRUCT query
-    #[pyo3(
-        signature = (format = &PyQueryResultFormat::Turtle), 
-        // text_signature = "(format=QueryResultFormat.Turtle)"
-    )]
+    #[pyo3(signature = (format = &PyQueryResultFormat::Turtle))]
+    // text_signature = "(format=QueryResultFormat.Turtle)")]
     pub fn run_current_query_construct(
         &mut self,
         format: &PyQueryResultFormat,
@@ -400,9 +398,8 @@ impl PyRudof {
     /// format: Format of the DCTAP data, e.g. csv, tsv
     /// Returns: None
     /// Raises: RudofError if there is an error reading the DCTAP data
-    #[pyo3(signature = (path_name, format = &PyDCTapFormat::CSV), 
-    // text_signature = "(path_name, format=DCTapFormat.CSV)"
-    )]
+    #[pyo3(signature = (path_name, format = &PyDCTapFormat::CSV))]
+    // text_signature = "(path_name, format=DCTapFormat.CSV)")]
     pub fn read_dctap_path(&mut self, path_name: &str, format: &PyDCTapFormat) -> PyResult<()> {
         let reader = get_path_reader(path_name, "DCTAP data")?;
         self.inner.reset_dctap();
