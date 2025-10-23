@@ -66,7 +66,7 @@ pub async fn execute_sparql_query_impl(
     })?;
 
     let result_format_str = result_format.as_deref().unwrap_or("Internal");
-    let parsed_result_format = ResultQueryFormat::from_str(&result_format_str).map_err(|e| {
+    let parsed_result_format = ResultQueryFormat::from_str(result_format_str).map_err(|e| {
         invalid_request(
             codes::INVALID_FORMAT,
             Some(json!({
@@ -82,7 +82,7 @@ pub async fn execute_sparql_query_impl(
     let mut output_buffer = Cursor::new(Vec::new());
 
     execute_query(
-        &mut *rudof,
+        &mut rudof,
         &query_spec,
         &parsed_query_type,
         &parsed_result_format,
