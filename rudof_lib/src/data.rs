@@ -79,7 +79,7 @@ pub fn get_data_rudof(
                         error: e.to_string(),
                     })?;
                 let base = get_base(d, config, base)?;
-                rudof.read_data(data_reader, &rdf_format, base.as_deref(), reader_mode)?;
+                rudof.read_data(data_reader, &rdf_format, base.as_deref(), reader_mode, true)?;
             }
             Ok(())
         }

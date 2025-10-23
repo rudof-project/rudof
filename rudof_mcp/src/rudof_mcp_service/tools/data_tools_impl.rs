@@ -96,6 +96,7 @@ pub async fn load_rdf_data_impl(
                     &parsed_format,
                     None,
                     &ReaderMode::default(),
+                    false, // not merging, replacing existing data
                 )
                 .map_err(|e| {
                     internal_error(

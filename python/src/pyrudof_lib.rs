@@ -582,16 +582,17 @@ impl PyRudof {
         Ok(())
     }
 
-    /// Reads RDF data (and merges it with existing data)
+    /// Reads RDF data
     /// Parameters:
     /// input: Path or URL containing the RDF data
     /// format: Format of the RDF data, e.g. turtle, jsonld
     /// base: Optional base IRI to resolve relative IRIs in the RDF data
     /// reader_mode: Reader mode to use when reading the RDF data, e.g. lax, strict
+    /// merge: if true, merges the read RDF data with the current RDF data, if false, replaces the current RDF data
     /// Returns: None
     /// Raises: RudofError if there is an error reading the RDF data
-    #[pyo3(signature = (input, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax),
-        text_signature = "(input, format=RDFFormat.Turtle, base=None, reader_mode=ReaderMode.Lax)"
+    #[pyo3(signature = (input, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax, merge = false),
+        text_signature = "(input, format=RDFFormat.Turtle, base=None, reader_mode=ReaderMode.Lax, merge = False)"
     )]
     pub fn read_data(
         &mut self,
@@ -599,12 +600,13 @@ impl PyRudof {
         format: &PyRDFFormat,
         base: Option<&str>,
         reader_mode: &PyReaderMode,
+        merge: bool,
     ) -> PyResult<()> {
         let reader_mode = cnv_reader_mode(reader_mode);
         let format = cnv_rdf_format(format);
         let reader = get_reader(input, Some(format.mime_type()), "RDF data")?;
         self.inner
-            .read_data(reader, &format, base, &reader_mode)
+            .read_data(reader, &format, base, &reader_mode, merge)
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -692,10 +694,11 @@ impl PyRudof {
     /// format: Format of the RDF data, e.g. turtle, jsonld
     /// base: Optional base IRI to resolve relative IRIs in the RDF data
     /// reader_mode: Reader mode to use when reading the RDF data, e.g. lax
+    /// merge: if true, merges the read RDF data with the current RDF data, if false, replaces the current RDF data
     /// Returns: None
     /// Raises: RudofError if there is an error reading the RDF data
-    #[pyo3(signature = (input, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax),
-        text_signature = "(input, format=RDFFormat.Turtle, base=None, reader_mode=ReaderMode.Lax)"
+    #[pyo3(signature = (input, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax, merge = false),
+        text_signature = "(input, format=RDFFormat.Turtle, base=None, reader_mode=ReaderMode.Lax, merge = False)"
     )]
     pub fn read_data_str(
         &mut self,
@@ -703,11 +706,12 @@ impl PyRudof {
         format: &PyRDFFormat,
         base: Option<&str>,
         reader_mode: &PyReaderMode,
+        merge: bool,
     ) -> PyResult<()> {
         let reader_mode = cnv_reader_mode(reader_mode);
         let format = cnv_rdf_format(format);
         self.inner
-            .read_data(input.as_bytes(), &format, base, &reader_mode)
+            .read_data(input.as_bytes(), &format, base, &reader_mode, merge)
             .map_err(cnv_err)?;
         Ok(())
     }

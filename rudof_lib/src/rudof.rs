@@ -1157,7 +1157,11 @@ impl Rudof {
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
+        merge: bool,
     ) -> Result<()> {
+        if !merge {
+            self.rdf_data = RdfData::new();
+        }
         self.rdf_data
             .merge_from_reader(reader, format, base, reader_mode)
             .map_err(|e| RudofError::MergeRDFDataFromReader {
@@ -1381,6 +1385,7 @@ mod tests {
                 &srdf::RDFFormat::Turtle,
                 None,
                 &srdf::ReaderMode::Strict,
+                false,
             )
             .unwrap();
 
@@ -1414,6 +1419,7 @@ mod tests {
                 &srdf::RDFFormat::Turtle,
                 None,
                 &srdf::ReaderMode::Strict,
+                false,
             )
             .unwrap();
 
@@ -1447,6 +1453,7 @@ mod tests {
                 &srdf::RDFFormat::Turtle,
                 None,
                 &srdf::ReaderMode::Strict,
+                false,
             )
             .unwrap();
 
@@ -1493,6 +1500,7 @@ mod tests {
                 &srdf::RDFFormat::Turtle,
                 None,
                 &srdf::ReaderMode::Strict,
+                false,
             )
             .unwrap();
 
@@ -1538,6 +1546,7 @@ mod tests {
                 &srdf::RDFFormat::Turtle,
                 None,
                 &srdf::ReaderMode::Strict,
+                false,
             )
             .unwrap();
 
@@ -1582,6 +1591,7 @@ mod tests {
                 &srdf::RDFFormat::Turtle,
                 None,
                 &srdf::ReaderMode::Strict,
+                false,
             )
             .unwrap();
         let result = rudof
@@ -1617,6 +1627,7 @@ mod tests {
                 &srdf::RDFFormat::Turtle,
                 None,
                 &srdf::ReaderMode::Strict,
+                false,
             )
             .unwrap();
         let result = rudof
