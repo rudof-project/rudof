@@ -376,4 +376,7 @@ pub enum RudofError {
 
     #[error("Error using endpoint {endpoint}: {error}")]
     EndpointUseError { endpoint: String, error: String },
+
+    #[error("Error parsing query result format {format}: {error}")]
+    QueryResultFormatParseError { format: String, error: String },
 }

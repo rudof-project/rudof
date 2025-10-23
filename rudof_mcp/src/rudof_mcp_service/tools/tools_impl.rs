@@ -7,6 +7,7 @@ use rmcp::{
 // Import the public helper functions from the implementation files
 use super::data_tools_impl::*;
 use super::node_tools_impl::*;
+use super::query_tools_impl::*;
 
 #[tool_router]
 impl RudofMcpService {
@@ -24,7 +25,7 @@ impl RudofMcpService {
 
     #[tool(
         name = "export_rdf_data",
-        description = "Serialize and return the server's RDF datastore in the requested format"
+        description = "Serialize and return the RDF stored on the server in the requested format"
     )]
     pub async fn export_rdf_data(
         &self,
@@ -48,7 +49,7 @@ impl RudofMcpService {
 
     #[tool(
         name = "export_plantuml",
-        description = "Generate a PlantUML diagram of the server's RDF datastore"
+        description = "Generate a PlantUML diagram of the RDF stored on the server"
     )]
     pub async fn export_plantuml(
         &self,
@@ -60,7 +61,7 @@ impl RudofMcpService {
 
     #[tool(
         name = "export_image",
-        description = "Generate an image (SVG or PNG) visualization of the server's RDF datastore"
+        description = "Generate an image (SVG or PNG) visualization of the RDF stored on the server"
     )]
     pub async fn export_image(
         &self,
@@ -72,7 +73,7 @@ impl RudofMcpService {
 
     #[tool(
         name = "node_info",
-        description = "Show information about a node (outgoing/incoming arcs) from the server RDF datastore"
+        description = "Show information about a node (outgoing/incoming arcs) from the RDF stored on the server"
     )]
     pub async fn node_info(
         &self,
@@ -80,6 +81,18 @@ impl RudofMcpService {
     ) -> Result<CallToolResult, McpError> {
         // Delegates the call to the function in node_tols_impl.rs
         node_info_impl(self, params).await
+    }
+
+    #[tool(
+        name = "execute_sparql_query",
+        description = "Execute a SPARQL query (SELECT, CONSTRUCT, ASK, DESCRIBE) against the RDF stored on the server"
+    )]
+    pub async fn execute_sparql_query(
+        &self,
+        params: Parameters<ExecuteSparqlQueryRequest>,
+    ) -> Result<CallToolResult, McpError> {
+        // Delegates the call to the function in query_tools_impl.rs
+        execute_sparql_query_impl(self, params).await
     }
 }
 
@@ -148,7 +161,15 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
                         .idempotent(true),
                 );
             }
-
+            "execute_sparql_query" => {
+                tool.title = Some("Execute SPARQL Query".to_string());
+                tool.annotations = Some(
+                    rmcp::model::ToolAnnotations::new()
+                        .read_only(true)
+                        .destructive(false)
+                        .idempotent(true),
+                );
+            }
             _ => {}
         }
     }

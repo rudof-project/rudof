@@ -6,9 +6,9 @@ pub mod codes {
     // GENERAL Errors
     pub const RESOURCE_NOT_FOUND: &str = "resource_not_found";
     pub const SERIALIZE_DATA_ERROR: &str = "serialize_data_error";
+    pub const INVALID_FORMAT: &str = "invalid_format";
 
     // DATA Errors
-    pub const INVALID_FORMAT: &str = "invalid_format";
     pub const RDF_LOAD_ERROR: &str = "rdf_load_error";
     pub const UTF8_CONVERSION_ERROR: &str = "utf8_conversion_error";
     pub const INVALID_BASE_IRI: &str = "invalid_base_iri";
@@ -20,6 +20,10 @@ pub mod codes {
     pub const NODE_NOT_FOUND: &str = "node_not_found";
     pub const INVALID_MODE: &str = "invalid_mode";
     pub const RDF_ARC_QUERY_ERROR: &str = "rdf_arc_query_error";
+
+    // QUERY Errors
+    pub const INVALID_QUERY_TYPE: &str = "invalid_query_type";
+    pub const QUERY_EXECUTION_ERROR: &str = "query_execution_error";
 }
 
 // Create an `McpError::resource_not_found` with optional structured data.

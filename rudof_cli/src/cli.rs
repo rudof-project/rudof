@@ -2,15 +2,18 @@ use crate::dctap_format::DCTapFormat;
 use crate::result_compare_format::ResultCompareFormat;
 use crate::{
     CliShaclFormat, DCTapResultFormat, GenerateSchemaFormat, InputCompareFormat, InputCompareMode,
-    InputConvertFormat, InputConvertMode, OutputConvertFormat, OutputConvertMode, QueryType,
-    RDFReaderMode, RdfConfigFormat, RdfConfigResultFormat, ResultDataFormat, ResultQueryFormat,
-    ResultServiceFormat, ResultShExValidationFormat, ResultShaclValidationFormat,
-    ResultValidationFormat, ShExFormat, ShapeMapFormat, ShowNodeMode, SortByResultShapeMap,
-    SortByShaclValidationReport, SortByValidate, ValidationMode,
+    InputConvertFormat, InputConvertMode, OutputConvertFormat, OutputConvertMode, RDFReaderMode,
+    RdfConfigFormat, RdfConfigResultFormat, ResultDataFormat, ResultServiceFormat,
+    ResultShExValidationFormat, ResultShaclValidationFormat, ResultValidationFormat, ShExFormat,
+    ShapeMapFormat, ShowNodeMode, SortByResultShapeMap, SortByShaclValidationReport,
+    SortByValidate, ValidationMode,
 };
 use clap::{Parser, Subcommand};
 use iri_s::IriS;
-use rudof_lib::{InputSpec, data_format::DataFormat};
+use rudof_lib::{
+    InputSpec, data_format::DataFormat, query_result_format::ResultQueryFormat,
+    query_type::QueryType,
+};
 use shacl_validation::shacl_processor::ShaclValidationMode;
 use std::path::PathBuf;
 
