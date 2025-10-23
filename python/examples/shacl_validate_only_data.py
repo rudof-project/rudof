@@ -2,7 +2,7 @@ from pyrudof import Rudof, RudofConfig
 
 rudof = Rudof(RudofConfig())
 
-rudof.read_shacl_str("""
+rudof.read_data_str("""
 prefix : <http://example.org/>
 prefix sh:     <http://www.w3.org/ns/shacl#> 
 prefix xsd:    <http://www.w3.org/2001/XMLSchema#> 
@@ -22,7 +22,7 @@ prefix : <http://example.org/>
 
 :ok :name "alice" .                 
 :ko :name 1 .
-""")
+""", merge = True)
 
 result = rudof.validate_shacl()
 

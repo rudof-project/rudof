@@ -20,10 +20,12 @@ include = ["pyrudof.pyi"]
 
 [lib]
 name = "pyrudof"
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 pyo3 = { version = "0.26", features = ["abi3-py37", "extension-module", "experimental-inspect"] }
+# pyo3-stub-gen = { version = "0.16.1" }
+# pyo3-stub-gen-derive = { version = "0.16.1" }
 pythonize = { version = "0.26.0" }
 rudof_lib.workspace = true
 tracing.workspace = true
