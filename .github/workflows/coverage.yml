@@ -26,7 +26,7 @@ jobs:
               run: cargo install cargo-tarpaulin
 
             - name: Generate coverage
-              run: cargo tarpaulin --engine llvm --no-dead-code --print-rust-flags --workspace --out xml 
+              run: cargo tarpaulin --no-default-features --out Lcov --timeout 120 --verbose
 
             - name: Check for coverage file
               run: ls -al
@@ -35,4 +35,3 @@ jobs:
               uses: coverallsapp/github-action@v2
               with:
                 github-token: ${{ secrets.GITHUB_TOKEN }}
-                path-to-lcov: ./cobertura.xml
