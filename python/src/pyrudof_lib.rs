@@ -17,6 +17,7 @@ use rudof_lib::{
     ValidationStatus, VarName,
     node_info::{format_node_info_list, get_node_info},
     parse_node_selector,
+    shacl_validation::validation_report::report::SortModeReport,
     srdf::Object,
 };
 use std::{
@@ -28,6 +29,7 @@ use std::{
     str::FromStr,
     sync::{Arc, Mutex},
 };
+// use pyo3_stub_gen::derive::*;
 
 /// Main class to handle `rudof` features.
 /// There should  be only one instance of `rudof` per program.
@@ -35,11 +37,13 @@ use std::{
 /// It can be used to read data, schemas, shapemaps and DCTAP from strings or files,
 /// run queries, validate data, convert schemas to Common Shapes Model, compare schemas, etc.
 /// It is thread safe.
+// #[gen_stub_pyclass]
 #[pyclass(name = "Rudof")]
 pub struct PyRudof {
     inner: Rudof,
 }
 
+// #[gen_stub_pymethods]
 #[pymethods]
 impl PyRudof {
     #[new]
@@ -85,7 +89,6 @@ impl PyRudof {
     /// show_incoming: Boolean indicating whether to show incoming edges
     #[pyo3(
         signature = (node_selector, predicates = Vec::new(), show_outgoing = true, show_incoming = false, show_colors = true),
-        text_signature = "(node_selector, predicates = [], show_outgoing = True, show_incoming = False, show_colors = True)"
     )]
     pub fn node_info(
         &mut self,
@@ -161,7 +164,7 @@ impl PyRudof {
     /// label: Optional label of the shape to convert or None to use the start shape or the first shape
     #[pyo3(
         signature = (schema, mode = "shex", format = "turtle", base = None, reader_mode = &PyReaderMode::Lax, label = None),
-        text_signature = "(schema, mode, format, base=None, reader_mode=ReaderMode.Lax, label=None)"
+//        text_signature = "(schema, mode, format, base=None, reader_mode=ReaderMode.Lax, label=None)"
     )]
     pub fn get_coshamo_str(
         &mut self,
@@ -200,7 +203,7 @@ impl PyRudof {
     /// reader_mode: Reader mode to use when reading the schemas, e.g. lax, strict
     #[pyo3(
         signature = (schema1, schema2, mode1 = "shex", mode2 = "shex", format1 = "turtle", format2 = "turtle", base1 = None, base2 = None, label1 = None, label2 = None, reader_mode = &PyReaderMode::Lax), 
-        text_signature = "(schema1, schema2, mode1='shex', mode2='shex', format1='turtle', format2='turtle', base1=None, base2=None, label1=None, label2=None, reader_mode=ReaderMode.Lax)"
+        // text_signature = "(schema1, schema2, mode1='shex', mode2='shex', format1='turtle', format2='turtle', base1=None, base2=None, label1=None, label2=None, reader_mode=ReaderMode.Lax)"
     )]
     #[allow(clippy::too_many_arguments)]
     pub fn compare_schemas_str(
@@ -276,7 +279,7 @@ impl PyRudof {
     /// Run a SPARQL CONSTRUCT query obtained from a string on the RDF data
     #[pyo3(
         signature = (input, format = &PyQueryResultFormat::Turtle),
-        text_signature = "(input, format=QueryResultFormat.Turtle)"
+        // text_signature = "(input, format=QueryResultFormat.Turtle)"
     )]
     pub fn run_query_construct_str(
         &mut self,
@@ -292,8 +295,8 @@ impl PyRudof {
     }
 
     /// Run the current query on the current RDF data if it is a CONSTRUCT query
-    #[pyo3(
-        signature = (format = &PyQueryResultFormat::Turtle), text_signature = "(format=QueryResultFormat.Turtle)")]
+    #[pyo3(signature = (format = &PyQueryResultFormat::Turtle))]
+    // text_signature = "(format=QueryResultFormat.Turtle)")]
     pub fn run_current_query_construct(
         &mut self,
         format: &PyQueryResultFormat,
@@ -378,7 +381,7 @@ impl PyRudof {
     /// Returns: None
     /// Raises: RudofError if there is an error reading the DCTAP data
     #[pyo3(signature = (input, format = &PyDCTapFormat::CSV),
-        text_signature = "(input, format=PyDCTapFormat.CSV)"
+        // text_signature = "(input, format=PyDCTapFormat.CSV)"
     )]
     pub fn read_dctap_str(&mut self, input: &str, format: &PyDCTapFormat) -> PyResult<()> {
         self.inner.reset_dctap();
@@ -395,7 +398,8 @@ impl PyRudof {
     /// format: Format of the DCTAP data, e.g. csv, tsv
     /// Returns: None
     /// Raises: RudofError if there is an error reading the DCTAP data
-    #[pyo3(signature = (path_name, format = &PyDCTapFormat::CSV), text_signature = "(path_name, format=DCTapFormat.CSV)")]
+    #[pyo3(signature = (path_name, format = &PyDCTapFormat::CSV))]
+    // text_signature = "(path_name, format=DCTapFormat.CSV)")]
     pub fn read_dctap_path(&mut self, path_name: &str, format: &PyDCTapFormat) -> PyResult<()> {
         let reader = get_path_reader(path_name, "DCTAP data")?;
         self.inner.reset_dctap();
@@ -415,7 +419,7 @@ impl PyRudof {
     ///
     #[pyo3(
         signature = (input, format = &PyShExFormat::ShExC, base = None, reader_mode = &PyReaderMode::Lax),
-        text_signature = "(input, format=ShExFormat.ShExC, base=None, reader_mode=ReaderMode.Lax)"
+        // text_signature = "(input, format=ShExFormat.ShExC, base=None, reader_mode=ReaderMode.Lax)"
     )]
     pub fn read_shex_str(
         &mut self,
@@ -447,7 +451,7 @@ impl PyRudof {
     /// Returns: None
     /// Raises: RudofError if there is an error reading the SHACL shapes graph
     #[pyo3(signature = (input, format = &PyShaclFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax),
-        text_signature = "(input, format=ShaclFormat.Turtle, base=None, reader_mode=ReaderMode.Lax)"
+        // text_signature = "(input, format=ShaclFormat.Turtle, base=None, reader_mode=ReaderMode.Lax)"
     )]
     pub fn read_shacl_str(
         &mut self,
@@ -476,7 +480,7 @@ impl PyRudof {
     ///
     #[pyo3(
         signature = (input, format = &PyShExFormat::ShExC, base = None, reader_mode = &PyReaderMode::Lax),
-        text_signature = "(input, format=ShExFormat.ShExC, base=None, reader_mode=ReaderMode.Lax)"
+        // text_signature = "(input, format=ShExFormat.ShExC, base=None, reader_mode=ReaderMode.Lax)"
     )]
     pub fn read_shex(
         &mut self,
@@ -503,7 +507,7 @@ impl PyRudof {
     /// Returns: None
     /// Raises: RudofError if there is an error reading the SHACL shapes graph
     #[pyo3(signature = (input, format = &PyShaclFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax),
-        text_signature = "(input, format=ShaclFormat.Turtle, base=None, reader_mode=ReaderMode.Lax)"
+        // text_signature = "(input, format=ShaclFormat.Turtle, base=None, reader_mode=ReaderMode.Lax)"
     )]
     pub fn read_shacl(
         &mut self,
@@ -582,16 +586,17 @@ impl PyRudof {
         Ok(())
     }
 
-    /// Reads RDF data (and merges it with existing data)
+    /// Reads RDF data
     /// Parameters:
     /// input: Path or URL containing the RDF data
     /// format: Format of the RDF data, e.g. turtle, jsonld
     /// base: Optional base IRI to resolve relative IRIs in the RDF data
     /// reader_mode: Reader mode to use when reading the RDF data, e.g. lax, strict
+    /// merge: if true, merges the read RDF data with the current RDF data, if false, replaces the current RDF data
     /// Returns: None
     /// Raises: RudofError if there is an error reading the RDF data
-    #[pyo3(signature = (input, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax),
-        text_signature = "(input, format=RDFFormat.Turtle, base=None, reader_mode=ReaderMode.Lax)"
+    #[pyo3(signature = (input, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax, merge = false),
+        // text_signature = "(input, format=RDFFormat.Turtle, base=None, reader_mode=ReaderMode.Lax, merge = False)"
     )]
     pub fn read_data(
         &mut self,
@@ -599,12 +604,13 @@ impl PyRudof {
         format: &PyRDFFormat,
         base: Option<&str>,
         reader_mode: &PyReaderMode,
+        merge: bool,
     ) -> PyResult<()> {
         let reader_mode = cnv_reader_mode(reader_mode);
         let format = cnv_rdf_format(format);
         let reader = get_reader(input, Some(format.mime_type()), "RDF data")?;
         self.inner
-            .read_data(reader, &format, base, &reader_mode)
+            .read_data(reader, &format, base, &reader_mode, merge)
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -618,7 +624,7 @@ impl PyRudof {
     /// Returns: None
     /// Raises: RudofError if there is an error reading the Service Description
     #[pyo3(signature = (input, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax),
-        text_signature = "(input, format=RDFFormat.Turtle, base=None, reader_mode=ReaderMode.Lax)"
+        // text_signature = "(input, format=RDFFormat.Turtle, base=None, reader_mode=ReaderMode.Lax)"
     )]
     pub fn read_service_description(
         &mut self,
@@ -645,7 +651,7 @@ impl PyRudof {
     /// Returns: None
     /// Raises: RudofError if there is an error reading the Service Description
     #[pyo3(signature = (input, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax),
-        text_signature = "(input, format=RDFFormat.Turtle, base=None, reader_mode=ReaderMode.Lax)"
+        // text_signature = "(input, format=RDFFormat.Turtle, base=None, reader_mode=ReaderMode.Lax)"
     )]
     pub fn read_service_description_str(
         &mut self,
@@ -669,7 +675,7 @@ impl PyRudof {
     /// Returns: None
     /// Raises: RudofError if there is an error writing the Service Description
     #[pyo3(signature = (output, format = &PyServiceDescriptionFormat::Internal),
-        text_signature = "(output, format=ServiceDescriptionFormat.Internal)"
+        // text_signature = "(output, format=ServiceDescriptionFormat.Internal)"
     )]
     pub fn serialize_service_description(
         &self,
@@ -692,10 +698,11 @@ impl PyRudof {
     /// format: Format of the RDF data, e.g. turtle, jsonld
     /// base: Optional base IRI to resolve relative IRIs in the RDF data
     /// reader_mode: Reader mode to use when reading the RDF data, e.g. lax
+    /// merge: if true, merges the read RDF data with the current RDF data, if false, replaces the current RDF data
     /// Returns: None
     /// Raises: RudofError if there is an error reading the RDF data
-    #[pyo3(signature = (input, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax),
-        text_signature = "(input, format=RDFFormat.Turtle, base=None, reader_mode=ReaderMode.Lax)"
+    #[pyo3(signature = (input, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax, merge = false),
+        // text_signature = "(input, format=RDFFormat.Turtle, base=None, reader_mode=ReaderMode.Lax, merge = False)"
     )]
     pub fn read_data_str(
         &mut self,
@@ -703,18 +710,19 @@ impl PyRudof {
         format: &PyRDFFormat,
         base: Option<&str>,
         reader_mode: &PyReaderMode,
+        merge: bool,
     ) -> PyResult<()> {
         let reader_mode = cnv_reader_mode(reader_mode);
         let format = cnv_rdf_format(format);
         self.inner
-            .read_data(input.as_bytes(), &format, base, &reader_mode)
+            .read_data(input.as_bytes(), &format, base, &reader_mode, merge)
             .map_err(cnv_err)?;
         Ok(())
     }
 
     /// Serialize the current ShEx schema
     #[pyo3(signature = (format = &PyRDFFormat::Turtle),
-        text_signature = "(format=RDFFormat.Turtle)"
+        // text_signature = "(format=RDFFormat.Turtle)"
     )]
     pub fn serialize_data(&self, format: &PyRDFFormat) -> PyResult<String> {
         let mut v = Vec::new();
@@ -1675,7 +1683,24 @@ impl PyValidationReport {
     /// Convert ValidationReport to a String
     pub fn show(&self) -> String {
         let result = &self.inner;
-        format!("{result}")
+        result.to_string()
+    }
+
+    /// Convert ValidationReport to a table String
+    /// It can include details or not, default = false
+    /// It can be formatted to fit in a terminal width, default = 80
+    #[pyo3(
+        signature = (with_details = false, terminal_width = 80)
+    )]
+    pub fn show_as_table(&self, with_details: bool, terminal_width: usize) -> PyResult<String> {
+        let result = &self.inner;
+        let capture = CaptureWriter::new();
+        let capture_clone = capture.clone();
+        let boxed: Box<dyn Write> = Box::new(capture);
+        let sort_mode = SortModeReport::default();
+        result.show_as_table(boxed, sort_mode, with_details, terminal_width)?;
+        let result = capture_clone.to_string();
+        Ok(result)
     }
 
     /// Returns true if there were no violation errors
@@ -1911,3 +1936,5 @@ fn get_reader(input: &str, accept: Option<&str>, context: &str) -> PyResult<Inpu
         .map_err(cnv_err)?;
     Ok(reader)
 }
+
+// define_stub_info_gatherer!(stub_info);

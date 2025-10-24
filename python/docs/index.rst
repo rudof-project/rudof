@@ -46,7 +46,7 @@ Installation
     )
 
     result = rudof.validate_shacl(ShaclValidationMode(), ShapesGraphSource())
-    print(result.show())
+    print(result.show_as_table())
     
 
 Table of Contents
