@@ -7,6 +7,10 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.1.130
+### Added
+- Added `query` tools to MCP server
+
 ## v0.1.129
 ### Added
 - `merge` parameter to `read_data` and `read_data_str` to indicate if we want to merge the RDF data read with the current one or replace it

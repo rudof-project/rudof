@@ -1,4 +1,4 @@
-use crate::rudof_mcp_service::errors::{self, codes};
+use crate::rudof_mcp_service::errors::{self, error_messages};
 use rmcp::{
     ErrorData as McpError, RoleServer,
     model::{
@@ -47,7 +47,7 @@ pub async fn read_resource(
         "rdf://graph" => get_current_rdf_graph_resource(service, &uri).await,
 
         _ => Err(errors::resource_not_found(
-            codes::RESOURCE_NOT_FOUND,
+            error_messages::RESOURCE_NOT_FOUND,
             Some(json!({ "uri": uri })),
         )),
     }
@@ -61,21 +61,21 @@ async fn get_current_rdf_graph_resource(
 
     let format = RDFFormat::from_str("turtle").map_err(|e| {
         errors::internal_error(
-            codes::SERIALIZE_DATA_ERROR,
+            error_messages::CONVERSION_ERROR,
             Some(json!({ "error": e.to_string() })),
         )
     })?;
     let mut buf = Vec::new();
     rudof.serialize_data(&format, &mut buf).map_err(|e| {
         errors::internal_error(
-            codes::SERIALIZE_DATA_ERROR,
+            error_messages::SERIALIZE_DATA_ERROR,
             Some(json!({ "error": e.to_string() })),
         )
     })?;
 
     let graph_text = String::from_utf8(buf).map_err(|e| {
         errors::internal_error(
-            codes::UTF8_CONVERSION_ERROR,
+            error_messages::CONVERSION_ERROR,
             Some(json!({ "error": e.to_string() })),
         )
     })?;

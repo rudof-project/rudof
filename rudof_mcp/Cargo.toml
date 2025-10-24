@@ -29,3 +29,4 @@ tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
 prefixmap = { workspace = true }
 shex_ast = { workspace = true }
 base64 = "0.22.1"
+iri_s.workspace = true
