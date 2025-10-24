@@ -1,6 +1,6 @@
 [package]
 name = "rudof_mcp"
-version = "0.1.129"
+version = "0.1.131"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shex_ast"
