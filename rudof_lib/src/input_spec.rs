@@ -161,7 +161,7 @@ impl FromStr for InputSpec {
                 let url_spec = UrlSpec::parse(s)?;
                 Ok(InputSpec::Url(url_spec))
             }
-            _ if Path::new(s).exists() => { 
+            _ if Path::new(s).exists() => {
                 let pb: PathBuf =
                     PathBuf::from_str(s).map_err(|e| InputSpecError::ParsingPathError {
                         str: s.to_string(),
@@ -169,9 +169,7 @@ impl FromStr for InputSpec {
                     })?;
                 Ok(InputSpec::Path(pb))
             }
-            _ => {
-                Ok(InputSpec::Str(s.to_string()))
-            }
+            _ => Ok(InputSpec::Str(s.to_string())),
         }
     }
 }

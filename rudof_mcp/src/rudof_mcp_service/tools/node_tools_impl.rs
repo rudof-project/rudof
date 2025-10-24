@@ -4,10 +4,7 @@ use rmcp::{
     handler::server::wrapper::Parameters,
     model::{CallToolResult, Content},
 };
-use rudof_lib::{
-    node_info::*,
-    parse_node_selector,
-};
+use rudof_lib::{node_info::*, parse_node_selector};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -68,8 +65,12 @@ pub async fn node_info_impl(
     })?;
 
     let mode_str = mode.as_deref().unwrap_or("both");
-    let mut options = NodeInfoOptions::from_mode_str(mode_str)
-        .map_err(|e| invalid_request(error_messages::INVALID_NODE_MODE, Some(json!({ "error": e.to_string() }))))?;
+    let mut options = NodeInfoOptions::from_mode_str(mode_str).map_err(|e| {
+        invalid_request(
+            error_messages::INVALID_NODE_MODE,
+            Some(json!({ "error": e.to_string() })),
+        )
+    })?;
     options.show_colors = false;
 
     let pred_list: Vec<String> = predicates.unwrap_or_default();
@@ -80,9 +81,12 @@ pub async fn node_info_impl(
         )
     })?;
 
-    let node_info = node_infos
-        .first()
-        .ok_or_else(|| internal_error(error_messages::NODE_NOT_FOUND, Some(json!({ "error": node }))))?;
+    let node_info = node_infos.first().ok_or_else(|| {
+        internal_error(
+            error_messages::NODE_NOT_FOUND,
+            Some(json!({ "error": node })),
+        )
+    })?;
 
     let mut output_buffer = Cursor::new(Vec::new());
 
@@ -102,19 +106,24 @@ pub async fn node_info_impl(
     })?;
 
     let response = NodeInfoResponse {
-        subject: node_info.subject_qualified.clone(), 
-        outgoing: node_info.outgoing
+        subject: node_info.subject_qualified.clone(),
+        outgoing: node_info
+            .outgoing
             .iter()
             .map(|(predicate_iri, objects_vec)| NodePredicateObjects {
-                predicate: predicate_iri.to_string(), 
+                predicate: predicate_iri.to_string(),
                 objects: objects_vec.iter().map(|term| term.to_string()).collect(),
             })
             .collect(),
-        incoming: node_info.incoming
+        incoming: node_info
+            .incoming
             .iter()
             .map(|(predicate_iri, subjects_vec)| NodePredicateSubjects {
                 predicate: predicate_iri.to_string(),
-                subjects: subjects_vec.iter().map(|subject| subject.to_string()).collect(),
+                subjects: subjects_vec
+                    .iter()
+                    .map(|subject| subject.to_string())
+                    .collect(),
             })
             .collect(),
     };

@@ -50,7 +50,9 @@ pub async fn execute_sparql_query_impl(
     let query_type_str = detect_query_type(&query).ok_or_else(|| {
         invalid_request(
             error_messages::INVALID_QUERY_TYPE,
-            Some(json!({"error": "Could not detect query type (SELECT, CONSTRUCT, ASK, DESCRIBE)"}),),
+            Some(
+                json!({"error": "Could not detect query type (SELECT, CONSTRUCT, ASK, DESCRIBE)"}),
+            ),
         )
     })?;
     let parsed_query_type = QueryType::from_str(&query_type_str).map_err(|e| {

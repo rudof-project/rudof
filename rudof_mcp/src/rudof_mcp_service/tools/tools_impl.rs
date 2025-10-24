@@ -190,7 +190,9 @@ mod tests {
             endpoint: None,
         };
 
-        let result = service.load_rdf_data_from_sources(Parameters(request)).await;
+        let result = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await;
 
         assert!(result.is_ok());
         let call_result = result.unwrap();
@@ -209,7 +211,9 @@ mod tests {
             endpoint: None,
         };
 
-        let result = service.load_rdf_data_from_sources(Parameters(request)).await;
+        let result = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await;
 
         assert!(result.is_err());
     }
@@ -224,7 +228,9 @@ mod tests {
             base: None,
             endpoint: None,
         };
-        let result = service.load_rdf_data_from_sources(Parameters(request)).await;
+        let result = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await;
 
         assert!(result.is_err());
     }
@@ -239,7 +245,10 @@ mod tests {
             base: None,
             endpoint: None,
         };
-        let _ = service.load_rdf_data_from_sources(Parameters(request)).await.unwrap();
+        let _ = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await
+            .unwrap();
 
         let export_req = ExportRdfDataRequest {
             format: "turtle".to_string(),
@@ -323,7 +332,10 @@ mod tests {
             base: None,
             endpoint: None,
         };
-        let _ = service.load_rdf_data_from_sources(Parameters(request)).await.unwrap();
+        let _ = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await
+            .unwrap();
 
         let result = service.export_plantuml(Parameters(EmptyRequest {})).await;
 
@@ -361,7 +373,10 @@ mod tests {
             base: None,
             endpoint: None,
         };
-        let _ = service.load_rdf_data_from_sources(Parameters(request)).await.unwrap();
+        let _ = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await
+            .unwrap();
 
         let node_req = NodeInfoRequest {
             node: "<http://example.org/alice>".to_string(),
@@ -387,7 +402,10 @@ mod tests {
             base: None,
             endpoint: None,
         };
-        let _ = service.load_rdf_data_from_sources(Parameters(request)).await.unwrap();
+        let _ = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await
+            .unwrap();
 
         let node_req = NodeInfoRequest {
             node: "http://example.org/nonexistent".to_string(),
@@ -410,7 +428,10 @@ mod tests {
             base: None,
             endpoint: None,
         };
-        let _ = service.load_rdf_data_from_sources(Parameters(request)).await.unwrap();
+        let _ = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await
+            .unwrap();
 
         let node_req = NodeInfoRequest {
             node: "<http://example.org/alice>".to_string(),
@@ -433,7 +454,10 @@ mod tests {
             base: None,
             endpoint: None,
         };
-        let _ = service.load_rdf_data_from_sources(Parameters(request)).await.unwrap();
+        let _ = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await
+            .unwrap();
 
         let node_req = NodeInfoRequest {
             node: "ex:bob".to_string(),
@@ -456,7 +480,10 @@ mod tests {
             base: None,
             endpoint: None,
         };
-        let _ = service.load_rdf_data_from_sources(Parameters(request)).await.unwrap();
+        let _ = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await
+            .unwrap();
 
         let node_req = NodeInfoRequest {
             node: "http://example.org/alice".to_string(),
@@ -479,7 +506,10 @@ mod tests {
             base: None,
             endpoint: None,
         };
-        let _ = service.load_rdf_data_from_sources(Parameters(request)).await.unwrap();
+        let _ = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await
+            .unwrap();
 
         let node_req = NodeInfoRequest {
             node: "<http://example.org/alice>".to_string(),
@@ -564,7 +594,10 @@ mod tests {
             base: None,
             endpoint: None,
         };
-        let _ = service.load_rdf_data_from_sources(Parameters(request)).await.unwrap();
+        let _ = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await
+            .unwrap();
 
         let export_req = ExportRdfDataRequest {
             format: "turtle".to_string(),
@@ -592,7 +625,10 @@ mod tests {
             base: None,
             endpoint: None,
         };
-        let _ = service.load_rdf_data_from_sources(Parameters(request)).await.unwrap();
+        let _ = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await
+            .unwrap();
 
         let formats = vec!["turtle", "ntriples", "rdf/xml", "json"];
 
