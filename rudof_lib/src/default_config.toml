@@ -71,8 +71,8 @@ show_extends = true
 show_dependencies = false
 show_ir = false
 # shex_format = ShExC  
-check_well_formed = true        # Check is schema is well formed
-base = "http://base/"           # Base IRI to resolve relative IRIs 
+check_well_formed = true # Check is schema is well formed
+base = "http://base/"    # Base IRI to resolve relative IRIs 
 
 # [shex_validator]
 
@@ -87,7 +87,7 @@ base = "http://base/"           # Base IRI to resolve relative IRIs
 shex_validator.check_negation_requirement = true
 
 # Default width for pretty printing results of validation
-shex_validator.width = 80 
+shex_validator.width = 80
 
 # [shex2uml]
 # shex2uml.plantuml_path = "path/to/plantuml.jar" 
@@ -120,10 +120,9 @@ title = "Title"
 # delimiter = ','
 # quote = '"'
 # flexible = true/false
-picklist_delimiter = '|' 
+picklist_delimiter = '|'
 # [tap.property_place_holders]
 # empty_property_placeholder = "stem"
-
 
 
 # Configuration about DCTAP to ShEx converter
@@ -133,9 +132,12 @@ base_iri = "http://example.org/"
 [tap2shex.prefixmap]
 dct = "http://purl.org/dc/terms/"
 rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+rdfs = "http://www.w3.org/2000/01/rdf-schema#"
+owl = "http://www.w3.org/2002/07/owl#"
 foaf = "http://xmlns.com/foaf/0.1/"
 xsd = "http://www.w3.org/2001/XMLSchema#"
 sdo = "https://schema.org/"
+schema = "http://schema.org/"
 ex = "http://example.org/"
 
 # [tap2shex.prefix_cc]

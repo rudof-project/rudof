@@ -162,7 +162,7 @@ impl<R: io::Read> TapReader<R> {
 
     fn get_shape_id(&mut self, rcd: &StringRecord, line: u64) -> Result<Option<ShapeId>> {
         if let Some(str) = self.state.headers().shape_id(rcd) {
-            let shape_id = ShapeId::new(&str.trim(), line);
+            let shape_id = ShapeId::new(str.trim(), line);
             Ok(Some(shape_id))
         } else {
             Ok(None)
@@ -221,7 +221,7 @@ impl<R: io::Read> TapReader<R> {
             } else if let Some(placeholder) = self.config.get_property_placeholder(&str) {
                 self.generate_property_id(str.as_str().trim(), &placeholder, pos)
             } else {
-                let property_id = PropertyId::new(&str.trim(), pos.line());
+                let property_id = PropertyId::new(str.trim(), pos.line());
                 Some(property_id)
             }
         } else {
