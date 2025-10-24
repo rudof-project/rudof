@@ -26,7 +26,10 @@ jobs:
               run: cargo install cargo-tarpaulin
 
             - name: Generate coverage
-              run: cargo tarpaulin --engine llvm --no-dead-code --print-rust-flags --workspace --out xml
+              run: cargo tarpaulin --engine llvm --no-dead-code --print-rust-flags --workspace --out xml 
+
+            - name: Check for coverage file
+              run: ls -al
 
             - name: Publish to Coveralls
               uses: coverallsapp/github-action@v2
