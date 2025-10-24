@@ -17,4 +17,4 @@ As a command line tool, it contains several subcommands which can be decomposed 
 
 Most of the commands can be customized either providing parameters at run-time or by passing a config file parameter. 
 
-Config files use TOML syntax. By default, rudof uses the following [default_config.toml](https://github.com/rudof-project/rudof/blob/master/config/default_config.toml) file which can be used as a template if you want to customize it.
+Config files use TOML syntax. By default, rudof uses a [default_config.toml](https://github.com/rudof-project/rudof/blob/master/config/default_config.toml) file. If you want to customize rudof's behaviour you can create your own template making a copy of the previous one and passing it as the value of `-c` option. 

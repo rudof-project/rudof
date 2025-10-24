@@ -163,7 +163,10 @@ It is possible to convert from ShEx schema to a set of HTML pages representing t
 The content of the HTML pages can be customized using [Jinja](https://docs.rs/minijinja/latest/minijinja/index.html) templates. The generated pages will be stored in an output folder that must be specified with the `--target` option. 
 
 ```sh
-rudof convert -s simple.shex -m shex -x html -t output-folder
+rudof convert -s simple.shex -m shex -x html -t output-folder -e templates-folder
 ```
 
-> The HTML pages that are generated can be highly configured as `rudof`'s approach is based on templates. Thus, it takes a set of [default templates](https://github.com/rudof-project/rudof/tree/master/shapes_converter/default_templates) which define the appearance of the resulting HTML. However, it is possible to use customized templates based on the [minininja](https://docs.rs/minijinja/latest/minijinja/index.html) template engine.
+> The HTML pages that are generated can be highly configured as `rudof`'s approach is based on templates. 
+Thus, it takes a set of [default templates](https://github.com/rudof-project/rudof/tree/master/shapes_converter/default_templates) 
+which define the appearance of the resulting HTML. However, it is possible to use customized templates based on the 
+[minininja](https://docs.rs/minijinja/latest/minijinja/index.html) template engine.

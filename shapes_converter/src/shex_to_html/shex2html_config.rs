@@ -19,6 +19,7 @@ pub const DEFAULT_SHAPE_TEMPLATE_NAME: &str = "shape.html";
 pub struct ShEx2HtmlConfig {
     pub landing_page_name: String,
     pub shape_template_name: String,
+    pub template_folder: Option<String>,
     pub css_file_name: Option<String>,
     pub title: String,
     pub target_folder: Option<PathBuf>,
@@ -37,6 +38,7 @@ impl Default for ShEx2HtmlConfig {
             title: "ShEx schema".to_string(),
             landing_page_name: DEFAULT_LANDING_PAGE_NAME.to_string(),
             shape_template_name: DEFAULT_SHAPE_TEMPLATE_NAME.to_string(),
+            template_folder: None,
             css_file_name: Some("shex2html.css".to_string()),
             target_folder: None,
             color_property_name: Some(DEFAULT_COLOR_PROPERTY_NAME.to_string()),

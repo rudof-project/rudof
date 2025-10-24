@@ -28,6 +28,7 @@ pub fn run_convert(
     output: &Option<PathBuf>,
     output_mode: &OutputConvertMode,
     target_folder: &Option<PathBuf>,
+    template_folder: &Option<PathBuf>,
     config: &RudofConfig,
     force_overwrite: bool,
     reader_mode: &ReaderMode,
@@ -121,9 +122,15 @@ pub fn run_convert(
             None => Err(anyhow!(
                 "Conversion from ShEx to HTML requires an output parameter to indicate where to write the generated HTML files"
             )),
-            Some(output_path) => {
-                run_shex2html(input, format, base, output_path, config, reader_mode)
-            }
+            Some(output_path) => run_shex2html(
+                input,
+                format,
+                base,
+                output_path,
+                template_folder,
+                config,
+                reader_mode,
+            ),
         },
         (InputConvertMode::DCTAP, OutputConvertMode::UML) => run_tap2uml(
             input,
@@ -136,9 +143,9 @@ pub fn run_convert(
         ),
         (InputConvertMode::DCTAP, OutputConvertMode::HTML) => match target_folder {
             None => Err(anyhow!(
-                "Conversion from DCTAP to HTML requires an output parameter to indicate where to write the generated HTML files"
+                "Conversion from DCTAP to HTML requires parameter `target-folder` to indicate where to write the generated HTML files"
             )),
-            Some(output_path) => run_tap2html(input, format, output_path, config),
+            Some(output_path) => run_tap2html(input, format, output_path, template_folder, config),
         },
         _ => Err(anyhow!(
             "Conversion from {input_mode} to {output_mode} is not supported yet"
@@ -252,6 +259,7 @@ fn run_shex2html<P: AsRef<Path>>(
     base: &Option<IriS>,
     // msg_writer: &mut Box<dyn Write>,
     output_folder: P,
+    template_folder: &Option<PathBuf>,
     config: &RudofConfig,
     reader_mode: &ReaderMode,
 ) -> Result<()> {
@@ -269,7 +277,14 @@ fn run_shex2html<P: AsRef<Path>>(
         trace!("Landing page will be generated at {landing_page}\nStarted converter...");
         let mut converter = ShEx2Html::new(config);
         converter.convert(schema)?;
-        converter.export_schema()?;
+        let template_folder = match template_folder {
+            None => match shex2html_config.template_folder {
+                None => bail!("No template folder specified neither in config nor in command line"),
+                Some(tf) => PathBuf::from(tf),
+            },
+            Some(tf) => tf.to_path_buf(),
+        };
+        converter.export_schema(template_folder)?;
         trace!("HTML pages generated at {}", landing_page);
     } else {
         bail!("No ShEx schema")
@@ -282,6 +297,7 @@ fn run_tap2html<P: AsRef<Path>>(
     format: &InputConvertFormat,
     // msg_writer: &mut Box<dyn Write>,
     output_folder: P,
+    template_folder: &Option<PathBuf>,
     config: &RudofConfig,
 ) -> Result<()> {
     trace!("Starting tap2html");
@@ -307,7 +323,14 @@ fn run_tap2html<P: AsRef<Path>>(
         let mut converter = ShEx2Html::new(shex2html_config);
         converter.convert(&shex)?;
         // debug!("Converted HTMLSchema: {:?}", converter.current_html());
-        converter.export_schema()?;
+        let template_folder = match template_folder {
+            None => match config.shex2html_config().template_folder {
+                None => bail!("No template folder specified neither in config nor in command line"),
+                Some(tf) => PathBuf::from(tf),
+            },
+            Some(tf) => tf.to_path_buf(),
+        };
+        converter.export_schema(template_folder)?;
         trace!("HTML pages generated at {}", landing_page);
         Ok(())
     } else {

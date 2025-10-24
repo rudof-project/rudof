@@ -111,8 +111,8 @@ impl ShEx2Html {
         Name::new(&str, None, self.config.landing_page())
     }
 
-    pub fn export_schema(&self) -> Result<(), ShEx2HtmlError> {
-        let environment = create_env();
+    pub fn export_schema<P: AsRef<Path>>(&self, path: P) -> Result<(), ShEx2HtmlError> {
+        let environment = create_env(path);
         let landing_page = self.config.landing_page();
         let template = environment.get_template(self.config.landing_page_name.as_str())?;
         let landing_page_name = self.config.landing_page_name();
@@ -387,9 +387,9 @@ fn iri_ref2name(
     Ok(name)
 }
 
-pub fn create_env() -> Environment<'static> {
+pub fn create_env<P: AsRef<Path>>(path: P) -> Environment<'static> {
     let mut env = Environment::new();
-    env.set_loader(path_loader("shapes_converter/default_templates"));
+    env.set_loader(path_loader(path));
     env
 }
 

@@ -1040,6 +1040,15 @@ pub enum Command {
         target_folder: Option<PathBuf>,
 
         #[arg(
+            short = 'e',
+            long = "templates-folder",
+            ignore_case = true,
+            value_name = "FOLDER",
+            help = "Templates folder"
+        )]
+        template_folder: Option<PathBuf>,
+
+        #[arg(
             short = 'l',
             long = "shape-label",
             value_name = "LABEL",

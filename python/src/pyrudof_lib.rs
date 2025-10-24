@@ -743,14 +743,18 @@ impl PyRudof {
 
     /// Adds RDF data read from a String to the current RDF Data
     ///
-    /// Parameters:
-    /// input: String containing the RDF data
-    /// format: Format of the RDF data, e.g. turtle, jsonld
-    /// base: Optional base IRI to resolve relative IRIs in the RDF data
-    /// reader_mode: Reader mode to use when reading the RDF data, e.g. lax
-    /// merge: if true, merges the read RDF data with the current RDF data, if false, replaces the current RDF data
-    /// Returns: None
-    /// Raises: RudofError if there is an error reading the RDF data
+    /// Args:
+    ///     input: String containing the RDF data
+    ///     format: Format of the RDF data, e.g. turtle, jsonld
+    ///     base: Optional base IRI to resolve relative IRIs in the RDF data
+    ///     reader_mode: Reader mode to use when reading the RDF data, e.g. lax
+    ///     merge: if true, merges the read RDF data with the current RDF data, if false, replaces the current RDF data
+    ///
+    /// Returns:
+    ///     None
+    ///
+    /// Raises:
+    ///     RudofError if there is an error reading the RDF data
     #[pyo3(signature = (input, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax, merge = false),
         // text_signature = "(input, format=RDFFormat.Turtle, base=None, reader_mode=ReaderMode.Lax, merge = False)"
     )]
@@ -771,6 +775,9 @@ impl PyRudof {
     }
 
     /// Serialize the current ShEx schema
+    ///
+    /// Args:
+    ///     format: Format of the ShEx schema, e.g. shexc, turtle
     #[pyo3(signature = (format = &PyRDFFormat::Turtle),
         // text_signature = "(format=RDFFormat.Turtle)"
     )]
@@ -792,6 +799,9 @@ impl PyRudof {
     }
 
     /// Reads the current Shapemap from a String
+    ///
+    /// Args:
+    ///    input: String containing the Shapemap
     #[pyo3(signature = (input,format = &PyShapeMapFormat::Compact),
         text_signature = "(input, format=ShapeMapFormat.Compact)"
     )]
@@ -804,6 +814,9 @@ impl PyRudof {
     }
 
     /// Reads the current Shapemap from a file path
+    ///
+    /// Args:
+    ///    input: Path or URL containing the Shapemap
     #[pyo3(signature = (input,format = &PyShapeMapFormat::Compact),
         text_signature = "(input, format=ShapeMapFormat.Compact)"
     )]
@@ -825,11 +838,15 @@ impl PyRudof {
 
     /// Validates the current RDF Data
     ///
-    /// mode can be native to use Native implementation or SPARQL to use the SPARQL based implementation
-    /// shapes_graph_source: Indicates the source of the shapes graph,
-    /// which can be extracted from the current RDF data,
-    /// or from the current SHACL schema.
-    /// If there is no current SHACL schema, it tries to get it from the current RDF data
+    /// Args:
+    ///    mode: Mode of validation, can be Native or SPARQL based
+    ///   shapes_graph_source: Source of the shapes graph, can be extracted from the current RDF data or from the current SHACL schema
+    ///
+    /// Returns:
+    ///   ValidationReport object containing the results of the validation
+    ///
+    /// Raises:
+    ///  RudofError if there is an error during validation
     #[pyo3(signature = (mode = &PyShaclValidationMode::Native, shapes_graph_source = &PyShapesGraphSource::CurrentSchema),
         text_signature = "(mode=ShaclValidationMode.Native, shapes_graph_source=ShapesGraphSource.CurrentSchema)"
     )]
@@ -853,6 +870,12 @@ impl PyRudof {
     }
 
     /// Converts the current ShEx to a Class-like diagram using PlantUML syntax
+    ///
+    /// Args:
+    ///    uml_mode: Mode of UML generation, all nodes or only the neighbours  
+    ///
+    /// Returns:
+    ///    String containing the PlantUML representation of the current ShEx schema
     #[pyo3(signature = (uml_mode))]
     pub fn shex2plantuml(&self, uml_mode: &PyUmlGenerationMode) -> PyResult<String> {
         let mut v = Vec::new();
