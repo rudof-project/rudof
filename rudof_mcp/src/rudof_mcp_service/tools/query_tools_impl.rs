@@ -110,7 +110,10 @@ pub async fn execute_sparql_query_impl(
     })?;
 
     let text_output = format!(
-        "Query executed successfully\n\nQuery Type: {}\nResult Format: {}\nResults:\n{}",
+        "Query executed successfully\n
+        Query Type: {}\n
+        Result Format: {}\n
+        Results:\n{}",
         query_type_str, result_format_str, output_str
     );
 

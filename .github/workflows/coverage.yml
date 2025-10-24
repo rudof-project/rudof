@@ -26,10 +26,10 @@ jobs:
               run: cargo install cargo-tarpaulin
 
             - name: Generate coverage
-              run: cargo tarpaulin --engine llvm --no-dead-code --print-rust-flags --workspace --out lcov 
+              run: cargo tarpaulin --engine llvm --no-dead-code --print-rust-flags --workspace --out xml
 
             - name: Publish to Coveralls
               uses: coverallsapp/github-action@v2
               with:
                 github-token: ${{ secrets.GITHUB_TOKEN }}
-                path-to-lcov: lcov.info
+                path-to-lcov: ./cobertura.xml

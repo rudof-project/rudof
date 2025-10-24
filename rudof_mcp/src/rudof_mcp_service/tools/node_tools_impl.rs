@@ -68,8 +68,9 @@ pub async fn node_info_impl(
     })?;
 
     let mode_str = mode.as_deref().unwrap_or("both");
-    let options = NodeInfoOptions::from_mode_str(mode_str)
+    let mut options = NodeInfoOptions::from_mode_str(mode_str)
         .map_err(|e| invalid_request(error_messages::INVALID_NODE_MODE, Some(json!({ "error": e.to_string() }))))?;
+    options.show_colors = false;
 
     let pred_list: Vec<String> = predicates.unwrap_or_default();
     let node_infos = get_node_info(rdf, node_selector, &pred_list, &options).map_err(|e| {
@@ -100,34 +101,22 @@ pub async fn node_info_impl(
         )
     })?;
 
-    // Función auxiliar para mapear el HashMap de arcos salientes a Vec<NodePredicateObjects>
-    let outgoing_mapped: Vec<NodePredicateObjects> = node_info.outgoing
-        .iter()
-        .map(|(predicate_iri, objects_vec)| NodePredicateObjects {
-            // Convertir S::IRI a String
-            predicate: predicate_iri.to_string(), 
-            // Convertir Vec<S::Term> a Vec<String>
-            objects: objects_vec.iter().map(|term| term.to_string()).collect(),
-        })
-        .collect();
-
-    // Función auxiliar para mapear el HashMap de arcos entrantes a Vec<NodePredicateSubjects>
-    let incoming_mapped: Vec<NodePredicateSubjects> = node_info.incoming
-        .iter()
-        .map(|(predicate_iri, subjects_vec)| NodePredicateSubjects {
-            // Convertir S::IRI a String
-            predicate: predicate_iri.to_string(),
-            // Convertir Vec<S::Subject> a Vec<String>
-            subjects: subjects_vec.iter().map(|subject| subject.to_string()).collect(),
-        })
-        .collect();
-
-    // Construir la respuesta estructurada
     let response = NodeInfoResponse {
-        // Se asume que subject_qualified contiene la representación en String del subject
         subject: node_info.subject_qualified.clone(), 
-        outgoing: outgoing_mapped,
-        incoming: incoming_mapped,
+        outgoing: node_info.outgoing
+            .iter()
+            .map(|(predicate_iri, objects_vec)| NodePredicateObjects {
+                predicate: predicate_iri.to_string(), 
+                objects: objects_vec.iter().map(|term| term.to_string()).collect(),
+            })
+            .collect(),
+        incoming: node_info.incoming
+            .iter()
+            .map(|(predicate_iri, subjects_vec)| NodePredicateSubjects {
+                predicate: predicate_iri.to_string(),
+                subjects: subjects_vec.iter().map(|subject| subject.to_string()).collect(),
+            })
+            .collect(),
     };
 
     let structured = serde_json::to_value(&response).map_err(|e| {
