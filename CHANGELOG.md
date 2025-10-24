@@ -7,6 +7,14 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.1.131
+### Added 
+- Support for query in MCP_Server
+
+### Fixed
+- trimming shape ids and property ids in DCTAP to support extra whitespaces
+- Added `_:` to show blank nodes in SPARQL results
+
 ## v0.1.130
 ### Added
 - Added `query` tools to MCP server
