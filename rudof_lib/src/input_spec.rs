@@ -5,6 +5,7 @@ use reqwest::{
     header::{ACCEPT, HeaderValue},
     // Url as ReqwestUrl,
 };
+use std::io::Cursor;
 use std::{
     fmt::Display,
     fs,
@@ -114,10 +115,12 @@ impl InputSpec {
                     error: format!("{e}"),
                 })?;
                 let reader = BufReader::new(resp);
-                Ok(Either::Right(Either::Right(reader)))
+                Ok(Either::Right(Either::Right(Either::Left(reader))))
             }
-            InputSpec::Str(_s) => {
-                todo!("Handle string input spec")
+            InputSpec::Str(s) => {
+                let cursor = Cursor::new(s.clone().into_bytes());
+                let reader = BufReader::new(cursor);
+                Ok(Either::Right(Either::Right(Either::Right(reader))))
             }
         }
     }
@@ -149,6 +152,7 @@ impl FromStr for InputSpec {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
+            _ if s == "-" => Ok(InputSpec::Stdin),
             _ if s.starts_with("http://") => {
                 let url_spec = UrlSpec::parse(s)?;
                 Ok(InputSpec::Url(url_spec))
@@ -157,8 +161,7 @@ impl FromStr for InputSpec {
                 let url_spec = UrlSpec::parse(s)?;
                 Ok(InputSpec::Url(url_spec))
             }
-            _ if s == "-" => Ok(InputSpec::Stdin),
-            _ => {
+            _ if Path::new(s).exists() => {
                 let pb: PathBuf =
                     PathBuf::from_str(s).map_err(|e| InputSpecError::ParsingPathError {
                         str: s.to_string(),
@@ -166,13 +169,19 @@ impl FromStr for InputSpec {
                     })?;
                 Ok(InputSpec::Path(pb))
             }
+            _ => Ok(InputSpec::Str(s.to_string())),
         }
     }
 }
 
 /// This type implements [`std::io::BufRead`].
-pub type InputSpecReader =
-    Either<StdinLock<'static>, Either<BufReader<fs::File>, BufReader<reqwest::blocking::Response>>>;
+pub type InputSpecReader = Either<
+    StdinLock<'static>,
+    Either<
+        BufReader<fs::File>,
+        Either<BufReader<reqwest::blocking::Response>, BufReader<std::io::Cursor<Vec<u8>>>>,
+    >,
+>;
 
 #[derive(Error, Debug)]
 pub enum InputSpecError {

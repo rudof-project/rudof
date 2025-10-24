@@ -7,36 +7,13 @@ use rmcp::{
 // Import the public helper functions from the implementation files
 use super::data_tools_impl::*;
 use super::node_tools_impl::*;
+use super::query_tools_impl::*;
 
 #[tool_router]
 impl RudofMcpService {
     #[tool(
-        name = "load_rdf_data",
-        description = "Load RDF data from a string into the server's datastore"
-    )]
-    pub async fn load_rdf_data(
-        &self,
-        params: Parameters<LoadRdfDataRequest>,
-    ) -> Result<CallToolResult, McpError> {
-        // Delegates the call to the function in data_tools_impl.rs
-        load_rdf_data_impl(self, params).await
-    }
-
-    #[tool(
-        name = "export_rdf_data",
-        description = "Serialize and return the server's RDF datastore in the requested format"
-    )]
-    pub async fn export_rdf_data(
-        &self,
-        params: Parameters<ExportRdfDataRequest>,
-    ) -> Result<CallToolResult, McpError> {
-        // Delegates the call to the function in data_tools_impl.rs
-        export_rdf_data_impl(self, params).await
-    }
-
-    #[tool(
         name = "load_rdf_data_from_sources",
-        description = "Load RDF data from remote sources (URLs, files) or SPARQL endpoint into the server's datastore"
+        description = "Load RDF data from remote sources (URLs, files, raw text) or SPARQL endpoint into the server's datastore"
     )]
     pub async fn load_rdf_data_from_sources(
         &self,
@@ -47,8 +24,20 @@ impl RudofMcpService {
     }
 
     #[tool(
+        name = "export_rdf_data",
+        description = "Serialize and return the RDF stored on the server in the requested format"
+    )]
+    pub async fn export_rdf_data(
+        &self,
+        params: Parameters<ExportRdfDataRequest>,
+    ) -> Result<CallToolResult, McpError> {
+        // Delegates the call to the function in data_tools_impl.rs
+        export_rdf_data_impl(self, params).await
+    }
+
+    #[tool(
         name = "export_plantuml",
-        description = "Generate a PlantUML diagram of the server's RDF datastore"
+        description = "Generate a PlantUML diagram of the RDF stored on the server"
     )]
     pub async fn export_plantuml(
         &self,
@@ -60,7 +49,7 @@ impl RudofMcpService {
 
     #[tool(
         name = "export_image",
-        description = "Generate an image (SVG or PNG) visualization of the server's RDF datastore"
+        description = "Generate an image (SVG or PNG) visualization of the RDF stored on the server"
     )]
     pub async fn export_image(
         &self,
@@ -72,7 +61,7 @@ impl RudofMcpService {
 
     #[tool(
         name = "node_info",
-        description = "Show information about a node (outgoing/incoming arcs) from the server RDF datastore"
+        description = "Show information about a node (outgoing/incoming arcs) from the RDF stored on the server"
     )]
     pub async fn node_info(
         &self,
@@ -80,6 +69,18 @@ impl RudofMcpService {
     ) -> Result<CallToolResult, McpError> {
         // Delegates the call to the function in node_tols_impl.rs
         node_info_impl(self, params).await
+    }
+
+    #[tool(
+        name = "execute_sparql_query",
+        description = "Execute a SPARQL query (SELECT, CONSTRUCT, ASK, DESCRIBE) against the RDF stored on the server"
+    )]
+    pub async fn execute_sparql_query(
+        &self,
+        params: Parameters<ExecuteSparqlQueryRequest>,
+    ) -> Result<CallToolResult, McpError> {
+        // Delegates the call to the function in query_tools_impl.rs
+        execute_sparql_query_impl(self, params).await
     }
 }
 
@@ -94,8 +95,8 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
 
     for tool in tools.iter_mut() {
         match tool.name.as_ref() {
-            "load_rdf_data" => {
-                tool.title = Some("Load RDF data".to_string());
+            "load_rdf_data_from_sources" => {
+                tool.title = Some("Load RDF data from sources".to_string());
                 tool.annotations = Some(
                     rmcp::model::ToolAnnotations::new()
                         .read_only(false)
@@ -110,15 +111,6 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
                         .read_only(true)
                         .destructive(false)
                         .idempotent(true),
-                );
-            }
-            "load_rdf_data_from_sources" => {
-                tool.title = Some("Load RDF data from sources".to_string());
-                tool.annotations = Some(
-                    rmcp::model::ToolAnnotations::new()
-                        .read_only(false)
-                        .destructive(false)
-                        .idempotent(false),
                 );
             }
             "export_plantuml" => {
@@ -148,7 +140,15 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
                         .idempotent(true),
                 );
             }
-
+            "execute_sparql_query" => {
+                tool.title = Some("Execute SPARQL Query".to_string());
+                tool.annotations = Some(
+                    rmcp::model::ToolAnnotations::new()
+                        .read_only(true)
+                        .destructive(false)
+                        .idempotent(true),
+                );
+            }
             _ => {}
         }
     }
@@ -183,12 +183,16 @@ mod tests {
     async fn test_load_rdf_data_success() {
         let service = create_test_service();
 
-        let request = LoadRdfDataRequest {
-            rdf_data: SAMPLE_TURTLE.to_string(),
-            format: "turtle".to_string(),
+        let request = LoadRdfDataFromSourcesRequest {
+            data: vec![SAMPLE_TURTLE.to_string()],
+            data_format: "turtle".to_string(),
+            base: None,
+            endpoint: None,
         };
 
-        let result = service.load_rdf_data(Parameters(request)).await;
+        let result = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await;
 
         assert!(result.is_ok());
         let call_result = result.unwrap();
@@ -200,12 +204,16 @@ mod tests {
     async fn test_load_rdf_data_invalid_format() {
         let service = create_test_service();
 
-        let request = LoadRdfDataRequest {
-            rdf_data: SAMPLE_TURTLE.to_string(),
-            format: "invalid_format".to_string(),
+        let request = LoadRdfDataFromSourcesRequest {
+            data: vec![SAMPLE_TURTLE.to_string()],
+            data_format: "invalid_format".to_string(),
+            base: None,
+            endpoint: None,
         };
 
-        let result = service.load_rdf_data(Parameters(request)).await;
+        let result = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await;
 
         assert!(result.is_err());
     }
@@ -214,12 +222,15 @@ mod tests {
     async fn test_load_rdf_data_invalid_syntax() {
         let service = create_test_service();
 
-        let request = LoadRdfDataRequest {
-            rdf_data: "this is not valid RDF".to_string(),
-            format: "turtle".to_string(),
+        let request = LoadRdfDataFromSourcesRequest {
+            data: vec!["no_valid_RDF".to_string()],
+            data_format: "turtle".to_string(),
+            base: None,
+            endpoint: None,
         };
-
-        let result = service.load_rdf_data(Parameters(request)).await;
+        let result = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await;
 
         assert!(result.is_err());
     }
@@ -228,11 +239,16 @@ mod tests {
     async fn test_export_rdf_data_success() {
         let service = create_test_service();
 
-        let load_req = LoadRdfDataRequest {
-            rdf_data: SAMPLE_TURTLE.to_string(),
-            format: "turtle".to_string(),
+        let request = LoadRdfDataFromSourcesRequest {
+            data: vec![SAMPLE_TURTLE.to_string()],
+            data_format: "turtle".to_string(),
+            base: None,
+            endpoint: None,
         };
-        let _ = service.load_rdf_data(Parameters(load_req)).await.unwrap();
+        let _ = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await
+            .unwrap();
 
         let export_req = ExportRdfDataRequest {
             format: "turtle".to_string(),
@@ -310,11 +326,16 @@ mod tests {
     async fn test_export_plantuml_success() {
         let service = create_test_service();
 
-        let load_req = LoadRdfDataRequest {
-            rdf_data: SAMPLE_TURTLE.to_string(),
-            format: "turtle".to_string(),
+        let request = LoadRdfDataFromSourcesRequest {
+            data: vec![SAMPLE_TURTLE.to_string()],
+            data_format: "turtle".to_string(),
+            base: None,
+            endpoint: None,
         };
-        let _ = service.load_rdf_data(Parameters(load_req)).await.unwrap();
+        let _ = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await
+            .unwrap();
 
         let result = service.export_plantuml(Parameters(EmptyRequest {})).await;
 
@@ -346,11 +367,16 @@ mod tests {
     async fn test_node_info_success() {
         let service = create_test_service();
 
-        let load_req = LoadRdfDataRequest {
-            rdf_data: SAMPLE_TURTLE.to_string(),
-            format: "turtle".to_string(),
+        let request = LoadRdfDataFromSourcesRequest {
+            data: vec![SAMPLE_TURTLE.to_string()],
+            data_format: "turtle".to_string(),
+            base: None,
+            endpoint: None,
         };
-        let _ = service.load_rdf_data(Parameters(load_req)).await.unwrap();
+        let _ = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await
+            .unwrap();
 
         let node_req = NodeInfoRequest {
             node: "<http://example.org/alice>".to_string(),
@@ -370,11 +396,16 @@ mod tests {
     async fn test_node_info_not_found() {
         let service = create_test_service();
 
-        let load_req = LoadRdfDataRequest {
-            rdf_data: SAMPLE_TURTLE.to_string(),
-            format: "turtle".to_string(),
+        let request = LoadRdfDataFromSourcesRequest {
+            data: vec![SAMPLE_TURTLE.to_string()],
+            data_format: "turtle".to_string(),
+            base: None,
+            endpoint: None,
         };
-        let _ = service.load_rdf_data(Parameters(load_req)).await.unwrap();
+        let _ = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await
+            .unwrap();
 
         let node_req = NodeInfoRequest {
             node: "http://example.org/nonexistent".to_string(),
@@ -391,11 +422,16 @@ mod tests {
     async fn test_node_info_outgoing_only() {
         let service = create_test_service();
 
-        let load_req = LoadRdfDataRequest {
-            rdf_data: SAMPLE_TURTLE.to_string(),
-            format: "turtle".to_string(),
+        let request = LoadRdfDataFromSourcesRequest {
+            data: vec![SAMPLE_TURTLE.to_string()],
+            data_format: "turtle".to_string(),
+            base: None,
+            endpoint: None,
         };
-        let _ = service.load_rdf_data(Parameters(load_req)).await.unwrap();
+        let _ = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await
+            .unwrap();
 
         let node_req = NodeInfoRequest {
             node: "<http://example.org/alice>".to_string(),
@@ -412,11 +448,16 @@ mod tests {
     async fn test_node_info_incoming_only() {
         let service = create_test_service();
 
-        let load_req = LoadRdfDataRequest {
-            rdf_data: SAMPLE_TURTLE.to_string(),
-            format: "turtle".to_string(),
+        let request = LoadRdfDataFromSourcesRequest {
+            data: vec![SAMPLE_TURTLE.to_string()],
+            data_format: "turtle".to_string(),
+            base: None,
+            endpoint: None,
         };
-        let _ = service.load_rdf_data(Parameters(load_req)).await.unwrap();
+        let _ = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await
+            .unwrap();
 
         let node_req = NodeInfoRequest {
             node: "ex:bob".to_string(),
@@ -433,11 +474,16 @@ mod tests {
     async fn test_node_info_invalid_mode() {
         let service = create_test_service();
 
-        let load_req = LoadRdfDataRequest {
-            rdf_data: SAMPLE_TURTLE.to_string(),
-            format: "turtle".to_string(),
+        let request = LoadRdfDataFromSourcesRequest {
+            data: vec![SAMPLE_TURTLE.to_string()],
+            data_format: "turtle".to_string(),
+            base: None,
+            endpoint: None,
         };
-        let _ = service.load_rdf_data(Parameters(load_req)).await.unwrap();
+        let _ = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await
+            .unwrap();
 
         let node_req = NodeInfoRequest {
             node: "http://example.org/alice".to_string(),
@@ -454,11 +500,16 @@ mod tests {
     async fn test_node_info_with_predicates() {
         let service = create_test_service();
 
-        let load_req = LoadRdfDataRequest {
-            rdf_data: SAMPLE_TURTLE.to_string(),
-            format: "turtle".to_string(),
+        let request = LoadRdfDataFromSourcesRequest {
+            data: vec![SAMPLE_TURTLE.to_string()],
+            data_format: "turtle".to_string(),
+            base: None,
+            endpoint: None,
         };
-        let _ = service.load_rdf_data(Parameters(load_req)).await.unwrap();
+        let _ = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await
+            .unwrap();
 
         let node_req = NodeInfoRequest {
             node: "<http://example.org/alice>".to_string(),
@@ -537,11 +588,16 @@ mod tests {
     async fn test_load_and_export_roundtrip() {
         let service = create_test_service();
 
-        let load_req = LoadRdfDataRequest {
-            rdf_data: SAMPLE_TURTLE.to_string(),
-            format: "turtle".to_string(),
+        let request = LoadRdfDataFromSourcesRequest {
+            data: vec![SAMPLE_TURTLE.to_string()],
+            data_format: "turtle".to_string(),
+            base: None,
+            endpoint: None,
         };
-        let _ = service.load_rdf_data(Parameters(load_req)).await.unwrap();
+        let _ = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await
+            .unwrap();
 
         let export_req = ExportRdfDataRequest {
             format: "turtle".to_string(),
@@ -563,11 +619,16 @@ mod tests {
     async fn test_multiple_format_export() {
         let service = create_test_service();
 
-        let load_req = LoadRdfDataRequest {
-            rdf_data: SAMPLE_TURTLE.to_string(),
-            format: "turtle".to_string(),
+        let request = LoadRdfDataFromSourcesRequest {
+            data: vec![SAMPLE_TURTLE.to_string()],
+            data_format: "turtle".to_string(),
+            base: None,
+            endpoint: None,
         };
-        let _ = service.load_rdf_data(Parameters(load_req)).await.unwrap();
+        let _ = service
+            .load_rdf_data_from_sources(Parameters(request))
+            .await
+            .unwrap();
 
         let formats = vec!["turtle", "ntriples", "rdf/xml", "json"];
 
