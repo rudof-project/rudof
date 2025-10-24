@@ -1,0 +1,8 @@
+prefix : <http://example.org/>
+prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT * WHERE {
+  #  ?x :since ?date .
+  #  ?x rdf:reifies <<( ?person :knows ?known )>>
+  ?person :knows ?known {| :since ?since |}
+}

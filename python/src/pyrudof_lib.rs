@@ -340,12 +340,17 @@ impl PyRudof {
     }
 
     /// Run a SPARQL query obtained from a file path on the RDF data
-    /// Parameters:
-    /// path_name: Path to the file containing the SPARQL query
-    /// Returns: QuerySolutions object containing the results of the query
-    /// Raises: RudofError if there is an error reading the file or running the query
+    ///
+    /// Args:
+    ///     path_name: Path to the file containing the SPARQL query
+    ///
+    /// Returns:
+    ///     `QuerySolutions` object containing the results of the query
+    /// Raises:
+    ///     `RudofError` if there is an error reading the file or running the query
+    ///
     /// Example:
-    ///   rudof.run_query_path("query.sparql")
+    ///   `rudof.run_query_path("query.sparql")`
     #[pyo3(signature = (path_name))]
     pub fn run_query_path(&mut self, path_name: &str) -> PyResult<PyQuerySolutions> {
         let mut reader = get_path_reader(path_name, "SPARQL query")?;
@@ -354,13 +359,18 @@ impl PyRudof {
     }
 
     /// Run a SPARQL query obtained from a file path on the RDF data
-    /// Parameters:
-    /// query: Path to the file containing the SPARQL query
-    /// endpoint: URL of the SPARQL endpoint
-    /// Returns: QuerySolutions object containing the results of the query
-    /// Raises: RudofError if there is an error reading the file or running the query
+    ///
+    /// Args:
+    ///     query: Path to the file containing the SPARQL query
+    ///     endpoint: URL of the SPARQL endpoint
+    ///
+    /// Returns:
+    ///     QuerySolutions object containing the results of the query
+    /// Raises:
+    ///     RudofError if there is an error reading the file or running the query
+    ///
     /// Example:
-    ///   rudof.run_query_path("query.sparql")
+    ///     `rudof.run_query_path("query.sparql")`
     #[pyo3(signature = (query, endpoint))]
     pub fn run_query_endpoint_str(
         &mut self,
@@ -375,11 +385,13 @@ impl PyRudof {
     }
 
     /// Reads DCTAP from a String
-    /// Parameters:
-    /// input: String containing the DCTAP data
-    /// format: Format of the DCTAP data, e.g. csv, tsv
-    /// Returns: None
-    /// Raises: RudofError if there is an error reading the DCTAP data
+    /// Args:
+    ///     input: String containing the DCTAP data
+    ///     format: Format of the DCTAP data, e.g. csv, tsv
+    /// Returns:
+    ///     None
+    /// Raises:
+    ///     RudofError if there is an error reading the DCTAP data
     #[pyo3(signature = (input, format = &PyDCTapFormat::CSV),
         // text_signature = "(input, format=PyDCTapFormat.CSV)"
     )]
@@ -393,11 +405,15 @@ impl PyRudof {
     }
 
     /// Reads DCTAP from a path
-    /// Parameters:
-    /// path_name: Path to the file containing the DCTAP data
-    /// format: Format of the DCTAP data, e.g. csv, tsv
-    /// Returns: None
-    /// Raises: RudofError if there is an error reading the DCTAP data
+    /// Args:
+    ///     path_name: Path to the file containing the DCTAP data
+    ///     format: Format of the DCTAP data, e.g. csv, tsv
+    ///
+    /// Returns:
+    ///     None
+    ///
+    /// Raises:
+    ///     RudofError if there is an error reading the DCTAP data
     #[pyo3(signature = (path_name, format = &PyDCTapFormat::CSV))]
     // text_signature = "(path_name, format=DCTapFormat.CSV)")]
     pub fn read_dctap_path(&mut self, path_name: &str, format: &PyDCTapFormat) -> PyResult<()> {
@@ -409,13 +425,17 @@ impl PyRudof {
     }
 
     /// Reads a ShEx schema from a string
-    /// Parameters:
-    /// input: String containing the ShEx schema
-    /// format: Format of the ShEx schema, e.g. shexc, turtle
-    /// base: Optional base IRI to resolve relative IRIs in the schema
-    /// reader_mode: Reader mode to use when reading the schema, e.g. lax, strict
-    /// Returns: None
-    /// Raises: RudofError if there is an error reading the ShEx schema
+    ///
+    /// Args:
+    ///
+    ///     input: String containing the ShEx schema
+    ///     format: Format of the ShEx schema, e.g. shexc, turtle
+    ///     base: Optional base IRI to resolve relative IRIs in the schema
+    ///     reader_mode: Reader mode to use when reading the schema, e.g. lax, strict
+    /// Returns:
+    ///     None
+    /// Raises:
+    ///     RudofError if there is an error reading the ShEx schema
     ///
     #[pyo3(
         signature = (input, format = &PyShExFormat::ShExC, base = None, reader_mode = &PyReaderMode::Lax),
@@ -443,13 +463,18 @@ impl PyRudof {
     }
 
     /// Reads a SHACL shapes graph from a string
-    /// Parameters:
-    /// input: String containing the SHACL shapes graph
-    /// format: Format of the SHACL shapes graph, e.g. turtle
-    /// base: Optional base IRI to resolve relative IRIs in the shapes graph
-    /// reader_mode: Reader mode to use when reading the shapes graph, e.g. lax, strict
-    /// Returns: None
-    /// Raises: RudofError if there is an error reading the SHACL shapes graph
+    ///
+    /// Args:
+    ///     input: String containing the SHACL shapes graph
+    ///     format: Format of the SHACL shapes graph, e.g. turtle
+    ///     base: Optional base IRI to resolve relative IRIs in the shapes graph
+    ///     reader_mode: Reader mode to use when reading the shapes graph, e.g. lax, strict
+    ///
+    /// Returns:
+    ///     None
+    ///
+    /// Raises:
+    ///     RudofError if there is an error reading the SHACL shapes graph
     #[pyo3(signature = (input, format = &PyShaclFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax),
         // text_signature = "(input, format=ShaclFormat.Turtle, base=None, reader_mode=ReaderMode.Lax)"
     )]
@@ -470,12 +495,16 @@ impl PyRudof {
     }
 
     /// Obtains a ShEx schema
-    /// Parameters:
-    /// input: Can be a file path or an URL
-    /// format: Format of the ShEx schema, e.g. shexc, turtle
-    /// base: Optional base IRI to resolve relative IRIs in the schema
-    /// reader_mode: Reader mode to use when reading the schema, e.g. lax, strict
-    /// Returns: None
+    ///
+    /// Args:
+    ///     input: Can be a file path or an URL
+    ///     format: Format of the ShEx schema, e.g. shexc, turtle
+    ///     base: Optional base IRI to resolve relative IRIs in the schema
+    ///     reader_mode: Reader mode to use when reading the schema, e.g. lax, strict
+    ///
+    /// Returns:
+    ///     None
+    ///
     /// Raises: RudofError if there is an error reading the ShEx schema
     ///
     #[pyo3(
@@ -499,13 +528,18 @@ impl PyRudof {
     }
 
     /// Reads a SHACL shapes graph
-    /// Parameters:
-    /// input: URL of file path
-    /// format: Format of the SHACL shapes graph, e.g. turtle
-    /// base: Optional base IRI to resolve relative IRIs in the shapes graph
-    /// reader_mode: Reader mode to use when reading the shapes graph, e.g. lax, strict
-    /// Returns: None
-    /// Raises: RudofError if there is an error reading the SHACL shapes graph
+    ///
+    /// Args:
+    ///     input: URL of file path
+    ///     format: Format of the SHACL shapes graph, e.g. turtle
+    ///     base: Optional base IRI to resolve relative IRIs in the shapes graph
+    ///     reader_mode: Reader mode to use when reading the shapes graph, e.g. lax, strict
+    ///
+    /// Returns:
+    ///     None
+    ///
+    /// Raises:
+    ///     RudofError if there is an error reading the SHACL shapes graph
     #[pyo3(signature = (input, format = &PyShaclFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax),
         // text_signature = "(input, format=ShaclFormat.Turtle, base=None, reader_mode=ReaderMode.Lax)"
     )]
@@ -527,8 +561,11 @@ impl PyRudof {
     }
 
     /// Lists the known SPARQL endpoints
-    /// Returns: A list of tuples (name, url) of the known SPARQL endpoints
-    /// Raises: RudofError if there is an error obtaining the list of endpoints
+    ///
+    /// Returns:
+    ///     A list of tuples (name, url) of the known SPARQL endpoints
+    /// Raises:
+    ///     RudofError if there is an error obtaining the list of endpoints
     pub fn list_endpoints(&self) -> PyResult<Vec<(String, String)>> {
         let mut result = Vec::new();
         let endpoints = self.inner.list_endpoints();
@@ -547,8 +584,11 @@ impl PyRudof {
     }
 
     /// Converts the current RDF data to a Visual representation in PlantUML, that visual representation can be later converted to SVG or PNG pictures using PlantUML processors
-    /// Returns: String containing the PlantUML representation of the current RDF data
-    /// Raises: RudofError if there is an error generating the UML
+    ///
+    /// Returns:
+    ///     String containing the PlantUML representation of the current RDF data
+    /// Raises:
+    ///     RudofError if there is an error generating the UML
     #[pyo3(signature = ())]
     pub fn data2plantuml(&self) -> PyResult<String> {
         let mut writer = Cursor::new(Vec::new());
@@ -568,11 +608,15 @@ impl PyRudof {
 
     /// Converts the current RDF data to a Visual representation in PlantUML and stores it in a file
     /// That visual representation can be later converted to SVG or PNG pictures using PlantUML processors
-    /// Parameters:
-    /// file_name: Path to the file where the PlantUML representation of the current RDF
-    /// data will be stored
-    /// Returns: None
-    /// Raises: RudofError if there is an error generating the UML or writing the file
+    /// Args:
+    ///     file_name: Path to the file where the PlantUML representation of the current RDF
+    ///         data will be stored
+    ///
+    /// Returns:
+    ///     None
+    ///
+    /// Raises:
+    ///     RudofError if there is an error generating the UML or writing the file
     #[pyo3(signature = (file_name))]
     pub fn data2plantuml_file(&self, file_name: &str) -> PyResult<()> {
         let file = File::create(file_name)?;
@@ -587,14 +631,20 @@ impl PyRudof {
     }
 
     /// Reads RDF data
-    /// Parameters:
-    /// input: Path or URL containing the RDF data
-    /// format: Format of the RDF data, e.g. turtle, jsonld
-    /// base: Optional base IRI to resolve relative IRIs in the RDF data
-    /// reader_mode: Reader mode to use when reading the RDF data, e.g. lax, strict
-    /// merge: if true, merges the read RDF data with the current RDF data, if false, replaces the current RDF data
-    /// Returns: None
-    /// Raises: RudofError if there is an error reading the RDF data
+    ///
+    /// Args:
+    ///     input: Path or URL containing the RDF data
+    ///     format: Format of the RDF data, e.g. turtle, jsonld
+    ///     base: Optional base IRI to resolve relative IRIs in the RDF data
+    ///     reader_mode: Reader mode to use when reading the RDF data, e.g. lax, strict
+    ///     merge: if true, merges the read RDF data with the current RDF data, if false, replaces the current RDF data
+    ///
+    /// Returns:
+    ///     None, it reads the RDF data and adds it to the current RDF data
+    ///
+    /// Raises:
+    ///     RudofError if there is an error reading the RDF data
+    ///
     #[pyo3(signature = (input, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax, merge = false),
         // text_signature = "(input, format=RDFFormat.Turtle, base=None, reader_mode=ReaderMode.Lax, merge = False)"
     )]

@@ -222,7 +222,7 @@ impl<S: Rdf> QuerySolutions<S> {
                             let object = S::term_as_object(term)?;
                             match object {
                                 Object::Iri(iri) => self.prefixmap.qualify(&iri),
-                                Object::BlankNode(blank_node) => blank_node.to_string(),
+                                Object::BlankNode(blank_node) => format!("_:{}", blank_node),
                                 Object::Literal(literal) => literal.to_string(),
                                 Object::Triple {
                                     subject,

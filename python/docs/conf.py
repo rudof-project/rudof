@@ -19,7 +19,8 @@ release = pyrudof.__version__
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.doctest',
-    'sphinx.ext.intersphinx'
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.napoleon',
 ]
 
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
