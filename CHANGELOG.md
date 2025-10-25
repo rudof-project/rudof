@@ -7,6 +7,10 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.1.132
+### Added 
+- Parameter `-e` to specify templates-folder in shex2html and dctap2html conversion
+
 ## v0.1.131
 ### Added 
 - Support for query in MCP_Server

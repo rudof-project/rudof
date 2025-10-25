@@ -3,6 +3,7 @@
 - [Overview](./overview.md)
 - [Installation](./general/installation.md)
 - [Getting started](./general/getting-started.md)
+- [Configuration](./general/configuration.md)
 
 # `rudof` commands
 

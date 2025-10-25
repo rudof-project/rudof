@@ -15,6 +15,3 @@ As a command line tool, it contains several subcommands which can be decomposed 
 - _Commands about some technology_, which take some input from that technology and provide information about it. Examples are: `shex`, `shacl`, `dctap`, `shapemap`, `service`, `node` and `data`. Which are usually nouns or the name of the corresponding technology.
 - _Commands that do some actions_. Examples are: `query`, `validate` or `convert`, which are usually verbs.
 
-Most of the commands can be customized either providing parameters at run-time or by passing a config file parameter. 
-
-Config files use TOML syntax. By default, rudof uses a [default_config.toml](https://github.com/rudof-project/rudof/blob/master/config/default_config.toml) file. If you want to customize rudof's behaviour you can create your own template making a copy of the previous one and passing it as the value of `-c` option. 
