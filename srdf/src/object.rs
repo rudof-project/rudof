@@ -1,5 +1,3 @@
-use std::fmt::{Debug, Display};
-
 use crate::IriOrBlankNode;
 use crate::RDFError;
 use crate::SLiteral;
@@ -9,7 +7,7 @@ use crate::triple::Triple;
 use iri_s::IriS;
 use prefixmap::IriRef;
 use serde::{Deserialize, Serialize};
-use tracing::info;
+use std::fmt::{Debug, Display};
 use tracing::trace;
 
 /// Concrete representation of RDF objects which can be IRIs, Blank nodes, literals or triples
