@@ -104,7 +104,6 @@ impl Object {
     }
 
     pub fn show_qualified(&self, prefixmap: &prefixmap::PrefixMap) -> String {
-        info!("Showing qualified object: {self:?} with prefixmap: {prefixmap:?}");
         match self {
             Object::Iri(iri) => prefixmap.qualify(iri),
             Object::BlankNode(bnode) => format!("_:{bnode}"),
