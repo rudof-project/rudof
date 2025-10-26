@@ -69,7 +69,7 @@ lazy-regex = "3.4"
 mie = { version = "0.1.104", path = "./mie" }
 nom = "7"
 nom_locate = "4"
-oxigraph = { version = "0.5.1", default-features = false, features = [
+oxigraph = { version = "0.5.2", default-features = false, features = [
     "rdf-12",
 ] }
 oxilangtag = { version = "0.1.5", features = ["serde"] }
@@ -113,7 +113,7 @@ spargebra = { version = "0.4.0", features = ["sparql-12"] }
 sparql_service = { version = "0.1.111", path = "./sparql_service" }
 srdf = { version = "0.1.111", path = "./srdf" }
 supports-color = "3.0.0"
-tabled = { version = "0.20.0", features = ["ansi" ] }
+tabled = { version = "0.20.0", features = ["ansi"] }
 tempfile = "3.10.1"
 term_size = "0.3.2"
 termtree = { version = "0.4" }

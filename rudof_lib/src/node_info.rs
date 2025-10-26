@@ -8,7 +8,6 @@ use srdf::NeighsRDF;
 use std::collections::HashMap;
 use std::io::Write;
 use termtree::Tree;
-use tracing::info;
 
 // Core data structure representing node information
 #[derive(Debug, Clone)]
@@ -322,7 +321,6 @@ fn qualify_object<S: NeighsRDF>(
     object: &S::Term,
     options: &NodeInfoOptions,
 ) -> Result<String, RudofError> {
-    info!("Qualifying object: {object}");
     if options.show_colors {
         Ok(rdf.qualify_term(object))
     } else {

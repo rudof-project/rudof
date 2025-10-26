@@ -1,11 +1,10 @@
 #![allow(clippy::useless_conversion)]
-
 use pyo3::prelude::*;
-mod py_prefixmap;
+mod pyprefixmap;
 mod pyrudof_config;
 mod pyrudof_lib;
 
-pub use crate::py_prefixmap::*;
+pub use crate::pyprefixmap::*;
 pub use crate::pyrudof_config::*;
 pub use crate::pyrudof_lib::*;
 
@@ -17,11 +16,12 @@ pub mod pyrudof {
     #[pymodule_export]
     pub use super::{
         PyCompareSchemaFormat, PyCompareSchemaMode, PyDCTAP, PyDCTapFormat, PyMie, PyPrefixMap,
-        PyQueryResultFormat, PyQuerySolution, PyQuerySolutions, PyRDFFormat, PyReaderMode,
-        PyResultShapeMap, PyRudof, PyRudofConfig, PyRudofError, PyServiceDescription,
-        PyServiceDescriptionFormat, PyShExFormat, PyShExFormatter, PyShaclFormat,
-        PyShaclValidationMode, PyShapeMapFormat, PyShapeMapFormatter, PyShapesGraphSource,
-        PySortModeResultMap, PyUmlGenerationMode, PyValidationReport, PyValidationStatus,
+        PyQueryResultFormat, PyQueryShapeMap, PyQuerySolution, PyQuerySolutions, PyRDFFormat,
+        PyReaderMode, PyResultShapeMap, PyRudof, PyRudofConfig, PyRudofError, PyServiceDescription,
+        PyServiceDescriptionFormat, PyShExFormat, PyShExFormatter, PyShExSchema, PyShaclFormat,
+        PyShaclSchema, PyShaclValidationMode, PyShapeMapFormat, PyShapeMapFormatter,
+        PyShapesGraphSource, PySortModeResultMap, PyUmlGenerationMode, PyValidationReport,
+        PyValidationStatus,
     };
 
     #[pymodule_init]

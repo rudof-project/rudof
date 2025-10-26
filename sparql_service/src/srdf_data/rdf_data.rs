@@ -30,7 +30,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::io;
 use std::str::FromStr;
-use tracing::{info, trace};
+use tracing::trace;
 
 /// Generic abstraction that represents RDF Data which can be  behind SPARQL endpoints or an in-memory graph or both
 /// The triples in RdfData are taken as the union of the triples of the endpoints and the in-memory graph
@@ -436,7 +436,6 @@ impl QueryRDF for RdfData {
                 .execute()?;
             trace!("Got results from in-memory store");
             let sol = cnv_query_results(new_sol)?;
-            info!("Prefixmap before extends...: {}", sols.prefixmap().len());
             sols.extend(sol, self.graph_prefixmap()).map_err(|e| {
                 RdfDataError::ExtendingQuerySolutionsError {
                     query: query_str.to_string(),

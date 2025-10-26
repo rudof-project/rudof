@@ -107,16 +107,16 @@ impl DataGenerator {
 
     /// Run the complete generation pipeline (legacy ShEx support)
     pub async fn run<P: AsRef<Path>>(&mut self, shex_path: P) -> Result<()> {
-        tracing::info!("Loading ShEx schema from: {}", shex_path.as_ref().display());
+        tracing::trace!("Loading ShEx schema from: {}", shex_path.as_ref().display());
         self.load_schema(shex_path).await?;
 
-        tracing::info!(
+        tracing::trace!(
             "Generating {} entities",
             self.config.generation.entity_count
         );
         self.generate().await?;
 
-        tracing::info!("Data generation completed successfully");
+        tracing::trace!("Data generation completed successfully");
         Ok(())
     }
 

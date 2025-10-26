@@ -65,7 +65,7 @@ impl RdfConfigModel {
             }
             1 => yamls.into_iter().next().unwrap(),
             _ => {
-                info!("Multiple YAML documents found, using the first one");
+                info!("Multiple config documents found, using the first one");
                 yamls.into_iter().next().unwrap()
             }
         };

@@ -46,12 +46,20 @@ pub struct PyRudof {
 // #[gen_stub_pymethods]
 #[pymethods]
 impl PyRudof {
+    /// Creates a new Rudof instance with the given configuration
+    ///
+    /// Args:
+    ///   config: `RudofConfig` object containing the configuration
     #[new]
     pub fn __init__(config: &PyRudofConfig) -> PyResult<Self> {
         let rudof = Rudof::new(&config.inner).map_err(PyRudofError::from)?;
         Ok(Self { inner: rudof })
     }
 
+    /// Updates the configuration of the Rudof instance
+    ///
+    /// Args:
+    ///    config: `RudofConfig` object containing the new configuration
     pub fn update_config(&mut self, config: &PyRudofConfig) {
         self.inner.update_config(&config.inner)
     }
@@ -82,11 +90,13 @@ impl PyRudof {
     }
 
     /// Obtains information about a node in the RDF data
-    /// Parameters:
-    /// node_selector: String containing the node selector
-    /// predicates: List of predicates to take into account, if it is empty, it takes into account all predicates
-    /// show_outgoing: Boolean indicating whether to show outgoing edges
-    /// show_incoming: Boolean indicating whether to show incoming edges
+    ///
+    /// Args:
+    ///   node_selector: String containing the node selector
+    ///   predicates: List of predicates to take into account, if it is empty, it takes into account all predicates
+    ///   show_outgoing: Boolean indicating whether to show outgoing edges
+    ///   show_incoming: Boolean indicating whether to show incoming edges
+    ///   show_colors: Boolean indicating whether to show colors in the output
     #[pyo3(
         signature = (node_selector, predicates = Vec::new(), show_outgoing = true, show_incoming = false, show_colors = true),
     )]
@@ -155,13 +165,14 @@ impl PyRudof {
     }
 
     /// Get a Common Shapes Model from a schema
-    /// Parameters:
-    /// schema: String containing the schema
-    /// mode: Mode of the schema, e.g. shex
-    /// format: Format of the schema, e.g. shexc, turtle
-    /// base: Optional base IRI to resolve relative IRIs in the schema
-    /// reader_mode: Reader mode to use when reading the schema, e.g. lax, strict
-    /// label: Optional label of the shape to convert or None to use the start shape or the first shape
+    ///
+    /// Args:
+    ///   schema: String containing the schema
+    ///   mode: Mode of the schema, e.g. shex
+    ///   format: Format of the schema, e.g. shexc, turtle
+    ///   base: Optional base IRI to resolve relative IRIs in the schema
+    ///   reader_mode: Reader mode to use when reading the schema, e.g. lax, strict
+    ///   label: Optional label of the shape to convert or None to use the start shape or the first shape
     #[pyo3(
         signature = (schema, mode = "shex", format = "turtle", base = None, reader_mode = &PyReaderMode::Lax, label = None),
 //        text_signature = "(schema, mode, format, base=None, reader_mode=ReaderMode.Lax, label=None)"
@@ -195,12 +206,14 @@ impl PyRudof {
     }
 
     /// Compares two schemas provided as strings
-    /// Parameters: schema1, schema2: Strings containing the schemas to compare
-    /// mode1, mode2: Mode of the schemas, e.g. shex
-    /// format1, format2: Format of the schemas, e.g. shexc, turtle
-    /// label1, label2: Optional labels of the shapes to compare
-    /// base1, base2: Optional base IRIs to resolve relative IRIs in the schemas
-    /// reader_mode: Reader mode to use when reading the schemas, e.g. lax, strict
+    ///
+    /// Args:
+    ///   schema1, schema2: Strings containing the schemas to compare
+    ///   mode1, mode2: Mode of the schemas, e.g. shex
+    ///   format1, format2: Format of the schemas, e.g. shexc, turtle
+    ///   label1, label2: Optional labels of the shapes to compare
+    ///   base1, base2: Optional base IRIs to resolve relative IRIs in the schemas
+    ///   reader_mode: Reader mode to use when reading the schemas, e.g. lax, strict
     #[pyo3(
         signature = (schema1, schema2, mode1 = "shex", mode2 = "shex", format1 = "turtle", format2 = "turtle", base1 = None, base2 = None, label1 = None, label2 = None, reader_mode = &PyReaderMode::Lax), 
         // text_signature = "(schema1, schema2, mode1='shex', mode2='shex', format1='turtle', format2='turtle', base1=None, base2=None, label1=None, label2=None, reader_mode=ReaderMode.Lax)"

@@ -12,7 +12,6 @@ use iri_s::IriS;
 use prefixmap::{Deref, DerefError, IriRef, PrefixMap};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize, Serializer};
-use tracing::info;
 use tracing::trace;
 
 /// Concrete representation of RDF literals
@@ -48,7 +47,7 @@ pub enum SLiteral {
 impl SLiteral {
     /// Returns a string representation of the literal using the given prefixmap to qualify the datatype IRI
     pub fn show_qualified(&self, prefixmap: &PrefixMap) -> String {
-        info!("Showing qualified literal: {self:?} with prefixmap: {prefixmap:?}");
+        trace!("Showing qualified literal: {self:?} with prefixmap: {prefixmap:?}");
         // NOTE: I am not sure if there is a simpler way to do the following
         struct Helper<'a> {
             literal: &'a SLiteral,
