@@ -7,6 +7,11 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.1.133
+### Fixed
+
+- Issue with SPARQL queries that used annotation syntax updating Oxigraph to 0.5.2
+
 ## v0.1.132
 ### Added 
 - Parameter `-e` to specify templates-folder in shex2html and dctap2html conversion
