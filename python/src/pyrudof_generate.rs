@@ -135,6 +135,99 @@ impl PyGeneratorConfig {
         self.inner.parallel.batch_size = batch_size;
     }
 
+    /// Set whether to enable parallel shape processing
+    #[pyo3(signature = (enabled))]
+    pub fn set_parallel_shapes(&mut self, enabled: bool) {
+        self.inner.parallel.parallel_shapes = enabled;
+    }
+
+    /// Get whether parallel shape processing is enabled
+    #[pyo3(signature = ())]
+    pub fn get_parallel_shapes(&self) -> bool {
+        self.inner.parallel.parallel_shapes
+    }
+
+    /// Set whether to enable parallel field generation
+    #[pyo3(signature = (enabled))]
+    pub fn set_parallel_fields(&mut self, enabled: bool) {
+        self.inner.parallel.parallel_fields = enabled;
+    }
+
+    /// Get whether parallel field generation is enabled
+    #[pyo3(signature = ())]
+    pub fn get_parallel_fields(&self) -> bool {
+        self.inner.parallel.parallel_fields
+    }
+
+    /// Set the entity distribution strategy
+    #[pyo3(signature = (distribution))]
+    pub fn set_entity_distribution(&mut self, distribution: PyEntityDistribution) {
+        self.inner.generation.entity_distribution = distribution.into();
+    }
+
+    /// Set the locale for field generation (e.g., "en", "es", "fr")
+    #[pyo3(signature = (locale))]
+    pub fn set_locale(&mut self, locale: &str) {
+        self.inner.field_generators.default.locale = locale.to_string();
+    }
+
+    /// Get the locale for field generation
+    #[pyo3(signature = ())]
+    pub fn get_locale(&self) -> String {
+        self.inner.field_generators.default.locale.clone()
+    }
+
+    /// Set the data quality level for generated data
+    #[pyo3(signature = (quality))]
+    pub fn set_data_quality(&mut self, quality: PyDataQuality) {
+        self.inner.field_generators.default.quality = quality.into();
+    }
+
+    /// Get whether output will be compressed
+    #[pyo3(signature = ())]
+    pub fn get_compress(&self) -> bool {
+        self.inner.output.compress
+    }
+
+    /// Get whether statistics will be written
+    #[pyo3(signature = ())]
+    pub fn get_write_stats(&self) -> bool {
+        self.inner.output.write_stats
+    }
+
+    /// Get whether parallel writing is enabled
+    #[pyo3(signature = ())]
+    pub fn get_parallel_writing(&self) -> bool {
+        self.inner.output.parallel_writing
+    }
+
+    /// Get the number of parallel output files
+    #[pyo3(signature = ())]
+    pub fn get_parallel_file_count(&self) -> usize {
+        self.inner.output.parallel_file_count
+    }
+
+    /// Get the number of worker threads
+    #[pyo3(signature = ())]
+    pub fn get_worker_threads(&self) -> Option<usize> {
+        self.inner.parallel.worker_threads
+    }
+
+    /// Get the batch size for parallel processing
+    #[pyo3(signature = ())]
+    pub fn get_batch_size(&self) -> usize {
+        self.inner.parallel.batch_size
+    }
+
+    /// Validate the configuration
+    #[pyo3(signature = ())]
+    pub fn validate(&self) -> PyResult<()> {
+        self.inner
+            .validate()
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("{}", e)))?;
+        Ok(())
+    }
+
     /// Convert configuration to a String representation
     pub fn show(&self) -> String {
         format!("{:?}", self.inner)
@@ -194,6 +287,44 @@ impl From<PyCardinalityStrategy> for rudof_generate::config::CardinalityStrategy
             PyCardinalityStrategy::Balanced => {
                 rudof_generate::config::CardinalityStrategy::Balanced
             }
+        }
+    }
+}
+
+/// Entity distribution strategy
+#[pyclass(eq, eq_int, name = "EntityDistribution")]
+#[derive(PartialEq, Clone, Copy)]
+pub enum PyEntityDistribution {
+    /// Equal distribution across all shapes
+    Equal,
+}
+
+impl From<PyEntityDistribution> for rudof_generate::config::EntityDistribution {
+    fn from(val: PyEntityDistribution) -> Self {
+        match val {
+            PyEntityDistribution::Equal => rudof_generate::config::EntityDistribution::Equal,
+        }
+    }
+}
+
+/// Data quality level for generated data
+#[pyclass(eq, eq_int, name = "DataQuality")]
+#[derive(PartialEq, Clone, Copy)]
+pub enum PyDataQuality {
+    /// Simple random data
+    Low,
+    /// Realistic patterns
+    Medium,
+    /// Complex realistic data with correlations
+    High,
+}
+
+impl From<PyDataQuality> for rudof_generate::config::DataQuality {
+    fn from(val: PyDataQuality) -> Self {
+        match val {
+            PyDataQuality::Low => rudof_generate::config::DataQuality::Low,
+            PyDataQuality::Medium => rudof_generate::config::DataQuality::Medium,
+            PyDataQuality::High => rudof_generate::config::DataQuality::High,
         }
     }
 }
