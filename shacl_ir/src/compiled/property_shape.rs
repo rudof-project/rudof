@@ -5,6 +5,8 @@ use super::severity::CompiledSeverity;
 use super::shape::ShapeIR;
 use super::target::CompiledTarget;
 use crate::closed_info::ClosedInfo;
+use crate::reifier_info;
+use crate::reifier_info::ReifierInfo;
 use iri_s::IriS;
 use shacl_ast::Schema;
 use shacl_ast::property_shape::PropertyShape;
@@ -21,10 +23,12 @@ pub struct PropertyShapeIR {
     targets: Vec<CompiledTarget>,
     property_shapes: Vec<ShapeIR>,
     closed_info: ClosedInfo,
-    // ignored_properties: Vec<S::IRI>,
     deactivated: bool,
     // message: MessageMap,
     severity: Option<CompiledSeverity>,
+
+    // SHACL 1.2: Reifier info is only present for property shapes
+    reifier_info: Option<ReifierInfo>,
     // name: MessageMap,
     // description: MessageMap,
     // order: Option<NumericLiteral>,
@@ -44,6 +48,7 @@ impl PropertyShapeIR {
         closed_info: ClosedInfo,
         deactivated: bool,
         severity: Option<CompiledSeverity>,
+        reifier_info: Option<ReifierInfo>,
     ) -> Self {
         PropertyShapeIR {
             id,
@@ -54,6 +59,7 @@ impl PropertyShapeIR {
             closed_info,
             deactivated,
             severity,
+            reifier_info,
         }
     }
 
@@ -63,6 +69,10 @@ impl PropertyShapeIR {
 
     pub fn closed(&self) -> bool {
         self.closed_info.is_closed()
+    }
+
+    pub fn reifier_info(&self) -> Option<ReifierInfo> {
+        self.reifier_info.clone()
     }
 
     pub fn allowed_properties(&self) -> HashSet<IriS> {
@@ -133,6 +143,9 @@ impl PropertyShapeIR {
         let closed_info = ClosedInfo::get_closed_info_property_shape(&shape, schema)
             .map_err(|e| Box::new(CompiledShaclError::ShaclError { source: e }))?;
 
+        let reifier_info =
+            reifier_info::ReifierInfo::get_reifier_info_property_shape(&shape, schema)?;
+
         let compiled_property_shape = PropertyShapeIR::new(
             id,
             path,
@@ -142,6 +155,7 @@ impl PropertyShapeIR {
             closed_info,
             deactivated,
             severity,
+            reifier_info,
         );
 
         Ok(compiled_property_shape)

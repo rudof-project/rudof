@@ -2072,7 +2072,8 @@ where
     }
 }
 
-/// Applies a function and returns its result
+/// Conditional parser that succeeds if the predicate holds for the value,
+/// otherwise fails with the given message
 ///
 ///
 pub fn cond<RDF, A>(
@@ -2112,6 +2113,56 @@ where
             false => Err(RDFParseError::Custom {
                 msg: self.fail_msg.clone(),
             }),
+        }
+    }
+}
+
+/// IfThenElse parser that invokes choosed between one parser or another depending on the predicate over the value
+///
+///
+pub fn if_then_else<RDF, A, P, B>(
+    value: A,
+    pred: impl FnMut(&A) -> bool,
+    parse_then: P,
+    parse_else: P,
+) -> impl RDFNodeParse<RDF, Output = B>
+where
+    RDF: FocusRDF + 'static,
+    A: Clone,
+    P: RDFNodeParse<RDF, Output = B>,
+{
+    IfThenElse {
+        value: value.clone(),
+        pred,
+        parse_then,
+        parse_else,
+        _phantom: PhantomData,
+    }
+}
+
+#[derive(Debug, Clone)]
+struct IfThenElse<A, B, Pred, P> {
+    value: A,
+    pred: Pred,
+    parse_then: P,
+    parse_else: P,
+    _phantom: PhantomData<B>,
+}
+
+impl<RDF, A, B, P, Pred> RDFNodeParse<RDF> for IfThenElse<A, B, Pred, P>
+where
+    RDF: FocusRDF + 'static,
+    Pred: FnMut(&A) -> bool,
+    A: Clone,
+    P: RDFNodeParse<RDF, Output = B>,
+{
+    type Output = B;
+
+    fn parse_impl(&mut self, _rdf: &mut RDF) -> PResult<Self::Output> {
+        if (self.pred)(&self.value) {
+            self.parse_then.parse_impl(_rdf)
+        } else {
+            self.parse_else.parse_impl(_rdf)
         }
     }
 }

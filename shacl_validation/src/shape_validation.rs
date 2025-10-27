@@ -63,7 +63,8 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
 
         // After validating the constraints that are defined in the current
         //    Shape, it is important to also perform the validation over those
-        //    nested PropertyShapes. The validation needs to occur over the focus_nodes
+        //    nested PropertyShapes.
+        //  The validation needs to occur over the focus_nodes
         //    that have been computed for the current shape
         let property_shapes_validation_results =
             self.property_shapes().iter().flat_map(|prop_shape| {
@@ -108,10 +109,22 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
             }
         }
 
+        let reification_results = if let Some(reifier_info) = self.reifier_info() {
+            println!(
+                "Reifier info found for shape {}: {}",
+                self.id(),
+                reifier_info
+            );
+            Vec::new()
+        } else {
+            Vec::new()
+        };
+
         // Collect all validation results
         let validation_results = component_validation_results
             .chain(property_shapes_validation_results)
             .chain(vec![closed_validation_results])
+            .chain(vec![reification_results])
             .flatten()
             .collect();
 

@@ -1,3 +1,4 @@
 prefix : <http://example.org/>
 
-:alice :knows :bob {| :since 2020 |} .
+:alice a :Person; 
+       :knows :bob {| :since 2020 |} .
