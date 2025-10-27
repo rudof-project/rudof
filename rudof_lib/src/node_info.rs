@@ -89,7 +89,8 @@ pub fn get_node_info<S: NeighsRDF>(
     let mut results = Vec::new();
 
     for node in node_selector.iter_node(rdf) {
-        let subject = node_to_subject(node, rdf)?;
+        let subject = node_to_subject_checked(node, rdf)?;
+
         let subject_qualified = qualify_subject(rdf, &subject, options)?;
 
         let outgoing = if options.show_outgoing {
@@ -168,6 +169,32 @@ fn get_incoming_arcs<S: NeighsRDF>(
         .map(|(k, v)| (k, v.into_iter().collect()))
         .collect();
     Ok(map_vec)
+}
+
+// Convert an ObjectValue (node) to a Subject and checks that it exists in the RDF graph.
+pub fn node_to_subject_checked<S>(
+    node: &ObjectValue,
+    rdf: &S,
+) -> Result<S::Subject, RudofError>
+where
+    S: NeighsRDF,
+{
+    // Convert node to subject
+    let subject = node_to_subject(node, rdf)?;
+
+    // Check if the subject actually exists in the RDF graph
+    let mut triples = rdf
+    .triples_with_subject(subject.clone())
+    .map_err(|e| RudofError::RdfError { error: e.to_string() })?;
+
+    if triples.next().is_none() {
+        // No triples found for this subject → node does not exist
+        return Err(RudofError::NodeNotFound {
+            node: rdf.qualify_term(&S::subject_as_term(&subject)),
+        });
+    }
+
+    Ok(subject)
 }
 
 // Convert an ObjectValue (node) to a Subject
