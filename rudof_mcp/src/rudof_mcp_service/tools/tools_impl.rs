@@ -15,6 +15,7 @@ impl RudofMcpService {
         name = "load_rdf_data_from_sources",
         description = "Load RDF data from remote sources (URLs, files, raw text) or SPARQL endpoint into the server's datastore"
     )]
+    #[cfg(not(tarpaulin_skip))]
     pub async fn load_rdf_data_from_sources(
         &self,
         params: Parameters<LoadRdfDataFromSourcesRequest>,
@@ -27,6 +28,7 @@ impl RudofMcpService {
         name = "export_rdf_data",
         description = "Serialize and return the RDF stored on the server in the requested format"
     )]
+    #[cfg(not(tarpaulin_skip))]
     pub async fn export_rdf_data(
         &self,
         params: Parameters<ExportRdfDataRequest>,
@@ -39,6 +41,7 @@ impl RudofMcpService {
         name = "export_plantuml",
         description = "Generate a PlantUML diagram of the RDF stored on the server"
     )]
+    #[cfg(not(tarpaulin_skip))]
     pub async fn export_plantuml(
         &self,
         params: Parameters<EmptyRequest>,
@@ -51,6 +54,7 @@ impl RudofMcpService {
         name = "export_image",
         description = "Generate an image (SVG or PNG) visualization of the RDF stored on the server"
     )]
+    #[cfg(not(tarpaulin_skip))]
     pub async fn export_image(
         &self,
         params: Parameters<ExportImageRequest>,
@@ -63,6 +67,7 @@ impl RudofMcpService {
         name = "node_info",
         description = "Show information about a node (outgoing/incoming arcs) from the RDF stored on the server"
     )]
+    #[cfg(not(tarpaulin_skip))]
     pub async fn node_info(
         &self,
         params: Parameters<NodeInfoRequest>,
@@ -75,6 +80,7 @@ impl RudofMcpService {
         name = "execute_sparql_query",
         description = "Execute a SPARQL query (SELECT, CONSTRUCT, ASK, DESCRIBE) against the RDF stored on the server"
     )]
+    #[cfg(not(tarpaulin_skip))]
     pub async fn execute_sparql_query(
         &self,
         params: Parameters<ExecuteSparqlQueryRequest>,
