@@ -7,21 +7,21 @@ use crate::test;
 const PATH: &str = "tests/data-shapes/data-shapes-test-suite/tests/core/complex/";
 
 #[test]
-fn personexample() -> Result<(), TestSuiteError> {
+fn personexample() -> Result<(), Box<TestSuiteError>> {
     let path = format!("{}/{}.ttl", PATH, "personexample");
     // test(path, ShaclValidationMode::Native, Subsetting::None)
     test(path, ShaclValidationMode::Native)
 }
 
 #[test]
-fn shacl_shacl_data_shapes() -> Result<(), TestSuiteError> {
+fn shacl_shacl_data_shapes() -> Result<(), Box<TestSuiteError>> {
     let path = format!("{}/{}.ttl", PATH, "shacl-shacl-data-shapes");
     // test(path, ShaclValidationMode::Native, Subsetting::None)
     test(path, ShaclValidationMode::Native)
 }
 
 #[test]
-fn shacl_shacl() -> Result<(), TestSuiteError> {
+fn shacl_shacl() -> Result<(), Box<TestSuiteError>> {
     let path = format!("{}/{}.ttl", PATH, "shacl-shacl");
     // test(path, ShaclValidationMode::Native, Subsetting::None)
     test(path, ShaclValidationMode::Native)

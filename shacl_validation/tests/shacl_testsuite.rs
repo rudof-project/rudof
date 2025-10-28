@@ -14,7 +14,7 @@ fn test(
     path: String,
     mode: ShaclValidationMode,
     // subsetting: Subsetting,
-) -> Result<(), TestSuiteError> {
+) -> Result<(), Box<TestSuiteError>> {
     let mut manifest = Manifest::new(Path::new(&path))?;
     let tests = manifest.collect_tests()?;
 
@@ -34,7 +34,7 @@ fn test(
                 error: e.to_string(),
             })?;
         if report != test.report {
-            return Err(TestSuiteError::NotEquals);
+            return Err(Box::new(TestSuiteError::NotEquals));
         }
     }
 
