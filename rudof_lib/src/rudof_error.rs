@@ -23,6 +23,8 @@ pub enum RudofError {
     LiteralNotSubject { node: String },
     #[error("Node {node} is not a subject in the RDF data")]
     NodeNotSubject { node: String },
+    #[error("Node {node} is not in the RDF data")]
+    NodeNotFound { node: String },
     #[error("Error obtaining incoming arcs for object {object}: {error}")]
     IncomingArcs { object: String, error: String },
     #[error("Error obtaining outgoing arcs for subject {subject}: {error}")]
@@ -379,4 +381,7 @@ pub enum RudofError {
 
     #[error("Error parsing query result format {format}: {error}")]
     QueryResultFormatParseError { format: String, error: String },
+
+    #[error("RDF error: {error}")]
+    RdfError { error: String },
 }

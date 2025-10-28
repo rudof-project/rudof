@@ -115,3 +115,38 @@ impl ServerHandler for RudofMcpService {
         Ok(result)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Arc;
+    use tokio::sync::Mutex;
+
+    /// Initialize the RudofMcpService in a blocking-safe context
+    async fn create_test_service() -> RudofMcpService {
+        tokio::task::spawn_blocking(|| {
+            let rudof_config = rudof_lib::RudofConfig::new().unwrap();
+            let rudof = rudof_lib::Rudof::new(&rudof_config).unwrap();
+            RudofMcpService {
+                rudof: Arc::new(Mutex::new(rudof)),
+                tool_router: Default::default(),
+                prompt_router: Default::default(),
+            }
+        })
+        .await
+        .unwrap()
+    }
+
+    #[tokio::test]
+    async fn test_get_info_returns_expected_metadata() {
+        let service = create_test_service().await;
+        let info = service.get_info();
+
+        assert_eq!(info.protocol_version, ProtocolVersion::V_2024_11_05);
+        assert!(info.capabilities.tools.is_some());
+        assert!(info.capabilities.prompts.is_some());
+        assert!(info.capabilities.resources.is_some());
+        assert!(info.server_info.name.len() > 0);
+        assert!(info.instructions.is_some());
+    }
+}

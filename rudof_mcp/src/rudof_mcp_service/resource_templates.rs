@@ -1,3 +1,5 @@
+#![cfg(not(tarpaulin_skip))]
+
 use rmcp::{ErrorData as McpError, RoleServer, model::*, service::RequestContext};
 
 // Return the list of available resource templates

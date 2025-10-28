@@ -74,19 +74,17 @@ pub async fn node_info_impl(
     options.show_colors = false;
 
     let pred_list: Vec<String> = predicates.unwrap_or_default();
-    let node_infos = get_node_info(rdf, node_selector, &pred_list, &options).map_err(|e| {
-        internal_error(
-            error_messages::RDF_ARC_QUERY_ERROR,
-            Some(json!({ "error": e.to_string() })),
-        )
-    })?;
+    let node_infos = match get_node_info(rdf, node_selector, &pred_list, &options) {
+        Ok(infos) => infos,
+        Err(e) => {
+            return Err(resource_not_found(
+                error_messages::NODE_NOT_FOUND,
+                Some(json!({ "error": e.to_string() })),
+            ));
+        }
+    };
 
-    let node_info = node_infos.first().ok_or_else(|| {
-        internal_error(
-            error_messages::NODE_NOT_FOUND,
-            Some(json!({ "error": node })),
-        )
-    })?;
+    let node_info = &node_infos[0];
 
     let mut output_buffer = Cursor::new(Vec::new());
 
@@ -138,4 +136,104 @@ pub async fn node_info_impl(
     let mut result = CallToolResult::success(vec![Content::text(output_str)]);
     result.structured_content = Some(structured);
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::rudof_mcp_service::service::RudofMcpService;
+    use crate::rudof_mcp_service::tools::data_tools_impl::{
+        LoadRdfDataFromSourcesRequest, load_rdf_data_from_sources_impl,
+    };
+    use rmcp::handler::server::wrapper::Parameters;
+    use std::sync::Arc;
+    use tokio;
+    use tokio::sync::Mutex;
+
+    const SAMPLE_TURTLE: &str = r#"
+        prefix : <http://example.org/>
+        prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+        :a :name       "Alice"                  ;
+        :birthdate  "1990-05-02"^^xsd:date   ;
+        :enrolledIn :cs101                   .
+
+        :b :name "Bob", "Robert" .
+
+        :cs101 :name "Computer Science" .
+    "#;
+
+    // Initialize the RudofMcpService in a blocking-safe context
+    async fn create_test_service() -> RudofMcpService {
+        tokio::task::spawn_blocking(|| {
+            let rudof_config = rudof_lib::RudofConfig::new().unwrap();
+            let rudof = rudof_lib::Rudof::new(&rudof_config).unwrap();
+            RudofMcpService {
+                rudof: Arc::new(Mutex::new(rudof)),
+                tool_router: Default::default(),
+                prompt_router: Default::default(),
+            }
+        })
+        .await
+        .unwrap()
+    }
+
+    #[tokio::test]
+    async fn test_node_info_impl_success() {
+        let service = create_test_service().await;
+
+        // Load RDF data
+        let _ = load_rdf_data_from_sources_impl(
+            &service,
+            Parameters(LoadRdfDataFromSourcesRequest {
+                data: vec![SAMPLE_TURTLE.to_string()],
+                data_format: "turtle".to_string(),
+                base: None,
+                endpoint: None,
+            }),
+        )
+        .await
+        .unwrap();
+
+        let params = Parameters(NodeInfoRequest {
+            node: ":a".to_string(),
+            predicates: None,
+            mode: Some("both".to_string()),
+        });
+
+        let result = node_info_impl(&service, params).await;
+        assert!(result.is_ok());
+        let call_result = result.unwrap();
+        assert!(call_result.structured_content.is_some());
+        assert!(!call_result.content.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_node_info_impl_invalid_node() {
+        let service = create_test_service().await;
+
+        // Load RDF data
+        let _ = load_rdf_data_from_sources_impl(
+            &service,
+            Parameters(LoadRdfDataFromSourcesRequest {
+                data: vec![SAMPLE_TURTLE.to_string()],
+                data_format: "turtle".to_string(),
+                base: None,
+                endpoint: None,
+            }),
+        )
+        .await
+        .unwrap();
+
+        let params = Parameters(NodeInfoRequest {
+            node: "<http://example.org/nonexistent>".to_string(),
+            predicates: None,
+            mode: Some("both".to_string()),
+        });
+
+        let result = node_info_impl(&service, params).await;
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.message, "Node not found");
+    }
 }
