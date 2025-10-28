@@ -83,7 +83,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_default_trait() {
-        let default_service = tokio::task::spawn_blocking(|| RudofMcpService::default())
+        let default_service = tokio::task::spawn_blocking(RudofMcpService::default)
             .await
             .unwrap();
 

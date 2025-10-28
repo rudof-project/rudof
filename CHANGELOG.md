@@ -7,6 +7,13 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.1.136
+### Added
+- Documentation to MCP server
+
+### Fixed
+- `node` indicates if a node is not found in the RDF data
+
 ## v0.1.135
 ### Added
 - SHACL 1.2, added first version with suppport for `sh:reifierShape` and `sh:reificationRequired`

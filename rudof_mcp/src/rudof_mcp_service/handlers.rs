@@ -146,7 +146,7 @@ mod tests {
         assert!(info.capabilities.tools.is_some());
         assert!(info.capabilities.prompts.is_some());
         assert!(info.capabilities.resources.is_some());
-        assert!(info.server_info.name.len() > 0);
+        assert!(!info.server_info.name.is_empty());
         assert!(info.instructions.is_some());
     }
 }
