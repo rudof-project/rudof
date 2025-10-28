@@ -30,10 +30,14 @@ pub async fn read_resource(
     request: ReadResourceRequestParam,
 ) -> Result<ReadResourceResult, McpError> {
     let uri = request.uri;
-    match uri.as_str() {
-        _ => Err(errors::resource_not_found(
-            error_messages::RESOURCE_NOT_FOUND,
-            Some(json!({ "uri": uri })),
-        )),
-    }
+    // match uri.as_str() {
+    //     _ => Err(errors::resource_not_found(
+    //         error_messages::RESOURCE_NOT_FOUND,
+    //         Some(json!({ "uri": uri })),
+    //     )),
+    // }
+    Err(errors::resource_not_found(
+        error_messages::RESOURCE_NOT_FOUND,
+        Some(json!({ "uri": uri })),
+    ))
 }
