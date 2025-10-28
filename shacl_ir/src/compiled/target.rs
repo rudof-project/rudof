@@ -22,7 +22,7 @@ pub enum CompiledTarget {
 }
 
 impl CompiledTarget {
-    pub fn compile<S: Rdf>(target: Target<S>) -> Result<Self, CompiledShaclError> {
+    pub fn compile<S: Rdf>(target: Target<S>) -> Result<Self, Box<CompiledShaclError>> {
         let ans = match target {
             Target::TargetNode(object) => CompiledTarget::Node(object),
             Target::TargetClass(object) => CompiledTarget::Class(object),

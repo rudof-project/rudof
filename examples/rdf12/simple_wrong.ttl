@@ -1,0 +1,10 @@
+prefix : <http://example.org/>
+
+:alice a :Person; 
+       :knows :bob {| :since 2020 |} .
+
+:bob a :Person ;
+    :knows :alice . # No reification info for this triple, should trigger a validation error
+
+:carol a :Person ;
+      :knows :dave {| :since "not a number" |} . # Invalid datatype for :since, should trigger a validation error   

@@ -21,6 +21,10 @@ impl ReifierInfo {
         &self.reifier_shape
     }
 
+    pub fn predicate(&self) -> &IriS {
+        &self.predicate
+    }
+
     pub fn get_reifier_info_property_shape<R: Rdf>(
         shape: &PropertyShape<R>,
         schema: &Schema<R>,

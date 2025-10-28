@@ -168,3 +168,13 @@ pub const SH_REIFIER_SHAPE_STR: &str = concatcp!(SH_STR, "reifierShape");
 
 iri_once!(sh_reification_required, SH_REIFICATION_REQUIRED_STR);
 iri_once!(sh_reifier_shape, SH_REIFIER_SHAPE_STR);
+
+iri_once!(
+    sh_closed_constraint_component,
+    concatcp!(SH_STR, "ClosedConstraintComponent")
+);
+
+iri_once!(
+    sh_reifier_shape_constraint_component,
+    concatcp!(SH_STR, "ReifierShapeConstraintComponent")
+);

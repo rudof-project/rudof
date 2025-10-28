@@ -16,6 +16,7 @@ pub const XSD_BOOLEAN_STR: &str = concatcp!(XSD, "boolean");
 pub const XSD_INTEGER_STR: &str = concatcp!(XSD, "integer");
 pub const XSD_DECIMAL_STR: &str = concatcp!(XSD, "decimal");
 pub const XSD_DOUBLE_STR: &str = concatcp!(XSD, "double");
+pub const RDF_REIFIES_STR: &str = concatcp!(RDF, "reifies");
 pub const SH_STR: &str = "http://www.w3.org/ns/shacl#";
 
 // The following constants are required for SHACL Path parsing
@@ -26,6 +27,7 @@ pub const SH_ONE_OR_MORE_PATH_STR: &str = concatcp!(SH_STR, "oneOrMorePath");
 pub const SH_INVERSE_PATH_STR: &str = concatcp!(SH_STR, "inversePath");
 
 iri_once!(rdf_type, RDF_TYPE_STR);
+iri_once!(rdf_reifies, RDF_REIFIES_STR);
 iri_once!(rdf_first, RDF_FIRST_STR);
 iri_once!(rdf_rest, RDF_REST_STR);
 iri_once!(rdf_nil, RDF_NIL_STR);
