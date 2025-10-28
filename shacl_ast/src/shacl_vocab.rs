@@ -1,6 +1,5 @@
 use const_format::concatcp;
 use iri_s::{IriS, iri_once};
-
 pub const SH_STR: &str = "http://www.w3.org/ns/shacl#";
 pub const SH_BLANKNODE_STR: &str = concatcp!(SH_STR, "BlankNode");
 pub const SH_BLANK_NODE_OR_IRI_STR: &str = concatcp!(SH_STR, "BlankNodeOrIRI");
@@ -61,6 +60,7 @@ pub const SH_QUALIFIED_MAX_COUNT_STR: &str = concatcp!(SH_STR, "qualifiedMaxCoun
 pub const SH_QUALIFIED_VALUE_SHAPE_STR: &str = concatcp!(SH_STR, "qualifiedValueShape");
 pub const SH_QUALIFIED_VALUE_SHAPES_DISJOINT_STR: &str =
     concatcp!(SH_STR, "qualifiedValueShapesDisjoint");
+
 pub const SH_RESULT_STR: &str = concatcp!(SH_STR, "result");
 pub const SH_RESULT_PATH_STR: &str = concatcp!(SH_STR, "resultPath");
 pub const SH_RESULT_SEVERITY_STR: &str = concatcp!(SH_STR, "resultSeverity");
@@ -161,3 +161,20 @@ iri_once!(sh_text, SH_TEXT_STR);
 iri_once!(sh_unique_lang, SH_UNIQUE_LANG_STR);
 iri_once!(sh_xone, SH_XONE_STR);
 iri_once!(sh_source_constraint, SH_SOURCE_CONSTRAINT_STR);
+
+// SHACL 1.2
+pub const SH_REIFICATION_REQUIRED_STR: &str = concatcp!(SH_STR, "reificationRequired");
+pub const SH_REIFIER_SHAPE_STR: &str = concatcp!(SH_STR, "reifierShape");
+
+iri_once!(sh_reification_required, SH_REIFICATION_REQUIRED_STR);
+iri_once!(sh_reifier_shape, SH_REIFIER_SHAPE_STR);
+
+iri_once!(
+    sh_closed_constraint_component,
+    concatcp!(SH_STR, "ClosedConstraintComponent")
+);
+
+iri_once!(
+    sh_reifier_shape_constraint_component,
+    concatcp!(SH_STR, "ReifierShapeConstraintComponent")
+);

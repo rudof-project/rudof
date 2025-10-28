@@ -27,7 +27,7 @@ impl CompiledSeverity {
         }
     }
 
-    pub fn compile(severity: Option<Severity>) -> Result<Option<Self>, CompiledShaclError> {
+    pub fn compile(severity: Option<Severity>) -> Result<Option<Self>, Box<CompiledShaclError>> {
         let ans = match severity {
             Some(severity) => {
                 let severity = match severity {

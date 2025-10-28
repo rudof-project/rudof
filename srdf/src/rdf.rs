@@ -109,6 +109,10 @@ pub trait Rdf: Sized {
         subj.clone().into()
     }
 
+    fn triple_as_term(triple: &Self::Triple) -> Self::Term {
+        Self::Term::from(triple.clone())
+    }
+
     fn iris_as_term(iri: &IriS) -> Self::Term {
         Self::Term::from(Self::IRI::from(iri.clone()))
     }

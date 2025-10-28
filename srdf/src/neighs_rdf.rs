@@ -8,6 +8,7 @@ use crate::SHACLPath;
 use crate::Triple;
 use crate::matcher::Any;
 use crate::matcher::Matcher;
+use crate::rdf_reifies;
 use crate::rdf_type;
 
 pub type IncomingArcs<R> = HashMap<<R as Rdf>::IRI, HashSet<<R as Rdf>::Subject>>;
@@ -68,6 +69,14 @@ pub trait NeighsRDF: Rdf {
         predicate: Self::IRI,
     ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
         self.triples_matching(Any, predicate, Any)
+    }
+
+    fn triples_with_predicate_object(
+        &self,
+        predicate: Self::IRI,
+        object: Self::Term,
+    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
+        self.triples_matching(Any, predicate, object)
     }
 
     fn triples_with_object(
@@ -132,6 +141,19 @@ pub trait NeighsRDF: Rdf {
             .map(Triple::into_subject)
             .collect();
         Ok(subjects.into_iter())
+    }
+
+    fn reifiers_of_triple(
+        &self,
+        triple: &Self::Triple,
+    ) -> Result<impl Iterator<Item = Self::Subject>, Self::Err> {
+        let triple_term = Self::triple_as_term(triple);
+        let rdf_reifies: Self::IRI = rdf_reifies().clone().into();
+        let reifiers = Self::triples_with_predicate_object(self, rdf_reifies, triple_term)?
+            .map(|t| t.into_subject())
+            .collect::<HashSet<_>>();
+        // Find x such that: x rdf:reifies <<( s p o )>>
+        Ok(reifiers.into_iter())
     }
 
     fn object_for(

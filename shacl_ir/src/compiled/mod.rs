@@ -3,6 +3,7 @@ pub mod compiled_shacl_error;
 pub mod component_ir;
 pub mod node_shape;
 pub mod property_shape;
+pub mod reifier_info;
 pub mod schema;
 pub mod severity;
 pub mod shape;

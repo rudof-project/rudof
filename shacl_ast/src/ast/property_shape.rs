@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 use std::fmt::Display;
 
+use crate::reifier_info::ReifierInfo;
 use crate::shacl_vocab::{
     sh_deactivated, sh_description, sh_group, sh_info, sh_name, sh_order, sh_path,
     sh_property_shape, sh_severity, sh_violation, sh_warning,
@@ -18,6 +19,7 @@ pub struct PropertyShape<RDF: Rdf> {
     components: Vec<Component>,
     targets: Vec<Target<RDF>>,
     property_shapes: Vec<RDFNode>,
+    reifier_info: Option<ReifierInfo>,
     closed: bool,
     // ignored_properties: Vec<IriRef>,
     deactivated: bool,
@@ -48,8 +50,8 @@ impl<RDF: Rdf> PropertyShape<RDF> {
             description: MessageMap::new(),
             order: None,
             group: None,
-            // source_iri: None,
-            // annotations: Vec::new()
+            reifier_info: None, // source_iri: None,
+                                // annotations: Vec::new()
         }
     }
 
@@ -69,6 +71,15 @@ impl<RDF: Rdf> PropertyShape<RDF> {
 
     pub fn with_group(mut self, group: Option<RDFNode>) -> Self {
         self.group = group;
+        self
+    }
+
+    pub fn reifier_info(&self) -> &Option<ReifierInfo> {
+        &self.reifier_info
+    }
+
+    pub fn with_reifier_shape(mut self, reifier_info: Option<ReifierInfo>) -> Self {
+        self.reifier_info = reifier_info;
         self
     }
 
@@ -302,6 +313,9 @@ impl<RDF: Rdf> Display for PropertyShape<RDF> {
         for property in self.property_shapes.iter() {
             writeln!(f, "       Property {property}")?
         }
+        for reifier in self.reifier_info.iter() {
+            writeln!(f, "       ReifierInfo {reifier}")?
+        }
         for component in self.components.iter() {
             writeln!(f, "       {component}")?
         }
@@ -325,6 +339,7 @@ impl<RDF: Rdf> Clone for PropertyShape<RDF> {
             description: self.description.clone(),
             order: self.order.clone(),
             group: self.group.clone(),
+            reifier_info: self.reifier_info.clone(),
         }
     }
 }
