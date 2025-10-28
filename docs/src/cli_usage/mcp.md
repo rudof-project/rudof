@@ -1,6 +1,6 @@
 # Exporting rudof as an MCP server
 
-`rudof` can be exported as an MCP (Model Context Protocol) server, allowing it to provide its capabilities to external clients over HTTP.
+A part of `rudof` functionality can be exported as an [MCP (Model Context Protocol) server](https://modelcontextprotocol.io/docs/getting-started/intro), allowing it to provide its capabilities to external clients over HTTP.
 
 By default, the MCP server will listen on port `8000`, at host `127.0.0.1`, and expose its functionality under the route name `rudof`.
 
@@ -57,3 +57,7 @@ For example, to run the MCP server on port 8080, accessible from any host, under
 ```sh
 rudof mcp --host 0.0.0.0 --port 8080 --route-name rdf
 ```
+
+# More information
+
+Once you have started rudof as an MCP server, you can configure a client that supports MCP servers to it. You can find a list of clients [here](https://modelcontextprotocol.io/clients)
