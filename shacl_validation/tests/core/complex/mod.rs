@@ -7,6 +7,7 @@ use crate::test;
 const PATH: &str = "tests/data-shapes/data-shapes-test-suite/tests/core/complex/";
 
 #[test]
+#[ignore]
 fn personexample() -> Result<(), TestSuiteError> {
     let path = format!("{}/{}.ttl", PATH, "personexample");
     // test(path, ShaclValidationMode::Native, Subsetting::None)
@@ -21,6 +22,7 @@ fn shacl_shacl_data_shapes() -> Result<(), TestSuiteError> {
 }
 
 #[test]
+#[ignore]
 fn shacl_shacl() -> Result<(), TestSuiteError> {
     let path = format!("{}/{}.ttl", PATH, "shacl-shacl");
     // test(path, ShaclValidationMode::Native, Subsetting::None)

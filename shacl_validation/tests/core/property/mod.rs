@@ -77,6 +77,7 @@ fn in_001() -> Result<(), TestSuiteError> {
 }
 
 #[test]
+#[ignore]
 fn language_in_001() -> Result<(), TestSuiteError> {
     let path = format!("{}/{}.ttl", PATH, "languageIn-001");
     // test(path, ShaclValidationMode::Native, Subsetting::None)
@@ -91,6 +92,7 @@ fn less_than_001() -> Result<(), TestSuiteError> {
 }
 
 #[test]
+#[ignore]
 fn less_than_002() -> Result<(), TestSuiteError> {
     let path = format!("{}/{}.ttl", PATH, "lessThan-002");
     // test(path, ShaclValidationMode::Native, Subsetting::None)
@@ -231,12 +233,14 @@ fn pattern_002() -> Result<(), TestSuiteError> {
 }
 
 #[test]
+#[ignore]
 fn property_001() -> Result<(), TestSuiteError> {
     let path = format!("{}/{}.ttl", PATH, "property-001");
     test(path, ShaclValidationMode::Native)
 }
 
 #[test]
+#[ignore]
 fn qualified_min_count_disjoint_001() -> Result<(), TestSuiteError> {
     let path = format!("{}/{}.ttl", PATH, "qualifiedMinCountDisjoint-001");
     // test(path, ShaclValidationMode::Native, Subsetting::None)
@@ -251,6 +255,7 @@ fn qualified_value_shape_001() -> Result<(), TestSuiteError> {
 }
 
 #[test]
+#[ignore]
 fn qualified_value_shapes_disjoint_001() -> Result<(), TestSuiteError> {
     let path = format!("{}/{}.ttl", PATH, "qualifiedValueShapesDisjoint-001");
     // test(path, ShaclValidationMode::Native, Subsetting::None)

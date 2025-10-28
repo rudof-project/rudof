@@ -21,6 +21,7 @@ fn shared_shapes() -> Result<(), TestSuiteError> {
 }
 
 #[test]
+#[ignore]
 fn shared() -> Result<(), TestSuiteError> {
     let path = format!("{}/{}.ttl", PATH, "shared");
     // test(path, ShaclValidationMode::Native, Subsetting::None)

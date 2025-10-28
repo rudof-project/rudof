@@ -10,7 +10,6 @@ use std::path::Path;
 
 mod core;
 
-#[ignore]
 fn test(
     path: String,
     mode: ShaclValidationMode,
