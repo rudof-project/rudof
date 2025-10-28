@@ -4,8 +4,11 @@ name: Code Coverage
 
 jobs:
     coverage:
-        name: Coverage
+        name: coverage
         runs-on: ubuntu-latest
+        container:
+          image: xd009642/tarpaulin:develop-nightly
+          options: --security-opt seccomp=unconfined
         steps:
             - name: Checkout sources
               uses: actions/checkout@v4
@@ -13,23 +16,9 @@ jobs:
                 fetch-depth: 0
                 submodules: recursive
 
-            - name: Install stable Rust toolchain
-              uses: actions-rs/toolchain@v1
-              with:
-                profile: minimal
-                toolchain: stable
-                override: true
-
-            - uses: Swatinem/rust-cache@v2
-
-            - name: Install cargo-tarpaulin
-              run: cargo install cargo-tarpaulin
-
-            - name: Generate coverage
-              run: cargo tarpaulin --all-targets --all-features --out Lcov --timeout 120 --verbose
-
-            - name: Check for coverage file
-              run: ls -al
+            - name: Generate code coverage
+              run: |
+                cargo +nightly tarpaulin --verbose --all-features --workspace --timeout 120 --out xml
 
             - name: Publish to Coveralls
               uses: coverallsapp/github-action@v2
