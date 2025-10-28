@@ -240,3 +240,140 @@ pub async fn export_image_impl(
     result.structured_content = Some(structured);
     Ok(result)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rmcp::model::RawContent;
+    use std::sync::Arc;
+    use tokio::sync::Mutex;
+
+    const SAMPLE_TURTLE: &str = r#"
+        prefix : <http://example.org/>
+        prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+        :a :name "Alice";
+           :birthdate "1990-05-02"^^xsd:date;
+           :enrolledIn :cs101.
+
+        :b :name "Bob", "Robert".
+
+        :cs101 :name "Computer Science".
+    "#;
+
+    async fn create_test_service() -> RudofMcpService {
+        tokio::task::spawn_blocking(|| {
+            let rudof_config = rudof_lib::RudofConfig::new().unwrap();
+            let rudof = rudof_lib::Rudof::new(&rudof_config).unwrap();
+            RudofMcpService {
+                rudof: Arc::new(Mutex::new(rudof)),
+                tool_router: Default::default(),
+                prompt_router: Default::default(),
+            }
+        })
+        .await
+        .unwrap()
+    }
+
+    #[tokio::test]
+    async fn test_load_rdf_data_from_sources_impl_success() {
+        let service = create_test_service().await;
+
+        let params = Parameters(LoadRdfDataFromSourcesRequest {
+            data: vec![SAMPLE_TURTLE.to_string()],
+            data_format: "turtle".to_string(),
+            base: None,
+            endpoint: None,
+        });
+
+        let result = load_rdf_data_from_sources_impl(&service, params).await;
+        assert!(result.is_ok());
+        let call_result = result.unwrap();
+        assert!(call_result.structured_content.is_some());
+        assert!(call_result.content.iter().any(|c| {
+            matches!(c.raw, RawContent::Text(ref s) if s.text.contains("RDF data loaded"))
+        }));
+
+    }
+
+    #[tokio::test]
+    async fn test_load_rdf_data_from_sources_impl_invalid_format() {
+        let service = create_test_service().await;
+
+        let params = Parameters(LoadRdfDataFromSourcesRequest {
+            data: vec![SAMPLE_TURTLE.to_string()],
+            data_format: "invalidformat".to_string(),
+            base: None,
+            endpoint: None,
+        });
+
+        let result = load_rdf_data_from_sources_impl(&service, params).await;
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.message.contains("Invalid data format"));
+    }
+
+    #[tokio::test]
+    async fn test_export_rdf_data_impl_success() {
+        let service = create_test_service().await;
+
+        // First load RDF data
+        let _ = load_rdf_data_from_sources_impl(
+            &service,
+            Parameters(LoadRdfDataFromSourcesRequest {
+                data: vec![SAMPLE_TURTLE.to_string()],
+                data_format: "turtle".to_string(),
+                base: None,
+                endpoint: None,
+            }),
+        )
+        .await
+        .unwrap();
+
+        let params = Parameters(ExportRdfDataRequest {
+            format: "turtle".to_string(),
+        });
+
+        let result = export_rdf_data_impl(&service, params).await;
+        assert!(result.is_ok());
+        let call_result = result.unwrap();
+        assert!(call_result.structured_content.is_some());
+        assert!(call_result.content.iter().any(|c| {
+            matches!(c.raw, RawContent::Text(ref t) if t.text.contains(":a"))
+        }));
+    }
+
+    #[tokio::test]
+    async fn test_export_plantuml_impl_success() {
+        let service = create_test_service().await;
+
+        // Load RDF data first
+        let _ = load_rdf_data_from_sources_impl(
+            &service,
+            Parameters(LoadRdfDataFromSourcesRequest {
+                data: vec![SAMPLE_TURTLE.to_string()],
+                data_format: "turtle".to_string(),
+                base: None,
+                endpoint: None,
+            }),
+        )
+        .await
+        .unwrap();
+
+        let params = Parameters(EmptyRequest {});
+
+        let result = export_plantuml_impl(&service, params).await;
+        assert!(result.is_ok());
+        let call_result = result.unwrap();
+        assert!(call_result.structured_content.is_some());
+        assert!(call_result.content.iter().any(|c| {
+            matches!(c.raw, RawContent::Text(ref t) if t.text.contains("@startuml"))
+        }));
+    }
+
+    #[tokio::test]
+    async fn test_export_image_impl_success() {
+        // (Not implemented)
+    }
+
+}

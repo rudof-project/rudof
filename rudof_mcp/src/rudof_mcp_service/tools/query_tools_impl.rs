@@ -124,3 +124,113 @@ pub async fn execute_sparql_query_impl(
 
     Ok(result)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::rudof_mcp_service::tools::data_tools_impl::{
+        load_rdf_data_from_sources_impl,
+        LoadRdfDataFromSourcesRequest,
+    };
+    use std::sync::Arc;
+    use tokio::sync::Mutex;
+
+    const SAMPLE_TURTLE: &str = r#"
+        prefix : <http://example.org/>
+        prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+        :a :name "Alice" ;
+           :birthdate "1990-05-02"^^xsd:date ;
+           :enrolledIn :cs101 .
+
+        :b :name "Bob", "Robert" .
+
+        :cs101 :name "Computer Science" .
+    "#;
+
+    async fn create_test_service() -> RudofMcpService {
+        tokio::task::spawn_blocking(|| {
+            let rudof_config = rudof_lib::RudofConfig::new().unwrap();
+            let rudof = rudof_lib::Rudof::new(&rudof_config).unwrap();
+            RudofMcpService {
+                rudof: Arc::new(Mutex::new(rudof)),
+                tool_router: Default::default(),
+                prompt_router: Default::default(),
+            }
+        })
+        .await
+        .unwrap()
+    }
+
+    #[tokio::test]
+    async fn test_execute_sparql_query_impl_select_success() {
+        let service = create_test_service().await;
+
+        let _ = load_rdf_data_from_sources_impl(
+            &service,
+            Parameters(LoadRdfDataFromSourcesRequest {
+                data: vec![SAMPLE_TURTLE.to_string()],
+                data_format: "turtle".to_string(),
+                base: None,
+                endpoint: None,
+            }),
+        )
+        .await
+        .unwrap();
+
+        let query = r#"SELECT ?s ?p ?o WHERE { ?s ?p ?o }"#.to_string();
+
+        let params = Parameters(ExecuteSparqlQueryRequest {
+            query,
+            result_format: Some("Internal".to_string()),
+        });
+
+        let result = execute_sparql_query_impl(&service, params).await;
+        assert!(result.is_ok());
+        let call_result = result.unwrap();
+        assert!(call_result.structured_content.is_some());
+        assert!(!call_result.content.is_empty());
+
+        let structured = call_result.structured_content.unwrap();
+        assert_eq!(structured["status"], "success");
+
+        assert_eq!(
+            structured["query_type"].as_str().unwrap().to_uppercase(),
+            "SELECT"
+        );
+    }
+    
+    #[tokio::test]
+    async fn test_execute_sparql_query_impl_invalid_query() {
+        let service = create_test_service().await;
+
+        let query = "INVALID QUERY".to_string();
+
+        let params = Parameters(ExecuteSparqlQueryRequest {
+            query,
+            result_format: Some("Internal".to_string()),
+        });
+
+        let result = execute_sparql_query_impl(&service, params).await;
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.message, error_messages::INVALID_QUERY_TYPE);
+    }
+
+    #[tokio::test]
+    async fn test_execute_sparql_query_impl_invalid_result_format() {
+        let service = create_test_service().await;
+
+        let query = r#"SELECT ?s WHERE { ?s ?p ?o }"#.to_string();
+
+        let params = Parameters(ExecuteSparqlQueryRequest {
+            query,
+            result_format: Some("UnknownFormat".to_string()),
+        });
+
+        let result = execute_sparql_query_impl(&service, params).await;
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.message, error_messages::INVALID_QUERY_RESULT_FORMAT);
+    }
+}

@@ -169,7 +169,7 @@ mod tests {
     // Initialize the RudofMcpService in a blocking-safe context
     async fn create_test_service() -> RudofMcpService {
         tokio::task::spawn_blocking(|| {
-            let rudof_config = rudof_lib::RudofConfig::default_config().unwrap();
+            let rudof_config = rudof_lib::RudofConfig::new().unwrap();
             let rudof = rudof_lib::Rudof::new(&rudof_config).unwrap();
             RudofMcpService {
                 rudof: Arc::new(Mutex::new(rudof)),
