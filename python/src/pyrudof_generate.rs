@@ -1,4 +1,4 @@
-use pyo3::{pyclass, pymethods, PyErr, PyResult};
+use pyo3::{PyErr, PyResult, pyclass, pymethods};
 use std::path::Path;
 
 /// Python wrapper for GeneratorConfig
@@ -362,10 +362,9 @@ impl PyDataGenerator {
     ///   path: Path to the ShEx schema file
     #[pyo3(signature = (path))]
     pub fn load_shex_schema(&mut self, path: &str) -> PyResult<()> {
-        let generator = self
-            .inner
-            .as_mut()
-            .ok_or_else(|| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Generator not initialized"))?;
+        let generator = self.inner.as_mut().ok_or_else(|| {
+            PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Generator not initialized")
+        })?;
 
         self.runtime
             .block_on(generator.load_shex_schema(path))
@@ -380,10 +379,9 @@ impl PyDataGenerator {
     ///   path: Path to the SHACL schema file
     #[pyo3(signature = (path))]
     pub fn load_shacl_schema(&mut self, path: &str) -> PyResult<()> {
-        let generator = self
-            .inner
-            .as_mut()
-            .ok_or_else(|| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Generator not initialized"))?;
+        let generator = self.inner.as_mut().ok_or_else(|| {
+            PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Generator not initialized")
+        })?;
 
         self.runtime
             .block_on(generator.load_shacl_schema(path))
@@ -398,10 +396,9 @@ impl PyDataGenerator {
     ///   path: Path to the schema file
     #[pyo3(signature = (path))]
     pub fn load_schema_auto(&mut self, path: &str) -> PyResult<()> {
-        let generator = self
-            .inner
-            .as_mut()
-            .ok_or_else(|| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Generator not initialized"))?;
+        let generator = self.inner.as_mut().ok_or_else(|| {
+            PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Generator not initialized")
+        })?;
 
         self.runtime
             .block_on(generator.load_schema_auto(path))
@@ -413,10 +410,9 @@ impl PyDataGenerator {
     /// Generate synthetic data and write to output
     #[pyo3(signature = ())]
     pub fn generate(&mut self) -> PyResult<()> {
-        let generator = self
-            .inner
-            .as_mut()
-            .ok_or_else(|| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Generator not initialized"))?;
+        let generator = self.inner.as_mut().ok_or_else(|| {
+            PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Generator not initialized")
+        })?;
 
         self.runtime
             .block_on(generator.generate())
@@ -436,10 +432,9 @@ impl PyDataGenerator {
         schema_path: &str,
         format: Option<PySchemaFormat>,
     ) -> PyResult<()> {
-        let generator = self
-            .inner
-            .as_mut()
-            .ok_or_else(|| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Generator not initialized"))?;
+        let generator = self.inner.as_mut().ok_or_else(|| {
+            PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Generator not initialized")
+        })?;
 
         let rust_format = format.map(|f| f.into());
 
