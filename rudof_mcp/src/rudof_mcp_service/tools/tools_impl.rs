@@ -172,12 +172,12 @@ mod tests {
         let tools = router.list_all();
 
         assert!(!tools.is_empty());
-        assert!(tools.iter().any(|t| t.name == "load_rdf_data"));
         assert!(tools.iter().any(|t| t.name == "export_rdf_data"));
         assert!(tools.iter().any(|t| t.name == "load_rdf_data_from_sources"));
         assert!(tools.iter().any(|t| t.name == "export_plantuml"));
         assert!(tools.iter().any(|t| t.name == "export_image"));
         assert!(tools.iter().any(|t| t.name == "node_info"));
+        assert!(tools.iter().any(|t| t.name == "execute_sparql_query"));
     }
 
     #[test]
@@ -221,6 +221,13 @@ mod tests {
         assert_eq!(
             node_tool.unwrap().title,
             Some("Inspect RDF Node".to_string())
+        );
+
+        let quey_tool = tools.iter().find(|t| t.name == "execute_sparql_query");
+        assert!(quey_tool.is_some());
+        assert_eq!(
+            quey_tool.unwrap().title,
+            Some("Execute SPARQL Query".to_string())
         );
     }
 }

@@ -31,7 +31,6 @@ jobs:
       - name: Generate code coverage
         run: |
           cargo +nightly tarpaulin \
-            --verbose \
             --all-features \
             --workspace \
             --timeout 120 \
