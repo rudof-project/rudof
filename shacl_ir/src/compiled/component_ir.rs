@@ -594,7 +594,7 @@ pub struct Pattern {
 }
 
 impl Pattern {
-    pub fn new(pattern: String, flags: Option<String>) -> Result<Self, CompiledShaclError> {
+    pub fn new(pattern: String, flags: Option<String>) -> Result<Self, Box<CompiledShaclError>> {
         let regex = SRegex::new(&pattern, flags.as_deref()).map_err(|e| {
             CompiledShaclError::InvalidRegex {
                 pattern: pattern.clone(),

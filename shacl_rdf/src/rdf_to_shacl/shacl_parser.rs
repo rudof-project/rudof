@@ -1,6 +1,7 @@
 use super::shacl_parser_error::ShaclParserError;
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
+use shacl_ast::reifier_info::ReifierInfo;
 use shacl_ast::severity::Severity;
 use shacl_ast::shacl_vocab::{
     sh_and, sh_class, sh_closed, sh_datatype, sh_has_value, sh_in, sh_language_in, sh_max_count,
@@ -178,6 +179,9 @@ where
         // elements of `sh:xone` list
         let sh_xone_values = self.get_sh_xone_values()?;
 
+        // elements of `sh:reifierShape` list
+        let sh_reifier_shape_values = self.get_sh_reifier_shape_values()?;
+
         // I would prefer a code like: node_shape_instances.union(subjects_property).union(...)
         // But looking to the union API in HashSet, I think it can't be chained
         let mut candidates = HashSet::new();
@@ -190,6 +194,7 @@ where
         candidates.extend(sh_qualified_value_shape_nodes);
         candidates.extend(sh_node_values);
         candidates.extend(property_shapes_instances);
+        candidates.extend(sh_reifier_shape_values);
         candidates.extend(shape_instances);
         candidates.extend(subjects_target_class);
         candidates.extend(subjects_target_subjects_of);
@@ -231,6 +236,14 @@ where
                     });
                 }
             }
+        }
+        Ok(rs)
+    }
+
+    fn get_sh_reifier_shape_values(&mut self) -> Result<HashSet<RDF::Subject>> {
+        let mut rs = HashSet::new();
+        for s in self.objects_with_predicate(Self::sh_reifier_shape_iri())? {
+            rs.insert(s);
         }
         Ok(rs)
     }
@@ -290,11 +303,6 @@ where
         Ok(values_as_subjects)
     }
 
-    /*fn values_of_list(&mut self, term: RDF::Term) -> Result<Vec<RDF::Term>> {
-        let values = set_focus(&term).with(rdf_list()).parse_impl(&mut self.rdf_parser.rdf)?;
-        Ok(values)
-    }*/
-
     fn rdf_type_iri() -> RDF::IRI {
         rdf_type().clone().into()
     }
@@ -321,6 +329,10 @@ where
 
     fn sh_xone_iri() -> RDF::IRI {
         sh_xone().clone().into()
+    }
+
+    fn sh_reifier_shape_iri() -> RDF::IRI {
+        sh_reifier_shape().clone().into()
     }
 
     fn sh_and_iri() -> RDF::IRI {
@@ -388,15 +400,14 @@ where
         disjoint(),
         less_than(),
         less_than_or_equals(),
-        // Logical
+        // Logical constraint components
         not_component(),
         and(),
         or(),
         xone(),
-        // Shape based
+        // Shape based constraint components
         node(),
         // property is handled differently
-        // Qualified value shape
         qualified_value_shape(),
         // Other
         closed_component(),
@@ -423,7 +434,10 @@ where
             )
             // The following line is required because the path parser moves the focus node
             .then(move |ps| set_focus(&focus.clone()).with(ok(ps)))
-            .then(|ns| optional(severity()).flat_map(move |sev| Ok(ns.clone().with_severity(sev))))
+            .then(|ps| optional(severity()).flat_map(move |sev| Ok(ps.clone().with_severity(sev))))
+            .then(|ps| {
+                reifier_shape().flat_map(move |r_shape| Ok(ps.clone().with_reifier_shape(r_shape)))
+            })
             .then(|ps| targets().flat_map(move |ts| Ok(ps.clone().with_targets(ts))))
             .then(|ps| {
                 property_shapes()
@@ -619,25 +633,6 @@ where
                         }
                     }
                 }
-                /*if let Some(true) =
-                    rdf.get_object_for(focus, sh_qualified_value_shapes_disjoint())?
-                {
-                    for p in ps {
-                        // TODO: Check that they have qualifiedValueShape also...
-                        let qvs = rdf
-                            .triples_matching(p.clone().into(), sh_property().clone().into(), Any)
-                            .map_err(|e| RDFParseError::SRDFError { err: e.to_string() })?
-                            .map(Triple::into_object)
-                            .flat_map(|t| RDF::term_as_object(&t).ok());
-                        for qv in qvs {
-                            if &qv != focus {
-                                siblings.push(qv);
-                            }
-                        }
-                    }
-                } else {
-                };*/
-
                 Ok(siblings)
             }
             None => Err(RDFParseError::NoFocusNode),
@@ -762,26 +757,7 @@ where
     property_bool(sh_closed().clone())
 }
 
-/*opaque! {
-    fn min_count[RDF]()(RDF) -> Vec<Component>
-    where [
-    ] {
-        property_values_int(sh_min_count())
-        .map(|ns| ns.iter().map(|n| Component::MinCount(*n)).collect())
-    }
-}
-
-opaque! {
-    fn max_count[RDF]()(RDF) -> Vec<Component>
-    where [
-    ] {
-        property_values_int(sh_max_count())
-        .map(|ns| ns.iter().map(|n| Component::MaxCount(*n)).collect())
-    }
-}*/
-
 fn min_count<RDF>() -> FnOpaque<RDF, Vec<Component>>
-// impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
@@ -792,7 +768,6 @@ where
 }
 
 fn max_count<RDF>() -> FnOpaque<RDF, Vec<Component>>
-// impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
@@ -820,6 +795,28 @@ where
         property_values_bool(sh_deactivated().clone())
             .map(|ns| ns.iter().map(|n| Component::Deactivated(*n)).collect())
     )
+}
+
+fn reifier_shape<RDF>() -> FnOpaque<RDF, Option<ReifierInfo>>
+where
+    RDF: FocusRDF,
+{
+    opaque!(property_values(sh_reifier_shape().clone()).then(move |vs| {
+        optional(property_bool(sh_reification_required().clone())).map(move |requires_reifier| {
+            let reifier_shape = vs
+                .iter()
+                .filter_map(|v| RDF::term_as_object(v).ok())
+                .collect();
+            if vs.is_empty() {
+                None
+            } else {
+                Some(ReifierInfo::new(
+                    requires_reifier.unwrap_or(false),
+                    reifier_shape,
+                ))
+            }
+        })
+    }))
 }
 
 fn closed_component<RDF>() -> FnOpaque<RDF, Vec<Component>>

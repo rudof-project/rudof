@@ -1,10 +1,10 @@
-use crate::severity::CompiledSeverity;
-
 use super::compiled_shacl_error::CompiledShaclError;
 use super::component_ir::ComponentIR;
 use super::node_shape::NodeShapeIR;
 use super::property_shape::PropertyShapeIR;
 use super::target::CompiledTarget;
+use crate::reifier_info::ReifierInfo;
+use crate::severity::CompiledSeverity;
 use iri_s::IriS;
 use shacl_ast::Schema;
 use shacl_ast::shape::Shape;
@@ -23,6 +23,20 @@ impl ShapeIR {
         match self {
             ShapeIR::NodeShape(ns) => ns.deactivated(),
             ShapeIR::PropertyShape(ps) => ps.deactivated(),
+        }
+    }
+
+    pub fn reifier_info(&self) -> Option<ReifierInfo> {
+        match self {
+            ShapeIR::NodeShape(_ns) => None,
+            ShapeIR::PropertyShape(ps) => ps.reifier_info(),
+        }
+    }
+
+    pub fn path(&self) -> Option<SHACLPath> {
+        match self {
+            ShapeIR::NodeShape(_) => None,
+            ShapeIR::PropertyShape(ps) => Some(ps.path().clone()),
         }
     }
 
@@ -59,13 +73,6 @@ impl ShapeIR {
         match self {
             ShapeIR::NodeShape(ns) => ns.property_shapes(),
             ShapeIR::PropertyShape(ps) => ps.property_shapes(),
-        }
-    }
-
-    pub fn path(&self) -> Option<SHACLPath> {
-        match self {
-            ShapeIR::NodeShape(_) => None,
-            ShapeIR::PropertyShape(ps) => Some(ps.path().clone()),
         }
     }
 
@@ -133,6 +140,19 @@ impl Display for ShapeIR {
             ShapeIR::PropertyShape(shape) => {
                 writeln!(f, "PropertyShape")?;
                 writeln!(f, " path: {}", shape.path())?;
+                if let Some(reifier_info) = shape.reifier_info() {
+                    writeln!(
+                        f,
+                        " reifier info: reification required: {}, reifier shapes: [{}]",
+                        reifier_info.reification_required(),
+                        reifier_info
+                            .reifier_shape()
+                            .iter()
+                            .map(|s| s.id().to_string())
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    )?;
+                }
             }
         }
         if self.deactivated() {

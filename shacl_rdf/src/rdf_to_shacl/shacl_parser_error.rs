@@ -10,6 +10,9 @@ pub enum ShaclParserError {
         err: RDFParseError,
     },
 
+    #[error("Expected Value of `sh:reifierShape` to be a subject, found: {term}")]
+    ReifierShapeNoSubject { term: String },
+
     #[error("Error converting Term to RDFNode: {term}")]
     TermToRDFNodeFailed { term: String },
 

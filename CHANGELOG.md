@@ -7,7 +7,13 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
-## v0.1.133
+## v0.1.135
+### Added
+- SHACL 1.2, added first version with suppport for `sh:reifierShape` and `sh:reificationRequired`
+- MCP_SERVER: added documentation
+- Python bindings: added bindings for Rudof_Generate
+
+## v0.1.134
 ### Fixed
 
 - Issue with SPARQL queries that used annotation syntax updating Oxigraph to 0.5.2

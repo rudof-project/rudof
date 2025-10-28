@@ -3,10 +3,14 @@ use crate::shacl_engine::engine::Engine;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
-use iri_s::{IriS, iri};
+use iri_s::IriS;
+use shacl_ast::shacl_vocab::{
+    sh_closed_constraint_component, sh_reifier_shape_constraint_component,
+};
 use shacl_ir::compiled::node_shape::NodeShapeIR;
 use shacl_ir::compiled::property_shape::PropertyShapeIR;
 use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::reifier_info::ReifierInfo;
 use srdf::{NeighsRDF, Object, Rdf, SHACLPath, Triple};
 use std::{collections::HashSet, fmt::Debug};
 use tracing::trace;
@@ -63,7 +67,8 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
 
         // After validating the constraints that are defined in the current
         //    Shape, it is important to also perform the validation over those
-        //    nested PropertyShapes. The validation needs to occur over the focus_nodes
+        //    nested PropertyShapes.
+        //  The validation needs to occur over the focus_nodes
         //    that have been computed for the current shape
         let property_shapes_validation_results =
             self.property_shapes().iter().flat_map(|prop_shape| {
@@ -99,7 +104,7 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
                 for property in invalid_properties {
                     let vr_single = ValidationResult::new(
                         self.id().clone(),
-                        closed_constraint_component(),
+                        Object::iri(sh_closed_constraint_component().clone()),
                         self.severity(),
                     )
                     .with_path(Some(SHACLPath::iri(property)));
@@ -108,10 +113,24 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
             }
         }
 
+        let reification_results = if let Some(reifier_info) = self.reifier_info() {
+            validate_reifiers(
+                self,
+                store,
+                runner,
+                source_shape,
+                &reifier_info,
+                &focus_nodes,
+            )?
+        } else {
+            Vec::new()
+        };
+
         // Collect all validation results
         let validation_results = component_validation_results
             .chain(property_shapes_validation_results)
             .chain(vec![closed_validation_results])
+            .chain(vec![reification_results])
             .flatten()
             .collect();
 
@@ -119,8 +138,74 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
     }
 }
 
-fn closed_constraint_component() -> Object {
-    Object::Iri(iri!("http://www.w3.org/ns/shacl#ClosedConstraintComponent"))
+fn validate_reifiers<S>(
+    shape: &ShapeIR,
+    store: &S,
+    runner: &dyn Engine<S>,
+    source_shape: Option<&ShapeIR>,
+    reifier_info: &ReifierInfo,
+    focus_nodes: &FocusNodes<S>,
+) -> Result<Vec<ValidationResult>, Box<ValidateError>>
+where
+    S: NeighsRDF + Debug,
+{
+    let mut results = Vec::new();
+    for focus_node in focus_nodes.iter() {
+        for reifier_shape in reifier_info.reifier_shape() {
+            let pred = reifier_info.predicate();
+            let triples = store
+                .triples_with_subject_predicate(
+                    S::term_as_subject(focus_node).map_err(|_| {
+                        ValidateError::TriplesWithSubject {
+                            subject: format!("{focus_node:?}"),
+                            error: "Cannot convert to subject".to_string(),
+                        }
+                    })?,
+                    pred.clone().into(),
+                )
+                .map_err(|e| ValidateError::TriplesWithSubjectPredicate {
+                    subject: format!("{focus_node}"),
+                    predicate: pred.to_string(),
+                    error: e.to_string(),
+                })?;
+            for triple in triples {
+                let reifier_subjects = store.reifiers_of_triple(&triple).map_err(|e| {
+                    ValidateError::ReifiersOfTriple {
+                        triple: format!("{triple:?}"),
+                        error: e.to_string(),
+                    }
+                })?;
+                let reifier_subjects = reifier_subjects.collect::<Vec<_>>();
+                if reifier_subjects.is_empty() && reifier_info.reification_required() {
+                    let vr_single = ValidationResult::new(
+                        shape.id().clone(),
+                        Object::iri(sh_reifier_shape_constraint_component().clone()),
+                        shape.severity(),
+                    )
+                    .with_message(&format!(
+                        "Reification required but no reifier found for triple {} with predicate {}",
+                        triple, pred
+                    ))
+                    .with_path(Some(SHACLPath::iri(pred.clone())))
+                    .with_source(source_shape.map(|s| s.id()).cloned());
+                    results.push(vr_single);
+                    continue;
+                }
+                let reifier_nodes = reifier_subjects
+                    .iter()
+                    .map(|subj| S::subject_as_term(subj))
+                    .collect::<HashSet<_>>();
+                let vr_iter = reifier_shape.validate(
+                    store,
+                    runner,
+                    Some(&FocusNodes::from_iter(reifier_nodes)),
+                    Some(shape),
+                )?;
+                results.extend(vr_iter.into_iter());
+            }
+        }
+    }
+    Ok(results)
 }
 
 pub trait FocusNodesOps<S: Rdf> {

@@ -15,6 +15,9 @@ pub enum ValidateError {
     #[error("Obtaining rdfs:subClassOf of {term}: {error}")]
     SubClassOf { term: String, error: String },
 
+    #[error("Obtaining reifiers of triple {triple}: {error}")]
+    ReifiersOfTriple { triple: String, error: String },
+
     #[error("Obtaining instances of {term}: {error}")]
     InstanceOf { term: String, error: String },
 
@@ -26,14 +29,19 @@ pub enum ValidateError {
     },
     #[error("Error during the SPARQL operation")]
     SRDF,
+
     #[error("TargetNode cannot be a Blank Node")]
     TargetNodeBlankNode,
+
     #[error("TargetClass should be an IRI")]
     TargetClassNotIri,
+
     #[error("Error when working with the SRDFGraph, {}", ._0)] // TODO: move to store
     Graph(#[from] SRDFGraphError),
+
     #[error("Error when parsing the SHACL Graph, {}", ._0)] // TODO: move to store
     ShaclParser(#[from] ShaclParserError),
+
     #[error("Error during the constraint evaluation")]
     Constraint(#[from] ConstraintError),
     // #[error("Error parsing the IRI")]
@@ -84,4 +92,13 @@ pub enum ValidateError {
         "Error obtaining triples with subject {subject} during validation: {error}, checking CLOSED"
     )]
     TriplesWithSubject { subject: String, error: String },
+
+    #[error(
+        "Error obtaining triples with subject {subject} and predicate {predicate} during validation: {error}, checking REIFIER SHAPE"
+    )]
+    TriplesWithSubjectPredicate {
+        subject: String,
+        predicate: String,
+        error: String,
+    },
 }

@@ -1,6 +1,6 @@
 [package]
 name = "shacl_ir"
-version = "0.1.120"
+version = "0.1.135"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shacl_ir"

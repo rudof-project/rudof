@@ -5,6 +5,10 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum CompiledShaclError {
+    #[error(
+        "Invalid path for property shape with reifier shape {shape_id}, the path must be a single predicate, but got: {path}"
+    )]
+    InvalidReifierShapePath { shape_id: RDFNode, path: String },
     #[error("Conversion from IriRef {iri_ref } failed: {err}")]
     IriRefConversion { iri_ref: String, err: String },
 

@@ -26,3 +26,5 @@ Cargo.lock
 # python
 __pycache__/
 dist/
+tutorials
+python/temp/

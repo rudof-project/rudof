@@ -1,0 +1,19 @@
+prefix : <http://example.org/>
+prefix sh: <http://www.w3.org/ns/shacl#>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+:Person a sh:NodeShape ;
+  sh:targetClass :Person ;
+  sh:property :knows .
+ 
+:knows sh:path :knows ;
+        sh:reificationRequired true ;
+        sh:reifierShape :KnowsInfo .
+
+:KnowsInfo a sh:NodeShape ;
+ sh:property :since .
+ 
+ :since sh:path :since ;
+    sh:datatype xsd:integer ;
+    sh:minCount 1 ; sh:maxCount 1 .
+
