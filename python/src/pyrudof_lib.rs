@@ -679,13 +679,18 @@ impl PyRudof {
     }
 
     /// Read Service Description
-    /// Parameters:
-    /// input: Path or URL
-    /// format: Format of the Service Description, e.g. turtle, jsonld
-    /// base: Optional base IRI to resolve relative IRIs in the Service Description
-    /// reader_mode: Reader mode to use when reading the Service Description, e.g. lax
-    /// Returns: None
-    /// Raises: RudofError if there is an error reading the Service Description
+    ///
+    /// Args:
+    ///     input: Path or URL
+    ///     format: Format of the Service Description, e.g. turtle, jsonld
+    ///     base: Optional base IRI to resolve relative IRIs in the Service Description
+    ///     reader_mode: Reader mode to use when reading the Service Description, e.g. lax
+    ///
+    /// Returns:
+    ///     None
+    ///
+    /// Raises:
+    ///     `RudofError` if there is an error reading the Service Description
     #[pyo3(signature = (input, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax),
         // text_signature = "(input, format=RDFFormat.Turtle, base=None, reader_mode=ReaderMode.Lax)"
     )]
@@ -706,13 +711,17 @@ impl PyRudof {
     }
 
     /// Read Service Description from a String
-    /// Parameters:
-    /// input: String that contains the Service Description
-    /// format: Format of the Service Description, e.g. turtle, jsonld
-    /// base: Optional base IRI to resolve relative IRIs in the Service Description
-    /// reader_mode: Reader mode to use when reading the Service Description, e.g. lax
-    /// Returns: None
-    /// Raises: RudofError if there is an error reading the Service Description
+    /// Args:
+    ///     input: String that contains the Service Description
+    ///     format: Format of the Service Description, e.g. turtle, jsonld
+    ///     base: Optional base IRI to resolve relative IRIs in the Service Description
+    ///     reader_mode: Reader mode to use when reading the Service Description, e.g. lax
+    ///
+    /// Returns:
+    ///     None
+    ///
+    /// Raises:
+    ///    `RudofError` if there is an error reading the Service Description
     #[pyo3(signature = (input, format = &PyRDFFormat::Turtle, base = None, reader_mode = &PyReaderMode::Lax),
         // text_signature = "(input, format=RDFFormat.Turtle, base=None, reader_mode=ReaderMode.Lax)"
     )]
@@ -732,11 +741,15 @@ impl PyRudof {
     }
 
     /// Serialize the current Service Description to a file
-    /// Parameters:
-    /// format: Format of the Service Description, e.g. turtle, jsonld
-    /// output: Path to the file where the Service Description will be stored
-    /// Returns: None
-    /// Raises: RudofError if there is an error writing the Service Description
+    ///
+    /// Args:
+    ///     format: Format of the Service Description, e.g. turtle, jsonld
+    ///     output: Path to the file where the Service Description will be stored
+    ///
+    /// Returns:
+    ///     None
+    /// Raises:
+    ///     `RudofError` if there is an error writing the Service Description
     #[pyo3(signature = (output, format = &PyServiceDescriptionFormat::Internal),
         // text_signature = "(output, format=ServiceDescriptionFormat.Internal)"
     )]
@@ -925,6 +938,13 @@ impl PyRudof {
     }
 
     /// Serialize the current ShEx schema
+    ///
+    /// Args:
+    ///     formatter: `ShExFormatter` to use for serialization
+    ///     format: Format of the ShEx schema, e.g. shexc, turtle
+    ///
+    /// Returns:
+    ///    String containing the serialized ShEx schema
     #[pyo3(signature = (formatter, format = &PyShExFormat::ShExC),
         text_signature = "(formatter, format=ShExFormat.ShExC)"
     )]
@@ -950,6 +970,13 @@ impl PyRudof {
     }
 
     /// Serialize a ShEx schema
+    ///
+    /// Args:
+    ///     shex: ShEx schema to serialize
+    ///     formatter: Formatter to use for serialization
+    ///     format: Format of the ShEx schema, e.g. shexc, turtle
+    /// Returns:
+    ///    String containing the serialized ShEx schema
     #[pyo3(signature = (shex, formatter, format = &PyShExFormat::ShExC),
         text_signature = "(shex, formatter, format=ShExFormat.ShExC)"
     )]
