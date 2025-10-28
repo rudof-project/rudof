@@ -293,7 +293,6 @@ mod tests {
         assert!(call_result.content.iter().any(|c| {
             matches!(c.raw, RawContent::Text(ref s) if s.text.contains("RDF data loaded"))
         }));
-
     }
 
     #[tokio::test]
@@ -338,9 +337,12 @@ mod tests {
         assert!(result.is_ok());
         let call_result = result.unwrap();
         assert!(call_result.structured_content.is_some());
-        assert!(call_result.content.iter().any(|c| {
-            matches!(c.raw, RawContent::Text(ref t) if t.text.contains(":a"))
-        }));
+        assert!(
+            call_result
+                .content
+                .iter()
+                .any(|c| { matches!(c.raw, RawContent::Text(ref t) if t.text.contains(":a")) })
+        );
     }
 
     #[tokio::test]
@@ -366,14 +368,15 @@ mod tests {
         assert!(result.is_ok());
         let call_result = result.unwrap();
         assert!(call_result.structured_content.is_some());
-        assert!(call_result.content.iter().any(|c| {
-            matches!(c.raw, RawContent::Text(ref t) if t.text.contains("@startuml"))
-        }));
+        assert!(
+            call_result.content.iter().any(|c| {
+                matches!(c.raw, RawContent::Text(ref t) if t.text.contains("@startuml"))
+            })
+        );
     }
 
     #[tokio::test]
     async fn test_export_image_impl_success() {
         // (Not implemented)
     }
-
 }

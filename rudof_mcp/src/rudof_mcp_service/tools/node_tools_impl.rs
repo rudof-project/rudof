@@ -75,9 +75,7 @@ pub async fn node_info_impl(
 
     let pred_list: Vec<String> = predicates.unwrap_or_default();
     let node_infos = match get_node_info(rdf, node_selector, &pred_list, &options) {
-        Ok(infos) => {
-            infos
-        }
+        Ok(infos) => infos,
         Err(e) => {
             return Err(resource_not_found(
                 error_messages::NODE_NOT_FOUND,
@@ -145,12 +143,11 @@ mod tests {
     use super::*;
     use crate::rudof_mcp_service::service::RudofMcpService;
     use crate::rudof_mcp_service::tools::data_tools_impl::{
-        load_rdf_data_from_sources_impl,
-        LoadRdfDataFromSourcesRequest,
+        LoadRdfDataFromSourcesRequest, load_rdf_data_from_sources_impl,
     };
     use rmcp::handler::server::wrapper::Parameters;
-    use tokio;
     use std::sync::Arc;
+    use tokio;
     use tokio::sync::Mutex;
 
     const SAMPLE_TURTLE: &str = r#"

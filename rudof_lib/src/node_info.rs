@@ -172,10 +172,7 @@ fn get_incoming_arcs<S: NeighsRDF>(
 }
 
 // Convert an ObjectValue (node) to a Subject and checks that it exists in the RDF graph.
-pub fn node_to_subject_checked<S>(
-    node: &ObjectValue,
-    rdf: &S,
-) -> Result<S::Subject, RudofError>
+pub fn node_to_subject_checked<S>(node: &ObjectValue, rdf: &S) -> Result<S::Subject, RudofError>
 where
     S: NeighsRDF,
 {
@@ -183,9 +180,11 @@ where
     let subject = node_to_subject(node, rdf)?;
 
     // Check if the subject actually exists in the RDF graph
-    let mut triples = rdf
-    .triples_with_subject(subject.clone())
-    .map_err(|e| RudofError::RdfError { error: e.to_string() })?;
+    let mut triples =
+        rdf.triples_with_subject(subject.clone())
+            .map_err(|e| RudofError::RdfError {
+                error: e.to_string(),
+            })?;
 
     if triples.next().is_none() {
         // No triples found for this subject → node does not exist

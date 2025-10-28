@@ -57,8 +57,14 @@ mod tests {
 
         let _rudof_guard = service.rudof.lock().await;
 
-        assert!(!service.tool_router.map.is_empty(), "ToolRouter map should have routes");
-        assert!(!service.prompt_router.map.is_empty(), "PromptRouter map should have routes");
+        assert!(
+            !service.tool_router.map.is_empty(),
+            "ToolRouter map should have routes"
+        );
+        assert!(
+            !service.prompt_router.map.is_empty(),
+            "PromptRouter map should have routes"
+        );
     }
 
     #[tokio::test]
@@ -69,17 +75,25 @@ mod tests {
 
         let original_ptr = Arc::as_ptr(&service.rudof);
         let cloned_ptr = Arc::as_ptr(&cloned_service.rudof);
-        assert_eq!(original_ptr, cloned_ptr, "Cloned service should share the same Rudof instance");
+        assert_eq!(
+            original_ptr, cloned_ptr,
+            "Cloned service should share the same Rudof instance"
+        );
     }
 
     #[tokio::test]
     async fn test_default_trait() {
-        let default_service = tokio::task::spawn_blocking(|| RudofMcpService::default()).await.unwrap();
+        let default_service = tokio::task::spawn_blocking(|| RudofMcpService::default())
+            .await
+            .unwrap();
 
         let new_service = create_test_service().await;
 
         let default_ptr = Arc::as_ptr(&default_service.rudof);
         let new_ptr = Arc::as_ptr(&new_service.rudof);
-        assert_ne!(default_ptr, new_ptr, "Each service should have its own Rudof instance");
+        assert_ne!(
+            default_ptr, new_ptr,
+            "Each service should have its own Rudof instance"
+        );
     }
 }

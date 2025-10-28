@@ -1,16 +1,15 @@
 #![cfg(not(tarpaulin_skip))]
 
 use crate::rudof_mcp_service::errors::{self, error_messages};
+use crate::rudof_mcp_service::service::RudofMcpService;
 use rmcp::{
     ErrorData as McpError, RoleServer,
     model::{
-        ListResourcesResult, PaginatedRequestParam, ReadResourceRequestParam,
-        ReadResourceResult, 
+        ListResourcesResult, PaginatedRequestParam, ReadResourceRequestParam, ReadResourceResult,
     },
     service::RequestContext,
 };
 use serde_json::json;
-use crate::rudof_mcp_service::service::RudofMcpService;
 
 // Return the list of available resources
 // (Not implemented)

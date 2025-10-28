@@ -129,8 +129,7 @@ pub async fn execute_sparql_query_impl(
 mod tests {
     use super::*;
     use crate::rudof_mcp_service::tools::data_tools_impl::{
-        load_rdf_data_from_sources_impl,
-        LoadRdfDataFromSourcesRequest,
+        LoadRdfDataFromSourcesRequest, load_rdf_data_from_sources_impl,
     };
     use std::sync::Arc;
     use tokio::sync::Mutex;
@@ -199,7 +198,7 @@ mod tests {
             "SELECT"
         );
     }
-    
+
     #[tokio::test]
     async fn test_execute_sparql_query_impl_invalid_query() {
         let service = create_test_service().await;
