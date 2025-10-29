@@ -79,7 +79,10 @@ To do this, ensure the following prerequisites are met:
 
 ### Prerequisites
 
-- `rudof MCP server` is running locally (for example, using `rudof mcp`)
+- `rudof MCP server` is running locally (for example, using `rudof mcp`).
+
+> ⚠️ **IMPORTANT** `PlantUML` must be installed before starting the MCP server (see warning above in `Exporting rudof as an MCP server
+ section`).
 
 - [Node.js](https://nodejs.org/es/download) is installed on your system (required to use the `mcp-remote` command).
 
