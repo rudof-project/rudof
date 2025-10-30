@@ -19,3 +19,9 @@ ex:ExampleAndShape
 			sh:maxCount 1 ;
 		]
 	) .
+
+ex:ValidInstance
+		ex:property "A single value" .
+
+ex:InvalidInstance 
+		ex:property "Value one", "Value two" .

@@ -1,6 +1,11 @@
 use std::fmt::Display;
 
-use crate::{compiled::compile_shape, compiled_shacl_error::CompiledShaclError, shape::ShapeIR};
+use crate::{
+    compiled::{Deps, compile_shape},
+    compiled_shacl_error::CompiledShaclError,
+    schema_ir::SchemaIR,
+    shape_label_idx::ShapeLabelIdx,
+};
 use iri_s::IriS;
 use shacl_ast::{Schema, property_shape::PropertyShape};
 use srdf::Rdf;
@@ -8,7 +13,7 @@ use srdf::Rdf;
 #[derive(Debug, Clone, Default)]
 pub struct ReifierInfo {
     reification_required: bool,
-    reifier_shape: Vec<ShapeIR>,
+    reifier_shape: Vec<ShapeLabelIdx>,
     predicate: IriS,
 }
 
@@ -17,7 +22,7 @@ impl ReifierInfo {
         self.reification_required
     }
 
-    pub fn reifier_shape(&self) -> &Vec<ShapeIR> {
+    pub fn reifier_shape(&self) -> &Vec<ShapeLabelIdx> {
         &self.reifier_shape
     }
 
@@ -28,28 +33,34 @@ impl ReifierInfo {
     pub fn get_reifier_info_property_shape<R: Rdf>(
         shape: &PropertyShape<R>,
         schema: &Schema<R>,
-    ) -> Result<Option<Self>, Box<CompiledShaclError>> {
+        schema_ir: &mut SchemaIR,
+    ) -> Result<Option<(Self, Deps)>, Box<CompiledShaclError>> {
         if let Some(reifier_info) = shape.reifier_info() {
             let mut compiled_shapes = Vec::new();
+            let mut deps = Vec::new();
             for shape_node in reifier_info.reifier_shape() {
-                let compiled_shape = compile_shape(shape_node.clone(), schema)?;
+                let (compiled_shape, new_deps) = compile_shape(shape_node, schema, schema_ir)?;
                 compiled_shapes.push(compiled_shape);
+                deps.extend(new_deps);
             }
             let path = shape.path();
             let predicate = match path {
                 srdf::SHACLPath::Predicate { pred } => pred.clone(),
                 other => {
                     return Err(Box::new(CompiledShaclError::InvalidReifierShapePath {
-                        shape_id: shape.id().clone(),
+                        shape_id: Box::new(shape.id().clone()),
                         path: other.to_string(),
                     }));
                 }
             };
-            Ok(Some(Self {
-                reification_required: reifier_info.reification_required(),
-                reifier_shape: compiled_shapes,
-                predicate,
-            }))
+            Ok(Some((
+                Self {
+                    reification_required: reifier_info.reification_required(),
+                    reifier_shape: compiled_shapes,
+                    predicate,
+                },
+                deps,
+            )))
         } else {
             Ok(None)
         }

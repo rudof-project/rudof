@@ -3,8 +3,11 @@ use super::component_ir::ComponentIR;
 use super::node_shape::NodeShapeIR;
 use super::property_shape::PropertyShapeIR;
 use super::target::CompiledTarget;
+use crate::compiled::Deps;
 use crate::reifier_info::ReifierInfo;
+use crate::schema_ir::SchemaIR;
 use crate::severity::CompiledSeverity;
+use crate::shape_label_idx::ShapeLabelIdx;
 use iri_s::IriS;
 use shacl_ast::Schema;
 use shacl_ast::shape::Shape;
@@ -69,7 +72,7 @@ impl ShapeIR {
         }
     }
 
-    pub fn property_shapes(&self) -> &Vec<ShapeIR> {
+    pub fn property_shapes(&self) -> &Vec<ShapeLabelIdx> {
         match self {
             ShapeIR::NodeShape(ns) => ns.property_shapes(),
             ShapeIR::PropertyShape(ps) => ps.property_shapes(),
@@ -101,19 +104,22 @@ impl ShapeIR {
     pub fn compile<RDF: Rdf>(
         shape: Shape<RDF>,
         schema: &Schema<RDF>,
-    ) -> Result<Self, Box<CompiledShaclError>> {
-        let shape = match shape {
+        idx: &ShapeLabelIdx,
+        schema_ir: &mut SchemaIR,
+    ) -> Result<(ShapeLabelIdx, Deps), Box<CompiledShaclError>> {
+        let (shape_ir, deps) = match shape {
             Shape::NodeShape(node_shape) => {
-                let node_shape = NodeShapeIR::compile(node_shape, schema)?;
-                ShapeIR::NodeShape(Box::new(node_shape))
+                let (node_shape, deps) = NodeShapeIR::compile(node_shape, schema, schema_ir)?;
+                (ShapeIR::NodeShape(Box::new(node_shape)), deps)
             }
             Shape::PropertyShape(property_shape) => {
-                let property_shape = PropertyShapeIR::compile(*property_shape, schema)?;
-                ShapeIR::PropertyShape(Box::new(property_shape))
+                let (property_shape, deps) =
+                    PropertyShapeIR::compile(*property_shape, schema, schema_ir)?;
+                (ShapeIR::PropertyShape(Box::new(property_shape)), deps)
             }
         };
-
-        Ok(shape)
+        let idx = schema_ir.add_shape(*idx, shape_ir)?;
+        Ok((idx, deps))
     }
 
     pub fn closed(&self) -> bool {
@@ -148,7 +154,7 @@ impl Display for ShapeIR {
                         reifier_info
                             .reifier_shape()
                             .iter()
-                            .map(|s| s.id().to_string())
+                            .map(|s| s.to_string())
                             .collect::<Vec<_>>()
                             .join(", ")
                     )?;
@@ -184,7 +190,7 @@ impl Display for ShapeIR {
                 f,
                 " Property Shapes: [{}]",
                 property_shapes
-                    .map(|ps| ps.id().to_string())
+                    .map(|ps| ps.to_string())
                     .collect::<Vec<_>>()
                     .join(", ")
             )?;

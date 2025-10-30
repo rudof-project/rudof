@@ -18,6 +18,7 @@ repository.workspace = true
 iri_s.workspace = true
 itertools.workspace = true
 oxrdf = { workspace = true, features = ["oxsdatatypes"] }
+petgraph.workspace = true
 prefixmap.workspace = true
 regex.workspace = true
 shacl_ast.workspace = true

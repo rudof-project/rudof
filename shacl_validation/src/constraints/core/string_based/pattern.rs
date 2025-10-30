@@ -10,6 +10,7 @@ use indoc::formatdoc;
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::Pattern;
 use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::schema_ir::SchemaIR;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::SHACLPath;
@@ -25,6 +26,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Pattern {
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let pattern_check = |value_node: &S::Term| {
             if value_node.is_blank_node() {
@@ -56,6 +58,7 @@ impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Pattern {
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let flags = self.flags().clone();
         let pattern = self.pattern().clone();

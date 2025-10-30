@@ -10,6 +10,7 @@ use indoc::formatdoc;
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::MinLength;
 use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::schema_ir::SchemaIR;
 use srdf::Iri as _;
 use srdf::Literal as _;
 use srdf::NeighsRDF;
@@ -27,6 +28,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinLength {
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let min_length = |value_node: &S::Term| {
             if value_node.is_blank_node() {
@@ -70,6 +72,7 @@ impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MinLength {
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let min_length_value = self.min_length();
 

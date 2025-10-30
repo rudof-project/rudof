@@ -14,6 +14,7 @@ use crate::value_nodes::ValueNodes;
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::Node;
 use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::schema_ir::SchemaIR;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::SHACLPath;
@@ -29,16 +30,28 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node = |value_node: &S::Term| {
             let focus_nodes = FocusNodes::from_iter(std::iter::once(value_node.clone()));
-            let inner_results =
-                self.shape()
-                    .validate(store, &engine, Some(&focus_nodes), Some(self.shape()));
+            let shape = shapes_graph.get_shape_from_idx(self.shape()).expect(
+                format!(
+                    "Internal error evaluating `node` shape idx {} not found in shapes graph",
+                    self.shape()
+                )
+                .as_str(),
+            );
+            let inner_results = shape.validate(
+                store,
+                &engine,
+                Some(&focus_nodes),
+                Some(shape),
+                shapes_graph,
+            );
             inner_results.is_err() || !inner_results.unwrap().is_empty()
         };
 
-        let message = format!("Node({}) constraint not satisfied", self.shape().id());
+        let message = format!("Node({}) constraint not satisfied", shape.id());
         validate_with(
             component,
             shape,
@@ -60,6 +73,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Node {
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -69,6 +83,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Node {
             value_nodes,
             source_shape,
             maybe_path,
+            shapes_graph,
         )
     }
 }
@@ -82,6 +97,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for Node {
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -91,6 +107,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for Node {
             value_nodes,
             source_shape,
             maybe_path,
+            shapes_graph,
         )
     }
 }

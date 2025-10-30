@@ -1,19 +1,11 @@
-use rbe::Ref;
-use serde::Serialize;
 use std::fmt::Display;
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy, Debug, Default, Serialize)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy, Debug, Default)]
 pub struct ShapeLabelIdx(usize);
 
-impl Ref for ShapeLabelIdx {}
-
 impl ShapeLabelIdx {
-    pub fn incr(&mut self) {
-        self.0 += 1;
-    }
-
-    pub fn error() -> ShapeLabelIdx {
-        ShapeLabelIdx(0)
+    pub fn new(idx: usize) -> Self {
+        ShapeLabelIdx(idx)
     }
 }
 

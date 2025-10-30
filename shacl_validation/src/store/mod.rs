@@ -1,4 +1,4 @@
-use shacl_ir::compiled::schema::SchemaIR;
+use shacl_ir::compiled::schema_ir::SchemaIR;
 use shacl_ir::compiled_shacl_error::CompiledShaclError;
 use shacl_rdf::rdf_to_shacl::ShaclParser;
 use srdf::RDFFormat;

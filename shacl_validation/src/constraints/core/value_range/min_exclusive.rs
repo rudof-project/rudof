@@ -10,6 +10,7 @@ use indoc::formatdoc;
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::MinExclusive;
 use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::schema_ir::SchemaIR;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::SHACLPath;
@@ -24,6 +25,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinExclusive {
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let min_exclusive = |node: &S::Term| match S::term_as_sliteral(node) {
             Ok(lit) => lit
@@ -54,6 +56,7 @@ impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MinExclusive {
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let min_exclusive_value = self.min_exclusive().clone();
 

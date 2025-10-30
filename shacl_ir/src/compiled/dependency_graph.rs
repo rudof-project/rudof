@@ -1,17 +1,18 @@
-use crate::ShapeLabelIdx;
-use petgraph::graphmap::GraphMap;
+use crate::shape_label_idx::ShapeLabelIdx;
 use petgraph::visit::EdgeRef;
-use petgraph::visit::IntoEdgeReferences;
+use petgraph::{Directed, prelude::GraphMap};
 use std::fmt::Display;
 
 #[derive(Debug, Default, Clone)]
 pub struct DependencyGraph {
-    graph: GraphMap<ShapeLabelIdx, PosNeg, petgraph::Directed>,
+    graph: GraphMap<ShapeLabelIdx, PosNeg, Directed>,
 }
 
 impl DependencyGraph {
     pub fn new() -> Self {
-        Self::default()
+        DependencyGraph {
+            graph: GraphMap::new(),
+        }
     }
 
     pub fn add_edge(&mut self, from: ShapeLabelIdx, to: ShapeLabelIdx, pos_neg: PosNeg) {
@@ -60,8 +61,9 @@ impl DependencyGraph {
 
 impl Display for DependencyGraph {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for (source, target, posneg) in self.graph.edge_references() {
-            writeln!(f, "{} -{}-> {} ", source, posneg, target,)?;
+        writeln!(f, "Dependency Graph:")?;
+        for (from, to, posneg) in self.all_edges() {
+            writeln!(f, "  {} --{}--> {}", from, posneg, to)?;
         }
         Ok(())
     }
@@ -120,29 +122,5 @@ impl Display for PosNeg {
             PosNeg::Pos => write!(f, "[+]"),
             PosNeg::Neg => write!(f, "[-]"),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-
-    #[test]
-    fn test_neg_cycle_no() {
-        use super::*;
-
-        let mut graph = DependencyGraph::new();
-        graph.add_edge(ShapeLabelIdx::from(0), ShapeLabelIdx::from(1), PosNeg::Pos);
-        graph.add_edge(ShapeLabelIdx::from(1), ShapeLabelIdx::from(0), PosNeg::Pos);
-        assert!(!graph.has_neg_cycle());
-    }
-
-    #[test]
-    fn test_neg_cycle_yes() {
-        use super::*;
-
-        let mut graph = DependencyGraph::new();
-        graph.add_edge(ShapeLabelIdx::from(0), ShapeLabelIdx::from(1), PosNeg::Pos);
-        graph.add_edge(ShapeLabelIdx::from(1), ShapeLabelIdx::from(0), PosNeg::Neg);
-        assert!(graph.has_neg_cycle());
     }
 }

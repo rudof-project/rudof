@@ -6,6 +6,7 @@ use crate::value_nodes::ValueNodes;
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::LessThan;
 use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::schema_ir::SchemaIR;
 use srdf::NeighsRDF;
 use srdf::Object;
 use srdf::QueryRDF;
@@ -23,6 +24,7 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for LessThan {
         value_nodes: &ValueNodes<R>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let mut validation_results = Vec::new();
         let component = Object::iri(component.into());
@@ -89,6 +91,7 @@ impl<R: QueryRDF + Debug + 'static> SparqlValidator<R> for LessThan {
         _value_nodes: &ValueNodes<R>,
         _source_shape: Option<&ShapeIR>,
         _maybe_path: Option<SHACLPath>,
+        _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented("LessThan".to_string()))
     }

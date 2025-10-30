@@ -13,6 +13,7 @@ use shacl_ast::node_kind::NodeKind;
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::Nodekind;
 use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::schema_ir::SchemaIR;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::SHACLPath;
@@ -28,6 +29,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Nodekind {
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node_kind = |value_node: &S::Term| {
             match (
@@ -77,6 +79,7 @@ impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Nodekind {
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node_kind = self.node_kind().clone();
 

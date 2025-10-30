@@ -171,6 +171,22 @@ pub enum RudofError {
     #[error("Read error: {error} ")]
     ReadError { error: String },
 
+    #[error("Error reading SHACL from {reader} with format {format}: {error} ")]
+    ReadingSHACLError {
+        reader: String,
+        error: String,
+        format: String,
+    },
+
+    #[error(
+        "Error reading SHACL from graph obtained from {reader_name} with format {format}: {error} "
+    )]
+    ReadingSHACLFromGraphError {
+        error: String,
+        format: String,
+        reader_name: String,
+    },
+
     #[error("AddingEndpoint: {iri} ")]
     AddingEndpointError { iri: IriS, error: String },
 

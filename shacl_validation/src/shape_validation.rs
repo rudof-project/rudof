@@ -7,10 +7,10 @@ use iri_s::IriS;
 use shacl_ast::shacl_vocab::{
     sh_closed_constraint_component, sh_reifier_shape_constraint_component,
 };
-use shacl_ir::compiled::node_shape::NodeShapeIR;
 use shacl_ir::compiled::property_shape::PropertyShapeIR;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::reifier_info::ReifierInfo;
+use shacl_ir::{compiled::node_shape::NodeShapeIR, schema_ir::SchemaIR};
 use srdf::{NeighsRDF, Object, Rdf, SHACLPath, Triple};
 use std::{collections::HashSet, fmt::Debug};
 use tracing::trace;
@@ -23,6 +23,7 @@ pub trait Validate<S: Rdf> {
         runner: &dyn Engine<S>,
         targets: Option<&FocusNodes<S>>,
         source_shape: Option<&ShapeIR>,
+        shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, Box<ValidateError>>;
 }
 
@@ -33,6 +34,7 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
         runner: &dyn Engine<S>,
         targets: Option<&FocusNodes<S>>,
         source_shape: Option<&ShapeIR>,
+        shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, Box<ValidateError>> {
         trace!("Shape.validate with shape {}", self.id());
 
@@ -62,6 +64,7 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
                 &value_nodes,
                 source_shape,
                 self.path(),
+                shapes_graph,
             )
         });
 
@@ -72,7 +75,11 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
         //    that have been computed for the current shape
         let property_shapes_validation_results =
             self.property_shapes().iter().flat_map(|prop_shape| {
-                prop_shape.validate(store, runner, Some(&focus_nodes), Some(self))
+                let shape = shapes_graph.get_shape_from_idx(prop_shape).expect(&format!(
+                    "Internal error: Property shape for idx: {} not found in schema",
+                    prop_shape
+                ));
+                shape.validate(store, runner, Some(&focus_nodes), Some(self), shapes_graph)
             });
 
         // Check if there are extra properties but the shape is closed
@@ -121,6 +128,7 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
                 source_shape,
                 &reifier_info,
                 &focus_nodes,
+                shapes_graph,
             )?
         } else {
             Vec::new()
@@ -145,6 +153,7 @@ fn validate_reifiers<S>(
     source_shape: Option<&ShapeIR>,
     reifier_info: &ReifierInfo,
     focus_nodes: &FocusNodes<S>,
+    shapes_graph: &SchemaIR,
 ) -> Result<Vec<ValidationResult>, Box<ValidateError>>
 where
     S: NeighsRDF + Debug,
@@ -195,11 +204,19 @@ where
                     .iter()
                     .map(|subj| S::subject_as_term(subj))
                     .collect::<HashSet<_>>();
+                let reifier_shape =
+                    shapes_graph
+                        .get_shape_from_idx(reifier_shape)
+                        .expect(&format!(
+                            "Internal error: Reifier shape for idx: {} not found in schema",
+                            reifier_shape
+                        ));
                 let vr_iter = reifier_shape.validate(
                     store,
                     runner,
                     Some(&FocusNodes::from_iter(reifier_nodes)),
                     Some(shape),
+                    shapes_graph,
                 )?;
                 results.extend(vr_iter.into_iter());
             }

@@ -8,6 +8,7 @@ use crate::value_nodes::ValueNodes;
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::Disjoint;
 use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::schema_ir::SchemaIR;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::Rdf;
@@ -25,6 +26,7 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for Disjoint {
         value_nodes: &ValueNodes<R>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let check = |focus: &R::Term, value_node: &R::Term| {
             let subject: R::Subject = <R as Rdf>::term_as_subject(focus).unwrap();
@@ -78,6 +80,7 @@ impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Disjoint {
         _value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         _maybe_path: Option<SHACLPath>,
+        _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented("Disjoint".to_string()))
     }

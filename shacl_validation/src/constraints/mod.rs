@@ -1,6 +1,7 @@
 use constraint_error::ConstraintError;
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::schema_ir::SchemaIR;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::SHACLPath;
@@ -25,6 +26,7 @@ pub trait Validator<S: NeighsRDF + Debug> {
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 
@@ -37,6 +39,7 @@ pub trait NativeValidator<S: NeighsRDF> {
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 
@@ -49,6 +52,7 @@ pub trait SparqlValidator<S: QueryRDF + Debug> {
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 

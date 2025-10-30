@@ -2,7 +2,7 @@ use std::io::Cursor;
 
 use anyhow::*;
 use prefixmap::PrefixMap;
-use shacl_ir::schema::SchemaIR;
+use shacl_ir::schema_ir::SchemaIR;
 use shacl_validation::shacl_processor::EndpointValidation;
 use shacl_validation::shacl_processor::ShaclProcessor as _;
 use shacl_validation::shacl_processor::ShaclValidationMode;

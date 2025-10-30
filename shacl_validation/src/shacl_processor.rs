@@ -1,6 +1,6 @@
 use clap::ValueEnum;
 use prefixmap::PrefixMap;
-use shacl_ir::compiled::schema::SchemaIR;
+use shacl_ir::compiled::schema_ir::SchemaIR;
 use sparql_service::RdfData;
 use srdf::NeighsRDF;
 use srdf::RDFFormat;
@@ -56,7 +56,8 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug> {
         // for each shape in the schema that has at least one target
         for (_, shape) in shapes_graph.iter_with_targets() {
             tracing::debug!("ShaclProcessor.validate with shape {}", shape.id());
-            let results = shape.validate(self.store(), self.runner(), None, Some(shape))?;
+            let results =
+                shape.validate(self.store(), self.runner(), None, Some(shape), shapes_graph)?;
             validation_results.extend(results);
         }
 
@@ -102,8 +103,8 @@ impl ShaclProcessor<RdfData> for RdfDataValidation {
 /// use shacl_validation::store::ShaclDataManager;
 /// use srdf::RDFFormat;
 ///
-/// let graph_validation = GraphValidation::new(
-///     Path::new("../examples/book_conformant.ttl"), // example graph (refer to the examples folder)
+/// let graph_validation = GraphValidation::from_path(
+///     "../examples/book_conformant.ttl", // example graph (refer to the examples folder)
 ///     RDFFormat::Turtle, // serialization format of the graph
 ///     None, // no base is defined
 ///     ShaclValidationMode::Native, // use the Native mode (performance)
@@ -145,20 +146,20 @@ impl GraphValidation {
     /// use shacl_validation::shacl_processor::ShaclProcessor;
     /// use srdf::RDFFormat;
     ///
-    /// let graph_validation = GraphValidation::new(
-    ///     Path::new("../examples/book_conformant.ttl"), // example graph (refer to the examples folder)
+    /// let graph_validation = GraphValidation::from_path(
+    ///     "../examples/book_conformant.ttl", // example graph (refer to the examples folder)
     ///     RDFFormat::Turtle, // serialization format of the graph
     ///     None, // no base is defined
     ///     ShaclValidationMode::Native, // use the Native mode (performance)
     /// );
     /// ```
-    pub fn from_path(
-        data: &Path,
+    pub fn from_path<P: AsRef<Path>>(
+        data: P,
         data_format: RDFFormat,
         base: Option<&str>,
         mode: ShaclValidationMode,
     ) -> Result<Self, Box<ValidateError>> {
-        let store = Graph::from_path(data, data_format, base)?;
+        let store = Graph::from_path(data.as_ref(), data_format, base)?;
         Ok(GraphValidation { store, mode })
     }
 

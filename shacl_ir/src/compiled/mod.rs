@@ -1,24 +1,32 @@
 pub mod closed_info;
 pub mod compiled_shacl_error;
 pub mod component_ir;
+pub mod dependency_graph;
 pub mod node_shape;
 pub mod property_shape;
 pub mod reifier_info;
-pub mod schema;
+pub mod schema_ir;
 pub mod severity;
 pub mod shape;
+pub mod shape_label_idx;
 pub mod target;
 
 use compiled_shacl_error::CompiledShaclError;
 use iri_s::IriS;
 use prefixmap::IriRef;
+use shacl_ast::Schema;
+use shacl_ast::value::Value;
 use shape::ShapeIR;
 use srdf::Object;
 use srdf::RDFNode;
 use srdf::Rdf;
 
-use shacl_ast::Schema;
-use shacl_ast::value::Value;
+use crate::dependency_graph::PosNeg;
+use crate::schema_ir::SchemaIR;
+use crate::shape_label_idx::ShapeLabelIdx;
+
+/// Type alias for dependencies: a vector of (PosNeg, ShapeLabelIdx) pairs
+type Deps = Vec<(PosNeg, ShapeLabelIdx)>;
 
 fn convert_iri_ref(iri_ref: IriRef) -> Result<IriS, Box<CompiledShaclError>> {
     let iri = iri_ref.get_iri().map_err(|err| {
@@ -31,24 +39,27 @@ fn convert_iri_ref(iri_ref: IriRef) -> Result<IriS, Box<CompiledShaclError>> {
 }
 
 fn compile_shape<S: Rdf>(
-    shape: Object,
+    node: &Object,
     schema: &Schema<S>,
-) -> Result<ShapeIR, Box<CompiledShaclError>> {
+    schema_ir: &mut SchemaIR,
+) -> Result<(ShapeLabelIdx, Deps), Box<CompiledShaclError>> {
     let shape = schema
-        .get_shape(&shape)
+        .get_shape(node)
         .ok_or(CompiledShaclError::ShapeNotFound {
-            shape: Box::new(shape),
+            shape: Box::new(node.clone()),
         })?;
-    ShapeIR::compile(shape.to_owned(), schema)
+    let idx = schema_ir.add_shape_idx(node.clone())?;
+    ShapeIR::compile(shape.to_owned(), schema, &idx, schema_ir)
 }
 
 fn compile_shapes<S: Rdf>(
     shapes: Vec<Object>,
     schema: &Schema<S>,
-) -> Result<Vec<ShapeIR>, Box<CompiledShaclError>> {
+    schema_ir: &mut SchemaIR,
+) -> Result<Vec<(ShapeLabelIdx, Deps)>, Box<CompiledShaclError>> {
     let compiled_shapes = shapes
         .into_iter()
-        .map(|shape| compile_shape::<S>(shape, schema))
+        .map(|shape| compile_shape::<S>(&shape, schema, schema_ir))
         .collect::<Result<Vec<_>, _>>()?;
     Ok(compiled_shapes)
 }

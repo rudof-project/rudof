@@ -10,6 +10,7 @@ use indoc::formatdoc;
 use shacl_ir::compiled::component_ir::Class;
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::schema_ir::SchemaIR;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::SHACLPath;
@@ -27,6 +28,7 @@ impl<S: NeighsRDF + 'static> NativeValidator<S> for Class {
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let class = |value_node: &S::Term| {
             if value_node.is_literal() {
@@ -74,6 +76,7 @@ impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Class {
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let class_value = self.class_rule().clone();
 

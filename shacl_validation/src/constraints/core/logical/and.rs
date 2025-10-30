@@ -16,6 +16,7 @@ use crate::value_nodes::ValueNodes;
 use shacl_ir::compiled::component_ir::And;
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::schema_ir::SchemaIR;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::SHACLPath;
@@ -31,13 +32,23 @@ impl<S: NeighsRDF + Debug> Validator<S> for And {
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let and = |value_node: &S::Term| {
             self.shapes()
                 .iter()
                 .all(|shape| {
                     let focus_nodes = FocusNodes::from_iter(std::iter::once(value_node.clone()));
-                    match shape.validate(store, &engine, Some(&focus_nodes), Some(shape)) {
+                    let shape = shapes_graph.get_shape_from_idx(shape).expect(format!(
+                        "Internal error: Shape {shape} in AND constraint not found in shapes graph"
+                    ).as_str());
+                    match shape.validate(
+                        store,
+                        &engine,
+                        Some(&focus_nodes),
+                        Some(shape),
+                        shapes_graph,
+                    ) {
                         Ok(results) => results.is_empty(),
                         Err(_) => false,
                     }
@@ -45,7 +56,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for And {
                 .not()
         };
 
-        let message = "AND constraing not satisfied".to_string();
+        let message = "AND constraint not satisfied".to_string();
         validate_with(
             component,
             shape,
@@ -67,6 +78,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for And {
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -76,6 +88,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for And {
             value_nodes,
             source_shape,
             maybe_path,
+            shapes_graph,
         )
     }
 }
@@ -89,6 +102,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for And {
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -98,6 +112,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for And {
             value_nodes,
             source_shape,
             maybe_path,
+            shapes_graph,
         )
     }
 }

@@ -1,6 +1,7 @@
 use iri_s::IriS;
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::schema_ir::SchemaIR;
 use srdf::NeighsRDF;
 use srdf::RDFNode;
 use srdf::SHACLPath;
@@ -29,6 +30,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, Box<ValidateError>> {
         tracing::debug!("NativeEngine, evaluate with shape {}", shape.id());
         let shacl_component = ShaclComponent::new(component);
@@ -41,6 +43,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
                 value_nodes,
                 source_shape,
                 maybe_path,
+                shapes_graph,
             )
             .map_err(|e| {
                 Box::new(ValidateError::ConstraintError {

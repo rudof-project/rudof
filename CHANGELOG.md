@@ -7,6 +7,17 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## [Unreleased]
+### Added
+### Fixed
+### Changed
+- GraphValidation::from_path now takes as argument an `AsRef<Path>`
+
+
+## v0.1.137
+- Improved information about errors when reading SHACL shapes graphs
+- Added checking on recursive shapes
+
 ## v0.1.136
 ### Added
 - Documentation to MCP server

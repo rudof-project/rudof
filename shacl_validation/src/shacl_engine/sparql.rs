@@ -1,5 +1,6 @@
 use crate::constraints::ShaclComponent;
 use crate::constraints::SparqlDeref;
+use crate::constraints::core::shape_based;
 use crate::focus_nodes::FocusNodes;
 use crate::helpers::sparql::select;
 use crate::shacl_engine::engine::Engine;
@@ -10,6 +11,7 @@ use indoc::formatdoc;
 use iri_s::IriS;
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::schema_ir::SchemaIR;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::RDFNode;
@@ -28,6 +30,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        shape_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, Box<ValidateError>> {
         let shacl_component = ShaclComponent::new(component);
         let validator = shacl_component.deref();
@@ -39,6 +42,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
                 value_nodes,
                 source_shape,
                 maybe_path,
+                shape_graph,
             )
             .map_err(|e| {
                 Box::new(ValidateError::ConstraintError {

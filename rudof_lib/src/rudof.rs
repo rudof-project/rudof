@@ -5,7 +5,7 @@ pub use mie::Mie;
 pub use prefixmap::PrefixMap;
 pub use shacl_ast::ShaclFormat;
 pub use shacl_ast::ast::Schema as ShaclSchema;
-pub use shacl_ir::compiled::schema::SchemaIR as ShaclSchemaIR;
+pub use shacl_ir::compiled::schema_ir::SchemaIR as ShaclSchemaIR;
 pub use shacl_validation::shacl_processor::ShaclValidationMode;
 pub use shacl_validation::validation_report::report::ValidationReport;
 pub use shapes_comparator::{
@@ -642,6 +642,7 @@ impl Rudof {
     pub fn read_shacl<R: io::Read>(
         &mut self,
         reader: R,
+        reader_name: &str,
         format: &ShaclFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
@@ -659,13 +660,18 @@ impl Rudof {
 
         let rdf_graph =
             SRDFGraph::from_reader(reader, &format, base, reader_mode).map_err(|e| {
-                RudofError::ReadError {
-                    error: format!("{e}"),
+                RudofError::ReadingSHACLError {
+                    reader: reader_name.to_string(),
+                    error: e.to_string(),
+                    format: format.to_string(),
                 }
             })?;
-        let rdf_data = RdfData::from_graph(rdf_graph).map_err(|e| RudofError::ReadError {
-            error: format!("Obtaining SHACL from rdf_data: {e}"),
-        })?;
+        let rdf_data =
+            RdfData::from_graph(rdf_graph).map_err(|e| RudofError::ReadingSHACLFromGraphError {
+                error: e.to_string(),
+                format: format.to_string(),
+                reader_name: reader_name.to_string(),
+            })?;
         let schema = shacl_schema_from_data(rdf_data)?;
         self.shacl_schema = Some(schema);
         Ok(())
@@ -1083,7 +1089,7 @@ impl Rudof {
                         schema: Box::new(ast_schema.clone()),
                     }
                 })?;
-                Ok::<(shacl_ir::schema::SchemaIR, shacl_ast::Schema<RdfData>), RudofError>((
+                Ok::<(shacl_ir::schema_ir::SchemaIR, shacl_ast::Schema<RdfData>), RudofError>((
                     compiled_schema,
                     ast_schema.clone(),
                 ))
@@ -1507,6 +1513,7 @@ mod tests {
         rudof
             .read_shacl(
                 shacl.as_bytes(),
+                &"test",
                 &ShaclFormat::Turtle,
                 None,
                 &srdf::ReaderMode::Lax,
@@ -1553,6 +1560,7 @@ mod tests {
         rudof
             .read_shacl(
                 shacl.as_bytes(),
+                &"test",
                 &ShaclFormat::Turtle,
                 None,
                 &srdf::ReaderMode::Lax,

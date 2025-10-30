@@ -1,12 +1,14 @@
 use iri_s::IriS;
 use prefixmap::PrefixMap;
+use shacl_ast::Schema;
 use shacl_rdf::ShaclParser;
 use srdf::{RDFFormat, RDFNode, Rdf, ReaderMode, SRDFGraph};
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::io;
 
-use shacl_ast::Schema;
+use crate::dependency_graph::DependencyGraph;
+use crate::shape_label_idx::ShapeLabelIdx;
 
 use super::compiled_shacl_error::CompiledShaclError;
 use super::shape::ShapeIR;
@@ -15,21 +17,23 @@ use super::shape::ShapeIR;
 pub struct SchemaIR {
     // imports: Vec<IriS>,
     // entailments: Vec<IriS>,
-    shapes: HashMap<RDFNode, ShapeIR>,
+    shape_labels_map: HashMap<RDFNode, ShapeLabelIdx>,
+    shapes: HashMap<ShapeLabelIdx, ShapeIR>,
     prefixmap: PrefixMap,
     base: Option<IriS>,
+    dependency_graph: DependencyGraph,
+    shape_label_counter: usize,
 }
 
 impl SchemaIR {
-    pub fn new(
-        shapes: HashMap<RDFNode, ShapeIR>,
-        prefixmap: PrefixMap,
-        base: Option<IriS>,
-    ) -> SchemaIR {
+    pub fn new(prefixmap: PrefixMap, base: Option<IriS>) -> SchemaIR {
         SchemaIR {
-            shapes,
+            shape_labels_map: HashMap::new(),
+            shapes: HashMap::new(),
             prefixmap,
             base,
+            dependency_graph: DependencyGraph::new(),
+            shape_label_counter: 0,
         }
     }
 
@@ -58,6 +62,21 @@ impl SchemaIR {
         Self::from_reader(std::io::Cursor::new(&data), format, base, reader_mode)
     }
 
+    pub fn add_shape_idx(
+        &mut self,
+        sref: RDFNode,
+    ) -> Result<ShapeLabelIdx, Box<CompiledShaclError>> {
+        Ok(self
+            .shape_labels_map
+            .entry(sref)
+            .or_insert_with(|| {
+                let label_idx = ShapeLabelIdx::new(self.shape_label_counter);
+                self.shape_label_counter += 1;
+                label_idx
+            })
+            .to_owned())
+    }
+
     pub fn prefix_map(&self) -> PrefixMap {
         self.prefixmap.clone()
     }
@@ -67,34 +86,54 @@ impl SchemaIR {
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (&RDFNode, &ShapeIR)> {
-        self.shapes.iter()
+        self.shape_labels_map.iter().map(move |(node, label_idx)| {
+            let shape = self.shapes.get(label_idx).expect(
+                format!(
+                    "Internal error: Shape label index {label_idx} for node {node} not found in shapes map: {:?}",
+                    self.shapes
+                )
+                .as_str(),
+            );
+            (node, shape)
+        })
     }
 
     /// Iterate over all shapes that have at least one target.
     pub fn iter_with_targets(&self) -> impl Iterator<Item = (&RDFNode, &ShapeIR)> {
-        self.shapes
-            .iter()
-            .filter(|(_, shape)| !shape.targets().is_empty())
+        self.iter().filter(|(_, shape)| !shape.targets().is_empty())
     }
 
     pub fn get_shape(&self, sref: &RDFNode) -> Option<&ShapeIR> {
-        self.shapes.get(sref)
+        self.shape_labels_map.get(sref).map(|label_idx| {
+            self.shapes
+                .get(label_idx)
+                .expect(format!("Internal error: SHACL/SchemaIR. Shape label index {label_idx} corresponding to {sref} not found in shapes map {:?}", self.shapes).as_str())
+        })
+    }
+
+    pub fn add_shape(
+        &mut self,
+        idx: ShapeLabelIdx,
+        shape: ShapeIR,
+    ) -> Result<ShapeLabelIdx, Box<CompiledShaclError>> {
+        self.shapes.insert(idx.clone(), shape);
+        Ok(idx)
     }
 
     pub fn compile<RDF: Rdf>(schema: &Schema<RDF>) -> Result<SchemaIR, Box<CompiledShaclError>> {
-        let mut shapes = HashMap::default();
-
+        let mut schema_ir = SchemaIR::new(schema.prefix_map(), schema.base());
         for (rdf_node, shape) in schema.iter() {
-            let term = rdf_node.clone();
-            let shape = ShapeIR::compile(shape.to_owned(), schema)?;
-            shapes.insert(term, shape);
+            let idx = schema_ir.add_shape_idx(rdf_node.clone())?;
+            let (_idx, deps) = ShapeIR::compile(shape.to_owned(), schema, &idx, &mut schema_ir)?;
+            for (pos_neg, label_idx) in deps {
+                schema_ir.dependency_graph.add_edge(idx, label_idx, pos_neg);
+            }
         }
+        Ok(schema_ir)
+    }
 
-        let prefixmap = schema.prefix_map();
-
-        let base = schema.base();
-
-        Ok(SchemaIR::new(shapes, prefixmap, base))
+    pub fn get_shape_from_idx(&self, shape_idx: &ShapeLabelIdx) -> Option<&ShapeIR> {
+        self.shapes.get(shape_idx)
     }
 }
 
@@ -120,6 +159,7 @@ impl Display for SchemaIR {
         for (node, shape) in self.shapes.iter() {
             writeln!(f, "{node} -> {shape}")?;
         }
+        writeln!(f, "Dependency graph: {}", self.dependency_graph)?;
         Ok(())
     }
 }

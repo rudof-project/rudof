@@ -1,6 +1,7 @@
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::constraints::constraint_error::ConstraintError;
+use crate::constraints::core::shape_based;
 use crate::helpers::constraint::validate_ask_with;
 use crate::helpers::constraint::validate_with;
 use crate::iteration_strategy::ValueNodeIteration;
@@ -10,6 +11,7 @@ use indoc::formatdoc;
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::MaxLength;
 use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::schema_ir::SchemaIR;
 use srdf::Iri as _;
 use srdf::Literal as _;
 use srdf::NeighsRDF;
@@ -27,6 +29,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxLength {
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_length = |value_node: &S::Term| {
             if value_node.is_blank_node() {
@@ -70,6 +73,7 @@ impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MaxLength {
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_length_value = self.max_length();
 

@@ -1,6 +1,8 @@
+use shacl_ast::shape;
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::Xone;
 use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::schema_ir::SchemaIR;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::SHACLPath;
@@ -30,13 +32,27 @@ impl<S: NeighsRDF + Debug> Validator<S> for Xone {
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let xone = |value_node: &S::Term| {
             self.shapes()
                 .iter()
-                .filter(|shape| {
+                .filter(|shape_idx| {
                     let focus_nodes = FocusNodes::from_iter(std::iter::once(value_node.clone()));
-                    match shape.validate(store, &engine, Some(&focus_nodes), Some(shape)) {
+                    let shape = shapes_graph.get_shape_from_idx(shape_idx).expect(
+                        format!(
+                            "Internal error: Member of Xone shape {} not found in shapes graph",
+                            shape
+                        )
+                        .as_str(),
+                    );
+                    match shape.validate(
+                        store,
+                        &engine,
+                        Some(&focus_nodes),
+                        Some(shape),
+                        shapes_graph,
+                    ) {
                         Ok(results) => results.is_empty(),
                         Err(_) => false,
                     }
@@ -67,6 +83,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Xone {
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -76,6 +93,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Xone {
             value_nodes,
             source_shape,
             maybe_path,
+            shapes_graph,
         )
     }
 }
@@ -89,6 +107,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for Xone {
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -98,6 +117,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for Xone {
             value_nodes,
             source_shape,
             maybe_path,
+            shapes_graph,
         )
     }
 }

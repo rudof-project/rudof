@@ -3,6 +3,7 @@ use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::property_shape::PropertyShapeIR;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::compiled::target::CompiledTarget;
+use shacl_ir::schema_ir::SchemaIR;
 use srdf::NeighsRDF;
 use srdf::RDFNode;
 use srdf::SHACLPath;
@@ -21,6 +22,7 @@ pub trait Engine<S: NeighsRDF> {
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, Box<ValidateError>>;
 
     fn focus_nodes(
