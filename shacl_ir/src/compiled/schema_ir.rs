@@ -1,17 +1,18 @@
+use super::compiled_shacl_error::CompiledShaclError;
+use super::shape::ShapeIR;
+use crate::dependency_graph::DependencyGraph;
+use crate::shape_label_idx::ShapeLabelIdx;
+use either::Either::{self, Left, Right};
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 use shacl_ast::Schema;
 use shacl_rdf::ShaclParser;
 use srdf::{RDFFormat, RDFNode, Rdf, ReaderMode, SRDFGraph};
 use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 use std::fmt::Display;
 use std::io;
-
-use crate::dependency_graph::DependencyGraph;
-use crate::shape_label_idx::ShapeLabelIdx;
-
-use super::compiled_shacl_error::CompiledShaclError;
-use super::shape::ShapeIR;
+use tracing::trace;
 
 #[derive(Clone, Debug)]
 pub struct SchemaIR {
@@ -62,19 +63,21 @@ impl SchemaIR {
         Self::from_reader(std::io::Cursor::new(&data), format, base, reader_mode)
     }
 
+    /// Adds a shape index for the given `RDFNode` if it does not already exist.
+    /// Returns  `Right(ShapeLabelIdx)` if a new index was created or `Left(ShapeLabelIdx)` with the existing one.
     pub fn add_shape_idx(
         &mut self,
         sref: RDFNode,
-    ) -> Result<ShapeLabelIdx, Box<CompiledShaclError>> {
-        Ok(self
-            .shape_labels_map
-            .entry(sref)
-            .or_insert_with(|| {
+    ) -> Result<Either<ShapeLabelIdx, ShapeLabelIdx>, Box<CompiledShaclError>> {
+        match self.shape_labels_map.entry(sref) {
+            Entry::Occupied(entry) => Ok(Either::Left(entry.get().clone())),
+            Entry::Vacant(entry) => {
                 let label_idx = ShapeLabelIdx::new(self.shape_label_counter);
                 self.shape_label_counter += 1;
-                label_idx
-            })
-            .to_owned())
+                entry.insert(label_idx.clone());
+                Ok(Either::Right(label_idx))
+            }
+        }
     }
 
     pub fn prefix_map(&self) -> PrefixMap {
@@ -121,12 +124,21 @@ impl SchemaIR {
     }
 
     pub fn compile<RDF: Rdf>(schema: &Schema<RDF>) -> Result<SchemaIR, Box<CompiledShaclError>> {
+        trace!("Compiling SHACL schema");
         let mut schema_ir = SchemaIR::new(schema.prefix_map(), schema.base());
         for (rdf_node, shape) in schema.iter() {
-            let idx = schema_ir.add_shape_idx(rdf_node.clone())?;
-            let (_idx, deps) = ShapeIR::compile(shape.to_owned(), schema, &idx, &mut schema_ir)?;
-            for (pos_neg, label_idx) in deps {
-                schema_ir.dependency_graph.add_edge(idx, label_idx, pos_neg);
+            match schema_ir.add_shape_idx(rdf_node.clone())? {
+                Right(idx) => {
+                    trace!("Compiling shape {} with new index {}", rdf_node, idx);
+                    let (_idx, deps) =
+                        ShapeIR::compile(shape.to_owned(), schema, &idx, &mut schema_ir)?;
+                    for (pos_neg, label_idx) in deps {
+                        schema_ir.dependency_graph.add_edge(idx, label_idx, pos_neg);
+                    }
+                }
+                Left(idx) => {
+                    trace!("Shape {} already compiled with {}, skipping", rdf_node, idx);
+                }
             }
         }
         Ok(schema_ir)

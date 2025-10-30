@@ -1,0 +1,21 @@
+prefix : <http://example.org/> 
+prefix sh: <http://www.w3.org/ns/shacl#> 
+prefix xsd: <http://www.w3.org/2001/XMLSchema#> 
+
+:ko1 a :Node ;
+  :age 23 .
+
+:ok a :Node ;
+  :name "Alice" .
+
+:NotShape
+  a sh:NodeShape ;
+  sh:targetClass :Node ;
+  sh:not :notAgeShape .
+  
+:notAgeShape a sh:NodeShape ;
+   sh:property :ageShape .
+   
+:ageShape sh:path :age ;
+     sh:minCount 1 .
+

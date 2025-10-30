@@ -3,8 +3,6 @@ use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::focus_nodes::FocusNodes;
-use crate::helpers::constraint::validate_with;
-use crate::iteration_strategy::ValueNodeIteration;
 use crate::shacl_engine::Engine;
 use crate::shacl_engine::native::NativeEngine;
 use crate::shacl_engine::sparql::SparqlEngine;
@@ -16,9 +14,14 @@ use shacl_ir::compiled::component_ir::Not;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
 use srdf::NeighsRDF;
+use srdf::Object;
 use srdf::QueryRDF;
 use srdf::SHACLPath;
 use std::fmt::Debug;
+use tracing::debug;
+use tracing::info;
+use tracing::trace;
+use tracing_subscriber::field::debug;
 
 impl<S: NeighsRDF + Debug> Validator<S> for Not {
     fn validate(
@@ -26,41 +29,85 @@ impl<S: NeighsRDF + Debug> Validator<S> for Not {
         component: &ComponentIR,
         shape: &ShapeIR,
         store: &S,
-        engine: impl Engine<S>,
+        engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
         shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        let not = |value_node: &S::Term| {
-            let focus_nodes = FocusNodes::from_iter(std::iter::once(value_node.clone()));
-            let shape = shapes_graph.get_shape_from_idx(self.shape()).expect(
-                format!(
-                    "Internal error: Shape {} in NOT constraint not found in shapes graph",
-                    self.shape()
-                )
-                .as_str(),
-            );
-            let inner_results = shape.validate(
-                store,
-                &engine,
-                Some(&focus_nodes),
-                Some(shape),
-                shapes_graph,
-            );
-            inner_results.is_err() || inner_results.unwrap().is_empty()
-        };
+        let mut validation_results = Vec::new();
 
-        let message = "NOT constraint not satisfied".to_string();
-        validate_with(
-            component,
-            shape,
-            value_nodes,
-            ValueNodeIteration,
-            not,
-            message.as_str(),
-            maybe_path,
-        )
+        for (focus_node, nodes) in value_nodes.iter() {
+            debug!(
+                "Validating NOT constraint for shape {} and node: {focus_node}",
+                shape.id()
+            );
+            let all_nodes = nodes.iter().cloned().collect::<Vec<_>>();
+            info!(
+                "Before loop, focus node: {focus_node}, all nodes: {}",
+                all_nodes
+                    .iter()
+                    .map(|n| n.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            );
+            for node in nodes.iter() {
+                info!("Validating NOT constraint for node: {node}");
+                let focus_nodes = FocusNodes::from_iter(std::iter::once(node.clone()));
+                let not_shape = shapes_graph.get_shape_from_idx(self.shape()).expect(
+                    format!(
+                        "Internal error: Shape {} in NOT constraint not found in shapes graph",
+                        self.shape()
+                    )
+                    .as_str(),
+                );
+                debug!(
+                    "Validating NOT constraint with internal shape {}",
+                    not_shape.id()
+                );
+                let inner_results = not_shape.validate(
+                    store,
+                    engine,
+                    Some(&focus_nodes),
+                    Some(shape),
+                    shapes_graph,
+                );
+                let is_valid_inside = match inner_results {
+                    Err(results) => {
+                        trace!("Internal shape of NOT constraint failed {:?}", results);
+                        // TODO: Should we fail instead of considering it valid?
+                        false
+                    }
+                    Ok(results) if results.is_empty() => true,
+                    Ok(results) => {
+                        trace!(
+                            "Internal shape of NOT constraint failed with violations: {:?}",
+                            results
+                        );
+                        false
+                    }
+                };
+                info!(
+                    "NOT constraint validation result for node {node}, is_valid_inside?={is_valid_inside}"
+                );
+                if is_valid_inside {
+                    let message = format!(
+                        "Shape: {}. NOT constraint not satisfied for focus node {} and internal shape {}",
+                        shape.id(),
+                        focus_node,
+                        not_shape.id()
+                    );
+                    let component = Object::iri(component.into());
+                    let node_object = S::term_as_object(node)?;
+                    validation_results.push(
+                        ValidationResult::new(node_object, component.clone(), shape.severity())
+                            .with_message(message.as_str())
+                            .with_path(maybe_path.clone()),
+                    );
+                }
+            }
+        }
+        Ok(validation_results)
     }
 }
 
@@ -70,6 +117,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Not {
         component: &ComponentIR,
         shape: &ShapeIR,
         store: &S,
+        engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
@@ -79,7 +127,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Not {
             component,
             shape,
             store,
-            NativeEngine,
+            engine,
             value_nodes,
             source_shape,
             maybe_path,
@@ -103,7 +151,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for Not {
             component,
             shape,
             store,
-            SparqlEngine,
+            &mut SparqlEngine::new(),
             value_nodes,
             source_shape,
             maybe_path,

@@ -9,6 +9,7 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ## [Unreleased]
 ### Added
+- More documentation in MCP server
 ### Fixed
 ### Changed
 - GraphValidation::from_path now takes as argument an `AsRef<Path>`

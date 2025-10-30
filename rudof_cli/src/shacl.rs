@@ -69,6 +69,7 @@ pub fn run_shacl(
             reader_mode,
             config,
         )?;
+        trace!("Compiling SHACL schema from shapes graph");
         rudof.compile_shacl(&ShapesGraphSource::current_schema())
     } else {
         rudof.compile_shacl(&ShapesGraphSource::current_data())

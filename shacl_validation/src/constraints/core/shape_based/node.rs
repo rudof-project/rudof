@@ -3,9 +3,8 @@ use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::focus_nodes::FocusNodes;
-use crate::helpers::constraint::validate_with;
-use crate::iteration_strategy::ValueNodeIteration;
 use crate::shacl_engine::Engine;
+use crate::shacl_engine::engine;
 use crate::shacl_engine::native::NativeEngine;
 use crate::shacl_engine::sparql::SparqlEngine;
 use crate::shape_validation::Validate;
@@ -19,6 +18,7 @@ use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::SHACLPath;
 use std::fmt::Debug;
+use tracing::trace;
 
 impl<S: NeighsRDF + Debug> Validator<S> for Node {
     fn validate(
@@ -26,41 +26,61 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
         component: &ComponentIR,
         shape: &ShapeIR,
         store: &S,
-        engine: impl Engine<S>,
+        engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
         shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        let node = |value_node: &S::Term| {
-            let focus_nodes = FocusNodes::from_iter(std::iter::once(value_node.clone()));
-            let shape = shapes_graph.get_shape_from_idx(self.shape()).expect(
-                format!(
-                    "Internal error evaluating `node` shape idx {} not found in shapes graph",
-                    self.shape()
-                )
-                .as_str(),
+        let mut validation_results = Vec::new();
+        let shape_idx = self.shape();
+        let node_shape = shapes_graph.get_shape_from_idx(shape_idx).expect(
+            format!(
+                "Internal error: Shape {} in Node constraint not found in shapes graph",
+                self.shape()
+            )
+            .as_str(),
+        );
+        for (focus_node, nodes) in value_nodes.iter() {
+            trace!(
+                "Validating Node constraint for shape {} and node: {focus_node}",
+                shape.id()
             );
-            let inner_results = shape.validate(
-                store,
-                &engine,
-                Some(&focus_nodes),
-                Some(shape),
-                shapes_graph,
-            );
-            inner_results.is_err() || !inner_results.unwrap().is_empty()
-        };
-
-        let message = format!("Node({}) constraint not satisfied", shape.id());
-        validate_with(
-            component,
-            shape,
-            value_nodes,
-            ValueNodeIteration,
-            node,
-            &message,
-            maybe_path,
-        )
+            for node in nodes.iter() {
+                let focus_nodes = FocusNodes::from_iter(std::iter::once(node.clone()));
+                let inner_results = node_shape.validate(
+                    store,
+                    engine,
+                    Some(&focus_nodes),
+                    Some(shape),
+                    shapes_graph,
+                );
+                let is_valid = match inner_results {
+                    Err(_) => false,
+                    Ok(results) => results.is_empty(),
+                };
+                let node_object = S::term_as_object(node)?;
+                if !is_valid {
+                    let message = format!(
+                        "Shape {}: Node({node_shape}) constraint not satisfied for {node}",
+                        shape.id(),
+                    );
+                    let component = srdf::Object::iri(component.into());
+                    let result = ValidationResult::new(
+                        shape.id().clone(),
+                        component.clone(),
+                        shape.severity(),
+                    )
+                    .with_message(message.as_str())
+                    .with_path(maybe_path.clone());
+                    validation_results.push(result.clone());
+                    engine.record_validation(node_object, *shape_idx, vec![result]);
+                } else {
+                    engine.record_validation(node_object, *shape_idx, Vec::new());
+                }
+            }
+        }
+        Ok(validation_results)
     }
 }
 
@@ -70,6 +90,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Node {
         component: &ComponentIR,
         shape: &ShapeIR,
         store: &S,
+        engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
@@ -79,7 +100,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Node {
             component,
             shape,
             store,
-            NativeEngine,
+            engine,
             value_nodes,
             source_shape,
             maybe_path,
@@ -103,7 +124,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for Node {
             component,
             shape,
             store,
-            SparqlEngine,
+            &mut SparqlEngine::new(),
             value_nodes,
             source_shape,
             maybe_path,

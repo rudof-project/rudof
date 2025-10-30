@@ -34,6 +34,7 @@ use rudof_lib::{InputSpec, RudofConfig, data_format::DataFormat};
 use std::io;
 use std::path::PathBuf;
 use std::result::Result::Ok;
+use tracing::level_filters::LevelFilter;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::{filter::EnvFilter, fmt};
 
@@ -48,12 +49,18 @@ fn main() -> Result<()> {
         .with_line_number(true)
         .with_writer(io::stderr)
         .without_time();
+
     // Attempts to get the value of RUST_LOG which can be info, debug, trace, If unset, it uses "info"
-    let filter_layer = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("info"))
-        .unwrap();
+    /*let filter_layer = EnvFilter::try_from_default_env()
+    .or_else(|_| EnvFilter::try_new("info"))
+    .unwrap();*/
+    let env_filter = EnvFilter::builder()
+        .with_default_directive(LevelFilter::INFO.into())
+        .parse_lossy("rudof=trace,shacl_validation=trace,hyper=off,reqwest=off");
+
     tracing_subscriber::registry()
-        .with(filter_layer)
+        .with(env_filter)
+        // .with(EnvFilter::new(""))
         .with(fmt_layer)
         .init();
 

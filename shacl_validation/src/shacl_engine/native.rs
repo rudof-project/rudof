@@ -1,15 +1,3 @@
-use iri_s::IriS;
-use shacl_ir::compiled::component_ir::ComponentIR;
-use shacl_ir::compiled::shape::ShapeIR;
-use shacl_ir::schema_ir::SchemaIR;
-use srdf::NeighsRDF;
-use srdf::RDFNode;
-use srdf::SHACLPath;
-use srdf::Term;
-use srdf::Triple;
-use srdf::rdf_type;
-use srdf::rdfs_subclass_of;
-
 use crate::constraints::NativeDeref;
 use crate::constraints::ShaclComponent;
 use crate::focus_nodes::FocusNodes;
@@ -17,13 +5,36 @@ use crate::shacl_engine::engine::Engine;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
+use iri_s::IriS;
+use shacl_ir::compiled::component_ir::ComponentIR;
+use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::schema_ir::SchemaIR;
+use shacl_ir::shape_label_idx::ShapeLabelIdx;
+use srdf::NeighsRDF;
+use srdf::RDFNode;
+use srdf::SHACLPath;
+use srdf::Term;
+use srdf::Triple;
+use srdf::rdf_type;
+use srdf::rdfs_subclass_of;
+use std::collections::HashMap;
 use std::fmt::Debug;
 
-pub struct NativeEngine;
+pub struct NativeEngine {
+    cached_validations: HashMap<RDFNode, HashMap<ShapeLabelIdx, Vec<ValidationResult>>>,
+}
+
+impl NativeEngine {
+    pub fn new() -> Self {
+        Self {
+            cached_validations: Default::default(),
+        }
+    }
+}
 
 impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
     fn evaluate(
-        &self,
+        &mut self,
         store: &S,
         shape: &ShapeIR,
         component: &ComponentIR,
@@ -32,7 +43,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
         maybe_path: Option<SHACLPath>,
         shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, Box<ValidateError>> {
-        tracing::debug!("NativeEngine, evaluate with shape {}", shape.id());
+        tracing::debug!("evaluate [NativeEngine] with shape {}", shape.id());
         let shacl_component = ShaclComponent::new(component);
         let validator = shacl_component.deref();
         let result = validator
@@ -40,6 +51,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
                 component,
                 shape,
                 store,
+                self,
                 value_nodes,
                 source_shape,
                 maybe_path,
@@ -144,6 +156,18 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
         Ok(FocusNodes::from_iter(
             targets.into_iter().chain(subclass_targets),
         ))
+    }
+
+    fn record_validation(
+        &mut self,
+        node: RDFNode,
+        shape_idx: ShapeLabelIdx,
+        results: Vec<ValidationResult>,
+    ) {
+        self.cached_validations
+            .entry(node)
+            .or_insert_with(HashMap::new)
+            .insert(shape_idx, results);
     }
 
     /*     fn predicate(

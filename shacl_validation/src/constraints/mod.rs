@@ -22,7 +22,7 @@ pub trait Validator<S: NeighsRDF + Debug> {
         component: &ComponentIR,
         shape: &ShapeIR,
         store: &S,
-        engine: impl Engine<S>,
+        engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
@@ -36,6 +36,7 @@ pub trait NativeValidator<S: NeighsRDF> {
         component: &ComponentIR,
         shape: &ShapeIR,
         store: &S,
+        engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
@@ -124,38 +125,38 @@ impl<S: NeighsRDF + Debug + 'static> NativeDeref for ShaclComponent<'_, S> {
             ComponentIR::QualifiedValueShape(inner) => inner,
         }
     }
-
-    /*generate_deref_fn!(
-        ComponentIR,
-        Class,
-        Datatype,
-        NodeKind,
-        MinCount,
-        MaxCount,
-        MinExclusive,
-        MaxExclusive,
-        MinInclusive,
-        MaxInclusive,
-        MinLength,
-        MaxLength,
-        Pattern,
-        UniqueLang,
-        LanguageIn,
-        Equals,
-        Disjoint,
-        LessThan,
-        LessThanOrEquals,
-        Or,
-        And,
-        Not,
-        Xone,
-        Closed,
-        Node,
-        HasValue,
-        In,
-        QualifiedValueShape
-    );*/
 }
+
+/*generate_deref_fn!(
+    ComponentIR,
+    Class,
+    Datatype,
+    NodeKind,
+    MinCount,
+    MaxCount,
+    MinExclusive,
+    MaxExclusive,
+    MinInclusive,
+    MaxInclusive,
+    MinLength,
+    MaxLength,
+    Pattern,
+    UniqueLang,
+    LanguageIn,
+    Equals,
+    Disjoint,
+    LessThan,
+    LessThanOrEquals,
+    Or,
+    And,
+    Not,
+    Xone,
+    Closed,
+    Node,
+    HasValue,
+    In,
+    QualifiedValueShape
+);*/
 
 pub trait SparqlDeref {
     type Target: ?Sized;

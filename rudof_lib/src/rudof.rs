@@ -1068,8 +1068,9 @@ impl Rudof {
             .shacl_schema
             .as_ref()
             .ok_or(RudofError::NoShaclSchema {})?;
-        let validator = GraphValidation::from_graph(Graph::from_data(self.rdf_data.clone()), *mode);
-        let result = ShaclProcessor::validate(&validator, compiled_schema).map_err(|e| {
+        let mut validator =
+            GraphValidation::from_graph(Graph::from_data(self.rdf_data.clone()), *mode);
+        let result = ShaclProcessor::validate(&mut validator, compiled_schema).map_err(|e| {
             RudofError::SHACLValidationError {
                 error: format!("{e}"),
                 schema: Box::new(shacl_schema.to_owned()),

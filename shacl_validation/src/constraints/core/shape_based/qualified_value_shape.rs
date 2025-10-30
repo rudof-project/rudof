@@ -4,6 +4,7 @@ use crate::constraints::Validator;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::focus_nodes::FocusNodes;
 use crate::shacl_engine::Engine;
+use crate::shacl_engine::engine;
 use crate::shacl_engine::native::NativeEngine;
 use crate::shacl_engine::sparql::SparqlEngine;
 use crate::shape_validation::Validate;
@@ -27,7 +28,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
         component: &ComponentIR,
         shape: &ShapeIR,
         store: &S,
-        engine: impl Engine<S>,
+        engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
@@ -50,13 +51,8 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                     )
                     .as_str(),
                 );
-                let inner_results = shape.validate(
-                    store,
-                    &engine,
-                    Some(&focus_nodes),
-                    Some(shape),
-                    shapes_graph,
-                );
+                let inner_results =
+                    shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
                 let mut is_valid = match inner_results {
                     Err(e) => {
                         trace!(
@@ -97,7 +93,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                         trace!("Checking {node} with sibling shape: {}", sibling_shape.id());
                         let sibling_results = sibling_shape.validate(
                             store,
-                            &engine,
+                            engine,
                             Some(&focus_nodes),
                             Some(sibling_shape),
                             shapes_graph,
@@ -155,6 +151,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for QualifiedValueShape 
         component: &ComponentIR,
         shape: &ShapeIR,
         store: &S,
+        engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
@@ -164,7 +161,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for QualifiedValueShape 
             component,
             shape,
             store,
-            NativeEngine,
+            engine,
             value_nodes,
             source_shape,
             maybe_path,
@@ -188,7 +185,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for Qualified
             component,
             shape,
             store,
-            SparqlEngine,
+            &mut SparqlEngine::new(),
             value_nodes,
             source_shape,
             maybe_path,
