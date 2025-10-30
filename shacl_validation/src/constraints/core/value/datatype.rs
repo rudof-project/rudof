@@ -5,8 +5,6 @@ use crate::constraints::constraint_error::ConstraintError;
 use crate::helpers::constraint::validate_with;
 use crate::iteration_strategy::ValueNodeIteration;
 use crate::shacl_engine::Engine;
-use crate::shacl_engine::engine;
-use crate::shacl_engine::native::NativeEngine;
 use crate::shacl_engine::sparql::SparqlEngine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;

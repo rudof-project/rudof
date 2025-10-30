@@ -1,5 +1,6 @@
 // use oxiri::IriParseError;
 use shacl_ir::compiled::compiled_shacl_error::CompiledShaclError;
+use shacl_ir::shape_label_idx::ShapeLabelIdx;
 use shacl_rdf::rdf_to_shacl::shacl_parser_error::ShaclParserError;
 use sparql_service::RdfDataError;
 use srdf::RDFParseError;
@@ -12,6 +13,12 @@ use crate::helpers::helper_error::SRDFError;
 
 #[derive(Error, Debug)]
 pub enum ValidateError {
+    #[error("Shape not found for shape idx {shape_idx}: {error}")]
+    ShapeNotFound {
+        shape_idx: ShapeLabelIdx,
+        error: String,
+    },
+
     #[error("Obtaining rdfs:subClassOf of {term}: {error}")]
     SubClassOf { term: String, error: String },
 

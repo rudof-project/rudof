@@ -70,11 +70,11 @@ impl SchemaIR {
         sref: RDFNode,
     ) -> Result<Either<ShapeLabelIdx, ShapeLabelIdx>, Box<CompiledShaclError>> {
         match self.shape_labels_map.entry(sref) {
-            Entry::Occupied(entry) => Ok(Either::Left(entry.get().clone())),
+            Entry::Occupied(entry) => Ok(Either::Left(*entry.get())),
             Entry::Vacant(entry) => {
                 let label_idx = ShapeLabelIdx::new(self.shape_label_counter);
                 self.shape_label_counter += 1;
-                entry.insert(label_idx.clone());
+                entry.insert(label_idx);
                 Ok(Either::Right(label_idx))
             }
         }
@@ -90,13 +90,10 @@ impl SchemaIR {
 
     pub fn iter(&self) -> impl Iterator<Item = (&RDFNode, &ShapeIR)> {
         self.shape_labels_map.iter().map(move |(node, label_idx)| {
-            let shape = self.shapes.get(label_idx).expect(
-                format!(
-                    "Internal error: Shape label index {label_idx} for node {node} not found in shapes map: {:?}",
-                    self.shapes
-                )
-                .as_str(),
-            );
+            let shape = self
+              .shapes
+              .get(label_idx)
+              .unwrap_or_else(|| panic!("Internal error: Shape label index {label_idx} for node {node} not found in shapes map: {:?}",self.shapes));
             (node, shape)
         })
     }
@@ -110,7 +107,7 @@ impl SchemaIR {
         self.shape_labels_map.get(sref).map(|label_idx| {
             self.shapes
                 .get(label_idx)
-                .expect(format!("Internal error: SHACL/SchemaIR. Shape label index {label_idx} corresponding to {sref} not found in shapes map {:?}", self.shapes).as_str())
+                .unwrap_or_else(|| panic!("Internal error: SHACL/SchemaIR. Shape label index {label_idx} corresponding to {sref} not found in shapes map {:?}", self.shapes))
         })
     }
 
@@ -119,7 +116,7 @@ impl SchemaIR {
         idx: ShapeLabelIdx,
         shape: ShapeIR,
     ) -> Result<ShapeLabelIdx, Box<CompiledShaclError>> {
-        self.shapes.insert(idx.clone(), shape);
+        self.shapes.insert(idx, shape);
         Ok(idx)
     }
 

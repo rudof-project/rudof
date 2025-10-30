@@ -11,10 +11,9 @@ use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
 use crate::constraints::constraint_error::ConstraintError;
+use crate::constraints::get_shape_from_idx;
 use crate::focus_nodes::FocusNodes;
 use crate::shacl_engine::Engine;
-use crate::shacl_engine::engine;
-use crate::shacl_engine::native::NativeEngine;
 use crate::shacl_engine::sparql::SparqlEngine;
 use crate::shape_validation::Validate;
 use crate::validation_report::result::ValidationResult;
@@ -38,13 +37,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Xone {
                 let focus_nodes = FocusNodes::from_iter(std::iter::once(node.clone()));
                 let mut conforming_shapes = 0;
                 for shape_idx in self.shapes().iter() {
-                    let internal_shape = shapes_graph.get_shape_from_idx(shape_idx).expect(
-                        format!(
-                            "Internal error: Member of Xone shape {} not found in shapes graph",
-                            shape_idx
-                        )
-                        .as_str(),
-                    );
+                    let internal_shape = get_shape_from_idx(shapes_graph, shape_idx)?;
                     let inner_results = internal_shape.validate(
                         store,
                         engine,

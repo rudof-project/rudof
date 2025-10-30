@@ -2,10 +2,9 @@ use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
 use crate::constraints::constraint_error::ConstraintError;
+use crate::constraints::get_shape_from_idx;
 use crate::focus_nodes::FocusNodes;
 use crate::shacl_engine::Engine;
-use crate::shacl_engine::engine;
-use crate::shacl_engine::native::NativeEngine;
 use crate::shacl_engine::sparql::SparqlEngine;
 use crate::shape_validation::Validate;
 use crate::validation_report::result::ValidationResult;
@@ -44,15 +43,14 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
             // Count how many nodes conform to the shape
             for node in nodes.iter() {
                 let focus_nodes = FocusNodes::from_iter(std::iter::once(node.clone()));
-                let shape = shapes_graph.get_shape_from_idx(self.shape()).expect(
-                    format!(
-                        "Internal error evaluating `qualifiedValueShape` shape idx {} not found in shapes graph",
-                        self.shape()
-                    )
-                    .as_str(),
+                let shape = get_shape_from_idx(shapes_graph, self.shape())?;
+                let inner_results = shape.validate(
+                    store,
+                    engine,
+                    Some(&focus_nodes),
+                    Some(&shape),
+                    shapes_graph,
                 );
-                let inner_results =
-                    shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
                 let mut is_valid = match inner_results {
                     Err(e) => {
                         trace!(
@@ -83,19 +81,13 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                     // If there are siblings, check that none of them validate
                     trace!("Checking siblings for node {node}: {:?}", self.siblings());
                     for sibling in self.siblings().iter() {
-                        let sibling_shape = shapes_graph.get_shape_from_idx(sibling).expect(
-                            format!(
-                                "Internal error evaluating `qualifiedValueShape` sibling shape idx {} not found in shapes graph",
-                                sibling
-                            )
-                            .as_str(),
-                        );
+                        let sibling_shape = get_shape_from_idx(shapes_graph, sibling)?;
                         trace!("Checking {node} with sibling shape: {}", sibling_shape.id());
                         let sibling_results = sibling_shape.validate(
                             store,
                             engine,
                             Some(&focus_nodes),
-                            Some(sibling_shape),
+                            Some(&sibling_shape),
                             shapes_graph,
                         );
                         let sibling_is_valid =

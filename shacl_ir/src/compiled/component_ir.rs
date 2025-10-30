@@ -55,6 +55,7 @@ pub enum ComponentIR {
     QualifiedValueShape(QualifiedValueShape),
 }
 
+type MaybeComponentDeps = Option<(ComponentIR, Vec<(PosNeg, ShapeLabelIdx)>)>;
 impl ComponentIR {
     /// Compiles a an AST SHACL component to a IR SHACL Component
     /// It returns None for components that are not represented in the IR,
@@ -65,7 +66,7 @@ impl ComponentIR {
         component: Component,
         schema: &Schema<S>,
         schema_ir: &mut SchemaIR,
-    ) -> Result<Option<(Self, Vec<(PosNeg, ShapeLabelIdx)>)>, Box<CompiledShaclError>> {
+    ) -> Result<MaybeComponentDeps, Box<CompiledShaclError>> {
         let value = match component {
             Component::Class(object) => {
                 let class_rule = object;
@@ -204,7 +205,7 @@ impl ComponentIR {
                 let mut compiled_siblings = Vec::new();
                 for sibling in siblings.iter() {
                     let (compiled_sibling, sibling_deps) =
-                        compile_shape::<S>(&sibling, schema, schema_ir)?;
+                        compile_shape::<S>(sibling, schema, schema_ir)?;
                     compiled_siblings.push(compiled_sibling);
                     deps.extend(sibling_deps);
                 }

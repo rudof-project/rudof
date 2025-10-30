@@ -2,9 +2,9 @@ use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
 use crate::constraints::constraint_error::ConstraintError;
+use crate::constraints::get_shape_from_idx;
 use crate::focus_nodes::FocusNodes;
 use crate::shacl_engine::Engine;
-use crate::shacl_engine::native::NativeEngine;
 use crate::shacl_engine::sparql::SparqlEngine;
 use crate::shape_validation::Validate;
 use crate::validation_report::result::ValidationResult;
@@ -21,7 +21,6 @@ use std::fmt::Debug;
 use tracing::debug;
 use tracing::info;
 use tracing::trace;
-use tracing_subscriber::field::debug;
 
 impl<S: NeighsRDF + Debug> Validator<S> for Not {
     fn validate(
@@ -54,13 +53,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Not {
             for node in nodes.iter() {
                 info!("Validating NOT constraint for node: {node}");
                 let focus_nodes = FocusNodes::from_iter(std::iter::once(node.clone()));
-                let not_shape = shapes_graph.get_shape_from_idx(self.shape()).expect(
-                    format!(
-                        "Internal error: Shape {} in NOT constraint not found in shapes graph",
-                        self.shape()
-                    )
-                    .as_str(),
-                );
+                let not_shape = get_shape_from_idx(shapes_graph, self.shape())?;
                 debug!(
                     "Validating NOT constraint with internal shape {}",
                     not_shape.id()

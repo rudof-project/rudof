@@ -1514,7 +1514,7 @@ mod tests {
         rudof
             .read_shacl(
                 shacl.as_bytes(),
-                &"test",
+                "test",
                 &ShaclFormat::Turtle,
                 None,
                 &srdf::ReaderMode::Lax,
@@ -1561,7 +1561,7 @@ mod tests {
         rudof
             .read_shacl(
                 shacl.as_bytes(),
-                &"test",
+                "test",
                 &ShaclFormat::Turtle,
                 None,
                 &srdf::ReaderMode::Lax,

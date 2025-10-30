@@ -2,6 +2,7 @@ use constraint_error::ConstraintError;
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
+use shacl_ir::shape_label_idx::ShapeLabelIdx;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::SHACLPath;
@@ -31,6 +32,7 @@ pub trait Validator<S: NeighsRDF + Debug> {
 }
 
 pub trait NativeValidator<S: NeighsRDF> {
+    #[allow(clippy::too_many_arguments)]
     fn validate_native(
         &self,
         component: &ComponentIR,
@@ -45,6 +47,7 @@ pub trait NativeValidator<S: NeighsRDF> {
 }
 
 pub trait SparqlValidator<S: QueryRDF + Debug> {
+    #[allow(clippy::too_many_arguments)]
     fn validate_sparql(
         &self,
         component: &ComponentIR,
@@ -228,4 +231,16 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlDeref for ShaclComponent<'
         In,
         QualifiedValueShape
     ); */
+}
+
+pub fn get_shape_from_idx(
+    shapes_graph: &SchemaIR,
+    shape_idx: &ShapeLabelIdx,
+) -> Result<ShapeIR, ConstraintError> {
+    shapes_graph
+        .get_shape_from_idx(shape_idx)
+        .ok_or_else(|| ConstraintError::InternalError {
+            msg: format!("Shape idx {} not found in shapes graph", shape_idx),
+        })
+        .cloned()
 }

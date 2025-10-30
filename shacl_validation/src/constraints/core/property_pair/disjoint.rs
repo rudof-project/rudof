@@ -24,7 +24,7 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for Disjoint {
         component: &ComponentIR,
         shape: &ShapeIR,
         store: &R,
-        engine: &mut dyn engine::Engine<R>,
+        _engine: &mut dyn engine::Engine<R>,
         value_nodes: &ValueNodes<R>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,

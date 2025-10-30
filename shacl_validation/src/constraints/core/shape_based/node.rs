@@ -2,10 +2,9 @@ use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
 use crate::constraints::constraint_error::ConstraintError;
+use crate::constraints::get_shape_from_idx;
 use crate::focus_nodes::FocusNodes;
 use crate::shacl_engine::Engine;
-use crate::shacl_engine::engine;
-use crate::shacl_engine::native::NativeEngine;
 use crate::shacl_engine::sparql::SparqlEngine;
 use crate::shape_validation::Validate;
 use crate::validation_report::result::ValidationResult;
@@ -34,20 +33,23 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let mut validation_results = Vec::new();
         let shape_idx = self.shape();
-        let node_shape = shapes_graph.get_shape_from_idx(shape_idx).expect(
-            format!(
-                "Internal error: Shape {} in Node constraint not found in shapes graph",
-                self.shape()
-            )
-            .as_str(),
-        );
+        let node_shape = get_shape_from_idx(shapes_graph, shape_idx)?;
         for (focus_node, nodes) in value_nodes.iter() {
             trace!(
                 "Validating Node constraint for shape {} and node: {focus_node}",
                 shape.id()
             );
             for node in nodes.iter() {
+                let node_object = S::term_as_object(node)?;
                 let focus_nodes = FocusNodes::from_iter(std::iter::once(node.clone()));
+                if engine.has_validated(&node_object, *shape_idx) {
+                    trace!(
+                        "Skipping validation for Node constraint for shape {} and node: {focus_node} since already validated",
+                        shape.id()
+                    );
+                    continue;
+                }
+                engine.record_validation(node_object.clone(), *shape_idx, Vec::new());
                 let inner_results = node_shape.validate(
                     store,
                     engine,
@@ -59,7 +61,6 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
                     Err(_) => false,
                     Ok(results) => results.is_empty(),
                 };
-                let node_object = S::term_as_object(node)?;
                 if !is_valid {
                     let message = format!(
                         "Shape {}: Node({node_shape}) constraint not satisfied for {node}",
@@ -67,7 +68,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
                     );
                     let component = srdf::Object::iri(component.into());
                     let result = ValidationResult::new(
-                        shape.id().clone(),
+                        node_object.clone(),
                         component.clone(),
                         shape.severity(),
                     )

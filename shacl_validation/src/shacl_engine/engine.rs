@@ -15,6 +15,7 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 
 pub trait Engine<S: NeighsRDF> {
+    #[allow(clippy::too_many_arguments)]
     fn evaluate(
         &mut self,
         store: &S,
@@ -97,4 +98,6 @@ pub trait Engine<S: NeighsRDF> {
         shape_idx: ShapeLabelIdx,
         results: Vec<ValidationResult>,
     );
+
+    fn has_validated(&self, node: &RDFNode, shape_idx: ShapeLabelIdx) -> bool;
 }

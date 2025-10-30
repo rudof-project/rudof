@@ -27,7 +27,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Nodekind {
         component: &ComponentIR,
         shape: &ShapeIR,
         _: &S,
-        engine: &mut dyn Engine<S>,
+        _engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,

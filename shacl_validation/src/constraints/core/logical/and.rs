@@ -2,10 +2,9 @@ use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
 use crate::constraints::constraint_error::ConstraintError;
+use crate::constraints::get_shape_from_idx;
 use crate::focus_nodes::FocusNodes;
 use crate::shacl_engine::Engine;
-use crate::shacl_engine::engine;
-use crate::shacl_engine::native::NativeEngine;
 use crate::shacl_engine::sparql::SparqlEngine;
 use crate::shape_validation::Validate;
 use crate::validation_report::result::ValidationResult;
@@ -22,13 +21,13 @@ use std::fmt::Debug;
 impl<S: NeighsRDF + Debug> Validator<S> for And {
     fn validate(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        _component: &ComponentIR,
+        _shape: &ShapeIR,
         store: &S,
         engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
+        _maybe_path: Option<SHACLPath>,
         shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let mut validation_results = Vec::new();
@@ -37,16 +36,12 @@ impl<S: NeighsRDF + Debug> Validator<S> for And {
                 let focus_nodes = FocusNodes::from_iter(std::iter::once(node.clone()));
                 let mut all_conform = true;
                 for shape_idx in self.shapes().iter() {
-                    let shape = shapes_graph.get_shape_from_idx(shape_idx).expect(
-                        format!(
-                            "Internal error: Shape {shape_idx} in AND constraint not found in shapes graph"
-                        ).as_str(),
-                    );
+                    let shape = get_shape_from_idx(shapes_graph, shape_idx)?;
                     let inner_results = shape.validate(
                         store,
                         engine,
                         Some(&focus_nodes),
-                        Some(shape),
+                        Some(&shape),
                         shapes_graph,
                     );
                     match inner_results {

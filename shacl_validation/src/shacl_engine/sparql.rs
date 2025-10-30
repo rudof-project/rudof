@@ -27,6 +27,12 @@ impl SparqlEngine {
     }
 }
 
+impl Default for SparqlEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
     fn evaluate(
         &mut self,
@@ -183,6 +189,12 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
         _results: Vec<ValidationResult>,
     ) {
         // Nothing to do by now...
+    }
+
+    fn has_validated(&self, _node: &RDFNode, _shape_idx: ShapeLabelIdx) -> bool {
+        // By default, always return false so it forces re-validation
+        // This behavious can be a problem for recursive shapes
+        false
     }
 
     /*fn predicate(

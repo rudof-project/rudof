@@ -22,7 +22,7 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for LessThan {
         component: &ComponentIR,
         shape: &ShapeIR,
         store: &R,
-        engine: &mut dyn Engine<R>,
+        _engine: &mut dyn Engine<R>,
         value_nodes: &ValueNodes<R>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,

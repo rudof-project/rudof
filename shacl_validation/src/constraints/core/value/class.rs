@@ -26,7 +26,7 @@ impl<S: NeighsRDF + 'static> NativeValidator<S> for Class {
         component: &ComponentIR,
         shape: &ShapeIR,
         store: &S,
-        engine: &mut dyn engine::Engine<S>,
+        _engine: &mut dyn engine::Engine<S>,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,

@@ -32,6 +32,12 @@ impl NativeEngine {
     }
 }
 
+impl Default for NativeEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
     fn evaluate(
         &mut self,
@@ -166,8 +172,15 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
     ) {
         self.cached_validations
             .entry(node)
-            .or_insert_with(HashMap::new)
+            .or_default()
             .insert(shape_idx, results);
+    }
+
+    fn has_validated(&self, node: &RDFNode, shape_idx: ShapeLabelIdx) -> bool {
+        self.cached_validations
+            .get(node)
+            .and_then(|shape_map| shape_map.get(&shape_idx))
+            .is_some()
     }
 
     /*     fn predicate(

@@ -1,3 +1,4 @@
+use crate::constraints::get_shape_from_idx;
 use crate::focus_nodes::FocusNodes;
 use crate::shacl_engine::engine::Engine;
 use crate::validate_error::ValidateError;
@@ -85,10 +86,14 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
         //    that have been computed for the current shape
         let mut property_shapes_validation_results = Vec::new();
         for prop_shape in self.property_shapes().iter() {
-            let shape = shapes_graph.get_shape_from_idx(prop_shape).expect(&format!(
-                "Internal error: Property shape for idx: {} not found in schema",
-                prop_shape
-            ));
+            let shape = shapes_graph
+                .get_shape_from_idx(prop_shape)
+                .unwrap_or_else(|| {
+                    panic!(
+                        "Internal error: Property shape for idx: {} not found in schema",
+                        prop_shape
+                    )
+                });
             let results =
                 shape.validate(store, runner, Some(&focus_nodes), Some(self), shapes_graph)?;
             property_shapes_validation_results.extend(results);
@@ -217,12 +222,12 @@ where
                     .map(|subj| S::subject_as_term(subj))
                     .collect::<HashSet<_>>();
                 let reifier_shape =
-                    shapes_graph
-                        .get_shape_from_idx(reifier_shape)
-                        .expect(&format!(
-                            "Internal error: Reifier shape for idx: {} not found in schema",
-                            reifier_shape
-                        ));
+                    get_shape_from_idx(shapes_graph, reifier_shape).map_err(|e| {
+                        ValidateError::ShapeNotFound {
+                            shape_idx: *reifier_shape,
+                            error: e.to_string(),
+                        }
+                    })?;
                 let vr_iter = reifier_shape.validate(
                     store,
                     runner,

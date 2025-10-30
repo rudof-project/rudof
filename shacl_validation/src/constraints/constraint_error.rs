@@ -14,4 +14,7 @@ pub enum ConstraintError {
 
     #[error(transparent)]
     RDFError(#[from] RDFError),
+
+    #[error("Internal error: {}", .msg)]
+    InternalError { msg: String },
 }
