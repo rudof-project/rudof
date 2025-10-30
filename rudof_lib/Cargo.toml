@@ -47,3 +47,4 @@ tracing.workspace = true
 url.workspace = true
 anyhow = { workspace = true }
 clap.workspace = true 
+crossterm.workspace = true

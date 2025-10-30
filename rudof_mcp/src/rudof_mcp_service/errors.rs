@@ -26,6 +26,12 @@ pub mod error_messages {
     pub const INVALID_QUERY_TYPE: &str = "Invalid query type";
     pub const QUERY_EXECUTION_ERROR: &str = "Query execution error";
     pub const INVALID_QUERY_RESULT_FORMAT: &str = "Invalid query result format";
+
+    // SHEX VALIDATE Errors
+    pub const INVALID_SCHEMA_FORMAT: &str = "Invalid schema format";
+    pub const INVALID_READER_MODE: &str = "Invalid reader mode";
+    pub const INVALID_SHAPEMAP_FORMAT: &str = "Invalid shapemap format";
+    pub const INVALID_RESULT_SHEX_VALIDARION_FORMAT: &str = "Invalid result ShEx validation format";
 }
 
 // Create an `McpError::resource_not_found` with optional structured data.

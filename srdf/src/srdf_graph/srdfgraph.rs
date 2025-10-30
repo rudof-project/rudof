@@ -576,6 +576,18 @@ impl ReaderMode {
     }
 }
 
+impl FromStr for ReaderMode {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "strinct" => Ok(ReaderMode::Strict),
+            "lax" => Ok(ReaderMode::Lax),
+            _ => Err(format!("Unknown reader mode format: {s}")),
+        }
+    }
+}
+
 fn cnv_triple(t: &OxTriple) -> TripleRef<'_> {
     TripleRef::new(
         OxSubjectRef::from(&t.subject),

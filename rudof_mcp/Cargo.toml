@@ -30,6 +30,7 @@ prefixmap = { workspace = true }
 shex_ast = { workspace = true }
 base64 = "0.22.1"
 iri_s.workspace = true
+srdf.workspace = true
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_skip)'] }

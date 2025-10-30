@@ -45,7 +45,7 @@ pub async fn execute_sparql_query_impl(
     Parameters(ExecuteSparqlQueryRequest {
         query,
         result_format,
-    }): Parameters<ExecuteSparqlQueryRequest>,
+    }):Parameters<ExecuteSparqlQueryRequest>,
 ) -> Result<CallToolResult, McpError> {
     let query_type_str = detect_query_type(&query).ok_or_else(|| {
         invalid_request(

@@ -1,8 +1,8 @@
-use std::fmt::{Display, Formatter};
-
+use std::{fmt::{Display, Formatter}, str::FromStr};
 use clap::ValueEnum;
-
 use iri_s::mime_type::MimeType;
+use shex_ast::ShExFormat as ShExAstShExFormat;
+use crate::RudofError;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
 #[clap(rename_all = "lower")]
@@ -56,6 +56,40 @@ impl Display for ShExFormat {
             ShExFormat::NQuads => write!(dest, "nquads"),
             ShExFormat::JSON => write!(dest, "json"),
             ShExFormat::JSONLD => write!(dest, "jsonld"),
+        }
+    }
+}
+
+impl TryFrom<ShExFormat> for ShExAstShExFormat {
+    type Error = RudofError;
+
+    fn try_from(format: ShExFormat) -> Result<Self, Self::Error> {
+        match format {
+            ShExFormat::ShExC => Ok(ShExAstShExFormat::ShExC),
+            ShExFormat::ShExJ | ShExFormat::JSON | ShExFormat::JSONLD => Ok(ShExAstShExFormat::ShExJ),
+            other => return Err(RudofError::NotImplemented { msg: format!("ShEx format {other:?} validation not yet implemented")})
+        }
+    }
+}
+
+impl FromStr for ShExFormat {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "internal" => Ok(ShExFormat::Internal),
+            "simple" => Ok(ShExFormat::Simple),
+            "shexc" => Ok(ShExFormat::ShExC),
+            "shexj" => Ok(ShExFormat::ShExJ),
+            "json" => Ok(ShExFormat::JSON),
+            "jsonld" => Ok(ShExFormat::JSONLD),
+            "turtle" => Ok(ShExFormat::Turtle),
+            "ntriples" => Ok(ShExFormat::NTriples),
+            "rdfxml" => Ok(ShExFormat::RDFXML),
+            "trig" => Ok(ShExFormat::TriG),
+            "n3" => Ok(ShExFormat::N3),
+            "nquads" => Ok(ShExFormat::NQuads),
+            _ => Err(format!("Unknown ShEx format: {s}")),
         }
     }
 }
