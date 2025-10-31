@@ -15,6 +15,7 @@ use rudof_lib::ValidationReport;
 use rudof_lib::data::get_base;
 use rudof_lib::data::get_data_rudof;
 use rudof_lib::data_format::DataFormat;
+use rudof_lib::terminal_width::terminal_width;
 use shacl_ast::ShaclFormat;
 use shacl_validation::validation_report::report::SortModeReport;
 use srdf::RDFFormat;
@@ -27,7 +28,6 @@ use tracing::trace;
 
 use crate::CliShaclFormat;
 use crate::ResultShaclValidationFormat;
-use crate::terminal_width;
 use crate::writer::get_writer;
 use anyhow::Result;
 use iri_s::mime_type::MimeType;

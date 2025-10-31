@@ -1,5 +1,3 @@
-#![cfg(not(tarpaulin_skip))]
-
 use crate::rudof_mcp_service::errors::{self, error_messages};
 use crate::rudof_mcp_service::service::RudofMcpService;
 use rmcp::{

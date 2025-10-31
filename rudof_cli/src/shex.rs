@@ -1,16 +1,17 @@
+use crate::ColorSupport;
 use crate::writer::get_writer;
-use crate::{ColorSupport, shapemap_format_convert, terminal_width};
-use crate::{ResultShExValidationFormat, ShapeMapFormat as CliShapeMapFormat};
-use crate::{ShExFormat as CliShExFormat, SortByResultShapeMap};
 use anyhow::Context;
 use anyhow::{Result, bail};
 use iri_s::IriS;
 use iri_s::mime_type::MimeType;
 use rudof_lib::{
     InputSpec, Rudof, RudofConfig, RudofError, ShExFormatter, data::get_data_rudof,
-    data_format::DataFormat, parse_node_selector, parse_shape_selector, start,
+    data_format::DataFormat, parse_shape_selector,
+    result_shex_validation_format::ResultShExValidationFormat,
+    shapemap_format::ShapeMapFormat as CliShapeMapFormat, shex::validate_shex,
+    shex_format::ShExFormat as CliShExFormat, sort_by_result_shape_map::SortByResultShapeMap,
 };
-use shex_ast::shapemap::{ResultShapeMap, ShapeSelector};
+use shex_ast::shapemap::ShapeSelector;
 use shex_ast::{Schema, ShExFormat};
 use srdf::{RDFFormat, ReaderMode};
 use std::collections::HashMap;
@@ -242,106 +243,34 @@ pub fn run_validate_shex(
     config: &RudofConfig,
     force_overwrite: bool,
 ) -> Result<()> {
-    if let Some(schema) = schema {
-        let mut rudof = Rudof::new(config)?;
-        let (writer, _color) = get_writer(output, force_overwrite)?;
-        let schema_format = schema_format.unwrap_or_default();
-        let schema_reader = schema.open_read(Some(schema_format.mime_type()), "ShEx Schema")?;
-        let schema_format = match schema_format {
-            CliShExFormat::ShExC => ShExFormat::ShExC,
-            CliShExFormat::ShExJ => ShExFormat::ShExJ,
-            CliShExFormat::JSON => ShExFormat::ShExJ,
-            CliShExFormat::JSONLD => ShExFormat::ShExJ,
-            _ => bail!("ShExJ validation not yet implemented"),
-        };
-        let base_iri = get_base(config, base_schema)?;
-        rudof.read_shex(
-            schema_reader,
-            &schema_format,
-            Some(base_iri.as_str()),
-            reader_mode,
-            Some(&schema.source_name()),
-        )?;
-        get_data_rudof(
-            &mut rudof,
-            data,
-            data_format,
-            base_data,
-            endpoint,
-            reader_mode,
-            config,
-            false,
-        )?;
+    let mut rudof = Rudof::new(config)?;
+    let (mut writer, _color) = get_writer(output, force_overwrite)?;
 
-        let shapemap_format = shapemap_format_convert(shapemap_format);
-        if let Some(shapemap_spec) = shapemap {
-            let shapemap_reader = shapemap_spec.open_read(None, "ShapeMap")?;
-            rudof.read_shapemap(shapemap_reader, &shapemap_format)?;
-        }
+    get_data_rudof(
+        &mut rudof,
+        data,
+        data_format,
+        base_data,
+        endpoint,
+        reader_mode,
+        config,
+        false,
+    )?;
 
-        // If individual node/shapes are declared add them to current shape map
-        match (maybe_node, maybe_shape) {
-            (None, None) => {
-                // Nothing to do in this case
-            }
-            (Some(node_str), None) => {
-                let node_selector = parse_node_selector(node_str)?;
-                rudof.shapemap_add_node_shape_selectors(node_selector, start())
-            }
-            (Some(node_str), Some(shape_str)) => {
-                let node_selector = parse_node_selector(node_str)?;
-                let shape_selector = parse_shape_selector(shape_str)?;
-                rudof.shapemap_add_node_shape_selectors(node_selector, shape_selector);
-            }
-            (None, Some(shape_str)) => {
-                tracing::debug!(
-                    "Shape label {shape_str} ignored because noshapemap has also been provided"
-                )
-            }
-        };
-        let result = rudof.validate_shex()?;
-        let shapemap_format = result_format.to_shapemap_format()?;
-        write_result_shapemap(writer, &shapemap_format, result, sort_by)?;
-        Ok(())
-    } else {
-        bail!("No ShEx schema specified")
-    }
-}
-
-fn write_result_shapemap(
-    mut writer: Box<dyn Write + 'static>,
-    format: &CliShapeMapFormat,
-    result: ResultShapeMap,
-    sort_by: &SortByResultShapeMap,
-) -> Result<()> {
-    match format {
-        CliShapeMapFormat::Compact => {
-            writeln!(writer, "Result:")?;
-            result.show_as_table(writer, cnv_sort_mode(sort_by), false, terminal_width())?;
-        }
-        CliShapeMapFormat::Internal => {
-            let str = serde_json::to_string_pretty(&result)
-                .context("Error converting Result to JSON".to_string())?;
-            writeln!(writer, "{str}")?;
-        }
-        CliShapeMapFormat::Json => {
-            let str = serde_json::to_string_pretty(&result)
-                .context("Error converting Result to JSON".to_string())?;
-            writeln!(writer, "{str}")?;
-        }
-        CliShapeMapFormat::Details => {
-            writeln!(writer, "Result:")?;
-            result.show_as_table(writer, cnv_sort_mode(sort_by), true, terminal_width())?;
-        }
-    }
-    Ok(())
-}
-
-fn cnv_sort_mode(sort_by: &SortByResultShapeMap) -> shex_ast::shapemap::result_shape_map::SortMode {
-    match sort_by {
-        SortByResultShapeMap::Node => shex_ast::shapemap::result_shape_map::SortMode::Node,
-        SortByResultShapeMap::Shape => shex_ast::shapemap::result_shape_map::SortMode::Shape,
-        SortByResultShapeMap::Status => shex_ast::shapemap::result_shape_map::SortMode::Status,
-        SortByResultShapeMap::Details => shex_ast::shapemap::result_shape_map::SortMode::Details,
-    }
+    validate_shex(
+        &mut rudof,
+        schema,
+        schema_format,
+        base_schema,
+        reader_mode,
+        maybe_node,
+        maybe_shape,
+        shapemap,
+        shapemap_format,
+        result_format,
+        sort_by,
+        config,
+        &mut writer,
+    )
+    .map_err(anyhow::Error::from)
 }

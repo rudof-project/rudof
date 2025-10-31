@@ -17,8 +17,6 @@ extern crate tracing_subscriber;
 use anyhow::*;
 use clap::Parser;
 use rudof_cli::CliShaclFormat;
-use rudof_cli::ShExFormat as CliShExFormat;
-use rudof_cli::SortByResultShapeMap;
 use rudof_cli::SortByShaclValidationReport;
 use rudof_cli::cli::{Cli, Command};
 use rudof_cli::data::run_data;
@@ -30,7 +28,10 @@ use rudof_cli::{
     GenerateSchemaFormat, ValidationMode, run_convert, run_dctap, run_service, run_shacl,
     run_shapemap, run_shex, run_validate_shacl, run_validate_shex,
 };
-use rudof_lib::{InputSpec, RudofConfig, data_format::DataFormat};
+use rudof_lib::{
+    InputSpec, RudofConfig, data_format::DataFormat, shex_format::ShExFormat as CliShExFormat,
+    sort_by_result_shape_map::SortByResultShapeMap,
+};
 use std::io;
 use std::path::PathBuf;
 use std::result::Result::Ok;

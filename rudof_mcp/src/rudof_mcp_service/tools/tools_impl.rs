@@ -8,6 +8,7 @@ use rmcp::{
 use super::data_tools_impl::*;
 use super::node_tools_impl::*;
 use super::query_tools_impl::*;
+use super::shex_validate_tools_impl::*;
 
 #[tool_router]
 impl RudofMcpService {
@@ -15,7 +16,6 @@ impl RudofMcpService {
         name = "load_rdf_data_from_sources",
         description = "Load RDF data from remote sources (URLs, files, raw text) or SPARQL endpoint into the server's datastore"
     )]
-    #[cfg(not(tarpaulin_skip))]
     pub async fn load_rdf_data_from_sources(
         &self,
         params: Parameters<LoadRdfDataFromSourcesRequest>,
@@ -28,7 +28,6 @@ impl RudofMcpService {
         name = "export_rdf_data",
         description = "Serialize and return the RDF stored on the server in the requested format"
     )]
-    #[cfg(not(tarpaulin_skip))]
     pub async fn export_rdf_data(
         &self,
         params: Parameters<ExportRdfDataRequest>,
@@ -41,7 +40,6 @@ impl RudofMcpService {
         name = "export_plantuml",
         description = "Generate a PlantUML diagram of the RDF stored on the server"
     )]
-    #[cfg(not(tarpaulin_skip))]
     pub async fn export_plantuml(
         &self,
         params: Parameters<EmptyRequest>,
@@ -54,7 +52,6 @@ impl RudofMcpService {
         name = "export_image",
         description = "Generate an image (SVG or PNG) visualization of the RDF stored on the server"
     )]
-    #[cfg(not(tarpaulin_skip))]
     pub async fn export_image(
         &self,
         params: Parameters<ExportImageRequest>,
@@ -67,7 +64,6 @@ impl RudofMcpService {
         name = "node_info",
         description = "Show information about a node (outgoing/incoming arcs) from the RDF stored on the server"
     )]
-    #[cfg(not(tarpaulin_skip))]
     pub async fn node_info(
         &self,
         params: Parameters<NodeInfoRequest>,
@@ -80,13 +76,24 @@ impl RudofMcpService {
         name = "execute_sparql_query",
         description = "Execute a SPARQL query (SELECT, CONSTRUCT, ASK, DESCRIBE) against the RDF stored on the server"
     )]
-    #[cfg(not(tarpaulin_skip))]
     pub async fn execute_sparql_query(
         &self,
         params: Parameters<ExecuteSparqlQueryRequest>,
     ) -> Result<CallToolResult, McpError> {
         // Delegates the call to the function in query_tools_impl.rs
         execute_sparql_query_impl(self, params).await
+    }
+
+    #[tool(
+        name = "validate_shex",
+        description = "Validate RDF data against a ShEx schema using the provided inputs"
+    )]
+    pub async fn validate_shex(
+        &self,
+        params: Parameters<ValidateShexRequest>,
+    ) -> Result<CallToolResult, McpError> {
+        // Delegates the call to the function in shex_validate_tools_impl.rs
+        validate_shex_impl(self, params).await
     }
 }
 
@@ -155,6 +162,15 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
                         .idempotent(true),
                 );
             }
+            "validate_shex" => {
+                tool.title = Some("Validate RDF with ShEx".to_string());
+                tool.annotations = Some(
+                    rmcp::model::ToolAnnotations::new()
+                        .read_only(true)
+                        .destructive(false)
+                        .idempotent(true),
+                );
+            }
             _ => {}
         }
     }
@@ -178,6 +194,7 @@ mod tests {
         assert!(tools.iter().any(|t| t.name == "export_image"));
         assert!(tools.iter().any(|t| t.name == "node_info"));
         assert!(tools.iter().any(|t| t.name == "execute_sparql_query"));
+        assert!(tools.iter().any(|t| t.name == "validate_shex"));
     }
 
     #[test]
@@ -228,6 +245,13 @@ mod tests {
         assert_eq!(
             quey_tool.unwrap().title,
             Some("Execute SPARQL Query".to_string())
+        );
+
+        let validate_shex_tool = tools.iter().find(|t| t.name == "validate_shex");
+        assert!(validate_shex_tool.is_some());
+        assert_eq!(
+            validate_shex_tool.unwrap().title,
+            Some("Validate RDF with ShEx".to_string())
         );
     }
 }

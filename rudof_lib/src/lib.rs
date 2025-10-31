@@ -9,11 +9,17 @@ pub mod node_info;
 pub mod query;
 pub mod query_result_format;
 pub mod query_type;
+pub mod result_shex_validation_format;
 pub mod rudof;
 pub mod rudof_config;
 pub mod rudof_error;
 pub mod selector;
+pub mod shapemap_format;
 pub mod shapes_graph_source;
+pub mod shex;
+pub mod shex_format;
+pub mod sort_by_result_shape_map;
+pub mod terminal_width;
 
 pub use input_spec::*;
 pub use iri_s::*;

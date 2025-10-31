@@ -1,13 +1,13 @@
 use std::path::PathBuf;
 
 use crate::ColorSupport;
-use crate::ShapeMapFormat as CliShapeMapFormat;
 use crate::writer::get_writer;
 use anyhow::Result;
 use rudof_lib::InputSpec;
 use rudof_lib::Rudof;
 use rudof_lib::RudofConfig;
 use rudof_lib::ShapeMapFormatter;
+use rudof_lib::shapemap_format::ShapeMapFormat as CliShapeMapFormat;
 use shex_ast::shapemap::ShapeMapFormat;
 
 pub fn run_shapemap(
