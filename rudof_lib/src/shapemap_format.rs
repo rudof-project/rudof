@@ -1,4 +1,7 @@
-use std::{fmt::{Display, Formatter}, str::FromStr};
+use std::{
+    fmt::{Display, Formatter},
+    str::FromStr,
+};
 
 use clap::ValueEnum;
 use shex_ast::shapemap::ShapeMapFormat as ShexAstShapeMapFormat;

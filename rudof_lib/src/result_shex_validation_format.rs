@@ -1,8 +1,11 @@
 use anyhow::{Result, bail};
 use clap::ValueEnum;
-use std::{fmt::{Display, Formatter}, str::FromStr};
+use std::{
+    fmt::{Display, Formatter},
+    str::FromStr,
+};
 
-use crate::{shapemap_format::ShapeMapFormat, RudofError};
+use crate::{RudofError, shapemap_format::ShapeMapFormat};
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
 #[clap(rename_all = "lower")]
@@ -57,7 +60,11 @@ impl TryFrom<&ResultShExValidationFormat> for ShapeMapFormat {
             ResultShExValidationFormat::Compact => Ok(ShapeMapFormat::Compact),
             ResultShExValidationFormat::Details => Ok(ShapeMapFormat::Details),
             ResultShExValidationFormat::Json => Ok(ShapeMapFormat::Json),
-            other => return Err(RudofError::NotImplemented { msg: format!("Result ShEx validation format {other:?} not yet implemented")})
+            other => {
+                return Err(RudofError::NotImplemented {
+                    msg: format!("Result ShEx validation format {other:?} not yet implemented"),
+                });
+            }
         }
     }
 }

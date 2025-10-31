@@ -1,18 +1,21 @@
+use crate::rudof_mcp_service::{errors::*, service::RudofMcpService};
+use iri_s::IriS;
 use rmcp::{
     ErrorData as McpError,
     handler::server::wrapper::Parameters,
     model::{CallToolResult, Content},
 };
+use rudof_lib::{
+    InputSpec, RudofConfig, result_shex_validation_format::ResultShExValidationFormat,
+    shapemap_format::ShapeMapFormat, shex::validate_shex, shex_format::ShExFormat,
+    sort_by_result_shape_map::SortByResultShapeMap,
+};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use crate::rudof_mcp_service::{errors::*, service::RudofMcpService};
-use rudof_lib::{shex::validate_shex, InputSpec, shex_format::ShExFormat, shapemap_format::ShapeMapFormat,
-result_shex_validation_format::ResultShExValidationFormat, sort_by_result_shape_map::SortByResultShapeMap, RudofConfig};
 use serde_json::json;
+use srdf::ReaderMode;
 use std::io::Cursor;
 use std::str::FromStr;
-use iri_s::IriS;
-use srdf::ReaderMode;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ValidateShexRequest {
@@ -55,7 +58,7 @@ pub struct ValidateShexResponse {
 
 pub async fn validate_shex_impl(
     service: &RudofMcpService,
-    Parameters(ValidateShexRequest{
+    Parameters(ValidateShexRequest {
         schema,
         schema_format,
         base_schema,
@@ -65,10 +68,9 @@ pub async fn validate_shex_impl(
         shapemap,
         shapemap_format,
         result_format,
-        sort_by
-    }):Parameters<ValidateShexRequest>,
+        sort_by,
+    }): Parameters<ValidateShexRequest>,
 ) -> Result<CallToolResult, McpError> {
-
     let shcema_spec = Some(InputSpec::Str(schema.clone()));
 
     let parsed_schema_format: Option<ShExFormat> = match schema_format {
@@ -142,20 +144,21 @@ pub async fn validate_shex_impl(
     let mut output_buffer = Cursor::new(Vec::new());
 
     validate_shex(
-        &mut rudof, 
+        &mut rudof,
         &shcema_spec,
         &parsed_schema_format,
-        &parsed_base_schema, 
-        &parsed_reader_mode, 
-        &maybe_node, 
-        &maybe_shape, 
-        &shapemap_spec, 
-        &parsed_shapemap_format, 
-        &parsed_result_format, 
-        &parsed_sort_by, 
-        &rudof_config, 
-        &mut output_buffer
-    ).map_err(|e| {
+        &parsed_base_schema,
+        &parsed_reader_mode,
+        &maybe_node,
+        &maybe_shape,
+        &shapemap_spec,
+        &parsed_shapemap_format,
+        &parsed_result_format,
+        &parsed_sort_by,
+        &rudof_config,
+        &mut output_buffer,
+    )
+    .map_err(|e| {
         internal_error(
             error_messages::QUERY_EXECUTION_ERROR,
             Some(json!({"error": e.to_string(),})),

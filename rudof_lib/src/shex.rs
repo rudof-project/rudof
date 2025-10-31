@@ -1,13 +1,16 @@
-use crate::{InputSpec, Rudof, RudofConfig, RudofError, shex_format::ShExFormat as CliShExFormat, 
-shapemap_format::ShapeMapFormat as CliShapeMapFormat, result_shex_validation_format::ResultShExValidationFormat,
-sort_by_result_shape_map::SortByResultShapeMap, selector::*, terminal_width::terminal_width};
-use shex_ast::shapemap::ResultShapeMap;
+use crate::{
+    InputSpec, Rudof, RudofConfig, RudofError,
+    result_shex_validation_format::ResultShExValidationFormat, selector::*,
+    shapemap_format::ShapeMapFormat as CliShapeMapFormat, shex_format::ShExFormat as CliShExFormat,
+    sort_by_result_shape_map::SortByResultShapeMap, terminal_width::terminal_width,
+};
 use iri_s::IriS;
+use iri_s::MimeType;
+use shex_ast::shapemap::ResultShapeMap;
 use srdf::ReaderMode;
 use std::env;
-use url::Url;
 use std::io::Write;
-use iri_s::MimeType;
+use url::Url;
 
 pub fn validate_shex<W: Write>(
     rudof: &mut Rudof,
@@ -22,7 +25,7 @@ pub fn validate_shex<W: Write>(
     result_format: &ResultShExValidationFormat,
     sort_by: &SortByResultShapeMap,
     config: &RudofConfig,
-    writer: &mut W
+    writer: &mut W,
 ) -> Result<(), RudofError> {
     if let Some(schema) = schema {
         let schema_format = schema_format.unwrap_or_default();
@@ -45,17 +48,15 @@ pub fn validate_shex<W: Write>(
             Some(&schema.source_name()),
         )?;
 
-        
-
         let shapemap_format = shapemap_format.into();
 
         if let Some(shapemap_spec) = shapemap {
-            let shapemap_reader = shapemap_spec
-                .open_read(None, "ShapeMap")
-                .map_err(|e| RudofError::ShapeMapParseError {
+            let shapemap_reader = shapemap_spec.open_read(None, "ShapeMap").map_err(|e| {
+                RudofError::ShapeMapParseError {
                     str: shapemap_spec.source_name().to_string(),
                     error: e.to_string(),
-                })?;
+                }
+            })?;
 
             rudof.read_shapemap(shapemap_reader, &shapemap_format)?;
         }
@@ -115,7 +116,7 @@ fn write_result_shapemap<W: Write>(
     mut writer: W,
     format: &CliShapeMapFormat,
     result: ResultShapeMap,
-    sort_by: &SortByResultShapeMap
+    sort_by: &SortByResultShapeMap,
 ) -> Result<(), RudofError> {
     match format {
         CliShapeMapFormat::Compact => {
@@ -123,13 +124,15 @@ fn write_result_shapemap<W: Write>(
             result.show_as_table(writer, sort_by.into(), false, terminal_width())?;
         }
         CliShapeMapFormat::Internal => {
-            let str = serde_json::to_string_pretty(&result)
-                .map_err(|e| RudofError::Generic { error: e.to_string() })?;
+            let str = serde_json::to_string_pretty(&result).map_err(|e| RudofError::Generic {
+                error: e.to_string(),
+            })?;
             writeln!(writer, "{str}")?;
         }
         CliShapeMapFormat::Json => {
-            let str = serde_json::to_string_pretty(&result)
-                .map_err(|e| RudofError::Generic { error: e.to_string() })?;
+            let str = serde_json::to_string_pretty(&result).map_err(|e| RudofError::Generic {
+                error: e.to_string(),
+            })?;
             writeln!(writer, "{str}")?;
         }
         CliShapeMapFormat::Details => {

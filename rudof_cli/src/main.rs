@@ -28,8 +28,10 @@ use rudof_cli::{
     GenerateSchemaFormat, ValidationMode, run_convert, run_dctap, run_service, run_shacl,
     run_shapemap, run_shex, run_validate_shacl, run_validate_shex,
 };
-use rudof_lib::{InputSpec, RudofConfig, data_format::DataFormat, shex_format::ShExFormat as CliShExFormat,
-sort_by_result_shape_map::SortByResultShapeMap};
+use rudof_lib::{
+    InputSpec, RudofConfig, data_format::DataFormat, shex_format::ShExFormat as CliShExFormat,
+    sort_by_result_shape_map::SortByResultShapeMap,
+};
 use std::io;
 use std::path::PathBuf;
 use std::result::Result::Ok;

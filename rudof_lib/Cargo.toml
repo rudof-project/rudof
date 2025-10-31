@@ -19,6 +19,9 @@ include = [
 
 
 [dependencies]
+anyhow = { workspace = true }
+clap.workspace = true 
+crossterm.workspace = true
 dctap.workspace = true
 either.workspace = true
 iri_s.workspace = true
@@ -45,6 +48,3 @@ thiserror = "2.0"
 toml = "0.8"
 tracing.workspace = true
 url.workspace = true
-anyhow = { workspace = true }
-clap.workspace = true 
-crossterm.workspace = true

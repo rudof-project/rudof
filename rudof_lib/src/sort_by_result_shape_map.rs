@@ -1,6 +1,9 @@
 use clap::ValueEnum;
-use std::{fmt::{Display, Formatter}, str::FromStr};
 use shex_ast::shapemap::result_shape_map::SortMode;
+use std::{
+    fmt::{Display, Formatter},
+    str::FromStr,
+};
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
 #[clap(rename_all = "lower")]
@@ -24,7 +27,6 @@ impl Display for SortByResultShapeMap {
 }
 
 impl From<&SortByResultShapeMap> for SortMode {
-
     fn from(format: &SortByResultShapeMap) -> Self {
         match format {
             SortByResultShapeMap::Node => SortMode::Node,

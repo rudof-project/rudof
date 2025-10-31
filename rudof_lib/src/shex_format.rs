@@ -1,8 +1,11 @@
-use std::{fmt::{Display, Formatter}, str::FromStr};
+use crate::RudofError;
 use clap::ValueEnum;
 use iri_s::mime_type::MimeType;
 use shex_ast::ShExFormat as ShExAstShExFormat;
-use crate::RudofError;
+use std::{
+    fmt::{Display, Formatter},
+    str::FromStr,
+};
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
 #[clap(rename_all = "lower")]
@@ -66,8 +69,14 @@ impl TryFrom<ShExFormat> for ShExAstShExFormat {
     fn try_from(format: ShExFormat) -> Result<Self, Self::Error> {
         match format {
             ShExFormat::ShExC => Ok(ShExAstShExFormat::ShExC),
-            ShExFormat::ShExJ | ShExFormat::JSON | ShExFormat::JSONLD => Ok(ShExAstShExFormat::ShExJ),
-            other => return Err(RudofError::NotImplemented { msg: format!("ShEx format {other:?} validation not yet implemented")})
+            ShExFormat::ShExJ | ShExFormat::JSON | ShExFormat::JSONLD => {
+                Ok(ShExAstShExFormat::ShExJ)
+            }
+            other => {
+                return Err(RudofError::NotImplemented {
+                    msg: format!("ShEx format {other:?} validation not yet implemented"),
+                });
+            }
         }
     }
 }

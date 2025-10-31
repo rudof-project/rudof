@@ -1,14 +1,15 @@
-use crate::writer::get_writer;
 use crate::ColorSupport;
+use crate::writer::get_writer;
 use anyhow::Context;
 use anyhow::{Result, bail};
 use iri_s::IriS;
 use iri_s::mime_type::MimeType;
 use rudof_lib::{
-    InputSpec, Rudof, RudofConfig, RudofError, ShExFormatter, 
-    data_format::DataFormat, parse_shape_selector, shex::validate_shex, 
-    shapemap_format::ShapeMapFormat as CliShapeMapFormat, shex_format::ShExFormat as CliShExFormat, sort_by_result_shape_map::SortByResultShapeMap,
-    result_shex_validation_format::ResultShExValidationFormat, data::get_data_rudof
+    InputSpec, Rudof, RudofConfig, RudofError, ShExFormatter, data::get_data_rudof,
+    data_format::DataFormat, parse_shape_selector,
+    result_shex_validation_format::ResultShExValidationFormat,
+    shapemap_format::ShapeMapFormat as CliShapeMapFormat, shex::validate_shex,
+    shex_format::ShExFormat as CliShExFormat, sort_by_result_shape_map::SortByResultShapeMap,
 };
 use shex_ast::shapemap::ShapeSelector;
 use shex_ast::{Schema, ShExFormat};
@@ -257,19 +258,19 @@ pub fn run_validate_shex(
     )?;
 
     validate_shex(
-        &mut rudof, 
-        schema, 
-        schema_format, 
-        base_schema,  
-        reader_mode, 
-        maybe_node, 
-        maybe_shape, 
-        shapemap, 
-        shapemap_format, 
-        result_format, 
-        sort_by, 
-        config, 
-        &mut writer
-    ).map_err(anyhow::Error::from)
-        
+        &mut rudof,
+        schema,
+        schema_format,
+        base_schema,
+        reader_mode,
+        maybe_node,
+        maybe_shape,
+        shapemap,
+        shapemap_format,
+        result_format,
+        sort_by,
+        config,
+        &mut writer,
+    )
+    .map_err(anyhow::Error::from)
 }
