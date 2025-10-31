@@ -19,7 +19,7 @@ fn test(
     let tests = manifest.collect_tests()?;
 
     for test in tests {
-        let validator = RdfDataValidation::from_rdf_data(test.data, mode);
+        let mut validator = RdfDataValidation::from_rdf_data(test.data, mode);
         let test_shapes = test
             .shapes
             .try_into()

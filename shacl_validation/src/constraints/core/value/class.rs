@@ -4,6 +4,7 @@ use crate::constraints::constraint_error::ConstraintError;
 use crate::helpers::constraint::validate_ask_with;
 use crate::helpers::constraint::validate_with;
 use crate::iteration_strategy::ValueNodeIteration;
+use crate::shacl_engine::engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
@@ -25,6 +26,7 @@ impl<S: NeighsRDF + 'static> NativeValidator<S> for Class {
         component: &ComponentIR,
         shape: &ShapeIR,
         store: &S,
+        _engine: &mut dyn engine::Engine<S>,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,

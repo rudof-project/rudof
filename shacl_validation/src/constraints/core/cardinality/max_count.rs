@@ -15,7 +15,6 @@ use crate::focus_nodes::FocusNodes;
 use crate::helpers::constraint::validate_with;
 use crate::iteration_strategy::FocusNodeIteration;
 use crate::shacl_engine::Engine;
-use crate::shacl_engine::native::NativeEngine;
 use crate::shacl_engine::sparql::SparqlEngine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
@@ -26,7 +25,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for MaxCount {
         component: &ComponentIR,
         shape: &ShapeIR,
         _: &S,
-        _: impl Engine<S>,
+        _: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
@@ -52,6 +51,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxCount {
         component: &ComponentIR,
         shape: &ShapeIR,
         store: &S,
+        engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
@@ -61,7 +61,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxCount {
             component,
             shape,
             store,
-            NativeEngine,
+            engine,
             value_nodes,
             source_shape,
             maybe_path,
@@ -85,7 +85,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for MaxCount 
             component,
             shape,
             store,
-            SparqlEngine,
+            &mut SparqlEngine::new(),
             value_nodes,
             source_shape,
             maybe_path,

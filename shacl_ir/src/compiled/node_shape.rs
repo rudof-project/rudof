@@ -4,7 +4,10 @@ use super::component_ir::ComponentIR;
 use super::severity::CompiledSeverity;
 use super::target::CompiledTarget;
 use crate::{
-    closed_info::ClosedInfo, compiled::Deps, schema_ir::SchemaIR, shape_label_idx::ShapeLabelIdx,
+    closed_info::ClosedInfo,
+    dependency_graph::{DependencyGraph, PosNeg},
+    schema_ir::SchemaIR,
+    shape_label_idx::ShapeLabelIdx,
 };
 use iri_s::IriS;
 use shacl_ast::Schema;
@@ -87,6 +90,29 @@ impl NodeShapeIR {
     pub fn closed(&self) -> bool {
         self.closed_info.is_closed()
     }
+
+    pub(crate) fn add_edges(
+        &self,
+        shape_idx: ShapeLabelIdx,
+        dg: &mut DependencyGraph,
+        posneg: PosNeg,
+        schema_ir: &SchemaIR,
+        visited: &mut HashSet<ShapeLabelIdx>,
+    ) {
+        for component in &self.components {
+            component.add_edges(shape_idx, dg, posneg, schema_ir, visited);
+        }
+        for property_shape_idx in &self.property_shapes {
+            if let Some(shape) = schema_ir.get_shape_from_idx(property_shape_idx) {
+                dg.add_edge(shape_idx, *property_shape_idx, posneg);
+                if visited.contains(property_shape_idx) {
+                } else {
+                    visited.insert(*property_shape_idx);
+                    shape.add_edges(*property_shape_idx, dg, posneg, schema_ir, visited);
+                }
+            }
+        }
+    }
 }
 
 impl NodeShapeIR {
@@ -96,20 +122,17 @@ impl NodeShapeIR {
         shape: Box<NodeShape<S>>,
         schema: &Schema<S>,
         schema_ir: &mut SchemaIR,
-    ) -> Result<(Self, Deps), Box<CompiledShaclError>> {
+    ) -> Result<Self, Box<CompiledShaclError>> {
         let id = shape.id().clone();
         let deactivated = shape.is_deactivated().to_owned();
         let severity = CompiledSeverity::compile(shape.severity())?;
 
         let components = shape.components().iter().collect::<Vec<_>>();
         let mut compiled_components = Vec::new();
-        let mut deps = Vec::new();
         for component in components {
-            if let Some((component, new_deps)) =
-                ComponentIR::compile(component.to_owned(), schema, schema_ir)?
+            if let Some(component) = ComponentIR::compile(component.to_owned(), schema, schema_ir)?
             {
                 compiled_components.push(component);
-                deps.extend(new_deps);
             }
         }
 
@@ -121,9 +144,8 @@ impl NodeShapeIR {
 
         let mut property_shapes = Vec::new();
         for property_shape in shape.property_shapes() {
-            let (shape, new_deps) = compile_shape(property_shape, schema, schema_ir)?;
+            let shape = compile_shape(property_shape, schema, schema_ir)?;
             property_shapes.push(shape);
-            deps.extend(new_deps);
         }
 
         let closed_info = ClosedInfo::get_closed_info_node_shape(&shape, schema)
@@ -139,6 +161,6 @@ impl NodeShapeIR {
             severity,
         );
 
-        Ok((compiled_node_shape, deps))
+        Ok(compiled_node_shape)
     }
 }

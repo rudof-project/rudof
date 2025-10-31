@@ -1,14 +1,11 @@
-use std::fmt::Display;
-
 use crate::{
-    compiled::{Deps, compile_shape},
-    compiled_shacl_error::CompiledShaclError,
-    schema_ir::SchemaIR,
+    compiled::compile_shape, compiled_shacl_error::CompiledShaclError, schema_ir::SchemaIR,
     shape_label_idx::ShapeLabelIdx,
 };
 use iri_s::IriS;
 use shacl_ast::{Schema, property_shape::PropertyShape};
 use srdf::Rdf;
+use std::fmt::Display;
 
 #[derive(Debug, Clone, Default)]
 pub struct ReifierInfo {
@@ -34,14 +31,12 @@ impl ReifierInfo {
         shape: &PropertyShape<R>,
         schema: &Schema<R>,
         schema_ir: &mut SchemaIR,
-    ) -> Result<Option<(Self, Deps)>, Box<CompiledShaclError>> {
+    ) -> Result<Option<Self>, Box<CompiledShaclError>> {
         if let Some(reifier_info) = shape.reifier_info() {
             let mut compiled_shapes = Vec::new();
-            let mut deps = Vec::new();
             for shape_node in reifier_info.reifier_shape() {
-                let (compiled_shape, new_deps) = compile_shape(shape_node, schema, schema_ir)?;
+                let compiled_shape = compile_shape(shape_node, schema, schema_ir)?;
                 compiled_shapes.push(compiled_shape);
-                deps.extend(new_deps);
             }
             let path = shape.path();
             let predicate = match path {
@@ -53,14 +48,11 @@ impl ReifierInfo {
                     }));
                 }
             };
-            Ok(Some((
-                Self {
-                    reification_required: reifier_info.reification_required(),
-                    reifier_shape: compiled_shapes,
-                    predicate,
-                },
-                deps,
-            )))
+            Ok(Some(Self {
+                reification_required: reifier_info.reification_required(),
+                reifier_shape: compiled_shapes,
+                predicate,
+            }))
         } else {
             Ok(None)
         }

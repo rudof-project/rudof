@@ -12,6 +12,7 @@ pub mod shape_label_idx;
 pub mod target;
 
 use compiled_shacl_error::CompiledShaclError;
+use either::Either;
 use iri_s::IriS;
 use prefixmap::IriRef;
 use shacl_ast::Schema;
@@ -20,13 +21,10 @@ use shape::ShapeIR;
 use srdf::Object;
 use srdf::RDFNode;
 use srdf::Rdf;
+use tracing::trace;
 
-use crate::dependency_graph::PosNeg;
 use crate::schema_ir::SchemaIR;
 use crate::shape_label_idx::ShapeLabelIdx;
-
-/// Type alias for dependencies: a vector of (PosNeg, ShapeLabelIdx) pairs
-type Deps = Vec<(PosNeg, ShapeLabelIdx)>;
 
 fn convert_iri_ref(iri_ref: IriRef) -> Result<IriS, Box<CompiledShaclError>> {
     let iri = iri_ref.get_iri().map_err(|err| {
@@ -42,21 +40,29 @@ fn compile_shape<S: Rdf>(
     node: &Object,
     schema: &Schema<S>,
     schema_ir: &mut SchemaIR,
-) -> Result<(ShapeLabelIdx, Deps), Box<CompiledShaclError>> {
+) -> Result<ShapeLabelIdx, Box<CompiledShaclError>> {
     let shape = schema
         .get_shape(node)
         .ok_or(CompiledShaclError::ShapeNotFound {
             shape: Box::new(node.clone()),
         })?;
-    let idx = schema_ir.add_shape_idx(node.clone())?;
-    ShapeIR::compile(shape.to_owned(), schema, &idx, schema_ir)
+    match schema_ir.add_shape_idx(node.clone())? {
+        Either::Right(idx) => {
+            trace!("Compiling shape {:?} with index {:?}", node, idx);
+            ShapeIR::compile(shape.to_owned(), schema, &idx, schema_ir)
+        }
+        Either::Left(idx) => {
+            trace!("Shape {:?} already compiled, skipping recompilation", node);
+            Ok(idx)
+        }
+    }
 }
 
 fn compile_shapes<S: Rdf>(
     shapes: Vec<Object>,
     schema: &Schema<S>,
     schema_ir: &mut SchemaIR,
-) -> Result<Vec<(ShapeLabelIdx, Deps)>, Box<CompiledShaclError>> {
+) -> Result<Vec<ShapeLabelIdx>, Box<CompiledShaclError>> {
     let compiled_shapes = shapes
         .into_iter()
         .map(|shape| compile_shape::<S>(&shape, schema, schema_ir))

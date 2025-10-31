@@ -15,6 +15,7 @@ repository.workspace = true
 #]
 
 [dependencies]
+either.workspace = true
 iri_s.workspace = true
 itertools.workspace = true
 oxrdf = { workspace = true, features = ["oxsdatatypes"] }
@@ -25,3 +26,4 @@ shacl_ast.workspace = true
 shacl_rdf.workspace = true
 srdf.workspace = true
 thiserror.workspace = true
+tracing.workspace = true

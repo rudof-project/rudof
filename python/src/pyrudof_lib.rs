@@ -502,7 +502,7 @@ impl PyRudof {
         let reader_mode = cnv_reader_mode(reader_mode);
         self.inner.reset_shacl();
         self.inner
-            .read_shacl(input.as_bytes(), &format, base, &reader_mode)
+            .read_shacl(input.as_bytes(), input, &format, base, &reader_mode)
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -568,7 +568,7 @@ impl PyRudof {
         self.inner.reset_shacl();
         let reader_mode = cnv_reader_mode(reader_mode);
         self.inner
-            .read_shacl(reader, &format, base, &reader_mode)
+            .read_shacl(reader, input, &format, base, &reader_mode)
             .map_err(cnv_err)?;
         Ok(())
     }

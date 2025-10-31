@@ -21,7 +21,8 @@ type Result<A> = std::result::Result<A, Box<SchemaIRError>>;
 
 #[derive(Debug, Default, Clone)]
 pub struct SchemaIR {
-    shape_labels_map: HashMap<ShapeLabel, ShapeLabelIdx>,
+    labels_idx_map: HashMap<ShapeLabel, ShapeLabelIdx>,
+    idx_labels_map: HashMap<ShapeLabelIdx, ShapeLabel>,
     shapes: HashMap<ShapeLabelIdx, ShapeExprInfo>,
     shape_label_counter: usize,
     sources_map: HashMap<IriS, SourceIdx>,
@@ -39,7 +40,8 @@ pub struct SchemaIR {
 impl SchemaIR {
     pub fn new() -> SchemaIR {
         SchemaIR {
-            shape_labels_map: HashMap::new(),
+            labels_idx_map: HashMap::new(),
+            idx_labels_map: HashMap::new(),
             shape_label_counter: 0,
             sources_map: HashMap::new(),
             sources: HashMap::new(),
@@ -102,7 +104,8 @@ impl SchemaIR {
         source_iri: &IriS,
     ) -> ShapeLabelIdx {
         let idx = ShapeLabelIdx::from(self.shape_label_counter);
-        self.shape_labels_map.insert(shape_label.clone(), idx);
+        self.labels_idx_map.insert(shape_label.clone(), idx);
+        self.idx_labels_map.insert(idx, shape_label.clone());
         let source_idx = self.new_source_idx(source_iri);
         self.shapes.insert(
             idx,
@@ -228,7 +231,7 @@ impl SchemaIR {
             }
             ShapeExprLabel::Start => Ok(ShapeLabel::Start),
         }?;
-        match self.shape_labels_map.get(&shape_label) {
+        match self.labels_idx_map.get(&shape_label) {
             Some(idx) => Ok(*idx),
             None => Err(Box::new(SchemaIRError::LabelNotFound { shape_label })),
         }
@@ -240,7 +243,7 @@ impl SchemaIR {
     }
 
     pub fn find_shape_label_idx(&self, label: &ShapeLabel) -> Option<&ShapeLabelIdx> {
-        self.shape_labels_map.get(label)
+        self.labels_idx_map.get(label)
     }
 
     pub fn find_shape_idx(&self, idx: &ShapeLabelIdx) -> Option<&ShapeExprInfo> {
@@ -274,7 +277,7 @@ impl SchemaIR {
     }
 
     pub fn existing_labels(&self) -> Vec<&ShapeLabel> {
-        self.shape_labels_map.keys().collect()
+        self.labels_idx_map.keys().collect()
     }
 
     pub fn shapes(&self) -> impl Iterator<Item = (&ShapeLabel, &IriS, &ShapeExpr)> {
@@ -342,7 +345,7 @@ impl SchemaIR {
     }
 
     pub fn get_shape_label_idx(&self, shape_label: &ShapeLabel) -> Result<ShapeLabelIdx> {
-        match self.shape_labels_map.get(shape_label) {
+        match self.labels_idx_map.get(shape_label) {
             Some(shape_label_idx) => Ok(*shape_label_idx),
             None => Err(Box::new(SchemaIRError::ShapeLabelNotFound {
                 shape_label: shape_label.clone(),
@@ -532,7 +535,7 @@ impl Display for SchemaIR {
         }
         writeln!(dest, "SchemaIR with {} shapes", self.shape_label_counter)?;
         writeln!(dest, "Labels to indexes:")?;
-        for (label, idx) in self.shape_labels_map.iter() {
+        for (label, idx) in self.labels_idx_map.iter() {
             let label = self.show_label(label);
             writeln!(dest, "{label} -> {idx}")?;
         }

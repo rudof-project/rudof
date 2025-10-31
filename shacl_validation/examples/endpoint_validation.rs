@@ -30,7 +30,7 @@ fn main() -> Result<()> {
 
     let schema: SchemaIR = ShaclDataManager::load(Cursor::new(shacl), RDFFormat::Turtle, None)?;
 
-    let endpoint_validation = EndpointValidation::new(
+    let mut endpoint_validation = EndpointValidation::new(
         "https://query.wikidata.org/sparql",
         &PrefixMap::default(),
         ShaclValidationMode::Native,

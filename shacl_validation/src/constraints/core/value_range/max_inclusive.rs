@@ -4,6 +4,7 @@ use crate::constraints::constraint_error::ConstraintError;
 use crate::helpers::constraint::validate_ask_with;
 use crate::helpers::constraint::validate_with;
 use crate::iteration_strategy::ValueNodeIteration;
+use crate::shacl_engine::Engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
@@ -22,6 +23,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxInclusive {
         component: &ComponentIR,
         shape: &ShapeIR,
         _store: &S,
+        _engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,

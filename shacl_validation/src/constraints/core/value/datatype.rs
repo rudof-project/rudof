@@ -5,7 +5,6 @@ use crate::constraints::constraint_error::ConstraintError;
 use crate::helpers::constraint::validate_with;
 use crate::iteration_strategy::ValueNodeIteration;
 use crate::shacl_engine::Engine;
-use crate::shacl_engine::native::NativeEngine;
 use crate::shacl_engine::sparql::SparqlEngine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
@@ -27,7 +26,7 @@ impl<R: NeighsRDF + Debug> Validator<R> for Datatype {
         component: &ComponentIR,
         shape: &ShapeIR,
         _: &R,
-        _: impl Engine<R>,
+        _: &mut dyn Engine<R>,
         value_nodes: &ValueNodes<R>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
@@ -83,6 +82,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Datatype {
         component: &ComponentIR,
         shape: &ShapeIR,
         store: &S,
+        engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
@@ -92,7 +92,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Datatype {
             component,
             shape,
             store,
-            NativeEngine,
+            engine,
             value_nodes,
             source_shape,
             maybe_path,
@@ -116,7 +116,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for Datatype 
             component,
             shape,
             store,
-            SparqlEngine,
+            &mut SparqlEngine::new(),
             value_nodes,
             source_shape,
             maybe_path,

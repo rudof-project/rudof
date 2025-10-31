@@ -7,3 +7,12 @@
 
 :Bob a :Person ;
     :name "Bob" .
+
+# No name for KO to trigger validation error
+:ko a :Person ;
+    :knows :ko .
+
+# Knows KO to trigger validation error 
+:ko1 a :Person ;
+    :name "KO1" ;
+    :knows :ko .

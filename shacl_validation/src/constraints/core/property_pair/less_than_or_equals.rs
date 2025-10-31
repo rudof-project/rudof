@@ -1,6 +1,7 @@
 use crate::constraints::NativeValidator;
 use crate::constraints::SparqlValidator;
 use crate::constraints::constraint_error::ConstraintError;
+use crate::shacl_engine::Engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use shacl_ir::compiled::component_ir::ComponentIR;
@@ -21,6 +22,7 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for LessThanOrEquals {
         component: &ComponentIR,
         shape: &ShapeIR,
         store: &R,
+        _engine: &mut dyn Engine<R>,
         value_nodes: &ValueNodes<R>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,

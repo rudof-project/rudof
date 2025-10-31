@@ -4,6 +4,7 @@ use shacl_ir::compiled::property_shape::PropertyShapeIR;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::compiled::target::CompiledTarget;
 use shacl_ir::schema_ir::SchemaIR;
+use shacl_ir::shape_label_idx::ShapeLabelIdx;
 use srdf::NeighsRDF;
 use srdf::RDFNode;
 use srdf::SHACLPath;
@@ -14,8 +15,9 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 
 pub trait Engine<S: NeighsRDF> {
+    #[allow(clippy::too_many_arguments)]
     fn evaluate(
-        &self,
+        &mut self,
         store: &S,
         shape: &ShapeIR,
         component: &ComponentIR,
@@ -89,4 +91,13 @@ pub trait Engine<S: NeighsRDF> {
             })?;
         Ok(FocusNodes::new(nodes))
     }
+
+    fn record_validation(
+        &mut self,
+        node: RDFNode,
+        shape_idx: ShapeLabelIdx,
+        results: Vec<ValidationResult>,
+    );
+
+    fn has_validated(&self, node: &RDFNode, shape_idx: ShapeLabelIdx) -> bool;
 }

@@ -3,6 +3,7 @@ use crate::constraints::SparqlValidator;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::helpers::constraint::validate_with_focus;
 use crate::iteration_strategy::ValueNodeIteration;
+use crate::shacl_engine::engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use shacl_ir::compiled::component_ir::ComponentIR;
@@ -23,6 +24,7 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for Disjoint {
         component: &ComponentIR,
         shape: &ShapeIR,
         store: &R,
+        _engine: &mut dyn engine::Engine<R>,
         value_nodes: &ValueNodes<R>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,

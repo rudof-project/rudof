@@ -4,7 +4,8 @@ use super::component_ir::ComponentIR;
 use super::severity::CompiledSeverity;
 use super::target::CompiledTarget;
 use crate::closed_info::ClosedInfo;
-use crate::compiled::Deps;
+use crate::dependency_graph::DependencyGraph;
+use crate::dependency_graph::PosNeg;
 use crate::reifier_info;
 use crate::reifier_info::ReifierInfo;
 use crate::schema_ir::SchemaIR;
@@ -117,7 +118,7 @@ impl PropertyShapeIR {
         shape: PropertyShape<S>,
         schema: &Schema<S>,
         schema_ir: &mut SchemaIR,
-    ) -> Result<(Self, Deps), Box<CompiledShaclError>> {
+    ) -> Result<Self, Box<CompiledShaclError>> {
         let id = shape.id().clone();
         let path = shape.path().to_owned();
         let deactivated = shape.is_deactivated().to_owned();
@@ -125,13 +126,10 @@ impl PropertyShapeIR {
 
         let components = shape.components().iter().collect::<Vec<_>>();
         let mut compiled_components = Vec::new();
-        let mut deps = Vec::new();
         for component in components {
-            if let Some((component, new_deps)) =
-                ComponentIR::compile(component.to_owned(), schema, schema_ir)?
+            if let Some(component) = ComponentIR::compile(component.to_owned(), schema, schema_ir)?
             {
                 compiled_components.push(component);
-                deps.extend(new_deps);
             }
         }
 
@@ -143,22 +141,15 @@ impl PropertyShapeIR {
 
         let mut property_shapes = Vec::new();
         for property_shape in shape.property_shapes() {
-            let (shape, new_deps) = compile_shape(property_shape, schema, schema_ir)?;
+            let shape = compile_shape(property_shape, schema, schema_ir)?;
             property_shapes.push(shape);
-            deps.extend(new_deps);
         }
 
         let closed_info = ClosedInfo::get_closed_info_property_shape(&shape, schema)
             .map_err(|e| Box::new(CompiledShaclError::ShaclError { source: e }))?;
 
-        let reifier_info = if let Some((reifier_info, new_deps)) =
-            reifier_info::ReifierInfo::get_reifier_info_property_shape(&shape, schema, schema_ir)?
-        {
-            deps.extend(new_deps);
-            Some(reifier_info)
-        } else {
-            None
-        };
+        let reifier_info =
+            reifier_info::ReifierInfo::get_reifier_info_property_shape(&shape, schema, schema_ir)?;
 
         let compiled_property_shape = PropertyShapeIR::new(
             id,
@@ -172,6 +163,29 @@ impl PropertyShapeIR {
             reifier_info,
         );
 
-        Ok((compiled_property_shape, deps))
+        Ok(compiled_property_shape)
+    }
+
+    pub(crate) fn add_edges(
+        &self,
+        shape_idx: ShapeLabelIdx,
+        dg: &mut DependencyGraph,
+        posneg: PosNeg,
+        schema_ir: &SchemaIR,
+        visited: &mut HashSet<ShapeLabelIdx>,
+    ) {
+        for component in &self.components {
+            component.add_edges(shape_idx, dg, posneg, schema_ir, visited);
+        }
+        for property_shape_idx in &self.property_shapes {
+            if let Some(shape) = schema_ir.get_shape_from_idx(property_shape_idx) {
+                dg.add_edge(shape_idx, *property_shape_idx, posneg);
+                if visited.contains(property_shape_idx) {
+                } else {
+                    visited.insert(*property_shape_idx);
+                    shape.add_edges(*property_shape_idx, dg, posneg, schema_ir, visited);
+                }
+            }
+        }
     }
 }

@@ -5,7 +5,7 @@ use shacl_ast::shacl_vocab::{
 };
 use shacl_ir::severity::CompiledSeverity;
 use srdf::{BuildRDF, FocusRDF, NeighsRDF, Object, RDFNode, SHACLPath};
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ValidationResult {
@@ -269,5 +269,22 @@ where
         SHACLPath::ZeroOrMore { path: _ } => todo!(),
         SHACLPath::OneOrMore { path: _ } => todo!(),
         SHACLPath::ZeroOrOne { path: _ } => todo!(),
+    }
+}
+
+impl Display for ValidationResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "ValidationResult(focus_node: {}, constraint_component: {}, severity: {:?}, message: {:?}, path: {:?}, value: {:?}, source: {:?}, details: {:?})",
+            self.focus_node,
+            self.constraint_component,
+            self.severity,
+            self.message,
+            self.path,
+            self.value,
+            self.source,
+            self.details
+        )
     }
 }
