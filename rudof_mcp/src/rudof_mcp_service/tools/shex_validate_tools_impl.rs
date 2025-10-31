@@ -103,10 +103,7 @@ pub async fn validate_shex_impl(
         None => ReaderMode::Strict,
     };
 
-    let shapemap_spec: Option<InputSpec> = match shapemap {
-        Some(s) => Some(InputSpec::Str(s.clone())),
-        None => None,
-    };
+    let shapemap_spec: Option<InputSpec> = shapemap.map(|s| InputSpec::Str(s.clone()));
 
     let parsed_shapemap_format: ShapeMapFormat = match shapemap_format {
         Some(s) => ShapeMapFormat::from_str(&s).map_err(|e| {
