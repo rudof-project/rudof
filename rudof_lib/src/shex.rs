@@ -12,6 +12,7 @@ use std::env;
 use std::io::Write;
 use url::Url;
 
+#[allow(clippy::too_many_arguments)]
 pub fn validate_shex<W: Write>(
     rudof: &mut Rudof,
     schema: &Option<InputSpec>,
@@ -88,7 +89,7 @@ pub fn validate_shex<W: Write>(
         write_result_shapemap(writer, &shapemap_format, result, sort_by)?;
         Ok(())
     } else {
-        return Err(RudofError::NoShExSchemaToSerialize);
+        Err(RudofError::NoShExSchemaToSerialize)
     }
 }
 

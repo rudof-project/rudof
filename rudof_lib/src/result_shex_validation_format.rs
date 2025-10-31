@@ -61,9 +61,9 @@ impl TryFrom<&ResultShExValidationFormat> for ShapeMapFormat {
             ResultShExValidationFormat::Details => Ok(ShapeMapFormat::Details),
             ResultShExValidationFormat::Json => Ok(ShapeMapFormat::Json),
             other => {
-                return Err(RudofError::NotImplemented {
+                Err(RudofError::NotImplemented {
                     msg: format!("Result ShEx validation format {other:?} not yet implemented"),
-                });
+                })
             }
         }
     }

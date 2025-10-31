@@ -73,9 +73,9 @@ impl TryFrom<ShExFormat> for ShExAstShExFormat {
                 Ok(ShExAstShExFormat::ShExJ)
             }
             other => {
-                return Err(RudofError::NotImplemented {
+                Err(RudofError::NotImplemented {
                     msg: format!("ShEx format {other:?} validation not yet implemented"),
-                });
+                })
             }
         }
     }
