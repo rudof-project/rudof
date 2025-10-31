@@ -1,6 +1,6 @@
 use super::compiled_shacl_error::CompiledShaclError;
 use super::shape::ShapeIR;
-use crate::dependency_graph::DependencyGraph;
+use crate::dependency_graph::{DependencyGraph, PosNeg};
 use crate::shape_label_idx::ShapeLabelIdx;
 use either::Either::{self, Left, Right};
 use iri_s::IriS;
@@ -8,17 +8,18 @@ use prefixmap::PrefixMap;
 use shacl_ast::Schema;
 use shacl_rdf::ShaclParser;
 use srdf::{RDFFormat, RDFNode, Rdf, ReaderMode, SRDFGraph};
-use std::collections::HashMap;
 use std::collections::hash_map::Entry;
+use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 use std::io;
-use tracing::trace;
+use tracing::{debug, info, trace};
 
 #[derive(Clone, Debug)]
 pub struct SchemaIR {
     // imports: Vec<IriS>,
     // entailments: Vec<IriS>,
-    shape_labels_map: HashMap<RDFNode, ShapeLabelIdx>,
+    labels_idx_map: HashMap<RDFNode, ShapeLabelIdx>,
+    idx_labels_map: HashMap<ShapeLabelIdx, RDFNode>,
     shapes: HashMap<ShapeLabelIdx, ShapeIR>,
     prefixmap: PrefixMap,
     base: Option<IriS>,
@@ -29,7 +30,8 @@ pub struct SchemaIR {
 impl SchemaIR {
     pub fn new(prefixmap: PrefixMap, base: Option<IriS>) -> SchemaIR {
         SchemaIR {
-            shape_labels_map: HashMap::new(),
+            labels_idx_map: HashMap::new(),
+            idx_labels_map: HashMap::new(),
             shapes: HashMap::new(),
             prefixmap,
             base,
@@ -69,12 +71,13 @@ impl SchemaIR {
         &mut self,
         sref: RDFNode,
     ) -> Result<Either<ShapeLabelIdx, ShapeLabelIdx>, Box<CompiledShaclError>> {
-        match self.shape_labels_map.entry(sref) {
+        match self.labels_idx_map.entry(sref.clone()) {
             Entry::Occupied(entry) => Ok(Either::Left(*entry.get())),
             Entry::Vacant(entry) => {
                 let label_idx = ShapeLabelIdx::new(self.shape_label_counter);
                 self.shape_label_counter += 1;
                 entry.insert(label_idx);
+                self.idx_labels_map.insert(label_idx, sref);
                 Ok(Either::Right(label_idx))
             }
         }
@@ -89,7 +92,7 @@ impl SchemaIR {
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (&RDFNode, &ShapeIR)> {
-        self.shape_labels_map.iter().map(move |(node, label_idx)| {
+        self.labels_idx_map.iter().map(move |(node, label_idx)| {
             let shape = self
               .shapes
               .get(label_idx)
@@ -104,7 +107,7 @@ impl SchemaIR {
     }
 
     pub fn get_shape(&self, sref: &RDFNode) -> Option<&ShapeIR> {
-        self.shape_labels_map.get(sref).map(|label_idx| {
+        self.labels_idx_map.get(sref).map(|label_idx| {
             self.shapes
                 .get(label_idx)
                 .unwrap_or_else(|| panic!("Internal error: SHACL/SchemaIR. Shape label index {label_idx} corresponding to {sref} not found in shapes map {:?}", self.shapes))
@@ -127,22 +130,60 @@ impl SchemaIR {
             match schema_ir.add_shape_idx(rdf_node.clone())? {
                 Right(idx) => {
                     trace!("Compiling shape {} with new index {}", rdf_node, idx);
-                    let (_idx, deps) =
-                        ShapeIR::compile(shape.to_owned(), schema, &idx, &mut schema_ir)?;
-                    for (pos_neg, label_idx) in deps {
-                        schema_ir.dependency_graph.add_edge(idx, label_idx, pos_neg);
-                    }
+                    let _idx = ShapeIR::compile(shape.to_owned(), schema, &idx, &mut schema_ir)?;
                 }
                 Left(idx) => {
                     trace!("Shape {} already compiled with {}, skipping", rdf_node, idx);
                 }
             }
         }
+        schema_ir.build_dependency_graph();
+        if schema_ir.dependency_graph.has_cycles() {
+            info!(
+                "Warning: The dependency graph has cycles. This is known as a recursive schema and the SHACL semantics for these schemas is implementation dependent"
+            );
+            info!(
+                "More information about recursive schemas can be found at https://www.w3.org/TR/shacl/#shapes-recursion"
+            );
+            debug!(
+                "Dependency graph with cycles: {}",
+                schema_ir.dependency_graph
+            );
+        }
+        if schema_ir.dependency_graph.has_neg_cycle() {
+            info!(
+                "Warning: The dependency graph has negative cycles. This may lead to unexpected behavior in SHACL validation due to non-stratified negation"
+            );
+            let neg_cycles_str: String = schema_ir
+                .dependency_graph
+                .neg_cycles()
+                .iter()
+                .map(|cycles| {
+                    cycles
+                        .iter()
+                        .map(show_cycle)
+                        .collect::<Vec<_>>()
+                        .join("\n ")
+                })
+                .collect::<Vec<_>>()
+                .join("\n---\n");
+            debug!("Negative cycles: {}", neg_cycles_str);
+        }
         Ok(schema_ir)
     }
 
     pub fn get_shape_from_idx(&self, shape_idx: &ShapeLabelIdx) -> Option<&ShapeIR> {
         self.shapes.get(shape_idx)
+    }
+
+    pub(crate) fn build_dependency_graph(&mut self) {
+        let mut dg = DependencyGraph::new();
+        let mut visited = HashSet::new();
+        for (shape_idx, shape_ir) in self.shapes.iter() {
+            // Add edges, we start by positive edges, but the direction can change when there is some negation
+            shape_ir.add_edges(*shape_idx, &mut dg, PosNeg::pos(), self, &mut visited);
+        }
+        self.dependency_graph = dg;
     }
 }
 
@@ -166,11 +207,26 @@ impl Display for SchemaIR {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "SHACL shapes graph IR",)?;
         for (node, shape) in self.shapes.iter() {
-            writeln!(f, "{node} -> {shape}")?;
+            let node_label = self
+                .idx_labels_map
+                .get(node)
+                .map(|n| n.show_qualified(&self.prefixmap))
+                .unwrap_or("?".to_string());
+            writeln!(f, "{node_label}[{node}] -> {shape}")?;
         }
         writeln!(f, "Dependency graph: {}", self.dependency_graph)?;
         Ok(())
     }
+}
+
+fn show_cycle(cycle: &(ShapeLabelIdx, ShapeLabelIdx, Vec<ShapeLabelIdx>)) -> String {
+    let (from, to, shapes) = cycle;
+    let shapes_str = shapes
+        .iter()
+        .map(|s| s.to_string())
+        .collect::<Vec<_>>()
+        .join(" -> ");
+    format!("Cycle from {} to {}: {}", from, to, shapes_str)
 }
 
 #[cfg(test)]

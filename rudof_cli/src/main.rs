@@ -56,7 +56,7 @@ fn main() -> Result<()> {
     .unwrap();*/
     let env_filter = EnvFilter::builder()
         .with_default_directive(LevelFilter::INFO.into())
-        .parse_lossy("rudof=trace,shacl_validation=trace,hyper=off,reqwest=off");
+        .parse_lossy("rudof=info,shacl_validation=info,shacl_ir=debug,hyper=off,reqwest=off");
 
     tracing_subscriber::registry()
         .with(env_filter)

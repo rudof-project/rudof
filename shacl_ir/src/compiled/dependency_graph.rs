@@ -1,4 +1,5 @@
 use crate::shape_label_idx::ShapeLabelIdx;
+use petgraph::algo::is_cyclic_directed;
 use petgraph::visit::EdgeRef;
 use petgraph::{Directed, prelude::GraphMap};
 use std::fmt::Display;
@@ -52,6 +53,11 @@ impl DependencyGraph {
         !neg_cycles.is_empty()
     }
 
+    /// Check if the dependency graph has any cycles (including positive cycles).
+    pub fn has_cycles(&self) -> bool {
+        is_cyclic_directed(&self.graph)
+    }
+
     pub fn all_edges(&self) -> DependencyGraphIter<'_> {
         DependencyGraphIter {
             inner: self.graph.all_edges(),
@@ -62,7 +68,7 @@ impl DependencyGraph {
 impl Display for DependencyGraph {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Dependency Graph:")?;
-        for (from, to, posneg) in self.all_edges() {
+        for (from, posneg, to) in self.all_edges() {
             writeln!(f, "  {} --{}--> {}", from, posneg, to)?;
         }
         Ok(())

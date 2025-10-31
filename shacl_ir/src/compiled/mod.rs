@@ -23,12 +23,8 @@ use srdf::RDFNode;
 use srdf::Rdf;
 use tracing::trace;
 
-use crate::dependency_graph::PosNeg;
 use crate::schema_ir::SchemaIR;
 use crate::shape_label_idx::ShapeLabelIdx;
-
-/// Type alias for dependencies: a vector of (PosNeg, ShapeLabelIdx) pairs
-type Deps = Vec<(PosNeg, ShapeLabelIdx)>;
 
 fn convert_iri_ref(iri_ref: IriRef) -> Result<IriS, Box<CompiledShaclError>> {
     let iri = iri_ref.get_iri().map_err(|err| {
@@ -44,7 +40,7 @@ fn compile_shape<S: Rdf>(
     node: &Object,
     schema: &Schema<S>,
     schema_ir: &mut SchemaIR,
-) -> Result<(ShapeLabelIdx, Deps), Box<CompiledShaclError>> {
+) -> Result<ShapeLabelIdx, Box<CompiledShaclError>> {
     let shape = schema
         .get_shape(node)
         .ok_or(CompiledShaclError::ShapeNotFound {
@@ -57,7 +53,7 @@ fn compile_shape<S: Rdf>(
         }
         Either::Left(idx) => {
             trace!("Shape {:?} already compiled, skipping recompilation", node);
-            Ok((idx, Vec::new()))
+            Ok(idx)
         }
     }
 }
@@ -66,7 +62,7 @@ fn compile_shapes<S: Rdf>(
     shapes: Vec<Object>,
     schema: &Schema<S>,
     schema_ir: &mut SchemaIR,
-) -> Result<Vec<(ShapeLabelIdx, Deps)>, Box<CompiledShaclError>> {
+) -> Result<Vec<ShapeLabelIdx>, Box<CompiledShaclError>> {
     let compiled_shapes = shapes
         .into_iter()
         .map(|shape| compile_shape::<S>(&shape, schema, schema_ir))
