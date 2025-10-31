@@ -72,11 +72,9 @@ impl TryFrom<ShExFormat> for ShExAstShExFormat {
             ShExFormat::ShExJ | ShExFormat::JSON | ShExFormat::JSONLD => {
                 Ok(ShExAstShExFormat::ShExJ)
             }
-            other => {
-                Err(RudofError::NotImplemented {
-                    msg: format!("ShEx format {other:?} validation not yet implemented"),
-                })
-            }
+            other => Err(RudofError::NotImplemented {
+                msg: format!("ShEx format {other:?} validation not yet implemented"),
+            }),
         }
     }
 }
