@@ -1,11 +1,9 @@
-use std::fmt::Display;
-
-use either::Either;
-
 use crate::{
     edge::Edge, evidence::Evidence, formal_base_type::FormalBaseType,
     label_property_spec::LabelPropertySpec, pgs::PropertyGraphSchema, pgs_error::PgsError,
 };
+use either::Either;
+use std::fmt::Display;
 
 #[derive(Debug, Clone)]
 pub struct EdgeType {
@@ -26,7 +24,7 @@ impl EdgeType {
         }
     }
 
-    pub fn semantics(&self, schema: &PropertyGraphSchema) -> Result<EdgeSemantics, PgsError> {
+    pub fn semantics(&self, _schema: &PropertyGraphSchema) -> Result<EdgeSemantics, PgsError> {
         // Placeholder for actual implementation
         Ok(EdgeSemantics {
             source: FormalBaseType::new(),
@@ -55,8 +53,8 @@ pub struct EdgeSemantics {
 impl EdgeSemantics {
     pub fn conforms_edge(
         &self,
-        type_name: &str,
-        edge: &Edge,
+        _type_name: &str,
+        _edge: &Edge,
     ) -> Either<Vec<PgsError>, Vec<Evidence>> {
         // Placeholder for actual implementation
         // This would check if the edge conforms to the semantics defined by this EdgeType

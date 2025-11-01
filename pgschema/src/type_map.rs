@@ -98,7 +98,7 @@ impl TypeMap {
                         failed_associations.push(FailedAssociation {
                             node_id: result_association.node_id.clone(),
                             type_name: result_association.type_name.clone(),
-                            status: FailedAssociationStatus::FailedResult_ShouldConform {
+                            status: FailedAssociationStatus::FailedResultShouldConform {
                                 errors: errors.clone(),
                             },
                         });
@@ -107,7 +107,7 @@ impl TypeMap {
                         failed_associations.push(FailedAssociation {
                             node_id: result_association.node_id.clone(),
                             type_name: result_association.type_name.clone(),
-                            status: FailedAssociationStatus::PassedResult_ShouldNotConform {
+                            status: FailedAssociationStatus::PassedResultShouldNotConform {
                                 evidences: evidences.clone(),
                             },
                         });
@@ -134,21 +134,21 @@ pub struct FailedAssociation {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum FailedAssociationStatus {
-    FailedResult_ShouldConform { errors: Vec<PgsError> },
-    PassedResult_ShouldNotConform { evidences: Vec<Evidence> },
+    FailedResultShouldConform { errors: Vec<PgsError> },
+    PassedResultShouldNotConform { evidences: Vec<Evidence> },
 }
 
 impl Display for FailedAssociation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.status {
-            FailedAssociationStatus::FailedResult_ShouldConform { errors } => write!(
+            FailedAssociationStatus::FailedResultShouldConform { errors } => write!(
                 f,
                 "{}:{} should conform, but result failed: Errors: {}",
                 self.node_id,
                 self.type_name,
                 show_errors(errors)
             ),
-            FailedAssociationStatus::PassedResult_ShouldNotConform { evidences } => write!(
+            FailedAssociationStatus::PassedResultShouldNotConform { evidences } => write!(
                 f,
                 "{}:{} should fail but result passed with evidences: {:?}",
                 self.node_id,

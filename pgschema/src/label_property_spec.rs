@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use crate::{
     formal_base_type::FormalBaseType,
     // formal_graph_type::FormalGraphType,
@@ -8,6 +6,7 @@ use crate::{
     property_value_spec::PropertyValueSpec,
     type_name::{Name, TypeName},
 };
+use std::fmt::Display;
 
 // In the PGSchema paper, LabelPropertySpec is denoted by F
 #[derive(Debug, Clone, PartialEq, Eq)]

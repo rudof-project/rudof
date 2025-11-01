@@ -26,7 +26,7 @@ impl ValidationResult {
 
     pub fn add_association(&mut self, association: ResultAssociation) {
         if association.conforms {
-            self.is_valid = self.is_valid && true;
+            // self.is_valid = self.is_valid && true;
         } else {
             self.is_valid = false;
         }

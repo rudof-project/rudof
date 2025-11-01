@@ -135,12 +135,13 @@ impl Display for Value {
 
 impl PartialOrd for Value {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        match (self, other) {
+        Some(self.cmp(other))
+        /*match (self, other) {
             (Value::Integer(i1), Value::Integer(i2)) => i1.partial_cmp(i2),
             (Value::String(s1), Value::String(s2)) => s1.partial_cmp(s2),
             (Value::Date(d1), Value::Date(d2)) => d1.partial_cmp(d2),
             _ => None,
-        }
+        }*/
     }
 }
 impl Ord for Value {

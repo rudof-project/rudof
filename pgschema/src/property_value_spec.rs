@@ -153,31 +153,31 @@ pub struct TypeSpec {
 impl TypeSpec {
     pub fn string(card: Card) -> Self {
         TypeSpec {
-            type_def: Type::Type(ValueType::string(card)),
+            type_def: Type::ValueType(ValueType::string(card)),
         }
     }
 
     pub fn integer(card: Card) -> Self {
         TypeSpec {
-            type_def: Type::Type(ValueType::integer(card)),
+            type_def: Type::ValueType(ValueType::integer(card)),
         }
     }
 
     pub fn date(card: Card) -> Self {
         TypeSpec {
-            type_def: Type::Type(ValueType::date(card)),
+            type_def: Type::ValueType(ValueType::date(card)),
         }
     }
 
     pub fn bool(card: Card) -> Self {
         TypeSpec {
-            type_def: Type::Type(ValueType::bool(card)),
+            type_def: Type::ValueType(ValueType::bool(card)),
         }
     }
 
     pub fn any() -> Self {
         TypeSpec {
-            type_def: Type::Type(ValueType::Any),
+            type_def: Type::ValueType(ValueType::Any),
         }
     }
 
@@ -214,14 +214,14 @@ impl Display for TypeSpec {
 enum Type {
     Conjunction(Box<Type>, Box<Type>),
     Disjunction(Box<Type>, Box<Type>),
-    Type(ValueType),
+    ValueType(ValueType),
     Cond(ValueType, BooleanExpr),
 }
 
 impl Type {
     pub fn to_value_type(&self) -> ValueType {
         match self {
-            Type::Type(value_type) => value_type.clone(),
+            Type::ValueType(value_type) => value_type.clone(),
             Type::Conjunction(a, b) => {
                 let avt: ValueType = (*a).to_value_type();
                 let bvt: ValueType = (*b).to_value_type();
