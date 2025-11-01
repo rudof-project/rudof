@@ -26,6 +26,12 @@ use crate::{
 
 pub struct PgsBuilder {}
 
+impl Default for PgsBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PgsBuilder {
     pub fn new() -> Self {
         PgsBuilder {}
@@ -163,7 +169,7 @@ fn get_property_value(property_value: Properties) -> Result<PGPropertyValue, Pgs
 
 fn get_base_property(base_property: BaseProperty) -> Result<PGPropertyValue, PgsError> {
     let (key, type_spec) = get_property(base_property.property)?;
-    if let Some(_) = base_property.optionalopt {
+    if base_property.optionalopt.is_some() {
         Ok(PGPropertyValue::optional_property(key, type_spec))
     } else {
         Ok(PGPropertyValue::property(key, type_spec))

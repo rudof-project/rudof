@@ -10,6 +10,12 @@ pub struct Record {
     map: HashMap<Key, Set<Value>>,
 }
 
+impl Default for Record {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Record {
     pub fn keys(&self) -> Set<&Key> {
         self.map.keys().collect()
@@ -26,11 +32,11 @@ impl Record {
     }
 
     pub fn insert(&mut self, key: Key, value: Value) {
-        self.map.entry(key).or_insert_with(Set::new).insert(value);
+        self.map.entry(key).or_default().insert(value);
     }
 
     pub fn insert_values(&mut self, key: Key, values: Set<Value>) {
-        self.map.entry(key).or_insert_with(Set::new).extend(values);
+        self.map.entry(key).or_default().extend(values);
     }
 
     pub fn get(&self, key: &Key) -> Option<&Set<Value>> {

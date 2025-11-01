@@ -1,4 +1,4 @@
-use std::{fmt::Display, path::Path};
+use std::fmt::Display;
 
 use either::Either::{Left, Right};
 
@@ -16,6 +16,12 @@ use crate::{
 pub struct TypeMap {
     // TODO: Improve the performance of this representation using a HashMap
     associations: Vec<Association>,
+}
+
+impl Default for TypeMap {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl TypeMap {
@@ -60,8 +66,8 @@ impl TypeMap {
                 }
             })?;
             let conforms_result = match either_node_edge {
-                Left(node) => schema.conforms_node(&type_name, node),
-                Right(edge) => schema.conforms_edge(&type_name, edge),
+                Left(node) => schema.conforms_node(type_name, node),
+                Right(edge) => schema.conforms_edge(type_name, edge),
             };
             // TODO: Handle when should_conform is false
             result.add_association(ResultAssociation {

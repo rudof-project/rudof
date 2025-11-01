@@ -16,6 +16,12 @@ pub struct RecordType {
     open: bool,
 }
 
+impl Default for RecordType {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RecordType {
     pub fn keys(&self) -> HashSet<&Key> {
         self.map.keys().collect()

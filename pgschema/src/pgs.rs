@@ -19,6 +19,12 @@ pub struct PropertyGraphSchema {
     edge_id_counter: usize,
 }
 
+impl Default for PropertyGraphSchema {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PropertyGraphSchema {
     pub fn new() -> Self {
         PropertyGraphSchema {
@@ -39,7 +45,7 @@ impl PropertyGraphSchema {
                 label: type_name.to_string(),
             })?;
         self.node_types
-            .get(&node_id)
+            .get(node_id)
             .ok_or(PgsError::MissingType(type_name.to_string()))
     }
 
@@ -51,7 +57,7 @@ impl PropertyGraphSchema {
                 label: type_name.to_string(),
             })?;
         self.edge_types
-            .get(&edge_id)
+            .get(edge_id)
             .ok_or(PgsError::MissingType(type_name.to_string()))
     }
 
@@ -138,7 +144,7 @@ impl PropertyGraphSchema {
     ) -> Either<Vec<PgsError>, Vec<Evidence>> {
         if let Some(node_id) = self.node_names.get(type_name) {
             if let Some(spec) = self.node_types.get(node_id) {
-                match spec.semantics(&self) {
+                match spec.semantics(self) {
                     Ok(semantics) => semantics.conforms(node.labels(), node.content()),
                     Err(e) => Either::Left(vec![e]),
                 }
@@ -159,7 +165,7 @@ impl PropertyGraphSchema {
     ) -> Either<Vec<PgsError>, Vec<Evidence>> {
         if let Some(edge_id) = self.edge_names.get(type_name) {
             if let Some(spec) = self.edge_types.get(edge_id) {
-                match spec.semantics(&self) {
+                match spec.semantics(self) {
                     Ok(semantics) => semantics.conforms_edge(type_name, edge),
                     Err(e) => Either::Left(vec![e]),
                 }

@@ -17,6 +17,12 @@ pub struct FormalBaseType {
     content: HashSet<RecordType>, // Define the structure of FormalBaseType as needed
 }
 
+impl Default for FormalBaseType {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FormalBaseType {
     /// Creates a new FormalBaseType with no labels or content.
     pub fn new() -> Self {
@@ -65,17 +71,14 @@ impl FormalBaseType {
         if self.labels != *labels {
             // TODO: Check openness of labels
             return Either::Left::<Vec<PgsError>, Vec<Evidence>>(vec![PgsError::LabelsDifferent {
-                record_labels: format!("{}", labels.iter().cloned().collect::<Vec<_>>().join(", ")),
-                type_labels: format!(
-                    "{}",
-                    self.labels.iter().cloned().collect::<Vec<_>>().join(", ")
-                ),
+                record_labels: labels.iter().cloned().collect::<Vec<_>>().join(", ").to_string(),
+                type_labels: self.labels.iter().cloned().collect::<Vec<_>>().join(", ").to_string(),
             }]);
         }
         for record_type in &self.content {
             if record_type.conforms(content).is_right() {
                 return Either::Right(vec![Evidence::LabelsContentConforms {
-                    labels: format!("{}", labels.iter().cloned().collect::<Vec<_>>().join(", ")),
+                    labels: labels.iter().cloned().collect::<Vec<_>>().join(", ").to_string(),
                     record: format!("{}", content),
                     type_content: format!("{}", record_type),
                 }]);
@@ -83,14 +86,11 @@ impl FormalBaseType {
         }
         Either::Left(vec![PgsError::RecordContentFails {
             record: format!("{}", content),
-            type_content: format!(
-                "{}",
-                self.content
+            type_content: self.content
                     .iter()
                     .map(|rt| rt.to_string())
                     .collect::<Vec<_>>()
-                    .join("\n")
-            ),
+                    .join("\n").to_string(),
         }])
     }
 
@@ -150,7 +150,7 @@ fn combine_set_records(
     let mut combined: HashSet<RecordType> = HashSet::new();
     for record1 in set1 {
         for record2 in set2 {
-            let combined_record = record1.combine(&record2);
+            let combined_record = record1.combine(record2);
             combined.insert(combined_record);
         }
     }

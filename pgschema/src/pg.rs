@@ -21,6 +21,12 @@ pub struct PropertyGraph {
     edge_id_counter: usize,
 }
 
+impl Default for PropertyGraph {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PropertyGraph {
     /// Creates a new empty PropertyGraph.
     pub fn new() -> Self {
@@ -57,10 +63,10 @@ impl PropertyGraph {
     }
 
     pub fn get_node_edge_by_label(&self, label: &str) -> Result<Either<&Node, &Edge>, PgsError> {
-        if let Some(node) = self.get_node_by_label(label).ok() {
+        if let Ok(node) = self.get_node_by_label(label) {
             return Ok(Either::Left(node));
         }
-        if let Some(edge) = self.get_edge_by_label(label).ok() {
+        if let Ok(edge) = self.get_edge_by_label(label) {
             return Ok(Either::Right(edge));
         }
         Err(PgsError::MissingNodeEdgeLabel {

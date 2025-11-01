@@ -17,6 +17,12 @@ use crate::{
 
 pub struct PgBuilder {}
 
+impl Default for PgBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PgBuilder {
     pub fn new() -> Self {
         PgBuilder {}
@@ -123,14 +129,11 @@ fn get_values(values: Values) -> Result<HashSet<Value>, PgsError> {
             let value = get_value(value)?;
             result.insert(value);
         }
-        Values::ListValue(values_opt) => match values_opt {
-            Some(values) => {
-                for value in values {
-                    let value = get_value(value)?;
-                    result.insert(value);
-                }
+        Values::ListValue(values_opt) => if let Some(values) = values_opt {
+            for value in values {
+                let value = get_value(value)?;
+                result.insert(value);
             }
-            None => {}
         },
     }
     Ok(result)

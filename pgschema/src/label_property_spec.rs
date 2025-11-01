@@ -22,6 +22,12 @@ pub enum LabelPropertySpec {
     Content(Box<LabelPropertySpec>, PropertyValueSpec),
 }
 
+impl Default for LabelPropertySpec {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LabelPropertySpec {
     pub fn new() -> Self {
         LabelPropertySpec::Empty

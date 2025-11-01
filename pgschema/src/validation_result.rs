@@ -10,6 +10,12 @@ pub struct ValidationResult {
     pub associations: Vec<ResultAssociation>,
 }
 
+impl Default for ValidationResult {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ValidationResult {
     pub fn new() -> Self {
         ValidationResult {
