@@ -1,0 +1,13 @@
+(n1: User { email: "alice@email.com" });
+
+// No email
+(n2_wrong: User { name: "Bob" });
+
+// Wrong email without @
+(n3_wrong: User { email: "carol" });
+
+// Email with an integer
+(n4_wrong: User { email: 23 });
+
+// 2 emails
+(n5_wrong: User { email: [ "email1@email.com", "email2@email.com" ] })

@@ -1,0 +1,3 @@
+n1: UserType,
+n2: UserType,
+n3_wrong:!UserType

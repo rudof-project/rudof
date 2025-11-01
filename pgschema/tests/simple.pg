@@ -1,0 +1,2 @@
+(alice: Person { name: "Alice", age: 23, aliases: "Ally" });
+(bob: Person { name: "Robert", aliases: ["Bob", "Bobby"] })

@@ -1,0 +1,30 @@
+[package]
+name = "pgschema"
+version = "0.1.5"
+edition = "2024"
+license = "MIT"
+description = "Prototype for PG-SChema with property constraints"
+homepage = "https://github.com/wesopapers/pgschemapc"
+repository = "https://github.com/wesopapers/pgschemapc"
+keywords = ["pgschema", "property graphs", "property constraints"]
+categories = ["command-line-utilities", "property-graphs", "pg-schema"]
+
+[dependencies]
+anyhow = "1.0"
+clap = "4.5"
+clientele = "0.3"
+either = "1.15"
+itertools = "0.14"
+regex = "1.11.1"
+rustemo = "0.7"
+text-diff = "0.4.0"
+thiserror = "2.0"
+time = { version = "0.3", features = ["macros", "parsing"] }
+tracing = "0.1"
+
+[dev-dependencies]
+tracing-test = "0.2"
+rustemo-compiler = "0.7"
+
+[build-dependencies]
+rustemo-compiler = "0.7"

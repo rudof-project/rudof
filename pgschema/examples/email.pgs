@@ -1,0 +1,3 @@
+CREATE NODE TYPE ( EmailUserType {
+    email: STRING CHECK REGEX "^[\w.-]+@[\w.-]+\.\w+$"
+}) 

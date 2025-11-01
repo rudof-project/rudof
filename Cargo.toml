@@ -5,6 +5,7 @@ members = [
     "dctap",
     "iri_s",
     "mie",
+    "pgschema",
     "prefixmap",
     "python",
     "rbe",
@@ -80,6 +81,7 @@ oxrdfio = { version = "0.2.0", features = ["rdf-12"] }
 oxrdfxml = { version = "0.2.0" }
 oxsdatatypes = "0.2.2"
 oxttl = { version = "0.2.0", features = ["rdf-12"] }
+pgschema = { version = "0.1.5", path = "./pgschema" }
 petgraph = { version = "0.8" }
 prefixmap = { version = "0.1.104", path = "./prefixmap" }
 pretty = { version = "0.12" }

@@ -7,7 +7,7 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
-## [Unreleased]
+## v0.1.137
 ### Added
 - More documentation in MCP server
 - First support for recursive shapes in SHACL. At this moment, the compiler detects recursive SHACL and classifies in stratified schemas (non-negative cycles) and non-stratified schemas (negative cycles) whose semantics can be more difficult to implement. It also does a first implementation of recursive schemas, which is not yet well tested. This can solve issue #238

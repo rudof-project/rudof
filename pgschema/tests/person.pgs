@@ -1,0 +1,5 @@
+CREATE NODE TYPE ( UserType : Person {
+    name: STRING , 
+    OPTIONAL age: INTEGER,
+    aliases: STRING *
+}) 

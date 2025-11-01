@@ -1,0 +1,11 @@
+CREATE NODE TYPE ( PersonType : Person {
+    name: STRING,
+    OPTIONAL age: INTEGER
+}) ;
+CREATE NODE TYPE ( StudentType : Person & Student {
+    name: STRING,
+    OPTIONAL age: INTEGER
+}) ;
+CREATE NODE TYPE ( CourseType: Course {
+    name: STRING
+})

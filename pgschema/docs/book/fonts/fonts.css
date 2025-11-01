@@ -1,0 +1,16 @@
+@font-face {
+    font-family: "JetBrains Mono";
+    src: url("JetBrainsMono-Regular.ttf") format("ttf");
+}
+
+@font-face {
+    font-family: "IA Writer QuattroS";
+    src: url("iAWriterQuattroS-Regular.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "Lora";
+    src: url("Lora.var.woff2") format("woff2-variations");
+    font-weight: 100 900;
+    font-style: normal;
+}

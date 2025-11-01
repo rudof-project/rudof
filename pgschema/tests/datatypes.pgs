@@ -1,0 +1,7 @@
+CREATE NODE TYPE (PersonType: Person { 
+    name: STRING, 
+    age: INTEGER, 
+    birthDate: DATE, 
+    hasChildren: BOOL 
+})
+

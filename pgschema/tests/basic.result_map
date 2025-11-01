@@ -1,0 +1,4 @@
+n1:PersonType,
+n2_wrong:! PersonType,
+n3_wrong:! PersonType,
+n4_wrong:! PersonType

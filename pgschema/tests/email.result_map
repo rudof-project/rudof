@@ -1,0 +1,5 @@
+n1: EmailUserType,
+n2_wrong:! EmailUserType,
+n3_wrong:! EmailUserType,
+n4_wrong:! EmailUserType,
+n5_wrong:! EmailUserType

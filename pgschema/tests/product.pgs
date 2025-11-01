@@ -1,0 +1,5 @@
+CREATE NODE TYPE ( ProductType : Product {
+    productId: STRING ,
+    label: STRING, 
+    category: STRING | INTEGER
+}) 

@@ -1,0 +1,49 @@
+Map:
+    Association+[COMMA]
+    ;
+
+Association:
+    NodeId SEMICOLON NOT? TypeName ;
+
+NodeId:
+    IDENTIFIER ;
+
+TypeName:
+    IDENTIFIER ;
+
+// Productions for comments  
+Layout: LayoutItem*;
+LayoutItem: WS | Comment;
+Comment: '/*' Corncs '*/' | CommentLine;
+Corncs: Cornc*;
+Cornc: Comment | NotComment | WS;
+
+terminals
+
+// Terminals for comments
+WS: /\s+/;
+CommentLine: /\/\/.*/;
+NotComment: /((\*[^\/])|[^\s*\/]|\/[^\*])+/;
+START_COMMENT: '/*';
+END_COMMENT: '*/';
+
+IDENTIFIER:
+    /\w+/ ;
+
+AT:
+    "@" ;
+
+COMMA:
+    "," ;
+
+SEMICOLON:
+    ":" ;
+
+OPENBRACKET:
+    "[" ;
+
+CLOSEBRACKET:
+    "]" ;
+
+NOT:
+    "!" ;
