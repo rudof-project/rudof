@@ -7,6 +7,14 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.1.138
+### Added
+- Added experimental feature to support Property Graphs and Property graph schemas (PGSchema)
+
+### Fixed
+- Recovered the option to get tracing information from RUST_LOG variable
+- Improved the visualization of SHACL validation results which were not presenting the path in property shapes
+
 ## v0.1.137
 ### Added
 - More documentation in MCP server

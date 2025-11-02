@@ -6,7 +6,7 @@ license = "MIT"
 description = "Prototype for PG-SChema with property constraints"
 homepage = "https://github.com/wesopapers/pgschemapc"
 repository = "https://github.com/wesopapers/pgschemapc"
-keywords = ["pgschema", "property graphs", "property constraints"]
+keywords = ["pgschema", "property-graphs", "property-constraints"]
 categories = ["command-line-utilities", "property-graphs", "pg-schema"]
 
 [dependencies]
