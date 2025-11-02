@@ -22,3 +22,7 @@ pub mod type_name;
 pub mod validation_result;
 pub mod value;
 pub mod value_type;
+
+pub enum PgSchemaFormat {
+    PgSchemaC,
+}

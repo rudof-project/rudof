@@ -7,8 +7,12 @@ use sparql_service::RdfData;
 use srdf::SRDFSparql;
 use thiserror::Error;
 
+use crate::data_format::DataFormatError;
+
 #[derive(Error, Debug)]
 pub enum RudofError {
+    #[error("Data format error: {error}")]
+    DataFormatError { error: DataFormatError },
     #[error("Error qualifying object {object}: {error}")]
     QualifyObject { object: String, error: String },
     #[error("Error qualifying subject {subject}: {error}")]
