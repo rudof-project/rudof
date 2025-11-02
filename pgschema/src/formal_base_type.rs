@@ -71,14 +71,30 @@ impl FormalBaseType {
         if self.labels != *labels {
             // TODO: Check openness of labels
             return Either::Left::<Vec<PgsError>, Vec<Evidence>>(vec![PgsError::LabelsDifferent {
-                record_labels: labels.iter().cloned().collect::<Vec<_>>().join(", ").to_string(),
-                type_labels: self.labels.iter().cloned().collect::<Vec<_>>().join(", ").to_string(),
+                record_labels: labels
+                    .iter()
+                    .cloned()
+                    .collect::<Vec<_>>()
+                    .join(", ")
+                    .to_string(),
+                type_labels: self
+                    .labels
+                    .iter()
+                    .cloned()
+                    .collect::<Vec<_>>()
+                    .join(", ")
+                    .to_string(),
             }]);
         }
         for record_type in &self.content {
             if record_type.conforms(content).is_right() {
                 return Either::Right(vec![Evidence::LabelsContentConforms {
-                    labels: labels.iter().cloned().collect::<Vec<_>>().join(", ").to_string(),
+                    labels: labels
+                        .iter()
+                        .cloned()
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                        .to_string(),
                     record: format!("{}", content),
                     type_content: format!("{}", record_type),
                 }]);
@@ -86,11 +102,13 @@ impl FormalBaseType {
         }
         Either::Left(vec![PgsError::RecordContentFails {
             record: format!("{}", content),
-            type_content: self.content
-                    .iter()
-                    .map(|rt| rt.to_string())
-                    .collect::<Vec<_>>()
-                    .join("\n").to_string(),
+            type_content: self
+                .content
+                .iter()
+                .map(|rt| rt.to_string())
+                .collect::<Vec<_>>()
+                .join("\n")
+                .to_string(),
         }])
     }
 
