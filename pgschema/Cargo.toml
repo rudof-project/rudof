@@ -7,7 +7,12 @@ description = "Prototype for PG-SChema with property constraints"
 homepage = "https://github.com/wesopapers/pgschemapc"
 repository = "https://github.com/wesopapers/pgschemapc"
 keywords = ["pgschema", "property-graphs", "property-constraints"]
-categories = ["command-line-utilities", "property-graphs", "pg-schema"]
+categories = [
+    "command-line-utilities",
+    "web-programming",
+    "parser-implementations",
+    "data-structures",
+]
 
 [dependencies]
 anyhow = "1.0"
