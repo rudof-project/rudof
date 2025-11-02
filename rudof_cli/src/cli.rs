@@ -1,3 +1,4 @@
+use crate::PgSchemaFormat;
 use crate::dctap_format::DCTapFormat;
 use crate::result_compare_format::ResultCompareFormat;
 use crate::{
@@ -155,7 +156,7 @@ pub enum Command {
         #[arg(
             short = 't',
             value_name = "BOOL",
-            help = "SHow processing time",
+            help = "Show processing time",
             long = "show-time"
         )]
         show_time: Option<bool>,
@@ -204,6 +205,72 @@ pub enum Command {
             help = "Compile Schema to Internal representation"
         )]
         compile: Option<bool>,
+
+        #[arg(
+            long = "force-overwrite",
+            help = "Force overwrite to output file if it already exists",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
+
+        /// Config file path, if unset it assumes default config
+        #[arg(
+            short = 'c',
+            long = "config-file",
+            value_name = "FILE",
+            help = "Config file name"
+        )]
+        config: Option<PathBuf>,
+    },
+
+    /// Show information about Property Graph Schemas
+    PgSchema {
+        #[arg(
+            short = 's',
+            long = "schema",
+            value_name = "INPUT",
+            help = "Schema, FILE, URI or - for stdin"
+        )]
+        schema: InputSpec,
+
+        #[arg(
+            short = 'f',
+            long = "format",
+            value_name = "FORMAT",
+            ignore_case = true,
+            help = "PGSchema format",
+            default_value_t = PgSchemaFormat::PgSchemaC
+        )]
+        schema_format: PgSchemaFormat,
+
+        #[arg(
+            short = 'r',
+            long = "result-format",
+            ignore_case = true,
+            value_name = "FORMAT",
+            help = "Result schema format",
+            default_value_t = PgSchemaFormat::PgSchemaC
+        )]
+        result_schema_format: PgSchemaFormat,
+
+        #[arg(
+            short = 't',
+            value_name = "BOOL",
+            help = "Show processing time",
+            long = "show-time"
+        )]
+        show_time: Option<bool>,
+
+        #[arg(long = "show-schema", value_name = "BOOL", help = "Show schema")]
+        show_schema: Option<bool>,
+
+        #[arg(
+            short = 'o',
+            long = "output-file",
+            value_name = "FILE",
+            help = "Output file name, default = terminal"
+        )]
+        output: Option<PathBuf>,
 
         #[arg(
             long = "force-overwrite",

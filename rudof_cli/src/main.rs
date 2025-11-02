@@ -24,6 +24,7 @@ use rudof_cli::node::run_node;
 use rudof_cli::query::run_query;
 use rudof_cli::rdf_config::run_rdf_config;
 use rudof_cli::run_compare;
+use rudof_cli::run_pgschema;
 use rudof_cli::{
     GenerateSchemaFormat, ValidationMode, run_convert, run_dctap, run_service, run_shacl,
     run_shapemap, run_shex, run_validate_shacl, run_validate_shex,
@@ -465,6 +466,26 @@ fn main() -> Result<()> {
                 *force_overwrite,
             )?;
             Ok(())
+        }
+        Some(Command::PgSchema {
+            schema,
+            schema_format,
+            output,
+            result_schema_format,
+            config,
+            show_time,
+            show_schema,
+            force_overwrite,
+        }) => {
+            let config = get_config(config)?;
+            run_pgschema(
+                schema,
+                schema_format,
+                output,
+                result_schema_format,
+                *force_overwrite,
+                &config,
+            )
         }
         Some(Command::Convert {
             file,

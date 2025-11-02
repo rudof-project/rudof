@@ -20,7 +20,7 @@ pub fn run_service(
 ) -> Result<()> {
     let reader = input.open_read(Some(data_format.mime_type()), "Service")?;
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let rdf_format = data_format2rdf_format(data_format);
+    let rdf_format = data_format2rdf_format(data_format)?;
     let service_config = config.service_config();
     let base = service_config.base.as_ref().map(|i| i.as_str());
     let mut rudof = Rudof::new(config)?;
