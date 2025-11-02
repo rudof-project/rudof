@@ -30,7 +30,7 @@ impl<R: NeighsRDF + Debug> Validator<R> for Datatype {
         value_nodes: &ValueNodes<R>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
-        _shapes_graph: &SchemaIR,
+        shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let check = |value_node: &R::Term| {
             trace!(
@@ -61,8 +61,8 @@ impl<R: NeighsRDF + Debug> Validator<R> for Datatype {
         };
 
         let message = format!(
-            "Datatype constraint not satisfied. Expected datatype: {}",
-            self.datatype()
+            "Expected datatype: {}",
+            shapes_graph.prefix_map().qualify(self.datatype())
         );
         validate_with(
             component,

@@ -19,6 +19,7 @@ use srdf::QueryRDF;
 use srdf::SHACLPath;
 use srdf::Term;
 use std::fmt::Debug;
+use tracing::debug;
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinLength {
     fn validate_native<'a>(
@@ -32,6 +33,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinLength {
         maybe_path: Option<SHACLPath>,
         _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
+        debug!("Maybe_path: {:?}", maybe_path);
         let min_length = |value_node: &S::Term| {
             if value_node.is_blank_node() {
                 true

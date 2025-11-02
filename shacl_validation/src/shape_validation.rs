@@ -65,7 +65,7 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
                 component,
                 &value_nodes,
                 source_shape,
-                None,
+                self.path(),
                 shapes_graph,
             )?;
             trace!(

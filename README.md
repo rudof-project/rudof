@@ -173,10 +173,20 @@ We maintain a Wiki page with some common [Usage scenarios and How-to guides](htt
 It is possible to change the debug level information with:
 
 ```sh
-export RUST_LOG=value
+export RUST_LOG=info
 ```
 
-where `value` can be `debug` to show more verbose information or `info` to show basic information.
+where `value` can be `info`, `debug` or `trace` to show more information. It is also possible to have more control about the logs using more complex filters. For example, to show `trace` for the elements in crate `shacl_validation`, and supress any logs for crates `hyper` and `reqwest` (which can be quite verbose with traces), you can use:
+
+```
+export RUST_LOG=info,shacl_validation=trace,hyper=off,reqwest=off
+```
+
+In case you use nu_shell, you can use: 
+
+```
+$env.RUST_LOG = 'info,shacl_validation=trace,hyper=off,reqwest=off' 
+```
 
 ## Command line usage
 
