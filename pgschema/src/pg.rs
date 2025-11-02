@@ -40,6 +40,22 @@ impl PropertyGraph {
         }
     }
 
+    // TODO: Review merge behavior for name conflicts
+    pub fn merge(&mut self, other: &PropertyGraph) {
+        for (node_id, node) in other.nodes.iter() {
+            self.nodes.insert(node_id.clone(), node.clone());
+        }
+        for (edge_id, edge) in other.edges.iter() {
+            self.edges.insert(edge_id.clone(), edge.clone());
+        }
+        for (name, node_id) in other.node_names.iter() {
+            self.node_names.insert(name.clone(), node_id.clone());
+        }
+        for (name, edge_id) in other.edge_names.iter() {
+            self.edge_names.insert(name.clone(), edge_id.clone());
+        }
+    }
+
     /* TODO: It gives an error because PgBuilder is not in scope
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, PgsError> {
         let content =

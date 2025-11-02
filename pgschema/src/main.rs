@@ -220,15 +220,15 @@ mod tests {
     }
 
     fn test_case(pg_file: &str, pgs_file: &str, map_file: &str, expected_map_file: &str) {
-        let pg = get_graph(pg_file).expect(format!("Failed to parse: {pg_file})").as_str());
-        let pgs = get_schema(pgs_file).expect(format!("Failed to parse: {pgs_file})").as_str());
-        let type_map = get_map(map_file).expect(format!("Failed to parse: {map_file})").as_str());
+        let pg = get_graph(pg_file).unwrap_or_else(|_| panic!("Failed to parse: {pg_file})"));
+        let pgs = get_schema(pgs_file).unwrap_or_else(|_| panic!("Failed to parse: {pgs_file})"));
+        let type_map = get_map(map_file).unwrap_or_else(|_| panic!("Failed to parse: {map_file})"));
         let expected_result = get_map(expected_map_file)
-            .expect(format!("Failed to parse: {expected_map_file})").as_str());
+            .unwrap_or_else(|_| panic!("Failed to parse: {expected_map_file})"));
         let result = type_map.validate(&pgs, &pg).unwrap();
         let comparison = expected_result.compare_with_result(&result).unwrap();
         if comparison.is_empty() {
-            assert!(true);
+            // Test passed
         } else {
             panic!(
                 "Validation failed: {}",

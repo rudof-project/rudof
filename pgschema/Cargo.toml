@@ -16,7 +16,7 @@ clientele = "0.3"
 either = "1.15"
 itertools = "0.14"
 regex = "1.11.1"
-rustemo = "0.7"
+rustemo = "0.7.1"
 text-diff = "0.4.0"
 thiserror = "2.0"
 time = { version = "0.3", features = ["macros", "parsing"] }

@@ -404,9 +404,9 @@ fn show_path_opt(object: Option<&SHACLPath>, shacl_prefixmap: &PrefixMap) -> Str
         None => String::new(),
         Some(SHACLPath::Predicate { pred }) => {
             let path = shacl_prefixmap.qualify(pred);
-            format!("{path}")
+            path.to_string()
         }
-        Some(path) => format!("{path}"),
+        Some(path) => path.to_string(),
     }
 }
 

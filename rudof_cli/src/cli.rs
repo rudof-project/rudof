@@ -140,7 +140,7 @@ pub enum Command {
             long = "result-format",
             ignore_case = true,
             value_name = "FORMAT",
-            help = "Result schema format, default = ShExJ",
+            help = "Result schema format",
             default_value_t = ShExFormat::ShExJ
         )]
         result_schema_format: ShExFormat,
@@ -224,7 +224,7 @@ pub enum Command {
     },
 
     /// Show information about Property Graph Schemas
-    PgSchema {
+    Pgschema {
         #[arg(
             short = 's',
             long = "schema",
@@ -239,7 +239,8 @@ pub enum Command {
             value_name = "FORMAT",
             ignore_case = true,
             help = "PGSchema format",
-            default_value_t = PgSchemaFormat::PgSchemaC
+            default_value_t = PgSchemaFormat::PgSchemaC,
+            value_enum
         )]
         schema_format: PgSchemaFormat,
 
@@ -249,7 +250,8 @@ pub enum Command {
             ignore_case = true,
             value_name = "FORMAT",
             help = "Result schema format",
-            default_value_t = PgSchemaFormat::PgSchemaC
+            default_value_t = PgSchemaFormat::PgSchemaC,
+            value_enum
         )]
         result_schema_format: PgSchemaFormat,
 

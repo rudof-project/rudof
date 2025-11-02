@@ -25,6 +25,7 @@ use rudof_cli::query::run_query;
 use rudof_cli::rdf_config::run_rdf_config;
 use rudof_cli::run_compare;
 use rudof_cli::run_pgschema;
+use rudof_cli::run_validate_pgschema;
 use rudof_cli::{
     GenerateSchemaFormat, ValidationMode, run_convert, run_dctap, run_service, run_shacl,
     run_shapemap, run_shex, run_validate_shacl, run_validate_shex,
@@ -33,6 +34,7 @@ use rudof_lib::{
     InputSpec, RudofConfig, data_format::DataFormat, shex_format::ShExFormat as CliShExFormat,
     sort_by_result_shape_map::SortByResultShapeMap,
 };
+use std::env;
 use std::io;
 use std::path::PathBuf;
 use std::result::Result::Ok;
@@ -44,6 +46,13 @@ use tracing_subscriber::{filter::EnvFilter, fmt};
 fn main() -> Result<()> {
     // Load environment variables from `.env`:
     clientele::dotenv().ok();
+
+    unsafe {
+        // env::set_var("RUST_BACKTRACE", "1");
+
+        // Disable rustemo tracing output which is very verbose
+        env::set_var("RUSTEMO_NOTRACE", "1");
+    }
 
     let fmt_layer = fmt::layer()
         .with_file(true)
@@ -272,6 +281,16 @@ fn main() -> Result<()> {
                         *force_overwrite,
                     )
                 }
+                ValidationMode::PGSchema => run_validate_pgschema(
+                    schema,
+                    data,
+                    data_format,
+                    shapemap,
+                    shapemap_format,
+                    output,
+                    &config,
+                    *force_overwrite,
+                ),
             }
         }
         Some(Command::ShexValidate {
@@ -467,7 +486,7 @@ fn main() -> Result<()> {
             )?;
             Ok(())
         }
-        Some(Command::PgSchema {
+        Some(Command::Pgschema {
             schema,
             schema_format,
             output,

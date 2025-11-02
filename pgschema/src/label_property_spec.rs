@@ -142,7 +142,7 @@ mod tests {
         let name = PropertyValue::property(Key::new("name"), TypeSpec::string(Card::One));
         let age = PropertyValue::property(Key::new("age"), TypeSpec::integer(Card::One));
         let person_content = PropertyValue::each_of(name, age);
-        graph.add_node_spec(
+        let _ = graph.add_node_spec(
             "PersonType",
             LabelPropertySpec::content(person_label, PropertyValueSpec::closed(person_content)),
         );

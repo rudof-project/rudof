@@ -107,7 +107,7 @@ mod tests {
         let aliases =
             PropertyValue::property(Key::new("aliases"), TypeSpec::string(Card::ZeroOrMore));
         let person_content = PropertyValue::each_of(name, PropertyValue::each_of(age, aliases));
-        graph.add_node_spec(
+        let _ = graph.add_node_spec(
             "PersonType",
             LabelPropertySpec::content(person_label, PropertyValueSpec::closed(person_content)),
         );
@@ -116,11 +116,10 @@ mod tests {
         let semantics = property_value_spec.semantics(&graph).unwrap();
         debug!("Semantics of person type: {:?}", semantics);
 
-        assert_eq!(
+        assert!(
             graph
                 .conforms_node(&"PersonType".to_string(), &alice)
-                .is_right(),
-            true
+                .is_right()
         );
         assert!(
             graph
@@ -154,7 +153,7 @@ mod tests {
         let aliases =
             PropertyValue::property(Key::new("aliases"), TypeSpec::string(Card::ZeroOrMore));
         let person_content = PropertyValue::each_of(name, PropertyValue::each_of(age, aliases));
-        graph.add_node_spec(
+        let _ = graph.add_node_spec(
             "PersonType",
             LabelPropertySpec::content(person_label, PropertyValueSpec::closed(person_content)),
         );
@@ -187,7 +186,7 @@ mod tests {
         let aliases =
             PropertyValue::property(Key::new("aliases"), TypeSpec::string(Card::ZeroOrMore));
         let person_content = PropertyValue::each_of(name, PropertyValue::each_of(age, aliases));
-        graph.add_node_spec(
+        let _ = graph.add_node_spec(
             "PersonType",
             LabelPropertySpec::content(person_label, PropertyValueSpec::closed(person_content)),
         );
@@ -241,7 +240,7 @@ mod tests {
             PropertyValue::each_of(age, aliases),
         );
         let mut graph = PropertyGraphSchema::new();
-        graph.add_node_spec(
+        let _ = graph.add_node_spec(
             "PersonType",
             LabelPropertySpec::content(person_label, PropertyValueSpec::closed(person_content)),
         );

@@ -1,3 +1,7 @@
+#![allow(non_camel_case_types)] // Disables warnings for non-camel-case type names
+#![allow(non_snake_case)] // Disables warnings for non-snake-case function/variable names
+#![allow(non_upper_case_globals)] // Disables warnings for non-upper-case static constants
+
 pub mod boolean_expr;
 pub mod card;
 pub mod cli;
@@ -10,7 +14,10 @@ pub mod key;
 pub mod label_property_spec;
 pub mod node;
 pub mod node_id;
+
+#[allow(clippy::all)]
 pub mod parser;
+
 pub mod pg;
 pub mod pgs;
 pub mod pgs_error;
