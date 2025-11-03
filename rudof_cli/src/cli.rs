@@ -21,13 +21,10 @@ use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about)]
-// #[command(name = "rudof")]
-// #[command(author = "Jose Emilio Labra Gayo <labra@uniovi.es>")]
-// #[command(version = "0.1")]
 #[command(
     arg_required_else_help = true,
     long_about = "\
-A tool to process and validate RDF data using shapes, and convert between different RDF data models"
+A tool to process graph data (RDF and Property Graphs) using schemas (ShEx, SHACL, DCTAP, etc.)"
 )]
 pub struct Cli {
     #[command(subcommand)]
