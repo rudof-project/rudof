@@ -7,9 +7,13 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.1.140
+### Added
+- Methods to return the list of validation results in SHACL and to get information from those results
+
 ## v0.1.139
 ### Added
-- Visualization of subject, predicate and objects in triple terms now have customizable colors and styles
+- Visualization of subject, predicate and objects in triple terms now have customizable colors and styles solving issue #381
 
 ## v0.1.138
 ### Added
