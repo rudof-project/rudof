@@ -17,7 +17,7 @@ use rudof_lib::{
     ValidationStatus, VarName,
     node_info::{format_node_info_list, get_node_info},
     parse_node_selector,
-    shacl_validation::validation_report::report::SortModeReport,
+    shacl_validation::validation_report::{report::SortModeReport, result::ValidationResult},
     srdf::Object,
 };
 use std::{
@@ -1800,8 +1800,10 @@ impl PyValidationReport {
     }
 
     /// Convert ValidationReport to a table String
-    /// It can include details or not, default = false
-    /// It can be formatted to fit in a terminal width, default = 80
+    ///
+    /// Args:
+    ///   with_details: bool - whether to include details in the table
+    ///   terminal_width: usize - the width of the terminal to format the table
     #[pyo3(
         signature = (with_details = false, terminal_width = 80)
     )]
@@ -1819,6 +1821,72 @@ impl PyValidationReport {
     /// Returns true if there were no violation errors
     pub fn conforms(&self) -> bool {
         self.inner.conforms()
+    }
+
+    /// Returns the list of validation results
+    pub fn validation_results(&self) -> Vec<PyValidationResult> {
+        self.inner
+            .results()
+            .iter()
+            .cloned()
+            .map(|result| PyValidationResult { inner: result })
+            .collect()
+    }
+}
+
+/// Result of a SHACL validation
+#[pyclass(frozen, name = "ValidationResult")]
+pub struct PyValidationResult {
+    inner: ValidationResult,
+}
+
+#[pymethods]
+impl PyValidationResult {
+    pub fn __repr__(&self) -> String {
+        format!("{}", self.inner)
+    }
+
+    pub fn __str__(&self) -> String {
+        format!("{}", self.inner)
+    }
+
+    /// Returns the focus node of the validation result
+    pub fn focus_node(&self) -> String {
+        self.inner.focus_node().to_string()
+    }
+
+    /// Returns the constraint component of the validation result
+    pub fn constraint_component(&self) -> String {
+        self.inner.component().to_string()
+    }
+
+    /// Returns the value of the validation result
+    pub fn value(&self) -> String {
+        self.inner
+            .value()
+            .map(|n| n.to_string())
+            .unwrap_or_default()
+    }
+
+    /// Returns the path of the validation result
+    pub fn path(&self) -> String {
+        self.inner.path().map(|p| p.to_string()).unwrap_or_default()
+    }
+
+    /// Returns the source shape of the validation result
+    pub fn source_shape(&self) -> String {
+        self.inner
+            .source()
+            .map(|s| s.to_string())
+            .unwrap_or_default()
+    }
+
+    /// Returns a natural language message describing the validation result
+    pub fn message(&self) -> String {
+        self.inner
+            .message()
+            .map(|m| m.to_string())
+            .unwrap_or_default()
     }
 }
 
