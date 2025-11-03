@@ -349,6 +349,8 @@ impl Rudof {
 
     /// Generate a PlantUML representation of RDF Data
     ///
+    /// The visualization configuration is taken from the current Rudof configuration
+    /// The configuration can be customized to change colors, styles, and other aspects of the visualization
     pub fn data2plant_uml<W: io::Write>(&self, writer: &mut W) -> Result<()> {
         let config = self.config.rdf_data_config().rdf_visualization_config();
         let converter = VisualRDFGraph::from_rdf(&self.rdf_data, config).map_err(|e| {

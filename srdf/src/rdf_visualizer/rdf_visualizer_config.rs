@@ -1,6 +1,17 @@
 use serde::{Deserialize, Serialize};
 
-use crate::rdf_visualizer::{style::Style, uml_color::UmlColor};
+use crate::rdf_visualizer::{
+    arrow_style::{
+        ArrowStyle, DEFAULT_OBJECT_ARROW_STYLE, DEFAULT_PREDICATE_ARROW_STYLE,
+        DEFAULT_SUBJECT_ARROW_STYLE,
+    },
+    style::Style,
+    uml_color::UmlColor,
+};
+
+const DEFAULT_SUBJECT_TEXT: &str = "subj";
+const DEFAULT_PREDICATE_TEXT: &str = "pred";
+const DEFAULT_OBJECT_TEXT: &str = "obj";
 
 /// RDF Visualization config
 /// Contains values for customizing the appearance of RDF visualizations.
@@ -49,6 +60,14 @@ pub struct RDFVisualizationConfig {
     reifies_label: Option<String>,
     unasserted_triple_shape: Option<UmlShape>,
     asserted_triple_shape: Option<UmlShape>,
+
+    subject_arrow_style: Option<ArrowStyle>,
+    predicate_arrow_style: Option<ArrowStyle>,
+    object_arrow_style: Option<ArrowStyle>,
+
+    subject_text: Option<String>,
+    predicate_text: Option<String>,
+    object_text: Option<String>,
 }
 
 impl RDFVisualizationConfig {
@@ -201,6 +220,42 @@ impl RDFVisualizationConfig {
     pub fn get_style(&self) -> Style {
         Style::from_config(self)
     }
+
+    pub fn get_subject_arrow_style(&self) -> ArrowStyle {
+        self.subject_arrow_style
+            .clone()
+            .unwrap_or(DEFAULT_SUBJECT_ARROW_STYLE)
+    }
+
+    pub fn get_subject_text(&self) -> String {
+        self.subject_text
+            .clone()
+            .unwrap_or(DEFAULT_SUBJECT_TEXT.into())
+    }
+
+    pub fn get_predicate_arrow_style(&self) -> ArrowStyle {
+        self.predicate_arrow_style
+            .clone()
+            .unwrap_or(DEFAULT_PREDICATE_ARROW_STYLE)
+    }
+
+    pub fn get_predicate_text(&self) -> String {
+        self.predicate_text
+            .clone()
+            .unwrap_or(DEFAULT_PREDICATE_TEXT.into())
+    }
+
+    pub fn get_object_arrow_style(&self) -> ArrowStyle {
+        self.object_arrow_style
+            .clone()
+            .unwrap_or(DEFAULT_OBJECT_ARROW_STYLE)
+    }
+
+    pub fn get_object_text(&self) -> String {
+        self.object_text
+            .clone()
+            .unwrap_or(DEFAULT_OBJECT_TEXT.into())
+    }
 }
 
 // Default values
@@ -283,6 +338,14 @@ impl Default for RDFVisualizationConfig {
             reifies_label: Some(REIFIES_LABEL.into()),
             unasserted_triple_shape: Some(NON_ASSERTED_TRIPLE_SHAPE),
             asserted_triple_shape: Some(ASSERTED_TRIPLE_SHAPE),
+
+            subject_arrow_style: Some(DEFAULT_SUBJECT_ARROW_STYLE),
+            predicate_arrow_style: Some(DEFAULT_PREDICATE_ARROW_STYLE),
+            object_arrow_style: Some(DEFAULT_OBJECT_ARROW_STYLE),
+
+            subject_text: Some(DEFAULT_SUBJECT_TEXT.into()),
+            predicate_text: Some(DEFAULT_PREDICATE_TEXT.into()),
+            object_text: Some(DEFAULT_OBJECT_TEXT.into()),
         }
     }
 }

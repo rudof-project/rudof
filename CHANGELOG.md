@@ -7,6 +7,10 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.1.139
+### Added
+- Visualization of subject, predicate and objects in triple terms now have customizable colors and styles
+
 ## v0.1.138
 ### Added
 - Added experimental feature to support Property Graphs and Property graph schemas (PGSchema)
