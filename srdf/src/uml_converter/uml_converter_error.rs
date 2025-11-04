@@ -1,8 +1,14 @@
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-
 pub enum UmlConverterError {
+    #[error(
+        "No PlantUML jar file found\nThe environment variable `PLANTUML` should point to a plantuml.jar file\nSearching jar file in: {path}: {error}"
+    )]
+    NoPlantUMLFile { path: String, error: String },
+
+    #[error("Java is not installed or not found in PATH: {error}")]
+    JavaNotInstalled { error: String },
     #[error("Error creating temporary UML file: {tempfile_name}: {error}")]
     CreatingTempUMLFile {
         tempfile_name: String,
@@ -30,9 +36,6 @@ pub enum UmlConverterError {
         temp_name: String,
         error: std::io::Error,
     },
-
-    #[error("No PlantUML file path found at path: {path}: {error}")]
-    NoPlantUMLFile { path: String, error: String },
 
     #[error("Label not found: {name}")]
     NotFoundLabel { name: String },
