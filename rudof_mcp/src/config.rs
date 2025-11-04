@@ -10,8 +10,11 @@ impl ServerConfig {
         format!("{}:{}", self.host, self.port)
     }
 
+    /// MCP-SPEC: The `canonical_uri` uniquely identifies this MCP instance as a protected resource.
+    /// It serves as the audience claim value for validating OAuth 2.1 Bearer tokens.
+    /// Clients MUST use this canonical URI as the `aud` when requesting access tokens from the Authorization Server.
     pub fn canonical_uri(&self) -> String {
-        format!("https://{}:{}/{}", self.host, self.port, self.route_name)
+        "account".to_string()
     }
 
     /// MCP-SPEC: When running locally, servers SHOULD bind only to localhost (127.0.0.1)

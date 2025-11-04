@@ -16,7 +16,7 @@ use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
 
 use crate::{config::ServerConfig, middleware::with_guards, rudof_mcp_service::RudofMcpService, 
-    auth::{AuthConfig, protected_resource_metadata_handler, authorization_guard}};
+    auth::{AuthConfig, protected_resource_metadata_handler, authorization_guard, oauth_authorization_server_metadata_handler}};
 
 /// Entry point for running the MCP Streamable HTTP server.
 /// This function sets up the MCP server according to the **MCP 2025-06-18** specification:
@@ -45,17 +45,14 @@ pub async fn run_mcp(route_name: &str, port: &str, host: &str) -> Result<()> {
         Default::default(),
     );
 
-    let route_path = format!("/{}", cfg.route_name);
-
-    // --- Build auth config ---
     let auth_cfg = Arc::new(AuthConfig::new(
-        cfg.canonical_uri(),                  // MCP canonical URI (audience)
-        "https://auth.example.com".to_string(), // EXTERNAL AS base URL
+        cfg.canonical_uri(),                  
+        "http://localhost:8080/realms/mcp-realm".to_string(), 
         true,
     ));
 
-    // --- Public discovery endpoint ---
-    let resource_metadata_route = "/.well-known/oauth-protected-resource";
+    let resource_metadata_route = "/.well-known/oauth-protected-resource"; // Discovery endpoint for OAuth Protected Resource Metadata.
+    let route_path = format!("/{}", cfg.route_name); // The route path represents the resource endpoint for MCP sessions
 
     let router = Router::new()
         .route(
@@ -66,23 +63,38 @@ pub async fn run_mcp(route_name: &str, port: &str, host: &str) -> Result<()> {
             })
             .fallback_service(any_service(rmcp_service)),
         )
-        .route(resource_metadata_route, axum::routing::get({
-            let ac = auth_cfg.clone();
-            move || protected_resource_metadata_handler(ac.clone())
-        }))
+        .route(
+            resource_metadata_route,
+            axum::routing::get({
+                move || protected_resource_metadata_handler("rudof".to_string())
+            }),
+        )
+        .route(
+            &format!("{}/{{resource}}", resource_metadata_route.trim_end_matches('/')),
+            axum::routing::get({
+                move |axum::extract::Path(resource): axum::extract::Path<String>| {
+                    protected_resource_metadata_handler(resource)
+                }
+            }),
+        )
+        .route(
+            "/.well-known/openid-configuration",
+            axum::routing::get(oauth_authorization_server_metadata_handler),
+        )
+        .route(
+            "/.well-known/oauth-authorization-server",
+            axum::routing::get(oauth_authorization_server_metadata_handler),
+        )
         .layer(ServiceBuilder::new().layer(TraceLayer::new_for_http()));
 
-    // --- Apply security layers ---
-    // Apply protocol/origin guards first
+
     let guarded_router = with_guards(router);
 
-    // Apply authorization middleware after guards
     let guarded_router = guarded_router.layer(axum::middleware::from_fn_with_state(
         auth_cfg.clone(),
-        authorization_guard,  // Just pass the function name, don't wrap it in a closure
+        authorization_guard,  
     ));
 
-    // --- Start server ---
     let bind_addr = cfg.safe_bind_address();
     tracing::info!("Binding to {}", bind_addr);
 
