@@ -14,9 +14,12 @@ use rmcp::transport::streamable_http_server::{
 };
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
+use tower_http::cors::{CorsLayer, Any};
+use axum::http::Method;
 
 use crate::{config::ServerConfig, middleware::with_guards, rudof_mcp_service::RudofMcpService, 
-    auth::{AuthConfig, protected_resource_metadata_handler, authorization_guard, oauth_authorization_server_metadata_handler}};
+    auth::{AuthConfig, protected_resource_metadata_handler, authorization_guard, oauth_authorization_server_metadata_handler,
+    dynamic_client_registration_handler}};
 
 /// Entry point for running the MCP Streamable HTTP server.
 /// This function sets up the MCP server according to the **MCP 2025-06-18** specification:
@@ -54,6 +57,11 @@ pub async fn run_mcp(route_name: &str, port: &str, host: &str) -> Result<()> {
     let resource_metadata_route = "/.well-known/oauth-protected-resource"; // Discovery endpoint for OAuth Protected Resource Metadata.
     let route_path = format!("/{}", cfg.route_name); // The route path represents the resource endpoint for MCP sessions
 
+    let cors = CorsLayer::new()
+        .allow_origin(Any)                        
+        .allow_methods([Method::POST])            
+        .allow_headers(Any);   
+
     let router = Router::new()
         .route(
             &route_path,
@@ -85,6 +93,11 @@ pub async fn run_mcp(route_name: &str, port: &str, host: &str) -> Result<()> {
             "/.well-known/oauth-authorization-server",
             axum::routing::get(oauth_authorization_server_metadata_handler),
         )
+        .route(
+        "/.well-known/dynamic-client-registration",
+        axum::routing::post(dynamic_client_registration_handler)
+        )
+        .layer(cors)
         .layer(ServiceBuilder::new().layer(TraceLayer::new_for_http()));
 
 

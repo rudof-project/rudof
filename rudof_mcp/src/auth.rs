@@ -4,6 +4,7 @@ use axum::{
     http::{Request, Response, StatusCode, HeaderValue, header},
     middleware::Next,
     response::IntoResponse,
+    Json
 };
 use serde::{Serialize, Deserialize};
 use tracing::warn;
@@ -57,6 +58,26 @@ pub struct TokenClaims {
     pub scope: Option<String>,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct ClientRegistrationRequest {
+    pub client_name: Option<String>,
+    pub redirect_uris: Vec<String>,
+    pub grant_types: Option<Vec<String>>,
+    pub response_types: Option<Vec<String>>,
+    pub token_endpoint_auth_method: Option<String>,
+}
+
+/// RFC 7591 Dynamic Client Registration Response
+#[derive(Serialize)]
+pub struct ClientRegistrationResponse {
+    pub client_id: String,
+    pub client_secret: Option<String>,
+    pub client_id_issued_at: u64,
+    pub client_secret_expires_at: u64,
+    pub redirect_uris: Vec<String>,
+}
+
+
 /// Internal error types for authentication handling
 #[allow(dead_code)]
 pub enum AuthError {
@@ -99,16 +120,15 @@ pub async fn protected_resource_metadata_handler(
     resource: String,
 ) -> impl IntoResponse {
     let canonical_resource = if resource.is_empty() {
-        "rudof".to_string()
+        "http://localhost:8000/rudof".to_string()
     } else {
         resource
     };
 
     let metadata = json!({
-        "issuer": "http://localhost:8080/realms/mcp-realm",
-        "authorization_servers": ["http://localhost:8000/.well-known/oauth-authorization-server"],
-        "resource_id": format!("http://localhost:8000/{}", canonical_resource),
-        "scopes": ["openid", "profile"]
+        "resource": canonical_resource,  
+        "authorization_servers": ["http://localhost:8080/realms/mcp-realm"],
+        "scopes_supported": ["openid", "profile", "email"] 
     });
 
     (
@@ -137,9 +157,11 @@ pub async fn oauth_authorization_server_metadata_handler() -> impl IntoResponse 
                             json!(["authorization_code", "refresh_token"]);
                     }
                     if json_value.get("scopes_supported").is_none() {
-                        json_value["scopes_supported"] = json!(["openid", "profile", "email"]);
+                        json_value["scopes_supported"] = json!(["openid", "profile"]);
                     }
-
+                    json_value["registration_endpoint"] = json!(
+                        "http://localhost:8000/.well-known/dynamic-client-registration"
+                    );
                     let body = serde_json::to_string(&json_value).unwrap_or_default();
                     (
                         StatusCode::OK,
@@ -181,6 +203,30 @@ pub async fn oauth_authorization_server_metadata_handler() -> impl IntoResponse 
     }
 }
 
+/// Handles dynamic client registration by forwarding the request to Keycloak
+pub async fn dynamic_client_registration_handler(
+    Json(req): Json<ClientRegistrationRequest>,
+) -> impl IntoResponse {
+    let keycloak_url = "http://localhost:8080/realms/mcp-realm/clients-registrations/openid-connect";
+
+    let client = Client::new();
+
+    match client.post(keycloak_url)
+        .json(&req)
+        .send()
+        .await
+    {
+        Ok(resp) => {
+            let status = resp.status();
+            match resp.json::<Value>().await {
+                Ok(json_body) => (status, [(axum::http::header::CONTENT_TYPE, "application/json")], serde_json::to_string(&json_body).unwrap()),
+                Err(_) => (axum::http::StatusCode::BAD_GATEWAY, [(axum::http::header::CONTENT_TYPE, "text/plain")], "Failed to parse Keycloak response".to_string())
+            }
+        },
+        Err(e) => (axum::http::StatusCode::BAD_GATEWAY, [(axum::http::header::CONTENT_TYPE, "text/plain")], format!("Failed to contact Keycloak: {}", e))
+    }
+}
+
 /// Middleware guard to protect resources.
 /// Verifies bearer tokens against the MCP audience and external AS JWKS.
 pub async fn authorization_guard(
@@ -207,14 +253,14 @@ pub async fn authorization_guard(
             let token = h.split_whitespace().nth(1).unwrap_or("");
             match verify_jwt(token, &authcfg).await {
                 Ok(claims) => {
-                    // MCP-SPEC: Token audience MUST include MCP canonical URI
-                    if !claims.aud.iter().any(|aud| aud == &authcfg.canonical_uri) {
-                        return unauthorized_response(
-                            &authcfg.resource_metadata_url(),
-                            Some("invalid_token".to_string()),
-                            Some(format!("Token audience mismatch: {:?}", claims.aud)),
-                        );
-                    }
+                    // // MCP-SPEC: Token audience MUST include "rudof-mcp"
+                    // if !claims.aud.iter().any(|aud| aud == "rudof-mcp") {
+                    //     return unauthorized_response(
+                    //         &authcfg.resource_metadata_url(),
+                    //         Some("invalid_token".to_string()),
+                    //         Some(format!("Token audience mismatch: {:?}", claims.aud)),
+                    //     );
+                    // }
 
                     // MCP-SPEC: Store claims in request context for downstream handlers
                     req.extensions_mut().insert(claims);

@@ -32,8 +32,7 @@ srdf.workspace = true
 tokio = { version = "1.47.1", features = ["full"] }
 tokio-util = "0.7.16"
 tower = "0.5"
-tower-http = { version = "0.5", features = ["trace"] }
+tower-http = { version = "0.5", features = ["trace", "cors"] }
 tracing.workspace = true
 tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
-
  
