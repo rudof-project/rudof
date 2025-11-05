@@ -855,6 +855,15 @@ pub enum Command {
         output: Option<PathBuf>,
 
         #[arg(
+            short = 'd',
+            long = "depth",
+            value_name = "NUMBER",
+            help = "outgoing number of levels, default = 1",
+            default_value_t = 1
+        )]
+        depth: usize,
+
+        #[arg(
             short = 'c',
             long = "config",
             value_name = "FILE",

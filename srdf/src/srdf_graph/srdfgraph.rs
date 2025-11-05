@@ -11,10 +11,10 @@ use serde::Serialize;
 use serde::ser::SerializeStruct;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
-use std::io::{self, BufReader, Write};
+use std::io::{self, BufReader, Cursor, Read, Write};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use tracing::debug;
+use tracing::{debug, trace};
 
 use crate::srdfgraph_error::SRDFGraphError;
 use oxrdf::{
@@ -69,7 +69,8 @@ impl SRDFGraph {
 
     pub fn merge_from_reader<R: io::Read>(
         &mut self,
-        read: R,
+        reader: &mut R,
+        source_name: &str,
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
@@ -80,12 +81,32 @@ impl SRDFGraph {
                     None => TurtleParser::new(),
                     Some(iri) => TurtleParser::new().with_base_iri(iri)?,
                 };
-                // let mut graph = Graph::default();
-                let mut reader = turtle_parser.for_reader(read);
-                for triple_result in reader.by_ref() {
-                    self.graph.insert(triple_result?.as_ref());
+                let mut buffer = Vec::new();
+                reader.read_to_end(&mut buffer)?;
+                let reader1 = Cursor::new(buffer.clone());
+                let mut reader2 = Cursor::new(buffer);
+                let mut turtle_reader = turtle_parser.for_reader(reader1);
+                for triple_result in turtle_reader.by_ref() {
+                    let triple = match triple_result {
+                        Err(e) => {
+                            if reader_mode.is_strict() {
+                                let mut str = String::new();
+                                let _ = reader2.read_to_string(&mut str)?;
+                                trace!("Error parsing turtle...rest of input: {}", str);
+                                return Err(SRDFGraphError::TurtleParseError {
+                                    source_name: source_name.to_string(),
+                                    error: e.to_string(),
+                                });
+                            } else {
+                                debug!("Turtle Error captured in Lax mode: {e:?}");
+                                continue;
+                            }
+                        }
+                        Ok(t) => t,
+                    };
+                    self.graph.insert(triple.as_ref());
                 }
-                let prefixes: HashMap<&str, &str> = reader.prefixes().collect();
+                let prefixes: HashMap<&str, &str> = turtle_reader.prefixes().collect();
                 self.base = match (&self.base, base) {
                     (None, None) => None,
                     (Some(b), None) => Some(b.clone()),
@@ -96,7 +117,7 @@ impl SRDFGraph {
             }
             RDFFormat::NTriples => {
                 let parser = NTriplesParser::new();
-                let mut reader = parser.for_reader(read);
+                let mut reader = parser.for_reader(reader);
                 for triple_result in reader.by_ref() {
                     match triple_result {
                         Err(e) => {
@@ -117,7 +138,7 @@ impl SRDFGraph {
             }
             RDFFormat::RDFXML => {
                 let parser = RdfXmlParser::new();
-                let mut reader = parser.for_reader(read);
+                let mut reader = parser.for_reader(reader);
                 for triple_result in reader.by_ref() {
                     match triple_result {
                         Err(e) => {
@@ -141,7 +162,7 @@ impl SRDFGraph {
             RDFFormat::N3 => todo!(),
             RDFFormat::NQuads => {
                 let parser = NQuadsParser::new();
-                let mut reader = parser.for_reader(read);
+                let mut reader = parser.for_reader(reader);
                 for triple_result in reader.by_ref() {
                     match triple_result {
                         Err(e) => {
@@ -162,7 +183,7 @@ impl SRDFGraph {
             }
             RDFFormat::JsonLd => {
                 let parser = JsonLdParser::new();
-                let mut reader = parser.for_reader(read);
+                let mut reader = parser.for_reader(reader);
                 for triple_result in reader.by_ref() {
                     match triple_result {
                         Err(e) => {
@@ -191,14 +212,15 @@ impl SRDFGraph {
     }
 
     pub fn from_reader<R: io::Read>(
-        read: R,
+        read: &mut R,
+        source_name: &str,
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<SRDFGraph, SRDFGraphError> {
         let mut srdf_graph = SRDFGraph::new();
 
-        srdf_graph.merge_from_reader(read, format, base, reader_mode)?;
+        srdf_graph.merge_from_reader(read, source_name, format, base, reader_mode)?;
         Ok(srdf_graph)
     }
 
@@ -223,7 +245,13 @@ impl SRDFGraph {
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<SRDFGraph, SRDFGraphError> {
-        Self::from_reader(std::io::Cursor::new(&data), format, base, reader_mode)
+        Self::from_reader(
+            &mut std::io::Cursor::new(&data),
+            "String",
+            format,
+            base,
+            reader_mode,
+        )
     }
 
     fn cnv_iri(iri: IriS) -> OxNamedNode {
@@ -261,8 +289,15 @@ impl SRDFGraph {
             path_name: path_name.to_string(),
             error: e,
         })?;
-        let reader = BufReader::new(file);
-        Self::merge_from_reader(self, reader, format, base, reader_mode)?;
+        let mut reader = BufReader::new(file);
+        Self::merge_from_reader(
+            self,
+            &mut reader,
+            path.as_ref().display().to_string().as_str(),
+            format,
+            base,
+            reader_mode,
+        )?;
         Ok(())
     }
 
@@ -277,8 +312,14 @@ impl SRDFGraph {
             path_name: path_name.to_string(),
             error: e,
         })?;
-        let reader = BufReader::new(file);
-        Self::from_reader(reader, format, base, reader_mode)
+        let mut reader = BufReader::new(file);
+        Self::from_reader(
+            &mut reader,
+            path.as_ref().display().to_string().as_str(),
+            format,
+            base,
+            reader_mode,
+        )
     }
 
     pub fn parse_data(

@@ -162,26 +162,27 @@ impl RdfData {
         reader_mode: &ReaderMode,
     ) -> Result<RdfData, RdfDataError> {
         let mut rdf_data = Self::new();
-        rdf_data.merge_from_reader(data.as_bytes(), format, base, reader_mode)?;
+        rdf_data.merge_from_reader(&mut data.as_bytes(), "String", format, base, reader_mode)?;
         Ok(rdf_data)
     }
 
     /// Merge the in-memory graph with the graph read from a reader
     pub fn merge_from_reader<R: io::Read>(
         &mut self,
-        read: R,
+        read: &mut R,
+        source_name: &str,
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<(), RdfDataError> {
         match &mut self.graph {
             Some(graph) => graph
-                .merge_from_reader(read, format, base, reader_mode)
+                .merge_from_reader(read, source_name, format, base, reader_mode)
                 .map_err(|e| RdfDataError::SRDFGraphError { err: Box::new(e) }),
             None => {
                 let mut graph = SRDFGraph::new();
                 graph
-                    .merge_from_reader(read, format, base, reader_mode)
+                    .merge_from_reader(read, source_name, format, base, reader_mode)
                     .map_err(|e| RdfDataError::SRDFGraphError { err: Box::new(e) })?;
                 self.graph = Some(graph);
                 Ok(())

@@ -28,7 +28,8 @@ fn main() -> Result<()> {
             ] .
     "#;
 
-    let schema: SchemaIR = ShaclDataManager::load(Cursor::new(shacl), RDFFormat::Turtle, None)?;
+    let schema: SchemaIR =
+        ShaclDataManager::load(&mut Cursor::new(shacl), "Test", RDFFormat::Turtle, None)?;
 
     let mut endpoint_validation = EndpointValidation::new(
         "https://query.wikidata.org/sparql",

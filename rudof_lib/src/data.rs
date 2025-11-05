@@ -79,14 +79,23 @@ pub fn get_data_rudof(
         (false, None) => {
             let rdf_format = data_format2rdf_format(data_format)
                 .map_err(|e| RudofError::DataFormatError { error: e })?;
-            for d in data {
-                let data_reader = d
+            for data_input in data {
+                let mut data_reader = data_input
                     .open_read(Some(data_format.mime_type()), "RDF data")
                     .map_err(|e| RudofError::RDFDataReadError {
+                        source_name: data_input.source_name(),
+                        mime_type: data_format.mime_type().to_string(),
                         error: e.to_string(),
                     })?;
-                let base = get_base(d, config, base)?;
-                rudof.read_data(data_reader, &rdf_format, base.as_deref(), reader_mode, true)?;
+                let base = get_base(data_input, config, base)?;
+                rudof.read_data(
+                    &mut data_reader,
+                    data_input.source_name().as_str(),
+                    &rdf_format,
+                    base.as_deref(),
+                    reader_mode,
+                    true,
+                )?;
             }
             Ok(())
         }

@@ -110,7 +110,12 @@ pub async fn node_info_impl(
             .iter()
             .map(|(predicate_iri, objects_vec)| NodePredicateObjects {
                 predicate: predicate_iri.to_string(),
-                objects: objects_vec.iter().map(|term| term.to_string()).collect(),
+                objects: objects_vec
+                    .iter()
+                    .map(
+                        |term| term.to_string(), // TODO: Review this
+                    )
+                    .collect(),
             })
             .collect(),
         incoming: node_info

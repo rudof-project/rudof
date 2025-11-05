@@ -7,6 +7,10 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.1.141
+## Added
+- `node` information accepts a new parameter `outgoing_depth` to declare the number of neighbours from a node that are shown
+
 ## v0.1.140
 ### Added
 - Methods to return the list of validation results in SHACL and to get information from those results

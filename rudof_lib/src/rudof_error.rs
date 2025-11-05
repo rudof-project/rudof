@@ -157,9 +157,10 @@ pub enum RudofError {
     },
 
     #[error(
-        "Error merging current RDF data, format: {format}, base: {base}, reader_mode: {reader_mode}: {error} "
+        "Error obtaining RDF data from {source_name}, format: {format}, base: {base}, reader_mode: {reader_mode}: {error} "
     )]
     MergeRDFDataFromReader {
+        source_name: String,
         format: String,
         base: String,
         reader_mode: String,
@@ -393,8 +394,12 @@ pub enum RudofError {
     #[error("Invalid image format: {format}. Must be 'SVG' or 'PNG'")]
     InvalidImageFormat { format: String },
 
-    #[error("Error reading RDF data: {error}")]
-    RDFDataReadError { error: String },
+    #[error("Error reading RDF data from {source_name} using mime_type {mime_type}: {error}")]
+    RDFDataReadError {
+        source_name: String,
+        error: String,
+        mime_type: String,
+    },
 
     #[error("Error using endpoint {endpoint}: {error}")]
     EndpointUseError { endpoint: String, error: String },

@@ -100,11 +100,11 @@ pub fn run_shacl_convert(
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let mut rudof = Rudof::new(config)?;
     let mime_type = input_format.mime_type();
-    let reader = input.open_read(Some(mime_type), "SHACL shapes")?;
+    let mut reader = input.open_read(Some(mime_type), "SHACL shapes")?;
     let input_format = shacl_format_convert(*input_format)?;
     let base = get_base(input, config, base)?;
     rudof.read_shacl(
-        reader,
+        &mut reader,
         &input.to_string(),
         &input_format,
         base.as_deref(),
@@ -124,12 +124,12 @@ pub fn add_shacl_schema_rudof(
     config: &RudofConfig,
 ) -> Result<()> {
     let mime_type = shapes_format.mime_type();
-    let reader = schema.open_read(Some(mime_type), "SHACL shapes")?;
+    let mut reader = schema.open_read(Some(mime_type), "SHACL shapes")?;
     let reader_name = schema.to_string();
     let shapes_format = shacl_format_convert(*shapes_format)?;
     let base = get_base(schema, config, base_shapes)?;
     rudof.read_shacl(
-        reader,
+        &mut reader,
         &reader_name,
         &shapes_format,
         base.as_deref(),

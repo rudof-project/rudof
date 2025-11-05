@@ -19,6 +19,7 @@ pub fn run_node(
     reader_mode: &ReaderMode,
     node_str: &str,
     predicates: &[String],
+    depth: usize,
     show_node_mode: &ShowNodeMode,
     _show_hyperlinks: &bool,
     _debug: u8,
@@ -45,9 +46,9 @@ pub fn run_node(
     tracing::debug!("Node info with node selector: {node_selector:?}");
 
     let options = match show_node_mode {
-        ShowNodeMode::Outgoing => NodeInfoOptions::outgoing(),
-        ShowNodeMode::Incoming => NodeInfoOptions::incoming(),
-        ShowNodeMode::Both => NodeInfoOptions::both(),
+        ShowNodeMode::Outgoing => NodeInfoOptions::outgoing().with_depth(depth),
+        ShowNodeMode::Incoming => NodeInfoOptions::incoming().with_depth(depth),
+        ShowNodeMode::Both => NodeInfoOptions::both().with_depth(depth),
     };
 
     let node_infos = get_node_info(data, node_selector, predicates, &options)?;

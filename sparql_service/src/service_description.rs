@@ -100,12 +100,13 @@ impl ServiceDescription {
     }
 
     pub fn from_reader<R: io::Read>(
-        read: R,
+        read: &mut R,
+        source_name: &str,
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<ServiceDescription, ServiceDescriptionError> {
-        let rdf = SRDFGraph::from_reader(read, format, base, reader_mode)?;
+        let rdf = SRDFGraph::from_reader(read, source_name, format, base, reader_mode)?;
         let mut parser = ServiceDescriptionParser::new(rdf);
         let service = parser.parse()?;
         Ok(service)

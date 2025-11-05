@@ -8,6 +8,8 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum SRDFGraphError {
+    #[error("Error parsing Turtle data from {source_name}: {error}")]
+    TurtleParseError { source_name: String, error: String },
     #[error("Parsing base iri {str}: error: {error}")]
     BaseParseError { str: String, error: String },
 

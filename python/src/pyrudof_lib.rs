@@ -98,7 +98,7 @@ impl PyRudof {
     ///   show_incoming: Boolean indicating whether to show incoming edges
     ///   show_colors: Boolean indicating whether to show colors in the output
     #[pyo3(
-        signature = (node_selector, predicates = Vec::new(), show_outgoing = true, show_incoming = false, show_colors = true),
+        signature = (node_selector, predicates = Vec::new(), show_outgoing = true, show_incoming = false, show_colors = true, outgoing_depth = 1),
     )]
     pub fn node_info(
         &mut self,
@@ -107,12 +107,14 @@ impl PyRudof {
         show_outgoing: bool,
         show_incoming: bool,
         show_colors: bool,
+        outgoing_depth: usize,
     ) -> PyResult<String> {
         let node_selector = parse_node_selector(node_selector).map_err(cnv_err)?;
         let options = rudof_lib::node_info::NodeInfoOptions {
             show_outgoing,
             show_incoming,
             show_colors,
+            outgoing_depth,
         };
         let data = self.inner.get_rdf_data();
         let node_infos =
@@ -502,7 +504,7 @@ impl PyRudof {
         let reader_mode = cnv_reader_mode(reader_mode);
         self.inner.reset_shacl();
         self.inner
-            .read_shacl(input.as_bytes(), input, &format, base, &reader_mode)
+            .read_shacl(&mut input.as_bytes(), input, &format, base, &reader_mode)
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -564,11 +566,11 @@ impl PyRudof {
         reader_mode: &PyReaderMode,
     ) -> PyResult<()> {
         let format = cnv_shacl_format(format);
-        let reader = get_reader(input, Some(format.mime_type()), "SHACL shapes graph")?;
+        let mut reader = get_reader(input, Some(format.mime_type()), "SHACL shapes graph")?;
         self.inner.reset_shacl();
         let reader_mode = cnv_reader_mode(reader_mode);
         self.inner
-            .read_shacl(reader, input, &format, base, &reader_mode)
+            .read_shacl(&mut reader, input, &format, base, &reader_mode)
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -671,9 +673,9 @@ impl PyRudof {
     ) -> PyResult<()> {
         let reader_mode = cnv_reader_mode(reader_mode);
         let format = cnv_rdf_format(format);
-        let reader = get_reader(input, Some(format.mime_type()), "RDF data")?;
+        let mut reader = get_reader(input, Some(format.mime_type()), "RDF data")?;
         self.inner
-            .read_data(reader, &format, base, &reader_mode, merge)
+            .read_data(&mut reader, "String", &format, base, &reader_mode, merge)
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -703,9 +705,9 @@ impl PyRudof {
     ) -> PyResult<()> {
         let reader_mode = cnv_reader_mode(reader_mode);
         let format = cnv_rdf_format(format);
-        let reader = get_reader(input, Some(format.mime_type()), "Service Description")?;
+        let mut reader = get_reader(input, Some(format.mime_type()), "Service Description")?;
         self.inner
-            .read_service_description(reader, &format, base, &reader_mode)
+            .read_service_description(&mut reader, "String", &format, base, &reader_mode)
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -735,7 +737,7 @@ impl PyRudof {
         let reader_mode = cnv_reader_mode(reader_mode);
         let format = cnv_rdf_format(format);
         self.inner
-            .read_service_description(input.as_bytes(), &format, base, &reader_mode)
+            .read_service_description(&mut input.as_bytes(), "String", &format, base, &reader_mode)
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -795,7 +797,14 @@ impl PyRudof {
         let reader_mode = cnv_reader_mode(reader_mode);
         let format = cnv_rdf_format(format);
         self.inner
-            .read_data(input.as_bytes(), &format, base, &reader_mode, merge)
+            .read_data(
+                &mut input.as_bytes(),
+                "String",
+                &format,
+                base,
+                &reader_mode,
+                merge,
+            )
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -1962,13 +1971,13 @@ impl PyValidationStatus {
 /// It can be converted to a Python exception
 #[pyclass(name = "RudofError")]
 pub struct PyRudofError {
-    error: RudofError,
+    error: Box<RudofError>,
 }
 
 impl PyRudofError {
     fn str(msg: String) -> Self {
         Self {
-            error: RudofError::Generic { error: msg },
+            error: Box::new(RudofError::Generic { error: msg }),
         }
     }
 }
@@ -1982,7 +1991,9 @@ impl From<PyRudofError> for PyErr {
 impl From<RudofError> for PyRudofError {
     fn from(error: RudofError) -> Self {
         println!("From<RudofError>: {error}");
-        Self { error }
+        Self {
+            error: Box::new(error),
+        }
     }
 }
 

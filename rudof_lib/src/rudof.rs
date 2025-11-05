@@ -643,7 +643,7 @@ impl Rudof {
     /// - `format` indicates the Shacl format
     pub fn read_shacl<R: io::Read>(
         &mut self,
-        reader: R,
+        reader: &mut R,
         reader_name: &str,
         format: &ShaclFormat,
         base: Option<&str>,
@@ -660,13 +660,11 @@ impl Rudof {
             ShaclFormat::JsonLd => Ok(RDFFormat::JsonLd),
         }?;
 
-        let rdf_graph =
-            SRDFGraph::from_reader(reader, &format, base, reader_mode).map_err(|e| {
-                RudofError::ReadingSHACLError {
-                    reader: reader_name.to_string(),
-                    error: e.to_string(),
-                    format: format.to_string(),
-                }
+        let rdf_graph = SRDFGraph::from_reader(reader, reader_name, &format, base, reader_mode)
+            .map_err(|e| RudofError::ReadingSHACLError {
+                reader: reader_name.to_string(),
+                error: e.to_string(),
+                format: format.to_string(),
             })?;
         let rdf_data =
             RdfData::from_graph(rdf_graph).map_err(|e| RudofError::ReadingSHACLFromGraphError {
@@ -979,17 +977,17 @@ impl Rudof {
 
     pub fn read_service_description<R: io::Read>(
         &mut self,
-        reader: R,
+        reader: &mut R,
+        source_name: &str,
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<()> {
         let service_description =
-            ServiceDescription::from_reader(reader, format, base, reader_mode).map_err(|e| {
-                RudofError::ReadingServiceDescription {
+            ServiceDescription::from_reader(reader, source_name, format, base, reader_mode)
+                .map_err(|e| RudofError::ReadingServiceDescription {
                     error: format!("{e}"),
-                }
-            })?;
+                })?;
         self.service_description = Some(service_description);
         Ok(())
     }
@@ -1006,8 +1004,14 @@ impl Rudof {
                 path: path.as_ref().to_string_lossy().to_string(),
                 error: format!("{e}"),
             })?;
-        let reader = BufReader::new(file);
-        self.read_service_description(reader, format, base, reader_mode)
+        let mut reader = BufReader::new(file);
+        self.read_service_description(
+            &mut reader,
+            path.as_ref().display().to_string().as_str(),
+            format,
+            base,
+            reader_mode,
+        )
     }
 
     pub fn read_service_description_url(
@@ -1024,13 +1028,13 @@ impl Rudof {
             }
         })?;
         let url_spec = InputSpec::Url(url_spec);
-        let reader = url_spec
+        let mut reader = url_spec
             .open_read(Some("text/turtle"), "Reading service description")
             .map_err(|e| RudofError::ReadingServiceDescriptionUrl {
                 url: url_str.to_string(),
                 error: format!("{e}"),
             })?;
-        self.read_service_description(reader, format, base, reader_mode)
+        self.read_service_description(&mut reader, url_str, format, base, reader_mode)
     }
 
     pub fn serialize_service_description<W: io::Write>(
@@ -1162,7 +1166,8 @@ impl Rudof {
     /// Parses an RDF graph from a reader and merges it with the current graph
     pub fn read_data<R: io::Read>(
         &mut self,
-        reader: R,
+        reader: &mut R,
+        source_name: &str,
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
@@ -1172,8 +1177,9 @@ impl Rudof {
             self.rdf_data = RdfData::new();
         }
         self.rdf_data
-            .merge_from_reader(reader, format, base, reader_mode)
+            .merge_from_reader(reader, source_name, format, base, reader_mode)
             .map_err(|e| RudofError::MergeRDFDataFromReader {
+                source_name: source_name.to_string(),
                 format: format!("{format:?}"),
                 base: format!("{base:?}"),
                 reader_mode: format!("{reader_mode:?}"),
@@ -1390,7 +1396,8 @@ mod tests {
         let mut rudof = Rudof::new(&RudofConfig::default_config().unwrap()).unwrap();
         rudof
             .read_data(
-                data.as_bytes(),
+                &mut data.as_bytes(),
+                "test",
                 &srdf::RDFFormat::Turtle,
                 None,
                 &srdf::ReaderMode::Strict,
@@ -1424,7 +1431,8 @@ mod tests {
         let mut rudof = Rudof::new(&RudofConfig::default_config().unwrap()).unwrap();
         rudof
             .read_data(
-                data.as_bytes(),
+                &mut data.as_bytes(),
+                "test",
                 &srdf::RDFFormat::Turtle,
                 None,
                 &srdf::ReaderMode::Strict,
@@ -1458,7 +1466,8 @@ mod tests {
         let mut rudof = Rudof::new(&RudofConfig::default_config().unwrap()).unwrap();
         rudof
             .read_data(
-                data.as_bytes(),
+                &mut data.as_bytes(),
+                "test",
                 &srdf::RDFFormat::Turtle,
                 None,
                 &srdf::ReaderMode::Strict,
@@ -1505,7 +1514,8 @@ mod tests {
         let mut rudof = Rudof::new(&RudofConfig::default_config().unwrap()).unwrap();
         rudof
             .read_data(
-                data.as_bytes(),
+                &mut data.as_bytes(),
+                "test",
                 &srdf::RDFFormat::Turtle,
                 None,
                 &srdf::ReaderMode::Strict,
@@ -1515,7 +1525,7 @@ mod tests {
 
         rudof
             .read_shacl(
-                shacl.as_bytes(),
+                &mut shacl.as_bytes(),
                 "test",
                 &ShaclFormat::Turtle,
                 None,
@@ -1552,7 +1562,8 @@ mod tests {
         let mut rudof = Rudof::new(&RudofConfig::new().unwrap()).unwrap();
         rudof
             .read_data(
-                data.as_bytes(),
+                &mut data.as_bytes(),
+                "test",
                 &srdf::RDFFormat::Turtle,
                 None,
                 &srdf::ReaderMode::Strict,
@@ -1562,7 +1573,7 @@ mod tests {
 
         rudof
             .read_shacl(
-                shacl.as_bytes(),
+                &mut shacl.as_bytes(),
                 "test",
                 &ShaclFormat::Turtle,
                 None,
@@ -1598,7 +1609,8 @@ mod tests {
         let mut rudof = Rudof::new(&RudofConfig::new().unwrap()).unwrap();
         rudof
             .read_data(
-                data.as_bytes(),
+                &mut data.as_bytes(),
+                "test",
                 &srdf::RDFFormat::Turtle,
                 None,
                 &srdf::ReaderMode::Strict,
@@ -1634,7 +1646,8 @@ mod tests {
         let mut rudof = Rudof::new(&RudofConfig::new().unwrap()).unwrap();
         rudof
             .read_data(
-                data.as_bytes(),
+                &mut data.as_bytes(),
+                "test",
                 &srdf::RDFFormat::Turtle,
                 None,
                 &srdf::ReaderMode::Strict,

@@ -404,6 +404,7 @@ fn main() -> Result<()> {
             show_node_mode,
             show_hyperlinks,
             output,
+            depth,
             config,
             force_overwrite,
         }) => {
@@ -416,6 +417,7 @@ fn main() -> Result<()> {
                 &reader_mode.into(),
                 node,
                 predicates,
+                *depth,
                 show_node_mode,
                 show_hyperlinks,
                 cli.debug,

@@ -183,14 +183,16 @@ pub fn parse_shex_schema_rudof(
     Ok(())
 }
 
-fn get_base(config: &RudofConfig, base: &Option<IriS>) -> Result<IriS, RudofError> {
+fn get_base(config: &RudofConfig, base: &Option<IriS>) -> Result<IriS, Box<RudofError>> {
     if let Some(base) = base {
         Ok(base.clone())
     } else if let Some(base) = config.shex_config().base.as_ref() {
         Ok(base.clone())
     } else {
-        let cwd = env::current_dir().map_err(|e| RudofError::CurrentDirError {
-            error: format!("{e}"),
+        let cwd = env::current_dir().map_err(|e| {
+            Box::new(RudofError::CurrentDirError {
+                error: format!("{e}"),
+            })
         })?;
         // Note: we use from_directory_path to convert a directory to a file URL that ends with a trailing slash
         // from_url_path would not add the trailing slash and would fail when resolving relative IRIs

@@ -41,13 +41,14 @@ impl SchemaIR {
     }
 
     pub fn from_reader<R: io::Read>(
-        read: R,
+        read: &mut R,
+        source_name: &str,
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<SchemaIR, Box<CompiledShaclError>> {
         let mut rdf = SRDFGraph::new();
-        rdf.merge_from_reader(read, format, base, reader_mode)
+        rdf.merge_from_reader(read, source_name, format, base, reader_mode)
             .map_err(|e| CompiledShaclError::RdfGraphError { err: Box::new(e) })?;
         let schema = ShaclParser::new(rdf)
             .parse()
@@ -62,7 +63,13 @@ impl SchemaIR {
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<SchemaIR, Box<CompiledShaclError>> {
-        Self::from_reader(std::io::Cursor::new(&data), format, base, reader_mode)
+        Self::from_reader(
+            &mut std::io::Cursor::new(&data),
+            "String",
+            format,
+            base,
+            reader_mode,
+        )
     }
 
     /// Adds a shape index for the given `RDFNode` if it does not already exist.
@@ -278,12 +285,18 @@ mod tests {
     "#;
 
     fn load_schema(shacl_schema: &str) -> SchemaIR {
-        let reader = Cursor::new(shacl_schema);
+        let mut reader = Cursor::new(shacl_schema);
         let rdf_format = RDFFormat::Turtle;
         let base = None;
 
-        let rdf =
-            SRDFGraph::from_reader(reader, &rdf_format, base, &ReaderMode::default()).unwrap();
+        let rdf = SRDFGraph::from_reader(
+            &mut reader,
+            "String",
+            &rdf_format,
+            base,
+            &ReaderMode::default(),
+        )
+        .unwrap();
 
         ShaclParser::new(rdf).parse().unwrap().try_into().unwrap()
     }
