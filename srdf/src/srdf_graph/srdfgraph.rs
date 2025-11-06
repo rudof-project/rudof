@@ -1,37 +1,54 @@
 use crate::async_srdf::AsyncSRDF;
 use crate::matcher::Matcher;
-use crate::{BuildRDF, FocusRDF, NeighsRDF, RDF_TYPE_STR, RDFFormat, Rdf};
+use crate::srdfgraph_error::SRDFGraphError;
+use crate::{
+    BuildRDF, FocusRDF, NeighsRDF, QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions,
+    RDF_TYPE_STR, RDFFormat, Rdf, VarName,
+};
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
+use oxigraph::sparql::{QueryResults, SparqlEvaluator};
+use oxigraph::store::Store;
 use oxjsonld::JsonLdParser;
+use oxrdf::{
+    BlankNode as OxBlankNode, Graph, GraphName, Literal as OxLiteral, NamedNode as OxNamedNode,
+    NamedNodeRef, NamedOrBlankNode as OxSubject, NamedOrBlankNodeRef as OxSubjectRef, Quad,
+    Term as OxTerm, TermRef, Triple as OxTriple, TripleRef,
+};
 use oxrdfio::{JsonLdProfileSet, RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
+use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
+use prefixmap::{PrefixMapError, prefixmap::*};
 use serde::Serialize;
 use serde::ser::SerializeStruct;
+use sparesults::QuerySolution as SparQuerySolution;
 use std::collections::{HashMap, HashSet};
+use std::fmt::Debug;
 use std::fs::File;
 use std::io::{self, BufReader, Cursor, Read, Write};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use tracing::{debug, trace};
 
-use crate::srdfgraph_error::SRDFGraphError;
-use oxrdf::{
-    BlankNode as OxBlankNode, Graph, GraphName, Literal as OxLiteral, NamedNode as OxNamedNode,
-    NamedNodeRef, NamedOrBlankNode as OxSubject, NamedOrBlankNodeRef as OxSubjectRef, Quad,
-    Term as OxTerm, TermRef, Triple as OxTriple, TripleRef,
-};
-use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
-use prefixmap::{PrefixMapError, prefixmap::*};
-
-#[derive(Debug, Default, Clone)]
+#[derive(Default, Clone)]
 pub struct SRDFGraph {
     focus: Option<OxTerm>,
     graph: Graph,
     pm: PrefixMap,
     base: Option<IriS>,
     bnode_counter: usize,
+    store: Option<Store>,
+}
+
+impl Debug for SRDFGraph {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SRDFGraph")
+            .field("triples_count", &self.graph.len())
+            .field("prefixmap", &self.pm)
+            .field("base", &self.base)
+            .finish()
+    }
 }
 
 impl Serialize for SRDFGraph {
@@ -556,6 +573,7 @@ impl BuildRDF for SRDFGraph {
             pm: PrefixMap::new(),
             base: None,
             bnode_counter: 0,
+            store: None,
         }
     }
 
@@ -635,6 +653,94 @@ fn cnv_triple(t: &OxTriple) -> TripleRef<'_> {
         NamedNodeRef::from(&t.predicate),
         TermRef::from(&t.object),
     )
+}
+
+impl QueryRDF for SRDFGraph {
+    fn query_construct(
+        &self,
+        _query_str: &str,
+        _format: &QueryResultFormat,
+    ) -> Result<String, SRDFGraphError>
+    where
+        Self: Sized,
+    {
+        let str = String::new();
+        if let Some(_store) = &self.store {
+            tracing::debug!("Querying in-memory store (we ignore it by now");
+        }
+        Ok(str)
+    }
+
+    fn query_select(&self, query_str: &str) -> Result<QuerySolutions<SRDFGraph>, SRDFGraphError>
+    where
+        Self: Sized,
+    {
+        let mut sols: QuerySolutions<SRDFGraph> = QuerySolutions::empty();
+        if let Some(store) = &self.store {
+            trace!("Querying in-memory store");
+
+            let parsed_query = SparqlEvaluator::new().parse_query(query_str).map_err(|e| {
+                SRDFGraphError::ParsingQueryError {
+                    msg: format!("Error parsing query: {}", e),
+                }
+            })?;
+            let new_sol = parsed_query.on_store(store).execute().map_err(|e| {
+                SRDFGraphError::RunningQueryError {
+                    query: query_str.to_string(),
+                    msg: format!("Error executing query: {}", e),
+                }
+            })?;
+            trace!("Got results from in-memory store");
+            let sol = cnv_query_results(new_sol)?;
+            sols.extend(sol, self.prefixmap()).map_err(|e| {
+                SRDFGraphError::ExtendingQuerySolutionsError {
+                    query: query_str.to_string(),
+                    error: format!("{e}"),
+                }
+            })?;
+        } else {
+            trace!("No in-memory store to query");
+        }
+        Ok(sols)
+    }
+
+    fn query_ask(&self, _query: &str) -> Result<bool, Self::Err> {
+        todo!()
+    }
+}
+
+fn cnv_query_results(
+    query_results: QueryResults,
+) -> Result<Vec<QuerySolution<SRDFGraph>>, SRDFGraphError> {
+    let mut results = Vec::new();
+    if let QueryResults::Solutions(solutions) = query_results {
+        trace!("Converting query solutions");
+        let mut counter = 0;
+        for solution_action in solutions {
+            counter += 1;
+            trace!("Converting solution {counter}");
+            let solution = solution_action.map_err(|e| SRDFGraphError::QueryResultError {
+                msg: format!("Error getting query solution: {}", e),
+            })?;
+            let result = cnv_query_solution(solution);
+            results.push(result)
+        }
+    }
+    Ok(results)
+}
+
+fn cnv_query_solution(qs: SparQuerySolution) -> QuerySolution<SRDFGraph> {
+    let mut variables = Vec::new();
+    let mut values = Vec::new();
+    for v in qs.variables() {
+        let varname = VarName::new(v.as_str());
+        variables.push(varname);
+    }
+    for t in qs.values() {
+        let term = t.clone();
+        values.push(term)
+    }
+    QuerySolution::new(variables, values)
 }
 
 #[cfg(test)]

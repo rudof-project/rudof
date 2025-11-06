@@ -5,10 +5,10 @@ use crate::{Node, object_value::ObjectValue};
 use iri_s::IriS;
 use prefixmap::IriRef;
 use serde::Serialize;
+use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::SLiteral;
 use srdf::shacl_path::SHACLPath;
-use srdf::{NeighsRDF, VariableSolutionIndex};
 use thiserror::Error;
 use tracing::{info, trace};
 
@@ -158,10 +158,10 @@ where
     for solution in query_solutions.iter() {
         let variables = solution.variables();
         info!("SPARQL NodeSelector variables: {:?}", variables);
-        if let Some(variable) = variables.first() {
-            if let Some(value) = solution.find_solution(variable) {
-                results.push(value.clone())
-            }
+        if let Some(variable) = variables.first()
+            && let Some(value) = solution.find_solution(variable)
+        {
+            results.push(value.clone())
         }
     }
     Ok(results)

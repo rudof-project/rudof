@@ -8,8 +8,21 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum SRDFGraphError {
+    #[error("Query result error: {msg}")]
+    QueryResultError { msg: String },
+
+    #[error("Error extending query solutions for query: {query}: {error}")]
+    ExtendingQuerySolutionsError { query: String, error: String },
+
+    #[error("Parsing query error: {msg}")]
+    ParsingQueryError { msg: String },
+
+    #[error("Running query {query} error: {msg}")]
+    RunningQueryError { query: String, msg: String },
+
     #[error("Error parsing Turtle data from {source_name}: {error}")]
     TurtleParseError { source_name: String, error: String },
+
     #[error("Parsing base iri {str}: error: {error}")]
     BaseParseError { str: String, error: String },
 

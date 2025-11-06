@@ -10,8 +10,8 @@ pub enum ShapemapError {
     InconsistentStatus {
         node: Box<Node>,
         label: Box<ShapeLabel>,
-        old_status: ValidationStatus,
-        new_status: ValidationStatus,
+        old_status: Box<ValidationStatus>,
+        new_status: Box<ValidationStatus>,
     },
 
     #[error("Error running query to select nodes. Query: \n{query}\nError: {error}")]

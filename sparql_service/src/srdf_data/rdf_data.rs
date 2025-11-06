@@ -7,7 +7,6 @@ use oxrdf::{
     BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode,
     NamedOrBlankNode as OxSubject, Term as OxTerm, Triple as OxTriple,
 };
-use oxrdfio::{JsonLdProfileSet, RdfFormat};
 use prefixmap::PrefixMap;
 use serde::Serialize;
 use serde::ser::SerializeStruct;
@@ -17,7 +16,6 @@ use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::QuerySolution;
 use srdf::QuerySolutions;
-use srdf::RDF_TYPE_STR;
 use srdf::RDFFormat;
 use srdf::Rdf;
 use srdf::ReaderMode;
@@ -30,7 +28,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::io;
 use std::str::FromStr;
-use tracing::{info, trace};
+use tracing::trace;
 
 /// Generic abstraction that represents RDF Data which can be  behind SPARQL endpoints or an in-memory graph or both
 /// The triples in RdfData are taken as the union of the triples of the endpoints and the in-memory graph
@@ -498,24 +496,6 @@ fn cnv_query_solution(qs: SparQuerySolution) -> QuerySolution<RdfData> {
         values.push(term)
     }
     QuerySolution::new(variables, values)
-}
-
-fn _cnv_rdf_format(rdf_format: RDFFormat) -> RdfFormat {
-    match rdf_format {
-        RDFFormat::NTriples => RdfFormat::NTriples,
-        RDFFormat::Turtle => RdfFormat::Turtle,
-        RDFFormat::RDFXML => RdfFormat::RdfXml,
-        RDFFormat::TriG => RdfFormat::TriG,
-        RDFFormat::N3 => RdfFormat::N3,
-        RDFFormat::NQuads => RdfFormat::NQuads,
-        RDFFormat::JsonLd => RdfFormat::JsonLd {
-            profile: JsonLdProfileSet::empty(),
-        },
-    }
-}
-
-fn _rdf_type() -> OxNamedNode {
-    OxNamedNode::new_unchecked(RDF_TYPE_STR)
 }
 
 impl NeighsRDF for RdfData {
