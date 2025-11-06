@@ -3,6 +3,7 @@ use crate::{keyword, pp_label, pp_object_value};
 use colored::*;
 use prefixmap::PrefixMap;
 use pretty::{Arena, DocAllocator, DocBuilder};
+use std::borrow::Cow;
 use std::marker::PhantomData;
 
 /// Struct that can be used to pretty print Shapemaps
@@ -179,8 +180,36 @@ where
             NodeSelector::Node(v) => pp_object_value(v, self.doc, &self.nodes_prefixmap),
             NodeSelector::TriplePattern { .. } => todo!(),
             NodeSelector::TriplePatternPath { .. } => todo!(),
-            NodeSelector::Sparql { .. } => todo!(),
+            NodeSelector::Sparql { query } => self
+                .keyword("SPARQL")
+                .append(self.space())
+                .append(self.triple_quotes(query)),
             NodeSelector::Generic { .. } => todo!(),
+        }
+    }
+
+    fn space(&self) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.space()
+    }
+
+    pub fn triple_quotes(&self, str: &str) -> DocBuilder<'a, Arena<'a, A>, A> {
+        self.doc.text(format!("'''{str}'''"))
+    }
+
+    fn keyword<U>(&self, s: U) -> DocBuilder<'a, Arena<'a, A>, A>
+    where
+        U: Into<Cow<'a, str>>,
+    {
+        if let Some(color) = self.keyword_color {
+            let data: Cow<str> = s.into();
+            let s: String = match data {
+                Cow::Owned(t) => t,
+                Cow::Borrowed(t) => t.into(),
+            };
+            self.doc.text(s.as_str().color(color).to_string())
+        } else {
+            let s: String = s.into().into();
+            self.doc.text(s)
         }
     }
 

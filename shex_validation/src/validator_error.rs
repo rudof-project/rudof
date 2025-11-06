@@ -16,6 +16,8 @@ use crate::Reasons;
 
 #[derive(Error, Debug, Clone)]
 pub enum ValidatorError {
+    #[error("Filling node {node} from node selector to validate: {error}")]
+    FillingShapeMapNodes { node: String, error: String },
     #[error(
         "Shape {idx} is abstract and cannot be used in validation for node {node}. Descendants failed with errors: {errors}"
     )]

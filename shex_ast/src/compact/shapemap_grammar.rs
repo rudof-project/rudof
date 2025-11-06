@@ -1,4 +1,5 @@
 use crate::shapemap::{NodeSelector, ShapeSelector};
+use crate::string;
 use crate::{
     IRes, ParseError, Span,
     compact::grammar::{map_error, tag_no_case_tws, token_tws, traced, tws0},
@@ -79,12 +80,20 @@ pub(crate) fn shape_spec<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeSelector
 pub(crate) fn node_selector<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NodeSelector> {
     traced(
         "node_selector",
-        map_error(move |i| object_term(i), || ParseError::ExpectedNodeSpec),
+        map_error(
+            move |i| alt((object_term, extended))(i),
+            || ParseError::ExpectedNodeSpec,
+        ),
     )
 }
 
 fn object_term(i: Span) -> IRes<NodeSelector> {
     alt((subject_term, literal_selector))(i)
+}
+
+fn extended(i: Span) -> IRes<NodeSelector> {
+    let (i, (_keyword, _, query)) = tuple((tag_no_case_tws("SPARQL"), tws0, string()))(i)?;
+    Ok((i, NodeSelector::Sparql { query }))
 }
 
 fn subject_term(i: Span) -> IRes<NodeSelector> {
@@ -109,6 +118,22 @@ mod tests {
         let (_, shape_map) = association(input).unwrap();
         let expected = ShapeMapStatement::Association {
             node_selector: NodeSelector::prefixed("", "a"),
+            shape_selector: ShapeSelector::prefixed("", "label"),
+        };
+        assert_eq!(shape_map, expected);
+    }
+
+    #[test]
+    fn example_shapemap_sparql() {
+        let query = r#""""foo""""#;
+        let str = format!("SPARQL {query}@:label");
+        println!("Str: {str}");
+        let input = Span::new(str.as_str());
+        let (_, shape_map) = association(input).unwrap();
+        let expected = ShapeMapStatement::Association {
+            node_selector: NodeSelector::Sparql {
+                query: "foo".to_string(),
+            },
             shape_selector: ShapeSelector::prefixed("", "label"),
         };
         assert_eq!(shape_map, expected);

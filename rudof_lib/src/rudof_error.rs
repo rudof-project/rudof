@@ -156,6 +156,15 @@ pub enum RudofError {
         error: String,
     },
 
+    #[error("Obtaining nodes from node_selector: {node_selector}: {error}")]
+    NodeSelectorError {
+        node_selector: String,
+        error: String,
+    },
+
+    #[error("Converting term {term} to subject: {error}")]
+    Term2Subject { term: String, error: String },
+
     #[error(
         "Error obtaining RDF data from {source_name}, format: {format}, base: {base}, reader_mode: {reader_mode}: {error} "
     )]
@@ -170,8 +179,12 @@ pub enum RudofError {
     #[error("Utf8 error: {error} ")]
     Utf8Error { error: String },
 
-    #[error("Shapemap parse error on str: {str}: {error}")]
-    ShapeMapParseError { str: String, error: String },
+    #[error("Shapemap parse error from {source_name}\nSource map read:\n{str}\nError: {error}")]
+    ShapeMapParseError {
+        source_name: String,
+        str: String,
+        error: String,
+    },
 
     #[error("Read error: {error} ")]
     ReadError { error: String },

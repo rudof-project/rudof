@@ -4,7 +4,7 @@ use crate::{RudofError, ShapeMapParser};
 use iri_s::IriS;
 use prefixmap::IriRef;
 use shex_ast::ObjectValue;
-use srdf::NeighsRDF;
+use srdf::{NeighsRDF, QueryRDF};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fmt::{Display, Formatter};
@@ -102,16 +102,28 @@ impl NodeInfoOptions {
 // Get node information from RDF data
 // This is the main entry point for retrieving node information.
 // It iterates over all nodes in the selector and collects their information.
-pub fn get_node_info<S: NeighsRDF + Debug>(
-    rdf: &S,
+pub fn get_node_info<R>(
+    rdf: &R,
     node_selector: NodeSelector,
     predicates: &[String],
     options: &NodeInfoOptions,
-) -> Result<Vec<NodeInfo<S>>, RudofError> {
+) -> Result<Vec<NodeInfo<R>>, RudofError>
+where
+    R: NeighsRDF + Debug + QueryRDF,
+{
     let mut results = Vec::new();
+    let nodes = node_selector
+        .nodes(rdf)
+        .map_err(|e| RudofError::NodeSelectorError {
+            node_selector: node_selector.to_string(),
+            error: e.to_string(),
+        })?;
 
-    for node in node_selector.iter_node(rdf) {
-        let subject = node_to_subject_checked(node, rdf)?;
+    for node in nodes.iter() {
+        let subject = R::term_as_subject(node).map_err(|e| RudofError::Term2Subject {
+            term: node.to_string(),
+            error: e.to_string(),
+        })?;
 
         let subject_qualified = qualify_subject(rdf, &subject, options)?;
 

@@ -1,10 +1,9 @@
+use crate::{Object, QueryResultFormat, RDFError, Rdf};
 use prefixmap::{PrefixMap, PrefixMapError};
 use serde::Serialize;
 use std::fmt::Display;
 use std::io::Write;
 use tabled::{builder::Builder, settings::Style};
-
-use crate::{Object, QueryResultFormat, RDFError, Rdf};
 
 /// Represents RDF that supports SPARQL-like queries
 pub trait QueryRDF: Rdf {
@@ -112,8 +111,12 @@ impl<S: Rdf> QuerySolution<S> {
         }
     }
 
-    pub fn variables(&self) -> impl Iterator<Item = &VarName> {
+    pub fn variables_iter(&self) -> impl Iterator<Item = &VarName> {
         self.variables.iter()
+    }
+
+    pub fn variables(&self) -> &Vec<VarName> {
+        &self.variables
     }
 
     pub fn convert<T: Rdf, F>(&self, cnv_term: F) -> QuerySolution<T>
@@ -208,7 +211,7 @@ impl<S: Rdf> QuerySolutions<S> {
             variables.push("".to_string()); // First column = index
             variables.extend(
                 first
-                    .variables()
+                    .variables_iter()
                     .map(|v| format!("{v}"))
                     .collect::<Vec<_>>(),
             );
@@ -216,7 +219,7 @@ impl<S: Rdf> QuerySolutions<S> {
             for (idx, result) in results_iter.enumerate() {
                 let mut record = Vec::new();
                 record.push(format!("{}", idx + 1)); // First column = index
-                for (idx, _variable) in result.variables().enumerate() {
+                for (idx, _variable) in result.variables_iter().enumerate() {
                     let str = match result.find_solution(idx) {
                         Some(term) => {
                             let object = S::term_as_object(term)?;

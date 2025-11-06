@@ -833,6 +833,7 @@ impl PyRudof {
         Ok(str)
     }
 
+    /*
     /// Reads the current Shapemap from a String
     ///
     /// Args:
@@ -843,22 +844,35 @@ impl PyRudof {
     pub fn read_shapemap_str(&mut self, input: &str, format: &PyShapeMapFormat) -> PyResult<()> {
         let format = cnv_shapemap_format(format);
         self.inner
-            .read_shapemap(input.as_bytes(), &format)
+            .read_shapemap(input.as_bytes(), "String", &format)
+            .map_err(cnv_err)?;
+        Ok(())
+    }*/
+
+    /// Reads the current Shapemap from a file or URL
+    ///
+    /// Args:
+    ///    input: Path or URL containing the Shapemap
+    #[pyo3(signature = (input,format = &PyShapeMapFormat::Compact), text_signature = "(input, format=ShapeMapFormat.Compact)")]
+    pub fn read_shapemap(&mut self, input: &str, format: &PyShapeMapFormat) -> PyResult<()> {
+        let format = cnv_shapemap_format(format);
+        let reader = get_reader(input, Some(format.mime_type()), "Shapemap")?;
+        self.inner
+            .read_shapemap(reader, input, &format)
             .map_err(cnv_err)?;
         Ok(())
     }
 
-    /// Reads the current Shapemap from a file path
+    /// Reads the current Shapemap from a String
     ///
     /// Args:
-    ///    input: Path or URL containing the Shapemap
-    #[pyo3(signature = (input,format = &PyShapeMapFormat::Compact),
-        text_signature = "(input, format=ShapeMapFormat.Compact)"
-    )]
-    pub fn read_shapemap(&mut self, input: &str, format: &PyShapeMapFormat) -> PyResult<()> {
+    ///    input: String containing the Shapemap
+    #[pyo3(signature = (str,format = &PyShapeMapFormat::Compact), text_signature = "(input, format=ShapeMapFormat.Compact)")]
+    pub fn read_shapemap_str(&mut self, str: &str, format: &PyShapeMapFormat) -> PyResult<()> {
         let format = cnv_shapemap_format(format);
-        let reader = get_reader(input, Some(format.mime_type()), "Shapemap")?;
-        self.inner.read_shapemap(reader, &format).map_err(cnv_err)?;
+        self.inner
+            .read_shapemap(str.as_bytes(), "String", &format)
+            .map_err(cnv_err)?;
         Ok(())
     }
 
@@ -1624,7 +1638,12 @@ impl PyQuerySolution {
 
     /// Returns the list of variables in this solution
     pub fn variables(&self) -> Vec<String> {
-        let vars: Vec<String> = self.inner.variables().map(|v| v.to_string()).collect();
+        let vars: Vec<String> = self
+            .inner
+            .variables()
+            .iter()
+            .map(|v| v.to_string())
+            .collect();
         vars
     }
 

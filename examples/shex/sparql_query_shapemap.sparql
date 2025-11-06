@@ -1,0 +1,7 @@
+PREFIX : <http://example.org/>
+
+select * where {
+    ?x a :Person ;
+       :age ?age .
+    FILTER (?age > 18)
+}
