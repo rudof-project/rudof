@@ -1,0 +1,10 @@
+SPARQL """
+  PREFIX : <http://example.org/>
+
+select ?x where {
+    ?x a :Person ;
+       :age ?age .
+    FILTER (?age > 18)
+}
+ 
+"""@:Person

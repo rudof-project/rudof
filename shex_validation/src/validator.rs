@@ -3,7 +3,6 @@ use crate::ValidatorConfig;
 use crate::atom;
 use crate::engine::Engine;
 use crate::validator_error::*;
-use prefixmap::IriRef;
 use prefixmap::PrefixMap;
 use serde_json::Value;
 use shex_ast::Node;
@@ -11,11 +10,12 @@ use shex_ast::ShapeExprLabel;
 use shex_ast::ShapeLabelIdx;
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::shape_label::ShapeLabel;
-use shex_ast::object_value::ObjectValue;
 use shex_ast::shapemap::ResultShapeMap;
 use shex_ast::shapemap::ValidationStatus;
 use shex_ast::shapemap::query_shape_map::QueryShapeMap;
 use srdf::NeighsRDF;
+use srdf::QueryRDF;
+use tracing::info;
 use tracing::trace;
 
 type Result<T> = std::result::Result<T, ValidatorError>;
@@ -85,7 +85,7 @@ impl Validator {
         maybe_nodes_prefixmap: &Option<PrefixMap>,
     ) -> Result<ResultShapeMap>
     where
-        S: NeighsRDF,
+        S: NeighsRDF + QueryRDF,
     {
         let mut engine = Engine::new(&self.config);
         let shape_expr_label: ShapeExprLabel = shape.into();
@@ -117,10 +117,11 @@ impl Validator {
         maybe_nodes_prefixmap: &Option<PrefixMap>,
     ) -> Result<ResultShapeMap>
     where
-        S: NeighsRDF,
+        S: NeighsRDF + QueryRDF,
     {
         let mut engine = Engine::new(&self.config);
         self.fill_pending(&mut engine, shapemap, rdf, schema)?;
+        info!("Filled pending atoms: {:?}", engine.pending());
         engine.validate_pending(rdf, schema)?;
         let result = self.result_map(&mut engine, maybe_nodes_prefixmap)?;
         Ok(result)
@@ -134,17 +135,34 @@ impl Validator {
         schema: &SchemaIR,
     ) -> Result<()>
     where
-        S: NeighsRDF,
+        S: QueryRDF,
     {
-        for (node_value, label) in shapemap.iter_node_shape(rdf) {
+        trace!(
+            "fill_pending: Filling pending atoms from QueryShapeMap...: {:?}",
+            shapemap
+        );
+        let pairs = shapemap
+            .node_shapes(rdf)
+            .map_err(|e| ValidatorError::ShapeMapError {
+                error: e.to_string(),
+            })?;
+        trace!(
+            "fill_pending: After filling pending atoms from QueryShapeMap...: {:?}",
+            shapemap
+        );
+        for (node, label) in pairs.iter() {
             let idx = self.get_shape_expr_label(label, schema)?;
-            let node = self.node_from_object_value(node_value, rdf)?;
-            engine.add_pending(node.clone(), idx);
+            let node =
+                S::term_as_object(node).map_err(|e| ValidatorError::FillingShapeMapNodes {
+                    node: node.to_string(),
+                    error: e.to_string(),
+                })?;
+            engine.add_pending(Node::new(node), idx);
         }
         Ok(())
     }
 
-    fn node_from_object_value<S>(&self, value: &ObjectValue, rdf: &S) -> Result<Node>
+    /*fn node_from_object_value<S>(&self, value: &ObjectValue, rdf: &S) -> Result<Node>
     where
         S: NeighsRDF,
     {
@@ -156,7 +174,7 @@ impl Validator {
             }
             ObjectValue::Literal(lit) => Ok(Node::literal(lit.clone())),
         }
-    }
+    }*/
 
     fn get_shape_label(&self, idx: &ShapeLabelIdx) -> Result<&ShapeLabel> {
         let info = self.schema.find_shape_idx(idx).unwrap();

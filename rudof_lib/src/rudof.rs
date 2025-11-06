@@ -1122,6 +1122,12 @@ impl Rudof {
     /// Validate RDF data using ShEx
     /// It uses a ShEx validator which has a corrent ShEx schema and the current ShapeMap
     pub fn validate_shex(&mut self) -> Result<ResultShapeMap> {
+        // We initialize the store in case the SPARQL based node selectors need to do SPARQL queries
+        self.rdf_data
+            .check_store()
+            .map_err(|e| RudofError::StorageError {
+                error: format!("{e}"),
+            })?;
         let schema_str = format!("{:?}", self.shex_validator);
         match self.shex_validator {
             None => Err(RudofError::ShExValidatorUndefined {}),
@@ -1211,6 +1217,7 @@ impl Rudof {
     pub fn read_shapemap<R: io::Read>(
         &mut self,
         mut reader: R,
+        reader_name: &str,
         shapemap_format: &ShapeMapFormat,
     ) -> Result<()> {
         let mut v = Vec::new();
@@ -1230,6 +1237,7 @@ impl Rudof {
                     &self.shex_shapes_prefixmap(),
                 )
                 .map_err(|e| RudofError::ShapeMapParseError {
+                    source_name: reader_name.to_string(),
                     str: s.to_string(),
                     error: format!("{e}"),
                 })?;
@@ -1415,7 +1423,7 @@ mod tests {
             )
             .unwrap();
         rudof
-            .read_shapemap(shapemap.as_bytes(), &ShapeMapFormat::default())
+            .read_shapemap(shapemap.as_bytes(), "Test", &ShapeMapFormat::default())
             .unwrap();
         let result = rudof.validate_shex().unwrap();
         let node = Node::iri(iri!("http://example/x"));
@@ -1450,7 +1458,7 @@ mod tests {
             )
             .unwrap();
         rudof
-            .read_shapemap(shapemap.as_bytes(), &ShapeMapFormat::default())
+            .read_shapemap(shapemap.as_bytes(), "Test", &ShapeMapFormat::default())
             .unwrap();
         let result = rudof.validate_shex().unwrap();
         let node = Node::iri(iri!("http://example/x"));
@@ -1485,7 +1493,7 @@ mod tests {
             )
             .unwrap();
         rudof
-            .read_shapemap(shapemap.as_bytes(), &ShapeMapFormat::default())
+            .read_shapemap(shapemap.as_bytes(), "Test", &ShapeMapFormat::default())
             .unwrap();
         let result = rudof.validate_shex().unwrap();
         let node = Node::iri(iri!("http://example/x"));

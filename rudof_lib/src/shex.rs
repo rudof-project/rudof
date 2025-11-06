@@ -54,12 +54,17 @@ pub fn validate_shex<W: Write>(
         if let Some(shapemap_spec) = shapemap {
             let shapemap_reader = shapemap_spec.open_read(None, "ShapeMap").map_err(|e| {
                 RudofError::ShapeMapParseError {
+                    source_name: shapemap_spec.source_name(),
                     str: shapemap_spec.source_name().to_string(),
                     error: e.to_string(),
                 }
             })?;
 
-            rudof.read_shapemap(shapemap_reader, &shapemap_format)?;
+            rudof.read_shapemap(
+                shapemap_reader,
+                shapemap_spec.source_name().as_str(),
+                &shapemap_format,
+            )?;
         }
 
         // If individual node/shapes are declared add them to current shape map

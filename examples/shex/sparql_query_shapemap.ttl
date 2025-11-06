@@ -1,0 +1,13 @@
+PREFIX : <http://example.org/>
+
+:ok1 a :Person ;
+     :name "John" ;
+     :age  23     .
+
+:ko1 a :Person ;
+     :name 34     ;
+     :age 34      .
+
+:ignored a :Person ;
+    :name 45 ;
+     :age 2       .

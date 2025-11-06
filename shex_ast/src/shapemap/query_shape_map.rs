@@ -1,9 +1,10 @@
-use crate::shapemap::{Association, NodeSelector, ShapeSelector};
+use crate::shapemap::{Association, NodeSelector, ShapeSelector, ShapemapError};
 use crate::{Node, ShapeExprLabel, ir::shape_label::ShapeLabel, object_value::ObjectValue};
 use prefixmap::PrefixMap;
 use serde::Serialize;
-use srdf::NeighsRDF;
+use srdf::QueryRDF;
 use std::fmt::Display;
+use tracing::trace;
 
 #[derive(Debug, Default, PartialEq, Clone, Serialize)]
 pub struct QueryShapeMap {
@@ -44,14 +45,23 @@ impl QueryShapeMap {
         self.associations.iter()
     }
 
-    pub fn iter_node_shape<'a, S>(
+    pub fn node_shapes<'a, R>(
         &'a self,
-        rdf: &'a S,
-    ) -> impl Iterator<Item = (&'a ObjectValue, &'a ShapeExprLabel)> + 'a
+        rdf: &'a R,
+    ) -> Result<Vec<(R::Term, &'a ShapeExprLabel)>, ShapemapError>
     where
-        S: NeighsRDF,
+        R: QueryRDF,
     {
-        self.iter().flat_map(|assoc| assoc.iter_node_shape(rdf))
+        trace!("node_shapes... pairs from QueryShapeMap: {:?}", self);
+        let mut result = Vec::new();
+        for assoc in self.iter() {
+            trace!("Processing association: {:?}", assoc);
+            let node_shapes = assoc.iter_node_shape(rdf)?;
+            for pair in node_shapes {
+                result.push(pair)
+            }
+        }
+        Ok(result)
     }
 
     pub fn from_node_shape(

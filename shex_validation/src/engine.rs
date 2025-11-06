@@ -18,6 +18,7 @@ use shex_ast::ir::shape::Shape;
 use shex_ast::ir::shape_expr::ShapeExpr;
 use srdf::BlankNode;
 use srdf::Iri as _;
+use srdf::QueryRDF;
 use srdf::{NeighsRDF, Object};
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -60,11 +61,10 @@ impl Engine {
         *self = Engine::new(&config);
     }
 
-    pub(crate) fn validate_pending(
-        &mut self,
-        rdf: &impl NeighsRDF,
-        schema: &SchemaIR,
-    ) -> Result<()> {
+    pub(crate) fn validate_pending<R>(&mut self, rdf: &R, schema: &SchemaIR) -> Result<()>
+    where
+        R: NeighsRDF + QueryRDF,
+    {
         while let Some(atom) = self.pop_pending() {
             match atom.clone() {
                 Atom::Pos((node, idx)) => {
@@ -197,13 +197,16 @@ impl Engine {
         }
     }
 
-    pub(crate) fn dep(
+    pub(crate) fn dep<R>(
         &self,
         node: &Node,
         idx: &ShapeLabelIdx,
         schema: &SchemaIR,
-        rdf: &impl NeighsRDF,
-    ) -> Result<HashSet<(Node, ShapeLabelIdx)>> {
+        rdf: &R,
+    ) -> Result<HashSet<(Node, ShapeLabelIdx)>>
+    where
+        R: QueryRDF + NeighsRDF,
+    {
         if let Some(info) = schema.find_shape_idx(idx) {
             let se = info.expr();
             let mut dep = HashSet::new();
@@ -238,14 +241,17 @@ impl Engine {
         }
     }
 
-    pub(crate) fn prove(
+    pub(crate) fn prove<R>(
         &self,
         node: &Node,
         label: &ShapeLabelIdx,
         hyp: &mut Vec<(Node, ShapeLabelIdx)>,
         schema: &SchemaIR,
-        rdf: &impl NeighsRDF,
-    ) -> Result<ValidationResult> {
+        rdf: &R,
+    ) -> Result<ValidationResult>
+    where
+        R: NeighsRDF + QueryRDF,
+    {
         // Implements algorithm presented in page 14 of this paper:
         // https://labra.weso.es/publication/2017_semantics-validation-shapes-schemas/
         debug!(
@@ -300,14 +306,17 @@ impl Engine {
         Ok(result)
     }
 
-    pub(crate) fn check_node_idx(
+    pub(crate) fn check_node_idx<R>(
         &self,
         node: &Node,
         idx: &ShapeLabelIdx,
         schema: &SchemaIR,
-        rdf: &impl NeighsRDF,
+        rdf: &R,
         typing: &mut HashSet<(Node, ShapeLabelIdx)>,
-    ) -> Result<ValidationResult> {
+    ) -> Result<ValidationResult>
+    where
+        R: NeighsRDF + QueryRDF,
+    {
         trace!(
             "Checking {node}@{idx}, typing: [{}]",
             typing.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
@@ -372,15 +381,18 @@ impl Engine {
         }
     }
 
-    fn check_descendants(
+    fn check_descendants<R>(
         &self,
         node: &Node,
         idx: &ShapeLabelIdx,
         descendants: Vec<ShapeLabelIdx>,
         schema: &SchemaIR,
-        rdf: &impl NeighsRDF,
+        rdf: &R,
         typing: &mut HashSet<(Node, ShapeLabelIdx)>,
-    ) -> Result<ValidationResult> {
+    ) -> Result<ValidationResult>
+    where
+        R: NeighsRDF + QueryRDF,
+    {
         let mut errors_collection = Vec::new();
         for desc in descendants {
             match self.check_node_idx(node, &desc, schema, rdf, typing)? {
@@ -413,15 +425,18 @@ impl Engine {
         }]))
     }
 
-    pub(crate) fn check_node_shape_expr(
+    pub(crate) fn check_node_shape_expr<R>(
         &self,
         idx: &ShapeLabelIdx,
         node: &Node,
         se: &ShapeExpr,
         schema: &SchemaIR,
-        rdf: &impl NeighsRDF,
+        rdf: &R,
         typing: &mut HashSet<(Node, ShapeLabelIdx)>,
-    ) -> Result<ValidationResult> {
+    ) -> Result<ValidationResult>
+    where
+        R: NeighsRDF + QueryRDF,
+    {
         match se {
             ShapeExpr::ShapeAnd { exprs, .. } => {
                 tracing::debug!(
@@ -550,15 +565,18 @@ impl Engine {
         }
     }
 
-    pub(crate) fn check_node_shape(
+    pub(crate) fn check_node_shape<R>(
         &self,
         idx: &ShapeLabelIdx,
         node: &Node,
         shape: &Shape,
         _schema: &SchemaIR,
-        rdf: &impl NeighsRDF,
+        rdf: &R,
         typing: &mut Typing,
-    ) -> Result<ValidationResult> {
+    ) -> Result<ValidationResult>
+    where
+        R: QueryRDF + NeighsRDF,
+    {
         debug!("check_node_shape: node = {node}, shape = {idx} [No extends]");
         let (values, remainder) = self.neighs(node, shape.preds(), rdf)?;
         if shape.is_closed() && !remainder.is_empty() {
@@ -572,15 +590,18 @@ impl Engine {
         }
     }
 
-    pub(crate) fn check_node_shape_extends(
+    pub(crate) fn check_node_shape_extends<R>(
         &self,
         idx: &ShapeLabelIdx,
         node: &Node,
         shape: &Shape,
         schema: &SchemaIR,
-        rdf: &impl NeighsRDF,
+        rdf: &R,
         typing: &mut HashSet<(Node, ShapeLabelIdx)>,
-    ) -> Result<ValidationResult> {
+    ) -> Result<ValidationResult>
+    where
+        R: NeighsRDF + QueryRDF,
+    {
         debug!("check_node_shape_extends: node={node}, shape={idx}");
         let preds_extends = Vec::from_iter(schema.get_preds_extends(idx));
         trace!(
@@ -704,7 +725,7 @@ impl Engine {
     /// - remainder is a list of predicates for which there are no objects
     pub(crate) fn neighs<S>(&self, node: &Node, preds: Vec<Pred>, rdf: &S) -> Result<Neighs>
     where
-        S: NeighsRDF,
+        S: QueryRDF + NeighsRDF,
     {
         let node = self.get_rdf_node(node, rdf);
         let list: Vec<_> = preds.iter().map(|pred| pred.iri().clone().into()).collect();

@@ -1,13 +1,14 @@
 use crossterm::terminal;
 use tracing::debug;
 
-const MAX_TERMINAL_WIDTH: usize = 120;
+const MAX_TERMINAL_WIDTH: usize = 100;
 const DEFAULT_TERMINAL_WIDTH: usize = 80;
 
 pub fn terminal_width() -> usize {
     if let Ok((cols, _)) = terminal::size() {
-        debug!("DETECTED TERMINAL WIDTH: {}", cols);
-        sanitize_width(cols as usize)
+        let w = sanitize_width(cols as usize);
+        debug!("DETECTED TERMINAL WIDTH: {cols}, it will use: {w}");
+        w
     } else {
         DEFAULT_TERMINAL_WIDTH
     }

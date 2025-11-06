@@ -30,7 +30,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::io;
 use std::str::FromStr;
-use tracing::trace;
+use tracing::{info, trace};
 
 /// Generic abstraction that represents RDF Data which can be  behind SPARQL endpoints or an in-memory graph or both
 /// The triples in RdfData are taken as the union of the triples of the endpoints and the in-memory graph
@@ -429,7 +429,7 @@ impl QueryRDF for RdfData {
     {
         let mut sols: QuerySolutions<RdfData> = QuerySolutions::empty();
         if let Some(store) = &self.store {
-            trace!("Querying in-memory store of length: {:?}", store.len());
+            trace!("Querying in-memory store of length: {}", store.len()?);
 
             let new_sol = SparqlEvaluator::new()
                 .parse_query(query_str)?
@@ -443,6 +443,8 @@ impl QueryRDF for RdfData {
                     error: format!("{e}"),
                 }
             })?;
+        } else {
+            trace!("No in-memory store to query");
         }
         for (name, endpoint) in self.endpoints_to_use() {
             let new_sols = endpoint.query_select(query_str)?;

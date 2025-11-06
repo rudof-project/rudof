@@ -13,4 +13,14 @@ pub enum ShapemapError {
         old_status: ValidationStatus,
         new_status: ValidationStatus,
     },
+
+    #[error("Error running query to select nodes. Query: \n{query}\nError: {error}")]
+    NodeSelectorQueryError { query: String, error: String },
+
+    #[error("Obtaining IRI from IriRef {iri_ref}: {prefixmap}\nPrefixmap: {prefixmap}")]
+    ResolvingIriRef {
+        iri_ref: String,
+        prefixmap: String,
+        error: String,
+    },
 }
