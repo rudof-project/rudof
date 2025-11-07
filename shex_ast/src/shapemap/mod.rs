@@ -5,16 +5,15 @@
 //! ShapeMaps can associate RDF nodes with shapes indicating whether the RDF nodes conform or not to those shapes.
 //!
 pub mod association;
+pub mod conformant_info;
 pub mod node_selector;
+pub mod non_conformant_info;
 pub mod query_shape_map;
 pub mod result_shape_map;
+pub mod shacl_path_ref;
 pub mod shape_selector;
-
 #[allow(clippy::module_inception)]
 pub mod shapemap;
-
-pub mod conformant_info;
-pub mod non_conformant_info;
 pub mod shapemap_config;
 pub mod shapemap_error;
 pub mod shapemap_state;
@@ -26,6 +25,7 @@ pub use node_selector::*;
 pub use non_conformant_info::*;
 pub use query_shape_map::*;
 pub use result_shape_map::*;
+pub use shacl_path_ref::*;
 pub use shape_selector::*;
 pub use shapemap::*;
 pub use shapemap_config::*;

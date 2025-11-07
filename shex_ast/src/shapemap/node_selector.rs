@@ -1,16 +1,18 @@
-use std::fmt::Display;
-
 use crate::object_value::ObjectValue;
+use crate::shapemap::SHACLPathRef;
 use crate::shapemap::ShapemapError;
 use iri_s::IriS;
 use prefixmap::IriRef;
+use prefixmap::PrefixMap;
+use prefixmap::PrefixMapError;
 use serde::Serialize;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::SLiteral;
-use srdf::shacl_path::SHACLPath;
+use std::fmt::Display;
 use thiserror::Error;
-use tracing::{info, trace};
+use tracing::info;
+use tracing::trace;
 
 /// A NodeSelector following [ShapeMap spec](https://shexspec.github.io/shape-map/#shapemap-structure) can be used to select RDF Nodes
 ///
@@ -19,13 +21,7 @@ pub enum NodeSelector {
     Node(ObjectValue),
     TriplePattern {
         subject: Pattern,
-        pred: IriRef,
-        object: Pattern,
-    },
-    // Note: We are not using yet the following
-    TriplePatternPath {
-        subject: Pattern,
-        pred: SHACLPath,
+        path: SHACLPathRef,
         object: Pattern,
     },
     Sparql {
@@ -38,6 +34,13 @@ pub enum NodeSelector {
 }
 
 impl NodeSelector {
+    pub fn triple_pattern(subject: Pattern, path: SHACLPathRef, object: Pattern) -> NodeSelector {
+        NodeSelector::TriplePattern {
+            subject,
+            path,
+            object,
+        }
+    }
     pub fn iri_unchecked(str: &str) -> NodeSelector {
         NodeSelector::Node(ObjectValue::iri(IriS::new_unchecked(str)))
     }
@@ -80,9 +83,31 @@ impl NodeSelector {
                 Ok(vec![term])
             }
             NodeSelector::Sparql { query } => {
-                trace!("Resolving SPARQL NodeSelector query: {}", query);
                 let nodes = resolve_query(rdf, query)?;
-                info!("SPARQL NodeSelector nodes resolve query: {:?}", nodes);
+                Ok(nodes)
+            }
+            NodeSelector::TriplePattern {
+                subject,
+                path,
+                object,
+            } => {
+                let subj_str =
+                    mk_vble(subject, &rdf.prefixmap().unwrap_or_default()).map_err(|e| {
+                        ShapemapError::PrefixMapError {
+                            node: subject.to_string(),
+                            error: e.to_string(),
+                        }
+                    })?;
+                let path_str = mk_path_str(path, &rdf.prefixmap().unwrap_or_default())?;
+                let obj_str =
+                    mk_vble(object, &rdf.prefixmap().unwrap_or_default()).map_err(|e| {
+                        ShapemapError::PrefixMapError {
+                            node: object.to_string(),
+                            error: e.to_string(),
+                        }
+                    })?;
+                let query = format!("SELECT ?focus WHERE {{ {subj_str} {path_str} {obj_str} }}");
+                let nodes = resolve_query(rdf, &query)?;
                 Ok(nodes)
             }
             _ => todo!(),
@@ -93,6 +118,36 @@ impl NodeSelector {
         NodeSelector::Sparql {
             query: query.to_string(),
         }
+    }
+}
+
+fn mk_path_str(path: &SHACLPathRef, prefixmap: &PrefixMap) -> Result<String, ShapemapError> {
+    match path {
+        SHACLPathRef::Predicate { pred } => {
+            let pred_resolved =
+                prefixmap
+                    .resolve_iriref(pred)
+                    .map_err(|e| ShapemapError::PrefixMapError {
+                        node: pred.to_string(),
+                        error: e.to_string(),
+                    })?;
+            Ok(format!("<{pred_resolved}>"))
+        }
+        _ => todo!(),
+    }
+}
+
+fn mk_vble(p: &Pattern, prefixmap: &PrefixMap) -> Result<String, PrefixMapError> {
+    match p {
+        Pattern::Node(object_value) => match object_value {
+            ObjectValue::IriRef(iri_ref) => {
+                let iri = prefixmap.resolve_iriref(iri_ref)?;
+                Ok(format!("<{iri}>"))
+            }
+            ObjectValue::Literal(sliteral) => Ok(sliteral.to_string()),
+        },
+        Pattern::Wildcard => Ok("?any".to_string()),
+        Pattern::Focus => Ok("?focus".to_string()),
     }
 }
 
@@ -110,16 +165,15 @@ impl NodeSelect for NodeSelector {
             }
             NodeSelector::TriplePattern {
                 subject,
-                pred,
+                path,
                 object,
-            } => match (subject, pred, object) {
+            } => match (subject, path, object) {
                 (Pattern::Focus, _pred, Pattern::Wildcard) => todo!(),
                 (Pattern::Focus, _pred, Pattern::Node(_node)) => todo!(),
                 (Pattern::Wildcard, _pred, Pattern::Focus) => todo!(),
                 (Pattern::Node(_n), _pred, Pattern::Focus) => todo!(),
                 (_, _, _) => todo!(),
             },
-            NodeSelector::TriplePatternPath { .. } => todo!(),
             NodeSelector::Sparql { .. } => todo!(),
             NodeSelector::Generic { .. } => todo!(),
         }
@@ -131,6 +185,34 @@ pub enum Pattern {
     Node(ObjectValue),
     Wildcard,
     Focus,
+}
+
+impl Pattern {
+    pub fn focus() -> Self {
+        Pattern::Focus
+    }
+
+    pub fn wildcard() -> Self {
+        Pattern::Wildcard
+    }
+
+    pub fn node(obj: ObjectValue) -> Self {
+        Pattern::Node(obj)
+    }
+
+    pub fn prefixed(prefix: &str, local: &str) -> Self {
+        Pattern::Node(ObjectValue::iri_ref(IriRef::prefixed(prefix, local)))
+    }
+}
+
+impl Display for Pattern {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Pattern::Node(object_value) => write!(f, "{object_value}"),
+            Pattern::Wildcard => write!(f, "_"),
+            Pattern::Focus => write!(f, "FOCUS"),
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -145,14 +227,14 @@ where
     R: QueryRDF,
 {
     let mut results = Vec::new();
-    info!("Resolving SPARQL NodeSelector query for rdf");
+    trace!("Resolving SPARQL NodeSelector query for rdf\nQuery:\n{query}");
     let query_solutions =
         rdf.query_select(query)
             .map_err(|e| ShapemapError::NodeSelectorQueryError {
                 query: query.to_string(),
                 error: e.to_string(),
             })?;
-    info!(
+    trace!(
         "SPARQL NodeSelector query solutions: {}",
         query_solutions.count()
     );
@@ -177,12 +259,7 @@ impl Display for NodeSelector {
             }
             NodeSelector::TriplePattern {
                 subject: _,
-                pred: _,
-                object: _,
-            } => todo!(),
-            NodeSelector::TriplePatternPath {
-                subject: _,
-                pred: _,
+                path: _,
                 object: _,
             } => todo!(),
             NodeSelector::Sparql { query } => {

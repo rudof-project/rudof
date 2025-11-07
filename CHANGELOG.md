@@ -7,6 +7,11 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.1.142
+## Added
+- Support for SPARQL extension of shapemaps and node selectors
+- Support for triple patterns in shapemaps and node selectors
+
 ## v0.1.141
 ## Added
 - `node` information accepts a new parameter `outgoing_depth` to declare the number of neighbours from a node that are shown

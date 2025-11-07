@@ -1,0 +1,14 @@
+PREFIX : <http://example.org/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+:ok1 a :Person ;
+     :name "John" ;
+     :age  23     .
+
+:ko1 a :Person ;
+     :name 34     ;
+     :age 34      .
+
+:ignored a :Person ;
+    :name 45 ;
+     :age 2       .

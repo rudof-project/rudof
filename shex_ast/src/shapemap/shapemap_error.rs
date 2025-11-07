@@ -4,6 +4,9 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ShapemapError {
+    #[error("PrefixMap error for node {node}: {error}")]
+    PrefixMapError { node: String, error: String },
+
     #[error(
         "Trying to create an inconsistent status on node {node} and shape {label}. Old status: {old_status}, new status: {new_status}"
     )]
