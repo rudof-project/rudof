@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
+use crate::object_value::ObjectValue;
 use crate::shapemap::ShapemapError;
-use crate::{Node, object_value::ObjectValue};
 use iri_s::IriS;
 use prefixmap::IriRef;
 use serde::Serialize;
@@ -19,9 +19,10 @@ pub enum NodeSelector {
     Node(ObjectValue),
     TriplePattern {
         subject: Pattern,
-        pred: IriS,
+        pred: IriRef,
         object: Pattern,
     },
+    // Note: We are not using yet the following
     TriplePatternPath {
         subject: Pattern,
         pred: SHACLPath,
@@ -127,7 +128,7 @@ impl NodeSelect for NodeSelector {
 #[derive(Debug, PartialEq, Clone, Serialize)]
 
 pub enum Pattern {
-    Node(Node),
+    Node(ObjectValue),
     Wildcard,
     Focus,
 }

@@ -1,11 +1,11 @@
-use crate::shapemap::{NodeSelector, ShapeSelector};
-use crate::string;
+use crate::shapemap::{NodeSelector, Pattern, ShapeSelector};
 use crate::{
     IRes, ParseError, Span,
     compact::grammar::{map_error, tag_no_case_tws, token_tws, traced, tws0},
     compact::shex_grammar::shape_expr_label,
     iri, literal,
 };
+use crate::{ObjectValue, string};
 use nom::{
     branch::alt,
     character::complete::char,
@@ -81,7 +81,7 @@ pub(crate) fn node_selector<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NodeSelect
     traced(
         "node_selector",
         map_error(
-            move |i| alt((object_term, extended))(i),
+            move |i| alt((object_term, triple_pattern, extended))(i),
             || ParseError::ExpectedNodeSpec,
         ),
     )
@@ -89,6 +89,51 @@ pub(crate) fn node_selector<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NodeSelect
 
 fn object_term(i: Span) -> IRes<NodeSelector> {
     alt((subject_term, literal_selector))(i)
+}
+
+fn object_value(i: Span) -> IRes<ObjectValue> {
+    alt((
+        map(iri, ObjectValue::iri_ref),
+        map(literal(), ObjectValue::literal),
+    ))(i)
+}
+
+fn triple_pattern(i: Span) -> IRes<NodeSelector> {
+    let (i, (_, triple, _)) = tuple((open_curly, triple_pattern_inner, close_curly))(i)?;
+    Ok((i, triple))
+}
+
+fn triple_pattern_inner(i: Span) -> IRes<NodeSelector> {
+    alt((focus_object, subject_focus))(i)
+}
+
+fn focus_object(i: Span) -> IRes<NodeSelector> {
+    let (i, (_, _, pred, _, obj)) = tuple((focus, tws0, iri, tws0, object_value))(i)?;
+    Ok((
+        i,
+        NodeSelector::TriplePattern {
+            subject: Pattern::Focus,
+            pred,
+            object: Pattern::Node(obj),
+        },
+    ))
+}
+
+fn subject_focus(i: Span) -> IRes<NodeSelector> {
+    let (i, (subj, _, pred, _, _)) = tuple((object_value, tws0, iri, tws0, focus))(i)?;
+    Ok((
+        i,
+        NodeSelector::TriplePattern {
+            subject: Pattern::Node(subj),
+            pred,
+            object: Pattern::Focus,
+        },
+    ))
+}
+
+fn focus(i: Span) -> IRes<Pattern> {
+    let (i, _) = tag_no_case_tws("FOCUS")(i)?;
+    Ok((i, Pattern::Focus))
 }
 
 fn extended(i: Span) -> IRes<NodeSelector> {
@@ -104,6 +149,14 @@ fn subject_term(i: Span) -> IRes<NodeSelector> {
 fn literal_selector(i: Span) -> IRes<NodeSelector> {
     let (i, lit) = literal()(i)?;
     Ok((i, NodeSelector::literal(lit)))
+}
+
+fn open_curly(i: Span) -> IRes<char> {
+    char('{')(i)
+}
+
+fn close_curly(i: Span) -> IRes<char> {
+    char('}')(i)
 }
 
 #[cfg(test)]

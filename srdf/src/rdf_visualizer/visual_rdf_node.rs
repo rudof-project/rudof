@@ -178,7 +178,7 @@ fn object_to_visual_node<R: NeighsRDF>(
         } => {
             let sub: IriOrBlankNode = (**subject).clone();
             let s: R::Subject = R::Subject::from(sub);
-            let p: R::IRI = R::IRI::from((**predicate).clone());
+            let p: R::IRI = R::IRI::from(predicate.clone());
             let o: R::Term = R::Term::from((**object).clone());
             let triple = graph.create_triple_term(rdf, s, p, o)?;
             Ok(triple)
