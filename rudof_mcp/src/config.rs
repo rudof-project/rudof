@@ -1,26 +1,11 @@
-#[derive(Clone)]
-pub struct ServerConfig {
-    pub route_name: String,
-    pub host: String,
-    pub port: u16,
-}
+/// MCP-SPEC: The canonical URI of this MCP server.
+pub const CANONICAL_URI: &str = "http://localhost:8000/rudof";
 
-impl ServerConfig {
-    pub fn bind_address(&self) -> String {
-        format!("{}:{}", self.host, self.port)
-    }
+/// Authorization Server (Keycloak) base URL.
+pub const AS_URL: &str = "http://localhost:8080/realms/mcp-realm";
 
-    /// MCP-SPEC: The `canonical_uri` uniquely identifies this MCP instance as a protected resource.
-    /// It serves as the audience claim value for validating OAuth 2.1 Bearer tokens.
-    /// Clients MUST use this canonical URI as the `aud` when requesting access tokens from the Authorization Server.
-    pub fn canonical_uri(&self) -> String {
-        format!("https://{}/{}", self.host, self.route_name)
-    }
+pub const ROUTE_PATH: &str = "/rudof";
 
-    /// MCP-SPEC: When running locally, servers SHOULD bind only to localhost (127.0.0.1)
-    /// rather than all network interfaces (0.0.0.0) to mitigate DNS rebinding attacks.
-    pub fn safe_bind_address(&self) -> String {
-        let host = if self.host == "0.0.0.0" { "127.0.0.1" } else { &self.host };
-        format!("{}:{}", host, self.port)
-    }
-}
+/// MCP-SPEC: When running locally, servers SHOULD bind only to localhost (127.0.0.1) rather than 
+/// all network interfaces (0.0.0.0) to mitigate DNS rebinding attacks.
+pub const BIND_ADDR: &str = "localhost:8000";

@@ -121,12 +121,9 @@ fn main() -> Result<()> {
             )
         }
         Some(Command::Mcp {
-            host,
-            port,
-            route_name,
         }) => {
             // Run the MCP server
-            rudof_mcp::run_mcp(route_name, port, host)
+            rudof_mcp::run_mcp()
         }
         Some(Command::Service {
             service,

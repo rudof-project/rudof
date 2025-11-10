@@ -28,7 +28,7 @@ services:
     depends_on:
       - postgres
     volumes:
-      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+      - ./keycloak:/opt/keycloak/data/import/
     restart: unless-stopped
 
 volumes:
