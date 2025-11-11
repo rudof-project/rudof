@@ -1,13 +1,10 @@
-use base64::{Engine as _, engine::general_purpose};
+use base64::{engine::general_purpose, Engine as _};
 use rmcp::{
-    ErrorData as McpError,
-    handler::server::wrapper::Parameters,
-    model::{CallToolResult, Content},
+    handler::server::wrapper::Parameters, model::{CallToolResult, Content}, ErrorData as McpError,
 };
 use rudof_lib::{
-    InputSpec, RDFFormat, ReaderMode,
     data::{export_rdf_to_image, get_data_rudof, parse_image_format, parse_optional_base_iri},
-    data_format::DataFormat,
+    data_format::DataFormat, InputSpec, RDFFormat, ReaderMode,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -32,6 +29,12 @@ pub struct LoadRdfDataFromSourcesRequest {
 pub struct LoadRdfDataFromSourcesResponse {
     /// Message confirming data load
     pub message: String,
+    /// Number of sources processed
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sources_count: Option<usize>,
+    /// RDF format used
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub format: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -46,6 +49,9 @@ pub struct ExportRdfDataResponse {
     pub data: String,
     /// Format used for serialization (e.g. "turtle", "jsonld")
     pub format: String,
+    /// Size of the serialized data in bytes
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub size_bytes: Option<usize>,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -66,6 +72,9 @@ pub struct ExportImageResponse {
 pub struct ExportPlantUmlResponse {
     /// PlantUML diagram data as a string
     pub plantuml_data: String,
+    /// Size of the diagram in characters
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub size: Option<usize>,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -128,12 +137,28 @@ pub async fn load_rdf_data_from_sources_impl(
         )
     })?;
 
+    let sources_count = data_specs.len();
     let response = LoadRdfDataFromSourcesResponse {
-        message: "RDF data loaded from sources/endpoint successfully".to_string(),
+        message: format!(
+            "Successfully loaded RDF data from {} source(s) in {} format",
+            sources_count, data_format
+        ),
+        sources_count: Some(sources_count),
+        format: Some(data_format.clone()),
     };
+    
     let structured = serde_json::to_value(&response).unwrap();
-    let mut result = CallToolResult::success(vec![Content::text(response.message.clone())]);
+    let mut result = CallToolResult::success(vec![
+        Content::text(response.message.clone()),
+    ]);
     result.structured_content = Some(structured);
+    
+    tracing::info!(
+        sources = sources_count,
+        format = %data_format,
+        "RDF data loaded successfully"
+    );
+    
     Ok(result)
 }
 
@@ -153,6 +178,8 @@ pub async fn export_rdf_data_impl(
                     Some(json!({ "error": e.to_string() })),
                 )
             })?;
+            
+            let size_bytes = v.len();
             let str = String::from_utf8(v).map_err(|e| {
                 internal_error(
                     error_messages::CONVERSION_ERROR,
@@ -163,10 +190,24 @@ pub async fn export_rdf_data_impl(
             let response = ExportRdfDataResponse {
                 data: str.clone(),
                 format: format.clone(),
+                size_bytes: Some(size_bytes),
             };
+            
             let structured = serde_json::to_value(&response).unwrap();
-            let mut result = CallToolResult::success(vec![Content::text(str)]);
+            
+            // Return data in a code block for better formatting
+            let formatted_data = format!("```{}\n{}\n```", format, str);
+            let mut result = CallToolResult::success(vec![
+                Content::text(formatted_data),
+            ]);
             result.structured_content = Some(structured);
+            
+            tracing::info!(
+                format = %format,
+                size_bytes = size_bytes,
+                "RDF data exported successfully"
+            );
+            
             Ok(result)
         }
         Err(e) => Err(invalid_request(
@@ -197,12 +238,23 @@ pub async fn export_plantuml_impl(
         )
     })?;
 
+    let size = str.len();
     let response = ExportPlantUmlResponse {
         plantuml_data: str.clone(),
+        size: Some(size),
     };
+    
     let structured = serde_json::to_value(&response).unwrap();
-    let mut result = CallToolResult::success(vec![Content::text(str)]);
+    
+    // Format as PlantUML code block
+    let formatted_data = format!("```plantuml\n{}\n```", str);
+    let mut result = CallToolResult::success(vec![
+        Content::text(formatted_data),
+    ]);
     result.structured_content = Some(structured);
+    
+    tracing::info!(size = size, "PlantUML diagram exported successfully");
+    
     Ok(result)
 }
 
@@ -227,17 +279,42 @@ pub async fn export_image_impl(
         )
     })?;
 
+    let size_bytes = v.len();
     let base64_data = general_purpose::STANDARD.encode(&v);
 
     let response = ExportImageResponse {
         image_data_base64: base64_data.clone(),
         image_format: image_format.clone(),
     };
+    
     let structured = serde_json::to_value(&response).unwrap();
 
-    let mut result = CallToolResult::success(vec![Content::text(base64_data)]);
+    // Return base64 data with explanation
+    let mime_type = match image_format.to_lowercase().as_str() {
+        "svg" => "image/svg+xml",
+        "png" => "image/png",
+        _ => "image/png",
+    };
+    
+    let description = format!(
+        "Image generated successfully ({} format, {} bytes encoded as base64)",
+        image_format, size_bytes
+    );
+
+    let mut result = CallToolResult::success(vec![
+        Content::text(description),
+        Content::text(format!("\n\nBase64 data:\n{}", base64_data)),
+    ]);
 
     result.structured_content = Some(structured);
+    
+    tracing::info!(
+        format = %image_format,
+        size_bytes = size_bytes,
+        mime_type = mime_type,
+        "Image exported successfully"
+    );
+    
     Ok(result)
 }
 
@@ -262,6 +339,10 @@ mod tests {
     "#;
 
     async fn create_test_service() -> RudofMcpService {
+        use crate::rudof_mcp_service::service::ServiceConfig;
+        use std::collections::HashMap;
+        use tokio::sync::RwLock;
+        
         tokio::task::spawn_blocking(|| {
             let rudof_config = rudof_lib::RudofConfig::new().unwrap();
             let rudof = rudof_lib::Rudof::new(&rudof_config).unwrap();
@@ -269,6 +350,9 @@ mod tests {
                 rudof: Arc::new(Mutex::new(rudof)),
                 tool_router: Default::default(),
                 prompt_router: Default::default(),
+                config: Arc::new(RwLock::new(ServiceConfig::default())),
+                resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
+                log_level_handle: None,
             }
         })
         .await

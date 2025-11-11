@@ -38,6 +38,12 @@ pub struct QueryExecutionResponse {
 
     /// Results as structured data
     pub results: String,
+
+    /// Size of the results in bytes
+    pub result_size_bytes: usize,
+
+    /// Number of lines in the result
+    pub result_lines: usize,
 }
 
 pub async fn execute_sparql_query_impl(
@@ -97,12 +103,36 @@ pub async fn execute_sparql_query_impl(
         )
     })?;
 
+    // Calculate metadata
+    let result_size_bytes = output_str.len();
+    let result_lines = output_str.lines().count();
+
     let response = QueryExecutionResponse {
         query_type: query_type_str.clone(),
         result_format: result_format_str.to_string(),
         status: "success".to_string(),
         results: output_str.to_string(),
+        result_size_bytes,
+        result_lines,
     };
+
+    tracing::info!(
+        query_type = %query_type_str,
+        result_format = %result_format_str,
+        result_size_bytes,
+        result_lines,
+        query_length = query.len(),
+        "Executed SPARQL query successfully"
+    );
+
+    tracing::info!(
+        query_type = %query_type_str,
+        result_format = %result_format_str,
+        result_size_bytes,
+        result_lines,
+        query_length = query.len(),
+        "Executed SPARQL query successfully"
+    );
 
     let structured = serde_json::to_value(&response).map_err(|e| {
         internal_error(
@@ -111,15 +141,39 @@ pub async fn execute_sparql_query_impl(
         )
     })?;
 
-    let text_output = format!(
-        "Query executed successfully\n
-        Query Type: {}\n
-        Result Format: {}\n
-        Results:\n{}",
-        query_type_str, result_format_str, output_str
+    // Create a summary text with metadata
+    let summary = format!(
+        "# SPARQL Query Execution\n\n\
+        **Status:** ✓ Success\n\
+        **Query Type:** {}\n\
+        **Result Format:** {}\n\
+        **Result Size:** {} bytes\n\
+        **Result Lines:** {}\n",
+        query_type_str,
+        result_format_str,
+        result_size_bytes,
+        result_lines
     );
 
-    let mut result = CallToolResult::success(vec![Content::text(text_output)]);
+    // Format the query in a code block
+    let query_display = format!("## Query\n\n```sparql\n{}\n```", query);
+
+    // Format results based on the format type
+    let results_display = match result_format_str.to_lowercase().as_str() {
+        "csv" => format!("## Results\n\n```csv\n{}\n```", output_str),
+        "jsonld" | "json" => format!("## Results\n\n```json\n{}\n```", output_str),
+        "turtle" | "n3" => format!("## Results\n\n```turtle\n{}\n```", output_str),
+        "ntriples" | "nquads" => format!("## Results\n\n```ntriples\n{}\n```", output_str),
+        "rdfxml" => format!("## Results\n\n```xml\n{}\n```", output_str),
+        "trig" => format!("## Results\n\n```trig\n{}\n```", output_str),
+        _ => format!("## Results\n\n```\n{}\n```", output_str),
+    };
+
+    let mut result = CallToolResult::success(vec![
+        Content::text(summary),
+        Content::text(query_display),
+        Content::text(results_display),
+    ]);
     result.structured_content = Some(structured);
 
     Ok(result)
@@ -128,11 +182,13 @@ pub async fn execute_sparql_query_impl(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::rudof_mcp_service::service::{RudofMcpService, ServiceConfig};
     use crate::rudof_mcp_service::tools::data_tools_impl::{
         LoadRdfDataFromSourcesRequest, load_rdf_data_from_sources_impl,
     };
+    use std::collections::HashMap;
     use std::sync::Arc;
-    use tokio::sync::Mutex;
+    use tokio::sync::{Mutex, RwLock};
 
     const SAMPLE_TURTLE: &str = r#"
         prefix : <http://example.org/>
@@ -155,6 +211,9 @@ mod tests {
                 rudof: Arc::new(Mutex::new(rudof)),
                 tool_router: Default::default(),
                 prompt_router: Default::default(),
+                config: Arc::new(RwLock::new(ServiceConfig::default())),
+                resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
+                log_level_handle: None,
             }
         })
         .await

@@ -28,6 +28,14 @@ pub struct NodeInfoResponse {
     pub outgoing: Vec<NodePredicateObjects>,
     /// List of incoming arcs to the subject node.
     pub incoming: Vec<NodePredicateSubjects>,
+    /// Number of outgoing predicates
+    pub outgoing_count: usize,
+    /// Number of incoming predicates
+    pub incoming_count: usize,
+    /// Total number of outgoing objects
+    pub total_outgoing_objects: usize,
+    /// Total number of incoming subjects
+    pub total_incoming_subjects: usize,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -103,28 +111,64 @@ pub async fn node_info_impl(
         )
     })?;
 
+    let outgoing_data: Vec<NodePredicateObjects> = node_info
+        .outgoing
+        .iter()
+        .map(|(predicate_iri, objects_vec)| NodePredicateObjects {
+            predicate: predicate_iri.to_string(),
+            objects: objects_vec.iter().map(|term| term.to_string()).collect(),
+        })
+        .collect();
+
+    let incoming_data: Vec<NodePredicateSubjects> = node_info
+        .incoming
+        .iter()
+        .map(|(predicate_iri, subjects_vec)| NodePredicateSubjects {
+            predicate: predicate_iri.to_string(),
+            subjects: subjects_vec
+                .iter()
+                .map(|subject| subject.to_string())
+                .collect(),
+        })
+        .collect();
+
+    // Calculate metadata
+    let outgoing_count = outgoing_data.len();
+    let incoming_count = incoming_data.len();
+    let total_outgoing_objects: usize = outgoing_data.iter().map(|p| p.objects.len()).sum();
+    let total_incoming_subjects: usize = incoming_data.iter().map(|p| p.subjects.len()).sum();
+
     let response = NodeInfoResponse {
         subject: node_info.subject_qualified.clone(),
-        outgoing: node_info
-            .outgoing
-            .iter()
-            .map(|(predicate_iri, objects_vec)| NodePredicateObjects {
-                predicate: predicate_iri.to_string(),
-                objects: objects_vec.iter().map(|term| term.to_string()).collect(),
-            })
-            .collect(),
-        incoming: node_info
-            .incoming
-            .iter()
-            .map(|(predicate_iri, subjects_vec)| NodePredicateSubjects {
-                predicate: predicate_iri.to_string(),
-                subjects: subjects_vec
-                    .iter()
-                    .map(|subject| subject.to_string())
-                    .collect(),
-            })
-            .collect(),
+        outgoing: outgoing_data,
+        incoming: incoming_data,
+        outgoing_count,
+        incoming_count,
+        total_outgoing_objects,
+        total_incoming_subjects,
     };
+
+    tracing::info!(
+        node = %node,
+        subject = %node_info.subject_qualified,
+        outgoing_predicates = outgoing_count,
+        incoming_predicates = incoming_count,
+        total_outgoing_objects,
+        total_incoming_subjects,
+        mode = mode_str,
+        "Retrieved node information"
+    );
+
+    tracing::info!(
+        node = %node,
+        subject = %node_info.subject_qualified,
+        outgoing_predicates = outgoing_count,
+        incoming_predicates = incoming_count,
+        total_outgoing_objects,
+        total_incoming_subjects,
+        mode = mode_str,
+        "Retrieved node information"
+    );
 
     let structured = serde_json::to_value(&response).map_err(|e| {
         internal_error(
@@ -133,7 +177,29 @@ pub async fn node_info_impl(
         )
     })?;
 
-    let mut result = CallToolResult::success(vec![Content::text(output_str)]);
+    // Create a summary text
+    let summary = format!(
+        "# Node Information: {}\n\n\
+        **Mode:** {}\n\
+        **Outgoing Predicates:** {}\n\
+        **Incoming Predicates:** {}\n\
+        **Total Outgoing Objects:** {}\n\
+        **Total Incoming Subjects:** {}\n",
+        node_info.subject_qualified,
+        mode_str,
+        outgoing_count,
+        incoming_count,
+        total_outgoing_objects,
+        total_incoming_subjects
+    );
+
+    // Format the detailed output in a code block
+    let detailed_output = format!("## Detailed Node Information\n\n```\n{}\n```", output_str);
+
+    let mut result = CallToolResult::success(vec![
+        Content::text(summary),
+        Content::text(detailed_output),
+    ]);
     result.structured_content = Some(structured);
     Ok(result)
 }
@@ -141,14 +207,15 @@ pub async fn node_info_impl(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rudof_mcp_service::service::RudofMcpService;
+    use crate::rudof_mcp_service::service::{RudofMcpService, ServiceConfig};
     use crate::rudof_mcp_service::tools::data_tools_impl::{
         LoadRdfDataFromSourcesRequest, load_rdf_data_from_sources_impl,
     };
     use rmcp::handler::server::wrapper::Parameters;
+    use std::collections::HashMap;
     use std::sync::Arc;
     use tokio;
-    use tokio::sync::Mutex;
+    use tokio::sync::{Mutex, RwLock};
 
     const SAMPLE_TURTLE: &str = r#"
         prefix : <http://example.org/>
@@ -172,6 +239,9 @@ mod tests {
                 rudof: Arc::new(Mutex::new(rudof)),
                 tool_router: Default::default(),
                 prompt_router: Default::default(),
+                config: Arc::new(RwLock::new(ServiceConfig::default())),
+                resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
+                log_level_handle: None,
             }
         })
         .await

@@ -15,7 +15,7 @@ use serde_json::Value;
 use serde_json::json;
 use anyhow::{Result, Context as AnyhowContext};
 
-use crate::config::AS_URL;
+use crate::config::{AS_URL, SCOPES};
 
 // ============================================================================
 // Configuration
@@ -380,7 +380,7 @@ pub async fn protected_resource_metadata_handler(
     let metadata = json!({
         "resource": resource,
         "authorization_servers": [AS_URL],
-        "scopes_supported": ["openid", "profile", "email"]
+        "scopes_supported": SCOPES
     });
 
     (

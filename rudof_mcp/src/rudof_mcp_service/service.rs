@@ -1,27 +1,118 @@
-use std::sync::Arc;
-use tokio::sync::Mutex;
+use std::{collections::HashMap, sync::Arc};
+use tokio::sync::{Mutex, RwLock};
+use tracing_subscriber::reload;
 
 use crate::rudof_mcp_service::{prompts, tools};
 use rmcp::handler::server::router::{prompt::PromptRouter, tool::ToolRouter};
 use rudof_lib::{Rudof, RudofConfig};
 
+/// Type alias for the reload handle used to dynamically change log levels
+pub type ReloadHandle = reload::Handle<
+    tracing_subscriber::EnvFilter,
+    tracing_subscriber::Registry,
+>;
+
+/// Configuration for the RudofMcpService
+#[derive(Clone, Debug)]
+pub struct ServiceConfig {
+    /// Whether to allow dynamic updates to tools/prompts
+    pub allow_dynamic_updates: bool,
+    /// Maximum number of concurrent validation operations
+    pub max_concurrent_validations: usize,
+    /// Enable caching for validation results
+    pub cache_enabled: bool,
+}
+
+impl Default for ServiceConfig {
+    fn default() -> Self {
+        Self {
+            allow_dynamic_updates: false,
+            max_concurrent_validations: 10,
+            cache_enabled: true,
+        }
+    }
+}
+
+/// Main MCP service for Rudof operations
 #[derive(Clone)]
 pub struct RudofMcpService {
+    /// Core Rudof instance for validation and operations
     pub rudof: Arc<Mutex<Rudof>>,
+    /// Router for handling tool calls
     pub tool_router: ToolRouter<RudofMcpService>,
+    /// Router for handling prompt requests
     pub prompt_router: PromptRouter<RudofMcpService>,
+    /// Service configuration
+    pub config: Arc<RwLock<ServiceConfig>>,
+    /// Track resource subscriptions (URI -> list of subscriber IDs)
+    pub resource_subscriptions: Arc<RwLock<HashMap<String, Vec<String>>>>,
+    /// Handle for dynamically reloading log level
+    pub log_level_handle: Option<Arc<RwLock<ReloadHandle>>>,
 }
 
 impl RudofMcpService {
     pub fn new() -> Self {
-        // TODO: Check and protect against possible initialization errors
         let rudof_config = RudofConfig::new().unwrap();
         let rudof = Rudof::new(&rudof_config).unwrap();
         Self {
             rudof: Arc::new(Mutex::new(rudof)),
             tool_router: tools::tool_router_public(),
             prompt_router: prompts::prompt_router_public(),
+            config: Arc::new(RwLock::new(ServiceConfig::default())),
+            resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
+            log_level_handle: None,
         }
+    }
+
+    /// Create a new service with custom configuration
+    pub fn with_config(config: ServiceConfig) -> Self {
+        let rudof_config = RudofConfig::new().unwrap();
+        let rudof = Rudof::new(&rudof_config).unwrap();
+        Self {
+            rudof: Arc::new(Mutex::new(rudof)),
+            tool_router: tools::tool_router_public(),
+            prompt_router: prompts::prompt_router_public(),
+            config: Arc::new(RwLock::new(config)),
+            resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
+            log_level_handle: None,
+        }
+    }
+
+    /// Create a new service with a log level handle for dynamic log control
+    pub fn with_log_handle(log_handle: Arc<RwLock<ReloadHandle>>) -> Self {
+        let rudof_config = RudofConfig::new().unwrap();
+        let rudof = Rudof::new(&rudof_config).unwrap();
+        Self {
+            rudof: Arc::new(Mutex::new(rudof)),
+            tool_router: tools::tool_router_public(),
+            prompt_router: prompts::prompt_router_public(),
+            config: Arc::new(RwLock::new(ServiceConfig::default())),
+            resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
+            log_level_handle: Some(log_handle),
+        }
+    }
+
+    /// Add a resource subscription
+    pub async fn subscribe_resource(&self, uri: String, subscriber_id: String) {
+        let mut subs = self.resource_subscriptions.write().await;
+        subs.entry(uri).or_insert_with(Vec::new).push(subscriber_id);
+    }
+
+    /// Remove a resource subscription
+    pub async fn unsubscribe_resource(&self, uri: &str, subscriber_id: &str) {
+        let mut subs = self.resource_subscriptions.write().await;
+        if let Some(subscribers) = subs.get_mut(uri) {
+            subscribers.retain(|id| id != subscriber_id);
+            if subscribers.is_empty() {
+                subs.remove(uri);
+            }
+        }
+    }
+
+    /// Get all subscribers for a resource
+    pub async fn get_resource_subscribers(&self, uri: &str) -> Vec<String> {
+        let subs = self.resource_subscriptions.read().await;
+        subs.get(uri).cloned().unwrap_or_default()
     }
 }
 
@@ -45,6 +136,9 @@ mod tests {
                 rudof: Arc::new(Mutex::new(rudof)),
                 tool_router: tools::tool_router_public(),
                 prompt_router: prompts::prompt_router_public(),
+                config: Arc::new(RwLock::new(ServiceConfig::default())),
+                resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
+                log_level_handle: None,
             }
         })
         .await

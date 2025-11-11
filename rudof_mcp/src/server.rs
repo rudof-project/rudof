@@ -12,10 +12,13 @@ use rmcp::transport::streamable_http_server::{
     session::local::LocalSessionManager,
     SessionManager,
 };
+use tokio::sync::RwLock;
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
 use tower_http::cors::{CorsLayer, Any};
 use axum::http::Method;
+use tracing_subscriber::{reload, prelude::*, EnvFilter, fmt};
+use std::io;
 
 use crate::{
     middleware::with_guards,
@@ -31,6 +34,7 @@ use crate::{
 /// Entry point for running the MCP Streamable HTTP server.
 /// 
 /// This function sets up the MCP server according to the MCP 2025-06-18 specification:
+/// - Initializes tracing with dynamic log level control via reload::Handle
 /// - Initializes the `StreamableHttpService` with a `LocalSessionManager`
 /// - Builds and applies OAuth2 authentication with proper token validation
 /// - Exposes OAuth2 discovery endpoints (RFC 9728, RFC 8414)
@@ -46,8 +50,41 @@ use crate::{
 /// - Proper WWW-Authenticate headers on 401 responses (RFC 9728)
 #[tokio::main]
 pub async fn run_mcp() -> Result<()> {
+    // Initialize tracing with reloadable filter for dynamic log level control
+    let fmt_layer = fmt::layer()
+        .with_file(true)
+        .with_target(false)
+        .with_line_number(true)
+        .with_writer(io::stderr)
+        .without_time();
+    
+    // Create initial filter from environment or default to "info"
+    let initial_filter = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("info"))
+        .unwrap();
+    
+    // Create a reloadable layer with the filter
+    let (filter_layer, reload_handle) = reload::Layer::new(initial_filter);
+    
+    // Initialize the subscriber with the reloadable filter
+    tracing_subscriber::registry()
+        .with(filter_layer)
+        .with(fmt_layer)
+        .init();
+    
+    tracing::info!("Initializing MCP server with dynamic log level control");
+    
+    // Wrap the reload handle for sharing with the service
+    let log_handle = Arc::new(RwLock::new(reload_handle));
+    
     let session_manager = Arc::new(LocalSessionManager::default());
-    let mcp_service_factory = || Ok(RudofMcpService::new());
+    
+    // Create service factory that includes the log handle
+    let log_handle_clone = log_handle.clone();
+    let mcp_service_factory = move || {
+        Ok(RudofMcpService::with_log_handle(log_handle_clone.clone()))
+    };
+    
     let rmcp_service = StreamableHttpService::new(
         mcp_service_factory,
         session_manager.clone(),

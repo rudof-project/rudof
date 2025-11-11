@@ -10,7 +10,7 @@ services:
     restart: unless-stopped
 
   keycloak:
-    image: quay.io/keycloak/keycloak:26.0
+    image: quay.io/keycloak/keycloak:nightly
     command:
       - start-dev
       - --import-realm
@@ -23,6 +23,7 @@ services:
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
       KC_PROXY_HEADERS: xforwarded
       KC_HOSTNAME: localhost
+      KC_SPI_DATASTORE_LEGACY_ALLOW_MIGRATE_EXISTING_DATABASE_TO_SNAPSHOT: "true"
     ports:
       - "8080:8080"
     depends_on:
