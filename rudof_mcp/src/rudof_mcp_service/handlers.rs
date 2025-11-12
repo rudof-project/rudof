@@ -1,5 +1,5 @@
 use crate::rudof_mcp_service::service::RudofMcpService;
-use crate::rudof_mcp_service::{resource_templates, resources};
+use crate::rudof_mcp_service::{resource_templates, resources::*};
 use rmcp::{
     ErrorData as McpError, RoleServer, ServerHandler, 
     model::*, 
@@ -34,7 +34,7 @@ impl ServerHandler for RudofMcpService {
         logging_meta.insert("enabled".to_string(), json!(true));
         
         ServerInfo {
-            protocol_version: ProtocolVersion::V_2024_11_05,
+            protocol_version: ProtocolVersion::V_2025_06_18,
             capabilities: ServerCapabilities {
                 experimental: Some(experimental),
                 logging: Some(logging_meta), 
@@ -48,11 +48,10 @@ impl ServerHandler for RudofMcpService {
                 tools: Some(ToolsCapability {
                     list_changed: Some(true),
                 }),
-                completions: None,
+                completions: Some(serde_json::Map::new()),
             },
             server_info: Implementation::from_build_env(),
-            instructions: Some("This MCP server exposes Rudof tools and prompts for RDF data validation 
-            and processing. Rudof is a comprehensive library that implements Shape Expressions (ShEx), 
+            instructions: Some("This MCP server exposes Rudof tools and prompts. Rudof is a comprehensive library that implements Shape Expressions (ShEx), 
             SHACL, DCTAP, and other technologies in the RDF ecosystem, enabling schema validation, 
             data transformation, and semantic web operations.".to_string()),
         }
@@ -61,26 +60,68 @@ impl ServerHandler for RudofMcpService {
     /// Return a list of available tools using the generated ToolRouter.
     async fn list_tools(
         &self,
-        _request: Option<PaginatedRequestParam>,
+        request: Option<PaginatedRequestParam>,
         _: RequestContext<RoleServer>,
     ) -> Result<ListToolsResult, McpError> {
-        let tools = crate::rudof_mcp_service::tools::annotated_tools();
+        let all_tools = crate::rudof_mcp_service::tools::annotated_tools();
+        
+        // Handle pagination if requested
+        let (tools, next_cursor) = if let Some(params) = request {
+            let page_size = 20; // Default page size
+            let cursor = params.cursor.and_then(|c| c.parse::<usize>().ok()).unwrap_or(0);
+            
+            let start = cursor;
+            let end = std::cmp::min(start + page_size, all_tools.len());
+            
+            let page_tools = all_tools[start..end].to_vec();
+            let cursor_value = if end < all_tools.len() {
+                Some(end.to_string())
+            } else {
+                None
+            };
+            
+            (page_tools, cursor_value)
+        } else {
+            (all_tools, None)
+        };
+        
         Ok(ListToolsResult {
             tools,
-            next_cursor: None,
+            next_cursor,
         })
     }
 
     /// Return a list of available prompts using the generated PromptRouter.
     async fn list_prompts(
         &self,
-        _request: Option<PaginatedRequestParam>,
+        request: Option<PaginatedRequestParam>,
         _: RequestContext<RoleServer>,
     ) -> Result<ListPromptsResult, McpError> {
-        let prompts = self.prompt_router.list_all();
+        let all_prompts = self.prompt_router.list_all();
+        
+        // Handle pagination if requested
+        let (prompts, next_cursor) = if let Some(params) = request {
+            let page_size = 20; // Default page size
+            let cursor = params.cursor.and_then(|c| c.parse::<usize>().ok()).unwrap_or(0);
+            
+            let start = cursor;
+            let end = std::cmp::min(start + page_size, all_prompts.len());
+            
+            let page_prompts = all_prompts[start..end].to_vec();
+            let cursor_value = if end < all_prompts.len() {
+                Some(end.to_string())
+            } else {
+                None
+            };
+            
+            (page_prompts, cursor_value)
+        } else {
+            (all_prompts, None)
+        };
+        
         Ok(ListPromptsResult {
             prompts,
-            next_cursor: None,
+            next_cursor,
         })
     }
 
@@ -91,10 +132,10 @@ impl ServerHandler for RudofMcpService {
         context: RequestContext<RoleServer>,
     ) -> Result<ListResourcesResult, McpError> {
         // Delegate to resources module
-        resources::list_resources(_request, context).await
+        list_resources(_request, context).await
     }
 
-    /// Read a resource by URI, returning content for known resources or an error if not found
+    /// Read a resource by URI
     async fn read_resource(
         &self,
         ReadResourceRequestParam { uri }: ReadResourceRequestParam,
@@ -102,7 +143,7 @@ impl ServerHandler for RudofMcpService {
     ) -> Result<ReadResourceResult, McpError> {
         // Delegate read handling to resources module
         let req = ReadResourceRequestParam { uri };
-        resources::read_resource(self, req).await
+        read_resource(self, req).await
     }
 
     /// Return a list of available resource templates
@@ -140,7 +181,6 @@ impl ServerHandler for RudofMcpService {
         // Check if we have a log level handle for dynamic updates
         if let Some(handle) = &self.log_level_handle {
             // Convert MCP LoggingLevel to tracing LevelFilter
-            use rmcp::model::LoggingLevel;
             let level_str = match request.level {
                 LoggingLevel::Debug => "debug",
                 LoggingLevel::Info => "info",
@@ -218,6 +258,33 @@ impl ServerHandler for RudofMcpService {
         Ok(result)
     }
 
+    // Handle completion requests for tool/prompt arguments
+    async fn complete(
+        &self,
+        request: CompleteRequestParam,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<CompleteResult, McpError> {
+        tracing::debug!("Completion requested: {:?}", request);
+
+        // Extract the reference information and argument name
+        let completions = match &request.r#ref {
+            Reference::Prompt(prompt_ref) => {
+                self.get_prompt_argument_completions(&prompt_ref.name, &request.argument.name)
+            }
+            Reference::Resource(resource_ref) => {
+                self.get_resource_uri_completions(&resource_ref.uri, &request.argument.name)
+            }
+        };
+
+        Ok(CompleteResult {
+            completion: CompletionInfo {
+                values: completions,
+                total: None,
+                has_more: Some(false),
+            },
+        })
+    }
+
     // Handle resource subscription requests
     async fn subscribe(
         &self,
@@ -286,7 +353,7 @@ impl ServerHandler for RudofMcpService {
             progress_token = ?notification.progress_token,
             progress = notification.progress,
             total = ?notification.total,
-            "Progress update received"
+            "Progress update received from client"
         );
     }
 
@@ -311,6 +378,7 @@ mod tests {
         tokio::task::spawn_blocking(|| {
             let rudof_config = rudof_lib::RudofConfig::new().unwrap();
             let rudof = rudof_lib::Rudof::new(&rudof_config).unwrap();
+            let (notification_tx, _) = tokio::sync::broadcast::channel(100);
             RudofMcpService {
                 rudof: Arc::new(Mutex::new(rudof)),
                 tool_router: Default::default(),
@@ -318,6 +386,7 @@ mod tests {
                 config: Arc::new(RwLock::new(ServiceConfig::default())),
                 resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
                 log_level_handle: None,
+                notification_tx: Arc::new(notification_tx),
             }
         })
         .await

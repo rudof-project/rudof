@@ -51,38 +51,49 @@ use crate::{
 #[tokio::main]
 pub async fn run_mcp() -> Result<()> {
     // Initialize tracing with reloadable filter for dynamic log level control
-    let fmt_layer = fmt::layer()
-        .with_file(true)
-        .with_target(false)
-        .with_line_number(true)
-        .with_writer(io::stderr)
-        .without_time();
-    
-    // Create initial filter from environment or default to "info"
-    let initial_filter = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("info"))
-        .unwrap();
-    
-    // Create a reloadable layer with the filter
-    let (filter_layer, reload_handle) = reload::Layer::new(initial_filter);
-    
-    // Initialize the subscriber with the reloadable filter
-    tracing_subscriber::registry()
-        .with(filter_layer)
-        .with(fmt_layer)
-        .init();
-    
-    tracing::info!("Initializing MCP server with dynamic log level control");
-    
-    // Wrap the reload handle for sharing with the service
-    let log_handle = Arc::new(RwLock::new(reload_handle));
+    // Check if a global subscriber is already set to avoid double initialization
+    let log_handle = if tracing::dispatcher::has_been_set() {
+        tracing::info!("Tracing already initialized, skipping MCP-specific initialization");
+        // Return None to indicate we're using the existing subscriber
+        None
+    } else {
+        let fmt_layer = fmt::layer()
+            .with_file(true)
+            .with_target(false)
+            .with_line_number(true)
+            .with_writer(io::stderr)
+            .without_time();
+        
+        // Create initial filter from environment or default to "info"
+        let initial_filter = EnvFilter::try_from_default_env()
+            .or_else(|_| EnvFilter::try_new("info"))
+            .unwrap();
+        
+        // Create a reloadable layer with the filter
+        let (filter_layer, reload_handle) = reload::Layer::new(initial_filter);
+        
+        // Initialize the subscriber with the reloadable filter
+        tracing_subscriber::registry()
+            .with(filter_layer)
+            .with(fmt_layer)
+            .init();
+        
+        tracing::info!("Initializing MCP server with dynamic log level control");
+        
+        // Wrap the reload handle for sharing with the service
+        Some(Arc::new(RwLock::new(reload_handle)))
+    };
     
     let session_manager = Arc::new(LocalSessionManager::default());
     
-    // Create service factory that includes the log handle
-    let log_handle_clone = log_handle.clone();
+    // Create service factory that includes the log handle (if available)
     let mcp_service_factory = move || {
-        Ok(RudofMcpService::with_log_handle(log_handle_clone.clone()))
+        if let Some(handle) = log_handle.clone() {
+            Ok(RudofMcpService::with_log_handle(handle))
+        } else {
+            // Use default service without log handle if tracing was already initialized
+            Ok(RudofMcpService::new())
+        }
     };
     
     let rmcp_service = StreamableHttpService::new(

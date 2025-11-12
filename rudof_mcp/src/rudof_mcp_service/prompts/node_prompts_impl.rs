@@ -19,59 +19,105 @@ pub struct ExplorerRdfNodePromptArgs {
 pub async fn explore_rdf_node_prompt_impl(
     Parameters(args): Parameters<ExplorerRdfNodePromptArgs>,
 ) -> Result<GetPromptResult, McpError> {
-    let node_example = args.node;
-    let mode_value = args.mode.unwrap_or_else(|| "both".to_string());
-    let predicates_list = args.predicates.unwrap_or_else(std::vec::Vec::new);
-    let predicates_display = if predicates_list.is_empty() {
-        "[]".to_string()
+    let node = args.node;
+    let mode = args.mode.unwrap_or_else(|| "both".to_string());
+    let predicates = args.predicates.unwrap_or_default();
+    
+    let predicates_display = if predicates.is_empty() {
+        "none (showing all predicates)".to_string()
     } else {
-        format!("[{}]", predicates_list.join(", "))
+        format!("`{}`", predicates.join("`, `"))
+    };
+
+    // Build mode description
+    let mode_description = match mode.as_str() {
+        "outgoing" => "outgoing relationships only (what this node points to)",
+        "incoming" => "incoming relationships only (what points to this node)",
+        _ => "both outgoing and incoming relationships",
     };
 
     let messages = vec![
         PromptMessage::new_text(
             PromptMessageRole::User,
             format!(
-                "Explore RDF Node:\n\
-                - **Node:** {}\n\
-                - **Mode:** {}\n\
-                - **Predicates:** {}",
-                node_example, mode_value, predicates_display
+                "Explore RDF node `{}` with mode: **{}**, predicates: {}",
+                node, mode, predicates_display
             )
         ),
         PromptMessage::new_text(
             PromptMessageRole::Assistant,
             format!(
-                "I'll help you explore the RDF node '{}' and its relationships in the **loaded RDF graph (resource: rdf://graph)**.\n\n\
-                Let me retrieve the node information using the **node_info** tool:\n\n\
-                **What we'll discover:**\n\
-                - **Outgoing arcs**: Properties and values associated with this node (what this node \"says\" about itself)\n\
-                - **Incoming arcs**: Other nodes that reference this node (what others \"say\" about this node)\n\n\
-                This will give you a complete picture of how '{}' fits into the RDF graph structure.\n\n\
-                You can run the **node_info** tool with the following parameters:\n\
-                - node: \"{}\"\n\
-                - mode: \"{}\" (outgoing | incoming | both [default])\n\
-                - predicates: {} (optional - filter by specific predicates)\n\n\
-                What would you like to do next?
-                1. View all relationships (current mode: **{}**)
-                2. Filter by specific predicates (current: **{}**)
-                3. Explore a different node
-                4. Change the mode to focus only on outgoing or incoming arcs",
-                node_example,
-                node_example,
-                node_example,
-                mode_value,
+                "# 🔍 Exploring RDF Node: `{}`\n\n\
+                I'll analyze this node in the loaded RDF graph to discover its relationships and structure.\n\n\
+                ## Query Configuration\n\
+                - **Node:** `{}`\n\
+                - **Mode:** `{}` ({})\n\
+                - **Predicate Filter:** {}\n\n\
+                ## What We'll Discover\n\n\
+                ### Outgoing Arcs (Properties)\n\
+                Properties and values **from** this node → showing what this node \"knows\" or \"has\"\n\
+                ```\n\
+                {} --predicate--> ?object\n\
+                ```\n\n\
+                ### Incoming Arcs (References)\n\
+                Other nodes that **reference** this node → showing what \"knows about\" this node\n\
+                ```\n\
+                ?subject --predicate--> {}\n\
+                ```\n\n\
+                ## Next Steps\n\n\
+                **1. Run node_info tool** with these parameters:\n\
+                ```json\n\
+                {{\n\
+                  \"node\": \"{}\",\n\
+                  \"mode\": \"{}\",\n\
+                  \"predicates\": {}\n\
+                }}\n\
+                ```\n\n\
+                **2. Alternative: Query with SPARQL**\n\
+                ```sparql\n\
+                # Find all outgoing properties\n\
+                SELECT ?predicate ?object WHERE {{\n\
+                  <{}> ?predicate ?object .\n\
+                }}\n\n\
+                # Find all incoming references\n\
+                SELECT ?subject ?predicate WHERE {{\n\
+                  ?subject ?predicate <{}> .\n\
+                }}\n\
+                ```\n\n\
+                **3. If node not found:**\n\
+                - Verify the node exists: `execute_sparql_query` with `ASK {{ <{}> ?p ?o }}`\n\
+                - Check prefixes: ensure prefix declarations match your data\n\
+                - List all subjects: `SELECT DISTINCT ?s WHERE {{ ?s ?p ?o }} LIMIT 10`\n\n\
+                ## Exploration Options\n\n\
+                Would you like to:\n\
+                - **Proceed with current settings** (mode: `{}`)\n\
+                - **Change mode** to `outgoing`, `incoming`, or `both`\n\
+                - **Filter by predicates** (e.g., `[\"rdf:type\", \"foaf:knows\"]`)\n\
+                - **Explore a different node** in the graph\n\
+                - **Visualize** the neighborhood using `export_rdf_plantuml`\n\n\
+                Let me know how you'd like to proceed!",
+                node,
+                node,
+                mode,
+                mode_description,
                 predicates_display,
-                mode_value,
-                predicates_display,
+                node,
+                node,
+                node,
+                mode,
+                serde_json::to_string(&predicates).unwrap_or_else(|_| "[]".to_string()),
+                node,
+                node,
+                node,
+                mode
             )
         ),
     ];
 
     Ok(GetPromptResult {
         description: Some(format!(
-            "Information for node {} with query mode {} and predicates {}",
-            node_example, mode_value, predicates_display
+            "Explore RDF node {} ({}, predicates: {})",
+            node, mode_description, predicates_display
         )),
         messages,
     })

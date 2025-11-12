@@ -21,7 +21,7 @@ pub struct ExecuteSparqlQueryRequest {
     /// SPARQL query string to execute
     pub query: String,
 
-    /// Result format: "Internal" (table), "NTriples", "JsonLd", "RdfXml", "Csv", "TriG", "N3", "NQuads", "Turtle".
+    /// Result format
     pub result_format: Option<String>,
 }
 
@@ -54,27 +54,14 @@ pub async fn execute_sparql_query_impl(
     }): Parameters<ExecuteSparqlQueryRequest>,
 ) -> Result<CallToolResult, McpError> {
     let query_type_str = detect_query_type(&query).ok_or_else(|| {
-        invalid_request(
-            error_messages::INVALID_QUERY_TYPE,
-            Some(
-                json!({"error": "Could not detect query type (SELECT, CONSTRUCT, ASK, DESCRIBE)"}),
-            ),
-        )
+        sparql_error("detecting query type", "Could not detect query type (SELECT, CONSTRUCT, ASK, DESCRIBE)")
     })?;
-    let parsed_query_type = QueryType::from_str(&query_type_str).map_err(|e| {
-        invalid_request(
-            error_messages::INVALID_QUERY_TYPE,
-            Some(json!({ "error": e.to_string()})),
-        )
-    })?;
+    let parsed_query_type = QueryType::from_str(&query_type_str)
+        .map_err(|e| sparql_error("parsing query type", e.to_string()))?;
 
     let result_format_str = result_format.as_deref().unwrap_or("Internal");
-    let parsed_result_format = ResultQueryFormat::from_str(result_format_str).map_err(|e| {
-        invalid_request(
-            error_messages::INVALID_QUERY_RESULT_FORMAT,
-            Some(json!({"error": e.to_string()})),
-        )
-    })?;
+    let parsed_result_format = ResultQueryFormat::from_str(result_format_str)
+        .map_err(|e| sparql_error("parsing result format", e.to_string()))?;
 
     let query_spec = InputSpec::Str(query.clone());
 
@@ -88,20 +75,11 @@ pub async fn execute_sparql_query_impl(
         &parsed_result_format,
         &mut output_buffer,
     )
-    .map_err(|e| {
-        internal_error(
-            error_messages::QUERY_EXECUTION_ERROR,
-            Some(json!({"error": e.to_string(),})),
-        )
-    })?;
+    .map_err(|e| sparql_error("executing query", e.to_string()))?;
 
     let output_bytes = output_buffer.into_inner();
-    let output_str = String::from_utf8(output_bytes).map_err(|e| {
-        internal_error(
-            error_messages::CONVERSION_ERROR,
-            Some(json!({ "error": e.to_string() })),
-        )
-    })?;
+    let output_str = String::from_utf8(output_bytes)
+        .map_err(|e| sparql_error("converting results to UTF-8", e.to_string()))?;
 
     // Calculate metadata
     let result_size_bytes = output_str.len();
@@ -125,15 +103,6 @@ pub async fn execute_sparql_query_impl(
         "Executed SPARQL query successfully"
     );
 
-    tracing::info!(
-        query_type = %query_type_str,
-        result_format = %result_format_str,
-        result_size_bytes,
-        result_lines,
-        query_length = query.len(),
-        "Executed SPARQL query successfully"
-    );
-
     let structured = serde_json::to_value(&response).map_err(|e| {
         internal_error(
             error_messages::SERIALIZE_DATA_ERROR,
@@ -141,7 +110,7 @@ pub async fn execute_sparql_query_impl(
         )
     })?;
 
-    // Create a summary text with metadata
+    // Create a summary text
     let summary = format!(
         "# SPARQL Query Execution\n\n\
         **Status:** ✓ Success\n\
@@ -155,7 +124,6 @@ pub async fn execute_sparql_query_impl(
         result_lines
     );
 
-    // Format the query in a code block
     let query_display = format!("## Query\n\n```sparql\n{}\n```", query);
 
     // Format results based on the format type
@@ -207,6 +175,7 @@ mod tests {
         tokio::task::spawn_blocking(|| {
             let rudof_config = rudof_lib::RudofConfig::new().unwrap();
             let rudof = rudof_lib::Rudof::new(&rudof_config).unwrap();
+            let (notification_tx, _) = tokio::sync::broadcast::channel(100);
             RudofMcpService {
                 rudof: Arc::new(Mutex::new(rudof)),
                 tool_router: Default::default(),
@@ -214,6 +183,7 @@ mod tests {
                 config: Arc::new(RwLock::new(ServiceConfig::default())),
                 resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
                 log_level_handle: None,
+                notification_tx: Arc::new(notification_tx),
             }
         })
         .await
@@ -228,7 +198,7 @@ mod tests {
             &service,
             Parameters(LoadRdfDataFromSourcesRequest {
                 data: vec![SAMPLE_TURTLE.to_string()],
-                data_format: "turtle".to_string(),
+                data_format: None,
                 base: None,
                 endpoint: None,
             }),

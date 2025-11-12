@@ -16,7 +16,7 @@ pub struct NodeInfoRequest {
     pub node: String,
     /// Optional list of predicates to filter outgoing arcs
     pub predicates: Option<Vec<String>>,
-    /// Optional mode: "incoming", "outgoing", or "both" (default "both")
+    /// Optional mode
     pub mode: Option<String>,
 }
 
@@ -65,20 +65,12 @@ pub async fn node_info_impl(
     let rudof = service.rudof.lock().await;
     let rdf = rudof.get_rdf_data();
 
-    let node_selector = parse_node_selector(&node).map_err(|e| {
-        invalid_request(
-            error_messages::INVALID_NODE_SELECTOR,
-            Some(json!({ "error": e.to_string() })),
-        )
-    })?;
+    let node_selector = parse_node_selector(&node)
+        .map_err(|e| rdf_error("parsing node selector", e.to_string()))?;
 
     let mode_str = mode.as_deref().unwrap_or("both");
-    let mut options = NodeInfoOptions::from_mode_str(mode_str).map_err(|e| {
-        invalid_request(
-            error_messages::INVALID_NODE_MODE,
-            Some(json!({ "error": e.to_string() })),
-        )
-    })?;
+    let mut options = NodeInfoOptions::from_mode_str(mode_str)
+        .map_err(|e| rdf_error("parsing node mode", e.to_string()))?;
     options.show_colors = false;
 
     let pred_list: Vec<String> = predicates.unwrap_or_default();
@@ -96,20 +88,12 @@ pub async fn node_info_impl(
 
     let mut output_buffer = Cursor::new(Vec::new());
 
-    format_node_info_list(&node_infos, rdf, &mut output_buffer, &options).map_err(|e| {
-        internal_error(
-            error_messages::SERIALIZE_DATA_ERROR,
-            Some(json!({ "error": e.to_string() })),
-        )
-    })?;
+    format_node_info_list(&node_infos, rdf, &mut output_buffer, &options)
+        .map_err(|e| rdf_error("formatting node info", e.to_string()))?;
 
     let output_bytes = output_buffer.into_inner();
-    let output_str = String::from_utf8(output_bytes).map_err(|e| {
-        internal_error(
-            error_messages::SERIALIZE_DATA_ERROR,
-            Some(json!({ "error": e.to_string() })),
-        )
-    })?;
+    let output_str = String::from_utf8(output_bytes)
+        .map_err(|e| rdf_error("converting to UTF-8", e.to_string()))?;
 
     let outgoing_data: Vec<NodePredicateObjects> = node_info
         .outgoing
@@ -159,17 +143,6 @@ pub async fn node_info_impl(
         "Retrieved node information"
     );
 
-    tracing::info!(
-        node = %node,
-        subject = %node_info.subject_qualified,
-        outgoing_predicates = outgoing_count,
-        incoming_predicates = incoming_count,
-        total_outgoing_objects,
-        total_incoming_subjects,
-        mode = mode_str,
-        "Retrieved node information"
-    );
-
     let structured = serde_json::to_value(&response).map_err(|e| {
         internal_error(
             error_messages::SERIALIZE_DATA_ERROR,
@@ -193,7 +166,6 @@ pub async fn node_info_impl(
         total_incoming_subjects
     );
 
-    // Format the detailed output in a code block
     let detailed_output = format!("## Detailed Node Information\n\n```\n{}\n```", output_str);
 
     let mut result = CallToolResult::success(vec![
@@ -235,6 +207,7 @@ mod tests {
         tokio::task::spawn_blocking(|| {
             let rudof_config = rudof_lib::RudofConfig::new().unwrap();
             let rudof = rudof_lib::Rudof::new(&rudof_config).unwrap();
+            let (notification_tx, _) = tokio::sync::broadcast::channel(100);
             RudofMcpService {
                 rudof: Arc::new(Mutex::new(rudof)),
                 tool_router: Default::default(),
@@ -242,6 +215,7 @@ mod tests {
                 config: Arc::new(RwLock::new(ServiceConfig::default())),
                 resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
                 log_level_handle: None,
+                notification_tx: Arc::new(notification_tx),
             }
         })
         .await
@@ -257,7 +231,7 @@ mod tests {
             &service,
             Parameters(LoadRdfDataFromSourcesRequest {
                 data: vec![SAMPLE_TURTLE.to_string()],
-                data_format: "turtle".to_string(),
+                data_format: None,
                 base: None,
                 endpoint: None,
             }),
@@ -287,7 +261,7 @@ mod tests {
             &service,
             Parameters(LoadRdfDataFromSourcesRequest {
                 data: vec![SAMPLE_TURTLE.to_string()],
-                data_format: "turtle".to_string(),
+                data_format: None,
                 base: None,
                 endpoint: None,
             }),

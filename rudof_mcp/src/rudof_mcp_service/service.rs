@@ -1,5 +1,5 @@
 use std::{collections::HashMap, sync::Arc};
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::{Mutex, RwLock, broadcast};
 use tracing_subscriber::reload;
 
 use crate::rudof_mcp_service::{prompts, tools};
@@ -12,28 +12,28 @@ pub type ReloadHandle = reload::Handle<
     tracing_subscriber::Registry,
 >;
 
+/// Notification types that can be sent to clients
+#[derive(Debug, Clone)]
+pub enum ServerNotification {
+    ToolsListChanged,
+    PromptsListChanged,
+    ResourcesListChanged,
+    ResourceUpdated(String), // Resource URI
+}
+
 /// Configuration for the RudofMcpService
 #[derive(Clone, Debug)]
 pub struct ServiceConfig {
-    /// Whether to allow dynamic updates to tools/prompts
-    pub allow_dynamic_updates: bool,
-    /// Maximum number of concurrent validation operations
-    pub max_concurrent_validations: usize,
-    /// Enable caching for validation results
-    pub cache_enabled: bool,
 }
 
 impl Default for ServiceConfig {
     fn default() -> Self {
         Self {
-            allow_dynamic_updates: false,
-            max_concurrent_validations: 10,
-            cache_enabled: true,
         }
     }
 }
 
-/// Main MCP service for Rudof operations
+/// MCP service for Rudof operations
 #[derive(Clone)]
 pub struct RudofMcpService {
     /// Core Rudof instance for validation and operations
@@ -48,12 +48,15 @@ pub struct RudofMcpService {
     pub resource_subscriptions: Arc<RwLock<HashMap<String, Vec<String>>>>,
     /// Handle for dynamically reloading log level
     pub log_level_handle: Option<Arc<RwLock<ReloadHandle>>>,
+    /// Broadcast channel for sending notifications to clients
+    pub notification_tx: Arc<broadcast::Sender<ServerNotification>>,
 }
 
 impl RudofMcpService {
     pub fn new() -> Self {
         let rudof_config = RudofConfig::new().unwrap();
         let rudof = Rudof::new(&rudof_config).unwrap();
+        let (notification_tx, _) = broadcast::channel(100);
         Self {
             rudof: Arc::new(Mutex::new(rudof)),
             tool_router: tools::tool_router_public(),
@@ -61,6 +64,7 @@ impl RudofMcpService {
             config: Arc::new(RwLock::new(ServiceConfig::default())),
             resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
             log_level_handle: None,
+            notification_tx: Arc::new(notification_tx),
         }
     }
 
@@ -68,6 +72,7 @@ impl RudofMcpService {
     pub fn with_config(config: ServiceConfig) -> Self {
         let rudof_config = RudofConfig::new().unwrap();
         let rudof = Rudof::new(&rudof_config).unwrap();
+        let (notification_tx, _) = broadcast::channel(100);
         Self {
             rudof: Arc::new(Mutex::new(rudof)),
             tool_router: tools::tool_router_public(),
@@ -75,6 +80,7 @@ impl RudofMcpService {
             config: Arc::new(RwLock::new(config)),
             resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
             log_level_handle: None,
+            notification_tx: Arc::new(notification_tx),
         }
     }
 
@@ -82,6 +88,7 @@ impl RudofMcpService {
     pub fn with_log_handle(log_handle: Arc<RwLock<ReloadHandle>>) -> Self {
         let rudof_config = RudofConfig::new().unwrap();
         let rudof = Rudof::new(&rudof_config).unwrap();
+        let (notification_tx, _) = broadcast::channel(100);
         Self {
             rudof: Arc::new(Mutex::new(rudof)),
             tool_router: tools::tool_router_public(),
@@ -89,6 +96,7 @@ impl RudofMcpService {
             config: Arc::new(RwLock::new(ServiceConfig::default())),
             resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
             log_level_handle: Some(log_handle),
+            notification_tx: Arc::new(notification_tx),
         }
     }
 
@@ -114,6 +122,77 @@ impl RudofMcpService {
         let subs = self.resource_subscriptions.read().await;
         subs.get(uri).cloned().unwrap_or_default()
     }
+
+    /// Send a notification to all subscribed clients
+    pub fn notify(&self, notification: ServerNotification) {
+        // Log the notification attempt
+        match &notification {
+            ServerNotification::ToolsListChanged => {
+                tracing::debug!("Sending tools/list_changed notification");
+            }
+            ServerNotification::PromptsListChanged => {
+                tracing::debug!("Sending prompts/list_changed notification");
+            }
+            ServerNotification::ResourcesListChanged => {
+                tracing::debug!("Sending resources/list_changed notification");
+            }
+            ServerNotification::ResourceUpdated(uri) => {
+                tracing::debug!(%uri, "Sending resources/updated notification");
+            }
+        }
+        
+        // Send via broadcast channel - ignore errors if no receivers
+        let _ = self.notification_tx.send(notification);
+    }
+
+    /// Subscribe to notifications
+    pub fn subscribe_notifications(&self) -> broadcast::Receiver<ServerNotification> {
+        self.notification_tx.subscribe()
+    }
+
+    /// Get completion suggestions for prompt arguments
+    pub(crate) fn get_prompt_argument_completions(
+        &self,
+        prompt_name: &str,
+        argument_name: &str,
+    ) -> Vec<String> {
+        match (prompt_name, argument_name) {
+            // Completions for explore_rdf_node prompt
+            ("explore_rdf_node", "mode") => vec![
+                "outgoing".to_string(),
+                "incoming".to_string(),
+                "both".to_string(),
+            ],
+            
+            // Completions for analyze_rdf_data analysis types
+            ("analyze_rdf_data", "analysis_type") => vec![
+                "structure".to_string(),
+                "patterns".to_string(),
+                "quality".to_string(),
+                "statistics".to_string(),
+            ],
+            
+            // Completions for generate_test_data complexity
+            ("generate_test_data", "complexity") => vec![
+                "simple".to_string(),
+                "moderate".to_string(),
+                "complex".to_string(),
+            ],
+            
+            _ => vec![],
+        }
+    }
+
+    /// Get completion suggestions for resource URI templates
+    pub(crate) fn get_resource_uri_completions(
+        &self,
+        _uri: &str,
+        _argument_name: &str,
+    ) -> Vec<String> {
+        // Resource URI completions can be extended based on available resources
+        // For now, return empty as resources are dynamically generated
+        vec![]
+    }
 }
 
 impl Default for RudofMcpService {
@@ -132,6 +211,7 @@ mod tests {
         spawn_blocking(|| {
             let rudof_config = rudof_lib::RudofConfig::new().unwrap();
             let rudof = rudof_lib::Rudof::new(&rudof_config).unwrap();
+            let (notification_tx, _) = broadcast::channel(100);
             RudofMcpService {
                 rudof: Arc::new(Mutex::new(rudof)),
                 tool_router: tools::tool_router_public(),
@@ -139,6 +219,7 @@ mod tests {
                 config: Arc::new(RwLock::new(ServiceConfig::default())),
                 resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
                 log_level_handle: None,
+                notification_tx: Arc::new(notification_tx),
             }
         })
         .await
