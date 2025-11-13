@@ -249,10 +249,9 @@ pub async fn validate_shex_impl(
     ]);
     result.structured_content = Some(structured);
 
-    // Notify subscribers that validation results have been updated
-    use crate::rudof_mcp_service::service::ServerNotification;
-    service.notify(ServerNotification::ResourceUpdated("rudof://validation-result".to_string()));
-    service.notify(ServerNotification::ResourceUpdated("rudof://schema".to_string()));
+    // Notify subscribers that validation resources have been updated
+    service.notify_resource_updated("rudof://validation-result".to_string()).await;
+    service.notify_resource_updated("rudof://schema".to_string()).await;
 
     Ok(result)
 }

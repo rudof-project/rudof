@@ -175,7 +175,6 @@ mod tests {
         tokio::task::spawn_blocking(|| {
             let rudof_config = rudof_lib::RudofConfig::new().unwrap();
             let rudof = rudof_lib::Rudof::new(&rudof_config).unwrap();
-            let (notification_tx, _) = tokio::sync::broadcast::channel(100);
             RudofMcpService {
                 rudof: Arc::new(Mutex::new(rudof)),
                 tool_router: Default::default(),
@@ -183,7 +182,7 @@ mod tests {
                 config: Arc::new(RwLock::new(ServiceConfig::default())),
                 resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
                 log_level_handle: None,
-                notification_tx: Arc::new(notification_tx),
+                current_context: Arc::new(RwLock::new(None)),
             }
         })
         .await

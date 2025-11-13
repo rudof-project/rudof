@@ -40,6 +40,33 @@ pub struct Cli {
 pub enum Command {
     /// Export rudof as an MCP server
     Mcp {
+        #[arg(
+            short = 't',
+            long = "transport",
+            value_name = "TRANSPORT",
+            ignore_case = true,
+            help = "Transport type: stdio (for CLI/IDE) or http-sse (for web clients)",
+            default_value_t = rudof_mcp::TransportType::Stdio
+        )]
+        transport: rudof_mcp::TransportType,
+
+        #[arg(
+            short = 'p',
+            long = "port",
+            value_name = "PORT",
+            help = "Port number for HTTP transport (only used with http-sse transport)",
+            default_value_t = 8000
+        )]
+        port: u16,
+
+        #[arg(
+            short = 'r',
+            long = "route",
+            value_name = "PATH",
+            help = "Route path for HTTP transport (only used with http-sse transport)",
+            default_value = "/rudof"
+        )]
+        route_path: String,
     },
 
     /// Show information about ShEx ShapeMaps

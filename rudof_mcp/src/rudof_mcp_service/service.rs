@@ -1,9 +1,13 @@
 use std::{collections::HashMap, sync::Arc};
-use tokio::sync::{Mutex, RwLock, broadcast};
+use tokio::sync::{Mutex, RwLock};
 use tracing_subscriber::reload;
 
 use crate::rudof_mcp_service::{prompts, tools};
-use rmcp::handler::server::router::{prompt::PromptRouter, tool::ToolRouter};
+use rmcp::{
+    handler::server::router::{prompt::PromptRouter, tool::ToolRouter},
+    service::RequestContext,
+    RoleServer,
+};
 use rudof_lib::{Rudof, RudofConfig};
 
 /// Type alias for the reload handle used to dynamically change log levels
@@ -11,15 +15,6 @@ pub type ReloadHandle = reload::Handle<
     tracing_subscriber::EnvFilter,
     tracing_subscriber::Registry,
 >;
-
-/// Notification types that can be sent to clients
-#[derive(Debug, Clone)]
-pub enum ServerNotification {
-    ToolsListChanged,
-    PromptsListChanged,
-    ResourcesListChanged,
-    ResourceUpdated(String), // Resource URI
-}
 
 /// Configuration for the RudofMcpService
 #[derive(Clone, Debug)]
@@ -48,15 +43,14 @@ pub struct RudofMcpService {
     pub resource_subscriptions: Arc<RwLock<HashMap<String, Vec<String>>>>,
     /// Handle for dynamically reloading log level
     pub log_level_handle: Option<Arc<RwLock<ReloadHandle>>>,
-    /// Broadcast channel for sending notifications to clients
-    pub notification_tx: Arc<broadcast::Sender<ServerNotification>>,
+    /// Current request context (temporarily stored during request handling)
+    pub(crate) current_context: Arc<RwLock<Option<RequestContext<RoleServer>>>>,
 }
 
 impl RudofMcpService {
     pub fn new() -> Self {
         let rudof_config = RudofConfig::new().unwrap();
         let rudof = Rudof::new(&rudof_config).unwrap();
-        let (notification_tx, _) = broadcast::channel(100);
         Self {
             rudof: Arc::new(Mutex::new(rudof)),
             tool_router: tools::tool_router_public(),
@@ -64,7 +58,7 @@ impl RudofMcpService {
             config: Arc::new(RwLock::new(ServiceConfig::default())),
             resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
             log_level_handle: None,
-            notification_tx: Arc::new(notification_tx),
+            current_context: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -72,7 +66,6 @@ impl RudofMcpService {
     pub fn with_config(config: ServiceConfig) -> Self {
         let rudof_config = RudofConfig::new().unwrap();
         let rudof = Rudof::new(&rudof_config).unwrap();
-        let (notification_tx, _) = broadcast::channel(100);
         Self {
             rudof: Arc::new(Mutex::new(rudof)),
             tool_router: tools::tool_router_public(),
@@ -80,7 +73,7 @@ impl RudofMcpService {
             config: Arc::new(RwLock::new(config)),
             resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
             log_level_handle: None,
-            notification_tx: Arc::new(notification_tx),
+            current_context: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -88,7 +81,6 @@ impl RudofMcpService {
     pub fn with_log_handle(log_handle: Arc<RwLock<ReloadHandle>>) -> Self {
         let rudof_config = RudofConfig::new().unwrap();
         let rudof = Rudof::new(&rudof_config).unwrap();
-        let (notification_tx, _) = broadcast::channel(100);
         Self {
             rudof: Arc::new(Mutex::new(rudof)),
             tool_router: tools::tool_router_public(),
@@ -96,7 +88,7 @@ impl RudofMcpService {
             config: Arc::new(RwLock::new(ServiceConfig::default())),
             resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
             log_level_handle: Some(log_handle),
-            notification_tx: Arc::new(notification_tx),
+            current_context: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -123,64 +115,117 @@ impl RudofMcpService {
         subs.get(uri).cloned().unwrap_or_default()
     }
 
-    /// Send a notification to all subscribed clients
-    pub fn notify(&self, notification: ServerNotification) {
-        // Log the notification attempt
-        match &notification {
-            ServerNotification::ToolsListChanged => {
-                tracing::debug!("Sending tools/list_changed notification");
-            }
-            ServerNotification::PromptsListChanged => {
-                tracing::debug!("Sending prompts/list_changed notification");
-            }
-            ServerNotification::ResourcesListChanged => {
-                tracing::debug!("Sending resources/list_changed notification");
-            }
-            ServerNotification::ResourceUpdated(uri) => {
-                tracing::debug!(%uri, "Sending resources/updated notification");
-            }
-        }
+    /// Send a notification about resource updates using rmcp's notification system
+    /// 
+    /// This method uses the MCP protocol's built-in notification mechanism.
+    /// For HTTP-SSE transport, rmcp automatically sends notifications via Server-Sent Events.
+    /// 
+    /// The notification is sent to the client through the RequestContext's peer interface,
+    /// which handles the underlying transport details (SSE for HTTP, JSON-RPC for stdio).
+    pub async fn notify_resource_updated(&self, uri: String) {
+        let subscribers = self.get_resource_subscribers(&uri).await;
         
-        // Send via broadcast channel - ignore errors if no receivers
-        let _ = self.notification_tx.send(notification);
+        if subscribers.is_empty() {
+            tracing::debug!(uri = %uri, "No subscribers for resource update");
+            return;
+        }
+
+        // Use rmcp's notification system via the current RequestContext
+        let context_guard = self.current_context.read().await;
+        if let Some(context) = context_guard.as_ref() {
+            // Send notification through rmcp's peer interface
+            // For HTTP transport, this automatically uses SSE
+            if let Err(e) = context.peer.notify_resource_updated(
+                rmcp::model::ResourceUpdatedNotificationParam { uri: uri.clone() }
+            ).await {
+                tracing::warn!(
+                    uri = %uri,
+                    error = ?e,
+                    "Failed to send resource updated notification"
+                );
+            } else {
+                tracing::info!(
+                    uri = %uri,
+                    subscriber_count = subscribers.len(),
+                    "Resource updated notification sent via rmcp"
+                );
+            }
+        } else {
+            tracing::debug!(
+                uri = %uri,
+                subscriber_count = subscribers.len(),
+                "Resource updated (no active request context)"
+            );
+        }
     }
 
-    /// Subscribe to notifications
-    pub fn subscribe_notifications(&self) -> broadcast::Receiver<ServerNotification> {
-        self.notification_tx.subscribe()
+    /// Send a notification that the resources list has changed
+    /// 
+    /// Uses rmcp's notification system to inform clients that the available resources have changed.
+    /// For HTTP-SSE transport, this is automatically sent via Server-Sent Events.
+    pub async fn notify_resource_list_changed(&self) {
+        let context_guard = self.current_context.read().await;
+        if let Some(context) = context_guard.as_ref() {
+            if let Err(e) = context.peer.notify_resource_list_changed().await {
+                tracing::warn!(
+                    error = ?e,
+                    "Failed to send resource list changed notification"
+                );
+            } else {
+                tracing::info!("Resource list changed notification sent via rmcp");
+            }
+        } else {
+            tracing::debug!("Resource list changed (no active request context)");
+        }
+    }
+
+    /// Send a notification that the tools list has changed
+    /// 
+    /// Uses rmcp's notification system to inform clients that the available tools have changed.
+    /// For HTTP-SSE transport, this is automatically sent via Server-Sent Events.
+    pub async fn notify_tool_list_changed(&self) {
+        let context_guard = self.current_context.read().await;
+        if let Some(context) = context_guard.as_ref() {
+            if let Err(e) = context.peer.notify_tool_list_changed().await {
+                tracing::warn!(
+                    error = ?e,
+                    "Failed to send tool list changed notification"
+                );
+            } else {
+                tracing::info!("Tool list changed notification sent via rmcp");
+            }
+        } else {
+            tracing::debug!("Tool list changed (no active request context)");
+        }
+    }
+
+    /// Send a notification that the prompts list has changed
+    /// 
+    /// Uses rmcp's notification system to inform clients that the available prompts have changed.
+    /// For HTTP-SSE transport, this is automatically sent via Server-Sent Events.
+    pub async fn notify_prompt_list_changed(&self) {
+        let context_guard = self.current_context.read().await;
+        if let Some(context) = context_guard.as_ref() {
+            if let Err(e) = context.peer.notify_prompt_list_changed().await {
+                tracing::warn!(
+                    error = ?e,
+                    "Failed to send prompt list changed notification"
+                );
+            } else {
+                tracing::info!("Prompt list changed notification sent via rmcp");
+            }
+        } else {
+            tracing::debug!("Prompt list changed (no active request context)");
+        }
     }
 
     /// Get completion suggestions for prompt arguments
     pub(crate) fn get_prompt_argument_completions(
         &self,
-        prompt_name: &str,
-        argument_name: &str,
+        _prompt_name: &str,
+        _argument_name: &str,
     ) -> Vec<String> {
-        match (prompt_name, argument_name) {
-            // Completions for explore_rdf_node prompt
-            ("explore_rdf_node", "mode") => vec![
-                "outgoing".to_string(),
-                "incoming".to_string(),
-                "both".to_string(),
-            ],
-            
-            // Completions for analyze_rdf_data analysis types
-            ("analyze_rdf_data", "analysis_type") => vec![
-                "structure".to_string(),
-                "patterns".to_string(),
-                "quality".to_string(),
-                "statistics".to_string(),
-            ],
-            
-            // Completions for generate_test_data complexity
-            ("generate_test_data", "complexity") => vec![
-                "simple".to_string(),
-                "moderate".to_string(),
-                "complex".to_string(),
-            ],
-            
-            _ => vec![],
-        }
+        vec![]
     }
 
     /// Get completion suggestions for resource URI templates
@@ -211,7 +256,6 @@ mod tests {
         spawn_blocking(|| {
             let rudof_config = rudof_lib::RudofConfig::new().unwrap();
             let rudof = rudof_lib::Rudof::new(&rudof_config).unwrap();
-            let (notification_tx, _) = broadcast::channel(100);
             RudofMcpService {
                 rudof: Arc::new(Mutex::new(rudof)),
                 tool_router: tools::tool_router_public(),
@@ -219,7 +263,7 @@ mod tests {
                 config: Arc::new(RwLock::new(ServiceConfig::default())),
                 resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
                 log_level_handle: None,
-                notification_tx: Arc::new(notification_tx),
+                current_context: Arc::new(RwLock::new(None)),
             }
         })
         .await

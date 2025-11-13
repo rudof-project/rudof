@@ -237,8 +237,21 @@ impl ServerHandler for RudofMcpService {
         request: CallToolRequestParam,
         context: RequestContext<RoleServer>,
     ) -> Result<CallToolResult, McpError> {
+        // Store the context so tools can access it for notifications
+        {
+            let mut ctx_guard = self.current_context.write().await;
+            *ctx_guard = Some(context.clone());
+        }
+        
         let ctx = rmcp::handler::server::tool::ToolCallContext::new(self, request, context);
         let result = self.tool_router.call(ctx).await?;
+        
+        // Clear the context after the tool call
+        {
+            let mut ctx_guard = self.current_context.write().await;
+            *ctx_guard = None;
+        }
+        
         Ok(result)
     }
 
@@ -378,7 +391,6 @@ mod tests {
         tokio::task::spawn_blocking(|| {
             let rudof_config = rudof_lib::RudofConfig::new().unwrap();
             let rudof = rudof_lib::Rudof::new(&rudof_config).unwrap();
-            let (notification_tx, _) = tokio::sync::broadcast::channel(100);
             RudofMcpService {
                 rudof: Arc::new(Mutex::new(rudof)),
                 tool_router: Default::default(),
@@ -386,7 +398,7 @@ mod tests {
                 config: Arc::new(RwLock::new(ServiceConfig::default())),
                 resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
                 log_level_handle: None,
-                notification_tx: Arc::new(notification_tx),
+                current_context: Arc::new(RwLock::new(None)),
             }
         })
         .await
@@ -398,7 +410,7 @@ mod tests {
         let service = create_test_service().await;
         let info = service.get_info();
 
-        assert_eq!(info.protocol_version, ProtocolVersion::V_2024_11_05);
+        assert_eq!(info.protocol_version, ProtocolVersion::V_2025_06_18);
         
         // Verify all capabilities are enabled
         let caps = info.capabilities;

@@ -138,14 +138,13 @@ pub async fn load_rdf_data_from_sources_impl(
     );
     
     // Notify subscribers that all current-data resources have been updated
-    use crate::rudof_mcp_service::service::ServerNotification;
-    service.notify(ServerNotification::ResourceUpdated("rudof://current-data".to_string()));
-    service.notify(ServerNotification::ResourceUpdated("rudof://current-data/ntriples".to_string()));
-    service.notify(ServerNotification::ResourceUpdated("rudof://current-data/rdfxml".to_string()));
-    service.notify(ServerNotification::ResourceUpdated("rudof://current-data/jsonld".to_string()));
-    service.notify(ServerNotification::ResourceUpdated("rudof://current-data/trig".to_string()));
-    service.notify(ServerNotification::ResourceUpdated("rudof://current-data/nquads".to_string()));
-    service.notify(ServerNotification::ResourceUpdated("rudof://current-data/n3".to_string()));
+    service.notify_resource_updated("rudof://current-data".to_string()).await;
+    service.notify_resource_updated("rudof://current-data/ntriples".to_string()).await;
+    service.notify_resource_updated("rudof://current-data/rdfxml".to_string()).await;
+    service.notify_resource_updated("rudof://current-data/jsonld".to_string()).await;
+    service.notify_resource_updated("rudof://current-data/trig".to_string()).await;
+    service.notify_resource_updated("rudof://current-data/nquads".to_string()).await;
+    service.notify_resource_updated("rudof://current-data/n3".to_string()).await;
     
     Ok(result)
 }
@@ -322,7 +321,6 @@ mod tests {
         tokio::task::spawn_blocking(|| {
             let rudof_config = rudof_lib::RudofConfig::new().unwrap();
             let rudof = rudof_lib::Rudof::new(&rudof_config).unwrap();
-            let (notification_tx, _) = tokio::sync::broadcast::channel(100);
             RudofMcpService {
                 rudof: Arc::new(Mutex::new(rudof)),
                 tool_router: Default::default(),
@@ -330,7 +328,7 @@ mod tests {
                 config: Arc::new(RwLock::new(ServiceConfig::default())),
                 resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
                 log_level_handle: None,
-                notification_tx: Arc::new(notification_tx),
+                current_context: Arc::new(RwLock::new(None)),
             }
         })
         .await
