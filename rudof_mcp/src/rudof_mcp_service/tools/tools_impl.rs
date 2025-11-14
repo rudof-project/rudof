@@ -74,7 +74,7 @@ impl RudofMcpService {
 
     #[tool(
         name = "execute_sparql_query",
-        description = "Execute a SPARQL query (SELECT, CONSTRUCT, ASK, DESCRIBE) against the RDF stored on the server"
+        description = "Execute a SPARQL query (SELECT, CONSTRUCT, ASK, DESCRIBE) against the RDF stored on the server. You can provide either a direct SPARQL query or a natural language description that will be converted to SPARQL using an LLM."
     )]
     pub async fn execute_sparql_query(
         &self,
@@ -115,7 +115,7 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
                         .read_only(false)
                         .destructive(false)
                         .idempotent(false)
-                        .open_world(true),  // Can access external URLs/endpoints
+                        .open_world(true), // Can access external URLs/endpoints
                 );
             }
             "export_rdf_data" => {
@@ -125,7 +125,7 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
                         .read_only(true)
                         .destructive(false)
                         .idempotent(true)
-                        .open_world(false),  // Operates on internal data only
+                        .open_world(false), // Operates on internal data only
                 );
             }
             "export_plantuml" => {

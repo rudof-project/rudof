@@ -1,9 +1,10 @@
+use crate::rudof_mcp_service::logging::{LogData, send_log};
 use crate::rudof_mcp_service::service::RudofMcpService;
 use crate::rudof_mcp_service::{resource_templates, resources::*};
 use rmcp::{
-    ErrorData as McpError, RoleServer, ServerHandler, 
-    model::*, 
-    service::{RequestContext, NotificationContext}
+    ErrorData as McpError, RoleServer, ServerHandler,
+    model::*,
+    service::{NotificationContext, RequestContext},
 };
 use serde_json::json;
 use std::collections::BTreeMap;
@@ -13,26 +14,37 @@ impl ServerHandler for RudofMcpService {
     fn get_info(&self) -> ServerInfo {
         // Create experimental capabilities for Rudof-specific features
         let mut experimental = BTreeMap::new();
-        
+
         let mut shex_val_meta = serde_json::Map::new();
         shex_val_meta.insert("version".to_string(), json!("1.0"));
-        shex_val_meta.insert("formats".to_string(), json!(["shexc", "shexj", "turtle", "ntriples", "rdfxml", "trig", "n3", "nquads"]));
-        shex_val_meta.insert("result_formats".to_string(), json!(["compact", "turtle", "json"]));
+        shex_val_meta.insert(
+            "formats".to_string(),
+            json!([
+                "shexc", "shexj", "turtle", "ntriples", "rdfxml", "trig", "n3", "nquads"
+            ]),
+        );
+        shex_val_meta.insert(
+            "result_formats".to_string(),
+            json!(["compact", "turtle", "json"]),
+        );
         experimental.insert("rudof.shex_validation".to_string(), shex_val_meta);
-        
+
         let mut rdf_viz_meta = serde_json::Map::new();
         rdf_viz_meta.insert("version".to_string(), json!("1.0"));
         rdf_viz_meta.insert("formats".to_string(), json!(["plantuml", "svg", "png"]));
         experimental.insert("rudof.rdf_visualization".to_string(), rdf_viz_meta);
-        
+
         let mut sparql_meta = serde_json::Map::new();
         sparql_meta.insert("version".to_string(), json!("1.0"));
-        sparql_meta.insert("query_types".to_string(), json!(["SELECT", "CONSTRUCT", "ASK", "DESCRIBE"]));
+        sparql_meta.insert(
+            "query_types".to_string(),
+            json!(["SELECT", "CONSTRUCT", "ASK", "DESCRIBE"]),
+        );
         experimental.insert("rudof.sparql".to_string(), sparql_meta);
-        
+
         let mut logging_meta = serde_json::Map::new();
         logging_meta.insert("enabled".to_string(), json!(true));
-        
+
         ServerInfo {
             protocol_version: ProtocolVersion::V_2025_06_18,
             capabilities: ServerCapabilities {
@@ -64,31 +76,31 @@ impl ServerHandler for RudofMcpService {
         _: RequestContext<RoleServer>,
     ) -> Result<ListToolsResult, McpError> {
         let all_tools = crate::rudof_mcp_service::tools::annotated_tools();
-        
+
         // Handle pagination if requested
         let (tools, next_cursor) = if let Some(params) = request {
             let page_size = 20; // Default page size
-            let cursor = params.cursor.and_then(|c| c.parse::<usize>().ok()).unwrap_or(0);
-            
+            let cursor = params
+                .cursor
+                .and_then(|c| c.parse::<usize>().ok())
+                .unwrap_or(0);
+
             let start = cursor;
             let end = std::cmp::min(start + page_size, all_tools.len());
-            
+
             let page_tools = all_tools[start..end].to_vec();
             let cursor_value = if end < all_tools.len() {
                 Some(end.to_string())
             } else {
                 None
             };
-            
+
             (page_tools, cursor_value)
         } else {
             (all_tools, None)
         };
-        
-        Ok(ListToolsResult {
-            tools,
-            next_cursor,
-        })
+
+        Ok(ListToolsResult { tools, next_cursor })
     }
 
     /// Return a list of available prompts using the generated PromptRouter.
@@ -98,27 +110,30 @@ impl ServerHandler for RudofMcpService {
         _: RequestContext<RoleServer>,
     ) -> Result<ListPromptsResult, McpError> {
         let all_prompts = self.prompt_router.list_all();
-        
+
         // Handle pagination if requested
         let (prompts, next_cursor) = if let Some(params) = request {
             let page_size = 20; // Default page size
-            let cursor = params.cursor.and_then(|c| c.parse::<usize>().ok()).unwrap_or(0);
-            
+            let cursor = params
+                .cursor
+                .and_then(|c| c.parse::<usize>().ok())
+                .unwrap_or(0);
+
             let start = cursor;
             let end = std::cmp::min(start + page_size, all_prompts.len());
-            
+
             let page_prompts = all_prompts[start..end].to_vec();
             let cursor_value = if end < all_prompts.len() {
                 Some(end.to_string())
             } else {
                 None
             };
-            
+
             (page_prompts, cursor_value)
         } else {
             (all_prompts, None)
         };
-        
+
         Ok(ListPromptsResult {
             prompts,
             next_cursor,
@@ -167,68 +182,51 @@ impl ServerHandler for RudofMcpService {
             let initialize_uri = &http_request_part.uri;
             tracing::info!(?initialize_headers, %initialize_uri, "initialize from http server");
         }
+
+        // Set default log level to Info when initialized
+        {
+            let mut min_level = self.current_min_log_level.write().await;
+            *min_level = Some(LoggingLevel::Info);
+        }
+
+        // // Send initialization log via MCP
+        // if let Err(e) = context.peer.notify_logging_message(
+        //     rmcp::model::LoggingMessageNotificationParam {
+        //         level: LoggingLevel::Info,
+        //         logger: Some("service".to_string()),
+        //         data: serde_json::json!({
+        //             "message": "MCP server initialized successfully",
+        //             "protocol_version": "2025-06-18",
+        //             "capabilities": ["logging", "tools", "prompts", "resources"]
+        //         }),
+        //     }
+        // ).await {
+        //     tracing::warn!(error = ?e, "Failed to send initialization log");
+        // }
+
+        tracing::info!("MCP server initialized successfully");
+
         Ok(self.get_info())
     }
 
     /// Handle dynamic log level changes from the client
+    /// This updates the MCP logging notification level, controlling which log messages
+    /// are sent to the client via MCP notifications.
     async fn set_level(
         &self,
         request: SetLevelRequestParam,
         _context: RequestContext<RoleServer>,
     ) -> Result<(), McpError> {
-        tracing::info!(level = ?request.level, "Log level change requested");
-        
-        // Check if we have a log level handle for dynamic updates
-        if let Some(handle) = &self.log_level_handle {
-            // Convert MCP LoggingLevel to tracing LevelFilter
-            let level_str = match request.level {
-                LoggingLevel::Debug => "debug",
-                LoggingLevel::Info => "info",
-                LoggingLevel::Notice => "info",  
-                LoggingLevel::Warning => "warn",
-                LoggingLevel::Error => "error",
-                LoggingLevel::Critical => "error",  
-                LoggingLevel::Alert => "error",     
-                LoggingLevel::Emergency => "error", 
-            };
-            
-            // Create new filter with the requested level
-            match tracing_subscriber::EnvFilter::try_new(level_str) {
-                Ok(new_filter) => {
-                    // Reload the filter
-                    match handle.write().await.reload(new_filter) {
-                        Ok(()) => {
-                            tracing::info!(
-                                new_level = %level_str,
-                                "Log level successfully changed"
-                            );
-                            Ok(())
-                        }
-                        Err(e) => {
-                            tracing::error!(error = ?e, "Failed to reload log filter");
-                            Err(rmcp::ErrorData::internal_error(
-                                format!("Failed to reload log filter: {}", e),
-                                None,
-                            ))
-                        }
-                    }
-                }
-                Err(e) => {
-                    tracing::error!(error = ?e, level = %level_str, "Invalid log level format");
-                    Err(rmcp::ErrorData::invalid_params(
-                        format!("Invalid log level: {}", e),
-                        None,
-                    ))
-                }
-            }
-        } else {
-            // No reload handle available - log warning but acknowledge request
-            tracing::warn!(
-                "Dynamic log level changes not available - no reload handle configured. \
-                 Service must be initialized with with_log_handle() to support this feature."
-            );
-            Ok(())
+        tracing::debug!(level = ?request.level, "Log level change requested");
+
+        // Update the MCP minimum log level for notification filtering
+        {
+            let mut min_level = self.current_min_log_level.write().await;
+            *min_level = Some(request.level);
+            tracing::info!(new_level = ?request.level, "MCP notification log level updated");
         }
+
+        Ok(())
     }
 
     // Construct a ToolCallContext and delegate to the generated router
@@ -242,17 +240,60 @@ impl ServerHandler for RudofMcpService {
             let mut ctx_guard = self.current_context.write().await;
             *ctx_guard = Some(context.clone());
         }
-        
-        let ctx = rmcp::handler::server::tool::ToolCallContext::new(self, request, context);
-        let result = self.tool_router.call(ctx).await?;
-        
+
+        // Send debug log for tool invocation (respects log level filtering)
+        let tool_name = request.name.clone();
+        let log_data = LogData::new("Tool invocation started")
+            .with_field("tool_name", tool_name.clone())
+            .with_field("has_arguments", request.arguments.is_some());
+        send_log(
+            LoggingLevel::Debug,
+            Some("tools".to_string()),
+            log_data,
+            self.current_min_log_level.clone(),
+            &context.peer,
+        )
+        .await;
+
+        let ctx = rmcp::handler::server::tool::ToolCallContext::new(self, request, context.clone());
+        let result = self.tool_router.call(ctx).await;
+
+        // Log tool completion (respects log level filtering)
+        match &result {
+            Ok(_) => {
+                let log_data = LogData::new("Tool executed successfully")
+                    .with_field("tool_name", tool_name.clone());
+                send_log(
+                    LoggingLevel::Info,
+                    Some("tools".to_string()),
+                    log_data,
+                    self.current_min_log_level.clone(),
+                    &context.peer,
+                )
+                .await;
+            }
+            Err(e) => {
+                let log_data = LogData::new("Tool execution failed")
+                    .with_field("tool_name", tool_name.clone())
+                    .with_field("error", e.message.clone());
+                send_log(
+                    LoggingLevel::Error,
+                    Some("tools".to_string()),
+                    log_data,
+                    self.current_min_log_level.clone(),
+                    &context.peer,
+                )
+                .await;
+            }
+        }
+
         // Clear the context after the tool call
         {
             let mut ctx_guard = self.current_context.write().await;
             *ctx_guard = None;
         }
-        
-        Ok(result)
+
+        result
     }
 
     // Construct a PromptContext and delegate to the generated router
@@ -306,16 +347,19 @@ impl ServerHandler for RudofMcpService {
     ) -> Result<(), McpError> {
         let uri = request.uri;
         // Generate a simple subscriber ID using timestamp
-        let subscriber_id = format!("sub_{}", std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos());
-        
+        let subscriber_id = format!(
+            "sub_{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        );
+
         tracing::info!(%uri, %subscriber_id, "Client subscribed to resource");
-        
+
         // Store the subscription
         self.subscribe_resource(uri.clone(), subscriber_id).await;
-        
+
         Ok(())
     }
 
@@ -326,24 +370,21 @@ impl ServerHandler for RudofMcpService {
         _context: RequestContext<RoleServer>,
     ) -> Result<(), McpError> {
         let uri = request.uri;
-        
+
         tracing::info!(%uri, "Client unsubscribed from resource");
-        
+
         // Note: Without tracking who subscribed, we clear all subscriptions for this URI
         // In production, you'd want to track the specific subscriber ID
         let subscribers = self.get_resource_subscribers(&uri).await;
         for subscriber_id in subscribers {
             self.unsubscribe_resource(&uri, &subscriber_id).await;
         }
-        
+
         Ok(())
     }
 
     // Handle notification when client is initialized
-    async fn on_initialized(
-        &self,
-        _context: NotificationContext<RoleServer>,
-    ) -> () {
+    async fn on_initialized(&self, _context: NotificationContext<RoleServer>) -> () {
         tracing::info!("Client successfully initialized");
     }
 
@@ -371,10 +412,7 @@ impl ServerHandler for RudofMcpService {
     }
 
     // Handle notification when client's roots list changes
-    async fn on_roots_list_changed(
-        &self,
-        _context: NotificationContext<RoleServer>,
-    ) -> () {
+    async fn on_roots_list_changed(&self, _context: NotificationContext<RoleServer>) -> () {
         tracing::info!("Client's roots list changed");
     }
 }
@@ -397,7 +435,7 @@ mod tests {
                 prompt_router: Default::default(),
                 config: Arc::new(RwLock::new(ServiceConfig::default())),
                 resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
-                log_level_handle: None,
+                current_min_log_level: Arc::new(RwLock::new(None)),
                 current_context: Arc::new(RwLock::new(None)),
             }
         })
@@ -411,19 +449,19 @@ mod tests {
         let info = service.get_info();
 
         assert_eq!(info.protocol_version, ProtocolVersion::V_2025_06_18);
-        
+
         // Verify all capabilities are enabled
         let caps = info.capabilities;
         assert!(caps.tools.is_some());
         assert_eq!(caps.tools.as_ref().unwrap().list_changed, Some(true));
-        
+
         assert!(caps.prompts.is_some());
         assert_eq!(caps.prompts.as_ref().unwrap().list_changed, Some(true));
-        
+
         assert!(caps.resources.is_some());
         assert_eq!(caps.resources.as_ref().unwrap().subscribe, Some(true));
         assert_eq!(caps.resources.as_ref().unwrap().list_changed, Some(true));
-        
+
         assert!(!info.server_info.name.is_empty());
         assert!(info.instructions.is_some());
     }

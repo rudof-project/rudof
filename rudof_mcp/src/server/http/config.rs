@@ -5,9 +5,4 @@ pub const AS_URL: &str = "http://localhost:8080/realms/mcp-realm";
 pub const ROUTE_PATH: &str = "/rudof";
 
 /// The list of required scopes for authorization.
-pub const SCOPES: &[&str] = &[
-    "mcp-audience",
-    "mcp:read",
-    "mcp:tools",
-    "mcp:prompts",
-];
+pub const SCOPES: &[&str] = &["mcp-audience", "mcp:read", "mcp:tools", "mcp:prompts"];

@@ -1,5 +1,6 @@
 pub mod errors;
 pub mod handlers;
+pub mod logging;
 pub mod prompts;
 pub mod resource_templates;
 pub mod resources;

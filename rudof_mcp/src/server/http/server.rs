@@ -1,28 +1,21 @@
 use std::sync::Arc;
 
+use anyhow::Result;
 use axum::{
+    Router,
     http::{HeaderMap, StatusCode},
     response::IntoResponse,
-    routing::{delete, any_service},
-    Router,
+    routing::{any_service, delete},
 };
-use anyhow::Result;
-use tokio::sync::RwLock;
 use rmcp::transport::streamable_http_server::{
-    StreamableHttpService,
-    session::local::LocalSessionManager,
-    SessionManager,
+    SessionManager, StreamableHttpService, session::local::LocalSessionManager,
 };
-use tower_http::{trace::TraceLayer, cors::CorsLayer};
+use tower_http::{cors::CorsLayer, trace::TraceLayer};
 
-use crate::rudof_mcp_service::{RudofMcpService, service::ReloadHandle};
-use super::middleware::with_guards;
-use super::auth::{
-    AuthConfig,
-    protected_resource_metadata_handler,
-    authorization_guard,
-};
+use super::auth::{AuthConfig, authorization_guard, protected_resource_metadata_handler};
 use super::config::AS_URL;
+use super::middleware::with_guards;
+use crate::rudof_mcp_service::RudofMcpService;
 
 /// Run MCP server using HTTP with Server-Sent Events (SSE) transport.
 /// This transport is ideal for:
@@ -30,7 +23,7 @@ use super::config::AS_URL;
 /// - Remote connections over HTTP/HTTPS
 /// - Multiple concurrent client connections
 /// - Network-based integrations
-/// 
+///
 /// # Security Features
 /// - OAuth2/OIDC authentication with JWT validation
 /// - TLS/HTTPS support (configure via reverse proxy)
@@ -38,43 +31,20 @@ use super::config::AS_URL;
 /// - Audience and issuer validation (RFC 8707)
 /// - DNS rebinding protection (origin validation)
 /// - Localhost-only binding by default
-/// 
+///
 /// # Protocol
 /// - MCP 2025-06-18 Streamable HTTP transport
 /// - JSON-RPC over HTTP POST
 /// - Server-Sent Events for real-time notifications
 /// - Session management with explicit termination support
-pub async fn run_mcp_http(
-    port: u16, 
-    route_path: &str,
-    log_handle: Option<Arc<RwLock<ReloadHandle>>>,
-) -> Result<()> {
-    
-    // Build dynamic configuration based on port and route
+pub async fn run_mcp_http(port: u16, route_path: &str) -> Result<()> {
     let bind_addr = format!("localhost:{}", port);
     let canonical_uri = format!("http://localhost:{}{}", port, route_path);
-    
-    tracing::info!("Starting MCP server with HTTP SSE transport");
-    tracing::info!("Protocol: MCP 2025-06-18 Streamable HTTP");
-    
+
     let session_manager = Arc::new(LocalSessionManager::default());
-    
-    // Share the log handle across all service instances
-    // Note: Each service instance created by the factory needs access to the same log handle
-    // for dynamic log level changes to work across all sessions
-    let mcp_service_factory = move || {
-        match &log_handle {
-            Some(handle) => {
-                tracing::debug!("Creating RudofMcpService WITH log handle for new session");
-                Ok(RudofMcpService::with_log_handle(handle.clone()))
-            }
-            None => {
-                tracing::warn!("Creating RudofMcpService WITHOUT log handle - dynamic log level changes will not work");
-                Ok(RudofMcpService::new())
-            }
-        }
-    };
-    
+
+    let mcp_service_factory = move || Ok(RudofMcpService::new());
+
     let rmcp_service = StreamableHttpService::new(
         mcp_service_factory,
         session_manager.clone(),
@@ -82,12 +52,8 @@ pub async fn run_mcp_http(
     );
 
     let oauth2_auth_cfg = Arc::new(
-        AuthConfig::new(
-            canonical_uri.clone(),
-            AS_URL.to_string(),
-            true,
-        )
-        .with_cache_ttl(std::time::Duration::from_secs(3600))
+        AuthConfig::new(canonical_uri.clone(), AS_URL.to_string(), true)
+            .with_cache_ttl(std::time::Duration::from_secs(3600)),
     );
 
     // Build routes
@@ -109,10 +75,10 @@ pub async fn run_mcp_http(
                 move || protected_resource_metadata_handler(uri.clone())
             }),
         );
-  
+
     // Configure CORS layer
     let cors = CorsLayer::new()
-        .allow_origin(tower_http::cors::Any)  // Allow any origin for development
+        .allow_origin(tower_http::cors::Any) // Allow any origin for development
         .allow_methods([
             axum::http::Method::GET,
             axum::http::Method::POST,
@@ -125,29 +91,22 @@ pub async fn run_mcp_http(
             axum::http::HeaderName::from_static("mcp-protocol-version"),
             axum::http::HeaderName::from_static("mcp-session-id"),
         ])
-        .expose_headers([
-            axum::http::HeaderName::from_static("mcp-session-id"),
-        ]);
+        .expose_headers([axum::http::HeaderName::from_static("mcp-session-id")]);
 
     // Apply tracing and CORS layers (order matters: CORS first, then tracing)
-    let router = router
-        .layer(TraceLayer::new_for_http())
-        .layer(cors);
+    let router = router.layer(TraceLayer::new_for_http()).layer(cors);
 
     // Apply protocol and origin guards (before authorization)
     let guarded_router = with_guards(router);
 
     // Apply authorization middleware (after guards)
-    let guarded_router = guarded_router.layer(
-        axum::middleware::from_fn_with_state(
-            oauth2_auth_cfg.clone(),
-            authorization_guard,
-        )
-    );
+    let guarded_router = guarded_router.layer(axum::middleware::from_fn_with_state(
+        oauth2_auth_cfg.clone(),
+        authorization_guard,
+    ));
 
     let listener = std::net::TcpListener::bind(&bind_addr)?;
-    let server = axum_server::Server::from_tcp(listener)
-        .serve(guarded_router.into_make_service());
+    let server = axum_server::Server::from_tcp(listener).serve(guarded_router.into_make_service());
 
     tracing::info!("MCP HTTP server listening on {}", canonical_uri);
     tracing::info!("Transport: HTTP with Server-Sent Events (SSE)");
@@ -170,7 +129,7 @@ pub async fn run_mcp_http(
 }
 
 /// Handler for explicit session termination (HTTP DELETE).
-/// 
+///
 /// According to the MCP specification:
 /// - Clients may send a DELETE with the `Mcp-Session-Id` header to explicitly end a session
 /// - The server MUST respond:
@@ -191,7 +150,11 @@ async fn handle_delete_session(
                 }
                 Err(e) => {
                     tracing::warn!(session_id = %id, error = %e, "Session not found or already expired");
-                    (StatusCode::NOT_FOUND, "Session not found or already expired").into_response()
+                    (
+                        StatusCode::NOT_FOUND,
+                        "Session not found or already expired",
+                    )
+                        .into_response()
                 }
             }
         }

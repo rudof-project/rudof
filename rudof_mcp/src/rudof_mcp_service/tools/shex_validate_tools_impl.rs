@@ -54,19 +54,19 @@ pub struct ValidateShexRequest {
 pub struct ValidateShexResponse {
     /// Validation result output.
     pub results: String,
-    
+
     /// Result format used
     pub result_format: String,
-    
+
     /// Sort order applied
     pub sort_by: String,
-    
+
     /// Size of results in bytes
     pub result_size_bytes: usize,
-    
+
     /// Number of lines in result
     pub result_lines: usize,
-    
+
     /// Whether validation passed (if determinable)
     pub validation_status: Option<String>,
 }
@@ -86,23 +86,28 @@ pub async fn validate_shex_impl(
         sort_by,
     }): Parameters<ValidateShexRequest>,
 ) -> Result<CallToolResult, McpError> {
-    let result_format_str = result_format.clone().unwrap_or_else(|| "compact".to_string());
+    let result_format_str = result_format
+        .clone()
+        .unwrap_or_else(|| "compact".to_string());
     let sort_by_str = sort_by.clone().unwrap_or_else(|| "node".to_string());
     let has_shapemap = shapemap.is_some();
     let has_node = maybe_node.is_some();
     let has_shape = maybe_shape.is_some();
-    
+
     let shcema_spec = Some(InputSpec::Str(schema.clone()));
 
     let parsed_schema_format: Option<ShExFormat> = match schema_format {
-        Some(s) => Some(ShExFormat::from_str(&s)
-            .map_err(|e| shex_error("parsing schema format", e.to_string()))?),
+        Some(s) => Some(
+            ShExFormat::from_str(&s)
+                .map_err(|e| shex_error("parsing schema format", e.to_string()))?,
+        ),
         None => None,
     };
 
     let parsed_base_schema: Option<IriS> = match base_schema {
-        Some(s) => Some(IriS::from_str(&s)
-            .map_err(|e| shex_error("parsing base IRI", e.to_string()))?),
+        Some(s) => {
+            Some(IriS::from_str(&s).map_err(|e| shex_error("parsing base IRI", e.to_string()))?)
+        }
         None => None,
     };
 
@@ -115,8 +120,7 @@ pub async fn validate_shex_impl(
     let shapemap_spec: Option<InputSpec> = shapemap.map(|s| InputSpec::Str(s.clone()));
 
     let parsed_shapemap_format: ShapeMapFormat = match shapemap_format {
-        Some(s) => ShapeMapFormat::from_str(&s)
-            .map_err(|e| shapemap_error(e.to_string()))?,
+        Some(s) => ShapeMapFormat::from_str(&s).map_err(|e| shapemap_error(e.to_string()))?,
         None => ShapeMapFormat::Compact,
     };
 
@@ -161,7 +165,7 @@ pub async fn validate_shex_impl(
     // Calculate metadata
     let result_size_bytes = output_str.len();
     let result_lines = output_str.lines().count();
-    
+
     // Try to determine validation status from output
     let validation_status = if output_str.contains("conformant") || output_str.contains("✓") {
         Some("conformant".to_string())
@@ -200,13 +204,13 @@ pub async fn validate_shex_impl(
         )
     })?;
 
-    // Create a summary 
+    // Create a summary
     let status_emoji = match validation_status.as_deref() {
         Some("conformant") => "✅",
         Some("non-conformant") => "❌",
         _ => "ℹ️",
     };
-    
+
     let mut summary = format!(
         "# ShEx Validation Results\n\n\
         **Status:** {} {}\n\
@@ -221,7 +225,7 @@ pub async fn validate_shex_impl(
         result_size_bytes,
         result_lines
     );
-    
+
     // Add validation parameters if provided
     if let Some(node) = &maybe_node {
         summary.push_str(&format!("**Node:** {}\n", node));
@@ -229,13 +233,15 @@ pub async fn validate_shex_impl(
     if let Some(shape) = &maybe_shape {
         summary.push_str(&format!("**Shape:** {}\n", shape));
     }
-    
+
     let schema_display = format!("## ShEx Schema\n\n```shex\n{}\n```", schema);
-    
+
     // Format results based on the format type
     let results_display = match result_format_str.to_lowercase().as_str() {
         "turtle" | "n3" => format!("## Validation Results\n\n```turtle\n{}\n```", output_str),
-        "ntriples" | "nquads" => format!("## Validation Results\n\n```ntriples\n{}\n```", output_str),
+        "ntriples" | "nquads" => {
+            format!("## Validation Results\n\n```ntriples\n{}\n```", output_str)
+        }
         "rdfxml" => format!("## Validation Results\n\n```xml\n{}\n```", output_str),
         "trig" => format!("## Validation Results\n\n```trig\n{}\n```", output_str),
         "json" | "jsonld" => format!("## Validation Results\n\n```json\n{}\n```", output_str),
@@ -250,8 +256,12 @@ pub async fn validate_shex_impl(
     result.structured_content = Some(structured);
 
     // Notify subscribers that validation resources have been updated
-    service.notify_resource_updated("rudof://validation-result".to_string()).await;
-    service.notify_resource_updated("rudof://schema".to_string()).await;
+    service
+        .notify_resource_updated("rudof://validation-result".to_string())
+        .await;
+    service
+        .notify_resource_updated("rudof://schema".to_string())
+        .await;
 
     Ok(result)
 }

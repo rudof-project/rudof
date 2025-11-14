@@ -1,24 +1,22 @@
 use rmcp::{
     ErrorData as McpError,
-    model::{Annotated, ReadResourceResult, RawResource, ResourceContents},
+    model::{Annotated, RawResource, ReadResourceResult, ResourceContents},
 };
 use serde_json::json;
 
 pub fn get_node_resources() -> Vec<Annotated<RawResource>> {
-    vec![
-        Annotated {
-            raw: RawResource {
-                uri: "rudof://formats/node-modes".to_string(),
-                name: "Node Inspection Modes".to_string(),
-                description: Some("Available modes for node inspection".to_string()),
-                mime_type: Some("application/json".to_string()),
-                title: None,
-                size: None,
-                icons: None,
-            },
-            annotations: None,
+    vec![Annotated {
+        raw: RawResource {
+            uri: "rudof://formats/node-modes".to_string(),
+            name: "Node Inspection Modes".to_string(),
+            description: Some("Available modes for node inspection".to_string()),
+            mime_type: Some("application/json".to_string()),
+            title: None,
+            size: None,
+            icons: None,
         },
-    ]
+        annotations: None,
+    }]
 }
 
 pub fn handle_node_resource(uri: &str) -> Option<Result<ReadResourceResult, McpError>> {
@@ -49,7 +47,7 @@ fn get_node_modes(uri: &str) -> Result<ReadResourceResult, McpError> {
         ],
         "default": "both"
     });
-    
+
     Ok(ReadResourceResult {
         contents: vec![ResourceContents::TextResourceContents {
             uri: uri.to_string(),

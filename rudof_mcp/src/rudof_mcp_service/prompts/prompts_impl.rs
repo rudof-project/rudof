@@ -10,7 +10,6 @@ use crate::rudof_mcp_service::service::RudofMcpService;
 // Import the public helper functions from the implementation files
 use super::data_prompts_impl::*;
 use super::node_prompts_impl::*;
-use super::query_prompts_impl::*;
 use super::validation_prompts_impl::*;
 
 #[prompt_router]
@@ -50,28 +49,6 @@ impl RudofMcpService {
     }
 
     #[prompt(
-        name = "optimize_sparql_query",
-        description = "Get suggestions to optimize SPARQL query performance and efficiency"
-    )]
-    async fn optimize_sparql_query_prompt(
-        &self,
-        Parameters(args): Parameters<OptimizeSparqlQueryPromptArgs>,
-    ) -> Result<GetPromptResult, McpError> {
-        optimize_sparql_query_prompt_impl(Parameters(args)).await
-    }
-
-    #[prompt(
-        name = "suggest_shex_schema",
-        description = "Get help creating a ShEx schema for your RDF data domain"
-    )]
-    async fn suggest_shex_schema_prompt(
-        &self,
-        Parameters(args): Parameters<SuggestShexSchemaPromptArgs>,
-    ) -> Result<GetPromptResult, McpError> {
-        suggest_shex_schema_prompt_impl(Parameters(args)).await
-    }
-
-    #[prompt(
         name = "explain_validation_errors",
         description = "Understand and fix ShEx validation errors with detailed explanations"
     )]
@@ -80,17 +57,6 @@ impl RudofMcpService {
         Parameters(args): Parameters<ExplainValidationErrorsPromptArgs>,
     ) -> Result<GetPromptResult, McpError> {
         explain_validation_errors_prompt_impl(Parameters(args)).await
-    }
-
-    #[prompt(
-        name = "debug_shex_schema",
-        description = "Debug ShEx schema syntax, reference, and logical errors"
-    )]
-    async fn debug_shex_schema_prompt(
-        &self,
-        Parameters(args): Parameters<DebugShexSchemaPromptArgs>,
-    ) -> Result<GetPromptResult, McpError> {
-        debug_shex_schema_prompt_impl(Parameters(args)).await
     }
 }
 

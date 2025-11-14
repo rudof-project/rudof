@@ -1,12 +1,11 @@
 use rmcp::{
     ErrorData as McpError,
-    model::{Annotated, ReadResourceResult, RawResource, ResourceContents},
+    model::{Annotated, RawResource, ReadResourceResult, ResourceContents},
 };
 use serde_json::json;
 
 pub fn get_shex_validate_resources() -> Vec<Annotated<RawResource>> {
     vec![
-        
         Annotated {
             raw: RawResource {
                 uri: "rudof://formats/shex".to_string(),
@@ -23,7 +22,9 @@ pub fn get_shex_validate_resources() -> Vec<Annotated<RawResource>> {
             raw: RawResource {
                 uri: "rudof://formats/validation-result".to_string(),
                 name: "Supported Validation Result Formats".to_string(),
-                description: Some("List of all supported ShEx validation result formats".to_string()),
+                description: Some(
+                    "List of all supported ShEx validation result formats".to_string(),
+                ),
                 mime_type: Some("application/json".to_string()),
                 title: None,
                 size: None,
@@ -60,7 +61,6 @@ pub fn get_shex_validate_resources() -> Vec<Annotated<RawResource>> {
 
 pub fn handle_shex_validate_resource(uri: &str) -> Option<Result<ReadResourceResult, McpError>> {
     match uri {
-        
         "rudof://formats/shex" => Some(get_shex_formats(uri)),
         "rudof://formats/validation-result" => Some(get_shex_validation_result_formats(uri)),
         "rudof://formats/validation-reader-modes" => Some(get_reader_modes(uri)),
@@ -155,7 +155,7 @@ fn get_shex_formats(uri: &str) -> Result<ReadResourceResult, McpError> {
         ],
         "default": "shexc"
     });
-    
+
     Ok(ReadResourceResult {
         contents: vec![ResourceContents::TextResourceContents {
             uri: uri.to_string(),
@@ -165,8 +165,6 @@ fn get_shex_formats(uri: &str) -> Result<ReadResourceResult, McpError> {
         }],
     })
 }
-
-
 
 fn get_shex_validation_result_formats(uri: &str) -> Result<ReadResourceResult, McpError> {
     let formats = json!({
@@ -232,7 +230,7 @@ fn get_shex_validation_result_formats(uri: &str) -> Result<ReadResourceResult, M
         ],
         "default": "details"
     });
-    
+
     Ok(ReadResourceResult {
         contents: vec![ResourceContents::TextResourceContents {
             uri: uri.to_string(),
@@ -259,7 +257,7 @@ fn get_reader_modes(uri: &str) -> Result<ReadResourceResult, McpError> {
         ],
         "default": "strict"
     });
-    
+
     Ok(ReadResourceResult {
         contents: vec![ResourceContents::TextResourceContents {
             uri: uri.to_string(),
@@ -296,7 +294,7 @@ fn get_validation_sort_options(uri: &str) -> Result<ReadResourceResult, McpError
         ],
         "default": "node"
     });
-    
+
     Ok(ReadResourceResult {
         contents: vec![ResourceContents::TextResourceContents {
             uri: uri.to_string(),
@@ -306,5 +304,3 @@ fn get_validation_sort_options(uri: &str) -> Result<ReadResourceResult, McpError
         }],
     })
 }
-
-

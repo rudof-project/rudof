@@ -1,10 +1,9 @@
-use std::sync::Arc;
 use axum::{
     body::Body,
-    http::{Request, Response, StatusCode, HeaderValue, header},
+    http::{HeaderValue, Request, Response, StatusCode, header},
     middleware::Next,
 };
-use tracing::{warn, debug, error};
+use std::sync::Arc;
 
 use super::config::AuthConfig;
 
@@ -19,18 +18,18 @@ pub async fn authorization_guard(
     next: Next,
 ) -> Response<Body> {
     let path = req.uri().path().to_string();
-    
-    debug!("Authorization guard processing request to: {}", path);
+
+    tracing::debug!("Authorization guard processing request to: {}", path);
 
     // Well-known endpoints are always public
     if path.starts_with("/.well-known/") {
-        debug!("Allowing public access to well-known endpoint: {}", path);
+        tracing::debug!("Allowing public access to well-known endpoint: {}", path);
         return next.run(req).await;
     }
 
     // Skip auth if not required
     if !auth_cfg.require_auth {
-        debug!("Authentication not required, allowing request");
+        tracing::debug!("Authentication not required, allowing request");
         return next.run(req).await;
     }
 
@@ -40,17 +39,17 @@ pub async fn authorization_guard(
         .get(header::AUTHORIZATION)
         .and_then(|v| v.to_str().ok());
 
-    debug!("Authorization header present: {}", auth_header.is_some());
+    tracing::debug!("Authorization header present: {}", auth_header.is_some());
 
     match auth_header {
         Some(h) if h.to_lowercase().starts_with("bearer ") => {
             let token = match h.split_whitespace().nth(1) {
                 Some(t) => {
-                    debug!("Bearer token extracted (length: {})", t.len());
+                    tracing::debug!("Bearer token extracted (length: {})", t.len());
                     t
                 }
                 None => {
-                    warn!("Malformed Bearer token");
+                    tracing::warn!("Malformed Bearer token");
                     return unauthorized_response(
                         &auth_cfg.resource_metadata_url(),
                         Some("invalid_request"),
@@ -60,19 +59,19 @@ pub async fn authorization_guard(
             };
 
             // Verify and validate token
-            debug!("Starting token verification...");
+            tracing::debug!("Starting token verification...");
             match auth_cfg.verify_token(token).await {
                 Ok(claims) => {
-                    debug!("Token validated successfully for subject: {:?}", claims.sub);
-                    debug!("Token audience: {:?}", claims.aud);
-                    debug!("Token issuer: {}", claims.iss);
+                    tracing::debug!("Token validated successfully for subject: {:?}", claims.sub);
+                    tracing::debug!("Token audience: {:?}", claims.aud);
+                    tracing::debug!("Token issuer: {}", claims.iss);
                     req.extensions_mut().insert(claims);
-                    debug!("Passing request to next handler");
+                    tracing::debug!("Passing request to next handler");
                     next.run(req).await
                 }
                 Err(e) => {
-                    error!("Token validation failed: {:#}", e);
-                    error!("Error details: {:?}", e);
+                    tracing::error!("Token validation failed: {:#}", e);
+                    tracing::error!("Error details: {:?}", e);
                     unauthorized_response(
                         &auth_cfg.resource_metadata_url(),
                         Some("invalid_token"),
@@ -82,11 +81,14 @@ pub async fn authorization_guard(
             }
         }
         Some(_) => {
-            warn!("Invalid Authorization header format");
+            tracing::warn!("Invalid Authorization header format");
             bad_request_response("Authorization header must use Bearer scheme")
         }
         None => {
-            warn!("Missing Authorization header for protected endpoint: {}", path);
+            tracing::warn!(
+                "Missing Authorization header for protected endpoint: {}",
+                path
+            );
             unauthorized_response(
                 &auth_cfg.resource_metadata_url(),
                 Some("missing_token"),
@@ -119,9 +121,8 @@ fn unauthorized_response(
 
     resp.headers_mut().insert(
         header::WWW_AUTHENTICATE,
-        HeaderValue::from_str(&header_value).unwrap_or_else(|_| {
-            HeaderValue::from_static(r#"Bearer realm="mcp""#)
-        }),
+        HeaderValue::from_str(&header_value)
+            .unwrap_or_else(|_| HeaderValue::from_static(r#"Bearer realm="mcp""#)),
     );
 
     resp

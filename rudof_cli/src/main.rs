@@ -49,15 +49,15 @@ fn main() -> Result<()> {
         .with_line_number(true)
         .with_writer(io::stderr)
         .without_time();
-    
+
     // Attempts to get the value of RUST_LOG which can be info, debug, trace, If unset, it uses "info"
     let initial_filter = EnvFilter::try_from_default_env()
         .or_else(|_| EnvFilter::try_new("info"))
         .unwrap();
-    
+
     // Create a reloadable layer with the filter for dynamic log level changes
     let (filter_layer, reload_handle) = reload::Layer::new(initial_filter);
-    
+
     tracing_subscriber::registry()
         .with(filter_layer)
         .with(fmt_layer)
@@ -125,13 +125,13 @@ fn main() -> Result<()> {
                 *force_overwrite,
             )
         }
-        Some(Command::Mcp { 
+        Some(Command::Mcp {
             transport,
             port,
             route_path,
         }) => {
             // Pass the reload handle to MCP server for dynamic log level changes
-            rudof_mcp::run_mcp(*transport, *port, route_path, Some(reload_handle))
+            rudof_mcp::run_mcp(*transport, *port, route_path)
         }
         Some(Command::Service {
             service,

@@ -2,7 +2,7 @@ use crate::rudof_mcp_service::errors::rdf_error;
 use crate::rudof_mcp_service::service::RudofMcpService;
 use rmcp::{
     ErrorData as McpError,
-    model::{Annotated, ReadResourceResult, RawResource, ResourceContents},
+    model::{Annotated, RawResource, ReadResourceResult, ResourceContents},
 };
 use rudof_lib::RDFFormat;
 use serde_json::json;
@@ -98,7 +98,9 @@ pub fn get_data_resources() -> Vec<Annotated<RawResource>> {
             raw: RawResource {
                 uri: "rudof://formats/rdf".to_string(),
                 name: "Supported RDF Formats".to_string(),
-                description: Some("List of all supported RDF data formats for import/export".to_string()),
+                description: Some(
+                    "List of all supported RDF data formats for import/export".to_string(),
+                ),
                 mime_type: Some("application/json".to_string()),
                 title: None,
                 size: None,
@@ -133,17 +135,18 @@ pub async fn export_rdf_data(
     format_str: &str,
 ) -> Result<ReadResourceResult, McpError> {
     let rudof = service.rudof.lock().await;
-    
-    let rdf_format = RDFFormat::from_str(format_str)
-        .map_err(|e| rdf_error("parsing format", e.to_string()))?;
-    
+
+    let rdf_format =
+        RDFFormat::from_str(format_str).map_err(|e| rdf_error("parsing format", e.to_string()))?;
+
     let mut buffer = Vec::new();
-    rudof.serialize_data(&rdf_format, &mut buffer)
+    rudof
+        .serialize_data(&rdf_format, &mut buffer)
         .map_err(|e| rdf_error("serializing data", e.to_string()))?;
-    
-    let text = String::from_utf8(buffer)
-        .map_err(|e| rdf_error("converting to UTF-8", e.to_string()))?;
-    
+
+    let text =
+        String::from_utf8(buffer).map_err(|e| rdf_error("converting to UTF-8", e.to_string()))?;
+
     let mime_type = match format_str {
         "turtle" => "text/turtle",
         "ntriples" => "application/n-triples",
@@ -220,7 +223,7 @@ fn get_rdf_formats(uri: &str) -> Result<ReadResourceResult, McpError> {
         ],
         "default": "turtle"
     });
-    
+
     Ok(ReadResourceResult {
         contents: vec![ResourceContents::TextResourceContents {
             uri: uri.to_string(),

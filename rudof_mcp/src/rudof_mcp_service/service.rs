@@ -1,30 +1,22 @@
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::{Mutex, RwLock};
-use tracing_subscriber::reload;
 
 use crate::rudof_mcp_service::{prompts, tools};
 use rmcp::{
-    handler::server::router::{prompt::PromptRouter, tool::ToolRouter},
-    service::RequestContext,
     RoleServer,
+    handler::server::router::{prompt::PromptRouter, tool::ToolRouter},
+    model::LoggingLevel,
+    service::RequestContext,
 };
 use rudof_lib::{Rudof, RudofConfig};
 
-/// Type alias for the reload handle used to dynamically change log levels
-pub type ReloadHandle = reload::Handle<
-    tracing_subscriber::EnvFilter,
-    tracing_subscriber::Registry,
->;
-
 /// Configuration for the RudofMcpService
 #[derive(Clone, Debug)]
-pub struct ServiceConfig {
-}
+pub struct ServiceConfig {}
 
 impl Default for ServiceConfig {
     fn default() -> Self {
-        Self {
-        }
+        Self {}
     }
 }
 
@@ -41,8 +33,8 @@ pub struct RudofMcpService {
     pub config: Arc<RwLock<ServiceConfig>>,
     /// Track resource subscriptions (URI -> list of subscriber IDs)
     pub resource_subscriptions: Arc<RwLock<HashMap<String, Vec<String>>>>,
-    /// Handle for dynamically reloading log level
-    pub log_level_handle: Option<Arc<RwLock<ReloadHandle>>>,
+    /// Current minimum log level for MCP logging notifications
+    pub current_min_log_level: Arc<RwLock<Option<LoggingLevel>>>,
     /// Current request context (temporarily stored during request handling)
     pub(crate) current_context: Arc<RwLock<Option<RequestContext<RoleServer>>>>,
 }
@@ -57,7 +49,7 @@ impl RudofMcpService {
             prompt_router: prompts::prompt_router_public(),
             config: Arc::new(RwLock::new(ServiceConfig::default())),
             resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
-            log_level_handle: None,
+            current_min_log_level: Arc::new(RwLock::new(None)),
             current_context: Arc::new(RwLock::new(None)),
         }
     }
@@ -72,22 +64,7 @@ impl RudofMcpService {
             prompt_router: prompts::prompt_router_public(),
             config: Arc::new(RwLock::new(config)),
             resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
-            log_level_handle: None,
-            current_context: Arc::new(RwLock::new(None)),
-        }
-    }
-
-    /// Create a new service with a log level handle for dynamic log control
-    pub fn with_log_handle(log_handle: Arc<RwLock<ReloadHandle>>) -> Self {
-        let rudof_config = RudofConfig::new().unwrap();
-        let rudof = Rudof::new(&rudof_config).unwrap();
-        Self {
-            rudof: Arc::new(Mutex::new(rudof)),
-            tool_router: tools::tool_router_public(),
-            prompt_router: prompts::prompt_router_public(),
-            config: Arc::new(RwLock::new(ServiceConfig::default())),
-            resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
-            log_level_handle: Some(log_handle),
+            current_min_log_level: Arc::new(RwLock::new(None)),
             current_context: Arc::new(RwLock::new(None)),
         }
     }
@@ -116,15 +93,9 @@ impl RudofMcpService {
     }
 
     /// Send a notification about resource updates using rmcp's notification system
-    /// 
-    /// This method uses the MCP protocol's built-in notification mechanism.
-    /// For HTTP-SSE transport, rmcp automatically sends notifications via Server-Sent Events.
-    /// 
-    /// The notification is sent to the client through the RequestContext's peer interface,
-    /// which handles the underlying transport details (SSE for HTTP, JSON-RPC for stdio).
     pub async fn notify_resource_updated(&self, uri: String) {
         let subscribers = self.get_resource_subscribers(&uri).await;
-        
+
         if subscribers.is_empty() {
             tracing::debug!(uri = %uri, "No subscribers for resource update");
             return;
@@ -133,11 +104,13 @@ impl RudofMcpService {
         // Use rmcp's notification system via the current RequestContext
         let context_guard = self.current_context.read().await;
         if let Some(context) = context_guard.as_ref() {
-            // Send notification through rmcp's peer interface
-            // For HTTP transport, this automatically uses SSE
-            if let Err(e) = context.peer.notify_resource_updated(
-                rmcp::model::ResourceUpdatedNotificationParam { uri: uri.clone() }
-            ).await {
+            if let Err(e) = context
+                .peer
+                .notify_resource_updated(rmcp::model::ResourceUpdatedNotificationParam {
+                    uri: uri.clone(),
+                })
+                .await
+            {
                 tracing::warn!(
                     uri = %uri,
                     error = ?e,
@@ -160,9 +133,6 @@ impl RudofMcpService {
     }
 
     /// Send a notification that the resources list has changed
-    /// 
-    /// Uses rmcp's notification system to inform clients that the available resources have changed.
-    /// For HTTP-SSE transport, this is automatically sent via Server-Sent Events.
     pub async fn notify_resource_list_changed(&self) {
         let context_guard = self.current_context.read().await;
         if let Some(context) = context_guard.as_ref() {
@@ -180,9 +150,6 @@ impl RudofMcpService {
     }
 
     /// Send a notification that the tools list has changed
-    /// 
-    /// Uses rmcp's notification system to inform clients that the available tools have changed.
-    /// For HTTP-SSE transport, this is automatically sent via Server-Sent Events.
     pub async fn notify_tool_list_changed(&self) {
         let context_guard = self.current_context.read().await;
         if let Some(context) = context_guard.as_ref() {
@@ -200,9 +167,6 @@ impl RudofMcpService {
     }
 
     /// Send a notification that the prompts list has changed
-    /// 
-    /// Uses rmcp's notification system to inform clients that the available prompts have changed.
-    /// For HTTP-SSE transport, this is automatically sent via Server-Sent Events.
     pub async fn notify_prompt_list_changed(&self) {
         let context_guard = self.current_context.read().await;
         if let Some(context) = context_guard.as_ref() {
@@ -225,6 +189,7 @@ impl RudofMcpService {
         _prompt_name: &str,
         _argument_name: &str,
     ) -> Vec<String> {
+        // Not implemented yet;For now, return empty
         vec![]
     }
 
@@ -234,8 +199,7 @@ impl RudofMcpService {
         _uri: &str,
         _argument_name: &str,
     ) -> Vec<String> {
-        // Resource URI completions can be extended based on available resources
-        // For now, return empty as resources are dynamically generated
+        // Not implemented yet; For now, return empty
         vec![]
     }
 }
@@ -262,7 +226,7 @@ mod tests {
                 prompt_router: prompts::prompt_router_public(),
                 config: Arc::new(RwLock::new(ServiceConfig::default())),
                 resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
-                log_level_handle: None,
+                current_min_log_level: Arc::new(RwLock::new(None)),
                 current_context: Arc::new(RwLock::new(None)),
             }
         })

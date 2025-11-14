@@ -60,7 +60,6 @@ rudof_mcp/
 │       │   ├── prompts_impl.rs                   # Prompt router
 │       │   ├── data_prompts_impl.rs              # Data analysis prompts
 │       │   ├── node_prompts_impl.rs              # Node exploration prompts
-│       │   ├── query_prompts_impl.rs             # Query optimization prompts
 │       │   └── validation_prompts_impl.rs        # Validation error prompts
 │       └── resources/                            # Resource implementations
 │           ├── mod.rs
@@ -90,10 +89,7 @@ The MCP server exposes the following prompts:
 1. **explore_rdf_node**: Interactive guide for exploring RDF node information, relationships, and graph structure.
 2. **analyze_rdf_data**: Comprehensive guide for analyzing loaded RDF data structure, patterns, and quality.
 3. **generate_test_data**: Generate conformant RDF test data examples from a ShEx schema.
-4. **optimize_sparql_query**: Get suggestions to optimize SPARQL query performance and efficiency.
-5. **suggest_shex_schema**: Get help creating a ShEx schema for your RDF data domain.
-6. **explain_validation_errors**: Understand and fix ShEx validation errors with detailed explanations.
-7. **debug_shex_schema**: Debug ShEx schema syntax, reference, and logical errors.
+4. **explain_validation_errors**: Understand and fix ShEx validation errors with detailed explanations.
 
 ## Available Resources
 

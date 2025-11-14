@@ -1,6 +1,6 @@
 use rmcp::{
     ErrorData as McpError,
-    model::{Annotated, ReadResourceResult, RawResource, ResourceContents},
+    model::{Annotated, RawResource, ReadResourceResult, ResourceContents},
 };
 use serde_json::json;
 
@@ -66,7 +66,7 @@ fn get_query_types(uri: &str) -> Result<ReadResourceResult, McpError> {
             }
         ]
     });
-    
+
     Ok(ReadResourceResult {
         contents: vec![ResourceContents::TextResourceContents {
             uri: uri.to_string(),
@@ -143,7 +143,7 @@ fn get_query_result_formats(uri: &str) -> Result<ReadResourceResult, McpError> {
         ],
         "default": "internal"
     });
-    
+
     Ok(ReadResourceResult {
         contents: vec![ResourceContents::TextResourceContents {
             uri: uri.to_string(),

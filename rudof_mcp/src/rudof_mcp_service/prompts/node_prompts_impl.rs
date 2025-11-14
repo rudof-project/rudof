@@ -22,7 +22,7 @@ pub async fn explore_rdf_node_prompt_impl(
     let node = args.node;
     let mode = args.mode.unwrap_or_else(|| "both".to_string());
     let predicates = args.predicates.unwrap_or_default();
-    
+
     let predicates_display = if predicates.is_empty() {
         "none (showing all predicates)".to_string()
     } else {
@@ -42,7 +42,7 @@ pub async fn explore_rdf_node_prompt_impl(
             format!(
                 "Explore RDF node `{}` with mode: **{}**, predicates: {}",
                 node, mode, predicates_display
-            )
+            ),
         ),
         PromptMessage::new_text(
             PromptMessageRole::Assistant,
@@ -110,7 +110,7 @@ pub async fn explore_rdf_node_prompt_impl(
                 node,
                 node,
                 mode
-            )
+            ),
         ),
     ];
 

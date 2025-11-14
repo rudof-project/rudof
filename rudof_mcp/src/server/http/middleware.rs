@@ -1,9 +1,9 @@
 use axum::{
+    Router,
     body::Body,
     http::{Request, StatusCode},
     middleware::{self, Next},
     response::Response,
-    Router,
 };
 use tracing::warn;
 

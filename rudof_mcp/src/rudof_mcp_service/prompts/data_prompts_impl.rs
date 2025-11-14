@@ -21,18 +21,10 @@ pub async fn analyze_rdf_data_prompt_impl(
             PromptMessageRole::Assistant,
             "I'll help you analyze the RDF data currently loaded in Rudof.\n\n\
             **Analysis steps:**\n\
-            1. **Export the data** using the `export_rdf_data` tool to see the current triples\n\
-            2. **Query patterns** using `execute_sparql_query` to find:\n\
-               - All unique classes: `SELECT DISTINCT ?class WHERE { ?s a ?class }`\n\
-               - All unique predicates: `SELECT DISTINCT ?p WHERE { ?s ?p ?o }`\n\
-               - Triple count: `SELECT (COUNT(*) as ?count) WHERE { ?s ?p ?o }`\n\
-            3. **Explore specific nodes** using `node_info` to understand relationships\n\
-            4. **Visualize** using `export_rdf_plantuml` or `export_rdf_image` for a graph overview\n\n\
-            **What insights would you like?**\n\
-            - Data statistics (classes, predicates, instance counts)\n\
-            - Graph structure and connectivity\n\
-            - Data quality issues\n\
-            - Schema/ontology patterns\n\n\
+            1. **Export the data** using the `export_rdf_data` tool to see the current triples.\n\
+            2. **Run SPARQL queries** using `execute_sparql_query` to explore the loaded data.
+            3. **Explore specific nodes** using `node_info` to understand relationships.\n\
+            4. **Visualize** using `export_rdf_plantuml` or `export_rdf_image` for a graph overview.\n\n\
             Let me know what aspect you'd like to explore first!"
         ),
     ];
@@ -55,11 +47,14 @@ pub async fn generate_test_data_prompt_impl(
     Parameters(args): Parameters<GenerateTestDataPromptArgs>,
 ) -> Result<GetPromptResult, McpError> {
     let num = args.num_examples.unwrap_or(3);
-    
+
     let messages = vec![
         PromptMessage::new_text(
             PromptMessageRole::User,
-            format!("Generate {} test data examples for this schema:\n```shex\n{}\n```", num, args.schema)
+            format!(
+                "Generate {} test data examples for this schema:\n```shex\n{}\n```",
+                num, args.schema
+            ),
         ),
         PromptMessage::new_text(
             PromptMessageRole::Assistant,
@@ -98,7 +93,7 @@ pub async fn generate_test_data_prompt_impl(
                    - Adjust if validation fails\n\n\
                 Would you like me to help create specific test cases?",
                 num
-            )
+            ),
         ),
     ];
 

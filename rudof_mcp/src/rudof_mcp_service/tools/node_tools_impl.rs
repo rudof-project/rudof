@@ -168,10 +168,8 @@ pub async fn node_info_impl(
 
     let detailed_output = format!("## Detailed Node Information\n\n```\n{}\n```", output_str);
 
-    let mut result = CallToolResult::success(vec![
-        Content::text(summary),
-        Content::text(detailed_output),
-    ]);
+    let mut result =
+        CallToolResult::success(vec![Content::text(summary), Content::text(detailed_output)]);
     result.structured_content = Some(structured);
     Ok(result)
 }
@@ -213,7 +211,7 @@ mod tests {
                 prompt_router: Default::default(),
                 config: Arc::new(RwLock::new(ServiceConfig::default())),
                 resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
-                log_level_handle: None,
+                current_min_log_level: Arc::new(RwLock::new(None)),
                 current_context: Arc::new(RwLock::new(None)),
             }
         })

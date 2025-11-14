@@ -11,9 +11,7 @@ use super::super::config::{AS_URL, SCOPES};
 // ============================================================================
 
 /// Protected resource metadata endpoint
-pub async fn protected_resource_metadata_handler(
-    resource: String,
-) -> impl IntoResponse {
+pub async fn protected_resource_metadata_handler(resource: String) -> impl IntoResponse {
     let metadata = json!({
         "resource": resource,
         "authorization_servers": [AS_URL],

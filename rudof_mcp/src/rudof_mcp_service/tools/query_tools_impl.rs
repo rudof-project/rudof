@@ -2,7 +2,7 @@ use crate::rudof_mcp_service::{errors::*, service::*};
 use rmcp::{
     ErrorData as McpError,
     handler::server::wrapper::Parameters,
-    model::{CallToolResult, Content},
+    model::{CallToolResult, Content, CreateMessageRequestParam, Role, SamplingMessage},
 };
 use rudof_lib::{
     InputSpec,
@@ -18,8 +18,11 @@ use std::str::FromStr;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ExecuteSparqlQueryRequest {
-    /// SPARQL query string to execute
-    pub query: String,
+    /// SPARQL query string to execute (optional if query_natural_language is provided)
+    pub query: Option<String>,
+
+    /// Natural language description of the query to generate SPARQL using LLM
+    pub query_natural_language: Option<String>,
 
     /// Result format
     pub result_format: Option<String>,
@@ -46,15 +49,137 @@ pub struct QueryExecutionResponse {
     pub result_lines: usize,
 }
 
+/// Generate a SPARQL query from natural language using rmcp sampling
+async fn generate_sparql_from_natural_language(
+    service: &RudofMcpService,
+    natural_language: &str,
+) -> Result<String, McpError> {
+    let system_message = r#"You are a SPARQL query expert. Convert natural language questions into valid SPARQL queries.
+                                    - Only output the SPARQL query, no explanations or markdown formatting
+                                    - Use standard SPARQL syntax (SELECT, CONSTRUCT, ASK, or DESCRIBE)
+                                    - Include appropriate prefixes if needed
+                                    - Make the query efficient and correct
+                                    - If you need to guess prefixes, use common ones like rdf:, rdfs:, xsd:, ex:, etc."#;
+
+    let user_message = format!("Generate a SPARQL query for: {}", natural_language);
+
+    // Get the current request context to access the peer for sampling
+    let context_guard = service.current_context.read().await;
+    let context = context_guard.as_ref().ok_or_else(|| {
+        internal_error(
+            error_messages::SAMPLING_CONTEXT_ERROR,
+            Some(json!({ "error": "Request context not found" })),
+        )
+    })?;
+
+    // Create sampling request with messages
+    let sampling_request = CreateMessageRequestParam {
+        messages: vec![
+            SamplingMessage {
+                role: Role::User,
+                content: Content::text(system_message),
+            },
+            SamplingMessage {
+                role: Role::User,
+                content: Content::text(user_message.clone()),
+            },
+        ],
+        model_preferences: None,
+        system_prompt: None,
+        include_context: None,
+        temperature: Some(0.3),
+        max_tokens: 512,
+        stop_sequences: None,
+        metadata: None,
+    };
+
+    // Send sampling request through rmcp
+    let response = context
+        .peer
+        .create_message(sampling_request)
+        .await
+        .map_err(|e| {
+            internal_error(
+                error_messages::QUERY_GENERATION_ERROR,
+                Some(json!({ "error": e.to_string() })),
+            )
+        })?;
+
+    // Extract text from the SamplingMessage content in the response
+    // The response.message.content is of type Content
+    let generated_query = if let Some(text_content) = response.message.content.as_text() {
+        text_content.text.clone()
+    } else {
+        return Err(internal_error(
+            error_messages::SAMPLING_RESPONSE_ERROR,
+            Some(json!({ "error": "Expected text response from LLM" })),
+        ));
+    };
+
+    // Clean up any markdown code blocks that might have been generated
+    let cleaned_query = if generated_query.starts_with("```") {
+        generated_query
+            .lines()
+            .skip(1)
+            .take_while(|line| !line.starts_with("```"))
+            .collect::<Vec<_>>()
+            .join("\n")
+            .trim()
+            .to_string()
+    } else {
+        generated_query.trim().to_string()
+    };
+
+    tracing::info!(
+        natural_language = %natural_language,
+        generated_query = %cleaned_query,
+        "Generated SPARQL query from natural language via rmcp sampling"
+    );
+
+    Ok(cleaned_query)
+}
+
 pub async fn execute_sparql_query_impl(
     service: &RudofMcpService,
     Parameters(ExecuteSparqlQueryRequest {
         query,
+        query_natural_language,
         result_format,
     }): Parameters<ExecuteSparqlQueryRequest>,
 ) -> Result<CallToolResult, McpError> {
-    let query_type_str = detect_query_type(&query).ok_or_else(|| {
-        sparql_error("detecting query type", "Could not detect query type (SELECT, CONSTRUCT, ASK, DESCRIBE)")
+    // Determine the SPARQL query to execute
+    let sparql_query = match (query, query_natural_language) {
+        (Some(q), None) => {
+            // Direct SPARQL query provided
+            q
+        }
+        (None, Some(nl)) => {
+            // Natural language query provided - generate SPARQL using rmcp sampling
+            generate_sparql_from_natural_language(service, &nl).await?
+        }
+        (Some(_), Some(_)) => {
+            return Err(internal_error(
+                "Invalid request",
+                Some(json!({
+                    "error": "Cannot provide both 'query' and 'query_natural_language'. Please provide only one."
+                })),
+            ));
+        }
+        (None, None) => {
+            return Err(internal_error(
+                "Invalid request",
+                Some(json!({
+                    "error": "Must provide either 'query' or 'query_natural_language'"
+                })),
+            ));
+        }
+    };
+
+    let query_type_str = detect_query_type(&sparql_query).ok_or_else(|| {
+        sparql_error(
+            "detecting query type",
+            "Could not detect query type (SELECT, CONSTRUCT, ASK, DESCRIBE)",
+        )
     })?;
     let parsed_query_type = QueryType::from_str(&query_type_str)
         .map_err(|e| sparql_error("parsing query type", e.to_string()))?;
@@ -63,7 +188,7 @@ pub async fn execute_sparql_query_impl(
     let parsed_result_format = ResultQueryFormat::from_str(result_format_str)
         .map_err(|e| sparql_error("parsing result format", e.to_string()))?;
 
-    let query_spec = InputSpec::Str(query.clone());
+    let query_spec = InputSpec::Str(sparql_query.clone());
 
     let mut rudof = service.rudof.lock().await;
     let mut output_buffer = Cursor::new(Vec::new());
@@ -99,7 +224,7 @@ pub async fn execute_sparql_query_impl(
         result_format = %result_format_str,
         result_size_bytes,
         result_lines,
-        query_length = query.len(),
+        query_length = sparql_query.len(),
         "Executed SPARQL query successfully"
     );
 
@@ -118,13 +243,10 @@ pub async fn execute_sparql_query_impl(
         **Result Format:** {}\n\
         **Result Size:** {} bytes\n\
         **Result Lines:** {}\n",
-        query_type_str,
-        result_format_str,
-        result_size_bytes,
-        result_lines
+        query_type_str, result_format_str, result_size_bytes, result_lines
     );
 
-    let query_display = format!("## Query\n\n```sparql\n{}\n```", query);
+    let query_display = format!("## Query\n\n```sparql\n{}\n```", sparql_query);
 
     // Format results based on the format type
     let results_display = match result_format_str.to_lowercase().as_str() {
@@ -181,7 +303,7 @@ mod tests {
                 prompt_router: Default::default(),
                 config: Arc::new(RwLock::new(ServiceConfig::default())),
                 resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
-                log_level_handle: None,
+                current_min_log_level: Arc::new(RwLock::new(None)),
                 current_context: Arc::new(RwLock::new(None)),
             }
         })
@@ -208,7 +330,8 @@ mod tests {
         let query = r#"SELECT ?s ?p ?o WHERE { ?s ?p ?o }"#.to_string();
 
         let params = Parameters(ExecuteSparqlQueryRequest {
-            query,
+            query: Some(query),
+            query_natural_language: None,
             result_format: Some("Internal".to_string()),
         });
 
@@ -234,7 +357,8 @@ mod tests {
         let query = "INVALID QUERY".to_string();
 
         let params = Parameters(ExecuteSparqlQueryRequest {
-            query,
+            query: Some(query),
+            query_natural_language: None,
             result_format: Some("Internal".to_string()),
         });
 
@@ -251,7 +375,8 @@ mod tests {
         let query = r#"SELECT ?s WHERE { ?s ?p ?o }"#.to_string();
 
         let params = Parameters(ExecuteSparqlQueryRequest {
-            query,
+            query: Some(query),
+            query_natural_language: None,
             result_format: Some("UnknownFormat".to_string()),
         });
 

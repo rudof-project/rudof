@@ -1,7 +1,7 @@
-use serde::{Serialize, Deserialize};
-use serde_json::Value;
-use anyhow::{Result, Context as AnyhowContext};
+use anyhow::{Context as AnyhowContext, Result};
 use josekit::jwt::JwtPayload;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use tracing::debug;
 
 use super::config::AuthConfig;
@@ -43,7 +43,7 @@ impl TokenClaims {
     /// Extract claims from a JWT payload with validation
     fn from_payload(payload: &JwtPayload) -> Result<Self> {
         let claims_map = payload.claims_set();
-        
+
         // Required claims
         let iss = claims_map
             .get("iss")
@@ -60,11 +60,20 @@ impl TokenClaims {
         let aud = Self::extract_audience(claims_map)?;
 
         // Optional claims
-        let sub = claims_map.get("sub").and_then(|v| v.as_str()).map(String::from);
+        let sub = claims_map
+            .get("sub")
+            .and_then(|v| v.as_str())
+            .map(String::from);
         let nbf = claims_map.get("nbf").and_then(|v| v.as_i64());
         let iat = claims_map.get("iat").and_then(|v| v.as_i64());
-        let jti = claims_map.get("jti").and_then(|v| v.as_str()).map(String::from);
-        let scope = claims_map.get("scope").and_then(|v| v.as_str()).map(String::from);
+        let jti = claims_map
+            .get("jti")
+            .and_then(|v| v.as_str())
+            .map(String::from);
+        let scope = claims_map
+            .get("scope")
+            .and_then(|v| v.as_str())
+            .map(String::from);
         let client_id = claims_map
             .get("client_id")
             .or_else(|| claims_map.get("azp"))
@@ -90,7 +99,7 @@ impl TokenClaims {
             .ok_or_else(|| anyhow::anyhow!("Missing 'aud' claim"))?;
 
         let mut audiences = Vec::new();
-        
+
         if let Some(s) = aud_value.as_str() {
             audiences.push(s.to_string());
         } else if let Some(arr) = aud_value.as_array() {
@@ -134,7 +143,7 @@ impl TokenClaims {
     fn validate_issuer(&self, expected_issuer: &str) -> Result<()> {
         let expected = expected_issuer.trim_end_matches('/');
         let actual = self.iss.trim_end_matches('/');
-        
+
         if actual != expected {
             return Err(anyhow::anyhow!(
                 "Invalid issuer: expected '{}', got '{}'",
@@ -148,10 +157,11 @@ impl TokenClaims {
     /// Validate audience contains expected value
     fn validate_audience(&self, expected_audience: &str) -> Result<()> {
         let expected = expected_audience.trim_end_matches('/');
-        
-        let has_audience = self.aud.iter().any(|aud| {
-            aud.trim_end_matches('/') == expected
-        });
+
+        let has_audience = self
+            .aud
+            .iter()
+            .any(|aud| aud.trim_end_matches('/') == expected);
 
         if !has_audience {
             return Err(anyhow::anyhow!(
@@ -178,19 +188,37 @@ impl AuthConfig {
         // Try to verify with each key in the JWKS
         for key in jwks.keys() {
             let alg = key.algorithm().unwrap_or("RS256");
-            
+
             debug!("Attempting verification with algorithm: {}", alg);
-            
+
             let verify_result = match alg {
-                "RS256" => jwt::decode_with_verifier(token, &josekit::jws::RS256.verifier_from_jwk(key)?),
-                "RS384" => jwt::decode_with_verifier(token, &josekit::jws::RS384.verifier_from_jwk(key)?),
-                "RS512" => jwt::decode_with_verifier(token, &josekit::jws::RS512.verifier_from_jwk(key)?),
-                "ES256" => jwt::decode_with_verifier(token, &josekit::jws::ES256.verifier_from_jwk(key)?),
-                "ES384" => jwt::decode_with_verifier(token, &josekit::jws::ES384.verifier_from_jwk(key)?),
-                "ES512" => jwt::decode_with_verifier(token, &josekit::jws::ES512.verifier_from_jwk(key)?),
-                "PS256" => jwt::decode_with_verifier(token, &josekit::jws::PS256.verifier_from_jwk(key)?),
-                "PS384" => jwt::decode_with_verifier(token, &josekit::jws::PS384.verifier_from_jwk(key)?),
-                "PS512" => jwt::decode_with_verifier(token, &josekit::jws::PS512.verifier_from_jwk(key)?),
+                "RS256" => {
+                    jwt::decode_with_verifier(token, &josekit::jws::RS256.verifier_from_jwk(key)?)
+                }
+                "RS384" => {
+                    jwt::decode_with_verifier(token, &josekit::jws::RS384.verifier_from_jwk(key)?)
+                }
+                "RS512" => {
+                    jwt::decode_with_verifier(token, &josekit::jws::RS512.verifier_from_jwk(key)?)
+                }
+                "ES256" => {
+                    jwt::decode_with_verifier(token, &josekit::jws::ES256.verifier_from_jwk(key)?)
+                }
+                "ES384" => {
+                    jwt::decode_with_verifier(token, &josekit::jws::ES384.verifier_from_jwk(key)?)
+                }
+                "ES512" => {
+                    jwt::decode_with_verifier(token, &josekit::jws::ES512.verifier_from_jwk(key)?)
+                }
+                "PS256" => {
+                    jwt::decode_with_verifier(token, &josekit::jws::PS256.verifier_from_jwk(key)?)
+                }
+                "PS384" => {
+                    jwt::decode_with_verifier(token, &josekit::jws::PS384.verifier_from_jwk(key)?)
+                }
+                "PS512" => {
+                    jwt::decode_with_verifier(token, &josekit::jws::PS512.verifier_from_jwk(key)?)
+                }
                 _ => {
                     debug!("Unsupported algorithm: {}", alg);
                     continue;
@@ -199,19 +227,22 @@ impl AuthConfig {
 
             if let Ok((payload, _header)) = verify_result {
                 debug!("JWT signature verified successfully");
-                
+
                 // Extract claims
                 let claims = TokenClaims::from_payload(&payload)
                     .context("Failed to extract claims from token")?;
 
                 // Validate claims
-                claims.validate_time_claims()
+                claims
+                    .validate_time_claims()
                     .context("Time-based claim validation failed")?;
 
-                claims.validate_issuer(&self.issuer)
+                claims
+                    .validate_issuer(&self.issuer)
                     .context("Issuer validation failed")?;
 
-                claims.validate_audience(&self.canonical_uri)
+                claims
+                    .validate_audience(&self.canonical_uri)
                     .context("Audience validation failed")?;
 
                 debug!("Token validated successfully for subject: {:?}", claims.sub);

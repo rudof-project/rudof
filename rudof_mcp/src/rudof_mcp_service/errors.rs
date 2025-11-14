@@ -28,6 +28,9 @@ pub mod error_messages {
     pub const INVALID_QUERY_TYPE: &str = "Invalid query type";
     pub const QUERY_EXECUTION_ERROR: &str = "Query execution error";
     pub const INVALID_QUERY_RESULT_FORMAT: &str = "Invalid query result format";
+    pub const QUERY_GENERATION_ERROR: &str = "Query generation error";
+    pub const SAMPLING_CONTEXT_ERROR: &str = "Sampling context error";
+    pub const SAMPLING_RESPONSE_ERROR: &str = "Sampling response error";
 
     // SHEX VALIDATE Errors
     pub const INVALID_SCHEMA_FORMAT: &str = "Invalid schema format";
@@ -52,11 +55,11 @@ pub fn internal_error(error_messages: &'static str, data: Option<Value>) -> McpE
     McpError::internal_error(error_messages, data)
 }
 
-/// Create an RDF-specific error 
+/// Create an RDF-specific error
 pub fn rdf_error(operation: &str, detail: impl Into<String>) -> McpError {
     let detail_str = detail.into();
     tracing::error!(operation = %operation, error = %detail_str, "RDF operation failed");
-    
+
     internal_error(
         error_messages::RDF_LOAD_ERROR,
         Some(serde_json::json!({
@@ -66,11 +69,11 @@ pub fn rdf_error(operation: &str, detail: impl Into<String>) -> McpError {
     )
 }
 
-/// Create a SPARQL query error 
+/// Create a SPARQL query error
 pub fn sparql_error(query_type: &str, detail: impl Into<String>) -> McpError {
     let detail_str = detail.into();
     tracing::error!(query_type = %query_type, error = %detail_str, "SPARQL query failed");
-    
+
     internal_error(
         error_messages::QUERY_EXECUTION_ERROR,
         Some(serde_json::json!({
@@ -80,11 +83,11 @@ pub fn sparql_error(query_type: &str, detail: impl Into<String>) -> McpError {
     )
 }
 
-/// Create a ShEx validation error 
+/// Create a ShEx validation error
 pub fn shex_error(schema_part: &str, detail: impl Into<String>) -> McpError {
     let detail_str = detail.into();
     tracing::error!(schema_part = %schema_part, error = %detail_str, "ShEx operation failed");
-    
+
     invalid_request(
         error_messages::INVALID_SCHEMA_FORMAT,
         Some(serde_json::json!({
@@ -98,7 +101,7 @@ pub fn shex_error(schema_part: &str, detail: impl Into<String>) -> McpError {
 pub fn shapemap_error(detail: impl Into<String>) -> McpError {
     let detail_str = detail.into();
     tracing::error!(error = %detail_str, "ShapeMap operation failed");
-    
+
     invalid_request(
         error_messages::INVALID_SHAPEMAP_FORMAT,
         Some(serde_json::json!({ "detail": detail_str })),

@@ -1,9 +1,11 @@
-use std::{sync::Arc, time::{Duration, Instant}};
-use tokio::sync::RwLock;
-use reqwest::Client;
+use anyhow::{Context as AnyhowContext, Result};
 use josekit::jwk::JwkSet;
-use anyhow::{Result, Context as AnyhowContext};
-use tracing::debug;
+use reqwest::Client;
+use std::{
+    sync::Arc,
+    time::{Duration, Instant},
+};
+use tokio::sync::RwLock;
 
 // ============================================================================
 // Configuration
@@ -62,11 +64,7 @@ impl JwksCache {
 // ============================================================================
 
 impl AuthConfig {
-    pub fn new(
-        canonical_uri: String,
-        issuer: String,
-        require_auth: bool,
-    ) -> Self {
+    pub fn new(canonical_uri: String, issuer: String, require_auth: bool) -> Self {
         Self {
             canonical_uri,
             issuer,
@@ -96,10 +94,11 @@ impl AuthConfig {
     /// Fetch JWKS from the authorization server
     async fn fetch_jwks(&self) -> Result<JwkSet> {
         let jwks_uri = format!("{}/protocol/openid-connect/certs", self.issuer);
-        
-        debug!("Fetching JWKS from {}", jwks_uri);
-        
-        let response = self.http_client
+
+        tracing::debug!("Fetching JWKS from {}", jwks_uri);
+
+        let response = self
+            .http_client
             .get(&jwks_uri)
             .send()
             .await
@@ -117,8 +116,7 @@ impl AuthConfig {
             .await
             .context("Failed to read JWKS response")?;
 
-        JwkSet::from_bytes(&jwks_bytes)
-            .context("Failed to parse JWKS")
+        JwkSet::from_bytes(&jwks_bytes).context("Failed to parse JWKS")
     }
 
     /// Get JWKS with caching
@@ -127,15 +125,15 @@ impl AuthConfig {
         {
             let cache = self.jwks_cache.read().await;
             if let Some(jwks) = cache.get() {
-                debug!("Using cached JWKS");
+                tracing::debug!("Using cached JWKS");
                 return Ok(jwks.clone());
             }
         }
 
         // Cache miss or expired - fetch new JWKS
-        debug!("JWKS cache miss - fetching new keys");
+        tracing::debug!("JWKS cache miss - fetching new keys");
         let jwks = self.fetch_jwks().await?;
-        
+
         // Update cache
         {
             let mut cache = self.jwks_cache.write().await;
