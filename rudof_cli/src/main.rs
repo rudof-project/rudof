@@ -40,7 +40,7 @@ use std::path::PathBuf;
 use std::result::Result::Ok;
 // use tracing::level_filters::LevelFilter;
 use tracing_subscriber::prelude::*;
-use tracing_subscriber::{filter::EnvFilter, fmt, reload};
+use tracing_subscriber::{filter::EnvFilter, fmt};
 
 #[allow(unused_variables)]
 fn main() -> Result<()> {
