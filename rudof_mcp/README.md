@@ -8,12 +8,11 @@ Export rudof_lib functionality as a [Model-Context-Protocol](https://modelcontex
 - **Configurable Server**: Port and route path configuration for HTTP transport.
 - **MCP Protocol Support**: Full support for MCP Protocol versions 2025-06-18 (current), 2025-03-26 (fallback), and 2024-11-05 (deprecated).
 - **OAuth2/OIDC Authentication**: Security for HTTP transport with JWT validation.
-- **Real-time Notifications**: Server-to-client notifications via Server-Sent Events (HTTP) or JSON-RPC (stdio) with shared notification channel.
+- **Real-time Notifications**: Server-to-client notifications.
 - **Resource Subscriptions**: Clients can subscribe to specific resources for updates.
 - **Argument Completion**: Intelligent completion suggestions for prompt and resource arguments (pending implementation).
 - **Dynamic Log Levels**: Runtime log level configuration via MCP logging protocol.
 - **Session Management**: Explicit session termination support with DELETE requests.
-- **CORS Support**: Cross-Origin Resource Sharing enabled for web clients (HTTP transport).
 
 ## Architecture
 
@@ -28,12 +27,12 @@ rudof_mcp/
 │   │   └── keycloak/
 │   ├── server/
 │   │   ├── mod.rs                
-│   │   ├── server.rs                             # Main entry point + tracing
+│   │   ├── server_impl.rs                        # Main entry point + tracing
 │   │   ├── transport.rs                          # TransportType enum
 │   │   ├── stdio_server.rs                       # Stdio transport implementation
 │   │   └── http/                                 # HTTP-specific modules
 │   │       ├── mod.rs
-│   │       ├── server.rs                         # HTTP server implementation
+│   │       ├── http_server.rs                    # HTTP server implementation
 │   │       ├── config.rs                         # HTTP configuration constants
 │   │       ├── middleware.rs                     # Protocol & origin guards
 │   │       └── auth/                             # Authentication module

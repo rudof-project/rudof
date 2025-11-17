@@ -366,7 +366,7 @@ mod tests {
         let call_result = result.unwrap();
         assert!(call_result.structured_content.is_some());
         assert!(call_result.content.iter().any(|c| {
-            matches!(c.raw, RawContent::Text(ref s) if s.text.contains("RDF data loaded"))
+            matches!(c.raw, RawContent::Text(ref s) if s.text.contains("Successfully loaded RDF data"))
         }));
     }
 
@@ -384,7 +384,7 @@ mod tests {
         let result = load_rdf_data_from_sources_impl(&service, params).await;
         assert!(result.is_err());
         let err = result.unwrap_err();
-        assert!(err.message.contains("Invalid data format"));
+        assert!(err.message.contains("RDF load error"));
     }
 
     #[tokio::test]

@@ -1,19 +1,17 @@
 # Exporting rudof as an MCP server
 
-A part of `rudof` functionality can be exported as an [MCP (Model Context Protocol) server](https://modelcontextprotocol.io/docs/getting-started/intro), allowing it to provide its capabilities to external clients over HTTP.
+Part of `rudof` functionality can be exported as an [MCP (Model Context Protocol) server](https://modelcontextprotocol.io/docs/getting-started/intro), allowing it to provide its capabilities to external clients.
 
-By default, the MCP server will listen on port `8000`, at host `127.0.0.1`, and expose its functionality under the route name `rudof`.
+The MCP server supports two configurable transport methods:
+- `stdin` (default): Communicates through standard input/output
+- `http-sse`: Accessible over HTTP at a specified host and port
+
+By default, the MCP server uses the `stdin` transport. When using `http-sse` transport, the server listens on `http://127.0.0.1:8000` by default and exposes its functionality under the route name `rudof`.
 
 You can start the MCP server with the following command:
 
 ```sh
 rudof mcp
-```
-
-This will start a local MCP server accessible at:
-
-```sh
-http://127.0.0.1:8000/rudof
 ```
 
 > ⚠️ **IMPORTANT** If you want to use rudof's functionality to export RDF data to visual formats (PlantUML, SVG, PNG), you must set up `PlantUML` **before starting the MCP server**.
@@ -26,10 +24,23 @@ http://127.0.0.1:8000/rudof
 > $env:PLANTUML="C:\ProgramData\PlantUML\plantuml.jar"
 > ```
 
-## Changing Server Settings
-### Changing the port
+## Changing MCP Server Settings
+
+### Changing the transport type
+
+You can specify the transport type used by the MCP server with the `--transport` (or `-t`) option. Possible values include `http-sse` and `stdin` (default).
+
+For example, to start the server using the `http-sse` transport:
+
+```sh
+rudof mcp --transport http-sse
+```
+
+### Changing the port (http-sse)
 
 You can specify a custom port using the `--port` (or `-p`) option.
+
+By default, it is `8000`.
 
 For example, to run the server on port 9000:
 
@@ -37,7 +48,7 @@ For example, to run the server on port 9000:
 rudof mcp --port 9000
 ```
 
-### Changing the route name
+### Changing the route name (http-sse)
 
 The route name determines the path under which the MCP server is exposed.
 
@@ -47,27 +58,45 @@ By default, it is `rudof`, but you can change it with `--route-name` (or `-n`):
 rudof mcp --route-name rdfserver
 ```
 
-### Changing the host address
-
-By default, `rudof` binds the MCP server to `127.0.0.1` (localhost).
-
-To make it accessible from other machines, you can specify a different host address using the `--host` option.
-
-For example, to bind to all interfaces:
-
-```sh
-rudof mcp --host 0.0.0.0
-```
-
 ### Combined example
 
 You can combine all parameters as needed.
 
-For example, to run the MCP server on port 8080, accessible from any host, under the route rdf:
+For example, to run the MCP server with `http-sse` transport on port `8080` under the route `rdf`:
 
 ```sh
-rudof mcp --host 0.0.0.0 --port 8080 --route-name rdf
+rudof mcp --transport http-sse --port 8080 --route-name rdf
 ```
+
+## Using HTTP-SSE Transport
+
+If you want to use the `http-sse` transport, you need to deploy an Authorization Server (AS) for authentication. This section explains how to set it up using Docker Desktop.
+
+### Deploying the Authorization Server
+
+The Authorization Server is based on Keycloak and can be deployed using Docker Compose. The configuration file is located at `/rudof-mcp/src/as`. To start it:
+
+1. Navigate to the directory containing the docker-compose file:
+```sh
+   cd /rudof-mcp/src/as
+```
+
+2. Start the services with Docker Compose:
+```sh
+   docker-compose up -d
+```
+
+3. The Authorization Server will be accessible at `http://localhost:8080` (username: `admin`, password: `admin`).
+
+
+> ⚠️ **IMPORTANT** By default, the Authorization Server is configured with the following audience: `http://localhost:8000/rudof`.
+> If you start the MCP server with a different port or route name, you must update the audience  configuration in the Authorization Server accordingly.
+>For example, if you start the server with:
+>```sh
+>rudof mcp --transport http-sse --port 9000 --route-name rdfserver
+>```
+>You need to change the audience in the Authorization Server to `http://localhost:9000/rdfserver`
+
 
 ## Connecting with Claude Desktop (Example MCP Client)
 
@@ -75,25 +104,33 @@ Once you have started rudof as an MCP server, you can configure a `client that s
 
 As an example, we'll show how to connect the rudof MCP server to `Claude Desktop`, allowing you to interact with your RDF data directly through Claude.
 
-To do this, ensure the following prerequisites are met:
-
-### Prerequisites
-
-- `rudof MCP server` is running locally (for example, using `rudof mcp`).
-
-> ⚠️ **IMPORTANT** `PlantUML` must be installed before starting the MCP server (see warning above in `Exporting rudof as an MCP server
- section`).
-
-- [Node.js](https://nodejs.org/es/download) is installed on your system (required to use the `mcp-remote` command).
-
-- [Claude Desktop](https://claude.com/download) is installed and configured on your machine.
-
-
 ### Claude Desktop’s Configuration
 
-In Claude Desktop’s configuration file add the following entry under your MCP servers section:
+#### Using stdin transport (default)
 
-```sh
+In Claude Desktop's configuration file, add the following entry under your MCP servers section:
+```json
+"rudof": {
+  "command": "/path/to/rudof",
+  "args": [
+    "mcp"
+  ],
+  "enabled": true
+}
+```
+
+> **Note**: Replace `/path/to/rudof` with the actual path to your `rudof` binary.
+
+#### Using HTTP-SSE transport
+
+If you prefer to use HTTP-SSE transport, you need to verify:
+
+- `rudof MCP server` is running locally (for example, using `rudof mcp --transport http-sse`).
+- [Node.js](https://nodejs.org/es/download) is installed on your system (required to use the `mcp-remote` command).
+- The Authorization Server is deployed and running (see `Using HTTP-SSE Transport` section).
+
+In Claude Desktop's configuration file, add the following entry under your MCP servers section:
+```json
 "rudof": {
   "command": "npx",
   "args": [
@@ -105,10 +142,6 @@ In Claude Desktop’s configuration file add the following entry under your MCP 
   "enabled": true
 }
 ```
-
-This configuration tells Claude Desktop to connect to your local `rudof MCP server` over HTTP.
-
-Once saved, restart Claude Desktop. You should now be able to query and interact with your RDF data through Claude using `rudof’s MCP tools`.
 
 ### Prompt Examples
 Once connected, you can interact with `rudof` through `Claude Desktop` using natural language prompts.
@@ -177,4 +210,10 @@ select ?person ?name ?status where {
   ?person schema:name ?name ;
           :status ?status .
 }
+```
+
+You can also express the query in natural language:
+
+```
+Para cada persona, devuelve el número total de personas a las que conoce directamente o indirectamente con grado de relación 2, es decir, conoce a una persona que conoce a esa persona.
 ```

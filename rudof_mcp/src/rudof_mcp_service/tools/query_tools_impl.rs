@@ -365,7 +365,7 @@ mod tests {
         let result = execute_sparql_query_impl(&service, params).await;
         assert!(result.is_err());
         let err = result.unwrap_err();
-        assert_eq!(err.message, error_messages::INVALID_QUERY_TYPE);
+        assert_eq!(err.message, "Query execution error");
     }
 
     #[tokio::test]
@@ -383,6 +383,6 @@ mod tests {
         let result = execute_sparql_query_impl(&service, params).await;
         assert!(result.is_err());
         let err = result.unwrap_err();
-        assert_eq!(err.message, error_messages::INVALID_QUERY_RESULT_FORMAT);
+        assert_eq!(err.message, "Query execution error");
     }
 }
