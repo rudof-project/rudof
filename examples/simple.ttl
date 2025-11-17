@@ -12,4 +12,5 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 :c :name "Charlie" ;
    :knows :a, :b .
 
-:cs101 :name "Computer Science" .   
+:cs101 :name "Computer Science" ;
+       :homePage <http://cs.example.org> .

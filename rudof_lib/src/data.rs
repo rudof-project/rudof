@@ -7,18 +7,24 @@ use srdf::{
 };
 use std::str::FromStr;
 
-use crate::{InputSpec, Rudof, RudofConfig, RudofError, data_format::DataFormat};
+use crate::{
+    InputSpec, Rudof, RudofConfig, RudofError,
+    data_format::{DataFormat, DataFormatError},
+};
 
 // Converts a rudof_lib DataFormat into a srdf RDFFormat.
-pub fn data_format2rdf_format(data_format: &DataFormat) -> RDFFormat {
+pub fn data_format2rdf_format(data_format: &DataFormat) -> Result<RDFFormat, DataFormatError> {
     match data_format {
-        DataFormat::N3 => RDFFormat::N3,
-        DataFormat::NQuads => RDFFormat::NQuads,
-        DataFormat::NTriples => RDFFormat::NTriples,
-        DataFormat::RDFXML => RDFFormat::RDFXML,
-        DataFormat::TriG => RDFFormat::TriG,
-        DataFormat::Turtle => RDFFormat::Turtle,
-        DataFormat::JsonLd => RDFFormat::JsonLd,
+        DataFormat::N3 => Ok(RDFFormat::N3),
+        DataFormat::NQuads => Ok(RDFFormat::NQuads),
+        DataFormat::NTriples => Ok(RDFFormat::NTriples),
+        DataFormat::RDFXML => Ok(RDFFormat::RDFXML),
+        DataFormat::TriG => Ok(RDFFormat::TriG),
+        DataFormat::Turtle => Ok(RDFFormat::Turtle),
+        DataFormat::JsonLd => Ok(RDFFormat::JsonLd),
+        DataFormat::PG => Err(DataFormatError::NonRdfFormat {
+            format: data_format.to_string(),
+        }),
     }
 }
 
@@ -71,15 +77,25 @@ pub fn get_data_rudof(
             }
         }
         (false, None) => {
-            let rdf_format = data_format2rdf_format(data_format);
-            for d in data {
-                let data_reader = d
+            let rdf_format = data_format2rdf_format(data_format)
+                .map_err(|e| RudofError::DataFormatError { error: e })?;
+            for data_input in data {
+                let mut data_reader = data_input
                     .open_read(Some(data_format.mime_type()), "RDF data")
                     .map_err(|e| RudofError::RDFDataReadError {
+                        source_name: data_input.source_name(),
+                        mime_type: data_format.mime_type().to_string(),
                         error: e.to_string(),
                     })?;
-                let base = get_base(d, config, base)?;
-                rudof.read_data(data_reader, &rdf_format, base.as_deref(), reader_mode, true)?;
+                let base = get_base(data_input, config, base)?;
+                rudof.read_data(
+                    &mut data_reader,
+                    data_input.source_name().as_str(),
+                    &rdf_format,
+                    base.as_deref(),
+                    reader_mode,
+                    true,
+                )?;
             }
             Ok(())
         }

@@ -1,6 +1,8 @@
 use constraint_error::ConstraintError;
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::schema_ir::SchemaIR;
+use shacl_ir::shape_label_idx::ShapeLabelIdx;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::SHACLPath;
@@ -21,26 +23,31 @@ pub trait Validator<S: NeighsRDF + Debug> {
         component: &ComponentIR,
         shape: &ShapeIR,
         store: &S,
-        engine: impl Engine<S>,
+        engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 
 pub trait NativeValidator<S: NeighsRDF> {
+    #[allow(clippy::too_many_arguments)]
     fn validate_native(
         &self,
         component: &ComponentIR,
         shape: &ShapeIR,
         store: &S,
+        engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 
 pub trait SparqlValidator<S: QueryRDF + Debug> {
+    #[allow(clippy::too_many_arguments)]
     fn validate_sparql(
         &self,
         component: &ComponentIR,
@@ -49,6 +56,7 @@ pub trait SparqlValidator<S: QueryRDF + Debug> {
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 
@@ -120,38 +128,38 @@ impl<S: NeighsRDF + Debug + 'static> NativeDeref for ShaclComponent<'_, S> {
             ComponentIR::QualifiedValueShape(inner) => inner,
         }
     }
-
-    /*generate_deref_fn!(
-        ComponentIR,
-        Class,
-        Datatype,
-        NodeKind,
-        MinCount,
-        MaxCount,
-        MinExclusive,
-        MaxExclusive,
-        MinInclusive,
-        MaxInclusive,
-        MinLength,
-        MaxLength,
-        Pattern,
-        UniqueLang,
-        LanguageIn,
-        Equals,
-        Disjoint,
-        LessThan,
-        LessThanOrEquals,
-        Or,
-        And,
-        Not,
-        Xone,
-        Closed,
-        Node,
-        HasValue,
-        In,
-        QualifiedValueShape
-    );*/
 }
+
+/*generate_deref_fn!(
+    ComponentIR,
+    Class,
+    Datatype,
+    NodeKind,
+    MinCount,
+    MaxCount,
+    MinExclusive,
+    MaxExclusive,
+    MinInclusive,
+    MaxInclusive,
+    MinLength,
+    MaxLength,
+    Pattern,
+    UniqueLang,
+    LanguageIn,
+    Equals,
+    Disjoint,
+    LessThan,
+    LessThanOrEquals,
+    Or,
+    And,
+    Not,
+    Xone,
+    Closed,
+    Node,
+    HasValue,
+    In,
+    QualifiedValueShape
+);*/
 
 pub trait SparqlDeref {
     type Target: ?Sized;
@@ -223,4 +231,16 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlDeref for ShaclComponent<'
         In,
         QualifiedValueShape
     ); */
+}
+
+pub fn get_shape_from_idx(
+    shapes_graph: &SchemaIR,
+    shape_idx: &ShapeLabelIdx,
+) -> Result<ShapeIR, ConstraintError> {
+    shapes_graph
+        .get_shape_from_idx(shape_idx)
+        .ok_or_else(|| ConstraintError::InternalError {
+            msg: format!("Shape idx {} not found in shapes graph", shape_idx),
+        })
+        .cloned()
 }

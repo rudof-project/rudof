@@ -297,6 +297,7 @@ impl QueryRDF for SRDFSparql {
     }
 
     fn query_select(&self, query: &str) -> Result<QuerySolutions<Self>> {
+        tracing::trace!("srdf_sparql: SPARQL SELECT query: {}", query);
         let solutions = make_sparql_query_select(query, &self.client, &self.endpoint_iri)?;
         let qs: Vec<QuerySolution<SRDFSparql>> = solutions.iter().map(cnv_query_solution).collect();
         Ok(QuerySolutions::new(qs, self.prefixmap.clone()))

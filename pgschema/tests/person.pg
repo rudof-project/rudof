@@ -1,0 +1,11 @@
+(n1: Person { name: "Alice", age: 23, aliases: [] });
+(n2: Person { name: "Bob", aliases: ["Bobby", "Bob" ] });
+(n3: Person { name: "Carol", age: 43, aliases: ["Caroline" ] });
+
+// Has 2 ages
+(n4_wrong: Person { name: "Dave", age: [ 43, 23 ] , aliases: ["David" ] });
+
+// Doesn't have aliases
+(n5_wrong: Person { name: "Dave", age: 43  })
+
+

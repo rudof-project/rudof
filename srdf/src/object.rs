@@ -19,7 +19,7 @@ pub enum Object {
     Literal(SLiteral),
     Triple {
         subject: Box<IriOrBlankNode>,
-        predicate: Box<IriS>,
+        predicate: IriS,
         object: Box<Object>,
     },
 }
@@ -50,11 +50,7 @@ impl Object {
                 subject,
                 predicate,
                 object,
-            } => {
-                subject.as_ref().length()
-                    + predicate.as_ref().as_str().len()
-                    + object.as_ref().length()
-            }
+            } => subject.as_ref().length() + predicate.as_str().len() + object.as_ref().length(),
         }
     }
 
@@ -177,7 +173,7 @@ impl TryFrom<oxrdf::Term> for Object {
                 let predicate = IriS::from_named_node(&p);
                 Ok(Object::Triple {
                     subject: Box::new(subject),
-                    predicate: Box::new(predicate),
+                    predicate,
                     object: Box::new(object),
                 })
             }

@@ -1,0 +1,5 @@
+n1: EmployeeType,
+n2: EmployeeType,
+n3_wrong:! EmployeeType,
+n4_wrong:! EmployeeType,
+n5_wrong:! EmployeeType

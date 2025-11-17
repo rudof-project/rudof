@@ -1,13 +1,3 @@
-use clap::ValueEnum;
-use prefixmap::PrefixMap;
-use shacl_ir::compiled::schema::SchemaIR;
-use sparql_service::RdfData;
-use srdf::NeighsRDF;
-use srdf::RDFFormat;
-use srdf::SRDFSparql;
-use std::fmt::Debug;
-use std::path::Path;
-
 use crate::shacl_engine::engine::Engine;
 use crate::shacl_engine::native::NativeEngine;
 use crate::shacl_engine::sparql::SparqlEngine;
@@ -17,6 +7,15 @@ use crate::store::graph::Graph;
 use crate::store::sparql::Endpoint;
 use crate::validate_error::ValidateError;
 use crate::validation_report::report::ValidationReport;
+use clap::ValueEnum;
+use prefixmap::PrefixMap;
+use shacl_ir::compiled::schema_ir::SchemaIR;
+use sparql_service::RdfData;
+use srdf::NeighsRDF;
+use srdf::RDFFormat;
+use srdf::SRDFSparql;
+use std::fmt::Debug;
+use std::path::Path;
 
 #[derive(ValueEnum, Copy, Clone, Debug, PartialEq, Default)]
 /// Backend used for the validation.
@@ -39,8 +38,8 @@ pub enum ShaclValidationMode {
 /// to empty, and, for each shape in the schema, the target nodes are
 /// selected, and then, each validator for each constraint is applied.
 pub trait ShaclProcessor<S: NeighsRDF + Debug> {
-    fn store(&self) -> &S;
-    fn runner(&self) -> &dyn Engine<S>;
+    // fn store(&self) -> &S;
+    // fn runner(&mut self) -> &mut dyn Engine<S>;
 
     /// Executes the Validation of the provided Graph, in any of the supported
     /// formats, against the shapes graph passed as an argument. As a result,
@@ -49,24 +48,28 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug> {
     /// # Arguments
     ///
     /// * `shapes_graph` - A compiled SHACL shapes graph
-    fn validate(&self, shapes_graph: &SchemaIR) -> Result<ValidationReport, Box<ValidateError>> {
-        // we initialize the validation report to empty
-        let mut validation_results = Vec::new();
+    fn validate(&mut self, shapes_graph: &SchemaIR)
+    -> Result<ValidationReport, Box<ValidateError>>; /*  {
+    // we initialize the validation report to empty
+    let mut validation_results = Vec::new();
+    let store = self.store();
+    let runner = self.runner();
 
-        // for each shape in the schema that has at least one target
-        for (_, shape) in shapes_graph.iter_with_targets() {
-            tracing::debug!("ShaclProcessor.validate with shape {}", shape.id());
-            let results = shape.validate(self.store(), self.runner(), None, Some(shape))?;
-            validation_results.extend(results);
-        }
-
-        // return the possibly empty validation report
-        Ok(ValidationReport::new()
-            .with_results(validation_results)
-            .with_prefixmap(shapes_graph.prefix_map()))
+    // for each shape in the schema that has at least rust-analyzer-diagnostics-view:/diagnostic%20message%20[17]?17#file:///home/labra/src/rust/rudof/shacl_validation/src/shacl_processor.rsone target
+    for (_, shape) in shapes_graph.iter_with_targets() {
+    tracing::debug!("ShaclProcessor.validate with shape {}", shape.id());
+    let results = shape.validate(store, runner, None, Some(shape), shapes_graph)?;
+    validation_results.extend(results);
     }
+
+    // return the possibly empty validation report
+    Ok(ValidationReport::new()
+    .with_results(validation_results)
+    .with_prefixmap(shapes_graph.prefix_map()))
+    } */
 }
 
+#[derive(Debug)]
 pub struct RdfDataValidation {
     data: RdfData,
     mode: ShaclValidationMode,
@@ -79,17 +82,39 @@ impl RdfDataValidation {
 }
 
 impl ShaclProcessor<RdfData> for RdfDataValidation {
-    fn store(&self) -> &RdfData {
-        &self.data
-    }
+    fn validate(
+        &mut self,
+        shapes_graph: &SchemaIR,
+    ) -> Result<ValidationReport, Box<ValidateError>> {
+        let mut validation_results = Vec::new();
+        let mut runner: Box<dyn Engine<RdfData>> = match self.mode {
+            ShaclValidationMode::Native => Box::new(NativeEngine::new()),
+            ShaclValidationMode::Sparql => Box::new(SparqlEngine::new()),
+        };
 
-    fn runner(&self) -> &dyn Engine<RdfData> {
-        match self.mode {
-            ShaclValidationMode::Native => &NativeEngine,
-            ShaclValidationMode::Sparql => &SparqlEngine,
+        for (_, shape) in shapes_graph.iter_with_targets() {
+            tracing::debug!("ShaclProcessor.validate with shape {}", shape.id());
+            let results =
+                shape.validate(&self.data, &mut (*runner), None, Some(shape), shapes_graph)?;
+            validation_results.extend(results);
         }
+
+        // return the possibly empty validation report
+        Ok(ValidationReport::new()
+            .with_results(validation_results)
+            .with_prefixmap(shapes_graph.prefix_map()))
     }
 }
+/*  fn store(&self) -> &RdfData {
+    &self.data
+}
+
+fn runner(&mut self) -> &mut dyn Engine<RdfData> {
+    match self.mode {
+        ShaclValidationMode::Native => &mut self.native_engine,
+        ShaclValidationMode::Sparql => &mut SparqlEngine,
+    }
+} */
 
 /// The In-Memory Graph Validation algorithm.
 ///
@@ -102,8 +127,8 @@ impl ShaclProcessor<RdfData> for RdfDataValidation {
 /// use shacl_validation::store::ShaclDataManager;
 /// use srdf::RDFFormat;
 ///
-/// let graph_validation = GraphValidation::new(
-///     Path::new("../examples/book_conformant.ttl"), // example graph (refer to the examples folder)
+/// let mut graph_validation = GraphValidation::from_path(
+///     "../examples/book_conformant.ttl", // example graph (refer to the examples folder)
 ///     RDFFormat::Turtle, // serialization format of the graph
 ///     None, // no base is defined
 ///     ShaclValidationMode::Native, // use the Native mode (performance)
@@ -145,20 +170,20 @@ impl GraphValidation {
     /// use shacl_validation::shacl_processor::ShaclProcessor;
     /// use srdf::RDFFormat;
     ///
-    /// let graph_validation = GraphValidation::new(
-    ///     Path::new("../examples/book_conformant.ttl"), // example graph (refer to the examples folder)
+    /// let graph_validation = GraphValidation::from_path(
+    ///     "../examples/book_conformant.ttl", // example graph (refer to the examples folder)
     ///     RDFFormat::Turtle, // serialization format of the graph
     ///     None, // no base is defined
     ///     ShaclValidationMode::Native, // use the Native mode (performance)
     /// );
     /// ```
-    pub fn from_path(
-        data: &Path,
+    pub fn from_path<P: AsRef<Path>>(
+        data: P,
         data_format: RDFFormat,
         base: Option<&str>,
         mode: ShaclValidationMode,
     ) -> Result<Self, Box<ValidateError>> {
-        let store = Graph::from_path(data, data_format, base)?;
+        let store = Graph::from_path(data.as_ref(), data_format, base)?;
         Ok(GraphValidation { store, mode })
     }
 
@@ -168,16 +193,38 @@ impl GraphValidation {
 }
 
 impl ShaclProcessor<RdfData> for GraphValidation {
-    fn store(&self) -> &RdfData {
+    fn validate(
+        &mut self,
+        shapes_graph: &SchemaIR,
+    ) -> Result<ValidationReport, Box<ValidateError>> {
+        let mut validation_results = Vec::new();
+        let store = self.store.store();
+        let mut runner: Box<dyn Engine<RdfData>> = match self.mode {
+            ShaclValidationMode::Native => Box::new(NativeEngine::new()),
+            ShaclValidationMode::Sparql => Box::new(SparqlEngine::new()),
+        };
+
+        for (_, shape) in shapes_graph.iter_with_targets() {
+            tracing::debug!("ShaclProcessor.validate with shape {}", shape.id());
+            let results = shape.validate(store, &mut (*runner), None, Some(shape), shapes_graph)?;
+            validation_results.extend(results);
+        }
+
+        // return the possibly empty validation report
+        Ok(ValidationReport::new()
+            .with_results(validation_results)
+            .with_prefixmap(shapes_graph.prefix_map()))
+    }
+    /*fn store(&self) -> &RdfData {
         self.store.store()
     }
 
-    fn runner(&self) -> &dyn Engine<RdfData> {
+    fn runner(&self) -> &mut dyn Engine<RdfData> {
         match self.mode {
-            ShaclValidationMode::Native => &NativeEngine,
-            ShaclValidationMode::Sparql => &SparqlEngine,
+            ShaclValidationMode::Native => &mut NativeEngine,
+            ShaclValidationMode::Sparql => &mut SparqlEngine,
         }
-    }
+    }*/
 }
 
 /// The Endpoint Graph Validation algorithm.
@@ -208,7 +255,31 @@ impl EndpointValidation {
 }
 
 impl ShaclProcessor<SRDFSparql> for EndpointValidation {
-    fn store(&self) -> &SRDFSparql {
+    fn validate(
+        &mut self,
+        shapes_graph: &SchemaIR,
+    ) -> Result<ValidationReport, Box<ValidateError>> {
+        // we initialize the validation report to empty
+        let mut validation_results = Vec::new();
+        let store = self.store.store();
+        let mut runner: Box<dyn Engine<SRDFSparql>> = match self.mode {
+            ShaclValidationMode::Native => Box::new(NativeEngine::new()),
+            ShaclValidationMode::Sparql => Box::new(SparqlEngine::new()),
+        };
+
+        // for each shape in the schema that has at least rust-analyzer-diagnostics-view:/diagnostic%20message%20[17]?17#file:///home/labra/src/rust/rudof/shacl_validation/src/shacl_processor.rsone target
+        for (_, shape) in shapes_graph.iter_with_targets() {
+            tracing::debug!("ShaclProcessor.validate with shape {}", shape.id());
+            let results = shape.validate(store, &mut (*runner), None, Some(shape), shapes_graph)?;
+            validation_results.extend(results);
+        }
+
+        // return the possibly empty validation report
+        Ok(ValidationReport::new()
+            .with_results(validation_results)
+            .with_prefixmap(shapes_graph.prefix_map()))
+    }
+    /*fn store(&self) -> &SRDFSparql {
         self.store.store()
     }
 
@@ -217,5 +288,5 @@ impl ShaclProcessor<SRDFSparql> for EndpointValidation {
             ShaclValidationMode::Native => &NativeEngine,
             ShaclValidationMode::Sparql => &SparqlEngine,
         }
-    }
+    }*/
 }

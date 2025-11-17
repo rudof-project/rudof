@@ -21,7 +21,8 @@ pub fn run_shapemap(
     let rudof_config = RudofConfig::new()?;
     let mut rudof = Rudof::new(&rudof_config)?;
     let shapemap_format = shapemap_format_convert(shapemap_format);
-    rudof.read_shapemap(input.open_read(None, "ShapeMap")?, &shapemap_format)?;
+    let reader = input.open_read(None, "ShapeMap")?;
+    rudof.read_shapemap(reader, input.source_name().as_str(), &shapemap_format)?;
     let result_format = shapemap_format_convert(result_format);
     let formatter = match color {
         ColorSupport::WithColor => ShapeMapFormatter::default(),

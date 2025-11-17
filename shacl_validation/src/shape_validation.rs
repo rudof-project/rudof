@@ -1,3 +1,4 @@
+use crate::constraints::get_shape_from_idx;
 use crate::focus_nodes::FocusNodes;
 use crate::shacl_engine::engine::Engine;
 use crate::validate_error::ValidateError;
@@ -7,10 +8,10 @@ use iri_s::IriS;
 use shacl_ast::shacl_vocab::{
     sh_closed_constraint_component, sh_reifier_shape_constraint_component,
 };
-use shacl_ir::compiled::node_shape::NodeShapeIR;
 use shacl_ir::compiled::property_shape::PropertyShapeIR;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::reifier_info::ReifierInfo;
+use shacl_ir::{compiled::node_shape::NodeShapeIR, schema_ir::SchemaIR};
 use srdf::{NeighsRDF, Object, Rdf, SHACLPath, Triple};
 use std::{collections::HashSet, fmt::Debug};
 use tracing::trace;
@@ -20,9 +21,10 @@ pub trait Validate<S: Rdf> {
     fn validate(
         &self,
         store: &S,
-        runner: &dyn Engine<S>,
+        runner: &mut dyn Engine<S>,
         targets: Option<&FocusNodes<S>>,
         source_shape: Option<&ShapeIR>,
+        shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, Box<ValidateError>>;
 }
 
@@ -30,9 +32,10 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
     fn validate(
         &self,
         store: &S,
-        runner: &dyn Engine<S>,
+        runner: &mut dyn Engine<S>,
         targets: Option<&FocusNodes<S>>,
         source_shape: Option<&ShapeIR>,
+        shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, Box<ValidateError>> {
         trace!("Shape.validate with shape {}", self.id());
 
@@ -54,26 +57,47 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
         trace!("Value nodes for shape {}: {value_nodes}", self.id());
 
         // 3. Check each of the components
-        let component_validation_results = self.components().iter().flat_map(move |component| {
-            runner.evaluate(
+        let mut component_validation_results = Vec::new();
+        for component in self.components().iter() {
+            let results = runner.evaluate(
                 store,
                 self,
                 component,
                 &value_nodes,
                 source_shape,
                 self.path(),
-            )
-        });
+                shapes_graph,
+            )?;
+            trace!(
+                "Results for component {component}: with value nodes {value_nodes}\n{}\nend results",
+                results
+                    .iter()
+                    .map(|r| r.to_string())
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            );
+            component_validation_results.extend(results);
+        }
 
         // After validating the constraints that are defined in the current
         //    Shape, it is important to also perform the validation over those
         //    nested PropertyShapes.
         //  The validation needs to occur over the focus_nodes
         //    that have been computed for the current shape
-        let property_shapes_validation_results =
-            self.property_shapes().iter().flat_map(|prop_shape| {
-                prop_shape.validate(store, runner, Some(&focus_nodes), Some(self))
-            });
+        let mut property_shapes_validation_results = Vec::new();
+        for prop_shape in self.property_shapes().iter() {
+            let shape = shapes_graph
+                .get_shape_from_idx(prop_shape)
+                .unwrap_or_else(|| {
+                    panic!(
+                        "Internal error: Property shape for idx: {} not found in schema",
+                        prop_shape
+                    )
+                });
+            let results =
+                shape.validate(store, runner, Some(&focus_nodes), Some(self), shapes_graph)?;
+            property_shapes_validation_results.extend(results);
+        }
 
         // Check if there are extra properties but the shape is closed
         let mut closed_validation_results = Vec::new();
@@ -121,6 +145,7 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
                 source_shape,
                 &reifier_info,
                 &focus_nodes,
+                shapes_graph,
             )?
         } else {
             Vec::new()
@@ -128,10 +153,10 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
 
         // Collect all validation results
         let validation_results = component_validation_results
+            .into_iter()
             .chain(property_shapes_validation_results)
-            .chain(vec![closed_validation_results])
-            .chain(vec![reification_results])
-            .flatten()
+            .chain(closed_validation_results)
+            .chain(reification_results)
             .collect();
 
         Ok(validation_results)
@@ -141,10 +166,11 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
 fn validate_reifiers<S>(
     shape: &ShapeIR,
     store: &S,
-    runner: &dyn Engine<S>,
+    runner: &mut dyn Engine<S>,
     source_shape: Option<&ShapeIR>,
     reifier_info: &ReifierInfo,
     focus_nodes: &FocusNodes<S>,
+    shapes_graph: &SchemaIR,
 ) -> Result<Vec<ValidationResult>, Box<ValidateError>>
 where
     S: NeighsRDF + Debug,
@@ -195,11 +221,19 @@ where
                     .iter()
                     .map(|subj| S::subject_as_term(subj))
                     .collect::<HashSet<_>>();
+                let reifier_shape =
+                    get_shape_from_idx(shapes_graph, reifier_shape).map_err(|e| {
+                        ValidateError::ShapeNotFound {
+                            shape_idx: *reifier_shape,
+                            error: e.to_string(),
+                        }
+                    })?;
                 let vr_iter = reifier_shape.validate(
                     store,
                     runner,
                     Some(&FocusNodes::from_iter(reifier_nodes)),
                     Some(shape),
+                    shapes_graph,
                 )?;
                 results.extend(vr_iter.into_iter());
             }

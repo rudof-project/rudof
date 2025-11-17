@@ -20,6 +20,9 @@ pub struct Node {
 }
 
 impl Node {
+    pub fn new(object: Object) -> Self {
+        Self { node: object }
+    }
     /// Creates a node from an [`ÌriS`]
     pub fn iri(iri: IriS) -> Node {
         Node {

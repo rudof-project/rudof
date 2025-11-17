@@ -1,8 +1,9 @@
-use crate::shapemap::{NodeSelector, ShapeSelector};
-use crate::{ShapeExprLabel, object_value::ObjectValue};
+use crate::ShapeExprLabel;
+use crate::shapemap::{NodeSelector, ShapeSelector, ShapemapError};
 use serde::Serialize;
-use srdf::NeighsRDF;
+use srdf::QueryRDF;
 use std::iter::once;
+use tracing::info;
 
 /// Combines a [`NodeSelector`] with a [`ShapeExprLabel`]
 #[derive(Debug, PartialEq, Clone, Serialize)]
@@ -19,17 +20,20 @@ impl Association {
         }
     }
 
-    pub fn iter_node_shape<S>(
-        &self,
-        rdf: &S,
-    ) -> impl Iterator<Item = (&ObjectValue, &ShapeExprLabel)>
+    pub fn iter_node_shape<'a, S>(
+        &'a self,
+        rdf: &'a S,
+    ) -> Result<impl Iterator<Item = (S::Term, &'a ShapeExprLabel)>, ShapemapError>
     where
-        S: NeighsRDF,
+        S: QueryRDF,
     {
-        self.node_selector.iter_node(rdf).flat_map(move |node| {
+        let nodes = self.node_selector.nodes(rdf)?;
+        info!("Association nodes: {:?}", nodes);
+        let iter = nodes.into_iter().flat_map(move |node| {
             self.shape_selector
                 .iter_shape()
-                .flat_map(move |label| once((node, label)))
-        })
+                .flat_map(move |label| once((node.clone(), label)))
+        });
+        Ok(iter)
     }
 }

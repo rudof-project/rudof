@@ -10,7 +10,7 @@ use serde::{
 use srdf::SLiteral;
 use srdf::lang::Lang;
 use srdf::numeric_literal::NumericLiteral;
-use std::fmt;
+use std::fmt::{self, Display};
 use std::{result, str::FromStr};
 
 use crate::Node;
@@ -425,5 +425,14 @@ impl From<&ObjectValue> for Node {
     fn from(value: &ObjectValue) -> Self {
         let obj: srdf::Object = value.into();
         Node::from(obj)
+    }
+}
+
+impl Display for ObjectValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ObjectValue::IriRef(iri_ref) => write!(f, "{iri_ref}"),
+            ObjectValue::Literal(sliteral) => write!(f, "{sliteral}"),
+        }
     }
 }

@@ -2,6 +2,7 @@ use clap::ValueEnum;
 use iri_s::mime_type::MimeType;
 use srdf::RDFFormat;
 use std::fmt::{Display, Formatter};
+use thiserror::Error;
 
 // Represents the various RDF data serialization formats
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
@@ -14,21 +15,33 @@ pub enum DataFormat {
     N3,
     NQuads,
     JsonLd,
+    PG,
 }
 
 // Converts a `DataFormat` into the corresponding `RDFFormat` from the `srdf` crate.
-impl From<DataFormat> for RDFFormat {
-    fn from(val: DataFormat) -> Self {
-        match val {
-            DataFormat::Turtle => RDFFormat::Turtle,
-            DataFormat::NTriples => RDFFormat::NTriples,
-            DataFormat::RDFXML => RDFFormat::RDFXML,
-            DataFormat::TriG => RDFFormat::TriG,
-            DataFormat::N3 => RDFFormat::N3,
-            DataFormat::NQuads => RDFFormat::NQuads,
-            DataFormat::JsonLd => RDFFormat::JsonLd,
+impl TryFrom<DataFormat> for RDFFormat {
+    type Error = DataFormatError;
+
+    fn try_from(value: DataFormat) -> Result<Self, Self::Error> {
+        match value {
+            DataFormat::Turtle => Ok(RDFFormat::Turtle),
+            DataFormat::NTriples => Ok(RDFFormat::NTriples),
+            DataFormat::RDFXML => Ok(RDFFormat::RDFXML),
+            DataFormat::TriG => Ok(RDFFormat::TriG),
+            DataFormat::N3 => Ok(RDFFormat::N3),
+            DataFormat::NQuads => Ok(RDFFormat::NQuads),
+            DataFormat::JsonLd => Ok(RDFFormat::JsonLd),
+            DataFormat::PG => Err(DataFormatError::NonRdfFormat {
+                format: value.to_string(),
+            }),
         }
     }
+}
+
+#[derive(Error, Clone, Debug)]
+pub enum DataFormatError {
+    #[error("Non RDF format: {format}")]
+    NonRdfFormat { format: String },
 }
 
 // Converts an `RDFFormat` from the `srdf` crate into the corresponding `DataFormat`.
@@ -57,6 +70,7 @@ impl Display for DataFormat {
             DataFormat::N3 => write!(dest, "n3"),
             DataFormat::NQuads => write!(dest, "nquads"),
             DataFormat::JsonLd => write!(dest, "jsonld"),
+            DataFormat::PG => write!(dest, "pg"),
         }
     }
 }
@@ -72,6 +86,7 @@ impl MimeType for DataFormat {
             DataFormat::N3 => "text/n3",
             DataFormat::NQuads => "application/n-quads",
             DataFormat::JsonLd => "application/ld+json",
+            DataFormat::PG => "application/pg",
         }
     }
 }

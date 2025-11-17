@@ -7,6 +7,50 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.1.142
+## Added
+- Support for SPARQL extension of shapemaps and node selectors
+- Support for triple patterns in shapemaps and node selectors
+
+## v0.1.141
+## Added
+- `node` information accepts a new parameter `outgoing_depth` to declare the number of neighbours from a node that are shown
+
+## Fixed
+- Improved the error messages when there is no PLANTUML variable declaration
+
+## v0.1.140
+### Added
+- Methods to return the list of validation results in SHACL and to get information from those results
+
+## v0.1.139
+### Added
+- Visualization of subject, predicate and objects in triple terms now have customizable colors and styles solving issue #381
+
+## v0.1.138
+### Added
+- Added experimental feature to support Property Graphs and Property graph schemas (PGSchema)
+
+### Fixed
+- Recovered the option to get tracing information from RUST_LOG variable
+- Improved the visualization of SHACL validation results which were not presenting the path in property shapes
+
+## v0.1.137
+### Added
+- More documentation in MCP server
+- First support for recursive shapes in SHACL. At this moment, the compiler detects recursive SHACL and classifies in stratified schemas (non-negative cycles) and non-stratified schemas (negative cycles) whose semantics can be more difficult to implement. It also does a first implementation of recursive schemas, which is not yet well tested. This can solve issue #238
+- Issue solved: #358 MCP server for ShEx validation, progress toward: #325
+
+### Fixed
+
+### Changed
+- GraphValidation::from_path now takes as argument an `AsRef<Path>`
+- The SHACL internal representation now has a dependency graph
+
+## v0.1.137
+- Improved information about errors when reading SHACL shapes graphs
+- Added checking on recursive shapes
+
 ## v0.1.136
 ### Added
 - Documentation to MCP server

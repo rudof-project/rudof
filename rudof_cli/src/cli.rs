@@ -1,3 +1,4 @@
+use crate::PgSchemaFormat;
 use crate::dctap_format::DCTapFormat;
 use crate::result_compare_format::ResultCompareFormat;
 use crate::{
@@ -20,13 +21,10 @@ use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about)]
-// #[command(name = "rudof")]
-// #[command(author = "Jose Emilio Labra Gayo <labra@uniovi.es>")]
-// #[command(version = "0.1")]
 #[command(
     arg_required_else_help = true,
     long_about = "\
-A tool to process and validate RDF data using shapes, and convert between different RDF data models"
+A tool to process graph data (RDF and Property Graphs) using schemas (ShEx, SHACL, DCTAP, etc.)"
 )]
 pub struct Cli {
     #[command(subcommand)]
@@ -141,7 +139,7 @@ pub enum Command {
             long = "result-format",
             ignore_case = true,
             value_name = "FORMAT",
-            help = "Result schema format, default = ShExJ",
+            help = "Result schema format",
             default_value_t = ShExFormat::ShExJ
         )]
         result_schema_format: ShExFormat,
@@ -157,7 +155,7 @@ pub enum Command {
         #[arg(
             short = 't',
             value_name = "BOOL",
-            help = "SHow processing time",
+            help = "Show processing time",
             long = "show-time"
         )]
         show_time: Option<bool>,
@@ -206,6 +204,74 @@ pub enum Command {
             help = "Compile Schema to Internal representation"
         )]
         compile: Option<bool>,
+
+        #[arg(
+            long = "force-overwrite",
+            help = "Force overwrite to output file if it already exists",
+            default_value_t = false
+        )]
+        force_overwrite: bool,
+
+        /// Config file path, if unset it assumes default config
+        #[arg(
+            short = 'c',
+            long = "config-file",
+            value_name = "FILE",
+            help = "Config file name"
+        )]
+        config: Option<PathBuf>,
+    },
+
+    /// Show information about Property Graph Schemas
+    Pgschema {
+        #[arg(
+            short = 's',
+            long = "schema",
+            value_name = "INPUT",
+            help = "Schema, FILE, URI or - for stdin"
+        )]
+        schema: InputSpec,
+
+        #[arg(
+            short = 'f',
+            long = "format",
+            value_name = "FORMAT",
+            ignore_case = true,
+            help = "PGSchema format",
+            default_value_t = PgSchemaFormat::PgSchemaC,
+            value_enum
+        )]
+        schema_format: PgSchemaFormat,
+
+        #[arg(
+            short = 'r',
+            long = "result-format",
+            ignore_case = true,
+            value_name = "FORMAT",
+            help = "Result schema format",
+            default_value_t = PgSchemaFormat::PgSchemaC,
+            value_enum
+        )]
+        result_schema_format: PgSchemaFormat,
+
+        #[arg(
+            short = 't',
+            value_name = "BOOL",
+            help = "Show processing time",
+            long = "show-time"
+        )]
+        show_time: Option<bool>,
+
+        #[arg(long = "show-schema", value_name = "BOOL", help = "Show schema")]
+        show_schema: Option<bool>,
+
+        #[arg(
+            short = 'o',
+            long = "output-file",
+            value_name = "FILE",
+            help = "Output file name, default = terminal"
+        )]
+        output: Option<PathBuf>,
 
         #[arg(
             long = "force-overwrite",
@@ -789,6 +855,15 @@ pub enum Command {
             help = "Output file name, default = terminal"
         )]
         output: Option<PathBuf>,
+
+        #[arg(
+            short = 'd',
+            long = "depth",
+            value_name = "NUMBER",
+            help = "outgoing number of levels, default = 1",
+            default_value_t = 1
+        )]
+        depth: usize,
 
         #[arg(
             short = 'c',

@@ -18,15 +18,21 @@ pub fn run_service(
     config: &RudofConfig,
     force_overwrite: bool,
 ) -> Result<()> {
-    let reader = input.open_read(Some(data_format.mime_type()), "Service")?;
+    let mut reader = input.open_read(Some(data_format.mime_type()), "Service")?;
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
-    let rdf_format = data_format2rdf_format(data_format);
+    let rdf_format = data_format2rdf_format(data_format)?;
     let service_config = config.service_config();
     let base = service_config.base.as_ref().map(|i| i.as_str());
     let mut rudof = Rudof::new(config)?;
     let reader_mode = reader_mode.into();
 
-    rudof.read_service_description(reader, &rdf_format, base, &reader_mode)?;
+    rudof.read_service_description(
+        &mut reader,
+        input.source_name().as_str(),
+        &rdf_format,
+        base,
+        &reader_mode,
+    )?;
     match result_format {
         ResultServiceFormat::Internal => {
             rudof

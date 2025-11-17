@@ -24,6 +24,8 @@ use rudof_cli::node::run_node;
 use rudof_cli::query::run_query;
 use rudof_cli::rdf_config::run_rdf_config;
 use rudof_cli::run_compare;
+use rudof_cli::run_pgschema;
+use rudof_cli::run_validate_pgschema;
 use rudof_cli::{
     GenerateSchemaFormat, ValidationMode, run_convert, run_dctap, run_service, run_shacl,
     run_shapemap, run_shex, run_validate_shacl, run_validate_shex,
@@ -32,9 +34,11 @@ use rudof_lib::{
     InputSpec, RudofConfig, data_format::DataFormat, shex_format::ShExFormat as CliShExFormat,
     sort_by_result_shape_map::SortByResultShapeMap,
 };
+use std::env;
 use std::io;
 use std::path::PathBuf;
 use std::result::Result::Ok;
+// use tracing::level_filters::LevelFilter;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::{filter::EnvFilter, fmt, reload};
 
@@ -42,6 +46,13 @@ use tracing_subscriber::{filter::EnvFilter, fmt, reload};
 fn main() -> Result<()> {
     // Load environment variables from `.env`:
     clientele::dotenv().ok();
+
+    unsafe {
+        // env::set_var("RUST_BACKTRACE", "1");
+
+        // Disable rustemo tracing output which is very verbose
+        env::set_var("RUSTEMO_NOTRACE", "1");
+    }
 
     let fmt_layer = fmt::layer()
         .with_file(true)
@@ -51,19 +62,19 @@ fn main() -> Result<()> {
         .without_time();
 
     // Attempts to get the value of RUST_LOG which can be info, debug, trace, If unset, it uses "info"
-    let initial_filter = EnvFilter::try_from_default_env()
+    let env_filter = EnvFilter::try_from_default_env()
         .or_else(|_| EnvFilter::try_new("info"))
         .unwrap();
-
-    // Create a reloadable layer with the filter for dynamic log level changes
-    let (filter_layer, reload_handle) = reload::Layer::new(initial_filter);
+    /*let env_filter = EnvFilter::builder()
+    .with_default_directive(LevelFilter::INFO.into())
+    .parse_lossy("rudof=info,shacl_validation=info,shacl_ir=debug,hyper=off,reqwest=off");*/
 
     tracing_subscriber::registry()
-        .with(filter_layer)
+        .with(env_filter.clone())
         .with(fmt_layer)
         .init();
 
-    tracing::trace!("rudof running...");
+    tracing::trace!("rudof running with tracing filter {}", env_filter);
 
     let args = clientele::args_os()?;
     let cli = Cli::parse_from(args);
@@ -270,6 +281,16 @@ fn main() -> Result<()> {
                         *force_overwrite,
                     )
                 }
+                ValidationMode::PGSchema => run_validate_pgschema(
+                    schema,
+                    data,
+                    data_format,
+                    shapemap,
+                    shapemap_format,
+                    output,
+                    &config,
+                    *force_overwrite,
+                ),
             }
         }
         Some(Command::ShexValidate {
@@ -383,6 +404,7 @@ fn main() -> Result<()> {
             show_node_mode,
             show_hyperlinks,
             output,
+            depth,
             config,
             force_overwrite,
         }) => {
@@ -395,6 +417,7 @@ fn main() -> Result<()> {
                 &reader_mode.into(),
                 node,
                 predicates,
+                *depth,
                 show_node_mode,
                 show_hyperlinks,
                 cli.debug,
@@ -464,6 +487,26 @@ fn main() -> Result<()> {
                 *force_overwrite,
             )?;
             Ok(())
+        }
+        Some(Command::Pgschema {
+            schema,
+            schema_format,
+            output,
+            result_schema_format,
+            config,
+            show_time,
+            show_schema,
+            force_overwrite,
+        }) => {
+            let config = get_config(config)?;
+            run_pgschema(
+                schema,
+                schema_format,
+                output,
+                result_schema_format,
+                *force_overwrite,
+                &config,
+            )
         }
         Some(Command::Convert {
             file,

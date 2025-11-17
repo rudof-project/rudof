@@ -4,12 +4,14 @@ use crate::constraints::constraint_error::ConstraintError;
 use crate::helpers::constraint::validate_ask_with;
 use crate::helpers::constraint::validate_with;
 use crate::iteration_strategy::ValueNodeIteration;
+use crate::shacl_engine::Engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::MinExclusive;
 use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::schema_ir::SchemaIR;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::SHACLPath;
@@ -21,9 +23,11 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinExclusive {
         component: &ComponentIR,
         shape: &ShapeIR,
         _store: &S,
+        _engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let min_exclusive = |node: &S::Term| match S::term_as_sliteral(node) {
             Ok(lit) => lit
@@ -54,6 +58,7 @@ impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MinExclusive {
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let min_exclusive_value = self.min_exclusive().clone();
 
@@ -110,7 +115,8 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 :ko3 a :Node; :p "other"^^xsd:double .
 "#;
         let rdf = RdfData::from_str(graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
-        let validator = RdfDataValidation::from_rdf_data(rdf.clone(), ShaclValidationMode::Native);
+        let mut validator =
+            RdfDataValidation::from_rdf_data(rdf.clone(), ShaclValidationMode::Native);
         let schema = parse_shacl_rdf(rdf).unwrap();
         let schema_ir = schema.try_into().unwrap();
         let report = validator.validate(&schema_ir).unwrap();

@@ -1,0 +1,3 @@
+(n1: Student { name: "Alice", age: 23 });
+(n2_wrong: Student { name: "Bob", age: 12 });
+(n3_wrong: Student { name: "Carol", age: "unknown" })

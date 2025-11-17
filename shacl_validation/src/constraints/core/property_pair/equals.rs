@@ -3,11 +3,13 @@ use crate::constraints::SparqlValidator;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::helpers::constraint::validate_with_focus;
 use crate::iteration_strategy::ValueNodeIteration;
+use crate::shacl_engine::engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::Equals;
 use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::schema_ir::SchemaIR;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::Rdf;
@@ -22,9 +24,11 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for Equals {
         component: &ComponentIR,
         shape: &ShapeIR,
         store: &R,
+        _engine: &mut dyn engine::Engine<R>,
         value_nodes: &ValueNodes<R>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let check = |focus: &R::Term, value_node: &R::Term| {
             let subject: R::Subject = <R as Rdf>::term_as_subject(focus).unwrap();
@@ -85,6 +89,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for Equals {
         _value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         _maybe_path: Option<SHACLPath>,
+        _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented("Equals".to_string()))
     }

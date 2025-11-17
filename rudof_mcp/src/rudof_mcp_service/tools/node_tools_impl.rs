@@ -95,53 +95,33 @@ pub async fn node_info_impl(
     let output_str = String::from_utf8(output_bytes)
         .map_err(|e| rdf_error("converting to UTF-8", e.to_string()))?;
 
-    let outgoing_data: Vec<NodePredicateObjects> = node_info
-        .outgoing
-        .iter()
-        .map(|(predicate_iri, objects_vec)| NodePredicateObjects {
-            predicate: predicate_iri.to_string(),
-            objects: objects_vec.iter().map(|term| term.to_string()).collect(),
-        })
-        .collect();
-
-    let incoming_data: Vec<NodePredicateSubjects> = node_info
-        .incoming
-        .iter()
-        .map(|(predicate_iri, subjects_vec)| NodePredicateSubjects {
-            predicate: predicate_iri.to_string(),
-            subjects: subjects_vec
-                .iter()
-                .map(|subject| subject.to_string())
-                .collect(),
-        })
-        .collect();
-
-    // Calculate metadata
-    let outgoing_count = outgoing_data.len();
-    let incoming_count = incoming_data.len();
-    let total_outgoing_objects: usize = outgoing_data.iter().map(|p| p.objects.len()).sum();
-    let total_incoming_subjects: usize = incoming_data.iter().map(|p| p.subjects.len()).sum();
-
     let response = NodeInfoResponse {
         subject: node_info.subject_qualified.clone(),
-        outgoing: outgoing_data,
-        incoming: incoming_data,
-        outgoing_count,
-        incoming_count,
-        total_outgoing_objects,
-        total_incoming_subjects,
+        outgoing: node_info
+            .outgoing
+            .iter()
+            .map(|(predicate_iri, objects_vec)| NodePredicateObjects {
+                predicate: predicate_iri.to_string(),
+                objects: objects_vec
+                    .iter()
+                    .map(
+                        |term| term.to_string(), // TODO: Review this
+                    )
+                    .collect(),
+            })
+            .collect(),
+        incoming: node_info
+            .incoming
+            .iter()
+            .map(|(predicate_iri, subjects_vec)| NodePredicateSubjects {
+                predicate: predicate_iri.to_string(),
+                subjects: subjects_vec
+                    .iter()
+                    .map(|subject| subject.to_string())
+                    .collect(),
+            })
+            .collect(),
     };
-
-    tracing::info!(
-        node = %node,
-        subject = %node_info.subject_qualified,
-        outgoing_predicates = outgoing_count,
-        incoming_predicates = incoming_count,
-        total_outgoing_objects,
-        total_incoming_subjects,
-        mode = mode_str,
-        "Retrieved node information"
-    );
 
     let structured = serde_json::to_value(&response).map_err(|e| {
         internal_error(

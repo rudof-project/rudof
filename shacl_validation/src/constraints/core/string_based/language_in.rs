@@ -1,6 +1,7 @@
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::LanguageIn;
 use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::schema_ir::SchemaIR;
 use srdf::Literal;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
@@ -14,7 +15,6 @@ use crate::constraints::constraint_error::ConstraintError;
 use crate::helpers::constraint::validate_with;
 use crate::iteration_strategy::ValueNodeIteration;
 use crate::shacl_engine::Engine;
-use crate::shacl_engine::native::NativeEngine;
 use crate::shacl_engine::sparql::SparqlEngine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
@@ -25,10 +25,11 @@ impl<S: NeighsRDF + Debug> Validator<S> for LanguageIn {
         component: &ComponentIR,
         shape: &ShapeIR,
         _: &S,
-        _: impl Engine<S>,
+        _: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
         _source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let language_in = |value_node: &S::Term| {
             if let Ok(literal) = S::term_as_literal(value_node) {
@@ -41,8 +42,12 @@ impl<S: NeighsRDF + Debug> Validator<S> for LanguageIn {
         };
 
         let message = format!(
-            "LanguageIn constraint not satisfied. Expected one of: {:?}",
+            "LanguageIn constraint not satisfied. Expected one of: {}",
             self.langs()
+                .iter()
+                .map(|l| l.as_str())
+                .collect::<Vec<&str>>()
+                .join(", ")
         );
         validate_with(
             component,
@@ -62,18 +67,21 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LanguageIn {
         component: &ComponentIR,
         shape: &ShapeIR,
         store: &S,
+        engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
             shape,
             store,
-            NativeEngine,
+            engine,
             value_nodes,
             source_shape,
             maybe_path,
+            shapes_graph,
         )
     }
 }
@@ -87,15 +95,17 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for LanguageI
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&ShapeIR>,
         maybe_path: Option<SHACLPath>,
+        shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
             shape,
             store,
-            SparqlEngine,
+            &mut SparqlEngine::new(),
             value_nodes,
             source_shape,
             maybe_path,
+            shapes_graph,
         )
     }
 }

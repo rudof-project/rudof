@@ -1,0 +1,289 @@
+Pgs:
+    CreateType+[SEMICOLON] ;
+
+CreateType: 
+    CreateNodeType | CreateEdgeType | CreateGraphType ;
+
+CreateNodeType:
+    CREATE NODE TYPE NodeType ;
+
+CreateEdgeType:
+    CREATE EDGE TYPE EdgeType ;
+
+CreateGraphType:
+    CREATE GRAPH TYPE GraphType ;
+
+NodeType:
+    "(" TypeName? LabelPropertySpec ")" ;
+
+EdgeType:
+    source=EndpointType "-[" TypeName? LabelPropertySpec "]->" target=EndpointType ;
+
+GraphType:
+    TypeName GraphTypeMode? "{" GraphTypeElements? "}" ;
+
+GraphTypeImports:
+    "IMPORTS" Imports ;
+
+Imports:
+    TypeName+[COMMA] ;
+
+GraphTypeMode:
+    STRICT | LOOSE ;
+
+GraphTypeElements: 
+    TypeName | NodeType | EdgeType ;
+
+TypeName:
+    IDENTIFIER ;  
+
+EndpointType:
+    "(" LabelPropertySpec ")" ;
+
+LabelPropertySpec:
+    LabelSpec? PropertySpec? ;
+
+LabelSpec:
+    ":" Labels ;
+
+Labels: 
+    SingleLabel MoreLabels? 
+    ;
+
+MoreLabels: 
+    AMPERSAND SingleLabel MoreLabels? {AndLabels}
+  | BAR SingleLabel MoreLabels? {OrLabels}
+  ; 
+
+SingleLabel:
+    IDENTIFIER {SingleLabel} 
+   | "@" IDENTIFIER {TypeName} ;
+
+PropertySpec:
+    OPEN_CURLY Properties CLOSE_CURLY ;
+
+Properties:
+      left=Properties "," right=Properties {EachOf, 1, left} 
+    | left=Properties "||" right=Properties {OneOf, 2, left} 
+    | '(' Properties ')' {Paren}
+    | "OPTIONAL"? Property {BaseProperty}
+    ;
+
+Property:
+    key ":" TypeSpec ;
+
+key:
+    IDENTIFIER ;
+
+TypeSpec:
+    SimpleType MoreTypes? ;
+
+MoreTypes:
+    AMPERSAND SimpleType MoreTypes? {IntersectionType}
+  | BAR SimpleType MoreTypes?  {UnionType}
+  ;
+
+SimpleType: STRING_NAME Card? Check? {StringSpec}
+    | INTEGER_NAME Card? Check? {Integer}
+    | DATE_NAME Card? Check? {Date}
+    | BOOL_NAME Card? Check? {Bool}
+    | ANY Check? {Any}
+    | CHECK Cond {Cond}
+    ;
+
+Check: CHECK Cond ;
+
+
+Cond: TRUE 
+    | FALSE 
+    | GT SingleValue  {GT}
+    | GE SingleValue  {GE}
+    | LT SingleValue {LT}
+    | LE SingleValue {LE}
+    | EQUALS SingleValue {EQ}
+    | REGEX QUOTED_STRING {Regex}
+    | left=Cond AND right=Cond {And,1,left}
+    | left=Cond OR right=Cond {OR,1,left}
+    | NOT Cond {Not}
+    | "(" Cond ")" {ParenCond}
+    ; 
+
+
+Card: 
+    "?" {Optional} 
+    | "+" {OneOrMore} 
+    | "*" {ZeroOrMore}
+    | "{" NUMBER "," Max "}" {Range} ;
+
+Max:
+    NUMBER | 
+    "*" {Star};
+
+
+SingleValue:    
+      QUOTED_STRING {StringValue}
+    | NUMBER {NumberValue}
+    | DATE QUOTED_STRING {DateValue}
+    | BOOL {BooleanValue}
+    ;
+
+BOOL:
+    TRUE | FALSE ;
+
+// This code is to handle comments
+Layout: LayoutItem*;
+LayoutItem: WS | Comment;
+Comment: '/*' Corncs '*/' | CommentLine;
+Corncs: Cornc*;
+Cornc: Comment | NotComment | WS;
+
+
+terminals
+
+// Terminals for comments
+WS: /\s+/;
+CommentLine: /\/\/.*/;
+NotComment: /((\*[^\/])|[^\s*\/]|\/[^\*])+/;
+START_COMMENT: '/*';
+END_COMMENT: '*/';
+
+IDENTIFIER:
+    /[a-zA-Z_][0-9a-zA-Z_]*/ ;
+
+SEMICOLON:
+    ";" ;
+
+CREATE:
+    "CREATE" ;
+
+NODE:
+    "NODE" ;
+
+EDGE:
+    "EDGE" ;
+
+GRAPH:
+    "GRAPH" ;
+
+TYPE:
+    "TYPE" ;
+
+OPEN_PAREN:
+    "(" ;
+
+CLOSE_PAREN:
+    ")" ;
+
+OPEN_ARROW:
+    "-[" ;
+
+CLOSE_ARROW:
+    "]->" ;
+
+OPEN_CURLY:
+    "{" ;
+
+CLOSE_CURLY:
+    "}" ;
+
+COLON:
+    ":" ;
+
+COMMA:
+    "," ;
+
+BAR:
+    "|" ;
+
+DOUBLE_BAR:
+    "||" ;
+
+
+PLUS:
+    "+" ;
+
+STAR:
+    "*" ;
+
+QUESTION:
+    "?" ;
+
+INTEGER_NAME:
+    "INTEGER" ;
+
+BOOL_NAME:
+    "BOOL" ;
+
+
+STRING_NAME:
+    "STRING" ; 
+
+DATE_NAME:
+    "DATE" ;
+
+NUMBER:
+    /\d+/ ;
+
+OPTIONAL:
+    "OPTIONAL" ;
+
+AMPERSAND:
+    "&" ;
+
+AT:
+    "@" ;
+
+CHECK:
+    "CHECK" ;
+
+TRUE:
+    "TRUE" ; 
+
+FALSE:
+    "FALSE" ;
+
+GT:
+    ">" ;
+
+LT:
+    "<" ;
+
+GE:
+    ">=" ;
+LE:
+    "<=" ;
+
+EQUALS:
+    "=" ;
+
+QUOTED_STRING: /"((\\")|[^"])*"/ ;
+
+REGEX:
+    "REGEX" ;
+
+AND:
+    "AND" ;
+
+OR:
+    "OR" ;
+
+NOT:
+    "NOT" ;
+
+ANY:
+    "ANY" ;
+
+DATE:
+    "DATE" ;
+
+STRICT:
+    "STRICT" ;
+
+LOOSE:
+    "LOOSE" ;
+
+ABSTRACT:
+    "ABSTRACT" ;
+
+IMPORTS:
+    "IMPORTS" ;

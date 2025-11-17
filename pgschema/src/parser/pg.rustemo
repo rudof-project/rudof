@@ -1,0 +1,164 @@
+Pg:
+    Declarations ;
+
+Declarations: Declaration+[SEMICOLON] ;
+
+Declaration: Node | Edge ;
+
+Node: "(" Id LabelsRecord ")" ;
+
+Edge:
+  "[" Id ":" "(" source=IDENTIFIER ")" "-[" LabelsRecord "]->" "(" target=IDENTIFIER ")" "]" ;
+
+Id:
+    IDENTIFIER ;
+
+LabelsRecord:
+    Labels? Record? ;
+
+Labels:
+    ":" IDENTIFIER+[AMPERSAND] ;
+
+Record:
+    OPEN_CURLY Properties CLOSE_CURLY ;
+
+Properties: Property+[COMMA];
+
+Property:
+    key ":" Values  ;
+
+key:
+    IDENTIFIER ;
+
+Values: SingleValue
+      | OPENSQUAREBRACKET ListValues CLOSESQUAREBRACKET {ListValue}
+      ;
+
+ListValues: SingleValue*[COMMA] ;
+
+SingleValue:    
+      QUOTED_STRING {StringValue}
+    | NUMBER {NumberValue}
+    | DATE QUOTED_STRING {DateValue}
+    | BOOL {BooleanValue}
+    ;
+
+BOOL:
+    TRUE | FALSE ;
+
+// Productions for comments  
+Layout: LayoutItem*;
+LayoutItem: WS | Comment;
+Comment: '/*' Corncs '*/' | CommentLine;
+Corncs: Cornc*;
+Cornc: Comment | NotComment | WS;
+
+terminals
+
+// Terminals for comments
+WS: /\s+/;
+CommentLine: /\/\/.*/;
+NotComment: /((\*[^\/])|[^\s*\/]|\/[^\*])+/;
+START_COMMENT: '/*';
+END_COMMENT: '*/';
+
+QUOTED_STRING: /"((\\")|[^"])*"/ ;
+
+IDENTIFIER:
+    /\w+/ ;
+
+SEMICOLON:
+    ";" ;
+
+CREATE:
+    "CREATE" ;
+
+NODE:
+    "NODE" ;
+
+EDGE:
+    "EDGE" ;
+
+GRAPH:
+    "GRAPH" ;
+
+TYPE:
+    "TYPE" ;
+
+OPEN_PAREN:
+    "(" ;
+
+CLOSE_PAREN:
+    ")" ;
+
+OPEN_ARROW:
+    "-[" ;
+
+CLOSE_ARROW:
+    "]->" ;
+
+OPEN_CURLY:
+    "{" ;
+
+CLOSE_CURLY:
+    "}" ;
+
+COLON:
+    ":" ;
+
+COMMA:
+    "," ;
+
+BAR:
+    "|" ;
+
+PLUS:
+    "+" ;
+
+STAR:
+    "*" ;
+
+QUESTION:
+    "?" ;
+
+INTEGER_NAME:
+    "INTEGER" ;
+
+STRING_NAME:
+    "STRING" ;
+
+DATE_NAME:
+    "DATE" ;
+
+NUMBER:
+    /\d+/ ;
+
+OPTIONAL:
+    "OPTIONAL" ;
+
+QUOTE:
+    '\"' ;
+
+AMPERSAND:
+    "&" ;
+
+OPENSQUAREBRACKET:
+    "[" ;
+
+CLOSESQUAREBRACKET:
+    "]" ;
+
+START_ARROW:
+    "-[" ;
+
+END_ARROW:
+    "]->" ;
+
+TRUE:
+    "TRUE" ;
+
+FALSE:
+    "FALSE" ;
+
+DATE:
+    "DATE" ;

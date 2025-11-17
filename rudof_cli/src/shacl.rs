@@ -22,6 +22,7 @@ use srdf::RDFFormat;
 use srdf::ReaderMode;
 use srdf::SRDFGraph;
 use tracing::Level;
+use tracing::debug;
 use tracing::enabled;
 use tracing::trace;
 
@@ -68,6 +69,7 @@ pub fn run_shacl(
             reader_mode,
             config,
         )?;
+        trace!("Compiling SHACL schema from shapes graph");
         rudof.compile_shacl(&ShapesGraphSource::current_schema())
     } else {
         rudof.compile_shacl(&ShapesGraphSource::current_data())
@@ -77,8 +79,8 @@ pub fn run_shacl(
     rudof.serialize_shacl(&shacl_format, &mut writer)?;
     if enabled!(Level::DEBUG) {
         match rudof.get_shacl_ir() {
-            Some(ir) => trace!("SHACL IR: {}", ir),
-            None => trace!("No SHACL IR available"),
+            Some(ir) => debug!("SHACL IR: {}", ir),
+            None => debug!("No SHACL IR available"),
         }
     }
     Ok(())
@@ -98,10 +100,16 @@ pub fn run_shacl_convert(
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     let mut rudof = Rudof::new(config)?;
     let mime_type = input_format.mime_type();
-    let reader = input.open_read(Some(mime_type), "SHACL shapes")?;
+    let mut reader = input.open_read(Some(mime_type), "SHACL shapes")?;
     let input_format = shacl_format_convert(*input_format)?;
     let base = get_base(input, config, base)?;
-    rudof.read_shacl(reader, &input_format, base.as_deref(), reader_mode)?;
+    rudof.read_shacl(
+        &mut reader,
+        &input.to_string(),
+        &input_format,
+        base.as_deref(),
+        reader_mode,
+    )?;
     let output_format = shacl_format_convert(*output_format)?;
     rudof.serialize_shacl(&output_format, &mut writer)?;
     Ok(())
@@ -116,10 +124,17 @@ pub fn add_shacl_schema_rudof(
     config: &RudofConfig,
 ) -> Result<()> {
     let mime_type = shapes_format.mime_type();
-    let reader = schema.open_read(Some(mime_type), "SHACL shapes")?;
+    let mut reader = schema.open_read(Some(mime_type), "SHACL shapes")?;
+    let reader_name = schema.to_string();
     let shapes_format = shacl_format_convert(*shapes_format)?;
     let base = get_base(schema, config, base_shapes)?;
-    rudof.read_shacl(reader, &shapes_format, base.as_deref(), reader_mode)?;
+    rudof.read_shacl(
+        &mut reader,
+        &reader_name,
+        &shapes_format,
+        base.as_deref(),
+        reader_mode,
+    )?;
     Ok(())
 }
 

@@ -1,6 +1,6 @@
 [package]
 name = "srdf"
-version = "0.1.135"
+version = "0.1.142"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/srdf"
@@ -20,9 +20,10 @@ repository.workspace = true
 [dependencies]
 async-trait.workspace = true
 colored.workspace = true
-const_format = "0.2"
+const_format.workspace = true
 iri_s.workspace = true
 itertools.workspace = true
+oxigraph.workspace = true
 oxilangtag.workspace = true
 oxiri.workspace = true
 oxjsonld.workspace = true

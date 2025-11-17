@@ -2,7 +2,7 @@ use either::Either;
 use iri_s::IriS;
 use reqwest::{
     blocking::{Client, ClientBuilder},
-    header::{ACCEPT, HeaderValue},
+    header::{ACCEPT, HeaderValue, USER_AGENT},
     // Url as ReqwestUrl,
 };
 use std::io::Cursor;
@@ -95,10 +95,16 @@ impl InputSpec {
                             InputSpecError::AcceptValue {
                                 context: context_error.to_string(),
                                 str: accept_str.to_string(),
-                                error: format!("{e}"),
+                                error: e.to_string(),
                             }
                         })?;
                         headers.insert(ACCEPT, accept_value);
+                        let user_agent_rudof = HeaderValue::from_str("rudof").map_err(|e| {
+                            InputSpecError::UserAgentValue {
+                                error: e.to_string(),
+                            }
+                        })?;
+                        headers.insert(USER_AGENT, user_agent_rudof);
                         let client =
                             Client::builder()
                                 .default_headers(headers)
@@ -231,6 +237,9 @@ pub enum InputSpecError {
         str: String,
         error: String,
     },
+
+    #[error("Error setting USER_AGENT: {error}")]
+    UserAgentValue { error: String },
 }
 
 #[derive(Debug, Clone)]

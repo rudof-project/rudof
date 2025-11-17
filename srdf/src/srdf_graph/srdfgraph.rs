@@ -1,37 +1,54 @@
 use crate::async_srdf::AsyncSRDF;
 use crate::matcher::Matcher;
-use crate::{BuildRDF, FocusRDF, NeighsRDF, RDF_TYPE_STR, RDFFormat, Rdf};
+use crate::srdfgraph_error::SRDFGraphError;
+use crate::{
+    BuildRDF, FocusRDF, NeighsRDF, QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions,
+    RDF_TYPE_STR, RDFFormat, Rdf, VarName,
+};
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
+use oxigraph::sparql::{QueryResults, SparqlEvaluator};
+use oxigraph::store::Store;
 use oxjsonld::JsonLdParser;
-use oxrdfio::{JsonLdProfileSet, RdfFormat, RdfSerializer};
-use oxrdfxml::RdfXmlParser;
-use serde::Serialize;
-use serde::ser::SerializeStruct;
-use std::collections::{HashMap, HashSet};
-use std::fs::File;
-use std::io::{self, BufReader, Write};
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
-use tracing::debug;
-
-use crate::srdfgraph_error::SRDFGraphError;
 use oxrdf::{
     BlankNode as OxBlankNode, Graph, GraphName, Literal as OxLiteral, NamedNode as OxNamedNode,
     NamedNodeRef, NamedOrBlankNode as OxSubject, NamedOrBlankNodeRef as OxSubjectRef, Quad,
     Term as OxTerm, TermRef, Triple as OxTriple, TripleRef,
 };
+use oxrdfio::{JsonLdProfileSet, RdfFormat, RdfSerializer};
+use oxrdfxml::RdfXmlParser;
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
 use prefixmap::{PrefixMapError, prefixmap::*};
+use serde::Serialize;
+use serde::ser::SerializeStruct;
+use sparesults::QuerySolution as SparQuerySolution;
+use std::collections::{HashMap, HashSet};
+use std::fmt::Debug;
+use std::fs::File;
+use std::io::{self, BufReader, Cursor, Read, Write};
+use std::path::{Path, PathBuf};
+use std::str::FromStr;
+use tracing::{debug, trace};
 
-#[derive(Debug, Default, Clone)]
+#[derive(Default, Clone)]
 pub struct SRDFGraph {
     focus: Option<OxTerm>,
     graph: Graph,
     pm: PrefixMap,
     base: Option<IriS>,
     bnode_counter: usize,
+    store: Option<Store>,
+}
+
+impl Debug for SRDFGraph {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SRDFGraph")
+            .field("triples_count", &self.graph.len())
+            .field("prefixmap", &self.pm)
+            .field("base", &self.base)
+            .finish()
+    }
 }
 
 impl Serialize for SRDFGraph {
@@ -69,7 +86,8 @@ impl SRDFGraph {
 
     pub fn merge_from_reader<R: io::Read>(
         &mut self,
-        read: R,
+        reader: &mut R,
+        source_name: &str,
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
@@ -80,12 +98,32 @@ impl SRDFGraph {
                     None => TurtleParser::new(),
                     Some(iri) => TurtleParser::new().with_base_iri(iri)?,
                 };
-                // let mut graph = Graph::default();
-                let mut reader = turtle_parser.for_reader(read);
-                for triple_result in reader.by_ref() {
-                    self.graph.insert(triple_result?.as_ref());
+                let mut buffer = Vec::new();
+                reader.read_to_end(&mut buffer)?;
+                let reader1 = Cursor::new(buffer.clone());
+                let mut reader2 = Cursor::new(buffer);
+                let mut turtle_reader = turtle_parser.for_reader(reader1);
+                for triple_result in turtle_reader.by_ref() {
+                    let triple = match triple_result {
+                        Err(e) => {
+                            if reader_mode.is_strict() {
+                                let mut str = String::new();
+                                let _ = reader2.read_to_string(&mut str)?;
+                                trace!("Error parsing turtle...rest of input: {}", str);
+                                return Err(SRDFGraphError::TurtleParseError {
+                                    source_name: source_name.to_string(),
+                                    error: e.to_string(),
+                                });
+                            } else {
+                                debug!("Turtle Error captured in Lax mode: {e:?}");
+                                continue;
+                            }
+                        }
+                        Ok(t) => t,
+                    };
+                    self.graph.insert(triple.as_ref());
                 }
-                let prefixes: HashMap<&str, &str> = reader.prefixes().collect();
+                let prefixes: HashMap<&str, &str> = turtle_reader.prefixes().collect();
                 self.base = match (&self.base, base) {
                     (None, None) => None,
                     (Some(b), None) => Some(b.clone()),
@@ -96,7 +134,7 @@ impl SRDFGraph {
             }
             RDFFormat::NTriples => {
                 let parser = NTriplesParser::new();
-                let mut reader = parser.for_reader(read);
+                let mut reader = parser.for_reader(reader);
                 for triple_result in reader.by_ref() {
                     match triple_result {
                         Err(e) => {
@@ -117,7 +155,7 @@ impl SRDFGraph {
             }
             RDFFormat::RDFXML => {
                 let parser = RdfXmlParser::new();
-                let mut reader = parser.for_reader(read);
+                let mut reader = parser.for_reader(reader);
                 for triple_result in reader.by_ref() {
                     match triple_result {
                         Err(e) => {
@@ -141,7 +179,7 @@ impl SRDFGraph {
             RDFFormat::N3 => todo!(),
             RDFFormat::NQuads => {
                 let parser = NQuadsParser::new();
-                let mut reader = parser.for_reader(read);
+                let mut reader = parser.for_reader(reader);
                 for triple_result in reader.by_ref() {
                     match triple_result {
                         Err(e) => {
@@ -162,7 +200,7 @@ impl SRDFGraph {
             }
             RDFFormat::JsonLd => {
                 let parser = JsonLdParser::new();
-                let mut reader = parser.for_reader(read);
+                let mut reader = parser.for_reader(reader);
                 for triple_result in reader.by_ref() {
                     match triple_result {
                         Err(e) => {
@@ -191,14 +229,15 @@ impl SRDFGraph {
     }
 
     pub fn from_reader<R: io::Read>(
-        read: R,
+        read: &mut R,
+        source_name: &str,
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<SRDFGraph, SRDFGraphError> {
         let mut srdf_graph = SRDFGraph::new();
 
-        srdf_graph.merge_from_reader(read, format, base, reader_mode)?;
+        srdf_graph.merge_from_reader(read, source_name, format, base, reader_mode)?;
         Ok(srdf_graph)
     }
 
@@ -223,7 +262,13 @@ impl SRDFGraph {
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<SRDFGraph, SRDFGraphError> {
-        Self::from_reader(std::io::Cursor::new(&data), format, base, reader_mode)
+        Self::from_reader(
+            &mut std::io::Cursor::new(&data),
+            "String",
+            format,
+            base,
+            reader_mode,
+        )
     }
 
     fn cnv_iri(iri: IriS) -> OxNamedNode {
@@ -261,8 +306,15 @@ impl SRDFGraph {
             path_name: path_name.to_string(),
             error: e,
         })?;
-        let reader = BufReader::new(file);
-        Self::merge_from_reader(self, reader, format, base, reader_mode)?;
+        let mut reader = BufReader::new(file);
+        Self::merge_from_reader(
+            self,
+            &mut reader,
+            path.as_ref().display().to_string().as_str(),
+            format,
+            base,
+            reader_mode,
+        )?;
         Ok(())
     }
 
@@ -277,8 +329,14 @@ impl SRDFGraph {
             path_name: path_name.to_string(),
             error: e,
         })?;
-        let reader = BufReader::new(file);
-        Self::from_reader(reader, format, base, reader_mode)
+        let mut reader = BufReader::new(file);
+        Self::from_reader(
+            &mut reader,
+            path.as_ref().display().to_string().as_str(),
+            format,
+            base,
+            reader_mode,
+        )
     }
 
     pub fn parse_data(
@@ -515,6 +573,7 @@ impl BuildRDF for SRDFGraph {
             pm: PrefixMap::new(),
             base: None,
             bnode_counter: 0,
+            store: None,
         }
     }
 
@@ -594,6 +653,94 @@ fn cnv_triple(t: &OxTriple) -> TripleRef<'_> {
         NamedNodeRef::from(&t.predicate),
         TermRef::from(&t.object),
     )
+}
+
+impl QueryRDF for SRDFGraph {
+    fn query_construct(
+        &self,
+        _query_str: &str,
+        _format: &QueryResultFormat,
+    ) -> Result<String, SRDFGraphError>
+    where
+        Self: Sized,
+    {
+        let str = String::new();
+        if let Some(_store) = &self.store {
+            tracing::debug!("Querying in-memory store (we ignore it by now");
+        }
+        Ok(str)
+    }
+
+    fn query_select(&self, query_str: &str) -> Result<QuerySolutions<SRDFGraph>, SRDFGraphError>
+    where
+        Self: Sized,
+    {
+        let mut sols: QuerySolutions<SRDFGraph> = QuerySolutions::empty();
+        if let Some(store) = &self.store {
+            trace!("Querying in-memory store");
+
+            let parsed_query = SparqlEvaluator::new().parse_query(query_str).map_err(|e| {
+                SRDFGraphError::ParsingQueryError {
+                    msg: format!("Error parsing query: {}", e),
+                }
+            })?;
+            let new_sol = parsed_query.on_store(store).execute().map_err(|e| {
+                SRDFGraphError::RunningQueryError {
+                    query: query_str.to_string(),
+                    msg: format!("Error executing query: {}", e),
+                }
+            })?;
+            trace!("Got results from in-memory store");
+            let sol = cnv_query_results(new_sol)?;
+            sols.extend(sol, self.prefixmap()).map_err(|e| {
+                SRDFGraphError::ExtendingQuerySolutionsError {
+                    query: query_str.to_string(),
+                    error: format!("{e}"),
+                }
+            })?;
+        } else {
+            trace!("No in-memory store to query");
+        }
+        Ok(sols)
+    }
+
+    fn query_ask(&self, _query: &str) -> Result<bool, Self::Err> {
+        todo!()
+    }
+}
+
+fn cnv_query_results(
+    query_results: QueryResults,
+) -> Result<Vec<QuerySolution<SRDFGraph>>, SRDFGraphError> {
+    let mut results = Vec::new();
+    if let QueryResults::Solutions(solutions) = query_results {
+        trace!("Converting query solutions");
+        let mut counter = 0;
+        for solution_action in solutions {
+            counter += 1;
+            trace!("Converting solution {counter}");
+            let solution = solution_action.map_err(|e| SRDFGraphError::QueryResultError {
+                msg: format!("Error getting query solution: {}", e),
+            })?;
+            let result = cnv_query_solution(solution);
+            results.push(result)
+        }
+    }
+    Ok(results)
+}
+
+fn cnv_query_solution(qs: SparQuerySolution) -> QuerySolution<SRDFGraph> {
+    let mut variables = Vec::new();
+    let mut values = Vec::new();
+    for v in qs.variables() {
+        let varname = VarName::new(v.as_str());
+        variables.push(varname);
+    }
+    for t in qs.values() {
+        let term = t.clone();
+        values.push(term)
+    }
+    QuerySolution::new(variables, values)
 }
 
 #[cfg(test)]

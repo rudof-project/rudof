@@ -1,0 +1,3 @@
+(n1: Person { name: "Alice" });
+(n2: Person { name: "Bob", age: 23 });
+[e1: (n1) -[ :knows { since: 2020 }]-> (n2)]

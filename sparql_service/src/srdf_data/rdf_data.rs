@@ -7,7 +7,6 @@ use oxrdf::{
     BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode,
     NamedOrBlankNode as OxSubject, Term as OxTerm, Triple as OxTriple,
 };
-use oxrdfio::{JsonLdProfileSet, RdfFormat};
 use prefixmap::PrefixMap;
 use serde::Serialize;
 use serde::ser::SerializeStruct;
@@ -17,7 +16,6 @@ use srdf::NeighsRDF;
 use srdf::QueryRDF;
 use srdf::QuerySolution;
 use srdf::QuerySolutions;
-use srdf::RDF_TYPE_STR;
 use srdf::RDFFormat;
 use srdf::Rdf;
 use srdf::ReaderMode;
@@ -162,26 +160,27 @@ impl RdfData {
         reader_mode: &ReaderMode,
     ) -> Result<RdfData, RdfDataError> {
         let mut rdf_data = Self::new();
-        rdf_data.merge_from_reader(data.as_bytes(), format, base, reader_mode)?;
+        rdf_data.merge_from_reader(&mut data.as_bytes(), "String", format, base, reader_mode)?;
         Ok(rdf_data)
     }
 
     /// Merge the in-memory graph with the graph read from a reader
     pub fn merge_from_reader<R: io::Read>(
         &mut self,
-        read: R,
+        read: &mut R,
+        source_name: &str,
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<(), RdfDataError> {
         match &mut self.graph {
             Some(graph) => graph
-                .merge_from_reader(read, format, base, reader_mode)
+                .merge_from_reader(read, source_name, format, base, reader_mode)
                 .map_err(|e| RdfDataError::SRDFGraphError { err: Box::new(e) }),
             None => {
                 let mut graph = SRDFGraph::new();
                 graph
-                    .merge_from_reader(read, format, base, reader_mode)
+                    .merge_from_reader(read, source_name, format, base, reader_mode)
                     .map_err(|e| RdfDataError::SRDFGraphError { err: Box::new(e) })?;
                 self.graph = Some(graph);
                 Ok(())
@@ -428,7 +427,7 @@ impl QueryRDF for RdfData {
     {
         let mut sols: QuerySolutions<RdfData> = QuerySolutions::empty();
         if let Some(store) = &self.store {
-            trace!("Querying in-memory store of length: {:?}", store.len());
+            trace!("Querying in-memory store of length: {}", store.len()?);
 
             let new_sol = SparqlEvaluator::new()
                 .parse_query(query_str)?
@@ -442,6 +441,8 @@ impl QueryRDF for RdfData {
                     error: format!("{e}"),
                 }
             })?;
+        } else {
+            trace!("No in-memory store to query");
         }
         for (name, endpoint) in self.endpoints_to_use() {
             let new_sols = endpoint.query_select(query_str)?;
@@ -495,24 +496,6 @@ fn cnv_query_solution(qs: SparQuerySolution) -> QuerySolution<RdfData> {
         values.push(term)
     }
     QuerySolution::new(variables, values)
-}
-
-fn _cnv_rdf_format(rdf_format: RDFFormat) -> RdfFormat {
-    match rdf_format {
-        RDFFormat::NTriples => RdfFormat::NTriples,
-        RDFFormat::Turtle => RdfFormat::Turtle,
-        RDFFormat::RDFXML => RdfFormat::RdfXml,
-        RDFFormat::TriG => RdfFormat::TriG,
-        RDFFormat::N3 => RdfFormat::N3,
-        RDFFormat::NQuads => RdfFormat::NQuads,
-        RDFFormat::JsonLd => RdfFormat::JsonLd {
-            profile: JsonLdProfileSet::empty(),
-        },
-    }
-}
-
-fn _rdf_type() -> OxNamedNode {
-    OxNamedNode::new_unchecked(RDF_TYPE_STR)
 }
 
 impl NeighsRDF for RdfData {

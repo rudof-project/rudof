@@ -1483,7 +1483,7 @@ fn datatype_iri(i: Span) -> IRes<IriRef> {
 
 /// `[135s] string ::= STRING_LITERAL1 | STRING_LITERAL_LONG1`
 /// `                  | STRING_LITERAL2 | STRING_LITERAL_LONG2`
-fn string<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, String> {
+pub fn string<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, String> {
     traced(
         "string",
         map_error(
@@ -1799,7 +1799,7 @@ fn rest_range<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Option<i32>> {
 
 /// From rest_range, integer_or_star = INTEGER | "*"
 fn integer_or_star(i: Span) -> IRes<i32> {
-    alt((map(integer(), |n| n as i32), (map(token_tws("*"), |_| -1))))(i)
+    alt((map(integer(), |n| n as i32), map(token_tws("*"), |_| -1)))(i)
 }
 
 /// `[69] <RDF_TYPE> ::= "a"`

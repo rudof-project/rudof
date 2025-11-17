@@ -1,0 +1,51 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: pgschemapc
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Jose Emilio
+    family-names: Labra Gayo
+    email: labra@uniovi.es
+    affiliation: University of Oviedo
+    orcid: 'https://orcid.org/0000-0001-8907-5348'
+  - given-names: Dominik
+    family-names: Tomaszuk
+    email: d.toamszuk@uwb.edu.pl
+    affiliation: University of Bialystok
+    orcid: 'https://orcid.org/0000-0003-1806-067X'
+identifiers:
+  - type: other
+    value: 'https://github.com/wesopapers/pgschemapc'
+    description: Github
+repository-code: 'https://github.com/wesopapers/pgschemapc'
+abstract: >-
+  PG-Schema_PC is a prototype Rust implementation of
+  PG-Schema with Property Constraints, a principled
+  extension of the PG-Schema language designed to enhance
+  the expressiveness and validation capabilities of property
+  graph schemas. Property graphs enable flexible data
+  modeling by annotating nodes and edges with properties,
+  but this flexibility often leads to a lack of consistency
+  and validation mechanisms. PG-Schema_PC addresses this
+  challenge by introducing constructs for structural,
+  cardinality, and range constraints, allowing schema
+  designers to define precise requirements over property
+  sets. The repository includes formalized grammar
+  definitions, a test suite with illustrative examples from
+  the related publication, and demonstrates the feasibility
+  of schema-driven validation in property graph settings.
+  The code is written in Rust and can be executed using the
+  standard Cargo toolchain.
+keywords:
+  - property graphs
+  - graph data model
+  - graph schema
+  - schema validation
+  - Rust
+  - PG-Schema
+license: MIT

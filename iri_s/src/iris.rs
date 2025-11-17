@@ -55,6 +55,7 @@ impl IriS {
         Ok(IriS { iri })
     }
 
+    /// Get the IRI as a string slice
     pub fn as_str(&self) -> &str {
         self.iri.as_str()
     }

@@ -1,7 +1,9 @@
+pub mod arrow_style;
 pub mod rdf_visualizer_config;
 pub mod rdf_visualizer_error;
 pub mod stereotype_style;
 pub mod style;
+pub mod thickness_style;
 pub mod uml_color;
 pub mod usage_count;
 pub mod visual_rdf_edge;

@@ -1,9 +1,8 @@
-use std::fmt::Display;
-
 use crate::ShapeLabelIdx;
 use petgraph::graphmap::GraphMap;
 use petgraph::visit::EdgeRef;
 use petgraph::visit::IntoEdgeReferences;
+use std::fmt::Display;
 
 #[derive(Debug, Default, Clone)]
 pub struct DependencyGraph {

@@ -1,11 +1,9 @@
-use std::fmt::Display;
-
-use super::compile_shape;
-use super::compile_shapes;
 use super::compiled_shacl_error::CompiledShaclError;
 use super::convert_iri_ref;
-use super::convert_value;
-use super::shape::ShapeIR;
+use crate::compiled::{compile_shape, compile_shapes, convert_value};
+use crate::dependency_graph::{DependencyGraph, PosNeg};
+use crate::schema_ir::SchemaIR;
+use crate::shape_label_idx::ShapeLabelIdx;
 use iri_s::IriS;
 use shacl_ast::Schema;
 use shacl_ast::component::Component;
@@ -21,6 +19,8 @@ use srdf::Rdf;
 use srdf::SLiteral;
 use srdf::SRegex;
 use srdf::lang::Lang;
+use std::collections::HashSet;
+use std::fmt::Display;
 
 #[derive(Debug, Clone)]
 pub enum ComponentIR {
@@ -53,11 +53,17 @@ pub enum ComponentIR {
 }
 
 impl ComponentIR {
+    /// Compiles a an AST SHACL component to a IR SHACL Component
+    /// It returns None for components that are not represented in the IR,
+    /// such as sh:closed and sh:deactivated.
+    /// It returns a vector of (PosNeg, ShapeLabelIdx) pairs for components that are represented in the IR.
+    /// The vector is list of dependant shapes for cases with recursion
     pub fn compile<S: Rdf>(
         component: Component,
         schema: &Schema<S>,
-    ) -> Result<Option<Self>, Box<CompiledShaclError>> {
-        let component = match component {
+        schema_ir: &mut SchemaIR,
+    ) -> Result<Option<ComponentIR>, Box<CompiledShaclError>> {
+        let value = match component {
             Component::Class(object) => {
                 let class_rule = object;
                 Some(ComponentIR::Class(Class::new(class_rule)))
@@ -109,22 +115,28 @@ impl ComponentIR {
                     iri_ref,
                 )))
             }
-            Component::Or { shapes } => Some(ComponentIR::Or(Or::new(compile_shapes::<S>(
-                shapes, schema,
-            )?))),
-            Component::And { shapes } => Some(ComponentIR::And(And::new(compile_shapes::<S>(
-                shapes, schema,
-            )?))),
+            Component::Or { shapes } => {
+                let values = compile_shapes::<S>(shapes, schema, schema_ir)?;
+                let ors = values.into_iter().collect::<Vec<_>>();
+                Some(ComponentIR::Or(Or::new(ors)))
+            }
+            Component::And { shapes } => {
+                let values = compile_shapes::<S>(shapes, schema, schema_ir)?;
+                let ands = values.into_iter().collect::<Vec<_>>();
+                Some(ComponentIR::And(And::new(ands)))
+            }
             Component::Not { shape } => {
-                let shape = compile_shape::<S>(shape, schema)?;
+                let shape = compile_shape::<S>(&shape, schema, schema_ir)?;
                 Some(ComponentIR::Not(Not::new(shape)))
             }
-            Component::Xone { shapes } => Some(ComponentIR::Xone(Xone::new(compile_shapes::<S>(
-                shapes, schema,
-            )?))),
+            Component::Xone { shapes } => {
+                let values = compile_shapes::<S>(shapes, schema, schema_ir)?;
+                let xones = values.into_iter().collect::<Vec<_>>();
+                Some(ComponentIR::Xone(Xone::new(xones)))
+            }
             Component::Closed { .. } => None,
             Component::Node { shape } => {
-                let shape = compile_shape::<S>(shape, schema)?;
+                let shape = compile_shape::<S>(&shape, schema, schema_ir)?;
                 Some(ComponentIR::Node(Node::new(shape)))
             }
             Component::HasValue { value } => {
@@ -145,10 +157,10 @@ impl ComponentIR {
                 disjoint,
                 siblings,
             } => {
-                let shape = compile_shape::<S>(shape, schema)?;
+                let shape = compile_shape::<S>(&shape, schema, schema_ir)?;
                 let mut compiled_siblings = Vec::new();
                 for sibling in siblings.iter() {
-                    let compiled_sibling = compile_shape(sibling.clone(), schema)?;
+                    let compiled_sibling = compile_shape::<S>(sibling, schema, schema_ir)?;
                     compiled_siblings.push(compiled_sibling);
                 }
                 Some(ComponentIR::QualifiedValueShape(QualifiedValueShape::new(
@@ -161,7 +173,106 @@ impl ComponentIR {
             }
             Component::Deactivated(_b) => None,
         };
-        Ok(component)
+        Ok(value)
+    }
+
+    pub(crate) fn add_edges(
+        &self,
+        shape_idx: ShapeLabelIdx,
+        dg: &mut DependencyGraph,
+        posneg: PosNeg,
+        schema_ir: &SchemaIR,
+        visited: &mut HashSet<ShapeLabelIdx>,
+    ) {
+        match self {
+            ComponentIR::Class(_c) => {}
+            ComponentIR::Datatype(_d) => {}
+            ComponentIR::NodeKind(_nk) => {}
+            ComponentIR::MinCount(_mc) => {}
+            ComponentIR::MaxCount(_mc) => {}
+            ComponentIR::MinExclusive(_me) => {}
+            ComponentIR::MaxExclusive(_me) => {}
+            ComponentIR::MinInclusive(_mi) => {}
+            ComponentIR::MaxInclusive(_mi) => {}
+            ComponentIR::MinLength(_ml) => {}
+            ComponentIR::MaxLength(_ml) => {}
+            ComponentIR::Pattern(_p) => {}
+            ComponentIR::UniqueLang(_ul) => {}
+            ComponentIR::LanguageIn(_li) => {}
+            ComponentIR::Equals(_e) => {}
+            ComponentIR::Disjoint(_d) => {}
+            ComponentIR::LessThan(_lt) => {}
+            ComponentIR::LessThanOrEquals(_lte) => {}
+            ComponentIR::Or(o) => {
+                for idx in o.shapes() {
+                    if let Some(shape) = schema_ir.get_shape_from_idx(idx) {
+                        dg.add_edge(shape_idx, *idx, posneg);
+                        if visited.contains(idx) {
+                            continue;
+                        } else {
+                            visited.insert(*idx);
+                            shape.add_edges(*idx, dg, posneg, schema_ir, visited);
+                        }
+                    }
+                }
+            }
+            ComponentIR::And(a) => {
+                for idx in a.shapes() {
+                    if let Some(shape) = schema_ir.get_shape_from_idx(idx) {
+                        dg.add_edge(shape_idx, *idx, posneg);
+                        if visited.contains(idx) {
+                            continue;
+                        } else {
+                            visited.insert(*idx);
+                            shape.add_edges(*idx, dg, posneg, schema_ir, visited);
+                        }
+                    }
+                }
+            }
+            ComponentIR::Not(n) => {
+                let idx = n.shape();
+                if let Some(shape) = schema_ir.get_shape_from_idx(idx) {
+                    dg.add_edge(shape_idx, *idx, posneg.change());
+                    if visited.contains(idx) {
+                    } else {
+                        visited.insert(*idx);
+                        shape.add_edges(*idx, dg, posneg.change(), schema_ir, visited);
+                    }
+                }
+            }
+            ComponentIR::Xone(x) => {
+                for idx in x.shapes() {
+                    if let Some(shape) = schema_ir.get_shape_from_idx(idx) {
+                        dg.add_edge(shape_idx, *idx, posneg);
+                        if visited.contains(idx) {
+                            continue;
+                        } else {
+                            visited.insert(*idx);
+                            shape.add_edges(*idx, dg, posneg, schema_ir, visited);
+                        }
+                    }
+                }
+            }
+            ComponentIR::Node(n) => {
+                let idx = n.shape();
+                if let Some(shape) = schema_ir.get_shape_from_idx(idx) {
+                    dg.add_edge(shape_idx, *idx, posneg);
+                    if visited.contains(idx) {
+                    } else {
+                        visited.insert(*idx);
+                        shape.add_edges(*idx, dg, posneg, schema_ir, visited);
+                    }
+                }
+            }
+            ComponentIR::HasValue(_hv) => {}
+            ComponentIR::In(_i) => {}
+            ComponentIR::QualifiedValueShape(qvs) => {
+                dg.add_edge(shape_idx, *qvs.shape(), posneg);
+                /*for sibling in qvs.siblings() {
+                    dg.add_edge(shape_idx, *sibling, posneg);
+                }*/
+            }
+        }
     }
 }
 
@@ -218,15 +329,15 @@ impl MinCount {
 /// https://www.w3.org/TR/shacl/#AndConstraintComponent
 #[derive(Debug, Clone)]
 pub struct And {
-    shapes: Vec<ShapeIR>,
+    shapes: Vec<ShapeLabelIdx>,
 }
 
 impl And {
-    pub fn new(shapes: Vec<ShapeIR>) -> Self {
+    pub fn new(shapes: Vec<ShapeLabelIdx>) -> Self {
         And { shapes }
     }
 
-    pub fn shapes(&self) -> &Vec<ShapeIR> {
+    pub fn shapes(&self) -> &Vec<ShapeLabelIdx> {
         &self.shapes
     }
 }
@@ -237,17 +348,15 @@ impl And {
 /// https://www.w3.org/TR/shacl/#NotConstraintComponent
 #[derive(Debug, Clone)]
 pub struct Not {
-    shape: Box<ShapeIR>,
+    shape: ShapeLabelIdx,
 }
 
 impl Not {
-    pub fn new(shape: ShapeIR) -> Self {
-        Not {
-            shape: Box::new(shape),
-        }
+    pub fn new(shape: ShapeLabelIdx) -> Self {
+        Not { shape }
     }
 
-    pub fn shape(&self) -> &ShapeIR {
+    pub fn shape(&self) -> &ShapeLabelIdx {
         &self.shape
     }
 }
@@ -260,15 +369,15 @@ impl Not {
 
 #[derive(Debug, Clone)]
 pub struct Or {
-    shapes: Vec<ShapeIR>,
+    shapes: Vec<ShapeLabelIdx>,
 }
 
 impl Or {
-    pub fn new(shapes: Vec<ShapeIR>) -> Self {
+    pub fn new(shapes: Vec<ShapeLabelIdx>) -> Self {
         Or { shapes }
     }
 
-    pub fn shapes(&self) -> &Vec<ShapeIR> {
+    pub fn shapes(&self) -> &Vec<ShapeLabelIdx> {
         &self.shapes
     }
 }
@@ -280,15 +389,15 @@ impl Or {
 /// https://www.w3.org/TR/shacl/#XoneConstraintComponent
 #[derive(Debug, Clone)]
 pub struct Xone {
-    shapes: Vec<ShapeIR>,
+    shapes: Vec<ShapeLabelIdx>,
 }
 
 impl Xone {
-    pub fn new(shapes: Vec<ShapeIR>) -> Self {
+    pub fn new(shapes: Vec<ShapeLabelIdx>) -> Self {
         Xone { shapes }
     }
 
-    pub fn shapes(&self) -> &Vec<ShapeIR> {
+    pub fn shapes(&self) -> &Vec<ShapeLabelIdx> {
         &self.shapes
     }
 }
@@ -453,17 +562,15 @@ impl LessThan {
 /// https://www.w3.org/TR/shacl/#NodeShapeComponent
 #[derive(Debug, Clone)]
 pub struct Node {
-    shape: Box<ShapeIR>,
+    shape: ShapeLabelIdx,
 }
 
 impl Node {
-    pub fn new(shape: ShapeIR) -> Self {
-        Node {
-            shape: Box::new(shape),
-        }
+    pub fn new(shape: ShapeLabelIdx) -> Self {
+        Node { shape }
     }
 
-    pub fn shape(&self) -> &ShapeIR {
+    pub fn shape(&self) -> &ShapeLabelIdx {
         &self.shape
     }
 }
@@ -478,23 +585,23 @@ impl Node {
 /// https://www.w3.org/TR/shacl/#QualifiedValueShapeConstraintComponent
 #[derive(Debug, Clone)]
 pub struct QualifiedValueShape {
-    shape: Box<ShapeIR>,
+    shape: ShapeLabelIdx,
     qualified_min_count: Option<isize>,
     qualified_max_count: Option<isize>,
     qualified_value_shapes_disjoint: Option<bool>,
-    siblings: Vec<ShapeIR>,
+    siblings: Vec<ShapeLabelIdx>,
 }
 
 impl QualifiedValueShape {
     pub fn new(
-        shape: ShapeIR,
+        shape: ShapeLabelIdx,
         qualified_min_count: Option<isize>,
         qualified_max_count: Option<isize>,
         qualified_value_shapes_disjoint: Option<bool>,
-        siblings: Vec<ShapeIR>,
+        siblings: Vec<ShapeLabelIdx>,
     ) -> Self {
         QualifiedValueShape {
-            shape: Box::new(shape),
+            shape,
             qualified_min_count,
             qualified_max_count,
             qualified_value_shapes_disjoint,
@@ -502,7 +609,7 @@ impl QualifiedValueShape {
         }
     }
 
-    pub fn shape(&self) -> &ShapeIR {
+    pub fn shape(&self) -> &ShapeLabelIdx {
         &self.shape
     }
 
@@ -514,7 +621,7 @@ impl QualifiedValueShape {
         self.qualified_max_count
     }
 
-    pub fn siblings(&self) -> &Vec<ShapeIR> {
+    pub fn siblings(&self) -> &Vec<ShapeLabelIdx> {
         &self.siblings
     }
 
@@ -879,7 +986,7 @@ impl Display for Xone {
             "Xone [{}]",
             self.shapes()
                 .iter()
-                .map(|s| s.id().to_string())
+                .map(|s| s.to_string())
                 .collect::<Vec<_>>()
                 .join(", ")
         )
@@ -888,7 +995,7 @@ impl Display for Xone {
 
 impl Display for Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Node [{}]", self.shape.id())
+        write!(f, "Node [{}]", self.shape())
     }
 }
 
@@ -899,7 +1006,7 @@ impl Display for And {
             "And [{}]",
             self.shapes()
                 .iter()
-                .map(|s| s.id().to_string())
+                .map(|s| s.to_string())
                 .collect::<Vec<_>>()
                 .join(", ")
         )
@@ -908,7 +1015,7 @@ impl Display for And {
 
 impl Display for Not {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Not [{}]", self.shape.id())
+        write!(f, "Not [{}]", self.shape)
     }
 }
 
@@ -919,7 +1026,7 @@ impl Display for Or {
             "Or[{}]",
             self.shapes()
                 .iter()
-                .map(|s| s.id().to_string())
+                .map(|s| s.to_string())
                 .collect::<Vec<_>>()
                 .join(", ")
         )
@@ -1019,7 +1126,7 @@ impl Display for QualifiedValueShape {
         write!(
             f,
             "QualifiedValueShape: shape: {}, qualifiedMinCount: {:?}, qualifiedMaxCount: {:?}, qualifiedValueShapesDisjoint: {:?}{}",
-            self.shape().id(),
+            self.shape(),
             self.qualified_min_count(),
             self.qualified_max_count(),
             self.qualified_value_shapes_disjoint(),

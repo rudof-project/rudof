@@ -196,21 +196,10 @@ impl VisualRDFGraph {
         for (node, node_id) in &self.nodes_map {
             match node {
                 VisualRDFNode::NonAssertedTriple(subj, pred, obj) => {
-                    let subj_id = self.get_node_id(subj)?;
-                    let pred_id = self.get_node_id(pred)?;
-                    let obj_id = self.get_node_id(obj)?;
-                    writeln!(writer, "{node_id}-->{subj_id}: subject \n")?;
-                    writeln!(writer, "{node_id}-->{pred_id}: predicate \n")?;
-                    writeln!(writer, "{node_id}-->{obj_id}: object \n")?;
+                    triple_term_as_plantuml(writer, self, node_id, subj, pred, obj)?;
                 }
-                // TODO: Maybe visualize asserted/non-asserted triples differently?
                 VisualRDFNode::AssertedTriple(subj, pred, obj) => {
-                    let subj_id = self.get_node_id(subj)?;
-                    let pred_id = self.get_node_id(pred)?;
-                    let obj_id = self.get_node_id(obj)?;
-                    writeln!(writer, "{node_id}-->{subj_id}: subject \n")?;
-                    writeln!(writer, "{node_id}-->{pred_id}: predicate \n")?;
-                    writeln!(writer, "{node_id}-->{obj_id}: object \n")?;
+                    triple_term_as_plantuml(writer, self, node_id, subj, pred, obj)?;
                 }
                 _ => {}
             }
@@ -288,4 +277,36 @@ impl UmlConverter for VisualRDFGraph {
                 error: e.to_string(),
             })
     }
+}
+
+fn triple_term_as_plantuml<W: Write>(
+    writer: &mut W,
+    graph: &VisualRDFGraph,
+    triple_id: &NodeId,
+    subj: &VisualRDFNode,
+    pred: &VisualRDFNode,
+    obj: &VisualRDFNode,
+) -> Result<(), RdfVisualizerError> {
+    let subj_id = graph.get_node_id(subj)?;
+    let pred_id = graph.get_node_id(pred)?;
+    let obj_id = graph.get_node_id(obj)?;
+    writeln!(
+        writer,
+        "{triple_id}-->{subj_id} {} : {} \n",
+        graph.config.get_subject_arrow_style().as_plantuml(),
+        graph.config.get_subject_text()
+    )?;
+    writeln!(
+        writer,
+        "{triple_id}-->{pred_id} {} : {}\n",
+        graph.config.get_predicate_arrow_style().as_plantuml(),
+        graph.config.get_predicate_text()
+    )?;
+    writeln!(
+        writer,
+        "{triple_id}-->{obj_id} {} : {}\n",
+        graph.config.get_object_arrow_style().as_plantuml(),
+        graph.config.get_object_text()
+    )?;
+    Ok(())
 }

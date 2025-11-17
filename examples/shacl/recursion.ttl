@@ -1,0 +1,18 @@
+@prefix :    <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:Alice a :Person ;
+    :name "Alice" ;
+    :knows :Bob .
+
+:Bob a :Person ;
+    :name "Bob" .
+
+# No name for KO to trigger validation error
+:ko a :Person ;
+    :knows :ko .
+
+# Knows KO to trigger validation error 
+:ko1 a :Person ;
+    :name "KO1" ;
+    :knows :ko .

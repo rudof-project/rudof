@@ -1,0 +1,2 @@
+(n1: Product { productId: "p1", label: "Bread", category: "Food" });
+(n2: Product { productId: "p2", label: "Card", category: 23 })

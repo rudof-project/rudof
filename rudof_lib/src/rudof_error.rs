@@ -7,8 +7,12 @@ use sparql_service::RdfData;
 use srdf::SRDFSparql;
 use thiserror::Error;
 
+use crate::data_format::DataFormatError;
+
 #[derive(Error, Debug)]
 pub enum RudofError {
+    #[error("Data format error: {error}")]
+    DataFormatError { error: DataFormatError },
     #[error("Error qualifying object {object}: {error}")]
     QualifyObject { object: String, error: String },
     #[error("Error qualifying subject {subject}: {error}")]
@@ -152,10 +156,20 @@ pub enum RudofError {
         error: String,
     },
 
+    #[error("Obtaining nodes from node_selector: {node_selector}: {error}")]
+    NodeSelectorError {
+        node_selector: String,
+        error: String,
+    },
+
+    #[error("Converting term {term} to subject: {error}")]
+    Term2Subject { term: String, error: String },
+
     #[error(
-        "Error merging current RDF data, format: {format}, base: {base}, reader_mode: {reader_mode}: {error} "
+        "Error obtaining RDF data from {source_name}, format: {format}, base: {base}, reader_mode: {reader_mode}: {error} "
     )]
     MergeRDFDataFromReader {
+        source_name: String,
         format: String,
         base: String,
         reader_mode: String,
@@ -165,11 +179,31 @@ pub enum RudofError {
     #[error("Utf8 error: {error} ")]
     Utf8Error { error: String },
 
-    #[error("Shapemap parse error on str: {str}: {error}")]
-    ShapeMapParseError { str: String, error: String },
+    #[error("Shapemap parse error from {source_name}\nSource map read:\n{str}\nError: {error}")]
+    ShapeMapParseError {
+        source_name: String,
+        str: String,
+        error: String,
+    },
 
     #[error("Read error: {error} ")]
     ReadError { error: String },
+
+    #[error("Error reading SHACL from {reader} with format {format}: {error} ")]
+    ReadingSHACLError {
+        reader: String,
+        error: String,
+        format: String,
+    },
+
+    #[error(
+        "Error reading SHACL from graph obtained from {reader_name} with format {format}: {error} "
+    )]
+    ReadingSHACLFromGraphError {
+        error: String,
+        format: String,
+        reader_name: String,
+    },
 
     #[error("AddingEndpoint: {iri} ")]
     AddingEndpointError { iri: IriS, error: String },
@@ -373,8 +407,12 @@ pub enum RudofError {
     #[error("Invalid image format: {format}. Must be 'SVG' or 'PNG'")]
     InvalidImageFormat { format: String },
 
-    #[error("Error reading RDF data: {error}")]
-    RDFDataReadError { error: String },
+    #[error("Error reading RDF data from {source_name} using mime_type {mime_type}: {error}")]
+    RDFDataReadError {
+        source_name: String,
+        error: String,
+        mime_type: String,
+    },
 
     #[error("Error using endpoint {endpoint}: {error}")]
     EndpointUseError { endpoint: String, error: String },

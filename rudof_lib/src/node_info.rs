@@ -4,8 +4,10 @@ use crate::{RudofError, ShapeMapParser};
 use iri_s::IriS;
 use prefixmap::IriRef;
 use shex_ast::ObjectValue;
-use srdf::NeighsRDF;
+use srdf::{NeighsRDF, QueryRDF};
 use std::collections::HashMap;
+use std::fmt::Debug;
+use std::fmt::{Display, Formatter};
 use std::io::Write;
 use termtree::Tree;
 
@@ -14,8 +16,19 @@ use termtree::Tree;
 pub struct NodeInfo<S: NeighsRDF> {
     pub subject: S::Subject,
     pub subject_qualified: String,
-    pub outgoing: HashMap<S::IRI, Vec<S::Term>>,
+    pub outgoing: HashMap<S::IRI, Vec<OutgoingNeighsNode<S>>>,
     pub incoming: HashMap<S::IRI, Vec<S::Subject>>,
+}
+
+#[derive(Debug, Clone)]
+pub enum OutgoingNeighsNode<S: NeighsRDF> {
+    Term {
+        term: S::Term,
+    },
+    More {
+        term: S::Term,
+        rest: HashMap<S::IRI, Vec<OutgoingNeighsNode<S>>>,
+    },
 }
 
 impl<S: NeighsRDF> NodeInfo<S> {
@@ -37,6 +50,7 @@ pub struct NodeInfoOptions {
     pub show_outgoing: bool,
     pub show_incoming: bool,
     pub show_colors: bool,
+    pub outgoing_depth: usize,
 }
 
 impl NodeInfoOptions {
@@ -45,6 +59,7 @@ impl NodeInfoOptions {
             show_outgoing: true,
             show_incoming: false,
             show_colors: true,
+            outgoing_depth: 1,
         }
     }
 
@@ -53,6 +68,7 @@ impl NodeInfoOptions {
             show_outgoing: false,
             show_incoming: true,
             show_colors: true,
+            outgoing_depth: 1,
         }
     }
 
@@ -61,7 +77,13 @@ impl NodeInfoOptions {
             show_outgoing: true,
             show_incoming: true,
             show_colors: true,
+            outgoing_depth: 1,
         }
+    }
+
+    pub fn with_depth(mut self, depth: usize) -> Self {
+        self.outgoing_depth = depth;
+        self
     }
 
     pub fn from_mode_str(mode: &str) -> Result<Self, RudofError> {
@@ -80,21 +102,33 @@ impl NodeInfoOptions {
 // Get node information from RDF data
 // This is the main entry point for retrieving node information.
 // It iterates over all nodes in the selector and collects their information.
-pub fn get_node_info<S: NeighsRDF>(
-    rdf: &S,
+pub fn get_node_info<R>(
+    rdf: &R,
     node_selector: NodeSelector,
     predicates: &[String],
     options: &NodeInfoOptions,
-) -> Result<Vec<NodeInfo<S>>, RudofError> {
+) -> Result<Vec<NodeInfo<R>>, RudofError>
+where
+    R: NeighsRDF + Debug + QueryRDF,
+{
     let mut results = Vec::new();
+    let nodes = node_selector
+        .nodes(rdf)
+        .map_err(|e| RudofError::NodeSelectorError {
+            node_selector: node_selector.to_string(),
+            error: e.to_string(),
+        })?;
 
-    for node in node_selector.iter_node(rdf) {
-        let subject = node_to_subject_checked(node, rdf)?;
+    for node in nodes.iter() {
+        let subject = R::term_as_subject(node).map_err(|e| RudofError::Term2Subject {
+            term: node.to_string(),
+            error: e.to_string(),
+        })?;
 
         let subject_qualified = qualify_subject(rdf, &subject, options)?;
 
         let outgoing = if options.show_outgoing {
-            get_outgoing_arcs(rdf, &subject, predicates)?
+            get_outgoing_arcs_depth(rdf, &subject, predicates, options.outgoing_depth)?
         } else {
             HashMap::new()
         };
@@ -149,6 +183,98 @@ fn get_outgoing_arcs<S: NeighsRDF>(
             .collect();
         Ok(map_vec)
     }
+}
+
+// Get outgoing arcs for a subject, optionally filtered by predicates
+fn get_outgoing_arcs_depth<S: NeighsRDF>(
+    rdf: &S,
+    subject: &S::Subject,
+    predicates: &[String],
+    depth: usize,
+) -> Result<HashMap<S::IRI, Vec<OutgoingNeighsNode<S>>>, RudofError> {
+    if depth == 1 {
+        let outgoing_1 = get_outgoing_arcs(rdf, subject, predicates)?;
+        let result = outgoing_1
+            .iter()
+            .map(|(k, v)| {
+                let nodes: Vec<_> = v
+                    .iter()
+                    .map(|t| OutgoingNeighsNode::Term { term: t.clone() })
+                    .collect();
+                (k.clone(), nodes)
+            })
+            .collect();
+        Ok(result)
+    } else if predicates.is_empty() {
+        let map = rdf
+            .outgoing_arcs(subject.clone())
+            .map_err(|e| RudofError::OutgoingArcs {
+                subject: rdf.qualify_subject(subject),
+                error: e.to_string(),
+            })?;
+
+        let mut result = HashMap::new();
+        for (k, v) in map.into_iter() {
+            let mut nodes = Vec::new();
+            for obj in v.into_iter() {
+                let rest = match S::term_as_subject(&obj) {
+                    Ok(s) => get_outgoing_arcs_depth(rdf, &s, predicates, depth - 1)?,
+                    Err(_) => HashMap::new(),
+                };
+                nodes.push(OutgoingNeighsNode::More { term: obj, rest });
+            }
+            result.insert(k, nodes);
+        }
+        Ok(result)
+    } else {
+        let preds = convert_predicates(predicates, rdf)?;
+        let (map, _) =
+            rdf.outgoing_arcs_from_list(subject, &preds)
+                .map_err(|e| RudofError::OutgoingArcs {
+                    subject: rdf.qualify_subject(subject),
+                    error: e.to_string(),
+                })?;
+        let mut result = HashMap::new();
+        for (k, v) in map.into_iter() {
+            let mut nodes = Vec::new();
+            for obj in v.into_iter() {
+                let rest = match S::term_as_subject(&obj) {
+                    Ok(s) => get_outgoing_arcs_depth(rdf, &s, predicates, depth - 1)?,
+                    Err(_) => HashMap::new(),
+                };
+                nodes.push(OutgoingNeighsNode::More { term: obj, rest });
+            }
+            result.insert(k, nodes);
+        }
+        Ok(result)
+    }
+    /*if predicates.is_empty() {
+        let map = rdf
+            .outgoing_arcs(subject.clone())
+            .map_err(|e| RudofError::OutgoingArcs {
+                subject: rdf.qualify_subject(subject),
+                error: e.to_string(),
+            })?;
+
+        let map_vec = map
+            .into_iter()
+            .map(|(k, v)| (k, v.into_iter().collect()))
+            .collect();
+        Ok(map_vec)
+    } else {
+        let preds = convert_predicates(predicates, rdf)?;
+        let (map, _) =
+            rdf.outgoing_arcs_from_list(subject, &preds)
+                .map_err(|e| RudofError::OutgoingArcs {
+                    subject: rdf.qualify_subject(subject),
+                    error: e.to_string(),
+                })?;
+        let map_vec = map
+            .into_iter()
+            .map(|(k, v)| (k, v.into_iter().collect()))
+            .collect();
+        Ok(map_vec)
+    }*/
 }
 
 // Get incoming arcs for a subject
@@ -269,21 +395,7 @@ pub fn format_node_info<S: NeighsRDF, W: Write>(
         writeln!(writer, "Outgoing arcs")?;
         let mut outgoing_tree =
             Tree::new(node_info.subject_qualified.to_string()).with_glyphs(outgoing_glyphs());
-        let mut preds: Vec<_> = node_info.outgoing.keys().collect();
-        preds.sort();
-
-        for pred in preds {
-            let pred_str = qualify_iri(rdf, pred, options);
-            if let Some(objs) = node_info.outgoing.get(pred) {
-                for o in objs {
-                    let obj_str = qualify_object(rdf, o, options)?;
-                    outgoing_tree.leaves.push(
-                        Tree::new(format!("─ {} ─► {}", pred_str, obj_str))
-                            .with_glyphs(outgoing_glyphs()),
-                    );
-                }
-            }
-        }
+        mk_tree(&mut outgoing_tree, &node_info.outgoing, rdf, options)?;
         writeln!(writer, "{}", outgoing_tree)?;
     }
 
@@ -310,6 +422,39 @@ pub fn format_node_info<S: NeighsRDF, W: Write>(
             }
         }
         writeln!(writer, "{}", incoming_tree)?;
+    }
+    Ok(())
+}
+
+fn mk_tree<S: NeighsRDF>(
+    outgoing_tree: &mut Tree<String>,
+    outgoing_neighs: &HashMap<S::IRI, Vec<OutgoingNeighsNode<S>>>,
+    rdf: &S,
+    options: &NodeInfoOptions,
+) -> Result<(), RudofError> {
+    let mut preds: Vec<_> = outgoing_neighs.keys().collect();
+    preds.sort();
+    for pred in outgoing_neighs.keys() {
+        let pred_str = qualify_iri(rdf, pred, options);
+        if let Some(objs) = outgoing_neighs.get(pred) {
+            for o in objs {
+                match o {
+                    OutgoingNeighsNode::Term { term } => {
+                        let obj_str = qualify_object(rdf, term, options)?;
+                        outgoing_tree.leaves.push(
+                            Tree::new(format!("─ {} ─► {}", pred_str, obj_str))
+                                .with_glyphs(outgoing_glyphs()),
+                        );
+                    }
+                    OutgoingNeighsNode::More { term, rest } => {
+                        let subj_str = qualify_object(rdf, term, options)?;
+                        let mut sub_tree = Tree::new(subj_str).with_glyphs(outgoing_glyphs());
+                        mk_tree(&mut sub_tree, rest, rdf, options)?;
+                        outgoing_tree.leaves.push(sub_tree);
+                    }
+                }
+            }
+        }
     }
     Ok(())
 }
@@ -391,5 +536,19 @@ fn incoming_glyphs() -> termtree::GlyphPalette {
         middle_skip: "│",
         last_skip: "",
         skip_indent: "   ",
+    }
+}
+
+impl<S> Display for OutgoingNeighsNode<S>
+where
+    S: NeighsRDF,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            OutgoingNeighsNode::Term { term } => write!(f, "{}", term),
+            OutgoingNeighsNode::More { term, rest: _ } => {
+                write!(f, "{}", term)
+            }
+        }
     }
 }

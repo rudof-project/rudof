@@ -1,0 +1,8 @@
+CREATE NODE TYPE ( PersonType : Person {
+    name: STRING,
+    OPTIONAL age: INTEGER
+}) ;
+CREATE NODE TYPE ( SalariedType : Salaried {
+    salary: INTEGER
+}) ;
+CREATE NODE TYPE ( EmployeeType: @PersonType & @SalariedType )
