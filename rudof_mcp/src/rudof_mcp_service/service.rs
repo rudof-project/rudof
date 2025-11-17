@@ -11,14 +11,8 @@ use rmcp::{
 use rudof_lib::{Rudof, RudofConfig};
 
 /// Configuration for the RudofMcpService
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct ServiceConfig {}
-
-impl Default for ServiceConfig {
-    fn default() -> Self {
-        Self {}
-    }
-}
 
 /// MCP service for Rudof operations
 #[derive(Clone)]

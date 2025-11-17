@@ -49,7 +49,7 @@ impl ServerHandler for RudofMcpService {
             protocol_version: ProtocolVersion::V_2025_06_18,
             capabilities: ServerCapabilities {
                 experimental: Some(experimental),
-                logging: Some(logging_meta), 
+                logging: Some(logging_meta),
                 prompts: Some(PromptsCapability {
                     list_changed: Some(true),
                 }),

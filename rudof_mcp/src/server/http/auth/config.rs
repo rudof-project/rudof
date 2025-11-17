@@ -45,10 +45,10 @@ impl JwksCache {
     }
 
     fn get(&self) -> Option<&JwkSet> {
-        if let (Some(jwks), Some(fetched_at)) = (&self.jwks, self.fetched_at) {
-            if fetched_at.elapsed() < self.ttl {
-                return Some(jwks);
-            }
+        if let (Some(jwks), Some(fetched_at)) = (&self.jwks, self.fetched_at)
+            && fetched_at.elapsed() < self.ttl
+        {
+            return Some(jwks);
         }
         None
     }

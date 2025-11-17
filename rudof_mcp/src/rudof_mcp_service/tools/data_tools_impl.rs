@@ -102,7 +102,7 @@ pub async fn load_rdf_data_from_sources_impl(
         parse_optional_base_iri(base).map_err(|e| rdf_error("parsing base IRI", e.to_string()))?;
 
     let data_format_str = data_format.as_deref().unwrap_or("turtle");
-    let parsed_data_format: DataFormat = RDFFormat::from_str(&data_format_str)
+    let parsed_data_format: DataFormat = RDFFormat::from_str(data_format_str)
         .map_err(|e| rdf_error("parsing data format", e.to_string()))?
         .into();
 
@@ -124,7 +124,7 @@ pub async fn load_rdf_data_from_sources_impl(
             "Successfully loaded RDF data from {} source(s) in {} format",
             sources_count, data_format_str
         ),
-        sources_count: sources_count,
+        sources_count,
         format: data_format_str.to_string(),
     };
 
@@ -172,7 +172,7 @@ pub async fn export_rdf_data_impl(
     let rudof = service.rudof.lock().await;
     let format_str = format.as_deref().unwrap_or("turtle");
 
-    match RDFFormat::from_str(&format_str) {
+    match RDFFormat::from_str(format_str) {
         Ok(parsed_format) => {
             let mut v = Vec::new();
             rudof
@@ -186,7 +186,7 @@ pub async fn export_rdf_data_impl(
             let response = ExportRdfDataResponse {
                 data: str.clone(),
                 format: format_str.to_string(),
-                size_bytes: size_bytes,
+                size_bytes,
             };
 
             let structured = serde_json::to_value(&response).unwrap();
@@ -234,7 +234,7 @@ pub async fn export_plantuml_impl(
     let size = str.len();
     let response = ExportPlantUmlResponse {
         plantuml_data: str.clone(),
-        size: size,
+        size,
     };
 
     let structured = serde_json::to_value(&response).unwrap();

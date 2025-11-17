@@ -130,10 +130,10 @@ impl TokenClaims {
         }
 
         // Check not-before if present (with 60s clock skew tolerance)
-        if let Some(nbf) = self.nbf {
-            if now < nbf - 60 {
-                return Err(anyhow::anyhow!("Token not yet valid"));
-            }
+        if let Some(nbf) = self.nbf
+            && now < nbf - 60
+        {
+            return Err(anyhow::anyhow!("Token not yet valid"));
         }
 
         Ok(())
