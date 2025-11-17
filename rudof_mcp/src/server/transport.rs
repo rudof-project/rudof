@@ -1,18 +1,13 @@
 use clap::ValueEnum;
 
 /// Transport type for MCP server
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum, Default)]
 pub enum TransportType {
     /// Standard input/output transport (for local CLI usage)
     Stdio,
     /// HTTP with Server-Sent Events transport (for network usage)
+    #[default]
     HttpSse,
-}
-
-impl Default for TransportType {
-    fn default() -> Self {
-        Self::HttpSse
-    }
 }
 
 impl std::fmt::Display for TransportType {

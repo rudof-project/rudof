@@ -1,6 +1,6 @@
 pub mod auth;
 pub mod config;
+pub mod http_server;
 pub mod middleware;
-pub mod server;
 
-pub use server::run_mcp_http;
+pub use http_server::run_mcp_http;
