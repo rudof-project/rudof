@@ -1,5 +1,6 @@
 use clap::ValueEnum;
 use std::fmt::{Display, Formatter};
+use std::str::FromStr;
 
 use iri_s::mime_type::MimeType;
 
@@ -43,6 +44,24 @@ impl Display for CliShaclFormat {
             CliShaclFormat::N3 => write!(dest, "n3"),
             CliShaclFormat::NQuads => write!(dest, "nquads"),
             CliShaclFormat::JsonLd => write!(dest, "jsonld"),
+        }
+    }
+}
+
+impl FromStr for CliShaclFormat {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "internal" => Ok(CliShaclFormat::Internal),
+            "turtle" => Ok(CliShaclFormat::Turtle),
+            "ntriples" => Ok(CliShaclFormat::NTriples),
+            "rdfxml" => Ok(CliShaclFormat::RDFXML),
+            "trig" => Ok(CliShaclFormat::TriG),
+            "n3" => Ok(CliShaclFormat::N3),
+            "nquads" => Ok(CliShaclFormat::NQuads),
+            "jsonld" => Ok(CliShaclFormat::JsonLd),
+            other => Err(format!("Unsupported SHACL format: {other}")),
         }
     }
 }

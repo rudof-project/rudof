@@ -1,4 +1,3 @@
-use anyhow::{Result, bail};
 use clap::ValueEnum;
 use std::{
     fmt::{Display, Formatter},
@@ -23,15 +22,14 @@ pub enum ResultShExValidationFormat {
 }
 
 impl ResultShExValidationFormat {
-    pub fn to_shapemap_format(&self) -> Result<ShapeMapFormat> {
+    pub fn to_shapemap_format(&self) -> Result<ShapeMapFormat, RudofError> {
         match self {
             ResultShExValidationFormat::Compact => Ok(ShapeMapFormat::Compact),
             ResultShExValidationFormat::Details => Ok(ShapeMapFormat::Details),
             ResultShExValidationFormat::Json => Ok(ShapeMapFormat::Json),
-            _ => bail!(
-                "Conversion to ShapeMapFormat not supported for {self}. \
-                 Use a different format or implement conversion."
-            ),
+            _ =>  Err(RudofError::NotImplemented {
+                msg: format!("Conversion to ShapeMapFormat not yet implemented"),
+            }),
         }
     }
 }

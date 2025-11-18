@@ -1,4 +1,3 @@
-use crate::CliShaclFormat;
 use crate::dctap_format::DCTapFormat as CliDCTapFormat;
 use anyhow::{Result, bail};
 use clap::ValueEnum;
@@ -9,6 +8,7 @@ use std::{
     fmt::{Display, Formatter},
     str::FromStr,
 };
+use rudof_lib::shacl_format::CliShaclFormat;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
 #[clap(rename_all = "lower")]

@@ -20,6 +20,9 @@ pub mod shex;
 pub mod shex_format;
 pub mod sort_by_result_shape_map;
 pub mod terminal_width;
+pub mod shacl;
+pub mod shacl_format;
+pub mod result_shacl_validation_format;
 
 pub use input_spec::*;
 pub use iri_s::*;

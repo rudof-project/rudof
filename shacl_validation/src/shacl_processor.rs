@@ -8,6 +8,7 @@ use crate::store::sparql::Endpoint;
 use crate::validate_error::ValidateError;
 use crate::validation_report::report::ValidationReport;
 use clap::ValueEnum;
+use std::str::FromStr;
 use prefixmap::PrefixMap;
 use shacl_ir::compiled::schema_ir::SchemaIR;
 use sparql_service::RdfData;
@@ -29,6 +30,18 @@ pub enum ShaclValidationMode {
     Native,
     /// SPARQL-based engine using SPARQL queries to validate the data
     Sparql,
+}
+
+impl FromStr for ShaclValidationMode {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "native" => Ok(ShaclValidationMode::Native),
+            "sparql" => Ok(ShaclValidationMode::Sparql),
+            other => Err(format!("Unsupported SHACL validation mode: {other}")),
+        }
+    }
 }
 
 /// The basic operations of the SHACL Processor.

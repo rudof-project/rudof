@@ -9,6 +9,7 @@ use super::data_tools_impl::*;
 use super::node_tools_impl::*;
 use super::query_tools_impl::*;
 use super::shex_validate_tools_impl::*;
+use super::shacl_validate_tools_impl::*;
 
 #[tool_router]
 impl RudofMcpService {
@@ -95,6 +96,18 @@ impl RudofMcpService {
         // Delegates the call to the function in shex_validate_tools_impl.rs
         validate_shex_impl(self, params).await
     }
+
+    #[tool(
+        name = "validate_shacl",
+        description = "Validate RDF data against a SHACL schema using the provided inputs"
+    )]
+    pub async fn validate_shacl(
+        &self,
+        params: Parameters<ValidateShaclRequest>,
+    ) -> Result<CallToolResult, McpError> {
+        // Delegates the call to the function in shacl_validate_tools_impl.rs
+        validate_shacl_impl(self, params).await
+    }
 }
 
 // Public wrapper to expose the generated router from the macro
@@ -178,6 +191,16 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
                         .open_world(false),
                 );
             }
+            "validate_shacl" => {
+                tool.title = Some("Validate RDF with SHACL".to_string());
+                tool.annotations = Some(
+                    rmcp::model::ToolAnnotations::new()
+                        .read_only(true)
+                        .destructive(false)
+                        .idempotent(true)
+                        .open_world(false),
+                );
+            }
             _ => {}
         }
     }
@@ -202,6 +225,7 @@ mod tests {
         assert!(tools.iter().any(|t| t.name == "node_info"));
         assert!(tools.iter().any(|t| t.name == "execute_sparql_query"));
         assert!(tools.iter().any(|t| t.name == "validate_shex"));
+        assert!(tools.iter().any(|t| t.name == "validate_shacl"));
     }
 
     #[test]
@@ -240,6 +264,16 @@ mod tests {
         assert!(validate_shex_tool.is_some());
         let tool = validate_shex_tool.unwrap();
         assert_eq!(tool.title, Some("Validate RDF with ShEx".to_string()));
+        assert!(tool.annotations.is_some());
+        let annot = tool.annotations.as_ref().unwrap();
+        assert_eq!(annot.read_only_hint, Some(true));
+        assert_eq!(annot.idempotent_hint, Some(true));
+
+        // Test validate_shacl
+        let validate_shacl_tool = tools.iter().find(|t| t.name == "validate_shacl");
+        assert!(validate_shacl_tool.is_some());
+        let tool = validate_shacl_tool.unwrap();
+        assert_eq!(tool.title, Some("Validate RDF with SHACL".to_string()));
         assert!(tool.annotations.is_some());
         let annot = tool.annotations.as_ref().unwrap();
         assert_eq!(annot.read_only_hint, Some(true));

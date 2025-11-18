@@ -1,13 +1,14 @@
 use crate::run_shacl_convert;
 use crate::{
-    CliShaclFormat, InputConvertFormat, InputConvertMode, OutputConvertFormat, OutputConvertMode,
-    add_shacl_schema_rudof, dctap_format::DCTapFormat as CliDCTapFormat, parse_dctap,
+    InputConvertFormat, InputConvertMode, OutputConvertFormat, OutputConvertMode,
+    dctap_format::DCTapFormat as CliDCTapFormat, parse_dctap,
     parse_shex_schema_rudof, run_shex, show_shex_schema, writer::get_writer,
 };
 use anyhow::{Result, anyhow, bail};
 use iri_s::IriS;
 use prefixmap::IriRef;
-use rudof_lib::{InputSpec, Rudof, RudofConfig, ShExFormatter, ShapeMapParser, UmlGenerationMode};
+use rudof_lib::{InputSpec, Rudof, RudofConfig, ShExFormatter, ShapeMapParser, UmlGenerationMode, shacl::add_shacl_schema_rudof,
+shacl_format::CliShaclFormat};
 use shapes_converter::{ShEx2Html, ShEx2Sparql, ShEx2Uml, Shacl2ShEx, Tap2ShEx};
 use srdf::UmlConverter;
 use srdf::{ImageFormat, ReaderMode};

@@ -1,6 +1,5 @@
 // Current modules
 pub mod cli;
-pub mod cli_shacl_format;
 pub mod color_support;
 pub mod compare;
 pub mod convert;
@@ -23,7 +22,6 @@ pub mod rdf_reader_mode;
 pub mod result_compare_format;
 pub mod result_data_format;
 pub mod result_service_format;
-pub mod result_shacl_validation_format;
 pub mod result_validation_format;
 pub mod service;
 pub mod shacl;
@@ -34,7 +32,6 @@ pub mod sort_by_validate;
 pub mod validation_mode;
 pub mod writer;
 
-pub use cli_shacl_format::*;
 pub use color_support::*;
 pub use compare::*;
 pub use convert::*;
@@ -52,7 +49,6 @@ pub use rdf_config::*;
 pub use rdf_reader_mode::*;
 pub use result_data_format::*;
 pub use result_service_format::*;
-pub use result_shacl_validation_format::*;
 pub use result_validation_format::*;
 pub use service::*;
 pub use shacl::*;
