@@ -66,20 +66,21 @@ pub async fn node_info_impl(
     let rdf = rudof.get_rdf_data();
 
     let node_selector = parse_node_selector(&node)
-        .map_err(|e| rdf_error("parsing node selector", e.to_string()))?;
+        .map_err(|e| invalid_request_error("Invalid node selector", e.to_string(), Some(json!({"operation":"node_info_impl", "phase":"parse_node_selector"}))))?;
 
     let mode_str = mode.as_deref().unwrap_or("both");
     let mut options = NodeInfoOptions::from_mode_str(mode_str)
-        .map_err(|e| rdf_error("parsing node mode", e.to_string()))?;
+        .map_err(|e| invalid_request_error("Invalid mode", e.to_string(), Some(json!({"operation":"node_info_impl", "phase":"parse_node_mode"}))))?;
     options.show_colors = false;
 
     let pred_list: Vec<String> = predicates.unwrap_or_default();
     let node_infos = match get_node_info(rdf, node_selector, &pred_list, &options) {
         Ok(infos) => infos,
         Err(e) => {
-            return Err(resource_not_found(
-                error_messages::NODE_NOT_FOUND,
-                Some(json!({ "error": e.to_string() })),
+            return Err(resource_not_found_error(
+                "Node not found",
+                e.to_string(),
+                Some(serde_json::json!({"operation":"node_info_impl", "phase":"get_node_info"})),
             ));
         }
     };
@@ -89,12 +90,11 @@ pub async fn node_info_impl(
     let mut output_buffer = Cursor::new(Vec::new());
 
     format_node_info_list(&node_infos, rdf, &mut output_buffer, &options)
-        .map_err(|e| rdf_error("formatting node info", e.to_string()))?;
+        .map_err(|e| internal_error("Serialization error", e.to_string(), Some(json!({"operation":"node_info_impl", "phase":"format_node_info_list"}))))?;
 
     let output_bytes = output_buffer.into_inner();
     let output_str = String::from_utf8(output_bytes)
-        .map_err(|e| rdf_error("converting to UTF-8", e.to_string()))?;
-
+        .map_err(|e| internal_error("Conversion error", e.to_string(), Some(json!({"operation":"node_info_impl", "phase":"utf8_conversion"}))))?;
     let outgoing_data: Vec<NodePredicateObjects> = node_info
         .outgoing
         .iter()
@@ -145,8 +145,9 @@ pub async fn node_info_impl(
 
     let structured = serde_json::to_value(&response).map_err(|e| {
         internal_error(
-            error_messages::SERIALIZE_DATA_ERROR,
-            Some(json!({ "error": e.to_string() })),
+            "Serialization error",
+            e.to_string(),
+            Some(json!({"operation":"node_info_impl", "phase":"serialize_response"})),
         )
     })?;
 

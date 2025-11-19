@@ -1,4 +1,4 @@
-use crate::rudof_mcp_service::errors::rdf_error;
+use crate::rudof_mcp_service::errors::*;
 use crate::rudof_mcp_service::service::RudofMcpService;
 use rmcp::{
     ErrorData as McpError,
@@ -137,15 +137,15 @@ pub async fn export_rdf_data(
     let rudof = service.rudof.lock().await;
 
     let rdf_format =
-        RDFFormat::from_str(format_str).map_err(|e| rdf_error("parsing format", e.to_string()))?;
+        RDFFormat::from_str(format_str).map_err(|e| invalid_request_error("Serialization error", e.to_string(), Some(json!({"phase":"parse_format","param":"format","value":format_str}))))?;
 
     let mut buffer = Vec::new();
     rudof
         .serialize_data(&rdf_format, &mut buffer)
-        .map_err(|e| rdf_error("serializing data", e.to_string()))?;
+        .map_err(|e| internal_error("Serialization error", e.to_string(), Some(json!({"operation":"export_rdf_data", "phase":"serialize_data"}))))?;
 
     let text =
-        String::from_utf8(buffer).map_err(|e| rdf_error("converting to UTF-8", e.to_string()))?;
+        String::from_utf8(buffer).map_err(|e| internal_error("Conversion error", e.to_string(), Some(json!({"operation":"export_rdf_data", "phase":"utf8_conversion"}))))?;
 
     let mime_type = match format_str {
         "turtle" => "text/turtle",

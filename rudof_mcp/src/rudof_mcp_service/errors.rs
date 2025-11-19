@@ -1,225 +1,51 @@
 use rmcp::ErrorData as McpError;
-use serde_json::Value;
+use serde_json::{json, Map, Value};
 
-/// Canonical error messages used by this MCP server implementation.
-/// These messages provide human-readable descriptions for error conditions.
-pub mod error_messages {
-    // GENERAL Errors
-    pub const RESOURCE_NOT_FOUND: &str = "Resource not found";
-    pub const CONVERSION_ERROR: &str = "Conversion error";
-    pub const UNSUPPORTED_OPERATION: &str = "Unsupported operation";
-
-    // DATA Errors
-    pub const RDF_LOAD_ERROR: &str = "RDF load error";
-    pub const INVALID_BASE_IRI: &str = "Invalid base IRI";
-    pub const INVALID_DATA_SPEC: &str = "Invalid data specification";
-    pub const VISUALIZATION_ERROR: &str = "Visualization error";
-    pub const INVALID_DATA_FORMAT: &str = "Invalid data format";
-    pub const INVALID_EXPORT_FORMAT: &str = "Invalid export format";
-    pub const SERIALIZE_DATA_ERROR: &str = "Data serialization error";
-
-    // NODE Errors
-    pub const INVALID_NODE_SELECTOR: &str = "Invalid node selector";
-    pub const NODE_NOT_FOUND: &str = "Node not found";
-    pub const INVALID_NODE_MODE: &str = "Invalid mode";
-    pub const RDF_ARC_QUERY_ERROR: &str = "RDF arc query error";
-
-    // QUERY Errors
-    pub const INVALID_QUERY_TYPE: &str = "Invalid query type";
-    pub const QUERY_EXECUTION_ERROR: &str = "Query execution error";
-    pub const INVALID_QUERY_RESULT_FORMAT: &str = "Invalid query result format";
-    pub const QUERY_GENERATION_ERROR: &str = "Query generation error";
-    pub const SAMPLING_CONTEXT_ERROR: &str = "Sampling context error";
-    pub const SAMPLING_RESPONSE_ERROR: &str = "Sampling response error";
-
-    // SHEX VALIDATE Errors
-    pub const INVALID_SCHEMA_FORMAT: &str = "Invalid schema format";
-    pub const INVALID_READER_MODE: &str = "Invalid reader mode";
-    pub const INVALID_SHAPEMAP_FORMAT: &str = "Invalid shapemap format";
-    pub const INVALID_RESULT_SHEX_VALIDATION_FORMAT: &str = "Invalid result ShEx validation format";
-    pub const VALIDATION_FAILED: &str = "Validation failed";
+#[derive(Debug, Clone, Copy)]
+pub enum ErrorKind {
+    ResourceNotFound,
+    InvalidRequest,
+    Internal,
 }
 
-// Create an `McpError::resource_not_found` with optional structured data.
-pub fn resource_not_found(error_messages: &'static str, data: Option<Value>) -> McpError {
-    McpError::resource_not_found(error_messages, data)
+pub fn internal_error(message: &'static str, cause: impl Into<String>, context: Option<Value>) -> McpError {
+    mk_error(ErrorKind::Internal, message, Some(cause.into()), context)
 }
 
-// Create an `McpError::invalid_request` with optional structured data.
-pub fn invalid_request(error_messages: &'static str, data: Option<Value>) -> McpError {
-    McpError::invalid_request(error_messages, data)
+pub fn invalid_request_error(message: &'static str, cause: impl Into<String>, context: Option<Value>) -> McpError {
+    mk_error(ErrorKind::InvalidRequest, message, Some(cause.into()), context)
 }
 
-// Create an `McpError::internal_error` with optional structured data.
-pub fn internal_error(error_messages: &'static str, data: Option<Value>) -> McpError {
-    McpError::internal_error(error_messages, data)
+pub fn resource_not_found_error(message: &'static str, cause: impl Into<String>, context: Option<Value>) -> McpError {
+    mk_error(ErrorKind::ResourceNotFound, message, Some(cause.into()), context)
 }
 
-/// Create an RDF-specific error
-pub fn rdf_error(operation: &str, detail: impl Into<String>) -> McpError {
-    let detail_str = detail.into();
-    tracing::error!(operation = %operation, error = %detail_str, "RDF operation failed");
-
-    internal_error(
-        error_messages::RDF_LOAD_ERROR,
-        Some(serde_json::json!({
-            "operation": operation,
-            "detail": detail_str
-        })),
-    )
-}
-
-/// Create a SPARQL query error
-pub fn sparql_error(query_type: &str, detail: impl Into<String>) -> McpError {
-    let detail_str = detail.into();
-    tracing::error!(query_type = %query_type, error = %detail_str, "SPARQL query failed");
-
-    internal_error(
-        error_messages::QUERY_EXECUTION_ERROR,
-        Some(serde_json::json!({
-            "query_type": query_type,
-            "detail": detail_str
-        })),
-    )
-}
-
-/// Create a ShEx validation error
-pub fn shex_error(schema_part: &str, detail: impl Into<String>) -> McpError {
-    let detail_str = detail.into();
-    tracing::error!(schema_part = %schema_part, error = %detail_str, "ShEx operation failed");
-
-    invalid_request(
-        error_messages::INVALID_SCHEMA_FORMAT,
-        Some(serde_json::json!({
-            "schema_part": schema_part,
-            "detail": detail_str
-        })),
-    )
-}
-
-/// Create a ShapeMap error
-pub fn shapemap_error(detail: impl Into<String>) -> McpError {
-    let detail_str = detail.into();
-    tracing::error!(error = %detail_str, "ShapeMap operation failed");
-
-    invalid_request(
-        error_messages::INVALID_SHAPEMAP_FORMAT,
-        Some(serde_json::json!({ "detail": detail_str })),
-    )
-}
-
-/// Create a resource unavailable error (MCP-specific)
-pub fn resource_unavailable(uri: &str, reason: impl Into<String>) -> McpError {
-    internal_error(
-        error_messages::RESOURCE_NOT_FOUND,
-        Some(serde_json::json!({
-            "uri": uri,
-            "reason": reason.into()
-        })),
-    )
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use serde_json::json;
-
-    #[test]
-    fn test_resource_not_found_without_data() {
-        let err = resource_not_found(error_messages::RESOURCE_NOT_FOUND, None);
-        assert_eq!(err.message, error_messages::RESOURCE_NOT_FOUND);
-        assert!(err.data.is_none());
-    }
-
-    #[test]
-    fn test_resource_not_found_with_data() {
-        let data = json!({"id": 123, "reason": "missing"});
-        let err = resource_not_found(error_messages::RESOURCE_NOT_FOUND, Some(data.clone()));
-        assert_eq!(err.message, error_messages::RESOURCE_NOT_FOUND);
-        assert_eq!(err.data, Some(data.clone()));
-    }
-
-    #[test]
-    fn test_invalid_request_without_data() {
-        let err = invalid_request(error_messages::CONVERSION_ERROR, None);
-        assert_eq!(err.message, error_messages::CONVERSION_ERROR);
-        assert!(err.data.is_none());
-    }
-
-    #[test]
-    fn test_invalid_request_with_data() {
-        let data = json!({"field": "value"});
-        let err = invalid_request(error_messages::CONVERSION_ERROR, Some(data.clone()));
-        assert_eq!(err.message, error_messages::CONVERSION_ERROR);
-        assert_eq!(err.data, Some(data.clone()));
-    }
-
-    #[test]
-    fn test_internal_error_without_data() {
-        let err = internal_error(error_messages::VISUALIZATION_ERROR, None);
-        assert_eq!(err.message, error_messages::VISUALIZATION_ERROR);
-        assert!(err.data.is_none());
-    }
-
-    #[test]
-    fn test_internal_error_with_data() {
-        let data = json!({"detail": "stacktrace"});
-        let err = internal_error(error_messages::VISUALIZATION_ERROR, Some(data.clone()));
-        assert_eq!(err.message, error_messages::VISUALIZATION_ERROR);
-        assert_eq!(err.data, Some(data.clone()));
-    }
-
-    #[test]
-    fn test_rdf_error() {
-        let err = rdf_error("parsing", "Unexpected token");
-        assert_eq!(err.message, error_messages::RDF_LOAD_ERROR);
-        assert!(err.data.is_some());
-        if let Some(data) = err.data {
-            assert_eq!(data["operation"], "parsing");
-            assert_eq!(data["detail"], "Unexpected token");
+fn mk_error(kind: ErrorKind, message: &'static str, cause: Option<String>, context: Option<Value>) -> McpError {
+    let mut map = Map::new();
+    if let Some(ctx) = context {
+        match ctx {
+            Value::Object(o) => {
+                for (k, v) in o.into_iter() {
+                    map.insert(k, v);
+                }
+            }
+            other => {
+                map.insert("context".to_string(), other);
+            }
         }
     }
 
-    #[test]
-    fn test_sparql_error() {
-        let err = sparql_error("SELECT", "Syntax error");
-        assert_eq!(err.message, error_messages::QUERY_EXECUTION_ERROR);
-        assert!(err.data.is_some());
-        if let Some(data) = err.data {
-            assert_eq!(data["query_type"], "SELECT");
-            assert_eq!(data["detail"], "Syntax error");
-        }
+    if let Some(c) = cause {
+        map.insert("cause".to_string(), json!(c));
     }
 
-    #[test]
-    fn test_shex_error() {
-        let err = shex_error("schema validation", "Invalid shape");
-        assert_eq!(err.message, error_messages::INVALID_SCHEMA_FORMAT);
-        assert!(err.data.is_some());
-        if let Some(data) = err.data {
-            assert_eq!(data["schema_part"], "schema validation");
-            assert_eq!(data["detail"], "Invalid shape");
-        }
-    }
+    tracing::error!(?message, ?map, "MCP error occurred");
 
-    #[test]
-    fn test_shapemap_error() {
-        let err = shapemap_error("Invalid syntax");
-        assert_eq!(err.message, error_messages::INVALID_SHAPEMAP_FORMAT);
-        assert!(err.data.is_some());
-        if let Some(data) = err.data {
-            assert_eq!(data["detail"], "Invalid syntax");
-        }
-    }
+    let value = Some(Value::Object(map));
 
-    #[test]
-    fn test_resource_unavailable() {
-        let err = resource_unavailable("rudof://data", "Loading in progress");
-        assert_eq!(err.message, error_messages::RESOURCE_NOT_FOUND);
-        assert!(err.data.is_some());
-        if let Some(data) = err.data {
-            assert_eq!(data["uri"], "rudof://data");
-            assert_eq!(data["reason"], "Loading in progress");
-        }
+    match kind {
+        ErrorKind::ResourceNotFound => McpError::resource_not_found(message, value),
+        ErrorKind::InvalidRequest => McpError::invalid_request(message, value),
+        ErrorKind::Internal => McpError::internal_error(message, value),
     }
 }

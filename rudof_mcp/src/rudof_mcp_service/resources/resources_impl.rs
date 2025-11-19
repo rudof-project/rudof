@@ -1,4 +1,4 @@
-use crate::rudof_mcp_service::errors::{self, error_messages};
+use crate::rudof_mcp_service::errors::*;
 use crate::rudof_mcp_service::service::RudofMcpService;
 use rmcp::{
     ErrorData as McpError, RoleServer,
@@ -8,14 +8,12 @@ use rmcp::{
     },
     service::RequestContext,
 };
-use serde_json::json;
 
 use super::data_resources_impl::{get_data_resources, handle_data_resource};
 use super::node_resources_impl::{get_node_resources, handle_node_resource};
 use super::query_resources_impl::{get_query_resources, handle_query_resource};
-use super::shex_validate_resources_impl::{
-    get_shex_validate_resources, handle_shex_validate_resource,
-};
+use super::shex_validate_resources_impl::{get_shex_validate_resources, handle_shex_validate_resource};
+use super::shacl_validate_resources_impl::{get_shacl_validate_resources, handle_shacl_validate_resource};
 
 /// Return the list of available resources
 pub async fn list_resources(
@@ -29,6 +27,7 @@ pub async fn list_resources(
     all_resources.extend(get_node_resources());
     all_resources.extend(get_query_resources());
     all_resources.extend(get_shex_validate_resources());
+    all_resources.extend(get_shacl_validate_resources());
 
     // Handle pagination if requested
     let (resources, next_cursor) = if let Some(params) = request {
@@ -83,9 +82,14 @@ pub async fn read_resource(
         return result;
     }
 
+    if let Some(result) = handle_shacl_validate_resource(&uri) {
+        return result;
+    }
+
     // Resource not found
-    Err(errors::resource_not_found(
-        error_messages::RESOURCE_NOT_FOUND,
-        Some(json!({ "uri": uri })),
+    Err(resource_not_found_error(
+        "Invalid resource",
+        "The requested resource does not exist.",
+        Some(serde_json::json!({"operation":"read_resource"})),
     ))
 }

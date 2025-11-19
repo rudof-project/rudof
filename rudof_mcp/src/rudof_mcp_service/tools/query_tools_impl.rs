@@ -67,8 +67,9 @@ async fn generate_sparql_from_natural_language(
     let context_guard = service.current_context.read().await;
     let context = context_guard.as_ref().ok_or_else(|| {
         internal_error(
-            error_messages::SAMPLING_CONTEXT_ERROR,
-            Some(json!({ "error": "Request context not found" })),
+            "Sampling context error",
+            "Request context not found",
+            Some(json!({"operation":"generate_sparql_from_natural_language","phase":"get_context"})),
         )
     })?;
 
@@ -100,8 +101,9 @@ async fn generate_sparql_from_natural_language(
         .await
         .map_err(|e| {
             internal_error(
-                error_messages::QUERY_GENERATION_ERROR,
-                Some(json!({ "error": e.to_string() })),
+                "Query generation error",
+                e.to_string(),
+                Some(json!({"operation":"generate_sparql_from_natural_language","phase":"create_message"})),
             )
         })?;
 
@@ -111,8 +113,9 @@ async fn generate_sparql_from_natural_language(
         text_content.text.clone()
     } else {
         return Err(internal_error(
-            error_messages::SAMPLING_RESPONSE_ERROR,
-            Some(json!({ "error": "Expected text response from LLM" })),
+            "Sampling response error",
+            "Expected text response from LLM",
+            Some(json!({"operation":"generate_sparql_from_natural_language","phase":"extract_response_text"})),
         ));
     };
 
@@ -158,36 +161,34 @@ pub async fn execute_sparql_query_impl(
             generate_sparql_from_natural_language(service, &nl).await?
         }
         (Some(_), Some(_)) => {
-            return Err(internal_error(
+            return Err(invalid_request_error(
                 "Invalid request",
-                Some(json!({
-                    "error": "Cannot provide both 'query' and 'query_natural_language'. Please provide only one."
-                })),
+                "Cannot provide both 'query' and 'query_natural_language'",
+                Some(json!({"operation":"execute_sparql_query_impl", "phase":"query_validation"})),
             ));
         }
         (None, None) => {
-            return Err(internal_error(
+            return Err(invalid_request_error(
                 "Invalid request",
-                Some(json!({
-                    "error": "Must provide either 'query' or 'query_natural_language'"
-                })),
+                "Must provide either 'query' or 'query_natural_language'",
+                Some(json!({"operation":"execute_sparql_query_impl", "phase":"query_validation"})),
             ));
         }
     };
 
     let query_type_str = detect_query_type(&sparql_query).ok_or_else(|| {
-        sparql_error(
-            "detecting query type",
-            "Could not detect query type (SELECT, CONSTRUCT, ASK, DESCRIBE)",
+        invalid_request_error(
+            "Invalid query type",
+            "Detecting query type error",
+            Some(json!({"operation":"execute_sparql_query_impl", "phase":"detect_query_type"})),
         )
     })?;
     let parsed_query_type = QueryType::from_str(&query_type_str)
-        .map_err(|e| sparql_error("parsing query type", e.to_string()))?;
+        .map_err(|e| invalid_request_error("Invalid query type", e.to_string(), Some(json!({"operation":"execute_sparql_query_impl", "phase":"parse_query_type"}))))?;
 
     let result_format_str = result_format.as_deref().unwrap_or("Internal");
     let parsed_result_format = ResultQueryFormat::from_str(result_format_str)
-        .map_err(|e| sparql_error("parsing result format", e.to_string()))?;
-
+        .map_err(|e| invalid_request_error("Invalid query result format", e.to_string(), Some(json!({"operation":"execute_sparql_query_impl", "phase":"parse_result_format"}))))?;
     let query_spec = InputSpec::Str(sparql_query.clone());
 
     let mut rudof = service.rudof.lock().await;
@@ -200,12 +201,11 @@ pub async fn execute_sparql_query_impl(
         &parsed_result_format,
         &mut output_buffer,
     )
-    .map_err(|e| sparql_error("executing query", e.to_string()))?;
+    .map_err(|e| internal_error("Query execution error", e.to_string(), Some(json!({"operation":"execute_sparql_query_impl", "phase":"execute_query"}))))?;
 
     let output_bytes = output_buffer.into_inner();
     let output_str = String::from_utf8(output_bytes)
-        .map_err(|e| sparql_error("converting results to UTF-8", e.to_string()))?;
-
+        .map_err(|e| internal_error("Conversion error", e.to_string(), Some(json!({"operation":"execute_sparql_query_impl", "phase":"utf8_conversion"}))))?;
     // Calculate metadata
     let result_size_bytes = output_str.len();
     let result_lines = output_str.lines().count();
@@ -230,8 +230,9 @@ pub async fn execute_sparql_query_impl(
 
     let structured = serde_json::to_value(&response).map_err(|e| {
         internal_error(
-            error_messages::SERIALIZE_DATA_ERROR,
-            Some(json!({ "error": e.to_string() })),
+            "Serialization error",
+            e.to_string(),
+            Some(json!({"operation":"execute_sparql_query_impl", "phase":"serialize_response"})),
         )
     })?;
 

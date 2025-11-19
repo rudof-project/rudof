@@ -21,7 +21,7 @@ pub fn get_shex_validate_resources() -> Vec<Annotated<RawResource>> {
         Annotated {
             raw: RawResource {
                 uri: "rudof://formats/validation-result".to_string(),
-                name: "Supported Validation Result Formats".to_string(),
+                name: "Supported Validation ShEx Result Formats".to_string(),
                 description: Some(
                     "List of all supported ShEx validation result formats".to_string(),
                 ),
