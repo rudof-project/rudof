@@ -215,5 +215,5 @@ select ?person ?name ?status where {
 You can also express the query in natural language:
 
 ```
-Para cada persona, devuelve el número total de personas a las que conoce directamente o indirectamente con grado de relación 2, es decir, conoce a una persona que conoce a esa persona.
+For each person, return the total number of people they know directly or indirectly with a relationship degree of 2; that is, they know someone who knows that person.
 ```
