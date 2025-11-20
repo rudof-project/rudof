@@ -6,6 +6,8 @@ use crate::{
 };
 use iri_s::IriS;
 use iri_s::MimeType;
+use shex_ast::ShExFormat;
+use srdf::RDFFormat;
 use shex_ast::shapemap::ResultShapeMap;
 use srdf::ReaderMode;
 use std::env;
@@ -146,5 +148,94 @@ fn write_result_shapemap<W: Write>(
             result.show_as_table(writer, sort_by.into(), true, terminal_width())?;
         }
     }
+    Ok(())
+}
+
+/// Parse a ShEx schema from the given `InputSpec` into the provided `Rudof` instance.
+/// This centralizes the parsing and base resolution logic so callers (CLI, MCP)
+/// don't duplicate behavior.
+pub fn parse_shex_schema(
+    rudof: &mut Rudof,
+    input: &InputSpec,
+    schema_format: &CliShExFormat,
+    base: &Option<IriS>,
+    reader_mode: &ReaderMode,
+    config: &RudofConfig,
+) -> Result<(), RudofError> {
+    let reader = input
+        .open_read(Some(schema_format.mime_type()), "ShEx schema")
+        .map_err(|e| RudofError::ReadingPathContext {
+            path: input.source_name().to_string(),
+            error: e.to_string(),
+            context: "ShEx schema".to_string(),
+        })?;
+
+    let shex_format = shex_format_convert(schema_format);
+    let base_iri = get_base(config, base)?;
+
+    rudof.read_shex(
+        reader,
+        &shex_format,
+        Some(base_iri.as_str()),
+        reader_mode,
+        Some(&input.source_name()),
+    )?;
+
+    if config.shex_config().check_well_formed() {
+        let shex_ir = rudof.get_shex_ir().unwrap();
+        if shex_ir.has_neg_cycle() {
+            return Err(RudofError::Generic {
+                error: format!("Schema contains negative cycles: {:?}", shex_ir.neg_cycles()),
+            });
+        }
+    }
+
+    Ok(())
+}
+
+pub fn shex_format_convert(shex_format: &CliShExFormat) -> ShExFormat {
+    match shex_format {
+        CliShExFormat::ShExC => ShExFormat::ShExC,
+        CliShExFormat::ShExJ => ShExFormat::ShExJ,
+        CliShExFormat::Turtle => ShExFormat::RDFFormat(RDFFormat::Turtle),
+        _ => ShExFormat::ShExC,
+    }
+}
+
+/// Serialize the current ShEx (full schema) from `rudof` into `writer`.
+pub fn serialize_current_shex_rudof<W: Write>(
+    rudof: &Rudof,
+    result_schema_format: &CliShExFormat,
+    formatter: &shex_ast::compact::ShExFormatter,
+    writer: &mut W,
+) -> Result<(), RudofError> {
+    let shex_format = shex_format_convert(result_schema_format);
+    rudof.serialize_current_shex(&shex_format, formatter, writer)?;
+    Ok(())
+}
+
+/// Serialize a selected shape from the current ShEx in `rudof` into `writer`.
+pub fn serialize_shape_current_shex_rudof<W: Write>(
+    rudof: &Rudof,
+    shape: &shex_ast::shapemap::ShapeSelector,
+    result_schema_format: &CliShExFormat,
+    formatter: &shex_ast::compact::ShExFormatter,
+    writer: &mut W,
+) -> Result<(), RudofError> {
+    let shex_format = shex_format_convert(result_schema_format);
+    rudof.serialize_shape_current_shex(shape, &shex_format, formatter, writer)?;
+    Ok(())
+}
+
+/// Serialize a provided `Schema` value using `rudof` helpers into `writer`.
+pub fn serialize_shex_rudof<W: Write>(
+    rudof: &Rudof,
+    shex: &shex_ast::Schema,
+    result_schema_format: &CliShExFormat,
+    formatter: &shex_ast::compact::ShExFormatter,
+    writer: &mut W,
+) -> Result<(), RudofError> {
+    let shex_format = (*result_schema_format).try_into()?;
+    rudof.serialize_shex(shex, &shex_format, formatter, writer)?;
     Ok(())
 }

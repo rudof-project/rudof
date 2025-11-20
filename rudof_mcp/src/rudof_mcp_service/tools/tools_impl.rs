@@ -10,6 +10,7 @@ use super::node_tools_impl::*;
 use super::query_tools_impl::*;
 use super::shacl_validate_tools_impl::*;
 use super::shex_validate_tools_impl::*;
+use super::shex_tools_impl::*;
 
 #[tool_router]
 impl RudofMcpService {
@@ -98,6 +99,14 @@ impl RudofMcpService {
     }
 
     #[tool(
+        name = "show_shex",
+        description = "Show/serialize a ShEx schema stored on the server or provided inline"
+    )]
+    pub async fn show_shex(&self, params: Parameters<ShowShexRequest>) -> Result<CallToolResult, McpError> {
+        show_shex_impl(self, params).await
+    }
+
+    #[tool(
         name = "validate_shacl",
         description = "Validate RDF data against a SHACL schema using the provided inputs"
     )]
@@ -183,6 +192,16 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
             }
             "validate_shex" => {
                 tool.title = Some("Validate RDF with ShEx".to_string());
+                tool.annotations = Some(
+                    rmcp::model::ToolAnnotations::new()
+                        .read_only(true)
+                        .destructive(false)
+                        .idempotent(true)
+                        .open_world(false),
+                );
+            }
+            "show_shex" => {
+                tool.title = Some("Show ShEx Schema".to_string());
                 tool.annotations = Some(
                     rmcp::model::ToolAnnotations::new()
                         .read_only(true)
