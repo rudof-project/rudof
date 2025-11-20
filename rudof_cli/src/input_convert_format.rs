@@ -6,7 +6,7 @@ use std::{
     str::FromStr,
 };
 
-use rudof_lib::{shex_format::ShExFormat, shacl_format::CliShaclFormat};
+use rudof_lib::{shacl_format::CliShaclFormat, shex_format::ShExFormat};
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
 #[clap(rename_all = "lower")]

@@ -15,10 +15,14 @@ use tracing::debug;
 use tracing::enabled;
 use tracing::trace;
 
-use rudof_lib::{shacl_format::CliShaclFormat, shacl::*, result_shacl_validation_format::{ResultShaclValidationFormat, SortByShaclValidationReport}};
 use crate::writer::get_writer;
 use anyhow::Result;
 use iri_s::mime_type::MimeType;
+use rudof_lib::{
+    result_shacl_validation_format::{ResultShaclValidationFormat, SortByShaclValidationReport},
+    shacl::*,
+    shacl_format::CliShaclFormat,
+};
 
 #[allow(clippy::too_many_arguments)]
 pub fn run_shacl(
@@ -133,7 +137,6 @@ pub fn run_validate_shacl(
         config,
         false,
     )?;
-
 
     let validation_report = if let Some(schema) = schema {
         let shapes_format = (*shapes_format).unwrap_or_default();

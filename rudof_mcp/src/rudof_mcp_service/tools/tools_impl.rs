@@ -8,8 +8,8 @@ use rmcp::{
 use super::data_tools_impl::*;
 use super::node_tools_impl::*;
 use super::query_tools_impl::*;
-use super::shex_validate_tools_impl::*;
 use super::shacl_validate_tools_impl::*;
+use super::shex_validate_tools_impl::*;
 
 #[tool_router]
 impl RudofMcpService {

@@ -5,17 +5,21 @@ use crate::{
     DCTapResultFormat, GenerateSchemaFormat, InputCompareFormat, InputCompareMode,
     InputConvertFormat, InputConvertMode, OutputConvertFormat, OutputConvertMode, RDFReaderMode,
     RdfConfigFormat, RdfConfigResultFormat, ResultDataFormat, ResultServiceFormat,
-    ResultValidationFormat, ShowNodeMode,
-    SortByValidate, ValidationMode,
+    ResultValidationFormat, ShowNodeMode, SortByValidate, ValidationMode,
 };
 use clap::{Parser, Subcommand};
 use iri_s::IriS;
 use rudof_lib::{
-    InputSpec, data_format::DataFormat, query_result_format::ResultQueryFormat,
-    query_type::QueryType, result_shex_validation_format::ResultShExValidationFormat,
-    shapemap_format::ShapeMapFormat, shex_format::ShExFormat,
-    sort_by_result_shape_map::SortByResultShapeMap, shacl_format::CliShaclFormat,
-    result_shacl_validation_format::{ResultShaclValidationFormat, SortByShaclValidationReport}
+    InputSpec,
+    data_format::DataFormat,
+    query_result_format::ResultQueryFormat,
+    query_type::QueryType,
+    result_shacl_validation_format::{ResultShaclValidationFormat, SortByShaclValidationReport},
+    result_shex_validation_format::ResultShExValidationFormat,
+    shacl_format::CliShaclFormat,
+    shapemap_format::ShapeMapFormat,
+    shex_format::ShExFormat,
+    sort_by_result_shape_map::SortByResultShapeMap,
 };
 use shacl_validation::shacl_processor::ShaclValidationMode;
 use std::path::PathBuf;

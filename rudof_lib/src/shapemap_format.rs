@@ -46,7 +46,9 @@ impl FromStr for ShapeMapFormat {
             "internal" => Ok(ShapeMapFormat::Internal),
             "json" => Ok(ShapeMapFormat::Json),
             "details" => Ok(ShapeMapFormat::Details),
-            other => Err(crate::RudofError::UnsupportedShapeMapFormat { format: other.to_string() }),
+            other => Err(crate::RudofError::UnsupportedShapeMapFormat {
+                format: other.to_string(),
+            }),
         }
     }
 }

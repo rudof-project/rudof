@@ -27,7 +27,9 @@ impl ResultShExValidationFormat {
             ResultShExValidationFormat::Compact => Ok(ShapeMapFormat::Compact),
             ResultShExValidationFormat::Details => Ok(ShapeMapFormat::Details),
             ResultShExValidationFormat::Json => Ok(ShapeMapFormat::Json),
-            other => Err(RudofError::UnsupportedShExToShapeMapConversion { format: other.to_string() }),
+            other => Err(RudofError::UnsupportedShExToShapeMapConversion {
+                format: other.to_string(),
+            }),
         }
     }
 }
@@ -56,7 +58,9 @@ impl TryFrom<&ResultShExValidationFormat> for ShapeMapFormat {
             ResultShExValidationFormat::Compact => Ok(ShapeMapFormat::Compact),
             ResultShExValidationFormat::Details => Ok(ShapeMapFormat::Details),
             ResultShExValidationFormat::Json => Ok(ShapeMapFormat::Json),
-            other => Err(RudofError::UnsupportedShExToShapeMapConversion { format: format!("{other:?}") }),
+            other => Err(RudofError::UnsupportedShExToShapeMapConversion {
+                format: format!("{other:?}"),
+            }),
         }
     }
 }
@@ -75,7 +79,9 @@ impl FromStr for ResultShExValidationFormat {
             "compact" => Ok(ResultShExValidationFormat::Compact),
             "details" => Ok(ResultShExValidationFormat::Details),
             "jspn" => Ok(ResultShExValidationFormat::Json),
-            other => Err(RudofError::UnsupportedShExResultFormat { format: other.to_string() }),
+            other => Err(RudofError::UnsupportedShExResultFormat {
+                format: other.to_string(),
+            }),
         }
     }
 }

@@ -26,12 +26,12 @@ use rudof_cli::run_pgschema;
 use rudof_cli::run_validate_pgschema;
 use rudof_cli::{
     GenerateSchemaFormat, ValidationMode, run_convert, run_dctap, run_service, run_shacl,
-    run_shapemap, run_shex, run_validate_shacl, run_validate_shex
+    run_shapemap, run_shex, run_validate_shacl, run_validate_shex,
 };
 use rudof_lib::{
-    InputSpec, RudofConfig, data_format::DataFormat, shex_format::ShExFormat as CliShExFormat,
-    sort_by_result_shape_map::SortByResultShapeMap, shacl_format::CliShaclFormat,
-    result_shacl_validation_format::SortByShaclValidationReport
+    InputSpec, RudofConfig, data_format::DataFormat,
+    result_shacl_validation_format::SortByShaclValidationReport, shacl_format::CliShaclFormat,
+    shex_format::ShExFormat as CliShExFormat, sort_by_result_shape_map::SortByResultShapeMap,
 };
 use std::env;
 use std::io;

@@ -1,5 +1,5 @@
 use rmcp::ErrorData as McpError;
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value, json};
 
 #[derive(Debug, Clone, Copy)]
 pub enum ErrorKind {
@@ -8,19 +8,46 @@ pub enum ErrorKind {
     Internal,
 }
 
-pub fn internal_error(message: &'static str, cause: impl Into<String>, context: Option<Value>) -> McpError {
+pub fn internal_error(
+    message: &'static str,
+    cause: impl Into<String>,
+    context: Option<Value>,
+) -> McpError {
     mk_error(ErrorKind::Internal, message, Some(cause.into()), context)
 }
 
-pub fn invalid_request_error(message: &'static str, cause: impl Into<String>, context: Option<Value>) -> McpError {
-    mk_error(ErrorKind::InvalidRequest, message, Some(cause.into()), context)
+pub fn invalid_request_error(
+    message: &'static str,
+    cause: impl Into<String>,
+    context: Option<Value>,
+) -> McpError {
+    mk_error(
+        ErrorKind::InvalidRequest,
+        message,
+        Some(cause.into()),
+        context,
+    )
 }
 
-pub fn resource_not_found_error(message: &'static str, cause: impl Into<String>, context: Option<Value>) -> McpError {
-    mk_error(ErrorKind::ResourceNotFound, message, Some(cause.into()), context)
+pub fn resource_not_found_error(
+    message: &'static str,
+    cause: impl Into<String>,
+    context: Option<Value>,
+) -> McpError {
+    mk_error(
+        ErrorKind::ResourceNotFound,
+        message,
+        Some(cause.into()),
+        context,
+    )
 }
 
-fn mk_error(kind: ErrorKind, message: &'static str, cause: Option<String>, context: Option<Value>) -> McpError {
+fn mk_error(
+    kind: ErrorKind,
+    message: &'static str,
+    cause: Option<String>,
+    context: Option<Value>,
+) -> McpError {
     let mut map = Map::new();
     if let Some(ctx) = context {
         match ctx {

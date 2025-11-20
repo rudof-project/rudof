@@ -65,12 +65,22 @@ pub async fn node_info_impl(
     let rudof = service.rudof.lock().await;
     let rdf = rudof.get_rdf_data();
 
-    let node_selector = parse_node_selector(&node)
-        .map_err(|e| invalid_request_error("Invalid node selector", e.to_string(), Some(json!({"operation":"node_info_impl", "phase":"parse_node_selector"}))))?;
+    let node_selector = parse_node_selector(&node).map_err(|e| {
+        invalid_request_error(
+            "Invalid node selector",
+            e.to_string(),
+            Some(json!({"operation":"node_info_impl", "phase":"parse_node_selector"})),
+        )
+    })?;
 
     let mode_str = mode.as_deref().unwrap_or("both");
-    let mut options = NodeInfoOptions::from_mode_str(mode_str)
-        .map_err(|e| invalid_request_error("Invalid mode", e.to_string(), Some(json!({"operation":"node_info_impl", "phase":"parse_node_mode"}))))?;
+    let mut options = NodeInfoOptions::from_mode_str(mode_str).map_err(|e| {
+        invalid_request_error(
+            "Invalid mode",
+            e.to_string(),
+            Some(json!({"operation":"node_info_impl", "phase":"parse_node_mode"})),
+        )
+    })?;
     options.show_colors = false;
 
     let pred_list: Vec<String> = predicates.unwrap_or_default();
@@ -89,12 +99,22 @@ pub async fn node_info_impl(
 
     let mut output_buffer = Cursor::new(Vec::new());
 
-    format_node_info_list(&node_infos, rdf, &mut output_buffer, &options)
-        .map_err(|e| internal_error("Serialization error", e.to_string(), Some(json!({"operation":"node_info_impl", "phase":"format_node_info_list"}))))?;
+    format_node_info_list(&node_infos, rdf, &mut output_buffer, &options).map_err(|e| {
+        internal_error(
+            "Serialization error",
+            e.to_string(),
+            Some(json!({"operation":"node_info_impl", "phase":"format_node_info_list"})),
+        )
+    })?;
 
     let output_bytes = output_buffer.into_inner();
-    let output_str = String::from_utf8(output_bytes)
-        .map_err(|e| internal_error("Conversion error", e.to_string(), Some(json!({"operation":"node_info_impl", "phase":"utf8_conversion"}))))?;
+    let output_str = String::from_utf8(output_bytes).map_err(|e| {
+        internal_error(
+            "Conversion error",
+            e.to_string(),
+            Some(json!({"operation":"node_info_impl", "phase":"utf8_conversion"})),
+        )
+    })?;
     let outgoing_data: Vec<NodePredicateObjects> = node_info
         .outgoing
         .iter()

@@ -1,11 +1,20 @@
 use std::io::Write;
 
 use iri_s::{IriS, MimeType};
+use shacl_ast::ShaclFormat;
 use shacl_validation::validation_report::report::ValidationReport;
 use srdf::{ReaderMode, SRDFGraph};
-use shacl_ast::ShaclFormat;
 
-use crate::{InputSpec, Rudof, RudofConfig, RudofError, data::get_base, result_shacl_validation_format::{ResultShaclValidationFormat, SortByShaclValidationReport, cnv_sort_mode_report, result_format_to_rdf_format}, shacl_format::CliShaclFormat, terminal_width::terminal_width};
+use crate::{
+    InputSpec, Rudof, RudofConfig, RudofError,
+    data::get_base,
+    result_shacl_validation_format::{
+        ResultShaclValidationFormat, SortByShaclValidationReport, cnv_sort_mode_report,
+        result_format_to_rdf_format,
+    },
+    shacl_format::CliShaclFormat,
+    terminal_width::terminal_width,
+};
 
 pub fn add_shacl_schema_rudof(
     rudof: &mut Rudof,
@@ -16,11 +25,13 @@ pub fn add_shacl_schema_rudof(
     config: &RudofConfig,
 ) -> Result<(), RudofError> {
     let mime_type = shapes_format.mime_type();
-    let mut reader = schema.open_read(Some(mime_type), "SHACL shapes").map_err(|e| RudofError::ReadingPathContext {
-        path: schema.source_name().to_string(),
-        error: e.to_string(),
-        context: "SHACL Schema".to_string(),
-    })?;
+    let mut reader = schema
+        .open_read(Some(mime_type), "SHACL shapes")
+        .map_err(|e| RudofError::ReadingPathContext {
+            path: schema.source_name().to_string(),
+            error: e.to_string(),
+            context: "SHACL Schema".to_string(),
+        })?;
     let reader_name = schema.to_string();
     let shapes_format = shacl_format_convert(*shapes_format)?;
     let base = get_base(schema, config, base_shapes)?;
@@ -77,19 +88,24 @@ pub fn write_validation_report<W: Write>(
             report.show_as_table(writer, sort_mode, true, terminal_width)?;
             Ok(())
         }
-        ResultShaclValidationFormat::Json => {
-            Err(RudofError::NotImplemented { msg: "Generation of JSON for SHACL validation report is not implemented yet".to_string() })
-        }
+        ResultShaclValidationFormat::Json => Err(RudofError::NotImplemented {
+            msg: "Generation of JSON for SHACL validation report is not implemented yet"
+                .to_string(),
+        }),
         _ => {
             use srdf::BuildRDF;
             let mut rdf_writer = SRDFGraph::new();
             report
                 .to_rdf(&mut rdf_writer)
-                .map_err(|e| RudofError::Generic { error: format!("Error converting SHACL validation report to RDF: {e}") })?;
+                .map_err(|e| RudofError::Generic {
+                    error: format!("Error converting SHACL validation report to RDF: {e}"),
+                })?;
             let rdf_format = result_format_to_rdf_format(format)?;
             rdf_writer
                 .serialize(&rdf_format, &mut writer)
-                .map_err(|e| RudofError::RdfError { error: e.to_string() })?;
+                .map_err(|e| RudofError::RdfError {
+                    error: e.to_string(),
+                })?;
             Ok(())
         }
     }

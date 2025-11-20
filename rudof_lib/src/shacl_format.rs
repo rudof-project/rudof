@@ -61,7 +61,9 @@ impl FromStr for CliShaclFormat {
             "n3" => Ok(CliShaclFormat::N3),
             "nquads" => Ok(CliShaclFormat::NQuads),
             "jsonld" => Ok(CliShaclFormat::JsonLd),
-            other => Err(crate::RudofError::UnsupportedShaclFormat { format: other.to_string() }),
+            other => Err(crate::RudofError::UnsupportedShaclFormat {
+                format: other.to_string(),
+            }),
         }
     }
 }

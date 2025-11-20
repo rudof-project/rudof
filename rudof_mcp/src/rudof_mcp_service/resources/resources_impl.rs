@@ -12,8 +12,12 @@ use rmcp::{
 use super::data_resources_impl::{get_data_resources, handle_data_resource};
 use super::node_resources_impl::{get_node_resources, handle_node_resource};
 use super::query_resources_impl::{get_query_resources, handle_query_resource};
-use super::shex_validate_resources_impl::{get_shex_validate_resources, handle_shex_validate_resource};
-use super::shacl_validate_resources_impl::{get_shacl_validate_resources, handle_shacl_validate_resource};
+use super::shacl_validate_resources_impl::{
+    get_shacl_validate_resources, handle_shacl_validate_resource,
+};
+use super::shex_validate_resources_impl::{
+    get_shex_validate_resources, handle_shex_validate_resource,
+};
 
 /// Return the list of available resources
 pub async fn list_resources(

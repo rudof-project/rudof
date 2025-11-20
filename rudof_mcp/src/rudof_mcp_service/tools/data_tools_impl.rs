@@ -98,8 +98,13 @@ pub async fn load_rdf_data_from_sources_impl(
         .collect::<Result<_, _>>()
             .map_err(|e| invalid_request_error("Invalid data specification", e.to_string(), Some(json!({"operation":"load_rdf_data_from_sources_impl", "phase":"parse_data_specs"}))))?;
 
-    let base_iri =
-        parse_optional_base_iri(base).map_err(|e| invalid_request_error("Invalid base IRI", e.to_string(), Some(json!({"operation":"load_rdf_data_from_sources_impl", "phase":"parse_base_iri"}))))?;
+    let base_iri = parse_optional_base_iri(base).map_err(|e| {
+        invalid_request_error(
+            "Invalid base IRI",
+            e.to_string(),
+            Some(json!({"operation":"load_rdf_data_from_sources_impl", "phase":"parse_base_iri"})),
+        )
+    })?;
 
     let data_format_str = data_format.as_deref().unwrap_or("turtle");
     let parsed_data_format: DataFormat = RDFFormat::from_str(data_format_str)
@@ -116,7 +121,13 @@ pub async fn load_rdf_data_from_sources_impl(
         &config,
         false,
     )
-    .map_err(|e| internal_error("RDF load error", e.to_string(), Some(json!({"operation":"load_rdf_data_from_sources_impl","phase":"get_data_rudof"}))))?;
+    .map_err(|e| {
+        internal_error(
+            "RDF load error",
+            e.to_string(),
+            Some(json!({"operation":"load_rdf_data_from_sources_impl","phase":"get_data_rudof"})),
+        )
+    })?;
 
     let sources_count = data_specs.len();
     let response = LoadRdfDataFromSourcesResponse {
@@ -175,13 +186,22 @@ pub async fn export_rdf_data_impl(
     match RDFFormat::from_str(format_str) {
         Ok(parsed_format) => {
             let mut v = Vec::new();
-            rudof
-                .serialize_data(&parsed_format, &mut v)
-                .map_err(|e| internal_error("Serialization error", e.to_string(), Some(json!({"operation":"export_rdf_data_impl", "phase":"serialize_data"}))))?;
+            rudof.serialize_data(&parsed_format, &mut v).map_err(|e| {
+                internal_error(
+                    "Serialization error",
+                    e.to_string(),
+                    Some(json!({"operation":"export_rdf_data_impl", "phase":"serialize_data"})),
+                )
+            })?;
 
             let size_bytes = v.len();
-            let str = String::from_utf8(v)
-                .map_err(|e| internal_error("Conversion error", e.to_string(), Some(json!({"operation":"export_rdf_data_impl", "phase":"utf8_conversion"}))))?;
+            let str = String::from_utf8(v).map_err(|e| {
+                internal_error(
+                    "Conversion error",
+                    e.to_string(),
+                    Some(json!({"operation":"export_rdf_data_impl", "phase":"utf8_conversion"})),
+                )
+            })?;
             let response = ExportRdfDataResponse {
                 data: str.clone(),
                 format: format_str.to_string(),
@@ -217,12 +237,21 @@ pub async fn export_plantuml_impl(
     let rudof = service.rudof.lock().await;
     let mut v = Vec::new();
 
-    rudof.data2plant_uml(&mut v)
-        .map_err(|e| internal_error("Serialization error", e.to_string(), Some(json!({"operation":"export_plantuml_impl", "phase":"serialize_data"}))))?;
+    rudof.data2plant_uml(&mut v).map_err(|e| {
+        internal_error(
+            "Serialization error",
+            e.to_string(),
+            Some(json!({"operation":"export_plantuml_impl", "phase":"serialize_data"})),
+        )
+    })?;
 
-
-    let str = String::from_utf8(v)
-        .map_err(|e| internal_error("Conversion error", e.to_string(), Some(json!({"operation":"export_plantuml_impl", "phase":"utf8_conversion"}))))?;
+    let str = String::from_utf8(v).map_err(|e| {
+        internal_error(
+            "Conversion error",
+            e.to_string(),
+            Some(json!({"operation":"export_plantuml_impl", "phase":"utf8_conversion"})),
+        )
+    })?;
     let size = str.len();
     let response = ExportPlantUmlResponse {
         plantuml_data: str.clone(),
@@ -248,11 +277,21 @@ pub async fn export_image_impl(
     let Parameters(ExportImageRequest { image_format }) = params;
     let rudof = service.rudof.lock().await;
 
-    let format = parse_image_format(&image_format)
-        .map_err(|e| invalid_request_error("Invalid export format", e.to_string(), Some(json!({"operation":"export_image_impl", "phase":"parse_image_format"}))))?;
+    let format = parse_image_format(&image_format).map_err(|e| {
+        invalid_request_error(
+            "Invalid export format",
+            e.to_string(),
+            Some(json!({"operation":"export_image_impl", "phase":"parse_image_format"})),
+        )
+    })?;
 
-    let v = export_rdf_to_image(&rudof, format)
-        .map_err(|e| internal_error("Export rdf to image error", e.to_string(), Some(json!({"operation":"export_image_impl", "phase":"export_rdf_to_image"}))))?;
+    let v = export_rdf_to_image(&rudof, format).map_err(|e| {
+        internal_error(
+            "Export rdf to image error",
+            e.to_string(),
+            Some(json!({"operation":"export_image_impl", "phase":"export_rdf_to_image"})),
+        )
+    })?;
 
     let size_bytes = v.len();
     let base64_data = general_purpose::STANDARD.encode(&v);

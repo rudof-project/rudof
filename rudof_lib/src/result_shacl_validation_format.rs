@@ -39,7 +39,9 @@ impl Display for ResultShaclValidationFormat {
     }
 }
 
-pub fn result_format_to_rdf_format(result_format: &ResultShaclValidationFormat) -> Result<RDFFormat, RudofError> {
+pub fn result_format_to_rdf_format(
+    result_format: &ResultShaclValidationFormat,
+) -> Result<RDFFormat, RudofError> {
     match result_format {
         ResultShaclValidationFormat::Turtle => Ok(RDFFormat::Turtle),
         ResultShaclValidationFormat::NTriples => Ok(RDFFormat::NTriples),
@@ -47,7 +49,9 @@ pub fn result_format_to_rdf_format(result_format: &ResultShaclValidationFormat) 
         ResultShaclValidationFormat::TriG => Ok(RDFFormat::TriG),
         ResultShaclValidationFormat::N3 => Ok(RDFFormat::N3),
         ResultShaclValidationFormat::NQuads => Ok(RDFFormat::NQuads),
-        _ => Err(RudofError::UnsupportedShaclResultFormat { format: result_format.to_string() }),
+        _ => Err(RudofError::UnsupportedShaclResultFormat {
+            format: result_format.to_string(),
+        }),
     }
 }
 
@@ -66,7 +70,9 @@ impl FromStr for ResultShaclValidationFormat {
             "compact" => Ok(ResultShaclValidationFormat::Compact),
             "details" => Ok(ResultShaclValidationFormat::Details),
             "json" => Ok(ResultShaclValidationFormat::Json),
-            other => Err(RudofError::UnsupportedShaclResultFormat { format: other.to_string() }),
+            other => Err(RudofError::UnsupportedShaclResultFormat {
+                format: other.to_string(),
+            }),
         }
     }
 }
@@ -122,7 +128,9 @@ impl std::str::FromStr for SortByShaclValidationReport {
             "path" => Ok(SortByShaclValidationReport::Path),
             "sourceshape" => Ok(SortByShaclValidationReport::SourceShape),
             "details" => Ok(SortByShaclValidationReport::Details),
-            other => Err(RudofError::UnsupportedShaclSortMode { mode: other.to_string() }),
+            other => Err(RudofError::UnsupportedShaclSortMode {
+                mode: other.to_string(),
+            }),
         }
     }
 }

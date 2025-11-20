@@ -94,42 +94,70 @@ pub async fn validate_shex_impl(
     let shcema_spec = Some(InputSpec::Str(schema.clone()));
 
     let parsed_schema_format: Option<ShExFormat> = match schema_format {
-        Some(s) => Some(
-            ShExFormat::from_str(&s)
-                .map_err(|e| invalid_request_error("Invalid schema format", e.to_string(), Some(json!({"operation":"validate_shex_impl", "phase":"parse_schema_format"}))))?,
-        ),
+        Some(s) => Some(ShExFormat::from_str(&s).map_err(|e| {
+            invalid_request_error(
+                "Invalid schema format",
+                e.to_string(),
+                Some(json!({"operation":"validate_shex_impl", "phase":"parse_schema_format"})),
+            )
+        })?),
         None => None,
     };
 
     let parsed_base_schema: Option<IriS> = match base_schema {
-        Some(s) => {
-            Some(IriS::from_str(&s).map_err(|e| invalid_request_error("Invalid base IRI", e.to_string(), Some(json!({"operation":"validate_shex_impl", "phase":"parse_base_schema"}))))?)
-        }
+        Some(s) => Some(IriS::from_str(&s).map_err(|e| {
+            invalid_request_error(
+                "Invalid base IRI",
+                e.to_string(),
+                Some(json!({"operation":"validate_shex_impl", "phase":"parse_base_schema"})),
+            )
+        })?),
         None => None,
     };
 
     let parsed_reader_mode: ReaderMode = match reader_mode {
-        Some(s) => ReaderMode::from_str(&s)
-            .map_err(|e| invalid_request_error("Invalid reader mode", e.to_string(), Some(json!({"operation":"validate_shex_impl", "phase":"parse_reader_mode"}))))?,
+        Some(s) => ReaderMode::from_str(&s).map_err(|e| {
+            invalid_request_error(
+                "Invalid reader mode",
+                e.to_string(),
+                Some(json!({"operation":"validate_shex_impl", "phase":"parse_reader_mode"})),
+            )
+        })?,
         None => ReaderMode::Strict,
     };
 
     let shapemap_spec: Option<InputSpec> = shapemap.map(|s| InputSpec::Str(s.clone()));
 
     let parsed_shapemap_format: ShapeMapFormat = match shapemap_format {
-        Some(s) => ShapeMapFormat::from_str(&s).map_err(|e| invalid_request_error("Invalid shapemap format", e.to_string(), Some(json!({"operation":"validate_shex_impl", "phase":"parse_shapemap_format"}))))?,
+        Some(s) => ShapeMapFormat::from_str(&s).map_err(|e| {
+            invalid_request_error(
+                "Invalid shapemap format",
+                e.to_string(),
+                Some(json!({"operation":"validate_shex_impl", "phase":"parse_shapemap_format"})),
+            )
+        })?,
         None => ShapeMapFormat::Compact,
     };
 
     let parsed_result_format: ResultShExValidationFormat = match result_format {
-        Some(s) => ResultShExValidationFormat::from_str(&s)
-            .map_err(|e| invalid_request_error("Invalid result format", e.to_string(), Some(json!({"operation":"validate_shex_impl", "phase":"parse_result_format"}))))?,
+        Some(s) => ResultShExValidationFormat::from_str(&s).map_err(|e| {
+            invalid_request_error(
+                "Invalid result format",
+                e.to_string(),
+                Some(json!({"operation":"validate_shex_impl", "phase":"parse_result_format"})),
+            )
+        })?,
         None => ResultShExValidationFormat::Compact,
     };
 
     let parsed_sort_by: SortByResultShapeMap = match sort_by {
-        Some(s) => SortByResultShapeMap::from_str(&s)
-            .map_err(|e| invalid_request_error("Invalid sort order", e.to_string(), Some(json!({"operation":"validate_shex_impl", "phase":"parse_sort_by"}))))?,
+        Some(s) => SortByResultShapeMap::from_str(&s).map_err(|e| {
+            invalid_request_error(
+                "Invalid sort order",
+                e.to_string(),
+                Some(json!({"operation":"validate_shex_impl", "phase":"parse_sort_by"})),
+            )
+        })?,
         None => SortByResultShapeMap::Node,
     };
 
@@ -153,11 +181,22 @@ pub async fn validate_shex_impl(
         &rudof_config,
         &mut output_buffer,
     )
-    .map_err(|e| internal_error("Validation failed", e.to_string(), Some(json!({"operation":"validate_shex_impl", "phase":"validate_shex"}))))?;
+    .map_err(|e| {
+        internal_error(
+            "Validation failed",
+            e.to_string(),
+            Some(json!({"operation":"validate_shex_impl", "phase":"validate_shex"})),
+        )
+    })?;
 
     let output_bytes = output_buffer.into_inner();
-    let output_str = String::from_utf8(output_bytes)
-        .map_err(|e| internal_error("Conversion error", e.to_string(), Some(json!({"operation":"validate_shex_impl", "phase":"utf8_conversion"}))))?;
+    let output_str = String::from_utf8(output_bytes).map_err(|e| {
+        internal_error(
+            "Conversion error",
+            e.to_string(),
+            Some(json!({"operation":"validate_shex_impl", "phase":"utf8_conversion"})),
+        )
+    })?;
     // Calculate metadata
     let result_size_bytes = output_str.len();
     let result_lines = output_str.lines().count();
@@ -196,10 +235,7 @@ pub async fn validate_shex_impl(
         **Sort By:** {}\n\
         **Result Size:** {} bytes\n\
         **Result Lines:** {}\n",
-        result_format_str,
-        sort_by_str,
-        result_size_bytes,
-        result_lines
+        result_format_str, sort_by_str, result_size_bytes, result_lines
     );
 
     // Add validation parameters if provided

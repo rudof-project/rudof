@@ -46,7 +46,9 @@ impl FromStr for SortByResultShapeMap {
             "shape" => Ok(SortByResultShapeMap::Shape),
             "status" => Ok(SortByResultShapeMap::Status),
             "details" => Ok(SortByResultShapeMap::Details),
-            other => Err(crate::RudofError::UnsupportedShapeMapSortMode { mode: other.to_string() }),
+            other => Err(crate::RudofError::UnsupportedShapeMapSortMode {
+                mode: other.to_string(),
+            }),
         }
     }
 }

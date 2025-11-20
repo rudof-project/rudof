@@ -348,7 +348,9 @@ pub enum RudofError {
     #[error("Unsupported ShEx result format: {format}")]
     UnsupportedShExResultFormat { format: String },
 
-    #[error("Conversion of result ShEx validation format to ShapeMapFormat not implemented: {format}")]
+    #[error(
+        "Conversion of result ShEx validation format to ShapeMapFormat not implemented: {format}"
+    )]
     UnsupportedShExToShapeMapConversion { format: String },
 
     #[error("Unsupported ShEx format: {format}")]

@@ -1,7 +1,10 @@
 use clap::ValueEnum;
 use std::fmt::{Display, Formatter};
 
-use rudof_lib::{result_shex_validation_format::ResultShExValidationFormat, result_shacl_validation_format::ResultShaclValidationFormat};
+use rudof_lib::{
+    result_shacl_validation_format::ResultShaclValidationFormat,
+    result_shex_validation_format::ResultShExValidationFormat,
+};
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 #[clap(rename_all = "lower")]

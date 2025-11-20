@@ -8,7 +8,6 @@ use crate::store::sparql::Endpoint;
 use crate::validate_error::ValidateError;
 use crate::validation_report::report::ValidationReport;
 use clap::ValueEnum;
-use std::str::FromStr;
 use prefixmap::PrefixMap;
 use shacl_ir::compiled::schema_ir::SchemaIR;
 use sparql_service::RdfData;
@@ -17,6 +16,7 @@ use srdf::RDFFormat;
 use srdf::SRDFSparql;
 use std::fmt::Debug;
 use std::path::Path;
+use std::str::FromStr;
 
 #[derive(ValueEnum, Copy, Clone, Debug, PartialEq, Default)]
 /// Backend used for the validation.

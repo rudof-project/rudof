@@ -96,7 +96,9 @@ impl FromStr for ShExFormat {
             "trig" => Ok(ShExFormat::TriG),
             "n3" => Ok(ShExFormat::N3),
             "nquads" => Ok(ShExFormat::NQuads),
-            other => Err(RudofError::UnsupportedShExFormat { format: other.to_string() }),
+            other => Err(RudofError::UnsupportedShExFormat {
+                format: other.to_string(),
+            }),
         }
     }
 }
