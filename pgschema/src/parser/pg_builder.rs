@@ -6,7 +6,9 @@ use crate::{
     key::Key,
     parser::{
         pg::PgParser,
-        pg_actions::{Declaration, Edge, LabelsRecord, Node, Property, SingleValue, Values},
+        pg_actions::{
+            Edge, LabelsRecord, Node, Property, SingleValue, Statement, Values, identifier,
+        },
     },
     pg::PropertyGraph,
     pgs_error::PgsError,
@@ -34,22 +36,22 @@ impl PgBuilder {
                 error: e.to_string(),
             })?;
         let mut pg = PropertyGraph::new();
-        get_declarations(pg_content, &mut pg)?;
+        get_statements(pg_content, &mut pg)?;
         Ok(pg)
     }
 }
 
-fn get_declarations(decls: Vec<Declaration>, pg: &mut PropertyGraph) -> Result<(), PgsError> {
-    for decl in decls {
-        get_declaration(decl, pg)?;
+fn get_statements(statements: Vec<Statement>, pg: &mut PropertyGraph) -> Result<(), PgsError> {
+    for statement in statements {
+        get_statement(statement, pg)?;
     }
     Ok(())
 }
 
-fn get_declaration(decl: Declaration, pg: &mut PropertyGraph) -> Result<(), PgsError> {
-    match decl {
-        Declaration::Node(node) => get_node(node, pg),
-        Declaration::Edge(edge) => get_edge(edge, pg),
+fn get_statement(statement: Statement, pg: &mut PropertyGraph) -> Result<(), PgsError> {
+    match statement {
+        Statement::Node(node) => get_node(node, pg),
+        Statement::Edge(edge) => get_edge(edge, pg),
     }
     /*    let id = get_id(decl.id)?;
     let either = get_node_or_edge(decl.node_edge)?;
@@ -65,11 +67,12 @@ fn get_declaration(decl: Declaration, pg: &mut PropertyGraph) -> Result<(), PgsE
 }
 
 fn get_edge(edge: Edge, pg: &mut PropertyGraph) -> Result<(), PgsError> {
-    let id = get_id(edge.id)?;
+    println!("Getting edge: {:?}", edge);
+    // let id = get_id(edge.id)?;
     let source = get_id(edge.source)?;
     let target = get_id(edge.target)?;
     let (labels, record) = get_labels_record(edge.labels_record)?;
-    pg.add_edge(id, source, labels, record, target)
+    pg.add_edge(edge.id, source, labels, record, target)
 }
 
 fn get_node(node: Node, pg: &mut PropertyGraph) -> Result<(), PgsError> {
@@ -99,10 +102,10 @@ fn get_id(id: String) -> Result<String, PgsError> {
     Ok(id)
 }
 
-fn get_labels(labels: Vec<String>) -> Result<HashSet<LabelName>, PgsError> {
+fn get_labels(labels: Vec<identifier>) -> Result<HashSet<LabelName>, PgsError> {
     let mut result = HashSet::new();
     for label in labels {
-        result.insert(label);
+        result.insert(label.as_str().into());
     }
     Ok(result)
 }
@@ -117,7 +120,7 @@ fn get_properties(property_spec: Vec<Property>) -> Result<Record, PgsError> {
 }
 
 fn get_property(property: Property) -> Result<(String, HashSet<Value>), PgsError> {
-    let key = property.key;
+    let key = property.key.as_str().to_string();
     let values = get_values(property.values)?;
     Ok((key, values))
 }
