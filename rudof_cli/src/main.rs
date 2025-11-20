@@ -16,8 +16,6 @@ extern crate tracing_subscriber;
 
 use anyhow::*;
 use clap::Parser;
-use rudof_cli::CliShaclFormat;
-use rudof_cli::SortByShaclValidationReport;
 use rudof_cli::cli::{Cli, Command};
 use rudof_cli::data::run_data;
 use rudof_cli::node::run_node;
@@ -31,8 +29,9 @@ use rudof_cli::{
     run_shapemap, run_shex, run_validate_shacl, run_validate_shex,
 };
 use rudof_lib::{
-    InputSpec, RudofConfig, data_format::DataFormat, shex_format::ShExFormat as CliShExFormat,
-    sort_by_result_shape_map::SortByResultShapeMap,
+    InputSpec, RudofConfig, data_format::DataFormat,
+    result_shacl_validation_format::SortByShaclValidationReport, shacl_format::CliShaclFormat,
+    shex_format::ShExFormat as CliShExFormat, sort_by_result_shape_map::SortByResultShapeMap,
 };
 use std::env;
 use std::io;
@@ -137,12 +136,12 @@ fn main() -> Result<()> {
             )
         }
         Some(Command::Mcp {
-            host,
+            transport,
             port,
-            route_name,
+            route_path,
         }) => {
-            // Run the MCP server
-            rudof_mcp::run_mcp(route_name, port, host)
+            // Pass the reload handle to MCP server for dynamic log level changes
+            rudof_mcp::run_mcp(*transport, *port, route_path)
         }
         Some(Command::Service {
             service,

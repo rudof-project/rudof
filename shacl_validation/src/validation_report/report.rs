@@ -180,9 +180,9 @@ impl ValidationReport {
         Ok(())
     }
 
-    pub fn show_as_table(
+    pub fn show_as_table<W: Write>(
         &self,
-        mut writer: Box<dyn Write + 'static>,
+        mut writer: W,
         _sort_mode: SortModeReport,
         with_details: bool,
         terminal_width: usize,

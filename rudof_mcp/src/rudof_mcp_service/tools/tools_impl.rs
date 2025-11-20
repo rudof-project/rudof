@@ -8,6 +8,7 @@ use rmcp::{
 use super::data_tools_impl::*;
 use super::node_tools_impl::*;
 use super::query_tools_impl::*;
+use super::shacl_validate_tools_impl::*;
 use super::shex_validate_tools_impl::*;
 
 #[tool_router]
@@ -74,7 +75,7 @@ impl RudofMcpService {
 
     #[tool(
         name = "execute_sparql_query",
-        description = "Execute a SPARQL query (SELECT, CONSTRUCT, ASK, DESCRIBE) against the RDF stored on the server"
+        description = "Execute a SPARQL query (SELECT, CONSTRUCT, ASK, DESCRIBE) against the RDF stored on the server. You can provide either a direct SPARQL query or a natural language description that will be converted to SPARQL using an LLM."
     )]
     pub async fn execute_sparql_query(
         &self,
@@ -95,6 +96,18 @@ impl RudofMcpService {
         // Delegates the call to the function in shex_validate_tools_impl.rs
         validate_shex_impl(self, params).await
     }
+
+    #[tool(
+        name = "validate_shacl",
+        description = "Validate RDF data against a SHACL schema using the provided inputs"
+    )]
+    pub async fn validate_shacl(
+        &self,
+        params: Parameters<ValidateShaclRequest>,
+    ) -> Result<CallToolResult, McpError> {
+        // Delegates the call to the function in shacl_validate_tools_impl.rs
+        validate_shacl_impl(self, params).await
+    }
 }
 
 // Public wrapper to expose the generated router from the macro
@@ -109,39 +122,43 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
     for tool in tools.iter_mut() {
         match tool.name.as_ref() {
             "load_rdf_data_from_sources" => {
-                tool.title = Some("Load RDF data from sources".to_string());
+                tool.title = Some("Load RDF Data from Sources".to_string());
                 tool.annotations = Some(
                     rmcp::model::ToolAnnotations::new()
                         .read_only(false)
                         .destructive(false)
-                        .idempotent(false),
+                        .idempotent(false)
+                        .open_world(true), // Can access external URLs/endpoints
                 );
             }
             "export_rdf_data" => {
-                tool.title = Some("Export RDF data".to_string());
+                tool.title = Some("Export RDF Data".to_string());
                 tool.annotations = Some(
                     rmcp::model::ToolAnnotations::new()
                         .read_only(true)
                         .destructive(false)
-                        .idempotent(true),
+                        .idempotent(true)
+                        .open_world(false), // Operates on internal data only
                 );
             }
             "export_plantuml" => {
-                tool.title = Some("Export PlantUML diagram".to_string());
+                tool.title = Some("Export PlantUML Diagram".to_string());
                 tool.annotations = Some(
                     rmcp::model::ToolAnnotations::new()
                         .read_only(true)
                         .destructive(false)
-                        .idempotent(true),
+                        .idempotent(true)
+                        .open_world(false),
                 );
             }
             "export_image" => {
-                tool.title = Some("Export RDF image visualization".to_string());
+                tool.title = Some("Export RDF Image Visualization".to_string());
                 tool.annotations = Some(
                     rmcp::model::ToolAnnotations::new()
                         .read_only(true)
                         .destructive(false)
-                        .idempotent(true),
+                        .idempotent(true)
+                        .open_world(false),
                 );
             }
             "node_info" => {
@@ -150,7 +167,8 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
                     rmcp::model::ToolAnnotations::new()
                         .read_only(true)
                         .destructive(false)
-                        .idempotent(true),
+                        .idempotent(true)
+                        .open_world(false),
                 );
             }
             "execute_sparql_query" => {
@@ -159,7 +177,8 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
                     rmcp::model::ToolAnnotations::new()
                         .read_only(true)
                         .destructive(false)
-                        .idempotent(true),
+                        .idempotent(true)
+                        .open_world(false),
                 );
             }
             "validate_shex" => {
@@ -168,7 +187,18 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
                     rmcp::model::ToolAnnotations::new()
                         .read_only(true)
                         .destructive(false)
-                        .idempotent(true),
+                        .idempotent(true)
+                        .open_world(false),
+                );
+            }
+            "validate_shacl" => {
+                tool.title = Some("Validate RDF with SHACL".to_string());
+                tool.annotations = Some(
+                    rmcp::model::ToolAnnotations::new()
+                        .read_only(true)
+                        .destructive(false)
+                        .idempotent(true)
+                        .open_world(false),
                 );
             }
             _ => {}
@@ -195,6 +225,7 @@ mod tests {
         assert!(tools.iter().any(|t| t.name == "node_info"));
         assert!(tools.iter().any(|t| t.name == "execute_sparql_query"));
         assert!(tools.iter().any(|t| t.name == "validate_shex"));
+        assert!(tools.iter().any(|t| t.name == "validate_shacl"));
     }
 
     #[test]
@@ -203,55 +234,49 @@ mod tests {
 
         assert!(!tools.is_empty());
 
+        // Test load_rdf_data_from_sources
         let load_sources_tool = tools
             .iter()
             .find(|t| t.name == "load_rdf_data_from_sources");
         assert!(load_sources_tool.is_some());
-        assert_eq!(
-            load_sources_tool.unwrap().title,
-            Some("Load RDF data from sources".to_string())
-        );
+        let tool = load_sources_tool.unwrap();
+        assert_eq!(tool.title, Some("Load RDF Data from Sources".to_string()));
+        assert!(tool.annotations.is_some());
+        let annot = tool.annotations.as_ref().unwrap();
+        assert_eq!(annot.read_only_hint, Some(false));
+        assert_eq!(annot.destructive_hint, Some(false));
+        assert_eq!(annot.idempotent_hint, Some(false));
+        assert_eq!(annot.open_world_hint, Some(true));
 
+        // Test export_rdf_data
         let export_tool = tools.iter().find(|t| t.name == "export_rdf_data");
         assert!(export_tool.is_some());
-        assert_eq!(
-            export_tool.unwrap().title,
-            Some("Export RDF data".to_string())
-        );
+        let tool = export_tool.unwrap();
+        assert_eq!(tool.title, Some("Export RDF Data".to_string()));
+        assert!(tool.annotations.is_some());
+        let annot = tool.annotations.as_ref().unwrap();
+        assert_eq!(annot.read_only_hint, Some(true));
+        assert_eq!(annot.idempotent_hint, Some(true));
+        assert_eq!(annot.open_world_hint, Some(false));
 
-        let plantuml_tool = tools.iter().find(|t| t.name == "export_plantuml");
-        assert!(plantuml_tool.is_some());
-        assert_eq!(
-            plantuml_tool.unwrap().title,
-            Some("Export PlantUML diagram".to_string())
-        );
-
-        let image_tool = tools.iter().find(|t| t.name == "export_image");
-        assert!(image_tool.is_some());
-        assert_eq!(
-            image_tool.unwrap().title,
-            Some("Export RDF image visualization".to_string())
-        );
-
-        let node_tool = tools.iter().find(|t| t.name == "node_info");
-        assert!(node_tool.is_some());
-        assert_eq!(
-            node_tool.unwrap().title,
-            Some("Inspect RDF Node".to_string())
-        );
-
-        let quey_tool = tools.iter().find(|t| t.name == "execute_sparql_query");
-        assert!(quey_tool.is_some());
-        assert_eq!(
-            quey_tool.unwrap().title,
-            Some("Execute SPARQL Query".to_string())
-        );
-
+        // Test validate_shex
         let validate_shex_tool = tools.iter().find(|t| t.name == "validate_shex");
         assert!(validate_shex_tool.is_some());
-        assert_eq!(
-            validate_shex_tool.unwrap().title,
-            Some("Validate RDF with ShEx".to_string())
-        );
+        let tool = validate_shex_tool.unwrap();
+        assert_eq!(tool.title, Some("Validate RDF with ShEx".to_string()));
+        assert!(tool.annotations.is_some());
+        let annot = tool.annotations.as_ref().unwrap();
+        assert_eq!(annot.read_only_hint, Some(true));
+        assert_eq!(annot.idempotent_hint, Some(true));
+
+        // Test validate_shacl
+        let validate_shacl_tool = tools.iter().find(|t| t.name == "validate_shacl");
+        assert!(validate_shacl_tool.is_some());
+        let tool = validate_shacl_tool.unwrap();
+        assert_eq!(tool.title, Some("Validate RDF with SHACL".to_string()));
+        assert!(tool.annotations.is_some());
+        let annot = tool.annotations.as_ref().unwrap();
+        assert_eq!(annot.read_only_hint, Some(true));
+        assert_eq!(annot.idempotent_hint, Some(true));
     }
 }

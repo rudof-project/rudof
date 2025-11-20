@@ -1,101 +1,78 @@
 use rmcp::ErrorData as McpError;
-use serde_json::Value;
+use serde_json::{Map, Value, json};
 
-// Canonical error codes used by this MCP server implementation.
-pub mod error_messages {
-    // GENERAL Errors
-    pub const RESOURCE_NOT_FOUND: &str = "Resource not found";
-    pub const CONVERSION_ERROR: &str = "Conversion error";
-
-    // DATA Errors
-    pub const RDF_LOAD_ERROR: &str = "RDF load error";
-    pub const INVALID_BASE_IRI: &str = "Invalid base IRI";
-    pub const INVALID_DATA_SPEC: &str = "Invalid data spec";
-    pub const VISUALIZATION_ERROR: &str = "Visualization error";
-    pub const INVALID_DATA_FORMAT: &str = "Invalid data format";
-    pub const INVALID_EXPORT_FORMAT: &str = "Invalid export format";
-    pub const SERIALIZE_DATA_ERROR: &str = "Data serialization error";
-
-    // NODE Errors
-    pub const INVALID_NODE_SELECTOR: &str = "Invalid node selector";
-    pub const NODE_NOT_FOUND: &str = "Node not found";
-    pub const INVALID_NODE_MODE: &str = "Invalid mode";
-    pub const RDF_ARC_QUERY_ERROR: &str = "RDF arc query error";
-
-    // QUERY Errors
-    pub const INVALID_QUERY_TYPE: &str = "Invalid query type";
-    pub const QUERY_EXECUTION_ERROR: &str = "Query execution error";
-    pub const INVALID_QUERY_RESULT_FORMAT: &str = "Invalid query result format";
-
-    // SHEX VALIDATE Errors
-    pub const INVALID_SCHEMA_FORMAT: &str = "Invalid schema format";
-    pub const INVALID_READER_MODE: &str = "Invalid reader mode";
-    pub const INVALID_SHAPEMAP_FORMAT: &str = "Invalid shapemap format";
-    pub const INVALID_RESULT_SHEX_VALIDARION_FORMAT: &str = "Invalid result ShEx validation format";
+#[derive(Debug, Clone, Copy)]
+pub enum ErrorKind {
+    ResourceNotFound,
+    InvalidRequest,
+    Internal,
 }
 
-// Create an `McpError::resource_not_found` with optional structured data.
-pub fn resource_not_found(error_messages: &'static str, data: Option<Value>) -> McpError {
-    McpError::resource_not_found(error_messages, data)
+pub fn internal_error(
+    message: &'static str,
+    cause: impl Into<String>,
+    context: Option<Value>,
+) -> McpError {
+    mk_error(ErrorKind::Internal, message, Some(cause.into()), context)
 }
 
-// Create an `McpError::invalid_request` with structured data.
-pub fn invalid_request(error_messages: &'static str, data: Option<Value>) -> McpError {
-    McpError::invalid_request(error_messages, data)
+pub fn invalid_request_error(
+    message: &'static str,
+    cause: impl Into<String>,
+    context: Option<Value>,
+) -> McpError {
+    mk_error(
+        ErrorKind::InvalidRequest,
+        message,
+        Some(cause.into()),
+        context,
+    )
 }
 
-// Create an `McpError::internal_error` with structured data.
-pub fn internal_error(error_messages: &'static str, data: Option<Value>) -> McpError {
-    McpError::internal_error(error_messages, data)
+pub fn resource_not_found_error(
+    message: &'static str,
+    cause: impl Into<String>,
+    context: Option<Value>,
+) -> McpError {
+    mk_error(
+        ErrorKind::ResourceNotFound,
+        message,
+        Some(cause.into()),
+        context,
+    )
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use serde_json::json;
-
-    #[test]
-    fn test_resource_not_found_without_data() {
-        let err = resource_not_found(error_messages::RESOURCE_NOT_FOUND, None);
-        assert_eq!(err.message, error_messages::RESOURCE_NOT_FOUND);
-        assert!(err.data.is_none());
+fn mk_error(
+    kind: ErrorKind,
+    message: &'static str,
+    cause: Option<String>,
+    context: Option<Value>,
+) -> McpError {
+    let mut map = Map::new();
+    if let Some(ctx) = context {
+        match ctx {
+            Value::Object(o) => {
+                for (k, v) in o.into_iter() {
+                    map.insert(k, v);
+                }
+            }
+            other => {
+                map.insert("context".to_string(), other);
+            }
+        }
     }
 
-    #[test]
-    fn test_resource_not_found_with_data() {
-        let data = json!({"id": 123, "reason": "missing"});
-        let err = resource_not_found(error_messages::RESOURCE_NOT_FOUND, Some(data.clone()));
-        assert_eq!(err.message, error_messages::RESOURCE_NOT_FOUND);
-        assert_eq!(err.data, Some(data.clone()));
+    if let Some(c) = cause {
+        map.insert("cause".to_string(), json!(c));
     }
 
-    #[test]
-    fn test_invalid_request_without_data() {
-        let err = invalid_request(error_messages::CONVERSION_ERROR, None);
-        assert_eq!(err.message, error_messages::CONVERSION_ERROR);
-        assert!(err.data.is_none());
-    }
+    tracing::error!(?message, ?map, "MCP error occurred");
 
-    #[test]
-    fn test_invalid_request_with_data() {
-        let data = json!({"field": "value"});
-        let err = invalid_request(error_messages::CONVERSION_ERROR, Some(data.clone()));
-        assert_eq!(err.message, error_messages::CONVERSION_ERROR);
-        assert_eq!(err.data, Some(data.clone()));
-    }
+    let value = Some(Value::Object(map));
 
-    #[test]
-    fn test_internal_error_without_data() {
-        let err = internal_error(error_messages::VISUALIZATION_ERROR, None);
-        assert_eq!(err.message, error_messages::VISUALIZATION_ERROR);
-        assert!(err.data.is_none());
-    }
-
-    #[test]
-    fn test_internal_error_with_data() {
-        let data = json!({"detail": "stacktrace"});
-        let err = internal_error(error_messages::VISUALIZATION_ERROR, Some(data.clone()));
-        assert_eq!(err.message, error_messages::VISUALIZATION_ERROR);
-        assert_eq!(err.data, Some(data.clone()));
+    match kind {
+        ErrorKind::ResourceNotFound => McpError::resource_not_found(message, value),
+        ErrorKind::InvalidRequest => McpError::invalid_request(message, value),
+        ErrorKind::Internal => McpError::internal_error(message, value),
     }
 }

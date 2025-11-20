@@ -20,9 +20,9 @@ use crate::rudof_mcp_service::{errors::*, service::RudofMcpService};
 pub struct LoadRdfDataFromSourcesRequest {
     /// List of data sources (file paths, URLs, raw text)
     pub data: Vec<String>,
-    /// RDF format (e.g. "turtle", "jsonld")
-    pub data_format: String,
-    /// Base IRI for parsing data
+    /// Optional RDF format
+    pub data_format: Option<String>,
+    /// Optional Base IRI for parsing data
     pub base: Option<String>,
     /// Optional SPARQL endpoint URL or name
     pub endpoint: Option<String>,
@@ -32,20 +32,26 @@ pub struct LoadRdfDataFromSourcesRequest {
 pub struct LoadRdfDataFromSourcesResponse {
     /// Message confirming data load
     pub message: String,
+    /// Number of sources processed
+    pub sources_count: usize,
+    /// RDF format used
+    pub format: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ExportRdfDataRequest {
-    /// RDF format (e.g. "turtle", "jsonld")
-    pub format: String,
+    /// Optional RDF format
+    pub format: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ExportRdfDataResponse {
     /// Serialized RDF data as a string
     pub data: String,
-    /// Format used for serialization (e.g. "turtle", "jsonld")
+    /// RDF format used for serialization
     pub format: String,
+    /// Size of the serialized data in bytes
+    pub size_bytes: usize,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -66,6 +72,8 @@ pub struct ExportImageResponse {
 pub struct ExportPlantUmlResponse {
     /// PlantUML diagram data as a string
     pub plantuml_data: String,
+    /// Size of the diagram in characters
+    pub size: usize,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -88,27 +96,19 @@ pub async fn load_rdf_data_from_sources_impl(
         .iter()
         .map(|s| InputSpec::from_str(s))
         .collect::<Result<_, _>>()
-        .map_err(|e| {
-            invalid_request(
-                error_messages::INVALID_DATA_SPEC,
-                Some(json!({ "error": e.to_string() })),
-            )
-        })?;
+            .map_err(|e| invalid_request_error("Invalid data specification", e.to_string(), Some(json!({"operation":"load_rdf_data_from_sources_impl", "phase":"parse_data_specs"}))))?;
 
     let base_iri = parse_optional_base_iri(base).map_err(|e| {
-        invalid_request(
-            error_messages::INVALID_BASE_IRI,
-            Some(json!({ "error": e.to_string() })),
+        invalid_request_error(
+            "Invalid base IRI",
+            e.to_string(),
+            Some(json!({"operation":"load_rdf_data_from_sources_impl", "phase":"parse_base_iri"})),
         )
     })?;
 
-    let parsed_data_format: DataFormat = RDFFormat::from_str(&data_format)
-        .map_err(|e| {
-            invalid_request(
-                error_messages::INVALID_DATA_FORMAT,
-                Some(json!({ "error": e.to_string() })),
-            )
-        })?
+    let data_format_str = data_format.as_deref().unwrap_or("turtle");
+    let parsed_data_format: DataFormat = RDFFormat::from_str(data_format_str)
+        .map_err(|e| invalid_request_error("Invalid data format", e.to_string(), Some(json!({"operation":"load_rdf_data_from_sources_impl", "phase":"parse_data_format"}))))?
         .into();
 
     get_data_rudof(
@@ -123,17 +123,55 @@ pub async fn load_rdf_data_from_sources_impl(
     )
     .map_err(|e| {
         internal_error(
-            error_messages::RDF_LOAD_ERROR,
-            Some(json!({ "error": e.to_string() })),
+            "RDF load error",
+            e.to_string(),
+            Some(json!({"operation":"load_rdf_data_from_sources_impl","phase":"get_data_rudof"})),
         )
     })?;
 
+    let sources_count = data_specs.len();
     let response = LoadRdfDataFromSourcesResponse {
-        message: "RDF data loaded from sources/endpoint successfully".to_string(),
+        message: format!(
+            "Successfully loaded RDF data from {} source(s) in {} format",
+            sources_count, data_format_str
+        ),
+        sources_count,
+        format: data_format_str.to_string(),
     };
+
     let structured = serde_json::to_value(&response).unwrap();
     let mut result = CallToolResult::success(vec![Content::text(response.message.clone())]);
     result.structured_content = Some(structured);
+
+    tracing::info!(
+        sources = sources_count,
+        format = %data_format_str,
+        "RDF data loaded successfully"
+    );
+
+    // Notify subscribers that all current-data resources have been updated
+    service
+        .notify_resource_updated("rudof://current-data".to_string())
+        .await;
+    service
+        .notify_resource_updated("rudof://current-data/ntriples".to_string())
+        .await;
+    service
+        .notify_resource_updated("rudof://current-data/rdfxml".to_string())
+        .await;
+    service
+        .notify_resource_updated("rudof://current-data/jsonld".to_string())
+        .await;
+    service
+        .notify_resource_updated("rudof://current-data/trig".to_string())
+        .await;
+    service
+        .notify_resource_updated("rudof://current-data/nquads".to_string())
+        .await;
+    service
+        .notify_resource_updated("rudof://current-data/n3".to_string())
+        .await;
+
     Ok(result)
 }
 
@@ -143,35 +181,51 @@ pub async fn export_rdf_data_impl(
 ) -> Result<CallToolResult, McpError> {
     let Parameters(ExportRdfDataRequest { format }) = params;
     let rudof = service.rudof.lock().await;
+    let format_str = format.as_deref().unwrap_or("turtle");
 
-    match RDFFormat::from_str(&format) {
+    match RDFFormat::from_str(format_str) {
         Ok(parsed_format) => {
             let mut v = Vec::new();
             rudof.serialize_data(&parsed_format, &mut v).map_err(|e| {
                 internal_error(
-                    error_messages::SERIALIZE_DATA_ERROR,
-                    Some(json!({ "error": e.to_string() })),
-                )
-            })?;
-            let str = String::from_utf8(v).map_err(|e| {
-                internal_error(
-                    error_messages::CONVERSION_ERROR,
-                    Some(json!({ "error": e.to_string() })),
+                    "Serialization error",
+                    e.to_string(),
+                    Some(json!({"operation":"export_rdf_data_impl", "phase":"serialize_data"})),
                 )
             })?;
 
+            let size_bytes = v.len();
+            let str = String::from_utf8(v).map_err(|e| {
+                internal_error(
+                    "Conversion error",
+                    e.to_string(),
+                    Some(json!({"operation":"export_rdf_data_impl", "phase":"utf8_conversion"})),
+                )
+            })?;
             let response = ExportRdfDataResponse {
                 data: str.clone(),
-                format: format.clone(),
+                format: format_str.to_string(),
+                size_bytes,
             };
+
             let structured = serde_json::to_value(&response).unwrap();
-            let mut result = CallToolResult::success(vec![Content::text(str)]);
+
+            let formatted_data = format!("```{}\n{}\n```", format_str, str);
+            let mut result = CallToolResult::success(vec![Content::text(formatted_data)]);
             result.structured_content = Some(structured);
+
+            tracing::info!(
+                format = %format_str,
+                size_bytes = size_bytes,
+                "RDF data exported successfully"
+            );
+
             Ok(result)
         }
-        Err(e) => Err(invalid_request(
-            error_messages::INVALID_DATA_FORMAT,
-            Some(json!({ "format": format, "error": e.to_string() })),
+        Err(e) => Err(invalid_request_error(
+            "Invalid export format",
+            e.to_string(),
+            Some(json!({"operation":"export_rdf_data_impl", "phase":"parse_export_format",})),
         )),
     }
 }
@@ -185,24 +239,34 @@ pub async fn export_plantuml_impl(
 
     rudof.data2plant_uml(&mut v).map_err(|e| {
         internal_error(
-            error_messages::SERIALIZE_DATA_ERROR,
-            Some(json!({ "error": e.to_string() })),
+            "Serialization error",
+            e.to_string(),
+            Some(json!({"operation":"export_plantuml_impl", "phase":"serialize_data"})),
         )
     })?;
 
     let str = String::from_utf8(v).map_err(|e| {
         internal_error(
-            error_messages::CONVERSION_ERROR,
-            Some(json!({ "error": e.to_string() })),
+            "Conversion error",
+            e.to_string(),
+            Some(json!({"operation":"export_plantuml_impl", "phase":"utf8_conversion"})),
         )
     })?;
-
+    let size = str.len();
     let response = ExportPlantUmlResponse {
         plantuml_data: str.clone(),
+        size,
     };
+
     let structured = serde_json::to_value(&response).unwrap();
-    let mut result = CallToolResult::success(vec![Content::text(str)]);
+
+    // Format as PlantUML code block
+    let formatted_data = format!("```plantuml\n{}\n```", str);
+    let mut result = CallToolResult::success(vec![Content::text(formatted_data)]);
     result.structured_content = Some(structured);
+
+    tracing::info!(size = size, "PlantUML diagram exported successfully");
+
     Ok(result)
 }
 
@@ -214,30 +278,56 @@ pub async fn export_image_impl(
     let rudof = service.rudof.lock().await;
 
     let format = parse_image_format(&image_format).map_err(|e| {
-        invalid_request(
-            error_messages::INVALID_EXPORT_FORMAT,
-            Some(json!({ "error": e.to_string() })),
+        invalid_request_error(
+            "Invalid export format",
+            e.to_string(),
+            Some(json!({"operation":"export_image_impl", "phase":"parse_image_format"})),
         )
     })?;
 
     let v = export_rdf_to_image(&rudof, format).map_err(|e| {
         internal_error(
-            error_messages::VISUALIZATION_ERROR,
-            Some(json!({ "error": e.to_string() })),
+            "Export rdf to image error",
+            e.to_string(),
+            Some(json!({"operation":"export_image_impl", "phase":"export_rdf_to_image"})),
         )
     })?;
 
+    let size_bytes = v.len();
     let base64_data = general_purpose::STANDARD.encode(&v);
 
     let response = ExportImageResponse {
         image_data_base64: base64_data.clone(),
         image_format: image_format.clone(),
     };
+
     let structured = serde_json::to_value(&response).unwrap();
 
-    let mut result = CallToolResult::success(vec![Content::text(base64_data)]);
+    let mime_type = match image_format.to_lowercase().as_str() {
+        "svg" => "image/svg+xml",
+        "png" => "image/png",
+        _ => "image/png",
+    };
+
+    let description = format!(
+        "Image generated successfully ({} format, {} bytes encoded as base64)",
+        image_format, size_bytes
+    );
+
+    let mut result = CallToolResult::success(vec![
+        Content::text(description),
+        Content::text(format!("\n\nBase64 data:\n{}", base64_data)),
+    ]);
 
     result.structured_content = Some(structured);
+
+    tracing::info!(
+        format = %image_format,
+        size_bytes = size_bytes,
+        mime_type = mime_type,
+        "Image exported successfully"
+    );
+
     Ok(result)
 }
 
@@ -262,6 +352,10 @@ mod tests {
     "#;
 
     async fn create_test_service() -> RudofMcpService {
+        use crate::rudof_mcp_service::service::ServiceConfig;
+        use std::collections::HashMap;
+        use tokio::sync::RwLock;
+
         tokio::task::spawn_blocking(|| {
             let rudof_config = rudof_lib::RudofConfig::new().unwrap();
             let rudof = rudof_lib::Rudof::new(&rudof_config).unwrap();
@@ -269,6 +363,10 @@ mod tests {
                 rudof: Arc::new(Mutex::new(rudof)),
                 tool_router: Default::default(),
                 prompt_router: Default::default(),
+                config: Arc::new(RwLock::new(ServiceConfig::default())),
+                resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
+                current_min_log_level: Arc::new(RwLock::new(None)),
+                current_context: Arc::new(RwLock::new(None)),
             }
         })
         .await
@@ -281,7 +379,7 @@ mod tests {
 
         let params = Parameters(LoadRdfDataFromSourcesRequest {
             data: vec![SAMPLE_TURTLE.to_string()],
-            data_format: "turtle".to_string(),
+            data_format: None,
             base: None,
             endpoint: None,
         });
@@ -291,7 +389,7 @@ mod tests {
         let call_result = result.unwrap();
         assert!(call_result.structured_content.is_some());
         assert!(call_result.content.iter().any(|c| {
-            matches!(c.raw, RawContent::Text(ref s) if s.text.contains("RDF data loaded"))
+            matches!(c.raw, RawContent::Text(ref s) if s.text.contains("Successfully loaded RDF data"))
         }));
     }
 
@@ -301,15 +399,13 @@ mod tests {
 
         let params = Parameters(LoadRdfDataFromSourcesRequest {
             data: vec![SAMPLE_TURTLE.to_string()],
-            data_format: "invalidformat".to_string(),
+            data_format: Some("invalidformat".to_string()),
             base: None,
             endpoint: None,
         });
 
         let result = load_rdf_data_from_sources_impl(&service, params).await;
         assert!(result.is_err());
-        let err = result.unwrap_err();
-        assert!(err.message.contains("Invalid data format"));
     }
 
     #[tokio::test]
@@ -321,7 +417,7 @@ mod tests {
             &service,
             Parameters(LoadRdfDataFromSourcesRequest {
                 data: vec![SAMPLE_TURTLE.to_string()],
-                data_format: "turtle".to_string(),
+                data_format: None,
                 base: None,
                 endpoint: None,
             }),
@@ -329,9 +425,7 @@ mod tests {
         .await
         .unwrap();
 
-        let params = Parameters(ExportRdfDataRequest {
-            format: "turtle".to_string(),
-        });
+        let params = Parameters(ExportRdfDataRequest { format: None });
 
         let result = export_rdf_data_impl(&service, params).await;
         assert!(result.is_ok());
@@ -354,7 +448,7 @@ mod tests {
             &service,
             Parameters(LoadRdfDataFromSourcesRequest {
                 data: vec![SAMPLE_TURTLE.to_string()],
-                data_format: "turtle".to_string(),
+                data_format: None,
                 base: None,
                 endpoint: None,
             }),

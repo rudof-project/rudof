@@ -2,18 +2,23 @@ use crate::PgSchemaFormat;
 use crate::dctap_format::DCTapFormat;
 use crate::result_compare_format::ResultCompareFormat;
 use crate::{
-    CliShaclFormat, DCTapResultFormat, GenerateSchemaFormat, InputCompareFormat, InputCompareMode,
+    DCTapResultFormat, GenerateSchemaFormat, InputCompareFormat, InputCompareMode,
     InputConvertFormat, InputConvertMode, OutputConvertFormat, OutputConvertMode, RDFReaderMode,
     RdfConfigFormat, RdfConfigResultFormat, ResultDataFormat, ResultServiceFormat,
-    ResultShaclValidationFormat, ResultValidationFormat, ShowNodeMode, SortByShaclValidationReport,
-    SortByValidate, ValidationMode,
+    ResultValidationFormat, ShowNodeMode, SortByValidate, ValidationMode,
 };
 use clap::{Parser, Subcommand};
 use iri_s::IriS;
 use rudof_lib::{
-    InputSpec, data_format::DataFormat, query_result_format::ResultQueryFormat,
-    query_type::QueryType, result_shex_validation_format::ResultShExValidationFormat,
-    shapemap_format::ShapeMapFormat, shex_format::ShExFormat,
+    InputSpec,
+    data_format::DataFormat,
+    query_result_format::ResultQueryFormat,
+    query_type::QueryType,
+    result_shacl_validation_format::{ResultShaclValidationFormat, SortByShaclValidationReport},
+    result_shex_validation_format::ResultShExValidationFormat,
+    shacl_format::CliShaclFormat,
+    shapemap_format::ShapeMapFormat,
+    shex_format::ShExFormat,
     sort_by_result_shape_map::SortByResultShapeMap,
 };
 use shacl_validation::shacl_processor::ShaclValidationMode;
@@ -38,31 +43,33 @@ pub struct Cli {
 pub enum Command {
     /// Export rudof as an MCP server
     Mcp {
-        /// Port to bind the MCP server, default = 8000
+        #[arg(
+            short = 't',
+            long = "transport",
+            value_name = "TRANSPORT",
+            ignore_case = true,
+            help = "Transport type: stdio (for CLI/IDE) or http-sse (for web clients)",
+            default_value_t = rudof_mcp::TransportType::Stdio
+        )]
+        transport: rudof_mcp::TransportType,
+
         #[arg(
             short = 'p',
             long = "port",
-            value_name = "Port number",
-            default_value_t = String::from("8000")
+            value_name = "PORT",
+            help = "Port number for HTTP transport (only used with http-sse transport)",
+            default_value_t = 8000
         )]
-        port: String,
+        port: u16,
 
-        /// Route name to bind the MCP server, default = rudof
         #[arg(
-            short = 'n',
-            long = "route-name",
-            value_name = "Route name",
-            default_value_t = String::from("rudof")
+            short = 'r',
+            long = "route",
+            value_name = "PATH",
+            help = "Route path for HTTP transport (only used with http-sse transport)",
+            default_value = "/rudof"
         )]
-        route_name: String,
-
-        /// Host address to bind the MCP server, default = 127.0.0.1
-        #[arg(
-            long = "host",
-            value_name = "Host address",
-            default_value_t = String::from("127.0.0.1")
-        )]
-        host: String,
+        route_path: String,
     },
 
     /// Show information about ShEx ShapeMaps

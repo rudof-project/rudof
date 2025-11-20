@@ -1,59 +1,156 @@
+use crate::rudof_mcp_service::logging::{LogData, send_log};
 use crate::rudof_mcp_service::service::RudofMcpService;
-use crate::rudof_mcp_service::{resource_templates, resources};
-use rmcp::{ErrorData as McpError, RoleServer, ServerHandler, model::*, service::RequestContext};
+use crate::rudof_mcp_service::{resource_templates, resources::*};
+use rmcp::{
+    ErrorData as McpError, RoleServer, ServerHandler,
+    model::*,
+    service::{NotificationContext, RequestContext},
+};
+use serde_json::json;
+use std::collections::BTreeMap;
 
 impl ServerHandler for RudofMcpService {
-    // Return server metadata including protocol version, capabilities, and implementation info
+    /// Return server metadata including protocol version, capabilities, and implementation info
     fn get_info(&self) -> ServerInfo {
+        // Create experimental capabilities for Rudof-specific features
+        let mut experimental = BTreeMap::new();
+
+        let mut shex_val_meta = serde_json::Map::new();
+        shex_val_meta.insert("version".to_string(), json!("1.0"));
+        shex_val_meta.insert(
+            "formats".to_string(),
+            json!([
+                "shexc", "shexj", "turtle", "ntriples", "rdfxml", "trig", "n3", "nquads"
+            ]),
+        );
+        shex_val_meta.insert(
+            "result_formats".to_string(),
+            json!(["compact", "turtle", "json"]),
+        );
+        experimental.insert("rudof.shex_validation".to_string(), shex_val_meta);
+
+        let mut rdf_viz_meta = serde_json::Map::new();
+        rdf_viz_meta.insert("version".to_string(), json!("1.0"));
+        rdf_viz_meta.insert("formats".to_string(), json!(["plantuml", "svg", "png"]));
+        experimental.insert("rudof.rdf_visualization".to_string(), rdf_viz_meta);
+
+        let mut sparql_meta = serde_json::Map::new();
+        sparql_meta.insert("version".to_string(), json!("1.0"));
+        sparql_meta.insert(
+            "query_types".to_string(),
+            json!(["SELECT", "CONSTRUCT", "ASK", "DESCRIBE"]),
+        );
+        experimental.insert("rudof.sparql".to_string(), sparql_meta);
+
+        let mut logging_meta = serde_json::Map::new();
+        logging_meta.insert("enabled".to_string(), json!(true));
+
         ServerInfo {
-            protocol_version: ProtocolVersion::V_2024_11_05,
-            capabilities: ServerCapabilities::builder()
-                .enable_prompts()
-                .enable_resources()
-                .enable_tools()
-                .build(),
+            protocol_version: ProtocolVersion::V_2025_06_18,
+            capabilities: ServerCapabilities {
+                experimental: Some(experimental),
+                logging: Some(logging_meta),
+                prompts: Some(PromptsCapability {
+                    list_changed: Some(true),
+                }),
+                resources: Some(ResourcesCapability {
+                    subscribe: Some(true),
+                    list_changed: Some(true),
+                }),
+                tools: Some(ToolsCapability {
+                    list_changed: Some(true),
+                }),
+                completions: Some(serde_json::Map::new()),
+            },
             server_info: Implementation::from_build_env(),
-            instructions: Some("This server exposes rudof tools and prompts.".to_string()),
+            instructions: Some("This MCP server exposes Rudof tools and prompts. Rudof is a comprehensive library that implements Shape Expressions (ShEx), 
+            SHACL, DCTAP, and other technologies in the RDF ecosystem, enabling schema validation, 
+            data transformation, and semantic web operations.".to_string()),
         }
     }
 
-    // Return a list of available tools using the generated ToolRouter.
+    /// Return a list of available tools using the generated ToolRouter.
     async fn list_tools(
         &self,
-        _request: Option<PaginatedRequestParam>,
+        request: Option<PaginatedRequestParam>,
         _: RequestContext<RoleServer>,
     ) -> Result<ListToolsResult, McpError> {
-        let tools = crate::rudof_mcp_service::tools::annotated_tools();
-        Ok(ListToolsResult {
-            tools,
-            next_cursor: None,
-        })
+        let all_tools = crate::rudof_mcp_service::tools::annotated_tools();
+
+        // Handle pagination if requested
+        let (tools, next_cursor) = if let Some(params) = request {
+            let page_size = 20; // Default page size
+            let cursor = params
+                .cursor
+                .and_then(|c| c.parse::<usize>().ok())
+                .unwrap_or(0);
+
+            let start = cursor;
+            let end = std::cmp::min(start + page_size, all_tools.len());
+
+            let page_tools = all_tools[start..end].to_vec();
+            let cursor_value = if end < all_tools.len() {
+                Some(end.to_string())
+            } else {
+                None
+            };
+
+            (page_tools, cursor_value)
+        } else {
+            (all_tools, None)
+        };
+
+        Ok(ListToolsResult { tools, next_cursor })
     }
 
-    // Return a list of available prompts using the generated PromptRouter.
+    /// Return a list of available prompts using the generated PromptRouter.
     async fn list_prompts(
         &self,
-        _request: Option<PaginatedRequestParam>,
+        request: Option<PaginatedRequestParam>,
         _: RequestContext<RoleServer>,
     ) -> Result<ListPromptsResult, McpError> {
-        let prompts = self.prompt_router.list_all();
+        let all_prompts = self.prompt_router.list_all();
+
+        // Handle pagination if requested
+        let (prompts, next_cursor) = if let Some(params) = request {
+            let page_size = 20; // Default page size
+            let cursor = params
+                .cursor
+                .and_then(|c| c.parse::<usize>().ok())
+                .unwrap_or(0);
+
+            let start = cursor;
+            let end = std::cmp::min(start + page_size, all_prompts.len());
+
+            let page_prompts = all_prompts[start..end].to_vec();
+            let cursor_value = if end < all_prompts.len() {
+                Some(end.to_string())
+            } else {
+                None
+            };
+
+            (page_prompts, cursor_value)
+        } else {
+            (all_prompts, None)
+        };
+
         Ok(ListPromptsResult {
             prompts,
-            next_cursor: None,
+            next_cursor,
         })
     }
 
-    // Return a list of available resources
+    /// Return a list of available resources
     async fn list_resources(
         &self,
         _request: Option<PaginatedRequestParam>,
         context: RequestContext<RoleServer>,
     ) -> Result<ListResourcesResult, McpError> {
         // Delegate to resources module
-        resources::list_resources(_request, context).await
+        list_resources(_request, context).await
     }
 
-    // Read a resource by URI, returning content for known resources or an error if not found
+    /// Read a resource by URI
     async fn read_resource(
         &self,
         ReadResourceRequestParam { uri }: ReadResourceRequestParam,
@@ -61,10 +158,10 @@ impl ServerHandler for RudofMcpService {
     ) -> Result<ReadResourceResult, McpError> {
         // Delegate read handling to resources module
         let req = ReadResourceRequestParam { uri };
-        resources::read_resource(self, req).await
+        read_resource(self, req).await
     }
 
-    // Return a list of available resource templates
+    /// Return a list of available resource templates
     async fn list_resource_templates(
         &self,
         _request: Option<PaginatedRequestParam>,
@@ -74,7 +171,7 @@ impl ServerHandler for RudofMcpService {
         resource_templates::list_resource_templates(_request, context).await
     }
 
-    // Handle MCP initialization, logging HTTP context if available, and return server info
+    /// Handle MCP initialization, logging HTTP context if available, and return server info
     async fn initialize(
         &self,
         _request: InitializeRequestParam,
@@ -85,7 +182,51 @@ impl ServerHandler for RudofMcpService {
             let initialize_uri = &http_request_part.uri;
             tracing::info!(?initialize_headers, %initialize_uri, "initialize from http server");
         }
+
+        // Set default log level to Info when initialized
+        {
+            let mut min_level = self.current_min_log_level.write().await;
+            *min_level = Some(LoggingLevel::Info);
+        }
+
+        // // Send initialization log via MCP
+        // if let Err(e) = context.peer.notify_logging_message(
+        //     rmcp::model::LoggingMessageNotificationParam {
+        //         level: LoggingLevel::Info,
+        //         logger: Some("service".to_string()),
+        //         data: serde_json::json!({
+        //             "message": "MCP server initialized successfully",
+        //             "protocol_version": "2025-06-18",
+        //             "capabilities": ["logging", "tools", "prompts", "resources"]
+        //         }),
+        //     }
+        // ).await {
+        //     tracing::warn!(error = ?e, "Failed to send initialization log");
+        // }
+
+        tracing::info!("MCP server initialized successfully");
+
         Ok(self.get_info())
+    }
+
+    /// Handle dynamic log level changes from the client
+    /// This updates the MCP logging notification level, controlling which log messages
+    /// are sent to the client via MCP notifications.
+    async fn set_level(
+        &self,
+        request: SetLevelRequestParam,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<(), McpError> {
+        tracing::debug!(level = ?request.level, "Log level change requested");
+
+        // Update the MCP minimum log level for notification filtering
+        {
+            let mut min_level = self.current_min_log_level.write().await;
+            *min_level = Some(request.level);
+            tracing::info!(new_level = ?request.level, "MCP notification log level updated");
+        }
+
+        Ok(())
     }
 
     // Construct a ToolCallContext and delegate to the generated router
@@ -94,9 +235,65 @@ impl ServerHandler for RudofMcpService {
         request: CallToolRequestParam,
         context: RequestContext<RoleServer>,
     ) -> Result<CallToolResult, McpError> {
-        let ctx = rmcp::handler::server::tool::ToolCallContext::new(self, request, context);
-        let result = self.tool_router.call(ctx).await?;
-        Ok(result)
+        // Store the context so tools can access it for notifications
+        {
+            let mut ctx_guard = self.current_context.write().await;
+            *ctx_guard = Some(context.clone());
+        }
+
+        // Send debug log for tool invocation (respects log level filtering)
+        let tool_name = request.name.clone();
+        let log_data = LogData::new("Tool invocation started")
+            .with_field("tool_name", tool_name.clone())
+            .with_field("has_arguments", request.arguments.is_some());
+        send_log(
+            LoggingLevel::Debug,
+            Some("tools".to_string()),
+            log_data,
+            self.current_min_log_level.clone(),
+            &context.peer,
+        )
+        .await;
+
+        let ctx = rmcp::handler::server::tool::ToolCallContext::new(self, request, context.clone());
+        let result = self.tool_router.call(ctx).await;
+
+        // Log tool completion (respects log level filtering)
+        match &result {
+            Ok(_) => {
+                let log_data = LogData::new("Tool executed successfully")
+                    .with_field("tool_name", tool_name.clone());
+                send_log(
+                    LoggingLevel::Info,
+                    Some("tools".to_string()),
+                    log_data,
+                    self.current_min_log_level.clone(),
+                    &context.peer,
+                )
+                .await;
+            }
+            Err(e) => {
+                let log_data = LogData::new("Tool execution failed")
+                    .with_field("tool_name", tool_name.clone())
+                    .with_field("error", e.message.clone());
+                send_log(
+                    LoggingLevel::Error,
+                    Some("tools".to_string()),
+                    log_data,
+                    self.current_min_log_level.clone(),
+                    &context.peer,
+                )
+                .await;
+            }
+        }
+
+        // Clear the context after the tool call
+        {
+            let mut ctx_guard = self.current_context.write().await;
+            *ctx_guard = None;
+        }
+
+        result
     }
 
     // Construct a PromptContext and delegate to the generated router
@@ -114,13 +311,118 @@ impl ServerHandler for RudofMcpService {
         let result = self.prompt_router.get_prompt(ctx).await?;
         Ok(result)
     }
+
+    // Handle completion requests for tool/prompt arguments
+    async fn complete(
+        &self,
+        request: CompleteRequestParam,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<CompleteResult, McpError> {
+        tracing::debug!("Completion requested: {:?}", request);
+
+        // Extract the reference information and argument name
+        let completions = match &request.r#ref {
+            Reference::Prompt(prompt_ref) => {
+                self.get_prompt_argument_completions(&prompt_ref.name, &request.argument.name)
+            }
+            Reference::Resource(resource_ref) => {
+                self.get_resource_uri_completions(&resource_ref.uri, &request.argument.name)
+            }
+        };
+
+        Ok(CompleteResult {
+            completion: CompletionInfo {
+                values: completions,
+                total: None,
+                has_more: Some(false),
+            },
+        })
+    }
+
+    // Handle resource subscription requests
+    async fn subscribe(
+        &self,
+        request: SubscribeRequestParam,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<(), McpError> {
+        let uri = request.uri;
+        // Generate a simple subscriber ID using timestamp
+        let subscriber_id = format!(
+            "sub_{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        );
+
+        tracing::info!(%uri, %subscriber_id, "Client subscribed to resource");
+
+        // Store the subscription
+        self.subscribe_resource(uri.clone(), subscriber_id).await;
+
+        Ok(())
+    }
+
+    // Handle resource unsubscription requests
+    async fn unsubscribe(
+        &self,
+        request: UnsubscribeRequestParam,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<(), McpError> {
+        let uri = request.uri;
+
+        tracing::info!(%uri, "Client unsubscribed from resource");
+
+        // Note: Without tracking who subscribed, we clear all subscriptions for this URI
+        // In production, you'd want to track the specific subscriber ID
+        let subscribers = self.get_resource_subscribers(&uri).await;
+        for subscriber_id in subscribers {
+            self.unsubscribe_resource(&uri, &subscriber_id).await;
+        }
+
+        Ok(())
+    }
+
+    // Handle notification when client is initialized
+    async fn on_initialized(&self, _context: NotificationContext<RoleServer>) -> () {
+        tracing::info!("Client successfully initialized");
+    }
+
+    // Handle cancelled operation notifications
+    async fn on_cancelled(
+        &self,
+        notification: CancelledNotificationParam,
+        _context: NotificationContext<RoleServer>,
+    ) -> () {
+        tracing::debug!(request_id = %notification.request_id, "Operation cancelled by client");
+    }
+
+    // Handle progress notifications from client
+    async fn on_progress(
+        &self,
+        notification: ProgressNotificationParam,
+        _context: NotificationContext<RoleServer>,
+    ) -> () {
+        tracing::debug!(
+            progress_token = ?notification.progress_token,
+            progress = notification.progress,
+            total = ?notification.total,
+            "Progress update received from client"
+        );
+    }
+
+    // Handle notification when client's roots list changes
+    async fn on_roots_list_changed(&self, _context: NotificationContext<RoleServer>) -> () {
+        tracing::info!("Client's roots list changed");
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Arc;
-    use tokio::sync::Mutex;
+    use crate::rudof_mcp_service::service::ServiceConfig;
+    use std::{collections::HashMap, sync::Arc};
+    use tokio::sync::{Mutex, RwLock};
 
     /// Initialize the RudofMcpService in a blocking-safe context
     async fn create_test_service() -> RudofMcpService {
@@ -131,6 +433,10 @@ mod tests {
                 rudof: Arc::new(Mutex::new(rudof)),
                 tool_router: Default::default(),
                 prompt_router: Default::default(),
+                config: Arc::new(RwLock::new(ServiceConfig::default())),
+                resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
+                current_min_log_level: Arc::new(RwLock::new(None)),
+                current_context: Arc::new(RwLock::new(None)),
             }
         })
         .await
@@ -142,10 +448,20 @@ mod tests {
         let service = create_test_service().await;
         let info = service.get_info();
 
-        assert_eq!(info.protocol_version, ProtocolVersion::V_2024_11_05);
-        assert!(info.capabilities.tools.is_some());
-        assert!(info.capabilities.prompts.is_some());
-        assert!(info.capabilities.resources.is_some());
+        assert_eq!(info.protocol_version, ProtocolVersion::V_2025_06_18);
+
+        // Verify all capabilities are enabled
+        let caps = info.capabilities;
+        assert!(caps.tools.is_some());
+        assert_eq!(caps.tools.as_ref().unwrap().list_changed, Some(true));
+
+        assert!(caps.prompts.is_some());
+        assert_eq!(caps.prompts.as_ref().unwrap().list_changed, Some(true));
+
+        assert!(caps.resources.is_some());
+        assert_eq!(caps.resources.as_ref().unwrap().subscribe, Some(true));
+        assert_eq!(caps.resources.as_ref().unwrap().list_changed, Some(true));
+
         assert!(!info.server_info.name.is_empty());
         assert!(info.instructions.is_some());
     }

@@ -330,6 +330,32 @@ pub enum RudofError {
     #[error("Not implemented yet: {msg}")]
     NotImplemented { msg: String },
 
+    #[error("Unsupported SHACL result format: {format}")]
+    UnsupportedShaclResultFormat { format: String },
+
+    #[error("Unsupported sort mode for SHACL validation report: {mode}")]
+    UnsupportedShaclSortMode { mode: String },
+
+    #[error("Unsupported SHACL format: {format}")]
+    UnsupportedShaclFormat { format: String },
+
+    #[error("Unsupported ShapeMap format: {format}")]
+    UnsupportedShapeMapFormat { format: String },
+
+    #[error("Unsupported ShapeMap sort mode: {mode}")]
+    UnsupportedShapeMapSortMode { mode: String },
+
+    #[error("Unsupported ShEx result format: {format}")]
+    UnsupportedShExResultFormat { format: String },
+
+    #[error(
+        "Conversion of result ShEx validation format to ShapeMapFormat not implemented: {format}"
+    )]
+    UnsupportedShExToShapeMapConversion { format: String },
+
+    #[error("Unsupported ShEx format: {format}")]
+    UnsupportedShExFormat { format: String },
+
     #[error("Cannot serialize current ShapeMap because it has not been defined")]
     NoShapeMapToSerialize,
 

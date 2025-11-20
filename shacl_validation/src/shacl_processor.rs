@@ -16,6 +16,7 @@ use srdf::RDFFormat;
 use srdf::SRDFSparql;
 use std::fmt::Debug;
 use std::path::Path;
+use std::str::FromStr;
 
 #[derive(ValueEnum, Copy, Clone, Debug, PartialEq, Default)]
 /// Backend used for the validation.
@@ -29,6 +30,18 @@ pub enum ShaclValidationMode {
     Native,
     /// SPARQL-based engine using SPARQL queries to validate the data
     Sparql,
+}
+
+impl FromStr for ShaclValidationMode {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "native" => Ok(ShaclValidationMode::Native),
+            "sparql" => Ok(ShaclValidationMode::Sparql),
+            other => Err(format!("Unsupported SHACL validation mode: {other}")),
+        }
+    }
 }
 
 /// The basic operations of the SHACL Processor.

@@ -13,14 +13,16 @@ repository.workspace = true
 [dependencies]
 anyhow.workspace = true
 axum = "0.8.4"
+axum-server = "0.7"
 base64 = "0.22.1"
 clap.workspace = true
 clientele = "0.3.8"
 iri_s.workspace = true
+josekit = "0.10.3"
 prefixmap = { workspace = true }
-reqwest = { version = "0.12.23", features = ["json"] }
-rmcp = { version = "0.6.3", features = [ "client", "server", "transport-io", "transport-streamable-http-server" ] }
-rmcp-macros = "0.6.3"
+reqwest = { version = "0.12.23", features = ["json", "rustls-tls"] }
+rmcp = { version = "0.8.5", features = [ "client", "server", "transport-io", "transport-streamable-http-server"] }
+rmcp-macros = "0.8.5"
 rudof_lib.workspace = true
 schemars = "1.0.4"
 serde = { version = "1.0.219", features = ["derive"] }
@@ -29,9 +31,8 @@ shex_ast = { workspace = true }
 srdf.workspace = true
 tokio = { version = "1.47.1", features = ["full"] }
 tokio-util = "0.7.16"
+tower = "0.5"
+tower-http = { version = "0.5", features = ["trace", "cors"] }
 tracing.workspace = true
-tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
-
-
-
-
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+ 

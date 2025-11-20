@@ -38,7 +38,7 @@ impl From<&SortByResultShapeMap> for SortMode {
 }
 
 impl FromStr for SortByResultShapeMap {
-    type Err = String;
+    type Err = crate::RudofError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
@@ -46,7 +46,9 @@ impl FromStr for SortByResultShapeMap {
             "shape" => Ok(SortByResultShapeMap::Shape),
             "status" => Ok(SortByResultShapeMap::Status),
             "details" => Ok(SortByResultShapeMap::Details),
-            _ => Err(format!("Unknown sort type: {s}")),
+            other => Err(crate::RudofError::UnsupportedShapeMapSortMode {
+                mode: other.to_string(),
+            }),
         }
     }
 }

@@ -3,8 +3,7 @@ use clap::ValueEnum;
 
 use std::fmt::{Display, Formatter};
 
-use crate::CliShaclFormat;
-
+use rudof_lib::shacl_format::CliShaclFormat;
 use rudof_lib::shex_format::ShExFormat;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]

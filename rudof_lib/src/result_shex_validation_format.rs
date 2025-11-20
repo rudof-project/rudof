@@ -1,4 +1,3 @@
-use anyhow::{Result, bail};
 use clap::ValueEnum;
 use std::{
     fmt::{Display, Formatter},
@@ -23,15 +22,14 @@ pub enum ResultShExValidationFormat {
 }
 
 impl ResultShExValidationFormat {
-    pub fn to_shapemap_format(&self) -> Result<ShapeMapFormat> {
+    pub fn to_shapemap_format(&self) -> Result<ShapeMapFormat, RudofError> {
         match self {
             ResultShExValidationFormat::Compact => Ok(ShapeMapFormat::Compact),
             ResultShExValidationFormat::Details => Ok(ShapeMapFormat::Details),
             ResultShExValidationFormat::Json => Ok(ShapeMapFormat::Json),
-            _ => bail!(
-                "Conversion to ShapeMapFormat not supported for {self}. \
-                 Use a different format or implement conversion."
-            ),
+            other => Err(RudofError::UnsupportedShExToShapeMapConversion {
+                format: other.to_string(),
+            }),
         }
     }
 }
@@ -60,15 +58,15 @@ impl TryFrom<&ResultShExValidationFormat> for ShapeMapFormat {
             ResultShExValidationFormat::Compact => Ok(ShapeMapFormat::Compact),
             ResultShExValidationFormat::Details => Ok(ShapeMapFormat::Details),
             ResultShExValidationFormat::Json => Ok(ShapeMapFormat::Json),
-            other => Err(RudofError::NotImplemented {
-                msg: format!("Result ShEx validation format {other:?} not yet implemented"),
+            other => Err(RudofError::UnsupportedShExToShapeMapConversion {
+                format: format!("{other:?}"),
             }),
         }
     }
 }
 
 impl FromStr for ResultShExValidationFormat {
-    type Err = String;
+    type Err = RudofError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
@@ -81,7 +79,9 @@ impl FromStr for ResultShExValidationFormat {
             "compact" => Ok(ResultShExValidationFormat::Compact),
             "details" => Ok(ResultShExValidationFormat::Details),
             "jspn" => Ok(ResultShExValidationFormat::Json),
-            _ => Err(format!("Unknown result ShEx validation format: {s}")),
+            other => Err(RudofError::UnsupportedShExResultFormat {
+                format: other.to_string(),
+            }),
         }
     }
 }
