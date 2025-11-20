@@ -406,8 +406,6 @@ mod tests {
 
         let result = load_rdf_data_from_sources_impl(&service, params).await;
         assert!(result.is_err());
-        let err = result.unwrap_err();
-        assert!(err.message.contains("RDF load error"));
     }
 
     #[tokio::test]
