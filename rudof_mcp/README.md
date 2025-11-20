@@ -46,7 +46,9 @@ rudof_mcp/
 │       ├── service.rs                            # Main service state
 │       ├── handlers.rs                           # MCP request handlers
 │       ├── errors.rs                             # Error types & helpers
-│       ├── resource_templates.rs                 # Resource template definitions
+│       ├── resource_templates                    # Resource template implementations
+|       |   ├── mod.rs
+|       |   ├── resource_templates_impl.rs
 │       ├── tools/                                # Tool implementations
 │       │   ├── mod.rs
 │       │   ├── tools_impl.rs                     # Tool router & annotations
