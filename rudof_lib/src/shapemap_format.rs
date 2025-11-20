@@ -38,7 +38,7 @@ impl From<&ShapeMapFormat> for ShexAstShapeMapFormat {
 }
 
 impl FromStr for ShapeMapFormat {
-    type Err = String;
+    type Err = crate::RudofError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
@@ -46,7 +46,7 @@ impl FromStr for ShapeMapFormat {
             "internal" => Ok(ShapeMapFormat::Internal),
             "json" => Ok(ShapeMapFormat::Json),
             "details" => Ok(ShapeMapFormat::Details),
-            _ => Err(format!("Unknown shapemap format: {s}")),
+            other => Err(crate::RudofError::UnsupportedShapeMapFormat { format: other.to_string() }),
         }
     }
 }

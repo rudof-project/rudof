@@ -49,7 +49,7 @@ impl Display for CliShaclFormat {
 }
 
 impl FromStr for CliShaclFormat {
-    type Err = String;
+    type Err = crate::RudofError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
@@ -61,7 +61,7 @@ impl FromStr for CliShaclFormat {
             "n3" => Ok(CliShaclFormat::N3),
             "nquads" => Ok(CliShaclFormat::NQuads),
             "jsonld" => Ok(CliShaclFormat::JsonLd),
-            other => Err(format!("Unsupported SHACL format: {other}")),
+            other => Err(crate::RudofError::UnsupportedShaclFormat { format: other.to_string() }),
         }
     }
 }

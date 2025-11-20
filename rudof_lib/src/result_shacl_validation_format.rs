@@ -47,12 +47,12 @@ pub fn result_format_to_rdf_format(result_format: &ResultShaclValidationFormat) 
         ResultShaclValidationFormat::TriG => Ok(RDFFormat::TriG),
         ResultShaclValidationFormat::N3 => Ok(RDFFormat::N3),
         ResultShaclValidationFormat::NQuads => Ok(RDFFormat::NQuads),
-        _ => Err(RudofError::NotImplemented { msg: format!("Unsupported result format {}", result_format) }),
+        _ => Err(RudofError::UnsupportedShaclResultFormat { format: result_format.to_string() }),
     }
 }
 
 impl FromStr for ResultShaclValidationFormat {
-    type Err = String;
+    type Err = RudofError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
@@ -66,7 +66,7 @@ impl FromStr for ResultShaclValidationFormat {
             "compact" => Ok(ResultShaclValidationFormat::Compact),
             "details" => Ok(ResultShaclValidationFormat::Details),
             "json" => Ok(ResultShaclValidationFormat::Json),
-            other => Err(format!("Unsupported result SHACL validation format: {other}")),
+            other => Err(RudofError::UnsupportedShaclResultFormat { format: other.to_string() }),
         }
     }
 }
@@ -111,7 +111,7 @@ pub fn cnv_sort_mode_report(sort_by: &SortByShaclValidationReport) -> SortModeRe
 }
 
 impl std::str::FromStr for SortByShaclValidationReport {
-    type Err = String;
+    type Err = RudofError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
@@ -122,7 +122,7 @@ impl std::str::FromStr for SortByShaclValidationReport {
             "path" => Ok(SortByShaclValidationReport::Path),
             "sourceshape" => Ok(SortByShaclValidationReport::SourceShape),
             "details" => Ok(SortByShaclValidationReport::Details),
-            other => Err(format!("Unsupported sort mode for SHACL validation report: {other}")),
+            other => Err(RudofError::UnsupportedShaclSortMode { mode: other.to_string() }),
         }
     }
 }

@@ -80,7 +80,7 @@ impl TryFrom<ShExFormat> for ShExAstShExFormat {
 }
 
 impl FromStr for ShExFormat {
-    type Err = String;
+    type Err = RudofError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
@@ -96,7 +96,7 @@ impl FromStr for ShExFormat {
             "trig" => Ok(ShExFormat::TriG),
             "n3" => Ok(ShExFormat::N3),
             "nquads" => Ok(ShExFormat::NQuads),
-            _ => Err(format!("Unknown ShEx format: {s}")),
+            other => Err(RudofError::UnsupportedShExFormat { format: other.to_string() }),
         }
     }
 }
