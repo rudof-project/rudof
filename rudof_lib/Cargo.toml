@@ -1,6 +1,6 @@
 [package]
 name = "rudof_lib"
-version = "0.1.142"
+version = "0.1.143"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/rudof_lib"
