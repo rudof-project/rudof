@@ -7,6 +7,18 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.1.143
+## Added
+- SHACL tools for MCP server
+- ShEx tools for MCP server
+
+## Fixed
+- Support for YARSPG grammar in Property graphs
+- Improved MCP server to follow best practices
+
+## Changed
+- Removed several todo!s in shex2uml converter
+
 ## v0.1.142
 ## Added
 - Support for SPARQL extension of shapemaps and node selectors
