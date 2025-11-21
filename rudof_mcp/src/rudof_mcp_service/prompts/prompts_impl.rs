@@ -36,18 +36,7 @@ impl RudofMcpService {
     ) -> Result<GetPromptResult, McpError> {
         analyze_rdf_data_prompt_impl(Parameters(args)).await
     }
-
-    #[prompt(
-        name = "generate_test_data",
-        description = "Generate conformant RDF test data examples from a ShEx schema"
-    )]
-    async fn generate_test_data_prompt(
-        &self,
-        Parameters(args): Parameters<GenerateTestDataPromptArgs>,
-    ) -> Result<GetPromptResult, McpError> {
-        generate_test_data_prompt_impl(Parameters(args)).await
-    }
-
+    
     #[prompt(
         name = "explain_validation_errors",
         description = "Understand and fix ShEx validation errors with detailed explanations"
