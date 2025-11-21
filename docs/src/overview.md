@@ -110,6 +110,7 @@ An incomplete list of projects which are related to `rudof` is the following:
 ## Contributors
 
 - [Jose Emilio Labra Gayo](https://labra.weso.es/)
+- [Samuel Bustamante Larriet](https://github.com/samuel-bustamante)
 - [Ángel Iglesias Préstamo](http://angelip2303.github.io/)
 - [Diego Martín Fernández](https://github.com/DiegoMfer)
 - [Marc-Antoine Arnaud](https://luminvent.com/)
