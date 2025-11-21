@@ -137,7 +137,7 @@ async fn generate_sparql_from_natural_language(
         generated_query.trim().to_string()
     };
 
-    tracing::info!(
+    tracing::debug!(
         natural_language = %natural_language,
         generated_query = %cleaned_query,
         "Generated SPARQL query from natural language via rmcp sampling"
@@ -243,15 +243,6 @@ pub async fn execute_sparql_query_impl(
         result_size_bytes,
         result_lines,
     };
-
-    tracing::info!(
-        query_type = %query_type_str,
-        result_format = %result_format_str,
-        result_size_bytes,
-        result_lines,
-        query_length = sparql_query.len(),
-        "Executed SPARQL query successfully"
-    );
 
     let structured = serde_json::to_value(&response).map_err(|e| {
         internal_error(

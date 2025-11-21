@@ -1,8 +1,7 @@
 use crate::run_shacl_convert;
 use crate::{
     InputConvertFormat, InputConvertMode, OutputConvertFormat, OutputConvertMode,
-    dctap_format::DCTapFormat as CliDCTapFormat, parse_dctap, parse_shex_schema_rudof, run_shex,
-    show_shex_schema, writer::get_writer,
+    dctap_format::DCTapFormat as CliDCTapFormat, parse_dctap, run_shex, writer::get_writer,
 };
 use anyhow::{Result, anyhow, bail};
 use iri_s::IriS;
@@ -177,14 +176,18 @@ fn run_shacl2shex(
     let mut converter = Shacl2ShEx::new(&config.shacl2shex_config());
 
     converter.convert(shacl_schema)?;
-    let (writer, color) = get_writer(output, force_overwrite)?;
+    let (mut writer, color) = get_writer(output, force_overwrite)?;
     let result_schema_format = result_format.to_shex_format()?;
-    show_shex_schema(
+    let formatter = match color {
+        crate::ColorSupport::NoColor => ShExFormatter::default().without_colors(),
+        crate::ColorSupport::WithColor => ShExFormatter::default(),
+    };
+    rudof_lib::shex::serialize_shex_rudof(
         &rudof,
         converter.current_shex(),
         &result_schema_format,
-        writer,
-        color,
+        &formatter,
+        &mut writer,
     )?;
     Ok(())
 }
@@ -203,7 +206,15 @@ fn run_shex2uml(
 ) -> Result<()> {
     let schema_format = format.to_shex_format()?;
     let mut rudof = Rudof::new(config)?;
-    parse_shex_schema_rudof(&mut rudof, input, &schema_format, base, reader_mode, config)?;
+    rudof_lib::shex::parse_shex_schema(
+        &mut rudof,
+        input,
+        &schema_format,
+        base,
+        reader_mode,
+        config,
+    )
+    .map_err(|e| anyhow!("{}", e))?;
     let mut converter = ShEx2Uml::new(&config.shex2uml_config());
     if let Some(schema) = rudof.get_shex() {
         converter.convert(schema)?;
@@ -270,7 +281,15 @@ fn run_shex2html<P: AsRef<Path>>(
     let schema_format = format.to_shex_format()?;
     let mut rudof = Rudof::new(config)?;
 
-    parse_shex_schema_rudof(&mut rudof, input, &schema_format, base, reader_mode, config)?;
+    rudof_lib::shex::parse_shex_schema(
+        &mut rudof,
+        input,
+        &schema_format,
+        base,
+        reader_mode,
+        config,
+    )
+    .map_err(|e| anyhow!("{}", e))?;
     if let Some(schema) = rudof.get_shex() {
         let shex2html_config = config.shex2html_config();
         let config = shex2html_config
@@ -355,7 +374,15 @@ fn run_shex2sparql(
 ) -> Result<()> {
     let schema_format = format.to_shex_format()?;
     let mut rudof = Rudof::new(config)?;
-    parse_shex_schema_rudof(&mut rudof, input, &schema_format, base, reader_mode, config)?;
+    rudof_lib::shex::parse_shex_schema(
+        &mut rudof,
+        input,
+        &schema_format,
+        base,
+        reader_mode,
+        config,
+    )
+    .map_err(|e| anyhow!("{}", e))?;
     if let Some(schema) = rudof.get_shex() {
         let converter = ShEx2Sparql::new(&config.shex2sparql_config());
         let sparql = converter.convert(schema, shape)?;
@@ -384,8 +411,18 @@ fn run_tap2shex(
         let converter = Tap2ShEx::new(&config.tap2shex_config());
         let shex = converter.convert(dctap)?;
         let result_schema_format = result_format.to_shex_format()?;
-        let (writer, color) = get_writer(output, force_overwrite)?;
-        show_shex_schema(&rudof, &shex, &result_schema_format, writer, color)?;
+        let (mut writer, color) = get_writer(output, force_overwrite)?;
+        let formatter = match color {
+            crate::ColorSupport::NoColor => ShExFormatter::default().without_colors(),
+            crate::ColorSupport::WithColor => ShExFormatter::default(),
+        };
+        rudof_lib::shex::serialize_shex_rudof(
+            &rudof,
+            &shex,
+            &result_schema_format,
+            &formatter,
+            &mut writer,
+        )?;
         Ok(())
     } else {
         bail!("Internal error: No DCTAP")

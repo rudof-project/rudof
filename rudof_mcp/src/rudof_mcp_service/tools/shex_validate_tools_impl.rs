@@ -87,9 +87,6 @@ pub async fn validate_shex_impl(
         .clone()
         .unwrap_or_else(|| "compact".to_string());
     let sort_by_str = sort_by.clone().unwrap_or_else(|| "node".to_string());
-    let has_shapemap = shapemap.is_some();
-    let has_node = maybe_node.is_some();
-    let has_shape = maybe_shape.is_some();
 
     let shcema_spec = Some(InputSpec::Str(schema.clone()));
 
@@ -208,18 +205,6 @@ pub async fn validate_shex_impl(
         result_size_bytes,
         result_lines,
     };
-
-    tracing::info!(
-        schema_format = ?parsed_schema_format,
-        result_format = %result_format_str,
-        sort_by = %sort_by_str,
-        result_size_bytes,
-        result_lines,
-        has_node,
-        has_shape,
-        has_shapemap,
-        "ShEx validation executed"
-    );
 
     let structured = serde_json::to_value(&response).map_err(|e| {
         internal_error(

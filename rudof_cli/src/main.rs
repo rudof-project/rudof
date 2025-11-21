@@ -53,30 +53,61 @@ fn main() -> Result<()> {
         env::set_var("RUSTEMO_NOTRACE", "1");
     }
 
-    let fmt_layer = fmt::layer()
-        .with_file(true)
-        .with_target(false)
-        .with_line_number(true)
-        .with_writer(io::stderr)
-        .without_time();
+    // Parse CLI args first to check the command
+    let args = clientele::args_os()?;
+    let cli = Cli::parse_from(args);
 
     // Attempts to get the value of RUST_LOG which can be info, debug, trace, If unset, it uses "info"
     let env_filter = EnvFilter::try_from_default_env()
         .or_else(|_| EnvFilter::try_new("info"))
         .unwrap();
-    /*let env_filter = EnvFilter::builder()
-    .with_default_directive(LevelFilter::INFO.into())
-    .parse_lossy("rudof=info,shacl_validation=info,shacl_ir=debug,hyper=off,reqwest=off");*/
 
-    tracing_subscriber::registry()
-        .with(env_filter.clone())
-        .with(fmt_layer)
-        .init();
+    // Check if we're running MCP with stdio transport
+    let is_mcp_stdio = matches!(
+        &cli.command,
+        Some(Command::Mcp {
+            transport: rudof_mcp::TransportType::Stdio,
+            ..
+        })
+    );
+
+    if is_mcp_stdio {
+        let log_dir = std::path::Path::new("rudof_mcp").join("src").join("server");
+        std::fs::create_dir_all(&log_dir)?;
+        let log_path = log_dir.join("mcp_server.log");
+        // For MCP stdio, write logs to file
+        let log_file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(log_path)?;
+
+        let fmt_layer = fmt::layer()
+            .with_file(true)
+            .with_target(false)
+            .with_line_number(true)
+            .with_writer(move || log_file.try_clone().unwrap())
+            .without_time();
+
+        tracing_subscriber::registry()
+            .with(env_filter.clone())
+            .with(fmt_layer)
+            .init();
+    } else {
+        // For other commands, use stderr
+        let fmt_layer = fmt::layer()
+            .with_file(true)
+            .with_target(false)
+            .with_line_number(true)
+            .with_writer(io::stderr)
+            .without_time();
+
+        tracing_subscriber::registry()
+            .with(env_filter.clone())
+            .with(fmt_layer)
+            .init();
+    }
 
     tracing::trace!("rudof running with tracing filter {}", env_filter);
-
-    let args = clientele::args_os()?;
-    let cli = Cli::parse_from(args);
 
     match &cli.command {
         Some(Command::Compare {

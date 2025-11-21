@@ -143,12 +143,6 @@ pub async fn load_rdf_data_from_sources_impl(
     let mut result = CallToolResult::success(vec![Content::text(response.message.clone())]);
     result.structured_content = Some(structured);
 
-    tracing::info!(
-        sources = sources_count,
-        format = %data_format_str,
-        "RDF data loaded successfully"
-    );
-
     // Notify subscribers that all current-data resources have been updated
     service
         .notify_resource_updated("rudof://current-data".to_string())
@@ -214,12 +208,6 @@ pub async fn export_rdf_data_impl(
             let mut result = CallToolResult::success(vec![Content::text(formatted_data)]);
             result.structured_content = Some(structured);
 
-            tracing::info!(
-                format = %format_str,
-                size_bytes = size_bytes,
-                "RDF data exported successfully"
-            );
-
             Ok(result)
         }
         Err(e) => Err(invalid_request_error(
@@ -265,8 +253,6 @@ pub async fn export_plantuml_impl(
     let mut result = CallToolResult::success(vec![Content::text(formatted_data)]);
     result.structured_content = Some(structured);
 
-    tracing::info!(size = size, "PlantUML diagram exported successfully");
-
     Ok(result)
 }
 
@@ -303,12 +289,6 @@ pub async fn export_image_impl(
 
     let structured = serde_json::to_value(&response).unwrap();
 
-    let mime_type = match image_format.to_lowercase().as_str() {
-        "svg" => "image/svg+xml",
-        "png" => "image/png",
-        _ => "image/png",
-    };
-
     let description = format!(
         "Image generated successfully ({} format, {} bytes encoded as base64)",
         image_format, size_bytes
@@ -320,13 +300,6 @@ pub async fn export_image_impl(
     ]);
 
     result.structured_content = Some(structured);
-
-    tracing::info!(
-        format = %image_format,
-        size_bytes = size_bytes,
-        mime_type = mime_type,
-        "Image exported successfully"
-    );
 
     Ok(result)
 }

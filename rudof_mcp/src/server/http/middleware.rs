@@ -5,7 +5,6 @@ use axum::{
     middleware::{self, Next},
     response::Response,
 };
-use tracing::warn;
 
 const PROTOCOL_HEADER: &str = "MCP-Protocol-Version";
 const SUPPORTED_PROTOCOL_VERSIONS: &[&str] = &[
@@ -33,16 +32,18 @@ pub async fn protocol_version_guard(req: Request<Body>, next: Next) -> Response 
     if let Some(v) = req.headers().get(PROTOCOL_HEADER) {
         match v.to_str() {
             Ok(s) if SUPPORTED_PROTOCOL_VERSIONS.contains(&s) => {
+                tracing::debug!("Accepted MCP-Protocol-Version: {}", s);
                 // OK — continue
             }
             Ok(s) => {
-                warn!("Unsupported MCP-Protocol-Version: {s}");
+                tracing::error!("Unsupported MCP-Protocol-Version: {}", s);
                 return Response::builder()
                     .status(StatusCode::BAD_REQUEST)
                     .body("unsupported MCP-Protocol-Version".into())
                     .unwrap();
             }
             Err(_) => {
+                tracing::error!("Invalid MCP-Protocol-Version header");
                 return Response::builder()
                     .status(StatusCode::BAD_REQUEST)
                     .body("invalid MCP-Protocol-Version header".into())
@@ -71,16 +72,21 @@ pub async fn origin_guard(req: Request<Body>, next: Next) -> Response {
                     || origin_str.starts_with("http://127.0.0.1")
                     || origin_str.starts_with("https://127.0.0.1") =>
             {
+                tracing::debug!("Accepted Origin header: {}", origin_str);
                 // Allowed origin
             }
             Ok(origin_str) => {
-                warn!(%origin_str, "Rejected request due to invalid Origin header");
+                tracing::error!(
+                    "Rejected request due to invalid Origin header: {}",
+                    origin_str
+                );
                 return Response::builder()
                     .status(StatusCode::FORBIDDEN)
                     .body("origin not allowed".into())
                     .unwrap();
             }
             Err(_) => {
+                tracing::error!("Rejected request due to invalid Origin header");
                 return Response::builder()
                     .status(StatusCode::FORBIDDEN)
                     .body("invalid Origin header".into())

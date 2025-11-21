@@ -105,6 +105,10 @@ impl AuthConfig {
             .context("Failed to fetch JWKS")?;
 
         if !response.status().is_success() {
+            tracing::error!(
+                status = %response.status(),
+                "Failed to fetch JWKS from authorization server"
+            );
             return Err(anyhow::anyhow!(
                 "JWKS endpoint returned status: {}",
                 response.status()
