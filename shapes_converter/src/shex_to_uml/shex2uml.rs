@@ -2,7 +2,8 @@ use std::io::Write;
 
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
 use shex_ast::{
-    Annotation, ObjectValue, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr, ValueSetValue,
+    Annotation, NodeKind, ObjectValue, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr,
+    ValueSetValue, XsFacet,
 };
 use srdf::{UmlConverter, UmlConverterError, UmlGenerationMode};
 
@@ -76,8 +77,8 @@ impl ShEx2Uml {
             ShapeExprLabel::IriRef { value } => {
                 iri_ref2name(value, &self.config, &None, &self.current_prefixmap)
             }
-            ShapeExprLabel::BNode { value: _ } => todo!(),
-            ShapeExprLabel::Start => todo!(),
+            ShapeExprLabel::BNode { value } => Ok(Name::new(format!("_:{value}").as_str(), None)),
+            ShapeExprLabel::Start => Ok(Name::new("start", None)),
         }
     }
 
@@ -99,9 +100,10 @@ impl ShEx2Uml {
                     .collect();
                 Ok(UmlComponent::or(cs.into_iter()))
             }
-            other => Err(ShEx2UmlError::NotImplemented {
-                msg: format!("Complex shape expressions are not implemented yet\nShape: {other:?}"),
-            }),
+            other => Err(ShEx2UmlError::not_implemented(
+                format!("Complex shape expressions are not implemented yet\nShape: {other:?}")
+                    .as_str(),
+            )),
         }
     }
 
@@ -181,7 +183,15 @@ impl ShEx2Uml {
                                     }
                                 }
                             }
-                            _ => todo!(),
+                            TripleExpr::EachOf { .. } => {
+                                todo!()
+                            }
+                            TripleExpr::OneOf { .. } => {
+                                todo!()
+                            }
+                            TripleExpr::TripleExprRef(_) => {
+                                todo!()
+                            }
                         }
                     }
                 }
@@ -192,7 +202,9 @@ impl ShEx2Uml {
                     max: _,
                     sem_acts: _,
                     annotations: _,
-                } => todo!(),
+                } => {
+                    todo!()
+                }
                 TripleExpr::TripleConstraint {
                     id: _,
                     negated: _,
@@ -240,27 +252,28 @@ impl ShEx2Uml {
         current_card: &UmlCardinality,
     ) -> Result<ValueConstraint, ShEx2UmlError> {
         match value_expr {
-            ShapeExpr::ShapeOr { shape_exprs: _ } => todo!(),
-            ShapeExpr::ShapeAnd { shape_exprs: _ } => todo!(),
-            ShapeExpr::ShapeNot { shape_expr: _ } => todo!(),
+            ShapeExpr::ShapeOr { shape_exprs } => Err(ShEx2UmlError::not_implemented(
+                format!("ShapeExpr::ShapeOr in value_expr2value_constraint not implemented yet: {shape_exprs:?}").as_str(),
+            )),
+            ShapeExpr::ShapeAnd { shape_exprs } => Err(ShEx2UmlError::not_implemented(
+                format!("ShapeExpr::ShapeAnd in value_expr2value_constraint not implemented yet: {shape_exprs:?}").as_str(),
+            )),
+            ShapeExpr::ShapeNot { shape_expr } => Err(ShEx2UmlError::not_implemented(
+                format!("ShapeExpr::ShapeNot in value_expr2value_constraint not implemented yet: {shape_expr:?}").as_str(),
+            )),
             ShapeExpr::NodeConstraint(nc) => {
-                if let Some(datatype) = nc.datatype() {
-                    let name =
-                        iri_ref2name(&datatype, &self.config, &None, &self.current_prefixmap)?;
-                    Ok(ValueConstraint::datatype(name))
-                } else if let Some(value_set) = nc.values() {
-                    let value_set_constraint = value_set2value_constraint(
-                        &value_set,
-                        &self.config,
-                        &self.current_prefixmap,
-                    )?;
-                    Ok(ValueConstraint::ValueSet(value_set_constraint))
-                } else {
-                    todo!()
-                }
+                let maybe_nk = cnv_nodekind(nc.node_kind())?;
+                let maybe_dt = cnv_datatype(nc.datatype())?;
+                let maybe_facets = cnv_facets(nc.facets())?;
+                let maybe_values = cnv_values(nc.values())?;
+                Ok(mk_and(vec![maybe_nk, maybe_dt, maybe_facets, maybe_values]))
             }
-            ShapeExpr::Shape(_) => todo!(),
-            ShapeExpr::External => todo!(),
+            ShapeExpr::Shape(s) => Err(ShEx2UmlError::not_implemented(
+                format!("ShapeExpr::Shape in value_expr2value_constraint not implemented yet: {s:?}").as_str(),
+            )),
+            ShapeExpr::External => Err(ShEx2UmlError::not_implemented(
+                "ShapeExpr::External in value_expr2value_constraint not implemented yet",
+            )),
             ShapeExpr::Ref(r) => match &r {
                 ShapeExprLabel::IriRef { value } => {
                     let ref_name =
@@ -273,8 +286,15 @@ impl ShEx2Uml {
                     )?;
                     Ok(ValueConstraint::None)
                 }
-                ShapeExprLabel::BNode { value: _ } => todo!(),
-                ShapeExprLabel::Start => todo!(),
+                ShapeExprLabel::BNode { value } => Err(ShEx2UmlError::not_implemented(
+                    format!(
+                        "ShapeExprLabel::BNode in value_expr2value_constraint not implemented yet: _:{value}"
+                    )
+                    .as_str(),
+                )),
+                ShapeExprLabel::Start => Err(ShEx2UmlError::not_implemented(
+                    "ShapeExprLabel::Start in value_expr2value_constraint not implemented yet",
+                )),
             },
         }
     }
@@ -364,6 +384,56 @@ fn get_label(
     Ok(None)
 }
 
+fn cnv_nodekind(maybe_nk: Option<NodeKind>) -> Result<Option<ValueConstraint>, ShEx2UmlError> {
+    if let Some(nk) = maybe_nk {
+        let name = match nk {
+            NodeKind::Iri => Name::new("iri", None),
+            NodeKind::BNode => Name::new("bnode", None),
+            NodeKind::NonLiteral => Name::new("nonliteral", None),
+            NodeKind::Literal => Name::new("literal", None),
+        };
+        Ok(Some(ValueConstraint::Kind(name)))
+    } else {
+        Ok(None)
+    }
+}
+
+fn cnv_datatype(maybe_dt: Option<IriRef>) -> Result<Option<ValueConstraint>, ShEx2UmlError> {
+    if let Some(dt) = maybe_dt {
+        let name = iri_ref2name(&dt, &ShEx2UmlConfig::default(), &None, &PrefixMap::new())?;
+        Ok(Some(ValueConstraint::datatype(name)))
+    } else {
+        Ok(None)
+    }
+}
+
+fn cnv_facets(
+    maybe_facets: Option<Vec<XsFacet>>,
+) -> Result<Option<ValueConstraint>, ShEx2UmlError> {
+    if let Some(facets) = maybe_facets {
+        let mut facet_names = Vec::new();
+        for facet in facets {
+            let name = facet2name(&facet, &mut facet_names)?;
+            facet_names.push(name);
+        }
+        Ok(Some(ValueConstraint::Facet(facet_names)))
+    } else {
+        Ok(None)
+    }
+}
+
+fn cnv_values(
+    maybe_values: Option<Vec<ValueSetValue>>,
+) -> Result<Option<ValueConstraint>, ShEx2UmlError> {
+    if let Some(values) = maybe_values {
+        let value_set_constraint =
+            value_set2value_constraint(&values, &ShEx2UmlConfig::default(), &PrefixMap::new())?;
+        Ok(Some(ValueConstraint::ValueSet(value_set_constraint)))
+    } else {
+        Ok(None)
+    }
+}
+
 impl UmlConverter for ShEx2Uml {
     fn as_plantuml<W: Write>(
         &self,
@@ -371,6 +441,78 @@ impl UmlConverter for ShEx2Uml {
         mode: &UmlGenerationMode,
     ) -> Result<(), UmlConverterError> {
         self.as_plantuml(writer, mode)
+    }
+}
+
+fn facet2name(facet: &XsFacet, _names: &mut Vec<Name>) -> Result<Name, ShEx2UmlError> {
+    match facet {
+        XsFacet::StringFacet(sf) => string_facet2name(sf),
+        XsFacet::NumericFacet(nf) => numeric_facet2name(nf),
+    }
+}
+
+fn string_facet2name(facet: &shex_ast::ast::xs_facet::StringFacet) -> Result<Name, ShEx2UmlError> {
+    match facet {
+        shex_ast::ast::xs_facet::StringFacet::Length(n) => {
+            Ok(Name::new(format!("length={n}").as_str(), None))
+        }
+        shex_ast::ast::xs_facet::StringFacet::MinLength(n) => {
+            Ok(Name::new(format!("minLength={n}").as_str(), None))
+        }
+        shex_ast::ast::xs_facet::StringFacet::MaxLength(n) => {
+            Ok(Name::new(format!("maxLength={n}").as_str(), None))
+        }
+        shex_ast::ast::xs_facet::StringFacet::Pattern(p) => {
+            if let Some(flags) = &p.flags {
+                Ok(Name::new(
+                    format!("pattern={} (flags={})", p.str, flags).as_str(),
+                    None,
+                ))
+            } else {
+                Ok(Name::new(format!("pattern={}", p.str).as_str(), None))
+            }
+        }
+    }
+}
+
+fn numeric_facet2name(
+    facet: &shex_ast::ast::xs_facet::NumericFacet,
+) -> Result<Name, ShEx2UmlError> {
+    match facet {
+        shex_ast::ast::xs_facet::NumericFacet::MinInclusive(n) => {
+            Ok(Name::new(format!("minInclusive={}", n).as_str(), None))
+        }
+        shex_ast::ast::xs_facet::NumericFacet::MinExclusive(n) => {
+            Ok(Name::new(format!("minExclusive={}", n).as_str(), None))
+        }
+        shex_ast::ast::xs_facet::NumericFacet::MaxInclusive(n) => {
+            Ok(Name::new(format!("maxInclusive={}", n).as_str(), None))
+        }
+        shex_ast::ast::xs_facet::NumericFacet::MaxExclusive(n) => {
+            Ok(Name::new(format!("maxExclusive={}", n).as_str(), None))
+        }
+        shex_ast::ast::xs_facet::NumericFacet::TotalDigits(n) => {
+            Ok(Name::new(format!("totalDigits={}", n).as_str(), None))
+        }
+        shex_ast::ast::xs_facet::NumericFacet::FractionDigits(n) => {
+            Ok(Name::new(format!("fractionDigits={}", n).as_str(), None))
+        }
+    }
+}
+
+fn mk_and(values: Vec<Option<ValueConstraint>>) -> ValueConstraint {
+    let mut vcs = Vec::new();
+    for vc in values {
+        if let Some(vc) = vc {
+            vcs.push(vc);
+        }
+    }
+    if vcs.is_empty() {
+        ValueConstraint::Any
+    } else if vcs.len() == 1 {
+        vcs.into_iter().next().unwrap()
+    } else {
+        ValueConstraint::And { values: vcs }
     }
 }
 

@@ -1,26 +1,39 @@
 Pg:
-    Declarations ;
+    Statements ;
 
-Declarations: Declaration+[SEMICOLON] ;
+Statements: Statement+ ;
 
-Declaration: Node | Edge ;
+Statement: 
+    Edge 
+  | Node ;
 
-Node: "(" Id LabelsRecord ")" ;
+Node: "(" NodeId LabelsRecord ")" ;
 
 Edge:
-  "[" Id ":" "(" source=IDENTIFIER ")" "-[" LabelsRecord "]->" "(" target=IDENTIFIER ")" "]" ;
+//     directed 
+    // | undirected 
+//    ;
+// directed:
+    "(" source=IDENTIFIER ")" "-" "(" EdgeId? LabelsRecord ")" "->" "(" target=IDENTIFIER ")" ; 
+
+NodeId: 
+    Id ;
+
+EdgeId:
+    Id ;
 
 Id:
-    IDENTIFIER ;
+    IDENTIFIER {shift};
 
 LabelsRecord:
     Labels? Record? ;
 
 Labels:
-    ":" IDENTIFIER+[AMPERSAND] ;
+    OPEN_CURLY identifier+[COMMA] CLOSE_CURLY;
+
 
 Record:
-    OPEN_CURLY Properties CLOSE_CURLY ;
+    OPENSQUAREBRACKET Properties CLOSESQUAREBRACKET ;
 
 Properties: Property+[COMMA];
 
@@ -28,7 +41,7 @@ Property:
     key ":" Values  ;
 
 key:
-    IDENTIFIER ;
+    identifier ;
 
 Values: SingleValue
       | OPENSQUAREBRACKET ListValues CLOSESQUAREBRACKET {ListValue}
@@ -46,6 +59,11 @@ SingleValue:
 BOOL:
     TRUE | FALSE ;
 
+identifier:
+    IDENTIFIER
+    | QUOTED_STRING 
+    ;
+
 // Productions for comments  
 Layout: LayoutItem*;
 LayoutItem: WS | Comment;
@@ -53,11 +71,12 @@ Comment: '/*' Corncs '*/' | CommentLine;
 Corncs: Cornc*;
 Cornc: Comment | NotComment | WS;
 
+
 terminals
 
 // Terminals for comments
 WS: /\s+/;
-CommentLine: /\/\/.*/;
+CommentLine: /#.*/;
 NotComment: /((\*[^\/])|[^\s*\/]|\/[^\*])+/;
 START_COMMENT: '/*';
 END_COMMENT: '*/';
@@ -149,10 +168,10 @@ CLOSESQUAREBRACKET:
     "]" ;
 
 START_ARROW:
-    "-[" ;
+    "-" ;
 
 END_ARROW:
-    "]->" ;
+    "->" ;
 
 TRUE:
     "TRUE" ;

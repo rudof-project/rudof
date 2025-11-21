@@ -1,0 +1,15 @@
+# Nodes
+(Author01 {"Author"}["fname": "John", "lname": "Smith"]) #Author01
+(Author02 {"Author"}["fname": "Alice", "lname": "Brown"])
+(EI01 {"Entry", "InProceedings"}["title": "Serialization for...", "numpages": "10", "keyword": "Graph database"])
+(EA01 {"Entry", "Article"}["title": "Property Graph...", "numpages": "10", "keyword": ["Query", "Graph"]])
+(Proc01 {"Proceedings"}["title": "BDAS", "year": "2018", "month": "May"])
+(Jour01 {"Journal"}["title": "J. DB", "year": "2020", "vol": "30"])
+
+# Edges
+(EI01)-({"has_author"}["order": "1"])->(Author01)
+(EI01)-({"has_author"}["order": "2"])->(Author02)
+(EA01)-({"has_author"}["order": "1"])->(Author02)
+(EA01)-({"cites"})->(EI01)
+(EI01)-({"booktitle"}["pages": "111-121"])->(Proc01)
+(EA01)-({"published_in"}["pages": "222-232"])->(Jour01)

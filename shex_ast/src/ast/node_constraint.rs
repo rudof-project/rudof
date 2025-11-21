@@ -49,6 +49,14 @@ impl NodeConstraint {
         self.datatype.clone()
     }
 
+    pub fn facets(&self) -> Option<Vec<XsFacet>> {
+        self.xs_facet.clone()
+    }
+
+    pub fn values(&self) -> Option<Vec<ValueSetValue>> {
+        self.values.clone()
+    }
+
     pub fn with_node_kind(mut self, node_kind: NodeKind) -> Self {
         self.node_kind = Some(node_kind);
         self
@@ -138,19 +146,6 @@ impl NodeConstraint {
         }*/
         self.values = Some(values);
         self
-    }
-
-    pub fn values(&self) -> Option<Vec<ValueSetValue>> {
-        match &self.values {
-            None => None,
-            Some(vs) => {
-                let mut r = Vec::new();
-                for v in vs {
-                    r.push((*v).clone())
-                }
-                Some(r)
-            }
-        }
     }
 }
 

@@ -135,7 +135,7 @@ impl PropertyGraph {
     /// Adds an edge to the PropertyGraph.
     pub fn add_edge(
         &mut self,
-        name_id: String,
+        name_id: Option<String>,
         source: String,
         labels: HashSet<LabelName>,
         record: Record,
@@ -143,7 +143,8 @@ impl PropertyGraph {
     ) -> Result<(), PgsError> {
         let id = EdgeId::new(self.edge_id_counter);
         self.edge_id_counter += 1;
-        self.edge_names.insert(name_id, id.clone());
+        self.edge_names
+            .insert(name_id.unwrap_or_default(), id.clone());
         let source_id = self.get_node_id(&source)?;
         let target_id = self.get_node_id(&target)?;
         let edge = Edge {
