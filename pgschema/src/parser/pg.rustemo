@@ -14,7 +14,7 @@ Edge:
     // | undirected 
 //    ;
 // directed:
-    "[" "(" source=IDENTIFIER ")" "-" "(" EdgeId? LabelsRecord ")" "->" "(" target=IDENTIFIER ")" "]"; 
+    "(" source=IDENTIFIER ")" "-" "(" EdgeId? LabelsRecord ")" "->" "(" target=IDENTIFIER ")" ; 
 
 NodeId: 
     Id ;
@@ -23,13 +23,14 @@ EdgeId:
     Id ;
 
 Id:
-    IDENTIFIER ;
+    IDENTIFIER {shift};
 
 LabelsRecord:
     Labels? Record? ;
 
 Labels:
-    OPEN_CURLY identifier+[AMPERSAND] CLOSE_CURLY;
+    OPEN_CURLY identifier+[COMMA] CLOSE_CURLY;
+
 
 Record:
     OPENSQUAREBRACKET Properties CLOSESQUAREBRACKET ;
@@ -75,7 +76,7 @@ terminals
 
 // Terminals for comments
 WS: /\s+/;
-CommentLine: /\/\/.*/;
+CommentLine: /#.*/;
 NotComment: /((\*[^\/])|[^\s*\/]|\/[^\*])+/;
 START_COMMENT: '/*';
 END_COMMENT: '*/';

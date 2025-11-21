@@ -260,6 +260,25 @@ pub fn identifier1_identifier(_ctx: &Ctx, identifier: identifier) -> identifier1
 pub fn labels_identifier1(_ctx: &Ctx, identifier1: identifier1) -> Labels {
     identifier1
 }
+pub type EdgeIdOpt = Option<EdgeId>;
+pub fn edge_id_opt_edge_id(_ctx: &Ctx, edge_id: EdgeId) -> EdgeIdOpt {
+    Some(edge_id)
+}
+pub fn edge_id_opt_empty(_ctx: &Ctx) -> EdgeIdOpt {
+    None
+}
+pub type Labels = identifier1;
+#[derive(Debug, Clone)]
+pub enum Conj {
+    AMPERSAND,
+    COMMA,
+}
+pub fn conj_ampersand(_ctx: &Ctx) -> Conj {
+    Conj::AMPERSAND
+}
+pub fn conj_comma(_ctx: &Ctx) -> Conj {
+    Conj::COMMA
+}
 pub fn identifier1_c1(
     _ctx: &Ctx,
     mut identifier1: identifier1,
@@ -267,33 +286,4 @@ pub fn identifier1_c1(
 ) -> identifier1 {
     identifier1.push(identifier);
     identifier1
-}
-pub type Labels = identifier1;
-#[derive(Debug, Clone)]
-pub struct directed {
-    pub source: IDENTIFIER,
-    pub edge_id_opt: EdgeIdOpt,
-    pub labels_record: LabelsRecord,
-    pub target: IDENTIFIER,
-}
-pub fn directed_c1(
-    _ctx: &Ctx,
-    source: IDENTIFIER,
-    edge_id_opt: EdgeIdOpt,
-    labels_record: LabelsRecord,
-    target: IDENTIFIER,
-) -> directed {
-    directed {
-        source,
-        edge_id_opt,
-        labels_record,
-        target,
-    }
-}
-pub type EdgeIdOpt = Option<EdgeId>;
-pub fn edge_id_opt_edge_id(_ctx: &Ctx, edge_id: EdgeId) -> EdgeIdOpt {
-    Some(edge_id)
-}
-pub fn edge_id_opt_empty(_ctx: &Ctx) -> EdgeIdOpt {
-    None
 }

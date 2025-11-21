@@ -1,5 +1,5 @@
 (n1 {Person} [name: "Alice", age: 23 ])
-(n2 {Person & Student} [ name: "Bob" ])
+(n2 {Person, Student} [ name: "Bob" ])
 (n3 {Course} [ name: "Algebra" ])
-[(n1) - (e1 {knows} [since: 2020 ]) -> (n2)] 
-[(n2) - (e2 {knows} [start: 2024, end: 2025 ]) -> (n3)] 
+(n1) - (e1 {knows} [since: 2020 ]) -> (n2)
+(n2) - (e2 {knows} [start: 2024, end: 2025 ]) -> (n3)

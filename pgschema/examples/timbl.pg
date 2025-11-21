@@ -1,9 +1,9 @@
-(n1: Person { name: "Tim Berners-Lee", birthDate: 1955 });
-(n2: City & Metropolis { name: "London" });
-(n3: Country { name: "UK" });
-(n4: Organization { name: "CERN" });
+(n1 { Person } [ name: "Tim Berners-Lee", birthDate: 1955 ])
+(n2 { City, Metropolis } [ name: "London" ])
+(n3 { Country } [ name: "UK" ])
+(n4 { Organization } [ name: "CERN" ])
 
-[r1:(n1)-[:birthPlace]->(n2)];
-[r2:(n2)-[:country]->(n3)];
-[r3:(n1)-[:employer { start: 1980, end: 1980 }]->(n4)];
-[r4:(n1)-[:employer { start: 1984, end: 1994 }]->(n4)]
+(n1) -(r1 {birthPlace})-> (n2)
+(n2) -(r2 { country})-> (n3)
+(n1) -(r3 {employer} [ start: 1980, end: 1980 ])-> (n4)
+(n1) -(r4 {employer} [ start: 1984, end: 1994 ])-> (n4)

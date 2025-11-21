@@ -67,7 +67,6 @@ fn get_statement(statement: Statement, pg: &mut PropertyGraph) -> Result<(), Pgs
 }
 
 fn get_edge(edge: Edge, pg: &mut PropertyGraph) -> Result<(), PgsError> {
-    println!("Getting edge: {:?}", edge);
     // let id = get_id(edge.id)?;
     let source = get_id(edge.source)?;
     let target = get_id(edge.target)?;
