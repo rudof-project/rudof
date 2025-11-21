@@ -315,14 +315,36 @@ fn value_constraint2plantuml(vc: &ValueConstraint, config: &ShEx2UmlConfig) -> S
         ValueConstraint::ValueSet(values) => {
             let mut str = String::new();
             str.push_str("[ ");
-            for value in values {
-                let name_puml = name2plantuml(value, config);
+            for name in values {
+                let name_puml = name2plantuml(name, config);
+                if !str.is_empty() {
+                    str.push_str(" ");
+                }
                 str.push_str(name_puml.as_str());
-                str.push_str(", ");
             }
             str.push_str(" ]");
             str.to_string()
         }
+        ValueConstraint::Facet(names) => {
+            let mut str = String::new();
+            for name in names {
+                let name_puml = name2plantuml(name, config);
+                if !str.is_empty() {
+                    str.push_str(" ");
+                }
+                str.push_str(name_puml.as_str());
+            }
+            str.to_string()
+        }
+        ValueConstraint::Kind(name) => name2plantuml(name, config),
+        ValueConstraint::And { values } => values.iter().fold(String::new(), |mut acc, vc| {
+            let vc_str = value_constraint2plantuml(vc, config);
+            if !acc.is_empty() {
+                acc.push_str(" ");
+            }
+            acc.push_str(vc_str.as_str());
+            acc
+        }),
     }
 }
 

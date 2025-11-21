@@ -6,8 +6,13 @@ pub enum ValueConstraint {
     Any,
     ValueSet(Vec<Name>),
     Datatype(Name),
+    Facet(Vec<Name>),
     Ref(Name),
+    Kind(Name),
     None,
+    And {
+        values: Vec<ValueConstraint>,
+    },
 }
 
 impl ValueConstraint {
