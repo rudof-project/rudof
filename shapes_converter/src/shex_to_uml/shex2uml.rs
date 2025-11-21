@@ -502,10 +502,8 @@ fn numeric_facet2name(
 
 fn mk_and(values: Vec<Option<ValueConstraint>>) -> ValueConstraint {
     let mut vcs = Vec::new();
-    for vc in values {
-        if let Some(vc) = vc {
-            vcs.push(vc);
-        }
+    for vc in values.into_iter().flatten() {
+        vcs.push(vc);
     }
     if vcs.is_empty() {
         ValueConstraint::Any

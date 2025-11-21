@@ -318,7 +318,7 @@ fn value_constraint2plantuml(vc: &ValueConstraint, config: &ShEx2UmlConfig) -> S
             for name in values {
                 let name_puml = name2plantuml(name, config);
                 if !str.is_empty() {
-                    str.push_str(" ");
+                    str.push(' ');
                 }
                 str.push_str(name_puml.as_str());
             }
@@ -330,7 +330,7 @@ fn value_constraint2plantuml(vc: &ValueConstraint, config: &ShEx2UmlConfig) -> S
             for name in names {
                 let name_puml = name2plantuml(name, config);
                 if !str.is_empty() {
-                    str.push_str(" ");
+                    str.push(' ');
                 }
                 str.push_str(name_puml.as_str());
             }
@@ -340,7 +340,7 @@ fn value_constraint2plantuml(vc: &ValueConstraint, config: &ShEx2UmlConfig) -> S
         ValueConstraint::And { values } => values.iter().fold(String::new(), |mut acc, vc| {
             let vc_str = value_constraint2plantuml(vc, config);
             if !acc.is_empty() {
-                acc.push_str(" ");
+                acc.push(' ');
             }
             acc.push_str(vc_str.as_str());
             acc
