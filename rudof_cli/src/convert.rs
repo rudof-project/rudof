@@ -1,8 +1,7 @@
 use crate::run_shacl_convert;
 use crate::{
     InputConvertFormat, InputConvertMode, OutputConvertFormat, OutputConvertMode,
-    dctap_format::DCTapFormat as CliDCTapFormat, parse_dctap, run_shex,
-    writer::get_writer,
+    dctap_format::DCTapFormat as CliDCTapFormat, parse_dctap, run_shex, writer::get_writer,
 };
 use anyhow::{Result, anyhow, bail};
 use iri_s::IriS;
@@ -207,8 +206,15 @@ fn run_shex2uml(
 ) -> Result<()> {
     let schema_format = format.to_shex_format()?;
     let mut rudof = Rudof::new(config)?;
-    rudof_lib::shex::parse_shex_schema(&mut rudof, input, &schema_format, base, reader_mode, config)
-        .map_err(|e| anyhow!("{}", e))?;
+    rudof_lib::shex::parse_shex_schema(
+        &mut rudof,
+        input,
+        &schema_format,
+        base,
+        reader_mode,
+        config,
+    )
+    .map_err(|e| anyhow!("{}", e))?;
     let mut converter = ShEx2Uml::new(&config.shex2uml_config());
     if let Some(schema) = rudof.get_shex() {
         converter.convert(schema)?;
@@ -275,8 +281,15 @@ fn run_shex2html<P: AsRef<Path>>(
     let schema_format = format.to_shex_format()?;
     let mut rudof = Rudof::new(config)?;
 
-    rudof_lib::shex::parse_shex_schema(&mut rudof, input, &schema_format, base, reader_mode, config)
-        .map_err(|e| anyhow!("{}", e))?;
+    rudof_lib::shex::parse_shex_schema(
+        &mut rudof,
+        input,
+        &schema_format,
+        base,
+        reader_mode,
+        config,
+    )
+    .map_err(|e| anyhow!("{}", e))?;
     if let Some(schema) = rudof.get_shex() {
         let shex2html_config = config.shex2html_config();
         let config = shex2html_config
@@ -361,8 +374,15 @@ fn run_shex2sparql(
 ) -> Result<()> {
     let schema_format = format.to_shex_format()?;
     let mut rudof = Rudof::new(config)?;
-    rudof_lib::shex::parse_shex_schema(&mut rudof, input, &schema_format, base, reader_mode, config)
-        .map_err(|e| anyhow!("{}", e))?;
+    rudof_lib::shex::parse_shex_schema(
+        &mut rudof,
+        input,
+        &schema_format,
+        base,
+        reader_mode,
+        config,
+    )
+    .map_err(|e| anyhow!("{}", e))?;
     if let Some(schema) = rudof.get_shex() {
         let converter = ShEx2Sparql::new(&config.shex2sparql_config());
         let sparql = converter.convert(schema, shape)?;

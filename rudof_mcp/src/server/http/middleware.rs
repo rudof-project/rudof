@@ -76,7 +76,10 @@ pub async fn origin_guard(req: Request<Body>, next: Next) -> Response {
                 // Allowed origin
             }
             Ok(origin_str) => {
-                tracing::error!("Rejected request due to invalid Origin header: {}", origin_str);
+                tracing::error!(
+                    "Rejected request due to invalid Origin header: {}",
+                    origin_str
+                );
                 return Response::builder()
                     .status(StatusCode::FORBIDDEN)
                     .body("origin not allowed".into())

@@ -3,9 +3,8 @@ use crate::writer::get_writer;
 use anyhow::{Result, bail};
 use iri_s::IriS;
 use rudof_lib::{
-    InputSpec, Rudof, RudofConfig, ShExFormatter, data::get_data_rudof,
-    data_format::DataFormat, parse_shape_selector,
-    result_shex_validation_format::ResultShExValidationFormat,
+    InputSpec, Rudof, RudofConfig, ShExFormatter, data::get_data_rudof, data_format::DataFormat,
+    parse_shape_selector, result_shex_validation_format::ResultShExValidationFormat,
     shapemap_format::ShapeMapFormat as CliShapeMapFormat, shex::validate_shex,
     shex_format::ShExFormat as CliShExFormat, sort_by_result_shape_map::SortByResultShapeMap,
 };
@@ -36,15 +35,8 @@ pub fn run_shex(
     let (mut writer, color) = get_writer(output, force_overwrite)?;
     let mut rudof = Rudof::new(config)?;
 
-    rudof_lib::shex::parse_shex_schema(
-        &mut rudof,
-        input,
-        schema_format,
-        base,
-        reader_mode,
-        config,
-    )
-    .map_err(anyhow::Error::from)?;
+    rudof_lib::shex::parse_shex_schema(&mut rudof, input, schema_format, base, reader_mode, config)
+        .map_err(anyhow::Error::from)?;
 
     if let Some(shape_label) = shape {
         let shape_selector = parse_shape_selector(shape_label)?;
@@ -124,8 +116,6 @@ pub fn run_shex(
         Ok(())
     }
 }
-
-
 
 fn show_extends_table<R: Write>(
     writer: &mut R,

@@ -7,8 +7,8 @@ use crate::{
 use iri_s::IriS;
 use iri_s::MimeType;
 use shex_ast::ShExFormat;
-use srdf::RDFFormat;
 use shex_ast::shapemap::ResultShapeMap;
+use srdf::RDFFormat;
 use srdf::ReaderMode;
 use std::env;
 use std::io::Write;
@@ -185,7 +185,10 @@ pub fn parse_shex_schema(
         let shex_ir = rudof.get_shex_ir().unwrap();
         if shex_ir.has_neg_cycle() {
             return Err(RudofError::Generic {
-                error: format!("Schema contains negative cycles: {:?}", shex_ir.neg_cycles()),
+                error: format!(
+                    "Schema contains negative cycles: {:?}",
+                    shex_ir.neg_cycles()
+                ),
             });
         }
     }

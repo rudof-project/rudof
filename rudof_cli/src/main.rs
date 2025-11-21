@@ -53,7 +53,7 @@ fn main() -> Result<()> {
         env::set_var("RUSTEMO_NOTRACE", "1");
     }
 
-   // Parse CLI args first to check the command
+    // Parse CLI args first to check the command
     let args = clientele::args_os()?;
     let cli = Cli::parse_from(args);
 
@@ -80,7 +80,7 @@ fn main() -> Result<()> {
             .create(true)
             .append(true)
             .open(log_path)?;
-        
+
         let fmt_layer = fmt::layer()
             .with_file(true)
             .with_target(false)

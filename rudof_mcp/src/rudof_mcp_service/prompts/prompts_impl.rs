@@ -36,7 +36,7 @@ impl RudofMcpService {
     ) -> Result<GetPromptResult, McpError> {
         analyze_rdf_data_prompt_impl(Parameters(args)).await
     }
-    
+
     #[prompt(
         name = "explain_validation_errors",
         description = "Understand and fix ShEx validation errors with detailed explanations"

@@ -9,8 +9,8 @@ use super::data_tools_impl::*;
 use super::node_tools_impl::*;
 use super::query_tools_impl::*;
 use super::shacl_validate_tools_impl::*;
-use super::shex_validate_tools_impl::*;
 use super::shex_tools_impl::*;
+use super::shex_validate_tools_impl::*;
 
 #[tool_router]
 impl RudofMcpService {
@@ -114,7 +114,10 @@ impl RudofMcpService {
         name = "check_shex",
         description = "Check if a ShEx schema is well-formed"
     )]
-    pub async fn check_shex(&self, params: Parameters<CheckShexRequest>) -> Result<CallToolResult, McpError> {
+    pub async fn check_shex(
+        &self,
+        params: Parameters<CheckShexRequest>,
+    ) -> Result<CallToolResult, McpError> {
         // Delegates the call to the function in shex_tools_impl.rs
         check_shex_impl(self, params).await
     }
@@ -123,7 +126,10 @@ impl RudofMcpService {
         name = "shape_info",
         description = "Obtain information about a specific ShEx shape"
     )]
-    pub async fn shape_info(&self, params: Parameters<ShapeInfoRequest>) -> Result<CallToolResult, McpError> {
+    pub async fn shape_info(
+        &self,
+        params: Parameters<ShapeInfoRequest>,
+    ) -> Result<CallToolResult, McpError> {
         // Delegates the call to the function in shex_tools_impl.rs
         shape_info_impl(self, params).await
     }
@@ -132,7 +138,10 @@ impl RudofMcpService {
         name = "convert_shex",
         description = "Convert a ShEx schema between supported formats"
     )]
-    pub async fn convert_shex(&self, params: Parameters<ConvertShexRequest>) -> Result<CallToolResult, McpError> {
+    pub async fn convert_shex(
+        &self,
+        params: Parameters<ConvertShexRequest>,
+    ) -> Result<CallToolResult, McpError> {
         // Delegates the call to the function in shex_tools_impl.rs
         convert_shex_impl(self, params).await
     }
@@ -156,7 +165,7 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
                         .read_only(false)
                         .destructive(false)
                         .idempotent(false)
-                        .open_world(true), 
+                        .open_world(true),
                 );
             }
             "export_rdf_data" => {
@@ -166,7 +175,7 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
                         .read_only(true)
                         .destructive(false)
                         .idempotent(true)
-                        .open_world(false), 
+                        .open_world(false),
                 );
             }
             "export_plantuml" => {
