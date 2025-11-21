@@ -21,18 +21,10 @@ use crate::rudof_mcp_service::RudofMcpService;
 /// - Input: JSON-RPC messages via stdin
 /// - Output: JSON-RPC responses via stdout
 pub async fn run_mcp_stdio() -> Result<()> {
-    tracing::info!("MCP stdio server started");
-    tracing::info!("Transport: JSON-RPC over stdin/stdout");
-
     let server = RudofMcpService::new();
 
-    let service = server.serve(stdio()).await.inspect_err(|e| {
-        tracing::error!("Server error: {:?}", e);
-    })?;
+    let service = server.serve(stdio()).await?;
 
     service.waiting().await?;
-
-    tracing::info!("MCP stdio server shutting down");
-
     Ok(())
 }

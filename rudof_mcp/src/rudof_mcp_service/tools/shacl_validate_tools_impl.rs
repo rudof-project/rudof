@@ -214,15 +214,6 @@ pub async fn validate_shacl_impl(
         result_lines,
     };
 
-    tracing::info!(
-        shape_format = ?parsed_shape_format,
-        result_format = %result_format_str,
-        sort_by = %sort_by_str,
-        result_size_bytes,
-        result_lines,
-        "SHACL validation executed"
-    );
-
     let structured = serde_json::to_value(&response).map_err(|e| {
         internal_error(
             "Serialization error",

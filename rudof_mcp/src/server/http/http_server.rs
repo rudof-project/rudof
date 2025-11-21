@@ -10,7 +10,8 @@ use axum::{
 use rmcp::transport::streamable_http_server::{
     SessionManager, StreamableHttpService, session::local::LocalSessionManager,
 };
-use tower_http::{cors::CorsLayer, trace::TraceLayer};
+use tower_http::cors::CorsLayer;
+// use tower_http::trace::TraceLayer;
 
 use super::auth::{AuthConfig, authorization_guard, protected_resource_metadata_handler};
 use super::config::AS_URL;
@@ -26,7 +27,6 @@ use crate::rudof_mcp_service::RudofMcpService;
 ///
 /// # Security Features
 /// - OAuth2/OIDC authentication with JWT validation
-/// - TLS/HTTPS support (configure via reverse proxy)
 /// - JWT signature verification using JWKS
 /// - Audience and issuer validation (RFC 8707)
 /// - DNS rebinding protection (origin validation)
@@ -93,8 +93,10 @@ pub async fn run_mcp_http(port: u16, route_path: &str) -> Result<()> {
         ])
         .expose_headers([axum::http::HeaderName::from_static("mcp-session-id")]);
 
-    // Apply tracing and CORS layers (order matters: CORS first, then tracing)
-    let router = router.layer(TraceLayer::new_for_http()).layer(cors);
+    // Apply CORS layers and tracing layer
+    let router = router
+        // .layer(TraceLayer::new_for_http())
+        .layer(cors);
 
     // Apply protocol and origin guards (before authorization)
     let guarded_router = with_guards(router);
@@ -109,9 +111,7 @@ pub async fn run_mcp_http(port: u16, route_path: &str) -> Result<()> {
     let server = axum_server::Server::from_tcp(listener).serve(guarded_router.into_make_service());
 
     tracing::info!("MCP HTTP server listening on {}", canonical_uri);
-    tracing::info!("Transport: HTTP with Server-Sent Events (SSE)");
     tracing::info!("Authorization server: {}", oauth2_auth_cfg.issuer);
-    tracing::info!("Session management: Enabled with explicit termination support");
 
     // Graceful shutdown handling
     tokio::select! {
@@ -121,7 +121,7 @@ pub async fn run_mcp_http(port: u16, route_path: &str) -> Result<()> {
             }
         }
         _ = tokio::signal::ctrl_c() => {
-            tracing::info!("Shutdown signal received, stopping HTTP server...");
+            tracing::debug!("Shutdown signal received, stopping HTTP server...");
         }
     }
 
@@ -149,7 +149,7 @@ async fn handle_delete_session(
                     (StatusCode::NO_CONTENT, "").into_response()
                 }
                 Err(e) => {
-                    tracing::warn!(session_id = %id, error = %e, "Session not found or already expired");
+                    tracing::error!(session_id = %id, error = %e, "Session not found or already expired");
                     (
                         StatusCode::NOT_FOUND,
                         "Session not found or already expired",
@@ -159,7 +159,7 @@ async fn handle_delete_session(
             }
         }
         None => {
-            tracing::warn!("Missing Mcp-Session-Id header in DELETE request");
+            tracing::error!("Missing Mcp-Session-Id header in DELETE request");
             (StatusCode::BAD_REQUEST, "Missing Mcp-Session-Id header").into_response()
         }
     }

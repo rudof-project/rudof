@@ -49,7 +49,7 @@ pub async fn authorization_guard(
                     t
                 }
                 None => {
-                    tracing::warn!("Malformed Bearer token");
+                    tracing::error!("Malformed Bearer token");
                     return unauthorized_response(
                         &auth_cfg.resource_metadata_url(),
                         Some("invalid_request"),
@@ -81,11 +81,11 @@ pub async fn authorization_guard(
             }
         }
         Some(_) => {
-            tracing::warn!("Invalid Authorization header format");
+            tracing::error!("Invalid Authorization header format");
             bad_request_response("Authorization header must use Bearer scheme")
         }
         None => {
-            tracing::warn!(
+            tracing::error!(
                 "Missing Authorization header for protected endpoint: {}",
                 path
             );

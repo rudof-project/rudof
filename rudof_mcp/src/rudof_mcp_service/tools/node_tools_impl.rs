@@ -152,17 +152,6 @@ pub async fn node_info_impl(
         total_incoming_subjects,
     };
 
-    tracing::info!(
-        node = %node,
-        subject = %node_info.subject_qualified,
-        outgoing_predicates = outgoing_count,
-        incoming_predicates = incoming_count,
-        total_outgoing_objects,
-        total_incoming_subjects,
-        mode = mode_str,
-        "Retrieved node information"
-    );
-
     let structured = serde_json::to_value(&response).map_err(|e| {
         internal_error(
             "Serialization error",

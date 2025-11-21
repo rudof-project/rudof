@@ -65,12 +65,22 @@ impl RudofMcpService {
 
     /// Add a resource subscription
     pub async fn subscribe_resource(&self, uri: String, subscriber_id: String) {
+        tracing::debug!(
+            uri = %uri,
+            subscriber_id = %subscriber_id,
+            "Subscribing to resource"
+        );
         let mut subs = self.resource_subscriptions.write().await;
         subs.entry(uri).or_insert_with(Vec::new).push(subscriber_id);
     }
 
     /// Remove a resource subscription
     pub async fn unsubscribe_resource(&self, uri: &str, subscriber_id: &str) {
+        tracing::debug!(
+            uri = %uri,
+            subscriber_id = %subscriber_id,
+            "Unsubscribing from resource"
+        );
         let mut subs = self.resource_subscriptions.write().await;
         if let Some(subscribers) = subs.get_mut(uri) {
             subscribers.retain(|id| id != subscriber_id);
@@ -82,12 +92,14 @@ impl RudofMcpService {
 
     /// Get all subscribers for a resource
     pub async fn get_resource_subscribers(&self, uri: &str) -> Vec<String> {
+        tracing::debug!(uri = %uri, "Getting resource subscribers");
         let subs = self.resource_subscriptions.read().await;
         subs.get(uri).cloned().unwrap_or_default()
     }
 
     /// Send a notification about resource updates using rmcp's notification system
     pub async fn notify_resource_updated(&self, uri: String) {
+        tracing::debug!(uri = %uri, "Notifying resource updated");
         let subscribers = self.get_resource_subscribers(&uri).await;
 
         if subscribers.is_empty() {
@@ -105,13 +117,13 @@ impl RudofMcpService {
                 })
                 .await
             {
-                tracing::warn!(
+                tracing::error!(
                     uri = %uri,
                     error = ?e,
                     "Failed to send resource updated notification"
                 );
             } else {
-                tracing::info!(
+                tracing::debug!(
                     uri = %uri,
                     subscriber_count = subscribers.len(),
                     "Resource updated notification sent via rmcp"
@@ -128,15 +140,16 @@ impl RudofMcpService {
 
     /// Send a notification that the resources list has changed
     pub async fn notify_resource_list_changed(&self) {
+        tracing::debug!("Notifying resource list changed");
         let context_guard = self.current_context.read().await;
         if let Some(context) = context_guard.as_ref() {
             if let Err(e) = context.peer.notify_resource_list_changed().await {
-                tracing::warn!(
+                tracing::error!(
                     error = ?e,
                     "Failed to send resource list changed notification"
                 );
             } else {
-                tracing::info!("Resource list changed notification sent via rmcp");
+                tracing::debug!("Resource list changed notification sent via rmcp");
             }
         } else {
             tracing::debug!("Resource list changed (no active request context)");
@@ -145,15 +158,16 @@ impl RudofMcpService {
 
     /// Send a notification that the tools list has changed
     pub async fn notify_tool_list_changed(&self) {
+        tracing::debug!("Notifying tool list changed");
         let context_guard = self.current_context.read().await;
         if let Some(context) = context_guard.as_ref() {
             if let Err(e) = context.peer.notify_tool_list_changed().await {
-                tracing::warn!(
+                tracing::error!(
                     error = ?e,
                     "Failed to send tool list changed notification"
                 );
             } else {
-                tracing::info!("Tool list changed notification sent via rmcp");
+                tracing::debug!("Tool list changed notification sent via rmcp");
             }
         } else {
             tracing::debug!("Tool list changed (no active request context)");
@@ -162,15 +176,16 @@ impl RudofMcpService {
 
     /// Send a notification that the prompts list has changed
     pub async fn notify_prompt_list_changed(&self) {
+        tracing::debug!("Notifying prompt list changed");
         let context_guard = self.current_context.read().await;
         if let Some(context) = context_guard.as_ref() {
             if let Err(e) = context.peer.notify_prompt_list_changed().await {
-                tracing::warn!(
+                tracing::error!(
                     error = ?e,
                     "Failed to send prompt list changed notification"
                 );
             } else {
-                tracing::info!("Prompt list changed notification sent via rmcp");
+                tracing::debug!("Prompt list changed notification sent via rmcp");
             }
         } else {
             tracing::debug!("Prompt list changed (no active request context)");
@@ -183,6 +198,11 @@ impl RudofMcpService {
         _prompt_name: &str,
         _argument_name: &str,
     ) -> Vec<String> {
+        tracing::debug!(
+            prompt_name = %_prompt_name,
+            argument_name = %_argument_name,
+            "Getting prompt argument completions"
+        );
         // Not implemented yet;For now, return empty
         vec![]
     }
@@ -193,6 +213,11 @@ impl RudofMcpService {
         _uri: &str,
         _argument_name: &str,
     ) -> Vec<String> {
+        tracing::debug!(
+            uri = %_uri,
+            argument_name = %_argument_name,
+            "Getting resource URI completions"
+        );
         // Not implemented yet; For now, return empty
         vec![]
     }

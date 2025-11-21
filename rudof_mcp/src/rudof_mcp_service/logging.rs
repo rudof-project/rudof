@@ -70,13 +70,15 @@ pub async fn send_log(
     min_level: Arc<RwLock<Option<LoggingLevel>>>,
     peer: &rmcp::service::Peer<rmcp::RoleServer>,
 ) {
+    tracing::debug!("Preparing to send MCP log: level={:?}, logger={:?}, data={:?}", level, logger, data);
     let current_min = min_level.read().await;
     if let Some(min) = *current_min {
         if !should_log(level, min) {
+            tracing::debug!("Log level {:?} is below minimum {:?}, not sending log", level, min);
             return;
         }
     } else {
-        // No minimum level set means logging is not configured
+        tracing::debug!("No minimum log level set, not sending MCP log");
         return;
     }
     drop(current_min);
@@ -89,8 +91,7 @@ pub async fn send_log(
         })
         .await
     {
-        // Use tracing as fallback if MCP logging fails
-        tracing::warn!(
+        tracing::error!(
             error = ?e,
             level = ?level,
             "Failed to send MCP log notification"
