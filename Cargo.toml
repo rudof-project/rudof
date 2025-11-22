@@ -49,10 +49,13 @@ authors = [
 # [dependencies]
 anyhow = "1.0"
 async-trait = "0.1.89"
+axum = "0.8.4"
+axum-server = "0.7"
+base64 = "0.22.1"
 calamine = { version = "0.31" }
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4.2.1", features = ["derive"] }
-clientele = "0.2"
+clientele = "0.3.8"
 crossterm = "0.27"
 colored = "3"
 const_format = "0.2"
@@ -66,6 +69,7 @@ indexmap = { version = "2", features = ["serde"] }
 indoc = "2"
 iri_s = { version = "0.1.90", path = "./iri_s" }
 itertools = "0.14"
+josekit = "0.10.3"
 lazy-regex = "3.4"
 mie = { version = "0.1.104", path = "./mie" }
 nom = "7"
@@ -92,7 +96,7 @@ rbe = { version = "0.1.111", path = "./rbe" }
 rbe_testsuite = { version = "0.1.90", path = "./rbe_testsuite" }
 rdf_config = { version = "0.1.102", path = "./rdf_config" }
 regex = "1.11"
-reqwest = { version = "0.12", features = ["blocking", "json"] }
+reqwest = { version = "0.12", features = ["blocking", "json", "rustls-tls"] }
 rudof_cli = { version = "0.1.111", path = "./rudof_cli" }
 rudof_generate = { version = "0.1.118", path = "./rudof_generate" }
 rudof_lib = { version = "0.1.110", path = "./rudof_lib" }
@@ -120,11 +124,12 @@ tempfile = "3.10.1"
 term_size = "0.3.2"
 termtree = { version = "0.4" }
 thiserror = "2.0"
-tokio = { version = "1.4", features = ["rt", "rt-multi-thread"] }
+tokio = { version = "1.47.1", features = ["full"] }
+tokio-util = "0.7"
 tokio-test = "0.4"
 toml = "0.9"
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 tracing-test = "0.2.5"
 url = "2.2.2"
 uuid = { version = "1.0", features = ["v4"] }
