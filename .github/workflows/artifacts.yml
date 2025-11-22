@@ -93,6 +93,13 @@ jobs:
           submodules: true
       - name: Update Rustup
         run: rustup update
+      - name: Install OpenSSL
+        run: |
+          Get-Command openssl
+          openssl version
+          echo "OPENSSL_LIB_DIR=C:/Program Files/OpenSSL/lib" >> $env:GITHUB_ENV
+          echo "OPENSSL_DIR=C:/Program Files/OpenSSL/" >> $env:GITHUB_ENV
+          echo "OPENSSL_INCLUDE_DIR=C:/Program Files/OpenSSL/include" >> $env:GITHUB_ENV
       - name: Use an intelligent Rust cache for building the project
         uses: Swatinem/rust-cache@v2
       - name: Remove the MySys64 libraries and utilities
