@@ -96,7 +96,12 @@ rbe = { version = "0.1.111", path = "./rbe" }
 rbe_testsuite = { version = "0.1.90", path = "./rbe_testsuite" }
 rdf_config = { version = "0.1.102", path = "./rdf_config" }
 regex = "1.11"
-reqwest = { version = "0.12", features = ["blocking", "json", "rustls-tls"] }
+reqwest = { version = "0.12", default-features = false, features = [
+    "blocking",
+    "json",
+    "rustls-tls",
+    "rustls-tls-native-roots",
+] }
 rudof_cli = { version = "0.1.111", path = "./rudof_cli" }
 rudof_generate = { version = "0.1.118", path = "./rudof_generate" }
 rudof_lib = { version = "0.1.110", path = "./rudof_lib" }
