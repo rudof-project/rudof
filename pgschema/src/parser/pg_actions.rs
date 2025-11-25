@@ -27,11 +27,7 @@ pub fn statements_statement1(_ctx: &Ctx, statement1: Statement1) -> Statements {
     statement1
 }
 pub type Statements1 = Vec<Statement>;
-pub fn statement1_c1(
-    _ctx: &Ctx,
-    mut statement1: Statement1,
-    statement: Statement,
-) -> Statement1 {
+pub fn statement1_c1(_ctx: &Ctx, mut statement1: Statement1, statement: Statement) -> Statement1 {
     statement1.push(statement);
     statement1
 }
@@ -84,11 +80,7 @@ pub struct LabelsRecord {
     pub labels_opt: LabelsOpt,
     pub record_opt: RecordOpt,
 }
-pub fn labels_record_c1(
-    _ctx: &Ctx,
-    labels_opt: LabelsOpt,
-    record_opt: RecordOpt,
-) -> LabelsRecord {
+pub fn labels_record_c1(_ctx: &Ctx, labels_opt: LabelsOpt, record_opt: RecordOpt) -> LabelsRecord {
     LabelsRecord {
         labels_opt,
         record_opt,
@@ -118,11 +110,7 @@ pub fn properties_property1(_ctx: &Ctx, property1: Property1) -> Properties {
     property1
 }
 pub type Property1 = Vec<Property>;
-pub fn property1_c1(
-    _ctx: &Ctx,
-    mut property1: Property1,
-    property: Property,
-) -> Property1 {
+pub fn property1_c1(_ctx: &Ctx, mut property1: Property1, property: Property) -> Property1 {
     property1.push(property);
     property1
 }
@@ -165,17 +153,11 @@ pub fn single_value1_c1(
     single_value1.push(single_value);
     single_value1
 }
-pub fn single_value1_single_value(
-    _ctx: &Ctx,
-    single_value: SingleValue,
-) -> SingleValue1 {
+pub fn single_value1_single_value(_ctx: &Ctx, single_value: SingleValue) -> SingleValue1 {
     vec![single_value]
 }
 pub type SingleValue0 = Option<SingleValue1>;
-pub fn single_value0_single_value1(
-    _ctx: &Ctx,
-    single_value1: SingleValue1,
-) -> SingleValue0 {
+pub fn single_value0_single_value1(_ctx: &Ctx, single_value1: SingleValue1) -> SingleValue0 {
     Some(single_value1)
 }
 pub fn single_value0_empty(_ctx: &Ctx) -> SingleValue0 {
@@ -188,10 +170,7 @@ pub enum SingleValue {
     DateValue(QUOTED_STRING),
     BooleanValue(BOOL),
 }
-pub fn single_value_string_value(
-    _ctx: &Ctx,
-    quoted_string: QUOTED_STRING,
-) -> SingleValue {
+pub fn single_value_string_value(_ctx: &Ctx, quoted_string: QUOTED_STRING) -> SingleValue {
     SingleValue::StringValue(quoted_string)
 }
 pub fn single_value_number_value(_ctx: &Ctx, number: NUMBER) -> SingleValue {
@@ -235,9 +214,10 @@ impl identifier {
     pub fn as_str(&self) -> &str {
         match self {
             identifier::IDENTIFIER(s) => s.as_str(),
-            identifier::QUOTED_STRING(s) => {
-                s.strip_prefix('"').and_then(|s| s.strip_suffix('"')).unwrap_or(s)
-            }
+            identifier::QUOTED_STRING(s) => s
+                .strip_prefix('"')
+                .and_then(|s| s.strip_suffix('"'))
+                .unwrap_or(s),
         }
     }
 }
