@@ -19,6 +19,8 @@ clap.workspace = true
 clientele.workspace = true
 iri_s.workspace = true
 josekit.workspace = true
+[target.'cfg(windows)'.dependencies]
+openssl = { version = "0.10", features = ["vendored"] }
 prefixmap.workspace = true
 reqwest.workspace = true
 rmcp = { version = "0.8.5", features = [
