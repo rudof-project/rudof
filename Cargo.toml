@@ -74,6 +74,7 @@ lazy-regex = "3.4"
 mie = { version = "0.1.104", path = "./mie" }
 nom = "7"
 nom_locate = "4"
+openssl = { version = "0.10", features = ["vendored"] }
 oxigraph = { version = "0.5.2", default-features = false, features = [
     "rdf-12",
 ] }
