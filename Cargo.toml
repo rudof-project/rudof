@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "rudof_generate",
+    "como",
     "dctap",
     "iri_s",
     "mie",
@@ -12,6 +12,7 @@ members = [
     "rbe_testsuite",
     "rdf_config",
     "rudof_cli",
+    "rudof_generate",
     "rudof_lib",
     "rudof_mcp",
     "shacl_ast",
@@ -31,6 +32,12 @@ default-members = ["rudof_cli"]
 
 [workspace.package]
 edition = "2024"
+authors = [
+    "Jose Emilio Labra Gayo <labra@uniovi.es>",
+    "Samuel Bustamante Larriet <samuelbustamantelarriet@gmail.com>",
+    "Ángel Iglesias Préstamo <angel.iglesias.prestamo@gmail.com>",
+    "Marc-Antoine Arnaud <marc-antoine.arnaud@luminvent.com>",
+]
 license = "MIT OR Apache-2.0"
 description = "RDF data shapes implementation in Rust"
 repository = "https://github.com/rudof-project/rudof"
@@ -38,11 +45,6 @@ homepage = "https://rudof-project.github.io/rudof"
 readme = "./README.md"
 keywords = ["rdf", "linked-data", "semantic-web", "shex"]
 categories = ["database"]
-authors = [
-    "Jose Emilio Labra Gayo <labra@uniovi.es>",
-    "Ángel Iglesias Préstamo <angel.iglesias.prestamo@gmail.com>",
-    "Marc-Antoine Arnaud <marc-antoine.arnaud@luminvent.com>",
-]
 
 [workspace.dependencies]
 
@@ -56,6 +58,7 @@ calamine = { version = "0.31" }
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4.2.1", features = ["derive"] }
 clientele = "0.3.8"
+como = { version = "0.1.132", path = "./como" }
 crossterm = "0.27"
 colored = "3"
 const_format = "0.2"

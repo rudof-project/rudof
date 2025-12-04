@@ -1,0 +1,20 @@
+[package]
+name = "como"
+version = "0.1.132"
+authors.workspace = true
+description.workspace = true
+documentation = "https://docs.rs/como"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+iri_s.workspace = true
+
+[dev-dependencies]
+tracing-test.workspace = true
