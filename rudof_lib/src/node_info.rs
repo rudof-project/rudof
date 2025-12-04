@@ -448,7 +448,8 @@ fn mk_tree<S: NeighsRDF>(
                     }
                     OutgoingNeighsNode::More { term, rest } => {
                         let subj_str = qualify_object(rdf, term, options)?;
-                        let mut sub_tree = Tree::new(subj_str).with_glyphs(outgoing_glyphs());
+                        let origin_str = format!("─ {} ─► {}", pred_str, subj_str);
+                        let mut sub_tree = Tree::new(origin_str).with_glyphs(outgoing_glyphs());
                         mk_tree(&mut sub_tree, rest, rdf, options)?;
                         outgoing_tree.leaves.push(sub_tree);
                     }

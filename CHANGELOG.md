@@ -7,6 +7,10 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.1.144
+## Fixed
+- Bug in node information when depth was bigger to 1 which was ignoring predicates
+
 ## v0.1.143
 ## Added
 - SHACL tools for MCP server
