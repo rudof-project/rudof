@@ -1,9 +1,21 @@
+use crate::{card::Card, key::Key, type_name::TypeName, value::Value};
+use serde::Serialize;
 use thiserror::Error;
 
-use crate::{card::Card, key::Key, type_name::TypeName, value::Value};
-
-#[derive(Error, Debug, PartialEq, Clone)]
+#[derive(Error, Serialize, Debug, Clone, PartialEq)]
 pub enum PgsError {
+    #[error("Serialization error: {error}")]
+    SerializationError { error: String },
+
+    #[error("Error flushing CSV writer: {error}")]
+    FlushingCSVWriter { error: String },
+
+    #[error("Error writing CSV record: {error}")]
+    WritingCSVRecord { error: String },
+
+    #[error("Error writing CSV header: {error}")]
+    WritingCSVHeader { error: String },
+
     #[error("Error parsing as number: {0}")]
     InvalidNumber(String),
 

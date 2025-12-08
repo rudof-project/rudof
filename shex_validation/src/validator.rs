@@ -15,7 +15,6 @@ use shex_ast::shapemap::ValidationStatus;
 use shex_ast::shapemap::query_shape_map::QueryShapeMap;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
-use tracing::info;
 use tracing::trace;
 
 type Result<T> = std::result::Result<T, ValidatorError>;
@@ -121,7 +120,7 @@ impl Validator {
     {
         let mut engine = Engine::new(&self.config);
         self.fill_pending(&mut engine, shapemap, rdf, schema)?;
-        info!("Filled pending atoms: {:?}", engine.pending());
+        trace!("Filled pending atoms: {:?}", engine.pending());
         engine.validate_pending(rdf, schema)?;
         let result = self.result_map(&mut engine, maybe_nodes_prefixmap)?;
         Ok(result)

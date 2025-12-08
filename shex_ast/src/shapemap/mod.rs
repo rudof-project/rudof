@@ -39,6 +39,7 @@ pub enum ShapeMapFormat {
     #[default]
     Compact,
     JSON,
+    CSV,
 }
 
 impl ShapeMapFormat {
@@ -47,6 +48,7 @@ impl ShapeMapFormat {
         match self {
             ShapeMapFormat::Compact => "text/plain",
             ShapeMapFormat::JSON => "application/json",
+            ShapeMapFormat::CSV => "text/csv",
         }
     }
 }

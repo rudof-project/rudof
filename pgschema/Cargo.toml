@@ -15,16 +15,20 @@ categories = [
 ]
 
 [dependencies]
-anyhow = "1.0"
-clap = "4.5"
-clientele = "0.3"
-either = "1.15"
-itertools = "0.14"
-regex = "1.11.1"
+anyhow.workspace = true
+clap.workspace = true
+clientele.workspace = true
+colored.workspace = true
+csv.workspace = true
+either.workspace = true
+itertools.workspace = true
+regex.workspace = true
 rustemo = "0.7.1"
+serde.workspace = true
+serde_json.workspace = true
 text-diff = "0.4.0"
-thiserror = "2.0"
-time = { version = "0.3", features = ["macros", "parsing"] }
+thiserror.workspace = true
+time.workspace = true
 tracing = "0.1"
 
 [dev-dependencies]

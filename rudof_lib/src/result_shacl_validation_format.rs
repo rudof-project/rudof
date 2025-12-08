@@ -9,6 +9,8 @@ use crate::RudofError;
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
 #[clap(rename_all = "lower")]
 pub enum ResultShaclValidationFormat {
+    #[default]
+    Details,
     Turtle,
     NTriples,
     RDFXML,
@@ -17,9 +19,8 @@ pub enum ResultShaclValidationFormat {
     NQuads,
     Minimal,
     Compact,
-    #[default]
-    Details,
     Json,
+    CSV,
 }
 
 impl Display for ResultShaclValidationFormat {
@@ -35,6 +36,7 @@ impl Display for ResultShaclValidationFormat {
             ResultShaclValidationFormat::Minimal => write!(dest, "minimal"),
             ResultShaclValidationFormat::Details => write!(dest, "details"),
             ResultShaclValidationFormat::Json => write!(dest, "json"),
+            ResultShaclValidationFormat::CSV => write!(dest, "csv"),
         }
     }
 }

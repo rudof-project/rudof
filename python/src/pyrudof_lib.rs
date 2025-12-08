@@ -1776,7 +1776,7 @@ impl PyResultShapeMap {
         let capture_clone = capture.clone();
         let boxed: Box<dyn Write> = Box::new(capture);
         self.inner
-            .show_as_table(boxed, sort_mode.into(), with_details, terminal_width)
+            .as_table(boxed, sort_mode.into(), with_details, terminal_width)
             .map_err(|e| {
                 PyRudofError::str(format!("Error converting ResultShapeMap to table: {e}"))
             })?;

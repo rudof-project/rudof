@@ -1,6 +1,7 @@
+use serde::Serialize;
 use std::fmt::Display;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub enum Evidence {
     LabelsContentConforms {
         labels: String,

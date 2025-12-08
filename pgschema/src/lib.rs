@@ -14,16 +14,15 @@ pub mod key;
 pub mod label_property_spec;
 pub mod node;
 pub mod node_id;
-
 #[allow(clippy::all)]
 pub mod parser;
-
 pub mod pg;
 pub mod pgs;
 pub mod pgs_error;
 pub mod property_value_spec;
 pub mod record;
 pub mod record_type;
+pub mod result_association;
 pub mod type_map;
 pub mod type_name;
 pub mod validation_result;

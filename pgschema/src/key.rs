@@ -1,6 +1,7 @@
+use serde::Serialize;
 use std::fmt::Display;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize)]
 pub struct Key(String);
 impl Key {
     pub fn new(name: &str) -> Self {

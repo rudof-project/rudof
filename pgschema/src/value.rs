@@ -1,11 +1,10 @@
-use std::fmt::Display;
-
+use crate::pgs_error::PgsError;
 use regex::Regex;
+use serde::Serialize;
+use std::fmt::Display;
 use time::{Date, macros::format_description};
 
-use crate::pgs_error::PgsError;
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
 pub enum Value {
     String(String),
     Integer(i32),

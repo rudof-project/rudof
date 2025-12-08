@@ -1,14 +1,9 @@
+use either::Either::{Left, Right};
 use std::fmt::Display;
 
-use either::Either::{Left, Right};
-
 use crate::{
-    evidence::Evidence,
-    // formal_graph_type::FormalGraphType,
-    pg::PropertyGraph,
-    pgs::PropertyGraphSchema,
-    pgs_error::PgsError,
-    validation_result::{ResultAssociation, ValidationResult},
+    evidence::Evidence, pg::PropertyGraph, pgs::PropertyGraphSchema, pgs_error::PgsError,
+    result_association::ResultAssociation, validation_result::ValidationResult,
 };
 
 /// Defines associations between node IDs and type names that can be used to trigger validation

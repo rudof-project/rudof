@@ -12,6 +12,7 @@ use srdf::RDFFormat;
 use srdf::ReaderMode;
 use std::env;
 use std::io::Write;
+use tracing::info;
 use url::Url;
 
 #[allow(clippy::too_many_arguments)]
@@ -129,7 +130,11 @@ fn write_result_shapemap<W: Write>(
     match format {
         CliShapeMapFormat::Compact => {
             writeln!(writer, "Result:")?;
-            result.show_as_table(writer, sort_by.into(), false, terminal_width())?;
+            result.as_table(writer, sort_by.into(), false, terminal_width())?;
+        }
+        CliShapeMapFormat::CSV => {
+            info!("Serializing result as CSV");
+            result.as_csv(writer, sort_by.into(), true)?;
         }
         CliShapeMapFormat::Internal => {
             let str = serde_json::to_string_pretty(&result).map_err(|e| RudofError::Generic {
@@ -145,7 +150,7 @@ fn write_result_shapemap<W: Write>(
         }
         CliShapeMapFormat::Details => {
             writeln!(writer, "Result:")?;
-            result.show_as_table(writer, sort_by.into(), true, terminal_width())?;
+            result.as_table(writer, sort_by.into(), true, terminal_width())?;
         }
     }
     Ok(())

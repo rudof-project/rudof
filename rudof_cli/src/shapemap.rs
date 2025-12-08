@@ -38,5 +38,6 @@ pub fn shapemap_format_convert(shapemap_format: &CliShapeMapFormat) -> ShapeMapF
         CliShapeMapFormat::Internal => ShapeMapFormat::JSON,
         CliShapeMapFormat::Json => ShapeMapFormat::JSON,
         CliShapeMapFormat::Details => ShapeMapFormat::Compact,
+        CliShapeMapFormat::CSV => ShapeMapFormat::CSV,
     }
 }

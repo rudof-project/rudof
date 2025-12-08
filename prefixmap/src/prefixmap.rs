@@ -1,10 +1,9 @@
+use crate::{IriRef, PrefixMapError};
 use colored::*;
 use indexmap::IndexMap;
 use indexmap::map::Iter;
 use iri_s::*;
 use serde::{Deserialize, Serialize};
-
-use crate::{IriRef, PrefixMapError};
 use std::str::FromStr;
 use std::{collections::HashMap, fmt};
 

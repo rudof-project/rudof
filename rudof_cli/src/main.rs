@@ -311,16 +311,20 @@ fn main() -> Result<()> {
                         *force_overwrite,
                     )
                 }
-                ValidationMode::PGSchema => run_validate_pgschema(
-                    schema,
-                    data,
-                    data_format,
-                    shapemap,
-                    shapemap_format,
-                    output,
-                    &config,
-                    *force_overwrite,
-                ),
+                ValidationMode::PGSchema => {
+                    let result_validation_format = result_format.to_pgschema_result_format();
+                    run_validate_pgschema(
+                        schema,
+                        data,
+                        data_format,
+                        shapemap,
+                        shapemap_format,
+                        output,
+                        &config,
+                        &result_validation_format,
+                        *force_overwrite,
+                    )
+                }
             }
         }
         Some(Command::ShexValidate {

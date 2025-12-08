@@ -37,6 +37,7 @@ pub fn run_validate_pgschema(
     _shapemap_format: &CliShapeMapFormat,
     output: &Option<PathBuf>,
     _config: &RudofConfig,
+    result_validation_format: &PgSchemaResultFormat,
     force_overwrite: bool,
 ) -> Result<()> {
     // let mut rudof = Rudof::new(config)?;
@@ -65,7 +66,18 @@ pub fn run_validate_pgschema(
     let mut map_reader = shapemap.open_read(None, "type map")?;
     let type_map = get_map(&mut map_reader)?;
     let result = type_map.validate(&schema, &graph)?;
-    write!(writer, "{}", result)?;
+    match result_validation_format {
+        PgSchemaResultFormat::Compact => write!(writer, "{}", result)?,
+        // PgSchemaResultFormat::Details => result.as_details(writer)?,
+        PgSchemaResultFormat::Json => result.as_json(writer)?,
+        PgSchemaResultFormat::CSV => result.as_csv(writer, true)?,
+        _ => {
+            bail!(
+                "Unsupported PGSchema result format: {}",
+                result_validation_format
+            );
+        }
+    }
     Ok(())
 }
 
@@ -87,13 +99,19 @@ impl Display for PgSchemaFormat {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum, Default)]
 pub enum PgSchemaResultFormat {
     #[default]
-    Internal,
+    Compact,
+    Details,
+    Json,
+    CSV,
 }
 
 impl Display for PgSchemaResultFormat {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            PgSchemaResultFormat::Internal => "internal",
+            PgSchemaResultFormat::Compact => "compact",
+            PgSchemaResultFormat::Details => "details",
+            PgSchemaResultFormat::Json => "json",
+            PgSchemaResultFormat::CSV => "csv",
         };
         write!(f, "{}", s)
     }
@@ -144,4 +162,11 @@ fn get_map<R: Read>(reader: &mut R) -> Result<pgschema::type_map::TypeMap> {
         }
     };
     Ok(map)
+}
+
+pub enum ResultPGSchemaValidationFormat {
+    Compact,
+    Details,
+    Json,
+    CSV,
 }

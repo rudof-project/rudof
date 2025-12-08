@@ -11,7 +11,6 @@ use srdf::QueryRDF;
 use srdf::SLiteral;
 use std::fmt::Display;
 use thiserror::Error;
-use tracing::info;
 use tracing::trace;
 
 /// A NodeSelector following [ShapeMap spec](https://shexspec.github.io/shape-map/#shapemap-structure) can be used to select RDF Nodes
@@ -240,7 +239,7 @@ where
     );
     for solution in query_solutions.iter() {
         let variables = solution.variables();
-        info!("SPARQL NodeSelector variables: {:?}", variables);
+        trace!("SPARQL NodeSelector variables: {:?}", variables);
         if let Some(variable) = variables.first()
             && let Some(value) = solution.find_solution(variable)
         {

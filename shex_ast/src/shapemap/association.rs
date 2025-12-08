@@ -3,7 +3,7 @@ use crate::shapemap::{NodeSelector, ShapeSelector, ShapemapError};
 use serde::Serialize;
 use srdf::QueryRDF;
 use std::iter::once;
-use tracing::info;
+use tracing::trace;
 
 /// Combines a [`NodeSelector`] with a [`ShapeExprLabel`]
 #[derive(Debug, PartialEq, Clone, Serialize)]
@@ -28,7 +28,7 @@ impl Association {
         S: QueryRDF,
     {
         let nodes = self.node_selector.nodes(rdf)?;
-        info!("Association nodes: {:?}", nodes);
+        trace!("Association nodes: {:?}", nodes);
         let iter = nodes.into_iter().flat_map(move |node| {
             self.shape_selector
                 .iter_shape()

@@ -9,6 +9,8 @@ use crate::{RudofError, shapemap_format::ShapeMapFormat};
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
 #[clap(rename_all = "lower")]
 pub enum ResultShExValidationFormat {
+    #[default]
+    Details,
     Turtle,
     NTriples,
     RDFXML,
@@ -16,9 +18,8 @@ pub enum ResultShExValidationFormat {
     N3,
     NQuads,
     Compact,
-    #[default]
-    Details,
     Json,
+    CSV,
 }
 
 impl ResultShExValidationFormat {
@@ -27,6 +28,7 @@ impl ResultShExValidationFormat {
             ResultShExValidationFormat::Compact => Ok(ShapeMapFormat::Compact),
             ResultShExValidationFormat::Details => Ok(ShapeMapFormat::Details),
             ResultShExValidationFormat::Json => Ok(ShapeMapFormat::Json),
+            ResultShExValidationFormat::CSV => Ok(ShapeMapFormat::CSV),
             other => Err(RudofError::UnsupportedShExToShapeMapConversion {
                 format: other.to_string(),
             }),
@@ -46,6 +48,7 @@ impl Display for ResultShExValidationFormat {
             ResultShExValidationFormat::Compact => write!(dest, "compact"),
             ResultShExValidationFormat::Json => write!(dest, "json"),
             ResultShExValidationFormat::Details => write!(dest, "details"),
+            ResultShExValidationFormat::CSV => write!(dest, "csv"),
         }
     }
 }
@@ -58,6 +61,7 @@ impl TryFrom<&ResultShExValidationFormat> for ShapeMapFormat {
             ResultShExValidationFormat::Compact => Ok(ShapeMapFormat::Compact),
             ResultShExValidationFormat::Details => Ok(ShapeMapFormat::Details),
             ResultShExValidationFormat::Json => Ok(ShapeMapFormat::Json),
+            ResultShExValidationFormat::CSV => Ok(ShapeMapFormat::CSV),
             other => Err(RudofError::UnsupportedShExToShapeMapConversion {
                 format: format!("{other:?}"),
             }),
@@ -78,7 +82,8 @@ impl FromStr for ResultShExValidationFormat {
             "nquads" => Ok(ResultShExValidationFormat::NQuads),
             "compact" => Ok(ResultShExValidationFormat::Compact),
             "details" => Ok(ResultShExValidationFormat::Details),
-            "jspn" => Ok(ResultShExValidationFormat::Json),
+            "json" => Ok(ResultShExValidationFormat::Json),
+            "csv" => Ok(ResultShExValidationFormat::CSV),
             other => Err(RudofError::UnsupportedShExResultFormat {
                 format: other.to_string(),
             }),

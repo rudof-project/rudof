@@ -1,10 +1,8 @@
-use std::{collections::HashSet, fmt::Display};
-
-use either::Either;
-
 use crate::{
     boolean_expr::BooleanExpr, card::Card, evidence::Evidence, pgs_error::PgsError, value::Value,
 };
+use either::Either;
+use std::{collections::HashSet, fmt::Display};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ValueType {

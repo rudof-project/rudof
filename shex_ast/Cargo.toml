@@ -13,6 +13,7 @@ repository.workspace = true
 colored.workspace = true
 const_format.workspace = true
 crossterm.workspace = true
+csv.workspace = true
 iri_s.workspace = true
 itertools.workspace = true
 lazy-regex.workspace = true

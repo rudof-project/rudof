@@ -1,6 +1,7 @@
+use serde::Serialize;
 use std::fmt::Display;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
 pub enum Card {
     ZeroOrOne,
     One,
@@ -51,7 +52,7 @@ impl Display for Card {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
 pub enum Max {
     Unbounded,
     Bounded(usize),

@@ -6,6 +6,8 @@ use rudof_lib::{
     result_shex_validation_format::ResultShExValidationFormat,
 };
 
+use crate::PgSchemaResultFormat;
+
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 #[clap(rename_all = "lower")]
 pub enum ResultValidationFormat {
@@ -18,6 +20,7 @@ pub enum ResultValidationFormat {
     Compact,
     Details,
     Json,
+    CSV,
 }
 
 impl ResultValidationFormat {
@@ -32,6 +35,7 @@ impl ResultValidationFormat {
             ResultValidationFormat::Compact => ResultShExValidationFormat::Compact,
             ResultValidationFormat::Details => ResultShExValidationFormat::Details,
             ResultValidationFormat::Json => ResultShExValidationFormat::Json,
+            ResultValidationFormat::CSV => ResultShExValidationFormat::CSV,
         }
     }
 
@@ -46,6 +50,22 @@ impl ResultValidationFormat {
             ResultValidationFormat::Compact => ResultShaclValidationFormat::Compact,
             ResultValidationFormat::Details => ResultShaclValidationFormat::Details,
             ResultValidationFormat::Json => ResultShaclValidationFormat::Json,
+            ResultValidationFormat::CSV => ResultShaclValidationFormat::CSV,
+        }
+    }
+
+    pub fn to_pgschema_result_format(&self) -> PgSchemaResultFormat {
+        match &self {
+            ResultValidationFormat::Compact => PgSchemaResultFormat::Compact,
+            ResultValidationFormat::Details => PgSchemaResultFormat::Details,
+            ResultValidationFormat::Json => PgSchemaResultFormat::Json,
+            ResultValidationFormat::CSV => PgSchemaResultFormat::CSV,
+            ResultValidationFormat::Turtle => todo!(),
+            ResultValidationFormat::NTriples => todo!(),
+            ResultValidationFormat::RDFXML => todo!(),
+            ResultValidationFormat::TriG => todo!(),
+            ResultValidationFormat::N3 => todo!(),
+            ResultValidationFormat::NQuads => todo!(),
         }
     }
 }
@@ -62,6 +82,7 @@ impl Display for ResultValidationFormat {
             ResultValidationFormat::Compact => write!(dest, "compact"),
             ResultValidationFormat::Json => write!(dest, "json"),
             ResultValidationFormat::Details => write!(dest, "details"),
+            ResultValidationFormat::CSV => write!(dest, "csv"),
         }
     }
 }

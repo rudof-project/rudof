@@ -425,6 +425,9 @@ impl Rudof {
                     })?;
                     Ok(())
                 }
+                ShapeMapFormat::CSV => {
+                    todo!()
+                }
             }
         } else {
             Err(RudofError::NoShapeMapToSerialize)
@@ -1244,6 +1247,7 @@ impl Rudof {
                 Ok::<QueryShapeMap, RudofError>(shapemap)
             }
             ShapeMapFormat::JSON => todo!(),
+            ShapeMapFormat::CSV => todo!(),
         }?;
         self.shapemap = Some(shapemap);
         Ok(())

@@ -221,7 +221,58 @@ impl ResultShapeMap {
         })
     }
 
-    pub fn show_as_table<W: Write>(
+    pub fn as_csv<W: Write>(
+        &self,
+        writer: W,
+        sort_mode: SortMode,
+        with_details: bool,
+    ) -> Result<(), Error> {
+        let mut wtr = csv::Writer::from_writer(writer);
+        wtr.write_record(["node", "shape", "status", "details"])?;
+
+        let cmp = self.get_comparator(sort_mode);
+        for (node, label, status) in self.iter().sorted_by(cmp) {
+            let node_label = show_node(node, &self.nodes_prefixmap());
+            let shape_label = show_shapelabel(label, &self.shapes_prefixmap());
+            let details;
+            let status_label;
+            match status {
+                ValidationStatus::Conformant(conformant_info) => {
+                    details = conformant_info.to_string();
+                    status_label = match self.ok_color() {
+                        None => ColoredString::from(self.ok_text()),
+                        Some(color) => self.ok_text().color(color).to_owned(),
+                    };
+                }
+                ValidationStatus::NonConformant(non_conformant_info) => {
+                    details = non_conformant_info.to_string();
+                    status_label = match self.fail_color() {
+                        None => ColoredString::from(self.fail_text()),
+                        Some(color) => self.fail_text().color(color).to_owned(),
+                    };
+                }
+                ValidationStatus::Pending => {
+                    details = "".to_owned();
+                    status_label = "Pending".color(self.pending_color().unwrap()).to_owned();
+                }
+                ValidationStatus::Inconsistent(ci, nci) => {
+                    details = format!("Conformant: {ci}, Non-conformant: {nci}");
+                    status_label = "Inconsistent"
+                        .color(self.pending_color().unwrap())
+                        .to_owned();
+                }
+            };
+            if with_details {
+                wtr.write_record([node_label, shape_label, status_label.to_string(), details])?;
+            } else {
+                wtr.write_record([node_label, shape_label, status_label.to_string()])?;
+            }
+        }
+        wtr.flush()?;
+        Ok(())
+    }
+
+    pub fn as_table<W: Write>(
         &self,
         mut writer: W,
         sort_mode: SortMode,
@@ -235,39 +286,7 @@ impl ResultShapeMap {
             builder.push_record(["Node", "Shape", "Status"]);
         }
 
-        let cmp = match sort_mode {
-            SortMode::Node => {
-                |a: &(&Node, &ShapeLabel, &ValidationStatus),
-                 b: &(&Node, &ShapeLabel, &ValidationStatus)| {
-                    a.0.cmp(b.0).then(a.1.cmp(b.1))
-                }
-            }
-            SortMode::Shape => {
-                |a: &(&Node, &ShapeLabel, &ValidationStatus),
-                 b: &(&Node, &ShapeLabel, &ValidationStatus)| {
-                    a.1.cmp(b.1).then(a.0.cmp(b.0))
-                }
-            }
-            SortMode::Status => {
-                |a: &(&Node, &ShapeLabel, &ValidationStatus),
-                 b: &(&Node, &ShapeLabel, &ValidationStatus)| {
-                    a.2.code()
-                        .cmp(&b.2.code())
-                        .then(a.0.cmp(b.0))
-                        .then(a.1.cmp(b.1))
-                }
-            }
-            SortMode::Details => {
-                |a: &(&Node, &ShapeLabel, &ValidationStatus),
-                 b: &(&Node, &ShapeLabel, &ValidationStatus)| {
-                    a.2.reason()
-                        .cmp(&b.2.reason())
-                        .then(a.0.cmp(b.0))
-                        .then(a.1.cmp(b.1))
-                }
-            }
-        };
-
+        let cmp = self.get_comparator(sort_mode);
         for (node, label, status) in self.iter().sorted_by(cmp) {
             let node_label = show_node(node, &self.nodes_prefixmap());
             let shape_label = show_shapelabel(label, &self.shapes_prefixmap());
@@ -310,6 +329,47 @@ impl ResultShapeMap {
         table.with(Modify::new(Segment::all()).with(Width::wrap(terminal_width)));
         writeln!(writer, "{table}")?;
         Ok(())
+    }
+
+    fn get_comparator(
+        &self,
+        sort_mode: SortMode,
+    ) -> impl FnMut(
+        &(&Node, &ShapeLabel, &ValidationStatus),
+        &(&Node, &ShapeLabel, &ValidationStatus),
+    ) -> std::cmp::Ordering {
+        match sort_mode {
+            SortMode::Node => {
+                |a: &(&Node, &ShapeLabel, &ValidationStatus),
+                 b: &(&Node, &ShapeLabel, &ValidationStatus)| {
+                    a.0.cmp(b.0).then(a.1.cmp(b.1))
+                }
+            }
+            SortMode::Shape => {
+                |a: &(&Node, &ShapeLabel, &ValidationStatus),
+                 b: &(&Node, &ShapeLabel, &ValidationStatus)| {
+                    a.1.cmp(b.1).then(a.0.cmp(b.0))
+                }
+            }
+            SortMode::Status => {
+                |a: &(&Node, &ShapeLabel, &ValidationStatus),
+                 b: &(&Node, &ShapeLabel, &ValidationStatus)| {
+                    a.2.code()
+                        .cmp(&b.2.code())
+                        .then(a.0.cmp(b.0))
+                        .then(a.1.cmp(b.1))
+                }
+            }
+            SortMode::Details => {
+                |a: &(&Node, &ShapeLabel, &ValidationStatus),
+                 b: &(&Node, &ShapeLabel, &ValidationStatus)| {
+                    a.2.reason()
+                        .cmp(&b.2.reason())
+                        .then(a.0.cmp(b.0))
+                        .then(a.1.cmp(b.1))
+                }
+            }
+        }
     }
 }
 
