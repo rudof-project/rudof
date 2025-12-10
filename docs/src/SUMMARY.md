@@ -14,6 +14,7 @@
 - [query](./cli_usage/sparql.md)
 - [shex](./cli_usage/shex.md)
 - [shacl](./cli_usage/shacl.md)
+- [pgschema](./cli_usage/pgschema.md)
 - [shapemap](./cli_usage/shapemap.md)
 - [dctap](./cli_usage/dctap.md)
 - [service](./cli_usage/service.md)

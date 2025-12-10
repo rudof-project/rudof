@@ -29,7 +29,7 @@ use std::path::PathBuf;
 #[command(
     arg_required_else_help = true,
     long_about = "\
-A tool to process graph data (RDF and Property Graphs) using schemas (ShEx, SHACL, DCTAP, etc.)"
+A tool to process graph data (RDF and Property Graphs) using schemas (ShEx, SHACL, PGSchema, DCTAP, etc.)"
 )]
 pub struct Cli {
     #[command(subcommand)]

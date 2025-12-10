@@ -8,6 +8,7 @@ use thiserror::Error;
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 #[clap(rename_all = "lower")]
 pub enum DataFormat {
+    // RDF formats
     Turtle,
     NTriples,
     RDFXML,
@@ -15,6 +16,7 @@ pub enum DataFormat {
     N3,
     NQuads,
     JsonLd,
+    // For property graphs
     PG,
 }
 

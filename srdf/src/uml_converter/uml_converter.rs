@@ -4,7 +4,6 @@ use std::{
     path::{self, Path},
     process::Command,
 };
-
 use tempfile::TempDir;
 use tracing::{Level, debug, trace};
 
@@ -187,8 +186,13 @@ fn check_plantuml_jar<P: AsRef<Path>>(plantuml_path: P) -> Result<(), io::Error>
         let mut command = Command::new("java");
         command
             .arg("-jar")
-            .arg(plantuml_path.as_ref().display().to_string());
+            .arg(plantuml_path.as_ref().display().to_string())
+            .arg("-version");
         let output = command.output()?;
+        debug!(
+            "PlantUML jar file check executed with status: {}",
+            output.status
+        );
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
             debug!("PlantUML jar file check stderr: {}", stderr);

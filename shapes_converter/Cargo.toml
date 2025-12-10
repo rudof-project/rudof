@@ -32,6 +32,6 @@ spargebra.workspace = true
 sparql_service.workspace = true
 srdf.workspace = true
 tempfile.workspace = true
-thiserror = "2.0"
-toml = "0.8"
-tracing = { workspace = true }
+thiserror.workspace = true
+toml.workspace = true
+tracing.workspace = true

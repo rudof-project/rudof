@@ -7,6 +7,18 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.1.146 
+### Fixed
+- Small bug that was opening an interactive window when running plantuml commands
+
+## v0.1.145
+## Added
+- Visualization of ShEx results as CSV
+- Visualization of PGSchema validation results as CSV
+
+## Fixed
+- Some extra info! messages
+
 ## v0.1.144
 ## Fixed
 - Bug in node information when depth was bigger to 1 which was ignoring predicates
