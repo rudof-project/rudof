@@ -455,7 +455,7 @@ pub fn format_node_info<S: NeighsRDF, W: Write>(
         writeln!(writer, "Outgoing arcs")?;
         let mut outgoing_tree =
             Tree::new(node_info.subject_qualified.to_string()).with_glyphs(outgoing_glyphs());
-        mk_tree(&mut outgoing_tree, &node_info.outgoing, rdf, options)?;
+        mk_outgoing_tree(&mut outgoing_tree, &node_info.outgoing, rdf, options)?;
         writeln!(writer, "{}", outgoing_tree)?;
     }
 
@@ -473,8 +473,7 @@ pub fn format_node_info<S: NeighsRDF, W: Write>(
     Ok(())
 }
 
-// TODO - Rename to mk_outgoing_tree
-fn mk_tree<S: NeighsRDF>(
+fn mk_outgoing_tree<S: NeighsRDF>(
     outgoing_tree: &mut Tree<String>,
     outgoing_neighs: &HashMap<S::IRI, Vec<OutgoingNeighsNode<S>>>,
     rdf: &S,
@@ -498,7 +497,7 @@ fn mk_tree<S: NeighsRDF>(
                         let subj_str = qualify_object(rdf, term, options)?;
                         let origin_str = format!("─ {} ─► {}", pred_str, subj_str);
                         let mut sub_tree = Tree::new(origin_str).with_glyphs(outgoing_glyphs());
-                        mk_tree(&mut sub_tree, rest, rdf, options)?;
+                        mk_outgoing_tree(&mut sub_tree, rest, rdf, options)?;
                         outgoing_tree.leaves.push(sub_tree);
                     }
                 }
