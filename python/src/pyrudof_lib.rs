@@ -97,8 +97,9 @@ impl PyRudof {
     ///   show_outgoing: Boolean indicating whether to show outgoing edges
     ///   show_incoming: Boolean indicating whether to show incoming edges
     ///   show_colors: Boolean indicating whether to show colors in the output
+    ///   depth: Distance of the neighbors to show
     #[pyo3(
-        signature = (node_selector, predicates = Vec::new(), show_outgoing = true, show_incoming = false, show_colors = true, outgoing_depth = 1),
+        signature = (node_selector, predicates = Vec::new(), show_outgoing = true, show_incoming = false, show_colors = true, depth = 1),
     )]
     pub fn node_info(
         &mut self,
@@ -107,14 +108,14 @@ impl PyRudof {
         show_outgoing: bool,
         show_incoming: bool,
         show_colors: bool,
-        outgoing_depth: usize,
+        depth: usize,
     ) -> PyResult<String> {
         let node_selector = parse_node_selector(node_selector).map_err(cnv_err)?;
         let options = rudof_lib::node_info::NodeInfoOptions {
             show_outgoing,
             show_incoming,
             show_colors,
-            outgoing_depth,
+            depth,
         };
         let data = self.inner.get_rdf_data();
         let node_infos =

@@ -63,8 +63,7 @@ pub struct NodeInfoOptions {
     pub show_outgoing: bool,
     pub show_incoming: bool,
     pub show_colors: bool,
-    // TODO - Rename to depth since its used in both outgoing and incoming
-    pub outgoing_depth: usize,
+    pub depth: usize,
 }
 
 impl NodeInfoOptions {
@@ -73,7 +72,7 @@ impl NodeInfoOptions {
             show_outgoing: true,
             show_incoming: false,
             show_colors: true,
-            outgoing_depth: 1,
+            depth: 1,
         }
     }
 
@@ -82,7 +81,7 @@ impl NodeInfoOptions {
             show_outgoing: false,
             show_incoming: true,
             show_colors: true,
-            outgoing_depth: 1,
+            depth: 1,
         }
     }
 
@@ -91,12 +90,12 @@ impl NodeInfoOptions {
             show_outgoing: true,
             show_incoming: true,
             show_colors: true,
-            outgoing_depth: 1,
+            depth: 1,
         }
     }
 
     pub fn with_depth(mut self, depth: usize) -> Self {
-        self.outgoing_depth = depth;
+        self.depth = depth;
         self
     }
 
@@ -142,13 +141,13 @@ where
         let subject_qualified = qualify_subject(rdf, &subject, options)?;
 
         let outgoing = if options.show_outgoing {
-            get_outgoing_arcs_depth(rdf, &subject, predicates, options.outgoing_depth)?
+            get_outgoing_arcs_depth(rdf, &subject, predicates, options.depth)?
         } else {
             HashMap::new()
         };
 
         let incoming = if options.show_incoming {
-            get_incoming_arcs_depth(rdf, &subject, options.outgoing_depth)?
+            get_incoming_arcs_depth(rdf, &subject, options.depth)?
         } else {
             HashMap::new()
         };
