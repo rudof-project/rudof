@@ -4,10 +4,9 @@ Export rudof_lib functionality as a [Model-Context-Protocol](https://modelcontex
 
 ## Features
 
-- **Dual Transport Support**: Choose between stdio and HTTP SSE based on your use case.
-- **Configurable Server**: Port and route path configuration for HTTP transport.
-- **MCP Protocol Support**: Full support for MCP Protocol versions 2025-06-18 (current), 2025-03-26 (fallback), and 2024-11-05 (deprecated).
-- **OAuth2/OIDC Authentication**: Security for HTTP transport with JWT validation.
+- **Dual Transport Support**: Choose between stdio and Streamable HTTP based on your use case.
+- **Configurable Server**: Port and route path configuration Streamable HTTP transport.
+- **OAuth2/OIDC Authentication**: Security for Streamable HTTP transport with JWT validation.
 - **Real-time Notifications**: Server-to-client notifications.
 - **Resource Subscriptions**: Clients can subscribe to specific resources for updates.
 - **Argument Completion**: Intelligent completion suggestions for prompt and resource arguments (pending implementation).
