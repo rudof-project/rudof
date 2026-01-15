@@ -36,10 +36,10 @@ pub enum OutgoingNeighsNode<S: NeighsRDF> {
 #[derive(Debug, Clone)]
 pub enum IncomingNeighsNode<S: NeighsRDF> {
     Term {
-        subject: S::Subject,
+        term: S::Term,
     },
     More {
-        subject: S::Subject,
+        term: S::Term,
         rest: HashMap<S::IRI, Vec<IncomingNeighsNode<S>>>,
     },
 }
@@ -324,7 +324,9 @@ fn get_incoming_arcs_depth<S: NeighsRDF>(
             .map(|(k, v)| {
                 let nodes: Vec<_> = v
                     .iter()
-                    .map(|s| IncomingNeighsNode::Term { subject: s.clone() })
+                    .map(|s| IncomingNeighsNode::Term {
+                        term: S::subject_as_term(s)
+                    })
                     .collect();
                 (k.clone(), nodes)
             })
@@ -344,7 +346,10 @@ fn get_incoming_arcs_depth<S: NeighsRDF>(
             let mut nodes = Vec::new();
             for subj in v.into_iter() {
                 let rest = get_incoming_arcs_depth(rdf, &subj, depth - 1)?;
-                nodes.push(IncomingNeighsNode::More { subject: subj, rest });
+                nodes.push(IncomingNeighsNode::More {
+                    term: S::subject_as_term(&subj),
+                    rest
+                });
             }
             result.insert(k, nodes);
         }
@@ -516,15 +521,15 @@ fn mk_incoming_tree<S: NeighsRDF>(
         if let Some(subjs) = incoming_neighs.get(pred) {
             for s in subjs {
                 match s {
-                    IncomingNeighsNode::Term { subject } => {
-                        let subj_str = qualify_subject(rdf, subject, options)?;
+                    IncomingNeighsNode::Term { term } => {
+                        let subj_str = qualify_object(rdf, term, options)?;
                         incoming_tree.leaves.push(
                             Tree::new(format!("─ {} ── {}", pred_str, subj_str))
                                 .with_glyphs(incoming_glyphs()),
                         );
                     }
-                    IncomingNeighsNode::More { subject, rest } => {
-                        let subj_str = qualify_subject(rdf, subject, options)?;
+                    IncomingNeighsNode::More { term, rest } => {
+                        let subj_str = qualify_object(rdf, term, options)?;
                         let origin_str = format!("─ {} ── {}", pred_str, subj_str);
                         let mut sub_tree = Tree::new(origin_str).with_glyphs(incoming_glyphs());
                         mk_incoming_tree(&mut sub_tree, rest, rdf, options)?;
@@ -637,9 +642,9 @@ where
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            IncomingNeighsNode::Term { subject } => write!(f, "{}", subject),
-            IncomingNeighsNode::More { subject, rest: _ } => {
-                write!(f, "{}", subject)
+            IncomingNeighsNode::Term { term } => write!(f, "{}", term),
+            IncomingNeighsNode::More { term, rest: _ } => {
+                write!(f, "{}", term)
             }
         }
     }
