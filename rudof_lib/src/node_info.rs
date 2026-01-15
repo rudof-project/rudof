@@ -324,7 +324,7 @@ fn get_incoming_arcs_depth<S: NeighsRDF>(
                 let nodes: Vec<_> = v
                     .iter()
                     .map(|s| IncomingNeighsNode::Term {
-                        term: S::subject_as_term(s)
+                        term: S::subject_as_term(s),
                     })
                     .collect();
                 (k.clone(), nodes)
@@ -347,7 +347,7 @@ fn get_incoming_arcs_depth<S: NeighsRDF>(
                 let rest = get_incoming_arcs_depth(rdf, &subj, depth - 1)?;
                 nodes.push(IncomingNeighsNode::More {
                     term: S::subject_as_term(&subj),
-                    rest
+                    rest,
                 });
             }
             result.insert(k, nodes);

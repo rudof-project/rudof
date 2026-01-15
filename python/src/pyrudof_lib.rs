@@ -3,22 +3,22 @@
 //!
 use crate::PyRudofConfig;
 use pyo3::{
-    exceptions::PyValueError, pyclass, pymethods, Bound, Py, PyAny, PyErr, PyRef, PyRefMut, PyResult,
-    Python,
+    Bound, Py, PyAny, PyErr, PyRef, PyRefMut, PyResult, Python, exceptions::PyValueError, pyclass,
+    pymethods,
 };
 use pythonize::pythonize;
 use rudof_lib::{
-    node_info::{format_node_info_list, get_node_info}, parse_node_selector, shacl_validation::validation_report::{report::SortModeReport, result::ValidationResult}, srdf::Object, CoShaMo, ComparatorError,
-    CompareSchemaFormat, CompareSchemaMode, DCTAPFormat, InputSpec, InputSpecError, InputSpecReader, Mie,
-    MimeType, QueryResultFormat, QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat, RdfData,
-    ReaderMode, ResultShapeMap, Rudof, RudofError, ServiceDescription,
-    ServiceDescriptionFormat, ShExFormat, ShExFormatter, ShExSchema, ShaCo, ShaclFormat, ShaclSchemaIR,
-    ShaclValidationMode, ShapeLabel, ShapeMapFormat, ShapeMapFormatter, ShapesGraphSource,
-    SortMode, UmlGenerationMode,
-    ValidationReport,
-    ValidationStatus,
-    VarName,
-    DCTAP,
+    CoShaMo, ComparatorError, CompareSchemaFormat, CompareSchemaMode, DCTAP, DCTAPFormat,
+    InputSpec, InputSpecError, InputSpecReader, Mie, MimeType, QueryResultFormat, QueryShapeMap,
+    QuerySolution, QuerySolutions, RDFFormat, RdfData, ReaderMode, ResultShapeMap, Rudof,
+    RudofError, ServiceDescription, ServiceDescriptionFormat, ShExFormat, ShExFormatter,
+    ShExSchema, ShaCo, ShaclFormat, ShaclSchemaIR, ShaclValidationMode, ShapeLabel, ShapeMapFormat,
+    ShapeMapFormatter, ShapesGraphSource, SortMode, UmlGenerationMode, ValidationReport,
+    ValidationStatus, VarName,
+    node_info::{format_node_info_list, get_node_info},
+    parse_node_selector,
+    shacl_validation::validation_report::{report::SortModeReport, result::ValidationResult},
+    srdf::Object,
 };
 use std::{
     ffi::OsStr,
