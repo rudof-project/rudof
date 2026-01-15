@@ -3,7 +3,7 @@
 Part of `rudof` functionality can be exported as an [MCP (Model Context Protocol) server](https://modelcontextprotocol.io/docs/getting-started/intro), allowing it to provide its capabilities to external clients.
 
 The MCP server supports two configurable transport methods:
-- `stdio` (default): The client launches the MCP server as a subprocess. The server reads JSON-RPC messages from its standard input (stdin) and sends messages to its standard output (stdout)
+- `stdio` (default): The client launches the MCP server as a subprocess. The server reads JSON-RPC messages from its standard input (stdin) and sends messages to its standard output (stdout).
 - `streamable-http`: The server operates as an independent process that can handle multiple client connections. This transport uses HTTP POST and GET requests. Server can optionally make use of Server-Sent Events (SSE) to stream multiple server messages.
 
 By default, the MCP server uses the `stdio` transport. When using `streamable-http` transport, the server listens on `http://127.0.0.1:8000` by default and exposes its functionality under the route name `rudof`.
@@ -23,12 +23,10 @@ rudof mcp
 >
 > ```json
 > "rudof": {
->      "command": "C:\\Users\\samue\\Documents\\Rudof\\rudof\\target\\release\\rudof.exe",
->      "args": [
->        "mcp"
->      ],
+>      "command": "/path/to/rudof",
+>      "args": [ "mcp" ],
 >      "env": {
->        "PLANTUML": "C:\\ProgramData\\PlantUML\\plantuml.jar"
+>        "PLANTUML": "/path/to/plantuml.jar"
 >      },
 >      "enabled": true
 >    }
@@ -122,11 +120,9 @@ In Claude Desktop's configuration file, add the following entry under your MCP s
 ```json
 "rudof": {
   "command": "/path/to/rudof",
-  "args": [
-    "mcp"
-  ],
+  "args": [ "mcp" ],
   "env": {
-      "PLANTUML": "C:\\ProgramData\\PlantUML\\plantuml.jar"
+      "PLANTUML": "/path/to/plantuml.jar"
    },
   "enabled": true
 }
