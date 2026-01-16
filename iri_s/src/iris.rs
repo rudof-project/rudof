@@ -34,6 +34,7 @@ impl IriS {
         IriS { iri }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn from_path(path: &std::path::Path) -> Result<IriS, IriSError> {
         let absolute_path = if path.is_absolute() {
             Ok(path.to_path_buf())
