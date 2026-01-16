@@ -1,14 +1,15 @@
-use iri_s::{IriS, IriSError};
+use crate::error::IriSError;
+use crate::iri::iris::IriS;
 use serde::{Deserialize, Serialize};
-use std::fmt::Display;
+use std::convert::Infallible;
+use std::fmt::{Display, Formatter};
 use std::str::FromStr;
-use void::Void;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(try_from = "String", into = "String")]
 pub enum Iri {
     String(String),
-    IriS(IriS),
+    IriS(IriS)
 }
 
 impl Iri {
@@ -18,7 +19,7 @@ impl Iri {
 
     /// Converts a `Iri`` represented as a `String` into an parsed Iri represented by a `IriS`
     /// `base` is useful to obtain an absolute Iri
-    pub fn resolve(&mut self, base: Option<IriS>) -> Result<Iri, IriSError> {
+    pub fn resolve(&self, base: Option<IriS>) -> Result<Iri, IriSError> {
         match self {
             Iri::String(s) => match base {
                 None => {
@@ -26,7 +27,7 @@ impl Iri {
                     Ok(Iri::IriS(iri))
                 }
                 Some(base) => {
-                    let iri = base.clone().extend(s)?;
+                    let iri = base.extend(s)?;
                     Ok(Iri::IriS(iri))
                 }
             },
@@ -36,7 +37,7 @@ impl Iri {
 }
 
 impl Display for Iri {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let str = match self {
             Iri::String(s) => s,
             Iri::IriS(iri_s) => iri_s.as_str(),
@@ -56,8 +57,10 @@ impl From<Iri> for String {
 }
 
 impl TryFrom<String> for Iri {
-    type Error = Void;
-    fn try_from(s: String) -> Result<Self, Self::Error> {
-        Ok(Iri::String(s))
+    type Error = Infallible;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Ok(Iri::String(value))
     }
+
 }
