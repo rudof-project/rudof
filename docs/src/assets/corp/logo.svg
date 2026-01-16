@@ -6,9 +6,24 @@
    version="1.1"
    width="765.13727"
    height="613.59875"
+   sodipodi:docname="logo.svg"
+   inkscape:export-filename="favicon.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1" />
   <defs
      id="defs14">
     <style
@@ -128,6 +143,13 @@
        x2="750.21002"
        y2="98.220001" />
   </defs>
+  <ellipse
+     style="fill:#e6e6e4;fill-opacity:0.996078;stroke-width:1.05266"
+     id="path1"
+     cx="388.69501"
+     cy="373.89767"
+     rx="81.121262"
+     ry="77.421921" />
   <path
      class="cls-4"
      d="m 379.87718,592.00719 c 8.73,1.53 17.34,-0.14 25.99,-0.89 -1.41,6.49 -3.56,12.72 -6.8,18.51 -2.85,5.1 -7.74,5.34 -10.98,0.42 -3.66,-5.56 -5.88,-11.84 -8.21,-18.04 z"
