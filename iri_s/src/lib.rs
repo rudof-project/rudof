@@ -11,6 +11,5 @@ pub mod iri;
 pub mod mime_type;
 
 pub use crate::error::*;
-pub use crate::iri::iri::*;
-pub use crate::iri::iris::*;
+pub use crate::iri::IriS;
 pub use crate::mime_type::*;

@@ -1,9 +1,7 @@
-pub mod iri;
 pub mod iris;
 pub mod visitor;
 mod test;
 
-pub use iri::Iri;
 pub use iris::IriS;
 
 /// ```
