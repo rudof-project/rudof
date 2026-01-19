@@ -25,15 +25,14 @@ impl IriS {
     }
 
     pub fn from_path(path: &Path) -> Result<IriS, IriSError> {
-        let abs_path =
-            if path.is_absolute() {
-                Ok(path.to_path_buf())
-            } else {
-                canonicalize(path).map_err(|e| IriSError::ConvertingPathToIri {
-                    path: path.to_string_lossy().to_string(),
-                    error: e.to_string(),
-                })
-            }?;
+        let abs_path = if path.is_absolute() {
+            Ok(path.to_path_buf())
+        } else {
+            canonicalize(path).map_err(|e| IriSError::ConvertingPathToIri {
+                path: path.to_string_lossy().to_string(),
+                error: e.to_string(),
+            })
+        }?;
 
         let url = Url::from_file_path(&abs_path).map_err(|_| IriSError::ConvertingPathToIri {
             path: abs_path.to_string_lossy().to_string(),
@@ -42,7 +41,7 @@ impl IriS {
 
         let iri = NamedNode::new(url.as_str()).map_err(|e| IriSError::IriParseError {
             str: url.as_str().to_string(),
-            error: e.to_string()
+            error: e.to_string(),
         })?;
 
         Ok(IriS { iri })
@@ -91,7 +90,7 @@ impl IriS {
         let joined = url.join(str).map_err(|e| IriSError::JoinError {
             str: str.to_string(),
             current: Box::new(self.clone()),
-            error: e.to_string()
+            error: e.to_string(),
         })?;
 
         Ok(IriS::new_unchecked(joined.as_str()))
@@ -102,12 +101,11 @@ impl IriS {
     /// This function checks for possible errors returning a Result
     pub fn extend(&self, str: &str) -> Result<Self, IriSError> {
         let current_str = self.iri.as_str();
-        let extend_str =
-            if current_str.ends_with("/") || current_str.ends_with("#") {
-                format!("{current_str}{str}")
-            } else {
-                format!("{current_str}/{str}")
-            };
+        let extend_str = if current_str.ends_with("/") || current_str.ends_with("#") {
+            format!("{current_str}{str}")
+        } else {
+            format!("{current_str}/{str}")
+        };
 
         let iri = NamedNode::new(extend_str.as_str()).map_err(|e| IriSError::IriParseError {
             str: extend_str,
@@ -141,19 +139,16 @@ impl IriS {
 
     /// Resolve `other` with this IRI
     pub fn resolve_iri(&self, other: &str) -> Result<Iri<String>, IriSError> {
-        let base = Iri::parse(self.as_str())
-            .map_err(|e| IriSError::IriParseError {
-                str: self.to_string(),
-                error: e.to_string(),
-            })?;
+        let base = Iri::parse(self.as_str()).map_err(|e| IriSError::IriParseError {
+            str: self.to_string(),
+            error: e.to_string(),
+        })?;
 
-        base
-            .resolve(other)
-            .map_err(|e| IriSError::IriResolveError {
-                error: e.to_string(),
-                base: Box::new(IriS::new_unchecked(base.as_str())),
-                other: other.to_string(),
-            })
+        base.resolve(other).map_err(|e| IriSError::IriResolveError {
+            error: e.to_string(),
+            base: Box::new(IriS::new_unchecked(base.as_str())),
+            other: other.to_string(),
+        })
     }
 
     pub fn namednode_from_iri(iri: &Iri<String>) -> Result<NamedNode, IriSError> {
@@ -167,10 +162,10 @@ impl IriS {
     /// It handles also IRIs with the `file` scheme as local file names. For example: `file:///person.txt`
     #[cfg(not(target_family = "wasm"))]
     pub fn dereference(&self, base: &Option<IriS>) -> Result<String, IriSError> {
-        use reqwest::header;
-        use reqwest::header::USER_AGENT;
-        use reqwest::header::HeaderMap;
         use reqwest::blocking::Client;
+        use reqwest::header;
+        use reqwest::header::HeaderMap;
+        use reqwest::header::USER_AGENT;
         use std::fs;
 
         let url = match base {
@@ -191,7 +186,7 @@ impl IriS {
             }
             None => Url::from_str(self.iri.as_str()).map_err(|e| IriSError::UrlParseError {
                 str: self.iri.as_str().to_string(),
-                error: e.to_string()
+                error: e.to_string(),
             })?,
         };
 
@@ -222,13 +217,13 @@ impl IriS {
                     .default_headers(headers)
                     .build()
                     .map_err(|e| IriSError::ReqwestClientCreation {
-                        error: e.to_string()
+                        error: e.to_string(),
                     })?;
                 let res = client
                     .get(url)
                     .send()
                     .map_err(|e| IriSError::ReqwestError {
-                        error: e.to_string()
+                        error: e.to_string(),
                     })?
                     .text()
                     .map_err(|e| IriSError::ReqwestTextError {
@@ -242,7 +237,7 @@ impl IriS {
     #[cfg(target_family = "wasm")]
     pub fn dereference(&self, _base: &Option<IriS>) -> Result<String, IriSError> {
         Err(IriSError::ReqwestClientCreation {
-            error: "rewquest is not enabled".to_string()
+            error: "rewquest is not enabled".to_string(),
         })
     }
 }
@@ -272,11 +267,9 @@ impl FromStr for IriS {
     type Err = IriSError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let iri = NamedNode::new(s).map_err(|e| {
-            IriSError::IriParseError {
-                str: s.to_string(),
-                error: e.to_string(),
-            }
+        let iri = NamedNode::new(s).map_err(|e| IriSError::IriParseError {
+            str: s.to_string(),
+            error: e.to_string(),
         })?;
         Ok(IriS { iri })
     }

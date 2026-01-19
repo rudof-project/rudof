@@ -1,6 +1,6 @@
 pub mod iris;
-pub mod visitor;
 mod test;
+pub mod visitor;
 
 pub use iris::IriS;
 

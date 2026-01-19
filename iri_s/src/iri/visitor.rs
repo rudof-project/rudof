@@ -25,12 +25,12 @@ impl Visitor<'_> for IriVisitor {
             ))),
             Err(other) => Err(E::custom(format!(
                 "Can not parse value \"{v}\" to IRI. Error: {other}"
-            )))
+            ))),
         }
     }
 }
 
-impl <'de> Deserialize<'de> for IriS {
+impl<'de> Deserialize<'de> for IriS {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,

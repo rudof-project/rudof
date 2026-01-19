@@ -44,12 +44,12 @@ mod tests {
             "examples/shex/base.shex",
             Some("file:///home/labra/src/rust/rudof/"),
         )
-            .unwrap();
+        .unwrap();
         let iri2 = IriS::from_str_base(
             "file:///home/labra/src/rust/rudof/examples/shex/base.shex",
             None,
         )
-            .unwrap();
+        .unwrap();
         assert_eq!(iri1, iri2);
     }
 
@@ -63,7 +63,7 @@ mod tests {
 
 #[cfg(test)]
 mod tests_macros {
-    use crate::{iri, iri_once, static_once, IriS};
+    use crate::{IriS, iri, iri_once, static_once};
 
     #[test]
     fn test_macro_iri() {
