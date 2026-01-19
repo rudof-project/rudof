@@ -1,17 +1,14 @@
+use crate::iri::IriS;
 use serde::Serialize;
-// use oxiri::Iri;
-// use oxrdf::IriParseError;
 use thiserror::Error;
-
-use crate::IriS;
 
 #[derive(Error, Debug, Clone, Serialize)]
 pub enum IriSError {
     #[error("Error converting path {path} to IRI: {error}")]
     ConvertingPathToIri { path: String, error: String },
 
-    #[error("Error parsing {str} as IRI: {err}")]
-    IriParseError { str: String, err: String },
+    #[error("Error parsing {str} as IRI: {error}")]
+    IriParseError { str: String, error: String },
 
     #[error("Parsing {str} using base: {base} as IRI. Error: {error}")]
     IriParseErrorWithBase {
@@ -20,18 +17,18 @@ pub enum IriSError {
         error: String,
     },
 
-    #[error("Error resolving IRI `{other}` with base IRI `{base}`: {err}")]
+    #[error("Error resolving IRI `{other}` with base IRI `{base}`: {error}")]
     IriResolveError {
-        err: Box<String>,
+        error: String,
         base: Box<IriS>,
         other: String,
     },
 
-    #[error("Error joining IRI `{current}` with `{str}`: {err}")]
+    #[error("Error joining IRI `{current}` with `{str}`: {error}")]
     JoinError {
-        err: Box<String>,
+        error: String,
         current: Box<IriS>,
-        str: Box<String>,
+        str: String,
     },
     #[error("Creating reqwest http client: {error}")]
     ReqwestClientCreation { error: String },
