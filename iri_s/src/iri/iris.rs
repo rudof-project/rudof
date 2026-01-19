@@ -15,15 +15,18 @@ pub struct IriS {
 }
 
 impl IriS {
+    /// Get the RDF type IRI
     pub fn rdf_type() -> IriS {
         IriS::new_unchecked("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
     }
 
+    /// Create an `IriS` from a `Url`
     pub fn from_url(url: &Url) -> IriS {
         let iri = NamedNode::new_unchecked(url.as_str());
         IriS { iri }
     }
 
+    /// Create an `IriS` from a file system path
     pub fn from_path(path: &Path) -> Result<IriS, IriSError> {
         let abs_path = if path.is_absolute() {
             Ok(path.to_path_buf())
@@ -52,6 +55,7 @@ impl IriS {
         IriS { iri: iri.clone() }
     }
 
+    /// Create an `IriS` from a string with an optional base IRI string
     pub fn from_str_base(str: &str, base: Option<&str>) -> Result<IriS, IriSError> {
         match base {
             Some(base_str) => IriS::from_str(base_str)?.resolve_str(str),
@@ -59,6 +63,7 @@ impl IriS {
         }
     }
 
+    /// Create an `IriS` from a string with an optional base IRI
     pub fn from_str_base_iri(str: &str, base_iri: &Option<IriS>) -> Result<IriS, IriSError> {
         match base_iri {
             Some(base_iri) => base_iri.resolve_str(str),
@@ -76,11 +81,13 @@ impl IriS {
         &self.iri
     }
 
+    /// Create an `IriS` from a string without checking for possible syntactic errors
     pub fn new_unchecked(str: &str) -> IriS {
         let iri = NamedNode::new_unchecked(str);
         IriS { iri }
     }
 
+    /// Join a string to the current IRI
     pub fn join(&self, str: &str) -> Result<Self, IriSError> {
         let url = Url::from_str(self.as_str()).map_err(|e| IriSError::IriParseError {
             str: str.to_string(),
@@ -98,7 +105,7 @@ impl IriS {
 
     /// Extends the current IRI with a new string
     ///
-    /// This function checks for possible errors returning a Result
+    /// This function checks for possible errors returning a `Result`
     pub fn extend(&self, str: &str) -> Result<Self, IriSError> {
         let current_str = self.iri.as_str();
         let extend_str = if current_str.ends_with("/") || current_str.ends_with("#") {
@@ -151,6 +158,7 @@ impl IriS {
         })
     }
 
+    /// Create a `NamedNode` from an IRI
     pub fn namednode_from_iri(iri: &Iri<String>) -> Result<NamedNode, IriSError> {
         NamedNode::new(iri.as_str()).map_err(|e| IriSError::IriParseError {
             str: iri.as_str().to_string(),
@@ -158,7 +166,7 @@ impl IriS {
         })
     }
 
-    /// [Dereference](https://www.w3.org/wiki/DereferenceURI) the IRI and get the content available from it
+    /// [Dereference](https://www.w3.org/wiki/DereferenceURI) the IRI and get the content available from it.
     /// It handles also IRIs with the `file` scheme as local file names. For example: `file:///person.txt`
     #[cfg(not(target_family = "wasm"))]
     pub fn dereference(&self, base: &Option<IriS>) -> Result<String, IriSError> {

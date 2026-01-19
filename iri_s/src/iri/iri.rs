@@ -16,7 +16,7 @@ impl Iri {
         Iri::String(str.to_string())
     }
 
-    /// Converts a `Iri`` represented as a `String` into an parsed Iri represented by a `IriS`
+    /// Converts a `Iri` represented as a `String` into a parsed Iri represented by a `IriS`
     /// `base` is useful to obtain an absolute Iri
     pub fn resolve(&self, base: Option<IriS>) -> Result<Iri, IriSError> {
         match self {

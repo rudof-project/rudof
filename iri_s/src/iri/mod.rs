@@ -37,7 +37,7 @@ macro_rules! iri {
 }
 
 /// This macro creates a static variable that is initialized once and can be accessed globally.
-/// TODO - This should be in a general utilities crate or even removed since is not used currently
+// TODO - This should be in a general utilities crate or even removed since is not used currently
 #[macro_export]
 macro_rules! static_once {
     ($name:ident, $type:ty, $init:expr) => {
