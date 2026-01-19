@@ -1,7 +1,6 @@
 use crate::error::IriSError;
 use crate::iri::iris::IriS;
 use serde::{Deserialize, Serialize};
-use std::convert::Infallible;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
@@ -56,11 +55,9 @@ impl From<Iri> for String {
     }
 }
 
-impl TryFrom<String> for Iri {
-    type Error = Infallible;
+impl From<String> for Iri {
 
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        Ok(Iri::String(value))
+    fn from(value: String) -> Self {
+        Iri::String(value)
     }
-
 }
