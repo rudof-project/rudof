@@ -25,6 +25,7 @@ members = [
     "shex_validation",
     "sparql_service",
     "srdf",
+    "srdf_new",
 ]
 
 default-members = ["rudof_cli"]
