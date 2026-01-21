@@ -11,6 +11,7 @@ members = [
     "rbe",
     "rbe_testsuite",
     "rdf_config",
+    "rdf", 
     "rudof_cli",
     "rudof_lib",
     "rudof_mcp",
@@ -25,7 +26,6 @@ members = [
     "shex_validation",
     "sparql_service",
     "srdf",
-    "srdf_new",
 ]
 
 default-members = ["rudof_cli"]
@@ -75,6 +75,7 @@ lazy-regex = "3.4"
 mie = { version = "0.1.104", path = "./mie" }
 nom = "7"
 nom_locate = "4"
+once_cell = "1.18.0"
 openssl = { version = "0.10", features = ["vendored"] }
 oxigraph = { version = "0.5.2", default-features = false, features = [
     "rdf-12",

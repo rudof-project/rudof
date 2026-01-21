@@ -182,7 +182,7 @@ impl NumericLiteral {
         NumericLiteral::Double(d)
     }
 
-    pub fn lexical_form(&self) -> String {
+    pub fn lexical_form(&self) -> String{
         self.to_string()
     }
 

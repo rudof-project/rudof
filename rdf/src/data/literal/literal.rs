@@ -1,17 +1,13 @@
 use rust_decimal::Decimal;
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
+use prefixmap::IriRef;
 
-use super::{Lang, SLiteral, XsdDateTime};
+use crate::{
+    data::literal::{Lang, ConcreteLiteral, XsdDateTime},
+    vocab::{XSD_BOOLEAN, XSD_DATETIME, XSD_DECIMAL, XSD_DOUBLE, XSD_INTEGER},
+};
 
-/// XSD namespace constants for literal datatypes
-mod xsd {
-    pub(super) const BOOLEAN: &str = "http://www.w3.org/2001/XMLSchema#boolean";
-    pub(super) const INTEGER: &str = "http://www.w3.org/2001/XMLSchema#integer";
-    pub(super) const DATE_TIME: &str = "http://www.w3.org/2001/XMLSchema#dateTime";
-    pub(super) const DOUBLE: &str = "http://www.w3.org/2001/XMLSchema#double";
-    pub(super) const DECIMAL: &str = "http://www.w3.org/2001/XMLSchema#decimal";
-}
 
 /// Types that implement this trait can be used as RDF Literals.
 ///
@@ -26,17 +22,17 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
     fn lang(&self) -> Option<Lang>;
 
     /// Returns the datatype IRI of this literal.
-    fn datatype(&self) -> &str;
+    fn datatype(&self) -> &IriRef;
 
-    /// Converts this literal to an `SLiteral` if possible.
-    fn as_sliteral(&self) -> Option<SLiteral>;
+    /// Converts this literal to an `ConcreteLiteral` if possible.
+    fn as_concrete_literal(&self) -> Option<ConcreteLiteral>;
 
     /// Attempts to convert this literal to a boolean value.
     ///
     /// Returns `Some(bool)` if the literal has datatype `xsd:boolean` and
     /// a valid lexical form ("true" or "false").
     fn as_bool(&self) -> Option<bool> {
-        if self.datatype() != xsd::BOOLEAN {
+        if self.datatype() != &*XSD_BOOLEAN {
             return None;
         }
 
@@ -52,7 +48,7 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
     /// Returns `Some(isize)` if the literal has datatype `xsd:integer` and
     /// a valid parseable lexical form.
     fn as_integer(&self) -> Option<isize> {
-        if self.datatype() != xsd::INTEGER {
+        if self.datatype() != &*XSD_INTEGER {
             return None;
         }
 
@@ -64,7 +60,7 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
     /// Returns `Some(XsdDateTime)` if the literal has datatype `xsd:dateTime` and
     /// a valid parseable lexical form.
     fn as_date_time(&self) -> Option<XsdDateTime> {
-        if self.datatype() != xsd::DATE_TIME {
+        if self.datatype() != &*XSD_DATETIME {
             return None;
         }
 
@@ -76,7 +72,7 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
     /// Returns `Some(f64)` if the literal has datatype `xsd:double` and
     /// a valid parseable lexical form.
     fn as_double(&self) -> Option<f64> {
-        if self.datatype() != xsd::DOUBLE {
+        if self.datatype() != &*XSD_DOUBLE {
             return None;
         }
 
@@ -88,7 +84,7 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
     /// Returns `Some(Decimal)` if the literal has datatype `xsd:decimal` and
     /// a valid parseable lexical form.
     fn as_decimal(&self) -> Option<Decimal> {
-        if self.datatype() != xsd::DECIMAL {
+        if self.datatype() != &*XSD_DECIMAL {
             return None;
         }
 

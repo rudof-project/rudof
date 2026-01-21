@@ -1,9 +1,9 @@
 [package]
-name = "srdf_new"
+name = "rdf"
 version = "0.1.146"
 authors.workspace = true
 description.workspace = true
-documentation = "https://docs.rs/srdf"
+documentation = "https://docs.rs/rdf"
 edition.workspace = true
 license.workspace = true
 homepage.workspace = true
@@ -11,6 +11,7 @@ repository.workspace = true
 
 [dependencies]
 iri_s.workspace = true
+once_cell.workspace = true
 oxilangtag.workspace = true
 oxrdf.workspace = true
 oxsdatatypes.workspace = true
