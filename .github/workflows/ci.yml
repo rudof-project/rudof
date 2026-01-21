@@ -42,7 +42,7 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-
+      - uses: Swatinem/rust-cache@v2
       - name: Run cargo check
         uses: actions-rs/cargo@v1
         continue-on-error: false
@@ -104,7 +104,7 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-
+      - uses: Swatinem/rust-cache@v2
       - name: Run cargo test
         uses: actions-rs/cargo@v1
         continue-on-error: false
