@@ -44,7 +44,7 @@ jobs:
         if: github.event_name == 'release'
 
   mac:
-    runs-on: macos-latest
+    runs-on: macos-15-latest
     env:
       DEVELOPER_DIR: '/Applications/Xcode.app/Contents/Developer'
       SDKROOT: '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk'
