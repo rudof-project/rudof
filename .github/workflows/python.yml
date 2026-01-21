@@ -113,9 +113,9 @@ jobs:
         target: [x86_64, aarch64]
         include:
           - target: x86_64
-            vm: macos-13
+            vm: macos-15-intel
           - target: aarch64
-            vm: macos-latest
+            vm: macos-15-latest
 
     steps:
       - uses: actions/checkout@v4
