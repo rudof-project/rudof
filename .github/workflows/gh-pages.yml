@@ -3,6 +3,9 @@ on:
   push:
     branches:
       - master
+    paths:
+      - docs
+      - .readthedocs.yml
 
 jobs:
   deploy:

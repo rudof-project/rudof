@@ -1,8 +1,33 @@
 # Based on https://github.com/actions-rs/meta/blob/master/recipes/quickstart.md
 #
-on: [push, pull_request]
 
 name: CI
+
+on:
+  push:
+    paths-ignore:
+      - docs
+      - examples
+      - .github
+      - "**/LICENSE*"
+      - "**/README*"
+      - "**/CHANGELOG*"
+      - "**/.dockerignore"
+      - "**/Dockerfile"
+      - "**/*.md"
+      - .readthedocs.yml
+  pull_request:
+    paths-ignore:
+      - docs
+      - examples
+      - .github
+      - "**/LICENSE*"
+      - "**/README*"
+      - "**/CHANGELOG*"
+      - "**/.dockerignore"
+      - "**/Dockerfile"
+      - "**/*.md"
+      - .readthedocs.yml
 
 jobs:
   check:

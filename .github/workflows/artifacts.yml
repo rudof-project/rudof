@@ -1,9 +1,6 @@
 name: Artifacts
 
 on:
-  push:
-    branches:
-      - main
   release:
     types:
       - published
@@ -35,13 +32,11 @@ jobs:
           path: target/release/${{ vars.BINARY_NAME }}
       - name: Rename the binary according to the version and architecture
         run: mv target/release/${{ vars.BINARY_NAME }} ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_linux_gnu
-        if: github.event_name == 'release'
       - name: Upload the generated binaries to their corresponding release
         uses: softprops/action-gh-release@v1
         with:
           files: |
             ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_linux_gnu
-        if: github.event_name == 'release'
 
   mac:
     runs-on: macos-latest
@@ -72,17 +67,14 @@ jobs:
           path: target/aarch64-apple-darwin/release/${{ vars.BINARY_NAME }}
       - name: Rename the binary according to the version and architecture
         run: mv target/release/${{ vars.BINARY_NAME }} ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_apple
-        if: github.event_name == 'release'
       - name: Rename the binary according to the version and architecture
         run: mv target/aarch64-apple-darwin/release/${{ vars.BINARY_NAME }} ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_aarch64_apple
-        if: github.event_name == 'release'
       - name: Upload the generated binaries to their corresponding release
         uses: softprops/action-gh-release@v1
         with:
           files: |
             ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_apple
             ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_aarch64_apple
-        if: github.event_name == 'release'
 
   windows:
     runs-on: windows-latest
@@ -114,12 +106,10 @@ jobs:
           path: target/release/${{ vars.BINARY_NAME }}.exe
       - name: Rename the binary according to the version and architecture
         run: mv target/release/${{ vars.BINARY_NAME }}.exe ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_windows_msvc.exe
-        if: github.event_name == 'release'
       - name: Upload the generated binary to its corresponding release
         uses: softprops/action-gh-release@v1
         with:
           files: ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_windows_msvc.exe
-        if: github.event_name == 'release'
 
   deb:
     runs-on: ubuntu-latest
@@ -141,7 +131,6 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_amd64.deb
-      if: github.event_name == 'release'
 
   docker:
     runs-on: ubuntu-latest
