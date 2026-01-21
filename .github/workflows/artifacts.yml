@@ -19,8 +19,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
-      - name: Update Rustup
-        run: rustup update
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
       - name: Use an intelligent Rust cache for building the project
         uses: Swatinem/rust-cache@v2
       - name: Build the release version of `rudof` for the x86 architecture
@@ -49,6 +53,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
       - name: Use an intelligent Rust cache for building the project
         uses: Swatinem/rust-cache@v2
       - name: Build the release version of `rudof` for the x86 architecture
@@ -93,6 +103,12 @@ jobs:
           echo "OPENSSL_LIB_DIR=C:/Program Files/OpenSSL/lib" >> $env:GITHUB_ENV
           echo "OPENSSL_DIR=C:/Program Files/OpenSSL/" >> $env:GITHUB_ENV
           echo "OPENSSL_INCLUDE_DIR=C:/Program Files/OpenSSL/include" >> $env:GITHUB_ENV
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
       - name: Use an intelligent Rust cache for building the project
         uses: Swatinem/rust-cache@v2
       - name: Remove the MySys64 libraries and utilities
@@ -116,6 +132,12 @@ jobs:
     steps:
     - name: Allow the workflow to access the files of the repository
       uses: actions/checkout@v3
+    - name: Install stable toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
     - name: Install cargo deb
       run: cargo install cargo-deb
     - name: Build the .deb file using cargo deb
