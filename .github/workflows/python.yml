@@ -3,9 +3,9 @@ name: Python
 on:
   push:
     paths-ignore:
-      - docs
-      - examples
-      - .github
+      - "docs/**"
+      - "examples/**"
+      - ".github/**"
       - "**/LICENSE*"
       - "**/README*"
       - "**/CHANGELOG*"
@@ -15,9 +15,9 @@ on:
       - .readthedocs.yml
   pull_request:
     paths-ignore:
-      - docs
-      - examples
-      - .github
+      - "docs/**"
+      - "examples/**"
+      - ".github/**"
       - "**/LICENSE*"
       - "**/README*"
       - "**/CHANGELOG*"
