@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Allow the workflow to access the files of the repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
       - name: Update Rustup
@@ -46,7 +46,7 @@ jobs:
       MACOSX_DEPLOYMENT_TARGET: '10.14'
     steps:
       - name: Allow the workflow to access the files of the repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
       - name: Use an intelligent Rust cache for building the project
