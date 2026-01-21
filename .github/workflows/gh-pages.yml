@@ -1,4 +1,5 @@
-name: Deploy
+name: MdBook GitHub Pages Deployment
+
 on:
   push:
     branches:
@@ -18,7 +19,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: jontze/action-mdbook@v3
         with:
-          token: ${{secrets.GITHUB_TOKEN}}
+          token: ${{ secrets.GITHUB_TOKEN }}
           # Optional Plugins have to be enabled with a version
           mdbook-version: "0.4.40" # Use a semver compatible string
           use-linkcheck: true

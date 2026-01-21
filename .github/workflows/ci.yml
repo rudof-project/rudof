@@ -97,7 +97,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
-
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -110,4 +109,3 @@ jobs:
         continue-on-error: false
         with:
           command: test
-
