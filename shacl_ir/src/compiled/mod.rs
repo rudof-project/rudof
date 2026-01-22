@@ -33,7 +33,7 @@ fn convert_iri_ref(iri_ref: IriRef) -> Result<IriS, Box<CompiledShaclError>> {
             err: err.to_string(),
         })
     })?;
-    Ok(iri)
+    Ok(iri.clone())
 }
 
 fn compile_shape<S: Rdf>(

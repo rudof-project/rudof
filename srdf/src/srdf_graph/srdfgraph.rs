@@ -129,7 +129,7 @@ impl SRDFGraph {
                     (Some(b), None) => Some(b.clone()),
                     (_, Some(b)) => Some(IriS::new_unchecked(b)),
                 };
-                let pm = PrefixMap::from_hashmap(&prefixes)?;
+                let pm = PrefixMap::from_hashmap(prefixes)?;
                 self.merge_prefixes(pm)?;
             }
             RDFFormat::NTriples => {
@@ -513,7 +513,7 @@ impl BuildRDF for SRDFGraph {
     }
 
     fn add_prefix(&mut self, alias: &str, iri: &IriS) -> Result<(), Self::Err> {
-        self.pm.insert(alias, iri)?;
+        self.pm.add_prefix(alias, iri.clone())?;
         Ok(())
     }
 

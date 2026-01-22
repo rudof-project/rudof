@@ -55,9 +55,9 @@ impl ShapeDecl {
 
 impl Deref for ShapeDecl {
     fn deref(
-        &self,
-        base: &Option<iri_s::IriS>,
-        prefixmap: &Option<prefixmap::PrefixMap>,
+        self,
+        base: Option<&iri_s::IriS>,
+        prefixmap: Option<&prefixmap::PrefixMap>,
     ) -> Result<Self, DerefError>
     where
         Self: Sized,

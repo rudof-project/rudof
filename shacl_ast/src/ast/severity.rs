@@ -25,7 +25,7 @@ impl From<Severity> for IriS {
             Severity::Info => IriS::new_unchecked(SH_INFO_STR),
             Severity::Warning => IriS::new_unchecked(SH_WARNING_STR),
             Severity::Violation => IriS::new_unchecked(SH_VIOLATION_STR),
-            Severity::Generic(iri_ref) => iri_ref.get_iri().unwrap(),
+            Severity::Generic(iri_ref) => iri_ref.get_iri().unwrap().clone(),
         }
     }
 }

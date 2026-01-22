@@ -24,7 +24,7 @@ impl SHACLPathRef {
     pub fn to_shaclpath(&self, prefixmap: &PrefixMap) -> Result<SHACLPath, PrefixMapError> {
         match self {
             SHACLPathRef::Predicate { pred } => {
-                let iri = prefixmap.resolve_iriref(pred)?;
+                let iri = prefixmap.resolve_iriref(pred.clone())?;
                 Ok(SHACLPath::iri(iri))
             }
             SHACLPathRef::Alternative { paths } => {

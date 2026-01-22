@@ -1958,7 +1958,7 @@ fn prefixed_name_refactor<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, IriRef> {
 
 fn pname_ns_iri_ref(i: Span) -> IRes<IriRef> {
     let (i, pname_ns) = pname_ns(i)?;
-    Ok((i, IriRef::prefixed(pname_ns.fragment(), "")))
+    Ok((i, IriRef::prefixed(*pname_ns.fragment(), "")))
 }
 
 /// `[138s] blankNode ::= BLANK_NODE_LABEL`
@@ -2069,7 +2069,7 @@ fn digits(i: Span) -> IRes<i128> {
 fn pname_ln(i: Span) -> IRes<IriRef> {
     // This code is different here: https://github.com/vandenoever/rome/blob/047cf54def2aaac75ac4b9adbef08a9d010689bd/src/io/turtle/grammar.rs#L293
     let (i, (prefix, local)) = tuple((pname_ns, pn_local))(i)?;
-    Ok((i, IriRef::prefixed(prefix.fragment(), local)))
+    Ok((i, IriRef::prefixed(*prefix.fragment(), local)))
 }
 
 /// `[77] <PN_LOCAL> ::= (PN_CHARS_U | ":" | [0-9] | PLX) (PN_CHARS | "." | ":" | PLX)`

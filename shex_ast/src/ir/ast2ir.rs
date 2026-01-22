@@ -1281,7 +1281,7 @@ fn check_literal_datatype(sliteral: &SLiteral, expected: &IriS, node: &Node) -> 
                     error: e.to_string(),
                 })
             })?;
-            if &node_dt_iri == expected {
+            if node_dt_iri == expected {
                 Ok(())
             } else {
                 Err(Box::new(SchemaIRError::DatatypeDontMatch {

@@ -586,13 +586,13 @@ where
 
 impl Deref for SLiteral {
     fn deref(
-        &self,
-        base: &Option<iri_s::IriS>,
-        prefixmap: &Option<prefixmap::PrefixMap>,
+        self,
+        base: Option<&IriS>,
+        prefixmap: Option<&PrefixMap>,
     ) -> Result<Self, DerefError> {
         match self {
             SLiteral::NumericLiteral(n) => Ok(SLiteral::NumericLiteral(n.clone())),
-            SLiteral::BooleanLiteral(b) => Ok(SLiteral::BooleanLiteral(*b)),
+            SLiteral::BooleanLiteral(b) => Ok(SLiteral::BooleanLiteral(b)),
             SLiteral::StringLiteral { lexical_form, lang } => Ok(SLiteral::StringLiteral {
                 lexical_form: lexical_form.clone(),
                 lang: lang.clone(),

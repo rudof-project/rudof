@@ -190,7 +190,7 @@ impl ServiceDescription {
 
 fn cnv_prefixmap(pm: &PrefixMap) -> HashMap<String, IriS> {
     let mut result = HashMap::new();
-    for (alias, prefix) in pm.iter() {
+    for (alias, prefix) in pm.clone() {
         result.insert(alias.clone(), prefix.clone());
     }
     result

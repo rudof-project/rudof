@@ -83,9 +83,9 @@ impl ObjectValue {
 
 impl Deref for ObjectValue {
     fn deref(
-        &self,
-        base: &Option<iri_s::IriS>,
-        prefixmap: &Option<prefixmap::PrefixMap>,
+        self,
+        base: Option<&IriS>,
+        prefixmap: Option<&prefixmap::PrefixMap>,
     ) -> Result<Self, DerefError> {
         match self {
             ObjectValue::IriRef(iri_ref) => {
@@ -414,7 +414,7 @@ impl From<&ObjectValue> for srdf::Object {
         match value {
             ObjectValue::IriRef(iri_ref) => {
                 let iri = iri_ref.get_iri().unwrap(); // Should not fail, as it was already deref'ed
-                srdf::Object::from(iri)
+                srdf::Object::from(iri.clone())
             }
             ObjectValue::Literal(literal) => literal.into(),
         }

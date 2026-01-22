@@ -48,9 +48,9 @@ impl Annotation {
 
 impl Deref for Annotation {
     fn deref(
-        &self,
-        base: &Option<iri_s::IriS>,
-        prefixmap: &Option<prefixmap::PrefixMap>,
+        self,
+        base: Option<&IriS>,
+        prefixmap: Option<&prefixmap::PrefixMap>,
     ) -> Result<Self, DerefError> {
         let new_pred = self.predicate.deref(base, prefixmap)?;
         let new_obj = self.object.deref(base, prefixmap)?;

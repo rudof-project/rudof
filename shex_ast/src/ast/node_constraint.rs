@@ -151,15 +151,15 @@ impl NodeConstraint {
 
 impl Deref for NodeConstraint {
     fn deref(
-        &self,
-        base: &Option<iri_s::IriS>,
-        prefixmap: &Option<prefixmap::PrefixMap>,
+        self,
+        base: Option<&iri_s::IriS>,
+        prefixmap: Option<&prefixmap::PrefixMap>,
     ) -> Result<Self, DerefError>
     where
         Self: Sized,
     {
-        let datatype = <IriRef as Deref>::deref_opt(&self.datatype, base, prefixmap)?;
-        let values = <ValueSetValue as Deref>::deref_opt_vec(&self.values, base, prefixmap)?;
+        let datatype = self.datatype().deref(base, prefixmap)?;
+        let values = self.values.deref(base, prefixmap)?;
         Ok(NodeConstraint {
             node_kind: self.node_kind.clone(),
             datatype,
