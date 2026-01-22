@@ -1,8 +1,8 @@
-use crate::SH_DEBUG_STR;
-use crate::SH_TRACE_STR;
 use crate::shacl_vocab::SH_INFO_STR;
 use crate::shacl_vocab::SH_VIOLATION_STR;
 use crate::shacl_vocab::SH_WARNING_STR;
+use crate::SH_DEBUG_STR;
+use crate::SH_TRACE_STR;
 use iri_s::IriS;
 use prefixmap::IriRef;
 use std::fmt::Display;

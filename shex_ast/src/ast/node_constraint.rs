@@ -1,10 +1,9 @@
 use std::fmt;
 
 use prefixmap::{Deref, DerefError, IriRef};
-// use log::debug;
 use serde::{
-    Deserialize, Serialize, Serializer,
-    de::{self, MapAccess, Visitor},
+    de::{self, MapAccess, Visitor}, Deserialize, Serialize,
+    Serializer,
 };
 use srdf::numeric_literal::NumericLiteral;
 

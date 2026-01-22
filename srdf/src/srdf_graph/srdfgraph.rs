@@ -3,7 +3,7 @@ use crate::matcher::Matcher;
 use crate::srdfgraph_error::SRDFGraphError;
 use crate::{
     BuildRDF, FocusRDF, NeighsRDF, QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions,
-    RDF_TYPE_STR, RDFFormat, Rdf, VarName,
+    RDFFormat, Rdf, VarName, RDF_TYPE_STR,
 };
 use async_trait::async_trait;
 use colored::*;
@@ -19,9 +19,9 @@ use oxrdf::{
 use oxrdfio::{JsonLdProfileSet, RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
-use prefixmap::{PrefixMapError, prefixmap::*};
-use serde::Serialize;
+use prefixmap::{prefixmap::*, PrefixMapError};
 use serde::ser::SerializeStruct;
+use serde::Serialize;
 use sparesults::QuerySolution as SparQuerySolution;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
@@ -753,7 +753,6 @@ mod tests {
     use oxrdf::Term as OxTerm;
     use std::collections::HashSet;
 
-    use crate::PResult;
     use crate::iri;
     use crate::matcher::Any;
     use crate::not;
@@ -768,6 +767,7 @@ mod tests {
     use crate::set_focus;
     // use crate::Query as _;
     use crate::BuildRDF;
+    use crate::PResult;
     use crate::RDFFormat;
     use crate::RDFNodeParse as _;
     use crate::RDFParseError;

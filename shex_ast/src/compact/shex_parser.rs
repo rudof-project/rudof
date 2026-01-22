@@ -1,11 +1,10 @@
-use iri_s::IriS;
-// use nom::AsBytes;
-use crate::ParseError;
-use crate::Span;
 use crate::ast::Schema;
 use crate::compact::grammar_structs::ShExStatement;
 use crate::shex_statement;
 use crate::tws0;
+use crate::ParseError;
+use crate::Span;
+use iri_s::IriS;
 use nom::Err;
 use prefixmap::Deref;
 use std::fs;
