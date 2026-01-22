@@ -32,7 +32,6 @@
 // pm.insert("schema", &IriS::from_str("http://schema.org/"))
 // pm.insert("", &IriS::from_str("http://example.org/")?);
 // ```
-pub mod alias;
 pub mod deref;
 pub mod iri_ref;
 pub mod prefixmap;
@@ -40,7 +39,6 @@ pub mod prefixmap_error;
 pub mod qdisplay;
 
 pub use crate::prefixmap::*;
-pub use alias::*;
 pub use deref::*;
 pub use iri_ref::*;
 pub use prefixmap_error::*;
