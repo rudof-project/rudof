@@ -18,4 +18,10 @@ pub enum PrefixMapError {
 
     #[error("IO Error: {error}")]
     IOError { error: String },
+
+    #[error("Alias '{prefix}' already exists in prefix map with value '{value}'")]
+    AliasAlreadyExists {
+        prefix: String,
+        value: String
+    }
 }

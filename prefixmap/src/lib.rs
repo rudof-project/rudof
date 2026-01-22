@@ -20,8 +20,8 @@
 //! let schema_iri  = IriS::from_str("http://schema.org/")?;
 //! let example_iri = IriS::from_str("http://example.org/")?;
 //! let mut pm = PrefixMap::new();
-//! pm.insert("schema", &schema_iri);
-//! pm.insert("", &example_iri);
+//! pm.add_prefix("schema", schema_iri);
+//! pm.add_prefix("", example_iri);
 //! # Ok(())
 //! # }
 //! ```
@@ -57,7 +57,7 @@ mod tests {
     fn it_works() -> Result<(), PrefixMapError> {
         let mut pm = PrefixMap::new();
         let schema_iri = IriS::from_str("http://schema.org/")?;
-        pm.insert("schema", &schema_iri).unwrap();
+        pm.add_prefix("schema", schema_iri)?;
         let resolved = pm.resolve("schema:knows")?;
         let schema_knows = IriS::from_str("http://schema.org/knows")?;
         assert_eq!(resolved, schema_knows);

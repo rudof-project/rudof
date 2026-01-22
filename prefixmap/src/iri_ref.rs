@@ -3,6 +3,7 @@ use crate::{Deref, DerefError, PrefixMapError};
 use iri_s::{IriS, IriSError};
 use serde::de::Visitor;
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
 
@@ -23,9 +24,9 @@ pub struct IriRefError {
 impl IriRef {
     /// Tries to get the IRI, returns an error if it is a prefixed name
     /// Usually you want to use get_iri_prefixmap instead
-    pub fn get_iri(&self) -> Result<IriS, IriRefError> {
+    pub fn get_iri(&self) -> Result<&IriS, IriRefError> {
         match self {
-            IriRef::Iri(iri) => Ok(iri.clone()),
+            IriRef::Iri(iri) => Ok(iri),
             IriRef::Prefixed { prefix, local } => Err(IriRefError {
                 prefix: prefix.clone(),
                 local: local.clone(),
@@ -34,18 +35,20 @@ impl IriRef {
     }
 
     /// Gets the IRI, resolving prefixed names using the provided PrefixMap
-    pub fn get_iri_prefixmap(&self, prefixmap: &PrefixMap) -> Result<IriS, PrefixMapError> {
+    pub fn get_iri_prefixmap(&self, prefixmap: &PrefixMap) -> Result<Cow<'_, IriS>, PrefixMapError> {
         match self {
-            IriRef::Iri(iri) => Ok(iri.clone()),
-            IriRef::Prefixed { prefix, local } => prefixmap.resolve_prefix_local(prefix, local),
+            IriRef::Iri(iri) => Ok(Cow::Borrowed(iri)),
+            IriRef::Prefixed { prefix, local } => prefixmap
+                .resolve_prefix_local(prefix, local)
+                .map(Cow::Owned),
         }
     }
 
     /// Creates a prefixed name IriRef from the given prefix and local part
-    pub fn prefixed(prefix: &str, local: &str) -> IriRef {
+    pub fn prefixed<S: Into<String>>(prefix: S, local: S) -> IriRef {
         IriRef::Prefixed {
-            prefix: prefix.to_string(),
-            local: local.to_string(),
+            prefix: prefix.into(),
+            local: local.into(),
         }
     }
 
@@ -56,34 +59,37 @@ impl IriRef {
 }
 
 impl Deref for IriRef {
+
     fn deref(
-        &self,
-        base: &Option<IriS>,
-        prefixmap: &Option<PrefixMap>,
+        self,
+        base: Option<&IriS>,
+        prefixmap: Option<&PrefixMap>,
     ) -> Result<Self, DerefError> {
         match self {
-            IriRef::Iri(iri_s) => match base {
-                None => Ok(IriRef::Iri(iri_s.clone())),
-                Some(base_iri) => {
-                    let iri = base_iri.resolve(iri_s.clone())?;
-                    Ok(IriRef::Iri(iri))
-                }
+            IriRef::Iri(iri_s) => {
+                let resolved = match base {
+                    None => iri_s,
+                    Some(base) => base.resolve(iri_s)?
+                };
+                Ok(IriRef::Iri(resolved))
             },
-            IriRef::Prefixed { prefix, local } => match prefixmap {
-                None => Err(DerefError::NoPrefixMapPrefixedName {
-                    prefix: prefix.clone(),
-                    local: local.clone(),
-                }),
-                Some(prefixmap) => {
-                    let iri = prefixmap.resolve_prefix_local(prefix, local).map_err(|e| {
-                        DerefError::DerefPrefixMapError {
-                            alias: prefix.to_string(),
-                            local: local.to_string(),
-                            error: Box::new(e),
-                        }
+            IriRef::Prefixed { prefix, local } => {
+                let prefixmap = match prefixmap {
+                    None => return Err(DerefError::NoPrefixMapPrefixedName {
+                        prefix, local
+                    }),
+                    Some(pm) => pm,
+                };
+
+                let iri = prefixmap
+                    .resolve_prefix_local(&prefix, &local)
+                    .map_err(|e| DerefError::DerefPrefixMapError {
+                        alias: prefix,
+                        local,
+                        error: Box::new(e)
                     })?;
-                    Ok(IriRef::Iri(iri))
-                }
+
+                Ok(IriRef::Iri(iri))
             },
         }
     }
@@ -101,8 +107,7 @@ impl FromStr for IriRef {
     type Err = IriSError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let iri_s = IriS::from_str(s)?;
-        Ok(IriRef::Iri(iri_s))
+        Ok(IriRef::Iri(IriS::from_str(s)?))
     }
 }
 
@@ -135,10 +140,9 @@ impl From<IriRef> for String {
 impl Display for IriRef {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            IriRef::Iri(i) => write!(f, "{i}")?,
-            IriRef::Prefixed { prefix, local } => write!(f, "{prefix}:{local}")?,
+            IriRef::Iri(i) => write!(f, "{i}"),
+            IriRef::Prefixed { prefix, local } => write!(f, "{prefix}:{local}"),
         }
-        Ok(())
     }
 }
 

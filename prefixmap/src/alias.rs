@@ -4,7 +4,7 @@ pub struct Alias {
 }
 
 impl Alias {
-    pub fn new(str: &str) -> Self {
-        Self { id: str.to_owned() }
+    pub fn new<S: Into<String>>(str: S) -> Self {
+        Self { id: str.into() }
     }
 }

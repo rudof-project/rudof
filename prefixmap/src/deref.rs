@@ -24,69 +24,36 @@ pub enum DerefError {
 }
 
 pub trait Deref {
-    fn deref(&self, base: &Option<IriS>, prefixmap: &Option<PrefixMap>) -> Result<Self, DerefError>
+    fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError>
     where
         Self: Sized;
+}
 
-    fn deref_opt<T>(
-        maybe: &Option<T>,
-        base: &Option<IriS>,
-        prefixmap: &Option<PrefixMap>,
-    ) -> Result<Option<T>, DerefError>
+impl <T: Deref> Deref for Option<T> {
+    fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError>
     where
-        T: Deref,
+        Self: Sized
     {
-        maybe.as_ref().map(|t| t.deref(base, prefixmap)).transpose()
-    }
-
-    fn deref_opt_box<T>(
-        maybe: &Option<Box<T>>,
-        base: &Option<IriS>,
-        prefixmap: &Option<PrefixMap>,
-    ) -> Result<Option<Box<T>>, DerefError>
-    where
-        T: Deref,
-    {
-        maybe
-            .as_ref()
+        self
             .map(|t| t.deref(base, prefixmap))
             .transpose()
-            .map(|t| t.map(|t| Box::new(t)))
     }
+}
 
-    fn deref_vec<T>(
-        ts: &[T],
-        base: &Option<IriS>,
-        prefixmap: &Option<PrefixMap>,
-    ) -> Result<Vec<T>, DerefError>
+impl <T: Deref> Deref for Box<T> {
+    fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError>
     where
-        T: Deref,
+        Self: Sized
     {
-        ts.iter().map(|t| t.deref(base, prefixmap)).collect()
+        Ok(Box::new((*self).deref(base, prefixmap)?))
     }
+}
 
-    fn deref_vec_box<T>(
-        ts: &[Box<T>],
-        base: &Option<IriS>,
-        prefixmap: &Option<PrefixMap>,
-    ) -> Result<Vec<T>, DerefError>
+impl <T: Deref> Deref for Vec<T> {
+    fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError>
     where
-        T: Deref,
+        Self: Sized,
     {
-        ts.iter().map(|t| t.deref(base, prefixmap)).collect()
-    }
-
-    fn deref_opt_vec<T>(
-        maybe_ts: &Option<Vec<T>>,
-        base: &Option<IriS>,
-        prefixmap: &Option<PrefixMap>,
-    ) -> Result<Option<Vec<T>>, DerefError>
-    where
-        T: Deref,
-    {
-        maybe_ts
-            .as_ref()
-            .map(|ts| ts.iter().map(|t| t.deref(base, prefixmap)).collect())
-            .transpose()
+        self.into_iter().map(|t| t.deref(base, prefixmap)).collect()
     }
 }
