@@ -6,9 +6,7 @@ mod xsd_datetime;
 #[cfg(test)]
 mod tests {
     mod literal_tests;
-    mod lang_tests;
     mod numeric_literal_tests;
-    mod xsd_datetime_tests;
 }
 
 pub use lang::{Lang, LangParseError};

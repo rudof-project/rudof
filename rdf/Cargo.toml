@@ -16,6 +16,7 @@ oxilangtag.workspace = true
 oxrdf.workspace = true
 oxsdatatypes.workspace = true
 prefixmap.workspace = true
+proptest.workspace = true
 rust_decimal.workspace = true
 rust_decimal_macros.workspace = true
 serde.workspace = true
