@@ -15,4 +15,3 @@ indexmap.workspace = true
 iri_s.workspace = true
 serde.workspace = true
 thiserror.workspace = true
-tracing.workspace = true
