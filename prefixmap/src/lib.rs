@@ -26,37 +26,12 @@
 //! # }
 //! ```
 
-// ```
-// let mut pm = PrefixMap::new();
-// let binding = ;
-// pm.insert("schema", &IriS::from_str("http://schema.org/"))
-// pm.insert("", &IriS::from_str("http://example.org/")?);
-// ```
-pub mod deref;
-pub mod iri_ref;
-pub mod prefixmap;
-pub mod prefixmap_error;
+mod test;
+pub mod iri;
+pub mod error;
+pub mod map;
 
-pub use crate::prefixmap::*;
-pub use deref::*;
-pub use iri_ref::*;
-pub use prefixmap_error::*;
-
-#[cfg(test)]
-mod tests {
-    use iri_s::IriS;
-    use std::str::FromStr;
-
-    use super::*;
-
-    #[test]
-    fn it_works() -> Result<(), PrefixMapError> {
-        let mut pm = PrefixMap::new();
-        let schema_iri = IriS::from_str("http://schema.org/")?;
-        pm.add_prefix("schema", schema_iri)?;
-        let resolved = pm.resolve("schema:knows")?;
-        let schema_knows = IriS::from_str("http://schema.org/knows")?;
-        assert_eq!(resolved, schema_knows);
-        Ok(())
-    }
-}
+pub use crate::error::*;
+pub use crate::iri::{Deref, DerefError};
+pub use crate::iri::{IriRef, IriRefError};
+pub use crate::map::PrefixMap;

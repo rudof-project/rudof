@@ -19,7 +19,8 @@ use oxrdf::{
 use oxrdfio::{JsonLdProfileSet, RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
-use prefixmap::{prefixmap::*, PrefixMapError};
+use prefixmap::map::*;
+use prefixmap::PrefixMapError;
 use serde::ser::SerializeStruct;
 use serde::Serialize;
 use sparesults::QuerySolution as SparQuerySolution;
