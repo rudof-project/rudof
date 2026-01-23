@@ -1,4 +1,4 @@
-use crate::data::literal::{ConcreteLiteral, Lang};
+use crate::rdf_core::term::literal::{ConcreteLiteral, Lang};
 use prefixmap::{IriRef, PrefixMap, Deref};
 use iri_s::IriS;
 
@@ -258,7 +258,6 @@ fn test_ord_panics_on_incomparable() {
 
 
 #[test]
-#[should_panic]
 fn test_partial_ord_floats_with_nan() {
     let lit1 = ConcreteLiteral::double(3.14);
     let lit_nan = ConcreteLiteral::double(f64::NAN);
@@ -404,7 +403,7 @@ fn test_lit_datatype_constructor() {
     let lit = ConcreteLiteral::lit_datatype("value", &custom_iri);
     
     assert_eq!(lit.lexical_form(), "value");
-    assert_eq!(lit.datatype(), custom_iri);
+    assert_eq!(lit.datatype().clone(), custom_iri);
 }
 
 
@@ -526,15 +525,14 @@ fn test_very_large_unsigned_long() {
 
 #[test]
 fn test_very_large_long() {
-    let lit = ConcreteLiteral::long(isize::MAX);
-    assert_eq!(lit.lexical_form(), isize::MAX.to_string());
+    let lit = ConcreteLiteral::long(i64::MAX);
+    assert_eq!(lit.lexical_form(), i64::MAX.to_string());
 }
-
 
 #[test]
 fn test_very_small_long() {
-    let lit = ConcreteLiteral::long(isize::MIN);
-    assert_eq!(lit.lexical_form(), isize::MIN.to_string());
+    let lit = ConcreteLiteral::long(i64::MIN);
+    assert_eq!(lit.lexical_form(), i64::MIN.to_string());
 }
 
 

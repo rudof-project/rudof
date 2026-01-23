@@ -1,5 +1,2 @@
-mod error;
-mod data;
-mod vocab;
-
-pub use data::ConcreteLiteral;
+pub mod rdf_core;
+pub mod rdf_impl;

@@ -1,18 +1,110 @@
+use rust_decimal::Decimal;
 use std::{
     fmt::{self, Debug, Display},
     hash::Hash,
     result,
 };
-
-use crate::{
-    data::literal::{Lang, NumericLiteral, XsdDateTime},
-    error::RDFError,
-    vocab::{RDF_LANG_STRING, XSD_BOOLEAN, XSD_DATETIME, XSD_STRING},
+use crate::rdf_core::{
+    RDFError,
+    term::literal::{Lang, NumericLiteral, XsdDateTime},
 };
+
 use iri_s::IriS;
 use prefixmap::{Deref, DerefError, IriRef, PrefixMap};
-use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize, Serializer};
+
+
+/// Types that implement this trait can be used as RDF Literals.
+///
+/// This trait provides methods for accessing literal properties and converting
+/// literals to specific Rust types based on their XSD datatype.
+pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
+    /// Returns the lexical form of the literal as a string slice.
+    fn lexical_form(&self) -> &str;
+
+    /// Returns the language tag if this is a language-tagged literal.
+    fn lang(&self) -> Option<Lang>;
+
+    /// Returns the datatype IRI of this literal.
+    fn datatype(&self) -> IriRef;
+
+    /// Converts this literal to an `ConcreteLiteral` if possible.
+    fn to_concrete_literal(&self) -> Option<ConcreteLiteral>;
+
+    /// Attempts to convert this literal to a boolean value.
+    ///
+    /// Returns `Some(bool)` if the literal has datatype `xsd:boolean` and
+    /// a valid lexical form ("true" or "false").
+    fn to_bool(&self) -> Option<bool> {
+        let iri = self.datatype().get_iri().ok()?;
+
+        if iri.as_str() != "http://www.w3.org/2001/XMLSchema#boolean" {
+            return None;
+        }
+
+        match self.lexical_form() {
+            "true" => Some(true),
+            "false" => Some(false),
+            _ => None,
+        }
+    }
+
+    /// Attempts to convert this literal to an integer value.
+    ///
+    /// Returns `Some(isize)` if the literal has datatype `xsd:integer` and
+    /// a valid parseable lexical form.
+    fn to_integer(&self) -> Option<isize> {
+        let iri = self.datatype().get_iri().ok()?;
+
+        if iri.as_str() != "http://www.w3.org/2001/XMLSchema#integer" {
+            return None;
+        }
+
+        self.lexical_form().parse().ok()
+    }
+
+    /// Attempts to convert this literal to a datetime value.
+    ///
+    /// Returns `Some(XsdDateTime)` if the literal has datatype `xsd:dateTime` and
+    /// a valid parseable lexical form.
+    fn to_date_time(&self) -> Option<XsdDateTime> {
+        let iri = self.datatype().get_iri().ok()?;
+
+        if iri.as_str() != "http://www.w3.org/2001/XMLSchema#dateTime" {
+            return None;
+        }
+
+        XsdDateTime::new(self.lexical_form()).ok()
+    }
+
+    /// Attempts to convert this literal to a double-precision float value.
+    ///
+    /// Returns `Some(f64)` if the literal has datatype `xsd:double` and
+    /// a valid parseable lexical form.
+    fn to_double(&self) -> Option<f64> {
+        let iri = self.datatype().get_iri().ok()?;
+
+        if iri.as_str() != "http://www.w3.org/2001/XMLSchema#double" {
+            return None;
+        }
+
+        self.lexical_form().parse().ok()
+    }
+
+    /// Attempts to convert this literal to a decimal value.
+    ///
+    /// Returns `Some(Decimal)` if the literal has datatype `xsd:decimal` and
+    /// a valid parseable lexical form.
+    fn to_decimal(&self) -> Option<Decimal> {
+        let iri = self.datatype().get_iri().ok()?;
+
+        if iri.as_str() != "http://www.w3.org/2001/XMLSchema#decimal" {
+            return None;
+        }
+
+        self.lexical_form().parse().ok()
+    }
+}
 
 /// Concrete representation of RDF literals with type-safe internal representations.
 ///
@@ -58,7 +150,7 @@ pub enum ConcreteLiteral {
     /// A literal with an explicit datatype IRI.
     DatatypeLiteral {
         lexical_form: String,
-        datatype: IriRef, 
+        datatype: IriRef,
     },
 
     /// A numeric literal (integer, float, decimal, etc.).
@@ -97,10 +189,10 @@ impl ConcreteLiteral {
     /// # Examples
     ///
     /// ```
-    /// use srdf_new::SLiteral;
+    /// use rdf::ConcreteLiteral;
     /// use prefixmap::PrefixMap;
     ///
-    /// let lit = SLiteral::integer(42);
+    /// let lit = ConcreteLiteral::integer(42);
     /// let prefixmap = PrefixMap::basic();
     /// println!("{}", lit.show_qualified(&prefixmap));
     /// ```
@@ -209,18 +301,18 @@ impl ConcreteLiteral {
     ///
     /// # Errors
     ///
-    /// Returns an `RDFError` if datatype validation fails.
+    /// Returns an `LiteralError` if datatype validation fails.
     ///
     /// # Examples
     ///
     /// ```
-    /// use srdf_new::SLiteral;
+    /// use rdf::ConcreteLiteral;
     /// use iri_s::IriS;
     /// use prefixmap::IriRef;
     ///
     /// // Create a datatype literal with an integer value
     /// let dt_iri = IriRef::iri(IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#integer"));
-    /// let lit = SLiteral::lit_datatype("42", &dt_iri);
+    /// let lit = ConcreteLiteral::lit_datatype("42", &dt_iri);
     ///
     /// // Validate the literal
     /// let checked = lit.as_checked_literal().unwrap();
@@ -231,7 +323,7 @@ impl ConcreteLiteral {
             datatype,
         } = self
         {
-            check_literal_datatype(lexical_form, datatype)
+            check_literal_datatype(lexical_form.as_ref(), &datatype)
         } else {
             Ok(self)
         }
@@ -253,13 +345,13 @@ impl ConcreteLiteral {
     /// # Examples
     ///
     /// ```
-    /// use srdf_new::SLiteral;
-    /// use srdf_new::data::literal::Lang;
+    /// use rdf::ConcreteLiteral;
+    /// use rdf::Lang;
     ///
-    /// let lit1 = SLiteral::str("hello");
-    /// let lit2 = SLiteral::str("hello");
-    /// let lit3 = SLiteral::lang_str("hello", Lang::new("en").unwrap());
-    /// let lit4 = SLiteral::integer(42);
+    /// let lit1 = ConcreteLiteral::str("hello");
+    /// let lit2 = ConcreteLiteral::str("hello");
+    /// let lit3 = ConcreteLiteral::lang_str("hello", Lang::new("en").unwrap());
+    /// let lit4 = ConcreteLiteral::integer(42);
     ///
     /// // Plain string literals with the same content are equal
     /// assert!(lit1.match_literal(&lit2));
@@ -268,11 +360,11 @@ impl ConcreteLiteral {
     /// assert!(!lit1.match_literal(&lit3));
     ///
     /// // Numeric and string literals are not equal even if lexical forms match
-    /// let lit5 = SLiteral::lit_datatype("42", &lit4.datatype());
+    /// let lit5 = ConcreteLiteral::lit_datatype("42", &lit4.datatype());
     /// assert!(!lit5.match_literal(&lit4));
     ///
     /// // Comparing numeric literals of the same value returns true
-    /// let lit6 = SLiteral::integer(42);
+    /// let lit6 = ConcreteLiteral::integer(42);
     /// assert!(lit4.match_literal(&lit6));
     /// ```
     pub fn match_literal(&self, literal_expected: &Self) -> bool {
@@ -316,87 +408,134 @@ impl ConcreteLiteral {
 
 /// ## Constructor Methods - Numeric Types
 impl ConcreteLiteral {
-    /// Creates a literal representing a signed integer (`isize`).
+    /// Creates a literal representing an unbounded integer (`i128`).
+    ///
+    /// This corresponds to XSD's `xsd:integer` type, which is unbounded.
     #[inline]
-    pub fn integer(n: isize) -> Self {
+    pub fn integer(n: i128) -> Self {
         Self::NumericLiteral(NumericLiteral::integer(n))
     }
 
-    /// Creates a literal representing a non-negative integer (`usize` ≥ 0).
+    /// Creates a literal representing a non-negative integer (`u128` ≥ 0).
+    ///
+    /// This corresponds to XSD's `xsd:nonNegativeInteger` type.
     #[inline]
-    pub fn non_negative_integer(n: usize) -> Self {
+    pub fn non_negative_integer(n: u128) -> Self {
         Self::NumericLiteral(NumericLiteral::non_negative_integer(n))
     }
 
-    /// Creates a literal representing a non-positive integer (`isize` ≤ 0).
+    /// Creates a literal representing a non-positive integer (`i128` ≤ 0).
+    ///
+    /// This corresponds to XSD's `xsd:nonPositiveInteger` type.
+    ///
+    /// # Errors
+    /// Returns `RDFError::NumericOutOfRange` if `n` is greater than 0.
     #[inline]
-    pub fn non_positive_integer(n: isize) -> Self {
-        Self::NumericLiteral(NumericLiteral::non_positive_integer(n))
+    pub fn non_positive_integer(n: i128) -> Result<Self, RDFError> {
+        Ok(Self::NumericLiteral(NumericLiteral::non_positive_integer(
+            n,
+        )?))
     }
 
-    /// Creates a literal representing a strictly positive integer (`usize` > 0).
+    /// Creates a literal representing a strictly positive integer (`u128` > 0).
+    ///
+    /// This corresponds to XSD's `xsd:positiveInteger` type.
+    ///
+    /// # Errors
+    /// Returns `RDFError::NumericOutOfRange` if `n` is 0.
     #[inline]
-    pub fn positive_integer(n: usize) -> Self {
-        Self::NumericLiteral(NumericLiteral::positive_integer(n))
+    pub fn positive_integer(n: u128) -> Result<Self, RDFError> {
+        Ok(Self::NumericLiteral(NumericLiteral::positive_integer(n)?))
     }
 
-    /// Creates a literal representing a strictly negative integer (`isize` < 0).
+    /// Creates a literal representing a strictly negative integer (`i128` < 0).
+    ///
+    /// This corresponds to XSD's `xsd:negativeInteger` type.
+    ///
+    /// # Errors
+    /// Returns `RDFError::NumericOutOfRange` if `n` is greater than or equal to 0.
     #[inline]
-    pub fn negative_integer(n: isize) -> Self {
-        Self::NumericLiteral(NumericLiteral::negative_integer(n))
+    pub fn negative_integer(n: i128) -> Result<Self, RDFError> {
+        Ok(Self::NumericLiteral(NumericLiteral::negative_integer(n)?))
     }
 
     /// Creates a literal representing a double-precision floating-point number (`f64`).
+    ///
+    /// This corresponds to XSD's `xsd:double` type (64-bit IEEE 754).
     #[inline]
     pub fn double(d: f64) -> Self {
         Self::NumericLiteral(NumericLiteral::double(d))
     }
 
     /// Creates a literal representing a decimal number (`Decimal` type for precise arithmetic).
+    ///
+    /// This corresponds to XSD's `xsd:decimal` type for exact decimal arithmetic.
     #[inline]
     pub fn decimal(d: Decimal) -> Self {
         Self::NumericLiteral(NumericLiteral::decimal(d))
     }
 
-    /// Creates a literal representing a signed long integer (`isize`).
+    /// Creates a literal representing a 64-bit signed long integer (`i64`).
+    ///
+    /// This corresponds to XSD's `xsd:long` type (-9,223,372,036,854,775,808 to 9,223,372,036,854,775,807).
     #[inline]
-    pub fn long(n: isize) -> Self {
+    pub fn long(n: i64) -> Self {
         Self::NumericLiteral(NumericLiteral::long(n))
     }
 
+    /// Creates a literal representing a signed byte (`i8`), values -128 to 127.
+    ///
+    /// This corresponds to XSD's `xsd:byte` type.
+    #[inline]
+    pub fn byte(n: i8) -> Self {
+        Self::NumericLiteral(NumericLiteral::byte(n))
+    }
+
+    /// Creates a literal representing a signed short (`i16`), values -32,768 to 32,767.
+    ///
+    /// This corresponds to XSD's `xsd:short` type.
+    #[inline]
+    pub fn short(n: i16) -> Self {
+        Self::NumericLiteral(NumericLiteral::short(n))
+    }
+
     /// Creates a literal representing an unsigned byte (`u8`), values 0–255.
+    ///
+    /// This corresponds to XSD's `xsd:unsignedByte` type.
     #[inline]
     pub fn unsigned_byte(n: u8) -> Self {
         Self::NumericLiteral(NumericLiteral::unsigned_byte(n))
     }
 
-    /// Creates a literal representing an unsigned short (`u16`), values 0–65535.
+    /// Creates a literal representing an unsigned short (`u16`), values 0–65,535.
+    ///
+    /// This corresponds to XSD's `xsd:unsignedShort` type.
     #[inline]
     pub fn unsigned_short(n: u16) -> Self {
         Self::NumericLiteral(NumericLiteral::unsigned_short(n))
     }
 
     /// Creates a literal representing an unsigned integer (`u32`).
+    ///
+    /// This corresponds to XSD's `xsd:unsignedInt` type.
     #[inline]
     pub fn unsigned_int(n: u32) -> Self {
         Self::NumericLiteral(NumericLiteral::unsigned_int(n))
     }
 
     /// Creates a literal representing an unsigned long integer (`u64`).
+    ///
+    /// This corresponds to XSD's `xsd:unsignedLong` type.
     #[inline]
     pub fn unsigned_long(n: u64) -> Self {
         Self::NumericLiteral(NumericLiteral::unsigned_long(n))
     }
 
-    /// Creates a literal representing a signed byte (`i8`), values -128 to 127.
+    /// Creates a literal representing a single-precision floating-point number (`f32`).
+    ///
+    /// This corresponds to XSD's `xsd:float` type (32-bit IEEE 754).
     #[inline]
-    pub fn byte(n: i8) -> Self {
-        Self::NumericLiteral(NumericLiteral::byte(n))
-    }
-
-    /// Creates a literal representing a single-precision floating-point number (`f64`).
-    #[inline]
-    pub fn float(n: f64) -> Self {
+    pub fn float(n: f32) -> Self {
         Self::NumericLiteral(NumericLiteral::float(n))
     }
 }
@@ -489,15 +628,19 @@ impl ConcreteLiteral {
             Self::DatatypeLiteral { datatype, .. }
             | Self::WrongDatatypeLiteral { datatype, .. } => datatype.clone(),
 
-            Self::StringLiteral { lang: None, .. } => XSD_STRING.clone(),
+            Self::StringLiteral { lang: None, .. } => IriRef::iri(
+                IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#string")),
 
-            Self::StringLiteral { lang: Some(_), .. } => RDF_LANG_STRING.clone(),
+            Self::StringLiteral { lang: Some(_), .. } => IriRef::iri(IriS::new_unchecked(
+                "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString")),
 
-            Self::NumericLiteral(nl) => IriRef::iri(IriS::new_unchecked(nl.datatype())),
+            Self::NumericLiteral(nl) => nl.datatype(),
 
-            Self::BooleanLiteral(_) => XSD_BOOLEAN.clone(),
-
-            Self::DatetimeLiteral(_) => XSD_DATETIME.clone(),
+            Self::BooleanLiteral(_) => IriRef::iri(IriS::new_unchecked(
+                "http://www.w3.org/2001/XMLSchema#boolean")),
+            Self::DatetimeLiteral(_) => IriRef::iri(IriS::new_unchecked(
+                "http://www.w3.org/2001/XMLSchema#dateTime",
+            )),
         }
     }
 
@@ -524,23 +667,22 @@ impl ConcreteLiteral {
     /// # Examples
     ///
     /// ```
-    /// use srdf_new::SLiteral;
-    /// assert_eq!(SLiteral::parse_bool("true").unwrap(), true);
-    /// assert_eq!(SLiteral::parse_bool("0").unwrap(), false);
-    /// assert!(SLiteral::parse_bool("yes").is_err());
+    /// use rdf::ConcreteLiteral;
+    /// assert_eq!(ConcreteLiteral::parse_bool("true").unwrap(), true);
+    /// assert_eq!(ConcreteLiteral::parse_bool("0").unwrap(), false);
+    /// assert!(ConcreteLiteral::parse_bool("yes").is_err());
     /// ```
-    pub fn parse_bool(s: &str) -> Result<bool, RDFError> {
+    pub fn parse_bool(s: &str) -> Result<bool, String> {
         match s {
             "true" | "1" => Ok(true),
             "false" | "0" => Ok(false),
-            _ => Err(RDFError::LiteralDataTypeParseError {
-                literal: s.to_owned(),
-                datatype: "boolean".to_string(),
-            }),
-        }
+            _ => Err(format!("Cannot convert {s} to boolean")),
+        }   
     }
 
     /// Parses an integer from its string representation.
+    ///
+    /// XSD integer is unbounded, so this returns `i128`.
     ///
     /// # Errors
     ///
@@ -549,17 +691,14 @@ impl ConcreteLiteral {
     /// # Examples
     ///
     /// ```
-    /// use srdf_new::SLiteral;
-    /// assert_eq!(SLiteral::parse_integer("-7").unwrap(), -7);
-    /// assert_eq!(SLiteral::parse_integer("2").unwrap(), 2);
-    /// assert!(SLiteral::parse_integer("x").is_err());
+    /// use rdf::ConcreteLiteral;
+    /// assert_eq!(ConcreteLiteral::parse_integer("-7").unwrap(), -7);
+    /// assert_eq!(ConcreteLiteral::parse_integer("2").unwrap(), 2);
+    /// assert!(ConcreteLiteral::parse_integer("x").is_err());
     /// ```
-    pub fn parse_integer(s: &str) -> Result<isize, RDFError> {
-        s.parse::<isize>()
-            .map_err(|_| RDFError::LiteralDataTypeParseError {
-                literal: s.to_owned(),
-                datatype: "integer".to_string(),
-            })
+    pub fn parse_integer(s: &str) -> Result<i128, String> {
+        s.parse::<i128>()
+            .map_err(|e| format!("Cannot convert {s} to integer: {e}"))
     }
 
     /// Parses a negative integer from its string representation.
@@ -571,25 +710,19 @@ impl ConcreteLiteral {
     /// # Examples
     ///
     /// ```
-    /// use srdf_new::SLiteral;
-    /// assert_eq!(SLiteral::parse_negative_integer("-3").unwrap(), -3);
-    /// assert!(SLiteral::parse_negative_integer("0").is_err());
+    /// use rdf::ConcreteLiteral;
+    /// assert_eq!(ConcreteLiteral::parse_negative_integer("-3").unwrap(), -3);
+    /// assert!(ConcreteLiteral::parse_negative_integer("0").is_err());
     /// ```
-    pub fn parse_negative_integer(s: &str) -> Result<isize, RDFError> {
+    pub fn parse_negative_integer(s: &str) -> Result<i128, String> {
         let value = s
-            .parse::<isize>()
-            .map_err(|_| RDFError::LiteralDataTypeParseError {
-                literal: s.to_owned(),
-                datatype: "negativeInteger".to_string(),
-            })?;
+            .parse::<i128>()
+            .map_err(|e| format!("Cannot convert {s} to negative integer: {e}"))?;
 
         if value < 0 {
             Ok(value)
         } else {
-            Err(RDFError::LiteralDataTypeParseError {
-                literal: s.to_owned(),
-                datatype: "negativeInteger".to_string(),
-            })
+            Err(format!("Cannot convert {s} to negative integer: value is not negative"))
         }
     }
 
@@ -598,21 +731,15 @@ impl ConcreteLiteral {
     /// # Errors
     ///
     /// Returns an error if the value is positive or cannot be parsed.
-    pub fn parse_non_positive_integer(s: &str) -> Result<isize, RDFError> {
+    pub fn parse_non_positive_integer(s: &str) -> Result<i128, String> {
         let value = s
-            .parse::<isize>()
-            .map_err(|_| RDFError::LiteralDataTypeParseError {
-                literal: s.to_owned(),
-                datatype: "nonPositiveInteger".to_string(),
-            })?;
+            .parse::<i128>()
+            .map_err(|e| format!("Cannot convert {s} to non-positive integer: {e}"))?;
 
         if value <= 0 {
             Ok(value)
         } else {
-            Err(RDFError::LiteralDataTypeParseError {
-                literal: s.to_owned(),
-                datatype: "nonPositiveInteger".to_string(),
-            })
+            Err(format!("Cannot convert {s} to non-positive integer: value is positive"))
         }
     }
 
@@ -621,21 +748,15 @@ impl ConcreteLiteral {
     /// # Errors
     ///
     /// Returns an error if the value is not positive or cannot be parsed.
-    pub fn parse_positive_integer(s: &str) -> Result<usize, RDFError> {
+    pub fn parse_positive_integer(s: &str) -> Result<u128, String> {
         let value = s
-            .parse::<usize>()
-            .map_err(|_| RDFError::LiteralDataTypeParseError {
-                literal: s.to_owned(),
-                datatype: "positiveInteger".to_string(),
-            })?;
+            .parse::<u128>()
+            .map_err(|e| format!("Cannot convert {s} to positive integer: {e}"))?;
 
         if value > 0 {
             Ok(value)
         } else {
-            Err(RDFError::LiteralDataTypeParseError {
-                literal: s.to_owned(),
-                datatype: "positiveInteger".to_string(),
-            })
+            Err(format!("Cannot convert {s} to positive integer: value is not positive"))
         }
     }
 
@@ -644,12 +765,9 @@ impl ConcreteLiteral {
     /// # Errors
     ///
     /// Returns an error if the string cannot be parsed as a non-negative integer.
-    pub fn parse_non_negative_integer(s: &str) -> Result<usize, RDFError> {
-        s.parse::<usize>()
-            .map_err(|_| RDFError::LiteralDataTypeParseError {
-                literal: s.to_owned(),
-                datatype: "nonNegativeInteger".to_string(),
-            })
+    pub fn parse_non_negative_integer(s: &str) -> Result<u128, String> {
+        s.parse::<u128>()
+            .map_err(|e| format!("Cannot convert {s} to non-negative integer: {e}"))
     }
 
     /// Parses an unsigned byte (0–255) from its string representation.
@@ -657,12 +775,9 @@ impl ConcreteLiteral {
     /// # Errors
     ///
     /// Returns an error if the string cannot be parsed as a `u8`.
-    pub fn parse_unsigned_byte(s: &str) -> Result<u8, RDFError> {
+    pub fn parse_unsigned_byte(s: &str) -> Result<u8, String> {
         s.parse::<u8>()
-            .map_err(|_| RDFError::LiteralDataTypeParseError {
-                literal: s.to_owned(),
-                datatype: "unsignedByte".to_string(),
-            })
+            .map_err(|e| format!("Cannot convert {s} to unsignedByte: {e}"))
     }
 
     /// Parses an unsigned short (0–65535) from its string representation.
@@ -670,12 +785,9 @@ impl ConcreteLiteral {
     /// # Errors
     ///
     /// Returns an error if the string cannot be parsed as a `u16`.
-    pub fn parse_unsigned_short(s: &str) -> Result<u16, RDFError> {
+    pub fn parse_unsigned_short(s: &str) -> Result<u16, String> {
         s.parse::<u16>()
-            .map_err(|_| RDFError::LiteralDataTypeParseError {
-                literal: s.to_owned(),
-                datatype: "unsignedShort".to_string(),
-            })
+            .map_err(|e| format!("Cannot convert {s} to unsignedShort: {e}"))
     }
 
     /// Parses an unsigned integer from its string representation.
@@ -683,12 +795,9 @@ impl ConcreteLiteral {
     /// # Errors
     ///
     /// Returns an error if the string cannot be parsed as a `u32`.
-    pub fn parse_unsigned_int(s: &str) -> Result<u32, RDFError> {
+    pub fn parse_unsigned_int(s: &str) -> Result<u32, String> {
         s.parse::<u32>()
-            .map_err(|_| RDFError::LiteralDataTypeParseError {
-                literal: s.to_owned(),
-                datatype: "unsignedInt".to_string(),
-            })
+            .map_err(|e| format!("Cannot convert {s} to unsignedInt: {e}"))
     }
 
     /// Parses an unsigned long (0–u64::MAX) from its string representation.
@@ -696,38 +805,29 @@ impl ConcreteLiteral {
     /// # Errors
     ///
     /// Returns an error if the string cannot be parsed as a `u64`.
-    pub fn parse_unsigned_long(s: &str) -> Result<u64, RDFError> {
+    pub fn parse_unsigned_long(s: &str) -> Result<u64, String> {
         s.parse::<u64>()
-            .map_err(|_| RDFError::LiteralDataTypeParseError {
-                literal: s.to_owned(),
-                datatype: "unsignedLong".to_string(),
-            })
+            .map_err(|e| format!("Cannot convert {s} to unsignedLong: {e}"))
     }
 
-    /// Parses a double (f64) from its string representation.
+    /// Parses a double (64-bit float) from its string representation.
     ///
     /// # Errors
     ///
     /// Returns an error if the string cannot be parsed as a `f64`.
-    pub fn parse_double(s: &str) -> Result<f64, RDFError> {
+    pub fn parse_double(s: &str) -> Result<f64, String> {
         s.parse::<f64>()
-            .map_err(|_| RDFError::LiteralDataTypeParseError {
-                literal: s.to_owned(),
-                datatype: "double".to_string(),
-            })
+            .map_err(|e| format!("Cannot convert {s} to double: {e}"))
     }
 
-    /// Parses a long integer from its string representation.
+    /// Parses a long integer (64-bit signed) from its string representation.
     ///
     /// # Errors
     ///
-    /// Returns an error if the string cannot be parsed as an `isize`.
-    pub fn parse_long(s: &str) -> Result<isize, RDFError> {
-        s.parse::<isize>()
-            .map_err(|_| RDFError::LiteralDataTypeParseError {
-                literal: s.to_owned(),
-                datatype: "long".to_string(),
-            })
+    /// Returns an error if the string cannot be parsed as an `i64`.
+    pub fn parse_long(s: &str) -> Result<i64, String> {
+        s.parse::<i64>()
+            .map_err(|e| format!("Cannot convert {s} to long: {e}"))
     }
 
     /// Parses a decimal from its string representation using `rust_decimal::Decimal`.
@@ -735,25 +835,19 @@ impl ConcreteLiteral {
     /// # Errors
     ///
     /// Returns an error if the string cannot be parsed as a `Decimal`.
-    pub fn parse_decimal(s: &str) -> Result<Decimal, RDFError> {
+    pub fn parse_decimal(s: &str) -> Result<Decimal, String> {
         s.parse::<Decimal>()
-            .map_err(|_| RDFError::LiteralDataTypeParseError {
-                literal: s.to_owned(),
-                datatype: "decimal".to_string(),
-            })
+            .map_err(|e| format!("Cannot convert {s} to decimal: {e}"))
     }
 
-    /// Parses a float (f64) from its string representation.
+    /// Parses a float (32-bit) from its string representation.
     ///
     /// # Errors
     ///
     /// Returns an error if the string cannot be parsed as a float.
-    pub fn parse_float(s: &str) -> Result<f64, RDFError> {
-        s.parse::<f64>()
-            .map_err(|_| RDFError::LiteralDataTypeParseError {
-                literal: s.to_owned(),
-                datatype: "float".to_string(),
-            })
+    pub fn parse_float(s: &str) -> Result<f32, String> {
+        s.parse::<f32>()
+            .map_err(|e| format!("Cannot convert {s} to float: {e}"))
     }
 
     /// Parses a signed byte (-128 to 127) from its string representation.
@@ -761,12 +855,19 @@ impl ConcreteLiteral {
     /// # Errors
     ///
     /// Returns an error if the string cannot be parsed as an `i8`.
-    pub fn parse_byte(s: &str) -> Result<i8, RDFError> {
+    pub fn parse_byte(s: &str) -> Result<i8, String> {
         s.parse::<i8>()
-            .map_err(|_| RDFError::LiteralDataTypeParseError {
-                literal: s.to_owned(),
-                datatype: "byte".to_string(),
-            })
+            .map_err(|e| format!("Cannot convert {s} to byte: {e}"))
+    }
+
+    /// Parses a signed short (-32768 to 32767) from its string representation.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the string cannot be parsed as an `i16`.
+    pub fn parse_short(s: &str) -> Result<i16, String> {
+        s.parse::<i16>()
+            .map_err(|e| format!("Cannot convert {s} to short: {e}"))
     }
 }
 
@@ -932,7 +1033,7 @@ impl TryFrom<oxrdf::Literal> for ConcreteLiteral {
     ///
     /// # Errors
     ///
-    /// Returns an `RDFError` if:
+    /// Returns an `LiteralError` if:
     /// - The language tag is invalid
     /// - The datatype is unsupported or malformed
     /// - The literal structure is unknown
@@ -955,7 +1056,7 @@ impl TryFrom<oxrdf::Literal> for ConcreteLiteral {
             (s, Some(dtype), None) => {
                 // Use safe IRI creation if possible
                 let datatype_iri = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
-                check_literal_datatype(s, datatype_iri)
+                check_literal_datatype(s.as_ref(), &datatype_iri)
             }
 
             _ => Err(RDFError::ConversionError {
@@ -1045,125 +1146,192 @@ where
 /// # Errors
 ///
 /// Returns `RDFError` if the datatype IRI itself is invalid.
-fn check_literal_datatype(lexical_form: String, datatype: IriRef) -> Result<ConcreteLiteral, RDFError> {
+fn check_literal_datatype(
+    lexical_form: &str,
+    datatype: &IriRef,
+) -> Result<ConcreteLiteral, RDFError> {
     // Resolve the IRI
     let iri = datatype.get_iri().map_err(|_| RDFError::IriRefError {
         iri_ref: datatype.to_string(),
     })?;
 
-    match iri.as_str() {
-        "http://www.w3.org/2001/XMLSchema#integer" => Ok(validate(
-            lexical_form,
-            datatype,
-            ConcreteLiteral::parse_integer,
-            ConcreteLiteral::integer,
-        )),
-        "http://www.w3.org/2001/XMLSchema#long" => Ok(validate(
-            lexical_form,
-            datatype,
-            ConcreteLiteral::parse_long,
-            ConcreteLiteral::long,
-        )),
-        "http://www.w3.org/2001/XMLSchema#double" => Ok(validate(
-            lexical_form,
-            datatype,
-            ConcreteLiteral::parse_double,
-            ConcreteLiteral::double,
-        )),
-        "http://www.w3.org/2001/XMLSchema#boolean" => Ok(validate(
-            lexical_form,
-            datatype,
-            ConcreteLiteral::parse_bool,
-            ConcreteLiteral::boolean,
-        )),
-        "http://www.w3.org/2001/XMLSchema#float" => Ok(validate(
-            lexical_form,
-            datatype,
-            ConcreteLiteral::parse_float,
-            ConcreteLiteral::float,
-        )),
-        "http://www.w3.org/2001/XMLSchema#decimal" => Ok(validate(
-            lexical_form,
-            datatype,
-            ConcreteLiteral::parse_decimal,
-            ConcreteLiteral::decimal,
-        )),
-        "http://www.w3.org/2001/XMLSchema#negativeInteger" => Ok(validate(
-            lexical_form,
-            datatype,
-            ConcreteLiteral::parse_negative_integer,
-            ConcreteLiteral::negative_integer,
-        )),
-        "http://www.w3.org/2001/XMLSchema#positiveInteger" => Ok(validate(
-            lexical_form,
-            datatype,
-            ConcreteLiteral::parse_positive_integer,
-            ConcreteLiteral::positive_integer,
-        )),
-        "http://www.w3.org/2001/XMLSchema#nonNegativeInteger" => Ok(validate(
-            lexical_form,
-            datatype,
-            ConcreteLiteral::parse_non_negative_integer,
-            ConcreteLiteral::non_negative_integer,
-        )),
-        "http://www.w3.org/2001/XMLSchema#nonPositiveInteger" => Ok(validate(
-            lexical_form,
-            datatype,
-            ConcreteLiteral::parse_non_positive_integer,
-            ConcreteLiteral::non_positive_integer,
-        )),
-        "http://www.w3.org/2001/XMLSchema#unsignedInt" => Ok(validate(
-            lexical_form,
-            datatype,
-            ConcreteLiteral::parse_unsigned_int,
-            ConcreteLiteral::unsigned_int,
-        )),
-        "http://www.w3.org/2001/XMLSchema#unsignedLong" => Ok(validate(
-            lexical_form,
-            datatype,
-            ConcreteLiteral::parse_unsigned_long,
-            ConcreteLiteral::unsigned_long,
-        )),
-        "http://www.w3.org/2001/XMLSchema#unsignedByte" => Ok(validate(
-            lexical_form,
-            datatype,
-            ConcreteLiteral::parse_unsigned_byte,
-            ConcreteLiteral::unsigned_byte,
-        )),
-        "http://www.w3.org/2001/XMLSchema#unsignedShort" => Ok(validate(
-            lexical_form,
-            datatype,
-            ConcreteLiteral::parse_unsigned_short,
-            ConcreteLiteral::unsigned_short,
-        )),
-        _ => {
-            // Unknown or custom datatype: do not validate lexical form
-            Ok(ConcreteLiteral::DatatypeLiteral {
-                lexical_form: lexical_form.to_string(),
-                datatype,
-            })
-        }
+    let iri_str = iri.as_str();
+
+    // Macro for constructors that return ConcreteLiteral directly
+    macro_rules! check_xsd_type {
+        ($xsd_const:expr, $parse_fn:expr, $construct_fn:expr) => {
+            if iri_str == $xsd_const {
+                return Ok(validate(lexical_form, datatype, $parse_fn, $construct_fn));
+            }
+        };
     }
+
+    // Macro for constructors that return Result<ConcreteLiteral, RDFError>
+    macro_rules! check_xsd_type_result {
+        ($xsd_const:expr, $parse_fn:expr, $construct_fn:expr) => {
+            if iri_str == $xsd_const {
+                return Ok(validate_with_result(
+                    lexical_form,
+                    datatype,
+                    $parse_fn,
+                    $construct_fn,
+                ));
+            }
+        };
+    }
+
+    // Check all XSD types using appropriate macro
+    check_xsd_type!(
+        "http://www.w3.org/2001/XMLSchema#integer",
+        ConcreteLiteral::parse_integer,
+        ConcreteLiteral::integer
+    );
+    check_xsd_type!(
+        "http://www.w3.org/2001/XMLSchema#long", 
+        ConcreteLiteral::parse_long, 
+        ConcreteLiteral::long
+    );
+    check_xsd_type!(
+        "http://www.w3.org/2001/XMLSchema#double",
+        ConcreteLiteral::parse_double,
+        ConcreteLiteral::double
+    );
+    check_xsd_type!(
+        "http://www.w3.org/2001/XMLSchema#boolean",
+        ConcreteLiteral::parse_bool,
+        ConcreteLiteral::boolean
+    );
+    check_xsd_type!(
+        "http://www.w3.org/2001/XMLSchema#float",
+        ConcreteLiteral::parse_float,
+        ConcreteLiteral::float
+    );
+    check_xsd_type!(
+        "http://www.w3.org/2001/XMLSchema#decimal",
+        ConcreteLiteral::parse_decimal,
+        ConcreteLiteral::decimal
+    );
+    check_xsd_type!(
+        "http://www.w3.org/2001/XMLSchema#byte",
+        ConcreteLiteral::parse_byte,
+        ConcreteLiteral::byte
+    );
+    check_xsd_type!(
+        "http://www.w3.org/2001/XMLSchema#short",
+        ConcreteLiteral::parse_short,
+        ConcreteLiteral::short
+    );
+    check_xsd_type!(
+        "http://www.w3.org/2001/XMLSchema#unsignedInt",
+        ConcreteLiteral::parse_unsigned_int,
+        ConcreteLiteral::unsigned_int
+    );
+    check_xsd_type!(
+        "http://www.w3.org/2001/XMLSchema#unsignedLong",
+        ConcreteLiteral::parse_unsigned_long,
+        ConcreteLiteral::unsigned_long
+    );
+    check_xsd_type!(
+        "http://www.w3.org/2001/XMLSchema#unsignedByte",
+        ConcreteLiteral::parse_unsigned_byte,
+        ConcreteLiteral::unsigned_byte
+    );
+    check_xsd_type!(
+        "http://www.w3.org/2001/XMLSchema#unsignedShort",
+        ConcreteLiteral::parse_unsigned_short,
+        ConcreteLiteral::unsigned_short
+    );
+    check_xsd_type!(
+        "http://www.w3.org/2001/XMLSchema#nonNegativeInteger",
+        ConcreteLiteral::parse_non_negative_integer,
+        ConcreteLiteral::non_negative_integer
+    );
+
+    // These constructors return Result and need special handling
+    check_xsd_type_result!(
+        "http://www.w3.org/2001/XMLSchema#negativeInteger",
+        ConcreteLiteral::parse_negative_integer,
+        ConcreteLiteral::negative_integer
+    );
+    check_xsd_type_result!(
+        "http://www.w3.org/2001/XMLSchema#positiveInteger",
+        ConcreteLiteral::parse_positive_integer,
+        ConcreteLiteral::positive_integer
+    );
+    check_xsd_type_result!(
+        "http://www.w3.org/2001/XMLSchema#nonPositiveInteger",
+        ConcreteLiteral::parse_non_positive_integer,
+        ConcreteLiteral::non_positive_integer
+    );
+
+    // Unknown or custom datatype: do not validate lexical form
+    Ok(ConcreteLiteral::DatatypeLiteral {
+        lexical_form: lexical_form.to_string(),
+        datatype: datatype.clone(),
+    })
 }
 
-/// Validates a lexical form against a specified datatype using a parser and constructs an `SLiteral`.
+/// Validates a lexical form against a specified datatype using a parser and constructor.
 ///
 /// # Parameters
 /// - `lexical_form`: The literal value as a string that needs to be validated.
 /// - `datatype`: The IRI of the expected datatype.
 /// - `parser`: A function that attempts to parse the `lexical_form` into a value of type `T`.
-/// - `constructor`: A function that constructs an `SLiteral` from a successfully parsed value.
-fn validate<T, P, C>(lexical_form: String, datatype: IriRef, parser: P, constructor: C) -> ConcreteLiteral
+/// - `constructor`: A function that constructs a `ConcreteLiteral` from a successfully parsed value.
+fn validate<T, P, C>(
+    lexical_form: &str,
+    datatype: &IriRef,
+    parser: P,
+    constructor: C,
+) -> ConcreteLiteral
 where
-    P: Fn(&str) -> Result<T, RDFError>,
+    P: Fn(&str) -> Result<T, String>,
     C: Fn(T) -> ConcreteLiteral,
 {
-    match parser(&lexical_form) {
+    match parser(lexical_form) {
         Ok(value) => constructor(value),
         Err(err) => ConcreteLiteral::WrongDatatypeLiteral {
-            lexical_form,
-            datatype,
+            lexical_form: lexical_form.to_string(),
+            datatype: datatype.clone(),
             error: err.to_string(),
         },
     }
 }
+
+/// Validates a lexical form with a constructor that returns `Result`.
+///
+/// This variant handles constructors that perform additional validation
+/// (e.g., range checks for positiveInteger, negativeInteger).
+///
+/// # Parameters
+/// - `lexical_form`: The literal value as a string that needs to be validated.
+/// - `datatype`: The IRI of the expected datatype.
+/// - `parser`: A function that attempts to parse the `lexical_form` into a value of type `T`.
+/// - `constructor`: A function that constructs a `ConcreteLiteral` from a parsed value, returning `Result`.
+fn validate_with_result<T, P, C>(
+    lexical_form: &str,
+    datatype: &IriRef,
+    parser: P,
+    constructor: C,
+) -> ConcreteLiteral
+where
+    P: Fn(&str) -> Result<T, String>,
+    C: Fn(T) -> Result<ConcreteLiteral, RDFError>,
+{
+    match parser(lexical_form) {
+        Ok(value) => match constructor(value) {
+            Ok(literal) => literal,
+            Err(err) => ConcreteLiteral::WrongDatatypeLiteral {
+                lexical_form: lexical_form.to_string(),
+                datatype: datatype.clone(),
+                error: err.to_string(),
+            },
+        },
+        Err(err) => ConcreteLiteral::WrongDatatypeLiteral {
+            lexical_form: lexical_form.to_string(),
+            datatype: datatype.clone(),
+            error: err.to_string(),
+        },
+    }
+}
+

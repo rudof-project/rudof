@@ -1,4 +1,4 @@
-use crate::data::literal::Lang;
+use crate::rdf_core::term::literal::Lang;
 use std::collections::HashSet;
 
 // ----------------------------------
