@@ -7,6 +7,7 @@ use std::borrow::Cow;
 use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
 
+/// An IRI reference, which can be either a full IRI or a prefixed name
 // TODO - Move to iri_s crate
 #[derive(Serialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
 #[serde(into = "String")]
@@ -15,6 +16,7 @@ pub enum IriRef {
     Prefixed { prefix: String, local: String },
 }
 
+/// Error returned when trying to get an IRI from a prefixed name [`IriRef`]
 #[derive(Debug, Error, Clone)]
 #[error("Cannot obtain IRI from prefixed name IriRef {prefix}:{local}")]
 pub struct IriRefError {
@@ -22,9 +24,13 @@ pub struct IriRefError {
     local: String,
 }
 
+/// Functions for working with [`IriRef`]
 impl IriRef {
-    /// Tries to get the IRI, returns an error if it is a prefixed name
-    /// Usually you want to use get_iri_prefixmap instead
+    /// Tries to get the IRI
+    ///
+    /// Usually you want to use [`self.get_iri_prefixmap`] instead
+    ///
+    /// Returns a reference to the IRI if successful, or an [`IriRefError`] if it is a prefixed name
     pub fn get_iri(&self) -> Result<&IriS, IriRefError> {
         match self {
             IriRef::Iri(iri) => Ok(iri),
@@ -35,7 +41,10 @@ impl IriRef {
         }
     }
 
-    /// Gets the IRI, resolving prefixed names using the provided PrefixMap
+    /// Gets the IRI, resolving prefixed names using the provided [`PrefixMap`]
+    ///
+    /// Returns a [`Cow`], which is borrowed if the [`IriRef`] is already an IRI, or owned if it was a prefixed name.
+    /// If the prefixed name cannot be resolved, returns a [`PrefixMapError`]
     pub fn get_iri_prefixmap(&self, prefixmap: &PrefixMap) -> Result<Cow<'_, IriS>, PrefixMapError> {
         match self {
             IriRef::Iri(iri) => Ok(Cow::Borrowed(iri)),
@@ -45,7 +54,7 @@ impl IriRef {
         }
     }
 
-    /// Creates a prefixed name IriRef from the given prefix and local part
+    /// Creates a prefixed name [`IriRef`] from the given prefix and local part
     pub fn prefixed<S: Into<String>>(prefix: S, local: S) -> IriRef {
         IriRef::Prefixed {
             prefix: prefix.into(),
@@ -53,7 +62,7 @@ impl IriRef {
         }
     }
 
-    /// Creates an IriRef from an IriS
+    /// Creates an ['IriRef'] from an [`IriS`]
     pub fn iri(iri: IriS) -> IriRef {
         IriRef::Iri(iri)
     }
