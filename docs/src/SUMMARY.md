@@ -38,7 +38,8 @@
 
 - [Scope of the project](./internals/scope.md)
 - [Architecture](./internals/architecture.md)
-  - [iri_s](./internals/crates/iri_s.md)
+  - [`iri_s`](./internals/crates/iri_s.md)
+  - [`prefixmap`](./internals/crates/prefixmap.md)
 - [ADRs](./internals/ADRs.md)
 
 # More information
