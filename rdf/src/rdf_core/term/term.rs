@@ -1,4 +1,7 @@
-use std::{hash::Hash, fmt::{Debug, Display}};
+use std::{
+    fmt::{Debug, Display},
+    hash::Hash,
+};
 
 /// Represents any RDF term that can appear in an RDF graph.
 ///

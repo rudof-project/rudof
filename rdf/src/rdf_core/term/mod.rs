@@ -9,4 +9,4 @@ pub use blank_node::{BlankNode, BlankNodeRef, ConcreteBlankNode};
 pub use iri::Iri;
 pub use iri_or_blanknode::IriOrBlankNode;
 pub use term::{Term, TermKind};
-pub use triple::{ConcreteTriple, Subject, Object, Triple};
+pub use triple::{ConcreteTriple, Object, Subject, Triple};

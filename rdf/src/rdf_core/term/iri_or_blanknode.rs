@@ -1,11 +1,11 @@
 use std::fmt::Display;
 
+use crate::rdf_core::{RDFError, term::Object};
 use iri_s::IriS;
 use serde::{Deserialize, Serialize};
-use crate::rdf_core::{RDFError, term::Object};
 
 /// Represents an RDF resource that is either an IRI or a blank node.
-/// 
+///
 /// # Variants
 /// - **BlankNode**: An anonymous resource without a global identifier, represented
 ///   by a local label (e.g., "b0", "genid1")
@@ -74,7 +74,7 @@ impl Display for IriOrBlankNode {
 }
 
 // =======================================
-// Trait Implementations 
+// Trait Implementations
 // =======================================
 
 /// Converts an `IriOrBlankNode` into an `oxrdf::NamedOrBlankNode`.
@@ -122,7 +122,7 @@ impl TryFrom<Object> for IriOrBlankNode {
 /// This conversion succeeds only when the object is an IRI or blank node.
 /// It fails with an error if the object is a literal or triple, as these
 /// cannot be represented as resources.
-/// 
+///
 /// # Errors
 ///
 /// - `RDFError::ExpectedIriOrBlankNodeFoundLiteral`: When attempting to convert

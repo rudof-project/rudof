@@ -1,9 +1,9 @@
-use oxsdatatypes::DateTime;
-use std::str::FromStr;
-use thiserror::Error;
 use core::fmt;
+use oxsdatatypes::DateTime;
 use serde::de::{self, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::str::FromStr;
+use thiserror::Error;
 
 /// A validated XSD DateTime wrapper that ensures type safety and correct formatting.
 ///

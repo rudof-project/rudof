@@ -58,9 +58,10 @@ fn numeric_literal_strategy() -> impl Strategy<Value = NumericLiteral> {
         non_positive_integer_strategy(),
         non_negative_integer_strategy(),
         // Decimal from i64 for reasonable range
-        any::<i64>().prop_filter_map("decimal conversion", |n| 
-            NumericLiteral::decimal_from_i64(n).ok()
-        ),
+        any::<i64>().prop_filter_map("decimal conversion", |n| NumericLiteral::decimal_from_i64(
+            n
+        )
+        .ok()),
     ]
 }
 
@@ -150,7 +151,7 @@ proptest! {
     ) {
         let a_dec = a.to_decimal();
         let b_dec = b.to_decimal();
-        
+
         if let (Some(ad), Some(bd)) = (a_dec, b_dec) {
             prop_assert_eq!(a.less_than(&b), ad < bd);
         }
@@ -164,7 +165,7 @@ proptest! {
     ) {
         let a_dec = a.to_decimal();
         let b_dec = b.to_decimal();
-        
+
         if let (Some(ad), Some(bd)) = (a_dec, b_dec) {
             prop_assert_eq!(a.less_than_or_eq(&b), ad <= bd);
         }
@@ -243,7 +244,7 @@ proptest! {
     fn lexical_form_roundtrip(lit in numeric_literal_strategy()) {
         let lexical = lit.lexical_form();
         prop_assert!(!lexical.is_empty());
-        
+
         // For integer types, parsing should yield same value
         match &lit {
             NumericLiteral::Integer(n) => {
@@ -267,7 +268,7 @@ proptest! {
     ) {
         let result = NumericLiteral::decimal_from_parts(whole, fraction);
         prop_assert!(result.is_ok());
-        
+
         if let Ok(NumericLiteral::Decimal(d)) = result {
             let str_repr = format!("{}.{}", whole, fraction);
             let expected = Decimal::from_str_exact(&str_repr).unwrap();
@@ -293,7 +294,7 @@ proptest! {
             a.hash(&mut hasher_a);
             b.hash(&mut hasher_b);
             prop_assert_eq!(
-                hasher_a.finish(), 
+                hasher_a.finish(),
                 hasher_b.finish(),
                 "Equal values must have equal hashes"
             );
@@ -427,10 +428,10 @@ proptest! {
     fn integer_long_decimal_consistency(n in any::<i64>()) {
         let int_lit = NumericLiteral::integer(n as i128);
         let long_lit = NumericLiteral::long(n);
-        
+
         let int_dec = int_lit.to_decimal();
         let long_dec = long_lit.to_decimal();
-        
+
         prop_assert!(int_dec.is_some());
         prop_assert!(long_dec.is_some());
         prop_assert_eq!(int_dec, long_dec);
@@ -441,10 +442,10 @@ proptest! {
     fn byte_integer_comparison_consistency(n in any::<i8>()) {
         let byte_lit = NumericLiteral::byte(n);
         let int_lit = NumericLiteral::integer(n as i128);
-        
+
         let byte_dec = byte_lit.to_decimal().unwrap();
         let int_dec = int_lit.to_decimal().unwrap();
-        
+
         prop_assert_eq!(byte_dec, int_dec);
     }
 
@@ -453,10 +454,10 @@ proptest! {
     fn unsigned_int_non_negative_consistency(n in any::<u32>()) {
         let uint_lit = NumericLiteral::unsigned_int(n);
         let non_neg_lit = NumericLiteral::non_negative_integer(n as u128);
-        
+
         let uint_dec = uint_lit.to_decimal().unwrap();
         let non_neg_dec = non_neg_lit.to_decimal().unwrap();
-        
+
         prop_assert_eq!(uint_dec, non_neg_dec);
     }
 }
@@ -472,7 +473,7 @@ proptest! {
         let s = n.to_string();
         let result = NumericLiteral::try_from(s.as_str());
         prop_assert!(result.is_ok());
-        
+
         if let Ok(lit) = result {
             prop_assert_eq!(lit.to_decimal().unwrap().to_i64(), Some(n));
         }
@@ -539,27 +540,29 @@ mod edge_case_tests {
 
     #[test]
     fn test_extreme_values() {
-        // Test with i64 range 
+        // Test with i64 range
         let max_i64 = NumericLiteral::integer(i64::MAX as i128);
         let min_i64 = NumericLiteral::integer(i64::MIN as i128);
-        
+
         assert!(max_i64.to_decimal().is_some());
         assert!(min_i64.to_decimal().is_some());
-        
+
         // Test i128 extremes return None (expected behavior)
         let max_i128 = NumericLiteral::integer(i128::MAX);
         let min_i128 = NumericLiteral::integer(i128::MIN);
-        
+
         // These should fail to convert to Decimal due to range limitations
         assert!(max_i128.to_decimal().is_none() || max_i128.to_decimal().is_some());
         assert!(min_i128.to_decimal().is_none() || min_i128.to_decimal().is_some());
-        
+
         // Zero edge cases
         assert!(NumericLiteral::positive_integer(0).is_err());
         assert!(NumericLiteral::negative_integer(0).is_err());
         assert!(NumericLiteral::non_positive_integer(0).is_ok());
-        assert_eq!(NumericLiteral::non_negative_integer(0), 
-                   NumericLiteral::NonNegativeInteger(0));
+        assert_eq!(
+            NumericLiteral::non_negative_integer(0),
+            NumericLiteral::NonNegativeInteger(0)
+        );
     }
 
     #[test]
@@ -568,23 +571,29 @@ mod edge_case_tests {
         assert!(NumericLiteral::negative_integer(-1).is_ok());
         assert!(NumericLiteral::negative_integer(0).is_err());
         assert!(NumericLiteral::negative_integer(1).is_err());
-        
+
         assert!(NumericLiteral::non_positive_integer(-1).is_ok());
         assert!(NumericLiteral::non_positive_integer(0).is_ok());
         assert!(NumericLiteral::non_positive_integer(1).is_err());
     }
-    
+
     /// Test that i128 extreme values are representable as NumericLiterals
     /// even if they can't convert to Decimal
     #[test]
     fn test_i128_extremes_exist() {
         let max_i128 = NumericLiteral::integer(i128::MAX);
         let min_i128 = NumericLiteral::integer(i128::MIN);
-        
+
         // They should have valid lexical forms and datatypes
         assert!(!max_i128.lexical_form().is_empty());
         assert!(!min_i128.lexical_form().is_empty());
-        assert_eq!(max_i128.datatype().to_string(), "http://www.w3.org/2001/XMLSchema#integer");
-        assert_eq!(min_i128.datatype().to_string(), "http://www.w3.org/2001/XMLSchema#integer");
+        assert_eq!(
+            max_i128.datatype().to_string(),
+            "http://www.w3.org/2001/XMLSchema#integer"
+        );
+        assert_eq!(
+            min_i128.datatype().to_string(),
+            "http://www.w3.org/2001/XMLSchema#integer"
+        );
     }
 }

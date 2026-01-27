@@ -1,15 +1,17 @@
 use crate::rdf_core::{
-        Matcher,
-        term::{BlankNode, Term, TermKind, Iri, Subject, Triple, 
-            literal::{ConcreteLiteral, Lang, Literal}}
+    Matcher,
+    term::{
+        BlankNode, Iri, Subject, Term, TermKind, Triple,
+        literal::{ConcreteLiteral, Lang, Literal},
+    },
 };
+use iri_s::IriS;
 use oxrdf::{
     BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode,
-    NamedOrBlankNode as OxSubject, NamedOrBlankNodeRef as OxSubjectRef,
-    Term as OxTerm, Triple as OxTriple
+    NamedOrBlankNode as OxSubject, NamedOrBlankNodeRef as OxSubjectRef, Term as OxTerm,
+    Triple as OxTriple,
 };
 use prefixmap::IriRef;
-use iri_s::IriS;
 
 /// Implements the `Subject` trait for `OxSubject` (owned version).
 ///

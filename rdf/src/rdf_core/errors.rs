@@ -6,7 +6,6 @@ pub enum RDFError {
     // ========================================================================
     // Language and Literal Errors
     // ========================================================================
-
     /// Error parsing or validating a language tag in an RDF literal.
     ///
     /// # Fields
@@ -23,7 +22,6 @@ pub enum RDFError {
     // ========================================================================
     // IRI Errors
     // ========================================================================
-
     /// Error obtaining a valid IRI from an IRI reference.
     ///
     /// This occurs when attempting to resolve an IRI reference (which may be
@@ -46,7 +44,6 @@ pub enum RDFError {
     // ========================================================================
     // Conversion Errors
     // ========================================================================
-
     /// Generic conversion error for RDF data transformations.
     ///
     /// # Fields
@@ -124,7 +121,6 @@ pub enum RDFError {
     // ========================================================================
     // Type Expectation Errors
     // ========================================================================
-
     /// Expected an IRI or blank node in subject/object position, but found a literal.
     ///
     /// # Fields
@@ -148,7 +144,6 @@ pub enum RDFError {
     // ========================================================================
     // Comparison and Query Errors
     // ========================================================================
-
     /// Error comparing two RDF terms.
     ///
     /// # Fields
@@ -210,7 +205,6 @@ pub enum RDFError {
     // ========================================================================
     // Output/Serialization Errors
     // ========================================================================
-
     /// Error formatting SPARQL query results as a table.
     ///
     /// # Fields

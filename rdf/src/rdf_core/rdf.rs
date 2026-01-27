@@ -1,7 +1,7 @@
 use crate::rdf_core::{
     Matcher, RDFError,
     term::{
-        IriOrBlankNode, Object, BlankNode, Iri, Term, Subject, Triple,
+        BlankNode, Iri, IriOrBlankNode, Object, Subject, Term, Triple,
         literal::{ConcreteLiteral, Lang, Literal},
     },
 };
@@ -169,11 +169,12 @@ pub trait Rdf: Sized {
                 term: term.to_string(),
             }
         })?;
-        let slit = <Self::Literal as TryInto<ConcreteLiteral>>::try_into(lit.clone()).map_err(|_| {
-            RDFError::LiteralAsSLiteral {
-                literal: lit.to_string(),
-            }
-        })?;
+        let slit =
+            <Self::Literal as TryInto<ConcreteLiteral>>::try_into(lit.clone()).map_err(|_| {
+                RDFError::LiteralAsSLiteral {
+                    literal: lit.to_string(),
+                }
+            })?;
         Ok(slit)
     }
 

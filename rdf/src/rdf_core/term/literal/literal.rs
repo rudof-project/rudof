@@ -1,18 +1,17 @@
+use crate::rdf_core::{
+    RDFError,
+    term::literal::{Lang, NumericLiteral, XsdDateTime},
+};
 use rust_decimal::Decimal;
 use std::{
     fmt::{self, Debug, Display},
     hash::Hash,
     result,
 };
-use crate::rdf_core::{
-    RDFError,
-    term::literal::{Lang, NumericLiteral, XsdDateTime},
-};
 
 use iri_s::IriS;
 use prefixmap::{Deref, DerefError, IriRef, PrefixMap};
 use serde::{Deserialize, Serialize, Serializer};
-
 
 /// Types that implement this trait can be used as RDF Literals.
 ///
@@ -628,16 +627,19 @@ impl ConcreteLiteral {
             Self::DatatypeLiteral { datatype, .. }
             | Self::WrongDatatypeLiteral { datatype, .. } => datatype.clone(),
 
-            Self::StringLiteral { lang: None, .. } => IriRef::iri(
-                IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#string")),
+            Self::StringLiteral { lang: None, .. } => IriRef::iri(IriS::new_unchecked(
+                "http://www.w3.org/2001/XMLSchema#string",
+            )),
 
             Self::StringLiteral { lang: Some(_), .. } => IriRef::iri(IriS::new_unchecked(
-                "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString")),
+                "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString",
+            )),
 
             Self::NumericLiteral(nl) => nl.datatype(),
 
             Self::BooleanLiteral(_) => IriRef::iri(IriS::new_unchecked(
-                "http://www.w3.org/2001/XMLSchema#boolean")),
+                "http://www.w3.org/2001/XMLSchema#boolean",
+            )),
             Self::DatetimeLiteral(_) => IriRef::iri(IriS::new_unchecked(
                 "http://www.w3.org/2001/XMLSchema#dateTime",
             )),
@@ -677,7 +679,7 @@ impl ConcreteLiteral {
             "true" | "1" => Ok(true),
             "false" | "0" => Ok(false),
             _ => Err(format!("Cannot convert {s} to boolean")),
-        }   
+        }
     }
 
     /// Parses an integer from its string representation.
@@ -722,7 +724,9 @@ impl ConcreteLiteral {
         if value < 0 {
             Ok(value)
         } else {
-            Err(format!("Cannot convert {s} to negative integer: value is not negative"))
+            Err(format!(
+                "Cannot convert {s} to negative integer: value is not negative"
+            ))
         }
     }
 
@@ -739,7 +743,9 @@ impl ConcreteLiteral {
         if value <= 0 {
             Ok(value)
         } else {
-            Err(format!("Cannot convert {s} to non-positive integer: value is positive"))
+            Err(format!(
+                "Cannot convert {s} to non-positive integer: value is positive"
+            ))
         }
     }
 
@@ -756,7 +762,9 @@ impl ConcreteLiteral {
         if value > 0 {
             Ok(value)
         } else {
-            Err(format!("Cannot convert {s} to positive integer: value is not positive"))
+            Err(format!(
+                "Cannot convert {s} to positive integer: value is not positive"
+            ))
         }
     }
 
@@ -1187,8 +1195,8 @@ fn check_literal_datatype(
         ConcreteLiteral::integer
     );
     check_xsd_type!(
-        "http://www.w3.org/2001/XMLSchema#long", 
-        ConcreteLiteral::parse_long, 
+        "http://www.w3.org/2001/XMLSchema#long",
+        ConcreteLiteral::parse_long,
         ConcreteLiteral::long
     );
     check_xsd_type!(
@@ -1334,4 +1342,3 @@ where
         },
     }
 }
-

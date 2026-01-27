@@ -7,7 +7,7 @@ use std::fmt::{Debug, Display};
 /// to represent resources that don't need to be referenced outside of that context.
 pub trait BlankNode: Debug + Display + PartialEq {
     /// Constructs a new blank node with the given identifier.
-    /// 
+    ///
     /// # Arguments
     ///
     /// * `id` - The identifier for this blank node. Accepts any type convertible to `String`, such as `&str` or `String`.
@@ -17,7 +17,7 @@ pub trait BlankNode: Debug + Display + PartialEq {
 }
 
 /// A trait for borrowed references to blank node labels.
-/// 
+///
 /// This trait is useful for working with blank node identifiers without
 /// taking ownership, allowing zero-copy operations when processing RDF data.
 pub trait BlankNodeRef<'a> {
@@ -46,7 +46,7 @@ impl<'a> ConcreteBlankNode<'a> {
 
 impl<'a> BlankNodeRef<'a> for ConcreteBlankNode<'a> {
     /// Returns the blank node's label as a string slice.
-    /// 
+    ///
     /// The returned reference has the same lifetime `'a` as the
     /// `ConcreteBlankNode` instance
     fn label(&self) -> &'a str {

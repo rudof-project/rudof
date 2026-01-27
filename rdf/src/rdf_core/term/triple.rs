@@ -1,11 +1,17 @@
-use std::{hash::Hash, fmt::{Debug, Display}};
 use crate::rdf_core::{
-    Rdf, RDFError,
-    term::{Iri, IriOrBlankNode, Term, TermKind, literal::{Lang, NumericLiteral, ConcreteLiteral}}
+    RDFError, Rdf,
+    term::{
+        Iri, IriOrBlankNode, Term, TermKind,
+        literal::{ConcreteLiteral, Lang, NumericLiteral},
+    },
 };
 use iri_s::IriS;
 use prefixmap::IriRef;
 use serde::{Deserialize, Serialize};
+use std::{
+    fmt::{Debug, Display},
+    hash::Hash,
+};
 
 /// Represents an RDF triple.
 ///
@@ -37,7 +43,6 @@ where
     /// Returns a reference to the predicate of this triple.
     fn pred(&self) -> &P;
 
-
     /// Returns a reference to the object of this triple.
     fn obj(&self) -> &O;
 
@@ -64,7 +69,7 @@ where
 }
 
 /// A concrete implementation of an RDF triple for a specific RDF model.
-/// 
+///
 /// # Type Parameters
 ///
 /// * `R` - The RDF implementation type that defines the specific types for
@@ -83,7 +88,7 @@ where
     R: Rdf,
 {
     /// Creates a new concrete triple from owned components.
-    /// 
+    ///
     /// # Parameters
     ///
     /// * `subj` - The subject component from the RDF model `R`
@@ -93,7 +98,7 @@ where
         ConcreteTriple { subj, pred, obj }
     }
 
-     /// Returns a reference to the subject component.
+    /// Returns a reference to the subject component.
     pub fn subj(&self) -> &R::Subject {
         &self.subj
     }
@@ -109,7 +114,7 @@ where
     }
 
     /// Converts this triple from one RDF implementation to another.
-    /// 
+    ///
     /// # Type Parameters
     ///
     /// * `T` - The target RDF implementation type
@@ -179,7 +184,7 @@ pub enum Object {
     /// A literal value with a datatype and optional language tag.
     Literal(ConcreteLiteral),
     /// An RDF-star quoted triple that can be used as an object.
-    /// 
+    ///
     /// # Fields
     /// - `subject`: The subject of the nested triple (IRI or blank node)
     /// - `predicate`: The predicate of the nested triple (IRI)
@@ -236,7 +241,6 @@ impl Object {
 
 /// ## Accessors methods
 impl Object {
-
     // Returns the length (in bytes) of this object's string representation.
     ///
     /// - For IRIs: the length of the IRI string
@@ -295,7 +299,6 @@ impl Object {
 }
 
 impl Object {
-
     /// ## Parsing methods
     /// Parses a string into an RDF object, with optional base IRI resolution.
     ///
@@ -307,7 +310,7 @@ impl Object {
     /// # Parameters
     /// - `str`: The string to parse
     /// - `base`: Optional base IRI for resolving relative IRI references
-    /// 
+    ///
     /// # Errors
     /// - `RDFError::ParsingIri` if IRI parsing fails
     pub fn parse(str: &str, base: Option<&str>) -> Result<Object, RDFError> {
@@ -327,7 +330,6 @@ impl Object {
 
 /// ## Formatting methods
 impl Object {
-
     /// Formats this object using qualified names (prefixes) where possible.
     ///
     /// This method produces a compact representation by replacing full IRIs
