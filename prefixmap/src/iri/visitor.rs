@@ -1,6 +1,6 @@
 use crate::IriRef;
-use serde::de::Visitor;
 use serde::Deserialize;
+use serde::de::Visitor;
 use std::str::FromStr;
 
 struct IriRefVisitor;

@@ -1,6 +1,6 @@
-use crate::iri::deref::{Deref, DerefError};
 use crate::PrefixMap;
 use crate::PrefixMapError;
+use crate::iri::deref::{Deref, DerefError};
 use iri_s::{IriS, IriSError};
 use serde::Serialize;
 use std::borrow::Cow;
@@ -45,7 +45,10 @@ impl IriRef {
     ///
     /// Returns a [`Cow`], which is borrowed if the [`IriRef`] is already an IRI, or owned if it was a prefixed name.
     /// If the prefixed name cannot be resolved, returns a [`PrefixMapError`]
-    pub fn get_iri_prefixmap(&self, prefixmap: &PrefixMap) -> Result<Cow<'_, IriS>, PrefixMapError> {
+    pub fn get_iri_prefixmap(
+        &self,
+        prefixmap: &PrefixMap,
+    ) -> Result<Cow<'_, IriS>, PrefixMapError> {
         match self {
             IriRef::Iri(iri) => Ok(Cow::Borrowed(iri)),
             IriRef::Prefixed { prefix, local } => prefixmap
@@ -69,25 +72,18 @@ impl IriRef {
 }
 
 impl Deref for IriRef {
-
-    fn deref(
-        self,
-        base: Option<&IriS>,
-        prefixmap: Option<&PrefixMap>,
-    ) -> Result<Self, DerefError> {
+    fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
         match self {
             IriRef::Iri(iri_s) => {
                 let resolved = match base {
                     None => iri_s,
-                    Some(base) => base.resolve(iri_s)?
+                    Some(base) => base.resolve(iri_s)?,
                 };
                 Ok(IriRef::Iri(resolved))
-            },
+            }
             IriRef::Prefixed { prefix, local } => {
                 let prefixmap = match prefixmap {
-                    None => return Err(DerefError::NoPrefixMapPrefixedName {
-                        prefix, local
-                    }),
+                    None => return Err(DerefError::NoPrefixMapPrefixedName { prefix, local }),
                     Some(pm) => pm,
                 };
 
@@ -96,11 +92,11 @@ impl Deref for IriRef {
                     .map_err(|e| DerefError::DerefPrefixMapError {
                         alias: prefix,
                         local,
-                        error: Box::new(e)
+                        error: Box::new(e),
                     })?;
 
                 Ok(IriRef::Iri(iri))
-            },
+            }
         }
     }
 }

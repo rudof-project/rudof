@@ -5,7 +5,6 @@ use thiserror::Error;
 /// Errors that can occur when working with [`PrefixMap`]
 #[derive(Debug, Error, Clone)]
 pub enum PrefixMapError {
-
     /// Error originating from the [`iri_s`] crate
     #[error(transparent)]
     IriSError(#[from] IriSError),
@@ -27,8 +26,5 @@ pub enum PrefixMapError {
 
     /// Error indicating that an alias already exists in the [`PrefixMap`]
     #[error("Alias '{prefix}' already exists in prefix map with value '{value}'")]
-    AliasAlreadyExists {
-        prefix: String,
-        value: String
-    }
+    AliasAlreadyExists { prefix: String, value: String },
 }

@@ -60,8 +60,8 @@ impl PrefixMap {
         if self.map.contains_key(key) {
             return Err(PrefixMapError::AliasAlreadyExists {
                 prefix: key.to_string(),
-                value: self.map.get(key).unwrap().to_string()
-            })
+                value: self.map.get(key).unwrap().to_string(),
+            });
         }
         self.map.insert(key.to_string(), iri.into());
         Ok(())
@@ -127,7 +127,7 @@ impl PrefixMap {
     fn alias_color(&self, alias: &str) -> ColoredString {
         match self.qualify_prefix_color {
             Some(color) => alias.color(color),
-            None => ColoredString::from(alias)
+            None => ColoredString::from(alias),
         }
     }
 
@@ -135,7 +135,7 @@ impl PrefixMap {
     fn local_color(&self, rest: &str) -> ColoredString {
         match self.qualify_localname_color {
             Some(color) => rest.color(color),
-            None => ColoredString::from(rest)
+            None => ColoredString::from(rest),
         }
     }
 
@@ -143,7 +143,7 @@ impl PrefixMap {
     fn semicolon_color(&self) -> ColoredString {
         match self.qualify_semicolon_color {
             Some(color) => ":".color(color),
-            None => ColoredString::from(":")
+            None => ColoredString::from(":"),
         }
     }
 
@@ -176,14 +176,12 @@ impl PrefixMap {
 
     /// Disable all rich qualifying (colors and hyperlinks)
     pub fn without_rich_qualifying(self) -> Self {
-        self.with_hyperlink(false)
-            .without_colors()
+        self.with_hyperlink(false).without_colors()
     }
 }
 
 /// Common predefined prefix maps
 impl PrefixMap {
-
     /// Basic prefixmap with common definitions.
     /// This includes:
     /// - `default`
@@ -201,7 +199,7 @@ impl PrefixMap {
             ("sh", "https://www.w3.org/ns/shacl#"),
             ("xsd", "https://www.w3.org/2001/XMLSchema#"),
         ]))
-            .unwrap()
+        .unwrap()
     }
 
     /// Default Wikidata prefix map
@@ -250,15 +248,14 @@ impl PrefixMap {
             ("wdv", "https://www.wikidata.org/value/"),
             ("wikibase", "https://wikiba.se/ontology#"),
         ]))
-            .unwrap()
-            .without_default_colors()
-            .with_hyperlink(true)
+        .unwrap()
+        .without_default_colors()
+        .with_hyperlink(true)
     }
 }
 
 /// Qualifying IRIs against a [`PrefixMap`]
 impl PrefixMap {
-
     /// Qualifies an IRI against a [`PrefixMap`]
     ///
     /// If it can't qualify the IRI, it returns the iri between `<` and `>`
@@ -284,7 +281,8 @@ impl PrefixMap {
     /// # Ok::<(), PrefixMapError>(())
     /// ```
     pub fn qualify(&self, iri: &IriS) -> String {
-        self.qualify_optional(iri).unwrap_or_else(|| format!("<{iri}>"))
+        self.qualify_optional(iri)
+            .unwrap_or_else(|| format!("<{iri}>"))
     }
 
     /// Qualifies an IRI against a [`PrefixMap`]
@@ -317,7 +315,11 @@ impl PrefixMap {
         let s = self.format_colored(alias, rest);
 
         if self.hyperlink {
-            Some(format!("\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\", iri.as_str(), s))
+            Some(format!(
+                "\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\",
+                iri.as_str(),
+                s
+            ))
         } else {
             Some(s)
         }
@@ -358,8 +360,7 @@ impl PrefixMap {
         };
 
         if self.hyperlink {
-            let s_hyperlink =
-                format!("\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\", iri.as_str(), s);
+            let s_hyperlink = format!("\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\", iri.as_str(), s);
             (s_hyperlink, length)
         } else {
             (s, length)
@@ -398,10 +399,10 @@ impl PrefixMap {
 
     /// Finds the longest prefix match for a given IRI in the [`PrefixMap`]
     fn longest_prefix_match<'a>(&'a self, iri: &'a IriS) -> Option<(&'a str, &'a str)> {
-        self.map.iter()
+        self.map
+            .iter()
             .filter_map(|(alias, pm_iri)| {
-                iri
-                    .as_str()
+                iri.as_str()
                     .strip_prefix(pm_iri.as_str())
                     .map(|rest| (alias.as_str(), rest))
             })
@@ -411,7 +412,6 @@ impl PrefixMap {
 
 /// Resolving strings and IRI references against a [`PrefixMap`]
 impl PrefixMap {
-
     /// Resolves a string against a prefix map
     ///
     /// Returns an error if the prefix is not found in the prefix map or if the `string` is not a valid IRI.
@@ -450,9 +450,7 @@ impl PrefixMap {
     /// Resolves an [`IriRef`] against a [`PrefixMap`]
     pub fn resolve_iriref(&self, iri_ref: IriRef) -> Result<IriS, PrefixMapError> {
         match iri_ref {
-            IriRef::Prefixed { prefix, local } => {
-                Ok(self.resolve_prefix_local(prefix, local)?)
-            },
+            IriRef::Prefixed { prefix, local } => Ok(self.resolve_prefix_local(prefix, local)?),
             IriRef::Iri(iri) => Ok(iri),
         }
     }
@@ -490,7 +488,11 @@ impl PrefixMap {
     /// assert_eq!(xsd_string, xsd_string_resolved);
     /// # Ok::<(), PrefixMapError>(())
     /// ```
-    pub fn resolve_prefix_local<S: Into<String>>(&self, prefix: S, local: S) -> Result<IriS, PrefixMapError> {
+    pub fn resolve_prefix_local<S: Into<String>>(
+        &self,
+        prefix: S,
+        local: S,
+    ) -> Result<IriS, PrefixMapError> {
         let prefix = prefix.into();
         let local = local.into();
 

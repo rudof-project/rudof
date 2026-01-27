@@ -1,8 +1,8 @@
 #![allow(unused_imports, dead_code)]
 
-use crate::iri::deref::Deref;
-use crate::iri::IriRef;
 use crate::PrefixMap;
+use crate::iri::IriRef;
+use crate::iri::deref::Deref;
 use iri_s::IriS;
 use proptest::prelude::*;
 use std::borrow::Cow;

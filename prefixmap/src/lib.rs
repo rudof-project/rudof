@@ -26,10 +26,10 @@
 //! # }
 //! ```
 
-mod test;
-pub mod iri;
 pub mod error;
+pub mod iri;
 pub mod map;
+mod test;
 
 pub use crate::error::*;
 pub use crate::iri::{Deref, DerefError};
