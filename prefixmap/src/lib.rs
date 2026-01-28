@@ -31,7 +31,6 @@ pub mod iri;
 pub mod map;
 mod test;
 
-pub use crate::error::*;
-pub use crate::iri::{Deref, DerefError};
-pub use crate::iri::{IriRef, IriRefError};
+pub use crate::iri::Deref;
+pub use crate::iri::IriRef;
 pub use crate::map::PrefixMap;

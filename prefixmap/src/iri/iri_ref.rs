@@ -1,11 +1,10 @@
+use crate::error::{DerefError, IriRefError, PrefixMapError};
+use crate::iri::deref::Deref;
 use crate::PrefixMap;
-use crate::PrefixMapError;
-use crate::iri::deref::{Deref, DerefError};
 use iri_s::{IriS, IriSError};
 use serde::Serialize;
 use std::borrow::Cow;
 use std::{fmt::Display, str::FromStr};
-use thiserror::Error;
 
 /// An IRI reference, which can be either a full IRI or a prefixed name
 // TODO - Move to iri_s crate
@@ -14,14 +13,6 @@ use thiserror::Error;
 pub enum IriRef {
     Iri(IriS),
     Prefixed { prefix: String, local: String },
-}
-
-/// Error returned when trying to get an IRI from a prefixed name [`IriRef`]
-#[derive(Debug, Error, Clone)]
-#[error("Cannot obtain IRI from prefixed name IriRef {prefix}:{local}")]
-pub struct IriRefError {
-    prefix: String,
-    local: String,
 }
 
 /// Functions for working with [`IriRef`]

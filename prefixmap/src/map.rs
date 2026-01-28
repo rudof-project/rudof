@@ -1,4 +1,5 @@
-use crate::{IriRef, PrefixMapError};
+use crate::error::PrefixMapError;
+use crate::IriRef;
 use colored::*;
 use indexmap::IndexMap;
 use iri_s::*;
@@ -262,7 +263,7 @@ impl PrefixMap {
     /// ```
     /// # use std::collections::HashMap;
     /// # use prefixmap::PrefixMap;
-    /// # use prefixmap::PrefixMapError;
+    /// # use prefixmap::error::PrefixMapError;
     /// # use iri_s::*;
     /// # use std::str::FromStr;
     /// let pm = PrefixMap::from_hashmap(
@@ -292,7 +293,7 @@ impl PrefixMap {
     /// ```
     /// # use std::collections::HashMap;
     /// # use prefixmap::PrefixMap;
-    /// # use prefixmap::PrefixMapError;
+    /// # use prefixmap::error::PrefixMapError;
     /// # use iri_s::*;
     /// # use std::str::FromStr;
     /// let pm = PrefixMap::from_hashmap(
@@ -330,7 +331,7 @@ impl PrefixMap {
     /// ```
     /// # use std::collections::HashMap;
     /// # use prefixmap::PrefixMap;
-    /// # use prefixmap::PrefixMapError;
+    /// # use prefixmap::error::PrefixMapError;
     /// # use iri_s::*;
     /// # use std::str::FromStr;
     /// let pm = PrefixMap::from_hashmap(
@@ -374,7 +375,7 @@ impl PrefixMap {
     /// ```
     /// # use std::collections::HashMap;
     /// # use prefixmap::PrefixMap;
-    /// # use prefixmap::PrefixMapError;
+    /// # use prefixmap::error::PrefixMapError;
     /// # use iri_s::*;
     /// # use std::str::FromStr;
     /// let pm = PrefixMap::from_hashmap(
@@ -421,7 +422,7 @@ impl PrefixMap {
     /// ```
     /// # use std::collections::HashMap;
     /// # use prefixmap::PrefixMap;
-    /// # use prefixmap::PrefixMapError;
+    /// # use prefixmap::error::PrefixMapError;
     /// # use iri_s::*;
     /// # use std::str::FromStr;
     ///
@@ -464,7 +465,7 @@ impl PrefixMap {
     /// ```
     /// # use std::collections::HashMap;
     /// # use prefixmap::PrefixMap;
-    /// # use prefixmap::PrefixMapError;
+    /// # use prefixmap::error::PrefixMapError;
     /// # use iri_s::*;
     /// # use std::str::FromStr;
     ///

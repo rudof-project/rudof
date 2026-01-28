@@ -3,5 +3,5 @@ pub mod iri_ref;
 mod test;
 mod visitor;
 
-pub use deref::{Deref, DerefError};
-pub use iri_ref::{IriRef, IriRefError};
+pub use deref::Deref;
+pub use iri_ref::IriRef;
