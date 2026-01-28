@@ -4,21 +4,21 @@ use rust_decimal::Decimal;
 use serde::de::Unexpected;
 use serde::ser::SerializeMap;
 use serde::{
-    Deserialize, Serialize, Serializer,
-    de::{self, MapAccess, Visitor},
+    de::{self, MapAccess, Visitor}, Deserialize, Serialize,
+    Serializer,
 };
-use srdf::SLiteral;
 use srdf::lang::Lang;
 use srdf::numeric_literal::NumericLiteral;
+use srdf::SLiteral;
 use std::fmt::{self, Display};
 use std::{result, str::FromStr};
 
-use crate::Node;
 use crate::ast::{
     BYTE_STR, DATETIME_STR, FLOAT_STR, LONG_STR, NEGATIVE_INTEGER_STR, NON_NEGATIVE_INTEGER_STR,
     NON_POSITIVE_INTEGER_STR, POSITIVE_INTEGER_STR, SHORT_STR, UNSIGNED_BYTE_STR, UNSIGNED_INT_STR,
     UNSIGNED_LONG_STR, UNSIGNED_SHORT_STR,
 };
+use crate::Node;
 
 use super::{BOOLEAN_STR, DECIMAL_STR, DOUBLE_STR, INTEGER_STR};
 
@@ -83,9 +83,9 @@ impl ObjectValue {
 
 impl Deref for ObjectValue {
     fn deref(
-        &self,
-        base: &Option<iri_s::IriS>,
-        prefixmap: &Option<prefixmap::PrefixMap>,
+        self,
+        base: Option<&IriS>,
+        prefixmap: Option<&prefixmap::PrefixMap>,
     ) -> Result<Self, DerefError> {
         match self {
             ObjectValue::IriRef(iri_ref) => {
@@ -414,7 +414,7 @@ impl From<&ObjectValue> for srdf::Object {
         match value {
             ObjectValue::IriRef(iri_ref) => {
                 let iri = iri_ref.get_iri().unwrap(); // Should not fail, as it was already deref'ed
-                srdf::Object::from(iri)
+                srdf::Object::from(iri.clone())
             }
             ObjectValue::Literal(literal) => literal.into(),
         }

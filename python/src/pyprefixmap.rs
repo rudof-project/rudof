@@ -1,6 +1,6 @@
 use crate::cnv_err;
-use pyo3::{PyResult, pyclass, pymethods};
-use rudof_lib::{PrefixMap, RudofError};
+use pyo3::{pyclass, pymethods, PyResult};
+use rudof_lib::{IriS, PrefixMap, RudofError};
 
 /// PrefixMap
 #[pyclass(name = "PrefixMap")]
@@ -24,8 +24,16 @@ impl PyPrefixMap {
         text_signature = "(prefix, iri)"
     )]
     pub fn add_prefix(&mut self, prefix: &str, iri: &str) -> PyResult<()> {
+        let iri = IriS::new(iri)
+            .map_err(|e| {
+                RudofError::PrefixMapError {
+                    error: e.to_string(),
+                }
+            })
+            .map_err(cnv_err)?;
+
         self.inner
-            .add_prefix(prefix.to_string(), iri.to_string())
+            .add_prefix(prefix, iri)
             .map_err(|e| RudofError::PrefixMapError {
                 error: e.to_string(),
             })

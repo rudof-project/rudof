@@ -1,18 +1,18 @@
 /// This file converts ShEx AST to ShEx compact syntax
 use crate::{
-    IriOrStr,
     ast::{
-        Annotation, BNode, NodeConstraint, NodeKind, NumericFacet, ObjectValue, Pattern, Schema,
-        SemAct, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel, StringFacet, TripleExpr, XsFacet,
-        value_set_value::ValueSetValue,
+        value_set_value::ValueSetValue, Annotation, BNode, NodeConstraint, NodeKind, NumericFacet, ObjectValue, Pattern,
+        Schema, SemAct, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel, StringFacet, TripleExpr,
+        XsFacet,
     },
+    IriOrStr,
 };
 use colored::*;
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use pretty::{Arena, DocAllocator, DocBuilder, RefDoc};
 use rust_decimal::Decimal;
-use srdf::{SLiteral, lang::Lang, numeric_literal::NumericLiteral};
+use srdf::{lang::Lang, numeric_literal::NumericLiteral, SLiteral};
 use std::{borrow::Cow, io, marker::PhantomData};
 use tracing::trace;
 
@@ -968,16 +968,16 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use iri_s::IriS;
     use iri_s::iri;
+    use iri_s::IriS;
     use prefixmap::PrefixMap;
 
     #[test]
     fn empty_schema() {
         let mut pm = PrefixMap::new();
-        pm.insert("", &IriS::new_unchecked("http://example.org/"))
+        pm.add_prefix("", IriS::new_unchecked("http://example.org/"))
             .unwrap();
-        pm.insert("schema", &IriS::new_unchecked("https://schema.org/"))
+        pm.add_prefix("schema", IriS::new_unchecked("https://schema.org/"))
             .unwrap();
         let schema = Schema::new(&iri!("http://default/")).with_prefixmap(Some(pm));
         let s = ShExFormatter::default()

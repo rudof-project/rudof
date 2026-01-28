@@ -28,3 +28,5 @@ __pycache__/
 dist/
 tutorials
 python/temp/
+
+**/proptest-regressions

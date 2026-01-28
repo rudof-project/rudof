@@ -3,7 +3,7 @@ use crate::matcher::Matcher;
 use crate::srdfgraph_error::SRDFGraphError;
 use crate::{
     BuildRDF, FocusRDF, NeighsRDF, QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions,
-    RDF_TYPE_STR, RDFFormat, Rdf, VarName,
+    RDFFormat, Rdf, VarName, RDF_TYPE_STR,
 };
 use async_trait::async_trait;
 use colored::*;
@@ -19,9 +19,10 @@ use oxrdf::{
 use oxrdfio::{JsonLdProfileSet, RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
-use prefixmap::{PrefixMapError, prefixmap::*};
-use serde::Serialize;
+use prefixmap::map::*;
+use prefixmap::PrefixMapError;
 use serde::ser::SerializeStruct;
+use serde::Serialize;
 use sparesults::QuerySolution as SparQuerySolution;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
@@ -129,7 +130,7 @@ impl SRDFGraph {
                     (Some(b), None) => Some(b.clone()),
                     (_, Some(b)) => Some(IriS::new_unchecked(b)),
                 };
-                let pm = PrefixMap::from_hashmap(&prefixes)?;
+                let pm = PrefixMap::from_hashmap(prefixes)?;
                 self.merge_prefixes(pm)?;
             }
             RDFFormat::NTriples => {
@@ -513,7 +514,7 @@ impl BuildRDF for SRDFGraph {
     }
 
     fn add_prefix(&mut self, alias: &str, iri: &IriS) -> Result<(), Self::Err> {
-        self.pm.insert(alias, iri)?;
+        self.pm.add_prefix(alias, iri.clone())?;
         Ok(())
     }
 
@@ -753,7 +754,6 @@ mod tests {
     use oxrdf::Term as OxTerm;
     use std::collections::HashSet;
 
-    use crate::PResult;
     use crate::iri;
     use crate::matcher::Any;
     use crate::not;
@@ -768,6 +768,7 @@ mod tests {
     use crate::set_focus;
     // use crate::Query as _;
     use crate::BuildRDF;
+    use crate::PResult;
     use crate::RDFFormat;
     use crate::RDFNodeParse as _;
     use crate::RDFParseError;

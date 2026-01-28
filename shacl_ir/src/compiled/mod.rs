@@ -15,8 +15,8 @@ use compiled_shacl_error::CompiledShaclError;
 use either::Either;
 use iri_s::IriS;
 use prefixmap::IriRef;
-use shacl_ast::Schema;
 use shacl_ast::value::Value;
+use shacl_ast::Schema;
 use shape::ShapeIR;
 use srdf::Object;
 use srdf::RDFNode;
@@ -33,7 +33,7 @@ fn convert_iri_ref(iri_ref: IriRef) -> Result<IriS, Box<CompiledShaclError>> {
             err: err.to_string(),
         })
     })?;
-    Ok(iri)
+    Ok(iri.clone())
 }
 
 fn compile_shape<S: Rdf>(

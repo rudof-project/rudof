@@ -71,7 +71,7 @@ impl NodeSelector {
                                 iri_ref: iri_ref.to_string(),
                                 error: e.to_string(),
                             })?;
-                        let iri_term: R::Term = iri.into();
+                        let iri_term = R::Term::from(iri.into_owned());
                         Ok(iri_term.clone())
                     }
                     ObjectValue::Literal(sliteral) => {
@@ -125,7 +125,7 @@ fn mk_path_str(path: &SHACLPathRef, prefixmap: &PrefixMap) -> Result<String, Sha
         SHACLPathRef::Predicate { pred } => {
             let pred_resolved =
                 prefixmap
-                    .resolve_iriref(pred)
+                    .resolve_iriref(pred.clone())
                     .map_err(|e| ShapemapError::PrefixMapError {
                         node: pred.to_string(),
                         error: e.to_string(),
@@ -140,7 +140,7 @@ fn mk_vble(p: &Pattern, prefixmap: &PrefixMap) -> Result<String, PrefixMapError>
     match p {
         Pattern::Node(object_value) => match object_value {
             ObjectValue::IriRef(iri_ref) => {
-                let iri = prefixmap.resolve_iriref(iri_ref)?;
+                let iri = prefixmap.resolve_iriref(iri_ref.clone())?;
                 Ok(format!("<{iri}>"))
             }
             ObjectValue::Literal(sliteral) => Ok(sliteral.to_string()),

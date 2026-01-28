@@ -45,7 +45,7 @@ pub fn find_annotation(
 ) -> std::result::Result<Option<ObjectValue>, PrefixMapError> {
     if let Some(anns) = annotations {
         for a in anns.iter() {
-            let iri_predicate = prefixmap.resolve_iriref(&a.predicate())?;
+            let iri_predicate = prefixmap.resolve_iriref(a.predicate())?;
             if *predicate == iri_predicate {
                 return Ok(Some(a.object()));
             }

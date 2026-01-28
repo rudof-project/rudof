@@ -3,36 +3,35 @@ use crate::compact::grammar_structs::{
     Cardinality, NumericLength, NumericRange, Qualifier, SenseFlags, ShExStatement,
 };
 use crate::compact::{
-    IRes, Span, grammar::map_error, grammar::tag_no_case_tws, grammar::token, grammar::token_tws,
-    grammar::traced, grammar::tws0, shex_parser_error::ParseError as ShExParseError,
+    grammar::map_error, grammar::tag_no_case_tws, grammar::token, grammar::token_tws, grammar::traced, grammar::tws0,
+    shex_parser_error::ParseError as ShExParseError, IRes, Span,
+};
+use crate::iri_ref_or_wildcard::IriRefOrWildcard;
+use crate::string_or_wildcard::StringOrWildcard;
+use crate::{
+    iri_exclusion::IriExclusion, language_exclusion::LanguageExclusion, literal_exclusion::LiteralExclusion, object_value::ObjectValue, value_set_value::ValueSetValue, Annotation, BNode, LangOrWildcard,
+    NodeConstraint, NodeKind, NumericFacet, Pattern, SemAct, Shape, ShapeExpr,
+    ShapeExprLabel, StringFacet,
+    TripleExpr, TripleExprLabel, XsFacet,
 };
 use iri_s::IriS;
-use lazy_regex::{Lazy, regex};
+use lazy_regex::{regex, Lazy};
 use nom::bytes::complete::tag_no_case;
 use nom::{
-    Err, InputTake,
-    branch::alt,
-    bytes::complete::{tag, take_while, take_while1},
+    branch::alt, bytes::complete::{tag, take_while, take_while1},
     character::complete::{alpha1, alphanumeric1, char, digit0, digit1, none_of, one_of, satisfy},
     combinator::{cut, map, map_res, opt, recognize},
     error::ErrorKind,
     error_position,
     multi::{count, fold_many0, many0, many1},
     sequence::{delimited, pair, preceded, tuple},
+    Err,
+    InputTake,
 };
 use nom_locate::LocatedSpan;
 use prefixmap::IriRef;
 use regex::Regex;
-// use shex_ast::IriOrStr;
-use crate::iri_ref_or_wildcard::IriRefOrWildcard;
-use crate::string_or_wildcard::StringOrWildcard;
-use crate::{
-    Annotation, BNode, LangOrWildcard, NodeConstraint, NodeKind, NumericFacet, Pattern, SemAct,
-    Shape, ShapeExpr, ShapeExprLabel, StringFacet, TripleExpr, TripleExprLabel, XsFacet,
-    iri_exclusion::IriExclusion, language_exclusion::LanguageExclusion,
-    literal_exclusion::LiteralExclusion, object_value::ObjectValue, value_set_value::ValueSetValue,
-};
-use srdf::{RDF_TYPE_STR, SLiteral, lang::Lang, numeric_literal::NumericLiteral};
+use srdf::{lang::Lang, numeric_literal::NumericLiteral, SLiteral, RDF_TYPE_STR};
 use std::{collections::VecDeque, fmt::Debug, num::ParseIntError};
 use thiserror::Error;
 
@@ -1958,7 +1957,7 @@ fn prefixed_name_refactor<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, IriRef> {
 
 fn pname_ns_iri_ref(i: Span) -> IRes<IriRef> {
     let (i, pname_ns) = pname_ns(i)?;
-    Ok((i, IriRef::prefixed(pname_ns.fragment(), "")))
+    Ok((i, IriRef::prefixed(*pname_ns.fragment(), "")))
 }
 
 /// `[138s] blankNode ::= BLANK_NODE_LABEL`
@@ -2069,7 +2068,7 @@ fn digits(i: Span) -> IRes<i128> {
 fn pname_ln(i: Span) -> IRes<IriRef> {
     // This code is different here: https://github.com/vandenoever/rome/blob/047cf54def2aaac75ac4b9adbef08a9d010689bd/src/io/turtle/grammar.rs#L293
     let (i, (prefix, local)) = tuple((pname_ns, pn_local))(i)?;
-    Ok((i, IriRef::prefixed(prefix.fragment(), local)))
+    Ok((i, IriRef::prefixed(*prefix.fragment(), local)))
 }
 
 /// `[77] <PN_LOCAL> ::= (PN_CHARS_U | ":" | [0-9] | PLX) (PN_CHARS | "." | ":" | PLX)`

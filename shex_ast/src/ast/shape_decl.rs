@@ -1,8 +1,8 @@
 use super::shape_expr::ShapeExpr;
-use crate::Annotation;
-use crate::ShapeExprLabel;
 use crate::ast::deserialize_string_or_struct;
 use crate::ast::serialize_string_or_struct;
+use crate::Annotation;
+use crate::ShapeExprLabel;
 use prefixmap::Deref;
 use prefixmap::DerefError;
 use serde::{Deserialize, Serialize};
@@ -55,9 +55,9 @@ impl ShapeDecl {
 
 impl Deref for ShapeDecl {
     fn deref(
-        &self,
-        base: &Option<iri_s::IriS>,
-        prefixmap: &Option<prefixmap::PrefixMap>,
+        self,
+        base: Option<&iri_s::IriS>,
+        prefixmap: Option<&prefixmap::PrefixMap>,
     ) -> Result<Self, DerefError>
     where
         Self: Sized,

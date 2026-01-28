@@ -1,11 +1,10 @@
-use iri_s::IriS;
-// use nom::AsBytes;
-use crate::ParseError;
-use crate::Span;
 use crate::ast::Schema;
 use crate::compact::grammar_structs::ShExStatement;
 use crate::shex_statement;
 use crate::tws0;
+use crate::ParseError;
+use crate::Span;
+use iri_s::IriS;
 use nom::Err;
 use prefixmap::Deref;
 use std::fs;
@@ -53,8 +52,8 @@ impl ShExParser<'_> {
                     shape_label,
                     shape_expr,
                 } => {
-                    let shape_label = shape_label.deref(&schema.base(), &schema.prefixmap())?;
-                    let shape_expr = shape_expr.deref(&schema.base(), &schema.prefixmap())?;
+                    let shape_label = shape_label.deref(schema.base().as_ref(), schema.prefixmap().as_ref())?;
+                    let shape_expr = shape_expr.deref(schema.base().as_ref(), schema.prefixmap().as_ref())?;
                     // shapes_counter += 1;
                     // tracing::debug!("Shape decl #{shapes_counter}: {shape_label} ");
                     schema.add_shape(shape_label, shape_expr, is_abstract);

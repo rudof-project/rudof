@@ -1,22 +1,22 @@
 use super::{
-    ObjectValue, iri_ref_or_wildcard::IriRefOrWildcard, string_or_wildcard::StringOrWildcard,
+    iri_ref_or_wildcard::IriRefOrWildcard, string_or_wildcard::StringOrWildcard, ObjectValue,
 };
-use crate::LangOrWildcard;
 use crate::exclusion::Exclusion;
 use crate::iri_exclusion::IriExclusion;
 use crate::language_exclusion::LanguageExclusion;
 use crate::literal_exclusion::LiteralExclusion;
+use crate::LangOrWildcard;
 use iri_s::IriSError;
 use prefixmap::{Deref, DerefError, IriRef};
 use rust_decimal::Decimal;
 use serde::ser::SerializeMap;
 use serde::{
-    Deserialize, Serialize, Serializer,
-    de::{self, MapAccess, Unexpected, Visitor},
+    de::{self, MapAccess, Unexpected, Visitor}, Deserialize, Serialize,
+    Serializer,
 };
-use srdf::SLiteral;
 use srdf::lang::Lang;
-use std::{fmt, result, str::FromStr};
+use srdf::SLiteral;
+use std::{fmt, str::FromStr};
 use thiserror::Error;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -95,9 +95,9 @@ impl ValueSetValue {
 
 impl Deref for ValueSetValue {
     fn deref(
-        &self,
-        base: &Option<iri_s::IriS>,
-        prefixmap: &Option<prefixmap::PrefixMap>,
+        self,
+        base: Option<&iri_s::IriS>,
+        prefixmap: Option<&prefixmap::PrefixMap>,
     ) -> Result<Self, DerefError>
     where
         Self: Sized,
@@ -211,7 +211,7 @@ impl ValueSetValueType {
 //const DECIMAL_STR: &str = "http://www.w3.org/2001/XMLSchema#decimal";
 
 impl Serialize for ValueSetValue {
-    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
