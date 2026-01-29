@@ -1,13 +1,13 @@
-use crate::ParseError;
-use crate::Span;
-use crate::compact::shapemap_grammar::ShapeMapStatement;
 use crate::compact::shapemap_grammar::shapemap_statement;
+use crate::compact::shapemap_grammar::ShapeMapStatement;
 use crate::compact::shapemap_grammar::{node_selector, shape_spec};
 use crate::compact::shex_grammar::iri;
+use crate::shapemap::query_shape_map::QueryShapeMap;
 use crate::shapemap::NodeSelector;
 use crate::shapemap::ShapeSelector;
-use crate::shapemap::query_shape_map::QueryShapeMap;
 use crate::tws0;
+use crate::ParseError;
+use crate::Span;
 use nom::Err;
 use prefixmap::IriRef;
 use prefixmap::PrefixMap;
@@ -181,12 +181,12 @@ mod tests {
         let str = r#":a@:S"#;
         let mut nodes_prefixmap = PrefixMap::new();
         nodes_prefixmap
-            .insert("", &IriS::new_unchecked("http://example.org/"))
+            .add_prefix("", IriS::new_unchecked("http://example.org/"))
             .unwrap();
 
         let mut shapes_prefixmap = PrefixMap::new();
         shapes_prefixmap
-            .insert("", &IriS::new_unchecked("http://example.org/shapes/"))
+            .add_prefix("", IriS::new_unchecked("http://example.org/shapes/"))
             .unwrap();
 
         let parsed_shapemap = ShapeMapParser::parse(

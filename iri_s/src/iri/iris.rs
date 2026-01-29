@@ -87,6 +87,14 @@ impl IriS {
         IriS { iri }
     }
 
+    pub fn new(str: &str) -> Result<IriS, IriSError> {
+        let iri = NamedNode::new(str).map_err(|e| IriSError::IriParseError {
+            str: str.to_string(),
+            error: e.to_string(),
+        })?;
+        Ok(IriS { iri })
+    }
+
     /// Join a string to the current IRI
     pub fn join(&self, str: &str) -> Result<Self, IriSError> {
         let url = Url::from_str(self.as_str()).map_err(|e| IriSError::IriParseError {

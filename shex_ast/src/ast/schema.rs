@@ -1,6 +1,6 @@
-use crate::ast::{SchemaJsonError, serde_string_or_struct::*};
+use crate::ast::{serde_string_or_struct::*, SchemaJsonError};
 use crate::{BNode, IriOrStr, ShapeExprLabel};
-use iri_s::{IriS, IriSError, iri};
+use iri_s::{iri, IriS, IriSError};
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
@@ -119,10 +119,10 @@ impl Schema {
         match self.prefixmap {
             None => {
                 let mut pm = PrefixMap::new();
-                pm.insert(alias, iri)?;
+                pm.add_prefix(alias, iri.clone())?;
                 self.prefixmap = Some(pm);
             }
-            Some(ref mut pm) => pm.insert(alias, iri)?,
+            Some(ref mut pm) => pm.add_prefix(alias, iri.clone())?,
         };
         Ok(())
     }
@@ -149,7 +149,7 @@ impl Schema {
 
     pub fn resolve_iriref(&self, iri_ref: &IriRef) -> IriS {
         match &self.prefixmap {
-            Some(pm) => match pm.resolve_iriref(iri_ref) {
+            Some(pm) => match pm.resolve_iriref(iri_ref.clone()) {
                 Err(_) => todo!(),
                 Ok(iri) => iri.clone(),
             },
@@ -291,10 +291,10 @@ impl Schema {
             }
         };
         if let Some(shapes) = self.shapes() {
-            let expected_iri = prefixmap.resolve_iriref(shape)?;
+            let expected_iri = prefixmap.resolve_iriref(shape.clone())?;
             for shape_decl in shapes {
                 if let ShapeExprLabel::IriRef { value } = shape_decl.id {
-                    let iri = prefixmap.resolve_iriref(&value)?;
+                    let iri = prefixmap.resolve_iriref(value.clone())?;
                     if iri == expected_iri {
                         return Ok(Some(shape_decl.shape_expr));
                     }

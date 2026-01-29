@@ -470,9 +470,9 @@ impl TripleExpr {
 
 impl Deref for TripleExpr {
     fn deref(
-        &self,
-        base: &Option<IriS>,
-        prefixmap: &Option<PrefixMap>,
+        self,
+        base: Option<&IriS>,
+        prefixmap: Option<&PrefixMap>,
     ) -> Result<Self, DerefError> {
         match self {
             TripleExpr::EachOf {
@@ -483,17 +483,15 @@ impl Deref for TripleExpr {
                 sem_acts,
                 annotations,
             } => {
-                let id = <TripleExprLabel as Deref>::deref_opt(id, base, prefixmap)?;
-                let annotations =
-                    <Annotation as Deref>::deref_opt_vec(annotations, base, prefixmap)?;
-                let sem_acts = <SemAct as Deref>::deref_opt_vec(sem_acts, base, prefixmap)?;
-                let expressions =
-                    <TripleExprWrapper as Deref>::deref_vec(expressions, base, prefixmap)?;
+                let id = id.deref(base, prefixmap)?;
+                let annotations = annotations.deref(base, prefixmap)?;
+                let sem_acts = sem_acts.deref(base, prefixmap)?;
+                let expressions = expressions.deref(base, prefixmap)?;
                 Ok(TripleExpr::EachOf {
                     id,
                     expressions,
-                    min: *min,
-                    max: *max,
+                    min,
+                    max,
                     sem_acts,
                     annotations,
                 })
@@ -506,17 +504,15 @@ impl Deref for TripleExpr {
                 sem_acts,
                 annotations,
             } => {
-                let id = <TripleExprLabel as Deref>::deref_opt(id, base, prefixmap)?;
-                let annotations =
-                    <Annotation as Deref>::deref_opt_vec(annotations, base, prefixmap)?;
-                let sem_acts = <SemAct as Deref>::deref_opt_vec(sem_acts, base, prefixmap)?;
-                let expressions =
-                    <TripleExprWrapper as Deref>::deref_vec(expressions, base, prefixmap)?;
+                let id = id.deref(base, prefixmap)?;
+                let annotations = annotations.deref(base, prefixmap)?;
+                let sem_acts = sem_acts.deref(base, prefixmap)?;
+                let expressions = expressions.deref(base, prefixmap)?;
                 Ok(TripleExpr::OneOf {
                     id,
                     expressions,
-                    min: *min,
-                    max: *max,
+                    min,
+                    max,
                     sem_acts,
                     annotations,
                 })
@@ -532,20 +528,19 @@ impl Deref for TripleExpr {
                 sem_acts,
                 annotations,
             } => {
-                let id = <TripleExprLabel as Deref>::deref_opt(id, base, prefixmap)?;
-                let annotations =
-                    <Annotation as Deref>::deref_opt_vec(annotations, base, prefixmap)?;
-                let sem_acts = <SemAct as Deref>::deref_opt_vec(sem_acts, base, prefixmap)?;
+                let id = id.deref(base, prefixmap)?;
+                let annotations = annotations.deref(base, prefixmap)?;
+                let sem_acts = sem_acts.deref(base, prefixmap)?;
                 let predicate = predicate.deref(base, prefixmap)?;
-                let value_expr = <ShapeExpr as Deref>::deref_opt_box(value_expr, base, prefixmap)?;
+                let value_expr = value_expr.deref(base, prefixmap)?;
                 Ok(TripleExpr::TripleConstraint {
                     id,
-                    negated: *negated,
-                    inverse: *inverse,
+                    negated,
+                    inverse,
                     predicate,
                     value_expr,
-                    min: *min,
-                    max: *max,
+                    min,
+                    max,
                     sem_acts,
                     annotations,
                 })
@@ -595,9 +590,9 @@ impl TripleExprWrapper {}
 
 impl Deref for TripleExprWrapper {
     fn deref(
-        &self,
-        base: &Option<IriS>,
-        prefixmap: &Option<PrefixMap>,
+        self,
+        base: Option<&IriS>,
+        prefixmap: Option<&PrefixMap>,
     ) -> Result<Self, DerefError> {
         let te = self.te.deref(base, prefixmap)?;
         Ok(TripleExprWrapper { te })

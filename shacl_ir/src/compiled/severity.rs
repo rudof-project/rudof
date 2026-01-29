@@ -43,7 +43,7 @@ impl CompiledSeverity {
                                 err: e.to_string(),
                             }
                         })?;
-                        CompiledSeverity::Generic(iri)
+                        CompiledSeverity::Generic(iri.clone())
                     }
                 };
                 Some(severity)
