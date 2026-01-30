@@ -1,37 +1,34 @@
-use crate::async_srdf::AsyncSRDF;
-use crate::matcher::Matcher;
-use crate::srdfgraph_error::SRDFGraphError;
-use crate::{
-    BuildRDF, FocusRDF, NeighsRDF, QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions,
-    RDF_TYPE_STR, RDFFormat, Rdf, VarName,
+use crate::rdf_core::{
+    AsyncRDF, BuildRDF, FocusRDF, NeighsRDF, RDFFormat, Rdf, RDFError, Matcher,
+    query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions, VarName},
+    vocab::rdf_type,
 };
+
 use async_trait::async_trait;
 use colored::*;
-use iri_s::IriS;
 use oxigraph::{store::Store, sparql::{QueryResults, SparqlEvaluator}};
-use oxjsonld::JsonLdParser;
 use oxrdf::{
     BlankNode as OxBlankNode, Graph, GraphName, Literal as OxLiteral, NamedNode as OxNamedNode,
     NamedNodeRef, NamedOrBlankNode as OxSubject, NamedOrBlankNodeRef as OxSubjectRef, Quad,
     Term as OxTerm, TermRef, Triple as OxTriple, TripleRef,
 };
+use oxjsonld::JsonLdParser;
 use oxrdfio::{JsonLdProfileSet, RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
 use prefixmap::{PrefixMapError, prefixmap::*};
-use serde::Serialize;
-use serde::ser::SerializeStruct;
+use iri_s::IriS;
+use serde::{ser::SerializeStruct, Serialize};
 use sparesults::QuerySolution as SparQuerySolution;
-use std::collections::{HashMap, HashSet};
-use std::fmt::Debug;
-use std::fs::File;
-use std::io::{self, BufReader, Cursor, Read, Write};
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
+use std::{
+    fmt::Debug, collections::{HashMap, HashSet}, fs::File,
+    io::{self, BufReader, Cursor, Read, Write}, path::{Path, PathBuf},
+    str::FromStr,
+};
 use tracing::{debug, trace};
 
 #[derive(Default, Clone)]
-pub struct SRDFGraph {
+pub struct InMemoryGraph {
     focus: Option<OxTerm>,
     graph: Graph,
     pm: PrefixMap,
@@ -40,9 +37,9 @@ pub struct SRDFGraph {
     store: Option<Store>,
 }
 
-impl Debug for SRDFGraph {
+impl Debug for InMemoryGraph {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SRDFGraph")
+        f.debug_struct("InMemoryGraph")
             .field("triples_count", &self.graph.len())
             .field("prefixmap", &self.pm)
             .field("base", &self.base)
@@ -50,7 +47,7 @@ impl Debug for SRDFGraph {
     }
 }
 
-impl Serialize for SRDFGraph {
+impl Serialize for InMemoryGraph {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -63,7 +60,7 @@ impl Serialize for SRDFGraph {
     }
 }
 
-impl SRDFGraph {
+impl InMemoryGraph {
     pub fn new() -> Self {
         Self::default()
     }
@@ -233,8 +230,8 @@ impl SRDFGraph {
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
-    ) -> Result<SRDFGraph, SRDFGraphError> {
-        let mut srdf_graph = SRDFGraph::new();
+    ) -> Result<InMemoryGraph, SRDFGraphError> {
+        let mut srdf_graph = InMemoryGraph::new();
 
         srdf_graph.merge_from_reader(read, source_name, format, base, reader_mode)?;
         Ok(srdf_graph)
@@ -260,7 +257,7 @@ impl SRDFGraph {
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
-    ) -> Result<SRDFGraph, SRDFGraphError> {
+    ) -> Result<InMemoryGraph, SRDFGraphError> {
         Self::from_reader(
             &mut std::io::Cursor::new(&data),
             "String",
@@ -322,7 +319,7 @@ impl SRDFGraph {
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
-    ) -> Result<SRDFGraph, SRDFGraphError> {
+    ) -> Result<InMemoryGraph, SRDFGraphError> {
         let path_name = path.as_ref().display();
         let file = File::open(path.as_ref()).map_err(|e| SRDFGraphError::ReadingPathError {
             path_name: path_name.to_string(),
@@ -344,7 +341,7 @@ impl SRDFGraph {
         folder: &Path,
         base: Option<&str>,
         reader_mode: &ReaderMode,
-    ) -> Result<SRDFGraph, SRDFGraphError> {
+    ) -> Result<InMemoryGraph, SRDFGraphError> {
         let mut attempt = PathBuf::from(folder);
         attempt.push(data);
         let data_path = &attempt;
@@ -357,7 +354,7 @@ impl SRDFGraph {
     }
 }
 
-impl Rdf for SRDFGraph {
+impl Rdf for InMemoryGraph {
     type IRI = OxNamedNode;
     type BNode = OxBlankNode;
     type Literal = OxLiteral;
@@ -397,7 +394,7 @@ impl Rdf for SRDFGraph {
     }
 }
 
-impl NeighsRDF for SRDFGraph {
+impl NeighsRDF for InMemoryGraph {
     fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
         Ok(self.graph.iter().map(TripleRef::into_owned))
     }
@@ -442,7 +439,7 @@ impl NeighsRDF for SRDFGraph {
 }
 
 #[async_trait]
-impl AsyncSRDF for SRDFGraph {
+impl AsyncSRDF for InMemoryGraph {
     type IRI = OxNamedNode;
     type BNode = OxBlankNode;
     type Literal = OxLiteral;
@@ -495,7 +492,7 @@ impl AsyncSRDF for SRDFGraph {
     }
 }
 
-impl FocusRDF for SRDFGraph {
+impl FocusRDF for InMemoryGraph {
     fn set_focus(&mut self, focus: &Self::Term) {
         self.focus = Some(focus.clone())
     }
@@ -505,7 +502,7 @@ impl FocusRDF for SRDFGraph {
     }
 }
 
-impl BuildRDF for SRDFGraph {
+impl BuildRDF for InMemoryGraph {
     fn add_base(&mut self, base: &Option<IriS>) -> Result<(), Self::Err> {
         self.base.clone_from(base);
         Ok(())
@@ -566,7 +563,7 @@ impl BuildRDF for SRDFGraph {
     }
 
     fn empty() -> Self {
-        SRDFGraph {
+        InMemoryGraph {
             focus: None,
             graph: Graph::new(),
             pm: PrefixMap::new(),
@@ -654,7 +651,7 @@ fn cnv_triple(t: &OxTriple) -> TripleRef<'_> {
     )
 }
 
-impl QueryRDF for SRDFGraph {
+impl QueryRDF for InMemoryGraph {
     fn query_construct(
         &self,
         _query_str: &str,
@@ -670,11 +667,11 @@ impl QueryRDF for SRDFGraph {
         Ok(str)
     }
 
-    fn query_select(&self, query_str: &str) -> Result<QuerySolutions<SRDFGraph>, SRDFGraphError>
+    fn query_select(&self, query_str: &str) -> Result<QuerySolutions<InMemoryGraph>, SRDFGraphError>
     where
         Self: Sized,
     {
-        let mut sols: QuerySolutions<SRDFGraph> = QuerySolutions::empty();
+        let mut sols: QuerySolutions<InMemoryGraph> = QuerySolutions::empty();
         if let Some(store) = &self.store {
             trace!("Querying in-memory store");
 
@@ -710,7 +707,7 @@ impl QueryRDF for SRDFGraph {
 
 fn cnv_query_results(
     query_results: QueryResults,
-) -> Result<Vec<QuerySolution<SRDFGraph>>, SRDFGraphError> {
+) -> Result<Vec<QuerySolution<InMemoryGraph>>, SRDFGraphError> {
     let mut results = Vec::new();
     if let QueryResults::Solutions(solutions) = query_results {
         trace!("Converting query solutions");
@@ -728,7 +725,7 @@ fn cnv_query_results(
     Ok(results)
 }
 
-fn cnv_query_solution(qs: SparQuerySolution) -> QuerySolution<SRDFGraph> {
+fn cnv_query_solution(qs: SparQuerySolution) -> QuerySolution<InMemoryGraph> {
     let mut variables = Vec::new();
     let mut values = Vec::new();
     for v in qs.variables() {
@@ -773,7 +770,7 @@ mod tests {
     use crate::Triple;
 
     use super::ReaderMode;
-    use super::SRDFGraph;
+    use super::InMemoryGraph;
 
     const DUMMY_GRAPH: &str = r#"
         prefix : <http://example.org/>
@@ -843,8 +840,8 @@ mod tests {
         Bool(bool),
     }
 
-    fn graph_from_str(s: &str) -> SRDFGraph {
-        SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap()
+    fn graph_from_str(s: &str) -> InMemoryGraph {
+        InMemoryGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap()
     }
 
     #[test]
@@ -944,7 +941,7 @@ mod tests {
 
     #[test]
     fn test_add_triple() {
-        let mut graph = SRDFGraph::default();
+        let mut graph = InMemoryGraph::default();
 
         let alice = OxSubject::NamedNode(OxNamedNode::new_unchecked("http://example.org/alice"));
         let knows = OxNamedNode::new_unchecked("http://example.org/knows");
@@ -1136,7 +1133,7 @@ mod tests {
 
     #[test]
     fn test_iri() {
-        let graph = SRDFGraph::default();
+        let graph = InMemoryGraph::default();
         let x = OxNamedNode::new_unchecked("http://example.org/x");
         let x_iri = IriS::from_named_node(&x);
         assert_eq!(iri().parse(&x_iri, graph).unwrap(), x)
@@ -1144,7 +1141,7 @@ mod tests {
 
     #[test]
     fn test_add_triple_ref() {
-        let mut graph = SRDFGraph::default();
+        let mut graph = InMemoryGraph::default();
         let s = OxNamedNode::new_unchecked("http://example.org/x");
         let p = OxNamedNode::new_unchecked("http://example.org/p");
         let o = OxNamedNode::new_unchecked("http://example.org/y");

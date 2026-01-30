@@ -1,6 +1,9 @@
 use crate::rdf_core::{
     RDFError,
     term::literal::{Lang, NumericLiteral, XsdDateTime},
+    vocab::{xsd_boolean, xsd_string, xsd_date_time, xsd_byte, xsd_decimal, xsd_double, xsd_float, xsd_integer, xsd_long, xsd_negative_integer, xsd_non_negative_integer, 
+        xsd_non_positive_integer, xsd_positive_integer, xsd_short, xsd_unsigned_byte, xsd_unsigned_int, xsd_unsigned_long, 
+        xsd_unsigned_short, rdf_lang},
 };
 use rust_decimal::Decimal;
 use std::{
@@ -628,20 +631,20 @@ impl ConcreteLiteral {
             | Self::WrongDatatypeLiteral { datatype, .. } => datatype.clone(),
 
             Self::StringLiteral { lang: None, .. } => IriRef::iri(IriS::new_unchecked(
-                "http://www.w3.org/2001/XMLSchema#string",
+                xsd_string().as_str(),
             )),
 
             Self::StringLiteral { lang: Some(_), .. } => IriRef::iri(IriS::new_unchecked(
-                "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString",
+                rdf_lang().as_str(),
             )),
 
-            Self::NumericLiteral(nl) => nl.datatype(),
+            Self::NumericLiteral(nl) => IriRef::iri(IriS::new_unchecked(nl.datatype())),
 
             Self::BooleanLiteral(_) => IriRef::iri(IriS::new_unchecked(
-                "http://www.w3.org/2001/XMLSchema#boolean",
+                xsd_boolean().as_str(),
             )),
             Self::DatetimeLiteral(_) => IriRef::iri(IriS::new_unchecked(
-                "http://www.w3.org/2001/XMLSchema#dateTime",
+                xsd_date_time().as_str(),
             )),
         }
     }
@@ -1190,84 +1193,84 @@ fn check_literal_datatype(
 
     // Check all XSD types using appropriate macro
     check_xsd_type!(
-        "http://www.w3.org/2001/XMLSchema#integer",
+        xsd_integer().as_str(),
         ConcreteLiteral::parse_integer,
         ConcreteLiteral::integer
     );
     check_xsd_type!(
-        "http://www.w3.org/2001/XMLSchema#long",
+        xsd_long().as_str(),
         ConcreteLiteral::parse_long,
         ConcreteLiteral::long
     );
     check_xsd_type!(
-        "http://www.w3.org/2001/XMLSchema#double",
+        xsd_double().as_str(),
         ConcreteLiteral::parse_double,
         ConcreteLiteral::double
     );
     check_xsd_type!(
-        "http://www.w3.org/2001/XMLSchema#boolean",
+        xsd_boolean().as_str(),
         ConcreteLiteral::parse_bool,
         ConcreteLiteral::boolean
     );
     check_xsd_type!(
-        "http://www.w3.org/2001/XMLSchema#float",
+        xsd_float().as_str(),
         ConcreteLiteral::parse_float,
         ConcreteLiteral::float
     );
     check_xsd_type!(
-        "http://www.w3.org/2001/XMLSchema#decimal",
+        xsd_decimal().as_str(),
         ConcreteLiteral::parse_decimal,
         ConcreteLiteral::decimal
     );
     check_xsd_type!(
-        "http://www.w3.org/2001/XMLSchema#byte",
+        xsd_byte().as_str(),
         ConcreteLiteral::parse_byte,
         ConcreteLiteral::byte
     );
     check_xsd_type!(
-        "http://www.w3.org/2001/XMLSchema#short",
+        xsd_short().as_str(),
         ConcreteLiteral::parse_short,
         ConcreteLiteral::short
     );
     check_xsd_type!(
-        "http://www.w3.org/2001/XMLSchema#unsignedInt",
+        xsd_unsigned_int().as_str(),
         ConcreteLiteral::parse_unsigned_int,
         ConcreteLiteral::unsigned_int
     );
     check_xsd_type!(
-        "http://www.w3.org/2001/XMLSchema#unsignedLong",
+        xsd_unsigned_long().as_str(),
         ConcreteLiteral::parse_unsigned_long,
         ConcreteLiteral::unsigned_long
     );
     check_xsd_type!(
-        "http://www.w3.org/2001/XMLSchema#unsignedByte",
+        xsd_unsigned_byte().as_str(),
         ConcreteLiteral::parse_unsigned_byte,
         ConcreteLiteral::unsigned_byte
     );
     check_xsd_type!(
-        "http://www.w3.org/2001/XMLSchema#unsignedShort",
+        xsd_unsigned_short().as_str(),
         ConcreteLiteral::parse_unsigned_short,
         ConcreteLiteral::unsigned_short
     );
     check_xsd_type!(
-        "http://www.w3.org/2001/XMLSchema#nonNegativeInteger",
+        xsd_non_negative_integer().as_str(),
         ConcreteLiteral::parse_non_negative_integer,
         ConcreteLiteral::non_negative_integer
     );
 
     // These constructors return Result and need special handling
     check_xsd_type_result!(
-        "http://www.w3.org/2001/XMLSchema#negativeInteger",
+        xsd_negative_integer().as_str(),
         ConcreteLiteral::parse_negative_integer,
         ConcreteLiteral::negative_integer
     );
     check_xsd_type_result!(
-        "http://www.w3.org/2001/XMLSchema#positiveInteger",
+        xsd_positive_integer().as_str(),
         ConcreteLiteral::parse_positive_integer,
         ConcreteLiteral::positive_integer
     );
     check_xsd_type_result!(
-        "http://www.w3.org/2001/XMLSchema#nonPositiveInteger",
+        xsd_non_positive_integer().as_str(),
         ConcreteLiteral::parse_non_positive_integer,
         ConcreteLiteral::non_positive_integer
     );

@@ -289,3 +289,4 @@ pub trait NeighsRDF: Rdf {
         Ok(values)
     }
 }
+

@@ -1,9 +1,24 @@
+mod async_rdf;
+mod build_rdf;
 mod errors;
+mod focus_rdf;
 mod matcher;
+mod neighs_rdf;
+pub mod parser;
+pub mod query;
 mod rdf;
+mod rdf_format;
+mod shacl_path;
 pub mod term;
+pub mod utils;
 pub mod vocab;
 
+pub use async_rdf::AsyncRDF;
+pub use build_rdf::BuildRDF;
+pub use focus_rdf::FocusRDF;
 pub use errors::RDFError;
-pub use matcher::Matcher;
+pub use matcher::{Matcher, Any};
+pub use neighs_rdf::{NeighsRDF, Neigh, NeighsIterator};
 pub use rdf::Rdf;
+pub use rdf_format::RDFFormat;
+pub use shacl_path::SHACLPath;

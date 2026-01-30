@@ -1,9 +1,11 @@
 use core::fmt;
 use std::fmt::Display;
 
-use crate::rdf_core::RDFError;
-use iri_s::IriS;
-use prefixmap::IriRef;
+use crate::rdf_core::{
+    RDFError,
+    vocab::{xsd_integer, xsd_decimal, xsd_double, xsd_long, xsd_byte, xsd_float, xsd_short, xsd_unsigned_int, xsd_unsigned_long, 
+        xsd_unsigned_short, xsd_unsigned_byte, xsd_non_negative_integer, xsd_non_positive_integer, xsd_negative_integer, xsd_positive_integer},
+};
 use rust_decimal::{
     Decimal,
     prelude::{FromPrimitive, ToPrimitive},
@@ -58,53 +60,23 @@ impl NumericLiteral {
     /// Returns the XSD datatype IRI for this numeric literal.
     ///
     /// Each variant maps to its corresponding XML Schema datatype.
-    pub fn datatype(&self) -> IriRef {
+    pub fn datatype(&self) -> &str {
         match self {
-            NumericLiteral::Integer(_) => IriRef::iri(IriS::new_unchecked(
-                "http://www.w3.org/2001/XMLSchema#integer",
-            )),
-            NumericLiteral::Decimal(_) => IriRef::iri(IriS::new_unchecked(
-                "http://www.w3.org/2001/XMLSchema#decimal",
-            )),
-            NumericLiteral::Double(_) => IriRef::iri(IriS::new_unchecked(
-                "http://www.w3.org/2001/XMLSchema#double",
-            )),
-            NumericLiteral::Long(_) => {
-                IriRef::iri(IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#long"))
-            }
-            NumericLiteral::Float(_) => IriRef::iri(IriS::new_unchecked(
-                "http://www.w3.org/2001/XMLSchema#float",
-            )),
-            NumericLiteral::Byte(_) => {
-                IriRef::iri(IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#byte"))
-            }
-            NumericLiteral::Short(_) => IriRef::iri(IriS::new_unchecked(
-                "http://www.w3.org/2001/XMLSchema#short",
-            )),
-            NumericLiteral::NonNegativeInteger(_) => IriRef::iri(IriS::new_unchecked(
-                "http://www.w3.org/2001/XMLSchema#nonNegativeInteger",
-            )),
-            NumericLiteral::UnsignedLong(_) => IriRef::iri(IriS::new_unchecked(
-                "http://www.w3.org/2001/XMLSchema#unsignedLong",
-            )),
-            NumericLiteral::UnsignedInt(_) => IriRef::iri(IriS::new_unchecked(
-                "http://www.w3.org/2001/XMLSchema#unsignedInt",
-            )),
-            NumericLiteral::UnsignedShort(_) => IriRef::iri(IriS::new_unchecked(
-                "http://www.w3.org/2001/XMLSchema#unsignedShort",
-            )),
-            NumericLiteral::UnsignedByte(_) => IriRef::iri(IriS::new_unchecked(
-                "http://www.w3.org/2001/XMLSchema#unsignedByte",
-            )),
-            NumericLiteral::PositiveInteger(_) => IriRef::iri(IriS::new_unchecked(
-                "http://www.w3.org/2001/XMLSchema#positiveInteger",
-            )),
-            NumericLiteral::NegativeInteger(_) => IriRef::iri(IriS::new_unchecked(
-                "http://www.w3.org/2001/XMLSchema#negativeInteger",
-            )),
-            NumericLiteral::NonPositiveInteger(_) => IriRef::iri(IriS::new_unchecked(
-                "http://www.w3.org/2001/XMLSchema#nonPositiveInteger",
-            )),
+            NumericLiteral::Integer(_) => xsd_integer().as_str(),
+            NumericLiteral::Decimal(_) => xsd_decimal().as_str(),
+            NumericLiteral::Double(_) => xsd_double().as_str(),
+            NumericLiteral::Long(_) => xsd_long().as_str(),
+            NumericLiteral::Float(_) => xsd_float().as_str(),
+            NumericLiteral::Byte(_) => xsd_byte().as_str(),
+            NumericLiteral::Short(_) => xsd_short().as_str(),
+            NumericLiteral::NonNegativeInteger(_) => xsd_non_negative_integer().as_str(),
+            NumericLiteral::UnsignedLong(_) => xsd_unsigned_long().as_str(),
+            NumericLiteral::UnsignedInt(_) => xsd_unsigned_int().as_str(),
+            NumericLiteral::UnsignedShort(_) => xsd_unsigned_short().as_str(),
+            NumericLiteral::UnsignedByte(_) => xsd_unsigned_byte().as_str(),
+            NumericLiteral::PositiveInteger(_) => xsd_positive_integer().as_str(),
+            NumericLiteral::NegativeInteger(_) => xsd_negative_integer().as_str(),
+            NumericLiteral::NonPositiveInteger(_) => xsd_non_positive_integer().as_str(),
         }
     }
 

@@ -10,16 +10,28 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
+async-trait.workspace = true
+colored.workspace = true
+const_format.workspace = true
 iri_s.workspace = true
-once_cell.workspace = true
+
+oxigraph.workspace = true
+oxjsonld.workspace = true
 oxilangtag.workspace = true
 oxrdf.workspace = true
+oxrdfio.workspace = true
+oxrdfxml.workspace = true
 oxsdatatypes.workspace = true
+oxttl.workspace = true
 prefixmap.workspace = true
 proptest.workspace = true
+regex.workspace = true
 rust_decimal.workspace = true
 rust_decimal_macros.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+sparesults.workspace = true
+spargebra.workspace = true
+tabled.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
