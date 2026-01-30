@@ -17,6 +17,7 @@ iri_s.workspace = true
 
 oxigraph.workspace = true
 oxjsonld.workspace = true
+oxiri.workspace = true
 oxilangtag.workspace = true
 oxrdf.workspace = true
 oxrdfio.workspace = true

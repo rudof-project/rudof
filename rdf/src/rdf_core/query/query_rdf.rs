@@ -43,7 +43,7 @@ pub trait QueryRDF: Rdf {
         &self,
         query: &str,
         result_format: &QueryResultFormat,
-    ) -> Result<&str, Self::Err>
+    ) -> Result<String, Self::Err>
     where
         Self: Sized;
 

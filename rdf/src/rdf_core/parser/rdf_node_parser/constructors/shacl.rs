@@ -1,10 +1,8 @@
 use crate::rdf_core::{
-    FocusRDF, RDFError, SHACLPath,
-    parser::rdf_node_parser::{RDFNodeParse, constructors::{SingleValuePropertyParser, ListParser}},
-    vocab::{
+    FocusRDF, RDFError, SHACLPath, parser::rdf_node_parser::{RDFNodeParse, constructors::{ListParser, SingleValuePropertyParser}}, term::Iri, vocab::{
         sh_alternative_path, sh_inverse_path, sh_one_or_more_path, 
         sh_zero_or_more_path, sh_zero_or_one_path
-    },
+    }
 };
 use iri_s::IriS;
 
@@ -50,7 +48,7 @@ where
         // Literals are not valid SHACL paths
         Err(RDFError::InvalidSHACLPathError {
             node: self.term.to_string(),
-            error: "SHACL path cannot be a literal".into(),
+            error: Box::new(RDFError::ConversionError { msg: "SHACL path cannot be a literal".into() }),
         })
     }
 }
@@ -92,7 +90,7 @@ where
     
     Err(RDFError::InvalidSHACLPathError {
         node: rdf.get_focus().map(|t| t.to_string()).unwrap_or_default(),
-        error: "Unsupported SHACL path construct".into(),
+        error: Box::new(RDFError::ConversionError { msg: "Unsupported SHACL path construct".into() }),
     })
 }
 

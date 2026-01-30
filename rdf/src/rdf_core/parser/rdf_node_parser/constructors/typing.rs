@@ -1,7 +1,5 @@
 use crate::rdf_core::{
-    FocusRDF, RDFError,
-    parser::rdf_node_parser::{RDFNodeParse, constructors::{SingleValuePropertyParser, SubjectsWithValuePropertyParser}},
-    vocab::rdf_type,
+    FocusRDF, RDFError, parser::rdf_node_parser::{RDFNodeParse, constructors::{SingleValuePropertyParser, SubjectsWithValuePropertyParser}}, term::Iri, vocab::rdf_type
 };
 use iri_s::IriS;
 use std::{marker::PhantomData, collections::HashMap};
@@ -147,6 +145,8 @@ where
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
         let type_term: RDF::Term = self.expected_type.clone().into();
-        SubjectsWithValuePropertyParser::new(rdf_type(), type_term).parse_focused(rdf)
+        let pred: RDF::IRI = rdf_type().clone().into();
+
+        SubjectsWithValuePropertyParser::new(pred, type_term).parse_focused(rdf)
     }
 }

@@ -1,8 +1,9 @@
 use crate::rdf_core::{
-    AsyncRDF, BuildRDF, FocusRDF, NeighsRDF, RDFFormat, Rdf, RDFError, Matcher,
+    AsyncRDF, BuildRDF, FocusRDF, NeighsRDF, RDFFormat, Rdf, Matcher,
     query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions, VarName},
-    vocab::rdf_type,
+    vocab::rdf_type as vocab_rdf_type,
 };
+use crate::rdf_impl::in_memory_graph_error::InMemoryGraphError;
 
 use async_trait::async_trait;
 use colored::*;
@@ -10,7 +11,7 @@ use oxigraph::{store::Store, sparql::{QueryResults, SparqlEvaluator}};
 use oxrdf::{
     BlankNode as OxBlankNode, Graph, GraphName, Literal as OxLiteral, NamedNode as OxNamedNode,
     NamedNodeRef, NamedOrBlankNode as OxSubject, NamedOrBlankNodeRef as OxSubjectRef, Quad,
-    Term as OxTerm, TermRef, Triple as OxTriple, TripleRef,
+    Term as OxTerm, TermRef, Triple as OxTriple, TripleRef
 };
 use oxjsonld::JsonLdParser;
 use oxrdfio::{JsonLdProfileSet, RdfFormat, RdfSerializer};
@@ -87,7 +88,7 @@ impl InMemoryGraph {
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
-    ) -> Result<(), SRDFGraphError> {
+    ) -> Result<(), InMemoryGraphError> {
         match format {
             RDFFormat::Turtle => {
                 let turtle_parser = match base {
@@ -106,7 +107,7 @@ impl InMemoryGraph {
                                 let mut str = String::new();
                                 let _ = reader2.read_to_string(&mut str)?;
                                 trace!("Error parsing turtle...rest of input: {}", str);
-                                return Err(SRDFGraphError::TurtleParseError {
+                                return Err(InMemoryGraphError::TurtleParseError {
                                     source_name: source_name.to_string(),
                                     error: e.to_string(),
                                 });
@@ -135,7 +136,7 @@ impl InMemoryGraph {
                     match triple_result {
                         Err(e) => {
                             if reader_mode.is_strict() {
-                                return Err(SRDFGraphError::NTriplesError {
+                                return Err(InMemoryGraphError::NTriplesError {
                                     data: "Reading N-Triples".to_string(),
                                     error: e.to_string(),
                                 });
@@ -156,7 +157,7 @@ impl InMemoryGraph {
                     match triple_result {
                         Err(e) => {
                             if reader_mode.is_strict() {
-                                return Err(SRDFGraphError::RDFXMLError {
+                                return Err(InMemoryGraphError::RDFXMLError {
                                     data: "Reading RDF/XML".to_string(),
                                     error: e.to_string(),
                                 });
@@ -180,7 +181,7 @@ impl InMemoryGraph {
                     match triple_result {
                         Err(e) => {
                             if reader_mode.is_strict() {
-                                return Err(SRDFGraphError::NQuadsError {
+                                return Err(InMemoryGraphError::NQuadsError {
                                     data: "Reading NQuads".to_string(),
                                     error: e.to_string(),
                                 });
@@ -201,7 +202,7 @@ impl InMemoryGraph {
                     match triple_result {
                         Err(e) => {
                             if reader_mode.is_strict() {
-                                return Err(SRDFGraphError::JsonLDError {
+                                return Err(InMemoryGraphError::JsonLDError {
                                     data: "Reading JSON-LD".to_string(),
                                     error: e.to_string(),
                                 });
@@ -219,7 +220,7 @@ impl InMemoryGraph {
         Ok(())
     }
 
-    pub fn merge_prefixes(&mut self, prefixmap: PrefixMap) -> Result<(), SRDFGraphError> {
+    pub fn merge_prefixes(&mut self, prefixmap: PrefixMap) -> Result<(), InMemoryGraphError> {
         self.pm.merge(prefixmap)?;
         Ok(())
     }
@@ -230,14 +231,14 @@ impl InMemoryGraph {
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
-    ) -> Result<InMemoryGraph, SRDFGraphError> {
+    ) -> Result<InMemoryGraph, InMemoryGraphError> {
         let mut srdf_graph = InMemoryGraph::new();
 
         srdf_graph.merge_from_reader(read, source_name, format, base, reader_mode)?;
         Ok(srdf_graph)
     }
 
-    pub fn resolve(&self, str: &str) -> Result<OxNamedNode, SRDFGraphError> {
+    pub fn resolve(&self, str: &str) -> Result<OxNamedNode, InMemoryGraphError> {
         let r = self.pm.resolve(str)?;
         Ok(Self::cnv_iri(r))
     }
@@ -257,7 +258,7 @@ impl InMemoryGraph {
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
-    ) -> Result<InMemoryGraph, SRDFGraphError> {
+    ) -> Result<InMemoryGraph, InMemoryGraphError> {
         Self::from_reader(
             &mut std::io::Cursor::new(&data),
             "String",
@@ -276,7 +277,7 @@ impl InMemoryGraph {
         subj: S,
         pred: P,
         obj: O,
-    ) -> Result<(), SRDFGraphError>
+    ) -> Result<(), InMemoryGraphError>
     where
         S: Into<OxSubjectRef<'a>>,
         P: Into<NamedNodeRef<'a>>,
@@ -296,9 +297,9 @@ impl InMemoryGraph {
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
-    ) -> Result<(), SRDFGraphError> {
+    ) -> Result<(), InMemoryGraphError> {
         let path_name = path.as_ref().display();
-        let file = File::open(path.as_ref()).map_err(|e| SRDFGraphError::ReadingPathError {
+        let file = File::open(path.as_ref()).map_err(|e| InMemoryGraphError::ReadingPathError {
             path_name: path_name.to_string(),
             error: e,
         })?;
@@ -319,9 +320,9 @@ impl InMemoryGraph {
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
-    ) -> Result<InMemoryGraph, SRDFGraphError> {
+    ) -> Result<InMemoryGraph, InMemoryGraphError> {
         let path_name = path.as_ref().display();
-        let file = File::open(path.as_ref()).map_err(|e| SRDFGraphError::ReadingPathError {
+        let file = File::open(path.as_ref()).map_err(|e| InMemoryGraphError::ReadingPathError {
             path_name: path_name.to_string(),
             error: e,
         })?;
@@ -341,7 +342,7 @@ impl InMemoryGraph {
         folder: &Path,
         base: Option<&str>,
         reader_mode: &ReaderMode,
-    ) -> Result<InMemoryGraph, SRDFGraphError> {
+    ) -> Result<InMemoryGraph, InMemoryGraphError> {
         let mut attempt = PathBuf::from(folder);
         attempt.push(data);
         let data_path = &attempt;
@@ -361,7 +362,7 @@ impl Rdf for InMemoryGraph {
     type Subject = OxSubject;
     type Term = OxTerm;
     type Triple = OxTriple;
-    type Err = SRDFGraphError;
+    type Err = InMemoryGraphError;
 
     fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, PrefixMapError> {
         let iri = self.pm.resolve_prefix_local(prefix, local)?;
@@ -402,12 +403,12 @@ impl NeighsRDF for InMemoryGraph {
     // Optimized version for triples with a specific subject
     fn triples_with_subject(
         &self,
-        subject: Self::Subject,
+        subject: &Self::Subject,
     ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
         // Collect the triples into a Vec to avoid the lifetime dependency on subject
         let triples: Vec<_> = self
             .graph
-            .triples_for_subject(&subject)
+            .triples_for_subject(subject)
             .map(TripleRef::into_owned)
             .collect();
         Ok(triples.into_iter())
@@ -415,9 +416,9 @@ impl NeighsRDF for InMemoryGraph {
 
     fn triples_matching<S, P, O>(
         &self,
-        subject: S,
-        predicate: P,
-        object: O,
+        subject: &S,
+        predicate: &P,
+        object: &O,
     ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err>
     where
         S: Matcher<Self::Subject>,
@@ -426,9 +427,9 @@ impl NeighsRDF for InMemoryGraph {
     {
         // TODO: Implement this function in a way that it does not retrieve all triples
         let triples = self.triples()?.filter_map(move |triple| {
-            match subject == triple.subject
-                && predicate == triple.predicate
-                && object == triple.object
+            match subject == &triple.subject
+                && predicate == &triple.predicate
+                && object == &triple.object
             {
                 true => Some(triple),
                 false => None,
@@ -439,18 +440,18 @@ impl NeighsRDF for InMemoryGraph {
 }
 
 #[async_trait]
-impl AsyncSRDF for InMemoryGraph {
+impl AsyncRDF for InMemoryGraph {
     type IRI = OxNamedNode;
     type BNode = OxBlankNode;
     type Literal = OxLiteral;
     type Subject = OxSubject;
     type Term = OxTerm;
-    type Err = SRDFGraphError;
+    type Err = InMemoryGraphError;
 
     async fn get_predicates_subject(
         &self,
         subject: &OxSubject,
-    ) -> Result<HashSet<OxNamedNode>, SRDFGraphError> {
+    ) -> Result<HashSet<OxNamedNode>, InMemoryGraphError> {
         let mut results = HashSet::new();
         for triple in self.graph.triples_for_subject(subject) {
             let predicate: OxNamedNode = triple.predicate.to_owned().into();
@@ -463,7 +464,7 @@ impl AsyncSRDF for InMemoryGraph {
         &self,
         subject: &OxSubject,
         pred: &OxNamedNode,
-    ) -> Result<HashSet<OxTerm>, SRDFGraphError> {
+    ) -> Result<HashSet<OxTerm>, InMemoryGraphError> {
         let mut results = HashSet::new();
         for triple in self.graph.triples_for_subject(subject) {
             let predicate: OxNamedNode = triple.predicate.to_owned().into();
@@ -479,7 +480,7 @@ impl AsyncSRDF for InMemoryGraph {
         &self,
         object: &OxTerm,
         pred: &OxNamedNode,
-    ) -> Result<HashSet<OxSubject>, SRDFGraphError> {
+    ) -> Result<HashSet<OxSubject>, InMemoryGraphError> {
         let mut results = HashSet::new();
         for triple in self.graph.triples_for_object(object) {
             let predicate: OxNamedNode = triple.predicate.to_owned().into();
@@ -497,8 +498,8 @@ impl FocusRDF for InMemoryGraph {
         self.focus = Some(focus.clone())
     }
 
-    fn get_focus(&self) -> &Option<Self::Term> {
-        &self.focus
+    fn get_focus(&self) -> Option<&Self::Term> {
+        self.focus.as_ref()
     }
 }
 
@@ -522,7 +523,7 @@ impl BuildRDF for InMemoryGraph {
         self.bnode_counter += 1;
         match self.bnode_counter.try_into() {
             Ok(bn) => Ok(OxBlankNode::new_from_unique_id(bn)),
-            Err(_) => Err(SRDFGraphError::BlankNodeId {
+            Err(_) => Err(InMemoryGraphError::BlankNodeId {
                 msg: format!("Error converting {} to usize", self.bnode_counter),
             }),
         }
@@ -604,7 +605,7 @@ fn cnv_rdf_format(rdf_format: &RDFFormat) -> RdfFormat {
 }
 
 fn rdf_type() -> OxNamedNode {
-    OxNamedNode::new_unchecked(RDF_TYPE_STR)
+    OxNamedNode::new_unchecked(vocab_rdf_type().as_str())
 }
 
 fn triple_to_quad(t: TripleRef, graph_name: GraphName) -> Quad {
@@ -656,7 +657,7 @@ impl QueryRDF for InMemoryGraph {
         &self,
         _query_str: &str,
         _format: &QueryResultFormat,
-    ) -> Result<String, SRDFGraphError>
+    ) -> Result<String, InMemoryGraphError>
     where
         Self: Sized,
     {
@@ -667,7 +668,7 @@ impl QueryRDF for InMemoryGraph {
         Ok(str)
     }
 
-    fn query_select(&self, query_str: &str) -> Result<QuerySolutions<InMemoryGraph>, SRDFGraphError>
+    fn query_select(&self, query_str: &str) -> Result<QuerySolutions<InMemoryGraph>, InMemoryGraphError>
     where
         Self: Sized,
     {
@@ -676,12 +677,12 @@ impl QueryRDF for InMemoryGraph {
             trace!("Querying in-memory store");
 
             let parsed_query = SparqlEvaluator::new().parse_query(query_str).map_err(|e| {
-                SRDFGraphError::ParsingQueryError {
+                InMemoryGraphError::ParsingQueryError {
                     msg: format!("Error parsing query: {}", e),
                 }
             })?;
             let new_sol = parsed_query.on_store(store).execute().map_err(|e| {
-                SRDFGraphError::RunningQueryError {
+                InMemoryGraphError::RunningQueryError {
                     query: query_str.to_string(),
                     msg: format!("Error executing query: {}", e),
                 }
@@ -689,7 +690,7 @@ impl QueryRDF for InMemoryGraph {
             trace!("Got results from in-memory store");
             let sol = cnv_query_results(new_sol)?;
             sols.extend(sol, self.prefixmap()).map_err(|e| {
-                SRDFGraphError::ExtendingQuerySolutionsError {
+                InMemoryGraphError::ExtendingQuerySolutionsError {
                     query: query_str.to_string(),
                     error: format!("{e}"),
                 }
@@ -707,7 +708,7 @@ impl QueryRDF for InMemoryGraph {
 
 fn cnv_query_results(
     query_results: QueryResults,
-) -> Result<Vec<QuerySolution<InMemoryGraph>>, SRDFGraphError> {
+) -> Result<Vec<QuerySolution<InMemoryGraph>>, InMemoryGraphError> {
     let mut results = Vec::new();
     if let QueryResults::Solutions(solutions) = query_results {
         trace!("Converting query solutions");
@@ -715,7 +716,7 @@ fn cnv_query_results(
         for solution_action in solutions {
             counter += 1;
             trace!("Converting solution {counter}");
-            let solution = solution_action.map_err(|e| SRDFGraphError::QueryResultError {
+            let solution = solution_action.map_err(|e| InMemoryGraphError::QueryResultError {
                 msg: format!("Error getting query solution: {}", e),
             })?;
             let result = cnv_query_solution(solution);
@@ -737,415 +738,4 @@ fn cnv_query_solution(qs: SparQuerySolution) -> QuerySolution<InMemoryGraph> {
         values.push(term)
     }
     QuerySolution::new(variables, values)
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::neighs_rdf::NeighsRDF;
-    use iri_s::IriS;
-    use oxrdf::Literal as OxLiteral;
-    use oxrdf::NamedNode as OxNamedNode;
-    use oxrdf::NamedOrBlankNode as OxSubject;
-    use oxrdf::Term as OxTerm;
-    use std::collections::HashSet;
-
-    use crate::PResult;
-    use crate::iri;
-    use crate::matcher::Any;
-    use crate::not;
-    use crate::property_bool;
-    use crate::property_integer;
-    use crate::property_integers;
-    use crate::property_string;
-    use crate::property_value;
-    use crate::rdf_list;
-    use crate::rdf_parser;
-    use crate::satisfy;
-    use crate::set_focus;
-    // use crate::Query as _;
-    use crate::BuildRDF;
-    use crate::RDFFormat;
-    use crate::RDFNodeParse as _;
-    use crate::RDFParseError;
-    use crate::Triple;
-
-    use super::ReaderMode;
-    use super::InMemoryGraph;
-
-    const DUMMY_GRAPH: &str = r#"
-        prefix : <http://example.org/>
-        :x :p 1 .
-        :y :p "String" .
-        :y :q 2 .
-        :z :r 3 .
-        :x :s 4 .
-    "#;
-
-    const DUMMY_GRAPH_1: &str = r#"
-        prefix : <http://example.org/>
-        prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-        :x :p [ :p 1 ] .
-    "#;
-
-    const DUMMY_GRAPH_2: &str = r#"
-        prefix : <http://example.org/>
-        :x :p (1 2) .
-    "#;
-
-    const DUMMY_GRAPH_3: &str = r#"
-        prefix : <http://example.org/>
-        :x :p 1, 2, 3, 2 .
-    "#;
-
-    /*const DUMMY_GRAPH_4: &str = r#"
-        prefix : <http://example.org/>
-        :x :p 1, 2, 3 .
-    "#;*/
-
-    const DUMMY_GRAPH_5: &str = r#"
-        prefix : <http://example.org/>
-        :x :p 1, 2 ;
-        :q true .
-    "#;
-
-    const DUMMY_GRAPH_6: &str = r#"
-        prefix : <http://example.org/>
-        :x :p 1 .
-    "#;
-
-    const DUMMY_GRAPH_7: &str = r#"
-        prefix : <http://example.org/>
-        :x :p true .
-    "#;
-
-    const DUMMY_GRAPH_8: &str = r#"
-        prefix : <http://example.org/>
-        :x :p true ;
-        :q 1    .
-    "#;
-
-    const DUMMY_GRAPH_9: &str = r#"
-        prefix : <http://example.org/>
-        :x :p 1 .
-    "#;
-
-    const DUMMY_GRAPH_10: &str = r#"
-        prefix : <http://example.org/>
-        :x :p "1" .
-    "#;
-
-    #[derive(Debug, PartialEq)]
-    enum A {
-        Int(isize),
-        Bool(bool),
-    }
-
-    fn graph_from_str(s: &str) -> InMemoryGraph {
-        InMemoryGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap()
-    }
-
-    #[test]
-    fn test_triples_matching_subject_predicate_and_object() {
-        let graph = graph_from_str(DUMMY_GRAPH);
-        let x: OxSubject = OxNamedNode::new_unchecked("http://example.org/x").into();
-        let p = OxNamedNode::new_unchecked("http://example.org/p");
-        let one: OxTerm = OxLiteral::from(1).into();
-        let triples = graph.triples_matching(x, p, one).unwrap();
-        assert_eq!(triples.count(), 1)
-    }
-
-    #[test]
-    fn test_triples_matching_subject_and_predicate() {
-        let graph = graph_from_str(DUMMY_GRAPH);
-        let x: OxSubject = OxNamedNode::new_unchecked("http://example.org/x").into();
-        let p = OxNamedNode::new_unchecked("http://example.org/p");
-        let triples = graph.triples_matching(x, p, Any).unwrap();
-        assert_eq!(triples.count(), 1)
-    }
-
-    #[test]
-    fn test_triples_matching_subject_and_object() {
-        let graph = graph_from_str(DUMMY_GRAPH);
-        let x: OxSubject = OxNamedNode::new_unchecked("http://example.org/x").into();
-        let one: OxTerm = OxLiteral::from(1).into();
-        let triples = graph.triples_matching(x, Any, one).unwrap();
-        assert_eq!(triples.count(), 1)
-    }
-
-    #[test]
-    fn test_triples_matching_predicate_and_object() {
-        let graph = graph_from_str(DUMMY_GRAPH);
-        let p = OxNamedNode::new_unchecked("http://example.org/p");
-        let one: OxTerm = OxLiteral::from(1).into();
-        let triples = graph.triples_matching(Any, p, one).unwrap();
-        assert_eq!(triples.count(), 1)
-    }
-
-    #[test]
-    fn test_triples_matching_subject() {
-        let graph = graph_from_str(DUMMY_GRAPH);
-        let x: OxSubject = OxNamedNode::new_unchecked("http://example.org/x").into();
-        let triples = graph.triples_matching(x, Any, Any).unwrap();
-        assert_eq!(triples.count(), 2)
-    }
-
-    #[test]
-    fn test_triples_matching_predicate() {
-        let graph = graph_from_str(DUMMY_GRAPH);
-        let p = OxNamedNode::new_unchecked("http://example.org/p");
-        let triples = graph.triples_matching(Any, p, Any).unwrap();
-        assert_eq!(triples.count(), 2)
-    }
-
-    #[test]
-    fn test_triples_matching_object() {
-        let graph = graph_from_str(DUMMY_GRAPH);
-        let one: OxTerm = OxLiteral::from(1).into();
-        let triples = graph.triples_matching(Any, Any, one).unwrap();
-        assert_eq!(triples.count(), 1)
-    }
-
-    #[test]
-    fn test_incoming_arcs() {
-        let graph = graph_from_str(DUMMY_GRAPH);
-        let x = OxSubject::NamedNode(OxNamedNode::new_unchecked("http://example.org/x"));
-        let p = OxNamedNode::new_unchecked("http://example.org/p");
-        let one: OxTerm = OxLiteral::from(1).into();
-        let actual = graph.incoming_arcs(one).unwrap();
-        let expected = HashSet::from([x]);
-        assert_eq!(actual.get(&p), Some(&expected))
-    }
-
-    #[test]
-    fn test_outgoing_arcs() {
-        let graph = graph_from_str(DUMMY_GRAPH_1);
-
-        let x = OxSubject::NamedNode(OxNamedNode::new_unchecked("http://example.org/x"));
-        let p = OxNamedNode::new_unchecked("http://example.org/p");
-        let one: OxTerm = OxLiteral::from(1).into();
-
-        let subject = graph
-            .triples_matching(x, p.clone(), Any)
-            .unwrap()
-            .map(Triple::into_object)
-            .next()
-            .unwrap()
-            .try_into()
-            .unwrap();
-
-        let actual = graph.outgoing_arcs(subject).unwrap();
-        let expected = HashSet::from([one]);
-
-        assert_eq!(actual.get(&p), Some(&expected))
-    }
-
-    #[test]
-    fn test_add_triple() {
-        let mut graph = InMemoryGraph::default();
-
-        let alice = OxSubject::NamedNode(OxNamedNode::new_unchecked("http://example.org/alice"));
-        let knows = OxNamedNode::new_unchecked("http://example.org/knows");
-        let bob = OxTerm::NamedNode(OxNamedNode::new_unchecked("http://example.org/bob"));
-
-        graph.add_triple(alice, knows, bob).unwrap();
-
-        assert_eq!(graph.len(), 1);
-    }
-
-    #[test]
-    fn test_rdf_list() {
-        let graph = graph_from_str(DUMMY_GRAPH_2);
-
-        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
-
-        let mut parser = property_value(p).then(move |obj| set_focus(&obj).with(rdf_list()));
-        let result: Vec<OxTerm> = parser.parse(&x, graph).unwrap();
-
-        assert_eq!(
-            result,
-            vec![
-                OxTerm::from(OxLiteral::from(1)),
-                OxTerm::from(OxLiteral::from(2))
-            ]
-        )
-    }
-
-    /*
-    #[test]
-    fn test_parser() {
-        rdf_parser! {
-            fn my_ok['a, A, RDF](value: &'a A)(RDF) -> A
-            where [
-                A: Clone
-            ] { ok(value) }
-        }
-        let graph = graph_from_str("prefix : <http://example.org/>");
-        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-        assert_eq!(my_ok(&3).parse(&x, graph).unwrap(), 3)
-    }*/
-
-    #[test]
-    fn test_parser_property_integers() {
-        let graph = graph_from_str(DUMMY_GRAPH_3);
-        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
-        let mut parser = property_integers(p);
-        assert_eq!(parser.parse(&x, graph).unwrap(), HashSet::from([1, 2, 3]))
-    }
-
-    /*
-    #[test]
-    fn test_parser_then_mut() {
-        let graph = graph_from_str(DUMMY_GRAPH_4);
-        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
-
-        let mut parser = property_integers(&p).then_mut(move |ns| {
-            ns.extend(vec![4, 5]);
-            ok(ns)
-        });
-
-        assert_eq!(
-            parser.parse(&x, graph).unwrap(),
-            HashSet::from([1, 2, 3, 4, 5])
-        )
-    } */
-
-    #[test]
-    fn test_parser_or() {
-        let graph = graph_from_str(DUMMY_GRAPH_5);
-        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
-        let q = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/q"));
-        let mut parser = property_bool(p).or(property_bool(q));
-        assert!(parser.parse(&x, graph).unwrap())
-    }
-
-    #[test]
-    fn test_parser_or_enum_1() {
-        let graph = graph_from_str(DUMMY_GRAPH_6);
-        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
-        let parser_a_bool = property_bool(p.clone()).map(A::Bool);
-        let parser_a_int = property_integer(p).map(A::Int);
-        let mut parser = parser_a_int.or(parser_a_bool);
-        assert_eq!(parser.parse(&x, graph).unwrap(), A::Int(1))
-    }
-
-    #[test]
-    fn test_parser_or_enum_2() {
-        let graph = graph_from_str(DUMMY_GRAPH_7);
-        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
-        let parser_a_bool = property_bool(p.clone()).map(A::Bool);
-        let parser_a_int = property_integer(p).map(A::Int);
-        let mut parser = parser_a_int.or(parser_a_bool);
-        assert_eq!(parser.parse(&x, graph).unwrap(), A::Bool(true))
-    }
-
-    #[test]
-    fn test_parser_and() {
-        let graph = graph_from_str(DUMMY_GRAPH_8);
-        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
-        let q = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/q"));
-        let mut parser = property_bool(p).and(property_integer(q));
-        assert_eq!(parser.parse(&x, graph).unwrap(), (true, 1))
-    }
-
-    #[test]
-    fn test_parser_map() {
-        let graph = graph_from_str(DUMMY_GRAPH_9);
-        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
-        let mut parser = property_integer(p).map(|n| n + 1);
-        assert_eq!(parser.parse(&x, graph).unwrap(), 2)
-    }
-
-    #[test]
-    fn test_parser_and_then() {
-        let graph = graph_from_str(DUMMY_GRAPH_10);
-        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
-
-        struct IntConversionError(String);
-
-        fn cnv_int(s: String) -> Result<isize, IntConversionError> {
-            s.parse().map_err(|_| IntConversionError(s))
-        }
-
-        impl From<IntConversionError> for RDFParseError {
-            fn from(error: IntConversionError) -> RDFParseError {
-                RDFParseError::Custom {
-                    msg: format!("Int conversion error: {}", error.0),
-                }
-            }
-        }
-
-        let mut parser = property_string(p).and_then(cnv_int);
-        assert_eq!(parser.parse(&x, graph).unwrap(), 1)
-    }
-
-    #[test]
-    fn test_parser_flat_map() {
-        let graph = graph_from_str(DUMMY_GRAPH_10);
-        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
-
-        fn cnv_int(s: String) -> PResult<isize> {
-            s.parse().map_err(|_| RDFParseError::Custom {
-                msg: format!("Error converting {s}"),
-            })
-        }
-
-        let mut parser = property_string(p).flat_map(cnv_int);
-        assert_eq!(parser.parse(&x, graph).unwrap(), 1)
-    }
-
-    #[test]
-    fn test_rdf_parser_macro() {
-        rdf_parser! {
-              fn is_term['a, RDF](term: &'a RDF::Term)(RDF) -> ()
-              where [
-              ] {
-                let name = format!("is_{term}");
-                satisfy(|t| { t == *term }, name.as_str())
-              }
-        }
-
-        let graph = graph_from_str(DUMMY_GRAPH_9);
-        let x = OxNamedNode::new_unchecked("http://example.org/x");
-        let iri_s = IriS::from_named_node(&x);
-        let term = x.clone().into();
-        let mut parser = is_term(&term);
-        let result = parser.parse(&iri_s, graph);
-        assert!(result.is_ok())
-    }
-
-    #[test]
-    fn test_not() {
-        let graph = graph_from_str(DUMMY_GRAPH_9);
-        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-        let q = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/q"));
-        assert!(not(property_value(q)).parse(&x, graph).is_ok())
-    }
-
-    #[test]
-    fn test_iri() {
-        let graph = InMemoryGraph::default();
-        let x = OxNamedNode::new_unchecked("http://example.org/x");
-        let x_iri = IriS::from_named_node(&x);
-        assert_eq!(iri().parse(&x_iri, graph).unwrap(), x)
-    }
-
-    #[test]
-    fn test_add_triple_ref() {
-        let mut graph = InMemoryGraph::default();
-        let s = OxNamedNode::new_unchecked("http://example.org/x");
-        let p = OxNamedNode::new_unchecked("http://example.org/p");
-        let o = OxNamedNode::new_unchecked("http://example.org/y");
-        graph.add_triple_ref(&s, &p, &o).unwrap();
-        assert_eq!(graph.len(), 1);
-    }
 }

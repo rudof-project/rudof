@@ -1,7 +1,7 @@
 use crate::rdf_core::{
     FocusRDF, RDFError,
     parser::rdf_node_parser::RDFNodeParse,
-    term::{IriOrBlankNode, Object},
+    term::{Iri, IriOrBlankNode, Object, literal::Literal},
 };
 use iri_s::{IriS, iri};
 use std::marker::PhantomData;
@@ -38,7 +38,7 @@ where
                         })?;
                 Ok(object)
             }
-            None => Err(RDFError::NoFocusNode),
+            None => Err(RDFError::NoFocusNodeError),
         }
     }
 }
@@ -66,7 +66,7 @@ where
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
         match rdf.get_focus() {
             Some(focus) => Ok(focus.clone()),
-            None => Err(RDFError::NoFocusNode),
+            None => Err(RDFError::NoFocusNodeError),
         }
     }
 }
@@ -100,7 +100,7 @@ where
                     })?;
                 Ok(iri)
             }
-            None => Err(RDFError::NoFocusNode),
+            None => Err(RDFError::NoFocusNodeError),
         }
     }
 }
@@ -134,7 +134,7 @@ where
                     })?;
                 Ok(lit)
             }
-            None => Err(RDFError::NoFocusNode),
+            None => Err(RDFError::NoFocusNodeError),
         }
     }
 }
@@ -161,7 +161,7 @@ where
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
         let lit = LiteralParser::new().parse_focused(rdf)?;
-        lit.as_bool().ok_or_else(|| RDFError::ExpectedBooleanError {
+        lit.to_bool().ok_or_else(|| RDFError::ExpectedBooleanError {
             term: lit.to_string(),
         })
     }
@@ -204,7 +204,7 @@ where
 
                 Ok(iri_or_bnode)
             }
-            None => Err(RDFError::NoFocusNode),
+            None => Err(RDFError::NoFocusNodeError),
         }
     }
 }

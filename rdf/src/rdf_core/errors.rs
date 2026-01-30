@@ -445,4 +445,55 @@ pub enum RDFError {
     /// - `object`: The IRI of the expected type/class that has no instances
     #[error("No instances found for type: {object}")]
     FailedInstancesOfError { object: String },
+
+    /// Error when a required property is not found on a node.
+    ///
+    /// # Fields
+    /// - `property`: The predicate that was expected
+    /// - `subject`: The subject node where the property was searched
+    /// - `err`: Underlying error
+    #[error("Property '{property}' not found in subject '{subject}': {err}")]
+    PropertyNotFoundError {
+        property: String,
+        subject: String,
+        err: Box<RDFError>,
+    },
+
+    /// Error when attempting to convert a term into an RDF Object.
+    ///
+    /// # Fields
+    /// - `term`: String representation of the term that failed conversion
+    #[error("Failed to convert term to Object: {term}")]
+    FailedTermToObjectError {
+        term: String,
+    },
+
+    /// Error when more than one instance of a given type is found when exactly one was expected.
+    ///
+    /// # Fields
+    /// - `type_iri`: The IRI of the type that has multiple instances
+    #[error("More than one instance found for type: {type_iri}")]
+    MoreThanOneInstanceError {
+        type_iri: String,
+    },
+
+    /// Error when an RDF node has a type different from the expected one.
+    ///
+    /// # Fields
+    /// - `expected`: String representation of the expected RDF type
+    /// - `actual`: String representation of the actual RDF type found
+    #[error("Type mismatch: expected {expected}, but found {actual}")]
+    TypeMismatchError {
+        expected: String,
+        actual: String,
+    },
+
+    /// Error when a conditional parser predicate evaluates to false.
+    ///
+    /// # Fields
+    /// - `msg`: Explanation of why the condition failed
+    #[error("Conditional parser failed: {msg}")]
+    FailedConditionalError {
+        msg: String,
+    },
 }

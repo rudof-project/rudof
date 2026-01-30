@@ -1,6 +1,6 @@
 use crate::rdf_core::{
     NeighsRDF, RDFError, SHACLPath,
-    parser::rdf_node_parser::constructors::ShaclPathParser,
+    parser::rdf_node_parser::{RDFNodeParse, constructors::ShaclPathParser},
 };
 
 /// A trait for RDF graphs that maintain a focus node for context-aware parsing.
@@ -88,7 +88,7 @@ where
         match self.objects_for(subject, predicate)?.into_iter().next() {
             Some(term) => {
                 let path = ShaclPathParser::new(term.clone())
-                    .parse_impl(self)
+                    .parse_focused(self)
                     .map_err(|e| RDFError::InvalidSHACLPathError {
                         node: format!("{term}"),
                         error: Box::new(e),

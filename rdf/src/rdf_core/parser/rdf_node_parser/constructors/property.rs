@@ -1,11 +1,8 @@
 use crate::rdf_core::{
-    Any, FocusRDF, NeighsRDF, RDFError,
+    Any, FocusRDF, RDFError,
     parser::rdf_node_parser::{
         RDFNodeParse,
-        utils::{
-            term_to_bool, term_to_int, term_to_iri, term_to_iri_or_blanknode, 
-            term_to_string
-        }
+        utils::{term_to_bool, term_to_int, term_to_iri, term_to_iri_or_blanknode, term_to_string},
     },
     term::{IriOrBlankNode, Object, Triple},
 };
@@ -18,7 +15,7 @@ use std::marker::PhantomData;
 // ============================================================================
 
 /// Parser that extracts all values of a property from the focus node.
-/// 
+///
 /// Returns a `HashSet` of terms. If the property has no values, returns an empty set.
 #[derive(Debug, Clone)]
 pub struct ValuesPropertyParser<RDF> {
@@ -42,23 +39,21 @@ where
     type Output = HashSet<RDF::Term>;
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
-        let subject = rdf.get_focus()
-            .ok_or(RDFError::NoFocusNodeError)?
-            .clone()
-            .try_into()
-            .map_err(|_| RDFError::ExpectedFocusAsSubjectError { 
-                focus: "cannot convert to subject".to_string() 
-            })?;
+        if let Ok(subject) = rdf.get_focus_as_subject() {
+            let pred: RDF::IRI = self.property.clone().into();
 
-        let pred: RDF::IRI = self.property.clone().into();
-        
-        Ok(rdf.triples_matching(&subject, &pred, &Any)
-            .map_err(|e| RDFError::OutgoingArcsError { 
-                focus: format!("{}", self.property), 
-                error: e.to_string() 
-            })?
-            .map(Triple::into_object)
-            .collect())
+             Ok(rdf
+                .triples_matching(&subject, &pred, &Any)
+                .map_err(|e| RDFError::OutgoingArcsError {
+                    focus: format!("{}", self.property),
+                    error: e.to_string(),
+                })?
+                .map(Triple::into_object)
+                .collect()
+            )
+        } else {
+            Ok(HashSet::new())
+        }
     }
 }
 
@@ -100,7 +95,7 @@ where
 // ============================================================================
 
 /// Parser that extracts exactly one value from the property.
-/// 
+///
 /// Fails if the property has zero or more than one value.
 #[derive(Debug, Clone)]
 pub struct SingleValuePropertyParser<RDF> {
@@ -124,20 +119,25 @@ where
     type Output = RDF::Term;
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
-        let focus_str = rdf.get_focus().map(|f| f.to_string())
+        let focus_str = rdf
+            .get_focus()
+            .map(|f| f.to_string())
             .unwrap_or_else(|| "No focus node".to_string());
-            
+
         let vals: HashSet<_> = ValuesPropertyParser {
             property: self.property.clone(),
             _marker: PhantomData,
-        }.parse_focused(rdf)?;
-        
+        }
+        .parse_focused(rdf)?;
+
         let mut iter = vals.into_iter();
-        let first = iter.next().ok_or_else(|| RDFError::NoValuesPredicateError {
-            node: focus_str,
-            pred: format!("{}", self.property),
-        })?;
-        
+        let first = iter
+            .next()
+            .ok_or_else(|| RDFError::NoValuesPredicateError {
+                node: focus_str,
+                pred: format!("{}", self.property),
+            })?;
+
         Ok(first)
     }
 }
@@ -168,11 +168,11 @@ where
     type Output = Vec<isize>;
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
-
-        ValuesPropertyParser::new(self.property.clone()).parse_focused(rdf)?
-        .into_iter()
-        .map(|t| term_to_int::<RDF>(&t))
-        .collect::<Result<Vec<_>, _>>()
+        ValuesPropertyParser::new(self.property.clone())
+            .parse_focused(rdf)?
+            .into_iter()
+            .map(|t| term_to_int::<RDF>(&t))
+            .collect::<Result<Vec<_>, _>>()
     }
 }
 
@@ -199,10 +199,11 @@ where
     type Output = Vec<bool>;
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
-        ValuesPropertyParser::new(self.property.clone()).parse_focused(rdf)?
-        .into_iter()
-        .map(|t| term_to_bool::<RDF>(&t))
-        .collect::<Result<Vec<_>, _>>()
+        ValuesPropertyParser::new(self.property.clone())
+            .parse_focused(rdf)?
+            .into_iter()
+            .map(|t| term_to_bool::<RDF>(&t))
+            .collect::<Result<Vec<_>, _>>()
     }
 }
 
@@ -229,10 +230,11 @@ where
     type Output = Vec<String>;
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
-        ValuesPropertyParser::new(self.property.clone()).parse_focused(rdf)?
-        .into_iter()
-        .map(|t| term_to_string::<RDF>(&t))
-        .collect::<Result<Vec<_>, _>>()
+        ValuesPropertyParser::new(self.property.clone())
+            .parse_focused(rdf)?
+            .into_iter()
+            .map(|t| term_to_string::<RDF>(&t))
+            .collect::<Result<Vec<_>, _>>()
     }
 }
 
@@ -259,10 +261,11 @@ where
     type Output = HashSet<IriS>;
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
-        ValuesPropertyParser::new(self.property.clone()).parse_focused(rdf)?
-        .into_iter()
-        .map(|t| term_to_iri::<RDF>(&t))
-        .collect::<Result<HashSet<_>, _>>()
+        ValuesPropertyParser::new(self.property.clone())
+            .parse_focused(rdf)?
+            .into_iter()
+            .map(|t| term_to_iri::<RDF>(&t))
+            .collect::<Result<HashSet<_>, _>>()
     }
 }
 
@@ -289,10 +292,11 @@ where
     type Output = HashSet<IriOrBlankNode>;
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
-        ValuesPropertyParser::new(self.property.clone()).parse_focused(rdf)?
-        .into_iter()
-        .map(|t| term_to_iri_or_blanknode::<RDF>(&t))
-        .collect::<Result<HashSet<_>, _>>()
+        ValuesPropertyParser::new(self.property.clone())
+            .parse_focused(rdf)?
+            .into_iter()
+            .map(|t| term_to_iri_or_blanknode::<RDF>(&t))
+            .collect::<Result<HashSet<_>, _>>()
     }
 }
 
@@ -319,12 +323,15 @@ where
     type Output = Vec<Object>;
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
-        ValuesPropertyParser::new(self.property.clone()).parse_focused(rdf)?
-        .into_iter()
-        .map(|t| t.try_into().map_err(|_| RDFError::FailedTermToObjectError {
-            term: t.to_string(),
-        }))
-        .collect::<Result<Vec<_>, _>>()
+        ValuesPropertyParser::new(self.property.clone())
+            .parse_focused(rdf)?
+            .into_iter()
+            .map(|t| {
+                let term_str = t.to_string();
+                t.try_into()
+                    .map_err(|_| RDFError::FailedTermToObjectError { term: term_str })
+            })
+            .collect::<Result<Vec<_>, _>>()
     }
 }
 
@@ -355,9 +362,9 @@ where
     type Output = isize;
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
-        SingleValuePropertyParser::new(self.property.clone()).parse_focused(rdf).and_then(|term| {
-            term_to_int::<RDF>(&term)
-        })
+        SingleValuePropertyParser::new(self.property.clone())
+            .parse_focused(rdf)
+            .and_then(|term| term_to_int::<RDF>(&term))
     }
 }
 
@@ -384,9 +391,9 @@ where
     type Output = bool;
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
-        SingleValuePropertyParser::new(self.property.clone()).parse_focused(rdf).and_then(|term| {
-            term_to_bool::<RDF>(&term)
-        })
+        SingleValuePropertyParser::new(self.property.clone())
+            .parse_focused(rdf)
+            .and_then(|term| term_to_bool::<RDF>(&term))
     }
 }
 
@@ -413,9 +420,9 @@ where
     type Output = IriS;
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
-        SingleValuePropertyParser::new(self.property.clone()).parse_focused(rdf).and_then(|term| {
-            term_to_iri::<RDF>(&term)
-        })
+        SingleValuePropertyParser::new(self.property.clone())
+            .parse_focused(rdf)
+            .and_then(|term| term_to_iri::<RDF>(&term))
     }
 }
 
@@ -442,9 +449,9 @@ where
     type Output = String;
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
-        SingleValuePropertyParser::new(self.property.clone()).parse_focused(rdf).and_then(|term| {
-            term_to_string::<RDF>(&term)
-        })
+        SingleValuePropertyParser::new(self.property.clone())
+            .parse_focused(rdf)
+            .and_then(|term| term_to_string::<RDF>(&term))
     }
 }
 
@@ -452,26 +459,22 @@ where
 // Other parsers
 // ============================================================================
 
-
 /// Parser that finds subjects with a specific property-value pair (reverse lookup).
 #[derive(Debug, Clone)]
 pub struct SubjectsWithValuePropertyParser<RDF>
-where 
-    RDF: FocusRDF
+where
+    RDF: FocusRDF,
 {
     property: RDF::IRI,
     value: RDF::Term,
 }
 
 impl<RDF> SubjectsWithValuePropertyParser<RDF>
-where 
-    RDF: FocusRDF
+where
+    RDF: FocusRDF,
 {
     pub fn new(property: RDF::IRI, value: RDF::Term) -> Self {
-        SubjectsWithValuePropertyParser {
-            property,
-            value,
-        }
+        SubjectsWithValuePropertyParser { property, value }
     }
 }
 
@@ -482,7 +485,11 @@ where
     type Output = Vec<RDF::Subject>;
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
-        Ok(rdf.triples_matching(&Any, &self.property, &self.value)?
+        Ok(rdf
+            .triples_matching(&Any, &self.property, &self.value)
+            .map_err(|e| RDFError::ObtainingTriples {
+                error: e.to_string(),
+            })?
             .map(Triple::into_subject)
             .collect())
     }

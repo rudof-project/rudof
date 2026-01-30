@@ -1,7 +1,5 @@
 use crate::rdf_core::{
-    FocusRDF, RDFError,
-    parser::rdf_node_parser::{RDFNodeParse, constructors::TypeParser},
-    vocab::rdf_nil,
+    FocusRDF, RDFError, parser::rdf_node_parser::{RDFNodeParse, constructors::TypeParser}, term::Iri, vocab::rdf_nil
 };
 use iri_s::IriS;
 use std::marker::PhantomData;
@@ -76,8 +74,12 @@ where
         let focus = rdf.get_focus()
             .ok_or(RDFError::NoFocusNodeError)?;
 
-        let iri: RDF::IRI = <RDF::Term as TryInto<RDF::IRI>>::try_into(focus.clone()).unwrap()?;
-
+        let iri: RDF::IRI = match <RDF::Term as TryInto<RDF::IRI>>::try_into(focus.clone()) {
+            Ok(iri) => iri,
+            Err(_) => return Err(RDFError::ExpectedIRIError {
+                term: focus.to_string(),
+            }),
+        };
 
         if iri.as_str() == self.expected.as_str() {
             Ok(())
@@ -117,9 +119,10 @@ where
         let focus = rdf.get_focus()
             .ok_or(RDFError::NoFocusNodeError)?;
         
-        let is_nil = focus.clone().try_into()
-            .map(|iri: RDF::IRI| iri.as_str() == rdf_nil().as_str())
-            .unwrap_or(false);
+        let is_nil = match TryInto::<RDF::IRI>::try_into(focus.clone()) {
+            Ok(iri) => iri.as_str() == rdf_nil().as_str(),
+            Err(_) => false,
+        };
             
         if is_nil {
             Ok(())
@@ -259,7 +262,7 @@ where
         if (self.predicate)(&self.value) {
             Ok(())
         } else {
-            Err(RDFError::ConditionFailedError {
+            Err(RDFError::FailedConditionalError {
                 msg: self.fail_msg.clone(),
             })
         }

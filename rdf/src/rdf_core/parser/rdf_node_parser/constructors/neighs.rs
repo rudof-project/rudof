@@ -1,5 +1,5 @@
 use crate::rdf_core::{
-    FocusRDF, NeighsRDF, RDFError,
+    FocusRDF, RDFError,
     parser::rdf_node_parser::RDFNodeParse,
 };
 use std::collections::{HashMap, HashSet};

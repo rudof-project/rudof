@@ -1,10 +1,9 @@
 use crate::rdf_core::{
     FocusRDF, RDFError, 
-    term::Triple, 
     parser::rdf_node_parser::{
         RDFNodeParse,
         constructors::{
-            SingleInstanceParser, InstancesParser, ListParser, ValuesPropertyParser, SingleValuePropertyParser, TypeParser, 
+            InstancesParser, SingleInstanceParser, ListParser, ValuesPropertyParser, SingleValuePropertyParser, TypeParser, 
             HasTypeParser, SatisfyParser
         },
     }
@@ -176,7 +175,7 @@ where
     /// Finds all instances of a given type in the entire graph.
     ///
     /// This is a graph-wide query, not focus-dependent.
-    pub fn find_instances_of(&self, type_iri: IriS) -> Result<Vec<RDF::Subject>, RDFError>
+    pub fn find_instances_of(&mut self, type_iri: IriS) -> Result<Vec<RDF::Subject>, RDFError>
     where
         RDF: FocusRDF,
     {
@@ -195,7 +194,7 @@ where
     }
 
     /// Finds exactly one instance of a type (fails if not exactly one).
-    pub fn find_single_instance(&self, type_iri: IriS) -> Result<RDF::Subject, RDFError>
+    pub fn find_single_instance(&mut self, type_iri: IriS) -> Result<RDF::Subject, RDFError>
     where
         RDF: FocusRDF,
     {

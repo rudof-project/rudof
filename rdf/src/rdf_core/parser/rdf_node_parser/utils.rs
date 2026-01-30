@@ -1,8 +1,6 @@
 use crate::rdf_core::{
-    RDFError, FocusRDF,
-    vocab::{rdf_first, rdf_rest, rdf_nil},
-    term::{Term, literal::{NumericLiteral, ConcreteLiteral}, IriOrBlankNode},
-    parser::rdf_node_parser::constructors::SingleValuePropertyParser,
+    FocusRDF, RDFError, parser::rdf_node_parser::{RDFNodeParse, constructors::SingleValuePropertyParser}, 
+    term::{Iri, IriOrBlankNode, literal::{ConcreteLiteral, Literal, NumericLiteral}}, vocab::{rdf_first, rdf_nil, rdf_rest}
 };
 use iri_s::{IriS, iri};
 
@@ -103,7 +101,7 @@ where
             }
         })?;
     let n = literal
-        .as_integer()
+        .to_integer()
         .ok_or_else(|| RDFError::ExpectedIntegerError {
             term: format!("{term}"),
         })?;
@@ -187,7 +185,7 @@ where
             }
         })?;
     let n = literal
-        .as_bool()
+        .to_bool()
         .ok_or_else(|| RDFError::ExpectedBooleanError {
             term: format!("{term}"),
         })?;
@@ -246,7 +244,7 @@ where
 ///
 /// # Errors
 ///
-/// * `RDFError::ExpectedIriOrBlankNode` - If the term is not an IRI or blank node
+/// * `RDFError::ExpectedIriOrBlankNodeError` - If the term is not an IRI or blank node
 /// * `RDFError::SubjectToIriOrBlankNodeError` - If the subject cannot be converted to `IriOrBlankNode`
 pub fn term_to_iri_or_blanknode<R>(term: &R::Term) -> Result<IriOrBlankNode, RDFError>
 where
@@ -254,7 +252,7 @@ where
 {
     let subj: R::Subject =
         <R::Term as TryInto<R::Subject>>::try_into(term.clone()).map_err(|_| {
-            RDFError::ExpectedIriOrBlankNode {
+            RDFError::ExpectedIriOrBlankNodeError {
                 term: format!("{term}"),
                 error: "Expected IRI or BlankNode".to_string(),
             }
@@ -353,7 +351,9 @@ fn is_nil_node<RDF>(node: &RDF::Term) -> bool
 where
     RDF: FocusRDF,
 {
-    node.clone().try_into()
-        .map(|iri: RDF::IRI| iri.as_str() == rdf_nil().as_str())
-        .unwrap_or(false)
+    let tmp: Result<RDF::IRI, _> = <RDF::Term as TryInto<RDF::IRI>>::try_into(node.clone());
+    match tmp {
+        Ok(iri) => iri.as_str() == rdf_nil().as_str(),
+        Err(_) => false,
+    }
 }
