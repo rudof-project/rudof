@@ -93,6 +93,50 @@ where
     }
 }
 
+/// Parses two values sequentially, returning both results as a tuple.
+///
+/// Both parsers must succeed for the combined parser to succeed.
+/// The results are returned as a tuple in the order parsed.
+///
+/// # Type Parameters
+///
+/// * `P1` - The first parser.
+/// * `P2` - The second parser.
+pub struct And<P1, P2> {
+    /// The first parser to execute.
+    first: P1,
+    /// The second parser to execute.
+    second: P2,
+}
+
+impl<P1, P2> And<P1, P2> {
+    /// Creates a new sequential parser returning both results.
+    pub fn new(first: P1, second: P2) -> Self {
+        Self { first, second }
+    }
+}
+
+impl<RDF, P1, P2, T1, T2> RDFNodeParse<RDF> for And<P1, P2>
+where
+    RDF: FocusRDF,
+    P1: RDFNodeParse<RDF, Output = T1>,
+    P2: RDFNodeParse<RDF, Output = T2>,
+{
+    type Output = (T1, T2);
+
+    /// Executes both parsers and returns both results as a tuple.
+    ///
+    /// # Errors
+    ///
+    /// Returns the error from the first parser if it fails,
+    /// or the error from the second parser if it fails.
+    fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
+        let v1 = self.first.parse_focused(rdf)?;
+        let v2 = self.second.parse_focused(rdf)?;
+        Ok((v1, v2))
+    }
+}
+
 /// Negates a parser's result, succeeding when the inner parser fails.
 ///
 /// Requires the inner parser's output to implement `Debug` to report the
@@ -732,6 +776,14 @@ where
         P: RDFNodeParse<RDF, Output = Self::Output>,
     {
         Or::new(self, other)
+    }
+
+    /// Combines this parser with another, returning both results as a tuple.
+    fn and<P, B>(self, other: P) -> And<Self, P>
+    where
+        P: RDFNodeParse<RDF, Output = B>,
+    {
+        And::new(self, other)
     }
 
     /// Negates this parser's result.

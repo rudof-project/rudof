@@ -52,7 +52,7 @@ where
     // ============================================================================
 
     /// Returns the prefix map of the underlying graph.
-    pub fn prefixmap(&self) -> Option<PrefixMap> {
+    pub fn prefixmap(&self) -> Option<&PrefixMap> {
         self.rdf.prefixmap()
     }
 

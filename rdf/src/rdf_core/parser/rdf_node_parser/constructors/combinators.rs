@@ -2,7 +2,7 @@ use crate::rdf_core::{FocusRDF, RDFError, parser::rdf_node_parser::RDFNodeParse}
 use std::marker::PhantomData;
 
 /// Parser that chooses between two parsers based on a predicate.
-/// 
+///
 /// evaluates the predicate on a stored value and executes either
 /// the `then` parser or the `else` parser accordingly.
 #[derive(Debug, Clone)]
@@ -58,7 +58,11 @@ where
     F: Fn(&A) -> Result<O, RDFError>,
 {
     pub fn new(value: A, function: F) -> Self {
-        Self { value, function, _phantom: std::marker::PhantomData }
+        Self {
+            value,
+            function,
+            _phantom: std::marker::PhantomData,
+        }
     }
 }
 
@@ -75,7 +79,7 @@ where
 }
 
 /// Parser that applies a function directly to the RDF graph.
-/// 
+///
 /// This is the "escape hatch" for arbitrary graph operations that
 /// don't fit the standard parser patterns. The function receives
 /// mutable access to the RDF graph and can perform any query or
@@ -92,7 +96,10 @@ impl<RDF, F> ApplyRdfParser<RDF, F> {
         RDF: FocusRDF,
         F: Fn(&mut RDF) -> Result<A, RDFError>,
     {
-        Self { function, _marker: PhantomData }
+        Self {
+            function,
+            _marker: PhantomData,
+        }
     }
 }
 

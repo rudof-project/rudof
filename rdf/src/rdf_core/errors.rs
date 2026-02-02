@@ -3,6 +3,12 @@ use thiserror::Error;
 /// Represents all possible errors that can occur during RDF operations.
 #[derive(Error, Debug, PartialEq)]
 pub enum RDFError {
+    /// Default / fallback error.
+    #[error("{msg}")]
+    DefaultError {
+        msg: String,
+    },
+    
     // ========================================================================
     // Language and Literal Errors
     // ========================================================================
