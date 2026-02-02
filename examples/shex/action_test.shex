@@ -1,0 +1,16 @@
+PREFIX :     <http://example.org/>
+PREFIX foaf: <http://xmlns.com/foaf/>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+PREFIX test: <http://shex.io/extensions/Test/>
+
+%test:{  %}
+
+:IssueShape {
+    :reportedBy @:UserShape
+        %test:{ fail("some message") %}
+}
+
+:UserShape {
+    foaf:name xsd:string
+        %test:{ print(o) %}
+}
