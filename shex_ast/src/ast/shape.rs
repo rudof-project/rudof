@@ -3,7 +3,8 @@ use prefixmap::PrefixMap;
 use serde::{Deserialize, Serialize};
 
 use crate::{Annotation, SemAct, ShapeExprLabel, TripleExpr, TripleExprWrapper};
-use prefixmap::{Deref, DerefError, IriRef};
+use prefixmap::{Deref, IriRef};
+use prefixmap::error::DerefError;
 
 #[derive(Deserialize, Serialize, Debug, Default, PartialEq, Clone)]
 pub struct Shape {

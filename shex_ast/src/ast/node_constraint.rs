@@ -1,6 +1,7 @@
 use std::fmt;
 
-use prefixmap::{Deref, DerefError, IriRef};
+use prefixmap::{Deref, IriRef};
+use prefixmap::error::DerefError;
 use serde::{
     de::{self, MapAccess, Visitor}, Deserialize, Serialize,
     Serializer,

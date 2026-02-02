@@ -1,6 +1,7 @@
 use std::io::Write;
 
-use prefixmap::{IriRef, PrefixMap, PrefixMapError};
+use prefixmap::{IriRef, PrefixMap};
+use prefixmap::error::PrefixMapError;
 use shex_ast::{
     Annotation, NodeKind, ObjectValue, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr,
     ValueSetValue, XsFacet,

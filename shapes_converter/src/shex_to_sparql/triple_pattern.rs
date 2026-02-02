@@ -1,4 +1,5 @@
-use prefixmap::{IriRef, PrefixMap, PrefixMapError};
+use prefixmap::{IriRef, PrefixMap};
+use prefixmap::error::PrefixMapError;
 
 use crate::shex_to_sparql::Var;
 

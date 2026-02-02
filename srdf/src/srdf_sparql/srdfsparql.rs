@@ -149,7 +149,7 @@ impl Rdf for SRDFSparql {
         &self,
         prefix: &str,
         local: &str,
-    ) -> std::result::Result<IriS, prefixmap::PrefixMapError> {
+    ) -> std::result::Result<IriS, prefixmap::error::PrefixMapError> {
         self.prefixmap.resolve_prefix_local(prefix, local)
     }
 
