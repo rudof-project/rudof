@@ -1,5 +1,5 @@
 use crate::PrefixMap;
-use iri_s::IriSError;
+use iri_s::error::IriSError;
 use thiserror::Error;
 
 /// Errors that can occur when working with [`PrefixMap`]

@@ -3,9 +3,9 @@ use std::path::PathBuf;
 use crate::writer::get_writer;
 use crate::{RDFReaderMode, ResultServiceFormat};
 use anyhow::Result;
-use iri_s::mime_type::MimeType;
+use iri_s::MimeType;
 use rudof_lib::{
-    InputSpec, Rudof, RudofConfig, data::data_format2rdf_format, data_format::DataFormat,
+    data::data_format2rdf_format, data_format::DataFormat, InputSpec, Rudof, RudofConfig,
 };
 use sparql_service::ServiceDescriptionFormat;
 

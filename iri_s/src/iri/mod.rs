@@ -1,7 +1,9 @@
-pub mod iris;
+mod iris;
+mod iri;
 mod test;
-pub mod visitor;
+mod visitor;
 
+pub use iri::Iri;
 pub use iris::IriS;
 
 /// ```
@@ -32,7 +34,7 @@ pub use iris::IriS;
 #[macro_export]
 macro_rules! iri {
     ($lit: tt) => {
-        $crate::iri::iris::IriS::new_unchecked($lit)
+        $crate::IriS::new_unchecked($lit)
     };
 }
 

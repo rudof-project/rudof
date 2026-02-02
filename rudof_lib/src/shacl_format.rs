@@ -2,7 +2,7 @@ use clap::ValueEnum;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
-use iri_s::mime_type::MimeType;
+use iri_s::MimeType;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
 #[clap(rename_all = "lower")]

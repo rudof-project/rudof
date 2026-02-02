@@ -13,7 +13,7 @@ pub enum Tap2ShExError {
     #[error(transparent)]
     IriSError {
         #[from]
-        err: iri_s::IriSError,
+        err: iri_s::error::IriSError,
     },
 
     #[error("PrefixMap error: {err} at line: {line}, field: {field}")]

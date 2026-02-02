@@ -1,8 +1,9 @@
 use crate::ast::{serde_string_or_struct::*, SchemaJsonError};
 use crate::{BNode, IriOrStr, ShapeExprLabel};
-use iri_s::{iri, IriS, IriSError};
-use prefixmap::{IriRef, PrefixMap};
+use iri_s::error::IriSError;
+use iri_s::{iri, IriS};
 use prefixmap::error::PrefixMapError;
+use prefixmap::{IriRef, PrefixMap};
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
@@ -329,7 +330,6 @@ impl Display for Schema {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
 
     #[test]
