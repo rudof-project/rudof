@@ -29,6 +29,7 @@
 pub mod error;
 pub mod iri;
 pub mod map;
+#[cfg(all(test, not(target_arch = "wasm32")))]
 mod test;
 
 pub use crate::iri::Deref;
