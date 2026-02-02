@@ -1,6 +1,6 @@
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use prefixmap::PrefixMapError;
+use prefixmap::error::PrefixMapError;
 
 // TODO: I think this struct is not used anywhere
 // It was in the original design but then we moved to using SchemaIR directly

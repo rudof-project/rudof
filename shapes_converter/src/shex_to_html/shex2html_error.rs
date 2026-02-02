@@ -3,7 +3,8 @@ use std::{
     string::FromUtf8Error,
 };
 
-use prefixmap::{IriRef, PrefixMapError};
+use prefixmap::IriRef;
+use prefixmap::error::PrefixMapError;
 use shex_ast::{Schema, SchemaJsonError, ShapeExprLabel};
 use srdf::UmlConverterError;
 use thiserror::Error;

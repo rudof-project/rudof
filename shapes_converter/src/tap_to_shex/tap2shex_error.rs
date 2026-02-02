@@ -1,5 +1,5 @@
 use dctap::{DatatypeId, PropertyId, ShapeId, TapShape};
-use prefixmap::PrefixMapError;
+use prefixmap::error::PrefixMapError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]

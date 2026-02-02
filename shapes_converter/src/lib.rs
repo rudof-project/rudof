@@ -13,7 +13,7 @@ pub mod tap_to_shex;
 
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use prefixmap::PrefixMapError;
+use prefixmap::error::PrefixMapError;
 use shex_ast::Annotation;
 use shex_ast::ObjectValue;
 

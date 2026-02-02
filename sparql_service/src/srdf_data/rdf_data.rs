@@ -383,7 +383,7 @@ impl Rdf for RdfData {
         &self,
         prefix: &str,
         local: &str,
-    ) -> Result<IriS, prefixmap::PrefixMapError> {
+    ) -> Result<IriS, prefixmap::error::PrefixMapError> {
         if let Some(graph) = self.graph() {
             let iri = graph.prefixmap().resolve_prefix_local(prefix, local)?;
             Ok(iri.clone())
@@ -393,7 +393,7 @@ impl Rdf for RdfData {
                     return Ok(iri.clone());
                 }
             }
-            Err(prefixmap::PrefixMapError::PrefixNotFound {
+            Err(prefixmap::error::PrefixMapError::PrefixNotFound {
                 prefix: prefix.to_string(),
                 prefixmap: PrefixMap::new(),
             })

@@ -7,7 +7,8 @@ use crate::language_exclusion::LanguageExclusion;
 use crate::literal_exclusion::LiteralExclusion;
 use crate::LangOrWildcard;
 use iri_s::IriSError;
-use prefixmap::{Deref, DerefError, IriRef};
+use prefixmap::{Deref, IriRef};
+use prefixmap::error::DerefError;
 use rust_decimal::Decimal;
 use serde::ser::SerializeMap;
 use serde::{

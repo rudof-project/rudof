@@ -1,5 +1,6 @@
 use iri_s::{IriS, IriSError};
-use prefixmap::{IriRef, PrefixMapError};
+use prefixmap::IriRef;
+use prefixmap::error::PrefixMapError;
 use srdf::lang::Lang;
 use thiserror::Error;
 
