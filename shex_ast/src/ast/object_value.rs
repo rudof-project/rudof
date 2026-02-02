@@ -1,5 +1,6 @@
 use iri_s::{IriS, IriSError};
-use prefixmap::{Deref, DerefError, IriRef};
+use prefixmap::{Deref, IriRef};
+use prefixmap::error::DerefError;
 use rust_decimal::Decimal;
 use serde::de::Unexpected;
 use serde::ser::SerializeMap;

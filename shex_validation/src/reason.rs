@@ -1,5 +1,6 @@
 use crate::ValidatorErrors;
-use prefixmap::{PrefixMap, PrefixMapError};
+use prefixmap::PrefixMap;
+use prefixmap::error::PrefixMapError;
 use serde::{Serialize, ser::SerializeMap};
 use shex_ast::{
     Node, ShapeLabelIdx,

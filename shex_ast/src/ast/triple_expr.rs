@@ -1,7 +1,8 @@
 use std::{result, str::FromStr};
 
 use iri_s::{IriS, IriSError};
-use prefixmap::{Deref, DerefError, IriRef, PrefixMap};
+use prefixmap::{Deref, IriRef, PrefixMap};
+use prefixmap::error::DerefError;
 use serde::{Deserialize, Serialize, Serializer};
 
 use crate::ast::serde_string_or_struct::*;

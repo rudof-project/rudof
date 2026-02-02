@@ -4,7 +4,7 @@ use crate::shapemap::ShapemapError;
 use iri_s::IriS;
 use prefixmap::IriRef;
 use prefixmap::PrefixMap;
-use prefixmap::PrefixMapError;
+use prefixmap::error::PrefixMapError;
 use serde::Serialize;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;

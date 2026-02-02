@@ -46,7 +46,7 @@ pub enum SchemaJsonError {
     #[error(transparent)]
     PrefixMapError {
         #[from]
-        err: prefixmap::PrefixMapError,
+        err: prefixmap::error::PrefixMapError,
     },
 
     #[error("Obtaining current dir: {error:?}")]

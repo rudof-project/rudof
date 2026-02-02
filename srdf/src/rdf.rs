@@ -12,7 +12,7 @@ use crate::lang::Lang;
 use crate::matcher::Matcher;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use prefixmap::PrefixMapError;
+use prefixmap::error::PrefixMapError;
 use rust_decimal::Decimal;
 use std::cmp::Ordering;
 use std::fmt::Display;
