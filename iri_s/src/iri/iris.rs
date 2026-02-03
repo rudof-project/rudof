@@ -250,6 +250,7 @@ impl From<Url> for IriS {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl TryFrom<&Path> for IriS {
     type Error = IriSError;
 
