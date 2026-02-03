@@ -71,17 +71,17 @@ impl IriS {
         }
     }
 
-    /// Get the IRI as a string slice
+    /// Get the IRI as a `&str`
     pub fn as_str(&self) -> &str {
         self.iri.as_str()
     }
 
-    /// Convert an `IriS` to a `NamedNode`
     pub fn as_named_node(&self) -> &NamedNode {
+    /// Gets the [`NamedNode`] of an [`IriS`]
         &self.iri
     }
 
-    /// Create an `IriS` from a string without checking for possible syntactic errors
+    /// Create an [`IriS`] from a `&str` without checking for possible syntactic errors
     pub fn new_unchecked(str: &str) -> IriS {
         let iri = NamedNode::new_unchecked(str);
         IriS { iri }
