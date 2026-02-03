@@ -3,7 +3,7 @@ name = "rudof_mcp"
 version = "0.1.144"
 authors.workspace = true
 description.workspace = true
-documentation = "https://docs.rs/shex_ast"
+documentation = "https://docs.rs/rudof_mcp"
 edition.workspace = true
 license.workspace = true
 homepage.workspace = true
@@ -16,28 +16,15 @@ axum.workspace = true
 axum-server.workspace = true
 base64.workspace = true
 clap.workspace = true
-clientele.workspace = true
 iri_s.workspace = true
-josekit.workspace = true
-openssl.workspace = true
-prefixmap.workspace = true
-reqwest.workspace = true
-rmcp = { version = "0.8.5", features = [
-    "client",
-    "server",
-    "transport-io",
-    "transport-streamable-http-server",
-] }
-rmcp-macros = "0.8.5"
+rmcp.workspace = true
 rudof_lib.workspace = true
-schemars = "1.0.4"
+schemars.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 shex_ast.workspace = true
 srdf.workspace = true
 tokio.workspace = true
-tokio-util.workspace = true
-tower = "0.5"
-tower-http = { version = "0.5", features = ["trace", "cors"] }
 tracing.workspace = true
-tracing-subscriber.workspace = true
+uuid.workspace = true
+chrono.workspace = true

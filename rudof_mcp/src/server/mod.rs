@@ -1,6 +1,7 @@
-pub mod http;
+mod streamable_http;
 mod server_impl;
 mod stdio_server;
-pub mod transport;
-pub use server_impl::run_mcp;
+mod transport;
+
+pub use server_impl::{run_mcp, run_mcp_async};
 pub use transport::TransportType;

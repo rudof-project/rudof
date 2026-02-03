@@ -62,50 +62,19 @@ fn main() -> Result<()> {
         .or_else(|_| EnvFilter::try_new("info"))
         .unwrap();
 
-    // Check if we're running MCP with stdio transport
-    let is_mcp_stdio = matches!(
-        &cli.command,
-        Some(Command::Mcp {
-            transport: rudof_mcp::TransportType::Stdio,
-            ..
-        })
-    );
+    // Initialize tracing with stderr output
+    // Note: MCP stdio transport allows logging to stderr per spec (MCP 2025-11-25)
+    let fmt_layer = fmt::layer()
+        .with_file(true)
+        .with_target(false)
+        .with_line_number(true)
+        .with_writer(io::stderr)
+        .without_time();
 
-    if is_mcp_stdio {
-        let log_dir = std::path::Path::new("rudof_mcp").join("src").join("server");
-        std::fs::create_dir_all(&log_dir)?;
-        let log_path = log_dir.join("mcp_server.log");
-        // For MCP stdio, write logs to file
-        let log_file = std::fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(log_path)?;
-
-        let fmt_layer = fmt::layer()
-            .with_file(true)
-            .with_target(false)
-            .with_line_number(true)
-            .with_writer(move || log_file.try_clone().unwrap())
-            .without_time();
-
-        tracing_subscriber::registry()
-            .with(env_filter.clone())
-            .with(fmt_layer)
-            .init();
-    } else {
-        // For other commands, use stderr
-        let fmt_layer = fmt::layer()
-            .with_file(true)
-            .with_target(false)
-            .with_line_number(true)
-            .with_writer(io::stderr)
-            .without_time();
-
-        tracing_subscriber::registry()
-            .with(env_filter.clone())
-            .with(fmt_layer)
-            .init();
-    }
+    tracing_subscriber::registry()
+        .with(env_filter.clone())
+        .with(fmt_layer)
+        .init();
 
     tracing::trace!("rudof running with tracing filter {}", env_filter);
 
@@ -171,7 +140,6 @@ fn main() -> Result<()> {
             port,
             route_path,
         }) => {
-            // Pass the reload handle to MCP server for dynamic log level changes
             rudof_mcp::run_mcp(*transport, *port, route_path)
         }
         Some(Command::Service {
