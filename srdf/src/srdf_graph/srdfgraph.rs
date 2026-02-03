@@ -19,15 +19,15 @@ use oxrdf::{
 use oxrdfio::{JsonLdProfileSet, RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
-use prefixmap::map::*;
 use prefixmap::error::PrefixMapError;
+use prefixmap::map::*;
 use serde::ser::SerializeStruct;
 use serde::Serialize;
 use sparesults::QuerySolution as SparQuerySolution;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::fs::File;
-use std::io::{self, BufReader, Cursor, Read, Write};
+use std::io::{BufReader, Cursor, Read, Write};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use tracing::{debug, trace};
@@ -85,7 +85,7 @@ impl SRDFGraph {
         self.graph.is_empty()
     }
 
-    pub fn merge_from_reader<R: io::Read>(
+    pub fn merge_from_reader<R: Read>(
         &mut self,
         reader: &mut R,
         source_name: &str,
@@ -229,7 +229,7 @@ impl SRDFGraph {
         Ok(())
     }
 
-    pub fn from_reader<R: io::Read>(
+    pub fn from_reader<R: Read>(
         read: &mut R,
         source_name: &str,
         format: &RDFFormat,
@@ -264,7 +264,7 @@ impl SRDFGraph {
         reader_mode: &ReaderMode,
     ) -> Result<SRDFGraph, SRDFGraphError> {
         Self::from_reader(
-            &mut std::io::Cursor::new(&data),
+            &mut Cursor::new(&data),
             "String",
             format,
             base,
@@ -360,18 +360,13 @@ impl SRDFGraph {
 }
 
 impl Rdf for SRDFGraph {
+    type Subject = OxSubject;
     type IRI = OxNamedNode;
+    type Term = OxTerm;
     type BNode = OxBlankNode;
     type Literal = OxLiteral;
-    type Subject = OxSubject;
-    type Term = OxTerm;
     type Triple = OxTriple;
     type Err = SRDFGraphError;
-
-    fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, PrefixMapError> {
-        let iri = self.pm.resolve_prefix_local(prefix, local)?;
-        Ok(iri.clone())
-    }
 
     fn qualify_iri(&self, node: &Self::IRI) -> String {
         let iri = IriS::from_str(node.as_str()).unwrap();
@@ -394,28 +389,19 @@ impl Rdf for SRDFGraph {
         }
     }
 
-    fn prefixmap(&self) -> Option<prefixmap::PrefixMap> {
+    fn prefixmap(&self) -> Option<PrefixMap> {
         Some(self.pm.clone())
+    }
+
+    fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, PrefixMapError> {
+        let iri = self.pm.resolve_prefix_local(prefix, local)?;
+        Ok(iri.clone())
     }
 }
 
 impl NeighsRDF for SRDFGraph {
     fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
         Ok(self.graph.iter().map(TripleRef::into_owned))
-    }
-
-    // Optimized version for triples with a specific subject
-    fn triples_with_subject(
-        &self,
-        subject: Self::Subject,
-    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
-        // Collect the triples into a Vec to avoid the lifetime dependency on subject
-        let triples: Vec<_> = self
-            .graph
-            .triples_for_subject(&subject)
-            .map(TripleRef::into_owned)
-            .collect();
-        Ok(triples.into_iter())
     }
 
     fn triples_matching<S, P, O>(
@@ -441,14 +427,28 @@ impl NeighsRDF for SRDFGraph {
         });
         Ok(triples)
     }
+
+    // Optimized version for triples with a specific subject
+    fn triples_with_subject(
+        &self,
+        subject: Self::Subject,
+    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
+        // Collect the triples into a Vec to avoid the lifetime dependency on subject
+        let triples: Vec<_> = self
+            .graph
+            .triples_for_subject(&subject)
+            .map(TripleRef::into_owned)
+            .collect();
+        Ok(triples.into_iter())
+    }
 }
 
 #[async_trait]
 impl AsyncSRDF for SRDFGraph {
+    type Subject = OxSubject;
     type IRI = OxNamedNode;
     type BNode = OxBlankNode;
     type Literal = OxLiteral;
-    type Subject = OxSubject;
     type Term = OxTerm;
     type Err = SRDFGraphError;
 
@@ -508,6 +508,17 @@ impl FocusRDF for SRDFGraph {
 }
 
 impl BuildRDF for SRDFGraph {
+    fn empty() -> Self {
+        SRDFGraph {
+            focus: None,
+            graph: Graph::new(),
+            pm: PrefixMap::new(),
+            base: None,
+            bnode_counter: 0,
+            store: None,
+        }
+    }
+
     fn add_base(&mut self, base: &Option<IriS>) -> Result<(), Self::Err> {
         self.base.clone_from(base);
         Ok(())
@@ -521,16 +532,6 @@ impl BuildRDF for SRDFGraph {
     fn add_prefix_map(&mut self, prefix_map: PrefixMap) -> Result<(), Self::Err> {
         self.pm = prefix_map.clone();
         Ok(())
-    }
-
-    fn add_bnode(&mut self) -> Result<Self::BNode, Self::Err> {
-        self.bnode_counter += 1;
-        match self.bnode_counter.try_into() {
-            Ok(bn) => Ok(OxBlankNode::new_from_unique_id(bn)),
-            Err(_) => Err(SRDFGraphError::BlankNodeId {
-                msg: format!("Error converting {} to usize", self.bnode_counter),
-            }),
-        }
     }
 
     fn add_triple<S, P, O>(&mut self, subj: S, pred: P, obj: O) -> Result<(), Self::Err>
@@ -567,14 +568,13 @@ impl BuildRDF for SRDFGraph {
         Ok(())
     }
 
-    fn empty() -> Self {
-        SRDFGraph {
-            focus: None,
-            graph: Graph::new(),
-            pm: PrefixMap::new(),
-            base: None,
-            bnode_counter: 0,
-            store: None,
+    fn add_bnode(&mut self) -> Result<Self::BNode, Self::Err> {
+        self.bnode_counter += 1;
+        match self.bnode_counter.try_into() {
+            Ok(bn) => Ok(OxBlankNode::new_from_unique_id(bn)),
+            Err(_) => Err(SRDFGraphError::BlankNodeId {
+                msg: format!("Error converting {} to usize", self.bnode_counter),
+            }),
         }
     }
 
@@ -582,7 +582,7 @@ impl BuildRDF for SRDFGraph {
         let mut serializer = RdfSerializer::from_format(cnv_rdf_format(format));
 
         for (prefix, iri) in &self.pm.map {
-            serializer = serializer.with_prefix(prefix, iri.as_str()).unwrap();
+            serializer = serializer.with_prefix(prefix, iri.as_str())?;
         }
 
         let mut writer = serializer.for_writer(write);
@@ -657,21 +657,6 @@ fn cnv_triple(t: &OxTriple) -> TripleRef<'_> {
 }
 
 impl QueryRDF for SRDFGraph {
-    fn query_construct(
-        &self,
-        _query_str: &str,
-        _format: &QueryResultFormat,
-    ) -> Result<String, SRDFGraphError>
-    where
-        Self: Sized,
-    {
-        let str = String::new();
-        if let Some(_store) = &self.store {
-            tracing::debug!("Querying in-memory store (we ignore it by now");
-        }
-        Ok(str)
-    }
-
     fn query_select(&self, query_str: &str) -> Result<QuerySolutions<SRDFGraph>, SRDFGraphError>
     where
         Self: Sized,
@@ -703,6 +688,21 @@ impl QueryRDF for SRDFGraph {
             trace!("No in-memory store to query");
         }
         Ok(sols)
+    }
+
+    fn query_construct(
+        &self,
+        _query_str: &str,
+        _format: &QueryResultFormat,
+    ) -> Result<String, SRDFGraphError>
+    where
+        Self: Sized,
+    {
+        let str = String::new();
+        if let Some(_store) = &self.store {
+            debug!("Querying in-memory store (we ignore it by now");
+        }
+        Ok(str)
     }
 
     fn query_ask(&self, _query: &str) -> Result<bool, Self::Err> {

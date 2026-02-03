@@ -1,9 +1,9 @@
-use crate::IriOrBlankNode;
-use crate::RDFError;
-use crate::SLiteral;
 use crate::lang::Lang;
 use crate::numeric_literal::NumericLiteral;
 use crate::triple::Triple;
+use crate::IriOrBlankNode;
+use crate::RDFError;
+use crate::SLiteral;
 use iri_s::IriS;
 use prefixmap::IriRef;
 use serde::{Deserialize, Serialize};
