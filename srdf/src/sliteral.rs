@@ -773,7 +773,7 @@ impl From<SLiteral> for oxrdf::Literal {
             } => match datatype.get_iri() {
                 Ok(datatype) => oxrdf::Literal::new_typed_literal(
                     lexical_form,
-                    datatype.as_named_node().to_owned(),
+                    datatype.named_node().clone(),
                 ),
                 Err(_) => lexical_form.clone().into(),
             },
@@ -787,7 +787,7 @@ impl From<SLiteral> for oxrdf::Literal {
             } => match datatype.get_iri() {
                 Ok(datatype) => oxrdf::Literal::new_typed_literal(
                     lexical_form,
-                    datatype.as_named_node().to_owned(),
+                    datatype.named_node().clone(),
                 ),
                 Err(_) => lexical_form.into(),
             },

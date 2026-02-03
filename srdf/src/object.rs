@@ -159,7 +159,7 @@ impl TryFrom<oxrdf::Term> for Object {
     fn try_from(value: oxrdf::Term) -> Result<Self, Self::Error> {
         match value {
             oxrdf::Term::NamedNode(named_node) => {
-                Ok(Object::iri(IriS::from_named_node(&named_node)))
+                Ok(Object::iri(named_node.into()))
             }
             oxrdf::Term::BlankNode(blank_node) => Ok(Object::bnode(blank_node.into_string())),
             oxrdf::Term::Literal(literal) => {
@@ -170,7 +170,7 @@ impl TryFrom<oxrdf::Term> for Object {
                 let (s, p, o) = triple.into_components();
                 let object = Object::try_from(o)?;
                 let subject = IriOrBlankNode::from(s);
-                let predicate = IriS::from_named_node(&p);
+                let predicate = p.into();
                 Ok(Object::Triple {
                     subject: Box::new(subject),
                     predicate,

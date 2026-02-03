@@ -116,8 +116,7 @@ fn get_base(config: &RudofConfig, base: &Option<IriS>) -> Result<IriS, RudofErro
             Url::from_directory_path(&cwd).map_err(|_| RudofError::ConvertingCurrentFolderUrl {
                 current_dir: cwd.to_string_lossy().to_string(),
             })?;
-        let iri = IriS::from_url(&url);
-        Ok(iri)
+        Ok(url.into())
     }
 }
 

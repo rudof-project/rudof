@@ -961,8 +961,8 @@ mod tests {
     fn test_rdf_list() {
         let graph = graph_from_str(DUMMY_GRAPH_2);
 
-        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
+        let x = OxNamedNode::new_unchecked("https://example.org/x").into();
+        let p = OxNamedNode::new_unchecked("https://example.org/p").into();
 
         let mut parser = property_value(p).then(move |obj| set_focus(&obj).with(rdf_list()));
         let result: Vec<OxTerm> = parser.parse(&x, graph).unwrap();
@@ -993,8 +993,8 @@ mod tests {
     #[test]
     fn test_parser_property_integers() {
         let graph = graph_from_str(DUMMY_GRAPH_3);
-        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
+        let x = OxNamedNode::new_unchecked("https://example.org/x").into();
+        let p = OxNamedNode::new_unchecked("https://example.org/p").into();
         let mut parser = property_integers(p);
         assert_eq!(parser.parse(&x, graph).unwrap(), HashSet::from([1, 2, 3]))
     }
@@ -1020,9 +1020,9 @@ mod tests {
     #[test]
     fn test_parser_or() {
         let graph = graph_from_str(DUMMY_GRAPH_5);
-        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
-        let q = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/q"));
+        let x = OxNamedNode::new_unchecked("https://example.org/x").into();
+        let p = OxNamedNode::new_unchecked("https://example.org/p").into();
+        let q = OxNamedNode::new_unchecked("https://example.org/q").into();
         let mut parser = property_bool(p).or(property_bool(q));
         assert!(parser.parse(&x, graph).unwrap())
     }
@@ -1030,8 +1030,8 @@ mod tests {
     #[test]
     fn test_parser_or_enum_1() {
         let graph = graph_from_str(DUMMY_GRAPH_6);
-        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
+        let x: IriS = OxNamedNode::new_unchecked("https://example.org/x").into();
+        let p: IriS = OxNamedNode::new_unchecked("https://example.org/p").into();
         let parser_a_bool = property_bool(p.clone()).map(A::Bool);
         let parser_a_int = property_integer(p).map(A::Int);
         let mut parser = parser_a_int.or(parser_a_bool);
@@ -1041,8 +1041,8 @@ mod tests {
     #[test]
     fn test_parser_or_enum_2() {
         let graph = graph_from_str(DUMMY_GRAPH_7);
-        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
+        let x: IriS = OxNamedNode::new_unchecked("https://example.org/x").into();
+        let p: IriS = OxNamedNode::new_unchecked("https://example.org/p").into();
         let parser_a_bool = property_bool(p.clone()).map(A::Bool);
         let parser_a_int = property_integer(p).map(A::Int);
         let mut parser = parser_a_int.or(parser_a_bool);
@@ -1052,9 +1052,9 @@ mod tests {
     #[test]
     fn test_parser_and() {
         let graph = graph_from_str(DUMMY_GRAPH_8);
-        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
-        let q = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/q"));
+        let x: IriS = OxNamedNode::new_unchecked("https://example.org/x").into();
+        let p: IriS = OxNamedNode::new_unchecked("https://example.org/p").into();
+        let q: IriS = OxNamedNode::new_unchecked("https://example.org/q").into();
         let mut parser = property_bool(p).and(property_integer(q));
         assert_eq!(parser.parse(&x, graph).unwrap(), (true, 1))
     }
@@ -1062,8 +1062,8 @@ mod tests {
     #[test]
     fn test_parser_map() {
         let graph = graph_from_str(DUMMY_GRAPH_9);
-        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
+        let x: IriS = OxNamedNode::new_unchecked("https://example.org/x").into();
+        let p: IriS = OxNamedNode::new_unchecked("https://example.org/p").into();
         let mut parser = property_integer(p).map(|n| n + 1);
         assert_eq!(parser.parse(&x, graph).unwrap(), 2)
     }
@@ -1071,8 +1071,8 @@ mod tests {
     #[test]
     fn test_parser_and_then() {
         let graph = graph_from_str(DUMMY_GRAPH_10);
-        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
+        let x = OxNamedNode::new_unchecked("https://example.org/x").into();
+        let p = OxNamedNode::new_unchecked("https://example.org/p").into();
 
         struct IntConversionError(String);
 
@@ -1095,8 +1095,8 @@ mod tests {
     #[test]
     fn test_parser_flat_map() {
         let graph = graph_from_str(DUMMY_GRAPH_10);
-        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-        let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
+        let x = OxNamedNode::new_unchecked("https://example.org/x").into();
+        let p = OxNamedNode::new_unchecked("https://example.org/p").into();
 
         fn cnv_int(s: String) -> PResult<isize> {
             s.parse().map_err(|_| RDFParseError::Custom {
@@ -1120,9 +1120,9 @@ mod tests {
         }
 
         let graph = graph_from_str(DUMMY_GRAPH_9);
-        let x = OxNamedNode::new_unchecked("http://example.org/x");
-        let iri_s = IriS::from_named_node(&x);
-        let term = x.clone().into();
+        let x = OxNamedNode::new_unchecked("https://example.org/x");
+        let iri_s: IriS = x.into();
+        let term = iri_s.clone().into();
         let mut parser = is_term(&term);
         let result = parser.parse(&iri_s, graph);
         assert!(result.is_ok())
@@ -1131,25 +1131,25 @@ mod tests {
     #[test]
     fn test_not() {
         let graph = graph_from_str(DUMMY_GRAPH_9);
-        let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-        let q = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/q"));
+        let x: IriS = OxNamedNode::new_unchecked("https://example.org/x").into();
+        let q: IriS = OxNamedNode::new_unchecked("https://example.org/q").into();
         assert!(not(property_value(q)).parse(&x, graph).is_ok())
     }
 
     #[test]
     fn test_iri() {
         let graph = SRDFGraph::default();
-        let x = OxNamedNode::new_unchecked("http://example.org/x");
-        let x_iri = IriS::from_named_node(&x);
+        let x = OxNamedNode::new_unchecked("https://example.org/x");
+        let x_iri = x.clone().into();
         assert_eq!(iri().parse(&x_iri, graph).unwrap(), x)
     }
 
     #[test]
     fn test_add_triple_ref() {
         let mut graph = SRDFGraph::default();
-        let s = OxNamedNode::new_unchecked("http://example.org/x");
-        let p = OxNamedNode::new_unchecked("http://example.org/p");
-        let o = OxNamedNode::new_unchecked("http://example.org/y");
+        let s = OxNamedNode::new_unchecked("https://example.org/x");
+        let p = OxNamedNode::new_unchecked("https://example.org/p");
+        let o = OxNamedNode::new_unchecked("https://example.org/y");
         graph.add_triple_ref(&s, &p, &o).unwrap();
         assert_eq!(graph.len(), 1);
     }

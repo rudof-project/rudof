@@ -93,7 +93,7 @@ impl Schema {
     /// Obtain a Schema from an IRI
     pub fn from_iri(iri: &IriS) -> Result<Schema, SchemaJsonError> {
         let body =
-            iri.dereference(&Some(iri.clone()))
+            iri.dereference(Some(iri))
                 .map_err(|e| SchemaJsonError::DereferencingIri {
                     iri: iri.clone(),
                     error: e,
