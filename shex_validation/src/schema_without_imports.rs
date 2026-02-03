@@ -6,7 +6,7 @@ use shex_ast::compact::ShExParser;
 use shex_ast::{
     ResolveMethod, Schema, SchemaJsonError, ShExFormat, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel,
 };
-use std::collections::{HashMap, hash_map::Entry};
+use std::collections::{hash_map::Entry, HashMap};
 use url::Url;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
@@ -48,7 +48,7 @@ impl SchemaWithoutImports {
     /// Resolve the imports declared in a schema
     pub fn resolve_imports(
         schema: &Schema,
-        base: &Option<IriS>,
+        base: Option<&IriS>,
         resolve_method: Option<&ResolveMethod>,
     ) -> Result<SchemaWithoutImports, SchemaWithoutImportsError> {
         let resolve_method = match resolve_method {
@@ -107,7 +107,7 @@ impl SchemaWithoutImports {
     pub fn resolve_imports_visited(
         pending: &mut Vec<IriRef>,
         visited: &mut Vec<IriRef>,
-        base: &Option<IriS>,
+        base: Option<&IriS>,
         resolve_method: &ResolveMethod,
         map: &mut HashMap<ShapeExprLabel, (ShapeExpr, IriS)>,
         prefixmap: &PrefixMap,
@@ -168,7 +168,7 @@ impl SchemaWithoutImports {
 pub fn find_schema_rotating_formats(
     iri: &IriS,
     formats: Vec<ShExFormat>,
-    base: &Option<IriS>,
+    base: Option<&IriS>,
 ) -> Result<Schema, SchemaWithoutImportsError> {
     for format in &formats {
         match get_schema_from_iri(iri, format, base) {
@@ -228,7 +228,7 @@ pub fn local_folder_as_iri() -> Result<IriS, SchemaJsonError> {
 pub fn get_schema_from_iri(
     iri: &IriS,
     format: &ShExFormat,
-    base: &Option<IriS>,
+    base: Option<&IriS>,
 ) -> Result<Schema, SchemaWithoutImportsError> {
     match format {
         ShExFormat::ShExC => {

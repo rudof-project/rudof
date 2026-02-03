@@ -1,4 +1,4 @@
-use iri_s::IriSError;
+use iri_s::error::IriSError;
 use prefixmap::error::{DerefError, PrefixMapError};
 use std::{
     io,

@@ -6,9 +6,9 @@ use crate::iri_exclusion::IriExclusion;
 use crate::language_exclusion::LanguageExclusion;
 use crate::literal_exclusion::LiteralExclusion;
 use crate::LangOrWildcard;
-use iri_s::IriSError;
-use prefixmap::{Deref, IriRef};
+use iri_s::error::IriSError;
 use prefixmap::error::DerefError;
+use prefixmap::{Deref, IriRef};
 use rust_decimal::Decimal;
 use serde::ser::SerializeMap;
 use serde::{

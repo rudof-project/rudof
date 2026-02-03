@@ -141,3 +141,4 @@ url = "2.2.2"
 uuid = { version = "1.0", features = ["v4"] }
 yaml-rust2 = { version = "0.10" }
 proptest = "1.9.0"
+#bencher = "0.1.5"

@@ -1,6 +1,6 @@
 use crate::RudofError;
 use clap::ValueEnum;
-use iri_s::mime_type::MimeType;
+use iri_s::MimeType;
 use shex_ast::ShExFormat as ShExAstShExFormat;
 use std::{
     fmt::{Display, Formatter},
