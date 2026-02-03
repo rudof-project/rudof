@@ -379,6 +379,13 @@ pub async fn export_image_impl(
     let size_bytes = v.len();
     let base64_data = general_purpose::STANDARD.encode(&v);
 
+    // Determine MIME type based on image format
+    let mime_type = match image_format.to_lowercase().as_str() {
+        "svg" => "image/svg+xml",
+        "png" => "image/png",
+        _ => "application/octet-stream",
+    };
+
     let response = ExportImageResponse {
         image_data_base64: base64_data.clone(),
         image_format: image_format.clone(),
@@ -393,13 +400,13 @@ pub async fn export_image_impl(
     })?;
 
     let description = format!(
-        "Image generated successfully ({} format, {} bytes encoded as base64)",
+        "Image generated successfully ({} format, {} bytes)",
         image_format, size_bytes
     );
 
     let mut result = CallToolResult::success(vec![
         Content::text(description),
-        Content::text(format!("\n\nBase64 data:\n{}", base64_data)),
+        Content::image(base64_data, mime_type),
     ]);
 
     result.structured_content = Some(structured);
