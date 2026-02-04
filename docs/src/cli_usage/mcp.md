@@ -32,6 +32,99 @@ rudof mcp
 >    }
 > ```
 
+## MCP Capabilities
+
+The Rudof MCP server exposes the following capabilities:
+
+| Capability    | Feature                                              |
+|---------------|------------------------------------------------------|
+| `tools`       | 12 tools for validation, querying, and data ops      |
+| `prompts`     | Guided templates for common workflows                |
+| `resources`   | Access to RDF data and format information            |
+| `logging`     | Real-time log notifications with level filtering     |
+| `completions` | Argument completions for tools and prompts           |
+| `tasks`       | Async task support for long-running operations       |
+
+### Available Tools
+
+The MCP server provides 12 tools organized by functionality:
+
+**Data Management:**
+
+| Tool | Description |
+|------|-------------|
+| `load_rdf_data_from_sources` | Load RDF data from URLs, files, raw text, or SPARQL endpoints |
+| `export_rdf_data` | Serialize RDF data to various formats (Turtle, JSON-LD, N-Triples, etc.) |
+| `export_plantuml` | Generate PlantUML diagram of the RDF graph |
+| `export_image` | Generate SVG or PNG visualization of the RDF graph |
+
+**Node Inspection:**
+
+| Tool | Description |
+|------|-------------|
+| `node_info` | Show information about a node (outgoing/incoming arcs) |
+
+**Query:**
+
+| Tool | Description |
+|------|-------------|
+| `execute_sparql_query` | Execute SPARQL queries (SELECT, CONSTRUCT, ASK, DESCRIBE) |
+
+**ShEx Tools:**
+
+| Tool | Description |
+|------|-------------|
+| `validate_shex` | Validate RDF data against a ShEx schema |
+| `check_shex` | Check if a ShEx schema is well-formed |
+| `shape_info` | Get information about a specific ShEx shape |
+| `convert_shex` | Convert ShEx schema between formats (shexc, shexj, turtle) |
+| `show_shex` | Parse and display ShEx schema with optional analysis |
+
+**SHACL Tools:**
+
+| Tool | Description |
+|------|-------------|
+| `validate_shacl` | Validate RDF data against a SHACL schema |
+
+### Available Prompts
+
+The MCP server provides guided templates for common workflows:
+
+| Prompt | Description |
+|--------|-------------|
+| `explore_rdf_node` | Interactive guide for exploring RDF node information and relationships |
+| `analyze_rdf_data` | Comprehensive guide for analyzing RDF data structure and quality |
+| `validation_guide` | Step-by-step guide for validating RDF data against ShEx or SHACL schemas |
+| `sparql_builder` | Interactive helper for building and understanding SPARQL queries |
+
+### Available Resources
+
+The server exposes resources for accessing RDF data and format information:
+
+**Current RDF Data (multiple formats):**
+
+- `rudof://current-data` - Turtle format
+- `rudof://current-data/ntriples` - N-Triples format
+- `rudof://current-data/rdfxml` - RDF/XML format
+- `rudof://current-data/jsonld` - JSON-LD format
+- `rudof://current-data/trig` - TriG format
+- `rudof://current-data/nquads` - N-Quads format
+- `rudof://current-data/n3` - Notation3 format
+
+**Format Information:**
+
+- `rudof://formats/rdf` - Supported RDF formats
+- `rudof://formats/shex` - Supported ShEx formats
+- `rudof://formats/shacl` - Supported SHACL formats
+- `rudof://formats/node-modes` - Node inspection modes
+- `rudof://formats/query-types` - Supported SPARQL query types
+- `rudof://formats/query-results` - Query result formats
+- `rudof://formats/shex-validation-result` - ShEx validation result formats
+- `rudof://formats/shacl-validation-result` - SHACL validation result formats
+- `rudof://formats/validation-reader-modes` - Reader modes (strict/lax)
+- `rudof://formats/shex-validation-sort-options` - ShEx result sort options
+- `rudof://formats/shacl-validation-sort-options` - SHACL result sort options
+
 ## Changing MCP Server Settings
 
 ### Changing the transport type
@@ -76,36 +169,6 @@ For example, to run the MCP server with `streamable-http` transport on port `808
 rudof mcp --transport streamable-http --port 8080 --route-name rdf
 ```
 
-## Using Streamable HTTP Transport
-
-If you want to use the `streamable-http` transport, you need to deploy an Authorization Server (AS) for authentication. This section explains how to set it up using Docker Desktop.
-
-### Deploying the Authorization Server
-
-The Authorization Server is based on Keycloak and can be deployed using Docker Compose. The configuration file is located at `/rudof-mcp/src/as`. To start it:
-
-1. Navigate to the directory containing the docker-compose file:
-```sh
-   cd /rudof-mcp/src/as
-```
-
-2. Start the services with Docker Compose:
-```sh
-   docker-compose up -d
-```
-
-3. The Authorization Server will be accessible at `http://localhost:8080` (username: `admin`, password: `admin`).
-
-
-> ⚠️ **IMPORTANT** By default, the Authorization Server is configured with the following audience: `http://localhost:8000/rudof`.
-> If you start the MCP server with a different port or route name, you must update the audience  configuration in the Authorization Server accordingly.
->For example, if you start the server with:
->```sh
->rudof mcp --transport streamable-http --port 9000 --route-name rdfserver
->```
->You need to change the audience in the Authorization Server to `http://localhost:9000/rdfserver`
-
-
 ## Connecting with Claude Desktop (Example MCP Client)
 
 Once you have started rudof as an MCP server, you can configure a `client that supports MCP servers` to it. You can find a list of clients [here](https://modelcontextprotocol.io/clients).
@@ -119,7 +182,7 @@ As an example, we'll show how to connect the rudof MCP server to `Claude Desktop
 In Claude Desktop's configuration file, add the following entry under your MCP servers section:
 ```json
 "rudof": {
-  "command": "/path/to/rudof",
+  "command": "/path/to/rudof.exe",
   "args": [ "mcp" ],
   "env": {
       "PLANTUML": "/path/to/plantuml.jar"
@@ -128,15 +191,12 @@ In Claude Desktop's configuration file, add the following entry under your MCP s
 }
 ```
 
-> **Note**: Replace `/path/to/rudof` with the actual path to your `rudof` binary.
-
 #### Using Streamable HTTP transport
 
 If you want to test the streamable-http transport, you need to verify:
 
 - `rudof MCP server` is running locally (for example, using `rudof mcp --transport streamable-http`).
 - [Node.js](https://nodejs.org/es/download) is installed on your system (required to use the `mcp-remote` command).
-- The Authorization Server is deployed and running (see `Using HTTP-SSE Transport` section).
 
 In Claude Desktop's configuration file, add the following entry under your MCP servers section:
 ```json
@@ -229,4 +289,71 @@ You can also express the query in natural language:
 
 ```
 For each person, return the total number of people they know either directly or indirectly with a relationship degree of 2, that is, they know someone who knows that person.
+```
+
+#### Validate RDF Data with ShEx
+
+You can validate your RDF data against a ShEx schema:
+
+```
+Validate the current RDF graph against the following ShEx schema:
+
+prefix : <http://example.org/>
+prefix schema: <http://schema.org/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+:Person {
+  schema:name xsd:string ;
+  :status [:Active :Waiting]? ;
+  schema:knows @:Person *
+}
+```
+
+You can also check if a ShEx schema is well-formed:
+
+```
+Check if the following ShEx schema is valid:
+
+prefix : <http://example.org/>
+:Shape { :property . }
+```
+
+#### Validate RDF Data with SHACL
+
+Similarly, you can validate RDF data against a SHACL shapes graph:
+
+```
+Validate the current RDF graph against this SHACL schema:
+
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix schema: <http://schema.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex: <http://example.org/> .
+
+ex:PersonShape a sh:NodeShape ;
+  sh:targetClass schema:Person ;
+  sh:property [
+    sh:path schema:name ;
+    sh:datatype xsd:string ;
+    sh:minCount 1 ;
+  ] .
+```
+
+#### Convert ShEx Schema Formats
+
+You can convert ShEx schemas between different formats:
+
+```
+Convert this ShEx schema to JSON format:
+
+prefix : <http://example.org/>
+:Person { :name . ; :age . }
+```
+
+#### Get Shape Information
+
+Retrieve detailed information about a specific shape in a schema:
+
+```
+Show me information about the :Person shape in the previously loaded ShEx schema.
 ```
