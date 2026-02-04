@@ -85,6 +85,7 @@ oxrdfio = { version = "0.2.0", features = ["rdf-12"] }
 oxrdfxml = { version = "0.2.0" }
 oxsdatatypes = "0.2.2"
 oxttl = { version = "0.2.0", features = ["rdf-12"] }
+paste = "1.0.15"
 pgschema = { version = "0.1.5", path = "./pgschema" }
 petgraph = { version = "0.8" }
 prefixmap = { version = "0.1.104", path = "./prefixmap" }

@@ -1,8 +1,6 @@
 use std::fmt::Display;
 
-use crate::shacl_vocab::{
-    sh_target_class, sh_target_node, sh_target_objects_of, sh_target_subjects_of,
-};
+use crate::ShaclVocab;
 use prefixmap::IriRef;
 use srdf::{BuildRDF, RDFNode, Rdf, rdf_type, rdfs_class};
 
@@ -49,19 +47,19 @@ impl<S: Rdf> Target<S> {
         let node: RDF::Subject = rdf_node.clone().try_into().map_err(|_| unreachable!())?;
         match self {
             Target::TargetNode(target_rdf_node) => {
-                rdf.add_triple(node, sh_target_node().clone(), target_rdf_node.clone())
+                rdf.add_triple(node, ShaclVocab::sh_target_node().clone(), target_rdf_node.clone())
             }
             Target::TargetClass(node_class) => {
-                rdf.add_triple(node, sh_target_class().clone(), node_class.clone())
+                rdf.add_triple(node, ShaclVocab::sh_target_class().clone(), node_class.clone())
             }
             Target::TargetSubjectsOf(iri_ref) => rdf.add_triple(
                 node,
-                sh_target_subjects_of().clone(),
+                ShaclVocab::sh_target_subjects_of().clone(),
                 iri_ref.get_iri().unwrap().clone(),
             ),
             Target::TargetObjectsOf(iri_ref) => rdf.add_triple(
                 node,
-                sh_target_objects_of().clone(),
+                ShaclVocab::sh_target_objects_of().clone(),
                 iri_ref.get_iri().unwrap().clone(),
             ),
             Target::TargetImplicitClass(_class) => {

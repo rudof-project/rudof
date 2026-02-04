@@ -16,10 +16,11 @@ repository.workspace = true
 #]
 
 [dependencies]
-const_format = "0.2"
+const_format.workspace = true
 iri_s.workspace = true
 itertools = "0.14"
 oxrdf = { workspace = true, features = ["oxsdatatypes"] }
+paste.workspace = true
 prefixmap.workspace = true
 regex.workspace = true
 srdf.workspace = true

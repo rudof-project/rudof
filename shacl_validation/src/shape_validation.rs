@@ -5,9 +5,7 @@ use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use iri_s::IriS;
-use shacl_ast::shacl_vocab::{
-    sh_closed_constraint_component, sh_reifier_shape_constraint_component,
-};
+use shacl_ast::ShaclVocab;
 use shacl_ir::compiled::property_shape::PropertyShapeIR;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::reifier_info::ReifierInfo;
@@ -128,7 +126,7 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
                 for property in invalid_properties {
                     let vr_single = ValidationResult::new(
                         self.id().clone(),
-                        Object::iri(sh_closed_constraint_component().clone()),
+                        Object::iri(ShaclVocab::sh_closed_constraint_component().clone()),
                         self.severity(),
                     )
                     .with_path(Some(SHACLPath::iri(property)));
@@ -205,7 +203,7 @@ where
                 if reifier_subjects.is_empty() && reifier_info.reification_required() {
                     let vr_single = ValidationResult::new(
                         shape.id().clone(),
-                        Object::iri(sh_reifier_shape_constraint_component().clone()),
+                        Object::iri(ShaclVocab::sh_reifier_shape_constraint_component().clone()),
                         shape.severity(),
                     )
                     .with_message(&format!(

@@ -1,8 +1,4 @@
-use crate::SH_DEBUG_STR;
-use crate::SH_TRACE_STR;
-use crate::shacl_vocab::SH_INFO_STR;
-use crate::shacl_vocab::SH_VIOLATION_STR;
-use crate::shacl_vocab::SH_WARNING_STR;
+use crate::ShaclVocab;
 use iri_s::IriS;
 use prefixmap::IriRef;
 use std::fmt::Display;
@@ -20,11 +16,11 @@ pub enum Severity {
 impl From<Severity> for IriS {
     fn from(value: Severity) -> Self {
         match value {
-            Severity::Trace => IriS::new_unchecked(SH_TRACE_STR),
-            Severity::Debug => IriS::new_unchecked(SH_DEBUG_STR),
-            Severity::Info => IriS::new_unchecked(SH_INFO_STR),
-            Severity::Warning => IriS::new_unchecked(SH_WARNING_STR),
-            Severity::Violation => IriS::new_unchecked(SH_VIOLATION_STR),
+            Severity::Trace => IriS::new_unchecked(ShaclVocab::SH_TRACE),
+            Severity::Debug => IriS::new_unchecked(ShaclVocab::SH_DEBUG),
+            Severity::Info => IriS::new_unchecked(ShaclVocab::SH_INFO),
+            Severity::Warning => IriS::new_unchecked(ShaclVocab::SH_WARNING),
+            Severity::Violation => IriS::new_unchecked(ShaclVocab::SH_VIOLATION),
             Severity::Generic(iri_ref) => iri_ref.get_iri().unwrap().clone(),
         }
     }
