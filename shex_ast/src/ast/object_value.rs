@@ -1,4 +1,5 @@
-use iri_s::{IriS, IriSError};
+use iri_s::error::IriSError;
+use iri_s::IriS;
 use prefixmap::error::DerefError;
 use prefixmap::{Deref, IriRef};
 use rust_decimal::Decimal;

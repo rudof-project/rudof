@@ -1,13 +1,13 @@
 use crate::{
-    InputSpec, Rudof, RudofConfig, RudofError,
-    result_shex_validation_format::ResultShExValidationFormat, selector::*,
-    shapemap_format::ShapeMapFormat as CliShapeMapFormat, shex_format::ShExFormat as CliShExFormat,
+    result_shex_validation_format::ResultShExValidationFormat, selector::*, shapemap_format::ShapeMapFormat as CliShapeMapFormat, shex_format::ShExFormat as CliShExFormat,
     sort_by_result_shape_map::SortByResultShapeMap, terminal_width::terminal_width,
+    InputSpec, Rudof,
+    RudofConfig, RudofError,
 };
 use iri_s::IriS;
 use iri_s::MimeType;
-use shex_ast::ShExFormat;
 use shex_ast::shapemap::ResultShapeMap;
+use shex_ast::ShExFormat;
 use srdf::RDFFormat;
 use srdf::ReaderMode;
 use std::env;
@@ -116,8 +116,7 @@ fn get_base(config: &RudofConfig, base: &Option<IriS>) -> Result<IriS, RudofErro
             Url::from_directory_path(&cwd).map_err(|_| RudofError::ConvertingCurrentFolderUrl {
                 current_dir: cwd.to_string_lossy().to_string(),
             })?;
-        let iri = IriS::from_url(&url);
-        Ok(iri)
+        Ok(url.into())
     }
 }
 

@@ -1,4 +1,4 @@
-use iri_s::IriSError;
+use iri_s::error::IriSError;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 

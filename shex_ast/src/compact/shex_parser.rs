@@ -69,7 +69,7 @@ impl ShExParser<'_> {
     }
 
     pub fn parse_buf(path: &Path, base: Option<IriS>) -> Result<Schema> {
-        let source_iri = IriS::from_path(path).map_err(|e| ParseError::Custom {
+        let source_iri = path.try_into().map_err(|e| ParseError::Custom {
             msg: format!("Cannot convert path to IRI: {e}"),
         })?;
         let data = fs::read_to_string(path)?;

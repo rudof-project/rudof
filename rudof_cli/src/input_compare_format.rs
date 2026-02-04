@@ -1,7 +1,7 @@
 use crate::dctap_format::DCTapFormat as CliDCTapFormat;
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 use clap::ValueEnum;
-use iri_s::mime_type::MimeType;
+use iri_s::MimeType;
 use rudof_lib::shacl_format::CliShaclFormat;
 use shex_ast::ShExFormat;
 use srdf::RDFFormat;

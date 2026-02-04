@@ -154,6 +154,39 @@ jobs:
       with:
         files: ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_amd64.deb
 
+  rpm:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Allow the workflow to access the files of the repository
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: Install stable toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+    - name: Use an intelligent Rust cache for building the project
+      uses: Swatinem/rust-cache@v2
+    - name: Install cargo-generate-rpm
+      run: cargo install cargo-generate-rpm
+    - name: Build the release version of `rudof`
+      run: cargo build --release
+    - name: Generate the .rpm package using cargo-generate-rpm
+      run: cargo generate-rpm -p rudof_cli
+    - name: Upload the .rpm Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ vars.BINARY_NAME }}_x86_64_rpm
+        path: target/generate-rpm/*.rpm
+    - name: Rename the RPM according to the version and architecture
+      run: mv target/generate-rpm/*.rpm ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64.rpm
+    - name: Upload the generated RPM to its corresponding release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64.rpm
+
   docker:
     runs-on: ubuntu-latest
     steps:
