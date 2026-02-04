@@ -1,0 +1,109 @@
+# Dockerfile for rudof MCP server (Full version with PlantUML support)
+# Optimized for Docker MCP Registry
+#
+# This variant includes Java and PlantUML for full export_image functionality.
+# For a minimal image without image export, use Dockerfile.mcp instead.
+
+FROM clux/muslrust:latest as builder
+
+# Create non-root user for security
+RUN groupadd -g 10001 -r dockergrp && useradd -r -g dockergrp -u 10001 dockeruser
+
+WORKDIR /app
+
+# Copy only what's needed for dependency resolution first (better caching)
+COPY Cargo.toml Cargo.lock ./
+COPY rudof_mcp/Cargo.toml rudof_mcp/
+COPY rudof_lib/Cargo.toml rudof_lib/
+COPY rudof_cli/Cargo.toml rudof_cli/
+COPY iri_s/Cargo.toml iri_s/
+COPY prefixmap/Cargo.toml prefixmap/
+COPY srdf/Cargo.toml srdf/
+COPY shex_ast/Cargo.toml shex_ast/
+COPY shex_compact/Cargo.toml shex_compact/
+COPY shex_validation/Cargo.toml shex_validation/
+COPY shex_testsuite/Cargo.toml shex_testsuite/
+COPY shacl_ast/Cargo.toml shacl_ast/
+COPY shacl_ir/Cargo.toml shacl_ir/
+COPY shacl_rdf/Cargo.toml shacl_rdf/
+COPY shacl_validation/Cargo.toml shacl_validation/
+COPY sparql_service/Cargo.toml sparql_service/
+COPY dctap/Cargo.toml dctap/
+COPY rbe/Cargo.toml rbe/
+COPY rbe_testsuite/Cargo.toml rbe_testsuite/
+COPY shapes_converter/Cargo.toml shapes_converter/
+COPY shapes_comparator/Cargo.toml shapes_comparator/
+COPY shapemap_oxgraph/Cargo.toml shapemap_oxgraph/
+COPY rdf_config/Cargo.toml rdf_config/
+COPY mie/Cargo.toml mie/
+COPY pgschema/Cargo.toml pgschema/
+COPY rudof_generate/Cargo.toml rudof_generate/
+
+# Create dummy source files to build dependencies
+RUN mkdir -p rudof_mcp/src && echo "" > rudof_mcp/src/lib.rs
+RUN mkdir -p rudof_lib/src && echo "" > rudof_lib/src/lib.rs
+RUN mkdir -p rudof_cli/src && echo "fn main() {}" > rudof_cli/src/main.rs
+RUN mkdir -p iri_s/src && echo "" > iri_s/src/lib.rs
+RUN mkdir -p prefixmap/src && echo "" > prefixmap/src/lib.rs
+RUN mkdir -p srdf/src && echo "" > srdf/src/lib.rs
+RUN mkdir -p shex_ast/src && echo "" > shex_ast/src/lib.rs
+RUN mkdir -p shex_compact/src && echo "" > shex_compact/src/lib.rs
+RUN mkdir -p shex_validation/src && echo "" > shex_validation/src/lib.rs
+RUN mkdir -p shex_testsuite/src && echo "" > shex_testsuite/src/lib.rs
+RUN mkdir -p shacl_ast/src && echo "" > shacl_ast/src/lib.rs
+RUN mkdir -p shacl_ir/src && echo "" > shacl_ir/src/lib.rs
+RUN mkdir -p shacl_rdf/src && echo "" > shacl_rdf/src/lib.rs
+RUN mkdir -p shacl_validation/src && echo "" > shacl_validation/src/lib.rs
+RUN mkdir -p sparql_service/src && echo "" > sparql_service/src/lib.rs
+RUN mkdir -p dctap/src && echo "" > dctap/src/lib.rs
+RUN mkdir -p rbe/src && echo "" > rbe/src/lib.rs
+RUN mkdir -p rbe_testsuite/src && echo "" > rbe_testsuite/src/lib.rs
+RUN mkdir -p shapes_converter/src && echo "" > shapes_converter/src/lib.rs
+RUN mkdir -p shapes_comparator/src && echo "" > shapes_comparator/src/lib.rs
+RUN mkdir -p shapemap_oxgraph/src && echo "" > shapemap_oxgraph/src/lib.rs
+RUN mkdir -p rdf_config/src && echo "" > rdf_config/src/lib.rs
+RUN mkdir -p mie/src && echo "" > mie/src/lib.rs
+RUN mkdir -p pgschema/src && echo "" > pgschema/src/lib.rs
+RUN mkdir -p rudof_generate/src && echo "" > rudof_generate/src/lib.rs
+
+# Build dependencies (this layer will be cached)
+RUN cargo build --target x86_64-unknown-linux-musl --release -p rudof_cli 2>/dev/null || true
+
+# Copy actual source code
+COPY . .
+
+# Touch source files to invalidate cache and rebuild with actual code
+RUN touch rudof_cli/src/main.rs
+
+# Build the rudof CLI binary (which includes the MCP server)
+RUN cargo build --target x86_64-unknown-linux-musl --release -p rudof_cli
+
+# Runtime image with Java and PlantUML
+FROM eclipse-temurin:21-jre-alpine
+
+# Create non-root user
+RUN addgroup -g 10001 dockergrp && adduser -D -u 10001 -G dockergrp dockeruser
+
+# Install PlantUML
+ARG PLANTUML_VERSION=1.2024.8
+RUN mkdir -p /opt/plantuml && \
+    wget -q -O /opt/plantuml/plantuml.jar \
+    "https://github.com/plantuml/plantuml/releases/download/v${PLANTUML_VERSION}/plantuml-${PLANTUML_VERSION}.jar"
+
+# Install graphviz for PlantUML diagrams
+RUN apk add --no-cache graphviz fontconfig ttf-dejavu
+
+# Set environment variables
+ENV RUST_LOG="info,rudof_mcp=debug"
+ENV PLANTUML="/opt/plantuml/plantuml.jar"
+
+# Copy the binary from builder
+COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/rudof /usr/local/bin/rudof
+
+# Switch to non-root user
+USER dockeruser
+
+# MCP server entrypoint - default to stdio transport
+# Usage: rudof mcp [--transport stdio|http] [--port 8080]
+ENTRYPOINT ["rudof"]
+CMD ["mcp", "--transport", "stdio"]
