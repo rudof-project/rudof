@@ -1,22 +1,22 @@
 use super::{
-    iri_ref_or_wildcard::IriRefOrWildcard, string_or_wildcard::StringOrWildcard, ObjectValue,
+    ObjectValue, iri_ref_or_wildcard::IriRefOrWildcard, string_or_wildcard::StringOrWildcard,
 };
+use crate::LangOrWildcard;
 use crate::exclusion::Exclusion;
 use crate::iri_exclusion::IriExclusion;
 use crate::language_exclusion::LanguageExclusion;
 use crate::literal_exclusion::LiteralExclusion;
-use crate::LangOrWildcard;
 use iri_s::error::IriSError;
 use prefixmap::error::DerefError;
 use prefixmap::{Deref, IriRef};
 use rust_decimal::Decimal;
 use serde::ser::SerializeMap;
 use serde::{
-    de::{self, MapAccess, Unexpected, Visitor}, Deserialize, Serialize,
-    Serializer,
+    Deserialize, Serialize, Serializer,
+    de::{self, MapAccess, Unexpected, Visitor},
 };
-use srdf::lang::Lang;
 use srdf::SLiteral;
+use srdf::lang::Lang;
 use std::{fmt, str::FromStr};
 use thiserror::Error;
 

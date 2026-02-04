@@ -8,18 +8,18 @@ use crate::ir::shape_expr::ShapeExpr;
 use crate::ir::shape_label::ShapeLabel;
 use crate::ir::value_set::ValueSet;
 use crate::ir::value_set_value::ValueSetValue;
-use crate::{ast, ast::Schema as SchemaAST, SchemaIRError, ShapeLabelIdx};
-use crate::{ast::iri_exclusion::IriExclusion, ShapeExprLabel};
-use crate::{ir, CResult, Cond, Node, Pred, ResolveMethod, ShExFormat, ShExParser};
+use crate::{CResult, Cond, Node, Pred, ResolveMethod, ShExFormat, ShExParser, ir};
+use crate::{SchemaIRError, ShapeLabelIdx, ast, ast::Schema as SchemaAST};
+use crate::{ShapeExprLabel, ast::iri_exclusion::IriExclusion};
 use core::panic;
 use iri_s::error::IriSError;
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
-use rbe::{rbe::Rbe, Component, MatchCond, Max, Min, RbeTable};
 use rbe::{Cardinality, Pending, RbeError, SingleCond};
-use srdf::numeric_literal::NumericLiteral;
+use rbe::{Component, MatchCond, Max, Min, RbeTable, rbe::Rbe};
 use srdf::Object;
 use srdf::SLiteral;
+use srdf::numeric_literal::NumericLiteral;
 use tracing::{debug, trace};
 
 #[derive(Debug, Default)]

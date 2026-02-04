@@ -471,11 +471,7 @@ impl TripleExpr {
 }
 
 impl Deref for TripleExpr {
-    fn deref(
-        self,
-        base: Option<&IriS>,
-        prefixmap: Option<&PrefixMap>,
-    ) -> Result<Self, DerefError> {
+    fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
         match self {
             TripleExpr::EachOf {
                 id,
@@ -591,11 +587,7 @@ pub struct TripleExprWrapper {
 impl TripleExprWrapper {}
 
 impl Deref for TripleExprWrapper {
-    fn deref(
-        self,
-        base: Option<&IriS>,
-        prefixmap: Option<&PrefixMap>,
-    ) -> Result<Self, DerefError> {
+    fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
         let te = self.te.deref(base, prefixmap)?;
         Ok(TripleExprWrapper { te })
     }

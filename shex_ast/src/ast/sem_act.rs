@@ -1,5 +1,5 @@
-use prefixmap::{Deref, IriRef};
 use prefixmap::error::DerefError;
+use prefixmap::{Deref, IriRef};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]

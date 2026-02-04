@@ -1,112 +1,191 @@
-# rudof_mcp
+<div align="center">
 
-Export rudof_lib functionality as a [Model-Context-Protocol](https://modelcontextprotocol.io/) server with configurable transports.
+# Rudof MCP Server
 
-## Features
+A powerful Model Context Protocol server for RDF validation, querying, and data transformation
 
-- **Dual Transport Support**: Choose between stdio and Streamable HTTP based on your use case.
-- **Configurable Server**: Port and route path configuration Streamable HTTP transport.
-- **OAuth2/OIDC Authentication**: Security for Streamable HTTP transport with JWT validation.
-- **Real-time Notifications**: Server-to-client notifications.
-- **Resource Subscriptions**: Clients can subscribe to specific resources for updates.
-- **Argument Completion**: Intelligent completion suggestions for prompt and resource arguments (pending implementation).
-- **Dynamic Log Levels**: Runtime log level configuration via MCP logging protocol.
-- **Session Management**: Explicit session termination support with DELETE requests.
+</div>
 
-## Architecture
+---
 
-```
-rudof_mcp/
-├── Cargo.toml
-├── README.md
-├── src/
-│   ├── lib.rs                      
-│   ├── as/                                       # Authentication server (Keycloak)
-│   │   ├── docker-compose.yml
-│   │   └── keycloak/
-│   ├── server/
-│   │   ├── mod.rs                
-│   │   ├── server_impl.rs                        # Main entry point + tracing
-│   │   ├── transport.rs                          # TransportType enum
-│   │   ├── stdio_server.rs                       # Stdio transport implementation
-│   │   └── http/                                 # HTTP-specific modules
-│   │       ├── mod.rs
-│   │       ├── http_server.rs                    # HTTP server implementation
-│   │       ├── config.rs                         # HTTP configuration constants
-│   │       ├── middleware.rs                     # Protocol & origin guards
-│   │       └── auth/                             # Authentication module
-│   │           ├── mod.rs
-│   │           ├── config.rs                     # AuthConfig, JWKS cache
-│   │           ├── validation.rs                 # Token verification & validation
-│   │           ├── middleware.rs                 # Authorization guard
-│   │           └── metadata.rs                   # OAuth2 discovery endpoint
-│   └── rudof_mcp_service/                        # MCP service implementation
-│       ├── mod.rs
-│       ├── service.rs                            # Main service state
-│       ├── handlers.rs                           # MCP request handlers
-│       ├── errors.rs                             # Error types & helpers
-│       ├── resource_templates                    # Resource template implementations
-|       |   ├── mod.rs
-|       |   ├── resource_templates_impl.rs
-│       ├── tools/                                # Tool implementations
-│       │   ├── mod.rs
-│       │   ├── tools_impl.rs                     # Tool router & annotations
-│       │   ├── data_tools_impl.rs                # RDF data loading/export tools
-│       │   ├── node_tools_impl.rs                # Node inspection tools
-│       │   ├── query_tools_impl.rs               # SPARQL query tools
-│       │   └── shex_validate_tools_impl.rs       # ShEx validation tools
-│       ├── prompts/                              # Prompt implementations
-│       │   ├── mod.rs
-│       │   ├── prompts_impl.rs                   # Prompt router
-│       │   ├── data_prompts_impl.rs              # Data analysis prompts
-│       │   ├── node_prompts_impl.rs              # Node exploration prompts
-│       │   └── validation_prompts_impl.rs        # Validation error prompts
-│       └── resources/                            # Resource implementations
-│           ├── mod.rs
-│           ├── resources_impl.rs                 # Resource router
-│           ├── data_resources_impl.rs            # Current data resources
-│           ├── node_resources_impl.rs            # Node mode resources
-│           ├── query_resources_impl.rs           # Query result resources
-│           └── shex_validate_resources_impl.rs   # Validation resources
-```
+## 🚀 Overview
 
-## Available Tools
+Rudof MCP is a comprehensive [Model Context Protocol](https://modelcontextprotocol.io/) server implementation that exposes the powerful **Rudof** library to AI assistants and MCP-compatible clients. Seamlessly integrate RDF validation, SPARQL querying, and semantic data transformation into your AI workflows.
 
-The MCP server exposes the following tools:
+### What Can You Do?
 
-1. **load_rdf_data_from_sources**: Load RDF data from remote sources (URLs, files, raw text) or SPARQL endpoint into the server's datastore.
-2. **export_rdf_data**: Serialize and return the RDF stored on the server in the requested format.
-3. **export_plantuml**: Generate a PlantUML diagram of the RDF stored on the server.
-4. **export_image**: Generate an image (SVG or PNG) visualization of the RDF stored on the server.
-5. **node_info**: Show information about a node (outgoing/incoming arcs) from the RDF stored on the server.
-6. **execute_sparql_query**: Execute a SPARQL query (SELECT, CONSTRUCT, ASK, DESCRIBE) against the RDF stored on the server.
-7. **validate_shex**: Validate RDF data against a ShEx schema using the provided inputs.
+- 📊 **Load & Manipulate RDF Data** — From files, URLs, or SPARQL endpoints
+- ✅ **Validate RDF Data** — Against ShEx and SHACL schemas
+- 🔍 **Execute SPARQL Queries** — SELECT, CONSTRUCT, and ASK
+- 🧭 **Explore RDF Graphs** — Through intuitive node inspection tools
+- 🔄 **Convert Schemas** — Between different serialization formats
+- 📈 **Visualize Data** — Generate PlantUML diagrams and images
 
-## Available Prompts
 
-The MCP server exposes the following prompts:
+## 🔌 Transport Types
 
-1. **explore_rdf_node**: Interactive guide for exploring RDF node information, relationships, and graph structure.
-2. **analyze_rdf_data**: Comprehensive guide for analyzing loaded RDF data structure, patterns, and quality.
-3. **generate_test_data**: Generate conformant RDF test data examples from a ShEx schema.
-4. **explain_validation_errors**: Understand and fix ShEx validation errors with detailed explanations.
+### Stdio Transport
 
-## Available Resources
+**Perfect for:**
+- 🔧 CLI tools, command-line interfaces and IDE extensions (VSCode, IntelliJ, etc.)
+- 💻 Local process-to-process communication
+- 👤 Single client connections
 
-The MCP server exposes the following resources:
+The client launches the MCP server as a subprocess, with communication via stdin/stdout using JSON-RPC messages.
 
-1. **rudof://current-data**: Currently loaded RDF data in Turtle format
-2. **rudof://current-data/ntriples**: Currently loaded RDF data in N-Triples format
-3. **rudof://current-data/rdfxml**: Currently loaded RDF data in RDF/XML format
-4. **rudof://current-data/jsonld**: Currently loaded RDF data in JSON-LD format
-5. **rudof://current-data/trig**: Currently loaded RDF data in TriG format
-6. **rudof://current-data/nquads**: Currently loaded RDF data in N-Quads format
-7. **rudof://current-data/n3**: Currently loaded RDF data in N3 format
-8. **rudof://formats/rdf**: List of supported RDF formats
-9. **rudof://formats/node-modes**: Available node exploration modes (outgoing, incoming, both)
-10. **rudof://formats/query-types**: Supported SPARQL query types
-11. **rudof://formats/query-results**: Supported query result formats
-12. **rudof://formats/shex**: Supported ShEx schema formats
-13. **rudof://formats/validation-result**: Supported validation result formats
-14. **rudof://formats/validation-reader-modes**: Available reader modes for validation
-15. **rudof://formats/validation-sort-options**: Available sort options for validation results
+### Streamable HTTP Transport
+
+**Ideal for:**
+- 🌐 Web-based MCP clients
+- 🔗 Remote connections over HTTP/HTTPS
+- 👥 Multiple concurrent client connections
+
+**Features:**
+- JSON-RPC over HTTP POST
+- Server-Sent Events (SSE) for real-time streaming
+- Session management with `MCP-Session-Id` header
+- Origin header validation for security
+- Localhost-only binding by default (`127.0.0.1`)
+
+
+## 🎯 MCP Capabilities
+
+| Capability | Description |
+|------------|-------------|
+| **🛠️ Tools** | 10+ tools for validation, querying, and data operations |
+| **📝 Prompts** | Guided templates for common validation workflows |
+| **📦 Resources** | Access to current RDF data in multiple formats |
+| **📋 Logging** | Real-time log notifications with RFC 5424 level filtering |
+| **⌨️ Completions** | Argument completions for tools and prompts |
+| **⚡ Tasks** | Async task support for long-running operations (SEP-1686) |
+
+
+## 🛠️ Available Tools
+
+### Data Management
+
+| Tool | Description |
+|------|-------------|
+| `load_rdf_data_from_sources` | Load RDF data from URLs, files, or raw text |
+| `export_rdf_data` | Serialize RDF data to Turtle, N-Triples, RDF/XML, etc. |
+| `export_plantuml` | Generate PlantUML diagram of the RDF graph |
+| `export_image` | Generate SVG or PNG visualization |
+
+### Node Inspection
+
+| Tool | Description |
+|------|-------------|
+| `node_info` | Show outgoing/incoming arcs for an RDF node |
+
+### SPARQL Queries
+
+| Tool | Description |
+|------|-------------|
+| `execute_sparql_query` | Execute SELECT, CONSTRUCT, or ASK queries |
+
+### ShEx Validation & Analysis
+
+| Tool | Description |
+|------|-------------|
+| `validate_shex` | Validate RDF data against a ShEx schema |
+| `check_shex` | Check if a ShEx schema is syntactically valid |
+| `shape_info` | Get information about a specific ShEx shape |
+| `convert_shex` | Convert schemas between ShExC, ShExJ, Turtle formats |
+| `show_shex` | Parse and display schema with optional analysis |
+
+### SHACL Validation
+
+| Tool | Description |
+|------|-------------|
+| `validate_shacl` | Validate RDF data against a SHACL schema |
+
+
+## 📝 Interactive Prompts
+
+Guided templates for common workflows:
+
+| Prompt | Description |
+|--------|-------------|
+| `explore_rdf_node` | Guide for exploring RDF node relationships |
+| `analyze_rdf_data` | Comprehensive data structure and quality analysis |
+| `validation_guide` | Step-by-step ShEx/SHACL validation workflow |
+| `sparql_builder` | Interactive helper for building SPARQL queries |
+
+
+## 📦 Available Resources
+
+The server exposes RDF data and metadata through MCP resources with support for pagination and subscriptions.
+
+### Data Resources
+
+| Resource URI | Name | Description |
+|--------------|------|-------------|
+| `rudof://current-data` | Current RDF Data (Turtle) | Currently loaded RDF data in Turtle format |
+| `rudof://current-data/ntriples` | Current RDF Data (N-Triples) | Currently loaded RDF data in N-Triples format |
+| `rudof://current-data/rdfxml` | Current RDF Data (RDF/XML) | Currently loaded RDF data in RDF/XML format |
+| `rudof://current-data/jsonld` | Current RDF Data (JSON-LD) | Currently loaded RDF data in JSON-LD format |
+| `rudof://current-data/trig` | Current RDF Data (TriG) | Currently loaded RDF data in TriG format |
+| `rudof://current-data/nquads` | Current RDF Data (N-Quads) | Currently loaded RDF data in N-Quads format |
+| `rudof://current-data/n3` | Current RDF Data (N3) | Currently loaded RDF data in Notation3 format |
+| `rudof://formats/rdf` | Supported RDF Formats | List of all supported RDF data formats |
+
+### Node Resources
+
+| Resource URI | Name | Description |
+|--------------|------|-------------|
+| `rudof://formats/node-modes` | Node Inspection Modes | Available modes for node inspection |
+
+### Query Resources
+
+| Resource URI | Name | Description |
+|--------------|------|-------------|
+| `rudof://formats/query-types` | Supported SPARQL Query Types | Supported SPARQL query types |
+| `rudof://formats/query-results` | Supported Query Result Formats | Supported SPARQL query result formats |
+
+### ShEx Resources
+
+| Resource URI | Name | Description |
+|--------------|------|-------------|
+| `rudof://formats/shex` | Supported ShEx Formats | All supported ShEx schema formats |
+| `rudof://formats/shex-validation-result` | ShEx Validation Result Formats | Supported ShEx validation result formats |
+| `rudof://formats/validation-reader-modes` | Validation Reader Modes | Available reader modes (strict/lax) |
+| `rudof://formats/shex-validation-sort-options` | ShEx Validation Sort Options | Available sort options for results |
+
+### SHACL Resources
+
+| Resource URI | Name | Description |
+|--------------|------|-------------|
+| `rudof://formats/shacl` | Supported SHACL Formats | All supported SHACL schema formats |
+| `rudof://formats/shacl-validation-result` | SHACL Validation Result Formats | Supported SHACL validation result formats |
+| `rudof://formats/shacl-validation-sort-options` | SHACL Validation Sort Options | Available sort options for results |
+
+
+## 🔒 Security
+
+The HTTP transport implements comprehensive MCP specification security requirements:
+
+- ✅ **Origin Validation** — Invalid Origin headers return HTTP 403 Forbidden
+- ✅ **Protocol Version Validation** — Invalid versions return HTTP 400 Bad Request
+- ✅ **Localhost-Only Binding** — Binds to `127.0.0.1` by default, not `0.0.0.0`
+- ✅ **Session Management** — Explicit session termination via HTTP DELETE
+
+---
+
+## 📚 Dependencies
+
+Built on robust, well-maintained libraries:
+
+- [`rmcp`](https://crates.io/crates/rmcp) — Rust MCP SDK for protocol implementation
+- [`rudof_lib`](https://crates.io/crates/rudof_lib) — Core Rudof library for RDF operations
+- [`axum`](https://crates.io/crates/axum) — Modern HTTP server for StreamableHTTP transport
+- [`tokio`](https://crates.io/crates/tokio) — High-performance async runtime
+
+---
+
+<div align="center">
+
+*For more information about the Model Context Protocol, visit the [official MCP documentation](https://modelcontextprotocol.io/)📖.*
+
+</div>
+
+---

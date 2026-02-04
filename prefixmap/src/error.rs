@@ -29,7 +29,6 @@ pub enum PrefixMapError {
     AliasAlreadyExists { prefix: String, value: String },
 }
 
-
 /// Error returned when trying to get an IRI from a prefixed name [`IriRef`]
 #[derive(Debug, Error, Clone)]
 #[error("Cannot obtain IRI from prefixed name IriRef {prefix}:{local}")]
@@ -37,7 +36,6 @@ pub struct IriRefError {
     pub prefix: String,
     pub local: String,
 }
-
 
 /// Represents all the possible errors that can occur when dereferencing IRIs
 #[derive(Debug, Error, Clone)]

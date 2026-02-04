@@ -102,12 +102,20 @@ reqwest = { version = "0.12", default-features = false, features = [
     "rustls-tls",
     "rustls-tls-native-roots",
 ] }
+rmcp = { version = "0.14.0", features = [
+    "client",
+    "server",
+    "transport-io",
+    "transport-streamable-http-server",
+] }
+rmcp-macros = "0.14.0"
 rudof_cli = { version = "0.1.111", path = "./rudof_cli" }
 rudof_generate = { version = "0.1.118", path = "./rudof_generate" }
 rudof_lib = { version = "0.1.110", path = "./rudof_lib" }
 rudof_mcp = { version = "0.1.121", path = "./rudof_mcp" }
 rust_decimal = "1.38"
 rust_decimal_macros = "1.38"
+schemars = "1.0.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0"
 shacl_ast = { version = "0.1.106", path = "./shacl_ast" }

@@ -3,7 +3,7 @@ use crate::matcher::Matcher;
 use crate::srdfgraph_error::SRDFGraphError;
 use crate::{
     BuildRDF, FocusRDF, NeighsRDF, QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions,
-    RDFFormat, Rdf, VarName, RDF_TYPE_STR,
+    RDF_TYPE_STR, RDFFormat, Rdf, VarName,
 };
 use async_trait::async_trait;
 use colored::*;
