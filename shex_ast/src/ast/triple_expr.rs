@@ -1,8 +1,8 @@
 use std::{result, str::FromStr};
 
 use iri_s::{IriS, IriSError};
-use prefixmap::{Deref, IriRef, PrefixMap};
 use prefixmap::error::DerefError;
+use prefixmap::{Deref, IriRef, PrefixMap};
 use serde::{Deserialize, Serialize, Serializer};
 
 use crate::ast::serde_string_or_struct::*;
@@ -470,11 +470,7 @@ impl TripleExpr {
 }
 
 impl Deref for TripleExpr {
-    fn deref(
-        self,
-        base: Option<&IriS>,
-        prefixmap: Option<&PrefixMap>,
-    ) -> Result<Self, DerefError> {
+    fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
         match self {
             TripleExpr::EachOf {
                 id,
@@ -590,11 +586,7 @@ pub struct TripleExprWrapper {
 impl TripleExprWrapper {}
 
 impl Deref for TripleExprWrapper {
-    fn deref(
-        self,
-        base: Option<&IriS>,
-        prefixmap: Option<&PrefixMap>,
-    ) -> Result<Self, DerefError> {
+    fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
         let te = self.te.deref(base, prefixmap)?;
         Ok(TripleExprWrapper { te })
     }

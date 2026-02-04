@@ -85,7 +85,9 @@ pub fn handle_shex_validate_resource(uri: &str) -> Option<Result<ReadResourceRes
         "rudof://formats/shex" => Some(get_shex_formats(uri)),
         "rudof://formats/shex-validation-result" => Some(get_shex_validation_result_formats(uri)),
         "rudof://formats/validation-reader-modes" => Some(get_reader_modes(uri)),
-        "rudof://formats/shex-validation-sort-options" => Some(get_shex_validation_sort_options(uri)),
+        "rudof://formats/shex-validation-sort-options" => {
+            Some(get_shex_validation_sort_options(uri))
+        }
         _ => None,
     }
 }
@@ -327,4 +329,3 @@ fn get_shex_validation_sort_options(uri: &str) -> Result<ReadResourceResult, Mcp
         }],
     })
 }
-

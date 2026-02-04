@@ -15,10 +15,10 @@ use serde::{Deserialize, Serialize};
 pub struct ValidationGuidePromptArgs {
     /// Validation technology to use: 'shex' or 'shacl'
     pub technology: String,
-    
+
     /// Optional: specific node to validate (IRI or prefixed name)
     pub node: Option<String>,
-    
+
     /// Optional: specific shape to validate against
     pub shape: Option<String>,
 }
@@ -116,17 +116,28 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
                 technology.to_uppercase(),
                 technology.to_uppercase(),
                 technology,
-                if technology == "shex" { "shexc" } else { "turtle" },
+                if technology == "shex" {
+                    "shexc"
+                } else {
+                    "turtle"
+                },
                 example_schema,
                 tool_name,
-                if technology == "shex" { "shexc" } else { "turtle" },
+                if technology == "shex" {
+                    "shexc"
+                } else {
+                    "turtle"
+                },
                 if args.node.is_some() {
                     format!(",\n  \"maybe_node\": \"{}\"", args.node.as_ref().unwrap())
                 } else {
                     String::new()
                 },
                 if args.shape.is_some() {
-                    format!(",\n  \"maybe_shape\": \"{}\",\n", args.shape.as_ref().unwrap())
+                    format!(
+                        ",\n  \"maybe_shape\": \"{}\",\n",
+                        args.shape.as_ref().unwrap()
+                    )
                 } else {
                     ",\n".to_string()
                 },
@@ -140,8 +151,16 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
         description: Some(format!(
             "{} validation guide{}{}",
             technology.to_uppercase(),
-            if args.node.is_some() { format!(" for node {}", args.node.unwrap()) } else { String::new() },
-            if args.shape.is_some() { format!(" against shape {}", args.shape.unwrap()) } else { String::new() },
+            if args.node.is_some() {
+                format!(" for node {}", args.node.unwrap())
+            } else {
+                String::new()
+            },
+            if args.shape.is_some() {
+                format!(" against shape {}", args.shape.unwrap())
+            } else {
+                String::new()
+            },
         )),
         messages,
     })
@@ -152,7 +171,7 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 pub struct SparqlBuilderPromptArgs {
     /// What kind of query to build: 'select', 'construct', 'ask', 'describe', or describe your goal
     pub query_type: String,
-    
+
     /// Optional: natural language description of what you want to query
     pub description: Option<String>,
 }
@@ -162,7 +181,9 @@ pub async fn sparql_builder_prompt_impl(
     Parameters(args): Parameters<SparqlBuilderPromptArgs>,
 ) -> Result<GetPromptResult, McpError> {
     let query_type = args.query_type.to_lowercase();
-    let description = args.description.unwrap_or_else(|| "explore the data".to_string());
+    let description = args
+        .description
+        .unwrap_or_else(|| "explore the data".to_string());
 
     let (query_template, explanation) = match query_type.as_str() {
         "select" => (
@@ -217,7 +238,10 @@ SELECT (COUNT(*) AS ?count) WHERE { ?s ?p ?o }"#,
     let messages = vec![
         PromptMessage::new_text(
             PromptMessageRole::User,
-            format!("Help me build a SPARQL query.\nType: {}\nGoal: {}", query_type, description),
+            format!(
+                "Help me build a SPARQL query.\nType: {}\nGoal: {}",
+                query_type, description
+            ),
         ),
         PromptMessage::new_text(
             PromptMessageRole::Assistant,
@@ -268,7 +292,10 @@ SELECT (COUNT(*) AS ?count) WHERE { ?s ?p ?o }"#,
     ];
 
     Ok(GetPromptResult {
-        description: Some(format!("SPARQL {} query builder: {}", query_type, description)),
+        description: Some(format!(
+            "SPARQL {} query builder: {}",
+            query_type, description
+        )),
         messages,
     })
 }

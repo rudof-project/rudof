@@ -9,8 +9,8 @@ use crate::RDFError;
 use crate::XsdDateTime;
 use crate::{lang::Lang, numeric_literal::NumericLiteral};
 use iri_s::IriS;
-use prefixmap::{Deref, IriRef, PrefixMap};
 use prefixmap::error::DerefError;
+use prefixmap::{Deref, IriRef, PrefixMap};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize, Serializer};
 use tracing::trace;
@@ -586,11 +586,7 @@ where
 }
 
 impl Deref for SLiteral {
-    fn deref(
-        self,
-        base: Option<&IriS>,
-        prefixmap: Option<&PrefixMap>,
-    ) -> Result<Self, DerefError> {
+    fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
         match self {
             SLiteral::NumericLiteral(n) => Ok(SLiteral::NumericLiteral(n.clone())),
             SLiteral::BooleanLiteral(b) => Ok(SLiteral::BooleanLiteral(b)),

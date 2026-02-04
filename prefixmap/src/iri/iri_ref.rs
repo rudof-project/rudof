@@ -1,6 +1,6 @@
+use crate::PrefixMap;
 use crate::error::{DerefError, IriRefError, PrefixMapError};
 use crate::iri::deref::Deref;
-use crate::PrefixMap;
 use iri_s::{IriS, IriSError};
 use serde::Serialize;
 use std::borrow::Cow;

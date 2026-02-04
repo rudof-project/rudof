@@ -10,11 +10,7 @@ use axum::{
 const PROTOCOL_HEADER: &str = "MCP-Protocol-Version";
 
 /// Supported MCP protocol versions per specification 2025-11-25
-const SUPPORTED_PROTOCOL_VERSIONS: &[&str] = &[
-    "2025-11-25",
-    "2025-06-18",
-    "2025-03-26",
-];
+const SUPPORTED_PROTOCOL_VERSIONS: &[&str] = &["2025-11-25", "2025-06-18", "2025-03-26"];
 
 /// Default protocol version when header is absent (per spec)
 const DEFAULT_PROTOCOL_VERSION: &str = "2025-03-26";
@@ -25,20 +21,20 @@ pub fn is_valid_protocol_version(version: &str) -> bool {
 }
 
 /// Checks if an origin is valid per MCP spec (localhost only)
-/// 
+///
 /// This function validates that the origin is truly a localhost address,
 /// preventing DNS rebinding attacks where an attacker's domain resolves
 /// to localhost.
 pub fn is_valid_origin(origin: &str) -> bool {
     let localhost_patterns = [
-        ("http://localhost", 16),   
-        ("https://localhost", 17),  
-        ("http://127.0.0.1", 16),   
-        ("https://127.0.0.1", 17),  
-        ("http://[::1]", 12),       
-        ("https://[::1]", 13),     
+        ("http://localhost", 16),
+        ("https://localhost", 17),
+        ("http://127.0.0.1", 16),
+        ("https://127.0.0.1", 17),
+        ("http://[::1]", 12),
+        ("https://[::1]", 13),
     ];
-    
+
     for (pattern, len) in localhost_patterns {
         if origin.starts_with(pattern) {
             // Check that what follows is either nothing, a port (:), or a path (/)
@@ -48,7 +44,7 @@ pub fn is_valid_origin(origin: &str) -> bool {
             }
         }
     }
-    
+
     false
 }
 

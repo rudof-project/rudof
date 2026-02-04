@@ -3,7 +3,7 @@ use crate::matcher::Matcher;
 use crate::srdfgraph_error::SRDFGraphError;
 use crate::{
     BuildRDF, FocusRDF, NeighsRDF, QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions,
-    RDFFormat, Rdf, VarName, RDF_TYPE_STR,
+    RDF_TYPE_STR, RDFFormat, Rdf, VarName,
 };
 use async_trait::async_trait;
 use colored::*;
@@ -19,10 +19,10 @@ use oxrdf::{
 use oxrdfio::{JsonLdProfileSet, RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
-use prefixmap::map::*;
 use prefixmap::error::PrefixMapError;
-use serde::ser::SerializeStruct;
+use prefixmap::map::*;
 use serde::Serialize;
+use serde::ser::SerializeStruct;
 use sparesults::QuerySolution as SparQuerySolution;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;

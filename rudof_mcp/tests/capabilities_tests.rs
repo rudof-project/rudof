@@ -75,8 +75,11 @@ fn test_resources_capability_advertised() {
     let service = RudofMcpService::new();
     let info = service.get_info();
 
-    let resources_cap = info.capabilities.resources.expect("Resources capability should be advertised");
-    
+    let resources_cap = info
+        .capabilities
+        .resources
+        .expect("Resources capability should be advertised");
+
     assert_eq!(
         resources_cap.subscribe,
         Some(true),
@@ -95,7 +98,10 @@ fn test_logging_capability_advertised() {
     let service = RudofMcpService::new();
     let info = service.get_info();
 
-    let logging = info.capabilities.logging.expect("Logging capability should be advertised");
+    let logging = info
+        .capabilities
+        .logging
+        .expect("Logging capability should be advertised");
     assert!(
         logging.get("enabled").and_then(|v| v.as_bool()) == Some(true),
         "Logging should be enabled"
@@ -147,7 +153,7 @@ fn test_all_standard_capabilities_present() {
 
     // A well-formed MCP server should advertise its capabilities clearly
     // per the spec: "Servers MUST advertise their capabilities"
-    
+
     let capabilities_count = [
         caps.tools.is_some(),
         caps.prompts.is_some(),
@@ -155,7 +161,10 @@ fn test_all_standard_capabilities_present() {
         caps.logging.is_some(),
         caps.completions.is_some(),
         caps.tasks.is_some(),
-    ].iter().filter(|&&x| x).count();
+    ]
+    .iter()
+    .filter(|&&x| x)
+    .count();
 
     assert!(
         capabilities_count >= 3,

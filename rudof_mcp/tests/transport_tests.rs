@@ -42,7 +42,7 @@ fn test_transport_type_display_streamable_http() {
 fn test_transport_type_debug() {
     let stdio = TransportType::Stdio;
     let http = TransportType::StreamableHTTP;
-    
+
     assert!(
         format!("{:?}", stdio).contains("Stdio"),
         "Debug should contain 'Stdio'"
@@ -67,7 +67,7 @@ fn test_transport_type_clone() {
     let original = TransportType::Stdio;
     let cloned = original.clone();
     assert_eq!(original, cloned);
-    
+
     let original = TransportType::StreamableHTTP;
     let cloned = original.clone();
     assert_eq!(original, cloned);
@@ -79,7 +79,7 @@ fn test_transport_type_copy() {
     let original = TransportType::Stdio;
     let copied = original; // Copy, not move
     assert_eq!(original, copied); // original is still valid because Copy
-    
+
     let original = TransportType::StreamableHTTP;
     let copied = original;
     assert_eq!(original, copied);

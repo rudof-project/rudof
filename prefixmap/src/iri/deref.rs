@@ -1,5 +1,5 @@
-use crate::error::DerefError;
 use crate::PrefixMap;
+use crate::error::DerefError;
 use iri_s::IriS;
 
 /// A trait for dereferencing IRIs with an optional base IRI and a [`PrefixMap`]

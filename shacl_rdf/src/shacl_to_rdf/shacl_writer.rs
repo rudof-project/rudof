@@ -1,7 +1,7 @@
 use iri_s::IriS;
-use shacl_ast::shacl_vocab::sh;
 use shacl_ast::Schema;
-use srdf::{BuildRDF, RDFFormat, RDF, XSD};
+use shacl_ast::shacl_vocab::sh;
+use srdf::{BuildRDF, RDF, RDFFormat, XSD};
 use std::io::Write;
 use std::str::FromStr;
 

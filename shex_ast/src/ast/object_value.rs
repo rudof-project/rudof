@@ -1,25 +1,25 @@
 use iri_s::{IriS, IriSError};
-use prefixmap::{Deref, IriRef};
 use prefixmap::error::DerefError;
+use prefixmap::{Deref, IriRef};
 use rust_decimal::Decimal;
 use serde::de::Unexpected;
 use serde::ser::SerializeMap;
 use serde::{
-    de::{self, MapAccess, Visitor}, Deserialize, Serialize,
-    Serializer,
+    Deserialize, Serialize, Serializer,
+    de::{self, MapAccess, Visitor},
 };
+use srdf::SLiteral;
 use srdf::lang::Lang;
 use srdf::numeric_literal::NumericLiteral;
-use srdf::SLiteral;
 use std::fmt::{self, Display};
 use std::{result, str::FromStr};
 
+use crate::Node;
 use crate::ast::{
     BYTE_STR, DATETIME_STR, FLOAT_STR, LONG_STR, NEGATIVE_INTEGER_STR, NON_NEGATIVE_INTEGER_STR,
     NON_POSITIVE_INTEGER_STR, POSITIVE_INTEGER_STR, SHORT_STR, UNSIGNED_BYTE_STR, UNSIGNED_INT_STR,
     UNSIGNED_LONG_STR, UNSIGNED_SHORT_STR,
 };
-use crate::Node;
 
 use super::{BOOLEAN_STR, DECIMAL_STR, DOUBLE_STR, INTEGER_STR};
 

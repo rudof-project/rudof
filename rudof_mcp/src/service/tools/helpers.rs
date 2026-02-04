@@ -111,7 +111,11 @@ where
 /// * `format_name` - Human-readable name for error messages
 /// * `valid_values` - Comma-separated list of valid values for hints
 #[allow(dead_code)]
-pub fn parse_required_format<F>(format: &str, format_name: &str, valid_values: &str) -> ToolResult<F>
+pub fn parse_required_format<F>(
+    format: &str,
+    format_name: &str,
+    valid_values: &str,
+) -> ToolResult<F>
 where
     F: FromStr,
     F::Err: std::fmt::Display,
@@ -134,12 +138,12 @@ where
 /// * `field_name` - Human-readable name for error messages (e.g., "base IRI")
 pub fn parse_optional_iri(iri: Option<&str>, field_name: &str) -> ToolResult<Option<IriS>> {
     match iri {
-        Some(s) => IriS::from_str(s)
-            .map(Some)
-            .map_err(|e| ToolExecutionError::with_hint(
+        Some(s) => IriS::from_str(s).map(Some).map_err(|e| {
+            ToolExecutionError::with_hint(
                 format!("Invalid {}: {}", field_name, e),
                 "Provide a valid absolute IRI (e.g., 'http://example.org/base/')",
-            )),
+            )
+        }),
         None => Ok(None),
     }
 }
@@ -167,7 +171,8 @@ pub fn parse_optional_reader_mode(mode: Option<&str>) -> ToolResult<ReaderMode> 
 pub const RDF_FORMATS: &str = "turtle, ntriples, rdfxml, jsonld, trig, nquads, n3";
 
 /// Supported ShEx formats as a constant for documentation and hints.
-pub const SHEX_FORMATS: &str = "shexc, shexj, turtle, ntriples, rdfxml, trig, n3, nquads, json, jsonld, internal, simple";
+pub const SHEX_FORMATS: &str =
+    "shexc, shexj, turtle, ntriples, rdfxml, trig, n3, nquads, json, jsonld, internal, simple";
 
 /// Supported SHACL formats as a constant for documentation and hints.
 pub const SHACL_FORMATS: &str = "turtle, ntriples, rdfxml, jsonld, trig, n3, nquads, internal";
@@ -179,13 +184,16 @@ pub const SHAPEMAP_FORMATS: &str = "compact, json, internal, details, csv";
 pub const IMAGE_FORMATS: &str = "svg, png";
 
 /// Supported SPARQL result formats as a constant for documentation and hints.
-pub const SPARQL_RESULT_FORMATS: &str = "internal, turtle, ntriples, json-ld, rdf-xml, csv, trig, n3, nquads";
+pub const SPARQL_RESULT_FORMATS: &str =
+    "internal, turtle, ntriples, json-ld, rdf-xml, csv, trig, n3, nquads";
 
 /// Supported ShEx validation result formats as a constant.
-pub const SHEX_RESULT_FORMATS: &str = "compact, details, json, csv, turtle, ntriples, rdfxml, trig, n3, nquads";
+pub const SHEX_RESULT_FORMATS: &str =
+    "compact, details, json, csv, turtle, ntriples, rdfxml, trig, n3, nquads";
 
 /// Supported SHACL validation result formats as a constant.
-pub const SHACL_RESULT_FORMATS: &str = "compact, details, minimal, json, csv, turtle, ntriples, rdfxml, trig, n3, nquads";
+pub const SHACL_RESULT_FORMATS: &str =
+    "compact, details, minimal, json, csv, turtle, ntriples, rdfxml, trig, n3, nquads";
 
 /// Supported reader modes as a constant.
 pub const READER_MODES: &str = "strict, lax";
@@ -197,4 +205,5 @@ pub const NODE_INFO_MODES: &str = "outgoing, incoming, both";
 pub const SHEX_SORT_BY_MODES: &str = "node, shape, status, details";
 
 /// Supported SHACL validation result sort modes as a constant.
-pub const SHACL_SORT_BY_MODES: &str = "severity, node, component, value, path, sourceshape, details";
+pub const SHACL_SORT_BY_MODES: &str =
+    "severity, node, component, value, path, sourceshape, details";

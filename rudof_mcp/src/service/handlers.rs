@@ -17,9 +17,9 @@ use crate::service::service::RudofMcpService;
 use crate::service::{resource_templates, resources::*};
 use rmcp::{
     ErrorData as McpError, RoleServer, ServerHandler,
+    handler::server::tool::ToolCallContext,
     model::*,
     service::{NotificationContext, RequestContext},
-    handler::server::tool::ToolCallContext,
 };
 use serde_json::json;
 
@@ -28,8 +28,8 @@ impl ServerHandler for RudofMcpService {
     ///
     /// # Capabilities Advertised
     ///
-    /// - **tools**: Available 
-    /// - **prompts**: Available 
+    /// - **tools**: Available
+    /// - **prompts**: Available
     /// - **resources**: Available with `subscribe` and `list_changed` support
     /// - **logging**: Enabled for client-side log filtering
     /// - **completions**: Enabled for argument suggestions
@@ -43,9 +43,9 @@ impl ServerHandler for RudofMcpService {
         let mut task_cap = serde_json::Map::new();
         task_cap.insert("supported".to_string(), json!(true));
 
-        ServerInfo { 
+        ServerInfo {
             protocol_version: ProtocolVersion::LATEST,
-            capabilities: ServerCapabilities { 
+            capabilities: ServerCapabilities {
                 experimental: None,
                 logging: Some(logging_meta),
                 prompts: Some(PromptsCapability {
@@ -102,7 +102,11 @@ impl ServerHandler for RudofMcpService {
             (all_tools, None)
         };
 
-        Ok(ListToolsResult { tools, next_cursor, ..Default::default() })
+        Ok(ListToolsResult {
+            tools,
+            next_cursor,
+            ..Default::default()
+        })
     }
 
     /// Return a list of available prompts using the generated PromptRouter.
@@ -435,31 +439,34 @@ impl ServerHandler for RudofMcpService {
         context: RequestContext<RoleServer>,
     ) -> Result<CreateTaskResult, McpError> {
         tracing::debug!(tool_name = %request.name, "Enqueuing task for async execution");
-        
+
         // 1. Enqueue the task to get a task_id
         let result = self.task_store.enqueue().await;
         let task_id = result.task.task_id.clone();
-        
+
         tracing::debug!(
             task_id = %task_id,
             status = ?result.task.status,
             "Task enqueued, spawning background worker"
         );
-        
+
         // 2. Spawn background worker to execute the tool
         let service = self.clone();
         let tool_request = request.clone();
-        
+
         tokio::spawn(async move {
             tracing::debug!(task_id = %task_id, tool_name = %tool_request.name, "Background worker started");
-            
+
             // Update status to indicate execution has started
-            service.task_store.update_status(
-                &task_id,
-                rmcp::model::TaskStatus::Working,
-                Some(format!("Executing tool: {}", tool_request.name)),
-            ).await;
-            
+            service
+                .task_store
+                .update_status(
+                    &task_id,
+                    rmcp::model::TaskStatus::Working,
+                    Some(format!("Executing tool: {}", tool_request.name)),
+                )
+                .await;
+
             // Build the tool call context and execute
             // Note: We use the cloned context; the cancellation token is shared
             let ctx = rmcp::handler::server::tool::ToolCallContext::new(
@@ -467,7 +474,7 @@ impl ServerHandler for RudofMcpService {
                 tool_request.clone(),
                 context,
             );
-            
+
             match service.tool_router.call(ctx).await {
                 Ok(tool_result) => {
                     tracing::debug!(task_id = %task_id, "Task completed successfully");
@@ -475,11 +482,14 @@ impl ServerHandler for RudofMcpService {
                 }
                 Err(e) => {
                     tracing::error!(task_id = %task_id, error = ?e, "Task failed");
-                    service.task_store.fail(&task_id, e.message.to_string()).await;
+                    service
+                        .task_store
+                        .fail(&task_id, e.message.to_string())
+                        .await;
                 }
             }
         });
-        
+
         // 3. Return immediately with task info (client will poll for results)
         Ok(result)
     }
@@ -501,14 +511,13 @@ impl ServerHandler for RudofMcpService {
         _context: RequestContext<RoleServer>,
     ) -> Result<GetTaskInfoResult, McpError> {
         tracing::debug!(task_id = %request.task_id, "Getting task info");
-        
+
         self.task_store
             .get_info(request.clone())
             .await
-            .ok_or_else(|| McpError::resource_not_found(
-                format!("Task not found: {}", request.task_id),
-                None,
-            ))
+            .ok_or_else(|| {
+                McpError::resource_not_found(format!("Task not found: {}", request.task_id), None)
+            })
     }
 
     // Get the result of a completed task (SEP-1686)
@@ -518,45 +527,40 @@ impl ServerHandler for RudofMcpService {
         _context: RequestContext<RoleServer>,
     ) -> Result<TaskResult, McpError> {
         tracing::debug!(task_id = %request.task_id, "Getting task result");
-        
+
         // First check if task exists and its status
-        let info = self.task_store.get_info(GetTaskInfoParams {
-            task_id: request.task_id.clone(),
-            meta: None,
-        }).await;
-        
+        let info = self
+            .task_store
+            .get_info(GetTaskInfoParams {
+                task_id: request.task_id.clone(),
+                meta: None,
+            })
+            .await;
+
         match info {
             None => Err(McpError::resource_not_found(
                 format!("Task not found: {}", request.task_id),
                 None,
             )),
             Some(task_info) => {
-                let task = task_info.task.ok_or_else(|| McpError::resource_not_found(
-                    format!("Task not found: {}", request.task_id),
-                    None,
-                ))?;
+                let task = task_info.task.ok_or_else(|| {
+                    McpError::resource_not_found(
+                        format!("Task not found: {}", request.task_id),
+                        None,
+                    )
+                })?;
                 match task.status {
                     TaskStatus::Working | TaskStatus::InputRequired => {
-                        Err(McpError::invalid_request(
-                            "Task is still in progress",
-                            None,
-                        ))
+                        Err(McpError::invalid_request("Task is still in progress", None))
                     }
                     TaskStatus::Cancelled => {
-                        Err(McpError::invalid_request(
-                            "Task was cancelled",
-                            None,
-                        ))
+                        Err(McpError::invalid_request("Task was cancelled", None))
                     }
-                    TaskStatus::Completed | TaskStatus::Failed => {
-                        self.task_store
-                            .get_result(request.clone())
-                            .await
-                            .ok_or_else(|| McpError::internal_error(
-                                "Task result not available",
-                                None,
-                            ))
-                    }
+                    TaskStatus::Completed | TaskStatus::Failed => self
+                        .task_store
+                        .get_result(request.clone())
+                        .await
+                        .ok_or_else(|| McpError::internal_error("Task result not available", None)),
                 }
             }
         }
@@ -569,14 +573,13 @@ impl ServerHandler for RudofMcpService {
         _context: RequestContext<RoleServer>,
     ) -> Result<(), McpError> {
         tracing::debug!(task_id = %request.task_id, "Cancelling task");
-        
+
         self.task_store
             .cancel(request.clone())
             .await
             .map(|_| ())
-            .ok_or_else(|| McpError::invalid_request(
-                format!("Cannot cancel task: {}", request.task_id),
-                None,
-            ))
+            .ok_or_else(|| {
+                McpError::invalid_request(format!("Cannot cancel task: {}", request.task_id), None)
+            })
     }
 }

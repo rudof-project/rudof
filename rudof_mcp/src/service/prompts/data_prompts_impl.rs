@@ -17,7 +17,7 @@ pub async fn analyze_rdf_data_prompt_impl(
     Parameters(args): Parameters<AnalyzeRdfDataPromptArgs>,
 ) -> Result<GetPromptResult, McpError> {
     let focus = args.focus.unwrap_or_else(|| "all".to_string());
-    
+
     let focus_description = match focus.as_str() {
         "structure" => "graph structure and relationships",
         "quality" => "data quality and consistency",
@@ -28,7 +28,10 @@ pub async fn analyze_rdf_data_prompt_impl(
     let messages = vec![
         PromptMessage::new_text(
             PromptMessageRole::User,
-            format!("Analyze the loaded RDF data, focusing on: {}", focus_description),
+            format!(
+                "Analyze the loaded RDF data, focusing on: {}",
+                focus_description
+            ),
         ),
         PromptMessage::new_text(
             PromptMessageRole::Assistant,
@@ -92,7 +95,10 @@ pub async fn analyze_rdf_data_prompt_impl(
     ];
 
     Ok(GetPromptResult {
-        description: Some(format!("RDF data analysis guide focusing on {}", focus_description)),
+        description: Some(format!(
+            "RDF data analysis guide focusing on {}",
+            focus_description
+        )),
         messages,
     })
 }

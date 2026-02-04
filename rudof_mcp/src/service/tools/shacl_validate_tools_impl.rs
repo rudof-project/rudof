@@ -112,16 +112,16 @@ pub async fn validate_shacl_impl(
         None => None,
     };
 
-    let parsed_base_shape: Option<IriS> = match parse_optional_iri(base_shape.as_deref(), "base shape IRI") {
-        Ok(iri) => iri,
-        Err(e) => return Ok(e.into_call_tool_result()),
-    };
-
-    let parsed_reader_mode: ReaderMode =
-        match parse_optional_reader_mode(reader_mode.as_deref()) {
-            Ok(mode) => mode,
+    let parsed_base_shape: Option<IriS> =
+        match parse_optional_iri(base_shape.as_deref(), "base shape IRI") {
+            Ok(iri) => iri,
             Err(e) => return Ok(e.into_call_tool_result()),
         };
+
+    let parsed_reader_mode: ReaderMode = match parse_optional_reader_mode(reader_mode.as_deref()) {
+        Ok(mode) => mode,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
 
     let parsed_mode: ShaclValidationMode = match mode {
         Some(s) => match ShaclValidationMode::from_str(&s) {

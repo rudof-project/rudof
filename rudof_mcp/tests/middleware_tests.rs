@@ -2,9 +2,7 @@
 //!
 //! These tests verify the protocol version and origin validation
 
-use rudof_mcp::server::{
-    is_valid_protocol_version, is_valid_origin
-};
+use rudof_mcp::server::{is_valid_origin, is_valid_protocol_version};
 
 // =============================================================================
 // Protocol Version Guard Tests
@@ -16,11 +14,7 @@ mod protocol_version_guard_tests {
     /// Test that supported protocol versions should be accepted
     #[test]
     fn test_accepts_supported_protocol_version() {
-        let supported_versions = vec![
-            "2025-11-25",
-            "2025-06-18",
-            "2025-03-26",
-        ];
+        let supported_versions = vec!["2025-11-25", "2025-06-18", "2025-03-26"];
 
         for version in supported_versions {
             assert!(
@@ -79,11 +73,7 @@ mod origin_guard_tests {
         ];
 
         for origin in valid_origins {
-            assert!(
-                is_valid_origin(origin),
-                "Origin {} should be valid",
-                origin
-            );
+            assert!(is_valid_origin(origin), "Origin {} should be valid", origin);
         }
     }
 
@@ -97,10 +87,10 @@ mod origin_guard_tests {
             "http://10.0.0.1",
             "https://api.example.com",
             "http://attacker.com",
-            "http://localhost.attacker.com",  
+            "http://localhost.attacker.com",
             "http://127.0.0.2",
-            "https://localhost.evil.com",     
-            "http://localhostevil.com",       
+            "https://localhost.evil.com",
+            "http://localhostevil.com",
         ];
 
         for origin in invalid_origins {

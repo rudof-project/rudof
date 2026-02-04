@@ -1,5 +1,5 @@
-use prefixmap::{IriRef, PrefixMap};
 use prefixmap::error::PrefixMapError;
+use prefixmap::{IriRef, PrefixMap};
 use serde::Serialize;
 use srdf::SHACLPath;
 

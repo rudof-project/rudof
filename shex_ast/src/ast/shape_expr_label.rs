@@ -4,8 +4,8 @@ use iri_s::{IriS, IriSError};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-use prefixmap::{Deref, IriRef};
 use prefixmap::error::DerefError;
+use prefixmap::{Deref, IriRef};
 use thiserror::Error;
 
 use crate::ir::shape_label::ShapeLabel;

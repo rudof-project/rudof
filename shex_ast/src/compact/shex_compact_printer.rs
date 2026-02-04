@@ -1,18 +1,18 @@
 /// This file converts ShEx AST to ShEx compact syntax
 use crate::{
-    ast::{
-        value_set_value::ValueSetValue, Annotation, BNode, NodeConstraint, NodeKind, NumericFacet, ObjectValue, Pattern,
-        Schema, SemAct, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel, StringFacet, TripleExpr,
-        XsFacet,
-    },
     IriOrStr,
+    ast::{
+        Annotation, BNode, NodeConstraint, NodeKind, NumericFacet, ObjectValue, Pattern, Schema,
+        SemAct, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel, StringFacet, TripleExpr, XsFacet,
+        value_set_value::ValueSetValue,
+    },
 };
 use colored::*;
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use pretty::{Arena, DocAllocator, DocBuilder, RefDoc};
 use rust_decimal::Decimal;
-use srdf::{lang::Lang, numeric_literal::NumericLiteral, SLiteral};
+use srdf::{SLiteral, lang::Lang, numeric_literal::NumericLiteral};
 use std::{borrow::Cow, io, marker::PhantomData};
 use tracing::trace;
 
@@ -968,8 +968,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use iri_s::iri;
     use iri_s::IriS;
+    use iri_s::iri;
     use prefixmap::PrefixMap;
 
     #[test]

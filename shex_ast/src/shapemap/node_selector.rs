@@ -123,13 +123,12 @@ impl NodeSelector {
 fn mk_path_str(path: &SHACLPathRef, prefixmap: &PrefixMap) -> Result<String, ShapemapError> {
     match path {
         SHACLPathRef::Predicate { pred } => {
-            let pred_resolved =
-                prefixmap
-                    .resolve_iriref(pred.clone())
-                    .map_err(|e| ShapemapError::PrefixMapError {
-                        node: pred.to_string(),
-                        error: e.to_string(),
-                    })?;
+            let pred_resolved = prefixmap.resolve_iriref(pred.clone()).map_err(|e| {
+                ShapemapError::PrefixMapError {
+                    node: pred.to_string(),
+                    error: e.to_string(),
+                }
+            })?;
             Ok(format!("<{pred_resolved}>"))
         }
         _ => todo!(),

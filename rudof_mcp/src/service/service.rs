@@ -122,7 +122,7 @@ pub struct RudofMcpService {
 
 impl RudofMcpService {
     /// Create a new RudofMcpService instance.
-    /// 
+    ///
     /// # Panics
     /// Panics if Rudof configuration or initialization fails.
     /// For fallible construction, use [`try_new`](Self::try_new).
@@ -131,11 +131,11 @@ impl RudofMcpService {
     }
 
     /// Try to create a new RudofMcpService instance.
-    /// 
+    ///
     /// Returns an error if Rudof configuration or initialization fails.
     pub fn try_new() -> Result<Self, ServiceCreationError> {
-        let rudof_config = RudofConfig::new()
-            .map_err(|e| ServiceCreationError::ConfigError(e.to_string()))?;
+        let rudof_config =
+            RudofConfig::new().map_err(|e| ServiceCreationError::ConfigError(e.to_string()))?;
         let rudof = Rudof::new(&rudof_config)
             .map_err(|e| ServiceCreationError::RudofError(e.to_string()))?;
         Ok(Self {
@@ -198,9 +198,7 @@ impl RudofMcpService {
         if let Some(context) = context_guard.as_ref() {
             if let Err(e) = context
                 .peer
-                .notify_resource_updated(ResourceUpdatedNotificationParam {
-                    uri: uri.clone(),
-                })
+                .notify_resource_updated(ResourceUpdatedNotificationParam { uri: uri.clone() })
                 .await
             {
                 tracing::error!(
@@ -255,7 +253,7 @@ impl RudofMcpService {
             argument_name = %argument_name,
             "Getting prompt argument completions"
         );
-        
+
         // Provide context-aware completions based on prompt and argument
         match (prompt_name, argument_name) {
             // Format-related arguments (RDF formats from rudof://formats/rdf)
@@ -311,10 +309,7 @@ impl RudofMcpService {
             }
             // Common boolean arguments
             (_, "verbose") | (_, "debug") | (_, "strict") => {
-                vec![
-                    "true".to_string(),
-                    "false".to_string(),
-                ]
+                vec!["true".to_string(), "false".to_string()]
             }
             // Base IRI suggestions
             (_, "base") | (_, "base_iri") => {
@@ -360,10 +355,7 @@ impl RudofMcpService {
             }
             // Technology argument for validation_guide prompt
             ("validation_guide", "technology") | (_, "technology") => {
-                vec![
-                    "shex".to_string(),
-                    "shacl".to_string(),
-                ]
+                vec!["shex".to_string(), "shacl".to_string()]
             }
             // Query type argument for sparql_builder prompt (from rudof://formats/query-types)
             ("sparql_builder", "query_type") | (_, "query_type") => {
@@ -374,22 +366,18 @@ impl RudofMcpService {
                     "describe".to_string(),
                 ]
             }
-            _ => vec![]
+            _ => vec![],
         }
     }
 
     /// Get completion suggestions for resource URI templates
-    pub fn get_resource_uri_completions(
-        &self,
-        uri: &str,
-        argument_name: &str,
-    ) -> Vec<String> {
+    pub fn get_resource_uri_completions(&self, uri: &str, argument_name: &str) -> Vec<String> {
         tracing::debug!(
             uri = %uri,
             argument_name = %argument_name,
             "Getting resource URI completions"
         );
-        
+
         // Provide completions based on resource URI patterns
         if uri.starts_with("rudof://") {
             match argument_name {
@@ -459,12 +447,9 @@ impl RudofMcpService {
                 }
                 // Validation reader modes (from rudof://formats/validation-reader-modes)
                 "reader_mode" => {
-                    vec![
-                        "strict".to_string(),
-                        "lax".to_string(),
-                    ]
+                    vec!["strict".to_string(), "lax".to_string()]
                 }
-                _ => vec![]
+                _ => vec![],
             }
         } else {
             vec![]

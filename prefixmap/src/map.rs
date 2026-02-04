@@ -1,5 +1,5 @@
-use crate::error::PrefixMapError;
 use crate::IriRef;
+use crate::error::PrefixMapError;
 use colored::*;
 use indexmap::IndexMap;
 use iri_s::*;

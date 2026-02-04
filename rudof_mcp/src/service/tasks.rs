@@ -19,9 +19,9 @@
 //! may be garbage collected by the server.
 
 use rmcp::model::{
-    CallToolResult, CancelTaskParams, CreateTaskResult, EmptyObject,
-    GetTaskInfoParams, GetTaskInfoResult, GetTaskResultParams, ListTasksResult, PaginatedRequestParams,
-    Task, TaskResult, TaskStatus,
+    CallToolResult, CancelTaskParams, CreateTaskResult, EmptyObject, GetTaskInfoParams,
+    GetTaskInfoResult, GetTaskResultParams, ListTasksResult, PaginatedRequestParams, Task,
+    TaskResult, TaskStatus,
 };
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -105,10 +105,7 @@ impl TaskStore {
     }
 
     /// List all tasks with optional pagination
-    pub async fn list(
-        &self,
-        params: Option<PaginatedRequestParams>,
-    ) -> ListTasksResult {
+    pub async fn list(&self, params: Option<PaginatedRequestParams>) -> ListTasksResult {
         let tasks = self.tasks.read().await;
         let all_tasks: Vec<Task> = tasks.values().map(|e| e.task.clone()).collect();
 
@@ -190,7 +187,10 @@ impl TaskStore {
             // Only cancel if not already completed or failed
             match entry.task.status {
                 TaskStatus::Working | TaskStatus::InputRequired => {
-                    entry.update_status(TaskStatus::Cancelled, Some("Cancelled by client".to_string()));
+                    entry.update_status(
+                        TaskStatus::Cancelled,
+                        Some("Cancelled by client".to_string()),
+                    );
                     tracing::debug!(task_id = %params.task_id, "Task cancelled");
                     Some(EmptyObject {})
                 }
@@ -229,7 +229,10 @@ impl TaskStore {
         let mut tasks = self.tasks.write().await;
         if let Some(entry) = tasks.get_mut(task_id) {
             entry.result = Some(Ok(result));
-            entry.update_status(TaskStatus::Completed, Some("Task completed successfully".to_string()));
+            entry.update_status(
+                TaskStatus::Completed,
+                Some("Task completed successfully".to_string()),
+            );
             tracing::debug!(task_id = %task_id, "Task completed");
             true
         } else {

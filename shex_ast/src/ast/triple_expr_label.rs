@@ -2,8 +2,8 @@ use iri_s::IriSError;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
-use prefixmap::{Deref, IriRef};
 use prefixmap::error::DerefError;
+use prefixmap::{Deref, IriRef};
 
 use super::bnode::BNode;
 

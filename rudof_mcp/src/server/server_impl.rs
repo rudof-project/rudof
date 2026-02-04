@@ -1,7 +1,7 @@
 use anyhow::Result;
 
-use super::streamable_http::run_mcp_http;
 use super::stdio_server::run_mcp_stdio;
+use super::streamable_http::run_mcp_http;
 use super::transport::TransportType;
 
 /// Entry point for running the MCP server with the specified transport.

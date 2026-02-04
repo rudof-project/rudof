@@ -50,7 +50,9 @@ pub fn get_shacl_validate_resources() -> Vec<Annotated<RawResource>> {
             raw: RawResource {
                 uri: "rudof://formats/shacl-validation-sort-options".to_string(),
                 name: "SHACL Validation Result Sort Options".to_string(),
-                description: Some("Available sort options for SHACL validation results".to_string()),
+                description: Some(
+                    "Available sort options for SHACL validation results".to_string(),
+                ),
                 mime_type: Some("application/json".to_string()),
                 title: None,
                 size: None,
@@ -70,7 +72,9 @@ pub fn handle_shacl_validate_resource(uri: &str) -> Option<Result<ReadResourceRe
     match uri {
         "rudof://formats/shacl" => Some(get_shacl_formats(uri)),
         "rudof://formats/shacl-validation-result" => Some(get_shacl_validation_result_formats(uri)),
-        "rudof://formats/shacl-validation-sort-options" => Some(get_shacl_validation_sort_options(uri)),
+        "rudof://formats/shacl-validation-sort-options" => {
+            Some(get_shacl_validation_sort_options(uri))
+        }
         _ => None,
     }
 }
