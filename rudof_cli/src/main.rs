@@ -140,7 +140,7 @@ fn main() -> Result<()> {
             port,
             route_path,
         }) => {
-            rudof_mcp::run_mcp(*transport, *port, route_path)
+            rudof_mcp::server::run_mcp(*transport, *port, route_path)
         }
         Some(Command::Service {
             service,

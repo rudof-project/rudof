@@ -10,21 +10,6 @@
 //! - **Completions**: Argument suggestions for tools and prompts
 //! - **Logging**: Dynamic log level configuration
 //! - **Tasks**: Async task management (SEP-1686)
-//!
-//! # Protocol Flow
-//!
-//! ```text
-//! Client                                Server
-//!   │                                     │
-//!   │──── initialize ────────────────────>│
-//!   │<─── ServerInfo + capabilities ──────│
-//!   │                                     │
-//!   │──── tools/list ────────────────────>│
-//!   │<─── [Tool definitions] ─────────────│
-//!   │                                     │
-//!   │──── tools/call {name, args} ───────>│
-//!   │<─── CallToolResult ─────────────────│
-//!   │                                     │
 //! ```
 
 use crate::service::logging::{LogData, send_log};
@@ -60,7 +45,7 @@ impl ServerHandler for RudofMcpService {
 
         ServerInfo { 
             protocol_version: ProtocolVersion::LATEST,
-            capabilities: ServerCapabilities {
+            capabilities: ServerCapabilities { 
                 experimental: None,
                 logging: Some(logging_meta),
                 prompts: Some(PromptsCapability {

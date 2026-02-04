@@ -3,6 +3,7 @@
 # Rudof MCP Server
 
 A powerful Model Context Protocol server for RDF validation, querying, and data transformation
+
 </div>
 
 ---

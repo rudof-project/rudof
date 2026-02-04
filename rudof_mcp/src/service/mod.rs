@@ -7,27 +7,6 @@
 //!
 //! The MCP server exposes Rudof's library capabilities to AI assistants and other MCP clients.
 //!
-//! ## Architecture
-//!
-//! ```text
-//! ┌─────────────────────────────────────────────────────────────────┐
-//! │                        MCP Client (AI/LLM)                      │
-//! └─────────────────────────────┬───────────────────────────────────┘
-//!                               │ JSON-RPC 2.0 (stdio/HTTP)
-//! ┌─────────────────────────────┴───────────────────────────────────┐
-//! │                      RudofMcpService                            │
-//! │  ┌───────────────┐  ┌───────────────┐  ┌───────────────────┐    │
-//! │  │  ToolRouter   │  │ PromptRouter  │  │ ResourceHandlers  │    │
-//! │  │  (rmcp)       │  │ (rmcp)        │  │                   │    │
-//! │  └───────┬───────┘  └───────┬───────┘  └─────────┬─────────┘    │
-//! │          │                  │                    │              │
-//! │  ┌───────┴──────────────────┴────────────────────┴───────────┐  │
-//! │  │                    Rudof Library                          │  │
-//! │  │  (ShEx, SHACL, SPARQL, RDF parsing/serialization)         │  │
-//! │  └───────────────────────────────────────────────────────────┘  │
-//! └─────────────────────────────────────────────────────────────────┘
-//! ```
-//!
 //! ## MCP Capabilities
 //!
 //! This server advertises the following MCP capabilities:
@@ -52,3 +31,4 @@ mod tasks;
 mod tools;
 
 pub use service::RudofMcpService;
+pub use tools::annotated_tools;

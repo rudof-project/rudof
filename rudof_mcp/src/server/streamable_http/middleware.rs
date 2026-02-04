@@ -6,6 +6,7 @@ use axum::{
     response::Response,
 };
 
+/// Header name for MCP protocol version
 const PROTOCOL_HEADER: &str = "MCP-Protocol-Version";
 
 /// Supported MCP protocol versions per specification 2025-11-25
@@ -17,6 +18,39 @@ const SUPPORTED_PROTOCOL_VERSIONS: &[&str] = &[
 
 /// Default protocol version when header is absent (per spec)
 const DEFAULT_PROTOCOL_VERSION: &str = "2025-03-26";
+
+/// Checks if a protocol version is supported
+pub fn is_valid_protocol_version(version: &str) -> bool {
+    SUPPORTED_PROTOCOL_VERSIONS.contains(&version)
+}
+
+/// Checks if an origin is valid per MCP spec (localhost only)
+/// 
+/// This function validates that the origin is truly a localhost address,
+/// preventing DNS rebinding attacks where an attacker's domain resolves
+/// to localhost.
+pub fn is_valid_origin(origin: &str) -> bool {
+    let localhost_patterns = [
+        ("http://localhost", 16),   
+        ("https://localhost", 17),  
+        ("http://127.0.0.1", 16),   
+        ("https://127.0.0.1", 17),  
+        ("http://[::1]", 12),       
+        ("https://[::1]", 13),     
+    ];
+    
+    for (pattern, len) in localhost_patterns {
+        if origin.starts_with(pattern) {
+            // Check that what follows is either nothing, a port (:), or a path (/)
+            let rest = &origin[len..];
+            if rest.is_empty() || rest.starts_with(':') || rest.starts_with('/') {
+                return true;
+            }
+        }
+    }
+    
+    false
+}
 
 /// Applies all standard MCP middleware layers to the given router.
 /// This includes:
@@ -89,14 +123,7 @@ pub async fn protocol_version_guard(req: Request<Body>, next: Next) -> Response 
 pub async fn origin_guard(req: Request<Body>, next: Next) -> Response {
     if let Some(origin) = req.headers().get("Origin") {
         match origin.to_str() {
-            Ok(origin_str)
-                if origin_str.starts_with("http://localhost")
-                    || origin_str.starts_with("https://localhost")
-                    || origin_str.starts_with("http://127.0.0.1")
-                    || origin_str.starts_with("https://127.0.0.1")
-                    || origin_str.starts_with("http://[::1]")
-                    || origin_str.starts_with("https://[::1]") =>
-            {
+            Ok(origin_str) if is_valid_origin(origin_str) => {
                 tracing::debug!("Accepted Origin header: {}", origin_str);
                 // Allowed origin
             }
