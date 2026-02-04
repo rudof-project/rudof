@@ -26,7 +26,13 @@ impl IriS {
         IriS { iri }
     }
 
+    #[cfg(target_arch = "wasm32")]
+    pub fn parse_buf(_path: &Path, _base: Option<IriS>) -> Result<IriS, IriSError> {
+        Err(IriSError::WASMFilePath)
+    }
+
     /// Create an `IriS` from a file system path
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn from_path(path: &Path) -> Result<IriS, IriSError> {
         let abs_path = if path.is_absolute() {
             Ok(path.to_path_buf())

@@ -29,8 +29,10 @@
 pub mod error;
 pub mod iri;
 pub mod map;
+#[cfg(test)]
 mod test;
 
+pub use crate::error::*;
 pub use crate::iri::Deref;
 pub use crate::iri::IriRef;
 pub use crate::map::PrefixMap;

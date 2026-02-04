@@ -16,6 +16,9 @@ iri_s.workspace = true
 serde.workspace = true
 thiserror.workspace = true
 #test-strategy.workspace = true
-proptest.workspace = true
 #speculate.workspace = true
 #bencher.workspace = true
+
+
+[dev-dependencies]
+proptest.workspace = true

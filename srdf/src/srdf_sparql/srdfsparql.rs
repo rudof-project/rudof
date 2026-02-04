@@ -19,6 +19,10 @@ use std::{collections::HashSet, fmt::Display, str::FromStr};
 #[cfg(not(target_family = "wasm"))]
 pub use reqwest::blocking::Client;
 
+#[cfg(target_family = "wasm")]
+#[derive(Debug, Clone)]
+pub struct Client;
+
 type Result<A> = std::result::Result<A, SRDFSparqlError>;
 
 /// Implements SRDF interface as a SPARQL endpoint
@@ -332,7 +336,22 @@ fn cnv_query_solution(qs: &OxQuerySolution) -> QuerySolution<SRDFSparql> {
 
 #[cfg(target_family = "wasm")]
 fn sparql_client() -> Result<Client> {
-    Ok(Client())
+    Ok(Client)
+}
+
+#[cfg(target_family = "wasm")]
+fn sparql_client_construct_jsonld() -> Result<Client> {
+    Ok(Client)
+}
+
+#[cfg(target_family = "wasm")]
+fn sparql_client_construct_rdfxml() -> Result<Client> {
+    Ok(Client)
+}
+
+#[cfg(target_family = "wasm")]
+fn sparql_client_construct_turtle() -> Result<Client> {
+    Ok(Client)
 }
 
 #[cfg(not(target_family = "wasm"))]
@@ -364,6 +383,7 @@ fn sparql_client_construct_turtle() -> Result<Client> {
     Ok(client)
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn sparql_client_construct_jsonld() -> Result<Client> {
     use reqwest::header::{self, ACCEPT, USER_AGENT};
 
@@ -379,6 +399,7 @@ fn sparql_client_construct_jsonld() -> Result<Client> {
     Ok(client)
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn sparql_client_construct_rdfxml() -> Result<Client> {
     use reqwest::header::{self, ACCEPT, USER_AGENT};
 
@@ -395,12 +416,24 @@ fn sparql_client_construct_rdfxml() -> Result<Client> {
 }
 
 #[cfg(target_family = "wasm")]
-fn make_sparql_query(
+fn make_sparql_query_select(
     _query: &str,
     _client: &Client,
     _endpoint_iri: &IriS,
 ) -> Result<Vec<OxQuerySolution>> {
-    Err(SRDFSparqlError::UnknownEndpontName {
+    Err(SRDFSparqlError::UnknownEndpointName {
+        name: String::from("WASM"),
+    })
+}
+
+#[cfg(target_family = "wasm")]
+fn make_sparql_query_construct(
+    _query: &str,
+    _client: &Client,
+    _endpoint_iri: &IriS,
+    _format: &QueryResultFormat,
+) -> Result<String> {
+    Err(SRDFSparqlError::UnknownEndpointName {
         name: String::from("WASM"),
     })
 }
