@@ -1,5 +1,6 @@
 pub mod deref;
 pub mod iri_ref;
+
 #[cfg(test)]
 mod test;
 mod visitor;

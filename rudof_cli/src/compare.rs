@@ -1,11 +1,11 @@
 use crate::writer::get_writer;
 use crate::{
-    InputCompareFormat, input_compare_mode::InputCompareMode,
-    result_compare_format::ResultCompareFormat,
+    input_compare_mode::InputCompareMode, result_compare_format::ResultCompareFormat,
+    InputCompareFormat,
 };
-use anyhow::{Context, Result, bail};
+use anyhow::{bail, Context, Result};
 use iri_s::IriS;
-use iri_s::mime_type::MimeType;
+use iri_s::MimeType;
 use rudof_lib::{InputSpec, Rudof, RudofConfig};
 use shapes_comparator::{CoShaMo, CoShaMoConverter, ComparatorConfig};
 use shex_ast::Schema;

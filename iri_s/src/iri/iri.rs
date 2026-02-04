@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
+/// An IRI that can be either a raw [`String`] or a parsed [`IriS`]
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(try_from = "String", into = "String")]
 pub enum Iri {
@@ -12,26 +13,18 @@ pub enum Iri {
 }
 
 impl Iri {
-    pub fn new(str: &str) -> Iri {
-        Iri::String(str.to_string())
-    }
-
-    /// Converts a `Iri` represented as a `String` into a parsed Iri represented by a `IriS`
+    /// Converts a [`Iri`] represented as a [`String`] into a parsed [`Iri`] represented by a [`IriS`]
     /// `base` is useful to obtain an absolute Iri
-    pub fn resolve(&self, base: Option<IriS>) -> Result<Iri, IriSError> {
-        match self {
+    pub fn resolve(self, base: Option<IriS>) -> Result<Iri, IriSError> {
+        let iri = match self {
             Iri::String(s) => match base {
-                None => {
-                    let iri = IriS::from_str(s.as_str())?;
-                    Ok(Iri::IriS(iri))
-                }
-                Some(base) => {
-                    let iri = base.extend(s)?;
-                    Ok(Iri::IriS(iri))
-                }
+                None => IriS::from_str(s.as_str()),
+                Some(base) => base.extend(&s),
             },
-            Iri::IriS(_) => Ok(self.clone()),
-        }
+            Iri::IriS(_) => return Ok(self)
+        }?;
+
+        Ok(Iri::IriS(iri))
     }
 }
 
@@ -56,7 +49,6 @@ impl From<Iri> for String {
 }
 
 impl From<String> for Iri {
-
     fn from(value: String) -> Self {
         Iri::String(value)
     }

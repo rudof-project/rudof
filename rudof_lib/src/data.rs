@@ -1,15 +1,15 @@
 // Shared core logic for data management
 use iri_s::IriS;
-use iri_s::mime_type::MimeType;
+use iri_s::MimeType;
 use srdf::{
-    ImageFormat, RDFFormat, ReaderMode, UmlConverter, UmlGenerationMode,
-    rdf_visualizer::visual_rdf_graph::VisualRDFGraph,
+    rdf_visualizer::visual_rdf_graph::VisualRDFGraph, ImageFormat, RDFFormat, ReaderMode, UmlConverter,
+    UmlGenerationMode,
 };
 use std::str::FromStr;
 
 use crate::{
-    InputSpec, Rudof, RudofConfig, RudofError,
-    data_format::{DataFormat, DataFormatError},
+    data_format::{DataFormat, DataFormatError}, InputSpec, Rudof, RudofConfig,
+    RudofError,
 };
 
 // Converts a rudof_lib DataFormat into a srdf RDFFormat.

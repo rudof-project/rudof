@@ -3,7 +3,8 @@ use prefixmap::PrefixMap;
 use serde::{Deserialize, Serialize};
 
 use crate::{Annotation, SemAct, ShapeExprLabel, TripleExpr, TripleExprWrapper};
-use prefixmap::{Deref, DerefError, IriRef};
+use prefixmap::error::DerefError;
+use prefixmap::{Deref, IriRef};
 
 #[derive(Deserialize, Serialize, Debug, Default, PartialEq, Clone)]
 pub struct Shape {
@@ -102,11 +103,7 @@ impl Shape {
 }
 
 impl Deref for Shape {
-    fn deref(
-        self,
-        base: Option<&IriS>,
-        prefixmap: Option<&PrefixMap>,
-    ) -> Result<Self, DerefError> {
+    fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
         let new_extra = match &self.extra {
             None => None,
             Some(es) => {

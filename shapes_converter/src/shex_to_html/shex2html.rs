@@ -1,7 +1,8 @@
 use crate::{ShEx2HtmlError, ShEx2Uml, find_annotation, object_value2string};
 use minijinja::Template;
 use minijinja::{Environment, path_loader};
-use prefixmap::{IriRef, PrefixMap, PrefixMapError};
+use prefixmap::error::PrefixMapError;
+use prefixmap::{IriRef, PrefixMap};
 use shex_ast::{Annotation, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
 use srdf::UmlConverter;
 use srdf::UmlGenerationMode;

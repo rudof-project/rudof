@@ -8,17 +8,18 @@ use crate::ir::shape_expr::ShapeExpr;
 use crate::ir::shape_label::ShapeLabel;
 use crate::ir::value_set::ValueSet;
 use crate::ir::value_set_value::ValueSetValue;
-use crate::{ast, ast::Schema as SchemaAST, SchemaIRError, ShapeLabelIdx};
-use crate::{ast::iri_exclusion::IriExclusion, ShapeExprLabel};
-use crate::{ir, CResult, Cond, Node, Pred, ResolveMethod, ShExFormat, ShExParser};
+use crate::{CResult, Cond, Node, Pred, ResolveMethod, ShExFormat, ShExParser, ir};
+use crate::{SchemaIRError, ShapeLabelIdx, ast, ast::Schema as SchemaAST};
+use crate::{ShapeExprLabel, ast::iri_exclusion::IriExclusion};
 use core::panic;
-use iri_s::{IriS, IriSError};
+use iri_s::error::IriSError;
+use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
-use rbe::{rbe::Rbe, Component, MatchCond, Max, Min, RbeTable};
 use rbe::{Cardinality, Pending, RbeError, SingleCond};
-use srdf::numeric_literal::NumericLiteral;
+use rbe::{Component, MatchCond, Max, Min, RbeTable, rbe::Rbe};
 use srdf::Object;
 use srdf::SLiteral;
+use srdf::numeric_literal::NumericLiteral;
 use tracing::{debug, trace};
 
 #[derive(Debug, Default)]
@@ -80,7 +81,7 @@ impl AST2IR {
             if !visited_sources.contains(&import_iri) {
                 visited_sources.push(import_iri.clone());
                 // For imported schemas, the base is the source IRI of the schema that imports them
-                let imported_schema = self.resolve(&import_iri, &Some(source_iri.clone()))?;
+                let imported_schema = self.resolve(&import_iri, Some(source_iri))?;
                 let (_local, total) = self.compile_visited(
                     &imported_schema,
                     &import_iri,
@@ -105,7 +106,7 @@ impl AST2IR {
         Ok((local, total_imported + local))
     }
 
-    fn resolve(&self, iri: &IriS, base: &Option<IriS>) -> CResult<SchemaAST> {
+    fn resolve(&self, iri: &IriS, base: Option<&IriS>) -> CResult<SchemaAST> {
         let new_schema = match &self.resolve_method {
             ResolveMethod::RotatingFormats(formats) => {
                 find_schema_rotating_formats(iri, formats.clone(), base)
@@ -1529,7 +1530,7 @@ fn cnv_iri_ref(iri: &IriRef, prefixmap: &PrefixMap) -> Result<IriS, Box<SchemaIR
 pub fn find_schema_rotating_formats(
     iri: &IriS,
     formats: Vec<ShExFormat>,
-    base: &Option<IriS>,
+    base: Option<&IriS>,
 ) -> Result<SchemaAST, Box<SchemaIRError>> {
     let mut errors = Vec::new();
     for format in &formats {
@@ -1550,7 +1551,7 @@ pub fn find_schema_rotating_formats(
 pub fn get_schema_from_iri(
     iri: &IriS,
     format: &ShExFormat,
-    base: &Option<IriS>,
+    base: Option<&IriS>,
 ) -> Result<SchemaAST, Box<SchemaIRError>> {
     let candidates = candidates(iri, base, format).map_err(|e| {
         Box::new(SchemaIRError::CandidatesError {
@@ -1587,7 +1588,7 @@ pub fn get_schema_from_iri(
 
 pub fn candidates(
     iri: &IriS,
-    base: &Option<IriS>,
+    base: Option<&IriS>,
     format: &ShExFormat,
 ) -> Result<Vec<IriS>, IriSError> {
     let mut candidates = vec![iri.clone()];
@@ -1606,7 +1607,7 @@ pub fn candidates(
 
 fn find_content_from_iris(
     iris: Vec<IriS>,
-    base: &Option<IriS>,
+    base: Option<&IriS>,
 ) -> Result<String, Box<SchemaIRError>> {
     find_first_ok(iris, |iri| get_content(iri, base))
         .map_err(|errs| {
@@ -1617,7 +1618,7 @@ fn find_content_from_iris(
         .map(|(content, _)| content)
 }
 
-fn get_content(iri: IriS, base: &Option<IriS>) -> Result<String, Box<SchemaIRError>> {
+fn get_content(iri: IriS, base: Option<&IriS>) -> Result<String, Box<SchemaIRError>> {
     iri.dereference(base).map_err(|e| {
         Box::new(SchemaIRError::DereferencingIri {
             iri: iri.clone(),

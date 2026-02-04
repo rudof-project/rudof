@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
-use prefixmap::{PrefixMap, PrefixMapError};
+use prefixmap::PrefixMap;
+use prefixmap::error::PrefixMapError;
 use rbe::RbeError;
 use serde::Serialize;
 use serde::ser::SerializeMap;

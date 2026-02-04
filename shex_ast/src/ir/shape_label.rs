@@ -1,6 +1,8 @@
 use crate::{BNode, SchemaJsonError, ShapeExprLabel};
-use iri_s::{IriS, IriSError};
-use prefixmap::{PrefixMap, PrefixMapError};
+use iri_s::error::IriSError;
+use iri_s::IriS;
+use prefixmap::error::PrefixMapError;
+use prefixmap::PrefixMap;
 use serde::Serialize;
 use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
@@ -46,9 +48,9 @@ impl ShapeLabel {
         prefixmap: &PrefixMap,
     ) -> Result<ShapeLabel, PrefixMapError> {
         match label {
-            ShapeExprLabel::IriRef { value } => {
-                Ok(ShapeLabel::Iri(value.get_iri_prefixmap(prefixmap)?.into_owned()))
-            }
+            ShapeExprLabel::IriRef { value } => Ok(ShapeLabel::Iri(
+                value.get_iri_prefixmap(prefixmap)?.into_owned(),
+            )),
             ShapeExprLabel::BNode { value } => Ok(ShapeLabel::BNode(value.clone())),
             ShapeExprLabel::Start => Ok(ShapeLabel::Start),
         }

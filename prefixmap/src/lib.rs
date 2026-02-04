@@ -29,6 +29,7 @@
 pub mod error;
 pub mod iri;
 pub mod map;
+
 #[cfg(test)]
 mod test;
 

@@ -1,10 +1,10 @@
 use super::shape_expr::ShapeExpr;
-use crate::ast::deserialize_string_or_struct;
-use crate::ast::serialize_string_or_struct;
 use crate::Annotation;
 use crate::ShapeExprLabel;
+use crate::ast::deserialize_string_or_struct;
+use crate::ast::serialize_string_or_struct;
 use prefixmap::Deref;
-use prefixmap::DerefError;
+use prefixmap::error::DerefError;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]

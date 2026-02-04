@@ -1,10 +1,12 @@
 use std::{fmt::Display, str::FromStr};
 
-use iri_s::{IriS, IriSError};
+use iri_s::error::IriSError;
+use iri_s::IriS;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-use prefixmap::{Deref, DerefError, IriRef};
+use prefixmap::error::DerefError;
+use prefixmap::{Deref, IriRef};
 use thiserror::Error;
 
 use crate::ir::shape_label::ShapeLabel;

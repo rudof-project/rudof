@@ -1,7 +1,7 @@
-use iri_s::IriSError;
+use iri_s::error::IriSError;
 use oxiri::IriParseError;
 use oxttl::TurtleParseError;
-use prefixmap::PrefixMapError;
+use prefixmap::error::PrefixMapError;
 use std::io;
 use std::io::Error as IOError;
 use thiserror::Error;

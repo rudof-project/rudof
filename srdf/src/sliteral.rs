@@ -1,17 +1,17 @@
-use std::fmt;
-use std::fmt::Debug;
-use std::fmt::Display;
-use std::hash::Hash;
-use std::result;
-
 use crate::Object;
 use crate::RDFError;
 use crate::XsdDateTime;
 use crate::{lang::Lang, numeric_literal::NumericLiteral};
 use iri_s::IriS;
-use prefixmap::{Deref, DerefError, IriRef, PrefixMap};
+use prefixmap::error::DerefError;
+use prefixmap::{Deref, IriRef, PrefixMap};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize, Serializer};
+use std::fmt;
+use std::fmt::Debug;
+use std::fmt::Display;
+use std::hash::Hash;
+use std::result;
 use tracing::trace;
 
 /// Concrete representation of RDF literals
@@ -585,11 +585,7 @@ where
 }
 
 impl Deref for SLiteral {
-    fn deref(
-        self,
-        base: Option<&IriS>,
-        prefixmap: Option<&PrefixMap>,
-    ) -> Result<Self, DerefError> {
+    fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
         match self {
             SLiteral::NumericLiteral(n) => Ok(SLiteral::NumericLiteral(n.clone())),
             SLiteral::BooleanLiteral(b) => Ok(SLiteral::BooleanLiteral(b)),
@@ -772,7 +768,7 @@ impl From<SLiteral> for oxrdf::Literal {
             } => match datatype.get_iri() {
                 Ok(datatype) => oxrdf::Literal::new_typed_literal(
                     lexical_form,
-                    datatype.as_named_node().to_owned(),
+                    datatype.named_node().clone(),
                 ),
                 Err(_) => lexical_form.clone().into(),
             },
@@ -786,7 +782,7 @@ impl From<SLiteral> for oxrdf::Literal {
             } => match datatype.get_iri() {
                 Ok(datatype) => oxrdf::Literal::new_typed_literal(
                     lexical_form,
-                    datatype.as_named_node().to_owned(),
+                    datatype.named_node().clone(),
                 ),
                 Err(_) => lexical_form.into(),
             },

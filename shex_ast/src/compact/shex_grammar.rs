@@ -3,35 +3,35 @@ use crate::compact::grammar_structs::{
     Cardinality, NumericLength, NumericRange, Qualifier, SenseFlags, ShExStatement,
 };
 use crate::compact::{
-    grammar::map_error, grammar::tag_no_case_tws, grammar::token, grammar::token_tws, grammar::traced, grammar::tws0,
-    shex_parser_error::ParseError as ShExParseError, IRes, Span,
+    IRes, Span, grammar::map_error, grammar::tag_no_case_tws, grammar::token, grammar::token_tws,
+    grammar::traced, grammar::tws0, shex_parser_error::ParseError as ShExParseError,
 };
 use crate::iri_ref_or_wildcard::IriRefOrWildcard;
 use crate::string_or_wildcard::StringOrWildcard;
 use crate::{
-    iri_exclusion::IriExclusion, language_exclusion::LanguageExclusion, literal_exclusion::LiteralExclusion, object_value::ObjectValue, value_set_value::ValueSetValue, Annotation, BNode, LangOrWildcard,
-    NodeConstraint, NodeKind, NumericFacet, Pattern, SemAct, Shape, ShapeExpr,
-    ShapeExprLabel, StringFacet,
-    TripleExpr, TripleExprLabel, XsFacet,
+    Annotation, BNode, LangOrWildcard, NodeConstraint, NodeKind, NumericFacet, Pattern, SemAct,
+    Shape, ShapeExpr, ShapeExprLabel, StringFacet, TripleExpr, TripleExprLabel, XsFacet,
+    iri_exclusion::IriExclusion, language_exclusion::LanguageExclusion,
+    literal_exclusion::LiteralExclusion, object_value::ObjectValue, value_set_value::ValueSetValue,
 };
 use iri_s::IriS;
-use lazy_regex::{regex, Lazy};
+use lazy_regex::{Lazy, regex};
 use nom::bytes::complete::tag_no_case;
 use nom::{
-    branch::alt, bytes::complete::{tag, take_while, take_while1},
+    Err, InputTake,
+    branch::alt,
+    bytes::complete::{tag, take_while, take_while1},
     character::complete::{alpha1, alphanumeric1, char, digit0, digit1, none_of, one_of, satisfy},
     combinator::{cut, map, map_res, opt, recognize},
     error::ErrorKind,
     error_position,
     multi::{count, fold_many0, many0, many1},
     sequence::{delimited, pair, preceded, tuple},
-    Err,
-    InputTake,
 };
 use nom_locate::LocatedSpan;
 use prefixmap::IriRef;
 use regex::Regex;
-use srdf::{lang::Lang, numeric_literal::NumericLiteral, SLiteral, RDF_TYPE_STR};
+use srdf::{RDF_TYPE_STR, SLiteral, lang::Lang, numeric_literal::NumericLiteral};
 use std::{collections::VecDeque, fmt::Debug, num::ParseIntError};
 use thiserror::Error;
 

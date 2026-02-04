@@ -1,9 +1,9 @@
-use iri_s::IriSError;
+use iri_s::error::IriSError;
 use shex_ast::compact::ParseError;
 use shex_ast::shapemap::ValidationStatus;
-use shex_ast::{Schema, SchemaIRError, ast::SchemaJsonError};
+use shex_ast::{ast::SchemaJsonError, Schema, SchemaIRError};
 use shex_validation::ValidatorError;
-use srdf::{RDFError, srdf_graph::SRDFGraphError};
+use srdf::{srdf_graph::SRDFGraphError, RDFError};
 use std::{ffi::OsString, io, path::PathBuf};
 use thiserror::Error;
 

@@ -1,13 +1,16 @@
-pub mod iris;
+mod iris;
+mod iri;
 mod test;
-pub mod visitor;
+mod visitor;
 
+pub use iri::Iri;
 pub use iris::IriS;
 
+/// Generates an [`IriS`] from a string literal.
 /// ```
 ///
 /// #[macro_use]
-/// use iri_s::{IriS, iri};
+/// # use iri_s::{IriS, iri};
 ///
 /// let iri = iri!("https://example.org/");
 ///
@@ -16,13 +19,11 @@ pub use iris::IriS;
 ///
 /// At this moment the implementation leverages on [`oxrdf::NamedNode`](https://docs.rs/oxrdf/latest/oxrdf/struct.NamedNode.html)
 ///
-///
-///
 /// Example
 ///
 /// ```
-/// use iri_s::IriS;
-/// use std::str::FromStr;
+/// # use iri_s::IriS;
+/// # use std::str::FromStr;
 ///
 /// let iri = IriS::from_str("https://example.org/").unwrap();
 ///
@@ -32,11 +33,11 @@ pub use iris::IriS;
 #[macro_export]
 macro_rules! iri {
     ($lit: tt) => {
-        $crate::iri::iris::IriS::new_unchecked($lit)
+        $crate::IriS::new_unchecked($lit)
     };
 }
 
-/// This macro creates a static variable that is initialized once and can be accessed globally.
+/// This macro creates a static variable that is initialized once andm can be accessed globally.
 // TODO - This should be in a general utilities crate or even removed since is not used currently
 #[macro_export]
 macro_rules! static_once {
@@ -48,7 +49,7 @@ macro_rules! static_once {
     };
 }
 
-/// This macro creates a static variable that is initialized once and can be accessed globally.
+/// This macro creates a static [`IriS`] variable that is initialized once and can be accessed globally.
 #[macro_export]
 macro_rules! iri_once {
     ($name:ident, $str:expr) => {

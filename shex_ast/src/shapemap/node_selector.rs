@@ -4,7 +4,7 @@ use crate::shapemap::ShapemapError;
 use iri_s::IriS;
 use prefixmap::IriRef;
 use prefixmap::PrefixMap;
-use prefixmap::PrefixMapError;
+use prefixmap::error::PrefixMapError;
 use serde::Serialize;
 use srdf::NeighsRDF;
 use srdf::QueryRDF;
@@ -123,13 +123,12 @@ impl NodeSelector {
 fn mk_path_str(path: &SHACLPathRef, prefixmap: &PrefixMap) -> Result<String, ShapemapError> {
     match path {
         SHACLPathRef::Predicate { pred } => {
-            let pred_resolved =
-                prefixmap
-                    .resolve_iriref(pred.clone())
-                    .map_err(|e| ShapemapError::PrefixMapError {
-                        node: pred.to_string(),
-                        error: e.to_string(),
-                    })?;
+            let pred_resolved = prefixmap.resolve_iriref(pred.clone()).map_err(|e| {
+                ShapemapError::PrefixMapError {
+                    node: pred.to_string(),
+                    error: e.to_string(),
+                }
+            })?;
             Ok(format!("<{pred_resolved}>"))
         }
         _ => todo!(),

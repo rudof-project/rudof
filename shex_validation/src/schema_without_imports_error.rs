@@ -1,4 +1,5 @@
-use iri_s::{IriS, IriSError};
+use iri_s::error::IriSError;
+use iri_s::IriS;
 use shex_ast::{ShapeExpr, ShapeExprLabel};
 use thiserror::Error;
 

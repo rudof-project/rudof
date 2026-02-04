@@ -1,12 +1,13 @@
 use std::{fmt, result};
 
 use iri_s::IriS;
+use prefixmap::Deref;
 use prefixmap::IriRef;
-use prefixmap::{Deref, DerefError};
+use prefixmap::error::DerefError;
 use serde::ser::SerializeMap;
 use serde::{
-    de::{self, MapAccess, Visitor}, Deserialize, Serialize,
-    Serializer,
+    Deserialize, Serialize, Serializer,
+    de::{self, MapAccess, Visitor},
 };
 use srdf::RDFS_LABEL_STR;
 

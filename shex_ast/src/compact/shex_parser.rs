@@ -1,9 +1,9 @@
+use crate::ParseError;
+use crate::Span;
 use crate::ast::Schema;
 use crate::compact::grammar_structs::ShExStatement;
 use crate::shex_statement;
 use crate::tws0;
-use crate::ParseError;
-use crate::Span;
 use iri_s::IriS;
 use nom::Err;
 use prefixmap::Deref;
@@ -52,8 +52,10 @@ impl ShExParser<'_> {
                     shape_label,
                     shape_expr,
                 } => {
-                    let shape_label = shape_label.deref(schema.base().as_ref(), schema.prefixmap().as_ref())?;
-                    let shape_expr = shape_expr.deref(schema.base().as_ref(), schema.prefixmap().as_ref())?;
+                    let shape_label =
+                        shape_label.deref(schema.base().as_ref(), schema.prefixmap().as_ref())?;
+                    let shape_expr =
+                        shape_expr.deref(schema.base().as_ref(), schema.prefixmap().as_ref())?;
                     // shapes_counter += 1;
                     // tracing::debug!("Shape decl #{shapes_counter}: {shape_label} ");
                     schema.add_shape(shape_label, shape_expr, is_abstract);
@@ -67,7 +69,7 @@ impl ShExParser<'_> {
     }
 
     pub fn parse_buf(path: &Path, base: Option<IriS>) -> Result<Schema> {
-        let source_iri = IriS::from_path(path).map_err(|e| ParseError::Custom {
+        let source_iri = path.try_into().map_err(|e| ParseError::Custom {
             msg: format!("Cannot convert path to IRI: {e}"),
         })?;
         let data = fs::read_to_string(path)?;

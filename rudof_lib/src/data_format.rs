@@ -1,5 +1,5 @@
 use clap::ValueEnum;
-use iri_s::mime_type::MimeType;
+use iri_s::MimeType;
 use srdf::RDFFormat;
 use std::fmt::{Display, Formatter};
 use thiserror::Error;

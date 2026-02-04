@@ -1,11 +1,12 @@
 use iri_s::IriS;
-use prefixmap::{Deref, DerefError, IriRef, PrefixMap};
+use prefixmap::error::DerefError;
+use prefixmap::{Deref, IriRef, PrefixMap};
 use serde::{Deserialize, Serialize, Serializer};
 use std::str::FromStr;
 
 use super::serde_string_or_struct::SerializeStringOrStruct;
-use crate::ast::serde_string_or_struct::*;
 use crate::Annotation;
+use crate::ast::serde_string_or_struct::*;
 use crate::{NodeConstraint, RefError, Shape, ShapeExprLabel};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
@@ -19,11 +20,7 @@ pub struct ShapeExprWrapper {
 }
 
 impl Deref for ShapeExprWrapper {
-    fn deref(
-        self,
-        base: Option<&IriS>,
-        prefixmap: Option<&PrefixMap>,
-    ) -> Result<Self, DerefError> {
+    fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
         let se = self.se.deref(base, prefixmap)?;
         let sew = ShapeExprWrapper { se };
         Ok(sew)
@@ -171,11 +168,7 @@ impl Default for ShapeExpr {
 }
 
 impl Deref for ShapeExpr {
-    fn deref(
-        self,
-        base: Option<&IriS>,
-        prefixmap: Option<&PrefixMap>,
-    ) -> Result<Self, DerefError> {
+    fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
         match self {
             ShapeExpr::External => Ok(ShapeExpr::External),
             ShapeExpr::ShapeAnd { shape_exprs } => {
@@ -190,9 +183,9 @@ impl Deref for ShapeExpr {
                     shape_exprs: shape_exprs.clone(),
                 })
             }
-            ShapeExpr::ShapeNot { shape_expr } => {
-                Ok(ShapeExpr::ShapeNot { shape_expr: shape_expr.deref(base, prefixmap)? })
-            }
+            ShapeExpr::ShapeNot { shape_expr } => Ok(ShapeExpr::ShapeNot {
+                shape_expr: shape_expr.deref(base, prefixmap)?,
+            }),
             ShapeExpr::Shape(shape) => {
                 let shape = shape.deref(base, prefixmap)?;
                 Ok(ShapeExpr::Shape(shape))
