@@ -23,7 +23,6 @@ use prefixmap::error::PrefixMapError;
 use prefixmap::map::*;
 use serde::ser::SerializeStruct;
 use serde::Serialize;
-use serde::ser::SerializeStruct;
 use sparesults::QuerySolution as SparQuerySolution;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;

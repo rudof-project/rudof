@@ -6,7 +6,6 @@ use crate::exclusion::Exclusion;
 use crate::iri_exclusion::IriExclusion;
 use crate::language_exclusion::LanguageExclusion;
 use crate::literal_exclusion::LiteralExclusion;
-use crate::LangOrWildcard;
 use iri_s::error::IriSError;
 use prefixmap::error::DerefError;
 use prefixmap::{Deref, IriRef};
