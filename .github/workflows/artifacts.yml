@@ -203,5 +203,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
+          context: .
+          file: "{context}/Dockerfile_rudof"
           no-cache: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ vars.BINARY_NAME }}:latest
