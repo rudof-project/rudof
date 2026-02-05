@@ -48,7 +48,7 @@ pub enum Command {
             long = "transport",
             value_name = "TRANSPORT",
             ignore_case = true,
-            help = "Transport type: stdio (for CLI/IDE) or http-sse (for web clients)",
+            help = "Transport type: stdio (for CLI/IDE) or streamable-http (for web clients)",
             default_value_t = rudof_mcp::server::TransportType::Stdio
         )]
         transport: rudof_mcp::server::TransportType,
