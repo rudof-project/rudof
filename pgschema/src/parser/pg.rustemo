@@ -76,7 +76,7 @@ terminals
 
 // Terminals for comments
 WS: /\s+/;
-CommentLine: /#.*/;
+CommentLine: /\/\/.*/;
 NotComment: /((\*[^\/])|[^\s*\/]|\/[^\*])+/;
 START_COMMENT: '/*';
 END_COMMENT: '*/';

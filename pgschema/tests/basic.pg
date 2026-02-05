@@ -1,10 +1,10 @@
-(n1: Person { name: "Alice" });
+(n1 {Person} [ name: "Alice" ])
 
 // Name not a String
-(n2_wrong: Person { name: 25 });
+(n2_wrong {Person} [ name: 25 ])
 
 // Label not Person
-(n3_wrong: Ohter { name: "Other" });
+(n3_wrong {Ohter} [name: "Other" ])
 
 // 2 Labels
-(n4_wrong: Person & Student { name: "Bob" })
+(n4_wrong {Person, Student} [ name: "Bob" ])
