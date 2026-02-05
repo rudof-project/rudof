@@ -9,19 +9,11 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
-#[features]
-#rdf-star = [
-# "oxrdf/rdf-star", 
-#    "srdf/rdf-star",
-#]
-
 [dependencies]
 const_format.workspace = true
 iri_s.workspace = true
-itertools = "0.14"
-oxrdf = { workspace = true, features = ["oxsdatatypes"] }
+itertools.workspace = true
 paste.workspace = true
 prefixmap.workspace = true
-regex.workspace = true
 srdf.workspace = true
-thiserror = "2.0"
+thiserror.workspace = true
