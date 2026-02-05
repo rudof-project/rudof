@@ -1,9 +1,9 @@
-use crate::lang::Lang;
-use crate::numeric_literal::NumericLiteral;
-use crate::triple::Triple;
 use crate::IriOrBlankNode;
 use crate::RDFError;
 use crate::SLiteral;
+use crate::lang::Lang;
+use crate::numeric_literal::NumericLiteral;
+use crate::triple::Triple;
 use iri_s::IriS;
 use prefixmap::IriRef;
 use serde::{Deserialize, Serialize};
@@ -158,9 +158,7 @@ impl TryFrom<oxrdf::Term> for Object {
 
     fn try_from(value: oxrdf::Term) -> Result<Self, Self::Error> {
         match value {
-            oxrdf::Term::NamedNode(named_node) => {
-                Ok(Object::iri(named_node.into()))
-            }
+            oxrdf::Term::NamedNode(named_node) => Ok(Object::iri(named_node.into())),
             oxrdf::Term::BlankNode(blank_node) => Ok(Object::bnode(blank_node.into_string())),
             oxrdf::Term::Literal(literal) => {
                 let lit: SLiteral = literal.try_into()?;

@@ -1,13 +1,13 @@
 use crate::{
-    result_shex_validation_format::ResultShExValidationFormat, selector::*, shapemap_format::ShapeMapFormat as CliShapeMapFormat, shex_format::ShExFormat as CliShExFormat,
+    InputSpec, Rudof, RudofConfig, RudofError,
+    result_shex_validation_format::ResultShExValidationFormat, selector::*,
+    shapemap_format::ShapeMapFormat as CliShapeMapFormat, shex_format::ShExFormat as CliShExFormat,
     sort_by_result_shape_map::SortByResultShapeMap, terminal_width::terminal_width,
-    InputSpec, Rudof,
-    RudofConfig, RudofError,
 };
 use iri_s::IriS;
 use iri_s::MimeType;
-use shex_ast::shapemap::ResultShapeMap;
 use shex_ast::ShExFormat;
+use shex_ast::shapemap::ResultShapeMap;
 use srdf::RDFFormat;
 use srdf::ReaderMode;
 use std::env;

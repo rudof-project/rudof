@@ -1,7 +1,7 @@
 use crate::ast::{SchemaJsonError, serde_string_or_struct::*};
 use crate::{BNode, IriOrStr, ShapeExprLabel};
 use iri_s::error::IriSError;
-use iri_s::{iri, IriS};
+use iri_s::{IriS, iri};
 use prefixmap::error::PrefixMapError;
 use prefixmap::{IriRef, PrefixMap};
 use serde::{Deserialize, Serialize};
@@ -92,12 +92,12 @@ impl Schema {
 
     /// Obtain a Schema from an IRI
     pub fn from_iri(iri: &IriS) -> Result<Schema, SchemaJsonError> {
-        let body =
-            iri.dereference(Some(iri))
-                .map_err(|e| SchemaJsonError::DereferencingIri {
-                    iri: iri.clone(),
-                    error: e,
-                })?;
+        let body = iri
+            .dereference(Some(iri))
+            .map_err(|e| SchemaJsonError::DereferencingIri {
+                iri: iri.clone(),
+                error: e,
+            })?;
         let mut schema = Schema::from_reader(body.as_bytes())?;
         schema.with_source_iri(iri);
         Ok(schema)

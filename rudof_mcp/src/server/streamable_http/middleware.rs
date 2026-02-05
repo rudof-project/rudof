@@ -33,41 +33,41 @@ impl OriginConfig {
     /// * `allowed_cidrs` - List of IP addresses or CIDR ranges (e.g., "127.0.0.1", "192.168.1.0/24", "::1")
     pub fn new(allowed_cidrs: Vec<String>) -> Result<Self, String> {
         let mut networks = Vec::new();
-        
+
         for cidr in allowed_cidrs {
             let network = IpNetwork::from_str(&cidr)
                 .map_err(|e| format!("Invalid CIDR notation '{}': {}", cidr, e))?;
             networks.push(network);
         }
-        
+
         if networks.is_empty() {
             return Err("At least one allowed network must be specified".to_string());
         }
-        
+
         Ok(Self {
             allowed_networks: Arc::new(networks),
             allow_missing_origin: true,
         })
     }
-    
+
     /// Creates a localhost-only configuration (default behavior)
     pub fn localhost_only() -> Self {
         Self {
             allowed_networks: Arc::new(vec![
-                IpNetwork::from_str("127.0.0.0/8").unwrap(),  // IPv4 localhost
-                IpNetwork::from_str("::1/128").unwrap(),       // IPv6 localhost
+                IpNetwork::from_str("127.0.0.0/8").unwrap(), // IPv4 localhost
+                IpNetwork::from_str("::1/128").unwrap(),     // IPv6 localhost
             ]),
             allow_missing_origin: true,
         }
     }
-    
+
     /// Sets whether to allow requests without Origin header
     #[allow(dead_code)]
     pub fn allow_missing_origin(mut self, allow: bool) -> Self {
         self.allow_missing_origin = allow;
         self
     }
-    
+
     /// Checks if an origin URL is allowed based on the configured networks
     pub fn is_allowed_origin(&self, origin: &str) -> bool {
         // Parse the origin URL to extract the host
@@ -75,12 +75,12 @@ impl OriginConfig {
             Some(h) => h,
             None => return false,
         };
-        
+
         // Try to parse as IP address
         if let Ok(ip_addr) = IpAddr::from_str(host) {
             return self.is_ip_allowed(&ip_addr);
         }
-        
+
         // Handle hostname (localhost)
         if host == "localhost" {
             // Check if any localhost IP is in the allowed networks
@@ -88,15 +88,17 @@ impl OriginConfig {
             let localhost_v6 = IpAddr::from_str("::1").unwrap();
             return self.is_ip_allowed(&localhost_v4) || self.is_ip_allowed(&localhost_v6);
         }
-        
+
         false
     }
-    
+
     /// Checks if an IP address is within any of the allowed networks
     fn is_ip_allowed(&self, ip: &IpAddr) -> bool {
-        self.allowed_networks.iter().any(|network| network.contains(*ip))
+        self.allowed_networks
+            .iter()
+            .any(|network| network.contains(*ip))
     }
-    
+
     /// Extracts the host portion from an origin URL
     /// Returns the host without protocol, port, or path
     fn extract_host_from_origin(origin: &str) -> Option<&str> {
@@ -105,24 +107,23 @@ impl OriginConfig {
             .strip_prefix("https://")
             .or_else(|| origin.strip_prefix("http://"))
             .unwrap_or(origin);
-        
+
         // Handle IPv6 addresses in brackets
         if let Some(start) = without_protocol.find('[') {
             if let Some(end) = without_protocol.find(']') {
                 return Some(&without_protocol[start + 1..end]);
             }
         }
-        
+
         // Split by : or / to remove port and path
         let host_end = without_protocol
             .find(':')
             .or_else(|| without_protocol.find('/'))
             .unwrap_or(without_protocol.len());
-        
+
         Some(&without_protocol[..host_end])
     }
 }
-
 
 /// Checks if a protocol version is supported
 #[allow(dead_code)]
@@ -282,10 +283,10 @@ mod tests {
         }
     }
 
-     #[test]
+    #[test]
     fn test_localhost_config() {
         let config = OriginConfig::localhost_only();
-        
+
         // Test localhost variations
         assert!(config.is_allowed_origin("http://localhost"));
         assert!(config.is_allowed_origin("https://localhost:8080"));
@@ -293,7 +294,7 @@ mod tests {
         assert!(config.is_allowed_origin("https://127.0.0.1:3000"));
         assert!(config.is_allowed_origin("http://[::1]"));
         assert!(config.is_allowed_origin("https://[::1]:8080"));
-        
+
         // Test non-localhost
         assert!(!config.is_allowed_origin("http://192.168.1.1"));
         assert!(!config.is_allowed_origin("https://example.com"));
@@ -301,17 +302,16 @@ mod tests {
 
     #[test]
     fn test_custom_networks() {
-        let config = OriginConfig::new(vec![
-            "192.168.1.0/24".to_string(),
-            "10.0.0.0/8".to_string(),
-        ]).unwrap();
-        
+        let config =
+            OriginConfig::new(vec!["192.168.1.0/24".to_string(), "10.0.0.0/8".to_string()])
+                .unwrap();
+
         // Test allowed networks
         assert!(config.is_allowed_origin("http://192.168.1.1"));
         assert!(config.is_allowed_origin("https://192.168.1.254"));
         assert!(config.is_allowed_origin("http://10.0.0.1"));
         assert!(config.is_allowed_origin("http://10.255.255.255"));
-        
+
         // Test disallowed
         assert!(!config.is_allowed_origin("http://192.168.2.1"));
         assert!(!config.is_allowed_origin("http://127.0.0.1"));

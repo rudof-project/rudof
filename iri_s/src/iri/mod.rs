@@ -1,5 +1,5 @@
-mod iris;
 mod iri;
+mod iris;
 mod test;
 mod visitor;
 

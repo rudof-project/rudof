@@ -42,9 +42,9 @@ impl Default for McpConfig {
 /// Examples: "127.0.0.1" (localhost IPv4), "0.0.0.0" (all IPv4), "::1" (localhost IPv6)
 /// * `port` - Port number for HTTP transport (ignored for Stdio)
 /// * `route_path` - Route path for HTTP transport (ignored for Stdio)
-/// * `allowed_networks` - Optional list of allowed IP addresses or CIDR ranges for HTTP transport .Examples: ["127.0.0.1", 
+/// * `allowed_networks` - Optional list of allowed IP addresses or CIDR ranges for HTTP transport .Examples: ["127.0.0.1",
 /// "192.168.1.0/24", "10.0.0.0/8", "::1"]. If None or empty, defaults to localhost only
-/// 
+///
 /// # Note
 /// This function creates its own Tokio runtime. If you're already in an async context,
 /// use `run_mcp_async` instead.
@@ -59,11 +59,18 @@ pub async fn run_mcp_async(config: McpConfig) -> Result<()> {
         TransportType::Stdio => run_mcp_stdio().await,
         TransportType::StreamableHTTP => {
             run_mcp_http(
-                config.bind_address.as_ref().expect("bind_address required for HTTP"),
+                config
+                    .bind_address
+                    .as_ref()
+                    .expect("bind_address required for HTTP"),
                 config.port.expect("port required for HTTP"),
-                config.route_path.as_ref().expect("route_path required for HTTP"),
+                config
+                    .route_path
+                    .as_ref()
+                    .expect("route_path required for HTTP"),
                 config.allowed_networks.clone(),
-            ).await
+            )
+            .await
         }
     }
 }

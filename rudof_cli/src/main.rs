@@ -147,7 +147,7 @@ fn main() -> Result<()> {
             } else {
                 Some(allowed_networks.clone())
             };
-            
+
             rudof_mcp::server::run_mcp(rudof_mcp::server::McpConfig {
                 transport: *transport,
                 bind_address: Some(bind_address.to_string()),
@@ -155,7 +155,7 @@ fn main() -> Result<()> {
                 route_path: Some(route_path.to_string()),
                 allowed_networks: networks,
             })
-        },
+        }
         Some(Command::Service {
             service,
             service_format,

@@ -246,7 +246,9 @@ impl From<NamedNode> for IriS {
 
 impl From<Url> for IriS {
     fn from(value: Url) -> Self {
-        IriS { iri: NamedNode::new_unchecked(value) }
+        IriS {
+            iri: NamedNode::new_unchecked(value),
+        }
     }
 }
 

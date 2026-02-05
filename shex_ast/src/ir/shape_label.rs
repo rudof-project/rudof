@@ -1,8 +1,8 @@
 use crate::{BNode, SchemaJsonError, ShapeExprLabel};
-use iri_s::error::IriSError;
 use iri_s::IriS;
-use prefixmap::error::PrefixMapError;
+use iri_s::error::IriSError;
 use prefixmap::PrefixMap;
+use prefixmap::error::PrefixMapError;
 use serde::Serialize;
 use std::{fmt::Display, str::FromStr};
 use thiserror::Error;

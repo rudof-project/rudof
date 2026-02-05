@@ -104,5 +104,4 @@ mod tests {
         let copied = original;
         assert_eq!(original, copied);
     }
-
 }

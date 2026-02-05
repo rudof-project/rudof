@@ -21,8 +21,8 @@ use oxrdfxml::RdfXmlParser;
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
 use prefixmap::error::PrefixMapError;
 use prefixmap::map::*;
-use serde::ser::SerializeStruct;
 use serde::Serialize;
+use serde::ser::SerializeStruct;
 use sparesults::QuerySolution as SparQuerySolution;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
@@ -263,13 +263,7 @@ impl SRDFGraph {
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<SRDFGraph, SRDFGraphError> {
-        Self::from_reader(
-            &mut Cursor::new(&data),
-            "String",
-            format,
-            base,
-            reader_mode,
-        )
+        Self::from_reader(&mut Cursor::new(&data), "String", format, base, reader_mode)
     }
 
     fn cnv_iri(iri: IriS) -> OxNamedNode {

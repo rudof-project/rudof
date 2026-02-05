@@ -6,7 +6,7 @@ use shex_ast::compact::ShExParser;
 use shex_ast::{
     ResolveMethod, Schema, SchemaJsonError, ShExFormat, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel,
 };
-use std::collections::{hash_map::Entry, HashMap};
+use std::collections::{HashMap, hash_map::Entry};
 use url::Url;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]

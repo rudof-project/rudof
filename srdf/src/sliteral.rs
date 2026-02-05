@@ -766,10 +766,9 @@ impl From<SLiteral> for oxrdf::Literal {
                 lexical_form,
                 datatype,
             } => match datatype.get_iri() {
-                Ok(datatype) => oxrdf::Literal::new_typed_literal(
-                    lexical_form,
-                    datatype.named_node().clone(),
-                ),
+                Ok(datatype) => {
+                    oxrdf::Literal::new_typed_literal(lexical_form, datatype.named_node().clone())
+                }
                 Err(_) => lexical_form.clone().into(),
             },
             SLiteral::NumericLiteral(number) => From::<NumericLiteral>::from(number),
@@ -780,10 +779,9 @@ impl From<SLiteral> for oxrdf::Literal {
                 datatype,
                 ..
             } => match datatype.get_iri() {
-                Ok(datatype) => oxrdf::Literal::new_typed_literal(
-                    lexical_form,
-                    datatype.named_node().clone(),
-                ),
+                Ok(datatype) => {
+                    oxrdf::Literal::new_typed_literal(lexical_form, datatype.named_node().clone())
+                }
                 Err(_) => lexical_form.into(),
             },
         }
