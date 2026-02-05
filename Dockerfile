@@ -37,4 +37,4 @@ EXPOSE 8000
 
 # MCP server entrypoint
 ENTRYPOINT ["rudof"]
-CMD ["mcp", "-t", "streamable-http", "-b", "0.0.0.0", "-p", "8000", "-n", "127.0.0.0/8", "-n", "::1/128", "-n", "172.16.0.0/12"]
+CMD ["mcp", "-t", "streamable-http", "-b", "0.0.0.0", "-p", "8000", "-r", "mcp","-n", "127.0.0.0/8", "-n", "::1/128", "-n", "172.16.0.0/12"]
