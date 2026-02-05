@@ -1,9 +1,9 @@
 use crate::writer::get_writer;
 use crate::{
-    input_compare_mode::InputCompareMode, result_compare_format::ResultCompareFormat,
-    InputCompareFormat,
+    InputCompareFormat, input_compare_mode::InputCompareMode,
+    result_compare_format::ResultCompareFormat,
 };
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use iri_s::IriS;
 use iri_s::MimeType;
 use rudof_lib::{InputSpec, Rudof, RudofConfig};

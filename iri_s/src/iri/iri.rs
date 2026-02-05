@@ -9,7 +9,7 @@ use std::str::FromStr;
 #[serde(try_from = "String", into = "String")]
 pub enum Iri {
     String(String),
-    IriS(IriS)
+    IriS(IriS),
 }
 
 impl Iri {
@@ -21,7 +21,7 @@ impl Iri {
                 None => IriS::from_str(s.as_str()),
                 Some(base) => base.extend(&s),
             },
-            Iri::IriS(_) => return Ok(self)
+            Iri::IriS(_) => return Ok(self),
         }?;
 
         Ok(Iri::IriS(iri))

@@ -1,8 +1,8 @@
 use crate::PrefixMap;
 use crate::error::{DerefError, IriRefError, PrefixMapError};
 use crate::iri::deref::Deref;
-use iri_s::error::IriSError;
 use iri_s::IriS;
+use iri_s::error::IriSError;
 use serde::Serialize;
 use std::borrow::Cow;
 use std::{fmt::Display, str::FromStr};

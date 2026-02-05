@@ -2,14 +2,14 @@
 use iri_s::IriS;
 use iri_s::MimeType;
 use srdf::{
-    rdf_visualizer::visual_rdf_graph::VisualRDFGraph, ImageFormat, RDFFormat, ReaderMode, UmlConverter,
-    UmlGenerationMode,
+    ImageFormat, RDFFormat, ReaderMode, UmlConverter, UmlGenerationMode,
+    rdf_visualizer::visual_rdf_graph::VisualRDFGraph,
 };
 use std::str::FromStr;
 
 use crate::{
-    data_format::{DataFormat, DataFormatError}, InputSpec, Rudof, RudofConfig,
-    RudofError,
+    InputSpec, Rudof, RudofConfig, RudofError,
+    data_format::{DataFormat, DataFormatError},
 };
 
 // Converts a rudof_lib DataFormat into a srdf RDFFormat.

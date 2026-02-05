@@ -63,7 +63,6 @@ fn main() -> Result<()> {
         .unwrap();
 
     // Initialize tracing with stderr output
-    // Note: MCP stdio transport allows logging to stderr per spec (MCP 2025-11-25)
     let fmt_layer = fmt::layer()
         .with_file(true)
         .with_target(false)
@@ -137,9 +136,26 @@ fn main() -> Result<()> {
         }
         Some(Command::Mcp {
             transport,
+            bind_address,
             port,
             route_path,
-        }) => rudof_mcp::server::run_mcp(*transport, *port, route_path),
+            allowed_networks,
+        }) => {
+            // Convert empty Vec to None
+            let networks = if allowed_networks.is_empty() {
+                None
+            } else {
+                Some(allowed_networks.clone())
+            };
+
+            rudof_mcp::server::run_mcp(rudof_mcp::server::McpConfig {
+                transport: *transport,
+                bind_address: Some(bind_address.to_string()),
+                port: Some(*port),
+                route_path: Some(route_path.to_string()),
+                allowed_networks: networks,
+            })
+        }
         Some(Command::Service {
             service,
             service_format,

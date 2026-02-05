@@ -5,7 +5,6 @@ use thiserror::Error;
 /// Errors that can occur when working with [`IriS`]
 #[derive(Error, Debug, Clone, Serialize)]
 pub enum IriSError {
-
     /// Error converting a [`std::path::Path`] into an IRI
     #[error("Error converting path {path} to IRI: {error}")]
     ConvertingPathToIri { path: String, error: String },

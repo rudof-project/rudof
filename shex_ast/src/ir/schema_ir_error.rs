@@ -1,13 +1,13 @@
-use iri_s::error::IriSError;
 use iri_s::IriS;
-use prefixmap::error::PrefixMapError;
+use iri_s::error::IriSError;
 use prefixmap::IriRef;
+use prefixmap::error::PrefixMapError;
 use srdf::lang::Lang;
 use thiserror::Error;
 
 use super::shape_label::ShapeLabel;
 use crate::ast::TripleExprLabel;
-use crate::{ast, Node, ShExFormat};
+use crate::{Node, ShExFormat, ast};
 use srdf::numeric_literal::NumericLiteral;
 
 #[derive(Error, Debug, Clone)]
