@@ -6,7 +6,7 @@ The MCP server supports two configurable transport methods:
 - `stdio` (default): The client launches the MCP server as a subprocess. The server reads JSON-RPC messages from its standard input (stdin) and sends messages to its standard output (stdout).
 - `streamable-http`: The server operates as an independent process that can handle multiple client connections. This transport uses HTTP POST and GET requests. Server can optionally make use of Server-Sent Events (SSE) to stream multiple server messages.
 
-By default, the MCP server uses the `stdio` transport. When using `streamable-http` transport, the server listens on `http://127.0.0.1:8000` by default and exposes its functionality under the route name `rudof`.
+By default, the MCP server uses the `stdio` transport. When using `streamable-http` transport, the server binds to `127.0.0.1` (localhost) on port `8000` by default and exposes its functionality under the route name `rudof`.
 
 You can start the MCP server with the following command:
 
@@ -137,6 +137,18 @@ For example, to start the server using the `streamable-http` transport:
 rudof mcp --transport streamable-http
 ```
 
+### Changing the bind address (streamable-http)
+
+You can specify which network interface the server binds to using the `--bind` (or `-b`) option. This controls where the server listens for incoming connections. **Default:** `127.0.0.1` (localhost only, most secure)
+
+For example, to bind to all IPv4 interfaces (allows network access):
+
+```sh
+rudof mcp --transport streamable-http --bind 0.0.0.0
+```
+
+> ⚠️ **Security Warning**: When binding to `0.0.0.0` or `::`, the server becomes accessible from any network interface. Always combine this with appropriate firewall rules and the `--allowed-network` option to restrict access.
+
 ### Changing the port (streamable-http)
 
 You can specify a custom port using the `--port` (or `-p`) option.
@@ -159,14 +171,30 @@ By default, it is `rudof`, but you can change it with `--route` (or `-n`):
 rudof mcp --route rdfserver
 ```
 
+### Configuring allowed networks (streamable-http)
+
+For security, the MCP server validates the `Origin` header of incoming HTTP requests. By default, only `localhost` connections are allowed (127.0.0.0/8 for IPv4 and ::1/128 for IPv6).
+
+You can specify custom allowed networks using the `--allowed-network` (or `-n`) option. This option accepts IP addresses or networks in CIDR notation and can be specified multiple times.
+
+```sh
+rudof mcp --transport streamable-http -n 127.0.0.1 -n 192.168.1.0/24
+```
+
+> 💡 **Note**: The `--bind` and `--allowed-network` options serve different purposes:
+> - `--bind` controls which network interface the server listens on
+> - `--allowed-network` controls which origins are accepted via the Origin HTTP header
+> 
+> For maximum security, you can bind to `0.0.0.0` (to allow network access) while restricting allowed networks with `-n` flags.
+
 ### Combined example
 
 You can combine all parameters as needed.
 
-For example, to run the MCP server with `streamable-http` transport on port `8080` under the route `rdf`:
+For example, to run the MCP server with `streamable-http` transport on port `8080` under the route `rdf`, allowing connections from localhost and a local network:
 
 ```sh
-rudof mcp --transport streamable-http --port 8080 --route-name rdf
+rudof mcp --transport streamable-http --bind 0.0.0.0 --port 8080 --route rdf --allowed-network 127.0.0.1 --allowed-network 192.168.1.0/24
 ```
 
 ## Connecting with Claude Desktop (Example MCP Client)

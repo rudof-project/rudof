@@ -54,6 +54,17 @@ pub enum Command {
         transport: rudof_mcp::server::TransportType,
 
         #[arg(
+            short = 'b',
+            long = "bind",
+            value_name = "ADDRESS",
+            help = "Bind address for HTTP transport. Examples: 127.0.0.1 (localhost IPv4), \
+                    0.0.0.0 (all IPv4 interfaces), ::1 (localhost IPv6), :: (all IPv6 interfaces). \
+                    Default: 127.0.0.1 for security",
+            default_value = "127.0.0.1"
+        )]
+        bind_address: String,
+
+        #[arg(
             short = 'p',
             long = "port",
             value_name = "PORT",
@@ -70,6 +81,18 @@ pub enum Command {
             default_value = "/rudof"
         )]
         route_path: String,
+
+        #[arg(
+            short = 'n',
+            long = "allowed-network",
+            value_name = "CIDR",
+            help = "Allowed IP network in CIDR notation (only used with http-sse transport). \
+                    It can be specified multiple times to allow multiple networks. \
+                    Examples: 127.0.0.1, 192.168.1.0/24, 10.0.0.0/8, ::1. \
+                    If not specified, defaults to localhost only (127.0.0.0/8 and ::1/128)",
+            num_args = 0..
+        )]
+        allowed_networks: Vec<String>,
     },
 
     /// Show information about ShEx ShapeMaps

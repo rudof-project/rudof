@@ -66,6 +66,7 @@ hashbag = { version = "0.1.12" }
 hashlink = { version = "0.10" }
 indexmap = { version = "2", features = ["serde"] }
 indoc = "2"
+ipnetwork = "0.21"
 iri_s = { version = "0.1.90", path = "./iri_s" }
 itertools = "0.14"
 josekit = "0.10.3"
