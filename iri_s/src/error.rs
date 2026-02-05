@@ -64,4 +64,8 @@ pub enum IriSError {
         url: String,
         error: String,
     },
+
+    #[cfg(target_arch = "wasm32")]
+    #[error("Error getting IRI from file path in WASM")]
+    WASMFilePath,
 }
