@@ -57,6 +57,11 @@ pub enum SRDFSparqlError {
         #[from]
         err: IriSError,
     },
+
+    #[error("Function not supported for WASM: {fn_name}")]
+    WASMError {
+        fn_name: String,
+    }
 }
 
 impl From<reqwest::Error> for SRDFSparqlError {

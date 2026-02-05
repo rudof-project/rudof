@@ -20,47 +20,6 @@ impl IriS {
         IriS::new_unchecked("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
     }
 
-    /// Create an `IriS` from a `Url`
-    pub fn from_url(url: &Url) -> IriS {
-        let iri = NamedNode::new_unchecked(url.as_str());
-        IriS { iri }
-    }
-
-    #[cfg(target_arch = "wasm32")]
-    pub fn parse_buf(_path: &Path, _base: Option<IriS>) -> Result<IriS, IriSError> {
-        Err(IriSError::WASMFilePath)
-    }
-
-    /// Create an `IriS` from a file system path
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn from_path(path: &Path) -> Result<IriS, IriSError> {
-        let abs_path = if path.is_absolute() {
-            Ok(path.to_path_buf())
-        } else {
-            canonicalize(path).map_err(|e| IriSError::ConvertingPathToIri {
-                path: path.to_string_lossy().to_string(),
-                error: e.to_string(),
-            })
-        }?;
-
-        let url = Url::from_file_path(&abs_path).map_err(|_| IriSError::ConvertingPathToIri {
-            path: abs_path.to_string_lossy().to_string(),
-            error: "Cannot convert path to file URL".to_string(),
-        })?;
-
-        let iri = NamedNode::new(url.as_str()).map_err(|e| IriSError::IriParseError {
-            str: url.as_str().to_string(),
-            error: e.to_string(),
-        })?;
-
-        Ok(IriS { iri })
-    }
-
-    /// Convert a `NamedNode` to an `IriS`
-    pub fn from_named_node(iri: &NamedNode) -> IriS {
-        IriS { iri: iri.clone() }
-    }
-
     /// Create an `IriS` from a string with an optional base IRI string
     pub fn from_str_base(str: &str, base: Option<&str>) -> Result<IriS, IriSError> {
         match base {

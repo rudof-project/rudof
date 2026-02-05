@@ -10,8 +10,8 @@ use oxrdf::{
 };
 use prefixmap::PrefixMap;
 use regex::Regex;
-use serde::Serialize;
 use serde::ser::SerializeStruct;
+use serde::Serialize;
 use sparesults::QuerySolution as OxQuerySolution;
 use std::hash::Hash;
 use std::{collections::HashSet, fmt::Display, str::FromStr};
@@ -421,8 +421,8 @@ fn make_sparql_query_select(
     _client: &Client,
     _endpoint_iri: &IriS,
 ) -> Result<Vec<OxQuerySolution>> {
-    Err(SRDFSparqlError::UnknownEndpointName {
-        name: String::from("WASM"),
+    Err(SRDFSparqlError::WASMError {
+        fn_name: String::from("make_sparql_query_select")
     })
 }
 
@@ -433,8 +433,8 @@ fn make_sparql_query_construct(
     _endpoint_iri: &IriS,
     _format: &QueryResultFormat,
 ) -> Result<String> {
-    Err(SRDFSparqlError::UnknownEndpointName {
-        name: String::from("WASM"),
+    Err(SRDFSparqlError::WASMError {
+        fn_name: String::from("make_sparql_query_construct")
     })
 }
 
