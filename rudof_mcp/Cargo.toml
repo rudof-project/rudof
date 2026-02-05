@@ -1,6 +1,6 @@
 [package]
 name = "rudof_mcp"
-version = "0.1.144"
+version = "0.1.147"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/rudof_mcp"

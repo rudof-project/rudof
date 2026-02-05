@@ -7,6 +7,16 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.1.147
+
+### Added
+### Fixed
+### Changed
+
+- Syntax of PGSchema data has been aligned with [YARSPG](https://github.com/lszeremeta/yarspg)
+
+### Removed
+
 ## v0.1.146 
 ### Fixed
 - Small bug that was opening an interactive window when running plantuml commands

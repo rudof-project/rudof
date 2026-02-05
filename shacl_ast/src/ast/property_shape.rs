@@ -286,7 +286,7 @@ impl<RDF: Rdf> PropertyShape<RDF> {
                 Severity::Violation => sh_violation(),
                 Severity::Info => sh_info(),
                 Severity::Warning => sh_warning(),
-                Severity::Generic(iri) => &iri.get_iri().unwrap(),
+                Severity::Generic(iri) => iri.get_iri().unwrap(),
             };
 
             rdf.add_triple(id.clone(), sh_severity().clone(), pred.clone())?;

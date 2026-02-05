@@ -1,9 +1,9 @@
-mod iri;
+mod iri_or_string;
 mod iris;
 mod test;
 mod visitor;
 
-pub use iri::Iri;
+pub use iri_or_string::Iri;
 pub use iris::IriS;
 
 /// Generates an [`IriS`] from a string literal.
