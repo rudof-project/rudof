@@ -30,11 +30,15 @@ ENV PLANTUML="/opt/plantuml/plantuml.jar"
 # Copy the binary from builder
 COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/rudof /usr/local/bin/rudof
 
+# Create persistent state directory
+RUN mkdir -p /app/state && chmod 777 /app/state
+
 # Switch to non-root user
 USER 1000:1000
 
-EXPOSE 8000
+# Declare VOLUME for state persistence
+VOLUME ["/app/state"]
 
 # MCP server entrypoint
 ENTRYPOINT ["rudof"]
-CMD ["mcp", "-t", "streamable-http", "-b", "0.0.0.0", "-p", "8000", "-r", "mcp","-n", "127.0.0.0/8", "-n", "::1/128", "-n", "172.16.0.0/12"]
+CMD ["mcp"]
