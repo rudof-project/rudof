@@ -213,6 +213,9 @@ pub async fn load_rdf_data_from_sources_impl(
     let mut result = CallToolResult::success(vec![Content::text(response.message.clone())]);
     result.structured_content = Some(structured);
 
+    // Release the lock before async operations (notifications and persistence)
+    drop(rudof);
+
     // Notify subscribers that all current-data resources have been updated
     const DATA_RESOURCE_URIS: &[&str] = &[
         "rudof://current-data",
