@@ -1,123 +1,160 @@
 PyRudof Library
 ===============
 
-
-.. py:currentmodule:: pyrudof
-
-`pyrudof` provides Python bindings for performing rudof operations. 
-The main class is `Rudof`, which can be configured using `RudofConfig`. 
-The library supports reading and writing RDF data in various formats, validating data against shapes defined in ShEx or SHACL, and converting between different shape representation formats.
+``pyrudof`` provides Python bindings for performing rudof operations.
+The main class is ``Rudof``, which can be configured using ``RudofConfig``.
+The library supports reading and writing RDF data in various formats, validating data against shapes defined in ShEx or SHACL, converting between different shape representation formats, and generating synthetic RDF data.
 
 
-`RudofConfig`
-"""""""""""""
-.. autoclass:: RudofConfig
+Core Classes
+""""""""""""
+
+.. autoclass:: pyrudof.RudofConfig
     :members:
     :undoc-members:
 
-`Rudof`
-"""""""
-.. autoclass:: Rudof
+
+.. autoclass:: pyrudof.Rudof
     :members:
     :undoc-members:
 
-`DCTAPFormat`
-"""""""""""""
-.. autoclass:: DCTAPFormat
-    :members:
 
-
-`ShapeMapFormat`
-""""""""""""""""
-.. autoclass:: ShapeMapFormat
-    :members:
-
-
-`ShapeMapFormat`
-""""""""""""""""
-.. autoclass:: ShapeMapFormat
-    :members:
-
-
-`ShExFormat`
+Data Formats
 """"""""""""
-.. autoclass:: ShExFormat
+
+.. autoclass:: pyrudof.RDFFormat
     :members:
 
 
-`ShaclFormat`
+.. autoclass:: pyrudof.ShExFormat
+    :members:
+
+
+.. autoclass:: pyrudof.ShaclFormat
+    :members:
+
+.. autoclass:: pyrudof.ShapeMapFormat
+    :members:
+
+.. autoclass:: pyrudof.DCTapFormat
+    :members:
+
+.. autoclass:: pyrudof.QueryResultFormat
+    :members:
+
+.. autoclass:: pyrudof.ServiceDescriptionFormat
+    :members:
+
+
+Formatters
+""""""""""
+
+.. autoclass:: pyrudof.ShExFormatter
+    :members:
+    :undoc-members:
+
+.. autoclass:: pyrudof.ShapeMapFormatter
+    :members:
+    :undoc-members:
+
+
+Reader Configuration
+""""""""""""""""""""
+
+.. autoclass:: pyrudof.ReaderMode
+    :members:
+
+
+Validation
+""""""""""
+.. autoclass:: pyrudof.ShaclValidationMode
+    :members:
+    :undoc-members:
+
+.. autoclass:: pyrudof.ShapesGraphSource
+    :members:
+    :undoc-members:
+
+.. autoclass:: pyrudof.ValidationReport
+    :members:
+    :undoc-members:
+
+.. autoclass:: pyrudof.ValidationStatus
+    :members:
+    :undoc-members:
+
+.. autoclass:: pyrudof.ResultShapeMap
+    :members:
+    :undoc-members:
+
+.. autoclass:: pyrudof.SortModeResultMap
+    :members:
+    :undoc-members:
+
+
+Schema Representations
+""""""""""""""""""""""
+
+.. autoclass:: pyrudof.ShExSchema
+    :members:
+    :undoc-members:
+
+.. autoclass:: pyrudof.ShaclSchema
+    :members:
+    :undoc-members:
+
+.. autoclass:: pyrudof.DCTAP
+    :members:
+    :undoc-members:
+
+.. autoclass:: pyrudof.ServiceDescription
+    :members:
+    :undoc-members:
+
+
+Schema Comparison
+"""""""""""""""""
+
+.. autoclass:: pyrudof.CompareSchemaFormat
+    :members:
+    :undoc-members:
+
+.. autoclass:: pyrudof.CompareSchemaMode
+    :members:
+    :undoc-members:
+
+
+Query Results
 """""""""""""
-.. autoclass:: ShaclFormat
+
+.. autoclass:: pyrudof.QueryShapeMap
     :members:
+    :undoc-members:
 
-
-`ShExFormatter`
-"""""""""""""""
-.. autoclass:: ShExFormatter
+.. autoclass:: pyrudof.QuerySolutions
     :members:
+    :undoc-members:
 
-
-`ShapeMapFormatter`
-"""""""""""""""""""
-.. autoclass:: ShapeMapFormatter
+.. autoclass:: pyrudof.QuerySolution
     :members:
+    :undoc-members:
 
 
-`UmlGenerationMode`
-"""""""""""""""""""
-.. autoclass:: UmlGenerationMode
-    :members:
-
-
-`ShExSchema`
-""""""""""""
-.. autoclass:: ShExSchema
-    :members:
-
-
-`DCTAP`
-"""""""
-.. autoclass:: DCTAP
-    :members:
-
-
-`QueryShapeMap`
-"""""""""""""""
-.. autoclass:: QueryShapeMap
-    :members:
-
-
-`ShaclSchema`
+Visualization
 """""""""""""
-.. autoclass:: ShaclSchema
+
+.. autoclass:: pyrudof.UmlGenerationMode
     :members:
+    :undoc-members:
 
 
-`ShaclValidationMode`
-"""""""""""""""""""""
-.. autoclass:: ShaclValidationMode
+Other
+"""""
+
+.. autoclass:: pyrudof.Mie
     :members:
+    :undoc-members:
 
-
-`ShapesGraphSource`
-"""""""""""""""""""
-.. autoclass:: ShapesGraphSource
+.. autoclass:: pyrudof.PrefixMap
     :members:
-
-
-`ResultShapeMap`
-""""""""""""""""
-.. autoclass:: ResultShapeMap
-    :members:
-
-
-`ValidationReport`
-""""""""""""""""""
-.. autoclass:: ValidationReport
-    :members:
-
-
-`ValidationStatus`
-""""""""""""""""""
-.. autoclass:: ValidationStatus
-    :members:
+    :undoc-members:

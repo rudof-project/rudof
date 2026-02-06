@@ -21,9 +21,15 @@ extensions = [
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
     'sphinx.ext.napoleon',
+    'sphinx.ext.viewcode',
 ]
 
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
+
+# -- Autodoc configuration --------------------------------------------------
+
+autodoc_member_order = 'groupwise'
+autodoc_typehints = 'description'
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -34,10 +40,6 @@ html_logo = "https://raw.githubusercontent.com/rudof-project/rudof/refs/heads/ma
 html_favicon = "https://raw.githubusercontent.com/rudof-project/rudof/refs/heads/master/docs/src/assets/corp/logo.svg"
 html_theme_options = {"body_max_width": None}
 html_baseurl = "https://pyrudof.readthedocs.io/en/stable/"
-
-# -- Options for doctests -------------------------------------------------
-
-doctest_global_setup = "from pyrudof import *"
 
 # -- Options for intersphinx -------------------------------------------------
 
