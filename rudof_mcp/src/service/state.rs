@@ -49,6 +49,7 @@ impl PersistedState {
     pub const CURRENT_VERSION: u32 = 1;
 
     /// Create a new empty state.
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
             version: Self::CURRENT_VERSION,
@@ -69,6 +70,7 @@ impl PersistedState {
     }
 
     /// Check if the state has any RDF data.
+    #[allow(dead_code)]
     pub fn has_rdf_data(&self) -> bool {
         self.rdf_data_ntriples
             .as_ref()
@@ -225,7 +227,7 @@ mod tests {
 
     #[test]
     fn test_save_and_load_state() {
-        let mut temp_file = NamedTempFile::new().unwrap();
+        let temp_file = NamedTempFile::new().unwrap();
         let path = temp_file.path().to_path_buf();
 
         let rdf = "<http://example.org/s> <http://example.org/p> <http://example.org/o> .\n";

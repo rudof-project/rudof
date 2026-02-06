@@ -33,10 +33,9 @@ mod prompts;
 mod resource_templates;
 mod resources;
 mod service;
-pub mod state;
+mod state;
 mod tasks;
 mod tools;
 
 pub use service::RudofMcpService;
-pub use state::{PersistedState, load_state, save_state};
 pub use tools::annotated_tools;
