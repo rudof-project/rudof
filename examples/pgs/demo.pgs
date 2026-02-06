@@ -1,0 +1,23 @@
+CREATE NODE TYPE ( PersonType : Person {
+    name: STRING ||
+    ( givenName: STRING, familyName: STRING ),
+    OPTIONAL birthdate: DATE
+}) ;
+
+CREATE NODE TYPE ( StudentType : @PersonType & Student {
+    id: INTEGER | STRING,
+    email: STRING CHECK REGEX "^[\w.-]+@[\w.-]+\.\w+$",
+    aliases: STRING *
+}) ;
+
+CREATE NODE TYPE ( CourseType: Course {
+    name: STRING,
+    credits: INTEGER CHECK (> 3)
+});
+
+CREATE EDGE TYPE (:PersonType) 
+                 -[KnowsType : Knows { since: INTEGER }]-> 
+                 (:PersonType);
+CREATE EDGE TYPE (:StudentType) 
+                 -[EnrolledInType : EnrolledIn { start: INTEGER, end: INTEGER }]-> 
+                 (:CourseType)
