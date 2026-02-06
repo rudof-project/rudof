@@ -228,6 +228,11 @@ pub async fn load_rdf_data_from_sources_impl(
         service.notify_resource_updated((*uri).to_string()).await;
     }
 
+    // Persist state for Docker ephemeral container support
+    if let Err(e) = service.persist_state().await {
+        tracing::warn!("Failed to persist state after loading RDF data: {}", e);
+    }
+
     Ok(result)
 }
 
