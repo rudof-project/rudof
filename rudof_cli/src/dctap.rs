@@ -24,13 +24,12 @@ pub fn run_dctap(
             DCTapResultFormat::Internal => {
                 writeln!(writer, "{dctap}")?;
                 Ok(())
-            }
+            },
             DCTapResultFormat::JSON => {
-                let str = serde_json::to_string_pretty(&dctap)
-                    .context("Error converting DCTap to JSON: {dctap}")?;
+                let str = serde_json::to_string_pretty(&dctap).context("Error converting DCTap to JSON: {dctap}")?;
                 writeln!(writer, "{str}")?;
                 Ok(())
-            }
+            },
         }
     } else {
         bail!("Internal error: No DCTAP read")
@@ -50,17 +49,17 @@ pub fn parse_dctap(rudof: &mut Rudof, input: &InputSpec, format: &CliDCTapFormat
             let reader = input.open_read(None, "DCTAP")?;
             rudof.read_dctap(reader, &dctap_format)?;
             Ok(())
-        }
+        },
         _ => match input {
             InputSpec::Path(path_buf) => {
                 rudof.read_dctap_path(path_buf, &dctap_format)?;
                 Ok(())
-            }
+            },
             InputSpec::Stdin => bail!("Can not read Excel file from stdin"),
             InputSpec::Url(_) => bail!("Not implemented reading Excel files from URIs yet"),
             InputSpec::Str(_) => {
                 bail!("Not implemented reading Excel files from strings yet")
-            }
+            },
         },
     }
 }

@@ -25,13 +25,13 @@ prefixmap = { workspace = true }
 # Data generation and utilities
 rand.workspace = true
 rayon.workspace = true
-rust_decimal.workspace = true 
-serde.workspace = true 
+rust_decimal.workspace = true
+serde.workspace = true
 serde_json.workspace = true
 shacl_ast.workspace = true
-shacl_rdf.workspace = true 
-shex_ast.workspace = true 
-srdf.workspace = true 
+shacl_rdf.workspace = true
+shex_ast.workspace = true
+srdf.workspace = true
 thiserror.workspace = true
 
 # Async and parallelism

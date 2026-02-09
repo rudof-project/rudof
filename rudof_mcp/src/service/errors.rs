@@ -34,11 +34,7 @@ pub enum ErrorKind {
 /// * `message` - A brief, user-facing error description
 /// * `cause` - The underlying error message or cause
 /// * `context` - Optional JSON object with debugging context
-pub fn internal_error(
-    message: &'static str,
-    cause: impl Into<String>,
-    context: Option<Value>,
-) -> McpError {
+pub fn internal_error(message: &'static str, cause: impl Into<String>, context: Option<Value>) -> McpError {
     mk_error(ErrorKind::Internal, message, Some(cause.into()), context)
 }
 
@@ -52,17 +48,8 @@ pub fn internal_error(
 /// * `message` - A brief, user-facing error description
 /// * `cause` - Specific details about what was invalid
 /// * `context` - Optional JSON object with debugging context
-pub fn invalid_request_error(
-    message: &'static str,
-    cause: impl Into<String>,
-    context: Option<Value>,
-) -> McpError {
-    mk_error(
-        ErrorKind::InvalidRequest,
-        message,
-        Some(cause.into()),
-        context,
-    )
+pub fn invalid_request_error(message: &'static str, cause: impl Into<String>, context: Option<Value>) -> McpError {
+    mk_error(ErrorKind::InvalidRequest, message, Some(cause.into()), context)
 }
 
 /// Create a resource not found error response.
@@ -75,29 +62,15 @@ pub fn invalid_request_error(
 /// * `message` - A brief, user-facing error description
 /// * `cause` - The URI or resource that wasn't found
 /// * `context` - Optional JSON object with debugging context
-pub fn resource_not_found_error(
-    message: &'static str,
-    cause: impl Into<String>,
-    context: Option<Value>,
-) -> McpError {
-    mk_error(
-        ErrorKind::ResourceNotFound,
-        message,
-        Some(cause.into()),
-        context,
-    )
+pub fn resource_not_found_error(message: &'static str, cause: impl Into<String>, context: Option<Value>) -> McpError {
+    mk_error(ErrorKind::ResourceNotFound, message, Some(cause.into()), context)
 }
 
 /// Internal helper to construct MCP error responses.
 ///
 /// Merges context data, logs the error via tracing, and creates
 /// the appropriate `ErrorData` variant.
-fn mk_error(
-    kind: ErrorKind,
-    message: &'static str,
-    cause: Option<String>,
-    context: Option<Value>,
-) -> McpError {
+fn mk_error(kind: ErrorKind, message: &'static str, cause: Option<String>, context: Option<Value>) -> McpError {
     let mut map = Map::new();
     if let Some(ctx) = context {
         match ctx {
@@ -105,10 +78,10 @@ fn mk_error(
                 for (k, v) in o.into_iter() {
                     map.insert(k, v);
                 }
-            }
+            },
             other => {
                 map.insert("context".to_string(), other);
-            }
+            },
         }
     }
 

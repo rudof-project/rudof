@@ -7,17 +7,17 @@ class TestShacl(unittest.TestCase):
         rudof = Rudof(RudofConfig())
         data = """
         prefix : <http://example.org/>
-        prefix sh:     <http://www.w3.org/ns/shacl#> 
-        prefix xsd:    <http://www.w3.org/2001/XMLSchema#> 
-                        
+        prefix sh:     <http://www.w3.org/ns/shacl#>
+        prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
+
         :Person a sh:NodeShape; sh:targetNode :ok ;
-         sh:property [                  
-          sh:path     :name ; 
-           sh:minCount 1; 
+         sh:property [
+          sh:path     :name ;
+           sh:minCount 1;
            sh:maxCount 1;
            sh:datatype xsd:string ;
         ] .
-        :ok :name "alice" .          
+        :ok :name "alice" .
         """
         rudof.read_data_str(data)
         result = rudof.validate_shacl()
@@ -28,17 +28,17 @@ class TestShacl(unittest.TestCase):
         rudof = Rudof(RudofConfig())
         data = """
         prefix : <http://example.org/>
-        prefix sh:     <http://www.w3.org/ns/shacl#> 
-        prefix xsd:    <http://www.w3.org/2001/XMLSchema#> 
-                        
+        prefix sh:     <http://www.w3.org/ns/shacl#>
+        prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
+
         :Person a sh:NodeShape; sh:targetNode :ko ;
-         sh:property [                  
-          sh:path     :name ; 
-           sh:minCount 1; 
+         sh:property [
+          sh:path     :name ;
+           sh:minCount 1;
            sh:maxCount 1;
            sh:datatype xsd:string ;
         ] .
-        :ko :name 23 .    
+        :ko :name 23 .
         """
         rudof.read_data_str(data)
         result = rudof.validate_shacl()
@@ -47,4 +47,4 @@ class TestShacl(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()    
+    unittest.main()

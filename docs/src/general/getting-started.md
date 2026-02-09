@@ -14,4 +14,3 @@ As a command line tool, it contains several subcommands which can be decomposed 
 
 - _Commands about some technology_, which take some input from that technology and provide information about it. Examples are: `shex`, `shacl`, `dctap`, `shapemap`, `service`, `node` and `data`. Which are usually nouns or the name of the corresponding technology.
 - _Commands that do some actions_. Examples are: `query`, `validate` or `convert`, which are usually verbs.
-

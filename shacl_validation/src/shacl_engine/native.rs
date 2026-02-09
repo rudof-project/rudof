@@ -82,11 +82,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
         }
     }
 
-    fn target_class(
-        &self,
-        store: &S,
-        class: &RDFNode,
-    ) -> Result<FocusNodes<S>, Box<ValidateError>> {
+    fn target_class(&self, store: &S, class: &RDFNode) -> Result<FocusNodes<S>, Box<ValidateError>> {
         // TODO: this should not be necessary, check in others triples_matching calls
         let cls: S::Term = class.clone().into();
         let focus_nodes = store
@@ -99,11 +95,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
         Ok(FocusNodes::from_iter(focus_nodes))
     }
 
-    fn target_subject_of(
-        &self,
-        store: &S,
-        predicate: &IriS,
-    ) -> Result<FocusNodes<S>, Box<ValidateError>> {
+    fn target_subject_of(&self, store: &S, predicate: &IriS) -> Result<FocusNodes<S>, Box<ValidateError>> {
         let pred: S::IRI = predicate.clone().into();
         let subjects = store
             .triples_with_predicate(pred)
@@ -114,11 +106,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
         Ok(focus_nodes)
     }
 
-    fn target_object_of(
-        &self,
-        store: &S,
-        predicate: &IriS,
-    ) -> Result<FocusNodes<S>, Box<ValidateError>> {
+    fn target_object_of(&self, store: &S, predicate: &IriS) -> Result<FocusNodes<S>, Box<ValidateError>> {
         let pred: S::IRI = predicate.clone().into();
         let objects = store
             .triples_with_predicate(pred)
@@ -127,11 +115,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
         Ok(FocusNodes::from_iter(objects))
     }
 
-    fn implicit_target_class(
-        &self,
-        store: &S,
-        subject: &RDFNode,
-    ) -> Result<FocusNodes<S>, Box<ValidateError>> {
+    fn implicit_target_class(&self, store: &S, subject: &RDFNode) -> Result<FocusNodes<S>, Box<ValidateError>> {
         // TODO: Replace by shacl_instances_of
         let term: S::Term = subject.clone().into();
         let targets = store
@@ -159,17 +143,10 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
                     .flatten()
             });
 
-        Ok(FocusNodes::from_iter(
-            targets.into_iter().chain(subclass_targets),
-        ))
+        Ok(FocusNodes::from_iter(targets.into_iter().chain(subclass_targets)))
     }
 
-    fn record_validation(
-        &mut self,
-        node: RDFNode,
-        shape_idx: ShapeLabelIdx,
-        results: Vec<ValidationResult>,
-    ) {
+    fn record_validation(&mut self, node: RDFNode, shape_idx: ShapeLabelIdx, results: Vec<ValidationResult>) {
         self.cached_validations
             .entry(node)
             .or_default()

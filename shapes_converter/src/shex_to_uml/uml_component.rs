@@ -14,8 +14,6 @@ impl UmlComponent {
     }
 
     pub fn or<I: Iterator<Item = UmlComponent>>(cs: I) -> UmlComponent {
-        UmlComponent::Or {
-            exprs: cs.collect(),
-        }
+        UmlComponent::Or { exprs: cs.collect() }
     }
 }

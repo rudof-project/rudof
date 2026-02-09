@@ -19,9 +19,8 @@
 //! may be garbage collected by the server.
 
 use rmcp::model::{
-    CallToolResult, CancelTaskParams, CreateTaskResult, EmptyObject, GetTaskInfoParams,
-    GetTaskInfoResult, GetTaskResultParams, ListTasksResult, PaginatedRequestParams, Task,
-    TaskResult, TaskStatus,
+    CallToolResult, CancelTaskParams, CreateTaskResult, EmptyObject, GetTaskInfoParams, GetTaskInfoResult,
+    GetTaskResultParams, ListTasksResult, PaginatedRequestParams, Task, TaskResult, TaskStatus,
 };
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -111,10 +110,7 @@ impl TaskStore {
 
         let (task_list, next_cursor) = if let Some(pagination) = params {
             let page_size = 20;
-            let cursor = pagination
-                .cursor
-                .and_then(|c| c.parse::<usize>().ok())
-                .unwrap_or(0);
+            let cursor = pagination.cursor.and_then(|c| c.parse::<usize>().ok()).unwrap_or(0);
 
             let start = cursor;
             let end = std::cmp::min(start + page_size, all_tasks.len());
@@ -164,7 +160,7 @@ impl TaskStore {
                 } else {
                     None
                 }
-            }
+            },
             TaskStatus::Failed => {
                 if let Some(Err(error_msg)) = &entry.result {
                     Some(TaskResult {
@@ -175,7 +171,7 @@ impl TaskStore {
                 } else {
                     None
                 }
-            }
+            },
             _ => None, // Task still in progress
         }
     }
@@ -187,13 +183,10 @@ impl TaskStore {
             // Only cancel if not already completed or failed
             match entry.task.status {
                 TaskStatus::Working | TaskStatus::InputRequired => {
-                    entry.update_status(
-                        TaskStatus::Cancelled,
-                        Some("Cancelled by client".to_string()),
-                    );
+                    entry.update_status(TaskStatus::Cancelled, Some("Cancelled by client".to_string()));
                     tracing::debug!(task_id = %params.task_id, "Task cancelled");
                     Some(EmptyObject {})
-                }
+                },
                 _ => {
                     tracing::debug!(
                         task_id = %params.task_id,
@@ -201,7 +194,7 @@ impl TaskStore {
                         "Task cannot be cancelled (already terminal state)"
                     );
                     None
-                }
+                },
             }
         } else {
             None
@@ -209,12 +202,7 @@ impl TaskStore {
     }
 
     /// Update task status (internal use by task executors)
-    pub async fn update_status(
-        &self,
-        task_id: &str,
-        status: TaskStatus,
-        message: Option<String>,
-    ) -> bool {
+    pub async fn update_status(&self, task_id: &str, status: TaskStatus, message: Option<String>) -> bool {
         let mut tasks = self.tasks.write().await;
         if let Some(entry) = tasks.get_mut(task_id) {
             entry.update_status(status, message);
@@ -229,10 +217,7 @@ impl TaskStore {
         let mut tasks = self.tasks.write().await;
         if let Some(entry) = tasks.get_mut(task_id) {
             entry.result = Some(Ok(result));
-            entry.update_status(
-                TaskStatus::Completed,
-                Some("Task completed successfully".to_string()),
-            );
+            entry.update_status(TaskStatus::Completed, Some("Task completed successfully".to_string()));
             tracing::debug!(task_id = %task_id, "Task completed");
             true
         } else {

@@ -40,16 +40,14 @@ impl ShEx2UmlConfig {
     }
 
     pub fn replace_iri_by_label(&self) -> bool {
-        self.replace_iri_by_label
-            .unwrap_or(DEFAULT_REPLACE_IRI_BY_LABEL)
+        self.replace_iri_by_label.unwrap_or(DEFAULT_REPLACE_IRI_BY_LABEL)
     }
 
     pub fn from_file(file_name: &str) -> Result<ShEx2UmlConfig, ShEx2UmlConfigError> {
-        let config_str =
-            fs::read_to_string(file_name).map_err(|e| ShEx2UmlConfigError::ReadingConfigError {
-                path_name: file_name.to_string(),
-                error: e,
-            })?;
+        let config_str = fs::read_to_string(file_name).map_err(|e| ShEx2UmlConfigError::ReadingConfigError {
+            path_name: file_name.to_string(),
+            error: e,
+        })?;
         toml::from_str::<ShEx2UmlConfig>(&config_str).map_err(|e| ShEx2UmlConfigError::TomlError {
             path_name: file_name.to_string(),
             error: e,
@@ -71,10 +69,7 @@ pub enum ShEx2UmlConfigError {
     ReadingConfigError { path_name: String, error: io::Error },
 
     #[error("Reading TOML from {path_name:?}. Error: {error:?}")]
-    TomlError {
-        path_name: String,
-        error: toml::de::Error,
-    },
+    TomlError { path_name: String, error: toml::de::Error },
 
     #[error("Accessing environment variable {var_name}: {error}")]
     EnvVarError { var_name: String, error: VarError },

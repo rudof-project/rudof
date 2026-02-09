@@ -7,8 +7,8 @@ use anyhow::{Result, anyhow, bail};
 use iri_s::IriS;
 use prefixmap::IriRef;
 use rudof_lib::{
-    InputSpec, Rudof, RudofConfig, ShExFormatter, ShapeMapParser, UmlGenerationMode,
-    shacl::add_shacl_schema_rudof, shacl_format::CliShaclFormat,
+    InputSpec, Rudof, RudofConfig, ShExFormatter, ShapeMapParser, UmlGenerationMode, shacl::add_shacl_schema_rudof,
+    shacl_format::CliShaclFormat,
 };
 use shapes_converter::{ShEx2Html, ShEx2Sparql, ShEx2Uml, Shacl2ShEx, Tap2ShEx};
 use srdf::UmlConverter;
@@ -56,7 +56,7 @@ pub fn run_convert(
                 reader_mode,
                 config,
             )
-        }
+        },
         (InputConvertMode::SHACL, OutputConvertMode::SHACL) => {
             let shacl_format = format.to_shacl_format()?;
             let output_format = result_format.to_shacl_format()?;
@@ -70,22 +70,17 @@ pub fn run_convert(
                 reader_mode,
                 config,
             )
-        }
-        (InputConvertMode::DCTAP, OutputConvertMode::ShEx) => run_tap2shex(
-            input,
-            format,
-            output,
-            result_format,
-            config,
-            force_overwrite,
-        ),
+        },
+        (InputConvertMode::DCTAP, OutputConvertMode::ShEx) => {
+            run_tap2shex(input, format, output, result_format, config, force_overwrite)
+        },
         (InputConvertMode::ShEx, OutputConvertMode::SPARQL) => {
             let maybe_shape = match maybe_shape_str {
                 None => None,
                 Some(shape_str) => {
                     let iri_shape = ShapeMapParser::parse_iri_ref(shape_str)?;
                     Some(iri_shape)
-                }
+                },
             };
             run_shex2sparql(
                 input,
@@ -98,7 +93,7 @@ pub fn run_convert(
                 force_overwrite,
                 reader_mode,
             )
-        }
+        },
         (InputConvertMode::ShEx, OutputConvertMode::UML) => run_shex2uml(
             input,
             format,
@@ -124,15 +119,7 @@ pub fn run_convert(
             None => Err(anyhow!(
                 "Conversion from ShEx to HTML requires an output parameter to indicate where to write the generated HTML files"
             )),
-            Some(output_path) => run_shex2html(
-                input,
-                format,
-                base,
-                output_path,
-                template_folder,
-                config,
-                reader_mode,
-            ),
+            Some(output_path) => run_shex2html(input, format, base, output_path, template_folder, config, reader_mode),
         },
         (InputConvertMode::DCTAP, OutputConvertMode::UML) => run_tap2uml(
             input,
@@ -206,15 +193,8 @@ fn run_shex2uml(
 ) -> Result<()> {
     let schema_format = format.to_shex_format()?;
     let mut rudof = Rudof::new(config)?;
-    rudof_lib::shex::parse_shex_schema(
-        &mut rudof,
-        input,
-        &schema_format,
-        base,
-        reader_mode,
-        config,
-    )
-    .map_err(|e| anyhow!("{}", e))?;
+    rudof_lib::shex::parse_shex_schema(&mut rudof, input, &schema_format, base, reader_mode, config)
+        .map_err(|e| anyhow!("{}", e))?;
     let mut converter = ShEx2Uml::new(&config.shex2uml_config());
     if let Some(schema) = rudof.get_shex() {
         converter.convert(schema)?;
@@ -248,19 +228,19 @@ fn generate_uml_output<P: AsRef<Path>>(
         OutputConvertFormat::PlantUML => {
             uml_converter.as_plantuml(writer, &mode)?;
             Ok(())
-        }
+        },
         OutputConvertFormat::SVG => {
             uml_converter.as_image(writer, ImageFormat::SVG, &mode, plantuml_path)?;
             Ok(())
-        }
+        },
         OutputConvertFormat::PNG => {
             uml_converter.as_image(writer, ImageFormat::PNG, &mode, plantuml_path)?;
             Ok(())
-        }
+        },
         OutputConvertFormat::Default => {
             uml_converter.as_plantuml(writer, &mode)?;
             Ok(())
-        }
+        },
         _ => Err(anyhow!(
             "Conversion to UML does not support output format {result_format}"
         )),
@@ -281,20 +261,11 @@ fn run_shex2html<P: AsRef<Path>>(
     let schema_format = format.to_shex_format()?;
     let mut rudof = Rudof::new(config)?;
 
-    rudof_lib::shex::parse_shex_schema(
-        &mut rudof,
-        input,
-        &schema_format,
-        base,
-        reader_mode,
-        config,
-    )
-    .map_err(|e| anyhow!("{}", e))?;
+    rudof_lib::shex::parse_shex_schema(&mut rudof, input, &schema_format, base, reader_mode, config)
+        .map_err(|e| anyhow!("{}", e))?;
     if let Some(schema) = rudof.get_shex() {
         let shex2html_config = config.shex2html_config();
-        let config = shex2html_config
-            .clone()
-            .with_target_folder(output_folder.as_ref());
+        let config = shex2html_config.clone().with_target_folder(output_folder.as_ref());
         let landing_page = config.landing_page().to_string_lossy().to_string();
         trace!("Landing page will be generated at {landing_page}\nStarted converter...");
         let mut converter = ShEx2Html::new(config);
@@ -329,18 +300,12 @@ fn run_tap2html<P: AsRef<Path>>(
     if let Some(dctap) = rudof.get_dctap() {
         let converter_tap = Tap2ShEx::new(&config.tap2shex_config());
         let shex = converter_tap.convert(dctap)?;
-        trace!(
-            "Converted ShEx: {}",
-            ShExFormatter::default().format_schema(&shex)
-        );
+        trace!("Converted ShEx: {}", ShExFormatter::default().format_schema(&shex));
         let shex2html_config = config
             .shex2html_config()
             .clone()
             .with_target_folder(output_folder.as_ref());
-        let landing_page = shex2html_config
-            .landing_page()
-            .to_string_lossy()
-            .to_string();
+        let landing_page = shex2html_config.landing_page().to_string_lossy().to_string();
         trace!("Landing page {landing_page}\nConverter...");
         let mut converter = ShEx2Html::new(shex2html_config);
         converter.convert(&shex)?;
@@ -374,15 +339,8 @@ fn run_shex2sparql(
 ) -> Result<()> {
     let schema_format = format.to_shex_format()?;
     let mut rudof = Rudof::new(config)?;
-    rudof_lib::shex::parse_shex_schema(
-        &mut rudof,
-        input,
-        &schema_format,
-        base,
-        reader_mode,
-        config,
-    )
-    .map_err(|e| anyhow!("{}", e))?;
+    rudof_lib::shex::parse_shex_schema(&mut rudof, input, &schema_format, base, reader_mode, config)
+        .map_err(|e| anyhow!("{}", e))?;
     if let Some(schema) = rudof.get_shex() {
         let converter = ShEx2Sparql::new(&config.shex2sparql_config());
         let sparql = converter.convert(schema, shape)?;
@@ -416,13 +374,7 @@ fn run_tap2shex(
             crate::ColorSupport::NoColor => ShExFormatter::default().without_colors(),
             crate::ColorSupport::WithColor => ShExFormatter::default(),
         };
-        rudof_lib::shex::serialize_shex_rudof(
-            &rudof,
-            &shex,
-            &result_schema_format,
-            &formatter,
-            &mut writer,
-        )?;
+        rudof_lib::shex::serialize_shex_rudof(&rudof, &shex, &result_schema_format, &formatter, &mut writer)?;
         Ok(())
     } else {
         bail!("Internal error: No DCTAP")

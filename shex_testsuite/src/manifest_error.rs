@@ -92,8 +92,8 @@ pub enum ManifestError {
         entry: String,
     },
 
-    #[error("Expected OK for {entry} but failed. Failed status are: [{}]\nPassed status are: [{}]", 
-       failed_status.iter().map(|s| s.code()).collect::<Vec<_>>().join(", "), 
+    #[error("Expected OK for {entry} but failed. Failed status are: [{}]\nPassed status are: [{}]",
+       failed_status.iter().map(|s| s.code()).collect::<Vec<_>>().join(", "),
        passed_status.iter().map(|s| s.code()).collect::<Vec<_>>().join(", "))]
     ExpectedOkButObtained {
         failed_status: Vec<ValidationStatus>,
@@ -126,9 +126,7 @@ pub enum ManifestError {
         error: serde_json::Error,
     },
 
-    #[error(
-        "Schema parsed after serialization could not be serialized\n{schema_parsed:?}\n{error:?}"
-    )]
+    #[error("Schema parsed after serialization could not be serialized\n{schema_parsed:?}\n{error:?}")]
     SchemaSerializationError2nd {
         schema_parsed: Box<Schema>,
         error: serde_json::Error,

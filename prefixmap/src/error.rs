@@ -11,10 +11,7 @@ pub enum PrefixMapError {
 
     /// Error indicating that a requested prefix alias was not found in the [`PrefixMap`]
     #[error("Alias '{prefix}' not found in prefix map\nAvailable aliases: [{}]", prefixmap.aliases().cloned().collect::<Vec<_>>().join(", "))]
-    PrefixNotFound {
-        prefix: String,
-        prefixmap: PrefixMap,
-    },
+    PrefixNotFound { prefix: String, prefixmap: PrefixMap },
 
     /// Error indicating a formatting issue
     #[error(transparent)]

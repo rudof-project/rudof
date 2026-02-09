@@ -8,18 +8,12 @@ pub use shacl_ast::ast::Schema as ShaclSchema;
 pub use shacl_ir::compiled::schema_ir::SchemaIR as ShaclSchemaIR;
 pub use shacl_validation::shacl_processor::ShaclValidationMode;
 pub use shacl_validation::validation_report::report::ValidationReport;
-pub use shapes_comparator::{
-    CoShaMo, ComparatorError, CompareSchemaFormat, CompareSchemaMode, ShaCo,
-};
+pub use shapes_comparator::{CoShaMo, ComparatorError, CompareSchemaFormat, CompareSchemaMode, ShaCo};
 pub use shex_ast::Node;
 pub use shex_ast::Schema as ShExSchema;
-pub use shex_ast::compact::{
-    ShExFormatter, ShapeMapParser, ShapemapFormatter as ShapeMapFormatter,
-};
+pub use shex_ast::compact::{ShExFormatter, ShapeMapParser, ShapemapFormatter as ShapeMapFormatter};
 pub use shex_ast::ir::shape_label::ShapeLabel;
-pub use shex_ast::shapemap::{
-    QueryShapeMap, ResultShapeMap, ShapeMapFormat, SortMode, ValidationStatus,
-};
+pub use shex_ast::shapemap::{QueryShapeMap, ResultShapeMap, ShapeMapFormat, SortMode, ValidationStatus};
 pub use shex_validation::Validator as ShExValidator;
 pub use shex_validation::ValidatorConfig;
 pub use sparql_service::RdfData;
@@ -112,9 +106,7 @@ impl Rudof {
     pub fn new(config: &RudofConfig) -> Result<Rudof> {
         let rdf_data = RdfData::new()
             .with_rdf_data_config(&config.rdf_data_config())
-            .map_err(|e| RudofError::RdfDataConfigError {
-                error: format!("{e}"),
-            })?;
+            .map_err(|e| RudofError::RdfDataConfigError { error: format!("{e}") })?;
         Ok(Rudof {
             version: env!("CARGO_PKG_VERSION").to_string(),
             config: config.clone(),
@@ -219,8 +211,7 @@ impl Rudof {
     pub fn get_shacl_from_data(&mut self) -> Result<()> {
         let schema = shacl_schema_from_data(self.rdf_data.clone())?;
         self.shacl_schema = Some(schema.clone());
-        let shacl_ir = ShaclSchemaIR::compile(&schema)
-            .map_err(|e| RudofError::ShaclCompilation { error: e })?;
+        let shacl_ir = ShaclSchemaIR::compile(&schema).map_err(|e| RudofError::ShaclCompilation { error: e })?;
         self.shacl_schema_ir = Some(shacl_ir);
         Ok(())
     }
@@ -309,24 +300,8 @@ impl Rudof {
         source_name1: Option<&str>,
         source_name2: Option<&str>,
     ) -> Result<ShaCo> {
-        let coshamo1 = self.get_coshamo(
-            reader1,
-            &mode1,
-            &format1,
-            base1,
-            reader_mode,
-            label1,
-            source_name1,
-        )?;
-        let coshamo2 = self.get_coshamo(
-            reader2,
-            &mode2,
-            &format2,
-            base2,
-            reader_mode,
-            label2,
-            source_name2,
-        )?;
+        let coshamo1 = self.get_coshamo(reader1, &mode1, &format1, base1, reader_mode, label1, source_name1)?;
+        let coshamo2 = self.get_coshamo(reader2, &mode2, &format2, base2, reader_mode, label2, source_name2)?;
         Ok(coshamo1.compare(&coshamo2))
     }
 
@@ -337,9 +312,7 @@ impl Rudof {
             let converter = Tap2ShEx::new(&self.config.tap2shex_config());
             let shex = converter
                 .convert(dctap)
-                .map_err(|e| RudofError::DCTap2ShEx {
-                    error: format!("{e}"),
-                })?;
+                .map_err(|e| RudofError::DCTap2ShEx { error: format!("{e}") })?;
             self.shex_schema = Some(shex);
             Ok(())
         } else {
@@ -353,38 +326,25 @@ impl Rudof {
     /// The configuration can be customized to change colors, styles, and other aspects of the visualization
     pub fn data2plant_uml<W: io::Write>(&self, writer: &mut W) -> Result<()> {
         let config = self.config.rdf_data_config().rdf_visualization_config();
-        let converter = VisualRDFGraph::from_rdf(&self.rdf_data, config).map_err(|e| {
-            RudofError::RDF2PlantUmlError {
-                error: format!("{e}"),
-            }
-        })?;
+        let converter = VisualRDFGraph::from_rdf(&self.rdf_data, config)
+            .map_err(|e| RudofError::RDF2PlantUmlError { error: format!("{e}") })?;
         converter
             .as_plantuml(writer, &UmlGenerationMode::AllNodes)
-            .map_err(|e| RudofError::RDF2PlantUmlErrorAsPlantUML {
-                error: format!("{e}"),
-            })?;
+            .map_err(|e| RudofError::RDF2PlantUmlErrorAsPlantUML { error: format!("{e}") })?;
         Ok(())
     }
 
     /// Generate a UML Class-like representation of a ShEx schema according to PlantUML syntax
     ///
-    pub fn shex2plant_uml<W: io::Write>(
-        &self,
-        mode: &UmlGenerationMode,
-        writer: &mut W,
-    ) -> Result<()> {
+    pub fn shex2plant_uml<W: io::Write>(&self, mode: &UmlGenerationMode, writer: &mut W) -> Result<()> {
         if let Some(shex) = &self.shex_schema {
             let mut converter = ShEx2Uml::new(&self.config.shex2uml_config());
             converter
                 .convert(shex)
-                .map_err(|e| RudofError::ShEx2PlantUmlError {
-                    error: format!("{e}"),
-                })?;
-            converter.as_plantuml(writer, mode).map_err(|e| {
-                RudofError::ShEx2PlantUmlErrorAsPlantUML {
-                    error: format!("{e}"),
-                }
-            })?;
+                .map_err(|e| RudofError::ShEx2PlantUmlError { error: format!("{e}") })?;
+            converter
+                .as_plantuml(writer, mode)
+                .map_err(|e| RudofError::ShEx2PlantUmlErrorAsPlantUML { error: format!("{e}") })?;
             Ok(())
         } else {
             Err(RudofError::ShEx2UmlWithoutShEx)
@@ -394,9 +354,7 @@ impl Rudof {
     pub fn serialize_data<W: io::Write>(&self, format: &RDFFormat, writer: &mut W) -> Result<()> {
         self.rdf_data
             .serialize(format, writer)
-            .map_err(|e| RudofError::SerializingData {
-                error: format!("{e}"),
-            })
+            .map_err(|e| RudofError::SerializingData { error: format!("{e}") })
     }
 
     /// Serialize the current ShapeMap
@@ -409,25 +367,23 @@ impl Rudof {
         if let Some(shapemap) = &self.shapemap {
             match format {
                 ShapeMapFormat::Compact => {
-                    formatter.write_shapemap(shapemap, writer).map_err(|e| {
-                        RudofError::ErrorFormattingShapeMap {
+                    formatter
+                        .write_shapemap(shapemap, writer)
+                        .map_err(|e| RudofError::ErrorFormattingShapeMap {
                             shapemap: format!("{:?}", shapemap.clone()),
                             error: format!("{e}"),
-                        }
-                    })
-                }
+                        })
+                },
                 ShapeMapFormat::JSON => {
-                    serde_json::to_writer_pretty(writer, &shapemap).map_err(|e| {
-                        RudofError::ErrorWritingShExJson {
-                            schema: format!("{:?}", shapemap.clone()),
-                            error: format!("{e}"),
-                        }
+                    serde_json::to_writer_pretty(writer, &shapemap).map_err(|e| RudofError::ErrorWritingShExJson {
+                        schema: format!("{:?}", shapemap.clone()),
+                        error: format!("{e}"),
                     })?;
                     Ok(())
-                }
+                },
                 ShapeMapFormat::CSV => {
                     todo!()
-                }
+                },
             }
         } else {
             Err(RudofError::NoShapeMapToSerialize)
@@ -444,23 +400,21 @@ impl Rudof {
     ) -> Result<()> {
         match format {
             ShExFormat::ShExC => {
-                formatter.write_schema(shex, writer).map_err(|e| {
-                    RudofError::ErrorFormattingSchema {
+                formatter
+                    .write_schema(shex, writer)
+                    .map_err(|e| RudofError::ErrorFormattingSchema {
                         schema: format!("{:?}", shex.clone()),
                         error: format!("{e}"),
-                    }
-                })?;
+                    })?;
                 Ok(())
-            }
+            },
             ShExFormat::ShExJ => {
-                serde_json::to_writer_pretty(writer, &shex).map_err(|e| {
-                    RudofError::ErrorWritingShExJson {
-                        schema: format!("{:?}", shex.clone()),
-                        error: format!("{e}"),
-                    }
+                serde_json::to_writer_pretty(writer, &shex).map_err(|e| RudofError::ErrorWritingShExJson {
+                    schema: format!("{:?}", shex.clone()),
+                    error: format!("{e}"),
                 })?;
                 Ok(())
-            }
+            },
             ShExFormat::RDFFormat(_) => Err(RudofError::NotImplemented {
                 msg: format!("ShEx from RDF format ShExR for {shex:?}"),
             }),
@@ -478,11 +432,12 @@ impl Rudof {
         if let Some(shex) = &self.shex_schema_ir {
             for shape_expr_label in shape_selector.iter_shape() {
                 let shape_label =
-                    ShapeLabel::from_shape_expr_label(shape_expr_label, &shex.prefixmap())
-                        .map_err(|e| RudofError::InvalidShapeLabel {
+                    ShapeLabel::from_shape_expr_label(shape_expr_label, &shex.prefixmap()).map_err(|e| {
+                        RudofError::InvalidShapeLabel {
                             label: shape_expr_label.to_string(),
                             error: format!("{e}"),
-                        })?;
+                        }
+                    })?;
                 if let Some((idx, shape_expr)) = shex.find_label(&shape_label) {
                     writeln!(writer, "# Shape {shape_label}")?;
                     write!(writer, "  {shape_expr}")?;
@@ -494,11 +449,7 @@ impl Rudof {
                     writeln!(
                         writer,
                         "  # Predicates: [{}]",
-                        preds
-                            .iter()
-                            .map(|p| p.to_string())
-                            .collect::<Vec<_>>()
-                            .join(" ")
+                        preds.iter().map(|p| p.to_string()).collect::<Vec<_>>().join(" ")
                     )?;
                 } else {
                     write!(writer, "Shape {shape_label} not found in schema")?;
@@ -524,16 +475,10 @@ impl Rudof {
         }
     }
 
-    pub fn run_query_construct_str(
-        &mut self,
-        str: &str,
-        result_format: &QueryResultFormat,
-    ) -> Result<String> {
+    pub fn run_query_construct_str(&mut self, str: &str, result_format: &QueryResultFormat) -> Result<String> {
         self.rdf_data
             .check_store()
-            .map_err(|e| RudofError::StorageError {
-                error: format!("{e}"),
-            })?;
+            .map_err(|e| RudofError::StorageError { error: format!("{e}") })?;
         let result = self
             .rdf_data
             .query_construct(str, result_format)
@@ -552,9 +497,7 @@ impl Rudof {
         let mut str = String::new();
         reader
             .read_to_string(&mut str)
-            .map_err(|e| RudofError::ReadError {
-                error: format!("{e}"),
-            })?;
+            .map_err(|e| RudofError::ReadError { error: format!("{e}") })?;
         self.run_query_construct_str(str.as_str(), query_format)
     }
 
@@ -562,62 +505,43 @@ impl Rudof {
         trace!("Running SELECT query: {str}");
         self.rdf_data
             .check_store()
-            .map_err(|e| RudofError::StorageError {
-                error: format!("{e}"),
-            })?;
+            .map_err(|e| RudofError::StorageError { error: format!("{e}") })?;
         trace!("After checking RDF store");
-        let results = self
-            .rdf_data
-            .query_select(str)
-            .map_err(|e| RudofError::QueryError {
-                str: str.to_string(),
-                error: format!("{e}"),
-            })?;
+        let results = self.rdf_data.query_select(str).map_err(|e| RudofError::QueryError {
+            str: str.to_string(),
+            error: format!("{e}"),
+        })?;
         Ok(results)
     }
 
-    pub fn run_query_select<R: io::Read>(
-        &mut self,
-        reader: &mut R,
-    ) -> Result<QuerySolutions<RdfData>> {
+    pub fn run_query_select<R: io::Read>(&mut self, reader: &mut R) -> Result<QuerySolutions<RdfData>> {
         let mut str = String::new();
         reader
             .read_to_string(&mut str)
-            .map_err(|e| RudofError::ReadError {
-                error: format!("{e}"),
-            })?;
+            .map_err(|e| RudofError::ReadError { error: format!("{e}") })?;
         self.run_query_select_str(str.as_str())
     }
 
-    pub fn serialize_shacl<W: io::Write>(
-        &self,
-        format: &ShaclFormat,
-        writer: &mut W,
-    ) -> Result<()> {
+    pub fn serialize_shacl<W: io::Write>(&self, format: &ShaclFormat, writer: &mut W) -> Result<()> {
         if let Some(shacl) = &self.shacl_schema {
             match format {
-                ShaclFormat::Internal => {
-                    write!(writer, "{shacl}").map_err(|e| RudofError::SerializingSHACLInternal {
-                        error: format!("{e}"),
-                    })
-                }
+                ShaclFormat::Internal => write!(writer, "{shacl}")
+                    .map_err(|e| RudofError::SerializingSHACLInternal { error: format!("{e}") }),
                 _ => {
                     let data_format = shacl_format2rdf_format(format)?;
                     let mut shacl_writer: ShaclWriter<RdfData> = ShaclWriter::new();
-                    shacl_writer
-                        .write(shacl)
-                        .map_err(|e| RudofError::WritingSHACL {
-                            shacl: format!("{:?}", shacl.clone()),
-                            error: format!("{e}"),
-                        })?;
-                    shacl_writer.serialize(&data_format, writer).map_err(|e| {
-                        RudofError::SerializingSHACL {
-                            error: format!("{e}"),
-                            shacl: format!("{:?}", shacl.clone()),
-                        }
+                    shacl_writer.write(shacl).map_err(|e| RudofError::WritingSHACL {
+                        shacl: format!("{:?}", shacl.clone()),
+                        error: format!("{e}"),
                     })?;
+                    shacl_writer
+                        .serialize(&data_format, writer)
+                        .map_err(|e| RudofError::SerializingSHACL {
+                            error: format!("{e}"),
+                            shacl: format!("{:?}", shacl.clone()),
+                        })?;
                     Ok(())
-                }
+                },
             }
         } else {
             Err(RudofError::NoShaclToSerialize)
@@ -663,18 +587,18 @@ impl Rudof {
             ShaclFormat::JsonLd => Ok(RDFFormat::JsonLd),
         }?;
 
-        let rdf_graph = SRDFGraph::from_reader(reader, reader_name, &format, base, reader_mode)
-            .map_err(|e| RudofError::ReadingSHACLError {
+        let rdf_graph = SRDFGraph::from_reader(reader, reader_name, &format, base, reader_mode).map_err(|e| {
+            RudofError::ReadingSHACLError {
                 reader: reader_name.to_string(),
                 error: e.to_string(),
                 format: format.to_string(),
-            })?;
-        let rdf_data =
-            RdfData::from_graph(rdf_graph).map_err(|e| RudofError::ReadingSHACLFromGraphError {
-                error: e.to_string(),
-                format: format.to_string(),
-                reader_name: reader_name.to_string(),
-            })?;
+            }
+        })?;
+        let rdf_data = RdfData::from_graph(rdf_graph).map_err(|e| RudofError::ReadingSHACLFromGraphError {
+            error: e.to_string(),
+            format: format.to_string(),
+            reader_name: reader_name.to_string(),
+        })?;
         let schema = shacl_schema_from_data(rdf_data)?;
         self.shacl_schema = Some(schema);
         Ok(())
@@ -685,32 +609,25 @@ impl Rudof {
     /// - `endpoint` is the name or the URL of the SPARQL endpoint
     ///   Rudof keeps a cache of endpoints registered with some common names like `wikidata`, `dbpedia`, etc. to make it easier to use them. `
     ///   Returns the results as QuerySolutions
-    pub fn run_query_endpoint(
-        &mut self,
-        query: &str,
-        endpoint: &str,
-    ) -> Result<QuerySolutions<RdfData>> {
+    pub fn run_query_endpoint(&mut self, query: &str, endpoint: &str) -> Result<QuerySolutions<RdfData>> {
         /*let iri_endpoint =
         IriS::from_str(endpoint).map_err(|e| RudofError::InvalidEndpointIri {
             endpoint: endpoint.to_string(),
             error: format!("{e}"),
         })?;*/
-        let (name, sparql_endpoint) =
-            self.get_endpoint(endpoint)
-                .map_err(|e| RudofError::InvalidEndpoint {
-                    endpoint: endpoint.to_string(),
-                    error: format!("{e}"),
-                })?;
+        let (name, sparql_endpoint) = self.get_endpoint(endpoint).map_err(|e| RudofError::InvalidEndpoint {
+            endpoint: endpoint.to_string(),
+            error: format!("{e}"),
+        })?;
 
         let rdf_data = RdfData::from_endpoint(name.as_str(), sparql_endpoint);
-        let solutions =
-            rdf_data
-                .query_select(query)
-                .map_err(|e| RudofError::QueryEndpointError {
-                    endpoint: endpoint.to_string(),
-                    query: query.to_string(),
-                    error: format!("{e}"),
-                })?;
+        let solutions = rdf_data
+            .query_select(query)
+            .map_err(|e| RudofError::QueryEndpointError {
+                endpoint: endpoint.to_string(),
+                query: query.to_string(),
+                error: format!("{e}"),
+            })?;
         Ok(solutions)
     }
 
@@ -730,14 +647,12 @@ impl Rudof {
                     error: format!("{e}"),
                 })?;
                 // Create a new SRDFSparql instance with the given IRI
-                let endpoint = SRDFSparql::new(&iri, &PrefixMap::new()).map_err(|e| {
-                    RudofError::InvalidEndpoint {
-                        endpoint: name.to_string(),
-                        error: format!("{e}"),
-                    }
+                let endpoint = SRDFSparql::new(&iri, &PrefixMap::new()).map_err(|e| RudofError::InvalidEndpoint {
+                    endpoint: name.to_string(),
+                    error: format!("{e}"),
                 })?;
                 Ok((name.to_string(), endpoint))
-            }
+            },
         }
     }
 
@@ -746,16 +661,13 @@ impl Rudof {
     pub fn read_dctap<R: std::io::Read>(&mut self, reader: R, format: &DCTAPFormat) -> Result<()> {
         let dctap = match format {
             DCTAPFormat::CSV => {
-                let dctap = DCTAP::from_reader(reader, &self.config.tap_config()).map_err(|e| {
-                    RudofError::DCTAPReaderCSVReader {
-                        error: format!("{e}"),
-                    }
-                })?;
+                let dctap = DCTAP::from_reader(reader, &self.config.tap_config())
+                    .map_err(|e| RudofError::DCTAPReaderCSVReader { error: format!("{e}") })?;
                 Ok(dctap)
-            }
+            },
             DCTAPFormat::XLS | DCTAPFormat::XLSB | DCTAPFormat::XLSM | DCTAPFormat::XLSX => {
                 Err(RudofError::DCTAPReadXLSNoPath)
-            }
+            },
         }?;
         self.dctap = Some(dctap);
         Ok(())
@@ -765,40 +677,34 @@ impl Rudof {
     /// - `format` indicates the DCTAP format
     pub fn read_dctap_path<P: AsRef<Path>>(&mut self, path: P, format: &DCTAPFormat) -> Result<()> {
         let path_name = path.as_ref().display().to_string();
-        let dctap =
-            match format {
-                DCTAPFormat::CSV => {
-                    let dctap = DCTAP::from_path(path, &self.config.tap_config()).map_err(|e| {
-                        RudofError::DCTAPReader {
-                            path: path_name,
-                            format: format.to_string(),
-                            error: format!("{e}"),
-                        }
-                    })?;
-                    Ok::<DCTAP, RudofError>(dctap)
-                }
-                DCTAPFormat::XLS | DCTAPFormat::XLSB | DCTAPFormat::XLSM | DCTAPFormat::XLSX => {
-                    let path_buf = path.as_ref().to_path_buf();
-                    let dctap = DCTAP::from_excel(path_buf, None, &self.config.tap_config())
-                        .map_err(|e| RudofError::DCTAPReaderPathXLS {
-                            path: path_name,
-                            error: format!("{e}"),
-                            format: format!("{format:?}"),
-                        })?;
-                    Ok(dctap)
-                }
-            }?;
+        let dctap = match format {
+            DCTAPFormat::CSV => {
+                let dctap = DCTAP::from_path(path, &self.config.tap_config()).map_err(|e| RudofError::DCTAPReader {
+                    path: path_name,
+                    format: format.to_string(),
+                    error: format!("{e}"),
+                })?;
+                Ok::<DCTAP, RudofError>(dctap)
+            },
+            DCTAPFormat::XLS | DCTAPFormat::XLSB | DCTAPFormat::XLSM | DCTAPFormat::XLSX => {
+                let path_buf = path.as_ref().to_path_buf();
+                let dctap = DCTAP::from_excel(path_buf, None, &self.config.tap_config()).map_err(|e| {
+                    RudofError::DCTAPReaderPathXLS {
+                        path: path_name,
+                        error: format!("{e}"),
+                        format: format!("{format:?}"),
+                    }
+                })?;
+                Ok(dctap)
+            },
+        }?;
         self.dctap = Some(dctap);
         Ok(())
     }
 
     pub fn read_rdf_config<R: io::Read>(&mut self, reader: R, source_name: String) -> Result<()> {
-        let rdf_config =
-            rdf_config::RdfConfigModel::from_reader(reader, source_name).map_err(|e| {
-                RudofError::RdfConfigReadError {
-                    error: format!("{e}"),
-                }
-            })?;
+        let rdf_config = rdf_config::RdfConfigModel::from_reader(reader, source_name)
+            .map_err(|e| RudofError::RdfConfigReadError { error: format!("{e}") })?;
         self.rdf_config = Some(rdf_config);
         Ok(())
     }
@@ -810,9 +716,7 @@ impl Rudof {
         let mut buf_reader = BufReader::new(reader);
         buf_reader
             .read_to_string(&mut str)
-            .map_err(|e| RudofError::ReadError {
-                error: format!("{e}"),
-            })?;
+            .map_err(|e| RudofError::ReadError { error: format!("{e}") })?;
         let query = SparqlQuery::new(&str).map_err(|e| RudofError::SparqlSyntaxError {
             error: format!("{e}"),
             source_name: source_name.unwrap_or("source without name").to_string(),
@@ -882,20 +786,17 @@ impl Rudof {
         };
         schema
             .from_schema_json(&schema_ast, &ResolveMethod::default(), &base_iri)
-            .map_err(|e| RudofError::CompilingSchemaError {
-                error: format!("{e}"),
-            })?;
+            .map_err(|e| RudofError::CompilingSchemaError { error: format!("{e}") })?;
         trace!("Schema compiled and storing it in schema_ir: {schema:?}");
         trace!("Displaying schema_ir: {}", schema);
         self.shex_schema_ir = Some(schema.clone());
         trace!("Schema_ir cloned, preparing validator...");
-        let validator =
-            ShExValidator::new(schema, &self.config.validator_config()).map_err(|e| {
-                RudofError::ShExValidatorCreationError {
-                    error: format!("{e}"),
-                    schema: format!("{schema_ast}"),
-                }
-            })?;
+        let validator = ShExValidator::new(schema, &self.config.validator_config()).map_err(|e| {
+            RudofError::ShExValidatorCreationError {
+                error: format!("{e}"),
+                schema: format!("{schema_ast}"),
+            }
+        })?;
         trace!("Validator created");
         self.shex_validator = Some(validator);
         Ok(())
@@ -919,23 +820,21 @@ impl Rudof {
                             error: format!("{e}"),
                         })?;
                         Ok::<Option<IriS>, RudofError>(Some(iri))
-                    }
+                    },
                     None => Ok(None),
                 }?;
 
                 let source_iri = match source_name {
                     Some(name) => {
-                        let cwd = env::current_dir().map_err(|e| RudofError::CurrentDirError {
-                            error: format!("{e}"),
-                        })?;
+                        let cwd =
+                            env::current_dir().map_err(|e| RudofError::CurrentDirError { error: format!("{e}") })?;
                         trace!("Current directory: {}", cwd.display());
                         // Note: we use from_directory_path to convert a directory to a file URL that ends with a trailing slash
                         // from_url_path would not add the trailing slash and would fail when resolving relative IRIs
-                        let url = Url::from_directory_path(&cwd).map_err(|_| {
-                            RudofError::ConvertingCurrentFolderUrl {
+                        let url =
+                            Url::from_directory_path(&cwd).map_err(|_| RudofError::ConvertingCurrentFolderUrl {
                                 current_dir: cwd.to_string_lossy().to_string(),
-                            }
-                        })?;
+                            })?;
                         trace!("Current directory as URL: {}", url);
                         let iri = IriS::from_str_base(name, Some(url.as_str())).map_err(|e| {
                             RudofError::SourceNameIriError {
@@ -944,26 +843,23 @@ impl Rudof {
                             }
                         })?;
                         Ok::<IriS, RudofError>(iri)
-                    }
+                    },
                     None => Ok(iri!("http://default/")),
                 }?;
                 let schema_json =
-                    ShExParser::from_reader(reader, base, &source_iri).map_err(|e| {
-                        RudofError::ShExCParserError {
-                            error: format!("{e}"),
-                            source_name: source_name.unwrap_or("source without name").to_string(),
-                        }
-                    })?;
-                Ok(schema_json)
-            }
-            ShExFormat::ShExJ => {
-                let schema_json =
-                    ShExSchema::from_reader(reader).map_err(|e| RudofError::ShExJParserError {
+                    ShExParser::from_reader(reader, base, &source_iri).map_err(|e| RudofError::ShExCParserError {
                         error: format!("{e}"),
                         source_name: source_name.unwrap_or("source without name").to_string(),
                     })?;
                 Ok(schema_json)
-            }
+            },
+            ShExFormat::ShExJ => {
+                let schema_json = ShExSchema::from_reader(reader).map_err(|e| RudofError::ShExJParserError {
+                    error: format!("{e}"),
+                    source_name: source_name.unwrap_or("source without name").to_string(),
+                })?;
+                Ok(schema_json)
+            },
             ShExFormat::RDFFormat(_) => {
                 todo!()
                 /*let rdf = parse_data(
@@ -974,7 +870,7 @@ impl Rudof {
                 )?;
                 let schema = ShExRParser::new(rdf).parse()?;
                 Ok(schema) */
-            }
+            },
         }
     }
 
@@ -986,11 +882,8 @@ impl Rudof {
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<()> {
-        let service_description =
-            ServiceDescription::from_reader(reader, source_name, format, base, reader_mode)
-                .map_err(|e| RudofError::ReadingServiceDescription {
-                    error: format!("{e}"),
-                })?;
+        let service_description = ServiceDescription::from_reader(reader, source_name, format, base, reader_mode)
+            .map_err(|e| RudofError::ReadingServiceDescription { error: format!("{e}") })?;
         self.service_description = Some(service_description);
         Ok(())
     }
@@ -1002,11 +895,10 @@ impl Rudof {
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<()> {
-        let file =
-            File::open(path.as_ref()).map_err(|e| RudofError::ReadingServiceDescriptionPath {
-                path: path.as_ref().to_string_lossy().to_string(),
-                error: format!("{e}"),
-            })?;
+        let file = File::open(path.as_ref()).map_err(|e| RudofError::ReadingServiceDescriptionPath {
+            path: path.as_ref().to_string_lossy().to_string(),
+            error: format!("{e}"),
+        })?;
         let mut reader = BufReader::new(file);
         self.read_service_description(
             &mut reader,
@@ -1024,11 +916,9 @@ impl Rudof {
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<()> {
-        let url_spec = UrlSpec::parse(url_str).map_err(|e| {
-            RudofError::ParsingUrlReadingServiceDescriptionUrl {
-                url: url_str.to_string(),
-                error: format!("{e}"),
-            }
+        let url_spec = UrlSpec::parse(url_str).map_err(|e| RudofError::ParsingUrlReadingServiceDescriptionUrl {
+            url: url_str.to_string(),
+            error: format!("{e}"),
         })?;
         let url_spec = InputSpec::Url(url_spec);
         let mut reader = url_spec
@@ -1046,11 +936,9 @@ impl Rudof {
         writer: &mut W,
     ) -> Result<()> {
         if let Some(service_description) = &self.service_description {
-            service_description.serialize(format, writer).map_err(|e| {
-                RudofError::SerializingServiceDescription {
-                    error: format!("{e}"),
-                }
-            })
+            service_description
+                .serialize(format, writer)
+                .map_err(|e| RudofError::SerializingServiceDescription { error: format!("{e}") })
         } else {
             Err(RudofError::NoServiceDescriptionToSerialize)
         }
@@ -1069,16 +957,9 @@ impl Rudof {
         shapes_graph_source: &ShapesGraphSource,
     ) -> Result<ValidationReport> {
         self.compile_shacl(shapes_graph_source)?;
-        let compiled_schema = self
-            .shacl_schema_ir
-            .as_ref()
-            .ok_or(RudofError::NoShaclSchema {})?;
-        let shacl_schema = self
-            .shacl_schema
-            .as_ref()
-            .ok_or(RudofError::NoShaclSchema {})?;
-        let mut validator =
-            GraphValidation::from_graph(Graph::from_data(self.rdf_data.clone()), *mode);
+        let compiled_schema = self.shacl_schema_ir.as_ref().ok_or(RudofError::NoShaclSchema {})?;
+        let shacl_schema = self.shacl_schema.as_ref().ok_or(RudofError::NoShaclSchema {})?;
+        let mut validator = GraphValidation::from_graph(Graph::from_data(self.rdf_data.clone()), *mode);
         let result = ShaclProcessor::validate(&mut validator, compiled_schema).map_err(|e| {
             RudofError::SHACLValidationError {
                 error: format!("{e}"),
@@ -1093,29 +974,27 @@ impl Rudof {
         let (compiled_schema, ast_schema) = match shapes_graph_source {
             ShapesGraphSource::CurrentSchema if self.shacl_schema.is_some() => {
                 let ast_schema = self.shacl_schema.as_ref().unwrap();
-                let compiled_schema = ShaclSchemaIR::compile(ast_schema).map_err(|e| {
-                    RudofError::SHACLCompilationError {
+                let compiled_schema =
+                    ShaclSchemaIR::compile(ast_schema).map_err(|e| RudofError::SHACLCompilationError {
                         error: e.to_string(),
                         schema: Box::new(ast_schema.clone()),
-                    }
-                })?;
+                    })?;
                 Ok::<(shacl_ir::schema_ir::SchemaIR, shacl_ast::Schema<RdfData>), RudofError>((
                     compiled_schema,
                     ast_schema.clone(),
                 ))
-            }
+            },
             // If self.shacl_schema is None or shapes_graph_source is CurrentData
             // We extract the SHACL schema from the current RDF data
             _ => {
                 let ast_schema = shacl_schema_from_data(self.rdf_data.clone())?;
-                let compiled_schema = ShaclSchemaIR::compile(&ast_schema).map_err(|e| {
-                    RudofError::SHACLCompilationError {
+                let compiled_schema =
+                    ShaclSchemaIR::compile(&ast_schema).map_err(|e| RudofError::SHACLCompilationError {
                         error: e.to_string(),
                         schema: Box::new(ast_schema.clone()),
-                    }
-                })?;
+                    })?;
                 Ok((compiled_schema, ast_schema))
-            }
+            },
         }?;
         self.shacl_schema = Some(ast_schema);
         self.shacl_schema_ir = Some(compiled_schema);
@@ -1128,9 +1007,7 @@ impl Rudof {
         // We initialize the store in case the SPARQL based node selectors need to do SPARQL queries
         self.rdf_data
             .check_store()
-            .map_err(|e| RudofError::StorageError {
-                error: format!("{e}"),
-            })?;
+            .map_err(|e| RudofError::StorageError { error: format!("{e}") })?;
         let schema_str = format!("{:?}", self.shex_validator);
         match self.shex_validator {
             None => Err(RudofError::ShExValidatorUndefined {}),
@@ -1152,7 +1029,7 @@ impl Rudof {
                             error: format!("{e}"),
                         })?;
                     Ok(result.clone())
-                }
+                },
             },
         }
     }
@@ -1163,11 +1040,10 @@ impl Rudof {
     /// - `prefixmap` is the prefix map to be used with the endpoint
     ///   If an endpoint with the same name already exists, it is replaced
     pub fn add_endpoint(&mut self, name: &str, iri: &IriS, prefixmap: &PrefixMap) -> Result<()> {
-        let sparql_endpoint =
-            SRDFSparql::new(iri, prefixmap).map_err(|e| RudofError::AddingEndpointError {
-                iri: iri.clone(),
-                error: format!("{e}"),
-            })?;
+        let sparql_endpoint = SRDFSparql::new(iri, prefixmap).map_err(|e| RudofError::AddingEndpointError {
+            iri: iri.clone(),
+            error: format!("{e}"),
+        })?;
         self.rdf_data.add_endpoint(name, sparql_endpoint);
         Ok(())
     }
@@ -1209,10 +1085,10 @@ impl Rudof {
                 let mut shapemap = QueryShapeMap::new();
                 shapemap.add_association(node, shape);
                 self.shapemap = Some(shapemap)
-            }
+            },
             Some(sm) => {
                 sm.add_association(node, shape);
-            }
+            },
         };
     }
 
@@ -1226,26 +1102,19 @@ impl Rudof {
         let mut v = Vec::new();
         reader
             .read_to_end(&mut v)
-            .map_err(|e| RudofError::ReadError {
-                error: format!("{e}"),
-            })?;
-        let s = String::from_utf8(v).map_err(|e| RudofError::Utf8Error {
-            error: format!("{e}"),
-        })?;
+            .map_err(|e| RudofError::ReadError { error: format!("{e}") })?;
+        let s = String::from_utf8(v).map_err(|e| RudofError::Utf8Error { error: format!("{e}") })?;
         let shapemap = match shapemap_format {
             ShapeMapFormat::Compact => {
-                let shapemap = ShapeMapParser::parse(
-                    s.as_str(),
-                    &Some(self.nodes_prefixmap()),
-                    &self.shex_shapes_prefixmap(),
-                )
-                .map_err(|e| RudofError::ShapeMapParseError {
-                    source_name: reader_name.to_string(),
-                    str: s.to_string(),
-                    error: format!("{e}"),
-                })?;
+                let shapemap =
+                    ShapeMapParser::parse(s.as_str(), &Some(self.nodes_prefixmap()), &self.shex_shapes_prefixmap())
+                        .map_err(|e| RudofError::ShapeMapParseError {
+                            source_name: reader_name.to_string(),
+                            str: s.to_string(),
+                            error: format!("{e}"),
+                        })?;
                 Ok::<QueryShapeMap, RudofError>(shapemap)
-            }
+            },
             ShapeMapFormat::JSON => todo!(),
             ShapeMapFormat::CSV => todo!(),
         }?;
@@ -1293,23 +1162,22 @@ impl Rudof {
                 msg: "Not yet implemented comparison between SHACL schemas".to_string(),
             }),
             CompareSchemaMode::ShEx => {
-                let shex_format = format.to_shex_format().map_err(|e| {
-                    RudofError::InvalidCompareSchemaFormat {
+                let shex_format = format
+                    .to_shex_format()
+                    .map_err(|e| RudofError::InvalidCompareSchemaFormat {
                         format: format!("{format:?}"),
                         error: format!("{e}"),
-                    }
-                })?;
-                let shex =
-                    self.read_shex_only(reader, &shex_format, base, reader_mode, source_name)?;
+                    })?;
+                let shex = self.read_shex_only(reader, &shex_format, base, reader_mode, source_name)?;
                 let mut converter = CoShaMoConverter::new(&comparator_config);
-                let coshamo = converter.from_shex(&shex, label).map_err(|e| {
-                    RudofError::CoShaMoFromShExError {
+                let coshamo = converter
+                    .from_shex(&shex, label)
+                    .map_err(|e| RudofError::CoShaMoFromShExError {
                         schema: format!("{shex:?}"),
                         error: format!("{e}"),
-                    }
-                })?;
+                    })?;
                 Ok(coshamo)
-            }
+            },
             CompareSchemaMode::ServiceDescription => Err(RudofError::NotImplemented {
                 msg: "Not yet implemented comparison between Service descriptions".to_string(),
             }),
@@ -1320,9 +1188,7 @@ impl Rudof {
 fn shacl_schema_from_data<RDF: FocusRDF + Debug>(rdf_data: RDF) -> Result<ShaclSchema<RDF>> {
     let schema = ShaclParser::new(rdf_data)
         .parse()
-        .map_err(|e| RudofError::SHACLParseError {
-            error: format!("{e}"),
-        })?;
+        .map_err(|e| RudofError::SHACLParseError { error: format!("{e}") })?;
     Ok(schema)
 }
 
@@ -1339,11 +1205,7 @@ fn shacl_format2rdf_format(shacl_format: &ShaclFormat) -> Result<RDFFormat> {
     }
 }
 
-pub fn show_triple_exprs(
-    idx: &ShapeLabelIdx,
-    schema: &SchemaIR,
-    writer: &mut impl io::Write,
-) -> Result<()> {
+pub fn show_triple_exprs(idx: &ShapeLabelIdx, schema: &SchemaIR, writer: &mut impl io::Write) -> Result<()> {
     if let Some(triple_exprs) = schema.get_triple_exprs(idx) {
         if let Some(current) = triple_exprs.get(&None) {
             writeln!(
@@ -1364,11 +1226,7 @@ pub fn show_triple_exprs(
                     writer,
                     "    {} -> {}",
                     label.as_ref().unwrap(),
-                    exprs
-                        .iter()
-                        .map(|t| t.to_string())
-                        .collect::<Vec<String>>()
-                        .join(", ")
+                    exprs.iter().map(|t| t.to_string()).collect::<Vec<String>>().join(", ")
                 )?;
             }
         }
@@ -1400,7 +1258,7 @@ mod tests {
         "#;
         let shex = r#"
         prefix : <http://example/>
-        :S @:T 
+        :S @:T
         :T { :p @:U }
         :U [ 2 ]
         "#;
@@ -1507,18 +1365,18 @@ mod tests {
 
     #[test]
     fn test_shacl_validation_ok() {
-        let data = r#"prefix : <http://example.org/> 
+        let data = r#"prefix : <http://example.org/>
         :x :p 23 .
         "#;
-        let shacl = r#"prefix :       <http://example.org/> 
-            prefix sh:     <http://www.w3.org/ns/shacl#> 
-            prefix xsd:    <http://www.w3.org/2001/XMLSchema#> 
+        let shacl = r#"prefix :       <http://example.org/>
+            prefix sh:     <http://www.w3.org/ns/shacl#>
+            prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
 
             :S a sh:NodeShape; sh:closed true ;
               sh:targetNode :x ;
-            sh:property [                  
-                sh:path     :p ; 
-                sh:minCount 1; 
+            sh:property [
+                sh:path     :p ;
+                sh:minCount 1;
                 sh:maxCount 1;
                 sh:datatype xsd:integer ;
             ] .
@@ -1545,28 +1403,25 @@ mod tests {
             )
             .unwrap();
         let result = rudof
-            .validate_shacl(
-                &ShaclValidationMode::Native,
-                &crate::ShapesGraphSource::CurrentSchema,
-            )
+            .validate_shacl(&ShaclValidationMode::Native, &crate::ShapesGraphSource::CurrentSchema)
             .unwrap();
         assert!(result.results().is_empty())
     }
 
     #[test]
     fn test_shacl_validation_ko() {
-        let data = r#"prefix : <http://example.org/> 
+        let data = r#"prefix : <http://example.org/>
         :x :other 23 .
         "#;
-        let shacl = r#"prefix :       <http://example.org/> 
-            prefix sh:     <http://www.w3.org/ns/shacl#> 
-            prefix xsd:    <http://www.w3.org/2001/XMLSchema#> 
+        let shacl = r#"prefix :       <http://example.org/>
+            prefix sh:     <http://www.w3.org/ns/shacl#>
+            prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
 
-            :S a sh:NodeShape; 
-             sh:targetNode :x ; 
-            sh:property [                  
-                sh:path     :p ; 
-                sh:minCount 1; 
+            :S a sh:NodeShape;
+             sh:targetNode :x ;
+            sh:property [
+                sh:path     :p ;
+                sh:minCount 1;
                 sh:maxCount 1;
                 sh:datatype xsd:integer ;
             ] .
@@ -1593,27 +1448,24 @@ mod tests {
             )
             .unwrap();
         let result = rudof
-            .validate_shacl(
-                &ShaclValidationMode::Native,
-                &crate::ShapesGraphSource::CurrentSchema,
-            )
+            .validate_shacl(&ShaclValidationMode::Native, &crate::ShapesGraphSource::CurrentSchema)
             .unwrap();
         assert!(!result.conforms())
     }
 
     #[test]
     fn test_shacl_validation_data_ko() {
-        let data = r#"prefix :       <http://example.org/> 
-            prefix sh:     <http://www.w3.org/ns/shacl#> 
-            prefix xsd:    <http://www.w3.org/2001/XMLSchema#> 
+        let data = r#"prefix :       <http://example.org/>
+            prefix sh:     <http://www.w3.org/ns/shacl#>
+            prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
 
             :x :other 23 .
 
-            :S a sh:NodeShape; 
-               sh:targetNode :x ; 
-               sh:property [                  
-                sh:path     :p ; 
-                sh:minCount 1; 
+            :S a sh:NodeShape;
+               sh:targetNode :x ;
+               sh:property [
+                sh:path     :p ;
+                sh:minCount 1;
                 sh:maxCount 1;
                 sh:datatype xsd:integer ;
             ] .
@@ -1630,27 +1482,24 @@ mod tests {
             )
             .unwrap();
         let result = rudof
-            .validate_shacl(
-                &ShaclValidationMode::Native,
-                &crate::ShapesGraphSource::CurrentData,
-            )
+            .validate_shacl(&ShaclValidationMode::Native, &crate::ShapesGraphSource::CurrentData)
             .unwrap();
         assert!(!result.conforms())
     }
 
     #[test]
     fn test_shacl_validation_data_ok() {
-        let data = r#"prefix :       <http://example.org/> 
-            prefix sh:     <http://www.w3.org/ns/shacl#> 
-            prefix xsd:    <http://www.w3.org/2001/XMLSchema#> 
+        let data = r#"prefix :       <http://example.org/>
+            prefix sh:     <http://www.w3.org/ns/shacl#>
+            prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
 
             :x :p 23 .
 
-            :S a sh:NodeShape; 
-               sh:targetNode :x ; 
-               sh:property [                  
-                sh:path     :p ; 
-                sh:minCount 1; 
+            :S a sh:NodeShape;
+               sh:targetNode :x ;
+               sh:property [
+                sh:path     :p ;
+                sh:minCount 1;
                 sh:maxCount 1;
                 sh:datatype xsd:integer ;
             ] .
@@ -1667,10 +1516,7 @@ mod tests {
             )
             .unwrap();
         let result = rudof
-            .validate_shacl(
-                &ShaclValidationMode::Native,
-                &crate::ShapesGraphSource::CurrentData,
-            )
+            .validate_shacl(&ShaclValidationMode::Native, &crate::ShapesGraphSource::CurrentData)
             .unwrap();
         assert!(result.conforms())
     }

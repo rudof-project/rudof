@@ -41,9 +41,7 @@ impl Display for ResultShaclValidationFormat {
     }
 }
 
-pub fn result_format_to_rdf_format(
-    result_format: &ResultShaclValidationFormat,
-) -> Result<RDFFormat, RudofError> {
+pub fn result_format_to_rdf_format(result_format: &ResultShaclValidationFormat) -> Result<RDFFormat, RudofError> {
     match result_format {
         ResultShaclValidationFormat::Turtle => Ok(RDFFormat::Turtle),
         ResultShaclValidationFormat::NTriples => Ok(RDFFormat::NTriples),

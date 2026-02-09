@@ -1,14 +1,14 @@
 (n1 {Person} [
-    name: "Alice", 
-    birthdate: DATE "2010-07-22" 
+    name: "Alice",
+    birthdate: DATE "2010-07-22"
 ])
-(n2 {Person, Student} [ 
+(n2 {Person, Student} [
     id: 234,
     name: "Robert Smith",
     aliases: ["Bob", "Robbie"],
     email: "bob@mail.com"
 ])
-(n3 {Course} [ 
+(n3 {Course} [
     name: "Algebra",
     credits: 6
 ])

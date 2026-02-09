@@ -8,4 +8,3 @@
 - [map command](./map.md)
 - [validate command](./validate.md)
 - [test-suite](./test-suite.md)
-

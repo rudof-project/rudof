@@ -44,22 +44,14 @@ impl NumericLiteral {
             NumericLiteral::Float(_) => "http://www.w3.org/2001/XMLSchema#float",
             NumericLiteral::Byte(_) => "http://www.w3.org/2001/XMLSchema#byte",
             NumericLiteral::Short(_) => "http://www.w3.org/2001/XMLSchema#short",
-            NumericLiteral::NonNegativeInteger(_) => {
-                "http://www.w3.org/2001/XMLSchema#nonNegativeInteger"
-            }
+            NumericLiteral::NonNegativeInteger(_) => "http://www.w3.org/2001/XMLSchema#nonNegativeInteger",
             NumericLiteral::UnsignedLong(_) => "http://www.w3.org/2001/XMLSchema#unsignedLong",
             NumericLiteral::UnsignedInt(_) => "http://www.w3.org/2001/XMLSchema#unsignedInt",
             NumericLiteral::UnsignedShort(_) => "http://www.w3.org/2001/XMLSchema#unsignedShort",
             NumericLiteral::UnsignedByte(_) => "http://www.w3.org/2001/XMLSchema#unsignedByte",
-            NumericLiteral::PositiveInteger(_) => {
-                "http://www.w3.org/2001/XMLSchema#positiveInteger"
-            }
-            NumericLiteral::NegativeInteger(_) => {
-                "http://www.w3.org/2001/XMLSchema#negativeInteger"
-            }
-            NumericLiteral::NonPositiveInteger(_) => {
-                "http://www.w3.org/2001/XMLSchema#nonPositiveInteger"
-            }
+            NumericLiteral::PositiveInteger(_) => "http://www.w3.org/2001/XMLSchema#positiveInteger",
+            NumericLiteral::NegativeInteger(_) => "http://www.w3.org/2001/XMLSchema#negativeInteger",
+            NumericLiteral::NonPositiveInteger(_) => "http://www.w3.org/2001/XMLSchema#nonPositiveInteger",
         }
     }
 
@@ -214,7 +206,7 @@ impl NumericLiteral {
                 let result = n1 < n2;
                 trace!("less_than: {n1} < {n2} = {result}");
                 result
-            }
+            },
             (v1, v2) => v1.as_decimal() < v2.as_decimal(),
         }
     }
@@ -246,7 +238,7 @@ impl NumericLiteral {
                 let s = normalized.to_string();
                 let s = s.replace("-", "").replace(".", "");
                 Some(s.len())
-            }
+            },
             NumericLiteral::Double(_d) => None,
             NumericLiteral::Float(_f) => None,
         }
@@ -273,7 +265,7 @@ impl NumericLiteral {
                 } else {
                     Some(0)
                 }
-            }
+            },
             NumericLiteral::Double(_d) => None,
             NumericLiteral::Float(_f) => None,
         }
@@ -298,16 +290,16 @@ impl Serialize for NumericLiteral {
             NumericLiteral::Integer(n) => {
                 let c: i128 = (*n) as i128;
                 serializer.serialize_i128(c)
-            }
+            },
             NumericLiteral::Decimal(d) => {
                 let f: f64 = (*d).try_into().unwrap();
                 serializer.serialize_f64(f)
-            }
+            },
             NumericLiteral::Double(d) => serializer.serialize_f64(*d),
             NumericLiteral::Long(n) => {
                 let c: i128 = (*n) as i128;
                 serializer.serialize_i128(c)
-            }
+            },
             NumericLiteral::Float(f) => serializer.serialize_f64(*f),
             NumericLiteral::Byte(b) => serializer.serialize_i8(*b),
             NumericLiteral::Short(s) => serializer.serialize_i16(*s),
@@ -466,10 +458,7 @@ impl From<NumericLiteral> for oxrdf::Literal {
             NumericLiteral::Integer(i) => (i as i64).into(),
             NumericLiteral::Decimal(d) => match d.to_f64() {
                 Some(decimal) => oxrdf::Literal::from(decimal),
-                None => oxrdf::Literal::new_typed_literal(
-                    d.to_string().as_str(),
-                    oxrdf::vocab::xsd::DECIMAL,
-                ),
+                None => oxrdf::Literal::new_typed_literal(d.to_string().as_str(), oxrdf::vocab::xsd::DECIMAL),
             },
             NumericLiteral::Double(d) => oxrdf::Literal::from(d),
             NumericLiteral::Long(l) => (l as i64).into(),
@@ -478,42 +467,36 @@ impl From<NumericLiteral> for oxrdf::Literal {
             NumericLiteral::Short(s) => oxrdf::Literal::from(s),
             NumericLiteral::NonNegativeInteger(n) => {
                 let s = n.to_string();
-                oxrdf::Literal::new_typed_literal(
-                    s.as_str(),
-                    oxrdf::vocab::xsd::NON_NEGATIVE_INTEGER,
-                )
-            }
+                oxrdf::Literal::new_typed_literal(s.as_str(), oxrdf::vocab::xsd::NON_NEGATIVE_INTEGER)
+            },
             NumericLiteral::UnsignedLong(n) => {
                 let s = n.to_string();
                 oxrdf::Literal::new_typed_literal(s.as_str(), oxrdf::vocab::xsd::UNSIGNED_LONG)
-            }
+            },
             NumericLiteral::UnsignedInt(n) => {
                 let s = n.to_string();
                 oxrdf::Literal::new_typed_literal(s.as_str(), oxrdf::vocab::xsd::UNSIGNED_INT)
-            }
+            },
             NumericLiteral::UnsignedShort(n) => {
                 let s = n.to_string();
                 oxrdf::Literal::new_typed_literal(s.as_str(), oxrdf::vocab::xsd::UNSIGNED_SHORT)
-            }
+            },
             NumericLiteral::UnsignedByte(n) => {
                 let s = n.to_string();
                 oxrdf::Literal::new_typed_literal(s.as_str(), oxrdf::vocab::xsd::UNSIGNED_BYTE)
-            }
+            },
             NumericLiteral::PositiveInteger(n) => {
                 let s = n.to_string();
                 oxrdf::Literal::new_typed_literal(s.as_str(), oxrdf::vocab::xsd::POSITIVE_INTEGER)
-            }
+            },
             NumericLiteral::NegativeInteger(n) => {
                 let s = n.to_string();
                 oxrdf::Literal::new_typed_literal(s.as_str(), oxrdf::vocab::xsd::NEGATIVE_INTEGER)
-            }
+            },
             NumericLiteral::NonPositiveInteger(n) => {
                 let s = n.to_string();
-                oxrdf::Literal::new_typed_literal(
-                    s.as_str(),
-                    oxrdf::vocab::xsd::NON_POSITIVE_INTEGER,
-                )
-            }
+                oxrdf::Literal::new_typed_literal(s.as_str(), oxrdf::vocab::xsd::NON_POSITIVE_INTEGER)
+            },
         }
     }
 }

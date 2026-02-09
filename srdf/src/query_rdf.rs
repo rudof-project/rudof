@@ -8,14 +8,10 @@ pub trait QueryRDF: Rdf {
         Self: Sized;
 
     /// SPARQL CONSTRUCT query
-    fn query_construct(
-        &self,
-        query: &str,
-        result_format: &QueryResultFormat,
-    ) -> Result<String, Self::Err>
+    fn query_construct(&self, query: &str, result_format: &QueryResultFormat) -> Result<String, Self::Err>
     where
         Self: Sized;
 
-    /// SPARQL ASK query    
+    /// SPARQL ASK query
     fn query_ask(&self, query: &str) -> Result<bool, Self::Err>;
 }

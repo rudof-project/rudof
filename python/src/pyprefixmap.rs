@@ -25,16 +25,12 @@ impl PyPrefixMap {
     )]
     pub fn add_prefix(&mut self, prefix: &str, iri: &str) -> PyResult<()> {
         let iri = IriS::new(iri)
-            .map_err(|e| RudofError::PrefixMapError {
-                error: e.to_string(),
-            })
+            .map_err(|e| RudofError::PrefixMapError { error: e.to_string() })
             .map_err(cnv_err)?;
 
         self.inner
             .add_prefix(prefix, iri)
-            .map_err(|e| RudofError::PrefixMapError {
-                error: e.to_string(),
-            })
+            .map_err(|e| RudofError::PrefixMapError { error: e.to_string() })
             .map_err(cnv_err)?;
         Ok(())
     }

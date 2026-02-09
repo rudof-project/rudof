@@ -2,19 +2,14 @@
 //! This is a wrapper of the methods provided by `rudof_lib`
 //!
 use crate::PyRudofConfig;
-use pyo3::{
-    Bound, Py, PyAny, PyErr, PyRef, PyRefMut, PyResult, Python, exceptions::PyValueError, pyclass,
-    pymethods,
-};
+use pyo3::{Bound, Py, PyAny, PyErr, PyRef, PyRefMut, PyResult, Python, exceptions::PyValueError, pyclass, pymethods};
 use pythonize::pythonize;
 use rudof_lib::{
-    CoShaMo, ComparatorError, CompareSchemaFormat, CompareSchemaMode, DCTAP, DCTAPFormat,
-    InputSpec, InputSpecError, InputSpecReader, Mie, MimeType, QueryResultFormat, QueryShapeMap,
-    QuerySolution, QuerySolutions, RDFFormat, RdfData, ReaderMode, ResultShapeMap, Rudof,
-    RudofError, ServiceDescription, ServiceDescriptionFormat, ShExFormat, ShExFormatter,
-    ShExSchema, ShaCo, ShaclFormat, ShaclSchemaIR, ShaclValidationMode, ShapeLabel, ShapeMapFormat,
-    ShapeMapFormatter, ShapesGraphSource, SortMode, UmlGenerationMode, ValidationReport,
-    ValidationStatus, VarName,
+    CoShaMo, ComparatorError, CompareSchemaFormat, CompareSchemaMode, DCTAP, DCTAPFormat, InputSpec, InputSpecError,
+    InputSpecReader, Mie, MimeType, QueryResultFormat, QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat,
+    RdfData, ReaderMode, ResultShapeMap, Rudof, RudofError, ServiceDescription, ServiceDescriptionFormat, ShExFormat,
+    ShExFormatter, ShExSchema, ShaCo, ShaclFormat, ShaclSchemaIR, ShaclValidationMode, ShapeLabel, ShapeMapFormat,
+    ShapeMapFormatter, ShapesGraphSource, SortMode, UmlGenerationMode, ValidationReport, ValidationStatus, VarName,
     node_info::{format_node_info_list, get_node_info},
     parse_node_selector,
     shacl_validation::validation_report::{report::SortModeReport, result::ValidationResult},
@@ -118,8 +113,7 @@ impl PyRudof {
             depth,
         };
         let data = self.inner.get_rdf_data();
-        let node_infos =
-            get_node_info(data, node_selector, &predicates, &options).map_err(cnv_err)?;
+        let node_infos = get_node_info(data, node_selector, &predicates, &options).map_err(cnv_err)?;
 
         let mut buffer = Vec::new();
         {
@@ -127,9 +121,7 @@ impl PyRudof {
             format_node_info_list(&node_infos, data, &mut writer, &options).map_err(cnv_err)?;
         }
         let str = String::from_utf8(buffer)
-            .map_err(|e| RudofError::Utf8Error {
-                error: e.to_string(),
-            })
+            .map_err(|e| RudofError::Utf8Error { error: e.to_string() })
             .map_err(cnv_err)?;
         Ok(str)
     }
@@ -297,31 +289,18 @@ impl PyRudof {
         signature = (input, format = &PyQueryResultFormat::Turtle),
          text_signature = "(input, format=QueryResultFormat.Turtle)"
     )]
-    pub fn run_query_construct_str(
-        &mut self,
-        input: &str,
-        format: &PyQueryResultFormat,
-    ) -> PyResult<String> {
+    pub fn run_query_construct_str(&mut self, input: &str, format: &PyQueryResultFormat) -> PyResult<String> {
         let format = cnv_query_result_format(format);
-        let str = self
-            .inner
-            .run_query_construct_str(input, &format)
-            .map_err(cnv_err)?;
+        let str = self.inner.run_query_construct_str(input, &format).map_err(cnv_err)?;
         Ok(str)
     }
 
     /// Run the current query on the current RDF data if it is a CONSTRUCT query
     #[pyo3(signature = (format = &PyQueryResultFormat::Turtle),
         text_signature = "(format=QueryResultFormat.Turtle)")]
-    pub fn run_current_query_construct(
-        &mut self,
-        format: &PyQueryResultFormat,
-    ) -> PyResult<String> {
+    pub fn run_current_query_construct(&mut self, format: &PyQueryResultFormat) -> PyResult<String> {
         let format = cnv_query_result_format(format);
-        let str = self
-            .inner
-            .run_current_query_construct(&format)
-            .map_err(cnv_err)?;
+        let str = self.inner.run_current_query_construct(&format).map_err(cnv_err)?;
         Ok(str)
     }
 
@@ -345,9 +324,7 @@ impl PyRudof {
     /// Reads a SPARQL query from a file path or URL and stores it as the current query
     pub fn read_query(&mut self, input: &str) -> PyResult<()> {
         let mut reader = get_reader(input, Some("application/sparql-query"), "SPARQL query")?;
-        self.inner
-            .read_query(&mut reader, Some(input))
-            .map_err(cnv_err)
+        self.inner.read_query(&mut reader, Some(input)).map_err(cnv_err)
     }
 
     /// Resets the current SPARQL query
@@ -388,15 +365,8 @@ impl PyRudof {
     /// Example:
     ///     `rudof.run_query_path("query.sparql")`
     #[pyo3(signature = (query, endpoint))]
-    pub fn run_query_endpoint_str(
-        &mut self,
-        query: &str,
-        endpoint: &str,
-    ) -> PyResult<PyQuerySolutions> {
-        let results = self
-            .inner
-            .run_query_endpoint(query, endpoint)
-            .map_err(cnv_err)?;
+    pub fn run_query_endpoint_str(&mut self, query: &str, endpoint: &str) -> PyResult<PyQuerySolutions> {
+        let results = self.inner.run_query_endpoint(query, endpoint).map_err(cnv_err)?;
         Ok(PyQuerySolutions { inner: results })
     }
 
@@ -414,9 +384,7 @@ impl PyRudof {
     pub fn read_dctap_str(&mut self, input: &str, format: &PyDCTapFormat) -> PyResult<()> {
         self.inner.reset_dctap();
         let format = cnv_dctap_format(format);
-        self.inner
-            .read_dctap(input.as_bytes(), &format)
-            .map_err(cnv_err)?;
+        self.inner.read_dctap(input.as_bytes(), &format).map_err(cnv_err)?;
         Ok(())
     }
 
@@ -467,13 +435,7 @@ impl PyRudof {
         let format = cnv_shex_format(format);
         self.inner.reset_shex();
         self.inner
-            .read_shex(
-                input.as_bytes(),
-                &format,
-                base,
-                &reader_mode.into(),
-                Some("string"),
-            )
+            .read_shex(input.as_bytes(), &format, base, &reader_mode.into(), Some("string"))
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -756,11 +718,7 @@ impl PyRudof {
     #[pyo3(signature = (output, format = &PyServiceDescriptionFormat::Internal),
          text_signature = "(output, format=ServiceDescriptionFormat.Internal)"
     )]
-    pub fn serialize_service_description(
-        &self,
-        output: &str,
-        format: &PyServiceDescriptionFormat,
-    ) -> PyResult<()> {
+    pub fn serialize_service_description(&self, output: &str, format: &PyServiceDescriptionFormat) -> PyResult<()> {
         let file = File::create(output)?;
         let mut writer = BufWriter::new(file);
         let service_description_format = cnv_service_description_format(format);
@@ -798,14 +756,7 @@ impl PyRudof {
         let reader_mode = cnv_reader_mode(reader_mode);
         let format = cnv_rdf_format(format);
         self.inner
-            .read_data(
-                &mut input.as_bytes(),
-                "String",
-                &format,
-                base,
-                &reader_mode,
-                merge,
-            )
+            .read_data(&mut input.as_bytes(), "String", &format, base, &reader_mode, merge)
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -822,14 +773,10 @@ impl PyRudof {
         let format = cnv_rdf_format(format);
         self.inner
             .serialize_data(&format, &mut v)
-            .map_err(|e| RudofError::SerializingData {
-                error: format!("{e}"),
-            })
+            .map_err(|e| RudofError::SerializingData { error: format!("{e}") })
             .map_err(cnv_err)?;
         let str = String::from_utf8(v)
-            .map_err(|e| RudofError::SerializingData {
-                error: format!("{e}"),
-            })
+            .map_err(|e| RudofError::SerializingData { error: format!("{e}") })
             .map_err(cnv_err)?;
         Ok(str)
     }
@@ -858,9 +805,7 @@ impl PyRudof {
     pub fn read_shapemap(&mut self, input: &str, format: &PyShapeMapFormat) -> PyResult<()> {
         let format = cnv_shapemap_format(format);
         let reader = get_reader(input, Some(format.mime_type()), "Shapemap")?;
-        self.inner
-            .read_shapemap(reader, input, &format)
-            .map_err(cnv_err)?;
+        self.inner.read_shapemap(reader, input, &format).map_err(cnv_err)?;
         Ok(())
     }
 
@@ -945,11 +890,7 @@ impl PyRudof {
 
     /// Converts the current ShEx to a Class-like diagram using PlantUML syntax and stores it in a file
     #[pyo3(signature = (uml_mode, file_name))]
-    pub fn shex2plantuml_file(
-        &self,
-        uml_mode: &PyUmlGenerationMode,
-        file_name: &str,
-    ) -> PyResult<()> {
+    pub fn shex2plantuml_file(&self, uml_mode: &PyUmlGenerationMode, file_name: &str) -> PyResult<()> {
         let file = File::create(file_name)?;
         let mut writer = BufWriter::new(file);
         self.inner
@@ -972,23 +913,15 @@ impl PyRudof {
     #[pyo3(signature = (formatter, format = &PyShExFormat::ShExC),
         text_signature = "(formatter, format=ShExFormat.ShExC)"
     )]
-    pub fn serialize_current_shex(
-        &self,
-        formatter: &PyShExFormatter,
-        format: &PyShExFormat,
-    ) -> PyResult<String> {
+    pub fn serialize_current_shex(&self, formatter: &PyShExFormatter, format: &PyShExFormat) -> PyResult<String> {
         let mut v = Vec::new();
         let format = cnv_shex_format(format);
         self.inner
             .serialize_current_shex(&format, &formatter.inner, &mut v)
-            .map_err(|e| RudofError::SerializingShEx {
-                error: format!("{e}"),
-            })
+            .map_err(|e| RudofError::SerializingShEx { error: format!("{e}") })
             .map_err(cnv_err)?;
         let str = String::from_utf8(v)
-            .map_err(|e| RudofError::SerializingShEx {
-                error: format!("{e}"),
-            })
+            .map_err(|e| RudofError::SerializingShEx { error: format!("{e}") })
             .map_err(cnv_err)?;
         Ok(str)
     }
@@ -1014,14 +947,10 @@ impl PyRudof {
         let format = cnv_shex_format(format);
         self.inner
             .serialize_shex(&shex.inner, &format, &formatter.inner, &mut v)
-            .map_err(|e| RudofError::SerializingShEx {
-                error: format!("{e}"),
-            })
+            .map_err(|e| RudofError::SerializingShEx { error: format!("{e}") })
             .map_err(cnv_err)?;
         let str = String::from_utf8(v)
-            .map_err(|e| RudofError::SerializingShEx {
-                error: format!("{e}"),
-            })
+            .map_err(|e| RudofError::SerializingShEx { error: format!("{e}") })
             .map_err(cnv_err)?;
         Ok(str)
     }
@@ -1035,14 +964,10 @@ impl PyRudof {
         let format = cnv_shacl_format(format);
         self.inner
             .serialize_shacl(&format, &mut v)
-            .map_err(|e| RudofError::SerializingShacl {
-                error: format!("{e}"),
-            })
+            .map_err(|e| RudofError::SerializingShacl { error: format!("{e}") })
             .map_err(cnv_err)?;
         let str = String::from_utf8(v)
-            .map_err(|e| RudofError::SerializingShacl {
-                error: format!("{e}"),
-            })
+            .map_err(|e| RudofError::SerializingShacl { error: format!("{e}") })
             .map_err(cnv_err)?;
         Ok(str)
     }
@@ -1051,23 +976,15 @@ impl PyRudof {
     #[pyo3(signature = (formatter, format = &PyShapeMapFormat::Compact),
         text_signature = "(formatter, format=ShapeMapFormat.Compact)"
     )]
-    pub fn serialize_shapemap(
-        &self,
-        formatter: &PyShapeMapFormatter,
-        format: &PyShapeMapFormat,
-    ) -> PyResult<String> {
+    pub fn serialize_shapemap(&self, formatter: &PyShapeMapFormatter, format: &PyShapeMapFormat) -> PyResult<String> {
         let mut v = Vec::new();
         let format = cnv_shapemap_format(format);
         self.inner
             .serialize_shapemap(&format, &formatter.inner, &mut v)
-            .map_err(|e| RudofError::SerializingShacl {
-                error: format!("{e}"),
-            })
+            .map_err(|e| RudofError::SerializingShacl { error: format!("{e}") })
             .map_err(cnv_err)?;
         let str = String::from_utf8(v)
-            .map_err(|e| RudofError::SerializingShacl {
-                error: format!("{e}"),
-            })
+            .map_err(|e| RudofError::SerializingShacl { error: format!("{e}") })
             .map_err(cnv_err)?;
         Ok(str)
     }
@@ -1327,9 +1244,7 @@ impl PyUmlGenerationMode {
     /// Show only the neighbours of a given node
     #[staticmethod]
     pub fn neighs(node: &str) -> Self {
-        PyUmlGenerationMode::PyNeighs {
-            node: node.to_string(),
-        }
+        PyUmlGenerationMode::PyNeighs { node: node.to_string() }
     }
 }
 
@@ -1366,10 +1281,7 @@ impl PyMie {
 
     /// Converts the MIE spec to JSON
     pub fn as_json(&self) -> PyResult<String> {
-        let str = self
-            .inner
-            .to_json()
-            .map_err(|e| PyRudofError::str(e.to_string()))?;
+        let str = self.inner.to_json().map_err(|e| PyRudofError::str(e.to_string()))?;
         Ok(str)
     }
 
@@ -1436,14 +1348,10 @@ impl PyServiceDescription {
         let service_description_format = cnv_service_description_format(format);
         self.inner
             .serialize(&service_description_format, &mut v)
-            .map_err(|e| RudofError::SerializingServiceDescription {
-                error: format!("{e}"),
-            })
+            .map_err(|e| RudofError::SerializingServiceDescription { error: format!("{e}") })
             .map_err(cnv_err)?;
         let str = String::from_utf8(v)
-            .map_err(|e| RudofError::SerializingServiceDescription {
-                error: format!("{e}"),
-            })
+            .map_err(|e| RudofError::SerializingServiceDescription { error: format!("{e}") })
             .map_err(cnv_err)?;
         Ok(str)
     }
@@ -1508,10 +1416,7 @@ impl PyShaCo {
 
     /// Converts the schema comparison result to JSON
     pub fn as_json(&self) -> PyResult<String> {
-        let str = self
-            .inner
-            .as_json()
-            .map_err(|e| PyRudofError::str(e.to_string()))?;
+        let str = self.inner.as_json().map_err(|e| PyRudofError::str(e.to_string()))?;
         Ok(str)
     }
 }
@@ -1639,12 +1544,7 @@ impl PyQuerySolution {
 
     /// Returns the list of variables in this solution
     pub fn variables(&self) -> Vec<String> {
-        let vars: Vec<String> = self
-            .inner
-            .variables()
-            .iter()
-            .map(|v| v.to_string())
-            .collect();
+        let vars: Vec<String> = self.inner.variables().iter().map(|v| v.to_string()).collect();
         vars
     }
 
@@ -1671,9 +1571,9 @@ impl PyQuerySolutions {
     /// Converts the solutions to a String
     pub fn show(&self) -> Result<String, PyRudofError> {
         let mut writer = Cursor::new(Vec::new());
-        self.inner.write_table(&mut writer).map_err(|e| {
-            PyRudofError::str(format!("Error converting QuerySolutions to table: {e}"))
-        })?;
+        self.inner
+            .write_table(&mut writer)
+            .map_err(|e| PyRudofError::str(format!("Error converting QuerySolutions to table: {e}")))?;
         let result = String::from_utf8(writer.into_inner()).expect("Invalid UTF-8");
         Ok(result)
     }
@@ -1704,9 +1604,7 @@ impl PyQuerySolutions {
             .iter()
             .map(|qs| PyQuerySolution { inner: qs.clone() })
             .collect();
-        let iter = QuerySolutionIter {
-            inner: rs.into_iter(),
-        };
+        let iter = QuerySolutionIter { inner: rs.into_iter() };
         Py::new(slf.py(), iter)
     }
 }
@@ -1748,12 +1646,8 @@ impl PyResultShapeMap {
                     PyNode {
                         inner: node.as_object().clone(),
                     },
-                    PyShapeLabel {
-                        inner: shape.clone(),
-                    },
-                    PyValidationStatus {
-                        inner: status.clone(),
-                    },
+                    PyShapeLabel { inner: shape.clone() },
+                    PyValidationStatus { inner: status.clone() },
                 )
             })
             .collect()
@@ -1778,9 +1672,7 @@ impl PyResultShapeMap {
         let boxed: Box<dyn Write> = Box::new(capture);
         self.inner
             .as_table(boxed, sort_mode.into(), with_details, terminal_width)
-            .map_err(|e| {
-                PyRudofError::str(format!("Error converting ResultShapeMap to table: {e}"))
-            })?;
+            .map_err(|e| PyRudofError::str(format!("Error converting ResultShapeMap to table: {e}")))?;
         let result = capture_clone.to_string();
         Ok(result)
     }
@@ -1891,10 +1783,7 @@ impl PyValidationResult {
 
     /// Returns the value of the validation result
     pub fn value(&self) -> String {
-        self.inner
-            .value()
-            .map(|n| n.to_string())
-            .unwrap_or_default()
+        self.inner.value().map(|n| n.to_string()).unwrap_or_default()
     }
 
     /// Returns the path of the validation result
@@ -1904,18 +1793,12 @@ impl PyValidationResult {
 
     /// Returns the source shape of the validation result
     pub fn source_shape(&self) -> String {
-        self.inner
-            .source()
-            .map(|s| s.to_string())
-            .unwrap_or_default()
+        self.inner.source().map(|s| s.to_string()).unwrap_or_default()
     }
 
     /// Returns a natural language message describing the validation result
     pub fn message(&self) -> String {
-        self.inner
-            .message()
-            .map(|m| m.to_string())
-            .unwrap_or_default()
+        self.inner.message().map(|m| m.to_string()).unwrap_or_default()
     }
 }
 
@@ -1980,9 +1863,8 @@ impl PyValidationStatus {
     /// NOTE: The current JSON structure is subject to change
     pub fn as_json<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         let value = self.inner.app_info();
-        let any = pythonize(py, &value).map_err(|e| {
-            PyRudofError::str(format!("Error converting appinfo to Python Object: {e}"))
-        })?;
+        let any = pythonize(py, &value)
+            .map_err(|e| PyRudofError::str(format!("Error converting appinfo to Python Object: {e}")))?;
         Ok(any)
     }
 }
@@ -2011,9 +1893,7 @@ impl From<PyRudofError> for PyErr {
 impl From<RudofError> for PyRudofError {
     fn from(error: RudofError) -> Self {
         println!("From<RudofError>: {error}");
-        Self {
-            error: Box::new(error),
-        }
+        Self { error: Box::new(error) }
     }
 }
 

@@ -146,12 +146,9 @@ mod tests {
         let data: Vec<(char, i32)> = vec![('P', 1), ('P', 2), ('Q', 1), ('Q', 2)];
 
         // Example triple expressions with predicates
-        let triple_exprs =
-            HashMap::from([('A', vec!['P', 'Q']), ('B', vec!['P']), ('C', vec!['Q'])]);
+        let triple_exprs = HashMap::from([('A', vec!['P', 'Q']), ('B', vec!['P']), ('C', vec!['Q'])]);
         let predicates = build_predicates(&triple_exprs).collect::<Vec<_>>();
-        for (i, partition) in
-            KPartitionIteratorMultiPredicate::new(data.clone(), predicates).enumerate()
-        {
+        for (i, partition) in KPartitionIteratorMultiPredicate::new(data.clone(), predicates).enumerate() {
             println!("{}: {:?}", i, partition);
         }
         /*

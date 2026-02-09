@@ -4,8 +4,8 @@ PyRudof Library
 
 .. py:currentmodule:: pyrudof
 
-`pyrudof` provides Python bindings for performing rudof operations. 
-The main class is `Rudof`, which can be configured using `RudofConfig`. 
+`pyrudof` provides Python bindings for performing rudof operations.
+The main class is `Rudof`, which can be configured using `RudofConfig`.
 The library supports reading and writing RDF data in various formats, validating data against shapes defined in ShEx or SHACL, and converting between different shape representation formats.
 
 

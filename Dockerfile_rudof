@@ -11,7 +11,7 @@ RUN set -x && cargo build --target x86_64-unknown-linux-musl --release
 RUN mkdir -p /build-out
 RUN set -x && cp target/x86_64-unknown-linux-musl/release/$BINARY_NAME /build-out/
 
-# Create a minimal docker image 
+# Create a minimal docker image
 FROM scratch
 
 COPY --from=0 /etc/passwd /etc/passwd

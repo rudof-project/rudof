@@ -95,19 +95,17 @@ mod tests {
             }
           }"#;
         let se = serde_json::from_str::<ShapeExpr>(str).unwrap();
-        let expected = ShapeExpr::Shape(Shape::default().with_expression(
-            TripleExpr::TripleConstraint {
-                id: None,
-                negated: None,
-                inverse: None,
-                predicate: IriS::new_unchecked("http://a.example/p1").into(),
-                value_expr: None,
-                min: None,
-                max: None,
-                sem_acts: None,
-                annotations: None,
-            },
-        ));
+        let expected = ShapeExpr::Shape(Shape::default().with_expression(TripleExpr::TripleConstraint {
+            id: None,
+            negated: None,
+            inverse: None,
+            predicate: IriS::new_unchecked("http://a.example/p1").into(),
+            value_expr: None,
+            min: None,
+            max: None,
+            sem_acts: None,
+            annotations: None,
+        }));
         assert_eq!(se, expected);
     }
 
@@ -122,21 +120,19 @@ mod tests {
             }
           }"#;
         let se = serde_json::from_str::<ShapeExpr>(str).unwrap();
-        let expected = ShapeExpr::Shape(Shape::default().with_expression(
-            TripleExpr::TripleConstraint {
-                id: None,
-                negated: None,
-                inverse: None,
-                predicate: IriS::new_unchecked("http://a.example/p1").into(),
-                value_expr: Some(Box::new(ShapeExpr::Ref(ShapeExprLabel::IriRef {
-                    value: IriRef::iri(IriS::new_unchecked("http://all.example/S5")),
-                }))),
-                min: None,
-                max: None,
-                sem_acts: None,
-                annotations: None,
-            },
-        ));
+        let expected = ShapeExpr::Shape(Shape::default().with_expression(TripleExpr::TripleConstraint {
+            id: None,
+            negated: None,
+            inverse: None,
+            predicate: IriS::new_unchecked("http://a.example/p1").into(),
+            value_expr: Some(Box::new(ShapeExpr::Ref(ShapeExprLabel::IriRef {
+                value: IriRef::iri(IriS::new_unchecked("http://all.example/S5")),
+            }))),
+            min: None,
+            max: None,
+            sem_acts: None,
+            annotations: None,
+        }));
         assert_eq!(se, expected);
     }
 

@@ -26,11 +26,7 @@ impl Display for ResultAssociation {
 
 fn show_details(details: &Either<Vec<PgsError>, Vec<Evidence>>) -> String {
     let details_str = match details {
-        Either::Left(errors) => errors
-            .iter()
-            .map(|e| e.to_string())
-            .collect::<Vec<_>>()
-            .join("\n   "),
+        Either::Left(errors) => errors.iter().map(|e| e.to_string()).collect::<Vec<_>>().join("\n   "),
         Either::Right(evidences) => evidences
             .iter()
             .map(|e| e.to_string())

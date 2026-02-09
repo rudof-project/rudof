@@ -228,7 +228,7 @@ macro_rules! combine_parsers {
 /// Convenience macro over [`opaque`][].
 /// This macro can be useful to combine parsers which can have some underlying different opaque types
 /// In this way, we can avoid some compiler performance problems when using `combine_parsers!` over a large number of parsers that are implemented as `impl RDFNodeParse`
-///  
+///
 #[macro_export]
 macro_rules! opaque {
     ($e: expr) => {
@@ -240,8 +240,7 @@ macro_rules! opaque {
 }
 
 /// Alias over `Opaque` where the function can be a plain function pointer
-pub type FnOpaque<RDF, O> =
-    Opaque<fn(&mut dyn FnMut(&mut dyn RDFNodeParse<RDF, Output = O>)), RDF, O>;
+pub type FnOpaque<RDF, O> = Opaque<fn(&mut dyn FnMut(&mut dyn RDFNodeParse<RDF, Output = O>)), RDF, O>;
 
 /// Name of Environment variable where we search for plantuml JAR
 pub const PLANTUML: &str = "PLANTUML";

@@ -1,6 +1,4 @@
-use crate::{
-    boolean_expr::BooleanExpr, card::Card, evidence::Evidence, pgs_error::PgsError, value::Value,
-};
+use crate::{boolean_expr::BooleanExpr, card::Card, evidence::Evidence, pgs_error::PgsError, value::Value};
 use either::Either;
 use std::{collections::HashSet, fmt::Display};
 
@@ -50,7 +48,7 @@ impl ValueType {
                     }]);
                 }
                 check_all(values, |v| v.is_string(), "is_string")
-            }
+            },
             ValueType::IntegerType(card) => {
                 if !card.contains(values.len()) {
                     return Either::Left(vec![PgsError::CardinalityMismatch {
@@ -59,7 +57,7 @@ impl ValueType {
                     }]);
                 }
                 check_all(values, |v| v.is_integer(), "is_integer")
-            }
+            },
             ValueType::DateType(card) => {
                 if !card.contains(values.len()) {
                     return Either::Left(vec![PgsError::CardinalityMismatch {
@@ -68,35 +66,31 @@ impl ValueType {
                     }]);
                 }
                 check_all(values, |v| v.is_date(), "is_date")
-            }
+            },
             ValueType::Intersection(a, b) => {
                 let a_evidence = a.conforms(values);
                 let b_evidence = b.conforms(values);
                 match (a_evidence, b_evidence) {
-                    (Either::Left(errs_a), Either::Left(errs_b)) => {
-                        Either::Left([errs_a, errs_b].concat())
-                    }
+                    (Either::Left(errs_a), Either::Left(errs_b)) => Either::Left([errs_a, errs_b].concat()),
                     (Either::Left(errs), Either::Right(_)) => Either::Left(errs),
                     (Either::Right(_), Either::Left(errs)) => Either::Left(errs),
                     (Either::Right(evidences_a), Either::Right(evidences_b)) => {
                         Either::Right([evidences_a, evidences_b].concat())
-                    }
+                    },
                 }
-            }
+            },
             ValueType::Union(a, b) => {
                 let a_evidence = a.conforms(values);
                 let b_evidence = b.conforms(values);
                 match (a_evidence, b_evidence) {
-                    (Either::Left(errs_a), Either::Left(errs_b)) => {
-                        Either::Left([errs_a, errs_b].concat())
-                    }
+                    (Either::Left(errs_a), Either::Left(errs_b)) => Either::Left([errs_a, errs_b].concat()),
                     (Either::Left(_), Either::Right(es)) => Either::Right(es),
                     (Either::Right(es), Either::Left(_)) => Either::Right(es),
                     (Either::Right(evidences_a), Either::Right(evidences_b)) => {
                         Either::Right([evidences_a, evidences_b].concat())
-                    }
+                    },
                 }
-            }
+            },
             ValueType::Cond(cond) => {
                 for value in values {
                     match cond.check(value) {
@@ -106,7 +100,7 @@ impl ValueType {
                                 condition: format!("{}", cond),
                                 value: format!("{}", value),
                             }]);
-                        }
+                        },
                         Err(e) => return Either::Left(vec![e]),
                     }
                 }
@@ -114,7 +108,7 @@ impl ValueType {
                     condition: format!("{}", cond),
                     values: format!("{:?}", values),
                 }])
-            }
+            },
             ValueType::Any => Either::Right(vec![Evidence::Any {
                 values: format!("{:?}", values),
             }]),
@@ -126,16 +120,12 @@ impl ValueType {
                     }]);
                 }
                 check_all(values, |v| v.is_bool(), "is_bool")
-            }
+            },
         }
     }
 }
 
-fn check_all<F>(
-    values: &HashSet<Value>,
-    predicate: F,
-    predicate_name: &str,
-) -> Either<Vec<PgsError>, Vec<Evidence>>
+fn check_all<F>(values: &HashSet<Value>, predicate: F, predicate_name: &str) -> Either<Vec<PgsError>, Vec<Evidence>>
 where
     F: Fn(&Value) -> bool,
 {

@@ -6,8 +6,7 @@ use pgschema::{
     pg::PropertyGraph,
 };
 use rudof_lib::{
-    InputSpec, RudofConfig, data_format::DataFormat,
-    shapemap_format::ShapeMapFormat as CliShapeMapFormat,
+    InputSpec, RudofConfig, data_format::DataFormat, shapemap_format::ShapeMapFormat as CliShapeMapFormat,
 };
 use std::{fmt::Display, io::Read, path::PathBuf};
 
@@ -53,7 +52,7 @@ pub fn run_validate_pgschema(
         Some(schema) => schema,
         None => {
             bail!("Schema must be provided for PGSchema validation");
-        }
+        },
     };
     let mut schema_reader = schema.open_read(None, "PGSchema")?;
     let schema = get_schema(&mut schema_reader)?;
@@ -61,7 +60,7 @@ pub fn run_validate_pgschema(
         Some(shapemap) => shapemap,
         None => {
             bail!("Type map must be provided for PGSchema validation");
-        }
+        },
     };
     let mut map_reader = shapemap.open_read(None, "type map")?;
     let type_map = get_map(&mut map_reader)?;
@@ -72,11 +71,8 @@ pub fn run_validate_pgschema(
         PgSchemaResultFormat::Json => result.as_json(writer)?,
         PgSchemaResultFormat::CSV => result.as_csv(writer, true)?,
         _ => {
-            bail!(
-                "Unsupported PGSchema result format: {}",
-                result_validation_format
-            );
-        }
+            bail!("Unsupported PGSchema result format: {}", result_validation_format);
+        },
     }
     Ok(())
 }
@@ -120,13 +116,12 @@ impl Display for PgSchemaResultFormat {
 fn get_schema<R: Read>(reader: &mut R) -> Result<pgschema::pgs::PropertyGraphSchema> {
     let mut schema_content = String::new();
     reader.read_to_string(&mut schema_content)?;
-    let schema: pgschema::pgs::PropertyGraphSchema =
-        match PgsBuilder::new().parse_pgs(schema_content.as_str()) {
-            Ok(schema) => schema,
-            Err(e) => {
-                bail!("Failed to parse schema: {}", e);
-            }
-        };
+    let schema: pgschema::pgs::PropertyGraphSchema = match PgsBuilder::new().parse_pgs(schema_content.as_str()) {
+        Ok(schema) => schema,
+        Err(e) => {
+            bail!("Failed to parse schema: {}", e);
+        },
+    };
     Ok(schema)
 }
 
@@ -137,7 +132,7 @@ fn get_pg_data<R: Read>(reader: &mut R, _data_format: &DataFormat) -> Result<Pro
         Ok(graph) => graph,
         Err(e) => {
             bail!("Failed to parse graph: {}", e);
-        }
+        },
     };
     Ok(graph)
 }
@@ -159,7 +154,7 @@ fn get_map<R: Read>(reader: &mut R) -> Result<pgschema::type_map::TypeMap> {
         Ok(map) => map,
         Err(e) => {
             bail!("Failed to parse type map: {}", e);
-        }
+        },
     };
     Ok(map)
 }

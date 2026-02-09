@@ -27,23 +27,16 @@ impl RdfConfigModel {
                 let mut emitter = yaml_rust2::YamlEmitter::new(fmt_writer);
                 emitter
                     .dump(&self.yaml)
-                    .map_err(|e| RdfConfigError::WritingRdfConfigError {
-                        error: e.to_string(),
-                    })?;
-            }
+                    .map_err(|e| RdfConfigError::WritingRdfConfigError { error: e.to_string() })?;
+            },
             RdfConfigFormat::Internal => {
-                write!(writer, "{self}").map_err(|e| RdfConfigError::WritingRdfConfigError {
-                    error: e.to_string(),
-                })?;
-            }
+                write!(writer, "{self}").map_err(|e| RdfConfigError::WritingRdfConfigError { error: e.to_string() })?;
+            },
         }
         Ok(())
     }
 
-    pub fn from_reader<R: std::io::Read>(
-        reader: R,
-        source_name: String,
-    ) -> Result<RdfConfigModel, RdfConfigError> {
+    pub fn from_reader<R: std::io::Read>(reader: R, source_name: String) -> Result<RdfConfigModel, RdfConfigError> {
         let mut reader = std::io::BufReader::new(reader);
         let mut buf = String::new();
         reader
@@ -51,23 +44,21 @@ impl RdfConfigModel {
             .map_err(|_| RdfConfigError::ErrorReadingFile {
                 source_name: source_name.clone(),
             })?;
-        let yamls = YamlLoader::load_from_str(buf.as_str()).map_err(|e| {
-            RdfConfigError::ErrorParsingYaml {
-                error: e.to_string(),
-                source_name: source_name.clone(),
-            }
+        let yamls = YamlLoader::load_from_str(buf.as_str()).map_err(|e| RdfConfigError::ErrorParsingYaml {
+            error: e.to_string(),
+            source_name: source_name.clone(),
         })?;
         let yaml = match yamls.len() {
             0 => {
                 return Err(RdfConfigError::ErrorParsingYamlEmpty {
                     source_name: source_name.clone(),
                 });
-            }
+            },
             1 => yamls.into_iter().next().unwrap(),
             _ => {
                 info!("Multiple config documents found, using the first one");
                 yamls.into_iter().next().unwrap()
-            }
+            },
         };
         Ok(RdfConfigModel::new(yaml))
     }

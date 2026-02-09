@@ -49,11 +49,7 @@ impl<S: Rdf> QuerySolution<S> {
     where
         F: Fn(&S::Term) -> T::Term,
     {
-        let cnv_values: Vec<Option<T::Term>> = self
-            .values
-            .iter()
-            .map(|s| s.as_ref().map(&cnv_term))
-            .collect();
+        let cnv_values: Vec<Option<T::Term>> = self.values.iter().map(|s| s.as_ref().map(&cnv_term)).collect();
         QuerySolution {
             variables: self.variables.clone(),
             values: cnv_values,
@@ -73,9 +69,7 @@ impl<S: Rdf> QuerySolution<S> {
     }
 }
 
-impl<S: Rdf, V: Into<Vec<VarName>>, T: Into<Vec<Option<S::Term>>>> From<(V, T)>
-    for QuerySolution<S>
-{
+impl<S: Rdf, V: Into<Vec<VarName>>, T: Into<Vec<Option<S::Term>>>> From<(V, T)> for QuerySolution<S> {
     #[inline]
     fn from((v, s): (V, T)) -> Self {
         Self {

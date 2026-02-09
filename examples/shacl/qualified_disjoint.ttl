@@ -5,23 +5,23 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
 :genderShape
 	a sh:NodeShape ;
-	sh:targetNode # :ok1, :ok2, :ko1, 
+	sh:targetNode # :ok1, :ok2, :ko1,
         :ko2 ;
 	# sh:property _:two_parents ;
     sh:property _:female_parent ;
-    sh:property _:male_parent . 
+    sh:property _:male_parent .
 
 _:two_parents sh:path :parent ;
 	sh:minCount 2 ;
 	sh:maxCount 2 .
 
-_:female_parent 
+_:female_parent
     sh:path :parent ;
     sh:qualifiedValueShape :femaleShape ;
     sh:qualifiedMinCount 1 ;
     sh:qualifiedValueShapesDisjoint true .
 
-_:male_parent 
+_:male_parent
     sh:path :parent ;
     sh:qualifiedValueShape :maleShape ;
     sh:qualifiedMinCount 1 ;
@@ -37,8 +37,8 @@ _:male_parent
 	sh:in ( :male :female );
     sh:minCount 1 .
 
-:ok1 :parent :p1f, :p1m . 
-:p1f :gender :female . 
+:ok1 :parent :p1f, :p1m .
+:p1f :gender :female .
 :p1m :gender :male .
 
 :ok2 :parent :p2o, :p2m .

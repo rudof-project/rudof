@@ -1,7 +1,7 @@
 use iri_s::IriS;
 
 use super::rdf_parser_error::RDFParseError;
-use crate::{Object, Vocab, RDF_NIL, RDF_TYPE, SRDF};
+use crate::{Object, RDF_NIL, RDF_TYPE, SRDF, Vocab};
 use std::{
     collections::{HashSet, VecDeque},
     error::Error,
@@ -17,7 +17,7 @@ type PResult<A> = Result<A, RDFParseError>;
 
 /// Represents a generic parser of RDF data
 pub trait RDFParse<RDF: SRDF> {
-    /// The type which is returned if the parser is successful.    
+    /// The type which is returned if the parser is successful.
     type Output;
 
     fn parse(&mut self, rdf: RDF) -> Result<Self::Output, RDF::Err>;
@@ -157,7 +157,7 @@ where
             Some(iri) => {
                 let iri_s = RDF::iri2iri_s(&iri);
                 iri_s.as_str() == RDF_NIL
-            }
+            },
             None => false,
         },
         "rdf_nil",
@@ -226,9 +226,7 @@ where
     fn parse_impl(&mut self, node: &RDF::Subject, rdf: &RDF) -> PResult<HashSet<RDF::Term>> {
         let values = rdf
             .get_objects_for_subject_predicate(&node, &self.property)
-            .map_err(|e| RDFParseError::SRDFError {
-                err: format!("{e}"),
-            })?;
+            .map_err(|e| RDFParseError::SRDFError { err: format!("{e}") })?;
         Ok(values)
     }
 }
@@ -478,7 +476,7 @@ mod tests {
     fn test_rdf_nil() {
         let s = r#"prefix : <http://example.org/>
         prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-        
+
         :x :p rdf:nil .
         "#;
 

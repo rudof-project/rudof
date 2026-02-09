@@ -22,7 +22,7 @@ fn main() -> Result<()> {
         Some(Command::Validate { graph, schema, map }) => run_validate(graph, schema, map),
         None => {
             bail!("Command not specified, type `--help` to see list of commands")
-        }
+        },
     }
 }
 
@@ -54,38 +54,37 @@ fn run_validate(graph_path: &str, schema_path: &str, map_path: &str) -> Result<(
 }
 
 fn get_schema(path: &str) -> Result<pgschema::pgs::PropertyGraphSchema> {
-    let schema_content = std::fs::read_to_string(path)
-        .with_context(|| format!("Failed to read schema file: {}", path))?;
-    let schema: pgschema::pgs::PropertyGraphSchema =
-        match PgsBuilder::new().parse_pgs(schema_content.as_str()) {
-            Ok(schema) => schema,
-            Err(e) => {
-                bail!("Failed to parse schema: {}", e);
-            }
-        };
+    let schema_content =
+        std::fs::read_to_string(path).with_context(|| format!("Failed to read schema file: {}", path))?;
+    let schema: pgschema::pgs::PropertyGraphSchema = match PgsBuilder::new().parse_pgs(schema_content.as_str()) {
+        Ok(schema) => schema,
+        Err(e) => {
+            bail!("Failed to parse schema: {}", e);
+        },
+    };
     Ok(schema)
 }
 
 fn get_graph(path: &str) -> Result<pgschema::pg::PropertyGraph> {
-    let graph_content = std::fs::read_to_string(path)
-        .with_context(|| format!("Failed to read graph file: {}", path))?;
+    let graph_content =
+        std::fs::read_to_string(path).with_context(|| format!("Failed to read graph file: {}", path))?;
     let graph = match PgBuilder::new().parse_pg(graph_content.as_str()) {
         Ok(graph) => graph,
         Err(e) => {
             bail!("Failed to parse graph: {}", e);
-        }
+        },
     };
     Ok(graph)
 }
 
 fn get_map(path: &str) -> Result<pgschema::type_map::TypeMap> {
-    let map_content = std::fs::read_to_string(path)
-        .with_context(|| format!("Failed to read type map file: {}", path))?;
+    let map_content =
+        std::fs::read_to_string(path).with_context(|| format!("Failed to read type map file: {}", path))?;
     let map: pgschema::type_map::TypeMap = match MapBuilder::new().parse_map(map_content.as_str()) {
         Ok(map) => map,
         Err(e) => {
             bail!("Failed to parse type map: {}", e);
-        }
+        },
     };
     Ok(map)
 }
@@ -146,12 +145,7 @@ mod tests {
 
     #[test]
     fn any() {
-        test_case(
-            "tests/any.pg",
-            "tests/any.pgs",
-            "tests/any.map",
-            "tests/any.result_map",
-        );
+        test_case("tests/any.pg", "tests/any.pgs", "tests/any.map", "tests/any.result_map");
     }
 
     #[test]
@@ -223,8 +217,8 @@ mod tests {
         let pg = get_graph(pg_file).unwrap_or_else(|_| panic!("Failed to parse: {pg_file})"));
         let pgs = get_schema(pgs_file).unwrap_or_else(|_| panic!("Failed to parse: {pgs_file})"));
         let type_map = get_map(map_file).unwrap_or_else(|_| panic!("Failed to parse: {map_file})"));
-        let expected_result = get_map(expected_map_file)
-            .unwrap_or_else(|_| panic!("Failed to parse: {expected_map_file})"));
+        let expected_result =
+            get_map(expected_map_file).unwrap_or_else(|_| panic!("Failed to parse: {expected_map_file})"));
         let result = type_map.validate(&pgs, &pg).unwrap();
         let comparison = expected_result.compare_with_result(&result).unwrap();
         if comparison.is_empty() {
@@ -232,11 +226,7 @@ mod tests {
         } else {
             panic!(
                 "Validation failed: {}",
-                comparison
-                    .iter()
-                    .map(|f| f.to_string())
-                    .collect::<Vec<_>>()
-                    .join("\n")
+                comparison.iter().map(|f| f.to_string()).collect::<Vec<_>>().join("\n")
             );
         }
     }

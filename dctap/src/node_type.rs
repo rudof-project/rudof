@@ -20,20 +20,20 @@ impl NodeType {
         match (self, node_type) {
             (NodeType::Basic(node_type), NodeType::Basic(other)) => {
                 NodeType::Or(vec![node_type.clone(), other.clone()])
-            }
+            },
             (NodeType::Basic(b), NodeType::Or(ns)) => {
                 let mut v = vec![b.clone()];
                 for n in ns {
                     v.push(n.clone())
                 }
                 NodeType::Or(v)
-            }
+            },
             (NodeType::Or(vs), NodeType::Basic(b)) => {
                 let mut v: Vec<BasicNodeType> = Vec::new();
                 v.append(vs);
                 v.push(b.clone());
                 NodeType::Or(v)
-            }
+            },
             (NodeType::Or(vs), NodeType::Or(ts)) => {
                 let mut v = Vec::new();
                 v.append(vs);
@@ -41,7 +41,7 @@ impl NodeType {
                     v.push(t.clone())
                 }
                 NodeType::Or(v)
-            }
+            },
         }
     }
 }

@@ -1,8 +1,7 @@
 use super::shexr_error::ShExRError;
 use super::*;
 use crate::{
-    BNode, NodeConstraint, NodeKind, ObjectValue, Schema, Shape, ShapeDecl, ShapeExpr,
-    ShapeExprLabel, ValueSetValue,
+    BNode, NodeConstraint, NodeKind, ObjectValue, Schema, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel, ValueSetValue,
 };
 use iri_s::IriS;
 use iri_s::iri;
@@ -57,15 +56,11 @@ where
         let object = term
             .clone()
             .try_into()
-            .map_err(|_| ShExRError::TermToRDFNodeFailed {
-                term: term.to_string(),
-            })?;
+            .map_err(|_| ShExRError::TermToRDFNodeFailed { term: term.to_string() })?;
         match object {
             Object::Iri(iri) => Ok(ShapeExprLabel::iri(iri)),
             Object::BlankNode(bnode) => Ok(ShapeExprLabel::bnode(BNode::new(bnode.as_str()))),
-            Object::Literal(lit) => Err(ShExRError::ShapeExprLabelLiteral {
-                term: lit.to_string(),
-            }),
+            Object::Literal(lit) => Err(ShExRError::ShapeExprLabelLiteral { term: lit.to_string() }),
             Object::Triple { .. } => todo!(),
         }
     }
@@ -108,11 +103,7 @@ where
         closed().then(|maybe_closed| {
             let extra = None; // TODO
             let expression = None; // TODO
-            ok(ShapeExpr::shape(Shape::new(
-                maybe_closed,
-                extra,
-                expression,
-            )))
+            ok(ShapeExpr::shape(Shape::new(maybe_closed, extra, expression)))
         })
     })
 }
@@ -250,20 +241,14 @@ fn parse_nodekind<RDF>() -> impl RDFNodeParse<RDF, Output = Option<NodeKind>>
 where
     RDF: FocusRDF,
 {
-    optional(
-        property_value(sx_node_kind())
-            .then(|ref node| set_focus(node).and(nodekind()).map(|(_, vs)| vs)),
-    )
+    optional(property_value(sx_node_kind()).then(|ref node| set_focus(node).and(nodekind()).map(|(_, vs)| vs)))
 }
 
 fn nodekind<RDF>() -> impl RDFNodeParse<RDF, Output = NodeKind>
 where
     RDF: FocusRDF,
 {
-    iri_kind()
-        .or(literal_kind())
-        .or(bnode_kind())
-        .or(nonliteral_kind())
+    iri_kind().or(literal_kind()).or(bnode_kind()).or(nonliteral_kind())
 }
 
 fn iri_kind<RDF>() -> impl RDFNodeParse<RDF, Output = NodeKind>

@@ -91,21 +91,21 @@ where
             MatchCond::Single(sc) => {
                 write!(f, "{sc}")?;
                 Ok(())
-            }
+            },
             MatchCond::Ref(r) => {
                 write!(f, "@{r}")?;
                 Ok(())
-            }
+            },
             MatchCond::And(cs) => {
                 write!(f, "And(")?;
                 cs.iter().try_fold((), |_, c| write!(f, "|{c}"))?;
                 write!(f, ")")
-            } /* MatchCond::Or(cs) => {
-                  write!(f, "Or")?;
-                  cs.iter().try_fold((), |_, c| write!(f, "|{c}"))?;
-                  write!(f, ")")
-              }
-              MatchCond::Not(c) => write!(f, "Not({c})"),*/
+            }, /* MatchCond::Or(cs) => {
+                   write!(f, "Or")?;
+                   cs.iter().try_fold((), |_, c| write!(f, "|{c}"))?;
+                   write!(f, ")")
+               }
+               MatchCond::Not(c) => write!(f, "Not({c})"),*/
         }
     }
 }
@@ -375,27 +375,21 @@ mod tests {
             })
         }
 
-        assert!(
-            cond_name("foo".to_string())
-                .matches(&"baz".to_string())
-                .is_err()
-        );
+        assert!(cond_name("foo".to_string()).matches(&"baz".to_string()).is_err());
     }
 
     #[test]
     fn test_name_pass() {
         fn cond_name(name: String) -> SingleCond<char, String, String> {
-            SingleCond::new()
-                .with_name("name")
-                .with_cond(move |v: &String| {
-                    if *v == name {
-                        Ok(Pending::new())
-                    } else {
-                        Err(RbeError::MsgError {
-                            msg: format!("Value {v} failed condition is not equal to {name}",),
-                        })
-                    }
-                })
+            SingleCond::new().with_name("name").with_cond(move |v: &String| {
+                if *v == name {
+                    Ok(Pending::new())
+                } else {
+                    Err(RbeError::MsgError {
+                        msg: format!("Value {v} failed condition is not equal to {name}",),
+                    })
+                }
+            })
         }
 
         assert_eq!(

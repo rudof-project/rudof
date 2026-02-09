@@ -119,13 +119,11 @@ impl TapReaderBuilder {
                     path: path_name.clone(),
                 }),
             },
-            Some(name) => excel
-                .worksheet_range(name)
-                .map_err(|e| TapError::SheetNameError {
-                    path: path_name.clone(),
-                    sheet_name: name.to_string(),
-                    error: e,
-                }),
+            Some(name) => excel.worksheet_range(name).map_err(|e| TapError::SheetNameError {
+                path: path_name.clone(),
+                sheet_name: name.to_string(),
+                error: e,
+            }),
         }?;
         let mut reader_range: ReaderRange<R> = ReaderRange::new(range);
         if let Some(rcd) = reader_range.next_record() {

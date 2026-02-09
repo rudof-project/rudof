@@ -21,7 +21,7 @@ impl Serialize for LiteralExclusion {
                 map.serialize_entry("type", "LiteralStem")?;
                 map.serialize_entry("stem", stem)?;
                 map.end()
-            }
+            },
         }
     }
 }

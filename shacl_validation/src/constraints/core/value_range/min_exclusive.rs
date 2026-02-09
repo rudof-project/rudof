@@ -30,10 +30,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinExclusive {
         _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let min_exclusive = |node: &S::Term| match S::term_as_sliteral(node) {
-            Ok(lit) => lit
-                .partial_cmp(self.min_exclusive())
-                .map(|o| o.is_le())
-                .unwrap_or(true),
+            Ok(lit) => lit.partial_cmp(self.min_exclusive()).map(|o| o.is_le()).unwrap_or(true),
             Err(_) => true,
         };
         let message = format!("MinExclusive({}) not satisfied", self.min_exclusive());
@@ -70,15 +67,7 @@ impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MinExclusive {
         };
 
         let message = format!("MinExclusive({}) not satisfied", self.min_exclusive());
-        validate_ask_with(
-            component,
-            shape,
-            store,
-            value_nodes,
-            query,
-            &message,
-            maybe_path,
-        )
+        validate_ask_with(component, shape, store, value_nodes, query, &message, maybe_path)
     }
 }
 
@@ -115,8 +104,7 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 :ko3 a :Node; :p "other"^^xsd:double .
 "#;
         let rdf = RdfData::from_str(graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
-        let mut validator =
-            RdfDataValidation::from_rdf_data(rdf.clone(), ShaclValidationMode::Native);
+        let mut validator = RdfDataValidation::from_rdf_data(rdf.clone(), ShaclValidationMode::Native);
         let schema = parse_shacl_rdf(rdf).unwrap();
         let schema_ir = schema.try_into().unwrap();
         let report = validator.validate(&schema_ir).unwrap();

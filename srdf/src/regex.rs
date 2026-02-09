@@ -32,16 +32,16 @@ impl SRegex {
             match flag {
                 's' => {
                     regex_builder.dot_matches_new_line(true);
-                }
+                },
                 'm' => {
                     regex_builder.multi_line(true);
-                }
+                },
                 'i' => {
                     regex_builder.case_insensitive(true);
-                }
+                },
                 'x' => {
                     regex_builder.ignore_whitespace(true);
-                }
+                },
                 'q' => (),                                             // Already supported
                 _ => return Err(SRegexError::InvalidFlagOption(flag)), // invalid option
             }
@@ -82,11 +82,6 @@ pub enum SRegexError {
 
 impl Display for SRegex {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "/{}/{}",
-            self.regex.as_str(),
-            self.flags.as_deref().unwrap_or("")
-        )
+        write!(f, "/{}/{}", self.regex.as_str(), self.flags.as_deref().unwrap_or(""))
     }
 }

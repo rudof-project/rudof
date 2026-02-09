@@ -3,10 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::io::Read;
 use std::path::Path;
 
-use crate::{
-    ConverterError, ShEx2HtmlConfig, ShEx2SparqlConfig, ShEx2UmlConfig, Shacl2ShExConfig,
-    Tap2ShExConfig,
-};
+use crate::{ConverterError, ShEx2HtmlConfig, ShEx2SparqlConfig, ShEx2UmlConfig, Shacl2ShExConfig, Tap2ShExConfig};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Default)]
 pub struct ConverterConfig {
@@ -21,11 +18,9 @@ pub struct ConverterConfig {
 impl ConverterConfig {
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<ConverterConfig, ConverterError> {
         let path_name = path.as_ref().display().to_string();
-        let mut f = std::fs::File::open(path).map_err(|e| {
-            ConverterError::ConverterConfigFromPathError {
-                path: path_name.clone(),
-                error: e,
-            }
+        let mut f = std::fs::File::open(path).map_err(|e| ConverterError::ConverterConfigFromPathError {
+            path: path_name.clone(),
+            error: e,
         })?;
         let mut s = String::new();
         f.read_to_string(&mut s)
@@ -34,12 +29,11 @@ impl ConverterConfig {
                 error: e,
             })?;
 
-        let config: ConverterConfig = toml::from_str(s.as_str()).map_err(|e| {
-            ConverterError::ConverterConfigFromTomlError {
+        let config: ConverterConfig =
+            toml::from_str(s.as_str()).map_err(|e| ConverterError::ConverterConfigFromTomlError {
                 path: path_name.clone(),
                 error: e,
-            }
-        })?;
+            })?;
         Ok(config)
     }
 

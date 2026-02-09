@@ -10,7 +10,7 @@ cardinality_strategy = "Random"      # How to handle cardinalities
 # Weighted distribution for different shape types
 [generation.distribution_weights]
 "http://example.org/Person" = 0.5        # 50% persons
-"http://example.org/Organization" = 0.3  # 30% organizations  
+"http://example.org/Organization" = 0.3  # 30% organizations
 "http://example.org/Course" = 0.2        # 20% courses
 
 [field_generators.default]

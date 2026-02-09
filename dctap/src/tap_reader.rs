@@ -1,9 +1,8 @@
 use crate::reader_range::ReaderRange;
 use crate::tap_error::Result;
 use crate::{
-    BasicNodeType, DatatypeId, NodeType, PlaceholderResolver, PropertyId, ShapeId, TapConfig,
-    TapError, TapReaderState, TapReaderWarning, TapShape, TapStatement, Value, ValueConstraint,
-    ValueConstraintType,
+    BasicNodeType, DatatypeId, NodeType, PlaceholderResolver, PropertyId, ShapeId, TapConfig, TapError, TapReaderState,
+    TapReaderWarning, TapShape, TapStatement, Value, ValueConstraint, ValueConstraintType,
 };
 use csv::{Position, Reader as CsvReader, StringRecord};
 use tracing::trace;
@@ -29,7 +28,7 @@ impl<R: io::Read> StringRecordReader<R> {
             StringRecordReader::CsvReader(reader) => {
                 let b = reader.read_record(record)?;
                 Ok(b)
-            }
+            },
             StringRecordReader::RangeReader(reader_range) => {
                 if let Some(rcd) = reader_range.next_record() {
                     *record = rcd;
@@ -37,7 +36,7 @@ impl<R: io::Read> StringRecordReader<R> {
                 } else {
                     Ok(false)
                 }
-            }
+            },
         }
     }
 
@@ -64,11 +63,7 @@ impl<R: io::Read> TapReader<R> {
         }
     }
 
-    pub fn new_range_reader(
-        reader: ReaderRange<R>,
-        state: TapReaderState,
-        config: &TapConfig,
-    ) -> Self {
+    pub fn new_range_reader(reader: ReaderRange<R>, state: TapReaderState, config: &TapConfig) -> Self {
         TapReader {
             reader: StringRecordReader::new_range_reader(reader),
             state,
@@ -130,10 +125,7 @@ impl<R: io::Read> TapReader<R> {
         }
     }
 
-    fn next_record_with_id(
-        &mut self,
-        shape_id: &Option<ShapeId>,
-    ) -> Result<Option<(StringRecord, Position)>> {
+    fn next_record_with_id(&mut self, shape_id: &Option<ShapeId>) -> Result<Option<(StringRecord, Position)>> {
         let mut record = StringRecord::new();
         let pos = self.position().clone();
         if self.reader.read_record(&mut record)? {
@@ -179,9 +171,7 @@ impl<R: io::Read> TapReader<R> {
 
     fn read_shape_label(&mut self, rcd: &StringRecord) -> Result<()> {
         if let Some(shapelabel) = self.get_shape_label(rcd)? {
-            self.state
-                .current_shape()
-                .set_shape_label(shapelabel.as_str());
+            self.state.current_shape().set_shape_label(shapelabel.as_str());
         };
         Ok(())
     }
@@ -194,10 +184,7 @@ impl<R: io::Read> TapReader<R> {
                         // TODO!, there is a property label and an empty property id
                         // Generate new property based on property label?
                         // If we don't do nothing here, it generates from empty_property_placeholder
-                        trace!(
-                            "Empty property id and empty property label at line {}",
-                            pos.line()
-                        );
+                        trace!("Empty property id and empty property label at line {}", pos.line());
                         self.state
                             .add_warning(TapReaderWarning::EmptyProperty { line: pos.line() });
                         None
@@ -240,11 +227,7 @@ impl<R: io::Read> TapReader<R> {
         Some(PropertyId::new(generated.as_str(), pos.line()))
     }
 
-    fn record2statement(
-        &mut self,
-        rcd: &StringRecord,
-        pos: &Position,
-    ) -> Result<Option<TapStatement>> {
+    fn record2statement(&mut self, rcd: &StringRecord, pos: &Position) -> Result<Option<TapStatement>> {
         if let Some(property_id) = self.get_property_id(rcd, pos) {
             let mut statement = TapStatement::new(property_id).with_source_line_number(pos.line());
             self.read_property_label(&mut statement, rcd);
@@ -291,23 +274,14 @@ impl<R: io::Read> TapReader<R> {
         if let Some(str) = self.state.headers().extends_label(rcd)
             && !str.is_empty()
         {
-            match self
-                .state
-                .current_shape()
-                .add_extends_label(&str, pos.line())
-            {
+            match self.state.current_shape().add_extends_label(&str, pos.line()) {
                 Ok(()) => (),
                 Err(warning) => self.state.add_warning(warning),
             }
         }
     }
 
-    fn read_value_datatype(
-        &self,
-        statement: &mut TapStatement,
-        rcd: &StringRecord,
-        pos: &Position,
-    ) {
+    fn read_value_datatype(&self, statement: &mut TapStatement, rcd: &StringRecord, pos: &Position) {
         if let Some(str) = self.state.headers().value_datatype(rcd)
             && let Some(clean_str) = strip_whitespace(&str)
         {
@@ -316,20 +290,13 @@ impl<R: io::Read> TapReader<R> {
         }
     }
 
-    fn read_value_nodetype(
-        &self,
-        statement: &mut TapStatement,
-        rcd: &StringRecord,
-        pos: &Position,
-    ) -> Result<()> {
+    fn read_value_nodetype(&self, statement: &mut TapStatement, rcd: &StringRecord, pos: &Position) -> Result<()> {
         if let Some(str) = self.state.headers().value_nodetype(rcd) {
             let mut current_node_type: Option<NodeType> = None;
             for str in get_strs(&str) {
                 let next_node_type = parse_node_type(str, pos)?;
                 match &mut current_node_type {
-                    Some(node_type) => {
-                        current_node_type = Some(node_type.merge_node_type(&next_node_type))
-                    }
+                    Some(node_type) => current_node_type = Some(node_type.merge_node_type(&next_node_type)),
                     None => current_node_type = Some(next_node_type),
                 }
             }
@@ -353,12 +320,7 @@ impl<R: io::Read> TapReader<R> {
         }
     }
 
-    fn read_value_constraint(
-        &self,
-        statement: &mut TapStatement,
-        rcd: &StringRecord,
-        pos: &Position,
-    ) -> Result<()> {
+    fn read_value_constraint(&self, statement: &mut TapStatement, rcd: &StringRecord, pos: &Position) -> Result<()> {
         if let Some(str) = self.state.headers().value_constraint(rcd) {
             let value_constraint_type = self.read_value_constraint_type(rcd, pos)?;
             match value_constraint_type {
@@ -367,25 +329,21 @@ impl<R: io::Read> TapReader<R> {
                     if !values.is_empty() {
                         statement.set_value_constraint(&ValueConstraint::picklist(values));
                     }
-                }
+                },
                 ValueConstraintType::Pattern => {
                     statement.set_value_constraint(&ValueConstraint::pattern(str.as_str()));
-                }
+                },
                 _ => {
                     trace!(
                         "Not implemented handling of value constraint type: {value_constraint_type:?}, It is just ignored"
                     )
-                }
+                },
             }
         };
         Ok(())
     }
 
-    fn read_value_constraint_type(
-        &self,
-        rcd: &StringRecord,
-        pos: &Position,
-    ) -> Result<ValueConstraintType> {
+    fn read_value_constraint_type(&self, rcd: &StringRecord, pos: &Position) -> Result<ValueConstraintType> {
         if let Some(str) = self.state.headers().value_constraint_type(rcd) {
             if let Some(clean_str) = strip_whitespace(&str) {
                 match clean_str.to_uppercase().as_str() {
@@ -405,7 +363,7 @@ impl<R: io::Read> TapReader<R> {
                             value: str.clone(),
                             line: pos.line(),
                         })
-                    }
+                    },
                 }
             } else {
                 Ok(ValueConstraintType::default())
@@ -415,12 +373,7 @@ impl<R: io::Read> TapReader<R> {
         }
     }
 
-    fn read_mandatory(
-        &self,
-        statement: &mut TapStatement,
-        rcd: &StringRecord,
-        pos: &Position,
-    ) -> Result<()> {
+    fn read_mandatory(&self, statement: &mut TapStatement, rcd: &StringRecord, pos: &Position) -> Result<()> {
         if let Some(str) = self.state.headers().mandatory(rcd) {
             let mandatory = parse_boolean(&str, "mandatory", pos)?;
             statement.set_mandatory(mandatory);
@@ -428,12 +381,7 @@ impl<R: io::Read> TapReader<R> {
         Ok(())
     }
 
-    fn read_repeatable(
-        &self,
-        statement: &mut TapStatement,
-        rcd: &StringRecord,
-        pos: &Position,
-    ) -> Result<()> {
+    fn read_repeatable(&self, statement: &mut TapStatement, rcd: &StringRecord, pos: &Position) -> Result<()> {
         if let Some(str) = self.state.headers().repeatable(rcd) {
             let repeatable = parse_boolean(&str, "repeatable", pos)?;
             statement.set_repeatable(repeatable);
@@ -549,13 +497,11 @@ mod tests {
         let data = "\
 shapeId,shapeLabel,propertyId,propertyLabel
 Person,PersonLabel,knows,KnowsLabel";
-        let mut tap_reader =
-            TapReaderBuilder::from_reader(data.as_bytes(), &TapConfig::default()).unwrap();
+        let mut tap_reader = TapReaderBuilder::from_reader(data.as_bytes(), &TapConfig::default()).unwrap();
         let mut expected_shape = TapShape::new(2);
         expected_shape.set_shape_id(&ShapeId::new("Person", 2));
         expected_shape.set_shape_label("PersonLabel");
-        let mut statement =
-            TapStatement::new(PropertyId::new("knows", 2)).with_source_line_number(2);
+        let mut statement = TapStatement::new(PropertyId::new("knows", 2)).with_source_line_number(2);
         statement.set_property_label("KnowsLabel");
         expected_shape.add_statement(statement);
         let next_shape = tap_reader.shapes().next().unwrap().unwrap();
@@ -570,17 +516,14 @@ shapeId,shapeLabel,propertyId,propertyLabel
 Person,PersonLabel,knows,KnowsLabel
 ,,name,NameLabel
 ";
-        let mut tap_reader =
-            TapReaderBuilder::from_reader(data.as_bytes(), &TapConfig::default()).unwrap();
+        let mut tap_reader = TapReaderBuilder::from_reader(data.as_bytes(), &TapConfig::default()).unwrap();
         let mut expected_shape = TapShape::new(2);
         expected_shape.set_shape_id(&ShapeId::new("Person", 2));
         expected_shape.set_shape_label("PersonLabel");
-        let mut statement =
-            TapStatement::new(PropertyId::new("knows", 2)).with_source_line_number(2);
+        let mut statement = TapStatement::new(PropertyId::new("knows", 2)).with_source_line_number(2);
         statement.set_property_label("KnowsLabel");
         expected_shape.add_statement(statement);
-        let mut statement =
-            TapStatement::new(PropertyId::new("name", 3)).with_source_line_number(3);
+        let mut statement = TapStatement::new(PropertyId::new("name", 3)).with_source_line_number(3);
         statement.set_property_label("NameLabel");
         expected_shape.add_statement(statement);
         let next_shape = tap_reader.shapes().next().unwrap().unwrap();
@@ -595,17 +538,14 @@ Person,PersonLabel,knows,KnowsLabel
 ,,name,NameLabel
 Company,CompanyLabel,founder,FounderLabel
 ";
-        let mut tap_reader =
-            TapReaderBuilder::from_reader(data.as_bytes(), &TapConfig::default()).unwrap();
+        let mut tap_reader = TapReaderBuilder::from_reader(data.as_bytes(), &TapConfig::default()).unwrap();
         let mut expected_shape1 = TapShape::new(2);
         expected_shape1.set_shape_id(&ShapeId::new("Person", 2));
         expected_shape1.set_shape_label("PersonLabel");
-        let mut statement =
-            TapStatement::new(PropertyId::new("knows", 2)).with_source_line_number(2);
+        let mut statement = TapStatement::new(PropertyId::new("knows", 2)).with_source_line_number(2);
         statement.set_property_label("KnowsLabel");
         expected_shape1.add_statement(statement);
-        let mut statement =
-            TapStatement::new(PropertyId::new("name", 3)).with_source_line_number(3);
+        let mut statement = TapStatement::new(PropertyId::new("name", 3)).with_source_line_number(3);
         statement.set_property_label("NameLabel");
         expected_shape1.add_statement(statement);
         let next_shape1 = tap_reader.shapes().next().unwrap().unwrap();
@@ -614,8 +554,7 @@ Company,CompanyLabel,founder,FounderLabel
         let mut expected_shape2 = TapShape::new(4);
         expected_shape2.set_shape_id(&ShapeId::new("Company", 4));
         expected_shape2.set_shape_label("CompanyLabel");
-        let mut statement =
-            TapStatement::new(PropertyId::new("founder", 4)).with_source_line_number(4);
+        let mut statement = TapStatement::new(PropertyId::new("founder", 4)).with_source_line_number(4);
         statement.set_property_label("FounderLabel");
         expected_shape2.add_statement(statement);
         let next_shape2 = tap_reader.shapes().next().unwrap().unwrap();
@@ -628,20 +567,12 @@ Company,CompanyLabel,founder,FounderLabel
 shapeId,propertyId,valueConstraint,valueConstraintType
 Person,gender,male female other,picklist
 ";
-        let mut tap_reader = TapReaderBuilder::from_reader(
-            data.as_bytes(),
-            &TapConfig::default().with_picklist_delimiter(' '),
-        )
-        .unwrap();
+        let mut tap_reader =
+            TapReaderBuilder::from_reader(data.as_bytes(), &TapConfig::default().with_picklist_delimiter(' ')).unwrap();
         let mut expected_shape1 = TapShape::new(2);
         expected_shape1.set_shape_id(&ShapeId::new("Person", 2));
-        let mut statement =
-            TapStatement::new(PropertyId::new("gender", 2)).with_source_line_number(2);
-        let vc = ValueConstraint::picklist(vec![
-            Value::new("male"),
-            Value::new("female"),
-            Value::new("other"),
-        ]);
+        let mut statement = TapStatement::new(PropertyId::new("gender", 2)).with_source_line_number(2);
+        let vc = ValueConstraint::picklist(vec![Value::new("male"), Value::new("female"), Value::new("other")]);
         statement.set_value_constraint(&vc);
         expected_shape1.add_statement(statement);
         let next_shape1 = tap_reader.shapes().next().unwrap().unwrap();

@@ -8,10 +8,7 @@ use serde::{Deserialize, Serialize, Serializer};
 
 use crate::ast::serde_string_or_struct::*;
 
-use super::{
-    annotation::Annotation, sem_act::SemAct, shape_expr::ShapeExpr,
-    triple_expr_label::TripleExprLabel,
-};
+use super::{annotation::Annotation, sem_act::SemAct, shape_expr::ShapeExpr, triple_expr_label::TripleExprLabel};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(tag = "type")]
@@ -197,7 +194,7 @@ impl TripleExpr {
             },
             TripleExpr::TripleExprRef(lbl) => {
                 panic!("Can't update id to TripleExprRef({lbl:?}")
-            }
+            },
         };
         self
     }
@@ -257,7 +254,7 @@ impl TripleExpr {
             },
             TripleExpr::TripleExprRef(lbl) => {
                 panic!("Can't update min to TripleExprRef({lbl:?}")
-            }
+            },
         };
         self
     }
@@ -317,7 +314,7 @@ impl TripleExpr {
             },
             TripleExpr::TripleExprRef(lbl) => {
                 panic!("Can't update max to TripleExprRef({lbl:?}")
-            }
+            },
         };
         self
     }
@@ -377,7 +374,7 @@ impl TripleExpr {
             },
             TripleExpr::TripleExprRef(lbl) => {
                 panic!("Can't update sem_acts to TripleExprRef({lbl:?}")
-            }
+            },
         };
         self
     }
@@ -437,7 +434,7 @@ impl TripleExpr {
             },
             TripleExpr::TripleExprRef(lbl) => {
                 panic!("Can't update annotations to TripleExprRef({lbl:?}")
-            }
+            },
         };
         self
     }
@@ -450,21 +447,21 @@ impl TripleExpr {
                 } else {
                     *annotations = Some(vec![annotation])
                 }
-            }
+            },
             Self::TripleConstraint { annotations, .. } => {
                 if let Some(anns) = annotations {
                     anns.push(annotation)
                 } else {
                     *annotations = Some(vec![annotation])
                 }
-            }
+            },
             Self::OneOf { annotations, .. } => {
                 if let Some(anns) = annotations {
                     anns.push(annotation)
                 } else {
                     *annotations = Some(vec![annotation])
                 }
-            }
+            },
             _ => todo!(),
         }
     }
@@ -493,7 +490,7 @@ impl Deref for TripleExpr {
                     sem_acts,
                     annotations,
                 })
-            }
+            },
             TripleExpr::OneOf {
                 id,
                 expressions,
@@ -514,7 +511,7 @@ impl Deref for TripleExpr {
                     sem_acts,
                     annotations,
                 })
-            }
+            },
             TripleExpr::TripleConstraint {
                 id,
                 negated,
@@ -542,11 +539,11 @@ impl Deref for TripleExpr {
                     sem_acts,
                     annotations,
                 })
-            }
+            },
             TripleExpr::TripleExprRef(label) => {
                 let label = label.deref(base, prefixmap)?;
                 Ok(TripleExpr::TripleExprRef(label))
-            }
+            },
         }
     }
 }
@@ -556,9 +553,7 @@ impl FromStr for TripleExpr {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let iri_ref = IriRef::try_from(s)?;
-        Ok(TripleExpr::TripleExprRef(TripleExprLabel::IriRef {
-            value: iri_ref,
-        }))
+        Ok(TripleExpr::TripleExprRef(TripleExprLabel::IriRef { value: iri_ref }))
     }
 }
 

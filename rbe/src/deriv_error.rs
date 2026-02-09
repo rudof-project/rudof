@@ -71,10 +71,7 @@ where
     RangeLowerBoundBiggerMax { symbol: A, card: Cardinality },
 
     #[error("Min > Max in cardinality {card} for {expr}")]
-    RangeLowerBoundBiggerMaxExpr {
-        expr: Box<Rbe<A>>,
-        card: Cardinality,
-    },
+    RangeLowerBoundBiggerMaxExpr { expr: Box<Rbe<A>>, card: Cardinality },
 
     #[error("Derived expr: {non_nullable_rbe} is not nullable\nExpr {expr}\nBag: {bag}")]
     NonNullable {
@@ -107,10 +104,7 @@ where
     ShouldFailButPassed { name: String },
 
     #[error("Or values failed {e}\n {failures}")]
-    OrValuesFail {
-        e: Box<Rbe<A>>,
-        failures: Failures<A>,
-    },
+    OrValuesFail { e: Box<Rbe<A>>, failures: Failures<A> },
 
     #[error("All values in or branch failed")]
     MkOrValuesFail,

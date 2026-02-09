@@ -1,7 +1,7 @@
 use super::validation_report_error::{ReportError, ResultError};
 use shacl_ast::shacl_vocab::{
-    sh_focus_node, sh_result_message, sh_result_path, sh_result_severity,
-    sh_source_constraint_component, sh_source_shape, sh_validation_result, sh_value,
+    sh_focus_node, sh_result_message, sh_result_path, sh_result_severity, sh_source_constraint_component,
+    sh_source_shape, sh_validation_result, sh_value,
 };
 use shacl_ir::severity::CompiledSeverity;
 use srdf::{BuildRDF, FocusRDF, NeighsRDF, Object, RDFNode, SHACLPath};
@@ -21,11 +21,7 @@ pub struct ValidationResult {
 
 impl ValidationResult {
     // Creates a new validation result
-    pub fn new(
-        focus_node: Object,
-        constraint_component: Object,
-        severity: CompiledSeverity,
-    ) -> Self {
+    pub fn new(focus_node: Object, constraint_component: Object, severity: CompiledSeverity) -> Self {
         Self {
             focus_node,
             path: None,
@@ -93,10 +89,7 @@ impl ValidationResult {
 }
 
 impl ValidationResult {
-    pub(crate) fn parse<S: FocusRDF>(
-        store: &mut S,
-        validation_result: &S::Term,
-    ) -> Result<Self, ResultError> {
+    pub(crate) fn parse<S: FocusRDF>(store: &mut S, validation_result: &S::Term) -> Result<Self, ResultError> {
         // Start processing the required fields.
         let focus_node = match store
             .object_for(validation_result, &sh_focus_node().clone().into())
@@ -116,26 +109,21 @@ impl ValidationResult {
                 error: e.to_string(),
             })? {
             Some(Object::Iri(severity)) => {
-                CompiledSeverity::from_iri(&severity).ok_or_else(|| {
-                    ResultError::WrongIRIForSeverity {
-                        field: "Severity".to_owned(),
-                        value: format!("{severity}"),
-                    }
+                CompiledSeverity::from_iri(&severity).ok_or_else(|| ResultError::WrongIRIForSeverity {
+                    field: "Severity".to_owned(),
+                    value: format!("{severity}"),
                 })?
-            }
+            },
             Some(other) => {
                 return Err(ResultError::WrongNodeForSeverity {
                     field: "Severity".to_owned(),
                     value: format!("{other}"),
                 });
-            }
+            },
             None => return Err(ResultError::MissingRequiredField("Severity".to_owned())),
         };
         let constraint_component = match store
-            .object_for(
-                validation_result,
-                &sh_source_constraint_component().clone().into(),
-            )
+            .object_for(validation_result, &sh_source_constraint_component().clone().into())
             .map_err(|e| ResultError::ObjectFor {
                 subject: validation_result.to_string(),
                 predicate: sh_source_constraint_component().to_string(),
@@ -146,7 +134,7 @@ impl ValidationResult {
                 return Err(ResultError::MissingRequiredField(
                     "SourceConstraintComponent".to_owned(),
                 ));
-            }
+            },
         };
 
         // Process the optional fields
@@ -177,19 +165,13 @@ impl ValidationResult {
             })?;
 
         // 3. Lastly we build the ValidationResult
-        Ok(
-            ValidationResult::new(focus_node, constraint_component, severity)
-                .with_path(path)
-                .with_source(source)
-                .with_value(value),
-        )
+        Ok(ValidationResult::new(focus_node, constraint_component, severity)
+            .with_path(path)
+            .with_source(source)
+            .with_value(value))
     }
 
-    pub fn to_rdf<RDF>(
-        &self,
-        rdf_writer: &mut RDF,
-        report_node: RDF::Subject,
-    ) -> Result<(), ReportError>
+    pub fn to_rdf<RDF>(&self, rdf_writer: &mut RDF, report_node: RDF::Subject) -> Result<(), ReportError>
     where
         RDF: BuildRDF + Sized,
     {
@@ -197,11 +179,7 @@ impl ValidationResult {
             .add_type(report_node.clone(), sh_validation_result().clone())
             .map_err(|e| ReportError::ValidationReportError { msg: e.to_string() })?;
         rdf_writer
-            .add_triple(
-                report_node.clone(),
-                sh_focus_node().clone(),
-                self.focus_node.clone(),
-            )
+            .add_triple(report_node.clone(), sh_focus_node().clone(), self.focus_node.clone())
             .map_err(|e| ReportError::ValidationReportError {
                 msg: format!("Error adding focus node to validation result: {e}"),
             })?;

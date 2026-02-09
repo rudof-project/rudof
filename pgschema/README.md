@@ -8,8 +8,8 @@ This repository contains a prototype implementation for the PG-Schema with Prope
 
 ## Overview
 
-PG-Schema_PC is a formal extension of the PG-Schema language, designed to support constraints over property sets in property graphs. 
-It introduces structural, cardinality, and range constraints that enhance the precision and expressiveness of schema definitions. 
+PG-Schema_PC is a formal extension of the PG-Schema language, designed to support constraints over property sets in property graphs.
+It introduces structural, cardinality, and range constraints that enhance the precision and expressiveness of schema definitions.
 This implementation serves as a reference interpreter for the abstract grammar and semantics presented in the associated publication.
 
 
@@ -25,9 +25,9 @@ cargo build --release
 
 which will create a binary in `target/release/pgschemapc`.
 
-Once you have the `pgschemapc` binary, you can add it to your executable path. 
+Once you have the `pgschemapc` binary, you can add it to your executable path.
 
-The command `pgschemapc --help` gives information about the available commands. 
+The command `pgschemapc --help` gives information about the available commands.
 
 ```sh
 pgschemapc --help
@@ -60,13 +60,13 @@ pgschemapc validate --graph examples/simple.pg --schema examples/simple.pgs --ma
 
 ## Running examples from paper
 
-The different examples from the submitted paper can be run using the following commands: 
+The different examples from the submitted paper can be run using the following commands:
 
 ```sh
 pgschemapc validate --graph examples/[EXAMPLE_NAME].pg --schema examples/[EXAMPLE_NAME].pgs --map examples/[EXAMPLE_NAME].map
 ```
 
-where `[EXAMPLE_NAME]` can be any of `simple`, `course`, `person`, `product`, `user`, etc. 
+where `[EXAMPLE_NAME]` can be any of `simple`, `course`, `person`, `product`, `user`, etc.
 
 Of course, you can play with the tool by creating your own property graph, property graph schema and association maps.
 
@@ -78,7 +78,7 @@ To run a test suite use the command:
 cargo test
 ```
 
-At this stage, the tool is a prototype for PGSchema with property constraints validation. 
+At this stage, the tool is a prototype for PGSchema with property constraints validation.
 Further integration with graph databases or external datasets will require extending the parsing and validation layers.
 
 ## Related Resources

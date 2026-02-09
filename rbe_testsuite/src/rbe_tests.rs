@@ -79,11 +79,10 @@ mod tests {
         /// Load all of the encoded tests in `data` into this collection.
         /// The given group name is assigned to all loaded tests.
         pub fn load_slice(&mut self, group_name: &str, data: &[u8]) -> Result<()> {
-            let data = std::str::from_utf8(data)
-                .with_context(|| format!("data in {group_name} is not valid UTF-8"))?;
+            let data = std::str::from_utf8(data).with_context(|| format!("data in {group_name} is not valid UTF-8"))?;
             let mut index = 1;
-            let mut tests: RbeTests = serde_json::from_str(data)
-                .with_context(|| format!("error decoding JSON for '{group_name}'"))?;
+            let mut tests: RbeTests =
+                serde_json::from_str(data).with_context(|| format!("error decoding JSON for '{group_name}'"))?;
             for t in &mut tests.tests {
                 t.set_group(group_name.to_string());
                 if t.name().is_empty() {
@@ -167,7 +166,7 @@ mod tests {
       "match_result": "Pass"
     }
   ]
-}        
+}
         "#};
         let mut tests = RbeTests::new();
         tests.load_slice("test", str.as_bytes()).unwrap();

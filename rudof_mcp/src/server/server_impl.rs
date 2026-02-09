@@ -59,18 +59,12 @@ pub async fn run_mcp_async(config: McpConfig) -> Result<()> {
         TransportType::Stdio => run_mcp_stdio().await,
         TransportType::StreamableHTTP => {
             run_mcp_http(
-                config
-                    .bind_address
-                    .as_ref()
-                    .expect("bind_address required for HTTP"),
+                config.bind_address.as_ref().expect("bind_address required for HTTP"),
                 config.port.expect("port required for HTTP"),
-                config
-                    .route_path
-                    .as_ref()
-                    .expect("route_path required for HTTP"),
+                config.route_path.as_ref().expect("route_path required for HTTP"),
                 config.allowed_networks.clone(),
             )
             .await
-        }
+        },
     }
 }

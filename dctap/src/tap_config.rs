@@ -18,16 +18,14 @@ impl DCTapConfig {
             error: e,
         })?;
         let mut s = String::new();
-        f.read_to_string(&mut s)
-            .map_err(|e| TapError::TapConfigFromPathError {
-                path: path_name.clone(),
-                error: e,
-            })?;
-        let config: DCTapConfig =
-            toml::from_str(s.as_str()).map_err(|e| TapError::TapConfigTomlError {
-                path: path_name.clone(),
-                error: e,
-            })?;
+        f.read_to_string(&mut s).map_err(|e| TapError::TapConfigFromPathError {
+            path: path_name.clone(),
+            error: e,
+        })?;
+        let config: DCTapConfig = toml::from_str(s.as_str()).map_err(|e| TapError::TapConfigTomlError {
+            path: path_name.clone(),
+            error: e,
+        })?;
         Ok(config)
     }
 }
@@ -104,10 +102,7 @@ impl TapConfig {
         self.flexible.unwrap_or(true)
     }
 
-    pub fn with_property_placeholders(
-        mut self,
-        property_place_holders: HashMap<String, PlaceholderResolver>,
-    ) -> Self {
+    pub fn with_property_placeholders(mut self, property_place_holders: HashMap<String, PlaceholderResolver>) -> Self {
         self.property_placeholders = Some(property_place_holders);
         self
     }
@@ -166,10 +161,7 @@ mod tests {
         let config = TapConfig::default()
             .with_property_placeholders(ph)
             .with_empty_property_placeholder(resolver.clone());
-        assert_eq!(
-            config.get_property_placeholder("nalt"),
-            Some(resolver.clone())
-        );
+        assert_eq!(config.get_property_placeholder("nalt"), Some(resolver.clone()));
         assert_eq!(config.get_property_placeholder(""), Some(resolver.clone()))
     }
 
@@ -190,10 +182,10 @@ picklist_delimiter = " "
 
         [property_placeholders.y.Stem]
         stem = "pending2"
-        
+
         [property_placeholders.x.Stem]
         stem = "pending"
-        
+
         [empty_property_placeholder.Stem]
         stem = "empty"
 "#;

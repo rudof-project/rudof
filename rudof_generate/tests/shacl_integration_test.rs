@@ -17,18 +17,18 @@ fn create_simple_shacl_schema(temp_dir: &TempDir) -> PathBuf {
 @prefix :       <http://example.org/> .
 @prefix sh:     <http://www.w3.org/ns/shacl#> .
 @prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
-        
+
 :Person a sh:NodeShape ;
    sh:closed true ;
-   sh:property [                  
-    sh:path     :name ; 
-    sh:minCount 1; 
+   sh:property [
+    sh:path     :name ;
+    sh:minCount 1;
     sh:maxCount 1;
     sh:datatype xsd:string ;
   ] ;
-  sh:property [                   
-   sh:path     :age ; 
-   sh:maxCount 1; 
+  sh:property [
+   sh:path     :age ;
+   sh:maxCount 1;
    sh:datatype xsd:integer ;
   ] .
     "#,

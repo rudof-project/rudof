@@ -24,9 +24,7 @@ impl FieldGenerator for StringGenerator {
             generate_name(&mut rng, &context.locale)
         } else if context.property.contains("title") || context.property.contains("Title") {
             generate_title(&mut rng, &context.locale)
-        } else if context.property.contains("description")
-            || context.property.contains("Description")
-        {
+        } else if context.property.contains("description") || context.property.contains("Description") {
             generate_description(&mut rng, &context.locale)
         } else if context.property.contains("email") || context.property.contains("Email") {
             generate_email(&mut rng)
@@ -54,17 +52,9 @@ impl FieldGenerator for IntegerGenerator {
         let mut rng = rand::thread_rng();
 
         // Get range from parameters or use defaults
-        let min = context
-            .parameters
-            .get("min")
-            .and_then(|v| v.as_i64())
-            .unwrap_or(-1000) as i32;
+        let min = context.parameters.get("min").and_then(|v| v.as_i64()).unwrap_or(-1000) as i32;
 
-        let max = context
-            .parameters
-            .get("max")
-            .and_then(|v| v.as_i64())
-            .unwrap_or(10000) as i32;
+        let max = context.parameters.get("max").and_then(|v| v.as_i64()).unwrap_or(10000) as i32;
 
         let value = rng.gen_range(min..=max);
         Ok(value.to_string())
@@ -86,17 +76,9 @@ impl FieldGenerator for DecimalGenerator {
     fn generate(&self, context: &GenerationContext) -> Result<String> {
         let mut rng = rand::thread_rng();
 
-        let min = context
-            .parameters
-            .get("min")
-            .and_then(|v| v.as_f64())
-            .unwrap_or(-500.0);
+        let min = context.parameters.get("min").and_then(|v| v.as_f64()).unwrap_or(-500.0);
 
-        let max = context
-            .parameters
-            .get("max")
-            .and_then(|v| v.as_f64())
-            .unwrap_or(500.0);
+        let max = context.parameters.get("max").and_then(|v| v.as_f64()).unwrap_or(500.0);
 
         let precision = context
             .parameters
@@ -255,8 +237,7 @@ impl FieldGenerator for UriGenerator {
 fn generate_name(rng: &mut impl Rng, locale: &str) -> String {
     let first_names = match locale {
         "es" => &[
-            "Ana", "Carlos", "María", "Diego", "Elena", "Fernando", "Isabel", "Jorge", "Laura",
-            "Miguel",
+            "Ana", "Carlos", "María", "Diego", "Elena", "Fernando", "Isabel", "Jorge", "Laura", "Miguel",
         ],
         "fr" => &[
             "Alice",
@@ -271,8 +252,7 @@ fn generate_name(rng: &mut impl Rng, locale: &str) -> String {
             "Jacques",
         ],
         _ => &[
-            "Alice", "Bob", "Charlie", "Diana", "Edward", "Fiona", "George", "Hannah", "Ian",
-            "Julia",
+            "Alice", "Bob", "Charlie", "Diana", "Edward", "Fiona", "George", "Hannah", "Ian", "Julia",
         ],
     };
 
@@ -290,8 +270,7 @@ fn generate_name(rng: &mut impl Rng, locale: &str) -> String {
             "Ruiz",
         ],
         "fr" => &[
-            "Martin", "Bernard", "Dubois", "Thomas", "Robert", "Richard", "Petit", "Durand",
-            "Leroy", "Moreau",
+            "Martin", "Bernard", "Dubois", "Thomas", "Robert", "Richard", "Petit", "Durand", "Leroy", "Moreau",
         ],
         _ => &[
             "Smith",
@@ -361,14 +340,7 @@ fn generate_title(rng: &mut impl Rng, locale: &str) -> String {
             "Développement",
             "Plateforme",
         ],
-        _ => &[
-            "System",
-            "Project",
-            "Analysis",
-            "Research",
-            "Development",
-            "Platform",
-        ],
+        _ => &["System", "Project", "Analysis", "Research", "Development", "Platform"],
     };
 
     let adj = adjectives.choose(rng).unwrap();
@@ -414,9 +386,7 @@ fn generate_email(rng: &mut impl Rng) -> String {
 }
 
 fn generate_generic_string(rng: &mut impl Rng, _locale: &str) -> String {
-    let words = [
-        "Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta",
-    ];
+    let words = ["Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta"];
     let word = words.choose(rng).unwrap();
     let number = rng.gen_range(1..1000);
 

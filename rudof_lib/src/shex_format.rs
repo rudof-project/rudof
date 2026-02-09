@@ -69,9 +69,7 @@ impl TryFrom<ShExFormat> for ShExAstShExFormat {
     fn try_from(format: ShExFormat) -> Result<Self, Self::Error> {
         match format {
             ShExFormat::ShExC => Ok(ShExAstShExFormat::ShExC),
-            ShExFormat::ShExJ | ShExFormat::JSON | ShExFormat::JSONLD => {
-                Ok(ShExAstShExFormat::ShExJ)
-            }
+            ShExFormat::ShExJ | ShExFormat::JSON | ShExFormat::JSONLD => Ok(ShExAstShExFormat::ShExJ),
             other => Err(RudofError::NotImplemented {
                 msg: format!("ShEx format {other:?} validation not yet implemented"),
             }),

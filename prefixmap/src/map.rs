@@ -222,23 +222,14 @@ impl PrefixMap {
             ("xsd", "https://www.w3.org/2001/XMLSchema#"),
             ("p", "https://www.wikidata.org/prop/"),
             ("pq", "https://www.wikidata.org/prop/qualifier/"),
-            (
-                "pqn",
-                "https://www.wikidata.org/prop/qualifier/value-normalized/",
-            ),
+            ("pqn", "https://www.wikidata.org/prop/qualifier/value-normalized/"),
             ("pqv", "https://www.wikidata.org/prop/qualifier/value/"),
             ("pr", "https://www.wikidata.org/prop/reference/"),
-            (
-                "prn",
-                "https://www.wikidata.org/prop/reference/value-normalized/",
-            ),
+            ("prn", "https://www.wikidata.org/prop/reference/value-normalized/"),
             ("prv", "https://www.wikidata.org/prop/reference/value/"),
             ("psv", "https://www.wikidata.org/prop/statement/value/"),
             ("ps", "https://www.wikidata.org/prop/statement/"),
-            (
-                "psn",
-                "https://www.wikidata.org/prop/statement/value-normalized/",
-            ),
+            ("psn", "https://www.wikidata.org/prop/statement/value-normalized/"),
             ("wd", "https://www.wikidata.org/entity/"),
             ("wdata", "https://www.wikidata.org/wiki/Special:EntityData/"),
             ("wdno", "https://www.wikidata.org/prop/novalue/"),
@@ -282,8 +273,7 @@ impl PrefixMap {
     /// # Ok::<(), PrefixMapError>(())
     /// ```
     pub fn qualify(&self, iri: &IriS) -> String {
-        self.qualify_optional(iri)
-            .unwrap_or_else(|| format!("<{iri}>"))
+        self.qualify_optional(iri).unwrap_or_else(|| format!("<{iri}>"))
     }
 
     /// Qualifies an IRI against a [`PrefixMap`]
@@ -316,11 +306,7 @@ impl PrefixMap {
         let s = self.format_colored(alias, rest);
 
         if self.hyperlink {
-            Some(format!(
-                "\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\",
-                iri.as_str(),
-                s
-            ))
+            Some(format!("\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\", iri.as_str(), s))
         } else {
             Some(s)
         }
@@ -394,8 +380,7 @@ impl PrefixMap {
     /// # Ok::<(), PrefixMapError>(())
     /// ```
     pub fn qualify_local(&self, iri: &IriS) -> Option<String> {
-        self.longest_prefix_match(iri)
-            .map(|(_, rest)| rest.to_string())
+        self.longest_prefix_match(iri).map(|(_, rest)| rest.to_string())
     }
 
     /// Finds the longest prefix match for a given IRI in the [`PrefixMap`]
@@ -489,11 +474,7 @@ impl PrefixMap {
     /// assert_eq!(xsd_string, xsd_string_resolved);
     /// # Ok::<(), PrefixMapError>(())
     /// ```
-    pub fn resolve_prefix_local<S: Into<String>>(
-        &self,
-        prefix: S,
-        local: S,
-    ) -> Result<IriS, PrefixMapError> {
+    pub fn resolve_prefix_local<S: Into<String>>(&self, prefix: S, local: S) -> Result<IriS, PrefixMapError> {
         let prefix = prefix.into();
         let local = local.into();
 
@@ -501,7 +482,7 @@ impl PrefixMap {
             Some(iri) => {
                 let new_iri = iri.extend(local.as_str())?;
                 Ok(new_iri)
-            }
+            },
             None => Err(PrefixMapError::PrefixNotFound {
                 prefix,
                 prefixmap: self.clone(),
@@ -528,7 +509,7 @@ impl Iterator for PrefixMap {
             false => {
                 let (k, v) = self.map.shift_remove_index(0).unwrap();
                 Some((k, v))
-            }
+            },
         }
     }
 }

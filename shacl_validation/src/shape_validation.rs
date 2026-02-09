@@ -5,9 +5,7 @@ use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use iri_s::IriS;
-use shacl_ast::shacl_vocab::{
-    sh_closed_constraint_component, sh_reifier_shape_constraint_component,
-};
+use shacl_ast::shacl_vocab::{sh_closed_constraint_component, sh_reifier_shape_constraint_component};
 use shacl_ir::compiled::property_shape::PropertyShapeIR;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::reifier_info::ReifierInfo;
@@ -70,11 +68,7 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
             )?;
             trace!(
                 "Results for component {component}: with value nodes {value_nodes}\n{}\nend results",
-                results
-                    .iter()
-                    .map(|r| r.to_string())
-                    .collect::<Vec<_>>()
-                    .join("\n")
+                results.iter().map(|r| r.to_string()).collect::<Vec<_>>().join("\n")
             );
             component_validation_results.extend(results);
         }
@@ -86,16 +80,13 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
         //    that have been computed for the current shape
         let mut property_shapes_validation_results = Vec::new();
         for prop_shape in self.property_shapes().iter() {
-            let shape = shapes_graph
-                .get_shape_from_idx(prop_shape)
-                .unwrap_or_else(|| {
-                    panic!(
-                        "Internal error: Property shape for idx: {} not found in schema",
-                        prop_shape
-                    )
-                });
-            let results =
-                shape.validate(store, runner, Some(&focus_nodes), Some(self), shapes_graph)?;
+            let shape = shapes_graph.get_shape_from_idx(prop_shape).unwrap_or_else(|| {
+                panic!(
+                    "Internal error: Property shape for idx: {} not found in schema",
+                    prop_shape
+                )
+            });
+            let results = shape.validate(store, runner, Some(&focus_nodes), Some(self), shapes_graph)?;
             property_shapes_validation_results.extend(results);
         }
 
@@ -107,16 +98,14 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
 
                 let all_properties: HashSet<IriS> = match S::term_as_subject(focus_node) {
                     Ok(subj) => {
-                        let ts = store.triples_with_subject(subj).map_err(|e| {
-                            ValidateError::TriplesWithSubject {
+                        let ts = store
+                            .triples_with_subject(subj)
+                            .map_err(|e| ValidateError::TriplesWithSubject {
                                 subject: format!("{focus_node:?}"),
                                 error: e.to_string(),
-                            }
-                        })?;
-                        Ok::<HashSet<IriS>, ValidateError>(
-                            ts.map(|t| t.pred().clone().into()).collect(),
-                        )
-                    }
+                            })?;
+                        Ok::<HashSet<IriS>, ValidateError>(ts.map(|t| t.pred().clone().into()).collect())
+                    },
                     Err(_) => Ok::<HashSet<IriS>, ValidateError>(HashSet::new()),
                 }?;
 
@@ -181,11 +170,9 @@ where
             let pred = reifier_info.predicate();
             let triples = store
                 .triples_with_subject_predicate(
-                    S::term_as_subject(focus_node).map_err(|_| {
-                        ValidateError::TriplesWithSubject {
-                            subject: format!("{focus_node:?}"),
-                            error: "Cannot convert to subject".to_string(),
-                        }
+                    S::term_as_subject(focus_node).map_err(|_| ValidateError::TriplesWithSubject {
+                        subject: format!("{focus_node:?}"),
+                        error: "Cannot convert to subject".to_string(),
                     })?,
                     pred.clone().into(),
                 )
@@ -195,12 +182,13 @@ where
                     error: e.to_string(),
                 })?;
             for triple in triples {
-                let reifier_subjects = store.reifiers_of_triple(&triple).map_err(|e| {
-                    ValidateError::ReifiersOfTriple {
-                        triple: format!("{triple:?}"),
-                        error: e.to_string(),
-                    }
-                })?;
+                let reifier_subjects =
+                    store
+                        .reifiers_of_triple(&triple)
+                        .map_err(|e| ValidateError::ReifiersOfTriple {
+                            triple: format!("{triple:?}"),
+                            error: e.to_string(),
+                        })?;
                 let reifier_subjects = reifier_subjects.collect::<Vec<_>>();
                 if reifier_subjects.is_empty() && reifier_info.reification_required() {
                     let vr_single = ValidationResult::new(
@@ -222,11 +210,9 @@ where
                     .map(|subj| S::subject_as_term(subj))
                     .collect::<HashSet<_>>();
                 let reifier_shape =
-                    get_shape_from_idx(shapes_graph, reifier_shape).map_err(|e| {
-                        ValidateError::ShapeNotFound {
-                            shape_idx: *reifier_shape,
-                            error: e.to_string(),
-                        }
+                    get_shape_from_idx(shapes_graph, reifier_shape).map_err(|e| ValidateError::ShapeNotFound {
+                        shape_idx: *reifier_shape,
+                        error: e.to_string(),
                     })?;
                 let vr_iter = reifier_shape.validate(
                     store,
@@ -314,7 +300,7 @@ impl<S: NeighsRDF> ValueNodesOps<S> for PropertyShapeIR {
                     // We are currently ust ignoring this case
                     // TODO: Should we add a violation for this case?
                     None
-                }
+                },
             }
         });
         Ok(ValueNodes::new(value_nodes))

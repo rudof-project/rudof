@@ -4,9 +4,7 @@ use prefixmap::error::PrefixMapError;
 use serde::{Serialize, ser::SerializeMap};
 use shex_ast::{
     Node, ShapeLabelIdx,
-    ir::{
-        node_constraint::NodeConstraint, schema_ir::SchemaIR, shape::Shape, shape_expr::ShapeExpr,
-    },
+    ir::{node_constraint::NodeConstraint, schema_ir::SchemaIR, shape::Shape, shape_expr::ShapeExpr},
 };
 use std::{fmt::Display, io};
 use termtree::Tree;
@@ -80,7 +78,7 @@ impl Reason {
                 }
                 tree.leaves.push(reasons_tree);
                 Ok(())
-            }
+            },
             Reason::ShapeOrPassed { reasons, .. } => {
                 let mut reasons_tree = Tree::new("reasons".to_string());
                 for reason in reasons.iter() {
@@ -88,7 +86,7 @@ impl Reason {
                 }
                 tree.leaves.push(reasons_tree);
                 Ok(())
-            }
+            },
             _ => Ok(()),
         }
     }
@@ -111,7 +109,7 @@ impl Reason {
                     schema.show_shape_expr(se, width)
                 );
                 Ok(s)
-            }
+            },
             Reason::ShapePassed { node, idx, .. } => {
                 let se_str = schema.show_shape_idx(idx, width);
                 Ok(format!(
@@ -120,7 +118,7 @@ impl Reason {
                     idx,
                     se_str
                 ))
-            }
+            },
             _ => Ok(format!("{self}",)),
         }
     }
@@ -135,9 +133,7 @@ impl Reason {
         let root_str = self.root_qualified(nodes_prefixmap, schema, width)?;
         let mut tree = Tree::new(root_str);
         self.build_tree(&mut tree, nodes_prefixmap, schema)?;
-        write!(writer, "{}", tree).map_err(|e| PrefixMapError::IOError {
-            error: e.to_string(),
-        })?;
+        write!(writer, "{}", tree).map_err(|e| PrefixMapError::IOError { error: e.to_string() })?;
         Ok(())
     }
 
@@ -149,9 +145,7 @@ impl Reason {
     ) -> Result<String, PrefixMapError> {
         let mut v = Vec::new();
         self.write_qualified(nodes_prefixmap, schema, width, &mut v)?;
-        let s = String::from_utf8(v).map_err(|e| PrefixMapError::IOError {
-            error: e.to_string(),
-        })?;
+        let s = String::from_utf8(v).map_err(|e| PrefixMapError::IOError { error: e.to_string() })?;
         Ok(s)
     }
 }
@@ -190,7 +184,7 @@ impl Display for Reason {
         match self {
             Reason::NodeConstraintPassed { node, nc } => {
                 write!(f, "Node constraint passed. Node: {node}, Constraint: {nc}",)
-            }
+            },
             Reason::ShapeAndPassed { node, se, reasons } => {
                 write!(f, "AND passed. Node {node}, and: {se}, reasons:")?;
                 for reason in reasons {
@@ -201,10 +195,10 @@ impl Display for Reason {
                     write!(f, "], ")?;
                 }
                 Ok(())
-            }
+            },
             Reason::ShapePassed { node, shape, idx } => {
                 write!(f, "Shape passed. Node {node}, shape {idx}: {shape}")
-            }
+            },
             Reason::ShapeOrPassed {
                 node,
                 shape_expr,
@@ -225,20 +219,12 @@ impl Display for Reason {
             Reason::EmptyPassed { node } => write!(f, "Shape External passed for node {node}"),
             Reason::ShapeRefPassed { node, idx } => {
                 write!(f, "ShapeRef passed. Node {node}, idx: {idx}")
-            }
-            Reason::ShapeExtendsPassed {
-                node,
-                shape,
-                reasons,
-            } => write!(
+            },
+            Reason::ShapeExtendsPassed { node, shape, reasons } => write!(
                 f,
                 "Shape extends passed. Node {node}, shape: {shape}, reasons: {reasons}"
             ),
-            Reason::DescendantShapePassed {
-                node,
-                shape,
-                reasons,
-            } => write!(
+            Reason::DescendantShapePassed { node, shape, reasons } => write!(
                 f,
                 "Descendant shapes passed. Node {node}, shape: {shape}, reasons: {reasons}"
             ),

@@ -6,14 +6,14 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 :LessThan a sh:NodeShape ;
   sh:targetClass :Node ;
   sh:property :start_end .
-  
+
 :start_end a sh:PropertyShape ;
     sh:path :startDate ;
     sh:lessThan :endDate .
 
 :ok1 a :Node; :startDate "2025-04-01"^^xsd:date; :endDate "2025-05-02"^^xsd:date .
-:ko1 a :Node; 
-     :startDate "2025-02-01"^^xsd:date; 
+:ko1 a :Node;
+     :startDate "2025-02-01"^^xsd:date;
      :endDate "2019-05-02"^^xsd:date .
 :ko2 a :Node ;
      :startDate 3, 4 ;

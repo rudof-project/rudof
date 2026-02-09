@@ -168,11 +168,7 @@ fn change_extension(name: String, old_extension: String, new_extension: String) 
     }
 }
 
-fn parse_schema(
-    path: &Path,
-    _base: Option<&str>,
-    entry_name: &String,
-) -> Result<SchemaJson, Box<ManifestError>> {
+fn parse_schema(path: &Path, _base: Option<&str>, entry_name: &String) -> Result<SchemaJson, Box<ManifestError>> {
     SchemaJson::parse_schema(path).map_err(|e| {
         Box::new(ManifestError::SchemaJsonError {
             error: Box::new(e),
@@ -183,13 +179,10 @@ fn parse_schema(
 
 impl ValidationEntry {
     pub fn run(&self, folder: &Path) -> Result<(), Box<ManifestError>> {
-        let path_absolute =
-            folder
-                .canonicalize()
-                .map_err(|err| ManifestError::AbsolutePathError {
-                    base: folder.to_string_lossy().to_string().into(),
-                    error: err,
-                })?;
+        let path_absolute = folder.canonicalize().map_err(|err| ManifestError::AbsolutePathError {
+            base: folder.to_string_lossy().to_string().into(),
+            error: err,
+        })?;
         let path_iri = path_to_iri(&path_absolute)?;
         let base_str = Some(path_iri.as_str());
 
@@ -215,16 +208,11 @@ impl ValidationEntry {
         let base_iri = path_to_iri(&path_schema)?;
         trace!("Compiling schema, base: {base_iri}");
         compiler
-            .compile(
-                &schema,
-                &base_iri,
-                &Some(base_iri.clone()),
-                &mut compiled_schema,
-            )
+            .compile(&schema, &base_iri, &Some(base_iri.clone()), &mut compiled_schema)
             .map_err(|e| Box::new(ManifestError::SchemaIRError(e)))?;
         let schema = compiled_schema.clone();
-        let mut validator = Validator::new(compiled_schema, &ValidatorConfig::default())
-            .map_err(ManifestError::ValidationError)?;
+        let mut validator =
+            Validator::new(compiled_schema, &ValidatorConfig::default()).map_err(ManifestError::ValidationError)?;
         let expected_type = parse_type(&self.type_)?;
         debug!("Schema compiled...expected type: {:?}", expected_type);
         trace!("Schema: {}", schema);
@@ -233,18 +221,16 @@ impl ValidationEntry {
         let mut passed_status: Vec<ValidationStatus> = Vec::new();
         if let Some(map) = &self.action.map {
             let map_path = folder.join(map);
-            let str =
-                std::fs::read_to_string(&map_path).map_err(|e| ManifestError::ReadingShapeMap {
-                    error: e.to_string(),
-                    entry: self.name.clone(),
-                    map: map_path.clone(),
-                })?;
-            let manifest_map = serde_json::from_str::<ManifestMap>(&str).map_err(|e| {
-                ManifestError::ParsingManifestMap {
-                    error: e.to_string(),
-                    entry: self.name.clone(),
-                }
+            let str = std::fs::read_to_string(&map_path).map_err(|e| ManifestError::ReadingShapeMap {
+                error: e.to_string(),
+                entry: self.name.clone(),
+                map: map_path.clone(),
             })?;
+            let manifest_map =
+                serde_json::from_str::<ManifestMap>(&str).map_err(|e| ManifestError::ParsingManifestMap {
+                    error: e.to_string(),
+                    entry: self.name.clone(),
+                })?;
             for entry in manifest_map.entries() {
                 let node = parse_node(entry.node(), base_str)?;
                 let shape = parse_shape(entry.shape())?;
@@ -285,7 +271,7 @@ impl ValidationEntry {
                     passed_status,
                     entry: Box::new(self.name.clone()),
                 }))
-            }
+            },
             (Failure, false) => Ok(()),
             (Failure, _) => {
                 debug!("Expected Failure but passed {}", &self.name);
@@ -294,7 +280,7 @@ impl ValidationEntry {
                     passed_status,
                     entry: self.name.clone(),
                 }))
-            }
+            },
         }
     }
 }
@@ -305,7 +291,7 @@ fn parse_maybe_shape(shape: &Option<String>) -> Result<ShapeLabel, Box<ManifestE
         Some(str) => {
             let shape = parse_shape(str)?;
             Ok(shape)
-        }
+        },
     }
 }
 
@@ -334,12 +320,11 @@ fn parse_focus(focus: &Focus, base: Option<&str>) -> Result<Node, Box<ManifestEr
             let node = parse_node(str, base)?;
             trace!("Parsed focus node: {node}");
             Ok(node)
-        }
+        },
         Focus::Typed(str, str_type) => {
-            let datatype = IriS::from_str(str_type.as_str())
-                .map_err(|e| Box::new(ManifestError::IriError(e)))?;
+            let datatype = IriS::from_str(str_type.as_str()).map_err(|e| Box::new(ManifestError::IriError(e)))?;
             Ok(Object::Literal(SLiteral::lit_datatype(str, &IriRef::Iri(datatype))).into())
-        }
+        },
     }
 }
 
@@ -359,11 +344,9 @@ fn parse_shape(str: &str) -> Result<ShapeLabel, Box<ManifestError>> {
             error: e.to_string(),
         })
     })?;
-    let shape_label = ShapeLabel::from_object(node.as_object()).map_err(|e| {
-        ManifestError::ParsingShapeLabel {
-            value: str.to_string(),
-            error: e.to_string(),
-        }
+    let shape_label = ShapeLabel::from_object(node.as_object()).map_err(|e| ManifestError::ParsingShapeLabel {
+        value: str.to_string(),
+        error: e.to_string(),
     })?;
     Ok(shape_label)
 }
@@ -395,8 +378,7 @@ fn path_to_iri(path: &Path) -> Result<IriS, Box<ManifestError>> {
 }
 
 fn get_path_schema(schema: &String, folder: &Path) -> PathBuf {
-    let new_schema_name =
-        change_extension(schema.to_string(), ".shex".to_string(), ".json".to_string());
+    let new_schema_name = change_extension(schema.to_string(), ".shex".to_string(), ".json".to_string());
     let json_path = Path::new(&new_schema_name);
     let mut attempt = PathBuf::from(folder);
     attempt.push(json_path);
@@ -424,9 +406,7 @@ impl Manifest for ManifestValidation {
 
     fn run_entry(&self, name: &str, base: &Path) -> Result<(), Box<ManifestError>> {
         match self.map.get(name) {
-            None => Err(Box::new(ManifestError::NotFoundEntry {
-                name: name.to_string(),
-            })),
+            None => Err(Box::new(ManifestError::NotFoundEntry { name: name.to_string() })),
             Some(entry) => entry.run(base),
         }
     }

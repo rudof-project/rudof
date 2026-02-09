@@ -88,14 +88,6 @@ impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MinLength {
         };
 
         let message = format!("MinLength({min_length_value}) not satisfied");
-        validate_ask_with(
-            component,
-            shape,
-            store,
-            value_nodes,
-            query,
-            &message,
-            maybe_path,
-        )
+        validate_ask_with(component, shape, store, value_nodes, query, &message, maybe_path)
     }
 }

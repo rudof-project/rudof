@@ -54,7 +54,7 @@ impl Display for CompiledTarget {
             CompiledTarget::WrongObjectsOf(node) => write!(f, "WrongObjectsOf({node})"),
             CompiledTarget::WrongImplicitClass(node) => {
                 write!(f, "WrongImplicitClass({node})")
-            }
+            },
         }
     }
 }

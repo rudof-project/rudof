@@ -65,7 +65,7 @@ impl HtmlShape {
         match &self.svg_shape {
             Some(_svg) => {
                 // If the current shape has an svg, let it go
-            }
+            },
             None => self.svg_shape.clone_from(&other.svg_shape),
         }
     }

@@ -47,17 +47,13 @@ impl FieldGeneratorRegistry {
         self.generators
             .get(name)
             .map(|g| g.as_ref())
-            .ok_or_else(|| {
-                DataGeneratorError::FieldGeneration(format!("Generator '{name}' not found"))
-            })
+            .ok_or_else(|| DataGeneratorError::FieldGeneration(format!("Generator '{name}' not found")))
     }
 
     /// Get the default generator for a datatype
     pub fn get_default_generator(&self, datatype: &str) -> Result<&dyn FieldGenerator> {
         let generator_name = self.datatype_mappings.get(datatype).ok_or_else(|| {
-            DataGeneratorError::FieldGeneration(format!(
-                "No generator found for datatype '{datatype}'"
-            ))
+            DataGeneratorError::FieldGeneration(format!("No generator found for datatype '{datatype}'"))
         })?;
 
         self.get_generator(generator_name)
@@ -65,9 +61,10 @@ impl FieldGeneratorRegistry {
 
     /// Create a generator instance from a factory
     pub fn create_generator(&self, name: &str) -> Result<Box<dyn FieldGenerator>> {
-        let factory = self.factories.get(name).ok_or_else(|| {
-            DataGeneratorError::FieldGeneration(format!("Factory for generator '{name}' not found"))
-        })?;
+        let factory = self
+            .factories
+            .get(name)
+            .ok_or_else(|| DataGeneratorError::FieldGeneration(format!("Factory for generator '{name}' not found")))?;
 
         factory.create()
     }

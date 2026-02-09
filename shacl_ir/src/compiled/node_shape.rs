@@ -130,8 +130,7 @@ impl NodeShapeIR {
         let components = shape.components().iter().collect::<Vec<_>>();
         let mut compiled_components = Vec::new();
         for component in components {
-            if let Some(component) = ComponentIR::compile(component.to_owned(), schema, schema_ir)?
-            {
+            if let Some(component) = ComponentIR::compile(component.to_owned(), schema, schema_ir)? {
                 compiled_components.push(component);
             }
         }

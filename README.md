@@ -15,7 +15,7 @@ and conversions between different RDF data modeling formalisms.
 
 The code can be used as a Rust library
 but it also contains a binary called `rudof`
-which can be used as an RDF playground. 
+which can be used as an RDF playground.
 
 We provide binaries for Linux, Windows, Mac and Docker
 (see [releases](https://github.com/rudof-project/rudof/releases)),
@@ -182,10 +182,10 @@ where `value` can be `info`, `debug` or `trace` to show more information. It is 
 export RUST_LOG=info,shacl_validation=trace,hyper=off,reqwest=off
 ```
 
-In case you use nu_shell, you can use: 
+In case you use nu_shell, you can use:
 
 ```
-$env.RUST_LOG = 'info,shacl_validation=trace,hyper=off,reqwest=off' 
+$env.RUST_LOG = 'info,shacl_validation=trace,hyper=off,reqwest=off'
 ```
 
 ## Command line usage
@@ -215,7 +215,7 @@ Commands:
   help            Print this message or the help of the given subcommand(s)
 
 Options:
-  -d, --debug...  
+  -d, --debug...
   -h, --help      Print help (see more with '--help')
   -V, --version   Print version
 ```

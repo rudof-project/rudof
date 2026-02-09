@@ -1,6 +1,6 @@
 ## pg - Property Graphs
 
-Property graphs contain a list of node or edge declarations separated by `;`. 
+Property graphs contain a list of node or edge declarations separated by `;`.
 
 An example can be:
 

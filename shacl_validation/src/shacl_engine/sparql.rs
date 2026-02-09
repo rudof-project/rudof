@@ -92,11 +92,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
         }))
     }
 
-    fn target_class(
-        &self,
-        store: &S,
-        class: &RDFNode,
-    ) -> Result<FocusNodes<S>, Box<ValidateError>> {
+    fn target_class(&self, store: &S, class: &RDFNode) -> Result<FocusNodes<S>, Box<ValidateError>> {
         let class: S::Term = class.clone().into();
         if !class.is_iri() {
             return Err(Box::new(ValidateError::TargetClassNotIri));
@@ -124,11 +120,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
         }))
     }
 
-    fn target_subject_of(
-        &self,
-        store: &S,
-        predicate: &IriS,
-    ) -> Result<FocusNodes<S>, Box<ValidateError>> {
+    fn target_subject_of(&self, store: &S, predicate: &IriS) -> Result<FocusNodes<S>, Box<ValidateError>> {
         let query = formatdoc! {"
             SELECT DISTINCT ?this
             WHERE {{
@@ -148,11 +140,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
         }))
     }
 
-    fn target_object_of(
-        &self,
-        store: &S,
-        predicate: &IriS,
-    ) -> Result<FocusNodes<S>, Box<ValidateError>> {
+    fn target_object_of(&self, store: &S, predicate: &IriS) -> Result<FocusNodes<S>, Box<ValidateError>> {
         let query = formatdoc! {"
             SELECT DISTINCT ?this
             WHERE {{
@@ -172,22 +160,13 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
         }))
     }
 
-    fn implicit_target_class(
-        &self,
-        _store: &S,
-        _shape: &RDFNode,
-    ) -> Result<FocusNodes<S>, Box<ValidateError>> {
+    fn implicit_target_class(&self, _store: &S, _shape: &RDFNode) -> Result<FocusNodes<S>, Box<ValidateError>> {
         Err(Box::new(ValidateError::NotImplemented {
             msg: "implicit_target_class".to_string(),
         }))
     }
 
-    fn record_validation(
-        &mut self,
-        _node: RDFNode,
-        _shape_idx: ShapeLabelIdx,
-        _results: Vec<ValidationResult>,
-    ) {
+    fn record_validation(&mut self, _node: RDFNode, _shape_idx: ShapeLabelIdx, _results: Vec<ValidationResult>) {
         // Nothing to do by now...
     }
 

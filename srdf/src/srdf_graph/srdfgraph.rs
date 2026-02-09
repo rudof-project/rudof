@@ -2,8 +2,8 @@ use crate::async_srdf::AsyncSRDF;
 use crate::matcher::Matcher;
 use crate::srdfgraph_error::SRDFGraphError;
 use crate::{
-    BuildRDF, FocusRDF, NeighsRDF, QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions,
-    RDF_TYPE_STR, RDFFormat, Rdf, VarName,
+    BuildRDF, FocusRDF, NeighsRDF, QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions, RDF_TYPE_STR, RDFFormat,
+    Rdf, VarName,
 };
 use async_trait::async_trait;
 use colored::*;
@@ -12,9 +12,9 @@ use oxigraph::sparql::{QueryResults, SparqlEvaluator};
 use oxigraph::store::Store;
 use oxjsonld::JsonLdParser;
 use oxrdf::{
-    BlankNode as OxBlankNode, Graph, GraphName, Literal as OxLiteral, NamedNode as OxNamedNode,
-    NamedNodeRef, NamedOrBlankNode as OxSubject, NamedOrBlankNodeRef as OxSubjectRef, Quad,
-    Term as OxTerm, TermRef, Triple as OxTriple, TripleRef,
+    BlankNode as OxBlankNode, Graph, GraphName, Literal as OxLiteral, NamedNode as OxNamedNode, NamedNodeRef,
+    NamedOrBlankNode as OxSubject, NamedOrBlankNodeRef as OxSubjectRef, Quad, Term as OxTerm, TermRef,
+    Triple as OxTriple, TripleRef,
 };
 use oxrdfio::{JsonLdProfileSet, RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
@@ -76,9 +76,7 @@ impl SRDFGraph {
 
     pub fn quads(&self) -> impl Iterator<Item = Quad> + '_ {
         let graph_name = GraphName::DefaultGraph;
-        self.graph
-            .iter()
-            .map(move |t| triple_to_quad(t, graph_name.clone()))
+        self.graph.iter().map(move |t| triple_to_quad(t, graph_name.clone()))
     }
 
     pub fn is_empty(&self) -> bool {
@@ -119,7 +117,7 @@ impl SRDFGraph {
                                 debug!("Turtle Error captured in Lax mode: {e:?}");
                                 continue;
                             }
-                        }
+                        },
                         Ok(t) => t,
                     };
                     self.graph.insert(triple.as_ref());
@@ -132,7 +130,7 @@ impl SRDFGraph {
                 };
                 let pm = PrefixMap::from_hashmap(prefixes)?;
                 self.merge_prefixes(pm)?;
-            }
+            },
             RDFFormat::NTriples => {
                 let parser = NTriplesParser::new();
                 let mut reader = parser.for_reader(reader);
@@ -147,13 +145,13 @@ impl SRDFGraph {
                             } else {
                                 debug!("Error captured: {e:?}")
                             }
-                        }
+                        },
                         Ok(t) => {
                             self.graph.insert(t.as_ref());
-                        }
+                        },
                     }
                 }
-            }
+            },
             RDFFormat::RDFXML => {
                 let parser = RdfXmlParser::new();
                 let mut reader = parser.for_reader(reader);
@@ -168,14 +166,14 @@ impl SRDFGraph {
                             } else {
                                 debug!("Error captured: {e:?}")
                             }
-                        }
+                        },
                         Ok(t) => {
                             let triple_ref = cnv_triple(&t);
                             self.graph.insert(triple_ref);
-                        }
+                        },
                     }
                 }
-            }
+            },
             RDFFormat::TriG => todo!(),
             RDFFormat::N3 => todo!(),
             RDFFormat::NQuads => {
@@ -192,13 +190,13 @@ impl SRDFGraph {
                             } else {
                                 debug!("NQuads Error captured in Lax mode: {e:?}")
                             }
-                        }
+                        },
                         Ok(t) => {
                             self.graph.insert(t.as_ref());
-                        }
+                        },
                     }
                 }
-            }
+            },
             RDFFormat::JsonLd => {
                 let parser = JsonLdParser::new();
                 let mut reader = parser.for_reader(reader);
@@ -213,13 +211,13 @@ impl SRDFGraph {
                             } else {
                                 debug!("JSON-LD Error captured in Lax mode: {e:?}")
                             }
-                        }
+                        },
                         Ok(t) => {
                             self.graph.insert(t.as_ref());
-                        }
+                        },
                     }
                 }
-            }
+            },
         }
         Ok(())
     }
@@ -270,12 +268,7 @@ impl SRDFGraph {
         OxNamedNode::new_unchecked(iri.as_str())
     }
 
-    pub fn add_triple_ref<'a, S, P, O>(
-        &mut self,
-        subj: S,
-        pred: P,
-        obj: O,
-    ) -> Result<(), SRDFGraphError>
+    pub fn add_triple_ref<'a, S, P, O>(&mut self, subj: S, pred: P, obj: O) -> Result<(), SRDFGraphError>
     where
         S: Into<OxSubjectRef<'a>>,
         P: Into<NamedNodeRef<'a>>,
@@ -411,10 +404,7 @@ impl NeighsRDF for SRDFGraph {
     {
         // TODO: Implement this function in a way that it does not retrieve all triples
         let triples = self.triples()?.filter_map(move |triple| {
-            match subject == triple.subject
-                && predicate == triple.predicate
-                && object == triple.object
-            {
+            match subject == triple.subject && predicate == triple.predicate && object == triple.object {
                 true => Some(triple),
                 false => None,
             }
@@ -423,10 +413,7 @@ impl NeighsRDF for SRDFGraph {
     }
 
     // Optimized version for triples with a specific subject
-    fn triples_with_subject(
-        &self,
-        subject: Self::Subject,
-    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
+    fn triples_with_subject(&self, subject: Self::Subject) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
         // Collect the triples into a Vec to avoid the lifetime dependency on subject
         let triples: Vec<_> = self
             .graph
@@ -446,10 +433,7 @@ impl AsyncSRDF for SRDFGraph {
     type Term = OxTerm;
     type Err = SRDFGraphError;
 
-    async fn get_predicates_subject(
-        &self,
-        subject: &OxSubject,
-    ) -> Result<HashSet<OxNamedNode>, SRDFGraphError> {
+    async fn get_predicates_subject(&self, subject: &OxSubject) -> Result<HashSet<OxNamedNode>, SRDFGraphError> {
         let mut results = HashSet::new();
         for triple in self.graph.triples_for_subject(subject) {
             let predicate: OxNamedNode = triple.predicate.to_owned().into();
@@ -659,36 +643,33 @@ impl QueryRDF for SRDFGraph {
         if let Some(store) = &self.store {
             trace!("Querying in-memory store");
 
-            let parsed_query = SparqlEvaluator::new().parse_query(query_str).map_err(|e| {
-                SRDFGraphError::ParsingQueryError {
-                    msg: format!("Error parsing query: {}", e),
-                }
-            })?;
-            let new_sol = parsed_query.on_store(store).execute().map_err(|e| {
-                SRDFGraphError::RunningQueryError {
+            let parsed_query =
+                SparqlEvaluator::new()
+                    .parse_query(query_str)
+                    .map_err(|e| SRDFGraphError::ParsingQueryError {
+                        msg: format!("Error parsing query: {}", e),
+                    })?;
+            let new_sol = parsed_query
+                .on_store(store)
+                .execute()
+                .map_err(|e| SRDFGraphError::RunningQueryError {
                     query: query_str.to_string(),
                     msg: format!("Error executing query: {}", e),
-                }
-            })?;
+                })?;
             trace!("Got results from in-memory store");
             let sol = cnv_query_results(new_sol)?;
-            sols.extend(sol, self.prefixmap()).map_err(|e| {
-                SRDFGraphError::ExtendingQuerySolutionsError {
+            sols.extend(sol, self.prefixmap())
+                .map_err(|e| SRDFGraphError::ExtendingQuerySolutionsError {
                     query: query_str.to_string(),
                     error: format!("{e}"),
-                }
-            })?;
+                })?;
         } else {
             trace!("No in-memory store to query");
         }
         Ok(sols)
     }
 
-    fn query_construct(
-        &self,
-        _query_str: &str,
-        _format: &QueryResultFormat,
-    ) -> Result<String, SRDFGraphError>
+    fn query_construct(&self, _query_str: &str, _format: &QueryResultFormat) -> Result<String, SRDFGraphError>
     where
         Self: Sized,
     {
@@ -704,9 +685,7 @@ impl QueryRDF for SRDFGraph {
     }
 }
 
-fn cnv_query_results(
-    query_results: QueryResults,
-) -> Result<Vec<QuerySolution<SRDFGraph>>, SRDFGraphError> {
+fn cnv_query_results(query_results: QueryResults) -> Result<Vec<QuerySolution<SRDFGraph>>, SRDFGraphError> {
     let mut results = Vec::new();
     if let QueryResults::Solutions(solutions) = query_results {
         trace!("Converting query solutions");
@@ -963,10 +942,7 @@ mod tests {
 
         assert_eq!(
             result,
-            vec![
-                OxTerm::from(OxLiteral::from(1)),
-                OxTerm::from(OxLiteral::from(2))
-            ]
+            vec![OxTerm::from(OxLiteral::from(1)), OxTerm::from(OxLiteral::from(2))]
         )
     }
 

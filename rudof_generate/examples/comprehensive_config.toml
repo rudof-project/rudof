@@ -30,7 +30,7 @@ cardinality_strategy = "Balanced"     # How to handle property cardinalities
 # ============================================================================
 # [generation.distribution_weights]
 # "http://example.org/Person" = 0.5        # 50% persons
-# "http://example.org/Organization" = 0.3  # 30% organizations  
+# "http://example.org/Organization" = 0.3  # 30% organizations
 # "http://example.org/Course" = 0.2        # 20% courses
 
 # ============================================================================
@@ -117,7 +117,7 @@ end_year = 2024
 #
 # Heuristic fallbacks (when no pattern specified):
 # - Properties with "phone"/"tel" → phone number format
-# - Properties with "email" → email format  
+# - Properties with "email" → email format
 # - Properties with "url"/"website" → URL format
 # - Properties with "id"/"identifier" → ID format
 
@@ -253,11 +253,11 @@ parallel_fields = true              # Generate field values in parallel
 # [generation]
 # entity_count = 10000
 # cardinality_strategy = "Maximum"
-# 
+#
 # [parallel]
 # worker_threads = 8
 # batch_size = 250
-# 
+#
 # [output]
 # parallel_writing = true
 # parallel_file_count = 0              # Auto-detect optimal count
@@ -267,7 +267,7 @@ parallel_fields = true              # Generate field values in parallel
 # worker_threads = 2
 # batch_size = 50
 # parallel_shapes = false
-# 
+#
 # [output]
 # compress = true                      # Compress output to save space
 
@@ -275,10 +275,10 @@ parallel_fields = true              # Generate field values in parallel
 # [generation]
 # entity_count = 10
 # seed = 12345                         # Fixed seed for reproducible results
-# 
+#
 # [parallel]
 # worker_threads = 1                   # Single-threaded for easier debugging
-# 
+#
 # [field_generators.default]
 # quality = "Low"                      # Faster generation with simpler data
 
@@ -287,20 +287,20 @@ parallel_fields = true              # Generate field values in parallel
 # entity_count = 50000
 # entity_distribution = "Weighted"
 # cardinality_strategy = "Random"
-# 
+#
 # [generation.distribution_weights]
 # "http://example.org/Person" = 0.6
 # "http://example.org/Organization" = 0.4
-# 
+#
 # [field_generators.default]
 # quality = "High"                     # High-quality realistic data
-# 
+#
 # [field_generators.properties."http://example.org/salary"]
 # generator = "integer"
 # [field_generators.properties."http://example.org/salary".parameters]
 # min = 30000
 # max = 200000
-# 
+#
 # [output]
 # format = "JSONLD"
 # compress = true
@@ -415,7 +415,7 @@ parallel_fields = true              # Generate field values in parallel
 # generator = "pattern"                      # Auto-detects phone format
 # parameters = {}
 
-# [field_generators.properties."http://example.org/emailAddress"] 
+# [field_generators.properties."http://example.org/emailAddress"]
 # generator = "pattern"                      # Auto-detects email format
 # parameters = {}
 
@@ -431,7 +431,7 @@ parallel_fields = true              # Generate field values in parallel
 # PATTERN GENERATOR NOTES
 # ============================================================================
 #
-# 1. SCHEMA INTEGRATION: Patterns from ShEx (/regex/) and SHACL (sh:pattern) 
+# 1. SCHEMA INTEGRATION: Patterns from ShEx (/regex/) and SHACL (sh:pattern)
 #    are automatically extracted and used - no configuration needed!
 #
 # 2. SUPPORTED PATTERNS:
@@ -451,7 +451,7 @@ parallel_fields = true              # Generate field values in parallel
 # ============================================================================
 # USAGE NOTES
 # ============================================================================
-# 
+#
 # 1. Start with basic settings and gradually add customizations
 # 2. Use small entity_count values (10-100) while testing configurations
 # 3. Set a fixed seed value for reproducible results during development
@@ -462,11 +462,11 @@ parallel_fields = true              # Generate field values in parallel
 # 8. Test with your actual schemas before running large generations
 # 9. NEW: Use pattern generator for regex-compliant string generation
 # 10. NEW: Test patterns with small datasets before scaling up
-# 
+#
 # Command line usage:
 # cargo run -p data_generator -- --config this_config.toml --schema your_schema.shex
 # cargo run -p data_generator -- --config this_config.toml --schema your_schema.ttl
-# 
+#
 # Override config values from command line:
 # cargo run -p data_generator -- --config this_config.toml --schema schema.shex --entities 5000 --output-file override.ttl
 #

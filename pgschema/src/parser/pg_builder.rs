@@ -6,9 +6,7 @@ use crate::{
     key::Key,
     parser::{
         pg::PgParser,
-        pg_actions::{
-            Edge, LabelsRecord, Node, Property, SingleValue, Statement, Values, identifier,
-        },
+        pg_actions::{Edge, LabelsRecord, Node, Property, SingleValue, Statement, Values, identifier},
     },
     pg::PropertyGraph,
     pgs_error::PgsError,
@@ -32,9 +30,7 @@ impl PgBuilder {
     pub fn parse_pg(&self, input: &str) -> Result<crate::pg::PropertyGraph, PgsError> {
         let pg_content = PgParser::new()
             .parse(input)
-            .map_err(|e| PgsError::PGParserError {
-                error: e.to_string(),
-            })?;
+            .map_err(|e| PgsError::PGParserError { error: e.to_string() })?;
         let mut pg = PropertyGraph::new();
         get_statements(pg_content, &mut pg)?;
         Ok(pg)
@@ -81,9 +77,7 @@ fn get_node(node: Node, pg: &mut PropertyGraph) -> Result<(), PgsError> {
     Ok(())
 }
 
-fn get_labels_record(
-    labels_record: LabelsRecord,
-) -> Result<(HashSet<LabelName>, Record), PgsError> {
+fn get_labels_record(labels_record: LabelsRecord) -> Result<(HashSet<LabelName>, Record), PgsError> {
     let labels = if let Some(labels) = labels_record.labels_opt {
         get_labels(labels).unwrap_or_default()
     } else {
@@ -130,7 +124,7 @@ fn get_values(values: Values) -> Result<HashSet<Value>, PgsError> {
         Values::SingleValue(value) => {
             let value = get_value(value)?;
             result.insert(value);
-        }
+        },
         Values::ListValue(values_opt) => {
             if let Some(values) = values_opt {
                 for value in values {
@@ -138,7 +132,7 @@ fn get_values(values: Values) -> Result<HashSet<Value>, PgsError> {
                     result.insert(value);
                 }
             }
-        }
+        },
     }
     Ok(result)
 }
@@ -148,17 +142,17 @@ fn get_value(value: SingleValue) -> Result<Value, PgsError> {
         SingleValue::StringValue(s) => {
             let cleaned = remove_quotes(s.as_str());
             Ok(Value::str(cleaned))
-        }
+        },
         SingleValue::NumberValue(str_number_) => {
-            let number = str_number_.parse::<i32>().map_err(|_| {
-                PgsError::InvalidNumber(format!("Invalid number value: {}", str_number_))
-            })?;
+            let number = str_number_
+                .parse::<i32>()
+                .map_err(|_| PgsError::InvalidNumber(format!("Invalid number value: {}", str_number_)))?;
             Ok(Value::int(number))
-        }
+        },
         SingleValue::DateValue(date) => {
             let date_value = Value::date(remove_quotes(date.as_str()))?;
             Ok(date_value)
-        }
+        },
         SingleValue::BooleanValue(bool) => match bool {
             super::pg_actions::BOOL::TRUE => Ok(Value::true_()),
             super::pg_actions::BOOL::FALSE => Ok(Value::false_()),

@@ -13,17 +13,17 @@ The graph from the example is a simple one but will be sufficient for the purpos
 Below you can see the contents of it.
 
 ```turtle
-:alice a :User;                             #Passes as a :UserShape     
+:alice a :User;                             #Passes as a :UserShape
        schema:name           "Alice" ;
        schema:gender         schema:Female ;
        schema:knows          :bob .
 
-:bob   a :User;                             #Passes as a :UserShape     
+:bob   a :User;                             #Passes as a :UserShape
        schema:gender         schema:Male ;
        schema:name           "Robert";
        schema:birthDate      "1980-03-10"^^xsd:date .
 
-:carol a :User;                             #Passes as a :UserShape     
+:carol a :User;                             #Passes as a :UserShape
        schema:name           "Carol" ;
        schema:gender         schema:Female ;
        foaf:name             "Carol" .
@@ -64,21 +64,21 @@ curl -o non-conformant.ttl https://raw.githubusercontent.com/rudof-project/rudof
 Which is the simple graph below.
 
 ```Turtle
-:dave  a :User ;                        #Fails as a :UserShape     
+:dave  a :User ;                        #Fails as a :UserShape
        schema:name       "Dave";
        schema:gender     :Unknown ;
        schema:birthDate  1980 ;
        schema:knows      :grace .
 
-:emily a :User ;                        #Fails as a :UserShape          
+:emily a :User ;                        #Fails as a :UserShape
        schema:name       "Emily", "Emilee";
        schema:gender     schema:Female .
 
-:frank a :User ;                        #Fails as a :UserShape     
+:frank a :User ;                        #Fails as a :UserShape
        foaf:name         "Frank" ;
        schema:gender     schema:Male .
 
-_:x    a :User;                         #Fails as a :UserShape          
+_:x    a :User;                         #Fails as a :UserShape
        schema:name       "Unknown" ;
        schema:gender     schema:Male ;
        schema:knows      _:x .

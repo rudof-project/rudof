@@ -12,7 +12,7 @@ Installation
 
 .. code-block:: python
     :caption: Basic example of knowledge graph validation using SHACL
-    
+
     from pyrudof import *
 
     rudof = Rudof(RudofConfig())
@@ -47,7 +47,7 @@ Installation
 
     result = rudof.validate_shacl(ShaclValidationMode(), ShapesGraphSource())
     print(result.show_as_table())
-    
+
 
 Table of Contents
 -----------------

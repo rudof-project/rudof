@@ -1,8 +1,5 @@
 use crate::writer::get_writer;
-use crate::{
-    InputCompareFormat, input_compare_mode::InputCompareMode,
-    result_compare_format::ResultCompareFormat,
-};
+use crate::{InputCompareFormat, input_compare_mode::InputCompareMode, result_compare_format::ResultCompareFormat};
 use anyhow::{Context, Result, bail};
 use iri_s::IriS;
 use iri_s::MimeType;
@@ -60,13 +57,13 @@ pub fn run_compare(
         ResultCompareFormat::Internal => {
             writeln!(writer, "{shaco}")?;
             Ok(())
-        }
+        },
         ResultCompareFormat::JSON => {
-            let str = serde_json::to_string_pretty(&shaco)
-                .context(format!("Error converting Result to JSON: {shaco}"))?;
+            let str =
+                serde_json::to_string_pretty(&shaco).context(format!("Error converting Result to JSON: {shaco}"))?;
             writeln!(writer, "{str}")?;
             Ok(())
-        }
+        },
     }
 }
 
@@ -88,11 +85,11 @@ pub fn get_coshamo(
             let mut converter = CoShaMoConverter::new(&ComparatorConfig::new());
             let coshamo = converter.from_shex(&shex, label)?;
             Ok(coshamo)
-        }
+        },
         InputCompareMode::DCTAP => bail!("Not yet implemented comparison between DCTAP files"),
         InputCompareMode::Service => {
             bail!("Not yet implemented comparison between Service descriptions")
-        }
+        },
     }
 }
 

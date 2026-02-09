@@ -11,9 +11,7 @@ pub struct Typing {
 
 impl Typing {
     pub fn new() -> Self {
-        Typing {
-            _map: HashMap::new(),
-        }
+        Typing { _map: HashMap::new() }
     }
 }
 

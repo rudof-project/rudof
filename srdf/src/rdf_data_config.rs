@@ -38,16 +38,15 @@ impl RdfDataConfig {
     pub fn with_wikidata(mut self) -> Self {
         let wikidata_name = "wikidata";
         let wikidata_iri = "https://query.wikidata.org/sparql";
-        let wikidata =
-            EndpointDescription::new_unchecked(wikidata_iri).with_prefixmap(PrefixMap::wikidata());
+        let wikidata = EndpointDescription::new_unchecked(wikidata_iri).with_prefixmap(PrefixMap::wikidata());
 
         match self.endpoints {
             None => {
                 self.endpoints = Some(HashMap::from([(wikidata_name.to_string(), wikidata)]));
-            }
+            },
             Some(ref mut map) => {
                 map.insert(wikidata_name.to_string(), wikidata);
-            }
+            },
         };
         self
     }
@@ -62,11 +61,10 @@ impl RdfDataConfig {
             path_name: path_name.clone(),
             error: e,
         })?;
-        let config: RdfDataConfig =
-            toml::from_str(s.as_str()).map_err(|e| RdfDataConfigError::TomlError {
-                path_name: path_name.to_string(),
-                error: e,
-            })?;
+        let config: RdfDataConfig = toml::from_str(s.as_str()).map_err(|e| RdfDataConfigError::TomlError {
+            path_name: path_name.to_string(),
+            error: e,
+        })?;
         Ok(config)
     }
 
@@ -144,10 +142,7 @@ pub enum RdfDataConfigError {
     ReadingConfigError { path_name: String, error: io::Error },
 
     #[error("Reading TOML from {path_name:?}. Error: {error:?}")]
-    TomlError {
-        path_name: String,
-        error: toml::de::Error,
-    },
+    TomlError { path_name: String, error: toml::de::Error },
 
     #[error("Converting to IRI the string {str}. Error: {error}")]
     ConvertingIriEndpoint { error: String, str: String },

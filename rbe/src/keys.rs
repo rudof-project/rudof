@@ -14,9 +14,7 @@ where
     K: Eq + Display + Default + Clone,
 {
     pub fn from(keys: &[K]) -> Keys<K> {
-        Keys {
-            keys: keys.to_vec(),
-        }
+        Keys { keys: keys.to_vec() }
     }
 }
 

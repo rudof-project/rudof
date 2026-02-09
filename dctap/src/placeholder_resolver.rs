@@ -9,9 +9,7 @@ pub enum PlaceholderResolver {
 
 impl PlaceholderResolver {
     pub fn stem(stem: &str) -> PlaceholderResolver {
-        PlaceholderResolver::Stem {
-            stem: stem.to_string(),
-        }
+        PlaceholderResolver::Stem { stem: stem.to_string() }
     }
 
     pub fn generate(&self, id: u64) -> String {
@@ -23,8 +21,6 @@ impl PlaceholderResolver {
 
 impl Default for PlaceholderResolver {
     fn default() -> Self {
-        PlaceholderResolver::Stem {
-            stem: "".to_string(),
-        }
+        PlaceholderResolver::Stem { stem: "".to_string() }
     }
 }

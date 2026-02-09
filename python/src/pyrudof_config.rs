@@ -25,9 +25,7 @@ impl PyRudofConfig {
     pub fn __init__(py: Python<'_>) -> PyResult<Self> {
         py.detach(|| {
             let rudof_config = RudofConfig::new().map_err(cnv_err)?;
-            Ok(Self {
-                inner: rudof_config,
-            })
+            Ok(Self { inner: rudof_config })
         })
     }
 
@@ -37,9 +35,7 @@ impl PyRudofConfig {
     pub fn from_path(path: &str) -> PyResult<Self> {
         let path = Path::new(path);
         let rudof_config = RudofConfig::from_path(path).map_err(cnv_err)?;
-        Ok(PyRudofConfig {
-            inner: rudof_config,
-        })
+        Ok(PyRudofConfig { inner: rudof_config })
     }
 }
 

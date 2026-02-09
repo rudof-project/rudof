@@ -36,9 +36,7 @@ pub fn get_shex_validate_resources() -> Vec<Annotated<RawResource>> {
             raw: RawResource {
                 uri: "rudof://formats/shex-validation-result".to_string(),
                 name: "Supported ShEx Validation Result Formats".to_string(),
-                description: Some(
-                    "List of all supported ShEx validation result formats".to_string(),
-                ),
+                description: Some("List of all supported ShEx validation result formats".to_string()),
                 mime_type: Some("application/json".to_string()),
                 title: None,
                 size: None,
@@ -85,9 +83,7 @@ pub fn handle_shex_validate_resource(uri: &str) -> Option<Result<ReadResourceRes
         "rudof://formats/shex" => Some(get_shex_formats(uri)),
         "rudof://formats/shex-validation-result" => Some(get_shex_validation_result_formats(uri)),
         "rudof://formats/validation-reader-modes" => Some(get_reader_modes(uri)),
-        "rudof://formats/shex-validation-sort-options" => {
-            Some(get_shex_validation_sort_options(uri))
-        }
+        "rudof://formats/shex-validation-sort-options" => Some(get_shex_validation_sort_options(uri)),
         _ => None,
     }
 }

@@ -28,10 +28,7 @@ pub async fn analyze_rdf_data_prompt_impl(
     let messages = vec![
         PromptMessage::new_text(
             PromptMessageRole::User,
-            format!(
-                "Analyze the loaded RDF data, focusing on: {}",
-                focus_description
-            ),
+            format!("Analyze the loaded RDF data, focusing on: {}", focus_description),
         ),
         PromptMessage::new_text(
             PromptMessageRole::Assistant,
@@ -95,10 +92,7 @@ pub async fn analyze_rdf_data_prompt_impl(
     ];
 
     Ok(GetPromptResult {
-        description: Some(format!(
-            "RDF data analysis guide focusing on {}",
-            focus_description
-        )),
+        description: Some(format!("RDF data analysis guide focusing on {}", focus_description)),
         messages,
     })
 }

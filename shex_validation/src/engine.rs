@@ -72,15 +72,15 @@ impl Engine {
                     match self.prove(&node, &idx, &mut hyp, schema, rdf)? {
                         Either::Right(reasons) => {
                             self.add_checked_pos(atom, reasons);
-                        }
+                        },
                         Either::Left(errors) => {
                             self.add_checked_neg(atom, errors);
-                        }
+                        },
                     }
-                }
+                },
                 Atom::Neg((_node, _idx)) => {
                     todo!()
-                }
+                },
             }
         }
         Ok(())
@@ -92,10 +92,10 @@ impl Engine {
             Atom::Pos(pa) => {
                 self.checked.insert(new_atom);
                 self.add_reasons(pa, reasons)
-            }
+            },
             Atom::Neg(_na) => {
                 todo!()
-            }
+            },
         }
     }
 
@@ -104,11 +104,11 @@ impl Engine {
             Atom::Neg(na) => {
                 self.checked.insert(atom);
                 self.add_errors(na, errors)
-            }
+            },
             Atom::Pos(na) => {
                 self.checked.insert(atom.negated());
                 self.add_errors(na, errors)
-            }
+            },
         }
     }
 
@@ -121,7 +121,7 @@ impl Engine {
             Entry::Occupied(mut vs) => vs.get_mut().extend(rs),
             Entry::Vacant(vac) => {
                 vac.insert(rs);
-            }
+            },
         }
     }
 
@@ -130,7 +130,7 @@ impl Engine {
             Entry::Occupied(mut vs) => vs.get_mut().extend(es),
             Entry::Vacant(vac) => {
                 vac.insert(es);
-            }
+            },
         }
     }
 
@@ -158,7 +158,7 @@ impl Engine {
             Entry::Occupied(mut es) => es.get_mut().push(err),
             Entry::Vacant(vacant) => {
                 vacant.insert(vec![err]);
-            }
+            },
         }
     }
 
@@ -259,10 +259,8 @@ impl Engine {
             hyp.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
         );
         hyp.push((node.clone(), *label));
-        let hyp_as_set: HashSet<(Node, ShapeLabelIdx)> = hyp
-            .iter()
-            .map(|(n, l)| (n.clone(), *l))
-            .collect::<HashSet<_>>();
+        let hyp_as_set: HashSet<(Node, ShapeLabelIdx)> =
+            hyp.iter().map(|(n, l)| (n.clone(), *l)).collect::<HashSet<_>>();
         let mut matched = HashSet::new();
         let candidates = self.dep(node, label, schema, rdf)?;
         let cleaned_candidates: HashSet<_> = candidates.difference(&hyp_as_set).cloned().collect();
@@ -275,14 +273,14 @@ impl Engine {
                         rs.iter().map(|r| format!("{r}")).join(", ")
                     );
                     matched.insert((n1.clone(), l1));
-                }
+                },
                 Either::Left(errors) => {
                     debug!(
                         "Failed to prove {n1}@{l1} while proving {node}@{label}: {}",
                         errors.iter().map(|e| format!("{e}")).join(", ")
                     );
                     // Should we collect errors here?
-                }
+                },
             }
         }
         let mut typing: HashSet<_> = matched.union(&hyp_as_set).cloned().collect();
@@ -290,11 +288,7 @@ impl Engine {
         hyp.pop();
         debug!(
             "{} {node}@{label} with result: {}, hyp: [{}]",
-            if result.is_right() {
-                "Proved"
-            } else {
-                "Failed to prove"
-            },
+            if result.is_right() { "Proved" } else { "Failed to prove" },
             show_result(
                 &result,
                 &rdf.prefixmap().unwrap_or_default(),
@@ -327,8 +321,7 @@ impl Engine {
                 if descendants.is_empty() {
                     return Err(ValidatorError::AbstractShapeNoDescendants { idx: *idx });
                 }
-                let descendants_result =
-                    self.check_descendants(node, idx, descendants, schema, rdf, typing)?;
+                let descendants_result = self.check_descendants(node, idx, descendants, schema, rdf, typing)?;
                 if descendants_result.is_right() {
                     Ok(descendants_result)
                 } else {
@@ -359,8 +352,7 @@ impl Engine {
                         return Ok(result);
                     }
                     // If the shape has descendants, check them too
-                    let descendants_result =
-                        self.check_descendants(node, idx, descendants, schema, rdf, typing)?;
+                    let descendants_result = self.check_descendants(node, idx, descendants, schema, rdf, typing)?;
                     if descendants_result.is_right() {
                         Ok(descendants_result)
                     } else {
@@ -408,14 +400,14 @@ impl Engine {
                         node: Box::new(node.clone()),
                         errors: ValidatorErrors::new(errors),
                     });
-                }
+                },
                 Either::Right(reasons) => {
                     return Ok(Either::Right(vec![Reason::DescendantShapePassed {
                         node: node.clone(),
                         shape: *idx,
                         reasons: Reasons::new(reasons.clone()),
                     }]));
-                }
+                },
             }
         }
         Ok(Either::Left(vec![ValidatorError::DescendantsShapeError {
@@ -457,10 +449,10 @@ impl Engine {
                                 node: Box::new(node.clone()),
                                 errors: ValidatorErrors::new(errors),
                             }]));
-                        }
+                        },
                         Either::Right(reasons) => {
                             reasons_collection.push(reasons);
-                        }
+                        },
                     }
                 }
                 Ok(Either::Right(vec![Reason::ShapeAndPassed {
@@ -468,7 +460,7 @@ impl Engine {
                     se: Box::new(se.clone()),
                     reasons: reasons_collection,
                 }]))
-            }
+            },
             ShapeExpr::ShapeOr { exprs, .. } => {
                 let mut errors_collection = Vec::new();
                 for e in exprs {
@@ -480,14 +472,14 @@ impl Engine {
                                 typing.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
                             );
                             errors_collection.push((*e, ValidatorErrors::new(errors)));
-                        }
+                        },
                         Either::Right(reasons) => {
                             return Ok(Either::Right(vec![Reason::ShapeOrPassed {
                                 shape_expr: *e,
                                 node: node.clone(),
                                 reasons: Reasons::new(reasons),
                             }]));
-                        }
+                        },
                     }
                 }
                 // If we didn't return inside the loop, all branches failed
@@ -496,7 +488,7 @@ impl Engine {
                     node: Box::new(node.clone()),
                     errors: errors_collection.clone(),
                 }]))
-            }
+            },
             ShapeExpr::ShapeNot { expr, .. } => {
                 let result = self.check_node_ref(node, expr, typing)?;
                 match result {
@@ -505,15 +497,13 @@ impl Engine {
                         shape_expr: se.clone(),
                         errors_evidences: ValidatorErrors::new(errors),
                     }])),
-                    Either::Right(reasons) => {
-                        Ok(Either::Left(vec![ValidatorError::ShapeNotError {
-                            node: Box::new(node.clone()),
-                            shape_expr: Box::new(se.clone()),
-                            reasons: Reasons::new(reasons),
-                        }]))
-                    }
+                    Either::Right(reasons) => Ok(Either::Left(vec![ValidatorError::ShapeNotError {
+                        node: Box::new(node.clone()),
+                        shape_expr: Box::new(se.clone()),
+                        reasons: Reasons::new(reasons),
+                    }])),
                 }
-            }
+            },
             ShapeExpr::NodeConstraint(nc) => {
                 match nc.cond().matches(node) {
                     Ok(_pending) => {
@@ -522,21 +512,21 @@ impl Engine {
                             node: node.clone(),
                             nc: nc.clone(),
                         })
-                    }
+                    },
                     Err(err) => fail(ValidatorError::RbeError(err)),
                 }
-            }
+            },
             ShapeExpr::Shape(shape) => {
                 if shape.extends().is_empty() {
                     self.check_node_shape(idx, node, shape, schema, rdf, typing)
                 } else {
                     self.check_node_shape_extends(idx, node, shape, schema, rdf, typing)
                 }
-            }
+            },
             ShapeExpr::External {} => {
                 debug!("External shape expression encountered for node {node} with shape {se}");
                 pass(Reason::ExternalPassed { node: node.clone() })
-            }
+            },
             ShapeExpr::Ref { idx } => self.check_node_ref(node, idx, typing),
             ShapeExpr::Empty => pass(Reason::EmptyPassed { node: node.clone() }),
         }
@@ -627,9 +617,7 @@ impl Engine {
                 .iter()
                 .map(|(maybe_label, te)| format!(
                     "{} -> [{}]",
-                    maybe_label
-                        .map(|l| l.to_string())
-                        .unwrap_or("[]".to_string()),
+                    maybe_label.map(|l| l.to_string()).unwrap_or("[]".to_string()),
                     te.iter().map(|p| p.show_rbe_simplified()).join(", ")
                 ))
                 .join("| ")
@@ -642,38 +630,23 @@ impl Engine {
             for (maybe_label, rbes, neighs_subset) in partition.iter() {
                 debug!(
                     " Part {npart}| Trying component: {}, neighs [{}] ",
-                    maybe_label
-                        .map(|l| l.to_string())
-                        .unwrap_or("[]".to_string()),
-                    neighs_subset
-                        .iter()
-                        .map(|(p, v)| format!("{p} {v}"))
-                        .join(", ")
+                    maybe_label.map(|l| l.to_string()).unwrap_or("[]".to_string()),
+                    neighs_subset.iter().map(|(p, v)| format!("{p} {v}")).join(", ")
                 );
                 let result = check_exprs_neigh(rbes, neighs_subset, node, shape, idx, typing)?;
                 if result.is_right() {
                     // TODO: Accumulate reasons from each triple expr
                     debug!(
                         " Part {npart}| Success component {}: neighs {}",
-                        maybe_label
-                            .map(|l| l.to_string())
-                            .unwrap_or("[]".to_string()),
-                        neighs_subset
-                            .iter()
-                            .map(|(p, v)| format!("{p} {v}"))
-                            .join(", ")
+                        maybe_label.map(|l| l.to_string()).unwrap_or("[]".to_string()),
+                        neighs_subset.iter().map(|(p, v)| format!("{p} {v}")).join(", ")
                     );
                 } else {
                     ok_partition = false;
                     debug!(
                         " Part {npart}| Failed component {}: neighs {}",
-                        maybe_label
-                            .map(|l| l.to_string())
-                            .unwrap_or("[]".to_string()),
-                        neighs_subset
-                            .iter()
-                            .map(|(p, v)| format!("{p} {v}"))
-                            .join(", ")
+                        maybe_label.map(|l| l.to_string()).unwrap_or("[]".to_string()),
+                        neighs_subset.iter().map(|(p, v)| format!("{p} {v}")).join(", ")
                     );
                     break;
                 }
@@ -767,16 +740,16 @@ impl Engine {
             Object::Iri(iri_s) => {
                 let iri: S::IRI = iri_s.clone().into();
                 iri.into().into()
-            }
+            },
             Object::BlankNode(id) => {
                 let bnode: S::BNode = BlankNode::new(id);
                 bnode.into()
-            }
+            },
             Object::Literal(lit) => {
                 let lit: S::Literal = lit.clone().into();
                 let term: S::Term = lit.into();
                 term
-            }
+            },
             Object::Triple { .. } => todo!(),
         }
     }
@@ -811,7 +784,7 @@ fn show_result(
                 .collect();
             let vs: Vec<String> = es.into_iter().collect::<Result<Vec<_>>>()?;
             Ok(vs.join(", "))
-        }
+        },
         Either::Right(reasons) => {
             let rs: Vec<Result<String>> = reasons
                 .iter()
@@ -822,7 +795,7 @@ fn show_result(
                 .collect();
             let vs: Vec<String> = rs.into_iter().collect::<Result<Vec<_>>>()?;
             Ok(vs.join(", "))
-        }
+        },
     }
 }
 
@@ -906,11 +879,11 @@ fn check_expr_neigh(
                         idx: *idx,
                     });
                 }
-            }
+            },
             Err(err) => {
                 debug!("Result with error: {err}");
                 return fail(ValidatorError::RbeError(err));
-            }
+            },
         }
     }
     debug!(
@@ -932,13 +905,8 @@ fn show_partition(partition: &[PartitionInfo]) -> String {
     partition
         .iter()
         .map(|(maybe_label, _rbes, neighs_subset)| {
-            let label_str = maybe_label
-                .map(|l| l.to_string())
-                .unwrap_or("[]".to_string());
-            let neighs_str = neighs_subset
-                .iter()
-                .map(|(p, o)| format!("{p} {o}"))
-                .join(", ");
+            let label_str = maybe_label.map(|l| l.to_string()).unwrap_or("[]".to_string());
+            let neighs_str = neighs_subset.iter().map(|(p, o)| format!("{p} {o}")).join(", ");
             format!("{} -> [{}]", label_str, neighs_str)
         })
         .join(" | ")

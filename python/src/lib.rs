@@ -17,14 +17,13 @@ pub mod pyrudof {
 
     #[pymodule_export]
     pub use super::{
-        PyCardinalityStrategy, PyCompareSchemaFormat, PyCompareSchemaMode, PyDCTAP, PyDCTapFormat,
-        PyDataGenerator, PyDataQuality, PyEntityDistribution, PyGeneratorConfig, PyMie,
-        PyOutputFormat, PyPrefixMap, PyQueryResultFormat, PyQueryShapeMap, PyQuerySolution,
-        PyQuerySolutions, PyRDFFormat, PyReaderMode, PyResultShapeMap, PyRudof, PyRudofConfig,
-        PyRudofError, PySchemaFormat, PyServiceDescription, PyServiceDescriptionFormat,
-        PyShExFormat, PyShExFormatter, PyShExSchema, PyShaclFormat, PyShaclSchema,
-        PyShaclValidationMode, PyShapeMapFormat, PyShapeMapFormatter, PyShapesGraphSource,
-        PySortModeResultMap, PyUmlGenerationMode, PyValidationReport, PyValidationStatus,
+        PyCardinalityStrategy, PyCompareSchemaFormat, PyCompareSchemaMode, PyDCTAP, PyDCTapFormat, PyDataGenerator,
+        PyDataQuality, PyEntityDistribution, PyGeneratorConfig, PyMie, PyOutputFormat, PyPrefixMap,
+        PyQueryResultFormat, PyQueryShapeMap, PyQuerySolution, PyQuerySolutions, PyRDFFormat, PyReaderMode,
+        PyResultShapeMap, PyRudof, PyRudofConfig, PyRudofError, PySchemaFormat, PyServiceDescription,
+        PyServiceDescriptionFormat, PyShExFormat, PyShExFormatter, PyShExSchema, PyShaclFormat, PyShaclSchema,
+        PyShaclValidationMode, PyShapeMapFormat, PyShapeMapFormatter, PyShapesGraphSource, PySortModeResultMap,
+        PyUmlGenerationMode, PyValidationReport, PyValidationStatus,
     };
 
     #[pymodule_init]

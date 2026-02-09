@@ -36,9 +36,7 @@ impl PatternGenerator {
         let mut rng = rand::thread_rng();
 
         // Handle common patterns - check international first
-        if pattern.contains("\\+1-\\d{3}-\\d{3}-\\d{4}")
-            || pattern.contains("\\+1\\-\\d{3}\\-\\d{3}\\-\\d{4}")
-        {
+        if pattern.contains("\\+1-\\d{3}-\\d{3}-\\d{4}") || pattern.contains("\\+1\\-\\d{3}\\-\\d{3}\\-\\d{4}") {
             // International phone number with country code
             return Ok(format!(
                 "+1-{:03}-{:03}-{:04}",
@@ -48,8 +46,7 @@ impl PatternGenerator {
             ));
         }
 
-        if pattern.contains("\\d{3}-\\d{3}-\\d{4}") || pattern.contains("\\d{3}\\-\\d{3}\\-\\d{4}")
-        {
+        if pattern.contains("\\d{3}-\\d{3}-\\d{4}") || pattern.contains("\\d{3}\\-\\d{3}\\-\\d{4}") {
             // Regular phone number pattern
             return Ok(format!(
                 "{:03}-{:03}-{:04}",
@@ -69,9 +66,7 @@ impl PatternGenerator {
             ));
         }
 
-        if pattern.contains("@")
-            || pattern.contains("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}")
-        {
+        if pattern.contains("@") || pattern.contains("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}") {
             // Email pattern
             let domains = ["example.com", "test.org", "sample.edu", "demo.net"];
             let usernames = ["user", "admin", "test", "demo", "john.doe", "jane.smith"];
@@ -194,22 +189,21 @@ impl PatternGenerator {
                     'd' => {
                         result.push_str(&rng.gen_range(0..10).to_string());
                         i += 2;
-                    }
+                    },
                     'w' => {
-                        let alphanumeric =
-                            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+                        let alphanumeric = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
                         let idx = rng.gen_range(0..alphanumeric.len());
                         result.push(alphanumeric.chars().nth(idx).unwrap());
                         i += 2;
-                    }
+                    },
                     's' => {
                         result.push(' ');
                         i += 2;
-                    }
+                    },
                     _ => {
                         result.push(chars[i + 1]);
                         i += 2;
-                    }
+                    },
                 },
                 '[' => {
                     // Find closing bracket and generate from character class
@@ -227,15 +221,14 @@ impl PatternGenerator {
                         result.push('[');
                         i += 1;
                     }
-                }
+                },
                 '.' => {
                     // Any character except newline
-                    let printable =
-                        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()";
+                    let printable = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()";
                     let idx = rng.gen_range(0..printable.len());
                     result.push(printable.chars().nth(idx).unwrap());
                     i += 1;
-                }
+                },
                 '{' => {
                     // Handle quantifiers like {3}, {2,5}
                     let mut j = i + 1;
@@ -281,7 +274,7 @@ impl PatternGenerator {
                         result.push('{');
                         i += 1;
                     }
-                }
+                },
                 '+' => {
                     // One or more - repeat 1-3 times
                     if !result.is_empty() {
@@ -301,7 +294,7 @@ impl PatternGenerator {
                         }
                     }
                     i += 1;
-                }
+                },
                 '*' => {
                     // Zero or more - repeat 0-2 times
                     if !result.is_empty() {
@@ -321,22 +314,22 @@ impl PatternGenerator {
                         }
                     }
                     i += 1;
-                }
+                },
                 '?' => {
                     // Zero or one - 50% chance to skip
                     if rng.gen_bool(0.5) && !result.is_empty() {
                         result.pop();
                     }
                     i += 1;
-                }
+                },
                 '|' | '^' | '$' | '(' | ')' => {
                     // Regex metacharacters - skip for now
                     i += 1;
-                }
+                },
                 c => {
                     result.push(c);
                     i += 1;
-                }
+                },
             }
         }
 
@@ -400,10 +393,7 @@ impl PatternGenerator {
             ))
         } else if property_lower.contains("url") || property_lower.contains("website") {
             let domains = ["example.com", "test.org", "sample.net"];
-            Ok(format!(
-                "https://{}",
-                domains[rng.gen_range(0..domains.len())]
-            ))
+            Ok(format!("https://{}", domains[rng.gen_range(0..domains.len())]))
         } else if property_lower.contains("id") || property_lower.contains("identifier") {
             Ok(format!("ID{:06}", rng.gen_range(100000..999999)))
         } else {

@@ -3,10 +3,9 @@ use crate::writer::get_writer;
 use anyhow::{Result, bail};
 use iri_s::IriS;
 use rudof_lib::{
-    InputSpec, Rudof, RudofConfig, ShExFormatter, data::get_data_rudof, data_format::DataFormat,
-    parse_shape_selector, result_shex_validation_format::ResultShExValidationFormat,
-    shapemap_format::ShapeMapFormat as CliShapeMapFormat, shex::validate_shex,
-    shex_format::ShExFormat as CliShExFormat, sort_by_result_shape_map::SortByResultShapeMap,
+    InputSpec, Rudof, RudofConfig, ShExFormatter, data::get_data_rudof, data_format::DataFormat, parse_shape_selector,
+    result_shex_validation_format::ResultShExValidationFormat, shapemap_format::ShapeMapFormat as CliShapeMapFormat,
+    shex::validate_shex, shex_format::ShExFormat as CliShExFormat, sort_by_result_shape_map::SortByResultShapeMap,
 };
 use shex_ast::ShExFormat;
 use srdf::{RDFFormat, ReaderMode};
@@ -58,13 +57,8 @@ pub fn run_shex(
             ColorSupport::NoColor => ShExFormatter::default().without_colors(),
             ColorSupport::WithColor => ShExFormatter::default(),
         };
-        rudof_lib::shex::serialize_current_shex_rudof(
-            &rudof,
-            result_schema_format,
-            &formatter,
-            &mut writer,
-        )
-        .map_err(anyhow::Error::from)?;
+        rudof_lib::shex::serialize_current_shex_rudof(&rudof, result_schema_format, &formatter, &mut writer)
+            .map_err(anyhow::Error::from)?;
     }
     if show_time {
         let elapsed = begin.elapsed();
@@ -117,10 +111,7 @@ pub fn run_shex(
     }
 }
 
-fn show_extends_table<R: Write>(
-    writer: &mut R,
-    extends_count: HashMap<usize, usize>,
-) -> Result<()> {
+fn show_extends_table<R: Write>(writer: &mut R, extends_count: HashMap<usize, usize>) -> Result<()> {
     for (key, value) in extends_count.iter() {
         writeln!(writer, "Shapes with {key} extends = {value}")?;
     }

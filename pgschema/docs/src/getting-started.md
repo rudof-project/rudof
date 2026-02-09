@@ -1,6 +1,6 @@
 # Getting started
 
-In order to verify that the installation has been successful, you can run the following command to check that everything is working as expected. 
+In order to verify that the installation has been successful, you can run the following command to check that everything is working as expected.
 
 ```sh
 pgschemapc --version
@@ -29,6 +29,3 @@ Options:
           Print version
 
 ```
-
-
-

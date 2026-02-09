@@ -77,9 +77,6 @@ mod tests {
     use std::str::FromStr;
     #[test]
     fn test_from_str() {
-        assert_eq!(
-            InputConvertFormat::from_str("CSV").unwrap(),
-            InputConvertFormat::CSV
-        )
+        assert_eq!(InputConvertFormat::from_str("CSV").unwrap(), InputConvertFormat::CSV)
     }
 }

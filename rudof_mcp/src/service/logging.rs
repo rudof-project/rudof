@@ -136,11 +136,7 @@ pub async fn send_log(
     let current_min = min_level.read().await;
     if let Some(min) = *current_min {
         if !should_log(level, min) {
-            tracing::debug!(
-                "Log level {:?} is below minimum {:?}, not sending log",
-                level,
-                min
-            );
+            tracing::debug!("Log level {:?} is below minimum {:?}, not sending log", level, min);
             return;
         }
     } else {

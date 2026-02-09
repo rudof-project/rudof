@@ -191,9 +191,7 @@ impl OutputConfig {
         }
 
         // Detect CPU cores (with fallback to 4)
-        let cpu_count = std::thread::available_parallelism()
-            .map(|n| n.get())
-            .unwrap_or(4);
+        let cpu_count = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4);
 
         // Calculate optimal file count based on dataset size
         let optimal_count = match total_triples {
@@ -231,8 +229,7 @@ impl GeneratorConfig {
 
     /// Save configuration to a TOML file
     pub fn to_toml_file<P: AsRef<Path>>(&self, path: P) -> Result<()> {
-        let content = toml::to_string_pretty(self)
-            .map_err(|e| crate::DataGeneratorError::Config(e.to_string()))?;
+        let content = toml::to_string_pretty(self).map_err(|e| crate::DataGeneratorError::Config(e.to_string()))?;
         std::fs::write(path, content)?;
         Ok(())
     }

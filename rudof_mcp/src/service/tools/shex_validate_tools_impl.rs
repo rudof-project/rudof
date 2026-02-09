@@ -1,4 +1,4 @@
-use crate::service::{errors::*, service::RudofMcpService};
+use crate::service::{errors::*, mcp_service::RudofMcpService};
 use iri_s::IriS;
 use rmcp::{
     ErrorData as McpError,
@@ -6,9 +6,8 @@ use rmcp::{
     model::{CallToolResult, Content},
 };
 use rudof_lib::{
-    InputSpec, RudofConfig, result_shex_validation_format::ResultShExValidationFormat,
-    shapemap_format::ShapeMapFormat, shex::validate_shex, shex_format::ShExFormat,
-    sort_by_result_shape_map::SortByResultShapeMap,
+    InputSpec, RudofConfig, result_shex_validation_format::ResultShExValidationFormat, shapemap_format::ShapeMapFormat,
+    shex::validate_shex, shex_format::ShExFormat, sort_by_result_shape_map::SortByResultShapeMap,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -104,9 +103,7 @@ pub async fn validate_shex_impl(
         sort_by,
     }): Parameters<ValidateShexRequest>,
 ) -> Result<CallToolResult, McpError> {
-    let result_format_str = result_format
-        .clone()
-        .unwrap_or_else(|| "compact".to_string());
+    let result_format_str = result_format.clone().unwrap_or_else(|| "compact".to_string());
     let sort_by_str = sort_by.clone().unwrap_or_else(|| "node".to_string());
 
     let shcema_spec = Some(InputSpec::Str(schema.clone()));
@@ -121,7 +118,7 @@ pub async fn validate_shex_impl(
                     format!("Supported formats: {}", SHEX_FORMATS),
                 )
                 .into_call_tool_result());
-            }
+            },
         },
         None => None,
     };
@@ -136,7 +133,7 @@ pub async fn validate_shex_impl(
                     "Provide a valid absolute IRI (e.g., 'http://example.org/base/')",
                 )
                 .into_call_tool_result());
-            }
+            },
         },
         None => None,
     };
@@ -151,7 +148,7 @@ pub async fn validate_shex_impl(
                     format!("Supported modes: {}", READER_MODES),
                 )
                 .into_call_tool_result());
-            }
+            },
         },
         None => ReaderMode::Strict,
     };
@@ -168,7 +165,7 @@ pub async fn validate_shex_impl(
                     format!("Supported formats: {}", SHAPEMAP_FORMATS),
                 )
                 .into_call_tool_result());
-            }
+            },
         },
         None => ShapeMapFormat::Compact,
     };
@@ -183,7 +180,7 @@ pub async fn validate_shex_impl(
                     format!("Supported formats: {}", SHEX_RESULT_FORMATS),
                 )
                 .into_call_tool_result());
-            }
+            },
         },
         None => ResultShExValidationFormat::Compact,
     };
@@ -198,7 +195,7 @@ pub async fn validate_shex_impl(
                     format!("Supported values: {}", SHEX_SORT_BY_MODES),
                 )
                 .into_call_tool_result());
-            }
+            },
         },
         None => SortByResultShapeMap::Node,
     };
@@ -283,7 +280,7 @@ pub async fn validate_shex_impl(
         "turtle" | "n3" => format!("## Validation Results\n\n```turtle\n{}\n```", output_str),
         "ntriples" | "nquads" => {
             format!("## Validation Results\n\n```ntriples\n{}\n```", output_str)
-        }
+        },
         "rdfxml" => format!("## Validation Results\n\n```xml\n{}\n```", output_str),
         "trig" => format!("## Validation Results\n\n```trig\n{}\n```", output_str),
         "json" | "jsonld" => format!("## Validation Results\n\n```json\n{}\n```", output_str),

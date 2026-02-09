@@ -31,8 +31,8 @@ The library is published as Rust crates, with the following ones:
 - [srdf](https://docs.rs/srdf)
 
 
-## Python bindings 
+## Python bindings
 
-The Python bindings are defined in the [python](https://github.com/rudof-project/rudof/tree/master/python). 
+The Python bindings are defined in the [python](https://github.com/rudof-project/rudof/tree/master/python).
 
 - [python documentation](https://pyrudof.readthedocs.io/)
