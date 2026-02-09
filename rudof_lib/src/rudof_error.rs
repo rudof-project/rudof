@@ -448,4 +448,7 @@ pub enum RudofError {
 
     #[error("RDF error: {error}")]
     RdfError { error: String },
+
+    #[error("WASM error: {0}")]
+    WASMError(String)
 }

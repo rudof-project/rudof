@@ -1,5 +1,6 @@
 use anyhow::*;
 use clap::Parser;
+use clientele;
 use pgschema::cli::{Cli, Command};
 use pgschema::parser::{map_builder::MapBuilder, pg_builder::PgBuilder, pgs_builder::PgsBuilder};
 use std::result::Result::Ok;

@@ -30,7 +30,7 @@ pub mod error;
 pub mod iri;
 pub mod map;
 
-#[cfg(test)]
+#[cfg(all(test, not(target_family = "wasm")))]
 mod test;
 
 pub use crate::error::*;

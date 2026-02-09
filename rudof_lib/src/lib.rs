@@ -23,6 +23,7 @@ pub mod shex;
 pub mod shex_format;
 pub mod sort_by_result_shape_map;
 pub mod terminal_width;
+mod wasm_stubs;
 
 pub use input_spec::*;
 pub use iri_s::*;

@@ -1,5 +1,6 @@
 mod iri;
 mod iris;
+#[cfg(not(target_family = "wasm"))]
 mod test;
 mod visitor;
 

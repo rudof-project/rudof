@@ -50,4 +50,3 @@ url.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true
-tokio = { version = "1.47", features = ["full"] }

@@ -1,13 +1,13 @@
 use crate::{
-    InputSpec, Rudof, RudofConfig, RudofError,
-    result_shex_validation_format::ResultShExValidationFormat, selector::*,
-    shapemap_format::ShapeMapFormat as CliShapeMapFormat, shex_format::ShExFormat as CliShExFormat,
+    result_shex_validation_format::ResultShExValidationFormat, selector::*, shapemap_format::ShapeMapFormat as CliShapeMapFormat, shex_format::ShExFormat as CliShExFormat,
     sort_by_result_shape_map::SortByResultShapeMap, terminal_width::terminal_width,
+    InputSpec, Rudof,
+    RudofConfig, RudofError,
 };
 use iri_s::IriS;
 use iri_s::MimeType;
-use shex_ast::ShExFormat;
 use shex_ast::shapemap::ResultShapeMap;
+use shex_ast::ShExFormat;
 use srdf::RDFFormat;
 use srdf::ReaderMode;
 use std::env;
@@ -107,16 +107,21 @@ fn get_base(config: &RudofConfig, base: &Option<IriS>) -> Result<IriS, RudofErro
     } else if let Some(base) = config.shex_config().base.as_ref() {
         Ok(base.clone())
     } else {
-        let cwd = env::current_dir().map_err(|e| RudofError::CurrentDirError {
-            error: format!("{e}"),
-        })?;
-        // Note: we use from_directory_path to convert a directory to a file URL that ends with a trailing slash
-        // from_url_path would not add the trailing slash and would fail when resolving relative IRIs
-        let url =
-            Url::from_directory_path(&cwd).map_err(|_| RudofError::ConvertingCurrentFolderUrl {
-                current_dir: cwd.to_string_lossy().to_string(),
+        #[cfg(target_family = "wasm")]
+        return Err(RudofError::WASMError("Base IRI must be provided in WASM environment".to_string()));
+        #[cfg(not(target_family = "wasm"))]
+        {
+            let cwd = env::current_dir().map_err(|e| RudofError::CurrentDirError {
+                error: format!("{e}"),
             })?;
-        Ok(url.into())
+            // Note: we use from_directory_path to convert a directory to a file URL that ends with a trailing slash
+            // from_url_path would not add the trailing slash and would fail when resolving relative IRIs
+            let url =
+                Url::from_directory_path(&cwd).map_err(|_| RudofError::ConvertingCurrentFolderUrl {
+                    current_dir: cwd.to_string_lossy().to_string(),
+                })?;
+            Ok(url.into())
+        }
     }
 }
 

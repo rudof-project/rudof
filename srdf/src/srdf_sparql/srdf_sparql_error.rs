@@ -58,6 +58,7 @@ pub enum SRDFSparqlError {
         err: IriSError,
     },
 
+    #[cfg(target_family = "wasm")]
     #[error("Function not supported for WASM: {fn_name}")]
     WASMError {
         fn_name: String,

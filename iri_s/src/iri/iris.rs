@@ -4,6 +4,7 @@ use oxrdf::{NamedNode, NamedOrBlankNode, Term};
 use serde::{Serialize, Serializer};
 use std::fmt;
 use std::fmt::{Display, Formatter};
+#[cfg(not(target_family = "wasm"))]
 use std::fs::canonicalize;
 use std::path::Path;
 use std::str::FromStr;
@@ -252,7 +253,19 @@ impl From<Url> for IriS {
     }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(target_family = "wasm")]
+impl TryFrom<&Path> for IriS {
+    type Error = IriSError;
+
+    fn try_from(value: &Path) -> Result<Self, Self::Error> {
+        Err(IriSError::ConvertingPathToIri {
+            path: value.to_string_lossy().to_string(),
+            error: String::from("Converting path to IRI is not supported in WASM target"),
+        })
+    }
+}
+
+#[cfg(not(target_family = "wasm"))]
 impl TryFrom<&Path> for IriS {
     type Error = IriSError;
 

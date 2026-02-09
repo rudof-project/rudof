@@ -2,28 +2,28 @@ use crate::context_entry_value::ContextEntryValue;
 use crate::manifest::Manifest;
 use crate::manifest_error::ManifestError;
 use crate::manifest_map::ManifestMap;
-use ValidationType::*;
 use iri_s::IriS;
 use prefixmap::IriRef;
 use serde::de::{self};
 use serde::{Deserialize, Deserializer, Serialize};
-use shex_ast::ResolveMethod;
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::shape_label::ShapeLabel;
 use shex_ast::shapemap::ValidationStatus;
-use shex_ast::{Node, ast::Schema as SchemaJson, ir::ast2ir::AST2IR};
+use shex_ast::ResolveMethod;
+use shex_ast::{ast::Schema as SchemaJson, ir::ast2ir::AST2IR, Node};
 use shex_validation::Validator;
 use shex_validation::ValidatorConfig;
+use srdf::srdf_graph::SRDFGraph;
 use srdf::Object;
 use srdf::RDFFormat;
 use srdf::SLiteral;
-use srdf::srdf_graph::SRDFGraph;
 use std::collections::HashMap;
 use std::fmt::{self, Display};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use tracing::{debug, trace};
 use url::Url;
+use ValidationType::*;
 
 #[derive(Deserialize, Debug)]
 #[serde(from = "ManifestValidationJson")]
@@ -378,6 +378,12 @@ fn parse_type(str: &str) -> Result<ValidationType, Box<ManifestError>> {
     }
 }
 
+#[cfg(target_family = "wasm")]
+fn path_to_iri(_: &Path) -> Result<IriS, Box<ManifestError>> {
+    Err(Box::new(ManifestError::WASMError("Unable to convert path to IRI".to_string())))
+}
+
+#[cfg(not(target_family = "wasm"))]
 fn path_to_iri(path: &Path) -> Result<IriS, Box<ManifestError>> {
     trace!("Converting path to IRI: {}", path.display());
     let canonical = path.canonicalize().map_err(|err| {

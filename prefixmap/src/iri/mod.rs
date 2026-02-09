@@ -1,7 +1,7 @@
 pub mod deref;
 pub mod iri_ref;
 
-#[cfg(test)]
+#[cfg(all(test, not(target_family = "wasm")))]
 mod test;
 mod visitor;
 

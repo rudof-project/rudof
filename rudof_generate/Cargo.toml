@@ -35,15 +35,18 @@ srdf.workspace = true
 thiserror.workspace = true
 
 # Async and parallelism
-tokio = { version = "1.0", features = ["full"] }
 toml.workspace = true
 
 # Logging and error handling
 tracing.workspace = true
 tracing-subscriber.workspace = true
-uuid.workspace = true
 
 [dev-dependencies]
 regex.workspace = true
 tempfile.workspace = true
-tokio-test.workspace = true
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+tokio = { workspace = true, features = [] }
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+tokio.workspace = true

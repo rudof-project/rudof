@@ -3,16 +3,14 @@ pub use dctap::{DCTAPFormat, DCTap as DCTAP};
 pub use iri_s::iri;
 pub use mie::Mie;
 pub use prefixmap::PrefixMap;
-pub use shacl_ast::ShaclFormat;
 pub use shacl_ast::ast::Schema as ShaclSchema;
+pub use shacl_ast::ShaclFormat;
 pub use shacl_ir::compiled::schema_ir::SchemaIR as ShaclSchemaIR;
 pub use shacl_validation::shacl_processor::ShaclValidationMode;
 pub use shacl_validation::validation_report::report::ValidationReport;
 pub use shapes_comparator::{
     CoShaMo, ComparatorError, CompareSchemaFormat, CompareSchemaMode, ShaCo,
 };
-pub use shex_ast::Node;
-pub use shex_ast::Schema as ShExSchema;
 pub use shex_ast::compact::{
     ShExFormatter, ShapeMapParser, ShapemapFormatter as ShapeMapFormatter,
 };
@@ -20,6 +18,8 @@ pub use shex_ast::ir::shape_label::ShapeLabel;
 pub use shex_ast::shapemap::{
     QueryShapeMap, ResultShapeMap, ShapeMapFormat, SortMode, ValidationStatus,
 };
+pub use shex_ast::Node;
+pub use shex_ast::Schema as ShExSchema;
 pub use shex_validation::Validator as ShExValidator;
 pub use shex_validation::ValidatorConfig;
 pub use sparql_service::RdfData;
@@ -43,10 +43,10 @@ use shex_ast::compact::ShExParser;
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::shapemap::{NodeSelector, ShapeSelector};
 use shex_ast::{ResolveMethod, ShExFormat, ShapeLabelIdx};
+use srdf::rdf_visualizer::visual_rdf_graph::VisualRDFGraph;
 // use shex_validation::SchemaWithoutImports;
 use srdf::QueryRDF;
 use srdf::Rdf;
-use srdf::rdf_visualizer::visual_rdf_graph::VisualRDFGraph;
 use srdf::{FocusRDF, SRDFGraph, SparqlQuery};
 use std::fmt::Debug;
 use std::fs::File;
@@ -924,6 +924,9 @@ impl Rudof {
                 }?;
 
                 let source_iri = match source_name {
+                    #[cfg(target_family = "wasm")]
+                    Some(_) => Err(RudofError::WASMError("Reading ShExC from a source with a name is not supported in WASM".to_string())),
+                    #[cfg(not(target_family = "wasm"))]
                     Some(name) => {
                         let cwd = env::current_dir().map_err(|e| RudofError::CurrentDirError {
                             error: format!("{e}"),
@@ -1384,9 +1387,9 @@ mod tests {
     use iri_s::iri;
     use shacl_ast::ShaclFormat;
     use shacl_validation::shacl_processor::ShaclValidationMode;
-    use shex_ast::ShExFormat;
     use shex_ast::shapemap::ShapeMapFormat;
-    use shex_ast::{Node, ir::shape_label::ShapeLabel};
+    use shex_ast::ShExFormat;
+    use shex_ast::{ir::shape_label::ShapeLabel, Node};
 
     use crate::RudofConfig;
 
