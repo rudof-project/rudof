@@ -4,7 +4,7 @@ CREATE NODE TYPE ( PersonType : Person {
 }) ;
 CREATE NODE TYPE ( StudentType : Person & Student {
     name: STRING,
-    OPTIONAL age: INTEGER
+    OPTIONAL age: INTEGER CHECK (> 18)
 }) ;
 CREATE NODE TYPE ( CourseType: Course {
     name: STRING

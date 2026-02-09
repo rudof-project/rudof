@@ -109,10 +109,10 @@ impl OriginConfig {
             .unwrap_or(origin);
 
         // Handle IPv6 addresses in brackets
-        if let Some(start) = without_protocol.find('[') {
-            if let Some(end) = without_protocol.find(']') {
-                return Some(&without_protocol[start + 1..end]);
-            }
+        if let Some(start) = without_protocol.find('[')
+            && let Some(end) = without_protocol.find(']')
+        {
+            return Some(&without_protocol[start + 1..end]);
         }
 
         // Split by : or / to remove port and path

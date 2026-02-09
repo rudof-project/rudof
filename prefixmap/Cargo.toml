@@ -1,6 +1,6 @@
 [package]
 name = "prefixmap"
-version = "0.1.145"
+version = "0.1.147"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/prefixmap"
@@ -18,3 +18,4 @@ thiserror.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 proptest.workspace = true
+#bencher.workspace = true

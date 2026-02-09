@@ -42,7 +42,7 @@ use crate::service::RudofMcpService;
 /// * `port` - Port to bind the HTTP server to
 /// * `route_path` - Path for the MCP endpoint (e.g., "/mcp")
 /// * `allowed_networks` - List of allowed IP addresses or CIDR ranges (e.g., ["127.0.0.1", "192.168.1.0/24"]).
-/// If empty or None, defaults to localhost only
+///   If empty or None, defaults to localhost only
 pub async fn run_mcp_http(
     bind_address: &str,
     port: u16,

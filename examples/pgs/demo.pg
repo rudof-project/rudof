@@ -1,0 +1,16 @@
+(n1 {Person} [
+    name: "Alice", 
+    birthdate: DATE "2010-07-22" 
+])
+(n2 {Person, Student} [ 
+    id: 234,
+    name: "Robert Smith",
+    aliases: ["Bob", "Robbie"],
+    email: "bob@mail.com"
+])
+(n3 {Course} [ 
+    name: "Algebra",
+    credits: 6
+])
+(n1) - (e1 {knows} [since: 2020 ]) -> (n2)
+(n2) - (e2 {EnrolledIn} [start: 2024, end: 2025 ]) -> (n3)

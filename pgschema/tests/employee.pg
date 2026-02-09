@@ -1,12 +1,12 @@
-(n1: Person & Salaried { name: "Alice", age: 23, salary: 2000 });
-(n2: Person & Salaried { name: "Bob", salary: 2500 });
+(n1 {Person, Salaried} [name: "Alice", age: 23, salary: 2000 ])
+(n2 {Person, Salaried} [name: "Bob", salary: 2500 ])
 
 // Only Person
-(n3_wrong: Person { name: "Bob", salary: 2500 });
+(n3_wrong {Person} [name: "Bob", salary: 2500 ])
 
 // Only Salaried
-(n4_wrong: Salaried { name: "Bob", salary: 2500 });
+(n4_wrong {Salaried} [name: "Bob", salary: 2500 ])
 
 // No Salary
-(n5_wrong: Person & Salaried { name: "Bob" })
+(n5_wrong {Person, Salaried} [ name: "Bob" ])
 

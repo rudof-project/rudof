@@ -1,6 +1,6 @@
 [package]
 name = "rudof_mcp"
-version = "0.1.144"
+version = "0.1.147"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/rudof_mcp"
@@ -34,3 +34,10 @@ tokio = { workspace = true, features = [] }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 tokio.workspace = true
+
+[dev-dependencies]
+tokio-test.workspace = true
+tracing-test.workspace = true
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
+tempfile.workspace = true
