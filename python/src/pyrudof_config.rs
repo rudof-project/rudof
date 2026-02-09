@@ -11,7 +11,7 @@ use rudof_lib::{RudofConfig, RudofError};
 use crate::PyRudofError;
 
 /// Contains the configuration parameters for Rudof.
-/// 
+///
 /// It can be:
 /// * Created with default values.
 /// * Loaded from a configuration file.
@@ -35,7 +35,7 @@ impl PyRudofConfig {
         })
     }
 
-     /// Loads a RudofConfig from a file path.
+    /// Loads a RudofConfig from a file path.
     ///
     /// Args:
     ///     path (str): Path to the configuration file.

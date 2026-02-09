@@ -164,7 +164,7 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If node selector is invalid or node doesn't exist in the graph.
-    /// 
+    ///
     /// Note:
     ///     Colors require a terminal with ANSI escape sequence support.
     pub fn node_info(
@@ -216,7 +216,7 @@ impl PyRudof {
     ///
     /// Returns:
     ///     ShExSchema | None: The loaded ShEx schema, or None if no schema is loaded.
-    /// 
+    ///
     /// See Also:
     ///     :meth:`read_shex_str`: Load ShEx schema
     pub fn get_shex(&self) -> Option<PyShExSchema> {
@@ -228,7 +228,7 @@ impl PyRudof {
     ///
     /// Returns:
     ///     ShaclSchema | None: The loaded SHACL schema, or None if no schema is loaded.
-    /// 
+    ///
     /// See Also:
     ///     :meth:`read_shacl_str`: Load SHACL schema
     pub fn get_shacl(&self) -> Option<PyShaclSchema> {
@@ -240,7 +240,7 @@ impl PyRudof {
     ///
     /// Returns:
     ///     QueryShapeMap | None: The loaded ShapeMap, or None if no ShapeMap is loaded.
-    /// 
+    ///
     /// See Also:
     ///     :meth:`read_shapemap_str`: Load ShapeMap
     pub fn get_shapemap(&self) -> Option<PyQueryShapeMap> {
@@ -606,9 +606,9 @@ impl PyRudof {
     ///
     /// Returns:
     ///     str: Serialized ShapeMap.
-    /// 
+    ///
     /// Raises:
-    ///     RudofError: If serialization fails or if the resulting bytes cannot be converted 
+    ///     RudofError: If serialization fails or if the resulting bytes cannot be converted
     ///     into a valid UTF-8 string
     pub fn serialize_shapemap(
         &self,
@@ -655,7 +655,7 @@ impl PyRudof {
     ///     mode (ShaclValidationMode, optional): Validation engine. Defaults to ``ShaclValidationMode.Native``.
     ///         - ``Native``: Fast built-in engine (recommended)
     ///         - ``Sparql``: SPARQL-based engine (slower, for debugging)
-    ///     shapes_graph_source (ShapesGraphSource, optional): Source of shapes. 
+    ///     shapes_graph_source (ShapesGraphSource, optional): Source of shapes.
     ///         Defaults to ``ShapesGraphSource.CurrentSchema``.
     ///         - ``CurrentSchema``: Use loaded SHACL schema
     ///         - ``CurrentData``: Extract shapes from RDF data
@@ -665,7 +665,7 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If no data or schema is loaded, or validation fails.
-    /// 
+    ///
     /// Note:
     ///     - Native mode is recommended for production (faster)
     ///     - SPARQL mode useful for debugging complex constraints
@@ -1410,7 +1410,7 @@ pub enum PyUmlGenerationMode {
     PyAllNodes {},
 
     /// Generate UML only for the neighbours of a given node/shape.
-    /// 
+    ///
     /// Args:
     ///     node (str): The identifier of the shape or node whose neighbors will be included in the UML diagram.
     #[pyo3(constructor = (node), name ="Neighs")]
@@ -2304,7 +2304,7 @@ impl PyValidationStatus {
     }
 
     /// Returns a JSON representation of the reason of this status.
-    /// 
+    ///
     /// Returns:
     ///     Any: Python object representing the JSON structure of the reason.
     ///
