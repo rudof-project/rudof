@@ -25,6 +25,65 @@ pub struct GenerationConfig {
     pub cardinality_strategy: CardinalityStrategy,
     /// Schema format specification
     pub schema_format: Option<SchemaFormat>,
+
+    // --- Coherence Control Parameters ---
+
+    /// Probability (0.0 to 1.0) that a property will be included
+    #[serde(default = "default_property_fill_probability")]
+    pub property_fill_probability: f64,
+
+    /// Whether to ignore minimum cardinality constraints (treat minCount as 0)
+    #[serde(default)]
+    pub ignore_min_cardinality: bool,
+
+    /// Maximum number of properties per instance (0 = unlimited)
+    #[serde(default)]
+    pub max_properties_per_instance: usize,
+
+    /// Strategy for selecting properties when count is limited
+    #[serde(default)]
+    pub property_selection_strategy: PropertySelectionStrategy,
+
+    /// Variance in property count (0.0 to 1.0)
+    #[serde(default)]
+    pub property_count_variance: f64,
+
+    /// List of properties to explicitly exclude
+    #[serde(default)]
+    pub excluded_properties: Vec<String>,
+
+    /// Per-type coherence settings overrides
+    #[serde(default)]
+    pub type_overrides: HashMap<String, TypeOverrideConfig>,
+}
+
+fn default_property_fill_probability() -> f64 {
+    1.0
+}
+
+/// Strategy for selecting which properties to keep when limiting count
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub enum PropertySelectionStrategy {
+    All,
+    Random,
+    Weighted,
+}
+
+impl Default for PropertySelectionStrategy {
+    fn default() -> Self {
+        Self::All
+    }
+}
+
+/// Overrides for coherence settings per type
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TypeOverrideConfig {
+    pub property_fill_probability: Option<f64>,
+    pub ignore_min_cardinality: Option<bool>,
+    pub max_properties_per_instance: Option<usize>,
+    pub property_selection_strategy: Option<PropertySelectionStrategy>,
+    pub property_count_variance: Option<f64>,
+    pub excluded_properties: Option<Vec<String>>,
 }
 
 /// Schema format for the generator
@@ -150,6 +209,15 @@ impl Default for GeneratorConfig {
                 entity_distribution: EntityDistribution::Equal,
                 cardinality_strategy: CardinalityStrategy::Balanced,
                 schema_format: None, // Auto-detect
+                
+                // Coherence defaults (High Coherence)
+                property_fill_probability: 1.0,
+                ignore_min_cardinality: false,
+                max_properties_per_instance: 0,
+                property_selection_strategy: PropertySelectionStrategy::All,
+                property_count_variance: 0.0,
+                excluded_properties: Vec::new(),
+                type_overrides: HashMap::new(),
             },
             field_generators: FieldGeneratorConfig {
                 default: DefaultFieldConfig {
@@ -277,6 +345,19 @@ impl GeneratorConfig {
                     "Weighted distribution weights must sum to a positive value".to_string(),
                 ));
             }
+        }
+        
+        // Validate coherence parameters
+        if self.generation.property_fill_probability < 0.0 || self.generation.property_fill_probability > 1.0 {
+             return Err(crate::DataGeneratorError::Config(
+                "property_fill_probability must be between 0.0 and 1.0".to_string(),
+            ));
+        }
+        
+        if self.generation.property_count_variance < 0.0 || self.generation.property_count_variance > 1.0 {
+             return Err(crate::DataGeneratorError::Config(
+                "property_count_variance must be between 0.0 and 1.0".to_string(),
+            ));
         }
 
         Ok(())

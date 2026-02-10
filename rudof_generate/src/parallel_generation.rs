@@ -202,6 +202,33 @@ impl ParallelGenerator {
         Ok(all_triples)
     }
 
+    /// Get effective configuration for a specific shape, applying overrides if present
+    fn get_effective_config(&self, shape_id: &str) -> GenerationConfig {
+        let mut config = self.config.clone();
+
+        if let Some(override_config) = self.config.type_overrides.get(shape_id) {
+            if let Some(val) = override_config.property_fill_probability {
+                config.property_fill_probability = val;
+            }
+            if let Some(val) = override_config.ignore_min_cardinality {
+                config.ignore_min_cardinality = val;
+            }
+            if let Some(val) = override_config.max_properties_per_instance {
+                config.max_properties_per_instance = val;
+            }
+            if let Some(val) = override_config.property_selection_strategy {
+                config.property_selection_strategy = val;
+            }
+            if let Some(val) = override_config.property_count_variance {
+                config.property_count_variance = val;
+            }
+            if let Some(val) = &override_config.excluded_properties {
+                config.excluded_properties = val.clone();
+            }
+        }
+        config
+    }
+
     /// Generate a single entity
     async fn generate_single_entity(
         &self,
@@ -213,6 +240,9 @@ impl ParallelGenerator {
         let entity_iri = format!("{}-{}", shape_id, entity_index + 1);
         let entity_node = NamedNode::new_unchecked(&entity_iri);
 
+        // Get effective configuration for this shape
+        let config = self.get_effective_config(shape_id);
+
         // Add type triple
         triples.push(Triple::new(
             NamedOrBlankNode::NamedNode(entity_node.clone()),
@@ -221,7 +251,45 @@ impl ParallelGenerator {
         ));
 
         // Generate property triples
+        
+        // 1. Filter properties based on probability and constraints
+        let mut properties_to_generate = Vec::new();
+        
         for property_info in &shape_info.properties {
+            // Apply property fill probability
+            // If min_cardinality > 0 and ignore_min_cardinality is false, we MUST generate it.
+            // Otherwise, we roll the dice.
+            let min_card = property_info.min_cardinality.unwrap_or(0);
+            let effective_min = if config.ignore_min_cardinality {
+                0
+            } else {
+                min_card
+            };
+
+            let must_include = effective_min > 0;
+            
+            if !must_include {
+                use rand::Rng;
+                let mut rng = rand::thread_rng();
+                let roll: f64 = rng.r#gen();
+                if roll > config.property_fill_probability {
+                    continue;
+                }
+            }
+            
+            properties_to_generate.push(property_info);
+        }
+
+        // 2. Apply max_properties_per_instance limit
+        if config.max_properties_per_instance > 0 && properties_to_generate.len() > config.max_properties_per_instance {
+            use rand::seq::SliceRandom;
+            let mut rng = rand::thread_rng();
+            properties_to_generate.shuffle(&mut rng);
+            properties_to_generate.truncate(config.max_properties_per_instance);
+        }
+
+        // 3. Generate triples for selected properties
+        for property_info in properties_to_generate {
             // Handle cardinality for both data and object properties
             let num_values = self.calculate_property_value_count(
                 property_info.min_cardinality,
@@ -229,6 +297,11 @@ impl ParallelGenerator {
                 entity_index,
             );
 
+            // If we decided to include it but calculated 0 values (e.g. random 0..X), 
+            // force at least 1 if we passed the probability check? 
+            // The spec says "generate property with cardinality >= effective_min".
+            // calculate_property_value_count respects min_cardinality.
+            
             for value_idx in 0..num_values {
                 if let Some(shape_ref) = &property_info.shape_ref {
                     // Object property with shape reference - generate nested entity
