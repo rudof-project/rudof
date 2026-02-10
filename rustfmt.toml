@@ -20,3 +20,10 @@ reorder_modules = true
 
 match_arm_leading_pipes = "Never"
 match_block_trailing_comma = true
+
+format_code_in_doc_comments = true
+format_macro_matchers = true
+imports_granularity = "Module"
+normalize_comments = true
+normalize_doc_attributes = true
+group_imports = "One"
