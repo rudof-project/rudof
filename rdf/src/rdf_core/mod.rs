@@ -7,10 +7,12 @@ mod neighs_rdf;
 pub mod parser;
 pub mod query;
 mod rdf;
+mod rdf_data_config;
 mod rdf_format;
 mod shacl_path;
 pub mod term;
 pub mod utils;
+pub mod visualizer;
 pub mod vocab;
 
 pub use async_rdf::AsyncRDF;

@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 /// Represents all possible errors that can occur during RDF operations.
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum RDFError {
     /// Default / fallback error.
     #[error("{msg}")]
@@ -502,4 +502,34 @@ pub enum RDFError {
     FailedConditionalError {
         msg: String,
     },
+
+    // ========================================================================
+    // Configuration Errors
+    // ========================================================================
+    /// Error reading the configuration file from disk.
+    ///
+    /// # Fields
+    /// - `path_name`: The path of the file that could not be read
+    /// - `error`: The underlying I/O error
+    #[error("Reading path {path_name:?} error: {error:?}")]
+    ReadingConfigError { path_name: String, error: std::io::Error },
+
+    /// Error parsing the TOML configuration file.
+    ///
+    /// # Fields
+    /// - `path_name`: The path of the TOML file that failed to parse
+    /// - `error`: The underlying TOML parsing error
+    #[error("Reading TOML from {path_name:?}. Error: {error:?}")]
+    TomlError {
+        path_name: String,
+        error: toml::de::Error,
+    },
+
+    /// Error converting a string to a valid IRI for an endpoint.
+    ///
+    /// # Fields
+    /// - `error`: Detailed description of the IRI parsing failure
+    /// - `str`: The string that failed to parse as an IRI
+    #[error("Converting to IRI the string {str}. Error: {error}")]
+    ConvertingIriEndpoint { error: String, str: String },
 }

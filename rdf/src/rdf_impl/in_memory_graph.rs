@@ -24,7 +24,7 @@ use serde::{ser::SerializeStruct, Serialize};
 use sparesults::QuerySolution as SparQuerySolution;
 use std::{
     fmt::Debug, fs::File,
-    io::{self, BufReader, Cursor, Read, Write}, path::{Path, PathBuf},
+    io::{self, BufReader, Cursor, Write}, path::Path,
     str::FromStr,
 };
 use tracing::{debug, trace};
@@ -179,7 +179,6 @@ impl InMemoryGraph {
         let mut buffer = Vec::new();
         reader.read_to_end(&mut buffer)?;
         let reader1 = Cursor::new(&buffer);
-        let mut reader2 = Cursor::new(&buffer);
         let mut turtle_reader = turtle_parser.for_reader(reader1);
         
         for triple_result in turtle_reader.by_ref() {
@@ -1281,7 +1280,7 @@ fn cnv_query_results(
     
     solutions
         .enumerate()
-        .map(|(idx, solution_result)| {
+        .map(|(_, solution_result)| {
             solution_result
                 .map(cnv_query_solution)
                 .map_err(|e| InMemoryGraphError::QueryResultError {
