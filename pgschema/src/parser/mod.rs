@@ -1,3 +1,4 @@
+#![allow(clippy::all)]
 // Parser for simple Property Graphs
 #[allow(clippy::all)]
 pub mod pg;
