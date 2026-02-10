@@ -126,13 +126,13 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
                 example_schema,
                 tool_name,
                 if technology == "shex" { "shexc" } else { "turtle" },
-                if args.node.is_some() {
-                    format!(",\n  \"maybe_node\": \"{}\"", args.node.as_ref().unwrap())
+                if let Some(n) = args.node.as_deref() {
+                    format!(",\n  \"maybe_node\": \"{n}\"")
                 } else {
                     String::new()
                 },
-                if args.shape.is_some() {
-                    format!(",\n  \"maybe_shape\": \"{}\",\n", args.shape.as_ref().unwrap())
+                if let Some(s) = args.shape.as_deref() {
+                    format!(",\n  \"maybe_shape\": \"{s}\",\n",)
                 } else {
                     ",\n".to_string()
                 },
@@ -146,13 +146,13 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
         description: Some(format!(
             "{} validation guide{}{}",
             technology.to_uppercase(),
-            if args.node.is_some() {
-                format!(" for node {}", args.node.unwrap())
+            if let Some(n) = args.node.as_deref() {
+                format!(" for node {n}")
             } else {
                 String::new()
             },
-            if args.shape.is_some() {
-                format!(" against shape {}", args.shape.unwrap())
+            if let Some(s) = args.shape.as_deref() {
+                format!(" against shape {s}")
             } else {
                 String::new()
             },
