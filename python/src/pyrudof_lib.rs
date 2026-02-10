@@ -313,14 +313,7 @@ impl PyRudof {
         let reader_mode = cnv_reader_mode(reader_mode);
         let format = cnv_rdf_format(format);
         self.inner
-            .read_data(
-                &mut input.as_bytes(),
-                "String",
-                &format,
-                base,
-                &reader_mode,
-                merge,
-            )
+            .read_data(&mut input.as_bytes(), "String", &format, base, &reader_mode, merge)
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -340,14 +333,10 @@ impl PyRudof {
         let format = cnv_rdf_format(format);
         self.inner
             .serialize_data(&format, &mut v)
-            .map_err(|e| RudofError::SerializingData {
-                error: format!("{e}"),
-            })
+            .map_err(|e| RudofError::SerializingData { error: format!("{e}") })
             .map_err(cnv_err)?;
         let str = String::from_utf8(v)
-            .map_err(|e| RudofError::SerializingData {
-                error: format!("{e}"),
-            })
+            .map_err(|e| RudofError::SerializingData { error: format!("{e}") })
             .map_err(cnv_err)?;
         Ok(str)
     }
@@ -415,23 +404,15 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If no schema is loaded or serialization fails.
-    pub fn serialize_current_shex(
-        &self,
-        formatter: &PyShExFormatter,
-        format: &PyShExFormat,
-    ) -> PyResult<String> {
+    pub fn serialize_current_shex(&self, formatter: &PyShExFormatter, format: &PyShExFormat) -> PyResult<String> {
         let mut v = Vec::new();
         let format = cnv_shex_format(format);
         self.inner
             .serialize_current_shex(&format, &formatter.inner, &mut v)
-            .map_err(|e| RudofError::SerializingShEx {
-                error: format!("{e}"),
-            })
+            .map_err(|e| RudofError::SerializingShEx { error: format!("{e}") })
             .map_err(cnv_err)?;
         let str = String::from_utf8(v)
-            .map_err(|e| RudofError::SerializingShEx {
-                error: format!("{e}"),
-            })
+            .map_err(|e| RudofError::SerializingShEx { error: format!("{e}") })
             .map_err(cnv_err)?;
         Ok(str)
     }
@@ -455,14 +436,10 @@ impl PyRudof {
         let format = cnv_shex_format(format);
         self.inner
             .serialize_shex(&shex.inner, &format, &formatter.inner, &mut v)
-            .map_err(|e| RudofError::SerializingShEx {
-                error: format!("{e}"),
-            })
+            .map_err(|e| RudofError::SerializingShEx { error: format!("{e}") })
             .map_err(cnv_err)?;
         let str = String::from_utf8(v)
-            .map_err(|e| RudofError::SerializingShEx {
-                error: format!("{e}"),
-            })
+            .map_err(|e| RudofError::SerializingShEx { error: format!("{e}") })
             .map_err(cnv_err)?;
         Ok(str)
     }
@@ -535,14 +512,10 @@ impl PyRudof {
         let format = cnv_shacl_format(format);
         self.inner
             .serialize_shacl(&format, &mut v)
-            .map_err(|e| RudofError::SerializingShacl {
-                error: format!("{e}"),
-            })
+            .map_err(|e| RudofError::SerializingShacl { error: format!("{e}") })
             .map_err(cnv_err)?;
         let str = String::from_utf8(v)
-            .map_err(|e| RudofError::SerializingShacl {
-                error: format!("{e}"),
-            })
+            .map_err(|e| RudofError::SerializingShacl { error: format!("{e}") })
             .map_err(cnv_err)?;
         Ok(str)
     }
@@ -578,9 +551,7 @@ impl PyRudof {
     pub fn read_shapemap(&mut self, input: &str, format: &PyShapeMapFormat) -> PyResult<()> {
         let format = cnv_shapemap_format(format);
         let reader = get_reader(input, Some(format.mime_type()), "Shapemap")?;
-        self.inner
-            .read_shapemap(reader, input, &format)
-            .map_err(cnv_err)?;
+        self.inner.read_shapemap(reader, input, &format).map_err(cnv_err)?;
         Ok(())
     }
 
@@ -596,23 +567,15 @@ impl PyRudof {
     /// Raises:
     ///     RudofError: If serialization fails or if the resulting bytes cannot be converted
     ///     into a valid UTF-8 string
-    pub fn serialize_shapemap(
-        &self,
-        formatter: &PyShapeMapFormatter,
-        format: &PyShapeMapFormat,
-    ) -> PyResult<String> {
+    pub fn serialize_shapemap(&self, formatter: &PyShapeMapFormatter, format: &PyShapeMapFormat) -> PyResult<String> {
         let mut v = Vec::new();
         let format = cnv_shapemap_format(format);
         self.inner
             .serialize_shapemap(&format, &formatter.inner, &mut v)
-            .map_err(|e| RudofError::SerializingShacl {
-                error: format!("{e}"),
-            })
+            .map_err(|e| RudofError::SerializingShacl { error: format!("{e}") })
             .map_err(cnv_err)?;
         let str = String::from_utf8(v)
-            .map_err(|e| RudofError::SerializingShacl {
-                error: format!("{e}"),
-            })
+            .map_err(|e| RudofError::SerializingShacl { error: format!("{e}") })
             .map_err(cnv_err)?;
         Ok(str)
     }
@@ -680,9 +643,7 @@ impl PyRudof {
     pub fn read_dctap_str(&mut self, input: &str, format: &PyDCTapFormat) -> PyResult<()> {
         self.inner.reset_dctap();
         let format = cnv_dctap_format(format);
-        self.inner
-            .read_dctap(input.as_bytes(), &format)
-            .map_err(cnv_err)?;
+        self.inner.read_dctap(input.as_bytes(), &format).map_err(cnv_err)?;
         Ok(())
     }
 
@@ -739,16 +700,9 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If query is malformed or execution fails.
-    pub fn run_query_construct_str(
-        &mut self,
-        input: &str,
-        format: &PyQueryResultFormat,
-    ) -> PyResult<String> {
+    pub fn run_query_construct_str(&mut self, input: &str, format: &PyQueryResultFormat) -> PyResult<String> {
         let format = cnv_query_result_format(format);
-        let str = self
-            .inner
-            .run_query_construct_str(input, &format)
-            .map_err(cnv_err)?;
+        let str = self.inner.run_query_construct_str(input, &format).map_err(cnv_err)?;
         Ok(str)
     }
 
@@ -772,9 +726,7 @@ impl PyRudof {
     ///     RudofError: If file/URL cannot be read or query is malformed.
     pub fn read_query(&mut self, input: &str) -> PyResult<()> {
         let mut reader = get_reader(input, Some("application/sparql-query"), "SPARQL query")?;
-        self.inner
-            .read_query(&mut reader, Some(input))
-            .map_err(cnv_err)
+        self.inner.read_query(&mut reader, Some(input)).map_err(cnv_err)
     }
 
     /// Executes a SPARQL query from a file path.
@@ -815,15 +767,9 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If no query is loaded or it's not a CONSTRUCT query.
-    pub fn run_current_query_construct(
-        &mut self,
-        format: &PyQueryResultFormat,
-    ) -> PyResult<String> {
+    pub fn run_current_query_construct(&mut self, format: &PyQueryResultFormat) -> PyResult<String> {
         let format = cnv_query_result_format(format);
-        let str = self
-            .inner
-            .run_current_query_construct(&format)
-            .map_err(cnv_err)?;
+        let str = self.inner.run_current_query_construct(&format).map_err(cnv_err)?;
         Ok(str)
     }
 
@@ -838,15 +784,8 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If endpoint is unreachable or query fails.
-    pub fn run_query_endpoint_str(
-        &mut self,
-        query: &str,
-        endpoint: &str,
-    ) -> PyResult<PyQuerySolutions> {
-        let results = self
-            .inner
-            .run_query_endpoint(query, endpoint)
-            .map_err(cnv_err)?;
+    pub fn run_query_endpoint_str(&mut self, query: &str, endpoint: &str) -> PyResult<PyQuerySolutions> {
+        let results = self.inner.run_query_endpoint(query, endpoint).map_err(cnv_err)?;
         Ok(PyQuerySolutions { inner: results })
     }
 
@@ -942,11 +881,7 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If no description is loaded or file cannot be written.
-    pub fn serialize_service_description(
-        &self,
-        output: &str,
-        format: &PyServiceDescriptionFormat,
-    ) -> PyResult<()> {
+    pub fn serialize_service_description(&self, output: &str, format: &PyServiceDescriptionFormat) -> PyResult<()> {
         let file = File::create(output)?;
         let mut writer = BufWriter::new(file);
         let service_description_format = cnv_service_description_format(format);
@@ -1038,11 +973,7 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If no schema is loaded, generation fails, or file cannot be written.
-    pub fn shex2plantuml_file(
-        &self,
-        uml_mode: &PyUmlGenerationMode,
-        file_name: &str,
-    ) -> PyResult<()> {
+    pub fn shex2plantuml_file(&self, uml_mode: &PyUmlGenerationMode, file_name: &str) -> PyResult<()> {
         let file = File::create(file_name)?;
         let mut writer = BufWriter::new(file);
         self.inner

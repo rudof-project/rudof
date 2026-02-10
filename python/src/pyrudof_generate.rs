@@ -561,14 +561,11 @@ impl PyDataGenerator {
     /// Raises:
     ///     RuntimeError: If the generator is not initialized.
     ///     ValueError: If schema loading or generation fails.
-    pub fn run_with_format(
-        &mut self,
-        schema_path: &str,
-        format: Option<PySchemaFormat>,
-    ) -> PyResult<()> {
-        let generator = self.inner.as_mut().ok_or_else(|| {
-            PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Generator not initialized")
-        })?;
+    pub fn run_with_format(&mut self, schema_path: &str, format: Option<PySchemaFormat>) -> PyResult<()> {
+        let generator = self
+            .inner
+            .as_mut()
+            .ok_or_else(|| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Generator not initialized"))?;
 
         let rust_format = format.map(|f| f.into());
 

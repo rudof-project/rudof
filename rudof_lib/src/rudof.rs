@@ -3,17 +3,17 @@ pub use dctap::{DCTAPFormat, DCTap as DCTAP};
 pub use iri_s::iri;
 pub use mie::Mie;
 pub use prefixmap::PrefixMap;
-pub use shacl_ast::ast::Schema as ShaclSchema;
 pub use shacl_ast::ShaclFormat;
+pub use shacl_ast::ast::Schema as ShaclSchema;
 pub use shacl_ir::compiled::schema_ir::SchemaIR as ShaclSchemaIR;
 pub use shacl_validation::shacl_processor::ShaclValidationMode;
 pub use shacl_validation::validation_report::report::ValidationReport;
 pub use shapes_comparator::{CoShaMo, ComparatorError, CompareSchemaFormat, CompareSchemaMode, ShaCo};
+pub use shex_ast::Node;
+pub use shex_ast::Schema as ShExSchema;
 pub use shex_ast::compact::{ShExFormatter, ShapeMapParser, ShapemapFormatter as ShapeMapFormatter};
 pub use shex_ast::ir::shape_label::ShapeLabel;
 pub use shex_ast::shapemap::{QueryShapeMap, ResultShapeMap, ShapeMapFormat, SortMode, ValidationStatus};
-pub use shex_ast::Node;
-pub use shex_ast::Schema as ShExSchema;
 pub use shex_validation::Validator as ShExValidator;
 pub use shex_validation::ValidatorConfig;
 pub use sparql_service::RdfData;
@@ -1242,9 +1242,9 @@ mod tests {
     use iri_s::iri;
     use shacl_ast::ShaclFormat;
     use shacl_validation::shacl_processor::ShaclValidationMode;
-    use shex_ast::shapemap::ShapeMapFormat;
     use shex_ast::ShExFormat;
-    use shex_ast::{ir::shape_label::ShapeLabel, Node};
+    use shex_ast::shapemap::ShapeMapFormat;
+    use shex_ast::{Node, ir::shape_label::ShapeLabel};
 
     use crate::RudofConfig;
 
