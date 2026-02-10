@@ -6,7 +6,7 @@ use crate::{
     key::Key,
     parser::{
         pg::PgParser,
-        pg_actions::{Edge, LabelsRecord, Node, Property, SingleValue, Statement, Values, identifier},
+        pg_actions::{identifier, Edge, LabelsRecord, Node, Property, SingleValue, Statement, Values},
     },
     pg::PropertyGraph,
     pgs_error::PgsError,
@@ -67,11 +67,11 @@ fn get_edge(edge: Edge, pg: &mut PropertyGraph) -> Result<(), PgsError> {
     let source = get_id(edge.source)?;
     let target = get_id(edge.target)?;
     let (labels, record) = get_labels_record(edge.labels_record)?;
-    pg.add_edge(edge.id, source, labels, record, target)
+    pg.add_edge(edge.edge_id_opt, source, labels, record, target)
 }
 
 fn get_node(node: Node, pg: &mut PropertyGraph) -> Result<(), PgsError> {
-    let id = get_id(node.id)?;
+    let id = get_id(node.node_id)?;
     let (labels, record) = get_labels_record(node.labels_record)?;
     pg.add_node(id, labels, record);
     Ok(())
@@ -167,4 +167,13 @@ fn remove_quotes(s: &str) -> &str {
     chars.next();
     chars.next_back();
     chars.as_str()
+}
+
+impl identifier {
+    pub fn as_str(&self) -> &str {
+        match self {
+            identifier::IDENTIFIER(s) => s.as_str(),
+            identifier::QUOTED_STRING(s) => s.strip_prefix('"').and_then(|s| s.strip_suffix('"')).unwrap_or(s),
+        }
+    }
 }
