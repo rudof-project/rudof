@@ -1,0 +1,30 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+    -   id: trailing-whitespace
+    -   id: end-of-file-fixer
+    -   id: check-yaml
+        # Prevents !Symbol TAG from being misinterpreted as a YAML syntax error
+        exclude: ^rbe_testsuite/tests/basic\.yaml$
+    -   id: check-json
+    -   id: check-toml
+    -   id: check-xml
+    -   id: check-added-large-files
+    -   id: check-case-conflict
+    -   id: check-illegal-windows-names
+    -   id: detect-private-key
+    -   id: fix-byte-order-marker
+    -   id: mixed-line-ending
+        args: [ "--fix=lf" ]
+    -   id: no-commit-to-branch
+        args: [ "-b", "master" ]
+#    -   id: file-contents-sorter # Check usage for cargo.toml
+-   repo: https://github.com/FeryET/pre-commit-rust
+    rev: v1.2.1
+    hooks:
+    -   id: cargo-check
+    -   id: fmt
+    -   id: clippy
+#        args: [ "--all-targets", "--all-features", "--workspace", "--", "-D", "warnings" ]
+    -   id: test

@@ -5,6 +5,8 @@
 [![rudof](https://github.com/rudof-project/rudof/actions/workflows/ci.yml/badge.svg)](https://github.com/rudof-project/rudof/actions/workflows/ci.yml)
 [![dependency status](https://deps.rs/repo/github/rudof-project/rudof/status.svg)](https://deps.rs/repo/github/rudof-project/rudof)
 [![CodeScene general](https://codescene.io/images/analyzed-by-codescene-badge.svg)](https://codescene.io/projects/72637)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
+
 
 This repo contains an RDF data shapes library implemented in Rust.
 The implementation supports
