@@ -252,13 +252,29 @@ impl ParallelGenerator {
 
         // Generate property triples
         
-        // 1. Filter properties based on probability and constraints
-        let mut properties_to_generate = Vec::new();
+        // 0. Calculate effective probability with variance for THIS instance
+        let mut variance_multiplier = 1.0;
+        if config.property_count_variance > 0.0 {
+            use rand::Rng;
+            let mut rng = rand::thread_rng();
+            // random range [-variance, +variance]
+            let variance_factor = rng.gen_range(-config.property_count_variance..=config.property_count_variance);
+            variance_multiplier = 1.0 + variance_factor;
+        }
         
+        let effective_probability = (config.property_fill_probability * variance_multiplier).clamp(0.0, 1.0);
+
+        // 1. Separate properties into mandatory and candidates
+        let mut properties_to_generate = Vec::new();
+        let mut candidates = Vec::new();
+        let mut mandatory_properties = Vec::new();
+
         for property_info in &shape_info.properties {
-            // Apply property fill probability
-            // If min_cardinality > 0 and ignore_min_cardinality is false, we MUST generate it.
-            // Otherwise, we roll the dice.
+            // Check if property is explicitly excluded
+            if config.excluded_properties.contains(&property_info.property_iri) {
+                continue;
+            }
+
             let min_card = property_info.min_cardinality.unwrap_or(0);
             let effective_min = if config.ignore_min_cardinality {
                 0
@@ -266,19 +282,62 @@ impl ParallelGenerator {
                 min_card
             };
 
-            let must_include = effective_min > 0;
-            
-            if !must_include {
-                use rand::Rng;
-                let mut rng = rand::thread_rng();
-                let roll: f64 = rng.r#gen();
-                if roll > config.property_fill_probability {
-                    continue;
+            if effective_min > 0 {
+                mandatory_properties.push(property_info);
+            } else {
+                candidates.push(property_info);
+            }
+        }
+
+        // 2. Select from candidates based on strategy
+        use crate::config::PropertySelectionStrategy;
+        use rand::seq::SliceRandom;
+        
+        match config.property_selection_strategy {
+            PropertySelectionStrategy::All | PropertySelectionStrategy::Weighted => {
+                // Weighted is treated as All for now (future work)
+                // Independent probability check for each candidate using effective_probability
+                for prop in candidates {
+                    use rand::Rng;
+                    let mut rng = rand::thread_rng();
+                    let roll: f64 = rng.r#gen();
+                    if roll <= effective_probability {
+                        properties_to_generate.push(prop);
+                    }
+                }
+            },
+            PropertySelectionStrategy::Random => {
+                // Fixed count based on probability
+                // Target count includes mandatory properties? 
+                // Spec says: "num_props = round(property_fill_probability * total_props)"
+                // This usually implies total *resulting* properties.
+                
+                let total_available = shape_info.properties.len();
+                let target_count = (effective_probability * total_available as f64).round() as usize;
+                
+                // We must include mandatory ones
+                let mandatory_count = mandatory_properties.len();
+                
+                // How many candidates to pick?
+                // If target <= mandatory, we pick 0 candidates (and just have mandatory).
+                // If target > mandatory, we pick (target - mandatory) candidates.
+                let mut slots_for_candidates = target_count.saturating_sub(mandatory_count);
+                
+                // Clamp to available candidates
+                slots_for_candidates = slots_for_candidates.min(candidates.len());
+                
+                if slots_for_candidates > 0 {
+                    let mut rng = rand::thread_rng();
+                    candidates.shuffle(&mut rng);
+                    for i in 0..slots_for_candidates {
+                        properties_to_generate.push(candidates[i]);
+                    }
                 }
             }
-            
-            properties_to_generate.push(property_info);
         }
+        
+        // Add mandatory properties
+        properties_to_generate.extend(mandatory_properties);
 
         // 2. Apply max_properties_per_instance limit
         if config.max_properties_per_instance > 0 && properties_to_generate.len() > config.max_properties_per_instance {

@@ -1,0 +1,291 @@
+================================================================================
+RUDOF GENERATOR - COHERENCE CONTROL PARAMETERS SPECIFICATION
+================================================================================
+
+This document specifies new configuration parameters needed to control the
+coherence level of generated RDF data. These parameters allow generating
+datasets that range from highly structured (coherence ≈ 1.0) to sparse and
+heterogeneous (coherence ≈ 0.3), without modifying the input schema.
+
+================================================================================
+1. property_fill_probability
+================================================================================
+
+Type: float (0.0 to 1.0)
+
+Purpose: Controls the probability that any given property will be included for
+an instance, regardless of whether the schema marks it as required.
+
+Behavior:
+- For each property defined in the schema for a given type, the generator
+  rolls a random number
+- If random() <= property_fill_probability, the property is included
+- If the roll fails, the property is skipped (even if schema says minCount 1)
+
+Example:
+    property_fill_probability = 0.4
+
+For a Professor type with 10 properties, on average only 4 properties would
+be generated per instance.
+
+Impact on Coherence:
+- 1.0 → All instances have all properties → Coherence ≈ 1.0
+- 0.3 → Instances have ~30% of properties, randomly selected → Coherence ≈ 0.3
+- 0.0 → No properties generated (only rdf:type)
+
+Implementation Notes:
+- Should be applied AFTER resolving cardinality constraints
+- The rdf:type property should be EXEMPT (always included)
+- Seed should be respected for reproducibility
+
+================================================================================
+2. ignore_min_cardinality
+================================================================================
+
+Type: boolean
+
+Purpose: When true, treats all sh:minCount / ShEx minimum cardinality
+constraints as if they were 0. This allows the generator to skip properties
+that the schema declares as "required".
+
+Behavior:
+- false (default): Respects schema constraints. If sh:minCount 1, property
+  MUST be generated.
+- true: Ignores minimum constraints. All properties become optional.
+
+Example:
+    ignore_min_cardinality = true
+
+Why Needed:
+The LUBM SHACL schema has 87 properties with sh:minCount 1. Without this flag,
+property_fill_probability cannot skip these properties because they're marked
+required.
+
+Interaction with property_fill_probability:
+    if ignore_min_cardinality:
+        effective_min = 0
+    else:
+        effective_min = schema_min_count
+
+    if random() <= property_fill_probability:
+        generate property with cardinality >= effective_min
+    else:
+        skip property (only if effective_min == 0)
+
+Implementation Notes:
+- Does NOT affect sh:maxCount - maximum constraints should still be respected
+- Should log a warning when skipping a schema-required property
+
+================================================================================
+3. max_properties_per_instance
+================================================================================
+
+Type: integer (0 = unlimited)
+
+Purpose: Hard cap on the number of properties generated for any single instance.
+Creates sparse instances even when schema defines many properties.
+
+Behavior:
+- After determining which properties to include (via property_fill_probability),
+  if count exceeds max_properties_per_instance, randomly select that many to keep
+- rdf:type does NOT count toward this limit (always included)
+
+Example:
+    max_properties_per_instance = 5
+
+For a Professor with 10 schema properties, only 5 (randomly chosen) plus
+rdf:type would be generated.
+
+Impact on Coherence:
+- Creates instances with varying property sets
+- Different instances of same type will have different property combinations
+- Directly reduces the CV(T) component in coherence formula
+
+Implementation Notes:
+- Selection of which properties to keep should be random (seeded)
+- Consider a priority system: some properties more likely to be kept than others
+- Value 0 means no limit
+
+================================================================================
+4. property_selection_strategy
+================================================================================
+
+Type: enum ("All", "Random", "Weighted")
+
+Purpose: Determines HOW properties are selected when not all properties are
+generated.
+
+Options:
+
+"All" (default):
+- Every property has equal chance based on property_fill_probability
+- Each property decided independently
+
+"Random":
+- First decide HOW MANY properties to include (based on probability * total)
+- Then randomly select that many properties
+- Ensures more consistent property counts across instances
+
+"Weighted":
+- Some properties have higher selection priority
+- Requires additional configuration for weights
+- Useful for: "name and email are common, fax is rare"
+
+Example with Weighted:
+    property_selection_strategy = "Weighted"
+
+    [generation.property_weights]
+    "http://example.org/name" = 1.0        # Always included
+    "http://example.org/email" = 0.9       # Almost always
+    "http://example.org/telephone" = 0.5   # Half the time
+    "http://example.org/fax" = 0.1         # Rarely
+
+Implementation Notes:
+- "Random" mode: num_props = round(property_fill_probability * total_props),
+  then select num_props randomly
+- "Weighted" mode: normalize weights, use weighted random selection
+- Should work in conjunction with max_properties_per_instance
+
+================================================================================
+5. property_count_variance
+================================================================================
+
+Type: float (0.0 to 1.0)
+
+Purpose: Controls how much the number of properties varies BETWEEN instances of
+the same type. Creates heterogeneous data where some instances are complete and
+others are sparse.
+
+Behavior:
+- 0.0: All instances of a type have the same number of properties (uniform)
+- 1.0: Property count varies wildly between instances (high variance)
+
+Mathematical Model:
+    base_count = property_fill_probability * total_properties
+    variance_range = base_count * property_count_variance
+    actual_count = base_count + random(-variance_range, +variance_range)
+    actual_count = clamp(actual_count, 1, total_properties)
+
+Example:
+    property_fill_probability = 0.5
+    property_count_variance = 0.6
+
+For a type with 10 properties:
+- Base count = 5
+- Variance range = 5 * 0.6 = 3
+- Actual count per instance: random between 2 and 8
+
+Impact on Coherence:
+- High variance means instances of the same type look very different
+- This is characteristic of real-world LOD (DBpedia-like data)
+- Directly impacts the Coverage(T) term in coherence calculation
+
+Implementation Notes:
+- Apply variance BEFORE selecting which specific properties
+- Could use normal distribution centered on base_count
+- Ensure at least 1 property (rdf:type) is always present
+
+================================================================================
+6. excluded_properties
+================================================================================
+
+Type: array of URI strings
+
+Purpose: Explicitly exclude certain properties from ever being generated.
+Useful for creating datasets that systematically lack certain information.
+
+Example:
+    [generation]
+    excluded_properties = [
+        "http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#telephone",
+        "http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#fax",
+        "http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#emailAddress"
+    ]
+
+Impact on Coherence:
+- Reduces the property set P(T) for affected types
+- All instances will lack these properties → uniform absence
+- Lowers overall coherence by reducing property coverage
+
+Implementation Notes:
+- Check against this list before generating any property
+- Should override schema requirements (even if minCount 1)
+- Log warning when excluding a required property
+
+================================================================================
+7. type_overrides (Advanced)
+================================================================================
+
+Type: map of type URI → override settings
+
+Purpose: Allow different coherence settings per type. Some types can be
+complete while others are sparse.
+
+Example:
+    [generation.type_overrides."http://example.org/University"]
+    property_fill_probability = 1.0  # Universities always complete
+
+    [generation.type_overrides."http://example.org/Student"]
+    property_fill_probability = 0.3  # Students often incomplete
+    max_properties_per_instance = 4
+
+Use Case:
+- Core entities (University, Department) are well-documented
+- Peripheral entities (Student, Publication) have missing data
+- Mimics real-world data quality patterns
+
+Implementation Notes:
+- Override values should fall back to global defaults
+- Only specified fields are overridden, others use global
+- Type matching should handle full URIs and prefixed names
+
+================================================================================
+COMPLETE EXAMPLE CONFIGURATIONS
+================================================================================
+
+HIGH Coherence (~0.95):
+------------------------
+[generation]
+property_fill_probability = 1.0
+ignore_min_cardinality = false
+max_properties_per_instance = 0
+property_selection_strategy = "All"
+property_count_variance = 0.0
+excluded_properties = []
+
+
+LOW Coherence (~0.3):
+---------------------
+[generation]
+property_fill_probability = 0.35
+ignore_min_cardinality = true
+max_properties_per_instance = 6
+property_selection_strategy = "Random"
+property_count_variance = 0.7
+excluded_properties = []
+
+
+MEDIUM Coherence (~0.6):
+------------------------
+[generation]
+property_fill_probability = 0.65
+ignore_min_cardinality = true
+max_properties_per_instance = 0
+property_selection_strategy = "All"
+property_count_variance = 0.3
+excluded_properties = []
+
+================================================================================
+SUMMARY TABLE
+================================================================================
+
+| Parameter                   | HIGH Coherence | LOW Coherence | Purpose                          |
+|-----------------------------|----------------|---------------|----------------------------------|
+| property_fill_probability   | 1.0            | 0.2-0.4       | Controls % of properties filled  |
+| ignore_min_cardinality      | false          | true          | Allows skipping required props   |
+| max_properties_per_instance | 0 (unlimited)  | 3-5           | Caps properties per instance     |
+| property_selection_strategy | "All"          | "Random"      | How properties are chosen        |
+| property_count_variance     | 0.0            | 0.5-0.8       | Variation between instances      |
+| excluded_properties         | []             | [...]         | Properties to never generate     |
+
+================================================================================
