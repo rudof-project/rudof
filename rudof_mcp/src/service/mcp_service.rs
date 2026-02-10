@@ -201,7 +201,8 @@ impl RudofMcpService {
             .serialize_data(&RDFFormat::NTriples, &mut buffer)
             .map_err(|e| state::StatePersistenceError::RdfSerialization(e.to_string()))?;
 
-        let rdf_ntriples = String::from_utf8(buffer).map_err(|e| state::StatePersistenceError::Json(e.to_string()))?;
+        let rdf_ntriples = String::from_utf8(buffer)
+            .map_err(|e| state::StatePersistenceError::Json(e.to_string()))?;
 
         // Count triples (count lines that aren't empty or comments)
         let triple_count = rdf_ntriples
