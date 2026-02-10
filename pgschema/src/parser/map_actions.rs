@@ -15,11 +15,7 @@ pub fn map_association1(_ctx: &Ctx, association1: Association1) -> Map {
     association1
 }
 pub type Association1 = Vec<Association>;
-pub fn association1_c1(
-    _ctx: &Ctx,
-    mut association1: Association1,
-    association: Association,
-) -> Association1 {
+pub fn association1_c1(_ctx: &Ctx, mut association1: Association1, association: Association) -> Association1 {
     association1.push(association);
     association1
 }
@@ -32,12 +28,7 @@ pub struct Association {
     pub notopt: NOTOpt,
     pub type_name: TypeName,
 }
-pub fn association_c1(
-    _ctx: &Ctx,
-    node_id: NodeId,
-    notopt: NOTOpt,
-    type_name: TypeName,
-) -> Association {
+pub fn association_c1(_ctx: &Ctx, node_id: NodeId, notopt: NOTOpt, type_name: TypeName) -> Association {
     Association {
         node_id,
         notopt,

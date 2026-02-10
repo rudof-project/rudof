@@ -23,11 +23,7 @@ pub fn pgs_create_type1(_ctx: &Ctx, create_type1: CreateType1) -> Pgs {
     create_type1
 }
 pub type CreateType1 = Vec<CreateType>;
-pub fn create_type1_c1(
-    _ctx: &Ctx,
-    mut create_type1: CreateType1,
-    create_type: CreateType,
-) -> CreateType1 {
+pub fn create_type1_c1(_ctx: &Ctx, mut create_type1: CreateType1, create_type: CreateType) -> CreateType1 {
     create_type1.push(create_type);
     create_type1
 }
@@ -40,22 +36,13 @@ pub enum CreateType {
     CreateEdgeType(CreateEdgeType),
     CreateGraphType(CreateGraphType),
 }
-pub fn create_type_create_node_type(
-    _ctx: &Ctx,
-    create_node_type: CreateNodeType,
-) -> CreateType {
+pub fn create_type_create_node_type(_ctx: &Ctx, create_node_type: CreateNodeType) -> CreateType {
     CreateType::CreateNodeType(create_node_type)
 }
-pub fn create_type_create_edge_type(
-    _ctx: &Ctx,
-    create_edge_type: CreateEdgeType,
-) -> CreateType {
+pub fn create_type_create_edge_type(_ctx: &Ctx, create_edge_type: CreateEdgeType) -> CreateType {
     CreateType::CreateEdgeType(create_edge_type)
 }
-pub fn create_type_create_graph_type(
-    _ctx: &Ctx,
-    create_graph_type: CreateGraphType,
-) -> CreateType {
+pub fn create_type_create_graph_type(_ctx: &Ctx, create_graph_type: CreateGraphType) -> CreateType {
     CreateType::CreateGraphType(create_graph_type)
 }
 pub type CreateNodeType = NodeType;
@@ -67,10 +54,7 @@ pub fn create_edge_type_edge_type(_ctx: &Ctx, edge_type: EdgeType) -> CreateEdge
     edge_type
 }
 pub type CreateGraphType = GraphType;
-pub fn create_graph_type_graph_type(
-    _ctx: &Ctx,
-    graph_type: GraphType,
-) -> CreateGraphType {
+pub fn create_graph_type_graph_type(_ctx: &Ctx, graph_type: GraphType) -> CreateGraphType {
     graph_type
 }
 #[derive(Debug, Clone)]
@@ -78,11 +62,7 @@ pub struct NodeType {
     pub type_name_opt: TypeNameOpt,
     pub label_property_spec: LabelPropertySpec,
 }
-pub fn node_type_c1(
-    _ctx: &Ctx,
-    type_name_opt: TypeNameOpt,
-    label_property_spec: LabelPropertySpec,
-) -> NodeType {
+pub fn node_type_c1(_ctx: &Ctx, type_name_opt: TypeNameOpt, label_property_spec: LabelPropertySpec) -> NodeType {
     NodeType {
         type_name_opt,
         label_property_spec,
@@ -135,10 +115,7 @@ pub fn graph_type_c1(
     }
 }
 pub type GraphTypeModeOpt = Option<GraphTypeMode>;
-pub fn graph_type_mode_opt_graph_type_mode(
-    _ctx: &Ctx,
-    graph_type_mode: GraphTypeMode,
-) -> GraphTypeModeOpt {
+pub fn graph_type_mode_opt_graph_type_mode(_ctx: &Ctx, graph_type_mode: GraphTypeMode) -> GraphTypeModeOpt {
     Some(graph_type_mode)
 }
 pub fn graph_type_mode_opt_empty(_ctx: &Ctx) -> GraphTypeModeOpt {
@@ -171,22 +148,13 @@ pub enum GraphTypeElements {
     NodeType(NodeType),
     EdgeType(EdgeType),
 }
-pub fn graph_type_elements_type_name(
-    _ctx: &Ctx,
-    type_name: TypeName,
-) -> GraphTypeElements {
+pub fn graph_type_elements_type_name(_ctx: &Ctx, type_name: TypeName) -> GraphTypeElements {
     GraphTypeElements::TypeName(type_name)
 }
-pub fn graph_type_elements_node_type(
-    _ctx: &Ctx,
-    node_type: NodeType,
-) -> GraphTypeElements {
+pub fn graph_type_elements_node_type(_ctx: &Ctx, node_type: NodeType) -> GraphTypeElements {
     GraphTypeElements::NodeType(node_type)
 }
-pub fn graph_type_elements_edge_type(
-    _ctx: &Ctx,
-    edge_type: EdgeType,
-) -> GraphTypeElements {
+pub fn graph_type_elements_edge_type(_ctx: &Ctx, edge_type: EdgeType) -> GraphTypeElements {
     GraphTypeElements::EdgeType(edge_type)
 }
 pub type TypeName = IDENTIFIER;
@@ -194,10 +162,7 @@ pub fn type_name_identifier(_ctx: &Ctx, identifier: IDENTIFIER) -> TypeName {
     identifier
 }
 pub type EndpointType = LabelPropertySpec;
-pub fn endpoint_type_label_property_spec(
-    _ctx: &Ctx,
-    label_property_spec: LabelPropertySpec,
-) -> EndpointType {
+pub fn endpoint_type_label_property_spec(_ctx: &Ctx, label_property_spec: LabelPropertySpec) -> EndpointType {
     label_property_spec
 }
 #[derive(Debug, Clone)]
@@ -223,10 +188,7 @@ pub fn label_spec_opt_empty(_ctx: &Ctx) -> LabelSpecOpt {
     None
 }
 pub type PropertySpecOpt = Option<PropertySpec>;
-pub fn property_spec_opt_property_spec(
-    _ctx: &Ctx,
-    property_spec: PropertySpec,
-) -> PropertySpecOpt {
+pub fn property_spec_opt_property_spec(_ctx: &Ctx, property_spec: PropertySpec) -> PropertySpecOpt {
     Some(property_spec)
 }
 pub fn property_spec_opt_empty(_ctx: &Ctx) -> PropertySpecOpt {
@@ -241,21 +203,14 @@ pub struct Labels {
     pub single_label: SingleLabel,
     pub more_labels_opt: MoreLabelsOpt,
 }
-pub fn labels_c1(
-    _ctx: &Ctx,
-    single_label: SingleLabel,
-    more_labels_opt: MoreLabelsOpt,
-) -> Labels {
+pub fn labels_c1(_ctx: &Ctx, single_label: SingleLabel, more_labels_opt: MoreLabelsOpt) -> Labels {
     Labels {
         single_label,
         more_labels_opt,
     }
 }
 pub type MoreLabelsOpt = Option<MoreLabels>;
-pub fn more_labels_opt_more_labels(
-    _ctx: &Ctx,
-    more_labels: MoreLabels,
-) -> MoreLabelsOpt {
+pub fn more_labels_opt_more_labels(_ctx: &Ctx, more_labels: MoreLabels) -> MoreLabelsOpt {
     Some(more_labels)
 }
 pub fn more_labels_opt_empty(_ctx: &Ctx) -> MoreLabelsOpt {
@@ -276,21 +231,13 @@ pub enum MoreLabels {
     AndLabels(AndLabels),
     OrLabels(OrLabels),
 }
-pub fn more_labels_and_labels(
-    _ctx: &Ctx,
-    single_label: SingleLabel,
-    more_labels_opt: MoreLabelsOpt,
-) -> MoreLabels {
+pub fn more_labels_and_labels(_ctx: &Ctx, single_label: SingleLabel, more_labels_opt: MoreLabelsOpt) -> MoreLabels {
     MoreLabels::AndLabels(AndLabels {
         single_label,
         more_labels_opt: Box::new(more_labels_opt),
     })
 }
-pub fn more_labels_or_labels(
-    _ctx: &Ctx,
-    single_label: SingleLabel,
-    more_labels_opt: MoreLabelsOpt,
-) -> MoreLabels {
+pub fn more_labels_or_labels(_ctx: &Ctx, single_label: SingleLabel, more_labels_opt: MoreLabelsOpt) -> MoreLabels {
     MoreLabels::OrLabels(OrLabels {
         single_label,
         more_labels_opt: Box::new(more_labels_opt),
@@ -333,11 +280,7 @@ pub enum Properties {
     Paren(Box<Properties>),
     BaseProperty(BaseProperty),
 }
-pub fn properties_each_of(
-    _ctx: &Ctx,
-    left: Properties,
-    right: Properties,
-) -> Properties {
+pub fn properties_each_of(_ctx: &Ctx, left: Properties, right: Properties) -> Properties {
     Properties::EachOf(EachOf {
         left: Box::new(left),
         right: Box::new(right),
@@ -352,15 +295,8 @@ pub fn properties_one_of(_ctx: &Ctx, left: Properties, right: Properties) -> Pro
 pub fn properties_paren(_ctx: &Ctx, properties: Properties) -> Properties {
     Properties::Paren(Box::new(properties))
 }
-pub fn properties_base_property(
-    _ctx: &Ctx,
-    optionalopt: OPTIONALOpt,
-    property: Property,
-) -> Properties {
-    Properties::BaseProperty(BaseProperty {
-        optionalopt,
-        property,
-    })
+pub fn properties_base_property(_ctx: &Ctx, optionalopt: OPTIONALOpt, property: Property) -> Properties {
+    Properties::BaseProperty(BaseProperty { optionalopt, property })
 }
 pub type OPTIONALOpt = Option<OptionalOptNoO>;
 #[derive(Debug, Clone)]
@@ -390,11 +326,7 @@ pub struct TypeSpec {
     pub simple_type: SimpleType,
     pub more_types_opt: MoreTypesOpt,
 }
-pub fn type_spec_c1(
-    _ctx: &Ctx,
-    simple_type: SimpleType,
-    more_types_opt: MoreTypesOpt,
-) -> TypeSpec {
+pub fn type_spec_c1(_ctx: &Ctx, simple_type: SimpleType, more_types_opt: MoreTypesOpt) -> TypeSpec {
     TypeSpec {
         simple_type,
         more_types_opt,
@@ -422,21 +354,13 @@ pub enum MoreTypes {
     IntersectionType(IntersectionType),
     UnionType(UnionType),
 }
-pub fn more_types_intersection_type(
-    _ctx: &Ctx,
-    simple_type: SimpleType,
-    more_types_opt: MoreTypesOpt,
-) -> MoreTypes {
+pub fn more_types_intersection_type(_ctx: &Ctx, simple_type: SimpleType, more_types_opt: MoreTypesOpt) -> MoreTypes {
     MoreTypes::IntersectionType(IntersectionType {
         simple_type,
         more_types_opt: Box::new(more_types_opt),
     })
 }
-pub fn more_types_union_type(
-    _ctx: &Ctx,
-    simple_type: SimpleType,
-    more_types_opt: MoreTypesOpt,
-) -> MoreTypes {
+pub fn more_types_union_type(_ctx: &Ctx, simple_type: SimpleType, more_types_opt: MoreTypesOpt) -> MoreTypes {
     MoreTypes::UnionType(UnionType {
         simple_type,
         more_types_opt: Box::new(more_types_opt),
@@ -471,32 +395,16 @@ pub enum SimpleType {
     Any(CheckOpt),
     Cond(Cond),
 }
-pub fn simple_type_string_spec(
-    _ctx: &Ctx,
-    card_opt: CardOpt,
-    check_opt: CheckOpt,
-) -> SimpleType {
+pub fn simple_type_string_spec(_ctx: &Ctx, card_opt: CardOpt, check_opt: CheckOpt) -> SimpleType {
     SimpleType::StringSpec(StringSpec { card_opt, check_opt })
 }
-pub fn simple_type_integer(
-    _ctx: &Ctx,
-    card_opt: CardOpt,
-    check_opt: CheckOpt,
-) -> SimpleType {
+pub fn simple_type_integer(_ctx: &Ctx, card_opt: CardOpt, check_opt: CheckOpt) -> SimpleType {
     SimpleType::Integer(Integer { card_opt, check_opt })
 }
-pub fn simple_type_date(
-    _ctx: &Ctx,
-    card_opt: CardOpt,
-    check_opt: CheckOpt,
-) -> SimpleType {
+pub fn simple_type_date(_ctx: &Ctx, card_opt: CardOpt, check_opt: CheckOpt) -> SimpleType {
     SimpleType::Date(Date { card_opt, check_opt })
 }
-pub fn simple_type_bool(
-    _ctx: &Ctx,
-    card_opt: CardOpt,
-    check_opt: CheckOpt,
-) -> SimpleType {
+pub fn simple_type_bool(_ctx: &Ctx, card_opt: CardOpt, check_opt: CheckOpt) -> SimpleType {
     SimpleType::Bool(Bool { card_opt, check_opt })
 }
 pub fn simple_type_any(_ctx: &Ctx, check_opt: CheckOpt) -> SimpleType {
@@ -632,10 +540,7 @@ pub enum SingleValue {
     DateValue(QUOTED_STRING),
     BooleanValue(BOOL),
 }
-pub fn single_value_string_value(
-    _ctx: &Ctx,
-    quoted_string: QUOTED_STRING,
-) -> SingleValue {
+pub fn single_value_string_value(_ctx: &Ctx, quoted_string: QUOTED_STRING) -> SingleValue {
     SingleValue::StringValue(quoted_string)
 }
 pub fn single_value_number_value(_ctx: &Ctx, number: NUMBER) -> SingleValue {
