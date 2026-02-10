@@ -84,7 +84,7 @@ pub enum TripleExpr {
         annotations: Option<Vec<Annotation>>,
     },
 
-    TripleExprRef(TripleExprLabel),
+    Ref(TripleExprLabel),
 }
 
 impl TripleExpr {
@@ -192,7 +192,7 @@ impl TripleExpr {
                 sem_acts,
                 annotations,
             },
-            TripleExpr::TripleExprRef(lbl) => {
+            TripleExpr::Ref(lbl) => {
                 panic!("Can't update id to TripleExprRef({lbl:?}")
             },
         };
@@ -252,7 +252,7 @@ impl TripleExpr {
                 sem_acts,
                 annotations,
             },
-            TripleExpr::TripleExprRef(lbl) => {
+            TripleExpr::Ref(lbl) => {
                 panic!("Can't update min to TripleExprRef({lbl:?}")
             },
         };
@@ -312,7 +312,7 @@ impl TripleExpr {
                 sem_acts,
                 annotations,
             },
-            TripleExpr::TripleExprRef(lbl) => {
+            TripleExpr::Ref(lbl) => {
                 panic!("Can't update max to TripleExprRef({lbl:?}")
             },
         };
@@ -372,7 +372,7 @@ impl TripleExpr {
                 sem_acts: new_sem_acts,
                 annotations,
             },
-            TripleExpr::TripleExprRef(lbl) => {
+            TripleExpr::Ref(lbl) => {
                 panic!("Can't update sem_acts to TripleExprRef({lbl:?}")
             },
         };
@@ -432,7 +432,7 @@ impl TripleExpr {
                 sem_acts,
                 annotations: new_annotations,
             },
-            TripleExpr::TripleExprRef(lbl) => {
+            TripleExpr::Ref(lbl) => {
                 panic!("Can't update annotations to TripleExprRef({lbl:?}")
             },
         };
@@ -540,9 +540,9 @@ impl Deref for TripleExpr {
                     annotations,
                 })
             },
-            TripleExpr::TripleExprRef(label) => {
+            TripleExpr::Ref(label) => {
                 let label = label.deref(base, prefixmap)?;
-                Ok(TripleExpr::TripleExprRef(label))
+                Ok(TripleExpr::Ref(label))
             },
         }
     }
@@ -553,7 +553,7 @@ impl FromStr for TripleExpr {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let iri_ref = IriRef::try_from(s)?;
-        Ok(TripleExpr::TripleExprRef(TripleExprLabel::IriRef { value: iri_ref }))
+        Ok(TripleExpr::Ref(TripleExprLabel::IriRef { value: iri_ref }))
     }
 }
 
@@ -563,7 +563,7 @@ impl SerializeStringOrStruct for TripleExpr {
         S: Serializer,
     {
         match &self {
-            TripleExpr::TripleExprRef(r) => r.serialize(serializer),
+            TripleExpr::Ref(r) => r.serialize(serializer),
             _ => self.serialize(serializer),
         }
     }

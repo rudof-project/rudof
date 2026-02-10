@@ -146,7 +146,7 @@ fn triple_expr2patterns(
                 ps.push(tp)
             }
         },
-        TripleExpr::TripleExprRef(_) => todo!(),
+        TripleExpr::Ref(_) => todo!(),
     }
 }
 

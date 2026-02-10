@@ -10,7 +10,7 @@ pub enum NodeType {
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 pub enum BasicNodeType {
-    IRI,
+    Iri,
     BNode,
     Literal,
 }
@@ -49,7 +49,7 @@ impl NodeType {
 impl Display for BasicNodeType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            BasicNodeType::IRI => write!(f, "IRI"),
+            BasicNodeType::Iri => write!(f, "IRI"),
             BasicNodeType::BNode => write!(f, "BlankNode"),
             BasicNodeType::Literal => write!(f, "Literal"),
         }

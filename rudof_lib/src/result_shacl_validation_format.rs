@@ -13,14 +13,14 @@ pub enum ResultShaclValidationFormat {
     Details,
     Turtle,
     NTriples,
-    RDFXML,
+    RdfXml,
     TriG,
     N3,
     NQuads,
     Minimal,
     Compact,
     Json,
-    CSV,
+    Csv,
 }
 
 impl Display for ResultShaclValidationFormat {
@@ -28,7 +28,7 @@ impl Display for ResultShaclValidationFormat {
         match self {
             ResultShaclValidationFormat::Turtle => write!(dest, "turtle"),
             ResultShaclValidationFormat::NTriples => write!(dest, "ntriples"),
-            ResultShaclValidationFormat::RDFXML => write!(dest, "rdfxml"),
+            ResultShaclValidationFormat::RdfXml => write!(dest, "rdfxml"),
             ResultShaclValidationFormat::TriG => write!(dest, "trig"),
             ResultShaclValidationFormat::N3 => write!(dest, "n3"),
             ResultShaclValidationFormat::NQuads => write!(dest, "nquads"),
@@ -36,7 +36,7 @@ impl Display for ResultShaclValidationFormat {
             ResultShaclValidationFormat::Minimal => write!(dest, "minimal"),
             ResultShaclValidationFormat::Details => write!(dest, "details"),
             ResultShaclValidationFormat::Json => write!(dest, "json"),
-            ResultShaclValidationFormat::CSV => write!(dest, "csv"),
+            ResultShaclValidationFormat::Csv => write!(dest, "csv"),
         }
     }
 }
@@ -45,7 +45,7 @@ pub fn result_format_to_rdf_format(result_format: &ResultShaclValidationFormat) 
     match result_format {
         ResultShaclValidationFormat::Turtle => Ok(RDFFormat::Turtle),
         ResultShaclValidationFormat::NTriples => Ok(RDFFormat::NTriples),
-        ResultShaclValidationFormat::RDFXML => Ok(RDFFormat::RDFXML),
+        ResultShaclValidationFormat::RdfXml => Ok(RDFFormat::RdfXml),
         ResultShaclValidationFormat::TriG => Ok(RDFFormat::TriG),
         ResultShaclValidationFormat::N3 => Ok(RDFFormat::N3),
         ResultShaclValidationFormat::NQuads => Ok(RDFFormat::NQuads),
@@ -62,7 +62,7 @@ impl FromStr for ResultShaclValidationFormat {
         match s.to_lowercase().as_str() {
             "turtle" => Ok(ResultShaclValidationFormat::Turtle),
             "ntriples" => Ok(ResultShaclValidationFormat::NTriples),
-            "rdfxml" => Ok(ResultShaclValidationFormat::RDFXML),
+            "rdfxml" => Ok(ResultShaclValidationFormat::RdfXml),
             "trig" => Ok(ResultShaclValidationFormat::TriG),
             "n3" => Ok(ResultShaclValidationFormat::N3),
             "nquads" => Ok(ResultShaclValidationFormat::NQuads),

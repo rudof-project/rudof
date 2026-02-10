@@ -31,7 +31,7 @@ pub struct GenerationConfig {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum SchemaFormat {
     ShEx,
-    SHACL,
+    Shacl,
 }
 
 /// How to distribute entities across different shapes

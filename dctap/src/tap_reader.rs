@@ -5,9 +5,9 @@ use crate::{
     TapReaderWarning, TapShape, TapStatement, Value, ValueConstraint, ValueConstraintType,
 };
 use csv::{Position, Reader as CsvReader, StringRecord};
-use tracing::trace;
 // use indexmap::IndexSet;
 use std::io::{self};
+use tracing::trace;
 
 enum StringRecordReader<R> {
     CsvReader(CsvReader<R>),
@@ -404,8 +404,8 @@ impl<R: io::Read> TapReader<R> {
 
 fn parse_node_type(str: &str, pos: &Position) -> Result<NodeType> {
     match str.to_uppercase().as_str() {
-        "URI" => Ok(NodeType::Basic(BasicNodeType::IRI)),
-        "IRI" => Ok(NodeType::Basic(BasicNodeType::IRI)),
+        "URI" => Ok(NodeType::Basic(BasicNodeType::Iri)),
+        "IRI" => Ok(NodeType::Basic(BasicNodeType::Iri)),
         "BNODE" => Ok(NodeType::Basic(BasicNodeType::BNode)),
         "LITERAL" => Ok(NodeType::Basic(BasicNodeType::Literal)),
         _ => Err(TapError::UnexpectedNodeType {

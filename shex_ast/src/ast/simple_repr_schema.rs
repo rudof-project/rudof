@@ -21,7 +21,7 @@ impl SimpleReprSchema {
         SimpleReprSchema { shapes: Vec::new() }
     }
 
-    pub fn from_schema(&mut self, schema: &Schema) {
+    pub fn populate_from_schema(&mut self, schema: &Schema) {
         if let Some(shapes) = schema.shapes() {
             for shape in shapes {
                 let simple_shape = self.convert_shape_decl(&shape, schema);
@@ -100,7 +100,7 @@ impl SimpleReprSchema {
                     shape.add_predicate(predicate)
                 }
             },
-            TripleExpr::TripleExprRef(_) => todo!(),
+            TripleExpr::Ref(_) => todo!(),
         }
     }
 

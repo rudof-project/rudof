@@ -161,7 +161,7 @@ impl ShEx2Uml {
                             TripleExpr::OneOf { .. } => {
                                 todo!()
                             },
-                            TripleExpr::TripleExprRef(_) => {
+                            TripleExpr::Ref(_) => {
                                 todo!()
                             },
                         }
@@ -203,7 +203,7 @@ impl ShEx2Uml {
                         },
                     }
                 },
-                TripleExpr::TripleExprRef(_) => todo!(),
+                TripleExpr::Ref(_) => todo!(),
             }
             Ok(UmlComponent::class(uml_class))
         } else {

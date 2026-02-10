@@ -71,7 +71,7 @@ impl ShEx2Html {
         let mut str_writer = BufWriter::new(Vec::new());
         self.current_uml_converter.as_image(
             str_writer.by_ref(),
-            srdf::ImageFormat::SVG,
+            srdf::ImageFormat::Svg,
             &UmlGenerationMode::all(),
             self.config.shex2uml_config().plantuml_path(),
         )?;
@@ -83,7 +83,7 @@ impl ShEx2Html {
         let mut str_writer = BufWriter::new(Vec::new());
         self.current_uml_converter.as_image(
             str_writer.by_ref(),
-            srdf::ImageFormat::SVG,
+            srdf::ImageFormat::Svg,
             &UmlGenerationMode::neighs(name),
             self.config.shex2uml_config().plantuml_path(),
         )?;
@@ -261,7 +261,7 @@ impl ShEx2Html {
                     };
                     Ok(())
                 },
-                TripleExpr::TripleExprRef(tref) => Err(ShEx2HtmlError::not_implemented(
+                TripleExpr::Ref(tref) => Err(ShEx2HtmlError::not_implemented(
                     format!("Triple expr reference {tref:?} not implemented yet").as_str(),
                 )),
             }?;
@@ -427,7 +427,7 @@ pub fn create_svg_shape<P: AsRef<Path>>(
     let mut str_writer = BufWriter::new(Vec::new());
     converter.as_image(
         str_writer.by_ref(),
-        srdf::ImageFormat::SVG,
+        srdf::ImageFormat::Svg,
         &UmlGenerationMode::neighs(name),
         plantuml_path.as_ref(),
     )?;

@@ -38,8 +38,8 @@ pub trait UmlConverter {
         }
 
         let (out_param, out_file_name) = match image_format {
-            ImageFormat::PNG => ("-png", tempdir_path.join("temp.png")),
-            ImageFormat::SVG => ("-svg", tempdir_path.join("temp.svg")),
+            ImageFormat::Png => ("-png", tempdir_path.join("temp.png")),
+            ImageFormat::Svg => ("-svg", tempdir_path.join("temp.svg")),
         };
         check_java_installed().map_err(|e| UmlConverterError::JavaNotInstalled { error: e.to_string() })?;
         check_plantuml_jar(plantuml_path.as_ref()).map_err(|e| UmlConverterError::NoPlantUMLFile {
@@ -190,8 +190,8 @@ fn check_plantuml_jar<P: AsRef<Path>>(plantuml_path: P) -> Result<(), io::Error>
 }
 
 pub enum ImageFormat {
-    SVG,
-    PNG,
+    Svg,
+    Png,
 }
 
 #[derive(Debug, Clone, Default)]

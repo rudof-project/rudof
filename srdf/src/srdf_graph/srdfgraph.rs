@@ -152,7 +152,7 @@ impl SRDFGraph {
                     }
                 }
             },
-            RDFFormat::RDFXML => {
+            RDFFormat::RdfXml => {
                 let parser = RdfXmlParser::new();
                 let mut reader = parser.for_reader(reader);
                 for triple_result in reader.by_ref() {
@@ -576,7 +576,7 @@ fn cnv_rdf_format(rdf_format: &RDFFormat) -> RdfFormat {
     match rdf_format {
         RDFFormat::NTriples => RdfFormat::NTriples,
         RDFFormat::Turtle => RdfFormat::Turtle,
-        RDFFormat::RDFXML => RdfFormat::RdfXml,
+        RDFFormat::RdfXml => RdfFormat::RdfXml,
         RDFFormat::TriG => RdfFormat::TriG,
         RDFFormat::N3 => RdfFormat::N3,
         RDFFormat::NQuads => RdfFormat::NQuads,

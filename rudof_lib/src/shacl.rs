@@ -41,7 +41,7 @@ pub fn add_shacl_schema_rudof(
 pub fn shacl_format_convert(shacl_format: CliShaclFormat) -> Result<ShaclFormat, RudofError> {
     match shacl_format {
         CliShaclFormat::Turtle => Ok(ShaclFormat::Turtle),
-        CliShaclFormat::RDFXML => Ok(ShaclFormat::RDFXML),
+        CliShaclFormat::RdfXml => Ok(ShaclFormat::RdfXml),
         CliShaclFormat::NTriples => Ok(ShaclFormat::NTriples),
         CliShaclFormat::TriG => Ok(ShaclFormat::TriG),
         CliShaclFormat::N3 => Ok(ShaclFormat::N3),

@@ -174,7 +174,7 @@ impl ValueSetValue {
             ValueSetValue::LanguageStemRange { stem, exclusions } => {
                 let matches_stem = match stem {
                     LangOrWildcard::Lang(lang) => match object {
-                        Object::Literal(SLiteral::StringLiteral { lang: Some(l), .. }) => {
+                        Object::Literal(SLiteral::String { lang: Some(l), .. }) => {
                             l.as_str().starts_with(lang.as_str())
                         },
                         _ => false,
@@ -188,14 +188,14 @@ impl ValueSetValue {
                     for ex in exclusions {
                         match ex {
                             LanguageExclusion::Language(lang) => {
-                                if let Object::Literal(srdf::SLiteral::StringLiteral { lang: Some(l), .. }) = object
+                                if let Object::Literal(SLiteral::String { lang: Some(l), .. }) = object
                                     && l == lang
                                 {
                                     return false;
                                 }
                             },
                             LanguageExclusion::LanguageStem(stem) => {
-                                if let Object::Literal(SLiteral::StringLiteral { lang: Some(l), .. }) = object
+                                if let Object::Literal(SLiteral::String { lang: Some(l), .. }) = object
                                     && l.as_str().starts_with(stem.as_str())
                                 {
                                     return false;

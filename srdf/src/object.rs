@@ -90,7 +90,7 @@ impl Object {
 
     pub fn lang(&self) -> Option<&Lang> {
         match self {
-            Object::Literal(SLiteral::StringLiteral { lang: Some(lang), .. }) => Some(lang),
+            Object::Literal(SLiteral::String { lang: Some(lang), .. }) => Some(lang),
             _ => None,
         }
     }

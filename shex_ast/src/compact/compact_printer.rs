@@ -13,14 +13,14 @@ pub(crate) fn pp_object_value<'a, A>(
 ) -> DocBuilder<'a, Arena<'a, A>, A> {
     match v {
         ObjectValue::IriRef(i) => pp_iri_ref(i, doc, prefixmap),
-        ObjectValue::Literal(SLiteral::BooleanLiteral(_value)) => {
+        ObjectValue::Literal(SLiteral::Boolean(_value)) => {
             todo!()
         },
-        ObjectValue::Literal(SLiteral::NumericLiteral(num)) => pp_numeric_literal(num, doc),
-        ObjectValue::Literal(SLiteral::DatatypeLiteral { .. }) => todo!(),
-        ObjectValue::Literal(SLiteral::WrongDatatypeLiteral { .. }) => todo!(),
-        ObjectValue::Literal(SLiteral::DatetimeLiteral { .. }) => todo!(),
-        ObjectValue::Literal(SLiteral::StringLiteral { .. }) => todo!(),
+        ObjectValue::Literal(SLiteral::Numeric(num)) => pp_numeric_literal(num, doc),
+        ObjectValue::Literal(SLiteral::Datatype { .. }) => todo!(),
+        ObjectValue::Literal(SLiteral::WrongDatatype { .. }) => todo!(),
+        ObjectValue::Literal(SLiteral::Datetime { .. }) => todo!(),
+        ObjectValue::Literal(SLiteral::String { .. }) => todo!(),
     }
 }
 

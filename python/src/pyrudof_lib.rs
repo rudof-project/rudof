@@ -1913,8 +1913,8 @@ fn cnv_comparator_err(e: ComparatorError) -> PyErr {
 
 fn cnv_dctap_format(format: &PyDCTapFormat) -> DCTAPFormat {
     match format {
-        PyDCTapFormat::CSV => DCTAPFormat::CSV,
-        PyDCTapFormat::XLSX => DCTAPFormat::XLSX,
+        PyDCTapFormat::CSV => DCTAPFormat::Csv,
+        PyDCTapFormat::XLSX => DCTAPFormat::Xlsx,
     }
 }
 
@@ -1937,7 +1937,7 @@ fn cnv_rdf_format(format: &PyRDFFormat) -> RDFFormat {
     match format {
         PyRDFFormat::Turtle => RDFFormat::Turtle,
         PyRDFFormat::NTriples => RDFFormat::NTriples,
-        PyRDFFormat::RDFXML => RDFFormat::RDFXML,
+        PyRDFFormat::RDFXML => RDFFormat::RdfXml,
         PyRDFFormat::TriG => RDFFormat::TriG,
         PyRDFFormat::N3 => RDFFormat::N3,
         PyRDFFormat::NQuads => RDFFormat::NQuads,
@@ -1948,7 +1948,7 @@ fn cnv_rdf_format(format: &PyRDFFormat) -> RDFFormat {
 fn cnv_shapemap_format(format: &PyShapeMapFormat) -> ShapeMapFormat {
     match format {
         PyShapeMapFormat::Compact => ShapeMapFormat::Compact,
-        PyShapeMapFormat::JSON => ShapeMapFormat::JSON,
+        PyShapeMapFormat::JSON => ShapeMapFormat::Json,
     }
 }
 
@@ -1964,7 +1964,7 @@ fn cnv_shacl_format(format: &PyShaclFormat) -> ShaclFormat {
     match format {
         PyShaclFormat::Turtle => ShaclFormat::Turtle,
         PyShaclFormat::NTriples => ShaclFormat::NTriples,
-        PyShaclFormat::RDFXML => ShaclFormat::RDFXML,
+        PyShaclFormat::RDFXML => ShaclFormat::RdfXml,
         PyShaclFormat::TriG => ShaclFormat::TriG,
         PyShaclFormat::N3 => ShaclFormat::N3,
         PyShaclFormat::NQuads => ShaclFormat::NQuads,

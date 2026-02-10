@@ -269,7 +269,7 @@ impl ValidationEntry {
                 Err(Box::new(ManifestError::ExpectedOkButObtained {
                     failed_status,
                     passed_status,
-                    entry: Box::new(self.name.clone()),
+                    entry: self.name.clone(),
                 }))
             },
             (Failure, false) => Ok(()),

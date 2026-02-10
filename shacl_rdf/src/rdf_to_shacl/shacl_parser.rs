@@ -572,7 +572,7 @@ where
                 let maybe_disjoint = rdf.object_for(focus, &into_iri::<RDF>(sh_qualified_value_shapes_disjoint()))?;
                 if let Some(disjoint) = maybe_disjoint {
                     match disjoint {
-                        Object::Literal(SLiteral::BooleanLiteral(true)) => {
+                        Object::Literal(SLiteral::Boolean(true)) => {
                             trace!("QualifiedValueShapeSiblings: Focus node {focus} has disjoint=true");
                             let qvs = rdf.objects_for(focus, &into_iri::<RDF>(sh_qualified_value_shape()))?;
                             if qvs.is_empty() {
@@ -596,7 +596,7 @@ where
                                 }
                             }
                         },
-                        Object::Literal(SLiteral::BooleanLiteral(false)) => {},
+                        Object::Literal(SLiteral::Boolean(false)) => {},
                         _ => {
                             trace!("Value of disjoint: {disjoint} is not boolean (Should we raise an error here?)");
                         },
@@ -1135,10 +1135,7 @@ where
     RDF: FocusRDF,
 {
     opaque!(property_iris(sh_target_class().clone()).flat_map(move |ts| {
-        let result = ts
-            .into_iter()
-            .map(|iri| Target::TargetClass(RDFNode::iri(iri)))
-            .collect();
+        let result = ts.into_iter().map(|iri| Target::Class(RDFNode::iri(iri))).collect();
         Ok(result)
     }))
 }
@@ -1148,7 +1145,7 @@ where
     RDF: FocusRDF,
 {
     property_objects(sh_target_node().clone()).flat_map(move |ts| {
-        let result = ts.into_iter().map(Target::TargetNode).collect();
+        let result = ts.into_iter().map(Target::Node).collect();
         Ok(result)
     })
 }
@@ -1170,7 +1167,7 @@ fn targets_implicit_class<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Ta
                         .clone()
                         .try_into()
                         .map_err(|_| RDFParseError::TermToRDFNodeFailed { term: t_name })?;
-                    Ok(Target::TargetImplicitClass(obj))
+                    Ok(Target::ImplicitClass(obj))
                 })
                 .collect();
             let ts = result?;
@@ -1180,20 +1177,14 @@ fn targets_implicit_class<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Ta
 
 fn targets_objects_of<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Target<R>>> {
     property_values_iri(sh_target_objects_of().clone()).flat_map(move |ts| {
-        let result = ts
-            .into_iter()
-            .map(|t: IriS| Target::TargetObjectsOf(t.into()))
-            .collect();
+        let result = ts.into_iter().map(|t: IriS| Target::ObjectsOf(t.into())).collect();
         Ok(result)
     })
 }
 
 fn targets_subjects_of<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Target<R>>> {
     property_values_iri(sh_target_subjects_of().clone()).flat_map(move |ts| {
-        let result = ts
-            .into_iter()
-            .map(|t: IriS| Target::TargetSubjectsOf(t.into()))
-            .collect();
+        let result = ts.into_iter().map(|t: IriS| Target::SubjectsOf(t.into())).collect();
         Ok(result)
     })
 }

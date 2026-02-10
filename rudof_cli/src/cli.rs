@@ -952,7 +952,7 @@ pub enum Command {
             ignore_case = true,
             value_name = "FORMAT",
             help = "DCTap file format",
-            default_value_t = DCTapFormat::CSV
+            default_value_t = DCTapFormat::Csv
         )]
         format: DCTapFormat,
 
@@ -1277,7 +1277,7 @@ pub enum Command {
             ignore_case = true,
             value_name = "FORMAT",
             help = "Output result service format",
-            default_value_t = ResultServiceFormat::JSON
+            default_value_t = ResultServiceFormat::Json
         )]
         result_service_format: ResultServiceFormat,
 

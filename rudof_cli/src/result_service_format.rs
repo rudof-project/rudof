@@ -6,7 +6,7 @@ use std::fmt::{Display, Formatter};
 pub enum ResultServiceFormat {
     Internal,
     Mie,
-    JSON,
+    Json,
 }
 
 impl Display for ResultServiceFormat {
@@ -14,7 +14,7 @@ impl Display for ResultServiceFormat {
         match self {
             ResultServiceFormat::Internal => write!(dest, "internal"),
             ResultServiceFormat::Mie => write!(dest, "mie"),
-            ResultServiceFormat::JSON => write!(dest, "json"),
+            ResultServiceFormat::Json => write!(dest, "json"),
         }
     }
 }

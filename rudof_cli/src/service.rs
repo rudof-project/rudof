@@ -38,7 +38,7 @@ pub fn run_service(
         ResultServiceFormat::Mie => {
             rudof.serialize_service_description(&ServiceDescriptionFormat::Mie, &mut writer)?;
         },
-        ResultServiceFormat::JSON => {
+        ResultServiceFormat::Json => {
             let json = serde_json::to_string_pretty(&rudof.get_service_description())?;
             writer.write_all(json.as_bytes())?;
         },

@@ -57,7 +57,7 @@ pub fn run_convert(
                 config,
             )
         },
-        (InputConvertMode::SHACL, OutputConvertMode::SHACL) => {
+        (InputConvertMode::Shacl, OutputConvertMode::Shacl) => {
             let shacl_format = format.to_shacl_format()?;
             let output_format = result_format.to_shacl_format()?;
             run_shacl_convert(
@@ -71,10 +71,10 @@ pub fn run_convert(
                 config,
             )
         },
-        (InputConvertMode::DCTAP, OutputConvertMode::ShEx) => {
+        (InputConvertMode::Dctap, OutputConvertMode::ShEx) => {
             run_tap2shex(input, format, output, result_format, config, force_overwrite)
         },
-        (InputConvertMode::ShEx, OutputConvertMode::SPARQL) => {
+        (InputConvertMode::ShEx, OutputConvertMode::Sparql) => {
             let maybe_shape = match maybe_shape_str {
                 None => None,
                 Some(shape_str) => {
@@ -94,7 +94,7 @@ pub fn run_convert(
                 reader_mode,
             )
         },
-        (InputConvertMode::ShEx, OutputConvertMode::UML) => run_shex2uml(
+        (InputConvertMode::ShEx, OutputConvertMode::Uml) => run_shex2uml(
             input,
             format,
             base,
@@ -105,7 +105,7 @@ pub fn run_convert(
             force_overwrite,
             reader_mode,
         ),
-        (InputConvertMode::SHACL, OutputConvertMode::ShEx) => run_shacl2shex(
+        (InputConvertMode::Shacl, OutputConvertMode::ShEx) => run_shacl2shex(
             input,
             format,
             base,
@@ -115,13 +115,13 @@ pub fn run_convert(
             force_overwrite,
             reader_mode,
         ),
-        (InputConvertMode::ShEx, OutputConvertMode::HTML) => match target_folder {
+        (InputConvertMode::ShEx, OutputConvertMode::Html) => match target_folder {
             None => Err(anyhow!(
                 "Conversion from ShEx to HTML requires an output parameter to indicate where to write the generated HTML files"
             )),
             Some(output_path) => run_shex2html(input, format, base, output_path, template_folder, config, reader_mode),
         },
-        (InputConvertMode::DCTAP, OutputConvertMode::UML) => run_tap2uml(
+        (InputConvertMode::Dctap, OutputConvertMode::Uml) => run_tap2uml(
             input,
             format,
             output,
@@ -130,7 +130,7 @@ pub fn run_convert(
             config,
             force_overwrite,
         ),
-        (InputConvertMode::DCTAP, OutputConvertMode::HTML) => match target_folder {
+        (InputConvertMode::Dctap, OutputConvertMode::Html) => match target_folder {
             None => Err(anyhow!(
                 "Conversion from DCTAP to HTML requires parameter `target-folder` to indicate where to write the generated HTML files"
             )),
@@ -229,12 +229,12 @@ fn generate_uml_output<P: AsRef<Path>>(
             uml_converter.as_plantuml(writer, &mode)?;
             Ok(())
         },
-        OutputConvertFormat::SVG => {
-            uml_converter.as_image(writer, ImageFormat::SVG, &mode, plantuml_path)?;
+        OutputConvertFormat::Svg => {
+            uml_converter.as_image(writer, ImageFormat::Svg, &mode, plantuml_path)?;
             Ok(())
         },
-        OutputConvertFormat::PNG => {
-            uml_converter.as_image(writer, ImageFormat::PNG, &mode, plantuml_path)?;
+        OutputConvertFormat::Png => {
+            uml_converter.as_image(writer, ImageFormat::Png, &mode, plantuml_path)?;
             Ok(())
         },
         OutputConvertFormat::Default => {
@@ -360,8 +360,8 @@ fn run_tap2shex(
 ) -> Result<()> {
     let mut rudof = Rudof::new(config)?;
     let tap_format = match format {
-        InputConvertFormat::CSV => Ok(CliDCTapFormat::CSV),
-        InputConvertFormat::Xlsx => Ok(CliDCTapFormat::XLSX),
+        InputConvertFormat::Csv => Ok(CliDCTapFormat::Csv),
+        InputConvertFormat::Xlsx => Ok(CliDCTapFormat::Xlsx),
         _ => Err(anyhow!("Can't obtain DCTAP format from {format}")),
     }?;
     parse_dctap(&mut rudof, input_path, &tap_format)?;
@@ -392,8 +392,8 @@ fn run_tap2uml(
 ) -> Result<()> {
     let mut rudof = Rudof::new(config)?;
     let tap_format = match format {
-        InputConvertFormat::CSV => Ok(CliDCTapFormat::CSV),
-        InputConvertFormat::Xlsx => Ok(CliDCTapFormat::XLSX),
+        InputConvertFormat::Csv => Ok(CliDCTapFormat::Csv),
+        InputConvertFormat::Xlsx => Ok(CliDCTapFormat::Xlsx),
         _ => Err(anyhow!("Can't obtain DCTAP format from {format}")),
     }?;
     parse_dctap(&mut rudof, input_path, &tap_format)?;

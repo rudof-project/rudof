@@ -122,7 +122,7 @@ fn write_result_shapemap<W: Write>(
             writeln!(writer, "Result:")?;
             result.as_table(writer, sort_by.into(), false, terminal_width())?;
         },
-        CliShapeMapFormat::CSV => {
+        CliShapeMapFormat::Csv => {
             info!("Serializing result as CSV");
             result.as_csv(writer, sort_by.into(), true)?;
         },

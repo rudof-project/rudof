@@ -69,7 +69,7 @@ pub fn run_validate_pgschema(
         PgSchemaResultFormat::Compact => write!(writer, "{}", result)?,
         // PgSchemaResultFormat::Details => result.as_details(writer)?,
         PgSchemaResultFormat::Json => result.as_json(writer)?,
-        PgSchemaResultFormat::CSV => result.as_csv(writer, true)?,
+        PgSchemaResultFormat::Csv => result.as_csv(writer, true)?,
         _ => {
             bail!("Unsupported PGSchema result format: {}", result_validation_format);
         },
@@ -98,7 +98,7 @@ pub enum PgSchemaResultFormat {
     Compact,
     Details,
     Json,
-    CSV,
+    Csv,
 }
 
 impl Display for PgSchemaResultFormat {
@@ -107,7 +107,7 @@ impl Display for PgSchemaResultFormat {
             PgSchemaResultFormat::Compact => "compact",
             PgSchemaResultFormat::Details => "details",
             PgSchemaResultFormat::Json => "json",
-            PgSchemaResultFormat::CSV => "csv",
+            PgSchemaResultFormat::Csv => "csv",
         };
         write!(f, "{}", s)
     }
@@ -163,5 +163,5 @@ pub enum ResultPGSchemaValidationFormat {
     Compact,
     Details,
     Json,
-    CSV,
+    Csv,
 }

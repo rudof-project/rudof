@@ -36,7 +36,7 @@ impl<R: NeighsRDF + Debug> Validator<R> for Datatype {
             trace!("sh:datatype: Checking {value_node} as datatype {}", self.datatype());
             if let Ok(literal) = R::term_as_literal(value_node) {
                 match TryInto::<SLiteral>::try_into(literal.clone()) {
-                    Ok(SLiteral::WrongDatatypeLiteral {
+                    Ok(SLiteral::WrongDatatype {
                         lexical_form,
                         datatype,
                         error,

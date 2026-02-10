@@ -413,7 +413,7 @@ impl AST2IR {
                 trace!("triple_expr2rbe: TripleConstraint: added component {c:?} to RBE table");
                 Ok(Rbe::symbol(c, min.value, max))
             },
-            ast::TripleExpr::TripleExprRef(r) => Err(Box::new(SchemaIRError::Todo {
+            ast::TripleExpr::Ref(r) => Err(Box::new(SchemaIRError::Todo {
                 msg: format!("TripleExprRef {r:?}"),
             })),
         }
@@ -569,7 +569,7 @@ impl AST2IR {
                 let pred = iri_ref2iri_s(predicate);
                 vec![Pred::new(pred)]
             },
-            ast::TripleExpr::TripleExprRef(_) => todo!(),
+            ast::TripleExpr::Ref(_) => todo!(),
         }
     }
 }
@@ -1156,7 +1156,7 @@ fn check_literal_datatype(sliteral: &SLiteral, expected: &IriS, node: &Node) -> 
         })
     })?;
     match checked_literal {
-        SLiteral::WrongDatatypeLiteral {
+        SLiteral::WrongDatatype {
             lexical_form,
             datatype,
             error,
@@ -1430,7 +1430,7 @@ pub fn find_schema_rotating_formats(
     }
     Err(Box::new(SchemaIRError::SchemaFromIriRotatingFormats {
         iri: iri.clone(),
-        errors: Box::new(errors),
+        errors,
     }))
 }
 
@@ -1489,16 +1489,14 @@ pub fn candidates(iri: &IriS, base: Option<&IriS>, format: &ShExFormat) -> Resul
 
 fn find_content_from_iris(iris: Vec<IriS>, base: Option<&IriS>) -> Result<String, Box<SchemaIRError>> {
     find_first_ok(iris, |iri| get_content(iri, base))
-        .map_err(|errs| Box::new(SchemaIRError::FindingContentFromIrisError { errors: Box::new(errs) }))
+        .map_err(|errs| Box::new(SchemaIRError::FindingContentFromIrisError { errors: errs }))
         .map(|(content, _)| content)
 }
 
-fn get_content(iri: IriS, base: Option<&IriS>) -> Result<String, Box<SchemaIRError>> {
-    iri.dereference(base).map_err(|e| {
-        Box::new(SchemaIRError::DereferencingIri {
-            iri: iri.clone(),
-            error: e.to_string(),
-        })
+fn get_content(iri: IriS, base: Option<&IriS>) -> Result<String, SchemaIRError> {
+    iri.dereference(base).map_err(|e| SchemaIRError::DereferencingIri {
+        iri: iri.clone(),
+        error: e.to_string(),
     })
 }
 

@@ -127,7 +127,7 @@ impl DataGenerator {
             Some(SchemaFormat::ShEx) => {
                 self.load_shex_schema(schema_path).await?;
             },
-            Some(SchemaFormat::SHACL) => {
+            Some(SchemaFormat::Shacl) => {
                 self.load_shacl_schema(schema_path).await?;
             },
             None => {

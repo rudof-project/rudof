@@ -12,49 +12,49 @@ use termtree::Tree;
 /// Reason represents justifications about why a node conforms to some shape
 #[derive(Debug, Clone)]
 pub enum Reason {
-    DescendantShapePassed {
+    DescendantShape {
         node: Node,
         shape: ShapeLabelIdx,
         reasons: Reasons,
     },
-    ShapeExtendsPassed {
+    ShapeExtends {
         node: Node,
         shape: Box<Shape>,
         reasons: Reasons,
     },
-    NodeConstraintPassed {
+    NodeConstraint {
         node: Node,
         nc: NodeConstraint,
     },
-    ShapeAndPassed {
+    ShapeAnd {
         node: Node,
         se: Box<ShapeExpr>,
         reasons: Vec<Vec<Reason>>,
     },
-    EmptyPassed {
+    Empty {
         node: Node,
     },
-    ExternalPassed {
+    External {
         node: Node,
     },
-    ShapeOrPassed {
+    ShapeOr {
         node: Node,
         shape_expr: ShapeLabelIdx,
         reasons: Reasons,
     },
-    ShapeNotPassed {
+    ShapeNot {
         node: Node,
         shape_expr: ShapeExpr,
 
         // Errors that are evidences that the negation passess
         errors_evidences: ValidatorErrors,
     },
-    ShapePassed {
+    Shape {
         node: Node,
         shape: Box<Shape>,
         idx: ShapeLabelIdx,
     },
-    ShapeRefPassed {
+    ShapeRef {
         node: Node,
         idx: ShapeLabelIdx,
     },
@@ -68,8 +68,8 @@ impl Reason {
         _schema: &SchemaIR,
     ) -> Result<(), PrefixMapError> {
         match self {
-            Reason::NodeConstraintPassed { .. } => Ok(()),
-            Reason::ShapeAndPassed { reasons, .. } => {
+            Reason::NodeConstraint { .. } => Ok(()),
+            Reason::ShapeAnd { reasons, .. } => {
                 let mut reasons_tree = Tree::new("reasons".to_string());
                 for reason in reasons {
                     for r in reason {
@@ -79,7 +79,7 @@ impl Reason {
                 tree.leaves.push(reasons_tree);
                 Ok(())
             },
-            Reason::ShapeOrPassed { reasons, .. } => {
+            Reason::ShapeOr { reasons, .. } => {
                 let mut reasons_tree = Tree::new("reasons".to_string());
                 for reason in reasons.iter() {
                     reason.build_tree(&mut reasons_tree, _nodes_prefixmap, _schema)?;
@@ -98,11 +98,11 @@ impl Reason {
         width: usize,
     ) -> Result<String, PrefixMapError> {
         match self {
-            Reason::NodeConstraintPassed { node, nc } => Ok(format!(
+            Reason::NodeConstraint { node, nc } => Ok(format!(
                 "Node constraint passed. Node: {}, Constraint: {nc}",
                 node.show_qualified(nodes_prefixmap),
             )),
-            Reason::ShapeAndPassed { node, se, .. } => {
+            Reason::ShapeAnd { node, se, .. } => {
                 let s = format!(
                     "AND passed. Node {}, and: {}",
                     node.show_qualified(nodes_prefixmap),
@@ -110,7 +110,7 @@ impl Reason {
                 );
                 Ok(s)
             },
-            Reason::ShapePassed { node, idx, .. } => {
+            Reason::Shape { node, idx, .. } => {
                 let se_str = schema.show_shape_idx(idx, width);
                 Ok(format!(
                     "Shape passed. Node {}, shape {}: {}",
@@ -182,10 +182,10 @@ impl Reason {
 impl Display for Reason {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Reason::NodeConstraintPassed { node, nc } => {
+            Reason::NodeConstraint { node, nc } => {
                 write!(f, "Node constraint passed. Node: {node}, Constraint: {nc}",)
             },
-            Reason::ShapeAndPassed { node, se, reasons } => {
+            Reason::ShapeAnd { node, se, reasons } => {
                 write!(f, "AND passed. Node {node}, and: {se}, reasons:")?;
                 for reason in reasons {
                     write!(f, "[")?;
@@ -196,10 +196,10 @@ impl Display for Reason {
                 }
                 Ok(())
             },
-            Reason::ShapePassed { node, shape, idx } => {
+            Reason::Shape { node, shape, idx } => {
                 write!(f, "Shape passed. Node {node}, shape {idx}: {shape}")
             },
-            Reason::ShapeOrPassed {
+            Reason::ShapeOr {
                 node,
                 shape_expr,
                 reasons,
@@ -207,7 +207,7 @@ impl Display for Reason {
                 f,
                 "Shape OR passed. Node {node}, shape: {shape_expr}, reasons: {reasons}"
             ),
-            Reason::ShapeNotPassed {
+            Reason::ShapeNot {
                 node,
                 shape_expr,
                 errors_evidences,
@@ -215,16 +215,16 @@ impl Display for Reason {
                 f,
                 "Shape NOT passed. Node {node}, shape: {shape_expr}, errors: {errors_evidences}"
             ),
-            Reason::ExternalPassed { node } => write!(f, "Shape External passed for node {node}"),
-            Reason::EmptyPassed { node } => write!(f, "Shape External passed for node {node}"),
-            Reason::ShapeRefPassed { node, idx } => {
+            Reason::External { node } => write!(f, "Shape External passed for node {node}"),
+            Reason::Empty { node } => write!(f, "Shape External passed for node {node}"),
+            Reason::ShapeRef { node, idx } => {
                 write!(f, "ShapeRef passed. Node {node}, idx: {idx}")
             },
-            Reason::ShapeExtendsPassed { node, shape, reasons } => write!(
+            Reason::ShapeExtends { node, shape, reasons } => write!(
                 f,
                 "Shape extends passed. Node {node}, shape: {shape}, reasons: {reasons}"
             ),
-            Reason::DescendantShapePassed { node, shape, reasons } => write!(
+            Reason::DescendantShape { node, shape, reasons } => write!(
                 f,
                 "Descendant shapes passed. Node {node}, shape: {shape}, reasons: {reasons}"
             ),

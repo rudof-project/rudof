@@ -27,10 +27,10 @@ impl RdfConfigModel {
                 let mut emitter = yaml_rust2::YamlEmitter::new(fmt_writer);
                 emitter
                     .dump(&self.yaml)
-                    .map_err(|e| RdfConfigError::WritingRdfConfigError { error: e.to_string() })?;
+                    .map_err(|e| RdfConfigError::WritingRdfConfig { error: e.to_string() })?;
             },
             RdfConfigFormat::Internal => {
-                write!(writer, "{self}").map_err(|e| RdfConfigError::WritingRdfConfigError { error: e.to_string() })?;
+                write!(writer, "{self}").map_err(|e| RdfConfigError::WritingRdfConfig { error: e.to_string() })?;
             },
         }
         Ok(())

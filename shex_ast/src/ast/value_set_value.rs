@@ -54,7 +54,7 @@ impl ValueSetValue {
     }
 
     pub fn string_literal(value: &str, lang: Option<Lang>) -> ValueSetValue {
-        let ov = ObjectValue::Literal(SLiteral::StringLiteral {
+        let ov = ObjectValue::Literal(SLiteral::String {
             lexical_form: value.to_string(),
             lang,
         });
@@ -738,12 +738,10 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                                 let lang = Lang::new(&lang).map_err(|e| {
                                     de::Error::custom(format!("Can't parse language tag {lang} for literal: Error {e}"))
                                 })?;
-                                Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
-                                    SLiteral::StringLiteral {
-                                        lexical_form: v,
-                                        lang: Some(lang),
-                                    },
-                                )))
+                                Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(SLiteral::String {
+                                    lexical_form: v,
+                                    lang: Some(lang),
+                                })))
                             },
                             None => Ok(ValueSetValue::datatype_literal(&v, &iri)),
                         },
@@ -757,19 +755,15 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                                         "Can't parse language tag {language} for literal: Error {e}"
                                     ))
                                 })?;
-                                Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
-                                    SLiteral::StringLiteral {
-                                        lexical_form,
-                                        lang: Some(lang),
-                                    },
-                                )))
-                            },
-                            None => Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
-                                SLiteral::StringLiteral {
+                                Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(SLiteral::String {
                                     lexical_form,
-                                    lang: None,
-                                },
-                            ))),
+                                    lang: Some(lang),
+                                })))
+                            },
+                            None => Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(SLiteral::String {
+                                lexical_form,
+                                lang: None,
+                            }))),
                         },
                         None => Err(de::Error::missing_field("value")),
                     },

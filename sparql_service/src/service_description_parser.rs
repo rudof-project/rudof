@@ -192,13 +192,13 @@ fn supported_language_iri(iri: &IriS) -> PResult<SupportedLanguage> {
 
 fn result_format_iri(iri: &IriS) -> PResult<SparqlResultFormat> {
     let rf = match iri.as_str() {
-        "http://www.w3.org/ns/formats/SPARQL_Results_XML" => SparqlResultFormat::XML,
+        "http://www.w3.org/ns/formats/SPARQL_Results_XML" => SparqlResultFormat::Xml,
         "http://www.w3.org/ns/formats/JSON-LD" => SparqlResultFormat::JsonLD,
         "http://www.w3.org/ns/formats/N-Triples" => SparqlResultFormat::NTriples,
-        "http://www.w3.org/ns/formats/SPARQL_Results_CSV" => SparqlResultFormat::CSV,
-        "http://www.w3.org/ns/formats/SPARQL_Results_JSON" => SparqlResultFormat::JSON,
+        "http://www.w3.org/ns/formats/SPARQL_Results_CSV" => SparqlResultFormat::Csv,
+        "http://www.w3.org/ns/formats/SPARQL_Results_JSON" => SparqlResultFormat::Json,
         "http://www.w3.org/ns/formats/Turtle" => SparqlResultFormat::Turtle,
-        "http://www.w3.org/ns/formats/SPARQL_Results_TSV" => SparqlResultFormat::TSV,
+        "http://www.w3.org/ns/formats/SPARQL_Results_TSV" => SparqlResultFormat::Tsv,
         "http://www.w3.org/ns/formats/RDF_XML" => SparqlResultFormat::RdfXml,
         _ => SparqlResultFormat::Other(iri.clone()),
     };

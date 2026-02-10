@@ -58,7 +58,7 @@ pub fn run_compare(
             writeln!(writer, "{shaco}")?;
             Ok(())
         },
-        ResultCompareFormat::JSON => {
+        ResultCompareFormat::Json => {
             let str =
                 serde_json::to_string_pretty(&shaco).context(format!("Error converting Result to JSON: {shaco}"))?;
             writeln!(writer, "{str}")?;
@@ -79,14 +79,14 @@ pub fn get_coshamo(
     source_name: Option<&str>,
 ) -> Result<CoShaMo> {
     match mode {
-        InputCompareMode::SHACL => bail!("Not yet implemented comparison between SHACL schemas"),
+        InputCompareMode::Shacl => bail!("Not yet implemented comparison between SHACL schemas"),
         InputCompareMode::ShEx => {
             let shex = read_shex(rudof, format, base, reader, reader_mode, source_name)?;
             let mut converter = CoShaMoConverter::new(&ComparatorConfig::new());
-            let coshamo = converter.from_shex(&shex, label)?;
+            let coshamo = converter.populate_from_shex(&shex, label)?;
             Ok(coshamo)
         },
-        InputCompareMode::DCTAP => bail!("Not yet implemented comparison between DCTAP files"),
+        InputCompareMode::Dctap => bail!("Not yet implemented comparison between DCTAP files"),
         InputCompareMode::Service => {
             bail!("Not yet implemented comparison between Service descriptions")
         },

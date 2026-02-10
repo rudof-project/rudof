@@ -547,7 +547,7 @@ impl ParallelGenerator {
                         .iter()
                         .map(|v| match v {
                             crate::unified_constraints::Value::Literal(val, _) => json!(val),
-                            crate::unified_constraints::Value::IRI(iri) => json!(iri),
+                            crate::unified_constraints::Value::Iri(iri) => json!(iri),
                             _ => json!(null),
                         })
                         .collect();
@@ -557,7 +557,7 @@ impl ParallelGenerator {
                     crate::unified_constraints::Value::Literal(val, _) => {
                         params.insert("fixed_value".to_string(), json!(val));
                     },
-                    crate::unified_constraints::Value::IRI(iri) => {
+                    crate::unified_constraints::Value::Iri(iri) => {
                         params.insert("fixed_value".to_string(), json!(iri));
                     },
                     _ => {},

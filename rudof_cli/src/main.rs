@@ -256,7 +256,7 @@ fn main() -> Result<()> {
                         *force_overwrite,
                     )
                 },
-                ValidationMode::SHACL => {
+                ValidationMode::Shacl => {
                     let shacl_format = match &schema_format {
                         None => Ok::<Option<CliShaclFormat>, anyhow::Error>(None),
                         Some(f) => {
@@ -621,13 +621,13 @@ fn schema_format_to_shacl_format(f: &CliShExFormat) -> Result<CliShaclFormat> {
         CliShExFormat::Simple => Err(anyhow!("Validation using SHACL mode doesn't support {f} format")),
         CliShExFormat::Turtle => Ok(CliShaclFormat::Turtle),
         CliShExFormat::NTriples => Ok(CliShaclFormat::NTriples),
-        CliShExFormat::RDFXML => Ok(CliShaclFormat::RDFXML),
+        CliShExFormat::RdfXml => Ok(CliShaclFormat::RdfXml),
         CliShExFormat::TriG => Ok(CliShaclFormat::TriG),
         CliShExFormat::N3 => Ok(CliShaclFormat::N3),
         CliShExFormat::NQuads => Ok(CliShaclFormat::NQuads),
         CliShExFormat::ShExJ => bail!("Validation using SHACL mode doesn't support ShExC format"),
-        CliShExFormat::JSON => Ok(CliShaclFormat::JsonLd),
-        CliShExFormat::JSONLD => Ok(CliShaclFormat::JsonLd),
+        CliShExFormat::Json => Ok(CliShaclFormat::JsonLd),
+        CliShExFormat::JsonLd => Ok(CliShaclFormat::JsonLd),
     }
 }
 
@@ -707,7 +707,7 @@ fn run_generate(
             GenerateSchemaFormat::ShEx => {
                 generator.load_shex_schema(&schema_path).await?;
             },
-            GenerateSchemaFormat::SHACL => {
+            GenerateSchemaFormat::Shacl => {
                 generator.load_shacl_schema(&schema_path).await?;
             },
         }

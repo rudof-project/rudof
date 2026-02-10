@@ -3,17 +3,17 @@ pub use dctap::{DCTAPFormat, DCTap as DCTAP};
 pub use iri_s::iri;
 pub use mie::Mie;
 pub use prefixmap::PrefixMap;
-pub use shacl_ast::ShaclFormat;
 pub use shacl_ast::ast::Schema as ShaclSchema;
+pub use shacl_ast::ShaclFormat;
 pub use shacl_ir::compiled::schema_ir::SchemaIR as ShaclSchemaIR;
 pub use shacl_validation::shacl_processor::ShaclValidationMode;
 pub use shacl_validation::validation_report::report::ValidationReport;
 pub use shapes_comparator::{CoShaMo, ComparatorError, CompareSchemaFormat, CompareSchemaMode, ShaCo};
-pub use shex_ast::Node;
-pub use shex_ast::Schema as ShExSchema;
 pub use shex_ast::compact::{ShExFormatter, ShapeMapParser, ShapemapFormatter as ShapeMapFormatter};
 pub use shex_ast::ir::shape_label::ShapeLabel;
 pub use shex_ast::shapemap::{QueryShapeMap, ResultShapeMap, ShapeMapFormat, SortMode, ValidationStatus};
+pub use shex_ast::Node;
+pub use shex_ast::Schema as ShExSchema;
 pub use shex_validation::Validator as ShExValidator;
 pub use shex_validation::ValidatorConfig;
 pub use sparql_service::RdfData;
@@ -37,10 +37,10 @@ use shex_ast::compact::ShExParser;
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::shapemap::{NodeSelector, ShapeSelector};
 use shex_ast::{ResolveMethod, ShExFormat, ShapeLabelIdx};
+use srdf::rdf_visualizer::visual_rdf_graph::VisualRDFGraph;
 // use shex_validation::SchemaWithoutImports;
 use srdf::QueryRDF;
 use srdf::Rdf;
-use srdf::rdf_visualizer::visual_rdf_graph::VisualRDFGraph;
 use srdf::{FocusRDF, SRDFGraph, SparqlQuery};
 use std::fmt::Debug;
 use std::fs::File;
@@ -374,14 +374,14 @@ impl Rudof {
                             error: format!("{e}"),
                         })
                 },
-                ShapeMapFormat::JSON => {
+                ShapeMapFormat::Json => {
                     serde_json::to_writer_pretty(writer, &shapemap).map_err(|e| RudofError::ErrorWritingShExJson {
                         schema: format!("{:?}", shapemap.clone()),
                         error: format!("{e}"),
                     })?;
                     Ok(())
                 },
-                ShapeMapFormat::CSV => {
+                ShapeMapFormat::Csv => {
                     todo!()
                 },
             }
@@ -580,7 +580,7 @@ impl Rudof {
             ShaclFormat::Internal => Err(RudofError::InternalSHACLFormatNonReadable),
             ShaclFormat::Turtle => Ok(RDFFormat::Turtle),
             ShaclFormat::NTriples => Ok(RDFFormat::NTriples),
-            ShaclFormat::RDFXML => Ok(RDFFormat::RDFXML),
+            ShaclFormat::RdfXml => Ok(RDFFormat::RdfXml),
             ShaclFormat::TriG => Ok(RDFFormat::TriG),
             ShaclFormat::N3 => Ok(RDFFormat::N3),
             ShaclFormat::NQuads => Ok(RDFFormat::NQuads),
@@ -658,14 +658,14 @@ impl Rudof {
 
     /// Reads a `DCTAP` and replaces the current one
     /// - `format` indicates the DCTAP format
-    pub fn read_dctap<R: std::io::Read>(&mut self, reader: R, format: &DCTAPFormat) -> Result<()> {
+    pub fn read_dctap<R: io::Read>(&mut self, reader: R, format: &DCTAPFormat) -> Result<()> {
         let dctap = match format {
-            DCTAPFormat::CSV => {
+            DCTAPFormat::Csv => {
                 let dctap = DCTAP::from_reader(reader, &self.config.tap_config())
                     .map_err(|e| RudofError::DCTAPReaderCSVReader { error: format!("{e}") })?;
                 Ok(dctap)
             },
-            DCTAPFormat::XLS | DCTAPFormat::XLSB | DCTAPFormat::XLSM | DCTAPFormat::XLSX => {
+            DCTAPFormat::Xls | DCTAPFormat::Xlsb | DCTAPFormat::Xlsm | DCTAPFormat::Xlsx => {
                 Err(RudofError::DCTAPReadXLSNoPath)
             },
         }?;
@@ -678,7 +678,7 @@ impl Rudof {
     pub fn read_dctap_path<P: AsRef<Path>>(&mut self, path: P, format: &DCTAPFormat) -> Result<()> {
         let path_name = path.as_ref().display().to_string();
         let dctap = match format {
-            DCTAPFormat::CSV => {
+            DCTAPFormat::Csv => {
                 let dctap = DCTAP::from_path(path, &self.config.tap_config()).map_err(|e| RudofError::DCTAPReader {
                     path: path_name,
                     format: format.to_string(),
@@ -686,7 +686,7 @@ impl Rudof {
                 })?;
                 Ok::<DCTAP, RudofError>(dctap)
             },
-            DCTAPFormat::XLS | DCTAPFormat::XLSB | DCTAPFormat::XLSM | DCTAPFormat::XLSX => {
+            DCTAPFormat::Xls | DCTAPFormat::Xlsb | DCTAPFormat::Xlsm | DCTAPFormat::Xlsx => {
                 let path_buf = path.as_ref().to_path_buf();
                 let dctap = DCTAP::from_excel(path_buf, None, &self.config.tap_config()).map_err(|e| {
                     RudofError::DCTAPReaderPathXLS {
@@ -785,7 +785,7 @@ impl Rudof {
             None
         };
         schema
-            .from_schema_json(&schema_ast, &ResolveMethod::default(), &base_iri)
+            .populate_from_schema_json(&schema_ast, &ResolveMethod::default(), &base_iri)
             .map_err(|e| RudofError::CompilingSchemaError { error: format!("{e}") })?;
         trace!("Schema compiled and storing it in schema_ir: {schema:?}");
         trace!("Displaying schema_ir: {}", schema);
@@ -1115,8 +1115,7 @@ impl Rudof {
                         })?;
                 Ok::<QueryShapeMap, RudofError>(shapemap)
             },
-            ShapeMapFormat::JSON => todo!(),
-            ShapeMapFormat::CSV => todo!(),
+            _ => todo!(),
         }?;
         self.shapemap = Some(shapemap);
         Ok(())
@@ -1170,12 +1169,13 @@ impl Rudof {
                     })?;
                 let shex = self.read_shex_only(reader, &shex_format, base, reader_mode, source_name)?;
                 let mut converter = CoShaMoConverter::new(&comparator_config);
-                let coshamo = converter
-                    .from_shex(&shex, label)
-                    .map_err(|e| RudofError::CoShaMoFromShExError {
-                        schema: format!("{shex:?}"),
-                        error: format!("{e}"),
-                    })?;
+                let coshamo =
+                    converter
+                        .populate_from_shex(&shex, label)
+                        .map_err(|e| RudofError::CoShaMoFromShExError {
+                            schema: format!("{shex:?}"),
+                            error: format!("{e}"),
+                        })?;
                 Ok(coshamo)
             },
             CompareSchemaMode::ServiceDescription => Err(RudofError::NotImplemented {
@@ -1197,7 +1197,7 @@ fn shacl_format2rdf_format(shacl_format: &ShaclFormat) -> Result<RDFFormat> {
         ShaclFormat::N3 => Ok(RDFFormat::N3),
         ShaclFormat::NQuads => Ok(RDFFormat::NQuads),
         ShaclFormat::NTriples => Ok(RDFFormat::NTriples),
-        ShaclFormat::RDFXML => Ok(RDFFormat::RDFXML),
+        ShaclFormat::RdfXml => Ok(RDFFormat::RdfXml),
         ShaclFormat::TriG => Ok(RDFFormat::TriG),
         ShaclFormat::Turtle => Ok(RDFFormat::Turtle),
         ShaclFormat::Internal => Err(RudofError::NoInternalFormatForRDF),
@@ -1242,9 +1242,9 @@ mod tests {
     use iri_s::iri;
     use shacl_ast::ShaclFormat;
     use shacl_validation::shacl_processor::ShaclValidationMode;
-    use shex_ast::ShExFormat;
     use shex_ast::shapemap::ShapeMapFormat;
-    use shex_ast::{Node, ir::shape_label::ShapeLabel};
+    use shex_ast::ShExFormat;
+    use shex_ast::{ir::shape_label::ShapeLabel, Node};
 
     use crate::RudofConfig;
 

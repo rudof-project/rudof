@@ -124,7 +124,7 @@ impl ShExToUnified {
                     max_cardinality: max_card,
                 });
             },
-            TripleExpr::TripleExprRef(_) => {
+            TripleExpr::Ref(_) => {
                 // Handle triple expression references if needed
             },
         }
@@ -139,10 +139,10 @@ impl ShExToUnified {
         // Convert node kind
         if let Some(nk) = node_constraint.node_kind() {
             let unified_nk = match nk {
-                shex_ast::ast::NodeKind::Iri => NodeKind::IRI,
+                shex_ast::ast::NodeKind::Iri => NodeKind::Iri,
                 shex_ast::ast::NodeKind::BNode => NodeKind::BlankNode,
                 shex_ast::ast::NodeKind::Literal => NodeKind::Literal,
-                shex_ast::ast::NodeKind::NonLiteral => NodeKind::BlankNodeOrIRI,
+                shex_ast::ast::NodeKind::NonLiteral => NodeKind::BlankNodeOrIri,
             };
             constraints.push(UnifiedConstraint::NodeKind(unified_nk));
         }

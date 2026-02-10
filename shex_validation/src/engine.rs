@@ -402,7 +402,7 @@ impl Engine {
                     });
                 },
                 Either::Right(reasons) => {
-                    return Ok(Either::Right(vec![Reason::DescendantShapePassed {
+                    return Ok(Either::Right(vec![Reason::DescendantShape {
                         node: node.clone(),
                         shape: *idx,
                         reasons: Reasons::new(reasons.clone()),
@@ -455,7 +455,7 @@ impl Engine {
                         },
                     }
                 }
-                Ok(Either::Right(vec![Reason::ShapeAndPassed {
+                Ok(Either::Right(vec![Reason::ShapeAnd {
                     node: node.clone(),
                     se: Box::new(se.clone()),
                     reasons: reasons_collection,
@@ -474,7 +474,7 @@ impl Engine {
                             errors_collection.push((*e, ValidatorErrors::new(errors)));
                         },
                         Either::Right(reasons) => {
-                            return Ok(Either::Right(vec![Reason::ShapeOrPassed {
+                            return Ok(Either::Right(vec![Reason::ShapeOr {
                                 shape_expr: *e,
                                 node: node.clone(),
                                 reasons: Reasons::new(reasons),
@@ -492,7 +492,7 @@ impl Engine {
             ShapeExpr::ShapeNot { expr, .. } => {
                 let result = self.check_node_ref(node, expr, typing)?;
                 match result {
-                    Either::Left(errors) => Ok(Either::Right(vec![Reason::ShapeNotPassed {
+                    Either::Left(errors) => Ok(Either::Right(vec![Reason::ShapeNot {
                         node: node.clone(),
                         shape_expr: se.clone(),
                         errors_evidences: ValidatorErrors::new(errors),
@@ -508,7 +508,7 @@ impl Engine {
                 match nc.cond().matches(node) {
                     Ok(_pending) => {
                         // We ignore pending nodes here, because node constraints are not expected to generate pending nodes
-                        pass(Reason::NodeConstraintPassed {
+                        pass(Reason::NodeConstraint {
                             node: node.clone(),
                             nc: nc.clone(),
                         })
@@ -525,10 +525,10 @@ impl Engine {
             },
             ShapeExpr::External {} => {
                 debug!("External shape expression encountered for node {node} with shape {se}");
-                pass(Reason::ExternalPassed { node: node.clone() })
+                pass(Reason::External { node: node.clone() })
             },
             ShapeExpr::Ref { idx } => self.check_node_ref(node, idx, typing),
-            ShapeExpr::Empty => pass(Reason::EmptyPassed { node: node.clone() }),
+            ShapeExpr::Empty => pass(Reason::Empty { node: node.clone() }),
         }
     }
 
@@ -542,7 +542,7 @@ impl Engine {
         {
             // If the node is already in the typing, we can return true
             if typing.contains(&(node.clone(), *idx)) {
-                pass(Reason::ShapeRefPassed {
+                pass(Reason::ShapeRef {
                     node: node.clone(),
                     idx: *idx,
                 })
@@ -654,7 +654,7 @@ impl Engine {
             }
             if ok_partition {
                 debug!(" Part {npart}| Partition succeeded",);
-                return pass(Reason::ShapeExtendsPassed {
+                return pass(Reason::ShapeExtends {
                     node: node.clone(),
                     shape: Box::new(shape.clone()),
                     reasons: Reasons::new(vec![]), // TODO: Collect reasons from each triple expr
@@ -818,7 +818,7 @@ fn check_exprs_neigh(
             });
         }
     }
-    pass(Reason::ShapePassed {
+    pass(Reason::Shape {
         node: node.clone(),
         shape: Box::new(shape.clone()),
         idx: *idx,
@@ -860,7 +860,7 @@ fn check_expr_neigh(
                         }
                     }
                     if failed_pending.is_empty() {
-                        return pass(Reason::ShapePassed {
+                        return pass(Reason::Shape {
                             node: node.clone(),
                             shape: Box::new(shape.clone()),
                             idx: *idx,
@@ -873,7 +873,7 @@ fn check_expr_neigh(
                     }
                 } else {
                     // No Pending values
-                    return pass(Reason::ShapePassed {
+                    return pass(Reason::Shape {
                         node: node.clone(),
                         shape: Box::new(shape.clone()),
                         idx: *idx,

@@ -1218,7 +1218,7 @@ fn include_<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, TripleExpr> {
         map_error(
             move |i| {
                 let (i, (_, tel)) = tuple((token_tws("&"), cut(triple_expr_label)))(i)?;
-                Ok((i, TripleExpr::TripleExprRef(tel)))
+                Ok((i, TripleExpr::Ref(tel)))
             },
             || ShExParseError::Include,
         ),
@@ -1290,13 +1290,7 @@ pub fn literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, SLiteral> {
     traced(
         "literal",
         map_error(
-            move |i| {
-                alt((
-                    rdf_literal(),
-                    map(numeric_literal, SLiteral::NumericLiteral),
-                    boolean_literal,
-                ))(i)
-            },
+            move |i| alt((rdf_literal(), map(numeric_literal, SLiteral::Numeric), boolean_literal))(i),
             || ShExParseError::Literal,
         ),
     )

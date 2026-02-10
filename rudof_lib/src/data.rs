@@ -18,11 +18,11 @@ pub fn data_format2rdf_format(data_format: &DataFormat) -> Result<RDFFormat, Dat
         DataFormat::N3 => Ok(RDFFormat::N3),
         DataFormat::NQuads => Ok(RDFFormat::NQuads),
         DataFormat::NTriples => Ok(RDFFormat::NTriples),
-        DataFormat::RDFXML => Ok(RDFFormat::RDFXML),
+        DataFormat::RdfXml => Ok(RDFFormat::RdfXml),
         DataFormat::TriG => Ok(RDFFormat::TriG),
         DataFormat::Turtle => Ok(RDFFormat::Turtle),
         DataFormat::JsonLd => Ok(RDFFormat::JsonLd),
-        DataFormat::PG => Err(DataFormatError::NonRdfFormat {
+        DataFormat::Pg => Err(DataFormatError::NonRdfFormat {
             format: data_format.to_string(),
         }),
     }
@@ -120,8 +120,8 @@ pub fn parse_optional_base_iri(base_str: Option<String>) -> Result<Option<IriS>,
 /// Converts a case-insensitive image format string ("SVG" or "PNG") into ImageFormat.
 pub fn parse_image_format(image_format_str: &str) -> Result<ImageFormat, RudofError> {
     match image_format_str.to_uppercase().as_str() {
-        "SVG" => Ok(ImageFormat::SVG),
-        "PNG" => Ok(ImageFormat::PNG),
+        "SVG" => Ok(ImageFormat::Svg),
+        "PNG" => Ok(ImageFormat::Png),
         _ => Err(RudofError::InvalidImageFormat {
             format: image_format_str.to_string(),
         }),

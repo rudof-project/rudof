@@ -4,13 +4,13 @@ use std::fmt::Display;
 
 #[derive(Clone, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
 pub enum SparqlResultFormat {
-    XML,
+    Xml,
     Turtle,
-    TSV,
+    Tsv,
     RdfXml,
-    JSON,
+    Json,
     NTriples,
-    CSV,
+    Csv,
     JsonLD,
     Other(IriS),
 }
@@ -18,13 +18,13 @@ pub enum SparqlResultFormat {
 impl Display for SparqlResultFormat {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SparqlResultFormat::XML => write!(f, "XML"),
+            SparqlResultFormat::Xml => write!(f, "XML"),
             SparqlResultFormat::Turtle => write!(f, "Turtle"),
-            SparqlResultFormat::TSV => write!(f, "TSV"),
+            SparqlResultFormat::Tsv => write!(f, "TSV"),
             SparqlResultFormat::RdfXml => write!(f, "RDF/XML"),
-            SparqlResultFormat::JSON => write!(f, "JSON"),
+            SparqlResultFormat::Json => write!(f, "JSON"),
             SparqlResultFormat::NTriples => write!(f, "N-TRIPLES"),
-            SparqlResultFormat::CSV => write!(f, "CSV"),
+            SparqlResultFormat::Csv => write!(f, "CSV"),
             SparqlResultFormat::JsonLD => write!(f, "JSON_LD"),
             SparqlResultFormat::Other(iri) => write!(f, "ResultFormat({iri})",),
         }

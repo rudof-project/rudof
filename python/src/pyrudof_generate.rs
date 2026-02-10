@@ -239,14 +239,14 @@ impl PyGeneratorConfig {
 #[derive(PartialEq, Clone, Copy)]
 pub enum PySchemaFormat {
     ShEx,
-    SHACL,
+    Shacl,
 }
 
 impl From<PySchemaFormat> for rudof_generate::SchemaFormat {
     fn from(val: PySchemaFormat) -> Self {
         match val {
             PySchemaFormat::ShEx => rudof_generate::SchemaFormat::ShEx,
-            PySchemaFormat::SHACL => rudof_generate::SchemaFormat::SHACL,
+            PySchemaFormat::Shacl => rudof_generate::SchemaFormat::Shacl,
         }
     }
 }

@@ -20,7 +20,7 @@ impl CoShaMoConverter {
         }
     }
 
-    pub fn from_service(
+    pub fn populate_from_service(
         &mut self,
         service: ServiceDescription,
         label: &Option<String>,
@@ -37,7 +37,7 @@ impl CoShaMoConverter {
         Ok(self.current_coshamo.clone())
     }
 
-    pub fn from_shex(&mut self, schema: &Schema, label: Option<&str>) -> Result<CoShaMo, ComparatorError> {
+    pub fn populate_from_shex(&mut self, schema: &Schema, label: Option<&str>) -> Result<CoShaMo, ComparatorError> {
         self.current_coshamo = CoShaMo::new().with_prefixmap(schema.prefixmap());
         // choose the shape
         if let Some(label) = label {
@@ -130,7 +130,7 @@ impl CoShaMoConverter {
                     .add_constraint(&iri_s, ValueDescription::new(predicate));
                 Ok(())
             },
-            TripleExpr::TripleExprRef(_) => todo!(),
+            TripleExpr::Ref(_) => todo!(),
         }
     }
 
@@ -170,7 +170,7 @@ impl CoShaMoConverter {
                     ValueDescription::new(predicate).with_value_constraint(node_constraint),
                 ))
             },
-            TripleExpr::TripleExprRef(_) => Err(ComparatorError::NotImplemented {
+            TripleExpr::Ref(_) => Err(ComparatorError::NotImplemented {
                 feature: "TripleExprRef as constraint".to_string(),
             }),
         }

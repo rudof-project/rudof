@@ -68,7 +68,7 @@ impl ShaclToUnified {
 
         // Extract target class if available
         let target_class = node_shape.targets().first().and_then(|target| match target {
-            shacl_ast::target::Target::TargetClass(tc) => Some(tc.to_string()),
+            shacl_ast::target::Target::Class(tc) => Some(tc.to_string()),
             _ => None,
         });
 
@@ -150,12 +150,12 @@ impl ShaclToUnified {
             },
             Component::NodeKind(node_kind) => {
                 let unified_nk = match *node_kind {
-                    shacl_ast::node_kind::NodeKind::Iri => NodeKind::IRI,
+                    shacl_ast::node_kind::NodeKind::Iri => NodeKind::Iri,
                     shacl_ast::node_kind::NodeKind::BlankNode => NodeKind::BlankNode,
                     shacl_ast::node_kind::NodeKind::Literal => NodeKind::Literal,
-                    shacl_ast::node_kind::NodeKind::BlankNodeOrIri => NodeKind::BlankNodeOrIRI,
+                    shacl_ast::node_kind::NodeKind::BlankNodeOrIri => NodeKind::BlankNodeOrIri,
                     shacl_ast::node_kind::NodeKind::BlankNodeOrLiteral => NodeKind::BlankNodeOrLiteral,
-                    shacl_ast::node_kind::NodeKind::IRIOrLiteral => NodeKind::IRIOrLiteral,
+                    shacl_ast::node_kind::NodeKind::IRIOrLiteral => NodeKind::IriOrLiteral,
                 };
                 constraints.push(UnifiedConstraint::NodeKind(unified_nk));
             },
@@ -209,7 +209,7 @@ impl ShaclToUnified {
 
     fn convert_value_to_unified_value(&self, value: &shacl_ast::value::Value) -> Value {
         match value {
-            shacl_ast::value::Value::Iri(iri) => Value::IRI(iri.to_string()),
+            shacl_ast::value::Value::Iri(iri) => Value::Iri(iri.to_string()),
             shacl_ast::value::Value::Literal(lit) => {
                 Value::Literal(lit.lexical_form().to_string(), Some(lit.datatype().to_string()))
             },

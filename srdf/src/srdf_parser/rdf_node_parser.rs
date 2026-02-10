@@ -1448,7 +1448,7 @@ where
         term: format!("{term}"),
     })?;
     match slit {
-        SLiteral::NumericLiteral(n) => Ok(n),
+        SLiteral::Numeric(n) => Ok(n),
         _ => Err(RDFParseError::ExpectedNumber {
             term: format!("{term}"),
         }),
@@ -1787,10 +1787,7 @@ where
 }*/
 
 /// Parses a node as an RDF List applying each element of the list a parser
-pub fn parse_rdf_list<RDF, P>(parser: P) -> ParseRDFList<P>
-where
-    RDF: NeighsRDF,
-{
+pub fn parse_rdf_list<P>(parser: P) -> ParseRDFList<P> {
     ParseRDFList { parser }
 }
 

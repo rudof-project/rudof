@@ -132,8 +132,8 @@ impl Shacl2ShEx {
         _schema: &ShaclSchema<RDF>,
     ) -> Result<Option<ValueSetValue>, Shacl2ShExError> {
         match target {
-            Target::TargetNode(_) => Ok(None),
-            Target::TargetClass(cls) => {
+            Target::Node(_) => Ok(None),
+            Target::Class(cls) => {
                 let value_set_value = match cls {
                     Object::Iri(iri) => Ok(ValueSetValue::iri(IriRef::iri(iri.clone()))),
                     Object::BlankNode(bn) => {
@@ -146,11 +146,11 @@ impl Shacl2ShEx {
                 }?;
                 Ok(Some(value_set_value))
             },
-            Target::TargetSubjectsOf(_) => Ok(None),
-            Target::TargetObjectsOf(_) => Ok(None),
-            Target::TargetImplicitClass(_) => Ok(None),
-            Target::WrongTargetNode(_) => todo!(),
-            Target::WrongTargetClass(_) => todo!(),
+            Target::SubjectsOf(_) => Ok(None),
+            Target::ObjectsOf(_) => Ok(None),
+            Target::ImplicitClass(_) => Ok(None),
+            Target::WrongNode(_) => todo!(),
+            Target::WrongClass(_) => todo!(),
             Target::WrongSubjectsOf(_) => todo!(),
             Target::WrongObjectsOf(_) => todo!(),
             Target::WrongImplicitClass(_) => todo!(),

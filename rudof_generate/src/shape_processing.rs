@@ -215,7 +215,7 @@ impl ShapeProcessor {
                     });
                 }
             },
-            TripleExpr::TripleExprRef(_) => {
+            TripleExpr::Ref(_) => {
                 // Handle triple expression references if needed
             },
         }

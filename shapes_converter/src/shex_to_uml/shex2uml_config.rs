@@ -44,11 +44,11 @@ impl ShEx2UmlConfig {
     }
 
     pub fn from_file(file_name: &str) -> Result<ShEx2UmlConfig, ShEx2UmlConfigError> {
-        let config_str = fs::read_to_string(file_name).map_err(|e| ShEx2UmlConfigError::ReadingConfigError {
+        let config_str = fs::read_to_string(file_name).map_err(|e| ShEx2UmlConfigError::ReadingConfig {
             path_name: file_name.to_string(),
             error: e,
         })?;
-        toml::from_str::<ShEx2UmlConfig>(&config_str).map_err(|e| ShEx2UmlConfigError::TomlError {
+        toml::from_str::<ShEx2UmlConfig>(&config_str).map_err(|e| ShEx2UmlConfigError::Toml {
             path_name: file_name.to_string(),
             error: e,
         })
@@ -66,13 +66,13 @@ impl ShEx2UmlConfig {
 #[derive(Error, Debug)]
 pub enum ShEx2UmlConfigError {
     #[error("Reading path {path_name:?} error: {error:?}")]
-    ReadingConfigError { path_name: String, error: io::Error },
+    ReadingConfig { path_name: String, error: io::Error },
 
     #[error("Reading TOML from {path_name:?}. Error: {error:?}")]
-    TomlError { path_name: String, error: toml::de::Error },
+    Toml { path_name: String, error: toml::de::Error },
 
     #[error("Accessing environment variable {var_name}: {error}")]
-    EnvVarError { var_name: String, error: VarError },
+    EnvVar { var_name: String, error: VarError },
 }
 
 impl Default for ShEx2UmlConfig {

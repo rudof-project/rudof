@@ -25,7 +25,7 @@ pub fn run_dctap(
                 writeln!(writer, "{dctap}")?;
                 Ok(())
             },
-            DCTapResultFormat::JSON => {
+            DCTapResultFormat::Json => {
                 let str = serde_json::to_string_pretty(&dctap).context("Error converting DCTap to JSON: {dctap}")?;
                 writeln!(writer, "{str}")?;
                 Ok(())
@@ -38,14 +38,14 @@ pub fn run_dctap(
 
 pub fn parse_dctap(rudof: &mut Rudof, input: &InputSpec, format: &CliDCTapFormat) -> Result<()> {
     let dctap_format = match format {
-        CliDCTapFormat::CSV => DCTAPFormat::CSV,
-        CliDCTapFormat::XLSX => DCTAPFormat::XLSX,
-        CliDCTapFormat::XLSB => DCTAPFormat::XLSB,
-        CliDCTapFormat::XLSM => DCTAPFormat::XLSM,
-        CliDCTapFormat::XLS => DCTAPFormat::XLS,
+        CliDCTapFormat::Csv => DCTAPFormat::Csv,
+        CliDCTapFormat::Xlsx => DCTAPFormat::Xlsx,
+        CliDCTapFormat::Xlsb => DCTAPFormat::Xlsb,
+        CliDCTapFormat::Xlsm => DCTAPFormat::Xlsm,
+        CliDCTapFormat::Xls => DCTAPFormat::Xls,
     };
     match format {
-        CliDCTapFormat::CSV => {
+        CliDCTapFormat::Csv => {
             let reader = input.open_read(None, "DCTAP")?;
             rudof.read_dctap(reader, &dctap_format)?;
             Ok(())

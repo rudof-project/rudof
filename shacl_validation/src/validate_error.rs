@@ -32,7 +32,7 @@ pub enum ValidateError {
         error: String,
     },
     #[error("Error during the SPARQL operation")]
-    SRDF,
+    SRdf,
 
     #[error("TargetNode cannot be a Blank Node")]
     TargetNodeBlankNode,

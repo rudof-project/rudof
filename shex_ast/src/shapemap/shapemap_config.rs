@@ -16,18 +16,17 @@ pub struct ShapemapConfigMain {
 impl ShapemapConfigMain {
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<ShapemapConfigMain, ShapemapConfigError> {
         let path_name = path.as_ref().display().to_string();
-        let mut f = std::fs::File::open(path).map_err(|e| ShapemapConfigError::FromPathError {
+        let mut f = std::fs::File::open(path).map_err(|e| ShapemapConfigError::FromPath {
             path: path_name.clone(),
             error: e.to_string(),
         })?;
         let mut s = String::new();
-        f.read_to_string(&mut s)
-            .map_err(|e| ShapemapConfigError::FromFileError {
-                file: path_name.clone(),
-                error: e.to_string(),
-            })?;
+        f.read_to_string(&mut s).map_err(|e| ShapemapConfigError::FromFile {
+            file: path_name.clone(),
+            error: e.to_string(),
+        })?;
 
-        let config: ShapemapConfigMain = toml::from_str(s.as_str()).map_err(|e| ShapemapConfigError::TomlError {
+        let config: ShapemapConfigMain = toml::from_str(s.as_str()).map_err(|e| ShapemapConfigError::Toml {
             path: path_name.clone(),
             error: e.to_string(),
         })?;
@@ -128,11 +127,11 @@ impl ShapemapConfig {
 #[derive(Error, Debug, Clone)]
 pub enum ShapemapConfigError {
     #[error("Error reading config file from path {path}: {error}")]
-    FromPathError { path: String, error: String },
+    FromPath { path: String, error: String },
 
     #[error("Error reading config file from file {file}: {error}")]
-    FromFileError { file: String, error: String },
+    FromFile { file: String, error: String },
 
     #[error("Error reading config file from path {path}: {error}")]
-    TomlError { path: String, error: String },
+    Toml { path: String, error: String },
 }

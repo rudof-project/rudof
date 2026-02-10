@@ -3,11 +3,11 @@ use crate::manifest::Manifest;
 use crate::manifest_error::ManifestError;
 use iri_s::IriS;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
 // use serde_derive::{Serialize};
 use shex_ast::ast::Schema as SchemaJson;
 use shex_ast::compact::ShExParser;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use tracing::debug;
 use url::Url;
 
@@ -166,9 +166,9 @@ impl SchemasEntry {
 
         let schema_parsed_after_serialization = serde_json::from_str::<shex_ast::ast::Schema>(&schema_serialized)
             .map_err(|e| ManifestError::SchemaParsingAfterSerialization {
-                schema_name: Box::new(self.name.to_string()),
+                schema_name: self.name.to_string(),
                 schema_parsed: Box::new(schema_parsed.clone()),
-                schema_serialized: Box::new(schema_serialized.clone()),
+                schema_serialized: schema_serialized.clone(),
                 error: e,
             })?;
         debug!("Passed schema parsing from string that was serialized = schema2");
@@ -200,7 +200,7 @@ impl SchemasEntry {
             let mut shexc_schema_parsed =
                 ShExParser::parse_buf(&shex_buf, Some(base_iri)).map_err(|e| ManifestError::ShExCParsingError {
                     error: Box::new(e),
-                    entry_name: Box::new(self.name.to_string()),
+                    entry_name: self.name.to_string(),
                     shex_path: Box::new(shex_buf.clone()),
                 })?;
 
@@ -213,7 +213,7 @@ impl SchemasEntry {
             } else {
                 Err(Box::new(ManifestError::ShExSchemaDifferent {
                     json_schema_parsed: Box::new(schema_parsed),
-                    schema_serialized: Box::new(schema_serialized),
+                    schema_serialized,
                     shexc_schema_parsed: Box::new(shexc_schema_parsed),
                 }))
             }
@@ -221,9 +221,9 @@ impl SchemasEntry {
             debug!("Schemas in JSON are different");
             Err(Box::new(ManifestError::SchemasDifferent {
                 schema_parsed: Box::new(schema_parsed),
-                schema_serialized: Box::new(schema_serialized.clone()),
+                schema_serialized: schema_serialized.clone(),
                 schema_parsed_after_serialization: Box::new(schema_parsed_after_serialization),
-                schema_serialized_after: Box::new(schema_serialized_after),
+                schema_serialized_after,
             }))
         }
     }

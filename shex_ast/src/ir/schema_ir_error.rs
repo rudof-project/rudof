@@ -73,7 +73,7 @@ pub enum SchemaIRError {
     },
 
     #[error("Finding content from iris. Errors: {errors:?}")]
-    FindingContentFromIrisError { errors: Box<Vec<Box<SchemaIRError>>> },
+    FindingContentFromIrisError { errors: Vec<SchemaIRError> },
 
     #[error("Generating candidates from iri {iri}: {error}")]
     CandidatesError { iri: IriS, error: String },
@@ -212,7 +212,7 @@ pub enum SchemaIRError {
     #[error("Error importing Schema from iri: {iri}: {}", errors.iter().map(|(format, error)| format!("\nFor {format}: {error}")).collect::<Vec<_>>().join(""))]
     SchemaFromIriRotatingFormats {
         iri: IriS,
-        errors: Box<Vec<(ShExFormat, Box<SchemaIRError>)>>,
+        errors: Vec<(ShExFormat, Box<SchemaIRError>)>,
     },
 
     #[error("Error converting IriRef {prefix}:{local} to Iri: {error}")]

@@ -119,18 +119,18 @@ impl ValidationReport {
     {
         rdf_writer
             .add_prefix("sh", sh())
-            .map_err(|e| ReportError::ValidationReportError {
+            .map_err(|e| ReportError::ValidationError {
                 msg: format!("Error adding prefix to RDF: {e}"),
             })?;
         let report_node: RDF::Subject = rdf_writer
             .add_bnode()
-            .map_err(|e| ReportError::ValidationReportError {
+            .map_err(|e| ReportError::ValidationError {
                 msg: format!("Error creating bnode: {e}"),
             })?
             .into();
         rdf_writer
             .add_type(report_node.clone(), sh_validation_report().clone())
-            .map_err(|e| ReportError::ValidationReportError {
+            .map_err(|e| ReportError::ValidationError {
                 msg: format!("Error type ValidationReport to bnode: {e}"),
             })?;
 
@@ -140,7 +140,7 @@ impl ValidationReport {
             let rdf_true: <RDF as Rdf>::Term = Object::boolean(true).into();
             rdf_writer
                 .add_triple(report_node.clone(), conforms, rdf_true)
-                .map_err(|e| ReportError::ValidationReportError {
+                .map_err(|e| ReportError::ValidationError {
                     msg: format!("Error adding conforms to bnode: {e}"),
                 })?;
             return Ok(());
@@ -148,22 +148,22 @@ impl ValidationReport {
             let rdf_false: <RDF as Rdf>::Term = Object::boolean(false).into();
             rdf_writer
                 .add_triple(report_node.clone(), conforms, rdf_false)
-                .map_err(|e| ReportError::ValidationReportError {
+                .map_err(|e| ReportError::ValidationError {
                     msg: format!("Error adding conforms to bnode: {e}"),
                 })?;
             for result in self.results.iter() {
                 let result_node: <RDF as Rdf>::BNode =
-                    rdf_writer.add_bnode().map_err(|e| ReportError::ValidationReportError {
+                    rdf_writer.add_bnode().map_err(|e| ReportError::ValidationError {
                         msg: format!("Error creating bnode: {e}"),
                     })?;
                 let result_node_term: <RDF as Rdf>::Term = result_node.into();
                 rdf_writer
                     .add_triple(report_node.clone(), sh_result.clone(), result_node_term.clone())
-                    .map_err(|e| ReportError::ValidationReportError {
+                    .map_err(|e| ReportError::ValidationError {
                         msg: format!("Error adding conforms to bnode: {e}"),
                     })?;
                 let result_node_subject: <RDF as Rdf>::Subject = <RDF as Rdf>::Subject::try_from(result_node_term)
-                    .map_err(|_e| ReportError::ValidationReportError {
+                    .map_err(|_e| ReportError::ValidationError {
                         msg: "Cannot convert subject to term".to_string(),
                     })?;
                 result.to_rdf(rdf_writer, result_node_subject)?;

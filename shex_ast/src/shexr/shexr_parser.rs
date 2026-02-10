@@ -47,7 +47,7 @@ where
     fn schema() -> impl RDFNodeParse<RDF, Output = Schema> {
         property_value(sx_shapes()).then(move |ref node| {
             set_focus(node)
-                .and(parse_rdf_list::<RDF, _>(Self::shape_decl()))
+                .and(parse_rdf_list(Self::shape_decl()))
                 .map(|(_, vs)| Schema::new(&iri!("http://default/")).with_shapes(Some(vs)))
         })
     }
@@ -120,7 +120,7 @@ rdf_parser! {
         has_type(sx_shape_and()).with(
         property_value(sx_shape_exprs()).then(|ref node| {
             set_focus(node).and(
-                   parse_rdf_list::<RDF, _>(shape_expr())
+                   parse_rdf_list(shape_expr())
                  ).map(|(_,vs)| { ShapeExpr::and(vs) })
            }))
     }
@@ -131,7 +131,7 @@ rdf_parser! {
         has_type(sx_shape_or()).with(
         property_value(sx_shape_exprs().clone()).then(|ref node| {
             set_focus(node).and(
-                   parse_rdf_list::<RDF, _>(shape_expr())
+                   parse_rdf_list(shape_expr())
                  ).map(|(_,vs)| { ShapeExpr::or(vs) })
            }))
     }
@@ -283,11 +283,10 @@ fn parse_value_set<RDF>() -> impl RDFNodeParse<RDF, Output = Option<Vec<ValueSet
 where
     RDF: FocusRDF,
 {
-    optional(property_value(sx_values()).then(|ref node| {
-        set_focus(node)
-            .and(parse_rdf_list::<RDF, _>(parse_value()))
-            .map(|(_, vs)| vs)
-    }))
+    optional(
+        property_value(sx_values())
+            .then(|ref node| set_focus(node).and(parse_rdf_list(parse_value())).map(|(_, vs)| vs)),
+    )
 }
 
 fn parse_value<RDF>() -> impl RDFNodeParse<RDF, Output = ValueSetValue>
