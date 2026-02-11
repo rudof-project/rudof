@@ -202,6 +202,33 @@ impl ParallelGenerator {
         Ok(all_triples)
     }
 
+    /// Get effective configuration for a specific shape, applying overrides if present
+    fn get_effective_config(&self, shape_id: &str) -> GenerationConfig {
+        let mut config = self.config.clone();
+
+        if let Some(override_config) = self.config.type_overrides.get(shape_id) {
+            if let Some(val) = override_config.property_fill_probability {
+                config.property_fill_probability = val;
+            }
+            if let Some(val) = override_config.ignore_min_cardinality {
+                config.ignore_min_cardinality = val;
+            }
+            if let Some(val) = override_config.max_properties_per_instance {
+                config.max_properties_per_instance = val;
+            }
+            if let Some(val) = override_config.property_selection_strategy {
+                config.property_selection_strategy = val;
+            }
+            if let Some(val) = override_config.property_count_variance {
+                config.property_count_variance = val;
+            }
+            if let Some(val) = &override_config.excluded_properties {
+                config.excluded_properties = val.clone();
+            }
+        }
+        config
+    }
+
     /// Generate a single entity
     async fn generate_single_entity(
         &self,
@@ -213,6 +240,9 @@ impl ParallelGenerator {
         let entity_iri = format!("{}-{}", shape_id, entity_index + 1);
         let entity_node = NamedNode::new_unchecked(&entity_iri);
 
+        // Get effective configuration for this shape
+        let config = self.get_effective_config(shape_id);
+
         // Add type triple
         triples.push(Triple::new(
             NamedOrBlankNode::NamedNode(entity_node.clone()),
@@ -221,7 +251,104 @@ impl ParallelGenerator {
         ));
 
         // Generate property triples
+        
+        // 0. Calculate effective probability with variance for THIS instance
+        let mut variance_multiplier = 1.0;
+        if config.property_count_variance > 0.0 {
+            use rand::Rng;
+            let mut rng = rand::thread_rng();
+            // random range [-variance, +variance]
+            let variance_factor = rng.gen_range(-config.property_count_variance..=config.property_count_variance);
+            variance_multiplier = 1.0 + variance_factor;
+        }
+        
+        let effective_probability = (config.property_fill_probability * variance_multiplier).clamp(0.0, 1.0);
+
+        // 1. Separate properties into mandatory and candidates
+        let mut properties_to_generate = Vec::new();
+        let mut candidates = Vec::new();
+        let mut mandatory_properties = Vec::new();
+
         for property_info in &shape_info.properties {
+            // Check if property is explicitly excluded
+            if config.excluded_properties.contains(&property_info.property_iri) {
+                continue;
+            }
+
+            let min_card = property_info.min_cardinality.unwrap_or(0);
+            let effective_min = if config.ignore_min_cardinality {
+                0
+            } else {
+                min_card
+            };
+
+            if effective_min > 0 {
+                mandatory_properties.push(property_info);
+            } else {
+                candidates.push(property_info);
+            }
+        }
+
+        // 2. Select from candidates based on strategy
+        use crate::config::PropertySelectionStrategy;
+        use rand::seq::SliceRandom;
+        
+        match config.property_selection_strategy {
+            PropertySelectionStrategy::All | PropertySelectionStrategy::Weighted => {
+                // Weighted is treated as All for now (future work)
+                // Independent probability check for each candidate using effective_probability
+                for prop in candidates {
+                    use rand::Rng;
+                    let mut rng = rand::thread_rng();
+                    let roll: f64 = rng.r#gen();
+                    if roll <= effective_probability {
+                        properties_to_generate.push(prop);
+                    }
+                }
+            },
+            PropertySelectionStrategy::Random => {
+                // Fixed count based on probability
+                // Target count includes mandatory properties? 
+                // Spec says: "num_props = round(property_fill_probability * total_props)"
+                // This usually implies total *resulting* properties.
+                
+                let total_available = shape_info.properties.len();
+                let target_count = (effective_probability * total_available as f64).round() as usize;
+                
+                // We must include mandatory ones
+                let mandatory_count = mandatory_properties.len();
+                
+                // How many candidates to pick?
+                // If target <= mandatory, we pick 0 candidates (and just have mandatory).
+                // If target > mandatory, we pick (target - mandatory) candidates.
+                let mut slots_for_candidates = target_count.saturating_sub(mandatory_count);
+                
+                // Clamp to available candidates
+                slots_for_candidates = slots_for_candidates.min(candidates.len());
+                
+                if slots_for_candidates > 0 {
+                    let mut rng = rand::thread_rng();
+                    candidates.shuffle(&mut rng);
+                    for i in 0..slots_for_candidates {
+                        properties_to_generate.push(candidates[i]);
+                    }
+                }
+            }
+        }
+        
+        // Add mandatory properties
+        properties_to_generate.extend(mandatory_properties);
+
+        // 2. Apply max_properties_per_instance limit
+        if config.max_properties_per_instance > 0 && properties_to_generate.len() > config.max_properties_per_instance {
+            use rand::seq::SliceRandom;
+            let mut rng = rand::thread_rng();
+            properties_to_generate.shuffle(&mut rng);
+            properties_to_generate.truncate(config.max_properties_per_instance);
+        }
+
+        // 3. Generate triples for selected properties
+        for property_info in properties_to_generate {
             // Handle cardinality for both data and object properties
             let num_values = self.calculate_property_value_count(
                 property_info.min_cardinality,
@@ -229,6 +356,11 @@ impl ParallelGenerator {
                 entity_index,
             );
 
+            // If we decided to include it but calculated 0 values (e.g. random 0..X), 
+            // force at least 1 if we passed the probability check? 
+            // The spec says "generate property with cardinality >= effective_min".
+            // calculate_property_value_count respects min_cardinality.
+            
             for value_idx in 0..num_values {
                 if let Some(shape_ref) = &property_info.shape_ref {
                     // Object property with shape reference - generate nested entity

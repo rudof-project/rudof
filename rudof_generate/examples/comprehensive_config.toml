@@ -26,6 +26,59 @@ cardinality_strategy = "Balanced"     # How to handle property cardinalities
 # schema_format = "SHACL"             # Force SHACL format
 
 # ============================================================================
+# COHERENCE CONTROL - Control the density and structure of generated data
+# ============================================================================
+# Control how complete and structured the generated data is.
+# These settings allow generating anything from sparse knowledge graphs (Low Coherence)
+# to complete relational-like tables (High Coherence).
+
+# property_fill_probability = 1.0     # Probability (0.0-1.0) to include a property 
+#                                     # regardless of schema requirements (unless ignore_min is false)
+
+# ignore_min_cardinality = false      # If true, treats all minCount/min constraints as 0.
+#                                     # Allows skipping "required" properties.
+
+# max_properties_per_instance = 0     # Hard cap on properties per instance (0 = unlimited).
+#                                     # Useful for creating sparse nodes.
+
+# property_selection_strategy = "All" # Strategy for selecting which properties to keep:
+#                                     # - "All": Each property decided independently (coin flip)
+#                                     # - "Random": Select N properties randomly
+#                                     # - "Weighted": Select based on weights (see below)
+
+# property_count_variance = 0.0       # Variance (0.0-1.0) in number of properties between 
+#                                     # instances of the same type. 0.0 = uniform, 1.0 = high variance.
+
+# excluded_properties = []            # List of property URIs to explicitly exclude from generation.
+#                                     # e.g. ["http://example.org/privateData"]
+
+# --- High Coherence Example (like relational DBs) ---
+# property_fill_probability = 1.0
+# ignore_min_cardinality = false
+# max_properties_per_instance = 0
+# property_selection_strategy = "All"
+# property_count_variance = 0.0
+
+# --- Low Coherence Example (like noisy web data) ---
+# property_fill_probability = 0.35
+# ignore_min_cardinality = true
+# max_properties_per_instance = 6
+# property_selection_strategy = "Random"
+# property_count_variance = 0.7
+
+# ============================================================================
+# COHERENCE OVERRIDES - Different settings per type
+# ============================================================================
+# You can override global coherence settings for specific shapes/types.
+
+# [generation.type_overrides."http://example.org/Student"]
+# property_fill_probability = 0.3
+# max_properties_per_instance = 4
+
+# [generation.type_overrides."http://example.org/Professor"]
+# property_fill_probability = 1.0    # Professors always detailed
+
+# ============================================================================
 # WEIGHTED DISTRIBUTION - When using entity_distribution = "Weighted"
 # ============================================================================
 # [generation.distribution_weights]
