@@ -21,11 +21,11 @@ use crate::pp_object_value;
 ///
 /// Example:
 /// ```
-/// use shex_compact::ShExFormatter;
+/// use shex_ast::compact::ShExFormatter;
 /// use shex_ast::{Schema, ShapeExprLabel, ShapeExpr};
-/// use iri_s::IriS;
+/// use iri_s::{IriS, iri};
 ///
-/// let mut schema = Schema::new();
+/// let mut schema = Schema::new(&iri!("http://default/"));
 /// schema.add_prefix("ex", &IriS::new_unchecked("http://example.org/"));
 /// schema.add_shape(ShapeExprLabel::iri_unchecked("http://example.org/S"), ShapeExpr::empty_shape(), false);
 ///
