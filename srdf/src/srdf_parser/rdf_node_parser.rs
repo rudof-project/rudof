@@ -65,7 +65,7 @@ where
     ///   fn cnv_int(s: String) -> PResult<isize> {
     ///      s.parse().map_err(|_| RDFParseError::Custom{ msg: format!("Error converting {s}")})
     ///   }
-    ///   let mut parser = property_string(&p).flat_map(cnv_int);
+    ///   let mut parser = property_string(p).flat_map(cnv_int);
     ///   assert_eq!(parser.parse(&x, graph).unwrap(), 1)
     /// ```
     fn flat_map<F, O>(self, f: F) -> FlatMap<Self, F>
@@ -103,7 +103,7 @@ where
     ///     }
     /// }
     ///
-    /// let mut parser = property_string(&p).and_then(cnv_int);
+    /// let mut parser = property_string(p).and_then(cnv_int);
     /// assert_eq!(parser.parse(&x, graph).unwrap(), 1)
     /// ```
     fn and_then<F, O, E>(self, f: F) -> AndThen<Self, F>
@@ -126,7 +126,7 @@ where
     ///  "#;
     /// let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
     /// let p = iri!("http://example.org/p");
-    /// let mut parser = property_integer(&p).map(|n| n + 1);
+    /// let mut parser = property_integer(p).map(|n| n + 1);
     /// assert_eq!(parser.parse(&iri!("http://example.org/x"), graph).unwrap(), 2)
     /// ```
     fn map<F, B>(self, f: F) -> Map<Self, F>
@@ -153,7 +153,7 @@ where
     /// let x = IriS::new_unchecked("http://example.org/x");
     /// let p = IriS::new_unchecked("http://example.org/p");
     /// let q = IriS::new_unchecked("http://example.org/q");
-    /// let mut parser = property_bool(&p).and(property_integer(&q));
+    /// let mut parser = property_bool(p).and(property_integer(q));
     /// assert_eq!(parser.parse(&x, graph).unwrap(), (true, 1))
     /// ```
     fn and<P2>(self, parser: P2) -> (Self, P2)
@@ -201,9 +201,9 @@ where
     ///     let mut graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
     ///     let x = IriS::new_unchecked("http://example.org/x");
     ///     let p = IriS::new_unchecked("http://example.org/p");
-    ///     let mut parser = property_integers(&p).then_mut(move |ns| {
+    ///     let mut parser = property_integers(p).then_mut(move |ns| {
     ///         ns.extend(vec![4, 5]);
-    ///         ok(ns)
+    ///         ok(ns.clone())
     ///      });
     ///     assert_eq!(parser.parse(&x, graph).unwrap(), HashSet::from([1, 2, 3, 4, 5]))
     /// ```
@@ -231,7 +231,7 @@ where
     ///  let x = IriS::new_unchecked("http://example.org/x");
     ///  let p = IriS::new_unchecked("http://example.org/p");
     ///  let q = IriS::new_unchecked("http://example.org/q");
-    ///  let mut parser = property_bool(&p).or(property_bool(&q));
+    ///  let mut parser = property_bool(p).or(property_bool(q));
     ///  assert_eq!(parser.parse(&x, graph).unwrap(), true)
     /// ```
     fn or<P2>(self, parser: P2) -> Or<Self, P2>
@@ -254,7 +254,7 @@ where
     ///
     /// ```
     /// # use iri_s::IriS;
-    /// # use srdf::{rdf_parser, RDFParser, RDF, RDFFormat, FocusRDF, ReaderMode, satisfy, RDFNodeParse, Query, Rdf, property_value, rdf_list, set_focus, parse_property_value_as_list, ok};
+    /// # use srdf::{rdf_parser, RDFParser, RDF, RDFFormat, FocusRDF, ReaderMode, satisfy, RDFNodeParse, Rdf, property_value, rdf_list, set_focus, ok};
     /// # use srdf::srdf_graph::SRDFGraph;
     /// let s = r#"prefix : <http://example.org/>
     ///            :x :p :y .
@@ -263,7 +263,7 @@ where
     /// let p = IriS::new_unchecked("http://example.org/p");
     /// let x = IriS::new_unchecked("http://example.org/x");
     /// assert_eq!(
-    ///   property_value(&p).with(ok(&1))
+    ///   *property_value(p).with(ok(&1))
     ///   .parse(&x, graph).unwrap(),
     ///   1
     /// )
@@ -705,7 +705,7 @@ where
 ///
 /// let graph = SRDFGraph::new();
 /// let x = iri!("http://example.org/x");
-/// assert_eq!(iri().parse(&x, graph).unwrap(), x)
+/// assert_eq!(iri().parse(&x, graph).unwrap().as_str(), x.as_str())
 /// ```
 pub fn iri<RDF>() -> ParseIri<RDF>
 where
@@ -748,7 +748,7 @@ where
 ///
 /// let graph = SRDFGraph::new();
 /// let x = iri!("http://example.org/x");
-/// assert_eq!(iri().parse(&x, graph).unwrap(), x)
+/// assert_eq!(iri().parse(&x, graph).unwrap().as_str(), x.as_str())
 /// ```
 pub fn literal<RDF>() -> ParseLiteral<RDF>
 where
@@ -1645,7 +1645,7 @@ where
 /// let graph = SRDFGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
 /// let x = iri!("http://example.org/x");
 /// let p = iri!("http://example.org/p");
-/// let mut parser = property_value(&p).then(move |obj| {
+/// let mut parser = property_value(p).then(move |obj| {
 ///   set_focus(&obj).with(rdf_list())
 /// });
 /// assert_eq!(parser.parse(&x, graph).unwrap(),
