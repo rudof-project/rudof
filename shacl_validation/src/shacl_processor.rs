@@ -146,8 +146,8 @@ fn runner(&mut self) -> &mut dyn Engine<RdfData> {
 /// // the following schema should generate no errors when the conforming graph
 /// // loaded in the previous declaration is used for validation
 /// let schema = std::fs::read_to_string(Path::new("../examples/book.ttl")).unwrap();
-/// let cursor = std::io::Cursor::new(schema);
-/// let compiled_schema = ShaclDataManager::load(cursor, RDFFormat::Turtle, None).unwrap();
+/// let mut cursor = std::io::Cursor::new(schema);
+/// let compiled_schema = ShaclDataManager::load(&mut cursor, "base_uri", RDFFormat::Turtle, None).unwrap();
 ///
 /// let report = graph_validation.validate(&compiled_schema).unwrap();
 ///
