@@ -233,10 +233,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlDeref for ShaclComponent<'
     ); */
 }
 
-pub fn get_shape_from_idx(
-    shapes_graph: &SchemaIR,
-    shape_idx: &ShapeLabelIdx,
-) -> Result<ShapeIR, ConstraintError> {
+pub fn get_shape_from_idx(shapes_graph: &SchemaIR, shape_idx: &ShapeLabelIdx) -> Result<ShapeIR, ConstraintError> {
     shapes_graph
         .get_shape_from_idx(shape_idx)
         .ok_or_else(|| ConstraintError::InternalError {

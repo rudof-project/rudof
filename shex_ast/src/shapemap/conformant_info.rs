@@ -34,7 +34,7 @@ impl ConformantInfo {
                         new_values.push(other.app_info);
                     }
                     Value::Array(new_values)
-                }
+                },
                 _ => todo!(),
             },
         }

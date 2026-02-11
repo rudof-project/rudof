@@ -5,14 +5,14 @@ use std::fmt::{Display, Formatter};
 #[clap(rename_all = "lower")]
 pub enum DCTapResultFormat {
     Internal,
-    JSON,
+    Json,
 }
 
 impl Display for DCTapResultFormat {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
             DCTapResultFormat::Internal => write!(dest, "internal"),
-            DCTapResultFormat::JSON => write!(dest, "json"),
+            DCTapResultFormat::Json => write!(dest, "json"),
         }
     }
 }

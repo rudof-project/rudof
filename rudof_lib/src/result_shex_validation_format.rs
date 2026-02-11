@@ -13,22 +13,22 @@ pub enum ResultShExValidationFormat {
     Details,
     Turtle,
     NTriples,
-    RDFXML,
+    RdfXml,
     TriG,
     N3,
     NQuads,
     Compact,
     Json,
-    CSV,
+    Csv,
 }
 
 impl ResultShExValidationFormat {
-    pub fn to_shapemap_format(&self) -> Result<ShapeMapFormat, RudofError> {
+    pub fn to_shapemap_format(self) -> Result<ShapeMapFormat, RudofError> {
         match self {
             ResultShExValidationFormat::Compact => Ok(ShapeMapFormat::Compact),
             ResultShExValidationFormat::Details => Ok(ShapeMapFormat::Details),
             ResultShExValidationFormat::Json => Ok(ShapeMapFormat::Json),
-            ResultShExValidationFormat::CSV => Ok(ShapeMapFormat::CSV),
+            ResultShExValidationFormat::Csv => Ok(ShapeMapFormat::Csv),
             other => Err(RudofError::UnsupportedShExToShapeMapConversion {
                 format: other.to_string(),
             }),
@@ -41,14 +41,14 @@ impl Display for ResultShExValidationFormat {
         match self {
             ResultShExValidationFormat::Turtle => write!(dest, "turtle"),
             ResultShExValidationFormat::NTriples => write!(dest, "ntriples"),
-            ResultShExValidationFormat::RDFXML => write!(dest, "rdfxml"),
+            ResultShExValidationFormat::RdfXml => write!(dest, "rdfxml"),
             ResultShExValidationFormat::TriG => write!(dest, "trig"),
             ResultShExValidationFormat::N3 => write!(dest, "n3"),
             ResultShExValidationFormat::NQuads => write!(dest, "nquads"),
             ResultShExValidationFormat::Compact => write!(dest, "compact"),
             ResultShExValidationFormat::Json => write!(dest, "json"),
             ResultShExValidationFormat::Details => write!(dest, "details"),
-            ResultShExValidationFormat::CSV => write!(dest, "csv"),
+            ResultShExValidationFormat::Csv => write!(dest, "csv"),
         }
     }
 }
@@ -61,7 +61,7 @@ impl TryFrom<&ResultShExValidationFormat> for ShapeMapFormat {
             ResultShExValidationFormat::Compact => Ok(ShapeMapFormat::Compact),
             ResultShExValidationFormat::Details => Ok(ShapeMapFormat::Details),
             ResultShExValidationFormat::Json => Ok(ShapeMapFormat::Json),
-            ResultShExValidationFormat::CSV => Ok(ShapeMapFormat::CSV),
+            ResultShExValidationFormat::Csv => Ok(ShapeMapFormat::Csv),
             other => Err(RudofError::UnsupportedShExToShapeMapConversion {
                 format: format!("{other:?}"),
             }),
@@ -76,14 +76,14 @@ impl FromStr for ResultShExValidationFormat {
         match s.to_lowercase().as_str() {
             "turtle" => Ok(ResultShExValidationFormat::Turtle),
             "ntriples" => Ok(ResultShExValidationFormat::NTriples),
-            "rdfxml" => Ok(ResultShExValidationFormat::RDFXML),
+            "rdfxml" => Ok(ResultShExValidationFormat::RdfXml),
             "trig" => Ok(ResultShExValidationFormat::TriG),
             "n3" => Ok(ResultShExValidationFormat::N3),
             "nquads" => Ok(ResultShExValidationFormat::NQuads),
             "compact" => Ok(ResultShExValidationFormat::Compact),
             "details" => Ok(ResultShExValidationFormat::Details),
             "json" => Ok(ResultShExValidationFormat::Json),
-            "csv" => Ok(ResultShExValidationFormat::CSV),
+            "csv" => Ok(ResultShExValidationFormat::Csv),
             other => Err(RudofError::UnsupportedShExResultFormat {
                 format: other.to_string(),
             }),

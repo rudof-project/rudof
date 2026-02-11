@@ -21,9 +21,7 @@ impl Record {
         self.map.keys().collect()
     }
     pub fn new() -> Self {
-        Record {
-            map: HashMap::new(),
-        }
+        Record { map: HashMap::new() }
     }
 
     pub fn with_key_value(mut self, key: &str, value: Value) -> Self {

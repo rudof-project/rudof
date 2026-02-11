@@ -332,14 +332,14 @@ impl PyGeneratorConfig {
 #[derive(PartialEq, Clone, Copy)]
 pub enum PySchemaFormat {
     ShEx,
-    SHACL,
+    Shacl,
 }
 
 impl From<PySchemaFormat> for rudof_generate::SchemaFormat {
     fn from(val: PySchemaFormat) -> Self {
         match val {
             PySchemaFormat::ShEx => rudof_generate::SchemaFormat::ShEx,
-            PySchemaFormat::SHACL => rudof_generate::SchemaFormat::SHACL,
+            PySchemaFormat::Shacl => rudof_generate::SchemaFormat::Shacl,
         }
     }
 }
@@ -386,9 +386,7 @@ impl From<PyCardinalityStrategy> for rudof_generate::config::CardinalityStrategy
             PyCardinalityStrategy::Minimum => rudof_generate::config::CardinalityStrategy::Minimum,
             PyCardinalityStrategy::Maximum => rudof_generate::config::CardinalityStrategy::Maximum,
             PyCardinalityStrategy::Random => rudof_generate::config::CardinalityStrategy::Random,
-            PyCardinalityStrategy::Balanced => {
-                rudof_generate::config::CardinalityStrategy::Balanced
-            }
+            PyCardinalityStrategy::Balanced => rudof_generate::config::CardinalityStrategy::Balanced,
         }
     }
 }
@@ -482,9 +480,10 @@ impl PyDataGenerator {
     ///     RuntimeError: If the generator is not initialized.
     ///     ValueError: If the schema cannot be loaded or parsed.
     pub fn load_shex_schema(&mut self, path: &str) -> PyResult<()> {
-        let generator = self.inner.as_mut().ok_or_else(|| {
-            PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Generator not initialized")
-        })?;
+        let generator = self
+            .inner
+            .as_mut()
+            .ok_or_else(|| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Generator not initialized"))?;
 
         self.runtime
             .block_on(generator.load_shex_schema(path))
@@ -502,9 +501,10 @@ impl PyDataGenerator {
     ///     RuntimeError: If the generator is not initialized.
     ///     ValueError: If the schema cannot be loaded or parsed.
     pub fn load_shacl_schema(&mut self, path: &str) -> PyResult<()> {
-        let generator = self.inner.as_mut().ok_or_else(|| {
-            PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Generator not initialized")
-        })?;
+        let generator = self
+            .inner
+            .as_mut()
+            .ok_or_else(|| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Generator not initialized"))?;
 
         self.runtime
             .block_on(generator.load_shacl_schema(path))
@@ -522,9 +522,10 @@ impl PyDataGenerator {
     ///     RuntimeError: If the generator is not initialized.
     ///     ValueError: If the schema cannot be loaded or parsed.
     pub fn load_schema_auto(&mut self, path: &str) -> PyResult<()> {
-        let generator = self.inner.as_mut().ok_or_else(|| {
-            PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Generator not initialized")
-        })?;
+        let generator = self
+            .inner
+            .as_mut()
+            .ok_or_else(|| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Generator not initialized"))?;
 
         self.runtime
             .block_on(generator.load_schema_auto(path))
@@ -539,9 +540,10 @@ impl PyDataGenerator {
     ///     RuntimeError: If the generator is not initialized.
     ///     ValueError: If data generation fails.
     pub fn generate(&mut self) -> PyResult<()> {
-        let generator = self.inner.as_mut().ok_or_else(|| {
-            PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Generator not initialized")
-        })?;
+        let generator = self
+            .inner
+            .as_mut()
+            .ok_or_else(|| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Generator not initialized"))?;
 
         self.runtime
             .block_on(generator.generate())
@@ -559,14 +561,11 @@ impl PyDataGenerator {
     /// Raises:
     ///     RuntimeError: If the generator is not initialized.
     ///     ValueError: If schema loading or generation fails.
-    pub fn run_with_format(
-        &mut self,
-        schema_path: &str,
-        format: Option<PySchemaFormat>,
-    ) -> PyResult<()> {
-        let generator = self.inner.as_mut().ok_or_else(|| {
-            PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Generator not initialized")
-        })?;
+    pub fn run_with_format(&mut self, schema_path: &str, format: Option<PySchemaFormat>) -> PyResult<()> {
+        let generator = self
+            .inner
+            .as_mut()
+            .ok_or_else(|| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Generator not initialized"))?;
 
         let rust_format = format.map(|f| f.into());
 

@@ -15,7 +15,7 @@ shapes:User {
 } AND {
   :owner @:Person
 } OR {
-  :owner @:Association  
+  :owner @:Association
 }
 
 :Person shapes:User AND {
@@ -25,6 +25,3 @@ shapes:User {
 :Association {
     :name xsd:string ;
 }
-
-
-

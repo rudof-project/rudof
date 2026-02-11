@@ -53,16 +53,14 @@ impl InputSpec {
     pub fn as_iri(&self) -> Result<IriS, InputSpecError> {
         match self {
             InputSpec::Path(path) => {
-                let path_absolute =
-                    path.canonicalize()
-                        .map_err(|err| InputSpecError::AbsolutePathError {
-                            path: path.to_string_lossy().to_string(),
-                            error: err,
-                        })?;
+                let path_absolute = path.canonicalize().map_err(|err| InputSpecError::AbsolutePathError {
+                    path: path.to_string_lossy().to_string(),
+                    error: err,
+                })?;
                 let url = Url::from_file_path(path_absolute)
                     .map_err(|_| InputSpecError::FromFilePath { path: path.clone() })?;
                 Ok(IriS::new_unchecked(url.as_str()))
-            }
+            },
             InputSpec::Stdin => Ok(IriS::new_unchecked("file://stdin")),
             InputSpec::Str(_s) => Ok(IriS::new_unchecked("file://str")),
             InputSpec::Url(url) => Ok(IriS::new_unchecked(url.to_string().as_str())),
@@ -70,11 +68,7 @@ impl InputSpec {
     }
 
     // The initial version of this code was inspired by [patharg](https://github.com/jwodder/patharg/blob/edd912e865143646fd7bb4c7796aa919fa5622b3/src/lib.rs#L264)
-    pub fn open_read(
-        &self,
-        accept: Option<&str>,
-        context_error: &str,
-    ) -> Result<InputSpecReader, InputSpecError> {
+    pub fn open_read(&self, accept: Option<&str>, context_error: &str) -> Result<InputSpecReader, InputSpecError> {
         match self {
             InputSpec::Stdin => Ok(Either::Left(io::stdin().lock())),
             InputSpec::Path(p) => match fs::File::open(p) {
@@ -91,29 +85,22 @@ impl InputSpec {
                     None => url_spec.client.get(url_spec.url.as_str()),
                     Some(accept_str) => {
                         let mut headers = reqwest::header::HeaderMap::new();
-                        let accept_value = HeaderValue::from_str(accept_str).map_err(|e| {
-                            InputSpecError::AcceptValue {
+                        let accept_value =
+                            HeaderValue::from_str(accept_str).map_err(|e| InputSpecError::AcceptValue {
                                 context: context_error.to_string(),
                                 str: accept_str.to_string(),
                                 error: e.to_string(),
-                            }
-                        })?;
+                            })?;
                         headers.insert(ACCEPT, accept_value);
-                        let user_agent_rudof = HeaderValue::from_str("rudof").map_err(|e| {
-                            InputSpecError::UserAgentValue {
-                                error: e.to_string(),
-                            }
-                        })?;
+                        let user_agent_rudof = HeaderValue::from_str("rudof")
+                            .map_err(|e| InputSpecError::UserAgentValue { error: e.to_string() })?;
                         headers.insert(USER_AGENT, user_agent_rudof);
-                        let client =
-                            Client::builder()
-                                .default_headers(headers)
-                                .build()
-                                .map_err(|e| InputSpecError::ClientBuilderError {
-                                    error: format!("{e}"),
-                                })?;
+                        let client = Client::builder()
+                            .default_headers(headers)
+                            .build()
+                            .map_err(|e| InputSpecError::ClientBuilderError { error: format!("{e}") })?;
                         client.get(url_spec.url.as_str())
-                    }
+                    },
                 }
                 .send()
                 .map_err(|e| InputSpecError::UrlDerefError {
@@ -122,30 +109,27 @@ impl InputSpec {
                 })?;
                 let reader = BufReader::new(resp);
                 Ok(Either::Right(Either::Right(Either::Left(reader))))
-            }
+            },
             InputSpec::Str(s) => {
                 let cursor = Cursor::new(s.clone().into_bytes());
                 let reader = BufReader::new(cursor);
                 Ok(Either::Right(Either::Right(Either::Right(reader))))
-            }
+            },
         }
     }
 
     pub fn guess_base(&self) -> Result<String, InputSpecError> {
         match self {
             InputSpec::Path(path) => {
-                let absolute_path =
-                    fs::canonicalize(path).map_err(|err| InputSpecError::AbsolutePathError {
-                        path: path.to_string_lossy().to_string(),
-                        error: err,
-                    })?;
-                let url: Url = Url::from_file_path(absolute_path).map_err(|_| {
-                    InputSpecError::GuessBaseFromPath {
-                        path: path.to_path_buf(),
-                    }
+                let absolute_path = fs::canonicalize(path).map_err(|err| InputSpecError::AbsolutePathError {
+                    path: path.to_string_lossy().to_string(),
+                    error: err,
+                })?;
+                let url: Url = Url::from_file_path(absolute_path).map_err(|_| InputSpecError::GuessBaseFromPath {
+                    path: path.to_path_buf(),
                 })?;
                 Ok(url.to_string())
-            }
+            },
             InputSpec::Stdin => Ok("stdin://".to_string()),
             InputSpec::Url(url_spec) => Ok(url_spec.url.to_string()),
             InputSpec::Str(_) => Ok("string://".to_string()),
@@ -162,19 +146,18 @@ impl FromStr for InputSpec {
             _ if s.starts_with("http://") => {
                 let url_spec = UrlSpec::parse(s)?;
                 Ok(InputSpec::Url(url_spec))
-            }
+            },
             _ if s.starts_with("https://") => {
                 let url_spec = UrlSpec::parse(s)?;
                 Ok(InputSpec::Url(url_spec))
-            }
+            },
             _ if Path::new(s).exists() => {
-                let pb: PathBuf =
-                    PathBuf::from_str(s).map_err(|e| InputSpecError::ParsingPathError {
-                        str: s.to_string(),
-                        error: format!("{e}"),
-                    })?;
+                let pb: PathBuf = PathBuf::from_str(s).map_err(|e| InputSpecError::ParsingPathError {
+                    str: s.to_string(),
+                    error: format!("{e}"),
+                })?;
                 Ok(InputSpec::Path(pb))
-            }
+            },
             _ => Ok(InputSpec::Str(s.to_string())),
         }
     }
@@ -183,20 +166,13 @@ impl FromStr for InputSpec {
 /// This type implements [`std::io::BufRead`].
 pub type InputSpecReader = Either<
     StdinLock<'static>,
-    Either<
-        BufReader<fs::File>,
-        Either<BufReader<reqwest::blocking::Response>, BufReader<std::io::Cursor<Vec<u8>>>>,
-    >,
+    Either<BufReader<fs::File>, Either<BufReader<reqwest::blocking::Response>, BufReader<std::io::Cursor<Vec<u8>>>>>,
 >;
 
 #[derive(Error, Debug)]
 pub enum InputSpecError {
     #[error("IO Error reading {msg} from {path}: {err}")]
-    OpenPathError {
-        msg: String,
-        path: PathBuf,
-        err: io::Error,
-    },
+    OpenPathError { msg: String, path: PathBuf, err: io::Error },
 
     #[error("IO Error: {err}")]
     IOError {
@@ -260,12 +236,9 @@ impl UrlSpec {
             str: str.to_string(),
             error: format!("{e}"),
         })?;
-        let client =
-            ClientBuilder::new()
-                .build()
-                .map_err(|e| InputSpecError::ClientBuilderError {
-                    error: format!("{e}"),
-                })?;
+        let client = ClientBuilder::new()
+            .build()
+            .map_err(|e| InputSpecError::ClientBuilderError { error: format!("{e}") })?;
         Ok(UrlSpec { url, client })
     }
 

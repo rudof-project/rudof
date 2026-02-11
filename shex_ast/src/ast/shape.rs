@@ -28,11 +28,7 @@ pub struct Shape {
 }
 
 impl Shape {
-    pub fn new(
-        closed: Option<bool>,
-        extra: Option<Vec<IriRef>>,
-        expression: Option<TripleExpr>,
-    ) -> Self {
+    pub fn new(closed: Option<bool>, extra: Option<Vec<IriRef>>, expression: Option<TripleExpr>) -> Self {
         Shape {
             closed,
             extra,
@@ -112,14 +108,14 @@ impl Deref for Shape {
                     ves.push(e.clone().deref(base, prefixmap)?);
                 }
                 Some(ves)
-            }
+            },
         };
         let new_expr = match &self.expression {
             None => None,
             Some(expr) => {
                 let ed = expr.clone().deref(base, prefixmap)?;
                 Some(ed)
-            }
+            },
         };
         let new_anns = match &self.annotations {
             None => None,
@@ -129,7 +125,7 @@ impl Deref for Shape {
                     new_as.push(a.clone().deref(base, prefixmap)?);
                 }
                 Some(new_as)
-            }
+            },
         };
         let new_sem_acts = match &self.sem_acts {
             None => None,
@@ -139,7 +135,7 @@ impl Deref for Shape {
                     new_sas.push(sa.clone().deref(base, prefixmap)?);
                 }
                 Some(new_sas)
-            }
+            },
         };
         let new_extends = match &self.extends {
             None => None,
@@ -149,7 +145,7 @@ impl Deref for Shape {
                     new_extends.push(e.clone().deref(base, prefixmap)?);
                 }
                 Some(new_extends)
-            }
+            },
         };
 
         let shape = Shape {

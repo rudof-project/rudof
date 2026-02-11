@@ -66,13 +66,12 @@ impl ShapeProcessor {
 
         // Parse ShEx file in a blocking task to avoid blocking the async runtime
         let shapes = tokio::task::spawn_blocking(move || {
-            let schema = ShExParser::parse_buf(&path, None).map_err(|e| {
-                DataGeneratorError::ShexParsing(format!("Failed to parse ShEx: {e}"))
-            })?;
+            let schema = ShExParser::parse_buf(&path, None)
+                .map_err(|e| DataGeneratorError::ShexParsing(format!("Failed to parse ShEx: {e}")))?;
 
-            schema.shapes().ok_or_else(|| {
-                DataGeneratorError::ShexParsing("No shapes found in schema".to_string())
-            })
+            schema
+                .shapes()
+                .ok_or_else(|| DataGeneratorError::ShexParsing("No shapes found in schema".to_string()))
         })
         .await??;
 
@@ -88,13 +87,9 @@ impl ShapeProcessor {
         self.dependency_graph.clear();
 
         // Process each shape in parallel
-        let shape_futures: Vec<_> = shapes
-            .iter()
-            .map(|shape| self.process_single_shape(shape))
-            .collect();
+        let shape_futures: Vec<_> = shapes.iter().map(|shape| self.process_single_shape(shape)).collect();
 
-        let processed_shapes: Result<Vec<ShapeInfo>> =
-            futures::future::try_join_all(shape_futures).await;
+        let processed_shapes: Result<Vec<ShapeInfo>> = futures::future::try_join_all(shape_futures).await;
         let processed_shapes = processed_shapes?;
 
         // Build the dependency graph
@@ -144,7 +139,7 @@ impl ShapeProcessor {
                 for e in expressions {
                     Self::extract_dependencies_and_properties(&e.te, dependencies, properties);
                 }
-            }
+            },
             TripleExpr::TripleConstraint {
                 predicate,
                 value_expr,
@@ -177,7 +172,7 @@ impl ShapeProcessor {
                                 max_cardinality: max_card,
                                 constraints: vec![], // TODO: Extract constraints from ShEx
                             });
-                        }
+                        },
                         ShapeExpr::NodeConstraint(node_constraint) => {
                             // Extract datatype from node constraint (data property)
                             let datatype = if let Some(dt) = node_constraint.datatype() {
@@ -195,20 +190,18 @@ impl ShapeProcessor {
                                 max_cardinality: max_card,
                                 constraints: vec![], // TODO: Extract constraints from node constraint
                             });
-                        }
+                        },
                         _ => {
                             // Other shape expressions - treat as generic string property
                             properties.push(PropertyInfo {
                                 property_iri,
-                                datatype: Some(
-                                    "http://www.w3.org/2001/XMLSchema#string".to_string(),
-                                ),
+                                datatype: Some("http://www.w3.org/2001/XMLSchema#string".to_string()),
                                 shape_ref: None,
                                 min_cardinality: min_card,
                                 max_cardinality: max_card,
                                 constraints: vec![], // TODO: Extract constraints from shape expression
                             });
-                        }
+                        },
                     }
                 } else {
                     // No value expression - treat as generic string property
@@ -221,10 +214,10 @@ impl ShapeProcessor {
                         constraints: vec![], // TODO: Extract constraints
                     });
                 }
-            }
-            TripleExpr::TripleExprRef(_) => {
+            },
+            TripleExpr::Ref(_) => {
                 // Handle triple expression references if needed
-            }
+            },
         }
     }
 
@@ -269,10 +262,7 @@ impl ShapeProcessor {
         // Simple format detection based on file extension
         if path_str.ends_with(".shex") {
             self.load_shex_schema(path).await
-        } else if path_str.ends_with(".ttl")
-            || path_str.ends_with(".rdf")
-            || path_str.ends_with(".nt")
-        {
+        } else if path_str.ends_with(".ttl") || path_str.ends_with(".rdf") || path_str.ends_with(".nt") {
             // Assume SHACL for RDF formats
             self.load_shacl_schema(path).await
         } else {

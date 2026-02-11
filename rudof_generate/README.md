@@ -5,7 +5,7 @@ A modern, configurable synthetic RDF data generator that creates realistic data 
 ## Features
 
 - **Configuration-driven**: Use TOML/JSON configuration files to control generation parameters
-- **Parallel processing**: Generate data using multiple threads for better performance  
+- **Parallel processing**: Generate data using multiple threads for better performance
 - **Parallel writing**: Automatically write to multiple files simultaneously for optimal I/O performance
 - **Flexible field generation**: Composable field generators for different data types
 - **ShEx and SHACL schema support**: Generate data that conforms to both ShEx shape definitions and SHACL constraints
@@ -67,30 +67,30 @@ cargo run -p data_generator -- --help
 @prefix :       <http://example.org/> .
 @prefix sh:     <http://www.w3.org/ns/shacl#> .
 @prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
-        
+
 :Person a sh:NodeShape ;
    sh:closed true ;
-   sh:property [                  
-    sh:path     :name ; 
-    sh:minCount 1; 
+   sh:property [
+    sh:path     :name ;
+    sh:minCount 1;
     sh:maxCount 1;
     sh:datatype xsd:string ;
   ] ;
-  sh:property [                   
-   sh:path     :birthDate ; 
-   sh:maxCount 1; 
+  sh:property [
+   sh:path     :birthDate ;
+   sh:maxCount 1;
    sh:datatype xsd:date ;
   ] ;
-  sh:property [                   
-   sh:path     :enrolledIn ; 
+  sh:property [
+   sh:path     :enrolledIn ;
    sh:node    :Course ;
   ] .
 
 :Course a sh:NodeShape;
    sh:closed true ;
-   sh:property [                  
-    sh:path     :name ; 
-    sh:minCount 1; 
+   sh:property [
+    sh:path     :name ;
+    sh:minCount 1;
     sh:maxCount 1;
     sh:datatype xsd:string ;
   ] .
@@ -133,7 +133,7 @@ cp data_generator/examples/config.toml my_config.toml
 # For SHACL schemas (.ttl, .rdf, .nt files)
 data_generator --config my_config.toml --schema your_schema.ttl
 
-# For ShEx schemas (.shex files)  
+# For ShEx schemas (.shex files)
 data_generator --config my_config.toml --schema your_schema.shex
 
 # Auto-detection works - no need to specify format
@@ -213,7 +213,7 @@ cardinality_strategy = "Random"
 # Weighted distribution for different shape types
 [generation.distribution_weights]
 "http://example.org/Person" = 0.5        # 50% persons
-"http://example.org/Organization" = 0.3  # 30% organizations  
+"http://example.org/Organization" = 0.3  # 30% organizations
 "http://example.org/Course" = 0.2        # 20% courses
 
 [field_generators.default]
@@ -332,7 +332,7 @@ Set `parallel_file_count = 0` to enable automatic detection:
 # Small dataset (50 entities) → automatically uses 1 file
 cargo run --bin data_generator -- -c examples/small_auto.toml -s examples/schema_file
 
-# Medium dataset (1000 entities) → automatically uses 8 files  
+# Medium dataset (1000 entities) → automatically uses 8 files
 cargo run --bin data_generator -- -c examples/auto_parallel.toml -s examples/schema_file
 
 # Large dataset (5000 entities) → automatically uses 16 files
@@ -432,7 +432,7 @@ parallel_file_count = 0      # 0 = auto-detect optimal count
 - `seed`: Random seed for reproducible results (optional)
 - `entity_distribution`: How to distribute entities across shapes
   - `"Equal"`: Equal distribution across all shapes
-  - `"Weighted"`: Use weights to control distribution  
+  - `"Weighted"`: Use weights to control distribution
   - `"Custom"`: Specify exact counts per shape
 - `cardinality_strategy`: How to handle property cardinalities
   - `"Minimum"`: Use minimum cardinality values
@@ -446,7 +446,7 @@ parallel_file_count = 0      # 0 = auto-detect optimal count
 - `datatypes`: Custom generators for specific XSD datatypes
 - `properties`: Custom generators for specific properties
 
-#### Output Settings  
+#### Output Settings
 - `path`: Output file path
 - `format`: Output format (`"Turtle"`, `"NTriples"`, `"JSONLD"`, `"RdfXml"`)
 - `compress`: Whether to compress output file
@@ -498,7 +498,7 @@ Example statistics:
 The generator is built with a modular, functional architecture:
 
 - `config/`: Configuration management and validation
-- `field_generators/`: Composable field value generators  
+- `field_generators/`: Composable field value generators
 - `shape_processing/`: ShEx schema parsing and analysis
 - `parallel_generation/`: Parallel data generation engine
 - `output/`: Multiple format output writers

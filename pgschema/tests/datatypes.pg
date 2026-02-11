@@ -1,6 +1,6 @@
-(n1 {Person} [ 
-     name: "Alice", 
-     age: 23, 
+(n1 {Person} [
+     name: "Alice",
+     age: 23,
      birthDate: DATE "2010-07-22",
-     hasChildren: FALSE 
+     hasChildren: FALSE
 ])

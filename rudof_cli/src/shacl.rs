@@ -53,14 +53,7 @@ pub fn run_shacl(
     )?;
     if let Some(schema) = schema {
         let shapes_format = (*shapes_format).unwrap_or_default();
-        add_shacl_schema_rudof(
-            &mut rudof,
-            schema,
-            &shapes_format,
-            base_shapes,
-            reader_mode,
-            config,
-        )?;
+        add_shacl_schema_rudof(&mut rudof, schema, &shapes_format, base_shapes, reader_mode, config)?;
         trace!("Compiling SHACL schema from shapes graph");
         rudof.compile_shacl(&ShapesGraphSource::current_schema())
     } else {
@@ -140,14 +133,7 @@ pub fn run_validate_shacl(
 
     let validation_report = if let Some(schema) = schema {
         let shapes_format = (*shapes_format).unwrap_or_default();
-        add_shacl_schema_rudof(
-            &mut rudof,
-            schema,
-            &shapes_format,
-            base_shapes,
-            reader_mode,
-            config,
-        )?;
+        add_shacl_schema_rudof(&mut rudof, schema, &shapes_format, base_shapes, reader_mode, config)?;
         rudof.validate_shacl(&mode, &ShapesGraphSource::current_schema())
     } else {
         rudof.validate_shacl(&mode, &ShapesGraphSource::current_data())

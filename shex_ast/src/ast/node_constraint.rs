@@ -67,11 +67,7 @@ impl NodeConstraint {
     }
 
     pub fn with_xsfacets(mut self, facets: Vec<XsFacet>) -> Self {
-        self.xs_facet = if facets.is_empty() {
-            None
-        } else {
-            Some(facets)
-        };
+        self.xs_facet = if facets.is_empty() { None } else { Some(facets) };
         self
     }
 
@@ -150,11 +146,7 @@ impl NodeConstraint {
 }
 
 impl Deref for NodeConstraint {
-    fn deref(
-        self,
-        base: Option<&iri_s::IriS>,
-        prefixmap: Option<&prefixmap::PrefixMap>,
-    ) -> Result<Self, DerefError>
+    fn deref(self, base: Option<&iri_s::IriS>, prefixmap: Option<&prefixmap::PrefixMap>) -> Result<Self, DerefError>
     where
         Self: Sized,
     {
@@ -188,19 +180,19 @@ impl Serialize for NodeConstraint {
             None => (),
             Some(nk) => {
                 map.serialize_entry("nodeKind", &format!("{nk}").to_lowercase())?;
-            }
+            },
         }
         match datatype {
             None => (),
             Some(dt) => {
                 map.serialize_entry("datatype", &format!("{dt}"))?;
-            }
+            },
         }
         match values {
             None => (),
             Some(values) => {
                 map.serialize_entry("values", &values)?;
-            }
+            },
         }
         match xs_facet {
             None => (),
@@ -213,38 +205,23 @@ impl Serialize for NodeConstraint {
                             StringFacet::MaxLength(ml) => map.serialize_entry("maxlength", ml)?,
                             StringFacet::Pattern(Pattern { str, flags: None }) => {
                                 map.serialize_entry("pattern", str)?;
-                            }
-                            StringFacet::Pattern(Pattern {
-                                str,
-                                flags: Some(fs),
-                            }) => {
+                            },
+                            StringFacet::Pattern(Pattern { str, flags: Some(fs) }) => {
                                 map.serialize_entry("pattern", str)?;
                                 map.serialize_entry("flags", fs)?;
-                            }
+                            },
                         },
                         XsFacet::NumericFacet(nf) => match nf {
-                            NumericFacet::FractionDigits(fd) => {
-                                map.serialize_entry("fractiondigits", fd)?
-                            }
-                            NumericFacet::TotalDigits(td) => {
-                                map.serialize_entry("totaldigits", td)?
-                            }
-                            NumericFacet::MaxExclusive(me) => {
-                                map.serialize_entry("maxexclusive", me)?
-                            }
-                            NumericFacet::MaxInclusive(mi) => {
-                                map.serialize_entry("maxinclusive", mi)?
-                            }
-                            NumericFacet::MinInclusive(mi) => {
-                                map.serialize_entry("mininclusive", mi)?
-                            }
-                            NumericFacet::MinExclusive(me) => {
-                                map.serialize_entry("minexclusive", me)?
-                            }
+                            NumericFacet::FractionDigits(fd) => map.serialize_entry("fractiondigits", fd)?,
+                            NumericFacet::TotalDigits(td) => map.serialize_entry("totaldigits", td)?,
+                            NumericFacet::MaxExclusive(me) => map.serialize_entry("maxexclusive", me)?,
+                            NumericFacet::MaxInclusive(mi) => map.serialize_entry("maxinclusive", mi)?,
+                            NumericFacet::MinInclusive(mi) => map.serialize_entry("mininclusive", mi)?,
+                            NumericFacet::MinExclusive(me) => map.serialize_entry("minexclusive", me)?,
                         },
                     }
                 }
-            }
+            },
         }
         map.end()
     }
@@ -284,9 +261,7 @@ impl<'de> Deserialize<'de> for NodeConstraint {
                     type Value = Field;
 
                     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                        formatter.write_str(
-                            "`type` or `nodeKind` or `datatype` or some xsfacet or `values` ",
-                        )
+                        formatter.write_str("`type` or `nodeKind` or `datatype` or some xsfacet or `values` ")
                     }
 
                     fn visit_str<E>(self, value: &str) -> Result<Field, E>
@@ -359,104 +334,100 @@ impl<'de> Deserialize<'de> for NodeConstraint {
                                 "literal" => Some(NodeKind::Literal),
                                 "nonliteral" => Some(NodeKind::NonLiteral),
                                 _ => {
-                                    return Err(de::Error::custom(format!(
-                                        "Unexpected value for `nodeKind`: {value}"
-                                    )));
-                                }
+                                    return Err(de::Error::custom(format!("Unexpected value for `nodeKind`: {value}")));
+                                },
                             }
-                        }
+                        },
                         Field::Datatype => {
                             if datatype.is_some() {
                                 return Err(de::Error::duplicate_field("datatype"));
                             }
                             let iri: IriRef = map.next_value()?;
                             datatype = Some(iri);
-                        }
+                        },
                         Field::Values => {
                             if values.is_some() {
                                 return Err(de::Error::duplicate_field("values"));
                             }
                             let vs: Vec<ValueSetValue> = map.next_value()?;
                             values = Some(vs)
-                        }
+                        },
                         Field::Pattern => {
                             if pattern.is_some() {
                                 return Err(de::Error::duplicate_field("pattern"));
                             }
                             pattern = Some(map.next_value()?);
-                        }
+                        },
                         Field::Length => {
                             if length.is_some() {
                                 return Err(de::Error::duplicate_field("length"));
                             }
                             length = Some(map.next_value()?);
-                        }
+                        },
                         Field::MinLength => {
                             if minlength.is_some() {
                                 return Err(de::Error::duplicate_field("minlength"));
                             }
                             minlength = Some(map.next_value()?);
-                        }
+                        },
                         Field::MaxLength => {
                             if maxlength.is_some() {
                                 return Err(de::Error::duplicate_field("maxlength"));
                             }
                             maxlength = Some(map.next_value()?);
-                        }
+                        },
                         Field::MinInclusive => {
                             if mininclusive.is_some() {
                                 return Err(de::Error::duplicate_field("mininclusive"));
                             }
                             mininclusive = Some(map.next_value()?);
-                        }
+                        },
                         Field::MaxInclusive => {
                             if maxinclusive.is_some() {
                                 return Err(de::Error::duplicate_field("maxinclusive"));
                             }
                             maxinclusive = Some(map.next_value()?);
-                        }
+                        },
                         Field::MinExclusive => {
                             if minexclusive.is_some() {
                                 return Err(de::Error::duplicate_field("minexclusive"));
                             }
                             minexclusive = Some(map.next_value()?);
-                        }
+                        },
                         Field::MaxExclusive => {
                             if maxexclusive.is_some() {
                                 return Err(de::Error::duplicate_field("maxexclusive"));
                             }
                             maxexclusive = Some(map.next_value()?);
-                        }
+                        },
                         Field::TotalDigits => {
                             if totaldigits.is_some() {
                                 return Err(de::Error::duplicate_field("totaldigits"));
                             }
                             totaldigits = Some(map.next_value()?);
-                        }
+                        },
                         Field::FractionDigits => {
                             if fractiondigits.is_some() {
                                 return Err(de::Error::duplicate_field("fractiondigits"));
                             }
                             fractiondigits = Some(map.next_value()?);
-                        }
+                        },
                         Field::Type => {
                             if type_.is_some() {
                                 return Err(de::Error::duplicate_field("type"));
                             }
                             let value: String = map.next_value()?;
                             if value != "NodeConstraint" {
-                                return Err(de::Error::custom(format!(
-                                    "Expected NodeConstraint, found: {value}"
-                                )));
+                                return Err(de::Error::custom(format!("Expected NodeConstraint, found: {value}")));
                             }
                             type_ = Some("NodeConstraint".to_string());
-                        }
+                        },
                         Field::Flags => {
                             if flags.is_some() {
                                 return Err(de::Error::duplicate_field("flags"));
                             }
                             flags = Some(map.next_value()?);
-                        }
+                        },
                     }
                 }
                 let mut nc = NodeConstraint::new();

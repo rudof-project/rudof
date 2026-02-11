@@ -34,10 +34,7 @@ where
     RangeLowerBoundBiggerMax { symbol: K, card: Cardinality },
 
     #[error("Min > Max in cardinality {card} for {expr}")]
-    RangeLowerBoundBiggerMaxExpr {
-        expr: Box<Rbe<K, V, R>>,
-        card: Cardinality,
-    },
+    RangeLowerBoundBiggerMaxExpr { expr: Box<Rbe<K, V, R>>, card: Cardinality },
 
     #[error("Derived expr: {non_nullable_rbe} is not nullable\nExpr {expr}")]
     NonNullableMatch {
@@ -77,9 +74,7 @@ where
     #[error("All values in or branch failed")]
     MkOrValuesFail,
 
-    #[error(
-        "Error matching iterator: {error_msg}\nExpr: {expr}\nCurrent:{current}\nkey: {key}\nopen: {open}"
-    )]
+    #[error("Error matching iterator: {error_msg}\nExpr: {expr}\nCurrent:{current}\nkey: {key}\nopen: {open}")]
     DerivIterError {
         error_msg: String,
         processed: Vec<(K, V)>,

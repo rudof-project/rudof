@@ -111,7 +111,7 @@ impl Value {
                 })?;
                 let matches = regex.is_match(s);
                 Ok(matches)
-            }
+            },
             _ => Err(PgsError::TypeMismatch {
                 operation: "regex_match".into(),
                 expected: "String".into(),

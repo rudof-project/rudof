@@ -29,17 +29,10 @@ impl<S: NeighsRDF + Debug> Validator<S> for In {
         _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let check = |value_node: &S::Term| {
-            let values: Vec<_> = self
-                .values()
-                .iter()
-                .map(|node| S::object_as_term(node))
-                .collect();
+            let values: Vec<_> = self.values().iter().map(|node| S::object_as_term(node)).collect();
             !values.contains(value_node)
         };
-        let message = format!(
-            "In constraint not satisfied. Expected one of: {:?}",
-            self.values()
-        );
+        let message = format!("In constraint not satisfied. Expected one of: {:?}", self.values());
         validate_with(
             component,
             shape,

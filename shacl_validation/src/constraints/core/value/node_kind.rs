@@ -34,11 +34,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Nodekind {
         _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node_kind = |value_node: &S::Term| {
-            match (
-                value_node.is_blank_node(),
-                value_node.is_iri(),
-                value_node.is_literal(),
-            ) {
+            match (value_node.is_blank_node(), value_node.is_iri(), value_node.is_literal()) {
                 (true, false, false) => matches!(
                     self.node_kind(),
                     NodeKind::BlankNode | NodeKind::BlankNodeOrIri | NodeKind::BlankNodeOrLiteral
@@ -111,14 +107,6 @@ impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Nodekind {
             "Nodekind constraint not satisfied. Expected node kind: {}",
             self.node_kind()
         );
-        validate_ask_with(
-            component,
-            shape,
-            store,
-            value_nodes,
-            query,
-            &message,
-            maybe_path,
-        )
+        validate_ask_with(component, shape, store, value_nodes, query, &message, maybe_path)
     }
 }

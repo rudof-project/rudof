@@ -55,23 +55,20 @@ pub async fn run_mcp_http(
 
     // Configure allowed origins
     let origin_config = match allowed_networks {
-        Some(networks) if !networks.is_empty() => OriginConfig::new(networks)
-            .map_err(|e| anyhow::anyhow!("Invalid network configuration: {}", e))?,
+        Some(networks) if !networks.is_empty() => {
+            OriginConfig::new(networks).map_err(|e| anyhow::anyhow!("Invalid network configuration: {}", e))?
+        },
         _ => {
             tracing::info!("No custom networks specified, using localhost-only configuration");
             OriginConfig::localhost_only()
-        }
+        },
     };
 
     let session_manager = Arc::new(LocalSessionManager::default());
 
     let mcp_service_factory = move || Ok(RudofMcpService::new());
 
-    let rmcp_service = StreamableHttpService::new(
-        mcp_service_factory,
-        session_manager.clone(),
-        Default::default(),
-    );
+    let rmcp_service = StreamableHttpService::new(mcp_service_factory, session_manager.clone(), Default::default());
 
     // Build routes
     let router = Router::new()
@@ -117,10 +114,7 @@ pub async fn run_mcp_http(
 ///   - `204 No Content` if the session was terminated successfully
 ///   - `404 Not Found` if the session was not found or already expired
 ///   - `400 Bad Request` if the header is missing or invalid
-async fn handle_delete_session(
-    headers: HeaderMap,
-    session_manager: Arc<LocalSessionManager>,
-) -> impl IntoResponse {
+async fn handle_delete_session(headers: HeaderMap, session_manager: Arc<LocalSessionManager>) -> impl IntoResponse {
     match headers.get("Mcp-Session-Id").and_then(|v| v.to_str().ok()) {
         Some(id) => {
             let id_arc = Arc::from(id.to_string());
@@ -128,21 +122,17 @@ async fn handle_delete_session(
                 Ok(()) => {
                     tracing::info!(session_id = %id, "Session terminated successfully");
                     (StatusCode::NO_CONTENT, "").into_response()
-                }
+                },
                 Err(e) => {
                     tracing::error!(session_id = %id, error = %e, "Session not found or already expired");
-                    (
-                        StatusCode::NOT_FOUND,
-                        "Session not found or already expired",
-                    )
-                        .into_response()
-                }
+                    (StatusCode::NOT_FOUND, "Session not found or already expired").into_response()
+                },
             }
-        }
+        },
         None => {
             tracing::error!("Missing Mcp-Session-Id header in DELETE request");
             (StatusCode::BAD_REQUEST, "Missing Mcp-Session-Id header").into_response()
-        }
+        },
     }
 }
 

@@ -17,31 +17,31 @@ pub enum InputCompareFormat {
     ShExC,
     ShExJ,
     Turtle,
-    RDFXML,
+    RdfXml,
     NTriples,
 }
 
 impl InputCompareFormat {
-    pub fn to_shex_format(&self) -> Result<ShExFormat> {
+    pub fn to_shex_format(self) -> Result<ShExFormat> {
         match self {
             InputCompareFormat::ShExC => Ok(ShExFormat::ShExC),
             InputCompareFormat::ShExJ => Ok(ShExFormat::ShExJ),
             InputCompareFormat::Turtle => Ok(ShExFormat::RDFFormat(RDFFormat::Turtle)),
-            InputCompareFormat::RDFXML => Ok(ShExFormat::RDFFormat(RDFFormat::RDFXML)),
+            InputCompareFormat::RdfXml => Ok(ShExFormat::RDFFormat(RDFFormat::RdfXml)),
             InputCompareFormat::NTriples => Ok(ShExFormat::RDFFormat(RDFFormat::NTriples)),
         }
     }
-    pub fn to_shacl_format(&self) -> Result<CliShaclFormat> {
+    pub fn to_shacl_format(self) -> Result<CliShaclFormat> {
         match self {
             InputCompareFormat::Turtle => Ok(CliShaclFormat::Turtle),
             InputCompareFormat::NTriples => Ok(CliShaclFormat::NTriples),
-            InputCompareFormat::RDFXML => Ok(CliShaclFormat::RDFXML),
+            InputCompareFormat::RdfXml => Ok(CliShaclFormat::RdfXml),
             InputCompareFormat::ShExC => bail!("Can't convert from ShExC to SHACL yet"),
             InputCompareFormat::ShExJ => bail!("Can't convert from ShExJ to SHACL yet"),
         }
     }
 
-    pub fn to_dctap_format(&self) -> Result<CliDCTapFormat> {
+    pub fn to_dctap_format(self) -> Result<CliDCTapFormat> {
         bail!("Converting to DCTAP, format {self} not supported")
     }
 }
@@ -54,7 +54,7 @@ impl FromStr for InputCompareFormat {
             "shexc" => Ok(InputCompareFormat::ShExC),
             "shexj" => Ok(InputCompareFormat::ShExJ),
             "turtle" => Ok(InputCompareFormat::Turtle),
-            "rdfxml" => Ok(InputCompareFormat::RDFXML),
+            "rdfxml" => Ok(InputCompareFormat::RdfXml),
             "ntriples" => Ok(InputCompareFormat::NTriples),
             _ => Err(format!("Unsupported input convert format {s}")),
         }
@@ -67,7 +67,7 @@ impl Display for InputCompareFormat {
             InputCompareFormat::ShExC => write!(dest, "shexc"),
             InputCompareFormat::ShExJ => write!(dest, "shexj"),
             InputCompareFormat::Turtle => write!(dest, "turtle"),
-            InputCompareFormat::RDFXML => write!(dest, "rdfxml"),
+            InputCompareFormat::RdfXml => write!(dest, "rdfxml"),
             InputCompareFormat::NTriples => write!(dest, "ntriples"),
         }
     }
@@ -79,7 +79,7 @@ impl MimeType for InputCompareFormat {
             InputCompareFormat::ShExC => "text/shex",
             InputCompareFormat::ShExJ => "application/json",
             InputCompareFormat::Turtle => "text/turtle",
-            InputCompareFormat::RDFXML => "application/rdf+xml",
+            InputCompareFormat::RdfXml => "application/rdf+xml",
             InputCompareFormat::NTriples => "application/n-triples",
         }
     }

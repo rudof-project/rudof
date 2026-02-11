@@ -7,4 +7,3 @@ An example validation can be run by:
 ```sh
 pgschemapc validate --graph examples/course.pg --schema examples/course.pgs --map examples/course.map
 ```
-

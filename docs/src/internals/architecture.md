@@ -60,6 +60,6 @@ subgraph external dependencies
  oxigraph[<a href='https://crates.io/crates/oxigraph'>oxigraph</a>] ;
  calamine[<a href='https://docs.rs/calamine/latest/calamine/'>calamine</a>] ;
  reqwest[<a href='https://docs.rs/reqwest/latest/reqwest/'>reqwest</a>] ;
- csv[<a href='https://docs.rs/csv/latest/csv/'>csv</a>] 
+ csv[<a href='https://docs.rs/csv/latest/csv/'>csv</a>]
 end
 ```

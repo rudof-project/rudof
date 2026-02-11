@@ -176,28 +176,28 @@ impl Deref for ShapeExpr {
                 Ok(ShapeExpr::ShapeAnd {
                     shape_exprs: shape_exprs.clone(),
                 })
-            }
+            },
             ShapeExpr::ShapeOr { shape_exprs } => {
                 let shape_exprs = shape_exprs.deref(base, prefixmap)?;
                 Ok(ShapeExpr::ShapeOr {
                     shape_exprs: shape_exprs.clone(),
                 })
-            }
+            },
             ShapeExpr::ShapeNot { shape_expr } => Ok(ShapeExpr::ShapeNot {
                 shape_expr: shape_expr.deref(base, prefixmap)?,
             }),
             ShapeExpr::Shape(shape) => {
                 let shape = shape.deref(base, prefixmap)?;
                 Ok(ShapeExpr::Shape(shape))
-            }
+            },
             ShapeExpr::Ref(ref_) => {
                 let ref_ = ref_.deref(base, prefixmap)?;
                 Ok(ShapeExpr::Ref(ref_))
-            }
+            },
             ShapeExpr::NodeConstraint(nc) => {
                 let nc = nc.deref(base, prefixmap)?;
                 Ok(ShapeExpr::NodeConstraint(nc))
-            }
+            },
         }
     }
 }
@@ -210,9 +210,7 @@ mod tests {
 
     #[test]
     fn test_serde_xsfacet_pattern() {
-        let facets: Vec<XsFacet> = vec![XsFacet::StringFacet(StringFacet::Pattern(Pattern::new(
-            "o*",
-        )))];
+        let facets: Vec<XsFacet> = vec![XsFacet::StringFacet(StringFacet::Pattern(Pattern::new("o*")))];
         let nc = NodeConstraint::new().with_xsfacets(facets);
         let se = ShapeExpr::NodeConstraint(nc);
         let json_nc = serde_json::to_string(&se).unwrap();

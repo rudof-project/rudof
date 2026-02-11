@@ -6,7 +6,7 @@ sphinx:
 
 build:
   os: ubuntu-22.04
-  # The following code could be replaced by "tools/rust: 1.87" 
+  # The following code could be replaced by "tools/rust: 1.87"
   # But it seems the latest version supported by readthedocs is 1.86
   jobs:
     pre_build:

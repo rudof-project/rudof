@@ -1,4 +1,4 @@
-from pyrudof import Rudof, RudofConfig, ShExFormatter, 
+from pyrudof import Rudof, RudofConfig, ShExFormatter,
 
 rudof = Rudof(RudofConfig())
 
@@ -10,7 +10,7 @@ schema1 = """
     :age xsd:integer ;
     :weight xsd:float ;
     :worksFor @:Company
- } 
+ }
  :Company {
     :name xsd:string ;
     :employee @:Person
@@ -19,7 +19,7 @@ schema1 = """
 # rudof.read_data_str(schema1)
 
 schema2 = """
- PREFIX ex: <http://example.org/> 
+ PREFIX ex: <http://example.org/>
  PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
  ex:Person {
     ex:name xsd:string ;
@@ -32,10 +32,10 @@ ex:Company {
 """
 print("Comparing schemas:");
 result = result = rudof.compare_schemas_str(
-    schema1, schema2, 
-    "shex", "shex", 
-    "shexc", "shexc", 
-    None, None, 
+    schema1, schema2,
+    "shex", "shex",
+    "shexc", "shexc",
+    None, None,
     "http://example.org/Person", "http://example.org/Person",
 
     )

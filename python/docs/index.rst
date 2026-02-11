@@ -58,7 +58,7 @@ SHACL Validation
 Validate RDF data against SHACL shapes:
 
 .. code-block:: python
-    
+
     from pyrudof import Rudof, RudofConfig, ShaclValidationMode, ShapesGraphSource
 
     rudof = Rudof(RudofConfig())
@@ -88,7 +88,7 @@ Validate RDF data against SHACL shapes:
 
     # Validate and display results
     result = rudof.validate_shacl(
-        ShaclValidationMode.Native, 
+        ShaclValidationMode.Native,
         ShapesGraphSource.CurrentSchema
     )
     print(result.show_as_table())
@@ -136,7 +136,7 @@ Execute SPARQL queries against remote endpoints:
         PREFIX wd: <http://www.wikidata.org/entity/>
         PREFIX wdt: <http://www.wikidata.org/prop/direct/>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-        
+
         CONSTRUCT {
             ?p a :Person ;
                :name ?personLabel .
@@ -148,7 +148,7 @@ Execute SPARQL queries against remote endpoints:
         }
         LIMIT 5
     """, QueryResultFormat.Turtle)
-    
+
     print(result)
 
 
@@ -162,7 +162,7 @@ Convert between different schema formats:
     from pyrudof import Rudof, RudofConfig, ShExFormatter
 
     rudof = Rudof(RudofConfig())
-    
+
     # Read DCTAP schema
     rudof.read_dctap_str("""
     shapeId,propertyId,Mandatory,Repeatable,valueDatatype,valueShape
@@ -172,7 +172,7 @@ Convert between different schema formats:
     Course,name,true,false,xsd:string,
     ,student,false,true,,Person
     """)
-    
+
     # Convert to ShEx
     rudof.dctap2shex()
     result = rudof.serialize_current_shex(ShExFormatter())

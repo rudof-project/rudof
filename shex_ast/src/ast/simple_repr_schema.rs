@@ -21,7 +21,7 @@ impl SimpleReprSchema {
         SimpleReprSchema { shapes: Vec::new() }
     }
 
-    pub fn from_schema(&mut self, schema: &Schema) {
+    pub fn populate_from_schema(&mut self, schema: &Schema) {
         if let Some(shapes) = schema.shapes() {
             for shape in shapes {
                 let simple_shape = self.convert_shape_decl(&shape, schema);
@@ -30,20 +30,11 @@ impl SimpleReprSchema {
         }
     }
 
-    pub fn convert_shape_decl(
-        &mut self,
-        shape_decl: &ShapeDecl,
-        schema: &Schema,
-    ) -> SimpleReprShape {
+    pub fn convert_shape_decl(&mut self, shape_decl: &ShapeDecl, schema: &Schema) -> SimpleReprShape {
         self.convert_shape_expr(&shape_decl.id, &shape_decl.shape_expr, schema)
     }
 
-    pub fn convert_shape_expr(
-        &mut self,
-        name: &ShapeExprLabel,
-        shape: &ShapeExpr,
-        schema: &Schema,
-    ) -> SimpleReprShape {
+    pub fn convert_shape_expr(&mut self, name: &ShapeExprLabel, shape: &ShapeExpr, schema: &Schema) -> SimpleReprShape {
         match shape {
             ShapeExpr::ShapeOr { shape_exprs: _ } => todo!(),
             ShapeExpr::ShapeAnd { shape_exprs: _ } => todo!(),
@@ -55,12 +46,7 @@ impl SimpleReprSchema {
         }
     }
 
-    pub fn convert_shape(
-        &mut self,
-        name: &ShapeExprLabel,
-        shape: &Shape,
-        schema: &Schema,
-    ) -> SimpleReprShape {
+    pub fn convert_shape(&mut self, name: &ShapeExprLabel, shape: &Shape, schema: &Schema) -> SimpleReprShape {
         let mut simple = SimpleReprShape::new(name);
         if let Some(triple_expr) = &shape.expression {
             self.convert_triple_expr(&mut simple, &triple_expr.te, schema);
@@ -68,12 +54,7 @@ impl SimpleReprSchema {
         simple
     }
 
-    pub fn convert_triple_expr(
-        &mut self,
-        shape: &mut SimpleReprShape,
-        te: &TripleExpr,
-        schema: &Schema,
-    ) {
+    pub fn convert_triple_expr(&mut self, shape: &mut SimpleReprShape, te: &TripleExpr, schema: &Schema) {
         match te {
             TripleExpr::EachOf {
                 id: _,
@@ -86,7 +67,7 @@ impl SimpleReprSchema {
                 for te in expressions {
                     self.convert_triple_expr(shape, &(te.te), schema);
                 }
-            }
+            },
             TripleExpr::OneOf {
                 id: _,
                 expressions,
@@ -98,7 +79,7 @@ impl SimpleReprSchema {
                 for te in expressions {
                     self.convert_triple_expr(shape, &te.te, schema);
                 }
-            }
+            },
             TripleExpr::TripleConstraint {
                 id: _,
                 negated: _,
@@ -118,8 +99,8 @@ impl SimpleReprSchema {
                 } else {
                     shape.add_predicate(predicate)
                 }
-            }
-            TripleExpr::TripleExprRef(_) => todo!(),
+            },
+            TripleExpr::Ref(_) => todo!(),
         }
     }
 
@@ -137,7 +118,7 @@ impl SimpleReprSchema {
                         }
                     }
                 }
-            }
+            },
             _ => todo!(),
         }
     }

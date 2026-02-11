@@ -9,4 +9,3 @@
 
 // No Salary
 (n5_wrong {Person, Salaried} [ name: "Bob" ])
-

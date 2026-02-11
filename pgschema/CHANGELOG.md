@@ -31,7 +31,7 @@ This ChangeLog tries to follow the Keep a ChangeLog guidelines](https://keepacha
 ### Changed
 ### Removed
 
-## v0.1.4 
+## v0.1.4
 
 ### Added
 - Included a folder with a test-suite
@@ -56,7 +56,6 @@ This ChangeLog tries to follow the Keep a ChangeLog guidelines](https://keepacha
 - Added github action workflows to automatically publish binaries and run continuous integration tests
 - Added status badges
 
-## v0.1.1 
+## v0.1.1
 
 Added command line options to validate and show information about property graphs (pg), property graphs schemas (pgs) and type maps (map)
-

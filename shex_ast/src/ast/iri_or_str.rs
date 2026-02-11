@@ -32,18 +32,15 @@ impl IriOrStr {
                 None => {
                     let iri = IriS::from_str(s.as_str())?;
                     Ok(iri)
-                }
+                },
                 Some(base) => {
                     let iri = base.resolve_str(s)?;
                     Ok(iri)
-                }
+                },
             },
             IriOrStr::IriRef(iri_ref) => match iri_ref {
                 IriRef::Iri(iri_s) => Ok(iri_s.clone()),
-                IriRef::Prefixed {
-                    prefix: _,
-                    local: _,
-                } => todo!(),
+                IriRef::Prefixed { prefix: _, local: _ } => todo!(),
             },
         }
     }

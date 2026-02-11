@@ -29,7 +29,7 @@ class TestGeneratorConfig(unittest.TestCase):
         config = pyrudof.GeneratorConfig()
         config.set_seed(42)
         self.assertEqual(config.get_seed(), 42)
-        
+
         # Test None seed
         config.set_seed(None)
         self.assertIsNone(config.get_seed())
@@ -107,7 +107,7 @@ class TestGeneratorConfig(unittest.TestCase):
         config = pyrudof.GeneratorConfig()
         config.set_entity_count(50)
         config.set_seed(123)
-        
+
         config_str = config.show()
         self.assertIsInstance(config_str, str)
         self.assertIn("GeneratorConfig", config_str)
@@ -127,14 +127,14 @@ class TestGeneratorConfig(unittest.TestCase):
         config = pyrudof.GeneratorConfig()
         config.set_entity_count(100)
         config.set_seed(42)
-        
+
         with tempfile.NamedTemporaryFile(mode='w', suffix='.toml', delete=False) as f:
             temp_path = f.name
-        
+
         try:
             config.to_toml_file(temp_path)
             self.assertTrue(os.path.exists(temp_path))
-            
+
             # Load it back
             loaded_config = pyrudof.GeneratorConfig.from_toml_file(temp_path)
             self.assertEqual(loaded_config.get_entity_count(), 100)
@@ -151,7 +151,7 @@ class TestDataGenerator(unittest.TestCase):
         """Test creating a data generator"""
         config = pyrudof.GeneratorConfig()
         config.set_entity_count(10)
-        
+
         generator = pyrudof.DataGenerator(config)
         self.assertIsNotNone(generator)
 
@@ -162,7 +162,7 @@ class TestDataGenerator(unittest.TestCase):
         config.set_seed(12345)
         config.set_output_path("/tmp/test.ttl")
         config.set_output_format(pyrudof.OutputFormat.Turtle)
-        
+
         generator = pyrudof.DataGenerator(config)
         self.assertIsNotNone(generator)
 
@@ -170,7 +170,7 @@ class TestDataGenerator(unittest.TestCase):
         """Test loading a non-existent schema file"""
         config = pyrudof.GeneratorConfig()
         generator = pyrudof.DataGenerator(config)
-        
+
         with self.assertRaises(Exception):
             generator.load_shex_schema("/nonexistent/schema.shex")
 
@@ -178,7 +178,7 @@ class TestDataGenerator(unittest.TestCase):
         """Test auto-loading a non-existent schema file"""
         config = pyrudof.GeneratorConfig()
         generator = pyrudof.DataGenerator(config)
-        
+
         with self.assertRaises(Exception):
             generator.load_schema_auto("/nonexistent/schema.shex")
 
@@ -189,7 +189,7 @@ class TestEnums(unittest.TestCase):
     def test_schema_format_enum(self):
         """Test SchemaFormat enum values"""
         self.assertNotEqual(pyrudof.SchemaFormat.ShEx, pyrudof.SchemaFormat.SHACL)
-        
+
         # Test equality
         self.assertEqual(pyrudof.SchemaFormat.ShEx, pyrudof.SchemaFormat.ShEx)
         self.assertEqual(pyrudof.SchemaFormat.SHACL, pyrudof.SchemaFormat.SHACL)
@@ -197,7 +197,7 @@ class TestEnums(unittest.TestCase):
     def test_output_format_enum(self):
         """Test OutputFormat enum values"""
         self.assertNotEqual(pyrudof.OutputFormat.Turtle, pyrudof.OutputFormat.NTriples)
-        
+
         # Test equality
         self.assertEqual(pyrudof.OutputFormat.Turtle, pyrudof.OutputFormat.Turtle)
         self.assertEqual(pyrudof.OutputFormat.NTriples, pyrudof.OutputFormat.NTriples)
@@ -210,7 +210,7 @@ class TestEnums(unittest.TestCase):
             pyrudof.CardinalityStrategy.Random,
             pyrudof.CardinalityStrategy.Balanced,
         ]
-        
+
         # All strategies should be unique
         for i, s1 in enumerate(strategies):
             for j, s2 in enumerate(strategies):
@@ -237,11 +237,11 @@ class TestIntegration(unittest.TestCase):
         config.set_compress(False)
         config.set_worker_threads(2)
         config.set_batch_size(10)
-        
+
         # Create generator
         generator = pyrudof.DataGenerator(config)
         self.assertIsNotNone(generator)
-        
+
         # Verify configuration
         self.assertEqual(config.get_entity_count(), 20)
         self.assertEqual(config.get_seed(), 42)

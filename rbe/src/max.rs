@@ -21,7 +21,7 @@ impl Max {
             Max::IntMax(m) => {
                 let max = if m > &n { m - n } else { 0 };
                 Max::IntMax(max)
-            }
+            },
         }
     }
 
@@ -103,9 +103,7 @@ impl Visitor<'_> for MaxVisitor {
         E: de::Error,
     {
         if value < -1 {
-            Err(E::custom(format!(
-                "value of type i64 {value} should be -1 or positive"
-            )))
+            Err(E::custom(format!("value of type i64 {value} should be -1 or positive")))
         } else {
             match value {
                 -1 => Ok(Max::Unbounded),

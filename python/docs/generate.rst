@@ -50,7 +50,7 @@ You can also load schemas and generate data in separate steps:
 .. code-block:: python
 
     generator = pyrudof.DataGenerator(config)
-    
+
     # Load schema (choose one method)
     generator.load_shex_schema("schema.shex")
     # OR
@@ -71,22 +71,22 @@ Configuration from Python
 .. code-block:: python
 
     config = pyrudof.GeneratorConfig()
-    
+
     # Basic settings
     config.set_entity_count(1000)
     config.set_output_path("/tmp/generated_data.ttl")
     config.set_output_format(pyrudof.OutputFormat.Turtle)
-    
+
     # Reproducibility
     config.set_seed(42)
-    
+
     # Data quality
     config.set_data_quality(pyrudof.DataQuality.High)
     config.set_locale("en")  # Use English locale for generated text
-    
+
     # Cardinality handling
     config.set_cardinality_strategy(pyrudof.CardinalityStrategy.Balanced)
-    
+
     # Performance
     config.set_worker_threads(4)
     config.set_batch_size(100)
@@ -103,10 +103,10 @@ Use a seed for reproducible results:
     config = pyrudof.GeneratorConfig()
     config.set_seed(42)
     config.set_entity_count(50)
-    
+
     generator = pyrudof.DataGenerator(config)
     generator.run("schema.shex")
-    
+
     # Running again with the same seed produces identical output
 
 
@@ -146,7 +146,7 @@ Example with different strategies:
 
     # Minimum relationships (faster, smaller output)
     config.set_cardinality_strategy(pyrudof.CardinalityStrategy.Minimum)
-    
+
     # Maximum relationships (slower, larger output, tests edge cases)
     config.set_cardinality_strategy(pyrudof.CardinalityStrategy.Maximum)
 
@@ -181,7 +181,7 @@ Configure the realism and complexity of generated data:
 
 
 .. tip::
-   Use ``DataQuality.Low`` for performance testing and ``DataQuality.High`` 
+   Use ``DataQuality.Low`` for performance testing and ``DataQuality.High``
    when you need realistic data for demonstrations or integration testing.
 
 
@@ -194,7 +194,7 @@ Enable parallel processing for faster generation of large datasets:
 
     config = pyrudof.GeneratorConfig()
     config.set_entity_count(10000)
-    
+
     # Enable parallelization
     config.set_worker_threads(4)  # Use 4 CPU cores
     config.set_batch_size(100)    # Process 100 entities per batch
@@ -202,7 +202,7 @@ Enable parallel processing for faster generation of large datasets:
     config.set_parallel_fields(True)   # Parallel field generation
     config.set_parallel_writing(True)  # Parallel output writing
     config.set_parallel_file_count(4)  # Write to 4 files simultaneously
-    
+
     generator = pyrudof.DataGenerator(config)
     generator.run("large_schema.shex")
 
@@ -223,13 +223,13 @@ Supported output formats:
 
     # Turtle format (default)
     config.set_output_format(pyrudof.OutputFormat.Turtle)
-    
+
     # N-Triples format (useful for streaming processing)
     config.set_output_format(pyrudof.OutputFormat.NTriples)
-    
+
     # Enable compression
     config.set_compress(True)  # Creates .ttl.gz or .nt.gz
-    
+
     # Generate statistics file
     config.set_write_stats(True)  # Creates output.stats.json
 
@@ -245,33 +245,33 @@ Complete example with all features:
 
     # Create configuration
     config = pyrudof.GeneratorConfig()
-    
+
     # Generation settings
     config.set_entity_count(5000)
     config.set_seed(42)
     config.set_cardinality_strategy(pyrudof.CardinalityStrategy.Balanced)
     config.set_data_quality(pyrudof.DataQuality.High)
     config.set_locale("en")
-    
+
     # Output settings
     config.set_output_path("./output/data.ttl")
     config.set_output_format(pyrudof.OutputFormat.Turtle)
     config.set_compress(True)
     config.set_write_stats(True)
-    
+
     # Performance settings
     config.set_worker_threads(8)
     config.set_batch_size(500)
     config.set_parallel_shapes(True)
     config.set_parallel_fields(True)
-    
+
     # Validate configuration
     config.validate()
-    
+
     # Create generator and run
     generator = pyrudof.DataGenerator(config)
     generator.run_with_format("schema.shex", pyrudof.SchemaFormat.ShEx)
-    
+
     print("Generation complete!")
     print(f"Configuration: {config.show()}")
 
@@ -304,9 +304,9 @@ Schema Format
 .. autoclass:: SchemaFormat
    :members:
    :undoc-members:
-   
+
    Schema formats supported by the generator:
-   
+
    * ``SchemaFormat.ShEx`` - Shape Expressions schema
    * ``SchemaFormat.SHACL`` - SHACL (Shapes Constraint Language) schema
 
@@ -316,9 +316,9 @@ Output Format
 .. autoclass:: OutputFormat
    :members:
    :undoc-members:
-   
+
    RDF serialization formats for generated output:
-   
+
    * ``OutputFormat.Turtle`` - Turtle/Terse RDF Triple Language (.ttl) - Human-readable, compact (default)
    * ``OutputFormat.NTriples`` - N-Triples (.nt) - Line-based, simple format for streaming
 
@@ -328,9 +328,9 @@ Cardinality Strategy
 .. autoclass:: CardinalityStrategy
    :members:
    :undoc-members:
-   
+
    Strategies for handling cardinalities when generating relationships:
-   
+
    * ``CardinalityStrategy.Minimum`` - Always use minimum cardinality (fastest, smallest output)
    * ``CardinalityStrategy.Maximum`` - Always use maximum cardinality (slowest, largest output, tests edge cases)
    * ``CardinalityStrategy.Random`` - Random value within valid range (unpredictable distribution)
@@ -342,9 +342,9 @@ Data Quality
 .. autoclass:: DataQuality
    :members:
    :undoc-members:
-   
+
    Data quality levels controlling realism and complexity:
-   
+
    * ``DataQuality.Low`` - Simple random data (fastest generation, minimal realism)
    * ``DataQuality.Medium`` - Realistic patterns (moderate speed, good for demos)
    * ``DataQuality.High`` - Complex realistic data with correlations (slower, production-like)
@@ -355,10 +355,10 @@ Entity Distribution
 .. autoclass:: EntityDistribution
    :members:
    :undoc-members:
-   
+
    Entity distribution strategies across shapes:
-   
+
    * ``EntityDistribution.Equal`` - Equal distribution of entities across all shapes
-   
+
    .. note::
       Currently only ``Equal`` distribution is supported.

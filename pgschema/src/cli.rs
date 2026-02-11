@@ -1,4 +1,6 @@
-use clap::{Parser, Subcommand, command};
+#[allow(unused_imports)]
+use clap::command;
+use clap::{Parser, Subcommand};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about)]

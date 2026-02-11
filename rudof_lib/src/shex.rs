@@ -1,6 +1,5 @@
 use crate::{
-    InputSpec, Rudof, RudofConfig, RudofError,
-    result_shex_validation_format::ResultShExValidationFormat, selector::*,
+    InputSpec, Rudof, RudofConfig, RudofError, result_shex_validation_format::ResultShExValidationFormat, selector::*,
     shapemap_format::ShapeMapFormat as CliShapeMapFormat, shex_format::ShExFormat as CliShExFormat,
     sort_by_result_shape_map::SortByResultShapeMap, terminal_width::terminal_width,
 };
@@ -55,40 +54,35 @@ pub fn validate_shex<W: Write>(
         let shapemap_format = shapemap_format.into();
 
         if let Some(shapemap_spec) = shapemap {
-            let shapemap_reader = shapemap_spec.open_read(None, "ShapeMap").map_err(|e| {
-                RudofError::ShapeMapParseError {
-                    source_name: shapemap_spec.source_name(),
-                    str: shapemap_spec.source_name().to_string(),
-                    error: e.to_string(),
-                }
-            })?;
+            let shapemap_reader =
+                shapemap_spec
+                    .open_read(None, "ShapeMap")
+                    .map_err(|e| RudofError::ShapeMapParseError {
+                        source_name: shapemap_spec.source_name(),
+                        str: shapemap_spec.source_name().to_string(),
+                        error: e.to_string(),
+                    })?;
 
-            rudof.read_shapemap(
-                shapemap_reader,
-                shapemap_spec.source_name().as_str(),
-                &shapemap_format,
-            )?;
+            rudof.read_shapemap(shapemap_reader, shapemap_spec.source_name().as_str(), &shapemap_format)?;
         }
 
         // If individual node/shapes are declared add them to current shape map
         match (maybe_node, maybe_shape) {
             (None, None) => {
                 // Nothing to do in this case
-            }
+            },
             (Some(node_str), None) => {
                 let node_selector = parse_node_selector(node_str)?;
                 rudof.shapemap_add_node_shape_selectors(node_selector, start())
-            }
+            },
             (Some(node_str), Some(shape_str)) => {
                 let node_selector = parse_node_selector(node_str)?;
                 let shape_selector = parse_shape_selector(shape_str)?;
                 rudof.shapemap_add_node_shape_selectors(node_selector, shape_selector);
-            }
+            },
             (None, Some(shape_str)) => {
-                tracing::debug!(
-                    "Shape label {shape_str} ignored because noshapemap has also been provided"
-                )
-            }
+                tracing::debug!("Shape label {shape_str} ignored because noshapemap has also been provided")
+            },
         };
 
         let result = rudof.validate_shex()?;
@@ -107,15 +101,12 @@ fn get_base(config: &RudofConfig, base: &Option<IriS>) -> Result<IriS, RudofErro
     } else if let Some(base) = config.shex_config().base.as_ref() {
         Ok(base.clone())
     } else {
-        let cwd = env::current_dir().map_err(|e| RudofError::CurrentDirError {
-            error: format!("{e}"),
-        })?;
+        let cwd = env::current_dir().map_err(|e| RudofError::CurrentDirError { error: format!("{e}") })?;
         // Note: we use from_directory_path to convert a directory to a file URL that ends with a trailing slash
         // from_url_path would not add the trailing slash and would fail when resolving relative IRIs
-        let url =
-            Url::from_directory_path(&cwd).map_err(|_| RudofError::ConvertingCurrentFolderUrl {
-                current_dir: cwd.to_string_lossy().to_string(),
-            })?;
+        let url = Url::from_directory_path(&cwd).map_err(|_| RudofError::ConvertingCurrentFolderUrl {
+            current_dir: cwd.to_string_lossy().to_string(),
+        })?;
         Ok(url.into())
     }
 }
@@ -130,27 +121,25 @@ fn write_result_shapemap<W: Write>(
         CliShapeMapFormat::Compact => {
             writeln!(writer, "Result:")?;
             result.as_table(writer, sort_by.into(), false, terminal_width())?;
-        }
-        CliShapeMapFormat::CSV => {
+        },
+        CliShapeMapFormat::Csv => {
             info!("Serializing result as CSV");
             result.as_csv(writer, sort_by.into(), true)?;
-        }
+        },
         CliShapeMapFormat::Internal => {
-            let str = serde_json::to_string_pretty(&result).map_err(|e| RudofError::Generic {
-                error: e.to_string(),
-            })?;
+            let str =
+                serde_json::to_string_pretty(&result).map_err(|e| RudofError::Generic { error: e.to_string() })?;
             writeln!(writer, "{str}")?;
-        }
+        },
         CliShapeMapFormat::Json => {
-            let str = serde_json::to_string_pretty(&result).map_err(|e| RudofError::Generic {
-                error: e.to_string(),
-            })?;
+            let str =
+                serde_json::to_string_pretty(&result).map_err(|e| RudofError::Generic { error: e.to_string() })?;
             writeln!(writer, "{str}")?;
-        }
+        },
         CliShapeMapFormat::Details => {
             writeln!(writer, "Result:")?;
             result.as_table(writer, sort_by.into(), true, terminal_width())?;
-        }
+        },
     }
     Ok(())
 }
@@ -189,10 +178,7 @@ pub fn parse_shex_schema(
         let shex_ir = rudof.get_shex_ir().unwrap();
         if shex_ir.has_neg_cycle() {
             return Err(RudofError::Generic {
-                error: format!(
-                    "Schema contains negative cycles: {:?}",
-                    shex_ir.neg_cycles()
-                ),
+                error: format!("Schema contains negative cycles: {:?}", shex_ir.neg_cycles()),
             });
         }
     }

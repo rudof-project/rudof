@@ -21,4 +21,3 @@ PREFIX schema: <http://schema.org/>
          sx:valueExpr :Book
         ]
      ] ) .
-

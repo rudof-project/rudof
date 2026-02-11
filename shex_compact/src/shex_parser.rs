@@ -38,16 +38,14 @@ impl ShExParser<'_> {
             match s? {
                 ShExStatement::BaseDecl { iri } => {
                     schema = schema.with_base(Some(iri));
-                }
+                },
                 ShExStatement::PrefixDecl { alias, iri } => {
                     schema.add_prefix(alias, &iri)?;
-                }
-                ShExStatement::StartDecl { shape_expr } => {
-                    schema = schema.with_start(Some(shape_expr))
-                }
+                },
+                ShExStatement::StartDecl { shape_expr } => schema = schema.with_start(Some(shape_expr)),
                 ShExStatement::ImportDecl { iri } => {
                     schema = schema.with_import(iri);
-                }
+                },
                 ShExStatement::ShapeDecl {
                     is_abstract,
                     shape_label,
@@ -58,10 +56,10 @@ impl ShExParser<'_> {
                     // shapes_counter += 1;
                     // tracing::debug!("Shape decl #{shapes_counter}: {shape_label} ");
                     schema.add_shape(shape_label, shape_expr, is_abstract);
-                }
+                },
                 ShExStatement::StartActions { actions } => {
                     schema = schema.with_start_actions(Some(actions));
-                }
+                },
             }
         }
         Ok(schema)
@@ -76,16 +74,10 @@ impl ShExParser<'_> {
         Ok(schema)
     }
 
-    pub fn from_reader<R: io::Read>(
-        mut reader: R,
-        base: Option<IriS>,
-        source_iri: &IriS,
-    ) -> Result<Schema> {
+    pub fn from_reader<R: io::Read>(mut reader: R, base: Option<IriS>, source_iri: &IriS) -> Result<Schema> {
         let mut v = Vec::new();
         reader.read_to_end(&mut v)?;
-        let s = String::from_utf8(v).map_err(|e| ParseError::Utf8Error {
-            error: format!("{e}"),
-        })?;
+        let s = String::from_utf8(v).map_err(|e| ParseError::Utf8Error { error: format!("{e}") })?;
         Self::parse(s.as_str(), base, source_iri)
     }
 }
@@ -98,10 +90,7 @@ struct StatementIterator<'a> {
 impl StatementIterator<'_> {
     pub fn new(src: Span) -> Result<StatementIterator> {
         match tws0(src) {
-            Ok((left, _)) => Ok(StatementIterator {
-                src: left,
-                done: false,
-            }),
+            Ok((left, _)) => Ok(StatementIterator { src: left, done: false }),
             Err(Err::Incomplete(_)) => Ok(StatementIterator { src, done: false }),
             Err(e) => Err(ParseError::Custom {
                 msg: format!("cannot start parsing. Error: {e}"),
@@ -126,33 +115,33 @@ impl<'a> Iterator for StatementIterator<'a> {
             Ok((left, s)) => {
                 r = Some(Ok(s));
                 self.src = left;
-            }
+            },
             Err(Err::Incomplete(needed)) => {
                 debug!("Incomplete! shex_statement. Needed: {needed:?}");
                 self.done = true;
                 r = None;
-            }
+            },
             Err(Err::Error(e)) | Err(Err::Failure(e)) => {
                 r = Some(Err(ParseError::NomError { err: Box::new(e) }));
                 self.done = true;
-            }
+            },
         }
 
         // Skip extra whitespace
         match tws0(self.src) {
             Ok((left, _)) => {
                 self.src = left;
-            }
+            },
             Err(Err::Incomplete(needed)) => {
                 debug!("Incomplete on tws: needed {needed:?}");
                 self.done = true;
-            }
+            },
             Err(e) => {
                 r = Some(Err(ParseError::Custom {
                     msg: format!("error parsing whitespace. Error: {e}"),
                 }));
                 self.done = true;
-            }
+            },
         }
         r
     }

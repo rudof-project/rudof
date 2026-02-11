@@ -3,12 +3,12 @@ use iri_s::IriS;
 use iri_s::iri;
 use prefixmap::IriRef;
 use shacl_ast::{
-    Schema as ShaclSchema, component::Component, node_shape::NodeShape,
-    property_shape::PropertyShape, shape::Shape as ShaclShape, target::Target,
+    Schema as ShaclSchema, component::Component, node_shape::NodeShape, property_shape::PropertyShape,
+    shape::Shape as ShaclShape, target::Target,
 };
 use shex_ast::{
-    BNode, NodeConstraint, Schema as ShExSchema, Shape as ShExShape, ShapeExpr, ShapeExprLabel,
-    TripleExpr, TripleExprWrapper, ValueSetValue,
+    BNode, NodeConstraint, Schema as ShExSchema, Shape as ShExShape, ShapeExpr, ShapeExprLabel, TripleExpr,
+    TripleExprWrapper, ValueSetValue,
 };
 use srdf::{Object, RDFNode, Rdf, SHACLPath};
 use tracing::debug;
@@ -33,17 +33,16 @@ impl Shacl2ShEx {
 
     pub fn convert<RDF: Rdf>(&mut self, schema: &ShaclSchema<RDF>) -> Result<(), Shacl2ShExError> {
         let prefixmap = schema.prefix_map().without_rich_qualifying();
-        self.current_shex =
-            ShExSchema::new(&iri!("http://default/")).with_prefixmap(Some(prefixmap));
+        self.current_shex = ShExSchema::new(&iri!("http://default/")).with_prefixmap(Some(prefixmap));
         for (_, shape) in schema.iter() {
             match &shape {
                 shacl_ast::shape::Shape::NodeShape(ns) => {
                     let (label, shape_expr, is_abstract) = self.convert_shape(ns, schema)?;
                     self.current_shex.add_shape(label, shape_expr, is_abstract)
-                }
+                },
                 shacl_ast::shape::Shape::PropertyShape(_) => {
                     // Ignoring property shapes at top level conversion
-                }
+                },
             }
         }
         Ok(())
@@ -64,9 +63,7 @@ impl Shacl2ShEx {
         match node {
             srdf::Object::Iri(iri) => Ok(ShapeExprLabel::iri(iri.clone())),
             srdf::Object::BlankNode(bn) => Ok(ShapeExprLabel::bnode(BNode::new(bn))),
-            srdf::Object::Literal(lit) => Err(Shacl2ShExError::RDFNode2LabelLiteral {
-                literal: lit.clone(),
-            }),
+            srdf::Object::Literal(lit) => Err(Shacl2ShExError::RDFNode2LabelLiteral { literal: lit.clone() }),
             Object::Triple { .. } => todo!(),
         }
     }
@@ -85,7 +82,7 @@ impl Shacl2ShEx {
                         let tc = self.property_shape2triple_constraint(ps)?;
                         exprs.push(tc);
                         Ok(())
-                    }
+                    },
                     ShaclShape::NodeShape(ns) => Err(Shacl2ShExError::NotExpectedNodeShape {
                         node_shape: ns.to_string(),
                     }),
@@ -125,14 +122,7 @@ impl Shacl2ShEx {
             }
         }
         let value_cls = ShapeExpr::node_constraint(NodeConstraint::new().with_values(values));
-        let tc = TripleExpr::triple_constraint(
-            None,
-            None,
-            IriRef::iri(IriS::rdf_type()),
-            Some(value_cls),
-            None,
-            None,
-        );
+        let tc = TripleExpr::triple_constraint(None, None, IriRef::iri(IriS::rdf_type()), Some(value_cls), None, None);
         Ok(Some(tc))
     }
 
@@ -142,27 +132,25 @@ impl Shacl2ShEx {
         _schema: &ShaclSchema<RDF>,
     ) -> Result<Option<ValueSetValue>, Shacl2ShExError> {
         match target {
-            Target::TargetNode(_) => Ok(None),
-            Target::TargetClass(cls) => {
+            Target::Node(_) => Ok(None),
+            Target::Class(cls) => {
                 let value_set_value = match cls {
                     Object::Iri(iri) => Ok(ValueSetValue::iri(IriRef::iri(iri.clone()))),
                     Object::BlankNode(bn) => {
-                        Err(Shacl2ShExError::UnexpectedBlankNodeForTargetClass {
-                            bnode: bn.clone(),
-                        })
-                    }
-                    Object::Literal(lit) => Err(Shacl2ShExError::UnexpectedLiteralForTargetClass {
-                        literal: lit.clone(),
-                    }),
+                        Err(Shacl2ShExError::UnexpectedBlankNodeForTargetClass { bnode: bn.clone() })
+                    },
+                    Object::Literal(lit) => {
+                        Err(Shacl2ShExError::UnexpectedLiteralForTargetClass { literal: lit.clone() })
+                    },
                     Object::Triple { .. } => todo!(),
                 }?;
                 Ok(Some(value_set_value))
-            }
-            Target::TargetSubjectsOf(_) => Ok(None),
-            Target::TargetObjectsOf(_) => Ok(None),
-            Target::TargetImplicitClass(_) => Ok(None),
-            Target::WrongTargetNode(_) => todo!(),
-            Target::WrongTargetClass(_) => todo!(),
+            },
+            Target::SubjectsOf(_) => Ok(None),
+            Target::ObjectsOf(_) => Ok(None),
+            Target::ImplicitClass(_) => Ok(None),
+            Target::WrongNode(_) => todo!(),
+            Target::WrongClass(_) => todo!(),
             Target::WrongSubjectsOf(_) => todo!(),
             Target::WrongObjectsOf(_) => todo!(),
             Target::WrongImplicitClass(_) => todo!(),
@@ -206,10 +194,7 @@ impl Shacl2ShEx {
                     annotations,
                 } => TripleExpr::EachOf {
                     id: id.clone(),
-                    expressions: Self::merge_expressions(
-                        expressions,
-                        &vec![TripleExprWrapper { te: tc.clone() }],
-                    ),
+                    expressions: Self::merge_expressions(expressions, &vec![TripleExprWrapper { te: tc.clone() }]),
                     min: *min,
                     max: *max,
                     sem_acts: sem_acts.clone(),
@@ -237,10 +222,7 @@ impl Shacl2ShEx {
                     annotations: _,
                 } => TripleExpr::EachOf {
                     id: id.clone(),
-                    expressions: Self::merge_expressions(
-                        &vec![TripleExprWrapper { te: tc.clone() }],
-                        exprs,
-                    ),
+                    expressions: Self::merge_expressions(&vec![TripleExprWrapper { te: tc.clone() }], exprs),
                     min: *min,
                     max: *max,
                     sem_acts: sem_acts.clone(),
@@ -273,10 +255,7 @@ impl Shacl2ShEx {
         }
     }
 
-    pub fn merge_expressions(
-        e1: &Vec<TripleExprWrapper>,
-        e2: &Vec<TripleExprWrapper>,
-    ) -> Vec<TripleExprWrapper> {
+    pub fn merge_expressions(e1: &Vec<TripleExprWrapper>, e2: &Vec<TripleExprWrapper>) -> Vec<TripleExprWrapper> {
         let mut es = Vec::new();
         for e in e1 {
             es.push(e.clone())
@@ -297,15 +276,10 @@ impl Shacl2ShEx {
         let se = self.components2shape_expr(shape.components())?;
         let min = None;
         let max = None;
-        Ok(TripleExpr::triple_constraint(
-            negated, inverse, predicate, se, min, max,
-        ))
+        Ok(TripleExpr::triple_constraint(negated, inverse, predicate, se, min, max))
     }
 
-    pub fn components2shape_expr(
-        &self,
-        components: &Vec<Component>,
-    ) -> Result<Option<ShapeExpr>, Shacl2ShExError> {
+    pub fn components2shape_expr(&self, components: &Vec<Component>) -> Result<Option<ShapeExpr>, Shacl2ShExError> {
         let mut ses = Vec::new();
         for c in components {
             let se = self.component2shape_expr(c)?;
@@ -318,13 +292,13 @@ impl Shacl2ShEx {
                 1 => {
                     let se = &ses[0];
                     Ok(Some(se.clone()))
-                }
+                },
                 _ => {
                     // Err(Shacl2ShExError::not_implemented("Conversion of shapes with multiple components is not implemented yet: {components:?}"))}
                     debug!("More than one component: {components:?}, taking only the first one");
                     let se = &ses[0];
                     Ok(Some(se.clone()))
-                }
+                },
             }
         }
     }
@@ -338,22 +312,12 @@ impl Shacl2ShEx {
             Object::Triple { .. } => todo!(),
         };
         let cls = NodeConstraint::new().with_values(vec![value]);
-        let te = TripleExpr::triple_constraint(
-            None,
-            None,
-            rdf_type,
-            Some(ShapeExpr::node_constraint(cls)),
-            None,
-            None,
-        );
+        let te = TripleExpr::triple_constraint(None, None, rdf_type, Some(ShapeExpr::node_constraint(cls)), None, None);
         let se = ShapeExpr::shape(ShExShape::new(None, None, Some(te)));
         Ok(se)
     }
 
-    pub fn component2shape_expr(
-        &self,
-        component: &Component,
-    ) -> Result<ShapeExpr, Shacl2ShExError> {
+    pub fn component2shape_expr(&self, component: &Component) -> Result<ShapeExpr, Shacl2ShExError> {
         match component {
             Component::Class(cls) => {
                 debug!(
@@ -361,7 +325,7 @@ impl Shacl2ShEx {
                 );
                 let se = self.create_class_constraint(cls)?;
                 Ok(se)
-            }
+            },
             Component::Datatype(dt) => Ok(ShapeExpr::node_constraint(
                 NodeConstraint::new().with_datatype(dt.clone()),
             )),
@@ -374,10 +338,7 @@ impl Shacl2ShEx {
             Component::MaxInclusive(_) => todo!(),
             Component::MinLength(_) => todo!(),
             Component::MaxLength(_) => todo!(),
-            Component::Pattern {
-                pattern: _,
-                flags: _,
-            } => todo!(),
+            Component::Pattern { pattern: _, flags: _ } => todo!(),
             Component::UniqueLang(_) => todo!(),
             Component::LanguageIn { langs: _ } => todo!(),
             Component::Equals(_) => todo!(),
@@ -387,7 +348,7 @@ impl Shacl2ShEx {
             Component::Or { shapes: _ } => {
                 debug!("Not implemented OR Shapes");
                 Ok(ShapeExpr::empty_shape())
-            }
+            },
             Component::And { shapes: _ } => todo!(),
             Component::Not { shape: _ } => todo!(),
             Component::Xone { shapes: _ } => todo!(),

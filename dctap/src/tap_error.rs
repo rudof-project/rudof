@@ -23,10 +23,7 @@ pub enum TapError {
     },
 
     #[error("Cannot obtain shape id with index {shape_id} from record {record:?}")]
-    NoShapeId {
-        shape_id: usize,
-        record: StringRecord,
-    },
+    NoShapeId { shape_id: usize, record: StringRecord },
 
     #[error(
         "Value of field {field} is {value} and should be boolean. Line: {}. Record: {}",
@@ -43,10 +40,7 @@ pub enum TapError {
     TapConfigFromPathError { path: String, error: io::Error },
 
     #[error("Error reading config file from path {path}: {error}")]
-    TapConfigTomlError {
-        path: String,
-        error: toml::de::Error,
-    },
+    TapConfigTomlError { path: String, error: toml::de::Error },
 
     #[error("Reading Excel file from {path}: {error}")]
     ReadingExcelError { path: String, error: io::Error },

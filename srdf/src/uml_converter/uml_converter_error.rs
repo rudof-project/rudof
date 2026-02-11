@@ -10,15 +10,9 @@ pub enum UmlConverterError {
     #[error("Java is not installed or not found in PATH: {error}")]
     JavaNotInstalled { error: String },
     #[error("Error creating temporary UML file: {tempfile_name}: {error}")]
-    CreatingTempUMLFile {
-        tempfile_name: String,
-        error: String,
-    },
+    CreatingTempUMLFile { tempfile_name: String, error: String },
     #[error("Error flushing temporary UML file: {tempfile_name}: {error}")]
-    FlushingTempUMLFile {
-        tempfile_name: String,
-        error: String,
-    },
+    FlushingTempUMLFile { tempfile_name: String, error: String },
 
     #[error("Error creating temportary file: {error}")]
     TempFileError { error: String },
@@ -32,10 +26,7 @@ pub enum UmlConverterError {
         error: std::io::Error,
     },
     #[error("Error copying temporary output file to writer: {temp_name}: {error}")]
-    CopyingTempFile {
-        temp_name: String,
-        error: std::io::Error,
-    },
+    CopyingTempFile { temp_name: String, error: std::io::Error },
 
     #[error("Label not found: {name}")]
     NotFoundLabel { name: String },

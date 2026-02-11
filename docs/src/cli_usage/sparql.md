@@ -37,9 +37,9 @@ prefix schema: <http://schema.org/>
 
 :c schema:name  "Carol"  .
 
-:d schema:name  23      .  
+:d schema:name  23      .
 
-:e schema:name  "Emily" ;  
+:e schema:name  "Emily" ;
    schema:knows :d      .
 ```
 
@@ -47,7 +47,7 @@ Then you can run the instruction below.
 
 ```sh
 rudof query -q user.sparql user.ttl
-?person        ?name          ?status        
+?person        ?name          ?status
      :b        "Bob"          :Waiting
      :a        "Alice"        :Active
 ```
@@ -67,7 +67,7 @@ select * where {
   ?person wdt:P31 wd:Q5 ;
           wdt:P19 ?birth_place ;
        rdfs:label ?label .
-  ?birth_place rdfs:label ?birth_place_name 
+  ?birth_place rdfs:label ?birth_place_name
   Filter(Lang(?label)='en' && Lang(?birth_place_name)='en')
 } limit 10
 ```
@@ -77,16 +77,16 @@ You can run the following command to run the SPARQL query:
 ```sh
 rudof query -q wikidata.sparql -e wikidata
 ?person        ?birth_place   ?label         ?birth_place_name
- wd:Q517764         wd:Q16  "Rob Pike"@en          "Canada"@en  
- wd:Q518834         wd:Q16  "André Gingras"@en     "Canada"@en  
- wd:Q535692         wd:Q16  "Michael Reed"@en      "Canada"@en  
- wd:Q574507         wd:Q16  "Elza Kephart"@en      "Canada"@en  
- wd:Q579599         wd:Q16  "Isaiah L. Kenen"@en   "Canada"@en  
- wd:Q601125         wd:Q16  "Jack Wetherall"@en    "Canada"@en  
- wd:Q679597         wd:Q16  "Moishe Postone"@en    "Canada"@en  
- wd:Q2896159        wd:Q16  "Benjamin Lumley"@en   "Canada"@en  
- wd:Q2926838        wd:Q16  "Bruno Hébert"@en      "Canada"@en  
- wd:Q2938960        wd:Q16  "Carl Marotte"@en      "Canada"@en 
+ wd:Q517764         wd:Q16  "Rob Pike"@en          "Canada"@en
+ wd:Q518834         wd:Q16  "André Gingras"@en     "Canada"@en
+ wd:Q535692         wd:Q16  "Michael Reed"@en      "Canada"@en
+ wd:Q574507         wd:Q16  "Elza Kephart"@en      "Canada"@en
+ wd:Q579599         wd:Q16  "Isaiah L. Kenen"@en   "Canada"@en
+ wd:Q601125         wd:Q16  "Jack Wetherall"@en    "Canada"@en
+ wd:Q679597         wd:Q16  "Moishe Postone"@en    "Canada"@en
+ wd:Q2896159        wd:Q16  "Benjamin Lumley"@en   "Canada"@en
+ wd:Q2926838        wd:Q16  "Bruno Hébert"@en      "Canada"@en
+ wd:Q2938960        wd:Q16  "Carl Marotte"@en      "Canada"@en
 ```
 
 ## Registered endpoints

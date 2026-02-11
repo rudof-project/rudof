@@ -5,7 +5,7 @@ use rmcp::{
     prompt, prompt_router,
 };
 
-use crate::service::service::RudofMcpService;
+use crate::service::mcp_service::RudofMcpService;
 
 // Import the public helper functions from the implementation files
 use crate::service::prompts::data_prompts_impl::*;

@@ -28,10 +28,9 @@ impl TriplePattern {
             IriRef::Prefixed { prefix, local } => {
                 let iri = prefixmap.resolve_prefix_local(prefix, local)?;
                 iri.to_string()
-            }
+            },
         };
-        write!(formatter, "{} {} {} .", self.subj, pred_str, self.obj)
-            .map_err(PrefixMapError::FormatError)?;
+        write!(formatter, "{} {} {} .", self.subj, pred_str, self.obj).map_err(PrefixMapError::FormatError)?;
         Ok(())
     }
 }

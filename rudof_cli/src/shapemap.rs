@@ -35,9 +35,9 @@ pub fn run_shapemap(
 pub fn shapemap_format_convert(shapemap_format: &CliShapeMapFormat) -> ShapeMapFormat {
     match shapemap_format {
         CliShapeMapFormat::Compact => ShapeMapFormat::Compact,
-        CliShapeMapFormat::Internal => ShapeMapFormat::JSON,
-        CliShapeMapFormat::Json => ShapeMapFormat::JSON,
+        CliShapeMapFormat::Internal => ShapeMapFormat::Json,
+        CliShapeMapFormat::Json => ShapeMapFormat::Json,
         CliShapeMapFormat::Details => ShapeMapFormat::Compact,
-        CliShapeMapFormat::CSV => ShapeMapFormat::CSV,
+        CliShapeMapFormat::Csv => ShapeMapFormat::Csv,
     }
 }

@@ -32,19 +32,18 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for Equals {
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let check = |focus: &R::Term, value_node: &R::Term| {
             let subject: R::Subject = <R as Rdf>::term_as_subject(focus).unwrap();
-            let triples_to_compare = match store
-                .triples_with_subject_predicate(subject.clone(), self.iri().clone().into())
-            {
-                Ok(iter) => iter,
-                Err(e) => {
-                    debug!(
-                        "Equals: Error trying to find triples for subject {} and predicate {}: {e}",
-                        subject,
-                        self.iri()
-                    );
-                    return true;
-                }
-            };
+            let triples_to_compare =
+                match store.triples_with_subject_predicate(subject.clone(), self.iri().clone().into()) {
+                    Ok(iter) => iter,
+                    Err(e) => {
+                        debug!(
+                            "Equals: Error trying to find triples for subject {} and predicate {}: {e}",
+                            subject,
+                            self.iri()
+                        );
+                        return true;
+                    },
+                };
             let mut triples_to_compare = triples_to_compare.peekable();
             if triples_to_compare.peek().is_none() {
                 debug!(

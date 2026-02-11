@@ -6,11 +6,9 @@ use shex_ast::{
 use crate::RudofError;
 
 pub fn parse_node_selector(node_str: &str) -> Result<NodeSelector, RudofError> {
-    let ns = ShapeMapParser::parse_node_selector(node_str).map_err(|e| {
-        RudofError::NodeSelectorParseError {
-            node_selector: node_str.to_string(),
-            error: e.to_string(),
-        }
+    let ns = ShapeMapParser::parse_node_selector(node_str).map_err(|e| RudofError::NodeSelectorParseError {
+        node_selector: node_str.to_string(),
+        error: e.to_string(),
     })?;
     Ok(ns)
 }
@@ -20,11 +18,10 @@ pub fn start() -> ShapeSelector {
 }
 
 pub fn parse_shape_selector(label_str: &str) -> Result<ShapeSelector, RudofError> {
-    let selector = ShapeMapParser::parse_shape_selector(label_str).map_err(|e| {
-        RudofError::ShapeSelectorParseError {
+    let selector =
+        ShapeMapParser::parse_shape_selector(label_str).map_err(|e| RudofError::ShapeSelectorParseError {
             shape_selector: label_str.to_string(),
             error: e.to_string(),
-        }
-    })?;
+        })?;
     Ok(selector)
 }

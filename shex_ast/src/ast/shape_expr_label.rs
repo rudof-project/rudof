@@ -54,11 +54,7 @@ impl ShapeExprLabel {
 }
 
 impl Deref for ShapeExprLabel {
-    fn deref(
-        self,
-        base: Option<&IriS>,
-        prefixmap: Option<&prefixmap::PrefixMap>,
-    ) -> Result<Self, DerefError>
+    fn deref(self, base: Option<&IriS>, prefixmap: Option<&prefixmap::PrefixMap>) -> Result<Self, DerefError>
     where
         Self: Sized,
     {
@@ -66,10 +62,8 @@ impl Deref for ShapeExprLabel {
             ShapeExprLabel::IriRef { value } => {
                 let new_value = value.deref(base, prefixmap)?;
                 Ok(ShapeExprLabel::IriRef { value: new_value })
-            }
-            ShapeExprLabel::BNode { value } => Ok(ShapeExprLabel::BNode {
-                value: value.clone(),
-            }),
+            },
+            ShapeExprLabel::BNode { value } => Ok(ShapeExprLabel::BNode { value: value.clone() }),
             ShapeExprLabel::Start => Ok(ShapeExprLabel::Start),
         }
     }
@@ -138,9 +132,7 @@ impl From<&ShapeLabel> for ShapeExprLabel {
             ShapeLabel::Iri(iri) => ShapeExprLabel::IriRef {
                 value: IriRef::iri(iri.clone()),
             },
-            ShapeLabel::BNode(bnode) => ShapeExprLabel::BNode {
-                value: bnode.clone(),
-            },
+            ShapeLabel::BNode(bnode) => ShapeExprLabel::BNode { value: bnode.clone() },
             ShapeLabel::Start => ShapeExprLabel::Start,
         }
     }

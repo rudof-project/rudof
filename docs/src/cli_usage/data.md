@@ -16,7 +16,7 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
 :b :name "Bob", "Robert" .
 
-:cs101 :name "Computer Science" .   
+:cs101 :name "Computer Science" .
 ```
 
 The following command parses the file `simple.ttl` and shows its contents:
@@ -37,8 +37,8 @@ The output would be something like:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<rdf:RDF xmlns:="http://example.org/" 
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" 
+<rdf:RDF xmlns:="http://example.org/"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
    xmlns:xsd="http://www.w3.org/2001/XMLSchema#">
         <rdf:Description rdf:about="http://example.org/cs101">
                 <name>Computer Science</name>
@@ -81,9 +81,9 @@ rudof data user.ttl simple.ttl -r rdfxml -o output.rdf
 
 It is possible to generate a visual representation of simple RDF graphs by using the `--result-format` option and selecting a visual format like `svg` or `png`.
 
-The visualization is leveraged on PlantUML so it is necessary to have the PlantUML binary downloaded and available through the `PLANTUML` variable. 
+The visualization is leveraged on PlantUML so it is necessary to have the PlantUML binary downloaded and available through the `PLANTUML` variable.
 
-Another alternative is to use the `plantuml`  result format to generate an intermediate file and pass that file to some PlantUML processor. 
+Another alternative is to use the `plantuml`  result format to generate an intermediate file and pass that file to some PlantUML processor.
 
 As an example, the following command generates a `plantuml` file:
 

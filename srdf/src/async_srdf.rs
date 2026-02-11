@@ -12,10 +12,7 @@ pub trait AsyncSRDF {
     type Term: Display + Sync + Send;
     type Err: Display;
 
-    async fn get_predicates_subject(
-        &self,
-        subject: &Self::Subject,
-    ) -> Result<HashSet<Self::IRI>, Self::Err>;
+    async fn get_predicates_subject(&self, subject: &Self::Subject) -> Result<HashSet<Self::IRI>, Self::Err>;
 
     async fn get_objects_for_subject_predicate(
         &self,

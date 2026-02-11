@@ -21,9 +21,7 @@ pub enum SRDFSparqlError {
     URLParseError { e: url::ParseError },
 
     #[error("SPARQL Results parser: {e:?}")]
-    SPAResults {
-        e: sparesults::QueryResultsParseError,
-    },
+    SPAResults { e: sparesults::QueryResultsParseError },
 
     #[error(transparent)]
     IriParseError {

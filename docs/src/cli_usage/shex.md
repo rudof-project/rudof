@@ -1,17 +1,17 @@
 # ShEx
 
-The command `shex` can be used to obtain information about [ShEx](https://shex.io/) schemas. 
+The command `shex` can be used to obtain information about [ShEx](https://shex.io/) schemas.
 
 > For ShEx validation, you can use the `shex-validate` or `validate` commands
 
 For executing the examples in this page we assume you have a file called `user.shex` in your folder with the following contents:
 
 ```shexc
-prefix : <http://example.org/> 
+prefix : <http://example.org/>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 prefix schema: <http://schema.org/>
 
-start = @:User 
+start = @:User
 
 :User {
   schema:name   xsd:string             ;
@@ -39,10 +39,10 @@ rudof shex -s examples/user.shex
 In ShEx, there are some [requirements](https://shex.io/shex-semantics/index.html#schema-requirements) that the schemas have to meet before validating. For example, for schemas that have recursive shapes and negations, it is required that there are no cycles with negative references, i.e. the schemas should have stratified negation. An example of a non-stratified schema could be:
 
 ```shex
-prefix :       <http://example.org/> 
+prefix :       <http://example.org/>
 
 :S {
-    :p NOT @:S + 
+    :p NOT @:S +
 }
 ```
 
@@ -177,21 +177,21 @@ Usage: rudof shex [OPTIONS] --schema <Schema file name>
 
 Options:
   -s, --schema <Schema file name>
-          
+
   -f, --format <Schema format>
           [default: shexc] [possible values: internal, simple, shexc, shexj, turtle, ntriples, rdfxml, trig, n3, nquads]
   -r, --result-format <Result schema format>
           [default: shexj] [possible values: internal, simple, shexc, shexj, turtle, ntriples, rdfxml, trig, n3, nquads]
   -t, --show elapsed time
-          
+
       --statistics
-          
+
   -o, --output-file <Output file name, default = terminal>
-          
+
       --reader-mode <RDF Reader mode>
           RDF Reader mode [default: strict] [possible values: lax, strict]
       --force-overwrite
-          
+
   -c, --config-file <Config file name>
           Config file path, if unset it assumes default config
   -h, --help

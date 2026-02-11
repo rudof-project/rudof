@@ -111,11 +111,11 @@ impl ShapeIR {
             Shape::NodeShape(node_shape) => {
                 let node_shape = NodeShapeIR::compile(node_shape, schema, schema_ir)?;
                 ShapeIR::NodeShape(Box::new(node_shape))
-            }
+            },
             Shape::PropertyShape(property_shape) => {
                 let property_shape = PropertyShapeIR::compile(*property_shape, schema, schema_ir)?;
                 ShapeIR::PropertyShape(Box::new(property_shape))
-            }
+            },
         };
         let idx = schema_ir.add_shape(*idx, shape_ir)?;
         Ok(idx)
@@ -132,10 +132,10 @@ impl ShapeIR {
         match self {
             ShapeIR::NodeShape(ns) => {
                 ns.add_edges(shape_idx, dg, posneg, schema_ir, visited);
-            }
+            },
             ShapeIR::PropertyShape(ps) => {
                 ps.add_edges(shape_idx, dg, posneg, schema_ir, visited);
-            }
+            },
         }
     }
 
@@ -159,7 +159,7 @@ impl Display for ShapeIR {
         match self {
             ShapeIR::NodeShape(_shape) => {
                 writeln!(f, "NodeShape")?;
-            }
+            },
             ShapeIR::PropertyShape(shape) => {
                 writeln!(f, "PropertyShape")?;
                 writeln!(f, " path: {}", shape.path())?;
@@ -176,7 +176,7 @@ impl Display for ShapeIR {
                             .join(", ")
                     )?;
                 }
-            }
+            },
         }
         if self.deactivated() {
             writeln!(f, " Deactivated: {}", self.deactivated())?;
@@ -206,10 +206,7 @@ impl Display for ShapeIR {
             writeln!(
                 f,
                 " Property Shapes: [{}]",
-                property_shapes
-                    .map(|ps| ps.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", ")
+                property_shapes.map(|ps| ps.to_string()).collect::<Vec<_>>().join(", ")
             )?;
         }
         Ok(())

@@ -5,6 +5,8 @@
 [![rudof](https://github.com/rudof-project/rudof/actions/workflows/ci.yml/badge.svg)](https://github.com/rudof-project/rudof/actions/workflows/ci.yml)
 [![dependency status](https://deps.rs/repo/github/rudof-project/rudof/status.svg)](https://deps.rs/repo/github/rudof-project/rudof)
 [![CodeScene general](https://codescene.io/images/analyzed-by-codescene-badge.svg)](https://codescene.io/projects/72637)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
+
 
 This repo contains an RDF data shapes library implemented in Rust.
 The implementation supports
@@ -15,7 +17,7 @@ and conversions between different RDF data modeling formalisms.
 
 The code can be used as a Rust library
 but it also contains a binary called `rudof`
-which can be used as an RDF playground. 
+which can be used as an RDF playground.
 
 We provide binaries for Linux, Windows, Mac and Docker
 (see [releases](https://github.com/rudof-project/rudof/releases)),
@@ -182,10 +184,10 @@ where `value` can be `info`, `debug` or `trace` to show more information. It is 
 export RUST_LOG=info,shacl_validation=trace,hyper=off,reqwest=off
 ```
 
-In case you use nu_shell, you can use: 
+In case you use nu_shell, you can use:
 
 ```
-$env.RUST_LOG = 'info,shacl_validation=trace,hyper=off,reqwest=off' 
+$env.RUST_LOG = 'info,shacl_validation=trace,hyper=off,reqwest=off'
 ```
 
 ## Command line usage
@@ -215,7 +217,7 @@ Commands:
   help            Print this message or the help of the given subcommand(s)
 
 Options:
-  -d, --debug...  
+  -d, --debug...
   -h, --help      Print help (see more with '--help')
   -V, --version   Print version
 ```
@@ -339,3 +341,18 @@ any contribution intentionally submitted for inclusion in the work by you,
 as defined in the Apache-2.0 license,
 shall be dual licensed as above,
 without any additional terms or conditions.
+
+#### Local development
+
+[Precommit](https://pre-commit.com/) has been configured to run formatters and linters before each commit.
+It is recommended to use it to ensure that the code is formatted and linted correctly before pushing it to the repository.
+
+In order to install it, you can run:
+
+```sh
+# Installs pre-commit it self
+pip install pre-commit
+
+# Installs the pre-commit hooks defined in .pre-commit-config.yaml
+pre-commit install
+```

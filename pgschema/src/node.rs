@@ -44,11 +44,7 @@ impl Node {
 
 impl Display for Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Node({} {:?} [{:?}]",
-            self.id, self.labels, self.properties
-        )
+        write!(f, "Node({} {:?} [{:?}]", self.id, self.labels, self.properties)
     }
 }
 
@@ -104,8 +100,7 @@ mod tests {
         let person_label = LabelPropertySpec::Label("Person".to_string());
         let name = PropertyValue::property(Key::new("name"), TypeSpec::string(Card::One));
         let age = PropertyValue::property(Key::new("age"), TypeSpec::integer(Card::One));
-        let aliases =
-            PropertyValue::property(Key::new("aliases"), TypeSpec::string(Card::ZeroOrMore));
+        let aliases = PropertyValue::property(Key::new("aliases"), TypeSpec::string(Card::ZeroOrMore));
         let person_content = PropertyValue::each_of(name, PropertyValue::each_of(age, aliases));
         let _ = graph.add_node_spec(
             "PersonType",
@@ -116,26 +111,10 @@ mod tests {
         let semantics = property_value_spec.semantics(&graph).unwrap();
         debug!("Semantics of person type: {:?}", semantics);
 
-        assert!(
-            graph
-                .conforms_node(&"PersonType".to_string(), &alice)
-                .is_right()
-        );
-        assert!(
-            graph
-                .conforms_node(&"PersonType".to_string(), &alice_wrong1)
-                .is_left()
-        );
-        assert!(
-            graph
-                .conforms_node(&"PersonType".to_string(), &alice_wrong2)
-                .is_left()
-        );
-        assert!(
-            graph
-                .conforms_node(&"PersonType".to_string(), &alice_wrong3)
-                .is_left()
-        )
+        assert!(graph.conforms_node(&"PersonType".to_string(), &alice).is_right());
+        assert!(graph.conforms_node(&"PersonType".to_string(), &alice_wrong1).is_left());
+        assert!(graph.conforms_node(&"PersonType".to_string(), &alice_wrong2).is_left());
+        assert!(graph.conforms_node(&"PersonType".to_string(), &alice_wrong3).is_left())
     }
 
     #[test]
@@ -150,18 +129,13 @@ mod tests {
         let person_label = LabelPropertySpec::Label("Person".to_string());
         let name = PropertyValue::property(Key::new("name"), TypeSpec::string(Card::One));
         let age = PropertyValue::property(Key::new("age"), TypeSpec::integer(Card::One));
-        let aliases =
-            PropertyValue::property(Key::new("aliases"), TypeSpec::string(Card::ZeroOrMore));
+        let aliases = PropertyValue::property(Key::new("aliases"), TypeSpec::string(Card::ZeroOrMore));
         let person_content = PropertyValue::each_of(name, PropertyValue::each_of(age, aliases));
         let _ = graph.add_node_spec(
             "PersonType",
             LabelPropertySpec::content(person_label, PropertyValueSpec::closed(person_content)),
         );
-        assert!(
-            graph
-                .conforms_node(&"PersonType".to_string(), &alice)
-                .is_left(),
-        )
+        assert!(graph.conforms_node(&"PersonType".to_string(), &alice).is_left(),)
     }
 
     #[test]
@@ -183,23 +157,14 @@ mod tests {
         let person_label = LabelPropertySpec::Label("Person".to_string());
         let name = PropertyValue::property(Key::new("name"), TypeSpec::string(Card::One));
         let age = PropertyValue::optional_property(Key::new("age"), TypeSpec::integer(Card::One));
-        let aliases =
-            PropertyValue::property(Key::new("aliases"), TypeSpec::string(Card::ZeroOrMore));
+        let aliases = PropertyValue::property(Key::new("aliases"), TypeSpec::string(Card::ZeroOrMore));
         let person_content = PropertyValue::each_of(name, PropertyValue::each_of(age, aliases));
         let _ = graph.add_node_spec(
             "PersonType",
             LabelPropertySpec::content(person_label, PropertyValueSpec::closed(person_content)),
         );
-        assert!(
-            graph
-                .conforms_node(&"PersonType".to_string(), &alice)
-                .is_right()
-        );
-        assert!(
-            graph
-                .conforms_node(&"PersonType".to_string(), &bob)
-                .is_right()
-        )
+        assert!(graph.conforms_node(&"PersonType".to_string(), &alice).is_right());
+        assert!(graph.conforms_node(&"PersonType".to_string(), &bob).is_right())
     }
 
     #[traced_test]
@@ -229,12 +194,10 @@ mod tests {
 
         let person_label = LabelPropertySpec::Label("Person".to_string());
         let name = PropertyValue::property(Key::new("name"), TypeSpec::string(Card::One));
-        let first_name =
-            PropertyValue::property(Key::new("first_name"), TypeSpec::string(Card::One));
+        let first_name = PropertyValue::property(Key::new("first_name"), TypeSpec::string(Card::One));
         let last_name = PropertyValue::property(Key::new("last_name"), TypeSpec::string(Card::One));
         let age = PropertyValue::optional_property(Key::new("age"), TypeSpec::integer(Card::One));
-        let aliases =
-            PropertyValue::property(Key::new("aliases"), TypeSpec::string(Card::ZeroOrMore));
+        let aliases = PropertyValue::property(Key::new("aliases"), TypeSpec::string(Card::ZeroOrMore));
         let person_content = PropertyValue::each_of(
             PropertyValue::one_of(name, PropertyValue::each_of(first_name, last_name)),
             PropertyValue::each_of(age, aliases),
@@ -245,22 +208,10 @@ mod tests {
             LabelPropertySpec::content(person_label, PropertyValueSpec::closed(person_content)),
         );
 
-        assert!(
-            graph
-                .conforms_node(&"PersonType".to_string(), &alice)
-                .is_right()
-        );
+        assert!(graph.conforms_node(&"PersonType".to_string(), &alice).is_right());
 
-        assert!(
-            graph
-                .conforms_node(&"PersonType".to_string(), &bob)
-                .is_right()
-        );
+        assert!(graph.conforms_node(&"PersonType".to_string(), &bob).is_right());
 
-        assert!(
-            graph
-                .conforms_node(&"PersonType".to_string(), &wrong1)
-                .is_left()
-        );
+        assert!(graph.conforms_node(&"PersonType".to_string(), &wrong1).is_left());
     }
 }

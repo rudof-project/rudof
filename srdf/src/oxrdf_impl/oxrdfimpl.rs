@@ -106,11 +106,7 @@ impl BlankNode for OxBlankNode {
 }
 
 impl Triple<OxSubject, OxNamedNode, OxTerm> for OxTriple {
-    fn new(
-        subj: impl Into<OxSubject>,
-        pred: impl Into<OxNamedNode>,
-        obj: impl Into<OxTerm>,
-    ) -> Self {
+    fn new(subj: impl Into<OxSubject>, pred: impl Into<OxNamedNode>, obj: impl Into<OxTerm>) -> Self {
         OxTriple::new(subj, pred, obj)
     }
 

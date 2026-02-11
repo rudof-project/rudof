@@ -37,10 +37,10 @@ impl Display for ObjectValue {
             ObjectValue::IriRef(iri) => {
                 write!(f, "{iri}")?;
                 Ok(())
-            }
+            },
             ObjectValue::ObjectLiteral(lit) => {
                 write!(f, "{lit}")
-            }
+            },
         }
     }
 }

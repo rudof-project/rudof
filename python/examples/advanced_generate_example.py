@@ -20,12 +20,12 @@ def example_basic_generation():
     print("\n" + "=" * 70)
     print("Example 1: Basic Data Generation")
     print("=" * 70)
-    
+
     config = pyrudof.GeneratorConfig()
     config.set_entity_count(10)
     config.set_output_path("/tmp/basic_output.ttl")
     config.set_output_format(pyrudof.OutputFormat.Turtle)
-    
+
     generator = pyrudof.DataGenerator(config)
     print("✓ Created basic generator configuration")
     print(f"  Entities: {config.get_entity_count()}")
@@ -37,13 +37,13 @@ def example_reproducible_generation():
     print("\n" + "=" * 70)
     print("Example 2: Reproducible Generation")
     print("=" * 70)
-    
+
     config = pyrudof.GeneratorConfig()
     config.set_entity_count(100)
     config.set_seed(42)  # Fixed seed for reproducibility
     config.set_output_path("/tmp/reproducible_output.ttl")
     config.set_output_format(pyrudof.OutputFormat.Turtle)
-    
+
     generator = pyrudof.DataGenerator(config)
     print("✓ Generator with fixed seed for reproducible results")
     print(f"  Seed: {config.get_seed()}")
@@ -55,19 +55,19 @@ def example_parallel_generation():
     print("\n" + "=" * 70)
     print("Example 3: Parallel Generation")
     print("=" * 70)
-    
+
     config = pyrudof.GeneratorConfig()
     config.set_entity_count(1000)
-    
+
     # Configure parallel processing
     config.set_worker_threads(4)
     config.set_batch_size(100)
     config.set_parallel_writing(True)
     config.set_parallel_file_count(4)
-    
+
     config.set_output_path("/tmp/parallel_output")
     config.set_output_format(pyrudof.OutputFormat.Turtle)
-    
+
     generator = pyrudof.DataGenerator(config)
     print("✓ Generator configured for parallel processing")
     print(f"  Worker threads: 4")
@@ -81,13 +81,13 @@ def example_with_stats():
     print("\n" + "=" * 70)
     print("Example 4: Generation with Statistics")
     print("=" * 70)
-    
+
     config = pyrudof.GeneratorConfig()
     config.set_entity_count(50)
     config.set_output_path("/tmp/output_with_stats.ttl")
     config.set_output_format(pyrudof.OutputFormat.Turtle)
     config.set_write_stats(True)
-    
+
     generator = pyrudof.DataGenerator(config)
     print("✓ Generator will write statistics file")
     print(f"  Data output: {config.get_output_path()}")
@@ -99,21 +99,21 @@ def example_cardinality_strategies():
     print("\n" + "=" * 70)
     print("Example 5: Cardinality Strategies")
     print("=" * 70)
-    
+
     strategies = {
         "Minimum": pyrudof.CardinalityStrategy.Minimum,
         "Maximum": pyrudof.CardinalityStrategy.Maximum,
         "Random": pyrudof.CardinalityStrategy.Random,
         "Balanced": pyrudof.CardinalityStrategy.Balanced,
     }
-    
+
     for name, strategy in strategies.items():
         config = pyrudof.GeneratorConfig()
         config.set_entity_count(20)
         config.set_cardinality_strategy(strategy)
         config.set_output_path(f"/tmp/output_{name.lower()}.ttl")
         config.set_output_format(pyrudof.OutputFormat.Turtle)
-        
+
         generator = pyrudof.DataGenerator(config)
         print(f"  ✓ {name:10} - Uses {name.lower()} cardinality for relationships")
 
@@ -123,7 +123,7 @@ def example_different_output_formats():
     print("\n" + "=" * 70)
     print("Example 6: Output Formats")
     print("=" * 70)
-    
+
     # Turtle format (more readable)
     config_turtle = pyrudof.GeneratorConfig()
     config_turtle.set_entity_count(10)
@@ -131,7 +131,7 @@ def example_different_output_formats():
     config_turtle.set_output_format(pyrudof.OutputFormat.Turtle)
     gen1 = pyrudof.DataGenerator(config_turtle)
     print("  ✓ Turtle format - Human-readable, with prefixes")
-    
+
     # NTriples format (more compact)
     config_ntriples = pyrudof.GeneratorConfig()
     config_ntriples.set_entity_count(10)
@@ -146,7 +146,7 @@ def example_schema_formats():
     print("\n" + "=" * 70)
     print("Example 7: Schema Formats")
     print("=" * 70)
-    
+
     # ShEx schema
     config_shex = pyrudof.GeneratorConfig()
     config_shex.set_schema_format(pyrudof.SchemaFormat.ShEx)
@@ -155,7 +155,7 @@ def example_schema_formats():
     gen1 = pyrudof.DataGenerator(config_shex)
     print("  ✓ ShEx schema format")
     print("    Use with: generator.load_shex_schema('schema.shex')")
-    
+
     # SHACL schema
     config_shacl = pyrudof.GeneratorConfig()
     config_shacl.set_schema_format(pyrudof.SchemaFormat.SHACL)
@@ -171,7 +171,7 @@ def example_config_persistence():
     print("\n" + "=" * 70)
     print("Example 8: Configuration Persistence")
     print("=" * 70)
-    
+
     # Create a configuration
     config = pyrudof.GeneratorConfig()
     config.set_entity_count(100)
@@ -180,22 +180,22 @@ def example_config_persistence():
     config.set_output_format(pyrudof.OutputFormat.Turtle)
     config.set_cardinality_strategy(pyrudof.CardinalityStrategy.Balanced)
     config.set_write_stats(True)
-    
+
     # Save to TOML file
     with tempfile.NamedTemporaryFile(mode='w', suffix='.toml', delete=False) as f:
         config_path = f.name
-    
+
     try:
         config.to_toml_file(config_path)
         print(f"✓ Configuration saved to: {config_path}")
-        
+
         # Load it back
         loaded_config = pyrudof.GeneratorConfig.from_toml_file(config_path)
         print(f"✓ Configuration loaded from file")
         print(f"  Entity count: {loaded_config.get_entity_count()}")
         print(f"  Random seed: {loaded_config.get_seed()}")
         print(f"  Output path: {loaded_config.get_output_path()}")
-        
+
         # Can also load from JSON (if you create a JSON config)
         print("\n  Supported formats:")
         print("    - TOML: GeneratorConfig.from_toml_file(path)")
@@ -210,13 +210,13 @@ def example_error_handling():
     print("\n" + "=" * 70)
     print("Example 9: Error Handling")
     print("=" * 70)
-    
+
     config = pyrudof.GeneratorConfig()
     config.set_entity_count(10)
     config.set_output_path("/tmp/error_test.ttl")
-    
+
     generator = pyrudof.DataGenerator(config)
-    
+
     # Try to load a non-existent schema
     try:
         generator.load_shex_schema("/nonexistent/schema.shex")
@@ -225,7 +225,7 @@ def example_error_handling():
         print(f"✓ Caught expected error when loading non-existent schema:")
         print(f"  Error type: {type(e).__name__}")
         print(f"  Error message: {str(e)[:60]}...")
-    
+
     # Try to load invalid config file
     try:
         config = pyrudof.GeneratorConfig.from_toml_file("/nonexistent/config.toml")
@@ -240,7 +240,7 @@ def example_complete_workflow():
     print("\n" + "=" * 70)
     print("Example 10: Complete Workflow (Conceptual)")
     print("=" * 70)
-    
+
     print("""
 A complete workflow would look like:
 
@@ -279,7 +279,7 @@ def main():
     print("=" * 70)
     print("\nThese examples demonstrate the Python API for rudof_generate.")
     print("They show configuration patterns without actually generating data.")
-    
+
     try:
         example_basic_generation()
         example_reproducible_generation()
@@ -291,7 +291,7 @@ def main():
         example_config_persistence()
         example_error_handling()
         example_complete_workflow()
-        
+
         print("\n" + "=" * 70)
         print("✓ All examples completed successfully!")
         print("=" * 70)
@@ -300,13 +300,13 @@ def main():
         print("  2. OR a valid SHACL schema (.ttl file with SHACL shapes)")
         print("\nSee the repository examples/ directory for sample schemas.")
         print("\n")
-        
+
     except Exception as e:
         print(f"\n✗ Error running examples: {e}")
         import traceback
         traceback.print_exc()
         return 1
-    
+
     return 0
 
 

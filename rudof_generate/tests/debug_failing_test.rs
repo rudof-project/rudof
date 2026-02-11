@@ -31,20 +31,12 @@ ex:PersonShape {
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shex_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shex_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Read the generated file content
     let content = std::fs::read_to_string(output_file.path()).unwrap();
@@ -58,14 +50,8 @@ ex:PersonShape {
             let datatype = lit.datatype().to_string();
             // Remove angle brackets if present
             let clean_datatype = datatype.trim_start_matches('<').trim_end_matches('>');
-            println!(
-                "Found literal: {} with datatype: {}",
-                lit.value(),
-                clean_datatype
-            );
-            *datatype_counts
-                .entry(clean_datatype.to_string())
-                .or_insert(0) += 1;
+            println!("Found literal: {} with datatype: {}", lit.value(), clean_datatype);
+            *datatype_counts.entry(clean_datatype.to_string()).or_insert(0) += 1;
         }
     }
 
@@ -73,21 +59,12 @@ ex:PersonShape {
 
     // Should have string, integer, and boolean literals
     if !datatype_counts.contains_key("http://www.w3.org/2001/XMLSchema#string") {
-        println!(
-            "Missing string datatype! Keys: {:?}",
-            datatype_counts.keys()
-        );
+        println!("Missing string datatype! Keys: {:?}", datatype_counts.keys());
     }
     if !datatype_counts.contains_key("http://www.w3.org/2001/XMLSchema#integer") {
-        println!(
-            "Missing integer datatype! Keys: {:?}",
-            datatype_counts.keys()
-        );
+        println!("Missing integer datatype! Keys: {:?}", datatype_counts.keys());
     }
     if !datatype_counts.contains_key("http://www.w3.org/2001/XMLSchema#boolean") {
-        println!(
-            "Missing boolean datatype! Keys: {:?}",
-            datatype_counts.keys()
-        );
+        println!("Missing boolean datatype! Keys: {:?}", datatype_counts.keys());
     }
 }

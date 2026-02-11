@@ -44,10 +44,7 @@ pub enum PgsError {
     CardinalityMismatch { expected: Card, count: usize },
 
     #[error("Predicate {predicate_name} failed with value {value}")]
-    PredicateFailed {
-        predicate_name: String,
-        value: Value,
-    },
+    PredicateFailed { predicate_name: String, value: Value },
 
     #[error("Missing keys in record type: {record_type}, keys: {keys:?}")]
     MissingKeys { keys: String, record_type: String },
@@ -65,10 +62,7 @@ pub enum PgsError {
     MapParserError { error: String },
 
     #[error("Labels do not match: record labels {record_labels}, type labels {type_labels}")]
-    LabelsDifferent {
-        record_labels: String,
-        type_labels: String,
-    },
+    LabelsDifferent { record_labels: String, type_labels: String },
 
     #[error("Error reading type map from file: {path}: {error}")]
     TypeMapFileReadError { path: String, error: String },
@@ -79,13 +73,8 @@ pub enum PgsError {
     #[error("Error reading property graph schema from file: {path}: {error}")]
     PGSchemaFileReadError { path: String, error: String },
 
-    #[error(
-        "Record does not conform to type content:\n Record:\n{record}\n Types:\n{type_content}"
-    )]
-    RecordContentFails {
-        record: String,
-        type_content: String,
-    },
+    #[error("Record does not conform to type content:\n Record:\n{record}\n Types:\n{type_content}")]
+    RecordContentFails { record: String, type_content: String },
 
     #[error("Type mismatch in operation {operation}: expected {expected}, found {found}")]
     TypeMismatch {

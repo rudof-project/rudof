@@ -23,9 +23,7 @@ impl Visitor<'_> for IriVisitor {
             Err(IriSError::IriParseError { str, error: err }) => Err(E::custom(format!(
                 "Error parsing \"{v}\" as IRI. String \"{str}\", Error: {err}"
             ))),
-            Err(other) => Err(E::custom(format!(
-                "Can not parse value \"{v}\" to IRI. Error: {other}"
-            ))),
+            Err(other) => Err(E::custom(format!("Can not parse value \"{v}\" to IRI. Error: {other}"))),
         }
     }
 }

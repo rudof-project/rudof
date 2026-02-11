@@ -1,6 +1,4 @@
-use crate::rdf_visualizer::{
-    rdf_visualizer_config::RDFVisualizationConfig, stereotype_style::StereotypeStyle,
-};
+use crate::rdf_visualizer::{rdf_visualizer_config::RDFVisualizationConfig, stereotype_style::StereotypeStyle};
 
 pub struct Style {
     stereotype_styles: Vec<StereotypeStyle>,

@@ -35,9 +35,9 @@ RDF Formats
 .. autoclass:: RDFFormat
    :members:
    :undoc-members:
-   
+
    Supported RDF serialization formats:
-   
+
    * ``RDFFormat.Turtle`` - Terse RDF Triple Language (.ttl)
    * ``RDFFormat.NTriples`` - Line-based RDF format (.nt)
    * ``RDFFormat.RDFXML`` - XML-based RDF syntax (.rdf, .owl)
@@ -52,9 +52,9 @@ ShEx Formats
 .. autoclass:: ShExFormat
    :members:
    :undoc-members:
-   
+
    Supported ShEx schema formats:
-   
+
    * ``ShExFormat.ShExC`` - ShEx Compact Syntax (human-readable, .shex)
    * ``ShExFormat.ShExJ`` - ShEx JSON format (.json)
    * ``ShExFormat.Turtle`` - ShEx in RDF/Turtle (.ttl)
@@ -65,9 +65,9 @@ SHACL Formats
 .. autoclass:: ShaclFormat
    :members:
    :undoc-members:
-   
+
    SHACL shapes graph serialization formats (all RDF-based):
-   
+
    * ``ShaclFormat.Turtle`` - Turtle format (.ttl)
    * ``ShaclFormat.NTriples`` - N-Triples format (.nt)
    * ``ShaclFormat.RDFXML`` - RDF/XML format (.rdf)
@@ -81,9 +81,9 @@ ShapeMap Formats
 .. autoclass:: ShapeMapFormat
    :members:
    :undoc-members:
-   
+
    ShapeMap serialization formats:
-   
+
    * ``ShapeMapFormat.Compact`` - Compact ShapeMap syntax (human-readable)
    * ``ShapeMapFormat.JSON`` - JSON representation
 
@@ -93,18 +93,18 @@ Other Formats
 .. autoclass:: DCTapFormat
    :members:
    :undoc-members:
-   
+
    DCTAP (Dublin Core Tabular Application Profiles) formats:
-   
+
    * ``DCTapFormat.CSV`` - Comma-separated values (.csv)
    * ``DCTapFormat.XLSX`` - Excel spreadsheet (.xlsx)
 
 .. autoclass:: QueryResultFormat
    :members:
    :undoc-members:
-   
+
    SPARQL query result formats:
-   
+
    * ``QueryResultFormat.Turtle`` - Turtle format (.ttl)
    * ``QueryResultFormat.NTriples`` - N-Triples format (.nt)
    * ``QueryResultFormat.RDFXML`` - RDF/XML format (.rdf)
@@ -116,9 +116,9 @@ Other Formats
 .. autoclass:: ServiceDescriptionFormat
    :members:
    :undoc-members:
-   
+
    SPARQL Service Description formats:
-   
+
    * ``ServiceDescriptionFormat.Internal`` - Internal representation
    * ``ServiceDescriptionFormat.Json`` - JSON format
    * ``ServiceDescriptionFormat.Mie`` - MIE specification format
@@ -149,9 +149,9 @@ Reader Configuration
 .. autoclass:: ReaderMode
    :members:
    :undoc-members:
-   
+
    Controls error handling during parsing:
-   
+
    * ``ReaderMode.Lax`` - Ignore non-fatal errors and continue (default, recommended for real-world data)
    * ``ReaderMode.Strict`` - Fail immediately on first error (useful for strict validation)
 
@@ -164,18 +164,18 @@ SHACL Validation
 .. autoclass:: ShaclValidationMode
    :members:
    :undoc-members:
-   
+
    SHACL validation engines:
-   
+
    * ``ShaclValidationMode.Native`` - Native SHACL validation engine (faster, recommended)
    * ``ShaclValidationMode.Sparql`` - SPARQL-based validation (slower, useful for debugging)
 
 .. autoclass:: ShapesGraphSource
    :members:
    :undoc-members:
-   
+
    Source of SHACL shapes for validation:
-   
+
    * ``ShapesGraphSource.CurrentData`` - Extract shapes from the current RDF data graph
    * ``ShapesGraphSource.CurrentSchema`` - Use the currently loaded SHACL schema
 
@@ -204,9 +204,9 @@ ShEx Validation
 .. autoclass:: SortModeResultMap
    :members:
    :undoc-members:
-   
+
    Sort modes for ResultShapeMap table display:
-   
+
    * ``SortModeResultMap.Node`` - Sort by focus node
    * ``SortModeResultMap.Shape`` - Sort by shape label
    * ``SortModeResultMap.Status`` - Sort by validation status
@@ -275,9 +275,9 @@ Visualization
 .. autoclass:: UmlGenerationMode
    :members:
    :undoc-members:
-   
+
    UML generation modes for PlantUML exports:
-   
+
    * ``UmlGenerationMode.all()`` - Generate UML for all shapes in the model
    * ``UmlGenerationMode.neighs(node)`` - Generate UML only for neighbors of specified node
 

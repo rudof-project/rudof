@@ -29,13 +29,13 @@
 mod errors;
 mod handlers;
 mod logging;
+mod mcp_service;
 mod prompts;
 mod resource_templates;
 mod resources;
-mod service;
 mod state;
 mod tasks;
 mod tools;
 
-pub use service::RudofMcpService;
+pub use mcp_service::RudofMcpService;
 pub use tools::annotated_tools;

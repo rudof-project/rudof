@@ -4,8 +4,8 @@ use iri_s::IriS;
 use oxigraph::sparql::{QueryResults, SparqlEvaluator};
 use oxigraph::store::Store;
 use oxrdf::{
-    BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode,
-    NamedOrBlankNode as OxSubject, Term as OxTerm, Triple as OxTriple,
+    BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, NamedOrBlankNode as OxSubject,
+    Term as OxTerm, Triple as OxTriple,
 };
 use prefixmap::PrefixMap;
 use serde::Serialize;
@@ -70,24 +70,18 @@ impl RdfData {
         self.focus = None;
     }
 
-    pub fn with_rdf_data_config(
-        mut self,
-        rdf_data_config: &srdf::RdfDataConfig,
-    ) -> Result<Self, RdfDataError> {
+    pub fn with_rdf_data_config(mut self, rdf_data_config: &srdf::RdfDataConfig) -> Result<Self, RdfDataError> {
         // Load endpoints
         if let Some(endpoints) = &rdf_data_config.endpoints {
             for (name, endpoint_description) in endpoints.iter() {
-                let sparql_endpoint = SRDFSparql::new(
-                    endpoint_description.query_url(),
-                    &endpoint_description.prefixmap(),
-                )
-                .map_err(|e| {
-                    RdfDataError::SRDFSparqlFromEndpointDescriptionError {
-                        name: name.clone(),
-                        url: endpoint_description.query_url().to_string(),
-                        err: Box::new(e),
-                    }
-                })?;
+                let sparql_endpoint =
+                    SRDFSparql::new(endpoint_description.query_url(), &endpoint_description.prefixmap()).map_err(
+                        |e| RdfDataError::SRDFSparqlFromEndpointDescriptionError {
+                            name: name.clone(),
+                            url: endpoint_description.query_url().to_string(),
+                            err: Box::new(e),
+                        },
+                    )?;
                 self.add_endpoint(name, sparql_endpoint);
             }
         }
@@ -142,10 +136,7 @@ impl RdfData {
     }
 
     pub fn graph_prefixmap(&self) -> PrefixMap {
-        self.graph
-            .as_ref()
-            .map(|g| g.prefixmap())
-            .unwrap_or_default()
+        self.graph.as_ref().map(|g| g.prefixmap()).unwrap_or_default()
     }
 
     /// Cleans the in-memory graph
@@ -184,7 +175,7 @@ impl RdfData {
                     .map_err(|e| RdfDataError::SRDFGraphError { err: Box::new(e) })?;
                 self.graph = Some(graph);
                 Ok(())
-            }
+            },
         }
     }
 
@@ -231,10 +222,7 @@ impl RdfData {
 
     /// Gets the PrefixMap from the in-memory graph
     pub fn prefixmap_in_memory(&self) -> PrefixMap {
-        self.graph
-            .as_ref()
-            .map(|g| g.prefixmap())
-            .unwrap_or_default()
+        self.graph.as_ref().map(|g| g.prefixmap()).unwrap_or_default()
     }
 
     pub fn show_blanknode(&self, bn: &OxBlankNode) -> String {
@@ -249,17 +237,13 @@ impl RdfData {
             (value, _, Some(lang), None) => format!("\"{}\"@{}", value, lang),
             (value, _, Some(lang), Some(direction)) => {
                 format!("\"{}\"@{}{}", value, lang, direction)
-            }
+            },
             _ => panic!("Unexpected literal structure <{}>", lit),
         };
         format!("{}", str.red())
     }
 
-    pub fn serialize<W: io::Write>(
-        &self,
-        format: &RDFFormat,
-        writer: &mut W,
-    ) -> Result<(), RdfDataError> {
+    pub fn serialize<W: io::Write>(&self, format: &RDFFormat, writer: &mut W) -> Result<(), RdfDataError> {
         if let Some(graph) = &self.graph {
             BuildRDF::serialize(graph, format, writer).map_err(|e| RdfDataError::Serializing {
                 format: *format,
@@ -335,16 +319,16 @@ impl Rdf for RdfData {
                     let mut pm = PrefixMap::new();
                     for e in self.use_endpoints.values() {
                         match pm.merge(e.prefixmap().clone()) {
-                            Ok(_) => {}
+                            Ok(_) => {},
                             Err(e) => {
                                 eprintln!("Warning: cannot merge prefixmap from endpoint: {}", e);
                                 return None;
-                            }
+                            },
                         }
                     }
                     Some(pm)
                 }
-            }
+            },
         }
     }
 
@@ -379,11 +363,7 @@ impl Rdf for RdfData {
         }
     }
 
-    fn resolve_prefix_local(
-        &self,
-        prefix: &str,
-        local: &str,
-    ) -> Result<IriS, prefixmap::error::PrefixMapError> {
+    fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, prefixmap::error::PrefixMapError> {
         if let Some(graph) = self.graph() {
             let iri = graph.prefixmap().resolve_prefix_local(prefix, local)?;
             Ok(iri.clone())
@@ -402,11 +382,7 @@ impl Rdf for RdfData {
 }
 
 impl QueryRDF for RdfData {
-    fn query_construct(
-        &self,
-        query_str: &str,
-        format: &QueryResultFormat,
-    ) -> Result<String, RdfDataError>
+    fn query_construct(&self, query_str: &str, format: &QueryResultFormat) -> Result<String, RdfDataError>
     where
         Self: Sized,
     {
@@ -435,19 +411,17 @@ impl QueryRDF for RdfData {
                 .execute()?;
             trace!("Got results from in-memory store");
             let sol = cnv_query_results(new_sol)?;
-            sols.extend(sol, self.graph_prefixmap()).map_err(|e| {
-                RdfDataError::ExtendingQuerySolutionsError {
+            sols.extend(sol, self.graph_prefixmap())
+                .map_err(|e| RdfDataError::ExtendingQuerySolutionsError {
                     query: query_str.to_string(),
                     error: format!("{e}"),
-                }
-            })?;
+                })?;
         } else {
             trace!("No in-memory store to query");
         }
         for (name, endpoint) in self.endpoints_to_use() {
             let new_sols = endpoint.query_select(query_str)?;
-            let new_sols_converted: Vec<QuerySolution<RdfData>> =
-                new_sols.iter().map(cnv_sol).collect();
+            let new_sols_converted: Vec<QuerySolution<RdfData>> = new_sols.iter().map(cnv_sol).collect();
             sols.extend(new_sols_converted, endpoint.prefixmap().clone())
                 .map_err(|e| RdfDataError::ExtendingQuerySolutionsErrorEndpoint {
                     query: query_str.to_string(),
@@ -467,9 +441,7 @@ fn cnv_sol(sol: &QuerySolution<SRDFSparql>) -> QuerySolution<RdfData> {
     sol.convert(|t| t.clone())
 }
 
-fn cnv_query_results(
-    query_results: QueryResults,
-) -> Result<Vec<QuerySolution<RdfData>>, RdfDataError> {
+fn cnv_query_results(query_results: QueryResults) -> Result<Vec<QuerySolution<RdfData>>, RdfDataError> {
     let mut results = Vec::new();
     if let QueryResults::Solutions(solutions) = query_results {
         trace!("Converting query solutions");
@@ -592,7 +564,7 @@ impl BuildRDF for RdfData {
                     .add_triple(subj, pred, obj)
                     .map_err(|e| RdfDataError::SRDFGraphError { err: Box::new(e) })?;
                 Ok(())
-            }
+            },
             None => {
                 let mut graph = SRDFGraph::new();
                 graph
@@ -600,7 +572,7 @@ impl BuildRDF for RdfData {
                     .map_err(|e| RdfDataError::SRDFGraphError { err: Box::new(e) })?;
                 self.graph = Some(graph);
                 Ok(())
-            }
+            },
         }
     }
 
@@ -629,11 +601,7 @@ impl BuildRDF for RdfData {
             .map_err(|e| RdfDataError::SRDFGraphError { err: Box::new(e) })
     }
 
-    fn serialize<W: std::io::Write>(
-        &self,
-        format: &RDFFormat,
-        writer: &mut W,
-    ) -> Result<(), Self::Err> {
+    fn serialize<W: std::io::Write>(&self, format: &RDFFormat, writer: &mut W) -> Result<(), Self::Err> {
         if let Some(graph) = &self.graph {
             BuildRDF::serialize(graph, format, writer).map_err(|e| RdfDataError::Serializing {
                 format: *format,
@@ -656,7 +624,7 @@ impl BuildRDF for RdfData {
                     .add_bnode()
                     .map_err(|e| RdfDataError::SRDFGraphError { err: Box::new(e) })?;
                 Ok(bnode)
-            }
+            },
             None => Err(RdfDataError::BNodeNoGraph),
         }
     }

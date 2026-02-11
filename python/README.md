@@ -4,7 +4,7 @@ The Python bindings for [rudof](https://rudof-project.github.io/) are called `py
 
 For more information, you can access the [readthedocs documentation](https://pyrudof.readthedocs.io/en/latest/). We keep several tutorials about rudof as Jupyter notebooks in: [https://rudof-project.github.io/tutorials].
 
-After compiling and installing this module, a Python library  called `pyrudof` should be available.  
+After compiling and installing this module, a Python library  called `pyrudof` should be available.
 
 ## Build the development version
 
@@ -28,7 +28,7 @@ If you are using `.env`, you can do the following:
 python3 -m venv .venv
 ```
 
-followed by: 
+followed by:
 
 ```sh
 source .venv/bin/activate
@@ -48,13 +48,13 @@ pip install -e .
 
 ## Running the tests
 
-Go to the tests folder: 
+Go to the tests folder:
 
 ```sh
 cd tests
 ```
 
-and run: 
+and run:
 
 ```sh
 python3 -m unittest discover -vvv

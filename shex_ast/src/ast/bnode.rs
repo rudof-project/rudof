@@ -9,17 +9,13 @@ pub struct BNode {
 
 impl BNode {
     pub fn new(s: &str) -> BNode {
-        BNode {
-            value: s.to_string(),
-        }
+        BNode { value: s.to_string() }
     }
 }
 
 impl From<&str> for BNode {
     fn from(s: &str) -> Self {
-        BNode {
-            value: s.to_string(),
-        }
+        BNode { value: s.to_string() }
     }
 }
 

@@ -105,24 +105,24 @@ impl ValueSetValue {
                                 {
                                     return false;
                                 }
-                            }
+                            },
                             IriExclusion::IriStem(stem) => {
                                 if let Object::Iri(iri_s) = object
                                     && iri_s.as_str().starts_with(stem.as_str())
                                 {
                                     return false;
                                 }
-                            }
+                            },
                         }
                     }
                 }
                 true
-            }
+            },
             ValueSetValue::LiteralStem { stem } => match object {
                 Object::Literal(lit) => {
                     let str = lit.lexical_form();
                     str.starts_with(stem)
-                }
+                },
                 _ => false,
             },
             ValueSetValue::LiteralStemRange { stem, exclusions } => {
@@ -131,7 +131,7 @@ impl ValueSetValue {
                         Object::Literal(lit) => {
                             let str = lit.lexical_form();
                             str.starts_with(s)
-                        }
+                        },
                         _ => false,
                     },
                     StringOrWildcard::Wildcard { type_: _ } => true, // Matches everything for now
@@ -149,7 +149,7 @@ impl ValueSetValue {
                                         return false;
                                     }
                                 }
-                            }
+                            },
                             LiteralExclusion::LiteralStem(stem) => {
                                 if let Object::Literal(lit) = object {
                                     let str = lit.lexical_form();
@@ -157,16 +157,13 @@ impl ValueSetValue {
                                         return false;
                                     }
                                 }
-                            }
+                            },
                         }
                     }
                 }
                 true
-            }
-            ValueSetValue::Language { language_tag } => object
-                .lang()
-                .map(|lang| language_tag == lang)
-                .unwrap_or(false),
+            },
+            ValueSetValue::Language { language_tag } => object.lang().map(|lang| language_tag == lang).unwrap_or(false),
             ValueSetValue::LanguageStem { stem } => object
                 .lang()
                 .map(|lang| match stem {
@@ -177,9 +174,9 @@ impl ValueSetValue {
             ValueSetValue::LanguageStemRange { stem, exclusions } => {
                 let matches_stem = match stem {
                     LangOrWildcard::Lang(lang) => match object {
-                        Object::Literal(SLiteral::StringLiteral { lang: Some(l), .. }) => {
+                        Object::Literal(SLiteral::String { lang: Some(l), .. }) => {
                             l.as_str().starts_with(lang.as_str())
-                        }
+                        },
                         _ => false,
                     },
                     LangOrWildcard::Wildcard { type_: _ } => true, // Matches everything for now
@@ -191,30 +188,24 @@ impl ValueSetValue {
                     for ex in exclusions {
                         match ex {
                             LanguageExclusion::Language(lang) => {
-                                if let Object::Literal(srdf::SLiteral::StringLiteral {
-                                    lang: Some(l),
-                                    ..
-                                }) = object
+                                if let Object::Literal(SLiteral::String { lang: Some(l), .. }) = object
                                     && l == lang
                                 {
                                     return false;
                                 }
-                            }
+                            },
                             LanguageExclusion::LanguageStem(stem) => {
-                                if let Object::Literal(SLiteral::StringLiteral {
-                                    lang: Some(l),
-                                    ..
-                                }) = object
+                                if let Object::Literal(SLiteral::String { lang: Some(l), .. }) = object
                                     && l.as_str().starts_with(stem.as_str())
                                 {
                                     return false;
                                 }
-                            }
+                            },
                         }
                     }
                 }
                 true
-            }
+            },
             ValueSetValue::ObjectValue(v) => v.match_value(object),
         }
     }
@@ -240,10 +231,10 @@ impl ValueSetValue {
                     }
                 }
                 s
-            }
+            },
             ValueSetValue::LiteralStem { stem } => {
                 format!("{stem}~")
-            }
+            },
             ValueSetValue::LiteralStemRange { stem, exclusions } => {
                 let mut s = match stem {
                     StringOrWildcard::String(s) => s.clone(),
@@ -262,13 +253,13 @@ impl ValueSetValue {
                     }
                 }
                 s
-            }
+            },
             ValueSetValue::Language { language_tag } => {
                 format!("@{}", language_tag)
-            }
+            },
             ValueSetValue::LanguageStem { stem } => {
                 format!("@{stem}~")
-            }
+            },
             ValueSetValue::LanguageStemRange { stem, exclusions } => {
                 let mut s = match stem {
                     LangOrWildcard::Lang(lang) => lang.to_string(),
@@ -287,7 +278,7 @@ impl ValueSetValue {
                     }
                 }
                 s
-            }
+            },
             ValueSetValue::ObjectValue(object_value) => object_value.show_qualified(prefixmap),
         }
     }
@@ -314,7 +305,7 @@ impl Display for ValueSetValue {
                     }
                 }
                 Ok(())
-            }
+            },
             ValueSetValue::LiteralStem { stem } => write!(f, "{stem}~"),
             ValueSetValue::LiteralStemRange { stem, exclusions } => {
                 match stem {
@@ -333,7 +324,7 @@ impl Display for ValueSetValue {
                     }
                 }
                 Ok(())
-            }
+            },
             ValueSetValue::Language { language_tag } => write!(f, "@{language_tag}"),
             ValueSetValue::LanguageStem { stem } => write!(f, "{stem}~"),
             ValueSetValue::LanguageStemRange { stem, exclusions } => {
@@ -353,7 +344,7 @@ impl Display for ValueSetValue {
                     }
                 }
                 Ok(())
-            }
+            },
             ValueSetValue::ObjectValue(ov) => write!(f, "{ov}"),
         }
     }

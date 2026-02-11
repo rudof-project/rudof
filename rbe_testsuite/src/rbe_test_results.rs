@@ -15,10 +15,10 @@ impl RbeTestsResults {
         match &result {
             RbeTestResult::Passed(result) => {
                 self.passed.push(result.clone());
-            }
+            },
             RbeTestResult::Failed(result) => {
                 self.failed.push(result.clone());
-            }
+            },
         }
     }
 
