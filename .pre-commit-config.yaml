@@ -28,4 +28,5 @@ repos:
     -   id: clippy
 #        args: [ "--all-targets", "--all-features", "--workspace", "--", "-D", "warnings" ]
     -   id: test
+        args: [ "--all" ]
     -   id: build
