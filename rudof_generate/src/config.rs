@@ -27,7 +27,6 @@ pub struct GenerationConfig {
     pub schema_format: Option<SchemaFormat>,
 
     // --- Coherence Control Parameters ---
-
     /// Probability (0.0 to 1.0) that a property will be included
     #[serde(default = "default_property_fill_probability")]
     pub property_fill_probability: f64,
@@ -123,8 +122,10 @@ pub struct FieldGeneratorConfig {
     /// Default generator settings
     pub default: DefaultFieldConfig,
     /// Per-datatype specific configurations
+    #[serde(default)]
     pub datatypes: HashMap<String, DatatypeConfig>,
     /// Per-property specific configurations
+    #[serde(default)]
     pub properties: HashMap<String, PropertyConfig>,
 }
 
@@ -209,7 +210,7 @@ impl Default for GeneratorConfig {
                 entity_distribution: EntityDistribution::Equal,
                 cardinality_strategy: CardinalityStrategy::Balanced,
                 schema_format: None, // Auto-detect
-                
+
                 // Coherence defaults (High Coherence)
                 property_fill_probability: 1.0,
                 ignore_min_cardinality: false,
@@ -346,16 +347,20 @@ impl GeneratorConfig {
                 ));
             }
         }
-        
+
         // Validate coherence parameters
-        if self.generation.property_fill_probability < 0.0 || self.generation.property_fill_probability > 1.0 {
-             return Err(crate::DataGeneratorError::Config(
+        if self.generation.property_fill_probability < 0.0
+            || self.generation.property_fill_probability > 1.0
+        {
+            return Err(crate::DataGeneratorError::Config(
                 "property_fill_probability must be between 0.0 and 1.0".to_string(),
             ));
         }
-        
-        if self.generation.property_count_variance < 0.0 || self.generation.property_count_variance > 1.0 {
-             return Err(crate::DataGeneratorError::Config(
+
+        if self.generation.property_count_variance < 0.0
+            || self.generation.property_count_variance > 1.0
+        {
+            return Err(crate::DataGeneratorError::Config(
                 "property_count_variance must be between 0.0 and 1.0".to_string(),
             ));
         }
