@@ -341,3 +341,18 @@ any contribution intentionally submitted for inclusion in the work by you,
 as defined in the Apache-2.0 license,
 shall be dual licensed as above,
 without any additional terms or conditions.
+
+#### Local development
+
+[Precommit](https://pre-commit.com/) has been configured to run formatters and linters before each commit.
+It is recommended to use it to ensure that the code is formatted and linted correctly before pushing it to the repository.
+
+In order to install it, you can run:
+
+```sh
+# Installs pre-commit it self
+pip install pre-commit
+
+# Installs the pre-commit hooks defined in .pre-commit-config.yaml
+pre-commit install
+```
