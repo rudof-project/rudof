@@ -1,5 +1,6 @@
 use rudof_generate::config::{
-    CardinalityStrategy, DataQuality, DatatypeConfig, EntityDistribution, GeneratorConfig, OutputFormat, PropertyConfig,
+    CardinalityStrategy, DataQuality, DatatypeConfig, EntityDistribution, GeneratorConfig, OutputFormat,
+    PropertyConfig, PropertySelectionStrategy,
 };
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -358,4 +359,82 @@ parallel_fields = true
     assert_eq!(templates.len(), 2);
     assert!(templates.contains(&"John Doe".to_string()));
     assert!(templates.contains(&"Jane Smith".to_string()));
+}
+
+#[tokio::test]
+async fn test_coherence_configuration_toml() {
+    let temp_dir = create_test_dir();
+
+    let config_content = r#"
+[generation]
+entity_count = 100
+seed = 12345
+entity_distribution = "Equal"
+cardinality_strategy = "Balanced"
+
+# Coherence settings
+property_fill_probability = 0.5
+ignore_min_cardinality = true
+max_properties_per_instance = 5
+property_selection_strategy = "Random"
+property_count_variance = 0.2
+excluded_properties = ["http://example.org/prop1", "http://example.org/prop2"]
+
+[generation.type_overrides."http://example.org/Student"]
+property_fill_probability = 0.8
+max_properties_per_instance = 10
+
+[field_generators.default]
+locale = "en"
+quality = "Medium"
+
+[field_generators.datatypes]
+[field_generators.properties]
+
+[output]
+path = "output.ttl"
+format = "Turtle"
+compress = false
+write_stats = true
+parallel_writing = false
+parallel_file_count = 1
+
+[parallel]
+worker_threads = 1
+batch_size = 100
+parallel_shapes = true
+parallel_fields = true
+"#;
+
+    let config_path = temp_dir.path().join("coherence_config.toml");
+    std::fs::write(&config_path, config_content).expect("Failed to write config file");
+
+    let config = GeneratorConfig::from_toml_file(&config_path).expect("Should load TOML config successfully");
+
+    // Verify coherence settings
+    assert_eq!(config.generation.property_fill_probability, 0.5);
+    assert!(config.generation.ignore_min_cardinality);
+    assert_eq!(config.generation.max_properties_per_instance, 5);
+    assert_eq!(
+        config.generation.property_selection_strategy,
+        PropertySelectionStrategy::Random
+    );
+    assert_eq!(config.generation.property_count_variance, 0.2);
+    assert_eq!(config.generation.excluded_properties.len(), 2);
+    assert!(
+        config
+            .generation
+            .excluded_properties
+            .contains(&"http://example.org/prop1".to_string())
+    );
+
+    // Verify overrides
+    let student_override = config
+        .generation
+        .type_overrides
+        .get("http://example.org/Student")
+        .expect("Should have override for Student");
+    assert_eq!(student_override.property_fill_probability, Some(0.8));
+    assert_eq!(student_override.max_properties_per_instance, Some(10));
+    assert_eq!(student_override.ignore_min_cardinality, None);
 }
