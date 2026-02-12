@@ -1,10 +1,26 @@
 import unittest
-
-from pyrudof import Rudof, RudofConfig
+from pyrudof import (
+    Rudof, 
+    RudofConfig, 
+    RDFFormat, 
+    ReaderMode, 
+    ShaclFormat, 
+    ShaclValidationMode, 
+    ShapesGraphSource
+)
 
 class TestShacl(unittest.TestCase):
+    def setUp(self) -> None:
+        self.config = RudofConfig()
+        self.rudof = Rudof(self.config)
+        
+        self.rdf_format = RDFFormat.Turtle
+        self.shacl_format = ShaclFormat.Turtle
+        self.reader_mode = ReaderMode.Lax
+        self.validation_mode = ShaclValidationMode.Native
+        self.shapes_source = ShapesGraphSource.CurrentData
+
     def test_ok(self) -> None:
-        rudof = Rudof(RudofConfig())
         data = """
         prefix : <http://example.org/>
         prefix sh:     <http://www.w3.org/ns/shacl#>
@@ -19,13 +35,13 @@ class TestShacl(unittest.TestCase):
         ] .
         :ok :name "alice" .
         """
-        rudof.read_data_str(data)
-        result = rudof.validate_shacl()
-        print(result.show())
+        self.rudof.read_data_str(data, self.rdf_format, None, self.reader_mode, False)
+        
+        result = self.rudof.validate_shacl(self.validation_mode, self.shapes_source)
+
         self.assertTrue(result.conforms())
 
     def test_ko(self) -> None:
-        rudof = Rudof(RudofConfig())
         data = """
         prefix : <http://example.org/>
         prefix sh:     <http://www.w3.org/ns/shacl#>
@@ -40,11 +56,11 @@ class TestShacl(unittest.TestCase):
         ] .
         :ko :name 23 .
         """
-        rudof.read_data_str(data)
-        result = rudof.validate_shacl()
-        print(result.show())
+        self.rudof.read_data_str(data, self.rdf_format, None, self.reader_mode, False)
+        
+        result = self.rudof.validate_shacl(self.validation_mode, self.shapes_source)
+        
         self.assertFalse(result.conforms())
-
 
 if __name__ == "__main__":
     unittest.main()
