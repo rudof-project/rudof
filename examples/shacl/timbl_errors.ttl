@@ -20,5 +20,3 @@ _:1     :birthPlace :Spain .
         rdfs:label 23 ;
         :birthDate "not-a-date"^^xsd:string ;
         :employer 34 .
-
-    

@@ -27,7 +27,7 @@ impl InheritanceGraph {
             Err(cycle_node) => {
                 trace!("Cycle detected at node {:?}", cycle_node.node_id());
                 true
-            }
+            },
         }
     }
 

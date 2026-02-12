@@ -26,9 +26,7 @@ pub enum Tap2ShExError {
     #[error("No base IRI trying to resolve IRI for {str}")]
     NoBaseIRI { str: String },
 
-    #[error(
-        "Multiple value expressions in statement: value_datatype: {value_datatype:?}, value_shape: {value_shape} "
-    )]
+    #[error("Multiple value expressions in statement: value_datatype: {value_datatype:?}, value_shape: {value_shape} ")]
     MultipleValueExprInStatement {
         value_datatype: DatatypeId,
         value_shape: ShapeId,
@@ -47,16 +45,11 @@ pub enum Tap2ShExError {
     PropertyId2IriNoPrefix { property_id: PropertyId },
 
     #[error("Parsing ValueShape at line: {line}: {error}")]
-    ParsingValueShape {
-        line: u64,
-        error: Box<Tap2ShExError>,
-    },
+    ParsingValueShape { line: u64, error: Box<Tap2ShExError> },
 }
 
 impl Tap2ShExError {
     pub fn not_implemented(msg: &str) -> Tap2ShExError {
-        Tap2ShExError::NotImplemented {
-            msg: msg.to_string(),
-        }
+        Tap2ShExError::NotImplemented { msg: msg.to_string() }
     }
 }

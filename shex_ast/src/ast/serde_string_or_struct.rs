@@ -126,10 +126,7 @@ where
 }
 
 /// Like `serialize_string_or_struct`, but can also handle missing values.
-pub fn serialize_opt_string_or_struct<T, S>(
-    value: &Option<T>,
-    serializer: S,
-) -> Result<S::Ok, S::Error>
+pub fn serialize_opt_string_or_struct<T, S>(value: &Option<T>, serializer: S) -> Result<S::Ok, S::Error>
 where
     T: SerializeStringOrStruct,
     S: Serializer,
@@ -204,10 +201,7 @@ where
 }
 
 /// Like `serialize_string_or_struct`, but can also handle missing values.
-pub fn serialize_opt_box_string_or_struct<T, S>(
-    value: &Option<Box<T>>,
-    serializer: S,
-) -> Result<S::Ok, S::Error>
+pub fn serialize_opt_box_string_or_struct<T, S>(value: &Option<Box<T>>, serializer: S) -> Result<S::Ok, S::Error>
 where
     T: SerializeStringOrStruct,
     S: Serializer,
@@ -304,10 +298,7 @@ where
 
 /// Like `serialize_string_or_struct`, but can also handle missing values.
 #[allow(dead_code)]
-pub fn serialize_vec_box_string_or_struct<T, S>(
-    _value: &[Box<T>],
-    serializer: S,
-) -> Result<S::Ok, S::Error>
+pub fn serialize_vec_box_string_or_struct<T, S>(_value: &[Box<T>], serializer: S) -> Result<S::Ok, S::Error>
 where
     T: SerializeStringOrStruct,
     S: Serializer,

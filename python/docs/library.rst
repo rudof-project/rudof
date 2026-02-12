@@ -1,123 +1,310 @@
-PyRudof Library
-===============
-
+API Reference
+=============
 
 .. py:currentmodule:: pyrudof
 
-`pyrudof` provides Python bindings for performing rudof operations. 
-The main class is `Rudof`, which can be configured using `RudofConfig`. 
-The library supports reading and writing RDF data in various formats, validating data against shapes defined in ShEx or SHACL, and converting between different shape representation formats.
+This page contains the complete API reference for ``pyrudof``. The library provides Python bindings for performing RDF operations including validation, schema conversion, SPARQL queries, and data generation.
 
 
-`RudofConfig`
-"""""""""""""
-.. autoclass:: RudofConfig
-    :members:
-    :undoc-members:
+Core Classes
+------------
 
-`Rudof`
-"""""""
+Rudof
+~~~~~
+
 .. autoclass:: Rudof
-    :members:
-    :undoc-members:
+   :members:
+   :undoc-members:
+   :special-members: __init__
 
-`DCTAPFormat`
-"""""""""""""
-.. autoclass:: DCTAPFormat
-    :members:
+RudofConfig
+~~~~~~~~~~~
 
-
-`ShapeMapFormat`
-""""""""""""""""
-.. autoclass:: ShapeMapFormat
-    :members:
+.. autoclass:: RudofConfig
+   :members:
+   :undoc-members:
+   :special-members: __init__
 
 
-`ShapeMapFormat`
-""""""""""""""""
-.. autoclass:: ShapeMapFormat
-    :members:
+Data Formats
+------------
 
+RDF Formats
+~~~~~~~~~~~
 
-`ShExFormat`
-""""""""""""
+.. autoclass:: RDFFormat
+   :members:
+   :undoc-members:
+
+   Supported RDF serialization formats:
+
+   * ``RDFFormat.Turtle`` - Terse RDF Triple Language (.ttl)
+   * ``RDFFormat.NTriples`` - Line-based RDF format (.nt)
+   * ``RDFFormat.RDFXML`` - XML-based RDF syntax (.rdf, .owl)
+   * ``RDFFormat.TriG`` - Turtle with named graphs (.trig)
+   * ``RDFFormat.N3`` - Notation3 (.n3)
+   * ``RDFFormat.NQuads`` - N-Triples with named graphs (.nq)
+   * ``RDFFormat.JsonLd`` - JSON-LD format (.jsonld)
+
+ShEx Formats
+~~~~~~~~~~~~
+
 .. autoclass:: ShExFormat
-    :members:
+   :members:
+   :undoc-members:
 
+   Supported ShEx schema formats:
 
-`ShaclFormat`
-"""""""""""""
+   * ``ShExFormat.ShExC`` - ShEx Compact Syntax (human-readable, .shex)
+   * ``ShExFormat.ShExJ`` - ShEx JSON format (.json)
+   * ``ShExFormat.Turtle`` - ShEx in RDF/Turtle (.ttl)
+
+SHACL Formats
+~~~~~~~~~~~~~
+
 .. autoclass:: ShaclFormat
-    :members:
+   :members:
+   :undoc-members:
 
+   SHACL shapes graph serialization formats (all RDF-based):
 
-`ShExFormatter`
-"""""""""""""""
+   * ``ShaclFormat.Turtle`` - Turtle format (.ttl)
+   * ``ShaclFormat.NTriples`` - N-Triples format (.nt)
+   * ``ShaclFormat.RDFXML`` - RDF/XML format (.rdf)
+   * ``ShaclFormat.TriG`` - TriG format (.trig)
+   * ``ShaclFormat.N3`` - Notation3 format (.n3)
+   * ``ShaclFormat.NQuads`` - N-Quads format (.nq)
+
+ShapeMap Formats
+~~~~~~~~~~~~~~~~
+
+.. autoclass:: ShapeMapFormat
+   :members:
+   :undoc-members:
+
+   ShapeMap serialization formats:
+
+   * ``ShapeMapFormat.Compact`` - Compact ShapeMap syntax (human-readable)
+   * ``ShapeMapFormat.JSON`` - JSON representation
+
+Other Formats
+~~~~~~~~~~~~~
+
+.. autoclass:: DCTapFormat
+   :members:
+   :undoc-members:
+
+   DCTAP (Dublin Core Tabular Application Profiles) formats:
+
+   * ``DCTapFormat.CSV`` - Comma-separated values (.csv)
+   * ``DCTapFormat.XLSX`` - Excel spreadsheet (.xlsx)
+
+.. autoclass:: QueryResultFormat
+   :members:
+   :undoc-members:
+
+   SPARQL query result formats:
+
+   * ``QueryResultFormat.Turtle`` - Turtle format (.ttl)
+   * ``QueryResultFormat.NTriples`` - N-Triples format (.nt)
+   * ``QueryResultFormat.RDFXML`` - RDF/XML format (.rdf)
+   * ``QueryResultFormat.TriG`` - TriG format (.trig)
+   * ``QueryResultFormat.N3`` - Notation3 format (.n3)
+   * ``QueryResultFormat.NQuads`` - N-Quads format (.nq)
+   * ``QueryResultFormat.CSV`` - CSV table format (.csv)
+
+.. autoclass:: ServiceDescriptionFormat
+   :members:
+   :undoc-members:
+
+   SPARQL Service Description formats:
+
+   * ``ServiceDescriptionFormat.Internal`` - Internal representation
+   * ``ServiceDescriptionFormat.Json`` - JSON format
+   * ``ServiceDescriptionFormat.Mie`` - MIE specification format
+
+Formatters
+----------
+
+ShExFormatter
+~~~~~~~~~~~~~
+
 .. autoclass:: ShExFormatter
-    :members:
+   :members:
+   :undoc-members:
+   :special-members: __init__
 
+ShapeMapFormatter
+~~~~~~~~~~~~~~~~~
 
-`ShapeMapFormatter`
-"""""""""""""""""""
 .. autoclass:: ShapeMapFormatter
-    :members:
+   :members:
+   :undoc-members:
+   :special-members: __init__
 
 
-`UmlGenerationMode`
-"""""""""""""""""""
-.. autoclass:: UmlGenerationMode
-    :members:
+Reader Configuration
+--------------------
 
+.. autoclass:: ReaderMode
+   :members:
+   :undoc-members:
 
-`ShExSchema`
-""""""""""""
-.. autoclass:: ShExSchema
-    :members:
+   Controls error handling during parsing:
 
+   * ``ReaderMode.Lax`` - Ignore non-fatal errors and continue (default, recommended for real-world data)
+   * ``ReaderMode.Strict`` - Fail immediately on first error (useful for strict validation)
 
-`DCTAP`
-"""""""
-.. autoclass:: DCTAP
-    :members:
+Validation
+----------
 
+SHACL Validation
+~~~~~~~~~~~~~~~~
 
-`QueryShapeMap`
-"""""""""""""""
-.. autoclass:: QueryShapeMap
-    :members:
-
-
-`ShaclSchema`
-"""""""""""""
-.. autoclass:: ShaclSchema
-    :members:
-
-
-`ShaclValidationMode`
-"""""""""""""""""""""
 .. autoclass:: ShaclValidationMode
-    :members:
+   :members:
+   :undoc-members:
 
+   SHACL validation engines:
 
-`ShapesGraphSource`
-"""""""""""""""""""
+   * ``ShaclValidationMode.Native`` - Native SHACL validation engine (faster, recommended)
+   * ``ShaclValidationMode.Sparql`` - SPARQL-based validation (slower, useful for debugging)
+
 .. autoclass:: ShapesGraphSource
-    :members:
+   :members:
+   :undoc-members:
 
+   Source of SHACL shapes for validation:
 
-`ResultShapeMap`
-""""""""""""""""
-.. autoclass:: ResultShapeMap
-    :members:
+   * ``ShapesGraphSource.CurrentData`` - Extract shapes from the current RDF data graph
+   * ``ShapesGraphSource.CurrentSchema`` - Use the currently loaded SHACL schema
 
-
-`ValidationReport`
-""""""""""""""""""
 .. autoclass:: ValidationReport
-    :members:
+   :members:
+   :undoc-members:
+   :special-members: __init__
 
+.. autoclass:: ValidationResult
+   :members:
+   :undoc-members:
 
-`ValidationStatus`
-""""""""""""""""""
+ShEx Validation
+~~~~~~~~~~~~~~~
+
+.. autoclass:: ResultShapeMap
+   :members:
+   :undoc-members:
+   :special-members: __init__
+
 .. autoclass:: ValidationStatus
-    :members:
+   :members:
+   :undoc-members:
+   :special-members: __init__
+
+.. autoclass:: SortModeResultMap
+   :members:
+   :undoc-members:
+
+   Sort modes for ResultShapeMap table display:
+
+   * ``SortModeResultMap.Node`` - Sort by focus node
+   * ``SortModeResultMap.Shape`` - Sort by shape label
+   * ``SortModeResultMap.Status`` - Sort by validation status
+   * ``SortModeResultMap.Details`` - Sort by detailed information
+
+Schema Representations
+----------------------
+
+.. autoclass:: ShExSchema
+   :members:
+   :undoc-members:
+
+.. autoclass:: ShaclSchema
+   :members:
+   :undoc-members:
+
+.. autoclass:: DCTAP
+   :members:
+   :undoc-members:
+
+.. autoclass:: ServiceDescription
+   :members:
+   :undoc-members:
+
+
+Schema Comparison
+-----------------
+
+.. autoclass:: CoShaMo
+   :members:
+   :undoc-members:
+
+.. autoclass:: ShaCo
+   :members:
+   :undoc-members:
+
+.. autoclass:: CompareSchemaFormat
+   :members:
+   :undoc-members:
+
+.. autoclass:: CompareSchemaMode
+   :members:
+   :undoc-members:
+
+
+Query Results
+-------------
+
+.. autoclass:: QueryShapeMap
+   :members:
+   :undoc-members:
+
+.. autoclass:: QuerySolutions
+   :members:
+   :undoc-members:
+   :special-members: __init__, __iter__
+
+.. autoclass:: QuerySolution
+   :members:
+   :undoc-members:
+
+
+Visualization
+-------------
+
+.. autoclass:: UmlGenerationMode
+   :members:
+   :undoc-members:
+
+   UML generation modes for PlantUML exports:
+
+   * ``UmlGenerationMode.all()`` - Generate UML for all shapes in the model
+   * ``UmlGenerationMode.neighs(node)`` - Generate UML only for neighbors of specified node
+
+
+Utilities
+---------
+
+.. autoclass:: Mie
+   :members:
+   :undoc-members:
+
+.. autoclass:: PrefixMap
+   :members:
+   :undoc-members:
+
+.. autoclass:: Node
+   :members:
+   :undoc-members:
+
+.. autoclass:: ShapeLabel
+   :members:
+   :undoc-members:
+
+
+Exceptions
+----------
+
+.. autoclass:: RudofError
+   :members:
+   :undoc-members:

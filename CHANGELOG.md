@@ -17,7 +17,7 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ### Removed
 
-## v0.1.146 
+## v0.1.146
 ### Fixed
 - Small bug that was opening an interactive window when running plantuml commands
 
@@ -108,11 +108,11 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 - Issue with SPARQL queries that used annotation syntax updating Oxigraph to 0.5.2
 
 ## v0.1.132
-### Added 
+### Added
 - Parameter `-e` to specify templates-folder in shex2html and dctap2html conversion
 
 ## v0.1.131
-### Added 
+### Added
 - Support for query in MCP_Server
 
 ### Fixed
@@ -151,13 +151,13 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ## v0.1.124
 ### Added
-- default_config.toml is now read at compile time and contains a default config file with some endpoints like dbpedia, wikidata, uniprot, etc. 
+- default_config.toml is now read at compile time and contains a default config file with some endpoints like dbpedia, wikidata, uniprot, etc.
 - added list_endpoints to PyRudof
 - Improved visualization of node information using termtree, now it shows the incoming/outgoing using arrow glyphs
 - node_info in Python bindings
 
 ### Changed
-- Moved node_formatter from rudof_cli to rudof_lib so it can be reused by Python bindings, CLI and MCP 
+- Moved node_formatter from rudof_cli to rudof_lib so it can be reused by Python bindings, CLI and MCP
 
 ### Fixed
 - A problem with node information that was showing extra `<` and `>` characters
@@ -177,7 +177,7 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Fixed
 
 ### Changed
-- The import in ShEx schemas supports `IriOrStr` in order to handle relative IRIs. Now the base IRI that is passed is the current folder. 
+- The import in ShEx schemas supports `IriOrStr` in order to handle relative IRIs. Now the base IRI that is passed is the current folder.
 - Changed initialization of rudof to return a potential error in case there is some problem with RudofConfig
 
 ### Removed
@@ -220,12 +220,12 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 - We moved the contents of ShEx Compact crate to ShEX AST because when we resolve imports, we need to parse the imported ShEx schema so there it is necessary to know which formats we are importing
 
 ### Removed
-- crates `shex_compact` and `shapemap` will no longer be published as independent crates and will instead be part of `shex_ast`. 
+- crates `shex_compact` and `shapemap` will no longer be published as independent crates and will instead be part of `shex_ast`.
 
 
 ## 0.1.116
 ### Added
-- ShEx validation now supports (min/max)(In/Ex)clusive, stems and stem ranges for IRIs, literals and languages 
+- ShEx validation now supports (min/max)(In/Ex)clusive, stems and stem ranges for IRIs, literals and languages
 - Added support for Start in validation
 - ShEx testsuite status: Passed: 1053, Failed: 91, Skipped: 22, Not implemented: 0
 
@@ -244,7 +244,7 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ## 0.1.113
 ### Added
 - More support for SPARQL queries in rudof and pyrudof
-- We had several issues and published several minor releases 
+- We had several issues and published several minor releases
 
 ## 0.1.108
 ### Fixed
@@ -259,7 +259,7 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 - Added `read_shapemap(input,...)` which was required by issue #329.
 
 ### Fixed
-- We found a issue when validating datatype literals because we were not handling 
+- We found a issue when validating datatype literals because we were not handling
 ### Changed
 
 
@@ -301,11 +301,11 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Added
 - Comparison between schemas
 - Added documentation about comparison between schemas
-- Published Windows amd-64 Python wheel 
+- Published Windows amd-64 Python wheel
 - Added parsed title in SPARQL service description from property dcterms:title
 
 ### Fixed
-- Cleaned and Clippied the code that we did in a hurry during Biohackathon 
+- Cleaned and Clippied the code that we did in a hurry during Biohackathon
 
 ### Changed
 - The behavour of `base` which was assumed to be None by default and now can be passed as a command line option.
@@ -364,7 +364,7 @@ This release has been created during the [Biohackathon 2025](https://2025.biohac
 ## 0.1.88
 ### Added
 
-Support for lessThan, lessThanOrEquals, equals and disjoint 
+Support for lessThan, lessThanOrEquals, equals and disjoint
 ### Fixed
 ### Changed
 ### Removed
@@ -423,9 +423,9 @@ Issue #312 changing the behaviour of RDF/XML and NQuads parsers which were gener
 
 ### Removed
 
-## [v0.1.81] - 2025-07-13 
+## [v0.1.81] - 2025-07-13
 
-Repaired a bug that was found when obtaining the neighbours of a node in an endpoint. 
+Repaired a bug that was found when obtaining the neighbours of a node in an endpoint.
 
 ## [v0.1.80] - 2025-07-11
 
@@ -435,7 +435,7 @@ Repaired a bug that was found when obtaining the neighbours of a node in an endp
 
 ## [v0.1.79] - 2025-06-30
 
-- Internal refactor in SHACL validator to use SHACL Internal Representation with an independent representation from the `Rdf` trait which allows it to be applied to different implementations of the `Rdf` trait. 
+- Internal refactor in SHACL validator to use SHACL Internal Representation with an independent representation from the `Rdf` trait which allows it to be applied to different implementations of the `Rdf` trait.
 
 ## [v0.1.77] - 2025-06-24
 
@@ -455,7 +455,7 @@ Repaired a bug that was found when obtaining the neighbours of a node in an endp
    - trait `SRDFBuilder` => `BuildRDF`
    - struct `Literal` => `SLiteral`
    - struct `Triple` => `STriple`
-   
+
 
 
 ## [v0.1.71] - 2025-05-28

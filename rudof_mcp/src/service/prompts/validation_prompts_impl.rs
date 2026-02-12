@@ -45,7 +45,7 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 }"#,
             "compact, details, json, csv",
         ),
-        "shacl" | _ => (
+        "shacl" => (
             "validate_shacl",
             "turtle, ntriples, rdfxml, jsonld",
             r#"@prefix sh: <http://www.w3.org/ns/shacl#> .
@@ -66,6 +66,12 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
   ] ."#,
             "compact, details, minimal, json, csv, turtle",
         ),
+        _ => {
+            return Err(McpError::invalid_request(
+                "Unsupported validation technology. Use 'shex' or 'shacl'.",
+                None,
+            ));
+        },
     };
 
     let messages = vec![
@@ -116,28 +122,17 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
                 technology.to_uppercase(),
                 technology.to_uppercase(),
                 technology,
-                if technology == "shex" {
-                    "shexc"
-                } else {
-                    "turtle"
-                },
+                if technology == "shex" { "shexc" } else { "turtle" },
                 example_schema,
                 tool_name,
-                if technology == "shex" {
-                    "shexc"
-                } else {
-                    "turtle"
-                },
-                if args.node.is_some() {
-                    format!(",\n  \"maybe_node\": \"{}\"", args.node.as_ref().unwrap())
+                if technology == "shex" { "shexc" } else { "turtle" },
+                if let Some(n) = args.node.as_deref() {
+                    format!(",\n  \"maybe_node\": \"{n}\"")
                 } else {
                     String::new()
                 },
-                if args.shape.is_some() {
-                    format!(
-                        ",\n  \"maybe_shape\": \"{}\",\n",
-                        args.shape.as_ref().unwrap()
-                    )
+                if let Some(s) = args.shape.as_deref() {
+                    format!(",\n  \"maybe_shape\": \"{s}\",\n",)
                 } else {
                     ",\n".to_string()
                 },
@@ -151,13 +146,13 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
         description: Some(format!(
             "{} validation guide{}{}",
             technology.to_uppercase(),
-            if args.node.is_some() {
-                format!(" for node {}", args.node.unwrap())
+            if let Some(n) = args.node.as_deref() {
+                format!(" for node {n}")
             } else {
                 String::new()
             },
-            if args.shape.is_some() {
-                format!(" against shape {}", args.shape.unwrap())
+            if let Some(s) = args.shape.as_deref() {
+                format!(" against shape {s}")
             } else {
                 String::new()
             },
@@ -181,9 +176,7 @@ pub async fn sparql_builder_prompt_impl(
     Parameters(args): Parameters<SparqlBuilderPromptArgs>,
 ) -> Result<GetPromptResult, McpError> {
     let query_type = args.query_type.to_lowercase();
-    let description = args
-        .description
-        .unwrap_or_else(|| "explore the data".to_string());
+    let description = args.description.unwrap_or_else(|| "explore the data".to_string());
 
     let (query_template, explanation) = match query_type.as_str() {
         "select" => (
@@ -292,10 +285,7 @@ SELECT (COUNT(*) AS ?count) WHERE { ?s ?p ?o }"#,
     ];
 
     Ok(GetPromptResult {
-        description: Some(format!(
-            "SPARQL {} query builder: {}",
-            query_type, description
-        )),
+        description: Some(format!("SPARQL {} query builder: {}", query_type, description)),
         messages,
     })
 }

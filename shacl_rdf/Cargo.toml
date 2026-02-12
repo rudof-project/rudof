@@ -11,7 +11,7 @@ repository.workspace = true
 
 #[features]
 #rdf-star = [
-# "oxrdf/rdf-star", 
+# "oxrdf/rdf-star",
 #    "srdf/rdf-star",
 #]
 

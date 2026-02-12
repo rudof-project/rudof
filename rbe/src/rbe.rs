@@ -59,7 +59,7 @@ where
                         expr: Box::new((*self).clone()),
                     })
                 }
-            }
+            },
         }
     }
 
@@ -130,22 +130,22 @@ where
             Rbe::Empty => (),
             Rbe::Symbol { value, card: _ } => {
                 set.insert(value.clone());
-            }
+            },
             Rbe::And { values } => {
                 values.iter().for_each(|v| v.symbols_aux(set));
-            }
+            },
             Rbe::Or { values } => {
                 values.iter().for_each(|v| v.symbols_aux(set));
-            }
+            },
             Rbe::Plus { value } => {
                 value.symbols_aux(set);
-            }
+            },
             Rbe::Star { value } => {
                 value.symbols_aux(set);
-            }
+            },
             Rbe::Repeat { value, card: _ } => {
                 value.symbols_aux(set);
-            }
+            },
         }
     }
 
@@ -168,11 +168,11 @@ where
                         },
                     };
                     break;
-                }
+                },
                 _ => {
                     processed.insert((*x).clone());
                     current = deriv;
-                }
+                },
             }
         }
         current
@@ -204,17 +204,11 @@ where
                     Rbe::Empty
                 } else {
                     Rbe::Fail {
-                        error: DerivError::UnexpectedEmpty {
-                            x: (*x).clone(),
-                            open,
-                        },
+                        error: DerivError::UnexpectedEmpty { x: (*x).clone(), open },
                     }
                 }
-            }
-            Rbe::Symbol {
-                ref value,
-                ref card,
-            } => {
+            },
+            Rbe::Symbol { ref value, ref card } => {
                 if *x == *value {
                     if card.max == Max::IntMax(0) {
                         Rbe::Fail {
@@ -244,24 +238,14 @@ where
                         },
                     }
                 }
-            }
+            },
             Rbe::And { ref values } => Self::deriv_and(values, x, n, open, controlled),
-            Rbe::Or { ref values } => {
-                Self::mk_or_values(values.iter().map(|rbe| rbe.deriv(x, n, open, controlled)))
-            }
+            Rbe::Or { ref values } => Self::mk_or_values(values.iter().map(|rbe| rbe.deriv(x, n, open, controlled))),
             Rbe::Plus { ref value } => {
                 let d = value.deriv(x, n, open, controlled);
-                Self::mk_and(
-                    &d,
-                    &Rbe::Star {
-                        value: value.clone(),
-                    },
-                )
-            }
-            Rbe::Repeat {
-                ref value,
-                ref card,
-            } if card.is_0_0() => {
+                Self::mk_and(&d, &Rbe::Star { value: value.clone() })
+            },
+            Rbe::Repeat { ref value, ref card } if card.is_0_0() => {
                 let d = value.deriv(x, n, open, controlled);
                 if d.nullable() {
                     Rbe::Fail {
@@ -270,30 +254,21 @@ where
                 } else {
                     Rbe::Empty
                 }
-            }
-            Rbe::Repeat {
-                ref value,
-                ref card,
-            } => {
+            },
+            Rbe::Repeat { ref value, ref card } => {
                 let d = value.deriv(x, n, open, controlled);
                 let card = card.minus(n);
                 let rest = Self::mk_range(value, &card);
                 Self::mk_and(&d, &rest)
-            }
+            },
             Rbe::Star { ref value } => {
                 let d = value.deriv(x, n, open, controlled);
                 Self::mk_and(&d, value)
-            }
+            },
         }
     }
 
-    fn deriv_and(
-        values: &Vec<Rbe<A>>,
-        x: &A,
-        n: usize,
-        open: bool,
-        controlled: &HashSet<A>,
-    ) -> Rbe<A> {
+    fn deriv_and(values: &Vec<Rbe<A>>, x: &A, n: usize, open: bool, controlled: &HashSet<A>) -> Rbe<A> {
         let mut or_values: Vec<Rbe<A>> = Vec::new();
         let mut failures = crate::deriv_error::Failures::new();
 
@@ -303,7 +278,7 @@ where
                 Rbe::Fail { error } => {
                     failures.push(value.clone(), error);
                     None
-                }
+                },
                 _ => Some(d),
             }
         }) {
@@ -407,7 +382,7 @@ where
                         values: vec![(*v1).clone(), (*v2).clone()],
                     }
                 }
-            }
+            },
         }
     }
 
@@ -464,12 +439,8 @@ where
             Rbe::Fail { error } => write!(dest, "Fail {{{error:?}}}"),
             Rbe::Empty => write!(dest, "Empty"),
             Rbe::Symbol { value, card } => write!(dest, "{value:?}{card:?}"),
-            Rbe::And { values } => values
-                .iter()
-                .try_for_each(|value| write!(dest, "{value:?};")),
-            Rbe::Or { values } => values
-                .iter()
-                .try_for_each(|value| write!(dest, "{value:?}|")),
+            Rbe::And { values } => values.iter().try_for_each(|value| write!(dest, "{value:?};")),
+            Rbe::Or { values } => values.iter().try_for_each(|value| write!(dest, "{value:?}|")),
             Rbe::Star { value } => write!(dest, "{value:?}*"),
             Rbe::Plus { value } => write!(dest, "{value:?}+"),
             Rbe::Repeat { value, card } => write!(dest, "({value:?}){card:?}"),
@@ -512,10 +483,7 @@ mod tests {
             Rbe::symbol('a', 0, Max::IntMax(0)),
             Rbe::symbol('b', 0, Max::IntMax(1)),
         ]);
-        assert_eq!(
-            rbe.deriv(&'a', 1, false, &HashSet::from(['a', 'b'])),
-            expected
-        );
+        assert_eq!(rbe.deriv(&'a', 1, false, &HashSet::from(['a', 'b'])), expected);
     }
 
     #[test]

@@ -34,9 +34,7 @@ impl<S: Rdf> FocusNodes<S> {
 
 impl<S: Rdf> Clone for FocusNodes<S> {
     fn clone(&self) -> Self {
-        Self {
-            set: self.set.clone(),
-        }
+        Self { set: self.set.clone() }
     }
 }
 

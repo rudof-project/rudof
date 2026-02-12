@@ -26,8 +26,6 @@ pub enum RdfVisualizerError {
 
 impl RdfVisualizerError {
     pub fn not_implemented(msg: &str) -> RdfVisualizerError {
-        RdfVisualizerError::NotImplemented {
-            msg: msg.to_string(),
-        }
+        RdfVisualizerError::NotImplemented { msg: msg.to_string() }
     }
 }

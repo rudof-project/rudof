@@ -72,9 +72,7 @@ impl PersistedState {
     /// Check if the state has any RDF data.
     #[allow(dead_code)]
     pub fn has_rdf_data(&self) -> bool {
-        self.rdf_data_ntriples
-            .as_ref()
-            .is_some_and(|s| !s.is_empty())
+        self.rdf_data_ntriples.as_ref().is_some_and(|s| !s.is_empty())
     }
 }
 
@@ -107,10 +105,7 @@ pub fn load_state() -> Option<PersistedState> {
     let state_path = get_state_path();
 
     if !state_path.exists() {
-        debug!(
-            "State file not found at {:?}, starting with empty state",
-            state_path
-        );
+        debug!("State file not found at {:?}, starting with empty state", state_path);
         return None;
     }
 
@@ -121,14 +116,14 @@ pub fn load_state() -> Option<PersistedState> {
                 state_path, state.version, state.triple_count, state.last_saved
             );
             Some(state)
-        }
+        },
         Err(e) => {
             warn!(
                 "Failed to load state from {:?}: {}. Starting with empty state.",
                 state_path, e
             );
             None
-        }
+        },
     }
 }
 
@@ -136,8 +131,8 @@ pub fn load_state() -> Option<PersistedState> {
 pub fn load_state_from_path(path: &Path) -> io::Result<PersistedState> {
     let file = fs::File::open(path)?;
     let reader = BufReader::new(file);
-    let state: PersistedState = serde_json::from_reader(reader)
-        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+    let state: PersistedState =
+        serde_json::from_reader(reader).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
     Ok(state)
 }
 
@@ -153,21 +148,17 @@ pub fn save_state(state: &PersistedState) -> io::Result<()> {
 /// Save state to a specific path.
 pub fn save_state_to_path(state: &PersistedState, path: &Path) -> io::Result<()> {
     // Create parent directories if needed
-    if let Some(parent) = path.parent() {
-        if !parent.exists() {
-            fs::create_dir_all(parent)?;
-        }
+    if let Some(parent) = path.parent()
+        && !parent.exists()
+    {
+        fs::create_dir_all(parent)?;
     }
 
     let file = fs::File::create(path)?;
     let writer = BufWriter::new(file);
-    serde_json::to_writer_pretty(writer, state)
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+    serde_json::to_writer_pretty(writer, state).map_err(io::Error::other)?;
 
-    info!(
-        "Saved state to {:?} (triples: {:?})",
-        path, state.triple_count
-    );
+    info!("Saved state to {:?} (triples: {:?})", path, state.triple_count);
     Ok(())
 }
 
@@ -175,22 +166,22 @@ pub fn save_state_to_path(state: &PersistedState, path: &Path) -> io::Result<()>
 #[derive(Debug)]
 pub enum StatePersistenceError {
     /// IO error during file operations
-    IoError(io::Error),
+    Io(io::Error),
     /// JSON serialization/deserialization error
-    JsonError(String),
+    Json(String),
     /// RDF serialization error
-    RdfSerializationError(String),
+    RdfSerialization(String),
     /// RDF parsing error
-    RdfParseError(String),
+    RdfParse(String),
 }
 
 impl std::fmt::Display for StatePersistenceError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::IoError(e) => write!(f, "IO error: {}", e),
-            Self::JsonError(e) => write!(f, "JSON error: {}", e),
-            Self::RdfSerializationError(e) => write!(f, "RDF serialization error: {}", e),
-            Self::RdfParseError(e) => write!(f, "RDF parse error: {}", e),
+            Self::Io(e) => write!(f, "IO error: {}", e),
+            Self::Json(e) => write!(f, "JSON error: {}", e),
+            Self::RdfSerialization(e) => write!(f, "RDF serialization error: {}", e),
+            Self::RdfParse(e) => write!(f, "RDF parse error: {}", e),
         }
     }
 }
@@ -199,7 +190,7 @@ impl std::error::Error for StatePersistenceError {}
 
 impl From<io::Error> for StatePersistenceError {
     fn from(e: io::Error) -> Self {
-        Self::IoError(e)
+        Self::Io(e)
     }
 }
 

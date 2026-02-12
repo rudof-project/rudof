@@ -18,7 +18,9 @@ pub fn terminal_width() -> usize {
 }
 
 #[cfg(target_family = "wasm")]
-pub fn terminal_width() -> usize { 0 }
+pub fn terminal_width() -> usize {
+    0
+}
 
 fn sanitize_width(width: usize) -> usize {
     match width {

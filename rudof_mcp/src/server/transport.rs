@@ -19,8 +19,8 @@ impl std::fmt::Display for TransportType {
     }
 }
 
+#[allow(clippy::clone_on_copy)]
 mod tests {
-
     #[allow(unused_imports)]
     use super::TransportType;
 
@@ -63,10 +63,7 @@ mod tests {
         let stdio = TransportType::Stdio;
         let http = TransportType::StreamableHTTP;
 
-        assert!(
-            format!("{:?}", stdio).contains("Stdio"),
-            "Debug should contain 'Stdio'"
-        );
+        assert!(format!("{:?}", stdio).contains("Stdio"), "Debug should contain 'Stdio'");
         assert!(
             format!("{:?}", http).contains("StreamableHTTP"),
             "Debug should contain 'StreamableHTTP'"

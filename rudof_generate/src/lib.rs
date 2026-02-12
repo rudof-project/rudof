@@ -93,10 +93,7 @@ impl DataGenerator {
     /// Generate synthetic data and write to output
     pub async fn generate(&mut self) -> Result<()> {
         let start_time = std::time::Instant::now();
-        let graph = self
-            .generator
-            .generate_data(&self.config.generation)
-            .await?;
+        let graph = self.generator.generate_data(&self.config.generation).await?;
         let generation_time = start_time.elapsed();
 
         self.writer
@@ -110,10 +107,7 @@ impl DataGenerator {
         tracing::trace!("Loading ShEx schema from: {}", shex_path.as_ref().display());
         self.load_schema(shex_path).await?;
 
-        tracing::trace!(
-            "Generating {} entities",
-            self.config.generation.entity_count
-        );
+        tracing::trace!("Generating {} entities", self.config.generation.entity_count);
         self.generate().await?;
 
         tracing::trace!("Data generation completed successfully");
@@ -132,20 +126,17 @@ impl DataGenerator {
         match format.or(self.config.generation.schema_format) {
             Some(SchemaFormat::ShEx) => {
                 self.load_shex_schema(schema_path).await?;
-            }
-            Some(SchemaFormat::SHACL) => {
+            },
+            Some(SchemaFormat::Shacl) => {
                 self.load_shacl_schema(schema_path).await?;
-            }
+            },
             None => {
                 // Auto-detect based on file extension
                 self.load_schema_auto(schema_path).await?;
-            }
+            },
         }
 
-        tracing::info!(
-            "Generating {} entities",
-            self.config.generation.entity_count
-        );
+        tracing::info!("Generating {} entities", self.config.generation.entity_count);
         self.generate().await?;
 
         tracing::info!("Data generation completed successfully");
@@ -174,10 +165,7 @@ impl DataGenerator {
             for prop in &unified_shape.properties {
                 // Extract dependencies from shape references
                 for constraint in &prop.constraints {
-                    if let crate::unified_constraints::UnifiedConstraint::ShapeReference(
-                        target_shape,
-                    ) = constraint
-                    {
+                    if let crate::unified_constraints::UnifiedConstraint::ShapeReference(target_shape) = constraint {
                         dependencies.push(ShapeDependency {
                             target_shape: target_shape.clone(),
                             property: prop.property_iri.clone(),
@@ -195,9 +183,7 @@ impl DataGenerator {
 
                 // Extract shape reference
                 let shape_ref = prop.constraints.iter().find_map(|c| match c {
-                    crate::unified_constraints::UnifiedConstraint::ShapeReference(sr) => {
-                        Some(sr.clone())
-                    }
+                    crate::unified_constraints::UnifiedConstraint::ShapeReference(sr) => Some(sr.clone()),
                     _ => None,
                 });
 
@@ -217,7 +203,7 @@ impl DataGenerator {
                 Err(_) => {
                     // Fallback to a simple IRI if parsing fails
                     prefixmap::IriRef::Iri(iri_s::IriS::new_unchecked("http://example.org/shape"))
-                }
+                },
             };
 
             let dummy_decl = shex_ast::ast::ShapeDecl {

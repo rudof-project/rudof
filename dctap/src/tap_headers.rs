@@ -60,7 +60,7 @@ impl TapHeaders {
                 "EXTENDSLABEL" => extends_label = Some(idx),
                 _ => {
                     debug!("Unknown field reading headers: {field}")
-                }
+                },
             }
         }
         Ok(TapHeaders {
@@ -90,8 +90,7 @@ impl TapHeaders {
     }
 
     pub fn property_label(&self, rcd: &StringRecord) -> Option<String> {
-        self.property_label
-            .and_then(|idx| get_str_from_rcd(rcd, idx))
+        self.property_label.and_then(|idx| get_str_from_rcd(rcd, idx))
     }
     pub fn shape_label(&self, rcd: &StringRecord) -> Option<String> {
         self.shape_label.and_then(|idx| get_str_from_rcd(rcd, idx))
@@ -103,23 +102,19 @@ impl TapHeaders {
         self.mandatory.and_then(|idx| get_str_from_rcd(rcd, idx))
     }
     pub fn value_datatype(&self, rcd: &StringRecord) -> Option<String> {
-        self.value_datatype
-            .and_then(|idx| get_str_from_rcd(rcd, idx))
+        self.value_datatype.and_then(|idx| get_str_from_rcd(rcd, idx))
     }
     pub fn value_nodetype(&self, rcd: &StringRecord) -> Option<String> {
-        self.value_nodetype
-            .and_then(|idx| get_str_from_rcd(rcd, idx))
+        self.value_nodetype.and_then(|idx| get_str_from_rcd(rcd, idx))
     }
     pub fn value_shape(&self, rcd: &StringRecord) -> Option<String> {
         self.value_shape.and_then(|idx| get_str_from_rcd(rcd, idx))
     }
     pub fn value_constraint(&self, rcd: &StringRecord) -> Option<String> {
-        self.value_constraint
-            .and_then(|idx| get_str_from_rcd(rcd, idx))
+        self.value_constraint.and_then(|idx| get_str_from_rcd(rcd, idx))
     }
     pub fn value_constraint_type(&self, rcd: &StringRecord) -> Option<String> {
-        self.value_constraint_type
-            .and_then(|idx| get_str_from_rcd(rcd, idx))
+        self.value_constraint_type.and_then(|idx| get_str_from_rcd(rcd, idx))
     }
     pub fn note(&self, rcd: &StringRecord) -> Option<String> {
         self.note.and_then(|idx| get_str_from_rcd(rcd, idx))
@@ -129,8 +124,7 @@ impl TapHeaders {
         self.extends_id.and_then(|idx| get_str_from_rcd(rcd, idx))
     }
     pub fn extends_label(&self, rcd: &StringRecord) -> Option<String> {
-        self.extends_label
-            .and_then(|idx| get_str_from_rcd(rcd, idx))
+        self.extends_label.and_then(|idx| get_str_from_rcd(rcd, idx))
     }
 }
 

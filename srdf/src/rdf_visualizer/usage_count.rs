@@ -34,9 +34,7 @@ impl UsageCount {
     }
 
     pub fn in_triple(&self) -> bool {
-        self.as_predicate_in_triple > 0
-            || self.as_subject_in_triple > 0
-            || self.as_object_in_triple > 0
+        self.as_predicate_in_triple > 0 || self.as_subject_in_triple > 0 || self.as_object_in_triple > 0
     }
 
     pub fn increment_as_predicate(&mut self) {

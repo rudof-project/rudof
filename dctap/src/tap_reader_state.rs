@@ -62,12 +62,12 @@ impl TapReaderState {
                 let v = r.get_mut();
                 *v += 1;
                 *v
-            }
+            },
             Entry::Vacant(v) => {
                 let initial = 0;
                 v.insert(initial);
                 initial
-            }
+            },
         }
     }
 

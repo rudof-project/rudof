@@ -28,10 +28,9 @@ impl PropertyValueSpec {
         let content_semantics = match self {
             PropertyValueSpec::Closed(pv) => pv.semantics(),
             PropertyValueSpec::Open(pv) => {
-                let open_semantics: HashSet<_> =
-                    pv.semantics().into_iter().map(|v| v.with_open()).collect();
+                let open_semantics: HashSet<_> = pv.semantics().into_iter().map(|v| v.with_open()).collect();
                 open_semantics
-            }
+            },
         };
         Ok(FormalBaseType::new().with_content(content_semantics))
     }
@@ -73,21 +72,21 @@ impl PropertyValue {
                 let left_semantics = left.semantics();
                 let right_semantics = right.semantics();
                 combine_semantics_sets(left_semantics, right_semantics)
-            }
+            },
             PropertyValue::OneOf(left, right) => {
                 let left_semantics = left.semantics();
                 let right_semantics = right.semantics();
                 //left_semantics.union(&right_semantics)
                 union_semantics_sets(left_semantics, right_semantics)
-            }
+            },
             PropertyValue::Property(p, type_spec) => {
                 let record = RecordType::new().with_key_value(p.str(), type_spec.to_value_type());
                 HashSet::from_iter(vec![record])
-            }
+            },
             PropertyValue::OptionalProperty(p, type_spec) => {
                 let record = RecordType::new().with_key_value(p.str(), type_spec.to_value_type());
                 HashSet::from_iter(vec![record, RecordType::empty()])
-            }
+            },
             PropertyValue::Empty => HashSet::new(),
         }
     }
@@ -101,16 +100,13 @@ impl Display for PropertyValue {
             PropertyValue::Property(key, type_spec) => write!(f, "{}: {}", key, type_spec),
             PropertyValue::OptionalProperty(key, type_spec) => {
                 write!(f, "{}: {} (optional)", key, type_spec)
-            }
+            },
             PropertyValue::Empty => write!(f, "Empty"),
         }
     }
 }
 
-fn combine_semantics_sets(
-    left: HashSet<RecordType>,
-    right: HashSet<RecordType>,
-) -> HashSet<RecordType> {
+fn combine_semantics_sets(left: HashSet<RecordType>, right: HashSet<RecordType>) -> HashSet<RecordType> {
     let mut combined = HashSet::new();
     for l in left {
         for r in &right {
@@ -120,10 +116,7 @@ fn combine_semantics_sets(
     combined
 }
 
-fn union_semantics_sets(
-    left: HashSet<RecordType>,
-    right: HashSet<RecordType>,
-) -> HashSet<RecordType> {
+fn union_semantics_sets(left: HashSet<RecordType>, right: HashSet<RecordType>) -> HashSet<RecordType> {
     let mut combined = HashSet::new();
     for l in left {
         combined.insert(l);
@@ -226,12 +219,12 @@ impl Type {
                 let avt: ValueType = (*a).to_value_type();
                 let bvt: ValueType = (*b).to_value_type();
                 ValueType::intersection(avt, bvt)
-            }
+            },
             Type::Disjunction(a, b) => ValueType::union(a.to_value_type(), b.to_value_type()),
             Type::Cond(value_type, cond) => {
                 let vt_cond = ValueType::cond(cond.clone());
                 ValueType::intersection(value_type.clone(), vt_cond)
-            }
+            },
         }
     }
 }

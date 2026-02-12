@@ -139,33 +139,30 @@ impl RudofMcpService {
     /// Returns an error if Rudof configuration or initialization fails.
     /// State loading failures are logged but don't prevent service creation.
     pub fn try_new() -> Result<Self, ServiceCreationError> {
-        let rudof_config =
-            RudofConfig::new().map_err(|e| ServiceCreationError::ConfigError(e.to_string()))?;
-        let mut rudof = Rudof::new(&rudof_config)
-            .map_err(|e| ServiceCreationError::RudofError(e.to_string()))?;
+        let rudof_config = RudofConfig::new().map_err(|e| ServiceCreationError::ConfigError(e.to_string()))?;
+        let mut rudof = Rudof::new(&rudof_config).map_err(|e| ServiceCreationError::RudofError(e.to_string()))?;
 
         // Attempt to load persisted state (for Docker ephemeral containers)
-        if let Some(persisted_state) = state::load_state() {
-            if let Some(rdf_ntriples) = &persisted_state.rdf_data_ntriples {
-                if !rdf_ntriples.is_empty() {
-                    tracing::info!(
-                        "Restoring {} triples from persisted state",
-                        persisted_state.triple_count.unwrap_or(0)
-                    );
-                    let mut cursor = Cursor::new(rdf_ntriples.as_bytes());
-                    if let Err(e) = rudof.read_data(
-                        &mut cursor,
-                        "persisted_state",
-                        &RDFFormat::NTriples,
-                        None,
-                        &ReaderMode::default(),
-                        false,
-                    ) {
-                        tracing::warn!("Failed to restore persisted RDF data: {}", e);
-                    } else {
-                        tracing::info!("Successfully restored RDF data from persisted state");
-                    }
-                }
+        if let Some(persisted_state) = state::load_state()
+            && let Some(rdf_ntriples) = &persisted_state.rdf_data_ntriples
+            && !rdf_ntriples.is_empty()
+        {
+            tracing::info!(
+                "Restoring {} triples from persisted state",
+                persisted_state.triple_count.unwrap_or(0)
+            );
+            let mut cursor = Cursor::new(rdf_ntriples.as_bytes());
+            if let Err(e) = rudof.read_data(
+                &mut cursor,
+                "persisted_state",
+                &RDFFormat::NTriples,
+                None,
+                &ReaderMode::default(),
+                false,
+            ) {
+                tracing::warn!("Failed to restore persisted RDF data: {}", e);
+            } else {
+                tracing::info!("Successfully restored RDF data from persisted state");
             }
         }
 
@@ -202,10 +199,9 @@ impl RudofMcpService {
         let mut buffer = Vec::new();
         rudof
             .serialize_data(&RDFFormat::NTriples, &mut buffer)
-            .map_err(|e| state::StatePersistenceError::RdfSerializationError(e.to_string()))?;
+            .map_err(|e| state::StatePersistenceError::RdfSerialization(e.to_string()))?;
 
-        let rdf_ntriples =
-            String::from_utf8(buffer).map_err(|e| state::StatePersistenceError::JsonError(e.to_string()))?;
+        let rdf_ntriples = String::from_utf8(buffer).map_err(|e| state::StatePersistenceError::Json(e.to_string()))?;
 
         // Count triples (count lines that aren't empty or comments)
         let triple_count = rdf_ntriples
@@ -317,11 +313,7 @@ impl RudofMcpService {
     }
 
     /// Get completion suggestions for prompt arguments
-    pub fn get_prompt_argument_completions(
-        &self,
-        prompt_name: &str,
-        argument_name: &str,
-    ) -> Vec<String> {
+    pub fn get_prompt_argument_completions(&self, prompt_name: &str, argument_name: &str) -> Vec<String> {
         tracing::debug!(
             prompt_name = %prompt_name,
             argument_name = %argument_name,
@@ -341,7 +333,7 @@ impl RudofMcpService {
                     "n3".to_string(),
                     "jsonld".to_string(),
                 ]
-            }
+            },
             // ShEx schema format arguments (from rudof://formats/shex)
             (_, "schema_format") | (_, "shex_format") => {
                 vec![
@@ -355,7 +347,7 @@ impl RudofMcpService {
                     "n3".to_string(),
                     "nquads".to_string(),
                 ]
-            }
+            },
             // SHACL format arguments (from rudof://formats/shacl)
             (_, "shacl_format") | (_, "shapes_format") => {
                 vec![
@@ -366,7 +358,7 @@ impl RudofMcpService {
                     "nquads".to_string(),
                     "json".to_string(),
                 ]
-            }
+            },
             // Validation result format arguments (from rudof://formats/shex-validation-result and rudof://formats/shacl-validation-result)
             (_, "result_format") => {
                 vec![
@@ -380,11 +372,11 @@ impl RudofMcpService {
                     "n3".to_string(),
                     "nquads".to_string(),
                 ]
-            }
+            },
             // Common boolean arguments
             (_, "verbose") | (_, "debug") | (_, "strict") => {
                 vec!["true".to_string(), "false".to_string()]
-            }
+            },
             // Base IRI suggestions
             (_, "base") | (_, "base_iri") => {
                 vec![
@@ -392,7 +384,7 @@ impl RudofMcpService {
                     "https://schema.org/".to_string(),
                     "http://www.w3.org/2001/XMLSchema#".to_string(),
                 ]
-            }
+            },
             // Shape label suggestions (common patterns)
             (_, "shape") | (_, "shape_label") | (_, "start_shape") => {
                 vec![
@@ -402,22 +394,15 @@ impl RudofMcpService {
                     "schema:Person".to_string(),
                     "foaf:Person".to_string(),
                 ]
-            }
+            },
             // Node selector suggestions
             (_, "node") | (_, "focus_node") => {
-                vec![
-                    ":node1".to_string(),
-                    "<http://example.org/resource>".to_string(),
-                ]
-            }
+                vec![":node1".to_string(), "<http://example.org/resource>".to_string()]
+            },
             // Mode argument for explore_rdf_node prompt (from rudof://formats/node-modes)
             (_, "mode") => {
-                vec![
-                    "both".to_string(),
-                    "outgoing".to_string(),
-                    "incoming".to_string(),
-                ]
-            }
+                vec!["both".to_string(), "outgoing".to_string(), "incoming".to_string()]
+            },
             // Focus argument for analyze_rdf_data prompt
             ("analyze_rdf_data", "focus") | (_, "focus") => {
                 vec![
@@ -426,11 +411,11 @@ impl RudofMcpService {
                     "quality".to_string(),
                     "statistics".to_string(),
                 ]
-            }
+            },
             // Technology argument for validation_guide prompt
             ("validation_guide", "technology") | (_, "technology") => {
                 vec!["shex".to_string(), "shacl".to_string()]
-            }
+            },
             // Query type argument for sparql_builder prompt (from rudof://formats/query-types)
             ("sparql_builder", "query_type") | (_, "query_type") => {
                 vec![
@@ -439,7 +424,7 @@ impl RudofMcpService {
                     "ask".to_string(),
                     "describe".to_string(),
                 ]
-            }
+            },
             _ => vec![],
         }
     }
@@ -466,7 +451,7 @@ impl RudofMcpService {
                         "nquads".to_string(),
                         "n3".to_string(),
                     ]
-                }
+                },
                 // SPARQL endpoint suggestions
                 "endpoint" => {
                     vec![
@@ -474,15 +459,11 @@ impl RudofMcpService {
                         "https://dbpedia.org/sparql".to_string(),
                         "http://localhost:3030/sparql".to_string(),
                     ]
-                }
+                },
                 // Node inspection modes (from rudof://formats/node-modes)
                 "mode" => {
-                    vec![
-                        "both".to_string(),
-                        "outgoing".to_string(),
-                        "incoming".to_string(),
-                    ]
-                }
+                    vec!["both".to_string(), "outgoing".to_string(), "incoming".to_string()]
+                },
                 // Query result formats (from rudof://formats/query-results)
                 "result_format" => {
                     vec![
@@ -496,7 +477,7 @@ impl RudofMcpService {
                         "rdfxml".to_string(),
                         "trig".to_string(),
                     ]
-                }
+                },
                 // ShEx schema formats (from rudof://formats/shex)
                 "shex_format" | "schema_format" => {
                     vec![
@@ -507,7 +488,7 @@ impl RudofMcpService {
                         "rdfxml".to_string(),
                         "jsonld".to_string(),
                     ]
-                }
+                },
                 // SHACL formats (from rudof://formats/shacl)
                 "shacl_format" | "shapes_format" => {
                     vec![
@@ -518,11 +499,11 @@ impl RudofMcpService {
                         "nquads".to_string(),
                         "json".to_string(),
                     ]
-                }
+                },
                 // Validation reader modes (from rudof://formats/validation-reader-modes)
                 "reader_mode" => {
                     vec!["strict".to_string(), "lax".to_string()]
-                }
+                },
                 _ => vec![],
             }
         } else {

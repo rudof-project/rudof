@@ -3,20 +3,20 @@ Pg:
 
 Statements: Statement+ ;
 
-Statement: 
-    Edge 
+Statement:
+    Edge
   | Node ;
 
 Node: "(" NodeId LabelsRecord ")" ;
 
 Edge:
-//     directed 
-    // | undirected 
+//     directed
+    // | undirected
 //    ;
 // directed:
-    "(" source=IDENTIFIER ")" "-" "(" EdgeId? LabelsRecord ")" "->" "(" target=IDENTIFIER ")" ; 
+    "(" source=IDENTIFIER ")" "-" "(" EdgeId? LabelsRecord ")" "->" "(" target=IDENTIFIER ")" ;
 
-NodeId: 
+NodeId:
     Id ;
 
 EdgeId:
@@ -49,7 +49,7 @@ Values: SingleValue
 
 ListValues: SingleValue*[COMMA] ;
 
-SingleValue:    
+SingleValue:
       QUOTED_STRING {StringValue}
     | NUMBER {NumberValue}
     | DATE QUOTED_STRING {DateValue}
@@ -61,10 +61,10 @@ BOOL:
 
 identifier:
     IDENTIFIER
-    | QUOTED_STRING 
+    | QUOTED_STRING
     ;
 
-// Productions for comments  
+// Productions for comments
 Layout: LayoutItem*;
 LayoutItem: WS | Comment;
 Comment: '/*' Corncs '*/' | CommentLine;

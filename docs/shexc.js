@@ -133,7 +133,7 @@ function hljsDefineShExC(hljs, opts = {}) {
         ]
     }
 
-    /** shape expressions from <http://shex.io/shex-semantics/index.html#prod-shapeExpression> 
+    /** shape expressions from <http://shex.io/shex-semantics/index.html#prod-shapeExpression>
      */
     productions.shape = {
         begin: /{/, end: /}/,
@@ -203,7 +203,7 @@ function hljsDefineShExC(hljs, opts = {}) {
         relevance: 0
     }
 
-    /** shape expressions from <http://shex.io/shex-semantics/index.html#prod-unaryTripleExpr> 
+    /** shape expressions from <http://shex.io/shex-semantics/index.html#prod-unaryTripleExpr>
      */
     productions.tripleExpression = {
         begin: iris_RE,

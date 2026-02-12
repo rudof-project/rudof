@@ -20,22 +20,20 @@ impl ShaclConfig {
 
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<ShaclConfig, ShaclConfigError> {
         let path_name = path.as_ref().display().to_string();
-        let mut f =
-            std::fs::File::open(path).map_err(|e| ShaclConfigError::ReadingConfigError {
-                path_name: path_name.clone(),
-                error: e,
-            })?;
+        let mut f = std::fs::File::open(path).map_err(|e| ShaclConfigError::ReadingConfigError {
+            path_name: path_name.clone(),
+            error: e,
+        })?;
         let mut s = String::new();
         f.read_to_string(&mut s)
             .map_err(|e| ShaclConfigError::ReadingConfigError {
                 path_name: path_name.clone(),
                 error: e,
             })?;
-        let config: ShaclConfig =
-            toml::from_str(s.as_str()).map_err(|e| ShaclConfigError::TomlError {
-                path_name: path_name.to_string(),
-                error: e,
-            })?;
+        let config: ShaclConfig = toml::from_str(s.as_str()).map_err(|e| ShaclConfigError::TomlError {
+            path_name: path_name.to_string(),
+            error: e,
+        })?;
         Ok(config)
     }
 }
@@ -52,8 +50,5 @@ pub enum ShaclConfigError {
     ReadingConfigError { path_name: String, error: io::Error },
 
     #[error("Reading SHACL config TOML from {path_name:?}. Error: {error:?}")]
-    TomlError {
-        path_name: String,
-        error: toml::de::Error,
-    },
+    TomlError { path_name: String, error: toml::de::Error },
 }

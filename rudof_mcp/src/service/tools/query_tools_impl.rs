@@ -1,4 +1,4 @@
-use crate::service::{errors::*, service::*};
+use crate::service::{errors::*, mcp_service::*};
 use rmcp::{
     ErrorData as McpError,
     handler::server::wrapper::Parameters,
@@ -77,9 +77,7 @@ async fn generate_sparql_from_natural_language(
         internal_error(
             "Sampling context error",
             "Request context not found",
-            Some(
-                json!({"operation":"generate_sparql_from_natural_language","phase":"get_context"}),
-            ),
+            Some(json!({"operation":"generate_sparql_from_natural_language","phase":"get_context"})),
         )
     })?;
 
@@ -107,17 +105,13 @@ async fn generate_sparql_from_natural_language(
     };
 
     // Send sampling request through rmcp
-    let response = context
-        .peer
-        .create_message(sampling_request)
-        .await
-        .map_err(|e| {
-            internal_error(
-                "Query generation error",
-                e.to_string(),
-                Some(json!({"operation":"generate_sparql_from_natural_language","phase":"create_message"})),
-            )
-        })?;
+    let response = context.peer.create_message(sampling_request).await.map_err(|e| {
+        internal_error(
+            "Query generation error",
+            e.to_string(),
+            Some(json!({"operation":"generate_sparql_from_natural_language","phase":"create_message"})),
+        )
+    })?;
 
     // Extract text from the SamplingMessage content in the response
     // The response.message.content is of type Content
@@ -127,9 +121,7 @@ async fn generate_sparql_from_natural_language(
         return Err(internal_error(
             "Sampling response error",
             "Expected text response from LLM",
-            Some(
-                json!({"operation":"generate_sparql_from_natural_language","phase":"extract_response_text"}),
-            ),
+            Some(json!({"operation":"generate_sparql_from_natural_language","phase":"extract_response_text"})),
         ));
     };
 
@@ -184,24 +176,24 @@ pub async fn execute_sparql_query_impl(
         (Some(q), None) => {
             // Direct SPARQL query provided
             q
-        }
+        },
         (None, Some(nl)) => {
             // Natural language query provided - generate SPARQL using rmcp sampling
             generate_sparql_from_natural_language(service, &nl).await?
-        }
+        },
         (Some(_), Some(_)) => {
             return Ok(ToolExecutionError::new(
                 "Cannot provide both 'query' and 'query_natural_language'. Choose one.",
             )
             .into_call_tool_result());
-        }
+        },
         (None, None) => {
             return Ok(ToolExecutionError::with_hint(
                 "No query provided",
                 "Provide either 'query' with a SPARQL query string, or 'query_natural_language' with a description",
             )
             .into_call_tool_result());
-        }
+        },
     };
 
     // Detect query type - return Tool Execution Error if unrecognizable
@@ -213,7 +205,7 @@ pub async fn execute_sparql_query_impl(
                 "Ensure the query starts with SELECT, CONSTRUCT, ASK",
             )
             .into_call_tool_result());
-        }
+        },
     };
 
     // Parse query type
@@ -225,7 +217,7 @@ pub async fn execute_sparql_query_impl(
                 "Supported query types: SELECT, CONSTRUCT, ASK",
             )
             .into_call_tool_result());
-        }
+        },
     };
 
     // Parse result format - return Tool Execution Error for invalid format
@@ -238,7 +230,7 @@ pub async fn execute_sparql_query_impl(
                 format!("Supported formats: {}", SPARQL_RESULT_FORMATS),
             )
             .into_call_tool_result());
-        }
+        },
     };
 
     let query_spec = InputSpec::Str(sparql_query.clone());

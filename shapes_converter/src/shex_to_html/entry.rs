@@ -11,11 +11,7 @@ pub struct ShapeTemplateEntry {
 }
 
 impl ShapeTemplateEntry {
-    pub fn new(
-        name: Name,
-        value_constraint: ValueConstraint,
-        card: Cardinality,
-    ) -> ShapeTemplateEntry {
+    pub fn new(name: Name, value_constraint: ValueConstraint, card: Cardinality) -> ShapeTemplateEntry {
         ShapeTemplateEntry {
             name,
             value_constraint,

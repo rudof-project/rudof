@@ -1,6 +1,4 @@
-use crate::shex_to_sparql::{
-    SelectQuery, ShEx2SparqlConfig, ShEx2SparqlError, TriplePattern, Var, VarBuilder,
-};
+use crate::shex_to_sparql::{SelectQuery, ShEx2SparqlConfig, ShEx2SparqlError, TriplePattern, Var, VarBuilder};
 use prefixmap::IriRef;
 use shex_ast::{Schema, Shape, ShapeExpr, TripleExpr};
 
@@ -10,16 +8,10 @@ pub struct ShEx2Sparql {
 
 impl ShEx2Sparql {
     pub fn new(config: &ShEx2SparqlConfig) -> ShEx2Sparql {
-        ShEx2Sparql {
-            config: config.clone(),
-        }
+        ShEx2Sparql { config: config.clone() }
     }
 
-    pub fn convert(
-        &self,
-        shex: &Schema,
-        maybe_shape: Option<IriRef>,
-    ) -> Result<SelectQuery, ShEx2SparqlError> {
+    pub fn convert(&self, shex: &Schema, maybe_shape: Option<IriRef>) -> Result<SelectQuery, ShEx2SparqlError> {
         let mut var_builder = VarBuilder::new();
         match maybe_shape {
             Some(shape) => {
@@ -31,7 +23,7 @@ impl ShEx2Sparql {
                         schema: Box::new(shex.clone()),
                     })
                 }
-            }
+            },
             None => {
                 if let Some(shape_expr) = shex.start() {
                     shape_expr2query(&shape_expr, &self.config, shex, &mut var_builder)
@@ -39,12 +31,7 @@ impl ShEx2Sparql {
                     // Convert the first shape
                     if let Some(shapes) = shex.shapes() {
                         if let Some(shape_decl) = shapes.first() {
-                            shape_expr2query(
-                                &shape_decl.shape_expr,
-                                &self.config,
-                                shex,
-                                &mut var_builder,
-                            )
+                            shape_expr2query(&shape_decl.shape_expr, &self.config, shex, &mut var_builder)
                         } else {
                             Err(ShEx2SparqlError::EmptyShapes {
                                 schema: Box::new(shex.clone()),
@@ -56,7 +43,7 @@ impl ShEx2Sparql {
                         })
                     }
                 }
-            }
+            },
         }
     }
 }
@@ -84,18 +71,16 @@ fn shape_expr2patterns(
     let mut ps = Vec::new();
     match se {
         ShapeExpr::ShapeOr { shape_exprs: _ } => Err(ShEx2SparqlError::not_implemented("ShapeOr")),
-        ShapeExpr::ShapeAnd { shape_exprs: _ } => {
-            Err(ShEx2SparqlError::not_implemented("ShapeAND"))
-        }
+        ShapeExpr::ShapeAnd { shape_exprs: _ } => Err(ShEx2SparqlError::not_implemented("ShapeAND")),
         ShapeExpr::ShapeNot { shape_expr: _ } => Err(ShEx2SparqlError::not_implemented("ShapeNot")),
         ShapeExpr::NodeConstraint(nc) => {
             let msg = format!("Node constraint: {nc:?}");
             Err(ShEx2SparqlError::not_implemented(msg.as_str()))
-        }
+        },
         ShapeExpr::Shape(s) => {
             shape2patterns(s, &mut ps, config, schema, var_builder);
             Ok(ps)
-        }
+        },
         ShapeExpr::External => Err(ShEx2SparqlError::not_implemented("ShapeExternal")),
         ShapeExpr::Ref(sref) => {
             if let Some(shape_expr) = schema.find_shape_by_label(sref)? {
@@ -106,7 +91,7 @@ fn shape_expr2patterns(
                     schema: Box::new(schema.clone()),
                 })
             }
-        }
+        },
     }
 }
 
@@ -135,12 +120,12 @@ fn triple_expr2patterns(
             for tew in expressions {
                 triple_expr2patterns(&tew.te, ps, config, schema, var_builder)
             }
-        }
+        },
         TripleExpr::OneOf { expressions, .. } => {
             for tew in expressions {
                 triple_expr2patterns(&tew.te, ps, config, schema, var_builder)
             }
-        }
+        },
         TripleExpr::TripleConstraint {
             inverse,
             predicate,
@@ -160,8 +145,8 @@ fn triple_expr2patterns(
                 let tp = TriplePattern::new(&subj, pred, &obj);
                 ps.push(tp)
             }
-        }
-        TripleExpr::TripleExprRef(_) => todo!(),
+        },
+        TripleExpr::Ref(_) => todo!(),
     }
 }
 
@@ -175,7 +160,7 @@ fn var_from_predicate(predicate: &IriRef, schema: &Schema, var_builder: &mut Var
                 } else {
                     todo!()
                 }
-            }
+            },
         },
         IriRef::Prefixed { prefix: _, local } => Var::new(local),
     }
@@ -195,26 +180,23 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
 :Person {
   :name xsd:string ;
-  :knows @<Person> 
+  :knows @<Person>
 }";
-        let schema =
-            shex_ast::compact::ShExParser::parse(shex_str, None, &iri!("http://default/")).unwrap();
+        let schema = shex_ast::compact::ShExParser::parse(shex_str, None, &iri!("http://default/")).unwrap();
         let query_str = "\
 prefix : <http://example.org/>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
 Select * where {
     ?this :name  ?name  .
-    ?this :knows ?knows  
+    ?this :knows ?knows
 }";
         let expected_query = SparqlParser::new().parse_query(query_str).unwrap();
         let converted_query = ShEx2Sparql::new(&ShEx2SparqlConfig::default())
             .convert(&schema, None)
             .unwrap();
         let converted_query_str = format!("{converted_query}");
-        let converted_query_parsed = SparqlParser::new()
-            .parse_query(converted_query_str.as_str())
-            .unwrap();
+        let converted_query_parsed = SparqlParser::new().parse_query(converted_query_str.as_str()).unwrap();
 
         assert_eq!(converted_query_parsed, expected_query);
     }

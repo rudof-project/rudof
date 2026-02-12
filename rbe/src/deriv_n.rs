@@ -73,12 +73,12 @@ where
                     // If it returns None we continue with the next position
                     self.pos += 1;
                     Self::next(self)
-                }
+                },
                 Some(d) => {
                     cloned[self.pos] = d;
                     self.pos += 1;
                     Some(cloned)
-                }
+                },
             }
         } else {
             None
@@ -95,10 +95,7 @@ mod tests {
         let vec = vec![1, 2, 3];
 
         let sets = deriv_n(vec, |x: &i32| Some(x + 100)).collect::<Vec<_>>();
-        assert_eq!(
-            sets,
-            vec![vec![101, 2, 3], vec![1, 102, 3], vec![1, 2, 103]]
-        )
+        assert_eq!(sets, vec![vec![101, 2, 3], vec![1, 102, 3], vec![1, 2, 103]])
     }
 
     #[test]

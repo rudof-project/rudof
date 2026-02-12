@@ -25,13 +25,13 @@ use rudof_cli::run_compare;
 use rudof_cli::run_pgschema;
 use rudof_cli::run_validate_pgschema;
 use rudof_cli::{
-    GenerateSchemaFormat, ValidationMode, run_convert, run_dctap, run_service, run_shacl,
-    run_shapemap, run_shex, run_validate_shacl, run_validate_shex,
+    GenerateSchemaFormat, ValidationMode, run_convert, run_dctap, run_service, run_shacl, run_shapemap, run_shex,
+    run_validate_shacl, run_validate_shex,
 };
 use rudof_lib::{
-    InputSpec, RudofConfig, data_format::DataFormat,
-    result_shacl_validation_format::SortByShaclValidationReport, shacl_format::CliShaclFormat,
-    shex_format::ShExFormat as CliShExFormat, sort_by_result_shape_map::SortByResultShapeMap,
+    InputSpec, RudofConfig, data_format::DataFormat, result_shacl_validation_format::SortByShaclValidationReport,
+    shacl_format::CliShaclFormat, shex_format::ShExFormat as CliShExFormat,
+    sort_by_result_shape_map::SortByResultShapeMap,
 };
 use std::env;
 use std::io;
@@ -115,7 +115,7 @@ fn main() -> Result<()> {
                 &config,
                 *force_overwrite,
             )
-        }
+        },
         Some(Command::RdfConfig {
             input,
             format,
@@ -125,15 +125,8 @@ fn main() -> Result<()> {
             force_overwrite,
         }) => {
             let config = get_config(config)?;
-            run_rdf_config(
-                input,
-                format,
-                output,
-                result_format,
-                &config,
-                *force_overwrite,
-            )
-        }
+            run_rdf_config(input, format, output, result_format, &config, *force_overwrite)
+        },
         Some(Command::Mcp {
             transport,
             bind_address,
@@ -155,7 +148,7 @@ fn main() -> Result<()> {
                 route_path: Some(route_path.to_string()),
                 allowed_networks: networks,
             })
-        }
+        },
         Some(Command::Service {
             service,
             service_format,
@@ -175,7 +168,7 @@ fn main() -> Result<()> {
                 &config,
                 *force_overwrite,
             )
-        }
+        },
         Some(Command::Shex {
             schema,
             schema_format,
@@ -194,9 +187,7 @@ fn main() -> Result<()> {
         }) => {
             let config = get_config(config)?;
             if let Some(show_dependencies) = show_dependencies {
-                config
-                    .shex_config()
-                    .with_show_dependencies(*show_dependencies);
+                config.shex_config().with_show_dependencies(*show_dependencies);
             }
             if let Some(flag) = show_statistics {
                 config.shex_config().set_show_extends(*flag);
@@ -216,7 +207,7 @@ fn main() -> Result<()> {
                 &reader_mode.into(),
                 &config,
             )
-        }
+        },
         Some(Command::Validate {
             validation_mode,
             schema,
@@ -264,14 +255,14 @@ fn main() -> Result<()> {
                         &config,
                         *force_overwrite,
                     )
-                }
-                ValidationMode::SHACL => {
+                },
+                ValidationMode::Shacl => {
                     let shacl_format = match &schema_format {
                         None => Ok::<Option<CliShaclFormat>, anyhow::Error>(None),
                         Some(f) => {
                             let f = schema_format_to_shacl_format(f)?;
                             Ok(Some(f))
-                        }
+                        },
                     }?;
                     let result_shacl_validation = result_format.to_shacl_result_format();
                     let sort_by = cnv_sort_by_validate_report(sort_by);
@@ -292,7 +283,7 @@ fn main() -> Result<()> {
                         &config,
                         *force_overwrite,
                     )
-                }
+                },
                 ValidationMode::PGSchema => {
                     let result_validation_format = result_format.to_pgschema_result_format();
                     run_validate_pgschema(
@@ -306,9 +297,9 @@ fn main() -> Result<()> {
                         &result_validation_format,
                         *force_overwrite,
                     )
-                }
+                },
             }
-        }
+        },
         Some(Command::ShexValidate {
             schema,
             schema_format,
@@ -349,7 +340,7 @@ fn main() -> Result<()> {
                 &config,
                 *force_overwrite,
             )
-        }
+        },
         Some(Command::ShaclValidate {
             shapes,
             shapes_format,
@@ -385,7 +376,7 @@ fn main() -> Result<()> {
                 &config,
                 *force_overwrite,
             )
-        }
+        },
         Some(Command::Data {
             data,
             data_format,
@@ -408,7 +399,7 @@ fn main() -> Result<()> {
                 &reader_mode.into(),
                 &config,
             )
-        }
+        },
         Some(Command::Node {
             data,
             data_format,
@@ -441,7 +432,7 @@ fn main() -> Result<()> {
                 &config,
                 *force_overwrite,
             )
-        }
+        },
         Some(Command::Shapemap {
             shapemap,
             shapemap_format,
@@ -484,7 +475,7 @@ fn main() -> Result<()> {
                 &reader_mode.into(),
                 &config,
             )
-        }
+        },
         Some(Command::DCTap {
             file,
             format,
@@ -494,16 +485,9 @@ fn main() -> Result<()> {
             force_overwrite,
         }) => {
             let config = get_config(config)?;
-            run_dctap(
-                file,
-                format,
-                result_format,
-                output,
-                &config,
-                *force_overwrite,
-            )?;
+            run_dctap(file, format, result_format, output, &config, *force_overwrite)?;
             Ok(())
-        }
+        },
         Some(Command::Pgschema {
             schema,
             schema_format,
@@ -523,7 +507,7 @@ fn main() -> Result<()> {
                 *force_overwrite,
                 &config,
             )
-        }
+        },
         Some(Command::Convert {
             file,
             format,
@@ -557,7 +541,7 @@ fn main() -> Result<()> {
                 &reader_mode.into(),
                 show_time.unwrap_or(false),
             )
-        }
+        },
         Some(Command::Query {
             query,
             data,
@@ -586,7 +570,7 @@ fn main() -> Result<()> {
                 cli.debug,
                 *force_overwrite,
             )
-        }
+        },
         Some(Command::Generate {
             schema,
             schema_format,
@@ -610,7 +594,7 @@ fn main() -> Result<()> {
         ),
         None => {
             bail!("Command not specified, type `--help` to see list of commands")
-        }
+        },
     }
 }
 
@@ -626,28 +610,24 @@ fn get_config(config: &Option<PathBuf>) -> Result<RudofConfig> {
         None => {
             let config = RudofConfig::default_config()?;
             Ok(config)
-        }
+        },
     }
 }
 
 fn schema_format_to_shacl_format(f: &CliShExFormat) -> Result<CliShaclFormat> {
     match f {
         CliShExFormat::Internal => Ok(CliShaclFormat::Internal),
-        CliShExFormat::ShExC => Err(anyhow!(
-            "Validation using SHACL mode doesn't support ShExC format"
-        )),
-        CliShExFormat::Simple => Err(anyhow!(
-            "Validation using SHACL mode doesn't support {f} format"
-        )),
+        CliShExFormat::ShExC => Err(anyhow!("Validation using SHACL mode doesn't support ShExC format")),
+        CliShExFormat::Simple => Err(anyhow!("Validation using SHACL mode doesn't support {f} format")),
         CliShExFormat::Turtle => Ok(CliShaclFormat::Turtle),
         CliShExFormat::NTriples => Ok(CliShaclFormat::NTriples),
-        CliShExFormat::RDFXML => Ok(CliShaclFormat::RDFXML),
+        CliShExFormat::RdfXml => Ok(CliShaclFormat::RdfXml),
         CliShExFormat::TriG => Ok(CliShaclFormat::TriG),
         CliShExFormat::N3 => Ok(CliShaclFormat::N3),
         CliShExFormat::NQuads => Ok(CliShaclFormat::NQuads),
         CliShExFormat::ShExJ => bail!("Validation using SHACL mode doesn't support ShExC format"),
-        CliShExFormat::JSON => Ok(CliShaclFormat::JsonLd),
-        CliShExFormat::JSONLD => Ok(CliShaclFormat::JsonLd),
+        CliShExFormat::Json => Ok(CliShaclFormat::JsonLd),
+        CliShExFormat::JsonLd => Ok(CliShaclFormat::JsonLd),
     }
 }
 
@@ -707,16 +687,13 @@ fn run_generate(
             InputSpec::Path(path) => path.clone(),
             InputSpec::Stdin => {
                 bail!("Schema from stdin is not supported for data generation")
-            }
+            },
             InputSpec::Url(url) => {
                 bail!("Schema from URL is not supported yet: {}", url)
-            }
+            },
             InputSpec::Str(s) => {
-                bail!(
-                    "Schema from string is not supported for data generation: {}",
-                    s
-                )
-            }
+                bail!("Schema from string is not supported for data generation: {}", s)
+            },
         };
 
         // Create generator
@@ -726,13 +703,13 @@ fn run_generate(
         match schema_format {
             GenerateSchemaFormat::Auto => {
                 generator.load_schema_auto(&schema_path).await?;
-            }
+            },
             GenerateSchemaFormat::ShEx => {
                 generator.load_shex_schema(&schema_path).await?;
-            }
-            GenerateSchemaFormat::SHACL => {
+            },
+            GenerateSchemaFormat::Shacl => {
                 generator.load_shacl_schema(&schema_path).await?;
-            }
+            },
         }
 
         // Generate data
@@ -744,22 +721,16 @@ fn run_generate(
     Ok(())
 }
 
-fn cnv_sort_by_validate_result_map(
-    s: &rudof_cli::sort_by_validate::SortByValidate,
-) -> SortByResultShapeMap {
+fn cnv_sort_by_validate_result_map(s: &rudof_cli::sort_by_validate::SortByValidate) -> SortByResultShapeMap {
     match s {
         rudof_cli::sort_by_validate::SortByValidate::Node => SortByResultShapeMap::Node,
         rudof_cli::sort_by_validate::SortByValidate::Details => SortByResultShapeMap::Details,
     }
 }
 
-fn cnv_sort_by_validate_report(
-    s: &rudof_cli::sort_by_validate::SortByValidate,
-) -> SortByShaclValidationReport {
+fn cnv_sort_by_validate_report(s: &rudof_cli::sort_by_validate::SortByValidate) -> SortByShaclValidationReport {
     match s {
         rudof_cli::sort_by_validate::SortByValidate::Node => SortByShaclValidationReport::Node,
-        rudof_cli::sort_by_validate::SortByValidate::Details => {
-            SortByShaclValidationReport::Details
-        }
+        rudof_cli::sort_by_validate::SortByValidate::Details => SortByShaclValidationReport::Details,
     }
 }

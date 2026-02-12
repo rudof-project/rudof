@@ -35,13 +35,13 @@ The following command can process the file and represent the shapes that it cont
 
 ```sh
 ❯ rudof dctap -s user.csv
-Shape(Person)  
- name xsd:string 
+Shape(Person)
+ name xsd:string
  birthDate xsd:date ?
  gender [male female other]?
  knows @Person *
  worksFor @Company *
-Shape(Company)  
+Shape(Company)
  founder @Person ?
 ```
 
@@ -63,7 +63,7 @@ Usage: rudof dctap [OPTIONS] --source-file <DCTap source file>
 
 Options:
   -s, --source-file <DCTap source file>
-          
+
   -f, --format <DCTap file format>
           [default: csv] [possible values: csv, xlsx, xlsb, xlsm, xls]
   -r, --result-format <Ouput results format>
@@ -71,9 +71,9 @@ Options:
   -c, --config-file <Config file name>
           Config file path, if unset it assumes default config
   -o, --output-file <Output file name, default = terminal>
-          
+
       --force-overwrite
-          
+
   -h, --help
           Print help
 ```
@@ -108,7 +108,7 @@ picklist_delimiter = " "
 
 [property_placeholders.x.Stem]
 stem = "pending"
-        
+
 [empty_property_placeholder.Stem]
 stem = "empty"
 ```

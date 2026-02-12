@@ -76,33 +76,23 @@ pub trait Rdf: Sized {
     }
 
     fn term_as_literal(term: &Self::Term) -> Result<Self::Literal, RDFError> {
-        <Self::Term as TryInto<Self::Literal>>::try_into(term.clone()).map_err(|_| {
-            RDFError::TermAsLiteral {
-                term: term.to_string(),
-            }
-        })
+        <Self::Term as TryInto<Self::Literal>>::try_into(term.clone())
+            .map_err(|_| RDFError::TermAsLiteral { term: term.to_string() })
     }
 
     fn term_as_sliteral(term: &Self::Term) -> Result<SLiteral, RDFError> {
-        let lit = <Self::Term as TryInto<Self::Literal>>::try_into(term.clone()).map_err(|_| {
-            RDFError::TermAsLiteral {
-                term: term.to_string(),
-            }
-        })?;
-        let slit = <Self::Literal as TryInto<SLiteral>>::try_into(lit.clone()).map_err(|_| {
-            RDFError::LiteralAsSLiteral {
+        let lit = <Self::Term as TryInto<Self::Literal>>::try_into(term.clone())
+            .map_err(|_| RDFError::TermAsLiteral { term: term.to_string() })?;
+        let slit =
+            <Self::Literal as TryInto<SLiteral>>::try_into(lit.clone()).map_err(|_| RDFError::LiteralAsSLiteral {
                 literal: lit.to_string(),
-            }
-        })?;
+            })?;
         Ok(slit)
     }
 
     fn term_as_subject(term: &Self::Term) -> Result<Self::Subject, RDFError> {
-        <Self::Term as TryInto<Self::Subject>>::try_into(term.clone()).map_err(|_e| {
-            RDFError::TermAsSubject {
-                term: term.to_string(),
-            }
-        })
+        <Self::Term as TryInto<Self::Subject>>::try_into(term.clone())
+            .map_err(|_e| RDFError::TermAsSubject { term: term.to_string() })
     }
 
     fn subject_as_term(subj: &Self::Subject) -> Self::Term {
@@ -118,11 +108,8 @@ pub trait Rdf: Sized {
     }
 
     fn term_as_iri(term: &Self::Term) -> Result<Self::IRI, RDFError> {
-        <Self::Term as TryInto<Self::IRI>>::try_into(term.clone()).map_err(|_| {
-            RDFError::TermAsIri {
-                term: term.to_string(),
-            }
-        })
+        <Self::Term as TryInto<Self::IRI>>::try_into(term.clone())
+            .map_err(|_| RDFError::TermAsIri { term: term.to_string() })
     }
 
     fn iri_or_bnode_as_term(ib: &IriOrBlankNode) -> Self::Term {
@@ -131,29 +118,21 @@ pub trait Rdf: Sized {
     }
 
     fn term_as_bnode(term: &Self::Term) -> Result<Self::BNode, RDFError> {
-        <Self::Term as TryInto<Self::BNode>>::try_into(term.clone()).map_err(|_| {
-            RDFError::TermAsBNode {
-                term: term.to_string(),
-            }
-        })
+        <Self::Term as TryInto<Self::BNode>>::try_into(term.clone())
+            .map_err(|_| RDFError::TermAsBNode { term: term.to_string() })
     }
 
     fn term_as_iris(term: &Self::Term) -> Result<IriS, RDFError> {
-        let iri = <Self::Term as TryInto<Self::IRI>>::try_into(term.clone()).map_err(|_| {
-            RDFError::TermAsIriS {
-                term: term.to_string(),
-            }
-        })?;
+        let iri = <Self::Term as TryInto<Self::IRI>>::try_into(term.clone())
+            .map_err(|_| RDFError::TermAsIriS { term: term.to_string() })?;
         let iri_s: IriS = iri.into();
         Ok(iri_s)
     }
 
     fn term_as_object(term: &Self::Term) -> Result<Object, RDFError> {
-        <Self::Term as TryInto<Object>>::try_into(term.clone()).map_err(|_e| {
-            RDFError::TermAsObject {
-                term: format!("Converting term to object: {term}"),
-                error: "Error term_as_object".to_string(),
-            }
+        <Self::Term as TryInto<Object>>::try_into(term.clone()).map_err(|_e| RDFError::TermAsObject {
+            term: format!("Converting term to object: {term}"),
+            error: "Error term_as_object".to_string(),
         })
     }
 
@@ -169,9 +148,7 @@ pub trait Rdf: Sized {
 
     fn term_as_lang(term: &Self::Term) -> std::result::Result<Lang, RDFError> {
         if term.is_blank_node() {
-            Err(RDFError::TermAsLang {
-                term: term.to_string(),
-            })
+            Err(RDFError::TermAsLang { term: term.to_string() })
         } else if let Ok(literal) = Self::term_as_literal(term) {
             let lang = Lang::new(literal.lexical_form());
             match lang {
@@ -190,11 +167,10 @@ pub trait Rdf: Sized {
         // This requires to clone but we should be able to optimize this later
         let obj1: Object = Self::term_as_object(term1)?;
         let obj2: Object = Self::term_as_object(term2)?;
-        obj1.partial_cmp(&obj2)
-            .ok_or_else(|| RDFError::ComparisonError {
-                term1: term1.lexical_form(),
-                term2: term2.lexical_form(),
-            })
+        obj1.partial_cmp(&obj2).ok_or_else(|| RDFError::ComparisonError {
+            term1: term1.lexical_form(),
+            term2: term2.lexical_form(),
+        })
     }
 
     /// Checks if the first term is equals to the second term

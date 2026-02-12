@@ -1,9 +1,9 @@
 use iri_s::error::IriSError;
 use shex_ast::compact::ParseError;
 use shex_ast::shapemap::ValidationStatus;
-use shex_ast::{ast::SchemaJsonError, Schema, SchemaIRError};
+use shex_ast::{Schema, SchemaIRError, ast::SchemaJsonError};
 use shex_validation::ValidatorError;
-use srdf::{srdf_graph::SRDFGraphError, RDFError};
+use srdf::{RDFError, srdf_graph::SRDFGraphError};
 use std::{ffi::OsString, io, path::PathBuf};
 use thiserror::Error;
 
@@ -15,15 +15,11 @@ pub enum ManifestError {
     #[error("Error parsing ShExC for entry {entry_name} from file {shex_path}. Error: {error:?}")]
     ShExCParsingError {
         error: Box<ParseError>,
-        entry_name: Box<String>,
+        entry_name: String,
         shex_path: Box<PathBuf>,
     },
     #[error("Reading Manifest Map from {map:?} for entry {entry:?}. Error: {error}")]
-    ReadingShapeMap {
-        entry: String,
-        map: std::path::PathBuf,
-        error: String,
-    },
+    ReadingShapeMap { entry: String, map: PathBuf, error: String },
 
     #[error("Parsing ShapeLabel: {value}. Error: {error:?}")]
     ParsingShapeLabel { value: String, error: String },
@@ -92,13 +88,13 @@ pub enum ManifestError {
         entry: String,
     },
 
-    #[error("Expected OK for {entry} but failed. Failed status are: [{}]\nPassed status are: [{}]", 
-       failed_status.iter().map(|s| s.code()).collect::<Vec<_>>().join(", "), 
+    #[error("Expected OK for {entry} but failed. Failed status are: [{}]\nPassed status are: [{}]",
+       failed_status.iter().map(|s| s.code()).collect::<Vec<_>>().join(", "),
        passed_status.iter().map(|s| s.code()).collect::<Vec<_>>().join(", "))]
     ExpectedOkButObtained {
         failed_status: Vec<ValidationStatus>,
         passed_status: Vec<ValidationStatus>,
-        entry: Box<String>,
+        entry: String,
     },
 
     #[error(
@@ -106,9 +102,9 @@ pub enum ManifestError {
     )]
     SchemasDifferent {
         schema_parsed: Box<Schema>,
-        schema_serialized: Box<String>,
+        schema_serialized: String,
         schema_parsed_after_serialization: Box<Schema>,
-        schema_serialized_after: Box<String>,
+        schema_serialized_after: String,
     },
 
     #[error(
@@ -116,7 +112,7 @@ pub enum ManifestError {
     )]
     ShExSchemaDifferent {
         json_schema_parsed: Box<Schema>,
-        schema_serialized: Box<String>,
+        schema_serialized: String,
         shexc_schema_parsed: Box<Schema>,
     },
 
@@ -126,9 +122,7 @@ pub enum ManifestError {
         error: serde_json::Error,
     },
 
-    #[error(
-        "Schema parsed after serialization could not be serialized\n{schema_parsed:?}\n{error:?}"
-    )]
+    #[error("Schema parsed after serialization could not be serialized\n{schema_parsed:?}\n{error:?}")]
     SchemaSerializationError2nd {
         schema_parsed: Box<Schema>,
         error: serde_json::Error,
@@ -138,9 +132,9 @@ pub enum ManifestError {
         "Parsing schema serialized with name: {schema_name}\nSchema serialized:\n{schema_serialized}\nError: {error}"
     )]
     SchemaParsingAfterSerialization {
-        schema_name: Box<String>,
+        schema_name: String,
         schema_parsed: Box<Schema>,
-        schema_serialized: Box<String>,
+        schema_serialized: String,
         error: serde_json::Error,
     },
 

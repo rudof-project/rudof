@@ -13,7 +13,7 @@ pub enum ShapeMapFormat {
     Internal,
     Json,
     Details,
-    CSV,
+    Csv,
 }
 
 impl Display for ShapeMapFormat {
@@ -23,7 +23,7 @@ impl Display for ShapeMapFormat {
             ShapeMapFormat::Internal => write!(dest, "internal"),
             ShapeMapFormat::Json => write!(dest, "json"),
             ShapeMapFormat::Details => write!(dest, "details"),
-            ShapeMapFormat::CSV => write!(dest, "csv"),
+            ShapeMapFormat::Csv => write!(dest, "csv"),
         }
     }
 }
@@ -32,10 +32,10 @@ impl From<&ShapeMapFormat> for ShexAstShapeMapFormat {
     fn from(format: &ShapeMapFormat) -> Self {
         match format {
             ShapeMapFormat::Compact => ShexAstShapeMapFormat::Compact,
-            ShapeMapFormat::Internal => ShexAstShapeMapFormat::JSON,
-            ShapeMapFormat::Json => ShexAstShapeMapFormat::JSON,
+            ShapeMapFormat::Internal => ShexAstShapeMapFormat::Json,
+            ShapeMapFormat::Json => ShexAstShapeMapFormat::Json,
             ShapeMapFormat::Details => ShexAstShapeMapFormat::Compact,
-            ShapeMapFormat::CSV => ShexAstShapeMapFormat::Compact,
+            ShapeMapFormat::Csv => ShexAstShapeMapFormat::Csv,
         }
     }
 }
@@ -49,7 +49,7 @@ impl FromStr for ShapeMapFormat {
             "internal" => Ok(ShapeMapFormat::Internal),
             "json" => Ok(ShapeMapFormat::Json),
             "details" => Ok(ShapeMapFormat::Details),
-            "csv" => Ok(ShapeMapFormat::CSV),
+            "csv" => Ok(ShapeMapFormat::Csv),
             other => Err(crate::RudofError::UnsupportedShapeMapFormat {
                 format: other.to_string(),
             }),

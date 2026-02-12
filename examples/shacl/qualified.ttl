@@ -19,8 +19,8 @@ _:1 sh:path :gender ;
 	sh:hasValue :female .
 
 
-:ok1 :parent :p1f, :p1m . 
-:p1f :gender :female . 
+:ok1 :parent :p1f, :p1m .
+:p1f :gender :female .
 :p1m :gender :male .
 
 :ok2 :parent :p2o, :p2m .

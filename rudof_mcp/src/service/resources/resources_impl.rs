@@ -5,12 +5,12 @@
 //! modules and handles request routing.
 
 use crate::service::errors::*;
-use crate::service::service::RudofMcpService;
+use crate::service::mcp_service::RudofMcpService;
 use rmcp::{
     ErrorData as McpError, RoleServer,
     model::{
-        Annotated, ListResourcesResult, PaginatedRequestParams, RawResource,
-        ReadResourceRequestParams, ReadResourceResult,
+        Annotated, ListResourcesResult, PaginatedRequestParams, RawResource, ReadResourceRequestParams,
+        ReadResourceResult,
     },
     service::RequestContext,
 };
@@ -42,10 +42,7 @@ pub async fn list_resources(
     // Handle pagination if requested
     let (resources, next_cursor) = if let Some(params) = request {
         let page_size = 20;
-        let cursor = params
-            .cursor
-            .and_then(|c| c.parse::<usize>().ok())
-            .unwrap_or(0);
+        let cursor = params.cursor.and_then(|c| c.parse::<usize>().ok()).unwrap_or(0);
 
         let start = cursor;
         let end = std::cmp::min(start + page_size, all_resources.len());

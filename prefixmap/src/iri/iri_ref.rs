@@ -37,15 +37,10 @@ impl IriRef {
     ///
     /// Returns a [`Cow`], which is borrowed if the [`IriRef`] is already an IRI, or owned if it was a prefixed name.
     /// If the prefixed name cannot be resolved, returns a [`PrefixMapError`]
-    pub fn get_iri_prefixmap(
-        &self,
-        prefixmap: &PrefixMap,
-    ) -> Result<Cow<'_, IriS>, PrefixMapError> {
+    pub fn get_iri_prefixmap(&self, prefixmap: &PrefixMap) -> Result<Cow<'_, IriS>, PrefixMapError> {
         match self {
             IriRef::Iri(iri) => Ok(Cow::Borrowed(iri)),
-            IriRef::Prefixed { prefix, local } => prefixmap
-                .resolve_prefix_local(prefix, local)
-                .map(Cow::Owned),
+            IriRef::Prefixed { prefix, local } => prefixmap.resolve_prefix_local(prefix, local).map(Cow::Owned),
         }
     }
 
@@ -72,23 +67,24 @@ impl Deref for IriRef {
                     Some(base) => base.resolve(iri_s)?,
                 };
                 Ok(IriRef::Iri(resolved))
-            }
+            },
             IriRef::Prefixed { prefix, local } => {
                 let prefixmap = match prefixmap {
                     None => return Err(DerefError::NoPrefixMapPrefixedName { prefix, local }),
                     Some(pm) => pm,
                 };
 
-                let iri = prefixmap
-                    .resolve_prefix_local(&prefix, &local)
-                    .map_err(|e| DerefError::DerefPrefixMapError {
-                        alias: prefix,
-                        local,
-                        error: Box::new(e),
-                    })?;
+                let iri =
+                    prefixmap
+                        .resolve_prefix_local(&prefix, &local)
+                        .map_err(|e| DerefError::DerefPrefixMapError {
+                            alias: prefix,
+                            local,
+                            error: Box::new(e),
+                        })?;
 
                 Ok(IriRef::Iri(iri))
-            }
+            },
         }
     }
 }
@@ -115,7 +111,7 @@ impl From<IriRef> for IriS {
             IriRef::Iri(iri_s) => iri_s,
             IriRef::Prefixed { prefix, local } => {
                 panic!("Cannot convert prefixed name {prefix}:{local} to IriS without context")
-            }
+            },
         }
     }
 }

@@ -3,7 +3,7 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
 import <examples/shex/base.shex>
 
-Start = :Company 
+Start = :Company
 
 :Company {
     :name xsd:string ;

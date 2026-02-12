@@ -6,5 +6,5 @@ select ?x where {
        :age ?age .
     FILTER (?age > 18)
 }
- 
+
 """@:Person

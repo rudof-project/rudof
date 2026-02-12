@@ -6,8 +6,7 @@ use std::{
 use either::Either;
 
 use crate::{
-    edge::Edge, edge_id::EdgeId, node::Node, node_id::NodeId, pgs_error::PgsError, record::Record,
-    type_name::LabelName,
+    edge::Edge, edge_id::EdgeId, node::Node, node_id::NodeId, pgs_error::PgsError, record::Record, type_name::LabelName,
 };
 
 /// Simple representation of a property graph
@@ -67,12 +66,9 @@ impl PropertyGraph {
     }*/
 
     pub fn get_node_by_label(&self, label: &str) -> Result<&Node, PgsError> {
-        let id = self
-            .node_names
-            .get(label)
-            .ok_or(PgsError::MissingNodeLabel {
-                label: label.to_string(),
-            })?;
+        let id = self.node_names.get(label).ok_or(PgsError::MissingNodeLabel {
+            label: label.to_string(),
+        })?;
         self.nodes.get(id).ok_or(PgsError::MissingNodeLabel {
             label: label.to_string(),
         })
@@ -91,12 +87,9 @@ impl PropertyGraph {
     }
 
     pub fn get_edge_by_label(&self, label: &str) -> Result<&Edge, PgsError> {
-        let id = self
-            .edge_names
-            .get(label)
-            .ok_or(PgsError::MissingEdgeLabel {
-                label: label.to_string(),
-            })?;
+        let id = self.edge_names.get(label).ok_or(PgsError::MissingEdgeLabel {
+            label: label.to_string(),
+        })?;
         self.edges.get(id).ok_or(PgsError::MissingEdgeLabel {
             label: label.to_string(),
         })
@@ -117,19 +110,14 @@ impl PropertyGraph {
         let id = NodeId::new(self.node_id_counter);
         self.node_id_counter += 1;
         self.node_names.insert(name_id, id.clone());
-        let node = Node::new(id.clone())
-            .with_labels(labels)
-            .with_content(&record);
+        let node = Node::new(id.clone()).with_labels(labels).with_content(&record);
         self.nodes.insert(id, node);
     }
 
     pub fn get_node_id(&self, label: &str) -> Result<NodeId, PgsError> {
-        self.node_names
-            .get(label)
-            .cloned()
-            .ok_or(PgsError::MissingNodeLabel {
-                label: label.to_string(),
-            })
+        self.node_names.get(label).cloned().ok_or(PgsError::MissingNodeLabel {
+            label: label.to_string(),
+        })
     }
 
     /// Adds an edge to the PropertyGraph.
@@ -143,8 +131,7 @@ impl PropertyGraph {
     ) -> Result<(), PgsError> {
         let id = EdgeId::new(self.edge_id_counter);
         self.edge_id_counter += 1;
-        self.edge_names
-            .insert(name_id.unwrap_or_default(), id.clone());
+        self.edge_names.insert(name_id.unwrap_or_default(), id.clone());
         let source_id = self.get_node_id(&source)?;
         let target_id = self.get_node_id(&target)?;
         let edge = Edge {

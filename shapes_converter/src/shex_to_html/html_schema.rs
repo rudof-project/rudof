@@ -40,7 +40,7 @@ impl HtmlSchema {
                 let n = NodeId::new(self.labels_counter);
                 v.insert(n);
                 (n, false)
-            }
+            },
         }
     }
 
@@ -48,20 +48,16 @@ impl HtmlSchema {
         self.svg_schema = svg_schema.to_string()
     }
 
-    pub fn add_component(
-        &mut self,
-        node: NodeId,
-        component: HtmlShape,
-    ) -> Result<(), ShEx2HtmlError> {
+    pub fn add_component(&mut self, node: NodeId, component: HtmlShape) -> Result<(), ShEx2HtmlError> {
         match self.shapes.entry(node) {
             Entry::Occupied(mut v) => {
                 v.get_mut().merge(&component);
                 Ok(())
-            }
+            },
             Entry::Vacant(v) => {
                 v.insert(component);
                 Ok(())
-            }
+            },
         }
     }
 

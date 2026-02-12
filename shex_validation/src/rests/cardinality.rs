@@ -1,13 +1,9 @@
 use crate::CardinalityError;
 
-fn check_cardinality(
-    c: usize,
-    min: &Option<i32>,
-    max: &Option<i32>,
-) -> Result<(), CardinalityError> {
+fn check_cardinality(c: usize, min: &Option<i32>, max: &Option<i32>) -> Result<(), CardinalityError> {
     let min = min.unwrap_or(1);
     if c < min.try_into().unwrap() {
-        return Err(CardinalityError::CardinalityLessThanMin { c: c, min: min });
+        return Err(CardinalityError::CardinalityLessThanMin { c, min });
     }
     let max = max.unwrap_or(1);
     if max == -1 {
@@ -15,7 +11,7 @@ fn check_cardinality(
         return Ok(());
     }
     if c > max.try_into().unwrap() {
-        return Err(CardinalityError::CardinalityGreaterThanMax { c: c, max: max });
+        return Err(CardinalityError::CardinalityGreaterThanMax { c, max });
     }
     Ok(())
 }
@@ -23,7 +19,7 @@ fn check_cardinality(
 #[cfg(test)]
 mod tests {
 
-    use crate::{*, cardinality::check_cardinality};
+    use crate::{cardinality::check_cardinality, *};
 
     #[test]
     fn test_cardinality() -> Result<(), CardinalityError> {
@@ -31,5 +27,4 @@ mod tests {
         assert_eq!(ce, ());
         Ok(())
     }
-
 }

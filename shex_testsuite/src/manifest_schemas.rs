@@ -164,14 +164,12 @@ impl SchemasEntry {
         })?;
         debug!("Passed schema serialization to a String");
 
-        let schema_parsed_after_serialization =
-            serde_json::from_str::<shex_ast::ast::Schema>(&schema_serialized).map_err(|e| {
-                ManifestError::SchemaParsingAfterSerialization {
-                    schema_name: Box::new(self.name.to_string()),
-                    schema_parsed: Box::new(schema_parsed.clone()),
-                    schema_serialized: Box::new(schema_serialized.clone()),
-                    error: e,
-                }
+        let schema_parsed_after_serialization = serde_json::from_str::<shex_ast::ast::Schema>(&schema_serialized)
+            .map_err(|e| ManifestError::SchemaParsingAfterSerialization {
+                schema_name: self.name.to_string(),
+                schema_parsed: Box::new(schema_parsed.clone()),
+                schema_serialized: schema_serialized.clone(),
+                error: e,
             })?;
         debug!("Passed schema parsing from string that was serialized = schema2");
 
@@ -192,24 +190,23 @@ impl SchemasEntry {
             let mut shex_buf = PathBuf::from(base);
             shex_buf.push(shex_local);
             #[cfg(target_family = "wasm")]
-            return Err(Box::new(ManifestError::WASMError("Url cannot be generated from file path".to_string())));
+            return Err(Box::new(ManifestError::WASMError(
+                "Url cannot be generated from file path".to_string(),
+            )));
             #[cfg(not(target_family = "wasm"))]
             {
-                let base_absolute =
-                    base.canonicalize()
-                        .map_err(|err| ManifestError::AbsolutePathError {
-                            base: base.as_os_str().to_os_string(),
-                            error: err,
-                        })?;
-                let base_url =
-                    Url::from_file_path(&base_absolute).map_err(|_| ManifestError::BasePathError {
-                        base: base_absolute.as_os_str().to_os_string(),
-                    })?;
+                let base_absolute = base.canonicalize().map_err(|err| ManifestError::AbsolutePathError {
+                    base: base.as_os_str().to_os_string(),
+                    error: err,
+                })?;
+                let base_url = Url::from_file_path(&base_absolute).map_err(|_| ManifestError::BasePathError {
+                    base: base_absolute.as_os_str().to_os_string(),
+                })?;
                 let base_iri = IriS::new_unchecked(base_url.as_str());
-                let mut shexc_schema_parsed = ShExParser::parse_buf(&shex_buf, Some(base_iri))
-                    .map_err(|e| ManifestError::ShExCParsingError {
+                let mut shexc_schema_parsed =
+                    ShExParser::parse_buf(&shex_buf, Some(base_iri)).map_err(|e| ManifestError::ShExCParsingError {
                         error: Box::new(e),
-                        entry_name: Box::new(self.name.to_string()),
+                        entry_name: self.name.to_string(),
                         shex_path: Box::new(shex_buf.clone()),
                     })?;
 
@@ -222,7 +219,7 @@ impl SchemasEntry {
                 } else {
                     Err(Box::new(ManifestError::ShExSchemaDifferent {
                         json_schema_parsed: Box::new(schema_parsed),
-                        schema_serialized: Box::new(schema_serialized),
+                        schema_serialized,
                         shexc_schema_parsed: Box::new(shexc_schema_parsed),
                     }))
                 }
@@ -231,9 +228,9 @@ impl SchemasEntry {
             debug!("Schemas in JSON are different");
             Err(Box::new(ManifestError::SchemasDifferent {
                 schema_parsed: Box::new(schema_parsed),
-                schema_serialized: Box::new(schema_serialized.clone()),
+                schema_serialized: schema_serialized.clone(),
                 schema_parsed_after_serialization: Box::new(schema_parsed_after_serialization),
-                schema_serialized_after: Box::new(schema_serialized_after),
+                schema_serialized_after,
             }))
         }
     }
@@ -254,9 +251,7 @@ impl Manifest for ManifestSchemas {
 
     fn run_entry(&self, name: &str, base: &Path) -> Result<(), Box<ManifestError>> {
         match self.map.get(name) {
-            None => Err(Box::new(ManifestError::NotFoundEntry {
-                name: name.to_string(),
-            })),
+            None => Err(Box::new(ManifestError::NotFoundEntry { name: name.to_string() })),
             Some(entry) => entry.run(base),
         }
     }

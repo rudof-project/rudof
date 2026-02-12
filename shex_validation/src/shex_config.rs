@@ -25,16 +25,14 @@ impl ShExConfigMain {
             error: e.to_string(),
         })?;
         let mut s = String::new();
-        f.read_to_string(&mut s)
-            .map_err(|e| ShExConfigError::FromPathError {
-                path: path_name.clone(),
-                error: e.to_string(),
-            })?;
-        let config: ShExConfigMain =
-            toml::from_str(s.as_str()).map_err(|e| ShExConfigError::TomlError {
-                path: path_name.clone(),
-                error: e.to_string(),
-            })?;
+        f.read_to_string(&mut s).map_err(|e| ShExConfigError::FromPathError {
+            path: path_name.clone(),
+            error: e.to_string(),
+        })?;
+        let config: ShExConfigMain = toml::from_str(s.as_str()).map_err(|e| ShExConfigError::TomlError {
+            path: path_name.clone(),
+            error: e.to_string(),
+        })?;
         Ok(config)
     }
 

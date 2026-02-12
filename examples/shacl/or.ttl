@@ -5,7 +5,7 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 prefix owl: <http://www.w3.org/2002/07/owl#>
 
-:ko1 
+:ko1
  # rdfs:comment owl:Thing ;
  # rdfs:comment 42 ;
  # rdfs:comment "A string" ;
@@ -21,7 +21,7 @@ prefix owl: <http://www.w3.org/2002/07/owl#>
 
 :TestShape-comment
   sh:path rdfs:comment ;
-  sh:or ( # _:str _:html _:lang 
+  sh:or ( # _:str _:html _:lang
     _:bool ) ;
 .
 

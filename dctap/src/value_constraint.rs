@@ -32,7 +32,7 @@ impl Display for ValueConstraint {
         match self {
             ValueConstraint::PickList(vs) => {
                 write!(f, "[{}]", vs.iter().format(" | "))?;
-            }
+            },
             ValueConstraint::Pattern(s) => write!(f, "Pattern({s})")?,
             ValueConstraint::IRIStem(s) => write!(f, "IRIStem({s})")?,
             ValueConstraint::LanguageTag(s) => write!(f, "LanguageTag({s})")?,

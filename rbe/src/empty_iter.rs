@@ -1,6 +1,5 @@
 use crate::{
-    Component, Key, MatchCond, Pending, Rbe as Rbe1, RbeError, RbeTable, Ref, Value, Values,
-    rbe::Rbe, rbe_error,
+    Component, Key, MatchCond, Pending, Rbe as Rbe1, RbeError, RbeTable, Ref, Value, Values, rbe::Rbe, rbe_error,
 };
 
 #[derive(Debug, Clone)]
@@ -67,11 +66,11 @@ where
         Rbe::And { values } => {
             let values1 = values.iter().map(|c| cnv_rbe(c, table)).collect();
             Rbe1::And { exprs: values1 }
-        }
+        },
         Rbe::Or { values } => {
             let values1 = values.iter().map(|c| cnv_rbe(c, table)).collect();
             Rbe1::Or { exprs: values1 }
-        }
+        },
         Rbe::Symbol { value, card } => {
             let key = cnv_key(value, table);
             let cond = cnv_cond(value, table);
@@ -80,7 +79,7 @@ where
                 cond,
                 card: (*card).clone(),
             }
-        }
+        },
         _ => todo!(),
     }
 }

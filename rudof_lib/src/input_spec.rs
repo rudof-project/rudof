@@ -4,7 +4,7 @@ use either::Either;
 use iri_s::IriS;
 #[cfg(not(target_family = "wasm"))]
 use reqwest::blocking::{Client, ClientBuilder, Response};
-use reqwest::header::{HeaderValue, ACCEPT, USER_AGENT};
+use reqwest::header::{ACCEPT, HeaderValue, USER_AGENT};
 use std::io::Cursor;
 use std::{
     fmt::Display,
@@ -54,16 +54,14 @@ impl InputSpec {
         match self {
             #[cfg(not(target_family = "wasm"))]
             InputSpec::Path(path) => {
-                let path_absolute =
-                    path.canonicalize()
-                        .map_err(|err| InputSpecError::AbsolutePathError {
-                            path: path.to_string_lossy().to_string(),
-                            error: err,
-                        })?;
+                let path_absolute = path.canonicalize().map_err(|err| InputSpecError::AbsolutePathError {
+                    path: path.to_string_lossy().to_string(),
+                    error: err,
+                })?;
                 let url = Url::from_file_path(path_absolute)
                     .map_err(|_| InputSpecError::FromFilePath { path: path.clone() })?;
                 Ok(IriS::new_unchecked(url.as_str()))
-            }
+            },
             #[cfg(target_family = "wasm")]
             InputSpec::Path(_) => Err(InputSpecError::WASMError("File path not supported in WASM".to_string())),
             InputSpec::Stdin => Ok(IriS::new_unchecked("file://stdin")),
@@ -73,11 +71,7 @@ impl InputSpec {
     }
 
     // The initial version of this code was inspired by [patharg](https://github.com/jwodder/patharg/blob/edd912e865143646fd7bb4c7796aa919fa5622b3/src/lib.rs#L264)
-    pub fn open_read(
-        &self,
-        accept: Option<&str>,
-        context_error: &str,
-    ) -> Result<InputSpecReader, InputSpecError> {
+    pub fn open_read(&self, accept: Option<&str>, context_error: &str) -> Result<InputSpecReader, InputSpecError> {
         match self {
             InputSpec::Stdin => Ok(Either::Left(io::stdin().lock())),
             InputSpec::Path(p) => match fs::File::open(p) {
@@ -94,29 +88,22 @@ impl InputSpec {
                     None => url_spec.client.get(url_spec.url.as_str()),
                     Some(accept_str) => {
                         let mut headers = reqwest::header::HeaderMap::new();
-                        let accept_value = HeaderValue::from_str(accept_str).map_err(|e| {
-                            InputSpecError::AcceptValue {
+                        let accept_value =
+                            HeaderValue::from_str(accept_str).map_err(|e| InputSpecError::AcceptValue {
                                 context: context_error.to_string(),
                                 str: accept_str.to_string(),
                                 error: e.to_string(),
-                            }
-                        })?;
+                            })?;
                         headers.insert(ACCEPT, accept_value);
-                        let user_agent_rudof = HeaderValue::from_str("rudof").map_err(|e| {
-                            InputSpecError::UserAgentValue {
-                                error: e.to_string(),
-                            }
-                        })?;
+                        let user_agent_rudof = HeaderValue::from_str("rudof")
+                            .map_err(|e| InputSpecError::UserAgentValue { error: e.to_string() })?;
                         headers.insert(USER_AGENT, user_agent_rudof);
-                        let client =
-                            Client::builder()
-                                .default_headers(headers)
-                                .build()
-                                .map_err(|e| InputSpecError::ClientBuilderError {
-                                    error: format!("{e}"),
-                                })?;
+                        let client = Client::builder()
+                            .default_headers(headers)
+                            .build()
+                            .map_err(|e| InputSpecError::ClientBuilderError { error: format!("{e}") })?;
                         client.get(url_spec.url.as_str())
-                    }
+                    },
                 }
                 .send()
                 .map_err(|e| InputSpecError::UrlDerefError {
@@ -125,12 +112,12 @@ impl InputSpec {
                 })?;
                 let reader = BufReader::new(resp);
                 Ok(Either::Right(Either::Right(Either::Left(reader))))
-            }
+            },
             InputSpec::Str(s) => {
                 let cursor = Cursor::new(s.clone().into_bytes());
                 let reader = BufReader::new(cursor);
                 Ok(Either::Right(Either::Right(Either::Right(reader))))
-            }
+            },
         }
     }
 
@@ -138,18 +125,15 @@ impl InputSpec {
         match self {
             #[cfg(not(target_family = "wasm"))]
             InputSpec::Path(path) => {
-                let absolute_path =
-                    fs::canonicalize(path).map_err(|err| InputSpecError::AbsolutePathError {
-                        path: path.to_string_lossy().to_string(),
-                        error: err,
-                    })?;
-                let url: Url = Url::from_file_path(absolute_path).map_err(|_| {
-                    InputSpecError::GuessBaseFromPath {
-                        path: path.to_path_buf(),
-                    }
+                let absolute_path = fs::canonicalize(path).map_err(|err| InputSpecError::AbsolutePathError {
+                    path: path.to_string_lossy().to_string(),
+                    error: err,
+                })?;
+                let url: Url = Url::from_file_path(absolute_path).map_err(|_| InputSpecError::GuessBaseFromPath {
+                    path: path.to_path_buf(),
                 })?;
                 Ok(url.to_string())
-            }
+            },
             #[cfg(target_family = "wasm")]
             InputSpec::Path(_) => Err(InputSpecError::WASMError("File path not supported in WASM".to_string())),
             InputSpec::Stdin => Ok("stdin://".to_string()),
@@ -168,41 +152,31 @@ impl FromStr for InputSpec {
             _ if s.starts_with("http://") => {
                 let url_spec = UrlSpec::parse(s)?;
                 Ok(InputSpec::Url(url_spec))
-            }
+            },
             _ if s.starts_with("https://") => {
                 let url_spec = UrlSpec::parse(s)?;
                 Ok(InputSpec::Url(url_spec))
-            }
+            },
             _ if Path::new(s).exists() => {
-                let pb: PathBuf =
-                    PathBuf::from_str(s).map_err(|e| InputSpecError::ParsingPathError {
-                        str: s.to_string(),
-                        error: format!("{e}"),
-                    })?;
+                let pb: PathBuf = PathBuf::from_str(s).map_err(|e| InputSpecError::ParsingPathError {
+                    str: s.to_string(),
+                    error: format!("{e}"),
+                })?;
                 Ok(InputSpec::Path(pb))
-            }
+            },
             _ => Ok(InputSpec::Str(s.to_string())),
         }
     }
 }
 
 /// This type implements [`std::io::BufRead`].
-pub type InputSpecReader = Either<
-    StdinLock<'static>,
-    Either<
-        BufReader<fs::File>,
-        Either<BufReader<Response>, BufReader<Cursor<Vec<u8>>>>,
-    >,
->;
+pub type InputSpecReader =
+    Either<StdinLock<'static>, Either<BufReader<fs::File>, Either<BufReader<Response>, BufReader<Cursor<Vec<u8>>>>>>;
 
 #[derive(Error, Debug)]
 pub enum InputSpecError {
     #[error("IO Error reading {msg} from {path}: {err}")]
-    OpenPathError {
-        msg: String,
-        path: PathBuf,
-        err: io::Error,
-    },
+    OpenPathError { msg: String, path: PathBuf, err: io::Error },
 
     #[error("IO Error: {err}")]
     IOError {
@@ -248,7 +222,7 @@ pub enum InputSpecError {
     UserAgentValue { error: String },
 
     #[error("Unable to perform operation in WASM: {0}")]
-    WASMError(String)
+    WASMError(String),
 }
 
 #[derive(Debug, Clone)]
@@ -269,12 +243,9 @@ impl UrlSpec {
             str: str.to_string(),
             error: format!("{e}"),
         })?;
-        let client =
-            ClientBuilder::new()
-                .build()
-                .map_err(|e| InputSpecError::ClientBuilderError {
-                    error: format!("{e}"),
-                })?;
+        let client = ClientBuilder::new()
+            .build()
+            .map_err(|e| InputSpecError::ClientBuilderError { error: format!("{e}") })?;
         Ok(UrlSpec { url, client })
     }
 

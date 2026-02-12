@@ -9,10 +9,10 @@ use shacl_ast::Schema;
 use shacl_ast::component::Component;
 use shacl_ast::node_kind::NodeKind;
 use shacl_ast::shacl_vocab::{
-    sh_and, sh_class, sh_datatype, sh_disjoint, sh_equals, sh_has_value, sh_in, sh_language_in,
-    sh_less_than, sh_less_than_or_equals, sh_max_count, sh_max_exclusive, sh_max_inclusive,
-    sh_max_length, sh_min_count, sh_min_exclusive, sh_min_inclusive, sh_min_length, sh_node,
-    sh_node_kind, sh_not, sh_or, sh_pattern, sh_qualified_value_shape, sh_unique_lang, sh_xone,
+    sh_and, sh_class, sh_datatype, sh_disjoint, sh_equals, sh_has_value, sh_in, sh_language_in, sh_less_than,
+    sh_less_than_or_equals, sh_max_count, sh_max_exclusive, sh_max_inclusive, sh_max_length, sh_min_count,
+    sh_min_exclusive, sh_min_inclusive, sh_min_length, sh_node, sh_node_kind, sh_not, sh_or, sh_pattern,
+    sh_qualified_value_shape, sh_unique_lang, sh_xone,
 };
 use srdf::RDFNode;
 use srdf::Rdf;
@@ -67,89 +67,74 @@ impl ComponentIR {
             Component::Class(object) => {
                 let class_rule = object;
                 Some(ComponentIR::Class(Class::new(class_rule)))
-            }
+            },
             Component::Datatype(iri_ref) => {
                 let iri_ref = convert_iri_ref(iri_ref)?;
                 Some(ComponentIR::Datatype(Datatype::new(iri_ref)))
-            }
+            },
             Component::NodeKind(node_kind) => Some(ComponentIR::NodeKind(Nodekind::new(node_kind))),
             Component::MinCount(count) => Some(ComponentIR::MinCount(MinCount::new(count))),
             Component::MaxCount(count) => Some(ComponentIR::MaxCount(MaxCount::new(count))),
-            Component::MinExclusive(literal) => {
-                Some(ComponentIR::MinExclusive(MinExclusive::new(literal)))
-            }
-            Component::MaxExclusive(literal) => {
-                Some(ComponentIR::MaxExclusive(MaxExclusive::new(literal)))
-            }
-            Component::MinInclusive(literal) => {
-                Some(ComponentIR::MinInclusive(MinInclusive::new(literal)))
-            }
-            Component::MaxInclusive(literal) => {
-                Some(ComponentIR::MaxInclusive(MaxInclusive::new(literal)))
-            }
+            Component::MinExclusive(literal) => Some(ComponentIR::MinExclusive(MinExclusive::new(literal))),
+            Component::MaxExclusive(literal) => Some(ComponentIR::MaxExclusive(MaxExclusive::new(literal))),
+            Component::MinInclusive(literal) => Some(ComponentIR::MinInclusive(MinInclusive::new(literal))),
+            Component::MaxInclusive(literal) => Some(ComponentIR::MaxInclusive(MaxInclusive::new(literal))),
             Component::MinLength(length) => Some(ComponentIR::MinLength(MinLength::new(length))),
             Component::MaxLength(length) => Some(ComponentIR::MaxLength(MaxLength::new(length))),
             Component::Pattern { pattern, flags } => {
                 let pattern = Pattern::new(pattern, flags)?;
                 Some(ComponentIR::Pattern(pattern))
-            }
+            },
             Component::UniqueLang(lang) => Some(ComponentIR::UniqueLang(UniqueLang::new(lang))),
-            Component::LanguageIn { langs } => {
-                Some(ComponentIR::LanguageIn(LanguageIn::new(langs)))
-            }
+            Component::LanguageIn { langs } => Some(ComponentIR::LanguageIn(LanguageIn::new(langs))),
             Component::Equals(iri_ref) => {
                 let iri_ref = convert_iri_ref(iri_ref)?;
                 Some(ComponentIR::Equals(Equals::new(iri_ref)))
-            }
+            },
             Component::Disjoint(iri_ref) => {
                 let iri_ref = convert_iri_ref(iri_ref)?;
                 Some(ComponentIR::Disjoint(Disjoint::new(iri_ref)))
-            }
+            },
             Component::LessThan(iri_ref) => {
                 let iri_ref = convert_iri_ref(iri_ref)?;
                 Some(ComponentIR::LessThan(LessThan::new(iri_ref)))
-            }
+            },
             Component::LessThanOrEquals(iri_ref) => {
                 let iri_ref = convert_iri_ref(iri_ref)?;
-                Some(ComponentIR::LessThanOrEquals(LessThanOrEquals::new(
-                    iri_ref,
-                )))
-            }
+                Some(ComponentIR::LessThanOrEquals(LessThanOrEquals::new(iri_ref)))
+            },
             Component::Or { shapes } => {
                 let values = compile_shapes::<S>(shapes, schema, schema_ir)?;
                 let ors = values.into_iter().collect::<Vec<_>>();
                 Some(ComponentIR::Or(Or::new(ors)))
-            }
+            },
             Component::And { shapes } => {
                 let values = compile_shapes::<S>(shapes, schema, schema_ir)?;
                 let ands = values.into_iter().collect::<Vec<_>>();
                 Some(ComponentIR::And(And::new(ands)))
-            }
+            },
             Component::Not { shape } => {
                 let shape = compile_shape::<S>(&shape, schema, schema_ir)?;
                 Some(ComponentIR::Not(Not::new(shape)))
-            }
+            },
             Component::Xone { shapes } => {
                 let values = compile_shapes::<S>(shapes, schema, schema_ir)?;
                 let xones = values.into_iter().collect::<Vec<_>>();
                 Some(ComponentIR::Xone(Xone::new(xones)))
-            }
+            },
             Component::Closed { .. } => None,
             Component::Node { shape } => {
                 let shape = compile_shape::<S>(&shape, schema, schema_ir)?;
                 Some(ComponentIR::Node(Node::new(shape)))
-            }
+            },
             Component::HasValue { value } => {
                 let term = convert_value(value)?;
                 Some(ComponentIR::HasValue(HasValue::new(term)))
-            }
+            },
             Component::In { values } => {
-                let terms = values
-                    .into_iter()
-                    .map(convert_value)
-                    .collect::<Result<Vec<_>, _>>()?;
+                let terms = values.into_iter().map(convert_value).collect::<Result<Vec<_>, _>>()?;
                 Some(ComponentIR::In(In::new(terms)))
-            }
+            },
             Component::QualifiedValueShape {
                 shape,
                 q_min_count,
@@ -170,7 +155,7 @@ impl ComponentIR {
                     disjoint,
                     compiled_siblings,
                 )))
-            }
+            },
             Component::Deactivated(_b) => None,
         };
         Ok(value)
@@ -185,24 +170,24 @@ impl ComponentIR {
         visited: &mut HashSet<ShapeLabelIdx>,
     ) {
         match self {
-            ComponentIR::Class(_c) => {}
-            ComponentIR::Datatype(_d) => {}
-            ComponentIR::NodeKind(_nk) => {}
-            ComponentIR::MinCount(_mc) => {}
-            ComponentIR::MaxCount(_mc) => {}
-            ComponentIR::MinExclusive(_me) => {}
-            ComponentIR::MaxExclusive(_me) => {}
-            ComponentIR::MinInclusive(_mi) => {}
-            ComponentIR::MaxInclusive(_mi) => {}
-            ComponentIR::MinLength(_ml) => {}
-            ComponentIR::MaxLength(_ml) => {}
-            ComponentIR::Pattern(_p) => {}
-            ComponentIR::UniqueLang(_ul) => {}
-            ComponentIR::LanguageIn(_li) => {}
-            ComponentIR::Equals(_e) => {}
-            ComponentIR::Disjoint(_d) => {}
-            ComponentIR::LessThan(_lt) => {}
-            ComponentIR::LessThanOrEquals(_lte) => {}
+            ComponentIR::Class(_c) => {},
+            ComponentIR::Datatype(_d) => {},
+            ComponentIR::NodeKind(_nk) => {},
+            ComponentIR::MinCount(_mc) => {},
+            ComponentIR::MaxCount(_mc) => {},
+            ComponentIR::MinExclusive(_me) => {},
+            ComponentIR::MaxExclusive(_me) => {},
+            ComponentIR::MinInclusive(_mi) => {},
+            ComponentIR::MaxInclusive(_mi) => {},
+            ComponentIR::MinLength(_ml) => {},
+            ComponentIR::MaxLength(_ml) => {},
+            ComponentIR::Pattern(_p) => {},
+            ComponentIR::UniqueLang(_ul) => {},
+            ComponentIR::LanguageIn(_li) => {},
+            ComponentIR::Equals(_e) => {},
+            ComponentIR::Disjoint(_d) => {},
+            ComponentIR::LessThan(_lt) => {},
+            ComponentIR::LessThanOrEquals(_lte) => {},
             ComponentIR::Or(o) => {
                 for idx in o.shapes() {
                     if let Some(shape) = schema_ir.get_shape_from_idx(idx) {
@@ -215,7 +200,7 @@ impl ComponentIR {
                         }
                     }
                 }
-            }
+            },
             ComponentIR::And(a) => {
                 for idx in a.shapes() {
                     if let Some(shape) = schema_ir.get_shape_from_idx(idx) {
@@ -228,7 +213,7 @@ impl ComponentIR {
                         }
                     }
                 }
-            }
+            },
             ComponentIR::Not(n) => {
                 let idx = n.shape();
                 if let Some(shape) = schema_ir.get_shape_from_idx(idx) {
@@ -239,7 +224,7 @@ impl ComponentIR {
                         shape.add_edges(*idx, dg, posneg.change(), schema_ir, visited);
                     }
                 }
-            }
+            },
             ComponentIR::Xone(x) => {
                 for idx in x.shapes() {
                     if let Some(shape) = schema_ir.get_shape_from_idx(idx) {
@@ -252,7 +237,7 @@ impl ComponentIR {
                         }
                     }
                 }
-            }
+            },
             ComponentIR::Node(n) => {
                 let idx = n.shape();
                 if let Some(shape) = schema_ir.get_shape_from_idx(idx) {
@@ -263,15 +248,15 @@ impl ComponentIR {
                         shape.add_edges(*idx, dg, posneg, schema_ir, visited);
                     }
                 }
-            }
-            ComponentIR::HasValue(_hv) => {}
-            ComponentIR::In(_i) => {}
+            },
+            ComponentIR::HasValue(_hv) => {},
+            ComponentIR::In(_i) => {},
             ComponentIR::QualifiedValueShape(qvs) => {
                 dg.add_edge(shape_idx, *qvs.shape(), posneg);
                 /*for sibling in qvs.siblings() {
                     dg.add_edge(shape_idx, *sibling, posneg);
                 }*/
-            }
+            },
         }
     }
 }
@@ -702,18 +687,12 @@ pub struct Pattern {
 
 impl Pattern {
     pub fn new(pattern: String, flags: Option<String>) -> Result<Self, Box<CompiledShaclError>> {
-        let regex = SRegex::new(&pattern, flags.as_deref()).map_err(|e| {
-            CompiledShaclError::InvalidRegex {
-                pattern: pattern.clone(),
-                flags: flags.clone(),
-                error: Box::new(e),
-            }
+        let regex = SRegex::new(&pattern, flags.as_deref()).map_err(|e| CompiledShaclError::InvalidRegex {
+            pattern: pattern.clone(),
+            flags: flags.clone(),
+            error: Box::new(e),
         })?;
-        Ok(Pattern {
-            pattern,
-            flags,
-            regex,
-        })
+        Ok(Pattern { pattern, flags, regex })
     }
 
     pub fn pattern(&self) -> &String {
@@ -817,9 +796,7 @@ pub struct MaxExclusive {
 
 impl MaxExclusive {
     pub fn new(literal: SLiteral) -> Self {
-        MaxExclusive {
-            max_exclusive: literal,
-        }
+        MaxExclusive { max_exclusive: literal }
     }
 
     pub fn max_exclusive(&self) -> &SLiteral {
@@ -835,9 +812,7 @@ pub struct MaxInclusive {
 
 impl MaxInclusive {
     pub fn new(literal: SLiteral) -> Self {
-        MaxInclusive {
-            max_inclusive: literal,
-        }
+        MaxInclusive { max_inclusive: literal }
     }
 
     pub fn max_inclusive(&self) -> &SLiteral {
@@ -853,9 +828,7 @@ pub struct MinExclusive {
 
 impl MinExclusive {
     pub fn new(literal: SLiteral) -> Self {
-        MinExclusive {
-            min_exclusive: literal,
-        }
+        MinExclusive { min_exclusive: literal }
     }
 
     pub fn min_exclusive(&self) -> &SLiteral {
@@ -871,9 +844,7 @@ pub struct MinInclusive {
 
 impl MinInclusive {
     pub fn new(literal: SLiteral) -> Self {
-        MinInclusive {
-            min_inclusive: literal,
-        }
+        MinInclusive { min_inclusive: literal }
     }
 
     pub fn min_inclusive_value(&self) -> &SLiteral {
@@ -944,7 +915,7 @@ impl Display for ComponentIR {
             ComponentIR::In(vs) => write!(f, " {vs}"),
             ComponentIR::QualifiedValueShape(qvs) => {
                 write!(f, " {qvs}")
-            }
+            },
         }
     }
 }

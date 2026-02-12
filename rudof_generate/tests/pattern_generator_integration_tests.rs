@@ -62,9 +62,7 @@ async fn test_pattern_with_enumeration() {
         "http://www.w3.org/2001/XMLSchema#string".to_string(),
         "test_subject".to_string(),
     );
-    context
-        .parameters
-        .insert("pattern".to_string(), json!("\\d{3}"));
+    context.parameters.insert("pattern".to_string(), json!("\\d{3}"));
 
     let mut generated_values = HashSet::new();
     for _ in 0..10 {
@@ -85,10 +83,7 @@ async fn test_pattern_with_enumeration() {
     }
 
     // Should generate variety from enumeration
-    assert!(
-        generated_values.len() > 1,
-        "Should generate variety from enumeration"
-    );
+    assert!(generated_values.len() > 1, "Should generate variety from enumeration");
     println!("Generated enumerated values: {generated_values:?}");
 }
 
@@ -156,9 +151,7 @@ async fn test_pattern_shacl_constraint_integration() {
             "http://www.w3.org/2001/XMLSchema#string".to_string(),
             "test_subject".to_string(),
         );
-        context
-            .parameters
-            .insert("pattern".to_string(), json!(pattern));
+        context.parameters.insert("pattern".to_string(), json!(pattern));
 
         let result = generator.generate(&context).unwrap();
         println!("Generated SHACL {prop_name} pattern: {result}");
@@ -166,11 +159,7 @@ async fn test_pattern_shacl_constraint_integration() {
     }
 
     // Validate we generated all SHACL pattern types
-    assert_eq!(
-        generated_results.len(),
-        3,
-        "Should generate all 3 SHACL pattern types"
-    );
+    assert_eq!(generated_results.len(), 3, "Should generate all 3 SHACL pattern types");
 
     // Validate specific SHACL pattern compliance
     for (prop_name, result) in &generated_results {
@@ -180,22 +169,13 @@ async fn test_pattern_shacl_constraint_integration() {
                     result.starts_with("PROD-"),
                     "Product code should start with PROD-: {result}"
                 );
-                assert!(
-                    result.len() >= 10,
-                    "Product code should have proper length: {result}"
-                );
-            }
+                assert!(result.len() >= 10, "Product code should have proper length: {result}");
+            },
             "serialNumber" => {
-                assert!(
-                    result.contains("-"),
-                    "Serial number should contain hyphens: {result}"
-                );
+                assert!(result.contains("-"), "Serial number should contain hyphens: {result}");
                 let parts: Vec<&str> = result.split('-').collect();
-                assert!(
-                    parts.len() >= 3,
-                    "Serial number should have multiple parts: {result}"
-                );
-            }
+                assert!(parts.len() >= 3, "Serial number should have multiple parts: {result}");
+            },
             "category" => {
                 assert!(
                     result
@@ -207,8 +187,8 @@ async fn test_pattern_shacl_constraint_integration() {
                     result.len() >= 3 && result.len() <= 8,
                     "Category should be 3-8 chars: {result}"
                 );
-            }
-            _ => {}
+            },
+            _ => {},
         }
     }
 }
@@ -242,9 +222,7 @@ async fn test_pattern_shex_cardinality_integration() {
             "http://www.w3.org/2001/XMLSchema#string".to_string(),
             "test_subject".to_string(),
         );
-        context
-            .parameters
-            .insert("pattern".to_string(), json!(pattern));
+        context.parameters.insert("pattern".to_string(), json!(pattern));
 
         let result = generator.generate(&context).unwrap();
         all_results.push((name, result));
@@ -258,9 +236,7 @@ async fn test_pattern_shex_cardinality_integration() {
             "http://www.w3.org/2001/XMLSchema#string".to_string(),
             "test_subject".to_string(),
         );
-        context
-            .parameters
-            .insert("pattern".to_string(), json!(pattern));
+        context.parameters.insert("pattern".to_string(), json!(pattern));
 
         let result = generator.generate(&context).unwrap();
         all_results.push((name, result));
@@ -268,24 +244,13 @@ async fn test_pattern_shex_cardinality_integration() {
     }
 
     // Validate we generated all types
-    assert_eq!(
-        all_results.len(),
-        6,
-        "Should generate all 6 pattern variations"
-    );
+    assert_eq!(all_results.len(), 6, "Should generate all 6 pattern variations");
 
     // Validate phone number formats
     for (name, result) in &all_results {
         if name.contains("Phone") || name.contains("Contacts") {
-            assert!(
-                result.contains("-"),
-                "Phone numbers should contain hyphens: {result}"
-            );
-            assert_eq!(
-                result.len(),
-                12,
-                "Phone numbers should be 12 chars: {result}"
-            );
+            assert!(result.contains("-"), "Phone numbers should contain hyphens: {result}");
+            assert_eq!(result.len(), 12, "Phone numbers should be 12 chars: {result}");
         } else if name.contains("Tag") {
             assert!(
                 result.chars().all(|c| c.is_ascii_uppercase()),
@@ -331,9 +296,7 @@ async fn test_pattern_generator_robustness() {
             "http://www.w3.org/2001/XMLSchema#string".to_string(),
             "test_subject".to_string(),
         );
-        context
-            .parameters
-            .insert("pattern".to_string(), json!(pattern));
+        context.parameters.insert("pattern".to_string(), json!(pattern));
 
         let result = generator.generate(&context);
 
@@ -345,11 +308,11 @@ async fn test_pattern_generator_robustness() {
                     "Should generate non-empty fallback for {description}: '{pattern}'"
                 );
                 println!("  -> Generated fallback: '{value}'");
-            }
+            },
             Err(e) => {
                 println!("  -> Error (acceptable): {e}");
                 // Errors are acceptable for malformed patterns
-            }
+            },
         }
     }
 }
@@ -376,9 +339,7 @@ async fn test_pattern_generator_complex_integration() {
             "http://www.w3.org/2001/XMLSchema#string".to_string(),
             "test_subject".to_string(),
         );
-        context
-            .parameters
-            .insert("pattern".to_string(), json!(pattern));
+        context.parameters.insert("pattern".to_string(), json!(pattern));
 
         let result = generator.generate(&context).unwrap();
         generated_results.push((prop_name, result));
@@ -408,30 +369,23 @@ async fn test_pattern_generator_complex_integration() {
                     result.len() >= 11,
                     "Organization ID should have proper length: {result}"
                 );
-            }
+            },
             "employeeId" => {
                 assert!(
                     result.starts_with("EMP-"),
                     "Employee ID should start with EMP-: {result}"
                 );
-                assert!(
-                    result.len() >= 9,
-                    "Employee ID should have proper length: {result}"
-                );
-            }
+                assert!(result.len() >= 9, "Employee ID should have proper length: {result}");
+            },
             "email" => {
                 assert!(result.contains("@"), "Email should contain @: {result}");
                 assert!(result.contains("."), "Email should contain .: {result}");
-            }
+            },
             "phone" => {
                 assert!(result.contains("-"), "Phone should contain -: {result}");
-                assert_eq!(
-                    result.len(),
-                    12,
-                    "Phone should be exactly 12 chars: {result}"
-                );
-            }
-            _ => {}
+                assert_eq!(result.len(), 12, "Phone should be exactly 12 chars: {result}");
+            },
+            _ => {},
         }
     }
 }
@@ -506,9 +460,7 @@ async fn test_pattern_generator_memory_efficiency() {
                 "http://www.w3.org/2001/XMLSchema#string".to_string(),
                 format!("subject_{j}"),
             );
-            context
-                .parameters
-                .insert("pattern".to_string(), json!(pattern));
+            context.parameters.insert("pattern".to_string(), json!(pattern));
 
             let result = generator.generate(&context);
             assert!(

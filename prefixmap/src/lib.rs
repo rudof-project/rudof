@@ -13,7 +13,7 @@
 //!
 //! ```
 //! # use std::str::FromStr;
-//! # use iri_s::{IriS, IriSError};
+//! # use iri_s::{IriS, error::IriSError};
 //! # use prefixmap::PrefixMap;
 //!
 //! # fn main() -> Result<(), IriSError> {

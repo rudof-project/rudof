@@ -59,10 +59,7 @@ where
         rdf_type().clone().into()
     }
 
-    pub fn instances_of(
-        &self,
-        object: &RDF::Term,
-    ) -> PResult<impl Iterator<Item = RDF::Subject> + '_> {
+    pub fn instances_of(&self, object: &RDF::Term) -> PResult<impl Iterator<Item = RDF::Subject> + '_> {
         let values = self
             .rdf
             .triples_matching(Any, Self::rdf_type_iri(), object.clone())
@@ -109,10 +106,7 @@ where
         Ok(value)
     }
 
-    pub fn parse_list_for_predicate(
-        &mut self,
-        pred: IriS,
-    ) -> Result<Vec<RDF::Term>, RDFParseError> {
+    pub fn parse_list_for_predicate(&mut self, pred: IriS) -> Result<Vec<RDF::Term>, RDFParseError> {
         let list_node = self.predicate_value(pred)?;
         self.rdf.set_focus(&list_node);
         let values = rdf_list().parse_impl(&mut self.rdf)?;

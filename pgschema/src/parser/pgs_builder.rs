@@ -9,16 +9,14 @@ use crate::{
     parser::{
         pgs::PgsParser,
         pgs_actions::{
-            BaseProperty, Card, Cond, LabelPropertySpec, Labels, Max, MoreLabels, MoreTypes,
-            Properties, Property, PropertySpec, Range, SimpleType, SingleLabel, SingleValue,
-            TypeSpec,
+            BaseProperty, Card, Cond, LabelPropertySpec, Labels, Max, MoreLabels, MoreTypes, Properties, Property,
+            PropertySpec, Range, SimpleType, SingleLabel, SingleValue, TypeSpec,
         },
     },
     pgs::PropertyGraphSchema,
     pgs_error::PgsError,
     property_value_spec::{
-        PropertyValue as PGPropertyValue, PropertyValueSpec as PGPropertyValueSpec,
-        TypeSpec as PGTypeSpec,
+        PropertyValue as PGPropertyValue, PropertyValueSpec as PGPropertyValueSpec, TypeSpec as PGTypeSpec,
     },
     value::Value,
     value_type::ValueType,
@@ -39,19 +37,14 @@ impl PgsBuilder {
     pub fn parse_pgs(&self, input: &str) -> Result<PropertyGraphSchema, PgsError> {
         let pgs_content = PgsParser::new()
             .parse(input)
-            .map_err(|e| PgsError::ParserError {
-                error: e.to_string(),
-            })?;
+            .map_err(|e| PgsError::ParserError { error: e.to_string() })?;
         let mut schema = PropertyGraphSchema::new();
         get_create_types(pgs_content, &mut schema)?;
         Ok(schema)
     }
 }
 
-fn get_create_types(
-    create_types: Vec<CreateType>,
-    schema: &mut PropertyGraphSchema,
-) -> Result<(), PgsError> {
+fn get_create_types(create_types: Vec<CreateType>, schema: &mut PropertyGraphSchema) -> Result<(), PgsError> {
     for create_type in create_types {
         match create_type {
             CreateType::CreateNodeType(node_type) => {
@@ -61,32 +54,24 @@ fn get_create_types(
                 } else {
                     let _ = schema.add_blank_node_spec(label_property_spec)?;
                 }
-            }
+            },
             CreateType::CreateEdgeType(edge_type) => {
                 let source_spec = get_label_property_spec(edge_type.source)?;
                 let target_spec = get_label_property_spec(edge_type.target)?;
                 let label_property_spec = get_label_property_spec(edge_type.label_property_spec)?;
                 if let Some(type_name) = edge_type.type_name_opt {
-                    let _ = schema.add_edge_spec(
-                        type_name.as_str(),
-                        source_spec,
-                        target_spec,
-                        label_property_spec,
-                    )?;
+                    let _ = schema.add_edge_spec(type_name.as_str(), source_spec, target_spec, label_property_spec)?;
                 } else {
-                    let _ =
-                        schema.add_blank_edge_spec(source_spec, label_property_spec, target_spec);
+                    let _ = schema.add_blank_edge_spec(source_spec, label_property_spec, target_spec);
                 }
-            }
+            },
             CreateType::CreateGraphType(_) => todo!(),
         }
     }
     Ok(())
 }
 
-fn get_label_property_spec(
-    label_property_spec: LabelPropertySpec,
-) -> Result<PGLabelPropertySpec, PgsError> {
+fn get_label_property_spec(label_property_spec: LabelPropertySpec) -> Result<PGLabelPropertySpec, PgsError> {
     if let Some(label_spec) = label_property_spec.label_spec_opt {
         let label_spec = get_labels(label_spec)?;
         if let Some(property_spec) = label_property_spec.property_spec_opt {
@@ -118,10 +103,7 @@ fn get_single_label(single_label: SingleLabel) -> Result<PGLabelPropertySpec, Pg
     }
 }
 
-fn get_more_labels(
-    more_labels: MoreLabels,
-    label_spec: &mut PGLabelPropertySpec,
-) -> Result<(), PgsError> {
+fn get_more_labels(more_labels: MoreLabels, label_spec: &mut PGLabelPropertySpec) -> Result<(), PgsError> {
     match more_labels {
         MoreLabels::AndLabels(and_labels) => {
             let label_spec2 = get_single_label(and_labels.single_label)?;
@@ -132,7 +114,7 @@ fn get_more_labels(
             } else {
                 Ok(())
             }
-        }
+        },
         MoreLabels::OrLabels(or_labels) => {
             let label_spec2 = get_single_label(or_labels.single_label)?;
             *label_spec = PGLabelPropertySpec::or(label_spec.clone(), label_spec2);
@@ -142,7 +124,7 @@ fn get_more_labels(
             } else {
                 Ok(())
             }
-        }
+        },
     }
 }
 
@@ -157,12 +139,12 @@ fn get_property_value(property_value: Properties) -> Result<PGPropertyValue, Pgs
             let left = get_property_value_spec(*each_of.left)?;
             let right = get_property_value_spec(*each_of.right)?;
             Ok(PGPropertyValue::each_of(left, right))
-        }
+        },
         PropertySpec::OneOf(one_of) => {
             let left = get_property_value_spec(*one_of.left)?;
             let right = get_property_value_spec(*one_of.right)?;
             Ok(PGPropertyValue::one_of(left, right))
-        }
+        },
         PropertySpec::BaseProperty(property) => get_base_property(property),
     }
 }
@@ -202,15 +184,13 @@ fn get_max(max: Max) -> Result<PGMax, PgsError> {
         Max::NUMBER(n) => {
             let n = get_number(n)?;
             Ok(PGMax::Bounded(n))
-        }
+        },
         Max::Star => Ok(PGMax::Unbounded),
     }
 }
 
 fn get_number(number: String) -> Result<usize, PgsError> {
-    number
-        .parse::<usize>()
-        .map_err(|_| PgsError::InvalidNumber(number))
+    number.parse::<usize>().map_err(|_| PgsError::InvalidNumber(number))
 }
 
 fn get_type_spec(type_spec: TypeSpec) -> Result<PGTypeSpec, PgsError> {
@@ -227,11 +207,11 @@ fn get_more_types(more_types: MoreTypes, current: PGTypeSpec) -> Result<PGTypeSp
         MoreTypes::UnionType(union_type) => {
             let right = get_simple_type(union_type.simple_type)?;
             Ok(PGTypeSpec::union(current, right))
-        }
+        },
         MoreTypes::IntersectionType(intersection_type) => {
             let right = get_simple_type(intersection_type.simple_type)?;
             Ok(PGTypeSpec::intersection(current, right))
-        }
+        },
     }
 }
 
@@ -245,7 +225,7 @@ fn get_simple_type(simple_type: SimpleType) -> Result<PGTypeSpec, PgsError> {
             } else {
                 Ok(PGTypeSpec::string(card))
             }
-        }
+        },
         SimpleType::Integer(integer) => {
             let card = get_card_opt(integer.card_opt)?;
             if let Some(cond) = integer.check_opt {
@@ -254,7 +234,7 @@ fn get_simple_type(simple_type: SimpleType) -> Result<PGTypeSpec, PgsError> {
             } else {
                 Ok(PGTypeSpec::integer(card))
             }
-        }
+        },
         SimpleType::Date(date) => {
             let card = get_card_opt(date.card_opt)?;
             if let Some(cond) = date.check_opt {
@@ -263,7 +243,7 @@ fn get_simple_type(simple_type: SimpleType) -> Result<PGTypeSpec, PgsError> {
             } else {
                 Ok(PGTypeSpec::date(card))
             }
-        }
+        },
         SimpleType::Any(cond) => {
             if let Some(cond) = cond {
                 let cond = get_cond(cond)?;
@@ -271,11 +251,11 @@ fn get_simple_type(simple_type: SimpleType) -> Result<PGTypeSpec, PgsError> {
             } else {
                 Ok(PGTypeSpec::any())
             }
-        }
+        },
         SimpleType::Cond(cond) => {
             let cond = get_cond(cond)?;
             Ok(PGTypeSpec::cond(ValueType::Any, cond))
-        }
+        },
         SimpleType::Bool(bool) => {
             let card = get_card_opt(bool.card_opt)?;
             if let Some(cond) = bool.check_opt {
@@ -284,7 +264,7 @@ fn get_simple_type(simple_type: SimpleType) -> Result<PGTypeSpec, PgsError> {
             } else {
                 Ok(PGTypeSpec::bool(card))
             }
-        }
+        },
     }
 }
 
@@ -304,44 +284,44 @@ fn get_cond(cond: Cond) -> Result<BooleanExpr, PgsError> {
             let left = get_cond(*and.left)?;
             let right = get_cond(*and.right)?;
             Ok(BooleanExpr::And(Box::new(left), Box::new(right)))
-        }
+        },
         Cond::OR(or) => {
             let left = get_cond(*or.left)?;
             let right = get_cond(*or.right)?;
             Ok(BooleanExpr::Or(Box::new(left), Box::new(right)))
-        }
+        },
         Cond::Not(cond) => {
             let expr = get_cond(*cond)?;
             Ok(BooleanExpr::Not(Box::new(expr)))
-        }
+        },
         Cond::ParenCond(cond) => {
             let expr = get_cond(*cond)?;
             Ok(expr)
-        }
+        },
         Cond::GT(single_value) => {
             let value = get_value(single_value)?;
             Ok(BooleanExpr::GreaterThan(value))
-        }
+        },
         Cond::GE(single_value) => {
             let value = get_value(single_value)?;
             Ok(BooleanExpr::GreaterThanOrEqual(value))
-        }
+        },
         Cond::LT(single_value) => {
             let value = get_value(single_value)?;
             Ok(BooleanExpr::LessThan(value))
-        }
+        },
         Cond::LE(single_value) => {
             let value = get_value(single_value)?;
             Ok(BooleanExpr::LessThanOrEqual(value))
-        }
+        },
         Cond::EQ(single_value) => {
             let value = get_value(single_value)?;
             Ok(BooleanExpr::Equals(value))
-        }
+        },
         Cond::Regex(pattern) => {
             let cleaned = remove_quotes(pattern.as_str());
             Ok(BooleanExpr::Regex(cleaned.to_string()))
-        }
+        },
     }
 }
 
@@ -350,17 +330,17 @@ fn get_value(value: SingleValue) -> Result<Value, PgsError> {
         SingleValue::StringValue(s) => {
             let cleaned = remove_quotes(s.as_str());
             Ok(Value::str(cleaned))
-        }
+        },
         SingleValue::NumberValue(str_number_) => {
-            let number = str_number_.parse::<i32>().map_err(|_| {
-                PgsError::InvalidNumber(format!("Invalid number value: {}", str_number_))
-            })?;
+            let number = str_number_
+                .parse::<i32>()
+                .map_err(|_| PgsError::InvalidNumber(format!("Invalid number value: {}", str_number_)))?;
             Ok(Value::int(number))
-        }
+        },
         SingleValue::DateValue(date) => {
             let date_value = Value::date(remove_quotes(date.as_str()))?;
             Ok(date_value)
-        }
+        },
         SingleValue::BooleanValue(bool) => match bool {
             super::pgs_actions::BOOL::TRUE => Ok(Value::true_()),
             super::pgs_actions::BOOL::FALSE => Ok(Value::false_()),

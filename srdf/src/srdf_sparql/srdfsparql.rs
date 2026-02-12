@@ -5,13 +5,13 @@ use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
 use oxrdf::{
-    BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode,
-    NamedOrBlankNode as OxSubject, Term as OxTerm, Triple as OxTriple,
+    BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, NamedOrBlankNode as OxSubject,
+    Term as OxTerm, Triple as OxTriple,
 };
 use prefixmap::PrefixMap;
 use regex::Regex;
-use serde::ser::SerializeStruct;
 use serde::Serialize;
+use serde::ser::SerializeStruct;
 use sparesults::QuerySolution as OxQuerySolution;
 use std::hash::Hash;
 use std::{collections::HashSet, fmt::Display, str::FromStr};
@@ -132,9 +132,7 @@ impl FromStr for SRDFSparql {
         } else {
             match s.to_lowercase().as_str() {
                 "wikidata" => SRDFSparql::wikidata(),
-                name => Err(SRDFSparqlError::UnknownEndpointName {
-                    name: name.to_string(),
-                }),
+                name => Err(SRDFSparqlError::UnknownEndpointName { name: name.to_string() }),
             }
         }
     }
@@ -364,9 +362,7 @@ fn sparql_client() -> Result<Client> {
         header::HeaderValue::from_static("application/sparql-results+json"),
     );
     headers.insert(USER_AGENT, header::HeaderValue::from_static("rudof"));
-    let client = reqwest::blocking::Client::builder()
-        .default_headers(headers)
-        .build()?;
+    let client = reqwest::blocking::Client::builder().default_headers(headers).build()?;
     Ok(client)
 }
 
@@ -377,9 +373,7 @@ fn sparql_client_construct_turtle() -> Result<Client> {
     let mut headers = header::HeaderMap::new();
     headers.insert(ACCEPT, header::HeaderValue::from_static("text/turtle"));
     headers.insert(USER_AGENT, header::HeaderValue::from_static("rudof"));
-    let client = reqwest::blocking::Client::builder()
-        .default_headers(headers)
-        .build()?;
+    let client = reqwest::blocking::Client::builder().default_headers(headers).build()?;
     Ok(client)
 }
 
@@ -388,14 +382,9 @@ fn sparql_client_construct_jsonld() -> Result<Client> {
     use reqwest::header::{self, ACCEPT, USER_AGENT};
 
     let mut headers = header::HeaderMap::new();
-    headers.insert(
-        ACCEPT,
-        header::HeaderValue::from_static("application/ld+json"),
-    );
+    headers.insert(ACCEPT, header::HeaderValue::from_static("application/ld+json"));
     headers.insert(USER_AGENT, header::HeaderValue::from_static("rudof"));
-    let client = reqwest::blocking::Client::builder()
-        .default_headers(headers)
-        .build()?;
+    let client = reqwest::blocking::Client::builder().default_headers(headers).build()?;
     Ok(client)
 }
 
@@ -404,25 +393,16 @@ fn sparql_client_construct_rdfxml() -> Result<Client> {
     use reqwest::header::{self, ACCEPT, USER_AGENT};
 
     let mut headers = header::HeaderMap::new();
-    headers.insert(
-        ACCEPT,
-        header::HeaderValue::from_static("application/rdf+xml"),
-    );
+    headers.insert(ACCEPT, header::HeaderValue::from_static("application/rdf+xml"));
     headers.insert(USER_AGENT, header::HeaderValue::from_static("rudof"));
-    let client = reqwest::blocking::Client::builder()
-        .default_headers(headers)
-        .build()?;
+    let client = reqwest::blocking::Client::builder().default_headers(headers).build()?;
     Ok(client)
 }
 
 #[cfg(target_family = "wasm")]
-fn make_sparql_query_select(
-    _query: &str,
-    _client: &Client,
-    _endpoint_iri: &IriS,
-) -> Result<Vec<OxQuerySolution>> {
+fn make_sparql_query_select(_query: &str, _client: &Client, _endpoint_iri: &IriS) -> Result<Vec<OxQuerySolution>> {
     Err(SRDFSparqlError::WASMError {
-        fn_name: String::from("make_sparql_query_select")
+        fn_name: String::from("make_sparql_query_select"),
     })
 }
 
@@ -434,16 +414,12 @@ fn make_sparql_query_construct(
     _format: &QueryResultFormat,
 ) -> Result<String> {
     Err(SRDFSparqlError::WASMError {
-        fn_name: String::from("make_sparql_query_construct")
+        fn_name: String::from("make_sparql_query_construct"),
     })
 }
 
 #[cfg(not(target_family = "wasm"))]
-fn make_sparql_query_select(
-    query_str: &str,
-    client: &Client,
-    endpoint_iri: &IriS,
-) -> Result<Vec<OxQuerySolution>> {
+fn make_sparql_query_select(query_str: &str, client: &Client, endpoint_iri: &IriS) -> Result<Vec<OxQuerySolution>> {
     use sparesults::{QueryResultsFormat, QueryResultsParser, ReaderQueryResultsParserOutput};
     // use spargebra::SparqlParser;
     use url::Url;
@@ -464,9 +440,7 @@ fn make_sparql_query_select(
     let body = client.get(url).send()?.text()?;
     let mut results = Vec::new();
     let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
-    if let ReaderQueryResultsParserOutput::Solutions(solutions) =
-        json_parser.for_reader(body.as_bytes())?
-    {
+    if let ReaderQueryResultsParserOutput::Solutions(solutions) = json_parser.for_reader(body.as_bytes())? {
         for solution in solutions {
             let sol = solution?;
             results.push(sol)

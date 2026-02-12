@@ -58,8 +58,7 @@ pub const SH_PROPERTY_STR: &str = concatcp!(SH_STR, "property");
 pub const SH_QUALIFIED_MIN_COUNT_STR: &str = concatcp!(SH_STR, "qualifiedMinCount");
 pub const SH_QUALIFIED_MAX_COUNT_STR: &str = concatcp!(SH_STR, "qualifiedMaxCount");
 pub const SH_QUALIFIED_VALUE_SHAPE_STR: &str = concatcp!(SH_STR, "qualifiedValueShape");
-pub const SH_QUALIFIED_VALUE_SHAPES_DISJOINT_STR: &str =
-    concatcp!(SH_STR, "qualifiedValueShapesDisjoint");
+pub const SH_QUALIFIED_VALUE_SHAPES_DISJOINT_STR: &str = concatcp!(SH_STR, "qualifiedValueShapesDisjoint");
 
 pub const SH_RESULT_STR: &str = concatcp!(SH_STR, "result");
 pub const SH_RESULT_PATH_STR: &str = concatcp!(SH_STR, "resultPath");
@@ -147,10 +146,7 @@ iri_once!(sh_result_severity, SH_RESULT_SEVERITY_STR);
 iri_once!(sh_result_message, SH_RESULT_MESSAGE_STR);
 iri_once!(sh_shapes_graph, SH_SHAPES_GRAPH_STR);
 iri_once!(sh_severity, SH_SEVERITY_STR);
-iri_once!(
-    sh_source_constraint_component,
-    SH_SOURCE_CONSTRAINT_COMPONENT_STR
-);
+iri_once!(sh_source_constraint_component, SH_SOURCE_CONSTRAINT_COMPONENT_STR);
 iri_once!(sh_source_shape, SH_SOURCE_SHAPE_STR);
 iri_once!(sh_value, SH_VALUE_STR);
 iri_once!(sh_target_node, SH_TARGET_NODE_STR);

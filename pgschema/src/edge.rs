@@ -53,11 +53,7 @@ impl Display for Edge {
             "Edge({}) {}-[{}{}]->{}",
             self.id,
             self.source,
-            self.labels
-                .iter()
-                .map(|l| l.to_string())
-                .collect::<Vec<_>>()
-                .join(", "),
+            self.labels.iter().map(|l| l.to_string()).collect::<Vec<_>>().join(", "),
             self.properties,
             self.target
         )

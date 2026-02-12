@@ -42,10 +42,7 @@ where
         self
     }
 
-    pub fn matches<T: IntoIterator<Item = (K, V)>>(
-        &self,
-        iter: T,
-    ) -> Result<Pending<V, R>, RbeError<K, V, R>> {
+    pub fn matches<T: IntoIterator<Item = (K, V)>>(&self, iter: T) -> Result<Pending<V, R>, RbeError<K, V, R>> {
         let mut pending = Pending::new();
         let mut processed: Vec<(K, V)> = Vec::new();
         match self.matches_iter(iter, &mut pending, &mut processed) {
@@ -59,7 +56,7 @@ where
                         expr: Box::new(self.rbe.clone()),
                     })
                 }
-            }
+            },
         }
     }
 
@@ -85,12 +82,12 @@ where
                         },
                     };
                     break;
-                }
+                },
                 _ => {
                     debug!("Processing: {key}/{value}\ncurrent:{current}\nderiv:{deriv}");
                     processed.push((key.clone(), value.clone()));
                     current = deriv;
-                }
+                },
             }
         }
         current
@@ -150,12 +147,7 @@ mod tests {
     fn test_rbe_matcher_len_name() {
         let rbe: Rbe<char, String, String> = Rbe::and(vec![
             Rbe::symbol_cond('a', cond_len(3), Min::from(1), Max::IntMax(1)),
-            Rbe::symbol_cond(
-                'b',
-                cond_name("foo".to_string()),
-                Min::from(0),
-                Max::IntMax(1),
-            ),
+            Rbe::symbol_cond('b', cond_name("foo".to_string()), Min::from(0), Max::IntMax(1)),
         ]);
         let expected = Pending::new();
         let rbe_matcher = RbeMatcher::new().with_rbe(&rbe);
@@ -178,10 +170,7 @@ mod tests {
         let expected = Pending::from(vec![(42, vec!["X".to_string()])]);
         let rbe_matcher = RbeMatcher::new().with_rbe(&rbe);
 
-        assert_eq!(
-            rbe_matcher.matches(vec![('a', 2), ('b', 42)].into_iter()),
-            Ok(expected)
-        );
+        assert_eq!(rbe_matcher.matches(vec![('a', 2), ('b', 42)].into_iter()), Ok(expected));
     }
 
     #[test]
@@ -196,10 +185,7 @@ mod tests {
         let expected = Pending::from(vec![(42, vec!["X".to_string()])]);
         let rbe_matcher = RbeMatcher::new().with_rbe(&rbe);
 
-        assert_eq!(
-            rbe_matcher.matches(vec![('b', 42), ('a', 2)].into_iter()),
-            Ok(expected)
-        );
+        assert_eq!(rbe_matcher.matches(vec![('b', 42), ('a', 2)].into_iter()), Ok(expected));
     }
 
     #[test]

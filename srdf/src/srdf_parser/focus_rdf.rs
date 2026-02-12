@@ -28,28 +28,23 @@ where
         match self.get_focus() {
             None => Err(RDFParseError::NoFocusNode),
             Some(term) => {
-                let subject =
-                    Self::term_as_subject(term).map_err(|_| RDFParseError::ExpectedSubject {
-                        node: format!("{term}"),
-                        context: "get_focus_as_subject".to_string(),
-                    })?;
+                let subject = Self::term_as_subject(term).map_err(|_| RDFParseError::ExpectedSubject {
+                    node: format!("{term}"),
+                    context: "get_focus_as_subject".to_string(),
+                })?;
                 Ok(subject)
-            }
+            },
         }
     }
 
-    fn get_path_for(
-        &mut self,
-        subject: &Self::Term,
-        predicate: &Self::IRI,
-    ) -> Result<Option<SHACLPath>, RDFError> {
+    fn get_path_for(&mut self, subject: &Self::Term, predicate: &Self::IRI) -> Result<Option<SHACLPath>, RDFError> {
         match self.objects_for(subject, predicate)?.into_iter().next() {
             Some(term) => match shacl_path_parse(term.clone()).parse_impl(self) {
                 Ok(path) => Ok(Some(path)),
                 Err(e) => {
                     debug!("Error parsing PATH from report...{e}");
                     Ok(None)
-                }
+                },
             },
             None => Ok(None),
         }

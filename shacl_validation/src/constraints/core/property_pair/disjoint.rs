@@ -32,28 +32,25 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for Disjoint {
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let check = |focus: &R::Term, value_node: &R::Term| {
             let subject: R::Subject = <R as Rdf>::term_as_subject(focus).unwrap();
-            let triples_to_compare = match store
-                .triples_with_subject_predicate(subject.clone(), self.iri().clone().into())
-            {
-                Ok(iter) => iter,
-                Err(e) => {
-                    debug!(
-                        "Disjoint: Error trying to find triples for subject {} and predicate {}: {e}",
-                        subject,
-                        self.iri()
-                    );
-                    return true;
-                }
-            };
+            let triples_to_compare =
+                match store.triples_with_subject_predicate(subject.clone(), self.iri().clone().into()) {
+                    Ok(iter) => iter,
+                    Err(e) => {
+                        debug!(
+                            "Disjoint: Error trying to find triples for subject {} and predicate {}: {e}",
+                            subject,
+                            self.iri()
+                        );
+                        return true;
+                    },
+                };
             for triple in triples_to_compare {
                 let value = triple.obj();
                 let value1 = <R as Rdf>::term_as_object(value_node).unwrap();
                 let value2 = <R as Rdf>::term_as_object(value).unwrap();
                 debug!("Comparing {value1} != {value2}");
                 if value1 == value2 {
-                    debug!(
-                        "Disjoint constraint violated: {value_node} is not disjoint with {value}"
-                    );
+                    debug!("Disjoint constraint violated: {value_node} is not disjoint with {value}");
                     return true;
                 }
             }

@@ -21,9 +21,7 @@ impl Display for VarName {
 
 impl VarName {
     pub fn new(str: &str) -> VarName {
-        VarName {
-            str: str.to_string(),
-        }
+        VarName { str: str.to_string() }
     }
 }
 

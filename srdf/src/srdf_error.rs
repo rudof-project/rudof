@@ -61,9 +61,7 @@ pub enum RDFError {
     #[error("Obtaining triples from RDF: {error}")]
     ObtainingTriples { error: String },
 
-    #[error(
-        "Error checking if RDF contains the triple <{subject}, {predicate}, {object}>: {error}"
-    )]
+    #[error("Error checking if RDF contains the triple <{subject}, {predicate}, {object}>: {error}")]
     FailedCheckingAssertion {
         subject: String,
         predicate: String,
@@ -91,8 +89,6 @@ pub enum RDFError {
 
 impl RDFError {
     pub fn msg(str: &str) -> RDFError {
-        RDFError::ConversionError {
-            msg: str.to_owned(),
-        }
+        RDFError::ConversionError { msg: str.to_owned() }
     }
 }
