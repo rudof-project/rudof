@@ -53,7 +53,7 @@ class TestGeneratorConfig(unittest.TestCase):
         """Test setting schema format"""
         config = pyrudof.GeneratorConfig()
         config.set_schema_format(pyrudof.SchemaFormat.ShEx)
-        config.set_schema_format(pyrudof.SchemaFormat.SHACL)
+        config.set_schema_format(pyrudof.SchemaFormat.Shacl)
         config.set_schema_format(None)
 
     def test_cardinality_strategy(self):
@@ -188,11 +188,11 @@ class TestEnums(unittest.TestCase):
 
     def test_schema_format_enum(self):
         """Test SchemaFormat enum values"""
-        self.assertNotEqual(pyrudof.SchemaFormat.ShEx, pyrudof.SchemaFormat.SHACL)
+        self.assertNotEqual(pyrudof.SchemaFormat.ShEx, pyrudof.SchemaFormat.Shacl)
 
         # Test equality
         self.assertEqual(pyrudof.SchemaFormat.ShEx, pyrudof.SchemaFormat.ShEx)
-        self.assertEqual(pyrudof.SchemaFormat.SHACL, pyrudof.SchemaFormat.SHACL)
+        self.assertEqual(pyrudof.SchemaFormat.Shacl, pyrudof.SchemaFormat.Shacl)
 
     def test_output_format_enum(self):
         """Test OutputFormat enum values"""
