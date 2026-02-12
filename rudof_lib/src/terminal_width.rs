@@ -1,9 +1,13 @@
+#[cfg(target_family = "wasm")]
+pub use crate::wasm_stubs::terminal_width;
 #[cfg(not(target_family = "wasm"))]
 use crossterm::terminal;
 #[cfg(not(target_family = "wasm"))]
 use tracing::debug;
 
+#[cfg(not(target_family = "wasm"))]
 const MAX_TERMINAL_WIDTH: usize = 100;
+#[cfg(not(target_family = "wasm"))]
 const DEFAULT_TERMINAL_WIDTH: usize = 80;
 
 #[cfg(not(target_family = "wasm"))]
@@ -17,11 +21,7 @@ pub fn terminal_width() -> usize {
     }
 }
 
-#[cfg(target_family = "wasm")]
-pub fn terminal_width() -> usize {
-    0
-}
-
+#[cfg(not(target_family = "wasm"))]
 fn sanitize_width(width: usize) -> usize {
     match width {
         w if w > MAX_TERMINAL_WIDTH => MAX_TERMINAL_WIDTH,

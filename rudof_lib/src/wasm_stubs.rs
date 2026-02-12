@@ -1,29 +1,23 @@
 use reqwest::header::HeaderMap;
 use std::io::{Error, Read};
 
-#[allow(dead_code)]
 pub struct Response;
-#[allow(dead_code)]
 #[derive(Debug, Clone)]
-pub struct Client;
-#[allow(dead_code)]
-pub struct ClientBuilder;
+pub(super) struct Client;
+pub(super) struct ClientBuilder;
 
-#[allow(dead_code)]
 impl ClientBuilder {
     pub fn new() -> Self {
         Self
     }
-    pub fn build(&self) -> Client {
-        Client
+    pub fn build(&self) -> Result<Client, Error> {
+        Ok(Client)
     }
-    pub fn get(_: &str) {}
     pub fn default_headers(&self, _p0: HeaderMap) -> ClientBuilder {
         Self
     }
 }
 
-#[allow(dead_code)]
 impl Client {
     pub fn builder() -> ClientBuilder {
         ClientBuilder
@@ -40,4 +34,8 @@ impl Read for Response {
     fn read(&mut self, _buf: &mut [u8]) -> std::io::Result<usize> {
         Err(Error::other("Response is not implemented in WASM target"))
     }
+}
+
+pub fn terminal_width() -> usize {
+    0
 }

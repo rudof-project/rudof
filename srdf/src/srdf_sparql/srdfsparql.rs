@@ -1,4 +1,9 @@
 use crate::matcher::{Any, Matcher};
+#[cfg(target_family = "wasm")]
+use crate::srdf_sparql::wasm_stubs::{
+    Client, make_sparql_query_construct, make_sparql_query_select, sparql_client, sparql_client_construct_jsonld,
+    sparql_client_construct_rdfxml, sparql_client_construct_turtle,
+};
 use crate::{AsyncSRDF, NeighsRDF, QueryRDF, QuerySolution, QuerySolutions, Rdf, VarName};
 use crate::{QueryResultFormat, SRDFSparqlError};
 use async_trait::async_trait;
@@ -17,11 +22,7 @@ use std::hash::Hash;
 use std::{collections::HashSet, fmt::Display, str::FromStr};
 
 #[cfg(not(target_family = "wasm"))]
-pub use reqwest::blocking::Client;
-
-#[cfg(target_family = "wasm")]
-#[derive(Debug, Clone)]
-pub struct Client;
+use reqwest::blocking::Client;
 
 type Result<A> = std::result::Result<A, SRDFSparqlError>;
 
@@ -139,21 +140,13 @@ impl FromStr for SRDFSparql {
 }
 
 impl Rdf for SRDFSparql {
+    type Subject = OxSubject;
     type IRI = OxNamedNode;
+    type Term = OxTerm;
     type BNode = OxBlankNode;
     type Literal = OxLiteral;
-    type Subject = OxSubject;
-    type Term = OxTerm;
     type Triple = OxTriple;
     type Err = SRDFSparqlError;
-
-    fn resolve_prefix_local(
-        &self,
-        prefix: &str,
-        local: &str,
-    ) -> std::result::Result<IriS, prefixmap::error::PrefixMapError> {
-        self.prefixmap.resolve_prefix_local(prefix, local)
-    }
 
     fn qualify_iri(&self, node: &OxNamedNode) -> String {
         let iri = IriS::from_str(node.as_str()).unwrap();
@@ -179,14 +172,22 @@ impl Rdf for SRDFSparql {
     fn prefixmap(&self) -> Option<PrefixMap> {
         Some(self.prefixmap.clone())
     }
+
+    fn resolve_prefix_local(
+        &self,
+        prefix: &str,
+        local: &str,
+    ) -> std::result::Result<IriS, prefixmap::error::PrefixMapError> {
+        self.prefixmap.resolve_prefix_local(prefix, local)
+    }
 }
 
 #[async_trait]
 impl AsyncSRDF for SRDFSparql {
+    type Subject = OxSubject;
     type IRI = OxNamedNode;
     type BNode = OxBlankNode;
     type Literal = OxLiteral;
-    type Subject = OxSubject;
     type Term = OxTerm;
     type Err = SRDFSparqlError;
 
@@ -285,6 +286,13 @@ impl NeighsRDF for SRDFSparql {
 }
 
 impl QueryRDF for SRDFSparql {
+    fn query_select(&self, query: &str) -> Result<QuerySolutions<Self>> {
+        tracing::trace!("srdf_sparql: SPARQL SELECT query: {}", query);
+        let solutions = make_sparql_query_select(query, &self.client, &self.endpoint_iri)?;
+        let qs: Vec<QuerySolution<SRDFSparql>> = solutions.iter().map(cnv_query_solution).collect();
+        Ok(QuerySolutions::new(qs, self.prefixmap.clone()))
+    }
+
     fn query_construct(&self, query: &str, format: &QueryResultFormat) -> Result<String> {
         let client = match format {
             QueryResultFormat::Turtle => Ok(&self.client_construct_turtle),
@@ -296,13 +304,6 @@ impl QueryRDF for SRDFSparql {
         }?;
         let str = make_sparql_query_construct(query, client, &self.endpoint_iri, format)?;
         Ok(str)
-    }
-
-    fn query_select(&self, query: &str) -> Result<QuerySolutions<Self>> {
-        tracing::trace!("srdf_sparql: SPARQL SELECT query: {}", query);
-        let solutions = make_sparql_query_select(query, &self.client, &self.endpoint_iri)?;
-        let qs: Vec<QuerySolution<SRDFSparql>> = solutions.iter().map(cnv_query_solution).collect();
-        Ok(QuerySolutions::new(qs, self.prefixmap.clone()))
     }
 
     fn query_ask(&self, query: &str) -> Result<bool> {
@@ -330,26 +331,6 @@ fn cnv_query_solution(qs: &OxQuerySolution) -> QuerySolution<SRDFSparql> {
         values.push(term)
     }
     QuerySolution::new(variables, values)
-}
-
-#[cfg(target_family = "wasm")]
-fn sparql_client() -> Result<Client> {
-    Ok(Client)
-}
-
-#[cfg(target_family = "wasm")]
-fn sparql_client_construct_jsonld() -> Result<Client> {
-    Ok(Client)
-}
-
-#[cfg(target_family = "wasm")]
-fn sparql_client_construct_rdfxml() -> Result<Client> {
-    Ok(Client)
-}
-
-#[cfg(target_family = "wasm")]
-fn sparql_client_construct_turtle() -> Result<Client> {
-    Ok(Client)
 }
 
 #[cfg(not(target_family = "wasm"))]
@@ -397,25 +378,6 @@ fn sparql_client_construct_rdfxml() -> Result<Client> {
     headers.insert(USER_AGENT, header::HeaderValue::from_static("rudof"));
     let client = reqwest::blocking::Client::builder().default_headers(headers).build()?;
     Ok(client)
-}
-
-#[cfg(target_family = "wasm")]
-fn make_sparql_query_select(_query: &str, _client: &Client, _endpoint_iri: &IriS) -> Result<Vec<OxQuerySolution>> {
-    Err(SRDFSparqlError::WASMError {
-        fn_name: String::from("make_sparql_query_select"),
-    })
-}
-
-#[cfg(target_family = "wasm")]
-fn make_sparql_query_construct(
-    _query: &str,
-    _client: &Client,
-    _endpoint_iri: &IriS,
-    _format: &QueryResultFormat,
-) -> Result<String> {
-    Err(SRDFSparqlError::WASMError {
-        fn_name: String::from("make_sparql_query_construct"),
-    })
 }
 
 #[cfg(not(target_family = "wasm"))]

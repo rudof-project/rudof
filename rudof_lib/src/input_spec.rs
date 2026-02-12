@@ -169,7 +169,7 @@ impl FromStr for InputSpec {
     }
 }
 
-/// This type implements [`std::io::BufRead`].
+/// This type implements [`io::BufRead`].
 pub type InputSpecReader =
     Either<StdinLock<'static>, Either<BufReader<fs::File>, Either<BufReader<Response>, BufReader<Cursor<Vec<u8>>>>>>;
 

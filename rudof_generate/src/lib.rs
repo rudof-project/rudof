@@ -1,3 +1,6 @@
+#[cfg(target_family = "wasm")]
+compile_error!("The `rudof_generate` crate is not supported in WebAssembly environments");
+
 pub mod config;
 pub mod converters;
 pub mod errors;
@@ -6,6 +9,8 @@ pub mod output;
 pub mod parallel_generation;
 pub mod shape_processing;
 pub mod unified_constraints;
+#[cfg(target_family = "wasm")]
+mod wasm_stubs;
 
 pub use config::{GeneratorConfig, SchemaFormat};
 pub use errors::{DataGeneratorError, Result};

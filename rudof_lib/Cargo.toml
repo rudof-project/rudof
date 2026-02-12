@@ -26,7 +26,6 @@ either.workspace = true
 iri_s.workspace = true
 mie.workspace = true
 oxrdf = { workspace = true, features = ["oxsdatatypes"] }
-pgschema.workspace = true
 prefixmap.workspace = true
 rdf_config.workspace = true
 reqwest.workspace = true
@@ -51,3 +50,6 @@ url.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 crossterm.workspace = true
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+clientele = { version = "0.3.8", features = [  ], default-features = false }

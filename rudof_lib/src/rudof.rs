@@ -49,6 +49,7 @@ use std::path::Path;
 use std::str::FromStr;
 use std::{env, io, result};
 use tracing::trace;
+#[cfg(not(target_family = "wasm"))]
 use url::Url;
 
 /// This represents the public API to interact with `rudof`

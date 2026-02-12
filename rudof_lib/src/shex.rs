@@ -9,10 +9,10 @@ use shex_ast::ShExFormat;
 use shex_ast::shapemap::ResultShapeMap;
 use srdf::RDFFormat;
 use srdf::ReaderMode;
-use std::env;
 use std::io::Write;
 use tracing::info;
-use url::Url;
+#[cfg(not(target_family = "wasm"))]
+use {std::env, url::Url};
 
 #[allow(clippy::too_many_arguments)]
 pub fn validate_shex<W: Write>(

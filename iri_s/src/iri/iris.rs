@@ -6,6 +6,7 @@ use std::fmt;
 use std::fmt::{Display, Formatter};
 #[cfg(not(target_family = "wasm"))]
 use std::fs::canonicalize;
+#[cfg(not(target_family = "wasm"))]
 use std::path::Path;
 use std::str::FromStr;
 use url::Url;
@@ -241,18 +242,6 @@ impl From<Url> for IriS {
         IriS {
             iri: NamedNode::new_unchecked(value),
         }
-    }
-}
-
-#[cfg(target_family = "wasm")]
-impl TryFrom<&Path> for IriS {
-    type Error = IriSError;
-
-    fn try_from(value: &Path) -> Result<Self, Self::Error> {
-        Err(IriSError::ConvertingPathToIri {
-            path: value.to_string_lossy().to_string(),
-            error: String::from("Converting path to IRI is not supported in WASM target"),
-        })
     }
 }
 

@@ -185,13 +185,6 @@ impl OutputWriter {
         parent.join(format!("{}_part_{:03}.{}", stem, index + 1, extension))
     }
 
-    #[cfg(target_family = "wasm")]
-    async fn create_parallel_manifest(&self, actual_file_count: usize) -> Result<()> {
-        Err(DataGeneratorError::OutputWriting(
-            "Unable to create manifest in WASM environment".to_string(),
-        ))
-    }
-
     /// Create a manifest file listing all parallel output files
     #[cfg(not(target_family = "wasm"))]
     async fn create_parallel_manifest(&self, actual_file_count: usize) -> Result<()> {
