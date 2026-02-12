@@ -4,12 +4,10 @@ use oxrdf::{NamedNode, NamedOrBlankNode, Term};
 use serde::{Serialize, Serializer};
 use std::fmt;
 use std::fmt::{Display, Formatter};
-#[cfg(not(target_family = "wasm"))]
-use std::fs::canonicalize;
-#[cfg(not(target_family = "wasm"))]
-use std::path::Path;
 use std::str::FromStr;
 use url::Url;
+#[cfg(not(target_family = "wasm"))]
+use {std::fs::canonicalize, std::path::Path};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct IriS {
