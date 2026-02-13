@@ -49,6 +49,7 @@ use std::path::Path;
 use std::str::FromStr;
 use std::{env, io, result};
 use tracing::trace;
+#[cfg(not(target_family = "wasm"))]
 use url::Url;
 
 /// This represents the public API to interact with `rudof`
@@ -825,6 +826,11 @@ impl Rudof {
                 }?;
 
                 let source_iri = match source_name {
+                    #[cfg(target_family = "wasm")]
+                    Some(_) => Err(RudofError::WASMError(
+                        "Reading ShExC from a source with a name is not supported in WASM".to_string(),
+                    )),
+                    #[cfg(not(target_family = "wasm"))]
                     Some(name) => {
                         let cwd =
                             env::current_dir().map_err(|e| RudofError::CurrentDirError { error: format!("{e}") })?;

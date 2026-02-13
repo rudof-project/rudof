@@ -2,6 +2,8 @@ use crate::context_entry_value::ContextEntryValue;
 use crate::manifest::Manifest;
 use crate::manifest_error::ManifestError;
 use crate::manifest_map::ManifestMap;
+#[cfg(target_family = "wasm")]
+use crate::wasm_stubs::path_to_iri;
 use ValidationType::*;
 use iri_s::IriS;
 use prefixmap::IriRef;
@@ -23,6 +25,7 @@ use std::fmt::{self, Display};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use tracing::{debug, trace};
+#[cfg(not(target_family = "wasm"))]
 use url::Url;
 
 #[derive(Deserialize, Debug)]
@@ -353,14 +356,15 @@ fn parse_shape(str: &str) -> Result<ShapeLabel, Box<ManifestError>> {
 
 fn parse_type(str: &str) -> Result<ValidationType, Box<ManifestError>> {
     match str {
-        "sht:ValidationTest" => Ok(ValidationType::Validation),
-        "sht:ValidationFailure" => Ok(ValidationType::Failure),
+        "sht:ValidationTest" => Ok(Validation),
+        "sht:ValidationFailure" => Ok(Failure),
         _ => Err(Box::new(ManifestError::ParsingValidationType {
             value: str.to_string(),
         })),
     }
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn path_to_iri(path: &Path) -> Result<IriS, Box<ManifestError>> {
     trace!("Converting path to IRI: {}", path.display());
     let canonical = path.canonicalize().map_err(|err| {

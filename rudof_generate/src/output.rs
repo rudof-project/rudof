@@ -186,6 +186,7 @@ impl OutputWriter {
     }
 
     /// Create a manifest file listing all parallel output files
+    #[cfg(not(target_family = "wasm"))]
     async fn create_parallel_manifest(&self, actual_file_count: usize) -> Result<()> {
         let manifest_path = self.config.path.with_extension("manifest.txt");
         let mut manifest_content = String::new();

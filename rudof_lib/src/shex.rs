@@ -9,10 +9,10 @@ use shex_ast::ShExFormat;
 use shex_ast::shapemap::ResultShapeMap;
 use srdf::RDFFormat;
 use srdf::ReaderMode;
-use std::env;
 use std::io::Write;
 use tracing::info;
-use url::Url;
+#[cfg(not(target_family = "wasm"))]
+use {std::env, url::Url};
 
 #[allow(clippy::too_many_arguments)]
 pub fn validate_shex<W: Write>(
@@ -101,13 +101,20 @@ fn get_base(config: &RudofConfig, base: &Option<IriS>) -> Result<IriS, RudofErro
     } else if let Some(base) = config.shex_config().base.as_ref() {
         Ok(base.clone())
     } else {
-        let cwd = env::current_dir().map_err(|e| RudofError::CurrentDirError { error: format!("{e}") })?;
-        // Note: we use from_directory_path to convert a directory to a file URL that ends with a trailing slash
-        // from_url_path would not add the trailing slash and would fail when resolving relative IRIs
-        let url = Url::from_directory_path(&cwd).map_err(|_| RudofError::ConvertingCurrentFolderUrl {
-            current_dir: cwd.to_string_lossy().to_string(),
-        })?;
-        Ok(url.into())
+        #[cfg(target_family = "wasm")]
+        return Err(RudofError::WASMError(
+            "Base IRI must be provided in WASM environment".to_string(),
+        ));
+        #[cfg(not(target_family = "wasm"))]
+        {
+            let cwd = env::current_dir().map_err(|e| RudofError::CurrentDirError { error: format!("{e}") })?;
+            // Note: we use from_directory_path to convert a directory to a file URL that ends with a trailing slash
+            // from_url_path would not add the trailing slash and would fail when resolving relative IRIs
+            let url = Url::from_directory_path(&cwd).map_err(|_| RudofError::ConvertingCurrentFolderUrl {
+                current_dir: cwd.to_string_lossy().to_string(),
+            })?;
+            Ok(url.into())
+        }
     }
 }
 

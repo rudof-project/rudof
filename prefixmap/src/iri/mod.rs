@@ -1,6 +1,7 @@
 pub mod deref;
 pub mod iri_ref;
-#[cfg(all(test, not(target_arch = "wasm32")))]
+
+#[cfg(all(test, not(target_family = "wasm")))]
 mod test;
 mod visitor;
 

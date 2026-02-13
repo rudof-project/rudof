@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use shex_ast::compact::ShExParser;
 use shex_ast::{ResolveMethod, Schema, SchemaJsonError, ShExFormat, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel};
 use std::collections::{HashMap, hash_map::Entry};
+#[cfg(not(target_family = "wasm"))]
 use url::Url;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]

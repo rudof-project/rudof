@@ -33,7 +33,6 @@ pub mod srdf_builder;
 pub mod srdf_error;
 pub mod srdf_graph;
 pub mod srdf_parser;
-#[cfg(not(target_family = "wasm"))]
 pub mod srdf_sparql;
 pub mod subject;
 pub mod term;
@@ -68,7 +67,6 @@ pub use srdf_builder::*;
 pub use srdf_error::*;
 pub use srdf_graph::*;
 pub use srdf_parser::*;
-#[cfg(not(target_family = "wasm"))]
 pub use srdf_sparql::*;
 pub use subject::*;
 pub use term::*;

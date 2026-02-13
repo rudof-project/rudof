@@ -1,15 +1,14 @@
 use crate::context_entry_value::ContextEntryValue;
 use crate::manifest::Manifest;
 use crate::manifest_error::ManifestError;
-use iri_s::IriS;
 use serde::{Deserialize, Serialize};
-// use serde_derive::{Serialize};
-use shex_ast::ast::Schema as SchemaJson;
-use shex_ast::compact::ShExParser;
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
-use tracing::debug;
-use url::Url;
+use std::path::Path;
+#[cfg(not(target_family = "wasm"))]
+use {
+    iri_s::IriS, shex_ast::ast::Schema as SchemaJson, shex_ast::compact::ShExParser, std::path::PathBuf,
+    tracing::debug, url::Url,
+};
 
 #[derive(Deserialize, Debug)]
 #[serde(from = "ManifestSchemasJson")]
@@ -142,6 +141,7 @@ impl ManifestSchemas {
     }
 }
 
+#[cfg(not(target_family = "wasm"))]
 impl SchemasEntry {
     pub fn run(&self, base: &Path) -> Result<(), Box<ManifestError>> {
         debug!(

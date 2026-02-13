@@ -1,10 +1,10 @@
+#[cfg(target_family = "wasm")]
+use crate::wasm_stubs::{Client, ClientBuilder, Response};
 use either::Either;
 use iri_s::IriS;
-use reqwest::{
-    blocking::{Client, ClientBuilder},
-    header::{ACCEPT, HeaderValue, USER_AGENT},
-    // Url as ReqwestUrl,
-};
+#[cfg(not(target_family = "wasm"))]
+use reqwest::blocking::{Client, ClientBuilder, Response};
+use reqwest::header::{ACCEPT, HeaderValue, USER_AGENT};
 use std::io::Cursor;
 use std::{
     fmt::Display,
@@ -52,6 +52,7 @@ impl InputSpec {
 
     pub fn as_iri(&self) -> Result<IriS, InputSpecError> {
         match self {
+            #[cfg(not(target_family = "wasm"))]
             InputSpec::Path(path) => {
                 let path_absolute = path.canonicalize().map_err(|err| InputSpecError::AbsolutePathError {
                     path: path.to_string_lossy().to_string(),
@@ -61,6 +62,8 @@ impl InputSpec {
                     .map_err(|_| InputSpecError::FromFilePath { path: path.clone() })?;
                 Ok(IriS::new_unchecked(url.as_str()))
             },
+            #[cfg(target_family = "wasm")]
+            InputSpec::Path(_) => Err(InputSpecError::WASMError("File path not supported in WASM".to_string())),
             InputSpec::Stdin => Ok(IriS::new_unchecked("file://stdin")),
             InputSpec::Str(_s) => Ok(IriS::new_unchecked("file://str")),
             InputSpec::Url(url) => Ok(IriS::new_unchecked(url.to_string().as_str())),
@@ -120,6 +123,7 @@ impl InputSpec {
 
     pub fn guess_base(&self) -> Result<String, InputSpecError> {
         match self {
+            #[cfg(not(target_family = "wasm"))]
             InputSpec::Path(path) => {
                 let absolute_path = fs::canonicalize(path).map_err(|err| InputSpecError::AbsolutePathError {
                     path: path.to_string_lossy().to_string(),
@@ -130,6 +134,8 @@ impl InputSpec {
                 })?;
                 Ok(url.to_string())
             },
+            #[cfg(target_family = "wasm")]
+            InputSpec::Path(_) => Err(InputSpecError::WASMError("File path not supported in WASM".to_string())),
             InputSpec::Stdin => Ok("stdin://".to_string()),
             InputSpec::Url(url_spec) => Ok(url_spec.url.to_string()),
             InputSpec::Str(_) => Ok("string://".to_string()),
@@ -163,11 +169,9 @@ impl FromStr for InputSpec {
     }
 }
 
-/// This type implements [`std::io::BufRead`].
-pub type InputSpecReader = Either<
-    StdinLock<'static>,
-    Either<BufReader<fs::File>, Either<BufReader<reqwest::blocking::Response>, BufReader<std::io::Cursor<Vec<u8>>>>>,
->;
+/// This type implements [`io::BufRead`].
+pub type InputSpecReader =
+    Either<StdinLock<'static>, Either<BufReader<fs::File>, Either<BufReader<Response>, BufReader<Cursor<Vec<u8>>>>>>;
 
 #[derive(Error, Debug)]
 pub enum InputSpecError {
@@ -216,6 +220,9 @@ pub enum InputSpecError {
 
     #[error("Error setting USER_AGENT: {error}")]
     UserAgentValue { error: String },
+
+    #[error("Unable to perform operation in WASM: {0}")]
+    WASMError(String),
 }
 
 #[derive(Debug, Clone)]

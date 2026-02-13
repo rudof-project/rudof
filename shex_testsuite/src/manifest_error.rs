@@ -140,4 +140,7 @@ pub enum ManifestError {
 
     #[error("Error converting ShapeExprLabel to ShapeLabel for entry {entry}. Error: {error}")]
     IriRefError { error: String, entry: String },
+
+    #[error("Unable to perform operation in WASM: {0}")]
+    WASMError(String),
 }
