@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::fmt::Display;
 
 use crate::reifier_info::ReifierInfo;
-use crate::{component::Component, message_map::MessageMap, severity::Severity, target::Target, ShaclVocab};
+use crate::{ShaclVocab, component::Component, message_map::MessageMap, severity::Severity, target::Target};
 use iri_s::IriS;
 use srdf::Rdf;
 use srdf::{BuildRDF, RDFNode, SHACLPath, numeric_literal::NumericLiteral};
@@ -234,7 +234,7 @@ impl<RDF: Rdf> PropertyShape<RDF> {
                 NumericLiteral::Integer(int) => {
                     let i: i128 = int.try_into().unwrap();
                     i.into()
-                }
+                },
                 NumericLiteral::Long(_) => todo!(),
                 NumericLiteral::Byte(_) => todo!(),
                 NumericLiteral::Short(_) => todo!(),
@@ -264,9 +264,7 @@ impl<RDF: Rdf> PropertyShape<RDF> {
             .iter()
             .try_for_each(|component| component.write(&self.id, rdf))?;
 
-        self.targets
-            .iter()
-            .try_for_each(|target| target.write(&self.id, rdf))?;
+        self.targets.iter().try_for_each(|target| target.write(&self.id, rdf))?;
 
         if self.deactivated {
             let literal: B::Literal = "true".to_string().into();
@@ -281,7 +279,7 @@ impl<RDF: Rdf> PropertyShape<RDF> {
                 Severity::Violation => ShaclVocab::sh_violation(),
                 Severity::Info => ShaclVocab::sh_info(),
                 Severity::Warning => ShaclVocab::sh_warning(),
-                Severity::Generic(iri) => &iri.get_iri().unwrap(),
+                Severity::Generic(iri) => iri.get_iri().unwrap(),
             };
 
             rdf.add_triple(id.clone(), ShaclVocab::sh_severity().clone(), pred.clone())?;

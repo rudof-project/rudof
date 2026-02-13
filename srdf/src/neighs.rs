@@ -19,10 +19,7 @@ where
     }
 
     pub fn inverse(pred: S::IRI, subject: S::Subject) -> Neigh<S> {
-        Neigh::Inverse {
-            p: pred,
-            s: subject,
-        }
+        Neigh::Inverse { p: pred, s: subject }
     }
 }
 
@@ -44,20 +41,17 @@ where
         match S::term_as_subject(&term) {
             Ok(subject) => {
                 let subject: S::Subject = subject;
-                let preds: HashSet<S::IRI> = rdf
-                    .triples_with_subject(subject)?
-                    .map(Triple::into_predicate)
-                    .collect();
+                let preds: HashSet<S::IRI> = rdf.triples_with_subject(subject)?.map(Triple::into_predicate).collect();
                 let _qs = preds.into_iter();
                 /*let vv = qs.flat_map(|p| {
                     let objs = rdf.get_objects_for_subject_predicate(&subject, &p)?;
                     objs.into_iter().map(|o| Neigh::Direct { p, o })
                 });*/
                 todo!(); // Ok(vv)
-            }
+            },
             Err(_) => {
                 todo!()
-            }
+            },
         }
         // NeighsIterator { term, objectsIter }
     }

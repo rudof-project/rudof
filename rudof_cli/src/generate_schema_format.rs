@@ -15,7 +15,7 @@ pub enum GenerateSchemaFormat {
 
     /// SHACL format
     #[value(name = "shacl")]
-    SHACL,
+    Shacl,
 }
 
 impl fmt::Display for GenerateSchemaFormat {
@@ -23,7 +23,7 @@ impl fmt::Display for GenerateSchemaFormat {
         match self {
             GenerateSchemaFormat::Auto => write!(f, "auto"),
             GenerateSchemaFormat::ShEx => write!(f, "shex"),
-            GenerateSchemaFormat::SHACL => write!(f, "shacl"),
+            GenerateSchemaFormat::Shacl => write!(f, "shacl"),
         }
     }
 }

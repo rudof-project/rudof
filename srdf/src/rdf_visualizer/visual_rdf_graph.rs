@@ -31,14 +31,11 @@ impl VisualRDFGraph {
         }
     }
 
-    pub fn from_rdf<R: NeighsRDF>(
-        rdf: &R,
-        config: RDFVisualizationConfig,
-    ) -> Result<Self, RDFError> {
+    pub fn from_rdf<R: NeighsRDF>(rdf: &R, config: RDFVisualizationConfig) -> Result<Self, RDFError> {
         let mut graph = VisualRDFGraph::new(config);
-        let triples = rdf.triples().map_err(|e| RDFError::ObtainingTriples {
-            error: e.to_string(),
-        })?;
+        let triples = rdf
+            .triples()
+            .map_err(|e| RDFError::ObtainingTriples { error: e.to_string() })?;
         for triple in triples {
             let (subject, predicate, object) = triple.clone().into_components();
             graph.create_triple(rdf, subject, predicate, object)?;
@@ -68,11 +65,7 @@ impl VisualRDFGraph {
         let object_id = self.get_or_create_node(object_node.clone());
         self.edges.insert((subject_id, edge, object_id));
         // TODO: Check if the triple is asserted or not
-        Ok(VisualRDFNode::non_asserted_triple(
-            subject_node,
-            edge_node,
-            object_node,
-        ))
+        Ok(VisualRDFNode::non_asserted_triple(subject_node, edge_node, object_node))
     }
 
     pub fn create_triple_term<R: NeighsRDF>(
@@ -103,14 +96,14 @@ impl VisualRDFGraph {
         let subject_str = subject.to_string();
         let predicate_str = predicate.to_string();
         let object_str = object.to_string();
-        let asserted = rdf.contains(subject, predicate, object).map_err(|e| {
-            RDFError::FailedCheckingAssertion {
+        let asserted = rdf
+            .contains(subject, predicate, object)
+            .map_err(|e| RDFError::FailedCheckingAssertion {
                 subject: subject_str.to_string(),
                 predicate: predicate_str.to_string(),
                 object: object_str.to_string(),
                 error: e.to_string(),
-            }
-        })?;
+            })?;
         let triple = if asserted {
             VisualRDFNode::asserted_triple(subject_node, edge_node, object_node)
         } else {
@@ -164,11 +157,7 @@ impl VisualRDFGraph {
         }
     }
 
-    pub fn as_plantuml<W: Write>(
-        &self,
-        writer: &mut W,
-        _mode: &UmlGenerationMode,
-    ) -> Result<(), RdfVisualizerError> {
+    pub fn as_plantuml<W: Write>(&self, writer: &mut W, _mode: &UmlGenerationMode) -> Result<(), RdfVisualizerError> {
         let style = self.config.get_style();
         trace!("Visual graph: {self}");
         trace!("Starting conversion...");
@@ -185,11 +174,7 @@ impl VisualRDFGraph {
         // Add edges
         for (source, edge, target) in &self.edges {
             trace!("Edge {source} --> {target}: {edge}");
-            writeln!(
-                writer,
-                "{source} --> {target} : {}\n",
-                edge.as_plantuml_link()
-            )?;
+            writeln!(writer, "{source} --> {target} : {}\n", edge.as_plantuml_link())?;
         }
 
         // Add edges from triples
@@ -197,11 +182,11 @@ impl VisualRDFGraph {
             match node {
                 VisualRDFNode::NonAssertedTriple(subj, pred, obj) => {
                     triple_term_as_plantuml(writer, self, node_id, subj, pred, obj)?;
-                }
+                },
                 VisualRDFNode::AssertedTriple(subj, pred, obj) => {
                     triple_term_as_plantuml(writer, self, node_id, subj, pred, obj)?;
-                }
-                _ => {}
+                },
+                _ => {},
             }
         }
 
@@ -211,12 +196,10 @@ impl VisualRDFGraph {
 
     pub fn show_node(&self, node: &VisualRDFNode) -> bool {
         match node {
-            VisualRDFNode::Predicate { .. } | VisualRDFNode::Reifies => {
-                match self.usage_count.get(node) {
-                    Some(usage_count) => usage_count.in_triple(),
-                    None => false,
-                }
-            }
+            VisualRDFNode::Predicate { .. } | VisualRDFNode::Reifies => match self.usage_count.get(node) {
+                Some(usage_count) => usage_count.in_triple(),
+                None => false,
+            },
             // All nodes are visualized by default
             _ => true,
         }
@@ -267,15 +250,9 @@ impl Display for VisualRDFGraph {
 }
 
 impl UmlConverter for VisualRDFGraph {
-    fn as_plantuml<W: Write>(
-        &self,
-        writer: &mut W,
-        mode: &crate::UmlGenerationMode,
-    ) -> Result<(), UmlConverterError> {
+    fn as_plantuml<W: Write>(&self, writer: &mut W, mode: &crate::UmlGenerationMode) -> Result<(), UmlConverterError> {
         self.as_plantuml(writer, mode)
-            .map_err(|e| UmlConverterError::UmlError {
-                error: e.to_string(),
-            })
+            .map_err(|e| UmlConverterError::UmlError { error: e.to_string() })
     }
 }
 

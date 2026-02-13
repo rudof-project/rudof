@@ -1,6 +1,6 @@
 [package]
 name = "iri_s"
-version = "0.1.137"
+version = "0.1.147"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/iri_s"
@@ -17,4 +17,6 @@ reqwest.workspace = true
 serde.workspace = true
 thiserror.workspace = true
 url.workspace = true
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
 proptest.workspace = true

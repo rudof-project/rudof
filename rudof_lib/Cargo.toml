@@ -1,6 +1,6 @@
 [package]
 name = "rudof_lib"
-version = "0.1.146"
+version = "0.1.147"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/rudof_lib"
@@ -21,13 +21,11 @@ include = [
 [dependencies]
 anyhow = { workspace = true }
 clap.workspace = true
-crossterm.workspace = true
 dctap.workspace = true
 either.workspace = true
 iri_s.workspace = true
 mie.workspace = true
 oxrdf = { workspace = true, features = ["oxsdatatypes"] }
-pgschema.workspace = true
 prefixmap.workspace = true
 rdf_config.workspace = true
 reqwest.workspace = true
@@ -49,3 +47,9 @@ thiserror.workspace = true
 toml.workspace = true
 tracing.workspace = true
 url.workspace = true
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+crossterm.workspace = true
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+clientele = { version = "0.3.8", features = [  ], default-features = false }

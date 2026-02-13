@@ -4,10 +4,10 @@ use oxrdf::{NamedNode, NamedOrBlankNode, Term};
 use serde::{Serialize, Serializer};
 use std::fmt;
 use std::fmt::{Display, Formatter};
-use std::fs::canonicalize;
-use std::path::Path;
 use std::str::FromStr;
 use url::Url;
+#[cfg(not(target_family = "wasm"))]
+use {std::fs::canonicalize, std::path::Path};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct IriS {
@@ -151,11 +151,10 @@ impl IriS {
 
         let url = match base {
             Some(base_iri) => {
-                let base =
-                    Url::from_str(base_iri.as_str()).map_err(|e| IriSError::UrlParseError {
-                        str: base_iri.to_string(),
-                        error: e.to_string(),
-                    })?;
+                let base = Url::from_str(base_iri.as_str()).map_err(|e| IriSError::UrlParseError {
+                    str: base_iri.to_string(),
+                    error: e.to_string(),
+                })?;
                 Url::options()
                     .base_url(Some(&base))
                     .parse(self.iri.as_str())
@@ -164,7 +163,7 @@ impl IriS {
                         base: format!("{base}"),
                         error: e.to_string(),
                     })?
-            }
+            },
             None => Url::from_str(self.iri.as_str()).map_err(|e| IriSError::UrlParseError {
                 str: self.iri.as_str().to_string(),
                 error: e.to_string(),
@@ -175,9 +174,7 @@ impl IriS {
             "file" => {
                 let path = url
                     .to_file_path()
-                    .map_err(|_| IriSError::ConvertingFileUrlToPath {
-                        url: url.to_string(),
-                    })?;
+                    .map_err(|_| IriSError::ConvertingFileUrlToPath { url: url.to_string() })?;
                 let path_name = path.to_string_lossy().to_string();
                 let body = fs::read_to_string(path).map_err(|e| IriSError::IOErrorFile {
                     path: path_name,
@@ -185,7 +182,7 @@ impl IriS {
                     error: e.to_string(),
                 })?;
                 Ok(body)
-            }
+            },
             _ => {
                 let mut headers = HeaderMap::new();
                 /* TODO: Add a parameter with the Accept header ?
@@ -197,21 +194,15 @@ impl IriS {
                 let client = Client::builder()
                     .default_headers(headers)
                     .build()
-                    .map_err(|e| IriSError::ReqwestClientCreation {
-                        error: e.to_string(),
-                    })?;
+                    .map_err(|e| IriSError::ReqwestClientCreation { error: e.to_string() })?;
                 let res = client
                     .get(url)
                     .send()
-                    .map_err(|e| IriSError::ReqwestError {
-                        error: e.to_string(),
-                    })?
+                    .map_err(|e| IriSError::ReqwestError { error: e.to_string() })?
                     .text()
-                    .map_err(|e| IriSError::ReqwestTextError {
-                        error: e.to_string(),
-                    })?;
+                    .map_err(|e| IriSError::ReqwestTextError { error: e.to_string() })?;
                 Ok(res)
-            }
+            },
         }
     }
 
@@ -246,11 +237,13 @@ impl From<NamedNode> for IriS {
 
 impl From<Url> for IriS {
     fn from(value: Url) -> Self {
-        IriS { iri: NamedNode::new_unchecked(value) }
+        IriS {
+            iri: NamedNode::new_unchecked(value),
+        }
     }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(target_family = "wasm"))]
 impl TryFrom<&Path> for IriS {
     type Error = IriSError;
 

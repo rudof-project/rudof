@@ -1,15 +1,10 @@
 //! ShEx to SPARQL
 //!
 //!
-mod select_query;
-pub mod shex2sparql;
-pub mod shex2sparql_config;
-pub mod shex2sparql_error;
-mod triple_pattern;
-mod var;
+pub mod shex2rdfconfig;
+pub mod shex2rdfconfig_config;
+pub mod shex2rdfconfig_error;
 
-pub use select_query::*;
-pub use shex2sparql_config::*;
-pub use shex2sparql_error::*;
-pub use triple_pattern::*;
-pub use var::*;
+pub use shex2rdfconfig::*;
+pub use shex2rdfconfig_config::*;
+pub use shex2rdfconfig_error::*;

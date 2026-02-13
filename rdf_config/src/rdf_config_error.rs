@@ -12,5 +12,5 @@ pub enum RdfConfigError {
     ErrorParsingYamlEmpty { source_name: String },
 
     #[error("Error writing RDF config: {error}")]
-    WritingRdfConfigError { error: String },
+    WritingRdfConfig { error: String },
 }

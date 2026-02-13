@@ -2,10 +2,9 @@ use crate::PgSchemaFormat;
 use crate::dctap_format::DCTapFormat;
 use crate::result_compare_format::ResultCompareFormat;
 use crate::{
-    DCTapResultFormat, GenerateSchemaFormat, InputCompareFormat, InputCompareMode,
-    InputConvertFormat, InputConvertMode, OutputConvertFormat, OutputConvertMode, RDFReaderMode,
-    RdfConfigFormat, RdfConfigResultFormat, ResultDataFormat, ResultServiceFormat,
-    ResultValidationFormat, ShowNodeMode, SortByValidate, ValidationMode,
+    DCTapResultFormat, GenerateSchemaFormat, InputCompareFormat, InputCompareMode, InputConvertFormat,
+    InputConvertMode, OutputConvertFormat, OutputConvertMode, RDFReaderMode, RdfConfigFormat, RdfConfigResultFormat,
+    ResultDataFormat, ResultServiceFormat, ResultValidationFormat, ShowNodeMode, SortByValidate, ValidationMode,
 };
 use clap::{Parser, Subcommand};
 use iri_s::IriS;
@@ -48,10 +47,21 @@ pub enum Command {
             long = "transport",
             value_name = "TRANSPORT",
             ignore_case = true,
-            help = "Transport type: stdio (for CLI/IDE) or http-sse (for web clients)",
+            help = "Transport type: stdio (for CLI/IDE) or streamable-http (for web clients)",
             default_value_t = rudof_mcp::server::TransportType::Stdio
         )]
         transport: rudof_mcp::server::TransportType,
+
+        #[arg(
+            short = 'b',
+            long = "bind",
+            value_name = "ADDRESS",
+            help = "Bind address for HTTP transport. Examples: 127.0.0.1 (localhost IPv4), \
+                    0.0.0.0 (all IPv4 interfaces), ::1 (localhost IPv6), :: (all IPv6 interfaces). \
+                    Default: 127.0.0.1 for security",
+            default_value = "127.0.0.1"
+        )]
+        bind_address: String,
 
         #[arg(
             short = 'p',
@@ -70,6 +80,18 @@ pub enum Command {
             default_value = "/rudof"
         )]
         route_path: String,
+
+        #[arg(
+            short = 'n',
+            long = "allowed-network",
+            value_name = "CIDR",
+            help = "Allowed IP network in CIDR notation (only used with http-sse transport). \
+                    It can be specified multiple times to allow multiple networks. \
+                    Examples: 127.0.0.1, 192.168.1.0/24, 10.0.0.0/8, ::1. \
+                    If not specified, defaults to localhost only (127.0.0.0/8 and ::1/128)",
+            num_args = 0..
+        )]
+        allowed_networks: Vec<String>,
     },
 
     /// Show information about ShEx ShapeMaps
@@ -149,30 +171,16 @@ pub enum Command {
         )]
         result_schema_format: ShExFormat,
 
-        #[arg(
-            short = 'l',
-            long = "shape-label",
-            value_name = "LABEL",
-            help = "shape label"
-        )]
+        #[arg(short = 'l', long = "shape-label", value_name = "LABEL", help = "shape label")]
         shape: Option<String>,
 
-        #[arg(
-            short = 't',
-            value_name = "BOOL",
-            help = "Show processing time",
-            long = "show-time"
-        )]
+        #[arg(short = 't', value_name = "BOOL", help = "Show processing time", long = "show-time")]
         show_time: Option<bool>,
 
         #[arg(long = "show-schema", value_name = "BOOL", help = "Show schema")]
         show_schema: Option<bool>,
 
-        #[arg(
-            long = "statistics",
-            value_name = "BOOL",
-            help = "Show statistics about the schema"
-        )]
+        #[arg(long = "statistics", value_name = "BOOL", help = "Show statistics about the schema")]
         show_statistics: Option<bool>,
 
         #[arg(
@@ -188,7 +196,7 @@ pub enum Command {
 
         #[arg(
             long = "reader-mode",
-            value_name = "MODE", 
+            value_name = "MODE",
             ignore_case = true,
             help = "RDF Reader mode (strict or lax)",
             default_value_t = RDFReaderMode::default(),
@@ -218,12 +226,7 @@ pub enum Command {
         force_overwrite: bool,
 
         /// Config file path, if unset it assumes default config
-        #[arg(
-            short = 'c',
-            long = "config-file",
-            value_name = "FILE",
-            help = "Config file name"
-        )]
+        #[arg(short = 'c', long = "config-file", value_name = "FILE", help = "Config file name")]
         config: Option<PathBuf>,
     },
 
@@ -259,12 +262,7 @@ pub enum Command {
         )]
         result_schema_format: PgSchemaFormat,
 
-        #[arg(
-            short = 't',
-            value_name = "BOOL",
-            help = "Show processing time",
-            long = "show-time"
-        )]
+        #[arg(short = 't', value_name = "BOOL", help = "Show processing time", long = "show-time")]
         show_time: Option<bool>,
 
         #[arg(long = "show-schema", value_name = "BOOL", help = "Show schema")]
@@ -286,12 +284,7 @@ pub enum Command {
         force_overwrite: bool,
 
         /// Config file path, if unset it assumes default config
-        #[arg(
-            short = 'c',
-            long = "config-file",
-            value_name = "FILE",
-            help = "Config file name"
-        )]
+        #[arg(short = 'c', long = "config-file", value_name = "FILE", help = "Config file name")]
         config: Option<PathBuf>,
     },
 
@@ -300,7 +293,7 @@ pub enum Command {
         #[clap(value_parser = clap::value_parser!(InputSpec))]
         data: Vec<InputSpec>,
 
-        #[arg(short = 'M', long = "mode", 
+        #[arg(short = 'M', long = "mode",
             value_name = "MODE",
             ignore_case = true,
             help = "Validation mode (ShEx or SHACL)",
@@ -335,7 +328,7 @@ pub enum Command {
 
         #[arg(
             long = "shapemap-format",
-            value_name = "FORMAT", 
+            value_name = "FORMAT",
             ignore_case = true,
             help = "ShapeMap format",
             default_value_t = ShapeMapFormat::Compact,
@@ -358,12 +351,7 @@ pub enum Command {
         )]
         sort_by: SortByValidate,
 
-        #[arg(
-            short = 'n',
-            long = "node",
-            value_name = "NODE",
-            help = "Node to validate"
-        )]
+        #[arg(short = 'n', long = "node", value_name = "NODE", help = "Node to validate")]
         node: Option<String>,
 
         #[arg(
@@ -378,7 +366,7 @@ pub enum Command {
         #[arg(
             short = 't',
             long = "data-format",
-            value_name = "FORMAT", 
+            value_name = "FORMAT",
             ignore_case = true,
             help = "RDF Data format (default = turtle)",
             default_value_t = DataFormat::Turtle
@@ -479,29 +467,19 @@ pub enum Command {
         )]
         schema_format: Option<ShExFormat>,
 
-        #[arg(
-            short = 'm',
-            long = "shapemap",
-            value_name = "INPUT",
-            help = "ShapeMap"
-        )]
+        #[arg(short = 'm', long = "shapemap", value_name = "INPUT", help = "ShapeMap")]
         shapemap: Option<InputSpec>,
 
         #[arg(
             long = "shapemap-format",
-            value_name = "FORMAT", 
+            value_name = "FORMAT",
             ignore_case = true,
             help = "ShapeMap format",
             default_value_t = ShapeMapFormat::Compact,
         )]
         shapemap_format: ShapeMapFormat,
 
-        #[arg(
-            short = 'n',
-            long = "node",
-            value_name = "NODE",
-            help = "Node to validate"
-        )]
+        #[arg(short = 'n', long = "node", value_name = "NODE", help = "Node to validate")]
         node: Option<String>,
 
         #[arg(
@@ -527,7 +505,7 @@ pub enum Command {
             short = 't',
             long = "data-format",
             ignore_case = true,
-            value_name = "FORMAT", 
+            value_name = "FORMAT",
             help = "RDF Data format",
             default_value_t = DataFormat::Turtle
         )]
@@ -550,7 +528,7 @@ pub enum Command {
         /// RDF Reader mode
         #[arg(
             long = "reader-mode",
-            value_name = "MODE", 
+            value_name = "MODE",
             ignore_case = true,
             help = "RDF Reader mode",
             default_value_t = RDFReaderMode::default(),
@@ -569,7 +547,7 @@ pub enum Command {
         #[arg(
             short = 'r',
             long = "result-format",
-            value_name = "FORMAT", 
+            value_name = "FORMAT",
             ignore_case = true,
             help = "Ouput result format",
             default_value_t = ResultShExValidationFormat::default()
@@ -585,12 +563,7 @@ pub enum Command {
         output: Option<PathBuf>,
 
         /// Config file path, if unset it assumes default config
-        #[arg(
-            short = 'c',
-            long = "config-file",
-            value_name = "FILE",
-            help = "Config file name"
-        )]
+        #[arg(short = 'c', long = "config-file", value_name = "FILE", help = "Config file name")]
         config: Option<PathBuf>,
 
         #[arg(
@@ -609,7 +582,7 @@ pub enum Command {
         #[arg(
             short = 't',
             long = "data-format",
-            value_name = "FORMAT", 
+            value_name = "FORMAT",
             ignore_case = true,
             help= "RDF Data format",
             default_value_t = DataFormat::Turtle
@@ -626,7 +599,7 @@ pub enum Command {
         /// RDF Reader mode
         #[arg(
             long = "reader-mode",
-            value_name = "MODE", 
+            value_name = "MODE",
             ignore_case = true,
             help = "RDF Reader mode",
             default_value_t = RDFReaderMode::default(),
@@ -670,7 +643,7 @@ pub enum Command {
         #[arg(
             short = 'm',
             long = "mode",
-            value_name = "MODE", 
+            value_name = "MODE",
             ignore_case = true,
             help = "Execution mode",
             default_value_t = ShaclValidationMode::Native,
@@ -682,7 +655,7 @@ pub enum Command {
             short = 'r',
             long = "result-format",
             ignore_case = true,
-            value_name = "FORMAT", 
+            value_name = "FORMAT",
             help = "Ouput result format",
             default_value_t = ResultShaclValidationFormat::default()
         )]
@@ -714,12 +687,7 @@ pub enum Command {
         force_overwrite: bool,
 
         /// Config file path, if unset it assumes default config
-        #[arg(
-            short = 'c',
-            long = "config-file",
-            value_name = "FILE",
-            help = "Config file name"
-        )]
+        #[arg(short = 'c', long = "config-file", value_name = "FILE", help = "Config file name")]
         config: Option<PathBuf>,
     },
 
@@ -731,7 +699,7 @@ pub enum Command {
         #[arg(
             short = 't',
             long = "data-format",
-            value_name = "FORMAT", 
+            value_name = "FORMAT",
             ignore_case = true,
             help = "RDF Data format",
             default_value_t = DataFormat::Turtle
@@ -744,7 +712,7 @@ pub enum Command {
         /// RDF Reader mode
         #[arg(
             long = "reader-mode",
-            value_name = "MODE", 
+            value_name = "MODE",
             ignore_case = true,
             help = "RDF Reader mode",
             default_value_t = RDFReaderMode::default(),
@@ -756,7 +724,7 @@ pub enum Command {
             short = 'r',
             long = "result-format",
             ignore_case = true,
-            value_name = "FORMAT", 
+            value_name = "FORMAT",
             help = "Ouput result format",
             default_value_t = ResultDataFormat::Turtle
         )]
@@ -771,12 +739,7 @@ pub enum Command {
         output: Option<PathBuf>,
 
         /// Config file path, if unset it assumes default config
-        #[arg(
-            short = 'c',
-            long = "config-file",
-            value_name = "FILE",
-            help = "Config file name"
-        )]
+        #[arg(short = 'c', long = "config-file", value_name = "FILE", help = "Config file name")]
         config: Option<PathBuf>,
 
         #[arg(
@@ -824,7 +787,7 @@ pub enum Command {
         /// RDF Reader mode
         #[arg(
             long = "reader-mode",
-            value_name = "MODE", 
+            value_name = "MODE",
             ignore_case = true,
             help = "RDF Reader mode",
             default_value_t = RDFReaderMode::default(),
@@ -836,7 +799,7 @@ pub enum Command {
             short = 'm',
             long = "show-node-mode",
             ignore_case = true,
-            value_name = "MODE", 
+            value_name = "MODE",
             help = "Mode used to show the node information",
             default_value_t = ShowNodeMode::Outgoing
         )]
@@ -870,12 +833,7 @@ pub enum Command {
         )]
         depth: usize,
 
-        #[arg(
-            short = 'c',
-            long = "config",
-            value_name = "FILE",
-            help = "Path to config file"
-        )]
+        #[arg(short = 'c', long = "config", value_name = "FILE", help = "Path to config file")]
         config: Option<PathBuf>,
 
         #[arg(
@@ -896,7 +854,7 @@ pub enum Command {
             short = 't',
             long = "data-format",
             ignore_case = true,
-            value_name = "FORMAT", 
+            value_name = "FORMAT",
             help = "RDF Data format",
             default_value_t = DataFormat::Turtle
         )]
@@ -905,7 +863,7 @@ pub enum Command {
         /// RDF Reader mode
         #[arg(
             long = "reader-mode",
-            value_name = "MODE", 
+            value_name = "MODE",
             ignore_case = true,
             help = "RDF Reader mode",
             default_value_t = RDFReaderMode::default(),
@@ -956,7 +914,7 @@ pub enum Command {
             short = 'r',
             long = "result-shapes-format",
             ignore_case = true,
-            value_name = "FORMAT", 
+            value_name = "FORMAT",
             help = "Result shapes format",
             default_value_t = CliShaclFormat::Internal
         )]
@@ -978,33 +936,23 @@ pub enum Command {
         force_overwrite: bool,
 
         /// Config file path, if unset it assumes default config
-        #[arg(
-            short = 'c',
-            long = "config-file",
-            value_name = "FILE",
-            help = "Config file name"
-        )]
+        #[arg(short = 'c', long = "config-file", value_name = "FILE", help = "Config file name")]
         config: Option<PathBuf>,
     },
 
     /// Show information and process DCTAP files
     #[command(name = "dctap")]
     DCTap {
-        #[arg(
-            short = 's',
-            long = "source-file",
-            value_name = "FILE",
-            help = "DCTap source file"
-        )]
+        #[arg(short = 's', long = "source-file", value_name = "FILE", help = "DCTap source file")]
         file: InputSpec,
 
         #[arg(
             short = 'f',
             long = "format",
             ignore_case = true,
-            value_name = "FORMAT", 
+            value_name = "FORMAT",
             help = "DCTap file format",
-            default_value_t = DCTapFormat::CSV
+            default_value_t = DCTapFormat::Csv
         )]
         format: DCTapFormat,
 
@@ -1012,19 +960,14 @@ pub enum Command {
             short = 'r',
             long = "result-format",
             ignore_case = true,
-            value_name = "FORMAT", 
+            value_name = "FORMAT",
             help = "Ouput results format",
             default_value_t = DCTapResultFormat::Internal
         )]
         result_format: DCTapResultFormat,
 
         /// Config file path, if unset it assumes default config
-        #[arg(
-            short = 'c',
-            long = "config-file",
-            value_name = "FILE",
-            help = "Config file name"
-        )]
+        #[arg(short = 'c', long = "config-file", value_name = "FILE", help = "Config file name")]
         config: Option<PathBuf>,
 
         #[arg(
@@ -1046,12 +989,7 @@ pub enum Command {
     /// Convert between different Data modeling technologies
     #[command(name = "convert")]
     Convert {
-        #[arg(
-            short = 'c',
-            long = "config",
-            value_name = "FILE",
-            help = "Path to config file"
-        )]
+        #[arg(short = 'c', long = "config", value_name = "FILE", help = "Path to config file")]
         config: Option<PathBuf>,
 
         #[arg(
@@ -1082,7 +1020,7 @@ pub enum Command {
             short = 'f',
             long = "format",
             ignore_case = true,
-            value_name = "FORMAT", 
+            value_name = "FORMAT",
             help = "Input file format",
             default_value_t = InputConvertFormat::ShExC
         )]
@@ -1100,7 +1038,7 @@ pub enum Command {
             short = 'r',
             long = "result-format",
             ignore_case = true,
-            value_name = "FORMAT", 
+            value_name = "FORMAT",
             help = "Result format",
             default_value_t = OutputConvertFormat::Default
         )]
@@ -1114,12 +1052,7 @@ pub enum Command {
         )]
         output: Option<PathBuf>,
 
-        #[arg(
-            short = 't',
-            long = "target-folder",
-            value_name = "FOLDER",
-            help = "Target folder"
-        )]
+        #[arg(short = 't', long = "target-folder", value_name = "FOLDER", help = "Target folder")]
         target_folder: Option<PathBuf>,
 
         #[arg(
@@ -1142,7 +1075,7 @@ pub enum Command {
         /// RDF Reader mode
         #[arg(
             long = "reader-mode",
-            value_name = "MODE", 
+            value_name = "MODE",
             ignore_case = true,
             help = "RDF Reader mode",
             default_value_t = RDFReaderMode::default(),
@@ -1166,18 +1099,13 @@ pub enum Command {
     /// Compare two shapes (which can be in different formats)
     #[command(name = "compare")]
     Compare {
-        #[arg(
-            short = 'c',
-            long = "config",
-            value_name = "FILE",
-            help = "Path to config file"
-        )]
+        #[arg(short = 'c', long = "config", value_name = "FILE", help = "Path to config file")]
         config: Option<PathBuf>,
 
-        #[arg(long = "mode1", 
-         value_name = "MODE", 
+        #[arg(long = "mode1",
+         value_name = "MODE",
          ignore_case = true,
-         help = "Input mode first schema", 
+         help = "Input mode first schema",
          default_value_t = InputCompareMode::default())]
         input_mode1: InputCompareMode,
 
@@ -1197,23 +1125,15 @@ pub enum Command {
         )]
         force_overwrite: bool,
 
-        #[arg(
-            long = "schema1",
-            value_name = "INPUT",
-            help = "Schema 1 (URI, file or - for stdin)"
-        )]
+        #[arg(long = "schema1", value_name = "INPUT", help = "Schema 1 (URI, file or - for stdin)")]
         schema1: InputSpec,
 
-        #[arg(
-            long = "schema2",
-            value_name = "INPUT",
-            help = "Schema 2 (URI, file or - for stdin)"
-        )]
+        #[arg(long = "schema2", value_name = "INPUT", help = "Schema 2 (URI, file or - for stdin)")]
         schema2: InputSpec,
 
         #[arg(
             long = "format1",
-            value_name = "FORMAT", 
+            value_name = "FORMAT",
             ignore_case = true,
             help = "File format 1",
             default_value_t = InputCompareFormat::default()
@@ -1222,7 +1142,7 @@ pub enum Command {
 
         #[arg(
             long = "format2",
-            value_name = "FORMAT", 
+            value_name = "FORMAT",
             ignore_case = true,
             help = "File format 2",
             default_value_t = InputCompareFormat::default()
@@ -1238,7 +1158,7 @@ pub enum Command {
         #[arg(
             short = 'r',
             long = "result-format",
-            value_name = "FORMAT", 
+            value_name = "FORMAT",
             ignore_case = true,
             help = "Result format",
             default_value_t = ResultCompareFormat::default()
@@ -1253,32 +1173,19 @@ pub enum Command {
         )]
         output: Option<PathBuf>,
 
-        #[arg(
-            short = 't',
-            long = "target-folder",
-            value_name = "FOLDER",
-            help = "Target folder"
-        )]
+        #[arg(short = 't', long = "target-folder", value_name = "FOLDER", help = "Target folder")]
         target_folder: Option<PathBuf>,
 
-        #[arg(
-            long = "shape1",
-            value_name = "LABEL",
-            help = "shape1 (default = START)"
-        )]
+        #[arg(long = "shape1", value_name = "LABEL", help = "shape1 (default = START)")]
         shape1: Option<String>,
 
-        #[arg(
-            long = "shape2",
-            value_name = "LABEL",
-            help = "shape2 (default = START)"
-        )]
+        #[arg(long = "shape2", value_name = "LABEL", help = "shape2 (default = START)")]
         shape2: Option<String>,
 
         /// RDF Reader mode
         #[arg(
             long = "reader-mode",
-            value_name = "MODE", 
+            value_name = "MODE",
             ignore_case = true,
             help = "RDF Reader mode",
             default_value_t = RDFReaderMode::default(),
@@ -1303,7 +1210,7 @@ pub enum Command {
         #[arg(
             short = 'r',
             long = "result-format",
-            value_name = "FORMAT", 
+            value_name = "FORMAT",
             ignore_case = true,
             help = "Output result rdf-config format",
             default_value_t = RdfConfigResultFormat::default()
@@ -1337,23 +1244,13 @@ pub enum Command {
         force_overwrite: bool,
 
         /// Config file path, if unset it assumes default config
-        #[arg(
-            short = 'c',
-            long = "config-file",
-            value_name = "FILE",
-            help = "Config file name"
-        )]
+        #[arg(short = 'c', long = "config-file", value_name = "FILE", help = "Config file name")]
         config: Option<PathBuf>,
     },
 
     /// Show information about SPARQL service
     Service {
-        #[arg(
-            short = 's',
-            long = "service",
-            value_name = "URL",
-            help = "SPARQL service URL"
-        )]
+        #[arg(short = 's', long = "service", value_name = "URL", help = "SPARQL service URL")]
         service: InputSpec,
 
         #[arg(
@@ -1378,16 +1275,16 @@ pub enum Command {
             short = 'r',
             long = "result-format",
             ignore_case = true,
-            value_name = "FORMAT", 
+            value_name = "FORMAT",
             help = "Output result service format",
-            default_value_t = ResultServiceFormat::JSON
+            default_value_t = ResultServiceFormat::Json
         )]
         result_service_format: ResultServiceFormat,
 
         /// RDF Reader mode
         #[arg(
             long = "reader-mode",
-            value_name = "MODE", 
+            value_name = "MODE",
             help = "RDF Reader mode",
             default_value_t = RDFReaderMode::default(),
             value_enum
@@ -1395,12 +1292,7 @@ pub enum Command {
         reader_mode: RDFReaderMode,
 
         /// Config file path, if unset it assumes default config
-        #[arg(
-            short = 'c',
-            long = "config-file",
-            value_name = "FILE",
-            help = "Config file name"
-        )]
+        #[arg(short = 'c', long = "config-file", value_name = "FILE", help = "Config file name")]
         config: Option<PathBuf>,
 
         #[arg(
@@ -1437,10 +1329,10 @@ pub enum Command {
         )]
         base: Option<IriS>,
 
-        #[arg(long = "query-type", 
-            value_name = "TYPE", 
+        #[arg(long = "query-type",
+            value_name = "TYPE",
             ignore_case = true,
-            help = "Query type (SELECT, ASK, CONSTRUCT, DESCRIBE)", 
+            help = "Query type (SELECT, ASK, CONSTRUCT, DESCRIBE)",
             default_value_t = QueryType::Select,
             value_enum
         )]
@@ -1449,7 +1341,7 @@ pub enum Command {
         /// RDF Reader mode
         #[arg(
             long = "reader-mode",
-            value_name = "MODE", 
+            value_name = "MODE",
             ignore_case = true,
             help = "RDF Reader mode",
             default_value_t = RDFReaderMode::default(),
@@ -1457,12 +1349,7 @@ pub enum Command {
         )]
         reader_mode: RDFReaderMode,
 
-        #[arg(
-            short = 'q',
-            long = "query",
-            value_name = "INPUT",
-            help = "SPARQL query"
-        )]
+        #[arg(short = 'q', long = "query", value_name = "INPUT", help = "SPARQL query")]
         query: InputSpec,
 
         #[arg(
@@ -1485,19 +1372,14 @@ pub enum Command {
             short = 'r',
             long = "result-format",
             ignore_case = true,
-            value_name = "FORMAT", 
+            value_name = "FORMAT",
             help = "Result query format",
             default_value_t = ResultQueryFormat::Internal
         )]
         result_query_format: ResultQueryFormat,
 
         /// Config file path, if unset it assumes default config
-        #[arg(
-            short = 'c',
-            long = "config-file",
-            value_name = "FILE",
-            help = "Config file name"
-        )]
+        #[arg(short = 'c', long = "config-file", value_name = "FILE", help = "Config file name")]
         config: Option<PathBuf>,
 
         #[arg(
@@ -1511,11 +1393,7 @@ pub enum Command {
 
     /// Generate synthetic RDF data from ShEx or SHACL schemas
     Generate {
-        #[arg(
-            short = 's',
-            long = "schema",
-            value_name = "Schema file (ShEx or SHACL)"
-        )]
+        #[arg(short = 's', long = "schema", value_name = "Schema file (ShEx or SHACL)")]
         schema: InputSpec,
 
         #[arg(
@@ -1554,18 +1432,10 @@ pub enum Command {
         #[arg(long = "seed", value_name = "Random seed for reproducible generation")]
         seed: Option<u64>,
 
-        #[arg(
-            short = 'p',
-            long = "parallel",
-            value_name = "Number of parallel threads"
-        )]
+        #[arg(short = 'p', long = "parallel", value_name = "Number of parallel threads")]
         parallel: Option<usize>,
 
-        #[arg(
-            short = 'c',
-            long = "config",
-            value_name = "Configuration file (TOML or JSON)"
-        )]
+        #[arg(short = 'c', long = "config", value_name = "Configuration file (TOML or JSON)")]
         config: Option<PathBuf>,
 
         #[arg(

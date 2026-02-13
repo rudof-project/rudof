@@ -1,4 +1,4 @@
-use crate::{component::Component, message_map::MessageMap, severity::Severity, target::Target, ShaclVocab};
+use crate::{ShaclVocab, component::Component, message_map::MessageMap, severity::Severity, target::Target};
 use iri_s::IriS;
 use srdf::{BuildRDF, RDFNode, Rdf};
 use std::collections::HashSet;
@@ -135,9 +135,7 @@ impl<RDF: Rdf> NodeShape<RDF> {
             .iter()
             .try_for_each(|component| component.write(&self.id, rdf))?;
 
-        self.targets
-            .iter()
-            .try_for_each(|target| target.write(&self.id, rdf))?;
+        self.targets.iter().try_for_each(|target| target.write(&self.id, rdf))?;
 
         self.property_shapes.iter().try_for_each(|property_shape| {
             rdf.add_triple(id.clone(), ShaclVocab::sh_property().clone(), property_shape.clone())
@@ -154,7 +152,7 @@ impl<RDF: Rdf> NodeShape<RDF> {
                 Severity::Violation => ShaclVocab::sh_violation(),
                 Severity::Info => ShaclVocab::sh_info(),
                 Severity::Warning => ShaclVocab::sh_warning(),
-                Severity::Generic(iri) => &iri.get_iri().unwrap(),
+                Severity::Generic(iri) => iri.get_iri().unwrap(),
             };
 
             rdf.add_triple(id.clone(), ShaclVocab::sh_severity().clone(), pred.clone())?;

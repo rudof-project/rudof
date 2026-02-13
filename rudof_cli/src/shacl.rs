@@ -1,19 +1,19 @@
 use std::path::PathBuf;
 
 use iri_s::IriS;
-use rudof_lib::data::get_base;
-use rudof_lib::data::get_data_rudof;
-use rudof_lib::data_format::DataFormat;
 use rudof_lib::InputSpec;
 use rudof_lib::Rudof;
 use rudof_lib::RudofConfig;
 use rudof_lib::ShaclValidationMode;
 use rudof_lib::ShapesGraphSource;
+use rudof_lib::data::get_base;
+use rudof_lib::data::get_data_rudof;
+use rudof_lib::data_format::DataFormat;
 use srdf::ReaderMode;
+use tracing::Level;
 use tracing::debug;
 use tracing::enabled;
 use tracing::trace;
-use tracing::Level;
 
 use crate::writer::get_writer;
 use anyhow::Result;
@@ -53,14 +53,7 @@ pub fn run_shacl(
     )?;
     if let Some(schema) = schema {
         let shapes_format = (*shapes_format).unwrap_or_default();
-        add_shacl_schema_rudof(
-            &mut rudof,
-            schema,
-            &shapes_format,
-            base_shapes,
-            reader_mode,
-            config,
-        )?;
+        add_shacl_schema_rudof(&mut rudof, schema, &shapes_format, base_shapes, reader_mode, config)?;
         trace!("Compiling SHACL schema from shapes graph");
         rudof.compile_shacl(&ShapesGraphSource::current_schema())
     } else {
@@ -140,14 +133,7 @@ pub fn run_validate_shacl(
 
     let validation_report = if let Some(schema) = schema {
         let shapes_format = (*shapes_format).unwrap_or_default();
-        add_shacl_schema_rudof(
-            &mut rudof,
-            schema,
-            &shapes_format,
-            base_shapes,
-            reader_mode,
-            config,
-        )?;
+        add_shacl_schema_rudof(&mut rudof, schema, &shapes_format, base_shapes, reader_mode, config)?;
         rudof.validate_shacl(&mode, &ShapesGraphSource::current_schema())
     } else {
         rudof.validate_shacl(&mode, &ShapesGraphSource::current_data())

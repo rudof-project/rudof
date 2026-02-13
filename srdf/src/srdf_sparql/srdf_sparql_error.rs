@@ -21,9 +21,7 @@ pub enum SRDFSparqlError {
     URLParseError { e: url::ParseError },
 
     #[error("SPARQL Results parser: {e:?}")]
-    SPAResults {
-        e: sparesults::QueryResultsParseError,
-    },
+    SPAResults { e: sparesults::QueryResultsParseError },
 
     #[error(transparent)]
     IriParseError {
@@ -57,6 +55,10 @@ pub enum SRDFSparqlError {
         #[from]
         err: IriSError,
     },
+
+    #[cfg(target_family = "wasm")]
+    #[error("Function not supported for WASM: {fn_name}")]
+    WASMError { fn_name: String },
 }
 
 impl From<reqwest::Error> for SRDFSparqlError {

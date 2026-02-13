@@ -85,17 +85,14 @@ where
             let mut map = serializer.serialize_map(Some(1))?;
             map.serialize_entry("pattern", str)?;
             map.end()
-        }
+        },
         // str.serialize(serializer),
-        Pattern {
-            str,
-            flags: Some(fs),
-        } => {
+        Pattern { str, flags: Some(fs) } => {
             let mut map = serializer.serialize_map(Some(2))?;
             map.serialize_entry("pattern", str)?;
             map.serialize_entry("flags", fs)?;
             map.end()
-        }
+        },
     }
 }
 

@@ -1,5 +1,5 @@
-use iri_s::error::IriSError;
 use iri_s::IriS;
+use iri_s::error::IriSError;
 use shex_ast::{ShapeExpr, ShapeExprLabel};
 use thiserror::Error;
 
@@ -11,9 +11,7 @@ pub enum SchemaWithoutImportsError {
         local: String,
         error: String,
     },
-    #[error(
-        "Obtaining schema from IRI {iri}. Tried to parse this list of formats: {formats} but they failed"
-    )]
+    #[error("Obtaining schema from IRI {iri}. Tried to parse this list of formats: {formats} but they failed")]
     SchemaFromIriRotatingFormats { iri: IriS, formats: String },
 
     #[error("Dereferencing IRI {iri}. Error: {error}")]

@@ -2,8 +2,8 @@ use crate::async_srdf::AsyncSRDF;
 use crate::matcher::Matcher;
 use crate::srdfgraph_error::SRDFGraphError;
 use crate::{
-    BuildRDF, FocusRDF, NeighsRDF, QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions,
-    RDF_TYPE_STR, RDFFormat, Rdf, VarName,
+    BuildRDF, FocusRDF, NeighsRDF, QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions, RDF_TYPE_STR, RDFFormat,
+    Rdf, VarName,
 };
 use async_trait::async_trait;
 use colored::*;
@@ -12,17 +12,17 @@ use oxigraph::sparql::{QueryResults, SparqlEvaluator};
 use oxigraph::store::Store;
 use oxjsonld::JsonLdParser;
 use oxrdf::{
-    BlankNode as OxBlankNode, Graph, GraphName, Literal as OxLiteral, NamedNode as OxNamedNode,
-    NamedNodeRef, NamedOrBlankNode as OxSubject, NamedOrBlankNodeRef as OxSubjectRef, Quad,
-    Term as OxTerm, TermRef, Triple as OxTriple, TripleRef,
+    BlankNode as OxBlankNode, Graph, GraphName, Literal as OxLiteral, NamedNode as OxNamedNode, NamedNodeRef,
+    NamedOrBlankNode as OxSubject, NamedOrBlankNodeRef as OxSubjectRef, Quad, Term as OxTerm, TermRef,
+    Triple as OxTriple, TripleRef,
 };
 use oxrdfio::{JsonLdProfileSet, RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
 use prefixmap::error::PrefixMapError;
 use prefixmap::map::*;
-use serde::ser::SerializeStruct;
 use serde::Serialize;
+use serde::ser::SerializeStruct;
 use sparesults::QuerySolution as SparQuerySolution;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
@@ -76,9 +76,7 @@ impl SRDFGraph {
 
     pub fn quads(&self) -> impl Iterator<Item = Quad> + '_ {
         let graph_name = GraphName::DefaultGraph;
-        self.graph
-            .iter()
-            .map(move |t| triple_to_quad(t, graph_name.clone()))
+        self.graph.iter().map(move |t| triple_to_quad(t, graph_name.clone()))
     }
 
     pub fn is_empty(&self) -> bool {
@@ -119,7 +117,7 @@ impl SRDFGraph {
                                 debug!("Turtle Error captured in Lax mode: {e:?}");
                                 continue;
                             }
-                        }
+                        },
                         Ok(t) => t,
                     };
                     self.graph.insert(triple.as_ref());
@@ -132,7 +130,7 @@ impl SRDFGraph {
                 };
                 let pm = PrefixMap::from_hashmap(prefixes)?;
                 self.merge_prefixes(pm)?;
-            }
+            },
             RDFFormat::NTriples => {
                 let parser = NTriplesParser::new();
                 let mut reader = parser.for_reader(reader);
@@ -147,14 +145,14 @@ impl SRDFGraph {
                             } else {
                                 debug!("Error captured: {e:?}")
                             }
-                        }
+                        },
                         Ok(t) => {
                             self.graph.insert(t.as_ref());
-                        }
+                        },
                     }
                 }
-            }
-            RDFFormat::RDFXML => {
+            },
+            RDFFormat::RdfXml => {
                 let parser = RdfXmlParser::new();
                 let mut reader = parser.for_reader(reader);
                 for triple_result in reader.by_ref() {
@@ -168,14 +166,14 @@ impl SRDFGraph {
                             } else {
                                 debug!("Error captured: {e:?}")
                             }
-                        }
+                        },
                         Ok(t) => {
                             let triple_ref = cnv_triple(&t);
                             self.graph.insert(triple_ref);
-                        }
+                        },
                     }
                 }
-            }
+            },
             RDFFormat::TriG => todo!(),
             RDFFormat::N3 => todo!(),
             RDFFormat::NQuads => {
@@ -192,13 +190,13 @@ impl SRDFGraph {
                             } else {
                                 debug!("NQuads Error captured in Lax mode: {e:?}")
                             }
-                        }
+                        },
                         Ok(t) => {
                             self.graph.insert(t.as_ref());
-                        }
+                        },
                     }
                 }
-            }
+            },
             RDFFormat::JsonLd => {
                 let parser = JsonLdParser::new();
                 let mut reader = parser.for_reader(reader);
@@ -213,13 +211,13 @@ impl SRDFGraph {
                             } else {
                                 debug!("JSON-LD Error captured in Lax mode: {e:?}")
                             }
-                        }
+                        },
                         Ok(t) => {
                             self.graph.insert(t.as_ref());
-                        }
+                        },
                     }
                 }
-            }
+            },
         }
         Ok(())
     }
@@ -263,25 +261,14 @@ impl SRDFGraph {
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<SRDFGraph, SRDFGraphError> {
-        Self::from_reader(
-            &mut Cursor::new(&data),
-            "String",
-            format,
-            base,
-            reader_mode,
-        )
+        Self::from_reader(&mut Cursor::new(&data), "String", format, base, reader_mode)
     }
 
     fn cnv_iri(iri: IriS) -> OxNamedNode {
         OxNamedNode::new_unchecked(iri.as_str())
     }
 
-    pub fn add_triple_ref<'a, S, P, O>(
-        &mut self,
-        subj: S,
-        pred: P,
-        obj: O,
-    ) -> Result<(), SRDFGraphError>
+    pub fn add_triple_ref<'a, S, P, O>(&mut self, subj: S, pred: P, obj: O) -> Result<(), SRDFGraphError>
     where
         S: Into<OxSubjectRef<'a>>,
         P: Into<NamedNodeRef<'a>>,
@@ -417,10 +404,7 @@ impl NeighsRDF for SRDFGraph {
     {
         // TODO: Implement this function in a way that it does not retrieve all triples
         let triples = self.triples()?.filter_map(move |triple| {
-            match subject == triple.subject
-                && predicate == triple.predicate
-                && object == triple.object
-            {
+            match subject == triple.subject && predicate == triple.predicate && object == triple.object {
                 true => Some(triple),
                 false => None,
             }
@@ -429,10 +413,7 @@ impl NeighsRDF for SRDFGraph {
     }
 
     // Optimized version for triples with a specific subject
-    fn triples_with_subject(
-        &self,
-        subject: Self::Subject,
-    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
+    fn triples_with_subject(&self, subject: Self::Subject) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
         // Collect the triples into a Vec to avoid the lifetime dependency on subject
         let triples: Vec<_> = self
             .graph
@@ -452,10 +433,7 @@ impl AsyncSRDF for SRDFGraph {
     type Term = OxTerm;
     type Err = SRDFGraphError;
 
-    async fn get_predicates_subject(
-        &self,
-        subject: &OxSubject,
-    ) -> Result<HashSet<OxNamedNode>, SRDFGraphError> {
+    async fn get_predicates_subject(&self, subject: &OxSubject) -> Result<HashSet<OxNamedNode>, SRDFGraphError> {
         let mut results = HashSet::new();
         for triple in self.graph.triples_for_subject(subject) {
             let predicate: OxNamedNode = triple.predicate.to_owned().into();
@@ -598,7 +576,7 @@ fn cnv_rdf_format(rdf_format: &RDFFormat) -> RdfFormat {
     match rdf_format {
         RDFFormat::NTriples => RdfFormat::NTriples,
         RDFFormat::Turtle => RdfFormat::Turtle,
-        RDFFormat::RDFXML => RdfFormat::RdfXml,
+        RDFFormat::RdfXml => RdfFormat::RdfXml,
         RDFFormat::TriG => RdfFormat::TriG,
         RDFFormat::N3 => RdfFormat::N3,
         RDFFormat::NQuads => RdfFormat::NQuads,
@@ -665,36 +643,33 @@ impl QueryRDF for SRDFGraph {
         if let Some(store) = &self.store {
             trace!("Querying in-memory store");
 
-            let parsed_query = SparqlEvaluator::new().parse_query(query_str).map_err(|e| {
-                SRDFGraphError::ParsingQueryError {
-                    msg: format!("Error parsing query: {}", e),
-                }
-            })?;
-            let new_sol = parsed_query.on_store(store).execute().map_err(|e| {
-                SRDFGraphError::RunningQueryError {
+            let parsed_query =
+                SparqlEvaluator::new()
+                    .parse_query(query_str)
+                    .map_err(|e| SRDFGraphError::ParsingQueryError {
+                        msg: format!("Error parsing query: {}", e),
+                    })?;
+            let new_sol = parsed_query
+                .on_store(store)
+                .execute()
+                .map_err(|e| SRDFGraphError::RunningQueryError {
                     query: query_str.to_string(),
                     msg: format!("Error executing query: {}", e),
-                }
-            })?;
+                })?;
             trace!("Got results from in-memory store");
             let sol = cnv_query_results(new_sol)?;
-            sols.extend(sol, self.prefixmap()).map_err(|e| {
-                SRDFGraphError::ExtendingQuerySolutionsError {
+            sols.extend(sol, self.prefixmap())
+                .map_err(|e| SRDFGraphError::ExtendingQuerySolutionsError {
                     query: query_str.to_string(),
                     error: format!("{e}"),
-                }
-            })?;
+                })?;
         } else {
             trace!("No in-memory store to query");
         }
         Ok(sols)
     }
 
-    fn query_construct(
-        &self,
-        _query_str: &str,
-        _format: &QueryResultFormat,
-    ) -> Result<String, SRDFGraphError>
+    fn query_construct(&self, _query_str: &str, _format: &QueryResultFormat) -> Result<String, SRDFGraphError>
     where
         Self: Sized,
     {
@@ -710,9 +685,7 @@ impl QueryRDF for SRDFGraph {
     }
 }
 
-fn cnv_query_results(
-    query_results: QueryResults,
-) -> Result<Vec<QuerySolution<SRDFGraph>>, SRDFGraphError> {
+fn cnv_query_results(query_results: QueryResults) -> Result<Vec<QuerySolution<SRDFGraph>>, SRDFGraphError> {
     let mut results = Vec::new();
     if let QueryResults::Solutions(solutions) = query_results {
         trace!("Converting query solutions");
@@ -961,18 +934,15 @@ mod tests {
     fn test_rdf_list() {
         let graph = graph_from_str(DUMMY_GRAPH_2);
 
-        let x = OxNamedNode::new_unchecked("https://example.org/x").into();
-        let p = OxNamedNode::new_unchecked("https://example.org/p").into();
+        let x = OxNamedNode::new_unchecked("http://example.org/x").into();
+        let p = OxNamedNode::new_unchecked("http://example.org/p").into();
 
         let mut parser = property_value(p).then(move |obj| set_focus(&obj).with(rdf_list()));
         let result: Vec<OxTerm> = parser.parse(&x, graph).unwrap();
 
         assert_eq!(
             result,
-            vec![
-                OxTerm::from(OxLiteral::from(1)),
-                OxTerm::from(OxLiteral::from(2))
-            ]
+            vec![OxTerm::from(OxLiteral::from(1)), OxTerm::from(OxLiteral::from(2))]
         )
     }
 
@@ -993,8 +963,8 @@ mod tests {
     #[test]
     fn test_parser_property_integers() {
         let graph = graph_from_str(DUMMY_GRAPH_3);
-        let x = OxNamedNode::new_unchecked("https://example.org/x").into();
-        let p = OxNamedNode::new_unchecked("https://example.org/p").into();
+        let x = OxNamedNode::new_unchecked("http://example.org/x").into();
+        let p = OxNamedNode::new_unchecked("http://example.org/p").into();
         let mut parser = property_integers(p);
         assert_eq!(parser.parse(&x, graph).unwrap(), HashSet::from([1, 2, 3]))
     }
@@ -1020,9 +990,9 @@ mod tests {
     #[test]
     fn test_parser_or() {
         let graph = graph_from_str(DUMMY_GRAPH_5);
-        let x = OxNamedNode::new_unchecked("https://example.org/x").into();
-        let p = OxNamedNode::new_unchecked("https://example.org/p").into();
-        let q = OxNamedNode::new_unchecked("https://example.org/q").into();
+        let x = OxNamedNode::new_unchecked("http://example.org/x").into();
+        let p = OxNamedNode::new_unchecked("http://example.org/p").into();
+        let q = OxNamedNode::new_unchecked("http://example.org/q").into();
         let mut parser = property_bool(p).or(property_bool(q));
         assert!(parser.parse(&x, graph).unwrap())
     }
@@ -1030,8 +1000,8 @@ mod tests {
     #[test]
     fn test_parser_or_enum_1() {
         let graph = graph_from_str(DUMMY_GRAPH_6);
-        let x: IriS = OxNamedNode::new_unchecked("https://example.org/x").into();
-        let p: IriS = OxNamedNode::new_unchecked("https://example.org/p").into();
+        let x: IriS = OxNamedNode::new_unchecked("http://example.org/x").into();
+        let p: IriS = OxNamedNode::new_unchecked("http://example.org/p").into();
         let parser_a_bool = property_bool(p.clone()).map(A::Bool);
         let parser_a_int = property_integer(p).map(A::Int);
         let mut parser = parser_a_int.or(parser_a_bool);
@@ -1041,8 +1011,8 @@ mod tests {
     #[test]
     fn test_parser_or_enum_2() {
         let graph = graph_from_str(DUMMY_GRAPH_7);
-        let x: IriS = OxNamedNode::new_unchecked("https://example.org/x").into();
-        let p: IriS = OxNamedNode::new_unchecked("https://example.org/p").into();
+        let x: IriS = OxNamedNode::new_unchecked("http://example.org/x").into();
+        let p: IriS = OxNamedNode::new_unchecked("http://example.org/p").into();
         let parser_a_bool = property_bool(p.clone()).map(A::Bool);
         let parser_a_int = property_integer(p).map(A::Int);
         let mut parser = parser_a_int.or(parser_a_bool);
@@ -1052,9 +1022,9 @@ mod tests {
     #[test]
     fn test_parser_and() {
         let graph = graph_from_str(DUMMY_GRAPH_8);
-        let x: IriS = OxNamedNode::new_unchecked("https://example.org/x").into();
-        let p: IriS = OxNamedNode::new_unchecked("https://example.org/p").into();
-        let q: IriS = OxNamedNode::new_unchecked("https://example.org/q").into();
+        let x: IriS = OxNamedNode::new_unchecked("http://example.org/x").into();
+        let p: IriS = OxNamedNode::new_unchecked("http://example.org/p").into();
+        let q: IriS = OxNamedNode::new_unchecked("http://example.org/q").into();
         let mut parser = property_bool(p).and(property_integer(q));
         assert_eq!(parser.parse(&x, graph).unwrap(), (true, 1))
     }
@@ -1062,8 +1032,8 @@ mod tests {
     #[test]
     fn test_parser_map() {
         let graph = graph_from_str(DUMMY_GRAPH_9);
-        let x: IriS = OxNamedNode::new_unchecked("https://example.org/x").into();
-        let p: IriS = OxNamedNode::new_unchecked("https://example.org/p").into();
+        let x: IriS = OxNamedNode::new_unchecked("http://example.org/x").into();
+        let p: IriS = OxNamedNode::new_unchecked("http://example.org/p").into();
         let mut parser = property_integer(p).map(|n| n + 1);
         assert_eq!(parser.parse(&x, graph).unwrap(), 2)
     }
@@ -1071,8 +1041,8 @@ mod tests {
     #[test]
     fn test_parser_and_then() {
         let graph = graph_from_str(DUMMY_GRAPH_10);
-        let x = OxNamedNode::new_unchecked("https://example.org/x").into();
-        let p = OxNamedNode::new_unchecked("https://example.org/p").into();
+        let x = OxNamedNode::new_unchecked("http://example.org/x").into();
+        let p = OxNamedNode::new_unchecked("http://example.org/p").into();
 
         struct IntConversionError(String);
 
@@ -1095,8 +1065,8 @@ mod tests {
     #[test]
     fn test_parser_flat_map() {
         let graph = graph_from_str(DUMMY_GRAPH_10);
-        let x = OxNamedNode::new_unchecked("https://example.org/x").into();
-        let p = OxNamedNode::new_unchecked("https://example.org/p").into();
+        let x = OxNamedNode::new_unchecked("http://example.org/x").into();
+        let p = OxNamedNode::new_unchecked("http://example.org/p").into();
 
         fn cnv_int(s: String) -> PResult<isize> {
             s.parse().map_err(|_| RDFParseError::Custom {
@@ -1120,7 +1090,7 @@ mod tests {
         }
 
         let graph = graph_from_str(DUMMY_GRAPH_9);
-        let x = OxNamedNode::new_unchecked("https://example.org/x");
+        let x = OxNamedNode::new_unchecked("http://example.org/x");
         let iri_s: IriS = x.into();
         let term = iri_s.clone().into();
         let mut parser = is_term(&term);
@@ -1131,15 +1101,15 @@ mod tests {
     #[test]
     fn test_not() {
         let graph = graph_from_str(DUMMY_GRAPH_9);
-        let x: IriS = OxNamedNode::new_unchecked("https://example.org/x").into();
-        let q: IriS = OxNamedNode::new_unchecked("https://example.org/q").into();
+        let x: IriS = OxNamedNode::new_unchecked("http://example.org/x").into();
+        let q: IriS = OxNamedNode::new_unchecked("http://example.org/q").into();
         assert!(not(property_value(q)).parse(&x, graph).is_ok())
     }
 
     #[test]
     fn test_iri() {
         let graph = SRDFGraph::default();
-        let x = OxNamedNode::new_unchecked("https://example.org/x");
+        let x = OxNamedNode::new_unchecked("http://example.org/x");
         let x_iri = x.clone().into();
         assert_eq!(iri().parse(&x_iri, graph).unwrap(), x)
     }
@@ -1147,9 +1117,9 @@ mod tests {
     #[test]
     fn test_add_triple_ref() {
         let mut graph = SRDFGraph::default();
-        let s = OxNamedNode::new_unchecked("https://example.org/x");
-        let p = OxNamedNode::new_unchecked("https://example.org/p");
-        let o = OxNamedNode::new_unchecked("https://example.org/y");
+        let s = OxNamedNode::new_unchecked("http://example.org/x");
+        let p = OxNamedNode::new_unchecked("http://example.org/p");
+        let o = OxNamedNode::new_unchecked("http://example.org/y");
         graph.add_triple_ref(&s, &p, &o).unwrap();
         assert_eq!(graph.len(), 1);
     }

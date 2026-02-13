@@ -1,6 +1,6 @@
 [package]
 name = "pgschema"
-version = "0.1.145"
+version = "0.1.147"
 edition = "2024"
 license = "MIT"
 description = "Prototype for PG-SChema with property constraints"
@@ -17,7 +17,6 @@ categories = [
 [dependencies]
 anyhow.workspace = true
 clap.workspace = true
-clientele.workspace = true
 colored.workspace = true
 csv.workspace = true
 either.workspace = true
@@ -30,6 +29,12 @@ text-diff = "0.4.0"
 thiserror.workspace = true
 time.workspace = true
 tracing = "0.1"
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+clientele = { workspace = true, default-features = false, features = ["dotenv", "std"] }
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+clientele.workspace = true
 
 [dev-dependencies]
 tracing-test = "0.2"

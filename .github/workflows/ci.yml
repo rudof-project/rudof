@@ -13,7 +13,7 @@ on:
       - "**/README*"
       - "**/CHANGELOG*"
       - "**/.dockerignore"
-      - "**/Dockerfile"
+      - "**/Dockerfile*"
       - "**/*.md"
       - .readthedocs.yml
   pull_request:
@@ -25,7 +25,7 @@ on:
       - "**/README*"
       - "**/CHANGELOG*"
       - "**/.dockerignore"
-      - "**/Dockerfile"
+      - "**/Dockerfile*"
       - "**/*.md"
       - .readthedocs.yml
 
@@ -63,6 +63,11 @@ jobs:
           override: true
           components: rustfmt
       - uses: Swatinem/rust-cache@v2
+      - name: Run cargo build
+        uses: actions-rs/cargo@v1
+        continue-on-error: false
+        with:
+          command: build
       - name: Check formatting
         uses: actions-rs/cargo@v1
         with:
@@ -109,3 +114,4 @@ jobs:
         continue-on-error: false
         with:
           command: test
+          args: --workspace

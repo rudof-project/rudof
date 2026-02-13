@@ -1,6 +1,6 @@
 [package]
 name = "rudof_cli"
-version = "0.1.146"
+version = "0.1.147"
 authors.workspace = true
 description.workspace = true
 documentation = "https://rudof-project.github.io/rudof"
@@ -17,7 +17,6 @@ name = "rudof"
 anyhow.workspace = true
 clap.workspace = true
 clientele.workspace = true
-crossterm.workspace = true
 dctap.workspace = true
 iri_s.workspace = true
 oxrdf.workspace = true

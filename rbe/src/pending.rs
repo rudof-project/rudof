@@ -59,7 +59,7 @@ where
                 Entry::Occupied(mut v) => v.get_mut().extend(vs),
                 Entry::Vacant(vacant) => {
                     vacant.insert(vs);
-                }
+                },
             }
         }
     }
@@ -68,10 +68,10 @@ where
         match self.pending_map.entry(v) {
             Entry::Occupied(mut v) => {
                 v.get_mut().insert(r);
-            }
+            },
             Entry::Vacant(vacant) => {
                 vacant.insert(IndexSet::from([r]));
-            }
+            },
         }
     }
 
@@ -79,10 +79,10 @@ where
         match self.pending_map.entry(v) {
             Entry::Occupied(mut v) => {
                 v.get_mut().extend(iter);
-            }
+            },
             Entry::Vacant(vacant) => {
                 vacant.insert(IndexSet::from_iter(iter));
-            }
+            },
         }
     }
 
@@ -96,9 +96,7 @@ where
         self.pending_map.is_empty()
     }
 
-    pub fn from<T: IntoIterator<Item = (V, RS)>, RS: IntoIterator<Item = R>>(
-        iter: T,
-    ) -> Pending<V, R> {
+    pub fn from<T: IntoIterator<Item = (V, RS)>, RS: IntoIterator<Item = R>>(iter: T) -> Pending<V, R> {
         let mut result = Pending::new();
         for (v, rs) in iter {
             result.insert_values(v, rs)
@@ -126,14 +124,14 @@ where
                             self.pending_map.swap_remove(&v);
                         }
                         Some((v.clone(), r.clone()))
-                    }
+                    },
                     None => {
                         panic!("Internal error in penidng map: Cannot pop from value {v:?}");
-                    }
+                    },
                 },
                 None => {
                     panic!("Internal error in pending map: Key {v:?} without value?");
-                }
+                },
             },
             None => None,
         }
@@ -161,7 +159,7 @@ where
                 Some((v, rs)) => {
                     self.current_state = Some((v, rs.into_iter()));
                     self.next()
-                }
+                },
             },
             Some((v, it)) => match it.next() {
                 None => {
@@ -171,9 +169,9 @@ where
                         Some((v, rs)) => {
                             self.current_state = Some((v, rs.iter()));
                             self.next()
-                        }
+                        },
                     }
-                }
+                },
                 Some(r) => Some((v, r)),
             },
         }
@@ -214,11 +212,7 @@ mod tests {
     fn test_pending_merge() {
         let mut pending1 = Pending::from(vec![('a', vec![1, 2]), ('b', vec![3])]);
         let pending2 = Pending::from(vec![('a', vec![3, 4]), ('c', vec![4])]);
-        let expected = Pending::from(vec![
-            ('a', vec![1, 2, 3, 4]),
-            ('c', vec![4]),
-            ('b', vec![3]),
-        ]);
+        let expected = Pending::from(vec![('a', vec![1, 2, 3, 4]), ('c', vec![4]), ('b', vec![3])]);
 
         pending1.merge(pending2);
         assert_eq!(pending1, expected);

@@ -56,14 +56,14 @@ impl ValidationStatus {
                     "reason": conformant_info.reason(),
                     "info": conformant_info.app_info()
                 })
-            }
+            },
             ValidationStatus::NonConformant(non_conformant_info) => {
                 serde_json::json!({
                     "status": "nonconformant",
                     "reason": non_conformant_info.reason(),
                     "info": non_conformant_info.app_info()
                 })
-            }
+            },
             ValidationStatus::Pending => serde_json::json!({ "status": "pending" }),
             ValidationStatus::Inconsistent(conformant, non_conformant) => {
                 serde_json::json!({
@@ -71,16 +71,14 @@ impl ValidationStatus {
                     "conformant": conformant.app_info(),
                     "non_conformant": non_conformant.app_info()
                 })
-            }
+            },
         }
     }
 
     pub fn reason(&self) -> String {
         match self {
             ValidationStatus::Conformant(conformant_info) => conformant_info.reason().to_string(),
-            ValidationStatus::NonConformant(non_conformant_info) => {
-                non_conformant_info.reason().to_string()
-            }
+            ValidationStatus::NonConformant(non_conformant_info) => non_conformant_info.reason().to_string(),
             ValidationStatus::Pending => "Pending".to_string(),
             ValidationStatus::Inconsistent(conformant, non_conformant) => {
                 format!(
@@ -88,7 +86,7 @@ impl ValidationStatus {
                     conformant.reason(),
                     non_conformant.reason()
                 )
-            }
+            },
         }
     }
 }
@@ -98,19 +96,19 @@ impl Display for ValidationStatus {
         match self {
             ValidationStatus::Conformant(conformant_info) => {
                 write!(f, "Conformant, reason: {conformant_info}")
-            }
+            },
             ValidationStatus::NonConformant(non_conformant_info) => {
                 write!(f, "Non conformant, reason: {non_conformant_info}")
-            }
+            },
             ValidationStatus::Pending => {
                 write!(f, "Pending")
-            }
+            },
             ValidationStatus::Inconsistent(conformant, inconformant) => {
                 write!(
                     f,
                     "Inconsistent, conformant: {conformant}, inconformant: {inconformant}"
                 )
-            }
+            },
         }
     }
 }

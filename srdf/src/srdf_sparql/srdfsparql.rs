@@ -1,12 +1,17 @@
 use crate::matcher::{Any, Matcher};
+#[cfg(target_family = "wasm")]
+use crate::srdf_sparql::wasm_stubs::{
+    Client, make_sparql_query_construct, make_sparql_query_select, sparql_client, sparql_client_construct_jsonld,
+    sparql_client_construct_rdfxml, sparql_client_construct_turtle,
+};
 use crate::{AsyncSRDF, NeighsRDF, QueryRDF, QuerySolution, QuerySolutions, Rdf, VarName};
 use crate::{QueryResultFormat, SRDFSparqlError};
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
 use oxrdf::{
-    BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode,
-    NamedOrBlankNode as OxSubject, Term as OxTerm, Triple as OxTriple,
+    BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, NamedOrBlankNode as OxSubject,
+    Term as OxTerm, Triple as OxTriple,
 };
 use prefixmap::PrefixMap;
 use regex::Regex;
@@ -17,7 +22,7 @@ use std::hash::Hash;
 use std::{collections::HashSet, fmt::Display, str::FromStr};
 
 #[cfg(not(target_family = "wasm"))]
-pub use reqwest::blocking::Client;
+use reqwest::blocking::Client;
 
 type Result<A> = std::result::Result<A, SRDFSparqlError>;
 
@@ -128,30 +133,20 @@ impl FromStr for SRDFSparql {
         } else {
             match s.to_lowercase().as_str() {
                 "wikidata" => SRDFSparql::wikidata(),
-                name => Err(SRDFSparqlError::UnknownEndpointName {
-                    name: name.to_string(),
-                }),
+                name => Err(SRDFSparqlError::UnknownEndpointName { name: name.to_string() }),
             }
         }
     }
 }
 
 impl Rdf for SRDFSparql {
+    type Subject = OxSubject;
     type IRI = OxNamedNode;
+    type Term = OxTerm;
     type BNode = OxBlankNode;
     type Literal = OxLiteral;
-    type Subject = OxSubject;
-    type Term = OxTerm;
     type Triple = OxTriple;
     type Err = SRDFSparqlError;
-
-    fn resolve_prefix_local(
-        &self,
-        prefix: &str,
-        local: &str,
-    ) -> std::result::Result<IriS, prefixmap::error::PrefixMapError> {
-        self.prefixmap.resolve_prefix_local(prefix, local)
-    }
 
     fn qualify_iri(&self, node: &OxNamedNode) -> String {
         let iri = IriS::from_str(node.as_str()).unwrap();
@@ -177,14 +172,22 @@ impl Rdf for SRDFSparql {
     fn prefixmap(&self) -> Option<PrefixMap> {
         Some(self.prefixmap.clone())
     }
+
+    fn resolve_prefix_local(
+        &self,
+        prefix: &str,
+        local: &str,
+    ) -> std::result::Result<IriS, prefixmap::error::PrefixMapError> {
+        self.prefixmap.resolve_prefix_local(prefix, local)
+    }
 }
 
 #[async_trait]
 impl AsyncSRDF for SRDFSparql {
+    type Subject = OxSubject;
     type IRI = OxNamedNode;
     type BNode = OxBlankNode;
     type Literal = OxLiteral;
-    type Subject = OxSubject;
     type Term = OxTerm;
     type Err = SRDFSparqlError;
 
@@ -283,6 +286,13 @@ impl NeighsRDF for SRDFSparql {
 }
 
 impl QueryRDF for SRDFSparql {
+    fn query_select(&self, query: &str) -> Result<QuerySolutions<Self>> {
+        tracing::trace!("srdf_sparql: SPARQL SELECT query: {}", query);
+        let solutions = make_sparql_query_select(query, &self.client, &self.endpoint_iri)?;
+        let qs: Vec<QuerySolution<SRDFSparql>> = solutions.iter().map(cnv_query_solution).collect();
+        Ok(QuerySolutions::new(qs, self.prefixmap.clone()))
+    }
+
     fn query_construct(&self, query: &str, format: &QueryResultFormat) -> Result<String> {
         let client = match format {
             QueryResultFormat::Turtle => Ok(&self.client_construct_turtle),
@@ -294,13 +304,6 @@ impl QueryRDF for SRDFSparql {
         }?;
         let str = make_sparql_query_construct(query, client, &self.endpoint_iri, format)?;
         Ok(str)
-    }
-
-    fn query_select(&self, query: &str) -> Result<QuerySolutions<Self>> {
-        tracing::trace!("srdf_sparql: SPARQL SELECT query: {}", query);
-        let solutions = make_sparql_query_select(query, &self.client, &self.endpoint_iri)?;
-        let qs: Vec<QuerySolution<SRDFSparql>> = solutions.iter().map(cnv_query_solution).collect();
-        Ok(QuerySolutions::new(qs, self.prefixmap.clone()))
     }
 
     fn query_ask(&self, query: &str) -> Result<bool> {
@@ -330,11 +333,6 @@ fn cnv_query_solution(qs: &OxQuerySolution) -> QuerySolution<SRDFSparql> {
     QuerySolution::new(variables, values)
 }
 
-#[cfg(target_family = "wasm")]
-fn sparql_client() -> Result<Client> {
-    Ok(Client())
-}
-
 #[cfg(not(target_family = "wasm"))]
 fn sparql_client() -> Result<Client> {
     use reqwest::header::{self, ACCEPT, USER_AGENT};
@@ -345,9 +343,7 @@ fn sparql_client() -> Result<Client> {
         header::HeaderValue::from_static("application/sparql-results+json"),
     );
     headers.insert(USER_AGENT, header::HeaderValue::from_static("rudof"));
-    let client = reqwest::blocking::Client::builder()
-        .default_headers(headers)
-        .build()?;
+    let client = reqwest::blocking::Client::builder().default_headers(headers).build()?;
     Ok(client)
 }
 
@@ -358,59 +354,34 @@ fn sparql_client_construct_turtle() -> Result<Client> {
     let mut headers = header::HeaderMap::new();
     headers.insert(ACCEPT, header::HeaderValue::from_static("text/turtle"));
     headers.insert(USER_AGENT, header::HeaderValue::from_static("rudof"));
-    let client = reqwest::blocking::Client::builder()
-        .default_headers(headers)
-        .build()?;
+    let client = reqwest::blocking::Client::builder().default_headers(headers).build()?;
     Ok(client)
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn sparql_client_construct_jsonld() -> Result<Client> {
     use reqwest::header::{self, ACCEPT, USER_AGENT};
 
     let mut headers = header::HeaderMap::new();
-    headers.insert(
-        ACCEPT,
-        header::HeaderValue::from_static("application/ld+json"),
-    );
+    headers.insert(ACCEPT, header::HeaderValue::from_static("application/ld+json"));
     headers.insert(USER_AGENT, header::HeaderValue::from_static("rudof"));
-    let client = reqwest::blocking::Client::builder()
-        .default_headers(headers)
-        .build()?;
+    let client = reqwest::blocking::Client::builder().default_headers(headers).build()?;
     Ok(client)
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn sparql_client_construct_rdfxml() -> Result<Client> {
     use reqwest::header::{self, ACCEPT, USER_AGENT};
 
     let mut headers = header::HeaderMap::new();
-    headers.insert(
-        ACCEPT,
-        header::HeaderValue::from_static("application/rdf+xml"),
-    );
+    headers.insert(ACCEPT, header::HeaderValue::from_static("application/rdf+xml"));
     headers.insert(USER_AGENT, header::HeaderValue::from_static("rudof"));
-    let client = reqwest::blocking::Client::builder()
-        .default_headers(headers)
-        .build()?;
+    let client = reqwest::blocking::Client::builder().default_headers(headers).build()?;
     Ok(client)
 }
 
-#[cfg(target_family = "wasm")]
-fn make_sparql_query(
-    _query: &str,
-    _client: &Client,
-    _endpoint_iri: &IriS,
-) -> Result<Vec<OxQuerySolution>> {
-    Err(SRDFSparqlError::UnknownEndpontName {
-        name: String::from("WASM"),
-    })
-}
-
 #[cfg(not(target_family = "wasm"))]
-fn make_sparql_query_select(
-    query_str: &str,
-    client: &Client,
-    endpoint_iri: &IriS,
-) -> Result<Vec<OxQuerySolution>> {
+fn make_sparql_query_select(query_str: &str, client: &Client, endpoint_iri: &IriS) -> Result<Vec<OxQuerySolution>> {
     use sparesults::{QueryResultsFormat, QueryResultsParser, ReaderQueryResultsParserOutput};
     // use spargebra::SparqlParser;
     use url::Url;
@@ -431,9 +402,7 @@ fn make_sparql_query_select(
     let body = client.get(url).send()?.text()?;
     let mut results = Vec::new();
     let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
-    if let ReaderQueryResultsParserOutput::Solutions(solutions) =
-        json_parser.for_reader(body.as_bytes())?
-    {
+    if let ReaderQueryResultsParserOutput::Solutions(solutions) = json_parser.for_reader(body.as_bytes())? {
         for solution in solutions {
             let sol = solution?;
             results.push(sol)

@@ -1,10 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::rdf_visualizer::{
-    arrow_style::{
-        ArrowStyle, DEFAULT_OBJECT_ARROW_STYLE, DEFAULT_PREDICATE_ARROW_STYLE,
-        DEFAULT_SUBJECT_ARROW_STYLE,
-    },
+    arrow_style::{ArrowStyle, DEFAULT_OBJECT_ARROW_STYLE, DEFAULT_PREDICATE_ARROW_STYLE, DEFAULT_SUBJECT_ARROW_STYLE},
     style::Style,
     uml_color::UmlColor,
 };
@@ -109,9 +106,7 @@ impl RDFVisualizationConfig {
     }
 
     pub fn uri_background_color(&self) -> UmlColor {
-        self.uri_background_color
-            .clone()
-            .unwrap_or(URI_BACKGROUND_COLOR)
+        self.uri_background_color.clone().unwrap_or(URI_BACKGROUND_COLOR)
     }
 
     pub fn uri_round_corner(&self) -> u32 {
@@ -127,9 +122,7 @@ impl RDFVisualizationConfig {
     }
 
     pub fn bnode_background_color(&self) -> UmlColor {
-        self.bnode_background_color
-            .clone()
-            .unwrap_or(BNODE_BACKGROUND_COLOR)
+        self.bnode_background_color.clone().unwrap_or(BNODE_BACKGROUND_COLOR)
     }
 
     pub fn bnode_round_corner(&self) -> u32 {
@@ -137,14 +130,11 @@ impl RDFVisualizationConfig {
     }
 
     pub fn literal_line_color(&self) -> UmlColor {
-        self.literal_line_color
-            .clone()
-            .unwrap_or(LITERAL_LINE_COLOR)
+        self.literal_line_color.clone().unwrap_or(LITERAL_LINE_COLOR)
     }
 
     pub fn literal_line_thickness(&self) -> u32 {
-        self.literal_line_thickness
-            .unwrap_or(LITERAL_LINE_THICKNESS)
+        self.literal_line_thickness.unwrap_or(LITERAL_LINE_THICKNESS)
     }
 
     pub fn literal_background_color(&self) -> UmlColor {
@@ -158,14 +148,11 @@ impl RDFVisualizationConfig {
     }
 
     pub fn reifier_line_color(&self) -> UmlColor {
-        self.reifier_line_color
-            .clone()
-            .unwrap_or(REIFIER_LINE_COLOR)
+        self.reifier_line_color.clone().unwrap_or(REIFIER_LINE_COLOR)
     }
 
     pub fn reifier_line_thickness(&self) -> u32 {
-        self.reifier_line_thickness
-            .unwrap_or(REIFIER_LINE_THICKNESS)
+        self.reifier_line_thickness.unwrap_or(REIFIER_LINE_THICKNESS)
     }
 
     pub fn reifier_background_color(&self) -> UmlColor {
@@ -187,9 +174,7 @@ impl RDFVisualizationConfig {
     }
 
     pub fn asserted_background_color(&self) -> UmlColor {
-        self.asserted_background_color
-            .clone()
-            .unwrap_or(URI_BACKGROUND_COLOR)
+        self.asserted_background_color.clone().unwrap_or(URI_BACKGROUND_COLOR)
     }
 
     pub fn asserted_round_corner(&self) -> u32 {
@@ -197,14 +182,11 @@ impl RDFVisualizationConfig {
     }
 
     pub fn non_asserted_line_color(&self) -> UmlColor {
-        self.non_asserted_line_color
-            .clone()
-            .unwrap_or(BNODE_LINE_COLOR)
+        self.non_asserted_line_color.clone().unwrap_or(BNODE_LINE_COLOR)
     }
 
     pub fn non_asserted_line_thickness(&self) -> u32 {
-        self.non_asserted_line_thickness
-            .unwrap_or(BNODE_LINE_THICKNESS)
+        self.non_asserted_line_thickness.unwrap_or(BNODE_LINE_THICKNESS)
     }
 
     pub fn non_asserted_background_color(&self) -> UmlColor {
@@ -222,15 +204,11 @@ impl RDFVisualizationConfig {
     }
 
     pub fn get_subject_arrow_style(&self) -> ArrowStyle {
-        self.subject_arrow_style
-            .clone()
-            .unwrap_or(DEFAULT_SUBJECT_ARROW_STYLE)
+        self.subject_arrow_style.clone().unwrap_or(DEFAULT_SUBJECT_ARROW_STYLE)
     }
 
     pub fn get_subject_text(&self) -> String {
-        self.subject_text
-            .clone()
-            .unwrap_or(DEFAULT_SUBJECT_TEXT.into())
+        self.subject_text.clone().unwrap_or(DEFAULT_SUBJECT_TEXT.into())
     }
 
     pub fn get_predicate_arrow_style(&self) -> ArrowStyle {
@@ -240,21 +218,15 @@ impl RDFVisualizationConfig {
     }
 
     pub fn get_predicate_text(&self) -> String {
-        self.predicate_text
-            .clone()
-            .unwrap_or(DEFAULT_PREDICATE_TEXT.into())
+        self.predicate_text.clone().unwrap_or(DEFAULT_PREDICATE_TEXT.into())
     }
 
     pub fn get_object_arrow_style(&self) -> ArrowStyle {
-        self.object_arrow_style
-            .clone()
-            .unwrap_or(DEFAULT_OBJECT_ARROW_STYLE)
+        self.object_arrow_style.clone().unwrap_or(DEFAULT_OBJECT_ARROW_STYLE)
     }
 
     pub fn get_object_text(&self) -> String {
-        self.object_text
-            .clone()
-            .unwrap_or(DEFAULT_OBJECT_TEXT.into())
+        self.object_text.clone().unwrap_or(DEFAULT_OBJECT_TEXT.into())
     }
 }
 

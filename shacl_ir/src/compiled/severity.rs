@@ -1,7 +1,7 @@
 use super::compiled_shacl_error::CompiledShaclError;
 use iri_s::IriS;
-use shacl_ast::severity::Severity;
 use shacl_ast::ShaclVocab;
+use shacl_ast::severity::Severity;
 use std::fmt::Display;
 
 #[derive(Hash, Clone, PartialEq, Eq, Debug)]
@@ -36,17 +36,15 @@ impl CompiledSeverity {
                     Severity::Warning => CompiledSeverity::Warning,
                     Severity::Info => CompiledSeverity::Info,
                     Severity::Generic(iri_ref) => {
-                        let iri = iri_ref.get_iri().map_err(|e| {
-                            CompiledShaclError::IriRefConversion {
-                                iri_ref: iri_ref.to_string(),
-                                err: e.to_string(),
-                            }
+                        let iri = iri_ref.get_iri().map_err(|e| CompiledShaclError::IriRefConversion {
+                            iri_ref: iri_ref.to_string(),
+                            err: e.to_string(),
                         })?;
                         CompiledSeverity::Generic(iri.clone())
-                    }
+                    },
                 };
                 Some(severity)
-            }
+            },
             None => None,
         };
 

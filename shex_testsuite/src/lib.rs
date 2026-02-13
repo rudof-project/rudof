@@ -11,3 +11,6 @@ pub mod manifest_run_result;
 pub mod manifest_schemas;
 pub mod manifest_validation;
 pub mod print_result_mode;
+
+#[cfg(target_family = "wasm")]
+mod wasm_stubs;

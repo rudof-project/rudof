@@ -10,7 +10,7 @@ on:
       - "**/README*"
       - "**/CHANGELOG*"
       - "**/.dockerignore"
-      - "**/Dockerfile"
+      - "**/Dockerfile*"
       - "**/*.md"
       - .readthedocs.yml
   pull_request:
@@ -22,7 +22,7 @@ on:
       - "**/README*"
       - "**/CHANGELOG*"
       - "**/.dockerignore"
-      - "**/Dockerfile"
+      - "**/Dockerfile*"
       - "**/*.md"
       - .readthedocs.yml
   release:

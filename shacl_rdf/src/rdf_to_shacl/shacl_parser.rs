@@ -4,17 +4,16 @@ use prefixmap::{IriRef, PrefixMap};
 use shacl_ast::reifier_info::ReifierInfo;
 use shacl_ast::severity::Severity;
 use shacl_ast::{
-    component::Component, node_kind::NodeKind, node_shape::NodeShape,
-    property_shape::PropertyShape, schema::Schema, shape::Shape, target::Target, value::Value, *,
+    component::Component, node_kind::NodeKind, node_shape::NodeShape, property_shape::PropertyShape, schema::Schema,
+    shape::Shape, target::Target, value::Value, *,
 };
 use srdf::{FnOpaque, rdf_type, rdfs_class};
 use srdf::{
-    FocusRDF, Iri as _, Object, PResult, RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf,
-    SHACLPath, SLiteral, Term, Triple, combine_parsers, combine_parsers_vec, combine_vec,
-    get_focus, has_type, instances_of, lang::Lang, matcher::Any, not, object, ok, opaque, optional,
-    parse_property_values, property_bool, property_integer, property_iri, property_iris,
-    property_objects, property_string, property_value, property_value_as_list, property_values,
-    property_values_bool, property_values_int, property_values_iri, property_values_literal,
+    FocusRDF, Iri as _, Object, PResult, RDFNode, RDFNodeParse, RDFParseError, RDFParser, Rdf, SHACLPath, SLiteral,
+    Term, Triple, combine_parsers, combine_parsers_vec, combine_vec, get_focus, has_type, instances_of, lang::Lang,
+    matcher::Any, not, object, ok, opaque, optional, parse_property_values, property_bool, property_integer,
+    property_iri, property_iris, property_objects, property_string, property_value, property_value_as_list,
+    property_values, property_values_bool, property_values_int, property_values_iri, property_values_literal,
     property_values_non_empty, property_values_string, rdf_list, term,
 };
 use srdf::{set_focus, shacl_path_parse};
@@ -73,9 +72,7 @@ where
             }
         }
 
-        Ok(Schema::new()
-            .with_prefixmap(prefixmap)
-            .with_shapes(self.shapes.clone()))
+        Ok(Schema::new().with_prefixmap(prefixmap).with_shapes(self.shapes.clone()))
     }
 
     /// Shapes candidates are defined in Appendix A of SHACL spec (Syntax rules)
@@ -206,9 +203,7 @@ where
                 if let Ok(subj) = term_to_subject::<RDF>(&v, "sh:or") {
                     rs.insert(subj.clone());
                 } else {
-                    return Err(ShaclParserError::OrValueNoSubject {
-                        term: format!("{v}"),
-                    });
+                    return Err(ShaclParserError::OrValueNoSubject { term: format!("{v}") });
                 }
             }
         }
@@ -224,9 +219,7 @@ where
                 if let Ok(subj) = &term_to_subject::<RDF>(&v, "sh:xone") {
                     rs.insert(subj.clone());
                 } else {
-                    return Err(ShaclParserError::XOneValueNoSubject {
-                        term: format!("{v}"),
-                    });
+                    return Err(ShaclParserError::XOneValueNoSubject { term: format!("{v}") });
                 }
             }
         }
@@ -250,9 +243,7 @@ where
                 if let Ok(subj) = term_to_subject::<RDF>(&v, "sh:and") {
                     rs.insert(subj);
                 } else {
-                    return Err(ShaclParserError::AndValueNoSubject {
-                        term: format!("{v}"),
-                    });
+                    return Err(ShaclParserError::AndValueNoSubject { term: format!("{v}") });
                 }
             }
         }
@@ -440,9 +431,7 @@ where
     })
 }
 
-fn property_shape_components<RDF>(
-    ps: PropertyShape<RDF>,
-) -> impl RDFNodeParse<RDF, Output = PropertyShape<RDF>>
+fn property_shape_components<RDF>(ps: PropertyShape<RDF>) -> impl RDFNodeParse<RDF, Output = PropertyShape<RDF>>
 where
     RDF: FocusRDF,
 {
@@ -458,9 +447,7 @@ where
             .then(move |t: RDFNode| ok(NodeShape::new(t)))
             .then(|ns| optional(severity()).flat_map(move |sev| Ok(ns.clone().with_severity(sev))))
             .then(|ns| targets().flat_map(move |ts| Ok(ns.clone().with_targets(ts))))
-            .then(|ns| {
-                property_shapes().flat_map(move |ps| Ok(ns.clone().with_property_shapes(ps)))
-            })
+            .then(|ns| property_shapes().flat_map(move |ps| Ok(ns.clone().with_property_shapes(ps))))
             .then(|ns| components().flat_map(move |cs| Ok(ns.clone().with_components(cs)))),
     )
 }
@@ -533,17 +520,15 @@ fn parse_qualified_value_shape<RDF: FocusRDF>(
         .and(qualified_min_count_parser())
         .and(qualified_max_count_parser())
         .and(qualified_value_shape_siblings())
-        .flat_map(
-            move |(((maybe_disjoint, maybe_mins), maybe_maxs), siblings)| {
-                Ok(build_qualified_shape(
-                    qvs.clone(),
-                    maybe_disjoint,
-                    maybe_mins,
-                    maybe_maxs,
-                    siblings,
-                ))
-            },
-        )
+        .flat_map(move |(((maybe_disjoint, maybe_mins), maybe_maxs), siblings)| {
+            Ok(build_qualified_shape(
+                qvs.clone(),
+                maybe_disjoint,
+                maybe_mins,
+                maybe_maxs,
+                siblings,
+            ))
+        })
 }
 
 fn qualified_value_shape_siblings<RDF: FocusRDF>() -> QualifiedValueShapeSiblings<RDF> {
@@ -588,20 +573,15 @@ where
                 )?;
                 if let Some(disjoint) = maybe_disjoint {
                     match disjoint {
-                        Object::Literal(SLiteral::BooleanLiteral(true)) => {
-                            trace!(
-                                "QualifiedValueShapeSiblings: Focus node {focus} has disjoint=true"
-                            );
-                            let qvs = rdf
-                                .objects_for(focus, &into_iri::<RDF>(ShaclVocab::sh_qualified_value_shape()))?;
+                        Object::Literal(SLiteral::Boolean(true)) => {
+                            trace!("QualifiedValueShapeSiblings: Focus node {focus} has disjoint=true");
+                            let qvs =
+                                rdf.objects_for(focus, &into_iri::<RDF>(ShaclVocab::sh_qualified_value_shape()))?;
                             if qvs.is_empty() {
-                                trace!(
-                                    "Focus node {focus} has disjoint=true but no qualifiedValueShape"
-                                );
+                                trace!("Focus node {focus} has disjoint=true but no qualifiedValueShape");
                             } else {
                                 trace!("QVS of focus node {focus}: {qvs:?}");
-                                let ps =
-                                    rdf.subjects_for(&into_iri::<RDF>(ShaclVocab::sh_property()), focus)?;
+                                let ps = rdf.subjects_for(&into_iri::<RDF>(ShaclVocab::sh_property()), focus)?;
                                 trace!("Property parents of focus node {focus}: {ps:?}");
                                 for property_parent in ps {
                                     let candidate_siblings = rdf.objects_for_shacl_path(
@@ -617,17 +597,15 @@ where
                                     }
                                 }
                             }
-                        }
-                        Object::Literal(SLiteral::BooleanLiteral(false)) => {}
+                        },
+                        Object::Literal(SLiteral::Boolean(false)) => {},
                         _ => {
-                            trace!(
-                                "Value of disjoint: {disjoint} is not boolean (Should we raise an error here?)"
-                            );
-                        }
+                            trace!("Value of disjoint: {disjoint} is not boolean (Should we raise an error here?)");
+                        },
                     }
                 }
                 Ok(siblings)
-            }
+            },
             None => Err(RDFParseError::NoFocusNode),
         }
     }
@@ -658,9 +636,7 @@ fn cnv_node<RDF>(t: RDF::Term) -> PResult<Component>
 where
     RDF: Rdf,
 {
-    let shape = RDF::term_as_object(&t).map_err(|_| RDFParseError::TermToRDFNodeFailed {
-        term: t.to_string(),
-    })?;
+    let shape = RDF::term_as_object(&t).map_err(|_| RDFParseError::TermToRDFNodeFailed { term: t.to_string() })?;
     Ok(Component::Node { shape })
 }
 
@@ -668,9 +644,7 @@ fn cnv_not<RDF>(t: RDF::Term) -> PResult<Component>
 where
     RDF: Rdf,
 {
-    let shape = RDF::term_as_object(&t).map_err(|_| RDFParseError::TermToRDFNodeFailed {
-        term: t.to_string(),
-    })?;
+    let shape = RDF::term_as_object(&t).map_err(|_| RDFParseError::TermToRDFNodeFailed { term: t.to_string() })?;
     Ok(Component::Not { shape })
 }
 
@@ -683,10 +657,7 @@ fn cnv_or_list<RDF: Rdf>(ls: Vec<RDF::Term>) -> PResult<Component> {
     Ok(Component::Or { shapes })
 }
 
-fn term_to_subject<RDF>(
-    term: &RDF::Term,
-    context: &str,
-) -> std::result::Result<RDF::Subject, ShaclParserError>
+fn term_to_subject<RDF>(term: &RDF::Term, context: &str) -> std::result::Result<RDF::Subject, ShaclParserError>
 where
     RDF: FocusRDF,
 {
@@ -696,29 +667,20 @@ where
     })
 }
 
-fn terms_as_nodes<RDF: Rdf>(
-    terms: Vec<RDF::Term>,
-) -> std::result::Result<Vec<RDFNode>, RDFParseError> {
+fn terms_as_nodes<RDF: Rdf>(terms: Vec<RDF::Term>) -> std::result::Result<Vec<RDFNode>, RDFParseError> {
     terms
         .into_iter()
         .map(|t| {
             let term_name = t.to_string();
-            RDF::term_as_object(&t)
-                .map_err(|_| RDFParseError::TermToRDFNodeFailed { term: term_name })
+            RDF::term_as_object(&t).map_err(|_| RDFParseError::TermToRDFNodeFailed { term: term_name })
         })
         .collect()
 }
 
-fn subjects_as_nodes<RDF: Rdf>(
-    subjs: HashSet<RDF::Subject>,
-) -> std::result::Result<Vec<RDFNode>, RDFParseError> {
+fn subjects_as_nodes<RDF: Rdf>(subjs: HashSet<RDF::Subject>) -> std::result::Result<Vec<RDFNode>, RDFParseError> {
     subjs
         .into_iter()
-        .map(|s| {
-            RDF::subject_as_node(&s).map_err(|_| RDFParseError::SubjToRDFNodeFailed {
-                subj: s.to_string(),
-            })
-        })
+        .map(|s| RDF::subject_as_node(&s).map_err(|_| RDFParseError::SubjToRDFNodeFailed { subj: s.to_string() }))
         .collect()
 }
 
@@ -796,17 +758,11 @@ where
 {
     opaque!(property_values(ShaclVocab::sh_reifier_shape().clone()).then(move |vs| {
         optional(property_bool(ShaclVocab::sh_reification_required().clone())).map(move |requires_reifier| {
-            let reifier_shape = vs
-                .iter()
-                .filter_map(|v| RDF::term_as_object(v).ok())
-                .collect();
+            let reifier_shape = vs.iter().filter_map(|v| RDF::term_as_object(v).ok()).collect();
             if vs.is_empty() {
                 None
             } else {
-                Some(ReifierInfo::new(
-                    requires_reifier.unwrap_or(false),
-                    reifier_shape,
-                ))
+                Some(ReifierInfo::new(requires_reifier.unwrap_or(false), reifier_shape))
             }
         })
     }))
@@ -817,8 +773,7 @@ where
     RDF: FocusRDF,
 {
     opaque!(optional(closed()).then(move |maybe_closed| {
-        ignored_properties()
-            .map(move |is| maybe_closed.map_or(vec![], |b| vec![Component::closed(b, is)]))
+        ignored_properties().map(move |is| maybe_closed.map_or(vec![], |b| vec![Component::closed(b, is)]))
     }))
 }
 
@@ -839,13 +794,11 @@ where
                             let iri_s = IriS::new_unchecked(iri_string);
                             hs.insert(iri_s);
                         } else {
-                            return Err(RDFParseError::ExpectedIRI {
-                                term: v.to_string(),
-                            });
+                            return Err(RDFParseError::ExpectedIRI { term: v.to_string() });
                         }
                     }
                     Ok(hs)
-                }
+                },
             }
         })
     )
@@ -856,11 +809,8 @@ where
     RDF: FocusRDF,
 {
     opaque!(
-        property_values_literal(ShaclVocab::sh_min_inclusive().clone()).map(|ns| {
-            ns.iter()
-                .map(|lit| Component::MinInclusive(lit.clone()))
-                .collect()
-        })
+        property_values_literal(ShaclVocab::sh_min_inclusive().clone())
+            .map(|ns| { ns.iter().map(|lit| Component::MinInclusive(lit.clone())).collect() })
     )
 }
 
@@ -870,11 +820,8 @@ where
     RDF: FocusRDF,
 {
     opaque!(
-        property_values_literal(ShaclVocab::sh_min_exclusive().clone()).map(|ns| {
-            ns.iter()
-                .map(|lit| Component::MinExclusive(lit.clone()))
-                .collect()
-        })
+        property_values_literal(ShaclVocab::sh_min_exclusive().clone())
+            .map(|ns| { ns.iter().map(|lit| Component::MinExclusive(lit.clone())).collect() })
     )
 }
 
@@ -884,11 +831,8 @@ where
     RDF: FocusRDF,
 {
     opaque!(
-        property_values_literal(ShaclVocab::sh_max_inclusive().clone()).map(|ns| {
-            ns.iter()
-                .map(|lit| Component::MaxInclusive(lit.clone()))
-                .collect()
-        })
+        property_values_literal(ShaclVocab::sh_max_inclusive().clone())
+            .map(|ns| ns.iter().map(|lit| Component::MaxInclusive(lit.clone())).collect())
     )
 }
 
@@ -898,11 +842,8 @@ where
     RDF: FocusRDF,
 {
     opaque!(
-        property_values_literal(ShaclVocab::sh_max_exclusive().clone()).map(|ns| {
-            ns.iter()
-                .map(|lit| Component::MaxExclusive(lit.clone()))
-                .collect()
-        })
+        property_values_literal(ShaclVocab::sh_max_exclusive().clone())
+            .map(|ns| { ns.iter().map(|lit| Component::MaxExclusive(lit.clone())).collect() })
     )
 }
 
@@ -1049,7 +990,7 @@ fn pattern<RDF: FocusRDF>() -> FnOpaque<RDF, Vec<Component>> {
                 let pattern = strs.first().unwrap().clone();
                 let flags = maybe_flags.clone();
                 Ok(vec![Component::Pattern { pattern, flags }])
-            }
+            },
             _ => todo!(), // Error...
         })
     }))
@@ -1085,9 +1026,7 @@ where
     Ok(Component::HasValue { value })
 }
 
-fn cnv_language_in_list<R: FocusRDF>(
-    terms: Vec<R::Term>,
-) -> std::result::Result<Component, RDFParseError> {
+fn cnv_language_in_list<R: FocusRDF>(terms: Vec<R::Term>) -> std::result::Result<Component, RDFParseError> {
     let langs: Vec<Lang> = terms.iter().flat_map(R::term_as_lang).collect();
     Ok(Component::LanguageIn { langs })
 }
@@ -1108,13 +1047,12 @@ where
         Ok(Value::Iri(IriRef::Iri(iri_s)))
     } else if let Ok(literal) = RDF::term_as_literal(term) {
         let literal: RDF::Literal = literal;
-        let slit: SLiteral =
-            literal
-                .clone()
-                .try_into()
-                .map_err(|_e| RDFParseError::LiteralToSLiteralFailed {
-                    literal: literal.to_string(),
-                })?;
+        let slit: SLiteral = literal
+            .clone()
+            .try_into()
+            .map_err(|_e| RDFParseError::LiteralToSLiteralFailed {
+                literal: literal.to_string(),
+            })?;
         Ok(Value::Literal(slit))
     } else {
         println!("Unexpected code in term_to_value: {term}: {msg}");
@@ -1133,10 +1071,7 @@ where
     Ok(Component::In { values })
 }
 
-fn parse_components_for_iri<RDF, P>(
-    iri: &IriS,
-    component_parser: P,
-) -> impl RDFNodeParse<RDF, Output = Vec<Component>>
+fn parse_components_for_iri<RDF, P>(iri: &IriS, component_parser: P) -> impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
     P: RDFNodeParse<RDF, Output = Component>,
@@ -1199,8 +1134,8 @@ where
     RDF: Rdf,
 {
     let term_name = term.to_string();
-    let result_iri: Result<RDF::IRI> = <RDF::Term as TryInto<RDF::IRI>>::try_into(term.clone())
-        .map_err(|_| ShaclParserError::ExpectedNodeKind {
+    let result_iri: Result<RDF::IRI> =
+        <RDF::Term as TryInto<RDF::IRI>>::try_into(term.clone()).map_err(|_| ShaclParserError::ExpectedNodeKind {
             term: term_name.to_string(),
         });
     let iri = result_iri?;
@@ -1223,10 +1158,7 @@ where
 {
     opaque!(
         property_iris(ShaclVocab::sh_target_class().clone()).flat_map(move |ts| {
-            let result = ts
-                .into_iter()
-                .map(|iri| Target::TargetClass(RDFNode::iri(iri)))
-                .collect();
+            let result = ts.into_iter().map(|iri| Target::Class(RDFNode::iri(iri))).collect();
             Ok(result)
         })
     )
@@ -1237,7 +1169,7 @@ where
     RDF: FocusRDF,
 {
     property_objects(ShaclVocab::sh_target_node().clone()).flat_map(move |ts| {
-        let result = ts.into_iter().map(Target::TargetNode).collect();
+        let result = ts.into_iter().map(Target::Node).collect();
         Ok(result)
     })
 }
@@ -1247,44 +1179,36 @@ fn targets_implicit_class<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Ta
         .and(instances_of(ShaclVocab::sh_property_shape().clone()))
         .and(instances_of(ShaclVocab::sh_node_shape().clone()))
         .and(get_focus())
-        .flat_map(
-            move |(((class, property_shapes), node_shapes), focus): (_, R::Term)| {
-                let result: std::result::Result<Vec<Target<R>>, RDFParseError> = class
-                    .into_iter()
-                    .filter(|t: &R::Subject| property_shapes.contains(t) || node_shapes.contains(t))
-                    .map(Into::into)
-                    .filter(|t: &R::Term| t.clone() == focus)
-                    .map(|t: R::Term| {
-                        let t_name = t.to_string();
-                        let obj = t
-                            .clone()
-                            .try_into()
-                            .map_err(|_| RDFParseError::TermToRDFNodeFailed { term: t_name })?;
-                        Ok(Target::TargetImplicitClass(obj))
-                    })
-                    .collect();
-                let ts = result?;
-                Ok(ts)
-            },
-        )
+        .flat_map(move |(((class, property_shapes), node_shapes), focus): (_, R::Term)| {
+            let result: std::result::Result<Vec<Target<R>>, RDFParseError> = class
+                .into_iter()
+                .filter(|t: &R::Subject| property_shapes.contains(t) || node_shapes.contains(t))
+                .map(Into::into)
+                .filter(|t: &R::Term| t.clone() == focus)
+                .map(|t: R::Term| {
+                    let t_name = t.to_string();
+                    let obj = t
+                        .clone()
+                        .try_into()
+                        .map_err(|_| RDFParseError::TermToRDFNodeFailed { term: t_name })?;
+                    Ok(Target::ImplicitClass(obj))
+                })
+                .collect();
+            let ts = result?;
+            Ok(ts)
+        })
 }
 
 fn targets_objects_of<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Target<R>>> {
     property_values_iri(ShaclVocab::sh_target_objects_of().clone()).flat_map(move |ts| {
-        let result = ts
-            .into_iter()
-            .map(|t: IriS| Target::TargetObjectsOf(t.into()))
-            .collect();
+        let result = ts.into_iter().map(|t: IriS| Target::ObjectsOf(t.into())).collect();
         Ok(result)
     })
 }
 
 fn targets_subjects_of<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Target<R>>> {
     property_values_iri(ShaclVocab::sh_target_subjects_of().clone()).flat_map(move |ts| {
-        let result = ts
-            .into_iter()
-            .map(|t: IriS| Target::TargetSubjectsOf(t.into()))
-            .collect();
+        let result = ts.into_iter().map(|t: IriS| Target::SubjectsOf(t.into())).collect();
         Ok(result)
     })
 }
@@ -1342,7 +1266,7 @@ mod tests {
                 assert_eq!(langs.len(), 2);
                 assert_eq!(langs[0], Lang::new("en").unwrap());
                 assert_eq!(langs[1], Lang::new("fr").unwrap());
-            }
+            },
             _ => panic!("Shape has not a LanguageIn component"),
         }
     }

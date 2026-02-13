@@ -1,4 +1,4 @@
-use crate::service::{errors::*, service::RudofMcpService};
+use crate::service::{errors::*, mcp_service::RudofMcpService};
 use iri_s::IriS;
 use rmcp::{
     ErrorData as McpError,
@@ -91,9 +91,7 @@ pub async fn validate_shacl_impl(
         sort_by,
     }): Parameters<ValidateShaclRequest>,
 ) -> Result<CallToolResult, McpError> {
-    let result_format_str = result_format
-        .clone()
-        .unwrap_or_else(|| "compact".to_string());
+    let result_format_str = result_format.clone().unwrap_or_else(|| "compact".to_string());
     let sort_by_str = sort_by.clone().unwrap_or_else(|| "node".to_string());
 
     let shape_spec: Option<InputSpec> = shape.as_ref().map(|s| InputSpec::Str(s.clone()));
@@ -107,16 +105,15 @@ pub async fn validate_shacl_impl(
                     format!("Supported formats: {}", SHACL_FORMATS),
                 )
                 .into_call_tool_result());
-            }
+            },
         },
         None => None,
     };
 
-    let parsed_base_shape: Option<IriS> =
-        match parse_optional_iri(base_shape.as_deref(), "base shape IRI") {
-            Ok(iri) => iri,
-            Err(e) => return Ok(e.into_call_tool_result()),
-        };
+    let parsed_base_shape: Option<IriS> = match parse_optional_iri(base_shape.as_deref(), "base shape IRI") {
+        Ok(iri) => iri,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
 
     let parsed_reader_mode: ReaderMode = match parse_optional_reader_mode(reader_mode.as_deref()) {
         Ok(mode) => mode,
@@ -132,7 +129,7 @@ pub async fn validate_shacl_impl(
                     "Supported modes: native, sparql",
                 )
                 .into_call_tool_result());
-            }
+            },
         },
         None => ShaclValidationMode::Native,
     };
@@ -146,7 +143,7 @@ pub async fn validate_shacl_impl(
                     format!("Supported formats: {}", SHACL_RESULT_FORMATS),
                 )
                 .into_call_tool_result());
-            }
+            },
         },
         None => ResultShaclValidationFormat::Details,
     };
@@ -160,7 +157,7 @@ pub async fn validate_shacl_impl(
                     format!("Supported sort orders: {}", SHACL_SORT_BY_MODES),
                 )
                 .into_call_tool_result());
-            }
+            },
         },
         None => SortByShaclValidationReport::Severity,
     };
@@ -250,17 +247,14 @@ pub async fn validate_shacl_impl(
         result_format_str, sort_by_str, result_size_bytes, result_lines
     );
 
-    let shape_display = format!(
-        "## SHACL Shape\n\n```shacl\n{}\n```",
-        shape.clone().unwrap_or_default()
-    );
+    let shape_display = format!("## SHACL Shape\n\n```shacl\n{}\n```", shape.clone().unwrap_or_default());
 
     // Format results based on the format type
     let results_display = match result_format_str.to_lowercase().as_str() {
         "turtle" | "n3" => format!("## Validation Results\n\n```turtle\n{}\n```", output_str),
         "ntriples" | "nquads" => {
             format!("## Validation Results\n\n```ntriples\n{}\n```", output_str)
-        }
+        },
         "rdfxml" => format!("## Validation Results\n\n```xml\n{}\n```", output_str),
         "trig" => format!("## Validation Results\n\n```trig\n{}\n```", output_str),
         "json" => format!("## Validation Results\n\n```json\n{}\n```", output_str),

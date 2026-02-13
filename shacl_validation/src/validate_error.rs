@@ -14,10 +14,7 @@ use crate::helpers::helper_error::SRDFError;
 #[derive(Error, Debug)]
 pub enum ValidateError {
     #[error("Shape not found for shape idx {shape_idx}: {error}")]
-    ShapeNotFound {
-        shape_idx: ShapeLabelIdx,
-        error: String,
-    },
+    ShapeNotFound { shape_idx: ShapeLabelIdx, error: String },
 
     #[error("Obtaining rdfs:subClassOf of {term}: {error}")]
     SubClassOf { term: String, error: String },
@@ -35,7 +32,7 @@ pub enum ValidateError {
         error: String,
     },
     #[error("Error during the SPARQL operation")]
-    SRDF,
+    SRdf,
 
     #[error("TargetNode cannot be a Blank Node")]
     TargetNodeBlankNode,
@@ -69,10 +66,7 @@ pub enum ValidateError {
     SparqlError { msg: String, source: SPARQLError },
 
     #[error("Constraint error in component {component}: {source}")]
-    ConstraintError {
-        component: String,
-        source: ConstraintError,
-    },
+    ConstraintError { component: String, source: ConstraintError },
 
     #[error("Implicit class not found")]
     ImplicitClassNotFound,
@@ -95,9 +89,7 @@ pub enum ValidateError {
     #[error(transparent)]
     RdfDataError(#[from] RdfDataError),
 
-    #[error(
-        "Error obtaining triples with subject {subject} during validation: {error}, checking CLOSED"
-    )]
+    #[error("Error obtaining triples with subject {subject} during validation: {error}, checking CLOSED")]
     TriplesWithSubject { subject: String, error: String },
 
     #[error(

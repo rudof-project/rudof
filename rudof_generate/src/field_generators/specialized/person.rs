@@ -139,9 +139,8 @@ fn generate_last_name(rng: &mut impl Rng, locale: &str) -> String {
             "Gutiérrez",
         ],
         "fr" => &[
-            "Martin", "Bernard", "Dubois", "Thomas", "Robert", "Richard", "Petit", "Durand",
-            "Leroy", "Moreau", "Simon", "Laurent", "Lefebvre", "Michel", "Garcia", "David",
-            "Bertrand", "Roux", "Vincent", "Fournier",
+            "Martin", "Bernard", "Dubois", "Thomas", "Robert", "Richard", "Petit", "Durand", "Leroy", "Moreau",
+            "Simon", "Laurent", "Lefebvre", "Michel", "Garcia", "David", "Bertrand", "Roux", "Vincent", "Fournier",
         ],
         _ => &[
             "Smith",
@@ -174,13 +173,7 @@ fn generate_person_email(rng: &mut impl Rng, locale: &str) -> String {
     let first = generate_first_name(rng, locale).to_lowercase();
     let last = generate_last_name(rng, locale).to_lowercase();
 
-    let domains = [
-        "gmail.com",
-        "yahoo.com",
-        "hotmail.com",
-        "outlook.com",
-        "company.com",
-    ];
+    let domains = ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "company.com"];
     let domain = domains.choose(rng).unwrap();
 
     let separators = [".", "_", ""];
@@ -201,7 +194,7 @@ fn generate_phone_number(rng: &mut impl Rng, locale: &str) -> String {
             let prefix = rng.gen_range(600..800);
             let number = rng.gen_range(100000..1000000);
             format!("+34 {prefix} {number}")
-        }
+        },
         "fr" => {
             // French phone number format
             let area = rng.gen_range(1..6);
@@ -213,14 +206,14 @@ fn generate_phone_number(rng: &mut impl Rng, locale: &str) -> String {
                 (number / 1000) % 1000,
                 number % 1000
             )
-        }
+        },
         _ => {
             // US phone number format
             let area = rng.gen_range(200..1000);
             let exchange = rng.gen_range(200..1000);
             let number = rng.gen_range(1000..10000);
             format!("({area}) {exchange}-{number}")
-        }
+        },
     }
 }
 
@@ -236,7 +229,7 @@ fn generate_address(rng: &mut impl Rng, locale: &str) -> String {
             let street = streets.choose(rng).unwrap();
             let number = rng.gen_range(1..200);
             format!("{street} {number}")
-        }
+        },
         "fr" => {
             let streets = [
                 "Rue de la Paix",
@@ -247,18 +240,12 @@ fn generate_address(rng: &mut impl Rng, locale: &str) -> String {
             let street = streets.choose(rng).unwrap();
             let number = rng.gen_range(1..200);
             format!("{number} {street}")
-        }
+        },
         _ => {
-            let streets = [
-                "Main Street",
-                "Oak Avenue",
-                "Pine Road",
-                "Elm Street",
-                "First Avenue",
-            ];
+            let streets = ["Main Street", "Oak Avenue", "Pine Road", "Elm Street", "First Avenue"];
             let street = streets.choose(rng).unwrap();
             let number = rng.gen_range(100..9999);
             format!("{number} {street}")
-        }
+        },
     }
 }

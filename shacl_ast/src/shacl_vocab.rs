@@ -35,7 +35,6 @@ impl RdfVocabulary for ShaclVocab {
     const BASE: &'static str = "http://www.w3.org/ns/shacl#";
 }
 
-
 vocab_term!(ShaclVocab, SH, "");
 vocab_term!(ShaclVocab, SH_BLANK_NODE, "BlankNode");
 vocab_term!(ShaclVocab, SH_BLANK_NODE_OR_IRI, "BlankNodeOrIRI");
@@ -94,7 +93,11 @@ vocab_term!(ShaclVocab, SH_PROPERTY, "property");
 vocab_term!(ShaclVocab, SH_QUALIFIED_MIN_COUNT, "qualifiedMinCount");
 vocab_term!(ShaclVocab, SH_QUALIFIED_MAX_COUNT, "qualifiedMaxCount");
 vocab_term!(ShaclVocab, SH_QUALIFIED_VALUE_SHAPE, "qualifiedValueShape");
-vocab_term!(ShaclVocab, SH_QUALIFIED_VALUE_SHAPES_DISJOINT, "qualifiedValueShapesDisjoint");
+vocab_term!(
+    ShaclVocab,
+    SH_QUALIFIED_VALUE_SHAPES_DISJOINT,
+    "qualifiedValueShapesDisjoint"
+);
 vocab_term!(ShaclVocab, SH_RESULT, "result");
 vocab_term!(ShaclVocab, SH_RESULT_PATH, "resultPath");
 vocab_term!(ShaclVocab, SH_RESULT_SEVERITY, "resultSeverity");
@@ -118,4 +121,8 @@ vocab_term!(ShaclVocab, SH_REIFICATION_REQUIRED, "reificationRequired");
 vocab_term!(ShaclVocab, SH_REIFIER_SHAPE, "reifierShape");
 
 vocab_term!(ShaclVocab, SH_CLOSED_CONSTRAINT_COMPONENT, "ClosedConstraintComponent");
-vocab_term!(ShaclVocab, SH_REIFIER_SHAPE_CONSTRAINT_COMPONENT, "ReifierShapeConstraintComponent");
+vocab_term!(
+    ShaclVocab,
+    SH_REIFIER_SHAPE_CONSTRAINT_COMPONENT,
+    "ReifierShapeConstraintComponent"
+);

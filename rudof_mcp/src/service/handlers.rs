@@ -13,7 +13,7 @@
 //! ```
 
 use crate::service::logging::{LogData, send_log};
-use crate::service::service::RudofMcpService;
+use crate::service::mcp_service::RudofMcpService;
 use crate::service::{resource_templates, resources::*};
 use rmcp::{
     ErrorData as McpError, RoleServer, ServerHandler,
@@ -48,24 +48,23 @@ impl ServerHandler for RudofMcpService {
             capabilities: ServerCapabilities {
                 experimental: None,
                 logging: Some(logging_meta),
-                prompts: Some(PromptsCapability {
-                    list_changed: None,
-                }),
+                prompts: Some(PromptsCapability { list_changed: None }),
                 resources: Some(ResourcesCapability {
                     subscribe: Some(true),
                     list_changed: Some(true),
                 }),
-                tools: Some(ToolsCapability {
-                    list_changed: None,
-                }),
+                tools: Some(ToolsCapability { list_changed: None }),
                 completions: Some(serde_json::Map::new()),
                 tasks: Some(TasksCapability::server_default()),
             },
             server_info: Implementation::from_build_env(),
-            instructions: Some("This MCP server exposes Rudof tools and prompts. Rudof is a comprehensive 
-            library that implements Shape Expressions (ShEx), SHACL, DCTAP, and other technologies in the 
-            RDF ecosystem, enabling schema validation, data transformation, and semantic web 
-            operations.".to_string()),
+            instructions: Some(
+                "This MCP server exposes Rudof tools and prompts. Rudof is a comprehensive
+            library that implements Shape Expressions (ShEx), SHACL, DCTAP, and other technologies in the
+            RDF ecosystem, enabling schema validation, data transformation, and semantic web
+            operations."
+                    .to_string(),
+            ),
         }
     }
 
@@ -82,10 +81,7 @@ impl ServerHandler for RudofMcpService {
         // Handle pagination if requested
         let (tools, next_cursor) = if let Some(params) = request {
             let page_size = 20;
-            let cursor = params
-                .cursor
-                .and_then(|c| c.parse::<usize>().ok())
-                .unwrap_or(0);
+            let cursor = params.cursor.and_then(|c| c.parse::<usize>().ok()).unwrap_or(0);
 
             let start = cursor;
             let end = std::cmp::min(start + page_size, all_tools.len());
@@ -121,10 +117,7 @@ impl ServerHandler for RudofMcpService {
         // Handle pagination if requested
         let (prompts, next_cursor) = if let Some(params) = request {
             let page_size = 20;
-            let cursor = params
-                .cursor
-                .and_then(|c| c.parse::<usize>().ok())
-                .unwrap_or(0);
+            let cursor = params.cursor.and_then(|c| c.parse::<usize>().ok()).unwrap_or(0);
 
             let start = cursor;
             let end = std::cmp::min(start + page_size, all_prompts.len());
@@ -264,8 +257,7 @@ impl ServerHandler for RudofMcpService {
         // Log tool completion (respects log level filtering)
         match &result {
             Ok(_) => {
-                let log_data = LogData::new("Tool executed successfully")
-                    .with_field("tool_name", tool_name.clone());
+                let log_data = LogData::new("Tool executed successfully").with_field("tool_name", tool_name.clone());
                 send_log(
                     LoggingLevel::Debug,
                     Some("tools".to_string()),
@@ -274,7 +266,7 @@ impl ServerHandler for RudofMcpService {
                     &context.peer,
                 )
                 .await;
-            }
+            },
             Err(e) => {
                 let log_data = LogData::new("Tool execution failed")
                     .with_field("tool_name", tool_name.clone())
@@ -287,7 +279,7 @@ impl ServerHandler for RudofMcpService {
                     &context.peer,
                 )
                 .await;
-            }
+            },
         }
 
         // Clear the context after the tool call
@@ -307,12 +299,7 @@ impl ServerHandler for RudofMcpService {
     ) -> Result<GetPromptResult, McpError> {
         tracing::debug!(prompt_name = %request.name, "Prompt retrieval requested");
 
-        let ctx = rmcp::handler::server::prompt::PromptContext::new(
-            self,
-            request.name,
-            request.arguments,
-            context,
-        );
+        let ctx = rmcp::handler::server::prompt::PromptContext::new(self, request.name, request.arguments, context);
 
         let result = self.prompt_router.get_prompt(ctx).await?;
         Ok(result)
@@ -328,10 +315,10 @@ impl ServerHandler for RudofMcpService {
         let completions = match &request.r#ref {
             Reference::Prompt(prompt_ref) => {
                 self.get_prompt_argument_completions(&prompt_ref.name, &request.argument.name)
-            }
+            },
             Reference::Resource(resource_ref) => {
                 self.get_resource_uri_completions(&resource_ref.uri, &request.argument.name)
-            }
+            },
         };
 
         Ok(CompleteResult {
@@ -469,24 +456,17 @@ impl ServerHandler for RudofMcpService {
 
             // Build the tool call context and execute
             // Note: We use the cloned context; the cancellation token is shared
-            let ctx = rmcp::handler::server::tool::ToolCallContext::new(
-                &service,
-                tool_request.clone(),
-                context,
-            );
+            let ctx = rmcp::handler::server::tool::ToolCallContext::new(&service, tool_request.clone(), context);
 
             match service.tool_router.call(ctx).await {
                 Ok(tool_result) => {
                     tracing::debug!(task_id = %task_id, "Task completed successfully");
                     service.task_store.complete(&task_id, tool_result).await;
-                }
+                },
                 Err(e) => {
                     tracing::error!(task_id = %task_id, error = ?e, "Task failed");
-                    service
-                        .task_store
-                        .fail(&task_id, e.message.to_string())
-                        .await;
-                }
+                    service.task_store.fail(&task_id, e.message.to_string()).await;
+                },
             }
         });
 
@@ -515,9 +495,7 @@ impl ServerHandler for RudofMcpService {
         self.task_store
             .get_info(request.clone())
             .await
-            .ok_or_else(|| {
-                McpError::resource_not_found(format!("Task not found: {}", request.task_id), None)
-            })
+            .ok_or_else(|| McpError::resource_not_found(format!("Task not found: {}", request.task_id), None))
     }
 
     // Get the result of a completed task (SEP-1686)
@@ -544,25 +522,20 @@ impl ServerHandler for RudofMcpService {
             )),
             Some(task_info) => {
                 let task = task_info.task.ok_or_else(|| {
-                    McpError::resource_not_found(
-                        format!("Task not found: {}", request.task_id),
-                        None,
-                    )
+                    McpError::resource_not_found(format!("Task not found: {}", request.task_id), None)
                 })?;
                 match task.status {
                     TaskStatus::Working | TaskStatus::InputRequired => {
                         Err(McpError::invalid_request("Task is still in progress", None))
-                    }
-                    TaskStatus::Cancelled => {
-                        Err(McpError::invalid_request("Task was cancelled", None))
-                    }
+                    },
+                    TaskStatus::Cancelled => Err(McpError::invalid_request("Task was cancelled", None)),
                     TaskStatus::Completed | TaskStatus::Failed => self
                         .task_store
                         .get_result(request.clone())
                         .await
                         .ok_or_else(|| McpError::internal_error("Task result not available", None)),
                 }
-            }
+            },
         }
     }
 
@@ -578,8 +551,6 @@ impl ServerHandler for RudofMcpService {
             .cancel(request.clone())
             .await
             .map(|_| ())
-            .ok_or_else(|| {
-                McpError::invalid_request(format!("Cannot cancel task: {}", request.task_id), None)
-            })
+            .ok_or_else(|| McpError::invalid_request(format!("Cannot cancel task: {}", request.task_id), None))
     }
 }

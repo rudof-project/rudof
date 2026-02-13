@@ -22,7 +22,7 @@ impl Serialize for LanguageExclusion {
                 map.serialize_entry("type", "LanguageStem")?;
                 map.serialize_entry("stem", stem)?;
                 map.end()
-            }
+            },
         }
     }
 }

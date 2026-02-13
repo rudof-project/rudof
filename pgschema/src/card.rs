@@ -33,9 +33,7 @@ impl Card {
             (Card::One, _) | (_, Card::One) => Card::One,
             (Card::ZeroOrMore, _) | (_, Card::ZeroOrMore) => Card::ZeroOrMore,
             (Card::OneOrMore, _) | (_, Card::OneOrMore) => Card::OneOrMore,
-            (Card::Range(min1, max1), Card::Range(min2, max2)) => {
-                Card::Range(*min1.max(min2), max1.min(max2))
-            }
+            (Card::Range(min1, max1), Card::Range(min2, max2)) => Card::Range(*min1.max(min2), max1.min(max2)),
         }
     }
 }

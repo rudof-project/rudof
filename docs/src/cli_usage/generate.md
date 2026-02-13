@@ -30,7 +30,7 @@ Let's start with a simple ShEx schema that defines a Person:
 
 **Example schema (`person.shex`):**
 ```shex
-prefix : <http://example.org/> 
+prefix : <http://example.org/>
 prefix schema: <http://schema.org/>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
@@ -69,30 +69,30 @@ Let's use a SHACL schema for Persons and Courses:
 @prefix :       <http://example.org/> .
 @prefix sh:     <http://www.w3.org/ns/shacl#> .
 @prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
-        
+
 :Person a sh:NodeShape ;
    sh:closed true ;
-   sh:property [                  
-    sh:path     :name ; 
-    sh:minCount 1; 
+   sh:property [
+    sh:path     :name ;
+    sh:minCount 1;
     sh:maxCount 1;
     sh:datatype xsd:string ;
   ] ;
-  sh:property [                   
-   sh:path     :birthDate ; 
-   sh:maxCount 1; 
+  sh:property [
+   sh:path     :birthDate ;
+   sh:maxCount 1;
    sh:datatype xsd:date ;
   ] ;
-  sh:property [                   
-   sh:path     :enrolledIn ; 
+  sh:property [
+   sh:path     :enrolledIn ;
    sh:node     :Course ;
   ] .
 
 :Course a sh:NodeShape;
    sh:closed true ;
-   sh:property [                  
-    sh:path     :name ; 
-    sh:minCount 1; 
+   sh:property [
+    sh:path     :name ;
+    sh:minCount 1;
     sh:maxCount 1;
     sh:datatype xsd:string ;
   ] .
@@ -269,7 +269,7 @@ batch_size = 250
 
 **Schema (`users.shex`):**
 ```shex
-prefix : <http://example.org/> 
+prefix : <http://example.org/>
 prefix schema: <http://schema.org/>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
@@ -292,7 +292,7 @@ rudof generate -s users.shex -n 20 -o users.ttl
 @prefix : <http://example.org/> .
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-        
+
 :Student a sh:NodeShape ;
    sh:property [
     sh:path :studentId ;
@@ -423,21 +423,21 @@ rudof generate -s schema.shex -n 50 --seed 3 -o dataset3.ttl
 
 ### ShEx Features
 
-✅ Shape expressions and constraints  
-✅ Cardinality (*, +, ?, {n,m})  
-✅ Datatypes (xsd:string, xsd:integer, xsd:date, etc.)  
-✅ Node kinds (IRI, Literal, BNode)  
-✅ Value constraints and enumerations  
+✅ Shape expressions and constraints
+✅ Cardinality (*, +, ?, {n,m})
+✅ Datatypes (xsd:string, xsd:integer, xsd:date, etc.)
+✅ Node kinds (IRI, Literal, BNode)
+✅ Value constraints and enumerations
 ✅ References between shapes (@:ShapeName)
 
 ### SHACL Features
 
-✅ Node shapes (sh:NodeShape)  
-✅ Property shapes (sh:property)  
-✅ Cardinality (sh:minCount, sh:maxCount)  
-✅ Datatypes (sh:datatype)  
-✅ Node kinds (sh:nodeKind)  
-✅ Value constraints (sh:in, sh:pattern)  
+✅ Node shapes (sh:NodeShape)
+✅ Property shapes (sh:property)
+✅ Cardinality (sh:minCount, sh:maxCount)
+✅ Datatypes (sh:datatype)
+✅ Node kinds (sh:nodeKind)
+✅ Value constraints (sh:in, sh:pattern)
 ✅ References between shapes (sh:node)
 
 ## See Also

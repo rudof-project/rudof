@@ -18,11 +18,7 @@ pub struct ValidationResult {
 
 impl ValidationResult {
     // Creates a new validation result
-    pub fn new(
-        focus_node: Object,
-        constraint_component: Object,
-        severity: CompiledSeverity,
-    ) -> Self {
+    pub fn new(focus_node: Object, constraint_component: Object, severity: CompiledSeverity) -> Self {
         Self {
             focus_node,
             path: None,
@@ -90,10 +86,7 @@ impl ValidationResult {
 }
 
 impl ValidationResult {
-    pub(crate) fn parse<S: FocusRDF>(
-        store: &mut S,
-        validation_result: &S::Term,
-    ) -> Result<Self, ResultError> {
+    pub(crate) fn parse<S: FocusRDF>(store: &mut S, validation_result: &S::Term) -> Result<Self, ResultError> {
         // Start processing the required fields.
         let focus_node = match store
             .object_for(validation_result, &ShaclVocab::sh_focus_node().clone().into())
@@ -113,19 +106,17 @@ impl ValidationResult {
                 error: e.to_string(),
             })? {
             Some(Object::Iri(severity)) => {
-                CompiledSeverity::from_iri(&severity).ok_or_else(|| {
-                    ResultError::WrongIRIForSeverity {
-                        field: "Severity".to_owned(),
-                        value: format!("{severity}"),
-                    }
+                CompiledSeverity::from_iri(&severity).ok_or_else(|| ResultError::WrongIRIForSeverity {
+                    field: "Severity".to_owned(),
+                    value: format!("{severity}"),
                 })?
-            }
+            },
             Some(other) => {
                 return Err(ResultError::WrongNodeForSeverity {
                     field: "Severity".to_owned(),
                     value: format!("{other}"),
                 });
-            }
+            },
             None => return Err(ResultError::MissingRequiredField("Severity".to_owned())),
         };
         let constraint_component = match store
@@ -143,7 +134,7 @@ impl ValidationResult {
                 return Err(ResultError::MissingRequiredField(
                     "SourceConstraintComponent".to_owned(),
                 ));
-            }
+            },
         };
 
         // Process the optional fields
@@ -174,32 +165,26 @@ impl ValidationResult {
             })?;
 
         // 3. Lastly we build the ValidationResult
-        Ok(
-            ValidationResult::new(focus_node, constraint_component, severity)
-                .with_path(path)
-                .with_source(source)
-                .with_value(value),
-        )
+        Ok(ValidationResult::new(focus_node, constraint_component, severity)
+            .with_path(path)
+            .with_source(source)
+            .with_value(value))
     }
 
-    pub fn to_rdf<RDF>(
-        &self,
-        rdf_writer: &mut RDF,
-        report_node: RDF::Subject,
-    ) -> Result<(), ReportError>
+    pub fn to_rdf<RDF>(&self, rdf_writer: &mut RDF, report_node: RDF::Subject) -> Result<(), ReportError>
     where
         RDF: BuildRDF + Sized,
     {
         rdf_writer
             .add_type(report_node.clone(), ShaclVocab::sh_validation_result().clone())
-            .map_err(|e| ReportError::ValidationReportError { msg: e.to_string() })?;
+            .map_err(|e| ReportError::ValidationError { msg: e.to_string() })?;
         rdf_writer
             .add_triple(
                 report_node.clone(),
                 ShaclVocab::sh_focus_node().clone(),
                 self.focus_node.clone(),
             )
-            .map_err(|e| ReportError::ValidationReportError {
+            .map_err(|e| ReportError::ValidationError {
                 msg: format!("Error adding focus node to validation result: {e}"),
             })?;
         rdf_writer
@@ -208,13 +193,13 @@ impl ValidationResult {
                 ShaclVocab::sh_source_constraint_component().clone(),
                 self.constraint_component.clone(),
             )
-            .map_err(|e| ReportError::ValidationReportError {
+            .map_err(|e| ReportError::ValidationError {
                 msg: format!("Error adding source constraint component to validation result: {e}"),
             })?;
         let severity: RDF::Term = self.severity().to_iri().into();
         rdf_writer
             .add_triple(report_node.clone(), ShaclVocab::sh_result_severity().clone(), severity)
-            .map_err(|e| ReportError::ValidationReportError {
+            .map_err(|e| ReportError::ValidationError {
                 msg: format!("Error adding severity to validation result: {e}"),
             })?;
         let message = match self.message {
@@ -223,14 +208,14 @@ impl ValidationResult {
         };
         rdf_writer
             .add_triple(report_node.clone(), ShaclVocab::sh_result_message().clone(), message)
-            .map_err(|e| ReportError::ValidationReportError {
+            .map_err(|e| ReportError::ValidationError {
                 msg: format!("Error result message to validation result: {e}"),
             })?;
         if let Some(source) = &self.source {
             let source_term: RDF::Term = source.clone().into();
             rdf_writer
                 .add_triple(report_node.clone(), ShaclVocab::sh_source_shape().clone(), source_term)
-                .map_err(|e| ReportError::ValidationReportError {
+                .map_err(|e| ReportError::ValidationError {
                     msg: format!("Error adding source to validation result: {e}"),
                 })?;
         }
@@ -238,7 +223,7 @@ impl ValidationResult {
             let result_path: RDF::Term = path_to_rdf::<RDF>(path);
             rdf_writer
                 .add_triple(report_node.clone(), ShaclVocab::sh_result_path().clone(), result_path)
-                .map_err(|e| ReportError::ValidationReportError {
+                .map_err(|e| ReportError::ValidationError {
                     msg: format!("Error adding result path to validation result: {e}"),
                 })?;
         }
@@ -246,7 +231,7 @@ impl ValidationResult {
             let value_term: RDF::Term = value.clone().into();
             rdf_writer
                 .add_triple(report_node.clone(), ShaclVocab::sh_value().clone(), value_term)
-                .map_err(|e| ReportError::ValidationReportError {
+                .map_err(|e| ReportError::ValidationError {
                     msg: format!("Error adding value to validation result: {e}"),
                 })?;
         }

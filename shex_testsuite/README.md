@@ -21,9 +21,9 @@ Options:
   -p, --print_result_mode <PRINT_RESULT_MODE>
           [default: basic] [possible values: basic, failed, passed, not-implemented, all]
   -e, --entry <Entry names>
-          
+
   -t, --trait <Trait names>
-          
+
   -h, --help
           Print help
   -V, --version

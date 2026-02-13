@@ -47,11 +47,7 @@ pub enum ValidatorError {
     AbstractShapeNoDescendants { idx: ShapeLabelIdx },
 
     #[error("Creating shapemap from node {node} and shape {shape} failed with errors: {error}")]
-    NodeShapeError {
-        node: String,
-        shape: String,
-        error: String,
-    },
+    NodeShapeError { node: String, shape: String, error: String },
     #[error("Converting Term to RDFNode failed pending {term}")]
     TermToRDFNodeFailed { term: String },
 
@@ -62,9 +58,7 @@ pub enum ValidatorError {
     ErrorSerializationError { source_error: String, error: String },
 
     #[error("References failed: Shape pattern matches, but references failed: {}", failed_pending.iter().map(|(n, s)| format!("({n}, {s})")).collect::<Vec<_>>().join(", "))]
-    FailedPending {
-        failed_pending: Vec<(Node, ShapeLabelIdx)>,
-    },
+    FailedPending { failed_pending: Vec<(Node, ShapeLabelIdx)> },
     #[error("Negation cycle error: {neg_cycles:?}")]
     NegCycleError {
         neg_cycles: Vec<Vec<(String, String, Vec<String>)>>,
@@ -103,10 +97,7 @@ pub enum ValidatorError {
     PrefixMapError(#[from] PrefixMapError),
 
     #[error("ShapeLabel not found {shape_label:?}: {error}")]
-    ShapeLabelNotFoundError {
-        shape_label: ShapeExprLabel,
-        error: String,
-    },
+    ShapeLabelNotFoundError { shape_label: ShapeExprLabel, error: String },
 
     #[error("And error: shape expression {shape_expr} failed for node {node}: {errors}")]
     ShapeAndError {
@@ -122,9 +113,7 @@ pub enum ValidatorError {
         errors: Vec<(ShapeLabelIdx, ValidatorErrors)>,
     },
 
-    #[error(
-        "Shape Not error: failed for node {node} because it passed {shape_expr} with {reasons}"
-    )]
+    #[error("Shape Not error: failed for node {node} because it passed {shape_expr} with {reasons}")]
     ShapeNotError {
         shape_expr: Box<ShapeExpr>,
         node: Box<Node>,
@@ -138,25 +127,13 @@ pub enum ValidatorError {
     ValidatorConfigTomlError { path: String, error: String },
 
     #[error("Adding non conformant {node}@{label} error: {error}")]
-    AddingNonConformantError {
-        node: String,
-        label: String,
-        error: String,
-    },
+    AddingNonConformantError { node: String, label: String, error: String },
 
     #[error("Adding conformant {node}@{label} error: {error}")]
-    AddingConformantError {
-        node: String,
-        label: String,
-        error: String,
-    },
+    AddingConformantError { node: String, label: String, error: String },
 
     #[error("Adding pending {node}@{label} error: {error}")]
-    AddingPendingError {
-        node: String,
-        label: String,
-        error: String,
-    },
+    AddingPendingError { node: String, label: String, error: String },
 
     #[error("Shape not found for index {idx}")]
     ShapeExprNotFound { idx: ShapeLabelIdx },
@@ -174,11 +151,7 @@ pub enum ValidatorError {
 }
 
 impl ValidatorError {
-    pub fn show_qualified(
-        &self,
-        _nodes_prefixmap: &PrefixMap,
-        _schema: &SchemaIR,
-    ) -> Result<String, PrefixMapError> {
+    pub fn show_qualified(&self, _nodes_prefixmap: &PrefixMap, _schema: &SchemaIR) -> Result<String, PrefixMapError> {
         Ok(format!("{self}"))
     }
 }

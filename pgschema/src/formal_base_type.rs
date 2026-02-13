@@ -63,38 +63,18 @@ impl FormalBaseType {
     }
 
     /// Checks if the FormalBaseType conforms to the given labels and content.
-    pub fn conforms(
-        &self,
-        labels: &HashSet<LabelName>,
-        content: &Record,
-    ) -> Either<Vec<PgsError>, Vec<Evidence>> {
+    pub fn conforms(&self, labels: &HashSet<LabelName>, content: &Record) -> Either<Vec<PgsError>, Vec<Evidence>> {
         if self.labels != *labels {
             // TODO: Check openness of labels
             return Either::Left::<Vec<PgsError>, Vec<Evidence>>(vec![PgsError::LabelsDifferent {
-                record_labels: labels
-                    .iter()
-                    .cloned()
-                    .collect::<Vec<_>>()
-                    .join(", ")
-                    .to_string(),
-                type_labels: self
-                    .labels
-                    .iter()
-                    .cloned()
-                    .collect::<Vec<_>>()
-                    .join(", ")
-                    .to_string(),
+                record_labels: labels.iter().cloned().collect::<Vec<_>>().join(", ").to_string(),
+                type_labels: self.labels.iter().cloned().collect::<Vec<_>>().join(", ").to_string(),
             }]);
         }
         for record_type in &self.content {
             if record_type.conforms(content).is_right() {
                 return Either::Right(vec![Evidence::LabelsContentConforms {
-                    labels: labels
-                        .iter()
-                        .cloned()
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                        .to_string(),
+                    labels: labels.iter().cloned().collect::<Vec<_>>().join(", ").to_string(),
                     record: format!("{}", content),
                     type_content: format!("{}", record_type),
                 }]);
@@ -161,10 +141,7 @@ fn combine_openness(open1: bool, open2: bool) -> bool {
     open1 || open2
 }
 
-fn combine_set_records(
-    set1: &HashSet<RecordType>,
-    set2: &HashSet<RecordType>,
-) -> HashSet<RecordType> {
+fn combine_set_records(set1: &HashSet<RecordType>, set2: &HashSet<RecordType>) -> HashSet<RecordType> {
     let mut combined: HashSet<RecordType> = HashSet::new();
     for record1 in set1 {
         for record2 in set2 {

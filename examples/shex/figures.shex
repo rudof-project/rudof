@@ -12,7 +12,7 @@ prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
 }
 
 :Colour extends @:Attribute {
-  :scope xsd:string 
+  :scope xsd:string
 } AND {
   :name ["colour"]
 }

@@ -73,9 +73,7 @@ impl Visitor<'_> for MinVisitor {
         E: de::Error,
     {
         if value < -1 {
-            Err(E::custom(format!(
-                "value of type i8 {value} should be -1 or positive"
-            )))
+            Err(E::custom(format!("value of type i8 {value} should be -1 or positive")))
         } else {
             let n = Min::from(value);
             Ok(n)
@@ -87,9 +85,7 @@ impl Visitor<'_> for MinVisitor {
         E: de::Error,
     {
         if value < -1 {
-            Err(E::custom(format!(
-                "value of type i32 {value} should be -1 or positive"
-            )))
+            Err(E::custom(format!("value of type i32 {value} should be -1 or positive")))
         } else {
             Ok(Min::from(value))
         }
@@ -100,9 +96,7 @@ impl Visitor<'_> for MinVisitor {
         E: de::Error,
     {
         if value < -1 {
-            Err(E::custom(format!(
-                "value of type i64 {value} should be -1 or positive"
-            )))
+            Err(E::custom(format!("value of type i64 {value} should be -1 or positive")))
         } else {
             Ok(Min::from(value))
         }

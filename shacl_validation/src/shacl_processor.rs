@@ -61,8 +61,7 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug> {
     /// # Arguments
     ///
     /// * `shapes_graph` - A compiled SHACL shapes graph
-    fn validate(&mut self, shapes_graph: &SchemaIR)
-    -> Result<ValidationReport, Box<ValidateError>>; /*  {
+    fn validate(&mut self, shapes_graph: &SchemaIR) -> Result<ValidationReport, Box<ValidateError>>; /*  {
     // we initialize the validation report to empty
     let mut validation_results = Vec::new();
     let store = self.store();
@@ -95,10 +94,7 @@ impl RdfDataValidation {
 }
 
 impl ShaclProcessor<RdfData> for RdfDataValidation {
-    fn validate(
-        &mut self,
-        shapes_graph: &SchemaIR,
-    ) -> Result<ValidationReport, Box<ValidateError>> {
+    fn validate(&mut self, shapes_graph: &SchemaIR) -> Result<ValidationReport, Box<ValidateError>> {
         let mut validation_results = Vec::new();
         let mut runner: Box<dyn Engine<RdfData>> = match self.mode {
             ShaclValidationMode::Native => Box::new(NativeEngine::new()),
@@ -107,8 +103,7 @@ impl ShaclProcessor<RdfData> for RdfDataValidation {
 
         for (_, shape) in shapes_graph.iter_with_targets() {
             tracing::debug!("ShaclProcessor.validate with shape {}", shape.id());
-            let results =
-                shape.validate(&self.data, &mut (*runner), None, Some(shape), shapes_graph)?;
+            let results = shape.validate(&self.data, &mut (*runner), None, Some(shape), shapes_graph)?;
             validation_results.extend(results);
         }
 
@@ -151,8 +146,8 @@ fn runner(&mut self) -> &mut dyn Engine<RdfData> {
 /// // the following schema should generate no errors when the conforming graph
 /// // loaded in the previous declaration is used for validation
 /// let schema = std::fs::read_to_string(Path::new("../examples/book.ttl")).unwrap();
-/// let cursor = std::io::Cursor::new(schema);
-/// let compiled_schema = ShaclDataManager::load(cursor, RDFFormat::Turtle, None).unwrap();
+/// let mut cursor = std::io::Cursor::new(schema);
+/// let compiled_schema = ShaclDataManager::load(&mut cursor, "base_uri", RDFFormat::Turtle, None).unwrap();
 ///
 /// let report = graph_validation.validate(&compiled_schema).unwrap();
 ///
@@ -206,10 +201,7 @@ impl GraphValidation {
 }
 
 impl ShaclProcessor<RdfData> for GraphValidation {
-    fn validate(
-        &mut self,
-        shapes_graph: &SchemaIR,
-    ) -> Result<ValidationReport, Box<ValidateError>> {
+    fn validate(&mut self, shapes_graph: &SchemaIR) -> Result<ValidationReport, Box<ValidateError>> {
         let mut validation_results = Vec::new();
         let store = self.store.store();
         let mut runner: Box<dyn Engine<RdfData>> = match self.mode {
@@ -247,31 +239,21 @@ pub struct EndpointValidation {
 }
 
 impl EndpointValidation {
-    pub fn new(
-        iri: &str,
-        prefixmap: &PrefixMap,
-        mode: ShaclValidationMode,
-    ) -> Result<Self, Box<ValidateError>> {
+    pub fn new(iri: &str, prefixmap: &PrefixMap, mode: ShaclValidationMode) -> Result<Self, Box<ValidateError>> {
         Ok(EndpointValidation {
             store: Endpoint::new(iri, prefixmap)?,
             mode,
         })
     }
 
-    pub fn from_sparql(
-        sparql: SRDFSparql,
-        mode: ShaclValidationMode,
-    ) -> Result<Self, Box<ValidateError>> {
+    pub fn from_sparql(sparql: SRDFSparql, mode: ShaclValidationMode) -> Result<Self, Box<ValidateError>> {
         let store = Endpoint::from_sparql(sparql);
         Ok(EndpointValidation { store, mode })
     }
 }
 
 impl ShaclProcessor<SRDFSparql> for EndpointValidation {
-    fn validate(
-        &mut self,
-        shapes_graph: &SchemaIR,
-    ) -> Result<ValidationReport, Box<ValidateError>> {
+    fn validate(&mut self, shapes_graph: &SchemaIR) -> Result<ValidationReport, Box<ValidateError>> {
         // we initialize the validation report to empty
         let mut validation_results = Vec::new();
         let store = self.store.store();

@@ -1,5 +1,5 @@
 use crate::service::errors::*;
-use crate::service::service::RudofMcpService;
+use crate::service::mcp_service::RudofMcpService;
 use rmcp::{
     ErrorData as McpError,
     model::{Annotated, RawResource, ReadResourceResult, ResourceContents},
@@ -109,9 +109,7 @@ pub fn get_data_resources() -> Vec<Annotated<RawResource>> {
             raw: RawResource {
                 uri: "rudof://formats/rdf".to_string(),
                 name: "Supported RDF Formats".to_string(),
-                description: Some(
-                    "List of all supported RDF data formats for import/export".to_string(),
-                ),
+                description: Some("List of all supported RDF data formats for import/export".to_string()),
                 mime_type: Some("application/json".to_string()),
                 title: None,
                 size: None,
@@ -157,15 +155,13 @@ pub async fn export_rdf_data(
     })?;
 
     let mut buffer = Vec::new();
-    rudof
-        .serialize_data(&rdf_format, &mut buffer)
-        .map_err(|e| {
-            internal_error(
-                "Serialization error",
-                e.to_string(),
-                Some(json!({"operation":"export_rdf_data", "phase":"serialize_data"})),
-            )
-        })?;
+    rudof.serialize_data(&rdf_format, &mut buffer).map_err(|e| {
+        internal_error(
+            "Serialization error",
+            e.to_string(),
+            Some(json!({"operation":"export_rdf_data", "phase":"serialize_data"})),
+        )
+    })?;
 
     let text = String::from_utf8(buffer).map_err(|e| {
         internal_error(

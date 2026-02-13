@@ -20,19 +20,15 @@ fn test(
 
     for test in tests {
         let mut validator = RdfDataValidation::from_rdf_data(test.data, mode);
-        let test_shapes = test
-            .shapes
-            .try_into()
-            .map_err(
-                |e: Box<CompiledShaclError>| TestSuiteError::TestShapesCompilation {
+        let test_shapes =
+            test.shapes
+                .try_into()
+                .map_err(|e: Box<CompiledShaclError>| TestSuiteError::TestShapesCompilation {
                     error: (*e).to_string(),
-                },
-            )?;
+                })?;
         let report = validator
             .validate(&test_shapes)
-            .map_err(|e| TestSuiteError::Validation {
-                error: e.to_string(),
-            })?;
+            .map_err(|e| TestSuiteError::Validation { error: e.to_string() })?;
         if report != test.report {
             return Err(Box::new(TestSuiteError::NotEquals));
         }

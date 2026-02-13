@@ -81,8 +81,8 @@ impl Shape {
     pub fn add_edges(&self, source: ShapeLabelIdx, graph: &mut DependencyGraph, pos_neg: PosNeg) {
         for (_component, _pred, cond) in self.expr.components() {
             match cond {
-                rbe::MatchCond::Single(_single_cond) => {}
-                rbe::MatchCond::And(_match_conds) => {}
+                rbe::MatchCond::Single(_single_cond) => {},
+                rbe::MatchCond::And(_match_conds) => {},
                 rbe::MatchCond::Ref(r) => graph.add_edge(source, r, pos_neg),
             }
         }
@@ -92,11 +92,11 @@ impl Shape {
         let mut result: HashMap<Pred, Vec<ShapeLabelIdx>> = HashMap::new();
         for (_component, pred, cond) in self.expr.components() {
             match cond {
-                rbe::MatchCond::Single(_single_cond) => {}
-                rbe::MatchCond::And(_match_conds) => {}
+                rbe::MatchCond::Single(_single_cond) => {},
+                rbe::MatchCond::And(_match_conds) => {},
                 rbe::MatchCond::Ref(r) => {
                     result.entry(pred.clone()).or_default().push(r);
-                }
+                },
             }
         }
         result
@@ -108,10 +108,7 @@ impl Display for Shape {
         let extends = if self.extends.is_empty() {
             "".to_string()
         } else {
-            format!(
-                "EXTENDS [{}]",
-                self.extends.iter().map(|e| e.to_string()).join(" ")
-            )
+            format!("EXTENDS [{}]", self.extends.iter().map(|e| e.to_string()).join(" "))
         };
         let closed = if self.closed { "CLOSED" } else { "" };
         let extra = if self.extra.is_empty() {

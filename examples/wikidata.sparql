@@ -6,8 +6,8 @@ SELECT * where {
   ?person       wdt:P31     wd:Q5 ;
                 wdt:P19     ?birth_place ;
                 rdfs:label  ?label .
-  ?birth_place  rdfs:label  ?birth_place_name 
+  ?birth_place  rdfs:label  ?birth_place_name
   Filter(
-    Lang(?label)='en' && 
+    Lang(?label)='en' &&
     Lang(?birth_place_name)='en')
 } limit 10

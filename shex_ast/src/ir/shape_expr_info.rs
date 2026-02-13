@@ -9,11 +9,7 @@ pub struct ShapeExprInfo {
 
 impl ShapeExprInfo {
     pub fn new(label: Option<ShapeLabel>, expr: ShapeExpr, source: SourceIdx) -> Self {
-        ShapeExprInfo {
-            label,
-            expr,
-            source,
-        }
+        ShapeExprInfo { label, expr, source }
     }
 
     pub fn set_expr(&mut self, expr: ShapeExpr) {

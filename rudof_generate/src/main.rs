@@ -74,7 +74,7 @@ async fn main() {
             Err(e) => {
                 error!("Failed to load configuration: {}", e);
                 std::process::exit(1);
-            }
+            },
         }
     } else {
         info!("No configuration file specified, using defaults");
@@ -121,11 +121,11 @@ async fn main() {
                 error!("Data generation failed: {}", e);
                 std::process::exit(1);
             }
-        }
+        },
         Err(e) => {
             error!("Failed to create data generator: {}", e);
             std::process::exit(1);
-        }
+        },
     }
 
     let duration = start_time.elapsed();
@@ -152,6 +152,6 @@ async fn load_config(config_path: &PathBuf) -> rudof_generate::Result<GeneratorC
             } else {
                 GeneratorConfig::from_toml_file(config_path)
             }
-        }
+        },
     }
 }

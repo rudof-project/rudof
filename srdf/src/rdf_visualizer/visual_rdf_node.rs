@@ -46,11 +46,7 @@ impl VisualRDFNode {
         term_to_visual_node(rdf, &term, graph)
     }
 
-    pub fn from_term<R: NeighsRDF>(
-        rdf: &R,
-        term: &R::Term,
-        graph: &mut VisualRDFGraph,
-    ) -> Result<Self, RDFError> {
+    pub fn from_term<R: NeighsRDF>(rdf: &R, term: &R::Term, graph: &mut VisualRDFGraph) -> Result<Self, RDFError> {
         term_to_visual_node(rdf, term, graph)
     }
 
@@ -70,41 +66,33 @@ impl VisualRDFNode {
     ) -> Result<String, RdfVisualizerError> {
         trace!("Converting node {self} with node id {node_id} to plantuml");
         match self {
-            VisualRDFNode::Iri { label, url } => Ok(format!(
-                "rectangle \"[[{url} {label}]]\" <<uri>> as {node_id}"
-            )),
-            VisualRDFNode::BlankNode { label: _ } => {
-                Ok(format!("rectangle \" \" <<bnode>> as {node_id}"))
-            }
-            VisualRDFNode::Literal { value } => {
-                Ok(format!("rectangle \"{value}\" <<literal>> as {node_id}"))
-            }
+            VisualRDFNode::Iri { label, url } => Ok(format!("rectangle \"[[{url} {label}]]\" <<uri>> as {node_id}")),
+            VisualRDFNode::BlankNode { label: _ } => Ok(format!("rectangle \" \" <<bnode>> as {node_id}")),
+            VisualRDFNode::Literal { value } => Ok(format!("rectangle \"{value}\" <<literal>> as {node_id}")),
             VisualRDFNode::NonAssertedTriple(_subj, _pred, _obj) => {
                 let mut str = String::new();
                 str.push_str(format!("cloud \" \" <<non_asserted>> as {node_id}\n").as_str());
                 Ok(str)
-            }
+            },
             VisualRDFNode::AssertedTriple(_subj, _pred, _obj) => {
                 let mut str = String::new();
                 str.push_str(format!("rectangle \" \" <<asserted>> as {node_id}\n").as_str());
                 Ok(str)
-            }
+            },
             VisualRDFNode::Predicate { label, url } => {
                 if show_if_predicate {
-                    Ok(format!(
-                        "rectangle \"[[{url} {label}]]\" <<uri>> as {node_id}"
-                    ))
+                    Ok(format!("rectangle \"[[{url} {label}]]\" <<uri>> as {node_id}"))
                 } else {
                     Ok(String::new())
                 }
-            }
+            },
             VisualRDFNode::Reifies => {
                 if show_if_predicate {
                     Ok(format!("rectangle \"reifies\" <<reifies>> as {node_id}"))
                 } else {
                     Ok("".to_string())
                 }
-            }
+            },
         }
     }
 }
@@ -164,7 +152,7 @@ fn object_to_visual_node<R: NeighsRDF>(
                 label: rdf.qualify_iri(&iri),
                 url: iri_s.as_str().to_string(),
             })
-        }
+        },
         Object::BlankNode(bnode) => Ok(VisualRDFNode::BlankNode {
             label: bnode.to_string(),
         }),
@@ -182,7 +170,7 @@ fn object_to_visual_node<R: NeighsRDF>(
             let o: R::Term = R::Term::from((**object).clone());
             let triple = graph.create_triple_term(rdf, s, p, o)?;
             Ok(triple)
-        }
+        },
     }
 }
 
@@ -192,18 +180,18 @@ impl Display for VisualRDFNode {
             VisualRDFNode::Iri { label, url } => write!(f, "Iri: {label} ({url})"),
             VisualRDFNode::BlankNode { label } => {
                 write!(f, "BlankNode: {label}")
-            }
+            },
             VisualRDFNode::Literal { value } => {
                 write!(f, "Literal: {value}")
-            }
+            },
             VisualRDFNode::NonAssertedTriple(_, _, _) => write!(f, "NonAssertedTriple"),
             VisualRDFNode::AssertedTriple(_, _, _) => write!(f, "AssertedTriple"),
             VisualRDFNode::Predicate { label, url } => {
                 write!(f, "Predicate: {label} ({url})")
-            }
+            },
             VisualRDFNode::Reifies => {
                 write!(f, "Reifies")
-            }
+            },
         }
     }
 }

@@ -10,11 +10,7 @@ use tracing::{Level, debug, trace};
 use crate::UmlConverterError;
 
 pub trait UmlConverter {
-    fn as_plantuml<W: Write>(
-        &self,
-        writer: &mut W,
-        mode: &UmlGenerationMode,
-    ) -> Result<(), UmlConverterError>;
+    fn as_plantuml<W: Write>(&self, writer: &mut W, mode: &UmlGenerationMode) -> Result<(), UmlConverterError>;
 
     fn as_image<W: Write, P: AsRef<Path>>(
         &self,
@@ -29,13 +25,8 @@ pub trait UmlConverter {
                 error: e.to_string(),
             });
         }
-        trace!(
-            "Using PlantUML jar file: {}",
-            plantuml_path.as_ref().display()
-        );
-        let tempdir = TempDir::new().map_err(|e| UmlConverterError::TempFileError {
-            error: e.to_string(),
-        })?;
+        trace!("Using PlantUML jar file: {}", plantuml_path.as_ref().display());
+        let tempdir = TempDir::new().map_err(|e| UmlConverterError::TempFileError { error: e.to_string() })?;
         trace!("Created temporary directory: {}", tempdir.path().display());
         let tempdir_path = tempdir.path();
         let tempfile_path = tempdir_path.join("temp.uml");
@@ -47,17 +38,13 @@ pub trait UmlConverter {
         }
 
         let (out_param, out_file_name) = match image_format {
-            ImageFormat::PNG => ("-png", tempdir_path.join("temp.png")),
-            ImageFormat::SVG => ("-svg", tempdir_path.join("temp.svg")),
+            ImageFormat::Png => ("-png", tempdir_path.join("temp.png")),
+            ImageFormat::Svg => ("-svg", tempdir_path.join("temp.svg")),
         };
-        check_java_installed().map_err(|e| UmlConverterError::JavaNotInstalled {
+        check_java_installed().map_err(|e| UmlConverterError::JavaNotInstalled { error: e.to_string() })?;
+        check_plantuml_jar(plantuml_path.as_ref()).map_err(|e| UmlConverterError::NoPlantUMLFile {
+            path: plantuml_path.as_ref().display().to_string(),
             error: e.to_string(),
-        })?;
-        check_plantuml_jar(plantuml_path.as_ref()).map_err(|e| {
-            UmlConverterError::NoPlantUMLFile {
-                path: plantuml_path.as_ref().display().to_string(),
-                error: e.to_string(),
-            }
         })?;
 
         // show_contents(&tempfile_path).unwrap();
@@ -90,20 +77,18 @@ pub trait UmlConverter {
                                 error: e,
                             }
                         })?;
-                        copy(&mut temp_file, writer).map_err(|e| {
-                            UmlConverterError::CopyingTempFile {
-                                temp_name: out_file_name.display().to_string(),
-                                error: e,
-                            }
+                        copy(&mut temp_file, writer).map_err(|e| UmlConverterError::CopyingTempFile {
+                            temp_name: out_file_name.display().to_string(),
+                            error: e,
                         })?;
                         Ok(())
-                    }
+                    },
                     Err(e) => Err(UmlConverterError::PlantUMLCommandError {
                         command: command_name,
                         error: e.to_string(),
                     }),
                 }
-            }
+            },
             Err(e) => Err(UmlConverterError::PlantUMLCommandError {
                 command: format!("{:?}", command),
                 error: e.to_string(),
@@ -117,20 +102,16 @@ pub trait UmlConverter {
         tempfile_name: &str,
         mode: &UmlGenerationMode,
     ) -> Result<(), UmlConverterError> {
-        let mut file =
-            File::create(tempfile_path).map_err(|e| UmlConverterError::CreatingTempUMLFile {
-                tempfile_name: tempfile_name.to_string(),
-                error: e.to_string(),
-            })?;
+        let mut file = File::create(tempfile_path).map_err(|e| UmlConverterError::CreatingTempUMLFile {
+            tempfile_name: tempfile_name.to_string(),
+            error: e.to_string(),
+        })?;
         self.as_plantuml(&mut file, mode)
-            .map_err(|e| UmlConverterError::UmlError {
-                error: e.to_string(),
-            })?;
-        file.flush()
-            .map_err(|e| UmlConverterError::FlushingTempUMLFile {
-                tempfile_name: tempfile_name.to_string(),
-                error: e.to_string(),
-            })?;
+            .map_err(|e| UmlConverterError::UmlError { error: e.to_string() })?;
+        file.flush().map_err(|e| UmlConverterError::FlushingTempUMLFile {
+            tempfile_name: tempfile_name.to_string(),
+            error: e.to_string(),
+        })?;
         Ok(())
     }
 }
@@ -179,20 +160,14 @@ fn check_java_installed() -> Result<(), io::Error> {
 
 fn check_plantuml_jar<P: AsRef<Path>>(plantuml_path: P) -> Result<(), io::Error> {
     if plantuml_path.as_ref().exists() {
-        debug!(
-            "Found PlantUML jar file at path: {}",
-            plantuml_path.as_ref().display()
-        );
+        debug!("Found PlantUML jar file at path: {}", plantuml_path.as_ref().display());
         let mut command = Command::new("java");
         command
             .arg("-jar")
             .arg(plantuml_path.as_ref().display().to_string())
             .arg("-version");
         let output = command.output()?;
-        debug!(
-            "PlantUML jar file check executed with status: {}",
-            output.status
-        );
+        debug!("PlantUML jar file check executed with status: {}", output.status);
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
             debug!("PlantUML jar file check stderr: {}", stderr);
@@ -215,8 +190,8 @@ fn check_plantuml_jar<P: AsRef<Path>>(plantuml_path: P) -> Result<(), io::Error>
 }
 
 pub enum ImageFormat {
-    SVG,
-    PNG,
+    Svg,
+    Png,
 }
 
 #[derive(Debug, Clone, Default)]

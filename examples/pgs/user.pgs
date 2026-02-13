@@ -1,4 +1,4 @@
 CREATE NODE TYPE ( UserType : User {
     name: STRING ||
     ( givenName: STRING, familyName: STRING )
-}) 
+})

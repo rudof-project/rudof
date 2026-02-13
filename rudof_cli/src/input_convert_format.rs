@@ -11,7 +11,7 @@ use rudof_lib::{shacl_format::CliShaclFormat, shex_format::ShExFormat};
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
 #[clap(rename_all = "lower")]
 pub enum InputConvertFormat {
-    CSV,
+    Csv,
     #[default]
     ShExC,
     ShExJ,
@@ -20,7 +20,7 @@ pub enum InputConvertFormat {
 }
 
 impl InputConvertFormat {
-    pub fn to_shex_format(&self) -> Result<ShExFormat> {
+    pub fn to_shex_format(self) -> Result<ShExFormat> {
         match self {
             InputConvertFormat::ShExC => Ok(ShExFormat::ShExC),
             InputConvertFormat::ShExJ => Ok(ShExFormat::ShExJ),
@@ -28,17 +28,17 @@ impl InputConvertFormat {
             _ => bail!("Converting ShEx, format {self} not supported"),
         }
     }
-    pub fn to_shacl_format(&self) -> Result<CliShaclFormat> {
+    pub fn to_shacl_format(self) -> Result<CliShaclFormat> {
         match self {
             InputConvertFormat::Turtle => Ok(CliShaclFormat::Turtle),
             _ => bail!("Converting to SHACL, format {self} not supported"),
         }
     }
 
-    pub fn to_dctap_format(&self) -> Result<CliDCTapFormat> {
+    pub fn to_dctap_format(self) -> Result<CliDCTapFormat> {
         match self {
-            InputConvertFormat::CSV => Ok(CliDCTapFormat::CSV),
-            InputConvertFormat::Xlsx => Ok(CliDCTapFormat::XLSX),
+            InputConvertFormat::Csv => Ok(CliDCTapFormat::Csv),
+            InputConvertFormat::Xlsx => Ok(CliDCTapFormat::Xlsx),
             _ => bail!("Converting to DCTAP, format {self} not supported"),
         }
     }
@@ -49,7 +49,7 @@ impl FromStr for InputConvertFormat {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "csv" => Ok(InputConvertFormat::CSV),
+            "csv" => Ok(InputConvertFormat::Csv),
             "xlsx" => Ok(InputConvertFormat::Xlsx),
             "shexc" => Ok(InputConvertFormat::ShExC),
             "shexj" => Ok(InputConvertFormat::ShExJ),
@@ -62,7 +62,7 @@ impl FromStr for InputConvertFormat {
 impl Display for InputConvertFormat {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            InputConvertFormat::CSV => write!(dest, "csv"),
+            InputConvertFormat::Csv => write!(dest, "csv"),
             InputConvertFormat::Xlsx => write!(dest, "xlsx"),
             InputConvertFormat::ShExC => write!(dest, "shexc"),
             InputConvertFormat::ShExJ => write!(dest, "shexj"),
@@ -77,9 +77,6 @@ mod tests {
     use std::str::FromStr;
     #[test]
     fn test_from_str() {
-        assert_eq!(
-            InputConvertFormat::from_str("CSV").unwrap(),
-            InputConvertFormat::CSV
-        )
+        assert_eq!(InputConvertFormat::from_str("CSV").unwrap(), InputConvertFormat::Csv)
     }
 }

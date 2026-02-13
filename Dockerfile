@@ -1,26 +1,44 @@
-ARG BINARY_NAME_DEFAULT=rudof
+# Dockerfile for rudof MCP server
+# Optimized for Docker MCP Registry
 
-FROM clux/muslrust:latest as builder
-RUN groupadd -g 10001 -r dockergrp && useradd -r -g dockergrp -u 10001 dockeruser
-ARG BINARY_NAME_DEFAULT
-ENV BINARY_NAME=$BINARY_NAME_DEFAULT
+FROM clux/muslrust:latest AS builder
 
-# Now add the rest of the project and build the real main
-COPY . ./
-RUN set -x && cargo build --target x86_64-unknown-linux-musl --release
-RUN mkdir -p /build-out
-RUN set -x && cp target/x86_64-unknown-linux-musl/release/$BINARY_NAME /build-out/
+WORKDIR /app
 
-# Create a minimal docker image 
-FROM scratch
+# Copy source code
+COPY . .
 
-COPY --from=0 /etc/passwd /etc/passwd
-USER dockeruser
+# Build the rudof CLI binary (which includes the MCP server)
+RUN cargo build --target x86_64-unknown-linux-musl --release -p rudof_cli
 
-ARG BINARY_NAME_DEFAULT
-ENV BINARY_NAME=$BINARY_NAME_DEFAULT
+# Runtime image with Java and PlantUML
+FROM eclipse-temurin:21-jre-alpine
 
-ENV RUST_LOG="error,$BINARY_NAME=info"
-COPY --from=builder /build-out/$BINARY_NAME /
+# Install PlantUML
+ARG PLANTUML_VERSION=1.2024.8
+RUN mkdir -p /opt/plantuml && \
+    wget -q -O /opt/plantuml/plantuml.jar \
+    "https://github.com/plantuml/plantuml/releases/download/v${PLANTUML_VERSION}/plantuml-${PLANTUML_VERSION}.jar"
 
-ENTRYPOINT ["/$BINARY_NAME"]
+# Install graphviz for PlantUML diagrams
+RUN apk add --no-cache graphviz fontconfig ttf-dejavu
+
+# Set environment variables
+ENV RUST_LOG="info,rudof_mcp=debug"
+ENV PLANTUML="/opt/plantuml/plantuml.jar"
+
+# Copy the binary from builder
+COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/rudof /usr/local/bin/rudof
+
+# Create persistent state directory
+RUN mkdir -p /app/state && chmod 777 /app/state
+
+# Switch to non-root user
+USER 1000:1000
+
+# Declare VOLUME for state persistence
+VOLUME ["/app/state"]
+
+# MCP server entrypoint
+ENTRYPOINT ["rudof"]
+CMD ["mcp"]

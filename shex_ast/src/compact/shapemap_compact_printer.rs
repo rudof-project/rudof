@@ -111,10 +111,7 @@ impl<'a, A> ShapemapCompactPrinter<'a, A>
 where
     A: Clone,
 {
-    pub fn new(
-        shapemap: &'a QueryShapeMap,
-        doc: &'a Arena<'a, A>,
-    ) -> ShapemapCompactPrinter<'a, A> {
+    pub fn new(shapemap: &'a QueryShapeMap, doc: &'a Arena<'a, A>) -> ShapemapCompactPrinter<'a, A> {
         ShapemapCompactPrinter {
             width: DEFAULT_WIDTH,
             keyword_color: DEFAULT_KEYWORD_COLOR,
@@ -158,10 +155,7 @@ where
         self
     }
 
-    pub fn pretty_print_write<W: std::io::Write>(
-        &self,
-        writer: &mut W,
-    ) -> Result<(), std::io::Error> {
+    pub fn pretty_print_write<W: std::io::Write>(&self, writer: &mut W) -> Result<(), std::io::Error> {
         let doc = self.pp_shapemap();
         doc.render(self.width, writer)
     }
@@ -188,11 +182,7 @@ where
     fn pp_node_selector(&self, ns: &NodeSelector) -> DocBuilder<'a, Arena<'a, A>, A> {
         match ns {
             NodeSelector::Node(v) => pp_object_value(v, self.doc, &self.nodes_prefixmap),
-            NodeSelector::TriplePattern {
-                subject,
-                path,
-                object,
-            } => self
+            NodeSelector::TriplePattern { subject, path, object } => self
                 .doc
                 .text("{")
                 .append(self.space())
@@ -219,11 +209,7 @@ where
         self.doc.text(format!("'''{str}'''"))
     }
 
-    fn pp_shacl_path(
-        &self,
-        path: &SHACLPathRef,
-        prefixmap: &PrefixMap,
-    ) -> DocBuilder<'a, Arena<'a, A>, A> {
+    fn pp_shacl_path(&self, path: &SHACLPathRef, prefixmap: &PrefixMap) -> DocBuilder<'a, Arena<'a, A>, A> {
         match path {
             SHACLPathRef::Predicate { pred } => self.pp_iri_ref(pred, prefixmap),
             _ => todo!(),
@@ -247,21 +233,19 @@ where
 
     fn pp_literal(&self, literal: &SLiteral) -> DocBuilder<'a, Arena<'a, A>, A> {
         match literal {
-            SLiteral::StringLiteral { lexical_form, lang } => {
-                self.pp_string_literal(lexical_form, lang)
-            }
-            SLiteral::DatatypeLiteral {
+            SLiteral::String { lexical_form, lang } => self.pp_string_literal(lexical_form, lang),
+            SLiteral::Datatype {
                 lexical_form: _,
                 datatype: _,
             } => todo!(),
-            SLiteral::WrongDatatypeLiteral {
+            SLiteral::WrongDatatype {
                 lexical_form: _,
                 datatype: _,
                 error: _,
             } => todo!(),
-            SLiteral::NumericLiteral(lit) => self.pp_numeric_literal(lit),
-            SLiteral::BooleanLiteral(_) => todo!(),
-            SLiteral::DatetimeLiteral(_xsd_date_time) => todo!(),
+            SLiteral::Numeric(lit) => self.pp_numeric_literal(lit),
+            SLiteral::Boolean(_) => todo!(),
+            SLiteral::Datetime(_xsd_date_time) => todo!(),
         }
     }
 
@@ -341,11 +325,7 @@ where
         self.doc.text(value.to_string())
     }
 
-    fn pp_string_literal(
-        &self,
-        lexical_form: &str,
-        lang: &Option<Lang>,
-    ) -> DocBuilder<'a, Arena<'a, A>, A> {
+    fn pp_string_literal(&self, lexical_form: &str, lang: &Option<Lang>) -> DocBuilder<'a, Arena<'a, A>, A> {
         match lang {
             Some(_) => todo!(),
             None => self.pp_string(lexical_form),
@@ -391,9 +371,7 @@ where
 
     fn pp_shape_selector(&self, s: &ShapeSelector) -> DocBuilder<'a, Arena<'a, A>, A> {
         match s {
-            ShapeSelector::Label(label) => {
-                pp_label(label, self.doc, &self.shapes_prefixmap, self.keyword_color)
-            }
+            ShapeSelector::Label(label) => pp_label(label, self.doc, &self.shapes_prefixmap, self.keyword_color),
             ShapeSelector::Start => keyword("START", self.doc, self.keyword_color),
         }
     }

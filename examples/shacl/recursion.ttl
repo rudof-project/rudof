@@ -12,7 +12,7 @@
 :ko a :Person ;
     :knows :ko .
 
-# Knows KO to trigger validation error 
+# Knows KO to trigger validation error
 :ko1 a :Person ;
     :name "KO1" ;
     :knows :ko .

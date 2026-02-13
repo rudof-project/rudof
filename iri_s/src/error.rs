@@ -5,7 +5,6 @@ use thiserror::Error;
 /// Errors that can occur when working with [`IriS`]
 #[derive(Error, Debug, Clone, Serialize)]
 pub enum IriSError {
-
     /// Error converting a [`std::path::Path`] into an IRI
     #[error("Error converting path {path} to IRI: {error}")]
     ConvertingPathToIri { path: String, error: String },
@@ -16,11 +15,7 @@ pub enum IriSError {
 
     /// Error parsing an [`String`] into an IRI using a base IRI
     #[error("Parsing {str} using base: {base} as IRI. Error: {error}")]
-    IriParseErrorWithBase {
-        str: String,
-        base: String,
-        error: String,
-    },
+    IriParseErrorWithBase { str: String, base: String, error: String },
 
     /// Error resolving an IRI against a base IRI
     #[error("Error resolving IRI `{other}` with base IRI `{base}`: {error}")]
@@ -60,9 +55,5 @@ pub enum IriSError {
 
     /// Error reading from a file obtained from a [`url::Url`]
     #[error("Error reading from file {path} obtained from url {url}. Error: {error}")]
-    IOErrorFile {
-        path: String,
-        url: String,
-        error: String,
-    },
+    IOErrorFile { path: String, url: String, error: String },
 }

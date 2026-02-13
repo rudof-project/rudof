@@ -4,5 +4,8 @@
 pub mod srdf_sparql_error;
 pub mod srdfsparql;
 
+#[cfg(target_family = "wasm")]
+mod wasm_stubs;
+
 pub use crate::srdf_sparql_error::*;
 pub use crate::srdfsparql::*;

@@ -1,9 +1,7 @@
 use std::collections::HashSet;
 
 use iri_s::IriS;
-use shacl_ast::{
-    Schema, ShaclError, node_shape::NodeShape, property_shape::PropertyShape, shape::Shape,
-};
+use shacl_ast::{Schema, ShaclError, node_shape::NodeShape, property_shape::PropertyShape, shape::Shape};
 use srdf::Rdf;
 
 #[derive(Debug, Clone, Default)]
@@ -30,9 +28,7 @@ impl ClosedInfo {
 
     pub fn ignored_properties(&self) -> Option<&HashSet<IriS>> {
         match self {
-            ClosedInfo::Yes {
-                ignored_properties, ..
-            } => Some(ignored_properties),
+            ClosedInfo::Yes { ignored_properties, .. } => Some(ignored_properties),
             ClosedInfo::No => None,
         }
     }
@@ -40,17 +36,12 @@ impl ClosedInfo {
     /// Allowed properties are the union of ignored properties and the properties that are defined in a shape
     pub fn allowed_properties(&self) -> Option<&HashSet<IriS>> {
         match self {
-            ClosedInfo::Yes {
-                allowed_properties, ..
-            } => Some(allowed_properties),
+            ClosedInfo::Yes { allowed_properties, .. } => Some(allowed_properties),
             ClosedInfo::No => None,
         }
     }
 
-    pub fn get_closed_info_node_shape<R: Rdf>(
-        shape: &NodeShape<R>,
-        schema: &Schema<R>,
-    ) -> Result<Self, ShaclError> {
+    pub fn get_closed_info_node_shape<R: Rdf>(shape: &NodeShape<R>, schema: &Schema<R>) -> Result<Self, ShaclError> {
         let (is_closed, ignored_properties) = shape.closed_component();
         if is_closed {
             let ignored_properties: HashSet<IriS> = ignored_properties.into_iter().collect();
@@ -93,28 +84,24 @@ impl ClosedInfo {
 }
 
 // TODO: Refactor to avoid code duplication between this method and the next one
-fn defined_properties<R: Rdf>(
-    shape: &NodeShape<R>,
-    schema: &Schema<R>,
-) -> Result<HashSet<IriS>, ShaclError> {
+fn defined_properties<R: Rdf>(shape: &NodeShape<R>, schema: &Schema<R>) -> Result<HashSet<IriS>, ShaclError> {
     let mut defined_properties: HashSet<IriS> = HashSet::new();
     for property_shape_ref in shape.property_shapes() {
-        let property_shape =
-            schema
-                .get_shape(property_shape_ref)
-                .ok_or_else(|| ShaclError::ShapeNotFound {
-                    shape: Box::new(property_shape_ref.clone()),
-                })?;
+        let property_shape = schema
+            .get_shape(property_shape_ref)
+            .ok_or_else(|| ShaclError::ShapeNotFound {
+                shape: Box::new(property_shape_ref.clone()),
+            })?;
         match property_shape {
             Shape::PropertyShape(ps) => {
                 let pred = ps.path().pred().unwrap();
                 defined_properties.insert(pred.clone());
-            }
+            },
             _ => {
                 return Err(ShaclError::ShapeNotFound {
                     shape: Box::new(property_shape_ref.clone()),
                 });
-            }
+            },
         }
     }
     Ok(defined_properties)
@@ -126,22 +113,21 @@ fn defined_properties_property_shape<R: Rdf>(
 ) -> Result<HashSet<IriS>, ShaclError> {
     let mut defined_properties: HashSet<IriS> = HashSet::new();
     for property_shape_ref in shape.property_shapes() {
-        let property_shape =
-            schema
-                .get_shape(property_shape_ref)
-                .ok_or_else(|| ShaclError::ShapeNotFound {
-                    shape: Box::new(property_shape_ref.clone()),
-                })?;
+        let property_shape = schema
+            .get_shape(property_shape_ref)
+            .ok_or_else(|| ShaclError::ShapeNotFound {
+                shape: Box::new(property_shape_ref.clone()),
+            })?;
         match property_shape {
             Shape::PropertyShape(ps) => {
                 let pred = ps.path().pred().unwrap();
                 defined_properties.insert(pred.clone());
-            }
+            },
             _ => {
                 return Err(ShaclError::ShapeNotFound {
                     shape: Box::new(property_shape_ref.clone()),
                 });
-            }
+            },
         }
     }
     Ok(defined_properties)

@@ -45,7 +45,6 @@ The client launches the MCP server as a subprocess, with communication via stdin
 - Server-Sent Events (SSE) for real-time streaming
 - Session management with `MCP-Session-Id` header
 - Origin header validation for security
-- Localhost-only binding by default (`127.0.0.1`)
 
 
 ## 🎯 MCP Capabilities
@@ -166,7 +165,6 @@ The HTTP transport implements comprehensive MCP specification security requireme
 
 - ✅ **Origin Validation** — Invalid Origin headers return HTTP 403 Forbidden
 - ✅ **Protocol Version Validation** — Invalid versions return HTTP 400 Bad Request
-- ✅ **Localhost-Only Binding** — Binds to `127.0.0.1` by default, not `0.0.0.0`
 - ✅ **Session Management** — Explicit session termination via HTTP DELETE
 
 ---
@@ -179,6 +177,7 @@ Built on robust, well-maintained libraries:
 - [`rudof_lib`](https://crates.io/crates/rudof_lib) — Core Rudof library for RDF operations
 - [`axum`](https://crates.io/crates/axum) — Modern HTTP server for StreamableHTTP transport
 - [`tokio`](https://crates.io/crates/tokio) — High-performance async runtime
+- [`ipnetwork`](https://crates.io/crates/ipnetwork) — IP address and network parsing and validation for allowed network configuration
 
 ---
 

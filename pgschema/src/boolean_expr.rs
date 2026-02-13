@@ -24,16 +24,16 @@ impl BooleanExpr {
                 let check_a = a.check(value)?;
                 let check_b = b.check(value)?;
                 Ok(check_a && check_b)
-            }
+            },
             BooleanExpr::Or(a, b) => {
                 let check_a = a.check(value)?;
                 let check_b = b.check(value)?;
                 Ok(check_a || check_b)
-            }
+            },
             BooleanExpr::Not(expr) => {
                 let check = expr.check(value)?;
                 Ok(!check)
-            }
+            },
             BooleanExpr::Equals(v) => Ok(value == v),
             BooleanExpr::GreaterThan(v) => value.greater_than(v),
             BooleanExpr::LessThan(v) => value.less_than(v),

@@ -36,7 +36,7 @@ mod prefixmap_tests {
             for i in 0..5 {
                 let iri = IriS::from_str(&uris[i])?;
                 pm.add_prefix(&prefix_vec[i], iri)?;
-                write!(expected, "prefix {}: <{}>\n", &prefix_vec[i], &uris[i]).unwrap();
+                writeln!(expected, "prefix {}: <{}>", &prefix_vec[i], &uris[i]).unwrap();
             }
 
             assert_eq!(pm.to_string(), expected);

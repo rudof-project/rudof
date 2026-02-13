@@ -102,10 +102,7 @@ pub enum RDFParseError {
     ExpectedIRIFoundLiteral { lit: SLiteral },
 
     #[error("Condition {condition_name} failed for node {node}")]
-    NodeDoesntSatisfyCondition {
-        condition_name: String,
-        node: String,
-    },
+    NodeDoesntSatisfyCondition { condition_name: String, node: String },
 
     #[error("Both branches of an OR parser failed. Error1: {err1}, Error2: {err2}")]
     FailedOr {

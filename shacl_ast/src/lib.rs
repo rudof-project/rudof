@@ -17,7 +17,7 @@ pub enum ShaclFormat {
     #[default]
     Turtle,
     NTriples,
-    RDFXML,
+    RdfXml,
     TriG,
     N3,
     NQuads,
@@ -31,7 +31,7 @@ impl ShaclFormat {
             ShaclFormat::Internal => "application/shacl+json",
             ShaclFormat::Turtle => "text/turtle",
             ShaclFormat::NTriples => "application/n-triples",
-            ShaclFormat::RDFXML => "application/rdf+xml",
+            ShaclFormat::RdfXml => "application/rdf+xml",
             ShaclFormat::TriG => "application/trig",
             ShaclFormat::N3 => "text/n3",
             ShaclFormat::NQuads => "application/n-quads",

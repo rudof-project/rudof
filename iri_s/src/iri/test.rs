@@ -1,7 +1,7 @@
 #![allow(unused_imports, dead_code)]
 
 use crate::iri;
-use crate::{iri_once, static_once, IriS};
+use crate::{IriS, iri_once, static_once};
 use proptest::prelude::*;
 use std::str::FromStr;
 

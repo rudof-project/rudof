@@ -3,10 +3,9 @@ use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use serde::{Deserialize, Serialize};
 use shex_ast::compact::ShExParser;
-use shex_ast::{
-    ResolveMethod, Schema, SchemaJsonError, ShExFormat, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel,
-};
-use std::collections::{hash_map::Entry, HashMap};
+use shex_ast::{ResolveMethod, Schema, SchemaJsonError, ShExFormat, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel};
+use std::collections::{HashMap, hash_map::Entry};
+#[cfg(not(target_family = "wasm"))]
 use url::Url;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
@@ -96,10 +95,10 @@ impl SchemaWithoutImports {
                     imported_from: maybe_iri.clone(),
                     shape_expr2: Box::new(decl.shape_expr),
                 });
-            }
+            },
             Entry::Vacant(v) => {
                 v.insert((decl.shape_expr.clone(), source_iri.clone()));
-            }
+            },
         }
         Ok(())
     }
@@ -118,7 +117,7 @@ impl SchemaWithoutImports {
                 let new_schema = match resolve_method {
                     ResolveMethod::RotatingFormats(formats) => {
                         find_schema_rotating_formats(&candidate_iri, formats.clone(), base)
-                    }
+                    },
                     ResolveMethod::ByGuessingExtension => todo!(),
                     ResolveMethod::ByContentNegotiation => todo!(),
                 }?;
@@ -143,9 +142,7 @@ impl SchemaWithoutImports {
         for (_, (shape, _)) in self.shapes() {
             let extends_counter = match shape {
                 ShapeExpr::Shape(Shape { extends: None, .. }) => Some(0),
-                ShapeExpr::Shape(Shape {
-                    extends: Some(es), ..
-                }) => Some(es.len()),
+                ShapeExpr::Shape(Shape { extends: Some(es), .. }) => Some(es.len()),
                 _ => None,
             };
 
@@ -154,10 +151,10 @@ impl SchemaWithoutImports {
                     Entry::Occupied(mut v) => {
                         let r = v.get_mut();
                         *r += 1;
-                    }
+                    },
                     Entry::Vacant(vac) => {
                         vac.insert(1);
-                    }
+                    },
                 }
             }
         }
@@ -174,7 +171,7 @@ pub fn find_schema_rotating_formats(
         match get_schema_from_iri(iri, format, base) {
             Err(_e) => {
                 // we ignore the errors by now...we could collect them in a structure and return more information about the errors
-            }
+            },
             Ok(schema) => return Ok(schema),
         }
     }
@@ -200,7 +197,7 @@ pub fn resolve_iri_ref(
                 }
             })?;
             Ok(iri)
-        }
+        },
     }
 }
 
@@ -208,12 +205,10 @@ pub fn resolve_iri_ref(
 pub fn local_folder_as_iri() -> Result<IriS, SchemaJsonError> {
     use tracing::debug;
 
-    let current_dir = std::env::current_dir().map_err(|e| SchemaJsonError::CurrentDir {
-        error: format!("{e}"),
-    })?;
+    let current_dir = std::env::current_dir().map_err(|e| SchemaJsonError::CurrentDir { error: format!("{e}") })?;
     debug!("Current dir: {current_dir:?}");
-    let url = Url::from_file_path(&current_dir)
-        .map_err(|_e| SchemaJsonError::LocalFolderIriError { path: current_dir })?;
+    let url =
+        Url::from_file_path(&current_dir).map_err(|_e| SchemaJsonError::LocalFolderIriError { path: current_dir })?;
     debug!("url: {url}");
     Ok(IriS::new_unchecked(url.as_str()))
 }
@@ -232,30 +227,28 @@ pub fn get_schema_from_iri(
 ) -> Result<Schema, SchemaWithoutImportsError> {
     match format {
         ShExFormat::ShExC => {
-            let content =
-                iri.dereference(base)
-                    .map_err(|e| SchemaWithoutImportsError::DereferencingIri {
-                        iri: iri.clone(),
-                        error: format!("{e}"),
-                    })?;
-            let schema = ShExParser::parse(content.as_str(), None, iri).map_err(|e| {
-                SchemaWithoutImportsError::ShExCError {
-                    error: format!("{e}"),
-                    content: content.clone(),
-                }
-            })?;
-            Ok(schema)
-        }
-        ShExFormat::ShExJ => {
-            let schema =
-                Schema::from_iri(iri).map_err(|e| SchemaWithoutImportsError::ShExJError {
+            let content = iri
+                .dereference(base)
+                .map_err(|e| SchemaWithoutImportsError::DereferencingIri {
                     iri: iri.clone(),
                     error: format!("{e}"),
                 })?;
+            let schema =
+                ShExParser::parse(content.as_str(), None, iri).map_err(|e| SchemaWithoutImportsError::ShExCError {
+                    error: format!("{e}"),
+                    content: content.clone(),
+                })?;
             Ok(schema)
-        }
+        },
+        ShExFormat::ShExJ => {
+            let schema = Schema::from_iri(iri).map_err(|e| SchemaWithoutImportsError::ShExJError {
+                iri: iri.clone(),
+                error: format!("{e}"),
+            })?;
+            Ok(schema)
+        },
         ShExFormat::RDFFormat(_) => {
             todo!()
-        }
+        },
     }
 }

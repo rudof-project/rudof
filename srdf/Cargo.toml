@@ -1,6 +1,6 @@
 [package]
 name = "srdf"
-version = "0.1.146"
+version = "0.1.147"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/srdf"
@@ -50,4 +50,3 @@ url.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true
-tokio = { version = "1.47", features = ["full"] }

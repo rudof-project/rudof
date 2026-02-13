@@ -14,7 +14,7 @@ fn shex_compact_simple(c: &mut Criterion) {
     <S> {
         :p @<T>;
     }
-    
+
     <T> {
         :q @<S>
     }"#;

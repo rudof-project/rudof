@@ -33,9 +33,7 @@ impl<R> ReaderRange<R> {
                     if let Some(str) = data.as_string() {
                         rcd.push_field(&str);
                     } else {
-                        debug!(
-                            "Processing excel, data can not converted to string: {data:?} at ({row},{column})"
-                        );
+                        debug!("Processing excel, data can not converted to string: {data:?} at ({row},{column})");
                         rcd.push_field("");
                     }
                 } else {

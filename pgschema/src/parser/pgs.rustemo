@@ -1,7 +1,7 @@
 Pgs:
     CreateType+[SEMICOLON] ;
 
-CreateType: 
+CreateType:
     CreateNodeType | CreateEdgeType | CreateGraphType ;
 
 CreateNodeType:
@@ -31,11 +31,11 @@ Imports:
 GraphTypeMode:
     STRICT | LOOSE ;
 
-GraphTypeElements: 
+GraphTypeElements:
     TypeName | NodeType | EdgeType ;
 
 TypeName:
-    IDENTIFIER ;  
+    IDENTIFIER ;
 
 EndpointType:
     "(" LabelPropertySpec ")" ;
@@ -46,25 +46,25 @@ LabelPropertySpec:
 LabelSpec:
     ":" Labels ;
 
-Labels: 
-    SingleLabel MoreLabels? 
+Labels:
+    SingleLabel MoreLabels?
     ;
 
-MoreLabels: 
+MoreLabels:
     AMPERSAND SingleLabel MoreLabels? {AndLabels}
   | BAR SingleLabel MoreLabels? {OrLabels}
-  ; 
+  ;
 
 SingleLabel:
-    IDENTIFIER {SingleLabel} 
+    IDENTIFIER {SingleLabel}
    | "@" IDENTIFIER {TypeName} ;
 
 PropertySpec:
     OPEN_CURLY Properties CLOSE_CURLY ;
 
 Properties:
-      left=Properties "," right=Properties {EachOf, 1, left} 
-    | left=Properties "||" right=Properties {OneOf, 2, left} 
+      left=Properties "," right=Properties {EachOf, 1, left}
+    | left=Properties "||" right=Properties {OneOf, 2, left}
     | '(' Properties ')' {Paren}
     | "OPTIONAL"? Property {BaseProperty}
     ;
@@ -94,8 +94,8 @@ SimpleType: STRING_NAME Card? Check? {StringSpec}
 Check: CHECK Cond ;
 
 
-Cond: TRUE 
-    | FALSE 
+Cond: TRUE
+    | FALSE
     | GT SingleValue  {GT}
     | GE SingleValue  {GE}
     | LT SingleValue {LT}
@@ -106,21 +106,21 @@ Cond: TRUE
     | left=Cond OR right=Cond {OR,1,left}
     | NOT Cond {Not}
     | "(" Cond ")" {ParenCond}
-    ; 
+    ;
 
 
-Card: 
-    "?" {Optional} 
-    | "+" {OneOrMore} 
+Card:
+    "?" {Optional}
+    | "+" {OneOrMore}
     | "*" {ZeroOrMore}
     | "{" NUMBER "," Max "}" {Range} ;
 
 Max:
-    NUMBER | 
+    NUMBER |
     "*" {Star};
 
 
-SingleValue:    
+SingleValue:
       QUOTED_STRING {StringValue}
     | NUMBER {NumberValue}
     | DATE QUOTED_STRING {DateValue}
@@ -216,7 +216,7 @@ BOOL_NAME:
 
 
 STRING_NAME:
-    "STRING" ; 
+    "STRING" ;
 
 DATE_NAME:
     "DATE" ;
@@ -237,7 +237,7 @@ CHECK:
     "CHECK" ;
 
 TRUE:
-    "TRUE" ; 
+    "TRUE" ;
 
 FALSE:
     "FALSE" ;

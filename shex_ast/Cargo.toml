@@ -1,6 +1,6 @@
 [package]
 name = "shex_ast"
-version = "0.1.145"
+version = "0.1.147"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shex_ast"
@@ -12,7 +12,6 @@ repository.workspace = true
 [dependencies]
 colored.workspace = true
 const_format.workspace = true
-crossterm.workspace = true
 csv.workspace = true
 iri_s.workspace = true
 itertools.workspace = true

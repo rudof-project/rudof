@@ -15,7 +15,7 @@ use serde_json::json;
 use std::str::FromStr;
 
 use super::helpers::*;
-use crate::service::{errors::*, service::RudofMcpService};
+use crate::service::{errors::*, mcp_service::RudofMcpService};
 
 /// Request parameters for loading RDF data from various sources.
 ///
@@ -147,7 +147,7 @@ pub async fn load_rdf_data_from_sources_impl(
                 "Provide valid file paths, URLs, or raw RDF content",
             )
             .into_call_tool_result());
-        }
+        },
     };
 
     // Parse base IRI - return Tool Execution Error for malformed IRI
@@ -159,7 +159,7 @@ pub async fn load_rdf_data_from_sources_impl(
                 "Provide a valid absolute IRI (e.g., 'http://example.org/base/')",
             )
             .into_call_tool_result());
-        }
+        },
     };
 
     // Parse data format - return Tool Execution Error for unsupported format
@@ -172,7 +172,7 @@ pub async fn load_rdf_data_from_sources_impl(
                 format!("Supported formats: {}", RDF_FORMATS),
             )
             .into_call_tool_result());
-        }
+        },
     };
 
     get_data_rudof(
@@ -213,6 +213,9 @@ pub async fn load_rdf_data_from_sources_impl(
     let mut result = CallToolResult::success(vec![Content::text(response.message.clone())]);
     result.structured_content = Some(structured);
 
+    // Release the lock before async operations (notifications and persistence)
+    drop(rudof);
+
     // Notify subscribers that all current-data resources have been updated
     const DATA_RESOURCE_URIS: &[&str] = &[
         "rudof://current-data",
@@ -226,6 +229,11 @@ pub async fn load_rdf_data_from_sources_impl(
 
     for uri in DATA_RESOURCE_URIS {
         service.notify_resource_updated((*uri).to_string()).await;
+    }
+
+    // Persist state for Docker ephemeral container support
+    if let Err(e) = service.persist_state().await {
+        tracing::warn!("Failed to persist state after loading RDF data: {}", e);
     }
 
     Ok(result)
@@ -254,7 +262,7 @@ pub async fn export_rdf_data_impl(
                 format!("Supported formats: {}", RDF_FORMATS),
             )
             .into_call_tool_result());
-        }
+        },
     };
 
     let mut v = Vec::new();
@@ -365,7 +373,7 @@ pub async fn export_image_impl(
                 format!("Supported formats: {}", IMAGE_FORMATS),
             )
             .into_call_tool_result());
-        }
+        },
     };
 
     let v = export_rdf_to_image(&rudof, format).map_err(|e| {
@@ -404,10 +412,7 @@ pub async fn export_image_impl(
         image_format, size_bytes
     );
 
-    let mut result = CallToolResult::success(vec![
-        Content::text(description),
-        Content::image(base64_data, mime_type),
-    ]);
+    let mut result = CallToolResult::success(vec![Content::text(description), Content::image(base64_data, mime_type)]);
 
     result.structured_content = Some(structured);
 

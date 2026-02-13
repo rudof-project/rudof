@@ -35,11 +35,7 @@ impl<S: Rdf> QuerySolutions<S> {
         }
     }
 
-    pub fn extend(
-        &mut self,
-        solutions: Vec<QuerySolution<S>>,
-        prefixmap: PrefixMap,
-    ) -> Result<(), PrefixMapError> {
+    pub fn extend(&mut self, solutions: Vec<QuerySolution<S>>, prefixmap: PrefixMap) -> Result<(), PrefixMapError> {
         self.solutions.extend(solutions);
         self.prefixmap.merge(prefixmap)?;
         Ok(())
@@ -59,12 +55,7 @@ impl<S: Rdf> QuerySolutions<S> {
             let mut builder = Builder::default();
             let mut variables = Vec::new();
             variables.push("".to_string()); // First column = index
-            variables.extend(
-                first
-                    .variables_iter()
-                    .map(|v| format!("{v}"))
-                    .collect::<Vec<_>>(),
-            );
+            variables.extend(first.variables_iter().map(|v| format!("{v}")).collect::<Vec<_>>());
             builder.push_record(variables);
             for (idx, result) in results_iter.enumerate() {
                 let mut record = Vec::new();
@@ -88,7 +79,7 @@ impl<S: Rdf> QuerySolutions<S> {
                                     object.show_qualified(&self.prefixmap)
                                 ),
                             }
-                        }
+                        },
                         None => String::new(),
                     };
                     record.push(str);
@@ -98,13 +89,9 @@ impl<S: Rdf> QuerySolutions<S> {
 
             let mut table = builder.build();
             table.with(Style::modern_rounded());
-            writeln!(writer, "{table}").map_err(|e| RDFError::WritingTableError {
-                error: format!("{e}"),
-            })?;
+            writeln!(writer, "{table}").map_err(|e| RDFError::WritingTableError { error: format!("{e}") })?;
         } else {
-            write!(writer, "No results").map_err(|e| RDFError::WritingTableError {
-                error: format!("{e}"),
-            })?;
+            write!(writer, "No results").map_err(|e| RDFError::WritingTableError { error: format!("{e}") })?;
         }
         Ok(())
     }

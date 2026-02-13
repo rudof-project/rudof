@@ -5,10 +5,7 @@ use crate::ir::inheritance_graph::InheritanceGraph;
 use crate::ir::shape::Shape;
 use crate::ir::shape_expr_info::ShapeExprInfo;
 use crate::ir::source_idx::SourceIdx;
-use crate::{
-    CResult, SchemaIRError, ShapeExprLabel, ShapeLabelIdx, ast::Schema as SchemaJson,
-    ir::ast2ir::AST2IR,
-};
+use crate::{CResult, SchemaIRError, ShapeExprLabel, ShapeLabelIdx, ast::Schema as SchemaJson, ir::ast2ir::AST2IR};
 use crate::{Expr, Node, Pred, ResolveMethod};
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
@@ -97,20 +94,13 @@ impl SchemaIR {
         self.total_shapes_counter
     }
 
-    pub fn add_shape(
-        &mut self,
-        shape_label: ShapeLabel,
-        se: ShapeExpr,
-        source_iri: &IriS,
-    ) -> ShapeLabelIdx {
+    pub fn add_shape(&mut self, shape_label: ShapeLabel, se: ShapeExpr, source_iri: &IriS) -> ShapeLabelIdx {
         let idx = ShapeLabelIdx::from(self.shape_label_counter);
         self.labels_idx_map.insert(shape_label.clone(), idx);
         self.idx_labels_map.insert(idx, shape_label.clone());
         let source_idx = self.new_source_idx(source_iri);
-        self.shapes.insert(
-            idx,
-            ShapeExprInfo::new(Some(shape_label.clone()), se, source_idx),
-        );
+        self.shapes
+            .insert(idx, ShapeExprInfo::new(Some(shape_label.clone()), se, source_idx));
         self.shape_label_counter += 1;
         idx
     }
@@ -139,10 +129,7 @@ impl SchemaIR {
         self.inheritance_graph.descendants(idx)
     }
 
-    pub fn get_triple_exprs(
-        &self,
-        idx: &ShapeLabelIdx,
-    ) -> Option<HashMap<Option<ShapeLabelIdx>, Vec<Expr>>> {
+    pub fn get_triple_exprs(&self, idx: &ShapeLabelIdx) -> Option<HashMap<Option<ShapeLabelIdx>, Vec<Expr>>> {
         if let Some(info) = self.find_shape_idx(idx) {
             let mut result = HashMap::new();
             let current_exprs = info.expr().get_triple_exprs(self);
@@ -185,17 +172,17 @@ impl SchemaIR {
                     Entry::Occupied(mut v) => {
                         let r = v.get_mut();
                         *r += 1;
-                    }
+                    },
                     Entry::Vacant(vac) => {
                         vac.insert(1);
-                    }
+                    },
                 }
             }
         }
         result
     }
 
-    pub fn from_schema_json(
+    pub fn populate_from_schema_json(
         &mut self,
         schema_json: &SchemaJson,
         resolve_method: &ResolveMethod,
@@ -212,23 +199,22 @@ impl SchemaIR {
                 IriRef::Iri(iri) => {
                     let label = ShapeLabel::iri(iri.clone());
                     Ok::<ShapeLabel, SchemaIRError>(label)
-                }
+                },
                 IriRef::Prefixed { prefix, local } => {
-                    let iri =
-                        self.prefixmap
-                            .resolve_prefix_local(prefix, local)
-                            .map_err(|err| SchemaIRError::PrefixedNotFound {
-                                prefix: prefix.clone(),
-                                local: local.clone(),
-                                err: Box::new(err),
-                            })?;
+                    let iri = self.prefixmap.resolve_prefix_local(prefix, local).map_err(|err| {
+                        SchemaIRError::PrefixedNotFound {
+                            prefix: prefix.clone(),
+                            local: local.clone(),
+                            err: Box::new(err),
+                        }
+                    })?;
                     Ok::<ShapeLabel, SchemaIRError>(ShapeLabel::iri(iri))
-                }
+                },
             },
             ShapeExprLabel::BNode { value } => {
                 let label = ShapeLabel::from_bnode((*value).clone());
                 Ok(label)
-            }
+            },
             ShapeExprLabel::Start => Ok(ShapeLabel::Start),
         }?;
         match self.labels_idx_map.get(&shape_label) {
@@ -264,15 +250,12 @@ impl SchemaIR {
     }
 
     fn new_source_idx(&mut self, source_iri: &IriS) -> SourceIdx {
-        let source_idx = self
-            .sources_map
-            .entry(source_iri.clone())
-            .or_insert_with(|| {
-                let idx = SourceIdx::new(self.sources_counter);
-                self.sources.insert(idx, source_iri.clone());
-                self.sources_counter += 1;
-                idx
-            });
+        let source_idx = self.sources_map.entry(source_iri.clone()).or_insert_with(|| {
+            let idx = SourceIdx::new(self.sources_counter);
+            self.sources.insert(idx, source_iri.clone());
+            self.sources_counter += 1;
+            idx
+        });
         *source_idx
     }
 
@@ -310,7 +293,7 @@ impl SchemaIR {
                     }
                     visited.insert(*idx);
                     self.references_visited(idx, visited)
-                }
+                },
                 _ => info.expr().references(self),
             }
         } else {
@@ -401,7 +384,7 @@ impl SchemaIR {
                     for e in shape.extends() {
                         inheritance_graph.add_edge(*idx, *e);
                     }
-                }
+                },
                 _ => continue,
             }
         }
@@ -411,16 +394,13 @@ impl SchemaIR {
     pub fn dependencies(&self) -> Vec<(ShapeLabel, PosNeg, ShapeLabel)> {
         let mut deps = Vec::new();
         for (source, posneg, target) in self.dependency_graph().all_edges() {
-            match (
-                self.shape_label_from_idx(&source),
-                self.shape_label_from_idx(&target),
-            ) {
+            match (self.shape_label_from_idx(&source), self.shape_label_from_idx(&target)) {
                 (Some(source_label), Some(target_label)) => {
                     deps.push((source_label.clone(), posneg, target_label.clone()));
-                }
+                },
                 _ => {
                     // We ignore dependencies between shapes that have no labels
-                }
+                },
             }
         }
         deps
@@ -439,14 +419,10 @@ impl SchemaIR {
                         )
                         .as_str(),
                     );
-                }
+                },
                 None => {
-                    result.push_str(
-                        self.show_shape_expr(info.expr(), width)
-                            .to_string()
-                            .as_str(),
-                    );
-                }
+                    result.push_str(self.show_shape_expr(info.expr(), width).to_string().as_str());
+                },
             }
         } else {
             result.push_str(format!("ShapeLabelIdx {idx} not found").as_str());
@@ -511,9 +487,7 @@ impl SchemaIR {
         };
         let show_pred = |p: &Pred| self.prefixmap.qualify(p.iri());
         let show_cond = |node: &Node| node.show_qualified(&self.prefixmap()).to_string();
-        let rbe = shape
-            .triple_expr()
-            .show_rbe_table(show_pred, show_cond, width);
+        let rbe = shape.triple_expr().show_rbe_table(show_pred, show_cond, width);
         format!("{extends}{closed}{extra}{{{rbe}}}")
     }
 }
@@ -570,9 +544,7 @@ mod tests {
     use iri_s::iri;
 
     use super::SchemaIR;
-    use crate::{
-        Pred, ResolveMethod, ShapeLabelIdx, ast::Schema as SchemaJson, ir::shape_label::ShapeLabel,
-    };
+    use crate::{Pred, ResolveMethod, ShapeLabelIdx, ast::Schema as SchemaJson, ir::shape_label::ShapeLabel};
 
     #[test]
     fn test_find_component() {
@@ -595,7 +567,7 @@ mod tests {
         }"#;
         let schema_json: SchemaJson = serde_json::from_str::<SchemaJson>(str).unwrap();
         let mut ir = SchemaIR::new();
-        ir.from_schema_json(&schema_json, &ResolveMethod::default(), &None)
+        ir.populate_from_schema_json(&schema_json, &ResolveMethod::default(), &None)
             .unwrap();
         println!("Schema IR: {ir}");
         let s1_label: ShapeLabel = ShapeLabel::iri(iri!("http://a.example/S1"));
@@ -648,7 +620,7 @@ mod tests {
 }"#;
         let schema: SchemaJson = serde_json::from_str(str).unwrap();
         let mut ir = SchemaIR::new();
-        ir.from_schema_json(&schema, &ResolveMethod::default(), &None)
+        ir.populate_from_schema_json(&schema, &ResolveMethod::default(), &None)
             .unwrap();
         println!("Schema IR: {ir}");
         let s: ShapeLabel = ShapeLabel::iri(iri!("http://example.org/S"));
@@ -715,7 +687,7 @@ mod tests {
 }"#;
         let schema: SchemaJson = serde_json::from_str(str).unwrap();
         let mut ir = SchemaIR::new();
-        ir.from_schema_json(&schema, &ResolveMethod::default(), &None)
+        ir.populate_from_schema_json(&schema, &ResolveMethod::default(), &None)
             .unwrap();
         let s: ShapeLabel = ShapeLabel::iri(iri!("http://example.org/S"));
         let idx = ir.get_shape_label_idx(&s).unwrap();

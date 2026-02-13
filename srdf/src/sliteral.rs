@@ -19,25 +19,25 @@ use tracing::trace;
 /// It also supports literals with wrong datatypes to be able to parse RDF data that can have wrong datatype literals but needs to be validated
 #[derive(PartialEq, Eq, Hash, Debug, Serialize, Deserialize, Clone)]
 pub enum SLiteral {
-    StringLiteral {
+    String {
         lexical_form: String,
         lang: Option<Lang>,
     },
-    DatatypeLiteral {
+    Datatype {
         lexical_form: String,
         datatype: IriRef, // TODO: We should change this to IriS
     },
-    NumericLiteral(NumericLiteral),
-    DatetimeLiteral(XsdDateTime),
+    Numeric(NumericLiteral),
+    Datetime(XsdDateTime),
 
     #[serde(serialize_with = "serialize_boolean_literal")]
-    BooleanLiteral(bool),
+    Boolean(bool),
 
     /// Represents a literal with a wrong datatype
     /// For example, a value like `23` with datatype `xsd:date`
     /// These literals can be useful to parse RDF data that can have wrong datatype literals but needs to be validated
     /// Error contains the error message
-    WrongDatatypeLiteral {
+    WrongDatatype {
         lexical_form: String,
         datatype: IriRef,
         error: String,
@@ -72,18 +72,15 @@ impl SLiteral {
     /// This can be useful to validate datatypes that are wrong like `"hello"^^xsd:integer`
     pub fn as_checked_literal(&self) -> Result<SLiteral, RDFError> {
         match self {
-            SLiteral::DatatypeLiteral {
-                lexical_form,
-                datatype,
-            } => check_literal_datatype(lexical_form, datatype),
+            SLiteral::Datatype { lexical_form, datatype } => check_literal_datatype(lexical_form, datatype),
             _ => Ok(self.clone()),
         }
     }
 
     pub fn match_literal(&self, literal_expected: &SLiteral) -> bool {
         let result = match self {
-            SLiteral::StringLiteral { lexical_form, lang } => match literal_expected {
-                SLiteral::StringLiteral {
+            SLiteral::String { lexical_form, lang } => match literal_expected {
+                SLiteral::String {
                     lexical_form: expected_lexical_form,
                     lang: expected_lang,
                 } => {
@@ -91,41 +88,34 @@ impl SLiteral {
                         "Comparing string literals: {lexical_form} ({lang:?}) with expected {expected_lexical_form} ({expected_lang:?})"
                     );
                     lexical_form == expected_lexical_form && lang == expected_lang
-                }
+                },
                 _ => false,
             },
-            SLiteral::DatatypeLiteral {
-                lexical_form,
-                datatype,
-            } => match literal_expected {
-                SLiteral::DatatypeLiteral {
+            SLiteral::Datatype { lexical_form, datatype } => match literal_expected {
+                SLiteral::Datatype {
                     lexical_form: expected_lexical_form,
                     datatype: expected_datatype,
                 } => lexical_form == expected_lexical_form && datatype == expected_datatype,
                 _ => false,
             },
-            SLiteral::NumericLiteral(numeric_literal) => match literal_expected {
-                SLiteral::NumericLiteral(expected_numeric_literal) => {
-                    numeric_literal == expected_numeric_literal
-                }
+            SLiteral::Numeric(numeric_literal) => match literal_expected {
+                SLiteral::Numeric(expected_numeric_literal) => numeric_literal == expected_numeric_literal,
                 _ => false,
             },
-            SLiteral::DatetimeLiteral(xsd_date_time) => match literal_expected {
-                SLiteral::DatetimeLiteral(expected_xsd_date_time) => {
-                    xsd_date_time == expected_xsd_date_time
-                }
+            SLiteral::Datetime(xsd_date_time) => match literal_expected {
+                SLiteral::Datetime(expected_xsd_date_time) => xsd_date_time == expected_xsd_date_time,
                 _ => false,
             },
-            SLiteral::BooleanLiteral(b) => match literal_expected {
-                SLiteral::BooleanLiteral(expected_bool) => b == expected_bool,
+            SLiteral::Boolean(b) => match literal_expected {
+                SLiteral::Boolean(expected_bool) => b == expected_bool,
                 _ => false,
             },
-            SLiteral::WrongDatatypeLiteral {
+            SLiteral::WrongDatatype {
                 lexical_form,
                 datatype,
                 error: _,
             } => match literal_expected {
-                SLiteral::WrongDatatypeLiteral {
+                SLiteral::WrongDatatype {
                     lexical_form: expected_lexical_form,
                     datatype: expected_datatype,
                     error: _,
@@ -138,70 +128,70 @@ impl SLiteral {
     }
 
     pub fn integer(n: isize) -> SLiteral {
-        SLiteral::NumericLiteral(NumericLiteral::integer(n))
+        SLiteral::Numeric(NumericLiteral::integer(n))
     }
 
     pub fn non_negative_integer(n: usize) -> SLiteral {
-        SLiteral::NumericLiteral(NumericLiteral::non_negative_integer(n))
+        SLiteral::Numeric(NumericLiteral::non_negative_integer(n))
     }
 
     pub fn non_positive_integer(n: isize) -> SLiteral {
-        SLiteral::NumericLiteral(NumericLiteral::non_positive_integer(n))
+        SLiteral::Numeric(NumericLiteral::non_positive_integer(n))
     }
 
     pub fn positive_integer(n: usize) -> SLiteral {
-        SLiteral::NumericLiteral(NumericLiteral::positive_integer(n))
+        SLiteral::Numeric(NumericLiteral::positive_integer(n))
     }
 
     pub fn negative_integer(n: isize) -> SLiteral {
-        SLiteral::NumericLiteral(NumericLiteral::negative_integer(n))
+        SLiteral::Numeric(NumericLiteral::negative_integer(n))
     }
 
     pub fn double(d: f64) -> SLiteral {
-        SLiteral::NumericLiteral(NumericLiteral::double(d))
+        SLiteral::Numeric(NumericLiteral::double(d))
     }
 
     pub fn decimal(d: Decimal) -> SLiteral {
-        SLiteral::NumericLiteral(NumericLiteral::decimal(d))
+        SLiteral::Numeric(NumericLiteral::decimal(d))
     }
 
     pub fn long(n: isize) -> SLiteral {
-        SLiteral::NumericLiteral(NumericLiteral::long(n))
+        SLiteral::Numeric(NumericLiteral::long(n))
     }
 
     pub fn unsigned_byte(n: u8) -> SLiteral {
-        SLiteral::NumericLiteral(NumericLiteral::unsigned_byte(n))
+        SLiteral::Numeric(NumericLiteral::unsigned_byte(n))
     }
 
     pub fn unsigned_short(n: u16) -> SLiteral {
-        SLiteral::NumericLiteral(NumericLiteral::unsigned_short(n))
+        SLiteral::Numeric(NumericLiteral::unsigned_short(n))
     }
 
     pub fn unsigned_int(n: u32) -> SLiteral {
-        SLiteral::NumericLiteral(NumericLiteral::unsigned_int(n))
+        SLiteral::Numeric(NumericLiteral::unsigned_int(n))
     }
 
     pub fn unsigned_long(n: u64) -> SLiteral {
-        SLiteral::NumericLiteral(NumericLiteral::unsigned_long(n))
+        SLiteral::Numeric(NumericLiteral::unsigned_long(n))
     }
 
     pub fn byte(n: i8) -> SLiteral {
-        SLiteral::NumericLiteral(NumericLiteral::byte(n))
+        SLiteral::Numeric(NumericLiteral::byte(n))
     }
 
     pub fn float(n: f64) -> SLiteral {
-        SLiteral::NumericLiteral(NumericLiteral::float(n))
+        SLiteral::Numeric(NumericLiteral::float(n))
     }
 
     pub fn lit_datatype(lexical_form: &str, datatype: &IriRef) -> SLiteral {
-        SLiteral::DatatypeLiteral {
+        SLiteral::Datatype {
             lexical_form: lexical_form.to_owned(),
             datatype: datatype.clone(),
         }
     }
 
     pub fn boolean(b: bool) -> SLiteral {
-        SLiteral::BooleanLiteral(b)
+        SLiteral::Boolean(b)
     }
 
     /// Parses a string that should represent a lexical form of a boolean
@@ -271,8 +261,7 @@ impl SLiteral {
     /// Valid values are any valid integer string
     /// Returns an error if the string cannot be parsed as a non-negative integer
     pub fn parse_non_negative_integer(str: &str) -> Result<usize, String> {
-        str::parse::<usize>(str)
-            .map_err(|e| format!("Cannot convert {str} to non-negative integer: {e}"))
+        str::parse::<usize>(str).map_err(|e| format!("Cannot convert {str} to non-negative integer: {e}"))
     }
 
     /// Parses a string that should represent a lexical form of a unsigned byte
@@ -374,14 +363,14 @@ impl SLiteral {
     }
 
     pub fn str(lexical_form: &str) -> SLiteral {
-        SLiteral::StringLiteral {
+        SLiteral::String {
             lexical_form: lexical_form.to_owned(),
             lang: None,
         }
     }
 
     pub fn lang_str(lexical_form: &str, lang: Lang) -> SLiteral {
-        SLiteral::StringLiteral {
+        SLiteral::String {
             lexical_form: lexical_form.to_owned(),
             lang: Some(lang),
         }
@@ -389,92 +378,77 @@ impl SLiteral {
 
     pub fn lang(&self) -> Option<Lang> {
         match self {
-            SLiteral::StringLiteral { lang, .. } => lang.clone(),
+            SLiteral::String { lang, .. } => lang.clone(),
             _ => None,
         }
     }
 
     pub fn lexical_form(&self) -> String {
         match self {
-            SLiteral::StringLiteral { lexical_form, .. } => lexical_form.clone(),
-            SLiteral::DatatypeLiteral { lexical_form, .. } => lexical_form.clone(),
-            SLiteral::NumericLiteral(nl) => nl.lexical_form(),
-            SLiteral::BooleanLiteral(true) => "true".to_string(),
-            SLiteral::BooleanLiteral(false) => "false".to_string(),
-            SLiteral::DatetimeLiteral(dt) => dt.to_string(),
-            SLiteral::WrongDatatypeLiteral { lexical_form, .. } => lexical_form.clone(),
+            SLiteral::String { lexical_form, .. } => lexical_form.clone(),
+            SLiteral::Datatype { lexical_form, .. } => lexical_form.clone(),
+            SLiteral::Numeric(nl) => nl.lexical_form(),
+            SLiteral::Boolean(true) => "true".to_string(),
+            SLiteral::Boolean(false) => "false".to_string(),
+            SLiteral::Datetime(dt) => dt.to_string(),
+            SLiteral::WrongDatatype { lexical_form, .. } => lexical_form.clone(),
         }
     }
 
-    pub fn display_qualified(
-        &self,
-        f: &mut std::fmt::Formatter<'_>,
-        prefixmap: &PrefixMap,
-    ) -> std::fmt::Result {
+    pub fn display_qualified(&self, f: &mut std::fmt::Formatter<'_>, prefixmap: &PrefixMap) -> std::fmt::Result {
         match self {
-            SLiteral::StringLiteral {
+            SLiteral::String {
                 lexical_form,
                 lang: None,
             } => write!(f, "\"{lexical_form}\""),
-            SLiteral::StringLiteral {
+            SLiteral::String {
                 lexical_form,
                 lang: Some(lang),
             } => write!(f, "\"{lexical_form}\"{lang}"),
-            SLiteral::DatatypeLiteral {
-                lexical_form,
-                datatype,
-            } => match datatype {
+            SLiteral::Datatype { lexical_form, datatype } => match datatype {
                 IriRef::Iri(iri) => write!(f, "\"{lexical_form}\"^^{}", prefixmap.qualify(iri)),
                 IriRef::Prefixed { prefix, local } => {
                     write!(f, "\"{lexical_form}\"^^{prefix}:{local}")
-                }
+                },
             },
-            SLiteral::NumericLiteral(n) => write!(f, "{n}"),
-            SLiteral::BooleanLiteral(true) => write!(f, "true"),
-            SLiteral::BooleanLiteral(false) => write!(f, "false"),
-            SLiteral::DatetimeLiteral(date_time) => write!(f, "{}", date_time.value()),
-            SLiteral::WrongDatatypeLiteral {
-                lexical_form,
-                datatype,
-                ..
+            SLiteral::Numeric(n) => write!(f, "{n}"),
+            SLiteral::Boolean(true) => write!(f, "true"),
+            SLiteral::Boolean(false) => write!(f, "false"),
+            SLiteral::Datetime(date_time) => write!(f, "{}", date_time.value()),
+            SLiteral::WrongDatatype {
+                lexical_form, datatype, ..
             } => match datatype {
                 IriRef::Iri(iri) => write!(f, "\"{lexical_form}\"^^{}", prefixmap.qualify(iri)),
                 IriRef::Prefixed { prefix, local } => {
                     write!(f, "\"{lexical_form}\"^^{prefix}:{local}")
-                }
+                },
             },
         }
     }
 
     pub fn datatype(&self) -> IriRef {
         match self {
-            SLiteral::DatatypeLiteral { datatype, .. } => datatype.clone(),
-            SLiteral::StringLiteral {
+            SLiteral::Datatype { datatype, .. } => datatype.clone(),
+            SLiteral::String {
                 lexical_form: _,
                 lang: None,
-            } => IriRef::iri(IriS::new_unchecked(
-                "http://www.w3.org/2001/XMLSchema#string",
-            )),
-            SLiteral::StringLiteral {
+            } => IriRef::iri(IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#string")),
+            SLiteral::String {
                 lexical_form: _,
                 lang: Some(_),
             } => IriRef::iri(IriS::new_unchecked(
                 "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString",
             )),
-            SLiteral::NumericLiteral(nl) => IriRef::iri(IriS::new_unchecked(nl.datatype())),
-            SLiteral::BooleanLiteral(_) => IriRef::iri(IriS::new_unchecked(
-                "http://www.w3.org/2001/XMLSchema#boolean",
-            )),
-            SLiteral::DatetimeLiteral(_) => IriRef::iri(IriS::new_unchecked(
-                "http://www.w3.org/2001/XMLSchema#dateTime",
-            )),
-            SLiteral::WrongDatatypeLiteral { datatype, .. } => datatype.clone(),
+            SLiteral::Numeric(nl) => IriRef::iri(IriS::new_unchecked(nl.datatype())),
+            SLiteral::Boolean(_) => IriRef::iri(IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#boolean")),
+            SLiteral::Datetime(_) => IriRef::iri(IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#dateTime")),
+            SLiteral::WrongDatatype { datatype, .. } => datatype.clone(),
         }
     }
 
     pub fn numeric_value(&self) -> Option<NumericLiteral> {
         match self {
-            SLiteral::NumericLiteral(nl) => Some(nl.clone()),
+            SLiteral::Numeric(nl) => Some(nl.clone()),
             _ => None,
         }
     }
@@ -482,7 +456,7 @@ impl SLiteral {
 
 impl Default for SLiteral {
     fn default() -> Self {
-        SLiteral::StringLiteral {
+        SLiteral::String {
             lexical_form: String::default(),
             lang: None,
         }
@@ -498,22 +472,19 @@ impl Default for SLiteral {
 impl PartialOrd for SLiteral {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         match self {
-            SLiteral::DatetimeLiteral(date_time1) => match other {
-                SLiteral::DatetimeLiteral(date_time2) => date_time1.partial_cmp(date_time2),
+            SLiteral::Datetime(date_time1) => match other {
+                SLiteral::Datetime(date_time2) => date_time1.partial_cmp(date_time2),
                 _ => None,
             },
-            SLiteral::StringLiteral { lexical_form, .. } => match other {
-                SLiteral::StringLiteral {
+            SLiteral::String { lexical_form, .. } => match other {
+                SLiteral::String {
                     lexical_form: other_lexical_form,
                     ..
                 } => Some(lexical_form.cmp(other_lexical_form)),
                 _ => None,
             },
-            SLiteral::DatatypeLiteral {
-                lexical_form,
-                datatype,
-            } => match other {
-                SLiteral::DatatypeLiteral {
+            SLiteral::Datatype { lexical_form, datatype } => match other {
+                SLiteral::Datatype {
                     lexical_form: other_lexical_form,
                     datatype: other_datatype,
                 } => {
@@ -522,23 +493,21 @@ impl PartialOrd for SLiteral {
                     } else {
                         None
                     }
-                }
+                },
                 _ => None,
             },
-            SLiteral::NumericLiteral(nl) => match other {
-                SLiteral::NumericLiteral(other_nl) => nl.partial_cmp(other_nl),
+            SLiteral::Numeric(nl) => match other {
+                SLiteral::Numeric(other_nl) => nl.partial_cmp(other_nl),
                 _ => None,
             },
-            SLiteral::BooleanLiteral(b) => match other {
-                SLiteral::BooleanLiteral(other_b) => Some(b.cmp(other_b)),
+            SLiteral::Boolean(b) => match other {
+                SLiteral::Boolean(other_b) => Some(b.cmp(other_b)),
                 _ => None,
             },
-            SLiteral::WrongDatatypeLiteral {
-                lexical_form,
-                datatype,
-                ..
+            SLiteral::WrongDatatype {
+                lexical_form, datatype, ..
             } => match other {
-                SLiteral::DatatypeLiteral {
+                SLiteral::Datatype {
                     lexical_form: other_lexical_form,
                     datatype: other_datatype,
                 } => {
@@ -547,7 +516,7 @@ impl PartialOrd for SLiteral {
                     } else {
                         None
                     }
-                }
+                },
                 _ => None,
             },
         }
@@ -587,36 +556,29 @@ where
 impl Deref for SLiteral {
     fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
         match self {
-            SLiteral::NumericLiteral(n) => Ok(SLiteral::NumericLiteral(n.clone())),
-            SLiteral::BooleanLiteral(b) => Ok(SLiteral::BooleanLiteral(b)),
-            SLiteral::StringLiteral { lexical_form, lang } => Ok(SLiteral::StringLiteral {
+            SLiteral::Numeric(n) => Ok(SLiteral::Numeric(n.clone())),
+            SLiteral::Boolean(b) => Ok(SLiteral::Boolean(b)),
+            SLiteral::String { lexical_form, lang } => Ok(SLiteral::String {
                 lexical_form: lexical_form.clone(),
                 lang: lang.clone(),
             }),
-            SLiteral::DatatypeLiteral {
-                lexical_form,
-                datatype,
-            } => {
+            SLiteral::Datatype { lexical_form, datatype } => {
                 let dt = datatype.deref(base, prefixmap)?;
-                Ok(SLiteral::DatatypeLiteral {
+                Ok(SLiteral::Datatype {
                     lexical_form: lexical_form.clone(),
                     datatype: dt,
                 })
-            }
-            SLiteral::DatetimeLiteral(date_time) => {
-                Ok(SLiteral::DatetimeLiteral(date_time.clone()))
-            }
-            SLiteral::WrongDatatypeLiteral {
-                lexical_form,
-                datatype,
-                ..
+            },
+            SLiteral::Datetime(date_time) => Ok(SLiteral::Datetime(date_time.clone())),
+            SLiteral::WrongDatatype {
+                lexical_form, datatype, ..
             } => {
                 let dt = datatype.deref(base, prefixmap)?;
-                Ok(SLiteral::DatatypeLiteral {
+                Ok(SLiteral::Datatype {
                     lexical_form: lexical_form.clone(),
                     datatype: dt,
                 })
-            }
+            },
         }
     }
 }
@@ -638,7 +600,7 @@ impl TryFrom<oxrdf::Literal> for SLiteral {
                     }),
                     Ok(lang) => Ok(SLiteral::lang_str(&s, lang)),
                 }
-            }
+            },
             (value, Some(dtype), None, None) => {
                 let xsd_double = oxrdf::vocab::xsd::DOUBLE.to_owned();
                 let xsd_integer = oxrdf::vocab::xsd::INTEGER.to_owned();
@@ -650,101 +612,99 @@ impl TryFrom<oxrdf::Literal> for SLiteral {
                 let xsd_boolean = oxrdf::vocab::xsd::BOOLEAN.to_owned();
                 match &dtype {
                     d if *d == xsd_boolean => match SLiteral::parse_bool(&value) {
-                        Ok(b) => Ok(SLiteral::BooleanLiteral(b)),
+                        Ok(b) => Ok(SLiteral::Boolean(b)),
                         Err(e) => {
                             let datatype = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
-                            Ok(SLiteral::WrongDatatypeLiteral {
+                            Ok(SLiteral::WrongDatatype {
                                 lexical_form: value,
                                 datatype,
                                 error: e.to_string(),
                             })
-                        }
+                        },
                     },
                     d if *d == xsd_double => match SLiteral::parse_double(&value) {
                         Ok(double_value) => Ok(SLiteral::double(double_value)),
                         Err(e) => {
                             let datatype = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
-                            Ok(SLiteral::WrongDatatypeLiteral {
+                            Ok(SLiteral::WrongDatatype {
                                 lexical_form: value,
                                 datatype,
                                 error: e.to_string(),
                             })
-                        }
+                        },
                     },
                     d if *d == xsd_decimal => match SLiteral::parse_decimal(&value) {
                         Ok(num_value) => Ok(SLiteral::decimal(num_value)),
                         Err(e) => {
                             let datatype = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
-                            Ok(SLiteral::WrongDatatypeLiteral {
+                            Ok(SLiteral::WrongDatatype {
                                 lexical_form: value,
                                 datatype,
                                 error: e.to_string(),
                             })
-                        }
+                        },
                     },
                     d if *d == xsd_float => match SLiteral::parse_float(&value) {
                         Ok(num_value) => Ok(SLiteral::float(num_value)),
                         Err(e) => {
                             let datatype = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
-                            Ok(SLiteral::WrongDatatypeLiteral {
+                            Ok(SLiteral::WrongDatatype {
                                 lexical_form: value,
                                 datatype,
                                 error: e.to_string(),
                             })
-                        }
+                        },
                     },
                     d if *d == xsd_long => match SLiteral::parse_long(&value) {
-                        Ok(num_value) => {
-                            Ok(SLiteral::NumericLiteral(NumericLiteral::long(num_value)))
-                        }
+                        Ok(num_value) => Ok(SLiteral::Numeric(NumericLiteral::long(num_value))),
                         Err(e) => {
                             let datatype = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
-                            Ok(SLiteral::WrongDatatypeLiteral {
+                            Ok(SLiteral::WrongDatatype {
                                 lexical_form: value,
                                 datatype,
                                 error: e.to_string(),
                             })
-                        }
+                        },
                     },
                     d if *d == xsd_integer => match SLiteral::parse_integer(&value) {
                         Ok(num_value) => Ok(SLiteral::integer(num_value)),
                         Err(e) => {
                             let datatype = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
-                            Ok(SLiteral::WrongDatatypeLiteral {
+                            Ok(SLiteral::WrongDatatype {
                                 lexical_form: value,
                                 datatype,
                                 error: e.to_string(),
                             })
-                        }
+                        },
                     },
                     d if *d == xsd_byte => match SLiteral::parse_byte(&value) {
                         Ok(num_value) => Ok(SLiteral::byte(num_value)),
                         Err(e) => {
                             let datatype = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
-                            Ok(SLiteral::WrongDatatypeLiteral {
+                            Ok(SLiteral::WrongDatatype {
                                 lexical_form: value,
                                 datatype,
                                 error: e.to_string(),
                             })
-                        }
+                        },
                     },
                     d if *d == xsd_datetime => match XsdDateTime::new(&value) {
-                        Ok(date_time) => Ok(SLiteral::DatetimeLiteral(date_time)),
+                        Ok(date_time) => Ok(SLiteral::Datetime(date_time)),
                         Err(e) => {
                             let datatype = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
-                            Ok(SLiteral::WrongDatatypeLiteral {
+                            Ok(SLiteral::WrongDatatype {
                                 lexical_form: value,
                                 datatype,
                                 error: e.to_string(),
                             })
-                        }
+                        },
                     },
                     _ => {
                         let datatype = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
                         Ok(SLiteral::lit_datatype(&value, &datatype))
-                    }
+                    },
                 }
-            }
+            },
             _ => Err(RDFError::ConversionError {
                 msg: "Unknwon literal value: {value}".to_string(),
             }),
@@ -755,35 +715,21 @@ impl TryFrom<oxrdf::Literal> for SLiteral {
 impl From<SLiteral> for oxrdf::Literal {
     fn from(value: SLiteral) -> Self {
         match value {
-            SLiteral::StringLiteral { lexical_form, lang } => match lang {
-                Some(lang) => oxrdf::Literal::new_language_tagged_literal_unchecked(
-                    lexical_form,
-                    lang.to_string(),
-                ),
+            SLiteral::String { lexical_form, lang } => match lang {
+                Some(lang) => oxrdf::Literal::new_language_tagged_literal_unchecked(lexical_form, lang.to_string()),
                 None => lexical_form.clone().into(),
             },
-            SLiteral::DatatypeLiteral {
-                lexical_form,
-                datatype,
-            } => match datatype.get_iri() {
-                Ok(datatype) => oxrdf::Literal::new_typed_literal(
-                    lexical_form,
-                    datatype.named_node().clone(),
-                ),
+            SLiteral::Datatype { lexical_form, datatype } => match datatype.get_iri() {
+                Ok(datatype) => oxrdf::Literal::new_typed_literal(lexical_form, datatype.named_node().clone()),
                 Err(_) => lexical_form.clone().into(),
             },
-            SLiteral::NumericLiteral(number) => From::<NumericLiteral>::from(number),
-            SLiteral::BooleanLiteral(bool) => bool.into(),
-            SLiteral::DatetimeLiteral(date_time) => (*date_time.value()).into(),
-            SLiteral::WrongDatatypeLiteral {
-                lexical_form,
-                datatype,
-                ..
+            SLiteral::Numeric(number) => From::<NumericLiteral>::from(number),
+            SLiteral::Boolean(bool) => bool.into(),
+            SLiteral::Datetime(date_time) => (*date_time.value()).into(),
+            SLiteral::WrongDatatype {
+                lexical_form, datatype, ..
             } => match datatype.get_iri() {
-                Ok(datatype) => oxrdf::Literal::new_typed_literal(
-                    lexical_form,
-                    datatype.named_node().clone(),
-                ),
+                Ok(datatype) => oxrdf::Literal::new_typed_literal(lexical_form, datatype.named_node().clone()),
                 Err(_) => lexical_form.into(),
             },
         }
@@ -810,7 +756,7 @@ fn check_literal_datatype(lexical_form: &str, datatype: &IriRef) -> Result<SLite
     match iri.as_str() {
         "http://www.w3.org/2001/XMLSchema#integer" => match SLiteral::parse_integer(lexical_form) {
             Ok(n) => Ok(SLiteral::integer(n)),
-            Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
+            Err(err) => Ok(SLiteral::WrongDatatype {
                 lexical_form: lexical_form.to_string(),
                 datatype: datatype.clone(),
                 error: err.to_string(),
@@ -818,7 +764,7 @@ fn check_literal_datatype(lexical_form: &str, datatype: &IriRef) -> Result<SLite
         },
         "http://www.w3.org/2001/XMLSchema#long" => match SLiteral::parse_long(lexical_form) {
             Ok(n) => Ok(SLiteral::long(n)),
-            Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
+            Err(err) => Ok(SLiteral::WrongDatatype {
                 lexical_form: lexical_form.to_string(),
                 datatype: datatype.clone(),
                 error: err.to_string(),
@@ -826,7 +772,7 @@ fn check_literal_datatype(lexical_form: &str, datatype: &IriRef) -> Result<SLite
         },
         "http://www.w3.org/2001/XMLSchema#double" => match SLiteral::parse_double(lexical_form) {
             Ok(d) => Ok(SLiteral::double(d)),
-            Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
+            Err(err) => Ok(SLiteral::WrongDatatype {
                 lexical_form: lexical_form.to_string(),
                 datatype: datatype.clone(),
                 error: err.to_string(),
@@ -834,7 +780,7 @@ fn check_literal_datatype(lexical_form: &str, datatype: &IriRef) -> Result<SLite
         },
         "http://www.w3.org/2001/XMLSchema#boolean" => match SLiteral::parse_bool(lexical_form) {
             Ok(b) => Ok(SLiteral::boolean(b)),
-            Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
+            Err(err) => Ok(SLiteral::WrongDatatype {
                 lexical_form: lexical_form.to_string(),
                 datatype: datatype.clone(),
                 error: err.to_string(),
@@ -842,7 +788,7 @@ fn check_literal_datatype(lexical_form: &str, datatype: &IriRef) -> Result<SLite
         },
         "http://www.w3.org/2001/XMLSchema#float" => match SLiteral::parse_float(lexical_form) {
             Ok(d) => Ok(SLiteral::float(d)),
-            Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
+            Err(err) => Ok(SLiteral::WrongDatatype {
                 lexical_form: lexical_form.to_string(),
                 datatype: datatype.clone(),
                 error: err.to_string(),
@@ -850,103 +796,91 @@ fn check_literal_datatype(lexical_form: &str, datatype: &IriRef) -> Result<SLite
         },
         "http://www.w3.org/2001/XMLSchema#decimal" => match SLiteral::parse_decimal(lexical_form) {
             Ok(d) => Ok(SLiteral::decimal(d)),
-            Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
+            Err(err) => Ok(SLiteral::WrongDatatype {
                 lexical_form: lexical_form.to_string(),
                 datatype: datatype.clone(),
                 error: err.to_string(),
             }),
         },
-        "http://www.w3.org/2001/XMLSchema#negativeInteger" => {
-            match SLiteral::parse_negative_integer(lexical_form) {
-                Ok(d) => Ok(SLiteral::negative_integer(d)),
-                Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
-                    lexical_form: lexical_form.to_string(),
-                    datatype: datatype.clone(),
-                    error: err.to_string(),
-                }),
-            }
-        }
-        "http://www.w3.org/2001/XMLSchema#positiveInteger" => {
-            match SLiteral::parse_positive_integer(lexical_form) {
-                Ok(d) => Ok(SLiteral::positive_integer(d)),
-                Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
-                    lexical_form: lexical_form.to_string(),
-                    datatype: datatype.clone(),
-                    error: err.to_string(),
-                }),
-            }
-        }
+        "http://www.w3.org/2001/XMLSchema#negativeInteger" => match SLiteral::parse_negative_integer(lexical_form) {
+            Ok(d) => Ok(SLiteral::negative_integer(d)),
+            Err(err) => Ok(SLiteral::WrongDatatype {
+                lexical_form: lexical_form.to_string(),
+                datatype: datatype.clone(),
+                error: err.to_string(),
+            }),
+        },
+        "http://www.w3.org/2001/XMLSchema#positiveInteger" => match SLiteral::parse_positive_integer(lexical_form) {
+            Ok(d) => Ok(SLiteral::positive_integer(d)),
+            Err(err) => Ok(SLiteral::WrongDatatype {
+                lexical_form: lexical_form.to_string(),
+                datatype: datatype.clone(),
+                error: err.to_string(),
+            }),
+        },
         "http://www.w3.org/2001/XMLSchema#nonNegativeInteger" => {
             match SLiteral::parse_non_negative_integer(lexical_form) {
                 Ok(d) => Ok(SLiteral::non_negative_integer(d)),
-                Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
+                Err(err) => Ok(SLiteral::WrongDatatype {
                     lexical_form: lexical_form.to_string(),
                     datatype: datatype.clone(),
                     error: err.to_string(),
                 }),
             }
-        }
+        },
         "http://www.w3.org/2001/XMLSchema#nonPositiveInteger" => {
             match SLiteral::parse_non_positive_integer(lexical_form) {
                 Ok(d) => Ok(SLiteral::non_positive_integer(d)),
-                Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
+                Err(err) => Ok(SLiteral::WrongDatatype {
                     lexical_form: lexical_form.to_string(),
                     datatype: datatype.clone(),
                     error: err.to_string(),
                 }),
             }
-        }
-        "http://www.w3.org/2001/XMLSchema#unsignedInt" => {
-            match SLiteral::parse_unsigned_int(lexical_form) {
-                Ok(d) => Ok(SLiteral::unsigned_int(d)),
-                Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
-                    lexical_form: lexical_form.to_string(),
-                    datatype: datatype.clone(),
-                    error: err.to_string(),
-                }),
-            }
-        }
-        "http://www.w3.org/2001/XMLSchema#unsignedLong" => {
-            match SLiteral::parse_unsigned_long(lexical_form) {
-                Ok(d) => Ok(SLiteral::unsigned_long(d)),
-                Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
-                    lexical_form: lexical_form.to_string(),
-                    datatype: datatype.clone(),
-                    error: err.to_string(),
-                }),
-            }
-        }
-        "http://www.w3.org/2001/XMLSchema#unsignedByte" => {
-            match SLiteral::parse_unsigned_byte(lexical_form) {
-                Ok(d) => Ok(SLiteral::unsigned_byte(d)),
-                Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
-                    lexical_form: lexical_form.to_string(),
-                    datatype: datatype.clone(),
-                    error: err.to_string(),
-                }),
-            }
-        }
-        "http://www.w3.org/2001/XMLSchema#unsignedShort" => {
-            match SLiteral::parse_unsigned_short(lexical_form) {
-                Ok(d) => Ok(SLiteral::unsigned_short(d)),
-                Err(err) => Ok(SLiteral::WrongDatatypeLiteral {
-                    lexical_form: lexical_form.to_string(),
-                    datatype: datatype.clone(),
-                    error: err.to_string(),
-                }),
-            }
-        }
+        },
+        "http://www.w3.org/2001/XMLSchema#unsignedInt" => match SLiteral::parse_unsigned_int(lexical_form) {
+            Ok(d) => Ok(SLiteral::unsigned_int(d)),
+            Err(err) => Ok(SLiteral::WrongDatatype {
+                lexical_form: lexical_form.to_string(),
+                datatype: datatype.clone(),
+                error: err.to_string(),
+            }),
+        },
+        "http://www.w3.org/2001/XMLSchema#unsignedLong" => match SLiteral::parse_unsigned_long(lexical_form) {
+            Ok(d) => Ok(SLiteral::unsigned_long(d)),
+            Err(err) => Ok(SLiteral::WrongDatatype {
+                lexical_form: lexical_form.to_string(),
+                datatype: datatype.clone(),
+                error: err.to_string(),
+            }),
+        },
+        "http://www.w3.org/2001/XMLSchema#unsignedByte" => match SLiteral::parse_unsigned_byte(lexical_form) {
+            Ok(d) => Ok(SLiteral::unsigned_byte(d)),
+            Err(err) => Ok(SLiteral::WrongDatatype {
+                lexical_form: lexical_form.to_string(),
+                datatype: datatype.clone(),
+                error: err.to_string(),
+            }),
+        },
+        "http://www.w3.org/2001/XMLSchema#unsignedShort" => match SLiteral::parse_unsigned_short(lexical_form) {
+            Ok(d) => Ok(SLiteral::unsigned_short(d)),
+            Err(err) => Ok(SLiteral::WrongDatatype {
+                lexical_form: lexical_form.to_string(),
+                datatype: datatype.clone(),
+                error: err.to_string(),
+            }),
+        },
 
         _ => {
             // For other datatypes, we do not check the lexical form
             // We assume it is correct
             // This includes rdf:langString
             trace!("Not checking datatype {iri}");
-            Ok(SLiteral::DatatypeLiteral {
+            Ok(SLiteral::Datatype {
                 lexical_form: lexical_form.to_string(),
                 datatype: datatype.clone(),
             })
-        }
+        },
     }
 }
 

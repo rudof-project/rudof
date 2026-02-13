@@ -30,12 +30,12 @@ pub(crate) fn map_error<'a, T: 'a>(
                 let mut err = error().at(input);
                 err.append(context);
                 Err::Error(err)
-            }
+            },
             Err::Failure(context) => {
                 let mut err = error().at(input);
                 err.append(context);
                 Err::Failure(err)
-            }
+            },
         })
     }
 }
@@ -43,10 +43,7 @@ pub(crate) fn map_error<'a, T: 'a>(
 /// A combinator to add tracing to the parser.
 /// [fun] is an identifier for the parser and [parser] is the actual parser.
 #[inline(always)]
-pub(crate) fn traced<'a, T, P>(
-    fun: &'static str,
-    mut parser: P,
-) -> impl FnMut(Span<'a>) -> IRes<'a, T>
+pub(crate) fn traced<'a, T, P>(fun: &'static str, mut parser: P) -> impl FnMut(Span<'a>) -> IRes<'a, T>
 where
     T: Debug,
     P: FnMut(Span<'a>) -> IRes<'a, T>,
@@ -57,10 +54,10 @@ where
         match &result {
             Ok(_res) => {
                 // tracing::trace!(target: "parser", "{}", format!("{fun}({input:?}) -> {res:?}").green());
-            }
+            },
             Err(_e) => {
                 // tracing::trace!(target: "parser", "{}", format!("{fun}({input:?}) -> {e:?}").red());
-            }
+            },
         }
         result
     }
@@ -98,9 +95,7 @@ pub(crate) fn tws1(input: Span) -> IRes<()> {
 
 /// A combinator that creates a parser for a specific token.
 pub(crate) fn token<'a>(token: &'a str) -> impl FnMut(Span<'a>) -> IRes<'a, Span<'a>> {
-    map_error(tag(token), || {
-        ShExParseError::ExpectedToken(token.to_string())
-    })
+    map_error(tag(token), || ShExParseError::ExpectedToken(token.to_string()))
 }
 
 /// A combinator that creates a parser for a specific token,

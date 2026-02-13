@@ -19,16 +19,23 @@
 //! | `logging`     | Real-time log notifications with level filtering     |
 //! | `completions` | Argument completions for tools and prompts           |
 //! | `tasks`       | Async task support for long-running operations       |
+//!
+//! ## Docker State Persistence
+//!
+//! When running in Docker MCP Registry (ephemeral containers), the server supports
+//! state persistence via Docker volumes. Mount a volume to `/app/state/` and the
+//! server will automatically save/load RDF data between container restarts.
 
 mod errors;
 mod handlers;
 mod logging;
+mod mcp_service;
 mod prompts;
 mod resource_templates;
 mod resources;
-mod service;
+mod state;
 mod tasks;
 mod tools;
 
-pub use service::RudofMcpService;
+pub use mcp_service::RudofMcpService;
 pub use tools::annotated_tools;

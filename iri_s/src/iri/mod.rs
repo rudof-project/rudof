@@ -1,9 +1,12 @@
+mod iri_or_string;
 mod iris;
-mod iri;
+#[cfg(not(target_family = "wasm"))]
 mod test;
 mod visitor;
+#[cfg(target_family = "wasm")]
+mod wasm_stubs;
 
-pub use iri::Iri;
+pub use iri_or_string::Iri;
 pub use iris::IriS;
 
 /// Generates an [`IriS`] from a string literal.

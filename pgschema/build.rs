@@ -4,6 +4,7 @@ fn main() {
     // let mut settings = rustemo_compiler::Settings::new();
     let mut settings = rustemo_compiler::Settings::new()
         .notrace(true)
+        .force(true)
         // .prefer_shifts(true)
         .in_source_tree();
     settings.process_dir().unwrap();

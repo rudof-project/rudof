@@ -1,7 +1,7 @@
 use crate::ast::{SchemaJsonError, serde_string_or_struct::*};
 use crate::{BNode, IriOrStr, ShapeExprLabel};
 use iri_s::error::IriSError;
-use iri_s::{iri, IriS};
+use iri_s::{IriS, iri};
 use prefixmap::error::PrefixMapError;
 use prefixmap::{IriRef, PrefixMap};
 use serde::{Deserialize, Serialize};
@@ -70,10 +70,8 @@ impl Schema {
     /// Returns the list of imports declared in the Schema
     pub fn imports_resolved(&self, base: &Option<IriS>) -> Result<Vec<IriS>, IriSError> {
         if let Some(imports) = &self.imports {
-            let rs: Result<Vec<IriS>, IriSError> = imports
-                .iter()
-                .map(|i| i.resolve(base))
-                .collect::<Result<Vec<_>, _>>();
+            let rs: Result<Vec<IriS>, IriSError> =
+                imports.iter().map(|i| i.resolve(base)).collect::<Result<Vec<_>, _>>();
             let is = rs?;
             Ok(is)
         } else {
@@ -92,12 +90,12 @@ impl Schema {
 
     /// Obtain a Schema from an IRI
     pub fn from_iri(iri: &IriS) -> Result<Schema, SchemaJsonError> {
-        let body =
-            iri.dereference(Some(iri))
-                .map_err(|e| SchemaJsonError::DereferencingIri {
-                    iri: iri.clone(),
-                    error: e,
-                })?;
+        let body = iri
+            .dereference(Some(iri))
+            .map_err(|e| SchemaJsonError::DereferencingIri {
+                iri: iri.clone(),
+                error: e,
+            })?;
         let mut schema = Schema::from_reader(body.as_bytes())?;
         schema.with_source_iri(iri);
         Ok(schema)
@@ -123,7 +121,7 @@ impl Schema {
                 let mut pm = PrefixMap::new();
                 pm.add_prefix(alias, iri.clone())?;
                 self.prefixmap = Some(pm);
-            }
+            },
             Some(ref mut pm) => pm.add_prefix(alias, iri.clone())?,
         };
         Ok(())
@@ -160,22 +158,17 @@ impl Schema {
                 IriRef::Prefixed { prefix, local } => {
                     let str = format!("{prefix}{local}");
                     IriS::new_unchecked(str.as_str())
-                }
+                },
             },
         }
     }
 
-    pub fn add_shape(
-        &mut self,
-        shape_label: ShapeExprLabel,
-        shape_expr: ShapeExpr,
-        is_abstract: bool,
-    ) {
+    pub fn add_shape(&mut self, shape_label: ShapeExprLabel, shape_expr: ShapeExpr, is_abstract: bool) {
         let sd: ShapeDecl = ShapeDecl::new(shape_label, shape_expr, is_abstract);
         match self.shapes {
             None => {
                 self.shapes = Some(vec![sd]);
-            }
+            },
             Some(ref mut ses) => ses.push(sd),
         }
     }
@@ -190,11 +183,10 @@ impl Schema {
     pub fn parse_schema(path: &Path) -> Result<Schema, SchemaJsonError> {
         trace!("Parsing SchemaJson from path: {}", path.display());
         let schema = {
-            let schema_str =
-                fs::read_to_string(path).map_err(|e| SchemaJsonError::ReadingPathError {
-                    path_name: path.display().to_string(),
-                    error: e.to_string(),
-                })?;
+            let schema_str = fs::read_to_string(path).map_err(|e| SchemaJsonError::ReadingPathError {
+                path_name: path.display().to_string(),
+                error: e.to_string(),
+            })?;
             trace!("SchemaJson read from {}: {}", path.display(), schema_str);
             serde_json::from_str::<Schema>(&schema_str).map_err(|e| SchemaJsonError::JsonError {
                 path_name: path.display().to_string(),
@@ -206,18 +198,12 @@ impl Schema {
     }
 
     pub fn from_reader<R: io::Read>(rdr: R) -> Result<Schema, SchemaJsonError> {
-        let schema = serde_json::from_reader::<R, Schema>(rdr).map_err(|e| {
-            SchemaJsonError::JsonErrorFromReader {
-                error: e.to_string(),
-            }
-        })?;
+        let schema = serde_json::from_reader::<R, Schema>(rdr)
+            .map_err(|e| SchemaJsonError::JsonErrorFromReader { error: e.to_string() })?;
         Ok(schema)
     }
 
-    pub fn parse_schema_name(
-        schema_name: &String,
-        folder: &Path,
-    ) -> Result<Schema, SchemaJsonError> {
+    pub fn parse_schema_name(schema_name: &String, folder: &Path) -> Result<Schema, SchemaJsonError> {
         let json_path = Path::new(&schema_name);
         let mut attempt = PathBuf::from(folder);
         attempt.push(json_path);
@@ -270,10 +256,7 @@ impl Schema {
         }
     }
 
-    pub fn find_shape_by_label(
-        &self,
-        label: &ShapeExprLabel,
-    ) -> Result<Option<ShapeExpr>, SchemaJsonError> {
+    pub fn find_shape_by_label(&self, label: &ShapeExprLabel) -> Result<Option<ShapeExpr>, SchemaJsonError> {
         match label {
             ShapeExprLabel::IriRef { value } => self.find_shape_by_iri_ref(value),
             ShapeExprLabel::BNode { value: _ } => todo!(),
@@ -281,16 +264,13 @@ impl Schema {
         }
     }
 
-    pub fn find_shape_by_iri_ref(
-        &self,
-        shape: &IriRef,
-    ) -> Result<Option<ShapeExpr>, SchemaJsonError> {
+    pub fn find_shape_by_iri_ref(&self, shape: &IriRef) -> Result<Option<ShapeExpr>, SchemaJsonError> {
         let prefixmap = match &self.prefixmap {
             None => PrefixMap::default(),
             Some(pm) => {
                 // TODO: This should not be necessary
                 pm.clone()
-            }
+            },
         };
         if let Some(shapes) = self.shapes() {
             let expected_iri = prefixmap.resolve_iriref(shape.clone())?;

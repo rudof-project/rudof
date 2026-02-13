@@ -70,37 +70,33 @@ impl ShapeExpr {
             ShapeExpr::Ref { idx } => {
                 let info = schema.find_shape_idx(idx).unwrap();
                 info.expr().get_triple_exprs(schema)
-            }
+            },
             ShapeExpr::Empty => vec![],
         }
     }
 
     pub fn references(&self, schema: &SchemaIR) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
         match self {
-            ShapeExpr::ShapeOr { exprs, .. } => {
-                exprs.iter().fold(HashMap::new(), |mut acc, expr| {
-                    let refs = schema
-                        .find_shape_idx(expr)
-                        .map(|info| info.expr().references(schema))
-                        .unwrap_or_default();
-                    for (p, v) in refs {
-                        acc.entry(p).or_default().extend(v);
-                    }
-                    acc
-                })
-            }
-            ShapeExpr::ShapeAnd { exprs, .. } => {
-                exprs.iter().fold(HashMap::new(), |mut acc, expr| {
-                    let refs = schema
-                        .find_shape_idx(expr)
-                        .map(|info| info.expr().references(schema))
-                        .unwrap_or_default();
-                    for (p, v) in refs {
-                        acc.entry(p).or_default().extend(v);
-                    }
-                    acc
-                })
-            }
+            ShapeExpr::ShapeOr { exprs, .. } => exprs.iter().fold(HashMap::new(), |mut acc, expr| {
+                let refs = schema
+                    .find_shape_idx(expr)
+                    .map(|info| info.expr().references(schema))
+                    .unwrap_or_default();
+                for (p, v) in refs {
+                    acc.entry(p).or_default().extend(v);
+                }
+                acc
+            }),
+            ShapeExpr::ShapeAnd { exprs, .. } => exprs.iter().fold(HashMap::new(), |mut acc, expr| {
+                let refs = schema
+                    .find_shape_idx(expr)
+                    .map(|info| info.expr().references(schema))
+                    .unwrap_or_default();
+                for (p, v) in refs {
+                    acc.entry(p).or_default().extend(v);
+                }
+                acc
+            }),
             ShapeExpr::ShapeNot { expr, .. } => schema
                 .find_shape_idx(expr)
                 .map(|info| info.expr().references(schema))
@@ -112,7 +108,7 @@ impl ShapeExpr {
                 let mut map = HashMap::new();
                 map.insert(Pred::default(), vec![*idx]);
                 map
-            }
+            },
             ShapeExpr::Empty => HashMap::new(),
         }
     }
@@ -131,11 +127,7 @@ impl ShapeExpr {
         self.preds_visited(schema, &mut visited)
     }
 
-    fn preds_visited(
-        &self,
-        schema: &SchemaIR,
-        visited: &mut HashSet<ShapeLabelIdx>,
-    ) -> HashSet<Pred> {
+    fn preds_visited(&self, schema: &SchemaIR, visited: &mut HashSet<ShapeLabelIdx>) -> HashSet<Pred> {
         let mut preds = HashSet::new();
         match self {
             ShapeExpr::ShapeOr { exprs, .. } => {
@@ -145,7 +137,7 @@ impl ShapeExpr {
                     let expr = info.expr();
                     preds.extend(expr.preds_visited(schema, visited));
                 }
-            }
+            },
             ShapeExpr::ShapeAnd { exprs, .. } => {
                 for e in exprs {
                     let info = schema.find_shape_idx(e).unwrap();
@@ -153,18 +145,18 @@ impl ShapeExpr {
                     let expr = info.expr();
                     preds.extend(expr.preds_visited(schema, visited));
                 }
-            }
+            },
             ShapeExpr::ShapeNot { expr, .. } => {
                 let info = schema.find_shape_idx(expr).unwrap();
                 visited.insert(*expr);
                 let expr = info.expr();
                 preds.extend(expr.preds_visited(schema, visited));
-            }
-            ShapeExpr::NodeConstraint(_nc) => {}
+            },
+            ShapeExpr::NodeConstraint(_nc) => {},
             ShapeExpr::Shape(s) => {
                 preds.extend(s.preds());
-            }
-            ShapeExpr::External {} => {}
+            },
+            ShapeExpr::External {} => {},
             ShapeExpr::Ref { idx } => {
                 if visited.contains(idx) {
                     return preds;
@@ -173,8 +165,8 @@ impl ShapeExpr {
                 let info = schema.find_shape_idx(idx).unwrap();
                 let expr = info.expr();
                 preds.extend(expr.preds(schema));
-            }
-            ShapeExpr::Empty => {}
+            },
+            ShapeExpr::Empty => {},
         }
         preds
     }
@@ -201,7 +193,7 @@ impl ShapeExpr {
                         }
                     }
                 }
-            }
+            },
             ShapeExpr::ShapeAnd { exprs, .. } => {
                 for expr in exprs {
                     if let Some(info) = schema.find_shape_idx(expr) {
@@ -214,7 +206,7 @@ impl ShapeExpr {
                         }
                     }
                 }
-            }
+            },
             ShapeExpr::ShapeNot { expr, .. } => {
                 if let Some(info) = schema.find_shape_idx(expr) {
                     let expr = info.expr();
@@ -224,14 +216,14 @@ impl ShapeExpr {
                         expr.add_edges(source, graph, pos_neg.change(), schema, visited);
                     }
                 }
-            }
-            ShapeExpr::NodeConstraint(_) => {}
+            },
+            ShapeExpr::NodeConstraint(_) => {},
             ShapeExpr::Shape(s) => s.add_edges(source, graph, pos_neg),
-            ShapeExpr::External {} => {}
+            ShapeExpr::External {} => {},
             ShapeExpr::Ref { idx } => {
                 graph.add_edge(source, *idx, pos_neg);
-            }
-            ShapeExpr::Empty => {}
+            },
+            ShapeExpr::Empty => {},
         }
     }
 
@@ -270,20 +262,12 @@ impl Display for ShapeExpr {
             ShapeExpr::ShapeOr { exprs, .. } => write!(
                 f,
                 "OR({})",
-                exprs
-                    .iter()
-                    .map(|e| format!("{e}"))
-                    .collect::<Vec<_>>()
-                    .join(", ")
+                exprs.iter().map(|e| format!("{e}")).collect::<Vec<_>>().join(", ")
             ),
             ShapeExpr::ShapeAnd { exprs, .. } => write!(
                 f,
                 "AND({})",
-                exprs
-                    .iter()
-                    .map(|e| format!("{e}"))
-                    .collect::<Vec<_>>()
-                    .join(", ")
+                exprs.iter().map(|e| format!("{e}")).collect::<Vec<_>>().join(", ")
             ),
             ShapeExpr::ShapeNot { expr, .. } => write!(f, "NOT {expr}"),
             ShapeExpr::NodeConstraint(nc) => write!(f, "{nc}"),

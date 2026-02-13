@@ -11,7 +11,7 @@ use rmcp::transport::streamable_http_server::{
     SessionManager, StreamableHttpService, session::local::LocalSessionManager,
 };
 
-use super::middleware::with_guards;
+use super::middleware::{OriginConfig, with_guards};
 use crate::service::RudofMcpService;
 
 /// Run MCP server using HTTP with Server-Sent Events (SSE) transport.
@@ -36,20 +36,39 @@ use crate::service::RudofMcpService;
 /// # Note on CORS
 /// CORS is not configured here. If you need CORS for browser-based clients,
 /// configure it in a reverse proxy (Nginx, Caddy, etc.) for better flexibility.
-pub async fn run_mcp_http(port: u16, route_path: &str) -> Result<()> {
-    // Bind to 127.0.0.1 explicitly for security per MCP spec
-    let bind_addr = format!("127.0.0.1:{}", port);
-    let canonical_uri = format!("http://127.0.0.1:{}{}", port, route_path);
+///
+/// # Arguments
+/// * `bind_address` - Address to bind the HTTP server to (e.g., "127.0.0.1", "0.0.0.0", "::1"). Default: "127.0.0.1" for security
+/// * `port` - Port to bind the HTTP server to
+/// * `route_path` - Path for the MCP endpoint (e.g., "/mcp")
+/// * `allowed_networks` - List of allowed IP addresses or CIDR ranges (e.g., ["127.0.0.1", "192.168.1.0/24"]).
+///   If empty or None, defaults to localhost only
+pub async fn run_mcp_http(
+    bind_address: &str,
+    port: u16,
+    route_path: &str,
+    allowed_networks: Option<Vec<String>>,
+) -> Result<()> {
+    // Format bind address and canonical URI
+    let bind_addr = format_bind_address(bind_address, port);
+    let canonical_uri = format_canonical_uri(bind_address, port, route_path);
+
+    // Configure allowed origins
+    let origin_config = match allowed_networks {
+        Some(networks) if !networks.is_empty() => {
+            OriginConfig::new(networks).map_err(|e| anyhow::anyhow!("Invalid network configuration: {}", e))?
+        },
+        _ => {
+            tracing::info!("No custom networks specified, using localhost-only configuration");
+            OriginConfig::localhost_only()
+        },
+    };
 
     let session_manager = Arc::new(LocalSessionManager::default());
 
     let mcp_service_factory = move || Ok(RudofMcpService::new());
 
-    let rmcp_service = StreamableHttpService::new(
-        mcp_service_factory,
-        session_manager.clone(),
-        Default::default(),
-    );
+    let rmcp_service = StreamableHttpService::new(mcp_service_factory, session_manager.clone(), Default::default());
 
     // Build routes
     let router = Router::new()
@@ -63,8 +82,8 @@ pub async fn run_mcp_http(port: u16, route_path: &str) -> Result<()> {
             .fallback_service(any_service(rmcp_service)),
         );
 
-    // Apply protocol and origin guards
-    let guarded_router = with_guards(router);
+    // Apply protocol and origin guards with configured networks
+    let guarded_router = with_guards(router, origin_config);
 
     let listener = std::net::TcpListener::bind(&bind_addr)?;
     let server = axum_server::Server::from_tcp(listener).serve(guarded_router.into_make_service());
@@ -95,10 +114,7 @@ pub async fn run_mcp_http(port: u16, route_path: &str) -> Result<()> {
 ///   - `204 No Content` if the session was terminated successfully
 ///   - `404 Not Found` if the session was not found or already expired
 ///   - `400 Bad Request` if the header is missing or invalid
-async fn handle_delete_session(
-    headers: HeaderMap,
-    session_manager: Arc<LocalSessionManager>,
-) -> impl IntoResponse {
+async fn handle_delete_session(headers: HeaderMap, session_manager: Arc<LocalSessionManager>) -> impl IntoResponse {
     match headers.get("Mcp-Session-Id").and_then(|v| v.to_str().ok()) {
         Some(id) => {
             let id_arc = Arc::from(id.to_string());
@@ -106,20 +122,53 @@ async fn handle_delete_session(
                 Ok(()) => {
                     tracing::info!(session_id = %id, "Session terminated successfully");
                     (StatusCode::NO_CONTENT, "").into_response()
-                }
+                },
                 Err(e) => {
                     tracing::error!(session_id = %id, error = %e, "Session not found or already expired");
-                    (
-                        StatusCode::NOT_FOUND,
-                        "Session not found or already expired",
-                    )
-                        .into_response()
-                }
+                    (StatusCode::NOT_FOUND, "Session not found or already expired").into_response()
+                },
             }
-        }
+        },
         None => {
             tracing::error!("Missing Mcp-Session-Id header in DELETE request");
             (StatusCode::BAD_REQUEST, "Missing Mcp-Session-Id header").into_response()
-        }
+        },
+    }
+}
+
+/// Helper for format a bind address with port
+///
+/// # Arguments
+/// * `address` - The IP address or hostname (e.g., "127.0.0.1", "::1", "0.0.0.0")
+/// * `port` - The port number
+fn format_bind_address(address: &str, port: u16) -> String {
+    if address.contains(':') {
+        // IPv6 address - needs brackets
+        format!("[{}]:{}", address, port)
+    } else {
+        // IPv4 address or hostname
+        format!("{}:{}", address, port)
+    }
+}
+
+/// Helper for format a canonical URI
+///
+/// # Arguments
+/// * `address` - The IP address or hostname
+/// * `port` - The port number
+/// * `route_path` - The route path (e.g., "/rudof")
+fn format_canonical_uri(address: &str, port: u16, route_path: &str) -> String {
+    if address == "0.0.0.0" {
+        // When binding to all interfaces, show localhost in the URI for clarity
+        format!("http://127.0.0.1:{}{}", port, route_path)
+    } else if address == "::" {
+        // IPv6 all interfaces - show localhost IPv6
+        format!("http://[::1]:{}{}", port, route_path)
+    } else if address.contains(':') {
+        // IPv6 address - needs brackets
+        format!("http://[{}]:{}{}", address, port, route_path)
+    } else {
+        // IPv4 address or hostname
+        format!("http://{}:{}{}", address, port, route_path)
     }
 }
