@@ -9,7 +9,7 @@ use iri_s::mime_type::MimeType;
 use rudof_lib::{InputSpec, Rudof, RudofConfig};
 use shapes_comparator::{CoShaMo, CoShaMoConverter, ComparatorConfig};
 use shex_ast::Schema;
-use srdf::ReaderMode;
+use rdf::rdf_impl::ReaderMode;
 use std::path::PathBuf;
 use tracing::debug;
 

@@ -5,8 +5,8 @@ use crate::unified_constraints::UnifiedConstraint;
 use crate::{DataGeneratorError, Result};
 use oxrdf::{Literal, NamedNode, NamedOrBlankNode, Term, Triple};
 use serde_json::{Value, json};
-use srdf::BuildRDF;
-use srdf::srdf_graph::SRDFGraph;
+use rdf::rdf_core::BuildRDF;
+use rdf::rdf_impl::InMemoryGraph;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -49,14 +49,14 @@ impl ParallelGenerator {
     }
 
     /// Generate synthetic data in parallel
-    pub async fn generate_data(&self, config: &GenerationConfig) -> Result<SRDFGraph> {
+    pub async fn generate_data(&self, config: &GenerationConfig) -> Result<InMemoryGraph> {
         // Set up random seed if provided
         if let Some(seed) = config.seed {
             // Note: In a real implementation, you'd want to use a seeded RNG
             tracing::info!("Using random seed: {}", seed);
         }
 
-        let mut graph = SRDFGraph::default();
+        let mut graph = InMemoryGraph::default();
 
         // Calculate entity distribution
         let entity_counts = self.calculate_entity_distribution(config).await?;
@@ -354,7 +354,7 @@ impl ParallelGenerator {
     }
 
     /// Generate relationships between entities
-    async fn generate_relationships(&self, graph: &mut SRDFGraph) -> Result<()> {
+    async fn generate_relationships(&self, graph: &mut InMemoryGraph) -> Result<()> {
         let shapes = self.shapes.read().await;
         let generated_entities = self.generated_entities.read().await;
 
@@ -379,7 +379,7 @@ impl ParallelGenerator {
     /// Generate relationships for a specific dependency
     fn generate_relationships_for_dependency(
         &self,
-        graph: &mut SRDFGraph,
+        graph: &mut InMemoryGraph,
         from_entities: &[String],
         to_entities: &[String],
         dependency: &crate::shape_processing::ShapeDependency,

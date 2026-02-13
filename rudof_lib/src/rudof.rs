@@ -25,9 +25,13 @@ pub use shex_validation::ValidatorConfig;
 pub use sparql_service::RdfData;
 pub use sparql_service::ServiceDescription;
 pub use sparql_service::ServiceDescriptionFormat;
-pub use srdf::QueryResultFormat;
-pub use srdf::UmlGenerationMode;
-pub use srdf::{QuerySolution, QuerySolutions, RDFFormat, ReaderMode, SRDFSparql, VarName};
+pub use rdf::rdf_core::{
+    RDFFormat,
+    visualizer::uml_converter::UmlGenerationMode,
+    query::{QuerySolutions, QuerySolution, QueryResultFormat, VarName, SparqlQuery},
+    term::Object,
+};
+pub use rdf::rdf_impl::{ReaderMode, InMemoryGraph};
 
 pub type Result<T> = result::Result<T, RudofError>;
 
@@ -44,10 +48,10 @@ use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::shapemap::{NodeSelector, ShapeSelector};
 use shex_ast::{ResolveMethod, ShExFormat, ShapeLabelIdx};
 // use shex_validation::SchemaWithoutImports;
-use srdf::QueryRDF;
-use srdf::Rdf;
-use srdf::rdf_visualizer::visual_rdf_graph::VisualRDFGraph;
-use srdf::{FocusRDF, SRDFGraph, SparqlQuery};
+use rdf::rdf_core::{
+    Rdf, FocusRDF, query::QueryRDF, visualizer::VisualRDFGraph,
+};
+use rdf::rdf_impl::{SparqlEndpoint};
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::BufReader;
@@ -156,7 +160,7 @@ impl Rudof {
     }
 
     /// Get the list of endpoints to use in the queries
-    pub fn endpoints_to_use(&self) -> Vec<(String, SRDFSparql)> {
+    pub fn endpoints_to_use(&self) -> Vec<(String, SparqlEndpoint)> {
         self.rdf_data
             .endpoints_to_use()
             .map(|(name, endpoint)| (name.to_string(), endpoint.clone()))
@@ -663,7 +667,7 @@ impl Rudof {
             ShaclFormat::JsonLd => Ok(RDFFormat::JsonLd),
         }?;
 
-        let rdf_graph = SRDFGraph::from_reader(reader, reader_name, &format, base, reader_mode)
+        let rdf_graph = InMemoryGraph::from_reader(reader, reader_name, &format, base, reader_mode)
             .map_err(|e| RudofError::ReadingSHACLError {
                 reader: reader_name.to_string(),
                 error: e.to_string(),
@@ -719,7 +723,7 @@ impl Rudof {
     ///   Returns the corresponding `SRDFSparql` instance if found or creates a new one if `name` is a valid URL
     ///   If a new endpoint is created, its name will be the same as the URL
     ///   It sets the endpoint for its usage in the next queries
-    pub fn get_endpoint(&self, name: &str) -> Result<(String, SRDFSparql)> {
+    pub fn get_endpoint(&self, name: &str) -> Result<(String, SparqlEndpoint)> {
         // First, try to find the endpoint by its name in the registered endpoints
         match self.rdf_data.find_endpoint(name) {
             Some(endpoint) => Ok((name.to_string(), endpoint)),
@@ -730,7 +734,7 @@ impl Rudof {
                     error: format!("{e}"),
                 })?;
                 // Create a new SRDFSparql instance with the given IRI
-                let endpoint = SRDFSparql::new(&iri, &PrefixMap::new()).map_err(|e| {
+                let endpoint = SparqlEndpoint::new(&iri, &PrefixMap::new()).map_err(|e| {
                     RudofError::InvalidEndpoint {
                         endpoint: name.to_string(),
                         error: format!("{e}"),
@@ -1164,7 +1168,7 @@ impl Rudof {
     ///   If an endpoint with the same name already exists, it is replaced
     pub fn add_endpoint(&mut self, name: &str, iri: &IriS, prefixmap: &PrefixMap) -> Result<()> {
         let sparql_endpoint =
-            SRDFSparql::new(iri, prefixmap).map_err(|e| RudofError::AddingEndpointError {
+            SparqlEndpoint::new(iri, prefixmap).map_err(|e| RudofError::AddingEndpointError {
                 iri: iri.clone(),
                 error: format!("{e}"),
             })?;
@@ -1389,6 +1393,8 @@ mod tests {
     use shex_ast::{Node, ir::shape_label::ShapeLabel};
 
     use crate::RudofConfig;
+    use rdf::rdf_core::RDFFormat;
+    use rdf::rdf_impl::ReaderMode;
 
     use super::Rudof;
 
@@ -1410,9 +1416,9 @@ mod tests {
             .read_data(
                 &mut data.as_bytes(),
                 "test",
-                &srdf::RDFFormat::Turtle,
+                &RDFFormat::Turtle,
                 None,
-                &srdf::ReaderMode::Strict,
+                &ReaderMode::Strict,
                 false,
             )
             .unwrap();
@@ -1422,7 +1428,7 @@ mod tests {
                 shex.as_bytes(),
                 &ShExFormat::ShExC,
                 None,
-                &srdf::ReaderMode::Strict,
+                &ReaderMode::Strict,
                 Some("test"),
             )
             .unwrap();
@@ -1445,9 +1451,9 @@ mod tests {
             .read_data(
                 &mut data.as_bytes(),
                 "test",
-                &srdf::RDFFormat::Turtle,
+                &RDFFormat::Turtle,
                 None,
-                &srdf::ReaderMode::Strict,
+                &ReaderMode::Strict,
                 false,
             )
             .unwrap();
@@ -1457,7 +1463,7 @@ mod tests {
                 shex.as_bytes(),
                 &ShExFormat::ShExC,
                 None,
-                &srdf::ReaderMode::Strict,
+                &ReaderMode::Strict,
                 None,
             )
             .unwrap();
@@ -1480,9 +1486,9 @@ mod tests {
             .read_data(
                 &mut data.as_bytes(),
                 "test",
-                &srdf::RDFFormat::Turtle,
+                &RDFFormat::Turtle,
                 None,
-                &srdf::ReaderMode::Strict,
+                &ReaderMode::Strict,
                 false,
             )
             .unwrap();
@@ -1492,7 +1498,7 @@ mod tests {
                 shex.as_bytes(),
                 &ShExFormat::ShExC,
                 None,
-                &srdf::ReaderMode::Strict,
+                &ReaderMode::Strict,
                 None,
             )
             .unwrap();
@@ -1528,9 +1534,9 @@ mod tests {
             .read_data(
                 &mut data.as_bytes(),
                 "test",
-                &srdf::RDFFormat::Turtle,
+                &RDFFormat::Turtle,
                 None,
-                &srdf::ReaderMode::Strict,
+                &ReaderMode::Strict,
                 false,
             )
             .unwrap();
@@ -1541,7 +1547,7 @@ mod tests {
                 "test",
                 &ShaclFormat::Turtle,
                 None,
-                &srdf::ReaderMode::Lax,
+                &ReaderMode::Lax,
             )
             .unwrap();
         let result = rudof
@@ -1576,9 +1582,9 @@ mod tests {
             .read_data(
                 &mut data.as_bytes(),
                 "test",
-                &srdf::RDFFormat::Turtle,
+                &RDFFormat::Turtle,
                 None,
-                &srdf::ReaderMode::Strict,
+                &ReaderMode::Strict,
                 false,
             )
             .unwrap();
@@ -1589,7 +1595,7 @@ mod tests {
                 "test",
                 &ShaclFormat::Turtle,
                 None,
-                &srdf::ReaderMode::Lax,
+                &ReaderMode::Lax,
             )
             .unwrap();
         let result = rudof
@@ -1623,9 +1629,9 @@ mod tests {
             .read_data(
                 &mut data.as_bytes(),
                 "test",
-                &srdf::RDFFormat::Turtle,
+                &RDFFormat::Turtle,
                 None,
-                &srdf::ReaderMode::Strict,
+                &ReaderMode::Strict,
                 false,
             )
             .unwrap();
@@ -1660,9 +1666,9 @@ mod tests {
             .read_data(
                 &mut data.as_bytes(),
                 "test",
-                &srdf::RDFFormat::Turtle,
+                &RDFFormat::Turtle,
                 None,
-                &srdf::ReaderMode::Strict,
+                &ReaderMode::Strict,
                 false,
             )
             .unwrap();

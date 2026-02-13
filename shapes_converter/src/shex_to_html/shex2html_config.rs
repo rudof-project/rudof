@@ -6,7 +6,7 @@ use std::{
 use iri_s::IriS;
 use serde::{Deserialize, Serialize};
 use shex_validation::ShExConfig;
-use srdf::RDFS_LABEL_STR;
+use rdf::rdf_core::vocab::rdfs_label;
 use thiserror::Error;
 
 use crate::ShEx2UmlConfig;
@@ -42,7 +42,7 @@ impl Default for ShEx2HtmlConfig {
             css_file_name: Some("shex2html.css".to_string()),
             target_folder: None,
             color_property_name: Some(DEFAULT_COLOR_PROPERTY_NAME.to_string()),
-            annotation_label: vec![IriS::new_unchecked(RDFS_LABEL_STR)],
+            annotation_label: vec![rdfs_label().clone()],
             replace_iri_by_label: None,
             embed_svg_schema: true,
             embed_svg_shape: true,

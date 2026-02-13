@@ -3,7 +3,7 @@ use std::result;
 use rust_decimal::prelude::*;
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Serialize, Serializer};
-use srdf::numeric_literal::NumericLiteral;
+use rdf::rdf_core::term::literal::NumericLiteral;
 use thiserror::Error;
 // use void::Void;
 

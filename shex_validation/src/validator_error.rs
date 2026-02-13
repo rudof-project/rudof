@@ -9,7 +9,7 @@ use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::shape::Shape;
 use shex_ast::ir::shape_expr::ShapeExpr;
 use shex_ast::{Node, Pred, ShapeExprLabel, ShapeLabelIdx, ir::shape_label::ShapeLabel};
-use srdf::Object;
+use rdf::rdf_core::term::Object;
 use thiserror::Error;
 
 use crate::Reasons;

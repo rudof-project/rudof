@@ -1,6 +1,6 @@
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
-use srdf::lang::Lang;
+use rdf::rdf_core::term::literal::Lang;
 use std::{result, str::FromStr};
 use thiserror::Error;
 

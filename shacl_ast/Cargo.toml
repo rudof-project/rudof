@@ -22,5 +22,5 @@ itertools = "0.14"
 oxrdf = { workspace = true, features = ["oxsdatatypes"] }
 prefixmap.workspace = true
 regex.workspace = true
-srdf.workspace = true
+rdf.workspace = true
 thiserror = "2.0"

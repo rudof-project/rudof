@@ -3,9 +3,8 @@ use std::{collections::HashMap, fmt::Display};
 use either::Either;
 
 use crate::{
-    edge::Edge, edge_id::EdgeId, edge_type::EdgeType, evidence::Evidence,
-    label_property_spec::LabelPropertySpec, node::Node, node_id::NodeId, pgs_error::PgsError,
-    type_name::TypeName,
+    edge::Edge, edge_id::EdgeId, edge_type::EdgeType, evidence::Evidence, label_property_spec::LabelPropertySpec,
+    node::Node, node_id::NodeId, pgs_error::PgsError, type_name::TypeName,
 };
 
 /// Simple representation of a property graph
@@ -38,24 +37,18 @@ impl PropertyGraphSchema {
     }
 
     pub fn get_node_semantics(&self, type_name: &str) -> Result<&LabelPropertySpec, PgsError> {
-        let node_id = self
-            .node_names
-            .get(type_name)
-            .ok_or(PgsError::MissingNodeLabel {
-                label: type_name.to_string(),
-            })?;
+        let node_id = self.node_names.get(type_name).ok_or(PgsError::MissingNodeLabel {
+            label: type_name.to_string(),
+        })?;
         self.node_types
             .get(node_id)
             .ok_or(PgsError::MissingType(type_name.to_string()))
     }
 
     pub fn get_edge_semantics(&self, type_name: &str) -> Result<&EdgeType, PgsError> {
-        let edge_id = self
-            .edge_names
-            .get(type_name)
-            .ok_or(PgsError::MissingEdgeLabel {
-                label: type_name.to_string(),
-            })?;
+        let edge_id = self.edge_names.get(type_name).ok_or(PgsError::MissingEdgeLabel {
+            label: type_name.to_string(),
+        })?;
         self.edge_types
             .get(edge_id)
             .ok_or(PgsError::MissingType(type_name.to_string()))
@@ -88,15 +81,10 @@ impl PropertyGraphSchema {
         }
     }*/
 
-    pub fn add_node_spec(
-        &mut self,
-        type_name: &str,
-        spec: LabelPropertySpec,
-    ) -> Result<NodeId, PgsError> {
+    pub fn add_node_spec(&mut self, type_name: &str, spec: LabelPropertySpec) -> Result<NodeId, PgsError> {
         let node_id = NodeId::new(self.node_types_id_counter);
         self.node_types.insert(node_id.clone(), spec);
-        self.node_names
-            .insert(type_name.to_string(), node_id.clone());
+        self.node_names.insert(type_name.to_string(), node_id.clone());
         self.node_types_id_counter += 1;
         Ok(node_id)
     }
@@ -131,17 +119,12 @@ impl PropertyGraphSchema {
         }
         self.edge_types
             .insert(edge_id.clone(), EdgeType::new(source, edge, target));
-        self.edge_names
-            .insert(type_name.to_string(), edge_id.clone());
+        self.edge_names.insert(type_name.to_string(), edge_id.clone());
         self.edge_id_counter += 1;
         Ok(edge_id)
     }
 
-    pub fn conforms_node(
-        &self,
-        type_name: &TypeName,
-        node: &Node,
-    ) -> Either<Vec<PgsError>, Vec<Evidence>> {
+    pub fn conforms_node(&self, type_name: &TypeName, node: &Node) -> Either<Vec<PgsError>, Vec<Evidence>> {
         if let Some(node_id) = self.node_names.get(type_name) {
             if let Some(spec) = self.node_types.get(node_id) {
                 match spec.semantics(self) {
@@ -158,11 +141,7 @@ impl PropertyGraphSchema {
         }
     }
 
-    pub fn conforms_edge(
-        &self,
-        type_name: &TypeName,
-        edge: &Edge,
-    ) -> Either<Vec<PgsError>, Vec<Evidence>> {
+    pub fn conforms_edge(&self, type_name: &TypeName, edge: &Edge) -> Either<Vec<PgsError>, Vec<Evidence>> {
         if let Some(edge_id) = self.edge_names.get(type_name) {
             if let Some(spec) = self.edge_types.get(edge_id) {
                 match spec.semantics(self) {

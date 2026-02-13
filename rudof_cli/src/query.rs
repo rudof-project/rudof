@@ -6,7 +6,7 @@ use rudof_lib::{
     query::execute_query, query_result_format::ResultQueryFormat as CliResultQueryFormat,
     query_type::QueryType,
 };
-use srdf::ReaderMode;
+use rdf::rdf_impl::ReaderMode;
 use std::path::PathBuf;
 
 #[allow(clippy::too_many_arguments)]

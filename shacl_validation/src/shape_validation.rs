@@ -5,6 +5,10 @@ use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use iri_s::IriS;
+use rdf::rdf_core::{
+    NeighsRDF, Rdf, SHACLPath,
+    term::{Object, Triple},
+};
 use shacl_ast::shacl_vocab::{
     sh_closed_constraint_component, sh_reifier_shape_constraint_component,
 };
@@ -12,7 +16,6 @@ use shacl_ir::compiled::property_shape::PropertyShapeIR;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::reifier_info::ReifierInfo;
 use shacl_ir::{compiled::node_shape::NodeShapeIR, schema_ir::SchemaIR};
-use srdf::{NeighsRDF, Object, Rdf, SHACLPath, Triple};
 use std::{collections::HashSet, fmt::Debug};
 use tracing::trace;
 
@@ -107,7 +110,7 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
 
                 let all_properties: HashSet<IriS> = match S::term_as_subject(focus_node) {
                     Ok(subj) => {
-                        let ts = store.triples_with_subject(subj).map_err(|e| {
+                        let ts = store.triples_with_subject(&subj).map_err(|e| {
                             ValidateError::TriplesWithSubject {
                                 subject: format!("{focus_node:?}"),
                                 error: e.to_string(),
@@ -179,16 +182,14 @@ where
     for focus_node in focus_nodes.iter() {
         for reifier_shape in reifier_info.reifier_shape() {
             let pred = reifier_info.predicate();
+            let pred_iri: S::IRI = pred.clone().into();
+            let subject =
+                S::term_as_subject(focus_node).map_err(|_| ValidateError::TriplesWithSubject {
+                    subject: format!("{focus_node:?}"),
+                    error: "Cannot convert to subject".to_string(),
+                })?;
             let triples = store
-                .triples_with_subject_predicate(
-                    S::term_as_subject(focus_node).map_err(|_| {
-                        ValidateError::TriplesWithSubject {
-                            subject: format!("{focus_node:?}"),
-                            error: "Cannot convert to subject".to_string(),
-                        }
-                    })?,
-                    pred.clone().into(),
-                )
+                .triples_with_subject_predicate(&subject, &pred_iri)
                 .map_err(|e| ValidateError::TriplesWithSubjectPredicate {
                     subject: format!("{focus_node}"),
                     predicate: pred.to_string(),

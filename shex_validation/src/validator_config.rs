@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use shex_ast::shapemap::ShapemapConfig;
-use srdf::RdfDataConfig;
+use rdf::rdf_core::RdfDataConfig;
 use std::io::Read;
 use std::path::Path;
 

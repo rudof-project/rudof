@@ -703,8 +703,8 @@ impl Rdf for InMemoryGraph {
     /// # Returns
     ///
     /// `Some(&PrefixMap)` containing all defined namespace prefixes.
-    fn prefixmap(&self) -> Option<&PrefixMap> {
-        Some(&self.pm)
+    fn prefixmap(&self) -> Option<PrefixMap> {
+        Some(self.pm.clone())
     }
 }
 
@@ -869,6 +869,7 @@ impl AsyncRDF for InMemoryGraph {
 /// The focus term is used to track a specific RDF term of interest during graph operations.
 /// This can be useful for navigation, querying, or maintaining context during traversals.
 impl FocusRDF for InMemoryGraph {
+
     /// Sets the focus term for this graph.
     ///
     /// # Parameters

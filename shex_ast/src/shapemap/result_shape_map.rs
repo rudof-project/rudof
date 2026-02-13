@@ -1,7 +1,7 @@
 use colored::*;
 use itertools::Itertools;
 use serde::Serialize;
-use srdf::Object;
+use rdf::rdf_core::term::Object;
 use tabled::settings::Modify;
 use tabled::settings::Width;
 use tabled::settings::object::Segment;

@@ -5,7 +5,7 @@ use prefixmap::IriRef;
 use serde::de::{MapAccess, Visitor};
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Serialize, Serializer, de};
-use srdf::lang::Lang;
+use rdf::rdf_core::term::literal::Lang;
 use std::str::FromStr;
 use std::{fmt, result};
 

@@ -1,28 +1,3 @@
-//! ShEx compact syntax parser
-//!
-//! Example
-//!
-//! ```
-//! # use iri_s::IriS;
-//!
-//! use shex_ast::{Schema, Shape, ShapeExpr, ShapeExprLabel};
-//! use shex_compact::ShExParser;
-//!
-//! let str = r#"prefix : <http://example.org/>
-//!              :S {}
-//!             "#;
-//!
-//! let schema = ShExParser::parse(str, None).unwrap();
-//! let mut expected = Schema::new();
-//! expected.add_prefix("", &IriS::new_unchecked("http://example.org/"));
-//! expected.add_shape(
-//!   ShapeExprLabel::iri_unchecked("http://example.org/S"),
-//!   ShapeExpr::empty_shape(),
-//!   false
-//! );
-//! assert_eq!(schema,expected)
-//!
-//! ```
 mod compact_printer;
 mod grammar;
 mod grammar_structs;

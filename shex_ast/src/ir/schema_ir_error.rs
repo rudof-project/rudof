@@ -1,12 +1,11 @@
 use iri_s::{IriS, IriSError};
 use prefixmap::{IriRef, PrefixMapError};
-use srdf::lang::Lang;
+use rdf::rdf_core::term::literal::{Lang, NumericLiteral};
 use thiserror::Error;
 
 use super::shape_label::ShapeLabel;
 use crate::ast::TripleExprLabel;
 use crate::{Node, ShExFormat, ast};
-use srdf::numeric_literal::NumericLiteral;
 
 #[derive(Error, Debug, Clone)]
 pub enum SchemaIRError {

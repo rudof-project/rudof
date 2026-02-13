@@ -1,3 +1,3 @@
 mod regex;
 
-pub use regex::RDFRegex;
+pub use regex::{RDFRegex, RDFRegexError};

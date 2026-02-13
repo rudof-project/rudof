@@ -5,9 +5,7 @@ use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::compiled::target::CompiledTarget;
 use shacl_ir::schema_ir::SchemaIR;
 use shacl_ir::shape_label_idx::ShapeLabelIdx;
-use srdf::NeighsRDF;
-use srdf::RDFNode;
-use srdf::SHACLPath;
+use rdf::rdf_core::{NeighsRDF, SHACLPath, term::Object};
 
 use crate::focus_nodes::FocusNodes;
 use crate::validate_error::ValidateError;
@@ -53,9 +51,9 @@ pub trait Engine<S: NeighsRDF> {
 
     /// If s is a shape in a shapes graph SG and s has value t for sh:targetNode
     /// in SG then { t } is a target from any data graph for s in SG.
-    fn target_node(&self, store: &S, node: &RDFNode) -> Result<FocusNodes<S>, Box<ValidateError>>;
+    fn target_node(&self, store: &S, node: &Object) -> Result<FocusNodes<S>, Box<ValidateError>>;
 
-    fn target_class(&self, store: &S, class: &RDFNode)
+    fn target_class(&self, store: &S, class: &Object)
     -> Result<FocusNodes<S>, Box<ValidateError>>;
 
     fn target_subject_of(
@@ -73,7 +71,7 @@ pub trait Engine<S: NeighsRDF> {
     fn implicit_target_class(
         &self,
         store: &S,
-        shape: &RDFNode,
+        shape: &Object,
     ) -> Result<FocusNodes<S>, Box<ValidateError>>;
 
     fn path(
@@ -94,10 +92,10 @@ pub trait Engine<S: NeighsRDF> {
 
     fn record_validation(
         &mut self,
-        node: RDFNode,
+        node: Object,
         shape_idx: ShapeLabelIdx,
         results: Vec<ValidationResult>,
     );
 
-    fn has_validated(&self, node: &RDFNode, shape_idx: ShapeLabelIdx) -> bool;
+    fn has_validated(&self, node: &Object, shape_idx: ShapeLabelIdx) -> bool;
 }

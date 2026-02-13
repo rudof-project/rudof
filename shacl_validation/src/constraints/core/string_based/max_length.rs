@@ -12,12 +12,7 @@ use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::MaxLength;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use srdf::Iri as _;
-use srdf::Literal as _;
-use srdf::NeighsRDF;
-use srdf::QueryRDF;
-use srdf::SHACLPath;
-use srdf::Term;
+use rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF, term::{Term, Iri as _, literal::Literal as _}};
 use std::fmt::Debug;
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxLength {

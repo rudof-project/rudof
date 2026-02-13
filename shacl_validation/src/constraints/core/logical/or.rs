@@ -13,10 +13,7 @@ use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::Or;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use srdf::NeighsRDF;
-use srdf::Object;
-use srdf::QueryRDF;
-use srdf::SHACLPath;
+use rdf::rdf_core::{NeighsRDF, query::QueryRDF, SHACLPath, term::Object};
 use std::fmt::Debug;
 use tracing::debug;
 

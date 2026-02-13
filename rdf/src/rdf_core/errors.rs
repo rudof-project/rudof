@@ -374,6 +374,13 @@ pub enum RDFError {
     #[error("Failed to convert term to RDF node: {term}")]
     FailedTermToRDFNodeError { term: String },
 
+    // Error when attempting to convert a subject to an RDF node (Object) fails.
+    ///
+    /// # Fields
+    /// - `subject`: String representation of the term that failed conversion
+    #[error("Failed to convert subject to RDF node: {subject}")]
+    FailedSubjectToRDFNodeError { subject: String },
+
     /// Error when attempting to convert an RDF subject to an IRI or blank node.
     ///
     /// # Fields

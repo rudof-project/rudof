@@ -22,5 +22,6 @@ pub use errors::RDFError;
 pub use matcher::{Matcher, Any};
 pub use neighs_rdf::{NeighsRDF, Neigh, NeighsIterator};
 pub use rdf::Rdf;
+pub use rdf_data_config::RdfDataConfig;
 pub use rdf_format::RDFFormat;
 pub use shacl_path::SHACLPath;

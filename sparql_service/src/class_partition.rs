@@ -1,7 +1,7 @@
 use crate::PropertyPartition;
 use iri_s::IriS;
 use serde::{Deserialize, Serialize};
-use srdf::IriOrBlankNode;
+use rdf::rdf_core::term::IriOrBlankNode;
 use std::fmt::Display;
 
 #[derive(Clone, PartialEq, Eq, Default, Debug, Hash, Serialize, Deserialize)]

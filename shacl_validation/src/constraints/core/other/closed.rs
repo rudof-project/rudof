@@ -10,9 +10,7 @@ use shacl_ir::compiled::component_ir::Closed;
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use srdf::NeighsRDF;
-use srdf::QueryRDF;
-use srdf::SHACLPath;
+use rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF};
 use std::fmt::Debug;
 
 impl<S: NeighsRDF + Debug> Validator<S> for Closed {

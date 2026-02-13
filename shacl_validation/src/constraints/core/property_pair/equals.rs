@@ -10,11 +10,7 @@ use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::Equals;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use srdf::NeighsRDF;
-use srdf::QueryRDF;
-use srdf::Rdf;
-use srdf::SHACLPath;
-use srdf::Triple;
+use rdf::rdf_core::{NeighsRDF, query::QueryRDF, Rdf, SHACLPath, term::Triple};
 use std::fmt::Debug;
 use tracing::debug;
 
@@ -32,8 +28,9 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for Equals {
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let check = |focus: &R::Term, value_node: &R::Term| {
             let subject: R::Subject = <R as Rdf>::term_as_subject(focus).unwrap();
+            let iri_owned: R::IRI = self.iri().clone().into();
             let triples_to_compare = match store
-                .triples_with_subject_predicate(subject.clone(), self.iri().clone().into())
+                .triples_with_subject_predicate(&subject, &iri_owned)
             {
                 Ok(iter) => iter,
                 Err(e) => {

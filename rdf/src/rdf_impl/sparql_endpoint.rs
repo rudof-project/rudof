@@ -453,8 +453,8 @@ impl Rdf for SparqlEndpoint {
     }
 
     /// Returns the prefix map for this endpoint.
-    fn prefixmap(&self) -> Option<&PrefixMap> {
-        Some(&self.prefixmap)
+    fn prefixmap(&self) -> Option<PrefixMap> {
+        Some((*self.prefixmap).clone())
     }
 }
 

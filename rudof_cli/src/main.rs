@@ -9,7 +9,7 @@ extern crate rudof_generate;
 extern crate serde_json;
 extern crate shacl_ast;
 extern crate shapes_converter;
-extern crate srdf;
+extern crate rdf;
 extern crate supports_color;
 extern crate tracing;
 extern crate tracing_subscriber;

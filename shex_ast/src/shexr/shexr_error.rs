@@ -1,5 +1,5 @@
 use iri_s::IriS;
-use srdf::RDFParseError;
+use rdf::rdf_core::RDFError;
 use std::fmt::Display;
 use thiserror::Error;
 
@@ -10,7 +10,7 @@ pub enum ShExRError {
     #[error("RDF parse error: {err}")]
     RDFParseError {
         #[from]
-        err: RDFParseError,
+        err: RDFError,
     },
 
     #[error("No nodes with `rdf:type sx:Schema`")]

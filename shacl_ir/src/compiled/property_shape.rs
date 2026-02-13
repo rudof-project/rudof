@@ -13,14 +13,12 @@ use crate::shape_label_idx::ShapeLabelIdx;
 use iri_s::IriS;
 use shacl_ast::Schema;
 use shacl_ast::property_shape::PropertyShape;
-use srdf::RDFNode;
-use srdf::Rdf;
-use srdf::SHACLPath;
+use rdf::rdf_core::{Rdf, SHACLPath, term::Object};
 use std::collections::HashSet;
 
 #[derive(Debug, Clone)]
 pub struct PropertyShapeIR {
-    id: RDFNode,
+    id: Object,
     path: SHACLPath,
     components: Vec<ComponentIR>,
     targets: Vec<CompiledTarget>,
@@ -43,7 +41,7 @@ pub struct PropertyShapeIR {
 impl PropertyShapeIR {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        id: RDFNode,
+        id: Object,
         path: SHACLPath,
         components: Vec<ComponentIR>,
         targets: Vec<CompiledTarget>,
@@ -66,7 +64,7 @@ impl PropertyShapeIR {
         }
     }
 
-    pub fn id(&self) -> &RDFNode {
+    pub fn id(&self) -> &Object {
         &self.id
     }
 

@@ -3,7 +3,7 @@ use std::{collections::HashMap, fmt::Display};
 use crate::shape::Shape;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use srdf::{RDFNode, Rdf};
+use rdf::rdf_core::{Rdf, term::Object};
 
 #[derive(Debug, Clone, Default)]
 pub struct Schema<RDF: Rdf>
@@ -12,7 +12,7 @@ where
 {
     // imports: Vec<IriS>,
     // entailments: Vec<IriS>,
-    shapes: HashMap<RDFNode, Shape<RDF>>,
+    shapes: HashMap<Object, Shape<RDF>>,
     prefixmap: PrefixMap,
     base: Option<IriS>,
 }
@@ -35,7 +35,7 @@ impl<RDF: Rdf> Schema<RDF> {
         self
     }
 
-    pub fn with_shapes(mut self, shapes: HashMap<RDFNode, Shape<RDF>>) -> Self {
+    pub fn with_shapes(mut self, shapes: HashMap<Object, Shape<RDF>>) -> Self {
         self.shapes = shapes;
         self
     }
@@ -48,11 +48,11 @@ impl<RDF: Rdf> Schema<RDF> {
         self.base.clone()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (&RDFNode, &Shape<RDF>)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&Object, &Shape<RDF>)> {
         self.shapes.iter()
     }
 
-    pub fn get_shape(&self, sref: &RDFNode) -> Option<&Shape<RDF>> {
+    pub fn get_shape(&self, sref: &Object) -> Option<&Shape<RDF>> {
         self.shapes.get(sref)
     }
 }

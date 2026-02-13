@@ -1,7 +1,7 @@
-use super::pg::{Context, TokenKind};
 /// This file is maintained by rustemo but can be modified manually.
 /// All manual changes will be preserved except non-doc comments.
 use rustemo::Token as RustemoToken;
+use super::pg::{TokenKind, Context};
 pub type Input = str;
 pub type Ctx<'i> = Context<'i, Input>;
 #[allow(dead_code)]
@@ -26,7 +26,7 @@ pub type Statements = Statement1;
 pub fn statements_statement1(_ctx: &Ctx, statement1: Statement1) -> Statements {
     statement1
 }
-pub type Statements1 = Vec<Statement>;
+pub type Statement1 = Vec<Statement>;
 pub fn statement1_c1(
     _ctx: &Ctx,
     mut statement1: Statement1,
@@ -35,45 +35,63 @@ pub fn statement1_c1(
     statement1.push(statement);
     statement1
 }
+pub fn statement1_statement(_ctx: &Ctx, statement: Statement) -> Statement1 {
+    vec![statement]
+}
 #[derive(Debug, Clone)]
 pub enum Statement {
-    Node(Node),
     Edge(Edge),
+    Node(Node),
 }
-pub fn declaration_node(_ctx: &Ctx, node: Node) -> Statement {
-    Statement::Node(node)
-}
-pub fn declaration_edge(_ctx: &Ctx, edge: Edge) -> Statement {
+pub fn statement_edge(_ctx: &Ctx, edge: Edge) -> Statement {
     Statement::Edge(edge)
+}
+pub fn statement_node(_ctx: &Ctx, node: Node) -> Statement {
+    Statement::Node(node)
 }
 #[derive(Debug, Clone)]
 pub struct Node {
-    pub id: Id,
+    pub node_id: NodeId,
     pub labels_record: LabelsRecord,
 }
-pub fn node_c1(_ctx: &Ctx, id: Id, labels_record: LabelsRecord) -> Node {
-    Node { id, labels_record }
+pub fn node_c1(_ctx: &Ctx, node_id: NodeId, labels_record: LabelsRecord) -> Node {
+    Node { node_id, labels_record }
 }
 #[derive(Debug, Clone)]
 pub struct Edge {
     pub source: IDENTIFIER,
-    pub id: Option<Id>,
+    pub edge_id_opt: EdgeIdOpt,
     pub labels_record: LabelsRecord,
     pub target: IDENTIFIER,
 }
 pub fn edge_c1(
     _ctx: &Ctx,
     source: IDENTIFIER,
-    id: Option<Id>,
+    edge_id_opt: EdgeIdOpt,
     labels_record: LabelsRecord,
     target: IDENTIFIER,
 ) -> Edge {
     Edge {
-        id,
         source,
+        edge_id_opt,
         labels_record,
         target,
     }
+}
+pub type EdgeIdOpt = Option<EdgeId>;
+pub fn edge_id_opt_edge_id(_ctx: &Ctx, edge_id: EdgeId) -> EdgeIdOpt {
+    Some(edge_id)
+}
+pub fn edge_id_opt_empty(_ctx: &Ctx) -> EdgeIdOpt {
+    None
+}
+pub type NodeId = Id;
+pub fn node_id_id(_ctx: &Ctx, id: Id) -> NodeId {
+    id
+}
+pub type EdgeId = Id;
+pub fn edge_id_id(_ctx: &Ctx, id: Id) -> EdgeId {
+    id
 }
 pub type Id = IDENTIFIER;
 pub fn id_identifier(_ctx: &Ctx, identifier: IDENTIFIER) -> Id {
@@ -108,7 +126,22 @@ pub fn record_opt_record(_ctx: &Ctx, record: Record) -> RecordOpt {
 pub fn record_opt_empty(_ctx: &Ctx) -> RecordOpt {
     None
 }
-pub type IDENTIFIER1 = Vec<identifier>;
+pub type Labels = identifier1;
+pub fn labels_identifier1(_ctx: &Ctx, identifier1: identifier1) -> Labels {
+    identifier1
+}
+pub type identifier1 = Vec<identifier>;
+pub fn identifier1_c1(
+    _ctx: &Ctx,
+    mut identifier1: identifier1,
+    identifier: identifier,
+) -> identifier1 {
+    identifier1.push(identifier);
+    identifier1
+}
+pub fn identifier1_identifier(_ctx: &Ctx, identifier: identifier) -> identifier1 {
+    vec![identifier]
+}
 pub type Record = Properties;
 pub fn record_properties(_ctx: &Ctx, properties: Properties) -> Record {
     properties
@@ -214,76 +247,14 @@ pub fn bool_true(_ctx: &Ctx) -> BOOL {
 pub fn bool_false(_ctx: &Ctx) -> BOOL {
     BOOL::FALSE
 }
-pub fn statement1_statement(_ctx: &Ctx, statement: Statement) -> Statement1 {
-    vec![statement]
-}
-pub type Statement1 = Vec<Statement>;
-pub type NodeId = Id;
-pub fn node_id_id(_ctx: &Ctx, id: Id) -> NodeId {
-    id
-}
-pub type EdgeId = Id;
-pub fn edge_id_id(_ctx: &Ctx, id: Id) -> EdgeId {
-    id
-}
 #[derive(Debug, Clone)]
 pub enum identifier {
     IDENTIFIER(IDENTIFIER),
     QUOTED_STRING(QUOTED_STRING),
-}
-impl identifier {
-    pub fn as_str(&self) -> &str {
-        match self {
-            identifier::IDENTIFIER(s) => s.as_str(),
-            identifier::QUOTED_STRING(s) => {
-                s.strip_prefix('"').and_then(|s| s.strip_suffix('"')).unwrap_or(s)
-            }
-        }
-    }
 }
 pub fn identifier_identifier(_ctx: &Ctx, identifier: IDENTIFIER) -> identifier {
     identifier::IDENTIFIER(identifier)
 }
 pub fn identifier_quoted_string(_ctx: &Ctx, quoted_string: QUOTED_STRING) -> identifier {
     identifier::QUOTED_STRING(quoted_string)
-}
-pub fn statement_node(_ctx: &Ctx, node: Node) -> Statement {
-    Statement::Node(node)
-}
-pub fn statement_edge(_ctx: &Ctx, edge: Edge) -> Statement {
-    Statement::Edge(edge)
-}
-pub type identifier1 = Vec<identifier>;
-pub fn identifier1_identifier(_ctx: &Ctx, identifier: identifier) -> identifier1 {
-    vec![identifier]
-}
-pub fn labels_identifier1(_ctx: &Ctx, identifier1: identifier1) -> Labels {
-    identifier1
-}
-pub type EdgeIdOpt = Option<EdgeId>;
-pub fn edge_id_opt_edge_id(_ctx: &Ctx, edge_id: EdgeId) -> EdgeIdOpt {
-    Some(edge_id)
-}
-pub fn edge_id_opt_empty(_ctx: &Ctx) -> EdgeIdOpt {
-    None
-}
-pub type Labels = identifier1;
-#[derive(Debug, Clone)]
-pub enum Conj {
-    AMPERSAND,
-    COMMA,
-}
-pub fn conj_ampersand(_ctx: &Ctx) -> Conj {
-    Conj::AMPERSAND
-}
-pub fn conj_comma(_ctx: &Ctx) -> Conj {
-    Conj::COMMA
-}
-pub fn identifier1_c1(
-    _ctx: &Ctx,
-    mut identifier1: identifier1,
-    identifier: identifier,
-) -> identifier1 {
-    identifier1.push(identifier);
-    identifier1
 }

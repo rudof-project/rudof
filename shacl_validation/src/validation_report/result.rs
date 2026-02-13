@@ -4,17 +4,17 @@ use shacl_ast::shacl_vocab::{
     sh_source_constraint_component, sh_source_shape, sh_validation_result, sh_value,
 };
 use shacl_ir::severity::CompiledSeverity;
-use srdf::{BuildRDF, FocusRDF, NeighsRDF, Object, RDFNode, SHACLPath};
+use rdf::rdf_core::{BuildRDF, FocusRDF, NeighsRDF, SHACLPath, term::Object};
 use std::fmt::{Debug, Display};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ValidationResult {
-    focus_node: RDFNode,           // required
+    focus_node: Object,           // required
     path: Option<SHACLPath>,       // optional
-    value: Option<RDFNode>,        // optional
-    source: Option<RDFNode>,       // optional
-    constraint_component: RDFNode, // required
-    details: Option<Vec<RDFNode>>, // optional
+    value: Option<Object>,        // optional
+    source: Option<Object>,       // optional
+    constraint_component: Object, // required
+    details: Option<Vec<Object>>, // optional
     message: Option<String>,       // optional
     severity: CompiledSeverity,    // required
 }

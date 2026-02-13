@@ -1,11 +1,9 @@
 use shacl_ir::compiled::schema_ir::SchemaIR;
 use shacl_ir::compiled_shacl_error::CompiledShaclError;
 use shacl_rdf::rdf_to_shacl::ShaclParser;
-use srdf::RDFFormat;
-use srdf::ReaderMode;
-use srdf::SRDFGraph;
+use rdf::rdf_core::RDFFormat;
+use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use std::io::BufRead;
-
 use crate::validate_error::ValidateError;
 
 pub mod graph;
@@ -24,7 +22,7 @@ impl ShaclDataManager {
         rdf_format: RDFFormat,
         base: Option<&str>,
     ) -> Result<SchemaIR, Box<ValidateError>> {
-        let rdf = SRDFGraph::from_reader(
+        let rdf = InMemoryGraph::from_reader(
             reader,
             source_name,
             &rdf_format,

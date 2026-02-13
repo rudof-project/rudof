@@ -2,7 +2,7 @@ use crate::shapemap::{Association, NodeSelector, ShapeSelector, ShapemapError};
 use crate::{Node, ShapeExprLabel, ir::shape_label::ShapeLabel, object_value::ObjectValue};
 use prefixmap::PrefixMap;
 use serde::Serialize;
-use srdf::QueryRDF;
+use rdf::rdf_core::query::QueryRDF;
 use std::fmt::Display;
 use tracing::trace;
 

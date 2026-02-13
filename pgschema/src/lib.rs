@@ -14,6 +14,8 @@ pub mod key;
 pub mod label_property_spec;
 pub mod node;
 pub mod node_id;
+
+#[rustfmt::skip]
 #[allow(clippy::all)]
 pub mod parser;
 pub mod pg;

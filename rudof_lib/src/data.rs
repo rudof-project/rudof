@@ -1,10 +1,11 @@
 // Shared core logic for data management
 use iri_s::IriS;
 use iri_s::mime_type::MimeType;
-use srdf::{
-    ImageFormat, RDFFormat, ReaderMode, UmlConverter, UmlGenerationMode,
-    rdf_visualizer::visual_rdf_graph::VisualRDFGraph,
+use rdf::rdf_core::{
+    RDFFormat, 
+    visualizer::{VisualRDFGraph, uml_converter::{UmlConverter, UmlGenerationMode, ImageFormat}}
 };
+use rdf::rdf_impl::ReaderMode;
 use std::str::FromStr;
 
 use crate::{

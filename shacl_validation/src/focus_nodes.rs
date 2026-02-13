@@ -1,4 +1,4 @@
-use srdf::Rdf;
+use rdf::rdf_core::Rdf;
 use std::collections::HashSet;
 use std::fmt::Display;
 
@@ -65,7 +65,7 @@ impl<S: Rdf> IntoIterator for FocusNodes<S> {
     }
 }
 
-impl<S: srdf::Rdf> Display for FocusNodes<S> {
+impl<S: Rdf> Display for FocusNodes<S> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "FocusNodes[")?;
         for (i, node) in self.set.iter().enumerate() {

@@ -7,7 +7,7 @@ use shapes_converter::{
 };
 use shex_validation::{ShExConfig, ValidatorConfig};
 use sparql_service::ServiceConfig;
-use srdf::{PLANTUML, RdfDataConfig};
+use rdf::rdf_core::RdfDataConfig;
 use std::env;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -187,7 +187,7 @@ impl RudofConfig {
         if let Some(path) = &self.plantuml_path {
             path.to_owned()
         } else {
-            match env::var(PLANTUML) {
+            match env::var("PLANTUML") {
                 Ok(value) => Path::new(value.as_str()).to_path_buf(),
                 Err(_) => env::current_dir().unwrap(),
             }

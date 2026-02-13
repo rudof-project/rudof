@@ -1,4 +1,4 @@
-use srdf::{BuildRDF, Rdf};
+use rdf::rdf_core::{Rdf, BuildRDF};
 use std::fmt::Display;
 
 use crate::{node_shape::NodeShape, property_shape::PropertyShape};
@@ -66,14 +66,14 @@ impl<RDF: Rdf> PartialEq for Shape<RDF> {
 #[cfg(test)]
 mod tests {
     use iri_s::iri;
-    use srdf::SRDFGraph;
+    use rdf::{rdf_impl::InMemoryGraph, rdf_core::term::Object};
 
     use crate::{node_shape::NodeShape, shape::Shape};
 
     #[test]
     fn test_clone() {
-        let ns: NodeShape<SRDFGraph> =
-            NodeShape::new(srdf::Object::Iri(iri!("http://example.org/id")));
+        let ns: NodeShape<InMemoryGraph> =
+            NodeShape::new(Object::Iri(iri!("http://example.org/id")));
         let s1 = Shape::node_shape(ns);
         let s2 = s1.clone();
         assert_eq!(s1, s2)

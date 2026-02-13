@@ -9,7 +9,8 @@ use rudof_lib::{
     shex_format::ShExFormat as CliShExFormat, sort_by_result_shape_map::SortByResultShapeMap,
 };
 use shex_ast::ShExFormat;
-use srdf::{RDFFormat, ReaderMode};
+use rdf::rdf_core::RDFFormat;
+use rdf::rdf_impl::ReaderMode;
 use std::collections::HashMap;
 use std::io::{self, Write};
 use std::path::PathBuf;

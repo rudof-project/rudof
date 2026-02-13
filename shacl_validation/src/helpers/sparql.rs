@@ -1,5 +1,5 @@
 use super::helper_error::SPARQLError;
-use srdf::QueryRDF;
+use rdf::rdf_core::query::QueryRDF;
 use std::collections::HashSet;
 
 pub fn select<S: QueryRDF>(

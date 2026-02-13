@@ -5,7 +5,7 @@ use crate::rdf_core::{
         errors::RdfVisualizerError,
         NodeId, VisualRDFGraph,
     },
-    vocab::REIFIES
+    vocab::rdf_reifies,
 };
 use std::fmt::Display;
 
@@ -43,7 +43,7 @@ impl VisualRDFNode {
     /// # Returns
     /// * `VisualRDFNode` - The created visual node
     pub fn from_predicate<R: Rdf>(rdf: &R, predicate: &R::IRI) -> VisualRDFNode {
-        if predicate.as_str() == REIFIES {
+        if predicate.as_str() == rdf_reifies().as_str() {
             VisualRDFNode::Reifies
         } else {
             let iri_label = rdf.qualify_iri(predicate);

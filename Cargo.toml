@@ -16,16 +16,15 @@ members = [
     "rudof_lib",
     "rudof_mcp",
     "shacl_ast",
-    "shacl_ir",
+    "shacl_ir", 
     "shacl_rdf",
-    "shacl_validation",
+    "shacl_validation", 
     "shapes_comparator",
     "shapes_converter",
     "shex_ast",
     "shex_testsuite",
     "shex_validation",
     "sparql_service",
-    "srdf",
 ]
 
 default-members = ["rudof_cli"]
@@ -107,6 +106,7 @@ reqwest = { version = "0.12", default-features = false, features = [
     "rustls-tls-native-roots",
 ] }
 rudof_cli = { version = "0.1.111", path = "./rudof_cli" }
+rdf = { version = "0.1.111", path = "./rdf" }
 rudof_generate = { version = "0.1.118", path = "./rudof_generate" }
 rudof_lib = { version = "0.1.110", path = "./rudof_lib" }
 rudof_mcp = { version = "0.1.121", path = "./rudof_mcp" }
@@ -126,7 +126,6 @@ shex_validation = { version = "0.1.111", path = "./shex_validation" }
 sparesults = { version = "0.3.0", features = ["sparql-12"] }
 spargebra = { version = "0.4.0", features = ["sparql-12"] }
 sparql_service = { version = "0.1.111", path = "./sparql_service" }
-srdf = { version = "0.1.111", path = "./srdf" }
 supports-color = "3.0.0"
 tabled = { version = "0.20.0", features = ["ansi"] }
 tempfile = "3.10.1"

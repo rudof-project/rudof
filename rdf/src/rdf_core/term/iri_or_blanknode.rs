@@ -94,6 +94,74 @@ impl From<IriOrBlankNode> for oxrdf::NamedOrBlankNode {
 ///
 /// This enables interoperability with the `oxrdf` library, allowing conversion
 /// from oxrdf's subject type into the custom representation.
+impl From<oxrdf::NamedOrBlankNode> for IriOrBlankNode {
+    fn from(value: oxrdf::NamedOrBlankNode) -> Self {
+        match value {
+            oxrdf::NamedOrBlankNode::NamedNode(iri) => IriOrBlankNode::Iri(iri.into()),
+            oxrdf::NamedOrBlankNode::BlankNode(bnode) => {
+                IriOrBlankNode::BlankNode(bnode.into_string())
+            }
+        }
+    }
+}
+
+/// Converts an `IriOrBlankNode` into an `oxrdf::Term`.
+///
+/// This conversion allows using `IriOrBlankNode` values in contexts where
+/// oxrdf expects a full term (which can be an IRI, blank node, literal, or triple).
+impl From<IriOrBlankNode> for oxrdf::Term {
+    fn from(value: IriOrBlankNode) -> Self {
+        match value {
+            IriOrBlankNode::Iri(iri) => {
+                oxrdf::Term::NamedNode(oxrdf::NamedNode::new_unchecked(iri.as_str()))
+            }
+            IriOrBlankNode::BlankNode(bnode) => {
+                oxrdf::Term::BlankNode(oxrdf::BlankNode::new_unchecked(bnode))
+            }
+        }
+    }
+}
+
+/// Attempts to convert an `oxrdf::Term` into an `IriOrBlankNode`.
+///
+/// This conversion succeeds only when the term is a named node or blank node.
+/// It fails if the term is a literal or RDF-star triple.
+///
+/// # Errors
+///
+/// Returns an error if the term is a literal or triple, as these cannot be
+/// represented as `IriOrBlankNode`.
+impl TryFrom<oxrdf::Term> for IriOrBlankNode {
+    type Error = RDFError;
+
+    fn try_from(value: oxrdf::Term) -> Result<Self, Self::Error> {
+        match value {
+            oxrdf::Term::NamedNode(iri) => Ok(IriOrBlankNode::Iri(iri.into())),
+            oxrdf::Term::BlankNode(bnode) => Ok(IriOrBlankNode::BlankNode(bnode.into_string())),
+            oxrdf::Term::Literal(lit) => Err(RDFError::ExpectedIriOrBlankNodeFoundLiteral {
+                literal: lit.to_string(),
+            }),
+            oxrdf::Term::Triple(triple) => Err(RDFError::ExpectedIriOrBlankNodeFoundTriple {
+                subject: triple.subject.to_string(),
+                predicate: triple.predicate.to_string(),
+                object: triple.object.to_string(),
+            }),
+        }
+    }
+}
+
+/// Attempts to convert an `Object` into an `IriOrBlankNode`.
+///
+/// This conversion succeeds only when the object is an IRI or blank node.
+/// It fails with an error if the object is a literal or triple, as these
+/// cannot be represented as resources.
+///
+/// # Errors
+///
+/// - `RDFError::ExpectedIriOrBlankNodeFoundLiteral`: When attempting to convert
+///   a literal object. Literals cannot be subjects in standard RDF.
+/// - `RDFError::ExpectedIriOrBlankNodeFoundTriple`: When attempting to convert
+///   an RDF-star triple object in a context where quoted triples are not supported.
 impl TryFrom<Object> for IriOrBlankNode {
     type Error = RDFError;
 
@@ -113,29 +181,6 @@ impl TryFrom<Object> for IriOrBlankNode {
                 predicate: predicate.to_string(),
                 object: object.to_string(),
             }),
-        }
-    }
-}
-
-/// Attempts to convert an `Object` into an `IriOrBlankNode`.
-///
-/// This conversion succeeds only when the object is an IRI or blank node.
-/// It fails with an error if the object is a literal or triple, as these
-/// cannot be represented as resources.
-///
-/// # Errors
-///
-/// - `RDFError::ExpectedIriOrBlankNodeFoundLiteral`: When attempting to convert
-///   a literal object. Literals cannot be subjects in standard RDF.
-/// - `RDFError::ExpectedIriOrBlankNodeFoundTriple`: When attempting to convert
-///   an RDF-star triple object in a context where quoted triples are not supported.
-impl From<oxrdf::NamedOrBlankNode> for IriOrBlankNode {
-    fn from(value: oxrdf::NamedOrBlankNode) -> Self {
-        match value {
-            oxrdf::NamedOrBlankNode::NamedNode(iri) => IriOrBlankNode::Iri(iri.into()),
-            oxrdf::NamedOrBlankNode::BlankNode(bnode) => {
-                IriOrBlankNode::BlankNode(bnode.into_string())
-            }
         }
     }
 }

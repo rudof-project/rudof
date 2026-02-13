@@ -107,7 +107,7 @@ pub trait Rdf: Sized {
     /// Returns the prefix map used by this RDF implementation.
     ///
     /// Returns `None` if no prefix map is configured.
-    fn prefixmap(&self) -> Option<&PrefixMap>;
+    fn prefixmap(&self) -> Option<PrefixMap>;
 
     /// Resolves a prefix and local name to obtain the full IRI.
     ///

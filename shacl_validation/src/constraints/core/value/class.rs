@@ -12,12 +12,7 @@ use shacl_ir::compiled::component_ir::Class;
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use srdf::NeighsRDF;
-use srdf::QueryRDF;
-use srdf::SHACLPath;
-use srdf::Term;
-use srdf::rdf_type;
-use srdf::rdfs_subclass_of;
+use rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF, term::Term, vocab::{rdf_type, rdfs_subclass_of}};
 use std::fmt::Debug;
 
 impl<S: NeighsRDF + 'static> NativeValidator<S> for Class {

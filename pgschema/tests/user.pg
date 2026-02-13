@@ -1,14 +1,14 @@
 // OK, has name
-(n1: User { name: "Alice Cooper" });
+(n1 {User} [name: "Alice Cooper" ])
 
 // OK, has givenName and familyName
-(n2: User { givenName: "Robert", familyName: "Smith" });
+(n2 {User} [givenName: "Robert", familyName: "Smith" ])
 
 // Wrong because has name and givenName
-(n3_wrong: User { name: "Carol King", givenName: "Carol" });
+(n3_wrong {User} [name: "Carol King", givenName: "Carol" ])
 
 // Wrong because has name and familyName
-(n4_wrong: User { name: "David Bowie", familyName: "Bowie" });
+(n4_wrong {User} [name: "David Bowie", familyName: "Bowie" ])
 
 // Wrong because has name, givenName and familyName
-(n5_wrong: User { name: "David Bowie", givenName: "David", familyName: "Bowie" })
+(n5_wrong {User} [name: "David Bowie", givenName: "David", familyName: "Bowie" ])

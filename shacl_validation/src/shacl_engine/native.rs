@@ -10,18 +10,16 @@ use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
 use shacl_ir::shape_label_idx::ShapeLabelIdx;
-use srdf::NeighsRDF;
-use srdf::RDFNode;
-use srdf::SHACLPath;
-use srdf::Term;
-use srdf::Triple;
-use srdf::rdf_type;
-use srdf::rdfs_subclass_of;
+use rdf::rdf_core::{
+    NeighsRDF, SHACLPath,
+    term::{Object, Triple, Term},
+    vocab::{rdf_type, rdfs_subclass_of},
+};
 use std::collections::HashMap;
 use std::fmt::Debug;
 
 pub struct NativeEngine {
-    cached_validations: HashMap<RDFNode, HashMap<ShapeLabelIdx, Vec<ValidationResult>>>,
+    cached_validations: HashMap<Object, HashMap<ShapeLabelIdx, Vec<ValidationResult>>>,
 }
 
 impl NativeEngine {
@@ -73,7 +71,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
     }
 
     /// https://www.w3.org/TR/shacl/#targetNode
-    fn target_node(&self, _: &S, node: &RDFNode) -> Result<FocusNodes<S>, Box<ValidateError>> {
+    fn target_node(&self, _: &S, node: &Object) -> Result<FocusNodes<S>, Box<ValidateError>> {
         let node: S::Term = node.clone().into();
         if node.is_blank_node() {
             Err(Box::new(ValidateError::TargetNodeBlankNode))
@@ -85,12 +83,12 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
     fn target_class(
         &self,
         store: &S,
-        class: &RDFNode,
+        class: &Object,
     ) -> Result<FocusNodes<S>, Box<ValidateError>> {
         // TODO: this should not be necessary, check in others triples_matching calls
         let cls: S::Term = class.clone().into();
         let focus_nodes = store
-            .shacl_instances_of(cls)
+            .shacl_instances_of(&cls)
             .map_err(|e| ValidateError::TargetClassError {
                 msg: format!("Failed to get instances of class {class}: {e}"),
             })?
@@ -106,7 +104,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
     ) -> Result<FocusNodes<S>, Box<ValidateError>> {
         let pred: S::IRI = predicate.clone().into();
         let subjects = store
-            .triples_with_predicate(pred)
+            .triples_with_predicate(&pred)
             .map_err(|_| ValidateError::SRDF)?
             .map(Triple::into_subject)
             .map(Into::into);
@@ -121,7 +119,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
     ) -> Result<FocusNodes<S>, Box<ValidateError>> {
         let pred: S::IRI = predicate.clone().into();
         let objects = store
-            .triples_with_predicate(pred)
+            .triples_with_predicate(&pred)
             .map_err(|_| ValidateError::SRDF)?
             .map(Triple::into_object);
         Ok(FocusNodes::from_iter(objects))
@@ -130,7 +128,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
     fn implicit_target_class(
         &self,
         store: &S,
-        subject: &RDFNode,
+        subject: &Object,
     ) -> Result<FocusNodes<S>, Box<ValidateError>> {
         // TODO: Replace by shacl_instances_of
         let term: S::Term = subject.clone().into();
@@ -166,7 +164,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
 
     fn record_validation(
         &mut self,
-        node: RDFNode,
+        node: Object,
         shape_idx: ShapeLabelIdx,
         results: Vec<ValidationResult>,
     ) {
@@ -176,95 +174,10 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
             .insert(shape_idx, results);
     }
 
-    fn has_validated(&self, node: &RDFNode, shape_idx: ShapeLabelIdx) -> bool {
+    fn has_validated(&self, node: &Object, shape_idx: ShapeLabelIdx) -> bool {
         self.cached_validations
             .get(node)
             .and_then(|shape_map| shape_map.get(&shape_idx))
             .is_some()
     }
-
-    /*     fn predicate(
-        &self,
-        store: &S,
-        _: &PropertyShapeIR,
-        predicate: &S::IRI,
-        focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError> {
-        Ok(FocusNodes::from_iter(
-            get_objects_for(store, focus_node, predicate)?.into_iter(),
-        ))
-    }
-
-    fn alternative(
-        &self,
-        _store: &S,
-        _shape: &PropertyShapeIR,
-        _paths: &[SHACLPath],
-        _focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "alternative".to_string(),
-        })
-    }
-
-    fn sequence(
-        &self,
-        store: &S,
-        shape: &PropertyShapeIR,
-        paths: &[SHACLPath],
-        focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError> {
-        debug!("Sequence path not yet implemented");
-        Err(ValidateError::NotImplemented {
-            msg: "sequence".to_string(),
-        })
-    }
-
-    fn inverse(
-        &self,
-        _store: &S,
-        _shape: &PropertyShapeIR,
-        _path: &SHACLPath,
-        _focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "inverse".to_string(),
-        })
-    }
-
-    fn zero_or_more(
-        &self,
-        _store: &S,
-        _shape: &PropertyShapeIR,
-        _path: &SHACLPath,
-        _focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "zero_or_more".to_string(),
-        })
-    }
-
-    fn one_or_more(
-        &self,
-        _store: &S,
-        _shape: &PropertyShapeIR,
-        _path: &SHACLPath,
-        _focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "one_or_more".to_string(),
-        })
-    }
-
-    fn zero_or_one(
-        &self,
-        _store: &S,
-        _shape: &PropertyShapeIR,
-        _path: &SHACLPath,
-        _focus_node: &S::Term,
-    ) -> Result<FocusNodes<S>, ValidateError> {
-        Err(ValidateError::NotImplemented {
-            msg: "zero_or_one".to_string(),
-        })
-    } */
 }

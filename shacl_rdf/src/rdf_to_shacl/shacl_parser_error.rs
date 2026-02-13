@@ -1,5 +1,5 @@
 use shacl_ast::ShaclError;
-use srdf::RDFParseError;
+use rdf::rdf_core::RDFError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -7,7 +7,7 @@ pub enum ShaclParserError {
     #[error("RDF parse error: {err}")]
     RDFParseError {
         #[from]
-        err: RDFParseError,
+        err: RDFError,
     },
 
     #[error("Expected Value of `sh:reifierShape` to be a subject, found: {term}")]

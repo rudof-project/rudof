@@ -13,8 +13,7 @@ use shex_ast::ir::shape_label::ShapeLabel;
 use shex_ast::shapemap::ResultShapeMap;
 use shex_ast::shapemap::ValidationStatus;
 use shex_ast::shapemap::query_shape_map::QueryShapeMap;
-use srdf::NeighsRDF;
-use srdf::QueryRDF;
+use rdf::rdf_core::{NeighsRDF, query::QueryRDF};
 use tracing::trace;
 
 type Result<T> = std::result::Result<T, ValidatorError>;

@@ -12,11 +12,7 @@ use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::Datatype;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use srdf::Literal as _;
-use srdf::NeighsRDF;
-use srdf::QueryRDF;
-use srdf::SHACLPath;
-use srdf::SLiteral;
+use rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF, term::literal::{Literal as _, ConcreteLiteral}};
 use std::fmt::Debug;
 use tracing::trace;
 
@@ -38,8 +34,8 @@ impl<R: NeighsRDF + Debug> Validator<R> for Datatype {
                 self.datatype()
             );
             if let Ok(literal) = R::term_as_literal(value_node) {
-                match TryInto::<SLiteral>::try_into(literal.clone()) {
-                    Ok(SLiteral::WrongDatatypeLiteral {
+                match TryInto::<ConcreteLiteral>::try_into(literal.clone()) {
+                    Ok(ConcreteLiteral::WrongDatatypeLiteral {
                         lexical_form,
                         datatype,
                         error,
@@ -49,9 +45,9 @@ impl<R: NeighsRDF + Debug> Validator<R> for Datatype {
                         );
                         true
                     }
-                    Ok(_slit) => literal.datatype() != self.datatype().as_str(),
+                    Ok(_slit) => literal.datatype().get_iri().unwrap().as_str() != self.datatype().as_str(),
                     Err(_) => {
-                        trace!("Failed to convert literal to SLiteral: {literal}");
+                        trace!("Failed to convert literal to ConcreteLiteral: {literal}");
                         true
                     }
                 }

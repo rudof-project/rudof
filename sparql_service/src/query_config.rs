@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use srdf::RdfDataConfig;
+use rdf::rdf_core::RdfDataConfig;
 use std::io::Read;
 use std::{io, path::Path};
 use thiserror::Error;

@@ -11,19 +11,13 @@ use prefixmap::PrefixMap;
 use serde::Serialize;
 use serde::ser::SerializeStruct;
 use sparesults::QuerySolution as SparQuerySolution;
-use srdf::FocusRDF;
-use srdf::NeighsRDF;
-use srdf::QueryRDF;
-use srdf::QuerySolution;
-use srdf::QuerySolutions;
-use srdf::RDFFormat;
-use srdf::Rdf;
-use srdf::ReaderMode;
-use srdf::SRDFGraph;
-use srdf::SRDFSparql;
-use srdf::VarName;
-use srdf::matcher::Matcher;
-use srdf::{BuildRDF, QueryResultFormat};
+use rdf::{
+    rdf_core::{
+        FocusRDF, NeighsRDF, BuildRDF, RDFFormat, Rdf, Matcher, RdfDataConfig,
+        query::{QueryRDF, QueryResultFormat, QuerySolutions, QuerySolution, VarName},
+    },
+    rdf_impl::{InMemoryGraph, SparqlEndpoint, ReaderMode},
+};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::io;
@@ -39,13 +33,13 @@ pub struct RdfData {
 
     /// A HashMap that associates SPARQL endpoint names with their URLs
     /// Not all the endpoints in this hashmap are used when querying, one those in `use_endpoints`
-    endpoints: HashMap<String, SRDFSparql>,
+    endpoints: HashMap<String, SparqlEndpoint>,
 
     /// Set of endpoints to use when querying
-    use_endpoints: HashMap<String, SRDFSparql>,
+    use_endpoints: HashMap<String, SparqlEndpoint>,
 
     /// In-memory graph
-    graph: Option<SRDFGraph>,
+    graph: Option<InMemoryGraph>,
 
     /// In-memory Store used to access the graph using SPARQL queries
     store: Option<Store>,
@@ -72,12 +66,12 @@ impl RdfData {
 
     pub fn with_rdf_data_config(
         mut self,
-        rdf_data_config: &srdf::RdfDataConfig,
+        rdf_data_config: &RdfDataConfig,
     ) -> Result<Self, RdfDataError> {
         // Load endpoints
         if let Some(endpoints) = &rdf_data_config.endpoints {
             for (name, endpoint_description) in endpoints.iter() {
-                let sparql_endpoint = SRDFSparql::new(
+                let sparql_endpoint = SparqlEndpoint::new(
                     endpoint_description.query_url(),
                     &endpoint_description.prefixmap(),
                 )
@@ -117,7 +111,7 @@ impl RdfData {
     }
 
     /// Creates an RdfData from an in-memory RDF Graph
-    pub fn from_graph(graph: SRDFGraph) -> Result<RdfData, RdfDataError> {
+    pub fn from_graph(graph: InMemoryGraph) -> Result<RdfData, RdfDataError> {
         let store = Store::new()?;
         store.bulk_loader().load_quads(graph.quads())?;
         Ok(RdfData {
@@ -137,14 +131,14 @@ impl RdfData {
     }
 
     /// Get the in-memory graph
-    pub fn graph(&self) -> Option<&SRDFGraph> {
+    pub fn graph(&self) -> Option<&InMemoryGraph> {
         self.graph.as_ref()
     }
 
     pub fn graph_prefixmap(&self) -> PrefixMap {
         self.graph
             .as_ref()
-            .map(|g| g.prefixmap())
+            .map(|g| g.prefixmap().clone())
             .unwrap_or_default()
     }
 
@@ -178,7 +172,7 @@ impl RdfData {
                 .merge_from_reader(read, source_name, format, base, reader_mode)
                 .map_err(|e| RdfDataError::SRDFGraphError { err: Box::new(e) }),
             None => {
-                let mut graph = SRDFGraph::new();
+                let mut graph = InMemoryGraph::new();
                 graph
                     .merge_from_reader(read, source_name, format, base, reader_mode)
                     .map_err(|e| RdfDataError::SRDFGraphError { err: Box::new(e) })?;
@@ -189,7 +183,7 @@ impl RdfData {
     }
 
     /// Creates an RdfData from an endpoint
-    pub fn from_endpoint(name: &str, endpoint: SRDFSparql) -> RdfData {
+    pub fn from_endpoint(name: &str, endpoint: SparqlEndpoint) -> RdfData {
         RdfData {
             endpoints: HashMap::from([(name.to_string(), endpoint.clone())]),
             graph: None,
@@ -200,22 +194,22 @@ impl RdfData {
     }
 
     /// Adds a new endpoint to the list of available endpoints
-    pub fn add_endpoint(&mut self, name: &str, endpoint: SRDFSparql) {
+    pub fn add_endpoint(&mut self, name: &str, endpoint: SparqlEndpoint) {
         self.endpoints
             .entry(name.to_string())
             .and_modify(|e| *e = endpoint.clone())
             .or_insert(endpoint);
     }
 
-    pub fn use_endpoints(&self) -> &HashMap<String, SRDFSparql> {
+    pub fn use_endpoints(&self) -> &HashMap<String, SparqlEndpoint> {
         &self.use_endpoints
     }
 
-    pub fn endpoints(&self) -> &HashMap<String, SRDFSparql> {
+    pub fn endpoints(&self) -> &HashMap<String, SparqlEndpoint> {
         &self.endpoints
     }
 
-    pub fn use_endpoint(&mut self, name: &str, endpoint: SRDFSparql) {
+    pub fn use_endpoint(&mut self, name: &str, endpoint: SparqlEndpoint) {
         self.use_endpoints.insert(name.to_string(), endpoint);
     }
 
@@ -223,7 +217,7 @@ impl RdfData {
         self.use_endpoints.remove(name);
     }
 
-    pub fn endpoints_to_use(&self) -> impl Iterator<Item = (&str, &SRDFSparql)> {
+    pub fn endpoints_to_use(&self) -> impl Iterator<Item = (&str, &SparqlEndpoint)> {
         self.use_endpoints
             .iter()
             .map(|(name, endpoint)| (name.as_str(), endpoint))
@@ -233,7 +227,7 @@ impl RdfData {
     pub fn prefixmap_in_memory(&self) -> PrefixMap {
         self.graph
             .as_ref()
-            .map(|g| g.prefixmap())
+            .map(|g| g.prefixmap().clone())
             .unwrap_or_default()
     }
 
@@ -272,7 +266,7 @@ impl RdfData {
         Ok(())
     }
 
-    pub fn find_endpoint(&self, name: &str) -> Option<SRDFSparql> {
+    pub fn find_endpoint(&self, name: &str) -> Option<SparqlEndpoint> {
         self.endpoints.get(name).cloned()
     }
 
@@ -327,7 +321,7 @@ impl Rdf for RdfData {
 
     fn prefixmap(&self) -> std::option::Option<PrefixMap> {
         match &self.graph {
-            Some(g) => Some(g.prefixmap()),
+            Some(g) => Some(g.prefixmap().clone()),
             None => {
                 if self.use_endpoints.is_empty() {
                     None
@@ -463,7 +457,7 @@ impl QueryRDF for RdfData {
     }
 }
 
-fn cnv_sol(sol: &QuerySolution<SRDFSparql>) -> QuerySolution<RdfData> {
+fn cnv_sol(sol: &QuerySolution<SparqlEndpoint>) -> QuerySolution<RdfData> {
     sol.convert(|t| t.clone())
 }
 
@@ -513,14 +507,14 @@ impl NeighsRDF for RdfData {
 
     fn triples_matching<S, P, O>(
         &self,
-        subject: S,
-        predicate: P,
-        object: O,
+        subject: &S,
+        predicate: &P,
+        object: &O,
     ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err>
     where
-        S: Matcher<Self::Subject> + Clone,
-        P: Matcher<Self::IRI> + Clone,
-        O: Matcher<Self::Term> + Clone,
+        S: Matcher<Self::Subject>,
+        P: Matcher<Self::IRI>,
+        O: Matcher<Self::Term>,
     {
         let s1 = subject.clone();
         let p1 = predicate.clone();
@@ -546,8 +540,8 @@ impl FocusRDF for RdfData {
         self.focus = Some(focus.clone())
     }
 
-    fn get_focus(&self) -> &Option<Self::Term> {
-        &self.focus
+    fn get_focus(&self) -> Option<&Self::Term> {
+        self.focus.as_ref()
     }
 }
 
@@ -594,7 +588,7 @@ impl BuildRDF for RdfData {
                 Ok(())
             }
             None => {
-                let mut graph = SRDFGraph::new();
+                let mut graph = InMemoryGraph::new();
                 graph
                     .add_triple(subj, pred, obj)
                     .map_err(|e| RdfDataError::SRDFGraphError { err: Box::new(e) })?;

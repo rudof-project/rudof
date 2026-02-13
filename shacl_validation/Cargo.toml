@@ -11,9 +11,6 @@ keywords.workspace = true
 categories.workspace = true
 edition.workspace = true
 
-#[features]
-#rdf-star = ["srdf/rdf-star"]
-
 [dependencies]
 anyhow.workspace = true
 clap.workspace = true
@@ -27,7 +24,7 @@ shacl_ast.workspace = true
 shacl_ir.workspace = true 
 shacl_rdf.workspace = true 
 sparql_service.workspace = true 
-srdf.workspace = true 
+rdf.workspace = true 
 tabled.workspace = true
 thiserror.workspace = true
 toml.workspace = true

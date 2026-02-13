@@ -1,5 +1,6 @@
 use rudof_generate::{DataGenerator, GeneratorConfig};
-use srdf::{NeighsRDF, RDFFormat, ReaderMode, SRDFGraph};
+use rdf::rdf_core::{NeighsRDF, RDFFormat};
+use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use std::collections::HashMap;
 use std::io::Write;
 use tempfile::NamedTempFile;
@@ -38,7 +39,7 @@ ex:PersonShape {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(
+    let graph = InMemoryGraph::from_path(
         output_file.path(),
         &RDFFormat::Turtle,
         None,

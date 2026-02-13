@@ -13,9 +13,7 @@ use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::Node;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use srdf::NeighsRDF;
-use srdf::QueryRDF;
-use srdf::SHACLPath;
+use rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF, term::Object};
 use std::fmt::Debug;
 use tracing::trace;
 
@@ -66,7 +64,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
                         "Shape {}: Node({node_shape}) constraint not satisfied for {node}",
                         shape.id(),
                     );
-                    let component = srdf::Object::iri(component.into());
+                    let component = Object::iri(component.into());
                     let result = ValidationResult::new(
                         node_object.clone(),
                         component.clone(),

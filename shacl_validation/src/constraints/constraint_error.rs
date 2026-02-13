@@ -1,4 +1,4 @@
-use srdf::RDFError;
+use rdf::rdf_core::RDFError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]

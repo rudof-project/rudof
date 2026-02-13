@@ -11,9 +11,8 @@ use clap::ValueEnum;
 use prefixmap::PrefixMap;
 use shacl_ir::compiled::schema_ir::SchemaIR;
 use sparql_service::RdfData;
-use srdf::NeighsRDF;
-use srdf::RDFFormat;
-use srdf::SRDFSparql;
+use rdf::rdf_core::{NeighsRDF, RDFFormat};
+use rdf::rdf_impl::SparqlEndpoint;
 use std::fmt::Debug;
 use std::path::Path;
 use std::str::FromStr;
@@ -259,7 +258,7 @@ impl EndpointValidation {
     }
 
     pub fn from_sparql(
-        sparql: SRDFSparql,
+        sparql: SparqlEndpoint,
         mode: ShaclValidationMode,
     ) -> Result<Self, Box<ValidateError>> {
         let store = Endpoint::from_sparql(sparql);
@@ -267,7 +266,7 @@ impl EndpointValidation {
     }
 }
 
-impl ShaclProcessor<SRDFSparql> for EndpointValidation {
+impl ShaclProcessor<SparqlEndpoint> for EndpointValidation {
     fn validate(
         &mut self,
         shapes_graph: &SchemaIR,
@@ -275,7 +274,7 @@ impl ShaclProcessor<SRDFSparql> for EndpointValidation {
         // we initialize the validation report to empty
         let mut validation_results = Vec::new();
         let store = self.store.store();
-        let mut runner: Box<dyn Engine<SRDFSparql>> = match self.mode {
+        let mut runner: Box<dyn Engine<SparqlEndpoint>> = match self.mode {
             ShaclValidationMode::Native => Box::new(NativeEngine::new()),
             ShaclValidationMode::Sparql => Box::new(SparqlEngine::new()),
         };

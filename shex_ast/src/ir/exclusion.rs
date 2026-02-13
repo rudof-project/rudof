@@ -1,7 +1,7 @@
 use iri_s::IriS;
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Serialize, Serializer};
-use srdf::lang::Lang;
+use rdf::rdf_core::term::literal::Lang;
 use std::fmt::Display;
 use std::result;
 use std::str::FromStr;

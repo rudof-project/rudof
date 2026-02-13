@@ -5,7 +5,7 @@ use std::{
 
 use prefixmap::{IriRef, PrefixMapError};
 use shex_ast::{Schema, SchemaJsonError, ShapeExprLabel};
-use srdf::UmlConverterError;
+use rdf::rdf_core::visualizer::uml_converter::errors::UmlConverterError;
 use thiserror::Error;
 
 use crate::ShEx2UmlError;

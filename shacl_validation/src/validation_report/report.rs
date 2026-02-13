@@ -5,7 +5,7 @@ use iri_s::IriS;
 use prefixmap::PrefixMap;
 use shacl_ast::shacl_vocab::{sh, sh_conforms, sh_result, sh_validation_report};
 use shacl_ir::severity::CompiledSeverity;
-use srdf::{BuildRDF, FocusRDF, IriOrBlankNode, Object, Rdf, SHACLPath};
+use rdf::rdf_core::{BuildRDF, FocusRDF, Rdf, SHACLPath, term::{IriOrBlankNode, Object}};
 use std::{
     fmt::{Debug, Display},
     io::{Error, Write},

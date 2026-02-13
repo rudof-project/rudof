@@ -5,7 +5,7 @@ use shex_ast::{
     Annotation, NodeKind, ObjectValue, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr,
     ValueSetValue, XsFacet,
 };
-use srdf::{UmlConverter, UmlConverterError, UmlGenerationMode};
+use rdf::rdf_core::visualizer::uml_converter::{UmlConverter, UmlGenerationMode, errors::UmlConverterError};
 
 use crate::{
     find_annotation, object_value2string,

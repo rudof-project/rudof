@@ -1,6 +1,5 @@
 use crate::rdf_core::{FocusRDF, RDFError, parser::rdf_node_parser::{RDFNodeParse, utils::parse_list_recursive, constructors::ValuesPropertyParser}};
-use std::fmt::Debug;
-use std::marker::PhantomData;
+use std::{marker::PhantomData, fmt::Debug, cell::RefCell};
 use iri_s::IriS;
 
 // ============================================================================
@@ -445,37 +444,27 @@ where
     }
 }
 
-/// Concatenates results from multiple vector-producing parsers.
+/// Concatenates results from multiple vector-producing parsers using dynamic dispatch.
 ///
 /// Executes parsers sequentially, accumulating all results into a single vector.
-///
-/// # Type Parameters
-///
-/// * `P` - The parser type producing vectors.
-pub struct CombineMany<P> {
-    /// The collection of parsers to execute.
-    parsers: Vec<P>,
+pub struct CombineMany<RDF, A> {
+    /// The collection of boxed parsers to execute.
+    parsers: Vec<Box<dyn RDFNodeParse<RDF, Output = Vec<A>>>>,
 }
 
-impl<P> CombineMany<P> {
+impl<RDF, A> CombineMany<RDF, A> {
     /// Creates a new multi-combining parser.
-    pub fn new(parsers: Vec<P>) -> Self {
+    pub fn new(parsers: Vec<Box<dyn RDFNodeParse<RDF, Output = Vec<A>>>>) -> Self {
         Self { parsers }
     }
 }
 
-impl<RDF, P, A> RDFNodeParse<RDF> for CombineMany<P>
+impl<RDF, A> RDFNodeParse<RDF> for CombineMany<RDF, A>
 where
     RDF: FocusRDF,
-    P: RDFNodeParse<RDF, Output = Vec<A>>,
 {
     type Output = Vec<A>;
 
-    /// Executes all parsers and concatenates their results.
-    ///
-    /// # Errors
-    ///
-    /// Returns immediately with the first error encountered.
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
         let mut result = Vec::new();
         for p in self.parsers.iter() {
@@ -649,6 +638,54 @@ where
     }
 }
 
+/// Parser for dynamic parser dispatch at runtime.
+///
+/// This parser provides a mechanism for runtime parser selection,
+/// useful when the specific parser to use cannot be determined at
+/// compile time. The closure receives a callback that should be
+/// invoked with the desired parser.
+///
+/// # Type Parameters
+///
+/// * `F` - The closure type that performs dynamic dispatch.
+/// * `O` - The output type of the dynamically selected parser.
+pub struct Opaque<F, RDF, O>(RefCell<F>, PhantomData<fn(&mut RDF) -> O>);
+
+impl<RDF, F, O> Opaque<F, RDF, O>
+where
+    RDF: FocusRDF,
+    F: FnMut(&mut dyn FnMut(&mut dyn RDFNodeParse<RDF, Output = O>)),
+{
+    /// Creates a new opaque parser.
+    pub fn new(f: F) -> Self {
+        Opaque(RefCell::new(f), PhantomData)
+    }
+}
+
+impl<RDF, F, O> RDFNodeParse<RDF> for Opaque<F, RDF, O>
+where
+    RDF: FocusRDF + 'static,
+    F: FnMut(&mut dyn FnMut(&mut dyn RDFNodeParse<RDF, Output = O>)),
+{
+    type Output = O;
+
+    /// Executes the dynamic parser dispatch.
+    ///
+    /// # Errors
+    ///
+    /// Returns `RDFError::DefaultError` if no parser is invoked via the callback,
+    /// or propagates errors from the dynamically selected parser.
+    fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
+        let mut result = Err(RDFError::DefaultError {
+            msg: "Opaque parser failed".to_string(),
+        });
+        (self.0.borrow_mut())(&mut |parser| {
+            result = parser.parse_focused(rdf);
+        });
+        result
+    }
+}
+
 // ============================================================================
 // VALIDATION PARSERS
 // ============================================================================
@@ -811,12 +848,14 @@ where
         Combine::new(self, other)
     }
 
-    /// Combines multiple vector-producing parsers.
-    fn combine_many<A>(self, others: Vec<Self>) -> CombineMany<Self>
+    /// Combines multiple vector-producing parsers by erasing their types into Boxes.
+    fn combine_many<A>(self, others: Vec<Box<dyn RDFNodeParse<RDF, Output = Vec<A>>>>) -> CombineMany<RDF, A>
     where
-        Self: RDFNodeParse<RDF, Output = Vec<A>>,
+        Self: RDFNodeParse<RDF, Output = Vec<A>> + 'static,
+        RDF: 'static
     {
-        let mut all = vec![self];
+        let mut all: Vec<Box<dyn RDFNodeParse<RDF, Output = Vec<A>>>> = Vec::with_capacity(others.len() + 1);
+        all.push(Box::new(self));
         all.extend(others);
         CombineMany::new(all)
     }
@@ -835,6 +874,14 @@ where
         Self: RDFNodeParse<RDF, Output = A>,
     {
         List::new(self)
+    }
+
+    /// Wraps dynamic parser dispatch for runtime parser selection.
+    fn opaque<F>(f: F) -> Opaque<F, RDF, Self::Output>
+    where
+        F: FnMut(&mut dyn FnMut(&mut dyn RDFNodeParse<RDF, Output = Self::Output>)),
+    {
+        Opaque::new(f)
     }
 
     /// Applies this parser to all values of a property.

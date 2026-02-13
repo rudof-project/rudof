@@ -4,7 +4,7 @@ use crate::shacl_vocab::{
     sh_target_class, sh_target_node, sh_target_objects_of, sh_target_subjects_of,
 };
 use prefixmap::IriRef;
-use srdf::{BuildRDF, RDFNode, Rdf, rdf_type, rdfs_class};
+use rdf::rdf_core::{Rdf, BuildRDF, term::Object, vocab::{rdf_type, rdfs_class}};
 
 /// Represents target declarations
 #[derive(Debug)]
@@ -12,11 +12,11 @@ pub enum Target<S: Rdf>
 where
     S::Term: Clone,
 {
-    TargetNode(RDFNode), // TODO: Shacl12: Extend to Node Expressions
-    TargetClass(RDFNode),
+    TargetNode(Object), // TODO: Shacl12: Extend to Node Expressions
+    TargetClass(Object),
     TargetSubjectsOf(IriRef),
     TargetObjectsOf(IriRef),
-    TargetImplicitClass(RDFNode),
+    TargetImplicitClass(Object),
 
     // The following target declaration are not well formed but we keep them to generate violation errors for them
     WrongTargetNode(S::Term),
@@ -27,10 +27,10 @@ where
 }
 
 impl<S: Rdf> Target<S> {
-    pub fn target_node(node: RDFNode) -> Self {
+    pub fn target_node(node: Object) -> Self {
         Target::TargetNode(node)
     }
-    pub fn target_class(node: RDFNode) -> Self {
+    pub fn target_class(node: Object) -> Self {
         Target::TargetClass(node)
     }
     pub fn target_subjects_of(iri_ref: IriRef) -> Self {
@@ -39,10 +39,10 @@ impl<S: Rdf> Target<S> {
     pub fn target_objects_of(iri_ref: IriRef) -> Self {
         Target::TargetObjectsOf(iri_ref)
     }
-    pub fn target_implicit_class(node: RDFNode) -> Self {
+    pub fn target_implicit_class(node: Object) -> Self {
         Target::TargetImplicitClass(node)
     }
-    pub fn write<RDF>(&self, rdf_node: &RDFNode, rdf: &mut RDF) -> Result<(), RDF::Err>
+    pub fn write<RDF>(&self, rdf_node: &Object, rdf: &mut RDF) -> Result<(), RDF::Err>
     where
         RDF: BuildRDF,
     {

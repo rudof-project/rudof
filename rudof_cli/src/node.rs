@@ -5,7 +5,7 @@ use rudof_lib::{
     InputSpec, Rudof, RudofConfig, data::get_data_rudof, data_format::DataFormat,
     parse_node_selector,
 };
-use srdf::ReaderMode;
+use rdf::rdf_impl::ReaderMode;
 use std::path::PathBuf;
 
 use crate::{ShowNodeMode, writer::get_writer};

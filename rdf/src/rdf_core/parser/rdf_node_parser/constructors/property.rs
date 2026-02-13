@@ -1,10 +1,9 @@
 use crate::rdf_core::{
     Any, FocusRDF, RDFError,
     parser::rdf_node_parser::{
-        RDFNodeParse,
-        utils::{term_to_bool, term_to_int, term_to_iri, term_to_iri_or_blanknode, term_to_string},
+        ParserExt, RDFNodeParse, constructors::{ListParser, SetFocusParser}, utils::{term_to_bool, term_to_int, term_to_iri, term_to_iri_or_blanknode, term_to_literal, term_to_string}
     },
-    term::{IriOrBlankNode, Object, Triple},
+    term::{IriOrBlankNode, Object, Triple, literal::ConcreteLiteral},
 };
 use iri_s::IriS;
 use std::collections::HashSet;
@@ -139,6 +138,34 @@ where
             })?;
 
         Ok(first)
+    }
+}
+
+/// Parser that extracts a property value and parses it as an RDF List.
+#[derive(Debug, Clone)]
+pub struct SingleValuePropertyAsListParser<RDF> {
+    property: IriS,
+    _marker: PhantomData<RDF>,
+}
+
+impl<RDF> SingleValuePropertyAsListParser<RDF> {
+    pub fn new(property: IriS) -> Self {
+        SingleValuePropertyAsListParser {
+            property,
+            _marker: PhantomData,
+        }
+    }
+}
+
+impl<RDF> RDFNodeParse<RDF> for SingleValuePropertyAsListParser<RDF>
+where
+    RDF: FocusRDF + 'static,
+{
+    type Output = Vec<RDF::Term>;
+
+    fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
+        SingleValuePropertyParser::new(self.property.clone())
+            .then(|node| SetFocusParser::new(node).then(|_| ListParser::new())).parse_focused(rdf)
     }
 }
 
@@ -335,6 +362,47 @@ where
     }
 }
 
+/// Parser for all literal values of a property.
+#[derive(Debug, Clone)]
+pub struct LiteralsPropertyParser<RDF> {
+    property: IriS,
+    _marker: PhantomData<RDF>,
+}
+
+impl<RDF> LiteralsPropertyParser<RDF> {
+    pub fn new(property: IriS) -> Self {
+        LiteralsPropertyParser {
+            property,
+            _marker: PhantomData,
+        }
+    }
+}
+
+impl<RDF> RDFNodeParse<RDF> for LiteralsPropertyParser<RDF>
+where
+    RDF: FocusRDF,
+{
+    type Output = Vec<ConcreteLiteral>;
+
+    fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
+        ValuesPropertyParser::new(self.property.clone())
+            .parse_focused(rdf)?
+            .into_iter()
+            .map(|t| {
+                let rdf_lit: RDF::Literal = term_to_literal::<RDF>(&t)?;
+                
+                let slit: ConcreteLiteral = rdf_lit.clone().try_into().map_err(|_| {
+                    RDFError::DefaultError {
+                        msg: format!("Error converting literal {} to SLiteral", rdf_lit),
+                    }
+                })?;
+                
+                Ok(slit)
+            })
+            .collect::<Result<Vec<_>, _>>()
+    }
+}
+
 // ============================================================================
 // Typed single-value parsers
 // ============================================================================
@@ -452,6 +520,35 @@ where
         SingleValuePropertyParser::new(self.property.clone())
             .parse_focused(rdf)
             .and_then(|term| term_to_string::<RDF>(&term))
+    }
+}
+
+/// Parser for a single iri or blank node value.
+#[derive(Debug, Clone)]
+pub struct SingleIriOrBlankNodePropertyParser<RDF> {
+    property: IriS,
+    _marker: PhantomData<RDF>,
+}
+
+impl<RDF> SingleIriOrBlankNodePropertyParser<RDF> {
+    pub fn new(property: IriS) -> Self {
+        Self {
+            property,
+            _marker: PhantomData,
+        }
+    }
+}
+
+impl<RDF> RDFNodeParse<RDF> for SingleIriOrBlankNodePropertyParser<RDF>
+where
+    RDF: FocusRDF,
+{
+    type Output = IriOrBlankNode;
+
+    fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
+        SingleValuePropertyParser::new(self.property.clone())
+            .parse_focused(rdf)
+            .and_then(|term| term_to_iri_or_blanknode::<RDF>(&term))
     }
 }
 

@@ -1,4 +1,4 @@
-use srdf::SLiteral;
+use rdf::rdf_core::term::literal::ConcreteLiteral;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -7,7 +7,7 @@ pub enum Shacl2ShExError {
     NotImplemented { msg: String },
 
     #[error("Shacl2ShEx error: Feature not implemented: {literal}")]
-    RDFNode2LabelLiteral { literal: SLiteral },
+    RDFNode2LabelLiteral { literal: ConcreteLiteral },
 
     #[error("Not expected node shape: {node_shape:?}")]
     NotExpectedNodeShape { node_shape: String },
@@ -16,7 +16,7 @@ pub enum Shacl2ShExError {
     UnexpectedBlankNodeForTargetClass { bnode: String },
 
     #[error("Unexpected literal in target class declaration: {literal}")]
-    UnexpectedLiteralForTargetClass { literal: SLiteral },
+    UnexpectedLiteralForTargetClass { literal: ConcreteLiteral },
 }
 
 impl Shacl2ShExError {

@@ -11,8 +11,8 @@ use rudof_lib::{
     shacl::add_shacl_schema_rudof, shacl_format::CliShaclFormat,
 };
 use shapes_converter::{ShEx2Html, ShEx2Sparql, ShEx2Uml, Shacl2ShEx, Tap2ShEx};
-use srdf::UmlConverter;
-use srdf::{ImageFormat, ReaderMode};
+use rdf::rdf_core::visualizer::uml_converter::{ImageFormat, UmlConverter};
+use rdf::rdf_impl::ReaderMode;
 use std::{
     io::Write,
     path::{Path, PathBuf},

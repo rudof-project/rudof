@@ -15,7 +15,7 @@ use rudof_lib::{
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use srdf::ReaderMode;
+use rdf::rdf_impl::ReaderMode;
 use std::io::Cursor;
 use std::str::FromStr;
 

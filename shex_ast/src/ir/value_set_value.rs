@@ -2,8 +2,7 @@ use super::object_value::ObjectValue;
 use crate::ir::exclusion::{IriExclusion, LanguageExclusion, LiteralExclusion};
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use srdf::SLiteral;
-use srdf::{Object, lang::Lang};
+use rdf::rdf_core::term::{Object, literal::{Lang, ConcreteLiteral}};
 use std::fmt::Display;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -177,7 +176,7 @@ impl ValueSetValue {
             ValueSetValue::LanguageStemRange { stem, exclusions } => {
                 let matches_stem = match stem {
                     LangOrWildcard::Lang(lang) => match object {
-                        Object::Literal(SLiteral::StringLiteral { lang: Some(l), .. }) => {
+                        Object::Literal(ConcreteLiteral::StringLiteral { lang: Some(l), .. }) => {
                             l.as_str().starts_with(lang.as_str())
                         }
                         _ => false,
@@ -191,7 +190,7 @@ impl ValueSetValue {
                     for ex in exclusions {
                         match ex {
                             LanguageExclusion::Language(lang) => {
-                                if let Object::Literal(srdf::SLiteral::StringLiteral {
+                                if let Object::Literal(ConcreteLiteral::StringLiteral {
                                     lang: Some(l),
                                     ..
                                 }) = object
@@ -201,7 +200,7 @@ impl ValueSetValue {
                                 }
                             }
                             LanguageExclusion::LanguageStem(stem) => {
-                                if let Object::Literal(SLiteral::StringLiteral {
+                                if let Object::Literal(ConcreteLiteral::StringLiteral {
                                     lang: Some(l),
                                     ..
                                 }) = object

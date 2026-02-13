@@ -14,8 +14,7 @@ use serde::{
     Deserialize, Serialize, Serializer,
     de::{self, MapAccess, Unexpected, Visitor},
 };
-use srdf::SLiteral;
-use srdf::lang::Lang;
+use rdf::rdf_core::term::literal::{ConcreteLiteral, Lang};
 use std::{fmt, result, str::FromStr};
 use thiserror::Error;
 
@@ -55,7 +54,7 @@ impl ValueSetValue {
     }
 
     pub fn string_literal(value: &str, lang: Option<Lang>) -> ValueSetValue {
-        let ov = ObjectValue::Literal(SLiteral::StringLiteral {
+        let ov = ObjectValue::Literal(ConcreteLiteral::StringLiteral {
             lexical_form: value.to_string(),
             lang,
         });
@@ -768,7 +767,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                                     ))
                                 })?;
                                 Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
-                                    SLiteral::StringLiteral {
+                                    ConcreteLiteral::StringLiteral {
                                         lexical_form: v,
                                         lang: Some(lang),
                                     },
@@ -787,14 +786,14 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                                     ))
                                 })?;
                                 Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
-                                    SLiteral::StringLiteral {
+                                    ConcreteLiteral::StringLiteral {
                                         lexical_form,
                                         lang: Some(lang),
                                     },
                                 )))
                             }
                             None => Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
-                                SLiteral::StringLiteral {
+                                ConcreteLiteral::StringLiteral {
                                     lexical_form,
                                     lang: None,
                                 },

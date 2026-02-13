@@ -21,9 +21,7 @@ impl MapBuilder {
     pub fn parse_map(&self, input: &str) -> Result<TypeMap, PgsError> {
         let map_content = MapParser::new()
             .parse(input)
-            .map_err(|e| PgsError::MapParserError {
-                error: e.to_string(),
-            })?;
+            .map_err(|e| PgsError::MapParserError { error: e.to_string() })?;
         let mut type_map = TypeMap::new();
         get_type_map(map_content, &mut type_map)?;
         Ok(type_map)

@@ -3,8 +3,7 @@ use minijinja::Template;
 use minijinja::{Environment, path_loader};
 use prefixmap::{IriRef, PrefixMap, PrefixMapError};
 use shex_ast::{Annotation, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
-use srdf::UmlConverter;
-use srdf::UmlGenerationMode;
+use rdf::rdf_core::visualizer::uml_converter::{UmlConverter, UmlGenerationMode, ImageFormat};
 use std::ffi::OsStr;
 use std::fs::OpenOptions;
 use std::io::{BufWriter, Write};
@@ -81,7 +80,7 @@ impl ShEx2Html {
         let mut str_writer = BufWriter::new(Vec::new());
         self.current_uml_converter.as_image(
             str_writer.by_ref(),
-            srdf::ImageFormat::SVG,
+            ImageFormat::SVG,
             &UmlGenerationMode::all(),
             self.config.shex2uml_config().plantuml_path(),
         )?;
@@ -93,7 +92,7 @@ impl ShEx2Html {
         let mut str_writer = BufWriter::new(Vec::new());
         self.current_uml_converter.as_image(
             str_writer.by_ref(),
-            srdf::ImageFormat::SVG,
+            ImageFormat::SVG,
             &UmlGenerationMode::neighs(name),
             self.config.shex2uml_config().plantuml_path(),
         )?;
@@ -464,7 +463,7 @@ pub fn create_svg_shape<P: AsRef<Path>>(
     let mut str_writer = BufWriter::new(Vec::new());
     converter.as_image(
         str_writer.by_ref(),
-        srdf::ImageFormat::SVG,
+        ImageFormat::SVG,
         &UmlGenerationMode::neighs(name),
         plantuml_path.as_ref(),
     )?;

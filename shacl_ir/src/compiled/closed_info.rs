@@ -4,7 +4,7 @@ use iri_s::IriS;
 use shacl_ast::{
     Schema, ShaclError, node_shape::NodeShape, property_shape::PropertyShape, shape::Shape,
 };
-use srdf::Rdf;
+use rdf::rdf_core::Rdf;
 
 #[derive(Debug, Clone, Default)]
 pub enum ClosedInfo {

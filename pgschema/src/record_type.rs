@@ -57,27 +57,20 @@ impl RecordType {
         );
         let record_keys = record.keys();
         let record_type_keys = self.keys();
-        let (missing_record_type_keys, extra_record_keys) =
-            compare_keys(&record_type_keys, &record_keys);
+        let (missing_record_type_keys, extra_record_keys) = compare_keys(&record_type_keys, &record_keys);
         debug!(
             "Missing record type keys: {:?}, Extra record keys: {:?}",
             missing_record_type_keys, extra_record_keys
         );
         if non_empty(&missing_record_type_keys) {
-            debug!(
-                "No conforms with missing keys: {:?}",
-                missing_record_type_keys
-            );
+            debug!("No conforms with missing keys: {:?}", missing_record_type_keys);
             return Left(vec![PgsError::MissingKeys {
                 keys: format!("{:?}", missing_record_type_keys),
                 record_type: self.to_string(),
             }]);
         }
         if non_empty(&extra_record_keys) && !self.open {
-            debug!(
-                "No conforms with extra keys: {:?} and not open",
-                extra_record_keys
-            );
+            debug!("No conforms with extra keys: {:?} and not open", extra_record_keys);
             return Left(vec![PgsError::ExtraKeysNotOpen {
                 keys: format!("{:?}", extra_record_keys),
                 record_type: self.to_string(),
@@ -87,10 +80,7 @@ impl RecordType {
             if let Some(value_set) = record.get(key) {
                 let result = value_type.conforms(value_set);
                 if result.is_left() {
-                    debug!(
-                        "Value type doesn't conform: {}, result: {:?}",
-                        value_type, result
-                    );
+                    debug!("Value type doesn't conform: {}, result: {:?}", value_type, result);
                     return result;
                 } else {
                     debug!("Value {:?} conforms to type {value_type}", value_set);
@@ -119,8 +109,7 @@ impl RecordType {
         let mut result = RecordType::new();
         for (key, value_type) in &self.map {
             if let Some(other_value_type) = other.map.get(key) {
-                let combined_type =
-                    ValueType::intersection(value_type.clone(), other_value_type.clone());
+                let combined_type = ValueType::intersection(value_type.clone(), other_value_type.clone());
                 result.map.insert(key.clone(), combined_type);
             } else {
                 result.map.insert(key.clone(), value_type.clone());
@@ -152,10 +141,7 @@ impl Display for RecordType {
     }
 }
 
-fn compare_keys(
-    record_type_keys: &HashSet<&Key>,
-    record_keys: &HashSet<&Key>,
-) -> (HashSet<Key>, HashSet<Key>) {
+fn compare_keys(record_type_keys: &HashSet<&Key>, record_keys: &HashSet<&Key>) -> (HashSet<Key>, HashSet<Key>) {
     let mut missing_record_type_keys = HashSet::new();
     let mut extra_record_keys = HashSet::new();
     for key in record_type_keys {
@@ -186,12 +172,8 @@ mod tests {
     #[test]
     fn test_record_type_conforms() {
         let mut record_type = RecordType::new();
-        record_type
-            .map
-            .insert(Key::new("name"), ValueType::string(Card::One));
-        record_type
-            .map
-            .insert(Key::new("age"), ValueType::integer(Card::One));
+        record_type.map.insert(Key::new("name"), ValueType::string(Card::One));
+        record_type.map.insert(Key::new("age"), ValueType::integer(Card::One));
 
         let mut record = Record::new();
         record.insert(Key::new("name"), Value::str("Alice"));

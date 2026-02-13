@@ -5,6 +5,7 @@ use std::{
     num::{ParseFloatError, ParseIntError},
 };
 use thiserror::Error;
+use rdf::rdf_core::RDFError;
 
 use crate::compact::{LocatedParseError, Span};
 
@@ -12,6 +13,9 @@ use crate::compact::{LocatedParseError, Span};
 pub enum ParseError {
     #[error("Invalid language tag: {lang}")]
     InvalidLangTag { lang: String },
+
+    #[error("RDF error: {0}")]
+    RDFError(#[from] RDFError),
 
     #[error("Parsing error: {err}")]
     NomError { err: Box<LocatedParseError> },

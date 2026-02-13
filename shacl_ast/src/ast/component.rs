@@ -12,21 +12,23 @@ use crate::{node_kind::NodeKind, value::Value};
 use iri_s::{IriS, iri};
 use itertools::Itertools;
 use prefixmap::IriRef;
-use srdf::{BuildRDF, RDFNode, SLiteral, lang::Lang};
+use rdf::rdf_core::{
+    BuildRDF, term::{Object, literal::{ConcreteLiteral, Lang}}
+};
 use std::collections::HashSet;
 use std::fmt::Display;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Component {
-    Class(RDFNode),
+    Class(Object),
     Datatype(IriRef),
     NodeKind(NodeKind),
     MinCount(isize),
     MaxCount(isize),
-    MinExclusive(SLiteral),
-    MaxExclusive(SLiteral),
-    MinInclusive(SLiteral),
-    MaxInclusive(SLiteral),
+    MinExclusive(ConcreteLiteral),
+    MaxExclusive(ConcreteLiteral),
+    MinInclusive(ConcreteLiteral),
+    MaxInclusive(ConcreteLiteral),
     MinLength(isize),
     MaxLength(isize),
     Pattern {
@@ -42,23 +44,23 @@ pub enum Component {
     LessThan(IriRef),
     LessThanOrEquals(IriRef),
     Or {
-        shapes: Vec<RDFNode>,
+        shapes: Vec<Object>,
     },
     And {
-        shapes: Vec<RDFNode>,
+        shapes: Vec<Object>,
     },
     Not {
-        shape: RDFNode,
+        shape: Object,
     },
     Xone {
-        shapes: Vec<RDFNode>,
+        shapes: Vec<Object>,
     },
     Closed {
         is_closed: bool,
         ignored_properties: HashSet<IriS>,
     },
     Node {
-        shape: RDFNode,
+        shape: Object,
     },
     HasValue {
         value: Value,
@@ -67,17 +69,17 @@ pub enum Component {
         values: Vec<Value>,
     },
     QualifiedValueShape {
-        shape: RDFNode,
+        shape: Object,
         q_min_count: Option<isize>,
         q_max_count: Option<isize>,
         disjoint: Option<bool>,
-        siblings: Vec<RDFNode>,
+        siblings: Vec<Object>,
     },
     Deactivated(bool),
 }
 
 impl Component {
-    pub fn write<RDF>(&self, rdf_node: &RDFNode, rdf: &mut RDF) -> Result<(), RDF::Err>
+    pub fn write<RDF>(&self, rdf_node: &Object, rdf: &mut RDF) -> Result<(), RDF::Err>
     where
         RDF: BuildRDF,
     {
@@ -122,9 +124,9 @@ impl Component {
                 Self::write_integer(*value, SH_MAX_LENGTH_STR, rdf_node, rdf)?;
             }
             Self::Pattern { pattern, flags } => {
-                Self::write_literal(&SLiteral::str(pattern), SH_PATTERN_STR, rdf_node, rdf)?;
+                Self::write_literal(&ConcreteLiteral::str(pattern), SH_PATTERN_STR, rdf_node, rdf)?;
                 if let Some(flags) = flags {
-                    Self::write_literal(&SLiteral::str(flags), SH_FLAGS_STR, rdf_node, rdf)?;
+                    Self::write_literal(&ConcreteLiteral::str(flags), SH_FLAGS_STR, rdf_node, rdf)?;
                 }
             }
             Self::UniqueLang(value) => {
@@ -133,7 +135,7 @@ impl Component {
             Self::LanguageIn { langs } => {
                 langs.iter().try_for_each(|lang| {
                     Self::write_literal(
-                        &SLiteral::str(&lang.to_string()),
+                        &ConcreteLiteral::str(&lang.to_string()),
                         SH_LANGUAGE_IN_STR,
                         rdf_node,
                         rdf,
@@ -190,7 +192,7 @@ impl Component {
                 }
                 Value::Literal(literal) => {
                     Self::write_literal(
-                        &SLiteral::str(&literal.to_string()),
+                        &ConcreteLiteral::str(&literal.to_string()),
                         SH_HAS_VALUE_STR,
                         rdf_node,
                         rdf,
@@ -202,7 +204,7 @@ impl Component {
                 values.iter().try_for_each(|value| match value {
                     Value::Iri(iri) => Self::write_iri(iri, SH_IN_STR, rdf_node, rdf),
                     Value::Literal(literal) => Self::write_literal(
-                        &SLiteral::str(&literal.to_string()),
+                        &ConcreteLiteral::str(&literal.to_string()),
                         SH_IN_STR,
                         rdf_node,
                         rdf,
@@ -245,7 +247,7 @@ impl Component {
     fn write_integer<RDF>(
         value: isize,
         predicate: &str,
-        rdf_node: &RDFNode,
+        rdf_node: &Object,
         rdf: &mut RDF,
     ) -> Result<(), RDF::Err>
     where
@@ -259,7 +261,7 @@ impl Component {
     fn write_boolean<RDF>(
         value: bool,
         predicate: &str,
-        rdf_node: &RDFNode,
+        rdf_node: &Object,
         rdf: &mut RDF,
     ) -> Result<(), RDF::Err>
     where
@@ -270,9 +272,9 @@ impl Component {
     }
 
     fn write_literal<RDF>(
-        value: &SLiteral,
+        value: &ConcreteLiteral,
         predicate: &str,
-        rdf_node: &RDFNode,
+        rdf_node: &Object,
         rdf: &mut RDF,
     ) -> Result<(), RDF::Err>
     where
@@ -285,7 +287,7 @@ impl Component {
     fn write_iri<RDF>(
         value: &IriRef,
         predicate: &str,
-        rdf_node: &RDFNode,
+        rdf_node: &Object,
         rdf: &mut RDF,
     ) -> Result<(), RDF::Err>
     where
@@ -302,7 +304,7 @@ impl Component {
     fn write_term<RDF>(
         value: &RDF::Term,
         predicate: &str,
-        rdf_node: &RDFNode,
+        rdf_node: &Object,
         rdf: &mut RDF,
     ) -> Result<(), RDF::Err>
     where

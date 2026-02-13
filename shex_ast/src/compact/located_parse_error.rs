@@ -5,6 +5,7 @@ use std::{
     num::{ParseFloatError, ParseIntError},
 };
 use thiserror::Error;
+use rdf::rdf_core::RDFError;
 
 /// A [`ShExParseError`] at a certain location
 #[derive(Debug, Error)]
@@ -75,5 +76,11 @@ impl FromExternalError<Span<'_>, ParseFloatError> for LocatedParseError {
             err: e,
         }
         .at(input)
+    }
+}
+
+impl FromExternalError<Span<'_>, RDFError> for LocatedParseError {
+    fn from_external_error(input: Span, _kind: ErrorKind, e: RDFError) -> Self {
+        ShExParseError::RDFError(e).at(input)
     }
 }

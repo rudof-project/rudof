@@ -1,6 +1,7 @@
 use rudof_generate::config::OutputFormat;
 use rudof_generate::{DataGenerator, GeneratorConfig};
-use srdf::{Literal, NeighsRDF, RDFFormat, ReaderMode, SRDFGraph};
+use rdf::rdf_core::{NeighsRDF, RDFFormat, term::literal::Literal};
+use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use std::collections::HashMap;
 use std::io::Write;
 use tempfile::NamedTempFile;
@@ -40,7 +41,7 @@ ex:PersonShape {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(
+    let graph = InMemoryGraph::from_path(
         output_file.path(),
         &RDFFormat::Turtle,
         None,
@@ -119,7 +120,7 @@ ex:PersonShape a sh:NodeShape ;
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(
+    let graph = InMemoryGraph::from_path(
         output_file.path(),
         &RDFFormat::Turtle,
         None,
@@ -184,7 +185,7 @@ ex:PersonShape {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(
+    let graph = InMemoryGraph::from_path(
         output_file.path(),
         &RDFFormat::Turtle,
         None,
@@ -275,7 +276,7 @@ ex:PersonShape a sh:NodeShape ;
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(
+    let graph = InMemoryGraph::from_path(
         output_file.path(),
         &RDFFormat::Turtle,
         None,
@@ -362,7 +363,7 @@ ex:AddressShape {
 
     // Read and validate generated data
     let generated_data = std::fs::read_to_string(output_file.path()).unwrap();
-    let graph = SRDFGraph::from_str(
+    let graph = InMemoryGraph::from_str(
         &generated_data,
         &RDFFormat::Turtle,
         None,
@@ -452,7 +453,7 @@ ex:AddressShape a sh:NodeShape ;
 
     // Read and validate generated data
     let generated_data = std::fs::read_to_string(output_file.path()).unwrap();
-    let graph = SRDFGraph::from_str(
+    let graph = InMemoryGraph::from_str(
         &generated_data,
         &RDFFormat::Turtle,
         None,
@@ -534,7 +535,7 @@ ex:PersonShape a sh:NodeShape ;
 
     // Read and validate generated data
     let generated_data = std::fs::read_to_string(output_file.path()).unwrap();
-    let graph = SRDFGraph::from_str(
+    let graph = InMemoryGraph::from_str(
         &generated_data,
         &RDFFormat::Turtle,
         None,

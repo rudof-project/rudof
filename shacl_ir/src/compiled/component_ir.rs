@@ -14,11 +14,9 @@ use shacl_ast::shacl_vocab::{
     sh_max_length, sh_min_count, sh_min_exclusive, sh_min_inclusive, sh_min_length, sh_node,
     sh_node_kind, sh_not, sh_or, sh_pattern, sh_qualified_value_shape, sh_unique_lang, sh_xone,
 };
-use srdf::RDFNode;
-use srdf::Rdf;
-use srdf::SLiteral;
-use srdf::SRegex;
-use srdf::lang::Lang;
+use rdf::rdf_core::{
+    Rdf, utils::RDFRegex, term::{Object, literal::{ConcreteLiteral, Lang}}
+};
 use std::collections::HashSet;
 use std::fmt::Display;
 
@@ -442,15 +440,15 @@ impl Closed {
 /// https://www.w3.org/TR/shacl/#HasValueConstraintComponent
 #[derive(Debug, Clone)]
 pub struct HasValue {
-    value: RDFNode,
+    value: Object,
 }
 
 impl HasValue {
-    pub fn new(value: RDFNode) -> Self {
+    pub fn new(value: Object) -> Self {
         HasValue { value }
     }
 
-    pub fn value(&self) -> &RDFNode {
+    pub fn value(&self) -> &Object {
         &self.value
     }
 }
@@ -461,15 +459,15 @@ impl HasValue {
 /// https://www.w3.org/TR/shacl/#InConstraintComponent
 #[derive(Debug, Clone)]
 pub struct In {
-    values: Vec<RDFNode>,
+    values: Vec<Object>,
 }
 
 impl In {
-    pub fn new(values: Vec<RDFNode>) -> Self {
+    pub fn new(values: Vec<Object>) -> Self {
         In { values }
     }
 
-    pub fn values(&self) -> &Vec<RDFNode> {
+    pub fn values(&self) -> &Vec<Object> {
         &self.values
     }
 }
@@ -697,12 +695,12 @@ impl MinLength {
 pub struct Pattern {
     pattern: String,
     flags: Option<String>,
-    regex: SRegex,
+    regex: RDFRegex,
 }
 
 impl Pattern {
     pub fn new(pattern: String, flags: Option<String>) -> Result<Self, Box<CompiledShaclError>> {
-        let regex = SRegex::new(&pattern, flags.as_deref()).map_err(|e| {
+        let regex = RDFRegex::new(&pattern, flags.as_deref()).map_err(|e| {
             CompiledShaclError::InvalidRegex {
                 pattern: pattern.clone(),
                 flags: flags.clone(),
@@ -724,7 +722,7 @@ impl Pattern {
         &self.flags
     }
 
-    pub fn regex(&self) -> &SRegex {
+    pub fn regex(&self) -> &RDFRegex {
         &self.regex
     }
 
@@ -758,15 +756,15 @@ impl UniqueLang {
 /// https://www.w3.org/TR/shacl/#ClassConstraintComponent
 #[derive(Debug, Clone)]
 pub struct Class {
-    class_rule: RDFNode,
+    class_rule: Object,
 }
 
 impl Class {
-    pub fn new(class_rule: RDFNode) -> Self {
+    pub fn new(class_rule: Object) -> Self {
         Class { class_rule }
     }
 
-    pub fn class_rule(&self) -> &RDFNode {
+    pub fn class_rule(&self) -> &Object {
         &self.class_rule
     }
 }
@@ -812,17 +810,17 @@ impl Nodekind {
 /// https://www.w3.org/TR/shacl/#MaxExclusiveConstraintComponent
 #[derive(Debug, Clone)]
 pub struct MaxExclusive {
-    max_exclusive: SLiteral,
+    max_exclusive: ConcreteLiteral,
 }
 
 impl MaxExclusive {
-    pub fn new(literal: SLiteral) -> Self {
+    pub fn new(literal: ConcreteLiteral) -> Self {
         MaxExclusive {
             max_exclusive: literal,
         }
     }
 
-    pub fn max_exclusive(&self) -> &SLiteral {
+    pub fn max_exclusive(&self) -> &ConcreteLiteral {
         &self.max_exclusive
     }
 }
@@ -830,17 +828,17 @@ impl MaxExclusive {
 /// https://www.w3.org/TR/shacl/#MaxInclusiveConstraintComponent
 #[derive(Debug, Clone)]
 pub struct MaxInclusive {
-    max_inclusive: SLiteral,
+    max_inclusive: ConcreteLiteral,
 }
 
 impl MaxInclusive {
-    pub fn new(literal: SLiteral) -> Self {
+    pub fn new(literal: ConcreteLiteral) -> Self {
         MaxInclusive {
             max_inclusive: literal,
         }
     }
 
-    pub fn max_inclusive(&self) -> &SLiteral {
+    pub fn max_inclusive(&self) -> &ConcreteLiteral {
         &self.max_inclusive
     }
 }
@@ -848,17 +846,17 @@ impl MaxInclusive {
 /// https://www.w3.org/TR/shacl/#MinExclusiveConstraintComponent
 #[derive(Debug, Clone)]
 pub struct MinExclusive {
-    min_exclusive: SLiteral,
+    min_exclusive: ConcreteLiteral,
 }
 
 impl MinExclusive {
-    pub fn new(literal: SLiteral) -> Self {
+    pub fn new(literal: ConcreteLiteral) -> Self {
         MinExclusive {
             min_exclusive: literal,
         }
     }
 
-    pub fn min_exclusive(&self) -> &SLiteral {
+    pub fn min_exclusive(&self) -> &ConcreteLiteral {
         &self.min_exclusive
     }
 }
@@ -866,17 +864,17 @@ impl MinExclusive {
 /// https://www.w3.org/TR/shacl/#MinInclusiveConstraintComponent
 #[derive(Debug, Clone)]
 pub struct MinInclusive {
-    min_inclusive: SLiteral,
+    min_inclusive: ConcreteLiteral,
 }
 
 impl MinInclusive {
-    pub fn new(literal: SLiteral) -> Self {
+    pub fn new(literal: ConcreteLiteral) -> Self {
         MinInclusive {
             min_inclusive: literal,
         }
     }
 
-    pub fn min_inclusive_value(&self) -> &SLiteral {
+    pub fn min_inclusive_value(&self) -> &ConcreteLiteral {
         &self.min_inclusive
     }
 }

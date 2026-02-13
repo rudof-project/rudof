@@ -2,9 +2,7 @@ use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::Xone;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use srdf::NeighsRDF;
-use srdf::QueryRDF;
-use srdf::SHACLPath;
+use rdf::rdf_core::{NeighsRDF, query::QueryRDF, SHACLPath, term::Object};
 use std::fmt::Debug;
 
 use crate::constraints::NativeValidator;
@@ -66,7 +64,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Xone {
                         node,
                         conforming_shapes
                     );
-                    let component = srdf::Object::iri(component.into());
+                    let component = Object::iri(component.into());
                     validation_results.push(
                         ValidationResult::new(
                             shape.id().clone(),

@@ -3,12 +3,11 @@
 !/rbe_testsuite
 !/iri_s
 !/prefixmap
-!/srdf
+!/rdf
 !/shex_ast
 !/shex_compact
 !/rudof_cli
 !/shacl_ast
-!/srdf_sparql
 !/shex_testsuite
 !/shex_validation
 !/shapemap

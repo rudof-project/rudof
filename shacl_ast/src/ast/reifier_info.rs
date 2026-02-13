@@ -1,14 +1,14 @@
-use srdf::RDFNode;
+use rdf::rdf_core::term::Object;
 use std::fmt::Display;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ReifierInfo {
     reification_required: bool,
-    reifier_shape: Vec<RDFNode>,
+    reifier_shape: Vec<Object>,
 }
 
 impl ReifierInfo {
-    pub fn new(reification_required: bool, reifier_shape: Vec<RDFNode>) -> Self {
+    pub fn new(reification_required: bool, reifier_shape: Vec<Object>) -> Self {
         ReifierInfo {
             reification_required,
             reifier_shape,
@@ -19,7 +19,7 @@ impl ReifierInfo {
         self.reification_required
     }
 
-    pub fn reifier_shape(&self) -> &Vec<RDFNode> {
+    pub fn reifier_shape(&self) -> &Vec<Object> {
         &self.reifier_shape
     }
 }

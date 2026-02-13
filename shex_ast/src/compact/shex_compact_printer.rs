@@ -12,29 +12,13 @@ use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use pretty::{Arena, DocAllocator, DocBuilder, RefDoc};
 use rust_decimal::Decimal;
-use srdf::{SLiteral, lang::Lang, numeric_literal::NumericLiteral};
+use rdf::rdf_core::term::literal::{ConcreteLiteral, NumericLiteral, Lang};
 use std::{borrow::Cow, io, marker::PhantomData};
 use tracing::trace;
 
 use crate::pp_object_value;
 
 /// Struct that can be used to pretty print ShEx schemas
-///
-/// Example:
-/// ```
-/// use shex_compact::ShExFormatter;
-/// use shex_ast::{Schema, ShapeExprLabel, ShapeExpr};
-/// use iri_s::IriS;
-///
-/// let mut schema = Schema::new();
-/// schema.add_prefix("ex", &IriS::new_unchecked("http://example.org/"));
-/// schema.add_shape(ShapeExprLabel::iri_unchecked("http://example.org/S"), ShapeExpr::empty_shape(), false);
-///
-/// let expected = r#"prefix ex: <http://example.org/>
-/// ex:S {  }"#;
-///
-/// assert_eq!(ShExFormatter::default().format_schema(&schema), expected);
-/// ```
 #[derive(Debug, Clone)]
 pub struct ShExFormatter {
     keyword_color: Option<Color>,
@@ -510,23 +494,23 @@ where
         }
     }
 
-    fn pp_literal(&self, literal: &SLiteral) -> DocBuilder<'a, Arena<'a, A>, A> {
+    fn pp_literal(&self, literal: &ConcreteLiteral) -> DocBuilder<'a, Arena<'a, A>, A> {
         match literal {
-            SLiteral::StringLiteral { lexical_form, lang } => {
+            ConcreteLiteral::StringLiteral { lexical_form, lang } => {
                 self.pp_string_literal(lexical_form, lang)
             }
-            SLiteral::DatatypeLiteral {
+            ConcreteLiteral::DatatypeLiteral {
                 lexical_form: _,
                 datatype: _,
             } => todo!(),
-            SLiteral::WrongDatatypeLiteral {
+            ConcreteLiteral::WrongDatatypeLiteral {
                 lexical_form: _,
                 datatype: _,
                 error: _,
             } => todo!(),
-            SLiteral::NumericLiteral(lit) => self.pp_numeric_literal(lit),
-            SLiteral::BooleanLiteral(_) => todo!(),
-            SLiteral::DatetimeLiteral(_xsd_date_time) => todo!(),
+            ConcreteLiteral::NumericLiteral(lit) => self.pp_numeric_literal(lit),
+            ConcreteLiteral::BooleanLiteral(_) => todo!(),
+            ConcreteLiteral::DatetimeLiteral(_xsd_date_time) => todo!(),
         }
     }
 
@@ -700,11 +684,11 @@ where
 
     fn pp_numeric_literal(&self, value: &NumericLiteral) -> DocBuilder<'a, Arena<'a, A>, A> {
         match value {
-            NumericLiteral::Integer(n) => self.pp_isize(n),
+            NumericLiteral::Integer(n) => self.pp_isize(&(*n as isize)),
             NumericLiteral::Decimal(d) => self.pp_decimal(d),
             NumericLiteral::Double(d) => self.pp_double(d),
-            NumericLiteral::Long(l) => self.pp_isize(l),
-            NumericLiteral::Float(f) => self.pp_float(f),
+            NumericLiteral::Long(l) => self.pp_isize(&(*l as isize)),
+            NumericLiteral::Float(f) => self.pp_float(&(*f as f64)),
             NumericLiteral::Byte(b) => self.pp_byte(b),
             NumericLiteral::Short(s) => self.pp_short(s),
             NumericLiteral::NonNegativeInteger(n) => self.pp_non_negative_integer(n),

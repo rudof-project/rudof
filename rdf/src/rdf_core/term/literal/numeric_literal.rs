@@ -209,6 +209,11 @@ impl NumericLiteral {
         NumericLiteral::Integer(d as i128)
     }
 
+    /// Creates an integer literal from i128.
+    pub fn integer_from_i128(d: i128) -> NumericLiteral {
+        NumericLiteral::Integer(d as i128)
+    }
+
     /// Converts any numeric literal to Decimal for uniform comparison.
     ///
     /// This method enables cross-type numeric comparisons by normalizing

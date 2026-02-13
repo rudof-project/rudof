@@ -2215,7 +2215,7 @@ pub(crate) static RECOGNIZERS: [TokenRecognizer; TERMINAL_COUNT] = [
     TokenRecognizer(
         TokenKind::CommentLine,
         Recognizer::RegexMatch(
-            Lazy::new(|| { Regex::new(concat!("^", "#.*")).unwrap() }),
+            Lazy::new(|| { Regex::new(concat!("^", "//.*")).unwrap() }),
         ),
     ),
     TokenRecognizer(

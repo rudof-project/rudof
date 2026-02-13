@@ -4,7 +4,7 @@ use clap::ValueEnum;
 use iri_s::mime_type::MimeType;
 use rudof_lib::shacl_format::CliShaclFormat;
 use shex_ast::ShExFormat;
-use srdf::RDFFormat;
+use rdf::rdf_core::RDFFormat;
 use std::{
     fmt::{Display, Formatter},
     str::FromStr,

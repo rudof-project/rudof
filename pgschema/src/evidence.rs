@@ -31,7 +31,7 @@ impl Display for Evidence {
             Evidence::Any { values } => write!(f, "Values {:?} conform to ANY", values),
             Evidence::ConditionPassed { condition, values } => {
                 write!(f, "Condition {condition} passed for values: {values}")
-            }
+            },
         }
     }
 }

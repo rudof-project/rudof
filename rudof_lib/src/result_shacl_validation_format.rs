@@ -1,6 +1,6 @@
 use clap::ValueEnum;
 use shacl_validation::validation_report::report::SortModeReport;
-use srdf::RDFFormat;
+use rdf::rdf_core::RDFFormat;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 

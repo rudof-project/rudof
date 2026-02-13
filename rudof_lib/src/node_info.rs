@@ -4,7 +4,7 @@ use crate::{RudofError, ShapeMapParser};
 use iri_s::IriS;
 use prefixmap::IriRef;
 use shex_ast::ObjectValue;
-use srdf::{NeighsRDF, QueryRDF};
+use rdf::rdf_core::{NeighsRDF, query::QueryRDF};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fmt::{Display, Formatter};
@@ -171,7 +171,7 @@ fn get_outgoing_arcs<S: NeighsRDF>(
 ) -> Result<HashMap<S::IRI, Vec<S::Term>>, RudofError> {
     if predicates.is_empty() {
         let map = rdf
-            .outgoing_arcs(subject.clone())
+            .outgoing_arcs(&subject)
             .map_err(|e| RudofError::OutgoingArcs {
                 subject: rdf.qualify_subject(subject),
                 error: e.to_string(),
@@ -220,7 +220,7 @@ fn get_outgoing_arcs_depth<S: NeighsRDF>(
         Ok(result)
     } else if predicates.is_empty() {
         let map = rdf
-            .outgoing_arcs(subject.clone())
+            .outgoing_arcs(&subject)
             .map_err(|e| RudofError::OutgoingArcs {
                 subject: rdf.qualify_subject(subject),
                 error: e.to_string(),
@@ -297,7 +297,7 @@ fn get_incoming_arcs<S: NeighsRDF>(
 ) -> Result<HashMap<S::IRI, Vec<S::Subject>>, RudofError> {
     let object: S::Term = subject.clone().into();
     let map = rdf
-        .incoming_arcs(object.clone())
+        .incoming_arcs(&object)
         .map_err(|e| RudofError::IncomingArcs {
             object: rdf.qualify_term(&object),
             error: e.to_string(),
@@ -334,7 +334,7 @@ fn get_incoming_arcs_depth<S: NeighsRDF>(
     } else {
         let object: S::Term = subject.clone().into();
         let map = rdf
-            .incoming_arcs(object.clone())
+            .incoming_arcs(&object)
             .map_err(|e| RudofError::IncomingArcs {
                 object: rdf.qualify_term(&object),
                 error: e.to_string(),
@@ -366,7 +366,7 @@ where
 
     // Check if the subject actually exists in the RDF graph
     let mut triples =
-        rdf.triples_with_subject(subject.clone())
+        rdf.triples_with_subject(&subject)
             .map_err(|e| RudofError::RdfError {
                 error: e.to_string(),
             })?;
@@ -378,7 +378,7 @@ where
         });
     }
 
-    Ok(subject)
+    Ok(subject.clone())
 }
 
 // Convert an ObjectValue (node) to a Subject

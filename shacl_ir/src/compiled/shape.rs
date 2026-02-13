@@ -11,7 +11,7 @@ use crate::shape_label_idx::ShapeLabelIdx;
 use iri_s::IriS;
 use shacl_ast::Schema;
 use shacl_ast::shape::Shape;
-use srdf::{RDFNode, Rdf, SHACLPath};
+use rdf::rdf_core::{Rdf, SHACLPath, term::Object};
 use std::collections::HashSet;
 use std::fmt::Display;
 
@@ -51,7 +51,7 @@ impl ShapeIR {
         }
     }
 
-    pub fn id(&self) -> &RDFNode {
+    pub fn id(&self) -> &Object {
         match self {
             ShapeIR::NodeShape(ns) => ns.id(),
             ShapeIR::PropertyShape(ps) => ps.id(),

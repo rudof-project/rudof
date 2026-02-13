@@ -4,6 +4,7 @@ use prefixmap::{PrefixMap, PrefixMapError};
 use serde::Serialize;
 use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
+use rdf::rdf_core::term::Object;
 
 /// Shape labels can be IRIs, Blank nodes or the special `Start` label
 #[derive(PartialEq, Eq, Hash, Debug, Clone, PartialOrd, Ord)]
@@ -21,15 +22,15 @@ impl ShapeLabel {
         ShapeLabel::BNode(bn)
     }
 
-    pub fn from_object(obj: &srdf::Object) -> Result<ShapeLabel, SchemaJsonError> {
+    pub fn from_object(obj: &Object) -> Result<ShapeLabel, SchemaJsonError> {
         match obj {
-            srdf::Object::Iri(iri) => Ok(ShapeLabel::Iri(iri.clone())),
-            srdf::Object::BlankNode(bnode_id) => Ok(ShapeLabel::BNode(BNode::new(bnode_id))),
-            srdf::Object::Literal(_) => Err(SchemaJsonError::InvalidShapeLabel {
+            Object::Iri(iri) => Ok(ShapeLabel::Iri(iri.clone())),
+            Object::BlankNode(bnode_id) => Ok(ShapeLabel::BNode(BNode::new(bnode_id))),
+            Object::Literal(_) => Err(SchemaJsonError::InvalidShapeLabel {
                 value: obj.to_string(),
                 error: "Literal cannot be a ShapeLabel".to_string(),
             }),
-            srdf::Object::Triple { .. } => Err(SchemaJsonError::InvalidShapeLabel {
+            Object::Triple { .. } => Err(SchemaJsonError::InvalidShapeLabel {
                 value: obj.to_string(),
                 error: "Triple cannot be a ShapeLabel".to_string(),
             }),

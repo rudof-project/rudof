@@ -18,7 +18,7 @@ use rudof_lib::{
     node_info::{format_node_info_list, get_node_info},
     parse_node_selector,
     shacl_validation::validation_report::{report::SortModeReport, result::ValidationResult},
-    srdf::Object,
+    Object,
 };
 use std::{
     ffi::OsStr,

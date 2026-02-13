@@ -10,7 +10,7 @@ use shex_ast::{
     BNode, NodeConstraint, Schema as ShExSchema, Shape as ShExShape, ShapeExpr, ShapeExprLabel,
     TripleExpr, TripleExprWrapper, ValueSetValue,
 };
-use srdf::{Object, RDFNode, Rdf, SHACLPath};
+use rdf::rdf_core::{Rdf, SHACLPath, term::Object};
 use tracing::debug;
 
 #[allow(dead_code)] // TODO: only for config...
@@ -60,11 +60,11 @@ impl Shacl2ShEx {
         Ok((label, shape_expr, is_abstract))
     }
 
-    pub fn rdfnode2label(&self, node: &RDFNode) -> Result<ShapeExprLabel, Shacl2ShExError> {
+    pub fn rdfnode2label(&self, node: &Object) -> Result<ShapeExprLabel, Shacl2ShExError> {
         match node {
-            srdf::Object::Iri(iri) => Ok(ShapeExprLabel::iri(iri.clone())),
-            srdf::Object::BlankNode(bn) => Ok(ShapeExprLabel::bnode(BNode::new(bn))),
-            srdf::Object::Literal(lit) => Err(Shacl2ShExError::RDFNode2LabelLiteral {
+            Object::Iri(iri) => Ok(ShapeExprLabel::iri(iri.clone())),
+            Object::BlankNode(bn) => Ok(ShapeExprLabel::bnode(BNode::new(bn))),
+            Object::Literal(lit) => Err(Shacl2ShExError::RDFNode2LabelLiteral {
                 literal: lit.clone(),
             }),
             Object::Triple { .. } => todo!(),
@@ -329,7 +329,7 @@ impl Shacl2ShEx {
         }
     }
 
-    pub fn create_class_constraint(&self, cls: &RDFNode) -> Result<ShapeExpr, Shacl2ShExError> {
+    pub fn create_class_constraint(&self, cls: &Object) -> Result<ShapeExpr, Shacl2ShExError> {
         let rdf_type = IriRef::iri(IriS::rdf_type());
         let value = match cls {
             Object::Iri(iri) => ValueSetValue::iri(IriRef::iri(iri.clone())),

@@ -13,6 +13,8 @@ const RDF: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
 const XSD: &str = "http://www.w3.org/2001/XMLSchema#";
 /// Base namespace for SHACL terms.
 pub const SH: &str = "http://www.w3.org/ns/shacl#";
+/// Base namespace for RDFS vocabulary terms.
+pub const RDFS: &str = "http://www.w3.org/2000/01/rdf-schema#";
 
 // --------------------------------------------
 // RDF vocabulary IRI accessors
@@ -30,6 +32,18 @@ iri_once!(rdf_lang, RDF_LANG_STRING_STR);
 iri_once!(rdf_first, RDF_FIRST_STR);
 iri_once!(rdf_rest, RDF_REST_STR);
 iri_once!(rdf_nil, RDF_NIL_STR);
+
+
+// --------------------------------------------
+// RDFS vocabulary IRI accessors
+// --------------------------------------------
+pub const RDFS_LABEL_STR: &str = concatcp!(RDFS, "label");
+pub const RDFS_CLASS_STR: &str = concatcp!(RDFS, "Class");
+pub const RDFS_SUBCLASS_OF_STR: &str = concatcp!(RDFS, "subClassOf");
+
+iri_once!(rdfs_label, RDFS_LABEL_STR);
+iri_once!(rdfs_class, RDFS_CLASS_STR);
+iri_once!(rdfs_subclass_of, RDFS_SUBCLASS_OF_STR);
 
 // --------------------------------------------
 // XSD datatype IRI accessors
@@ -86,14 +100,3 @@ iri_once!(sh_zero_or_one_path, SH_ZERO_OR_ONE_PATH_STR);
 iri_once!(sh_zero_or_more_path, SH_ZERO_OR_MORE_PATH_STR);
 iri_once!(sh_one_or_more_path, SH_ONE_OR_MORE_PATH_STR);
 iri_once!(sh_inverse_path, SH_INVERSE_PATH_STR);
-
-// --------------------------------------------
-// Additional vocabulary constants
-// --------------------------------------------
-
-/// The IRI string for `rdf:reifies` property.
-///
-/// This constant provides direct access to the reification property IRI as a string,
-/// which can be useful when you need the IRI string rather than the parsed `IriS` object.
-/// Equivalent to `rdf_reifies().as_str()`.
-pub const REIFIES: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies";

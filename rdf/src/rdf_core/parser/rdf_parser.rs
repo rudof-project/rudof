@@ -52,7 +52,7 @@ where
     // ============================================================================
 
     /// Returns the prefix map of the underlying graph.
-    pub fn prefixmap(&self) -> Option<&PrefixMap> {
+    pub fn prefixmap(&self) -> Option<PrefixMap> {
         self.rdf.prefixmap()
     }
 
@@ -81,6 +81,15 @@ where
         if let Some(ref initial) = self.initial_focus {
             self.rdf.set_focus(initial);
         }
+    }
+
+    /// Returns a reference to the underlying RDF graph.
+    pub fn rdf(&self) -> &RDF {
+        &self.rdf
+    }
+
+    pub fn rdf_mut(&mut self) -> &mut RDF {
+        &mut self.rdf
     }
 
     // ============================================================================

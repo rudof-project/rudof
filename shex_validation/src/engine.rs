@@ -16,10 +16,11 @@ use shex_ast::ir::preds::Preds;
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::shape::Shape;
 use shex_ast::ir::shape_expr::ShapeExpr;
-use srdf::BlankNode;
-use srdf::Iri as _;
-use srdf::QueryRDF;
-use srdf::{NeighsRDF, Object};
+use rdf::rdf_core::{
+    NeighsRDF,
+    query::QueryRDF,  
+    term::{Object, BlankNode, Iri as _}
+};
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::hash_map::Entry;

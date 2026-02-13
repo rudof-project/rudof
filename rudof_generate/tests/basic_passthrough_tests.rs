@@ -119,10 +119,7 @@ ex:PersonShape a sh:NodeShape ;
 
     // Generate data
     let mut generator = rudof_generate::DataGenerator::new(config).unwrap();
-    generator
-        .load_shacl_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shacl_schema(schema_file.path()).await.unwrap();
     let result = generator.generate().await;
 
     assert!(result.is_ok(), "Should be able to generate data");
