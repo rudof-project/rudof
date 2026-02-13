@@ -10,13 +10,15 @@ pub enum Value {
     Literal(SLiteral),
 }
 
-impl Value {
-    pub fn iri(iri: IriS) -> Value {
-        Value::Iri(IriRef::iri(iri))
+impl From<IriS> for Value {
+    fn from(value: IriS) -> Self {
+        Value::Iri(IriRef::iri(value))
     }
+}
 
-    pub fn literal(literal: SLiteral) -> Value {
-        Value::Literal(literal)
+impl From<SLiteral> for Value {
+    fn from(value: SLiteral) -> Self {
+        Value::Literal(value)
     }
 }
 
