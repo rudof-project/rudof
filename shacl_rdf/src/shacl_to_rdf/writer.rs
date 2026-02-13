@@ -4,22 +4,16 @@ use srdf::{BuildRDF, RDF, RDFFormat, XSD};
 use std::io::Write;
 use std::str::FromStr;
 
-pub struct ShaclWriter<RDF>
-where
-    RDF: BuildRDF,
-{
+pub struct ShaclWriter<RDF: BuildRDF> {
     rdf: RDF,
-    shapes: isize,
+    shape_count: isize,
 }
 
-impl<RDF> ShaclWriter<RDF>
-where
-    RDF: BuildRDF,
-{
+impl<RDF: BuildRDF> ShaclWriter<RDF> {
     pub fn new() -> Self {
         Self {
             rdf: RDF::empty(),
-            shapes: 0,
+            shape_count: 0,
         }
     }
 
@@ -33,7 +27,7 @@ where
         self.rdf.add_base(&schema.base())?;
 
         schema.iter().try_for_each(|(_, shape)| {
-            self.shapes += 1;
+            self.shape_count += 1;
             shape.write(&mut self.rdf)
         })?;
 
@@ -41,7 +35,7 @@ where
     }
 
     pub fn shapes_count(&self) -> isize {
-        self.shapes
+        self.shape_count
     }
 
     pub fn serialize<W: Write>(&self, format: &RDFFormat, writer: &mut W) -> Result<(), RDF::Err> {
@@ -49,10 +43,7 @@ where
     }
 }
 
-impl<RDF> Default for ShaclWriter<RDF>
-where
-    RDF: BuildRDF,
-{
+impl<RDF: BuildRDF> Default for ShaclWriter<RDF> {
     fn default() -> Self {
         Self::new()
     }
