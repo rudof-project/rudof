@@ -1,6 +1,6 @@
 use crate::ShaclVocab;
 use iri_s::IriS;
-use prefixmap::IriRef;
+use prefixmap::{IriRef, IriRefError};
 use std::fmt::Display;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -13,15 +13,17 @@ pub enum Severity {
     Generic(IriRef),
 }
 
-impl From<Severity> for IriS {
-    fn from(value: Severity) -> Self {
+impl TryFrom<Severity> for IriS {
+    type Error = IriRefError;
+
+    fn try_from(value: Severity) -> Result<Self, Self::Error> {
         match value {
-            Severity::Trace => IriS::new_unchecked(ShaclVocab::SH_TRACE),
-            Severity::Debug => IriS::new_unchecked(ShaclVocab::SH_DEBUG),
-            Severity::Info => IriS::new_unchecked(ShaclVocab::SH_INFO),
-            Severity::Warning => IriS::new_unchecked(ShaclVocab::SH_WARNING),
-            Severity::Violation => IriS::new_unchecked(ShaclVocab::SH_VIOLATION),
-            Severity::Generic(iri_ref) => iri_ref.get_iri().unwrap().clone(),
+            Severity::Trace => Ok(ShaclVocab::sh_trace().clone()),
+            Severity::Debug => Ok(ShaclVocab::sh_debug().clone()),
+            Severity::Info => Ok(ShaclVocab::sh_info().clone()),
+            Severity::Warning => Ok(ShaclVocab::sh_warning().clone()),
+            Severity::Violation => Ok(ShaclVocab::sh_violation().clone()),
+            Severity::Generic(iri_ref) => iri_ref.get_iri().cloned(),
         }
     }
 }
