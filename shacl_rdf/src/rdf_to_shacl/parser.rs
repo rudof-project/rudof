@@ -1,4 +1,4 @@
-use super::shacl_parser_error::ShaclParserError;
+use crate::error::ShaclParserError;
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use shacl_ast::reifier_info::ReifierInfo;
@@ -1231,6 +1231,7 @@ fn into_iri<RDF: Rdf>(iri: &IriS) -> RDF::IRI {
 mod tests {
     use super::ShaclParser;
     use iri_s::IriS;
+    use shacl_ast::component::Component;
     use shacl_ast::shape::Shape;
     use srdf::Object;
     use srdf::RDFFormat;
@@ -1262,7 +1263,7 @@ mod tests {
         };
 
         match shape.components().first().unwrap() {
-            crate::rdf_to_shacl::shacl_parser::Component::LanguageIn { langs } => {
+            Component::LanguageIn { langs } => {
                 assert_eq!(langs.len(), 2);
                 assert_eq!(langs[0], Lang::new("en").unwrap());
                 assert_eq!(langs[1], Lang::new("fr").unwrap());

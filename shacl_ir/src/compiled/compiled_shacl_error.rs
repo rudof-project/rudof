@@ -1,5 +1,5 @@
 use shacl_ast::ShaclError;
-use shacl_rdf::shacl_parser_error::ShaclParserError;
+use shacl_rdf::error::ShaclParserError;
 use srdf::RDFNode;
 use thiserror::Error;
 

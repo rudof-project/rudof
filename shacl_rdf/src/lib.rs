@@ -4,18 +4,20 @@
 //!
 #![deny(rust_2018_idioms)]
 
-pub mod rdf_to_shacl;
-pub mod shacl_to_rdf;
+pub mod error;
+mod rdf_to_shacl;
+mod shacl_to_rdf;
 
-pub use rdf_to_shacl::*;
-pub use shacl_to_rdf::*;
+pub use rdf_to_shacl::ShaclParser;
+pub use shacl_to_rdf::ShaclWriter;
+
 use srdf::FocusRDF;
 
-pub fn parse_shacl_rdf<RDF>(rdf: RDF) -> Result<shacl_ast::Schema<RDF>, crate::shacl_parser_error::ShaclParserError>
+pub fn parse_shacl_rdf<RDF>(rdf: RDF) -> Result<shacl_ast::Schema<RDF>, error::ShaclParserError>
 where
     RDF: FocusRDF,
 {
-    let mut parser = crate::ShaclParser::new(rdf);
+    let mut parser = ShaclParser::new(rdf);
     let schema = parser.parse()?;
     Ok(schema)
 }
@@ -45,7 +47,7 @@ mod tests {
         let rdf = SRDFGraph::from_str(graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
         let schema = parse_shacl_rdf(rdf).unwrap();
         let shape = schema
-            .get_shape(&srdf::RDFNode::iri(iri!("http://example.org/Shape")))
+            .get_shape(&RDFNode::iri(iri!("http://example.org/Shape")))
             .unwrap();
         let expected_node_shape =
             NodeShape::new(RDFNode::iri(iri!("http://example.org/Shape"))).with_targets(vec![Target::target_class(

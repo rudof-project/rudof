@@ -1,15 +1,14 @@
+use crate::constraints::constraint_error::ConstraintError;
+use crate::helpers::helper_error::SPARQLError;
+use crate::helpers::helper_error::SRDFError;
 // use oxiri::IriParseError;
 use shacl_ir::compiled::compiled_shacl_error::CompiledShaclError;
 use shacl_ir::shape_label_idx::ShapeLabelIdx;
-use shacl_rdf::rdf_to_shacl::shacl_parser_error::ShaclParserError;
+use shacl_rdf::error::ShaclParserError;
 use sparql_service::RdfDataError;
 use srdf::RDFParseError;
 use srdf::SRDFGraphError;
 use thiserror::Error;
-
-use crate::constraints::constraint_error::ConstraintError;
-use crate::helpers::helper_error::SPARQLError;
-use crate::helpers::helper_error::SRDFError;
 
 #[derive(Error, Debug)]
 pub enum ValidateError {

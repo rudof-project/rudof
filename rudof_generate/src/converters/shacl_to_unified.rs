@@ -6,7 +6,7 @@ use shacl_ast::{
     Schema as ShaclSchema, component::Component, node_shape::NodeShape, property_shape::PropertyShape,
     shape::Shape as ShaclShape,
 };
-use shacl_rdf::rdf_to_shacl::ShaclParser;
+use shacl_rdf::ShaclParser;
 use srdf::{RDFFormat, ReaderMode, SRDFGraph};
 use std::fs;
 use std::path::Path;

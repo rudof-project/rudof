@@ -1,12 +1,11 @@
+use crate::validate_error::ValidateError;
 use shacl_ir::compiled::schema_ir::SchemaIR;
 use shacl_ir::compiled_shacl_error::CompiledShaclError;
-use shacl_rdf::rdf_to_shacl::ShaclParser;
+use shacl_rdf::ShaclParser;
 use srdf::RDFFormat;
 use srdf::ReaderMode;
 use srdf::SRDFGraph;
 use std::io::BufRead;
-
-use crate::validate_error::ValidateError;
 
 pub mod graph;
 pub mod sparql;
