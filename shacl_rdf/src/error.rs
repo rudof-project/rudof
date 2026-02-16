@@ -1,3 +1,5 @@
+use iri_s::error::IriSError;
+use prefixmap::PrefixMapError;
 use shacl_ast::ShaclError;
 use srdf::RDFParseError;
 use thiserror::Error;
@@ -51,4 +53,28 @@ pub enum ShaclParserError {
 
     #[error("Custom error: {msg}")]
     Custom { msg: String },
+}
+
+#[derive(Debug, Error)]
+pub enum ShaclWriterError {
+    #[error("IRI parsing error: {err}")]
+    IriSError {
+        #[from]
+        err: IriSError,
+    },
+
+    #[error("Prefix map error: {err}")]
+    PrefixMapError {
+        #[from]
+        err: PrefixMapError,
+    },
+
+    #[error("An error occured while writing RDF: {msg}")]
+    WriteError { msg: String },
+
+    #[error("An error occured while adding a prefix map to RDF: {msg}")]
+    AddPrefixMapError { msg: String },
+
+    #[error("An error occured while adding a base to RDF: {msg}")]
+    AddBaseError { msg: String },
 }
