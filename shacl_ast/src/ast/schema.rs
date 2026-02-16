@@ -58,6 +58,15 @@ impl<RDF: Rdf> ShaclSchema<RDF> {
     }
 }
 
+impl<RDF: Rdf> IntoIterator for ShaclSchema<RDF> {
+    type Item = (RDFNode, Shape<RDF>);
+    type IntoIter = IntoIter<RDFNode, Shape<RDF>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.shapes.into_iter()
+    }
+}
+
 impl<RDF: Rdf> Display for ShaclSchema<RDF> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for (id, shape) in self.shapes.iter() {
