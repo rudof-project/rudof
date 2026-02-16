@@ -1,9 +1,12 @@
 use crate::rdf_core::{
     RDFError,
     term::literal::{Lang, NumericLiteral, XsdDateTime},
-    vocab::{xsd_boolean, xsd_string, xsd_date_time, xsd_byte, xsd_decimal, xsd_double, xsd_float, xsd_integer, xsd_long, xsd_negative_integer, xsd_non_negative_integer, 
-        xsd_non_positive_integer, xsd_positive_integer, xsd_short, xsd_unsigned_byte, xsd_unsigned_int, xsd_unsigned_long, 
-        xsd_unsigned_short, rdf_lang},
+    vocab::{
+        rdf_lang, xsd_boolean, xsd_byte, xsd_date_time, xsd_decimal, xsd_double, xsd_float,
+        xsd_integer, xsd_long, xsd_negative_integer, xsd_non_negative_integer,
+        xsd_non_positive_integer, xsd_positive_integer, xsd_short, xsd_string, xsd_unsigned_byte,
+        xsd_unsigned_int, xsd_unsigned_long, xsd_unsigned_short,
+    },
 };
 use rust_decimal::Decimal;
 use std::{
@@ -540,6 +543,11 @@ impl ConcreteLiteral {
     pub fn float(n: f32) -> Self {
         Self::NumericLiteral(NumericLiteral::float(n))
     }
+
+    /// Creates a DatetimeLiteral
+    pub fn datetime(dt: XsdDateTime) -> Self {
+        Self::DatetimeLiteral(dt)
+    }
 }
 
 /// ## Constructor Methods - Other Types
@@ -630,22 +638,18 @@ impl ConcreteLiteral {
             Self::DatatypeLiteral { datatype, .. }
             | Self::WrongDatatypeLiteral { datatype, .. } => datatype.clone(),
 
-            Self::StringLiteral { lang: None, .. } => IriRef::iri(IriS::new_unchecked(
-                xsd_string().as_str(),
-            )),
+            Self::StringLiteral { lang: None, .. } => {
+                IriRef::iri(IriS::new_unchecked(xsd_string().as_str()))
+            }
 
-            Self::StringLiteral { lang: Some(_), .. } => IriRef::iri(IriS::new_unchecked(
-                rdf_lang().as_str(),
-            )),
+            Self::StringLiteral { lang: Some(_), .. } => {
+                IriRef::iri(IriS::new_unchecked(rdf_lang().as_str()))
+            }
 
             Self::NumericLiteral(nl) => IriRef::iri(IriS::new_unchecked(nl.datatype())),
 
-            Self::BooleanLiteral(_) => IriRef::iri(IriS::new_unchecked(
-                xsd_boolean().as_str(),
-            )),
-            Self::DatetimeLiteral(_) => IriRef::iri(IriS::new_unchecked(
-                xsd_date_time().as_str(),
-            )),
+            Self::BooleanLiteral(_) => IriRef::iri(IriS::new_unchecked(xsd_boolean().as_str())),
+            Self::DatetimeLiteral(_) => IriRef::iri(IriS::new_unchecked(xsd_date_time().as_str())),
         }
     }
 
@@ -879,6 +883,11 @@ impl ConcreteLiteral {
     pub fn parse_short(s: &str) -> Result<i16, String> {
         s.parse::<i16>()
             .map_err(|e| format!("Cannot convert {s} to short: {e}"))
+    }
+
+    /// Parses a datetime string using XsdDateTime
+    pub fn parse_datetime(s: &str) -> Result<XsdDateTime, String> {
+        XsdDateTime::new(s).map_err(|e| e.to_string())
     }
 }
 
@@ -1273,6 +1282,11 @@ fn check_literal_datatype(
         xsd_non_positive_integer().as_str(),
         ConcreteLiteral::parse_non_positive_integer,
         ConcreteLiteral::non_positive_integer
+    );
+    check_xsd_type!(
+        xsd_date_time().as_str(),
+        ConcreteLiteral::parse_datetime,
+        ConcreteLiteral::datetime
     );
 
     // Unknown or custom datatype: do not validate lexical form

@@ -59,9 +59,11 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
         let value_nodes = self.value_nodes(store, &focus_nodes, runner)?;
         trace!("Value nodes for shape {}: {value_nodes}", self.id());
 
+        let components = self.components();
+
         // 3. Check each of the components
         let mut component_validation_results = Vec::new();
-        for component in self.components().iter() {
+        for component in components.iter() {
             let results = runner.evaluate(
                 store,
                 self,

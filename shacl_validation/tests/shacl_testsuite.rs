@@ -34,6 +34,9 @@ fn test(
                 error: e.to_string(),
             })?;
         if report != test.report {
+            println!("❌ Test failed");
+            println!("Expected report:\n{:#?}", test.report);
+            println!("Actual report:\n{:#?}", report);
             return Err(Box::new(TestSuiteError::NotEquals));
         }
     }

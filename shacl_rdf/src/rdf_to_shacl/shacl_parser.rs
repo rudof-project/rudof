@@ -383,7 +383,6 @@ where
 {
     let parsers: Vec<Box<dyn RDFNodeParse<RDF, Output = Vec<Component>>>> = vec![
         // Value type
-        Box::new(class()),
         Box::new(node_kind()),
         Box::new(datatype()),
         // Cardinality
@@ -447,7 +446,6 @@ where
                     .and(path())
                     .then(move |(id, path)| SuccessParser::new(PropertyShape::new(id, path))),
             )
-            // The following line is required because the path parser moves the focus node
             .then(move |ps| SetFocusParser::new(focus.clone()).with(SuccessParser::new(ps)))
             .then(|ps| {
                 severity()
@@ -457,12 +455,14 @@ where
             .then(|ps| {
                 reifier_shape().flat_map(move |r_shape| Ok(ps.clone().with_reifier_shape(r_shape)))
             })
-            .then(|ps| targets().flat_map(move |ts| Ok(ps.clone().with_targets(ts))))
+            .then(|ps| {
+                targets().flat_map(move |ts| Ok(ps.clone().with_targets(ts)))
+            })
             .then(|ps| {
                 property_shapes()
                     .flat_map(move |prop_shapes| Ok(ps.clone().with_property_shapes(prop_shapes)))
+                    .then(move |ps_with_props| property_shape_components(ps_with_props))
             })
-            .then(move |ps| property_shape_components(ps))
     })
 }
 
@@ -487,11 +487,16 @@ where
                     .optional()
                     .flat_map(move |sev| Ok(ns.clone().with_severity(sev)))
             })
-            .then(|ns| targets().flat_map(move |ts| Ok(ns.clone().with_targets(ts))))
             .then(|ns| {
-                property_shapes().flat_map(move |ps| Ok(ns.clone().with_property_shapes(ps)))
+                targets().flat_map(move |ts| Ok(ns.clone().with_targets(ts)))
             })
-            .then(|ns| components().flat_map(move |cs| Ok(ns.clone().with_components(cs)))),
+            .then(|ns| {
+                property_shapes()
+                    .flat_map(move |ps| Ok(ns.clone().with_property_shapes(ps)))
+                    .then(|ns_with_ps| {
+                        components().flat_map(move |cs| Ok(ns_with_ps.clone().with_components(cs)))
+                    })
+            }),
     )
 }
 

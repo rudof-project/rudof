@@ -1,7 +1,12 @@
 use crate::rdf_core::{
     Any, FocusRDF, RDFError,
     parser::rdf_node_parser::{
-        ParserExt, RDFNodeParse, constructors::{ListParser, SetFocusParser}, utils::{term_to_bool, term_to_int, term_to_iri, term_to_iri_or_blanknode, term_to_literal, term_to_string}
+        ParserExt, RDFNodeParse,
+        constructors::{ListParser, SetFocusParser},
+        utils::{
+            term_to_bool, term_to_int, term_to_iri, term_to_iri_or_blanknode, term_to_literal,
+            term_to_string,
+        },
     },
     term::{IriOrBlankNode, Object, Triple, literal::ConcreteLiteral},
 };
@@ -41,15 +46,14 @@ where
         if let Ok(subject) = rdf.get_focus_as_subject() {
             let pred: RDF::IRI = self.property.clone().into();
 
-             Ok(rdf
+            Ok(rdf
                 .triples_matching(&subject, &pred, &Any)
                 .map_err(|e| RDFError::OutgoingArcsError {
                     focus: format!("{}", self.property),
                     error: e.to_string(),
                 })?
                 .map(Triple::into_object)
-                .collect()
-            )
+                .collect())
         } else {
             Ok(HashSet::new())
         }
@@ -165,7 +169,8 @@ where
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
         SingleValuePropertyParser::new(self.property.clone())
-            .then(|node| SetFocusParser::new(node).then(|_| ListParser::new())).parse_focused(rdf)
+            .then(|node| SetFocusParser::new(node).then(|_| ListParser::new()))
+            .parse_focused(rdf)
     }
 }
 
@@ -226,11 +231,16 @@ where
     type Output = Vec<bool>;
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
-        ValuesPropertyParser::new(self.property.clone())
+        let bools = ValuesPropertyParser::new(self.property.clone())
             .parse_focused(rdf)?
             .into_iter()
-            .map(|t| term_to_bool::<RDF>(&t))
-            .collect::<Result<Vec<_>, _>>()
+            .flat_map(|t| {
+                let b = term_to_bool::<RDF>(&t)?;
+                Ok::<bool, RDFError>(b)
+            })
+            .collect();
+
+         Ok(bools)
     }
 }
 
@@ -390,13 +400,15 @@ where
             .into_iter()
             .map(|t| {
                 let rdf_lit: RDF::Literal = term_to_literal::<RDF>(&t)?;
-                
-                let slit: ConcreteLiteral = rdf_lit.clone().try_into().map_err(|_| {
-                    RDFError::DefaultError {
-                        msg: format!("Error converting literal {} to SLiteral", rdf_lit),
-                    }
-                })?;
-                
+
+                let slit: ConcreteLiteral =
+                    rdf_lit
+                        .clone()
+                        .try_into()
+                        .map_err(|_| RDFError::DefaultError {
+                            msg: format!("Error converting literal {} to SLiteral", rdf_lit),
+                        })?;
+
                 Ok(slit)
             })
             .collect::<Result<Vec<_>, _>>()
