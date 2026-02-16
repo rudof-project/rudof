@@ -13,7 +13,7 @@ pub use shacl_to_rdf::ShaclWriter;
 
 use srdf::FocusRDF;
 
-pub fn parse_shacl_rdf<RDF>(rdf: RDF) -> Result<shacl_ast::Schema<RDF>, error::ShaclParserError>
+pub fn parse_shacl_rdf<RDF>(rdf: RDF) -> Result<shacl_ast::ShaclSchema<RDF>, error::ShaclParserError>
 where
     RDF: FocusRDF,
 {

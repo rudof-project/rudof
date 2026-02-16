@@ -9,7 +9,7 @@ use crate::schema_ir::SchemaIR;
 use crate::severity::CompiledSeverity;
 use crate::shape_label_idx::ShapeLabelIdx;
 use iri_s::IriS;
-use shacl_ast::Schema;
+use shacl_ast::ShaclSchema;
 use shacl_ast::shape::Shape;
 use srdf::{RDFNode, Rdf, SHACLPath};
 use std::collections::HashSet;
@@ -103,7 +103,7 @@ impl ShapeIR {
 
     pub fn compile<RDF: Rdf>(
         shape: Shape<RDF>,
-        schema: &Schema<RDF>,
+        schema: &ShaclSchema<RDF>,
         idx: &ShapeLabelIdx,
         schema_ir: &mut SchemaIR,
     ) -> Result<ShapeLabelIdx, Box<CompiledShaclError>> {

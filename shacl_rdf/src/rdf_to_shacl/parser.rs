@@ -4,8 +4,8 @@ use prefixmap::{IriRef, PrefixMap};
 use shacl_ast::reifier_info::ReifierInfo;
 use shacl_ast::severity::Severity;
 use shacl_ast::{
-    component::Component, node_kind::NodeKind, node_shape::NodeShape, property_shape::PropertyShape, schema::Schema,
-    shape::Shape, target::Target, value::Value, *,
+    component::Component, node_kind::NodeKind, node_shape::NodeShape, property_shape::PropertyShape,
+    schema::ShaclSchema, shape::Shape, target::Target, value::Value, *,
 };
 use srdf::{FnOpaque, rdf_type, rdfs_class};
 use srdf::{
@@ -58,7 +58,7 @@ where
         }
     }
 
-    pub fn parse(&mut self) -> Result<Schema<RDF>> {
+    pub fn parse(&mut self) -> Result<ShaclSchema<RDF>> {
         let prefixmap: PrefixMap = self.rdf_parser.prefixmap().unwrap_or_default();
 
         let mut state = State::from(self.shapes_candidates()?);
@@ -72,7 +72,9 @@ where
             }
         }
 
-        Ok(Schema::new().with_prefixmap(prefixmap).with_shapes(self.shapes.clone()))
+        Ok(ShaclSchema::new()
+            .with_prefixmap(prefixmap)
+            .with_shapes(self.shapes.clone()))
     }
 
     /// Shapes candidates are defined in Appendix A of SHACL spec (Syntax rules)

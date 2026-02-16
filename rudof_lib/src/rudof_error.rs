@@ -1,7 +1,7 @@
 use std::io;
 
 use iri_s::IriS;
-use shacl_ast::Schema;
+use shacl_ast::ShaclSchema;
 use shacl_ir::compiled_shacl_error::CompiledShaclError;
 use sparql_service::RdfData;
 use srdf::SRDFSparql;
@@ -212,13 +212,13 @@ pub enum RudofError {
     #[error("SHACL Compilation from schema {schema} error: {error}")]
     SHACLCompilationError {
         error: String,
-        schema: Box<Schema<RdfData>>,
+        schema: Box<ShaclSchema<RdfData>>,
     },
 
     #[error("SHACL Validation from schema {schema} error: {error}")]
     SHACLValidationError {
         error: String,
-        schema: Box<Schema<RdfData>>,
+        schema: Box<ShaclSchema<RdfData>>,
     },
 
     #[error("Creating Endpoint validation for SHACL from endpoint {endpoint:?}. error: {error}")]

@@ -1,13 +1,14 @@
-use std::{collections::HashMap, fmt::Display};
-
 use crate::shape::Shape;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 use srdf::{RDFNode, Rdf};
+use std::collections::hash_map::IntoIter;
+use std::{collections::HashMap, fmt::Display};
 
 #[derive(Debug, Clone, Default)]
-pub struct Schema<RDF: Rdf>
+pub struct ShaclSchema<RDF>
 where
+    RDF: Rdf,
     RDF::Term: Clone,
 {
     // imports: Vec<IriS>,
@@ -17,9 +18,9 @@ where
     base: Option<IriS>,
 }
 
-impl<RDF: Rdf> Schema<RDF> {
-    pub fn new() -> Schema<RDF> {
-        Schema {
+impl<RDF: Rdf> ShaclSchema<RDF> {
+    pub fn new() -> ShaclSchema<RDF> {
+        ShaclSchema {
             shapes: HashMap::new(),
             prefixmap: PrefixMap::new(),
             base: None,
@@ -57,7 +58,7 @@ impl<RDF: Rdf> Schema<RDF> {
     }
 }
 
-impl<RDF: Rdf> Display for Schema<RDF> {
+impl<RDF: Rdf> Display for ShaclSchema<RDF> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for (id, shape) in self.shapes.iter() {
             writeln!(f, "{id} -> {shape}")?;

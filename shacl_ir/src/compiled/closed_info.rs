@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use iri_s::IriS;
-use shacl_ast::{Schema, ShaclError, node_shape::NodeShape, property_shape::PropertyShape, shape::Shape};
+use shacl_ast::{ShaclError, ShaclSchema, node_shape::NodeShape, property_shape::PropertyShape, shape::Shape};
 use srdf::Rdf;
 
 #[derive(Debug, Clone, Default)]
@@ -41,7 +41,10 @@ impl ClosedInfo {
         }
     }
 
-    pub fn get_closed_info_node_shape<R: Rdf>(shape: &NodeShape<R>, schema: &Schema<R>) -> Result<Self, ShaclError> {
+    pub fn get_closed_info_node_shape<R: Rdf>(
+        shape: &NodeShape<R>,
+        schema: &ShaclSchema<R>,
+    ) -> Result<Self, ShaclError> {
         let (is_closed, ignored_properties) = shape.closed_component();
         if is_closed {
             let ignored_properties: HashSet<IriS> = ignored_properties.into_iter().collect();
@@ -62,7 +65,7 @@ impl ClosedInfo {
 
     pub fn get_closed_info_property_shape<R: Rdf>(
         shape: &PropertyShape<R>,
-        schema: &Schema<R>,
+        schema: &ShaclSchema<R>,
     ) -> Result<Self, ShaclError> {
         let (is_closed, ignored_properties) = shape.closed_component();
         if is_closed {
@@ -84,7 +87,7 @@ impl ClosedInfo {
 }
 
 // TODO: Refactor to avoid code duplication between this method and the next one
-fn defined_properties<R: Rdf>(shape: &NodeShape<R>, schema: &Schema<R>) -> Result<HashSet<IriS>, ShaclError> {
+fn defined_properties<R: Rdf>(shape: &NodeShape<R>, schema: &ShaclSchema<R>) -> Result<HashSet<IriS>, ShaclError> {
     let mut defined_properties: HashSet<IriS> = HashSet::new();
     for property_shape_ref in shape.property_shapes() {
         let property_shape = schema
@@ -109,7 +112,7 @@ fn defined_properties<R: Rdf>(shape: &NodeShape<R>, schema: &Schema<R>) -> Resul
 
 fn defined_properties_property_shape<R: Rdf>(
     shape: &PropertyShape<R>,
-    schema: &Schema<R>,
+    schema: &ShaclSchema<R>,
 ) -> Result<HashSet<IriS>, ShaclError> {
     let mut defined_properties: HashSet<IriS> = HashSet::new();
     for property_shape_ref in shape.property_shapes() {

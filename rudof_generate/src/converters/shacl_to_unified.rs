@@ -3,8 +3,7 @@ use crate::unified_constraints::{
 };
 use crate::{DataGeneratorError, Result};
 use shacl_ast::{
-    Schema as ShaclSchema, component::Component, node_shape::NodeShape, property_shape::PropertyShape,
-    shape::Shape as ShaclShape,
+    ShaclSchema, component::Component, node_shape::NodeShape, property_shape::PropertyShape, shape::Shape as ShaclShape,
 };
 use shacl_rdf::ShaclParser;
 use srdf::{RDFFormat, ReaderMode, SRDFGraph};

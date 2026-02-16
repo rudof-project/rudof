@@ -7,7 +7,7 @@ use crate::shape_label_idx::ShapeLabelIdx;
 use iri_s::IriS;
 use shacl_ast::component::Component;
 use shacl_ast::node_kind::NodeKind;
-use shacl_ast::{Schema, ShaclVocab};
+use shacl_ast::{ShaclSchema, ShaclVocab};
 use srdf::RDFNode;
 use srdf::Rdf;
 use srdf::SLiteral;
@@ -54,7 +54,7 @@ impl ComponentIR {
     /// The vector is list of dependant shapes for cases with recursion
     pub fn compile<S: Rdf>(
         component: Component,
-        schema: &Schema<S>,
+        schema: &ShaclSchema<S>,
         schema_ir: &mut SchemaIR,
     ) -> Result<Option<ComponentIR>, Box<CompiledShaclError>> {
         let value = match component {

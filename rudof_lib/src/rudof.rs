@@ -985,7 +985,7 @@ impl Rudof {
                         error: e.to_string(),
                         schema: Box::new(ast_schema.clone()),
                     })?;
-                Ok::<(shacl_ir::schema_ir::SchemaIR, shacl_ast::Schema<RdfData>), RudofError>((
+                Ok::<(shacl_ir::schema_ir::SchemaIR, shacl_ast::ShaclSchema<RdfData>), RudofError>((
                     compiled_schema,
                     ast_schema.clone(),
                 ))

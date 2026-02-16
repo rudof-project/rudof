@@ -5,7 +5,7 @@ use crate::shape_label_idx::ShapeLabelIdx;
 use either::Either::{self, Left, Right};
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use shacl_ast::Schema;
+use shacl_ast::ShaclSchema;
 use shacl_rdf::ShaclParser;
 use srdf::{RDFFormat, RDFNode, Rdf, ReaderMode, SRDFGraph};
 use std::collections::hash_map::Entry;
@@ -122,7 +122,7 @@ impl SchemaIR {
         Ok(idx)
     }
 
-    pub fn compile<RDF: Rdf>(schema: &Schema<RDF>) -> Result<SchemaIR, Box<CompiledShaclError>> {
+    pub fn compile<RDF: Rdf>(schema: &ShaclSchema<RDF>) -> Result<SchemaIR, Box<CompiledShaclError>> {
         trace!("Compiling SHACL schema");
         let mut schema_ir = SchemaIR::new(schema.prefix_map(), schema.base());
         for (rdf_node, shape) in schema.iter() {
@@ -177,18 +177,18 @@ impl SchemaIR {
     }
 }
 
-impl<RDF: Rdf> TryFrom<Schema<RDF>> for SchemaIR {
+impl<RDF: Rdf> TryFrom<ShaclSchema<RDF>> for SchemaIR {
     type Error = Box<CompiledShaclError>;
 
-    fn try_from(schema: Schema<RDF>) -> Result<Self, Self::Error> {
+    fn try_from(schema: ShaclSchema<RDF>) -> Result<Self, Self::Error> {
         Self::compile(&schema)
     }
 }
 
-impl<RDF: Rdf> TryFrom<&Schema<RDF>> for SchemaIR {
+impl<RDF: Rdf> TryFrom<&ShaclSchema<RDF>> for SchemaIR {
     type Error = Box<CompiledShaclError>;
 
-    fn try_from(schema: &Schema<RDF>) -> Result<Self, Self::Error> {
+    fn try_from(schema: &ShaclSchema<RDF>) -> Result<Self, Self::Error> {
         Self::compile(schema)
     }
 }
