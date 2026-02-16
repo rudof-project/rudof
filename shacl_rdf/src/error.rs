@@ -58,23 +58,23 @@ pub enum ShaclParserError {
 #[derive(Debug, Error)]
 pub enum ShaclWriterError {
     #[error("IRI parsing error: {err}")]
-    IriSError {
+    IriS {
         #[from]
         err: IriSError,
     },
 
     #[error("Prefix map error: {err}")]
-    PrefixMapError {
+    PrefixMap {
         #[from]
         err: PrefixMapError,
     },
 
     #[error("An error occured while writing RDF: {msg}")]
-    WriteError { msg: String },
+    Write { msg: String },
 
     #[error("An error occured while adding a prefix map to RDF: {msg}")]
-    AddPrefixMapError { msg: String },
+    AddPrefixMap { msg: String },
 
     #[error("An error occured while adding a base to RDF: {msg}")]
-    AddBaseError { msg: String },
+    AddBase { msg: String },
 }

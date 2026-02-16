@@ -26,10 +26,10 @@ impl<RDF: BuildRDF> ShaclWriter<RDF> {
 
         self.rdf
             .add_prefix_map(prefix_map)
-            .map_err(|e| ShaclWriterError::AddPrefixMapError { msg: e.to_string() })?;
+            .map_err(|e| ShaclWriterError::AddPrefixMap { msg: e.to_string() })?;
         self.rdf
             .add_base(&schema.base())
-            .map_err(|e| ShaclWriterError::AddBaseError { msg: e.to_string() })?;
+            .map_err(|e| ShaclWriterError::AddBase { msg: e.to_string() })?;
 
         schema
             .iter()
@@ -37,7 +37,7 @@ impl<RDF: BuildRDF> ShaclWriter<RDF> {
                 self.shape_count += 1;
                 shape.write(&mut self.rdf)
             })
-            .map_err(|e| ShaclWriterError::WriteError { msg: e.to_string() })?;
+            .map_err(|e| ShaclWriterError::Write { msg: e.to_string() })?;
 
         Ok(())
     }
