@@ -4,7 +4,7 @@ pub use iri_s::iri;
 pub use mie::Mie;
 pub use prefixmap::PrefixMap;
 pub use shacl_ast::ShaclFormat;
-pub use shacl_ast::ast::Schema as ShaclSchema;
+pub use shacl_ast::ast::ShaclSchema;
 pub use shacl_ir::compiled::schema_ir::SchemaIR as ShaclSchemaIR;
 pub use shacl_validation::shacl_processor::ShaclValidationMode;
 pub use shacl_validation::validation_report::report::ValidationReport;
