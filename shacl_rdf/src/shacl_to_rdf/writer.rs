@@ -1,3 +1,4 @@
+use crate::error::ShaclWriterError;
 use iri_s::IriS;
 use shacl_ast::{ShaclSchema, ShaclVocab};
 use srdf::{BuildRDF, RDF, RDFFormat, XSD};
@@ -23,13 +24,20 @@ impl<RDF: BuildRDF> ShaclWriter<RDF> {
         prefix_map.add_prefix("xsd", IriS::from_str(XSD)?)?;
         prefix_map.add_prefix("sh", ShaclVocab::sh().clone())?;
 
-        self.rdf.add_prefix_map(prefix_map)?;
-        self.rdf.add_base(&schema.base())?;
+        self.rdf
+            .add_prefix_map(prefix_map)
+            .map_err(|e| ShaclWriterError::AddPrefixMapError { msg: e.to_string() })?;
+        self.rdf
+            .add_base(&schema.base())
+            .map_err(|e| ShaclWriterError::AddBaseError { msg: e.to_string() })?;
 
-        schema.iter().try_for_each(|(_, shape)| {
-            self.shape_count += 1;
-            shape.write(&mut self.rdf)
-        })?;
+        schema
+            .iter()
+            .try_for_each(|(_, shape)| {
+                self.shape_count += 1;
+                shape.write(&mut self.rdf)
+            })
+            .map_err(|e| ShaclWriterError::WriteError { msg: e.to_string() })?;
 
         Ok(())
     }
