@@ -1,16 +1,17 @@
 use crate::common::shacl_test::ShaclTest;
 use crate::common::testsuite_error::TestSuiteError;
 use oxrdf::{NamedNode, NamedOrBlankNode as OxSubject, Term as OxTerm};
+use rdf::rdf_core::{
+    Any, NeighsRDF, RDFFormat,
+    term::Triple,
+    vocab::{rdf_first, rdf_rest},
+};
 use shacl_rdf::ShaclParser;
 use shacl_validation::shacl_validation_vocab;
 use shacl_validation::store::Store;
 use shacl_validation::store::graph::Graph;
 use shacl_validation::validation_report::report::ValidationReport;
 use sparql_service::RdfData;
-use srdf::NeighsRDF;
-use srdf::RDFFormat;
-use srdf::Triple;
-use srdf::matcher::Any;
 use std::{collections::HashSet, path::Path};
 
 pub struct Manifest {
@@ -51,7 +52,7 @@ impl Manifest {
 
         let mf_entries: NamedNode = shacl_validation_vocab::mf_entries().clone().into();
         let entry_subject = store
-            .triples_matching(subject, mf_entries, Any)
+            .triples_matching(&subject, &mf_entries, &Any)
             .map_err(|e| Box::new(e.into()))?
             .map(Triple::into_object)
             .next();
@@ -59,9 +60,9 @@ impl Manifest {
         if let Some(mut subject) = entry_subject {
             loop {
                 let inner_subject: OxSubject = subject.clone().try_into().unwrap();
-                let rdf_first: NamedNode = srdf::rdf_first().clone().into();
+                let rdf_first: NamedNode = rdf_first().clone().into();
                 match store
-                    .triples_matching(inner_subject.clone(), rdf_first, Any)
+                    .triples_matching(&inner_subject, &rdf_first, &Any)
                     .map_err(|e| Box::new(e.into()))?
                     .map(Triple::into_object)
                     .next()
@@ -70,9 +71,9 @@ impl Manifest {
                     None => break,
                 };
 
-                let rdf_rest: NamedNode = srdf::rdf_rest().clone().into();
+                let rdf_rest: NamedNode = rdf_rest().clone().into();
                 subject = match store
-                    .triples_matching(inner_subject, rdf_rest, Any)
+                    .triples_matching(&inner_subject, &rdf_rest, &Any)
                     .map_err(|e| Box::new(e.into()))?
                     .map(Triple::into_object)
                     .next()
@@ -102,7 +103,7 @@ impl Manifest {
             let mf_action: NamedNode = shacl_validation_vocab::mf_action().clone().into();
             let action: OxSubject = match self
                 .store
-                .triples_matching(entry.clone(), mf_action, Any)
+                .triples_matching(&entry, &mf_action, &Any)
                 .map_err(|e| Box::new(e.into()))?
                 .map(Triple::into_object)
                 .next()
@@ -120,7 +121,7 @@ impl Manifest {
             let mf_result: NamedNode = shacl_validation_vocab::mf_result().clone().into();
             let results = self
                 .store
-                .triples_matching(entry, mf_result, Any)
+                .triples_matching(&entry, &mf_result, &Any)
                 .map_err(|e| Box::new(e.into()))?
                 .map(Triple::into_object)
                 .next()
@@ -132,7 +133,7 @@ impl Manifest {
             let sht_data_graph: NamedNode = shacl_validation_vocab::sht_data_graph().clone().into();
             let data_graph_iri = self
                 .store
-                .triples_matching(action.clone(), sht_data_graph, Any)
+                .triples_matching(&action, &sht_data_graph, &Any)
                 .map_err(|e| Box::new(e.into()))?
                 .map(Triple::into_object)
                 .next()
@@ -141,7 +142,7 @@ impl Manifest {
             let sht_shapes_graph: NamedNode = shacl_validation_vocab::sht_shapes_graph().clone().into();
             let shapes_graph_iri = self
                 .store
-                .triples_matching(action, sht_shapes_graph, Any)
+                .triples_matching(&action, &sht_shapes_graph, &Any)
                 .map_err(|e| Box::new(e.into()))?
                 .map(Triple::into_object)
                 .next()

@@ -17,9 +17,10 @@ use iri_s::error::IriSError;
 use prefixmap::{IriRef, PrefixMap};
 use rbe::{Cardinality, Pending, RbeError, SingleCond};
 use rbe::{Component, MatchCond, Max, Min, RbeTable, rbe::Rbe};
-use srdf::Object;
-use srdf::SLiteral;
-use srdf::numeric_literal::NumericLiteral;
+use rdf::rdf_core::term::{
+    Object,
+    literal::{ConcreteLiteral, NumericLiteral},
+};
 use tracing::{debug, trace};
 
 #[derive(Debug, Default)]
@@ -1149,14 +1150,14 @@ fn check_node_datatype(node: &Node, dt: &IriS) -> CResult<()> {
 
 // Check that the literal has the expected datatype
 // It assumes that the literal has been checked and in case of wrong datatype it is a WrongDatatypeLiteral
-fn check_literal_datatype(sliteral: &SLiteral, expected: &IriS, node: &Node) -> CResult<()> {
-    let checked_literal = sliteral.as_checked_literal().map_err(|e| {
+fn check_literal_datatype(sliteral: &ConcreteLiteral, expected: &IriS, node: &Node) -> CResult<()> {
+    let checked_literal = sliteral.clone().into_checked_literal().map_err(|e| {
         Box::new(SchemaIRError::Internal {
-            msg: format!("check_literal_datatype: as_checked_literal error: {e}"),
+            msg: format!("check_literal_datatype: into_checked_literal error: {e}"),
         })
     })?;
     match checked_literal {
-        SLiteral::WrongDatatype {
+        ConcreteLiteral::WrongDatatypeLiteral {
             lexical_form,
             datatype,
             error,

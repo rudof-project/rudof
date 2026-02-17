@@ -1,5 +1,6 @@
 use crate::service::{errors::*, mcp_service::RudofMcpService};
 use iri_s::IriS;
+use rdf::rdf_impl::ReaderMode;
 use rmcp::{
     ErrorData as McpError,
     handler::server::wrapper::Parameters,
@@ -15,7 +16,6 @@ use rudof_lib::{
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use srdf::ReaderMode;
 use std::io::Cursor;
 use std::str::FromStr;
 

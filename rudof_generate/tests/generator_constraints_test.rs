@@ -1,5 +1,6 @@
+use rdf::rdf_core::{NeighsRDF, RDFFormat};
+use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use rudof_generate::{DataGenerator, GeneratorConfig};
-use srdf::{NeighsRDF, RDFFormat, ReaderMode, SRDFGraph};
 use std::collections::HashMap;
 use std::io::Write;
 use tempfile::NamedTempFile;
@@ -35,7 +36,7 @@ ex:PersonShape {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
 
     // Verify cardinality constraints
@@ -84,7 +85,7 @@ async fn test_shacl_cardinality_constraints() {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
 
     // Verify cardinality constraints
@@ -145,7 +146,7 @@ async fn test_datatype_constraints() {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
 
     // Verify datatype constraints
@@ -194,7 +195,7 @@ async fn test_value_constraints() {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
 
     // Verify value constraints
@@ -234,7 +235,7 @@ ex:PersonShape {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
 
     // Verify datatype constraints (reuse the same verification function)
@@ -272,7 +273,7 @@ ex:PersonShape {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
 
     // Verify value constraints (reuse the same verification function)
@@ -281,7 +282,7 @@ ex:PersonShape {
 
 // Helper functions for verification
 
-fn verify_shex_cardinality(graph: &SRDFGraph) {
+fn verify_shex_cardinality(graph: &InMemoryGraph) {
     let mut entity_properties: HashMap<String, HashMap<String, Vec<String>>> = HashMap::new();
 
     // Collect properties for each entity
@@ -321,7 +322,7 @@ fn verify_shex_cardinality(graph: &SRDFGraph) {
     }
 }
 
-fn verify_shacl_cardinality(graph: &SRDFGraph) {
+fn verify_shacl_cardinality(graph: &InMemoryGraph) {
     let mut entity_properties: HashMap<String, HashMap<String, Vec<String>>> = HashMap::new();
 
     // Collect properties for each entity
@@ -361,7 +362,7 @@ fn verify_shacl_cardinality(graph: &SRDFGraph) {
     }
 }
 
-fn verify_datatypes(graph: &SRDFGraph) {
+fn verify_datatypes(graph: &InMemoryGraph) {
     for triple in graph.triples().unwrap() {
         let literal = triple.object.clone();
         if let oxrdf::Term::Literal(lit) = literal {
@@ -403,7 +404,7 @@ fn verify_datatypes(graph: &SRDFGraph) {
     }
 }
 
-fn verify_value_constraints(graph: &SRDFGraph) {
+fn verify_value_constraints(graph: &InMemoryGraph) {
     // Only verify that basic datatypes are respected (no range/length constraints since they're not supported)
     for triple in graph.triples().unwrap() {
         let literal = triple.object.clone();

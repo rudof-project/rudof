@@ -1,8 +1,8 @@
 use std::fmt::{Display, Formatter};
 
 use iri_s::MimeType;
+use rdf::rdf_core::RDFFormat;
 use serde::{Deserialize, Serialize};
-use srdf::RDFFormat;
 
 /// Contains possible ShEx formats
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Default)]

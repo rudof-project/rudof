@@ -5,9 +5,9 @@ use std::{
 };
 
 use iri_s::IriS;
+use rdf::rdf_core::vocab::rdfs_label;
 use serde::{Deserialize, Serialize};
 use shex_validation::ShExConfig;
-use srdf::{PLANTUML, RDFS_LABEL_STR};
 use thiserror::Error;
 
 pub const DEFAULT_REPLACE_IRI_BY_LABEL: bool = true;
@@ -24,7 +24,7 @@ pub struct ShEx2UmlConfig {
 impl ShEx2UmlConfig {
     pub fn new() -> ShEx2UmlConfig {
         Self {
-            annotation_label: vec![IriS::new_unchecked(RDFS_LABEL_STR)],
+            annotation_label: vec![rdfs_label().clone()],
             replace_iri_by_label: None,
             shex: Some(ShExConfig::default()),
             shadowing: Some(true),
@@ -56,7 +56,7 @@ impl ShEx2UmlConfig {
 
     pub fn plantuml_path(&self) -> PathBuf {
         self.plantuml_path.clone().unwrap_or_else(|| {
-            env::var(PLANTUML)
+            env::var("PLANTUML")
                 .map(PathBuf::from)
                 .unwrap_or_else(|_| env::current_dir().unwrap())
         })

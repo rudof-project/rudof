@@ -1,19 +1,19 @@
 use super::validation_report_error::{ReportError, ResultError};
 use shacl_ast::ShaclVocab;
+use rdf::rdf_core::{BuildRDF, FocusRDF, NeighsRDF, SHACLPath, term::Object};
 use shacl_ir::severity::CompiledSeverity;
-use srdf::{BuildRDF, FocusRDF, NeighsRDF, Object, RDFNode, SHACLPath};
 use std::fmt::{Debug, Display};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ValidationResult {
-    focus_node: RDFNode,           // required
-    path: Option<SHACLPath>,       // optional
-    value: Option<RDFNode>,        // optional
-    source: Option<RDFNode>,       // optional
-    constraint_component: RDFNode, // required
-    details: Option<Vec<RDFNode>>, // optional
-    message: Option<String>,       // optional
-    severity: CompiledSeverity,    // required
+    focus_node: Object,           // required
+    path: Option<SHACLPath>,      // optional
+    value: Option<Object>,        // optional
+    source: Option<Object>,       // optional
+    constraint_component: Object, // required
+    details: Option<Vec<Object>>, // optional
+    message: Option<String>,      // optional
+    severity: CompiledSeverity,   // required
 }
 
 impl ValidationResult {

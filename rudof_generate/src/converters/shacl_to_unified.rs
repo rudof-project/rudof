@@ -2,11 +2,12 @@ use crate::unified_constraints::{
     NodeKind, UnifiedConstraint, UnifiedConstraintModel, UnifiedPropertyConstraint, UnifiedShape, Value,
 };
 use crate::{DataGeneratorError, Result};
+use rdf::rdf_core::{RDFFormat, term::literal::ConcreteLiteral};
+use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use shacl_ast::{
     ShaclSchema, component::Component, node_shape::NodeShape, property_shape::PropertyShape, shape::Shape as ShaclShape,
 };
 use shacl_rdf::ShaclParser;
-use srdf::{RDFFormat, ReaderMode, SRDFGraph};
 use std::fs;
 use std::path::Path;
 
@@ -33,7 +34,7 @@ impl ShaclToUnified {
     pub async fn convert_schema(&self, schema_data: String) -> Result<UnifiedConstraintModel> {
         let schema = tokio::task::spawn_blocking(move || {
             // Parse RDF data
-            let graph = SRDFGraph::from_str(&schema_data, &RDFFormat::Turtle, None, &ReaderMode::Strict)
+            let graph = InMemoryGraph::from_str(&schema_data, &RDFFormat::Turtle, None, &ReaderMode::Strict)
                 .map_err(|e| DataGeneratorError::Config(format!("Failed to parse RDF: {e}")))?;
 
             // Parse SHACL schema from RDF
@@ -47,7 +48,7 @@ impl ShaclToUnified {
         self.convert_shacl_schema(&schema).await
     }
 
-    async fn convert_shacl_schema(&self, schema: &ShaclSchema<SRDFGraph>) -> Result<UnifiedConstraintModel> {
+    async fn convert_shacl_schema(&self, schema: &ShaclSchema<InMemoryGraph>) -> Result<UnifiedConstraintModel> {
         let mut model = UnifiedConstraintModel::new();
 
         // Get all shapes from the schema
@@ -61,7 +62,11 @@ impl ShaclToUnified {
         Ok(model)
     }
 
-    fn convert_node_shape(&self, node_shape: &NodeShape<SRDFGraph>, schema: &ShaclSchema<SRDFGraph>) -> UnifiedShape {
+    fn convert_node_shape(
+        &self,
+        node_shape: &NodeShape<InMemoryGraph>,
+        schema: &ShaclSchema<InMemoryGraph>,
+    ) -> UnifiedShape {
         let shape_id = node_shape.id().to_string();
         let mut properties = Vec::new();
 
@@ -92,7 +97,7 @@ impl ShaclToUnified {
         }
     }
 
-    fn convert_property_shape(&self, prop_shape: &PropertyShape<SRDFGraph>) -> Option<UnifiedPropertyConstraint> {
+    fn convert_property_shape(&self, prop_shape: &PropertyShape<InMemoryGraph>) -> Option<UnifiedPropertyConstraint> {
         let property_iri = prop_shape.path().to_string();
         let mut constraints = Vec::new();
 
@@ -201,7 +206,7 @@ impl ShaclToUnified {
         }
     }
 
-    fn convert_literal_to_value(&self, literal: &srdf::SLiteral) -> Value {
+    fn convert_literal_to_value(&self, literal: &ConcreteLiteral) -> Value {
         // Simple conversion - in practice you'd want more sophisticated handling
         Value::Literal(literal.lexical_form().to_string(), Some(literal.datatype().to_string()))
     }

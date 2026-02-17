@@ -1,6 +1,6 @@
 use crate::ComparatorError;
+use rdf::rdf_core::RDFFormat;
 use shex_ast::ShExFormat;
-use srdf::RDFFormat;
 use std::{
     fmt::{Display, Formatter},
     str::FromStr,

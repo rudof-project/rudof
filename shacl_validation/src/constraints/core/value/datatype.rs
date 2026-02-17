@@ -8,15 +8,15 @@ use crate::shacl_engine::Engine;
 use crate::shacl_engine::sparql::SparqlEngine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
+use rdf::rdf_core::{
+    NeighsRDF, SHACLPath,
+    query::QueryRDF,
+    term::literal::{ConcreteLiteral, Literal as _},
+};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::Datatype;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use srdf::Literal as _;
-use srdf::NeighsRDF;
-use srdf::QueryRDF;
-use srdf::SHACLPath;
-use srdf::SLiteral;
 use std::fmt::Debug;
 use tracing::trace;
 
@@ -35,8 +35,8 @@ impl<R: NeighsRDF + Debug> Validator<R> for Datatype {
         let check = |value_node: &R::Term| {
             trace!("sh:datatype: Checking {value_node} as datatype {}", self.datatype());
             if let Ok(literal) = R::term_as_literal(value_node) {
-                match TryInto::<SLiteral>::try_into(literal.clone()) {
-                    Ok(SLiteral::WrongDatatype {
+                match TryInto::<ConcreteLiteral>::try_into(literal.clone()) {
+                    Ok(ConcreteLiteral::WrongDatatypeLiteral {
                         lexical_form,
                         datatype,
                         error,
@@ -46,9 +46,9 @@ impl<R: NeighsRDF + Debug> Validator<R> for Datatype {
                         );
                         true
                     },
-                    Ok(_slit) => literal.datatype() != self.datatype().as_str(),
+                    Ok(_slit) => literal.datatype().get_iri().unwrap().as_str() != self.datatype().as_str(),
                     Err(_) => {
-                        trace!("Failed to convert literal to SLiteral: {literal}");
+                        trace!("Failed to convert literal to ConcreteLiteral: {literal}");
                         true
                     },
                 }

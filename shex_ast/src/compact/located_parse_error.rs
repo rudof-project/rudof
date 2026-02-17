@@ -1,5 +1,6 @@
 use crate::{Span, shex_parser_error::ParseError as ShExParseError};
 use nom::error::{ErrorKind, FromExternalError};
+use rdf::rdf_core::RDFError;
 use std::{
     fmt::Debug,
     num::{ParseFloatError, ParseIntError},
@@ -75,5 +76,11 @@ impl FromExternalError<Span<'_>, ParseFloatError> for LocatedParseError {
             err: e,
         }
         .at(input)
+    }
+}
+
+impl FromExternalError<Span<'_>, RDFError> for LocatedParseError {
+    fn from_external_error(input: Span, _kind: ErrorKind, e: RDFError) -> Self {
+        ShExParseError::RDFError(e).at(input)
     }
 }

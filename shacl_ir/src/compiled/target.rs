@@ -2,23 +2,23 @@ use std::fmt::Display;
 
 use super::compiled_shacl_error::CompiledShaclError;
 use iri_s::IriS;
+use rdf::rdf_core::{Rdf, term::Object};
 use shacl_ast::target::Target;
-use srdf::{RDFNode, Rdf};
 
 /// Represents compiled target declarations
 #[derive(Debug, Clone)]
 pub enum CompiledTarget {
-    Node(RDFNode),
-    Class(RDFNode),
+    Node(Object),
+    Class(Object),
     SubjectsOf(IriS),
     ObjectsOf(IriS),
-    ImplicitClass(RDFNode),
+    ImplicitClass(Object),
     // The following target declarations always return violation errors
-    WrongTargetNode(RDFNode),
-    WrongTargetClass(RDFNode),
-    WrongSubjectsOf(RDFNode),
-    WrongObjectsOf(RDFNode),
-    WrongImplicitClass(RDFNode),
+    WrongTargetNode(Object),
+    WrongTargetClass(Object),
+    WrongSubjectsOf(Object),
+    WrongObjectsOf(Object),
+    WrongImplicitClass(Object),
 }
 
 impl CompiledTarget {

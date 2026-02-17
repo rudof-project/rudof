@@ -11,13 +11,13 @@ use crate::{
 };
 use iri_s::IriS;
 use shacl_ast::ShaclSchema;
+use rdf::rdf_core::{Rdf, term::Object};
 use shacl_ast::node_shape::NodeShape;
-use srdf::{RDFNode, Rdf};
 use std::collections::HashSet;
 
 #[derive(Debug, Clone)]
 pub struct NodeShapeIR {
-    id: RDFNode,
+    id: Object,
     components: Vec<ComponentIR>,
     targets: Vec<CompiledTarget>,
     property_shapes: Vec<ShapeLabelIdx>,
@@ -34,7 +34,7 @@ pub struct NodeShapeIR {
 
 impl NodeShapeIR {
     pub fn new(
-        id: RDFNode,
+        id: Object,
         components: Vec<ComponentIR>,
         targets: Vec<CompiledTarget>,
         property_shapes: Vec<ShapeLabelIdx>,
@@ -53,7 +53,7 @@ impl NodeShapeIR {
         }
     }
 
-    pub fn id(&self) -> &RDFNode {
+    pub fn id(&self) -> &Object {
         &self.id
     }
 

@@ -1,5 +1,5 @@
 use clap::ValueEnum;
-use srdf::ReaderMode;
+use rdf::rdf_impl::ReaderMode;
 use std::fmt::{Display, Formatter};
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Default, Debug)]

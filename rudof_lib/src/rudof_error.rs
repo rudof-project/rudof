@@ -2,9 +2,9 @@ use std::io;
 
 use iri_s::IriS;
 use shacl_ast::ShaclSchema;
+use rdf::rdf_impl::SparqlEndpointError;
 use shacl_ir::compiled_shacl_error::CompiledShaclError;
 use sparql_service::RdfData;
-use srdf::SRDFSparql;
 use thiserror::Error;
 
 use crate::data_format::DataFormatError;
@@ -222,7 +222,10 @@ pub enum RudofError {
     },
 
     #[error("Creating Endpoint validation for SHACL from endpoint {endpoint:?}. error: {error}")]
-    SHACLEndpointValidationCreation { error: String, endpoint: Box<SRDFSparql> },
+    SHACLEndpointValidationCreation {
+        error: String,
+        endpoint: Box<SparqlEndpointError>,
+    },
 
     #[error("Parsing RDF data error: {error}")]
     ParsingRDFDataReader { error: String },

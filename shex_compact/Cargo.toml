@@ -12,7 +12,7 @@ repository.workspace = true
 [dependencies]
 shex_ast = { workspace = true }
 iri_s = { workspace = true }
-srdf = { workspace = true }
+rdf = { workspace = true }
 prefixmap = { workspace = true }
 shapemap = { workspace = true }
 nom = "7"

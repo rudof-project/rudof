@@ -8,8 +8,11 @@ use iri_s::IriS;
 use itertools::Itertools;
 use mie::Mie;
 use prefixmap::PrefixMap;
+use rdf::{
+    rdf_core::RDFFormat,
+    rdf_impl::{InMemoryGraph, ReaderMode},
+};
 use serde::{Deserialize, Serialize};
-use srdf::{RDFFormat, ReaderMode, SRDFGraph};
 use std::{
     collections::{HashMap, HashSet},
     fmt::Display,
@@ -93,7 +96,7 @@ impl ServiceDescription {
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<ServiceDescription, ServiceDescriptionError> {
-        let rdf = SRDFGraph::from_path(path, format, base, reader_mode)?;
+        let rdf = InMemoryGraph::from_path(path, format, base, reader_mode)?;
         let mut parser = ServiceDescriptionParser::new(rdf);
         let service = parser.parse()?;
         Ok(service)
@@ -106,7 +109,7 @@ impl ServiceDescription {
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<ServiceDescription, ServiceDescriptionError> {
-        let rdf = SRDFGraph::from_reader(read, source_name, format, base, reader_mode)?;
+        let rdf = InMemoryGraph::from_reader(read, source_name, format, base, reader_mode)?;
         let mut parser = ServiceDescriptionParser::new(rdf);
         let service = parser.parse()?;
         Ok(service)

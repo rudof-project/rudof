@@ -8,16 +8,15 @@ use crate::shacl_engine::Engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
+use rdf::rdf_core::{
+    NeighsRDF, SHACLPath,
+    query::QueryRDF,
+    term::{Iri as _, Term, literal::Literal as _},
+};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::MaxLength;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use srdf::Iri as _;
-use srdf::Literal as _;
-use srdf::NeighsRDF;
-use srdf::QueryRDF;
-use srdf::SHACLPath;
-use srdf::Term;
 use std::fmt::Debug;
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxLength {

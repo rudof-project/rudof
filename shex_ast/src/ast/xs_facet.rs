@@ -1,9 +1,9 @@
 use std::result;
 
+use rdf::rdf_core::term::literal::NumericLiteral;
 use rust_decimal::prelude::*;
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Serialize, Serializer};
-use srdf::numeric_literal::NumericLiteral;
 use thiserror::Error;
 // use void::Void;
 

@@ -1,7 +1,7 @@
 use iri_s::IriS;
+use rdf::rdf_core::RdfDataConfig;
 use serde::{Deserialize, Serialize};
 use shex_ast::ShExFormat;
-use srdf::RdfDataConfig;
 use std::io::Read;
 use std::path::Path;
 use thiserror::Error;

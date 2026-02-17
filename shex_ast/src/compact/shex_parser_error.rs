@@ -1,5 +1,6 @@
 use iri_s::error::IriSError;
 use prefixmap::error::{DerefError, PrefixMapError};
+use rdf::rdf_core::RDFError;
 use std::{
     io,
     num::{ParseFloatError, ParseIntError},
@@ -12,6 +13,9 @@ use crate::compact::{LocatedParseError, Span};
 pub enum ParseError {
     #[error("Invalid language tag: {lang}")]
     InvalidLangTag { lang: String },
+
+    #[error("RDF error: {0}")]
+    RDFError(#[from] RDFError),
 
     #[error("Parsing error: {err}")]
     NomError { err: Box<LocatedParseError> },

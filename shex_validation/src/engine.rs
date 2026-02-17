@@ -8,6 +8,11 @@ use indexmap::IndexSet;
 use iri_s::iri;
 use itertools::Itertools;
 use prefixmap::PrefixMap;
+use rdf::rdf_core::{
+    NeighsRDF,
+    query::QueryRDF,
+    term::{BlankNode, Iri as _, Object},
+};
 use shex_ast::Expr;
 use shex_ast::Node;
 use shex_ast::Pred;
@@ -16,10 +21,6 @@ use shex_ast::ir::preds::Preds;
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::shape::Shape;
 use shex_ast::ir::shape_expr::ShapeExpr;
-use srdf::BlankNode;
-use srdf::Iri as _;
-use srdf::QueryRDF;
-use srdf::{NeighsRDF, Object};
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::hash_map::Entry;

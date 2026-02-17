@@ -3,8 +3,8 @@ use crate::shapemap::NodeSelector;
 use crate::{RudofError, ShapeMapParser};
 use iri_s::IriS;
 use prefixmap::IriRef;
+use rdf::rdf_core::{NeighsRDF, query::QueryRDF};
 use shex_ast::ObjectValue;
-use srdf::{NeighsRDF, QueryRDF};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fmt::{Display, Formatter};
@@ -162,12 +162,10 @@ fn get_outgoing_arcs<S: NeighsRDF>(
     predicates: &[String],
 ) -> Result<HashMap<S::IRI, Vec<S::Term>>, RudofError> {
     if predicates.is_empty() {
-        let map = rdf
-            .outgoing_arcs(subject.clone())
-            .map_err(|e| RudofError::OutgoingArcs {
-                subject: rdf.qualify_subject(subject),
-                error: e.to_string(),
-            })?;
+        let map = rdf.outgoing_arcs(subject).map_err(|e| RudofError::OutgoingArcs {
+            subject: rdf.qualify_subject(subject),
+            error: e.to_string(),
+        })?;
 
         let map_vec = map.into_iter().map(|(k, v)| (k, v.into_iter().collect())).collect();
         Ok(map_vec)
@@ -202,12 +200,10 @@ fn get_outgoing_arcs_depth<S: NeighsRDF>(
             .collect();
         Ok(result)
     } else if predicates.is_empty() {
-        let map = rdf
-            .outgoing_arcs(subject.clone())
-            .map_err(|e| RudofError::OutgoingArcs {
-                subject: rdf.qualify_subject(subject),
-                error: e.to_string(),
-            })?;
+        let map = rdf.outgoing_arcs(subject).map_err(|e| RudofError::OutgoingArcs {
+            subject: rdf.qualify_subject(subject),
+            error: e.to_string(),
+        })?;
 
         let mut result = HashMap::new();
         for (k, v) in map.into_iter() {
@@ -279,12 +275,10 @@ fn get_incoming_arcs<S: NeighsRDF>(
     subject: &S::Subject,
 ) -> Result<HashMap<S::IRI, Vec<S::Subject>>, RudofError> {
     let object: S::Term = subject.clone().into();
-    let map = rdf
-        .incoming_arcs(object.clone())
-        .map_err(|e| RudofError::IncomingArcs {
-            object: rdf.qualify_term(&object),
-            error: e.to_string(),
-        })?;
+    let map = rdf.incoming_arcs(&object).map_err(|e| RudofError::IncomingArcs {
+        object: rdf.qualify_term(&object),
+        error: e.to_string(),
+    })?;
 
     let map_vec = map.into_iter().map(|(k, v)| (k, v.into_iter().collect())).collect();
     Ok(map_vec)
@@ -313,12 +307,10 @@ fn get_incoming_arcs_depth<S: NeighsRDF>(
         Ok(result)
     } else {
         let object: S::Term = subject.clone().into();
-        let map = rdf
-            .incoming_arcs(object.clone())
-            .map_err(|e| RudofError::IncomingArcs {
-                object: rdf.qualify_term(&object),
-                error: e.to_string(),
-            })?;
+        let map = rdf.incoming_arcs(&object).map_err(|e| RudofError::IncomingArcs {
+            object: rdf.qualify_term(&object),
+            error: e.to_string(),
+        })?;
 
         let mut result = HashMap::new();
         for (k, v) in map.into_iter() {
@@ -346,7 +338,7 @@ where
 
     // Check if the subject actually exists in the RDF graph
     let mut triples = rdf
-        .triples_with_subject(subject.clone())
+        .triples_with_subject(&subject)
         .map_err(|e| RudofError::RdfError { error: e.to_string() })?;
 
     if triples.next().is_none() {
@@ -356,7 +348,7 @@ where
         });
     }
 
-    Ok(subject)
+    Ok(subject.clone())
 }
 
 // Convert an ObjectValue (node) to a Subject

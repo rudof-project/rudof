@@ -2,12 +2,12 @@ use crate::constraints::constraint_error::ConstraintError;
 use crate::helpers::helper_error::SPARQLError;
 use crate::helpers::helper_error::SRDFError;
 // use oxiri::IriParseError;
+use rdf::rdf_core::RDFError;
+use rdf::rdf_impl::InMemoryGraphError;
 use shacl_ir::compiled::compiled_shacl_error::CompiledShaclError;
 use shacl_ir::shape_label_idx::ShapeLabelIdx;
 use shacl_rdf::error::ShaclParserError;
 use sparql_service::RdfDataError;
-use srdf::RDFParseError;
-use srdf::SRDFGraphError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -40,7 +40,7 @@ pub enum ValidateError {
     TargetClassNotIri,
 
     #[error("Error when working with the SRDFGraph, {}", ._0)] // TODO: move to store
-    Graph(#[from] SRDFGraphError),
+    Graph(#[from] InMemoryGraphError),
 
     #[error("Error when parsing the SHACL Graph, {}", ._0)] // TODO: move to store
     ShaclParser(#[from] ShaclParserError),
@@ -53,7 +53,7 @@ pub enum ValidateError {
     IO(#[from] std::io::Error),
 
     #[error("Error loading the Shapes")]
-    Shapes(#[from] RDFParseError),
+    Shapes(#[from] RDFError),
 
     #[error("Error creating the SPARQL endpoint")]
     SPARQLCreation,

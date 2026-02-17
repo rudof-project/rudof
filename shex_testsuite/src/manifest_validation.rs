@@ -7,6 +7,13 @@ use crate::wasm_stubs::path_to_iri;
 use ValidationType::*;
 use iri_s::IriS;
 use prefixmap::IriRef;
+use rdf::{
+    rdf_core::{
+        RDFFormat,
+        term::{Object, literal::ConcreteLiteral},
+    },
+    rdf_impl::{InMemoryGraph, ReaderMode},
+};
 use serde::de::{self};
 use serde::{Deserialize, Deserializer, Serialize};
 use shex_ast::ResolveMethod;
@@ -16,10 +23,6 @@ use shex_ast::shapemap::ValidationStatus;
 use shex_ast::{Node, ast::Schema as SchemaJson, ir::ast2ir::AST2IR};
 use shex_validation::Validator;
 use shex_validation::ValidatorConfig;
-use srdf::Object;
-use srdf::RDFFormat;
-use srdf::SLiteral;
-use srdf::srdf_graph::SRDFGraph;
 use std::collections::HashMap;
 use std::fmt::{self, Display};
 use std::path::{Path, PathBuf};
@@ -189,12 +192,12 @@ impl ValidationEntry {
         let path_iri = path_to_iri(&path_absolute)?;
         let base_str = Some(path_iri.as_str());
 
-        let graph = SRDFGraph::parse_data(
+        let graph = InMemoryGraph::parse_data(
             &self.action.data,
             &RDFFormat::Turtle,
             folder,
             base_str,
-            &srdf::ReaderMode::Strict,
+            &ReaderMode::Strict,
         )
         .map_err(|e| Box::new(ManifestError::SRDFError(e)))?;
         trace!("Data obtained from: {}", self.action.data);
@@ -238,7 +241,7 @@ impl ValidationEntry {
                 let node = parse_node(entry.node(), base_str)?;
                 let shape = parse_shape(entry.shape())?;
                 let result = validator
-                    .validate_node_shape(&node, &shape, &graph, &schema, &Some(graph.prefixmap()))
+                    .validate_node_shape(&node, &shape, &graph, &schema, &Some(graph.prefixmap().clone()))
                     .map_err(|e| Box::new(ManifestError::ValidationError(e)))?;
 
                 let partial_status = result.get_info(&node, &shape).unwrap();
@@ -256,7 +259,7 @@ impl ValidationEntry {
             trace!("Focus node: {}, shape: {}", node, shape);
 
             let result = validator
-                .validate_node_shape(&node, &shape, &graph, &schema, &Some(graph.prefixmap()))
+                .validate_node_shape(&node, &shape, &graph, &schema, &Some(graph.prefixmap().clone()))
                 .map_err(|e| Box::new(ManifestError::ValidationError(e)))?;
             let validation_status = result.get_info(&node, &shape).unwrap();
             if validation_status.is_conformant() {
@@ -326,7 +329,7 @@ fn parse_focus(focus: &Focus, base: Option<&str>) -> Result<Node, Box<ManifestEr
         },
         Focus::Typed(str, str_type) => {
             let datatype = IriS::from_str(str_type.as_str()).map_err(|e| Box::new(ManifestError::IriError(e)))?;
-            Ok(Object::Literal(SLiteral::lit_datatype(str, &IriRef::Iri(datatype))).into())
+            Ok(Object::Literal(ConcreteLiteral::lit_datatype(str, &IriRef::Iri(datatype))).into())
         },
     }
 }

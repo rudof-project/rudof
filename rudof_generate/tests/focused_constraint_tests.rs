@@ -1,5 +1,6 @@
+use rdf::rdf_core::{NeighsRDF, RDFFormat};
+use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use rudof_generate::{DataGenerator, GeneratorConfig};
-use srdf::{NeighsRDF, RDFFormat, ReaderMode, SRDFGraph};
 use std::collections::HashMap;
 use std::io::Write;
 use tempfile::NamedTempFile;
@@ -36,7 +37,7 @@ ex:PersonShape {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
 
     // Verify that generated triples respect datatypes
@@ -101,7 +102,7 @@ ex:PersonShape a sh:NodeShape ;
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
 
     // Verify that generated triples respect datatypes
@@ -160,7 +161,7 @@ ex:PersonShape a sh:NodeShape ;
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
 
     // Count properties per entity to verify cardinality
@@ -229,7 +230,7 @@ ex:PersonShape a sh:NodeShape ;
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
 
     // Verify that data was generated

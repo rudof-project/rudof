@@ -1,9 +1,9 @@
 use crate::shape::Shape;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use srdf::{RDFNode, Rdf};
 use std::collections::hash_map::IntoIter;
 use std::{collections::HashMap, fmt::Display};
+use rdf::rdf_core::{Rdf, term::Object};
 
 #[derive(Debug, Clone, Default)]
 pub struct ShaclSchema<RDF>
@@ -13,7 +13,7 @@ where
 {
     // imports: Vec<IriS>,
     // entailments: Vec<IriS>,
-    shapes: HashMap<RDFNode, Shape<RDF>>,
+    shapes: HashMap<Object, Shape<RDF>>,
     prefixmap: PrefixMap,
     base: Option<IriS>,
 }
@@ -36,7 +36,7 @@ impl<RDF: Rdf> ShaclSchema<RDF> {
         self
     }
 
-    pub fn with_shapes(mut self, shapes: HashMap<RDFNode, Shape<RDF>>) -> Self {
+    pub fn with_shapes(mut self, shapes: HashMap<Object, Shape<RDF>>) -> Self {
         self.shapes = shapes;
         self
     }
@@ -49,18 +49,18 @@ impl<RDF: Rdf> ShaclSchema<RDF> {
         self.base.clone()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (&RDFNode, &Shape<RDF>)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&Object, &Shape<RDF>)> {
         self.shapes.iter()
     }
 
-    pub fn get_shape(&self, sref: &RDFNode) -> Option<&Shape<RDF>> {
+    pub fn get_shape(&self, sref: &Object) -> Option<&Shape<RDF>> {
         self.shapes.get(sref)
     }
 }
 
 impl<RDF: Rdf> IntoIterator for ShaclSchema<RDF> {
-    type Item = (RDFNode, Shape<RDF>);
-    type IntoIter = IntoIter<RDFNode, Shape<RDF>>;
+    type Item = (Object, Shape<RDF>);
+    type IntoIter = IntoIter<Object, Shape<RDF>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.shapes.into_iter()

@@ -1,11 +1,11 @@
 use crate::RudofError;
 use dctap::TapConfig;
+use rdf::rdf_core::RdfDataConfig;
 use serde::{Deserialize, Serialize};
 use shapes_comparator::ComparatorConfig;
 use shapes_converter::{ShEx2HtmlConfig, ShEx2SparqlConfig, ShEx2UmlConfig, Shacl2ShExConfig, Tap2ShExConfig};
 use shex_validation::{ShExConfig, ValidatorConfig};
 use sparql_service::ServiceConfig;
-use srdf::{PLANTUML, RdfDataConfig};
 use std::env;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -183,7 +183,7 @@ impl RudofConfig {
         if let Some(path) = &self.plantuml_path {
             path.to_owned()
         } else {
-            match env::var(PLANTUML) {
+            match env::var("PLANTUML") {
                 Ok(value) => Path::new(value.as_str()).to_path_buf(),
                 Err(_) => env::current_dir().unwrap(),
             }

@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use iri_s::IriS;
 use shacl_ast::{ShaclError, ShaclSchema, node_shape::NodeShape, property_shape::PropertyShape, shape::Shape};
-use srdf::Rdf;
+use rdf::rdf_core::Rdf;
 
 #[derive(Debug, Clone, Default)]
 pub enum ClosedInfo {

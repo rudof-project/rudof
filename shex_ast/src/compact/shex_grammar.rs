@@ -29,8 +29,13 @@ use nom::{
 use nom_locate::LocatedSpan;
 use prefixmap::IriRef;
 use regex::Regex;
-use srdf::{RDF_TYPE_STR, SLiteral, lang::Lang, numeric_literal::NumericLiteral};
-use std::{collections::VecDeque, fmt::Debug, num::ParseIntError};
+// use shex_ast::IriOrStr;
+use rdf::rdf_core::{
+    RDFError,
+    term::literal::{ConcreteLiteral, Lang, NumericLiteral},
+    vocab::rdf_type as rdf_type_vocab,
+};
+use std::{collections::VecDeque, fmt::Debug};
 use thiserror::Error;
 
 /// `[1] shexDoc ::= directive* ((notStartAction | startActions) statement*)?`
@@ -1286,11 +1291,17 @@ fn percent_code(i: Span) -> IRes<Option<String>> {
 }
 
 /// `[13t] literal ::= rdfLiteral | numericLiteral | booleanLiteral`
-pub fn literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, SLiteral> {
+pub fn literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ConcreteLiteral> {
     traced(
         "literal",
         map_error(
-            move |i| alt((rdf_literal(), map(numeric_literal, SLiteral::Numeric), boolean_literal))(i),
+            move |i| {
+                alt((
+                    rdf_literal(),
+                    map(numeric_literal, ConcreteLiteral::NumericLiteral),
+                    boolean_literal,
+                ))(i)
+            },
             || ShExParseError::Literal,
         ),
     )
@@ -1308,8 +1319,14 @@ fn raw_numeric_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NumericLiteral>
     map_error(
         move |i| {
             alt((
-                integer_literal(),
-                map(double, NumericLiteral::decimal_from_f64),
+                integer_literal(), // Asegúrate de que este no devuelva Result interno
+                |i| {
+                    let (i, val) = double(i)?;
+                    match NumericLiteral::decimal_from_f64(val) {
+                        Ok(n) => Ok((i, n)),
+                        Err(_) => Err(nom::Err::Error(ShExParseError::NumericLiteral.at(i))),
+                    }
+                },
                 decimal,
             ))(i)
         },
@@ -1331,8 +1348,8 @@ fn integer_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NumericLiteral> {
     )
 }
 
-fn boolean_literal(i: Span) -> IRes<SLiteral> {
-    map(boolean_value, SLiteral::boolean)(i)
+fn boolean_literal(i: Span) -> IRes<ConcreteLiteral> {
+    map(boolean_value, ConcreteLiteral::boolean)(i)
 }
 
 fn boolean_value(i: Span) -> IRes<bool> {
@@ -1342,21 +1359,21 @@ fn boolean_value(i: Span) -> IRes<bool> {
 /// `[65] rdfLiteral ::= langString | string ("^^" datatype)?`
 /// Refactored according to rdfLiteral in Turtle
 /// `rdfLiteral ::= string (LANGTAG | '^^' iri)?`
-fn rdf_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, SLiteral> {
+fn rdf_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ConcreteLiteral> {
     traced(
         "rdf_literal",
         map_error(
             move |i| {
                 let (i, str) = string()(i)?;
                 let (i, maybe_value) = opt(alt((
-                    map(lang_tag, |lang| SLiteral::lang_str(&str, lang)),
+                    map(lang_tag, |lang| ConcreteLiteral::lang_str(&str, lang)),
                     map(preceded(token("^^"), datatype_iri), |datatype| {
-                        SLiteral::lit_datatype(&str, &datatype)
+                        ConcreteLiteral::lit_datatype(&str, &datatype)
                     }),
                 )))(i)?;
                 let value = match maybe_value {
                     Some(v) => v,
-                    None => SLiteral::str(&str),
+                    None => ConcreteLiteral::str(&str),
                 };
                 Ok((i, value))
             },
@@ -1683,7 +1700,7 @@ fn integer_or_star(i: Span) -> IRes<i32> {
 /// `[69] <RDF_TYPE> ::= "a"`
 fn rdf_type(i: Span) -> IRes<IriRef> {
     let (i, _) = tag("a")(i)?;
-    let rdf_type: IriRef = IriRef::iri(IriS::new_unchecked(RDF_TYPE_STR));
+    let rdf_type: IriRef = IriRef::iri(rdf_type_vocab().clone());
     Ok((i, rdf_type))
 }
 
@@ -1905,7 +1922,15 @@ fn decimal(i: Span) -> IRes<NumericLiteral> {
     map_res(
         pair(recognize(preceded(opt(sign), digit0)), preceded(token("."), digit1)),
         |(whole, fraction)| {
-            Ok::<_, ParseIntError>(NumericLiteral::decimal_from_parts(whole.parse()?, fraction.parse()?))
+            let w = whole
+                .fragment()
+                .parse::<i64>()
+                .map_err(|e| RDFError::ConversionError { msg: e.to_string() })?;
+            let f = fraction
+                .fragment()
+                .parse::<u32>()
+                .map_err(|e| RDFError::ConversionError { msg: e.to_string() })?;
+            NumericLiteral::decimal_from_parts(w, f)
         },
     )(i)
 }

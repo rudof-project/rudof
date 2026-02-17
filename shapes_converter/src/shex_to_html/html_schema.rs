@@ -48,6 +48,7 @@ impl HtmlSchema {
         self.svg_schema = svg_schema.to_string()
     }
 
+    #[allow(clippy::result_large_err)]
     pub fn add_component(&mut self, node: NodeId, component: HtmlShape) -> Result<(), ShEx2HtmlError> {
         match self.shapes.entry(node) {
             Entry::Occupied(mut v) => {

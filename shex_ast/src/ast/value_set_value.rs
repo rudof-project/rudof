@@ -7,14 +7,13 @@ use crate::literal_exclusion::LiteralExclusion;
 use iri_s::error::IriSError;
 use prefixmap::error::DerefError;
 use prefixmap::{Deref, IriRef};
+use rdf::rdf_core::term::literal::{ConcreteLiteral, Lang};
 use rust_decimal::Decimal;
 use serde::ser::SerializeMap;
 use serde::{
     Deserialize, Serialize, Serializer,
     de::{self, MapAccess, Unexpected, Visitor},
 };
-use srdf::SLiteral;
-use srdf::lang::Lang;
 use std::{fmt, str::FromStr};
 use thiserror::Error;
 
@@ -54,7 +53,7 @@ impl ValueSetValue {
     }
 
     pub fn string_literal(value: &str, lang: Option<Lang>) -> ValueSetValue {
-        let ov = ObjectValue::Literal(SLiteral::String {
+        let ov = ObjectValue::Literal(ConcreteLiteral::StringLiteral {
             lexical_form: value.to_string(),
             lang,
         });
@@ -738,10 +737,12 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                                 let lang = Lang::new(&lang).map_err(|e| {
                                     de::Error::custom(format!("Can't parse language tag {lang} for literal: Error {e}"))
                                 })?;
-                                Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(SLiteral::String {
-                                    lexical_form: v,
-                                    lang: Some(lang),
-                                })))
+                                Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
+                                    ConcreteLiteral::StringLiteral {
+                                        lexical_form: v,
+                                        lang: Some(lang),
+                                    },
+                                )))
                             },
                             None => Ok(ValueSetValue::datatype_literal(&v, &iri)),
                         },
@@ -755,15 +756,19 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                                         "Can't parse language tag {language} for literal: Error {e}"
                                     ))
                                 })?;
-                                Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(SLiteral::String {
-                                    lexical_form,
-                                    lang: Some(lang),
-                                })))
+                                Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
+                                    ConcreteLiteral::StringLiteral {
+                                        lexical_form,
+                                        lang: Some(lang),
+                                    },
+                                )))
                             },
-                            None => Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(SLiteral::String {
-                                lexical_form,
-                                lang: None,
-                            }))),
+                            None => Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
+                                ConcreteLiteral::StringLiteral {
+                                    lexical_form,
+                                    lang: None,
+                                },
+                            ))),
                         },
                         None => Err(de::Error::missing_field("value")),
                     },

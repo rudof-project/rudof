@@ -3,7 +3,7 @@ use colored::*;
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use pretty::{Arena, DocAllocator, DocBuilder};
-use srdf::{SLiteral, numeric_literal::NumericLiteral};
+use rdf::rdf_core::term::literal::{ConcreteLiteral, NumericLiteral};
 use std::borrow::Cow;
 
 pub(crate) fn pp_object_value<'a, A>(
@@ -13,14 +13,14 @@ pub(crate) fn pp_object_value<'a, A>(
 ) -> DocBuilder<'a, Arena<'a, A>, A> {
     match v {
         ObjectValue::IriRef(i) => pp_iri_ref(i, doc, prefixmap),
-        ObjectValue::Literal(SLiteral::Boolean(_value)) => {
+        ObjectValue::Literal(ConcreteLiteral::BooleanLiteral(_value)) => {
             todo!()
         },
-        ObjectValue::Literal(SLiteral::Numeric(num)) => pp_numeric_literal(num, doc),
-        ObjectValue::Literal(SLiteral::Datatype { .. }) => todo!(),
-        ObjectValue::Literal(SLiteral::WrongDatatype { .. }) => todo!(),
-        ObjectValue::Literal(SLiteral::Datetime { .. }) => todo!(),
-        ObjectValue::Literal(SLiteral::String { .. }) => todo!(),
+        ObjectValue::Literal(ConcreteLiteral::NumericLiteral(num)) => pp_numeric_literal(num, doc),
+        ObjectValue::Literal(ConcreteLiteral::DatatypeLiteral { .. }) => todo!(),
+        ObjectValue::Literal(ConcreteLiteral::WrongDatatypeLiteral { .. }) => todo!(),
+        ObjectValue::Literal(ConcreteLiteral::DatetimeLiteral { .. }) => todo!(),
+        ObjectValue::Literal(ConcreteLiteral::StringLiteral { .. }) => todo!(),
     }
 }
 

@@ -1,9 +1,10 @@
 use std::io::Write;
 
 use iri_s::{IriS, MimeType};
+use rdf::rdf_core::BuildRDF;
+use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use shacl_ast::ShaclFormat;
 use shacl_validation::validation_report::report::ValidationReport;
-use srdf::{ReaderMode, SRDFGraph};
 
 use crate::{
     InputSpec, Rudof, RudofConfig, RudofError,
@@ -85,8 +86,7 @@ pub fn write_validation_report<W: Write>(
             msg: "Generation of JSON for SHACL validation report is not implemented yet".to_string(),
         }),
         _ => {
-            use srdf::BuildRDF;
-            let mut rdf_writer = SRDFGraph::new();
+            let mut rdf_writer = InMemoryGraph::new();
             report.to_rdf(&mut rdf_writer).map_err(|e| RudofError::Generic {
                 error: format!("Error converting SHACL validation report to RDF: {e}"),
             })?;

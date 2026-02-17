@@ -4,8 +4,11 @@ use colored::*;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
 use shacl_ast::ShaclVocab;
+use rdf::rdf_core::{
+    BuildRDF, FocusRDF, Rdf, SHACLPath,
+    term::{IriOrBlankNode, Object},
+};
 use shacl_ir::severity::CompiledSeverity;
-use srdf::{BuildRDF, FocusRDF, IriOrBlankNode, Object, Rdf, SHACLPath};
 use std::{
     fmt::{Debug, Display},
     io::{Error, Write},

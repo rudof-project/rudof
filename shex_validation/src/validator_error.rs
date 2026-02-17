@@ -3,6 +3,7 @@ use std::fmt::Display;
 use prefixmap::PrefixMap;
 use prefixmap::error::PrefixMapError;
 use rbe::RbeError;
+use rdf::rdf_core::term::Object;
 use serde::Serialize;
 use serde::ser::SerializeMap;
 use shex_ast::ir::preds::Preds;
@@ -10,7 +11,6 @@ use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::shape::Shape;
 use shex_ast::ir::shape_expr::ShapeExpr;
 use shex_ast::{Node, Pred, ShapeExprLabel, ShapeLabelIdx, ir::shape_label::ShapeLabel};
-use srdf::Object;
 use thiserror::Error;
 
 use crate::Reasons;
