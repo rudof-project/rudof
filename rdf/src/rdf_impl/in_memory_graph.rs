@@ -32,7 +32,6 @@ use std::{
     path::Path,
     str::FromStr,
 };
-use tracing::{debug, trace};
 
 /// An RDF graph stored entirely in memory.
 ///
@@ -1074,7 +1073,6 @@ fn handle_parse_error<T, E: std::fmt::Display>(
             if reader_mode.is_strict() {
                 Err(error_constructor(e.to_string()))
             } else {
-                debug!("Error captured in Lax mode: {e}");
                 Ok(None)
             }
         },
@@ -1140,9 +1138,6 @@ impl QueryRDF for InMemoryGraph {
     where
         Self: Sized,
     {
-        if self.store.is_some() {
-            debug!("CONSTRUCT queries not yet implemented for in-memory store");
-        }
         Ok(String::new())
     }
 
@@ -1193,8 +1188,6 @@ impl QueryRDF for InMemoryGraph {
                     error: e.to_string(),
                 }
             })?;
-        } else {
-            trace!("No in-memory store to query");
         }
 
         Ok(sols)
