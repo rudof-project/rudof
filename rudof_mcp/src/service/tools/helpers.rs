@@ -1,6 +1,6 @@
 use iri_s::IriS;
+use rdf::rdf_impl::ReaderMode;
 use rmcp::{model::CallToolResult, model::Content};
-use srdf::ReaderMode;
 use std::str::FromStr;
 
 /// Result type for parsing operations that may produce tool execution errors.

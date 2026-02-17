@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 
 use iri_s::IriS;
+use rdf::rdf_core::Rdf;
 use shacl_ast::{Schema, ShaclError, node_shape::NodeShape, property_shape::PropertyShape, shape::Shape};
-use srdf::Rdf;
 
 #[derive(Debug, Clone, Default)]
 pub enum ClosedInfo {

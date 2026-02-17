@@ -4,6 +4,7 @@ use crate::atom;
 use crate::engine::Engine;
 use crate::validator_error::*;
 use prefixmap::PrefixMap;
+use rdf::rdf_core::{NeighsRDF, query::QueryRDF};
 use serde_json::Value;
 use shex_ast::Node;
 use shex_ast::ShapeExprLabel;
@@ -13,8 +14,6 @@ use shex_ast::ir::shape_label::ShapeLabel;
 use shex_ast::shapemap::ResultShapeMap;
 use shex_ast::shapemap::ValidationStatus;
 use shex_ast::shapemap::query_shape_map::QueryShapeMap;
-use srdf::NeighsRDF;
-use srdf::QueryRDF;
 use tracing::trace;
 
 type Result<T> = std::result::Result<T, ValidatorError>;

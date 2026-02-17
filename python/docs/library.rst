@@ -40,7 +40,7 @@ RDF Formats
 
    * ``RDFFormat.Turtle`` - Terse RDF Triple Language (.ttl)
    * ``RDFFormat.NTriples`` - Line-based RDF format (.nt)
-   * ``RDFFormat.RDFXML`` - XML-based RDF syntax (.rdf, .owl)
+   * ``RDFFormat.Rdfxml`` - XML-based RDF syntax (.rdf, .owl)
    * ``RDFFormat.TriG`` - Turtle with named graphs (.trig)
    * ``RDFFormat.N3`` - Notation3 (.n3)
    * ``RDFFormat.NQuads`` - N-Triples with named graphs (.nq)
@@ -70,7 +70,7 @@ SHACL Formats
 
    * ``ShaclFormat.Turtle`` - Turtle format (.ttl)
    * ``ShaclFormat.NTriples`` - N-Triples format (.nt)
-   * ``ShaclFormat.RDFXML`` - RDF/XML format (.rdf)
+   * ``ShaclFormat.Rdfxml`` - RDF/XML format (.rdf)
    * ``ShaclFormat.TriG`` - TriG format (.trig)
    * ``ShaclFormat.N3`` - Notation3 format (.n3)
    * ``ShaclFormat.NQuads`` - N-Quads format (.nq)
@@ -107,7 +107,7 @@ Other Formats
 
    * ``QueryResultFormat.Turtle`` - Turtle format (.ttl)
    * ``QueryResultFormat.NTriples`` - N-Triples format (.nt)
-   * ``QueryResultFormat.RDFXML`` - RDF/XML format (.rdf)
+   * ``QueryResultFormat.Rdfxml`` - RDF/XML format (.rdf)
    * ``QueryResultFormat.TriG`` - TriG format (.trig)
    * ``QueryResultFormat.N3`` - Notation3 format (.n3)
    * ``QueryResultFormat.NQuads`` - N-Quads format (.nq)

@@ -9,16 +9,18 @@ use crate::shacl_vocab::{
 use crate::{component::Component, message_map::MessageMap, severity::Severity, target::Target};
 use crate::{sh_debug, sh_trace};
 use iri_s::IriS;
-use srdf::Rdf;
-use srdf::{BuildRDF, RDFNode, SHACLPath, numeric_literal::NumericLiteral};
+use rdf::rdf_core::{
+    BuildRDF, Rdf, SHACLPath,
+    term::{Object, literal::NumericLiteral},
+};
 
 #[derive(Debug)]
 pub struct PropertyShape<RDF: Rdf> {
-    id: RDFNode,
+    id: Object,
     path: SHACLPath,
     components: Vec<Component>,
     targets: Vec<Target<RDF>>,
-    property_shapes: Vec<RDFNode>,
+    property_shapes: Vec<Object>,
     reifier_info: Option<ReifierInfo>,
     closed: bool,
     // ignored_properties: Vec<IriRef>,
@@ -28,13 +30,13 @@ pub struct PropertyShape<RDF: Rdf> {
     name: MessageMap,
     description: MessageMap,
     order: Option<NumericLiteral>,
-    group: Option<RDFNode>,
+    group: Option<Object>,
     // source_iri: Option<IriRef>,
     // annotations: Vec<(IriRef, RDFNode)>,
 }
 
 impl<RDF: Rdf> PropertyShape<RDF> {
-    pub fn new(id: RDFNode, path: SHACLPath) -> Self {
+    pub fn new(id: Object, path: SHACLPath) -> Self {
         PropertyShape {
             id,
             path,
@@ -69,7 +71,7 @@ impl<RDF: Rdf> PropertyShape<RDF> {
         self
     }
 
-    pub fn with_group(mut self, group: Option<RDFNode>) -> Self {
+    pub fn with_group(mut self, group: Option<Object>) -> Self {
         self.group = group;
         self
     }
@@ -106,7 +108,7 @@ impl<RDF: Rdf> PropertyShape<RDF> {
         self
     }
 
-    pub fn with_property_shapes(mut self, property_shapes: Vec<RDFNode>) -> Self {
+    pub fn with_property_shapes(mut self, property_shapes: Vec<Object>) -> Self {
         self.property_shapes = property_shapes;
         self
     }
@@ -126,7 +128,7 @@ impl<RDF: Rdf> PropertyShape<RDF> {
         self
     }
 
-    pub fn id(&self) -> &RDFNode {
+    pub fn id(&self) -> &Object {
         &self.id
     }
 
@@ -162,50 +164,9 @@ impl<RDF: Rdf> PropertyShape<RDF> {
         &self.targets
     }
 
-    pub fn property_shapes(&self) -> &Vec<RDFNode> {
+    pub fn property_shapes(&self) -> &Vec<Object> {
         &self.property_shapes
     }
-
-    // pub fn get_value_nodes(
-    //     &self,
-    //     data_graph: &SRDFGraph,
-    //     focus_node: &RDFNode,
-    //     path: &SHACLPath,
-    // ) -> HashSet<RDFNode> {
-    //     match path {
-    //         SHACLPath::Predicate { pred } => {
-    //             let subject = match focus_node {
-    //                 RDFNode::Iri(iri_s) => Subject::NamedNode(iri_s.as_named_node().to_owned()),
-    //                 RDFNode::BlankNode(id) => Subject::BlankNode(BlankNode::new_unchecked(id)),
-    //                 RDFNode::Literal(_) => todo!(),
-    //             };
-    //             if let Ok(objects) =
-    //                 data_graph.objects_for_subject_predicate(&subject, pred.as_named_node())
-    //             {
-    //                 objects
-    //                     .into_iter()
-    //                     .map(|object| match object {
-    //                         Term::NamedNode(node) => {
-    //                             RDFNode::iri(IriS::new_unchecked(node.as_str()))
-    //                         }
-    //                         Term::BlankNode(node) => RDFNode::bnode(node.to_string()),
-    //                         Term::Literal(literal) => RDFNode::literal(literal.into()),
-    //                         #[cfg(feature = "rdf-star")]
-    //                         Term::Triple(_) => unimplemented!(),
-    //                     })
-    //                     .collect::<HashSet<RDFNode>>()
-    //             } else {
-    //                 HashSet::new()
-    //             }
-    //         }
-    //         SHACLPath::Alternative { .. } => todo!(),
-    //         SHACLPath::Sequence { .. } => todo!(),
-    //         SHACLPath::Inverse { .. } => todo!(),
-    //         SHACLPath::ZeroOrMore { .. } => todo!(),
-    //         SHACLPath::OneOrMore { .. } => todo!(),
-    //         SHACLPath::ZeroOrOne { .. } => todo!(),
-    //     }
-    // }
 
     // TODO: this is a bit ugly
     pub fn write<B>(&self, rdf: &mut B) -> Result<(), B::Err>
@@ -235,7 +196,8 @@ impl<RDF: Rdf> PropertyShape<RDF> {
             let literal: B::Literal = match order {
                 NumericLiteral::Decimal(_) => todo!(),
                 NumericLiteral::Double(float) => float.into(),
-                NumericLiteral::Float(float) => float.into(),
+                NumericLiteral::Float(float) => float.to_string().into(),
+                #[allow(clippy::useless_conversion)]
                 NumericLiteral::Integer(int) => {
                     let i: i128 = int.try_into().unwrap();
                     i.into()

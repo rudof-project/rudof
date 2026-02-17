@@ -1,6 +1,6 @@
 use clap::ValueEnum;
+use rdf::rdf_core::RDFFormat;
 use shacl_validation::validation_report::report::SortModeReport;
-use srdf::RDFFormat;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
@@ -45,7 +45,7 @@ pub fn result_format_to_rdf_format(result_format: &ResultShaclValidationFormat) 
     match result_format {
         ResultShaclValidationFormat::Turtle => Ok(RDFFormat::Turtle),
         ResultShaclValidationFormat::NTriples => Ok(RDFFormat::NTriples),
-        ResultShaclValidationFormat::RdfXml => Ok(RDFFormat::RdfXml),
+        ResultShaclValidationFormat::RdfXml => Ok(RDFFormat::Rdfxml),
         ResultShaclValidationFormat::TriG => Ok(RDFFormat::TriG),
         ResultShaclValidationFormat::N3 => Ok(RDFFormat::N3),
         ResultShaclValidationFormat::NQuads => Ok(RDFFormat::NQuads),

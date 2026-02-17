@@ -15,12 +15,10 @@ use compiled_shacl_error::CompiledShaclError;
 use either::Either;
 use iri_s::IriS;
 use prefixmap::IriRef;
+use rdf::rdf_core::{Rdf, term::Object};
 use shacl_ast::Schema;
 use shacl_ast::value::Value;
 use shape::ShapeIR;
-use srdf::Object;
-use srdf::RDFNode;
-use srdf::Rdf;
 use tracing::trace;
 
 use crate::schema_ir::SchemaIR;
@@ -68,14 +66,14 @@ fn compile_shapes<S: Rdf>(
     Ok(compiled_shapes)
 }
 
-fn convert_value(value: Value) -> Result<RDFNode, Box<CompiledShaclError>> {
+fn convert_value(value: Value) -> Result<Object, Box<CompiledShaclError>> {
     let ans = match value {
         Value::Iri(iri_ref) => {
             let iri = convert_iri_ref(iri_ref)?;
 
-            RDFNode::iri(iri)
+            Object::iri(iri)
         },
-        Value::Literal(literal) => RDFNode::literal(literal),
+        Value::Literal(literal) => Object::literal(literal),
     };
     Ok(ans)
 }

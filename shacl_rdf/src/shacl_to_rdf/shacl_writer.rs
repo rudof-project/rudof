@@ -1,7 +1,7 @@
 use iri_s::IriS;
+use rdf::rdf_core::{BuildRDF, RDFFormat};
 use shacl_ast::Schema;
 use shacl_ast::shacl_vocab::sh;
-use srdf::{BuildRDF, RDF, RDFFormat, XSD};
 use std::io::Write;
 use std::str::FromStr;
 
@@ -26,8 +26,11 @@ where
 
     pub fn write(&mut self, schema: &Schema<RDF>) -> Result<(), RDF::Err> {
         let mut prefix_map = schema.prefix_map();
-        let _ = prefix_map.add_prefix("rdf", IriS::from_str(RDF).unwrap());
-        let _ = prefix_map.add_prefix("xsd", IriS::from_str(XSD).unwrap());
+        let _ = prefix_map.add_prefix(
+            "rdf",
+            IriS::from_str("http://www.w3.org/1999/02/22-rdf-syntax-ns#").unwrap(),
+        );
+        let _ = prefix_map.add_prefix("xsd", IriS::from_str("http://www.w3.org/2001/XMLSchema#").unwrap());
         let _ = prefix_map.add_prefix("sh", sh().clone());
 
         self.rdf.add_prefix_map(prefix_map)?;

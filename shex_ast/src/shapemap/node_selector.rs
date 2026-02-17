@@ -5,10 +5,8 @@ use iri_s::IriS;
 use prefixmap::IriRef;
 use prefixmap::PrefixMap;
 use prefixmap::error::PrefixMapError;
+use rdf::rdf_core::{NeighsRDF, query::QueryRDF, term::literal::ConcreteLiteral};
 use serde::Serialize;
-use srdf::NeighsRDF;
-use srdf::QueryRDF;
-use srdf::SLiteral;
 use std::fmt::Display;
 use thiserror::Error;
 use tracing::trace;
@@ -44,7 +42,7 @@ impl NodeSelector {
         NodeSelector::Node(ObjectValue::iri_ref(iri))
     }
 
-    pub fn literal(lit: SLiteral) -> NodeSelector {
+    pub fn literal(lit: ConcreteLiteral) -> NodeSelector {
         NodeSelector::Node(ObjectValue::literal(lit))
     }
 

@@ -1,6 +1,7 @@
+use rdf::rdf_core::{NeighsRDF, RDFFormat};
+use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use rudof_generate::config::OutputFormat;
 use rudof_generate::{DataGenerator, GeneratorConfig};
-use srdf::{NeighsRDF, RDFFormat, ReaderMode, SRDFGraph};
 use std::collections::HashMap;
 use std::io::Write;
 use tempfile::NamedTempFile;
@@ -56,7 +57,7 @@ async fn debug_shex_datatype_generation() {
     println!("{content}");
 
     // Parse and analyze the generated RDF
-    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
 
     let mut datatype_counts = HashMap::new();
@@ -157,7 +158,7 @@ async fn debug_shacl_datatype_generation() {
     println!("{content}");
 
     // Parse and analyze the generated RDF
-    let graph = SRDFGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
 
     let mut datatype_counts = HashMap::new();

@@ -1,7 +1,7 @@
 use crate::{GraphDescription, NamedGraphDescription};
 use itertools::Itertools;
+use rdf::rdf_core::term::IriOrBlankNode;
 use serde::{Deserialize, Serialize};
-use srdf::IriOrBlankNode;
 use std::fmt::Display;
 use std::hash::Hash;
 

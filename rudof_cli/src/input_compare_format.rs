@@ -2,9 +2,9 @@ use crate::dctap_format::DCTapFormat as CliDCTapFormat;
 use anyhow::{Result, bail};
 use clap::ValueEnum;
 use iri_s::MimeType;
+use rdf::rdf_core::RDFFormat;
 use rudof_lib::shacl_format::CliShaclFormat;
 use shex_ast::ShExFormat;
-use srdf::RDFFormat;
 use std::{
     fmt::{Display, Formatter},
     str::FromStr,
@@ -27,7 +27,7 @@ impl InputCompareFormat {
             InputCompareFormat::ShExC => Ok(ShExFormat::ShExC),
             InputCompareFormat::ShExJ => Ok(ShExFormat::ShExJ),
             InputCompareFormat::Turtle => Ok(ShExFormat::RDFFormat(RDFFormat::Turtle)),
-            InputCompareFormat::RdfXml => Ok(ShExFormat::RDFFormat(RDFFormat::RdfXml)),
+            InputCompareFormat::RdfXml => Ok(ShExFormat::RDFFormat(RDFFormat::Rdfxml)),
             InputCompareFormat::NTriples => Ok(ShExFormat::RDFFormat(RDFFormat::NTriples)),
         }
     }

@@ -3,8 +3,8 @@ use crate::{
     shape_label_idx::ShapeLabelIdx,
 };
 use iri_s::IriS;
+use rdf::rdf_core::{Rdf, SHACLPath};
 use shacl_ast::{Schema, property_shape::PropertyShape};
-use srdf::Rdf;
 use std::fmt::Display;
 
 #[derive(Debug, Clone, Default)]
@@ -40,7 +40,7 @@ impl ReifierInfo {
             }
             let path = shape.path();
             let predicate = match path {
-                srdf::SHACLPath::Predicate { pred } => pred.clone(),
+                SHACLPath::Predicate { pred } => pred.clone(),
                 other => {
                     return Err(Box::new(CompiledShaclError::InvalidReifierShapePath {
                         shape_id: Box::new(shape.id().clone()),

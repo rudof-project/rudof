@@ -10,8 +10,8 @@ use colored::*;
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use pretty::{Arena, DocAllocator, DocBuilder, RefDoc};
+use rdf::rdf_core::term::literal::{ConcreteLiteral, Lang, NumericLiteral};
 use rust_decimal::Decimal;
-use srdf::{SLiteral, lang::Lang, numeric_literal::NumericLiteral};
 use std::{borrow::Cow, io, marker::PhantomData};
 use tracing::trace;
 
@@ -490,21 +490,21 @@ where
         }
     }
 
-    fn pp_literal(&self, literal: &SLiteral) -> DocBuilder<'a, Arena<'a, A>, A> {
+    fn pp_literal(&self, literal: &ConcreteLiteral) -> DocBuilder<'a, Arena<'a, A>, A> {
         match literal {
-            SLiteral::String { lexical_form, lang } => self.pp_string_literal(lexical_form, lang),
-            SLiteral::Datatype {
+            ConcreteLiteral::StringLiteral { lexical_form, lang } => self.pp_string_literal(lexical_form, lang),
+            ConcreteLiteral::DatatypeLiteral {
                 lexical_form: _,
                 datatype: _,
             } => todo!(),
-            SLiteral::WrongDatatype {
+            ConcreteLiteral::WrongDatatypeLiteral {
                 lexical_form: _,
                 datatype: _,
                 error: _,
             } => todo!(),
-            SLiteral::Numeric(lit) => self.pp_numeric_literal(lit),
-            SLiteral::Boolean(_) => todo!(),
-            SLiteral::Datetime(_xsd_date_time) => todo!(),
+            ConcreteLiteral::NumericLiteral(lit) => self.pp_numeric_literal(lit),
+            ConcreteLiteral::BooleanLiteral(_) => todo!(),
+            ConcreteLiteral::DatetimeLiteral(_xsd_date_time) => todo!(),
         }
     }
 
@@ -658,11 +658,11 @@ where
 
     fn pp_numeric_literal(&self, value: &NumericLiteral) -> DocBuilder<'a, Arena<'a, A>, A> {
         match value {
-            NumericLiteral::Integer(n) => self.pp_isize(n),
+            NumericLiteral::Integer(n) => self.pp_isize(&(*n as isize)),
             NumericLiteral::Decimal(d) => self.pp_decimal(d),
             NumericLiteral::Double(d) => self.pp_double(d),
-            NumericLiteral::Long(l) => self.pp_isize(l),
-            NumericLiteral::Float(f) => self.pp_float(f),
+            NumericLiteral::Long(l) => self.pp_isize(&(*l as isize)),
+            NumericLiteral::Float(f) => self.pp_float(&(*f as f64)),
             NumericLiteral::Byte(b) => self.pp_byte(b),
             NumericLiteral::Short(s) => self.pp_short(s),
             NumericLiteral::NonNegativeInteger(n) => self.pp_non_negative_integer(n),

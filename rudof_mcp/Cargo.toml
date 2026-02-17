@@ -24,7 +24,11 @@ schemars.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 shex_ast.workspace = true
-srdf.workspace = true
+rdf.workspace = true
+tokio.workspace = true
+tokio-util.workspace = true
+tower = "0.5"
+tower-http = { version = "0.5", features = ["trace", "cors"] }
 tracing.workspace = true
 uuid.workspace = true
 chrono.workspace = true

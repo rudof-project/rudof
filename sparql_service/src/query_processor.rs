@@ -1,5 +1,5 @@
 use prefixmap::PrefixMap;
-use srdf::{NeighsRDF, QuerySolutions};
+use rdf::rdf_core::{NeighsRDF, query::QuerySolutions};
 
 use crate::RdfData;
 

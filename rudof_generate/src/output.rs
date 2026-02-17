@@ -1,7 +1,7 @@
 use crate::config::OutputConfig;
 use crate::{DataGeneratorError, Result};
-use srdf::srdf_graph::SRDFGraph;
-use srdf::{BuildRDF, NeighsRDF, RDFFormat};
+use rdf::rdf_core::{BuildRDF, NeighsRDF, RDFFormat};
+use rdf::rdf_impl::InMemoryGraph;
 use std::fs::File;
 use std::path::PathBuf;
 
@@ -16,14 +16,14 @@ impl OutputWriter {
     }
 
     /// Write the generated graph to the configured output
-    pub async fn write_graph(&self, graph: &SRDFGraph) -> Result<()> {
+    pub async fn write_graph(&self, graph: &InMemoryGraph) -> Result<()> {
         self.write_graph_with_timing(graph, None).await
     }
 
     /// Write the generated graph to the configured output with timing information
     pub async fn write_graph_with_timing(
         &self,
-        graph: &SRDFGraph,
+        graph: &InMemoryGraph,
         generation_time: Option<std::time::Duration>,
     ) -> Result<()> {
         if self.config.parallel_writing {
@@ -36,7 +36,7 @@ impl OutputWriter {
     /// Write the graph using sequential (traditional) method
     async fn write_graph_sequential(
         &self,
-        graph: &SRDFGraph,
+        graph: &InMemoryGraph,
         generation_time: Option<std::time::Duration>,
     ) -> Result<()> {
         let format = self.get_rdf_format();
@@ -70,7 +70,7 @@ impl OutputWriter {
     /// Write the graph using parallel method - splits data across multiple files
     async fn write_graph_parallel(
         &self,
-        graph: &SRDFGraph,
+        graph: &InMemoryGraph,
         generation_time: Option<std::time::Duration>,
     ) -> Result<()> {
         let start_time = std::time::Instant::now();
@@ -153,7 +153,7 @@ impl OutputWriter {
     /// Write a chunk of triples to a file
     async fn write_triple_chunk(triples: Vec<oxrdf::Triple>, format: RDFFormat, output_path: PathBuf) -> Result<()> {
         // Create a temporary graph for this chunk
-        let mut chunk_graph = SRDFGraph::default();
+        let mut chunk_graph = InMemoryGraph::default();
 
         for triple in triples {
             chunk_graph
@@ -220,7 +220,11 @@ impl OutputWriter {
     }
 
     /// Write generation statistics
-    async fn write_statistics(&self, graph: &SRDFGraph, generation_time: Option<std::time::Duration>) -> Result<()> {
+    async fn write_statistics(
+        &self,
+        graph: &InMemoryGraph,
+        generation_time: Option<std::time::Duration>,
+    ) -> Result<()> {
         let stats_path = self.config.path.with_extension("stats.json");
         let mut stats = GenerationStatistics::from_graph(graph);
 
@@ -264,7 +268,7 @@ pub struct GenerationStatistics {
 }
 
 impl GenerationStatistics {
-    pub fn from_graph(graph: &SRDFGraph) -> Self {
+    pub fn from_graph(graph: &InMemoryGraph) -> Self {
         use std::collections::HashSet;
 
         let total_triples = graph.len();

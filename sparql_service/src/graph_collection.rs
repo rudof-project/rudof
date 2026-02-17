@@ -1,6 +1,6 @@
 use crate::NamedGraphDescription;
+use rdf::rdf_core::term::IriOrBlankNode;
 use serde::{Deserialize, Serialize};
-use srdf::IriOrBlankNode;
 use std::{collections::HashSet, fmt::Display, hash::Hash};
 
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]

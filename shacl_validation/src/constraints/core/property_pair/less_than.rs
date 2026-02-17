@@ -4,16 +4,15 @@ use crate::constraints::constraint_error::ConstraintError;
 use crate::shacl_engine::Engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
+use rdf::rdf_core::{
+    NeighsRDF, Rdf, SHACLPath,
+    query::QueryRDF,
+    term::{Object, Triple},
+};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::LessThan;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use srdf::NeighsRDF;
-use srdf::Object;
-use srdf::QueryRDF;
-use srdf::Rdf;
-use srdf::SHACLPath;
-use srdf::Triple;
 use std::fmt::Debug;
 
 impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for LessThan {
@@ -33,7 +32,8 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for LessThan {
 
         for (focus_node, nodes) in value_nodes.iter() {
             let subject: R::Subject = <R as Rdf>::term_as_subject(focus_node).unwrap();
-            match store.triples_with_subject_predicate(subject.clone(), self.iri().clone().into()) {
+            let iri_owned: R::IRI = self.iri().clone().into();
+            match store.triples_with_subject_predicate(&subject, &iri_owned) {
                 Ok(triples_iter) => {
                     // Collect nodes to compare
                     for triple in triples_iter {

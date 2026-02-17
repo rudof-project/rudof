@@ -2,12 +2,12 @@ use std::io::Cursor;
 
 use anyhow::*;
 use prefixmap::PrefixMap;
+use rdf::rdf_core::RDFFormat;
 use shacl_ir::schema_ir::SchemaIR;
 use shacl_validation::shacl_processor::EndpointValidation;
 use shacl_validation::shacl_processor::ShaclProcessor as _;
 use shacl_validation::shacl_processor::ShaclValidationMode;
 use shacl_validation::store::ShaclDataManager;
-use srdf::RDFFormat;
 
 fn main() -> Result<()> {
     let shacl = r#"

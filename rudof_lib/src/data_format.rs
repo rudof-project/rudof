@@ -1,6 +1,6 @@
 use clap::ValueEnum;
 use iri_s::MimeType;
-use srdf::RDFFormat;
+use rdf::rdf_core::RDFFormat;
 use std::fmt::{Display, Formatter};
 use thiserror::Error;
 
@@ -28,7 +28,7 @@ impl TryFrom<DataFormat> for RDFFormat {
         match value {
             DataFormat::Turtle => Ok(RDFFormat::Turtle),
             DataFormat::NTriples => Ok(RDFFormat::NTriples),
-            DataFormat::RdfXml => Ok(RDFFormat::RdfXml),
+            DataFormat::RdfXml => Ok(RDFFormat::Rdfxml),
             DataFormat::TriG => Ok(RDFFormat::TriG),
             DataFormat::N3 => Ok(RDFFormat::N3),
             DataFormat::NQuads => Ok(RDFFormat::NQuads),
@@ -52,7 +52,7 @@ impl From<RDFFormat> for DataFormat {
         match val {
             RDFFormat::Turtle => DataFormat::Turtle,
             RDFFormat::NTriples => DataFormat::NTriples,
-            RDFFormat::RdfXml => DataFormat::RdfXml,
+            RDFFormat::Rdfxml => DataFormat::RdfXml,
             RDFFormat::TriG => DataFormat::TriG,
             RDFFormat::N3 => DataFormat::N3,
             RDFFormat::NQuads => DataFormat::NQuads,

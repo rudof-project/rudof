@@ -24,6 +24,6 @@ prefixmap.workspace = true
 regex.workspace = true
 shacl_ast.workspace = true
 shacl_rdf.workspace = true
-srdf.workspace = true
+rdf.workspace = true
 thiserror.workspace = true
 tracing.workspace = true

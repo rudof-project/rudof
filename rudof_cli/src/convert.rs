@@ -6,13 +6,13 @@ use crate::{
 use anyhow::{Result, anyhow, bail};
 use iri_s::IriS;
 use prefixmap::IriRef;
+use rdf::rdf_core::visualizer::uml_converter::{ImageFormat, UmlConverter};
+use rdf::rdf_impl::ReaderMode;
 use rudof_lib::{
     InputSpec, Rudof, RudofConfig, ShExFormatter, ShapeMapParser, UmlGenerationMode, shacl::add_shacl_schema_rudof,
     shacl_format::CliShaclFormat,
 };
 use shapes_converter::{ShEx2Html, ShEx2Sparql, ShEx2Uml, Shacl2ShEx, Tap2ShEx};
-use srdf::UmlConverter;
-use srdf::{ImageFormat, ReaderMode};
 use std::{
     io::Write,
     path::{Path, PathBuf},
@@ -230,11 +230,11 @@ fn generate_uml_output<P: AsRef<Path>>(
             Ok(())
         },
         OutputConvertFormat::Svg => {
-            uml_converter.as_image(writer, ImageFormat::Svg, &mode, plantuml_path)?;
+            uml_converter.as_image(writer, ImageFormat::SVG, &mode, plantuml_path)?;
             Ok(())
         },
         OutputConvertFormat::Png => {
-            uml_converter.as_image(writer, ImageFormat::Png, &mode, plantuml_path)?;
+            uml_converter.as_image(writer, ImageFormat::PNG, &mode, plantuml_path)?;
             Ok(())
         },
         OutputConvertFormat::Default => {

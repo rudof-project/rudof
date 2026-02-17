@@ -3,9 +3,8 @@ use minijinja::Template;
 use minijinja::{Environment, path_loader};
 use prefixmap::error::PrefixMapError;
 use prefixmap::{IriRef, PrefixMap};
+use rdf::rdf_core::visualizer::uml_converter::{ImageFormat, UmlConverter, UmlGenerationMode};
 use shex_ast::{Annotation, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
-use srdf::UmlConverter;
-use srdf::UmlGenerationMode;
 use std::ffi::OsStr;
 use std::fs::OpenOptions;
 use std::io::{BufWriter, Write};
@@ -33,6 +32,7 @@ impl ShEx2Html {
         &self.current_html
     }
 
+    #[allow(clippy::result_large_err)]
     pub fn convert(&mut self, shex: &Schema) -> Result<(), ShEx2HtmlError> {
         let prefixmap = shex.prefixmap().unwrap_or_default().without_rich_qualifying();
         let parent = self.create_name_for_schema(shex);
@@ -67,11 +67,12 @@ impl ShEx2Html {
         Ok(())
     }
 
+    #[allow(clippy::result_large_err)]
     pub fn create_svg_schema(&self) -> Result<String, ShEx2HtmlError> {
         let mut str_writer = BufWriter::new(Vec::new());
         self.current_uml_converter.as_image(
             str_writer.by_ref(),
-            srdf::ImageFormat::Svg,
+            ImageFormat::SVG,
             &UmlGenerationMode::all(),
             self.config.shex2uml_config().plantuml_path(),
         )?;
@@ -79,11 +80,12 @@ impl ShEx2Html {
         Ok(str)
     }
 
+    #[allow(clippy::result_large_err)]
     pub fn create_svg_shape(&self, name: &str) -> Result<String, ShEx2HtmlError> {
         let mut str_writer = BufWriter::new(Vec::new());
         self.current_uml_converter.as_image(
             str_writer.by_ref(),
-            srdf::ImageFormat::Svg,
+            ImageFormat::SVG,
             &UmlGenerationMode::neighs(name),
             self.config.shex2uml_config().plantuml_path(),
         )?;
@@ -101,6 +103,7 @@ impl ShEx2Html {
         Name::new(&str, None, self.config.landing_page())
     }
 
+    #[allow(clippy::result_large_err)]
     pub fn export_schema<P: AsRef<Path>>(&self, path: P) -> Result<(), ShEx2HtmlError> {
         let environment = create_env(path);
         let landing_page = self.config.landing_page();
@@ -127,6 +130,7 @@ impl ShEx2Html {
         Ok(())
     }
 
+    #[allow(clippy::result_large_err)]
     fn shape_label2name(&mut self, label: &ShapeExprLabel, prefixmap: &PrefixMap) -> Result<Name, ShEx2HtmlError> {
         match label {
             ShapeExprLabel::IriRef { value } => iri_ref2name(value, &self.config, &None, prefixmap),
@@ -135,6 +139,7 @@ impl ShEx2Html {
         }
     }
 
+    #[allow(clippy::result_large_err)]
     fn shape_expr2htmlshape(
         &mut self,
         name: &mut Name,
@@ -153,6 +158,7 @@ impl ShEx2Html {
         }
     }
 
+    #[allow(clippy::result_large_err)]
     fn shape2htmlshape(
         &mut self,
         name: &mut Name,
@@ -271,6 +277,7 @@ impl ShEx2Html {
         }
     }
 
+    #[allow(clippy::result_large_err)]
     fn value_expr2value_constraint(
         &mut self,
         value_expr: &ShapeExpr,
@@ -323,6 +330,7 @@ impl ShEx2Html {
     }
 }
 
+#[allow(clippy::result_large_err)]
 fn iri_ref2name(
     iri_ref: &IriRef,
     config: &ShEx2HtmlConfig,
@@ -356,6 +364,7 @@ pub fn create_env<P: AsRef<Path>>(path: P) -> Environment<'static> {
     env
 }
 
+#[allow(clippy::result_large_err)]
 fn mk_card(min: &Option<i32>, max: &Option<i32>) -> Result<Cardinality, ShEx2HtmlError> {
     let min = if let Some(n) = min { *n } else { 1 };
     let max = if let Some(n) = max { *n } else { 1 };
@@ -370,6 +379,7 @@ fn mk_card(min: &Option<i32>, max: &Option<i32>) -> Result<Cardinality, ShEx2Htm
     }
 }
 
+#[allow(clippy::result_large_err)]
 fn generate_shape_page(
     shape: &HtmlShape,
     template: &Template,
@@ -395,6 +405,7 @@ fn generate_shape_page(
     }
 }
 
+#[allow(clippy::result_large_err)]
 fn mk_name(
     iri: &IriRef,
     annotations: &Option<Vec<Annotation>>,
@@ -419,7 +430,8 @@ fn get_label(
     Ok(None)
 }
 
-pub fn create_svg_shape<P: AsRef<Path>>(
+#[allow(clippy::result_large_err)]
+fn create_svg_shape<P: AsRef<Path>>(
     converter: &ShEx2Uml,
     name: &str,
     plantuml_path: P,
@@ -427,7 +439,7 @@ pub fn create_svg_shape<P: AsRef<Path>>(
     let mut str_writer = BufWriter::new(Vec::new());
     converter.as_image(
         str_writer.by_ref(),
-        srdf::ImageFormat::Svg,
+        ImageFormat::SVG,
         &UmlGenerationMode::neighs(name),
         plantuml_path.as_ref(),
     )?;

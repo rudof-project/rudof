@@ -9,13 +9,11 @@ use crate::shacl_engine::Engine;
 use crate::shacl_engine::sparql::SparqlEngine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
+use rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::HasValue;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use srdf::NeighsRDF;
-use srdf::QueryRDF;
-use srdf::SHACLPath;
 use std::fmt::Debug;
 
 impl<S: NeighsRDF + Debug> Validator<S> for HasValue {

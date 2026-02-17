@@ -6,7 +6,10 @@ use oxigraph::{
 };
 use thiserror::Error;
 
-use srdf::{RDFFormat, SRDFGraphError, SRDFSparqlError};
+use rdf::{
+    rdf_core::RDFFormat,
+    rdf_impl::{InMemoryGraphError, SparqlEndpointError},
+};
 
 #[derive(Debug, Error)]
 pub enum RdfDataError {
@@ -23,7 +26,7 @@ pub enum RdfDataError {
     #[error(transparent)]
     SRDFSparqlError {
         #[from]
-        err: SRDFSparqlError,
+        err: SparqlEndpointError,
     },
 
     #[error("Failed to create SPARQL endpoint {name} with {url}: {err}")]
@@ -31,11 +34,11 @@ pub enum RdfDataError {
         name: String,
         url: String,
         #[source]
-        err: Box<SRDFSparqlError>,
+        err: Box<SparqlEndpointError>,
     },
 
     #[error("RDF graph error: {err}")]
-    SRDFGraphError { err: Box<SRDFGraphError> },
+    SRDFGraphError { err: Box<InMemoryGraphError> },
 
     #[error(transparent)]
     IOError {
