@@ -3,8 +3,8 @@ use crate::{
     shape_label_idx::ShapeLabelIdx,
 };
 use iri_s::IriS;
-use shacl_ast::{ShaclSchema, property_shape::PropertyShape};
 use rdf::rdf_core::{Rdf, SHACLPath};
+use shacl_ast::{ShaclSchema, property_shape::PropertyShape};
 use std::fmt::Display;
 
 #[derive(Debug, Clone, Default)]

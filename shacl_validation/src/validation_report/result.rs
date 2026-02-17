@@ -1,6 +1,6 @@
 use super::validation_report_error::{ReportError, ResultError};
-use shacl_ast::ShaclVocab;
 use rdf::rdf_core::{BuildRDF, FocusRDF, NeighsRDF, SHACLPath, term::Object};
+use shacl_ast::ShaclVocab;
 use shacl_ir::severity::CompiledSeverity;
 use std::fmt::{Debug, Display};
 

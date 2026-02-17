@@ -197,10 +197,12 @@ impl Component {
                 // TODO: Review this code
                 values.iter().try_for_each(|value| match value {
                     Value::Iri(iri) => Self::write_iri(iri, ShaclVocab::SH_IN, rdf_node, rdf),
-                    Value::Literal(literal) => {
-                        Self::write_literal(&ConcreteLiteral::str(&literal.to_string()), ShaclVocab::SH_IN, rdf_node, rdf)
-                        Self::write_literal(&ConcreteLiteral::str(&literal.to_string()), SH_IN_STR, rdf_node, rdf)
-                    },
+                    Value::Literal(literal) => Self::write_literal(
+                        &ConcreteLiteral::str(&literal.to_string()),
+                        ShaclVocab::SH_IN,
+                        rdf_node,
+                        rdf,
+                    ),
                 })?;
             },
             Self::Deactivated(value) => {

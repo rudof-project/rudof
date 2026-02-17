@@ -1,9 +1,9 @@
 use crate::shape::Shape;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
+use rdf::rdf_core::{Rdf, term::Object};
 use std::collections::hash_map::IntoIter;
 use std::{collections::HashMap, fmt::Display};
-use rdf::rdf_core::{Rdf, term::Object};
 
 #[derive(Debug, Clone, Default)]
 pub struct ShaclSchema<RDF>

@@ -453,21 +453,23 @@ fn node_shape<RDF>() -> impl RDFNodeParse<RDF, Output = NodeShape<RDF>>
 where
     RDF: FocusRDF,
 {
-    NonEmptyValuesPropertyParser::new(ShaclVocab::sh_path().clone()).not().with(
-        ObjectParser::new()
-            .then(move |t: Object| SuccessParser::new(NodeShape::new(t)))
-            .then(|ns| {
-                severity()
-                    .optional()
-                    .flat_map(move |sev| Ok(ns.clone().with_severity(sev)))
-            })
-            .then(|ns| targets().flat_map(move |ts| Ok(ns.clone().with_targets(ts))))
-            .then(|ns| {
-                property_shapes()
-                    .flat_map(move |ps| Ok(ns.clone().with_property_shapes(ps)))
-                    .then(|ns_with_ps| components().flat_map(move |cs| Ok(ns_with_ps.clone().with_components(cs))))
-            }),
-    )
+    NonEmptyValuesPropertyParser::new(ShaclVocab::sh_path().clone())
+        .not()
+        .with(
+            ObjectParser::new()
+                .then(move |t: Object| SuccessParser::new(NodeShape::new(t)))
+                .then(|ns| {
+                    severity()
+                        .optional()
+                        .flat_map(move |sev| Ok(ns.clone().with_severity(sev)))
+                })
+                .then(|ns| targets().flat_map(move |ts| Ok(ns.clone().with_targets(ts))))
+                .then(|ns| {
+                    property_shapes()
+                        .flat_map(move |ps| Ok(ns.clone().with_property_shapes(ps)))
+                        .then(|ns_with_ps| components().flat_map(move |cs| Ok(ns_with_ps.clone().with_components(cs))))
+                }),
+        )
 }
 
 fn severity<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Severity> {
@@ -729,28 +731,32 @@ fn min_count<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    IntegersPropertyParser::new(ShaclVocab::sh_min_count().clone()).map(|ns| ns.iter().map(|n| Component::MinCount(*n)).collect())
+    IntegersPropertyParser::new(ShaclVocab::sh_min_count().clone())
+        .map(|ns| ns.iter().map(|n| Component::MinCount(*n)).collect())
 }
 
 fn max_count<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    IntegersPropertyParser::new(ShaclVocab::sh_max_count().clone()).map(|ns| ns.iter().map(|n| Component::MaxCount(*n)).collect())
+    IntegersPropertyParser::new(ShaclVocab::sh_max_count().clone())
+        .map(|ns| ns.iter().map(|n| Component::MaxCount(*n)).collect())
 }
 
 fn min_length<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    IntegersPropertyParser::new(ShaclVocab::sh_min_length().clone()).map(|ns| ns.iter().map(|n| Component::MinLength(*n)).collect())
+    IntegersPropertyParser::new(ShaclVocab::sh_min_length().clone())
+        .map(|ns| ns.iter().map(|n| Component::MinLength(*n)).collect())
 }
 
 fn deactivated<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    BoolsPropertyParser::new(ShaclVocab::sh_deactivated().clone()).map(|ns| ns.iter().map(|n| Component::Deactivated(*n)).collect())
+    BoolsPropertyParser::new(ShaclVocab::sh_deactivated().clone())
+        .map(|ns| ns.iter().map(|n| Component::Deactivated(*n)).collect())
 }
 
 fn reifier_shape<RDF>() -> impl RDFNodeParse<RDF, Output = Option<ReifierInfo>>
@@ -897,7 +903,8 @@ fn max_length<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    IntegersPropertyParser::new(ShaclVocab::sh_max_length().clone()).map(|ns| ns.iter().map(|n| Component::MaxLength(*n)).collect())
+    IntegersPropertyParser::new(ShaclVocab::sh_max_length().clone())
+        .map(|ns| ns.iter().map(|n| Component::MaxLength(*n)).collect())
 }
 
 fn datatype<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
@@ -915,7 +922,8 @@ fn class<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    ObjectsPropertyParser::new(ShaclVocab::sh_class().clone()).map(|ns| ns.iter().map(|n| Component::Class(n.clone())).collect())
+    ObjectsPropertyParser::new(ShaclVocab::sh_class().clone())
+        .map(|ns| ns.iter().map(|n| Component::Class(n.clone())).collect())
 }
 
 fn node_kind<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
@@ -1182,55 +1190,10 @@ fn unique_lang<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
 {
-    BoolsPropertyParser::new(ShaclVocab::sh_unique_lang().clone()).map(|ns| ns.iter().map(|n| Component::UniqueLang(*n)).collect())
+    BoolsPropertyParser::new(ShaclVocab::sh_unique_lang().clone())
+        .map(|ns| ns.iter().map(|n| Component::UniqueLang(*n)).collect())
 }
 
 fn into_iri<RDF: Rdf>(iri: &IriS) -> RDF::IRI {
     iri.clone().into()
-}
-
-// TODO - MERGE - Replace in test file
-#[cfg(test)]
-mod tests {
-    use super::ShaclParser;
-    use iri_s::IriS;
-    use rdf::rdf_core::{
-        RDFFormat,
-        term::{Object, literal::Lang},
-    };
-    use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
-    use shacl_ast::shape::Shape;
-
-    #[test]
-    fn test_language_in() {
-        let shape = r#"
-            @prefix :    <http://example.org/> .
-            @prefix sh:  <http://www.w3.org/ns/shacl#> .
-            @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-
-            :TestShape a sh:NodeShape ;
-                sh:targetNode "Hello"@en ;
-                sh:languageIn ( "en" "fr" ) .
-        "#;
-
-        let rdf_format = RDFFormat::Turtle;
-        let reader_mode = ReaderMode::default();
-        let shape_id: Object = IriS::new_unchecked("http://example.org/TestShape").into();
-
-        let graph = InMemoryGraph::from_str(shape, &rdf_format, None, &reader_mode).unwrap();
-        let schema = ShaclParser::new(graph).parse().unwrap();
-        let shape = match schema.get_shape(&shape_id).unwrap() {
-            Shape::NodeShape(ns) => ns,
-            _ => panic!("Shape is not a NodeShape"),
-        };
-
-        match shape.components().first().unwrap() {
-            crate::rdf_to_shacl::shacl_parser::Component::LanguageIn { langs } => {
-                assert_eq!(langs.len(), 2);
-                assert_eq!(langs[0], Lang::new("en").unwrap());
-                assert_eq!(langs[1], Lang::new("fr").unwrap());
-            },
-            _ => panic!("Shape has not a LanguageIn component"),
-        }
-    }
 }

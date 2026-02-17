@@ -1,7 +1,7 @@
 use crate::error::ShaclWriterError;
 use iri_s::IriS;
+use rdf::rdf_core::{BuildRDF, RDFFormat};
 use shacl_ast::{ShaclSchema, ShaclVocab};
-use srdf::{BuildRDF, RDF, RDFFormat, XSD};
 use std::io::Write;
 use std::str::FromStr;
 
@@ -20,8 +20,8 @@ impl<RDF: BuildRDF> ShaclWriter<RDF> {
 
     pub fn write(&mut self, schema: &ShaclSchema<RDF>) -> Result<(), ShaclWriterError> {
         let mut prefix_map = schema.prefix_map();
-        prefix_map.add_prefix("rdf", IriS::from_str(RDF)?)?;
-        prefix_map.add_prefix("xsd", IriS::from_str(XSD)?)?;
+        prefix_map.add_prefix("rdf", IriS::from_str("http://www.w3.org/1999/02/22-rdf-syntax-ns#")?)?;
+        prefix_map.add_prefix("xsd", IriS::from_str("http://www.w3.org/2001/XMLSchema#")?)?;
         prefix_map.add_prefix("sh", ShaclVocab::sh().clone())?;
 
         self.rdf

@@ -1,5 +1,5 @@
-use shacl_ast::ShaclSchema;
 use rdf::rdf_core::Rdf;
+use shacl_ast::ShaclSchema;
 use shacl_validation::validation_report::report::ValidationReport;
 
 pub struct ShaclTest<R: Rdf> {

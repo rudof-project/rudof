@@ -1,12 +1,12 @@
 use iri_s::IriS;
+use rdf::rdf_core::{
+    RDFFormat,
+    term::{Object, literal::Lang},
+};
+use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use shacl_ast::component::Component;
 use shacl_ast::shape::Shape;
 use shacl_rdf::ShaclParser;
-use srdf::Object;
-use srdf::RDFFormat;
-use srdf::ReaderMode;
-use srdf::SRDFGraph;
-use srdf::lang::Lang;
 
 #[cfg(test)]
 mod parser_tests {
@@ -28,7 +28,7 @@ mod parser_tests {
         let reader_mode = ReaderMode::default();
         let shape_id: Object = IriS::new_unchecked("http://example.org/TestShape").into();
 
-        let graph = SRDFGraph::from_str(shape, &rdf_format, None, &reader_mode).unwrap();
+        let graph = InMemoryGraph::from_str(shape, &rdf_format, None, &reader_mode).unwrap();
         let schema = ShaclParser::new(graph).parse().unwrap();
         let shape = match schema.get_shape(&shape_id).unwrap() {
             Shape::NodeShape(ns) => ns,

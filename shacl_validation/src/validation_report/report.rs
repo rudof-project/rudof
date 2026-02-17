@@ -3,11 +3,11 @@ use super::validation_report_error::ReportError;
 use colored::*;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use shacl_ast::ShaclVocab;
 use rdf::rdf_core::{
     BuildRDF, FocusRDF, Rdf, SHACLPath,
     term::{IriOrBlankNode, Object},
 };
+use shacl_ast::ShaclVocab;
 use shacl_ir::severity::CompiledSeverity;
 use std::{
     fmt::{Debug, Display},
