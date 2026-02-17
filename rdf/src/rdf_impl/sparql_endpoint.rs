@@ -239,7 +239,6 @@ impl SparqlEndpoint {
     /// }
     /// ```
     pub async fn query_select_async(&self, query: &str) -> Result<QuerySolutions<Self>> {
-        tracing::trace!("srdf_sparql: SPARQL SELECT query: {}", query);
         let solutions = make_sparql_query_select_async(query, &self.client, &self.endpoint_iri).await?;
 
         // Pre-allocate with known capacity for better performance
@@ -771,7 +770,6 @@ async fn make_sparql_query_select_async(
 ) -> Result<Vec<OxQuerySolution>> {
     // Build URL with query parameter
     let url = Url::parse_with_params(endpoint_iri.as_str(), &[("query", query_str)])?;
-    tracing::debug!("Making SPARQL query: {}", url);
 
     // Execute request and get response body
     let body = client.get(url).send().await?.text().await?;
@@ -797,21 +795,11 @@ async fn make_sparql_query_construct_async(
     _format: &QueryResultFormat,
 ) -> Result<String> {
     let url = Url::parse_with_params(endpoint_iri.as_str(), &[("query", query)])?;
-    tracing::debug!("Making SPARQL CONSTRUCT query: {}", url);
 
     let response = client.get(url).send().await?;
-    tracing::debug!("status: {}", response.status());
-
-    // Log the Content-Type for debugging
-    if let Some(ct) = response.headers().get("Content-Type") {
-        match ct.to_str() {
-            Ok(s) => tracing::debug!("Content-Type: {}", s),
-            Err(e) => tracing::debug!("Content-Type: <invalid>: {}", e),
-        }
-    }
 
     let body = response.text().await?;
-    tracing::debug!("body length: {}", body.len());
+
     Ok(body)
 }
 
