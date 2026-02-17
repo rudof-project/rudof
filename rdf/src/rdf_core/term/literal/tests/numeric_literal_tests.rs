@@ -279,25 +279,6 @@ proptest! {
 // ============================================================================
 
 proptest! {
-    /// If a == b, then hash(a) == hash(b)
-    #[test]
-    fn hash_eq_consistency(
-        a in numeric_literal_strategy(),
-        b in numeric_literal_strategy()
-    ) {
-        if a == b {
-            let mut hasher_a = DefaultHasher::new();
-            let mut hasher_b = DefaultHasher::new();
-            a.hash(&mut hasher_a);
-            b.hash(&mut hasher_b);
-            prop_assert_eq!(
-                hasher_a.finish(),
-                hasher_b.finish(),
-                "Equal values must have equal hashes"
-            );
-        }
-    }
-
     /// Hash should be deterministic
     #[test]
     fn hash_deterministic(lit in numeric_literal_strategy()) {

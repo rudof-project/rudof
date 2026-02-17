@@ -172,7 +172,7 @@ impl SparqlEndpoint {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use rdf::rdf_impl::SparqlEndpoint;
     /// use prefixmap::PrefixMap;
     ///
@@ -222,7 +222,7 @@ impl SparqlEndpoint {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use rdf::rdf_impl::SparqlEndpoint;
     ///
     /// #[tokio::main]
@@ -272,7 +272,7 @@ impl SparqlEndpoint {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use rdf::rdf_impl::SparqlEndpoint;
     /// use rdf::rdf_core::query::QueryResultFormat;
     ///
@@ -334,7 +334,7 @@ impl SparqlEndpoint {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use rdf::rdf_impl::SparqlEndpoint;
     ///
     /// #[tokio::main]
@@ -539,24 +539,24 @@ impl NeighsRDF for SparqlEndpoint {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use rdf::rdf_impl::SparqlEndpoint;
     /// use rdf::rdf_core::{Any, NeighsRDF};
     /// use oxrdf::NamedNode;
     ///
-    // /// fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // ///     let endpoint = SparqlEndpoint::wikidata()?;
-    // ///
-    // ///     let predicate = NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")?;
-    // ///     let mut triples = endpoint.triples_matching(&Any, &predicate, &Any)?;
-    // ///
-    // ///     // Take the first triple, if any
-    // ///     let first = triples.next();
-    // ///
-    // ///     assert!(first.is_some(), "Expected at least one triple from the endpoint");
-    // ///
-    // ///     Ok(())
-    // /// }
+    /// fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let endpoint = SparqlEndpoint::wikidata()?;
+    ///
+    ///     let predicate = NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")?;
+    ///     let mut triples = endpoint.triples_matching(&Any, &predicate, &Any)?;
+    ///
+    ///     // Take the first triple, if any
+    ///     let first = triples.next();
+    ///
+    ///     assert!(first.is_some(), "Expected at least one triple from the endpoint");
+    ///
+    ///     Ok(())
+    /// }
     /// ```
     fn triples_matching<S, P, O>(
         &self,
