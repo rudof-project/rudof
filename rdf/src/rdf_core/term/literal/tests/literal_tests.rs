@@ -107,14 +107,6 @@ fn concrete_literal_strategy() -> impl Strategy<Value = ConcreteLiteral> {
 // ============================================================================
 
 proptest! {
-    /// lexical_form should never be empty for any literal
-    #[test]
-    fn lexical_form_non_empty(lit in concrete_literal_strategy()) {
-        let lexical = lit.lexical_form();
-        // Note: Empty strings are valid lexical forms for string literals
-        prop_assert!(lexical.is_empty() || lexical.is_empty());
-    }
-
     /// datatype should always return a valid IRI
     #[test]
     fn datatype_is_valid(lit in concrete_literal_strategy()) {
@@ -521,7 +513,7 @@ proptest! {
         prop_assert!(checked.is_ok());
     }
 
-    /// into_checked_literal on numeric literals should succeed
+    /// as_checked_literal on numeric literals should succeed
     #[test]
     fn checked_literal_numeric(n in any::<i64>()) {
         let lit = ConcreteLiteral::integer(n as i128);
