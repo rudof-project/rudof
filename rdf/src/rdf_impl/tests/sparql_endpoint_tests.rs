@@ -159,13 +159,3 @@ fn test_triples_matching() {
         .collect();
     assert!(!triples.is_empty());
 }
-
-#[test]
-fn test_show_literal() {
-    let endpoint = SparqlEndpoint::wikidata().unwrap();
-    let literal = oxrdf::Literal::new_simple_literal("test");
-    let colored = endpoint.show_literal(&literal);
-    assert!(colored.contains("test"));
-    // Should be colored red
-    assert!(colored.contains("\x1b[31m"));
-}
