@@ -4,7 +4,7 @@ use crate::shacl_vocab::{
 use crate::{component::Component, message_map::MessageMap, severity::Severity, target::Target};
 use crate::{sh_debug, sh_trace};
 use iri_s::IriS;
-use rdf::rdf_core::{Rdf, BuildRDF, term::Object};
+use rdf::rdf_core::{BuildRDF, Rdf, term::Object};
 use std::collections::HashSet;
 use std::fmt::Display;
 

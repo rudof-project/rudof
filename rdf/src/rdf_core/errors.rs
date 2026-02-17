@@ -5,10 +5,8 @@ use thiserror::Error;
 pub enum RDFError {
     /// Default / fallback error.
     #[error("{msg}")]
-    DefaultError {
-        msg: String,
-    },
-    
+    DefaultError { msg: String },
+
     // ========================================================================
     // Language and Literal Errors
     // ========================================================================
@@ -208,7 +206,7 @@ pub enum RDFError {
     /// # Fields
     /// - `term`: String representation of the term that is not an rdf:nil
     #[error("Expected rdf:nil, but found: {term}")]
-    ExpectedNilError {term: String},
+    ExpectedNilError { term: String },
 
     // ========================================================================
     // Comparison and Query Errors
@@ -235,9 +233,7 @@ pub enum RDFError {
     /// - `predicate`: Predicate of the triple being checked
     /// - `object`: Object of the triple being checked
     /// - `error`: Detailed description of why the check failed
-    #[error(
-        "Error checking if RDF contains the triple <{subject}, {predicate}, {object}>: {error}"
-    )]
+    #[error("Error checking if RDF contains the triple <{subject}, {predicate}, {object}>: {error}")]
     FailedCheckingAssertion {
         subject: String,
         predicate: String,
@@ -293,9 +289,7 @@ pub enum RDFError {
     /// # Fields
     /// - `node`: String representation of the focus node that is not a valid subject
     /// - `context`: The operation or context where the subject was expected
-    #[error(
-        "Expected focus node to be a subject (IRI or blank node), but found: {node} in context: {context}"
-    )]
+    #[error("Expected focus node to be a subject (IRI or blank node), but found: {node} in context: {context}")]
     ExpectedSubjectError { node: String, context: String },
 
     // ========================================================================
@@ -314,10 +308,7 @@ pub enum RDFError {
     /// - `err1`: The error from the first parser that was tried
     /// - `err2`: The error from the second (fallback) parser
     #[error("Both branches of OR combinator failed. First: {err1}, Second: {err2}")]
-    FailedOrError {
-        err1: Box<RDFError>,
-        err2: Box<RDFError>,
-    },
+    FailedOrError { err1: Box<RDFError>, err2: Box<RDFError> },
 
     /// Error when a `not` combinator's inner parser unexpectedly succeeds.
     ///
@@ -341,10 +332,7 @@ pub enum RDFError {
     /// - `msg`: A detailed description of why the opaque parser failed
     /// - `context`: Optional context about where in the parsing process the failure occurred
     #[error("Opaque parser failed: {msg}{}", context.as_ref().map(|c| format!(" (context: {})", c)).unwrap_or_default())]
-    FailedOpaqueError {
-        msg: String,
-        context: Option<String>,
-    },
+    FailedOpaqueError { msg: String, context: Option<String> },
 
     /// Error when a parser explicitly fails with a custom message.
     ///
@@ -402,9 +390,7 @@ pub enum RDFError {
     /// - `pred`: The property/predicate that has multiple values
     /// - `value1`: String representation of the first value found
     /// - `value2`: String representation of the second value found
-    #[error(
-        "Node {node} has more than one value for predicate {pred}: found at least {value1} and {value2}"
-    )]
+    #[error("Node {node} has more than one value for predicate {pred}: found at least {value1} and {value2}")]
     MoreThanOneValuePredicateError {
         node: String,
         pred: String,
@@ -447,10 +433,7 @@ pub enum RDFError {
     /// - `condition_name`: The name/description of the condition that was not satisfied
     /// - `node`: String representation of the node that failed the condition
     #[error("Node {node} does not satisfy condition: {condition_name}")]
-    NodeDoesntSatisfyConditionError {
-        condition_name: String,
-        node: String,
-    },
+    NodeDoesntSatisfyConditionError { condition_name: String, node: String },
 
     /// Error when no instances of a specified type are found in the RDF data.
     ///
@@ -477,18 +460,14 @@ pub enum RDFError {
     /// # Fields
     /// - `term`: String representation of the term that failed conversion
     #[error("Failed to convert term to Object: {term}")]
-    FailedTermToObjectError {
-        term: String,
-    },
+    FailedTermToObjectError { term: String },
 
     /// Error when more than one instance of a given type is found when exactly one was expected.
     ///
     /// # Fields
     /// - `type_iri`: The IRI of the type that has multiple instances
     #[error("More than one instance found for type: {type_iri}")]
-    MoreThanOneInstanceError {
-        type_iri: String,
-    },
+    MoreThanOneInstanceError { type_iri: String },
 
     /// Error when an RDF node has a type different from the expected one.
     ///
@@ -496,19 +475,14 @@ pub enum RDFError {
     /// - `expected`: String representation of the expected RDF type
     /// - `actual`: String representation of the actual RDF type found
     #[error("Type mismatch: expected {expected}, but found {actual}")]
-    TypeMismatchError {
-        expected: String,
-        actual: String,
-    },
+    TypeMismatchError { expected: String, actual: String },
 
     /// Error when a conditional parser predicate evaluates to false.
     ///
     /// # Fields
     /// - `msg`: Explanation of why the condition failed
     #[error("Conditional parser failed: {msg}")]
-    FailedConditionalError {
-        msg: String,
-    },
+    FailedConditionalError { msg: String },
 
     // ========================================================================
     // Configuration Errors
@@ -527,10 +501,7 @@ pub enum RDFError {
     /// - `path_name`: The path of the TOML file that failed to parse
     /// - `error`: The underlying TOML parsing error
     #[error("Reading TOML from {path_name:?}. Error: {error:?}")]
-    TomlError {
-        path_name: String,
-        error: toml::de::Error,
-    },
+    TomlError { path_name: String, error: toml::de::Error },
 
     /// Error converting a string to a valid IRI for an endpoint.
     ///

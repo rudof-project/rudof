@@ -8,11 +8,11 @@ use crate::shacl_engine::Engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
+use rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::MinExclusive;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF};
 use std::fmt::Debug;
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinExclusive {
@@ -74,10 +74,10 @@ mod tests {
     use crate::shacl_processor::{RdfDataValidation, ShaclValidationMode};
 
     use crate::shacl_processor::ShaclProcessor;
-    use shacl_rdf::parse_shacl_rdf;
-    use sparql_service::RdfData;
     use rdf::rdf_core::RDFFormat;
     use rdf::rdf_impl::ReaderMode;
+    use shacl_rdf::parse_shacl_rdf;
+    use sparql_service::RdfData;
 
     #[test]
     fn test_min_exclusive_native() {

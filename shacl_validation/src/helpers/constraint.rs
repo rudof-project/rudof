@@ -1,6 +1,6 @@
+use rdf::rdf_core::{Rdf, SHACLPath, query::QueryRDF, term::Object};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
-use rdf::rdf_core::{Rdf, SHACLPath, query::QueryRDF, term::Object};
 use tracing::debug;
 
 use crate::constraints::constraint_error::ConstraintError;

@@ -1,6 +1,6 @@
 use iri_s::IriS;
-use serde::{Deserialize, Serialize};
 use rdf::rdf_core::term::{IriOrBlankNode, literal::NumericLiteral};
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
 #[derive(Clone, PartialEq, Eq, Default, Debug, Hash, Serialize, Deserialize)]

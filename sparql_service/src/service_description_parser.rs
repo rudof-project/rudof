@@ -9,15 +9,18 @@ use crate::{
 };
 use iri_s::IriS;
 use rdf::rdf_core::{
-    FocusRDF, RDFError, parser::{
-        RDFParse, 
+    FocusRDF, RDFError,
+    parser::{
+        RDFParse,
         rdf_node_parser::{
-            ParserExt, RDFNodeParse, constructors::{
-                FocusParser, IriOrBlankNodeParser, IrisPropertyParser, SetFocusParser, SingleIntegerPropertyParser, 
-                SingleIriPropertyParser, SingleStringPropertyParser, SuccessParser, SingleIriOrBlankNodePropertyParser
-            }
-        }
-    }, term::{IriOrBlankNode, literal::NumericLiteral}
+            ParserExt, RDFNodeParse,
+            constructors::{
+                FocusParser, IriOrBlankNodeParser, IrisPropertyParser, SetFocusParser, SingleIntegerPropertyParser,
+                SingleIriOrBlankNodePropertyParser, SingleIriPropertyParser, SingleStringPropertyParser, SuccessParser,
+            },
+        },
+    },
+    term::{IriOrBlankNode, literal::NumericLiteral},
 };
 
 use std::{collections::HashSet, fmt::Debug};
@@ -98,9 +101,7 @@ where
                                                         sd.add_title(title.as_deref());
                                                         sd.add_supported_languages(sl.clone());
                                                         sd.add_features(feature.clone());
-                                                        sd.add_result_formats(
-                                                            result_format.clone(),
-                                                        );
+                                                        sd.add_result_formats(result_format.clone());
                                                         SuccessParser::new(sd)
                                                     })
                                                 }
@@ -226,9 +227,7 @@ fn feature_iri(iri: &IriS) -> Result<Feature, RDFError> {
     }
 }
 
-pub fn available_graphs<RDF>(
-    node: RDF::Term,
-) -> impl RDFNodeParse<RDF, Output = Vec<GraphCollection>>
+pub fn available_graphs<RDF>(node: RDF::Term) -> impl RDFNodeParse<RDF, Output = Vec<GraphCollection>>
 where
     RDF: FocusRDF + 'static,
     RDF::Term: From<IriOrBlankNode> + TryInto<IriOrBlankNode> + Clone,
@@ -248,11 +247,11 @@ where
         named_graph()
             .map_property(sd_named_graph().clone())
             .map(move |named_graphs| {
-                let iri_or_blank: IriOrBlankNode = focus_clone.clone()
+                let iri_or_blank: IriOrBlankNode = focus_clone
+                    .clone()
                     .try_into()
                     .expect("Failed to convert Term to IriOrBlankNode");
-                GraphCollection::new(&iri_or_blank)
-                    .with_collection(named_graphs.into_iter())
+                GraphCollection::new(&iri_or_blank).with_collection(named_graphs.into_iter())
             })
     })
 }
@@ -279,16 +278,16 @@ where
             .and(default_graph(node_term.clone()).optional())
             .and(named_graphs(node_term))
             .then(move |((_, dg), named_gs)| {
-                SuccessParser::new(Dataset::new(&node_ds)
-                    .with_default_graph(dg)
-                    .with_named_graphs(named_gs))
+                SuccessParser::new(
+                    Dataset::new(&node_ds)
+                        .with_default_graph(dg)
+                        .with_named_graphs(named_gs),
+                )
             }),
     )
 }
 
-pub fn default_graph<RDF>(
-    focus: RDF::Term,
-) -> impl RDFNodeParse<RDF, Output = GraphDescription>
+pub fn default_graph<RDF>(focus: RDF::Term) -> impl RDFNodeParse<RDF, Output = GraphDescription>
 where
     RDF: FocusRDF + 'static,
     RDF::Term: From<IriOrBlankNode> + TryInto<IriOrBlankNode> + Clone,
@@ -329,9 +328,7 @@ where
     )
 }
 
-pub fn named_graphs<RDF>(
-    focus: RDF::Term,
-) -> impl RDFNodeParse<RDF, Output = Vec<NamedGraphDescription>>
+pub fn named_graphs<RDF>(focus: RDF::Term) -> impl RDFNodeParse<RDF, Output = Vec<NamedGraphDescription>>
 where
     RDF: FocusRDF + 'static,
     RDF::Term: TryInto<IriOrBlankNode> + From<IriOrBlankNode> + Clone,
@@ -349,9 +346,7 @@ where
     FocusParser::new().then(|focus| named_graph_description(focus))
 }
 
-fn named_graph_description<RDF>(
-    focus: RDF::Term,
-) -> impl RDFNodeParse<RDF, Output = NamedGraphDescription>
+fn named_graph_description<RDF>(focus: RDF::Term) -> impl RDFNodeParse<RDF, Output = NamedGraphDescription>
 where
     RDF: FocusRDF + 'static,
     RDF::Term: TryInto<IriOrBlankNode> + From<IriOrBlankNode> + Clone,
@@ -364,7 +359,8 @@ where
             .and(name())
             .and(graph().map_property(sd_graph().clone()))
             .map(move |((_, name), graphs)| {
-                let focus_iri: IriOrBlankNode = focus_clone.clone()
+                let focus_iri: IriOrBlankNode = focus_clone
+                    .clone()
                     .try_into()
                     .expect("Failed to convert Term to IriOrBlankNode");
                 trace!(
@@ -391,44 +387,36 @@ where
 {
     FocusParser::new().then(|focus: RDF::Term| {
         trace!("Parsing graph at focus, parsing it...");
-        let iri_or_blank: IriOrBlankNode = focus
-            .try_into()
-            .expect("Failed to convert Term to IriOrBlankNode");
+        let iri_or_blank: IriOrBlankNode = focus.try_into().expect("Failed to convert Term to IriOrBlankNode");
         graph_description(iri_or_blank)
     })
 }
 
-pub fn parse_void_triples<RDF>(
-    node: RDF::Term,
-) -> impl RDFNodeParse<RDF, Output = Option<NumericLiteral>>
+pub fn parse_void_triples<RDF>(node: RDF::Term) -> impl RDFNodeParse<RDF, Output = Option<NumericLiteral>>
 where
     RDF: FocusRDF + 'static,
     RDF::Term: Clone,
 {
     SetFocusParser::new(node).with(
         SingleIntegerPropertyParser::new(void_triples().clone())
-            .map(|n: isize| NumericLiteral::Integer(n as i128)) 
+            .map(|n: isize| NumericLiteral::Integer(n as i128))
             .optional(),
     )
 }
 
-pub fn parse_void_classes<RDF>(
-    node: RDF::Term,
-) -> impl RDFNodeParse<RDF, Output = Option<NumericLiteral>>
+pub fn parse_void_classes<RDF>(node: RDF::Term) -> impl RDFNodeParse<RDF, Output = Option<NumericLiteral>>
 where
     RDF: FocusRDF + 'static,
     RDF::Term: Clone,
 {
     SetFocusParser::new(node).with(
         SingleIntegerPropertyParser::new(void_classes().clone())
-            .map(|n: isize| NumericLiteral::Integer(n as i128)) 
-            .optional(), 
+            .map(|n: isize| NumericLiteral::Integer(n as i128))
+            .optional(),
     )
 }
 
-pub fn parse_void_class_partition<RDF>(
-    node: RDF::Term,
-) -> impl RDFNodeParse<RDF, Output = Vec<ClassPartition>>
+pub fn parse_void_class_partition<RDF>(node: RDF::Term) -> impl RDFNodeParse<RDF, Output = Vec<ClassPartition>>
 where
     RDF: FocusRDF + 'static,
     RDF::Term: TryInto<IriOrBlankNode> + Clone,
@@ -437,9 +425,7 @@ where
     SetFocusParser::new(node).with(class_partition().map_property(void_class_partition().clone()))
 }
 
-pub fn parse_void_property_partition<RDF>(
-    node: RDF::Term,
-) -> impl RDFNodeParse<RDF, Output = Vec<PropertyPartition>>
+pub fn parse_void_property_partition<RDF>(node: RDF::Term) -> impl RDFNodeParse<RDF, Output = Vec<PropertyPartition>>
 where
     RDF: FocusRDF + 'static,
     RDF::Term: TryInto<IriOrBlankNode> + Clone,
@@ -461,7 +447,8 @@ where
             .and(SingleIriPropertyParser::new(void_class().clone()))
             .and(property_partition().map_property(void_property().clone()))
             .map(move |((_, class), property_partition)| {
-                let focus_iri: IriOrBlankNode = focus_clone.clone()
+                let focus_iri: IriOrBlankNode = focus_clone
+                    .clone()
                     .try_into()
                     .expect("Failed to convert Term to IriOrBlankNode");
                 ClassPartition::new(&class)
@@ -484,12 +471,12 @@ where
                 .optional()
                 .map(|opt: Option<isize>| opt.map(|n| NumericLiteral::Integer(n as i128))),
         )
-        .map(|((focus, property), triples): ((RDF::Term, IriS), Option<NumericLiteral>)| {
-            let focus_iri: IriOrBlankNode = focus
-                .try_into()
-                .expect("Failed to convert Term to IriOrBlankNode");
-            PropertyPartition::new(&property)
-                .with_id(&focus_iri)
-                .with_triples(triples)
-        })
+        .map(
+            |((focus, property), triples): ((RDF::Term, IriS), Option<NumericLiteral>)| {
+                let focus_iri: IriOrBlankNode = focus.try_into().expect("Failed to convert Term to IriOrBlankNode");
+                PropertyPartition::new(&property)
+                    .with_id(&focus_iri)
+                    .with_triples(triples)
+            },
+        )
 }

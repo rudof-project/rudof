@@ -1,9 +1,9 @@
 use iri_s::error::IriSError;
+use rdf::{rdf_core::RDFError, rdf_impl::InMemoryGraphError};
 use shex_ast::compact::ParseError;
 use shex_ast::shapemap::ValidationStatus;
 use shex_ast::{Schema, SchemaIRError, ast::SchemaJsonError};
 use shex_validation::ValidatorError;
-use rdf::{rdf_impl::InMemoryGraphError, rdf_core::RDFError};
 use std::{ffi::OsString, io, path::PathBuf};
 use thiserror::Error;
 

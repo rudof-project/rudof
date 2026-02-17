@@ -1,8 +1,8 @@
 use std::path::Path;
 
-use sparql_service::RdfData;
 use rdf::rdf_core::RDFFormat;
 use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+use sparql_service::RdfData;
 
 use crate::validate_error::ValidateError;
 
@@ -23,11 +23,7 @@ impl Graph {
         Graph::default()
     }
 
-    pub fn from_path(
-        path: &Path,
-        rdf_format: RDFFormat,
-        base: Option<&str>,
-    ) -> Result<Self, Box<ValidateError>> {
+    pub fn from_path(path: &Path, rdf_format: RDFFormat, base: Option<&str>) -> Result<Self, Box<ValidateError>> {
         match InMemoryGraph::from_path(
             path,
             &rdf_format,

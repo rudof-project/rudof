@@ -1,10 +1,10 @@
 use std::io;
 
 use iri_s::IriS;
+use rdf::rdf_impl::SparqlEndpointError;
 use shacl_ast::Schema;
 use shacl_ir::compiled_shacl_error::CompiledShaclError;
 use sparql_service::RdfData;
-use rdf::rdf_impl::SparqlEndpointError;
 use thiserror::Error;
 
 use crate::data_format::DataFormatError;

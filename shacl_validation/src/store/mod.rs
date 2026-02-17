@@ -1,10 +1,10 @@
+use crate::validate_error::ValidateError;
+use rdf::rdf_core::RDFFormat;
+use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use shacl_ir::compiled::schema_ir::SchemaIR;
 use shacl_ir::compiled_shacl_error::CompiledShaclError;
 use shacl_rdf::rdf_to_shacl::ShaclParser;
-use rdf::rdf_core::RDFFormat;
-use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use std::io::BufRead;
-use crate::validate_error::ValidateError;
 
 pub mod graph;
 pub mod sparql;
@@ -22,14 +22,8 @@ impl ShaclDataManager {
         rdf_format: RDFFormat,
         base: Option<&str>,
     ) -> Result<SchemaIR, Box<ValidateError>> {
-        let rdf = InMemoryGraph::from_reader(
-            reader,
-            source_name,
-            &rdf_format,
-            base,
-            &ReaderMode::default(),
-        )
-        .map_err(|e| Box::new(ValidateError::Graph(e)))?;
+        let rdf = InMemoryGraph::from_reader(reader, source_name, &rdf_format, base, &ReaderMode::default())
+            .map_err(|e| Box::new(ValidateError::Graph(e)))?;
         match ShaclParser::new(rdf).parse() {
             Ok(schema) => {
                 let schema_compiled = schema

@@ -1,5 +1,5 @@
-use std::fmt::Display;
 use spargebra::{Query, SparqlParser, SparqlSyntaxError};
+use std::fmt::Display;
 
 /// Represents a parsed and validated SPARQL query.
 ///
@@ -50,7 +50,7 @@ impl SparqlQuery {
     }
 
     /// Serializes the query to its canonical SPARQL string form
-    /// 
+    ///
     /// Unlike [`source()`](Self::source), this returns a canonicalized version
     /// that may differ from the original in formatting but is semantically
     /// equivalent.

@@ -1925,11 +1925,11 @@ fn decimal(i: Span) -> IRes<NumericLiteral> {
             let w = whole
                 .fragment()
                 .parse::<i64>()
-                .map_err(|e| RDFError::ConversionError{msg: e.to_string()})?;
+                .map_err(|e| RDFError::ConversionError { msg: e.to_string() })?;
             let f = fraction
                 .fragment()
                 .parse::<u32>()
-                .map_err(|e| RDFError::ConversionError{msg: e.to_string()})?;
+                .map_err(|e| RDFError::ConversionError { msg: e.to_string() })?;
             NumericLiteral::decimal_from_parts(w, f)
         },
     )(i)

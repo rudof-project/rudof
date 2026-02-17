@@ -29,10 +29,7 @@ impl<S: Rdf> QuerySolutions<S> {
     /// * `solutions` - Vector of query solution rows
     /// * `prefixmap` - Prefix map for IRI qualification in output
     pub fn new(solutions: Vec<QuerySolution<S>>, prefixmap: PrefixMap) -> QuerySolutions<S> {
-        QuerySolutions {
-            solutions,
-            prefixmap: prefixmap,
-        }
+        QuerySolutions { solutions, prefixmap }
     }
 
     /// Creates an empty query solutions collection.
@@ -64,11 +61,7 @@ impl<S: Rdf> QuerySolutions<S> {
     ///
     /// Returns an error if the prefix maps have conflicting definitions for
     /// the same prefix (same prefix bound to different namespaces).
-    pub fn extend(
-        &mut self,
-        solutions: Vec<QuerySolution<S>>,
-        prefixmap: PrefixMap,
-    ) -> Result<(), PrefixMapError> {
+    pub fn extend(&mut self, solutions: Vec<QuerySolution<S>>, prefixmap: PrefixMap) -> Result<(), PrefixMapError> {
         self.solutions.extend(solutions);
         self.prefixmap.merge(prefixmap)?;
         Ok(())
@@ -106,9 +99,7 @@ impl<S: Rdf> QuerySolutions<S> {
     /// - Term conversion fails when processing solutions
     pub fn write_table(&self, writer: &mut dyn Write) -> Result<(), RDFError> {
         if self.solutions.is_empty() {
-            return write!(writer, "No results").map_err(|e| RDFError::WritingTableError {
-                error: format!("{e}"),
-            });
+            return write!(writer, "No results").map_err(|e| RDFError::WritingTableError { error: format!("{e}") });
         }
 
         let first = &self.solutions[0];
@@ -145,7 +136,7 @@ impl<S: Rdf> QuerySolutions<S> {
                                 object.show_qualified(&self.prefixmap)
                             ),
                         }
-                    }
+                    },
                     None => String::new(),
                 };
                 record.push(str);
@@ -155,9 +146,7 @@ impl<S: Rdf> QuerySolutions<S> {
 
         let mut table = builder.build();
         table.with(Style::modern_rounded());
-        writeln!(writer, "{table}").map_err(|e| RDFError::WritingTableError {
-            error: format!("{e}"),
-        })?;
+        writeln!(writer, "{table}").map_err(|e| RDFError::WritingTableError { error: format!("{e}") })?;
 
         Ok(())
     }

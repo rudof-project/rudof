@@ -5,6 +5,14 @@ use crate::dependency_graph::{DependencyGraph, PosNeg};
 use crate::schema_ir::SchemaIR;
 use crate::shape_label_idx::ShapeLabelIdx;
 use iri_s::IriS;
+use rdf::rdf_core::{
+    Rdf,
+    term::{
+        Object,
+        literal::{ConcreteLiteral, Lang},
+    },
+    utils::RDFRegex,
+};
 use shacl_ast::Schema;
 use shacl_ast::component::Component;
 use shacl_ast::node_kind::NodeKind;
@@ -13,9 +21,6 @@ use shacl_ast::shacl_vocab::{
     sh_less_than_or_equals, sh_max_count, sh_max_exclusive, sh_max_inclusive, sh_max_length, sh_min_count,
     sh_min_exclusive, sh_min_inclusive, sh_min_length, sh_node, sh_node_kind, sh_not, sh_or, sh_pattern,
     sh_qualified_value_shape, sh_unique_lang, sh_xone,
-};
-use rdf::rdf_core::{
-    Rdf, utils::RDFRegex, term::{Object, literal::{ConcreteLiteral, Lang}}
 };
 use std::collections::HashSet;
 use std::fmt::Display;
@@ -685,12 +690,10 @@ pub struct Pattern {
 
 impl Pattern {
     pub fn new(pattern: String, flags: Option<String>) -> Result<Self, Box<CompiledShaclError>> {
-        let regex = RDFRegex::new(&pattern, flags.as_deref()).map_err(|e| {
-            CompiledShaclError::InvalidRegex {
-                pattern: pattern.clone(),
-                flags: flags.clone(),
-                error: Box::new(e),
-            }
+        let regex = RDFRegex::new(&pattern, flags.as_deref()).map_err(|e| CompiledShaclError::InvalidRegex {
+            pattern: pattern.clone(),
+            flags: flags.clone(),
+            error: Box::new(e),
         })?;
         Ok(Pattern { pattern, flags, regex })
     }
@@ -796,9 +799,7 @@ pub struct MaxExclusive {
 
 impl MaxExclusive {
     pub fn new(literal: ConcreteLiteral) -> Self {
-        MaxExclusive {
-            max_exclusive: literal,
-        }
+        MaxExclusive { max_exclusive: literal }
     }
 
     pub fn max_exclusive(&self) -> &ConcreteLiteral {
@@ -814,9 +815,7 @@ pub struct MaxInclusive {
 
 impl MaxInclusive {
     pub fn new(literal: ConcreteLiteral) -> Self {
-        MaxInclusive {
-            max_inclusive: literal,
-        }
+        MaxInclusive { max_inclusive: literal }
     }
 
     pub fn max_inclusive(&self) -> &ConcreteLiteral {
@@ -832,9 +831,7 @@ pub struct MinExclusive {
 
 impl MinExclusive {
     pub fn new(literal: ConcreteLiteral) -> Self {
-        MinExclusive {
-            min_exclusive: literal,
-        }
+        MinExclusive { min_exclusive: literal }
     }
 
     pub fn min_exclusive(&self) -> &ConcreteLiteral {
@@ -850,9 +847,7 @@ pub struct MinInclusive {
 
 impl MinInclusive {
     pub fn new(literal: ConcreteLiteral) -> Self {
-        MinInclusive {
-            min_inclusive: literal,
-        }
+        MinInclusive { min_inclusive: literal }
     }
 
     pub fn min_inclusive_value(&self) -> &ConcreteLiteral {

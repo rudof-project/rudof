@@ -9,9 +9,9 @@ use crate::schema_ir::SchemaIR;
 use crate::severity::CompiledSeverity;
 use crate::shape_label_idx::ShapeLabelIdx;
 use iri_s::IriS;
+use rdf::rdf_core::{Rdf, SHACLPath, term::Object};
 use shacl_ast::Schema;
 use shacl_ast::shape::Shape;
-use rdf::rdf_core::{Rdf, SHACLPath, term::Object};
 use std::collections::HashSet;
 use std::fmt::Display;
 

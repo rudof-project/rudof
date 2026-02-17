@@ -15,10 +15,10 @@ use compiled_shacl_error::CompiledShaclError;
 use either::Either;
 use iri_s::IriS;
 use prefixmap::IriRef;
+use rdf::rdf_core::{Rdf, term::Object};
 use shacl_ast::Schema;
 use shacl_ast::value::Value;
 use shape::ShapeIR;
-use rdf::rdf_core::{Rdf, term::Object};
 use tracing::trace;
 
 use crate::schema_ir::SchemaIR;
@@ -72,7 +72,7 @@ fn convert_value(value: Value) -> Result<Object, Box<CompiledShaclError>> {
             let iri = convert_iri_ref(iri_ref)?;
 
             Object::iri(iri)
-        }
+        },
         Value::Literal(literal) => Object::literal(literal),
     };
     Ok(ans)

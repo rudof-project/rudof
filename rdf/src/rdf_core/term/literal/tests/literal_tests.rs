@@ -46,13 +46,9 @@ fn numeric_literal_strategy() -> impl Strategy<Value = ConcreteLiteral> {
             .prop_filter("finite double", |d| d.is_finite())
             .prop_map(ConcreteLiteral::double),
         // Positive integers
-        (1u128..=u128::MAX).prop_filter_map("positive integer", |n| {
-            ConcreteLiteral::positive_integer(n).ok()
-        }),
+        (1u128..=u128::MAX).prop_filter_map("positive integer", |n| { ConcreteLiteral::positive_integer(n).ok() }),
         // Negative integers
-        (i128::MIN..=-1i128).prop_filter_map("negative integer", |n| {
-            ConcreteLiteral::negative_integer(n).ok()
-        }),
+        (i128::MIN..=-1i128).prop_filter_map("negative integer", |n| { ConcreteLiteral::negative_integer(n).ok() }),
         // Non-positive integers
         (i128::MIN..=0i128).prop_filter_map("non-positive integer", |n| {
             ConcreteLiteral::non_positive_integer(n).ok()
@@ -93,8 +89,7 @@ fn xsd_datatype_strategy() -> impl Strategy<Value = IriRef> {
 
 /// Strategy for generating datatype literals
 fn datatype_literal_strategy() -> impl Strategy<Value = ConcreteLiteral> {
-    (".*", xsd_datatype_strategy())
-        .prop_map(|(lexical, datatype)| ConcreteLiteral::lit_datatype(&lexical, &datatype))
+    (".*", xsd_datatype_strategy()).prop_map(|(lexical, datatype)| ConcreteLiteral::lit_datatype(&lexical, &datatype))
 }
 
 /// Main strategy for generating arbitrary ConcreteLiterals
@@ -117,7 +112,7 @@ proptest! {
     fn lexical_form_non_empty(lit in concrete_literal_strategy()) {
         let lexical = lit.lexical_form();
         // Note: Empty strings are valid lexical forms for string literals
-        prop_assert!(lexical.len() == 0 || lexical.len() > 0);
+        prop_assert!(lexical.is_empty() || lexical.is_empty());
     }
 
     /// datatype should always return a valid IRI
@@ -429,11 +424,8 @@ proptest! {
         a in concrete_literal_strategy(),
         b in concrete_literal_strategy()
     ) {
-        match (a.partial_cmp(&b), b.partial_cmp(&a)) {
-            (Some(ord_ab), Some(ord_ba)) => {
-                prop_assert_eq!(ord_ab, ord_ba.reverse());
-            }
-            _ => {} // Not comparable, skip
+        if let (Some(ord_ab), Some(ord_ba)) = (a.partial_cmp(&b), b.partial_cmp(&a)) {
+          prop_assert_eq!(ord_ab, ord_ba.reverse());
         }
     }
 
@@ -508,32 +500,32 @@ proptest! {
 }
 
 // ============================================================================
-// Property Tests: as_checked_literal
+// Property Tests: into_checked_literal
 // ============================================================================
 
 proptest! {
-    /// as_checked_literal should not modify non-datatype literals
+    /// into_checked_literal should not modify non-datatype literals
     #[test]
     fn checked_literal_preserves_non_datatype(lit in string_literal_strategy()) {
         let original = lit.clone();
-        let checked = lit.as_checked_literal();
+        let checked = lit.into_checked_literal();
         prop_assert!(checked.is_ok());
         prop_assert_eq!(checked.unwrap(), original);
     }
 
-    /// as_checked_literal on boolean literals should succeed
+    /// into_checked_literal on boolean literals should succeed
     #[test]
     fn checked_literal_boolean(b in any::<bool>()) {
         let lit = ConcreteLiteral::boolean(b);
-        let checked = lit.as_checked_literal();
+        let checked = lit.into_checked_literal();
         prop_assert!(checked.is_ok());
     }
 
-    /// as_checked_literal on numeric literals should succeed
+    /// into_checked_literal on numeric literals should succeed
     #[test]
     fn checked_literal_numeric(n in any::<i64>()) {
         let lit = ConcreteLiteral::integer(n as i128);
-        let checked = lit.as_checked_literal();
+        let checked = lit.into_checked_literal();
         prop_assert!(checked.is_ok());
     }
 }
@@ -654,9 +646,11 @@ mod edge_case_tests {
     fn test_float_special_values() {
         // NaN and infinity should not be allowed by our filter
         // but let's test that finite values work
+        #[allow(clippy::approx_constant)]
         let lit = ConcreteLiteral::float(3.14f32);
         assert!(lit.numeric_value().is_some());
 
+        #[allow(clippy::approx_constant)]
         let lit2 = ConcreteLiteral::double(2.718);
         assert!(lit2.numeric_value().is_some());
     }
@@ -666,9 +660,7 @@ mod edge_case_tests {
         // This would typically be created internally during validation
         let wrong_lit = ConcreteLiteral::WrongDatatypeLiteral {
             lexical_form: "not_a_number".to_string(),
-            datatype: IriRef::iri(IriS::new_unchecked(
-                "http://www.w3.org/2001/XMLSchema#integer",
-            )),
+            datatype: IriRef::iri(IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#integer")),
             error: "parse error".to_string(),
         };
 

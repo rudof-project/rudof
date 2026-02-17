@@ -72,8 +72,7 @@ where
 ///
 /// # Type Parameters
 ///
-/// * `R` - The RDF implementation type that defines the specific types for
-///         subjects, predicates, and objects through its associated types
+/// * `R` - The RDF implementation type that defines the specific types for subjects, predicates, and objects through its associated types
 pub struct ConcreteTriple<R>
 where
     R: Rdf,
@@ -290,9 +289,7 @@ impl Object {
     /// - `None` if this is not a language-tagged literal
     pub fn lang(&self) -> Option<&Lang> {
         match self {
-            Object::Literal(ConcreteLiteral::StringLiteral {
-                lang: Some(lang), ..
-            }) => Some(lang),
+            Object::Literal(ConcreteLiteral::StringLiteral { lang: Some(lang), .. }) => Some(lang),
             _ => None,
         }
     }
@@ -404,14 +401,12 @@ impl TryFrom<oxrdf::Term> for Object {
 
     fn try_from(value: oxrdf::Term) -> Result<Self, Self::Error> {
         match value {
-            oxrdf::Term::NamedNode(named_node) => {
-                Ok(Object::iri(named_node.into()))
-            }
+            oxrdf::Term::NamedNode(named_node) => Ok(Object::iri(named_node.into())),
             oxrdf::Term::BlankNode(blank_node) => Ok(Object::bnode(blank_node.into_string())),
             oxrdf::Term::Literal(literal) => {
                 let lit: ConcreteLiteral = literal.try_into()?;
                 Ok(Object::literal(lit))
-            }
+            },
             oxrdf::Term::Triple(triple) => {
                 let (s, p, o) = triple.into_components();
                 let object = Object::try_from(o)?;
@@ -422,7 +417,7 @@ impl TryFrom<oxrdf::Term> for Object {
                     predicate,
                     object: Box::new(object),
                 })
-            }
+            },
         }
     }
 }

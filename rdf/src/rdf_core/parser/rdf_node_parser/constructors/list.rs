@@ -5,7 +5,7 @@ use crate::rdf_core::{
 use std::marker::PhantomData;
 
 /// Parser that extracts all elements from an RDF list structure.
-/// 
+///
 /// Traverses the RDF list using `rdf:first` and `rdf:rest` properties,
 /// collecting elements until reaching `rdf:nil`. Detects cycles.
 #[derive(Debug, Clone)]
@@ -15,9 +15,13 @@ pub struct ListParser<RDF> {
 
 impl<RDF> ListParser<RDF> {
     pub fn new() -> Self {
-        ListParser {
-            _marker: PhantomData,
-        }
+        ListParser { _marker: PhantomData }
+    }
+}
+
+impl<RDF> Default for ListParser<RDF> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -28,8 +32,7 @@ where
     type Output = Vec<RDF::Term>;
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
-        let focus = rdf.get_focus()
-            .ok_or(RDFError::NoFocusNodeError)?;
+        let focus = rdf.get_focus().ok_or(RDFError::NoFocusNodeError)?;
         parse_list_recursive::<RDF>(vec![focus.clone()], rdf)
     }
 }

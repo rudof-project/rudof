@@ -1,11 +1,11 @@
 use crate::RudofError;
 use dctap::TapConfig;
+use rdf::rdf_core::RdfDataConfig;
 use serde::{Deserialize, Serialize};
 use shapes_comparator::ComparatorConfig;
 use shapes_converter::{ShEx2HtmlConfig, ShEx2SparqlConfig, ShEx2UmlConfig, Shacl2ShExConfig, Tap2ShExConfig};
 use shex_validation::{ShExConfig, ValidatorConfig};
 use sparql_service::ServiceConfig;
-use rdf::rdf_core::RdfDataConfig;
 use std::env;
 use std::io::Read;
 use std::path::{Path, PathBuf};

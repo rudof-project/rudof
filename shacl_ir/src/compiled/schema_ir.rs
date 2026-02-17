@@ -5,10 +5,10 @@ use crate::shape_label_idx::ShapeLabelIdx;
 use either::Either::{self, Left, Right};
 use iri_s::IriS;
 use prefixmap::PrefixMap;
+use rdf::rdf_core::{RDFFormat, Rdf, term::Object};
+use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use shacl_ast::Schema;
 use shacl_rdf::ShaclParser;
-use rdf::rdf_core::{Rdf, RDFFormat, term::Object};
-use rdf::rdf_impl::{ReaderMode, InMemoryGraph};
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
@@ -268,14 +268,7 @@ mod tests {
         let rdf_format = RDFFormat::Turtle;
         let base = None;
 
-        let rdf = InMemoryGraph::from_reader(
-            &mut reader,
-            "String",
-            &rdf_format,
-            base,
-            &ReaderMode::default(),
-        )
-        .unwrap();
+        let rdf = InMemoryGraph::from_reader(&mut reader, "String", &rdf_format, base, &ReaderMode::default()).unwrap();
 
         ShaclParser::new(rdf).parse().unwrap().try_into().unwrap()
     }

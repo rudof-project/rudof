@@ -58,10 +58,7 @@ fn numeric_literal_strategy() -> impl Strategy<Value = NumericLiteral> {
         non_positive_integer_strategy(),
         non_negative_integer_strategy(),
         // Decimal from i64 for reasonable range
-        any::<i64>().prop_filter_map("decimal conversion", |n| NumericLiteral::decimal_from_i64(
-            n
-        )
-        .ok()),
+        any::<i64>().prop_filter_map("decimal conversion", |n| NumericLiteral::decimal_from_i64(n).ok()),
     ]
 }
 
@@ -314,7 +311,7 @@ proptest! {
     /// Equality should be reflexive: a == a
     #[test]
     fn equality_reflexive(a in numeric_literal_strategy()) {
-        prop_assert!(&a == &a);
+        prop_assert!(a == a);
     }
 
     /// Equality should be symmetric: if a == b then b == a

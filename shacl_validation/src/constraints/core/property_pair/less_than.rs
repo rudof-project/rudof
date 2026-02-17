@@ -4,11 +4,15 @@ use crate::constraints::constraint_error::ConstraintError;
 use crate::shacl_engine::Engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
+use rdf::rdf_core::{
+    NeighsRDF, Rdf, SHACLPath,
+    query::QueryRDF,
+    term::{Object, Triple},
+};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::LessThan;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use rdf::rdf_core::{NeighsRDF, SHACLPath, Rdf, query::QueryRDF, term::{Triple, Object}};
 use std::fmt::Debug;
 
 impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for LessThan {

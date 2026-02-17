@@ -50,16 +50,15 @@ impl RdfDataConfig {
     pub fn with_wikidata(mut self) -> Self {
         let wikidata_name = "wikidata";
         let wikidata_iri = "https://query.wikidata.org/sparql";
-        let wikidata =
-            EndpointDescription::new_unchecked(wikidata_iri).with_prefixmap(PrefixMap::wikidata());
+        let wikidata = EndpointDescription::new_unchecked(wikidata_iri).with_prefixmap(PrefixMap::wikidata());
 
         match self.endpoints {
             None => {
                 self.endpoints = Some(HashMap::from([(wikidata_name.to_string(), wikidata)]));
-            }
+            },
             Some(ref mut map) => {
                 map.insert(wikidata_name.to_string(), wikidata);
-            }
+            },
         };
         self
     }
@@ -84,11 +83,10 @@ impl RdfDataConfig {
             path_name: path_name.clone(),
             error: e,
         })?;
-        let config: RdfDataConfig =
-            toml::from_str(s.as_str()).map_err(|e| RDFError::TomlError {
-                path_name: path_name.to_string(),
-                error: e,
-            })?;
+        let config: RdfDataConfig = toml::from_str(s.as_str()).map_err(|e| RDFError::TomlError {
+            path_name: path_name.to_string(),
+            error: e,
+        })?;
         Ok(config)
     }
 

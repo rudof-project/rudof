@@ -3,10 +3,7 @@ use crate::rdf_core::{
     parser::rdf_node_parser::{
         ParserExt, RDFNodeParse,
         constructors::{ListParser, SetFocusParser},
-        utils::{
-            term_to_bool, term_to_int, term_to_iri, term_to_iri_or_blanknode, term_to_literal,
-            term_to_string,
-        },
+        utils::{term_to_bool, term_to_int, term_to_iri, term_to_iri_or_blanknode, term_to_literal, term_to_string},
     },
     term::{IriOrBlankNode, Object, Triple, literal::ConcreteLiteral},
 };
@@ -134,12 +131,10 @@ where
         .parse_focused(rdf)?;
 
         let mut iter = vals.into_iter();
-        let first = iter
-            .next()
-            .ok_or_else(|| RDFError::NoValuesPredicateError {
-                node: focus_str,
-                pred: format!("{}", self.property),
-            })?;
+        let first = iter.next().ok_or_else(|| RDFError::NoValuesPredicateError {
+            node: focus_str,
+            pred: format!("{}", self.property),
+        })?;
 
         Ok(first)
     }
@@ -240,7 +235,7 @@ where
             })
             .collect();
 
-         Ok(bools)
+        Ok(bools)
     }
 }
 
@@ -401,13 +396,9 @@ where
             .map(|t| {
                 let rdf_lit: RDF::Literal = term_to_literal::<RDF>(&t)?;
 
-                let slit: ConcreteLiteral =
-                    rdf_lit
-                        .clone()
-                        .try_into()
-                        .map_err(|_| RDFError::DefaultError {
-                            msg: format!("Error converting literal {} to SLiteral", rdf_lit),
-                        })?;
+                let slit: ConcreteLiteral = rdf_lit.clone().try_into().map_err(|_| RDFError::DefaultError {
+                    msg: format!("Error converting literal {} to SLiteral", rdf_lit),
+                })?;
 
                 Ok(slit)
             })
@@ -596,9 +587,7 @@ where
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
         Ok(rdf
             .triples_matching(&Any, &self.property, &self.value)
-            .map_err(|e| RDFError::ObtainingTriples {
-                error: e.to_string(),
-            })?
+            .map_err(|e| RDFError::ObtainingTriples { error: e.to_string() })?
             .map(Triple::into_subject)
             .collect())
     }

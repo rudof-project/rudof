@@ -1,6 +1,9 @@
-use crate::rdf_core::{FocusRDF, RDFError, parser::rdf_node_parser::{RDFNodeParse, utils::parse_list_recursive, constructors::ValuesPropertyParser}};
-use std::{marker::PhantomData, fmt::Debug, cell::RefCell};
+use crate::rdf_core::{
+    FocusRDF, RDFError,
+    parser::rdf_node_parser::{RDFNodeParse, constructors::ValuesPropertyParser, utils::parse_list_recursive},
+};
 use iri_s::IriS;
+use std::{cell::RefCell, fmt::Debug, marker::PhantomData};
 
 // ============================================================================
 // OPERATORS
@@ -40,7 +43,7 @@ where
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
         match self.parser.parse_focused(rdf) {
             Ok(v) => Ok(Some(v)),
-            Err(_) => Ok(None), 
+            Err(_) => Ok(None),
         }
     }
 }
@@ -172,8 +175,10 @@ where
     /// containing the debug representation of the parsed value.
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
         match self.parser.parse_focused(rdf) {
-            Ok(v) => Err(RDFError::FailedNotError { value: format!("{v:?}") }),
-            Err(_) => Ok(()), 
+            Ok(v) => Err(RDFError::FailedNotError {
+                value: format!("{v:?}"),
+            }),
+            Err(_) => Ok(()),
         }
     }
 }
@@ -569,9 +574,7 @@ where
     /// Returns `RDFError::NoFocusNodeError` if no focus is set,
     /// or errors from the list parsing utility or element parser.
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
-        let focus = rdf.get_focus()
-            .ok_or(RDFError::NoFocusNodeError)?
-            .clone();
+        let focus = rdf.get_focus().ok_or(RDFError::NoFocusNodeError)?.clone();
         let nodes = parse_list_recursive::<RDF>(vec![focus], rdf)?;
 
         let mut results = Vec::with_capacity(nodes.len());
@@ -700,6 +703,7 @@ where
 /// * `RDF` - The RDF graph type.
 /// * `P` - The predicate function type.
 #[derive(Clone)]
+#[allow(dead_code)]
 pub struct SatisfyParser<RDF, P> {
     /// The validation predicate.
     predicate: P,
@@ -720,6 +724,7 @@ where
     ///
     /// * `predicate` - The validation function.
     /// * `condition_name` - A descriptive name for the condition used in error messages.
+    #[allow(dead_code)]
     pub fn new(predicate: P, condition_name: impl Into<String>) -> Self {
         Self {
             predicate,
@@ -743,10 +748,9 @@ where
     /// Returns `RDFError::NoFocusNodeError` if no focus is set,
     /// or `RDFError::NodeDoesntSatisfyConditionError` if the predicate returns false.
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
-        let focus = rdf.get_focus()
-            .ok_or(RDFError::NoFocusNodeError)?;
-            
-        if (self.predicate)(&focus) {
+        let focus = rdf.get_focus().ok_or(RDFError::NoFocusNodeError)?;
+
+        if (self.predicate)(focus) {
             Ok(())
         } else {
             Err(RDFError::NodeDoesntSatisfyConditionError {
@@ -765,8 +769,8 @@ where
 ///
 /// Automatically implemented for all types implementing `RDFNodeParse<RDF>`,
 /// enabling method chaining for parser composition.
-pub trait ParserExt<RDF>: RDFNodeParse<RDF> + Sized 
-where 
+pub trait ParserExt<RDF>: RDFNodeParse<RDF> + Sized
+where
     RDF: FocusRDF,
 {
     /// Transforms successful results using a function.
@@ -852,7 +856,7 @@ where
     fn combine_many<A>(self, others: Vec<Box<dyn RDFNodeParse<RDF, Output = Vec<A>>>>) -> CombineMany<RDF, A>
     where
         Self: RDFNodeParse<RDF, Output = Vec<A>> + 'static,
-        RDF: 'static
+        RDF: 'static,
     {
         let mut all: Vec<Box<dyn RDFNodeParse<RDF, Output = Vec<A>>>> = Vec::with_capacity(others.len() + 1);
         all.push(Box::new(self));
@@ -870,7 +874,7 @@ where
 
     /// Parses an RDF list using this parser for elements.
     fn list<A>(self) -> List<RDF, Self>
-    where 
+    where
         Self: RDFNodeParse<RDF, Output = A>,
     {
         List::new(self)

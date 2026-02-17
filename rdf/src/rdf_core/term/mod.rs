@@ -2,6 +2,7 @@ mod blank_node;
 mod iri;
 mod iri_or_blanknode;
 pub mod literal;
+#[allow(clippy::module_inception)]
 mod term;
 mod triple;
 

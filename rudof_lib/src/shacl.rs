@@ -1,10 +1,10 @@
 use std::io::Write;
 
 use iri_s::{IriS, MimeType};
-use shacl_ast::ShaclFormat;
-use shacl_validation::validation_report::report::ValidationReport;
 use rdf::rdf_core::BuildRDF;
 use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+use shacl_ast::ShaclFormat;
+use shacl_validation::validation_report::report::ValidationReport;
 
 use crate::{
     InputSpec, Rudof, RudofConfig, RudofError,
@@ -87,11 +87,9 @@ pub fn write_validation_report<W: Write>(
         }),
         _ => {
             let mut rdf_writer = InMemoryGraph::new();
-            report
-                .to_rdf(&mut rdf_writer)
-                .map_err(|e| RudofError::Generic {
-                    error: format!("Error converting SHACL validation report to RDF: {e}"),
-                })?;
+            report.to_rdf(&mut rdf_writer).map_err(|e| RudofError::Generic {
+                error: format!("Error converting SHACL validation report to RDF: {e}"),
+            })?;
             let rdf_format = result_format_to_rdf_format(format)?;
             rdf_writer
                 .serialize(&rdf_format, &mut writer)

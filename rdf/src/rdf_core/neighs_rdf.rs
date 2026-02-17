@@ -1,8 +1,11 @@
-use std::{collections::{HashSet, HashMap}, vec::IntoIter};
 use crate::rdf_core::{
-    Rdf, RDFError, Matcher, Any, SHACLPath,
+    Any, Matcher, RDFError, Rdf, SHACLPath,
     term::{Object, Triple},
-    vocab::{rdf_reifies, rdf_type}
+    vocab::{rdf_reifies, rdf_type},
+};
+use std::{
+    collections::{HashMap, HashSet},
+    vec::IntoIter,
 };
 
 //----------------------------------------------------------------
@@ -38,7 +41,7 @@ pub trait NeighsRDF: Rdf {
     fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>, Self::Err>;
 
     /// Checks whether the graph contains at least one triple matching the pattern.
-    /// 
+    ///
     /// # Arguments
     ///
     /// * `subject` - Matcher for the subject (use [`Any`] for wildcard)
@@ -90,10 +93,7 @@ pub trait NeighsRDF: Rdf {
     /// # Arguments
     ///
     /// * `subject` - The subject to match
-    fn triples_with_subject(
-        &self,
-        subject: &Self::Subject,
-    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
+    fn triples_with_subject(&self, subject: &Self::Subject) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
         self.triples_matching(subject, &Any, &Any)
     }
 
@@ -120,10 +120,7 @@ pub trait NeighsRDF: Rdf {
     /// # Arguments
     ///
     /// * `predicate` - The predicate to match
-    fn triples_with_predicate(
-        &self,
-        predicate: &Self::IRI,
-    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
+    fn triples_with_predicate(&self, predicate: &Self::IRI) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
         self.triples_matching(&Any, predicate, &Any)
     }
 
@@ -150,10 +147,7 @@ pub trait NeighsRDF: Rdf {
     /// # Arguments
     ///
     /// * `object` - The object to match
-    fn triples_with_object(
-        &self,
-        object: &Self::Term,
-    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
+    fn triples_with_object(&self, object: &Self::Term) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
         self.triples_matching(&Any, &Any, object)
     }
 
@@ -229,10 +223,7 @@ pub trait NeighsRDF: Rdf {
     /// # Arguments
     ///
     /// * `cls` - Matcher for the class (object position of `rdf:type` triples)
-    fn shacl_instances_of<O>(
-        &self,
-        cls: &O,
-    ) -> Result<impl Iterator<Item = Self::Subject>, Self::Err>
+    fn shacl_instances_of<O>(&self, cls: &O) -> Result<impl Iterator<Item = Self::Subject>, Self::Err>
     where
         O: Matcher<Self::Term>,
     {
@@ -253,10 +244,7 @@ pub trait NeighsRDF: Rdf {
     /// # Arguments
     ///
     /// * `triple` - The triple to find reifiers for
-    fn reifiers_of_triple(
-        &self,
-        triple: &Self::Triple,
-    ) -> Result<impl Iterator<Item = Self::Subject>, Self::Err> {
+    fn reifiers_of_triple(&self, triple: &Self::Triple) -> Result<impl Iterator<Item = Self::Subject>, Self::Err> {
         let triple_term = Self::triple_as_term(triple);
         let rdf_reifies: Self::IRI = rdf_reifies().clone().into();
         let reifiers = Self::triples_with_predicate_object(self, &rdf_reifies, &triple_term)?
@@ -275,16 +263,12 @@ pub trait NeighsRDF: Rdf {
     ///
     /// * `subject` - The subject to query
     /// * `predicate` - The predicate to match
-    fn object_for(
-        &self,
-        subject: &Self::Term,
-        predicate: &Self::IRI,
-    ) -> Result<Option<Object>, RDFError> {
+    fn object_for(&self, subject: &Self::Term, predicate: &Self::IRI) -> Result<Option<Object>, RDFError> {
         match self.objects_for(subject, predicate)?.into_iter().next() {
             Some(term) => {
                 let obj = Self::term_as_object(&term)?;
                 Ok(Some(obj))
-            }
+            },
             None => Ok(None),
         }
     }
@@ -309,16 +293,12 @@ pub trait NeighsRDF: Rdf {
     ///
     /// * `subject` - The starting term for path navigation
     /// * `path` - The SHACL property path to follow
-    fn objects_for_shacl_path(
-        &self,
-        subject: &Self::Term,
-        path: &SHACLPath,
-    ) -> Result<HashSet<Self::Term>, RDFError> {
+    fn objects_for_shacl_path(&self, subject: &Self::Term, path: &SHACLPath) -> Result<HashSet<Self::Term>, RDFError> {
         match path {
             SHACLPath::Predicate { pred } => {
                 let pred: Self::IRI = pred.clone().into();
                 self.objects_for(subject, &pred)
-            }
+            },
             SHACLPath::Alternative { paths } => {
                 let mut all_objects = HashSet::new();
                 for path in paths {
@@ -326,29 +306,25 @@ pub trait NeighsRDF: Rdf {
                     all_objects.extend(objects);
                 }
                 Ok(all_objects)
-            }
+            },
             SHACLPath::Sequence { paths } => match paths.as_slice() {
                 [] => Ok(HashSet::from([subject.clone()])),
                 [first, rest @ ..] => {
                     let first_objects = self.objects_for_shacl_path(subject, first)?;
                     let mut all_objects = HashSet::new();
                     for obj in first_objects {
-                        let intermediate_objects = self.objects_for_shacl_path(
-                            &obj,
-                            &SHACLPath::Sequence {
-                                paths: rest.to_vec(),
-                            },
-                        )?;
+                        let intermediate_objects =
+                            self.objects_for_shacl_path(&obj, &SHACLPath::Sequence { paths: rest.to_vec() })?;
                         all_objects.extend(intermediate_objects);
                     }
                     Ok(all_objects)
-                }
+                },
             },
             SHACLPath::Inverse { path } => {
                 let pred: Self::IRI = path.pred().unwrap().clone().into();
                 let objects = self.subjects_for(&pred, subject)?;
                 Ok(objects)
-            }
+            },
             SHACLPath::ZeroOrMore { path } => {
                 let mut all_objects = HashSet::new();
                 all_objects.insert(subject.clone());
@@ -363,7 +339,7 @@ pub trait NeighsRDF: Rdf {
                     }
                 }
                 Ok(all_objects)
-            }
+            },
             SHACLPath::OneOrMore { path } => {
                 let mut all_objects = HashSet::new();
                 let first_objects = self.objects_for_shacl_path(subject, path)?;
@@ -379,14 +355,14 @@ pub trait NeighsRDF: Rdf {
                     }
                 }
                 Ok(all_objects)
-            }
+            },
             SHACLPath::ZeroOrOne { path } => {
                 let mut all_objects = HashSet::new();
                 all_objects.insert(subject.clone());
                 let next_objects = self.objects_for_shacl_path(subject, path)?;
                 all_objects.extend(next_objects);
                 Ok(all_objects)
-            }
+            },
         }
     }
 
@@ -399,16 +375,12 @@ pub trait NeighsRDF: Rdf {
     ///
     /// * `subject` - The subject term to query
     /// * `predicate` - The predicate IRI to match
-    /// 
+    ///
     /// # Errors
     ///
     /// Returns [`RDFError::ErrorObjectsFor`] if the query fails or if the
     /// subject term cannot be converted to a valid subject.
-    fn objects_for(
-        &self,
-        subject: &Self::Term,
-        predicate: &Self::IRI,
-    ) -> Result<HashSet<Self::Term>, RDFError> {
+    fn objects_for(&self, subject: &Self::Term, predicate: &Self::IRI) -> Result<HashSet<Self::Term>, RDFError> {
         let subject_node: Self::Subject = Self::term_as_subject(subject)?;
         let subject_str = format!("{subject}");
         let predicate_str = format!("{predicate}");
@@ -438,11 +410,7 @@ pub trait NeighsRDF: Rdf {
     /// # Errors
     ///
     /// Returns [`RDFError::ErrorSubjectsFor`] if the query fails.
-    fn subjects_for(
-        &self,
-        predicate: &Self::IRI,
-        object: &Self::Term,
-    ) -> Result<HashSet<Self::Term>, RDFError> {
+    fn subjects_for(&self, predicate: &Self::IRI, object: &Self::Term) -> Result<HashSet<Self::Term>, RDFError> {
         let values = self
             .triples_matching(&Any, predicate, object)
             .map_err(|e| RDFError::ErrorSubjectsFor {
@@ -523,10 +491,7 @@ where
     /// * `pred` - The predicate IRI of the relationship
     /// * `subject` - The subject that has this relationship to the focus node
     pub fn inverse(pred: S::IRI, subject: S::Subject) -> Neigh<S> {
-        Neigh::Inverse {
-            p: pred,
-            s: subject,
-        }
+        Neigh::Inverse { p: pred, s: subject }
     }
 }
 
@@ -572,25 +537,25 @@ where
                     .map(Triple::into_predicate)
                     .collect();
                 let _qs = preds.into_iter();
-                
+
                 // TODO: Complete implementation
                 // The intended approach is to:
                 // 1. For each predicate, get all objects (direct neighs)
                 // 2. Collect predicates where term appears as object (inverse neighs)
                 // 3. Create a lazy iterator that yields both types of neighs
-                
+
                 /*let vv = qs.flat_map(|p| {
                     let objs = rdf.get_objects_for_subject_predicate(&subject, &p)?;
                     objs.into_iter().map(|o| Neigh::Direct { p, o })
                 });*/
-                
+
                 todo!(); // Ok(vv)
-            }
+            },
             Err(_) => {
                 // TODO: Handle case where term is not a subject
                 // Should still find inverse relationships where term appears as object
                 todo!()
-            }
+            },
         }
     }
 }

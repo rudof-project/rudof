@@ -1,4 +1,4 @@
-use crate::rdf_core::visualizer::style::{UmlColor, ThicknessStyle};
+use crate::rdf_core::visualizer::style::{ThicknessStyle, UmlColor};
 use serde::{Deserialize, Serialize};
 
 /// Default line thickness used when no explicit thickness is specified.
@@ -67,7 +67,7 @@ impl ArrowStyle {
     }
 
     /// Converts the arrow style into a PlantUML-compatible style string.
-    /// 
+    ///
     /// # Returns
     /// A `String` representing the arrow style in PlantUML syntax.
     pub fn as_plantuml(&self) -> String {

@@ -1,8 +1,7 @@
-use serde::{Deserialize, Serialize};
 use crate::rdf_core::visualizer::style::{
-    ArrowStyle, DEFAULT_PREDICATE_ARROW_STYLE, DEFAULT_SUBJECT_ARROW_STYLE, DEFAULT_OBJECT_ARROW_STYLE,
-    Style, UmlColor
+    ArrowStyle, DEFAULT_OBJECT_ARROW_STYLE, DEFAULT_PREDICATE_ARROW_STYLE, DEFAULT_SUBJECT_ARROW_STYLE, Style, UmlColor,
 };
+use serde::{Deserialize, Serialize};
 
 /// Default text subject label used when no custom values are provided.
 const DEFAULT_SUBJECT_TEXT: &str = "subj";
@@ -327,7 +326,6 @@ const URI_LINE_THICKNESS: u32 = 1;
 const URI_BACKGROUND_COLOR: UmlColor = UmlColor::White;
 /// Default corner radius for URI node shapes.
 const URI_ROUND_CORNER: u32 = 25;
-
 
 /// Default stroke color for blank nodes.
 const BNODE_LINE_COLOR: UmlColor = UmlColor::Blue;

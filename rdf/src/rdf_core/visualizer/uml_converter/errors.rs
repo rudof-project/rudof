@@ -11,8 +11,10 @@ pub enum UmlConverterError {
     /// # Fields
     /// - `path`: The paths that were searched for the PlantUML jar file
     /// - `error`: Detailed description of why the file could not be found
-    #[error("No PlantUML jar file found\nThe environment variable `PLANTUML` should point 
-    to a plantuml.jar file\nSearching jar file in: {path}: {error}")]
+    #[error(
+        "No PlantUML jar file found\nThe environment variable `PLANTUML` should point
+    to a plantuml.jar file\nSearching jar file in: {path}: {error}"
+    )]
     NoPlantUMLFile { path: String, error: String },
 
     /// Error when Java is not installed or not found in the system PATH.
@@ -28,10 +30,7 @@ pub enum UmlConverterError {
     /// - `tempfile_name`: The name of the temporary file that failed to be created
     /// - `error`: Detailed description of the file creation failure
     #[error("Error creating temporary UML file: {tempfile_name}: {error}")]
-    CreatingTempUMLFile {
-        tempfile_name: String,
-        error: String,
-    },
+    CreatingTempUMLFile { tempfile_name: String, error: String },
 
     /// Error flushing (writing) content to a temporary UML file.
     ///
@@ -39,10 +38,7 @@ pub enum UmlConverterError {
     /// - `tempfile_name`: The name of the temporary file that failed to be flushed
     /// - `error`: Detailed description of the flush failure
     #[error("Error flushing temporary UML file: {tempfile_name}: {error}")]
-    FlushingTempUMLFile {
-        tempfile_name: String,
-        error: String,
-    },
+    FlushingTempUMLFile { tempfile_name: String, error: String },
 
     /// Generic error when creating a temporary file fails.
     ///
@@ -76,10 +72,7 @@ pub enum UmlConverterError {
     /// - `temp_name`: The name of the temporary file being copied
     /// - `error`: The underlying I/O error that occurred during copying
     #[error("Error copying temporary output file to writer: {temp_name}: {error}")]
-    CopyingTempFile {
-        temp_name: String,
-        error: std::io::Error,
-    },
+    CopyingTempFile { temp_name: String, error: std::io::Error },
 
     /// Error when a requested label cannot be found in the UML diagram.
     ///

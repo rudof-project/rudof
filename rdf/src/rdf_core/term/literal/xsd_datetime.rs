@@ -24,7 +24,7 @@ impl XsdDateTime {
     pub fn new(value: &str) -> Result<Self, XsdDateTimeParseError> {
         DateTime::from_str(value)
             .map(|dt| Self { value: dt })
-            .map_err(|e| XsdDateTimeParseError::InvalidDateTime(e))
+            .map_err(XsdDateTimeParseError::InvalidDateTime)
     }
 
     /// Returns a reference to the underlying `DateTime` value.

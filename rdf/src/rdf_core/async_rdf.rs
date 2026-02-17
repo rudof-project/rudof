@@ -1,5 +1,5 @@
-use std::{hash::Hash, collections::HashSet, fmt::Display};
 use async_trait::async_trait;
+use std::{collections::HashSet, fmt::Display, hash::Hash};
 
 /// An asynchronous trait for querying RDF graphs.
 ///
@@ -42,10 +42,7 @@ pub trait AsyncRDF {
     /// # Arguments
     ///
     /// * `subject` - A reference to the subject whose predicates should be retrieved
-    async fn get_predicates_subject(
-        &self,
-        subject: &Self::Subject,
-    ) -> Result<HashSet<Self::IRI>, Self::Err>;
+    async fn get_predicates_subject(&self, subject: &Self::Subject) -> Result<HashSet<Self::IRI>, Self::Err>;
 
     /// Retrieves all objects for a given subject-predicate pair.
     ///

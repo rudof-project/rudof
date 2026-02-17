@@ -1,11 +1,11 @@
 use crate::{Span, shex_parser_error::ParseError as ShExParseError};
 use nom::error::{ErrorKind, FromExternalError};
+use rdf::rdf_core::RDFError;
 use std::{
     fmt::Debug,
     num::{ParseFloatError, ParseIntError},
 };
 use thiserror::Error;
-use rdf::rdf_core::RDFError;
 
 /// A [`ShExParseError`] at a certain location
 #[derive(Debug, Error)]

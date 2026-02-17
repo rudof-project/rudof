@@ -5,10 +5,10 @@ use crate::{
 };
 use iri_s::IriS;
 use iri_s::MimeType;
-use shex_ast::ShExFormat;
-use shex_ast::shapemap::ResultShapeMap;
 use rdf::rdf_core::RDFFormat;
 use rdf::rdf_impl::ReaderMode;
+use shex_ast::ShExFormat;
+use shex_ast::shapemap::ResultShapeMap;
 use std::io::Write;
 use tracing::info;
 #[cfg(not(target_family = "wasm"))]

@@ -3,8 +3,11 @@ use std::fmt::Display;
 
 use crate::rdf_core::{
     RDFError,
-    vocab::{xsd_integer, xsd_decimal, xsd_double, xsd_long, xsd_byte, xsd_float, xsd_short, xsd_unsigned_int, xsd_unsigned_long, 
-        xsd_unsigned_short, xsd_unsigned_byte, xsd_non_negative_integer, xsd_non_positive_integer, xsd_negative_integer, xsd_positive_integer},
+    vocab::{
+        xsd_byte, xsd_decimal, xsd_double, xsd_float, xsd_integer, xsd_long, xsd_negative_integer,
+        xsd_non_negative_integer, xsd_non_positive_integer, xsd_positive_integer, xsd_short, xsd_unsigned_byte,
+        xsd_unsigned_int, xsd_unsigned_long, xsd_unsigned_short,
+    },
 };
 use rust_decimal::{
     Decimal,
@@ -155,8 +158,7 @@ impl NumericLiteral {
     /// Returns error if the constructed string cannot be parsed as Decimal.
     pub fn decimal_from_parts(whole: i64, fraction: u32) -> Result<NumericLiteral, RDFError> {
         let s = format!("{whole}.{fraction}");
-        let d = Decimal::from_str_exact(&s)
-            .map_err(|e| RDFError::ConversionError { msg: e.to_string() })?;
+        let d = Decimal::from_str_exact(&s).map_err(|e| RDFError::ConversionError { msg: e.to_string() })?;
         Ok(NumericLiteral::Decimal(d))
     }
 
@@ -211,7 +213,7 @@ impl NumericLiteral {
 
     /// Creates an integer literal from i128.
     pub fn integer_from_i128(d: i128) -> NumericLiteral {
-        NumericLiteral::Integer(d as i128)
+        NumericLiteral::Integer(d)
     }
 
     /// Converts any numeric literal to Decimal for uniform comparison.
@@ -291,13 +293,9 @@ impl NumericLiteral {
             // For decimals, normalize and count only digits
             NumericLiteral::Decimal(d) => {
                 let normalized = d.normalize();
-                let digit_count = normalized
-                    .to_string()
-                    .chars()
-                    .filter(|c| c.is_ascii_digit())
-                    .count();
+                let digit_count = normalized.to_string().chars().filter(|c| c.is_ascii_digit()).count();
                 Some(digit_count)
-            }
+            },
             // Float/double don't have meaningful total digits
             NumericLiteral::Double(_) | NumericLiteral::Float(_) => None,
         }
@@ -326,7 +324,7 @@ impl NumericLiteral {
             NumericLiteral::Decimal(d) => {
                 let s = d.to_string();
                 Some(s.find('.').map_or(0, |pos| s.len() - pos - 1))
-            }
+            },
             // Float/double don't have meaningful fraction digits
             NumericLiteral::Double(_) | NumericLiteral::Float(_) => None,
         }
@@ -385,7 +383,7 @@ impl Serialize for NumericLiteral {
                     Some(f) => serializer.serialize_f64(f),
                     None => serializer.serialize_str(&d.to_string()),
                 }
-            }
+            },
             NumericLiteral::Double(d) => serializer.serialize_f64(*d),
             NumericLiteral::Long(n) => serializer.serialize_i64(*n),
             NumericLiteral::Float(f) => serializer.serialize_f32(*f),
@@ -469,56 +467,43 @@ impl TryFrom<&str> for NumericLiteral {
 impl From<NumericLiteral> for oxrdf::Literal {
     fn from(n: NumericLiteral) -> Self {
         match n {
-            NumericLiteral::Integer(i) => {
-                oxrdf::Literal::new_typed_literal(&i.to_string(), oxrdf::vocab::xsd::INTEGER)
-            }
+            NumericLiteral::Integer(i) => oxrdf::Literal::new_typed_literal(i.to_string(), oxrdf::vocab::xsd::INTEGER),
             NumericLiteral::Decimal(d) => {
                 // Try converting to f64, otherwise use typed literal
                 match d.to_f64() {
                     Some(decimal) => oxrdf::Literal::from(decimal),
-                    None => oxrdf::Literal::new_typed_literal(
-                        &d.to_string(),
-                        oxrdf::vocab::xsd::DECIMAL,
-                    ),
+                    None => oxrdf::Literal::new_typed_literal(d.to_string(), oxrdf::vocab::xsd::DECIMAL),
                 }
-            }
+            },
             NumericLiteral::Double(d) => oxrdf::Literal::from(d),
-            NumericLiteral::Long(l) => {
-                oxrdf::Literal::new_typed_literal(&l.to_string(), oxrdf::vocab::xsd::LONG)
-            }
+            NumericLiteral::Long(l) => oxrdf::Literal::new_typed_literal(l.to_string(), oxrdf::vocab::xsd::LONG),
             NumericLiteral::Float(f) => oxrdf::Literal::from(f),
-            NumericLiteral::Byte(b) => {
-                oxrdf::Literal::new_typed_literal(&b.to_string(), oxrdf::vocab::xsd::BYTE)
-            }
+            NumericLiteral::Byte(b) => oxrdf::Literal::new_typed_literal(b.to_string(), oxrdf::vocab::xsd::BYTE),
             NumericLiteral::Short(s) => oxrdf::Literal::from(s),
-            NumericLiteral::NonNegativeInteger(n) => oxrdf::Literal::new_typed_literal(
-                &n.to_string(),
-                oxrdf::vocab::xsd::NON_NEGATIVE_INTEGER,
-            ),
+            NumericLiteral::NonNegativeInteger(n) => {
+                oxrdf::Literal::new_typed_literal(n.to_string(), oxrdf::vocab::xsd::NON_NEGATIVE_INTEGER)
+            },
             NumericLiteral::UnsignedLong(n) => {
-                oxrdf::Literal::new_typed_literal(&n.to_string(), oxrdf::vocab::xsd::UNSIGNED_LONG)
-            }
+                oxrdf::Literal::new_typed_literal(n.to_string(), oxrdf::vocab::xsd::UNSIGNED_LONG)
+            },
             NumericLiteral::UnsignedInt(n) => {
-                oxrdf::Literal::new_typed_literal(&n.to_string(), oxrdf::vocab::xsd::UNSIGNED_INT)
-            }
+                oxrdf::Literal::new_typed_literal(n.to_string(), oxrdf::vocab::xsd::UNSIGNED_INT)
+            },
             NumericLiteral::UnsignedShort(n) => {
-                oxrdf::Literal::new_typed_literal(&n.to_string(), oxrdf::vocab::xsd::UNSIGNED_SHORT)
-            }
+                oxrdf::Literal::new_typed_literal(n.to_string(), oxrdf::vocab::xsd::UNSIGNED_SHORT)
+            },
             NumericLiteral::UnsignedByte(n) => {
-                oxrdf::Literal::new_typed_literal(&n.to_string(), oxrdf::vocab::xsd::UNSIGNED_BYTE)
-            }
-            NumericLiteral::PositiveInteger(n) => oxrdf::Literal::new_typed_literal(
-                &n.to_string(),
-                oxrdf::vocab::xsd::POSITIVE_INTEGER,
-            ),
-            NumericLiteral::NegativeInteger(n) => oxrdf::Literal::new_typed_literal(
-                &n.to_string(),
-                oxrdf::vocab::xsd::NEGATIVE_INTEGER,
-            ),
-            NumericLiteral::NonPositiveInteger(n) => oxrdf::Literal::new_typed_literal(
-                &n.to_string(),
-                oxrdf::vocab::xsd::NON_POSITIVE_INTEGER,
-            ),
+                oxrdf::Literal::new_typed_literal(n.to_string(), oxrdf::vocab::xsd::UNSIGNED_BYTE)
+            },
+            NumericLiteral::PositiveInteger(n) => {
+                oxrdf::Literal::new_typed_literal(n.to_string(), oxrdf::vocab::xsd::POSITIVE_INTEGER)
+            },
+            NumericLiteral::NegativeInteger(n) => {
+                oxrdf::Literal::new_typed_literal(n.to_string(), oxrdf::vocab::xsd::NEGATIVE_INTEGER)
+            },
+            NumericLiteral::NonPositiveInteger(n) => {
+                oxrdf::Literal::new_typed_literal(n.to_string(), oxrdf::vocab::xsd::NON_POSITIVE_INTEGER)
+            },
         }
     }
 }

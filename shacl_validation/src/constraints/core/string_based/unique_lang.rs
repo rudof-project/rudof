@@ -6,11 +6,15 @@ use crate::shacl_engine::Engine;
 use crate::shacl_engine::sparql::SparqlEngine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
+use rdf::rdf_core::{
+    NeighsRDF, SHACLPath,
+    query::QueryRDF,
+    term::{Object, literal::Literal},
+};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::UniqueLang;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF, term::{literal::Literal, Object}};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use tracing::debug;

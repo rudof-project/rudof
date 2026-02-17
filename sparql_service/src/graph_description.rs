@@ -1,6 +1,6 @@
 use crate::{ClassPartition, PropertyPartition};
-use serde::{Deserialize, Serialize};
 use rdf::rdf_core::term::{IriOrBlankNode, literal::NumericLiteral};
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
 #[derive(Clone, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]

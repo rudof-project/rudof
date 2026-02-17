@@ -3,10 +3,10 @@ use iri_s::IriS;
 use iri_s::error::IriSError;
 use prefixmap::PrefixMap;
 use prefixmap::error::PrefixMapError;
+use rdf::rdf_core::term::Object;
 use serde::Serialize;
 use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
-use rdf::rdf_core::term::Object;
 
 /// Shape labels can be IRIs, Blank nodes or the special `Start` label
 #[derive(PartialEq, Eq, Hash, Debug, Clone, PartialOrd, Ord)]

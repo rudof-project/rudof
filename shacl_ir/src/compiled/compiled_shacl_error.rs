@@ -1,7 +1,7 @@
+use rdf::rdf_core::{term::Object, utils::RDFRegexError};
+use rdf::rdf_impl::InMemoryGraphError;
 use shacl_ast::ShaclError;
 use shacl_rdf::shacl_parser_error::ShaclParserError;
-use rdf::rdf_core::{utils::RDFRegexError, term::Object};
-use rdf::rdf_impl::InMemoryGraphError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -12,10 +12,7 @@ pub enum CompiledShaclError {
     #[error(
         "Invalid path for property shape with reifier shape {shape_id}, the path must be a single predicate, but got: {path}"
     )]
-    InvalidReifierShapePath {
-        shape_id: Box<Object>,
-        path: String,
-    },
+    InvalidReifierShapePath { shape_id: Box<Object>, path: String },
     #[error("Conversion from IriRef {iri_ref } failed: {err}")]
     IriRefConversion { iri_ref: String, err: String },
 

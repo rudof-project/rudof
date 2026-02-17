@@ -44,7 +44,7 @@ impl RDFRegex {
     /// - **`q`** (quote/literal): Treats the entire pattern as a literal string (escapes special characters)
     ///
     /// Flags can be combined, e.g., `"im"` for case-insensitive multi-line matching.
-    /// 
+    ///
     /// # Size Limits
     ///
     /// The compiled regex is limited to [`REGEX_SIZE_LIMIT`] bytes. Patterns
@@ -68,18 +68,18 @@ impl RDFRegex {
             match flag {
                 's' => {
                     regex_builder.dot_matches_new_line(true);
-                }
+                },
                 'm' => {
                     regex_builder.multi_line(true);
-                }
+                },
                 'i' => {
                     regex_builder.case_insensitive(true);
-                }
+                },
                 'x' => {
                     regex_builder.ignore_whitespace(true);
-                }
-                'q' => (),                                             
-                _ => return Err(RDFRegexError::InvalidFlagOption(flag)), 
+                },
+                'q' => (),
+                _ => return Err(RDFRegexError::InvalidFlagOption(flag)),
             }
         }
         let regex = regex_builder.build()?;
@@ -137,15 +137,10 @@ pub enum RDFRegexError {
 
 impl Display for RDFRegex {
     /// Formats the regex in a compact notation showing pattern and flags.
-    /// 
-    /// # Output format 
+    ///
+    /// # Output format
     /// - `/pattern/flags`
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "/{}/{}",
-            self.regex.as_str(),
-            self.flags.as_deref().unwrap_or("")
-        )
+        write!(f, "/{}/{}", self.regex.as_str(), self.flags.as_deref().unwrap_or(""))
     }
 }

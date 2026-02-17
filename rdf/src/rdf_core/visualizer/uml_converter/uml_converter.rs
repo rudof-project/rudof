@@ -1,5 +1,10 @@
 use crate::rdf_core::visualizer::uml_converter::errors::UmlConverterError;
-use std::{fs::File, io::{self, Write}, path::Path, process::Command};
+use std::{
+    fs::File,
+    io::{self, Write},
+    path::Path,
+    process::Command,
+};
 use tempfile::TempDir;
 
 /// Trait for converting data structures to PlantUML format.
@@ -15,11 +20,7 @@ pub trait UmlConverter {
     ///
     /// # Returns
     /// * `Result<(), UmlConverterError>` - Ok if successful, Err with details on failure
-    fn as_plantuml<W: Write>(
-        &self,
-        writer: &mut W,
-        mode: &UmlGenerationMode,
-    ) -> Result<(), UmlConverterError>;
+    fn as_plantuml<W: Write>(&self, writer: &mut W, mode: &UmlGenerationMode) -> Result<(), UmlConverterError>;
 
     /// Converts the implementing type to an image format using PlantUML.
     ///
@@ -50,9 +51,7 @@ pub trait UmlConverter {
         }
 
         // Create a temporary directory for intermediate files
-        let tempdir = TempDir::new().map_err(|e| UmlConverterError::TempFileError {
-            error: e.to_string(),
-        })?;
+        let tempdir = TempDir::new().map_err(|e| UmlConverterError::TempFileError { error: e.to_string() })?;
         let tempdir_path = tempdir.path();
 
         // Define paths for temporary UML file
@@ -69,16 +68,12 @@ pub trait UmlConverter {
         };
 
         // Verify Java is installed
-        check_java_installed().map_err(|e| UmlConverterError::JavaNotInstalled {
-            error: e.to_string(),
-        })?;
+        check_java_installed().map_err(|e| UmlConverterError::JavaNotInstalled { error: e.to_string() })?;
 
         // Verify PlantUML jar is valid
-        check_plantuml_jar(plantuml_path.as_ref()).map_err(|e| {
-            UmlConverterError::NoPlantUMLFile {
-                path: plantuml_path.as_ref().display().to_string(),
-                error: e.to_string(),
-            }
+        check_plantuml_jar(plantuml_path.as_ref()).map_err(|e| UmlConverterError::NoPlantUMLFile {
+            path: plantuml_path.as_ref().display().to_string(),
+            error: e.to_string(),
         })?;
 
         // Build the PlantUML command
@@ -87,7 +82,7 @@ pub trait UmlConverter {
             "-jar",
             &plantuml_path.as_ref().display().to_string(),
             "-o",
-            &tempdir_path.to_string_lossy().to_string(),
+            tempdir_path.to_string_lossy().as_ref(),
             out_param,
             "--verbose",
             &tempfile_name,
@@ -98,22 +93,19 @@ pub trait UmlConverter {
         match output {
             Ok(_) => {
                 // Open the generated image file
-                let mut temp_file = File::open(out_file_name.as_path()).map_err(|e| {
-                    UmlConverterError::CantOpenGeneratedTempFile {
+                let mut temp_file =
+                    File::open(out_file_name.as_path()).map_err(|e| UmlConverterError::CantOpenGeneratedTempFile {
                         generated_name: out_file_name.display().to_string(),
                         error: e,
-                    }
-                })?;
+                    })?;
 
                 // Copy the image data to the output writer
-                io::copy(&mut temp_file, writer).map_err(|e| {
-                    UmlConverterError::CopyingTempFile {
-                        temp_name: out_file_name.display().to_string(),
-                        error: e,
-                    }
+                io::copy(&mut temp_file, writer).map_err(|e| UmlConverterError::CopyingTempFile {
+                    temp_name: out_file_name.display().to_string(),
+                    error: e,
                 })?;
                 Ok(())
-            }
+            },
             Err(e) => Err(UmlConverterError::PlantUMLCommandError {
                 command: format!("{:?}", command),
                 error: e.to_string(),
@@ -137,24 +129,20 @@ pub trait UmlConverter {
         mode: &UmlGenerationMode,
     ) -> Result<(), UmlConverterError> {
         // Create the temporary file
-        let mut file =
-            File::create(tempfile_path).map_err(|e| UmlConverterError::CreatingTempUMLFile {
-                tempfile_name: tempfile_name.to_string(),
-                error: e.to_string(),
-            })?;
+        let mut file = File::create(tempfile_path).map_err(|e| UmlConverterError::CreatingTempUMLFile {
+            tempfile_name: tempfile_name.to_string(),
+            error: e.to_string(),
+        })?;
 
         // Write the PlantUML content to the file
         self.as_plantuml(&mut file, mode)
-            .map_err(|e| UmlConverterError::UmlError {
-                error: e.to_string(),
-            })?;
+            .map_err(|e| UmlConverterError::UmlError { error: e.to_string() })?;
 
         // Ensure all data is written to disk
-        file.flush()
-            .map_err(|e| UmlConverterError::FlushingTempUMLFile {
-                tempfile_name: tempfile_name.to_string(),
-                error: e.to_string(),
-            })?;
+        file.flush().map_err(|e| UmlConverterError::FlushingTempUMLFile {
+            tempfile_name: tempfile_name.to_string(),
+            error: e.to_string(),
+        })?;
         Ok(())
     }
 }
@@ -186,11 +174,7 @@ fn check_plantuml_jar<P: AsRef<Path>>(plantuml_path: P) -> Result<(), io::Error>
     if plantuml_path.as_ref().exists() {
         // Test the jar by running PlantUML with -version flag
         let mut command = Command::new("java");
-        command.args([
-            "-jar",
-            &plantuml_path.as_ref().display().to_string(),
-            "-version",
-        ]);
+        command.args(["-jar", &plantuml_path.as_ref().display().to_string(), "-version"]);
         let output = command.output()?;
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
@@ -213,6 +197,7 @@ fn check_plantuml_jar<P: AsRef<Path>>(plantuml_path: P) -> Result<(), io::Error>
 }
 
 /// Supported image output formats for PlantUML conversion.
+#[allow(clippy::upper_case_acronyms)]
 pub enum ImageFormat {
     /// Scalable Vector Graphics format
     SVG,

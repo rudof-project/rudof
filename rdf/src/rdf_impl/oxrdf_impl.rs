@@ -7,9 +7,8 @@ use crate::rdf_core::{
 };
 use iri_s::IriS;
 use oxrdf::{
-    BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode,
-    NamedOrBlankNode as OxSubject, NamedOrBlankNodeRef as OxSubjectRef, Term as OxTerm,
-    Triple as OxTriple,
+    BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, NamedOrBlankNode as OxSubject,
+    NamedOrBlankNodeRef as OxSubjectRef, Term as OxTerm, Triple as OxTriple,
 };
 use prefixmap::IriRef;
 
@@ -186,11 +185,7 @@ impl Triple<OxSubject, OxNamedNode, OxTerm> for OxTriple {
     /// - `subj`: The subject (IRI or blank node)
     /// - `pred`: The predicate (IRI/named node)
     /// - `obj`: The object (IRI, blank node, literal, or quoted triple)
-    fn new(
-        subj: impl Into<OxSubject>,
-        pred: impl Into<OxNamedNode>,
-        obj: impl Into<OxTerm>,
-    ) -> Self {
+    fn new(subj: impl Into<OxSubject>, pred: impl Into<OxNamedNode>, obj: impl Into<OxTerm>) -> Self {
         OxTriple::new(subj, pred, obj)
     }
 

@@ -7,8 +7,8 @@ use oxigraph::{
 use thiserror::Error;
 
 use rdf::{
-    rdf_impl::{InMemoryGraphError, SparqlEndpointError},
     rdf_core::RDFFormat,
+    rdf_impl::{InMemoryGraphError, SparqlEndpointError},
 };
 
 #[derive(Debug, Error)]

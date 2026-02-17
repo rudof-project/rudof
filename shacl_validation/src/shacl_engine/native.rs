@@ -6,15 +6,15 @@ use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use iri_s::IriS;
+use rdf::rdf_core::{
+    NeighsRDF, SHACLPath,
+    term::{Object, Term, Triple},
+    vocab::{rdf_type, rdfs_subclass_of},
+};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
 use shacl_ir::shape_label_idx::ShapeLabelIdx;
-use rdf::rdf_core::{
-    NeighsRDF, SHACLPath,
-    term::{Object, Triple, Term},
-    vocab::{rdf_type, rdfs_subclass_of},
-};
 use std::collections::HashMap;
 use std::fmt::Debug;
 
@@ -80,11 +80,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
         }
     }
 
-    fn target_class(
-        &self,
-        store: &S,
-        class: &Object,
-    ) -> Result<FocusNodes<S>, Box<ValidateError>> {
+    fn target_class(&self, store: &S, class: &Object) -> Result<FocusNodes<S>, Box<ValidateError>> {
         // TODO: this should not be necessary, check in others triples_matching calls
         let cls: S::Term = class.clone().into();
         let focus_nodes = store
@@ -117,11 +113,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
         Ok(FocusNodes::from_iter(objects))
     }
 
-    fn implicit_target_class(
-        &self,
-        store: &S,
-        subject: &Object,
-    ) -> Result<FocusNodes<S>, Box<ValidateError>> {
+    fn implicit_target_class(&self, store: &S, subject: &Object) -> Result<FocusNodes<S>, Box<ValidateError>> {
         // TODO: Replace by shacl_instances_of
         let term: S::Term = subject.clone().into();
         let targets = store
@@ -152,12 +144,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
         Ok(FocusNodes::from_iter(targets.into_iter().chain(subclass_targets)))
     }
 
-    fn record_validation(
-        &mut self,
-        node: Object,
-        shape_idx: ShapeLabelIdx,
-        results: Vec<ValidationResult>,
-    ) {
+    fn record_validation(&mut self, node: Object, shape_idx: ShapeLabelIdx, results: Vec<ValidationResult>) {
         self.cached_validations
             .entry(node)
             .or_default()

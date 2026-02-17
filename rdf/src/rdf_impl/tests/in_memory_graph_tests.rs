@@ -1,13 +1,13 @@
 use crate::rdf_core::{
-    Any, BuildRDF, NeighsRDF, RDFError, RDFFormat, 
+    Any, BuildRDF, NeighsRDF, RDFError, RDFFormat,
     parser::rdf_node_parser::{
-        ParserExt, RDFNodeParse, 
+        ParserExt, RDFNodeParse,
         constructors::{
-            IntegersPropertyParser, IriParser, ListParser, SetFocusParser, SingleBoolPropertyParser, SingleIntegerPropertyParser, 
-            SingleStringPropertyParser, SingleValuePropertyParser, SatisfyParser
-        }
-    }, 
-    term::Triple
+            IntegersPropertyParser, IriParser, ListParser, SatisfyParser, SetFocusParser, SingleBoolPropertyParser,
+            SingleIntegerPropertyParser, SingleStringPropertyParser, SingleValuePropertyParser,
+        },
+    },
+    term::Triple,
 };
 use crate::rdf_impl::{InMemoryGraph, ReaderMode};
 use crate::rdf_parser;
@@ -205,10 +205,7 @@ fn test_rdf_list() {
 
     assert_eq!(
         result,
-        vec![
-            OxTerm::from(OxLiteral::from(1)),
-            OxTerm::from(OxLiteral::from(2))
-        ]
+        vec![OxTerm::from(OxLiteral::from(1)), OxTerm::from(OxLiteral::from(2))]
     )
 }
 
@@ -304,7 +301,7 @@ fn test_parser_flat_map() {
     }
 
     let parser = SingleStringPropertyParser::new(p).flat_map(cnv_int);
-    assert_eq!(parser.parse(&x,&mut graph).unwrap(), 1)
+    assert_eq!(parser.parse(&x, &mut graph).unwrap(), 1)
 }
 
 #[test]

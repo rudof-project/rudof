@@ -10,9 +10,9 @@ use crate::{
     shape_label_idx::ShapeLabelIdx,
 };
 use iri_s::IriS;
+use rdf::rdf_core::{Rdf, term::Object};
 use shacl_ast::Schema;
 use shacl_ast::node_shape::NodeShape;
-use rdf::rdf_core::{Rdf, term::Object};
 use std::collections::HashSet;
 
 #[derive(Debug, Clone)]

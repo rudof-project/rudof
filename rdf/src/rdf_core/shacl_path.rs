@@ -2,11 +2,10 @@ use iri_s::IriS;
 use serde::Serialize;
 use std::fmt::Display;
 
-
 /// Represents a SHACL property path for navigating RDF graphs.
 ///
 /// SHACL paths follow the [SHACL property paths spec](https://www.w3.org/TR/shacl/#property-paths)
-/// which are a subset of SPARQL property paths. 
+/// which are a subset of SPARQL property paths.
 /// They enable complex navigation patterns through RDF graphs, extending simple predicate-based traversal with operations
 /// like sequences, alternatives, inverses, and quantifiers.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]

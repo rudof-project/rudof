@@ -149,6 +149,7 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
 /// floating-point values or literals with different datatypes). Use [`PartialOrd`]
 /// when comparing arbitrary literals to avoid panics.
 #[derive(PartialEq, Eq, Hash, Debug, Serialize, Deserialize, Clone)]
+#[allow(clippy::enum_variant_names)]
 pub enum ConcreteLiteral {
     /// A plain string literal, optionally with a language tag.
     StringLiteral { lexical_form: String, lang: Option<Lang> },
@@ -311,9 +312,9 @@ impl ConcreteLiteral {
     /// let lit = ConcreteLiteral::lit_datatype("42", &dt_iri);
     ///
     /// // Validate the literal
-    /// let checked = lit.as_checked_literal().unwrap();
+    /// let checked = lit.into_checked_literal().unwrap();
     /// ```
-    pub fn as_checked_literal(self) -> Result<Self, RDFError> {
+    pub fn into_checked_literal(self) -> Result<Self, RDFError> {
         if let Self::DatatypeLiteral { lexical_form, datatype } = self {
             check_literal_datatype(lexical_form.as_ref(), &datatype)
         } else {

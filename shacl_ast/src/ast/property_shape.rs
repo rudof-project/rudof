@@ -9,7 +9,10 @@ use crate::shacl_vocab::{
 use crate::{component::Component, message_map::MessageMap, severity::Severity, target::Target};
 use crate::{sh_debug, sh_trace};
 use iri_s::IriS;
-use rdf::rdf_core::{Rdf, BuildRDF, SHACLPath, term::{Object, literal::NumericLiteral}};
+use rdf::rdf_core::{
+    BuildRDF, Rdf, SHACLPath,
+    term::{Object, literal::NumericLiteral},
+};
 
 #[derive(Debug)]
 pub struct PropertyShape<RDF: Rdf> {
@@ -194,6 +197,7 @@ impl<RDF: Rdf> PropertyShape<RDF> {
                 NumericLiteral::Decimal(_) => todo!(),
                 NumericLiteral::Double(float) => float.into(),
                 NumericLiteral::Float(float) => float.to_string().into(),
+                #[allow(clippy::useless_conversion)]
                 NumericLiteral::Integer(int) => {
                     let i: i128 = int.try_into().unwrap();
                     i.into()

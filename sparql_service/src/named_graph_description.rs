@@ -1,7 +1,7 @@
 use crate::{EntailmentProfile, EntailmentRegime, GraphDescription};
 use iri_s::IriS;
-use serde::{Deserialize, Serialize};
 use rdf::rdf_core::term::IriOrBlankNode;
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Default, Serialize, Deserialize)]

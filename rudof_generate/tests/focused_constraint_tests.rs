@@ -1,6 +1,6 @@
-use rudof_generate::{DataGenerator, GeneratorConfig};
 use rdf::rdf_core::{NeighsRDF, RDFFormat};
 use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+use rudof_generate::{DataGenerator, GeneratorConfig};
 use std::collections::HashMap;
 use std::io::Write;
 use tempfile::NamedTempFile;
@@ -37,13 +37,8 @@ ex:PersonShape {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = InMemoryGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Verify that generated triples respect datatypes
     let mut property_counts = HashMap::new();
@@ -107,13 +102,8 @@ ex:PersonShape a sh:NodeShape ;
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = InMemoryGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Verify that generated triples respect datatypes
     let mut property_counts = HashMap::new();
@@ -171,13 +161,8 @@ ex:PersonShape a sh:NodeShape ;
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = InMemoryGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Count properties per entity to verify cardinality
     let mut entity_properties: HashMap<String, HashMap<String, u32>> = HashMap::new();
@@ -245,13 +230,8 @@ ex:PersonShape a sh:NodeShape ;
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = InMemoryGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Verify that data was generated
     let triples: Vec<_> = graph.triples().unwrap().collect();

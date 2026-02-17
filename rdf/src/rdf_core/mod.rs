@@ -17,10 +17,10 @@ pub mod vocab;
 
 pub use async_rdf::AsyncRDF;
 pub use build_rdf::BuildRDF;
-pub use focus_rdf::FocusRDF;
 pub use errors::RDFError;
-pub use matcher::{Matcher, Any};
-pub use neighs_rdf::{NeighsRDF, Neigh, NeighsIterator};
+pub use focus_rdf::FocusRDF;
+pub use matcher::{Any, Matcher};
+pub use neighs_rdf::{Neigh, NeighsIterator, NeighsRDF};
 pub use rdf::Rdf;
 pub use rdf_data_config::RdfDataConfig;
 pub use rdf_format::RDFFormat;

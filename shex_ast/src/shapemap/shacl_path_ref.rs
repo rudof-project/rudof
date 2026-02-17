@@ -1,7 +1,7 @@
 use prefixmap::error::PrefixMapError;
 use prefixmap::{IriRef, PrefixMap};
-use serde::Serialize;
 use rdf::rdf_core::SHACLPath;
+use serde::Serialize;
 
 /// SHACLPathRef is similar to SHACLPath but uses IriRef for predicates
 /// This is useful when parsing ShapeMaps where predicates may be given as prefixed names

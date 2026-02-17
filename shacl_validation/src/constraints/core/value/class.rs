@@ -8,11 +8,16 @@ use crate::shacl_engine::engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
+use rdf::rdf_core::{
+    NeighsRDF, SHACLPath,
+    query::QueryRDF,
+    term::Term,
+    vocab::{rdf_type, rdfs_subclass_of},
+};
 use shacl_ir::compiled::component_ir::Class;
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF, term::Term, vocab::{rdf_type, rdfs_subclass_of}};
 use std::fmt::Debug;
 
 impl<S: NeighsRDF + 'static> NativeValidator<S> for Class {

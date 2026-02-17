@@ -2,13 +2,13 @@ use crate::unified_constraints::{
     NodeKind, UnifiedConstraint, UnifiedConstraintModel, UnifiedPropertyConstraint, UnifiedShape, Value,
 };
 use crate::{DataGeneratorError, Result};
+use rdf::rdf_core::{RDFFormat, term::literal::ConcreteLiteral};
+use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use shacl_ast::{
     Schema as ShaclSchema, component::Component, node_shape::NodeShape, property_shape::PropertyShape,
     shape::Shape as ShaclShape,
 };
 use shacl_rdf::rdf_to_shacl::ShaclParser;
-use rdf::rdf_core::{RDFFormat, term::literal::ConcreteLiteral};
-use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use std::fs;
 use std::path::Path;
 
@@ -35,9 +35,8 @@ impl ShaclToUnified {
     pub async fn convert_schema(&self, schema_data: String) -> Result<UnifiedConstraintModel> {
         let schema = tokio::task::spawn_blocking(move || {
             // Parse RDF data
-            let graph =
-                InMemoryGraph::from_str(&schema_data, &RDFFormat::Turtle, None, &ReaderMode::Strict)
-                    .map_err(|e| DataGeneratorError::Config(format!("Failed to parse RDF: {e}")))?;
+            let graph = InMemoryGraph::from_str(&schema_data, &RDFFormat::Turtle, None, &ReaderMode::Strict)
+                .map_err(|e| DataGeneratorError::Config(format!("Failed to parse RDF: {e}")))?;
 
             // Parse SHACL schema from RDF
             let mut parser = ShaclParser::new(graph);
@@ -50,10 +49,7 @@ impl ShaclToUnified {
         self.convert_shacl_schema(&schema).await
     }
 
-    async fn convert_shacl_schema(
-        &self,
-        schema: &ShaclSchema<InMemoryGraph>,
-    ) -> Result<UnifiedConstraintModel> {
+    async fn convert_shacl_schema(&self, schema: &ShaclSchema<InMemoryGraph>) -> Result<UnifiedConstraintModel> {
         let mut model = UnifiedConstraintModel::new();
 
         // Get all shapes from the schema
@@ -102,10 +98,7 @@ impl ShaclToUnified {
         }
     }
 
-    fn convert_property_shape(
-        &self,
-        prop_shape: &PropertyShape<InMemoryGraph>,
-    ) -> Option<UnifiedPropertyConstraint> {
+    fn convert_property_shape(&self, prop_shape: &PropertyShape<InMemoryGraph>) -> Option<UnifiedPropertyConstraint> {
         let property_iri = prop_shape.path().to_string();
         let mut constraints = Vec::new();
 

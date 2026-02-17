@@ -1,8 +1,8 @@
+use rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF, term::literal::Literal};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::LanguageIn;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF, term::literal::Literal};
 use std::fmt::Debug;
 
 use crate::constraints::NativeValidator;

@@ -1,4 +1,7 @@
-use crate::rdf_core::{Rdf, query::{QueryResultFormat, QuerySolutions}};
+use crate::rdf_core::{
+    Rdf,
+    query::{QueryResultFormat, QuerySolutions},
+};
 
 /// Trait for RDF graphs that support SPARQL query execution.
 ///
@@ -39,11 +42,7 @@ pub trait QueryRDF: Rdf {
     /// * `query` - A SPARQL CONSTRUCT query string
     /// * `result_format` - The serialization format for the resulting RDF graph
     ///   (e.g., Turtle, RDF/XML, N-Triples)
-    fn query_construct(
-        &self,
-        query: &str,
-        result_format: &QueryResultFormat,
-    ) -> Result<String, Self::Err>
+    fn query_construct(&self, query: &str, result_format: &QueryResultFormat) -> Result<String, Self::Err>
     where
         Self: Sized;
 
@@ -56,6 +55,6 @@ pub trait QueryRDF: Rdf {
     ///
     /// # Arguments
     ///
-    /// * `query` - A SPARQL ASK query string 
+    /// * `query` - A SPARQL ASK query string
     fn query_ask(&self, query: &str) -> Result<bool, Self::Err>;
 }

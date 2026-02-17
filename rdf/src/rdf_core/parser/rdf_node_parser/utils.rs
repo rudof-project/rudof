@@ -1,6 +1,11 @@
 use crate::rdf_core::{
-    FocusRDF, RDFError, parser::rdf_node_parser::{RDFNodeParse, constructors::SingleValuePropertyParser}, 
-    term::{Iri, IriOrBlankNode, literal::{ConcreteLiteral, Literal, NumericLiteral}}, vocab::{rdf_first, rdf_nil, rdf_rest}
+    FocusRDF, RDFError,
+    parser::rdf_node_parser::{RDFNodeParse, constructors::SingleValuePropertyParser},
+    term::{
+        Iri, IriOrBlankNode,
+        literal::{ConcreteLiteral, Literal, NumericLiteral},
+    },
+    vocab::{rdf_first, rdf_nil, rdf_rest},
 };
 use iri_s::{IriS, iri};
 
@@ -61,10 +66,8 @@ where
     R: FocusRDF,
 {
     let literal: R::Literal =
-        <R::Term as TryInto<R::Literal>>::try_into(term.clone()).map_err(|_| {
-            RDFError::ExpectedLiteralError {
-                term: format!("{term}"),
-            }
+        <R::Term as TryInto<R::Literal>>::try_into(term.clone()).map_err(|_| RDFError::ExpectedLiteralError {
+            term: format!("{term}"),
         })?;
     Ok(literal)
 }
@@ -95,16 +98,12 @@ where
     R: FocusRDF,
 {
     let literal: R::Literal =
-        <R::Term as TryInto<R::Literal>>::try_into(term.clone()).map_err(|_| {
-            RDFError::ExpectedLiteralError {
-                term: format!("{term}"),
-            }
-        })?;
-    let n = literal
-        .to_integer()
-        .ok_or_else(|| RDFError::ExpectedIntegerError {
+        <R::Term as TryInto<R::Literal>>::try_into(term.clone()).map_err(|_| RDFError::ExpectedLiteralError {
             term: format!("{term}"),
         })?;
+    let n = literal.to_integer().ok_or_else(|| RDFError::ExpectedIntegerError {
+        term: format!("{term}"),
+    })?;
     Ok(n)
 }
 
@@ -135,10 +134,8 @@ where
     R: FocusRDF,
 {
     let literal: R::Literal =
-        <R::Term as TryInto<R::Literal>>::try_into(term.clone()).map_err(|_| {
-            RDFError::ExpectedLiteralError {
-                term: format!("{term}"),
-            }
+        <R::Term as TryInto<R::Literal>>::try_into(term.clone()).map_err(|_| RDFError::ExpectedLiteralError {
+            term: format!("{term}"),
         })?;
     let slit: ConcreteLiteral = literal
         .try_into()
@@ -179,16 +176,12 @@ where
     R: FocusRDF,
 {
     let literal: R::Literal =
-        <R::Term as TryInto<R::Literal>>::try_into(term.clone()).map_err(|_| {
-            RDFError::ExpectedLiteralError {
-                term: format!("{term}"),
-            }
-        })?;
-    let n = literal
-        .to_bool()
-        .ok_or_else(|| RDFError::ExpectedBooleanError {
+        <R::Term as TryInto<R::Literal>>::try_into(term.clone()).map_err(|_| RDFError::ExpectedLiteralError {
             term: format!("{term}"),
         })?;
+    let n = literal.to_bool().ok_or_else(|| RDFError::ExpectedBooleanError {
+        term: format!("{term}"),
+    })?;
     Ok(n)
 }
 
@@ -216,10 +209,8 @@ pub fn term_to_iri<R>(term: &R::Term) -> Result<IriS, RDFError>
 where
     R: FocusRDF,
 {
-    let iri: R::IRI = <R::Term as TryInto<R::IRI>>::try_into(term.clone()).map_err(|_| {
-        RDFError::ExpectedIRIError {
-            term: format!("{term}"),
-        }
+    let iri: R::IRI = <R::Term as TryInto<R::IRI>>::try_into(term.clone()).map_err(|_| RDFError::ExpectedIRIError {
+        term: format!("{term}"),
     })?;
     let iri_string = iri.as_str();
     Ok(iri!(iri_string))
@@ -250,19 +241,18 @@ pub fn term_to_iri_or_blanknode<R>(term: &R::Term) -> Result<IriOrBlankNode, RDF
 where
     R: FocusRDF,
 {
-    let subj: R::Subject =
-        <R::Term as TryInto<R::Subject>>::try_into(term.clone()).map_err(|_| {
-            RDFError::ExpectedIriOrBlankNodeError {
-                term: format!("{term}"),
-                error: "Expected IRI or BlankNode".to_string(),
-            }
+    let subj: R::Subject = <R::Term as TryInto<R::Subject>>::try_into(term.clone()).map_err(|_| {
+        RDFError::ExpectedIriOrBlankNodeError {
+            term: format!("{term}"),
+            error: "Expected IRI or BlankNode".to_string(),
+        }
+    })?;
+    let iri_or_bnode: IriOrBlankNode = subj
+        .clone()
+        .try_into()
+        .map_err(|_| RDFError::SubjectToIriOrBlankNodeError {
+            subject: format!("{subj}"),
         })?;
-    let iri_or_bnode: IriOrBlankNode =
-        subj.clone()
-            .try_into()
-            .map_err(|_| RDFError::SubjectToIriOrBlankNodeError {
-                subject: format!("{subj}"),
-            })?;
     Ok(iri_or_bnode)
 }
 
@@ -291,24 +281,17 @@ where
     R: FocusRDF,
 {
     let literal: R::Literal =
-        <R::Term as TryInto<R::Literal>>::try_into(term.clone()).map_err(|_| {
-            RDFError::ExpectedLiteralError {
-                term: format!("{term}"),
-            }
+        <R::Term as TryInto<R::Literal>>::try_into(term.clone()).map_err(|_| RDFError::ExpectedLiteralError {
+            term: format!("{term}"),
         })?;
     Ok(literal.lexical_form().to_string())
 }
 
-pub fn parse_list_recursive<RDF>(
-    mut visited: Vec<RDF::Term>,
-    rdf: &mut RDF,
-) -> Result<Vec<RDF::Term>, RDFError>
+pub fn parse_list_recursive<RDF>(mut visited: Vec<RDF::Term>, rdf: &mut RDF) -> Result<Vec<RDF::Term>, RDFError>
 where
     RDF: FocusRDF,
 {
-    let focus = rdf.get_focus()
-        .ok_or(RDFError::NoFocusNodeError)?
-        .clone();
+    let focus = rdf.get_focus().ok_or(RDFError::NoFocusNodeError)?.clone();
 
     // Base case: rdf:nil
     if is_nil_node::<RDF>(&focus) {
@@ -316,36 +299,35 @@ where
     }
 
     // Recursive case: extract first and rest
-    let first = SingleValuePropertyParser::new(rdf_first().clone()).parse_focused(rdf)
+    let first = SingleValuePropertyParser::new(rdf_first().clone())
+        .parse_focused(rdf)
         .map_err(|e| RDFError::PropertyNotFoundError {
             property: rdf_first().to_string(),
             subject: focus.to_string(),
-            err: Box::new(e.into()),
+            err: Box::new(e),
         })?;
-    
-    let rest = SingleValuePropertyParser::new(rdf_rest().clone()).parse_focused(rdf)
+
+    let rest = SingleValuePropertyParser::new(rdf_rest().clone())
+        .parse_focused(rdf)
         .map_err(|e| RDFError::PropertyNotFoundError {
             property: rdf_rest().to_string(),
             subject: focus.to_string(),
-            err: Box::new(e.into()),
+            err: Box::new(e),
         })?;
 
     // Cycle detection
     if visited.contains(&rest) {
-        return Err(RDFError::RecursiveRDFListError {
-            node: rest.to_string(),
-        });
+        return Err(RDFError::RecursiveRDFListError { node: rest.to_string() });
     }
 
     // Continue recursion
     visited.push(rest.clone());
     rdf.set_focus(&rest);
-    
+
     let mut result = vec![first];
     result.extend(parse_list_recursive::<RDF>(visited, rdf)?);
     Ok(result)
 }
-
 
 fn is_nil_node<RDF>(node: &RDF::Term) -> bool
 where

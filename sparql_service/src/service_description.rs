@@ -8,11 +8,11 @@ use iri_s::IriS;
 use itertools::Itertools;
 use mie::Mie;
 use prefixmap::PrefixMap;
-use serde::{Deserialize, Serialize};
 use rdf::{
+    rdf_core::RDFFormat,
     rdf_impl::{InMemoryGraph, ReaderMode},
-    rdf_core::RDFFormat
 };
+use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
     fmt::Display,

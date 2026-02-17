@@ -5,10 +5,8 @@ use iri_s::IriS;
 use prefixmap::IriRef;
 use prefixmap::PrefixMap;
 use prefixmap::error::PrefixMapError;
+use rdf::rdf_core::{NeighsRDF, query::QueryRDF, term::literal::ConcreteLiteral};
 use serde::Serialize;
-use rdf::rdf_core::{
-    NeighsRDF, query::QueryRDF, term::literal::ConcreteLiteral
-};
 use std::fmt::Display;
 use thiserror::Error;
 use tracing::trace;

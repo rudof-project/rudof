@@ -98,9 +98,7 @@ impl From<oxrdf::NamedOrBlankNode> for IriOrBlankNode {
     fn from(value: oxrdf::NamedOrBlankNode) -> Self {
         match value {
             oxrdf::NamedOrBlankNode::NamedNode(iri) => IriOrBlankNode::Iri(iri.into()),
-            oxrdf::NamedOrBlankNode::BlankNode(bnode) => {
-                IriOrBlankNode::BlankNode(bnode.into_string())
-            }
+            oxrdf::NamedOrBlankNode::BlankNode(bnode) => IriOrBlankNode::BlankNode(bnode.into_string()),
         }
     }
 }
@@ -112,12 +110,8 @@ impl From<oxrdf::NamedOrBlankNode> for IriOrBlankNode {
 impl From<IriOrBlankNode> for oxrdf::Term {
     fn from(value: IriOrBlankNode) -> Self {
         match value {
-            IriOrBlankNode::Iri(iri) => {
-                oxrdf::Term::NamedNode(oxrdf::NamedNode::new_unchecked(iri.as_str()))
-            }
-            IriOrBlankNode::BlankNode(bnode) => {
-                oxrdf::Term::BlankNode(oxrdf::BlankNode::new_unchecked(bnode))
-            }
+            IriOrBlankNode::Iri(iri) => oxrdf::Term::NamedNode(oxrdf::NamedNode::new_unchecked(iri.as_str())),
+            IriOrBlankNode::BlankNode(bnode) => oxrdf::Term::BlankNode(oxrdf::BlankNode::new_unchecked(bnode)),
         }
     }
 }
@@ -169,9 +163,7 @@ impl TryFrom<Object> for IriOrBlankNode {
         match value {
             Object::Iri(iri) => Ok(IriOrBlankNode::Iri(iri)),
             Object::BlankNode(b) => Ok(IriOrBlankNode::BlankNode(b)),
-            Object::Literal(l) => Err(RDFError::ExpectedIriOrBlankNodeFoundLiteral {
-                literal: l.to_string(),
-            }),
+            Object::Literal(l) => Err(RDFError::ExpectedIriOrBlankNodeFoundLiteral { literal: l.to_string() }),
             Object::Triple {
                 subject,
                 predicate,

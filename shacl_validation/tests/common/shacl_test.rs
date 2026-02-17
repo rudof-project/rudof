@@ -1,6 +1,6 @@
+use rdf::rdf_core::Rdf;
 use shacl_ast::Schema;
 use shacl_validation::validation_report::report::ValidationReport;
-use rdf::rdf_core::Rdf; 
 
 pub struct ShaclTest<R: Rdf> {
     pub data: R,

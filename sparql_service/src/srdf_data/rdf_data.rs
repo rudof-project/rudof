@@ -8,16 +8,16 @@ use oxrdf::{
     Term as OxTerm, Triple as OxTriple,
 };
 use prefixmap::PrefixMap;
+use rdf::{
+    rdf_core::{
+        BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf, RdfDataConfig,
+        query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions, VarName},
+    },
+    rdf_impl::{InMemoryGraph, ReaderMode, SparqlEndpoint},
+};
 use serde::Serialize;
 use serde::ser::SerializeStruct;
 use sparesults::QuerySolution as SparQuerySolution;
-use rdf::{
-    rdf_core::{
-        FocusRDF, NeighsRDF, BuildRDF, RDFFormat, Rdf, Matcher, RdfDataConfig,
-        query::{QueryRDF, QueryResultFormat, QuerySolutions, QuerySolution, VarName},
-    },
-    rdf_impl::{InMemoryGraph, SparqlEndpoint, ReaderMode},
-};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::io;
@@ -64,24 +64,18 @@ impl RdfData {
         self.focus = None;
     }
 
-    pub fn with_rdf_data_config(
-        mut self,
-        rdf_data_config: &RdfDataConfig,
-    ) -> Result<Self, RdfDataError> {
+    pub fn with_rdf_data_config(mut self, rdf_data_config: &RdfDataConfig) -> Result<Self, RdfDataError> {
         // Load endpoints
         if let Some(endpoints) = &rdf_data_config.endpoints {
             for (name, endpoint_description) in endpoints.iter() {
-                let sparql_endpoint = SparqlEndpoint::new(
-                    endpoint_description.query_url(),
-                    &endpoint_description.prefixmap(),
-                )
-                .map_err(|e| {
-                    RdfDataError::SRDFSparqlFromEndpointDescriptionError {
-                        name: name.clone(),
-                        url: endpoint_description.query_url().to_string(),
-                        err: Box::new(e),
-                    }
-                })?;
+                let sparql_endpoint =
+                    SparqlEndpoint::new(endpoint_description.query_url(), &endpoint_description.prefixmap()).map_err(
+                        |e| RdfDataError::SRDFSparqlFromEndpointDescriptionError {
+                            name: name.clone(),
+                            url: endpoint_description.query_url().to_string(),
+                            err: Box::new(e),
+                        },
+                    )?;
                 self.add_endpoint(name, sparql_endpoint);
             }
         }
@@ -136,10 +130,7 @@ impl RdfData {
     }
 
     pub fn graph_prefixmap(&self) -> PrefixMap {
-        self.graph
-            .as_ref()
-            .map(|g| g.prefixmap().clone())
-            .unwrap_or_default()
+        self.graph.as_ref().map(|g| g.prefixmap().clone()).unwrap_or_default()
     }
 
     /// Cleans the in-memory graph
@@ -225,10 +216,7 @@ impl RdfData {
 
     /// Gets the PrefixMap from the in-memory graph
     pub fn prefixmap_in_memory(&self) -> PrefixMap {
-        self.graph
-            .as_ref()
-            .map(|g| g.prefixmap().clone())
-            .unwrap_or_default()
+        self.graph.as_ref().map(|g| g.prefixmap().clone()).unwrap_or_default()
     }
 
     pub fn show_blanknode(&self, bn: &OxBlankNode) -> String {
@@ -500,20 +488,18 @@ impl NeighsRDF for RdfData {
         P: Matcher<Self::IRI>,
         O: Matcher<Self::Term>,
     {
-        let s1 = subject.clone();
-        let p1 = predicate.clone();
-        let o1 = object.clone();
+        let s1 = subject;
+        let p1 = predicate;
+        let o1 = object;
         let graph_triples = self
             .graph
             .iter()
-            .flat_map(move |g| NeighsRDF::triples_matching(g, s1.clone(), p1.clone(), o1.clone()))
+            .flat_map(move |g| NeighsRDF::triples_matching(g, s1, p1, o1))
             .flatten();
         let endpoints_triples = self
             .use_endpoints
             .iter()
-            .flat_map(move |(_name, e)| {
-                NeighsRDF::triples_matching(e, subject.clone(), predicate.clone(), object.clone())
-            })
+            .flat_map(move |(_name, e)| NeighsRDF::triples_matching(e, subject, predicate, object))
             .flatten();
         Ok(graph_triples.chain(endpoints_triples))
     }

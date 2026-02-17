@@ -1,11 +1,14 @@
 use anyhow::Result;
 use iri_s::IriS;
-use rudof_lib::{InputSpec, Rudof, RudofConfig, data::get_data_rudof, data_format::DataFormat};
 use rdf::rdf_core::{
     RDFFormat,
-    visualizer::{VisualRDFGraph, uml_converter::{UmlConverter, ImageFormat, UmlGenerationMode}}
+    visualizer::{
+        VisualRDFGraph,
+        uml_converter::{ImageFormat, UmlConverter, UmlGenerationMode},
+    },
 };
 use rdf::rdf_impl::ReaderMode;
+use rudof_lib::{InputSpec, Rudof, RudofConfig, data::get_data_rudof, data_format::DataFormat};
 use std::path::PathBuf;
 
 use crate::result_data_format::ResultDataFormat;
@@ -69,7 +72,7 @@ fn check_result_format(format: &ResultDataFormat) -> CheckResultFormat {
         ResultDataFormat::Turtle => CheckResultFormat::RDFFormat(RDFFormat::Turtle),
         ResultDataFormat::N3 => CheckResultFormat::RDFFormat(RDFFormat::N3),
         ResultDataFormat::NTriples => CheckResultFormat::RDFFormat(RDFFormat::NTriples),
-        ResultDataFormat::RdfXml => CheckResultFormat::RDFFormat(RDFFormat::RDFXML),
+        ResultDataFormat::RdfXml => CheckResultFormat::RDFFormat(RDFFormat::Rdfxml),
         ResultDataFormat::TriG => CheckResultFormat::RDFFormat(RDFFormat::TriG),
         ResultDataFormat::NQuads => CheckResultFormat::RDFFormat(RDFFormat::NQuads),
         ResultDataFormat::PlantUML => CheckResultFormat::VisualFormat(VisualFormat::PlantUML),

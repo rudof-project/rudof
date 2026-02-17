@@ -1,7 +1,7 @@
 use crate::config::OutputConfig;
 use crate::{DataGeneratorError, Result};
-use rdf::rdf_impl::InMemoryGraph;
 use rdf::rdf_core::{BuildRDF, NeighsRDF, RDFFormat};
+use rdf::rdf_impl::InMemoryGraph;
 use std::fs::File;
 use std::path::PathBuf;
 

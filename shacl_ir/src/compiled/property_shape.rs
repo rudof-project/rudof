@@ -11,9 +11,9 @@ use crate::reifier_info::ReifierInfo;
 use crate::schema_ir::SchemaIR;
 use crate::shape_label_idx::ShapeLabelIdx;
 use iri_s::IriS;
+use rdf::rdf_core::{Rdf, SHACLPath, term::Object};
 use shacl_ast::Schema;
 use shacl_ast::property_shape::PropertyShape;
-use rdf::rdf_core::{Rdf, SHACLPath, term::Object};
 use std::collections::HashSet;
 
 #[derive(Debug, Clone)]

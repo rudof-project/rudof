@@ -9,11 +9,11 @@ use crate::shacl_engine::sparql::SparqlEngine;
 use crate::shape_validation::Validate;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
+use rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF, term::Object};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::Node;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF, term::Object};
 use std::fmt::Debug;
 use tracing::trace;
 
@@ -59,13 +59,9 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
                         shape.id(),
                     );
                     let component = Object::iri(component.into());
-                    let result = ValidationResult::new(
-                        node_object.clone(),
-                        component.clone(),
-                        shape.severity(),
-                    )
-                    .with_message(message.as_str())
-                    .with_path(maybe_path.clone());
+                    let result = ValidationResult::new(node_object.clone(), component.clone(), shape.severity())
+                        .with_message(message.as_str())
+                        .with_path(maybe_path.clone());
                     validation_results.push(result.clone());
                     engine.record_validation(node_object, *shape_idx, vec![result]);
                 } else {

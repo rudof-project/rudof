@@ -1,6 +1,6 @@
 use crate::{
-    rdf_core::{AsyncRDF, NeighsRDF, term::Triple, query::QueryResultFormat, Rdf, Any},
-    rdf_impl::SparqlEndpoint
+    rdf_core::{Any, AsyncRDF, NeighsRDF, Rdf, query::QueryResultFormat, term::Triple},
+    rdf_impl::SparqlEndpoint,
 };
 use oxrdf::{NamedNode, NamedOrBlankNode as Subject, Term};
 
@@ -91,7 +91,10 @@ async fn test_query_construct_async() {
     let endpoint = SparqlEndpoint::wikidata().unwrap();
 
     let query = "CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o } LIMIT 1";
-    let result = endpoint.query_construct_async(query, &QueryResultFormat::Turtle).await.unwrap();
+    let result = endpoint
+        .query_construct_async(query, &QueryResultFormat::Turtle)
+        .await
+        .unwrap();
     assert!(!result.is_empty());
     assert!(result.contains("@prefix") || result.contains("<"));
 }
@@ -123,7 +126,10 @@ async fn test_get_objects_for_subject_predicate() {
     let subject: Subject = NamedNode::new_unchecked("http://www.wikidata.org/entity/Q42").into();
     let predicate = NamedNode::new_unchecked("http://www.wikidata.org/prop/P31");
 
-    let objects = endpoint.get_objects_for_subject_predicate(&subject, &predicate).await.unwrap();
+    let objects = endpoint
+        .get_objects_for_subject_predicate(&subject, &predicate)
+        .await
+        .unwrap();
     assert!(!objects.is_empty());
 }
 
@@ -131,10 +137,13 @@ async fn test_get_objects_for_subject_predicate() {
 async fn test_get_subjects_for_object_predicate() {
     let endpoint = SparqlEndpoint::wikidata().unwrap();
 
-    let object: Term = NamedNode::new_unchecked("http://www.wikidata.org/entity/Q3624078").into(); 
-    let predicate = NamedNode::new_unchecked("http://www.wikidata.org/prop/direct/P31"); 
+    let object: Term = NamedNode::new_unchecked("http://www.wikidata.org/entity/Q3624078").into();
+    let predicate = NamedNode::new_unchecked("http://www.wikidata.org/prop/direct/P31");
 
-    let subjects = endpoint.get_subjects_for_object_predicate(&object, &predicate).await.unwrap();
+    let subjects = endpoint
+        .get_subjects_for_object_predicate(&object, &predicate)
+        .await
+        .unwrap();
     assert!(!subjects.is_empty());
 }
 
@@ -143,7 +152,11 @@ fn test_triples_matching() {
     let endpoint = SparqlEndpoint::wikidata().unwrap();
     let subject: Subject = NamedNode::new_unchecked("http://www.wikidata.org/entity/Q42").into();
 
-    let triples: Vec<_> = endpoint.triples_matching(&subject, &Any, &Any).unwrap().take(5).collect();
+    let triples: Vec<_> = endpoint
+        .triples_matching(&subject, &Any, &Any)
+        .unwrap()
+        .take(5)
+        .collect();
     assert!(!triples.is_empty());
 }
 

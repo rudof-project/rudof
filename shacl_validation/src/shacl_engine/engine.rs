@@ -1,11 +1,11 @@
 use iri_s::IriS;
+use rdf::rdf_core::{NeighsRDF, SHACLPath, term::Object};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::property_shape::PropertyShapeIR;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::compiled::target::CompiledTarget;
 use shacl_ir::schema_ir::SchemaIR;
 use shacl_ir::shape_label_idx::ShapeLabelIdx;
-use rdf::rdf_core::{NeighsRDF, SHACLPath, term::Object};
 
 use crate::focus_nodes::FocusNodes;
 use crate::validate_error::ValidateError;
@@ -49,18 +49,13 @@ pub trait Engine<S: NeighsRDF> {
     /// in SG then { t } is a target from any data graph for s in SG.
     fn target_node(&self, store: &S, node: &Object) -> Result<FocusNodes<S>, Box<ValidateError>>;
 
-    fn target_class(&self, store: &S, class: &Object)
-    -> Result<FocusNodes<S>, Box<ValidateError>>;
+    fn target_class(&self, store: &S, class: &Object) -> Result<FocusNodes<S>, Box<ValidateError>>;
 
     fn target_subject_of(&self, store: &S, predicate: &IriS) -> Result<FocusNodes<S>, Box<ValidateError>>;
 
     fn target_object_of(&self, store: &S, predicate: &IriS) -> Result<FocusNodes<S>, Box<ValidateError>>;
 
-    fn implicit_target_class(
-        &self,
-        store: &S,
-        shape: &Object,
-    ) -> Result<FocusNodes<S>, Box<ValidateError>>;
+    fn implicit_target_class(&self, store: &S, shape: &Object) -> Result<FocusNodes<S>, Box<ValidateError>>;
 
     fn path(
         &self,
@@ -79,12 +74,7 @@ pub trait Engine<S: NeighsRDF> {
         Ok(FocusNodes::new(nodes))
     }
 
-    fn record_validation(
-        &mut self,
-        node: Object,
-        shape_idx: ShapeLabelIdx,
-        results: Vec<ValidationResult>,
-    );
+    fn record_validation(&mut self, node: Object, shape_idx: ShapeLabelIdx, results: Vec<ValidationResult>);
 
     fn has_validated(&self, node: &Object, shape_idx: ShapeLabelIdx) -> bool;
 }

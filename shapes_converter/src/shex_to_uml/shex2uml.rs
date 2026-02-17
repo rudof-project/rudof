@@ -2,10 +2,10 @@ use std::io::Write;
 
 use prefixmap::error::PrefixMapError;
 use prefixmap::{IriRef, PrefixMap};
+use rdf::rdf_core::visualizer::uml_converter::{UmlConverter, UmlGenerationMode, errors::UmlConverterError};
 use shex_ast::{
     Annotation, NodeKind, ObjectValue, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr, ValueSetValue, XsFacet,
 };
-use rdf::rdf_core::visualizer::uml_converter::{UmlConverter, UmlGenerationMode, errors::UmlConverterError};
 
 use crate::{
     find_annotation, object_value2string,
@@ -402,7 +402,7 @@ impl UmlConverter for ShEx2Uml {
     }
 }
 
-fn facet2name(facet: &XsFacet, _names: &mut Vec<Name>) -> Result<Name, ShEx2UmlError> {
+fn facet2name(facet: &XsFacet, _names: &mut [Name]) -> Result<Name, ShEx2UmlError> {
     match facet {
         XsFacet::StringFacet(sf) => string_facet2name(sf),
         XsFacet::NumericFacet(nf) => numeric_facet2name(nf),

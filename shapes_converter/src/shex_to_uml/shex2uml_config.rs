@@ -5,9 +5,9 @@ use std::{
 };
 
 use iri_s::IriS;
+use rdf::rdf_core::vocab::rdfs_label;
 use serde::{Deserialize, Serialize};
 use shex_validation::ShExConfig;
-use rdf::rdf_core::vocab::rdfs_label;
 use thiserror::Error;
 
 pub const DEFAULT_REPLACE_IRI_BY_LABEL: bool = true;

@@ -1,9 +1,14 @@
 use crate::rdf_core::{
-    FocusRDF, RDFError, parser::rdf_node_parser::{RDFNodeParse, constructors::{SingleValuePropertyParser, SubjectsWithValuePropertyParser}}, term::Iri, vocab::rdf_type
+    FocusRDF, RDFError,
+    parser::rdf_node_parser::{
+        RDFNodeParse,
+        constructors::{SingleValuePropertyParser, SubjectsWithValuePropertyParser},
+    },
+    term::Iri,
+    vocab::rdf_type,
 };
 use iri_s::IriS;
-use std::{marker::PhantomData, collections::HashMap};
-
+use std::{collections::HashMap, marker::PhantomData};
 
 /// Parser that extracts the `rdf:type` value from the focus node.
 #[derive(Debug, Clone)]
@@ -11,11 +16,15 @@ pub struct TypeParser<RDF> {
     _marker: PhantomData<RDF>,
 }
 
+impl<RDF> Default for TypeParser<RDF> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<RDF> TypeParser<RDF> {
     pub fn new() -> Self {
-        Self {
-            _marker: PhantomData,
-        }
+        Self { _marker: PhantomData }
     }
 }
 
@@ -31,7 +40,7 @@ where
 }
 
 /// Parser that finds and focuses on a single instance of the specified type.
-/// 
+///
 /// Searches for nodes with `rdf:type` matching the expected IRI, expecting exactly one match.
 /// If found, the focus is moved to that node and it is returned.
 #[derive(Debug, Clone)]
@@ -57,7 +66,7 @@ where
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
         let instances = InstancesParser::new(self.expected.clone()).parse_focused(rdf)?;
-        
+
         let mut iter = instances.into_iter();
         match iter.next() {
             Some(instance) => {
@@ -68,7 +77,7 @@ where
                 } else {
                     Ok(instance)
                 }
-            }
+            },
             None => Err(RDFError::FailedInstancesOfError {
                 object: self.expected.to_string(),
             }),
@@ -105,15 +114,13 @@ where
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
         let type_term = TypeParser::<RDF>::new().parse_focused(rdf)?;
         let type_iri: RDF::IRI =
-            <RDF::Term as TryInto<RDF::IRI>>::try_into(type_term.clone()).map_err(|_| {
-                RDFError::ExpectedIRIError {
-                    term: type_term.to_string(),
-                }
+            <RDF::Term as TryInto<RDF::IRI>>::try_into(type_term.clone()).map_err(|_| RDFError::ExpectedIRIError {
+                term: type_term.to_string(),
             })?;
-        
+
         let type_str = type_iri.as_str();
         let type_iri_s = iri_s::iri!(type_str);
-        
+
         match self.type_map.get(&type_iri_s) {
             Some(parser) => parser.parse_focused(rdf),
             None => self.default.parse_focused(rdf),

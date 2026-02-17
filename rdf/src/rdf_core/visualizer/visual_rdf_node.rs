@@ -1,10 +1,7 @@
 use crate::rdf_core::{
-    RDFError, NeighsRDF, Rdf,
+    NeighsRDF, RDFError, Rdf,
     term::{Iri, IriOrBlankNode, Object},
-    visualizer::{
-        errors::RdfVisualizerError,
-        NodeId, VisualRDFGraph,
-    },
+    visualizer::{NodeId, VisualRDFGraph, errors::RdfVisualizerError},
     vocab::rdf_reifies,
 };
 use std::fmt::Display;
@@ -84,11 +81,7 @@ impl VisualRDFNode {
     ///
     /// # Returns
     /// * `Result<Self, RDFError>` - The visual node or an error
-    pub fn from_term<R: NeighsRDF>(
-        rdf: &R,
-        term: &R::Term,
-        graph: &mut VisualRDFGraph,
-    ) -> Result<Self, RDFError> {
+    pub fn from_term<R: NeighsRDF>(rdf: &R, term: &R::Term, graph: &mut VisualRDFGraph) -> Result<Self, RDFError> {
         term_to_visual_node(rdf, term, graph)
     }
 

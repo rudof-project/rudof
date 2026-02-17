@@ -1,5 +1,8 @@
 use crate::rdf_core::{
-    FocusRDF, RDFError, parser::rdf_node_parser::{RDFNodeParse, constructors::TypeParser}, term::Iri, vocab::rdf_nil
+    FocusRDF, RDFError,
+    parser::rdf_node_parser::{RDFNodeParse, constructors::TypeParser},
+    term::Iri,
+    vocab::rdf_nil,
 };
 use iri_s::IriS;
 use std::marker::PhantomData;
@@ -12,8 +15,8 @@ pub struct SatisfyParser<RDF, P> {
     _marker: PhantomData<RDF>,
 }
 
-impl<RDF, P> SatisfyParser<RDF, P> 
-where 
+impl<RDF, P> SatisfyParser<RDF, P>
+where
     RDF: FocusRDF,
     P: Fn(&RDF::Term) -> bool,
 {
@@ -34,10 +37,9 @@ where
     type Output = ();
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
-        let focus = rdf.get_focus()
-            .ok_or(RDFError::NoFocusNodeError)?;
-            
-        if (self.predicate)(&focus) {
+        let focus = rdf.get_focus().ok_or(RDFError::NoFocusNodeError)?;
+
+        if (self.predicate)(focus) {
             Ok(())
         } else {
             Err(RDFError::NodeDoesntSatisfyConditionError {
@@ -71,14 +73,15 @@ where
     type Output = ();
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
-        let focus = rdf.get_focus()
-            .ok_or(RDFError::NoFocusNodeError)?;
+        let focus = rdf.get_focus().ok_or(RDFError::NoFocusNodeError)?;
 
         let iri: RDF::IRI = match <RDF::Term as TryInto<RDF::IRI>>::try_into(focus.clone()) {
             Ok(iri) => iri,
-            Err(_) => return Err(RDFError::ExpectedIRIError {
-                term: focus.to_string(),
-            }),
+            Err(_) => {
+                return Err(RDFError::ExpectedIRIError {
+                    term: focus.to_string(),
+                });
+            },
         };
 
         if iri.as_str() == self.expected.as_str() {
@@ -93,7 +96,7 @@ where
 }
 
 /// Parser that validates the current focus node is `rdf:nil`.
-/// 
+///
 /// `rdf:nil` represents the empty list in RDF. This parser succeeds with `()`
 /// if the focus node is `rdf:nil`, or fails otherwise.
 #[derive(Debug, Clone)]
@@ -101,11 +104,15 @@ pub struct NilParser<RDF> {
     _marker: PhantomData<RDF>,
 }
 
-impl <RDF> NilParser<RDF> {
+impl<RDF> NilParser<RDF> {
     pub fn new() -> Self {
-        NilParser {
-            _marker: PhantomData,
-        }
+        NilParser { _marker: PhantomData }
+    }
+}
+
+impl<RDF> Default for NilParser<RDF> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -116,14 +123,13 @@ where
     type Output = ();
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
-        let focus = rdf.get_focus()
-            .ok_or(RDFError::NoFocusNodeError)?;
-        
+        let focus = rdf.get_focus().ok_or(RDFError::NoFocusNodeError)?;
+
         let is_nil = match TryInto::<RDF::IRI>::try_into(focus.clone()) {
             Ok(iri) => iri.as_str() == rdf_nil().as_str(),
             Err(_) => false,
         };
-            
+
         if is_nil {
             Ok(())
         } else {
@@ -159,7 +165,7 @@ where
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
         let actual_type = TypeParser::<RDF>::new().parse_focused(rdf)?;
         let expected_term: RDF::Term = self.expected.clone().into();
-        
+
         if actual_type == expected_term {
             Ok(())
         } else {
@@ -172,7 +178,7 @@ where
 }
 
 /// Parser that always succeeds with a predefined value.
-/// 
+///
 /// Useful for introducing constants into parser chains or providing
 /// default values without querying the RDF graph.
 #[derive(Debug, Clone)]
@@ -199,8 +205,8 @@ where
 }
 
 /// Parser that always fails with a specific error message.
-/// 
-/// Useful for representing unrecoverable errors or enforcing 
+///
+/// Useful for representing unrecoverable errors or enforcing
 /// invariants in parser composition.
 #[derive(Debug, Clone)]
 pub struct FailureParser<A> {
@@ -224,9 +230,7 @@ where
     type Output = A;
 
     fn parse_focused(&self, _rdf: &mut RDF) -> Result<Self::Output, RDFError> {
-        Err(RDFError::ParseFailError {
-            msg: self.msg.clone(),
-        })
+        Err(RDFError::ParseFailError { msg: self.msg.clone() })
     }
 }
 

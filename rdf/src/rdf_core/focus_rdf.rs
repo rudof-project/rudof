@@ -58,13 +58,12 @@ where
         match self.get_focus() {
             None => Err(RDFError::NoFocusNodeError),
             Some(term) => {
-                let subject =
-                    Self::term_as_subject(term).map_err(|_| RDFError::ExpectedSubjectError {
-                        node: format!("{term}"),
-                        context: "get_focus_as_subject".to_string(),
-                    })?;
+                let subject = Self::term_as_subject(term).map_err(|_| RDFError::ExpectedSubjectError {
+                    node: format!("{term}"),
+                    context: "get_focus_as_subject".to_string(),
+                })?;
                 Ok(subject)
-            }
+            },
         }
     }
 
@@ -80,21 +79,17 @@ where
     /// * `Ok(Some(path))` - If an object exists and was successfully parsed as a SHACL path
     /// * `Ok(None)` - If no object exists or parsing failed
     /// * `Err(e)` - If querying the graph for objects fails
-    fn get_path_for(
-        &mut self,
-        subject: &Self::Term,
-        predicate: &Self::IRI,
-    ) -> Result<Option<SHACLPath>, RDFError> {
+    fn get_path_for(&mut self, subject: &Self::Term, predicate: &Self::IRI) -> Result<Option<SHACLPath>, RDFError> {
         match self.objects_for(subject, predicate)?.into_iter().next() {
             Some(term) => {
-                let path = ShaclPathParser::new(term.clone())
-                    .parse_focused(self)
-                    .map_err(|e| RDFError::InvalidSHACLPathError {
+                let path = ShaclPathParser::new(term.clone()).parse_focused(self).map_err(|e| {
+                    RDFError::InvalidSHACLPathError {
                         node: format!("{term}"),
                         error: Box::new(e),
-                    })?;
+                    }
+                })?;
                 Ok(Some(path))
-            }
+            },
             None => Ok(None),
         }
     }

@@ -1,6 +1,4 @@
-use crate::rdf_core::{
-    FocusRDF, RDFError
-};
+use crate::rdf_core::{FocusRDF, RDFError};
 use iri_s::IriS;
 
 /// A trait for parsing RDF data.
@@ -15,13 +13,13 @@ use iri_s::IriS;
 /// # Type Parameters
 ///
 /// * `RDF` - The RDF data structure type that implements [`FocusRDF`]
-pub trait RDFNodeParse<RDF> 
-where 
+pub trait RDFNodeParse<RDF>
+where
     RDF: FocusRDF,
 {
     /// The type returned when parsing succeeds.
     type Output;
-    
+
     /// Parses RDF data starting from the specified node.
     ///
     /// This is the main entry point for parsing. It sets the focus node of the RDF graph
@@ -36,7 +34,7 @@ where
         rdf.set_focus(&focus);
         self.parse_focused(rdf)
     }
-    
+
     /// The internal parsing implementation that operates on the current focus node.
     ///
     /// This method performs the actual parsing logic without modifying which node is focused.

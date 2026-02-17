@@ -41,9 +41,7 @@ pub enum SparqlEndpointError {
     /// # Fields
     /// - `e`: The underlying SPARQL results parsing error
     #[error("SPARQL Results parser: {e:?}")]
-    SPAResults {
-        e: sparesults::QueryResultsParseError,
-    },
+    SPAResults { e: sparesults::QueryResultsParseError },
 
     /// Error parsing an IRI.
     ///

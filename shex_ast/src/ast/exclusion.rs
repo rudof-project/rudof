@@ -2,10 +2,10 @@ use crate::iri_exclusion::IriExclusion;
 use crate::language_exclusion::LanguageExclusion;
 use crate::literal_exclusion::LiteralExclusion;
 use prefixmap::IriRef;
+use rdf::rdf_core::term::literal::Lang;
 use serde::de::{MapAccess, Visitor};
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Serialize, Serializer, de};
-use rdf::rdf_core::term::literal::Lang;
 use std::str::FromStr;
 use std::{fmt, result};
 

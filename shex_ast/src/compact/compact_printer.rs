@@ -15,7 +15,7 @@ pub(crate) fn pp_object_value<'a, A>(
         ObjectValue::IriRef(i) => pp_iri_ref(i, doc, prefixmap),
         ObjectValue::Literal(ConcreteLiteral::BooleanLiteral(_value)) => {
             todo!()
-        }
+        },
         ObjectValue::Literal(ConcreteLiteral::NumericLiteral(num)) => pp_numeric_literal(num, doc),
         ObjectValue::Literal(ConcreteLiteral::DatatypeLiteral { .. }) => todo!(),
         ObjectValue::Literal(ConcreteLiteral::WrongDatatypeLiteral { .. }) => todo!(),

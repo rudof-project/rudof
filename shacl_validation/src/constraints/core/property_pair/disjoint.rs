@@ -6,11 +6,11 @@ use crate::iteration_strategy::ValueNodeIteration;
 use crate::shacl_engine::engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
+use rdf::rdf_core::{NeighsRDF, Rdf, SHACLPath, query::QueryRDF, term::Triple};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::Disjoint;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use rdf::rdf_core::{NeighsRDF, Rdf, SHACLPath, query::QueryRDF, term::Triple};
 use std::fmt::Debug;
 use tracing::debug;
 
@@ -29,9 +29,7 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for Disjoint {
         let check = |focus: &R::Term, value_node: &R::Term| {
             let subject: R::Subject = <R as Rdf>::term_as_subject(focus).unwrap();
             let iri_owned: R::IRI = self.iri().clone().into();
-            let triples_to_compare = match store
-                .triples_with_subject_predicate(&subject, &iri_owned)
-            {
+            let triples_to_compare = match store.triples_with_subject_predicate(&subject, &iri_owned) {
                 Ok(iter) => iter,
                 Err(e) => {
                     debug!(
@@ -40,7 +38,7 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for Disjoint {
                         self.iri()
                     );
                     return true;
-                }
+                },
             };
             for triple in triples_to_compare {
                 let value = triple.obj();

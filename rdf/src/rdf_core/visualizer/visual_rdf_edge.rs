@@ -1,7 +1,4 @@
-
-use crate::rdf_core::{
-    Rdf, term::Iri, vocab::rdf_reifies
-};
+use crate::rdf_core::{Rdf, term::Iri, vocab::rdf_reifies};
 use std::fmt::Display;
 
 /// Represents an edge in a visual RDF graph.
@@ -15,7 +12,7 @@ pub enum VisualRDFEdge {
         /// The display label for the IRI
         label: String,
         /// The full IRI URL
-        url: String
+        url: String,
     },
     /// A special edge representing reification (rdf:reifies).
     Reifies,

@@ -2,8 +2,8 @@ use std::fmt::Display;
 
 use super::compiled_shacl_error::CompiledShaclError;
 use iri_s::IriS;
-use shacl_ast::target::Target;
 use rdf::rdf_core::{Rdf, term::Object};
+use shacl_ast::target::Target;
 
 /// Represents compiled target declarations
 #[derive(Debug, Clone)]

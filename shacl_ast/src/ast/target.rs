@@ -2,7 +2,11 @@ use std::fmt::Display;
 
 use crate::shacl_vocab::{sh_target_class, sh_target_node, sh_target_objects_of, sh_target_subjects_of};
 use prefixmap::IriRef;
-use rdf::rdf_core::{Rdf, BuildRDF, term::Object, vocab::{rdf_type, rdfs_class}};
+use rdf::rdf_core::{
+    BuildRDF, Rdf,
+    term::Object,
+    vocab::{rdf_type, rdfs_class},
+};
 
 /// Represents target declarations
 #[derive(Debug)]

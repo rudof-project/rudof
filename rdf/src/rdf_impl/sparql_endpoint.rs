@@ -9,15 +9,14 @@ use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
 use oxrdf::{
-    BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode,
-    NamedOrBlankNode as OxSubject, Term as OxTerm, Triple as OxTriple,
+    BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, NamedOrBlankNode as OxSubject,
+    Term as OxTerm, Triple as OxTriple,
 };
 use prefixmap::PrefixMap;
 use regex::Regex;
 use serde::{Serialize, ser::SerializeStruct};
 use sparesults::{
-    QueryResultsFormat, QueryResultsParser, QuerySolution as OxQuerySolution,
-    ReaderQueryResultsParserOutput,
+    QueryResultsFormat, QueryResultsParser, QuerySolution as OxQuerySolution, ReaderQueryResultsParserOutput,
 };
 use std::{collections::HashSet, fmt::Display, hash::Hash, str::FromStr, sync::Arc};
 use url::Url;
@@ -241,8 +240,7 @@ impl SparqlEndpoint {
     /// ```
     pub async fn query_select_async(&self, query: &str) -> Result<QuerySolutions<Self>> {
         tracing::trace!("srdf_sparql: SPARQL SELECT query: {}", query);
-        let solutions =
-            make_sparql_query_select_async(query, &self.client, &self.endpoint_iri).await?;
+        let solutions = make_sparql_query_select_async(query, &self.client, &self.endpoint_iri).await?;
 
         // Pre-allocate with known capacity for better performance
         let mut qs = Vec::with_capacity(solutions.len());
@@ -300,11 +298,7 @@ impl SparqlEndpoint {
     ///     Ok(())
     /// }
     /// ```
-    pub async fn query_construct_async(
-        &self,
-        query: &str,
-        format: &QueryResultFormat,
-    ) -> Result<String> {
+    pub async fn query_construct_async(&self, query: &str, format: &QueryResultFormat) -> Result<String> {
         // Select the appropriate client based on the requested format
         let client = match format {
             QueryResultFormat::Turtle => &self.client_construct_turtle,
@@ -314,7 +308,7 @@ impl SparqlEndpoint {
                 return Err(SparqlEndpointError::UnsupportedConstructFormat {
                     format: format.to_string(),
                 });
-            }
+            },
         };
 
         make_sparql_query_construct_async(query, client, &self.endpoint_iri, format).await
@@ -400,9 +394,7 @@ impl FromStr for SparqlEndpoint {
             // Try to match predefined endpoint names
             match s.to_lowercase().as_str() {
                 "wikidata" => SparqlEndpoint::wikidata(),
-                name => Err(SparqlEndpointError::UnknownEndpointName {
-                    name: name.to_string(),
-                }),
+                name => Err(SparqlEndpointError::UnknownEndpointName { name: name.to_string() }),
             }
         }
     }
@@ -418,11 +410,7 @@ impl Rdf for SparqlEndpoint {
     type Err = SparqlEndpointError;
 
     /// Resolves a prefix and local name to a full IRI.
-    fn resolve_prefix_local(
-        &self,
-        prefix: &str,
-        local: &str,
-    ) -> std::result::Result<IriS, prefixmap::PrefixMapError> {
+    fn resolve_prefix_local(&self, prefix: &str, local: &str) -> std::result::Result<IriS, prefixmap::PrefixMapError> {
         self.prefixmap.resolve_prefix_local(prefix, local)
     }
 
@@ -476,8 +464,7 @@ impl AsyncRDF for SparqlEndpoint {
     /// Pre-allocates the HashSet with capacity based on the number of results.
     async fn get_predicates_subject(&self, subject: &OxSubject) -> Result<HashSet<OxNamedNode>> {
         let query = format!(r#"select ?pred where {{ {subject} ?pred ?obj . }}"#);
-        let solutions =
-            make_sparql_query_select_async(&query, &self.client, &self.endpoint_iri).await?;
+        let solutions = make_sparql_query_select_async(&query, &self.client, &self.endpoint_iri).await?;
 
         let mut results = HashSet::with_capacity(solutions.len());
         for solution in solutions {
@@ -496,8 +483,7 @@ impl AsyncRDF for SparqlEndpoint {
         pred: &OxNamedNode,
     ) -> Result<HashSet<OxTerm>> {
         let query = format!(r#"select ?obj where {{ {subject} {pred} ?obj . }}"#);
-        let solutions =
-            make_sparql_query_select_async(&query, &self.client, &self.endpoint_iri).await?;
+        let solutions = make_sparql_query_select_async(&query, &self.client, &self.endpoint_iri).await?;
 
         let mut results = HashSet::with_capacity(solutions.len());
         for solution in solutions {
@@ -517,8 +503,7 @@ impl AsyncRDF for SparqlEndpoint {
         pred: &OxNamedNode,
     ) -> Result<HashSet<OxSubject>> {
         let query = format!(r#"select ?subj where {{ ?subj {pred} {object} . }}"#);
-        let solutions =
-            make_sparql_query_select_async(&query, &self.client, &self.endpoint_iri).await?;
+        let solutions = make_sparql_query_select_async(&query, &self.client, &self.endpoint_iri).await?;
 
         let mut results = HashSet::with_capacity(solutions.len());
         for solution in solutions {
@@ -613,9 +598,7 @@ impl NeighsRDF for SparqlEndpoint {
             // Use matched value if available, otherwise extract from solution
             let subject_res: Self::Subject = match &subject_val {
                 Some(s) => s.clone(),
-                None => solution
-                    .find_solution(0)
-                    .and_then(|s| s.clone().try_into().ok())?,
+                None => solution.find_solution(0).and_then(|s| s.clone().try_into().ok())?,
             };
 
             let predicate_res: Self::IRI = match &predicate_val {
@@ -652,10 +635,9 @@ impl QueryRDF for SparqlEndpoint {
     /// Creates a new runtime for each call. For better performance in
     /// async contexts, use `query_construct_async` directly.
     fn query_construct(&self, query: &str, format: &QueryResultFormat) -> Result<String> {
-        let runtime =
-            tokio::runtime::Runtime::new().map_err(|e| SparqlEndpointError::ParsingBody {
-                body: format!("Failed to create runtime: {}", e),
-            })?;
+        let runtime = tokio::runtime::Runtime::new().map_err(|e| SparqlEndpointError::ParsingBody {
+            body: format!("Failed to create runtime: {}", e),
+        })?;
 
         runtime.block_on(self.query_construct_async(query, format))
     }
@@ -670,10 +652,9 @@ impl QueryRDF for SparqlEndpoint {
     /// Creates a new runtime for each call. For better performance in
     /// async contexts, use `query_select_async` directly.
     fn query_select(&self, query: &str) -> Result<QuerySolutions<Self>> {
-        let runtime =
-            tokio::runtime::Runtime::new().map_err(|e| SparqlEndpointError::ParsingBody {
-                body: format!("Failed to create runtime: {}", e),
-            })?;
+        let runtime = tokio::runtime::Runtime::new().map_err(|e| SparqlEndpointError::ParsingBody {
+            body: format!("Failed to create runtime: {}", e),
+        })?;
 
         runtime.block_on(self.query_select_async(query))
     }
@@ -688,10 +669,9 @@ impl QueryRDF for SparqlEndpoint {
     /// Creates a new runtime for each call. For better performance in
     /// async contexts, use `query_ask_async` directly.
     fn query_ask(&self, query: &str) -> Result<bool> {
-        let runtime =
-            tokio::runtime::Runtime::new().map_err(|e| SparqlEndpointError::ParsingBody {
-                body: format!("Failed to create runtime: {}", e),
-            })?;
+        let runtime = tokio::runtime::Runtime::new().map_err(|e| SparqlEndpointError::ParsingBody {
+            body: format!("Failed to create runtime: {}", e),
+        })?;
 
         runtime.block_on(self.query_ask_async(query))
     }
@@ -704,12 +684,8 @@ impl QueryRDF for SparqlEndpoint {
 /// Uses iterators with `collect()` for efficient conversion.
 #[inline]
 fn cnv_query_solution(qs: &OxQuerySolution) -> QuerySolution<SparqlEndpoint> {
-    let vars: Vec<_> = qs
-        .variables()
-        .iter()
-        .map(|v| VarName::new(v.as_str()))
-        .collect();
-    let vals: Vec<_> = qs.values().iter().cloned().collect();
+    let vars: Vec<_> = qs.variables().iter().map(|v| VarName::new(v.as_str())).collect();
+    let vals: Vec<_> = qs.values().to_vec();
     QuerySolution::new(vars, vals)
 }
 
@@ -731,9 +707,7 @@ fn sparql_client() -> Result<reqwest::Client> {
     );
     headers.insert(USER_AGENT, header::HeaderValue::from_static("rudof"));
 
-    let client = reqwest::Client::builder()
-        .default_headers(headers)
-        .build()?;
+    let client = reqwest::Client::builder().default_headers(headers).build()?;
     Ok(client)
 }
 
@@ -758,9 +732,7 @@ macro_rules! create_construct_client {
             headers.insert(ACCEPT, header::HeaderValue::from_static($accept_header));
             headers.insert(USER_AGENT, header::HeaderValue::from_static("rudof"));
 
-            let client = reqwest::Client::builder()
-                .default_headers(headers)
-                .build()?;
+            let client = reqwest::Client::builder().default_headers(headers).build()?;
             Ok(client)
         }
     };
@@ -865,11 +837,7 @@ async fn make_sparql_query_construct_async(
 /// - HTTP request fails
 /// - Response cannot be parsed as JSON
 /// - JSON does not contain a boolean field
-async fn make_sparql_query_ask_async(
-    query: &str,
-    client: &reqwest::Client,
-    endpoint_iri: &IriS,
-) -> Result<bool> {
+async fn make_sparql_query_ask_async(query: &str, client: &reqwest::Client, endpoint_iri: &IriS) -> Result<bool> {
     let url = Url::parse_with_params(endpoint_iri.as_str(), &[("query", query)])?;
 
     let body = client.get(url).send().await?.text().await?;
@@ -923,9 +891,7 @@ fn parse_sparql_ask_results(body: &str) -> Result<bool> {
 fn parse_sparql_json_results(body: &str) -> Result<Vec<OxQuerySolution>> {
     let json_parser = QueryResultsParser::from_format(QueryResultsFormat::Json);
 
-    if let ReaderQueryResultsParserOutput::Solutions(solutions) =
-        json_parser.for_reader(body.as_bytes())?
-    {
+    if let ReaderQueryResultsParserOutput::Solutions(solutions) = json_parser.for_reader(body.as_bytes())? {
         // Collect all solutions, propagating any parsing errors
         solutions
             .collect::<std::result::Result<Vec<_>, _>>()
@@ -933,9 +899,7 @@ fn parse_sparql_json_results(body: &str) -> Result<Vec<OxQuerySolution>> {
                 body: format!("Error parsing solution: {}", e),
             })
     } else {
-        Err(SparqlEndpointError::ParsingBody {
-            body: body.to_string(),
-        })
+        Err(SparqlEndpointError::ParsingBody { body: body.to_string() })
     }
 }
 

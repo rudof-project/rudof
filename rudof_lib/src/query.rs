@@ -1,7 +1,4 @@
-use crate::{
-    InputSpec, RdfData, Rudof, RudofError, query_result_format::ResultQueryFormat,
-    query_type::QueryType,
-};
+use crate::{InputSpec, RdfData, Rudof, RudofError, query_result_format::ResultQueryFormat, query_type::QueryType};
 use rdf::rdf_core::query::{QueryResultFormat, QuerySolutions};
 use std::io::Write;
 use tracing::trace;

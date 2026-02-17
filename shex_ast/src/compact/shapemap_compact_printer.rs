@@ -6,8 +6,8 @@ use crate::{keyword, pp_label, pp_object_value};
 use colored::*;
 use prefixmap::{IriRef, PrefixMap};
 use pretty::{Arena, DocAllocator, DocBuilder};
+use rdf::rdf_core::term::literal::{ConcreteLiteral, Lang, NumericLiteral};
 use rust_decimal::Decimal;
-use rdf::rdf_core::term::literal::{ConcreteLiteral, NumericLiteral, Lang};
 use std::borrow::Cow;
 use std::marker::PhantomData;
 
@@ -231,9 +231,7 @@ where
 
     fn pp_literal(&self, literal: &ConcreteLiteral) -> DocBuilder<'a, Arena<'a, A>, A> {
         match literal {
-            ConcreteLiteral::StringLiteral { lexical_form, lang } => {
-                self.pp_string_literal(lexical_form, lang)
-            }
+            ConcreteLiteral::StringLiteral { lexical_form, lang } => self.pp_string_literal(lexical_form, lang),
             ConcreteLiteral::DatatypeLiteral {
                 lexical_form: _,
                 datatype: _,

@@ -14,7 +14,10 @@ pub enum RdfVisualizerError {
     /// # Fields
     /// - `err`: The underlying `std::io::Error` that was encountered
     #[error(transparent)]
-    IOError {#[from] err: io::Error},
+    IOError {
+        #[from]
+        err: io::Error,
+    },
 
     /// Error when a specific RDF node cannot be found in the visual graph.
     ///
@@ -34,5 +37,8 @@ pub enum RdfVisualizerError {
     /// # Fields
     /// - `err`: The underlying `UmlConverterError` that was encountered
     #[error(transparent)]
-    UmlConverterError {#[from] err: UmlConverterError},
+    UmlConverterError {
+        #[from]
+        err: UmlConverterError,
+    },
 }

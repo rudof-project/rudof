@@ -8,15 +8,15 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
 use iri_s::IriS;
+use rdf::rdf_core::{
+    NeighsRDF, SHACLPath,
+    query::QueryRDF,
+    term::{Object, Term},
+};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
 use shacl_ir::shape_label_idx::ShapeLabelIdx;
-use rdf::rdf_core::{
-    NeighsRDF, SHACLPath,
-    query::QueryRDF,
-    term::{Term, Object},
-};
 use std::fmt::Debug;
 
 pub struct SparqlEngine;
@@ -92,11 +92,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
         }))
     }
 
-    fn target_class(
-        &self,
-        store: &S,
-        class: &Object,
-    ) -> Result<FocusNodes<S>, Box<ValidateError>> {
+    fn target_class(&self, store: &S, class: &Object) -> Result<FocusNodes<S>, Box<ValidateError>> {
         let class: S::Term = class.clone().into();
         if !class.is_iri() {
             return Err(Box::new(ValidateError::TargetClassNotIri));
@@ -164,22 +160,13 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
         }))
     }
 
-    fn implicit_target_class(
-        &self,
-        _store: &S,
-        _shape: &Object,
-    ) -> Result<FocusNodes<S>, Box<ValidateError>> {
+    fn implicit_target_class(&self, _store: &S, _shape: &Object) -> Result<FocusNodes<S>, Box<ValidateError>> {
         Err(Box::new(ValidateError::NotImplemented {
             msg: "implicit_target_class".to_string(),
         }))
     }
 
-    fn record_validation(
-        &mut self,
-        _node: Object,
-        _shape_idx: ShapeLabelIdx,
-        _results: Vec<ValidationResult>,
-    ) {
+    fn record_validation(&mut self, _node: Object, _shape_idx: ShapeLabelIdx, _results: Vec<ValidationResult>) {
         // Nothing to do by now...
     }
 

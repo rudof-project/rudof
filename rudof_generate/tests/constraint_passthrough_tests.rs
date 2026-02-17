@@ -1,7 +1,7 @@
-use rudof_generate::config::OutputFormat;
-use rudof_generate::{DataGenerator, GeneratorConfig};
 use rdf::rdf_core::{NeighsRDF, RDFFormat, term::literal::Literal};
 use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+use rudof_generate::config::OutputFormat;
+use rudof_generate::{DataGenerator, GeneratorConfig};
 use std::collections::HashMap;
 use std::io::Write;
 use tempfile::NamedTempFile;
@@ -38,13 +38,8 @@ ex:PersonShape {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = InMemoryGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Verify that generated triples respect datatypes
     let mut datatype_counts = HashMap::new();
@@ -112,13 +107,8 @@ ex:PersonShape a sh:NodeShape ;
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = InMemoryGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Verify that generated triples respect datatypes
     let mut datatype_counts = HashMap::new();
@@ -174,13 +164,8 @@ ex:PersonShape {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = InMemoryGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Count properties per entity to verify cardinality
     let mut entity_properties: HashMap<String, HashMap<String, u32>> = HashMap::new();
@@ -262,13 +247,8 @@ ex:PersonShape a sh:NodeShape ;
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = InMemoryGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Count properties per entity to verify cardinality
     let mut entity_properties: HashMap<String, HashMap<String, u32>> = HashMap::new();
@@ -343,13 +323,7 @@ ex:AddressShape {
 
     // Read and validate generated data
     let generated_data = std::fs::read_to_string(output_file.path()).unwrap();
-    let graph = InMemoryGraph::from_str(
-        &generated_data,
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .unwrap();
+    let graph = InMemoryGraph::from_str(&generated_data, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
 
     // Check that we have both person and address data
     let triples = graph.triples().unwrap();
@@ -430,13 +404,7 @@ ex:AddressShape a sh:NodeShape ;
 
     // Read and validate generated data
     let generated_data = std::fs::read_to_string(output_file.path()).unwrap();
-    let graph = InMemoryGraph::from_str(
-        &generated_data,
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .unwrap();
+    let graph = InMemoryGraph::from_str(&generated_data, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
 
     // Check that we have both person and address data
     let triples = graph.triples().unwrap();
@@ -509,13 +477,7 @@ ex:PersonShape a sh:NodeShape ;
 
     // Read and validate generated data
     let generated_data = std::fs::read_to_string(output_file.path()).unwrap();
-    let graph = InMemoryGraph::from_str(
-        &generated_data,
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .unwrap();
+    let graph = InMemoryGraph::from_str(&generated_data, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
 
     // Verify that generated values respect constraints
     let triples = graph.triples().unwrap();

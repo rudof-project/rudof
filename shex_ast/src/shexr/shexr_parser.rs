@@ -15,9 +15,8 @@ use rdf::{
             rdf_node_parser::{
                 RDFNodeParse,
                 constructors::{
-                    HasTypeParser, IriParser, IsIriParser, SetFocusParser,
-                    SingleBoolPropertyParser, SingleInstanceParser, SingleValuePropertyParser,
-                    SuccessParser, TermParser,
+                    HasTypeParser, IriParser, IsIriParser, SetFocusParser, SingleBoolPropertyParser,
+                    SingleInstanceParser, SingleValuePropertyParser, SuccessParser, TermParser,
                 },
             },
         },
@@ -92,8 +91,7 @@ where
     }
 
     fn parse_shape_expr() -> impl RDFNodeParse<RDF, Output = ShapeExpr> {
-        SingleValuePropertyParser::new(sx_shape_expr())
-            .then(|node| SetFocusParser::new(node).then(|_| shape_expr()))
+        SingleValuePropertyParser::new(sx_shape_expr()).then(|node| SetFocusParser::new(node).then(|_| shape_expr()))
     }
 }
 
@@ -112,11 +110,7 @@ where
         closed().then(|maybe_closed| {
             let extra = None; // TODO
             let expression = None; // TODO
-            SuccessParser::new(ShapeExpr::shape(Shape::new(
-                maybe_closed,
-                extra,
-                expression,
-            )))
+            SuccessParser::new(ShapeExpr::shape(Shape::new(maybe_closed, extra, expression)))
         })
     })
 }
@@ -260,11 +254,7 @@ where
     RDF: FocusRDF,
 {
     SingleValuePropertyParser::new(sx_values())
-        .then(|node| {
-            SetFocusParser::new(node)
-                .and(parse_value().list())
-                .map(|(_, vs)| vs)
-        })
+        .then(|node| SetFocusParser::new(node).and(parse_value().list()).map(|(_, vs)| vs))
         .optional()
 }
 

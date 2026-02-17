@@ -2,6 +2,10 @@ use iri_s::IriS;
 use iri_s::error::IriSError;
 use prefixmap::error::DerefError;
 use prefixmap::{Deref, IriRef};
+use rdf::rdf_core::term::{
+    Object,
+    literal::{ConcreteLiteral, Lang, NumericLiteral},
+};
 use rust_decimal::Decimal;
 use serde::de::Unexpected;
 use serde::ser::SerializeMap;
@@ -9,7 +13,6 @@ use serde::{
     Deserialize, Serialize, Serializer,
     de::{self, MapAccess, Visitor},
 };
-use rdf::rdf_core::term::{Object, literal::{ConcreteLiteral, NumericLiteral, Lang}};
 use std::fmt::{self, Display};
 use std::{result, str::FromStr};
 
@@ -117,13 +120,13 @@ impl Serialize for ObjectValue {
                 let value_str = if *value { "true" } else { "false" };
                 map.serialize_entry("value", value_str)?;
                 map.end()
-            }
+            },
             ObjectValue::Literal(ConcreteLiteral::NumericLiteral(num)) => {
                 let mut map = serializer.serialize_map(Some(2))?;
                 map.serialize_entry("type", get_type_str(num))?;
                 map.serialize_entry("value", &num.to_string())?;
                 map.end()
-            }
+            },
             ObjectValue::Literal(ConcreteLiteral::DatetimeLiteral(date_time)) => {
                 let mut map = serializer.serialize_map(Some(2))?;
                 map.serialize_entry("type", DATETIME_STR)?;
@@ -139,16 +142,13 @@ impl Serialize for ObjectValue {
                 }
                 map.serialize_entry("value", lexical_form)?;
                 map.end()
-            }
-            ObjectValue::Literal(ConcreteLiteral::DatatypeLiteral {
-                lexical_form,
-                datatype,
-            }) => {
+            },
+            ObjectValue::Literal(ConcreteLiteral::DatatypeLiteral { lexical_form, datatype }) => {
                 let mut map = serializer.serialize_map(Some(2))?;
                 map.serialize_entry("type", datatype)?;
                 map.serialize_entry("value", lexical_form)?;
                 map.end()
-            }
+            },
             ObjectValue::Literal(ConcreteLiteral::WrongDatatypeLiteral {
                 lexical_form,
                 datatype,
@@ -367,7 +367,7 @@ impl<'de> Deserialize<'de> for ObjectValue {
                                     lexical_form,
                                     lang: Some(language),
                                 }))
-                            }
+                            },
                             None => Ok(ObjectValue::Literal(ConcreteLiteral::StringLiteral {
                                 lexical_form,
                                 lang: None,
@@ -399,7 +399,7 @@ impl From<&ObjectValue> for Object {
             ObjectValue::IriRef(iri_ref) => {
                 let iri = iri_ref.get_iri().unwrap(); // Should not fail, as it was already deref'ed
                 Object::from(iri.clone())
-            }
+            },
             ObjectValue::Literal(literal) => literal.clone().into(),
         }
     }

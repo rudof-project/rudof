@@ -2,6 +2,7 @@ use super::{Shacl2ShExConfig, Shacl2ShExError};
 use iri_s::IriS;
 use iri_s::iri;
 use prefixmap::IriRef;
+use rdf::rdf_core::{Rdf, SHACLPath, term::Object};
 use shacl_ast::{
     Schema as ShaclSchema, component::Component, node_shape::NodeShape, property_shape::PropertyShape,
     shape::Shape as ShaclShape, target::Target,
@@ -10,7 +11,6 @@ use shex_ast::{
     BNode, NodeConstraint, Schema as ShExSchema, Shape as ShExShape, ShapeExpr, ShapeExprLabel, TripleExpr,
     TripleExprWrapper, ValueSetValue,
 };
-use rdf::rdf_core::{Rdf, SHACLPath, term::Object};
 use tracing::debug;
 
 #[allow(dead_code)] // TODO: only for config...
@@ -63,9 +63,7 @@ impl Shacl2ShEx {
         match node {
             Object::Iri(iri) => Ok(ShapeExprLabel::iri(iri.clone())),
             Object::BlankNode(bn) => Ok(ShapeExprLabel::bnode(BNode::new(bn))),
-            Object::Literal(lit) => Err(Shacl2ShExError::RDFNode2LabelLiteral {
-                literal: lit.clone(),
-            }),
+            Object::Literal(lit) => Err(Shacl2ShExError::RDFNode2LabelLiteral { literal: lit.clone() }),
             Object::Triple { .. } => todo!(),
         }
     }

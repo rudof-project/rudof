@@ -12,7 +12,7 @@ pub enum RDFFormat {
     Turtle,
     /// N-Triples format.
     NTriples,
-    RDFXML,
+    Rdfxml,
     TriG,
     /// N3 (Notation3) format.
     N3,
@@ -24,7 +24,7 @@ pub enum RDFFormat {
 
 impl RDFFormat {
     /// Returns the file extensions associated with this format.
-    /// 
+    ///
     /// # Extensions by Format
     ///
     /// - **Turtle**: `["ttl", "turtle"]`
@@ -38,7 +38,7 @@ impl RDFFormat {
         match self {
             RDFFormat::Turtle => vec!["ttl", "turtle"],
             RDFFormat::NTriples => vec!["nt"],
-            RDFFormat::RDFXML => vec!["rdf", "xml"],
+            RDFFormat::Rdfxml => vec!["rdf", "xml"],
             RDFFormat::TriG => vec!["trig"],
             RDFFormat::N3 => vec!["n3"],
             RDFFormat::NQuads => vec!["nq", "nquads"],
@@ -63,7 +63,7 @@ impl MimeType for RDFFormat {
         match self {
             RDFFormat::Turtle => "text/turtle",
             RDFFormat::NTriples => "application/n-triples",
-            RDFFormat::RDFXML => "application/rdf+xml",
+            RDFFormat::Rdfxml => "application/rdf+xml",
             RDFFormat::TriG => "application/trig",
             RDFFormat::N3 => "text/n3",
             RDFFormat::NQuads => "application/n-quads",
@@ -94,7 +94,7 @@ impl FromStr for RDFFormat {
     /// # Arguments
     ///
     /// * `s` - The string to parse (case-insensitive)
-    /// 
+    ///
     /// # Errors
     ///
     /// Returns [`RDFError::NotSupportedRDFFormatError`] if the input string doesn't match any known format.
@@ -104,8 +104,8 @@ impl FromStr for RDFFormat {
             "turtle" => Ok(RDFFormat::Turtle),
             "ntriples" => Ok(RDFFormat::NTriples),
             "nt" => Ok(RDFFormat::NTriples),
-            "rdf/xml" => Ok(RDFFormat::RDFXML),
-            "rdf" => Ok(RDFFormat::RDFXML),
+            "rdf/xml" => Ok(RDFFormat::Rdfxml),
+            "rdf" => Ok(RDFFormat::Rdfxml),
             "trig" => Ok(RDFFormat::TriG),
             "n3" => Ok(RDFFormat::N3),
             "nquads" => Ok(RDFFormat::NQuads),
@@ -121,7 +121,7 @@ impl FromStr for RDFFormat {
 
 impl Display for RDFFormat {
     /// Formats the RDF format as its canonical name.
-    /// 
+    ///
     /// # Format Names
     ///
     /// - Turtle → "Turtle"
@@ -135,7 +135,7 @@ impl Display for RDFFormat {
         match self {
             RDFFormat::Turtle => write!(f, "Turtle"),
             RDFFormat::NTriples => write!(f, "N-Triples"),
-            RDFFormat::RDFXML => write!(f, "RDF/XML"),
+            RDFFormat::Rdfxml => write!(f, "RDF/XML"),
             RDFFormat::TriG => write!(f, "TriG"),
             RDFFormat::N3 => write!(f, "N3"),
             RDFFormat::NQuads => write!(f, "NQuads"),

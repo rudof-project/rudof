@@ -6,13 +6,13 @@ use crate::{
 use anyhow::{Result, anyhow, bail};
 use iri_s::IriS;
 use prefixmap::IriRef;
+use rdf::rdf_core::visualizer::uml_converter::{ImageFormat, UmlConverter};
+use rdf::rdf_impl::ReaderMode;
 use rudof_lib::{
     InputSpec, Rudof, RudofConfig, ShExFormatter, ShapeMapParser, UmlGenerationMode, shacl::add_shacl_schema_rudof,
     shacl_format::CliShaclFormat,
 };
 use shapes_converter::{ShEx2Html, ShEx2Sparql, ShEx2Uml, Shacl2ShEx, Tap2ShEx};
-use rdf::rdf_core::visualizer::uml_converter::{ImageFormat, UmlConverter};
-use rdf::rdf_impl::ReaderMode;
 use std::{
     io::Write,
     path::{Path, PathBuf},

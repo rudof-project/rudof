@@ -1,4 +1,7 @@
-use crate::rdf_core::{Rdf, query::{QuerySolution, VariableSolutionIndex}};
+use crate::rdf_core::{
+    Rdf,
+    query::{QuerySolution, VariableSolutionIndex},
+};
 use serde::Serialize;
 use std::fmt::Display;
 
@@ -20,9 +23,7 @@ impl VarName {
     ///
     /// * `str` - The variable name without prefix
     pub fn new(str: &str) -> VarName {
-        VarName {
-            str: str.to_string(),
-        }
+        VarName { str: str.to_string() }
     }
 
     /// Returns the variable name as a string slice without prefix.

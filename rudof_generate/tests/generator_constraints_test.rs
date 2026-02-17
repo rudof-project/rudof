@@ -1,6 +1,6 @@
-use rudof_generate::{DataGenerator, GeneratorConfig};
 use rdf::rdf_core::{NeighsRDF, RDFFormat};
 use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+use rudof_generate::{DataGenerator, GeneratorConfig};
 use std::collections::HashMap;
 use std::io::Write;
 use tempfile::NamedTempFile;
@@ -36,13 +36,8 @@ ex:PersonShape {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = InMemoryGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Verify cardinality constraints
     verify_shex_cardinality(&graph);
@@ -90,13 +85,8 @@ async fn test_shacl_cardinality_constraints() {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = InMemoryGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Verify cardinality constraints
     verify_shacl_cardinality(&graph);
@@ -156,13 +146,8 @@ async fn test_datatype_constraints() {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = InMemoryGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Verify datatype constraints
     verify_datatypes(&graph);
@@ -210,13 +195,8 @@ async fn test_value_constraints() {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = InMemoryGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Verify value constraints
     verify_value_constraints(&graph);
@@ -255,13 +235,8 @@ ex:PersonShape {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = InMemoryGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Verify datatype constraints (reuse the same verification function)
     verify_datatypes(&graph);
@@ -298,13 +273,8 @@ ex:PersonShape {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = InMemoryGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Verify value constraints (reuse the same verification function)
     verify_value_constraints(&graph);

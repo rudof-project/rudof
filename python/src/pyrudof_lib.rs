@@ -9,14 +9,13 @@ use pyo3::{Bound, Py, PyAny, PyErr, PyRef, PyRefMut, PyResult, Python, exception
 use pythonize::pythonize;
 use rudof_lib::{
     CoShaMo, ComparatorError, CompareSchemaFormat, CompareSchemaMode, DCTAP, DCTAPFormat, InputSpec, InputSpecError,
-    InputSpecReader, Mie, MimeType, QueryResultFormat, QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat,
+    InputSpecReader, Mie, MimeType, Object, QueryResultFormat, QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat,
     RdfData, ReaderMode, ResultShapeMap, Rudof, RudofError, ServiceDescription, ServiceDescriptionFormat, ShExFormat,
     ShExFormatter, ShExSchema, ShaCo, ShaclFormat, ShaclSchemaIR, ShaclValidationMode, ShapeLabel, ShapeMapFormat,
     ShapeMapFormatter, ShapesGraphSource, SortMode, UmlGenerationMode, ValidationReport, ValidationStatus, VarName,
     node_info::{format_node_info_list, get_node_info},
     parse_node_selector,
     shacl_validation::validation_report::{report::SortModeReport, result::ValidationResult},
-    Object,
 };
 use std::{
     ffi::OsStr,
@@ -261,7 +260,7 @@ impl PyRudof {
     ///     input (str): File path or URL to the RDF data.
     ///         Examples: ``"data.ttl"``, ``"http://example.org/data.rdf"``
     ///     format (RDFFormat, optional): Serialization format. Defaults to ``RDFFormat.Turtle``.
-    ///         Available: Turtle, NTriples, RDFXML, TriG, N3, NQuads, JsonLd
+    ///         Available: Turtle, NTriples, Rdfxml, TriG, N3, NQuads, JsonLd
     ///     base (str, optional): Base IRI for resolving relative IRIs. Defaults to ``None``.
     ///     reader_mode (&ReaderMode, optional): Error handling strategy. Defaults to ``ReaderMode.Lax``.
     ///         - ``Lax``: Continue on errors (recommended for real-world data)
@@ -1187,7 +1186,7 @@ impl From<&PySortModeResultMap> for SortMode {
 pub enum PyRDFFormat {
     Turtle,
     NTriples,
-    RDFXML,
+    Rdfxml,
     TriG,
     N3,
     NQuads,
@@ -1201,7 +1200,7 @@ pub enum PyRDFFormat {
 pub enum PyQueryResultFormat {
     Turtle,
     NTriples,
-    RDFXML,
+    Rdfxml,
     TriG,
     N3,
     NQuads,
@@ -1253,7 +1252,7 @@ pub enum PyShExFormat {
 pub enum PyShaclFormat {
     Turtle,
     NTriples,
-    RDFXML,
+    Rdfxml,
     TriG,
     N3,
     NQuads,
@@ -2317,7 +2316,7 @@ fn cnv_rdf_format(format: &PyRDFFormat) -> RDFFormat {
     match format {
         PyRDFFormat::Turtle => RDFFormat::Turtle,
         PyRDFFormat::NTriples => RDFFormat::NTriples,
-        PyRDFFormat::RDFXML => RDFFormat::RDFXML,
+        PyRDFFormat::Rdfxml => RDFFormat::Rdfxml,
         PyRDFFormat::TriG => RDFFormat::TriG,
         PyRDFFormat::N3 => RDFFormat::N3,
         PyRDFFormat::NQuads => RDFFormat::NQuads,
@@ -2365,7 +2364,7 @@ fn cnv_shacl_format(format: &PyShaclFormat) -> ShaclFormat {
     match format {
         PyShaclFormat::Turtle => ShaclFormat::Turtle,
         PyShaclFormat::NTriples => ShaclFormat::NTriples,
-        PyShaclFormat::RDFXML => ShaclFormat::RdfXml,
+        PyShaclFormat::Rdfxml => ShaclFormat::RdfXml,
         PyShaclFormat::TriG => ShaclFormat::TriG,
         PyShaclFormat::N3 => ShaclFormat::N3,
         PyShaclFormat::NQuads => ShaclFormat::NQuads,
@@ -2411,7 +2410,7 @@ fn cnv_query_result_format(format: &PyQueryResultFormat) -> QueryResultFormat {
     match format {
         PyQueryResultFormat::Turtle => QueryResultFormat::Turtle,
         PyQueryResultFormat::NTriples => QueryResultFormat::NTriples,
-        PyQueryResultFormat::RDFXML => QueryResultFormat::RdfXml,
+        PyQueryResultFormat::Rdfxml => QueryResultFormat::RdfXml,
         PyQueryResultFormat::CSV => QueryResultFormat::Csv,
         PyQueryResultFormat::TriG => QueryResultFormat::TriG,
         PyQueryResultFormat::N3 => QueryResultFormat::N3,

@@ -29,17 +29,17 @@ impl UsageCount {
         }
     }
 
-     /// Returns the number of times the entity was used as a predicate.
+    /// Returns the number of times the entity was used as a predicate.
     pub fn as_predicate(&self) -> usize {
         self.as_predicate
     }
 
-     /// Returns the number of times the entity was used as a subject.
+    /// Returns the number of times the entity was used as a subject.
     pub fn as_subject(&self) -> usize {
         self.as_subject
     }
 
-     /// Returns the number of times the entity was used as an object.
+    /// Returns the number of times the entity was used as an object.
     pub fn as_object(&self) -> usize {
         self.as_object
     }

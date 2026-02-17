@@ -14,9 +14,13 @@ pub struct ObjectParser<RDF> {
 
 impl<RDF> ObjectParser<RDF> {
     pub fn new() -> Self {
-        ObjectParser {
-            _marker: PhantomData,
-        }
+        ObjectParser { _marker: PhantomData }
+    }
+}
+
+impl<RDF> Default for ObjectParser<RDF> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -29,15 +33,11 @@ where
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
         match rdf.get_focus() {
             Some(focus) => {
-                let object: Object =
-                    focus
-                        .clone()
-                        .try_into()
-                        .map_err(|_| RDFError::ExpectedObjectError {
-                            term: focus.to_string(),
-                        })?;
+                let object: Object = focus.clone().try_into().map_err(|_| RDFError::ExpectedObjectError {
+                    term: focus.to_string(),
+                })?;
                 Ok(object)
-            }
+            },
             None => Err(RDFError::NoFocusNodeError),
         }
     }
@@ -51,9 +51,13 @@ pub struct TermParser<RDF> {
 
 impl<RDF> TermParser<RDF> {
     pub fn new() -> Self {
-        TermParser {
-            _marker: PhantomData,
-        }
+        TermParser { _marker: PhantomData }
+    }
+}
+
+impl<RDF> Default for TermParser<RDF> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -79,9 +83,13 @@ pub struct IriParser<RDF> {
 
 impl<RDF> IriParser<RDF> {
     pub fn new() -> Self {
-        IriParser {
-            _marker: PhantomData,
-        }
+        IriParser { _marker: PhantomData }
+    }
+}
+
+impl<RDF> Default for IriParser<RDF> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -94,12 +102,11 @@ where
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
         match rdf.get_focus() {
             Some(focus) => {
-                let iri: RDF::IRI =
-                    RDF::term_as_iri(focus).map_err(|_| RDFError::ExpectedIRIError {
-                        term: focus.to_string(),
-                    })?;
+                let iri: RDF::IRI = RDF::term_as_iri(focus).map_err(|_| RDFError::ExpectedIRIError {
+                    term: focus.to_string(),
+                })?;
                 Ok(iri)
-            }
+            },
             None => Err(RDFError::NoFocusNodeError),
         }
     }
@@ -111,11 +118,15 @@ pub struct LiteralParser<RDF> {
     _marker: PhantomData<RDF>,
 }
 
+impl<RDF> Default for LiteralParser<RDF> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<RDF> LiteralParser<RDF> {
     pub fn new() -> Self {
-        LiteralParser {
-            _marker: PhantomData,
-        }
+        LiteralParser { _marker: PhantomData }
     }
 }
 
@@ -128,12 +139,11 @@ where
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
         match rdf.get_focus() {
             Some(focus) => {
-                let lit: RDF::Literal =
-                    RDF::term_as_literal(focus).map_err(|_| RDFError::ExpectedLiteralError {
-                        term: focus.to_string(),
-                    })?;
+                let lit: RDF::Literal = RDF::term_as_literal(focus).map_err(|_| RDFError::ExpectedLiteralError {
+                    term: focus.to_string(),
+                })?;
                 Ok(lit)
-            }
+            },
             None => Err(RDFError::NoFocusNodeError),
         }
     }
@@ -145,11 +155,15 @@ pub struct BooleanParser<RDF> {
     _marker: PhantomData<RDF>,
 }
 
+impl<RDF> Default for BooleanParser<RDF> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<RDF> BooleanParser<RDF> {
     pub fn new() -> Self {
-        BooleanParser {
-            _marker: PhantomData,
-        }
+        BooleanParser { _marker: PhantomData }
     }
 }
 
@@ -161,9 +175,8 @@ where
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
         let lit = LiteralParser::new().parse_focused(rdf)?;
-        lit.to_bool().ok_or_else(|| RDFError::ExpectedBooleanError {
-            term: lit.to_string(),
-        })
+        lit.to_bool()
+            .ok_or_else(|| RDFError::ExpectedBooleanError { term: lit.to_string() })
     }
 }
 
@@ -175,9 +188,13 @@ pub struct IriOrBlankNodeParser<RDF> {
 
 impl<RDF> IriOrBlankNodeParser<RDF> {
     pub fn new() -> Self {
-        IriOrBlankNodeParser {
-            _marker: PhantomData,
-        }
+        IriOrBlankNodeParser { _marker: PhantomData }
+    }
+}
+
+impl<RDF> Default for IriOrBlankNodeParser<RDF> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -190,20 +207,23 @@ where
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
         match rdf.get_focus() {
             Some(focus) => {
-                let subj: RDF::Subject = <RDF::Term as TryInto<RDF::Subject>>::try_into(focus.clone())
-                    .map_err(|_| RDFError::ExpectedIriOrBlankNodeError {
-                        term: focus.to_string(),
-                        error: "Expected IRI or BlankNode".to_string(),
+                let subj: RDF::Subject =
+                    <RDF::Term as TryInto<RDF::Subject>>::try_into(focus.clone()).map_err(|_| {
+                        RDFError::ExpectedIriOrBlankNodeError {
+                            term: focus.to_string(),
+                            error: "Expected IRI or BlankNode".to_string(),
+                        }
                     })?;
 
-                let iri_or_bnode: IriOrBlankNode = subj.clone().try_into().map_err(|_| {
-                    RDFError::SubjectToIriOrBlankNodeError {
-                        subject: subj.to_string(),
-                    }
-                })?;
+                let iri_or_bnode: IriOrBlankNode =
+                    subj.clone()
+                        .try_into()
+                        .map_err(|_| RDFError::SubjectToIriOrBlankNodeError {
+                            subject: subj.to_string(),
+                        })?;
 
                 Ok(iri_or_bnode)
-            }
+            },
             None => Err(RDFError::NoFocusNodeError),
         }
     }
@@ -225,7 +245,7 @@ where
 {
     pub fn new(term: RDF::Term) -> Self {
         TermAsIri {
-            term: term,
+            term,
             _marker: PhantomData,
         }
     }
@@ -239,10 +259,8 @@ where
 
     fn parse_focused(&self, _rdf: &mut RDF) -> Result<Self::Output, RDFError> {
         let iri: RDF::IRI =
-            <RDF::Term as TryInto<RDF::IRI>>::try_into(self.term.clone()).map_err(|_| {
-                RDFError::ExpectedIRIError {
-                    term: self.term.to_string(),
-                }
+            <RDF::Term as TryInto<RDF::IRI>>::try_into(self.term.clone()).map_err(|_| RDFError::ExpectedIRIError {
+                term: self.term.to_string(),
             })?;
         let iri_string = iri.as_str();
         Ok(iri!(iri_string))

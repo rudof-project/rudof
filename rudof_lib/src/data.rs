@@ -2,8 +2,11 @@
 use iri_s::IriS;
 use iri_s::MimeType;
 use rdf::rdf_core::{
-    RDFFormat, 
-    visualizer::{VisualRDFGraph, uml_converter::{UmlConverter, UmlGenerationMode, ImageFormat}}
+    RDFFormat,
+    visualizer::{
+        VisualRDFGraph,
+        uml_converter::{ImageFormat, UmlConverter, UmlGenerationMode},
+    },
 };
 use rdf::rdf_impl::ReaderMode;
 use std::str::FromStr;
@@ -19,7 +22,7 @@ pub fn data_format2rdf_format(data_format: &DataFormat) -> Result<RDFFormat, Dat
         DataFormat::N3 => Ok(RDFFormat::N3),
         DataFormat::NQuads => Ok(RDFFormat::NQuads),
         DataFormat::NTriples => Ok(RDFFormat::NTriples),
-        DataFormat::RdfXml => Ok(RDFFormat::RDFXML),
+        DataFormat::RdfXml => Ok(RDFFormat::Rdfxml),
         DataFormat::TriG => Ok(RDFFormat::TriG),
         DataFormat::Turtle => Ok(RDFFormat::Turtle),
         DataFormat::JsonLd => Ok(RDFFormat::JsonLd),

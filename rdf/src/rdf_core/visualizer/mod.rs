@@ -9,5 +9,5 @@ mod visual_rdf_node;
 
 pub use rdf_visualizer_config::RDFVisualizationConfig;
 pub use visual_rdf_edge::VisualRDFEdge;
-pub use visual_rdf_graph::{VisualRDFGraph, NodeId, EdgeId};
+pub use visual_rdf_graph::{EdgeId, NodeId, VisualRDFGraph};
 pub use visual_rdf_node::VisualRDFNode;

@@ -7,14 +7,14 @@ use crate::literal_exclusion::LiteralExclusion;
 use iri_s::error::IriSError;
 use prefixmap::error::DerefError;
 use prefixmap::{Deref, IriRef};
+use rdf::rdf_core::term::literal::{ConcreteLiteral, Lang};
 use rust_decimal::Decimal;
 use serde::ser::SerializeMap;
 use serde::{
     Deserialize, Serialize, Serializer,
     de::{self, MapAccess, Unexpected, Visitor},
 };
-use rdf::rdf_core::term::literal::{ConcreteLiteral, Lang};
-use std::{fmt, result, str::FromStr};
+use std::{fmt, str::FromStr};
 use thiserror::Error;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -743,7 +743,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                                         lang: Some(lang),
                                     },
                                 )))
-                            }
+                            },
                             None => Ok(ValueSetValue::datatype_literal(&v, &iri)),
                         },
                         None => Err(de::Error::missing_field("value")),
@@ -762,7 +762,7 @@ impl<'de> Deserialize<'de> for ValueSetValue {
                                         lang: Some(lang),
                                     },
                                 )))
-                            }
+                            },
                             None => Ok(ValueSetValue::ObjectValue(ObjectValue::Literal(
                                 ConcreteLiteral::StringLiteral {
                                     lexical_form,

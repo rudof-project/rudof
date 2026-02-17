@@ -1,5 +1,5 @@
 use crate::rdf_core::{
-    AsyncRDF, BuildRDF, FocusRDF, NeighsRDF, RDFFormat, Rdf, Matcher,
+    AsyncRDF, BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf,
     query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions, VarName},
     vocab::rdf_type as vocab_rdf_type,
 };
@@ -7,24 +7,29 @@ use crate::rdf_impl::in_memory_graph_error::InMemoryGraphError;
 
 use async_trait::async_trait;
 use colored::*;
-use oxigraph::{store::Store, sparql::{QueryResults, SparqlEvaluator}};
-use oxrdf::{
-    BlankNode as OxBlankNode, Graph, GraphName, Literal as OxLiteral, NamedNode as OxNamedNode,
-    NamedNodeRef, NamedOrBlankNode as OxSubject, NamedOrBlankNodeRef as OxSubjectRef, Quad,
-    Term as OxTerm, TermRef, Triple as OxTriple, TripleRef
+use iri_s::IriS;
+use oxigraph::{
+    sparql::{QueryResults, SparqlEvaluator},
+    store::Store,
 };
 use oxjsonld::JsonLdParser;
+use oxrdf::{
+    BlankNode as OxBlankNode, Graph, GraphName, Literal as OxLiteral, NamedNode as OxNamedNode, NamedNodeRef,
+    NamedOrBlankNode as OxSubject, NamedOrBlankNodeRef as OxSubjectRef, Quad, Term as OxTerm, TermRef,
+    Triple as OxTriple, TripleRef,
+};
 use oxrdfio::{JsonLdProfileSet, RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
 use prefixmap::{PrefixMapError, map::*};
-use iri_s::IriS;
-use std::collections::{HashMap, HashSet};
-use serde::{ser::SerializeStruct, Serialize};
+use serde::{Serialize, ser::SerializeStruct};
 use sparesults::QuerySolution as SparQuerySolution;
+use std::collections::{HashMap, HashSet};
 use std::{
-    fmt::Debug, fs::File,
-    io::{self, BufReader, Cursor, Write}, path::Path,
+    fmt::Debug,
+    fs::File,
+    io::{self, BufReader, Cursor, Write},
+    path::Path,
     str::FromStr,
 };
 use tracing::{debug, trace};
@@ -38,19 +43,19 @@ use tracing::{debug, trace};
 pub struct InMemoryGraph {
     /// Optional focus term used by [`FocusRDF`] operations.
     focus: Option<OxTerm>,
-    
+
     /// Underlying RDF graph.
     graph: Graph,
-    
+
     /// Prefix map used for CURIE resolution and qualification.
     pm: PrefixMap,
-    
+
     /// Optional base IRI for resolving relative IRIs.
     base: Option<IriS>,
-    
+
     /// Counter used to generate unique blank node identifiers.
     bnode_counter: usize,
-    
+
     /// Optional Oxigraph store used for SPARQL evaluation.
     store: Option<Store>,
 }
@@ -92,9 +97,7 @@ impl InMemoryGraph {
     /// Returns an iterator over all triples as quads in the default graph.
     pub fn quads(&self) -> impl Iterator<Item = Quad> + '_ {
         let graph_name = GraphName::DefaultGraph;
-        self.graph
-            .iter()
-            .map(move |t| triple_to_quad(t, graph_name.clone()))
+        self.graph.iter().map(move |t| triple_to_quad(t, graph_name.clone()))
     }
 
     /// Returns `true` if the graph contains no triples.
@@ -129,25 +132,25 @@ impl InMemoryGraph {
         match format {
             RDFFormat::Turtle => {
                 self.parse_turtle(reader, source_name, base, reader_mode)?;
-            }
+            },
             RDFFormat::NTriples => {
                 self.parse_ntriples(reader, reader_mode)?;
-            }
-            RDFFormat::RDFXML => {
+            },
+            RDFFormat::Rdfxml => {
                 self.parse_rdfxml(reader, reader_mode)?;
-            }
+            },
             RDFFormat::TriG => {
                 todo!();
-            }
+            },
             RDFFormat::N3 => {
                 todo!();
-            }
+            },
             RDFFormat::NQuads => {
                 self.parse_nquads(reader, reader_mode)?;
-            }
+            },
             RDFFormat::JsonLd => {
                 self.parse_jsonld(reader, reader_mode)?;
-            }
+            },
         }
         Ok(())
     }
@@ -175,27 +178,24 @@ impl InMemoryGraph {
             None => TurtleParser::new(),
             Some(iri) => TurtleParser::new().with_base_iri(iri)?,
         };
-        
+
         let mut buffer = Vec::new();
         reader.read_to_end(&mut buffer)?;
         let reader1 = Cursor::new(&buffer);
         let mut turtle_reader = turtle_parser.for_reader(reader1);
-        
+
         for triple_result in turtle_reader.by_ref() {
-            let triple = match handle_parse_error(
-                triple_result,
-                reader_mode,
-                |e| InMemoryGraphError::TurtleParseError {
+            let triple =
+                match handle_parse_error(triple_result, reader_mode, |e| InMemoryGraphError::TurtleParseError {
                     source_name: source_name.to_string(),
                     error: e,
-                },
-            )? {
-                Some(t) => t,
-                None => continue,
-            };
+                })? {
+                    Some(t) => t,
+                    None => continue,
+                };
             self.graph.insert(triple.as_ref());
         }
-        
+
         let prefixes: HashMap<&str, &str> = turtle_reader.prefixes().collect();
         self.base = match (&self.base, base) {
             (None, None) => None,
@@ -204,7 +204,7 @@ impl InMemoryGraph {
         };
         let pm = PrefixMap::from_hashmap(prefixes)?;
         self.merge_prefixes(pm)?;
-        
+
         Ok(())
     }
 
@@ -225,22 +225,18 @@ impl InMemoryGraph {
     ) -> Result<(), InMemoryGraphError> {
         let parser = NTriplesParser::new();
         let mut nt_reader = parser.for_reader(reader);
-        
+
         for triple_result in nt_reader.by_ref() {
-            let triple = match handle_parse_error(
-                triple_result,
-                reader_mode,
-                |e| InMemoryGraphError::NTriplesError {
-                    data: "Reading N-Triples".to_string(),
-                    error: e,
-                },
-            )? {
+            let triple = match handle_parse_error(triple_result, reader_mode, |e| InMemoryGraphError::NTriplesError {
+                data: "Reading N-Triples".to_string(),
+                error: e,
+            })? {
                 Some(t) => t,
                 None => continue,
             };
             self.graph.insert(triple.as_ref());
         }
-        
+
         Ok(())
     }
 
@@ -261,23 +257,19 @@ impl InMemoryGraph {
     ) -> Result<(), InMemoryGraphError> {
         let parser = RdfXmlParser::new();
         let mut xml_reader = parser.for_reader(reader);
-        
+
         for triple_result in xml_reader.by_ref() {
-            let triple = match handle_parse_error(
-                triple_result,
-                reader_mode,
-                |e| InMemoryGraphError::RDFXMLError {
-                    data: "Reading RDF/XML".to_string(),
-                    error: e,
-                },
-            )? {
+            let triple = match handle_parse_error(triple_result, reader_mode, |e| InMemoryGraphError::RDFXMLError {
+                data: "Reading RDF/XML".to_string(),
+                error: e,
+            })? {
                 Some(t) => t,
                 None => continue,
             };
             let triple_ref = cnv_triple(&triple);
             self.graph.insert(triple_ref);
         }
-        
+
         Ok(())
     }
 
@@ -298,22 +290,18 @@ impl InMemoryGraph {
     ) -> Result<(), InMemoryGraphError> {
         let parser = NQuadsParser::new();
         let mut nq_reader = parser.for_reader(reader);
-        
+
         for triple_result in nq_reader.by_ref() {
-            let triple = match handle_parse_error(
-                triple_result,
-                reader_mode,
-                |e| InMemoryGraphError::NQuadsError {
-                    data: "Reading NQuads".to_string(),
-                    error: e,
-                },
-            )? {
+            let triple = match handle_parse_error(triple_result, reader_mode, |e| InMemoryGraphError::NQuadsError {
+                data: "Reading NQuads".to_string(),
+                error: e,
+            })? {
                 Some(t) => t,
                 None => continue,
             };
             self.graph.insert(triple.as_ref());
         }
-        
+
         Ok(())
     }
 
@@ -334,22 +322,18 @@ impl InMemoryGraph {
     ) -> Result<(), InMemoryGraphError> {
         let parser = JsonLdParser::new();
         let mut jsonld_reader = parser.for_reader(reader);
-        
+
         for triple_result in jsonld_reader.by_ref() {
-            let triple = match handle_parse_error(
-                triple_result,
-                reader_mode,
-                |e| InMemoryGraphError::JsonLDError {
-                    data: "Reading JSON-LD".to_string(),
-                    error: e,
-                },
-            )? {
+            let triple = match handle_parse_error(triple_result, reader_mode, |e| InMemoryGraphError::JsonLDError {
+                data: "Reading JSON-LD".to_string(),
+                error: e,
+            })? {
                 Some(t) => t,
                 None => continue,
             };
             self.graph.insert(triple.as_ref());
         }
-        
+
         Ok(())
     }
 
@@ -451,13 +435,7 @@ impl InMemoryGraph {
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<InMemoryGraph, InMemoryGraphError> {
-        Self::from_reader(
-            &mut Cursor::new(data),
-            "String",
-            format,
-            base,
-            reader_mode,
-        )
+        Self::from_reader(&mut Cursor::new(data), "String", format, base, reader_mode)
     }
 
     /// Converts an [`IriS`] into an Oxigraph named node.
@@ -486,12 +464,7 @@ impl InMemoryGraph {
     /// # Errors
     ///
     /// This method currently always returns `Ok(())`.
-    pub fn add_triple_ref<'a, S, P, O>(
-        &mut self,
-        subj: S,
-        pred: P,
-        obj: O,
-    ) -> Result<(), InMemoryGraphError>
+    pub fn add_triple_ref<'a, S, P, O>(&mut self, subj: S, pred: P, obj: O) -> Result<(), InMemoryGraphError>
     where
         S: Into<OxSubjectRef<'a>>,
         P: Into<NamedNodeRef<'a>>,
@@ -529,13 +502,7 @@ impl InMemoryGraph {
             error: e,
         })?;
         let mut reader = BufReader::new(file);
-        self.merge_from_reader(
-            &mut reader,
-            &path_ref.display().to_string(),
-            format,
-            base,
-            reader_mode,
-        )
+        self.merge_from_reader(&mut reader, &path_ref.display().to_string(), format, base, reader_mode)
     }
 
     /// Builds a graph from a filesystem path.
@@ -564,13 +531,7 @@ impl InMemoryGraph {
             error: e,
         })?;
         let mut reader = BufReader::new(file);
-        Self::from_reader(
-            &mut reader,
-            &path_ref.display().to_string(),
-            format,
-            base,
-            reader_mode,
-        )
+        Self::from_reader(&mut reader, &path_ref.display().to_string(), format, base, reader_mode)
     }
 
     /// Parses data from a relative path within a folder.
@@ -650,8 +611,7 @@ impl Rdf for InMemoryGraph {
     ///
     /// A string representation, either prefixed or full IRI.
     fn qualify_iri(&self, node: &Self::IRI) -> String {
-        let iri = IriS::from_str(node.as_str())
-            .expect("OxNamedNode should always contain valid IRI");
+        let iri = IriS::from_str(node.as_str()).expect("OxNamedNode should always contain valid IRI");
         self.pm.qualify(&iri)
     }
 
@@ -729,10 +689,7 @@ impl NeighsRDF for InMemoryGraph {
     /// # Parameters
     ///
     /// * `subject` - The subject to filter by
-    fn triples_with_subject(
-        &self,
-        subject: &Self::Subject,
-    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
+    fn triples_with_subject(&self, subject: &Self::Subject) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
         // Collect the triples into a Vec to avoid the lifetime dependency on subject
         let triples: Vec<_> = self
             .graph
@@ -769,10 +726,7 @@ impl NeighsRDF for InMemoryGraph {
     {
         // TODO: Implement this function in a way that it does not retrieve all triples
         let triples = self.triples()?.filter_map(move |triple| {
-            match subject == &triple.subject
-                && predicate == &triple.predicate
-                && object == &triple.object
-            {
+            match subject == &triple.subject && predicate == &triple.predicate && object == &triple.object {
                 true => Some(triple),
                 false => None,
             }
@@ -799,10 +753,7 @@ impl AsyncRDF for InMemoryGraph {
     /// # Errors
     ///
     /// This method currently always returns `Ok`.
-    async fn get_predicates_subject(
-        &self,
-        subject: &OxSubject,
-    ) -> Result<HashSet<OxNamedNode>, InMemoryGraphError> {
+    async fn get_predicates_subject(&self, subject: &OxSubject) -> Result<HashSet<OxNamedNode>, InMemoryGraphError> {
         let mut results = HashSet::new();
         for triple in self.graph.triples_for_subject(subject) {
             let predicate: OxNamedNode = triple.predicate.to_owned().into();
@@ -869,7 +820,6 @@ impl AsyncRDF for InMemoryGraph {
 /// The focus term is used to track a specific RDF term of interest during graph operations.
 /// This can be useful for navigation, querying, or maintaining context during traversals.
 impl FocusRDF for InMemoryGraph {
-
     /// Sets the focus term for this graph.
     ///
     /// # Parameters
@@ -944,10 +894,8 @@ impl BuildRDF for InMemoryGraph {
     /// Returns an error if the blank node counter overflows (extremely unlikely).
     fn add_bnode(&mut self) -> Result<Self::BNode, Self::Err> {
         self.bnode_counter += 1;
-        let bn = u128::try_from(self.bnode_counter).map_err(|_| {
-            InMemoryGraphError::BlankNodeId {
-                msg: format!("Blank node counter overflow: {}", self.bnode_counter),
-            }
+        let bn = u128::try_from(self.bnode_counter).map_err(|_| InMemoryGraphError::BlankNodeId {
+            msg: format!("Blank node counter overflow: {}", self.bnode_counter),
         })?;
         Ok(OxBlankNode::new_from_unique_id(bn))
     }
@@ -1050,7 +998,6 @@ impl BuildRDF for InMemoryGraph {
     }
 }
 
-
 /// Converts an RDF format enum to the Oxigraph RdfFormat type.
 ///
 /// # Parameters
@@ -1064,7 +1011,7 @@ fn cnv_rdf_format(rdf_format: &RDFFormat) -> RdfFormat {
     match rdf_format {
         RDFFormat::NTriples => RdfFormat::NTriples,
         RDFFormat::Turtle => RdfFormat::Turtle,
-        RDFFormat::RDFXML => RdfFormat::RdfXml,
+        RDFFormat::Rdfxml => RdfFormat::RdfXml,
         RDFFormat::TriG => RdfFormat::TriG,
         RDFFormat::N3 => RdfFormat::N3,
         RDFFormat::NQuads => RdfFormat::NQuads,
@@ -1130,7 +1077,7 @@ fn handle_parse_error<T, E: std::fmt::Display>(
                 debug!("Error captured in Lax mode: {e}");
                 Ok(None)
             }
-        }
+        },
     }
 }
 
@@ -1189,11 +1136,7 @@ fn cnv_triple(t: &OxTriple) -> TripleRef<'_> {
 }
 
 impl QueryRDF for InMemoryGraph {
-    fn query_construct(
-        &self,
-        _query_str: &str,
-        _format: &QueryResultFormat,
-    ) -> Result<String, InMemoryGraphError>
+    fn query_construct(&self, _query_str: &str, _format: &QueryResultFormat) -> Result<String, InMemoryGraphError>
     where
         Self: Sized,
     {
@@ -1224,33 +1167,36 @@ impl QueryRDF for InMemoryGraph {
         Self: Sized,
     {
         let mut sols = QuerySolutions::empty();
-        
+
         if let Some(store) = &self.store {
-            let parsed_query = SparqlEvaluator::new()
-                .parse_query(query_str)
-                .map_err(|e| InMemoryGraphError::ParsingQueryError {
-                    msg: format!("Error parsing query: {}", e),
-                })?;
-                
-            let query_results = parsed_query
-                .on_store(store)
-                .execute()
-                .map_err(|e| InMemoryGraphError::RunningQueryError {
-                    query: query_str.to_string(),
-                    msg: format!("Error executing query: {}", e),
-                })?;
-                
+            let parsed_query =
+                SparqlEvaluator::new()
+                    .parse_query(query_str)
+                    .map_err(|e| InMemoryGraphError::ParsingQueryError {
+                        msg: format!("Error parsing query: {}", e),
+                    })?;
+
+            let query_results =
+                parsed_query
+                    .on_store(store)
+                    .execute()
+                    .map_err(|e| InMemoryGraphError::RunningQueryError {
+                        query: query_str.to_string(),
+                        msg: format!("Error executing query: {}", e),
+                    })?;
+
             let solutions = cnv_query_results(query_results)?;
-            
-            sols.extend(solutions, self.prefixmap().clone())
-                .map_err(|e| InMemoryGraphError::ExtendingQuerySolutionsError {
+
+            sols.extend(solutions, self.prefixmap().clone()).map_err(|e| {
+                InMemoryGraphError::ExtendingQuerySolutionsError {
                     query: query_str.to_string(),
                     error: e.to_string(),
-                })?;
+                }
+            })?;
         } else {
             trace!("No in-memory store to query");
         }
-        
+
         Ok(sols)
     }
 
@@ -1272,13 +1218,12 @@ impl QueryRDF for InMemoryGraph {
 /// # Returns
 ///
 /// A vector of query solutions.
-fn cnv_query_results(
-    query_results: QueryResults,
-) -> Result<Vec<QuerySolution<InMemoryGraph>>, InMemoryGraphError> {
+fn cnv_query_results(query_results: QueryResults) -> Result<Vec<QuerySolution<InMemoryGraph>>, InMemoryGraphError> {
     let QueryResults::Solutions(solutions) = query_results else {
         return Ok(Vec::new());
     };
-    
+
+    #[allow(clippy::unused_enumerate_index)]
     solutions
         .enumerate()
         .map(|(_, solution_result)| {

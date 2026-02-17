@@ -7,6 +7,13 @@ use crate::wasm_stubs::path_to_iri;
 use ValidationType::*;
 use iri_s::IriS;
 use prefixmap::IriRef;
+use rdf::{
+    rdf_core::{
+        RDFFormat,
+        term::{Object, literal::ConcreteLiteral},
+    },
+    rdf_impl::{InMemoryGraph, ReaderMode},
+};
 use serde::de::{self};
 use serde::{Deserialize, Deserializer, Serialize};
 use shex_ast::ResolveMethod;
@@ -16,12 +23,6 @@ use shex_ast::shapemap::ValidationStatus;
 use shex_ast::{Node, ast::Schema as SchemaJson, ir::ast2ir::AST2IR};
 use shex_validation::Validator;
 use shex_validation::ValidatorConfig;
-use rdf::{
-    rdf_impl::{InMemoryGraph, ReaderMode},
-    rdf_core::{
-        RDFFormat, term::{Object, literal::ConcreteLiteral}
-    }
-};
 use std::collections::HashMap;
 use std::fmt::{self, Display};
 use std::path::{Path, PathBuf};
@@ -327,10 +328,9 @@ fn parse_focus(focus: &Focus, base: Option<&str>) -> Result<Node, Box<ManifestEr
             Ok(node)
         },
         Focus::Typed(str, str_type) => {
-            let datatype = IriS::from_str(str_type.as_str())
-                .map_err(|e| Box::new(ManifestError::IriError(e)))?;
+            let datatype = IriS::from_str(str_type.as_str()).map_err(|e| Box::new(ManifestError::IriError(e)))?;
             Ok(Object::Literal(ConcreteLiteral::lit_datatype(str, &IriRef::Iri(datatype))).into())
-        }
+        },
     }
 }
 

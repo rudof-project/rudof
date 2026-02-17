@@ -12,7 +12,11 @@ use iri_s::{IriS, iri};
 use itertools::Itertools;
 use prefixmap::IriRef;
 use rdf::rdf_core::{
-    BuildRDF, term::{Object, literal::{ConcreteLiteral, Lang}}
+    BuildRDF,
+    term::{
+        Object,
+        literal::{ConcreteLiteral, Lang},
+    },
 };
 use std::collections::HashSet;
 use std::fmt::Display;
@@ -196,18 +200,15 @@ impl Component {
                         rdf_node,
                         rdf,
                     )?;
-                }
+                },
             },
             Self::In { values } => {
                 // TODO: Review this code
                 values.iter().try_for_each(|value| match value {
                     Value::Iri(iri) => Self::write_iri(iri, SH_IN_STR, rdf_node, rdf),
-                    Value::Literal(literal) => Self::write_literal(
-                        &ConcreteLiteral::str(&literal.to_string()),
-                        SH_IN_STR,
-                        rdf_node,
-                        rdf,
-                    ),
+                    Value::Literal(literal) => {
+                        Self::write_literal(&ConcreteLiteral::str(&literal.to_string()), SH_IN_STR, rdf_node, rdf)
+                    },
                 })?;
             },
             Self::Deactivated(value) => {
@@ -238,12 +239,7 @@ impl Component {
         Ok(())
     }
 
-    fn write_integer<RDF>(
-        value: isize,
-        predicate: &str,
-        rdf_node: &Object,
-        rdf: &mut RDF,
-    ) -> Result<(), RDF::Err>
+    fn write_integer<RDF>(value: isize, predicate: &str, rdf_node: &Object, rdf: &mut RDF) -> Result<(), RDF::Err>
     where
         RDF: BuildRDF,
     {
@@ -252,12 +248,7 @@ impl Component {
         Self::write_term(&literal.into(), predicate, rdf_node, rdf)
     }
 
-    fn write_boolean<RDF>(
-        value: bool,
-        predicate: &str,
-        rdf_node: &Object,
-        rdf: &mut RDF,
-    ) -> Result<(), RDF::Err>
+    fn write_boolean<RDF>(value: bool, predicate: &str, rdf_node: &Object, rdf: &mut RDF) -> Result<(), RDF::Err>
     where
         RDF: BuildRDF,
     {
@@ -278,24 +269,14 @@ impl Component {
         Self::write_term(&literal.into(), predicate, rdf_node, rdf)
     }
 
-    fn write_iri<RDF>(
-        value: &IriRef,
-        predicate: &str,
-        rdf_node: &Object,
-        rdf: &mut RDF,
-    ) -> Result<(), RDF::Err>
+    fn write_iri<RDF>(value: &IriRef, predicate: &str, rdf_node: &Object, rdf: &mut RDF) -> Result<(), RDF::Err>
     where
         RDF: BuildRDF,
     {
         Self::write_term(&value.get_iri().unwrap().clone().into(), predicate, rdf_node, rdf)
     }
 
-    fn write_term<RDF>(
-        value: &RDF::Term,
-        predicate: &str,
-        rdf_node: &Object,
-        rdf: &mut RDF,
-    ) -> Result<(), RDF::Err>
+    fn write_term<RDF>(value: &RDF::Term, predicate: &str, rdf_node: &Object, rdf: &mut RDF) -> Result<(), RDF::Err>
     where
         RDF: BuildRDF,
     {

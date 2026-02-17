@@ -1,12 +1,12 @@
 use crate::rdf_core::{
-    FocusRDF, RDFError, 
+    FocusRDF, RDFError,
     parser::rdf_node_parser::{
         RDFNodeParse,
         constructors::{
-            InstancesParser, SingleInstanceParser, ListParser, ValuesPropertyParser, SingleValuePropertyParser, TypeParser, 
-            HasTypeParser, SatisfyParser
+            HasTypeParser, InstancesParser, ListParser, SatisfyParser, SingleInstanceParser, SingleValuePropertyParser,
+            TypeParser, ValuesPropertyParser,
         },
-    }
+    },
 };
 use iri_s::IriS;
 use prefixmap::PrefixMap;
@@ -23,7 +23,7 @@ where
 {
     /// The underlying RDF graph
     rdf: RDF,
-    
+
     /// Optional: track original focus for restoration (if needed)
     initial_focus: Option<RDF::Term>,
 }
@@ -34,7 +34,7 @@ where
 {
     /// Creates a new parsing context wrapping the RDF graph.
     pub fn new(rdf: RDF) -> Self {
-        Self { 
+        Self {
             rdf,
             initial_focus: None,
         }
@@ -122,14 +122,14 @@ where
         let previous = self.rdf.get_focus().cloned();
         let term: RDF::Term = start_node.clone().into();
         self.rdf.set_focus(&term);
-        
+
         let result = parser.parse_focused(&mut self.rdf);
-        
+
         // Restore previous focus
         if let Some(prev) = previous {
             self.rdf.set_focus(&prev);
         }
-        
+
         result
     }
 
@@ -160,7 +160,7 @@ where
     }
 
     /// Parses an RDF list starting at the current focus.
-    pub fn parse_list<T>(&mut self) -> Result<Vec<RDF::Term>, RDFError>
+    pub fn parse_list(&mut self) -> Result<Vec<RDF::Term>, RDFError>
     where
         RDF: FocusRDF,
     {
@@ -190,15 +190,15 @@ where
     {
         // Store current focus to restore later
         let saved_focus = self.rdf.get_focus().cloned();
-        
+
         // Execute type-based finder
         let result = InstancesParser::new(type_iri).parse_focused(&mut self.rdf);
-        
+
         // Restore focus
         if let Some(focus) = saved_focus {
-            let _ = self.rdf.set_focus(&focus);
+            self.rdf.set_focus(&focus);
         }
-        
+
         result
     }
 
@@ -209,11 +209,11 @@ where
     {
         let saved_focus = self.rdf.get_focus().cloned();
         let result = SingleInstanceParser::new(type_iri).parse_focused(&mut self.rdf);
-        
+
         if let Some(focus) = saved_focus {
-            let _ = self.rdf.set_focus(&focus);
+            self.rdf.set_focus(&focus);
         }
-        
+
         result
     }
 

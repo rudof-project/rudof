@@ -1,6 +1,6 @@
-use std::io::Write;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
+use std::io::Write;
 
 use crate::rdf_core::{NeighsRDF, RDFFormat};
 
@@ -25,7 +25,7 @@ pub trait BuildRDF: NeighsRDF {
     fn add_base(&mut self, base: &Option<IriS>) -> Result<(), Self::Err>;
 
     /// Adds a namespace prefix declaration to the graph.
-    /// 
+    ///
     /// # Arguments
     ///
     /// * `alias` - The prefix alias (e.g., "foaf", "ex", "rdf")
@@ -33,7 +33,7 @@ pub trait BuildRDF: NeighsRDF {
     fn add_prefix(&mut self, alias: &str, iri: &IriS) -> Result<(), Self::Err>;
 
     /// Adds multiple prefix declarations from a prefix map.
-    /// 
+    ///
     /// # Arguments
     ///
     /// * `prefix_map` - A map of prefix aliases to namespace IRIs
@@ -97,7 +97,7 @@ pub trait BuildRDF: NeighsRDF {
     fn add_bnode(&mut self) -> Result<Self::BNode, Self::Err>;
 
     /// Serializes the graph to an RDF format.
-    /// 
+    ///
     /// # Arguments
     ///
     /// * `format` - The RDF serialization format to use

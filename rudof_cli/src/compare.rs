@@ -3,10 +3,10 @@ use crate::{InputCompareFormat, input_compare_mode::InputCompareMode, result_com
 use anyhow::{Context, Result, bail};
 use iri_s::IriS;
 use iri_s::MimeType;
+use rdf::rdf_impl::ReaderMode;
 use rudof_lib::{InputSpec, Rudof, RudofConfig};
 use shapes_comparator::{CoShaMo, CoShaMoConverter, ComparatorConfig};
 use shex_ast::Schema;
-use rdf::rdf_impl::ReaderMode;
 use std::path::PathBuf;
 use tracing::debug;
 

@@ -33,7 +33,6 @@ iri_once!(rdf_first, RDF_FIRST_STR);
 iri_once!(rdf_rest, RDF_REST_STR);
 iri_once!(rdf_nil, RDF_NIL_STR);
 
-
 // --------------------------------------------
 // RDFS vocabulary IRI accessors
 // --------------------------------------------

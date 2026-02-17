@@ -2,11 +2,11 @@ use std::fmt;
 
 use prefixmap::error::DerefError;
 use prefixmap::{Deref, IriRef};
+use rdf::rdf_core::term::literal::NumericLiteral;
 use serde::{
     Deserialize, Serialize, Serializer,
     de::{self, MapAccess, Visitor},
 };
-use rdf::rdf_core::term::literal::NumericLiteral;
 
 use super::ValueSetValue;
 use crate::{NodeKind, NumericFacet, Pattern, StringFacet, XsFacet};

@@ -1,5 +1,5 @@
-use shacl_ast::ShaclError;
 use rdf::rdf_core::RDFError;
+use shacl_ast::ShaclError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
