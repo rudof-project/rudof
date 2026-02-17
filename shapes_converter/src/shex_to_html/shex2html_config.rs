@@ -85,17 +85,13 @@ impl ShEx2HtmlConfig {
     }
 
     pub fn from_file(file_name: &str) -> Result<ShEx2HtmlConfig, ShEx2HtmlConfigError> {
-        let config_str = fs::read_to_string(file_name).map_err(|e| {
-            ShEx2HtmlConfigError::ReadingConfigError {
-                path_name: file_name.to_string(),
-                error: e,
-            }
+        let config_str = fs::read_to_string(file_name).map_err(|e| ShEx2HtmlConfigError::ReadingConfigError {
+            path_name: file_name.to_string(),
+            error: e,
         })?;
-        toml::from_str::<ShEx2HtmlConfig>(&config_str).map_err(|e| {
-            ShEx2HtmlConfigError::TomlError {
-                path_name: file_name.to_string(),
-                error: e,
-            }
+        toml::from_str::<ShEx2HtmlConfig>(&config_str).map_err(|e| ShEx2HtmlConfigError::TomlError {
+            path_name: file_name.to_string(),
+            error: e,
         })
     }
 
@@ -117,8 +113,5 @@ pub enum ShEx2HtmlConfigError {
     ReadingConfigError { path_name: String, error: io::Error },
 
     #[error("Reading TOML from {path_name:?}. Error: {error:?}")]
-    TomlError {
-        path_name: String,
-        error: toml::de::Error,
-    },
+    TomlError { path_name: String, error: toml::de::Error },
 }

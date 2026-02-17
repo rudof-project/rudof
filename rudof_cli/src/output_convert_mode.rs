@@ -4,21 +4,21 @@ use std::fmt::{Display, Formatter};
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 #[clap(rename_all = "lower")]
 pub enum OutputConvertMode {
-    SPARQL,
+    Sparql,
     ShEx,
-    UML,
-    HTML,
-    SHACL,
+    Uml,
+    Html,
+    Shacl,
 }
 
 impl Display for OutputConvertMode {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            OutputConvertMode::SPARQL => write!(dest, "sparql"),
+            OutputConvertMode::Sparql => write!(dest, "sparql"),
             OutputConvertMode::ShEx => write!(dest, "shex"),
-            OutputConvertMode::UML => write!(dest, "uml"),
-            OutputConvertMode::HTML => write!(dest, "html"),
-            OutputConvertMode::SHACL => write!(dest, "shacl"),
+            OutputConvertMode::Uml => write!(dest, "uml"),
+            OutputConvertMode::Html => write!(dest, "html"),
+            OutputConvertMode::Shacl => write!(dest, "shacl"),
         }
     }
 }

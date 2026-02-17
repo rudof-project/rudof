@@ -31,7 +31,7 @@ fn convert_iri_ref(iri_ref: IriRef) -> Result<IriS, Box<CompiledShaclError>> {
             err: err.to_string(),
         })
     })?;
-    Ok(iri)
+    Ok(iri.clone())
 }
 
 fn compile_shape<S: Rdf>(
@@ -39,20 +39,18 @@ fn compile_shape<S: Rdf>(
     schema: &Schema<S>,
     schema_ir: &mut SchemaIR,
 ) -> Result<ShapeLabelIdx, Box<CompiledShaclError>> {
-    let shape = schema
-        .get_shape(node)
-        .ok_or(CompiledShaclError::ShapeNotFound {
-            shape: Box::new(node.clone()),
-        })?;
+    let shape = schema.get_shape(node).ok_or(CompiledShaclError::ShapeNotFound {
+        shape: Box::new(node.clone()),
+    })?;
     match schema_ir.add_shape_idx(node.clone())? {
         Either::Right(idx) => {
             trace!("Compiling shape {:?} with index {:?}", node, idx);
             ShapeIR::compile(shape.to_owned(), schema, &idx, schema_ir)
-        }
+        },
         Either::Left(idx) => {
             trace!("Shape {:?} already compiled, skipping recompilation", node);
             Ok(idx)
-        }
+        },
     }
 }
 

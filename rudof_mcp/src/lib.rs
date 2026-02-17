@@ -1,5 +1,5 @@
-pub mod rudof_mcp_service;
-pub mod server;
+#[cfg(target_family = "wasm")]
+compile_error!("This crate is not intended to be used in a WebAssembly environment.");
 
-pub use server::TransportType;
-pub use server::run_mcp;
+pub mod server;
+pub mod service;

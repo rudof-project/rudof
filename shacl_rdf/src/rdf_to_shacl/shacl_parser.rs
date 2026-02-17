@@ -30,15 +30,14 @@ use rdf::rdf_core::{
 use shacl_ast::reifier_info::ReifierInfo;
 use shacl_ast::severity::Severity;
 use shacl_ast::shacl_vocab::{
-    sh_and, sh_class, sh_closed, sh_datatype, sh_has_value, sh_in, sh_language_in, sh_max_count,
-    sh_max_exclusive, sh_max_inclusive, sh_max_length, sh_min_count, sh_min_exclusive,
-    sh_min_inclusive, sh_min_length, sh_node, sh_node_kind, sh_node_shape, sh_not, sh_or,
-    sh_pattern, sh_property_shape, sh_qualified_value_shapes_disjoint, sh_target_class,
-    sh_target_node, sh_target_objects_of, sh_target_subjects_of, sh_xone,
+    sh_and, sh_class, sh_closed, sh_datatype, sh_has_value, sh_in, sh_language_in, sh_max_count, sh_max_exclusive,
+    sh_max_inclusive, sh_max_length, sh_min_count, sh_min_exclusive, sh_min_inclusive, sh_min_length, sh_node,
+    sh_node_kind, sh_node_shape, sh_not, sh_or, sh_pattern, sh_property_shape, sh_qualified_value_shapes_disjoint,
+    sh_target_class, sh_target_node, sh_target_objects_of, sh_target_subjects_of, sh_xone,
 };
 use shacl_ast::{
-    component::Component, node_kind::NodeKind, node_shape::NodeShape,
-    property_shape::PropertyShape, schema::Schema, shape::Shape, target::Target, value::Value, *,
+    component::Component, node_kind::NodeKind, node_shape::NodeShape, property_shape::PropertyShape, schema::Schema,
+    shape::Shape, target::Target, value::Value, *,
 };
 use std::collections::{HashMap, HashSet};
 use tracing::trace;
@@ -92,9 +91,7 @@ where
             }
         }
 
-        Ok(Schema::new()
-            .with_prefixmap(prefixmap)
-            .with_shapes(self.shapes.clone()))
+        Ok(Schema::new().with_prefixmap(prefixmap).with_shapes(self.shapes.clone()))
     }
 
     /// Shapes candidates are defined in Appendix A of SHACL spec (Syntax rules)
@@ -225,9 +222,7 @@ where
                 if let Ok(subj) = term_to_subject::<RDF>(&v, "sh:or") {
                     rs.insert(subj.clone());
                 } else {
-                    return Err(ShaclParserError::OrValueNoSubject {
-                        term: format!("{v}"),
-                    });
+                    return Err(ShaclParserError::OrValueNoSubject { term: format!("{v}") });
                 }
             }
         }
@@ -243,9 +238,7 @@ where
                 if let Ok(subj) = &term_to_subject::<RDF>(&v, "sh:xone") {
                     rs.insert(subj.clone());
                 } else {
-                    return Err(ShaclParserError::XOneValueNoSubject {
-                        term: format!("{v}"),
-                    });
+                    return Err(ShaclParserError::XOneValueNoSubject { term: format!("{v}") });
                 }
             }
         }
@@ -269,9 +262,7 @@ where
                 if let Ok(subj) = term_to_subject::<RDF>(&v, "sh:and") {
                     rs.insert(subj);
                 } else {
-                    return Err(ShaclParserError::AndValueNoSubject {
-                        term: format!("{v}"),
-                    });
+                    return Err(ShaclParserError::AndValueNoSubject { term: format!("{v}") });
                 }
             }
         }
@@ -466,9 +457,7 @@ where
     })
 }
 
-fn property_shape_components<RDF>(
-    ps: PropertyShape<RDF>,
-) -> impl RDFNodeParse<RDF, Output = PropertyShape<RDF>>
+fn property_shape_components<RDF>(ps: PropertyShape<RDF>) -> impl RDFNodeParse<RDF, Output = PropertyShape<RDF>>
 where
     RDF: FocusRDF,
 {
@@ -565,17 +554,15 @@ fn parse_qualified_value_shape<RDF: FocusRDF>(
         .and(qualified_min_count_parser())
         .and(qualified_max_count_parser())
         .and(qualified_value_shape_siblings())
-        .flat_map(
-            move |(((maybe_disjoint, maybe_mins), maybe_maxs), siblings)| {
-                Ok(build_qualified_shape(
-                    qvs.clone(),
-                    maybe_disjoint,
-                    maybe_mins,
-                    maybe_maxs,
-                    siblings,
-                ))
-            },
-        )
+        .flat_map(move |(((maybe_disjoint, maybe_mins), maybe_maxs), siblings)| {
+            Ok(build_qualified_shape(
+                qvs.clone(),
+                maybe_disjoint,
+                maybe_mins,
+                maybe_maxs,
+                siblings,
+            ))
+        })
 }
 
 fn qualified_value_shape_siblings<RDF: FocusRDF>() -> QualifiedValueShapeSiblings<RDF> {
@@ -614,10 +601,7 @@ where
         match rdf.get_focus() {
             Some(focus) => {
                 let mut siblings = Vec::new();
-                let maybe_disjoint = rdf.object_for(
-                    focus,
-                    &into_iri::<RDF>(sh_qualified_value_shapes_disjoint()),
-                )?;
+                let maybe_disjoint = rdf.object_for(focus, &into_iri::<RDF>(sh_qualified_value_shapes_disjoint()))?;
                 if let Some(disjoint) = maybe_disjoint {
                     match disjoint {
                         Object::Literal(ConcreteLiteral::BooleanLiteral(true)) => {
@@ -627,13 +611,10 @@ where
                             let qvs = rdf
                                 .objects_for(focus, &into_iri::<RDF>(sh_qualified_value_shape()))?;
                             if qvs.is_empty() {
-                                trace!(
-                                    "Focus node {focus} has disjoint=true but no qualifiedValueShape"
-                                );
+                                trace!("Focus node {focus} has disjoint=true but no qualifiedValueShape");
                             } else {
                                 trace!("QVS of focus node {focus}: {qvs:?}");
-                                let ps =
-                                    rdf.subjects_for(&into_iri::<RDF>(sh_property()), focus)?;
+                                let ps = rdf.subjects_for(&into_iri::<RDF>(sh_property()), focus)?;
                                 trace!("Property parents of focus node {focus}: {ps:?}");
                                 for property_parent in ps {
                                     let candidate_siblings = rdf.objects_for_shacl_path(
@@ -652,10 +633,8 @@ where
                         }
                         Object::Literal(ConcreteLiteral::BooleanLiteral(false)) => {}
                         _ => {
-                            trace!(
-                                "Value of disjoint: {disjoint} is not boolean (Should we raise an error here?)"
-                            );
-                        }
+                            trace!("Value of disjoint: {disjoint} is not boolean (Should we raise an error here?)");
+                        },
                     }
                 }
                 Ok(siblings)
@@ -715,10 +694,7 @@ fn cnv_or_list<RDF: Rdf>(ls: Vec<RDF::Term>) -> Result<Component, RDFError> {
     Ok(Component::Or { shapes })
 }
 
-fn term_to_subject<RDF>(
-    term: &RDF::Term,
-    context: &str,
-) -> std::result::Result<RDF::Subject, ShaclParserError>
+fn term_to_subject<RDF>(term: &RDF::Term, context: &str) -> std::result::Result<RDF::Subject, ShaclParserError>
 where
     RDF: FocusRDF,
 {
@@ -1045,7 +1021,7 @@ fn pattern<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>> {
                 let pattern = strs.first().unwrap().clone();
                 let flags = maybe_flags.clone();
                 Ok(vec![Component::Pattern { pattern, flags }])
-            }
+            },
             _ => todo!(), // Error...
         })
     })
@@ -1127,10 +1103,7 @@ where
     Ok(Component::In { values })
 }
 
-fn parse_components_for_iri<RDF, P>(
-    iri: &IriS,
-    component_parser: P,
-) -> impl RDFNodeParse<RDF, Output = Vec<Component>>
+fn parse_components_for_iri<RDF, P>(iri: &IriS, component_parser: P) -> impl RDFNodeParse<RDF, Output = Vec<Component>>
 where
     RDF: FocusRDF,
     P: RDFNodeParse<RDF, Output = Component>,
@@ -1334,7 +1307,7 @@ mod tests {
                 assert_eq!(langs.len(), 2);
                 assert_eq!(langs[0], Lang::new("en").unwrap());
                 assert_eq!(langs[1], Lang::new("fr").unwrap());
-            }
+            },
             _ => panic!("Shape has not a LanguageIn component"),
         }
     }

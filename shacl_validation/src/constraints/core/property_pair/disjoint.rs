@@ -48,9 +48,7 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for Disjoint {
                 let value2 = <R as Rdf>::term_as_object(value).unwrap();
                 debug!("Comparing {value1} != {value2}");
                 if value1 == value2 {
-                    debug!(
-                        "Disjoint constraint violated: {value_node} is not disjoint with {value}"
-                    );
+                    debug!("Disjoint constraint violated: {value_node} is not disjoint with {value}");
                     return true;
                 }
             }

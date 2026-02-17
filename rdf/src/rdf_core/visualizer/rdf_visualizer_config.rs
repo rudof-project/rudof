@@ -165,9 +165,7 @@ impl RDFVisualizationConfig {
 
     /// Gets the background color for URI nodes.
     pub fn uri_background_color(&self) -> UmlColor {
-        self.uri_background_color
-            .clone()
-            .unwrap_or(URI_BACKGROUND_COLOR)
+        self.uri_background_color.clone().unwrap_or(URI_BACKGROUND_COLOR)
     }
 
     /// Gets the corner radius for URI node shapes.
@@ -187,9 +185,7 @@ impl RDFVisualizationConfig {
 
     /// Gets the background color for blank nodes.
     pub fn bnode_background_color(&self) -> UmlColor {
-        self.bnode_background_color
-            .clone()
-            .unwrap_or(BNODE_BACKGROUND_COLOR)
+        self.bnode_background_color.clone().unwrap_or(BNODE_BACKGROUND_COLOR)
     }
 
     /// Gets the corner radius for blank node shapes.
@@ -199,15 +195,12 @@ impl RDFVisualizationConfig {
 
     /// Gets the stroke color for literal nodes.
     pub fn literal_line_color(&self) -> UmlColor {
-        self.literal_line_color
-            .clone()
-            .unwrap_or(LITERAL_LINE_COLOR)
+        self.literal_line_color.clone().unwrap_or(LITERAL_LINE_COLOR)
     }
 
     /// Gets the stroke thickness for literal nodes.
     pub fn literal_line_thickness(&self) -> u32 {
-        self.literal_line_thickness
-            .unwrap_or(LITERAL_LINE_THICKNESS)
+        self.literal_line_thickness.unwrap_or(LITERAL_LINE_THICKNESS)
     }
 
     /// Gets the background color for literal nodes.
@@ -224,15 +217,12 @@ impl RDFVisualizationConfig {
 
     /// Gets the stroke color for reifier nodes.
     pub fn reifier_line_color(&self) -> UmlColor {
-        self.reifier_line_color
-            .clone()
-            .unwrap_or(REIFIER_LINE_COLOR)
+        self.reifier_line_color.clone().unwrap_or(REIFIER_LINE_COLOR)
     }
 
     /// Gets the stroke thickness for reifier nodes.
     pub fn reifier_line_thickness(&self) -> u32 {
-        self.reifier_line_thickness
-            .unwrap_or(REIFIER_LINE_THICKNESS)
+        self.reifier_line_thickness.unwrap_or(REIFIER_LINE_THICKNESS)
     }
 
     /// Gets the background color for reifier nodes.
@@ -259,9 +249,7 @@ impl RDFVisualizationConfig {
 
     /// Gets the background color for asserted triple terms.
     pub fn asserted_background_color(&self) -> UmlColor {
-        self.asserted_background_color
-            .clone()
-            .unwrap_or(URI_BACKGROUND_COLOR)
+        self.asserted_background_color.clone().unwrap_or(URI_BACKGROUND_COLOR)
     }
 
     /// Gets the corner radius for asserted triple term shapes.
@@ -271,15 +259,12 @@ impl RDFVisualizationConfig {
 
     /// Gets the stroke color for non-asserted triple terms.
     pub fn non_asserted_line_color(&self) -> UmlColor {
-        self.non_asserted_line_color
-            .clone()
-            .unwrap_or(BNODE_LINE_COLOR)
+        self.non_asserted_line_color.clone().unwrap_or(BNODE_LINE_COLOR)
     }
 
     /// Gets the stroke thickness for non-asserted triple terms.
     pub fn non_asserted_line_thickness(&self) -> u32 {
-        self.non_asserted_line_thickness
-            .unwrap_or(BNODE_LINE_THICKNESS)
+        self.non_asserted_line_thickness.unwrap_or(BNODE_LINE_THICKNESS)
     }
 
     /// Gets the background color for non-asserted triple terms.
@@ -301,16 +286,12 @@ impl RDFVisualizationConfig {
 
     /// Gets the arrow style for subject edges.
     pub fn get_subject_arrow_style(&self) -> ArrowStyle {
-        self.subject_arrow_style
-            .clone()
-            .unwrap_or(DEFAULT_SUBJECT_ARROW_STYLE)
+        self.subject_arrow_style.clone().unwrap_or(DEFAULT_SUBJECT_ARROW_STYLE)
     }
 
     /// Gets the label text for subject edges.
     pub fn get_subject_text(&self) -> String {
-        self.subject_text
-            .clone()
-            .unwrap_or(DEFAULT_SUBJECT_TEXT.into())
+        self.subject_text.clone().unwrap_or(DEFAULT_SUBJECT_TEXT.into())
     }
 
     /// Gets the arrow style for predicate edges.
@@ -322,23 +303,17 @@ impl RDFVisualizationConfig {
 
     /// Gets the label text for predicate edges.
     pub fn get_predicate_text(&self) -> String {
-        self.predicate_text
-            .clone()
-            .unwrap_or(DEFAULT_PREDICATE_TEXT.into())
+        self.predicate_text.clone().unwrap_or(DEFAULT_PREDICATE_TEXT.into())
     }
 
     /// Gets the arrow style for object edges.
     pub fn get_object_arrow_style(&self) -> ArrowStyle {
-        self.object_arrow_style
-            .clone()
-            .unwrap_or(DEFAULT_OBJECT_ARROW_STYLE)
+        self.object_arrow_style.clone().unwrap_or(DEFAULT_OBJECT_ARROW_STYLE)
     }
 
     /// Gets the label text for object edges.
     pub fn get_object_text(&self) -> String {
-        self.object_text
-            .clone()
-            .unwrap_or(DEFAULT_OBJECT_TEXT.into())
+        self.object_text.clone().unwrap_or(DEFAULT_OBJECT_TEXT.into())
     }
 }
 

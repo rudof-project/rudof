@@ -15,6 +15,9 @@ pub mod label_property_spec;
 pub mod node;
 pub mod node_id;
 
+#[cfg(target_family = "wasm")]
+compile_error!("pgschema is not supported in WebAssembly environments");
+
 #[rustfmt::skip]
 #[allow(clippy::all)]
 pub mod parser;

@@ -1,4 +1,4 @@
-from pyrudof import Rudof, RudofConfig, RDFFormat 
+from pyrudof import Rudof, RudofConfig, RDFFormat
 
 rudof = Rudof(RudofConfig())
 rudof.read_data("examples/person.ttl")

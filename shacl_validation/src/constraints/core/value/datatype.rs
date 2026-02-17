@@ -29,10 +29,7 @@ impl<R: NeighsRDF + Debug> Validator<R> for Datatype {
         shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let check = |value_node: &R::Term| {
-            trace!(
-                "sh:datatype: Checking {value_node} as datatype {}",
-                self.datatype()
-            );
+            trace!("sh:datatype: Checking {value_node} as datatype {}", self.datatype());
             if let Ok(literal) = R::term_as_literal(value_node) {
                 match TryInto::<ConcreteLiteral>::try_into(literal.clone()) {
                     Ok(ConcreteLiteral::WrongDatatypeLiteral {
@@ -49,7 +46,7 @@ impl<R: NeighsRDF + Debug> Validator<R> for Datatype {
                     Err(_) => {
                         trace!("Failed to convert literal to ConcreteLiteral: {literal}");
                         true
-                    }
+                    },
                 }
             } else {
                 true

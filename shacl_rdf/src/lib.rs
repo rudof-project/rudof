@@ -11,9 +11,7 @@ pub use rdf_to_shacl::*;
 pub use shacl_to_rdf::*;
 use rdf::rdf_core::FocusRDF;
 
-pub fn parse_shacl_rdf<RDF>(
-    rdf: RDF,
-) -> Result<shacl_ast::Schema<RDF>, crate::shacl_parser_error::ShaclParserError>
+pub fn parse_shacl_rdf<RDF>(rdf: RDF) -> Result<shacl_ast::Schema<RDF>, crate::shacl_parser_error::ShaclParserError>
 where
     RDF: FocusRDF,
 {

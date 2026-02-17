@@ -7,7 +7,7 @@ rudof.read_shex_str("""
 
 rudof.read_data_str("""
 prefix : <http://example.org/>
-                    
+
 :x :p 1 .
 :y :q 2 .
 """)

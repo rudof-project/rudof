@@ -57,11 +57,11 @@ mod tests {
                 let es: Vec<SE1> = es.iter().map(cnv).collect::<Result<Vec<_>, SErr>>()?;
 
                 Ok(SE1::And { es })
-            }
+            },
             SE::Not { e } => {
                 let e = cnv(e)?;
                 Ok(SE1::Not { e: Box::new(e) })
-            }
+            },
             SE::S { v } => match v.parse::<i32>() {
                 Ok(n) => Ok(SE1::S { v: n }),
                 Err(e) => Err(SErr::Cnv {
@@ -76,13 +76,9 @@ mod tests {
         let se = SE::And {
             es: vec![
                 SE::Not {
-                    e: Box::new(SE::S {
-                        v: "23".to_string(),
-                    }),
+                    e: Box::new(SE::S { v: "23".to_string() }),
                 },
-                SE::S {
-                    v: "43".to_string(),
-                },
+                SE::S { v: "43".to_string() },
             ],
         };
         let expected = SE1::And {
@@ -101,13 +97,9 @@ mod tests {
         let se = SE::And {
             es: vec![
                 SE::Not {
-                    e: Box::new(SE::S {
-                        v: "foo".to_string(),
-                    }),
+                    e: Box::new(SE::S { v: "foo".to_string() }),
                 },
-                SE::S {
-                    v: "43".to_string(),
-                },
+                SE::S { v: "43".to_string() },
             ],
         };
         assert!(cnv(&se).is_err())

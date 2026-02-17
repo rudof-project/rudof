@@ -7,11 +7,11 @@ use std::{
 #[derive(Debug, Default, PartialEq)]
 pub enum DCTAPFormat {
     #[default]
-    CSV,
-    XLSX,
-    XLSB,
-    XLSM,
-    XLS,
+    Csv,
+    Xlsx,
+    Xlsb,
+    Xlsm,
+    Xls,
 }
 
 impl FromStr for DCTAPFormat {
@@ -19,8 +19,8 @@ impl FromStr for DCTAPFormat {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "csv" => Ok(DCTAPFormat::CSV),
-            "xlsx" => Ok(DCTAPFormat::XLSX),
+            "csv" => Ok(DCTAPFormat::Csv),
+            "xlsx" => Ok(DCTAPFormat::Xlsx),
             _ => Err(format!("Unsupported DCTAP format {s}")),
         }
     }
@@ -29,11 +29,11 @@ impl FromStr for DCTAPFormat {
 impl Display for DCTAPFormat {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            DCTAPFormat::CSV => write!(dest, "csv"),
-            &DCTAPFormat::XLSX => write!(dest, "xlsx"),
-            DCTAPFormat::XLSB => write!(dest, "xlsb"),
-            DCTAPFormat::XLSM => write!(dest, "xlsm"),
-            DCTAPFormat::XLS => write!(dest, "xls"),
+            DCTAPFormat::Csv => write!(dest, "csv"),
+            &DCTAPFormat::Xlsx => write!(dest, "xlsx"),
+            DCTAPFormat::Xlsb => write!(dest, "xlsb"),
+            DCTAPFormat::Xlsm => write!(dest, "xlsm"),
+            DCTAPFormat::Xls => write!(dest, "xls"),
         }
     }
 }

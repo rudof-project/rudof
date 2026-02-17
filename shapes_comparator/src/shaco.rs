@@ -20,12 +20,7 @@ impl ShaCo {
         }
     }
 
-    pub fn add_equals_property(
-        &mut self,
-        iri_s: IriS,
-        descr1: ValueDescription,
-        descr2: ValueDescription,
-    ) {
+    pub fn add_equals_property(&mut self, iri_s: IriS, descr1: ValueDescription, descr2: ValueDescription) {
         self.equal_properties.insert(
             iri_s,
             EqualProperty {
@@ -44,9 +39,8 @@ impl ShaCo {
     }
 
     pub fn as_json(&self) -> Result<String, ComparatorError> {
-        serde_json::to_string_pretty(self).map_err(|e| ComparatorError::JsonSerializationError {
-            error: format!("{e}"),
-        })
+        serde_json::to_string_pretty(self)
+            .map_err(|e| ComparatorError::JsonSerializationError { error: format!("{e}") })
     }
 }
 
@@ -108,18 +102,12 @@ impl Display for EqualProperty {
         writeln!(
             f,
             "\n  - descr1: {}",
-            self.description1
-                .as_ref()
-                .map(|d| d.to_string())
-                .unwrap_or_default()
+            self.description1.as_ref().map(|d| d.to_string()).unwrap_or_default()
         )?;
         writeln!(
             f,
             "  - descr2: {}",
-            self.description2
-                .as_ref()
-                .map(|d| d.to_string())
-                .unwrap_or_default()
+            self.description2.as_ref().map(|d| d.to_string()).unwrap_or_default()
         )?;
         Ok(())
     }
@@ -130,10 +118,7 @@ impl Display for DiffProperty {
         writeln!(
             f,
             "\n  - descr: {}",
-            self.description
-                .as_ref()
-                .map(|d| d.to_string())
-                .unwrap_or_default()
+            self.description.as_ref().map(|d| d.to_string()).unwrap_or_default()
         )?;
         Ok(())
     }

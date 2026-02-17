@@ -5,8 +5,7 @@ use shex_testsuite::manifest_run_result::ManifestRunResult;
 use shex_testsuite::manifest_schemas::ManifestSchemas;
 use shex_testsuite::print_result_mode::PrintResultMode;
 use shex_testsuite::{
-    config::Config, config::ConfigError, manifest::Manifest,
-    manifest_negative_structure::ManifestNegativeStructure,
+    config::Config, config::ConfigError, manifest::Manifest, manifest_negative_structure::ManifestNegativeStructure,
     manifest_negative_syntax::ManifestNegativeSyntax, manifest_run_mode::ManifestRunMode,
     manifest_validation::ManifestValidation,
 };
@@ -81,21 +80,19 @@ fn parse_manifest(manifest_str: String, mode: ManifestMode) -> Result<Box<dyn Ma
         ManifestMode::Schemas => {
             let manifest_schemas = serde_json::from_str::<ManifestSchemas>(&manifest_str)?;
             Ok(Box::new(manifest_schemas))
-        }
+        },
         ManifestMode::Validation => {
             let manifest_validation = serde_json::from_str::<ManifestValidation>(&manifest_str)?;
             Ok(Box::new(manifest_validation))
-        }
+        },
         ManifestMode::NegativeStructure => {
-            let manifest_schemas =
-                serde_json::from_str::<ManifestNegativeStructure>(&manifest_str)?;
+            let manifest_schemas = serde_json::from_str::<ManifestNegativeStructure>(&manifest_str)?;
             Ok(Box::new(manifest_schemas))
-        }
+        },
         ManifestMode::NegativeSyntax => {
-            let manifest_negative_syntax =
-                serde_json::from_str::<ManifestNegativeSyntax>(&manifest_str)?;
+            let manifest_negative_syntax = serde_json::from_str::<ManifestNegativeSyntax>(&manifest_str)?;
             Ok(Box::new(manifest_negative_syntax))
-        }
+        },
     }
 }
 
@@ -110,10 +107,7 @@ fn main() -> Result<()> {
     let filter_layer = EnvFilter::try_from_default_env()
         .or_else(|_| EnvFilter::try_new("info"))
         .unwrap();
-    tracing_subscriber::registry()
-        .with(filter_layer)
-        .with(fmt_layer)
-        .init();
+    tracing_subscriber::registry().with(filter_layer).with(fmt_layer).init();
     let cli = Cli::parse();
 
     let manifest_path = Path::new(&cli.manifest_filename);
@@ -166,9 +160,7 @@ fn print_basic(result: &ManifestRunResult) {
         result.failed.len(),
         result.panicked.len(),
     );
-    let overview = format!(
-        "Passed: {npassed}, Failed: {nfailed}, Skipped: {nskipped}, Not implemented: {npanicked}",
-    );
+    let overview = format!("Passed: {npassed}, Failed: {nfailed}, Skipped: {nskipped}, Not implemented: {npanicked}",);
     println!("{overview}");
 }
 
@@ -181,11 +173,7 @@ fn print_failed(result: &ManifestRunResult) {
 
 fn print_failed_simple(result: &ManifestRunResult) {
     println!("--- Failed ---");
-    let mut sorted_names = result
-        .failed
-        .iter()
-        .map(|(name, _)| name)
-        .collect::<Vec<&String>>();
+    let mut sorted_names = result.failed.iter().map(|(name, _)| name).collect::<Vec<&String>>();
     sorted_names.sort();
     for name in &sorted_names {
         println!("{name}");
@@ -210,28 +198,28 @@ fn print_result(result: ManifestRunResult, print_result_mode: PrintResultMode) {
     match print_result_mode {
         PrintResultMode::Basic => {
             print_basic(&result);
-        }
+        },
         PrintResultMode::All => {
             print_passed(&result);
             print_failed(&result);
             print_panicked(&result);
             print_basic(&result);
-        }
+        },
         PrintResultMode::Failed => {
             print_failed(&result);
             print_basic(&result);
-        }
+        },
         PrintResultMode::FailedSimple => {
             print_failed_simple(&result);
             print_basic(&result);
-        }
+        },
         PrintResultMode::Passed => {
             print_passed(&result);
             print_basic(&result);
-        }
+        },
         PrintResultMode::NotImplemented => {
             print_panicked(&result);
             print_basic(&result);
-        }
+        },
     }
 }

@@ -1,6 +1,6 @@
 [package]
 name = "rdf"
-version = "0.1.146"
+version = "0.1.147"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/rdf"

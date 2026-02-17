@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
-use iri_s::{IriS, IriSError};
+use iri_s::IriS;
+use iri_s::error::IriSError;
 use thiserror::Error;
 
 #[derive(Error, Debug, Clone)]
@@ -46,7 +47,7 @@ pub enum SchemaJsonError {
     #[error(transparent)]
     PrefixMapError {
         #[from]
-        err: prefixmap::PrefixMapError,
+        err: prefixmap::error::PrefixMapError,
     },
 
     #[error("Obtaining current dir: {error:?}")]

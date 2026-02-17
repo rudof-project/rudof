@@ -47,11 +47,11 @@ impl<S: Rdf> IterationStrategy<S> for ValueNodeIteration {
         &'a self,
         value_nodes: &'a ValueNodes<S>,
     ) -> Box<dyn Iterator<Item = (&'a S::Term, &'a Self::Item)> + 'a> {
-        Box::new(value_nodes.iter().flat_map(|(focus_node, value_nodes)| {
-            value_nodes
-                .iter()
-                .map(move |value_node| (focus_node, value_node))
-        }))
+        Box::new(
+            value_nodes.iter().flat_map(|(focus_node, value_nodes)| {
+                value_nodes.iter().map(move |value_node| (focus_node, value_node))
+            }),
+        )
     }
 
     fn to_value(&self, item: &Self::Item) -> Option<<S as Rdf>::Term> {

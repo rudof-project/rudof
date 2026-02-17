@@ -21,9 +21,7 @@ impl Manifest {
         let base = Path::new(path)
             .canonicalize()
             .map_err(Box::new)
-            .map_err(|e| TestSuiteError::Validation {
-                error: e.to_string(),
-            })?;
+            .map_err(|e| TestSuiteError::Validation { error: e.to_string() })?;
         let base = match base.to_str() {
             Some(path) => format!("file:/{path}"),
             None => panic!("Path not found!!"),
@@ -37,24 +35,15 @@ impl Manifest {
             Some(&base),
             // &ReaderMode::Lax,
         )
-        .map_err(|e| TestSuiteError::Validation {
-            error: e.to_string(),
-        })?;
+        .map_err(|e| TestSuiteError::Validation { error: e.to_string() })?;
 
         let mut store = graph.store().clone();
 
         let entries = Manifest::parse_entries(&mut store, subject)?;
-        Ok(Self {
-            base,
-            store,
-            entries,
-        })
+        Ok(Self { base, store, entries })
     }
 
-    fn parse_entries(
-        store: &mut RdfData,
-        subject: OxSubject,
-    ) -> Result<HashSet<OxTerm>, Box<TestSuiteError>> {
+    fn parse_entries(store: &mut RdfData, subject: OxSubject) -> Result<HashSet<OxTerm>, Box<TestSuiteError>> {
         let mut entry_terms = HashSet::new();
 
         let mf_entries: NamedNode = shacl_validation_vocab::mf_entries().clone().into();
@@ -104,7 +93,7 @@ impl Manifest {
                     return Err(Box::new(TestSuiteError::Validation {
                         error: "Invalid entry term in manifest".to_string(),
                     }));
-                }
+                },
             };
 
             let mf_action: NamedNode = shacl_validation_vocab::mf_action().clone().into();
@@ -122,7 +111,7 @@ impl Manifest {
                     return Err(Box::new(TestSuiteError::Validation {
                         error: "Invalid action term in manifest".to_string(),
                     }));
-                }
+                },
             };
 
             let mf_result: NamedNode = shacl_validation_vocab::mf_result().clone().into();
@@ -134,11 +123,8 @@ impl Manifest {
                 .next()
                 .unwrap();
 
-            let report = ValidationReport::parse(&mut self.store, results).map_err(|e| {
-                Box::new(TestSuiteError::Validation {
-                    error: e.to_string(),
-                })
-            })?;
+            let report = ValidationReport::parse(&mut self.store, results)
+                .map_err(|e| Box::new(TestSuiteError::Validation { error: e.to_string() }))?;
 
             let sht_data_graph: NamedNode = shacl_validation_vocab::sht_data_graph().clone().into();
             let data_graph_iri = self
@@ -149,8 +135,7 @@ impl Manifest {
                 .next()
                 .unwrap();
 
-            let sht_shapes_graph: NamedNode =
-                shacl_validation_vocab::sht_shapes_graph().clone().into();
+            let sht_shapes_graph: NamedNode = shacl_validation_vocab::sht_shapes_graph().clone().into();
             let shapes_graph_iri = self
                 .store
                 .triples_matching(&action, &sht_shapes_graph, &Any)
@@ -168,9 +153,7 @@ impl Manifest {
                 Some(&self.base),
                 // &ReaderMode::default(),
             )
-            .map_err(|e| TestSuiteError::Validation {
-                error: e.to_string(),
-            })?;
+            .map_err(|e| TestSuiteError::Validation { error: e.to_string() })?;
 
             let data_graph = graph.store().clone();
 
@@ -180,15 +163,11 @@ impl Manifest {
                 Some(&self.base),
                 // &ReaderMode::default(),
             )
-            .map_err(|e| TestSuiteError::Validation {
-                error: e.to_string(),
-            })?;
+            .map_err(|e| TestSuiteError::Validation { error: e.to_string() })?;
             let shapes_graph = shapes.store().clone();
-            let schema = ShaclParser::new(shapes_graph).parse().map_err(|e| {
-                Box::new(TestSuiteError::Validation {
-                    error: e.to_string(),
-                })
-            })?;
+            let schema = ShaclParser::new(shapes_graph)
+                .parse()
+                .map_err(|e| Box::new(TestSuiteError::Validation { error: e.to_string() }))?;
 
             entries.push(ShaclTest::new(data_graph, schema, report));
         }

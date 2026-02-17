@@ -1,6 +1,5 @@
 use crate::shacl_vocab::{
-    sh_description, sh_group, sh_info, sh_name, sh_node_shape, sh_property, sh_severity,
-    sh_violation, sh_warning,
+    sh_description, sh_group, sh_info, sh_name, sh_node_shape, sh_property, sh_severity, sh_violation, sh_warning,
 };
 use crate::{component::Component, message_map::MessageMap, severity::Severity, target::Target};
 use crate::{sh_debug, sh_trace};
@@ -140,13 +139,11 @@ impl<RDF: Rdf> NodeShape<RDF> {
             .iter()
             .try_for_each(|component| component.write(&self.id, rdf))?;
 
-        self.targets
-            .iter()
-            .try_for_each(|target| target.write(&self.id, rdf))?;
+        self.targets.iter().try_for_each(|target| target.write(&self.id, rdf))?;
 
-        self.property_shapes.iter().try_for_each(|property_shape| {
-            rdf.add_triple(id.clone(), sh_property().clone(), property_shape.clone())
-        })?;
+        self.property_shapes
+            .iter()
+            .try_for_each(|property_shape| rdf.add_triple(id.clone(), sh_property().clone(), property_shape.clone()))?;
 
         if let Some(group) = &self.group {
             rdf.add_triple(id.clone(), sh_group().clone(), group.clone())?;
@@ -159,7 +156,7 @@ impl<RDF: Rdf> NodeShape<RDF> {
                 Severity::Violation => sh_violation(),
                 Severity::Info => sh_info(),
                 Severity::Warning => sh_warning(),
-                Severity::Generic(iri) => &iri.get_iri().unwrap(),
+                Severity::Generic(iri) => iri.get_iri().unwrap(),
             };
 
             rdf.add_triple(id.clone(), sh_severity().clone(), pred.clone())?;

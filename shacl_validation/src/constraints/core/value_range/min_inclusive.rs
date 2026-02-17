@@ -68,14 +68,6 @@ impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MinInclusive {
         };
 
         let message = format!("MinInclusive({}) not satisfied", self.min_inclusive_value());
-        validate_ask_with(
-            component,
-            shape,
-            store,
-            value_nodes,
-            query,
-            &message,
-            maybe_path,
-        )
+        validate_ask_with(component, shape, store, value_nodes, query, &message, maybe_path)
     }
 }

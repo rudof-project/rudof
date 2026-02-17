@@ -30,13 +30,8 @@ pub(crate) fn shapemap_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Vec<S
         "shapemap_statement",
         map_error(
             move |i| {
-                let (i, (a, _, ass, _, _)) = all_consuming(tuple((
-                    association,
-                    tws0,
-                    rest_associations,
-                    tws0,
-                    opt(char(',')),
-                )))(i)?;
+                let (i, (a, _, ass, _, _)) =
+                    all_consuming(tuple((association, tws0, rest_associations, tws0, opt(char(',')))))(i)?;
                 let mut rs = vec![a];
                 for a in ass {
                     rs.push(a);
@@ -95,17 +90,11 @@ fn object_term(i: Span) -> IRes<NodeSelector> {
 }
 
 fn object_value<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ObjectValue> {
-    move |i| {
-        alt((
-            map(iri, ObjectValue::iri_ref),
-            map(literal(), ObjectValue::literal),
-        ))(i)
-    }
+    move |i| alt((map(iri, ObjectValue::iri_ref), map(literal(), ObjectValue::literal)))(i)
 }
 
 fn triple_pattern(i: Span) -> IRes<NodeSelector> {
-    let (i, (_, _, triple, _, _)) =
-        tuple((open_curly, tws0, triple_pattern_inner, tws0, close_curly))(i)?;
+    let (i, (_, _, triple, _, _)) = tuple((open_curly, tws0, triple_pattern_inner, tws0, close_curly))(i)?;
     Ok((i, triple))
 }
 
@@ -121,8 +110,7 @@ fn node_or_wildcard(i: Span) -> IRes<Pattern> {
 }
 
 fn focus_object(i: Span) -> IRes<NodeSelector> {
-    let (i, (_, _, path, _, pattern)) =
-        tuple((focus, tws0, shacl_path, tws0, node_or_wildcard))(i)?;
+    let (i, (_, _, path, _, pattern)) = tuple((focus, tws0, shacl_path, tws0, node_or_wildcard))(i)?;
     Ok((
         i,
         NodeSelector::TriplePattern {
@@ -134,8 +122,7 @@ fn focus_object(i: Span) -> IRes<NodeSelector> {
 }
 
 fn subject_focus(i: Span) -> IRes<NodeSelector> {
-    let (i, (pattern, _, path, _, _)) =
-        tuple((node_or_wildcard, tws0, shacl_path, tws0, focus))(i)?;
+    let (i, (pattern, _, path, _, _)) = tuple((node_or_wildcard, tws0, shacl_path, tws0, focus))(i)?;
     Ok((
         i,
         NodeSelector::TriplePattern {

@@ -1,8 +1,8 @@
 //! A set whose elements can be repeated. The set tracks how many times each element appears
 //!
 use crate::{
-    Dataset, Feature, GraphCollection, ServiceDescriptionError, ServiceDescriptionFormat,
-    ServiceDescriptionParser, SparqlResultFormat, SupportedLanguage,
+    Dataset, Feature, GraphCollection, ServiceDescriptionError, ServiceDescriptionFormat, ServiceDescriptionParser,
+    SparqlResultFormat, SupportedLanguage,
 };
 use iri_s::IriS;
 use itertools::Itertools;
@@ -115,10 +115,7 @@ impl ServiceDescription {
         Ok(service)
     }
 
-    pub fn add_supported_languages<I: IntoIterator<Item = SupportedLanguage>>(
-        &mut self,
-        supported_languages: I,
-    ) {
+    pub fn add_supported_languages<I: IntoIterator<Item = SupportedLanguage>>(&mut self, supported_languages: I) {
         self.supported_language.extend(supported_languages);
     }
 
@@ -126,10 +123,7 @@ impl ServiceDescription {
         self.feature.extend(features);
     }
 
-    pub fn add_result_formats<I: IntoIterator<Item = SparqlResultFormat>>(
-        &mut self,
-        result_formats: I,
-    ) {
+    pub fn add_result_formats<I: IntoIterator<Item = SparqlResultFormat>>(&mut self, result_formats: I) {
         self.result_format.extend(result_formats);
     }
 
@@ -167,33 +161,27 @@ impl ServiceDescription {
         mie
     }
 
-    pub fn serialize<W: io::Write>(
-        &self,
-        format: &crate::ServiceDescriptionFormat,
-        writer: &mut W,
-    ) -> io::Result<()> {
+    pub fn serialize<W: io::Write>(&self, format: &crate::ServiceDescriptionFormat, writer: &mut W) -> io::Result<()> {
         match format {
             ServiceDescriptionFormat::Internal => writer.write_all(self.to_string().as_bytes()),
             ServiceDescriptionFormat::Mie => {
                 let mie = self.service2mie();
-                let mie_str = serde_json::to_string_pretty(&mie).map_err(|e| {
-                    io::Error::other(format!("Error converting ServiceDescription to MIE: {e}"))
-                })?;
+                let mie_str = serde_json::to_string_pretty(&mie)
+                    .map_err(|e| io::Error::other(format!("Error converting ServiceDescription to MIE: {e}")))?;
                 writer.write_all(mie_str.as_bytes())
-            }
+            },
             ServiceDescriptionFormat::Json => {
-                let json = serde_json::to_string_pretty(self).map_err(|e| {
-                    io::Error::other(format!("Error converting ServiceDescription to JSON: {e}"))
-                })?;
+                let json = serde_json::to_string_pretty(self)
+                    .map_err(|e| io::Error::other(format!("Error converting ServiceDescription to JSON: {e}")))?;
                 writer.write_all(json.as_bytes())
-            }
+            },
         }
     }
 }
 
 fn cnv_prefixmap(pm: &PrefixMap) -> HashMap<String, IriS> {
     let mut result = HashMap::new();
-    for (alias, prefix) in pm.iter() {
+    for (alias, prefix) in pm.clone() {
         result.insert(alias.clone(), prefix.clone());
     }
     result
@@ -207,11 +195,7 @@ impl Display for ServiceDescription {
         } else {
             writeln!(f, " endpoint: None")?;
         }
-        let sup_lang = self
-            .supported_language
-            .iter()
-            .map(|l| l.to_string())
-            .join(", ");
+        let sup_lang = self.supported_language.iter().map(|l| l.to_string()).join(", ");
         writeln!(f, "  supportedLanguage: [{sup_lang}]")?;
         let feature = self.feature.iter().map(|l| l.to_string()).join(", ");
         writeln!(f, "  feature: [{feature}]")?;
@@ -225,10 +209,7 @@ impl Display for ServiceDescription {
         writeln!(
             f,
             "  availableGraphs: {}",
-            self.available_graphs
-                .iter()
-                .map(|a| a.to_string())
-                .join(", ")
+            self.available_graphs.iter().map(|a| a.to_string()).join(", ")
         )?;
         Ok(())
     }

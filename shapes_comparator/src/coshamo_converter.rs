@@ -20,7 +20,7 @@ impl CoShaMoConverter {
         }
     }
 
-    pub fn from_service(
+    pub fn populate_from_service(
         &mut self,
         service: ServiceDescription,
         label: &Option<String>,
@@ -37,11 +37,7 @@ impl CoShaMoConverter {
         Ok(self.current_coshamo.clone())
     }
 
-    pub fn from_shex(
-        &mut self,
-        schema: &Schema,
-        label: Option<&str>,
-    ) -> Result<CoShaMo, ComparatorError> {
+    pub fn populate_from_shex(&mut self, schema: &Schema, label: Option<&str>) -> Result<CoShaMo, ComparatorError> {
         self.current_coshamo = CoShaMo::new().with_prefixmap(schema.prefixmap());
         // choose the shape
         if let Some(label) = label {
@@ -90,11 +86,7 @@ impl CoShaMoConverter {
         self.current_coshamo.resolve(iri_ref)
     }
 
-    fn triple_expr2coshamo(
-        &mut self,
-        triple_expr: &TripleExpr,
-        coshamo: &mut CoShaMo,
-    ) -> Result<(), ComparatorError> {
+    fn triple_expr2coshamo(&mut self, triple_expr: &TripleExpr, coshamo: &mut CoShaMo) -> Result<(), ComparatorError> {
         match triple_expr {
             TripleExpr::EachOf {
                 id: _,
@@ -110,7 +102,7 @@ impl CoShaMoConverter {
                     coshamo.add_constraint(&iri_s, tc);
                 }
                 Ok(())
-            }
+            },
             TripleExpr::OneOf {
                 id: _,
                 expressions: _,
@@ -137,8 +129,8 @@ impl CoShaMoConverter {
                 self.current_coshamo
                     .add_constraint(&iri_s, ValueDescription::new(predicate));
                 Ok(())
-            }
-            TripleExpr::TripleExprRef(_) => todo!(),
+            },
+            TripleExpr::Ref(_) => todo!(),
         }
     }
 
@@ -170,17 +162,15 @@ impl CoShaMoConverter {
                 feature: "OneOf as constraint".to_string(),
             }),
             TripleExpr::TripleConstraint {
-                predicate,
-                value_expr,
-                ..
+                predicate, value_expr, ..
             } => {
                 let node_constraint = self.value_expr2value_constraint(value_expr)?;
                 Ok((
                     predicate.clone(),
                     ValueDescription::new(predicate).with_value_constraint(node_constraint),
                 ))
-            }
-            TripleExpr::TripleExprRef(_) => Err(ComparatorError::NotImplemented {
+            },
+            TripleExpr::Ref(_) => Err(ComparatorError::NotImplemented {
                 feature: "TripleExprRef as constraint".to_string(),
             }),
         }
@@ -206,7 +196,7 @@ impl CoShaMoConverter {
                             feature: format!("Complex node constraint as ValueExpr: {nc:?}"),
                         })
                     }
-                }
+                },
                 ShapeExpr::Shape(s) => Err(ComparatorError::NotImplemented {
                     feature: format!("Shape as ValueExpr, shape: {s:?}"),
                 }),
@@ -225,7 +215,7 @@ impl CoShaMoConverter {
                 ShapeExpr::Ref(r) => {
                     let r: String = r.into();
                     ValueConstraint::reference(&r)
-                }
+                },
             }
         } else {
             Ok(ValueConstraint::Any)
@@ -256,7 +246,7 @@ impl CoShaMoConverter {
                 // Process shape.constraints
                 // Not implemented yet
                 Ok(coshamo)
-            }
+            },
             ShapeExpr::External => Err(ComparatorError::NotImplemented {
                 feature: "External".to_string(),
             }),

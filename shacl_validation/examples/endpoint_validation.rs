@@ -17,19 +17,18 @@ fn main() -> Result<()> {
         @prefix sh:  <http://www.w3.org/ns/shacl#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-        ex:WikidataExampleShape 
+        ex:WikidataExampleShape
             a sh:NodeShape ;
-            sh:targetNode wd:Q80 ; 
-            sh:property [                  
-                sh:path     wdt:P1477 ; 
-                sh:minCount 1 ; 
+            sh:targetNode wd:Q80 ;
+            sh:property [
+                sh:path     wdt:P1477 ;
+                sh:minCount 1 ;
                 sh:maxCount 1 ;
                 sh:datatype xsd:string ;
             ] .
     "#;
 
-    let schema: SchemaIR =
-        ShaclDataManager::load(&mut Cursor::new(shacl), "Test", RDFFormat::Turtle, None)?;
+    let schema: SchemaIR = ShaclDataManager::load(&mut Cursor::new(shacl), "Test", RDFFormat::Turtle, None)?;
 
     let mut endpoint_validation = EndpointValidation::new(
         "https://query.wikidata.org/sparql",

@@ -32,13 +32,11 @@ impl ShaclDataManager {
         .map_err(|e| Box::new(ValidateError::Graph(e)))?;
         match ShaclParser::new(rdf).parse() {
             Ok(schema) => {
-                let schema_compiled = schema.try_into().map_err(|e: Box<CompiledShaclError>| {
-                    ValidateError::CompiledShacl {
-                        error: Box::new(*e),
-                    }
-                })?;
+                let schema_compiled = schema
+                    .try_into()
+                    .map_err(|e: Box<CompiledShaclError>| ValidateError::CompiledShacl { error: Box::new(*e) })?;
                 Ok(schema_compiled)
-            }
+            },
             Err(error) => Err(Box::new(ValidateError::ShaclParser(error))),
         }
     }

@@ -1,5 +1,6 @@
 use iri_s::IriS;
-use prefixmap::{Deref, DerefError, IriRef, PrefixMap};
+use prefixmap::error::DerefError;
+use prefixmap::{Deref, IriRef, PrefixMap};
 use serde::{Deserialize, Serialize, Serializer};
 use std::str::FromStr;
 
@@ -19,11 +20,7 @@ pub struct ShapeExprWrapper {
 }
 
 impl Deref for ShapeExprWrapper {
-    fn deref(
-        &self,
-        base: &Option<IriS>,
-        prefixmap: &Option<PrefixMap>,
-    ) -> Result<Self, DerefError> {
+    fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
         let se = self.se.deref(base, prefixmap)?;
         let sew = ShapeExprWrapper { se };
         Ok(sew)
@@ -171,41 +168,36 @@ impl Default for ShapeExpr {
 }
 
 impl Deref for ShapeExpr {
-    fn deref(
-        &self,
-        base: &Option<IriS>,
-        prefixmap: &Option<PrefixMap>,
-    ) -> Result<Self, DerefError> {
+    fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
         match self {
             ShapeExpr::External => Ok(ShapeExpr::External),
             ShapeExpr::ShapeAnd { shape_exprs } => {
-                let shape_exprs = <ShapeExpr as Deref>::deref_vec(shape_exprs, base, prefixmap)?;
+                let shape_exprs = shape_exprs.deref(base, prefixmap)?;
                 Ok(ShapeExpr::ShapeAnd {
                     shape_exprs: shape_exprs.clone(),
                 })
-            }
+            },
             ShapeExpr::ShapeOr { shape_exprs } => {
-                let shape_exprs = <ShapeExpr as Deref>::deref_vec(shape_exprs, base, prefixmap)?;
+                let shape_exprs = shape_exprs.deref(base, prefixmap)?;
                 Ok(ShapeExpr::ShapeOr {
                     shape_exprs: shape_exprs.clone(),
                 })
-            }
-            ShapeExpr::ShapeNot { shape_expr } => {
-                let shape_expr = Box::new(shape_expr.deref(base, prefixmap)?);
-                Ok(ShapeExpr::ShapeNot { shape_expr })
-            }
+            },
+            ShapeExpr::ShapeNot { shape_expr } => Ok(ShapeExpr::ShapeNot {
+                shape_expr: shape_expr.deref(base, prefixmap)?,
+            }),
             ShapeExpr::Shape(shape) => {
                 let shape = shape.deref(base, prefixmap)?;
                 Ok(ShapeExpr::Shape(shape))
-            }
+            },
             ShapeExpr::Ref(ref_) => {
                 let ref_ = ref_.deref(base, prefixmap)?;
                 Ok(ShapeExpr::Ref(ref_))
-            }
+            },
             ShapeExpr::NodeConstraint(nc) => {
                 let nc = nc.deref(base, prefixmap)?;
                 Ok(ShapeExpr::NodeConstraint(nc))
-            }
+            },
         }
     }
 }
@@ -218,9 +210,7 @@ mod tests {
 
     #[test]
     fn test_serde_xsfacet_pattern() {
-        let facets: Vec<XsFacet> = vec![XsFacet::StringFacet(StringFacet::Pattern(Pattern::new(
-            "o*",
-        )))];
+        let facets: Vec<XsFacet> = vec![XsFacet::StringFacet(StringFacet::Pattern(Pattern::new("o*")))];
         let nc = NodeConstraint::new().with_xsfacets(facets);
         let se = ShapeExpr::NodeConstraint(nc);
         let json_nc = serde_json::to_string(&se).unwrap();

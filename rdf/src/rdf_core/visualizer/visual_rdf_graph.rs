@@ -163,8 +163,7 @@ impl VisualRDFGraph {
                 predicate: predicate_str.to_string(),
                 object: object_str.to_string(),
                 error: e.to_string(),
-            }
-        })?;
+            })?;
         let triple = if asserted {
             VisualRDFNode::asserted_triple(subject_node, edge_node, object_node)
         } else {
@@ -299,11 +298,11 @@ impl VisualRDFGraph {
             match node {
                 VisualRDFNode::NonAssertedTriple(subj, pred, obj) => {
                     triple_term_as_plantuml(writer, self, node_id, subj, pred, obj)?;
-                }
+                },
                 VisualRDFNode::AssertedTriple(subj, pred, obj) => {
                     triple_term_as_plantuml(writer, self, node_id, subj, pred, obj)?;
-                }
-                _ => {}
+                },
+                _ => {},
             }
         }
 
@@ -322,12 +321,10 @@ impl VisualRDFGraph {
     /// * `bool` - True if the node should be visualized
     pub fn show_node(&self, node: &VisualRDFNode) -> bool {
         match node {
-            VisualRDFNode::Predicate { .. } | VisualRDFNode::Reifies => {
-                match self.usage_count.get(node) {
-                    Some(usage_count) => usage_count.in_triple(),
-                    None => false,
-                }
-            }
+            VisualRDFNode::Predicate { .. } | VisualRDFNode::Reifies => match self.usage_count.get(node) {
+                Some(usage_count) => usage_count.in_triple(),
+                None => false,
+            },
             // All nodes are visualized by default
             _ => true,
         }

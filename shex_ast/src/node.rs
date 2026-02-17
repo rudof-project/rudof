@@ -24,9 +24,7 @@ impl Node {
     }
     /// Creates a node from an [`ÌriS`]
     pub fn iri(iri: IriS) -> Node {
-        Node {
-            node: Object::iri(iri),
-        }
+        Node { node: Object::iri(iri) }
     }
 
     /// Returns the length of the RDF Node
@@ -58,7 +56,7 @@ impl Node {
                             error: e.to_string(),
                         })?;
                 Ok(Object::Literal(checked_literal))
-            }
+            },
             _ => Ok(self.node.clone()),
         }
     }

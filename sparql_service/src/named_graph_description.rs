@@ -54,11 +54,7 @@ impl Display for NamedGraphDescription {
             writeln!(
                 f,
                 " graphs: {}",
-                self.graphs
-                    .iter()
-                    .map(|g| g.to_string())
-                    .collect::<Vec<_>>()
-                    .join("\n")
+                self.graphs.iter().map(|g| g.to_string()).collect::<Vec<_>>().join("\n")
             )?;
         }
         Ok(())

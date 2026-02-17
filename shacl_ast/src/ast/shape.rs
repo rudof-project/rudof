@@ -26,10 +26,10 @@ impl<RDF: Rdf> Shape<RDF> {
         match self {
             Shape::NodeShape(ns) => {
                 ns.write(rdf)?;
-            }
+            },
             Shape::PropertyShape(ps) => {
                 ps.write(rdf)?;
-            }
+            },
         }
         Ok(())
     }

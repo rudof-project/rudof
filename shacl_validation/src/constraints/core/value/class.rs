@@ -48,10 +48,7 @@ impl<S: NeighsRDF + 'static> NativeValidator<S> for Class {
             !is_class_valid
         };
 
-        let message = format!(
-            "Class constraint not satisfied for class {}",
-            self.class_rule()
-        );
+        let message = format!("Class constraint not satisfied for class {}", self.class_rule());
         validate_with(
             component,
             shape,
@@ -86,18 +83,7 @@ impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Class {
             }
         };
 
-        let message = format!(
-            "Class constraint not satisfied for class {}",
-            self.class_rule()
-        );
-        validate_ask_with(
-            component,
-            shape,
-            store,
-            value_nodes,
-            query,
-            &message,
-            maybe_path,
-        )
+        let message = format!("Class constraint not satisfied for class {}", self.class_rule());
+        validate_ask_with(component, shape, store, value_nodes, query, &message, maybe_path)
     }
 }

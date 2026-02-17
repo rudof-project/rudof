@@ -1,4 +1,5 @@
-use prefixmap::{Deref, DerefError, IriRef};
+use prefixmap::error::DerefError;
+use prefixmap::{Deref, IriRef};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
@@ -24,11 +25,7 @@ impl SemAct {
 }
 
 impl Deref for SemAct {
-    fn deref(
-        &self,
-        base: &Option<iri_s::IriS>,
-        prefixmap: &Option<prefixmap::PrefixMap>,
-    ) -> Result<Self, DerefError> {
+    fn deref(self, base: Option<&iri_s::IriS>, prefixmap: Option<&prefixmap::PrefixMap>) -> Result<Self, DerefError> {
         let new_name = self.name.deref(base, prefixmap)?;
         Ok(SemAct {
             name: new_name,

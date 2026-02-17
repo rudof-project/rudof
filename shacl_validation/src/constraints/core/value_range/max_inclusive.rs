@@ -28,10 +28,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxInclusive {
         _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_inclusive = |node: &S::Term| match S::term_as_sliteral(node) {
-            Ok(lit) => lit
-                .partial_cmp(self.max_inclusive())
-                .map(|o| o.is_gt())
-                .unwrap_or(true),
+            Ok(lit) => lit.partial_cmp(self.max_inclusive()).map(|o| o.is_gt()).unwrap_or(true),
             Err(_) => true,
         };
         let message = format!("MaxInclusive({}) not satisfied", self.max_inclusive());
@@ -68,14 +65,6 @@ impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MaxInclusive {
         };
 
         let message = format!("MaxInclusive({}) not satisfied", self.max_inclusive());
-        validate_ask_with(
-            component,
-            shape,
-            store,
-            value_nodes,
-            query,
-            &message,
-            maybe_path,
-        )
+        validate_ask_with(component, shape, store, value_nodes, query, &message, maybe_path)
     }
 }

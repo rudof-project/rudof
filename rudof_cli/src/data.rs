@@ -29,41 +29,25 @@ pub fn run_data(
         println!("Config: {config:?}")
     }
 
-    get_data_rudof(
-        &mut rudof,
-        data,
-        data_format,
-        base,
-        &None,
-        reader_mode,
-        config,
-        false,
-    )?;
+    get_data_rudof(&mut rudof, data, data_format, base, &None, reader_mode, config, false)?;
 
     match check_result_format(result_format) {
         CheckResultFormat::RDFFormat(rdf_format) => {
             rudof.get_rdf_data().serialize(&rdf_format, &mut writer)?;
-        }
+        },
         CheckResultFormat::VisualFormat(VisualFormat::PlantUML) => {
             rudof.data2plant_uml(&mut writer)?;
-        }
-        CheckResultFormat::VisualFormat(VisualFormat::SVG)
-        | CheckResultFormat::VisualFormat(VisualFormat::PNG) => {
+        },
+        CheckResultFormat::VisualFormat(VisualFormat::SVG) | CheckResultFormat::VisualFormat(VisualFormat::PNG) => {
             let rdf = rudof.get_rdf_data();
-            let uml_converter =
-                VisualRDFGraph::from_rdf(rdf, config.rdf_data_config().rdf_visualization_config())?;
+            let uml_converter = VisualRDFGraph::from_rdf(rdf, config.rdf_data_config().rdf_visualization_config())?;
             let format = match result_format {
-                ResultDataFormat::SVG => ImageFormat::SVG,
-                ResultDataFormat::PNG => ImageFormat::PNG,
+                ResultDataFormat::Svg => ImageFormat::Svg,
+                ResultDataFormat::Png => ImageFormat::Png,
                 _ => unreachable!(),
             };
-            uml_converter.as_image(
-                &mut writer,
-                format,
-                &UmlGenerationMode::all(),
-                config.plantuml_path(),
-            )?;
-        }
+            uml_converter.as_image(&mut writer, format, &UmlGenerationMode::all(), config.plantuml_path())?;
+        },
     }
     Ok(())
 }
@@ -85,12 +69,12 @@ fn check_result_format(format: &ResultDataFormat) -> CheckResultFormat {
         ResultDataFormat::Turtle => CheckResultFormat::RDFFormat(RDFFormat::Turtle),
         ResultDataFormat::N3 => CheckResultFormat::RDFFormat(RDFFormat::N3),
         ResultDataFormat::NTriples => CheckResultFormat::RDFFormat(RDFFormat::NTriples),
-        ResultDataFormat::RDFXML => CheckResultFormat::RDFFormat(RDFFormat::RDFXML),
+        ResultDataFormat::RdfXml => CheckResultFormat::RDFFormat(RDFFormat::RdfXml),
         ResultDataFormat::TriG => CheckResultFormat::RDFFormat(RDFFormat::TriG),
         ResultDataFormat::NQuads => CheckResultFormat::RDFFormat(RDFFormat::NQuads),
         ResultDataFormat::PlantUML => CheckResultFormat::VisualFormat(VisualFormat::PlantUML),
-        ResultDataFormat::SVG => CheckResultFormat::VisualFormat(VisualFormat::SVG),
-        ResultDataFormat::PNG => CheckResultFormat::VisualFormat(VisualFormat::PNG),
+        ResultDataFormat::Svg => CheckResultFormat::VisualFormat(VisualFormat::SVG),
+        ResultDataFormat::Png => CheckResultFormat::VisualFormat(VisualFormat::PNG),
         _ => todo!(),
     }
 }

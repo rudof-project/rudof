@@ -70,9 +70,9 @@ show_shapes = true
 show_extends = true
 show_dependencies = false
 show_ir = false
-# shex_format = ShExC  
+# shex_format = ShExC
 check_well_formed = true # Check is schema is well formed
-base = "http://base/"    # Base IRI to resolve relative IRIs 
+base = "http://base/"    # Base IRI to resolve relative IRIs
 
 # [shex_validator]
 
@@ -90,7 +90,7 @@ shex_validator.check_negation_requirement = true
 shex_validator.width = 80
 
 # [shex2uml]
-# shex2uml.plantuml_path = "path/to/plantuml.jar" 
+# shex2uml.plantuml_path = "path/to/plantuml.jar"
 # annotation_label = "iri"
 # replace_iri_by_label = false
 # shadowing = false
@@ -111,7 +111,7 @@ title = "Title"
 # [shex2html.shex] # ShExConfig
 
 # [shacl2shex]
-# starting_shapes_mode = NonBNodes 
+# starting_shapes_mode = NonBNodes
 # embed_bnodes = true/false (embed blank nodes in ShEx schema)
 # [shacl2shex.shacl] # ShaclConfig
 # add_target_class = true/false # if true, add rdf:type for sh:targetClass declarations
@@ -148,7 +148,7 @@ ex = "http://example.org/"
 base = "http://base/"
 
 # Visualizations require the plantuml.jar file which is usually available at: https://github.com/plantuml/plantuml/releases
-# plantuml_path = "path/to/plantuml.jar" 
+# plantuml_path = "path/to/plantuml.jar"
 
 # [comparator]
 # ignore_value_constraints = true|false

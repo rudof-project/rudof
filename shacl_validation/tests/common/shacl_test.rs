@@ -10,10 +10,6 @@ pub struct ShaclTest<R: Rdf> {
 
 impl<R: Rdf> ShaclTest<R> {
     pub fn new(data: R, shapes: Schema<R>, report: ValidationReport) -> Self {
-        ShaclTest {
-            data,
-            shapes,
-            report,
-        }
+        ShaclTest { data, shapes, report }
     }
 }

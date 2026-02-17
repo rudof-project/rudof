@@ -5,9 +5,8 @@ use pretty::{Arena, DocAllocator, DocBuilder, RefDoc};
 use rust_decimal::Decimal;
 /// This file converts ShEx AST to ShEx compact syntax
 use shex_ast::{
-    Annotation, BNode, NodeConstraint, NodeKind, NumericFacet, ObjectValue, Pattern, Schema,
-    SemAct, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel, StringFacet, TripleExpr, XsFacet,
-    value_set_value::ValueSetValue,
+    Annotation, BNode, NodeConstraint, NodeKind, NumericFacet, ObjectValue, Pattern, Schema, SemAct, Shape, ShapeDecl,
+    ShapeExpr, ShapeExprLabel, StringFacet, TripleExpr, XsFacet, value_set_value::ValueSetValue,
 };
 use srdf::{SLiteral, lang::Lang, numeric_literal::NumericLiteral};
 use std::{borrow::Cow, io, marker::PhantomData};
@@ -102,11 +101,7 @@ impl ShExFormatter {
         printer.pretty_print()
     }
 
-    pub fn write_schema<W: std::io::Write>(
-        &self,
-        schema: &Schema,
-        writer: &mut W,
-    ) -> Result<(), std::io::Error> {
+    pub fn write_schema<W: std::io::Write>(&self, schema: &Schema, writer: &mut W) -> Result<(), std::io::Error> {
         let arena = Arena::<()>::new();
         let mut printer = ShExCompactPrinter::new(schema, &arena);
         printer = printer.with_keyword_color(self.keyword_color);
@@ -247,8 +242,7 @@ where
 
     fn pp_shape_decls(
         &self,
-    ) -> impl Fn(&Vec<ShapeDecl>, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A>
-    {
+    ) -> impl Fn(&Vec<ShapeDecl>, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
         move |shape_decls, printer| {
             let mut docs = Vec::new();
             for sd in shape_decls {
@@ -264,9 +258,7 @@ where
             .append(self.pp_shape_expr(&sd.shape_expr))
     }
 
-    fn pp_start(
-        &self,
-    ) -> impl Fn(&ShapeExpr, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
+    fn pp_start(&self) -> impl Fn(&ShapeExpr, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
         move |se, printer| {
             printer
                 .keyword("start")
@@ -294,7 +286,7 @@ where
                     .intersperse(docs, self.keyword(" AND "))
                     .group()
                     .nest(self.indent)
-            }
+            },
             ShapeExpr::ShapeOr { shape_exprs } => {
                 let mut docs = Vec::new();
                 for sew in shape_exprs {
@@ -304,7 +296,7 @@ where
                     .intersperse(docs, self.keyword(" OR "))
                     .group()
                     .nest(self.indent)
-            }
+            },
             ShapeExpr::ShapeNot { shape_expr } => self
                 .doc
                 .nil()
@@ -341,8 +333,7 @@ where
 
     fn pp_extends(
         &self,
-    ) -> impl Fn(&Vec<ShapeExprLabel>, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A>
-    {
+    ) -> impl Fn(&Vec<ShapeExprLabel>, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
         move |vs, printer| {
             let mut docs = Vec::new();
             for v in vs {
@@ -360,8 +351,7 @@ where
 
     fn pp_annotations(
         &self,
-    ) -> impl Fn(&Vec<Annotation>, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A>
-    {
+    ) -> impl Fn(&Vec<Annotation>, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
         move |vs, printer| {
             let mut docs = Vec::new();
             for a in vs {
@@ -377,8 +367,7 @@ where
 
     fn pp_triple_expr(
         &self,
-    ) -> impl Fn(&TripleExpr, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> + '_
-    {
+    ) -> impl Fn(&TripleExpr, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> + '_ {
         move |te, printer| match te {
             TripleExpr::EachOf { expressions, .. } => {
                 let mut docs = Vec::new();
@@ -389,7 +378,7 @@ where
                 printer
                     .doc
                     .intersperse(docs, printer.doc.text(";").append(printer.doc.line()))
-            }
+            },
             TripleExpr::OneOf { .. } => todo!(),
             TripleExpr::TripleConstraint {
                 negated,
@@ -417,7 +406,7 @@ where
                     .append(self.pp_cardinality(min, max))
                     .append(self.opt_pp1(sem_acts, self.pp_actions()))
                     .append(self.opt_pp1(annotations, self.pp_annotations()))
-            }
+            },
             TripleExpr::TripleExprRef(_) => todo!(),
         }
     }
@@ -438,11 +427,7 @@ where
         }
     }
 
-    fn pp_cardinality(
-        &self,
-        min: &Option<i32>,
-        max: &Option<i32>,
-    ) -> DocBuilder<'a, Arena<'a, A>, A> {
+    fn pp_cardinality(&self, min: &Option<i32>, max: &Option<i32>) -> DocBuilder<'a, Arena<'a, A>, A> {
         match (min, max) {
             (Some(1), Some(1)) => self.doc.nil(),
             (Some(0), Some(1)) => self.doc.space().append(self.doc.text("?")),
@@ -476,9 +461,7 @@ where
         }
     }
 
-    fn pp_extra(
-        &self,
-    ) -> impl Fn(&Vec<IriRef>, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
+    fn pp_extra(&self) -> impl Fn(&Vec<IriRef>, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
         move |es, printer| {
             let mut docs = Vec::new();
             for e in es {
@@ -511,9 +494,7 @@ where
 
     fn pp_literal(&self, literal: &SLiteral) -> DocBuilder<'a, Arena<'a, A>, A> {
         match literal {
-            SLiteral::StringLiteral { lexical_form, lang } => {
-                self.pp_string_literal(lexical_form, lang)
-            }
+            SLiteral::StringLiteral { lexical_form, lang } => self.pp_string_literal(lexical_form, lang),
             SLiteral::DatatypeLiteral {
                 lexical_form: _,
                 datatype: _,
@@ -529,11 +510,7 @@ where
         }
     }
 
-    fn pp_string_literal(
-        &self,
-        lexical_form: &str,
-        lang: &Option<Lang>,
-    ) -> DocBuilder<'a, Arena<'a, A>, A> {
+    fn pp_string_literal(&self, lexical_form: &str, lang: &Option<Lang>) -> DocBuilder<'a, Arena<'a, A>, A> {
         match lang {
             Some(_) => todo!(),
             None => self.pp_string(lexical_form),
@@ -556,9 +533,7 @@ where
             .append(self.opt_pp(nc.xs_facet(), self.pp_xsfacets()))
     }
 
-    fn pp_node_kind(
-        &self,
-    ) -> impl Fn(&NodeKind, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
+    fn pp_node_kind(&self) -> impl Fn(&NodeKind, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
         move |nk, printer| match nk {
             NodeKind::Iri => printer.keyword("IRI"),
             NodeKind::BNode => printer.keyword("BNODE"),
@@ -569,8 +544,7 @@ where
 
     fn pp_value_set(
         &self,
-    ) -> impl Fn(&Vec<ValueSetValue>, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A>
-    {
+    ) -> impl Fn(&Vec<ValueSetValue>, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
         move |values, printer| {
             let mut docs = Vec::new();
             for v in values {
@@ -584,9 +558,7 @@ where
         }
     }
 
-    fn pp_xsfacets(
-        &self,
-    ) -> impl Fn(&Vec<XsFacet>, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
+    fn pp_xsfacets(&self) -> impl Fn(&Vec<XsFacet>, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
         move |xsfacets, printer| {
             let mut docs = Vec::new();
             for v in xsfacets {
@@ -637,18 +609,9 @@ where
 
     fn pp_stringfacet(&self, sf: &StringFacet) -> DocBuilder<'a, Arena<'a, A>, A> {
         match sf {
-            StringFacet::Length(l) => self
-                .keyword("Length")
-                .append(self.space())
-                .append(self.pp_usize(l)),
-            StringFacet::MinLength(l) => self
-                .keyword("MinLength")
-                .append(self.space())
-                .append(self.pp_usize(l)),
-            StringFacet::MaxLength(l) => self
-                .keyword("MaxLength")
-                .append(self.space())
-                .append(self.pp_usize(l)),
+            StringFacet::Length(l) => self.keyword("Length").append(self.space()).append(self.pp_usize(l)),
+            StringFacet::MinLength(l) => self.keyword("MinLength").append(self.space()).append(self.pp_usize(l)),
+            StringFacet::MaxLength(l) => self.keyword("MaxLength").append(self.space()).append(self.pp_usize(l)),
             StringFacet::Pattern(pat) => self.pp_pattern(pat),
         }
     }
@@ -662,9 +625,7 @@ where
         self.doc.text(str)
     }
 
-    fn pp_datatype(
-        &self,
-    ) -> impl Fn(&IriRef, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
+    fn pp_datatype(&self) -> impl Fn(&IriRef, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
         move |dt, printer| printer.pp_iri_ref(dt)
     }
 
@@ -809,9 +770,7 @@ where
         }
     }
 
-    fn pp_actions(
-        &self,
-    ) -> impl Fn(&Vec<SemAct>, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
+    fn pp_actions(&self) -> impl Fn(&Vec<SemAct>, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
         move |actions, printer| {
             let mut docs = Vec::new();
             for a in actions {
@@ -838,9 +797,7 @@ where
             })
     }
 
-    fn pp_base(
-        &self,
-    ) -> impl Fn(&IriS, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
+    fn pp_base(&self) -> impl Fn(&IriS, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
         move |base, printer| {
             printer
                 .keyword("base")
@@ -850,9 +807,7 @@ where
         }
     }
 
-    fn pp_prefix_map(
-        &self,
-    ) -> impl Fn(&PrefixMap, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
+    fn pp_prefix_map(&self) -> impl Fn(&PrefixMap, &ShExCompactPrinter<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
         move |pm, printer| {
             let mut pms: Vec<DocBuilder<'a, Arena<'a, A>, A>> = Vec::new();
             for (alias, iri) in pm.map.clone().into_iter() {
@@ -967,14 +922,11 @@ mod tests {
     #[test]
     fn empty_schema() {
         let mut pm = PrefixMap::new();
-        pm.insert("", &IriS::new_unchecked("http://example.org/"))
-            .unwrap();
+        pm.insert("", &IriS::new_unchecked("http://example.org/")).unwrap();
         pm.insert("schema", &IriS::new_unchecked("https://schema.org/"))
             .unwrap();
         let schema = Schema::new(&iri!("http://default/")).with_prefixmap(Some(pm));
-        let s = ShExFormatter::default()
-            .without_colors()
-            .format_schema(&schema);
+        let s = ShExFormatter::default().without_colors().format_schema(&schema);
         assert_eq!(
             s,
             "prefix : <http://example.org/>\nprefix schema: <https://schema.org/>\n"

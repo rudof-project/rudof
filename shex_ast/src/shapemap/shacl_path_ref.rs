@@ -1,4 +1,5 @@
-use prefixmap::{IriRef, PrefixMap, PrefixMapError};
+use prefixmap::error::PrefixMapError;
+use prefixmap::{IriRef, PrefixMap};
 use serde::Serialize;
 use rdf::rdf_core::SHACLPath;
 
@@ -24,39 +25,39 @@ impl SHACLPathRef {
     pub fn to_shaclpath(&self, prefixmap: &PrefixMap) -> Result<SHACLPath, PrefixMapError> {
         match self {
             SHACLPathRef::Predicate { pred } => {
-                let iri = prefixmap.resolve_iriref(pred)?;
+                let iri = prefixmap.resolve_iriref(pred.clone())?;
                 Ok(SHACLPath::iri(iri))
-            }
+            },
             SHACLPathRef::Alternative { paths } => {
                 let spaths = paths
                     .iter()
                     .map(|p| p.to_shaclpath(prefixmap))
                     .collect::<Result<Vec<SHACLPath>, PrefixMapError>>()?;
                 Ok(SHACLPath::alternative(spaths))
-            }
+            },
             SHACLPathRef::Sequence { paths } => {
                 let spaths = paths
                     .iter()
                     .map(|p| p.to_shaclpath(prefixmap))
                     .collect::<Result<Vec<SHACLPath>, PrefixMapError>>()?;
                 Ok(SHACLPath::sequence(spaths))
-            }
+            },
             SHACLPathRef::Inverse { path } => {
                 let spath = path.to_shaclpath(prefixmap)?;
                 Ok(SHACLPath::inverse(spath))
-            }
+            },
             SHACLPathRef::ZeroOrMore { path } => {
                 let spath = path.to_shaclpath(prefixmap)?;
                 Ok(SHACLPath::zero_or_more(spath))
-            }
+            },
             SHACLPathRef::OneOrMore { path } => {
                 let spath = path.to_shaclpath(prefixmap)?;
                 Ok(SHACLPath::one_or_more(spath))
-            }
+            },
             SHACLPathRef::ZeroOrOne { path } => {
                 let spath = path.to_shaclpath(prefixmap)?;
                 Ok(SHACLPath::zero_or_one(spath))
-            }
+            },
         }
     }
 }

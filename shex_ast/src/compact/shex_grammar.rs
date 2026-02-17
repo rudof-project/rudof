@@ -1,10 +1,16 @@
 use crate::compact::grammar::token_tws_no_case;
-use crate::compact::grammar_structs::{
-    Cardinality, NumericLength, NumericRange, Qualifier, SenseFlags, ShExStatement,
-};
+use crate::compact::grammar_structs::{Cardinality, NumericLength, NumericRange, Qualifier, SenseFlags, ShExStatement};
 use crate::compact::{
-    IRes, Span, grammar::map_error, grammar::tag_no_case_tws, grammar::token, grammar::token_tws,
-    grammar::traced, grammar::tws0, shex_parser_error::ParseError as ShExParseError,
+    IRes, Span, grammar::map_error, grammar::tag_no_case_tws, grammar::token, grammar::token_tws, grammar::traced,
+    grammar::tws0, shex_parser_error::ParseError as ShExParseError,
+};
+use crate::iri_ref_or_wildcard::IriRefOrWildcard;
+use crate::string_or_wildcard::StringOrWildcard;
+use crate::{
+    Annotation, BNode, LangOrWildcard, NodeConstraint, NodeKind, NumericFacet, Pattern, SemAct, Shape, ShapeExpr,
+    ShapeExprLabel, StringFacet, TripleExpr, TripleExprLabel, XsFacet, iri_exclusion::IriExclusion,
+    language_exclusion::LanguageExclusion, literal_exclusion::LiteralExclusion, object_value::ObjectValue,
+    value_set_value::ValueSetValue,
 };
 use iri_s::IriS;
 use lazy_regex::{Lazy, regex};
@@ -76,13 +82,8 @@ fn prefix_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement<'a>> {
         "prefix_decl",
         map_error(
             move |i| {
-                let (i, (_, _, pname_ns, _, iri_ref)) = tuple((
-                    tag_no_case("PREFIX"),
-                    tws0,
-                    cut(pname_ns),
-                    tws0,
-                    cut(iri_ref),
-                ))(i)?;
+                let (i, (_, _, pname_ns, _, iri_ref)) =
+                    tuple((tag_no_case("PREFIX"), tws0, cut(pname_ns), tws0, cut(iri_ref)))(i)?;
                 Ok((
                     i,
                     ShExStatement::PrefixDecl {
@@ -196,10 +197,7 @@ fn shape_expression<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr> {
 fn inline_shape_expression<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr> {
     traced(
         "inline_shape_expr",
-        map_error(
-            move |i| inline_shape_or(i),
-            || ShExParseError::ExpectedInlineShapeExpr,
-        ),
+        map_error(move |i| inline_shape_or(i), || ShExParseError::ExpectedInlineShapeExpr),
     )
 }
 
@@ -287,8 +285,7 @@ fn non_lit_opt_shape_or_ref<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr>
         "non_lit_opt_shape_or_ref",
         map_error(
             move |i| {
-                let (i, (non_lit, _, maybe_se)) =
-                    tuple((non_lit_node_constraint, tws0, cut(opt(shape_or_ref()))))(i)?;
+                let (i, (non_lit, _, maybe_se)) = tuple((non_lit_node_constraint, tws0, cut(opt(shape_or_ref()))))(i)?;
                 let nc = ShapeExpr::node_constraint(non_lit);
                 let se_result = match maybe_se {
                     None => nc,
@@ -299,7 +296,7 @@ fn non_lit_opt_shape_or_ref<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr>
                                 new_ses.push(sew.se)
                             }
                             ShapeExpr::and(new_ses)
-                        }
+                        },
                         other => make_shape_and(vec![nc, other]),
                     },
                 };
@@ -349,8 +346,7 @@ fn non_lit_inline_opt_shape_or_ref<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Sha
         "non_lit_inline_nodeConstraint InlineShapeOr?",
         map_error(
             move |i| {
-                let (i, (non_lit, _, maybe_se)) =
-                    tuple((non_lit_node_constraint, tws0, opt(inline_shape_or_ref)))(i)?;
+                let (i, (non_lit, _, maybe_se)) = tuple((non_lit_node_constraint, tws0, opt(inline_shape_or_ref)))(i)?;
                 let nc = ShapeExpr::node_constraint(non_lit);
                 let se_result = match maybe_se {
                     None => nc,
@@ -430,14 +426,7 @@ fn lit_node_constraint<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NodeConstraint>
     traced(
         "lit_node_constraint",
         map_error(
-            move |i| {
-                alt((
-                    literal_facets(),
-                    datatype_facets(),
-                    value_set_facets(),
-                    numeric_facets,
-                ))(i)
-            },
+            move |i| alt((literal_facets(), datatype_facets(), value_set_facets(), numeric_facets))(i),
             || ShExParseError::LitNodeConstraint,
         ),
     )
@@ -483,9 +472,7 @@ fn value_set_facets<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NodeConstraint> {
 
 /// `from [24] numeric_facets = numericFacet+`
 fn numeric_facets(i: Span) -> IRes<NodeConstraint> {
-    map(many1(numeric_facet()), |ns| {
-        NodeConstraint::new().with_xsfacets(ns)
-    })(i)
+    map(many1(numeric_facet()), |ns| NodeConstraint::new().with_xsfacets(ns))(i)
 }
 
 fn facets<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Vec<XsFacet>> {
@@ -592,12 +579,8 @@ fn numeric_length_int<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, XsFacet> {
     traced("numeric_length_int", move |i| {
         let (i, (numeric_length, n)) = tuple((numeric_length, integer()))(i)?;
         let nm = match numeric_length {
-            NumericLength::FractionDigits => {
-                XsFacet::NumericFacet(NumericFacet::FractionDigits(n as usize))
-            }
-            NumericLength::TotalDigits => {
-                XsFacet::NumericFacet(NumericFacet::TotalDigits(n as usize))
-            }
+            NumericLength::FractionDigits => XsFacet::NumericFacet(NumericFacet::FractionDigits(n as usize)),
+            NumericLength::TotalDigits => XsFacet::NumericFacet(NumericFacet::TotalDigits(n as usize)),
         };
         Ok((i, nm))
     })
@@ -606,9 +589,7 @@ fn numeric_length_int<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, XsFacet> {
 fn numeric_length(i: Span) -> IRes<NumericLength> {
     alt((
         map(token_tws("TOTALDIGITS"), |_| NumericLength::TotalDigits),
-        map(token_tws("FRACTIONDIGITS"), |_| {
-            NumericLength::FractionDigits
-        }),
+        map(token_tws("FRACTIONDIGITS"), |_| NumericLength::FractionDigits),
     ))(i)
 }
 
@@ -629,16 +610,15 @@ fn shape_definition<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr> {
         "shape_definition",
         map_error(
             move |i| {
-                let (i, (qualifiers, _, maybe_triple_expr, _, annotations, _, sem_actions)) =
-                    tuple((
-                        qualifiers(),
-                        token_tws("{"),
-                        maybe_triple_expr(),
-                        token_tws("}"),
-                        annotations,
-                        tws0,
-                        semantic_actions,
-                    ))(i)?;
+                let (i, (qualifiers, _, maybe_triple_expr, _, annotations, _, sem_actions)) = tuple((
+                    qualifiers(),
+                    token_tws("{"),
+                    maybe_triple_expr(),
+                    token_tws("}"),
+                    annotations,
+                    tws0,
+                    semantic_actions,
+                ))(i)?;
                 let closed = if qualifiers.contains(&Qualifier::Closed) {
                     Some(true)
                 } else {
@@ -649,20 +629,16 @@ fn shape_definition<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr> {
                 for q in qualifiers {
                     match q {
                         Qualifier::Extends(label) => extends.push(label),
-                        Qualifier::Closed => {}
+                        Qualifier::Closed => {},
                         Qualifier::Extra(ps) => {
                             for p in ps {
                                 extra.push(p)
                             }
-                        }
+                        },
                     }
                 }
                 let maybe_extra = if extra.is_empty() { None } else { Some(extra) };
-                let maybe_extends = if extends.is_empty() {
-                    None
-                } else {
-                    Some(extends)
-                };
+                let maybe_extends = if extends.is_empty() { None } else { Some(extends) };
                 let annotations = if annotations.is_empty() {
                     None
                 } else {
@@ -685,12 +661,8 @@ fn shape_definition<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr> {
 
 /// `[34] inlineShapeDefinition ::= qualifiers '{' tripleExpression? '}'`
 fn inline_shape_definition(i: Span) -> IRes<ShapeExpr> {
-    let (i, (qualifiers, _, maybe_triple_expr, _)) = tuple((
-        qualifiers(),
-        token_tws("{"),
-        maybe_triple_expr(),
-        token_tws("}"),
-    ))(i)?;
+    let (i, (qualifiers, _, maybe_triple_expr, _)) =
+        tuple((qualifiers(), token_tws("{"), maybe_triple_expr(), token_tws("}")))(i)?;
     let closed = if qualifiers.contains(&Qualifier::Closed) {
         Some(true)
     } else {
@@ -701,20 +673,17 @@ fn inline_shape_definition(i: Span) -> IRes<ShapeExpr> {
         match q {
             Qualifier::Extends(_) => {
                 todo!()
-            }
-            Qualifier::Closed => {}
+            },
+            Qualifier::Closed => {},
             Qualifier::Extra(ps) => {
                 for p in ps {
                     extra.push(p)
                 }
-            }
+            },
         }
     }
     let maybe_extra = if extra.is_empty() { None } else { Some(extra) };
-    Ok((
-        i,
-        ShapeExpr::shape(Shape::new(closed, maybe_extra, maybe_triple_expr)),
-    ))
+    Ok((i, ShapeExpr::shape(Shape::new(closed, maybe_extra, maybe_triple_expr))))
 }
 
 fn maybe_triple_expr<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Option<TripleExpr>> {
@@ -730,10 +699,7 @@ fn annotations(i: Span) -> IRes<Vec<Annotation>> {
 fn qualifiers<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Vec<Qualifier>> {
     traced(
         "qualifiers",
-        map_error(
-            move |i| many0(qualifier())(i),
-            || ShExParseError::ExpectedQualifiers,
-        ),
+        map_error(move |i| many0(qualifier())(i), || ShExParseError::ExpectedQualifiers),
     )
 }
 
@@ -783,8 +749,7 @@ fn extra_property_set<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Qualifier> {
         "extra_property_set",
         map_error(
             move |i| {
-                let (i, (_, ps)) =
-                    tuple((token_tws("EXTRA"), cut(many1(tuple((predicate, tws0))))))(i)?;
+                let (i, (_, ps)) = tuple((token_tws("EXTRA"), cut(many1(tuple((predicate, tws0))))))(i)?;
                 let ps = ps.into_iter().map(|(p, _)| p).collect();
                 Ok((i, Qualifier::Extra(ps)))
             },
@@ -797,10 +762,7 @@ fn extra_property_set<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Qualifier> {
 fn triple_expression<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, TripleExpr> {
     traced(
         "triple_expression",
-        map_error(
-            move |i| one_of_triple_expr()(i),
-            || ShExParseError::TripleExpression,
-        ),
+        map_error(move |i| one_of_triple_expr()(i), || ShExParseError::TripleExpression),
     )
 }
 
@@ -854,13 +816,7 @@ fn single_element_group(i: Span) -> IRes<TripleExpr> {
 
 /// `[42] multiElementGroup ::= unaryTripleExpr (';' unaryTripleExpr)+ ';'?`
 fn multi_element_group(i: Span) -> IRes<TripleExpr> {
-    let (i, (te1, _, tes, _, _)) = tuple((
-        unary_triple_expr(),
-        tws0,
-        rest_unary_triple_expr,
-        tws0,
-        opt(char(';')),
-    ))(i)?;
+    let (i, (te1, _, tes, _, _)) = tuple((unary_triple_expr(), tws0, rest_unary_triple_expr, tws0, opt(char(';'))))(i)?;
     let mut rs = vec![te1];
     for t in tes {
         rs.push(t);
@@ -915,17 +871,16 @@ fn bracketed_triple_expr<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, TripleExpr> {
         "bracketed_triple_expr",
         map_error(
             move |i| {
-                let (i, (_, te, _, maybe_card, _, annotations, _, sem_acts)) =
-                    tuple((
-                        token_tws("("),
-                        cut(triple_expression()),
-                        cut(token_tws(")")),
-                        cut(opt(cardinality())),
-                        tws0,
-                        annotations,
-                        tws0,
-                        semantic_actions,
-                    ))(i)?;
+                let (i, (_, te, _, maybe_card, _, annotations, _, sem_acts)) = tuple((
+                    token_tws("("),
+                    cut(triple_expression()),
+                    cut(token_tws(")")),
+                    cut(opt(cardinality())),
+                    tws0,
+                    annotations,
+                    tws0,
+                    semantic_actions,
+                ))(i)?;
                 let mut te = te;
                 if let Some(card) = maybe_card {
                     te = te.with_min(card.min());
@@ -948,50 +903,30 @@ fn triple_constraint<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, TripleExpr> {
         "triple_constraint",
         map_error(
             move |i| {
-                let (
-                    i,
-                    (
-                        maybe_sense_flags,
-                        _,
+                let (i, (maybe_sense_flags, _, predicate, _, se, _, maybe_card, _, annotations, _, sem_acts)) =
+                    tuple((
+                        opt(sense_flags),
+                        tws0,
                         predicate,
-                        _,
-                        se,
-                        _,
-                        maybe_card,
-                        _,
+                        tws0,
+                        inline_shape_expression(),
+                        tws0,
+                        opt(cardinality()),
+                        tws0,
                         annotations,
-                        _,
-                        sem_acts,
-                    ),
-                ) = tuple((
-                    opt(sense_flags),
-                    tws0,
-                    predicate,
-                    tws0,
-                    inline_shape_expression(),
-                    tws0,
-                    opt(cardinality()),
-                    tws0,
-                    annotations,
-                    tws0,
-                    semantic_actions,
-                ))(i)?;
+                        tws0,
+                        semantic_actions,
+                    ))(i)?;
                 let (min, max) = match maybe_card {
                     None => (None, None),
                     Some(card) => (card.min(), card.max()),
                 };
-                let value_expr = if se == ShapeExpr::any() {
-                    None
-                } else {
-                    Some(se)
-                };
+                let value_expr = if se == ShapeExpr::any() { None } else { Some(se) };
                 let (negated, inverse) = match maybe_sense_flags {
                     Some(sf) => sf.extract(),
                     None => (None, None),
                 };
-                let mut te = TripleExpr::triple_constraint(
-                    negated, inverse, predicate, value_expr, min, max,
-                );
+                let mut te = TripleExpr::triple_constraint(negated, inverse, predicate, value_expr, min, max);
                 te = te.with_sem_acts(sem_acts);
                 if !annotations.is_empty() {
                     te = te.with_annotations(Some(annotations))
@@ -1071,8 +1006,7 @@ fn value_set<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NodeConstraint> {
         "value set",
         map_error(
             move |i| {
-                let (i, (_, vs, _)) =
-                    tuple((token_tws("["), many0(value_set_value()), token_tws("]")))(i)?;
+                let (i, (_, vs, _)) = tuple((token_tws("["), many0(value_set_value()), token_tws("]")))(i)?;
                 Ok((i, NodeConstraint::new().with_values(vs)))
             },
             || ShExParseError::ValueSet,
@@ -1086,14 +1020,7 @@ fn value_set_value<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ValueSetValue> {
     traced(
         "value_set_value",
         map_error(
-            move |i| {
-                alt((
-                    exclusion_plus(),
-                    iri_range,
-                    literal_range(),
-                    language_range(),
-                ))(i)
-            },
+            move |i| alt((exclusion_plus(), iri_range, literal_range(), language_range()))(i),
             || ShExParseError::ValueSetValue,
         ),
     )
@@ -1108,17 +1035,13 @@ fn exclusion_plus<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ValueSetValue> {
                 let (i, (_, e)) = tuple((
                     token_tws("."),
                     alt((
-                        map(many1(literal_exclusion), |es| {
-                            ValueSetValue::LiteralStemRange {
-                                stem: StringOrWildcard::Wildcard,
-                                exclusions: Some(es),
-                            }
+                        map(many1(literal_exclusion), |es| ValueSetValue::LiteralStemRange {
+                            stem: StringOrWildcard::Wildcard,
+                            exclusions: Some(es),
                         }),
-                        map(many1(language_exclusion), |es| {
-                            ValueSetValue::LanguageStemRange {
-                                stem: LangOrWildcard::Wildcard,
-                                exclusions: Some(es),
-                            }
+                        map(many1(language_exclusion), |es| ValueSetValue::LanguageStemRange {
+                            stem: LangOrWildcard::Wildcard,
+                            exclusions: Some(es),
                         }),
                         map(many1(iri_exclusion), |es| ValueSetValue::IriStemRange {
                             stem: IriRefOrWildcard::Wildcard,
@@ -1147,7 +1070,7 @@ fn iri_range(i: Span) -> IRes<ValueSetValue> {
                     exclusions: Some(excs),
                 }
             }
-        }
+        },
     };
     Ok((i, value))
 }
@@ -1178,8 +1101,7 @@ fn literal_range<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ValueSetValue> {
         "literal_range",
         map_error(
             move |i| {
-                let (i, (literal, _, maybe_exc)) =
-                    tuple((literal(), tws0, opt(tilde_literal_exclusion)))(i)?;
+                let (i, (literal, _, maybe_exc)) = tuple((literal(), tws0, opt(tilde_literal_exclusion)))(i)?;
                 let vs = match maybe_exc {
                     None => ValueSetValue::ObjectValue(ObjectValue::Literal(literal)),
                     Some(excs) => {
@@ -1188,7 +1110,7 @@ fn literal_range<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ValueSetValue> {
                         } else {
                             ValueSetValue::string_stem_range(literal.lexical_form(), excs)
                         }
-                    }
+                    },
                 };
                 Ok((i, vs))
             },
@@ -1240,11 +1162,8 @@ fn language_range1<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ValueSetValue> {
         "language_range1",
         map_error(
             move |i| {
-                let (i, (lang_tag, _, maybe_stem_exclusions)) = tuple((
-                    lang_tag,
-                    tws0,
-                    opt(tuple((token_tws("~"), language_exclusions))),
-                ))(i)?;
+                let (i, (lang_tag, _, maybe_stem_exclusions)) =
+                    tuple((lang_tag, tws0, opt(tuple((token_tws("~"), language_exclusions)))))(i)?;
                 let value: ValueSetValue = match maybe_stem_exclusions {
                     None => ValueSetValue::language(lang_tag),
                     Some((_, exclusions)) => {
@@ -1256,7 +1175,7 @@ fn language_range1<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ValueSetValue> {
                                 exclusions: Some(exclusions),
                             }
                         }
-                    }
+                    },
                 };
                 Ok((i, value))
             },
@@ -1271,8 +1190,7 @@ fn language_range2<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ValueSetValue> {
         "language_range2",
         map_error(
             move |i| {
-                let (i, (_, _, exclusions)) =
-                    tuple((token_tws("@"), token_tws("~"), language_exclusions))(i)?;
+                let (i, (_, _, exclusions)) = tuple((token_tws("@"), token_tws("~"), language_exclusions))(i)?;
                 let v = if exclusions.is_empty() {
                     ValueSetValue::LanguageStemRange {
                         stem: LangOrWildcard::wildcard(),
@@ -1298,8 +1216,7 @@ fn language_exclusions(i: Span) -> IRes<Vec<LanguageExclusion>> {
 
 /// `[56] languageExclusion ::= '-' LANGTAG '~'?`
 fn language_exclusion(i: Span) -> IRes<LanguageExclusion> {
-    let (i, (_, lang, _, maybe_tilde)) =
-        tuple((token_tws("-"), lang_tag, tws0, opt(token_tws("~"))))(i)?;
+    let (i, (_, lang, _, maybe_tilde)) = tuple((token_tws("-"), lang_tag, tws0, opt(token_tws("~"))))(i)?;
     let lang_exc = match maybe_tilde {
         None => LanguageExclusion::Language(lang),
         Some(_) => LanguageExclusion::LanguageStem(lang),
@@ -1314,7 +1231,7 @@ fn include_<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, TripleExpr> {
         map_error(
             move |i| {
                 let (i, (_, tel)) = tuple((token_tws("&"), cut(triple_expr_label)))(i)?;
-                Ok((i, TripleExpr::TripleExprRef(tel)))
+                Ok((i, TripleExpr::Ref(tel)))
             },
             || ShExParseError::Include,
         ),
@@ -1327,8 +1244,7 @@ fn annotation<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Annotation> {
         "annotation",
         map_error(
             move |i| {
-                let (i, (_, p, _, o)) =
-                    tuple((token_tws("//"), cut(predicate), tws0, cut(iri_or_literal())))(i)?;
+                let (i, (_, p, _, o)) = tuple((token_tws("//"), cut(predicate), tws0, cut(iri_or_literal())))(i)?;
                 Ok((i, Annotation::new(p, o)))
             },
             || ShExParseError::ExpectedAnnotation,
@@ -1341,12 +1257,7 @@ fn iri_or_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ObjectValue> {
     traced(
         "iri_or_literal",
         map_error(
-            move |i| {
-                alt((
-                    map(iri, ObjectValue::iri_ref),
-                    map(literal(), ObjectValue::Literal),
-                ))(i)
-            },
+            move |i| alt((map(iri, ObjectValue::iri_ref), map(literal(), ObjectValue::Literal)))(i),
             || ShExParseError::ExpectedIriOrLiteral,
         ),
     )
@@ -1406,11 +1317,7 @@ pub fn literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ConcreteLiteral> {
 
 /// `[16t] numericLiteral ::= INTEGER | DECIMAL | DOUBLE`
 fn numeric_literal(i: Span) -> IRes<NumericLiteral> {
-    alt((
-        map(double, NumericLiteral::double),
-        decimal,
-        integer_literal(),
-    ))(i)
+    alt((map(double, NumericLiteral::double), decimal, integer_literal()))(i)
 }
 
 /// raw_numeric_literal obtains a numeric literal as a JSON
@@ -1454,10 +1361,7 @@ fn boolean_literal(i: Span) -> IRes<ConcreteLiteral> {
 }
 
 fn boolean_value(i: Span) -> IRes<bool> {
-    alt((
-        map(token_tws("true"), |_| true),
-        map(token_tws("false"), |_| false),
-    ))(i)
+    alt((map(token_tws("true"), |_| true), map(token_tws("false"), |_| false)))(i)
 }
 
 /// `[65] rdfLiteral ::= langString | string ("^^" datatype)?`
@@ -1526,11 +1430,7 @@ fn string_literal1<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, String> {
         "string_literal1",
         map_error(
             move |i| {
-                let (i, chars) = delimited(
-                    token("'"),
-                    many0(alt((single_quote_char(), echar, uchar))),
-                    token("'"),
-                )(i)?;
+                let (i, chars) = delimited(token("'"), many0(alt((single_quote_char(), echar, uchar))), token("'"))(i)?;
                 let str = chars.iter().collect();
                 Ok((i, str))
             },
@@ -1540,9 +1440,7 @@ fn string_literal1<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, String> {
 }
 
 fn single_quote_char<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, char> {
-    traced("single_quote_char", move |i| {
-        none_of(REQUIRES_ESCAPE_SINGLE_QUOTE)(i)
-    })
+    traced("single_quote_char", move |i| none_of(REQUIRES_ESCAPE_SINGLE_QUOTE)(i))
 }
 
 /// `[158s] <STRING_LITERAL_LONG1> ::= "'''" ( ("'" | "''")? ([^\\'\\] | ECHAR | UCHAR) )* "'''"`
@@ -1689,13 +1587,8 @@ fn code<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Option<String>> {
         "code",
         map_error(
             move |i| {
-                let (i, (_, str, _, _, _)) = tuple((
-                    char('{'),
-                    cut(code_str),
-                    cut(char('%')),
-                    tws0,
-                    cut(char('}')),
-                ))(i)?;
+                let (i, (_, str, _, _, _)) =
+                    tuple((char('{'), cut(code_str), cut(char('%')), tws0, cut(char('}'))))(i)?;
                 // let str = unescape_code(str.fragment());
                 Ok((i, Some(str)))
             },
@@ -1864,7 +1757,7 @@ fn unescape_pattern(str: &str) -> String {
             Some(c) if non_escaped.contains(&c) => {
                 r.push('\\');
                 r.push(c)
-            }
+            },
             Some('u') => {
                 let mut s = String::new();
                 for _ in 0..4 {
@@ -1878,7 +1771,7 @@ fn unescape_pattern(str: &str) -> String {
                 let u = u32::from_str_radix(&s, 16).unwrap();
                 let c = char::from_u32(u).unwrap();
                 r.push(c)
-            }
+            },
             Some('U') => {
                 let mut s = String::new();
                 for _ in 0..8 {
@@ -1892,7 +1785,7 @@ fn unescape_pattern(str: &str) -> String {
                 let u = u32::from_str_radix(&s, 16).unwrap();
                 let c = char::from_u32(u).unwrap();
                 r.push(c)
-            }
+            },
             Some(c) => r.push(c),
             None => panic!("unescape pattern. No more characters after \\"),
         }
@@ -1968,7 +1861,7 @@ fn prefixed_name_refactor<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, IriRef> {
 
 fn pname_ns_iri_ref(i: Span) -> IRes<IriRef> {
     let (i, pname_ns) = pname_ns(i)?;
-    Ok((i, IriRef::prefixed(pname_ns.fragment(), "")))
+    Ok((i, IriRef::prefixed(*pname_ns.fragment(), "")))
 }
 
 /// `[138s] blankNode ::= BLANK_NODE_LABEL`
@@ -2006,7 +1899,7 @@ fn blank_node_label2(src: Span) -> IRes<()> {
             } else {
                 Ok((left, ()))
             }
-        }
+        },
         Err(e) => Err(e),
     }
 }
@@ -2035,10 +1928,7 @@ fn integer<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, i128> {
 /// `[20t] <DECIMAL> ::= [+-]? [0-9]* "." [0-9]+`
 fn decimal(i: Span) -> IRes<NumericLiteral> {
     map_res(
-        pair(
-            recognize(preceded(opt(sign), digit0)),
-            preceded(token("."), digit1),
-        ),
+        pair(recognize(preceded(opt(sign), digit0)), preceded(token("."), digit1)),
         |(whole, fraction)| {
             let w = whole
                 .fragment()
@@ -2084,7 +1974,7 @@ fn digits(i: Span) -> IRes<i128> {
 fn pname_ln(i: Span) -> IRes<IriRef> {
     // This code is different here: https://github.com/vandenoever/rome/blob/047cf54def2aaac75ac4b9adbef08a9d010689bd/src/io/turtle/grammar.rs#L293
     let (i, (prefix, local)) = tuple((pname_ns, pn_local))(i)?;
-    Ok((i, IriRef::prefixed(prefix.fragment(), local)))
+    Ok((i, IriRef::prefixed(*prefix.fragment(), local)))
 }
 
 /// `[77] <PN_LOCAL> ::= (PN_CHARS_U | ":" | [0-9] | PLX) (PN_CHARS | "." | ":" | PLX)`
@@ -2110,7 +2000,7 @@ fn pn_local2(src: Span) -> IRes<()> {
             } else {
                 Ok((left, ()))
             }
-        }
+        },
         Err(e) => Err(e),
     }
 }
@@ -2135,10 +2025,7 @@ fn plx(i: Span) -> IRes<Span> {
 /// `[173s] <PN_LOCAL_ESC> ::= "\\" ( "_" | "~" | "." | "-" | "!" | "$" | "&" | "'" |
 ///             "(" | ")" | "*" | "+" | "," | ";" | "=" | "/" | "?" | "#" | "@" | "%" )``
 fn pn_local_esc(i: Span) -> IRes<Span> {
-    recognize(tuple((
-        char('\\'),
-        one_if(|c| "_~.-!$&'()*+,;=/?#@%".contains(c)),
-    )))(i)
+    recognize(tuple((char('\\'), one_if(|c| "_~.-!$&'()*+,;=/?#@%".contains(c)))))(i)
 }
 
 fn percent(i: Span) -> IRes<Span> {
@@ -2225,7 +2112,7 @@ fn unescape_uchar(str: &str) -> Result<char, UCharError> {
 
                 let u = u32::from_str_radix(&s, 16).unwrap();
                 r = char::from_u32(u).unwrap();
-            }
+            },
             Some('U') => {
                 let mut s = String::new();
                 for _ in 0..8 {
@@ -2238,7 +2125,7 @@ fn unescape_uchar(str: &str) -> Result<char, UCharError> {
 
                 let u = u32::from_str_radix(&s, 16).unwrap();
                 r = char::from_u32(u).unwrap();
-            }
+            },
             Some(c) => return Err(UCharError::UnexpectedCharacterAfterBackSlash { c }),
             None => return Err(UCharError::NoCharAfterBackSlash),
         }
@@ -2379,12 +2266,7 @@ fn symbol<'a>(value: &'a str) -> impl FnMut(Span<'a>) -> IRes<'a, ()> {
     }
 }
 
-fn many1_sep<'a, O, O2, F, G, H>(
-    mut parser_many: F,
-    mut sep: G,
-    maker: H,
-    mut i: Span<'a>,
-) -> IRes<'a, O2>
+fn many1_sep<'a, O, O2, F, G, H>(mut parser_many: F, mut sep: G, maker: H, mut i: Span<'a>) -> IRes<'a, O2>
 where
     F: FnMut(Span<'a>) -> IRes<'a, O>,
     G: FnMut(Span<'a>) -> IRes<'a, ()>,
@@ -2400,7 +2282,7 @@ where
         Ok((left, v)) => {
             vs.push(v);
             i = left;
-        }
+        },
         Err(e) => return Err(e),
     }
     loop {
@@ -2411,7 +2293,7 @@ where
         match sep(i) {
             Ok((left, _)) => {
                 i = left;
-            }
+            },
             _ => return Ok((i, maker(vs))),
         }
 
@@ -2423,7 +2305,7 @@ where
             Ok((left, v)) => {
                 vs.push(v);
                 i = left;
-            }
+            },
             _ => return Ok((i, maker(vs))),
         }
     }
@@ -2655,34 +2537,22 @@ mod tests {
     fn test_shape_atom_node_constraint() {
         let (_, result) = lit_node_constraint_shape_expr()(Span::new("[ 'a' ]")).unwrap();
         let expected_values = vec![ValueSetValue::string_literal("a", None)];
-        let expected =
-            ShapeExpr::NodeConstraint(NodeConstraint::new().with_values(expected_values));
+        let expected = ShapeExpr::NodeConstraint(NodeConstraint::new().with_values(expected_values));
         assert_eq!(result, expected)
     }
 
     #[test]
     fn test_triple_constraint() {
         let (_, result) = triple_constraint()(Span::new(":p xsd:int")).unwrap();
-        let nc = ShapeExpr::node_constraint(
-            NodeConstraint::new().with_datatype(IriRef::prefixed("xsd", "int")),
-        );
-        let expected = TripleExpr::triple_constraint(
-            None,
-            None,
-            IriRef::prefixed("", "p"),
-            Some(nc),
-            None,
-            None,
-        );
+        let nc = ShapeExpr::node_constraint(NodeConstraint::new().with_datatype(IriRef::prefixed("xsd", "int")));
+        let expected = TripleExpr::triple_constraint(None, None, IriRef::prefixed("", "p"), Some(nc), None, None);
         assert_eq!(result, expected)
     }
 
     #[test]
     fn test_inline_shape_expr() {
         let (_, result) = inline_shape_expression()(Span::new(":p")).unwrap();
-        let expected = ShapeExpr::node_constraint(
-            NodeConstraint::new().with_datatype(IriRef::prefixed("", "p")),
-        );
+        let expected = ShapeExpr::node_constraint(NodeConstraint::new().with_datatype(IriRef::prefixed("", "p")));
         assert_eq!(result, expected)
     }
 

@@ -1,9 +1,6 @@
 name: Artifacts
 
 on:
-  push:
-    branches:
-      - main
   release:
     types:
       - published
@@ -19,11 +16,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Allow the workflow to access the files of the repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
-      - name: Update Rustup
-        run: rustup update
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
       - name: Use an intelligent Rust cache for building the project
         uses: Swatinem/rust-cache@v2
       - name: Build the release version of `rudof` for the x86 architecture
@@ -35,25 +36,29 @@ jobs:
           path: target/release/${{ vars.BINARY_NAME }}
       - name: Rename the binary according to the version and architecture
         run: mv target/release/${{ vars.BINARY_NAME }} ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_linux_gnu
-        if: github.event_name == 'release'
       - name: Upload the generated binaries to their corresponding release
         uses: softprops/action-gh-release@v1
         with:
           files: |
             ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_linux_gnu
-        if: github.event_name == 'release'
 
   mac:
-    runs-on: macos-latest
+    runs-on: macos-15-latest
     env:
       DEVELOPER_DIR: '/Applications/Xcode.app/Contents/Developer'
       SDKROOT: '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk'
       MACOSX_DEPLOYMENT_TARGET: '10.14'
     steps:
       - name: Allow the workflow to access the files of the repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
       - name: Use an intelligent Rust cache for building the project
         uses: Swatinem/rust-cache@v2
       - name: Build the release version of `rudof` for the x86 architecture
@@ -72,17 +77,14 @@ jobs:
           path: target/aarch64-apple-darwin/release/${{ vars.BINARY_NAME }}
       - name: Rename the binary according to the version and architecture
         run: mv target/release/${{ vars.BINARY_NAME }} ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_apple
-        if: github.event_name == 'release'
       - name: Rename the binary according to the version and architecture
         run: mv target/aarch64-apple-darwin/release/${{ vars.BINARY_NAME }} ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_aarch64_apple
-        if: github.event_name == 'release'
       - name: Upload the generated binaries to their corresponding release
         uses: softprops/action-gh-release@v1
         with:
           files: |
             ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_apple
             ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_aarch64_apple
-        if: github.event_name == 'release'
 
   windows:
     runs-on: windows-latest
@@ -101,6 +103,12 @@ jobs:
           echo "OPENSSL_LIB_DIR=C:/Program Files/OpenSSL/lib" >> $env:GITHUB_ENV
           echo "OPENSSL_DIR=C:/Program Files/OpenSSL/" >> $env:GITHUB_ENV
           echo "OPENSSL_INCLUDE_DIR=C:/Program Files/OpenSSL/include" >> $env:GITHUB_ENV
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
       - name: Use an intelligent Rust cache for building the project
         uses: Swatinem/rust-cache@v2
       - name: Remove the MySys64 libraries and utilities
@@ -114,18 +122,22 @@ jobs:
           path: target/release/${{ vars.BINARY_NAME }}.exe
       - name: Rename the binary according to the version and architecture
         run: mv target/release/${{ vars.BINARY_NAME }}.exe ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_windows_msvc.exe
-        if: github.event_name == 'release'
       - name: Upload the generated binary to its corresponding release
         uses: softprops/action-gh-release@v1
         with:
           files: ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_windows_msvc.exe
-        if: github.event_name == 'release'
 
   deb:
     runs-on: ubuntu-latest
     steps:
     - name: Allow the workflow to access the files of the repository
       uses: actions/checkout@v3
+    - name: Install stable toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
     - name: Install cargo deb
       run: cargo install cargo-deb
     - name: Build the .deb file using cargo deb
@@ -141,7 +153,39 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_amd64.deb
-      if: github.event_name == 'release'
+
+  rpm:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Allow the workflow to access the files of the repository
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: Install stable toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+    - name: Use an intelligent Rust cache for building the project
+      uses: Swatinem/rust-cache@v2
+    - name: Install cargo-generate-rpm
+      run: cargo install cargo-generate-rpm
+    - name: Build the release version of `rudof`
+      run: cargo build --release
+    - name: Generate the .rpm package using cargo-generate-rpm
+      run: cargo generate-rpm -p rudof_cli
+    - name: Upload the .rpm Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ vars.BINARY_NAME }}_x86_64_rpm
+        path: target/generate-rpm/*.rpm
+    - name: Rename the RPM according to the version and architecture
+      run: mv target/generate-rpm/*.rpm ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64.rpm
+    - name: Upload the generated RPM to its corresponding release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64.rpm
 
   docker:
     runs-on: ubuntu-latest
@@ -159,5 +203,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
+          context: .
+          file: "{context}/Dockerfile_rudof"
           no-cache: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ vars.BINARY_NAME }}:latest

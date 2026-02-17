@@ -1,6 +1,6 @@
 [package]
 name = "rudof_cli"
-version = "0.1.146"
+version = "0.1.147"
 authors.workspace = true
 description.workspace = true
 documentation = "https://rudof-project.github.io/rudof"
@@ -17,7 +17,6 @@ name = "rudof"
 anyhow.workspace = true
 clap.workspace = true
 clientele.workspace = true
-crossterm.workspace = true
 dctap.workspace = true
 iri_s.workspace = true
 oxrdf.workspace = true
@@ -45,3 +44,12 @@ tracing.workspace = true
 tracing-subscriber.workspace = true
 url.workspace = true
 
+# RPM package metadata configuration
+[package.metadata.generate-rpm]
+# Package assets - files to include in the RPM
+assets = [
+    { source = "target/release/rudof", dest = "/usr/bin/rudof", mode = "755" },
+    { source = "../README.md", dest = "/usr/share/doc/rudof/README.md", mode = "644", doc = true },
+    { source = "../LICENSE-MIT", dest = "/usr/share/doc/rudof/LICENSE-MIT", mode = "644", doc = true },
+    { source = "../LICENSE-APACHE", dest = "/usr/share/doc/rudof/LICENSE-APACHE", mode = "644", doc = true },
+]

@@ -47,33 +47,27 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for LessThan {
                                 _ => None,
                             };
                             if let Some(msg) = message {
-                                let validation_result = ValidationResult::new(
-                                    shape.id().clone(),
-                                    component.clone(),
-                                    shape.severity(),
-                                )
-                                .with_message(msg.as_str())
-                                .with_path(maybe_path.clone());
+                                let validation_result =
+                                    ValidationResult::new(shape.id().clone(), component.clone(), shape.severity())
+                                        .with_message(msg.as_str())
+                                        .with_path(maybe_path.clone());
                                 validation_results.push(validation_result);
                             }
                         }
                     }
-                }
+                },
                 Err(e) => {
                     let message = format!(
                         "LessThan: Error trying to find triples for subject {} and predicate {}: {e}",
                         subject,
                         self.iri()
                     );
-                    let validation_result = ValidationResult::new(
-                        shape.id().clone(),
-                        component.clone(),
-                        shape.severity(),
-                    )
-                    .with_message(message.as_str())
-                    .with_path(maybe_path.clone());
+                    let validation_result =
+                        ValidationResult::new(shape.id().clone(), component.clone(), shape.severity())
+                            .with_message(message.as_str())
+                            .with_path(maybe_path.clone());
                     validation_results.push(validation_result);
-                }
+                },
             };
         }
         Ok(validation_results)

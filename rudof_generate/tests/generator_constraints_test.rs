@@ -32,10 +32,7 @@ ex:PersonShape {
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shex_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shex_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Parse generated data
@@ -51,7 +48,7 @@ ex:PersonShape {
     verify_shex_cardinality(&graph);
 }
 
-/// Test that SHACL cardinality constraints are respected in generated data  
+/// Test that SHACL cardinality constraints are respected in generated data
 #[tokio::test]
 async fn test_shacl_cardinality_constraints() {
     // Create a SHACL schema with cardinality constraints
@@ -59,7 +56,7 @@ async fn test_shacl_cardinality_constraints() {
     @prefix sh: <http://www.w3.org/ns/shacl#> .
     @prefix ex: <http://example.org/> .
     @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-    
+
     ex:PersonShape a sh:NodeShape ;
         sh:targetClass ex:Person ;
         sh:property [
@@ -89,10 +86,7 @@ async fn test_shacl_cardinality_constraints() {
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shacl_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shacl_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Parse generated data
@@ -116,7 +110,7 @@ async fn test_datatype_constraints() {
     @prefix sh: <http://www.w3.org/ns/shacl#> .
     @prefix ex: <http://example.org/> .
     @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-    
+
     ex:PersonShape a sh:NodeShape ;
         sh:targetClass ex:Person ;
         sh:property [
@@ -158,10 +152,7 @@ async fn test_datatype_constraints() {
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shacl_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shacl_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Parse generated data
@@ -185,7 +176,7 @@ async fn test_value_constraints() {
     @prefix sh: <http://www.w3.org/ns/shacl#> .
     @prefix ex: <http://example.org/> .
     @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-    
+
     ex:PersonShape a sh:NodeShape ;
         sh:targetClass ex:Person ;
         sh:property [
@@ -215,10 +206,7 @@ async fn test_value_constraints() {
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shacl_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shacl_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Parse generated data
@@ -263,10 +251,7 @@ ex:PersonShape {
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shex_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shex_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Parse generated data
@@ -309,10 +294,7 @@ ex:PersonShape {
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shex_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shex_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Parse generated data
@@ -423,34 +405,30 @@ fn verify_datatypes(graph: &InMemoryGraph) {
                         datatype, "http://www.w3.org/2001/XMLSchema#string",
                         "Name should be xsd:string"
                     );
-                }
+                },
                 "http://example.org/age" => {
                     assert_eq!(
                         datatype, "http://www.w3.org/2001/XMLSchema#integer",
                         "Age should be xsd:integer"
                     );
                     // Verify it's actually a valid integer
-                    lit.value()
-                        .parse::<i32>()
-                        .expect("Age should be valid integer");
-                }
+                    lit.value().parse::<i32>().expect("Age should be valid integer");
+                },
                 "http://example.org/height" => {
                     assert_eq!(
                         datatype, "http://www.w3.org/2001/XMLSchema#decimal",
                         "Height should be xsd:decimal"
                     );
                     // Verify it's actually a valid decimal
-                    lit.value()
-                        .parse::<f64>()
-                        .expect("Height should be valid decimal");
-                }
+                    lit.value().parse::<f64>().expect("Height should be valid decimal");
+                },
                 "http://example.org/birthDate" => {
                     assert_eq!(
                         datatype, "http://www.w3.org/2001/XMLSchema#date",
                         "Birth date should be xsd:date"
                     );
-                }
-                _ => {}
+                },
+                _ => {},
             }
         }
     }
@@ -468,12 +446,12 @@ fn verify_value_constraints(graph: &InMemoryGraph) {
                 "http://example.org/name" => {
                     // Just verify it's a string - no length constraints since they're not supported
                     assert!(!value.is_empty(), "Name should not be empty");
-                }
+                },
                 "http://example.org/age" => {
                     // Just verify it's a valid integer - no range constraints since they're not supported
                     value.parse::<i32>().expect("Age should be a valid integer");
-                }
-                _ => {}
+                },
+                _ => {},
             }
         }
     }

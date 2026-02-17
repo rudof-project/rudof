@@ -1,15 +1,14 @@
 use std::{result, str::FromStr};
 
-use iri_s::{IriS, IriSError};
-use prefixmap::{Deref, DerefError, IriRef, PrefixMap};
+use iri_s::IriS;
+use iri_s::error::IriSError;
+use prefixmap::error::DerefError;
+use prefixmap::{Deref, IriRef, PrefixMap};
 use serde::{Deserialize, Serialize, Serializer};
 
 use crate::ast::serde_string_or_struct::*;
 
-use super::{
-    annotation::Annotation, sem_act::SemAct, shape_expr::ShapeExpr,
-    triple_expr_label::TripleExprLabel,
-};
+use super::{annotation::Annotation, sem_act::SemAct, shape_expr::ShapeExpr, triple_expr_label::TripleExprLabel};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(tag = "type")]
@@ -85,7 +84,7 @@ pub enum TripleExpr {
         annotations: Option<Vec<Annotation>>,
     },
 
-    TripleExprRef(TripleExprLabel),
+    Ref(TripleExprLabel),
 }
 
 impl TripleExpr {
@@ -193,9 +192,9 @@ impl TripleExpr {
                 sem_acts,
                 annotations,
             },
-            TripleExpr::TripleExprRef(lbl) => {
+            TripleExpr::Ref(lbl) => {
                 panic!("Can't update id to TripleExprRef({lbl:?}")
-            }
+            },
         };
         self
     }
@@ -253,9 +252,9 @@ impl TripleExpr {
                 sem_acts,
                 annotations,
             },
-            TripleExpr::TripleExprRef(lbl) => {
+            TripleExpr::Ref(lbl) => {
                 panic!("Can't update min to TripleExprRef({lbl:?}")
-            }
+            },
         };
         self
     }
@@ -313,9 +312,9 @@ impl TripleExpr {
                 sem_acts,
                 annotations,
             },
-            TripleExpr::TripleExprRef(lbl) => {
+            TripleExpr::Ref(lbl) => {
                 panic!("Can't update max to TripleExprRef({lbl:?}")
-            }
+            },
         };
         self
     }
@@ -373,9 +372,9 @@ impl TripleExpr {
                 sem_acts: new_sem_acts,
                 annotations,
             },
-            TripleExpr::TripleExprRef(lbl) => {
+            TripleExpr::Ref(lbl) => {
                 panic!("Can't update sem_acts to TripleExprRef({lbl:?}")
-            }
+            },
         };
         self
     }
@@ -433,9 +432,9 @@ impl TripleExpr {
                 sem_acts,
                 annotations: new_annotations,
             },
-            TripleExpr::TripleExprRef(lbl) => {
+            TripleExpr::Ref(lbl) => {
                 panic!("Can't update annotations to TripleExprRef({lbl:?}")
-            }
+            },
         };
         self
     }
@@ -448,32 +447,28 @@ impl TripleExpr {
                 } else {
                     *annotations = Some(vec![annotation])
                 }
-            }
+            },
             Self::TripleConstraint { annotations, .. } => {
                 if let Some(anns) = annotations {
                     anns.push(annotation)
                 } else {
                     *annotations = Some(vec![annotation])
                 }
-            }
+            },
             Self::OneOf { annotations, .. } => {
                 if let Some(anns) = annotations {
                     anns.push(annotation)
                 } else {
                     *annotations = Some(vec![annotation])
                 }
-            }
+            },
             _ => todo!(),
         }
     }
 }
 
 impl Deref for TripleExpr {
-    fn deref(
-        &self,
-        base: &Option<IriS>,
-        prefixmap: &Option<PrefixMap>,
-    ) -> Result<Self, DerefError> {
+    fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
         match self {
             TripleExpr::EachOf {
                 id,
@@ -483,21 +478,19 @@ impl Deref for TripleExpr {
                 sem_acts,
                 annotations,
             } => {
-                let id = <TripleExprLabel as Deref>::deref_opt(id, base, prefixmap)?;
-                let annotations =
-                    <Annotation as Deref>::deref_opt_vec(annotations, base, prefixmap)?;
-                let sem_acts = <SemAct as Deref>::deref_opt_vec(sem_acts, base, prefixmap)?;
-                let expressions =
-                    <TripleExprWrapper as Deref>::deref_vec(expressions, base, prefixmap)?;
+                let id = id.deref(base, prefixmap)?;
+                let annotations = annotations.deref(base, prefixmap)?;
+                let sem_acts = sem_acts.deref(base, prefixmap)?;
+                let expressions = expressions.deref(base, prefixmap)?;
                 Ok(TripleExpr::EachOf {
                     id,
                     expressions,
-                    min: *min,
-                    max: *max,
+                    min,
+                    max,
                     sem_acts,
                     annotations,
                 })
-            }
+            },
             TripleExpr::OneOf {
                 id,
                 expressions,
@@ -506,21 +499,19 @@ impl Deref for TripleExpr {
                 sem_acts,
                 annotations,
             } => {
-                let id = <TripleExprLabel as Deref>::deref_opt(id, base, prefixmap)?;
-                let annotations =
-                    <Annotation as Deref>::deref_opt_vec(annotations, base, prefixmap)?;
-                let sem_acts = <SemAct as Deref>::deref_opt_vec(sem_acts, base, prefixmap)?;
-                let expressions =
-                    <TripleExprWrapper as Deref>::deref_vec(expressions, base, prefixmap)?;
+                let id = id.deref(base, prefixmap)?;
+                let annotations = annotations.deref(base, prefixmap)?;
+                let sem_acts = sem_acts.deref(base, prefixmap)?;
+                let expressions = expressions.deref(base, prefixmap)?;
                 Ok(TripleExpr::OneOf {
                     id,
                     expressions,
-                    min: *min,
-                    max: *max,
+                    min,
+                    max,
                     sem_acts,
                     annotations,
                 })
-            }
+            },
             TripleExpr::TripleConstraint {
                 id,
                 negated,
@@ -532,28 +523,27 @@ impl Deref for TripleExpr {
                 sem_acts,
                 annotations,
             } => {
-                let id = <TripleExprLabel as Deref>::deref_opt(id, base, prefixmap)?;
-                let annotations =
-                    <Annotation as Deref>::deref_opt_vec(annotations, base, prefixmap)?;
-                let sem_acts = <SemAct as Deref>::deref_opt_vec(sem_acts, base, prefixmap)?;
+                let id = id.deref(base, prefixmap)?;
+                let annotations = annotations.deref(base, prefixmap)?;
+                let sem_acts = sem_acts.deref(base, prefixmap)?;
                 let predicate = predicate.deref(base, prefixmap)?;
-                let value_expr = <ShapeExpr as Deref>::deref_opt_box(value_expr, base, prefixmap)?;
+                let value_expr = value_expr.deref(base, prefixmap)?;
                 Ok(TripleExpr::TripleConstraint {
                     id,
-                    negated: *negated,
-                    inverse: *inverse,
+                    negated,
+                    inverse,
                     predicate,
                     value_expr,
-                    min: *min,
-                    max: *max,
+                    min,
+                    max,
                     sem_acts,
                     annotations,
                 })
-            }
-            TripleExpr::TripleExprRef(label) => {
+            },
+            TripleExpr::Ref(label) => {
                 let label = label.deref(base, prefixmap)?;
-                Ok(TripleExpr::TripleExprRef(label))
-            }
+                Ok(TripleExpr::Ref(label))
+            },
         }
     }
 }
@@ -563,9 +553,7 @@ impl FromStr for TripleExpr {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let iri_ref = IriRef::try_from(s)?;
-        Ok(TripleExpr::TripleExprRef(TripleExprLabel::IriRef {
-            value: iri_ref,
-        }))
+        Ok(TripleExpr::Ref(TripleExprLabel::IriRef { value: iri_ref }))
     }
 }
 
@@ -575,7 +563,7 @@ impl SerializeStringOrStruct for TripleExpr {
         S: Serializer,
     {
         match &self {
-            TripleExpr::TripleExprRef(r) => r.serialize(serializer),
+            TripleExpr::Ref(r) => r.serialize(serializer),
             _ => self.serialize(serializer),
         }
     }
@@ -594,11 +582,7 @@ pub struct TripleExprWrapper {
 impl TripleExprWrapper {}
 
 impl Deref for TripleExprWrapper {
-    fn deref(
-        &self,
-        base: &Option<IriS>,
-        prefixmap: &Option<PrefixMap>,
-    ) -> Result<Self, DerefError> {
+    fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
         let te = self.te.deref(base, prefixmap)?;
         Ok(TripleExprWrapper { te })
     }

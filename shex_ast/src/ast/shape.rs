@@ -3,7 +3,8 @@ use prefixmap::PrefixMap;
 use serde::{Deserialize, Serialize};
 
 use crate::{Annotation, SemAct, ShapeExprLabel, TripleExpr, TripleExprWrapper};
-use prefixmap::{Deref, DerefError, IriRef};
+use prefixmap::error::DerefError;
+use prefixmap::{Deref, IriRef};
 
 #[derive(Deserialize, Serialize, Debug, Default, PartialEq, Clone)]
 pub struct Shape {
@@ -27,11 +28,7 @@ pub struct Shape {
 }
 
 impl Shape {
-    pub fn new(
-        closed: Option<bool>,
-        extra: Option<Vec<IriRef>>,
-        expression: Option<TripleExpr>,
-    ) -> Self {
+    pub fn new(closed: Option<bool>, extra: Option<Vec<IriRef>>, expression: Option<TripleExpr>) -> Self {
         Shape {
             closed,
             extra,
@@ -102,57 +99,53 @@ impl Shape {
 }
 
 impl Deref for Shape {
-    fn deref(
-        &self,
-        base: &Option<IriS>,
-        prefixmap: &Option<PrefixMap>,
-    ) -> Result<Self, DerefError> {
+    fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
         let new_extra = match &self.extra {
             None => None,
             Some(es) => {
                 let mut ves = Vec::new();
                 for e in es {
-                    ves.push(e.deref(base, prefixmap)?);
+                    ves.push(e.clone().deref(base, prefixmap)?);
                 }
                 Some(ves)
-            }
+            },
         };
         let new_expr = match &self.expression {
             None => None,
             Some(expr) => {
-                let ed = expr.deref(base, prefixmap)?;
+                let ed = expr.clone().deref(base, prefixmap)?;
                 Some(ed)
-            }
+            },
         };
         let new_anns = match &self.annotations {
             None => None,
             Some(anns) => {
                 let mut new_as = Vec::new();
                 for a in anns {
-                    new_as.push(a.deref(base, prefixmap)?);
+                    new_as.push(a.clone().deref(base, prefixmap)?);
                 }
                 Some(new_as)
-            }
+            },
         };
         let new_sem_acts = match &self.sem_acts {
             None => None,
             Some(sem_acts) => {
                 let mut new_sas = Vec::new();
                 for sa in sem_acts {
-                    new_sas.push(sa.deref(base, prefixmap)?);
+                    new_sas.push(sa.clone().deref(base, prefixmap)?);
                 }
                 Some(new_sas)
-            }
+            },
         };
         let new_extends = match &self.extends {
             None => None,
             Some(extends) => {
                 let mut new_extends = Vec::new();
                 for e in extends {
-                    new_extends.push(e.deref(base, prefixmap)?);
+                    new_extends.push(e.clone().deref(base, prefixmap)?);
                 }
                 Some(new_extends)
-            }
+            },
         };
 
         let shape = Shape {

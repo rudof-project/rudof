@@ -25,7 +25,7 @@ additional-js = [
     "shexc.js",
     "sparql.js",
     "init_highlight_on_load.js", # This is required as the last one after the custom highlight files to restart highlight
-    "theme/pagetoc.js", 
-    "mermaid.min.js", 
+    "theme/pagetoc.js",
+    "mermaid.min.js",
     "mermaid-init.js"
     ]

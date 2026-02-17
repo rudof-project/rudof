@@ -13,10 +13,7 @@ async fn test_basic_generator_creation() {
     config.output.path = output_file.path().to_path_buf();
 
     let generator = rudof_generate::DataGenerator::new(config);
-    assert!(
-        generator.is_ok(),
-        "Should be able to create a DataGenerator"
-    );
+    assert!(generator.is_ok(), "Should be able to create a DataGenerator");
 }
 
 /// Test that ShEx schemas can be loaded
@@ -119,6 +116,7 @@ ex:PersonShape a sh:NodeShape ;
 
     // Generate data
     let mut generator = rudof_generate::DataGenerator::new(config).unwrap();
+    generator.load_shacl_schema(schema_file.path()).await.unwrap();
     generator.load_shacl_schema(schema_file.path()).await.unwrap();
     let result = generator.generate().await;
 

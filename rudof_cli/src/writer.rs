@@ -9,10 +9,7 @@ use supports_color::Stream;
 use anyhow::{Result, bail};
 // use ColorSupport;
 
-pub fn get_writer(
-    output: &Option<PathBuf>,
-    force_overwrite: bool,
-) -> Result<(Box<dyn Write>, ColorSupport)> {
+pub fn get_writer(output: &Option<PathBuf>, force_overwrite: bool) -> Result<(Box<dyn Write>, ColorSupport)> {
     match output {
         None => {
             let stdout = io::stdout();
@@ -22,7 +19,7 @@ pub fn get_writer(
                 _ => ColorSupport::NoColor,
             };
             Ok((Box::new(handle), color_support))
-        }
+        },
         Some(path) => {
             let file = if Path::exists(path) {
                 if force_overwrite {
@@ -38,6 +35,6 @@ pub fn get_writer(
             }?;
             let writer = BufWriter::new(file);
             Ok((Box::new(writer), ColorSupport::NoColor))
-        }
+        },
     }
 }

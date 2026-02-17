@@ -124,11 +124,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
         }))
     }
 
-    fn target_subject_of(
-        &self,
-        store: &S,
-        predicate: &IriS,
-    ) -> Result<FocusNodes<S>, Box<ValidateError>> {
+    fn target_subject_of(&self, store: &S, predicate: &IriS) -> Result<FocusNodes<S>, Box<ValidateError>> {
         let query = formatdoc! {"
             SELECT DISTINCT ?this
             WHERE {{
@@ -148,11 +144,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
         }))
     }
 
-    fn target_object_of(
-        &self,
-        store: &S,
-        predicate: &IriS,
-    ) -> Result<FocusNodes<S>, Box<ValidateError>> {
+    fn target_object_of(&self, store: &S, predicate: &IriS) -> Result<FocusNodes<S>, Box<ValidateError>> {
         let query = formatdoc! {"
             SELECT DISTINCT ?this
             WHERE {{

@@ -72,9 +72,7 @@ impl SHACLPath {
     ///
     /// * `path` - The path to invert
     pub fn inverse(path: SHACLPath) -> Self {
-        SHACLPath::Inverse {
-            path: Box::new(path),
-        }
+        SHACLPath::Inverse { path: Box::new(path) }
     }
 
     /// Creates a zero-or-more quantified path (transitive closure).
@@ -83,9 +81,7 @@ impl SHACLPath {
     ///
     /// * `path` - The path to repeat
     pub fn zero_or_more(path: SHACLPath) -> Self {
-        SHACLPath::ZeroOrMore {
-            path: Box::new(path),
-        }
+        SHACLPath::ZeroOrMore { path: Box::new(path) }
     }
 
     /// Creates a one-or-more quantified path (non-empty transitive closure).
@@ -94,9 +90,7 @@ impl SHACLPath {
     ///
     /// * `path` - The path to repeat
     pub fn one_or_more(path: SHACLPath) -> Self {
-        SHACLPath::OneOrMore {
-            path: Box::new(path),
-        }
+        SHACLPath::OneOrMore { path: Box::new(path) }
     }
 
     /// Creates a zero-or-one quantified path (optional path).
@@ -105,9 +99,7 @@ impl SHACLPath {
     ///
     /// * `path` - The optional path
     pub fn zero_or_one(path: SHACLPath) -> Self {
-        SHACLPath::ZeroOrOne {
-            path: Box::new(path),
-        }
+        SHACLPath::ZeroOrOne { path: Box::new(path) }
     }
 }
 
@@ -133,7 +125,7 @@ impl Display for SHACLPath {
                         .collect::<Vec<String>>()
                         .join(" | ")
                 )
-            }
+            },
             SHACLPath::Sequence { paths } => write!(
                 f,
                 "({})",
@@ -145,16 +137,16 @@ impl Display for SHACLPath {
             ),
             SHACLPath::Inverse { path } => {
                 write!(f, "^({path})")
-            }
+            },
             SHACLPath::ZeroOrMore { path } => {
                 write!(f, "({path})*")
-            }
+            },
             SHACLPath::OneOrMore { path } => {
                 write!(f, "({path})+")
-            }
+            },
             SHACLPath::ZeroOrOne { path } => {
                 write!(f, "({path})?")
-            }
+            },
         }
     }
 }

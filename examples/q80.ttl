@@ -2,7 +2,7 @@ PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX wd: <http://www.wikidata.org/entity/>
 PREFIX wdt: <http://www.wikidata.org/prop/direct/>
-PREFIX wdtn: <http://www.wikidata.org/prop/direct-normalized/> 
+PREFIX wdtn: <http://www.wikidata.org/prop/direct-normalized/>
 
 wd:Q80 wdt:P31 wd:Q5 ;
        wdt:P19 wd:Q42 .

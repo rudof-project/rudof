@@ -33,10 +33,7 @@ ex:PersonShape {
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shex_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shex_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Parse generated data
@@ -106,10 +103,7 @@ ex:PersonShape a sh:NodeShape ;
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shacl_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shacl_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Parse generated data
@@ -173,10 +167,7 @@ ex:PersonShape a sh:NodeShape ;
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shacl_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shacl_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Parse generated data
@@ -250,10 +241,7 @@ ex:PersonShape a sh:NodeShape ;
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shacl_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shacl_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Parse generated data
@@ -275,8 +263,5 @@ ex:PersonShape a sh:NodeShape ;
         .filter(|t| t.predicate.to_string() == "<http://example.org/name>".to_string())
         .count();
 
-    assert!(
-        name_count > 0,
-        "Should have generated at least one name property"
-    );
+    assert!(name_count > 0, "Should have generated at least one name property");
 }

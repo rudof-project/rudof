@@ -41,21 +41,12 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
             for node in nodes.iter() {
                 let focus_nodes = FocusNodes::from_iter(std::iter::once(node.clone()));
                 let shape = get_shape_from_idx(shapes_graph, self.shape())?;
-                let inner_results = shape.validate(
-                    store,
-                    engine,
-                    Some(&focus_nodes),
-                    Some(&shape),
-                    shapes_graph,
-                );
+                let inner_results = shape.validate(store, engine, Some(&focus_nodes), Some(&shape), shapes_graph);
                 let mut is_valid = match inner_results {
                     Err(e) => {
-                        trace!(
-                            "Error validating node {node} with shape {}: {e}",
-                            shape.id()
-                        );
+                        trace!("Error validating node {node} with shape {}: {e}", shape.id());
                         false
-                    }
+                    },
                     Ok(results) => {
                         if !results.is_empty() {
                             trace!(
@@ -72,7 +63,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                             trace!("Node {node} initially conforms to shape {}", shape.id());
                             true
                         }
-                    }
+                    },
                 };
                 if !self.siblings().is_empty() && is_valid {
                     // If there are siblings, check that none of them validate
@@ -87,8 +78,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                             Some(&sibling_shape),
                             shapes_graph,
                         );
-                        let sibling_is_valid =
-                            sibling_results.is_ok() && sibling_results.unwrap().is_empty();
+                        let sibling_is_valid = sibling_results.is_ok() && sibling_results.unwrap().is_empty();
                         trace!(
                             "Result of node {node} with sibling shape {}: {sibling_is_valid}",
                             sibling_shape.id()
@@ -110,10 +100,9 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                     "QualifiedValueShape: only {valid_counter} nodes conform to shape {}, which is less than minCount: {min_count}. Focus node: {focus_node}",
                     shape.id()
                 );
-                let validation_result =
-                    ValidationResult::new(shape.id().clone(), component.clone(), shape.severity())
-                        .with_message(message.as_str())
-                        .with_path(maybe_path.clone());
+                let validation_result = ValidationResult::new(shape.id().clone(), component.clone(), shape.severity())
+                    .with_message(message.as_str())
+                    .with_path(maybe_path.clone());
                 validation_results.insert(validation_result);
             }
             if let Some(max_count) = self.qualified_max_count()
@@ -123,10 +112,9 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                     "QualifiedValueShape: {valid_counter} nodes conform to shape {}, which is greater than maxCount: {max_count}. Focus node: {focus_node}",
                     shape.id()
                 );
-                let validation_result =
-                    ValidationResult::new(shape.id().clone(), component.clone(), shape.severity())
-                        .with_message(message.as_str())
-                        .with_path(maybe_path.clone());
+                let validation_result = ValidationResult::new(shape.id().clone(), component.clone(), shape.severity())
+                    .with_message(message.as_str())
+                    .with_path(maybe_path.clone());
                 validation_results.insert(validation_result);
             }
         }

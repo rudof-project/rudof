@@ -31,7 +31,7 @@ impl CoShaMo {
     pub fn resolve(&self, iri_ref: &IriRef) -> Result<IriS, ComparatorError> {
         if let Some(prefixmap) = &self.prefixmap {
             prefixmap
-                .resolve_iriref(iri_ref)
+                .resolve_iriref(iri_ref.clone())
                 .map_err(|e| ComparatorError::ResolveError {
                     iri_ref: iri_ref.to_string(),
                     error: e.to_string(),

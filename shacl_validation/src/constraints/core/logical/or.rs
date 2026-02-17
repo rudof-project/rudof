@@ -36,37 +36,27 @@ impl<S: NeighsRDF + Debug> Validator<S> for Or {
                 let mut conforms = false;
                 for shape_idx in self.shapes().iter() {
                     let or_shape = get_shape_from_idx(shapes_graph, shape_idx)?;
-                    let inner_results = or_shape.validate(
-                        store,
-                        engine,
-                        Some(&focus_nodes),
-                        Some(shape),
-                        shapes_graph,
-                    );
+                    let inner_results = or_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
                     match inner_results {
                         Err(err) => {
                             debug!("Or: Error validating {node} with shape {shape}: {err}");
                             conforms = true;
-                        }
+                        },
                         Ok(results) => {
                             if results.is_empty() {
                                 conforms = true;
                                 break;
                             }
-                        }
+                        },
                     }
                 }
                 if !conforms {
                     let message = "OR not satisfied".to_string();
                     let component = Object::iri(component.into());
                     validation_results.push(
-                        ValidationResult::new(
-                            shape.id().clone(),
-                            component.clone(),
-                            shape.severity(),
-                        )
-                        .with_message(message.as_str())
-                        .with_path(maybe_path.clone()),
+                        ValidationResult::new(shape.id().clone(), component.clone(), shape.severity())
+                            .with_message(message.as_str())
+                            .with_path(maybe_path.clone()),
                     );
                 }
             }

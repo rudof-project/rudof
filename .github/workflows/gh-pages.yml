@@ -1,21 +1,25 @@
-name: Deploy
+name: MdBook GitHub Pages Deployment
+
 on:
   push:
     branches:
       - master
+    paths:
+      - "docs/**"
+      - .readthedocs.yml
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # To push a branch 
+      contents: write  # To push a branch
       pages: write  # To push to a GitHub Pages site
       id-token: write # To update the deployment status
     steps:
       - uses: actions/checkout@v4
       - uses: jontze/action-mdbook@v3
         with:
-          token: ${{secrets.GITHUB_TOKEN}}
+          token: ${{ secrets.GITHUB_TOKEN }}
           # Optional Plugins have to be enabled with a version
           mdbook-version: "0.4.40" # Use a semver compatible string
           use-linkcheck: true

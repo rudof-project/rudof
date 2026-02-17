@@ -71,12 +71,9 @@ fn apply_with_focus<S: Rdf, I: IterationStrategy<S>>(
                 ),
                 Ok(false) => None,
                 Err(err) => {
-                    debug!(
-                        "LessThan.validate_native with focus: {:?}, err: {err}",
-                        focus
-                    );
+                    debug!("LessThan.validate_native with focus: {:?}, err: {err}", focus);
                     None
-                }
+                },
             }
         })
         .collect();

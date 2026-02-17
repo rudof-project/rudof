@@ -45,15 +45,9 @@ pub enum IncomingNeighsNode<S: NeighsRDF> {
 }
 
 impl<S: NeighsRDF> NodeInfo<S> {
-    pub fn write<W: Write>(
-        &self,
-        rdf: &S,
-        options: &NodeInfoOptions,
-        writer: &mut W,
-    ) -> Result<(), RudofError> {
-        format_node_info(self, rdf, writer, options).map_err(|e| RudofError::NodeInfoFormatError {
-            error: e.to_string(),
-        })
+    pub fn write<W: Write>(&self, rdf: &S, options: &NodeInfoOptions, writer: &mut W) -> Result<(), RudofError> {
+        format_node_info(self, rdf, writer, options)
+            .map_err(|e| RudofError::NodeInfoFormatError { error: e.to_string() })
     }
 }
 
@@ -125,12 +119,10 @@ where
     R: NeighsRDF + Debug + QueryRDF,
 {
     let mut results = Vec::new();
-    let nodes = node_selector
-        .nodes(rdf)
-        .map_err(|e| RudofError::NodeSelectorError {
-            node_selector: node_selector.to_string(),
-            error: e.to_string(),
-        })?;
+    let nodes = node_selector.nodes(rdf).map_err(|e| RudofError::NodeSelectorError {
+        node_selector: node_selector.to_string(),
+        error: e.to_string(),
+    })?;
 
     for node in nodes.iter() {
         let subject = R::term_as_subject(node).map_err(|e| RudofError::Term2Subject {
@@ -177,23 +169,17 @@ fn get_outgoing_arcs<S: NeighsRDF>(
                 error: e.to_string(),
             })?;
 
-        let map_vec = map
-            .into_iter()
-            .map(|(k, v)| (k, v.into_iter().collect()))
-            .collect();
+        let map_vec = map.into_iter().map(|(k, v)| (k, v.into_iter().collect())).collect();
         Ok(map_vec)
     } else {
         let preds = convert_predicates(predicates, rdf)?;
-        let (map, _) =
-            rdf.outgoing_arcs_from_list(subject, &preds)
-                .map_err(|e| RudofError::OutgoingArcs {
-                    subject: rdf.qualify_subject(subject),
-                    error: e.to_string(),
-                })?;
-        let map_vec = map
-            .into_iter()
-            .map(|(k, v)| (k, v.into_iter().collect()))
-            .collect();
+        let (map, _) = rdf
+            .outgoing_arcs_from_list(subject, &preds)
+            .map_err(|e| RudofError::OutgoingArcs {
+                subject: rdf.qualify_subject(subject),
+                error: e.to_string(),
+            })?;
+        let map_vec = map.into_iter().map(|(k, v)| (k, v.into_iter().collect())).collect();
         Ok(map_vec)
     }
 }
@@ -210,10 +196,7 @@ fn get_outgoing_arcs_depth<S: NeighsRDF>(
         let result = outgoing_1
             .iter()
             .map(|(k, v)| {
-                let nodes: Vec<_> = v
-                    .iter()
-                    .map(|t| OutgoingNeighsNode::Term { term: t.clone() })
-                    .collect();
+                let nodes: Vec<_> = v.iter().map(|t| OutgoingNeighsNode::Term { term: t.clone() }).collect();
                 (k.clone(), nodes)
             })
             .collect();
@@ -241,12 +224,12 @@ fn get_outgoing_arcs_depth<S: NeighsRDF>(
         Ok(result)
     } else {
         let preds = convert_predicates(predicates, rdf)?;
-        let (map, _) =
-            rdf.outgoing_arcs_from_list(subject, &preds)
-                .map_err(|e| RudofError::OutgoingArcs {
-                    subject: rdf.qualify_subject(subject),
-                    error: e.to_string(),
-                })?;
+        let (map, _) = rdf
+            .outgoing_arcs_from_list(subject, &preds)
+            .map_err(|e| RudofError::OutgoingArcs {
+                subject: rdf.qualify_subject(subject),
+                error: e.to_string(),
+            })?;
         let mut result = HashMap::new();
         for (k, v) in map.into_iter() {
             let mut nodes = Vec::new();
@@ -303,10 +286,7 @@ fn get_incoming_arcs<S: NeighsRDF>(
             error: e.to_string(),
         })?;
 
-    let map_vec = map
-        .into_iter()
-        .map(|(k, v)| (k, v.into_iter().collect()))
-        .collect();
+    let map_vec = map.into_iter().map(|(k, v)| (k, v.into_iter().collect())).collect();
     Ok(map_vec)
 }
 
@@ -392,22 +372,20 @@ where
             let term: S::Term = match iri_ref {
                 IriRef::Iri(iri_s) => iri_s.clone().into(),
                 IriRef::Prefixed { prefix, local } => {
-                    let iri_s = rdf.resolve_prefix_local(prefix, local).map_err(|e| {
-                        RudofError::NodeResolveError {
+                    let iri_s = rdf
+                        .resolve_prefix_local(prefix, local)
+                        .map_err(|e| RudofError::NodeResolveError {
                             node: iri_ref.to_string(),
                             error: e.to_string(),
-                        }
-                    })?;
+                        })?;
                     iri_s.into()
-                }
+                },
             };
             S::term_as_subject(&term).map_err(|_| RudofError::NodeNotSubject {
                 node: rdf.qualify_term(&term),
             })
-        }
-        ObjectValue::Literal(lit) => Err(RudofError::LiteralNotSubject {
-            node: lit.to_string(),
-        }),
+        },
+        ObjectValue::Literal(lit) => Err(RudofError::LiteralNotSubject { node: lit.to_string() }),
     }
 }
 
@@ -420,15 +398,16 @@ where
     let mut vs = Vec::new();
     for s in predicates {
         let iri_ref = parse_iri_ref(s)?;
-        let iri_s = match iri_ref {
-            IriRef::Prefixed { prefix, local } => rdf
-                .resolve_prefix_local(prefix.as_str(), local.as_str())
-                .map_err(|e| RudofError::PredicateResolveError {
-                    predicate: s.clone(),
-                    error: e.to_string(),
-                })?,
-            IriRef::Iri(iri) => iri,
-        };
+        let iri_s =
+            match iri_ref {
+                IriRef::Prefixed { prefix, local } => rdf
+                    .resolve_prefix_local(prefix.as_str(), local.as_str())
+                    .map_err(|e| RudofError::PredicateResolveError {
+                        predicate: s.clone(),
+                        error: e.to_string(),
+                    })?,
+                IriRef::Iri(iri) => iri,
+            };
         vs.push(iri_s.into())
     }
     Ok(vs)
@@ -452,8 +431,7 @@ pub fn format_node_info<S: NeighsRDF, W: Write>(
 ) -> Result<(), RudofError> {
     if options.show_outgoing && !node_info.outgoing.is_empty() {
         writeln!(writer, "Outgoing arcs")?;
-        let mut outgoing_tree =
-            Tree::new(node_info.subject_qualified.to_string()).with_glyphs(outgoing_glyphs());
+        let mut outgoing_tree = Tree::new(node_info.subject_qualified.to_string()).with_glyphs(outgoing_glyphs());
         mk_outgoing_tree(&mut outgoing_tree, &node_info.outgoing, rdf, options)?;
         writeln!(writer, "{}", outgoing_tree)?;
     }
@@ -487,18 +465,17 @@ fn mk_outgoing_tree<S: NeighsRDF>(
                 match o {
                     OutgoingNeighsNode::Term { term } => {
                         let obj_str = qualify_object(rdf, term, options)?;
-                        outgoing_tree.leaves.push(
-                            Tree::new(format!("─ {} ─► {}", pred_str, obj_str))
-                                .with_glyphs(outgoing_glyphs()),
-                        );
-                    }
+                        outgoing_tree
+                            .leaves
+                            .push(Tree::new(format!("─ {} ─► {}", pred_str, obj_str)).with_glyphs(outgoing_glyphs()));
+                    },
                     OutgoingNeighsNode::More { term, rest } => {
                         let subj_str = qualify_object(rdf, term, options)?;
                         let origin_str = format!("─ {} ─► {}", pred_str, subj_str);
                         let mut sub_tree = Tree::new(origin_str).with_glyphs(outgoing_glyphs());
                         mk_outgoing_tree(&mut sub_tree, rest, rdf, options)?;
                         outgoing_tree.leaves.push(sub_tree);
-                    }
+                    },
                 }
             }
         }
@@ -521,18 +498,17 @@ fn mk_incoming_tree<S: NeighsRDF>(
                 match s {
                     IncomingNeighsNode::Term { term } => {
                         let subj_str = qualify_object(rdf, term, options)?;
-                        incoming_tree.leaves.push(
-                            Tree::new(format!("─ {} ── {}", pred_str, subj_str))
-                                .with_glyphs(incoming_glyphs()),
-                        );
-                    }
+                        incoming_tree
+                            .leaves
+                            .push(Tree::new(format!("─ {} ── {}", pred_str, subj_str)).with_glyphs(incoming_glyphs()));
+                    },
                     IncomingNeighsNode::More { term, rest } => {
                         let subj_str = qualify_object(rdf, term, options)?;
                         let origin_str = format!("─ {} ── {}", pred_str, subj_str);
                         let mut sub_tree = Tree::new(origin_str).with_glyphs(incoming_glyphs());
                         mk_incoming_tree(&mut sub_tree, rest, rdf, options)?;
                         incoming_tree.leaves.push(sub_tree);
-                    }
+                    },
                 }
             }
         }
@@ -568,11 +544,7 @@ fn qualify_subject<S: NeighsRDF>(
     }
 }
 
-fn qualify_object<S: NeighsRDF>(
-    rdf: &S,
-    object: &S::Term,
-    options: &NodeInfoOptions,
-) -> Result<String, RudofError> {
+fn qualify_object<S: NeighsRDF>(rdf: &S, object: &S::Term, options: &NodeInfoOptions) -> Result<String, RudofError> {
     if options.show_colors {
         Ok(rdf.qualify_term(object))
     } else {
@@ -629,7 +601,7 @@ where
             OutgoingNeighsNode::Term { term } => write!(f, "{}", term),
             OutgoingNeighsNode::More { term, rest: _ } => {
                 write!(f, "{}", term)
-            }
+            },
         }
     }
 }
@@ -643,7 +615,7 @@ where
             IncomingNeighsNode::Term { term } => write!(f, "{}", term),
             IncomingNeighsNode::More { term, rest: _ } => {
                 write!(f, "{}", term)
-            }
+            },
         }
     }
 }

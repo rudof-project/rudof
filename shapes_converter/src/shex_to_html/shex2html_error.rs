@@ -3,7 +3,8 @@ use std::{
     string::FromUtf8Error,
 };
 
-use prefixmap::{IriRef, PrefixMapError};
+use prefixmap::IriRef;
+use prefixmap::error::PrefixMapError;
 use shex_ast::{Schema, SchemaJsonError, ShapeExprLabel};
 use rdf::rdf_core::visualizer::uml_converter::errors::UmlConverterError;
 use thiserror::Error;
@@ -27,17 +28,12 @@ pub enum ShEx2HtmlError {
     NoLocalRefName { name: Name },
 
     #[error("Shape reference {sref} not found in schema {schema:?}")]
-    ShapeRefNotFound {
-        sref: ShapeExprLabel,
-        schema: Box<Schema>,
-    },
+    ShapeRefNotFound { sref: ShapeExprLabel, schema: Box<Schema> },
 
     #[error("No shapes found in schema to convert to SPARQL. Schema\n{schema:?}")]
     NoShapes { schema: Box<Schema> },
 
-    #[error(
-        "No shape found to convert to SPARQL because list of shapes is empty. Schema\n{schema:?}"
-    )]
+    #[error("No shape found to convert to SPARQL because list of shapes is empty. Schema\n{schema:?}")]
     EmptyShapes { schema: Box<Schema> },
 
     #[error(transparent)]
@@ -106,8 +102,6 @@ pub enum ShEx2HtmlError {
 
 impl ShEx2HtmlError {
     pub fn not_implemented(msg: &str) -> ShEx2HtmlError {
-        ShEx2HtmlError::NotImplemented {
-            msg: msg.to_string(),
-        }
+        ShEx2HtmlError::NotImplemented { msg: msg.to_string() }
     }
 }

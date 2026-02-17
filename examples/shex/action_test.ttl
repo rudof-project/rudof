@@ -1,0 +1,5 @@
+PREFIX : <http://example.org/>
+PREFIX foaf: <http://xmlns.com/foaf/>
+
+:Issue1 :reportedBy :User2 .
+:User2 foaf:name "Bob" .

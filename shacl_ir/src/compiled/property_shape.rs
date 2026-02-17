@@ -125,8 +125,7 @@ impl PropertyShapeIR {
         let components = shape.components().iter().collect::<Vec<_>>();
         let mut compiled_components = Vec::new();
         for component in components {
-            if let Some(component) = ComponentIR::compile(component.to_owned(), schema, schema_ir)?
-            {
+            if let Some(component) = ComponentIR::compile(component.to_owned(), schema, schema_ir)? {
                 compiled_components.push(component);
             }
         }
@@ -146,8 +145,7 @@ impl PropertyShapeIR {
         let closed_info = ClosedInfo::get_closed_info_property_shape(&shape, schema)
             .map_err(|e| Box::new(CompiledShaclError::ShaclError { source: e }))?;
 
-        let reifier_info =
-            reifier_info::ReifierInfo::get_reifier_info_property_shape(&shape, schema, schema_ir)?;
+        let reifier_info = reifier_info::ReifierInfo::get_reifier_info_property_shape(&shape, schema, schema_ir)?;
 
         let compiled_property_shape = PropertyShapeIR::new(
             id,

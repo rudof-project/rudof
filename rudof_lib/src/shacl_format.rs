@@ -2,7 +2,7 @@ use clap::ValueEnum;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
-use iri_s::mime_type::MimeType;
+use iri_s::MimeType;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
 #[clap(rename_all = "lower")]
@@ -11,7 +11,7 @@ pub enum CliShaclFormat {
     #[default]
     Turtle,
     NTriples,
-    RDFXML,
+    RdfXml,
     TriG,
     N3,
     NQuads,
@@ -23,7 +23,7 @@ impl MimeType for CliShaclFormat {
         match self {
             CliShaclFormat::Turtle => "text/turtle",
             CliShaclFormat::NTriples => "application/n-triples",
-            CliShaclFormat::RDFXML => "application/rdf+xml",
+            CliShaclFormat::RdfXml => "application/rdf+xml",
             CliShaclFormat::TriG => "application/trig",
             CliShaclFormat::N3 => "text/n3",
             CliShaclFormat::NQuads => "application/n-quads",
@@ -39,7 +39,7 @@ impl Display for CliShaclFormat {
             CliShaclFormat::Internal => write!(dest, "internal"),
             CliShaclFormat::Turtle => write!(dest, "turtle"),
             CliShaclFormat::NTriples => write!(dest, "NTriples"),
-            CliShaclFormat::RDFXML => write!(dest, "rdfxml"),
+            CliShaclFormat::RdfXml => write!(dest, "rdfxml"),
             CliShaclFormat::TriG => write!(dest, "trig"),
             CliShaclFormat::N3 => write!(dest, "n3"),
             CliShaclFormat::NQuads => write!(dest, "nquads"),
@@ -56,7 +56,7 @@ impl FromStr for CliShaclFormat {
             "internal" => Ok(CliShaclFormat::Internal),
             "turtle" => Ok(CliShaclFormat::Turtle),
             "ntriples" => Ok(CliShaclFormat::NTriples),
-            "rdfxml" => Ok(CliShaclFormat::RDFXML),
+            "rdfxml" => Ok(CliShaclFormat::RdfXml),
             "trig" => Ok(CliShaclFormat::TriG),
             "n3" => Ok(CliShaclFormat::N3),
             "nquads" => Ok(CliShaclFormat::NQuads),

@@ -49,7 +49,7 @@ impl ShapeMapParser<'_> {
                     } => {
                         // tracing::debug!("Association {node_selector:?}@{shape_selector:?}");
                         query_shapemap.add_association(node_selector, shape_selector);
-                    }
+                    },
                 }
             }
         }
@@ -117,10 +117,7 @@ struct ShapeMapStatementIterator<'a> {
 impl ShapeMapStatementIterator<'_> {
     pub fn new(src: Span) -> Result<ShapeMapStatementIterator> {
         match tws0(src) {
-            Ok((left, _)) => Ok(ShapeMapStatementIterator {
-                src: left,
-                done: false,
-            }),
+            Ok((left, _)) => Ok(ShapeMapStatementIterator { src: left, done: false }),
             Err(Err::Incomplete(_)) => Ok(ShapeMapStatementIterator { src, done: false }),
             Err(e) => Err(ParseError::Custom {
                 msg: format!("cannot start parsing. Error: {e}"),
@@ -145,16 +142,16 @@ impl Iterator for ShapeMapStatementIterator<'_> {
                     r = Some(Ok(s));
                 }
                 self.src = left;
-            }
+            },
             Err(Err::Incomplete(_)) => {
                 debug!("Incomplete! shapemap_statement");
                 self.done = true;
                 r = None;
-            }
+            },
             Err(Err::Error(e)) | Err(Err::Failure(e)) => {
                 r = Some(Err(ParseError::NomError { err: Box::new(e) }));
                 self.done = true;
-            }
+            },
         }
         if self.src.is_empty() {
             self.done = true;
@@ -181,29 +178,22 @@ mod tests {
         let str = r#":a@:S"#;
         let mut nodes_prefixmap = PrefixMap::new();
         nodes_prefixmap
-            .insert("", &IriS::new_unchecked("http://example.org/"))
+            .add_prefix("", IriS::new_unchecked("http://example.org/"))
             .unwrap();
 
         let mut shapes_prefixmap = PrefixMap::new();
         shapes_prefixmap
-            .insert("", &IriS::new_unchecked("http://example.org/shapes/"))
+            .add_prefix("", IriS::new_unchecked("http://example.org/shapes/"))
             .unwrap();
 
-        let parsed_shapemap = ShapeMapParser::parse(
-            str,
-            &Some(nodes_prefixmap.clone()),
-            &Some(shapes_prefixmap.clone()),
-        )
-        .unwrap();
+        let parsed_shapemap =
+            ShapeMapParser::parse(str, &Some(nodes_prefixmap.clone()), &Some(shapes_prefixmap.clone())).unwrap();
 
         let mut expected = QueryShapeMap::new()
             .with_nodes_prefixmap(&nodes_prefixmap)
             .with_shapes_prefixmap(&shapes_prefixmap);
 
-        expected.add_association(
-            NodeSelector::prefixed("", "a"),
-            ShapeSelector::prefixed("", "S"),
-        );
+        expected.add_association(NodeSelector::prefixed("", "a"), ShapeSelector::prefixed("", "S"));
         assert_eq!(parsed_shapemap, expected)
     }
 }

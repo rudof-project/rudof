@@ -41,45 +41,27 @@ impl<S: NeighsRDF + Debug> Validator<S> for Not {
             let all_nodes = nodes.iter().cloned().collect::<Vec<_>>();
             info!(
                 "Before loop, focus node: {focus_node}, all nodes: {}",
-                all_nodes
-                    .iter()
-                    .map(|n| n.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", ")
+                all_nodes.iter().map(|n| n.to_string()).collect::<Vec<_>>().join(", ")
             );
             for node in nodes.iter() {
                 info!("Validating NOT constraint for node: {node}");
                 let focus_nodes = FocusNodes::from_iter(std::iter::once(node.clone()));
                 let not_shape = get_shape_from_idx(shapes_graph, self.shape())?;
-                debug!(
-                    "Validating NOT constraint with internal shape {}",
-                    not_shape.id()
-                );
-                let inner_results = not_shape.validate(
-                    store,
-                    engine,
-                    Some(&focus_nodes),
-                    Some(shape),
-                    shapes_graph,
-                );
+                debug!("Validating NOT constraint with internal shape {}", not_shape.id());
+                let inner_results = not_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
                 let is_valid_inside = match inner_results {
                     Err(results) => {
                         trace!("Internal shape of NOT constraint failed {:?}", results);
                         // TODO: Should we fail instead of considering it valid?
                         false
-                    }
+                    },
                     Ok(results) if results.is_empty() => true,
                     Ok(results) => {
-                        trace!(
-                            "Internal shape of NOT constraint failed with violations: {:?}",
-                            results
-                        );
+                        trace!("Internal shape of NOT constraint failed with violations: {:?}", results);
                         false
-                    }
+                    },
                 };
-                info!(
-                    "NOT constraint validation result for node {node}, is_valid_inside?={is_valid_inside}"
-                );
+                info!("NOT constraint validation result for node {node}, is_valid_inside?={is_valid_inside}");
                 if is_valid_inside {
                     let message = format!(
                         "Shape: {}. NOT constraint not satisfied for focus node {} and internal shape {}",

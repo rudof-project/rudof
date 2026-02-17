@@ -45,10 +45,7 @@ impl QueryShapeMap {
         self.associations.iter()
     }
 
-    pub fn node_shapes<'a, R>(
-        &'a self,
-        rdf: &'a R,
-    ) -> Result<Vec<(R::Term, &'a ShapeExprLabel)>, ShapemapError>
+    pub fn node_shapes<'a, R>(&'a self, rdf: &'a R) -> Result<Vec<(R::Term, &'a ShapeExprLabel)>, ShapemapError>
     where
         R: QueryRDF,
     {
@@ -64,17 +61,11 @@ impl QueryShapeMap {
         Ok(result)
     }
 
-    pub fn from_node_shape(
-        node: &Node,
-        shape: &ShapeLabel,
-    ) -> Result<Self, crate::SchemaJsonError> {
+    pub fn from_node_shape(node: &Node, shape: &ShapeLabel) -> Result<Self, crate::SchemaJsonError> {
         let mut sm = QueryShapeMap::new();
         let object_value: ObjectValue = node.try_into()?;
         let shape: ShapeExprLabel = shape.into();
-        sm.add_association(
-            NodeSelector::Node(object_value),
-            ShapeSelector::label(shape),
-        );
+        sm.add_association(NodeSelector::Node(object_value), ShapeSelector::label(shape));
         Ok(sm)
     }
 }

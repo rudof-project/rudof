@@ -53,7 +53,7 @@ impl Tap2ShExConfig {
                             field: str.to_string(),
                         })
                     }
-                }
+                },
             }
         } else {
             let iri = match &self.base_iri {
@@ -61,9 +61,7 @@ impl Tap2ShExConfig {
                     str: str.to_string(),
                     line,
                 }),
-                Some(base_iri) => base_iri
-                    .extend(str)
-                    .map_err(|e| Tap2ShExError::IriSError { err: e }),
+                Some(base_iri) => base_iri.extend(str).map_err(|e| Tap2ShExError::IriSError { err: e }),
             }?;
             Ok(iri)
         }

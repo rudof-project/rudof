@@ -1,8 +1,6 @@
 use std::{collections::HashMap, path::Path};
 
-use crate::{
-    context_entry_value::ContextEntryValue, manifest::Manifest, manifest_error::ManifestError,
-};
+use crate::{context_entry_value::ContextEntryValue, manifest::Manifest, manifest_error::ManifestError};
 use serde::{Deserialize, Serialize};
 use tracing::debug;
 
@@ -71,10 +69,7 @@ struct NegativeStructureEntry {
 
 impl NegativeStructureEntry {
     pub fn run(&self, _base: &Path) -> Result<(), Box<ManifestError>> {
-        debug!(
-            "Running negative structure entry: {}...not implemented",
-            self.id
-        );
+        debug!("Running negative structure entry: {}...not implemented", self.id);
         Ok(())
     }
 }
@@ -94,9 +89,7 @@ impl Manifest for ManifestNegativeStructure {
 
     fn run_entry(&self, name: &str, base: &Path) -> Result<(), Box<ManifestError>> {
         match self.map.get(name) {
-            None => Err(Box::new(ManifestError::NotFoundEntry {
-                name: name.to_string(),
-            })),
+            None => Err(Box::new(ManifestError::NotFoundEntry { name: name.to_string() })),
             Some(entry) => entry.run(base),
         }
     }

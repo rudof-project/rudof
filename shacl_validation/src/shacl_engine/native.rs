@@ -97,11 +97,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
         Ok(FocusNodes::from_iter(focus_nodes))
     }
 
-    fn target_subject_of(
-        &self,
-        store: &S,
-        predicate: &IriS,
-    ) -> Result<FocusNodes<S>, Box<ValidateError>> {
+    fn target_subject_of(&self, store: &S, predicate: &IriS) -> Result<FocusNodes<S>, Box<ValidateError>> {
         let pred: S::IRI = predicate.clone().into();
         let subjects = store
             .triples_with_predicate(&pred)
@@ -112,11 +108,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
         Ok(focus_nodes)
     }
 
-    fn target_object_of(
-        &self,
-        store: &S,
-        predicate: &IriS,
-    ) -> Result<FocusNodes<S>, Box<ValidateError>> {
+    fn target_object_of(&self, store: &S, predicate: &IriS) -> Result<FocusNodes<S>, Box<ValidateError>> {
         let pred: S::IRI = predicate.clone().into();
         let objects = store
             .triples_with_predicate(&pred)
@@ -157,9 +149,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
                     .flatten()
             });
 
-        Ok(FocusNodes::from_iter(
-            targets.into_iter().chain(subclass_targets),
-        ))
+        Ok(FocusNodes::from_iter(targets.into_iter().chain(subclass_targets)))
     }
 
     fn record_validation(

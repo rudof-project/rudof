@@ -41,6 +41,7 @@ subgraph rudof
     srdf[<a href='https://crates.io/crates/srdf'>srdf</a>];
     shex_validation[<a href='https://crates.io/crates/shex_validation'>shex_validation</a>];
     shacl_validation[<a href='https://crates.io/crates/shacl_validation'>shacl_validation</a>];
+    shacl_ir[<a href='https://crates.io/crates/shacl_ir'>shacl_ir</a>];
     shacl_ast[<a href='https://crates.io/crates/shacl_ast'>shacl_ast</a>];
     iri_s[<a href='https://crates.io/crates/iri_s'>iri_s</a>];
     prefixmap[<a href='https://crates.io/crates/prefixmap'>prefixmap</a>];
@@ -55,8 +56,9 @@ subgraph rudof
  shex_ast --> srdf ;
  shex_validation-->shex_ast;
  srdf-->iri_s;
+ shacl_ir --> shacl_ast;
  shacl_ast-->srdf;
- shacl_validation-->shacl_ast;
+ shacl_validation-->shacl_ir;
  shex_ast-->prefixmap;
  srdf-->prefixmap;
  shex_validation-->rbe;
@@ -81,7 +83,7 @@ subgraph external dependencies
  oxigraph[<a href='https://crates.io/crates/oxigraph'>oxigraph</a>] ;
  calamine[<a href='https://docs.rs/calamine/latest/calamine/'>calamine</a>] ;
  reqwest[<a href='https://docs.rs/reqwest/latest/reqwest/'>reqwest</a>] ;
- csv[<a href='https://docs.rs/csv/latest/csv/'>csv</a>] 
+ csv[<a href='https://docs.rs/csv/latest/csv/'>csv</a>]
 end
 ```
 

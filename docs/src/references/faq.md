@@ -14,7 +14,7 @@ The history of the name is the following:
 
 - Initially, the project was called `shex-rs` because it was intended to support ShEx.
 - Later, we expanded the scope to suport SHACl and it was renamed `shapes-rs`.
-- The command line tool was initially called `sx` but it was considered [a bad name](https://github.com/rudof-project/rudof/issues/53) because it was already taken in linux.  
+- The command line tool was initially called `sx` but it was considered [a bad name](https://github.com/rudof-project/rudof/issues/53) because it was already taken in linux.
 - We changed to a more specific name `rdfsx` but after recording a video tutorial about the tool, we realized that it was difficult to pronounce.
 - After looking for alternatives, during a call with [Jonas Smedegaard](http://dr.jones.dk/blog/), he suggested `rudolf` because it was easy to pronounce, contained `rdf`, and was a nice character.
 - However, `rudolf` was already taken by another `rdf` related project, so we decided to change it to `rudof` which is short and easy to pronounce, although it is not well spelled.

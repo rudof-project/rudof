@@ -41,10 +41,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for UniqueLang {
                     // println!("Literal: {:?}", lit);
                     if let Some(lang) = lit.lang() {
                         // println!("Lang: {:?}", lang);
-                        langs_map
-                            .entry(lang.to_string())
-                            .or_default()
-                            .push(node.clone());
+                        langs_map.entry(lang.to_string()).or_default().push(node.clone());
                     }
                 }
             }
@@ -60,16 +57,11 @@ impl<S: NeighsRDF + Debug> Validator<S> for UniqueLang {
                     let message = format!(
                         "Unique lang failed for lang {} with values: {}",
                         key,
-                        nodes
-                            .iter()
-                            .map(|n| n.to_string())
-                            .collect::<Vec<_>>()
-                            .join(", ")
+                        nodes.iter().map(|n| n.to_string()).collect::<Vec<_>>().join(", ")
                     );
-                    let validation_result =
-                        ValidationResult::new(shape.id().clone(), component, shape.severity())
-                            .with_message(message.as_str())
-                            .with_path(maybe_path.clone());
+                    let validation_result = ValidationResult::new(shape.id().clone(), component, shape.severity())
+                        .with_message(message.as_str())
+                        .with_path(maybe_path.clone());
                     validation_results.push(validation_result);
                 }
             }

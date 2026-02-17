@@ -1,0 +1,22 @@
+prefix :       <http://example.org/>
+prefix sh:     <http://www.w3.org/ns/shacl#>
+prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
+prefix schema: <http://schema.org/>
+
+:Person a sh:NodeShape;
+   sh:targetClass :Person ;
+   sh:property [
+    sh:path     schema:name ;
+    sh:minCount 1;
+    sh:maxCount 1;
+    sh:datatype xsd:string ;
+  ] ;
+  sh:property [
+   sh:path     :status ;
+   sh:in       ( :Active :Waiting :Inactive ) ;
+   sh:minCount 1;
+  ] ;
+  sh:property [
+   sh:path     schema:knows ;
+   sh:nodeKind sh:IRI ;
+  ] .

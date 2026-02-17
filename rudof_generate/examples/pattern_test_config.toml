@@ -105,7 +105,7 @@ parallel_fields = true              # Enable field parallelism
 # ============================================================================
 # USAGE INSTRUCTIONS
 # ============================================================================
-# 
+#
 # To test pattern generation:
 # 1. Use with the pattern_schema.shex file:
 #    cargo run -p data_generator -- --config pattern_test_config.toml --schema pattern_schema.shex
@@ -117,7 +117,7 @@ parallel_fields = true              # Enable field parallelism
 #
 # Expected output examples:
 # - Email: user42@example.com, admin123@test.org
-# - Phone: 555-123-4567, 800-555-9999  
+# - Phone: 555-123-4567, 800-555-9999
 # - Student ID: AB1234, XYZ123456
 # - Website: https://example.com, http://test.org
 # - Birth date: 1985-03-15, 2001-12-25

@@ -1,11 +1,10 @@
 use crate::{
-    ClassPartition, Dataset, Feature, GraphCollection, GraphDescription, NamedGraphDescription,
-    PropertyPartition, SD_BASIC_FEDERATED_QUERY_STR, SD_DEREFERENCES_URIS_STR, SD_EMPTY_GRAPHS_STR,
-    SD_REQUIRES_DATASET_STR, SD_SPARQL10_QUERY_STR, SD_SPARQL11_QUERY_STR, SD_SPARQL11_UPDATE_STR,
-    SD_UNION_DEFAULT_GRAPH_STR, ServiceDescription, ServiceDescriptionError, SparqlResultFormat,
-    SupportedLanguage, dct_title, sd_available_graphs, sd_default_dataset, sd_default_graph,
-    sd_endpoint, sd_feature, sd_graph, sd_name, sd_named_graph, sd_result_format, sd_service,
-    sd_supported_language, void_class, void_class_partition, void_classes, void_property,
+    ClassPartition, Dataset, Feature, GraphCollection, GraphDescription, NamedGraphDescription, PropertyPartition,
+    SD_BASIC_FEDERATED_QUERY_STR, SD_DEREFERENCES_URIS_STR, SD_EMPTY_GRAPHS_STR, SD_REQUIRES_DATASET_STR,
+    SD_SPARQL10_QUERY_STR, SD_SPARQL11_QUERY_STR, SD_SPARQL11_UPDATE_STR, SD_UNION_DEFAULT_GRAPH_STR,
+    ServiceDescription, ServiceDescriptionError, SparqlResultFormat, SupportedLanguage, dct_title, sd_available_graphs,
+    sd_default_dataset, sd_default_graph, sd_endpoint, sd_feature, sd_graph, sd_name, sd_named_graph, sd_result_format,
+    sd_service, sd_supported_language, void_class, void_class_partition, void_classes, void_property,
     void_property_partition, void_triples,
 };
 use iri_s::IriS;
@@ -95,9 +94,7 @@ where
                                                         let mut sd = ServiceDescription::new()
                                                             .with_endpoint(iri.clone())
                                                             .with_available_graphs(ags.clone())
-                                                            .with_default_dataset(
-                                                                default_ds.clone(),
-                                                            );
+                                                            .with_default_dataset(default_ds.clone());
                                                         sd.add_title(title.as_deref());
                                                         sd.add_supported_languages(sl.clone());
                                                         sd.add_features(feature.clone());
@@ -205,13 +202,13 @@ fn supported_language_iri(iri: &IriS) -> Result<SupportedLanguage, RDFError> {
 
 fn result_format_iri(iri: &IriS) -> Result<SparqlResultFormat, RDFError> {
     let rf = match iri.as_str() {
-        "http://www.w3.org/ns/formats/SPARQL_Results_XML" => SparqlResultFormat::XML,
+        "http://www.w3.org/ns/formats/SPARQL_Results_XML" => SparqlResultFormat::Xml,
         "http://www.w3.org/ns/formats/JSON-LD" => SparqlResultFormat::JsonLD,
         "http://www.w3.org/ns/formats/N-Triples" => SparqlResultFormat::NTriples,
-        "http://www.w3.org/ns/formats/SPARQL_Results_CSV" => SparqlResultFormat::CSV,
-        "http://www.w3.org/ns/formats/SPARQL_Results_JSON" => SparqlResultFormat::JSON,
+        "http://www.w3.org/ns/formats/SPARQL_Results_CSV" => SparqlResultFormat::Csv,
+        "http://www.w3.org/ns/formats/SPARQL_Results_JSON" => SparqlResultFormat::Json,
         "http://www.w3.org/ns/formats/Turtle" => SparqlResultFormat::Turtle,
-        "http://www.w3.org/ns/formats/SPARQL_Results_TSV" => SparqlResultFormat::TSV,
+        "http://www.w3.org/ns/formats/SPARQL_Results_TSV" => SparqlResultFormat::Tsv,
         "http://www.w3.org/ns/formats/RDF_XML" => SparqlResultFormat::RdfXml,
         _ => SparqlResultFormat::Other(iri.clone()),
     };
@@ -304,9 +301,7 @@ where
     )
 }
 
-pub fn graph_description<RDF>(
-    node: IriOrBlankNode,
-) -> impl RDFNodeParse<RDF, Output = GraphDescription>
+pub fn graph_description<RDF>(node: IriOrBlankNode) -> impl RDFNodeParse<RDF, Output = GraphDescription>
 where
     RDF: FocusRDF + 'static,
     RDF::Term: From<IriOrBlankNode> + TryInto<IriOrBlankNode> + Clone,

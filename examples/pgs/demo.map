@@ -1,0 +1,5 @@
+n1:PersonType,
+n2:StudentType,
+n3:CourseType,
+e1:KnowsType,
+e2:EnrolledInType

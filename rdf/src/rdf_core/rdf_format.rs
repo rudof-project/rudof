@@ -12,9 +12,7 @@ pub enum RDFFormat {
     Turtle,
     /// N-Triples format.
     NTriples,
-    /// RDF/XML format.
-    RDFXML,
-    /// TriG format.
+    RdfXml,
     TriG,
     /// N3 (Notation3) format.
     N3,
@@ -40,7 +38,7 @@ impl RDFFormat {
         match self {
             RDFFormat::Turtle => vec!["ttl", "turtle"],
             RDFFormat::NTriples => vec!["nt"],
-            RDFFormat::RDFXML => vec!["rdf", "xml"],
+            RDFFormat::RdfXml => vec!["rdf", "xml"],
             RDFFormat::TriG => vec!["trig"],
             RDFFormat::N3 => vec!["n3"],
             RDFFormat::NQuads => vec!["nq", "nquads"],
@@ -65,7 +63,7 @@ impl MimeType for RDFFormat {
         match self {
             RDFFormat::Turtle => "text/turtle",
             RDFFormat::NTriples => "application/n-triples",
-            RDFFormat::RDFXML => "application/rdf+xml",
+            RDFFormat::RdfXml => "application/rdf+xml",
             RDFFormat::TriG => "application/trig",
             RDFFormat::N3 => "text/n3",
             RDFFormat::NQuads => "application/n-quads",
@@ -106,8 +104,8 @@ impl FromStr for RDFFormat {
             "turtle" => Ok(RDFFormat::Turtle),
             "ntriples" => Ok(RDFFormat::NTriples),
             "nt" => Ok(RDFFormat::NTriples),
-            "rdf/xml" => Ok(RDFFormat::RDFXML),
-            "rdf" => Ok(RDFFormat::RDFXML),
+            "rdf/xml" => Ok(RDFFormat::RdfXml),
+            "rdf" => Ok(RDFFormat::RdfXml),
             "trig" => Ok(RDFFormat::TriG),
             "n3" => Ok(RDFFormat::N3),
             "nquads" => Ok(RDFFormat::NQuads),
@@ -137,7 +135,7 @@ impl Display for RDFFormat {
         match self {
             RDFFormat::Turtle => write!(f, "Turtle"),
             RDFFormat::NTriples => write!(f, "N-Triples"),
-            RDFFormat::RDFXML => write!(f, "RDF/XML"),
+            RDFFormat::RdfXml => write!(f, "RDF/XML"),
             RDFFormat::TriG => write!(f, "TriG"),
             RDFFormat::N3 => write!(f, "N3"),
             RDFFormat::NQuads => write!(f, "NQuads"),

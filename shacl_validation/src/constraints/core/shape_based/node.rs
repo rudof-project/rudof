@@ -48,13 +48,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
                     continue;
                 }
                 engine.record_validation(node_object.clone(), *shape_idx, Vec::new());
-                let inner_results = node_shape.validate(
-                    store,
-                    engine,
-                    Some(&focus_nodes),
-                    Some(shape),
-                    shapes_graph,
-                );
+                let inner_results = node_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
                 let is_valid = match inner_results {
                     Err(_) => false,
                     Ok(results) => results.is_empty(),

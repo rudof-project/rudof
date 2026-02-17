@@ -37,17 +37,11 @@ pub(crate) fn pp_label<'a, A>(
     }
 }
 
-pub(crate) fn pp_bnode<'a, A>(
-    value: &BNode,
-    doc: &'a Arena<'a, A>,
-) -> DocBuilder<'a, Arena<'a, A>, A> {
+pub(crate) fn pp_bnode<'a, A>(value: &BNode, doc: &'a Arena<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
     doc.text(format!("{value}"))
 }
 
-fn pp_numeric_literal<'a, A>(
-    value: &NumericLiteral,
-    doc: &'a Arena<'a, A>,
-) -> DocBuilder<'a, Arena<'a, A>, A> {
+fn pp_numeric_literal<'a, A>(value: &NumericLiteral, doc: &'a Arena<'a, A>) -> DocBuilder<'a, Arena<'a, A>, A> {
     match value {
         NumericLiteral::Integer(n) => doc.text(n.to_string()),
         NumericLiteral::Decimal(decimal) => doc.text(decimal.to_string()),
@@ -67,11 +61,7 @@ fn pp_numeric_literal<'a, A>(
     }
 }
 
-fn pp_iri_ref<'a, A>(
-    value: &IriRef,
-    doc: &'a Arena<'a, A>,
-    prefixmap: &PrefixMap,
-) -> DocBuilder<'a, Arena<'a, A>, A> {
+fn pp_iri_ref<'a, A>(value: &IriRef, doc: &'a Arena<'a, A>, prefixmap: &PrefixMap) -> DocBuilder<'a, Arena<'a, A>, A> {
     match value {
         IriRef::Iri(iri) => pp_iri(iri, doc, prefixmap),
         IriRef::Prefixed { prefix, local } => doc
@@ -81,11 +71,7 @@ fn pp_iri_ref<'a, A>(
     }
 }
 
-pub(crate) fn keyword<'a, U, A>(
-    s: U,
-    doc: &'a Arena<'a, A>,
-    color: Option<Color>,
-) -> DocBuilder<'a, Arena<'a, A>, A>
+pub(crate) fn keyword<'a, U, A>(s: U, doc: &'a Arena<'a, A>, color: Option<Color>) -> DocBuilder<'a, Arena<'a, A>, A>
 where
     U: Into<Cow<'a, str>>,
 {
@@ -102,10 +88,6 @@ where
     }
 }
 
-fn pp_iri<'a, A>(
-    iri: &IriS,
-    doc: &'a Arena<'a, A>,
-    prefixmap: &PrefixMap,
-) -> DocBuilder<'a, Arena<'a, A>, A> {
+fn pp_iri<'a, A>(iri: &IriS, doc: &'a Arena<'a, A>, prefixmap: &PrefixMap) -> DocBuilder<'a, Arena<'a, A>, A> {
     doc.text(prefixmap.qualify(iri))
 }

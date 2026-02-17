@@ -6,7 +6,7 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
    :enrolledIn :cs101 ;
    :knows      :b, :c .
 
-:b :name "Bob", "Robert"; 
+:b :name "Bob", "Robert";
    :knows :c, :a .
 
 :c :name "Charlie" ;

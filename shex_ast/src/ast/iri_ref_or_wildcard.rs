@@ -1,4 +1,4 @@
-use iri_s::IriSError;
+use iri_s::error::IriSError;
 use prefixmap::IriRef;
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
@@ -30,7 +30,7 @@ impl Serialize for IriRefOrWildcard {
                 let mut map = serializer.serialize_map(Some(1))?;
                 map.serialize_entry("type", "Wildcard")?;
                 map.end()
-            }
+            },
         }
     }
 }

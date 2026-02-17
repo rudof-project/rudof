@@ -24,7 +24,7 @@ impl Serialize for LiteralExclusion {
                 map.serialize_entry("type", "LiteralStem")?;
                 map.serialize_entry("stem", stem)?;
                 map.end()
-            }
+            },
         }
     }
 }
@@ -56,7 +56,7 @@ impl Serialize for IriExclusion {
                 map.serialize_entry("type", "IriStem")?;
                 map.serialize_entry("stem", stem)?;
                 map.end()
-            }
+            },
         }
     }
 }
@@ -88,7 +88,7 @@ impl Serialize for LanguageExclusion {
                 map.serialize_entry("type", "LanguageStem")?;
                 map.serialize_entry("stem", stem)?;
                 map.end()
-            }
+            },
         }
     }
 }
@@ -126,9 +126,7 @@ pub struct SomeNoLanguageExclusion {
 }
 
 impl Exclusion {
-    pub fn parse_literal_exclusions(
-        excs: Vec<Exclusion>,
-    ) -> Result<Vec<LiteralExclusion>, SomeNoLitExclusion> {
+    pub fn parse_literal_exclusions(excs: Vec<Exclusion>) -> Result<Vec<LiteralExclusion>, SomeNoLitExclusion> {
         let mut lit_excs = Vec::new();
         for e in excs {
             match e {
@@ -140,37 +138,31 @@ impl Exclusion {
         Ok(lit_excs)
     }
 
-    pub fn parse_iri_exclusions(
-        excs: Vec<Exclusion>,
-    ) -> Result<Vec<IriExclusion>, SomeNoIriExclusion> {
+    pub fn parse_iri_exclusions(excs: Vec<Exclusion>) -> Result<Vec<IriExclusion>, SomeNoIriExclusion> {
         let mut iri_excs = Vec::new();
         for e in excs {
             match &e {
                 Exclusion::IriExclusion(le) => iri_excs.push(le.clone()),
                 v @ Exclusion::Untyped(s) => {
-                    let iri = FromStr::from_str(s.as_str())
-                        .map_err(|_e| SomeNoIriExclusion { exc: v.clone() })?;
+                    let iri = FromStr::from_str(s.as_str()).map_err(|_e| SomeNoIriExclusion { exc: v.clone() })?;
                     iri_excs.push(IriExclusion::Iri(iri))
-                }
+                },
                 other => return Err(SomeNoIriExclusion { exc: other.clone() }),
             }
         }
         Ok(iri_excs)
     }
 
-    pub fn parse_language_exclusions(
-        excs: Vec<Exclusion>,
-    ) -> Result<Vec<LanguageExclusion>, SomeNoIriExclusion> {
+    pub fn parse_language_exclusions(excs: Vec<Exclusion>) -> Result<Vec<LanguageExclusion>, SomeNoIriExclusion> {
         let mut lang_excs = Vec::new();
         for exc in excs {
             let exc_clone = exc.clone();
             match exc {
                 Exclusion::LanguageExclusion(le) => lang_excs.push(le),
                 Exclusion::Untyped(s) => {
-                    let lang = Lang::new(s.as_str())
-                        .map_err(|_e| SomeNoIriExclusion { exc: exc_clone })?;
+                    let lang = Lang::new(s.as_str()).map_err(|_e| SomeNoIriExclusion { exc: exc_clone })?;
                     lang_excs.push(LanguageExclusion::Language(lang))
-                }
+                },
                 other => return Err(SomeNoIriExclusion { exc: other }),
             }
         }
@@ -187,19 +179,19 @@ impl Serialize for Exclusion {
             Exclusion::IriExclusion(_iri) => todo!(),
             Exclusion::LiteralExclusion(LiteralExclusion::Literal(_lit)) => {
                 todo!()
-            }
+            },
             Exclusion::LiteralExclusion(LiteralExclusion::LiteralStem(stem)) => {
                 let mut map = serializer.serialize_map(Some(2))?;
                 map.serialize_entry("type", "LiteralStem")?;
                 map.serialize_entry("stem", stem)?;
                 map.end()
-            }
+            },
             Exclusion::LanguageExclusion(stem) => {
                 let mut map = serializer.serialize_map(Some(2))?;
                 map.serialize_entry("type", "LanguageStem")?;
                 map.serialize_entry("stem", stem)?;
                 map.end()
-            }
+            },
             Exclusion::Untyped(str) => serializer.serialize_str(str),
         }
     }

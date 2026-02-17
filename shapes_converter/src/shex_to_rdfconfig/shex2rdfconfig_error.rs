@@ -8,17 +8,12 @@ pub enum ShEx2SparqlError {
     ShapeNotFound { iri: IriRef, schema: Schema },
 
     #[error("Shape reference {sref} not found in schema {schema:?}")]
-    ShapeRefNotFound {
-        sref: ShapeExprLabel,
-        schema: Schema,
-    },
+    ShapeRefNotFound { sref: ShapeExprLabel, schema: Schema },
 
     #[error("No shapes found in schema to convert to SPARQL. Schema\n{schema:?}")]
     NoShapes { schema: Schema },
 
-    #[error(
-        "No shape found to convert to SPARQL because list of shapes is empty. Schema\n{schema:?}"
-    )]
+    #[error("No shape found to convert to SPARQL because list of shapes is empty. Schema\n{schema:?}")]
     EmptyShapes { schema: Schema },
 
     #[error(transparent)]
@@ -33,8 +28,6 @@ pub enum ShEx2SparqlError {
 
 impl ShEx2SparqlError {
     pub fn not_implemented(msg: &str) -> ShEx2SparqlError {
-        ShEx2SparqlError::NotImplemented {
-            msg: msg.to_string(),
-        }
+        ShEx2SparqlError::NotImplemented { msg: msg.to_string() }
     }
 }

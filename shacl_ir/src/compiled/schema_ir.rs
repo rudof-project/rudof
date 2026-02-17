@@ -64,13 +64,7 @@ impl SchemaIR {
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<SchemaIR, Box<CompiledShaclError>> {
-        Self::from_reader(
-            &mut std::io::Cursor::new(&data),
-            "String",
-            format,
-            base,
-            reader_mode,
-        )
+        Self::from_reader(&mut std::io::Cursor::new(&data), "String", format, base, reader_mode)
     }
 
     /// Adds a shape index for the given `RDFNode` if it does not already exist.
@@ -87,7 +81,7 @@ impl SchemaIR {
                 entry.insert(label_idx);
                 self.idx_labels_map.insert(label_idx, sref);
                 Ok(Either::Right(label_idx))
-            }
+            },
         }
     }
 
@@ -101,10 +95,12 @@ impl SchemaIR {
 
     pub fn iter(&self) -> impl Iterator<Item = (&Object, &ShapeIR)> {
         self.labels_idx_map.iter().map(move |(node, label_idx)| {
-            let shape = self
-              .shapes
-              .get(label_idx)
-              .unwrap_or_else(|| panic!("Internal error: Shape label index {label_idx} for node {node} not found in shapes map: {:?}",self.shapes));
+            let shape = self.shapes.get(label_idx).unwrap_or_else(|| {
+                panic!(
+                    "Internal error: Shape label index {label_idx} for node {node} not found in shapes map: {:?}",
+                    self.shapes
+                )
+            });
             (node, shape)
         })
     }
@@ -122,11 +118,7 @@ impl SchemaIR {
         })
     }
 
-    pub fn add_shape(
-        &mut self,
-        idx: ShapeLabelIdx,
-        shape: ShapeIR,
-    ) -> Result<ShapeLabelIdx, Box<CompiledShaclError>> {
+    pub fn add_shape(&mut self, idx: ShapeLabelIdx, shape: ShapeIR) -> Result<ShapeLabelIdx, Box<CompiledShaclError>> {
         self.shapes.insert(idx, shape);
         Ok(idx)
     }
@@ -139,10 +131,10 @@ impl SchemaIR {
                 Right(idx) => {
                     trace!("Compiling shape {} with new index {}", rdf_node, idx);
                     let _idx = ShapeIR::compile(shape.to_owned(), schema, &idx, &mut schema_ir)?;
-                }
+                },
                 Left(idx) => {
                     trace!("Shape {} already compiled with {}, skipping", rdf_node, idx);
-                }
+                },
             }
         }
         schema_ir.build_dependency_graph();
@@ -153,10 +145,7 @@ impl SchemaIR {
             info!(
                 "More information about recursive schemas can be found at https://www.w3.org/TR/shacl/#shapes-recursion"
             );
-            debug!(
-                "Dependency graph with cycles: {}",
-                schema_ir.dependency_graph
-            );
+            debug!("Dependency graph with cycles: {}", schema_ir.dependency_graph);
         }
         if schema_ir.dependency_graph.has_neg_cycle() {
             info!(
@@ -166,13 +155,7 @@ impl SchemaIR {
                 .dependency_graph
                 .neg_cycles()
                 .iter()
-                .map(|cycles| {
-                    cycles
-                        .iter()
-                        .map(show_cycle)
-                        .collect::<Vec<_>>()
-                        .join("\n ")
-                })
+                .map(|cycles| cycles.iter().map(show_cycle).collect::<Vec<_>>().join("\n "))
                 .collect::<Vec<_>>()
                 .join("\n---\n");
             debug!("Negative cycles: {}", neg_cycles_str);
@@ -229,11 +212,7 @@ impl Display for SchemaIR {
 
 fn show_cycle(cycle: &(ShapeLabelIdx, ShapeLabelIdx, Vec<ShapeLabelIdx>)) -> String {
     let (from, to, shapes) = cycle;
-    let shapes_str = shapes
-        .iter()
-        .map(|s| s.to_string())
-        .collect::<Vec<_>>()
-        .join(" -> ");
+    let shapes_str = shapes.iter().map(|s| s.to_string()).collect::<Vec<_>>().join(" -> ");
     format!("Cycle from {} to {}: {}", from, to, shapes_str)
 }
 
