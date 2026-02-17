@@ -492,19 +492,19 @@ where
 
     fn pp_literal(&self, literal: &ConcreteLiteral) -> DocBuilder<'a, Arena<'a, A>, A> {
         match literal {
-            SLiteral::String { lexical_form, lang } => self.pp_string_literal(lexical_form, lang),
-            SLiteral::Datatype {
+            ConcreteLiteral::StringLiteral { lexical_form, lang } => self.pp_string_literal(lexical_form, lang),
+            ConcreteLiteral::DatatypeLiteral {
                 lexical_form: _,
                 datatype: _,
             } => todo!(),
-            SLiteral::WrongDatatype {
+            ConcreteLiteral::WrongDatatypeLiteral {
                 lexical_form: _,
                 datatype: _,
                 error: _,
             } => todo!(),
-            SLiteral::Numeric(lit) => self.pp_numeric_literal(lit),
-            SLiteral::Boolean(_) => todo!(),
-            SLiteral::Datetime(_xsd_date_time) => todo!(),
+            ConcreteLiteral::NumericLiteral(lit) => self.pp_numeric_literal(lit),
+            ConcreteLiteral::BooleanLiteral(_) => todo!(),
+            ConcreteLiteral::DatetimeLiteral(_xsd_date_time) => todo!(),
         }
     }
 

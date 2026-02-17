@@ -1,5 +1,6 @@
 use std::{fmt, result};
-
+use iri_s::IriS;
+use prefixmap::Deref;
 use prefixmap::IriRef;
 use prefixmap::error::DerefError;
 use serde::ser::SerializeMap;

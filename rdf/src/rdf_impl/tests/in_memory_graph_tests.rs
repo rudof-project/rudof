@@ -197,8 +197,8 @@ fn test_add_triple() {
 fn test_rdf_list() {
     let mut graph = graph_from_str(DUMMY_GRAPH_2);
 
-    let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-    let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
+    let x = OxNamedNode::new_unchecked("http://example.org/x").into();
+    let p = OxNamedNode::new_unchecked("http://example.org/p").into();
 
     let parser = SingleValuePropertyParser::new(p).then(move |obj| SetFocusParser::new(obj).with(ListParser::new()));
     let result: Vec<OxTerm> = parser.parse(&x, &mut graph).unwrap();
@@ -215,8 +215,8 @@ fn test_rdf_list() {
 #[test]
 fn test_parser_property_integers() {
     let mut graph = graph_from_str(DUMMY_GRAPH_3);
-    let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-    let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
+    let x = OxNamedNode::new_unchecked("http://example.org/x").into();
+    let p = OxNamedNode::new_unchecked("http://example.org/p").into();
     let parser = IntegersPropertyParser::new(p);
     let mut result = parser.parse(&x, &mut graph).unwrap();
     result.sort();
@@ -227,9 +227,9 @@ fn test_parser_property_integers() {
 #[test]
 fn test_parser_or() {
     let mut graph = graph_from_str(DUMMY_GRAPH_5);
-    let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-    let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
-    let q = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/q"));
+    let x = OxNamedNode::new_unchecked("http://example.org/x").into();
+    let p = OxNamedNode::new_unchecked("http://example.org/p").into();
+    let q = OxNamedNode::new_unchecked("http://example.org/q").into();
     let parser = SingleBoolPropertyParser::new(p).or(SingleBoolPropertyParser::new(q));
     assert!(parser.parse(&x, &mut graph).unwrap())
 }
@@ -237,8 +237,8 @@ fn test_parser_or() {
 #[test]
 fn test_parser_or_enum_1() {
     let mut graph = graph_from_str(DUMMY_GRAPH_6);
-    let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-    let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
+    let x = OxNamedNode::new_unchecked("http://example.org/x").into();
+    let p: IriS = OxNamedNode::new_unchecked("http://example.org/p").into();
     let parser_a_bool = SingleBoolPropertyParser::new(p.clone()).map(A::Bool);
     let parser_a_int = SingleIntegerPropertyParser::new(p).map(A::Int);
     let parser = parser_a_int.or(parser_a_bool);
@@ -248,8 +248,8 @@ fn test_parser_or_enum_1() {
 #[test]
 fn test_parser_or_enum_2() {
     let mut graph = graph_from_str(DUMMY_GRAPH_7);
-    let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-    let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
+    let x = OxNamedNode::new_unchecked("http://example.org/x").into();
+    let p: IriS = OxNamedNode::new_unchecked("http://example.org/p").into();
     let parser_a_bool = SingleBoolPropertyParser::new(p.clone()).map(A::Bool);
     let parser_a_int = SingleIntegerPropertyParser::new(p).map(A::Int);
     let parser = parser_a_int.or(parser_a_bool);
@@ -259,9 +259,9 @@ fn test_parser_or_enum_2() {
 #[test]
 fn test_parser_and() {
     let mut graph = graph_from_str(DUMMY_GRAPH_8);
-    let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-    let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
-    let q = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/q"));
+    let x = OxNamedNode::new_unchecked("http://example.org/x").into();
+    let p = OxNamedNode::new_unchecked("http://example.org/p").into();
+    let q = OxNamedNode::new_unchecked("http://example.org/q").into();
     let parser = SingleBoolPropertyParser::new(p).and(SingleIntegerPropertyParser::new(q));
     assert_eq!(parser.parse(&x, &mut graph).unwrap(), (true, 1))
 }
@@ -269,8 +269,8 @@ fn test_parser_and() {
 #[test]
 fn test_parser_map() {
     let mut graph = graph_from_str(DUMMY_GRAPH_9);
-    let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-    let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
+    let x = OxNamedNode::new_unchecked("http://example.org/x").into();
+    let p = OxNamedNode::new_unchecked("http://example.org/p").into();
     let parser = SingleIntegerPropertyParser::new(p).map(|n| n + 1);
     assert_eq!(parser.parse(&x, &mut graph).unwrap(), 2)
 }
@@ -278,8 +278,8 @@ fn test_parser_map() {
 #[test]
 fn test_parser_and_then() {
     let mut graph = graph_from_str(DUMMY_GRAPH_10);
-    let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-    let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
+    let x = OxNamedNode::new_unchecked("http://example.org/x").into();
+    let p = OxNamedNode::new_unchecked("http://example.org/p").into();
 
     fn cnv_int(s: String) -> Result<isize, RDFError> {
         s.parse().map_err(|_| RDFError::DefaultError {
@@ -294,8 +294,8 @@ fn test_parser_and_then() {
 #[test]
 fn test_parser_flat_map() {
     let mut graph = graph_from_str(DUMMY_GRAPH_10);
-    let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-    let p = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/p"));
+    let x = OxNamedNode::new_unchecked("http://example.org/x").into();
+    let p = OxNamedNode::new_unchecked("http://example.org/p").into();
 
     fn cnv_int(s: String) -> Result<isize, RDFError> {
         s.parse().map_err(|_| RDFError::DefaultError {
@@ -320,7 +320,7 @@ fn test_rdf_parser_macro() {
 
     let mut graph = graph_from_str(DUMMY_GRAPH_9);
     let x = OxNamedNode::new_unchecked("http://example.org/x");
-    let iri_s = IriS::from_named_node(&x);
+    let iri_s = x.clone().into();
     let term = x.clone().into();
     let parser = is_term(&term);
     let result = parser.parse(&iri_s, &mut graph);
@@ -330,8 +330,8 @@ fn test_rdf_parser_macro() {
 #[test]
 fn test_not() {
     let mut graph = graph_from_str(DUMMY_GRAPH_9);
-    let x = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/x"));
-    let q = IriS::from_named_node(&OxNamedNode::new_unchecked("http://example.org/q"));
+    let x = OxNamedNode::new_unchecked("http://example.org/x").into();
+    let q = OxNamedNode::new_unchecked("http://example.org/q").into();
     assert!(SingleValuePropertyParser::new(q).not().parse(&x, &mut graph).is_ok())
 }
 
@@ -339,7 +339,7 @@ fn test_not() {
 fn test_iri() {
     let mut graph = InMemoryGraph::default();
     let x = OxNamedNode::new_unchecked("http://example.org/x");
-    let x_iri = IriS::from_named_node(&x);
+    let x_iri = x.clone().into();
     assert_eq!(IriParser::new().parse(&x_iri, &mut graph).unwrap(), x)
 }
 

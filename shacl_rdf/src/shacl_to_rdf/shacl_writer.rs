@@ -26,9 +26,9 @@ where
 
     pub fn write(&mut self, schema: &Schema<RDF>) -> Result<(), RDF::Err> {
         let mut prefix_map = schema.prefix_map();
-        let _ = prefix_map.insert("rdf", &IriS::from_str("http://www.w3.org/1999/02/22-rdf-syntax-ns#").unwrap());
-        let _ = prefix_map.insert("xsd", &IriS::from_str("http://www.w3.org/2001/XMLSchema#").unwrap());
-        let _ = prefix_map.insert("sh", sh());
+        let _ = prefix_map.add_prefix("rdf", IriS::from_str("http://www.w3.org/1999/02/22-rdf-syntax-ns#").unwrap());
+        let _ = prefix_map.add_prefix("xsd", IriS::from_str("http://www.w3.org/2001/XMLSchema#").unwrap());
+        let _ = prefix_map.add_prefix("sh", sh().clone());
 
         self.rdf.add_prefix_map(prefix_map)?;
         self.rdf.add_base(&schema.base())?;

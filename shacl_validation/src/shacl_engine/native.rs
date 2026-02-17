@@ -101,7 +101,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
         let pred: S::IRI = predicate.clone().into();
         let subjects = store
             .triples_with_predicate(&pred)
-            .map_err(|_| ValidateError::SRDF)?
+            .map_err(|_| ValidateError::SRdf)?
             .map(Triple::into_subject)
             .map(Into::into);
         let focus_nodes = FocusNodes::from_iter(subjects);
@@ -112,7 +112,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
         let pred: S::IRI = predicate.clone().into();
         let objects = store
             .triples_with_predicate(&pred)
-            .map_err(|_| ValidateError::SRDF)?
+            .map_err(|_| ValidateError::SRdf)?
             .map(Triple::into_object);
         Ok(FocusNodes::from_iter(objects))
     }

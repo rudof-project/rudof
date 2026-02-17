@@ -398,7 +398,7 @@ impl From<&ObjectValue> for Object {
         match value {
             ObjectValue::IriRef(iri_ref) => {
                 let iri = iri_ref.get_iri().unwrap(); // Should not fail, as it was already deref'ed
-                Object::from(iri)
+                Object::from(iri.clone())
             }
             ObjectValue::Literal(literal) => literal.clone().into(),
         }

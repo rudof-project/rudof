@@ -1193,7 +1193,7 @@ where
     IrisPropertyParser::new(sh_target_class().clone()).flat_map(move |ts| {
         let result = ts
             .into_iter()
-            .map(|iri| Target::TargetClass(Object::iri(iri)))
+            .map(|iri| Target::Class(Object::iri(iri)))
             .collect();
         Ok(result)
     })
@@ -1204,7 +1204,7 @@ where
     RDF: FocusRDF,
 {
     ObjectsPropertyParser::new(sh_target_node().clone()).flat_map(move |ts| {
-        let result = ts.into_iter().map(Target::TargetNode).collect();
+        let result = ts.into_iter().map(Target::Node).collect();
         Ok(result)
     })
 }
@@ -1227,7 +1227,7 @@ fn targets_implicit_class<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Ta
                             .clone()
                             .try_into()
                             .map_err(|_| RDFError::FailedTermToRDFNodeError { term: t_name })?;
-                        Ok(Target::TargetImplicitClass(obj))
+                        Ok(Target::ImplicitClass(obj))
                     })
                     .collect();
                 let ts = result?;
@@ -1240,7 +1240,7 @@ fn targets_objects_of<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Target
     IrisPropertyParser::new(sh_target_objects_of().clone()).flat_map(move |ts| {
         let result = ts
             .into_iter()
-            .map(|t: IriS| Target::TargetObjectsOf(t.into()))
+            .map(|t: IriS| Target::ObjectsOf(t.into()))
             .collect();
         Ok(result)
     })
@@ -1250,7 +1250,7 @@ fn targets_subjects_of<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Targe
     IrisPropertyParser::new(sh_target_subjects_of().clone()).flat_map(move |ts| {
         let result = ts
             .into_iter()
-            .map(|t: IriS| Target::TargetSubjectsOf(t.into()))
+            .map(|t: IriS| Target::SubjectsOf(t.into()))
             .collect();
         Ok(result)
     })

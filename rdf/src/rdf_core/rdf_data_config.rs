@@ -3,7 +3,7 @@ use std::{collections::HashMap, io, path::Path, str::FromStr};
 
 use prefixmap::PrefixMap;
 
-use iri_s::{IriS, IriSError};
+use iri_s::{IriS, error::IriSError};
 use serde::{Deserialize, Serialize};
 use std::io::Read;
 

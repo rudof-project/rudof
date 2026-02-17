@@ -30,14 +30,6 @@ use nom_locate::LocatedSpan;
 use prefixmap::IriRef;
 use regex::Regex;
 // use shex_ast::IriOrStr;
-use crate::iri_ref_or_wildcard::IriRefOrWildcard;
-use crate::string_or_wildcard::StringOrWildcard;
-use crate::{
-    Annotation, BNode, LangOrWildcard, NodeConstraint, NodeKind, NumericFacet, Pattern, SemAct,
-    Shape, ShapeExpr, ShapeExprLabel, StringFacet, TripleExpr, TripleExprLabel, XsFacet,
-    iri_exclusion::IriExclusion, language_exclusion::LanguageExclusion,
-    literal_exclusion::LiteralExclusion, object_value::ObjectValue, value_set_value::ValueSetValue,
-};
 use rdf::rdf_core::{
     RDFError,
     term::literal::{ConcreteLiteral, Lang, NumericLiteral},

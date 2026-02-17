@@ -2317,7 +2317,7 @@ fn cnv_rdf_format(format: &PyRDFFormat) -> RDFFormat {
     match format {
         PyRDFFormat::Turtle => RDFFormat::Turtle,
         PyRDFFormat::NTriples => RDFFormat::NTriples,
-        PyRDFFormat::RDFXML => RDFFormat::RdfXml,
+        PyRDFFormat::RDFXML => RDFFormat::RDFXML,
         PyRDFFormat::TriG => RDFFormat::TriG,
         PyRDFFormat::N3 => RDFFormat::N3,
         PyRDFFormat::NQuads => RDFFormat::NQuads,

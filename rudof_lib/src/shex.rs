@@ -9,7 +9,6 @@ use shex_ast::ShExFormat;
 use shex_ast::shapemap::ResultShapeMap;
 use rdf::rdf_core::RDFFormat;
 use rdf::rdf_impl::ReaderMode;
-use std::env;
 use std::io::Write;
 use tracing::info;
 #[cfg(not(target_family = "wasm"))]

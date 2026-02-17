@@ -230,11 +230,11 @@ fn generate_uml_output<P: AsRef<Path>>(
             Ok(())
         },
         OutputConvertFormat::Svg => {
-            uml_converter.as_image(writer, ImageFormat::Svg, &mode, plantuml_path)?;
+            uml_converter.as_image(writer, ImageFormat::SVG, &mode, plantuml_path)?;
             Ok(())
         },
         OutputConvertFormat::Png => {
-            uml_converter.as_image(writer, ImageFormat::Png, &mode, plantuml_path)?;
+            uml_converter.as_image(writer, ImageFormat::PNG, &mode, plantuml_path)?;
             Ok(())
         },
         OutputConvertFormat::Default => {

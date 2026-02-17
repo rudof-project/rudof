@@ -1,4 +1,4 @@
-use iri_s::{IriS, IriSError};
+use iri_s::{IriS, error::IriSError};
 use prefixmap::{IriRef, PrefixMapError};
 use rdf::rdf_core::term::literal::{Lang, NumericLiteral};
 use thiserror::Error;

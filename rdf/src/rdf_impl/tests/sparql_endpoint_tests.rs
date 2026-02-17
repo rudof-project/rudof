@@ -38,7 +38,7 @@ fn test_wikidata_endpoint() {
 fn test_with_prefixmap() {
     let mut prefixmap = prefixmap::PrefixMap::new();
     let iri = iri_s::IriS::new_unchecked("https://example.org/");
-    prefixmap.insert("", &iri).unwrap();
+    prefixmap.add_prefix("", iri.clone()).unwrap();
     let endpoint = SparqlEndpoint::wikidata().unwrap().with_prefixmap(prefixmap);
     // Check that the prefixmap was set by trying to resolve
     let resolved = endpoint.resolve_prefix_local("", "test").unwrap();

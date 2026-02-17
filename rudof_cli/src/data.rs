@@ -42,8 +42,8 @@ pub fn run_data(
             let rdf = rudof.get_rdf_data();
             let uml_converter = VisualRDFGraph::from_rdf(rdf, config.rdf_data_config().rdf_visualization_config())?;
             let format = match result_format {
-                ResultDataFormat::Svg => ImageFormat::Svg,
-                ResultDataFormat::Png => ImageFormat::Png,
+                ResultDataFormat::Svg => ImageFormat::SVG,
+                ResultDataFormat::Png => ImageFormat::PNG,
                 _ => unreachable!(),
             };
             uml_converter.as_image(&mut writer, format, &UmlGenerationMode::all(), config.plantuml_path())?;
@@ -69,7 +69,7 @@ fn check_result_format(format: &ResultDataFormat) -> CheckResultFormat {
         ResultDataFormat::Turtle => CheckResultFormat::RDFFormat(RDFFormat::Turtle),
         ResultDataFormat::N3 => CheckResultFormat::RDFFormat(RDFFormat::N3),
         ResultDataFormat::NTriples => CheckResultFormat::RDFFormat(RDFFormat::NTriples),
-        ResultDataFormat::RdfXml => CheckResultFormat::RDFFormat(RDFFormat::RdfXml),
+        ResultDataFormat::RdfXml => CheckResultFormat::RDFFormat(RDFFormat::RDFXML),
         ResultDataFormat::TriG => CheckResultFormat::RDFFormat(RDFFormat::TriG),
         ResultDataFormat::NQuads => CheckResultFormat::RDFFormat(RDFFormat::NQuads),
         ResultDataFormat::PlantUML => CheckResultFormat::VisualFormat(VisualFormat::PlantUML),

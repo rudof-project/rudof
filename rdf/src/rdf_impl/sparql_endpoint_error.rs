@@ -1,5 +1,5 @@
 use crate::rdf_impl::SparqlVars;
-use iri_s::IriSError;
+use iri_s::error::IriSError;
 use oxiri::IriParseError;
 use oxrdf::Term;
 use thiserror::Error;

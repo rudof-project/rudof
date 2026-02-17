@@ -2,10 +2,9 @@ use crate::rdf_core::{
     RDFError,
     term::literal::{Lang, NumericLiteral, XsdDateTime},
     vocab::{
-        rdf_lang, xsd_boolean, xsd_byte, xsd_date_time, xsd_decimal, xsd_double, xsd_float,
-        xsd_integer, xsd_long, xsd_negative_integer, xsd_non_negative_integer,
-        xsd_non_positive_integer, xsd_positive_integer, xsd_short, xsd_string, xsd_unsigned_byte,
-        xsd_unsigned_int, xsd_unsigned_long, xsd_unsigned_short,
+        rdf_lang, xsd_boolean, xsd_byte, xsd_date_time, xsd_decimal, xsd_double, xsd_float, xsd_integer, xsd_long,
+        xsd_negative_integer, xsd_non_negative_integer, xsd_non_positive_integer, xsd_positive_integer, xsd_short,
+        xsd_string, xsd_unsigned_byte, xsd_unsigned_int, xsd_unsigned_long, xsd_unsigned_short,
     },
 };
 use rust_decimal::Decimal;
@@ -41,7 +40,8 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
     /// Returns `Some(bool)` if the literal has datatype `xsd:boolean` and
     /// a valid lexical form ("true" or "false").
     fn to_bool(&self) -> Option<bool> {
-        let iri = self.datatype().get_iri().ok()?;
+        let datatype = self.datatype();
+        let iri = datatype.get_iri().ok()?;
 
         if iri.as_str() != "http://www.w3.org/2001/XMLSchema#boolean" {
             return None;
@@ -59,7 +59,8 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
     /// Returns `Some(isize)` if the literal has datatype `xsd:integer` and
     /// a valid parseable lexical form.
     fn to_integer(&self) -> Option<isize> {
-        let iri = self.datatype().get_iri().ok()?;
+        let datatype = self.datatype();
+        let iri = datatype.get_iri().ok()?;
 
         if iri.as_str() != "http://www.w3.org/2001/XMLSchema#integer" {
             return None;
@@ -73,7 +74,8 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
     /// Returns `Some(XsdDateTime)` if the literal has datatype `xsd:dateTime` and
     /// a valid parseable lexical form.
     fn to_date_time(&self) -> Option<XsdDateTime> {
-        let iri = self.datatype().get_iri().ok()?;
+        let datatype = self.datatype();
+        let iri = datatype.get_iri().ok()?;
 
         if iri.as_str() != "http://www.w3.org/2001/XMLSchema#dateTime" {
             return None;
@@ -87,7 +89,8 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
     /// Returns `Some(f64)` if the literal has datatype `xsd:double` and
     /// a valid parseable lexical form.
     fn to_double(&self) -> Option<f64> {
-        let iri = self.datatype().get_iri().ok()?;
+        let datatype = self.datatype();
+        let iri = datatype.get_iri().ok()?;
 
         if iri.as_str() != "http://www.w3.org/2001/XMLSchema#double" {
             return None;
@@ -101,7 +104,8 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
     /// Returns `Some(Decimal)` if the literal has datatype `xsd:decimal` and
     /// a valid parseable lexical form.
     fn to_decimal(&self) -> Option<Decimal> {
-        let iri = self.datatype().get_iri().ok()?;
+        let datatype = self.datatype();
+        let iri = datatype.get_iri().ok()?;
 
         if iri.as_str() != "http://www.w3.org/2001/XMLSchema#decimal" {
             return None;
@@ -147,16 +151,10 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
 #[derive(PartialEq, Eq, Hash, Debug, Serialize, Deserialize, Clone)]
 pub enum ConcreteLiteral {
     /// A plain string literal, optionally with a language tag.
-    StringLiteral {
-        lexical_form: String,
-        lang: Option<Lang>,
-    },
+    StringLiteral { lexical_form: String, lang: Option<Lang> },
 
     /// A literal with an explicit datatype IRI.
-    DatatypeLiteral {
-        lexical_form: String,
-        datatype: IriRef,
-    },
+    DatatypeLiteral { lexical_form: String, datatype: IriRef },
 
     /// A numeric literal (integer, float, decimal, etc.).
     NumericLiteral(NumericLiteral),
@@ -227,11 +225,7 @@ impl ConcreteLiteral {
     /// # Errors
     ///
     /// Returns any formatting error encountered while writing to the formatter.
-    pub fn display_qualified<W: fmt::Write>(
-        &self,
-        f: &mut W,
-        prefixmap: &PrefixMap,
-    ) -> fmt::Result {
+    pub fn display_qualified<W: fmt::Write>(&self, f: &mut W, prefixmap: &PrefixMap) -> fmt::Result {
         match self {
             Self::StringLiteral { lexical_form, lang } => {
                 write!(f, "\"{lexical_form}\"")?;
@@ -239,18 +233,15 @@ impl ConcreteLiteral {
                     write!(f, "{lang}")?;
                 }
                 Ok(())
-            }
-            Self::DatatypeLiteral {
-                lexical_form,
-                datatype,
-            } => self.format_datatype_literal(f, lexical_form, datatype, prefixmap),
+            },
+            Self::DatatypeLiteral { lexical_form, datatype } => {
+                self.format_datatype_literal(f, lexical_form, datatype, prefixmap)
+            },
             Self::NumericLiteral(n) => write!(f, "{n}"),
             Self::BooleanLiteral(b) => write!(f, "{b}"),
             Self::DatetimeLiteral(dt) => write!(f, "{}", dt.value()),
             Self::WrongDatatypeLiteral {
-                lexical_form,
-                datatype,
-                ..
+                lexical_form, datatype, ..
             } => self.format_datatype_literal(f, lexical_form, datatype, prefixmap),
         }
     }
@@ -284,10 +275,10 @@ impl ConcreteLiteral {
         match datatype {
             IriRef::Iri(iri) => {
                 write!(f, "\"{lexical_form}\"^^{}", prefixmap.qualify(iri))
-            }
+            },
             IriRef::Prefixed { prefix, local } => {
                 write!(f, "\"{lexical_form}\"^^{prefix}:{local}")
-            }
+            },
         }
     }
 }
@@ -323,11 +314,7 @@ impl ConcreteLiteral {
     /// let checked = lit.as_checked_literal().unwrap();
     /// ```
     pub fn as_checked_literal(self) -> Result<Self, RDFError> {
-        if let Self::DatatypeLiteral {
-            lexical_form,
-            datatype,
-        } = self
-        {
+        if let Self::DatatypeLiteral { lexical_form, datatype } = self {
             check_literal_datatype(lexical_form.as_ref(), &datatype)
         } else {
             Ok(self)
@@ -382,10 +369,7 @@ impl ConcreteLiteral {
                 },
             ) => lexical_form == expected_lexical_form && lang == expected_lang,
             (
-                Self::DatatypeLiteral {
-                    lexical_form,
-                    datatype,
-                },
+                Self::DatatypeLiteral { lexical_form, datatype },
                 Self::DatatypeLiteral {
                     lexical_form: expected_lexical_form,
                     datatype: expected_datatype,
@@ -396,9 +380,7 @@ impl ConcreteLiteral {
             (Self::BooleanLiteral(b1), Self::BooleanLiteral(b2)) => b1 == b2,
             (
                 Self::WrongDatatypeLiteral {
-                    lexical_form,
-                    datatype,
-                    ..
+                    lexical_form, datatype, ..
                 },
                 Self::WrongDatatypeLiteral {
                     lexical_form: expected_lexical_form,
@@ -437,9 +419,7 @@ impl ConcreteLiteral {
     /// Returns `RDFError::NumericOutOfRange` if `n` is greater than 0.
     #[inline]
     pub fn non_positive_integer(n: i128) -> Result<Self, RDFError> {
-        Ok(Self::NumericLiteral(NumericLiteral::non_positive_integer(
-            n,
-        )?))
+        Ok(Self::NumericLiteral(NumericLiteral::non_positive_integer(n)?))
     }
 
     /// Creates a literal representing a strictly positive integer (`u128` > 0).
@@ -635,16 +615,11 @@ impl ConcreteLiteral {
     /// - For datetime literals, returns `xsd:dateTime`.
     pub fn datatype(&self) -> IriRef {
         match self {
-            Self::DatatypeLiteral { datatype, .. }
-            | Self::WrongDatatypeLiteral { datatype, .. } => datatype.clone(),
+            Self::DatatypeLiteral { datatype, .. } | Self::WrongDatatypeLiteral { datatype, .. } => datatype.clone(),
 
-            Self::StringLiteral { lang: None, .. } => {
-                IriRef::iri(IriS::new_unchecked(xsd_string().as_str()))
-            }
+            Self::StringLiteral { lang: None, .. } => IriRef::iri(IriS::new_unchecked(xsd_string().as_str())),
 
-            Self::StringLiteral { lang: Some(_), .. } => {
-                IriRef::iri(IriS::new_unchecked(rdf_lang().as_str()))
-            }
+            Self::StringLiteral { lang: Some(_), .. } => IriRef::iri(IriS::new_unchecked(rdf_lang().as_str())),
 
             Self::NumericLiteral(nl) => IriRef::iri(IriS::new_unchecked(nl.datatype())),
 
@@ -731,9 +706,7 @@ impl ConcreteLiteral {
         if value < 0 {
             Ok(value)
         } else {
-            Err(format!(
-                "Cannot convert {s} to negative integer: value is not negative"
-            ))
+            Err(format!("Cannot convert {s} to negative integer: value is not negative"))
         }
     }
 
@@ -750,9 +723,7 @@ impl ConcreteLiteral {
         if value <= 0 {
             Ok(value)
         } else {
-            Err(format!(
-                "Cannot convert {s} to non-positive integer: value is positive"
-            ))
+            Err(format!("Cannot convert {s} to non-positive integer: value is positive"))
         }
     }
 
@@ -769,9 +740,7 @@ impl ConcreteLiteral {
         if value > 0 {
             Ok(value)
         } else {
-            Err(format!(
-                "Cannot convert {s} to positive integer: value is not positive"
-            ))
+            Err(format!("Cannot convert {s} to positive integer: value is not positive"))
         }
     }
 
@@ -841,8 +810,7 @@ impl ConcreteLiteral {
     ///
     /// Returns an error if the string cannot be parsed as an `i64`.
     pub fn parse_long(s: &str) -> Result<i64, String> {
-        s.parse::<i64>()
-            .map_err(|e| format!("Cannot convert {s} to long: {e}"))
+        s.parse::<i64>().map_err(|e| format!("Cannot convert {s} to long: {e}"))
     }
 
     /// Parses a decimal from its string representation using `rust_decimal::Decimal`.
@@ -871,8 +839,7 @@ impl ConcreteLiteral {
     ///
     /// Returns an error if the string cannot be parsed as an `i8`.
     pub fn parse_byte(s: &str) -> Result<i8, String> {
-        s.parse::<i8>()
-            .map_err(|e| format!("Cannot convert {s} to byte: {e}"))
+        s.parse::<i8>().map_err(|e| format!("Cannot convert {s} to byte: {e}"))
     }
 
     /// Parses a signed short (-32768 to 32767) from its string representation.
@@ -928,14 +895,9 @@ impl PartialOrd for ConcreteLiteral {
             // Chronological comparison for datetime literals
             (Self::DatetimeLiteral(dt1), Self::DatetimeLiteral(dt2)) => dt1.partial_cmp(dt2),
             // Lexicographic comparison for plain string literals
-            (
-                Self::StringLiteral {
-                    lexical_form: lf1, ..
-                },
-                Self::StringLiteral {
-                    lexical_form: lf2, ..
-                },
-            ) => Some(lf1.cmp(lf2)),
+            (Self::StringLiteral { lexical_form: lf1, .. }, Self::StringLiteral { lexical_form: lf2, .. }) => {
+                Some(lf1.cmp(lf2))
+            },
             // Datatype literals are only comparable if their datatypes match
             (
                 Self::DatatypeLiteral {
@@ -1007,32 +969,21 @@ impl Deref for ConcreteLiteral {
     /// # Errors
     ///
     /// Returns `DerefError` if datatype resolution fails.
-    fn deref(
-        &self,
-        base: &Option<IriS>,
-        prefixmap: &Option<PrefixMap>,
-    ) -> Result<Self, DerefError> {
+    fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
         match self {
-            Self::NumericLiteral(_) | Self::BooleanLiteral(_) | Self::DatetimeLiteral(_) => {
-                Ok(self.clone())
-            }
+            Self::NumericLiteral(_) | Self::BooleanLiteral(_) | Self::DatetimeLiteral(_) => Ok(self.clone()),
             Self::StringLiteral { .. } => Ok(self.clone()),
 
-            Self::DatatypeLiteral {
-                lexical_form,
-                datatype,
-            }
+            Self::DatatypeLiteral { lexical_form, datatype }
             | Self::WrongDatatypeLiteral {
-                lexical_form,
-                datatype,
-                ..
+                lexical_form, datatype, ..
             } => {
                 let dt = datatype.deref(base, prefixmap)?;
                 Ok(Self::DatatypeLiteral {
                     lexical_form: lexical_form.clone(),
                     datatype: dt,
                 })
-            }
+            },
         }
     }
 }
@@ -1077,7 +1028,7 @@ impl TryFrom<oxrdf::Literal> for ConcreteLiteral {
                 // Use safe IRI creation if possible
                 let datatype_iri = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
                 check_literal_datatype(s.as_ref(), &datatype_iri)
-            }
+            },
 
             _ => Err(RDFError::ConversionError {
                 msg: format!("Unknown literal structure: {literal_str}"),
@@ -1093,32 +1044,19 @@ impl From<ConcreteLiteral> for oxrdf::Literal {
         fn typed_literal(lexical: String, datatype: &IriRef) -> oxrdf::Literal {
             datatype
                 .get_iri()
-                .map(|dt| {
-                    oxrdf::Literal::new_typed_literal(
-                        lexical.clone(),
-                        dt.as_named_node().to_owned(),
-                    )
-                })
+                .map(|dt: &IriS| oxrdf::Literal::new_typed_literal(lexical.clone(), oxrdf::NamedNode::from(dt.clone())))
                 .unwrap_or_else(|_| lexical.into())
         }
 
         match value {
             ConcreteLiteral::StringLiteral { lexical_form, lang } => match lang {
-                Some(l) => oxrdf::Literal::new_language_tagged_literal_unchecked(
-                    lexical_form,
-                    l.to_string(),
-                ),
+                Some(l) => oxrdf::Literal::new_language_tagged_literal_unchecked(lexical_form, l.to_string()),
                 None => lexical_form.into(),
             },
 
-            ConcreteLiteral::DatatypeLiteral {
-                lexical_form,
-                datatype,
-            }
+            ConcreteLiteral::DatatypeLiteral { lexical_form, datatype }
             | ConcreteLiteral::WrongDatatypeLiteral {
-                lexical_form,
-                datatype,
-                ..
+                lexical_form, datatype, ..
             } => typed_literal(lexical_form, &datatype),
 
             ConcreteLiteral::NumericLiteral(number) => number.into(),
@@ -1166,10 +1104,7 @@ where
 /// # Errors
 ///
 /// Returns `RDFError` if the datatype IRI itself is invalid.
-fn check_literal_datatype(
-    lexical_form: &str,
-    datatype: &IriRef,
-) -> Result<ConcreteLiteral, RDFError> {
+fn check_literal_datatype(lexical_form: &str, datatype: &IriRef) -> Result<ConcreteLiteral, RDFError> {
     // Resolve the IRI
     let iri = datatype.get_iri().map_err(|_| RDFError::IriRefError {
         iri_ref: datatype.to_string(),
@@ -1206,11 +1141,7 @@ fn check_literal_datatype(
         ConcreteLiteral::parse_integer,
         ConcreteLiteral::integer
     );
-    check_xsd_type!(
-        xsd_long().as_str(),
-        ConcreteLiteral::parse_long,
-        ConcreteLiteral::long
-    );
+    check_xsd_type!(xsd_long().as_str(), ConcreteLiteral::parse_long, ConcreteLiteral::long);
     check_xsd_type!(
         xsd_double().as_str(),
         ConcreteLiteral::parse_double,
@@ -1231,11 +1162,7 @@ fn check_literal_datatype(
         ConcreteLiteral::parse_decimal,
         ConcreteLiteral::decimal
     );
-    check_xsd_type!(
-        xsd_byte().as_str(),
-        ConcreteLiteral::parse_byte,
-        ConcreteLiteral::byte
-    );
+    check_xsd_type!(xsd_byte().as_str(), ConcreteLiteral::parse_byte, ConcreteLiteral::byte);
     check_xsd_type!(
         xsd_short().as_str(),
         ConcreteLiteral::parse_short,
@@ -1303,12 +1230,7 @@ fn check_literal_datatype(
 /// - `datatype`: The IRI of the expected datatype.
 /// - `parser`: A function that attempts to parse the `lexical_form` into a value of type `T`.
 /// - `constructor`: A function that constructs a `ConcreteLiteral` from a successfully parsed value.
-fn validate<T, P, C>(
-    lexical_form: &str,
-    datatype: &IriRef,
-    parser: P,
-    constructor: C,
-) -> ConcreteLiteral
+fn validate<T, P, C>(lexical_form: &str, datatype: &IriRef, parser: P, constructor: C) -> ConcreteLiteral
 where
     P: Fn(&str) -> Result<T, String>,
     C: Fn(T) -> ConcreteLiteral,
@@ -1333,12 +1255,7 @@ where
 /// - `datatype`: The IRI of the expected datatype.
 /// - `parser`: A function that attempts to parse the `lexical_form` into a value of type `T`.
 /// - `constructor`: A function that constructs a `ConcreteLiteral` from a parsed value, returning `Result`.
-fn validate_with_result<T, P, C>(
-    lexical_form: &str,
-    datatype: &IriRef,
-    parser: P,
-    constructor: C,
-) -> ConcreteLiteral
+fn validate_with_result<T, P, C>(lexical_form: &str, datatype: &IriRef, parser: P, constructor: C) -> ConcreteLiteral
 where
     P: Fn(&str) -> Result<T, String>,
     C: Fn(T) -> Result<ConcreteLiteral, RDFError>,

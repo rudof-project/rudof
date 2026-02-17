@@ -2,9 +2,10 @@ use crate::rdf_core::{
     NeighsRDF, RDFError,
     term::Triple,
     visualizer::{
-        RDFVisualizationConfig, errors::RdfVisualizerError, utils::UsageCount,
-        VisualRDFEdge, VisualRDFNode,
-        uml_converter::{UmlConverter, UmlGenerationMode, errors::UmlConverterError}
+        RDFVisualizationConfig, VisualRDFEdge, VisualRDFNode,
+        errors::RdfVisualizerError,
+        uml_converter::{UmlConverter, UmlGenerationMode, errors::UmlConverterError},
+        utils::UsageCount,
     },
 };
 
@@ -59,22 +60,19 @@ impl VisualRDFGraph {
     ///
     /// # Returns
     /// * `Result<Self, RDFError>` - The constructed graph or an error
-    pub fn from_rdf<R: NeighsRDF>(
-        rdf: &R,
-        config: RDFVisualizationConfig,
-    ) -> Result<Self, RDFError> {
+    pub fn from_rdf<R: NeighsRDF>(rdf: &R, config: RDFVisualizationConfig) -> Result<Self, RDFError> {
         let mut graph = VisualRDFGraph::new(config);
-        let triples = rdf.triples().map_err(|e| RDFError::ObtainingTriples {
-            error: e.to_string(),
-        })?;
-        
+        let triples = rdf
+            .triples()
+            .map_err(|e| RDFError::ObtainingTriples { error: e.to_string() })?;
+
         // Reserve capacity based on size hint to reduce reallocations
         if let Some(upper_bound) = triples.size_hint().1 {
             graph.nodes_map.reserve(upper_bound.saturating_mul(3)); // Estimate 3 nodes per triple
             graph.usage_count.reserve(upper_bound.saturating_mul(3));
             graph.edges.reserve(upper_bound);
         }
-        
+
         for triple in triples {
             let (subject, predicate, object) = triple.into_components();
             graph.create_triple(rdf, subject, predicate, object)?;
@@ -114,12 +112,8 @@ impl VisualRDFGraph {
         self.increment_usage_count_as_object(&object_node);
         let object_id = self.get_or_create_node(object_node.clone());
         self.edges.insert((subject_id, edge, object_id));
-        
-        Ok(VisualRDFNode::non_asserted_triple(
-            subject_node,
-            edge_node,
-            object_node,
-        ))
+
+        Ok(VisualRDFNode::non_asserted_triple(subject_node, edge_node, object_node))
     }
 
     /// Creates a visual representation of an RDF triple as a term (for RDF-star).
@@ -157,8 +151,9 @@ impl VisualRDFGraph {
         let subject_str = subject.to_string();
         let predicate_str = predicate.to_string();
         let object_str = object.to_string();
-        let asserted = rdf.contains(&subject, &predicate, &object).map_err(|e| {
-            RDFError::FailedCheckingAssertion {
+        let asserted = rdf
+            .contains(&subject, &predicate, &object)
+            .map_err(|e| RDFError::FailedCheckingAssertion {
                 subject: subject_str.to_string(),
                 predicate: predicate_str.to_string(),
                 object: object_str.to_string(),
@@ -269,11 +264,7 @@ impl VisualRDFGraph {
     ///
     /// # Returns
     /// * `Result<(), RdfVisualizerError>` - Ok if successful, Err with details on failure
-    pub fn as_plantuml<W: Write>(
-        &self,
-        writer: &mut W,
-        _mode: &UmlGenerationMode,
-    ) -> Result<(), RdfVisualizerError> {
+    pub fn as_plantuml<W: Write>(&self, writer: &mut W, _mode: &UmlGenerationMode) -> Result<(), RdfVisualizerError> {
         let style = self.config.get_style();
         writeln!(writer, "@startuml\n")?;
         writeln!(writer, "{}", style.as_uml())?;
@@ -286,11 +277,7 @@ impl VisualRDFGraph {
         }
         // Add edges
         for (source, edge, target) in &self.edges {
-            writeln!(
-                writer,
-                "{source} --> {target} : {}\n",
-                edge.as_plantuml_link()
-            )?;
+            writeln!(writer, "{source} --> {target} : {}\n", edge.as_plantuml_link())?;
         }
 
         // Add edges from triples
@@ -388,15 +375,9 @@ impl UmlConverter for VisualRDFGraph {
     /// Converts the visual graph to PlantUML format.
     ///
     /// This implementation delegates to the struct's own `as_plantuml` method.
-    fn as_plantuml<W: Write>(
-        &self,
-        writer: &mut W,
-        mode: &UmlGenerationMode,
-    ) -> Result<(), UmlConverterError> {
+    fn as_plantuml<W: Write>(&self, writer: &mut W, mode: &UmlGenerationMode) -> Result<(), UmlConverterError> {
         self.as_plantuml(writer, mode)
-            .map_err(|e| UmlConverterError::UmlError {
-                error: e.to_string(),
-            })
+            .map_err(|e| UmlConverterError::UmlError { error: e.to_string() })
     }
 }
 

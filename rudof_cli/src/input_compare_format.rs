@@ -27,7 +27,7 @@ impl InputCompareFormat {
             InputCompareFormat::ShExC => Ok(ShExFormat::ShExC),
             InputCompareFormat::ShExJ => Ok(ShExFormat::ShExJ),
             InputCompareFormat::Turtle => Ok(ShExFormat::RDFFormat(RDFFormat::Turtle)),
-            InputCompareFormat::RdfXml => Ok(ShExFormat::RDFFormat(RDFFormat::RdfXml)),
+            InputCompareFormat::RdfXml => Ok(ShExFormat::RDFFormat(RDFFormat::RDFXML)),
             InputCompareFormat::NTriples => Ok(ShExFormat::RDFFormat(RDFFormat::NTriples)),
         }
     }

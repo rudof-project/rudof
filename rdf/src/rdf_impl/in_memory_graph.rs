@@ -17,7 +17,7 @@ use oxjsonld::JsonLdParser;
 use oxrdfio::{JsonLdProfileSet, RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
-use prefixmap::{PrefixMapError, prefixmap::*};
+use prefixmap::{PrefixMapError, map::*};
 use iri_s::IriS;
 use std::collections::{HashMap, HashSet};
 use serde::{ser::SerializeStruct, Serialize};
@@ -202,7 +202,7 @@ impl InMemoryGraph {
             (Some(b), None) => Some(b.clone()),
             (_, Some(b)) => Some(IriS::new_unchecked(b)),
         };
-        let pm = PrefixMap::from_hashmap(&prefixes)?;
+        let pm = PrefixMap::from_hashmap(prefixes)?;
         self.merge_prefixes(pm)?;
         
         Ok(())
@@ -921,7 +921,7 @@ impl BuildRDF for InMemoryGraph {
     ///
     /// Returns an error if the prefix cannot be added to the prefix map.
     fn add_prefix(&mut self, alias: &str, iri: &IriS) -> Result<(), Self::Err> {
-        self.pm.insert(alias, iri)?;
+        self.pm.add_prefix(alias, iri.clone())?;
         Ok(())
     }
 

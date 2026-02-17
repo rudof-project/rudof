@@ -3,6 +3,13 @@ pub use dctap::{DCTAPFormat, DCTap as DCTAP};
 pub use iri_s::iri;
 pub use mie::Mie;
 pub use prefixmap::PrefixMap;
+pub use rdf::rdf_core::{
+    RDFFormat,
+    query::{QueryResultFormat, QuerySolution, QuerySolutions, SparqlQuery, VarName},
+    term::Object,
+    visualizer::uml_converter::UmlGenerationMode,
+};
+pub use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 pub use shacl_ast::ShaclFormat;
 pub use shacl_ast::ast::Schema as ShaclSchema;
 pub use shacl_ir::compiled::schema_ir::SchemaIR as ShaclSchemaIR;
@@ -19,13 +26,6 @@ pub use shex_validation::ValidatorConfig;
 pub use sparql_service::RdfData;
 pub use sparql_service::ServiceDescription;
 pub use sparql_service::ServiceDescriptionFormat;
-pub use rdf::rdf_core::{
-    RDFFormat,
-    visualizer::uml_converter::UmlGenerationMode,
-    query::{QuerySolutions, QuerySolution, QueryResultFormat, VarName, SparqlQuery},
-    term::Object,
-};
-pub use rdf::rdf_impl::{ReaderMode, InMemoryGraph};
 
 pub type Result<T> = result::Result<T, RudofError>;
 
@@ -41,12 +41,9 @@ use shex_ast::compact::ShExParser;
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::shapemap::{NodeSelector, ShapeSelector};
 use shex_ast::{ResolveMethod, ShExFormat, ShapeLabelIdx};
-use srdf::rdf_visualizer::visual_rdf_graph::VisualRDFGraph;
 // use shex_validation::SchemaWithoutImports;
-use rdf::rdf_core::{
-    Rdf, FocusRDF, query::QueryRDF, visualizer::VisualRDFGraph,
-};
-use rdf::rdf_impl::{SparqlEndpoint};
+use rdf::rdf_core::{FocusRDF, Rdf, query::QueryRDF, visualizer::VisualRDFGraph};
+use rdf::rdf_impl::SparqlEndpoint;
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::BufReader;
@@ -586,26 +583,29 @@ impl Rudof {
             ShaclFormat::Internal => Err(RudofError::InternalSHACLFormatNonReadable),
             ShaclFormat::Turtle => Ok(RDFFormat::Turtle),
             ShaclFormat::NTriples => Ok(RDFFormat::NTriples),
-            ShaclFormat::RdfXml => Ok(RDFFormat::RdfXml),
+            ShaclFormat::RdfXml => Ok(RDFFormat::RDFXML),
             ShaclFormat::TriG => Ok(RDFFormat::TriG),
             ShaclFormat::N3 => Ok(RDFFormat::N3),
             ShaclFormat::NQuads => Ok(RDFFormat::NQuads),
             ShaclFormat::JsonLd => Ok(RDFFormat::JsonLd),
         }?;
 
-        let rdf_graph = InMemoryGraph::from_reader(reader, reader_name, &format, base, reader_mode)
-            .map_err(|e| RudofError::ReadingSHACLError {
+        let rdf_graph = InMemoryGraph::from_reader(reader, reader_name, &format, base, reader_mode).map_err(|e| {
+            RudofError::ReadingSHACLError {
                 reader: reader_name.to_string(),
                 error: e.to_string(),
                 format: format.to_string(),
             }
         })?;
+
         let rdf_data = RdfData::from_graph(rdf_graph).map_err(|e| RudofError::ReadingSHACLFromGraphError {
             error: e.to_string(),
             format: format.to_string(),
             reader_name: reader_name.to_string(),
         })?;
+
         let schema = shacl_schema_from_data(rdf_data)?;
+
         self.shacl_schema = Some(schema);
         Ok(())
     }
@@ -653,12 +653,11 @@ impl Rudof {
                     error: format!("{e}"),
                 })?;
                 // Create a new SRDFSparql instance with the given IRI
-                let endpoint = SparqlEndpoint::new(&iri, &PrefixMap::new()).map_err(|e| {
-                    RudofError::InvalidEndpoint {
+                let endpoint =
+                    SparqlEndpoint::new(&iri, &PrefixMap::new()).map_err(|e| RudofError::InvalidEndpoint {
                         endpoint: name.to_string(),
                         error: format!("{e}"),
-                    }
-                })?;
+                    })?;
                 Ok((name.to_string(), endpoint))
             },
         }
@@ -1053,11 +1052,10 @@ impl Rudof {
     /// - `prefixmap` is the prefix map to be used with the endpoint
     ///   If an endpoint with the same name already exists, it is replaced
     pub fn add_endpoint(&mut self, name: &str, iri: &IriS, prefixmap: &PrefixMap) -> Result<()> {
-        let sparql_endpoint =
-            SparqlEndpoint::new(iri, prefixmap).map_err(|e| RudofError::AddingEndpointError {
-                iri: iri.clone(),
-                error: format!("{e}"),
-            })?;
+        let sparql_endpoint = SparqlEndpoint::new(iri, prefixmap).map_err(|e| RudofError::AddingEndpointError {
+            iri: iri.clone(),
+            error: format!("{e}"),
+        })?;
         self.rdf_data.add_endpoint(name, sparql_endpoint);
         Ok(())
     }
@@ -1211,7 +1209,7 @@ fn shacl_format2rdf_format(shacl_format: &ShaclFormat) -> Result<RDFFormat> {
         ShaclFormat::N3 => Ok(RDFFormat::N3),
         ShaclFormat::NQuads => Ok(RDFFormat::NQuads),
         ShaclFormat::NTriples => Ok(RDFFormat::NTriples),
-        ShaclFormat::RdfXml => Ok(RDFFormat::RdfXml),
+        ShaclFormat::RdfXml => Ok(RDFFormat::RDFXML),
         ShaclFormat::TriG => Ok(RDFFormat::TriG),
         ShaclFormat::Turtle => Ok(RDFFormat::Turtle),
         ShaclFormat::Internal => Err(RudofError::NoInternalFormatForRDF),
@@ -1327,13 +1325,7 @@ mod tests {
             .unwrap();
 
         rudof
-            .read_shex(
-                shex.as_bytes(),
-                &ShExFormat::ShExC,
-                None,
-                &ReaderMode::Strict,
-                None,
-            )
+            .read_shex(shex.as_bytes(), &ShExFormat::ShExC, None, &ReaderMode::Strict, None)
             .unwrap();
         rudof
             .read_shapemap(shapemap.as_bytes(), "Test", &ShapeMapFormat::default())
@@ -1362,13 +1354,7 @@ mod tests {
             .unwrap();
 
         rudof
-            .read_shex(
-                shex.as_bytes(),
-                &ShExFormat::ShExC,
-                None,
-                &ReaderMode::Strict,
-                None,
-            )
+            .read_shex(shex.as_bytes(), &ShExFormat::ShExC, None, &ReaderMode::Strict, None)
             .unwrap();
         rudof
             .read_shapemap(shapemap.as_bytes(), "Test", &ShapeMapFormat::default())
