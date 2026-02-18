@@ -70,11 +70,7 @@ impl<S: Rdf> Target<S> {
                 // TODO: Review this code and in SHACL 1.2, add sh_shape_class ?
                 rdf.add_triple(node, rdf_type().clone(), rdfs_class().clone())
             },
-            Target::WrongNode(_) => todo!(),
-            Target::WrongClass(_) => todo!(),
-            Target::WrongSubjectsOf(_) => todo!(),
-            Target::WrongObjectsOf(_) => todo!(),
-            Target::WrongImplicitClass(_) => todo!(),
+            _ => todo!(),
         }
     }
 }

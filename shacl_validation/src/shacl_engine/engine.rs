@@ -34,11 +34,7 @@ pub trait Engine<S: NeighsRDF> {
                 CompiledTarget::SubjectsOf(predicate) => self.target_subject_of(store, predicate),
                 CompiledTarget::ObjectsOf(predicate) => self.target_object_of(store, predicate),
                 CompiledTarget::ImplicitClass(node) => self.implicit_target_class(store, node),
-                CompiledTarget::WrongTargetNode(_) => todo!(),
-                CompiledTarget::WrongTargetClass(_) => todo!(),
-                CompiledTarget::WrongSubjectsOf(_) => todo!(),
-                CompiledTarget::WrongObjectsOf(_) => todo!(),
-                CompiledTarget::WrongImplicitClass(_) => todo!(),
+                _ => todo!(),
             })
             .collect();
         let ts = targets_iter.into_iter().flatten();
