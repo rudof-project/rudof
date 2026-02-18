@@ -1,12 +1,12 @@
 <div align="center">
 
-# rdf
+# rudof_rdf
 
 </div>
 
 ## 🚀 Overview
 
-The `rdf` crate is a core component of the Rudof project, providing foundational data structures, utilities, and algorithms for working with RDF (Resource Description Framework) data in Rust. It is designed to support parsing, querying, manipulating, and visualizing RDF graphs, and serves as the backbone for higher-level crates in the Rudof ecosystem.
+The `rudof_rdf` crate is a core component of the Rudof project, providing foundational data structures, utilities, and algorithms for working with RDF (Resource Description Framework) data in Rust. It is designed to support parsing, querying, manipulating, and visualizing RDF graphs, and serves as the backbone for higher-level crates in the Rudof ecosystem.
 
 ## 📦 Architecture and Package Structure
 
@@ -29,7 +29,7 @@ The crate is organized into several key modules:
 
 ### Main Dependencies
 
-The `rdf` crate depends on several key libraries, both internal and external:
+The `rudof_rdf` crate depends on several key libraries, both internal and external:
 
 - Main Internal Rudof crates dependecies:
   - `iri_s`: IRI handling
@@ -39,8 +39,8 @@ The `rdf` crate depends on several key libraries, both internal and external:
   - `reqwest`: HTTP client for remote data access
   - `tokio`: Asynchronous runtime
 
-### Crates That Depend on `rdf`
-The `rdf` crate is a foundational dependency for many other Rudof crates:
+### Crates That Depend on `rudof_rdf`
+The `rudof_rdf` crate is a foundational dependency for many other Rudof crates:
 
 - `rudof_lib`: The main library crate for Rudof, which re-exports and builds upon rdf for higher-level features.
 - `rudof_cli`: The command-line interface for Rudof, enabling users to interact with RDF data and perform validation, conversion, and querying.
@@ -49,4 +49,4 @@ The `rdf` crate is a foundational dependency for many other Rudof crates:
 - `shex_testsuite`, `shapes_comparator`, `shapes_converter`, `sparql_service`, and others.
 
 ## 🛠️ Usage
-The `rdf` crate is not typically used directly by end-users, but rather as a building block for higher-level libraries and applications in the Rudof project. It provides the essential types and traits for representing RDF graphs, parsing and serializing RDF data, executing SPARQL queries, and integrating with other semantic web technologies.
+The `rudof_rdf` crate is not typically used directly by end-users, but rather as a building block for higher-level libraries and applications in the Rudof project. It provides the essential types and traits for representing RDF graphs, parsing and serializing RDF data, executing SPARQL queries, and integrating with other semantic web technologies.

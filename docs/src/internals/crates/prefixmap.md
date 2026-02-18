@@ -70,7 +70,7 @@ This create is also used by other rudof modules that needs IRIs functionality, s
 - [`shex_ast`](./shex_ast.md)
 - [`shex_validation`](./shex_validation.md)
 - [`sparql_service`](./sparql_service.md)
-- [`srdf`](./srdf.md)
+- [`rudof_rdf`](./rudof_rdf.md)
 
 ## Documentation
 

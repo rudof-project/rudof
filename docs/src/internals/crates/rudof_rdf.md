@@ -1,6 +1,6 @@
-# `rdf`
+# `rudof_rdf`
 
-The `rdf` crate is a core component of the Rudof project, providing foundational data structures, utilities, and algorithms for working with RDF (Resource Description Framework) data in Rust. It supports parsing, querying, manipulating, and visualizing RDF graphs, and serves as the backbone for higher-level crates in the Rudof ecosystem.
+The `rudof_rdf` crate is a core component of the Rudof project, providing foundational data structures, utilities, and algorithms for working with RDF (Resource Description Framework) data in Rust. It supports parsing, querying, manipulating, and visualizing RDF graphs, and serves as the backbone for higher-level crates in the Rudof ecosystem.
 
 ## Architecture and Package Structure
 
@@ -160,4 +160,4 @@ fn main() {
 
 ## Documentation
 
-The crate documentation can be found [here](https://docs.rs/rdf).
+The crate documentation can be found [here](https://docs.rs/rudof_rdf).
