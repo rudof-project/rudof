@@ -40,27 +40,23 @@ struct State {
 }
 
 impl State {
-    fn from(pending: Vec<Object>) -> Self {
-        State { pending }
-    }
-
     fn pop_pending(&mut self) -> Option<Object> {
         self.pending.pop()
     }
 }
 
-pub struct ShaclParser<RDF>
-where
-    RDF: FocusRDF,
-{
+impl From<Vec<Object>> for State {
+    fn from(value: Vec<Object>) -> Self {
+        Self { pending: value }
+    }
+}
+
+pub struct ShaclParser<RDF: FocusRDF> {
     rdf_parser: RDFParse<RDF>,
     shapes: HashMap<Object, Shape<RDF>>,
 }
 
-impl<RDF> ShaclParser<RDF>
-where
-    RDF: FocusRDF,
-{
+impl<RDF: FocusRDF> ShaclParser<RDF> {
     pub fn new(rdf: RDF) -> ShaclParser<RDF> {
         ShaclParser {
             rdf_parser: RDFParse::new(rdf),
@@ -71,7 +67,7 @@ where
     pub fn parse(&mut self) -> Result<ShaclSchema<RDF>, ShaclParserError> {
         let prefixmap: PrefixMap = self.rdf_parser.prefixmap().unwrap_or_default();
 
-        let mut state = State::from(self.shapes_candidates()?);
+        let mut state: State = self.shapes_candidates()?.into();
         while let Some(node) = state.pop_pending() {
             if let std::collections::hash_map::Entry::Vacant(e) = self.shapes.entry(node.clone()) {
                 self.rdf_parser.rdf_mut().set_focus(&node.clone().into());
