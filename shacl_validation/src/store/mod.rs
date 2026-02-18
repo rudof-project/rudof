@@ -3,7 +3,7 @@ use rdf::rdf_core::RDFFormat;
 use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use shacl_ir::compiled::schema_ir::SchemaIR;
 use shacl_ir::compiled_shacl_error::CompiledShaclError;
-use shacl_rdf::rdf_to_shacl::ShaclParser;
+use shacl_rdf::ShaclParser;
 use std::io::BufRead;
 
 pub mod graph;

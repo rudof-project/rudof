@@ -11,7 +11,7 @@ use crate::{
 };
 use iri_s::IriS;
 use rdf::rdf_core::{Rdf, term::Object};
-use shacl_ast::Schema;
+use shacl_ast::ShaclSchema;
 use shacl_ast::node_shape::NodeShape;
 use std::collections::HashSet;
 
@@ -120,7 +120,7 @@ impl NodeShapeIR {
     /// It embeds some components like deactivated as boolean attributes of the internal representation of the node shape
     pub fn compile<S: Rdf>(
         shape: Box<NodeShape<S>>,
-        schema: &Schema<S>,
+        schema: &ShaclSchema<S>,
         schema_ir: &mut SchemaIR,
     ) -> Result<Self, Box<CompiledShaclError>> {
         let id = shape.id().clone();

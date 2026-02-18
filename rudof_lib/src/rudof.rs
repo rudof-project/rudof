@@ -11,7 +11,7 @@ pub use rdf::rdf_core::{
 };
 pub use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 pub use shacl_ast::ShaclFormat;
-pub use shacl_ast::ast::Schema as ShaclSchema;
+pub use shacl_ast::ast::ShaclSchema;
 pub use shacl_ir::compiled::schema_ir::SchemaIR as ShaclSchemaIR;
 pub use shacl_validation::shacl_processor::ShaclValidationMode;
 pub use shacl_validation::validation_report::report::ValidationReport;
@@ -991,7 +991,7 @@ impl Rudof {
                         error: e.to_string(),
                         schema: Box::new(ast_schema.clone()),
                     })?;
-                Ok::<(shacl_ir::schema_ir::SchemaIR, shacl_ast::Schema<RdfData>), RudofError>((
+                Ok::<(shacl_ir::schema_ir::SchemaIR, shacl_ast::ShaclSchema<RdfData>), RudofError>((
                     compiled_schema,
                     ast_schema.clone(),
                 ))

@@ -2,12 +2,7 @@ use std::collections::HashSet;
 use std::fmt::Display;
 
 use crate::reifier_info::ReifierInfo;
-use crate::shacl_vocab::{
-    sh_deactivated, sh_description, sh_group, sh_info, sh_name, sh_order, sh_path, sh_property_shape, sh_severity,
-    sh_violation, sh_warning,
-};
-use crate::{component::Component, message_map::MessageMap, severity::Severity, target::Target};
-use crate::{sh_debug, sh_trace};
+use crate::{ShaclVocab, component::Component, message_map::MessageMap, severity::Severity, target::Target};
 use iri_s::IriS;
 use rdf::rdf_core::{
     BuildRDF, Rdf, SHACLPath,
@@ -174,14 +169,14 @@ impl<RDF: Rdf> PropertyShape<RDF> {
         B: BuildRDF,
     {
         let id: B::Subject = self.id.clone().try_into().map_err(|_| unreachable!())?;
-        rdf.add_type(id.clone(), sh_property_shape().clone())?;
+        rdf.add_type(id.clone(), ShaclVocab::sh_property_shape().clone())?;
 
         self.name.iter().try_for_each(|(lang, value)| {
             let literal: B::Literal = match lang {
                 Some(_) => todo!(),
                 None => value.clone().into(),
             };
-            rdf.add_triple(id.clone(), sh_name().clone(), literal)
+            rdf.add_triple(id.clone(), ShaclVocab::sh_name().clone(), literal)
         })?;
 
         self.description.iter().try_for_each(|(lang, value)| {
@@ -189,7 +184,7 @@ impl<RDF: Rdf> PropertyShape<RDF> {
                 Some(_) => todo!(),
                 None => value.clone().into(),
             };
-            rdf.add_triple(id.clone(), sh_description().clone(), literal)
+            rdf.add_triple(id.clone(), ShaclVocab::sh_description().clone(), literal)
         })?;
 
         if let Some(order) = self.order.clone() {
@@ -214,15 +209,15 @@ impl<RDF: Rdf> PropertyShape<RDF> {
                 NumericLiteral::NegativeInteger(_) => todo!(),
                 NumericLiteral::NonPositiveInteger(_) => todo!(),
             };
-            rdf.add_triple(id.clone(), sh_order().clone(), literal)?;
+            rdf.add_triple(id.clone(), ShaclVocab::sh_order().clone(), literal)?;
         }
 
         if let Some(group) = &self.group {
-            rdf.add_triple(id.clone(), sh_group().clone(), group.clone())?;
+            rdf.add_triple(id.clone(), ShaclVocab::sh_group().clone(), group.clone())?;
         }
 
         if let SHACLPath::Predicate { pred } = &self.path {
-            rdf.add_triple(id.clone(), sh_path().clone(), pred.clone())?;
+            rdf.add_triple(id.clone(), ShaclVocab::sh_path().clone(), pred.clone())?;
         } else {
             unimplemented!()
         }
@@ -236,20 +231,20 @@ impl<RDF: Rdf> PropertyShape<RDF> {
         if self.deactivated {
             let literal: B::Literal = "true".to_string().into();
 
-            rdf.add_triple(id.clone(), sh_deactivated().clone(), literal)?;
+            rdf.add_triple(id.clone(), ShaclVocab::sh_deactivated().clone(), literal)?;
         }
 
         if let Some(severity) = &self.severity {
             let pred = match severity {
-                Severity::Trace => sh_trace(),
-                Severity::Debug => sh_debug(),
-                Severity::Violation => sh_violation(),
-                Severity::Info => sh_info(),
-                Severity::Warning => sh_warning(),
+                Severity::Trace => ShaclVocab::sh_trace(),
+                Severity::Debug => ShaclVocab::sh_debug(),
+                Severity::Violation => ShaclVocab::sh_violation(),
+                Severity::Info => ShaclVocab::sh_info(),
+                Severity::Warning => ShaclVocab::sh_warning(),
                 Severity::Generic(iri) => iri.get_iri().unwrap(),
             };
 
-            rdf.add_triple(id.clone(), sh_severity().clone(), pred.clone())?;
+            rdf.add_triple(id.clone(), ShaclVocab::sh_severity().clone(), pred.clone())?;
         }
 
         Ok(())

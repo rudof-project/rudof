@@ -1,13 +1,4 @@
-use crate::SH_DEACTIVATED_STR;
-use crate::shacl_vocab::{
-    SH_AND_STR, SH_CLASS_STR, SH_CLOSED_STR, SH_DATATYPE_STR, SH_DISJOINT_STR, SH_EQUALS_STR, SH_FLAGS_STR,
-    SH_HAS_VALUE_STR, SH_IGNORED_PROPERTIES_STR, SH_IN_STR, SH_IRI_STR, SH_LANGUAGE_IN_STR, SH_LESS_THAN_OR_EQUALS_STR,
-    SH_LESS_THAN_STR, SH_MAX_COUNT_STR, SH_MAX_EXCLUSIVE_STR, SH_MAX_INCLUSIVE_STR, SH_MAX_LENGTH_STR,
-    SH_MIN_COUNT_STR, SH_MIN_EXCLUSIVE_STR, SH_MIN_INCLUSIVE_STR, SH_MIN_LENGTH_STR, SH_NODE_STR, SH_NOT_STR,
-    SH_OR_STR, SH_PATTERN_STR, SH_QUALIFIED_MAX_COUNT_STR, SH_QUALIFIED_MIN_COUNT_STR, SH_QUALIFIED_VALUE_SHAPE_STR,
-    SH_UNIQUE_LANG_STR, SH_XONE_STR,
-};
-use crate::{node_kind::NodeKind, value::Value};
+use crate::{ShaclVocab, node_kind::NodeKind, value::Value};
 use iri_s::{IriS, iri};
 use itertools::Itertools;
 use prefixmap::IriRef;
@@ -88,115 +79,115 @@ impl Component {
     {
         match self {
             Self::Class(rdf_node) => {
-                Self::write_term(&rdf_node.clone().into(), SH_CLASS_STR, rdf_node, rdf)?;
+                Self::write_term(&rdf_node.clone().into(), ShaclVocab::SH_CLASS, rdf_node, rdf)?;
             },
             Self::Datatype(iri) => {
-                Self::write_iri(iri, SH_DATATYPE_STR, rdf_node, rdf)?;
+                Self::write_iri(iri, ShaclVocab::SH_DATATYPE, rdf_node, rdf)?;
             },
             Self::NodeKind(node_kind) => {
                 let iri = match &node_kind {
-                    NodeKind::Iri => SH_IRI_STR,
+                    NodeKind::Iri => ShaclVocab::SH_IRI,
 
                     _ => unimplemented!(),
                 };
 
-                Self::write_iri(&IriRef::Iri(iri!(iri)), SH_DATATYPE_STR, rdf_node, rdf)?;
+                Self::write_iri(&IriRef::Iri(iri!(iri)), ShaclVocab::SH_DATATYPE, rdf_node, rdf)?;
             },
             Self::MinCount(value) => {
-                Self::write_integer(*value, SH_MIN_COUNT_STR, rdf_node, rdf)?;
+                Self::write_integer(*value, ShaclVocab::SH_MIN_COUNT, rdf_node, rdf)?;
             },
             Self::MaxCount(value) => {
-                Self::write_integer(*value, SH_MAX_COUNT_STR, rdf_node, rdf)?;
+                Self::write_integer(*value, ShaclVocab::SH_MAX_COUNT, rdf_node, rdf)?;
             },
             Self::MinExclusive(value) => {
-                Self::write_literal(value, SH_MIN_EXCLUSIVE_STR, rdf_node, rdf)?;
+                Self::write_literal(value, ShaclVocab::SH_MIN_EXCLUSIVE, rdf_node, rdf)?;
             },
             Self::MaxExclusive(value) => {
-                Self::write_literal(value, SH_MAX_EXCLUSIVE_STR, rdf_node, rdf)?;
+                Self::write_literal(value, ShaclVocab::SH_MAX_EXCLUSIVE, rdf_node, rdf)?;
             },
             Self::MinInclusive(value) => {
-                Self::write_literal(value, SH_MIN_INCLUSIVE_STR, rdf_node, rdf)?;
+                Self::write_literal(value, ShaclVocab::SH_MIN_INCLUSIVE, rdf_node, rdf)?;
             },
             Self::MaxInclusive(value) => {
-                Self::write_literal(value, SH_MAX_INCLUSIVE_STR, rdf_node, rdf)?;
+                Self::write_literal(value, ShaclVocab::SH_MAX_INCLUSIVE, rdf_node, rdf)?;
             },
             Self::MinLength(value) => {
-                Self::write_integer(*value, SH_MIN_LENGTH_STR, rdf_node, rdf)?;
+                Self::write_integer(*value, ShaclVocab::SH_MIN_LENGTH, rdf_node, rdf)?;
             },
             Self::MaxLength(value) => {
-                Self::write_integer(*value, SH_MAX_LENGTH_STR, rdf_node, rdf)?;
+                Self::write_integer(*value, ShaclVocab::SH_MAX_LENGTH, rdf_node, rdf)?;
             },
             Self::Pattern { pattern, flags } => {
-                Self::write_literal(&ConcreteLiteral::str(pattern), SH_PATTERN_STR, rdf_node, rdf)?;
+                Self::write_literal(&ConcreteLiteral::str(pattern), ShaclVocab::SH_PATTERN, rdf_node, rdf)?;
                 if let Some(flags) = flags {
-                    Self::write_literal(&ConcreteLiteral::str(flags), SH_FLAGS_STR, rdf_node, rdf)?;
+                    Self::write_literal(&ConcreteLiteral::str(flags), ShaclVocab::SH_FLAGS, rdf_node, rdf)?;
                 }
             },
             Self::UniqueLang(value) => {
-                Self::write_boolean(*value, SH_UNIQUE_LANG_STR, rdf_node, rdf)?;
+                Self::write_boolean(*value, ShaclVocab::SH_UNIQUE_LANG, rdf_node, rdf)?;
             },
             Self::LanguageIn { langs } => {
                 langs.iter().try_for_each(|lang| {
                     Self::write_literal(
                         &ConcreteLiteral::str(&lang.to_string()),
-                        SH_LANGUAGE_IN_STR,
+                        ShaclVocab::SH_LANGUAGE_IN,
                         rdf_node,
                         rdf,
                     )
                 })?;
             },
             Self::Equals(iri) => {
-                Self::write_iri(iri, SH_EQUALS_STR, rdf_node, rdf)?;
+                Self::write_iri(iri, ShaclVocab::SH_EQUALS, rdf_node, rdf)?;
             },
             Self::Disjoint(iri) => {
-                Self::write_iri(iri, SH_DISJOINT_STR, rdf_node, rdf)?;
+                Self::write_iri(iri, ShaclVocab::SH_DISJOINT, rdf_node, rdf)?;
             },
             Self::LessThan(iri) => {
-                Self::write_iri(iri, SH_LESS_THAN_STR, rdf_node, rdf)?;
+                Self::write_iri(iri, ShaclVocab::SH_LESS_THAN, rdf_node, rdf)?;
             },
             Self::LessThanOrEquals(iri) => {
-                Self::write_iri(iri, SH_LESS_THAN_OR_EQUALS_STR, rdf_node, rdf)?;
+                Self::write_iri(iri, ShaclVocab::SH_LESS_THAN_OR_EQUALS, rdf_node, rdf)?;
             },
             Self::Or { shapes } => {
                 shapes
                     .iter()
-                    .try_for_each(|shape| Self::write_term(&shape.clone().into(), SH_OR_STR, rdf_node, rdf))?;
+                    .try_for_each(|shape| Self::write_term(&shape.clone().into(), ShaclVocab::SH_OR, rdf_node, rdf))?;
             },
             Self::And { shapes } => {
                 shapes
                     .iter()
-                    .try_for_each(|shape| Self::write_term(&shape.clone().into(), SH_AND_STR, rdf_node, rdf))?;
+                    .try_for_each(|shape| Self::write_term(&shape.clone().into(), ShaclVocab::SH_AND, rdf_node, rdf))?;
             },
             Self::Not { shape } => {
-                Self::write_term(&shape.clone().into(), SH_PATTERN_STR, rdf_node, rdf)?;
+                Self::write_term(&shape.clone().into(), ShaclVocab::SH_PATTERN, rdf_node, rdf)?;
             },
             Self::Xone { shapes } => {
-                shapes
-                    .iter()
-                    .try_for_each(|shape| Self::write_term(&shape.clone().into(), SH_XONE_STR, rdf_node, rdf))?;
+                shapes.iter().try_for_each(|shape| {
+                    Self::write_term(&shape.clone().into(), ShaclVocab::SH_XONE, rdf_node, rdf)
+                })?;
             },
             Self::Closed {
                 is_closed,
                 ignored_properties,
             } => {
-                Self::write_boolean(*is_closed, SH_CLOSED_STR, rdf_node, rdf)?;
+                Self::write_boolean(*is_closed, ShaclVocab::SH_CLOSED, rdf_node, rdf)?;
 
                 ignored_properties.iter().try_for_each(|iri| {
                     let iri_ref = IriRef::Iri(iri.clone());
-                    Self::write_iri(&iri_ref, SH_IGNORED_PROPERTIES_STR, rdf_node, rdf)
+                    Self::write_iri(&iri_ref, ShaclVocab::SH_IGNORED_PROPERTIES, rdf_node, rdf)
                 })?;
             },
             Self::Node { shape } => {
-                Self::write_term(&shape.clone().into(), SH_NODE_STR, rdf_node, rdf)?;
+                Self::write_term(&shape.clone().into(), ShaclVocab::SH_NODE, rdf_node, rdf)?;
             },
             Self::HasValue { value } => match value {
                 Value::Iri(iri) => {
-                    Self::write_iri(iri, SH_HAS_VALUE_STR, rdf_node, rdf)?;
+                    Self::write_iri(iri, ShaclVocab::SH_HAS_VALUE, rdf_node, rdf)?;
                 },
                 Value::Literal(literal) => {
                     Self::write_literal(
                         &ConcreteLiteral::str(&literal.to_string()),
-                        SH_HAS_VALUE_STR,
+                        ShaclVocab::SH_HAS_VALUE,
                         rdf_node,
                         rdf,
                     )?;
@@ -205,14 +196,17 @@ impl Component {
             Self::In { values } => {
                 // TODO: Review this code
                 values.iter().try_for_each(|value| match value {
-                    Value::Iri(iri) => Self::write_iri(iri, SH_IN_STR, rdf_node, rdf),
-                    Value::Literal(literal) => {
-                        Self::write_literal(&ConcreteLiteral::str(&literal.to_string()), SH_IN_STR, rdf_node, rdf)
-                    },
+                    Value::Iri(iri) => Self::write_iri(iri, ShaclVocab::SH_IN, rdf_node, rdf),
+                    Value::Literal(literal) => Self::write_literal(
+                        &ConcreteLiteral::str(&literal.to_string()),
+                        ShaclVocab::SH_IN,
+                        rdf_node,
+                        rdf,
+                    ),
                 })?;
             },
             Self::Deactivated(value) => {
-                Self::write_boolean(*value, SH_DEACTIVATED_STR, rdf_node, rdf)?;
+                Self::write_boolean(*value, ShaclVocab::SH_DEACTIVATED, rdf_node, rdf)?;
             },
             Self::QualifiedValueShape {
                 shape,
@@ -221,18 +215,23 @@ impl Component {
                 disjoint,
                 ..
             } => {
-                Self::write_term(&shape.clone().into(), SH_QUALIFIED_VALUE_SHAPE_STR, rdf_node, rdf)?;
+                Self::write_term(
+                    &shape.clone().into(),
+                    ShaclVocab::SH_QUALIFIED_VALUE_SHAPE,
+                    rdf_node,
+                    rdf,
+                )?;
 
                 if let Some(value) = q_min_count {
-                    Self::write_integer(*value, SH_QUALIFIED_MIN_COUNT_STR, rdf_node, rdf)?;
+                    Self::write_integer(*value, ShaclVocab::SH_QUALIFIED_MIN_COUNT, rdf_node, rdf)?;
                 }
 
                 if let Some(value) = q_max_count {
-                    Self::write_integer(*value, SH_QUALIFIED_MAX_COUNT_STR, rdf_node, rdf)?;
+                    Self::write_integer(*value, ShaclVocab::SH_QUALIFIED_MAX_COUNT, rdf_node, rdf)?;
                 }
 
                 if let Some(value) = disjoint {
-                    Self::write_boolean(*value, SH_QUALIFIED_MAX_COUNT_STR, rdf_node, rdf)?;
+                    Self::write_boolean(*value, ShaclVocab::SH_QUALIFIED_MAX_COUNT, rdf_node, rdf)?;
                 }
             },
         }
@@ -377,34 +376,34 @@ impl Display for Component {
 impl From<Component> for IriS {
     fn from(value: Component) -> Self {
         match value {
-            Component::Class(_) => IriS::new_unchecked(SH_CLASS_STR),
-            Component::Datatype(_) => IriS::new_unchecked(SH_DATATYPE_STR),
-            Component::NodeKind(_) => IriS::new_unchecked(SH_IRI_STR),
-            Component::MinCount(_) => IriS::new_unchecked(SH_MIN_COUNT_STR),
-            Component::MaxCount(_) => IriS::new_unchecked(SH_MAX_COUNT_STR),
-            Component::MinExclusive(_) => IriS::new_unchecked(SH_MIN_EXCLUSIVE_STR),
-            Component::MaxExclusive(_) => IriS::new_unchecked(SH_MAX_EXCLUSIVE_STR),
-            Component::MinInclusive(_) => IriS::new_unchecked(SH_MIN_INCLUSIVE_STR),
-            Component::MaxInclusive(_) => IriS::new_unchecked(SH_MAX_INCLUSIVE_STR),
-            Component::MinLength(_) => IriS::new_unchecked(SH_MIN_LENGTH_STR),
-            Component::MaxLength(_) => IriS::new_unchecked(SH_MAX_LENGTH_STR),
-            Component::Pattern { .. } => IriS::new_unchecked(SH_PATTERN_STR),
-            Component::UniqueLang(_) => IriS::new_unchecked(SH_UNIQUE_LANG_STR),
-            Component::LanguageIn { .. } => IriS::new_unchecked(SH_LANGUAGE_IN_STR),
-            Component::Equals(_) => IriS::new_unchecked(SH_EQUALS_STR),
-            Component::Disjoint(_) => IriS::new_unchecked(SH_DISJOINT_STR),
-            Component::LessThan(_) => IriS::new_unchecked(SH_LESS_THAN_STR),
-            Component::LessThanOrEquals(_) => IriS::new_unchecked(SH_LESS_THAN_OR_EQUALS_STR),
-            Component::Or { .. } => IriS::new_unchecked(SH_OR_STR),
-            Component::And { .. } => IriS::new_unchecked(SH_AND_STR),
-            Component::Not { .. } => IriS::new_unchecked(SH_NOT_STR),
-            Component::Xone { .. } => IriS::new_unchecked(SH_XONE_STR),
-            Component::Closed { .. } => IriS::new_unchecked(SH_CLOSED_STR),
-            Component::Node { .. } => IriS::new_unchecked(SH_NODE_STR),
-            Component::HasValue { .. } => IriS::new_unchecked(SH_HAS_VALUE_STR),
-            Component::In { .. } => IriS::new_unchecked(SH_IN_STR),
-            Component::QualifiedValueShape { .. } => IriS::new_unchecked(SH_QUALIFIED_VALUE_SHAPE_STR),
-            Component::Deactivated(_) => IriS::new_unchecked(SH_DEACTIVATED_STR),
+            Component::Class(_) => ShaclVocab::sh_class().clone(),
+            Component::Datatype(_) => ShaclVocab::sh_datatype().clone(),
+            Component::NodeKind(_) => ShaclVocab::sh_iri().clone(),
+            Component::MinCount(_) => ShaclVocab::sh_min_count().clone(),
+            Component::MaxCount(_) => ShaclVocab::sh_max_count().clone(),
+            Component::MinExclusive(_) => ShaclVocab::sh_min_exclusive().clone(),
+            Component::MaxExclusive(_) => ShaclVocab::sh_max_exclusive().clone(),
+            Component::MinInclusive(_) => ShaclVocab::sh_min_inclusive().clone(),
+            Component::MaxInclusive(_) => ShaclVocab::sh_max_inclusive().clone(),
+            Component::MinLength(_) => ShaclVocab::sh_min_length().clone(),
+            Component::MaxLength(_) => ShaclVocab::sh_max_length().clone(),
+            Component::Pattern { .. } => ShaclVocab::sh_pattern().clone(),
+            Component::UniqueLang(_) => ShaclVocab::sh_unique_lang().clone(),
+            Component::LanguageIn { .. } => ShaclVocab::sh_language_in().clone(),
+            Component::Equals(_) => ShaclVocab::sh_equals().clone(),
+            Component::Disjoint(_) => ShaclVocab::sh_disjoint().clone(),
+            Component::LessThan(_) => ShaclVocab::sh_less_than().clone(),
+            Component::LessThanOrEquals(_) => ShaclVocab::sh_less_than_or_equals().clone(),
+            Component::Or { .. } => ShaclVocab::sh_or().clone(),
+            Component::And { .. } => ShaclVocab::sh_and().clone(),
+            Component::Not { .. } => ShaclVocab::sh_not().clone(),
+            Component::Xone { .. } => ShaclVocab::sh_xone().clone(),
+            Component::Closed { .. } => ShaclVocab::sh_closed().clone(),
+            Component::Node { .. } => ShaclVocab::sh_node().clone(),
+            Component::HasValue { .. } => ShaclVocab::sh_has_value().clone(),
+            Component::In { .. } => ShaclVocab::sh_in().clone(),
+            Component::QualifiedValueShape { .. } => ShaclVocab::sh_qualified_value_shape().clone(),
+            Component::Deactivated(_) => ShaclVocab::sh_deactivated().clone(),
         }
     }
 }

@@ -1,8 +1,4 @@
-use crate::shacl_vocab::{
-    sh_description, sh_group, sh_info, sh_name, sh_node_shape, sh_property, sh_severity, sh_violation, sh_warning,
-};
-use crate::{component::Component, message_map::MessageMap, severity::Severity, target::Target};
-use crate::{sh_debug, sh_trace};
+use crate::{ShaclVocab, component::Component, message_map::MessageMap, severity::Severity, target::Target};
 use iri_s::IriS;
 use rdf::rdf_core::{BuildRDF, Rdf, term::Object};
 use std::collections::HashSet;
@@ -117,14 +113,14 @@ impl<RDF: Rdf> NodeShape<RDF> {
         B: BuildRDF,
     {
         let id: B::Subject = self.id.clone().try_into().map_err(|_| unreachable!())?;
-        rdf.add_type(id.clone(), sh_node_shape().clone())?;
+        rdf.add_type(id.clone(), ShaclVocab::sh_node_shape().clone())?;
 
         self.name.iter().try_for_each(|(lang, value)| {
             let literal: B::Literal = match lang {
                 Some(_) => todo!(),
                 None => value.clone().into(),
             };
-            rdf.add_triple(id.clone(), sh_name().clone(), literal)
+            rdf.add_triple(id.clone(), ShaclVocab::sh_name().clone(), literal)
         })?;
 
         self.description.iter().try_for_each(|(lang, value)| {
@@ -132,7 +128,7 @@ impl<RDF: Rdf> NodeShape<RDF> {
                 Some(_) => todo!(),
                 None => value.clone().into(),
             };
-            rdf.add_triple(id.clone(), sh_description().clone(), literal)
+            rdf.add_triple(id.clone(), ShaclVocab::sh_description().clone(), literal)
         })?;
 
         self.components
@@ -141,25 +137,25 @@ impl<RDF: Rdf> NodeShape<RDF> {
 
         self.targets.iter().try_for_each(|target| target.write(&self.id, rdf))?;
 
-        self.property_shapes
-            .iter()
-            .try_for_each(|property_shape| rdf.add_triple(id.clone(), sh_property().clone(), property_shape.clone()))?;
+        self.property_shapes.iter().try_for_each(|property_shape| {
+            rdf.add_triple(id.clone(), ShaclVocab::sh_property().clone(), property_shape.clone())
+        })?;
 
         if let Some(group) = &self.group {
-            rdf.add_triple(id.clone(), sh_group().clone(), group.clone())?;
+            rdf.add_triple(id.clone(), ShaclVocab::sh_group().clone(), group.clone())?;
         }
 
         if let Some(severity) = &self.severity {
             let pred = match severity {
-                Severity::Trace => sh_trace(),
-                Severity::Debug => sh_debug(),
-                Severity::Violation => sh_violation(),
-                Severity::Info => sh_info(),
-                Severity::Warning => sh_warning(),
+                Severity::Trace => ShaclVocab::sh_trace(),
+                Severity::Debug => ShaclVocab::sh_debug(),
+                Severity::Violation => ShaclVocab::sh_violation(),
+                Severity::Info => ShaclVocab::sh_info(),
+                Severity::Warning => ShaclVocab::sh_warning(),
                 Severity::Generic(iri) => iri.get_iri().unwrap(),
             };
 
-            rdf.add_triple(id.clone(), sh_severity().clone(), pred.clone())?;
+            rdf.add_triple(id.clone(), ShaclVocab::sh_severity().clone(), pred.clone())?;
         }
 
         Ok(())

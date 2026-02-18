@@ -4,7 +4,7 @@ use iri_s::iri;
 use prefixmap::IriRef;
 use rdf::rdf_core::{Rdf, SHACLPath, term::Object};
 use shacl_ast::{
-    Schema as ShaclSchema, component::Component, node_shape::NodeShape, property_shape::PropertyShape,
+    ShaclSchema, component::Component, node_shape::NodeShape, property_shape::PropertyShape,
     shape::Shape as ShaclShape, target::Target,
 };
 use shex_ast::{

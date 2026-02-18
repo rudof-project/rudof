@@ -1,7 +1,7 @@
 use rdf::rdf_core::{term::Object, utils::RDFRegexError};
 use rdf::rdf_impl::InMemoryGraphError;
 use shacl_ast::ShaclError;
-use shacl_rdf::shacl_parser_error::ShaclParserError;
+use shacl_rdf::error::ShaclParserError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]

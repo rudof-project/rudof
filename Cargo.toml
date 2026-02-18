@@ -288,10 +288,12 @@ oxrdfio = { version = "0.2.0", features = ["rdf-12"] }
 oxrdfxml = { version = "0.2.0" }
 oxsdatatypes = "0.2.2"
 oxttl = { version = "0.2.0", features = ["rdf-12"] }
+paste = "1.0.15"
 pgschema = { version = "0.1.5", path = "./pgschema" }
 petgraph = { version = "0.8" }
 prefixmap = { version = "0.1.104", path = "./prefixmap" }
 pretty = { version = "0.12" }
+proptest = "1.9.0"
 pyrudof = { version = "0.1.110", path = "./python" }
 rand = "0.8"
 rayon = "1.7"
@@ -351,5 +353,4 @@ tracing-test = "0.2.5"
 url = "2.2.2"
 uuid = { version = "1.0", features = ["v4"] }
 yaml-rust2 = { version = "0.10" }
-proptest = "1.9.0"
 #bencher = "0.1.5"

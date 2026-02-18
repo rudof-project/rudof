@@ -4,7 +4,7 @@ use crate::{
 };
 use iri_s::IriS;
 use rdf::rdf_core::{Rdf, SHACLPath};
-use shacl_ast::{Schema, property_shape::PropertyShape};
+use shacl_ast::{ShaclSchema, property_shape::PropertyShape};
 use std::fmt::Display;
 
 #[derive(Debug, Clone, Default)]
@@ -29,7 +29,7 @@ impl ReifierInfo {
 
     pub fn get_reifier_info_property_shape<R: Rdf>(
         shape: &PropertyShape<R>,
-        schema: &Schema<R>,
+        schema: &ShaclSchema<R>,
         schema_ir: &mut SchemaIR,
     ) -> Result<Option<Self>, Box<CompiledShaclError>> {
         if let Some(reifier_info) = shape.reifier_info() {

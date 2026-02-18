@@ -5,10 +5,9 @@ use crate::{DataGeneratorError, Result};
 use rdf::rdf_core::{RDFFormat, term::literal::ConcreteLiteral};
 use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use shacl_ast::{
-    Schema as ShaclSchema, component::Component, node_shape::NodeShape, property_shape::PropertyShape,
-    shape::Shape as ShaclShape,
+    ShaclSchema, component::Component, node_shape::NodeShape, property_shape::PropertyShape, shape::Shape as ShaclShape,
 };
-use shacl_rdf::rdf_to_shacl::ShaclParser;
+use shacl_rdf::ShaclParser;
 use std::fs;
 use std::path::Path;
 

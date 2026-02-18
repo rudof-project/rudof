@@ -1,4 +1,3 @@
-mod shacl_parser;
-pub mod shacl_parser_error;
+mod parser;
 
-pub use shacl_parser::*;
+pub use parser::ShaclParser;

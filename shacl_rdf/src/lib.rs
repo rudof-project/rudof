@@ -4,18 +4,19 @@
 //!
 #![deny(rust_2018_idioms)]
 
-pub mod rdf_to_shacl;
-pub mod shacl_to_rdf;
+pub mod error;
+mod rdf_to_shacl;
+mod shacl_to_rdf;
 
 use rdf::rdf_core::FocusRDF;
-pub use rdf_to_shacl::*;
-pub use shacl_to_rdf::*;
+pub use rdf_to_shacl::ShaclParser;
+pub use shacl_to_rdf::ShaclWriter;
 
-pub fn parse_shacl_rdf<RDF>(rdf: RDF) -> Result<shacl_ast::Schema<RDF>, crate::shacl_parser_error::ShaclParserError>
+pub fn parse_shacl_rdf<RDF>(rdf: RDF) -> Result<shacl_ast::ShaclSchema<RDF>, error::ShaclParserError>
 where
     RDF: FocusRDF,
 {
-    let mut parser = crate::ShaclParser::new(rdf);
+    let mut parser = ShaclParser::new(rdf);
     let schema = parser.parse()?;
     Ok(schema)
 }

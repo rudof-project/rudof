@@ -13,15 +13,9 @@ use rdf::rdf_core::{
     },
     utils::RDFRegex,
 };
-use shacl_ast::Schema;
 use shacl_ast::component::Component;
 use shacl_ast::node_kind::NodeKind;
-use shacl_ast::shacl_vocab::{
-    sh_and, sh_class, sh_datatype, sh_disjoint, sh_equals, sh_has_value, sh_in, sh_language_in, sh_less_than,
-    sh_less_than_or_equals, sh_max_count, sh_max_exclusive, sh_max_inclusive, sh_max_length, sh_min_count,
-    sh_min_exclusive, sh_min_inclusive, sh_min_length, sh_node, sh_node_kind, sh_not, sh_or, sh_pattern,
-    sh_qualified_value_shape, sh_unique_lang, sh_xone,
-};
+use shacl_ast::{ShaclSchema, ShaclVocab};
 use std::collections::HashSet;
 use std::fmt::Display;
 
@@ -63,7 +57,7 @@ impl ComponentIR {
     /// The vector is list of dependant shapes for cases with recursion
     pub fn compile<S: Rdf>(
         component: Component,
-        schema: &Schema<S>,
+        schema: &ShaclSchema<S>,
         schema_ir: &mut SchemaIR,
     ) -> Result<Option<ComponentIR>, Box<CompiledShaclError>> {
         let value = match component {
@@ -858,32 +852,32 @@ impl MinInclusive {
 impl From<&ComponentIR> for IriS {
     fn from(value: &ComponentIR) -> Self {
         match value {
-            ComponentIR::Class(_) => sh_class().clone(),
-            ComponentIR::Datatype(_) => sh_datatype().clone(),
-            ComponentIR::NodeKind(_) => sh_node_kind().clone(),
-            ComponentIR::MinCount(_) => sh_min_count().clone(),
-            ComponentIR::MaxCount(_) => sh_max_count().clone(),
-            ComponentIR::MinExclusive(_) => sh_min_exclusive().clone(),
-            ComponentIR::MaxExclusive(_) => sh_max_exclusive().clone(),
-            ComponentIR::MinInclusive(_) => sh_min_inclusive().clone(),
-            ComponentIR::MaxInclusive(_) => sh_max_inclusive().clone(),
-            ComponentIR::MinLength(_) => sh_min_length().clone(),
-            ComponentIR::MaxLength(_) => sh_max_length().clone(),
-            ComponentIR::Pattern { .. } => sh_pattern().clone(),
-            ComponentIR::UniqueLang(_) => sh_unique_lang().clone(),
-            ComponentIR::LanguageIn { .. } => sh_language_in().clone(),
-            ComponentIR::Equals(_) => sh_equals().clone(),
-            ComponentIR::Disjoint(_) => sh_disjoint().clone(),
-            ComponentIR::LessThan(_) => sh_less_than().clone(),
-            ComponentIR::LessThanOrEquals(_) => sh_less_than_or_equals().clone(),
-            ComponentIR::Or { .. } => sh_or().clone(),
-            ComponentIR::And { .. } => sh_and().clone(),
-            ComponentIR::Not { .. } => sh_not().clone(),
-            ComponentIR::Xone { .. } => sh_xone().clone(),
-            ComponentIR::Node { .. } => sh_node().clone(),
-            ComponentIR::HasValue { .. } => sh_has_value().clone(),
-            ComponentIR::In { .. } => sh_in().clone(),
-            ComponentIR::QualifiedValueShape { .. } => sh_qualified_value_shape().clone(),
+            ComponentIR::Class(_) => ShaclVocab::sh_class().clone(),
+            ComponentIR::Datatype(_) => ShaclVocab::sh_datatype().clone(),
+            ComponentIR::NodeKind(_) => ShaclVocab::sh_node_kind().clone(),
+            ComponentIR::MinCount(_) => ShaclVocab::sh_min_count().clone(),
+            ComponentIR::MaxCount(_) => ShaclVocab::sh_max_count().clone(),
+            ComponentIR::MinExclusive(_) => ShaclVocab::sh_min_exclusive().clone(),
+            ComponentIR::MaxExclusive(_) => ShaclVocab::sh_max_exclusive().clone(),
+            ComponentIR::MinInclusive(_) => ShaclVocab::sh_min_inclusive().clone(),
+            ComponentIR::MaxInclusive(_) => ShaclVocab::sh_max_inclusive().clone(),
+            ComponentIR::MinLength(_) => ShaclVocab::sh_min_length().clone(),
+            ComponentIR::MaxLength(_) => ShaclVocab::sh_max_length().clone(),
+            ComponentIR::Pattern { .. } => ShaclVocab::sh_pattern().clone(),
+            ComponentIR::UniqueLang(_) => ShaclVocab::sh_unique_lang().clone(),
+            ComponentIR::LanguageIn { .. } => ShaclVocab::sh_language_in().clone(),
+            ComponentIR::Equals(_) => ShaclVocab::sh_equals().clone(),
+            ComponentIR::Disjoint(_) => ShaclVocab::sh_disjoint().clone(),
+            ComponentIR::LessThan(_) => ShaclVocab::sh_less_than().clone(),
+            ComponentIR::LessThanOrEquals(_) => ShaclVocab::sh_less_than_or_equals().clone(),
+            ComponentIR::Or { .. } => ShaclVocab::sh_or().clone(),
+            ComponentIR::And { .. } => ShaclVocab::sh_and().clone(),
+            ComponentIR::Not { .. } => ShaclVocab::sh_not().clone(),
+            ComponentIR::Xone { .. } => ShaclVocab::sh_xone().clone(),
+            ComponentIR::Node { .. } => ShaclVocab::sh_node().clone(),
+            ComponentIR::HasValue { .. } => ShaclVocab::sh_has_value().clone(),
+            ComponentIR::In { .. } => ShaclVocab::sh_in().clone(),
+            ComponentIR::QualifiedValueShape { .. } => ShaclVocab::sh_qualified_value_shape().clone(),
         }
     }
 }

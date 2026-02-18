@@ -16,7 +16,7 @@ use either::Either;
 use iri_s::IriS;
 use prefixmap::IriRef;
 use rdf::rdf_core::{Rdf, term::Object};
-use shacl_ast::Schema;
+use shacl_ast::ShaclSchema;
 use shacl_ast::value::Value;
 use shape::ShapeIR;
 use tracing::trace;
@@ -36,7 +36,7 @@ fn convert_iri_ref(iri_ref: IriRef) -> Result<IriS, Box<CompiledShaclError>> {
 
 fn compile_shape<S: Rdf>(
     node: &Object,
-    schema: &Schema<S>,
+    schema: &ShaclSchema<S>,
     schema_ir: &mut SchemaIR,
 ) -> Result<ShapeLabelIdx, Box<CompiledShaclError>> {
     let shape = schema.get_shape(node).ok_or(CompiledShaclError::ShapeNotFound {
@@ -56,7 +56,7 @@ fn compile_shape<S: Rdf>(
 
 fn compile_shapes<S: Rdf>(
     shapes: Vec<Object>,
-    schema: &Schema<S>,
+    schema: &ShaclSchema<S>,
     schema_ir: &mut SchemaIR,
 ) -> Result<Vec<ShapeLabelIdx>, Box<CompiledShaclError>> {
     let compiled_shapes = shapes

@@ -12,7 +12,7 @@ use crate::schema_ir::SchemaIR;
 use crate::shape_label_idx::ShapeLabelIdx;
 use iri_s::IriS;
 use rdf::rdf_core::{Rdf, SHACLPath, term::Object};
-use shacl_ast::Schema;
+use shacl_ast::ShaclSchema;
 use shacl_ast::property_shape::PropertyShape;
 use std::collections::HashSet;
 
@@ -114,7 +114,7 @@ impl PropertyShapeIR {
 impl PropertyShapeIR {
     pub fn compile<S: Rdf>(
         shape: PropertyShape<S>,
-        schema: &Schema<S>,
+        schema: &ShaclSchema<S>,
         schema_ir: &mut SchemaIR,
     ) -> Result<Self, Box<CompiledShaclError>> {
         let id = shape.id().clone();
