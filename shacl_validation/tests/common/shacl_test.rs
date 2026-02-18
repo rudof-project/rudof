@@ -1,4 +1,4 @@
-use rdf::rdf_core::Rdf;
+use rudof_rdf::rdf_core::Rdf;
 use shacl_ast::ShaclSchema;
 use shacl_validation::validation_report::report::ValidationReport;
 

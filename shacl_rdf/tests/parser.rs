@@ -1,9 +1,9 @@
 use iri_s::IriS;
-use rdf::rdf_core::{
+use rudof_rdf::rdf_core::{
     RDFFormat,
     term::{Object, literal::Lang},
 };
-use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use shacl_ast::component::Component;
 use shacl_ast::shape::Shape;
 use shacl_rdf::ShaclParser;

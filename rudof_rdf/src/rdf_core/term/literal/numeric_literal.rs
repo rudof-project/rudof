@@ -276,29 +276,66 @@ impl NumericLiteral {
     /// For decimals, this excludes the decimal point and sign.
     /// Returns None for float/double as they don't have a fixed digit count.
     pub fn total_digits(&self) -> Option<usize> {
-        match self {
+        let digits = match self {
             // For integer types, count digits in string representation
-            NumericLiteral::Integer(d) => Some(d.abs().to_string().len()),
-            NumericLiteral::Long(d) => Some(d.abs().to_string().len()),
-            NumericLiteral::Byte(d) => Some(d.abs().to_string().len()),
-            NumericLiteral::Short(d) => Some(d.abs().to_string().len()),
-            NumericLiteral::NonNegativeInteger(d) => Some(d.to_string().len()),
-            NumericLiteral::UnsignedLong(d) => Some(d.to_string().len()),
-            NumericLiteral::UnsignedInt(d) => Some(d.to_string().len()),
-            NumericLiteral::UnsignedShort(d) => Some(d.to_string().len()),
-            NumericLiteral::UnsignedByte(d) => Some(d.to_string().len()),
-            NumericLiteral::PositiveInteger(d) => Some(d.to_string().len()),
-            NumericLiteral::NegativeInteger(d) => Some(d.abs().to_string().len()),
-            NumericLiteral::NonPositiveInteger(d) => Some(d.abs().to_string().len()),
+            NumericLiteral::Integer(d) => {
+                if *d == i128::MIN {
+                    39
+                } else {
+                    d.abs().to_string().len()
+                }
+            },
+            NumericLiteral::Long(d) => {
+                if *d == i64::MIN {
+                    19
+                } else {
+                    d.abs().to_string().len()
+                }
+            },
+            NumericLiteral::Byte(d) => {
+                if *d == i8::MIN {
+                    3
+                } else {
+                    d.abs().to_string().len()
+                }
+            },
+            NumericLiteral::Short(d) => {
+                if *d == i16::MIN {
+                    5
+                } else {
+                    d.abs().to_string().len()
+                }
+            },
+            NumericLiteral::NonNegativeInteger(d) => d.to_string().len(),
+            NumericLiteral::UnsignedLong(d) => d.to_string().len(),
+            NumericLiteral::UnsignedInt(d) => d.to_string().len(),
+            NumericLiteral::UnsignedShort(d) => d.to_string().len(),
+            NumericLiteral::UnsignedByte(d) => d.to_string().len(),
+            NumericLiteral::PositiveInteger(d) => d.to_string().len(),
+            NumericLiteral::NegativeInteger(d) => {
+                if *d == i128::MIN {
+                    39
+                } else {
+                    d.abs().to_string().len()
+                }
+            },
+            NumericLiteral::NonPositiveInteger(d) => {
+                if *d == i128::MIN {
+                    39
+                } else {
+                    d.abs().to_string().len()
+                }
+            },
             // For decimals, normalize and count only digits
             NumericLiteral::Decimal(d) => {
                 let normalized = d.normalize();
-                let digit_count = normalized.to_string().chars().filter(|c| c.is_ascii_digit()).count();
-                Some(digit_count)
+                normalized.to_string().chars().filter(|c| c.is_ascii_digit()).count()
             },
             // Float/double don't have meaningful total digits
-            NumericLiteral::Double(_) | NumericLiteral::Float(_) => None,
-        }
+            NumericLiteral::Double(_) | NumericLiteral::Float(_) => return None,
+        };
+
+        Some(digits)
     }
 
     /// Returns the number of fractional digits.

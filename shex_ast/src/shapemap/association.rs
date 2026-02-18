@@ -1,6 +1,6 @@
 use crate::ShapeExprLabel;
 use crate::shapemap::{NodeSelector, ShapeSelector, ShapemapError};
-use rdf::rdf_core::query::QueryRDF;
+use rudof_rdf::rdf_core::query::QueryRDF;
 use serde::Serialize;
 use std::iter::once;
 use tracing::trace;

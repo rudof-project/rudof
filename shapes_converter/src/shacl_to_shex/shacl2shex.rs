@@ -2,7 +2,7 @@ use super::{Shacl2ShExConfig, Shacl2ShExError};
 use iri_s::IriS;
 use iri_s::iri;
 use prefixmap::IriRef;
-use rdf::rdf_core::{Rdf, SHACLPath, term::Object};
+use rudof_rdf::rdf_core::{Rdf, SHACLPath, term::Object};
 use shacl_ast::{
     ShaclSchema, component::Component, node_shape::NodeShape, property_shape::PropertyShape,
     shape::Shape as ShaclShape, target::Target,

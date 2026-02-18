@@ -1,7 +1,7 @@
 use iri_s::IriS;
 use prefixmap::IriRef;
 use rbe::Value;
-use rdf::rdf_core::{
+use rudof_rdf::rdf_core::{
     RDFError,
     term::{
         Object,

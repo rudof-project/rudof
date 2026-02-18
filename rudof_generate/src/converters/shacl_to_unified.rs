@@ -2,8 +2,8 @@ use crate::unified_constraints::{
     NodeKind, UnifiedConstraint, UnifiedConstraintModel, UnifiedPropertyConstraint, UnifiedShape, Value,
 };
 use crate::{DataGeneratorError, Result};
-use rdf::rdf_core::{RDFFormat, term::literal::ConcreteLiteral};
-use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+use rudof_rdf::rdf_core::{RDFFormat, term::literal::ConcreteLiteral};
+use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use shacl_ast::{
     ShaclSchema, component::Component, node_shape::NodeShape, property_shape::PropertyShape, shape::Shape as ShaclShape,
 };

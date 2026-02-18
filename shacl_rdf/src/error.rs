@@ -1,6 +1,6 @@
 use iri_s::error::IriSError;
 use prefixmap::PrefixMapError;
-use rdf::rdf_core::RDFError;
+use rudof_rdf::rdf_core::RDFError;
 use shacl_ast::ShaclError;
 use thiserror::Error;
 

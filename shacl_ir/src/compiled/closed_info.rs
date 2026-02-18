@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use iri_s::IriS;
-use rdf::rdf_core::Rdf;
+use rudof_rdf::rdf_core::Rdf;
 use shacl_ast::{ShaclError, ShaclSchema, node_shape::NodeShape, property_shape::PropertyShape, shape::Shape};
 
 #[derive(Debug, Clone, Default)]

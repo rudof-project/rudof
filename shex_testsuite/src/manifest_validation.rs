@@ -7,7 +7,7 @@ use crate::wasm_stubs::path_to_iri;
 use ValidationType::*;
 use iri_s::IriS;
 use prefixmap::IriRef;
-use rdf::{
+use rudof_rdf::{
     rdf_core::{
         RDFFormat,
         term::{Object, literal::ConcreteLiteral},

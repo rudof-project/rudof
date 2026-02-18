@@ -1,7 +1,7 @@
 use crate::shape::Shape;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use rdf::rdf_core::{Rdf, term::Object};
+use rudof_rdf::rdf_core::{Rdf, term::Object};
 use std::collections::hash_map::IntoIter;
 use std::{collections::HashMap, fmt::Display};
 

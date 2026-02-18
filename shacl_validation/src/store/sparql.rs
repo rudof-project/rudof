@@ -1,6 +1,6 @@
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use rdf::rdf_impl::SparqlEndpoint;
+use rudof_rdf::rdf_impl::SparqlEndpoint;
 
 use crate::validate_error::ValidateError;
 

@@ -1,6 +1,6 @@
 use crate::validate_error::ValidateError;
-use rdf::rdf_core::RDFFormat;
-use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+use rudof_rdf::rdf_core::RDFFormat;
+use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use shacl_ir::compiled::schema_ir::SchemaIR;
 use shacl_ir::compiled_shacl_error::CompiledShaclError;
 use shacl_rdf::ShaclParser;

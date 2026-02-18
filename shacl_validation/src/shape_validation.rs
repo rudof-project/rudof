@@ -5,7 +5,7 @@ use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use iri_s::IriS;
-use rdf::rdf_core::{
+use rudof_rdf::rdf_core::{
     NeighsRDF, Rdf, SHACLPath,
     term::{Object, Triple},
 };

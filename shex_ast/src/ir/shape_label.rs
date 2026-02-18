@@ -3,7 +3,7 @@ use iri_s::IriS;
 use iri_s::error::IriSError;
 use prefixmap::PrefixMap;
 use prefixmap::error::PrefixMapError;
-use rdf::rdf_core::term::Object;
+use rudof_rdf::rdf_core::term::Object;
 use serde::Serialize;
 use std::{fmt::Display, str::FromStr};
 use thiserror::Error;

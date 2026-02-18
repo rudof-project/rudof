@@ -1,5 +1,5 @@
 use crate::ComparatorError;
-use rdf::rdf_core::RDFFormat;
+use rudof_rdf::rdf_core::RDFFormat;
 use shex_ast::ShExFormat;
 use std::{
     fmt::{Display, Formatter},

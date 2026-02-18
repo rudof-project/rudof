@@ -2,13 +2,13 @@ use crate::ColorSupport;
 use crate::writer::get_writer;
 use anyhow::{Result, bail};
 use iri_s::IriS;
-use rdf::rdf_core::RDFFormat;
-use rdf::rdf_impl::ReaderMode;
 use rudof_lib::{
     InputSpec, Rudof, RudofConfig, ShExFormatter, data::get_data_rudof, data_format::DataFormat, parse_shape_selector,
     result_shex_validation_format::ResultShExValidationFormat, shapemap_format::ShapeMapFormat as CliShapeMapFormat,
     shex::validate_shex, shex_format::ShExFormat as CliShExFormat, sort_by_result_shape_map::SortByResultShapeMap,
 };
+use rudof_rdf::rdf_core::RDFFormat;
+use rudof_rdf::rdf_impl::ReaderMode;
 use shex_ast::ShExFormat;
 use std::collections::HashMap;
 use std::io::{self, Write};

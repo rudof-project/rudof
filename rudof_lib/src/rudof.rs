@@ -3,13 +3,13 @@ pub use dctap::{DCTAPFormat, DCTap as DCTAP};
 pub use iri_s::iri;
 pub use mie::Mie;
 pub use prefixmap::PrefixMap;
-pub use rdf::rdf_core::{
+pub use rudof_rdf::rdf_core::{
     RDFFormat,
     query::{QueryResultFormat, QuerySolution, QuerySolutions, SparqlQuery, VarName},
     term::Object,
     visualizer::uml_converter::UmlGenerationMode,
 };
-pub use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+pub use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 pub use shacl_ast::ShaclFormat;
 pub use shacl_ast::ast::ShaclSchema;
 pub use shacl_ir::compiled::schema_ir::SchemaIR as ShaclSchemaIR;
@@ -32,6 +32,9 @@ pub type Result<T> = result::Result<T, RudofError>;
 use crate::{InputSpec, RudofConfig, RudofError, ShapesGraphSource, UrlSpec};
 use iri_s::IriS;
 use rdf_config::RdfConfigModel;
+// use shex_validation::SchemaWithoutImports;
+use rudof_rdf::rdf_core::{FocusRDF, Rdf, query::QueryRDF, visualizer::VisualRDFGraph};
+use rudof_rdf::rdf_impl::SparqlEndpoint;
 use shacl_rdf::{ShaclParser, ShaclWriter};
 use shacl_validation::shacl_processor::{GraphValidation, ShaclProcessor};
 use shacl_validation::store::graph::Graph;
@@ -41,9 +44,6 @@ use shex_ast::compact::ShExParser;
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::shapemap::{NodeSelector, ShapeSelector};
 use shex_ast::{ResolveMethod, ShExFormat, ShapeLabelIdx};
-// use shex_validation::SchemaWithoutImports;
-use rdf::rdf_core::{FocusRDF, Rdf, query::QueryRDF, visualizer::VisualRDFGraph};
-use rdf::rdf_impl::SparqlEndpoint;
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::BufReader;
@@ -1259,8 +1259,8 @@ mod tests {
     use shex_ast::{Node, ir::shape_label::ShapeLabel};
 
     use crate::RudofConfig;
-    use rdf::rdf_core::RDFFormat;
-    use rdf::rdf_impl::ReaderMode;
+    use rudof_rdf::rdf_core::RDFFormat;
+    use rudof_rdf::rdf_impl::ReaderMode;
 
     use super::Rudof;
 

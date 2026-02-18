@@ -8,7 +8,7 @@ use crate::shacl_engine::engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
-use rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF, term::Term};
+use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF, term::Term};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::Pattern;
 use shacl_ir::compiled::shape::ShapeIR;

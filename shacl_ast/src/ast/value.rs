@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use iri_s::IriS;
 use prefixmap::IriRef;
-use rdf::rdf_core::term::literal::ConcreteLiteral;
+use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Value {

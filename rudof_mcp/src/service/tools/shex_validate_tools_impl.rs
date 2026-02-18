@@ -1,6 +1,5 @@
 use crate::service::{errors::*, mcp_service::RudofMcpService};
 use iri_s::IriS;
-use rdf::rdf_impl::ReaderMode;
 use rmcp::{
     ErrorData as McpError,
     handler::server::wrapper::Parameters,
@@ -10,6 +9,7 @@ use rudof_lib::{
     InputSpec, RudofConfig, result_shex_validation_format::ResultShExValidationFormat, shapemap_format::ShapeMapFormat,
     shex::validate_shex, shex_format::ShExFormat, sort_by_result_shape_map::SortByResultShapeMap,
 };
+use rudof_rdf::rdf_impl::ReaderMode;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;

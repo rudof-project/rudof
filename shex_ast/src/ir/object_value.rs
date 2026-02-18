@@ -1,6 +1,6 @@
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use rdf::rdf_core::term::{Object, literal::ConcreteLiteral};
+use rudof_rdf::rdf_core::term::{Object, literal::ConcreteLiteral};
 use std::fmt::Display;
 
 #[derive(PartialEq, Eq, Clone, Debug)]

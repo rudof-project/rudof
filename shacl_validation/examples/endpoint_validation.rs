@@ -2,7 +2,7 @@ use std::io::Cursor;
 
 use anyhow::*;
 use prefixmap::PrefixMap;
-use rdf::rdf_core::RDFFormat;
+use rudof_rdf::rdf_core::RDFFormat;
 use shacl_ir::schema_ir::SchemaIR;
 use shacl_validation::shacl_processor::EndpointValidation;
 use shacl_validation::shacl_processor::ShaclProcessor as _;

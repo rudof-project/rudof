@@ -17,7 +17,7 @@ use iri_s::error::IriSError;
 use prefixmap::{IriRef, PrefixMap};
 use rbe::{Cardinality, Pending, RbeError, SingleCond};
 use rbe::{Component, MatchCond, Max, Min, RbeTable, rbe::Rbe};
-use rdf::rdf_core::term::{
+use rudof_rdf::rdf_core::term::{
     Object,
     literal::{ConcreteLiteral, NumericLiteral},
 };

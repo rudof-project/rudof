@@ -1,6 +1,6 @@
 use prefixmap::error::PrefixMapError;
 use prefixmap::{IriRef, PrefixMap};
-use rdf::rdf_core::SHACLPath;
+use rudof_rdf::rdf_core::SHACLPath;
 use serde::Serialize;
 
 /// SHACLPathRef is similar to SHACLPath but uses IriRef for predicates

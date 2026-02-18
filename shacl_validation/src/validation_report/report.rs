@@ -3,7 +3,7 @@ use super::validation_report_error::ReportError;
 use colored::*;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use rdf::rdf_core::{
+use rudof_rdf::rdf_core::{
     BuildRDF, FocusRDF, Rdf, SHACLPath,
     term::{IriOrBlankNode, Object},
 };

@@ -6,7 +6,7 @@ use oxigraph::{
 };
 use thiserror::Error;
 
-use rdf::{
+use rudof_rdf::{
     rdf_core::RDFFormat,
     rdf_impl::{InMemoryGraphError, SparqlEndpointError},
 };

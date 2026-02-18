@@ -1,4 +1,4 @@
-use rdf::rdf_core::term::Object;
+use rudof_rdf::rdf_core::term::Object;
 use std::fmt::Display;
 
 #[derive(Debug, Clone, PartialEq)]

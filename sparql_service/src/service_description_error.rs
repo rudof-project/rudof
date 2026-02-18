@@ -1,4 +1,4 @@
-use rdf::{rdf_core::RDFError, rdf_impl::InMemoryGraphError};
+use rudof_rdf::{rdf_core::RDFError, rdf_impl::InMemoryGraphError};
 use thiserror::Error;
 
 #[derive(Error, Debug)]

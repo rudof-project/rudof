@@ -5,8 +5,8 @@ use crate::shape_label_idx::ShapeLabelIdx;
 use either::Either::{self, Left, Right};
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use rdf::rdf_core::{RDFFormat, Rdf, term::Object};
-use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+use rudof_rdf::rdf_core::{RDFFormat, Rdf, term::Object};
+use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use shacl_ast::ShaclSchema;
 use shacl_rdf::ShaclParser;
 use std::collections::hash_map::Entry;
@@ -220,8 +220,8 @@ fn show_cycle(cycle: &(ShapeLabelIdx, ShapeLabelIdx, Vec<ShapeLabelIdx>)) -> Str
 mod tests {
     use std::io::Cursor;
 
-    use rdf::rdf_core::RDFFormat;
-    use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+    use rudof_rdf::rdf_core::RDFFormat;
+    use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 
     use shacl_rdf::ShaclParser;
 
