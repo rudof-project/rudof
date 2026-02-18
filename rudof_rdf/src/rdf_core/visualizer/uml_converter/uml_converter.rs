@@ -1,10 +1,14 @@
 use crate::rdf_core::visualizer::uml_converter::errors::UmlConverterError;
-use std::{
-    fs::File,
-    io::{self, Write},
-    path::Path,
-    process::Command,
-};
+#[cfg(feature = "network")]
+use std::fs::File;
+#[cfg(feature = "network")]
+use std::io;
+use std::io::Write;
+#[cfg(feature = "network")]
+use std::path::Path;
+#[cfg(feature = "network")]
+use std::process::Command;
+#[cfg(feature = "network")]
 use tempfile::TempDir;
 
 /// Trait for converting data structures to PlantUML format.
@@ -35,6 +39,7 @@ pub trait UmlConverter {
     ///
     /// # Returns
     /// * `Result<(), UmlConverterError>` - Ok if successful, Err with details on failure
+    #[cfg(feature = "network")]
     fn as_image<W: Write, P: AsRef<Path>>(
         &self,
         writer: &mut W,
@@ -122,6 +127,7 @@ pub trait UmlConverter {
     ///
     /// # Returns
     /// * `Result<(), UmlConverterError>` - Ok if successful, Err with details on failure
+    #[cfg(feature = "network")]
     fn save_uml_to_tempfile(
         &self,
         tempfile_path: &std::path::Path,
@@ -151,6 +157,7 @@ pub trait UmlConverter {
 ///
 /// # Returns
 /// * `Result<(), io::Error>` - Ok if Java is available, Err otherwise
+#[cfg(feature = "network")]
 fn check_java_installed() -> Result<(), io::Error> {
     let output = Command::new("java").arg("-version").output()?;
     if output.status.success() {
@@ -170,6 +177,7 @@ fn check_java_installed() -> Result<(), io::Error> {
 ///
 /// # Returns
 /// * `Result<(), io::Error>` - Ok if the jar is valid, Err otherwise
+#[cfg(feature = "network")]
 fn check_plantuml_jar<P: AsRef<Path>>(plantuml_path: P) -> Result<(), io::Error> {
     if plantuml_path.as_ref().exists() {
         // Test the jar by running PlantUML with -version flag
@@ -197,6 +205,7 @@ fn check_plantuml_jar<P: AsRef<Path>>(plantuml_path: P) -> Result<(), io::Error>
 }
 
 /// Supported image output formats for PlantUML conversion.
+#[cfg(feature = "network")]
 #[allow(clippy::upper_case_acronyms)]
 pub enum ImageFormat {
     /// Scalable Vector Graphics format

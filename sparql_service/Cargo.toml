@@ -9,6 +9,10 @@ documentation = "https://docs.rs/sparql_service"
 homepage.workspace = true
 repository.workspace = true
 
+[features]
+default = ["network"]
+network = ["rudof_rdf/network"]
+
 [dependencies]
 colored.workspace = true
 const_format = "0.2"
@@ -20,7 +24,7 @@ oxrdf = { workspace = true, features = ["oxsdatatypes", "rdf-12"] }
 oxrdfio = { workspace = true, features = ["rdf-12"] }
 oxsdatatypes.workspace = true
 prefixmap.workspace = true
-rudof_rdf.workspace = true
+rudof_rdf = { version = "0.1.147", path = "../rudof_rdf", default-features = false }
 rust_decimal = "1.38"
 serde.workspace = true
 serde_json.workspace = true

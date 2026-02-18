@@ -9,6 +9,10 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
+[features]
+default = ["network"]
+network = ["dep:reqwest", "dep:tokio", "dep:tempfile"]
+
 [dependencies]
 async-trait.workspace = true
 colored.workspace = true
@@ -27,16 +31,16 @@ oxttl.workspace = true
 prefixmap.workspace = true
 proptest.workspace = true
 regex.workspace = true
-reqwest.workspace = true
+reqwest = { workspace = true, optional = true }
 rust_decimal.workspace = true
 rust_decimal_macros.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 sparesults.workspace = true
 spargebra.workspace = true
-tempfile.workspace = true
+tempfile = { workspace = true, optional = true }
 tabled.workspace = true
 thiserror.workspace = true
-tokio.workspace = true
+tokio = { workspace = true, optional = true }
 toml.workspace = true
 url.workspace = true

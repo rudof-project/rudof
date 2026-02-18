@@ -8,14 +8,17 @@ use thiserror::Error;
 
 use rudof_rdf::{
     rdf_core::RDFFormat,
-    rdf_impl::{InMemoryGraphError, SparqlEndpointError},
+    rdf_impl::InMemoryGraphError,
 };
+#[cfg(feature = "network")]
+use rudof_rdf::rdf_impl::SparqlEndpointError;
 
 #[derive(Debug, Error)]
 pub enum RdfDataError {
     #[error("Error extending query solutions for query '{query}': {error}")]
     ExtendingQuerySolutionsError { query: String, error: String },
 
+    #[cfg(feature = "network")]
     #[error("Error extending query solutions for query '{query} for endpoint {endpoint}': {error}")]
     ExtendingQuerySolutionsErrorEndpoint {
         query: String,
@@ -23,12 +26,14 @@ pub enum RdfDataError {
         endpoint: String,
     },
 
+    #[cfg(feature = "network")]
     #[error(transparent)]
     SRDFSparqlError {
         #[from]
         err: SparqlEndpointError,
     },
 
+    #[cfg(feature = "network")]
     #[error("Failed to create SPARQL endpoint {name} with {url}: {err}")]
     SRDFSparqlFromEndpointDescriptionError {
         name: String,

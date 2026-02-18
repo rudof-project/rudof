@@ -2,4 +2,6 @@ pub mod errors;
 #[allow(clippy::module_inception)]
 mod uml_converter;
 
-pub use uml_converter::{ImageFormat, UmlConverter, UmlGenerationMode};
+#[cfg(feature = "network")]
+pub use uml_converter::ImageFormat;
+pub use uml_converter::{UmlConverter, UmlGenerationMode};

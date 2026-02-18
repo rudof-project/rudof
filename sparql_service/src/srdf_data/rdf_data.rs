@@ -10,14 +10,20 @@ use oxrdf::{
 use prefixmap::PrefixMap;
 use rudof_rdf::{
     rdf_core::{
-        BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf, RdfDataConfig,
-        query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions, VarName},
+        BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf,
+        query::{QueryRDF, QuerySolution, QuerySolutions, VarName},
     },
-    rdf_impl::{InMemoryGraph, ReaderMode, SparqlEndpoint},
+    rdf_impl::{InMemoryGraph, ReaderMode},
+};
+#[cfg(feature = "network")]
+use rudof_rdf::{
+    rdf_core::{RdfDataConfig, query::QueryResultFormat},
+    rdf_impl::SparqlEndpoint,
 };
 use serde::Serialize;
 use serde::ser::SerializeStruct;
 use sparesults::QuerySolution as SparQuerySolution;
+#[cfg(feature = "network")]
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::io;
@@ -33,9 +39,11 @@ pub struct RdfData {
 
     /// A HashMap that associates SPARQL endpoint names with their URLs
     /// Not all the endpoints in this hashmap are used when querying, one those in `use_endpoints`
+    #[cfg(feature = "network")]
     endpoints: HashMap<String, SparqlEndpoint>,
 
     /// Set of endpoints to use when querying
+    #[cfg(feature = "network")]
     use_endpoints: HashMap<String, SparqlEndpoint>,
 
     /// In-memory graph
@@ -48,7 +56,9 @@ pub struct RdfData {
 impl RdfData {
     pub fn new() -> RdfData {
         RdfData {
+            #[cfg(feature = "network")]
             endpoints: HashMap::new(),
+            #[cfg(feature = "network")]
             use_endpoints: HashMap::new(),
             graph: None,
             store: None,
@@ -58,12 +68,14 @@ impl RdfData {
 
     pub fn reset(&mut self) {
         // We keep the available list of endpoints but we clear the used ones
+        #[cfg(feature = "network")]
         self.use_endpoints.clear();
         self.graph = None;
         self.store = None;
         self.focus = None;
     }
 
+    #[cfg(feature = "network")]
     pub fn with_rdf_data_config(mut self, rdf_data_config: &RdfDataConfig) -> Result<Self, RdfDataError> {
         // Load endpoints
         if let Some(endpoints) = &rdf_data_config.endpoints {
@@ -109,17 +121,21 @@ impl RdfData {
         let store = Store::new()?;
         store.bulk_loader().load_quads(graph.quads())?;
         Ok(RdfData {
+            #[cfg(feature = "network")]
             endpoints: HashMap::new(),
             graph: Some(graph),
             store: Some(store),
             focus: None,
+            #[cfg(feature = "network")]
             use_endpoints: HashMap::new(),
         })
     }
 
     // Cleans the values of endpoints and graph
     pub fn clean_all(&mut self) {
+        #[cfg(feature = "network")]
         self.endpoints.clear();
+        #[cfg(feature = "network")]
         self.use_endpoints.clear();
         self.graph = None
     }
@@ -174,6 +190,7 @@ impl RdfData {
     }
 
     /// Creates an RdfData from an endpoint
+    #[cfg(feature = "network")]
     pub fn from_endpoint(name: &str, endpoint: SparqlEndpoint) -> RdfData {
         RdfData {
             endpoints: HashMap::from([(name.to_string(), endpoint.clone())]),
@@ -185,6 +202,7 @@ impl RdfData {
     }
 
     /// Adds a new endpoint to the list of available endpoints
+    #[cfg(feature = "network")]
     pub fn add_endpoint(&mut self, name: &str, endpoint: SparqlEndpoint) {
         self.endpoints
             .entry(name.to_string())
@@ -192,22 +210,27 @@ impl RdfData {
             .or_insert(endpoint);
     }
 
+    #[cfg(feature = "network")]
     pub fn use_endpoints(&self) -> &HashMap<String, SparqlEndpoint> {
         &self.use_endpoints
     }
 
+    #[cfg(feature = "network")]
     pub fn endpoints(&self) -> &HashMap<String, SparqlEndpoint> {
         &self.endpoints
     }
 
+    #[cfg(feature = "network")]
     pub fn use_endpoint(&mut self, name: &str, endpoint: SparqlEndpoint) {
         self.use_endpoints.insert(name.to_string(), endpoint);
     }
 
+    #[cfg(feature = "network")]
     pub fn dont_use_endpoint(&mut self, name: &str) {
         self.use_endpoints.remove(name);
     }
 
+    #[cfg(feature = "network")]
     pub fn endpoints_to_use(&self) -> impl Iterator<Item = (&str, &SparqlEndpoint)> {
         self.use_endpoints
             .iter()
@@ -244,18 +267,21 @@ impl RdfData {
                 error: format!("{e}"),
             })?
         }
+        #[cfg(feature = "network")]
         for (name, e) in self.use_endpoints.iter() {
             writeln!(writer, "Endpoint {}: {}", name, e.iri())?
         }
         Ok(())
     }
 
+    #[cfg(feature = "network")]
     pub fn find_endpoint(&self, name: &str) -> Option<SparqlEndpoint> {
         self.endpoints.get(name).cloned()
     }
 
     /// Gets all the triples from the in-memory graph and the endpoints
     /// This operation can be very expensive if the endpoints contain a lot of data
+    #[cfg(feature = "network")]
     pub fn all_triples(&self) -> Result<impl Iterator<Item = OxTriple>, RdfDataError> {
         let graph_triples = self.graph.iter().flat_map(NeighsRDF::triples).flatten();
         let endpoints_triples = self
@@ -272,19 +298,37 @@ impl Serialize for RdfData {
     where
         S: serde::Serializer,
     {
-        let mut state = serializer.serialize_struct("RdfData", 2)?;
-        state.serialize_field("endpoints", &self.endpoints)?;
-        state.serialize_field("graph", &self.graph)?;
-        state.end()
+        #[cfg(feature = "network")]
+        {
+            let mut state = serializer.serialize_struct("RdfData", 2)?;
+            state.serialize_field("endpoints", &self.endpoints)?;
+            state.serialize_field("graph", &self.graph)?;
+            state.end()
+        }
+        #[cfg(not(feature = "network"))]
+        {
+            let mut state = serializer.serialize_struct("RdfData", 1)?;
+            state.serialize_field("graph", &self.graph)?;
+            state.end()
+        }
     }
 }
 
 impl Debug for RdfData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("RdfData")
-            .field("endpoints", &self.endpoints)
-            .field("graph", &self.graph)
-            .finish()
+        #[cfg(feature = "network")]
+        {
+            f.debug_struct("RdfData")
+                .field("endpoints", &self.endpoints)
+                .field("graph", &self.graph)
+                .finish()
+        }
+        #[cfg(not(feature = "network"))]
+        {
+            f.debug_struct("RdfData")
+                .field("graph", &self.graph)
+                .finish()
+        }
     }
 }
 
@@ -307,21 +351,26 @@ impl Rdf for RdfData {
         match &self.graph {
             Some(g) => Some(g.prefixmap().clone()),
             None => {
-                if self.use_endpoints.is_empty() {
-                    None
-                } else {
-                    let mut pm = PrefixMap::new();
-                    for e in self.use_endpoints.values() {
-                        match pm.merge(e.prefixmap().clone()) {
-                            Ok(_) => {},
-                            Err(e) => {
-                                eprintln!("Warning: cannot merge prefixmap from endpoint: {}", e);
-                                return None;
-                            },
+                #[cfg(feature = "network")]
+                {
+                    if self.use_endpoints.is_empty() {
+                        None
+                    } else {
+                        let mut pm = PrefixMap::new();
+                        for e in self.use_endpoints.values() {
+                            match pm.merge(e.prefixmap().clone()) {
+                                Ok(_) => {},
+                                Err(e) => {
+                                    eprintln!("Warning: cannot merge prefixmap from endpoint: {}", e);
+                                    return None;
+                                },
+                            }
                         }
+                        Some(pm)
                     }
-                    Some(pm)
                 }
+                #[cfg(not(feature = "network"))]
+                None
             },
         }
     }
@@ -331,6 +380,7 @@ impl Rdf for RdfData {
         if let Some(graph) = &self.graph {
             graph.prefixmap().qualify(&iri)
         } else {
+            #[cfg(feature = "network")]
             for (_name, e) in self.use_endpoints.iter() {
                 if let Some(qualified) = e.prefixmap().qualify_optional(&iri) {
                     return qualified;
@@ -362,6 +412,7 @@ impl Rdf for RdfData {
             let iri = graph.prefixmap().resolve_prefix_local(prefix, local)?;
             Ok(iri.clone())
         } else {
+            #[cfg(feature = "network")]
             for (_name, e) in self.use_endpoints.iter() {
                 if let Ok(iri) = e.prefixmap().resolve_prefix_local(prefix, local) {
                     return Ok(iri.clone());
@@ -376,6 +427,7 @@ impl Rdf for RdfData {
 }
 
 impl QueryRDF for RdfData {
+    #[cfg(feature = "network")]
     fn query_construct(&self, query_str: &str, format: &QueryResultFormat) -> Result<String, RdfDataError>
     where
         Self: Sized,
@@ -389,6 +441,14 @@ impl QueryRDF for RdfData {
             str.push_str(&new_str);
         }
         Ok(str)
+    }
+
+    #[cfg(not(feature = "network"))]
+    fn query_construct(&self, _query_str: &str, _format: &rudof_rdf::rdf_core::query::QueryResultFormat) -> Result<String, RdfDataError>
+    where
+        Self: Sized,
+    {
+        Ok(String::new())
     }
 
     fn query_select(&self, query_str: &str) -> Result<QuerySolutions<RdfData>, RdfDataError>
@@ -413,6 +473,7 @@ impl QueryRDF for RdfData {
         } else {
             trace!("No in-memory store to query");
         }
+        #[cfg(feature = "network")]
         for (name, endpoint) in self.endpoints_to_use() {
             let new_sols = endpoint.query_select(query_str)?;
             let new_sols_converted: Vec<QuerySolution<RdfData>> = new_sols.iter().map(cnv_sol).collect();
@@ -431,6 +492,7 @@ impl QueryRDF for RdfData {
     }
 }
 
+#[cfg(feature = "network")]
 fn cnv_sol(sol: &QuerySolution<SparqlEndpoint>) -> QuerySolution<RdfData> {
     sol.convert(|t| t.clone())
 }
@@ -477,6 +539,7 @@ impl NeighsRDF for RdfData {
         Ok(graph_triples)
     }
 
+    #[cfg(feature = "network")]
     fn triples_matching<S, P, O>(
         &self,
         subject: &S,
@@ -502,6 +565,26 @@ impl NeighsRDF for RdfData {
             .flat_map(move |(_name, e)| NeighsRDF::triples_matching(e, subject, predicate, object))
             .flatten();
         Ok(graph_triples.chain(endpoints_triples))
+    }
+
+    #[cfg(not(feature = "network"))]
+    fn triples_matching<S, P, O>(
+        &self,
+        subject: &S,
+        predicate: &P,
+        object: &O,
+    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err>
+    where
+        S: Matcher<Self::Subject>,
+        P: Matcher<Self::IRI>,
+        O: Matcher<Self::Term>,
+    {
+        let graph_triples = self
+            .graph
+            .iter()
+            .flat_map(move |g| NeighsRDF::triples_matching(g, subject, predicate, object))
+            .flatten();
+        Ok(graph_triples)
     }
 }
 
@@ -603,6 +686,7 @@ impl BuildRDF for RdfData {
         } else {
             Ok(())
         }?;
+        #[cfg(feature = "network")]
         for (name, endpoint) in &self.endpoints {
             writeln!(writer, "Endpoint {}: {}", name, endpoint.iri())?;
         }

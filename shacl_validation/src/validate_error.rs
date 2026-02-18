@@ -55,6 +55,7 @@ pub enum ValidateError {
     #[error("Error loading the Shapes")]
     Shapes(#[from] RDFError),
 
+    #[cfg(feature = "network")]
     #[error("Error creating the SPARQL endpoint")]
     SPARQLCreation,
 

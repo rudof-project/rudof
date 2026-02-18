@@ -4,12 +4,15 @@ use crate::shacl_engine::sparql::SparqlEngine;
 use crate::shape_validation::Validate;
 use crate::store::Store;
 use crate::store::graph::Graph;
+#[cfg(feature = "network")]
 use crate::store::sparql::Endpoint;
 use crate::validate_error::ValidateError;
 use crate::validation_report::report::ValidationReport;
 use clap::ValueEnum;
+#[cfg(feature = "network")]
 use prefixmap::PrefixMap;
 use rudof_rdf::rdf_core::{NeighsRDF, RDFFormat};
+#[cfg(feature = "network")]
 use rudof_rdf::rdf_impl::SparqlEndpoint;
 use shacl_ir::compiled::schema_ir::SchemaIR;
 use sparql_service::RdfData;
@@ -204,11 +207,13 @@ impl ShaclProcessor<RdfData> for GraphValidation {
 }
 
 /// The Endpoint Graph Validation algorithm.
+#[cfg(feature = "network")]
 pub struct EndpointValidation {
     store: Endpoint,
     mode: ShaclValidationMode,
 }
 
+#[cfg(feature = "network")]
 impl EndpointValidation {
     pub fn new(iri: &str, prefixmap: &PrefixMap, mode: ShaclValidationMode) -> Result<Self, Box<ValidateError>> {
         Ok(EndpointValidation {
@@ -223,6 +228,7 @@ impl EndpointValidation {
     }
 }
 
+#[cfg(feature = "network")]
 impl ShaclProcessor<SparqlEndpoint> for EndpointValidation {
     fn validate(&mut self, shapes_graph: &SchemaIR) -> Result<ValidationReport, Box<ValidateError>> {
         // we initialize the validation report to empty
@@ -233,7 +239,7 @@ impl ShaclProcessor<SparqlEndpoint> for EndpointValidation {
             ShaclValidationMode::Sparql => Box::new(SparqlEngine::new()),
         };
 
-        // for each shape in the schema that has at least rust-analyzer-diagnostics-view:/diagnostic%20message%20[17]?17#file:///home/labra/src/rust/rudof/shacl_validation/src/shacl_processor.rsone target
+        // for each shape in the schema that has at least one target
         for (_, shape) in shapes_graph.iter_with_targets() {
             tracing::debug!("ShaclProcessor.validate with shape {}", shape.id());
             let results = shape.validate(store, &mut (*runner), None, Some(shape), shapes_graph)?;
@@ -245,14 +251,4 @@ impl ShaclProcessor<SparqlEndpoint> for EndpointValidation {
             .with_results(validation_results)
             .with_prefixmap(shapes_graph.prefix_map()))
     }
-    /*fn store(&self) -> &SRDFSparql {
-        self.store.store()
-    }
-
-    fn runner(&self) -> &dyn Engine<SRDFSparql> {
-        match self.mode {
-            ShaclValidationMode::Native => &NativeEngine,
-            ShaclValidationMode::Sparql => &SparqlEngine,
-        }
-    }*/
 }

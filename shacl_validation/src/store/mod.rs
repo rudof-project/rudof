@@ -7,6 +7,7 @@ use shacl_rdf::ShaclParser;
 use std::io::BufRead;
 
 pub mod graph;
+#[cfg(feature = "network")]
 pub mod sparql;
 
 pub trait Store<S> {
