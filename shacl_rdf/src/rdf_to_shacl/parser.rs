@@ -1,33 +1,20 @@
 use crate::error::ShaclParserError;
-use crate::rdf_to_shacl::parsers::{
-    and, class, closed, datatype, deactivated, disjoint, equals, has_value, in_component, language_in, less_than,
-    less_than_or_equals, max_count, max_exclusive, max_inclusive, max_length, min_count, min_exclusive, min_inclusive,
-    min_length, node, node_kind, not, or, pattern, property, qualified_value_shape, severity, targets_class,
-    targets_node, targets_objects_of, targets_subjects_of, unique_lang, xone,
-};
+use crate::rdf_to_shacl::parsers::{node_shape, property_shape};
 use prefixmap::PrefixMap;
 use rdf::rdf_core::parser::rdf_node_parser::ParserExt;
 use rdf::rdf_core::{
-    Any, FocusRDF, RDFError, Rdf, SHACLPath,
+    Any, FocusRDF, RDFError, Rdf,
     parser::{
         RDFParse,
         rdf_node_parser::{
             RDFNodeParse,
-            constructors::{
-                FocusParser, HasTypeParser, InstancesParser, ListParser, NonEmptyValuesPropertyParser, ObjectParser,
-                SetFocusParser, ShaclPathParser, SingleBoolPropertyParser, SingleValuePropertyParser, SuccessParser,
-                ValuesPropertyParser,
-            },
+            constructors::{ListParser, SuccessParser},
         },
     },
     term::{Object, Triple},
-    vocab::{rdf_type, rdfs_class},
+    vocab::rdf_type,
 };
-use shacl_ast::reifier_info::ReifierInfo;
-use shacl_ast::{
-    component::Component, node_shape::NodeShape, property_shape::PropertyShape, schema::ShaclSchema, shape::Shape,
-    target::Target, *,
-};
+use shacl_ast::{ShaclVocab, schema::ShaclSchema, shape::Shape};
 use std::collections::{HashMap, HashSet};
 
 /// State used during the parsing process
@@ -68,7 +55,7 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
         while let Some(node) = state.pop_pending() {
             if let std::collections::hash_map::Entry::Vacant(e) = self.shapes.entry(node.clone()) {
                 self.rdf_parser.rdf_mut().set_focus(&node.clone().into());
-                let shape = Self::shape(&mut state)
+                let shape = Self::shape()
                     .parse_focused(self.rdf_parser.rdf_mut())
                     .map_err(|e| ShaclParserError::RDFParseError { err: e })?;
                 e.insert(shape);
@@ -340,132 +327,17 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
         ShaclVocab::sh_qualified_value_shape().clone().into()
     }
 
-    fn shape(state: &mut State) -> impl RDFNodeParse<RDF, Output = Shape<RDF>>
+    fn shape() -> impl RDFNodeParse<RDF, Output = Shape<RDF>>
     where
         RDF: FocusRDF + 'static,
     {
         node_shape()
             .then(move |ns| SuccessParser::new(Shape::NodeShape(Box::new(ns))))
-            .or(property_shape(state).then(|ps| SuccessParser::new(Shape::PropertyShape(Box::new(ps)))))
+            .or(property_shape().then(|ps| SuccessParser::new(Shape::PropertyShape(Box::new(ps)))))
     }
 }
 
-fn components<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
-where
-    RDF: FocusRDF,
-{
-    let parsers: Vec<Box<dyn RDFNodeParse<RDF, Output = Vec<Component>>>> = vec![
-        // Value type
-        Box::new(node_kind()),
-        Box::new(datatype()),
-        // Cardinality
-        Box::new(min_count()),
-        Box::new(max_count()),
-        // Value range
-        Box::new(min_inclusive()),
-        Box::new(min_exclusive()),
-        Box::new(max_inclusive()),
-        Box::new(max_exclusive()),
-        // String based
-        Box::new(min_length()),
-        Box::new(max_length()),
-        Box::new(pattern()),
-        // TODO: SHACL 1.2: single line ?
-        // single_line(),
-        Box::new(language_in()),
-        Box::new(unique_lang()),
-        // SHACL 1.2: List constraint components
-        // member_shape(),
-        // min_list_length(),
-        // max_list_length(),
-        // unique_members(),
-        // Property pair
-        Box::new(equals()),
-        Box::new(disjoint()),
-        Box::new(less_than()),
-        Box::new(less_than_or_equals()),
-        // Logical constraint components
-        Box::new(not()),
-        Box::new(and()),
-        Box::new(or()),
-        Box::new(xone()),
-        // Shape based constraint components
-        Box::new(node()),
-        // property is handled differently
-        Box::new(qualified_value_shape()),
-        // Other
-        Box::new(closed()),
-        Box::new(has_value()),
-        Box::new(in_component()),
-        // SPARQL based constraints and SPARQL based constraint components
-        // TODO
-
-        // TODO: deactivated is not a shape component...move this code elsewhere?
-        Box::new(deactivated()),
-    ];
-
-    Box::new(class()).combine_many(parsers)
-}
-
-fn property_shape<RDF>(_state: &mut State) -> impl RDFNodeParse<RDF, Output = PropertyShape<RDF>>
-where
-    RDF: FocusRDF + 'static,
-{
-    FocusParser::new().then(move |focus: RDF::Term| {
-        HasTypeParser::new(ShaclVocab::sh_property_shape().clone())
-            .optional()
-            .with(
-                ObjectParser::new()
-                    .and(path())
-                    .then(move |(id, path)| SuccessParser::new(PropertyShape::new(id, path))),
-            )
-            .then(move |ps| SetFocusParser::new(focus.clone()).with(SuccessParser::new(ps)))
-            .then(|ps| {
-                severity()
-                    .optional()
-                    .flat_map(move |sev| Ok(ps.clone().with_severity(sev)))
-            })
-            .then(|ps| reifier_shape().flat_map(move |r_shape| Ok(ps.clone().with_reifier_shape(r_shape))))
-            .then(|ps| targets().flat_map(move |ts| Ok(ps.clone().with_targets(ts))))
-            .then(|ps| {
-                property()
-                    .flat_map(move |prop_shapes| Ok(ps.clone().with_property_shapes(prop_shapes)))
-                    .then(move |ps_with_props| property_shape_components(ps_with_props))
-            })
-    })
-}
-
-fn property_shape_components<RDF>(ps: PropertyShape<RDF>) -> impl RDFNodeParse<RDF, Output = PropertyShape<RDF>>
-where
-    RDF: FocusRDF,
-{
-    components().flat_map(move |cs| Ok(ps.clone().with_components(cs)))
-}
-
-fn node_shape<RDF>() -> impl RDFNodeParse<RDF, Output = NodeShape<RDF>>
-where
-    RDF: FocusRDF,
-{
-    NonEmptyValuesPropertyParser::new(ShaclVocab::sh_path().clone())
-        .not()
-        .with(
-            ObjectParser::new()
-                .then(move |t: Object| SuccessParser::new(NodeShape::new(t)))
-                .then(|ns| {
-                    severity()
-                        .optional()
-                        .flat_map(move |sev| Ok(ns.clone().with_severity(sev)))
-                })
-                .then(|ns| targets().flat_map(move |ts| Ok(ns.clone().with_targets(ts))))
-                .then(|ns| {
-                    property()
-                        .flat_map(move |ps| Ok(ns.clone().with_property_shapes(ps)))
-                        .then(|ns_with_ps| components().flat_map(move |cs| Ok(ns_with_ps.clone().with_components(cs))))
-                }),
-        )
-}
-
-fn term_to_subject<RDF>(term: &RDF::Term, context: &str) -> std::result::Result<RDF::Subject, ShaclParserError>
+fn term_to_subject<RDF>(term: &RDF::Term, context: &str) -> Result<RDF::Subject, ShaclParserError>
 where
     RDF: FocusRDF,
 {
@@ -480,69 +352,4 @@ fn subjects_as_nodes<RDF: Rdf>(subjs: HashSet<RDF::Subject>) -> Result<Vec<Objec
         .into_iter()
         .map(|s| RDF::subject_as_node(&s).map_err(|_| RDFError::FailedSubjectToRDFNodeError { subject: s.to_string() }))
         .collect()
-}
-
-/// Parses the property value of the focus node as a SHACL path
-fn path<RDF>() -> impl RDFNodeParse<RDF, Output = SHACLPath>
-where
-    RDF: FocusRDF,
-{
-    SingleValuePropertyParser::new(ShaclVocab::sh_path().clone()).then(|path_term| ShaclPathParser::new(path_term))
-}
-
-fn targets<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Target<RDF>>>
-where
-    RDF: FocusRDF,
-{
-    let others: Vec<Box<dyn RDFNodeParse<RDF, Output = Vec<Target<RDF>>>>> = vec![
-        Box::new(targets_node()),
-        Box::new(targets_implicit_class()),
-        Box::new(targets_subjects_of()),
-        Box::new(targets_objects_of()),
-    ];
-
-    Box::new(targets_class()).combine_many(others)
-}
-
-fn reifier_shape<RDF>() -> impl RDFNodeParse<RDF, Output = Option<ReifierInfo>>
-where
-    RDF: FocusRDF,
-{
-    ValuesPropertyParser::new(ShaclVocab::sh_reifier_shape().clone()).then(move |vs| {
-        SingleBoolPropertyParser::new(ShaclVocab::sh_reification_required().clone())
-            .optional()
-            .map(move |requires_reifier| {
-                let reifier_shape = vs.iter().filter_map(|v| RDF::term_as_object(v).ok()).collect();
-                if vs.is_empty() {
-                    None
-                } else {
-                    Some(ReifierInfo::new(requires_reifier.unwrap_or(false), reifier_shape))
-                }
-            })
-    })
-}
-
-fn targets_implicit_class<R: FocusRDF>() -> impl RDFNodeParse<R, Output = Vec<Target<R>>> {
-    InstancesParser::new(rdfs_class().clone())
-        .and(InstancesParser::new(ShaclVocab::sh_property_shape().clone()))
-        .and(InstancesParser::new(ShaclVocab::sh_node_shape().clone()))
-        .and(FocusParser::new())
-        .flat_map(move |(((class, property_shapes), node_shapes), focus): (_, R::Term)| {
-            let result: std::result::Result<Vec<Target<R>>, RDFError> = class
-                .into_iter()
-                .filter(|t: &R::Subject| property_shapes.contains(t) || node_shapes.contains(t))
-                .map(Into::into)
-                .filter(|t: &R::Term| t.clone() == focus)
-                .map(|t: R::Term| {
-                    let t_name = t.to_string();
-                    let obj = t
-                        .clone()
-                        .try_into()
-                        .map_err(|_| RDFError::FailedTermToRDFNodeError { term: t_name })?;
-                    Ok(Target::ImplicitClass(obj))
-                })
-                .collect();
-            let ts = result?;
-            Ok(ts)
-        })
 }
