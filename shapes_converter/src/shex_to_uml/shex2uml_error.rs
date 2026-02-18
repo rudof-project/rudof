@@ -2,7 +2,7 @@ use std::io;
 
 use prefixmap::IriRef;
 use prefixmap::error::PrefixMapError;
-use rdf::rdf_core::visualizer::uml_converter::errors::UmlConverterError;
+use rudof_rdf::rdf_core::visualizer::uml_converter::errors::UmlConverterError;
 use shex_ast::{Schema, SchemaJsonError, ShapeExprLabel};
 use thiserror::Error;
 

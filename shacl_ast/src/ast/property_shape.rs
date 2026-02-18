@@ -4,7 +4,7 @@ use std::fmt::Display;
 use crate::reifier_info::ReifierInfo;
 use crate::{ShaclVocab, component::Component, message_map::MessageMap, severity::Severity, target::Target};
 use iri_s::IriS;
-use rdf::rdf_core::{
+use rudof_rdf::rdf_core::{
     BuildRDF, Rdf, SHACLPath,
     term::{Object, literal::NumericLiteral},
 };

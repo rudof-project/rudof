@@ -2,7 +2,7 @@ use crate::{ShaclVocab, node_kind::NodeKind, value::Value};
 use iri_s::{IriS, iri};
 use itertools::Itertools;
 use prefixmap::IriRef;
-use rdf::rdf_core::{
+use rudof_rdf::rdf_core::{
     BuildRDF,
     term::{
         Object,

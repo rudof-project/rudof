@@ -20,7 +20,7 @@ oxrdf = { workspace = true, features = ["oxsdatatypes", "rdf-12"] }
 oxrdfio = { workspace = true, features = ["rdf-12"] }
 oxsdatatypes = { workspace = true }
 prefixmap.workspace = true
-rdf = { workspace = true }
+rudof_rdf.workspace = true
 rust_decimal = "1.38"
 serde.workspace = true
 serde_json.workspace = true

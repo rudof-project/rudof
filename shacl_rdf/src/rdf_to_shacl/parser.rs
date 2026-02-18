@@ -1,9 +1,9 @@
 use crate::error::ShaclParserError;
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
-use rdf::rdf_core::parser::rdf_node_parser::ParserExt;
-use rdf::rdf_core::parser::rdf_node_parser::constructors::{BoolsPropertyParser, IntegersPropertyParser};
-use rdf::rdf_core::{
+use rudof_rdf::rdf_core::parser::rdf_node_parser::ParserExt;
+use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{BoolsPropertyParser, IntegersPropertyParser};
+use rudof_rdf::rdf_core::{
     Any, FocusRDF, RDFError, Rdf, SHACLPath,
     parser::{
         RDFParse,

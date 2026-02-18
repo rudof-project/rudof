@@ -1,7 +1,7 @@
-use rdf::rdf_core::{NeighsRDF, RDFFormat, term::literal::Literal};
-use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use rudof_generate::config::OutputFormat;
 use rudof_generate::{DataGenerator, GeneratorConfig};
+use rudof_rdf::rdf_core::{NeighsRDF, RDFFormat, term::literal::Literal};
+use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use std::collections::HashMap;
 use std::io::Write;
 use tempfile::NamedTempFile;

@@ -6,7 +6,7 @@ use crate::{keyword, pp_label, pp_object_value};
 use colored::*;
 use prefixmap::{IriRef, PrefixMap};
 use pretty::{Arena, DocAllocator, DocBuilder};
-use rdf::rdf_core::term::literal::{ConcreteLiteral, Lang, NumericLiteral};
+use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, Lang, NumericLiteral};
 use rust_decimal::Decimal;
 use std::borrow::Cow;
 use std::marker::PhantomData;

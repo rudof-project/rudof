@@ -1,5 +1,5 @@
 use iri_s::IriS;
-use rdf::rdf_core::RDFError;
+use rudof_rdf::rdf_core::RDFError;
 use std::fmt::Display;
 use thiserror::Error;
 

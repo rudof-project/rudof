@@ -4,7 +4,7 @@ use std::{
 };
 
 use iri_s::IriS;
-use rdf::rdf_core::vocab::rdfs_label;
+use rudof_rdf::rdf_core::vocab::rdfs_label;
 use serde::{Deserialize, Serialize};
 use shex_validation::ShExConfig;
 use thiserror::Error;

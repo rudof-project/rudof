@@ -1,5 +1,5 @@
 [package]
-name = "rdf"
+name = "rudof_rdf"
 version = "0.1.147"
 authors.workspace = true
 description.workspace = true

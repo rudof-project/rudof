@@ -8,7 +8,7 @@ use iri_s::IriS;
 use itertools::Itertools;
 use mie::Mie;
 use prefixmap::PrefixMap;
-use rdf::{
+use rudof_rdf::{
     rdf_core::RDFFormat,
     rdf_impl::{InMemoryGraph, ReaderMode},
 };

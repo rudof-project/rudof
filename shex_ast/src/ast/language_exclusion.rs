@@ -1,4 +1,4 @@
-use rdf::rdf_core::term::literal::Lang;
+use rudof_rdf::rdf_core::term::literal::Lang;
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
 use std::fmt::Display;

@@ -9,7 +9,7 @@ use crate::shacl_engine::sparql::SparqlEngine;
 use crate::shape_validation::Validate;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
-use rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF, term::Object};
+use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF, term::Object};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::QualifiedValueShape;
 use shacl_ir::compiled::shape::ShapeIR;

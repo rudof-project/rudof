@@ -1,5 +1,5 @@
 use clap::ValueEnum;
-use rdf::rdf_core::RDFFormat;
+use rudof_rdf::rdf_core::RDFFormat;
 use shacl_validation::validation_report::report::SortModeReport;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;

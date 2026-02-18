@@ -105,7 +105,7 @@ impl SparqlEndpoint {
     /// # Examples
     ///
     /// ```
-    /// use rdf::rdf_impl::SparqlEndpoint;
+    /// use rudof_rdf::rdf_impl::SparqlEndpoint;
     /// use iri_s::IriS;
     /// use prefixmap::PrefixMap;
     ///
@@ -151,7 +151,7 @@ impl SparqlEndpoint {
     /// # Examples
     ///
     /// ```
-    /// use rdf::rdf_impl::SparqlEndpoint;
+    /// use rudof_rdf::rdf_impl::SparqlEndpoint;
     ///
     /// let wikidata = SparqlEndpoint::wikidata();
     /// ```
@@ -173,7 +173,7 @@ impl SparqlEndpoint {
     /// # Examples
     ///
     /// ```no_run
-    /// use rdf::rdf_impl::SparqlEndpoint;
+    /// use rudof_rdf::rdf_impl::SparqlEndpoint;
     /// use prefixmap::PrefixMap;
     ///
     /// let endpoint = SparqlEndpoint::wikidata();
@@ -223,7 +223,7 @@ impl SparqlEndpoint {
     /// # Examples
     ///
     /// ```no_run
-    /// use rdf::rdf_impl::SparqlEndpoint;
+    /// use rudof_rdf::rdf_impl::SparqlEndpoint;
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -273,8 +273,8 @@ impl SparqlEndpoint {
     /// # Examples
     ///
     /// ```no_run
-    /// use rdf::rdf_impl::SparqlEndpoint;
-    /// use rdf::rdf_core::query::QueryResultFormat;
+    /// use rudof_rdf::rdf_impl::SparqlEndpoint;
+    /// use rudof_rdf::rdf_core::query::QueryResultFormat;
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -335,7 +335,7 @@ impl SparqlEndpoint {
     /// # Examples
     ///
     /// ```no_run
-    /// use rdf::rdf_impl::SparqlEndpoint;
+    /// use rudof_rdf::rdf_impl::SparqlEndpoint;
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -540,8 +540,8 @@ impl NeighsRDF for SparqlEndpoint {
     /// # Examples
     ///
     /// ```no_run
-    /// use rdf::rdf_impl::SparqlEndpoint;
-    /// use rdf::rdf_core::{Any, NeighsRDF};
+    /// use rudof_rdf::rdf_impl::SparqlEndpoint;
+    /// use rudof_rdf::rdf_core::{Any, NeighsRDF};
     /// use oxrdf::NamedNode;
     ///
     /// fn main() -> Result<(), Box<dyn std::error::Error>> {

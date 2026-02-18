@@ -5,7 +5,7 @@ use crate::dependency_graph::{DependencyGraph, PosNeg};
 use crate::schema_ir::SchemaIR;
 use crate::shape_label_idx::ShapeLabelIdx;
 use iri_s::IriS;
-use rdf::rdf_core::{
+use rudof_rdf::rdf_core::{
     Rdf,
     term::{
         Object,

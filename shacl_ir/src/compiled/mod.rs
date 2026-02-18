@@ -15,7 +15,7 @@ use compiled_shacl_error::CompiledShaclError;
 use either::Either;
 use iri_s::IriS;
 use prefixmap::IriRef;
-use rdf::rdf_core::{Rdf, term::Object};
+use rudof_rdf::rdf_core::{Rdf, term::Object};
 use shacl_ast::ShaclSchema;
 use shacl_ast::value::Value;
 use shape::ShapeIR;

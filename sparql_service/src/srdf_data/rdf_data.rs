@@ -8,7 +8,7 @@ use oxrdf::{
     Term as OxTerm, Triple as OxTriple,
 };
 use prefixmap::PrefixMap;
-use rdf::{
+use rudof_rdf::{
     rdf_core::{
         BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf, RdfDataConfig,
         query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions, VarName},

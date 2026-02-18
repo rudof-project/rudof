@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::ShaclVocab;
 use prefixmap::IriRef;
-use rdf::rdf_core::{
+use rudof_rdf::rdf_core::{
     BuildRDF, Rdf,
     term::Object,
     vocab::{rdf_type, rdfs_class},

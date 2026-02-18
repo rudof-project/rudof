@@ -1,6 +1,5 @@
 use crate::service::{errors::*, mcp_service::RudofMcpService};
 use iri_s::IriS;
-use rdf::rdf_impl::ReaderMode;
 use rmcp::{
     ErrorData as McpError,
     handler::server::wrapper::Parameters,
@@ -13,6 +12,7 @@ use rudof_lib::{
     shacl_format::CliShaclFormat,
     shapes_graph_source::ShapesGraphSource,
 };
+use rudof_rdf::rdf_impl::ReaderMode;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;

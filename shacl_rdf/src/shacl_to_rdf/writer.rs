@@ -1,6 +1,6 @@
 use crate::error::ShaclWriterError;
 use iri_s::IriS;
-use rdf::rdf_core::{BuildRDF, RDFFormat};
+use rudof_rdf::rdf_core::{BuildRDF, RDFFormat};
 use shacl_ast::{ShaclSchema, ShaclVocab};
 use std::io::Write;
 use std::str::FromStr;

@@ -54,7 +54,7 @@ The following examples illustrate just one of the many features `rdf` provides â
 ### Composing Parsers with Fluent API
 
 ```rust
-use rdf::rdf_core::{
+use rudof_rdf::rdf_core::{
     FocusRDF,
     parser::{
         RDFParse,
@@ -70,8 +70,8 @@ use rdf::rdf_core::{
     },
     term::{Object, literal::Lang},
 };
-use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
-use rdf::rdf_core::RDFFormat;
+use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+use rudof_rdf::rdf_core::RDFFormat;
 use iri_s::IriS;
 
 // The domain type we want to build from the RDF graph.

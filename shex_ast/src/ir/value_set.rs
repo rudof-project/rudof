@@ -1,4 +1,4 @@
-use rdf::rdf_core::term::Object;
+use rudof_rdf::rdf_core::term::Object;
 
 use super::value_set_value::ValueSetValue;
 

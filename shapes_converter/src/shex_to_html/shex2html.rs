@@ -3,7 +3,7 @@ use minijinja::Template;
 use minijinja::{Environment, path_loader};
 use prefixmap::error::PrefixMapError;
 use prefixmap::{IriRef, PrefixMap};
-use rdf::rdf_core::visualizer::uml_converter::{ImageFormat, UmlConverter, UmlGenerationMode};
+use rudof_rdf::rdf_core::visualizer::uml_converter::{ImageFormat, UmlConverter, UmlGenerationMode};
 use shex_ast::{Annotation, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
 use std::ffi::OsStr;
 use std::fs::OpenOptions;

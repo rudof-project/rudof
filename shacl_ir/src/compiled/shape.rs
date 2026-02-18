@@ -9,7 +9,7 @@ use crate::schema_ir::SchemaIR;
 use crate::severity::CompiledSeverity;
 use crate::shape_label_idx::ShapeLabelIdx;
 use iri_s::IriS;
-use rdf::rdf_core::{Rdf, SHACLPath, term::Object};
+use rudof_rdf::rdf_core::{Rdf, SHACLPath, term::Object};
 use shacl_ast::ShaclSchema;
 use shacl_ast::shape::Shape;
 use std::collections::HashSet;

@@ -9,8 +9,8 @@ use crate::validate_error::ValidateError;
 use crate::validation_report::report::ValidationReport;
 use clap::ValueEnum;
 use prefixmap::PrefixMap;
-use rdf::rdf_core::{NeighsRDF, RDFFormat};
-use rdf::rdf_impl::SparqlEndpoint;
+use rudof_rdf::rdf_core::{NeighsRDF, RDFFormat};
+use rudof_rdf::rdf_impl::SparqlEndpoint;
 use shacl_ir::compiled::schema_ir::SchemaIR;
 use sparql_service::RdfData;
 use std::fmt::Debug;
@@ -147,7 +147,7 @@ impl GraphValidation {
     /// use shacl_validation::shacl_processor::GraphValidation;
     /// use shacl_validation::shacl_processor::ShaclValidationMode;
     /// use shacl_validation::shacl_processor::ShaclProcessor;
-    /// use rdf::rdf_core::RDFFormat;
+    /// use rudof_rdf::rdf_core::RDFFormat;
     ///
     /// let graph_validation = GraphValidation::from_path(
     ///     "../examples/book_conformant.ttl", // example graph (refer to the examples folder)

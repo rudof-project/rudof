@@ -8,8 +8,8 @@ pub mod error;
 mod rdf_to_shacl;
 mod shacl_to_rdf;
 
-use rdf::rdf_core::FocusRDF;
 pub use rdf_to_shacl::ShaclParser;
+use rudof_rdf::rdf_core::FocusRDF;
 pub use shacl_to_rdf::ShaclWriter;
 
 pub fn parse_shacl_rdf<RDF>(rdf: RDF) -> Result<shacl_ast::ShaclSchema<RDF>, error::ShaclParserError>
@@ -25,8 +25,8 @@ where
 mod tests {
     use super::*;
     use iri_s::iri;
-    use rdf::rdf_core::{RDFFormat, term::Object};
-    use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+    use rudof_rdf::rdf_core::{RDFFormat, term::Object};
+    use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
     use shacl_ast::node_shape::NodeShape;
     use shacl_ast::shape::Shape;
     use shacl_ast::target::Target;
