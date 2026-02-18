@@ -4,8 +4,8 @@ mod targets_node;
 mod targets_objects_of;
 mod targets_subjects_of;
 
-use rdf::rdf_core::FocusRDF;
-use rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
+use rudof_rdf::rdf_core::FocusRDF;
+use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
 use shacl_ast::target::Target;
 
 pub(crate) use targets_class::targets_class;

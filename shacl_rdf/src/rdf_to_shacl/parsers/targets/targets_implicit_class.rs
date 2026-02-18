@@ -1,7 +1,7 @@
-use rdf::rdf_core::parser::rdf_node_parser::constructors::{FocusParser, InstancesParser};
-use rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
-use rdf::rdf_core::vocab::rdfs_class;
-use rdf::rdf_core::{FocusRDF, RDFError};
+use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{FocusParser, InstancesParser};
+use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
+use rudof_rdf::rdf_core::vocab::rdfs_class;
+use rudof_rdf::rdf_core::{FocusRDF, RDFError};
 use shacl_ast::ShaclVocab;
 use shacl_ast::target::Target;
 

@@ -1,4 +1,4 @@
-use rdf::rdf_core::RdfDataConfig;
+use rudof_rdf::rdf_core::RdfDataConfig;
 use serde::{Deserialize, Serialize};
 use shex_ast::shapemap::ShapemapConfig;
 use std::io::Read;

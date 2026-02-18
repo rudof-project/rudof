@@ -23,6 +23,6 @@ oxrdf = { workspace = true, features = ["oxsdatatypes"] }
 prefixmap.workspace = true
 regex.workspace = true
 shacl_ast.workspace = true
-rdf.workspace = true
+rudof_rdf.workspace = true
 thiserror.workspace = true
 tracing.workspace = true

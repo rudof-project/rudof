@@ -1,9 +1,9 @@
 use iri_s::IriS;
 use prefixmap::IriRef;
-use rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
-use rdf::rdf_core::term::literal::ConcreteLiteral;
-use rdf::rdf_core::term::{Iri, Object, Term};
-use rdf::rdf_core::{FocusRDF, RDFError, Rdf};
+use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
+use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
+use rudof_rdf::rdf_core::term::{Iri, Object, Term};
+use rudof_rdf::rdf_core::{FocusRDF, RDFError, Rdf};
 use shacl_ast::component::Component;
 use shacl_ast::value::Value;
 

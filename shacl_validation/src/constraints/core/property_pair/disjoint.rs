@@ -6,7 +6,7 @@ use crate::iteration_strategy::ValueNodeIteration;
 use crate::shacl_engine::engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
-use rdf::rdf_core::{NeighsRDF, Rdf, SHACLPath, query::QueryRDF, term::Triple};
+use rudof_rdf::rdf_core::{NeighsRDF, Rdf, SHACLPath, query::QueryRDF, term::Triple};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::Disjoint;
 use shacl_ir::compiled::shape::ShapeIR;

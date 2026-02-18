@@ -4,7 +4,7 @@ use crate::constraints::constraint_error::ConstraintError;
 use crate::shacl_engine::Engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
-use rdf::rdf_core::{
+use rudof_rdf::rdf_core::{
     NeighsRDF, Rdf, SHACLPath,
     query::QueryRDF,
     term::{Object, Triple},

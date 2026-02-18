@@ -1,5 +1,5 @@
-use rdf::rdf_core::{term::Object, utils::RDFRegexError};
-use rdf::rdf_impl::InMemoryGraphError;
+use rudof_rdf::rdf_core::{term::Object, utils::RDFRegexError};
+use rudof_rdf::rdf_impl::InMemoryGraphError;
 use shacl_ast::ShaclError;
 use shacl_rdf::error::ShaclParserError;
 use thiserror::Error;

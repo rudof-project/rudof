@@ -1,6 +1,6 @@
 use crate::{ShaclVocab, component::Component, message_map::MessageMap, severity::Severity, target::Target};
 use iri_s::IriS;
-use rdf::rdf_core::{BuildRDF, Rdf, term::Object};
+use rudof_rdf::rdf_core::{BuildRDF, Rdf, term::Object};
 use std::collections::HashSet;
 use std::fmt::Display;
 

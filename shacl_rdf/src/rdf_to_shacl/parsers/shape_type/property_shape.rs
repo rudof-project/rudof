@@ -1,10 +1,10 @@
 use crate::rdf_to_shacl::parsers::targets::targets;
 use crate::rdf_to_shacl::parsers::{components, path, property, reifier_shape, severity};
-use rdf::rdf_core::FocusRDF;
-use rdf::rdf_core::parser::rdf_node_parser::constructors::{
+use rudof_rdf::rdf_core::FocusRDF;
+use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{
     FocusParser, HasTypeParser, ObjectParser, SetFocusParser, SuccessParser,
 };
-use rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
+use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
 use shacl_ast::ShaclVocab;
 use shacl_ast::property_shape::PropertyShape;
 

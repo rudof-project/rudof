@@ -1,6 +1,6 @@
 use colored::*;
 use itertools::Itertools;
-use rdf::rdf_core::term::Object;
+use rudof_rdf::rdf_core::term::Object;
 use serde::Serialize;
 use tabled::settings::Modify;
 use tabled::settings::Width;

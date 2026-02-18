@@ -3,7 +3,7 @@ use std::fmt::Display;
 use prefixmap::PrefixMap;
 use prefixmap::error::PrefixMapError;
 use rbe::RbeError;
-use rdf::rdf_core::term::Object;
+use rudof_rdf::rdf_core::term::Object;
 use serde::Serialize;
 use serde::ser::SerializeMap;
 use shex_ast::ir::preds::Preds;

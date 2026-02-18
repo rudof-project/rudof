@@ -1,4 +1,4 @@
-use rdf::rdf_core::{Rdf, term::Object};
+use rudof_rdf::rdf_core::{Rdf, term::Object};
 
 use crate::{focus_nodes::FocusNodes, value_nodes::ValueNodes};
 

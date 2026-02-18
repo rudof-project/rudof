@@ -1,10 +1,10 @@
-use rdf::rdf_core::parser::rdf_node_parser::constructors::{
+use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{
     ObjectsPropertyParser, SingleBoolPropertyParser, SingleIntegerPropertyParser,
 };
-use rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
-use rdf::rdf_core::term::Object;
-use rdf::rdf_core::term::literal::ConcreteLiteral;
-use rdf::rdf_core::{FocusRDF, RDFError, SHACLPath};
+use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
+use rudof_rdf::rdf_core::term::Object;
+use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
+use rudof_rdf::rdf_core::{FocusRDF, RDFError, SHACLPath};
 use shacl_ast::ShaclVocab;
 use shacl_ast::component::Component;
 use std::collections::HashSet;

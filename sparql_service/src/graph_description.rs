@@ -1,5 +1,5 @@
 use crate::{ClassPartition, PropertyPartition};
-use rdf::rdf_core::term::{IriOrBlankNode, literal::NumericLiteral};
+use rudof_rdf::rdf_core::term::{IriOrBlankNode, literal::NumericLiteral};
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 

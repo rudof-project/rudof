@@ -8,7 +8,7 @@ use crate::shacl_engine::Engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
-use rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF};
+use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::MinExclusive;
 use shacl_ir::compiled::shape::ShapeIR;
@@ -74,8 +74,8 @@ mod tests {
     use crate::shacl_processor::{RdfDataValidation, ShaclValidationMode};
 
     use crate::shacl_processor::ShaclProcessor;
-    use rdf::rdf_core::RDFFormat;
-    use rdf::rdf_impl::ReaderMode;
+    use rudof_rdf::rdf_core::RDFFormat;
+    use rudof_rdf::rdf_impl::ReaderMode;
     use shacl_rdf::parse_shacl_rdf;
     use sparql_service::RdfData;
 

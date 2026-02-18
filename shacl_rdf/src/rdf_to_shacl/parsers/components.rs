@@ -3,8 +3,8 @@ use crate::rdf_to_shacl::parsers::{
     less_than_or_equals, max_count, max_exclusive, max_inclusive, max_length, min_count, min_exclusive, min_inclusive,
     min_length, node, node_kind, not, or, pattern, qualified_value_shape, unique_lang, xone,
 };
-use rdf::rdf_core::FocusRDF;
-use rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
+use rudof_rdf::rdf_core::FocusRDF;
+use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
 use shacl_ast::component::Component;
 
 pub(crate) fn components<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>

@@ -1,7 +1,7 @@
 use std::path::Path;
 
-use rdf::rdf_core::RDFFormat;
-use rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+use rudof_rdf::rdf_core::RDFFormat;
+use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use sparql_service::RdfData;
 
 use crate::validate_error::ValidateError;

@@ -15,7 +15,7 @@ use nom::{
     sequence::tuple,
 };
 use prefixmap::IriRef;
-use rdf::rdf_core::vocab::rdf_type as rdf_type_vocab;
+use rudof_rdf::rdf_core::vocab::rdf_type as rdf_type_vocab;
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum ShapeMapStatement {
@@ -178,7 +178,7 @@ fn close_curly(i: Span) -> IRes<char> {
 #[cfg(test)]
 mod tests {
     use prefixmap::IriRef;
-    use rdf::rdf_core::vocab::rdf_type as rdf_type_vocab;
+    use rudof_rdf::rdf_core::vocab::rdf_type as rdf_type_vocab;
 
     use crate::shapemap::ShapeSelector;
 

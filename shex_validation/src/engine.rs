@@ -8,7 +8,7 @@ use indexmap::IndexSet;
 use iri_s::iri;
 use itertools::Itertools;
 use prefixmap::PrefixMap;
-use rdf::rdf_core::{
+use rudof_rdf::rdf_core::{
     NeighsRDF,
     query::QueryRDF,
     term::{BlankNode, Iri as _, Object},

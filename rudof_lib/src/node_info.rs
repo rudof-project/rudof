@@ -3,7 +3,7 @@ use crate::shapemap::NodeSelector;
 use crate::{RudofError, ShapeMapParser};
 use iri_s::IriS;
 use prefixmap::IriRef;
-use rdf::rdf_core::{NeighsRDF, query::QueryRDF};
+use rudof_rdf::rdf_core::{NeighsRDF, query::QueryRDF};
 use shex_ast::ObjectValue;
 use std::collections::HashMap;
 use std::fmt::Debug;

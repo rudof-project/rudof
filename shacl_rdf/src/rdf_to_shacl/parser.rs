@@ -1,8 +1,8 @@
 use crate::error::ShaclParserError;
 use crate::rdf_to_shacl::parsers::{node_shape, property_shape};
 use prefixmap::PrefixMap;
-use rdf::rdf_core::parser::rdf_node_parser::ParserExt;
-use rdf::rdf_core::{
+use rudof_rdf::rdf_core::parser::rdf_node_parser::ParserExt;
+use rudof_rdf::rdf_core::{
     Any, FocusRDF, RDFError, Rdf,
     parser::{
         RDFParse,

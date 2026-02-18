@@ -1,4 +1,4 @@
-use rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF};
+use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::MaxCount;
 use shacl_ir::compiled::shape::ShapeIR;

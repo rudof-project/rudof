@@ -3,7 +3,7 @@ use colored::*;
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use pretty::{Arena, DocAllocator, DocBuilder};
-use rdf::rdf_core::term::literal::{ConcreteLiteral, NumericLiteral};
+use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, NumericLiteral};
 use std::borrow::Cow;
 
 pub(crate) fn pp_object_value<'a, A>(

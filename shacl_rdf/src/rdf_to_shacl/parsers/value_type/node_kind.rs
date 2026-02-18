@@ -1,8 +1,8 @@
 use crate::error::ShaclParserError;
-use rdf::rdf_core::parser::rdf_node_parser::constructors::ValuesPropertyParser;
-use rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
-use rdf::rdf_core::term::Iri;
-use rdf::rdf_core::{FocusRDF, Rdf};
+use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::ValuesPropertyParser;
+use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
+use rudof_rdf::rdf_core::term::Iri;
+use rudof_rdf::rdf_core::{FocusRDF, Rdf};
 use shacl_ast::ShaclVocab;
 use shacl_ast::component::Component;
 use shacl_ast::node_kind::NodeKind;

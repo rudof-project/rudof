@@ -1,4 +1,4 @@
-use rdf::rdf_core::Rdf;
+use rudof_rdf::rdf_core::Rdf;
 use std::collections::HashSet;
 use std::fmt::Display;
 

@@ -1,6 +1,6 @@
-use rdf::rdf_core::FocusRDF;
-use rdf::rdf_core::parser::rdf_node_parser::constructors::BoolsPropertyParser;
-use rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
+use rudof_rdf::rdf_core::FocusRDF;
+use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::BoolsPropertyParser;
+use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
 use shacl_ast::ShaclVocab;
 use shacl_ast::component::Component;
 

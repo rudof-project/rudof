@@ -1,7 +1,7 @@
 use crate::common::shacl_test::ShaclTest;
 use crate::common::testsuite_error::TestSuiteError;
 use oxrdf::{NamedNode, NamedOrBlankNode as OxSubject, Term as OxTerm};
-use rdf::rdf_core::{
+use rudof_rdf::rdf_core::{
     Any, NeighsRDF, RDFFormat,
     term::Triple,
     vocab::{rdf_first, rdf_rest},

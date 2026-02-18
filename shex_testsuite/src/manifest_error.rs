@@ -1,5 +1,5 @@
 use iri_s::error::IriSError;
-use rdf::{rdf_core::RDFError, rdf_impl::InMemoryGraphError};
+use rudof_rdf::{rdf_core::RDFError, rdf_impl::InMemoryGraphError};
 use shex_ast::compact::ParseError;
 use shex_ast::shapemap::ValidationStatus;
 use shex_ast::{Schema, SchemaIRError, ast::SchemaJsonError};

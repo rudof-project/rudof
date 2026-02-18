@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 
 use iri_s::IriS;
-use rdf::rdf_impl::ReaderMode;
 use rudof_lib::InputSpec;
 use rudof_lib::Rudof;
 use rudof_lib::RudofConfig;
@@ -10,6 +9,7 @@ use rudof_lib::ShapesGraphSource;
 use rudof_lib::data::get_base;
 use rudof_lib::data::get_data_rudof;
 use rudof_lib::data_format::DataFormat;
+use rudof_rdf::rdf_impl::ReaderMode;
 use tracing::Level;
 use tracing::debug;
 use tracing::enabled;

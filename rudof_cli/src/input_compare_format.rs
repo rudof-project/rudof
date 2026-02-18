@@ -2,8 +2,8 @@ use crate::dctap_format::DCTapFormat as CliDCTapFormat;
 use anyhow::{Result, bail};
 use clap::ValueEnum;
 use iri_s::MimeType;
-use rdf::rdf_core::RDFFormat;
 use rudof_lib::shacl_format::CliShaclFormat;
+use rudof_rdf::rdf_core::RDFFormat;
 use shex_ast::ShExFormat;
 use std::{
     fmt::{Display, Formatter},

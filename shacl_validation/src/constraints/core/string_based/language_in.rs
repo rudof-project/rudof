@@ -1,4 +1,4 @@
-use rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF, term::literal::Literal};
+use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF, term::literal::Literal};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::LanguageIn;
 use shacl_ir::compiled::shape::ShapeIR;

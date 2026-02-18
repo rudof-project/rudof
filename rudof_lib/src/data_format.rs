@@ -1,6 +1,6 @@
 use clap::ValueEnum;
 use iri_s::MimeType;
-use rdf::rdf_core::RDFFormat;
+use rudof_rdf::rdf_core::RDFFormat;
 use std::fmt::{Display, Formatter};
 use thiserror::Error;
 

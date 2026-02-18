@@ -1,8 +1,8 @@
 use super::super::parse_components_for_iri;
-use rdf::rdf_core::parser::rdf_node_parser::constructors::ListParser;
-use rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
-use rdf::rdf_core::term::literal::Lang;
-use rdf::rdf_core::{FocusRDF, RDFError};
+use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::ListParser;
+use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
+use rudof_rdf::rdf_core::term::literal::Lang;
+use rudof_rdf::rdf_core::{FocusRDF, RDFError};
 use shacl_ast::ShaclVocab;
 use shacl_ast::component::Component;
 

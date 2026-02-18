@@ -1,4 +1,4 @@
-use rdf::rdf_core::term::literal::Lang;
+use rudof_rdf::rdf_core::term::literal::Lang;
 use std::collections::HashMap;
 use std::str::FromStr;
 

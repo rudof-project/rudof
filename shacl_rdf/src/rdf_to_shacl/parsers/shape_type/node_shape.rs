@@ -1,8 +1,10 @@
 use crate::rdf_to_shacl::parsers::targets::targets;
 use crate::rdf_to_shacl::parsers::{components, property, severity};
-use rdf::rdf_core::FocusRDF;
-use rdf::rdf_core::parser::rdf_node_parser::constructors::{NonEmptyValuesPropertyParser, ObjectParser, SuccessParser};
-use rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
+use rudof_rdf::rdf_core::FocusRDF;
+use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{
+    NonEmptyValuesPropertyParser, ObjectParser, SuccessParser,
+};
+use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
 use shacl_ast::ShaclVocab;
 use shacl_ast::node_shape::NodeShape;
 

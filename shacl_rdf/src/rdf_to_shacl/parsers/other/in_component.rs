@@ -1,7 +1,7 @@
 use crate::rdf_to_shacl::parsers::utils::{parse_components_for_iri, term_to_value};
-use rdf::rdf_core::parser::rdf_node_parser::constructors::ListParser;
-use rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
-use rdf::rdf_core::{FocusRDF, RDFError, Rdf};
+use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::ListParser;
+use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
+use rudof_rdf::rdf_core::{FocusRDF, RDFError, Rdf};
 use shacl_ast::ShaclVocab;
 use shacl_ast::component::Component;
 

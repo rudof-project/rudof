@@ -1,5 +1,5 @@
 use iri_s::IriS;
-use rdf::rdf_core::RdfDataConfig;
+use rudof_rdf::rdf_core::RdfDataConfig;
 use serde::{Deserialize, Serialize};
 use shex_ast::ShExFormat;
 use std::io::Read;

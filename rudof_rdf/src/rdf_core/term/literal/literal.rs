@@ -193,7 +193,7 @@ impl ConcreteLiteral {
     /// # Examples
     ///
     /// ```
-    /// use rdf::rdf_core::term::literal::ConcreteLiteral;
+    /// use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
     /// use prefixmap::PrefixMap;
     ///
     /// let lit = ConcreteLiteral::integer(42);
@@ -303,7 +303,7 @@ impl ConcreteLiteral {
     /// # Examples
     ///
     /// ```
-    /// use rdf::rdf_core::term::literal::ConcreteLiteral;
+    /// use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
     /// use iri_s::IriS;
     /// use prefixmap::IriRef;
     ///
@@ -338,8 +338,8 @@ impl ConcreteLiteral {
     /// # Examples
     ///
     /// ```
-    /// use rdf::rdf_core::term::literal::ConcreteLiteral;
-    /// use rdf::rdf_core::term::literal::Lang;
+    /// use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
+    /// use rudof_rdf::rdf_core::term::literal::Lang;
     ///
     /// let lit1 = ConcreteLiteral::str("hello");
     /// let lit2 = ConcreteLiteral::str("hello");
@@ -652,7 +652,7 @@ impl ConcreteLiteral {
     /// # Examples
     ///
     /// ```
-    /// use rdf::rdf_core::term::literal::ConcreteLiteral;
+    /// use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
     /// assert_eq!(ConcreteLiteral::parse_bool("true").unwrap(), true);
     /// assert_eq!(ConcreteLiteral::parse_bool("0").unwrap(), false);
     /// assert!(ConcreteLiteral::parse_bool("yes").is_err());
@@ -676,7 +676,7 @@ impl ConcreteLiteral {
     /// # Examples
     ///
     /// ```
-    /// use rdf::rdf_core::term::literal::ConcreteLiteral;
+    /// use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
     /// assert_eq!(ConcreteLiteral::parse_integer("-7").unwrap(), -7);
     /// assert_eq!(ConcreteLiteral::parse_integer("2").unwrap(), 2);
     /// assert!(ConcreteLiteral::parse_integer("x").is_err());
@@ -695,7 +695,7 @@ impl ConcreteLiteral {
     /// # Examples
     ///
     /// ```
-    /// use rdf::rdf_core::term::literal::ConcreteLiteral;
+    /// use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
     /// assert_eq!(ConcreteLiteral::parse_negative_integer("-3").unwrap(), -3);
     /// assert!(ConcreteLiteral::parse_negative_integer("0").is_err());
     /// ```

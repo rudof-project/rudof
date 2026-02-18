@@ -6,8 +6,8 @@ use crate::{
 use iri_s::IriS;
 use iri_s::iri;
 use prefixmap::IriRef;
-use rdf::rdf_core::parser::rdf_node_parser::ParserExt;
-use rdf::{
+use rudof_rdf::rdf_core::parser::rdf_node_parser::ParserExt;
+use rudof_rdf::{
     rdf_core::{
         FocusRDF, RDFError, Rdf,
         parser::{

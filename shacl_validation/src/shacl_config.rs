@@ -1,4 +1,4 @@
-use rdf::rdf_core::RdfDataConfig;
+use rudof_rdf::rdf_core::RdfDataConfig;
 use std::io::Read;
 use std::{io, path::Path};
 use thiserror::Error;

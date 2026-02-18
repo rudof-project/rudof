@@ -1,4 +1,4 @@
-use rdf::rdf_core::term::literal::ConcreteLiteral;
+use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
 use thiserror::Error;
 
 #[derive(Error, Debug)]

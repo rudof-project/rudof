@@ -1,14 +1,14 @@
 use anyhow::Result;
 use iri_s::IriS;
-use rdf::rdf_core::{
+use rudof_lib::{InputSpec, Rudof, RudofConfig, data::get_data_rudof, data_format::DataFormat};
+use rudof_rdf::rdf_core::{
     RDFFormat,
     visualizer::{
         VisualRDFGraph,
         uml_converter::{ImageFormat, UmlConverter, UmlGenerationMode},
     },
 };
-use rdf::rdf_impl::ReaderMode;
-use rudof_lib::{InputSpec, Rudof, RudofConfig, data::get_data_rudof, data_format::DataFormat};
+use rudof_rdf::rdf_impl::ReaderMode;
 use std::path::PathBuf;
 
 use crate::result_data_format::ResultDataFormat;
