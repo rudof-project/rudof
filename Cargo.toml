@@ -269,6 +269,7 @@ indexmap = { version = "2", features = ["serde"] }
 indoc = "2"
 ipnetwork = "0.21"
 iri_s = { version = "0.1.90", path = "./iri_s" }
+is_ci = "1.0"
 itertools = "0.14"
 josekit = "0.10.3"
 lazy-regex = "3.4"
