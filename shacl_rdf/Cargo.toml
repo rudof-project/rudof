@@ -1,6 +1,6 @@
 [package]
 name = "shacl_rdf"
-version = "0.1.147"
+version = "0.1.148"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shacl_rdf"
