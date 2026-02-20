@@ -1,0 +1,8 @@
+prefix : <http://example.org>
+
+:Even {
+    (:p .; :p .)*
+}
+:Odd extends @:Even {
+    :p .
+}
