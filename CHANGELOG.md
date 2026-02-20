@@ -7,6 +7,20 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.1.149
+### Added
+### Fixed
+- Regression bug in handling of prefixmap declarations: https://github.com/rudof-project/rudof/issues/497
+- Unimplemented behaviour in regular bag expressions like `(a;b)*` has now been implemented
+
+### Changed
+### Removed
+
+## v0.1.148
+
+### Added
+- Improved rudof_generate
+
 ## v0.1.147
 
 ### Added

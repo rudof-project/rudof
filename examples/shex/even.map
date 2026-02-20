@@ -1,5 +1,5 @@
-:x2@:Even
-#, 
-#:x3@:Even, 
-#:x2@:Odd, 
-#:x3@:Odd
+:x1@:Even,
+:x2@:Even, 
+:x3@:Even,
+:x2@:Odd, 
+:x3@:Odd
