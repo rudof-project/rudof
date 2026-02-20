@@ -28,6 +28,10 @@ pub struct PropertyShape<RDF: Rdf> {
     group: Option<Object>,
     // source_iri: Option<IriRef>,
     // annotations: Vec<(IriRef, RDFNode)>,
+
+    // TODO - For NodeExpr, do not delete
+    // default_value: Option<NodeExpr<RDF>>, // ONLY WHEN PATH IS PREDICATE PATH
+    // values: Option<NodeExpr<RDF>>,        // ONLY WHEN PATH IS PREDICATE PATH
 }
 
 impl<RDF: Rdf> PropertyShape<RDF> {
@@ -49,6 +53,10 @@ impl<RDF: Rdf> PropertyShape<RDF> {
             group: None,
             reifier_info: None, // source_iri: None,
                                 // annotations: Vec::new()
+
+                                // TODO - For NodeExpr, do not delete
+                                // default_value: None,
+                                // values: None,
         }
     }
 
@@ -123,6 +131,17 @@ impl<RDF: Rdf> PropertyShape<RDF> {
         self
     }
 
+    // TODO - For NodeExpr, do not delete
+    // pub fn with_values(mut self, values: Option<NodeExpr<RDF>>) -> Self {
+    //     self.values = values;
+    //     self
+    // }
+    //
+    // pub fn with_default_value(mut self, default_value: Option<NodeExpr<RDF>>) -> Self {
+    //     self.default_value = default_value;
+    //     self
+    // }
+
     pub fn id(&self) -> &Object {
         &self.id
     }
@@ -162,6 +181,15 @@ impl<RDF: Rdf> PropertyShape<RDF> {
     pub fn property_shapes(&self) -> &Vec<Object> {
         &self.property_shapes
     }
+
+    // TODO - For NodeExpr, do not delete
+    // pub fn values(&self) -> Option<&NodeExpr<RDF>> {
+    //     self.values.as_ref()
+    // }
+    //
+    // pub fn default_value(&self) -> Option<&NodeExpr<RDF>> {
+    //     self.default_value.as_ref()
+    // }
 
     // TODO: this is a bit ugly
     pub fn write<B>(&self, rdf: &mut B) -> Result<(), B::Err>
@@ -274,8 +302,14 @@ impl<RDF: Rdf> Display for PropertyShape<RDF> {
         for component in self.components.iter() {
             writeln!(f, "       {component}")?
         }
-        write!(f, "}}")?;
-        Ok(())
+        // TODO - For NodeExpr, do not delete
+        // if let Some(v) = &self.default_value {
+        //     writeln!(f, "       default_value: {}", v)?;
+        // }
+        // if let Some(v) = &self.values {
+        //     writeln!(f, "       values: {}", v)?;
+        // }
+        write!(f, "}}")
     }
 }
 
@@ -295,6 +329,9 @@ impl<RDF: Rdf> Clone for PropertyShape<RDF> {
             order: self.order.clone(),
             group: self.group.clone(),
             reifier_info: self.reifier_info.clone(),
+            // TODO - For NodeExpr, do not delete
+            // default_value: self.default_value.clone(),
+            // values: self.values.clone(),
         }
     }
 }
@@ -313,5 +350,9 @@ impl<RDF: Rdf> PartialEq for PropertyShape<RDF> {
             && self.description == other.description
             && self.order == other.order
             && self.group == other.group
+
+        // TODO - For NodeExpr, do not delete
+        // && self.default_value == other.default_value
+        // && self.values == other.values
     }
 }

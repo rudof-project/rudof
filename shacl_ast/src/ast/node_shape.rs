@@ -71,6 +71,8 @@ impl<RDF: Rdf> NodeShape<RDF> {
 
     pub fn is_deactivated(&self) -> bool {
         for component in &self.components {
+            // TODO - For NodeExpr, do not delete
+            // if let Component::Deactivated(NodeExpr::Literal(ConcreteLiteral::BooleanLiteral(true))) = component {
             if let Component::Deactivated(true) = component {
                 return true;
             }

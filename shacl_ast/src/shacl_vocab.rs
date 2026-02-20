@@ -145,6 +145,10 @@ vocab_term!(
     "ReifierShapeConstraintComponent"
 ); // SHACL 1.2
 
+// TODO - For node expressions, do not delete
+// vocab_term!(ShaclVocab, SH_DEFAULT_VALUE, "defaultValue");
+// vocab_term!(ShaclVocab, SH_VALUES, "values");
+
 // Targets
 vocab_term!(ShaclVocab, SH_TARGET_NODE, "targetNode");
 vocab_term!(ShaclVocab, SH_TARGET_CLASS, "targetClass");

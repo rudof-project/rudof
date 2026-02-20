@@ -14,7 +14,7 @@ pub enum Target<S: Rdf>
 where
     S::Term: Clone,
 {
-    Node(Object), // TODO: Shacl12: Extend to Node Expressions
+    Node(Object), // TODO - Replace with NodeExpr
     Class(Object),
     SubjectsOf(IriRef),
     ObjectsOf(IriRef),
@@ -30,6 +30,7 @@ where
 
 impl<S: Rdf> Target<S> {
     pub fn target_node(node: Object) -> Self {
+        // TODO - Replace with NodeExpr
         Target::Node(node)
     }
     pub fn target_class(node: Object) -> Self {
