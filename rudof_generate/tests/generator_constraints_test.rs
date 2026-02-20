@@ -1,5 +1,6 @@
 use rudof_generate::{DataGenerator, GeneratorConfig};
-use srdf::{NeighsRDF, RDFFormat, ReaderMode, SRDFGraph};
+use rudof_rdf::rdf_core::{NeighsRDF, RDFFormat};
+use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use std::collections::HashMap;
 use std::io::Write;
 use tempfile::NamedTempFile;
@@ -31,26 +32,18 @@ ex:PersonShape {
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shex_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shex_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Verify cardinality constraints
     verify_shex_cardinality(&graph);
 }
 
-/// Test that SHACL cardinality constraints are respected in generated data  
+/// Test that SHACL cardinality constraints are respected in generated data
 #[tokio::test]
 async fn test_shacl_cardinality_constraints() {
     // Create a SHACL schema with cardinality constraints
@@ -58,7 +51,7 @@ async fn test_shacl_cardinality_constraints() {
     @prefix sh: <http://www.w3.org/ns/shacl#> .
     @prefix ex: <http://example.org/> .
     @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-    
+
     ex:PersonShape a sh:NodeShape ;
         sh:targetClass ex:Person ;
         sh:property [
@@ -88,20 +81,12 @@ async fn test_shacl_cardinality_constraints() {
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shacl_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shacl_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Verify cardinality constraints
     verify_shacl_cardinality(&graph);
@@ -115,7 +100,7 @@ async fn test_datatype_constraints() {
     @prefix sh: <http://www.w3.org/ns/shacl#> .
     @prefix ex: <http://example.org/> .
     @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-    
+
     ex:PersonShape a sh:NodeShape ;
         sh:targetClass ex:Person ;
         sh:property [
@@ -157,20 +142,12 @@ async fn test_datatype_constraints() {
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shacl_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shacl_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Verify datatype constraints
     verify_datatypes(&graph);
@@ -184,7 +161,7 @@ async fn test_value_constraints() {
     @prefix sh: <http://www.w3.org/ns/shacl#> .
     @prefix ex: <http://example.org/> .
     @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-    
+
     ex:PersonShape a sh:NodeShape ;
         sh:targetClass ex:Person ;
         sh:property [
@@ -214,20 +191,12 @@ async fn test_value_constraints() {
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shacl_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shacl_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Verify value constraints
     verify_value_constraints(&graph);
@@ -262,20 +231,12 @@ ex:PersonShape {
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shex_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shex_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Verify datatype constraints (reuse the same verification function)
     verify_datatypes(&graph);
@@ -308,20 +269,12 @@ ex:PersonShape {
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shex_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shex_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Verify value constraints (reuse the same verification function)
     verify_value_constraints(&graph);
@@ -329,7 +282,7 @@ ex:PersonShape {
 
 // Helper functions for verification
 
-fn verify_shex_cardinality(graph: &SRDFGraph) {
+fn verify_shex_cardinality(graph: &InMemoryGraph) {
     let mut entity_properties: HashMap<String, HashMap<String, Vec<String>>> = HashMap::new();
 
     // Collect properties for each entity
@@ -369,7 +322,7 @@ fn verify_shex_cardinality(graph: &SRDFGraph) {
     }
 }
 
-fn verify_shacl_cardinality(graph: &SRDFGraph) {
+fn verify_shacl_cardinality(graph: &InMemoryGraph) {
     let mut entity_properties: HashMap<String, HashMap<String, Vec<String>>> = HashMap::new();
 
     // Collect properties for each entity
@@ -409,7 +362,7 @@ fn verify_shacl_cardinality(graph: &SRDFGraph) {
     }
 }
 
-fn verify_datatypes(graph: &SRDFGraph) {
+fn verify_datatypes(graph: &InMemoryGraph) {
     for triple in graph.triples().unwrap() {
         let literal = triple.object.clone();
         if let oxrdf::Term::Literal(lit) = literal {
@@ -422,40 +375,36 @@ fn verify_datatypes(graph: &SRDFGraph) {
                         datatype, "http://www.w3.org/2001/XMLSchema#string",
                         "Name should be xsd:string"
                     );
-                }
+                },
                 "http://example.org/age" => {
                     assert_eq!(
                         datatype, "http://www.w3.org/2001/XMLSchema#integer",
                         "Age should be xsd:integer"
                     );
                     // Verify it's actually a valid integer
-                    lit.value()
-                        .parse::<i32>()
-                        .expect("Age should be valid integer");
-                }
+                    lit.value().parse::<i32>().expect("Age should be valid integer");
+                },
                 "http://example.org/height" => {
                     assert_eq!(
                         datatype, "http://www.w3.org/2001/XMLSchema#decimal",
                         "Height should be xsd:decimal"
                     );
                     // Verify it's actually a valid decimal
-                    lit.value()
-                        .parse::<f64>()
-                        .expect("Height should be valid decimal");
-                }
+                    lit.value().parse::<f64>().expect("Height should be valid decimal");
+                },
                 "http://example.org/birthDate" => {
                     assert_eq!(
                         datatype, "http://www.w3.org/2001/XMLSchema#date",
                         "Birth date should be xsd:date"
                     );
-                }
-                _ => {}
+                },
+                _ => {},
             }
         }
     }
 }
 
-fn verify_value_constraints(graph: &SRDFGraph) {
+fn verify_value_constraints(graph: &InMemoryGraph) {
     // Only verify that basic datatypes are respected (no range/length constraints since they're not supported)
     for triple in graph.triples().unwrap() {
         let literal = triple.object.clone();
@@ -467,12 +416,12 @@ fn verify_value_constraints(graph: &SRDFGraph) {
                 "http://example.org/name" => {
                     // Just verify it's a string - no length constraints since they're not supported
                     assert!(!value.is_empty(), "Name should not be empty");
-                }
+                },
                 "http://example.org/age" => {
                     // Just verify it's a valid integer - no range constraints since they're not supported
                     value.parse::<i32>().expect("Age should be a valid integer");
-                }
-                _ => {}
+                },
+                _ => {},
             }
         }
     }

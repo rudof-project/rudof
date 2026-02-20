@@ -46,7 +46,7 @@ impl<'a> ShapeMap for ShapeMapOxGraph<'a> {
                 match state {
                     ShapeMapState::Conforms => {
                         result.insert(node);
-                    }
+                    },
                     _ => (),
                 }
             }
@@ -90,7 +90,7 @@ impl<'a> ShapeMap for ShapeMapOxGraph<'a> {
                 let mut shape_map = HashMap::new();
                 shape_map.insert((*shape).clone(), &ShapeMapState::Pending);
                 self.node_shape_map.insert((*node).clone(), shape_map);
-            }
+            },
             Some(shape_map) => todo!(),
         }
     }
@@ -101,23 +101,23 @@ impl<'a> ShapeMap for ShapeMapOxGraph<'a> {
                 let mut sm: HashMap<ShapeLabelOxGraph, &'a ShapeMapState> = HashMap::new();
                 sm.insert((*shape).clone(), &ShapeMapState::Conforms);
                 self.node_shape_map.insert(node.clone(), sm);
-            }
+            },
             Some(sm) => match sm.get_mut(&shape) {
                 None => {
                     sm.insert((*shape).clone(), &ShapeMapState::Conforms);
-                }
+                },
                 Some(state) => match state {
                     ShapeMapState::Conforms => (),
                     ShapeMapState::Fails => {
                         sm.insert((*shape).clone(), &ShapeMapState::Inconsistent);
-                    }
+                    },
                     ShapeMapState::Pending => {
                         // TODO: Notify the pending pairs!
                         sm.insert((*shape).clone(), &ShapeMapState::Conforms);
-                    }
+                    },
                     ShapeMapState::Unknown => {
                         sm.insert((*shape).clone(), &ShapeMapState::Conforms);
-                    }
+                    },
                     ShapeMapState::Inconsistent => (),
                 },
             },

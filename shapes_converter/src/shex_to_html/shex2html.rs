@@ -3,18 +3,14 @@ use minijinja::Template;
 use minijinja::{Environment, path_loader};
 use prefixmap::error::PrefixMapError;
 use prefixmap::{IriRef, PrefixMap};
+use rudof_rdf::rdf_core::visualizer::uml_converter::{ImageFormat, UmlConverter, UmlGenerationMode};
 use shex_ast::{Annotation, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
-use srdf::UmlConverter;
-use srdf::UmlGenerationMode;
 use std::ffi::OsStr;
 use std::fs::OpenOptions;
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
-use super::{
-    Cardinality, HtmlSchema, HtmlShape, Name, NodeId, ShEx2HtmlConfig, ShapeTemplateEntry,
-    ValueConstraint,
-};
+use super::{Cardinality, HtmlSchema, HtmlShape, Name, NodeId, ShEx2HtmlConfig, ShapeTemplateEntry, ValueConstraint};
 
 pub struct ShEx2Html {
     config: ShEx2HtmlConfig,
@@ -36,11 +32,9 @@ impl ShEx2Html {
         &self.current_html
     }
 
+    #[allow(clippy::result_large_err)]
     pub fn convert(&mut self, shex: &Schema) -> Result<(), ShEx2HtmlError> {
-        let prefixmap = shex
-            .prefixmap()
-            .unwrap_or_default()
-            .without_rich_qualifying();
+        let prefixmap = shex.prefixmap().unwrap_or_default().without_rich_qualifying();
         let parent = self.create_name_for_schema(shex);
         if self.config.embed_svg_schema || self.config.embed_svg_shape {
             let _ = self.current_uml_converter.convert(shex);
@@ -49,13 +43,8 @@ impl ShEx2Html {
             for shape_decl in shapes {
                 let mut name = self.shape_label2name(&shape_decl.id, &prefixmap)?;
                 let (node_id, _found) = self.current_html.get_node_adding_label(&name.name());
-                let component = self.shape_expr2htmlshape(
-                    &mut name,
-                    &shape_decl.shape_expr,
-                    &prefixmap,
-                    &node_id,
-                    &parent,
-                )?;
+                let component =
+                    self.shape_expr2htmlshape(&mut name, &shape_decl.shape_expr, &prefixmap, &node_id, &parent)?;
                 self.current_html.add_component(node_id, component)?;
             }
         }
@@ -78,11 +67,12 @@ impl ShEx2Html {
         Ok(())
     }
 
+    #[allow(clippy::result_large_err)]
     pub fn create_svg_schema(&self) -> Result<String, ShEx2HtmlError> {
         let mut str_writer = BufWriter::new(Vec::new());
         self.current_uml_converter.as_image(
             str_writer.by_ref(),
-            srdf::ImageFormat::SVG,
+            ImageFormat::SVG,
             &UmlGenerationMode::all(),
             self.config.shex2uml_config().plantuml_path(),
         )?;
@@ -90,11 +80,12 @@ impl ShEx2Html {
         Ok(str)
     }
 
+    #[allow(clippy::result_large_err)]
     pub fn create_svg_shape(&self, name: &str) -> Result<String, ShEx2HtmlError> {
         let mut str_writer = BufWriter::new(Vec::new());
         self.current_uml_converter.as_image(
             str_writer.by_ref(),
-            srdf::ImageFormat::SVG,
+            ImageFormat::SVG,
             &UmlGenerationMode::neighs(name),
             self.config.shex2uml_config().plantuml_path(),
         )?;
@@ -112,6 +103,7 @@ impl ShEx2Html {
         Name::new(&str, None, self.config.landing_page())
     }
 
+    #[allow(clippy::result_large_err)]
     pub fn export_schema<P: AsRef<Path>>(&self, path: P) -> Result<(), ShEx2HtmlError> {
         let environment = create_env(path);
         let landing_page = self.config.landing_page();
@@ -138,11 +130,8 @@ impl ShEx2Html {
         Ok(())
     }
 
-    fn shape_label2name(
-        &mut self,
-        label: &ShapeExprLabel,
-        prefixmap: &PrefixMap,
-    ) -> Result<Name, ShEx2HtmlError> {
+    #[allow(clippy::result_large_err)]
+    fn shape_label2name(&mut self, label: &ShapeExprLabel, prefixmap: &PrefixMap) -> Result<Name, ShEx2HtmlError> {
         match label {
             ShapeExprLabel::IriRef { value } => iri_ref2name(value, &self.config, &None, prefixmap),
             ShapeExprLabel::BNode { value: _ } => todo!(),
@@ -150,6 +139,7 @@ impl ShEx2Html {
         }
     }
 
+    #[allow(clippy::result_large_err)]
     fn shape_expr2htmlshape(
         &mut self,
         name: &mut Name,
@@ -159,9 +149,7 @@ impl ShEx2Html {
         parent: &Name,
     ) -> Result<HtmlShape, ShEx2HtmlError> {
         match shape_expr {
-            ShapeExpr::Shape(shape) => {
-                self.shape2htmlshape(name, shape, prefixmap, current_node_id, parent)
-            }
+            ShapeExpr::Shape(shape) => self.shape2htmlshape(name, shape, prefixmap, current_node_id, parent),
             _ => Err(ShEx2HtmlError::NotImplemented {
                 msg: format!(
                     "Complex shape expressions are not implemented yet for conversion to HTML: {shape_expr:?}"
@@ -170,6 +158,7 @@ impl ShEx2Html {
         }
     }
 
+    #[allow(clippy::result_large_err)]
     fn shape2htmlshape(
         &mut self,
         name: &mut Name,
@@ -185,15 +174,11 @@ impl ShEx2Html {
         if let Some(extends) = &shape.extends {
             for e in extends.iter() {
                 let extended_name = self.shape_label2name(e, prefixmap)?;
-                let (extended_node, found) = self
-                    .current_html
-                    .get_node_adding_label(&extended_name.name());
+                let (extended_node, found) = self.current_html.get_node_adding_label(&extended_name.name());
                 html_shape.add_extends(&extended_name);
                 if !found {
-                    self.current_html.add_component(
-                        extended_node,
-                        HtmlShape::new(extended_name, parent.clone()),
-                    )?;
+                    self.current_html
+                        .add_component(extended_node, HtmlShape::new(extended_name, parent.clone()))?;
                 }
             }
         }
@@ -220,8 +205,7 @@ impl ShEx2Html {
                                 sem_acts: _,
                                 annotations,
                             } => {
-                                let pred_name =
-                                    mk_name(predicate, annotations, &self.config, prefixmap)?;
+                                let pred_name = mk_name(predicate, annotations, &self.config, prefixmap)?;
                                 let card = mk_card(min, max)?;
                                 let value_constraint = if let Some(se) = value_expr {
                                     self.value_expr2value_constraint(
@@ -236,22 +220,18 @@ impl ShEx2Html {
                                     ValueConstraint::default()
                                 };
                                 match value_constraint {
-                                    ValueConstraint::None => {}
+                                    ValueConstraint::None => {},
                                     _ => {
-                                        let entry = ShapeTemplateEntry::new(
-                                            pred_name,
-                                            value_constraint,
-                                            card,
-                                        );
+                                        let entry = ShapeTemplateEntry::new(pred_name, value_constraint, card);
                                         html_shape.add_entry(entry)
-                                    }
+                                    },
                                 }
-                            }
+                            },
                             _ => todo!(),
                         }
                     }
                     Ok(())
-                }
+                },
                 TripleExpr::OneOf {
                     id: _,
                     expressions: _,
@@ -274,27 +254,20 @@ impl ShEx2Html {
                     let pred_name = mk_name(predicate, annotations, &self.config, prefixmap)?;
                     let card = mk_card(min, max)?;
                     let value_constraint = if let Some(se) = value_expr {
-                        self.value_expr2value_constraint(
-                            se,
-                            prefixmap,
-                            current_node_id,
-                            &pred_name,
-                            &card,
-                            parent,
-                        )?
+                        self.value_expr2value_constraint(se, prefixmap, current_node_id, &pred_name, &card, parent)?
                     } else {
                         ValueConstraint::default()
                     };
                     match value_constraint {
-                        ValueConstraint::None => {}
+                        ValueConstraint::None => {},
                         _ => {
                             let entry = ShapeTemplateEntry::new(pred_name, value_constraint, card);
                             html_shape.add_entry(entry);
-                        }
+                        },
                     };
                     Ok(())
-                }
-                TripleExpr::TripleExprRef(tref) => Err(ShEx2HtmlError::not_implemented(
+                },
+                TripleExpr::Ref(tref) => Err(ShEx2HtmlError::not_implemented(
                     format!("Triple expr reference {tref:?} not implemented yet").as_str(),
                 )),
             }?;
@@ -304,6 +277,7 @@ impl ShEx2Html {
         }
     }
 
+    #[allow(clippy::result_large_err)]
     fn value_expr2value_constraint(
         &mut self,
         value_expr: &ShapeExpr,
@@ -329,29 +303,24 @@ impl ShEx2Html {
                     Ok(ValueConstraint::datatype(name))
                 } else {
                     Err(ShEx2HtmlError::not_implemented(
-                        format!("Some node constraints like {nc:?} are not implemented yet")
-                            .as_str(),
+                        format!("Some node constraints like {nc:?} are not implemented yet").as_str(),
                     ))
                 }
-            }
+            },
             ShapeExpr::Shape(shape) => Err(ShEx2HtmlError::not_implemented(
                 format!("Ref to shape {shape:?} not implemented yet").as_str(),
             )),
-            ShapeExpr::External => Err(ShEx2HtmlError::not_implemented(
-                "Ref to External not implemented yet",
-            )),
+            ShapeExpr::External => Err(ShEx2HtmlError::not_implemented("Ref to External not implemented yet")),
             ShapeExpr::Ref(r) => match &r {
                 ShapeExprLabel::IriRef { value } => {
                     let ref_name = iri_ref2name(value, &self.config, &None, prefixmap)?;
-                    let (node, found) = self
-                        .current_html
-                        .get_node_adding_label(ref_name.name().as_str());
+                    let (node, found) = self.current_html.get_node_adding_label(ref_name.name().as_str());
                     if !found {
                         self.current_html
                             .add_component(node, HtmlShape::new(ref_name.clone(), parent.clone()))?
                     }
                     Ok(ValueConstraint::Ref(ref_name))
-                }
+                },
                 ShapeExprLabel::BNode { value } => Err(ShEx2HtmlError::not_implemented(
                     format!("Ref to bnode: {value}").as_str(),
                 )),
@@ -361,6 +330,7 @@ impl ShEx2Html {
     }
 }
 
+#[allow(clippy::result_large_err)]
 fn iri_ref2name(
     iri_ref: &IriRef,
     config: &ShEx2HtmlConfig,
@@ -380,7 +350,7 @@ fn iri_ref2name(
                 Some(iri.as_str()),
                 config.target_folder().as_path(),
             )
-        }
+        },
     };
     if let Some(label) = maybe_label {
         name.add_label(label)
@@ -394,6 +364,7 @@ pub fn create_env<P: AsRef<Path>>(path: P) -> Environment<'static> {
     env
 }
 
+#[allow(clippy::result_large_err)]
 fn mk_card(min: &Option<i32>, max: &Option<i32>) -> Result<Cardinality, ShEx2HtmlError> {
     let min = if let Some(n) = min { *n } else { 1 };
     let max = if let Some(n) = max { *n } else { 1 };
@@ -408,6 +379,7 @@ fn mk_card(min: &Option<i32>, max: &Option<i32>) -> Result<Cardinality, ShEx2Htm
     }
 }
 
+#[allow(clippy::result_large_err)]
 fn generate_shape_page(
     shape: &HtmlShape,
     template: &Template,
@@ -433,6 +405,7 @@ fn generate_shape_page(
     }
 }
 
+#[allow(clippy::result_large_err)]
 fn mk_name(
     iri: &IriRef,
     annotations: &Option<Vec<Annotation>>,
@@ -457,7 +430,8 @@ fn get_label(
     Ok(None)
 }
 
-pub fn create_svg_shape<P: AsRef<Path>>(
+#[allow(clippy::result_large_err)]
+fn create_svg_shape<P: AsRef<Path>>(
     converter: &ShEx2Uml,
     name: &str,
     plantuml_path: P,
@@ -465,7 +439,7 @@ pub fn create_svg_shape<P: AsRef<Path>>(
     let mut str_writer = BufWriter::new(Vec::new());
     converter.as_image(
         str_writer.by_ref(),
-        srdf::ImageFormat::SVG,
+        ImageFormat::SVG,
         &UmlGenerationMode::neighs(name),
         plantuml_path.as_ref(),
     )?;

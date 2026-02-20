@@ -1,4 +1,4 @@
-use srdf::{RDFNode, Rdf};
+use rudof_rdf::rdf_core::{Rdf, term::Object};
 
 use crate::{focus_nodes::FocusNodes, value_nodes::ValueNodes};
 
@@ -13,7 +13,7 @@ pub trait IterationStrategy<S: Rdf> {
 
     fn to_value(&self, item: &Self::Item) -> Option<S::Term>;
 
-    fn to_object(&self, item: &Self::Item) -> Option<RDFNode> {
+    fn to_object(&self, item: &Self::Item) -> Option<Object> {
         match self.to_value(item) {
             None => None,
             Some(value) => S::term_as_object(&value).ok(),
@@ -47,11 +47,11 @@ impl<S: Rdf> IterationStrategy<S> for ValueNodeIteration {
         &'a self,
         value_nodes: &'a ValueNodes<S>,
     ) -> Box<dyn Iterator<Item = (&'a S::Term, &'a Self::Item)> + 'a> {
-        Box::new(value_nodes.iter().flat_map(|(focus_node, value_nodes)| {
-            value_nodes
-                .iter()
-                .map(move |value_node| (focus_node, value_node))
-        }))
+        Box::new(
+            value_nodes.iter().flat_map(|(focus_node, value_nodes)| {
+                value_nodes.iter().map(move |value_node| (focus_node, value_node))
+            }),
+        )
     }
 
     fn to_value(&self, item: &Self::Item) -> Option<<S as Rdf>::Term> {

@@ -1,11 +1,14 @@
 use iri_s::IriS;
 use prefixmap::IriRef;
 use rbe::Value;
+use rudof_rdf::rdf_core::{
+    RDFError,
+    term::{
+        Object,
+        literal::{ConcreteLiteral, NumericLiteral},
+    },
+};
 use serde::Serialize;
-use srdf::Object;
-use srdf::RDFError;
-use srdf::SLiteral;
-use srdf::numeric_literal::NumericLiteral;
 use std::fmt::Display;
 use tracing::trace;
 
@@ -25,9 +28,7 @@ impl Node {
     }
     /// Creates a node from an [`ÌriS`]
     pub fn iri(iri: IriS) -> Node {
-        Node {
-            node: Object::iri(iri),
-        }
+        Node { node: Object::iri(iri) }
     }
 
     /// Returns the length of the RDF Node
@@ -52,19 +53,17 @@ impl Node {
         trace!("as_checked_object: {:?}", self.node);
         match &self.node {
             Object::Literal(sliteral) => {
-                let checked_literal =
-                    sliteral
-                        .as_checked_literal()
-                        .map_err(|e| SchemaJsonError::LiteralError {
-                            error: e.to_string(),
-                        })?;
+                let checked_literal = sliteral
+                    .clone()
+                    .into_checked_literal()
+                    .map_err(|e| SchemaJsonError::LiteralError { error: e.to_string() })?;
                 Ok(Object::Literal(checked_literal))
-            }
+            },
             _ => Ok(self.node.clone()),
         }
     }
 
-    pub fn literal(lit: SLiteral) -> Node {
+    pub fn literal(lit: ConcreteLiteral) -> Node {
         Node {
             node: Object::literal(lit),
         }
@@ -116,15 +115,13 @@ impl TryFrom<&Node> for ObjectValue {
 
     fn try_from(node: &Node) -> Result<Self, Self::Error> {
         match &node.node {
-            srdf::Object::Iri(iri) => Ok(ObjectValue::IriRef(IriRef::iri(iri.clone()))),
-            srdf::Object::Literal(lit) => Ok(ObjectValue::Literal(lit.clone())),
-            srdf::Object::BlankNode(bnode_id) => {
-                Err(crate::SchemaJsonError::InvalidNodeInObjectValue {
-                    node: node.to_string(),
-                    error: format!("Blank node _:{bnode_id}"),
-                })
-            }
-            srdf::Object::Triple { .. } => Err(SchemaJsonError::InvalidNodeInObjectValue {
+            Object::Iri(iri) => Ok(ObjectValue::IriRef(IriRef::iri(iri.clone()))),
+            Object::Literal(lit) => Ok(ObjectValue::Literal(lit.clone())),
+            Object::BlankNode(bnode_id) => Err(crate::SchemaJsonError::InvalidNodeInObjectValue {
+                node: node.to_string(),
+                error: format!("Blank node _:{bnode_id}"),
+            }),
+            Object::Triple { .. } => Err(SchemaJsonError::InvalidNodeInObjectValue {
                 node: node.to_string(),
                 error: "RDF triples are not supported in ObjectValue".to_string(),
             }),

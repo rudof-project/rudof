@@ -19,9 +19,7 @@ where
 impl<T: Hash + Eq> Bag<T> {
     #[inline]
     pub fn new() -> Bag<T> {
-        Bag {
-            bag: HashBag::new(),
-        }
+        Bag { bag: HashBag::new() }
     }
 
     pub fn insert(&mut self, value: T) -> usize {
@@ -54,11 +52,7 @@ where
     T: Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let v: Vec<String> = self
-            .bag
-            .set_iter()
-            .map(|(t, n)| format!("{t}/{n}"))
-            .collect();
+        let v: Vec<String> = self.bag.set_iter().map(|(t, n)| format!("{t}/{n}")).collect();
         write!(f, "Bag [{}]", v.join(", "))
     }
 }
@@ -74,11 +68,7 @@ where
     T: Hash + Eq + Debug,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let v: Vec<String> = self
-            .bag
-            .set_iter()
-            .map(|(t, n)| format!("{t:?}/{n}"))
-            .collect();
+        let v: Vec<String> = self.bag.set_iter().map(|(t, n)| format!("{t:?}/{n}")).collect();
         write!(f, "Bag [{}]", v.join(", "))
     }
 }
@@ -152,9 +142,7 @@ where
     T: Hash + Eq,
 {
     fn new() -> Self {
-        BagVisitor {
-            marker: PhantomData,
-        }
+        BagVisitor { marker: PhantomData }
     }
 }
 

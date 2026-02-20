@@ -9,13 +9,11 @@ use crate::shacl_engine::sparql::SparqlEngine;
 use crate::shape_validation::Validate;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
+use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF};
 use shacl_ir::compiled::component_ir::And;
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use srdf::NeighsRDF;
-use srdf::QueryRDF;
-use srdf::SHACLPath;
 use std::fmt::Debug;
 
 impl<S: NeighsRDF + Debug> Validator<S> for And {
@@ -37,27 +35,18 @@ impl<S: NeighsRDF + Debug> Validator<S> for And {
                 let mut all_conform = true;
                 for shape_idx in self.shapes().iter() {
                     let shape = get_shape_from_idx(shapes_graph, shape_idx)?;
-                    let inner_results = shape.validate(
-                        store,
-                        engine,
-                        Some(&focus_nodes),
-                        Some(&shape),
-                        shapes_graph,
-                    );
+                    let inner_results = shape.validate(store, engine, Some(&focus_nodes), Some(&shape), shapes_graph);
                     match inner_results {
                         Err(e) => {
-                            tracing::trace!(
-                                "Error validating node {node} with shape {}: {e}",
-                                shape.id()
-                            );
+                            tracing::trace!("Error validating node {node} with shape {}: {e}", shape.id());
                             all_conform = false;
-                        }
+                        },
                         Ok(results) => {
                             if !results.is_empty() {
                                 all_conform = false;
                                 validation_results.extend(results);
                             }
-                        }
+                        },
                     }
                     if !all_conform {
                         break;

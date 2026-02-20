@@ -5,9 +5,9 @@ use std::{
 };
 
 use iri_s::IriS;
+use rudof_rdf::rdf_core::vocab::rdfs_label;
 use serde::{Deserialize, Serialize};
 use shex_validation::ShExConfig;
-use srdf::{PLANTUML, RDFS_LABEL_STR};
 use thiserror::Error;
 
 pub const DEFAULT_REPLACE_IRI_BY_LABEL: bool = true;
@@ -24,7 +24,7 @@ pub struct ShEx2UmlConfig {
 impl ShEx2UmlConfig {
     pub fn new() -> ShEx2UmlConfig {
         Self {
-            annotation_label: vec![IriS::new_unchecked(RDFS_LABEL_STR)],
+            annotation_label: vec![rdfs_label().clone()],
             replace_iri_by_label: None,
             shex: Some(ShExConfig::default()),
             shadowing: Some(true),
@@ -40,17 +40,15 @@ impl ShEx2UmlConfig {
     }
 
     pub fn replace_iri_by_label(&self) -> bool {
-        self.replace_iri_by_label
-            .unwrap_or(DEFAULT_REPLACE_IRI_BY_LABEL)
+        self.replace_iri_by_label.unwrap_or(DEFAULT_REPLACE_IRI_BY_LABEL)
     }
 
     pub fn from_file(file_name: &str) -> Result<ShEx2UmlConfig, ShEx2UmlConfigError> {
-        let config_str =
-            fs::read_to_string(file_name).map_err(|e| ShEx2UmlConfigError::ReadingConfigError {
-                path_name: file_name.to_string(),
-                error: e,
-            })?;
-        toml::from_str::<ShEx2UmlConfig>(&config_str).map_err(|e| ShEx2UmlConfigError::TomlError {
+        let config_str = fs::read_to_string(file_name).map_err(|e| ShEx2UmlConfigError::ReadingConfig {
+            path_name: file_name.to_string(),
+            error: e,
+        })?;
+        toml::from_str::<ShEx2UmlConfig>(&config_str).map_err(|e| ShEx2UmlConfigError::Toml {
             path_name: file_name.to_string(),
             error: e,
         })
@@ -58,7 +56,7 @@ impl ShEx2UmlConfig {
 
     pub fn plantuml_path(&self) -> PathBuf {
         self.plantuml_path.clone().unwrap_or_else(|| {
-            env::var(PLANTUML)
+            env::var("PLANTUML")
                 .map(PathBuf::from)
                 .unwrap_or_else(|_| env::current_dir().unwrap())
         })
@@ -68,16 +66,13 @@ impl ShEx2UmlConfig {
 #[derive(Error, Debug)]
 pub enum ShEx2UmlConfigError {
     #[error("Reading path {path_name:?} error: {error:?}")]
-    ReadingConfigError { path_name: String, error: io::Error },
+    ReadingConfig { path_name: String, error: io::Error },
 
     #[error("Reading TOML from {path_name:?}. Error: {error:?}")]
-    TomlError {
-        path_name: String,
-        error: toml::de::Error,
-    },
+    Toml { path_name: String, error: toml::de::Error },
 
     #[error("Accessing environment variable {var_name}: {error}")]
-    EnvVarError { var_name: String, error: VarError },
+    EnvVar { var_name: String, error: VarError },
 }
 
 impl Default for ShEx2UmlConfig {

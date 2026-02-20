@@ -99,15 +99,11 @@ where
     }
 
     pub fn plus(expr: Rbe<K, V, R>) -> Rbe<K, V, R> {
-        Rbe::Plus {
-            expr: Box::new(expr),
-        }
+        Rbe::Plus { expr: Box::new(expr) }
     }
 
     pub fn star(expr: Rbe<K, V, R>) -> Rbe<K, V, R> {
-        Rbe::Star {
-            expr: Box::new(expr),
-        }
+        Rbe::Star { expr: Box::new(expr) }
     }
 
     pub fn repeat(expr: Rbe<K, V, R>, min: usize, max: Max) -> Rbe<K, V, R> {
@@ -133,22 +129,22 @@ where
             Rbe::Empty => (),
             Rbe::Symbol { key, .. } => {
                 set.insert(key.clone());
-            }
+            },
             Rbe::And { exprs } => {
                 exprs.iter().for_each(|v| v.symbols_aux(set));
-            }
+            },
             Rbe::Or { exprs } => {
                 exprs.iter().for_each(|v| v.symbols_aux(set));
-            }
+            },
             Rbe::Plus { expr } => {
                 expr.symbols_aux(set);
-            }
+            },
             Rbe::Star { expr } => {
                 expr.symbols_aux(set);
-            }
+            },
             Rbe::Repeat { expr, card: _ } => {
                 expr.symbols_aux(set);
-            }
+            },
         }
     }
 
@@ -196,7 +192,7 @@ where
                         },
                     }
                 }
-            }
+            },
             Rbe::Symbol {
                 ref key,
                 ref cond,
@@ -208,16 +204,14 @@ where
                         Ok(new_pending) => {
                             if card.max == Max::IntMax(0) {
                                 Rbe::Fail {
-                                    error: RbeError::MaxCardinalityZeroFoundValue {
-                                        x: (*symbol).clone(),
-                                    },
+                                    error: RbeError::MaxCardinalityZeroFoundValue { x: (*symbol).clone() },
                                 }
                             } else {
                                 let new_card = card.minus(n);
                                 (*pending).merge(new_pending);
                                 Self::mk_range_symbol(symbol, cond, &new_card)
                             }
-                        }
+                        },
                     }
                 } else {
                     // Symbol is different from symbols defined in Rbe
@@ -235,10 +229,8 @@ where
                         }
                     }
                 }
-            }
-            Rbe::And { ref exprs } => {
-                Self::deriv_and(exprs, symbol, value, n, open, controlled, pending)
-            }
+            },
+            Rbe::And { ref exprs } => Self::deriv_and(exprs, symbol, value, n, open, controlled, pending),
             Rbe::Or { ref exprs } => Self::mk_or_values(
                 exprs
                     .iter()
@@ -247,29 +239,27 @@ where
             Rbe::Plus { ref expr } => {
                 let d = expr.deriv(symbol, value, n, open, controlled, pending);
                 Self::mk_and(&d, &Rbe::Star { expr: expr.clone() })
-            }
+            },
             Rbe::Repeat { ref expr, ref card } if card.is_0_0() => {
                 let d = expr.deriv(symbol, value, n, open, controlled, pending);
                 if d.nullable() {
                     Rbe::Fail {
-                        error: RbeError::CardinalityZeroZeroDeriv {
-                            symbol: symbol.clone(),
-                        },
+                        error: RbeError::CardinalityZeroZeroDeriv { symbol: symbol.clone() },
                     }
                 } else {
                     Rbe::Empty
                 }
-            }
+            },
             Rbe::Repeat { ref expr, ref card } => {
                 let d = expr.deriv(symbol, value, n, open, controlled, pending);
                 let card = card.minus(n);
                 let rest = Self::mk_range(expr, &card);
                 Self::mk_and(&d, &rest)
-            }
+            },
             Rbe::Star { ref expr } => {
                 let d = expr.deriv(symbol, value, n, open, controlled, pending);
                 Self::mk_and(&d, expr)
-            }
+            },
         }
     }
 
@@ -291,7 +281,7 @@ where
                 Rbe::Fail { error } => {
                     failures.push(expr.clone(), error);
                     None
-                }
+                },
                 _ => Some(d),
             }
         }) {
@@ -396,7 +386,7 @@ where
                         exprs: vec![(*v1).clone(), (*v2).clone()],
                     }
                 }
-            }
+            },
         }
     }
 
@@ -419,12 +409,8 @@ where
             Rbe::Fail { error } => write!(dest, "Fail {{{error:?}}}"),
             Rbe::Empty => write!(dest, "Empty"),
             Rbe::Symbol { key, cond, card } => write!(dest, "{key:?}|{cond:?}{card:?}"),
-            Rbe::And { exprs } => exprs
-                .iter()
-                .try_for_each(|value| write!(dest, "{value:?};")),
-            Rbe::Or { exprs } => exprs
-                .iter()
-                .try_for_each(|value| write!(dest, "{value:?}|")),
+            Rbe::And { exprs } => exprs.iter().try_for_each(|value| write!(dest, "{value:?};")),
+            Rbe::Or { exprs } => exprs.iter().try_for_each(|value| write!(dest, "{value:?}|")),
             Rbe::Star { expr } => write!(dest, "{expr:?}*"),
             Rbe::Plus { expr } => write!(dest, "{expr:?}+"),
             Rbe::Repeat { expr, card } => write!(dest, "({expr:?}){card:?}"),
@@ -474,14 +460,7 @@ mod tests {
             Rbe::symbol('b', 0, Max::IntMax(1)),
         ]);
         assert_eq!(
-            rbe.deriv(
-                &'a',
-                &23,
-                1,
-                false,
-                &HashSet::from(['a', 'b']),
-                &mut pending
-            ),
+            rbe.deriv(&'a', &23, 1, false, &HashSet::from(['a', 'b']), &mut pending),
             expected
         );
     }

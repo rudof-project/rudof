@@ -28,20 +28,14 @@ mod initialization_tests {
         // by checking that get_info returns valid data
         let info = service.get_info();
 
-        assert!(
-            !info.server_info.name.is_empty(),
-            "Server name should be set"
-        );
+        assert!(!info.server_info.name.is_empty(), "Server name should be set");
     }
 
     /// Test that try_new returns Ok for valid configuration
     #[test]
     fn test_try_new_succeeds() {
         let result = RudofMcpService::try_new();
-        assert!(
-            result.is_ok(),
-            "try_new should succeed with valid configuration"
-        );
+        assert!(result.is_ok(), "try_new should succeed with valid configuration");
     }
 
     /// Test service is Clone
@@ -150,10 +144,7 @@ mod prompt_router_tests {
         let service = RudofMcpService::new();
         let prompts = service.prompt_router.list_all();
 
-        assert!(
-            !prompts.is_empty(),
-            "Should have at least one prompt defined"
-        );
+        assert!(!prompts.is_empty(), "Should have at least one prompt defined");
     }
 
     /// Test prompts have required fields
@@ -245,10 +236,7 @@ mod completion_tests {
         let completions = service.get_prompt_argument_completions("any", "mode");
 
         assert!(!completions.is_empty(), "Should have mode completions");
-        assert!(
-            completions.contains(&"both".to_string()),
-            "Should include 'both' mode"
-        );
+        assert!(completions.contains(&"both".to_string()), "Should include 'both' mode");
         assert!(completions.contains(&"outgoing".to_string()));
         assert!(completions.contains(&"incoming".to_string()));
     }
@@ -307,13 +295,9 @@ mod completion_tests {
     fn test_non_rudof_uri_no_completions() {
         let service = RudofMcpService::new();
 
-        let completions =
-            service.get_resource_uri_completions("http://example.org/resource", "format");
+        let completions = service.get_resource_uri_completions("http://example.org/resource", "format");
 
-        assert!(
-            completions.is_empty(),
-            "Non-rudof URIs should have no completions"
-        );
+        assert!(completions.is_empty(), "Non-rudof URIs should have no completions");
     }
 
     /// Test unknown argument returns empty completions
@@ -323,10 +307,7 @@ mod completion_tests {
 
         let completions = service.get_prompt_argument_completions("any", "unknown_arg");
 
-        assert!(
-            completions.is_empty(),
-            "Unknown arguments should have no completions"
-        );
+        assert!(completions.is_empty(), "Unknown arguments should have no completions");
     }
 }
 
@@ -356,23 +337,15 @@ mod resource_subscription_management_tests {
         block_on(async {
             // Initially no subscribers
             let subscribers = service.get_resource_subscribers(&uri).await;
-            assert!(
-                subscribers.is_empty(),
-                "Should have no subscribers initially"
-            );
+            assert!(subscribers.is_empty(), "Should have no subscribers initially");
 
             // Add subscription
-            service
-                .subscribe_resource(uri.clone(), subscriber_id.clone())
-                .await;
+            service.subscribe_resource(uri.clone(), subscriber_id.clone()).await;
 
             // Should have subscriber now
             let subscribers = service.get_resource_subscribers(&uri).await;
             assert_eq!(subscribers.len(), 1, "Should have one subscriber");
-            assert!(
-                subscribers.contains(&subscriber_id),
-                "Should contain our subscriber"
-            );
+            assert!(subscribers.contains(&subscriber_id), "Should contain our subscriber");
         });
     }
 
@@ -385,9 +358,7 @@ mod resource_subscription_management_tests {
 
         block_on(async {
             // Add subscription
-            service
-                .subscribe_resource(uri.clone(), subscriber_id.clone())
-                .await;
+            service.subscribe_resource(uri.clone(), subscriber_id.clone()).await;
 
             // Verify subscriber exists
             let subscribers = service.get_resource_subscribers(&uri).await;
@@ -398,10 +369,7 @@ mod resource_subscription_management_tests {
 
             // Should be empty now
             let subscribers = service.get_resource_subscribers(&uri).await;
-            assert!(
-                subscribers.is_empty(),
-                "Should have no subscribers after unsubscribe"
-            );
+            assert!(subscribers.is_empty(), "Should have no subscribers after unsubscribe");
         });
     }
 
@@ -413,15 +381,9 @@ mod resource_subscription_management_tests {
 
         block_on(async {
             // Add multiple subscribers
-            service
-                .subscribe_resource(uri.clone(), "sub1".to_string())
-                .await;
-            service
-                .subscribe_resource(uri.clone(), "sub2".to_string())
-                .await;
-            service
-                .subscribe_resource(uri.clone(), "sub3".to_string())
-                .await;
+            service.subscribe_resource(uri.clone(), "sub1".to_string()).await;
+            service.subscribe_resource(uri.clone(), "sub2".to_string()).await;
+            service.subscribe_resource(uri.clone(), "sub3".to_string()).await;
 
             let subscribers = service.get_resource_subscribers(&uri).await;
             assert_eq!(subscribers.len(), 3, "Should have three subscribers");
@@ -459,9 +421,7 @@ mod resource_subscription_management_tests {
 
         block_on(async {
             // Add one subscriber
-            service
-                .subscribe_resource(uri.clone(), "sub1".to_string())
-                .await;
+            service.subscribe_resource(uri.clone(), "sub1".to_string()).await;
 
             // Unsubscribe non-existent subscriber
             service.unsubscribe_resource(&uri, "nonexistent").await;
@@ -515,10 +475,7 @@ mod task_store_tests {
 
         block_on(async {
             let tasks = service.task_store.list(None).await;
-            assert!(
-                tasks.tasks.is_empty(),
-                "Task store should be empty initially"
-            );
+            assert!(tasks.tasks.is_empty(), "Task store should be empty initially");
         });
     }
 
@@ -531,10 +488,7 @@ mod task_store_tests {
             let result = service.task_store.enqueue().await;
 
             // Should have created a task
-            assert!(
-                !result.task.task_id.is_empty(),
-                "Task ID should not be empty"
-            );
+            assert!(!result.task.task_id.is_empty(), "Task ID should not be empty");
         });
     }
 
@@ -553,10 +507,7 @@ mod task_store_tests {
 
             // Should contain our task
             let task_ids: Vec<_> = list_result.tasks.iter().map(|t| &t.task_id).collect();
-            assert!(
-                task_ids.contains(&&task_id),
-                "Enqueued task should appear in list"
-            );
+            assert!(task_ids.contains(&&task_id), "Enqueued task should appear in list");
         });
     }
 }

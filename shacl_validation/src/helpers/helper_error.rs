@@ -1,4 +1,5 @@
-use srdf::{RDFError, SRDFGraphError};
+use rudof_rdf::rdf_core::RDFError;
+use rudof_rdf::rdf_impl::InMemoryGraphError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -13,7 +14,7 @@ pub enum SRDFError {
     Srdf { error: String },
 
     #[error("Error during the creation of the SRDFGraph: {0}")]
-    SRDFGraph(#[from] SRDFGraphError),
+    SRDFGraph(#[from] InMemoryGraphError),
 
     #[error("RDFError: {0}")]
     RDFError(#[from] RDFError),

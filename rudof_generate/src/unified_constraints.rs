@@ -42,17 +42,17 @@ pub enum UnifiedConstraint {
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum NodeKind {
-    IRI,
+    Iri,
     BlankNode,
     Literal,
-    BlankNodeOrIRI,
+    BlankNodeOrIri,
     BlankNodeOrLiteral,
-    IRIOrLiteral,
+    IriOrLiteral,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Value {
-    IRI(String),
+    Iri(String),
     Literal(String, Option<String>), // value, datatype
     BlankNode(String),
 }

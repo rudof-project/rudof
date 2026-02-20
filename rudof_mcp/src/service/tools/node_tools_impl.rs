@@ -1,4 +1,4 @@
-use crate::service::{errors::*, service::*};
+use crate::service::{errors::*, mcp_service::*};
 use rmcp::{
     ErrorData as McpError,
     handler::server::wrapper::Parameters,
@@ -80,11 +80,7 @@ pub struct NodePredicateSubjects {
 /// - The node is not found in the RDF data
 pub async fn node_info_impl(
     service: &RudofMcpService,
-    Parameters(NodeInfoRequest {
-        node,
-        predicates,
-        mode,
-    }): Parameters<NodeInfoRequest>,
+    Parameters(NodeInfoRequest { node, predicates, mode }): Parameters<NodeInfoRequest>,
 ) -> Result<CallToolResult, McpError> {
     let rudof = service.rudof.lock().await;
     let rdf = rudof.get_rdf_data();
@@ -98,7 +94,7 @@ pub async fn node_info_impl(
                 "Provide a valid IRI (e.g., 'http://example.org/node'), prefixed name (e.g., 'ex:node'), or blank node (e.g., '_:b0')",
             )
             .into_call_tool_result());
-        }
+        },
     };
 
     // Parse mode - return Tool Execution Error for invalid mode
@@ -111,7 +107,7 @@ pub async fn node_info_impl(
                 format!("Supported modes: {}", NODE_INFO_MODES),
             )
             .into_call_tool_result());
-        }
+        },
     };
     options.show_colors = false;
 
@@ -126,7 +122,7 @@ pub async fn node_info_impl(
                 "Verify the node exists in the loaded RDF data. Use the correct IRI or prefixed name.",
             )
             .into_call_tool_result());
-        }
+        },
     };
 
     let node_info = &node_infos[0];
@@ -163,10 +159,7 @@ pub async fn node_info_impl(
         .iter()
         .map(|(predicate_iri, subjects_vec)| NodePredicateSubjects {
             predicate: predicate_iri.to_string(),
-            subjects: subjects_vec
-                .iter()
-                .map(|subject| subject.to_string())
-                .collect(),
+            subjects: subjects_vec.iter().map(|subject| subject.to_string()).collect(),
         })
         .collect();
 
@@ -212,8 +205,7 @@ pub async fn node_info_impl(
 
     let detailed_output = format!("## Detailed Node Information\n\n```\n{}\n```", output_str);
 
-    let mut result =
-        CallToolResult::success(vec![Content::text(summary), Content::text(detailed_output)]);
+    let mut result = CallToolResult::success(vec![Content::text(summary), Content::text(detailed_output)]);
     result.structured_content = Some(structured);
     Ok(result)
 }

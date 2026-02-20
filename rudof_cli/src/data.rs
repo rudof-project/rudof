@@ -1,9 +1,14 @@
 use anyhow::Result;
 use iri_s::IriS;
 use rudof_lib::{InputSpec, Rudof, RudofConfig, data::get_data_rudof, data_format::DataFormat};
-use srdf::UmlConverter;
-use srdf::rdf_visualizer::visual_rdf_graph::VisualRDFGraph;
-use srdf::{ImageFormat, RDFFormat, ReaderMode, UmlGenerationMode};
+use rudof_rdf::rdf_core::{
+    RDFFormat,
+    visualizer::{
+        VisualRDFGraph,
+        uml_converter::{ImageFormat, UmlConverter, UmlGenerationMode},
+    },
+};
+use rudof_rdf::rdf_impl::ReaderMode;
 use std::path::PathBuf;
 
 use crate::result_data_format::ResultDataFormat;
@@ -27,41 +32,25 @@ pub fn run_data(
         println!("Config: {config:?}")
     }
 
-    get_data_rudof(
-        &mut rudof,
-        data,
-        data_format,
-        base,
-        &None,
-        reader_mode,
-        config,
-        false,
-    )?;
+    get_data_rudof(&mut rudof, data, data_format, base, &None, reader_mode, config, false)?;
 
     match check_result_format(result_format) {
         CheckResultFormat::RDFFormat(rdf_format) => {
             rudof.get_rdf_data().serialize(&rdf_format, &mut writer)?;
-        }
+        },
         CheckResultFormat::VisualFormat(VisualFormat::PlantUML) => {
             rudof.data2plant_uml(&mut writer)?;
-        }
-        CheckResultFormat::VisualFormat(VisualFormat::SVG)
-        | CheckResultFormat::VisualFormat(VisualFormat::PNG) => {
+        },
+        CheckResultFormat::VisualFormat(VisualFormat::SVG) | CheckResultFormat::VisualFormat(VisualFormat::PNG) => {
             let rdf = rudof.get_rdf_data();
-            let uml_converter =
-                VisualRDFGraph::from_rdf(rdf, config.rdf_data_config().rdf_visualization_config())?;
+            let uml_converter = VisualRDFGraph::from_rdf(rdf, config.rdf_data_config().rdf_visualization_config())?;
             let format = match result_format {
-                ResultDataFormat::SVG => ImageFormat::SVG,
-                ResultDataFormat::PNG => ImageFormat::PNG,
+                ResultDataFormat::Svg => ImageFormat::SVG,
+                ResultDataFormat::Png => ImageFormat::PNG,
                 _ => unreachable!(),
             };
-            uml_converter.as_image(
-                &mut writer,
-                format,
-                &UmlGenerationMode::all(),
-                config.plantuml_path(),
-            )?;
-        }
+            uml_converter.as_image(&mut writer, format, &UmlGenerationMode::all(), config.plantuml_path())?;
+        },
     }
     Ok(())
 }
@@ -83,12 +72,12 @@ fn check_result_format(format: &ResultDataFormat) -> CheckResultFormat {
         ResultDataFormat::Turtle => CheckResultFormat::RDFFormat(RDFFormat::Turtle),
         ResultDataFormat::N3 => CheckResultFormat::RDFFormat(RDFFormat::N3),
         ResultDataFormat::NTriples => CheckResultFormat::RDFFormat(RDFFormat::NTriples),
-        ResultDataFormat::RDFXML => CheckResultFormat::RDFFormat(RDFFormat::RDFXML),
+        ResultDataFormat::RdfXml => CheckResultFormat::RDFFormat(RDFFormat::Rdfxml),
         ResultDataFormat::TriG => CheckResultFormat::RDFFormat(RDFFormat::TriG),
         ResultDataFormat::NQuads => CheckResultFormat::RDFFormat(RDFFormat::NQuads),
         ResultDataFormat::PlantUML => CheckResultFormat::VisualFormat(VisualFormat::PlantUML),
-        ResultDataFormat::SVG => CheckResultFormat::VisualFormat(VisualFormat::SVG),
-        ResultDataFormat::PNG => CheckResultFormat::VisualFormat(VisualFormat::PNG),
+        ResultDataFormat::Svg => CheckResultFormat::VisualFormat(VisualFormat::SVG),
+        ResultDataFormat::Png => CheckResultFormat::VisualFormat(VisualFormat::PNG),
         _ => todo!(),
     }
 }

@@ -4,9 +4,9 @@ use std::{
 };
 
 use iri_s::IriS;
+use rudof_rdf::rdf_core::vocab::rdfs_label;
 use serde::{Deserialize, Serialize};
 use shex_validation::ShExConfig;
-use srdf::RDFS_LABEL_STR;
 use thiserror::Error;
 
 use crate::ShEx2UmlConfig;
@@ -42,7 +42,7 @@ impl Default for ShEx2HtmlConfig {
             css_file_name: Some("shex2html.css".to_string()),
             target_folder: None,
             color_property_name: Some(DEFAULT_COLOR_PROPERTY_NAME.to_string()),
-            annotation_label: vec![IriS::new_unchecked(RDFS_LABEL_STR)],
+            annotation_label: vec![rdfs_label().clone()],
             replace_iri_by_label: None,
             embed_svg_schema: true,
             embed_svg_shape: true,
@@ -85,17 +85,13 @@ impl ShEx2HtmlConfig {
     }
 
     pub fn from_file(file_name: &str) -> Result<ShEx2HtmlConfig, ShEx2HtmlConfigError> {
-        let config_str = fs::read_to_string(file_name).map_err(|e| {
-            ShEx2HtmlConfigError::ReadingConfigError {
-                path_name: file_name.to_string(),
-                error: e,
-            }
+        let config_str = fs::read_to_string(file_name).map_err(|e| ShEx2HtmlConfigError::ReadingConfigError {
+            path_name: file_name.to_string(),
+            error: e,
         })?;
-        toml::from_str::<ShEx2HtmlConfig>(&config_str).map_err(|e| {
-            ShEx2HtmlConfigError::TomlError {
-                path_name: file_name.to_string(),
-                error: e,
-            }
+        toml::from_str::<ShEx2HtmlConfig>(&config_str).map_err(|e| ShEx2HtmlConfigError::TomlError {
+            path_name: file_name.to_string(),
+            error: e,
         })
     }
 
@@ -117,8 +113,5 @@ pub enum ShEx2HtmlConfigError {
     ReadingConfigError { path_name: String, error: io::Error },
 
     #[error("Reading TOML from {path_name:?}. Error: {error:?}")]
-    TomlError {
-        path_name: String,
-        error: toml::de::Error,
-    },
+    TomlError { path_name: String, error: toml::de::Error },
 }

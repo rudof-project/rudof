@@ -1,12 +1,12 @@
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use srdf::{Object, SLiteral};
+use rudof_rdf::rdf_core::term::{Object, literal::ConcreteLiteral};
 use std::fmt::Display;
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum ObjectValue {
     IriRef(IriS),
-    ObjectLiteral(SLiteral),
+    ObjectLiteral(ConcreteLiteral),
 }
 
 impl ObjectValue {
@@ -37,10 +37,10 @@ impl Display for ObjectValue {
             ObjectValue::IriRef(iri) => {
                 write!(f, "{iri}")?;
                 Ok(())
-            }
+            },
             ObjectValue::ObjectLiteral(lit) => {
                 write!(f, "{lit}")
-            }
+            },
         }
     }
 }

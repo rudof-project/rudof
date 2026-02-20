@@ -3,9 +3,12 @@ use super::validation_report_error::ReportError;
 use colored::*;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use shacl_ast::shacl_vocab::{sh, sh_conforms, sh_result, sh_validation_report};
+use rudof_rdf::rdf_core::{
+    BuildRDF, FocusRDF, Rdf, SHACLPath,
+    term::{IriOrBlankNode, Object},
+};
+use shacl_ast::ShaclVocab;
 use shacl_ir::severity::CompiledSeverity;
-use srdf::{BuildRDF, FocusRDF, IriOrBlankNode, Object, Rdf, SHACLPath};
 use std::{
     fmt::{Debug, Display},
     io::{Error, Write},
@@ -83,10 +86,10 @@ impl ValidationReport {
     pub fn parse<S: FocusRDF>(store: &mut S, subject: S::Term) -> Result<Self, ReportError> {
         let mut results = Vec::new();
         for result in store
-            .objects_for(&subject, &sh_result().clone().into())
+            .objects_for(&subject, &ShaclVocab::sh_result().clone().into())
             .map_err(|e| ReportError::ObjectsFor {
                 subject: subject.to_string(),
-                predicate: sh_result().to_string(),
+                predicate: ShaclVocab::sh_result().to_string(),
                 error: e.to_string(),
             })?
         {
@@ -118,29 +121,29 @@ impl ValidationReport {
         RDF: BuildRDF + Sized,
     {
         rdf_writer
-            .add_prefix("sh", sh())
-            .map_err(|e| ReportError::ValidationReportError {
+            .add_prefix("sh", ShaclVocab::sh())
+            .map_err(|e| ReportError::ValidationError {
                 msg: format!("Error adding prefix to RDF: {e}"),
             })?;
         let report_node: RDF::Subject = rdf_writer
             .add_bnode()
-            .map_err(|e| ReportError::ValidationReportError {
+            .map_err(|e| ReportError::ValidationError {
                 msg: format!("Error creating bnode: {e}"),
             })?
             .into();
         rdf_writer
-            .add_type(report_node.clone(), sh_validation_report().clone())
-            .map_err(|e| ReportError::ValidationReportError {
+            .add_type(report_node.clone(), ShaclVocab::sh_validation_report().clone())
+            .map_err(|e| ReportError::ValidationError {
                 msg: format!("Error type ValidationReport to bnode: {e}"),
             })?;
 
-        let conforms: <RDF as Rdf>::IRI = sh_conforms().clone().into();
-        let sh_result: <RDF as Rdf>::IRI = sh_result().clone().into();
+        let conforms: <RDF as Rdf>::IRI = ShaclVocab::sh_conforms().clone().into();
+        let sh_result: <RDF as Rdf>::IRI = ShaclVocab::sh_result().clone().into();
         if self.results.is_empty() {
             let rdf_true: <RDF as Rdf>::Term = Object::boolean(true).into();
             rdf_writer
                 .add_triple(report_node.clone(), conforms, rdf_true)
-                .map_err(|e| ReportError::ValidationReportError {
+                .map_err(|e| ReportError::ValidationError {
                     msg: format!("Error adding conforms to bnode: {e}"),
                 })?;
             return Ok(());
@@ -148,31 +151,23 @@ impl ValidationReport {
             let rdf_false: <RDF as Rdf>::Term = Object::boolean(false).into();
             rdf_writer
                 .add_triple(report_node.clone(), conforms, rdf_false)
-                .map_err(|e| ReportError::ValidationReportError {
+                .map_err(|e| ReportError::ValidationError {
                     msg: format!("Error adding conforms to bnode: {e}"),
                 })?;
             for result in self.results.iter() {
                 let result_node: <RDF as Rdf>::BNode =
-                    rdf_writer
-                        .add_bnode()
-                        .map_err(|e| ReportError::ValidationReportError {
-                            msg: format!("Error creating bnode: {e}"),
-                        })?;
+                    rdf_writer.add_bnode().map_err(|e| ReportError::ValidationError {
+                        msg: format!("Error creating bnode: {e}"),
+                    })?;
                 let result_node_term: <RDF as Rdf>::Term = result_node.into();
                 rdf_writer
-                    .add_triple(
-                        report_node.clone(),
-                        sh_result.clone(),
-                        result_node_term.clone(),
-                    )
-                    .map_err(|e| ReportError::ValidationReportError {
+                    .add_triple(report_node.clone(), sh_result.clone(), result_node_term.clone())
+                    .map_err(|e| ReportError::ValidationError {
                         msg: format!("Error adding conforms to bnode: {e}"),
                     })?;
-                let result_node_subject: <RDF as Rdf>::Subject =
-                    <RDF as Rdf>::Subject::try_from(result_node_term).map_err(|_e| {
-                        ReportError::ValidationReportError {
-                            msg: "Cannot convert subject to term".to_string(),
-                        }
+                let result_node_subject: <RDF as Rdf>::Subject = <RDF as Rdf>::Subject::try_from(result_node_term)
+                    .map_err(|_e| ReportError::ValidationError {
+                        msg: "Cannot convert subject to term".to_string(),
                     })?;
                 result.to_rdf(rdf_writer, result_node_subject)?;
             }
@@ -199,14 +194,7 @@ impl ValidationReport {
                 "Details",
             ]);
         } else {
-            builder.push_record([
-                "Severity",
-                "node",
-                "Component",
-                "Path",
-                "value",
-                "Source shape",
-            ]);
+            builder.push_record(["Severity", "node", "Component", "Path", "value", "Source shape"]);
         }
         if self.results.is_empty() {
             let str = "No Errors found";
@@ -224,9 +212,7 @@ impl ValidationReport {
             let shacl_prefixmap = if self.display_with_colors {
                 PrefixMap::basic()
             } else {
-                PrefixMap::basic()
-                    .with_hyperlink(true)
-                    .without_default_colors()
+                PrefixMap::basic().with_hyperlink(true).without_default_colors()
             };
             for result in self.results.iter() {
                 let severity_str = show_severity(result.severity(), &shacl_prefixmap);
@@ -253,14 +239,7 @@ impl ValidationReport {
                         &details,
                     ]);
                 } else {
-                    builder.push_record([
-                        &severity.to_string(),
-                        &node,
-                        &component,
-                        &path,
-                        &value,
-                        &source,
-                    ]);
+                    builder.push_record([&severity.to_string(), &node, &component, &path, &value, &source]);
                 }
             }
             let mut table = builder.build();
@@ -328,9 +307,7 @@ impl Display for ValidationReport {
             let shacl_prefixmap = if self.display_with_colors {
                 PrefixMap::basic()
             } else {
-                PrefixMap::basic()
-                    .with_hyperlink(true)
-                    .without_default_colors()
+                PrefixMap::basic().with_hyperlink(true).without_default_colors()
             };
             for result in self.results.iter() {
                 let severity_str = show_severity(result.severity(), &shacl_prefixmap);
@@ -405,7 +382,7 @@ fn show_path_opt(object: Option<&SHACLPath>, shacl_prefixmap: &PrefixMap) -> Str
         Some(SHACLPath::Predicate { pred }) => {
             let path = shacl_prefixmap.qualify(pred);
             path.to_string()
-        }
+        },
         Some(path) => path.to_string(),
     }
 }

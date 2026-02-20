@@ -5,9 +5,10 @@ use crate::shape_label_idx::ShapeLabelIdx;
 use either::Either::{self, Left, Right};
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use shacl_ast::Schema;
+use rudof_rdf::rdf_core::{RDFFormat, Rdf, term::Object};
+use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+use shacl_ast::ShaclSchema;
 use shacl_rdf::ShaclParser;
-use srdf::{RDFFormat, RDFNode, Rdf, ReaderMode, SRDFGraph};
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
@@ -18,8 +19,8 @@ use tracing::{debug, info, trace};
 pub struct SchemaIR {
     // imports: Vec<IriS>,
     // entailments: Vec<IriS>,
-    labels_idx_map: HashMap<RDFNode, ShapeLabelIdx>,
-    idx_labels_map: HashMap<ShapeLabelIdx, RDFNode>,
+    labels_idx_map: HashMap<Object, ShapeLabelIdx>,
+    idx_labels_map: HashMap<ShapeLabelIdx, Object>,
     shapes: HashMap<ShapeLabelIdx, ShapeIR>,
     prefixmap: PrefixMap,
     base: Option<IriS>,
@@ -47,7 +48,7 @@ impl SchemaIR {
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<SchemaIR, Box<CompiledShaclError>> {
-        let mut rdf = SRDFGraph::new();
+        let mut rdf = InMemoryGraph::new();
         rdf.merge_from_reader(read, source_name, format, base, reader_mode)
             .map_err(|e| CompiledShaclError::RdfGraphError { err: Box::new(e) })?;
         let schema = ShaclParser::new(rdf)
@@ -63,20 +64,14 @@ impl SchemaIR {
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<SchemaIR, Box<CompiledShaclError>> {
-        Self::from_reader(
-            &mut std::io::Cursor::new(&data),
-            "String",
-            format,
-            base,
-            reader_mode,
-        )
+        Self::from_reader(&mut std::io::Cursor::new(&data), "String", format, base, reader_mode)
     }
 
     /// Adds a shape index for the given `RDFNode` if it does not already exist.
     /// Returns  `Right(ShapeLabelIdx)` if a new index was created or `Left(ShapeLabelIdx)` with the existing one.
     pub fn add_shape_idx(
         &mut self,
-        sref: RDFNode,
+        sref: Object,
     ) -> Result<Either<ShapeLabelIdx, ShapeLabelIdx>, Box<CompiledShaclError>> {
         match self.labels_idx_map.entry(sref.clone()) {
             Entry::Occupied(entry) => Ok(Either::Left(*entry.get())),
@@ -86,7 +81,7 @@ impl SchemaIR {
                 entry.insert(label_idx);
                 self.idx_labels_map.insert(label_idx, sref);
                 Ok(Either::Right(label_idx))
-            }
+            },
         }
     }
 
@@ -98,22 +93,24 @@ impl SchemaIR {
         &self.base
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (&RDFNode, &ShapeIR)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&Object, &ShapeIR)> {
         self.labels_idx_map.iter().map(move |(node, label_idx)| {
-            let shape = self
-              .shapes
-              .get(label_idx)
-              .unwrap_or_else(|| panic!("Internal error: Shape label index {label_idx} for node {node} not found in shapes map: {:?}",self.shapes));
+            let shape = self.shapes.get(label_idx).unwrap_or_else(|| {
+                panic!(
+                    "Internal error: Shape label index {label_idx} for node {node} not found in shapes map: {:?}",
+                    self.shapes
+                )
+            });
             (node, shape)
         })
     }
 
     /// Iterate over all shapes that have at least one target.
-    pub fn iter_with_targets(&self) -> impl Iterator<Item = (&RDFNode, &ShapeIR)> {
+    pub fn iter_with_targets(&self) -> impl Iterator<Item = (&Object, &ShapeIR)> {
         self.iter().filter(|(_, shape)| !shape.targets().is_empty())
     }
 
-    pub fn get_shape(&self, sref: &RDFNode) -> Option<&ShapeIR> {
+    pub fn get_shape(&self, sref: &Object) -> Option<&ShapeIR> {
         self.labels_idx_map.get(sref).map(|label_idx| {
             self.shapes
                 .get(label_idx)
@@ -121,16 +118,12 @@ impl SchemaIR {
         })
     }
 
-    pub fn add_shape(
-        &mut self,
-        idx: ShapeLabelIdx,
-        shape: ShapeIR,
-    ) -> Result<ShapeLabelIdx, Box<CompiledShaclError>> {
+    pub fn add_shape(&mut self, idx: ShapeLabelIdx, shape: ShapeIR) -> Result<ShapeLabelIdx, Box<CompiledShaclError>> {
         self.shapes.insert(idx, shape);
         Ok(idx)
     }
 
-    pub fn compile<RDF: Rdf>(schema: &Schema<RDF>) -> Result<SchemaIR, Box<CompiledShaclError>> {
+    pub fn compile<RDF: Rdf>(schema: &ShaclSchema<RDF>) -> Result<SchemaIR, Box<CompiledShaclError>> {
         trace!("Compiling SHACL schema");
         let mut schema_ir = SchemaIR::new(schema.prefix_map(), schema.base());
         for (rdf_node, shape) in schema.iter() {
@@ -138,10 +131,10 @@ impl SchemaIR {
                 Right(idx) => {
                     trace!("Compiling shape {} with new index {}", rdf_node, idx);
                     let _idx = ShapeIR::compile(shape.to_owned(), schema, &idx, &mut schema_ir)?;
-                }
+                },
                 Left(idx) => {
                     trace!("Shape {} already compiled with {}, skipping", rdf_node, idx);
-                }
+                },
             }
         }
         schema_ir.build_dependency_graph();
@@ -152,10 +145,7 @@ impl SchemaIR {
             info!(
                 "More information about recursive schemas can be found at https://www.w3.org/TR/shacl/#shapes-recursion"
             );
-            debug!(
-                "Dependency graph with cycles: {}",
-                schema_ir.dependency_graph
-            );
+            debug!("Dependency graph with cycles: {}", schema_ir.dependency_graph);
         }
         if schema_ir.dependency_graph.has_neg_cycle() {
             info!(
@@ -165,13 +155,7 @@ impl SchemaIR {
                 .dependency_graph
                 .neg_cycles()
                 .iter()
-                .map(|cycles| {
-                    cycles
-                        .iter()
-                        .map(show_cycle)
-                        .collect::<Vec<_>>()
-                        .join("\n ")
-                })
+                .map(|cycles| cycles.iter().map(show_cycle).collect::<Vec<_>>().join("\n "))
                 .collect::<Vec<_>>()
                 .join("\n---\n");
             debug!("Negative cycles: {}", neg_cycles_str);
@@ -194,18 +178,18 @@ impl SchemaIR {
     }
 }
 
-impl<RDF: Rdf> TryFrom<Schema<RDF>> for SchemaIR {
+impl<RDF: Rdf> TryFrom<ShaclSchema<RDF>> for SchemaIR {
     type Error = Box<CompiledShaclError>;
 
-    fn try_from(schema: Schema<RDF>) -> Result<Self, Self::Error> {
+    fn try_from(schema: ShaclSchema<RDF>) -> Result<Self, Self::Error> {
         Self::compile(&schema)
     }
 }
 
-impl<RDF: Rdf> TryFrom<&Schema<RDF>> for SchemaIR {
+impl<RDF: Rdf> TryFrom<&ShaclSchema<RDF>> for SchemaIR {
     type Error = Box<CompiledShaclError>;
 
-    fn try_from(schema: &Schema<RDF>) -> Result<Self, Self::Error> {
+    fn try_from(schema: &ShaclSchema<RDF>) -> Result<Self, Self::Error> {
         Self::compile(schema)
     }
 }
@@ -228,11 +212,7 @@ impl Display for SchemaIR {
 
 fn show_cycle(cycle: &(ShapeLabelIdx, ShapeLabelIdx, Vec<ShapeLabelIdx>)) -> String {
     let (from, to, shapes) = cycle;
-    let shapes_str = shapes
-        .iter()
-        .map(|s| s.to_string())
-        .collect::<Vec<_>>()
-        .join(" -> ");
+    let shapes_str = shapes.iter().map(|s| s.to_string()).collect::<Vec<_>>().join(" -> ");
     format!("Cycle from {} to {}: {}", from, to, shapes_str)
 }
 
@@ -240,9 +220,8 @@ fn show_cycle(cycle: &(ShapeLabelIdx, ShapeLabelIdx, Vec<ShapeLabelIdx>)) -> Str
 mod tests {
     use std::io::Cursor;
 
-    use srdf::RDFFormat;
-    use srdf::ReaderMode;
-    use srdf::SRDFGraph;
+    use rudof_rdf::rdf_core::RDFFormat;
+    use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 
     use shacl_rdf::ShaclParser;
 
@@ -289,14 +268,7 @@ mod tests {
         let rdf_format = RDFFormat::Turtle;
         let base = None;
 
-        let rdf = SRDFGraph::from_reader(
-            &mut reader,
-            "String",
-            &rdf_format,
-            base,
-            &ReaderMode::default(),
-        )
-        .unwrap();
+        let rdf = InMemoryGraph::from_reader(&mut reader, "String", &rdf_format, base, &ReaderMode::default()).unwrap();
 
         ShaclParser::new(rdf).parse().unwrap().try_into().unwrap()
     }

@@ -107,10 +107,7 @@ impl FieldGenerationManager {
     }
 
     /// Generate multiple field values in parallel
-    pub async fn generate_fields_parallel(
-        &self,
-        contexts: Vec<GenerationContext>,
-    ) -> Result<Vec<String>> {
+    pub async fn generate_fields_parallel(&self, contexts: Vec<GenerationContext>) -> Result<Vec<String>> {
         use rayon::prelude::*;
 
         let results: Result<Vec<String>> = contexts

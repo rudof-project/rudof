@@ -1,23 +1,19 @@
-// use oxiri::IriParseError;
-use shacl_ir::compiled::compiled_shacl_error::CompiledShaclError;
-use shacl_ir::shape_label_idx::ShapeLabelIdx;
-use shacl_rdf::rdf_to_shacl::shacl_parser_error::ShaclParserError;
-use sparql_service::RdfDataError;
-use srdf::RDFParseError;
-use srdf::SRDFGraphError;
-use thiserror::Error;
-
 use crate::constraints::constraint_error::ConstraintError;
 use crate::helpers::helper_error::SPARQLError;
 use crate::helpers::helper_error::SRDFError;
+// use oxiri::IriParseError;
+use rudof_rdf::rdf_core::RDFError;
+use rudof_rdf::rdf_impl::InMemoryGraphError;
+use shacl_ir::compiled::compiled_shacl_error::CompiledShaclError;
+use shacl_ir::shape_label_idx::ShapeLabelIdx;
+use shacl_rdf::error::ShaclParserError;
+use sparql_service::RdfDataError;
+use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ValidateError {
     #[error("Shape not found for shape idx {shape_idx}: {error}")]
-    ShapeNotFound {
-        shape_idx: ShapeLabelIdx,
-        error: String,
-    },
+    ShapeNotFound { shape_idx: ShapeLabelIdx, error: String },
 
     #[error("Obtaining rdfs:subClassOf of {term}: {error}")]
     SubClassOf { term: String, error: String },
@@ -35,7 +31,7 @@ pub enum ValidateError {
         error: String,
     },
     #[error("Error during the SPARQL operation")]
-    SRDF,
+    SRdf,
 
     #[error("TargetNode cannot be a Blank Node")]
     TargetNodeBlankNode,
@@ -44,7 +40,7 @@ pub enum ValidateError {
     TargetClassNotIri,
 
     #[error("Error when working with the SRDFGraph, {}", ._0)] // TODO: move to store
-    Graph(#[from] SRDFGraphError),
+    Graph(#[from] InMemoryGraphError),
 
     #[error("Error when parsing the SHACL Graph, {}", ._0)] // TODO: move to store
     ShaclParser(#[from] ShaclParserError),
@@ -57,7 +53,7 @@ pub enum ValidateError {
     IO(#[from] std::io::Error),
 
     #[error("Error loading the Shapes")]
-    Shapes(#[from] RDFParseError),
+    Shapes(#[from] RDFError),
 
     #[error("Error creating the SPARQL endpoint")]
     SPARQLCreation,
@@ -69,10 +65,7 @@ pub enum ValidateError {
     SparqlError { msg: String, source: SPARQLError },
 
     #[error("Constraint error in component {component}: {source}")]
-    ConstraintError {
-        component: String,
-        source: ConstraintError,
-    },
+    ConstraintError { component: String, source: ConstraintError },
 
     #[error("Implicit class not found")]
     ImplicitClassNotFound,
@@ -95,9 +88,7 @@ pub enum ValidateError {
     #[error(transparent)]
     RdfDataError(#[from] RdfDataError),
 
-    #[error(
-        "Error obtaining triples with subject {subject} during validation: {error}, checking CLOSED"
-    )]
+    #[error("Error obtaining triples with subject {subject} during validation: {error}, checking CLOSED")]
     TriplesWithSubject { subject: String, error: String },
 
     #[error(

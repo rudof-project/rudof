@@ -11,28 +11,25 @@ keywords.workspace = true
 categories.workspace = true
 edition.workspace = true
 
-#[features]
-#rdf-star = ["srdf/rdf-star"]
-
 [dependencies]
 anyhow.workspace = true
 clap.workspace = true
-colored.workspace = true 
+colored.workspace = true
 const_format.workspace = true
 indoc.workspace = true
-iri_s.workspace = true 
-prefixmap.workspace = true 
+iri_s.workspace = true
+prefixmap.workspace = true
 serde.workspace = true
 shacl_ast.workspace = true 
 shacl_ir.workspace = true 
 shacl_rdf.workspace = true 
 sparql_service.workspace = true 
-srdf.workspace = true 
+rudof_rdf.workspace = true
 tabled.workspace = true
 thiserror.workspace = true
 toml.workspace = true
 tracing = { workspace = true }
-tracing-subscriber.workspace = true 
+tracing-subscriber.workspace = true
 
 [dev-dependencies]
 oxrdf.workspace = true

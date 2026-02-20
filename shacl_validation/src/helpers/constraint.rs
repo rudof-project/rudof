@@ -1,9 +1,6 @@
+use rudof_rdf::rdf_core::{Rdf, SHACLPath, query::QueryRDF, term::Object};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
-use srdf::Object;
-use srdf::QueryRDF;
-use srdf::Rdf;
-use srdf::SHACLPath;
 use tracing::debug;
 
 use crate::constraints::constraint_error::ConstraintError;
@@ -74,12 +71,9 @@ fn apply_with_focus<S: Rdf, I: IterationStrategy<S>>(
                 ),
                 Ok(false) => None,
                 Err(err) => {
-                    debug!(
-                        "LessThan.validate_native with focus: {:?}, err: {err}",
-                        focus
-                    );
+                    debug!("LessThan.validate_native with focus: {:?}, err: {err}", focus);
                     None
-                }
+                },
             }
         })
         .collect();

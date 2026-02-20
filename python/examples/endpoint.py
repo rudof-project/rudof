@@ -1,4 +1,4 @@
-from pyrudof import Rudof, RudofConfig, RDFFormat 
+from pyrudof import Rudof, RudofConfig, RDFFormat
 
 endpoint = "https://plod.dbcls.jp/repositories/RDFPortal_VoID"
 

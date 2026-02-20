@@ -8,13 +8,11 @@ use crate::shacl_engine::engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
+use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::MinInclusive;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use srdf::NeighsRDF;
-use srdf::QueryRDF;
-use srdf::SHACLPath;
 use std::fmt::Debug;
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinInclusive {
@@ -70,14 +68,6 @@ impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MinInclusive {
         };
 
         let message = format!("MinInclusive({}) not satisfied", self.min_inclusive_value());
-        validate_ask_with(
-            component,
-            shape,
-            store,
-            value_nodes,
-            query,
-            &message,
-            maybe_path,
-        )
+        validate_ask_with(component, shape, store, value_nodes, query, &message, maybe_path)
     }
 }

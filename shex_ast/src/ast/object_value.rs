@@ -2,6 +2,10 @@ use iri_s::IriS;
 use iri_s::error::IriSError;
 use prefixmap::error::DerefError;
 use prefixmap::{Deref, IriRef};
+use rudof_rdf::rdf_core::term::{
+    Object,
+    literal::{ConcreteLiteral, Lang, NumericLiteral},
+};
 use rust_decimal::Decimal;
 use serde::de::Unexpected;
 use serde::ser::SerializeMap;
@@ -9,17 +13,14 @@ use serde::{
     Deserialize, Serialize, Serializer,
     de::{self, MapAccess, Visitor},
 };
-use srdf::SLiteral;
-use srdf::lang::Lang;
-use srdf::numeric_literal::NumericLiteral;
 use std::fmt::{self, Display};
 use std::{result, str::FromStr};
 
 use crate::Node;
 use crate::ast::{
     BYTE_STR, DATETIME_STR, FLOAT_STR, LONG_STR, NEGATIVE_INTEGER_STR, NON_NEGATIVE_INTEGER_STR,
-    NON_POSITIVE_INTEGER_STR, POSITIVE_INTEGER_STR, SHORT_STR, UNSIGNED_BYTE_STR, UNSIGNED_INT_STR,
-    UNSIGNED_LONG_STR, UNSIGNED_SHORT_STR,
+    NON_POSITIVE_INTEGER_STR, POSITIVE_INTEGER_STR, SHORT_STR, UNSIGNED_BYTE_STR, UNSIGNED_INT_STR, UNSIGNED_LONG_STR,
+    UNSIGNED_SHORT_STR,
 };
 
 use super::{BOOLEAN_STR, DECIMAL_STR, DOUBLE_STR, INTEGER_STR};
@@ -30,33 +31,33 @@ use super::{BOOLEAN_STR, DECIMAL_STR, DOUBLE_STR, INTEGER_STR};
 #[derive(Debug, PartialEq, Clone)]
 pub enum ObjectValue {
     IriRef(IriRef),
-    Literal(SLiteral),
+    Literal(ConcreteLiteral),
     // TODO: consider adding Triples
 }
 
 impl ObjectValue {
     pub fn integer(n: isize) -> ObjectValue {
-        ObjectValue::Literal(SLiteral::integer(n))
+        ObjectValue::Literal(ConcreteLiteral::integer(n as i128))
     }
 
     pub fn double(n: f64) -> ObjectValue {
-        ObjectValue::Literal(SLiteral::double(n))
+        ObjectValue::Literal(ConcreteLiteral::double(n))
     }
 
     pub fn decimal(n: Decimal) -> ObjectValue {
-        ObjectValue::Literal(SLiteral::decimal(n))
+        ObjectValue::Literal(ConcreteLiteral::decimal(n))
     }
 
     pub fn bool(b: bool) -> ObjectValue {
-        ObjectValue::Literal(SLiteral::boolean(b))
+        ObjectValue::Literal(ConcreteLiteral::boolean(b))
     }
 
-    pub fn literal(lit: SLiteral) -> ObjectValue {
+    pub fn literal(lit: ConcreteLiteral) -> ObjectValue {
         ObjectValue::Literal(lit)
     }
 
     pub fn datatype_literal(lexical_form: &str, datatype: &IriRef) -> ObjectValue {
-        ObjectValue::Literal(SLiteral::lit_datatype(lexical_form, datatype))
+        ObjectValue::Literal(ConcreteLiteral::lit_datatype(lexical_form, datatype))
     }
 
     pub fn lexical_form(&self) -> String {
@@ -79,25 +80,21 @@ impl ObjectValue {
     }
 
     pub fn str(str: &str) -> Self {
-        ObjectValue::Literal(SLiteral::str(str))
+        ObjectValue::Literal(ConcreteLiteral::str(str))
     }
 }
 
 impl Deref for ObjectValue {
-    fn deref(
-        self,
-        base: Option<&IriS>,
-        prefixmap: Option<&prefixmap::PrefixMap>,
-    ) -> Result<Self, DerefError> {
+    fn deref(self, base: Option<&IriS>, prefixmap: Option<&prefixmap::PrefixMap>) -> Result<Self, DerefError> {
         match self {
             ObjectValue::IriRef(iri_ref) => {
                 let new_iri_ref = iri_ref.deref(base, prefixmap)?;
                 Ok(ObjectValue::IriRef(new_iri_ref))
-            }
+            },
             ObjectValue::Literal(lit) => {
                 let new_lit = lit.deref(base, prefixmap)?;
                 Ok(ObjectValue::Literal(new_lit))
-            }
+            },
         }
     }
 }
@@ -117,45 +114,42 @@ impl Serialize for ObjectValue {
         S: Serializer,
     {
         match self {
-            ObjectValue::Literal(SLiteral::BooleanLiteral(value)) => {
+            ObjectValue::Literal(ConcreteLiteral::BooleanLiteral(value)) => {
                 let mut map = serializer.serialize_map(Some(2))?;
                 map.serialize_entry("type", BOOLEAN_STR)?;
                 let value_str = if *value { "true" } else { "false" };
                 map.serialize_entry("value", value_str)?;
                 map.end()
-            }
-            ObjectValue::Literal(SLiteral::NumericLiteral(num)) => {
+            },
+            ObjectValue::Literal(ConcreteLiteral::NumericLiteral(num)) => {
                 let mut map = serializer.serialize_map(Some(2))?;
                 map.serialize_entry("type", get_type_str(num))?;
                 map.serialize_entry("value", &num.to_string())?;
                 map.end()
-            }
-            ObjectValue::Literal(SLiteral::DatetimeLiteral(date_time)) => {
+            },
+            ObjectValue::Literal(ConcreteLiteral::DatetimeLiteral(date_time)) => {
                 let mut map = serializer.serialize_map(Some(2))?;
                 map.serialize_entry("type", DATETIME_STR)?;
                 map.serialize_entry("value", &date_time.to_string())?;
                 map.end()
-            }
+            },
 
             ObjectValue::IriRef(iri) => serializer.serialize_str(iri.to_string().as_str()),
-            ObjectValue::Literal(SLiteral::StringLiteral { lexical_form, lang }) => {
+            ObjectValue::Literal(ConcreteLiteral::StringLiteral { lexical_form, lang }) => {
                 let mut map = serializer.serialize_map(Some(3))?;
                 if let Some(lan) = lang {
                     map.serialize_entry("language", &Some(lan))?;
                 }
                 map.serialize_entry("value", lexical_form)?;
                 map.end()
-            }
-            ObjectValue::Literal(SLiteral::DatatypeLiteral {
-                lexical_form,
-                datatype,
-            }) => {
+            },
+            ObjectValue::Literal(ConcreteLiteral::DatatypeLiteral { lexical_form, datatype }) => {
                 let mut map = serializer.serialize_map(Some(2))?;
                 map.serialize_entry("type", datatype)?;
                 map.serialize_entry("value", lexical_form)?;
                 map.end()
-            }
-            ObjectValue::Literal(SLiteral::WrongDatatypeLiteral {
+            },
+            ObjectValue::Literal(ConcreteLiteral::WrongDatatypeLiteral {
                 lexical_form,
                 datatype,
                 error,
@@ -166,7 +160,7 @@ impl Serialize for ObjectValue {
                 map.serialize_entry("value", lexical_form)?;
                 map.serialize_entry("error", error)?;
                 map.end()
-            }
+            },
         }
     }
 }
@@ -210,7 +204,7 @@ impl ObjectValueType {
             other => {
                 let iri = FromStr::from_str(other)?;
                 Ok(ObjectValueType::Other(iri))
-            }
+            },
         }
     }
 }
@@ -285,32 +279,31 @@ impl<'de> Deserialize<'de> for ObjectValue {
                             }
                             let value: String = map.next_value()?;
 
-                            let parsed_type_ =
-                                ObjectValueType::parse(value.as_str()).map_err(|e| {
-                                    de::Error::custom(format!(
+                            let parsed_type_ = ObjectValueType::parse(value.as_str()).map_err(|e| {
+                                de::Error::custom(format!(
                                     "Error parsing ValueSetValue type, found: {value}. Error: {e}"
                                 ))
-                                })?;
+                            })?;
                             type_ = Some(parsed_type_);
-                        }
+                        },
                         Field::Value => {
                             if value.is_some() {
                                 return Err(de::Error::duplicate_field("value"));
                             }
                             value = Some(map.next_value()?);
-                        }
+                        },
                         Field::Language => {
                             if language.is_some() {
                                 return Err(de::Error::duplicate_field("language"));
                             }
                             language = Some(map.next_value()?);
-                        }
+                        },
                         Field::LanguageTag => {
                             if language_tag.is_some() {
                                 return Err(de::Error::duplicate_field("languageTag"));
                             }
                             language_tag = Some(map.next_value()?);
-                        }
+                        },
                     }
                 }
                 match type_ {
@@ -325,49 +318,41 @@ impl<'de> Deserialize<'de> for ObjectValue {
                     Some(ObjectValueType::Decimal) => match value {
                         Some(s) => {
                             let n = Decimal::from_str(&s).map_err(|e| {
-                                de::Error::custom(format!(
-                                    "Can't parse value {s} as decimal: Error {e}"
-                                ))
+                                de::Error::custom(format!("Can't parse value {s} as decimal: Error {e}"))
                             })?;
                             Ok(ObjectValue::decimal(n))
-                        }
+                        },
                         None => Err(de::Error::missing_field("value")),
                     },
                     Some(ObjectValueType::Double) => match value {
                         Some(s) => {
                             let n = f64::from_str(&s).map_err(|e| {
-                                de::Error::custom(format!(
-                                    "Can't parse value {s} as double: Error {e}"
-                                ))
+                                de::Error::custom(format!("Can't parse value {s} as double: Error {e}"))
                             })?;
                             Ok(ObjectValue::double(n))
-                        }
+                        },
                         None => Err(de::Error::missing_field("value")),
                     },
                     Some(ObjectValueType::Integer) => match value {
                         Some(s) => {
                             let n = isize::from_str(&s).map_err(|e| {
-                                de::Error::custom(format!(
-                                    "Can't parse value {s} as integer: Error {e}"
-                                ))
+                                de::Error::custom(format!("Can't parse value {s} as integer: Error {e}"))
                             })?;
                             Ok(ObjectValue::integer(n))
-                        }
+                        },
                         None => Err(de::Error::missing_field("value")),
                     },
                     Some(ObjectValueType::Other(iri)) => match value {
                         Some(v) => match language_tag {
                             Some(lang) => {
                                 let lang = Lang::new(&lang).map_err(|e| {
-                                    de::Error::custom(format!(
-                                        "Invalid language tag {lang} in object value: {e}"
-                                    ))
+                                    de::Error::custom(format!("Invalid language tag {lang} in object value: {e}"))
                                 })?;
-                                Ok(ObjectValue::Literal(SLiteral::StringLiteral {
+                                Ok(ObjectValue::Literal(ConcreteLiteral::StringLiteral {
                                     lexical_form: v,
                                     lang: Some(lang),
                                 }))
-                            }
+                            },
                             None => Ok(ObjectValue::datatype_literal(&v, &iri)),
                         },
                         None => Err(de::Error::missing_field("value")),
@@ -376,16 +361,14 @@ impl<'de> Deserialize<'de> for ObjectValue {
                         Some(lexical_form) => match language {
                             Some(language) => {
                                 let language = Lang::new(&language).map_err(|e| {
-                                    de::Error::custom(format!(
-                                        "Invalid language tag {language} in object value: {e}"
-                                    ))
+                                    de::Error::custom(format!("Invalid language tag {language} in object value: {e}"))
                                 })?;
-                                Ok(ObjectValue::Literal(SLiteral::StringLiteral {
+                                Ok(ObjectValue::Literal(ConcreteLiteral::StringLiteral {
                                     lexical_form,
                                     lang: Some(language),
                                 }))
-                            }
-                            None => Ok(ObjectValue::Literal(SLiteral::StringLiteral {
+                            },
+                            None => Ok(ObjectValue::Literal(ConcreteLiteral::StringLiteral {
                                 lexical_form,
                                 lang: None,
                             })),
@@ -399,9 +382,8 @@ impl<'de> Deserialize<'de> for ObjectValue {
             where
                 E: de::Error,
             {
-                let iri_ref = IriRef::from_str(s).map_err(|e| {
-                    de::Error::custom(format!("Cannot convert string `{s}` to Iri: {e}"))
-                })?;
+                let iri_ref = IriRef::from_str(s)
+                    .map_err(|e| de::Error::custom(format!("Cannot convert string `{s}` to Iri: {e}")))?;
                 Ok(ObjectValue::IriRef(iri_ref))
             }
         }
@@ -411,21 +393,21 @@ impl<'de> Deserialize<'de> for ObjectValue {
     }
 }
 
-impl From<&ObjectValue> for srdf::Object {
+impl From<&ObjectValue> for Object {
     fn from(value: &ObjectValue) -> Self {
         match value {
             ObjectValue::IriRef(iri_ref) => {
                 let iri = iri_ref.get_iri().unwrap(); // Should not fail, as it was already deref'ed
-                srdf::Object::from(iri.clone())
-            }
-            ObjectValue::Literal(literal) => literal.into(),
+                Object::from(iri.clone())
+            },
+            ObjectValue::Literal(literal) => literal.clone().into(),
         }
     }
 }
 
 impl From<&ObjectValue> for Node {
     fn from(value: &ObjectValue) -> Self {
-        let obj: srdf::Object = value.into();
+        let obj: Object = value.into();
         Node::from(obj)
     }
 }

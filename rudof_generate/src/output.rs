@@ -1,7 +1,7 @@
 use crate::config::OutputConfig;
 use crate::{DataGeneratorError, Result};
-use srdf::srdf_graph::SRDFGraph;
-use srdf::{BuildRDF, NeighsRDF, RDFFormat};
+use rudof_rdf::rdf_core::{BuildRDF, NeighsRDF, RDFFormat};
+use rudof_rdf::rdf_impl::InMemoryGraph;
 use std::fs::File;
 use std::path::PathBuf;
 
@@ -12,20 +12,18 @@ pub struct OutputWriter {
 
 impl OutputWriter {
     pub fn new(config: &OutputConfig) -> Result<Self> {
-        Ok(Self {
-            config: config.clone(),
-        })
+        Ok(Self { config: config.clone() })
     }
 
     /// Write the generated graph to the configured output
-    pub async fn write_graph(&self, graph: &SRDFGraph) -> Result<()> {
+    pub async fn write_graph(&self, graph: &InMemoryGraph) -> Result<()> {
         self.write_graph_with_timing(graph, None).await
     }
 
     /// Write the generated graph to the configured output with timing information
     pub async fn write_graph_with_timing(
         &self,
-        graph: &SRDFGraph,
+        graph: &InMemoryGraph,
         generation_time: Option<std::time::Duration>,
     ) -> Result<()> {
         if self.config.parallel_writing {
@@ -38,7 +36,7 @@ impl OutputWriter {
     /// Write the graph using sequential (traditional) method
     async fn write_graph_sequential(
         &self,
-        graph: &SRDFGraph,
+        graph: &InMemoryGraph,
         generation_time: Option<std::time::Duration>,
     ) -> Result<()> {
         let format = self.get_rdf_format();
@@ -50,9 +48,9 @@ impl OutputWriter {
 
         // Write the graph
         let mut file = File::create(&self.config.path)?;
-        graph.serialize(&format, &mut file).map_err(|e| {
-            DataGeneratorError::OutputWriting(format!("Failed to serialize graph: {e}"))
-        })?;
+        graph
+            .serialize(&format, &mut file)
+            .map_err(|e| DataGeneratorError::OutputWriting(format!("Failed to serialize graph: {e}")))?;
 
         tracing::info!("Graph written to: {}", self.config.path.display());
 
@@ -72,7 +70,7 @@ impl OutputWriter {
     /// Write the graph using parallel method - splits data across multiple files
     async fn write_graph_parallel(
         &self,
-        graph: &SRDFGraph,
+        graph: &InMemoryGraph,
         generation_time: Option<std::time::Duration>,
     ) -> Result<()> {
         let start_time = std::time::Instant::now();
@@ -85,9 +83,7 @@ impl OutputWriter {
         // Collect all triples first
         let all_triples = graph
             .triples()
-            .map_err(|e| {
-                DataGeneratorError::OutputWriting(format!("Failed to collect triples: {e}"))
-            })?
+            .map_err(|e| DataGeneratorError::OutputWriting(format!("Failed to collect triples: {e}")))?
             .collect::<Vec<_>>();
 
         let total_triples = all_triples.len();
@@ -121,18 +117,14 @@ impl OutputWriter {
                 let output_path = self.get_parallel_file_path(index);
                 let chunk_triples = chunk.to_vec();
 
-                tokio::spawn(async move {
-                    Self::write_triple_chunk(chunk_triples, format, output_path).await
-                })
+                tokio::spawn(async move { Self::write_triple_chunk(chunk_triples, format, output_path).await })
             })
             .collect();
 
         // Wait for all file writing tasks to complete
         let write_results = futures::future::try_join_all(file_tasks)
             .await
-            .map_err(|e| {
-                DataGeneratorError::OutputWriting(format!("Parallel write task failed: {e}"))
-            })?;
+            .map_err(|e| DataGeneratorError::OutputWriting(format!("Parallel write task failed: {e}")))?;
 
         // Check all writes succeeded
         for result in write_results {
@@ -159,27 +151,21 @@ impl OutputWriter {
     }
 
     /// Write a chunk of triples to a file
-    async fn write_triple_chunk(
-        triples: Vec<oxrdf::Triple>,
-        format: RDFFormat,
-        output_path: PathBuf,
-    ) -> Result<()> {
+    async fn write_triple_chunk(triples: Vec<oxrdf::Triple>, format: RDFFormat, output_path: PathBuf) -> Result<()> {
         // Create a temporary graph for this chunk
-        let mut chunk_graph = SRDFGraph::default();
+        let mut chunk_graph = InMemoryGraph::default();
 
         for triple in triples {
             chunk_graph
                 .add_triple(triple.subject, triple.predicate, triple.object)
-                .map_err(|e| {
-                    DataGeneratorError::OutputWriting(format!("Failed to add triple to chunk: {e}"))
-                })?;
+                .map_err(|e| DataGeneratorError::OutputWriting(format!("Failed to add triple to chunk: {e}")))?;
         }
 
         // Write the chunk to file
         let mut file = File::create(&output_path)?;
-        chunk_graph.serialize(&format, &mut file).map_err(|e| {
-            DataGeneratorError::OutputWriting(format!("Failed to serialize chunk: {e}"))
-        })?;
+        chunk_graph
+            .serialize(&format, &mut file)
+            .map_err(|e| DataGeneratorError::OutputWriting(format!("Failed to serialize chunk: {e}")))?;
 
         tracing::debug!("Chunk written to: {}", output_path.display());
         Ok(())
@@ -193,22 +179,14 @@ impl OutputWriter {
             .file_stem()
             .and_then(|s| s.to_str())
             .unwrap_or("output");
-        let extension = self
-            .config
-            .path
-            .extension()
-            .and_then(|s| s.to_str())
-            .unwrap_or("ttl");
+        let extension = self.config.path.extension().and_then(|s| s.to_str()).unwrap_or("ttl");
 
-        let parent = self
-            .config
-            .path
-            .parent()
-            .unwrap_or_else(|| std::path::Path::new("."));
+        let parent = self.config.path.parent().unwrap_or_else(|| std::path::Path::new("."));
         parent.join(format!("{}_part_{:03}.{}", stem, index + 1, extension))
     }
 
     /// Create a manifest file listing all parallel output files
+    #[cfg(not(target_family = "wasm"))]
     async fn create_parallel_manifest(&self, actual_file_count: usize) -> Result<()> {
         let manifest_path = self.config.path.with_extension("manifest.txt");
         let mut manifest_content = String::new();
@@ -229,9 +207,7 @@ impl OutputWriter {
 
         tokio::fs::write(manifest_path, manifest_content)
             .await
-            .map_err(|e| {
-                DataGeneratorError::OutputWriting(format!("Failed to write manifest: {e}"))
-            })?;
+            .map_err(|e| DataGeneratorError::OutputWriting(format!("Failed to write manifest: {e}")))?;
 
         Ok(())
     }
@@ -246,7 +222,7 @@ impl OutputWriter {
     /// Write generation statistics
     async fn write_statistics(
         &self,
-        graph: &SRDFGraph,
+        graph: &InMemoryGraph,
         generation_time: Option<std::time::Duration>,
     ) -> Result<()> {
         let stats_path = self.config.path.with_extension("stats.json");
@@ -292,7 +268,7 @@ pub struct GenerationStatistics {
 }
 
 impl GenerationStatistics {
-    pub fn from_graph(graph: &SRDFGraph) -> Self {
+    pub fn from_graph(graph: &InMemoryGraph) -> Self {
         use std::collections::HashSet;
 
         let total_triples = graph.len();

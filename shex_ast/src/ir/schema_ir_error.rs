@@ -1,14 +1,11 @@
-use iri_s::IriS;
-use iri_s::error::IriSError;
-use prefixmap::IriRef;
-use prefixmap::error::PrefixMapError;
-use srdf::lang::Lang;
+use iri_s::{IriS, error::IriSError};
+use prefixmap::{IriRef, PrefixMapError};
+use rudof_rdf::rdf_core::term::literal::{Lang, NumericLiteral};
 use thiserror::Error;
 
 use super::shape_label::ShapeLabel;
 use crate::ast::TripleExprLabel;
 use crate::{Node, ShExFormat, ast};
-use srdf::numeric_literal::NumericLiteral;
 
 #[derive(Error, Debug, Clone)]
 pub enum SchemaIRError {
@@ -65,9 +62,7 @@ pub enum SchemaIRError {
     #[error("NodeKind NonLiteral but found {node}")]
     NodeKindNonLiteral { node: Node },
 
-    #[error(
-        "Datatype expected {expected} but found {found} for literal with lexical form {lexical_form}"
-    )]
+    #[error("Datatype expected {expected} but found {found} for literal with lexical form {lexical_form}")]
     DatatypeDontMatch {
         found: IriRef,
         expected: IriS,
@@ -75,9 +70,7 @@ pub enum SchemaIRError {
     },
 
     #[error("Finding content from iris. Errors: {errors:?}")]
-    FindingContentFromIrisError {
-        errors: Box<Vec<Box<SchemaIRError>>>,
-    },
+    FindingContentFromIrisError { errors: Vec<SchemaIRError> },
 
     #[error("Generating candidates from iri {iri}: {error}")]
     CandidatesError { iri: IriS, error: String },
@@ -93,52 +86,28 @@ pub enum SchemaIRError {
     },
 
     #[error("Datatype expected {expected} but found literal {node} which has datatype: {}", (*node).datatype().map(|d| d.to_string()).unwrap_or("None".to_string()))]
-    DatatypeNoLiteral {
-        expected: Box<IriS>,
-        node: Box<Node>,
-    },
+    DatatypeNoLiteral { expected: Box<IriS>, node: Box<Node> },
 
     #[error("Datatype expected {expected} but found String literal {lexical_form}")]
-    DatatypeDontMatchString {
-        expected: IriRef,
-        lexical_form: String,
-    },
+    DatatypeDontMatchString { expected: IriRef, lexical_form: String },
 
     #[error("Datatype expected {expected} but found Integer literal {lexical_form}")]
-    DatatypeDontMatchInteger {
-        expected: IriRef,
-        lexical_form: String,
-    },
+    DatatypeDontMatchInteger { expected: IriRef, lexical_form: String },
 
     #[error("Datatype expected {expected} but found decimal literal {lexical_form}")]
-    DatatypeDontMatchDecimal {
-        expected: IriRef,
-        lexical_form: String,
-    },
+    DatatypeDontMatchDecimal { expected: IriRef, lexical_form: String },
 
     #[error("Datatype expected {expected} but found float literal {lexical_form}")]
-    DatatypeDontMatchFloat {
-        expected: IriRef,
-        lexical_form: String,
-    },
+    DatatypeDontMatchFloat { expected: IriRef, lexical_form: String },
 
     #[error("Datatype expected {expected} but found long literal {lexical_form}")]
-    DatatypeDontMatchLong {
-        expected: IriRef,
-        lexical_form: String,
-    },
+    DatatypeDontMatchLong { expected: IriRef, lexical_form: String },
 
     #[error("Datatype expected {expected} but found double literal {lexical_form}")]
-    DatatypeDontMatchDouble {
-        expected: IriRef,
-        lexical_form: String,
-    },
+    DatatypeDontMatchDouble { expected: IriRef, lexical_form: String },
 
     #[error("Expected language tag {lang} for StringLiteral with lexical form {lexical_form}")]
-    DatatypeDontMatchLangString {
-        lexical_form: String,
-        lang: Box<Lang>,
-    },
+    DatatypeDontMatchLangString { lexical_form: String, lang: Box<Lang> },
 
     #[error("Length of {node} = {found} doesn't match {expected}")]
     LengthError {
@@ -240,7 +209,7 @@ pub enum SchemaIRError {
     #[error("Error importing Schema from iri: {iri}: {}", errors.iter().map(|(format, error)| format!("\nFor {format}: {error}")).collect::<Vec<_>>().join(""))]
     SchemaFromIriRotatingFormats {
         iri: IriS,
-        errors: Box<Vec<(ShExFormat, Box<SchemaIRError>)>>,
+        errors: Vec<(ShExFormat, Box<SchemaIRError>)>,
     },
 
     #[error("Error converting IriRef {prefix}:{local} to Iri: {error}")]

@@ -20,4 +20,3 @@ prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
 uml_str = rudof.shex2plantuml(UmlGenerationMode.all())
 
 print(uml_str)
-

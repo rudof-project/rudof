@@ -10,15 +10,12 @@ use crate::shacl_engine::Engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
+use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF, term::Term};
 use shacl_ast::node_kind::NodeKind;
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::Nodekind;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use srdf::NeighsRDF;
-use srdf::QueryRDF;
-use srdf::SHACLPath;
-use srdf::Term;
 use std::fmt::Debug;
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Nodekind {
@@ -34,11 +31,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Nodekind {
         _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node_kind = |value_node: &S::Term| {
-            match (
-                value_node.is_blank_node(),
-                value_node.is_iri(),
-                value_node.is_literal(),
-            ) {
+            match (value_node.is_blank_node(), value_node.is_iri(), value_node.is_literal()) {
                 (true, false, false) => matches!(
                     self.node_kind(),
                     NodeKind::BlankNode | NodeKind::BlankNodeOrIri | NodeKind::BlankNodeOrLiteral
@@ -111,14 +104,6 @@ impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Nodekind {
             "Nodekind constraint not satisfied. Expected node kind: {}",
             self.node_kind()
         );
-        validate_ask_with(
-            component,
-            shape,
-            store,
-            value_nodes,
-            query,
-            &message,
-            maybe_path,
-        )
+        validate_ask_with(component, shape, store, value_nodes, query, &message, maybe_path)
     }
 }

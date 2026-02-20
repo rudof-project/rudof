@@ -16,19 +16,15 @@ pub enum ConfigError {
     ReadingConfigError { path_name: String, error: io::Error },
 
     #[error("Reading TOML from {path_name:?}. Error: {error:?}")]
-    TomlError {
-        path_name: String,
-        error: toml::de::Error,
-    },
+    TomlError { path_name: String, error: toml::de::Error },
 }
 
 impl Config {
     pub fn from_file(file_name: &str) -> Result<Config, ConfigError> {
-        let config_str =
-            fs::read_to_string(file_name).map_err(|e| ConfigError::ReadingConfigError {
-                path_name: file_name.to_string(),
-                error: e,
-            })?;
+        let config_str = fs::read_to_string(file_name).map_err(|e| ConfigError::ReadingConfigError {
+            path_name: file_name.to_string(),
+            error: e,
+        })?;
         toml::from_str::<Config>(&config_str).map_err(|e| ConfigError::TomlError {
             path_name: file_name.to_string(),
             error: e,
@@ -43,8 +39,8 @@ mod tests {
     #[test]
     fn parse_example() {
         let sample_str = r#"
-         { "manifest_mode": "Schemas", 
-           "excluded_entries": ["entry1", "entry2"] 
+         { "manifest_mode": "Schemas",
+           "excluded_entries": ["entry1", "entry2"]
          }
         "#;
         let sample = Config {

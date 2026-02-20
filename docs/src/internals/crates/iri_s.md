@@ -29,19 +29,19 @@ println!("IRI extendido: {}", extended.as_str());
 This create depends mostly on the [`oxiri`](https://crates.io/crates/oxiri) and [`oxrdf`](https://crates.io/crates/oxrdf) crates.
 
 This create is also used by other rudof modules that needs IRIs functionality, such as:
-- [srdf](./srdf.md)
-- [prefixmap](./prefixmap.md)
-- [sparql_service](./sparql_service.md)
-- [dctap](./dctap.md)
-- [rudof_generate](./rudof_generate.md)
-- [rudof_lib](./rudof_lib.md)
-- [rudof_mcp](./rudof_mcp.md)
-- [shacl_ast](./shacl_ast.md)
-- [shacl_rdf](./shacl_rdf.md)
-- [shacl_validation](./shacl_validation.md)
-- [shapes_converter](./shapes_converter.md)
-- [shex_ast](./shex_ast.md)
-- [shex_validation](./shex_validation.md)
+- [`rudof_rdf`](./rudof_rdf.md)
+- [`prefixmap`](./prefixmap.md)
+- [`sparql_service`](./sparql_service.md)
+- [`dctap`](./dctap.md)
+- [`rudof_generate`](./rudof_generate.md)
+- [`rudof_lib`](./rudof_lib.md)
+- [`rudof_mcp`](./rudof_mcp.md)
+- [`shacl_ast`](./shacl_ast.md)
+- [`shacl_rdf`](./shacl_rdf.md)
+- [`shacl_validation`](./shacl_validation.md)
+- [`shapes_converter`](./shapes_converter.md)
+- [`shex_ast`](./shex_ast.md)
+- [`shex_validation`](./shex_validation.md)
 
 ## Documentation
 

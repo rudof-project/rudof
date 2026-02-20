@@ -28,7 +28,7 @@ impl<'de> Visitor<'de> for IriRefVisitor {
                 } else {
                     Err(E::custom(format!("Invalid IRI or prefixed name: {}", v)))
                 }
-            }
+            },
         }
     }
 }

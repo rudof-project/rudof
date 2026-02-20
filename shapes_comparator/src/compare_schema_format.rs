@@ -1,6 +1,6 @@
 use crate::ComparatorError;
+use rudof_rdf::rdf_core::RDFFormat;
 use shex_ast::ShExFormat;
-use srdf::RDFFormat;
 use std::{
     fmt::{Display, Formatter},
     str::FromStr,
@@ -27,7 +27,7 @@ impl FromStr for CompareSchemaFormat {
     }
 }
 impl CompareSchemaFormat {
-    pub fn to_shex_format(&self) -> Result<ShExFormat, ComparatorError> {
+    pub fn to_shex_format(self) -> Result<ShExFormat, ComparatorError> {
         match self {
             CompareSchemaFormat::ShExC => Ok(ShExFormat::ShExC),
             CompareSchemaFormat::ShExJ => Ok(ShExFormat::ShExJ),

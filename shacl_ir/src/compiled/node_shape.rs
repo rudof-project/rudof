@@ -10,14 +10,14 @@ use crate::{
     shape_label_idx::ShapeLabelIdx,
 };
 use iri_s::IriS;
-use shacl_ast::Schema;
+use rudof_rdf::rdf_core::{Rdf, term::Object};
+use shacl_ast::ShaclSchema;
 use shacl_ast::node_shape::NodeShape;
-use srdf::{RDFNode, Rdf};
 use std::collections::HashSet;
 
 #[derive(Debug, Clone)]
 pub struct NodeShapeIR {
-    id: RDFNode,
+    id: Object,
     components: Vec<ComponentIR>,
     targets: Vec<CompiledTarget>,
     property_shapes: Vec<ShapeLabelIdx>,
@@ -34,7 +34,7 @@ pub struct NodeShapeIR {
 
 impl NodeShapeIR {
     pub fn new(
-        id: RDFNode,
+        id: Object,
         components: Vec<ComponentIR>,
         targets: Vec<CompiledTarget>,
         property_shapes: Vec<ShapeLabelIdx>,
@@ -53,7 +53,7 @@ impl NodeShapeIR {
         }
     }
 
-    pub fn id(&self) -> &RDFNode {
+    pub fn id(&self) -> &Object {
         &self.id
     }
 
@@ -120,7 +120,7 @@ impl NodeShapeIR {
     /// It embeds some components like deactivated as boolean attributes of the internal representation of the node shape
     pub fn compile<S: Rdf>(
         shape: Box<NodeShape<S>>,
-        schema: &Schema<S>,
+        schema: &ShaclSchema<S>,
         schema_ir: &mut SchemaIR,
     ) -> Result<Self, Box<CompiledShaclError>> {
         let id = shape.id().clone();
@@ -130,8 +130,7 @@ impl NodeShapeIR {
         let components = shape.components().iter().collect::<Vec<_>>();
         let mut compiled_components = Vec::new();
         for component in components {
-            if let Some(component) = ComponentIR::compile(component.to_owned(), schema, schema_ir)?
-            {
+            if let Some(component) = ComponentIR::compile(component.to_owned(), schema, schema_ir)? {
                 compiled_components.push(component);
             }
         }

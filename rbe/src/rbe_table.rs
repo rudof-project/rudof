@@ -88,10 +88,7 @@ where
         self.rbe = rbe;
     }
 
-    pub fn matches(
-        &self,
-        values: Vec<(K, V)>,
-    ) -> Result<MatchTableIter<K, V, R>, RbeError<K, V, R>> {
+    pub fn matches(&self, values: Vec<(K, V)>) -> Result<MatchTableIter<K, V, R>, RbeError<K, V, R>> {
         trace!(
             "Checking if RbeTable {} matches [{}]",
             &self,
@@ -314,7 +311,7 @@ where
                     trace!("No more candidates");
                     None
                 }
-            }
+            },
             Some(vs) => {
                 //for (k, v, c, cond) in &vs {
                 // trace!("Next state: ({k} {v}) should match component {c} with cond: {cond})");
@@ -328,11 +325,11 @@ where
                             //);
                             pending.merge(new_pending);
                             // trace!("Pending merged: {pending}");
-                        }
+                        },
                         Err(err) => {
                             trace!("Failed condition: {cond} with value: {v}");
                             return Some(Err(err));
-                        }
+                        },
                     }
                 }
                 // trace!("Pending after checking conditions: {pending}");
@@ -342,13 +339,13 @@ where
                         trace!("Rbe {} matches bag {}", self.rbe, bag);
                         self.is_first = false;
                         Some(Ok(pending))
-                    }
+                    },
                     Err(err) => {
                         trace!("### Skipped error: {err}!!!!\n");
                         self.next()
-                    }
+                    },
                 }
-            }
+            },
         }
     }
 }
@@ -451,15 +448,11 @@ mod tests {
 
         assert_eq!(
             iter.next(),
-            Some(Ok(Pending::from(
-                vec![('y', vec!['t']), ('z', vec!['u'])].into_iter()
-            )))
+            Some(Ok(Pending::from(vec![('y', vec!['t']), ('z', vec!['u'])].into_iter())))
         );
         assert_eq!(
             iter.next(),
-            Some(Ok(Pending::from(
-                vec![('y', vec!['u']), ('z', vec!['t'])].into_iter()
-            )))
+            Some(Ok(Pending::from(vec![('y', vec!['u']), ('z', vec!['t'])].into_iter())))
         );
         assert_eq!(iter.next(), None);
     }

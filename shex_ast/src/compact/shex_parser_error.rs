@@ -1,5 +1,6 @@
 use iri_s::error::IriSError;
 use prefixmap::error::{DerefError, PrefixMapError};
+use rudof_rdf::rdf_core::RDFError;
 use std::{
     io,
     num::{ParseFloatError, ParseIntError},
@@ -13,14 +14,14 @@ pub enum ParseError {
     #[error("Invalid language tag: {lang}")]
     InvalidLangTag { lang: String },
 
+    #[error("RDF error: {0}")]
+    RDFError(#[from] RDFError),
+
     #[error("Parsing error: {err}")]
     NomError { err: Box<LocatedParseError> },
 
     #[error("Parsing node selector for string: {str}: {err}")]
-    NodeSelectorNomError {
-        err: Box<LocatedParseError>,
-        str: String,
-    },
+    NodeSelectorNomError { err: Box<LocatedParseError>, str: String },
 
     #[error(transparent)]
     IOError {
@@ -88,9 +89,7 @@ pub enum ParseError {
     #[error("Expected non literal node constraint followed by optional shape or shape reference")]
     NonLitNodeConstraintOptShapeOrRef,
 
-    #[error(
-        "Expected non literal inline node constraint followed by optional shape or shape reference"
-    )]
+    #[error("Expected non literal inline node constraint followed by optional shape or shape reference")]
     NonLitInlineNodeConstraintOptShapeOrRef,
 
     #[error("Expected inline shape atom")]
@@ -245,8 +244,7 @@ impl ParseError {
             String::new()
         } else {
             let line = if cfg!(not(miri)) {
-                String::from_utf8(position.get_line_beginning().to_vec())
-                    .expect("input is valid UTF-8")
+                String::from_utf8(position.get_line_beginning().to_vec()).expect("input is valid UTF-8")
             } else {
                 String::new()
             };

@@ -39,11 +39,7 @@ async fn test_pattern_generator_phone_numbers() {
 
         // Validate parts
         let parts: Vec<&str> = result.split('-').collect();
-        assert_eq!(
-            parts.len(),
-            3,
-            "Phone should have 3 parts separated by dashes"
-        );
+        assert_eq!(parts.len(), 3, "Phone should have 3 parts separated by dashes");
         assert_eq!(parts[0].len(), 3, "First part should be 3 digits");
         assert_eq!(parts[1].len(), 3, "Second part should be 3 digits");
         assert_eq!(parts[2].len(), 4, "Third part should be 4 digits");
@@ -137,10 +133,7 @@ async fn test_pattern_generator_student_id() {
 
         // Validate format: 2-3 uppercase letters followed by 4-6 digits
         let id_regex = Regex::new(r"^[A-Z]{2,3}\d{4,6}$").unwrap();
-        assert!(
-            id_regex.is_match(&result),
-            "Student ID should match pattern: {result}"
-        );
+        assert!(id_regex.is_match(&result), "Student ID should match pattern: {result}");
 
         // Check letter and digit counts
         let letters: String = result.chars().filter(|c| c.is_alphabetic()).collect();
@@ -193,10 +186,7 @@ async fn test_pattern_generator_date() {
         let month: i32 = parts[1].parse().unwrap();
         let day: i32 = parts[2].parse().unwrap();
 
-        assert!(
-            (1980..=2024).contains(&year),
-            "Year should be reasonable: {year}"
-        );
+        assert!((1980..=2024).contains(&year), "Year should be reasonable: {year}");
         assert!((1..=12).contains(&month), "Month should be 1-12: {month}");
         assert!((1..=31).contains(&day), "Day should be 1-31: {day}");
     }
@@ -223,10 +213,7 @@ async fn test_pattern_generator_ip_address() {
 
         // Validate format: X.X.X.X where X is 1-3 digits
         let ip_regex = Regex::new(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$").unwrap();
-        assert!(
-            ip_regex.is_match(&result),
-            "IP should match IPv4 format: {result}"
-        );
+        assert!(ip_regex.is_match(&result), "IP should match IPv4 format: {result}");
 
         let octets: Vec<&str> = result.split('.').collect();
         assert_eq!(octets.len(), 4, "IP should have 4 octets");
@@ -248,10 +235,9 @@ async fn test_pattern_generator_url() {
         "http://www.w3.org/2001/XMLSchema#string".to_string(),
         "test_subject".to_string(),
     );
-    context.parameters.insert(
-        "pattern".to_string(),
-        json!("https?://[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"),
-    );
+    context
+        .parameters
+        .insert("pattern".to_string(), json!("https?://[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"));
 
     for _ in 0..5 {
         let result = generator.generate(&context).unwrap();
@@ -272,10 +258,7 @@ async fn test_pattern_generator_url() {
         };
 
         assert!(!domain_part.is_empty(), "Domain part should not be empty");
-        assert!(
-            domain_part.contains("."),
-            "Domain should have TLD separator"
-        );
+        assert!(domain_part.contains("."), "Domain should have TLD separator");
     }
 }
 
@@ -307,14 +290,8 @@ async fn test_pattern_generator_heuristics() {
 
     let email_result = generator.generate(&email_context).unwrap();
     println!("Heuristic email: {email_result}");
-    assert!(
-        email_result.contains("@"),
-        "Email heuristic should generate @ symbol"
-    );
-    assert!(
-        email_result.contains("."),
-        "Email heuristic should generate domain"
-    );
+    assert!(email_result.contains("@"), "Email heuristic should generate @ symbol");
+    assert!(email_result.contains("."), "Email heuristic should generate domain");
 
     // Test URL heuristic
     let url_context = GenerationContext::new(
@@ -339,10 +316,7 @@ async fn test_pattern_generator_heuristics() {
 
     let id_result = generator.generate(&id_context).unwrap();
     println!("Heuristic ID: {id_result}");
-    assert!(
-        id_result.starts_with("ID"),
-        "ID heuristic should generate ID prefix"
-    );
+    assert!(id_result.starts_with("ID"), "ID heuristic should generate ID prefix");
 }
 
 /// Test pattern generator integration with configuration (without schema)
@@ -461,19 +435,13 @@ ex:PersonShape a sh:NodeShape ;
         generator: "pattern".to_string(),
         parameters: HashMap::new(),
     };
-    datatype_configs.insert(
-        "http://www.w3.org/2001/XMLSchema#string".to_string(),
-        string_config,
-    );
+    datatype_configs.insert("http://www.w3.org/2001/XMLSchema#string".to_string(), string_config);
     config.field_generators.datatypes = datatype_configs;
 
     // Test generation
     let mut generator = DataGenerator::new(config).unwrap();
     let load_result = generator.load_shacl_schema(schema_file.path()).await;
-    assert!(
-        load_result.is_ok(),
-        "Should load SHACL schema with patterns"
-    );
+    assert!(load_result.is_ok(), "Should load SHACL schema with patterns");
 
     let gen_result = generator.generate().await;
     assert!(
@@ -483,10 +451,7 @@ ex:PersonShape a sh:NodeShape ;
 
     // Verify output
     let output_content = std::fs::read_to_string(output_file.path()).unwrap();
-    assert!(
-        !output_content.is_empty(),
-        "Output file should not be empty"
-    );
+    assert!(!output_content.is_empty(), "Output file should not be empty");
     println!("Generated SHACL RDF:\n{output_content}");
 }
 
@@ -507,10 +472,7 @@ async fn test_pattern_generator_error_handling() {
     );
 
     let result = generator.generate(&context);
-    assert!(
-        result.is_ok(),
-        "Should handle unsupported patterns gracefully"
-    );
+    assert!(result.is_ok(), "Should handle unsupported patterns gracefully");
 
     let value = result.unwrap();
     assert!(!value.is_empty(), "Should generate some fallback value");

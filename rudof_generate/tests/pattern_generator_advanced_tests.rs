@@ -28,11 +28,7 @@ async fn test_pattern_generator_alphanumeric_patterns() {
             license_regex.is_match(&result),
             "License plate should match AAA123 format: {result}"
         );
-        assert_eq!(
-            result.len(),
-            6,
-            "License plate should be exactly 6 characters"
-        );
+        assert_eq!(result.len(), 6, "License plate should be exactly 6 characters");
 
         // First 3 should be uppercase letters
         let letters = &result[0..3];
@@ -61,10 +57,9 @@ async fn test_pattern_generator_optional_groups() {
         "http://www.w3.org/2001/XMLSchema#string".to_string(),
         "test_subject".to_string(),
     );
-    context.parameters.insert(
-        "pattern".to_string(),
-        json!("\\d{3}-\\d{3}-\\d{4}( ext\\. \\d{1,4})?"),
-    );
+    context
+        .parameters
+        .insert("pattern".to_string(), json!("\\d{3}-\\d{3}-\\d{4}( ext\\. \\d{1,4})?"));
 
     let mut with_ext_count = 0;
     let mut without_ext_count = 0;
@@ -125,11 +120,7 @@ async fn test_pattern_generator_character_classes() {
             hex_regex.is_match(&result),
             "Hex color should match #RRGGBB format: {result}"
         );
-        assert_eq!(
-            result.len(),
-            7,
-            "Hex color should be 7 characters including #"
-        );
+        assert_eq!(result.len(), 7, "Hex color should be 7 characters including #");
         assert!(result.starts_with("#"), "Should start with #");
 
         // Validate hex characters
@@ -166,11 +157,7 @@ async fn test_pattern_generator_anchors() {
             "Product code should match PROD-XXXX-YY format: {result}"
         );
         assert!(result.starts_with("PROD-"), "Should start with PROD-");
-        assert_eq!(
-            result.len(),
-            12,
-            "Product code should be 12 characters total"
-        );
+        assert_eq!(result.len(), 12, "Product code should be 12 characters total");
     }
 }
 
@@ -268,9 +255,7 @@ async fn test_pattern_generator_performance() {
     let duration = start.elapsed();
     let per_generation = duration.as_nanos() / iterations as u128;
 
-    println!(
-        "Generated {iterations} patterns in {duration:?} (avg: {per_generation}ns per generation)"
-    );
+    println!("Generated {iterations} patterns in {duration:?} (avg: {per_generation}ns per generation)");
 
     // Performance should be reasonable (less than 1ms per generation)
     assert!(
@@ -290,15 +275,10 @@ async fn test_pattern_generator_edge_cases() {
         "http://www.w3.org/2001/XMLSchema#string".to_string(),
         "test_subject".to_string(),
     );
-    simple_context
-        .parameters
-        .insert("pattern".to_string(), json!("a"));
+    simple_context.parameters.insert("pattern".to_string(), json!("a"));
 
     let simple_result = generator.generate(&simple_context).unwrap();
-    assert_eq!(
-        simple_result, "a",
-        "Simple pattern should generate exact match"
-    );
+    assert_eq!(simple_result, "a", "Simple pattern should generate exact match");
 
     // Test pattern with only quantifiers
     let mut quant_context = GenerationContext::new(
@@ -306,9 +286,7 @@ async fn test_pattern_generator_edge_cases() {
         "http://www.w3.org/2001/XMLSchema#string".to_string(),
         "test_subject".to_string(),
     );
-    quant_context
-        .parameters
-        .insert("pattern".to_string(), json!("\\d{5}"));
+    quant_context.parameters.insert("pattern".to_string(), json!("\\d{5}"));
 
     let quant_result = generator.generate(&quant_context).unwrap();
     assert_eq!(quant_result.len(), 5, "Should generate exactly 5 digits");
@@ -323,9 +301,7 @@ async fn test_pattern_generator_edge_cases() {
         "http://www.w3.org/2001/XMLSchema#string".to_string(),
         "test_subject".to_string(),
     );
-    alt_context
-        .parameters
-        .insert("pattern".to_string(), json!("(cat|dog)"));
+    alt_context.parameters.insert("pattern".to_string(), json!("(cat|dog)"));
 
     let alt_result = generator.generate(&alt_context).unwrap();
     println!("Alternation result: {alt_result}");
@@ -421,8 +397,7 @@ async fn test_pattern_generator_real_world_patterns() {
     let uuid_result = generator.generate(&uuid_context).unwrap();
     println!("Generated UUID-like: {uuid_result}");
 
-    let uuid_regex =
-        Regex::new(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$").unwrap();
+    let uuid_regex = Regex::new(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$").unwrap();
     assert!(
         uuid_regex.is_match(&uuid_result),
         "UUID should match standard format: {uuid_result}"
@@ -431,10 +406,7 @@ async fn test_pattern_generator_real_world_patterns() {
 
     // Count dashes
     let dash_count = uuid_result.matches('-').count();
-    assert_eq!(
-        dash_count, 4,
-        "UUID should have exactly 4 dashes: {uuid_result}"
-    );
+    assert_eq!(dash_count, 4, "UUID should have exactly 4 dashes: {uuid_result}");
 }
 
 /// Test pattern generator fallback behavior
@@ -448,16 +420,11 @@ async fn test_pattern_generator_fallback_behavior() {
         "http://www.w3.org/2001/XMLSchema#string".to_string(),
         "test_subject".to_string(),
     );
-    empty_context
-        .parameters
-        .insert("pattern".to_string(), json!(""));
+    empty_context.parameters.insert("pattern".to_string(), json!(""));
 
     let empty_result = generator.generate(&empty_context).unwrap();
     println!("Empty pattern fallback: {empty_result}");
-    assert!(
-        !empty_result.is_empty(),
-        "Should generate fallback for empty pattern"
-    );
+    assert!(!empty_result.is_empty(), "Should generate fallback for empty pattern");
 
     // Test with no pattern parameter - should use heuristics
     let no_pattern_context = GenerationContext::new(
@@ -468,10 +435,7 @@ async fn test_pattern_generator_fallback_behavior() {
 
     let no_pattern_result = generator.generate(&no_pattern_context).unwrap();
     println!("No pattern fallback: {no_pattern_result}");
-    assert!(
-        !no_pattern_result.is_empty(),
-        "Should generate fallback for no pattern"
-    );
+    assert!(!no_pattern_result.is_empty(), "Should generate fallback for no pattern");
     assert!(
         no_pattern_result.contains("@"),
         "Email heuristic should work without pattern"
@@ -488,10 +452,7 @@ async fn test_pattern_generator_comprehensive_coverage() {
     let test_patterns = vec![
         ("\\d{3}-\\d{3}-\\d{4}", "phone pattern"),
         ("\\+1-\\d{3}-\\d{3}-\\d{4}", "international phone"),
-        (
-            "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}",
-            "email pattern",
-        ),
+        ("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}", "email pattern"),
         ("[A-Z]{2,3}\\d{4,6}", "ID pattern"),
         ("\\d{4}-\\d{2}-\\d{2}", "date pattern"),
         ("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}", "IP pattern"),
@@ -509,9 +470,7 @@ async fn test_pattern_generator_comprehensive_coverage() {
             "http://www.w3.org/2001/XMLSchema#string".to_string(),
             "test_subject".to_string(),
         );
-        context
-            .parameters
-            .insert("pattern".to_string(), json!(pattern));
+        context.parameters.insert("pattern".to_string(), json!(pattern));
 
         match pattern_gen.generate(&context) {
             Ok(result) => {
@@ -521,11 +480,11 @@ async fn test_pattern_generator_comprehensive_coverage() {
                     "Generated value should not be empty for {description}"
                 );
                 generated_count += 1;
-            }
+            },
             Err(e) => {
                 println!("Failed to generate {description} ({pattern}): {e}");
                 // For this comprehensive test, we allow some patterns to fail gracefully
-            }
+            },
         }
     }
 

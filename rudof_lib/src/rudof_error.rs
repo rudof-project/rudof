@@ -1,10 +1,10 @@
 use std::io;
 
 use iri_s::IriS;
-use shacl_ast::Schema;
+use rudof_rdf::rdf_impl::SparqlEndpointError;
+use shacl_ast::ShaclSchema;
 use shacl_ir::compiled_shacl_error::CompiledShaclError;
 use sparql_service::RdfData;
-use srdf::SRDFSparql;
 use thiserror::Error;
 
 use crate::data_format::DataFormatError;
@@ -36,15 +36,9 @@ pub enum RudofError {
     #[error("Invalid mode: {mode}. Expected one of: {expected}")]
     InvalidMode { mode: String, expected: String },
     #[error("Error parsing node selector {node_selector}: {error}")]
-    NodeSelectorParseError {
-        node_selector: String,
-        error: String,
-    },
+    NodeSelectorParseError { node_selector: String, error: String },
     #[error("Error parsing shape selector {shape_selector}: {error}")]
-    ShapeSelectorParseError {
-        shape_selector: String,
-        error: String,
-    },
+    ShapeSelectorParseError { shape_selector: String, error: String },
     #[error("Error formatting node info: {error}")]
     NodeInfoFormatError { error: String },
 
@@ -109,10 +103,7 @@ pub enum RudofError {
     RudofConfigFromPathError { path: String, error: io::Error },
 
     #[error("Error reading config file from path {path}: {error}")]
-    RudofConfigTomlError {
-        path: String,
-        error: toml::de::Error,
-    },
+    RudofConfigTomlError { path: String, error: toml::de::Error },
 
     #[error("Error running query {str}: {error}")]
     QueryError { str: String, error: String },
@@ -157,10 +148,7 @@ pub enum RudofError {
     },
 
     #[error("Obtaining nodes from node_selector: {node_selector}: {error}")]
-    NodeSelectorError {
-        node_selector: String,
-        error: String,
-    },
+    NodeSelectorError { node_selector: String, error: String },
 
     #[error("Converting term {term} to subject: {error}")]
     Term2Subject { term: String, error: String },
@@ -196,9 +184,7 @@ pub enum RudofError {
         format: String,
     },
 
-    #[error(
-        "Error reading SHACL from graph obtained from {reader_name} with format {format}: {error} "
-    )]
+    #[error("Error reading SHACL from graph obtained from {reader_name} with format {format}: {error} ")]
     ReadingSHACLFromGraphError {
         error: String,
         format: String,
@@ -226,19 +212,19 @@ pub enum RudofError {
     #[error("SHACL Compilation from schema {schema} error: {error}")]
     SHACLCompilationError {
         error: String,
-        schema: Box<Schema<RdfData>>,
+        schema: Box<ShaclSchema<RdfData>>,
     },
 
     #[error("SHACL Validation from schema {schema} error: {error}")]
     SHACLValidationError {
         error: String,
-        schema: Box<Schema<RdfData>>,
+        schema: Box<ShaclSchema<RdfData>>,
     },
 
     #[error("Creating Endpoint validation for SHACL from endpoint {endpoint:?}. error: {error}")]
     SHACLEndpointValidationCreation {
         error: String,
-        endpoint: Box<SRDFSparql>,
+        endpoint: Box<SparqlEndpointError>,
     },
 
     #[error("Parsing RDF data error: {error}")]
@@ -348,9 +334,7 @@ pub enum RudofError {
     #[error("Unsupported ShEx result format: {format}")]
     UnsupportedShExResultFormat { format: String },
 
-    #[error(
-        "Conversion of result ShEx validation format to ShapeMapFormat not implemented: {format}"
-    )]
+    #[error("Conversion of result ShEx validation format to ShapeMapFormat not implemented: {format}")]
     UnsupportedShExToShapeMapConversion { format: String },
 
     #[error("Unsupported ShEx format: {format}")]
@@ -448,4 +432,7 @@ pub enum RudofError {
 
     #[error("RDF error: {error}")]
     RdfError { error: String },
+
+    #[error("WASM error: {0}")]
+    WASMError(String),
 }

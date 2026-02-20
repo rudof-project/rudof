@@ -25,11 +25,11 @@ Usage: rudof service [OPTIONS] --service <SPARQL service name>
 
 Options:
   -s, --service <SPARQL service name>
-          
+
   -f, --format <SPARQL service format>
           [default: turtle] [possible values: turtle, ntriples, rdfxml, trig, n3, nquads]
   -o, --output-file <Output file name, default = terminal>
-          
+
   -r, --result-format <Result service format>
           [default: internal] [possible values: internal]
       --reader-mode <RDF Reader mode>
@@ -37,7 +37,7 @@ Options:
   -c, --config-file <Config file name>
           Config file path, if unset it assumes default config
       --force-overwrite
-          
+
   -h, --help
           Print help
 ```

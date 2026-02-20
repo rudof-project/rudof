@@ -9,4 +9,4 @@ shex2html:
 tap2shex:
   base_iri: "http://example.org/"
 shex2sparql:
-shex2uml:  
+shex2uml:

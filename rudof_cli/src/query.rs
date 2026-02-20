@@ -2,11 +2,10 @@ use crate::writer::get_writer;
 use anyhow::Result;
 use iri_s::IriS;
 use rudof_lib::{
-    InputSpec, Rudof, RudofConfig, data::get_data_rudof, data_format::DataFormat,
-    query::execute_query, query_result_format::ResultQueryFormat as CliResultQueryFormat,
-    query_type::QueryType,
+    InputSpec, Rudof, RudofConfig, data::get_data_rudof, data_format::DataFormat, query::execute_query,
+    query_result_format::ResultQueryFormat as CliResultQueryFormat, query_type::QueryType,
 };
-use srdf::ReaderMode;
+use rudof_rdf::rdf_impl::ReaderMode;
 use std::path::PathBuf;
 
 #[allow(clippy::too_many_arguments)]
@@ -38,12 +37,6 @@ pub fn run_query(
         false,
     )?;
 
-    execute_query(
-        &mut rudof,
-        query,
-        query_type,
-        result_query_format,
-        &mut writer,
-    )?;
+    execute_query(&mut rudof, query, query_type, result_query_format, &mut writer)?;
     Ok(())
 }

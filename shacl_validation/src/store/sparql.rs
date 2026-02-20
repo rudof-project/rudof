@@ -1,6 +1,6 @@
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use srdf::SRDFSparql;
+use rudof_rdf::rdf_impl::SparqlEndpoint;
 
 use crate::validate_error::ValidateError;
 
@@ -8,24 +8,24 @@ use super::Store;
 
 #[derive(Debug, Clone)]
 pub struct Endpoint {
-    store: SRDFSparql,
+    store: SparqlEndpoint,
 }
 
 impl Endpoint {
     pub fn new(iri: &str, prefixmap: &PrefixMap) -> Result<Self, Box<ValidateError>> {
-        match SRDFSparql::new(&IriS::new_unchecked(iri), prefixmap) {
+        match SparqlEndpoint::new(&IriS::new_unchecked(iri), prefixmap) {
             Ok(store) => Ok(Self { store }),
             Err(_) => Err(Box::new(ValidateError::SPARQLCreation)),
         }
     }
 
-    pub fn from_sparql(sparql: SRDFSparql) -> Endpoint {
+    pub fn from_sparql(sparql: SparqlEndpoint) -> Endpoint {
         Endpoint { store: sparql }
     }
 }
 
-impl Store<SRDFSparql> for Endpoint {
-    fn store(&self) -> &SRDFSparql {
+impl Store<SparqlEndpoint> for Endpoint {
+    fn store(&self) -> &SparqlEndpoint {
         &self.store
     }
 }

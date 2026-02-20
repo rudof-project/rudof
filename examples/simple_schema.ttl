@@ -20,4 +20,3 @@ PREFIX : <http://example.org/>
          sx:valueExpr :Book
         ]
      ] ) .
-

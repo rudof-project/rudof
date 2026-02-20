@@ -6,14 +6,14 @@ use std::fmt::{Display, Formatter};
 pub enum ResultCompareFormat {
     #[default]
     Internal,
-    JSON,
+    Json,
 }
 
 impl Display for ResultCompareFormat {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
             ResultCompareFormat::Internal => write!(dest, "internal"),
-            ResultCompareFormat::JSON => write!(dest, "json"),
+            ResultCompareFormat::Json => write!(dest, "json"),
         }
     }
 }

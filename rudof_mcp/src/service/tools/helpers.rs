@@ -1,6 +1,6 @@
 use iri_s::IriS;
 use rmcp::{model::CallToolResult, model::Content};
-use srdf::ReaderMode;
+use rudof_rdf::rdf_impl::ReaderMode;
 use std::str::FromStr;
 
 /// Result type for parsing operations that may produce tool execution errors.
@@ -77,11 +77,7 @@ impl std::error::Error for ToolExecutionError {}
 /// * `format` - Optional format string to parse
 /// * `format_name` - Human-readable name for error messages (e.g., "RDF format")
 /// * `valid_values` - Comma-separated list of valid values for hints
-pub fn parse_optional_format<F>(
-    format: Option<&str>,
-    format_name: &str,
-    valid_values: &str,
-) -> ToolResult<F>
+pub fn parse_optional_format<F>(format: Option<&str>, format_name: &str, valid_values: &str) -> ToolResult<F>
 where
     F: FromStr + Default,
     F::Err: std::fmt::Display,
@@ -111,11 +107,7 @@ where
 /// * `format_name` - Human-readable name for error messages
 /// * `valid_values` - Comma-separated list of valid values for hints
 #[allow(dead_code)]
-pub fn parse_required_format<F>(
-    format: &str,
-    format_name: &str,
-    valid_values: &str,
-) -> ToolResult<F>
+pub fn parse_required_format<F>(format: &str, format_name: &str, valid_values: &str) -> ToolResult<F>
 where
     F: FromStr,
     F::Err: std::fmt::Display,
@@ -158,10 +150,7 @@ pub fn parse_optional_iri(iri: Option<&str>, field_name: &str) -> ToolResult<Opt
 pub fn parse_optional_reader_mode(mode: Option<&str>) -> ToolResult<ReaderMode> {
     match mode {
         Some(s) => ReaderMode::from_str(s).map_err(|e| {
-            ToolExecutionError::with_hint(
-                format!("Invalid reader mode: {}", e),
-                "Supported values: strict, lax",
-            )
+            ToolExecutionError::with_hint(format!("Invalid reader mode: {}", e), "Supported values: strict, lax")
         }),
         None => Ok(ReaderMode::Strict),
     }
@@ -184,12 +173,10 @@ pub const SHAPEMAP_FORMATS: &str = "compact, json, internal, details, csv";
 pub const IMAGE_FORMATS: &str = "svg, png";
 
 /// Supported SPARQL result formats as a constant for documentation and hints.
-pub const SPARQL_RESULT_FORMATS: &str =
-    "internal, turtle, ntriples, json-ld, rdf-xml, csv, trig, n3, nquads";
+pub const SPARQL_RESULT_FORMATS: &str = "internal, turtle, ntriples, json-ld, rdf-xml, csv, trig, n3, nquads";
 
 /// Supported ShEx validation result formats as a constant.
-pub const SHEX_RESULT_FORMATS: &str =
-    "compact, details, json, csv, turtle, ntriples, rdfxml, trig, n3, nquads";
+pub const SHEX_RESULT_FORMATS: &str = "compact, details, json, csv, turtle, ntriples, rdfxml, trig, n3, nquads";
 
 /// Supported SHACL validation result formats as a constant.
 pub const SHACL_RESULT_FORMATS: &str =
@@ -205,5 +192,4 @@ pub const NODE_INFO_MODES: &str = "outgoing, incoming, both";
 pub const SHEX_SORT_BY_MODES: &str = "node, shape, status, details";
 
 /// Supported SHACL validation result sort modes as a constant.
-pub const SHACL_SORT_BY_MODES: &str =
-    "severity, node, component, value, path, sourceshape, details";
+pub const SHACL_SORT_BY_MODES: &str = "severity, node, component, value, path, sourceshape, details";

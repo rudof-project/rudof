@@ -1,6 +1,6 @@
+use rudof_rdf::rdf_core::RdfDataConfig;
 use serde::{Deserialize, Serialize};
 use shex_ast::shapemap::ShapemapConfig;
-use srdf::RdfDataConfig;
 use std::io::Read;
 use std::path::Path;
 
@@ -48,11 +48,9 @@ impl ValidatorConfig {
     /// Obtain a `ValidatorConfig` from a path file in TOML format
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<ValidatorConfig, ValidatorError> {
         let path_name = path.as_ref().display().to_string();
-        let mut f = std::fs::File::open(path).map_err(|e| {
-            ValidatorError::ValidatorConfigFromPathError {
-                path: path_name.clone(),
-                error: e.to_string(),
-            }
+        let mut f = std::fs::File::open(path).map_err(|e| ValidatorError::ValidatorConfigFromPathError {
+            path: path_name.clone(),
+            error: e.to_string(),
         })?;
         let mut s = String::new();
         f.read_to_string(&mut s)

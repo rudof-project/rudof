@@ -8,16 +8,15 @@ use crate::shacl_engine::engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
+use rudof_rdf::rdf_core::{
+    NeighsRDF, SHACLPath,
+    query::QueryRDF,
+    term::{Iri as _, Term, literal::Literal as _},
+};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::MinLength;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use srdf::Iri as _;
-use srdf::Literal as _;
-use srdf::NeighsRDF;
-use srdf::QueryRDF;
-use srdf::SHACLPath;
-use srdf::Term;
 use std::fmt::Debug;
 use tracing::debug;
 
@@ -88,14 +87,6 @@ impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MinLength {
         };
 
         let message = format!("MinLength({min_length_value}) not satisfied");
-        validate_ask_with(
-            component,
-            shape,
-            store,
-            value_nodes,
-            query,
-            &message,
-            maybe_path,
-        )
+        validate_ask_with(component, shape, store, value_nodes, query, &message, maybe_path)
     }
 }

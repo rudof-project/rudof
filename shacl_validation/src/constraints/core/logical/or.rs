@@ -9,14 +9,11 @@ use crate::shacl_engine::sparql::SparqlEngine;
 use crate::shape_validation::Validate;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
+use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF, term::Object};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::Or;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use srdf::NeighsRDF;
-use srdf::Object;
-use srdf::QueryRDF;
-use srdf::SHACLPath;
 use std::fmt::Debug;
 use tracing::debug;
 
@@ -39,37 +36,27 @@ impl<S: NeighsRDF + Debug> Validator<S> for Or {
                 let mut conforms = false;
                 for shape_idx in self.shapes().iter() {
                     let or_shape = get_shape_from_idx(shapes_graph, shape_idx)?;
-                    let inner_results = or_shape.validate(
-                        store,
-                        engine,
-                        Some(&focus_nodes),
-                        Some(shape),
-                        shapes_graph,
-                    );
+                    let inner_results = or_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
                     match inner_results {
                         Err(err) => {
                             debug!("Or: Error validating {node} with shape {shape}: {err}");
                             conforms = true;
-                        }
+                        },
                         Ok(results) => {
                             if results.is_empty() {
                                 conforms = true;
                                 break;
                             }
-                        }
+                        },
                     }
                 }
                 if !conforms {
                     let message = "OR not satisfied".to_string();
                     let component = Object::iri(component.into());
                     validation_results.push(
-                        ValidationResult::new(
-                            shape.id().clone(),
-                            component.clone(),
-                            shape.severity(),
-                        )
-                        .with_message(message.as_str())
-                        .with_path(maybe_path.clone()),
+                        ValidationResult::new(shape.id().clone(), component.clone(), shape.severity())
+                            .with_message(message.as_str())
+                            .with_path(maybe_path.clone()),
                     );
                 }
             }

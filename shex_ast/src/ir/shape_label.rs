@@ -3,6 +3,7 @@ use iri_s::IriS;
 use iri_s::error::IriSError;
 use prefixmap::PrefixMap;
 use prefixmap::error::PrefixMapError;
+use rudof_rdf::rdf_core::term::Object;
 use serde::Serialize;
 use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
@@ -23,15 +24,15 @@ impl ShapeLabel {
         ShapeLabel::BNode(bn)
     }
 
-    pub fn from_object(obj: &srdf::Object) -> Result<ShapeLabel, SchemaJsonError> {
+    pub fn from_object(obj: &Object) -> Result<ShapeLabel, SchemaJsonError> {
         match obj {
-            srdf::Object::Iri(iri) => Ok(ShapeLabel::Iri(iri.clone())),
-            srdf::Object::BlankNode(bnode_id) => Ok(ShapeLabel::BNode(BNode::new(bnode_id))),
-            srdf::Object::Literal(_) => Err(SchemaJsonError::InvalidShapeLabel {
+            Object::Iri(iri) => Ok(ShapeLabel::Iri(iri.clone())),
+            Object::BlankNode(bnode_id) => Ok(ShapeLabel::BNode(BNode::new(bnode_id))),
+            Object::Literal(_) => Err(SchemaJsonError::InvalidShapeLabel {
                 value: obj.to_string(),
                 error: "Literal cannot be a ShapeLabel".to_string(),
             }),
-            srdf::Object::Triple { .. } => Err(SchemaJsonError::InvalidShapeLabel {
+            Object::Triple { .. } => Err(SchemaJsonError::InvalidShapeLabel {
                 value: obj.to_string(),
                 error: "Triple cannot be a ShapeLabel".to_string(),
             }),
@@ -43,14 +44,9 @@ impl ShapeLabel {
         Ok(ShapeLabel::Iri(iri))
     }
 
-    pub fn from_shape_expr_label(
-        label: &ShapeExprLabel,
-        prefixmap: &PrefixMap,
-    ) -> Result<ShapeLabel, PrefixMapError> {
+    pub fn from_shape_expr_label(label: &ShapeExprLabel, prefixmap: &PrefixMap) -> Result<ShapeLabel, PrefixMapError> {
         match label {
-            ShapeExprLabel::IriRef { value } => Ok(ShapeLabel::Iri(
-                value.get_iri_prefixmap(prefixmap)?.into_owned(),
-            )),
+            ShapeExprLabel::IriRef { value } => Ok(ShapeLabel::Iri(value.get_iri_prefixmap(prefixmap)?.into_owned())),
             ShapeExprLabel::BNode { value } => Ok(ShapeLabel::BNode(value.clone())),
             ShapeExprLabel::Start => Ok(ShapeLabel::Start),
         }

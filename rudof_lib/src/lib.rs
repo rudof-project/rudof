@@ -23,6 +23,8 @@ pub mod shex;
 pub mod shex_format;
 pub mod sort_by_result_shape_map;
 pub mod terminal_width;
+#[cfg(target_family = "wasm")]
+mod wasm_stubs;
 
 pub use input_spec::*;
 pub use iri_s::*;
@@ -30,9 +32,9 @@ pub use oxrdf;
 pub use rudof::*;
 pub use rudof_config::*;
 pub use rudof_error::*;
+pub use rudof_rdf;
 pub use selector::*;
 pub use shacl_ir;
 pub use shacl_validation;
 pub use shapes_graph_source::*;
 pub use shex_ast::*;
-pub use srdf;

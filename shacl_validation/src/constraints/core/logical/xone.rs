@@ -1,10 +1,8 @@
+use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF, term::Object};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::Xone;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use srdf::NeighsRDF;
-use srdf::QueryRDF;
-use srdf::SHACLPath;
 use std::fmt::Debug;
 
 use crate::constraints::NativeValidator;
@@ -38,25 +36,17 @@ impl<S: NeighsRDF + Debug> Validator<S> for Xone {
                 let mut conforming_shapes = 0;
                 for shape_idx in self.shapes().iter() {
                     let internal_shape = get_shape_from_idx(shapes_graph, shape_idx)?;
-                    let inner_results = internal_shape.validate(
-                        store,
-                        engine,
-                        Some(&focus_nodes),
-                        Some(shape),
-                        shapes_graph,
-                    );
+                    let inner_results =
+                        internal_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
                     match inner_results {
                         Err(e) => {
-                            tracing::trace!(
-                                "Error validating node {node} with shape {}: {e}",
-                                internal_shape.id()
-                            );
-                        }
+                            tracing::trace!("Error validating node {node} with shape {}: {e}", internal_shape.id());
+                        },
                         Ok(results) => {
                             if results.is_empty() {
                                 conforming_shapes += 1;
                             }
-                        }
+                        },
                     }
                 }
                 if conforming_shapes != 1 {
@@ -66,15 +56,11 @@ impl<S: NeighsRDF + Debug> Validator<S> for Xone {
                         node,
                         conforming_shapes
                     );
-                    let component = srdf::Object::iri(component.into());
+                    let component = Object::iri(component.into());
                     validation_results.push(
-                        ValidationResult::new(
-                            shape.id().clone(),
-                            component.clone(),
-                            shape.severity(),
-                        )
-                        .with_message(message.as_str())
-                        .with_path(maybe_path.clone()),
+                        ValidationResult::new(shape.id().clone(), component.clone(), shape.severity())
+                            .with_message(message.as_str())
+                            .with_path(maybe_path.clone()),
                     );
                 }
             }

@@ -1,9 +1,9 @@
 use std::result;
 
+use rudof_rdf::rdf_core::term::literal::NumericLiteral;
 use rust_decimal::prelude::*;
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Serialize, Serializer};
-use srdf::numeric_literal::NumericLiteral;
 use thiserror::Error;
 // use void::Void;
 
@@ -85,17 +85,14 @@ where
             let mut map = serializer.serialize_map(Some(1))?;
             map.serialize_entry("pattern", str)?;
             map.end()
-        }
+        },
         // str.serialize(serializer),
-        Pattern {
-            str,
-            flags: Some(fs),
-        } => {
+        Pattern { str, flags: Some(fs) } => {
             let mut map = serializer.serialize_map(Some(2))?;
             map.serialize_entry("pattern", str)?;
             map.serialize_entry("flags", fs)?;
             map.end()
-        }
+        },
     }
 }
 

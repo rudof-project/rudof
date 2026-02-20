@@ -1,7 +1,7 @@
 use colored::*;
 use itertools::Itertools;
+use rudof_rdf::rdf_core::term::Object;
 use serde::Serialize;
-use srdf::Object;
 use tabled::settings::Modify;
 use tabled::settings::Width;
 use tabled::settings::object::Segment;
@@ -99,25 +99,15 @@ impl ResultShapeMap {
                             (
                                 ValidationStatus::Conformant(conformant_info),
                                 ValidationStatus::Conformant(conformant_info2),
-                            ) => {
-                                *cell_status = ValidationStatus::Conformant(
-                                    conformant_info.merge(conformant_info2),
-                                )
-                            }
+                            ) => *cell_status = ValidationStatus::Conformant(conformant_info.merge(conformant_info2)),
                             (
                                 ValidationStatus::Conformant(_conformant_info),
                                 ValidationStatus::NonConformant(_non_conformant_info),
                             ) => todo!(),
+                            (ValidationStatus::Conformant(_conformant_info), ValidationStatus::Pending) => {},
                             (
                                 ValidationStatus::Conformant(_conformant_info),
-                                ValidationStatus::Pending,
-                            ) => {}
-                            (
-                                ValidationStatus::Conformant(_conformant_info),
-                                ValidationStatus::Inconsistent(
-                                    _conformant_info2,
-                                    _non_conformant_info2,
-                                ),
+                                ValidationStatus::Inconsistent(_conformant_info2, _non_conformant_info2),
                             ) => todo!(),
                             (
                                 ValidationStatus::NonConformant(_non_conformant_info),
@@ -126,82 +116,54 @@ impl ResultShapeMap {
                             (
                                 ValidationStatus::NonConformant(_non_conformant_info),
                                 ValidationStatus::NonConformant(_non_conformant_info2),
-                            ) => {}
+                            ) => {},
+                            (ValidationStatus::NonConformant(_non_conformant_info), ValidationStatus::Pending) => {},
                             (
                                 ValidationStatus::NonConformant(_non_conformant_info),
-                                ValidationStatus::Pending,
-                            ) => {}
-                            (
-                                ValidationStatus::NonConformant(_non_conformant_info),
-                                ValidationStatus::Inconsistent(
-                                    _conformant_info2,
-                                    _non_conformant_info2,
-                                ),
+                                ValidationStatus::Inconsistent(_conformant_info2, _non_conformant_info2),
                             ) => todo!(),
-                            (
-                                ValidationStatus::Pending,
-                                ValidationStatus::Conformant(conformant_info),
-                            ) => *cell_status = ValidationStatus::Conformant(conformant_info),
-                            (
-                                ValidationStatus::Pending,
-                                ValidationStatus::NonConformant(non_conformant_info),
-                            ) => {
+                            (ValidationStatus::Pending, ValidationStatus::Conformant(conformant_info)) => {
+                                *cell_status = ValidationStatus::Conformant(conformant_info)
+                            },
+                            (ValidationStatus::Pending, ValidationStatus::NonConformant(non_conformant_info)) => {
                                 *cell_status = ValidationStatus::NonConformant(non_conformant_info)
-                            }
-                            (ValidationStatus::Pending, ValidationStatus::Pending) => {}
+                            },
+                            (ValidationStatus::Pending, ValidationStatus::Pending) => {},
                             (
                                 ValidationStatus::Pending,
-                                ValidationStatus::Inconsistent(
-                                    _conformant_info,
-                                    _non_conformant_info,
-                                ),
+                                ValidationStatus::Inconsistent(_conformant_info, _non_conformant_info),
                             ) => todo!(),
                             (
-                                ValidationStatus::Inconsistent(
-                                    _conformant_info,
-                                    _non_conformant_info,
-                                ),
+                                ValidationStatus::Inconsistent(_conformant_info, _non_conformant_info),
                                 ValidationStatus::Conformant(_conformant_info2),
                             ) => todo!(),
                             (
-                                ValidationStatus::Inconsistent(
-                                    _conformant_info,
-                                    _non_conformant_info,
-                                ),
+                                ValidationStatus::Inconsistent(_conformant_info, _non_conformant_info),
                                 ValidationStatus::NonConformant(_non_conformant_info2),
                             ) => todo!(),
                             (
-                                ValidationStatus::Inconsistent(
-                                    _conformant_info,
-                                    _non_conformant_info,
-                                ),
+                                ValidationStatus::Inconsistent(_conformant_info, _non_conformant_info),
                                 ValidationStatus::Pending,
                             ) => todo!(),
                             (
-                                ValidationStatus::Inconsistent(
-                                    _conformant_info,
-                                    _non_conformant_info,
-                                ),
-                                ValidationStatus::Inconsistent(
-                                    _conformant_info2,
-                                    _non_conformant_info2,
-                                ),
+                                ValidationStatus::Inconsistent(_conformant_info, _non_conformant_info),
+                                ValidationStatus::Inconsistent(_conformant_info2, _non_conformant_info2),
                             ) => todo!(),
                         };
                         ok()
-                    }
+                    },
                     Entry::Vacant(v) => {
                         v.insert(status);
                         ok()
-                    }
+                    },
                 }
-            }
+            },
             Entry::Vacant(v) => {
                 let mut map = HashMap::new();
                 map.insert(shape_label, status);
                 v.insert(map);
                 ok()
-            }
+            },
         }?;
         ok()
     }
@@ -214,19 +176,12 @@ impl ResultShapeMap {
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (&Node, &ShapeLabel, &ValidationStatus)> {
-        self.result.iter().flat_map(|(node, shapes)| {
-            shapes
-                .iter()
-                .map(move |(shape, status)| (node, shape, status))
-        })
+        self.result
+            .iter()
+            .flat_map(|(node, shapes)| shapes.iter().map(move |(shape, status)| (node, shape, status)))
     }
 
-    pub fn as_csv<W: Write>(
-        &self,
-        writer: W,
-        sort_mode: SortMode,
-        with_details: bool,
-    ) -> Result<(), Error> {
+    pub fn as_csv<W: Write>(&self, writer: W, sort_mode: SortMode, with_details: bool) -> Result<(), Error> {
         let mut wtr = csv::Writer::from_writer(writer);
         wtr.write_record(["node", "shape", "status", "details"])?;
 
@@ -243,24 +198,22 @@ impl ResultShapeMap {
                         None => ColoredString::from(self.ok_text()),
                         Some(color) => self.ok_text().color(color).to_owned(),
                     };
-                }
+                },
                 ValidationStatus::NonConformant(non_conformant_info) => {
                     details = non_conformant_info.to_string();
                     status_label = match self.fail_color() {
                         None => ColoredString::from(self.fail_text()),
                         Some(color) => self.fail_text().color(color).to_owned(),
                     };
-                }
+                },
                 ValidationStatus::Pending => {
                     details = "".to_owned();
                     status_label = "Pending".color(self.pending_color().unwrap()).to_owned();
-                }
+                },
                 ValidationStatus::Inconsistent(ci, nci) => {
                     details = format!("Conformant: {ci}, Non-conformant: {nci}");
-                    status_label = "Inconsistent"
-                        .color(self.pending_color().unwrap())
-                        .to_owned();
-                }
+                    status_label = "Inconsistent".color(self.pending_color().unwrap()).to_owned();
+                },
             };
             if with_details {
                 wtr.write_record([node_label, shape_label, status_label.to_string(), details])?;
@@ -299,24 +252,22 @@ impl ResultShapeMap {
                         None => ColoredString::from(self.ok_text()),
                         Some(color) => self.ok_text().color(color).to_owned(),
                     };
-                }
+                },
                 ValidationStatus::NonConformant(non_conformant_info) => {
                     details = non_conformant_info.to_string();
                     status_label = match self.fail_color() {
                         None => ColoredString::from(self.fail_text()),
                         Some(color) => self.fail_text().color(color).to_owned(),
                     };
-                }
+                },
                 ValidationStatus::Pending => {
                     details = "".to_owned();
                     status_label = "Pending".color(self.pending_color().unwrap()).to_owned();
-                }
+                },
                 ValidationStatus::Inconsistent(ci, nci) => {
                     details = format!("Conformant: {ci}, Non-conformant: {nci}");
-                    status_label = "Inconsistent"
-                        .color(self.pending_color().unwrap())
-                        .to_owned();
-                }
+                    status_label = "Inconsistent".color(self.pending_color().unwrap()).to_owned();
+                },
             };
             if with_details {
                 builder.push_record([node_label, shape_label, status_label.to_string(), details]);
@@ -334,41 +285,25 @@ impl ResultShapeMap {
     fn get_comparator(
         &self,
         sort_mode: SortMode,
-    ) -> impl FnMut(
-        &(&Node, &ShapeLabel, &ValidationStatus),
-        &(&Node, &ShapeLabel, &ValidationStatus),
-    ) -> std::cmp::Ordering {
+    ) -> impl FnMut(&(&Node, &ShapeLabel, &ValidationStatus), &(&Node, &ShapeLabel, &ValidationStatus)) -> std::cmp::Ordering
+    {
         match sort_mode {
-            SortMode::Node => {
-                |a: &(&Node, &ShapeLabel, &ValidationStatus),
-                 b: &(&Node, &ShapeLabel, &ValidationStatus)| {
-                    a.0.cmp(b.0).then(a.1.cmp(b.1))
-                }
-            }
-            SortMode::Shape => {
-                |a: &(&Node, &ShapeLabel, &ValidationStatus),
-                 b: &(&Node, &ShapeLabel, &ValidationStatus)| {
-                    a.1.cmp(b.1).then(a.0.cmp(b.0))
-                }
-            }
-            SortMode::Status => {
-                |a: &(&Node, &ShapeLabel, &ValidationStatus),
-                 b: &(&Node, &ShapeLabel, &ValidationStatus)| {
-                    a.2.code()
-                        .cmp(&b.2.code())
-                        .then(a.0.cmp(b.0))
-                        .then(a.1.cmp(b.1))
-                }
-            }
-            SortMode::Details => {
-                |a: &(&Node, &ShapeLabel, &ValidationStatus),
-                 b: &(&Node, &ShapeLabel, &ValidationStatus)| {
-                    a.2.reason()
-                        .cmp(&b.2.reason())
-                        .then(a.0.cmp(b.0))
-                        .then(a.1.cmp(b.1))
-                }
-            }
+            SortMode::Node => |a: &(&Node, &ShapeLabel, &ValidationStatus),
+                               b: &(&Node, &ShapeLabel, &ValidationStatus)| {
+                a.0.cmp(b.0).then(a.1.cmp(b.1))
+            },
+            SortMode::Shape => |a: &(&Node, &ShapeLabel, &ValidationStatus),
+                                b: &(&Node, &ShapeLabel, &ValidationStatus)| {
+                a.1.cmp(b.1).then(a.0.cmp(b.0))
+            },
+            SortMode::Status => |a: &(&Node, &ShapeLabel, &ValidationStatus),
+                                 b: &(&Node, &ShapeLabel, &ValidationStatus)| {
+                a.2.code().cmp(&b.2.code()).then(a.0.cmp(b.0)).then(a.1.cmp(b.1))
+            },
+            SortMode::Details => |a: &(&Node, &ShapeLabel, &ValidationStatus),
+                                  b: &(&Node, &ShapeLabel, &ValidationStatus)| {
+                a.2.reason().cmp(&b.2.reason()).then(a.0.cmp(b.0)).then(a.1.cmp(b.1))
+            },
         }
     }
 }
@@ -420,11 +355,7 @@ impl Serialize for ResultShapeMap {
     {
         let mut seq = serializer.serialize_seq(Some(self.result.len()))?;
         for (node, shape, status) in self.iter() {
-            let result_aux = ResultSerializer {
-                node,
-                shape,
-                status,
-            };
+            let result_aux = ResultSerializer { node, shape, status };
             seq.serialize_element(&result_aux)?;
         }
         seq.end()

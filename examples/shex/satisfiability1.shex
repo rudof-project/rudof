@@ -1,4 +1,4 @@
-prefix :       <http://example.org/> 
+prefix :       <http://example.org/>
 
 # Separation test SA1
 :S {

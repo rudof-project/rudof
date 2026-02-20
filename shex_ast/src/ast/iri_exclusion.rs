@@ -22,7 +22,7 @@ impl Serialize for IriExclusion {
                 map.serialize_entry("type", "IriStem")?;
                 map.serialize_entry("stem", stem)?;
                 map.end()
-            }
+            },
         }
     }
 }

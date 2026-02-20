@@ -6,13 +6,13 @@ rdf = """prefix : <http://example.org/>
  :name "Alice"   ;
  :knows :bob     .
 :bob a :Person   ;
- :name "Robert"  . 
+ :name "Robert"  .
 """
 rudof.read_data_str(rdf)
 
 query = """prefix : <http://example.org/>
-select * where { 
-  ?x a :Person 
+select * where {
+  ?x a :Person
 }
 """
 

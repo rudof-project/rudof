@@ -5,14 +5,15 @@ use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use iri_s::IriS;
-use shacl_ast::shacl_vocab::{
-    sh_closed_constraint_component, sh_reifier_shape_constraint_component,
+use rudof_rdf::rdf_core::{
+    NeighsRDF, Rdf, SHACLPath,
+    term::{Object, Triple},
 };
+use shacl_ast::ShaclVocab;
 use shacl_ir::compiled::property_shape::PropertyShapeIR;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::reifier_info::ReifierInfo;
 use shacl_ir::{compiled::node_shape::NodeShapeIR, schema_ir::SchemaIR};
-use srdf::{NeighsRDF, Object, Rdf, SHACLPath, Triple};
 use std::{collections::HashSet, fmt::Debug};
 use tracing::trace;
 
@@ -56,9 +57,11 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
         let value_nodes = self.value_nodes(store, &focus_nodes, runner)?;
         trace!("Value nodes for shape {}: {value_nodes}", self.id());
 
+        let components = self.components();
+
         // 3. Check each of the components
         let mut component_validation_results = Vec::new();
-        for component in self.components().iter() {
+        for component in components.iter() {
             let results = runner.evaluate(
                 store,
                 self,
@@ -70,11 +73,7 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
             )?;
             trace!(
                 "Results for component {component}: with value nodes {value_nodes}\n{}\nend results",
-                results
-                    .iter()
-                    .map(|r| r.to_string())
-                    .collect::<Vec<_>>()
-                    .join("\n")
+                results.iter().map(|r| r.to_string()).collect::<Vec<_>>().join("\n")
             );
             component_validation_results.extend(results);
         }
@@ -86,16 +85,13 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
         //    that have been computed for the current shape
         let mut property_shapes_validation_results = Vec::new();
         for prop_shape in self.property_shapes().iter() {
-            let shape = shapes_graph
-                .get_shape_from_idx(prop_shape)
-                .unwrap_or_else(|| {
-                    panic!(
-                        "Internal error: Property shape for idx: {} not found in schema",
-                        prop_shape
-                    )
-                });
-            let results =
-                shape.validate(store, runner, Some(&focus_nodes), Some(self), shapes_graph)?;
+            let shape = shapes_graph.get_shape_from_idx(prop_shape).unwrap_or_else(|| {
+                panic!(
+                    "Internal error: Property shape for idx: {} not found in schema",
+                    prop_shape
+                )
+            });
+            let results = shape.validate(store, runner, Some(&focus_nodes), Some(self), shapes_graph)?;
             property_shapes_validation_results.extend(results);
         }
 
@@ -107,16 +103,14 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
 
                 let all_properties: HashSet<IriS> = match S::term_as_subject(focus_node) {
                     Ok(subj) => {
-                        let ts = store.triples_with_subject(subj).map_err(|e| {
-                            ValidateError::TriplesWithSubject {
+                        let ts = store
+                            .triples_with_subject(&subj)
+                            .map_err(|e| ValidateError::TriplesWithSubject {
                                 subject: format!("{focus_node:?}"),
                                 error: e.to_string(),
-                            }
-                        })?;
-                        Ok::<HashSet<IriS>, ValidateError>(
-                            ts.map(|t| t.pred().clone().into()).collect(),
-                        )
-                    }
+                            })?;
+                        Ok::<HashSet<IriS>, ValidateError>(ts.map(|t| t.pred().clone().into()).collect())
+                    },
                     Err(_) => Ok::<HashSet<IriS>, ValidateError>(HashSet::new()),
                 }?;
 
@@ -128,7 +122,7 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
                 for property in invalid_properties {
                     let vr_single = ValidationResult::new(
                         self.id().clone(),
-                        Object::iri(sh_closed_constraint_component().clone()),
+                        Object::iri(ShaclVocab::sh_closed_constraint_component().clone()),
                         self.severity(),
                     )
                     .with_path(Some(SHACLPath::iri(property)));
@@ -179,33 +173,31 @@ where
     for focus_node in focus_nodes.iter() {
         for reifier_shape in reifier_info.reifier_shape() {
             let pred = reifier_info.predicate();
-            let triples = store
-                .triples_with_subject_predicate(
-                    S::term_as_subject(focus_node).map_err(|_| {
-                        ValidateError::TriplesWithSubject {
-                            subject: format!("{focus_node:?}"),
-                            error: "Cannot convert to subject".to_string(),
-                        }
-                    })?,
-                    pred.clone().into(),
-                )
-                .map_err(|e| ValidateError::TriplesWithSubjectPredicate {
+            let pred_iri: S::IRI = pred.clone().into();
+            let subject = S::term_as_subject(focus_node).map_err(|_| ValidateError::TriplesWithSubject {
+                subject: format!("{focus_node:?}"),
+                error: "Cannot convert to subject".to_string(),
+            })?;
+            let triples = store.triples_with_subject_predicate(&subject, &pred_iri).map_err(|e| {
+                ValidateError::TriplesWithSubjectPredicate {
                     subject: format!("{focus_node}"),
                     predicate: pred.to_string(),
                     error: e.to_string(),
-                })?;
+                }
+            })?;
             for triple in triples {
-                let reifier_subjects = store.reifiers_of_triple(&triple).map_err(|e| {
-                    ValidateError::ReifiersOfTriple {
-                        triple: format!("{triple:?}"),
-                        error: e.to_string(),
-                    }
-                })?;
+                let reifier_subjects =
+                    store
+                        .reifiers_of_triple(&triple)
+                        .map_err(|e| ValidateError::ReifiersOfTriple {
+                            triple: format!("{triple:?}"),
+                            error: e.to_string(),
+                        })?;
                 let reifier_subjects = reifier_subjects.collect::<Vec<_>>();
                 if reifier_subjects.is_empty() && reifier_info.reification_required() {
                     let vr_single = ValidationResult::new(
                         shape.id().clone(),
-                        Object::iri(sh_reifier_shape_constraint_component().clone()),
+                        Object::iri(ShaclVocab::sh_reifier_shape_constraint_component().clone()),
                         shape.severity(),
                     )
                     .with_message(&format!(
@@ -222,11 +214,9 @@ where
                     .map(|subj| S::subject_as_term(subj))
                     .collect::<HashSet<_>>();
                 let reifier_shape =
-                    get_shape_from_idx(shapes_graph, reifier_shape).map_err(|e| {
-                        ValidateError::ShapeNotFound {
-                            shape_idx: *reifier_shape,
-                            error: e.to_string(),
-                        }
+                    get_shape_from_idx(shapes_graph, reifier_shape).map_err(|e| ValidateError::ShapeNotFound {
+                        shape_idx: *reifier_shape,
+                        error: e.to_string(),
                     })?;
                 let vr_iter = reifier_shape.validate(
                     store,
@@ -314,7 +304,7 @@ impl<S: NeighsRDF> ValueNodesOps<S> for PropertyShapeIR {
                     // We are currently ust ignoring this case
                     // TODO: Should we add a violation for this case?
                     None
-                }
+                },
             }
         });
         Ok(ValueNodes::new(value_nodes))

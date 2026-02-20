@@ -33,7 +33,7 @@ impl Serialize for StringOrWildcard {
                 let mut map = serializer.serialize_map(Some(1))?;
                 map.serialize_entry("type", "Wildcard")?;
                 map.end()
-            }
+            },
         }
     }
 }

@@ -1,3 +1,3 @@
-pub mod shacl_writer;
+pub mod writer;
 
-pub use shacl_writer::*;
+pub use writer::ShaclWriter;

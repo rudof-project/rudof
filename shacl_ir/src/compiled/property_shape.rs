@@ -11,16 +11,14 @@ use crate::reifier_info::ReifierInfo;
 use crate::schema_ir::SchemaIR;
 use crate::shape_label_idx::ShapeLabelIdx;
 use iri_s::IriS;
-use shacl_ast::Schema;
+use rudof_rdf::rdf_core::{Rdf, SHACLPath, term::Object};
+use shacl_ast::ShaclSchema;
 use shacl_ast::property_shape::PropertyShape;
-use srdf::RDFNode;
-use srdf::Rdf;
-use srdf::SHACLPath;
 use std::collections::HashSet;
 
 #[derive(Debug, Clone)]
 pub struct PropertyShapeIR {
-    id: RDFNode,
+    id: Object,
     path: SHACLPath,
     components: Vec<ComponentIR>,
     targets: Vec<CompiledTarget>,
@@ -43,7 +41,7 @@ pub struct PropertyShapeIR {
 impl PropertyShapeIR {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        id: RDFNode,
+        id: Object,
         path: SHACLPath,
         components: Vec<ComponentIR>,
         targets: Vec<CompiledTarget>,
@@ -66,7 +64,7 @@ impl PropertyShapeIR {
         }
     }
 
-    pub fn id(&self) -> &RDFNode {
+    pub fn id(&self) -> &Object {
         &self.id
     }
 
@@ -116,7 +114,7 @@ impl PropertyShapeIR {
 impl PropertyShapeIR {
     pub fn compile<S: Rdf>(
         shape: PropertyShape<S>,
-        schema: &Schema<S>,
+        schema: &ShaclSchema<S>,
         schema_ir: &mut SchemaIR,
     ) -> Result<Self, Box<CompiledShaclError>> {
         let id = shape.id().clone();
@@ -127,8 +125,7 @@ impl PropertyShapeIR {
         let components = shape.components().iter().collect::<Vec<_>>();
         let mut compiled_components = Vec::new();
         for component in components {
-            if let Some(component) = ComponentIR::compile(component.to_owned(), schema, schema_ir)?
-            {
+            if let Some(component) = ComponentIR::compile(component.to_owned(), schema, schema_ir)? {
                 compiled_components.push(component);
             }
         }
@@ -148,8 +145,7 @@ impl PropertyShapeIR {
         let closed_info = ClosedInfo::get_closed_info_property_shape(&shape, schema)
             .map_err(|e| Box::new(CompiledShaclError::ShaclError { source: e }))?;
 
-        let reifier_info =
-            reifier_info::ReifierInfo::get_reifier_info_property_shape(&shape, schema, schema_ir)?;
+        let reifier_info = reifier_info::ReifierInfo::get_reifier_info_property_shape(&shape, schema, schema_ir)?;
 
         let compiled_property_shape = PropertyShapeIR::new(
             id,

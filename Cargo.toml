@@ -11,20 +11,20 @@ members = [
     "rbe",
     "rbe_testsuite",
     "rdf_config",
+    "rudof_rdf",
     "rudof_cli",
     "rudof_lib",
     "rudof_mcp",
     "shacl_ast",
-    "shacl_ir",
+    "shacl_ir", 
     "shacl_rdf",
-    "shacl_validation",
+    "shacl_validation", 
     "shapes_comparator",
     "shapes_converter",
     "shex_ast",
     "shex_testsuite",
     "shex_validation",
     "sparql_service",
-    "srdf",
 ]
 
 default-members = ["rudof_cli"]
@@ -44,6 +44,207 @@ authors = [
     "Marc-Antoine Arnaud <marc-antoine.arnaud@luminvent.com>",
 ]
 
+[workspace.lints.rust]
+absolute_paths_not_starting_with_crate = "warn"
+elided_lifetimes_in_paths = "warn"
+explicit_outlives_requirements = "warn"
+let_underscore_drop = "warn"
+macro_use_extern_crate = "warn"
+trivial_casts = "warn"
+trivial_numeric_casts = "warn"
+unsafe_code = "warn"
+unused_import_braces = "warn"
+unused_lifetimes = "warn"
+unused_macro_rules = "warn"
+unused_qualifications = "warn"
+
+[workspace.lints.clippy]
+allow_attributes = "warn"
+as_underscore = "warn"
+assertions_on_result_states = "warn"
+assigning_clones = "warn"
+bool_to_int_with_if = "warn"
+borrow_as_ptr = "warn"
+case_sensitive_file_extension_comparisons = "warn"
+cast_lossless = "warn"
+cast_possible_truncation = "warn"
+cast_possible_wrap = "warn"
+cast_precision_loss = "warn"
+cast_ptr_alignment = "warn"
+cast_sign_loss = "warn"
+cfg_not_test = "warn"
+checked_conversions = "warn"
+clone_on_ref_ptr = "warn"
+cloned_instead_of_copied = "warn"
+copy_iterator = "warn"
+create_dir = "warn"
+dbg_macro = "warn"
+decimal_literal_representation = "warn"
+default_trait_access = "warn"
+default_union_representation = "warn"
+deref_by_slicing = "warn"
+disallowed_script_idents = "warn"
+doc_link_with_quotes = "warn"
+empty_drop = "warn"
+empty_enums = "warn"
+empty_enum_variants_with_brackets = "warn"
+empty_structs_with_brackets = "warn"
+enum_glob_use = "warn"
+error_impl_error = "warn"
+exit = "warn"
+expect_used = "warn"
+expl_impl_clone_on_copy = "warn"
+explicit_deref_methods = "warn"
+explicit_into_iter_loop = "warn"
+explicit_iter_loop = "warn"
+field_scoped_visibility_modifiers = "warn"
+filetype_is_file = "warn"
+filter_map_next = "warn"
+flat_map_option = "warn"
+fn_params_excessive_bools = "warn"
+fn_to_numeric_cast_any = "warn"
+format_push_string = "warn"
+from_iter_instead_of_collect = "warn"
+get_unwrap = "warn"
+host_endian_bytes = "warn"
+if_not_else = "warn"
+if_then_some_else_none = "warn"
+ignored_unit_patterns = "warn"
+implicit_clone = "warn"
+implicit_hasher = "warn"
+inconsistent_struct_constructor = "warn"
+index_refutable_slice = "warn"
+inefficient_to_string = "warn"
+infinite_loop = "warn"
+inline_always = "warn"
+inline_asm_x86_att_syntax = "warn"
+inline_asm_x86_intel_syntax = "warn"
+into_iter_without_iter = "warn"
+invalid_upcast_comparisons = "warn"
+items_after_statements = "warn"
+iter_filter_is_ok = "warn"
+iter_filter_is_some = "warn"
+iter_not_returning_iterator = "warn"
+iter_without_into_iter = "warn"
+large_digit_groups = "warn"
+large_futures = "warn"
+large_include_file = "warn"
+large_stack_arrays = "warn"
+large_types_passed_by_value = "warn"
+let_underscore_must_use = "warn"
+let_underscore_untyped = "warn"
+linkedlist = "warn"
+lossy_float_literal = "warn"
+macro_use_imports = "warn"
+manual_assert = "warn"
+manual_instant_elapsed = "warn"
+manual_is_variant_and = "warn"
+manual_let_else = "warn"
+manual_ok_or = "warn"
+manual_string_new = "warn"
+many_single_char_names = "warn"
+map_unwrap_or = "warn"
+match_bool = "warn"
+match_same_arms = "warn"
+match_wild_err_arm = "warn"
+match_wildcard_for_single_variants = "warn"
+maybe_infinite_iter = "warn"
+mem_forget = "warn"
+mismatching_type_param_order = "warn"
+missing_assert_message = "warn"
+missing_asserts_for_indexing = "warn"
+missing_fields_in_debug = "warn"
+multiple_inherent_impl = "warn"
+mut_mut = "warn"
+mutex_atomic = "warn"
+naive_bytecount = "warn"
+needless_bitwise_bool = "warn"
+needless_continue = "warn"
+needless_for_each = "warn"
+needless_pass_by_value = "warn"
+needless_raw_string_hashes = "warn"
+needless_raw_strings = "warn"
+negative_feature_names = "warn"
+no_effect_underscore_binding = "warn"
+no_mangle_with_rust_abi = "warn"
+non_ascii_literal = "warn"
+non_zero_suggestions = "warn"
+option_as_ref_cloned = "warn"
+panic = "warn"
+panic_in_result_fn = "warn"
+partial_pub_fields = "warn"
+pathbuf_init_then_push = "warn"
+print_stderr = "warn"
+print_stdout = "warn"
+ptr_as_ptr = "warn"
+ptr_cast_constness = "warn"
+pub_underscore_fields = "warn"
+pub_without_shorthand = "warn"
+range_minus_one = "warn"
+range_plus_one = "warn"
+rc_buffer = "warn"
+rc_mutex = "warn"
+redundant_closure_for_method_calls = "warn"
+redundant_else = "warn"
+redundant_feature_names = "warn"
+redundant_type_annotations = "warn"
+ref_as_ptr = "warn"
+ref_binding_to_reference = "warn"
+ref_option_ref = "warn"
+ref_patterns = "warn"
+renamed_function_params = "warn"
+rest_pat_in_fully_bound_structs = "warn"
+return_self_not_must_use = "warn"
+same_functions_in_if_condition = "warn"
+same_name_method = "warn"
+semicolon_inside_block = "warn"
+shadow_same = "warn"
+should_panic_without_expect = "warn"
+single_char_pattern = "warn"
+single_match_else = "warn"
+stable_sort_primitive = "warn"
+str_split_at_newline = "warn"
+str_to_string = "warn"
+string_add = "warn"
+string_add_assign = "warn"
+string_lit_chars_any = "warn"
+struct_excessive_bools = "warn"
+struct_field_names = "warn"
+suspicious_xor_used_as_pow = "warn"
+tests_outside_test_module = "warn"
+todo = "warn"
+transmute_ptr_to_ptr = "warn"
+trivially_copy_pass_by_ref = "warn"
+try_err = "warn"
+unchecked_time_subtraction = "warn"
+undocumented_unsafe_blocks = "warn"
+unicode_not_nfc = "warn"
+unimplemented = "warn"
+uninlined_format_args = "warn"
+unnecessary_box_returns = "warn"
+unnecessary_join = "warn"
+unnecessary_safety_comment = "warn"
+unnecessary_safety_doc = "warn"
+unnecessary_self_imports = "warn"
+unnecessary_wraps = "warn"
+unnecessary_unwrap = "warn"
+unneeded_field_pattern = "warn"
+unnested_or_patterns = "warn"
+unreadable_literal = "warn"
+unsafe_derive_deserialize = "warn"
+unseparated_literal_suffix = "warn"
+unused_async = "warn"
+unused_result_ok = "warn"
+unused_self = "warn"
+unwrap_in_result = "warn"
+use_debug = "warn"
+used_underscore_binding = "warn"
+used_underscore_items = "warn"
+verbose_bit_mask = "warn"
+verbose_file_reads = "warn"
+wildcard_dependencies = "warn"
+zero_sized_map_values = "warn"
+
 [workspace.dependencies]
 anyhow = "1.0"
 async-trait = "0.1.89"
@@ -53,7 +254,7 @@ base64 = "0.22.1"
 calamine = { version = "0.31" }
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4.5", features = ["derive"] }
-clientele = "0.3.8"
+clientele = { version = "0.3.8", default-features = false, features = ["dotenv", "subcommands", "std"] }
 crossterm = "0.27"
 colored = "3"
 const_format = "0.2"
@@ -61,7 +262,7 @@ csv = "1.3.1"
 dctap = { version = "0.1.111", path = "./dctap" }
 either = { version = "1.13", features = ["serde"] }
 futures = "0.3"
-getrandom = { version = "0.3", features = ["wasm_js"] }
+getrandom = { version = ">=0.3, <=0.4", features = ["wasm_js"] }
 hashbag = { version = "0.1.12" }
 hashlink = { version = "0.10" }
 indexmap = { version = "2", features = ["serde"] }
@@ -74,6 +275,7 @@ lazy-regex = "3.4"
 mie = { version = "0.1.104", path = "./mie" }
 nom = "7"
 nom_locate = "4"
+once_cell = "1.18.0"
 openssl = { version = "0.10", features = ["vendored"] }
 oxigraph = { version = "0.5.2", default-features = false, features = [
     "rdf-12",
@@ -86,10 +288,12 @@ oxrdfio = { version = "0.2.0", features = ["rdf-12"] }
 oxrdfxml = { version = "0.2.0" }
 oxsdatatypes = "0.2.2"
 oxttl = { version = "0.2.0", features = ["rdf-12"] }
+paste = "1.0.15"
 pgschema = { version = "0.1.5", path = "./pgschema" }
 petgraph = { version = "0.8" }
 prefixmap = { version = "0.1.104", path = "./prefixmap" }
 pretty = { version = "0.12" }
+proptest = "1.9.0"
 pyrudof = { version = "0.1.110", path = "./python" }
 rand = "0.8"
 rayon = "1.7"
@@ -111,6 +315,7 @@ rmcp = { version = "0.14.0", features = [
 ] }
 rmcp-macros = "0.14.0"
 rudof_cli = { version = "0.1.111", path = "./rudof_cli" }
+rudof_rdf = { version = "0.1.111", path = "./rudof_rdf" }
 rudof_generate = { version = "0.1.118", path = "./rudof_generate" }
 rudof_lib = { version = "0.1.110", path = "./rudof_lib" }
 rudof_mcp = { version = "0.1.121", path = "./rudof_mcp" }
@@ -131,7 +336,6 @@ shex_validation = { version = "0.1.111", path = "./shex_validation" }
 sparesults = { version = "0.3.0", features = ["sparql-12"] }
 spargebra = { version = "0.4.0", features = ["sparql-12"] }
 sparql_service = { version = "0.1.111", path = "./sparql_service" }
-srdf = { version = "0.1.111", path = "./srdf" }
 supports-color = "3.0.0"
 tabled = { version = "0.20.0", features = ["ansi"] }
 tempfile = "3.10.1"
@@ -149,5 +353,4 @@ tracing-test = "0.2.5"
 url = "2.2.2"
 uuid = { version = "1.0", features = ["v4"] }
 yaml-rust2 = { version = "0.10" }
-proptest = "1.9.0"
 #bencher = "0.1.5"

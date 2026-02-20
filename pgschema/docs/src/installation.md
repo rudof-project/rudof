@@ -11,4 +11,3 @@ cargo build
 ```
 
 to compile and generate a binary which will be available in `target/debug/pgschemapc`. If you want a more performant binary, you can use the `--release` option.
-

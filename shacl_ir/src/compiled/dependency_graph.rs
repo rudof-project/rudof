@@ -11,9 +11,7 @@ pub struct DependencyGraph {
 
 impl DependencyGraph {
     pub fn new() -> Self {
-        DependencyGraph {
-            graph: GraphMap::new(),
-        }
+        DependencyGraph { graph: GraphMap::new() }
     }
 
     pub fn add_edge(&mut self, from: ShapeLabelIdx, to: ShapeLabelIdx, pos_neg: PosNeg) {
@@ -26,9 +24,7 @@ impl DependencyGraph {
         for component in &scc {
             let mut neg_cycle = Vec::new();
             for node in component.iter().as_slice() {
-                let edges = self
-                    .graph
-                    .edges_directed(*node, petgraph::Direction::Outgoing);
+                let edges = self.graph.edges_directed(*node, petgraph::Direction::Outgoing);
                 for edge in edges {
                     if component.contains(&edge.target()) && edge.weight().is_neg() {
                         let mut shapes = Vec::new();
@@ -84,9 +80,7 @@ impl Iterator for DependencyGraphIter<'_> {
     type Item = (ShapeLabelIdx, PosNeg, ShapeLabelIdx);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner
-            .next()
-            .map(|(from, to, posneg)| (from, *posneg, to))
+        self.inner.next().map(|(from, to, posneg)| (from, *posneg, to))
     }
 }
 

@@ -18,14 +18,14 @@ release = pyrudof.__version__
 
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',  
+    'sphinx.ext.autosummary',
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
     'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
-    'sphinx.ext.todo',  
-    'sphinx.ext.coverage',  
-    #'sphinx_copybutton', 
+    'sphinx.ext.todo',
+    'sphinx.ext.coverage',
+    #'sphinx_copybutton',
 ]
 
 templates_path = ['_templates']
@@ -33,10 +33,10 @@ exclude_patterns = ["build", "Thumbs.db", ".DS_Store", "_build", "**.ipynb_check
 
 # -- Autodoc configuration --------------------------------------------------
 
-autodoc_member_order = 'bysource'  
-autodoc_typehints = 'both'  
+autodoc_member_order = 'bysource'
+autodoc_typehints = 'both'
 autodoc_typehints_description_target = 'documented'
-autodoc_class_signature = 'separated'  
+autodoc_class_signature = 'separated'
 autodoc_default_options = {
     'members': True,
     'member-order': 'bysource',
@@ -64,20 +64,20 @@ napoleon_attr_annotations = True
 
 # -- Autosummary configuration -----------------------------------------------
 
-autosummary_generate = True  
+autosummary_generate = True
 autosummary_imported_members = False
 
 # -- Options for HTML output -------------------------------------------------
 
 html_permalinks_icon = '<span>#</span>'
 html_theme = "sphinxawesome_theme"
-html_static_path = ['_static']  
+html_static_path = ['_static']
 html_logo = "https://raw.githubusercontent.com/rudof-project/rudof/refs/heads/master/docs/src/assets/corp/logo.svg"
 html_favicon = "https://raw.githubusercontent.com/rudof-project/rudof/refs/heads/master/docs/src/assets/corp/logo.svg"
 html_theme_options = {
     "body_max_width": None,
-    "show_prev_next": True,  
-    "show_scrolltop": True,  
+    "show_prev_next": True,
+    "show_scrolltop": True,
 }
 html_baseurl = "https://pyrudof.readthedocs.io/en/stable/"
 html_context = {

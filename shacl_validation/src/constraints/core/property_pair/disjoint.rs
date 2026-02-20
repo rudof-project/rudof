@@ -6,15 +6,11 @@ use crate::iteration_strategy::ValueNodeIteration;
 use crate::shacl_engine::engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
+use rudof_rdf::rdf_core::{NeighsRDF, Rdf, SHACLPath, query::QueryRDF, term::Triple};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::Disjoint;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use srdf::NeighsRDF;
-use srdf::QueryRDF;
-use srdf::Rdf;
-use srdf::SHACLPath;
-use srdf::Triple;
 use std::fmt::Debug;
 use tracing::debug;
 
@@ -32,9 +28,8 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for Disjoint {
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let check = |focus: &R::Term, value_node: &R::Term| {
             let subject: R::Subject = <R as Rdf>::term_as_subject(focus).unwrap();
-            let triples_to_compare = match store
-                .triples_with_subject_predicate(subject.clone(), self.iri().clone().into())
-            {
+            let iri_owned: R::IRI = self.iri().clone().into();
+            let triples_to_compare = match store.triples_with_subject_predicate(&subject, &iri_owned) {
                 Ok(iter) => iter,
                 Err(e) => {
                     debug!(
@@ -43,7 +38,7 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for Disjoint {
                         self.iri()
                     );
                     return true;
-                }
+                },
             };
             for triple in triples_to_compare {
                 let value = triple.obj();
@@ -51,9 +46,7 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for Disjoint {
                 let value2 = <R as Rdf>::term_as_object(value).unwrap();
                 debug!("Comparing {value1} != {value2}");
                 if value1 == value2 {
-                    debug!(
-                        "Disjoint constraint violated: {value_node} is not disjoint with {value}"
-                    );
+                    debug!("Disjoint constraint violated: {value_node} is not disjoint with {value}");
                     return true;
                 }
             }

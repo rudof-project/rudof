@@ -1,13 +1,11 @@
 use crate::RudofError;
 use dctap::TapConfig;
+use rudof_rdf::rdf_core::RdfDataConfig;
 use serde::{Deserialize, Serialize};
 use shapes_comparator::ComparatorConfig;
-use shapes_converter::{
-    ShEx2HtmlConfig, ShEx2SparqlConfig, ShEx2UmlConfig, Shacl2ShExConfig, Tap2ShExConfig,
-};
+use shapes_converter::{ShEx2HtmlConfig, ShEx2SparqlConfig, ShEx2UmlConfig, Shacl2ShExConfig, Tap2ShExConfig};
 use shex_validation::{ShExConfig, ValidatorConfig};
 use sparql_service::ServiceConfig;
-use srdf::{PLANTUML, RdfDataConfig};
 use std::env;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -61,11 +59,10 @@ impl RudofConfig {
     /// Obtain a RudofConfig from a path file in TOML
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<RudofConfig, RudofError> {
         let path_name = path.as_ref().display().to_string();
-        let mut f =
-            std::fs::File::open(path).map_err(|e| RudofError::RudofConfigFromPathError {
-                path: path_name.clone(),
-                error: e,
-            })?;
+        let mut f = std::fs::File::open(path).map_err(|e| RudofError::RudofConfigFromPathError {
+            path: path_name.clone(),
+            error: e,
+        })?;
         let mut s = String::new();
         f.read_to_string(&mut s)
             .map_err(|e| RudofError::RudofConfigFromPathError {
@@ -73,11 +70,10 @@ impl RudofConfig {
                 error: e,
             })?;
 
-        let config: RudofConfig =
-            toml::from_str(s.as_str()).map_err(|e| RudofError::RudofConfigTomlError {
-                path: path_name.clone(),
-                error: e,
-            })?;
+        let config: RudofConfig = toml::from_str(s.as_str()).map_err(|e| RudofError::RudofConfigTomlError {
+            path: path_name.clone(),
+            error: e,
+        })?;
         Ok(config)
     }
 
@@ -187,7 +183,7 @@ impl RudofConfig {
         if let Some(path) = &self.plantuml_path {
             path.to_owned()
         } else {
-            match env::var(PLANTUML) {
+            match env::var("PLANTUML") {
                 Ok(value) => Path::new(value.as_str()).to_path_buf(),
                 Err(_) => env::current_dir().unwrap(),
             }
@@ -226,17 +222,9 @@ sdo = "https://schema.org/"
 ex = "http://example.org/"
 "#;
         let config = RudofConfig::from_str(s).unwrap();
+        assert_eq!(config.tap2shex_config().base_iri.unwrap(), iri!("http://example.org/"));
         assert_eq!(
-            config.tap2shex_config().base_iri.unwrap(),
-            iri!("http://example.org/")
-        );
-        assert_eq!(
-            config
-                .tap2shex_config()
-                .prefixmap()
-                .find("sdo")
-                .unwrap()
-                .clone(),
+            config.tap2shex_config().prefixmap().find("sdo").unwrap().clone(),
             iri!("https://schema.org/")
         );
     }

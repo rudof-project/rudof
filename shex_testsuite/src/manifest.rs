@@ -13,11 +13,7 @@ pub trait Manifest {
 
     fn run_entry(&self, name: &str, base: &Path) -> Result<(), Box<ManifestError>>;
 
-    fn should_run_entry_name(
-        &self,
-        single_entries: &Option<Vec<String>>,
-        entry_name: &String,
-    ) -> bool {
+    fn should_run_entry_name(&self, single_entries: &Option<Vec<String>>, entry_name: &String) -> bool {
         match single_entries {
             None => true,
             Some(es) => es.contains(entry_name),
@@ -37,24 +33,23 @@ pub trait Manifest {
             if excluded_entries.contains(entry_name) {
                 result.add_skipped(entry_name.to_string());
             } else if Self::should_run_entry_name(self, &single_entries, entry_name) {
-                let safe_result =
-                    catch_unwind(AssertUnwindSafe(move || self.run_entry(entry_name, base)));
+                let safe_result = catch_unwind(AssertUnwindSafe(move || self.run_entry(entry_name, base)));
                 match safe_result {
                     Ok(Ok(())) => {
                         result.add_passed(entry_name.to_string());
-                    }
+                    },
                     Ok(Err(e)) => {
                         result.add_failed(entry_name.to_string(), *e);
                         if mode == ManifestRunMode::FailFirstError {
                             return result;
                         }
-                    }
+                    },
                     Err(err) => {
                         result.add_panicked(entry_name.to_string(), err);
                         if mode == ManifestRunMode::FailFirstError {
                             return result;
                         }
-                    }
+                    },
                 }
             }
         }

@@ -11,7 +11,7 @@ license.workspace = true
 anyhow.workspace = true
 rbe.workspace = true
 serde.workspace = true
-tracing.workspace = true 
+tracing.workspace = true
 
 [dev-dependencies]
 indoc = "2"

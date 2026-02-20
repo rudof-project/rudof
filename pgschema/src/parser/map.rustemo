@@ -11,7 +11,7 @@ NodeId:
 TypeName:
     IDENTIFIER ;
 
-// Productions for comments  
+// Productions for comments
 Layout: LayoutItem*;
 LayoutItem: WS | Comment;
 Comment: '/*' Corncs '*/' | CommentLine;

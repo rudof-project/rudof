@@ -1,180 +1,156 @@
 use const_format::concatcp;
-use iri_s::{IriS, iri_once};
-pub const SH_STR: &str = "http://www.w3.org/ns/shacl#";
-pub const SH_BLANKNODE_STR: &str = concatcp!(SH_STR, "BlankNode");
-pub const SH_BLANK_NODE_OR_IRI_STR: &str = concatcp!(SH_STR, "BlankNodeOrIRI");
-pub const SH_BLANK_NODE_OR_LITERAL_STR: &str = concatcp!(SH_STR, "BlankNodeOrLiteral");
-pub const SH_DEBUG_STR: &str = concatcp!(SH_STR, "Debug");
-pub const SH_INFO_STR: &str = concatcp!(SH_STR, "Info");
-pub const SH_IRI_STR: &str = concatcp!(SH_STR, "IRI");
-pub const SH_IRI_OR_LITERAL_STR: &str = concatcp!(SH_STR, "IRIOrLiteral");
-pub const SH_LITERAL_STR: &str = concatcp!(SH_STR, "Literal");
-pub const SH_NODE_SHAPE_STR: &str = concatcp!(SH_STR, "NodeShape");
-pub const SH_PROPERTY_SHAPE_STR: &str = concatcp!(SH_STR, "PropertyShape");
-pub const SH_SHAPE_STR: &str = concatcp!(SH_STR, "Shape");
-pub const SH_SCHEMA_STR: &str = concatcp!(SH_STR, "Schema");
-pub const SH_VALIDATION_REPORT_STR: &str = concatcp!(SH_STR, "ValidationReport");
-pub const SH_VALIDATION_RESULT_STR: &str = concatcp!(SH_STR, "ValidationResult");
-pub const SH_TRACE_STR: &str = concatcp!(SH_STR, "Trace");
-pub const SH_VIOLATION_STR: &str = concatcp!(SH_STR, "Violation");
-pub const SH_WARNING_STR: &str = concatcp!(SH_STR, "Warning");
-pub const SH_AND_STR: &str = concatcp!(SH_STR, "and");
-pub const SH_CLASS_STR: &str = concatcp!(SH_STR, "class");
-pub const SH_CLOSED_STR: &str = concatcp!(SH_STR, "closed");
-pub const SH_CONFORMS_STR: &str = concatcp!(SH_STR, "conforms");
-pub const SH_DATATYPE_STR: &str = concatcp!(SH_STR, "datatype");
-pub const SH_DEACTIVATED_STR: &str = concatcp!(SH_STR, "deactivated");
-pub const SH_DESCRIPTION_STR: &str = concatcp!(SH_STR, "description");
-pub const SH_DISJOINT_STR: &str = concatcp!(SH_STR, "disjoint");
-pub const SH_EQUALS_STR: &str = concatcp!(SH_STR, "equals");
-pub const SH_ENTAILMENT_STR: &str = concatcp!(SH_STR, "entailment");
-pub const SH_FLAGS_STR: &str = concatcp!(SH_STR, "flags");
-pub const SH_FOCUS_NODE_STR: &str = concatcp!(SH_STR, "focusNode");
-pub const SH_GROUP_STR: &str = concatcp!(SH_STR, "group");
-pub const SH_HAS_VALUE_STR: &str = concatcp!(SH_STR, "hasValue");
-pub const SH_IGNORED_PROPERTIES_STR: &str = concatcp!(SH_STR, "ignoredProperties");
-pub const SH_IN_STR: &str = concatcp!(SH_STR, "in");
-pub const SH_LANGUAGE_IN_STR: &str = concatcp!(SH_STR, "languageIn");
-pub const SH_LESS_THAN_STR: &str = concatcp!(SH_STR, "lessThan");
-pub const SH_LESS_THAN_OR_EQUALS_STR: &str = concatcp!(SH_STR, "lessThanOrEquals");
-pub const SH_MIN_COUNT_STR: &str = concatcp!(SH_STR, "minCount");
-pub const SH_MAX_COUNT_STR: &str = concatcp!(SH_STR, "maxCount");
-pub const SH_MIN_INCLUSIVE_STR: &str = concatcp!(SH_STR, "minInclusive");
-pub const SH_MIN_EXCLUSIVE_STR: &str = concatcp!(SH_STR, "minExclusive");
-pub const SH_MAX_INCLUSIVE_STR: &str = concatcp!(SH_STR, "maxInclusive");
-pub const SH_MAX_EXCLUSIVE_STR: &str = concatcp!(SH_STR, "maxExclusive");
-pub const SH_MIN_LENGTH_STR: &str = concatcp!(SH_STR, "minLength");
-pub const SH_MAX_LENGTH_STR: &str = concatcp!(SH_STR, "maxLength");
-pub const SH_MESSAGE_STR: &str = concatcp!(SH_STR, "message");
-pub const SH_NAME_STR: &str = concatcp!(SH_STR, "name");
-pub const SH_NODE_KIND_STR: &str = concatcp!(SH_STR, "nodeKind");
-pub const SH_NODE_STR: &str = concatcp!(SH_STR, "node");
-pub const SH_NOT_STR: &str = concatcp!(SH_STR, "not");
-pub const SH_OR_STR: &str = concatcp!(SH_STR, "or");
-pub const SH_ORDER_STR: &str = concatcp!(SH_STR, "order");
-pub const SH_PATH_STR: &str = concatcp!(SH_STR, "path");
-pub const SH_PATTERN_STR: &str = concatcp!(SH_STR, "pattern");
-pub const SH_PROPERTY_STR: &str = concatcp!(SH_STR, "property");
-pub const SH_QUALIFIED_MIN_COUNT_STR: &str = concatcp!(SH_STR, "qualifiedMinCount");
-pub const SH_QUALIFIED_MAX_COUNT_STR: &str = concatcp!(SH_STR, "qualifiedMaxCount");
-pub const SH_QUALIFIED_VALUE_SHAPE_STR: &str = concatcp!(SH_STR, "qualifiedValueShape");
-pub const SH_QUALIFIED_VALUE_SHAPES_DISJOINT_STR: &str =
-    concatcp!(SH_STR, "qualifiedValueShapesDisjoint");
+use iri_s::IriS;
+use std::sync::OnceLock;
 
-pub const SH_RESULT_STR: &str = concatcp!(SH_STR, "result");
-pub const SH_RESULT_PATH_STR: &str = concatcp!(SH_STR, "resultPath");
-pub const SH_RESULT_SEVERITY_STR: &str = concatcp!(SH_STR, "resultSeverity");
-pub const SH_RESULT_MESSAGE_STR: &str = concatcp!(SH_STR, "resultMessage");
-pub const SH_SHAPES_GRAPH_STR: &str = concatcp!(SH_STR, "shapesGraph");
-pub const SH_SEVERITY_STR: &str = concatcp!(SH_STR, "severity");
-pub const SH_SOURCE_CONSTRAINT_COMPONENT_STR: &str = concatcp!(SH_STR, "sourceConstraintComponent");
-pub const SH_SOURCE_SHAPE_STR: &str = concatcp!(SH_STR, "sourceShape");
-pub const SH_VALUE_STR: &str = concatcp!(SH_STR, "value");
-pub const SH_TARGET_NODE_STR: &str = concatcp!(SH_STR, "targetNode");
-pub const SH_TARGET_CLASS_STR: &str = concatcp!(SH_STR, "targetClass");
-pub const SH_TARGET_SUBJECTS_OF_STR: &str = concatcp!(SH_STR, "targetSubjectsOf");
-pub const SH_TARGET_OBJECTS_OF_STR: &str = concatcp!(SH_STR, "targetObjectsOf");
-pub const SH_TEXT_STR: &str = concatcp!(SH_STR, "text");
-pub const SH_UNIQUE_LANG_STR: &str = concatcp!(SH_STR, "uniqueLang");
-pub const SH_XONE_STR: &str = concatcp!(SH_STR, "xone");
-pub const SH_SOURCE_CONSTRAINT_STR: &str = concatcp!(SH_STR, "sourceConstraint");
+// TODO - Move this to a vocab / utils crate
 
-iri_once!(sh, SH_STR);
-iri_once!(sh_blanknode, SH_BLANKNODE_STR);
-iri_once!(sh_blank_node_or_iri, SH_BLANK_NODE_OR_IRI_STR);
-iri_once!(sh_blank_node_or_literal, SH_BLANK_NODE_OR_LITERAL_STR);
-iri_once!(sh_info, SH_INFO_STR);
-iri_once!(sh_iri, SH_IRI_STR);
-iri_once!(sh_iri_or_literal, SH_IRI_OR_LITERAL_STR);
-iri_once!(sh_literal, SH_LITERAL_STR);
-iri_once!(sh_node_shape, SH_NODE_SHAPE_STR);
-iri_once!(sh_property_shape, SH_PROPERTY_SHAPE_STR);
-iri_once!(sh_shape, SH_SHAPE_STR);
-iri_once!(sh_schema, SH_SCHEMA_STR);
-iri_once!(sh_validation_report, SH_VALIDATION_REPORT_STR);
-iri_once!(sh_validation_result, SH_VALIDATION_RESULT_STR);
-iri_once!(sh_violation, SH_VIOLATION_STR);
-iri_once!(sh_warning, SH_WARNING_STR);
-iri_once!(sh_trace, SH_TRACE_STR);
-iri_once!(sh_debug, SH_DEBUG_STR);
-iri_once!(sh_and, SH_AND_STR);
-iri_once!(sh_class, SH_CLASS_STR);
-iri_once!(sh_closed, SH_CLOSED_STR);
-iri_once!(sh_conforms, SH_CONFORMS_STR);
-iri_once!(sh_datatype, SH_DATATYPE_STR);
-iri_once!(sh_deactivated, SH_DEACTIVATED_STR);
-iri_once!(sh_description, SH_DESCRIPTION_STR);
-iri_once!(sh_disjoint, SH_DISJOINT_STR);
-iri_once!(sh_equals, SH_EQUALS_STR);
-iri_once!(sh_entailment, SH_ENTAILMENT_STR);
-iri_once!(sh_flags, SH_FLAGS_STR);
-iri_once!(sh_focus_node, SH_FOCUS_NODE_STR);
-iri_once!(sh_group, SH_GROUP_STR);
-iri_once!(sh_has_value, SH_HAS_VALUE_STR);
-iri_once!(sh_ignored_properties, SH_IGNORED_PROPERTIES_STR);
-iri_once!(sh_in, SH_IN_STR);
-iri_once!(sh_language_in, SH_LANGUAGE_IN_STR);
-iri_once!(sh_less_than, SH_LESS_THAN_STR);
-iri_once!(sh_less_than_or_equals, SH_LESS_THAN_OR_EQUALS_STR);
-iri_once!(sh_min_count, SH_MIN_COUNT_STR);
-iri_once!(sh_max_count, SH_MAX_COUNT_STR);
-iri_once!(sh_min_inclusive, SH_MIN_INCLUSIVE_STR);
-iri_once!(sh_min_exclusive, SH_MIN_EXCLUSIVE_STR);
-iri_once!(sh_max_inclusive, SH_MAX_INCLUSIVE_STR);
-iri_once!(sh_max_exclusive, SH_MAX_EXCLUSIVE_STR);
-iri_once!(sh_min_length, SH_MIN_LENGTH_STR);
-iri_once!(sh_max_length, SH_MAX_LENGTH_STR);
-iri_once!(sh_message, SH_MESSAGE_STR);
-iri_once!(sh_name, SH_NAME_STR);
-iri_once!(sh_node_kind, SH_NODE_KIND_STR);
-iri_once!(sh_node, SH_NODE_STR);
-iri_once!(sh_not, SH_NOT_STR);
-iri_once!(sh_or, SH_OR_STR);
-iri_once!(sh_order, SH_ORDER_STR);
-iri_once!(sh_path, SH_PATH_STR);
-iri_once!(sh_pattern, SH_PATTERN_STR);
-iri_once!(sh_property, SH_PROPERTY_STR);
-iri_once!(sh_qualified_min_count, SH_QUALIFIED_MIN_COUNT_STR);
-iri_once!(sh_qualified_max_count, SH_QUALIFIED_MAX_COUNT_STR);
-iri_once!(sh_qualified_value_shape, SH_QUALIFIED_VALUE_SHAPE_STR);
-iri_once!(
-    sh_qualified_value_shapes_disjoint,
-    SH_QUALIFIED_VALUE_SHAPES_DISJOINT_STR
+#[macro_export]
+macro_rules! vocab_term {
+    ($voc:ident, $name:ident, $suffix:literal) => {
+        impl $voc {
+            pub const $name: &'static str = concatcp!($voc::BASE, $suffix);
+
+            paste::paste! {
+                pub fn [<$name:lower>]() -> &'static IriS {
+                    static IRI: OnceLock<IriS> = OnceLock::new();
+                    IRI.get_or_init(|| IriS::new_unchecked(Self::$name))
+                }
+            }
+        }
+    };
+}
+
+pub trait RdfVocabulary {
+    const BASE: &'static str;
+
+    fn base_iri() -> &'static IriS {
+        static IRI: OnceLock<IriS> = OnceLock::new();
+        IRI.get_or_init(|| IriS::new_unchecked(Self::BASE))
+    }
+}
+
+pub struct ShaclVocab;
+
+impl RdfVocabulary for ShaclVocab {
+    const BASE: &'static str = "http://www.w3.org/ns/shacl#";
+}
+
+// Base
+vocab_term!(ShaclVocab, SH, "");
+
+// Value type
+vocab_term!(ShaclVocab, SH_NODE_KIND, "nodeKind");
+vocab_term!(ShaclVocab, SH_CLASS, "class");
+vocab_term!(ShaclVocab, SH_DATATYPE, "datatype");
+
+// Node kind
+vocab_term!(ShaclVocab, SH_BLANK_NODE, "BlankNode");
+vocab_term!(ShaclVocab, SH_IRI, "IRI");
+vocab_term!(ShaclVocab, SH_BLANK_NODE_OR_IRI, "BlankNodeOrIRI");
+vocab_term!(ShaclVocab, SH_BLANK_NODE_OR_LITERAL, "BlankNodeOrLiteral");
+vocab_term!(ShaclVocab, SH_LITERAL, "Literal");
+vocab_term!(ShaclVocab, SH_IRI_OR_LITERAL, "IRIOrLiteral");
+
+// Severity
+vocab_term!(ShaclVocab, SH_INFO, "Info");
+vocab_term!(ShaclVocab, SH_WARNING, "Warning");
+vocab_term!(ShaclVocab, SH_VIOLATION, "Violation");
+vocab_term!(ShaclVocab, SH_DEBUG, "Debug"); // SHACL 1.2
+vocab_term!(ShaclVocab, SH_TRACE, "Trace"); // SHACL 1.2
+
+// Shape Type
+vocab_term!(ShaclVocab, SH_SCHEMA, "Schema");
+vocab_term!(ShaclVocab, SH_SHAPE, "Shape");
+vocab_term!(ShaclVocab, SH_NODE_SHAPE, "NodeShape");
+vocab_term!(ShaclVocab, SH_PROPERTY_SHAPE, "PropertyShape");
+
+// Validation
+vocab_term!(ShaclVocab, SH_VALIDATION_REPORT, "ValidationReport");
+vocab_term!(ShaclVocab, SH_VALIDATION_RESULT, "ValidationResult");
+vocab_term!(ShaclVocab, SH_CONFORMS, "conforms");
+vocab_term!(ShaclVocab, SH_DEACTIVATED, "deactivated");
+vocab_term!(ShaclVocab, SH_FOCUS_NODE, "focusNode");
+vocab_term!(ShaclVocab, SH_MESSAGE, "message");
+vocab_term!(ShaclVocab, SH_RESULT, "result");
+vocab_term!(ShaclVocab, SH_RESULT_PATH, "resultPath");
+vocab_term!(ShaclVocab, SH_RESULT_SEVERITY, "resultSeverity");
+vocab_term!(ShaclVocab, SH_RESULT_MESSAGE, "resultMessage");
+vocab_term!(ShaclVocab, SH_SHAPES_GRAPH, "shapesGraph");
+vocab_term!(ShaclVocab, SH_SEVERITY, "severity");
+vocab_term!(ShaclVocab, SH_SOURCE_CONSTRAINT_COMPONENT, "sourceConstraintComponent");
+vocab_term!(ShaclVocab, SH_SOURCE_SHAPE, "sourceShape");
+vocab_term!(ShaclVocab, SH_VALUE, "value");
+
+// Logical constratints
+vocab_term!(ShaclVocab, SH_AND, "and");
+vocab_term!(ShaclVocab, SH_NOT, "not");
+vocab_term!(ShaclVocab, SH_OR, "or");
+vocab_term!(ShaclVocab, SH_XONE, "xone");
+
+// Property pair
+vocab_term!(ShaclVocab, SH_DISJOINT, "disjoint");
+vocab_term!(ShaclVocab, SH_EQUALS, "equals");
+vocab_term!(ShaclVocab, SH_LESS_THAN, "lessThan");
+vocab_term!(ShaclVocab, SH_LESS_THAN_OR_EQUALS, "lessThanOrEquals");
+
+// Non validating
+vocab_term!(ShaclVocab, SH_DESCRIPTION, "description");
+vocab_term!(ShaclVocab, SH_NAME, "name");
+vocab_term!(ShaclVocab, SH_ORDER, "order");
+vocab_term!(ShaclVocab, SH_GROUP, "group");
+
+// Other
+vocab_term!(ShaclVocab, SH_CLOSED, "closed");
+vocab_term!(ShaclVocab, SH_ENTAILMENT, "entailment");
+vocab_term!(ShaclVocab, SH_HAS_VALUE, "hasValue");
+vocab_term!(ShaclVocab, SH_IGNORED_PROPERTIES, "ignoredProperties");
+vocab_term!(ShaclVocab, SH_IN, "in");
+vocab_term!(ShaclVocab, SH_TEXT, "text");
+
+// String based
+vocab_term!(ShaclVocab, SH_PATTERN, "pattern");
+vocab_term!(ShaclVocab, SH_FLAGS, "flags");
+vocab_term!(ShaclVocab, SH_LANGUAGE_IN, "languageIn");
+vocab_term!(ShaclVocab, SH_MIN_LENGTH, "minLength");
+vocab_term!(ShaclVocab, SH_MAX_LENGTH, "maxLength");
+vocab_term!(ShaclVocab, SH_UNIQUE_LANG, "uniqueLang");
+
+// Cardinality
+vocab_term!(ShaclVocab, SH_MIN_COUNT, "minCount");
+vocab_term!(ShaclVocab, SH_MAX_COUNT, "maxCount");
+
+// Value range
+vocab_term!(ShaclVocab, SH_MIN_INCLUSIVE, "minInclusive");
+vocab_term!(ShaclVocab, SH_MIN_EXCLUSIVE, "minExclusive");
+vocab_term!(ShaclVocab, SH_MAX_INCLUSIVE, "maxInclusive");
+vocab_term!(ShaclVocab, SH_MAX_EXCLUSIVE, "maxExclusive");
+
+// Shape based
+vocab_term!(ShaclVocab, SH_NODE, "node");
+vocab_term!(ShaclVocab, SH_PROPERTY, "property");
+vocab_term!(ShaclVocab, SH_QUALIFIED_MIN_COUNT, "qualifiedMinCount");
+vocab_term!(ShaclVocab, SH_QUALIFIED_MAX_COUNT, "qualifiedMaxCount");
+vocab_term!(ShaclVocab, SH_QUALIFIED_VALUE_SHAPE, "qualifiedValueShape");
+vocab_term!(ShaclVocab, SH_PATH, "path");
+vocab_term!(
+    ShaclVocab,
+    SH_QUALIFIED_VALUE_SHAPES_DISJOINT,
+    "qualifiedValueShapesDisjoint"
 );
-iri_once!(sh_result, SH_RESULT_STR);
-iri_once!(sh_result_path, SH_RESULT_PATH_STR);
-iri_once!(sh_result_severity, SH_RESULT_SEVERITY_STR);
-iri_once!(sh_result_message, SH_RESULT_MESSAGE_STR);
-iri_once!(sh_shapes_graph, SH_SHAPES_GRAPH_STR);
-iri_once!(sh_severity, SH_SEVERITY_STR);
-iri_once!(
-    sh_source_constraint_component,
-    SH_SOURCE_CONSTRAINT_COMPONENT_STR
-);
-iri_once!(sh_source_shape, SH_SOURCE_SHAPE_STR);
-iri_once!(sh_value, SH_VALUE_STR);
-iri_once!(sh_target_node, SH_TARGET_NODE_STR);
-iri_once!(sh_target_class, SH_TARGET_CLASS_STR);
-iri_once!(sh_target_subjects_of, SH_TARGET_SUBJECTS_OF_STR);
-iri_once!(sh_target_objects_of, SH_TARGET_OBJECTS_OF_STR);
-iri_once!(sh_text, SH_TEXT_STR);
-iri_once!(sh_unique_lang, SH_UNIQUE_LANG_STR);
-iri_once!(sh_xone, SH_XONE_STR);
-iri_once!(sh_source_constraint, SH_SOURCE_CONSTRAINT_STR);
+vocab_term!(ShaclVocab, SH_REIFICATION_REQUIRED, "reificationRequired"); // SHACL 1.2
+vocab_term!(ShaclVocab, SH_REIFIER_SHAPE, "reifierShape"); // SHACL 1.2
+vocab_term!(
+    ShaclVocab,
+    SH_REIFIER_SHAPE_CONSTRAINT_COMPONENT,
+    "ReifierShapeConstraintComponent"
+); // SHACL 1.2
 
-// SHACL 1.2
-pub const SH_REIFICATION_REQUIRED_STR: &str = concatcp!(SH_STR, "reificationRequired");
-pub const SH_REIFIER_SHAPE_STR: &str = concatcp!(SH_STR, "reifierShape");
+// Targets
+vocab_term!(ShaclVocab, SH_TARGET_NODE, "targetNode");
+vocab_term!(ShaclVocab, SH_TARGET_CLASS, "targetClass");
+vocab_term!(ShaclVocab, SH_TARGET_SUBJECTS_OF, "targetSubjectsOf");
+vocab_term!(ShaclVocab, SH_TARGET_OBJECTS_OF, "targetObjectsOf");
 
-iri_once!(sh_reification_required, SH_REIFICATION_REQUIRED_STR);
-iri_once!(sh_reifier_shape, SH_REIFIER_SHAPE_STR);
-
-iri_once!(
-    sh_closed_constraint_component,
-    concatcp!(SH_STR, "ClosedConstraintComponent")
-);
-
-iri_once!(
-    sh_reifier_shape_constraint_component,
-    concatcp!(SH_STR, "ReifierShapeConstraintComponent")
-);
+// SPARQL
+vocab_term!(ShaclVocab, SH_SOURCE_CONSTRAINT, "sourceConstraint");
+vocab_term!(ShaclVocab, SH_CLOSED_CONSTRAINT_COMPONENT, "ClosedConstraintComponent");

@@ -21,12 +21,12 @@
     [ sh:datatype xsd:string]
    )
   ] ;
-  sh:property [                   # Blank node 3  
+  sh:property [                   # Blank node 3
    sh:path     schema:birthDate ;
    sh:maxCount 1;
    sh:datatype xsd:date ;
   ] ;
-  sh:property [                   # Blank node 4 
+  sh:property [                   # Blank node 4
    sh:path     schema:knows ;
    sh:nodeKind sh:IRI ;
    sh:class    :User ;

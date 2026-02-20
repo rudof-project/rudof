@@ -1,9 +1,5 @@
-use crate::{
-    InputSpec, RdfData, Rudof, RudofError, query_result_format::ResultQueryFormat,
-    query_type::QueryType,
-};
-
-use srdf::{QueryResultFormat, QuerySolutions};
+use crate::{InputSpec, RdfData, Rudof, RudofError, query_result_format::ResultQueryFormat, query_type::QueryType};
+use rudof_rdf::rdf_core::query::{QueryResultFormat, QuerySolutions};
 use std::io::Write;
 use tracing::trace;
 
@@ -15,34 +11,32 @@ pub fn execute_query<W: Write>(
     result_query_format: &ResultQueryFormat,
     writer: &mut W,
 ) -> Result<(), RudofError> {
-    let mut reader = query
-        .open_read(None, "Query")
-        .map_err(|e| RudofError::ReadError {
-            error: format!("Failed to open query: {}", e),
-        })?;
+    let mut reader = query.open_read(None, "Query").map_err(|e| RudofError::ReadError {
+        error: format!("Failed to open query: {}", e),
+    })?;
     match query_type {
         QueryType::Select => {
             trace!("Running SELECT query");
             let results = rudof.run_query_select(&mut reader)?;
             show_results(writer, &results, result_query_format)?;
-        }
+        },
         QueryType::Construct => {
             let query_format = cnv_query_format(result_query_format);
             let str = rudof.run_query_construct(&mut reader, &query_format)?;
             writeln!(writer, "{str}")?;
-        }
+        },
         QueryType::Ask => {
             // let bool = rudof.run_query_ask(&mut reader)?;
             // writeln!(writer, "{bool}")?;
             return Err(RudofError::NotImplemented {
                 msg: "ASK queries".to_string(),
             });
-        }
+        },
         QueryType::Describe => {
             return Err(RudofError::NotImplemented {
                 msg: "DESCRIBE queries".to_string(),
             });
-        }
+        },
     }
     Ok(())
 }
@@ -54,16 +48,14 @@ fn show_results(
 ) -> Result<(), RudofError> {
     match result_query_format {
         ResultQueryFormat::Internal => {
-            results
-                .write_table(writer)
-                .map_err(|e| RudofError::QueryError {
-                    str: "write_table".to_string(),
-                    error: format!("{}", e),
-                })?;
-        }
+            results.write_table(writer).map_err(|e| RudofError::QueryError {
+                str: "write_table".to_string(),
+                error: format!("{}", e),
+            })?;
+        },
         _ => {
             todo!()
-        }
+        },
     }
     Ok(())
 }

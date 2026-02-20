@@ -33,12 +33,12 @@ rudof node --node "<http://example.org/a>" simple.ttl
 You can simplify the previous command using '-n' instead of '--node' and using the prefixed version of the URL, i.e. ':a' instead of the full URL as:
 
 ```sh
-rudof node -n :a simple.ttl 
+rudof node -n :a simple.ttl
 ```
 
 ## Obtaining information from URLs
 
-Most of the commands that require a filename can also be used with dereferentiable URLs. In case the filename starts by `http://` or `https://`, `rudof` will try to get the contents of those URLs and process them. 
+Most of the commands that require a filename can also be used with dereferentiable URLs. In case the filename starts by `http://` or `https://`, `rudof` will try to get the contents of those URLs and process them.
 
 In this way, the previous example could also be run as:
 
@@ -48,7 +48,7 @@ rudof node -n :a https://raw.githubusercontent.com/rudof-project/rudof/refs/head
 
 ## Obtaining information from stdin
 
-It is also possible to get the information directly from stdin by replacing the filename by a hyphen ('-') . 
+It is also possible to get the information directly from stdin by replacing the filename by a hyphen ('-') .
 
 For example, if you type:
 

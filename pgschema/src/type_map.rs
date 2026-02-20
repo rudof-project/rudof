@@ -46,20 +46,17 @@ impl TypeMap {
         MapBuilder::new().parse_map(content.as_str())
     }*/
 
-    pub fn validate(
-        &self,
-        schema: &PropertyGraphSchema,
-        graph: &PropertyGraph,
-    ) -> Result<ValidationResult, PgsError> {
+    pub fn validate(&self, schema: &PropertyGraphSchema, graph: &PropertyGraph) -> Result<ValidationResult, PgsError> {
         let mut result = ValidationResult::new();
         for association in &self.associations {
             let node_id = association.node_id();
             let type_name = association.type_name();
-            let either_node_edge = graph.get_node_edge_by_label(node_id).map_err(|_| {
-                PgsError::MissingNodeEdgeLabel {
-                    label: node_id.to_string(),
-                }
-            })?;
+            let either_node_edge =
+                graph
+                    .get_node_edge_by_label(node_id)
+                    .map_err(|_| PgsError::MissingNodeEdgeLabel {
+                        label: node_id.to_string(),
+                    })?;
             let conforms_result = match either_node_edge {
                 Left(node) => schema.conforms_node(type_name, node),
                 Right(edge) => schema.conforms_edge(type_name, edge),
@@ -75,29 +72,21 @@ impl TypeMap {
         Ok(result) // Assuming validation passes for now
     }
 
-    pub fn compare_with_result(
-        &self,
-        result: &ValidationResult,
-    ) -> Result<Vec<FailedAssociation>, PgsError> {
+    pub fn compare_with_result(&self, result: &ValidationResult) -> Result<Vec<FailedAssociation>, PgsError> {
         let mut failed_associations = Vec::new();
         for result_association in &result.associations {
             if let Some(expected_association) =
                 self.find_association(&result_association.node_id, &result_association.type_name)
             {
-                match (
-                    expected_association.should_conform,
-                    &result_association.details,
-                ) {
+                match (expected_association.should_conform, &result_association.details) {
                     (true, Right(_)) => continue,
                     (true, Left(errors)) => {
                         failed_associations.push(FailedAssociation {
                             node_id: result_association.node_id.clone(),
                             type_name: result_association.type_name.clone(),
-                            status: FailedAssociationStatus::FailedResultShouldConform {
-                                errors: errors.clone(),
-                            },
+                            status: FailedAssociationStatus::FailedResultShouldConform { errors: errors.clone() },
                         });
-                    }
+                    },
                     (false, Right(evidences)) => {
                         failed_associations.push(FailedAssociation {
                             node_id: result_association.node_id.clone(),
@@ -106,7 +95,7 @@ impl TypeMap {
                                 evidences: evidences.clone(),
                             },
                         });
-                    }
+                    },
                     (false, Left(_)) => continue,
                 }
             } else {

@@ -1,16 +1,16 @@
 use std::io::Write;
 
 use iri_s::{IriS, MimeType};
+use rudof_rdf::rdf_core::BuildRDF;
+use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use shacl_ast::ShaclFormat;
 use shacl_validation::validation_report::report::ValidationReport;
-use srdf::{ReaderMode, SRDFGraph};
 
 use crate::{
     InputSpec, Rudof, RudofConfig, RudofError,
     data::get_base,
     result_shacl_validation_format::{
-        ResultShaclValidationFormat, SortByShaclValidationReport, cnv_sort_mode_report,
-        result_format_to_rdf_format,
+        ResultShaclValidationFormat, SortByShaclValidationReport, cnv_sort_mode_report, result_format_to_rdf_format,
     },
     shacl_format::CliShaclFormat,
     terminal_width::terminal_width,
@@ -35,20 +35,14 @@ pub fn add_shacl_schema_rudof(
     let reader_name = schema.to_string();
     let shapes_format = shacl_format_convert(*shapes_format)?;
     let base = get_base(schema, config, base_shapes)?;
-    rudof.read_shacl(
-        &mut reader,
-        &reader_name,
-        &shapes_format,
-        base.as_deref(),
-        reader_mode,
-    )?;
+    rudof.read_shacl(&mut reader, &reader_name, &shapes_format, base.as_deref(), reader_mode)?;
     Ok(())
 }
 
 pub fn shacl_format_convert(shacl_format: CliShaclFormat) -> Result<ShaclFormat, RudofError> {
     match shacl_format {
         CliShaclFormat::Turtle => Ok(ShaclFormat::Turtle),
-        CliShaclFormat::RDFXML => Ok(ShaclFormat::RDFXML),
+        CliShaclFormat::RdfXml => Ok(ShaclFormat::RdfXml),
         CliShaclFormat::NTriples => Ok(ShaclFormat::NTriples),
         CliShaclFormat::TriG => Ok(ShaclFormat::TriG),
         CliShaclFormat::N3 => Ok(ShaclFormat::N3),
@@ -79,34 +73,28 @@ pub fn write_validation_report<W: Write>(
                 )?;
             }
             Ok(())
-        }
+        },
         ResultShaclValidationFormat::Compact => {
             report.show_as_table(writer, sort_mode, false, terminal_width)?;
             Ok(())
-        }
+        },
         ResultShaclValidationFormat::Details => {
             report.show_as_table(writer, sort_mode, true, terminal_width)?;
             Ok(())
-        }
+        },
         ResultShaclValidationFormat::Json => Err(RudofError::NotImplemented {
-            msg: "Generation of JSON for SHACL validation report is not implemented yet"
-                .to_string(),
+            msg: "Generation of JSON for SHACL validation report is not implemented yet".to_string(),
         }),
         _ => {
-            use srdf::BuildRDF;
-            let mut rdf_writer = SRDFGraph::new();
-            report
-                .to_rdf(&mut rdf_writer)
-                .map_err(|e| RudofError::Generic {
-                    error: format!("Error converting SHACL validation report to RDF: {e}"),
-                })?;
+            let mut rdf_writer = InMemoryGraph::new();
+            report.to_rdf(&mut rdf_writer).map_err(|e| RudofError::Generic {
+                error: format!("Error converting SHACL validation report to RDF: {e}"),
+            })?;
             let rdf_format = result_format_to_rdf_format(format)?;
             rdf_writer
                 .serialize(&rdf_format, &mut writer)
-                .map_err(|e| RudofError::RdfError {
-                    error: e.to_string(),
-                })?;
+                .map_err(|e| RudofError::RdfError { error: e.to_string() })?;
             Ok(())
-        }
+        },
     }
 }

@@ -3,4 +3,3 @@ prefix : <http://example.org/>
 :S {
     :p NOT [ :a ]
 }
-

@@ -1,6 +1,6 @@
 use rudof_generate::config::{
-    CardinalityStrategy, DataQuality, DatatypeConfig, EntityDistribution, GeneratorConfig,
-    OutputFormat, PropertyConfig, PropertySelectionStrategy,
+    CardinalityStrategy, DataQuality, DatatypeConfig, EntityDistribution, GeneratorConfig, OutputFormat,
+    PropertyConfig, PropertySelectionStrategy,
 };
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -50,20 +50,13 @@ parallel_fields = true
     std::fs::write(&config_path, config_content).expect("Failed to write config file");
 
     // Load and validate the configuration
-    let config = GeneratorConfig::from_toml_file(&config_path)
-        .expect("Should load TOML config successfully");
+    let config = GeneratorConfig::from_toml_file(&config_path).expect("Should load TOML config successfully");
 
     // Verify generation settings
     assert_eq!(config.generation.entity_count, 100);
     assert_eq!(config.generation.seed, Some(12345));
-    assert_eq!(
-        config.generation.entity_distribution,
-        EntityDistribution::Equal
-    );
-    assert_eq!(
-        config.generation.cardinality_strategy,
-        CardinalityStrategy::Balanced
-    );
+    assert_eq!(config.generation.entity_distribution, EntityDistribution::Equal);
+    assert_eq!(config.generation.cardinality_strategy, CardinalityStrategy::Balanced);
 
     // Verify field generator settings
     assert_eq!(config.field_generators.default.locale, "es");
@@ -122,20 +115,13 @@ async fn test_configuration_loading_json() {
     std::fs::write(&config_path, config_content).expect("Failed to write JSON config file");
 
     // Load and validate the configuration
-    let config = GeneratorConfig::from_json_file(&config_path)
-        .expect("Should load JSON config successfully");
+    let config = GeneratorConfig::from_json_file(&config_path).expect("Should load JSON config successfully");
 
     // Verify generation settings
     assert_eq!(config.generation.entity_count, 75);
     assert_eq!(config.generation.seed, Some(54321));
-    assert_eq!(
-        config.generation.entity_distribution,
-        EntityDistribution::Equal
-    );
-    assert_eq!(
-        config.generation.cardinality_strategy,
-        CardinalityStrategy::Random
-    );
+    assert_eq!(config.generation.entity_distribution, EntityDistribution::Equal);
+    assert_eq!(config.generation.cardinality_strategy, CardinalityStrategy::Random);
 
     // Verify field generator settings
     assert_eq!(config.field_generators.default.locale, "en");
@@ -160,14 +146,8 @@ async fn test_default_configuration() {
     // Verify sensible defaults
     assert_eq!(config.generation.entity_count, 1000);
     assert_eq!(config.generation.seed, None);
-    assert_eq!(
-        config.generation.entity_distribution,
-        EntityDistribution::Equal
-    );
-    assert_eq!(
-        config.generation.cardinality_strategy,
-        CardinalityStrategy::Balanced
-    );
+    assert_eq!(config.generation.entity_distribution, EntityDistribution::Equal);
+    assert_eq!(config.generation.cardinality_strategy, CardinalityStrategy::Balanced);
 
     assert_eq!(config.field_generators.default.locale, "en");
     assert_eq!(config.field_generators.default.quality, DataQuality::Medium);
@@ -191,18 +171,12 @@ async fn test_configuration_validation() {
 
     // Test invalid entity count
     config.generation.entity_count = 0;
-    assert!(
-        config.validate().is_err(),
-        "Zero entity count should be invalid"
-    );
+    assert!(config.validate().is_err(), "Zero entity count should be invalid");
 
     // Reset and test invalid batch size
     config = GeneratorConfig::default();
     config.parallel.batch_size = 0;
-    assert!(
-        config.validate().is_err(),
-        "Zero batch size should be invalid"
-    );
+    assert!(config.validate().is_err(), "Zero batch size should be invalid");
 }
 
 #[tokio::test]
@@ -210,11 +184,7 @@ async fn test_configuration_merge() {
     let mut config = GeneratorConfig::default();
 
     // Test merging CLI overrides
-    config.merge_cli_overrides(
-        Some(500),
-        Some(PathBuf::from("custom_output.ttl")),
-        Some(98765),
-    );
+    config.merge_cli_overrides(Some(500), Some(PathBuf::from("custom_output.ttl")), Some(98765));
 
     assert_eq!(config.generation.entity_count, 500);
     assert_eq!(config.output.path.to_string_lossy(), "custom_output.ttl");
@@ -228,9 +198,7 @@ async fn test_configuration_serialization() {
 
     // Test TOML serialization
     let toml_path = temp_dir.path().join("test_output.toml");
-    config
-        .to_toml_file(&toml_path)
-        .expect("Should serialize to TOML");
+    config.to_toml_file(&toml_path).expect("Should serialize to TOML");
 
     // Verify file exists and has content
     assert!(toml_path.exists());
@@ -240,12 +208,8 @@ async fn test_configuration_serialization() {
     assert!(toml_content.contains("locale"));
 
     // Test round-trip
-    let loaded_config =
-        GeneratorConfig::from_toml_file(&toml_path).expect("Should load serialized TOML");
-    assert_eq!(
-        loaded_config.generation.entity_count,
-        config.generation.entity_count
-    );
+    let loaded_config = GeneratorConfig::from_toml_file(&toml_path).expect("Should load serialized TOML");
+    assert_eq!(loaded_config.generation.entity_count, config.generation.entity_count);
     assert_eq!(
         loaded_config.field_generators.default.locale,
         config.field_generators.default.locale
@@ -268,10 +232,10 @@ async fn test_datatype_configuration() {
         .parameters
         .insert("max".to_string(), serde_json::json!(65));
 
-    config.field_generators.datatypes.insert(
-        "http://www.w3.org/2001/XMLSchema#integer".to_string(),
-        datatype_config,
-    );
+    config
+        .field_generators
+        .datatypes
+        .insert("http://www.w3.org/2001/XMLSchema#integer".to_string(), datatype_config);
 
     // Verify configuration is stored correctly
     let int_config = config
@@ -365,8 +329,7 @@ parallel_fields = true
     let config_path = temp_dir.path().join("complex_config.toml");
     std::fs::write(&config_path, config_content).expect("Failed to write complex config");
 
-    let config =
-        GeneratorConfig::from_toml_file(&config_path).expect("Should load complex TOML config");
+    let config = GeneratorConfig::from_toml_file(&config_path).expect("Should load complex TOML config");
 
     // Verify complex configuration
     assert_eq!(config.generation.entity_count, 50);
@@ -446,20 +409,31 @@ parallel_fields = true
     let config_path = temp_dir.path().join("coherence_config.toml");
     std::fs::write(&config_path, config_content).expect("Failed to write config file");
 
-    let config = GeneratorConfig::from_toml_file(&config_path)
-        .expect("Should load TOML config successfully");
+    let config = GeneratorConfig::from_toml_file(&config_path).expect("Should load TOML config successfully");
 
     // Verify coherence settings
     assert_eq!(config.generation.property_fill_probability, 0.5);
     assert!(config.generation.ignore_min_cardinality);
     assert_eq!(config.generation.max_properties_per_instance, 5);
-    assert_eq!(config.generation.property_selection_strategy, PropertySelectionStrategy::Random);
+    assert_eq!(
+        config.generation.property_selection_strategy,
+        PropertySelectionStrategy::Random
+    );
     assert_eq!(config.generation.property_count_variance, 0.2);
     assert_eq!(config.generation.excluded_properties.len(), 2);
-    assert!(config.generation.excluded_properties.contains(&"http://example.org/prop1".to_string()));
+    assert!(
+        config
+            .generation
+            .excluded_properties
+            .contains(&"http://example.org/prop1".to_string())
+    );
 
     // Verify overrides
-    let student_override = config.generation.type_overrides.get("http://example.org/Student").expect("Should have override for Student");
+    let student_override = config
+        .generation
+        .type_overrides
+        .get("http://example.org/Student")
+        .expect("Should have override for Student");
     assert_eq!(student_override.property_fill_probability, Some(0.8));
     assert_eq!(student_override.max_properties_per_instance, Some(10));
     assert_eq!(student_override.ignore_min_cardinality, None);

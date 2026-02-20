@@ -1,4 +1,4 @@
-# compare: Compare Shapes 
+# compare: Compare Shapes
 
 `rudof` supports comparison between different schemas and shapes.
 
@@ -39,7 +39,7 @@ The following command can be used to compare the shape `http://example.org/Perso
 $ rudof compare --schema1 examples/shex/compare1.shex --format1 shexc --mode1 shex --schema2 examples/shex/compare2.shex --format2 shexc --mode2 shex --shape1 "http://example.org/Person" --shape2 "http://example.org/Person"
 Shapes Comparison:
  Equal properties:
-  - http://example.org/knows: 
+  - http://example.org/knows:
   - descr1:   - value: http://example.org/knows
   - datatype: _
 
@@ -47,7 +47,7 @@ Shapes Comparison:
   - datatype: _
 
 
-  - http://example.org/name: 
+  - http://example.org/name:
   - descr1:   - value: http://example.org/name
   - datatype: _
 
@@ -56,23 +56,23 @@ Shapes Comparison:
 
 
  Properties in shape 1 that are not in shape 2:
-  - http://example.org/worksFor: 
+  - http://example.org/worksFor:
   - descr:   - value: http://example.org/worksFor
   - datatype: _
 
 
-  - http://example.org/age: 
+  - http://example.org/age:
   - descr:   - value: http://example.org/age
   - datatype: _
 
 
  Properties in shape 2 that are not in shape 1:
-  - http://example.org/email: 
+  - http://example.org/email:
   - descr:   - value: http://example.org/email
   - datatype: _
 
 
-  - http://example.org/birthDate: 
+  - http://example.org/birthDate:
   - descr:   - value: http://example.org/birthDate
   - datatype: _
 ```

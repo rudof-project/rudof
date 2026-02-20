@@ -7,5 +7,3 @@
 
 // Doesn't have aliases
 (n5_wrong {Person} [ name: "Dave", age: 43  ])
-
-

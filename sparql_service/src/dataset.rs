@@ -1,7 +1,7 @@
 use crate::{GraphDescription, NamedGraphDescription};
 use itertools::Itertools;
+use rudof_rdf::rdf_core::term::IriOrBlankNode;
 use serde::{Deserialize, Serialize};
-use srdf::IriOrBlankNode;
 use std::fmt::Display;
 use std::hash::Hash;
 
@@ -44,10 +44,7 @@ impl Display for Dataset {
         writeln!(
             f,
             "Dataset: {}",
-            self.id
-                .as_ref()
-                .map(|v| v.to_string())
-                .unwrap_or("No Id".to_string())
+            self.id.as_ref().map(|v| v.to_string()).unwrap_or("No Id".to_string())
         )?;
         if let Some(default_graph) = &self.default_graph {
             writeln!(f, " default_graph: {default_graph}")?;

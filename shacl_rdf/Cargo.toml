@@ -11,7 +11,7 @@ repository.workspace = true
 
 #[features]
 #rdf-star = [
-# "oxrdf/rdf-star", 
+# "oxrdf/rdf-star",
 #    "srdf/rdf-star",
 #]
 
@@ -23,6 +23,6 @@ oxrdf = { workspace = true, features = ["oxsdatatypes"] }
 prefixmap.workspace = true
 regex.workspace = true
 shacl_ast.workspace = true
-srdf.workspace = true
+rudof_rdf.workspace = true
 thiserror.workspace = true
 tracing.workspace = true

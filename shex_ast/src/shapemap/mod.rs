@@ -38,8 +38,8 @@ pub use validation_status::*;
 pub enum ShapeMapFormat {
     #[default]
     Compact,
-    JSON,
-    CSV,
+    Json,
+    Csv,
 }
 
 impl ShapeMapFormat {
@@ -47,8 +47,8 @@ impl ShapeMapFormat {
     pub fn mime_type(&self) -> &str {
         match self {
             ShapeMapFormat::Compact => "text/plain",
-            ShapeMapFormat::JSON => "application/json",
-            ShapeMapFormat::CSV => "text/csv",
+            ShapeMapFormat::Json => "application/json",
+            ShapeMapFormat::Csv => "text/csv",
         }
     }
 }

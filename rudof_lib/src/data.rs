@@ -1,10 +1,14 @@
 // Shared core logic for data management
 use iri_s::IriS;
 use iri_s::MimeType;
-use srdf::{
-    ImageFormat, RDFFormat, ReaderMode, UmlConverter, UmlGenerationMode,
-    rdf_visualizer::visual_rdf_graph::VisualRDFGraph,
+use rudof_rdf::rdf_core::{
+    RDFFormat,
+    visualizer::{
+        VisualRDFGraph,
+        uml_converter::{ImageFormat, UmlConverter, UmlGenerationMode},
+    },
 };
+use rudof_rdf::rdf_impl::ReaderMode;
 use std::str::FromStr;
 
 use crate::{
@@ -18,22 +22,18 @@ pub fn data_format2rdf_format(data_format: &DataFormat) -> Result<RDFFormat, Dat
         DataFormat::N3 => Ok(RDFFormat::N3),
         DataFormat::NQuads => Ok(RDFFormat::NQuads),
         DataFormat::NTriples => Ok(RDFFormat::NTriples),
-        DataFormat::RDFXML => Ok(RDFFormat::RDFXML),
+        DataFormat::RdfXml => Ok(RDFFormat::Rdfxml),
         DataFormat::TriG => Ok(RDFFormat::TriG),
         DataFormat::Turtle => Ok(RDFFormat::Turtle),
         DataFormat::JsonLd => Ok(RDFFormat::JsonLd),
-        DataFormat::PG => Err(DataFormatError::NonRdfFormat {
+        DataFormat::Pg => Err(DataFormatError::NonRdfFormat {
             format: data_format.to_string(),
         }),
     }
 }
 
 // Helper function to determine the base IRI for reading data.
-pub fn get_base(
-    input: &InputSpec,
-    config: &RudofConfig,
-    base: &Option<IriS>,
-) -> Result<Option<String>, RudofError> {
+pub fn get_base(input: &InputSpec, config: &RudofConfig, base: &Option<IriS>) -> Result<Option<String>, RudofError> {
     if let Some(base) = base {
         Ok(Some(base.to_string()))
     } else {
@@ -49,7 +49,7 @@ pub fn get_base(
                 } else {
                     None
                 }
-            }
+            },
         };
         Ok(base)
     }
@@ -75,10 +75,10 @@ pub fn get_data_rudof(
             } else {
                 Err(RudofError::MissingDataAndEndpoint)
             }
-        }
+        },
         (false, None) => {
-            let rdf_format = data_format2rdf_format(data_format)
-                .map_err(|e| RudofError::DataFormatError { error: e })?;
+            let rdf_format =
+                data_format2rdf_format(data_format).map_err(|e| RudofError::DataFormatError { error: e })?;
             for data_input in data {
                 let mut data_reader = data_input
                     .open_read(Some(data_format.mime_type()), "RDF data")
@@ -98,13 +98,13 @@ pub fn get_data_rudof(
                 )?;
             }
             Ok(())
-        }
+        },
         (true, Some(endpoint)) => {
             let (new_endpoint, _sparql) = rudof.get_endpoint(endpoint)?;
             // rudof.add_endpoint(&endpoint, &endpoint, PrefixMap::new())?;
             rudof.use_endpoint(new_endpoint.as_str())?;
             Ok(())
-        }
+        },
         (false, Some(_)) => Err(RudofError::BothDataAndEndpointSpecified),
     }
 }
@@ -134,30 +134,17 @@ pub fn parse_image_format(image_format_str: &str) -> Result<ImageFormat, RudofEr
 
 /// Executes the full visualization and image generation logic.
 /// Returns the generated image data as a Vec<u8>.
-pub fn export_rdf_to_image(
-    rudof: &Rudof,
-    image_format: ImageFormat,
-) -> Result<Vec<u8>, RudofError> {
+pub fn export_rdf_to_image(rudof: &Rudof, image_format: ImageFormat) -> Result<Vec<u8>, RudofError> {
     let rdf = rudof.get_rdf_data();
     let config = rudof.config();
     let mut v = Vec::new();
 
-    let uml_converter =
-        VisualRDFGraph::from_rdf(rdf, config.rdf_data_config().rdf_visualization_config())
-            .map_err(|e| RudofError::RDF2PlantUmlError {
-                error: e.to_string(),
-            })?;
+    let uml_converter = VisualRDFGraph::from_rdf(rdf, config.rdf_data_config().rdf_visualization_config())
+        .map_err(|e| RudofError::RDF2PlantUmlError { error: e.to_string() })?;
 
     uml_converter
-        .as_image(
-            &mut v,
-            image_format,
-            &UmlGenerationMode::all(),
-            config.plantuml_path(),
-        )
-        .map_err(|e| RudofError::RDF2PlantUmlErrorAsPlantUML {
-            error: e.to_string(),
-        })?;
+        .as_image(&mut v, image_format, &UmlGenerationMode::all(), config.plantuml_path())
+        .map_err(|e| RudofError::RDF2PlantUmlErrorAsPlantUML { error: e.to_string() })?;
 
     Ok(v)
 }

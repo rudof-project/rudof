@@ -1,7 +1,7 @@
 use crate::{EntailmentProfile, EntailmentRegime, GraphDescription};
 use iri_s::IriS;
+use rudof_rdf::rdf_core::term::IriOrBlankNode;
 use serde::{Deserialize, Serialize};
-use srdf::IriOrBlankNode;
 use std::fmt::Display;
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Default, Serialize, Deserialize)]
@@ -54,11 +54,7 @@ impl Display for NamedGraphDescription {
             writeln!(
                 f,
                 " graphs: {}",
-                self.graphs
-                    .iter()
-                    .map(|g| g.to_string())
-                    .collect::<Vec<_>>()
-                    .join("\n")
+                self.graphs.iter().map(|g| g.to_string()).collect::<Vec<_>>().join("\n")
             )?;
         }
         Ok(())

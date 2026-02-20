@@ -15,12 +15,10 @@ use compiled_shacl_error::CompiledShaclError;
 use either::Either;
 use iri_s::IriS;
 use prefixmap::IriRef;
-use shacl_ast::Schema;
+use rudof_rdf::rdf_core::{Rdf, term::Object};
+use shacl_ast::ShaclSchema;
 use shacl_ast::value::Value;
 use shape::ShapeIR;
-use srdf::Object;
-use srdf::RDFNode;
-use srdf::Rdf;
 use tracing::trace;
 
 use crate::schema_ir::SchemaIR;
@@ -38,29 +36,27 @@ fn convert_iri_ref(iri_ref: IriRef) -> Result<IriS, Box<CompiledShaclError>> {
 
 fn compile_shape<S: Rdf>(
     node: &Object,
-    schema: &Schema<S>,
+    schema: &ShaclSchema<S>,
     schema_ir: &mut SchemaIR,
 ) -> Result<ShapeLabelIdx, Box<CompiledShaclError>> {
-    let shape = schema
-        .get_shape(node)
-        .ok_or(CompiledShaclError::ShapeNotFound {
-            shape: Box::new(node.clone()),
-        })?;
+    let shape = schema.get_shape(node).ok_or(CompiledShaclError::ShapeNotFound {
+        shape: Box::new(node.clone()),
+    })?;
     match schema_ir.add_shape_idx(node.clone())? {
         Either::Right(idx) => {
             trace!("Compiling shape {:?} with index {:?}", node, idx);
             ShapeIR::compile(shape.to_owned(), schema, &idx, schema_ir)
-        }
+        },
         Either::Left(idx) => {
             trace!("Shape {:?} already compiled, skipping recompilation", node);
             Ok(idx)
-        }
+        },
     }
 }
 
 fn compile_shapes<S: Rdf>(
     shapes: Vec<Object>,
-    schema: &Schema<S>,
+    schema: &ShaclSchema<S>,
     schema_ir: &mut SchemaIR,
 ) -> Result<Vec<ShapeLabelIdx>, Box<CompiledShaclError>> {
     let compiled_shapes = shapes
@@ -70,14 +66,14 @@ fn compile_shapes<S: Rdf>(
     Ok(compiled_shapes)
 }
 
-fn convert_value(value: Value) -> Result<RDFNode, Box<CompiledShaclError>> {
+fn convert_value(value: Value) -> Result<Object, Box<CompiledShaclError>> {
     let ans = match value {
         Value::Iri(iri_ref) => {
             let iri = convert_iri_ref(iri_ref)?;
 
-            RDFNode::iri(iri)
-        }
-        Value::Literal(literal) => RDFNode::literal(literal),
+            Object::iri(iri)
+        },
+        Value::Literal(literal) => Object::literal(literal),
     };
     Ok(ans)
 }

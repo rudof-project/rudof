@@ -18,4 +18,3 @@ rudof.read_dctap_str(dctap)
 dctap_read = rudof.get_dctap()
 
 print(f"DCTAP read: {dctap_read}")
-

@@ -8,16 +8,16 @@ use crate::shacl_engine::engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
+use rudof_rdf::rdf_core::{
+    NeighsRDF, SHACLPath,
+    query::QueryRDF,
+    term::Term,
+    vocab::{rdf_type, rdfs_subclass_of},
+};
 use shacl_ir::compiled::component_ir::Class;
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use srdf::NeighsRDF;
-use srdf::QueryRDF;
-use srdf::SHACLPath;
-use srdf::Term;
-use srdf::rdf_type;
-use srdf::rdfs_subclass_of;
 use std::fmt::Debug;
 
 impl<S: NeighsRDF + 'static> NativeValidator<S> for Class {
@@ -53,10 +53,7 @@ impl<S: NeighsRDF + 'static> NativeValidator<S> for Class {
             !is_class_valid
         };
 
-        let message = format!(
-            "Class constraint not satisfied for class {}",
-            self.class_rule()
-        );
+        let message = format!("Class constraint not satisfied for class {}", self.class_rule());
         validate_with(
             component,
             shape,
@@ -91,18 +88,7 @@ impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Class {
             }
         };
 
-        let message = format!(
-            "Class constraint not satisfied for class {}",
-            self.class_rule()
-        );
-        validate_ask_with(
-            component,
-            shape,
-            store,
-            value_nodes,
-            query,
-            &message,
-            maybe_path,
-        )
+        let message = format!("Class constraint not satisfied for class {}", self.class_rule());
+        validate_ask_with(component, shape, store, value_nodes, query, &message, maybe_path)
     }
 }

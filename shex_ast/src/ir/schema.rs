@@ -22,9 +22,6 @@ impl Schema {
     }
 
     pub fn resolve(&self, alias: &str) -> Result<Option<IriS>, PrefixMapError> {
-        self.prefixes
-            .as_ref()
-            .map(|pm| pm.resolve(alias))
-            .transpose()
+        self.prefixes.as_ref().map(|pm| pm.resolve(alias)).transpose()
     }
 }

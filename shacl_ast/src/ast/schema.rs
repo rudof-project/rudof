@@ -1,25 +1,26 @@
-use std::{collections::HashMap, fmt::Display};
-
 use crate::shape::Shape;
 use iri_s::IriS;
 use prefixmap::PrefixMap;
-use srdf::{RDFNode, Rdf};
+use rudof_rdf::rdf_core::{Rdf, term::Object};
+use std::collections::hash_map::IntoIter;
+use std::{collections::HashMap, fmt::Display};
 
 #[derive(Debug, Clone, Default)]
-pub struct Schema<RDF: Rdf>
+pub struct ShaclSchema<RDF>
 where
+    RDF: Rdf,
     RDF::Term: Clone,
 {
     // imports: Vec<IriS>,
     // entailments: Vec<IriS>,
-    shapes: HashMap<RDFNode, Shape<RDF>>,
+    shapes: HashMap<Object, Shape<RDF>>,
     prefixmap: PrefixMap,
     base: Option<IriS>,
 }
 
-impl<RDF: Rdf> Schema<RDF> {
-    pub fn new() -> Schema<RDF> {
-        Schema {
+impl<RDF: Rdf> ShaclSchema<RDF> {
+    pub fn new() -> ShaclSchema<RDF> {
+        ShaclSchema {
             shapes: HashMap::new(),
             prefixmap: PrefixMap::new(),
             base: None,
@@ -35,7 +36,7 @@ impl<RDF: Rdf> Schema<RDF> {
         self
     }
 
-    pub fn with_shapes(mut self, shapes: HashMap<RDFNode, Shape<RDF>>) -> Self {
+    pub fn with_shapes(mut self, shapes: HashMap<Object, Shape<RDF>>) -> Self {
         self.shapes = shapes;
         self
     }
@@ -48,16 +49,25 @@ impl<RDF: Rdf> Schema<RDF> {
         self.base.clone()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (&RDFNode, &Shape<RDF>)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&Object, &Shape<RDF>)> {
         self.shapes.iter()
     }
 
-    pub fn get_shape(&self, sref: &RDFNode) -> Option<&Shape<RDF>> {
+    pub fn get_shape(&self, sref: &Object) -> Option<&Shape<RDF>> {
         self.shapes.get(sref)
     }
 }
 
-impl<RDF: Rdf> Display for Schema<RDF> {
+impl<RDF: Rdf> IntoIterator for ShaclSchema<RDF> {
+    type Item = (Object, Shape<RDF>);
+    type IntoIter = IntoIter<Object, Shape<RDF>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.shapes.into_iter()
+    }
+}
+
+impl<RDF: Rdf> Display for ShaclSchema<RDF> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for (id, shape) in self.shapes.iter() {
             writeln!(f, "{id} -> {shape}")?;

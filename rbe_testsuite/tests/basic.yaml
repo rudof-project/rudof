@@ -14,7 +14,7 @@ tests:
     open: false
     match_result: !Pass
 
-  # /a/ != aa    
+  # /a/ != aa
   - name: a_1_1_with_a_2_fail
     rbe: !Symbol
       value: a
@@ -27,7 +27,7 @@ tests:
     open: false
     match_result: !Fail
 
-  # /a{1,3}/ = aa  
+  # /a{1,3}/ = aa
   - name: a_1_3_with_a_2_pass
     rbe: !Symbol
       value: a
@@ -39,8 +39,8 @@ tests:
         - 2
     open: false
     match_result: !Pass
-  
-  # /a/ != b  
+
+  # /a/ != b
   - name: a_1_1_with_b_1_fail
     rbe: !Symbol
       value: a
@@ -53,7 +53,7 @@ tests:
     open: false
     match_result: !Fail
 
-    # /a{1,u}/ = a     
+    # /a{1,u}/ = a
   - name: a_1_u_with_a_1_pass
     rbe: !Symbol
       value: a
@@ -66,7 +66,7 @@ tests:
     open: true
     match_result: !Pass
 
-    # /a{1,u}/(open) = ab 
+    # /a{1,u}/(open) = ab
   - name: a_1_u_with_a_1_b_1_pass
     rbe: !Symbol
       value: a
@@ -79,9 +79,9 @@ tests:
       - - b
         - 1
     open: true
-    match_result: !Pass    
+    match_result: !Pass
 
-    # /a{1,u}/(closed) != ab 
+    # /a{1,u}/(closed) != ab
   - name: a_1_u_with_a_1_b_1_closed_fail
     rbe: !Symbol
       value: a
@@ -96,7 +96,7 @@ tests:
     open: false
     match_result: !Fail
 
-    # /a{1,u}/(closed) != ab 
+    # /a{1,u}/(closed) != ab
   - name: b_plus_with_a_1_b_1_open_pass
     rbe: !Symbol
       value: b
@@ -110,17 +110,17 @@ tests:
         - 1
     open: true
     match_result: !Pass
-    
-    # /a{1,1};b{2,3}/ != ab 
+
+    # /a{1,1};b{2,3}/ != ab
   - name: a_1_1_b_2_3_with_a_1_b_1_open_fail
     rbe: !And
-      values: 
-        - !Symbol 
+      values:
+        - !Symbol
           value: a
           card:
             min: 1
             max: 1
-        - !Symbol 
+        - !Symbol
           value: b
           card:
             min: 2
@@ -136,13 +136,13 @@ tests:
     # /a{1,1};b{2,3}/ = abb
   - name: a_1_1_b_2_3_with_a_1_b_2_open_pass
     rbe: !And
-      values: 
-        - !Symbol 
+      values:
+        - !Symbol
           value: a
           card:
             min: 1
             max: 1
-        - !Symbol 
+        - !Symbol
           value: b
           card:
             min: 2
@@ -158,13 +158,13 @@ tests:
     # /a{1,1}|b{1,1}/ = a
   - name: a_1_1_or_b_1_1_with_a_1_open_pass
     rbe: !Or
-      values: 
-        - !Symbol 
+      values:
+        - !Symbol
           value: a
           card:
             min: 1
             max: 1
-        - !Symbol 
+        - !Symbol
           value: b
           card:
             min: 1
@@ -178,13 +178,13 @@ tests:
     # /a{1,1}|b{1,1}/ = b
   - name: a_1_1_or_b_1_1_with_b_1_open_pass
     rbe: !Or
-      values: 
-        - !Symbol 
+      values:
+        - !Symbol
           value: a
           card:
             min: 1
             max: 1
-        - !Symbol 
+        - !Symbol
           value: b
           card:
             min: 1
@@ -198,13 +198,13 @@ tests:
     # /a{1,1}|b{1,1}/ != c
   - name: a_1_1_or_b_1_1_with_c_1_open_fail
     rbe: !Or
-      values: 
-        - !Symbol 
+      values:
+        - !Symbol
           value: a
           card:
             min: 1
             max: 1
-        - !Symbol 
+        - !Symbol
           value: b
           card:
             min: 1
@@ -218,13 +218,13 @@ tests:
     # /a{1,1}|b{1,1}/ != ab
   - name: a_1_1_or_b_1_1_with_a_1_b_1_open_fail
     rbe: !Or
-      values: 
-        - !Symbol 
+      values:
+        - !Symbol
           value: a
           card:
             min: 1
             max: 1
-        - !Symbol 
+        - !Symbol
           value: b
           card:
             min: 1
@@ -240,13 +240,13 @@ tests:
     # /a{1,1}|b{1,1}/(open) == ac
   - name: a_1_1_or_b_1_1_with_a_1_c_1_open_pass
     rbe: !Or
-      values: 
-        - !Symbol 
+      values:
+        - !Symbol
           value: a
           card:
             min: 1
             max: 1
-        - !Symbol 
+        - !Symbol
           value: b
           card:
             min: 1
@@ -262,13 +262,13 @@ tests:
     # /a{1,1}|b{1,1}/(closed) != ac
   - name: a_1_1_or_b_1_1_with_a_1_c_1_closed_fail
     rbe: !Or
-      values: 
-        - !Symbol 
+      values:
+        - !Symbol
           value: a
           card:
             min: 1
             max: 1
-        - !Symbol 
+        - !Symbol
           value: b
           card:
             min: 1
@@ -284,18 +284,18 @@ tests:
     # /a{1,1}|b{1,1}/(closed) != ac
   - name: a_1_1_and_b_1_1_and_c_0_1_with_a_1_c_1_b_1_closed_pass
     rbe: !And
-      values: 
-        - !Symbol 
+      values:
+        - !Symbol
           value: a
           card:
             min: 1
             max: 1
-        - !Symbol 
+        - !Symbol
           value: b
           card:
             min: 1
             max: 1
-        - !Symbol 
+        - !Symbol
           value: c
           card:
             min: 0

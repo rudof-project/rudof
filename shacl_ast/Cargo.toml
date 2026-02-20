@@ -11,16 +11,15 @@ repository.workspace = true
 
 #[features]
 #rdf-star = [
-# "oxrdf/rdf-star", 
+# "oxrdf/rdf-star",
 #    "srdf/rdf-star",
 #]
 
 [dependencies]
-const_format = "0.2"
+const_format.workspace = true
 iri_s.workspace = true
-itertools = "0.14"
-oxrdf = { workspace = true, features = ["oxsdatatypes"] }
+itertools.workspace = true
+paste.workspace = true
 prefixmap.workspace = true
-regex.workspace = true
-srdf.workspace = true
-thiserror = "2.0"
+rudof_rdf.workspace = true
+thiserror.workspace = true

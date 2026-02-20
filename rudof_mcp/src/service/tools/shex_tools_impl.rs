@@ -1,4 +1,4 @@
-use crate::service::{errors::*, service::RudofMcpService};
+use crate::service::{errors::*, mcp_service::RudofMcpService};
 use iri_s::IriS;
 use rmcp::{
     ErrorData as McpError,
@@ -6,14 +6,13 @@ use rmcp::{
     model::{CallToolResult, Content},
 };
 use rudof_lib::{
-    InputSpec, RudofConfig, parse_shape_selector, shex::parse_shex_schema,
-    shex::serialize_current_shex_rudof, shex::serialize_shape_current_shex_rudof,
-    shex_format::ShExFormat,
+    InputSpec, RudofConfig, parse_shape_selector, shex::parse_shex_schema, shex::serialize_current_shex_rudof,
+    shex::serialize_shape_current_shex_rudof, shex_format::ShExFormat,
 };
+use rudof_rdf::rdf_impl::ReaderMode;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use srdf::ReaderMode;
 use std::io::Cursor;
 use std::str::FromStr;
 use std::time::Instant;
@@ -120,7 +119,7 @@ pub async fn show_shex_impl(
                     format!("Supported formats: {}", SHEX_FORMATS),
                 )
                 .into_call_tool_result());
-            }
+            },
         },
         None => ShExFormat::default(),
     };
@@ -135,7 +134,7 @@ pub async fn show_shex_impl(
                     format!("Supported formats: {}", SHEX_FORMATS),
                 )
                 .into_call_tool_result());
-            }
+            },
         },
         None => ShExFormat::default(),
     };
@@ -150,7 +149,7 @@ pub async fn show_shex_impl(
                     "Provide a valid absolute IRI (e.g., 'http://example.org/base/')",
                 )
                 .into_call_tool_result());
-            }
+            },
         },
         None => None,
     };
@@ -165,7 +164,7 @@ pub async fn show_shex_impl(
                     format!("Supported modes: {}", READER_MODES),
                 )
                 .into_call_tool_result());
-            }
+            },
         },
         None => ReaderMode::Strict,
     };
@@ -206,7 +205,7 @@ pub async fn show_shex_impl(
                     "Use a valid IRI or prefixed name (e.g., ':Person' or 'http://example.org/Person')",
                 )
                 .into_call_tool_result());
-            }
+            },
         };
         let formatter = shex_ast::compact::ShExFormatter::default().without_colors();
         serialize_shape_current_shex_rudof(
@@ -225,13 +224,7 @@ pub async fn show_shex_impl(
         })?;
     } else if show_schema.unwrap_or(true) {
         let formatter = shex_ast::compact::ShExFormatter::default().without_colors();
-        serialize_current_shex_rudof(
-            &rudof,
-            &parsed_result_format,
-            &formatter,
-            &mut output_buffer,
-        )
-        .map_err(|e| {
+        serialize_current_shex_rudof(&rudof, &parsed_result_format, &formatter, &mut output_buffer).map_err(|e| {
             internal_error(
                 "Serialization failed",
                 e.to_string(),
@@ -241,10 +234,7 @@ pub async fn show_shex_impl(
     }
 
     // Optionally include IR in logs — for MCP we include it in the summary if requested
-    let mut summary = format!(
-        "# ShEx Show Results\n\n**Result Format:** {}\n",
-        parsed_result_format
-    );
+    let mut summary = format!("# ShEx Show Results\n\n**Result Format:** {}\n", parsed_result_format);
 
     let mut dependencies_included = false;
     let mut statistics_included = false;
@@ -282,16 +272,8 @@ pub async fn show_shex_impl(
         } else {
             None
         },
-        dependencies_included: if dependencies_included {
-            Some(true)
-        } else {
-            None
-        },
-        statistics_included: if statistics_included {
-            Some(true)
-        } else {
-            None
-        },
+        dependencies_included: if dependencies_included { Some(true) } else { None },
+        statistics_included: if statistics_included { Some(true) } else { None },
     };
 
     let structured = serde_json::to_value(&response).map_err(|e| {
@@ -304,19 +286,10 @@ pub async fn show_shex_impl(
 
     // Optionally append elapsed time to the human-readable summary
     let mut contents = vec![Content::text(summary)];
-    contents.push(Content::text(format!(
-        "## Schema\n\n```shex\n{}\n```",
-        schema
-    )));
-    contents.push(Content::text(format!(
-        "## Serialized\n\n```shex\n{}\n```",
-        output_str
-    )));
+    contents.push(Content::text(format!("## Schema\n\n```shex\n{}\n```", schema)));
+    contents.push(Content::text(format!("## Serialized\n\n```shex\n{}\n```", output_str)));
     if let Some(seconds) = response.elapsed_seconds {
-        contents.insert(
-            1,
-            Content::text(format!("**Elapsed:** {:.03?} sec", seconds)),
-        );
+        contents.insert(1, Content::text(format!("**Elapsed:** {:.03?} sec", seconds)));
     }
 
     // If IR is available and inclusion flags are set, append additional sections
@@ -411,7 +384,7 @@ pub async fn check_shex_impl(
                     format!("Supported formats: {}", SHEX_FORMATS),
                 )
                 .into_call_tool_result());
-            }
+            },
         },
         None => ShExFormat::default(),
     };
@@ -426,7 +399,7 @@ pub async fn check_shex_impl(
                     "Provide a valid absolute IRI (e.g., 'http://example.org/base/')",
                 )
                 .into_call_tool_result());
-            }
+            },
         },
         None => None,
     };
@@ -441,7 +414,7 @@ pub async fn check_shex_impl(
                     format!("Supported modes: {}", READER_MODES),
                 )
                 .into_call_tool_result());
-            }
+            },
         },
         None => ReaderMode::Strict,
     };
@@ -480,7 +453,7 @@ pub async fn check_shex_impl(
             let mut result = CallToolResult::success(contents);
             result.structured_content = Some(structured);
             Ok(result)
-        }
+        },
         Err(err) => {
             // Return success with structured invalid result rather than an McpError so clients can inspect
             let elapsed = begin.elapsed().as_secs_f64();
@@ -500,7 +473,7 @@ pub async fn check_shex_impl(
             let mut result = CallToolResult::success(contents);
             result.structured_content = Some(structured);
             Ok(result)
-        }
+        },
     }
 }
 
@@ -587,14 +560,11 @@ pub async fn shape_info_impl(
         show_statistics,
     }): Parameters<ShapeInfoRequest>,
 ) -> Result<CallToolResult, McpError> {
-    let parsed_schema_format: ShExFormat = match parse_optional_format::<ShExFormat>(
-        schema_format.as_deref(),
-        "schema format",
-        SHEX_FORMATS,
-    ) {
-        Ok(fmt) => fmt,
-        Err(e) => return Ok(e.into_call_tool_result()),
-    };
+    let parsed_schema_format: ShExFormat =
+        match parse_optional_format::<ShExFormat>(schema_format.as_deref(), "schema format", SHEX_FORMATS) {
+            Ok(fmt) => fmt,
+            Err(e) => return Ok(e.into_call_tool_result()),
+        };
 
     let parsed_result_format: ShExFormat = match parse_optional_format::<ShExFormat>(
         result_schema_format.as_deref(),
@@ -605,11 +575,10 @@ pub async fn shape_info_impl(
         Err(e) => return Ok(e.into_call_tool_result()),
     };
 
-    let parsed_base_schema: Option<IriS> =
-        match parse_optional_iri(base_schema.as_deref(), "base IRI") {
-            Ok(iri) => iri,
-            Err(e) => return Ok(e.into_call_tool_result()),
-        };
+    let parsed_base_schema: Option<IriS> = match parse_optional_iri(base_schema.as_deref(), "base IRI") {
+        Ok(iri) => iri,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
 
     let parsed_reader_mode: ReaderMode = match parse_optional_reader_mode(reader_mode.as_deref()) {
         Ok(mode) => mode,
@@ -648,7 +617,7 @@ pub async fn shape_info_impl(
                 "Use a valid IRI or prefixed name (e.g., ':Person' or 'http://example.org/Person')",
             )
             .into_call_tool_result());
-        }
+        },
     };
     let formatter = shex_ast::compact::ShExFormatter::default().without_colors();
     serialize_shape_current_shex_rudof(
@@ -699,16 +668,8 @@ pub async fn shape_info_impl(
         } else {
             None
         },
-        dependencies_included: if dependencies_included {
-            Some(true)
-        } else {
-            None
-        },
-        statistics_included: if statistics_included {
-            Some(true)
-        } else {
-            None
-        },
+        dependencies_included: if dependencies_included { Some(true) } else { None },
+        statistics_included: if statistics_included { Some(true) } else { None },
     };
 
     let structured = serde_json::to_value(&response).map_err(|e| {
@@ -820,14 +781,11 @@ pub async fn convert_shex_impl(
         show_time,
     }): Parameters<ConvertShexRequest>,
 ) -> Result<CallToolResult, McpError> {
-    let parsed_schema_format: ShExFormat = match parse_optional_format::<ShExFormat>(
-        schema_format.as_deref(),
-        "schema format",
-        SHEX_FORMATS,
-    ) {
-        Ok(fmt) => fmt,
-        Err(e) => return Ok(e.into_call_tool_result()),
-    };
+    let parsed_schema_format: ShExFormat =
+        match parse_optional_format::<ShExFormat>(schema_format.as_deref(), "schema format", SHEX_FORMATS) {
+            Ok(fmt) => fmt,
+            Err(e) => return Ok(e.into_call_tool_result()),
+        };
 
     let parsed_result_format: ShExFormat = match parse_optional_format::<ShExFormat>(
         result_schema_format.as_deref(),
@@ -838,11 +796,10 @@ pub async fn convert_shex_impl(
         Err(e) => return Ok(e.into_call_tool_result()),
     };
 
-    let parsed_base_schema: Option<IriS> =
-        match parse_optional_iri(base_schema.as_deref(), "base IRI") {
-            Ok(iri) => iri,
-            Err(e) => return Ok(e.into_call_tool_result()),
-        };
+    let parsed_base_schema: Option<IriS> = match parse_optional_iri(base_schema.as_deref(), "base IRI") {
+        Ok(iri) => iri,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
 
     let parsed_reader_mode: ReaderMode = match parse_optional_reader_mode(reader_mode.as_deref()) {
         Ok(mode) => mode,
@@ -874,13 +831,7 @@ pub async fn convert_shex_impl(
 
     // Serialize requested output into buffer (whole schema)
     let formatter = shex_ast::compact::ShExFormatter::default().without_colors();
-    serialize_current_shex_rudof(
-        &rudof,
-        &parsed_result_format,
-        &formatter,
-        &mut output_buffer,
-    )
-    .map_err(|e| {
+    serialize_current_shex_rudof(&rudof, &parsed_result_format, &formatter, &mut output_buffer).map_err(|e| {
         internal_error(
             "Serialization failed",
             e.to_string(),
@@ -920,12 +871,9 @@ pub async fn convert_shex_impl(
         )
     })?;
 
-    let mut contents = vec![Content::text(format!(
-        "**Result Format:** {}",
-        parsed_result_format
-    ))];
+    let mut contents = vec![Content::text(format!("**Result Format:** {}", parsed_result_format))];
     contents.push(Content::text(format!(
-        "```shex    
+        "```shex
         {}
         ```",
         output_str

@@ -12,7 +12,6 @@ repository.workspace = true
 [dependencies]
 colored.workspace = true
 const_format.workspace = true
-crossterm.workspace = true
 csv.workspace = true
 iri_s.workspace = true
 itertools.workspace = true
@@ -27,7 +26,7 @@ regex.workspace = true
 rust_decimal.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-srdf.workspace = true
+rudof_rdf.workspace = true
 tabled.workspace = true
 term_size.workspace = true
 thiserror.workspace = true

@@ -7,13 +7,11 @@ use crate::shacl_engine::Engine;
 use crate::shacl_engine::sparql::SparqlEngine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
+use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::In;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use srdf::NeighsRDF;
-use srdf::QueryRDF;
-use srdf::SHACLPath;
 use std::fmt::Debug;
 
 impl<S: NeighsRDF + Debug> Validator<S> for In {
@@ -29,17 +27,10 @@ impl<S: NeighsRDF + Debug> Validator<S> for In {
         _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let check = |value_node: &S::Term| {
-            let values: Vec<_> = self
-                .values()
-                .iter()
-                .map(|node| S::object_as_term(node))
-                .collect();
+            let values: Vec<_> = self.values().iter().map(|node| S::object_as_term(node)).collect();
             !values.contains(value_node)
         };
-        let message = format!(
-            "In constraint not satisfied. Expected one of: {:?}",
-            self.values()
-        );
+        let message = format!("In constraint not satisfied. Expected one of: {:?}", self.values());
         validate_with(
             component,
             shape,

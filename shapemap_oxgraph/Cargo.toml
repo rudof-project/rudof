@@ -10,6 +10,3 @@ edition.workspace = true
 shapemap = { workspace = true }
 oxrdf = "0.1.7"
 thiserror = "2.0"
-
-
-

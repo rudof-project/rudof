@@ -1,8 +1,7 @@
 use super::compiled_shacl_error::CompiledShaclError;
 use iri_s::IriS;
+use shacl_ast::ShaclVocab;
 use shacl_ast::severity::Severity;
-use shacl_ast::shacl_vocab::{sh_info, sh_violation, sh_warning};
-use shacl_ast::{sh_debug, sh_trace};
 use std::fmt::Display;
 
 #[derive(Hash, Clone, PartialEq, Eq, Debug)]
@@ -18,11 +17,11 @@ pub enum CompiledSeverity {
 impl CompiledSeverity {
     pub fn iri(&self) -> IriS {
         match self {
-            CompiledSeverity::Trace => sh_trace().clone(),
-            CompiledSeverity::Debug => sh_debug().clone(),
-            CompiledSeverity::Violation => sh_violation().clone(),
-            CompiledSeverity::Warning => sh_warning().clone(),
-            CompiledSeverity::Info => sh_info().clone(),
+            CompiledSeverity::Trace => ShaclVocab::sh_trace().clone(),
+            CompiledSeverity::Debug => ShaclVocab::sh_debug().clone(),
+            CompiledSeverity::Violation => ShaclVocab::sh_violation().clone(),
+            CompiledSeverity::Warning => ShaclVocab::sh_warning().clone(),
+            CompiledSeverity::Info => ShaclVocab::sh_info().clone(),
             CompiledSeverity::Generic(iri) => iri.clone(),
         }
     }
@@ -37,17 +36,15 @@ impl CompiledSeverity {
                     Severity::Warning => CompiledSeverity::Warning,
                     Severity::Info => CompiledSeverity::Info,
                     Severity::Generic(iri_ref) => {
-                        let iri = iri_ref.get_iri().map_err(|e| {
-                            CompiledShaclError::IriRefConversion {
-                                iri_ref: iri_ref.to_string(),
-                                err: e.to_string(),
-                            }
+                        let iri = iri_ref.get_iri().map_err(|e| CompiledShaclError::IriRefConversion {
+                            iri_ref: iri_ref.to_string(),
+                            err: e.to_string(),
                         })?;
                         CompiledSeverity::Generic(iri.clone())
-                    }
+                    },
                 };
                 Some(severity)
-            }
+            },
             None => None,
         };
 
@@ -55,15 +52,15 @@ impl CompiledSeverity {
     }
 
     pub fn from_iri(iri: &IriS) -> Option<Self> {
-        if iri == sh_trace() {
+        if iri == ShaclVocab::sh_trace() {
             Some(CompiledSeverity::Trace)
-        } else if iri == sh_debug() {
+        } else if iri == ShaclVocab::sh_debug() {
             Some(CompiledSeverity::Debug)
-        } else if iri == sh_violation() {
+        } else if iri == ShaclVocab::sh_violation() {
             Some(CompiledSeverity::Violation)
-        } else if iri == sh_warning() {
+        } else if iri == ShaclVocab::sh_warning() {
             Some(CompiledSeverity::Warning)
-        } else if iri == sh_info() {
+        } else if iri == ShaclVocab::sh_info() {
             Some(CompiledSeverity::Info)
         } else {
             Some(CompiledSeverity::Generic(iri.clone()))
@@ -72,11 +69,11 @@ impl CompiledSeverity {
 
     pub fn to_iri(&self) -> IriS {
         match self {
-            CompiledSeverity::Trace => sh_trace().clone(),
-            CompiledSeverity::Debug => sh_debug().clone(),
-            CompiledSeverity::Violation => sh_violation().clone(),
-            CompiledSeverity::Warning => sh_warning().clone(),
-            CompiledSeverity::Info => sh_info().clone(),
+            CompiledSeverity::Trace => ShaclVocab::sh_trace().clone(),
+            CompiledSeverity::Debug => ShaclVocab::sh_debug().clone(),
+            CompiledSeverity::Violation => ShaclVocab::sh_violation().clone(),
+            CompiledSeverity::Warning => ShaclVocab::sh_warning().clone(),
+            CompiledSeverity::Info => ShaclVocab::sh_info().clone(),
             CompiledSeverity::Generic(iri) => iri.clone(),
         }
     }

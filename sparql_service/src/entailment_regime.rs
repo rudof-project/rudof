@@ -6,12 +6,12 @@ use std::fmt::Display;
 pub enum EntailmentRegime {
     #[default]
     Simple,
-    RDF,
-    RDFS,
+    Rdf,
+    Rdfs,
     D,
     OWLDirect,
     OWLRDFBased,
-    RIF,
+    Rif,
     Other(IriS),
 }
 
@@ -19,12 +19,12 @@ impl Display for EntailmentRegime {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             EntailmentRegime::Simple => write!(f, "Simple"),
-            EntailmentRegime::RDF => write!(f, "RDF"),
-            EntailmentRegime::RDFS => write!(f, "RDFS"),
+            EntailmentRegime::Rdf => write!(f, "RDF"),
+            EntailmentRegime::Rdfs => write!(f, "RDFS"),
             EntailmentRegime::D => write!(f, "D"),
             EntailmentRegime::OWLDirect => write!(f, "OWLDirect"),
             EntailmentRegime::OWLRDFBased => write!(f, "OWLRDFBased"),
-            EntailmentRegime::RIF => write!(f, "RIF"),
+            EntailmentRegime::Rif => write!(f, "RIF"),
             EntailmentRegime::Other(iri) => write!(f, "EntailmentRegime({iri})",),
         }
     }

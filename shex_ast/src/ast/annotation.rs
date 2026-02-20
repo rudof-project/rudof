@@ -1,15 +1,14 @@
-use std::{fmt, result};
-
 use iri_s::IriS;
 use prefixmap::Deref;
 use prefixmap::IriRef;
 use prefixmap::error::DerefError;
+use rudof_rdf::rdf_core::vocab::rdfs_label;
 use serde::ser::SerializeMap;
 use serde::{
     Deserialize, Serialize, Serializer,
     de::{self, MapAccess, Visitor},
 };
-use srdf::RDFS_LABEL_STR;
+use std::{fmt, result};
 
 use super::object_value::ObjectValue;
 
@@ -26,7 +25,7 @@ impl Annotation {
 
     pub fn rdfs_label(str: &str) -> Annotation {
         Annotation {
-            predicate: IriRef::iri(IriS::new_unchecked(RDFS_LABEL_STR)),
+            predicate: IriRef::iri(rdfs_label().clone()),
             object: ObjectValue::str(str),
         }
     }
@@ -48,11 +47,7 @@ impl Annotation {
 }
 
 impl Deref for Annotation {
-    fn deref(
-        self,
-        base: Option<&IriS>,
-        prefixmap: Option<&prefixmap::PrefixMap>,
-    ) -> Result<Self, DerefError> {
+    fn deref(self, base: Option<&IriS>, prefixmap: Option<&prefixmap::PrefixMap>) -> Result<Self, DerefError> {
         let new_pred = self.predicate.deref(base, prefixmap)?;
         let new_obj = self.object.deref(base, prefixmap)?;
         Ok(Annotation {
@@ -141,31 +136,27 @@ impl<'de> Deserialize<'de> for Annotation {
                             }
                             let iri: IriRef = map.next_value()?;
                             predicate = Some(iri);
-                        }
+                        },
                         Field::Type => {
                             if type_.is_some() {
                                 return Err(de::Error::duplicate_field("type"));
                             }
                             let value: String = map.next_value()?;
                             if value != "Annotation" {
-                                return Err(de::Error::custom(format!(
-                                    "Expected type `Annotation`, found: {value}"
-                                )));
+                                return Err(de::Error::custom(format!("Expected type `Annotation`, found: {value}")));
                             }
                             type_ = Some("Annotation".to_string());
-                        }
+                        },
                         Field::Object => {
                             if object.is_some() {
                                 return Err(de::Error::duplicate_field("object"));
                             }
                             object = Some(map.next_value()?);
-                        }
+                        },
                     }
                 }
                 match (predicate, object) {
-                    (None, None) => {
-                        Err(de::Error::custom("Missing fields `predicate` and `object`"))
-                    }
+                    (None, None) => Err(de::Error::custom("Missing fields `predicate` and `object`")),
                     (Some(_), None) => Err(de::Error::custom("Missing field `object`")),
                     (None, Some(_)) => Err(de::Error::custom("Missing field `predicate`")),
                     (Some(predicate), Some(object)) => Ok(Annotation { predicate, object }),

@@ -35,8 +35,7 @@ impl OriginConfig {
         let mut networks = Vec::new();
 
         for cidr in allowed_cidrs {
-            let network = IpNetwork::from_str(&cidr)
-                .map_err(|e| format!("Invalid CIDR notation '{}': {}", cidr, e))?;
+            let network = IpNetwork::from_str(&cidr).map_err(|e| format!("Invalid CIDR notation '{}': {}", cidr, e))?;
             networks.push(network);
         }
 
@@ -94,9 +93,7 @@ impl OriginConfig {
 
     /// Checks if an IP address is within any of the allowed networks
     fn is_ip_allowed(&self, ip: &IpAddr) -> bool {
-        self.allowed_networks
-            .iter()
-            .any(|network| network.contains(*ip))
+        self.allowed_networks.iter().any(|network| network.contains(*ip))
     }
 
     /// Extracts the host portion from an origin URL
@@ -157,7 +154,7 @@ pub async fn protocol_version_guard(req: Request<Body>, next: Next) -> Response 
             Ok(s) if SUPPORTED_PROTOCOL_VERSIONS.contains(&s) => {
                 tracing::debug!("Accepted MCP-Protocol-Version: {}", s);
                 // OK — continue
-            }
+            },
             Ok(s) => {
                 tracing::warn!("Unsupported MCP-Protocol-Version: {}", s);
                 return Response::builder()
@@ -170,21 +167,18 @@ pub async fn protocol_version_guard(req: Request<Body>, next: Next) -> Response 
                         .into(),
                     )
                     .unwrap();
-            }
+            },
             Err(_) => {
                 tracing::warn!("Invalid MCP-Protocol-Version header encoding");
                 return Response::builder()
                     .status(StatusCode::BAD_REQUEST)
                     .body("invalid MCP-Protocol-Version header encoding".into())
                     .unwrap();
-            }
+            },
         }
     } else {
         // No header — per spec, assume 2025-03-26 for backwards compatibility
-        tracing::debug!(
-            "No MCP-Protocol-Version header; assuming {}",
-            DEFAULT_PROTOCOL_VERSION
-        );
+        tracing::debug!("No MCP-Protocol-Version header; assuming {}", DEFAULT_PROTOCOL_VERSION);
     }
 
     next.run(req).await
@@ -209,26 +203,23 @@ pub async fn origin_guard(req: Request<Body>, next: Next, config: OriginConfig) 
             Ok(origin_str) if config.is_allowed_origin(origin_str) => {
                 tracing::debug!("Accepted Origin header: {}", origin_str);
                 // Allowed origin
-            }
+            },
             Ok(origin_str) => {
                 // Per MCP spec: "If the Origin header is present and invalid,
                 // servers MUST respond with HTTP 403 Forbidden"
-                tracing::warn!(
-                    "Rejected request due to non-allowed Origin header: {}",
-                    origin_str
-                );
+                tracing::warn!("Rejected request due to non-allowed Origin header: {}", origin_str);
                 return Response::builder()
                     .status(StatusCode::FORBIDDEN)
                     .body("origin not allowed - origin IP not in allowed networks".into())
                     .unwrap();
-            }
+            },
             Err(_) => {
                 tracing::warn!("Rejected request due to invalid Origin header encoding");
                 return Response::builder()
                     .status(StatusCode::FORBIDDEN)
                     .body("invalid Origin header encoding".into())
                     .unwrap();
-            }
+            },
         }
     } else if !config.allow_missing_origin {
         tracing::warn!("Rejected request due to missing Origin header");
@@ -265,14 +256,7 @@ mod tests {
     /// Test that unsupported protocol versions should be rejected
     #[test]
     fn test_rejects_unsupported_protocol_version() {
-        let unsupported_versions = vec![
-            "2020-01-01",
-            "1.0",
-            "invalid",
-            "",
-            "2024-01-01",
-            "2025-01-01",
-        ];
+        let unsupported_versions = vec!["2020-01-01", "1.0", "invalid", "", "2024-01-01", "2025-01-01"];
 
         for version in unsupported_versions {
             assert!(
@@ -302,9 +286,7 @@ mod tests {
 
     #[test]
     fn test_custom_networks() {
-        let config =
-            OriginConfig::new(vec!["192.168.1.0/24".to_string(), "10.0.0.0/8".to_string()])
-                .unwrap();
+        let config = OriginConfig::new(vec!["192.168.1.0/24".to_string(), "10.0.0.0/8".to_string()]).unwrap();
 
         // Test allowed networks
         assert!(config.is_allowed_origin("http://192.168.1.1"));

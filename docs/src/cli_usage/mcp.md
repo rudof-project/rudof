@@ -184,7 +184,7 @@ rudof mcp --transport streamable-http -n 127.0.0.1 -n 192.168.1.0/24
 > 💡 **Note**: The `--bind` and `--allowed-network` options serve different purposes:
 > - `--bind` controls which network interface the server listens on
 > - `--allowed-network` controls which origins are accepted via the Origin HTTP header
-> 
+>
 > For maximum security, you can bind to `0.0.0.0` (to allow network access) while restricting allowed networks with `-n` flags.
 
 ### Combined example
@@ -265,9 +265,9 @@ prefix schema: <http://schema.org/>
 
 :c schema:name  "Carol"  .
 
-:d schema:name  23      .  
+:d schema:name  23      .
 
-:e schema:name  "Emily" ;  
+:e schema:name  "Emily" ;
    schema:knows :d      .
 ```
 

@@ -17,4 +17,6 @@ reqwest.workspace = true
 serde.workspace = true
 thiserror.workspace = true
 url.workspace = true
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
 proptest.workspace = true

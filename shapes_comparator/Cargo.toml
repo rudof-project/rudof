@@ -18,6 +18,6 @@ shacl_ast.workspace = true
 shex_ast.workspace = true
 shex_validation.workspace = true
 sparql_service.workspace = true
-srdf.workspace = true
+rudof_rdf.workspace = true
 thiserror.workspace = true
 tracing = { workspace = true }

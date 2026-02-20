@@ -17,11 +17,7 @@ impl Name {
         let local_name_html = format!("{local_name}.html");
         Name {
             repr: str.to_string(),
-            path: Some(
-                target_folder
-                    .as_ref()
-                    .join(Path::new(local_name_html.as_str())),
-            ),
+            path: Some(target_folder.as_ref().join(Path::new(local_name_html.as_str()))),
             href: href.map(|s| s.to_string()),
             relative_href: Some(local_name_html),
             label: None,
@@ -38,9 +34,7 @@ impl Name {
 
     pub fn get_path_localname(&self) -> Option<(PathBuf, String)> {
         if let Some(href) = &self.relative_href {
-            self.path
-                .as_ref()
-                .map(|path| (path.to_owned(), href.to_string()))
+            self.path.as_ref().map(|path| (path.to_owned(), href.to_string()))
         } else {
             None
         }

@@ -10,10 +10,10 @@
 //!   and other issues that LLMs can self-correct
 //! - **Protocol Errors**: For internal server errors and unrecoverable issues
 
-use crate::service::service::RudofMcpService;
+use crate::service::mcp_service::RudofMcpService;
 use rmcp::{
-    ErrorData as McpError, handler::server::router::tool::ToolRouter,
-    handler::server::wrapper::Parameters, model::CallToolResult, tool, tool_router,
+    ErrorData as McpError, handler::server::router::tool::ToolRouter, handler::server::wrapper::Parameters,
+    model::CallToolResult, tool, tool_router,
 };
 
 // Import the public helper functions from the implementation files
@@ -47,10 +47,7 @@ impl RudofMcpService {
         name = "export_rdf_data",
         description = "Serialize and return the RDF stored on the server in the requested format"
     )]
-    pub async fn export_rdf_data(
-        &self,
-        params: Parameters<ExportRdfDataRequest>,
-    ) -> Result<CallToolResult, McpError> {
+    pub async fn export_rdf_data(&self, params: Parameters<ExportRdfDataRequest>) -> Result<CallToolResult, McpError> {
         export_rdf_data_impl(self, params).await
     }
 
@@ -59,10 +56,7 @@ impl RudofMcpService {
         name = "export_plantuml",
         description = "Generate a PlantUML diagram of the RDF stored on the server"
     )]
-    pub async fn export_plantuml(
-        &self,
-        params: Parameters<EmptyRequest>,
-    ) -> Result<CallToolResult, McpError> {
+    pub async fn export_plantuml(&self, params: Parameters<EmptyRequest>) -> Result<CallToolResult, McpError> {
         export_plantuml_impl(self, params).await
     }
 
@@ -71,10 +65,7 @@ impl RudofMcpService {
         name = "export_image",
         description = "Generate an image (SVG or PNG) visualization of the RDF stored on the server"
     )]
-    pub async fn export_image(
-        &self,
-        params: Parameters<ExportImageRequest>,
-    ) -> Result<CallToolResult, McpError> {
+    pub async fn export_image(&self, params: Parameters<ExportImageRequest>) -> Result<CallToolResult, McpError> {
         export_image_impl(self, params).await
     }
 
@@ -87,10 +78,7 @@ impl RudofMcpService {
         name = "node_info",
         description = "Show information about a node (outgoing/incoming arcs) from the RDF stored on the server"
     )]
-    pub async fn node_info(
-        &self,
-        params: Parameters<NodeInfoRequest>,
-    ) -> Result<CallToolResult, McpError> {
+    pub async fn node_info(&self, params: Parameters<NodeInfoRequest>) -> Result<CallToolResult, McpError> {
         node_info_impl(self, params).await
     }
 
@@ -119,34 +107,19 @@ impl RudofMcpService {
         name = "validate_shex",
         description = "Validate the RDF data stored on the server against a ShEx schema"
     )]
-    pub async fn validate_shex(
-        &self,
-        params: Parameters<ValidateShexRequest>,
-    ) -> Result<CallToolResult, McpError> {
+    pub async fn validate_shex(&self, params: Parameters<ValidateShexRequest>) -> Result<CallToolResult, McpError> {
         validate_shex_impl(self, params).await
     }
 
     /// Check if a ShEx schema is syntactically valid and well-formed.
-    #[tool(
-        name = "check_shex",
-        description = "Check if a ShEx schema is well-formed"
-    )]
-    pub async fn check_shex(
-        &self,
-        params: Parameters<CheckShexRequest>,
-    ) -> Result<CallToolResult, McpError> {
+    #[tool(name = "check_shex", description = "Check if a ShEx schema is well-formed")]
+    pub async fn check_shex(&self, params: Parameters<CheckShexRequest>) -> Result<CallToolResult, McpError> {
         check_shex_impl(self, params).await
     }
 
     /// Get detailed information about a specific shape in a ShEx schema.
-    #[tool(
-        name = "shape_info",
-        description = "Obtain information about a specific ShEx shape"
-    )]
-    pub async fn shape_info(
-        &self,
-        params: Parameters<ShapeInfoRequest>,
-    ) -> Result<CallToolResult, McpError> {
+    #[tool(name = "shape_info", description = "Obtain information about a specific ShEx shape")]
+    pub async fn shape_info(&self, params: Parameters<ShapeInfoRequest>) -> Result<CallToolResult, McpError> {
         shape_info_impl(self, params).await
     }
 
@@ -155,10 +128,7 @@ impl RudofMcpService {
         name = "convert_shex",
         description = "Convert a ShEx schema between supported formats (shexc, shexj, turtle)"
     )]
-    pub async fn convert_shex(
-        &self,
-        params: Parameters<ConvertShexRequest>,
-    ) -> Result<CallToolResult, McpError> {
+    pub async fn convert_shex(&self, params: Parameters<ConvertShexRequest>) -> Result<CallToolResult, McpError> {
         convert_shex_impl(self, params).await
     }
 
@@ -167,10 +137,7 @@ impl RudofMcpService {
         name = "show_shex",
         description = "Parse a ShEx schema and display it with optional compilation, statistics, and dependency analysis"
     )]
-    pub async fn show_shex(
-        &self,
-        params: Parameters<ShowShexRequest>,
-    ) -> Result<CallToolResult, McpError> {
+    pub async fn show_shex(&self, params: Parameters<ShowShexRequest>) -> Result<CallToolResult, McpError> {
         show_shex_impl(self, params).await
     }
 
@@ -183,10 +150,7 @@ impl RudofMcpService {
         name = "validate_shacl",
         description = "Validate the RDF data stored on the server against a SHACL schema"
     )]
-    pub async fn validate_shacl(
-        &self,
-        params: Parameters<ValidateShaclRequest>,
-    ) -> Result<CallToolResult, McpError> {
+    pub async fn validate_shacl(&self, params: Parameters<ValidateShaclRequest>) -> Result<CallToolResult, McpError> {
         validate_shacl_impl(self, params).await
     }
 }
@@ -224,7 +188,7 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
                         .idempotent(false)
                         .open_world(true),
                 );
-            }
+            },
             "export_rdf_data" => {
                 tool.title = Some("Export RDF Data".to_string());
                 tool.annotations = Some(
@@ -234,7 +198,7 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
                         .idempotent(true)
                         .open_world(false),
                 );
-            }
+            },
             "export_plantuml" => {
                 tool.title = Some("Export PlantUML Diagram".to_string());
                 tool.annotations = Some(
@@ -244,7 +208,7 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
                         .idempotent(true)
                         .open_world(false),
                 );
-            }
+            },
             "export_image" => {
                 tool.title = Some("Export RDF Image Visualization".to_string());
                 tool.annotations = Some(
@@ -254,7 +218,7 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
                         .idempotent(true)
                         .open_world(false),
                 );
-            }
+            },
             "node_info" => {
                 tool.title = Some("Inspect RDF Node".to_string());
                 tool.annotations = Some(
@@ -264,7 +228,7 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
                         .idempotent(true)
                         .open_world(false),
                 );
-            }
+            },
             "execute_sparql_query" => {
                 tool.title = Some("Execute SPARQL Query".to_string());
                 tool.annotations = Some(
@@ -274,7 +238,7 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
                         .idempotent(true)
                         .open_world(false),
                 );
-            }
+            },
             "show_shex" => {
                 tool.title = Some("Parse and Display ShEx Schema".to_string());
                 tool.annotations = Some(
@@ -284,7 +248,7 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
                         .idempotent(true)
                         .open_world(false),
                 );
-            }
+            },
             "check_shex" => {
                 tool.title = Some("Check ShEx Schema Well-Formedness".to_string());
                 tool.annotations = Some(
@@ -294,7 +258,7 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
                         .idempotent(true)
                         .open_world(false),
                 );
-            }
+            },
             "shape_info" => {
                 tool.title = Some("Show ShEx Shape Info".to_string());
                 tool.annotations = Some(
@@ -304,7 +268,7 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
                         .idempotent(true)
                         .open_world(false),
                 );
-            }
+            },
             "convert_shex" => {
                 tool.title = Some("Convert ShEx Schema Formats".to_string());
                 tool.annotations = Some(
@@ -314,7 +278,7 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
                         .idempotent(true)
                         .open_world(false),
                 );
-            }
+            },
             "validate_shex" => {
                 tool.title = Some("Validate RDF with ShEx".to_string());
                 tool.annotations = Some(
@@ -324,7 +288,7 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
                         .idempotent(true)
                         .open_world(false),
                 );
-            }
+            },
             "validate_shacl" => {
                 tool.title = Some("Validate RDF with SHACL".to_string());
                 tool.annotations = Some(
@@ -334,11 +298,11 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
                         .idempotent(true)
                         .open_world(false),
                 );
-            }
+            },
             _ => {
                 // Log warning for unhandled tools to catch missing annotations
                 tracing::warn!(tool_name = %tool.name, "Tool missing annotations");
-            }
+            },
         }
     }
 

@@ -8,13 +8,11 @@ use crate::shacl_engine::engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
+use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::component_ir::MaxExclusive;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
-use srdf::NeighsRDF;
-use srdf::QueryRDF;
-use srdf::SHACLPath;
 use std::fmt::Debug;
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxExclusive {
@@ -30,10 +28,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxExclusive {
         _shapes_graph: &SchemaIR,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_exclusive = |node: &S::Term| match S::term_as_sliteral(node) {
-            Ok(lit) => lit
-                .partial_cmp(self.max_exclusive())
-                .map(|o| o.is_ge())
-                .unwrap_or(true),
+            Ok(lit) => lit.partial_cmp(self.max_exclusive()).map(|o| o.is_ge()).unwrap_or(true),
             Err(_) => true,
         };
         let message = format!("MaxExclusive({}) not satisfied", self.max_exclusive());
@@ -70,14 +65,6 @@ impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MaxExclusive {
         };
 
         let message = format!("MaxExclusive({}) not satisfied", self.max_exclusive());
-        validate_ask_with(
-            component,
-            shape,
-            store,
-            value_nodes,
-            query,
-            &message,
-            maybe_path,
-        )
+        validate_ask_with(component, shape, store, value_nodes, query, &message, maybe_path)
     }
 }

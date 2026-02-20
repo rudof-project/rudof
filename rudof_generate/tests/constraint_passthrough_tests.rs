@@ -1,6 +1,7 @@
 use rudof_generate::config::OutputFormat;
 use rudof_generate::{DataGenerator, GeneratorConfig};
-use srdf::{Literal, NeighsRDF, RDFFormat, ReaderMode, SRDFGraph};
+use rudof_rdf::rdf_core::{NeighsRDF, RDFFormat, term::literal::Literal};
+use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use std::collections::HashMap;
 use std::io::Write;
 use tempfile::NamedTempFile;
@@ -33,20 +34,12 @@ ex:PersonShape {
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shex_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shex_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Verify that generated triples respect datatypes
     let mut datatype_counts = HashMap::new();
@@ -56,9 +49,7 @@ ex:PersonShape {
             let datatype = lit.datatype().to_string();
             // Remove angle brackets if present
             let clean_datatype = datatype.trim_start_matches('<').trim_end_matches('>');
-            *datatype_counts
-                .entry(clean_datatype.to_string())
-                .or_insert(0) += 1;
+            *datatype_counts.entry(clean_datatype.to_string()).or_insert(0) += 1;
         }
     }
 
@@ -112,20 +103,12 @@ ex:PersonShape a sh:NodeShape ;
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shacl_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shacl_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Verify that generated triples respect datatypes
     let mut datatype_counts = HashMap::new();
@@ -159,7 +142,7 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
 ex:PersonShape {
   ex:name xsd:string {1,1} ;      # exactly one name
-  ex:email xsd:string {0,2} ;     # zero to two emails  
+  ex:email xsd:string {0,2} ;     # zero to two emails
   ex:phone xsd:string *           # zero or more phones
 }
 "#;
@@ -177,20 +160,12 @@ ex:PersonShape {
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shex_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shex_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Count properties per entity to verify cardinality
     let mut entity_properties: HashMap<String, HashMap<String, u32>> = HashMap::new();
@@ -268,20 +243,12 @@ ex:PersonShape a sh:NodeShape ;
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shacl_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shacl_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Count properties per entity to verify cardinality
     let mut entity_properties: HashMap<String, HashMap<String, u32>> = HashMap::new();
@@ -312,10 +279,7 @@ ex:PersonShape a sh:NodeShape ;
 
         // Each entity should have 2-5 hobbies
         if let Some(&hobby_count) = properties.get("http://example.org/hobby") {
-            assert!(
-                (2..=5).contains(&hobby_count),
-                "Entity should have 2-5 hobbies"
-            );
+            assert!((2..=5).contains(&hobby_count), "Entity should have 2-5 hobbies");
         }
     }
 }
@@ -354,21 +318,12 @@ ex:AddressShape {
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shex_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shex_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Read and validate generated data
     let generated_data = std::fs::read_to_string(output_file.path()).unwrap();
-    let graph = SRDFGraph::from_str(
-        &generated_data,
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .unwrap();
+    let graph = InMemoryGraph::from_str(&generated_data, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
 
     // Check that we have both person and address data
     let triples = graph.triples().unwrap();
@@ -382,7 +337,7 @@ ex:AddressShape {
             "<http://example.org/name>" => has_person_name = true,
             "<http://example.org/street>" => has_address_street = true,
             "<http://example.org/city>" => has_address_city = true,
-            _ => {}
+            _ => {},
         }
     }
 
@@ -444,21 +399,12 @@ ex:AddressShape a sh:NodeShape ;
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shacl_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shacl_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Read and validate generated data
     let generated_data = std::fs::read_to_string(output_file.path()).unwrap();
-    let graph = SRDFGraph::from_str(
-        &generated_data,
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .unwrap();
+    let graph = InMemoryGraph::from_str(&generated_data, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
 
     // Check that we have both person and address data
     let triples = graph.triples().unwrap();
@@ -472,7 +418,7 @@ ex:AddressShape a sh:NodeShape ;
             "<http://example.org/name>" => has_person_name = true,
             "<http://example.org/street>" => has_address_street = true,
             "<http://example.org/city>" => has_address_city = true,
-            _ => {}
+            _ => {},
         }
     }
 
@@ -526,21 +472,12 @@ ex:PersonShape a sh:NodeShape ;
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shacl_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shacl_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Read and validate generated data
     let generated_data = std::fs::read_to_string(output_file.path()).unwrap();
-    let graph = SRDFGraph::from_str(
-        &generated_data,
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .unwrap();
+    let graph = InMemoryGraph::from_str(&generated_data, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
 
     // Verify that generated values respect constraints
     let triples = graph.triples().unwrap();
@@ -558,7 +495,7 @@ ex:PersonShape a sh:NodeShape ;
                         "Name length should be between 2 and 50 characters, got: {value}"
                     );
                 }
-            }
+            },
             "http://example.org/age" => {
                 if let oxrdf::Term::Literal(literal) = object {
                     let value: i32 = literal.lexical_form().parse().unwrap();
@@ -567,7 +504,7 @@ ex:PersonShape a sh:NodeShape ;
                         "Age should be between 0 and 150, got: {value}"
                     );
                 }
-            }
+            },
             "http://example.org/status" => {
                 if let oxrdf::Term::Literal(literal) = object {
                     let value = literal.lexical_form();
@@ -576,8 +513,8 @@ ex:PersonShape a sh:NodeShape ;
                         "Status should be one of active/inactive/pending, got: {value}"
                     );
                 }
-            }
-            _ => {}
+            },
+            _ => {},
         }
     }
 }

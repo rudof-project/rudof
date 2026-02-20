@@ -19,7 +19,7 @@ excluded_entries = [
   "extends-abstract-multi-empty_fail-Ref1ExtraOR",
   "extends-abstract-multi-empty_pass-missingOptRef1",
   "openopen1dotcloseCode1closeCode3",
-  
+
   # Entries with error parsing schema
   # - 1dot-relative_pass-short-shape
   "1dot-relative_pass-relative-shape",

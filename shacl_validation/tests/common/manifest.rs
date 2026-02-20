@@ -1,16 +1,17 @@
 use crate::common::shacl_test::ShaclTest;
 use crate::common::testsuite_error::TestSuiteError;
 use oxrdf::{NamedNode, NamedOrBlankNode as OxSubject, Term as OxTerm};
+use rudof_rdf::rdf_core::{
+    Any, NeighsRDF, RDFFormat,
+    term::Triple,
+    vocab::{rdf_first, rdf_rest},
+};
 use shacl_rdf::ShaclParser;
 use shacl_validation::shacl_validation_vocab;
 use shacl_validation::store::Store;
 use shacl_validation::store::graph::Graph;
 use shacl_validation::validation_report::report::ValidationReport;
 use sparql_service::RdfData;
-use srdf::NeighsRDF;
-use srdf::RDFFormat;
-use srdf::Triple;
-use srdf::matcher::Any;
 use std::{collections::HashSet, path::Path};
 
 pub struct Manifest {
@@ -24,9 +25,7 @@ impl Manifest {
         let base = Path::new(path)
             .canonicalize()
             .map_err(Box::new)
-            .map_err(|e| TestSuiteError::Validation {
-                error: e.to_string(),
-            })?;
+            .map_err(|e| TestSuiteError::Validation { error: e.to_string() })?;
         let base = match base.to_str() {
             Some(path) => format!("file:/{path}"),
             None => panic!("Path not found!!"),
@@ -40,29 +39,20 @@ impl Manifest {
             Some(&base),
             // &ReaderMode::Lax,
         )
-        .map_err(|e| TestSuiteError::Validation {
-            error: e.to_string(),
-        })?;
+        .map_err(|e| TestSuiteError::Validation { error: e.to_string() })?;
 
         let mut store = graph.store().clone();
 
         let entries = Manifest::parse_entries(&mut store, subject)?;
-        Ok(Self {
-            base,
-            store,
-            entries,
-        })
+        Ok(Self { base, store, entries })
     }
 
-    fn parse_entries(
-        store: &mut RdfData,
-        subject: OxSubject,
-    ) -> Result<HashSet<OxTerm>, Box<TestSuiteError>> {
+    fn parse_entries(store: &mut RdfData, subject: OxSubject) -> Result<HashSet<OxTerm>, Box<TestSuiteError>> {
         let mut entry_terms = HashSet::new();
 
         let mf_entries: NamedNode = shacl_validation_vocab::mf_entries().clone().into();
         let entry_subject = store
-            .triples_matching(subject, mf_entries, Any)
+            .triples_matching(&subject, &mf_entries, &Any)
             .map_err(|e| Box::new(e.into()))?
             .map(Triple::into_object)
             .next();
@@ -70,9 +60,9 @@ impl Manifest {
         if let Some(mut subject) = entry_subject {
             loop {
                 let inner_subject: OxSubject = subject.clone().try_into().unwrap();
-                let rdf_first: NamedNode = srdf::rdf_first().clone().into();
+                let rdf_first: NamedNode = rdf_first().clone().into();
                 match store
-                    .triples_matching(inner_subject.clone(), rdf_first, Any)
+                    .triples_matching(&inner_subject, &rdf_first, &Any)
                     .map_err(|e| Box::new(e.into()))?
                     .map(Triple::into_object)
                     .next()
@@ -81,9 +71,9 @@ impl Manifest {
                     None => break,
                 };
 
-                let rdf_rest: NamedNode = srdf::rdf_rest().clone().into();
+                let rdf_rest: NamedNode = rdf_rest().clone().into();
                 subject = match store
-                    .triples_matching(inner_subject, rdf_rest, Any)
+                    .triples_matching(&inner_subject, &rdf_rest, &Any)
                     .map_err(|e| Box::new(e.into()))?
                     .map(Triple::into_object)
                     .next()
@@ -107,13 +97,13 @@ impl Manifest {
                     return Err(Box::new(TestSuiteError::Validation {
                         error: "Invalid entry term in manifest".to_string(),
                     }));
-                }
+                },
             };
 
             let mf_action: NamedNode = shacl_validation_vocab::mf_action().clone().into();
             let action: OxSubject = match self
                 .store
-                .triples_matching(entry.clone(), mf_action, Any)
+                .triples_matching(&entry, &mf_action, &Any)
                 .map_err(|e| Box::new(e.into()))?
                 .map(Triple::into_object)
                 .next()
@@ -125,38 +115,34 @@ impl Manifest {
                     return Err(Box::new(TestSuiteError::Validation {
                         error: "Invalid action term in manifest".to_string(),
                     }));
-                }
+                },
             };
 
             let mf_result: NamedNode = shacl_validation_vocab::mf_result().clone().into();
             let results = self
                 .store
-                .triples_matching(entry, mf_result, Any)
+                .triples_matching(&entry, &mf_result, &Any)
                 .map_err(|e| Box::new(e.into()))?
                 .map(Triple::into_object)
                 .next()
                 .unwrap();
 
-            let report = ValidationReport::parse(&mut self.store, results).map_err(|e| {
-                Box::new(TestSuiteError::Validation {
-                    error: e.to_string(),
-                })
-            })?;
+            let report = ValidationReport::parse(&mut self.store, results)
+                .map_err(|e| Box::new(TestSuiteError::Validation { error: e.to_string() }))?;
 
             let sht_data_graph: NamedNode = shacl_validation_vocab::sht_data_graph().clone().into();
             let data_graph_iri = self
                 .store
-                .triples_matching(action.clone(), sht_data_graph, Any)
+                .triples_matching(&action, &sht_data_graph, &Any)
                 .map_err(|e| Box::new(e.into()))?
                 .map(Triple::into_object)
                 .next()
                 .unwrap();
 
-            let sht_shapes_graph: NamedNode =
-                shacl_validation_vocab::sht_shapes_graph().clone().into();
+            let sht_shapes_graph: NamedNode = shacl_validation_vocab::sht_shapes_graph().clone().into();
             let shapes_graph_iri = self
                 .store
-                .triples_matching(action, sht_shapes_graph, Any)
+                .triples_matching(&action, &sht_shapes_graph, &Any)
                 .map_err(|e| Box::new(e.into()))?
                 .map(Triple::into_object)
                 .next()
@@ -171,9 +157,7 @@ impl Manifest {
                 Some(&self.base),
                 // &ReaderMode::default(),
             )
-            .map_err(|e| TestSuiteError::Validation {
-                error: e.to_string(),
-            })?;
+            .map_err(|e| TestSuiteError::Validation { error: e.to_string() })?;
 
             let data_graph = graph.store().clone();
 
@@ -183,15 +167,11 @@ impl Manifest {
                 Some(&self.base),
                 // &ReaderMode::default(),
             )
-            .map_err(|e| TestSuiteError::Validation {
-                error: e.to_string(),
-            })?;
+            .map_err(|e| TestSuiteError::Validation { error: e.to_string() })?;
             let shapes_graph = shapes.store().clone();
-            let schema = ShaclParser::new(shapes_graph).parse().map_err(|e| {
-                Box::new(TestSuiteError::Validation {
-                    error: e.to_string(),
-                })
-            })?;
+            let schema = ShaclParser::new(shapes_graph)
+                .parse()
+                .map_err(|e| Box::new(TestSuiteError::Validation { error: e.to_string() }))?;
 
             entries.push(ShaclTest::new(data_graph, schema, report));
         }

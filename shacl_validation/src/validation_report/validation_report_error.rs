@@ -17,7 +17,7 @@ pub enum ReportError {
     Result(#[from] ResultError),
 
     #[error("Error generating ValidationReport: {msg}")]
-    ValidationReportError { msg: String },
+    ValidationError { msg: String },
 }
 
 #[derive(Error, Debug)]

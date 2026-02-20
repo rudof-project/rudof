@@ -4,6 +4,7 @@ use crate::atom;
 use crate::engine::Engine;
 use crate::validator_error::*;
 use prefixmap::PrefixMap;
+use rudof_rdf::rdf_core::{NeighsRDF, query::QueryRDF};
 use serde_json::Value;
 use shex_ast::Node;
 use shex_ast::ShapeExprLabel;
@@ -13,8 +14,6 @@ use shex_ast::ir::shape_label::ShapeLabel;
 use shex_ast::shapemap::ResultShapeMap;
 use shex_ast::shapemap::ValidationStatus;
 use shex_ast::shapemap::query_shape_map::QueryShapeMap;
-use srdf::NeighsRDF;
-use srdf::QueryRDF;
 use tracing::trace;
 
 type Result<T> = std::result::Result<T, ValidatorError>;
@@ -95,11 +94,7 @@ impl Validator {
         Ok(result)
     }
 
-    fn get_shape_expr_label(
-        &self,
-        label: &ShapeExprLabel,
-        schema: &SchemaIR,
-    ) -> Result<ShapeLabelIdx> {
+    fn get_shape_expr_label(&self, label: &ShapeExprLabel, schema: &SchemaIR) -> Result<ShapeLabelIdx> {
         schema
             .find_ref(label)
             .map_err(|error| ValidatorError::ShapeLabelNotFoundError {
@@ -126,13 +121,7 @@ impl Validator {
         Ok(result)
     }
 
-    fn fill_pending<S>(
-        &self,
-        engine: &mut Engine,
-        shapemap: &QueryShapeMap,
-        rdf: &S,
-        schema: &SchemaIR,
-    ) -> Result<()>
+    fn fill_pending<S>(&self, engine: &mut Engine, shapemap: &QueryShapeMap, rdf: &S, schema: &SchemaIR) -> Result<()>
     where
         S: QueryRDF,
     {
@@ -142,20 +131,17 @@ impl Validator {
         );
         let pairs = shapemap
             .node_shapes(rdf)
-            .map_err(|e| ValidatorError::ShapeMapError {
-                error: e.to_string(),
-            })?;
+            .map_err(|e| ValidatorError::ShapeMapError { error: e.to_string() })?;
         trace!(
             "fill_pending: After filling pending atoms from QueryShapeMap...: {:?}",
             shapemap
         );
         for (node, label) in pairs.iter() {
             let idx = self.get_shape_expr_label(label, schema)?;
-            let node =
-                S::term_as_object(node).map_err(|e| ValidatorError::FillingShapeMapNodes {
-                    node: node.to_string(),
-                    error: e.to_string(),
-                })?;
+            let node = S::term_as_object(node).map_err(|e| ValidatorError::FillingShapeMapNodes {
+                node: node.to_string(),
+                error: e.to_string(),
+            })?;
             engine.add_pending(Node::new(node), idx);
         }
         Ok(())
@@ -183,11 +169,7 @@ impl Validator {
         }
     }
 
-    pub fn result_map(
-        &self,
-        engine: &mut Engine,
-        maybe_nodes_prefixmap: &Option<PrefixMap>,
-    ) -> Result<ResultShapeMap> {
+    pub fn result_map(&self, engine: &mut Engine, maybe_nodes_prefixmap: &Option<PrefixMap>) -> Result<ResultShapeMap> {
         let nodes_prefixmap = match maybe_nodes_prefixmap {
             Some(pm) => pm.clone(),
             None => PrefixMap::default(),
@@ -202,48 +184,42 @@ impl Validator {
                 Atom::Pos(pa) => {
                     let reasons = engine.find_reasons(pa);
                     let json_reasons = json_reasons(&reasons)?;
-                    let str_reasons = show_reasons(
-                        &reasons,
-                        &nodes_prefixmap,
-                        &self.schema,
-                        self.config.width(),
-                    )?;
+                    let str_reasons = show_reasons(&reasons, &nodes_prefixmap, &self.schema, self.config.width())?;
                     let status = ValidationStatus::conformant(str_reasons, json_reasons);
                     // result.add_ok()
-                    result
-                        .add_result((*node).clone(), label.clone(), status)
-                        .map_err(|e| ValidatorError::AddingConformantError {
+                    result.add_result((*node).clone(), label.clone(), status).map_err(|e| {
+                        ValidatorError::AddingConformantError {
                             node: node.to_string(),
                             label: label.to_string(),
                             error: format!("{e}"),
-                        })?;
-                }
+                        }
+                    })?;
+                },
                 Atom::Neg(na) => {
                     let errors = engine.find_errors(na);
                     let json_errors = json_errors(&errors)?;
-                    let status =
-                        ValidationStatus::non_conformant(show_errors(&errors), json_errors);
-                    result
-                        .add_result((*node).clone(), label.clone(), status)
-                        .map_err(|e| ValidatorError::AddingNonConformantError {
+                    let status = ValidationStatus::non_conformant(show_errors(&errors), json_errors);
+                    result.add_result((*node).clone(), label.clone(), status).map_err(|e| {
+                        ValidatorError::AddingNonConformantError {
                             node: node.to_string(),
                             label: label.to_string(),
                             error: format!("{e}"),
-                        })?;
-                }
+                        }
+                    })?;
+                },
             }
         }
         for atom in &engine.pending() {
             let (node, idx) = atom.get_value();
             let label = self.get_shape_label(idx)?;
             let status = ValidationStatus::pending();
-            result
-                .add_result((*node).clone(), label.clone(), status)
-                .map_err(|e| ValidatorError::AddingPendingError {
+            result.add_result((*node).clone(), label.clone(), status).map_err(|e| {
+                ValidatorError::AddingPendingError {
                     node: node.to_string(),
                     label: label.to_string(),
                     error: format!("{e}"),
-                })?;
+                }
+            })?;
         }
         Ok(result)
     }
@@ -289,12 +265,10 @@ fn json_reasons(reasons: &[Reason]) -> Result<Value> {
     let rs: Result<Vec<_>> = reasons
         .iter()
         .map(|reason| {
-            let r = reason
-                .as_json()
-                .map_err(|e| ValidatorError::ReasonSerializationError {
-                    reason: reason.to_string(),
-                    error: format!("{e}"),
-                })?;
+            let r = reason.as_json().map_err(|e| ValidatorError::ReasonSerializationError {
+                reason: reason.to_string(),
+                error: format!("{e}"),
+            })?;
             Ok(r)
         })
         .collect();
@@ -303,23 +277,18 @@ fn json_reasons(reasons: &[Reason]) -> Result<Value> {
     Ok(value)
 }
 
-fn show_reasons(
-    reasons: &[Reason],
-    nodes_prefixmap: &PrefixMap,
-    schema: &SchemaIR,
-    width: usize,
-) -> Result<String> {
+fn show_reasons(reasons: &[Reason], nodes_prefixmap: &PrefixMap, schema: &SchemaIR, width: usize) -> Result<String> {
     let mut result = String::new();
     match reasons.len() {
         0 => {
             result.push_str("No detailed reason provided.\n");
             return Ok(result);
-        }
+        },
         1 => {
             let str = reasons[0].show_qualified(nodes_prefixmap, schema, width)?;
             result.push_str(&str);
             return Ok(result);
-        }
+        },
         _ => {
             for (idx, reason) in reasons.iter().enumerate() {
                 result.push_str(
@@ -330,7 +299,7 @@ fn show_reasons(
                     .as_str(),
                 );
             }
-        }
+        },
     }
     Ok(result)
 }

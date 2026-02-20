@@ -5,20 +5,17 @@ use crate::dependency_graph::{DependencyGraph, PosNeg};
 use crate::schema_ir::SchemaIR;
 use crate::shape_label_idx::ShapeLabelIdx;
 use iri_s::IriS;
-use shacl_ast::Schema;
+use rudof_rdf::rdf_core::{
+    Rdf,
+    term::{
+        Object,
+        literal::{ConcreteLiteral, Lang},
+    },
+    utils::RDFRegex,
+};
 use shacl_ast::component::Component;
 use shacl_ast::node_kind::NodeKind;
-use shacl_ast::shacl_vocab::{
-    sh_and, sh_class, sh_datatype, sh_disjoint, sh_equals, sh_has_value, sh_in, sh_language_in,
-    sh_less_than, sh_less_than_or_equals, sh_max_count, sh_max_exclusive, sh_max_inclusive,
-    sh_max_length, sh_min_count, sh_min_exclusive, sh_min_inclusive, sh_min_length, sh_node,
-    sh_node_kind, sh_not, sh_or, sh_pattern, sh_qualified_value_shape, sh_unique_lang, sh_xone,
-};
-use srdf::RDFNode;
-use srdf::Rdf;
-use srdf::SLiteral;
-use srdf::SRegex;
-use srdf::lang::Lang;
+use shacl_ast::{ShaclSchema, ShaclVocab};
 use std::collections::HashSet;
 use std::fmt::Display;
 
@@ -60,96 +57,81 @@ impl ComponentIR {
     /// The vector is list of dependant shapes for cases with recursion
     pub fn compile<S: Rdf>(
         component: Component,
-        schema: &Schema<S>,
+        schema: &ShaclSchema<S>,
         schema_ir: &mut SchemaIR,
     ) -> Result<Option<ComponentIR>, Box<CompiledShaclError>> {
         let value = match component {
             Component::Class(object) => {
                 let class_rule = object;
                 Some(ComponentIR::Class(Class::new(class_rule)))
-            }
+            },
             Component::Datatype(iri_ref) => {
                 let iri_ref = convert_iri_ref(iri_ref)?;
                 Some(ComponentIR::Datatype(Datatype::new(iri_ref)))
-            }
+            },
             Component::NodeKind(node_kind) => Some(ComponentIR::NodeKind(Nodekind::new(node_kind))),
             Component::MinCount(count) => Some(ComponentIR::MinCount(MinCount::new(count))),
             Component::MaxCount(count) => Some(ComponentIR::MaxCount(MaxCount::new(count))),
-            Component::MinExclusive(literal) => {
-                Some(ComponentIR::MinExclusive(MinExclusive::new(literal)))
-            }
-            Component::MaxExclusive(literal) => {
-                Some(ComponentIR::MaxExclusive(MaxExclusive::new(literal)))
-            }
-            Component::MinInclusive(literal) => {
-                Some(ComponentIR::MinInclusive(MinInclusive::new(literal)))
-            }
-            Component::MaxInclusive(literal) => {
-                Some(ComponentIR::MaxInclusive(MaxInclusive::new(literal)))
-            }
+            Component::MinExclusive(literal) => Some(ComponentIR::MinExclusive(MinExclusive::new(literal))),
+            Component::MaxExclusive(literal) => Some(ComponentIR::MaxExclusive(MaxExclusive::new(literal))),
+            Component::MinInclusive(literal) => Some(ComponentIR::MinInclusive(MinInclusive::new(literal))),
+            Component::MaxInclusive(literal) => Some(ComponentIR::MaxInclusive(MaxInclusive::new(literal))),
             Component::MinLength(length) => Some(ComponentIR::MinLength(MinLength::new(length))),
             Component::MaxLength(length) => Some(ComponentIR::MaxLength(MaxLength::new(length))),
             Component::Pattern { pattern, flags } => {
                 let pattern = Pattern::new(pattern, flags)?;
                 Some(ComponentIR::Pattern(pattern))
-            }
+            },
             Component::UniqueLang(lang) => Some(ComponentIR::UniqueLang(UniqueLang::new(lang))),
-            Component::LanguageIn { langs } => {
-                Some(ComponentIR::LanguageIn(LanguageIn::new(langs)))
-            }
+            Component::LanguageIn { langs } => Some(ComponentIR::LanguageIn(LanguageIn::new(langs))),
             Component::Equals(iri_ref) => {
                 let iri_ref = convert_iri_ref(iri_ref)?;
                 Some(ComponentIR::Equals(Equals::new(iri_ref)))
-            }
+            },
             Component::Disjoint(iri_ref) => {
                 let iri_ref = convert_iri_ref(iri_ref)?;
                 Some(ComponentIR::Disjoint(Disjoint::new(iri_ref)))
-            }
+            },
             Component::LessThan(iri_ref) => {
                 let iri_ref = convert_iri_ref(iri_ref)?;
                 Some(ComponentIR::LessThan(LessThan::new(iri_ref)))
-            }
+            },
             Component::LessThanOrEquals(iri_ref) => {
                 let iri_ref = convert_iri_ref(iri_ref)?;
-                Some(ComponentIR::LessThanOrEquals(LessThanOrEquals::new(
-                    iri_ref,
-                )))
-            }
+                Some(ComponentIR::LessThanOrEquals(LessThanOrEquals::new(iri_ref)))
+            },
             Component::Or { shapes } => {
                 let values = compile_shapes::<S>(shapes, schema, schema_ir)?;
                 let ors = values.into_iter().collect::<Vec<_>>();
                 Some(ComponentIR::Or(Or::new(ors)))
-            }
+            },
             Component::And { shapes } => {
                 let values = compile_shapes::<S>(shapes, schema, schema_ir)?;
                 let ands = values.into_iter().collect::<Vec<_>>();
                 Some(ComponentIR::And(And::new(ands)))
-            }
+            },
             Component::Not { shape } => {
                 let shape = compile_shape::<S>(&shape, schema, schema_ir)?;
                 Some(ComponentIR::Not(Not::new(shape)))
-            }
+            },
             Component::Xone { shapes } => {
                 let values = compile_shapes::<S>(shapes, schema, schema_ir)?;
                 let xones = values.into_iter().collect::<Vec<_>>();
                 Some(ComponentIR::Xone(Xone::new(xones)))
-            }
+            },
             Component::Closed { .. } => None,
             Component::Node { shape } => {
                 let shape = compile_shape::<S>(&shape, schema, schema_ir)?;
                 Some(ComponentIR::Node(Node::new(shape)))
-            }
+            },
             Component::HasValue { value } => {
                 let term = convert_value(value)?;
                 Some(ComponentIR::HasValue(HasValue::new(term)))
-            }
+            },
             Component::In { values } => {
-                let terms = values
-                    .into_iter()
-                    .map(convert_value)
-                    .collect::<Result<Vec<_>, _>>()?;
+                let terms = values.into_iter().map(convert_value).collect::<Result<Vec<_>, _>>()?;
                 Some(ComponentIR::In(In::new(terms)))
-            }
+            },
             Component::QualifiedValueShape {
                 shape,
                 q_min_count,
@@ -170,7 +152,7 @@ impl ComponentIR {
                     disjoint,
                     compiled_siblings,
                 )))
-            }
+            },
             Component::Deactivated(_b) => None,
         };
         Ok(value)
@@ -185,24 +167,24 @@ impl ComponentIR {
         visited: &mut HashSet<ShapeLabelIdx>,
     ) {
         match self {
-            ComponentIR::Class(_c) => {}
-            ComponentIR::Datatype(_d) => {}
-            ComponentIR::NodeKind(_nk) => {}
-            ComponentIR::MinCount(_mc) => {}
-            ComponentIR::MaxCount(_mc) => {}
-            ComponentIR::MinExclusive(_me) => {}
-            ComponentIR::MaxExclusive(_me) => {}
-            ComponentIR::MinInclusive(_mi) => {}
-            ComponentIR::MaxInclusive(_mi) => {}
-            ComponentIR::MinLength(_ml) => {}
-            ComponentIR::MaxLength(_ml) => {}
-            ComponentIR::Pattern(_p) => {}
-            ComponentIR::UniqueLang(_ul) => {}
-            ComponentIR::LanguageIn(_li) => {}
-            ComponentIR::Equals(_e) => {}
-            ComponentIR::Disjoint(_d) => {}
-            ComponentIR::LessThan(_lt) => {}
-            ComponentIR::LessThanOrEquals(_lte) => {}
+            ComponentIR::Class(_c) => {},
+            ComponentIR::Datatype(_d) => {},
+            ComponentIR::NodeKind(_nk) => {},
+            ComponentIR::MinCount(_mc) => {},
+            ComponentIR::MaxCount(_mc) => {},
+            ComponentIR::MinExclusive(_me) => {},
+            ComponentIR::MaxExclusive(_me) => {},
+            ComponentIR::MinInclusive(_mi) => {},
+            ComponentIR::MaxInclusive(_mi) => {},
+            ComponentIR::MinLength(_ml) => {},
+            ComponentIR::MaxLength(_ml) => {},
+            ComponentIR::Pattern(_p) => {},
+            ComponentIR::UniqueLang(_ul) => {},
+            ComponentIR::LanguageIn(_li) => {},
+            ComponentIR::Equals(_e) => {},
+            ComponentIR::Disjoint(_d) => {},
+            ComponentIR::LessThan(_lt) => {},
+            ComponentIR::LessThanOrEquals(_lte) => {},
             ComponentIR::Or(o) => {
                 for idx in o.shapes() {
                     if let Some(shape) = schema_ir.get_shape_from_idx(idx) {
@@ -215,7 +197,7 @@ impl ComponentIR {
                         }
                     }
                 }
-            }
+            },
             ComponentIR::And(a) => {
                 for idx in a.shapes() {
                     if let Some(shape) = schema_ir.get_shape_from_idx(idx) {
@@ -228,7 +210,7 @@ impl ComponentIR {
                         }
                     }
                 }
-            }
+            },
             ComponentIR::Not(n) => {
                 let idx = n.shape();
                 if let Some(shape) = schema_ir.get_shape_from_idx(idx) {
@@ -239,7 +221,7 @@ impl ComponentIR {
                         shape.add_edges(*idx, dg, posneg.change(), schema_ir, visited);
                     }
                 }
-            }
+            },
             ComponentIR::Xone(x) => {
                 for idx in x.shapes() {
                     if let Some(shape) = schema_ir.get_shape_from_idx(idx) {
@@ -252,7 +234,7 @@ impl ComponentIR {
                         }
                     }
                 }
-            }
+            },
             ComponentIR::Node(n) => {
                 let idx = n.shape();
                 if let Some(shape) = schema_ir.get_shape_from_idx(idx) {
@@ -263,15 +245,15 @@ impl ComponentIR {
                         shape.add_edges(*idx, dg, posneg, schema_ir, visited);
                     }
                 }
-            }
-            ComponentIR::HasValue(_hv) => {}
-            ComponentIR::In(_i) => {}
+            },
+            ComponentIR::HasValue(_hv) => {},
+            ComponentIR::In(_i) => {},
             ComponentIR::QualifiedValueShape(qvs) => {
                 dg.add_edge(shape_idx, *qvs.shape(), posneg);
                 /*for sibling in qvs.siblings() {
                     dg.add_edge(shape_idx, *sibling, posneg);
                 }*/
-            }
+            },
         }
     }
 }
@@ -442,15 +424,15 @@ impl Closed {
 /// https://www.w3.org/TR/shacl/#HasValueConstraintComponent
 #[derive(Debug, Clone)]
 pub struct HasValue {
-    value: RDFNode,
+    value: Object,
 }
 
 impl HasValue {
-    pub fn new(value: RDFNode) -> Self {
+    pub fn new(value: Object) -> Self {
         HasValue { value }
     }
 
-    pub fn value(&self) -> &RDFNode {
+    pub fn value(&self) -> &Object {
         &self.value
     }
 }
@@ -461,15 +443,15 @@ impl HasValue {
 /// https://www.w3.org/TR/shacl/#InConstraintComponent
 #[derive(Debug, Clone)]
 pub struct In {
-    values: Vec<RDFNode>,
+    values: Vec<Object>,
 }
 
 impl In {
-    pub fn new(values: Vec<RDFNode>) -> Self {
+    pub fn new(values: Vec<Object>) -> Self {
         In { values }
     }
 
-    pub fn values(&self) -> &Vec<RDFNode> {
+    pub fn values(&self) -> &Vec<Object> {
         &self.values
     }
 }
@@ -697,23 +679,17 @@ impl MinLength {
 pub struct Pattern {
     pattern: String,
     flags: Option<String>,
-    regex: SRegex,
+    regex: RDFRegex,
 }
 
 impl Pattern {
     pub fn new(pattern: String, flags: Option<String>) -> Result<Self, Box<CompiledShaclError>> {
-        let regex = SRegex::new(&pattern, flags.as_deref()).map_err(|e| {
-            CompiledShaclError::InvalidRegex {
-                pattern: pattern.clone(),
-                flags: flags.clone(),
-                error: Box::new(e),
-            }
+        let regex = RDFRegex::new(&pattern, flags.as_deref()).map_err(|e| CompiledShaclError::InvalidRegex {
+            pattern: pattern.clone(),
+            flags: flags.clone(),
+            error: Box::new(e),
         })?;
-        Ok(Pattern {
-            pattern,
-            flags,
-            regex,
-        })
+        Ok(Pattern { pattern, flags, regex })
     }
 
     pub fn pattern(&self) -> &String {
@@ -724,7 +700,7 @@ impl Pattern {
         &self.flags
     }
 
-    pub fn regex(&self) -> &SRegex {
+    pub fn regex(&self) -> &RDFRegex {
         &self.regex
     }
 
@@ -758,15 +734,15 @@ impl UniqueLang {
 /// https://www.w3.org/TR/shacl/#ClassConstraintComponent
 #[derive(Debug, Clone)]
 pub struct Class {
-    class_rule: RDFNode,
+    class_rule: Object,
 }
 
 impl Class {
-    pub fn new(class_rule: RDFNode) -> Self {
+    pub fn new(class_rule: Object) -> Self {
         Class { class_rule }
     }
 
-    pub fn class_rule(&self) -> &RDFNode {
+    pub fn class_rule(&self) -> &Object {
         &self.class_rule
     }
 }
@@ -812,17 +788,15 @@ impl Nodekind {
 /// https://www.w3.org/TR/shacl/#MaxExclusiveConstraintComponent
 #[derive(Debug, Clone)]
 pub struct MaxExclusive {
-    max_exclusive: SLiteral,
+    max_exclusive: ConcreteLiteral,
 }
 
 impl MaxExclusive {
-    pub fn new(literal: SLiteral) -> Self {
-        MaxExclusive {
-            max_exclusive: literal,
-        }
+    pub fn new(literal: ConcreteLiteral) -> Self {
+        MaxExclusive { max_exclusive: literal }
     }
 
-    pub fn max_exclusive(&self) -> &SLiteral {
+    pub fn max_exclusive(&self) -> &ConcreteLiteral {
         &self.max_exclusive
     }
 }
@@ -830,17 +804,15 @@ impl MaxExclusive {
 /// https://www.w3.org/TR/shacl/#MaxInclusiveConstraintComponent
 #[derive(Debug, Clone)]
 pub struct MaxInclusive {
-    max_inclusive: SLiteral,
+    max_inclusive: ConcreteLiteral,
 }
 
 impl MaxInclusive {
-    pub fn new(literal: SLiteral) -> Self {
-        MaxInclusive {
-            max_inclusive: literal,
-        }
+    pub fn new(literal: ConcreteLiteral) -> Self {
+        MaxInclusive { max_inclusive: literal }
     }
 
-    pub fn max_inclusive(&self) -> &SLiteral {
+    pub fn max_inclusive(&self) -> &ConcreteLiteral {
         &self.max_inclusive
     }
 }
@@ -848,17 +820,15 @@ impl MaxInclusive {
 /// https://www.w3.org/TR/shacl/#MinExclusiveConstraintComponent
 #[derive(Debug, Clone)]
 pub struct MinExclusive {
-    min_exclusive: SLiteral,
+    min_exclusive: ConcreteLiteral,
 }
 
 impl MinExclusive {
-    pub fn new(literal: SLiteral) -> Self {
-        MinExclusive {
-            min_exclusive: literal,
-        }
+    pub fn new(literal: ConcreteLiteral) -> Self {
+        MinExclusive { min_exclusive: literal }
     }
 
-    pub fn min_exclusive(&self) -> &SLiteral {
+    pub fn min_exclusive(&self) -> &ConcreteLiteral {
         &self.min_exclusive
     }
 }
@@ -866,17 +836,15 @@ impl MinExclusive {
 /// https://www.w3.org/TR/shacl/#MinInclusiveConstraintComponent
 #[derive(Debug, Clone)]
 pub struct MinInclusive {
-    min_inclusive: SLiteral,
+    min_inclusive: ConcreteLiteral,
 }
 
 impl MinInclusive {
-    pub fn new(literal: SLiteral) -> Self {
-        MinInclusive {
-            min_inclusive: literal,
-        }
+    pub fn new(literal: ConcreteLiteral) -> Self {
+        MinInclusive { min_inclusive: literal }
     }
 
-    pub fn min_inclusive_value(&self) -> &SLiteral {
+    pub fn min_inclusive_value(&self) -> &ConcreteLiteral {
         &self.min_inclusive
     }
 }
@@ -884,32 +852,32 @@ impl MinInclusive {
 impl From<&ComponentIR> for IriS {
     fn from(value: &ComponentIR) -> Self {
         match value {
-            ComponentIR::Class(_) => sh_class().clone(),
-            ComponentIR::Datatype(_) => sh_datatype().clone(),
-            ComponentIR::NodeKind(_) => sh_node_kind().clone(),
-            ComponentIR::MinCount(_) => sh_min_count().clone(),
-            ComponentIR::MaxCount(_) => sh_max_count().clone(),
-            ComponentIR::MinExclusive(_) => sh_min_exclusive().clone(),
-            ComponentIR::MaxExclusive(_) => sh_max_exclusive().clone(),
-            ComponentIR::MinInclusive(_) => sh_min_inclusive().clone(),
-            ComponentIR::MaxInclusive(_) => sh_max_inclusive().clone(),
-            ComponentIR::MinLength(_) => sh_min_length().clone(),
-            ComponentIR::MaxLength(_) => sh_max_length().clone(),
-            ComponentIR::Pattern { .. } => sh_pattern().clone(),
-            ComponentIR::UniqueLang(_) => sh_unique_lang().clone(),
-            ComponentIR::LanguageIn { .. } => sh_language_in().clone(),
-            ComponentIR::Equals(_) => sh_equals().clone(),
-            ComponentIR::Disjoint(_) => sh_disjoint().clone(),
-            ComponentIR::LessThan(_) => sh_less_than().clone(),
-            ComponentIR::LessThanOrEquals(_) => sh_less_than_or_equals().clone(),
-            ComponentIR::Or { .. } => sh_or().clone(),
-            ComponentIR::And { .. } => sh_and().clone(),
-            ComponentIR::Not { .. } => sh_not().clone(),
-            ComponentIR::Xone { .. } => sh_xone().clone(),
-            ComponentIR::Node { .. } => sh_node().clone(),
-            ComponentIR::HasValue { .. } => sh_has_value().clone(),
-            ComponentIR::In { .. } => sh_in().clone(),
-            ComponentIR::QualifiedValueShape { .. } => sh_qualified_value_shape().clone(),
+            ComponentIR::Class(_) => ShaclVocab::sh_class().clone(),
+            ComponentIR::Datatype(_) => ShaclVocab::sh_datatype().clone(),
+            ComponentIR::NodeKind(_) => ShaclVocab::sh_node_kind().clone(),
+            ComponentIR::MinCount(_) => ShaclVocab::sh_min_count().clone(),
+            ComponentIR::MaxCount(_) => ShaclVocab::sh_max_count().clone(),
+            ComponentIR::MinExclusive(_) => ShaclVocab::sh_min_exclusive().clone(),
+            ComponentIR::MaxExclusive(_) => ShaclVocab::sh_max_exclusive().clone(),
+            ComponentIR::MinInclusive(_) => ShaclVocab::sh_min_inclusive().clone(),
+            ComponentIR::MaxInclusive(_) => ShaclVocab::sh_max_inclusive().clone(),
+            ComponentIR::MinLength(_) => ShaclVocab::sh_min_length().clone(),
+            ComponentIR::MaxLength(_) => ShaclVocab::sh_max_length().clone(),
+            ComponentIR::Pattern { .. } => ShaclVocab::sh_pattern().clone(),
+            ComponentIR::UniqueLang(_) => ShaclVocab::sh_unique_lang().clone(),
+            ComponentIR::LanguageIn { .. } => ShaclVocab::sh_language_in().clone(),
+            ComponentIR::Equals(_) => ShaclVocab::sh_equals().clone(),
+            ComponentIR::Disjoint(_) => ShaclVocab::sh_disjoint().clone(),
+            ComponentIR::LessThan(_) => ShaclVocab::sh_less_than().clone(),
+            ComponentIR::LessThanOrEquals(_) => ShaclVocab::sh_less_than_or_equals().clone(),
+            ComponentIR::Or { .. } => ShaclVocab::sh_or().clone(),
+            ComponentIR::And { .. } => ShaclVocab::sh_and().clone(),
+            ComponentIR::Not { .. } => ShaclVocab::sh_not().clone(),
+            ComponentIR::Xone { .. } => ShaclVocab::sh_xone().clone(),
+            ComponentIR::Node { .. } => ShaclVocab::sh_node().clone(),
+            ComponentIR::HasValue { .. } => ShaclVocab::sh_has_value().clone(),
+            ComponentIR::In { .. } => ShaclVocab::sh_in().clone(),
+            ComponentIR::QualifiedValueShape { .. } => ShaclVocab::sh_qualified_value_shape().clone(),
         }
     }
 }
@@ -944,7 +912,7 @@ impl Display for ComponentIR {
             ComponentIR::In(vs) => write!(f, " {vs}"),
             ComponentIR::QualifiedValueShape(qvs) => {
                 write!(f, " {qvs}")
-            }
+            },
         }
     }
 }

@@ -1,6 +1,6 @@
+use rudof_rdf::rdf_core::term::literal::Lang;
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
-use srdf::lang::Lang;
 use std::fmt::Display;
 use std::result;
 
@@ -22,7 +22,7 @@ impl Serialize for LanguageExclusion {
                 map.serialize_entry("type", "LanguageStem")?;
                 map.serialize_entry("stem", stem)?;
                 map.end()
-            }
+            },
         }
     }
 }

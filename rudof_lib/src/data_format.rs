@@ -1,6 +1,6 @@
 use clap::ValueEnum;
 use iri_s::MimeType;
-use srdf::RDFFormat;
+use rudof_rdf::rdf_core::RDFFormat;
 use std::fmt::{Display, Formatter};
 use thiserror::Error;
 
@@ -11,13 +11,13 @@ pub enum DataFormat {
     // RDF formats
     Turtle,
     NTriples,
-    RDFXML,
+    RdfXml,
     TriG,
     N3,
     NQuads,
     JsonLd,
     // For property graphs
-    PG,
+    Pg,
 }
 
 // Converts a `DataFormat` into the corresponding `RDFFormat` from the `srdf` crate.
@@ -28,12 +28,12 @@ impl TryFrom<DataFormat> for RDFFormat {
         match value {
             DataFormat::Turtle => Ok(RDFFormat::Turtle),
             DataFormat::NTriples => Ok(RDFFormat::NTriples),
-            DataFormat::RDFXML => Ok(RDFFormat::RDFXML),
+            DataFormat::RdfXml => Ok(RDFFormat::Rdfxml),
             DataFormat::TriG => Ok(RDFFormat::TriG),
             DataFormat::N3 => Ok(RDFFormat::N3),
             DataFormat::NQuads => Ok(RDFFormat::NQuads),
             DataFormat::JsonLd => Ok(RDFFormat::JsonLd),
-            DataFormat::PG => Err(DataFormatError::NonRdfFormat {
+            DataFormat::Pg => Err(DataFormatError::NonRdfFormat {
                 format: value.to_string(),
             }),
         }
@@ -52,7 +52,7 @@ impl From<RDFFormat> for DataFormat {
         match val {
             RDFFormat::Turtle => DataFormat::Turtle,
             RDFFormat::NTriples => DataFormat::NTriples,
-            RDFFormat::RDFXML => DataFormat::RDFXML,
+            RDFFormat::Rdfxml => DataFormat::RdfXml,
             RDFFormat::TriG => DataFormat::TriG,
             RDFFormat::N3 => DataFormat::N3,
             RDFFormat::NQuads => DataFormat::NQuads,
@@ -67,12 +67,12 @@ impl Display for DataFormat {
         match self {
             DataFormat::Turtle => write!(dest, "turtle"),
             DataFormat::NTriples => write!(dest, "ntriples"),
-            DataFormat::RDFXML => write!(dest, "rdfxml"),
+            DataFormat::RdfXml => write!(dest, "rdfxml"),
             DataFormat::TriG => write!(dest, "trig"),
             DataFormat::N3 => write!(dest, "n3"),
             DataFormat::NQuads => write!(dest, "nquads"),
             DataFormat::JsonLd => write!(dest, "jsonld"),
-            DataFormat::PG => write!(dest, "pg"),
+            DataFormat::Pg => write!(dest, "pg"),
         }
     }
 }
@@ -83,12 +83,12 @@ impl MimeType for DataFormat {
         match self {
             DataFormat::Turtle => "text/turtle",
             DataFormat::NTriples => "application/n-triples",
-            DataFormat::RDFXML => "application/rdf+xml",
+            DataFormat::RdfXml => "application/rdf+xml",
             DataFormat::TriG => "application/trig",
             DataFormat::N3 => "text/n3",
             DataFormat::NQuads => "application/n-quads",
             DataFormat::JsonLd => "application/ld+json",
-            DataFormat::PG => "application/pg",
+            DataFormat::Pg => "application/pg",
         }
     }
 }

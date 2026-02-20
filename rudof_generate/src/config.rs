@@ -61,17 +61,12 @@ fn default_property_fill_probability() -> f64 {
 }
 
 /// Strategy for selecting which properties to keep when limiting count
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum PropertySelectionStrategy {
+    #[default]
     All,
     Random,
     Weighted,
-}
-
-impl Default for PropertySelectionStrategy {
-    fn default() -> Self {
-        Self::All
-    }
 }
 
 /// Overrides for coherence settings per type
@@ -89,7 +84,7 @@ pub struct TypeOverrideConfig {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum SchemaFormat {
     ShEx,
-    SHACL,
+    Shacl,
 }
 
 /// How to distribute entities across different shapes
@@ -260,9 +255,7 @@ impl OutputConfig {
         }
 
         // Detect CPU cores (with fallback to 4)
-        let cpu_count = std::thread::available_parallelism()
-            .map(|n| n.get())
-            .unwrap_or(4);
+        let cpu_count = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4);
 
         // Calculate optimal file count based on dataset size
         let optimal_count = match total_triples {
@@ -300,8 +293,7 @@ impl GeneratorConfig {
 
     /// Save configuration to a TOML file
     pub fn to_toml_file<P: AsRef<Path>>(&self, path: P) -> Result<()> {
-        let content = toml::to_string_pretty(self)
-            .map_err(|e| crate::DataGeneratorError::Config(e.to_string()))?;
+        let content = toml::to_string_pretty(self).map_err(|e| crate::DataGeneratorError::Config(e.to_string()))?;
         std::fs::write(path, content)?;
         Ok(())
     }
@@ -349,17 +341,13 @@ impl GeneratorConfig {
         }
 
         // Validate coherence parameters
-        if self.generation.property_fill_probability < 0.0
-            || self.generation.property_fill_probability > 1.0
-        {
+        if self.generation.property_fill_probability < 0.0 || self.generation.property_fill_probability > 1.0 {
             return Err(crate::DataGeneratorError::Config(
                 "property_fill_probability must be between 0.0 and 1.0".to_string(),
             ));
         }
 
-        if self.generation.property_count_variance < 0.0
-            || self.generation.property_count_variance > 1.0
-        {
+        if self.generation.property_count_variance < 0.0 || self.generation.property_count_variance > 1.0 {
             return Err(crate::DataGeneratorError::Config(
                 "property_count_variance must be between 0.0 and 1.0".to_string(),
             ));

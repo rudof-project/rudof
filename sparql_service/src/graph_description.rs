@@ -1,6 +1,6 @@
 use crate::{ClassPartition, PropertyPartition};
+use rudof_rdf::rdf_core::term::{IriOrBlankNode, literal::NumericLiteral};
 use serde::{Deserialize, Serialize};
-use srdf::{IriOrBlankNode, numeric_literal::NumericLiteral};
 use std::fmt::Display;
 
 #[derive(Clone, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
@@ -95,10 +95,7 @@ impl Display for GraphDescription {
             writeln!(
                 f,
                 "  class_partition: {}",
-                class_partition
-                    .map(|c| c.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", ")
+                class_partition.map(|c| c.to_string()).collect::<Vec<_>>().join(", ")
             )?;
         }
         let mut property_partition = self.property_partition.iter().peekable();
@@ -106,10 +103,7 @@ impl Display for GraphDescription {
             writeln!(
                 f,
                 "  property_partition: {}",
-                property_partition
-                    .map(|p| p.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", ")
+                property_partition.map(|p| p.to_string()).collect::<Vec<_>>().join(", ")
             )?;
         }
         Ok(())

@@ -1,6 +1,7 @@
 use rudof_generate::config::OutputFormat;
 use rudof_generate::{DataGenerator, GeneratorConfig};
-use srdf::{NeighsRDF, RDFFormat, ReaderMode, SRDFGraph};
+use rudof_rdf::rdf_core::{NeighsRDF, RDFFormat};
+use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use std::collections::HashMap;
 use std::io::Write;
 use tempfile::NamedTempFile;
@@ -12,7 +13,7 @@ async fn debug_shex_datatype_generation() {
     let shex_schema = r#"
     PREFIX : <http://example.org/>
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-    
+
     :PersonShape {
         :name xsd:string ;
         :age xsd:integer ;
@@ -38,7 +39,7 @@ async fn debug_shex_datatype_generation() {
         Err(e) => {
             println!("ShEx schema loading failed: {e:?}");
             return;
-        }
+        },
     }
 
     // Try to generate data
@@ -47,7 +48,7 @@ async fn debug_shex_datatype_generation() {
         Err(e) => {
             println!("Data generation failed: {e:?}");
             return;
-        }
+        },
     }
 
     // Read the generated content
@@ -56,42 +57,30 @@ async fn debug_shex_datatype_generation() {
     println!("{content}");
 
     // Parse and analyze the generated RDF
-    let graph = SRDFGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     let mut datatype_counts = HashMap::new();
     let mut all_triples = Vec::new();
 
     for triple in graph.triples().unwrap() {
-        all_triples.push(format!(
-            "{} {} {}",
-            triple.subject, triple.predicate, triple.object
-        ));
+        all_triples.push(format!("{} {} {}", triple.subject, triple.predicate, triple.object));
         match &triple.object {
             oxrdf::Term::Literal(lit) => {
                 let datatype = lit.datatype().to_string();
                 *datatype_counts.entry(datatype).or_insert(0) += 1;
-                println!(
-                    "Found literal: {} with datatype: {}",
-                    lit.value(),
-                    lit.datatype()
-                );
-            }
+                println!("Found literal: {} with datatype: {}", lit.value(), lit.datatype());
+            },
             oxrdf::Term::NamedNode(node) => {
                 println!("Found named node: {node}");
-            }
+            },
             oxrdf::Term::BlankNode(blank) => {
                 println!("Found blank node: {blank}");
-            }
+            },
             #[allow(unreachable_patterns)]
             _ => {
                 println!("Found other term type: {:?}", triple.object);
-            }
+            },
         }
     }
 
@@ -110,7 +99,7 @@ async fn debug_shacl_datatype_generation() {
     @prefix sh: <http://www.w3.org/ns/shacl#> .
     @prefix ex: <http://example.org/> .
     @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-    
+
     ex:PersonShape a sh:NodeShape ;
         sh:targetClass ex:Person ;
         sh:property [
@@ -151,7 +140,7 @@ async fn debug_shacl_datatype_generation() {
         Err(e) => {
             println!("SHACL schema loading failed: {e:?}");
             return;
-        }
+        },
     }
 
     // Try to generate data
@@ -160,7 +149,7 @@ async fn debug_shacl_datatype_generation() {
         Err(e) => {
             println!("Data generation failed: {e:?}");
             return;
-        }
+        },
     }
 
     // Read the generated content
@@ -169,43 +158,31 @@ async fn debug_shacl_datatype_generation() {
     println!("{content}");
 
     // Parse and analyze the generated RDF
-    let graph = SRDFGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     let mut datatype_counts = HashMap::new();
     let mut all_triples = Vec::new();
 
     for triple in graph.triples().unwrap() {
-        all_triples.push(format!(
-            "{} {} {}",
-            triple.subject, triple.predicate, triple.object
-        ));
+        all_triples.push(format!("{} {} {}", triple.subject, triple.predicate, triple.object));
 
         match &triple.object {
             oxrdf::Term::Literal(lit) => {
                 let datatype = lit.datatype().to_string();
                 *datatype_counts.entry(datatype).or_insert(0) += 1;
-                println!(
-                    "Found literal: {} with datatype: {}",
-                    lit.value(),
-                    lit.datatype()
-                );
-            }
+                println!("Found literal: {} with datatype: {}", lit.value(), lit.datatype());
+            },
             oxrdf::Term::NamedNode(node) => {
                 println!("Found named node: {node}");
-            }
+            },
             oxrdf::Term::BlankNode(blank) => {
                 println!("Found blank node: {blank}");
-            }
+            },
             #[allow(unreachable_patterns)]
             _ => {
                 println!("Found other term type: {:?}", triple.object);
-            }
+            },
         }
     }
 

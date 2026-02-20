@@ -1,17 +1,17 @@
 # `rudof_mcp`
 
-The `rudof_mcp` crate provides an implementation of an [MCP (Model Context Protocol) server](https://modelcontextprotocol.io/docs/getting-started/intro) that exposes the core functionality of the `rudof` library.  
+The `rudof_mcp` crate provides an implementation of an [MCP (Model Context Protocol) server](https://modelcontextprotocol.io/docs/getting-started/intro) that exposes the core functionality of the `rudof` library.
 It is built using the [`rmcp`](https://crates.io/crates/rmcp) SDK.
 
 ## MCP Transport Types
 
 The Rudof MCP server supports two configurable transport mechanisms:
 
-- **`stdio` (default):**  
+- **`stdio` (default):**
   The client launches the MCP server as a subprocess. The server reads JSON-RPC messages from standard input (`stdin`) and writes responses to standard output (`stdout`).
 
-- **`streamable-http`:**  
-  The server runs as an independent process capable of handling multiple concurrent client connections.  
+- **`streamable-http`:**
+  The server runs as an independent process capable of handling multiple concurrent client connections.
   This transport uses HTTP `POST` and `GET` requests and can optionally leverage Server-Sent Events (SSE) to stream multiple server messages.
 
   The Rudof MCP server allows configuring:
@@ -98,27 +98,27 @@ The server exposes resources for accessing RDF data and format metadata.
 
 ### Current RDF Data (multiple formats)
 
-- `rudof://current-data` — Turtle format  
-- `rudof://current-data/ntriples` — N-Triples format  
-- `rudof://current-data/rdfxml` — RDF/XML format  
-- `rudof://current-data/jsonld` — JSON-LD format  
-- `rudof://current-data/trig` — TriG format  
-- `rudof://current-data/nquads` — N-Quads format  
-- `rudof://current-data/n3` — Notation3 format  
+- `rudof://current-data` — Turtle format
+- `rudof://current-data/ntriples` — N-Triples format
+- `rudof://current-data/rdfxml` — RDF/XML format
+- `rudof://current-data/jsonld` — JSON-LD format
+- `rudof://current-data/trig` — TriG format
+- `rudof://current-data/nquads` — N-Quads format
+- `rudof://current-data/n3` — Notation3 format
 
 ### Format Information
 
-- `rudof://formats/rdf` — Supported RDF formats  
-- `rudof://formats/shex` — Supported ShEx formats  
-- `rudof://formats/shacl` — Supported SHACL formats  
-- `rudof://formats/node-modes` — Node inspection modes  
-- `rudof://formats/query-types` — Supported SPARQL query types  
-- `rudof://formats/query-results` — Query result formats  
-- `rudof://formats/shex-validation-result` — ShEx validation result formats  
-- `rudof://formats/shacl-validation-result` — SHACL validation result formats  
-- `rudof://formats/validation-reader-modes` — Reader modes (strict/lax)  
-- `rudof://formats/shex-validation-sort-options` — ShEx result sorting options  
-- `rudof://formats/shacl-validation-sort-options` — SHACL result sorting options  
+- `rudof://formats/rdf` — Supported RDF formats
+- `rudof://formats/shex` — Supported ShEx formats
+- `rudof://formats/shacl` — Supported SHACL formats
+- `rudof://formats/node-modes` — Node inspection modes
+- `rudof://formats/query-types` — Supported SPARQL query types
+- `rudof://formats/query-results` — Query result formats
+- `rudof://formats/shex-validation-result` — ShEx validation result formats
+- `rudof://formats/shacl-validation-result` — SHACL validation result formats
+- `rudof://formats/validation-reader-modes` — Reader modes (strict/lax)
+- `rudof://formats/shex-validation-sort-options` — ShEx result sorting options
+- `rudof://formats/shacl-validation-sort-options` — SHACL result sorting options
 
 ## Usage
 
@@ -190,11 +190,11 @@ tokio::spawn(async move {
 
 This crate primarily depends on:
 
-- [`rmcp`](https://crates.io/crates/rmcp) — Rust MCP SDK for protocol implementation  
-- [`rudof_lib`](https://crates.io/crates/rudof_lib) — Core Rudof library for RDF operations  
-- [`axum`](https://crates.io/crates/axum) — Modern HTTP server for Streamable HTTP transport  
-- [`tokio`](https://crates.io/crates/tokio) — High-performance asynchronous runtime  
-- [`ipnetwork`](https://crates.io/crates/ipnetwork) — IP address and network parsing and validation  
+- [`rmcp`](https://crates.io/crates/rmcp) — Rust MCP SDK for protocol implementation
+- [`rudof_lib`](https://crates.io/crates/rudof_lib) — Core Rudof library for RDF operations
+- [`axum`](https://crates.io/crates/axum) — Modern HTTP server for Streamable HTTP transport
+- [`tokio`](https://crates.io/crates/tokio) — High-performance asynchronous runtime
+- [`ipnetwork`](https://crates.io/crates/ipnetwork) — IP address and network parsing and validation
 
 ## Documentation
 

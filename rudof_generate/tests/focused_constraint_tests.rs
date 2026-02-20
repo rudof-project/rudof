@@ -1,5 +1,6 @@
 use rudof_generate::{DataGenerator, GeneratorConfig};
-use srdf::{NeighsRDF, RDFFormat, ReaderMode, SRDFGraph};
+use rudof_rdf::rdf_core::{NeighsRDF, RDFFormat};
+use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use std::collections::HashMap;
 use std::io::Write;
 use tempfile::NamedTempFile;
@@ -32,20 +33,12 @@ ex:PersonShape {
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shex_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shex_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Verify that generated triples respect datatypes
     let mut property_counts = HashMap::new();
@@ -105,20 +98,12 @@ ex:PersonShape a sh:NodeShape ;
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shacl_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shacl_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Verify that generated triples respect datatypes
     let mut property_counts = HashMap::new();
@@ -172,20 +157,12 @@ ex:PersonShape a sh:NodeShape ;
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shacl_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shacl_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Count properties per entity to verify cardinality
     let mut entity_properties: HashMap<String, HashMap<String, u32>> = HashMap::new();
@@ -249,20 +226,12 @@ ex:PersonShape a sh:NodeShape ;
 
     // Generate data
     let mut generator = DataGenerator::new(config).unwrap();
-    generator
-        .load_shacl_schema(schema_file.path())
-        .await
-        .unwrap();
+    generator.load_shacl_schema(schema_file.path()).await.unwrap();
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = SRDFGraph::from_path(
-        output_file.path(),
-        &RDFFormat::Turtle,
-        None,
-        &ReaderMode::Strict,
-    )
-    .expect("Failed to parse generated RDF");
+    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+        .expect("Failed to parse generated RDF");
 
     // Verify that data was generated
     let triples: Vec<_> = graph.triples().unwrap().collect();
@@ -274,8 +243,5 @@ ex:PersonShape a sh:NodeShape ;
         .filter(|t| t.predicate.to_string() == "<http://example.org/name>".to_string())
         .count();
 
-    assert!(
-        name_count > 0,
-        "Should have generated at least one name property"
-    );
+    assert!(name_count > 0, "Should have generated at least one name property");
 }

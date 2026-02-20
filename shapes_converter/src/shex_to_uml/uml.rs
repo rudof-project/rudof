@@ -49,7 +49,7 @@ impl Uml {
                 let n = NodeId::new(self.labels_counter);
                 v.insert(n);
                 (n, false)
-            }
+            },
         }
     }
 
@@ -64,15 +64,11 @@ impl Uml {
             Entry::Vacant(v) => {
                 v.insert(component);
                 Ok(())
-            }
+            },
         }
     }
 
-    pub fn update_component(
-        &mut self,
-        node: NodeId,
-        component: UmlComponent,
-    ) -> Result<(), UmlError> {
+    pub fn update_component(&mut self, node: NodeId, component: UmlComponent) -> Result<(), UmlError> {
         if let Some(r) = self.components.get_mut(&node) {
             *r = component
         } else {
@@ -81,10 +77,7 @@ impl Uml {
         Ok(())
     }
 
-    pub fn children<'a>(
-        &'a self,
-        node: &'a NodeId,
-    ) -> impl Iterator<Item = (&'a NodeId, &'a UmlComponent)> {
+    pub fn children<'a>(&'a self, node: &'a NodeId) -> impl Iterator<Item = (&'a NodeId, &'a UmlComponent)> {
         self.components.iter().filter(|(node_id, _component)| {
             if let Some(es) = self.extends.get(node_id) {
                 es.contains(node)
@@ -106,14 +99,14 @@ impl Uml {
                 let target = *entry.get();
                 self.make_link(source, target, link_name, card);
                 Ok(())
-            }
+            },
             Entry::Vacant(v) => {
                 self.labels_counter += 1;
                 let target_node_id = NodeId::new(self.labels_counter);
                 v.insert(target_node_id);
                 self.make_link(source, target_node_id, link_name, card);
                 Ok(())
-            }
+            },
         }
     }
 
@@ -128,10 +121,10 @@ impl Uml {
         match self.extends.entry(*source) {
             Entry::Occupied(mut v) => {
                 v.get_mut().insert(*target);
-            }
+            },
             Entry::Vacant(vacant) => {
                 vacant.insert(HashSet::from([*target]));
-            }
+            },
         }
     }
 
@@ -141,11 +134,7 @@ impl Uml {
             .flat_map(|(n1, vs)| vs.iter().map(move |n2| (n1, n2)))
     }
 
-    pub fn as_plantuml_all<W: Write>(
-        &self,
-        config: &ShEx2UmlConfig,
-        writer: &mut W,
-    ) -> Result<(), UmlError> {
+    pub fn as_plantuml_all<W: Write>(&self, config: &ShEx2UmlConfig, writer: &mut W) -> Result<(), UmlError> {
         writeln!(writer, "@startuml")?;
         self.preamble(writer, config)?;
         for (node_id, component) in self.components.iter() {
@@ -179,8 +168,7 @@ impl Uml {
                 || is_in_extends(&self.extends, node_id, target_node)
                 || is_in_extends(&self.extends, target_node, node_id)
                 || is_in_map(&self.outgoing, target_node, node_id)
-                || is_in_map(&self.incoming, target_node, node_id)
-                    && !serialized_components.contains(node_id)
+                || is_in_map(&self.incoming, target_node, node_id) && !serialized_components.contains(node_id)
             {
                 serialized_components.insert(node_id);
                 component2plantuml(node_id, component, config, writer)?;
@@ -208,11 +196,7 @@ impl Uml {
         // Hide the class attribute icon
         writeln!(writer, "hide circles")?;
 
-        writeln!(
-            writer,
-            "skinparam shadowing {}",
-            config.shadowing.unwrap_or_default()
-        )?;
+        writeln!(writer, "skinparam shadowing {}", config.shadowing.unwrap_or_default())?;
 
         // The following parameters should be taken from the ocnfig file...
         writeln!(writer, "skinparam class {{")?;
@@ -245,29 +229,22 @@ fn component2plantuml<W: Write>(
             } else {
                 "".to_string()
             };
-            writeln!(
-                writer,
-                "class \"{name}\" as {node_id} <<(S,#FF7700)>> {href} {{ "
-            )?;
+            writeln!(writer, "class \"{name}\" as {node_id} <<(S,#FF7700)>> {href} {{ ")?;
             for entry in class.entries() {
                 entry2plantuml(entry, config, writer)?;
             }
             writeln!(writer, "}}")?;
-        }
+        },
         UmlComponent::Or { exprs: _ } => {
             writeln!(writer, "class \"OR\" as {node_id} {{}}")?;
-        }
+        },
         UmlComponent::Not { expr: _ } => todo!(),
         UmlComponent::And { exprs: _ } => todo!(),
     }
     Ok(())
 }
 
-fn link2plantuml<W: Write>(
-    link: &UmlLink,
-    config: &ShEx2UmlConfig,
-    writer: &mut W,
-) -> Result<(), UmlError> {
+fn link2plantuml<W: Write>(link: &UmlLink, config: &ShEx2UmlConfig, writer: &mut W) -> Result<(), UmlError> {
     let source = format!("{}", link.source);
     let card = card2plantuml(&link.card);
     let target = format!("{}", link.target);
@@ -276,11 +253,7 @@ fn link2plantuml<W: Write>(
     Ok(())
 }
 
-fn entry2plantuml<W: Write>(
-    entry: &UmlEntry,
-    config: &ShEx2UmlConfig,
-    writer: &mut W,
-) -> Result<(), UmlError> {
+fn entry2plantuml<W: Write>(entry: &UmlEntry, config: &ShEx2UmlConfig, writer: &mut W) -> Result<(), UmlError> {
     let property = name2plantuml(&entry.name, config);
     let value_constraint = value_constraint2plantuml(&entry.value_constraint, config);
     let card = card2plantuml(&entry.card);
@@ -324,7 +297,7 @@ fn value_constraint2plantuml(vc: &ValueConstraint, config: &ShEx2UmlConfig) -> S
             }
             str.push_str(" ]");
             str.to_string()
-        }
+        },
         ValueConstraint::Facet(names) => {
             let mut str = String::new();
             for name in names {
@@ -335,7 +308,7 @@ fn value_constraint2plantuml(vc: &ValueConstraint, config: &ShEx2UmlConfig) -> S
                 str.push_str(name_puml.as_str());
             }
             str.to_string()
-        }
+        },
         ValueConstraint::Kind(name) => name2plantuml(name, config),
         ValueConstraint::And { values } => values.iter().fold(String::new(), |mut acc, vc| {
             let vc_str = value_constraint2plantuml(vc, config);
@@ -359,11 +332,7 @@ fn card2plantuml(card: &UmlCardinality) -> String {
     }
 }
 
-fn is_in_extends(
-    extends: &HashMap<NodeId, HashSet<NodeId>>,
-    node: &NodeId,
-    target: &NodeId,
-) -> bool {
+fn is_in_extends(extends: &HashMap<NodeId, HashSet<NodeId>>, node: &NodeId, target: &NodeId) -> bool {
     if let Some(es) = extends.get(node) {
         es.contains(target)
     } else {
@@ -380,10 +349,10 @@ where
         Entry::Occupied(mut entry) => {
             let set = entry.get_mut();
             set.insert(target);
-        }
+        },
         Entry::Vacant(v) => {
             v.insert(HashSet::from([target]));
-        }
+        },
     }
 }
 

@@ -2,10 +2,10 @@ use crate::iri_exclusion::IriExclusion;
 use crate::language_exclusion::LanguageExclusion;
 use crate::literal_exclusion::LiteralExclusion;
 use prefixmap::IriRef;
+use rudof_rdf::rdf_core::term::literal::Lang;
 use serde::de::{MapAccess, Visitor};
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Serialize, Serializer, de};
-use srdf::lang::Lang;
 use std::str::FromStr;
 use std::{fmt, result};
 
@@ -33,9 +33,7 @@ pub struct SomeNoLanguageExclusion {
 }
 
 impl Exclusion {
-    pub fn parse_literal_exclusions(
-        excs: Vec<Exclusion>,
-    ) -> Result<Vec<LiteralExclusion>, SomeNoLitExclusion> {
+    pub fn parse_literal_exclusions(excs: Vec<Exclusion>) -> Result<Vec<LiteralExclusion>, SomeNoLitExclusion> {
         let mut lit_excs = Vec::new();
         for e in excs {
             match e {
@@ -47,27 +45,22 @@ impl Exclusion {
         Ok(lit_excs)
     }
 
-    pub fn parse_iri_exclusions(
-        excs: Vec<Exclusion>,
-    ) -> Result<Vec<IriExclusion>, SomeNoIriExclusion> {
+    pub fn parse_iri_exclusions(excs: Vec<Exclusion>) -> Result<Vec<IriExclusion>, SomeNoIriExclusion> {
         let mut iri_excs = Vec::new();
         for e in excs {
             match &e {
                 Exclusion::IriExclusion(le) => iri_excs.push(le.clone()),
                 v @ Exclusion::Untyped(s) => {
-                    let iri = FromStr::from_str(s.as_str())
-                        .map_err(|_e| SomeNoIriExclusion { exc: v.clone() })?;
+                    let iri = FromStr::from_str(s.as_str()).map_err(|_e| SomeNoIriExclusion { exc: v.clone() })?;
                     iri_excs.push(IriExclusion::Iri(iri))
-                }
+                },
                 other => return Err(SomeNoIriExclusion { exc: other.clone() }),
             }
         }
         Ok(iri_excs)
     }
 
-    pub fn parse_language_exclusions(
-        excs: Vec<Exclusion>,
-    ) -> Result<Vec<LanguageExclusion>, SomeNoIriExclusion> {
+    pub fn parse_language_exclusions(excs: Vec<Exclusion>) -> Result<Vec<LanguageExclusion>, SomeNoIriExclusion> {
         let mut lang_excs = Vec::new();
         for e in excs {
             match e {
@@ -77,7 +70,7 @@ impl Exclusion {
                         exc: Exclusion::Untyped(s.clone()),
                     })?;
                     lang_excs.push(LanguageExclusion::Language(lang))
-                }
+                },
                 other => return Err(SomeNoIriExclusion { exc: other }),
             }
         }
@@ -94,19 +87,19 @@ impl Serialize for Exclusion {
             Exclusion::IriExclusion(_iri) => todo!(),
             Exclusion::LiteralExclusion(LiteralExclusion::Literal(_lit)) => {
                 todo!()
-            }
+            },
             Exclusion::LiteralExclusion(LiteralExclusion::LiteralStem(stem)) => {
                 let mut map = serializer.serialize_map(Some(2))?;
                 map.serialize_entry("type", "LiteralStem")?;
                 map.serialize_entry("stem", stem)?;
                 map.end()
-            }
+            },
             Exclusion::LanguageExclusion(stem) => {
                 let mut map = serializer.serialize_map(Some(2))?;
                 map.serialize_entry("type", "LanguageStem")?;
                 map.serialize_entry("stem", stem)?;
                 map.end()
-            }
+            },
             Exclusion::Untyped(str) => serializer.serialize_str(str),
         }
     }
@@ -184,53 +177,41 @@ impl<'de> Deserialize<'de> for Exclusion {
                             }
                             let value: String = map.next_value()?;
 
-                            let parsed_type_ =
-                                ExclusionType::parse(value.as_str()).map_err(|e| {
-                                    de::Error::custom(format!(
-                                        "Error parsing Exclusion type, found: {value}. Error: {e:?}"
-                                    ))
-                                })?;
+                            let parsed_type_ = ExclusionType::parse(value.as_str()).map_err(|e| {
+                                de::Error::custom(format!("Error parsing Exclusion type, found: {value}. Error: {e:?}"))
+                            })?;
                             type_ = Some(parsed_type_);
-                        }
+                        },
                         Field::Stem => {
                             if stem.is_some() {
                                 return Err(de::Error::duplicate_field("stem"));
                             }
                             stem = Some(map.next_value()?);
-                        }
+                        },
                     }
                 }
                 match type_ {
                     Some(ExclusionType::LiteralStem) => match stem {
-                        Some(StemValue::Literal(lit)) => Ok(Exclusion::LiteralExclusion(
-                            LiteralExclusion::LiteralStem(lit),
-                        )),
-                        Some(_) => Err(de::Error::custom(format!(
-                            "Stem {stem:?} must be a literal"
-                        ))),
+                        Some(StemValue::Literal(lit)) => {
+                            Ok(Exclusion::LiteralExclusion(LiteralExclusion::LiteralStem(lit)))
+                        },
+                        Some(_) => Err(de::Error::custom(format!("Stem {stem:?} must be a literal"))),
                         None => Err(de::Error::missing_field("stem")),
                     },
                     Some(ExclusionType::LanguageStem) => match stem {
-                        Some(StemValue::Language(lang)) => Ok(Exclusion::LanguageExclusion(
-                            LanguageExclusion::LanguageStem(lang),
-                        )),
+                        Some(StemValue::Language(lang)) => {
+                            Ok(Exclusion::LanguageExclusion(LanguageExclusion::LanguageStem(lang)))
+                        },
                         Some(StemValue::Literal(l)) => {
-                            let lang = Lang::new(&l).map_err(|e| {
-                                de::Error::custom(format!("Invalid language tag {l} in stem: {e}"))
-                            })?;
-                            Ok(Exclusion::LanguageExclusion(
-                                LanguageExclusion::LanguageStem(lang),
-                            ))
-                        }
-                        Some(_) => Err(de::Error::custom(format!(
-                            "Stem {stem:?} must be a language"
-                        ))),
+                            let lang = Lang::new(&l)
+                                .map_err(|e| de::Error::custom(format!("Invalid language tag {l} in stem: {e}")))?;
+                            Ok(Exclusion::LanguageExclusion(LanguageExclusion::LanguageStem(lang)))
+                        },
+                        Some(_) => Err(de::Error::custom(format!("Stem {stem:?} must be a language"))),
                         None => Err(de::Error::missing_field("stem")),
                     },
                     Some(ExclusionType::IriStem) => match stem {
-                        Some(StemValue::Iri(iri_ref)) => {
-                            Ok(Exclusion::IriExclusion(IriExclusion::IriStem(iri_ref)))
-                        }
+                        Some(StemValue::Iri(iri_ref)) => Ok(Exclusion::IriExclusion(IriExclusion::IriStem(iri_ref))),
                         Some(_) => Err(de::Error::custom(format!("Stem {stem:?} must be an IRI"))),
                         None => Err(de::Error::missing_field("stem")),
                     },
@@ -271,9 +252,7 @@ impl ExclusionType {
             "IriStem" => Ok(ExclusionType::IriStem),
             "LanguageStem" => Ok(ExclusionType::LanguageStem),
             "LiteralStem" => Ok(ExclusionType::LiteralStem),
-            _ => Err(ExclusionTypeError {
-                value: s.to_string(),
-            }),
+            _ => Err(ExclusionTypeError { value: s.to_string() }),
         }
     }
 }
