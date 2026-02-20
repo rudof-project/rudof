@@ -110,10 +110,7 @@ impl<RDF: Rdf> NodeShape<RDF> {
     }
 
     // TODO: this is a bit ugly
-    pub fn write<B>(&self, rdf: &mut B) -> Result<(), B::Err>
-    where
-        B: BuildRDF,
-    {
+    pub fn write<B: BuildRDF>(&self, rdf: &mut B) -> Result<(), B::Err> {
         let id: B::Subject = self.id.clone().try_into().map_err(|_| unreachable!())?;
         rdf.add_type(id.clone(), ShaclVocab::sh_node_shape().clone())?;
 

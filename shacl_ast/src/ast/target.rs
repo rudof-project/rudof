@@ -28,7 +28,7 @@ where
     WrongImplicitClass(S::Term),
 }
 
-impl<S: Rdf> Target<S> {
+impl<RDF: Rdf> Target<RDF> {
     pub fn target_node(node: Object) -> Self {
         // TODO - Replace with NodeExpr
         Target::Node(node)
@@ -45,11 +45,8 @@ impl<S: Rdf> Target<S> {
     pub fn target_implicit_class(node: Object) -> Self {
         Target::ImplicitClass(node)
     }
-    pub fn write<RDF>(&self, rdf_node: &Object, rdf: &mut RDF) -> Result<(), RDF::Err>
-    where
-        RDF: BuildRDF,
-    {
-        let node: RDF::Subject = rdf_node.clone().try_into().map_err(|_| unreachable!())?;
+    pub fn write<B: BuildRDF>(&self, rdf_node: &Object, rdf: &mut B) -> Result<(), B::Err> {
+        let node: B::Subject = rdf_node.clone().try_into().map_err(|_| unreachable!())?;
         match self {
             Target::Node(target_rdf_node) => {
                 rdf.add_triple(node, ShaclVocab::sh_target_node().clone(), target_rdf_node.clone())

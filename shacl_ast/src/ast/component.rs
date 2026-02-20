@@ -74,10 +74,7 @@ pub enum Component {
 }
 
 impl Component {
-    pub fn write<RDF>(&self, rdf_node: &Object, rdf: &mut RDF) -> Result<(), RDF::Err>
-    where
-        RDF: BuildRDF,
-    {
+    pub fn write<B: BuildRDF>(&self, rdf_node: &Object, rdf: &mut B) -> Result<(), B::Err> {
         match self {
             Self::Class(rdf_node) => {
                 Self::write_term(&rdf_node.clone().into(), ShaclVocab::SH_CLASS, rdf_node, rdf)?;
@@ -245,48 +242,33 @@ impl Component {
         Ok(())
     }
 
-    fn write_integer<RDF>(value: isize, predicate: &str, rdf_node: &Object, rdf: &mut RDF) -> Result<(), RDF::Err>
-    where
-        RDF: BuildRDF,
-    {
+    fn write_integer<B: BuildRDF>(value: isize, predicate: &str, rdf_node: &Object, rdf: &mut B) -> Result<(), B::Err> {
         let value: i128 = value.try_into().unwrap();
-        let literal: RDF::Literal = value.into();
+        let literal: B::Literal = value.into();
         Self::write_term(&literal.into(), predicate, rdf_node, rdf)
     }
 
-    fn write_boolean<RDF>(value: bool, predicate: &str, rdf_node: &Object, rdf: &mut RDF) -> Result<(), RDF::Err>
-    where
-        RDF: BuildRDF,
-    {
-        let literal: RDF::Literal = value.into();
+    fn write_boolean<B: BuildRDF>(value: bool, predicate: &str, rdf_node: &Object, rdf: &mut B) -> Result<(), B::Err> {
+        let literal: B::Literal = value.into();
         Self::write_term(&literal.into(), predicate, rdf_node, rdf)
     }
 
-    fn write_literal<RDF>(
+    fn write_literal<B: BuildRDF>(
         value: &ConcreteLiteral,
         predicate: &str,
         rdf_node: &Object,
-        rdf: &mut RDF,
-    ) -> Result<(), RDF::Err>
-    where
-        RDF: BuildRDF,
-    {
-        let literal: RDF::Literal = value.lexical_form().into();
+        rdf: &mut B,
+    ) -> Result<(), B::Err> {
+        let literal: B::Literal = value.lexical_form().into();
         Self::write_term(&literal.into(), predicate, rdf_node, rdf)
     }
 
-    fn write_iri<RDF>(value: &IriRef, predicate: &str, rdf_node: &Object, rdf: &mut RDF) -> Result<(), RDF::Err>
-    where
-        RDF: BuildRDF,
-    {
+    fn write_iri<B: BuildRDF>(value: &IriRef, predicate: &str, rdf_node: &Object, rdf: &mut B) -> Result<(), B::Err> {
         Self::write_term(&value.get_iri().unwrap().clone().into(), predicate, rdf_node, rdf)
     }
 
-    fn write_term<RDF>(value: &RDF::Term, predicate: &str, rdf_node: &Object, rdf: &mut RDF) -> Result<(), RDF::Err>
-    where
-        RDF: BuildRDF,
-    {
-        let node: RDF::Subject = rdf_node.clone().try_into().map_err(|_| unreachable!())?;
+    fn write_term<B: BuildRDF>(value: &B::Term, predicate: &str, rdf_node: &Object, rdf: &mut B) -> Result<(), B::Err> {
+        let node: B::Subject = rdf_node.clone().try_into().map_err(|_| unreachable!())?;
         rdf.add_triple(node, iri!(predicate), value.clone())
     }
 
