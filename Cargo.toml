@@ -263,7 +263,7 @@ crossterm = "0.27"
 colored = "3"
 const_format = "0.2"
 csv = "1.3.1"
-dctap = { version = "0.1.132", path = "./dctap" }
+dctap = { version = "0.2.0", path = "./dctap" }
 either = { version = "1.13", features = ["serde"] }
 futures = "0.3"
 getrandom = { version = ">=0.3, <=0.4", features = ["wasm_js"] }
@@ -298,7 +298,7 @@ petgraph = { version = "0.8" }
 prefixmap = { version = "0.1.104", path = "./prefixmap" }
 pretty = { version = "0.12" }
 proptest = "1.9.0"
-pyrudof = { version = "0.1.110", path = "./python" }
+pyrudof = { version = "0.2.0", path = "./python" }
 rand = "0.8"
 rayon = "1.7"
 rbe = { version = "0.1.111", path = "./rbe" }
@@ -318,11 +318,11 @@ rmcp = { version = "0.14.0", features = [
     "transport-streamable-http-server",
 ] }
 rmcp-macros = "0.14.0"
-rudof_cli = { version = "0.1.111", path = "./rudof_cli" }
+rudof_cli = { version = "0.2.0", path = "./rudof_cli" }
 rudof_rdf = { version = "0.1.111", path = "./rudof_rdf" }
 rudof_generate = { version = "0.1.118", path = "./rudof_generate" }
-rudof_lib = { version = "0.1.110", path = "./rudof_lib" }
-rudof_mcp = { version = "0.1.121", path = "./rudof_mcp" }
+rudof_lib = { version = "0.2.0", path = "./rudof_lib" }
+rudof_mcp = { version = "0.2.0", path = "./rudof_mcp" }
 rust_decimal = "1.38"
 rust_decimal_macros = "1.38"
 schemars = "1.0.4"
@@ -333,7 +333,7 @@ shacl_ir = { version = "0.1.90", path = "./shacl_ir" }
 shacl_rdf = { version = "0.1.90", path = "./shacl_rdf" }
 shacl_validation = { version = "0.1.90", path = "./shacl_validation" }
 shapes_comparator = { version = "0.1.111", path = "./shapes_comparator" }
-shapes_converter = { version = "0.1.111", path = "./shapes_converter" }
+shapes_converter = { version = "0.2.0", path = "./shapes_converter" }
 shex_ast = { version = "0.1.111", path = "./shex_ast" }
 shex_testsuite = { version = "0.1.108", path = "./shex_testsuite" }
 shex_validation = { version = "0.1.111", path = "./shex_validation" }
