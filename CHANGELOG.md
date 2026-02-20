@@ -9,6 +9,7 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ## v0.1.149
 ### Added
+- Option validation mode = PGSchema in rudof_cli
 ### Fixed
 - Regression bug in handling of prefixmap declarations: https://github.com/rudof-project/rudof/issues/497
 - Unimplemented behaviour in regular bag expressions like `(a;b)*` has now been implemented
