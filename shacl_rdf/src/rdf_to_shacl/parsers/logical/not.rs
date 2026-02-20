@@ -11,5 +11,5 @@ pub(crate) fn not<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<Compon
 
 fn cnv_not<RDF: Rdf>(t: RDF::Term) -> Result<Component, RDFError> {
     let shape = RDF::term_as_object(&t).map_err(|_| RDFError::FailedTermToRDFNodeError { term: t.to_string() })?;
-    Ok(Component::Not { shape })
+    Ok(Component::Not(shape))
 }

@@ -17,5 +17,5 @@ fn cnv_in_list<RDF: Rdf>(ls: Vec<RDF::Term>) -> Result<Component, RDFError> {
         .iter()
         .flat_map(|t| term_to_value::<RDF>(t, "parsing in list"))
         .collect();
-    Ok(Component::In { values })
+    Ok(Component::In(values))
 }

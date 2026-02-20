@@ -83,7 +83,7 @@ impl ComponentIR {
                 Some(ComponentIR::Pattern(pattern))
             },
             Component::UniqueLang(lang) => Some(ComponentIR::UniqueLang(UniqueLang::new(lang))),
-            Component::LanguageIn { langs } => Some(ComponentIR::LanguageIn(LanguageIn::new(langs))),
+            Component::LanguageIn(langs) => Some(ComponentIR::LanguageIn(LanguageIn::new(langs))),
             Component::Equals(iri_ref) => {
                 let iri_ref = convert_iri_ref(iri_ref)?;
                 Some(ComponentIR::Equals(Equals::new(iri_ref)))
@@ -100,35 +100,35 @@ impl ComponentIR {
                 let iri_ref = convert_iri_ref(iri_ref)?;
                 Some(ComponentIR::LessThanOrEquals(LessThanOrEquals::new(iri_ref)))
             },
-            Component::Or { shapes } => {
+            Component::Or(shapes) => {
                 let values = compile_shapes::<S>(shapes, schema, schema_ir)?;
                 let ors = values.into_iter().collect::<Vec<_>>();
                 Some(ComponentIR::Or(Or::new(ors)))
             },
-            Component::And { shapes } => {
+            Component::And(shapes) => {
                 let values = compile_shapes::<S>(shapes, schema, schema_ir)?;
                 let ands = values.into_iter().collect::<Vec<_>>();
                 Some(ComponentIR::And(And::new(ands)))
             },
-            Component::Not { shape } => {
+            Component::Not(shape) => {
                 let shape = compile_shape::<S>(&shape, schema, schema_ir)?;
                 Some(ComponentIR::Not(Not::new(shape)))
             },
-            Component::Xone { shapes } => {
+            Component::Xone(shapes) => {
                 let values = compile_shapes::<S>(shapes, schema, schema_ir)?;
                 let xones = values.into_iter().collect::<Vec<_>>();
                 Some(ComponentIR::Xone(Xone::new(xones)))
             },
             Component::Closed { .. } => None,
-            Component::Node { shape } => {
+            Component::Node(shape) => {
                 let shape = compile_shape::<S>(&shape, schema, schema_ir)?;
                 Some(ComponentIR::Node(Node::new(shape)))
             },
-            Component::HasValue { value } => {
+            Component::HasValue(value) => {
                 let term = convert_value(value)?;
                 Some(ComponentIR::HasValue(HasValue::new(term)))
             },
-            Component::In { values } => {
+            Component::In(values) => {
                 let terms = values.into_iter().map(convert_value).collect::<Result<Vec<_>, _>>()?;
                 Some(ComponentIR::In(In::new(terms)))
             },

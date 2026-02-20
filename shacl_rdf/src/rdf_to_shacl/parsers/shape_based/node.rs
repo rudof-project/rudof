@@ -14,5 +14,5 @@ pub(crate) fn node<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<Compo
 
 fn cnv_node<RDF: Rdf>(t: RDF::Term) -> Result<Component, RDFError> {
     let shape = RDF::term_as_object(&t).map_err(|_| RDFError::FailedTermToRDFNodeError { term: t.to_string() })?;
-    Ok(Component::Node { shape })
+    Ok(Component::Node(shape))
 }

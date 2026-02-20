@@ -14,5 +14,5 @@ pub(crate) fn and<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<Compon
 
 fn cnv_and_list<RDF: Rdf>(ls: Vec<RDF::Term>) -> Result<Component, RDFError> {
     let shapes: Vec<_> = terms_as_nodes::<RDF>(ls)?;
-    Ok(Component::And { shapes })
+    Ok(Component::And(shapes))
 }

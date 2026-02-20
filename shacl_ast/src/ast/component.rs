@@ -31,38 +31,22 @@ pub enum Component {
         flags: Option<String>,
     },
     UniqueLang(bool),
-    LanguageIn {
-        langs: Vec<Lang>,
-    },
+    LanguageIn(Vec<Lang>),
     Equals(IriRef),
     Disjoint(IriRef),
     LessThan(IriRef),
     LessThanOrEquals(IriRef),
-    Or {
-        shapes: Vec<Object>,
-    },
-    And {
-        shapes: Vec<Object>,
-    },
-    Not {
-        shape: Object,
-    },
-    Xone {
-        shapes: Vec<Object>,
-    },
+    Or(Vec<Object>),
+    And(Vec<Object>),
+    Not(Object),
+    Xone(Vec<Object>),
     Closed {
         is_closed: bool,
         ignored_properties: HashSet<IriS>,
     },
-    Node {
-        shape: Object,
-    },
-    HasValue {
-        value: Value,
-    },
-    In {
-        values: Vec<Value>,
-    },
+    Node(Object),
+    HasValue(Value),
+    In(Vec<Value>),
     QualifiedValueShape {
         shape: Object,
         q_min_count: Option<isize>,
@@ -124,7 +108,7 @@ impl Component {
             Self::UniqueLang(value) => {
                 Self::write_boolean(*value, ShaclVocab::SH_UNIQUE_LANG, rdf_node, rdf)?;
             },
-            Self::LanguageIn { langs } => {
+            Self::LanguageIn(langs) => {
                 langs.iter().try_for_each(|lang| {
                     Self::write_literal(
                         &ConcreteLiteral::str(&lang.to_string()),
@@ -146,20 +130,20 @@ impl Component {
             Self::LessThanOrEquals(iri) => {
                 Self::write_iri(iri, ShaclVocab::SH_LESS_THAN_OR_EQUALS, rdf_node, rdf)?;
             },
-            Self::Or { shapes } => {
+            Self::Or(shapes) => {
                 shapes
                     .iter()
                     .try_for_each(|shape| Self::write_term(&shape.clone().into(), ShaclVocab::SH_OR, rdf_node, rdf))?;
             },
-            Self::And { shapes } => {
+            Self::And(shapes) => {
                 shapes
                     .iter()
                     .try_for_each(|shape| Self::write_term(&shape.clone().into(), ShaclVocab::SH_AND, rdf_node, rdf))?;
             },
-            Self::Not { shape } => {
+            Self::Not(shape) => {
                 Self::write_term(&shape.clone().into(), ShaclVocab::SH_PATTERN, rdf_node, rdf)?;
             },
-            Self::Xone { shapes } => {
+            Self::Xone(shapes) => {
                 shapes.iter().try_for_each(|shape| {
                     Self::write_term(&shape.clone().into(), ShaclVocab::SH_XONE, rdf_node, rdf)
                 })?;
@@ -175,10 +159,10 @@ impl Component {
                     Self::write_iri(&iri_ref, ShaclVocab::SH_IGNORED_PROPERTIES, rdf_node, rdf)
                 })?;
             },
-            Self::Node { shape } => {
+            Self::Node(shape) => {
                 Self::write_term(&shape.clone().into(), ShaclVocab::SH_NODE, rdf_node, rdf)?;
             },
-            Self::HasValue { value } => match value {
+            Self::HasValue(value) => match value {
                 Value::Iri(iri) => {
                     Self::write_iri(iri, ShaclVocab::SH_HAS_VALUE, rdf_node, rdf)?;
                 },
@@ -191,7 +175,7 @@ impl Component {
                     )?;
                 },
             },
-            Self::In { values } => {
+            Self::In(values) => {
                 // TODO: Review this code
                 values.iter().try_for_each(|value| match value {
                     Value::Iri(iri) => Self::write_iri(iri, ShaclVocab::SH_IN, rdf_node, rdf),
@@ -304,18 +288,18 @@ impl Display for Component {
             Component::Disjoint(d) => write!(f, "disjoint({d})"),
             Component::LessThan(lt) => write!(f, "lessThan({lt})"),
             Component::LessThanOrEquals(lte) => write!(f, "lessThanOrEquals({lte})"),
-            Component::Or { shapes } => {
+            Component::Or(shapes) => {
                 let str = shapes.iter().map(|s| s.to_string()).join(" ");
                 write!(f, "or [{str}]")
             },
-            Component::And { shapes } => {
+            Component::And(shapes) => {
                 let str = shapes.iter().map(|s| s.to_string()).join(" ");
                 write!(f, "and [{str}]")
             },
-            Component::Not { shape } => {
+            Component::Not(shape) => {
                 write!(f, "not [{shape}]")
             },
-            Component::Xone { shapes } => {
+            Component::Xone(shapes) => {
                 let str = shapes.iter().map(|s| s.to_string()).join(" ");
                 write!(f, "xone [{str}]")
             },
@@ -336,9 +320,9 @@ impl Display for Component {
                     }
                 )
             },
-            Component::Node { shape } => write!(f, "node({shape})"),
-            Component::HasValue { value } => write!(f, "hasValue({value})"),
-            Component::In { values } => {
+            Component::Node(shape) => write!(f, "node({shape})"),
+            Component::HasValue(value) => write!(f, "hasValue({value})"),
+            Component::In(values) => {
                 let str = values.iter().map(|v| v.to_string()).join(" ");
                 write!(f, "In [{str}]")
             },

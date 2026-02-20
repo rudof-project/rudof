@@ -14,5 +14,5 @@ pub(crate) fn has_value<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<
 
 fn cnv_has_value<RDF: Rdf>(term: RDF::Term) -> Result<Component, RDFError> {
     let value = term_to_value::<RDF>(&term, "parsing hasValue")?;
-    Ok(Component::HasValue { value })
+    Ok(Component::HasValue(value))
 }

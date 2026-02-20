@@ -340,25 +340,25 @@ impl Shacl2ShEx {
             Component::MaxLength(_) => todo!(),
             Component::Pattern { pattern: _, flags: _ } => todo!(),
             Component::UniqueLang(_) => todo!(),
-            Component::LanguageIn { langs: _ } => todo!(),
+            Component::LanguageIn(_) => todo!(),
             Component::Equals(_) => todo!(),
             Component::Disjoint(_) => todo!(),
             Component::LessThan(_) => todo!(),
             Component::LessThanOrEquals(_) => todo!(),
-            Component::Or { shapes: _ } => {
+            Component::Or(_) => {
                 debug!("Not implemented OR Shapes");
                 Ok(ShapeExpr::empty_shape())
             },
-            Component::And { shapes: _ } => todo!(),
-            Component::Not { shape: _ } => todo!(),
-            Component::Xone { shapes: _ } => todo!(),
+            Component::And(_) => todo!(),
+            Component::Not(_) => todo!(),
+            Component::Xone(_) => todo!(),
             Component::Closed {
                 is_closed: _,
                 ignored_properties: _,
             } => todo!(),
-            Component::Node { shape: _ } => todo!(),
-            Component::HasValue { value: _ } => todo!(),
-            Component::In { values: _ } => todo!(),
+            Component::Node(_) => todo!(),
+            Component::HasValue(_) => todo!(),
+            Component::In(_) => todo!(),
             Component::QualifiedValueShape {
                 shape: _,
                 q_min_count: _,

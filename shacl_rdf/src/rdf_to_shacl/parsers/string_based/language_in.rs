@@ -15,5 +15,5 @@ pub(crate) fn language_in<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Ve
 
 fn cnv_language_in_list<R: FocusRDF>(terms: Vec<R::Term>) -> Result<Component, RDFError> {
     let langs: Vec<Lang> = terms.iter().flat_map(R::term_as_lang).collect();
-    Ok(Component::LanguageIn { langs })
+    Ok(Component::LanguageIn(langs))
 }

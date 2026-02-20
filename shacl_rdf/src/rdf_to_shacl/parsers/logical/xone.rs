@@ -14,5 +14,5 @@ pub(crate) fn xone<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<Compo
 
 fn cnv_xone_list<RDF: Rdf>(ls: Vec<RDF::Term>) -> Result<Component, RDFError> {
     let shapes: Vec<_> = terms_as_nodes::<RDF>(ls)?; // ls.into_iter().map(|t| t.try_into()).collect();
-    Ok(Component::Xone { shapes })
+    Ok(Component::Xone(shapes))
 }

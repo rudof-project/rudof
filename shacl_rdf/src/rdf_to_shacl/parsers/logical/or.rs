@@ -14,5 +14,5 @@ pub(crate) fn or<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<Compone
 
 fn cnv_or_list<RDF: Rdf>(ls: Vec<RDF::Term>) -> Result<Component, RDFError> {
     let shapes: Vec<_> = terms_as_nodes::<RDF>(ls)?;
-    Ok(Component::Or { shapes })
+    Ok(Component::Or(shapes))
 }
