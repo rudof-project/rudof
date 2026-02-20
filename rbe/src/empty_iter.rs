@@ -81,7 +81,9 @@ where
             }
         },
         Rbe::Fail { error } => Rbe1::Fail {
-            error: RbeError::MsgError { msg: format!("{error}") },
+            error: RbeError::MsgError {
+                msg: format!("{error}"),
+            },
         },
         Rbe::Star { value } => Rbe1::Star {
             expr: Box::new(cnv_rbe(value, table)),
@@ -152,7 +154,7 @@ mod tests {
             Rbe1::Symbol { key, card, .. } => {
                 assert_eq!(key, 1);
                 assert_eq!(card, Cardinality::from(Min::from(1), Max::IntMax(3)));
-            }
+            },
             other => panic!("Expected Symbol, got {:?}", other),
         }
     }
@@ -167,7 +169,7 @@ mod tests {
                 assert_eq!(exprs.len(), 2);
                 assert_eq!(exprs[0], Rbe1::Empty);
                 assert!(matches!(exprs[1], Rbe1::Symbol { .. }));
-            }
+            },
             other => panic!("Expected And, got {:?}", other),
         }
     }
@@ -182,7 +184,7 @@ mod tests {
                 assert_eq!(exprs.len(), 2);
                 assert_eq!(exprs[0], Rbe1::Empty);
                 assert!(matches!(exprs[1], Rbe1::Symbol { .. }));
-            }
+            },
             other => panic!("Expected Or, got {:?}", other),
         }
     }
@@ -195,7 +197,7 @@ mod tests {
         match result {
             Rbe1::Star { expr } => {
                 assert!(matches!(*expr, Rbe1::Symbol { .. }));
-            }
+            },
             other => panic!("Expected Star, got {:?}", other),
         }
     }
@@ -208,7 +210,7 @@ mod tests {
         match result {
             Rbe1::Plus { expr } => {
                 assert!(matches!(*expr, Rbe1::Symbol { .. }));
-            }
+            },
             other => panic!("Expected Plus, got {:?}", other),
         }
     }
@@ -222,7 +224,7 @@ mod tests {
             Rbe1::Repeat { expr, card } => {
                 assert!(matches!(*expr, Rbe1::Symbol { .. }));
                 assert_eq!(card, Cardinality::from(Min::from(2), Max::IntMax(5)));
-            }
+            },
             other => panic!("Expected Repeat, got {:?}", other),
         }
     }
@@ -250,7 +252,7 @@ mod tests {
                 assert_eq!(exprs.len(), 2);
                 assert!(matches!(exprs[0], Rbe1::Or { .. }));
                 assert_eq!(exprs[1], Rbe1::Empty);
-            }
+            },
             other => panic!("Expected And, got {:?}", other),
         }
     }
