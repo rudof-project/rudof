@@ -7,10 +7,13 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.2.0 
+### Changed
+- Shapemaps allow an optional trailing comma instead, [issue 501](https://github.com/rudof-project/rudof/issues/501)
 
 ## v0.2.0 
 
-We created a minor release to reset the number (0.1.149) and to reflect that this is the first release contains several contributions from 2 new core developers: @samuel-bustamante and @algarfer
+We created a new minor release 0.2.0 to reset the number (0.1.149) and to reflect that this is the first release contains several contributions from 2 new core developers: @samuel-bustamante and @algarfer
 
 ### Added
 - Option validation mode = PGSchema in rudof_cli
