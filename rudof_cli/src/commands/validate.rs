@@ -3,8 +3,8 @@ use crate::commands::base::{Command, CommandContext};
 use anyhow::Result;
 
 /// Implementation of the `validate` command.
-/// 
-/// This struct holds the specific arguments parsed by `clap` and 
+///
+/// This struct holds the specific arguments parsed by `clap` and
 /// implements the [Command] trait to execute validation logic.
 pub struct ValidateCommand {
     /// Arguments specific to validate.

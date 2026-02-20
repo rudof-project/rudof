@@ -1,8 +1,6 @@
 use std::{fmt::Display, str::FromStr};
 
-use clap::ValueEnum;
-
-#[derive(ValueEnum, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum QueryType {
     Select,
     Construct,

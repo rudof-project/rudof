@@ -1,10 +1,8 @@
 use crate::RudofError;
-use clap::ValueEnum;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-#[clap(rename_all = "lower")]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum ResultQueryFormat {
     Internal,
     Turtle,

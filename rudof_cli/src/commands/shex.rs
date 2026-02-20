@@ -3,8 +3,8 @@ use crate::commands::base::{Command, CommandContext};
 use anyhow::Result;
 
 /// Implementation of the `shex` command.
-/// 
-/// This struct holds the specific arguments parsed by `clap` and 
+///
+/// This struct holds the specific arguments parsed by `clap` and
 /// implements the [Command] trait to execute Shex logic.
 pub struct ShexCommand {
     /// Arguments specific to shex.

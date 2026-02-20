@@ -3,8 +3,8 @@ use crate::commands::base::{Command, CommandContext};
 use anyhow::Result;
 
 /// Implementation of the `shapemap` command.
-/// 
-/// This struct holds the specific arguments parsed by `clap` and 
+///
+/// This struct holds the specific arguments parsed by `clap` and
 /// implements the [Command] trait to execute Shapemap logic.
 pub struct ShapemapCommand {
     /// Arguments specific to shapemap.

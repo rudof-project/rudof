@@ -12,14 +12,14 @@ use crate::{
     result_shacl_validation_format::{
         ResultShaclValidationFormat, SortByShaclValidationReport, cnv_sort_mode_report, result_format_to_rdf_format,
     },
-    shacl_format::CliShaclFormat,
+    shacl_format::ShaclFormat as libShaclFormat,
     terminal_width::terminal_width,
 };
 
 pub fn add_shacl_schema_rudof(
     rudof: &mut Rudof,
     schema: &InputSpec,
-    shapes_format: &CliShaclFormat,
+    shapes_format: &libShaclFormat,
     base_shapes: &Option<IriS>,
     reader_mode: &ReaderMode,
     config: &RudofConfig,
@@ -39,16 +39,16 @@ pub fn add_shacl_schema_rudof(
     Ok(())
 }
 
-pub fn shacl_format_convert(shacl_format: CliShaclFormat) -> Result<ShaclFormat, RudofError> {
+pub fn shacl_format_convert(shacl_format: libShaclFormat) -> Result<ShaclFormat, RudofError> {
     match shacl_format {
-        CliShaclFormat::Turtle => Ok(ShaclFormat::Turtle),
-        CliShaclFormat::RdfXml => Ok(ShaclFormat::RdfXml),
-        CliShaclFormat::NTriples => Ok(ShaclFormat::NTriples),
-        CliShaclFormat::TriG => Ok(ShaclFormat::TriG),
-        CliShaclFormat::N3 => Ok(ShaclFormat::N3),
-        CliShaclFormat::NQuads => Ok(ShaclFormat::NQuads),
-        CliShaclFormat::Internal => Ok(ShaclFormat::Internal),
-        CliShaclFormat::JsonLd => Ok(ShaclFormat::JsonLd),
+        libShaclFormat::Turtle => Ok(ShaclFormat::Turtle),
+        libShaclFormat::RdfXml => Ok(ShaclFormat::RdfXml),
+        libShaclFormat::NTriples => Ok(ShaclFormat::NTriples),
+        libShaclFormat::TriG => Ok(ShaclFormat::TriG),
+        libShaclFormat::N3 => Ok(ShaclFormat::N3),
+        libShaclFormat::NQuads => Ok(ShaclFormat::NQuads),
+        libShaclFormat::Internal => Ok(ShaclFormat::Internal),
+        libShaclFormat::JsonLd => Ok(ShaclFormat::JsonLd),
     }
 }
 

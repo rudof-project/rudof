@@ -1,12 +1,10 @@
-use clap::ValueEnum;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
 use iri_s::MimeType;
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
-#[clap(rename_all = "lower")]
-pub enum CliShaclFormat {
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
+pub enum ShaclFormat {
     Internal,
     #[default]
     Turtle,
@@ -18,49 +16,49 @@ pub enum CliShaclFormat {
     JsonLd,
 }
 
-impl MimeType for CliShaclFormat {
+impl MimeType for ShaclFormat {
     fn mime_type(&self) -> &'static str {
         match self {
-            CliShaclFormat::Turtle => "text/turtle",
-            CliShaclFormat::NTriples => "application/n-triples",
-            CliShaclFormat::RdfXml => "application/rdf+xml",
-            CliShaclFormat::TriG => "application/trig",
-            CliShaclFormat::N3 => "text/n3",
-            CliShaclFormat::NQuads => "application/n-quads",
-            CliShaclFormat::Internal => "text/turtle",
-            CliShaclFormat::JsonLd => "application/ld+json",
+            ShaclFormat::Turtle => "text/turtle",
+            ShaclFormat::NTriples => "application/n-triples",
+            ShaclFormat::RdfXml => "application/rdf+xml",
+            ShaclFormat::TriG => "application/trig",
+            ShaclFormat::N3 => "text/n3",
+            ShaclFormat::NQuads => "application/n-quads",
+            ShaclFormat::Internal => "text/turtle",
+            ShaclFormat::JsonLd => "application/ld+json",
         }
     }
 }
 
-impl Display for CliShaclFormat {
+impl Display for ShaclFormat {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            CliShaclFormat::Internal => write!(dest, "internal"),
-            CliShaclFormat::Turtle => write!(dest, "turtle"),
-            CliShaclFormat::NTriples => write!(dest, "NTriples"),
-            CliShaclFormat::RdfXml => write!(dest, "rdfxml"),
-            CliShaclFormat::TriG => write!(dest, "trig"),
-            CliShaclFormat::N3 => write!(dest, "n3"),
-            CliShaclFormat::NQuads => write!(dest, "nquads"),
-            CliShaclFormat::JsonLd => write!(dest, "jsonld"),
+            ShaclFormat::Internal => write!(dest, "internal"),
+            ShaclFormat::Turtle => write!(dest, "turtle"),
+            ShaclFormat::NTriples => write!(dest, "NTriples"),
+            ShaclFormat::RdfXml => write!(dest, "rdfxml"),
+            ShaclFormat::TriG => write!(dest, "trig"),
+            ShaclFormat::N3 => write!(dest, "n3"),
+            ShaclFormat::NQuads => write!(dest, "nquads"),
+            ShaclFormat::JsonLd => write!(dest, "jsonld"),
         }
     }
 }
 
-impl FromStr for CliShaclFormat {
+impl FromStr for ShaclFormat {
     type Err = crate::RudofError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "internal" => Ok(CliShaclFormat::Internal),
-            "turtle" => Ok(CliShaclFormat::Turtle),
-            "ntriples" => Ok(CliShaclFormat::NTriples),
-            "rdfxml" => Ok(CliShaclFormat::RdfXml),
-            "trig" => Ok(CliShaclFormat::TriG),
-            "n3" => Ok(CliShaclFormat::N3),
-            "nquads" => Ok(CliShaclFormat::NQuads),
-            "jsonld" => Ok(CliShaclFormat::JsonLd),
+            "internal" => Ok(ShaclFormat::Internal),
+            "turtle" => Ok(ShaclFormat::Turtle),
+            "ntriples" => Ok(ShaclFormat::NTriples),
+            "rdfxml" => Ok(ShaclFormat::RdfXml),
+            "trig" => Ok(ShaclFormat::TriG),
+            "n3" => Ok(ShaclFormat::N3),
+            "nquads" => Ok(ShaclFormat::NQuads),
+            "jsonld" => Ok(ShaclFormat::JsonLd),
             other => Err(crate::RudofError::UnsupportedShaclFormat {
                 format: other.to_string(),
             }),

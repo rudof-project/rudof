@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{self, Write, BufWriter};
+use std::io::{self, BufWriter, Write};
 use std::path::PathBuf;
 
 use anyhow::{Result, bail};
@@ -13,22 +13,16 @@ use crate::output::color::{ColorSupport, detect_color_support_cached};
 /// 2. Checking for file existence and preventing accidental overwrites.
 /// 3. Detecting color support (enabled for TTYs, disabled for files).
 /// 4. Wrapping the output in a [BufWriter] for performance.
-pub fn get_writer(
-    output: &Option<PathBuf>,
-    force_overwrite: bool,
-) -> Result<(Box<dyn Write>, ColorSupport)> {
-
+pub fn get_writer(output: &Option<PathBuf>, force_overwrite: bool) -> Result<(Box<dyn Write>, ColorSupport)> {
     match output {
-
         // Handle stdout case (default)
         None => {
             let writer = BufWriter::new(io::stdout());
             let color = detect_color_support_cached();
             Ok((Box::new(writer), color))
-        }
+        },
 
         Some(path) => {
-
             // Standard Unix convention: "-" represents stdout
             if path.to_string_lossy() == "-" {
                 let writer = BufWriter::new(io::stdout());
@@ -50,6 +44,6 @@ pub fn get_writer(
 
             // Files should generally not contain ANSI color codes by default
             Ok((Box::new(writer), ColorSupport::NoColor))
-        }
+        },
     }
 }

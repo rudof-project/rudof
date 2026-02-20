@@ -36,7 +36,7 @@ fn from_level(level: ColorLevel) -> ColorSupport {
 }
 
 /// Detects color support for Stdout using a thread-safe cache.
-/// 
+///
 /// This is the recommended entry point to avoid repeated environment
 /// checks and system calls during the application lifecycle.
 pub fn detect_color_support_cached() -> ColorSupport {
@@ -86,13 +86,13 @@ fn env_force_color() -> usize {
 
 /// Checks the `NO_COLOR` environment variable.
 fn env_no_color() -> bool {
-    env::var("NO_COLOR").map_or(false, |val| val != "0")
+    env::var("NO_COLOR").is_ok_and(|val| val != "0")
 }
 
 /// Converts a numeric color level into a [ColorLevel] struct.
 fn translate_level(level: usize) -> Option<ColorLevel> {
-    if level == 0 { 
-        None 
+    if level == 0 {
+        None
     } else {
         Some(ColorLevel {
             level,
@@ -121,23 +121,23 @@ fn supports_color(stream: Stream) -> usize {
 
     // Colors are disabled if NO_COLOR is set, TERM is dumb, or it's not a TTY.
     if env_no_color()
-        || env::var("TERM").map_or(false, |t| t == "dumb")
-        || !(is_a_tty(stream) || env::var("IGNORE_IS_TERMINAL").map_or(false, |v| v != "0"))
+        || env::var("TERM").is_ok_and(|t| t == "dumb")
+        || !(is_a_tty(stream) || env::var("IGNORE_IS_TERMINAL").is_ok_and(|v| v != "0"))
     {
         return 0;
     }
 
     // Level 3: TrueColor detection
-    if env::var("COLORTERM").map_or(false, |v| check_colorterm_16m(&v))
-        || env::var("TERM").map_or(false, |v| check_term_16m(&v))
-        || env::var("TERM_PROGRAM").map_or(false, |v| v == "iTerm.app")
+    if env::var("COLORTERM").is_ok_and(|v| check_colorterm_16m(&v))
+        || env::var("TERM").is_ok_and(|v| check_term_16m(&v))
+        || env::var("TERM_PROGRAM").is_ok_and(|v| v == "iTerm.app")
     {
         return 3;
     }
 
     // Level 2: 256-color detection
-    if env::var("TERM_PROGRAM").map_or(false, |v| v == "Apple_Terminal")
-        || env::var("TERM").map_or(false, |v| check_256_color(&v))
+    if env::var("TERM_PROGRAM").is_ok_and(|v| v == "Apple_Terminal")
+        || env::var("TERM_PROGRAM").is_ok_and(|v| v == "iTerm.app")
     {
         return 2;
     }
@@ -145,7 +145,7 @@ fn supports_color(stream: Stream) -> usize {
     // Level 1: Basic color detection
     if env::var("COLORTERM").is_ok()
         || check_ansi_color(env::var("TERM").ok().as_deref())
-        || env::var("CLICOLOR").map_or(false, |v| v != "0")
+        || env::var("CLICOLOR").is_ok_and(|v| v != "0")
         || is_ci::uncached()
     {
         return 1;
@@ -157,12 +157,12 @@ fn supports_color(stream: Stream) -> usize {
 #[cfg(windows)]
 fn check_ansi_color(term: Option<&str>) -> bool {
     // Windows supports ANSI if it's not a known restricted terminal
-    term.map_or(true, |t| t != "dumb" && t != "cygwin")
+    term.is_none_or(|t| t != "dumb" && t != "cygwin")
 }
 
 #[cfg(not(windows))]
 fn check_ansi_color(term: Option<&str>) -> bool {
-    term.map_or(false, |t| t != "dumb")
+    term.is_none_or(|t| t != "dumb" && t != "cygwin")
 }
 
 fn check_colorterm_16m(colorterm: &str) -> bool {

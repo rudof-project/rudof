@@ -1,4 +1,3 @@
-use clap::ValueEnum;
 use std::{
     fmt::{Display, Formatter},
     str::FromStr,
@@ -6,8 +5,7 @@ use std::{
 
 use crate::{RudofError, shapemap_format::ShapeMapFormat};
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
-#[clap(rename_all = "lower")]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
 pub enum ResultShExValidationFormat {
     #[default]
     Details,
@@ -53,10 +51,10 @@ impl Display for ResultShExValidationFormat {
     }
 }
 
-impl TryFrom<&ResultShExValidationFormat> for ShapeMapFormat {
+impl TryFrom<ResultShExValidationFormat> for ShapeMapFormat {
     type Error = RudofError;
 
-    fn try_from(format: &ResultShExValidationFormat) -> Result<Self, Self::Error> {
+    fn try_from(format: ResultShExValidationFormat) -> Result<Self, Self::Error> {
         match format {
             ResultShExValidationFormat::Compact => Ok(ShapeMapFormat::Compact),
             ResultShExValidationFormat::Details => Ok(ShapeMapFormat::Details),
@@ -66,6 +64,14 @@ impl TryFrom<&ResultShExValidationFormat> for ShapeMapFormat {
                 format: format!("{other:?}"),
             }),
         }
+    }
+}
+
+impl TryFrom<&ResultShExValidationFormat> for ShapeMapFormat {
+    type Error = RudofError;
+
+    fn try_from(format: &ResultShExValidationFormat) -> Result<Self, Self::Error> {
+        (*format).try_into()
     }
 }
 

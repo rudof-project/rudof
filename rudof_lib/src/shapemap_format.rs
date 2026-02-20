@@ -3,11 +3,9 @@ use std::{
     str::FromStr,
 };
 
-use clap::ValueEnum;
 use shex_ast::shapemap::ShapeMapFormat as ShexAstShapeMapFormat;
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-#[clap(rename_all = "lower")]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum ShapeMapFormat {
     Compact,
     Internal,
@@ -28,8 +26,8 @@ impl Display for ShapeMapFormat {
     }
 }
 
-impl From<&ShapeMapFormat> for ShexAstShapeMapFormat {
-    fn from(format: &ShapeMapFormat) -> Self {
+impl From<ShapeMapFormat> for ShexAstShapeMapFormat {
+    fn from(format: ShapeMapFormat) -> Self {
         match format {
             ShapeMapFormat::Compact => ShexAstShapeMapFormat::Compact,
             ShapeMapFormat::Internal => ShexAstShapeMapFormat::Json,
@@ -37,6 +35,12 @@ impl From<&ShapeMapFormat> for ShexAstShapeMapFormat {
             ShapeMapFormat::Details => ShexAstShapeMapFormat::Compact,
             ShapeMapFormat::Csv => ShexAstShapeMapFormat::Csv,
         }
+    }
+}
+
+impl From<&ShapeMapFormat> for ShexAstShapeMapFormat {
+    fn from(format: &ShapeMapFormat) -> Self {
+        (*format).into()
     }
 }
 

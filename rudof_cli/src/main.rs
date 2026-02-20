@@ -1,8 +1,8 @@
 extern crate anyhow;
 extern crate clap;
 
-use clap::Parser;
 use anyhow::{Result, bail};
+use clap::Parser;
 
 use rudof_cli::cli::parser::{Cli, Command};
 use rudof_cli::commands::{CommandContext, CommandFactory};
