@@ -29,7 +29,11 @@ impl CompiledTarget {
             Target::SubjectsOf(iri_ref) => CompiledTarget::SubjectsOf(iri_ref.into()),
             Target::ObjectsOf(iri_ref) => CompiledTarget::ObjectsOf(iri_ref.into()),
             Target::ImplicitClass(object) => CompiledTarget::ImplicitClass(object),
-            _ => todo!(),
+            Target::WrongNode(_) => todo!(),
+            Target::WrongClass(_) => todo!(),
+            Target::WrongSubjectsOf(_) => todo!(),
+            Target::WrongObjectsOf(_) => todo!(),
+            Target::WrongImplicitClass(_) => todo!(),
         };
 
         Ok(ans)

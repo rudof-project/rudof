@@ -245,7 +245,12 @@ where
 {
     match path {
         SHACLPath::Predicate { pred } => pred.clone().into(),
-        _ => todo!(),
+        SHACLPath::Alternative { paths: _ } => todo!(),
+        SHACLPath::Sequence { paths: _ } => todo!(),
+        SHACLPath::Inverse { path: _ } => todo!(),
+        SHACLPath::ZeroOrMore { path: _ } => todo!(),
+        SHACLPath::OneOrMore { path: _ } => todo!(),
+        SHACLPath::ZeroOrOne { path: _ } => todo!(),
     }
 }
 
