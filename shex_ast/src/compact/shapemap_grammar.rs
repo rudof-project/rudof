@@ -30,8 +30,14 @@ pub(crate) fn shapemap_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Vec<S
         "shapemap_statement",
         map_error(
             move |i| {
-                let (i, (a, _, ass, _, _, _)) =
-                    all_consuming(tuple((association, tws0, rest_associations, tws0, opt(char(',')), tws0)))(i)?;
+                let (i, (a, _, ass, _, _, _)) = all_consuming(tuple((
+                    association,
+                    tws0,
+                    rest_associations,
+                    tws0,
+                    opt(char(',')),
+                    tws0,
+                )))(i)?;
                 let mut rs = vec![a];
                 for a in ass {
                     rs.push(a);

@@ -76,7 +76,9 @@ mod tests {
 
     #[test]
     fn test_add_and_find_prefix() {
-        let mut pm = PyPrefixMap { inner: PrefixMap::new() };
+        let mut pm = PyPrefixMap {
+            inner: PrefixMap::new(),
+        };
         pm.add_prefix("ex", "http://example.org/").unwrap();
         let result = pm.find("ex").unwrap();
         assert_eq!(result, Some("http://example.org/".to_string()));
@@ -84,7 +86,9 @@ mod tests {
 
     #[test]
     fn test_find_missing_prefix_returns_none() {
-        let pm = PyPrefixMap { inner: PrefixMap::new() };
+        let pm = PyPrefixMap {
+            inner: PrefixMap::new(),
+        };
         let result = pm.find("ex").unwrap();
         assert_eq!(result, None);
     }
