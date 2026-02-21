@@ -1,7 +1,6 @@
 [workspace]
 resolver = "2"
 members = [
-    "rudof_generate",
     "dctap",
     "iri_s",
     "mie",
@@ -15,6 +14,7 @@ members = [
     "rudof_cli",
     "rudof_lib",
     "rudof_mcp",
+    "rudof_generate",
     "shacl_ast",
     "shacl_ir",
     "shacl_rdf",
