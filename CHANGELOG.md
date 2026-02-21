@@ -8,6 +8,8 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Removed
 
 ## v0.2.2
+### Added
+- Now the shex validator continues validating a shapemap in case a shape label is not found. The previous behaviour failed. Issue #502
 
 ### Changed
 - shex_validator: validate_shapemap2 renamed to validate_shapemap
