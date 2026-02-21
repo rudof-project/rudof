@@ -2,6 +2,7 @@ use crate::ShapeExprLabel;
 use crate::shapemap::{NodeSelector, ShapeSelector, ShapemapError};
 use rudof_rdf::rdf_core::query::QueryRDF;
 use serde::Serialize;
+use std::fmt::Display;
 use std::iter::once;
 use tracing::trace;
 
@@ -35,5 +36,11 @@ impl Association {
                 .flat_map(move |label| once((node.clone(), label)))
         });
         Ok(iter)
+    }
+}
+
+impl Display for Association {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}@{}", self.node_selector, self.shape_selector)
     }
 }

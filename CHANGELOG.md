@@ -7,6 +7,11 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.2.2
+
+### Changed
+- shex_validator: validate_shapemap2 renamed to validate_shapemap
+
 ## v0.2.1
 ### Added
 - New methods in Python's prefixmap so it can be tested and we publish a new version
