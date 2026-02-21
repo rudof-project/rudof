@@ -18,6 +18,28 @@ pub struct PyPrefixMap {
 
 #[pymethods]
 impl PyPrefixMap {
+    /// Get the number of prefix mappings in the prefix map.
+    ///
+    /// Returns:
+    ///     int: The number of prefix mappings.
+    pub fn len(&self) -> usize {
+        self.inner.len()
+    }
+
+    /// Find the IRI associated with a given prefix.
+    ///
+    /// Args:
+    ///     prefix (str): The prefix to look up.
+    ///
+    /// Returns:
+    ///     Optional[str]: The IRI associated with the prefix, or `None` if the prefix is not found.
+    ///
+    /// Raises:
+    ///     ValueError: If the prefix cannot be found or if there is an error in the prefix map.
+    pub fn find(&self, prefix: &str) -> PyResult<Option<String>> {
+        Ok(self.inner.find(prefix).map(|iri| iri.to_string()))
+    }
+
     /// Convert the prefix map to a string representation.
     ///
     /// Returns:
@@ -45,5 +67,25 @@ impl PyPrefixMap {
             .map_err(|e| RudofError::PrefixMapError { error: e.to_string() })
             .map_err(cnv_err)?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_add_and_find_prefix() {
+        let mut pm = PyPrefixMap { inner: PrefixMap::new() };
+        pm.add_prefix("ex", "http://example.org/").unwrap();
+        let result = pm.find("ex").unwrap();
+        assert_eq!(result, Some("http://example.org/".to_string()));
+    }
+
+    #[test]
+    fn test_find_missing_prefix_returns_none() {
+        let pm = PyPrefixMap { inner: PrefixMap::new() };
+        let result = pm.find("ex").unwrap();
+        assert_eq!(result, None);
     }
 }

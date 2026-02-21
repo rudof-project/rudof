@@ -7,7 +7,10 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
-## v0.2.0 
+## v0.2.1
+### Added
+- New methods in Python's prefixmap so it can be tested and we publish a new version
+
 ### Changed
 - Shapemaps allow an optional trailing comma instead, [issue 501](https://github.com/rudof-project/rudof/issues/501)
 
