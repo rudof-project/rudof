@@ -26,6 +26,14 @@ impl PyPrefixMap {
         self.inner.len()
     }
 
+    /// Check if the prefix map is empty (i.e., contains no prefix mappings).
+    ///
+    /// Returns:
+    ///     bool: True if the prefix map is empty, False otherwise.
+    pub fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+
     /// Find the IRI associated with a given prefix.
     ///
     /// Args:
