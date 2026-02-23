@@ -62,9 +62,6 @@ fn execute(cli_command: &Command, debug: u8) -> Result<()> {
     // Convert CLI enum into a Command Trait Object
     let command = CommandFactory::create(cli_command.clone())?;
 
-    // Perform semantic validation of arguments
-    command.validate()?;
-
     // Prepare the execution context (writers, colors, config)
     let mut ctx = CommandContext::from_cli(cli_command, debug)?;
 

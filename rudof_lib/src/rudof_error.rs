@@ -435,4 +435,10 @@ pub enum RudofError {
 
     #[error("WASM error: {0}")]
     WASMError(String),
+
+    #[error("Error serializing RDF Config: {error}")]
+    SerializingRdfConfig { error: String },
+    
+    #[error("No RDF Config to serialize")]
+    NoRdfConfigToSerialize,
 }

@@ -261,7 +261,7 @@ pub struct ShexArgs {
         value_name = "INPUT",
         help = "Schema, FILE, URI or - for stdin"
     )]
-    schema: InputSpec,
+    pub schema: InputSpec,
 
     #[arg(
         short = 'f',
@@ -271,7 +271,7 @@ pub struct ShexArgs {
         help = "Schema format (ShExC, ShExJ, Turtle, ...), default = ShExC",
         default_value_t = ShExFormatCli::ShExC
     )]
-    schema_format: ShExFormatCli,
+    pub schema_format: ShExFormatCli,
 
     #[arg(
         short = 'r',
@@ -281,22 +281,22 @@ pub struct ShexArgs {
         help = "Result schema format",
         default_value_t = ShExFormatCli::ShExJ
     )]
-    result_schema_format: ShExFormatCli,
+    pub result_schema_format: ShExFormatCli,
 
     #[arg(short = 'l', long = "shape-label", value_name = "LABEL", help = "shape label")]
-    shape: Option<String>,
+    pub shape: Option<String>,
 
     #[arg(short = 't', value_name = "BOOL", help = "Show processing time", long = "show-time")]
-    show_time: Option<bool>,
+    pub show_time: Option<bool>,
 
     #[arg(long = "show-schema", value_name = "BOOL", help = "Show schema")]
-    show_schema: Option<bool>,
+    pub show_schema: Option<bool>,
 
     #[arg(long = "statistics", value_name = "BOOL", help = "Show statistics about the schema")]
-    show_statistics: Option<bool>,
+    pub show_statistics: Option<bool>,
 
     #[arg(short = 'b', long = "base", value_name = "IRI", help = "Base IRI")]
-    base: Option<IriS>,
+    pub base: Option<IriS>,
 
     #[arg(
         long = "reader-mode",
@@ -306,21 +306,21 @@ pub struct ShexArgs {
         default_value_t = RDFReaderModeCli::Strict,
         value_enum
     )]
-    reader_mode: RDFReaderModeCli,
+    pub reader_mode: RDFReaderModeCli,
 
     #[arg(
         long = "show-dependencies",
         value_name = "BOOL",
         help = "Show dependencies between shapes"
     )]
-    show_dependencies: Option<bool>,
+    pub show_dependencies: Option<bool>,
 
     #[arg(
         long = "compile",
         value_name = "BOOL",
         help = "Compile Schema to Internal representation"
     )]
-    compile: Option<bool>,
+    pub compile: Option<bool>,
 
     #[command(flatten)]
     pub common: CommonArgsAll,
@@ -1054,7 +1054,7 @@ pub struct CompareArgs {
         help = "Input mode first schema",
         default_value_t = InputCompareModeCli::ShEx
     )]
-    input_mode1: InputCompareModeCli,
+    pub input_mode1: InputCompareModeCli,
 
     #[arg(
         long = "mode2",
@@ -1063,13 +1063,13 @@ pub struct CompareArgs {
         help = "Input mode second schema",
         default_value_t = InputCompareModeCli::ShEx
     )]
-    input_mode2: InputCompareModeCli,
+    pub input_mode2: InputCompareModeCli,
 
     #[arg(long = "schema1", value_name = "INPUT", help = "Schema 1 (URI, file or - for stdin)")]
-    schema1: InputSpec,
+    pub schema1: InputSpec,
 
     #[arg(long = "schema2", value_name = "INPUT", help = "Schema 2 (URI, file or - for stdin)")]
-    schema2: InputSpec,
+    pub schema2: InputSpec,
 
     #[arg(
         long = "format1",
@@ -1078,7 +1078,7 @@ pub struct CompareArgs {
         help = "File format 1",
         default_value_t = InputCompareFormatCli::ShExC
     )]
-    format1: InputCompareFormatCli,
+    pub format1: InputCompareFormatCli,
 
     #[arg(
         long = "format2",
@@ -1087,13 +1087,13 @@ pub struct CompareArgs {
         help = "File format 2",
         default_value_t = InputCompareFormatCli::ShExC
     )]
-    format2: InputCompareFormatCli,
+    pub format2: InputCompareFormatCli,
 
     #[arg(long = "base1", value_name = "IRI", help = "Base IRI for 1st Schema")]
-    base1: Option<IriS>,
+    pub base1: Option<IriS>,
 
     #[arg(long = "base2", value_name = "IRI", help = "Base IRI for 2nd Schema")]
-    base2: Option<IriS>,
+    pub base2: Option<IriS>,
 
     #[arg(
         short = 'r',
@@ -1103,16 +1103,16 @@ pub struct CompareArgs {
         help = "Result format",
         default_value_t = ResultCompareFormatCli::Internal
     )]
-    result_format: ResultCompareFormatCli,
+    pub result_format: ResultCompareFormatCli,
 
     #[arg(short = 't', long = "target-folder", value_name = "FOLDER", help = "Target folder")]
-    target_folder: Option<PathBuf>,
+    pub target_folder: Option<PathBuf>,
 
     #[arg(long = "shape1", value_name = "LABEL", help = "shape1 (default = START)")]
-    shape1: Option<String>,
+    pub shape1: Option<String>,
 
     #[arg(long = "shape2", value_name = "LABEL", help = "shape2 (default = START)")]
-    shape2: Option<String>,
+    pub shape2: Option<String>,
 
     #[arg(
         long = "reader-mode",
@@ -1122,10 +1122,10 @@ pub struct CompareArgs {
         default_value_t = RDFReaderModeCli::Strict,
         value_enum
     )]
-    reader_mode: RDFReaderModeCli,
+    pub reader_mode: RDFReaderModeCli,
 
     #[arg(long = "show-time", help = "Show processing time")]
-    show_time: Option<bool>,
+    pub show_time: Option<bool>,
 
     #[command(flatten)]
     pub common: CommonArgsAll,
@@ -1140,7 +1140,7 @@ pub struct RdfConfigArgs {
         value_name = "INPUT",
         help = "Source file name (URI, file or - for stdin)"
     )]
-    input: InputSpec,
+    pub input: InputSpec,
 
     #[arg(
         short = 'r',
@@ -1150,7 +1150,7 @@ pub struct RdfConfigArgs {
         help = "Output result rdf-config format",
         default_value_t = RdfConfigResultFormatCli::Internal
     )]
-    result_format: RdfConfigResultFormatCli,
+    pub result_format: RdfConfigResultFormatCli,
 
     #[arg(
         short = 'f',
@@ -1160,7 +1160,7 @@ pub struct RdfConfigArgs {
         help = "rdf-config format",
         default_value_t = RdfConfigFormatCli::Yaml
     )]
-    format: RdfConfigFormatCli,
+    pub format: RdfConfigFormatCli,
 
     #[command(flatten)]
     pub common: CommonArgsAll,
@@ -1170,7 +1170,7 @@ pub struct RdfConfigArgs {
 #[derive(Debug, Clone, Args)]
 pub struct ServiceArgs {
     #[arg(short = 's', long = "service", value_name = "URL", help = "SPARQL service URL")]
-    service: InputSpec,
+    pub service: InputSpec,
 
     #[arg(
         short = 'f',
@@ -1180,7 +1180,7 @@ pub struct ServiceArgs {
         help = "SPARQL service format",
         default_value_t = DataFormatCli::Turtle
     )]
-    service_format: DataFormatCli,
+    pub service_format: DataFormatCli,
 
     #[arg(
         short = 'r',
@@ -1190,7 +1190,7 @@ pub struct ServiceArgs {
         help = "Output result service format",
         default_value_t = ResultServiceFormatCli::Json
     )]
-    result_service_format: ResultServiceFormatCli,
+    pub result_service_format: ResultServiceFormatCli,
 
     #[arg(
         long = "reader-mode",
@@ -1199,7 +1199,7 @@ pub struct ServiceArgs {
         default_value_t = RDFReaderModeCli::Strict,
         value_enum
     )]
-    reader_mode: RDFReaderModeCli,
+    pub reader_mode: RDFReaderModeCli,
 
     #[command(flatten)]
     pub common: CommonArgsAll,

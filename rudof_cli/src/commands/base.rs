@@ -6,7 +6,7 @@ use crate::commands::{
 };
 use crate::output::{ColorSupport, get_writer};
 use anyhow::Result;
-use rudof_lib::RudofConfig;
+use rudof_lib::{RudofConfig, Rudof};
 use std::io::Write;
 
 // ============================================================================
@@ -22,13 +22,6 @@ pub trait Command: Send + Sync {
     ///
     /// Useful for logging, telemetry, and debugging.
     fn name(&self) -> &'static str;
-
-    /// Performs pre-execution validation of specific command arguments.
-    ///
-    /// This is called after CLI parsing but before [Self::execute].
-    fn validate(&self) -> Result<()> {
-        Ok(())
-    }
 }
 
 // ============================================================================
@@ -43,14 +36,11 @@ pub struct CommandContext {
     /// Output writer (stdout, file, etc.)
     pub writer: Box<dyn Write>,
 
-    /// Configuration (from rudof_lib)
-    pub config: RudofConfig,
+    /// Rudof (from rudof_lib)
+    pub rudof: Rudof,
 
     /// Debug level
     pub debug_level: u8,
-
-    /// Force overwrite flag
-    pub force_overwrite: bool,
 
     /// Color support
     pub color: ColorSupport,
@@ -59,16 +49,14 @@ pub struct CommandContext {
 impl CommandContext {
     pub fn new(
         writer: Box<dyn Write>,
-        config: RudofConfig,
+        rudof: Rudof,
         debug_level: u8,
-        force_overwrite: bool,
         color: ColorSupport,
     ) -> Self {
         Self {
             writer,
-            config,
+            rudof,
             debug_level,
-            force_overwrite,
             color,
         }
     }
@@ -86,14 +74,16 @@ impl CommandContext {
             None => RudofConfig::default_config()?,
         };
 
+        // Initialize Rudof with the loaded configuration
+        let rudof = Rudof::new(&config)?;
+
         // Determine the appropriate writer and detect color support
         let (writer, color) = get_writer(&common.output().cloned(), common.force_overwrite())?;
 
         Ok(Self {
             writer,
-            config,
+            rudof,
             debug_level: debug,
-            force_overwrite: common.force_overwrite(),
             color,
         })
     }

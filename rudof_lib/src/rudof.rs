@@ -29,7 +29,12 @@ pub use sparql_service::ServiceDescriptionFormat;
 
 pub type Result<T> = result::Result<T, RudofError>;
 
-use crate::{InputSpec, RudofConfig, RudofError, ShapesGraphSource, UrlSpec};
+use crate::{
+    InputSpec, RudofConfig, RudofError, ShapesGraphSource, UrlSpec,
+    compare::{InputCompareFormat, InputCompareMode},
+    rdf_config::RdfConfigResultFormat,
+    rdf_reader_mode::RDFReaderMode,
+};
 use iri_s::IriS;
 use rdf_config::RdfConfigModel;
 // use shex_validation::SchemaWithoutImports;
@@ -286,16 +291,16 @@ impl Rudof {
         reader1: &mut R,
         reader2: &mut R,
 
-        mode1: CompareSchemaMode,
-        mode2: CompareSchemaMode,
+        mode1: InputCompareMode,
+        mode2: InputCompareMode,
 
-        format1: CompareSchemaFormat,
-        format2: CompareSchemaFormat,
+        format1: InputCompareFormat,
+        format2: InputCompareFormat,
 
         base1: Option<&str>,
         base2: Option<&str>,
 
-        reader_mode: &ReaderMode,
+        reader_mode: &RDFReaderMode,
 
         label1: Option<&str>,
         label2: Option<&str>,
@@ -303,8 +308,9 @@ impl Rudof {
         source_name1: Option<&str>,
         source_name2: Option<&str>,
     ) -> Result<ShaCo> {
-        let coshamo1 = self.get_coshamo(reader1, &mode1, &format1, base1, reader_mode, label1, source_name1)?;
-        let coshamo2 = self.get_coshamo(reader2, &mode2, &format2, base2, reader_mode, label2, source_name2)?;
+        let reader_mode: ReaderMode = reader_mode.into();
+        let coshamo1 = self.get_coshamo(reader1, &mode1, &format1, base1, &reader_mode, label1, source_name1)?;
+        let coshamo2 = self.get_coshamo(reader2, &mode2, &format2, base2, &reader_mode, label2, source_name2)?;
         Ok(coshamo1.compare(&coshamo2))
     }
 
@@ -1160,8 +1166,8 @@ impl Rudof {
     pub fn get_coshamo(
         &mut self,
         reader: &mut dyn std::io::Read,
-        mode: &CompareSchemaMode,
-        format: &CompareSchemaFormat,
+        mode: &InputCompareMode,
+        format: &InputCompareFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
         label: Option<&str>,
@@ -1169,10 +1175,10 @@ impl Rudof {
     ) -> Result<CoShaMo> {
         let comparator_config = self.config().comparator_config();
         match mode {
-            CompareSchemaMode::Shacl => Err(RudofError::NotImplemented {
+            InputCompareMode::Shacl => Err(RudofError::NotImplemented {
                 msg: "Not yet implemented comparison between SHACL schemas".to_string(),
             }),
-            CompareSchemaMode::ShEx => {
+            InputCompareMode::ShEx => {
                 let shex_format = format
                     .to_shex_format()
                     .map_err(|e| RudofError::InvalidCompareSchemaFormat {
@@ -1190,10 +1196,69 @@ impl Rudof {
                         })?;
                 Ok(coshamo)
             },
-            CompareSchemaMode::ServiceDescription => Err(RudofError::NotImplemented {
+            InputCompareMode::Service => Err(RudofError::NotImplemented {
                 msg: "Not yet implemented comparison between Service descriptions".to_string(),
             }),
+            InputCompareMode::Dctap => Err(RudofError::NotImplemented {
+                msg: "Not yet implemented comparison between DCTAP files".to_string(),
+            }),
         }
+    }
+
+    /// Serializes the current RDF Config to a writer
+    pub fn serialize_rdf_config<W: io::Write>(&self, format: &RdfConfigResultFormat, writer: &mut W) -> Result<()> {
+        if let Some(rdf_config) = &self.rdf_config {
+            rdf_config
+                .serialize(cnv_rdf_config_format(format), writer)
+                .map_err(|e| RudofError::SerializingRdfConfig { error: format!("{e}") })
+        } else {
+            writeln!(writer, "{{\"error\": \"No RDF Config read\"}}")?;
+            Ok(())
+        }
+    }
+
+    /// Returns the base IRI for the current context.
+    ///
+    /// If a base IRI is explicitly provided, it is returned.
+    /// Otherwise, if a base IRI is set in the ShEx config, it is returned.
+    /// If neither is available, an error is returned (depending on WASM environment).
+    pub fn get_base_iri(&self, base_iri: &Option<IriS>) -> Result<IriS> {
+        if let Some(base_iri) = base_iri {
+            Ok(base_iri.clone())
+        } else if let Some(base_iri) = self.config.shex_config().base.as_ref() {
+            Ok(base_iri.clone())
+        } else {
+            #[cfg(target_family = "wasm")]
+            return Err(RudofError::WASMError(
+                "Base IRI must be provided in WASM environment".to_string(),
+            ));
+            #[cfg(not(target_family = "wasm"))]
+            {
+                let cwd = env::current_dir().map_err(|e| RudofError::CurrentDirError { error: format!("{e}") })?;
+                // Note: we use from_directory_path to convert a directory to a file URL that ends with a trailing slash
+                // from_url_path would not add the trailing slash and would fail when resolving relative IRIs
+                let url = Url::from_directory_path(&cwd).map_err(|_| RudofError::ConvertingCurrentFolderUrl {
+                    current_dir: cwd.to_string_lossy().to_string(),
+                })?;
+                Ok(url.into())
+            }
+        }
+    }
+
+    pub fn parse_shape_selector(&self, label_str: &str) -> Result<ShapeSelector> {
+        let selector =
+            ShapeMapParser::parse_shape_selector(label_str).map_err(|e| RudofError::ShapeSelectorParseError {
+                shape_selector: label_str.to_string(),
+                error: e.to_string(),
+            })?;
+        Ok(selector)
+    }
+}
+
+fn cnv_rdf_config_format(format: &RdfConfigResultFormat) -> &rdf_config::RdfConfigFormat {
+    match format {
+        RdfConfigResultFormat::Yaml => &rdf_config::RdfConfigFormat::Yaml,
+        RdfConfigResultFormat::Internal => &rdf_config::RdfConfigFormat::Yaml,
     }
 }
 

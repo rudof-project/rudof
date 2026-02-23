@@ -26,6 +26,7 @@ use rudof_lib::{
     validation_mode::ValidationMode,
 };
 use std::fmt::{Display, Formatter, Result};
+use iri_s::MimeType;
 
 /// CLI wrapper macro for rudof_lib types.
 ///
@@ -36,31 +37,47 @@ use std::fmt::{Display, Formatter, Result};
 /// - An enum with `#[derive(ValueEnum)]` for CLI parsing
 /// - `From<&CliType> -> LibType` conversion using Display + FromStr
 /// - `Display` implementation that delegates to the lib type
+/// - Optional `MimeType` implementation (if `with_mime_type` is specified)
 ///
 /// # Requirements:
 /// The core library type must implement:
 /// - `FromStr` (for parsing from strings)
 /// - `Display` (for converting to strings)
+/// - `MimeType` (if using `with_mime_type`)
 ///
 /// # Syntax:
 /// ```no_run
+/// // Without MimeType
 /// cli_wrapper!(CliTypeName, LibTypeName, { Variant1, Variant2, ... });
+///
+/// // With MimeType
+/// cli_wrapper!(CliTypeName, LibTypeName, { Variant1, Variant2, ... }, with_mime_type);
 /// ```
 ///
 /// # Example:
 /// ```no_run
+/// // Regular wrapper
 /// cli_wrapper!(
 ///     ShaclFormatCli,
 ///     ShaclFormat,
 ///     { Internal, Turtle, NTriples, RdfXml }
 /// );
+///
+/// // With MimeType support
+/// cli_wrapper!(
+///     InputCompareFormatCli,
+///     InputCompareFormat,
+///     { ShExC, ShExJ, Turtle, RdfXml, NTriples },
+///     with_mime_type
+/// );
 /// ```
 #[macro_export]
 macro_rules! cli_wrapper {
+    // Version WITHOUT MimeType
     (
-        $cli:ident,      // CLI enum name (e.g., ShaclFormatCli)
-        $core:ident,     // Core lib type name (e.g., ShaclFormat)
-        { $($variant:ident),* $(,)? }  // Enum variants
+        $cli:ident,
+        $core:ident,
+        { $($variant:ident),* $(,)? }
     ) => {
         /// CLI wrapper enum with clap::ValueEnum support.
         #[derive(ValueEnum, Debug, Clone, PartialEq, Eq)]
@@ -70,15 +87,9 @@ macro_rules! cli_wrapper {
         }
 
         /// Convert CLI enum to core library type.
-        ///
-        /// Uses Display -> FromStr round-trip to ensure consistency.
-        /// Panics if variant names don't match between CLI and lib enums.
         impl From<&$cli> for $core {
             fn from(cli: &$cli) -> Self {
-                // Convert CLI enum to string using its Display impl
                 let s = cli.to_string();
-
-                // Parse string into core lib type using its FromStr impl
                 s.parse().unwrap_or_else(|e| {
                     panic!(
                         "CLI enum variant {:?} doesn't match lib enum: {:?}",
@@ -89,13 +100,54 @@ macro_rules! cli_wrapper {
         }
 
         /// Display implementation that delegates to the core library type.
-        ///
-        /// This ensures consistent string representation between CLI and lib.
         impl Display for $cli {
             fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-                // Convert to core type and use its Display
                 let core_value: $core = self.into();
                 write!(f, "{}", core_value)
+            }
+        }
+    };
+
+    // Version WITH MimeType
+    (
+        $cli:ident,
+        $core:ident,
+        { $($variant:ident),* $(,)? },
+        with_mime_type
+    ) => {
+        /// CLI wrapper enum with clap::ValueEnum support.
+        #[derive(ValueEnum, Debug, Clone, PartialEq, Eq)]
+        #[clap(rename_all = "lower")]
+        pub enum $cli {
+            $( $variant ),*
+        }
+
+        /// Convert CLI enum to core library type.
+        impl From<&$cli> for $core {
+            fn from(cli: &$cli) -> Self {
+                let s = cli.to_string();
+                s.parse().unwrap_or_else(|e| {
+                    panic!(
+                        "CLI enum variant {:?} doesn't match lib enum: {:?}",
+                        cli, e
+                    )
+                })
+            }
+        }
+
+        /// Display implementation that delegates to the core library type.
+        impl Display for $cli {
+            fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+                let core_value: $core = self.into();
+                write!(f, "{}", core_value)
+            }
+        }
+
+        /// MimeType implementation that delegates to the core library type.
+        impl MimeType for $cli {
+            fn mime_type(&self) -> &'static str {
+                let core_value: $core = self.into();
+                core_value.mime_type()
             }
         }
     };
@@ -131,7 +183,8 @@ cli_wrapper!(
         TriG,
         N3,
         NQuads
-    }
+    },
+    with_mime_type
 );
 
 // CLI wrapper for rudof_lib::rdf_reader_mode::RDFReaderMode.
@@ -181,7 +234,8 @@ cli_wrapper!(
         NQuads,
         JsonLd,
         Pg
-    }
+    },
+    with_mime_type
 );
 
 // CLI wrapper for rudof_lib::ShaclValidationMode.
@@ -422,7 +476,8 @@ cli_wrapper!(
         Turtle,
         RdfXml,
         NTriples,
-    }
+    },
+    with_mime_type
 );
 
 // CLI wrapper for rudof_lib::compare::ResultCompareFormat.

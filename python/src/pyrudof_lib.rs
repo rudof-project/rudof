@@ -8,7 +8,7 @@ use crate::PyRudofConfig;
 use pyo3::{Bound, Py, PyAny, PyErr, PyRef, PyRefMut, PyResult, Python, exceptions::PyValueError, pyclass, pymethods};
 use pythonize::pythonize;
 use rudof_lib::{
-    CoShaMo, ComparatorError, CompareSchemaFormat, CompareSchemaMode, DCTAP, DCTAPFormat, InputSpec, InputSpecError,
+    CoShaMo, CompareSchemaFormat, CompareSchemaMode, DCTAP, DCTAPFormat, InputSpec, InputSpecError,
     InputSpecReader, Mie, MimeType, Object, QueryResultFormat, QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat,
     RdfData, ReaderMode, ResultShapeMap, Rudof, RudofError, ServiceDescription, ServiceDescriptionFormat, ShExFormat,
     ShExFormatter, ShExSchema, ShaCo, ShaclFormat, ShaclSchemaIR, ShaclValidationMode, ShapeLabel, ShapeMapFormat,
@@ -16,6 +16,7 @@ use rudof_lib::{
     node_info::{format_node_info_list, get_node_info},
     parse_node_selector,
     shacl_validation::validation_report::{report::SortModeReport, result::ValidationResult},
+    compare::{InputCompareFormat, InputCompareMode},
 };
 use std::{
     ffi::OsStr,
@@ -1008,8 +1009,8 @@ impl PyRudof {
         reader_mode: &PyReaderMode,
         label: Option<&str>,
     ) -> PyResult<PyCoShaMo> {
-        let format = CompareSchemaFormat::from_str(format).map_err(cnv_comparator_err)?;
-        let mode = CompareSchemaMode::from_str(mode).map_err(cnv_comparator_err)?;
+        let format = InputCompareFormat::from_str(format).map_err(cnv_string_err)?;
+        let mode = InputCompareMode::from_str(mode).map_err(cnv_string_err)?;
         let mut reader = schema.as_bytes();
         let coshamo = self
             .inner
@@ -1063,10 +1064,10 @@ impl PyRudof {
         label2: Option<&str>,
         reader_mode: &PyReaderMode,
     ) -> PyResult<PyShaCo> {
-        let format1 = CompareSchemaFormat::from_str(format1).map_err(cnv_comparator_err)?;
-        let format2 = CompareSchemaFormat::from_str(format2).map_err(cnv_comparator_err)?;
-        let mode1 = CompareSchemaMode::from_str(mode1).map_err(cnv_comparator_err)?;
-        let mode2 = CompareSchemaMode::from_str(mode2).map_err(cnv_comparator_err)?;
+        let format1 = InputCompareFormat::from_str(format1).map_err(cnv_string_err)?;
+        let format2 = InputCompareFormat::from_str(format2).map_err(cnv_string_err)?;
+        let mode1 = InputCompareMode::from_str(mode1).map_err(cnv_string_err)?;
+        let mode2 = InputCompareMode::from_str(mode2).map_err(cnv_string_err)?;
         let mut reader1 = schema1.as_bytes();
         let coshamo1 = self
             .inner
@@ -2248,16 +2249,15 @@ pub(crate) fn cnv_err(e: RudofError) -> PyErr {
     e
 }
 
-/// Converts a Rust `ComparatorError` into a Python exception, logging it.
+/// Converts a String error into a Python exception.
 ///
 /// Args:
-///     e (ComparatorError): The comparator error to convert.
+///     e (String): The error message string to convert.
 ///
 /// Returns:
-///     PyErr: Python exception wrapping the error.
-fn cnv_comparator_err(e: ComparatorError) -> PyErr {
-    println!("ComparatorError: {e}");
-    let e: PyRudofError = PyRudofError::str(format!("{e}"));
+///     PyErr: Python exception corresponding to the error message.
+fn cnv_string_err(e: String) -> PyErr {
+    let e: PyRudofError = PyRudofError::str(e);
     let e: PyErr = e.into();
     e
 }

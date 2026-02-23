@@ -1,6 +1,7 @@
 use crate::cli::parser::McpArgs;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::Result;
+use rudof_mcp::server::{run_mcp, McpConfig};
 
 /// Implementation of the `mcp` command.
 ///
@@ -25,7 +26,16 @@ impl Command for McpCommand {
 
     /// Executes the MCP server logic.
     fn execute(&self, _ctx: &mut CommandContext) -> Result<()> {
-        println!("Mcp command executed");
+        let mcp_config = McpConfig {
+            transport: self.args.transport,
+            bind_address: Some(self.args.bind_address.to_string()),
+            port: Some(self.args.port),
+            route_path: Some(self.args.route_path.to_string()),
+            allowed_networks: Some(self.args.allowed_networks.clone()),
+        };
+
+        run_mcp(mcp_config)?;
+
         Ok(())
     }
 }
