@@ -7,6 +7,12 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.2.5
+
+### Fixed 
+
+Repaires Jobs for macos publishing
+
 ## v0.2.3/v0.2.4
 
 ### Fixed
