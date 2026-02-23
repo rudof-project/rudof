@@ -43,7 +43,7 @@ jobs:
             ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_linux_gnu
 
   mac:
-    runs-on: macos-15-latest
+    runs-on: macos-latest
     env:
       DEVELOPER_DIR: '/Applications/Xcode.app/Contents/Developer'
       SDKROOT: '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk'
