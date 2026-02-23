@@ -2,7 +2,7 @@ use crate::cli::parser::{Command as CliCommand, CommonArgs, CommonArgsAll, Commo
 use crate::commands::{
     CompareCommand, ConvertCommand, DataCommand, DctapCommand, GenerateCommand, McpCommand, NodeCommand,
     PgschemaCommand, QueryCommand, RdfConfigCommand, ServiceCommand, ShaclCommand, ShaclValidateCommand,
-    ShapemapCommand, ShexCommand, ShexValidateCommand, ValidateCommand,
+    ShapemapCommand, ShexCommand, ShexValidateCommand, ValidateCommand, PgSchemaValidateCommand,
 };
 use crate::output::{ColorSupport, get_writer};
 use anyhow::Result;
@@ -122,6 +122,7 @@ impl CommandFactory {
             CliCommand::Service(args) => Ok(Box::new(ServiceCommand::new(args))),
             CliCommand::Query(args) => Ok(Box::new(QueryCommand::new(args))),
             CliCommand::Generate(args) => Ok(Box::new(GenerateCommand::new(args))),
+            CliCommand::PgSchemaValidate(args) => Ok(Box::new(PgSchemaValidateCommand::new(args))),
         }
     }
 }
@@ -210,6 +211,10 @@ fn extract_common(cmd: &CliCommand) -> CommonArgs {
         }),
         CliCommand::Generate(a) => CommonArgs::All(CommonArgsAll {
             config: a.common.config.clone(),
+            output: a.common.output.clone(),
+            force_overwrite: a.common.force_overwrite,
+        }),
+        CliCommand::PgSchemaValidate(a) => CommonArgs::OutputForceOverWrite(CommonArgsOutputForceOverWrite {
             output: a.common.output.clone(),
             force_overwrite: a.common.force_overwrite,
         }),

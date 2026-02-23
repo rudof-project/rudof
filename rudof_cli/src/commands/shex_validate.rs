@@ -1,6 +1,7 @@
 use crate::cli::parser::ShexValidateArgs;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::Result;
+use rudof_lib::{InputSpec, data_format::DataFormat, ReaderMode, rdf_reader_mode::RDFReaderMode};
 
 /// Implementation of the `shex-validate` command.
 ///
@@ -25,7 +26,7 @@ impl Command for ShexValidateCommand {
 
     /// Executes the shex-validate logic.
     fn execute(&self, _ctx: &mut CommandContext) -> Result<()> {
-        println!("ShexValidate command executed");
+
         Ok(())
     }
 }

@@ -16,6 +16,7 @@ mod shapemap;
 mod shex;
 mod shex_validate;
 mod validate;
+mod pgschema_validate;
 
 pub use base::{CommandContext, CommandFactory};
 pub use compare::CompareCommand;
@@ -35,3 +36,4 @@ pub use shapemap::ShapemapCommand;
 pub use shex::ShexCommand;
 pub use shex_validate::ShexValidateCommand;
 pub use validate::ValidateCommand;
+pub use pgschema_validate::PgSchemaValidateCommand;

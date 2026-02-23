@@ -49,3 +49,17 @@ impl Display for PgSchemaResultFormat {
         write!(f, "{}", s)
     }
 }
+
+impl FromStr for PgSchemaResultFormat {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "compact" => Ok(PgSchemaResultFormat::Compact),
+            "details" => Ok(PgSchemaResultFormat::Details),
+            "json" => Ok(PgSchemaResultFormat::Json),
+            "csv" => Ok(PgSchemaResultFormat::Csv),
+            _ => Err(format!("Unknown PgSchemaResultFormat: {}", s)),
+        }
+    }
+}

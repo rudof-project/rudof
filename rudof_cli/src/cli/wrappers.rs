@@ -7,7 +7,7 @@ use rudof_lib::{
     dctap_format::DCTapFormat,
     dctap_result_format::DCTapResultFormat,
     generate_schema_format::GenerateSchemaFormat,
-    pgschema_format::PgSchemaFormat,
+    pgschema_format::{PgSchemaFormat, PgSchemaResultFormat},
     query_result_format::ResultQueryFormat,
     query_type::QueryType,
     rdf_config::{RdfConfigFormat, RdfConfigResultFormat},
@@ -27,6 +27,7 @@ use rudof_lib::{
 };
 use std::fmt::{Display, Formatter, Result};
 use iri_s::MimeType;
+use anyhow::{Result as AnyhowResult, bail};
 
 /// CLI wrapper macro for rudof_lib types.
 ///
@@ -199,6 +200,9 @@ cli_wrapper!(
 
 // CLI wrapper for rudof_lib::pgschema_format::PgSchemaFormat.
 cli_wrapper!(PgSchemaFormatCli, PgSchemaFormat, { PgSchemaC });
+
+// CLI wrapper for rudof_lib::pgschema_format::PgSchemaResultFormat.
+cli_wrapper!(PgSchemaResultFormatCli, PgSchemaResultFormat, { Compact, Details, Json, Csv });
 
 // CLI wrapper for rudof_lib::validation_mode::ValidationMode.
 cli_wrapper!(
@@ -553,3 +557,101 @@ cli_wrapper!(
         Shacl,
     }
 );
+
+// Convert SortByValidateCli -> SortByResultShapeMapCli
+impl From<SortByValidateCli> for SortByResultShapeMapCli {
+    fn from(val: SortByValidateCli) -> Self {
+        match val {
+            SortByValidateCli::Node => SortByResultShapeMapCli::Node,
+            SortByValidateCli::Details => SortByResultShapeMapCli::Details,
+        }
+    }
+}
+
+// Convert SortByValidateCli -> SortByShaclValidationReportCli
+impl From<SortByValidateCli> for SortByShaclValidationReportCli {
+    fn from(val: SortByValidateCli) -> Self {
+        match val {
+            SortByValidateCli::Node => SortByShaclValidationReportCli::Node,
+            SortByValidateCli::Details => SortByShaclValidationReportCli::Details,
+        }
+    }
+}
+
+// Convert ResultValidationFormatCli -> ResultShExValidationFormatCli
+impl From<ResultValidationFormatCli> for ResultShExValidationFormatCli {
+    fn from(val: ResultValidationFormatCli) -> Self {
+        match val {
+            ResultValidationFormatCli::Turtle => ResultShExValidationFormatCli::Turtle,
+            ResultValidationFormatCli::NTriples => ResultShExValidationFormatCli::NTriples,
+            ResultValidationFormatCli::RdfXml => ResultShExValidationFormatCli::RdfXml,
+            ResultValidationFormatCli::TriG => ResultShExValidationFormatCli::TriG,
+            ResultValidationFormatCli::N3 => ResultShExValidationFormatCli::N3,
+            ResultValidationFormatCli::NQuads => ResultShExValidationFormatCli::NQuads,
+            ResultValidationFormatCli::Compact => ResultShExValidationFormatCli::Compact,
+            ResultValidationFormatCli::Details => ResultShExValidationFormatCli::Details,
+            ResultValidationFormatCli::Json => ResultShExValidationFormatCli::Json,
+            ResultValidationFormatCli::Csv => ResultShExValidationFormatCli::Csv,
+        }
+    }
+}
+
+// Convert ResultValidationFormatCli -> ResultShaclValidationFormatCli
+impl From<ResultValidationFormatCli> for ResultShaclValidationFormatCli {
+    fn from(val: ResultValidationFormatCli) -> Self {
+        match val {
+            ResultValidationFormatCli::Turtle => ResultShaclValidationFormatCli::Turtle,
+            ResultValidationFormatCli::NTriples => ResultShaclValidationFormatCli::NTriples,
+            ResultValidationFormatCli::RdfXml => ResultShaclValidationFormatCli::RdfXml,
+            ResultValidationFormatCli::TriG => ResultShaclValidationFormatCli::TriG,
+            ResultValidationFormatCli::N3 => ResultShaclValidationFormatCli::N3,
+            ResultValidationFormatCli::NQuads => ResultShaclValidationFormatCli::NQuads,
+            ResultValidationFormatCli::Compact => ResultShaclValidationFormatCli::Compact,
+            ResultValidationFormatCli::Details => ResultShaclValidationFormatCli::Details,
+            ResultValidationFormatCli::Json => ResultShaclValidationFormatCli::Json,
+            ResultValidationFormatCli::Csv => ResultShaclValidationFormatCli::Csv,
+        }
+    }
+}
+
+impl TryFrom<ShExFormatCli> for ShaclFormatCli {
+    type Error = anyhow::Error;
+
+    fn try_from(val: ShExFormatCli) -> AnyhowResult<Self> {
+        match val {
+            ShExFormatCli::Internal => Ok(ShaclFormatCli::Internal),
+            ShExFormatCli::Turtle => Ok(ShaclFormatCli::Turtle),
+            ShExFormatCli::NTriples => Ok(ShaclFormatCli::NTriples),
+            ShExFormatCli::RdfXml => Ok(ShaclFormatCli::RdfXml),
+            ShExFormatCli::TriG => Ok(ShaclFormatCli::TriG),
+            ShExFormatCli::N3 => Ok(ShaclFormatCli::N3),
+            ShExFormatCli::NQuads => Ok(ShaclFormatCli::NQuads),
+            ShExFormatCli::JsonLd => Ok(ShaclFormatCli::JsonLd),
+            ShExFormatCli::Simple => bail!("Validation using SHACL mode doesn't support Simple format"),
+            ShExFormatCli::ShExC => bail!("Validation using SHACL mode doesn't support ShExC format"),
+            ShExFormatCli::ShExJ => bail!("Validation using SHACL mode doesn't support ShExJ format"),
+            ShExFormatCli::Json => Ok(ShaclFormatCli::JsonLd),
+        }
+    }
+}
+
+// Convert ResultValidationFormatCli -> PgSchemaResultFormatCli
+impl TryFrom<ResultValidationFormatCli> for PgSchemaResultFormatCli {
+    type Error = anyhow::Error;
+
+    fn try_from(val: ResultValidationFormatCli) -> AnyhowResult<Self, Self::Error> {
+        match val {
+            ResultValidationFormatCli::Compact => Ok(PgSchemaResultFormatCli::Compact),
+            ResultValidationFormatCli::Details => Ok(PgSchemaResultFormatCli::Details),
+            ResultValidationFormatCli::Json => Ok(PgSchemaResultFormatCli::Json),
+            ResultValidationFormatCli::Csv => Ok(PgSchemaResultFormatCli::Csv),
+            ResultValidationFormatCli::Turtle => todo!("PGSchema validation doesn't support Turtle result format"),
+            ResultValidationFormatCli::NTriples => todo!("PGSchema validation doesn't support NTriples result format"),
+            ResultValidationFormatCli::RdfXml => todo!("PGSchema validation doesn't support RDF/XML result format"),
+            ResultValidationFormatCli::TriG => todo!("PGSchema validation doesn't support TriG result format"),
+            ResultValidationFormatCli::N3 => todo!("PGSchema validation doesn't support N3 result format"),
+            ResultValidationFormatCli::NQuads => todo!("PGSchema validation doesn't support NQuads result format"),
+        }
+    }
+}
+

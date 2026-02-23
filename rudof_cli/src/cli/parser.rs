@@ -5,7 +5,7 @@ use crate::cli::wrappers::{
     ResultCompareFormatCli, ResultDataFormatCli, ResultQueryFormatCli, ResultServiceFormatCli,
     ResultShExValidationFormatCli, ResultShaclValidationFormatCli, ResultValidationFormatCli, ShExFormatCli,
     ShaclFormatCli, ShaclValidationModeCli, ShapeMapFormatCli, ShowNodeModeCli, SortByResultShapeMapCli,
-    SortByShaclValidationReportCli, SortByValidateCli, ValidationModeCli,
+    SortByShaclValidationReportCli, SortByValidateCli, ValidationModeCli, PgSchemaResultFormatCli,
 };
 use clap::{Args, Parser, Subcommand};
 use rudof_lib::{InputSpec, IriS};
@@ -53,7 +53,8 @@ pub enum Command {
     /// Show information about a node in an RDF Graph
     Node(NodeArgs),
     /// Show information about SHACL shapes
-    /// The SHACL schema can be passed through the data options or the optional schema options to provide an interface similar to Shacl-validate
+    /// The SHACL schema can be passed through the data options or the optional schema options to provide an interface similar 
+    /// to Shacl-validate
     Shacl(ShaclArgs),
     // Show information and process DCTAP files
     #[command(name = "dctap")]
@@ -70,6 +71,8 @@ pub enum Command {
     Query(QueryArgs),
     /// Generate synthetic RDF data from ShEx or SHACL schemas
     Generate(GenerateArgs),
+    /// Validate Property Graph data using PGSchema
+    PgSchemaValidate(PgSchemaValidateArgs),
 }
 
 // ============================================================================
@@ -373,7 +376,7 @@ pub struct PgschemaArgs {
 #[derive(Debug, Clone, Args)]
 pub struct ValidateArgs {
     #[clap(value_parser = clap::value_parser!(InputSpec))]
-    data: Vec<InputSpec>,
+    pub data: Vec<InputSpec>,
 
     #[arg(short = 'M', long = "mode",
         value_name = "MODE",
@@ -381,7 +384,7 @@ pub struct ValidateArgs {
         help = "Validation mode (ShEx or SHACL)",
         default_value_t = ValidationModeCli::ShEx
     )]
-    validation_mode: ValidationModeCli,
+    pub validation_mode: ValidationModeCli,
 
     #[arg(
         short = 's',
@@ -389,7 +392,7 @@ pub struct ValidateArgs {
         value_name = "INPUT",
         help = "Schema used for validatio, FILE, URI or - for stdin"
     )]
-    schema: Option<InputSpec>,
+    pub schema: Option<InputSpec>,
 
     #[arg(
         short = 'f',
@@ -398,7 +401,7 @@ pub struct ValidateArgs {
         value_name = "FORMAT",
         help = "Schema format"
     )]
-    schema_format: Option<ShExFormatCli>,
+    pub schema_format: Option<ShExFormatCli>,
 
     #[arg(
         short = 'm',
@@ -406,7 +409,7 @@ pub struct ValidateArgs {
         value_name = "INPUT",
         help = "ShapeMap used for validation, FILE, URI or - for stdin"
     )]
-    shapemap: Option<InputSpec>,
+    pub shapemap: Option<InputSpec>,
 
     #[arg(
         long = "shapemap-format",
@@ -415,13 +418,13 @@ pub struct ValidateArgs {
         help = "ShapeMap format",
         default_value_t = ShapeMapFormatCli::Compact,
     )]
-    shapemap_format: ShapeMapFormatCli,
+    pub shapemap_format: ShapeMapFormatCli,
 
     #[arg(long = "base-data", value_name = "IRI", help = "Base IRI for data")]
-    base_data: Option<IriS>,
+    pub base_data: Option<IriS>,
 
     #[arg(long = "base-schema", value_name = "IRI", help = "Base IRI for Schema")]
-    base_schema: Option<IriS>,
+    pub base_schema: Option<IriS>,
 
     #[arg(
         long = "sort_by",
@@ -431,10 +434,10 @@ pub struct ValidateArgs {
         default_value_t = SortByValidateCli::Node,
         value_enum
     )]
-    sort_by: SortByValidateCli,
+    pub sort_by: SortByValidateCli,
 
     #[arg(short = 'n', long = "node", value_name = "NODE", help = "Node to validate")]
-    node: Option<String>,
+    pub node: Option<String>,
 
     #[arg(
         short = 'l',
@@ -443,7 +446,7 @@ pub struct ValidateArgs {
         help = "shape label (default = START)",
         group = "node_shape"
     )]
-    shape: Option<String>,
+    pub shape: Option<String>,
 
     #[arg(
         short = 't',
@@ -453,7 +456,7 @@ pub struct ValidateArgs {
         help = "RDF Data format (default = turtle)",
         default_value_t = DataFormatCli::Turtle
     )]
-    data_format: DataFormatCli,
+    pub data_format: DataFormatCli,
 
     #[arg(
         short = 'e',
@@ -461,7 +464,7 @@ pub struct ValidateArgs {
         value_name = "ENDPOINT",
         help = "Endpoint with RDF data"
     )]
-    endpoint: Option<String>,
+    pub endpoint: Option<String>,
 
     #[arg(
         long = "max-steps",
@@ -469,7 +472,7 @@ pub struct ValidateArgs {
         help = "max steps to run during validation",
         default_value_t = 100
     )]
-    max_steps: usize,
+    pub max_steps: usize,
 
     #[arg(
         short = 'S',
@@ -480,7 +483,7 @@ pub struct ValidateArgs {
         default_value_t = ShaclValidationModeCli::Native,
         value_enum
     )]
-    shacl_validation_mode: ShaclValidationModeCli,
+    pub shacl_validation_mode: ShaclValidationModeCli,
 
     #[arg(
         long = "reader-mode",
@@ -489,7 +492,7 @@ pub struct ValidateArgs {
         default_value_t = RDFReaderModeCli::Strict,
         value_enum
     )]
-    reader_mode: RDFReaderModeCli,
+    pub reader_mode: RDFReaderModeCli,
 
     #[arg(
         short = 'r',
@@ -498,7 +501,7 @@ pub struct ValidateArgs {
         value_name = "FORMAT", help = "Ouput result format, default = compact",
         default_value_t = ResultValidationFormatCli::Compact
     )]
-    result_format: ResultValidationFormatCli,
+    pub result_format: ResultValidationFormatCli,
 
     #[command(flatten)]
     pub common: CommonArgsAll,
@@ -508,7 +511,7 @@ pub struct ValidateArgs {
 #[derive(Debug, Clone, Args)]
 pub struct ShexValidateArgs {
     #[clap(value_parser = clap::value_parser!(InputSpec))]
-    data: Vec<InputSpec>,
+    pub data: Vec<InputSpec>,
 
     #[arg(
         short = 's',
@@ -516,7 +519,7 @@ pub struct ShexValidateArgs {
         value_name = "INPUT",
         help = "Schema file name, URI or - (for stdin)"
     )]
-    schema: Option<InputSpec>,
+    pub schema: Option<InputSpec>,
 
     #[arg(
         short = 'f',
@@ -525,10 +528,10 @@ pub struct ShexValidateArgs {
         value_name = "FORMAT",
         help = "ShEx Schema format"
     )]
-    schema_format: Option<ShExFormatCli>,
+    pub schema_format: Option<ShExFormatCli>,
 
     #[arg(short = 'm', long = "shapemap", value_name = "INPUT", help = "ShapeMap")]
-    shapemap: Option<InputSpec>,
+    pub shapemap: Option<InputSpec>,
 
     #[arg(
         long = "shapemap-format",
@@ -537,10 +540,10 @@ pub struct ShexValidateArgs {
         help = "ShapeMap format",
         default_value_t = ShapeMapFormatCli::Compact,
     )]
-    shapemap_format: ShapeMapFormatCli,
+    pub shapemap_format: ShapeMapFormatCli,
 
     #[arg(short = 'n', long = "node", value_name = "NODE", help = "Node to validate")]
-    node: Option<String>,
+    pub node: Option<String>,
 
     #[arg(
         long = "sort_by",
@@ -550,7 +553,7 @@ pub struct ShexValidateArgs {
         default_value_t = SortByResultShapeMapCli::Node,
         value_enum
     )]
-    sort_by: SortByResultShapeMapCli,
+    pub sort_by: SortByResultShapeMapCli,
 
     #[arg(
         short = 'l',
@@ -559,7 +562,7 @@ pub struct ShexValidateArgs {
         help = "shape label (default = START)",
         group = "node_shape"
     )]
-    shape: Option<String>,
+    pub shape: Option<String>,
 
     #[arg(
         short = 't',
@@ -569,21 +572,21 @@ pub struct ShexValidateArgs {
         help = "RDF Data format",
         default_value_t = DataFormatCli::Turtle
     )]
-    data_format: DataFormatCli,
+    pub data_format: DataFormatCli,
 
     #[arg(
         long = "base-schema",
         value_name = "IRI",
         help = "Base Schema (used to resolve relative IRIs in Schema)"
     )]
-    base_schema: Option<IriS>,
+    pub base_schema: Option<IriS>,
 
     #[arg(
         long = "base-data",
         value_name = "IRI",
         help = "Base RDF Data IRI (used to resolve relative IRIs in RDF data)"
     )]
-    base_data: Option<IriS>,
+    pub base_data: Option<IriS>,
 
     #[arg(
         long = "reader-mode",
@@ -593,7 +596,7 @@ pub struct ShexValidateArgs {
         default_value_t = RDFReaderModeCli::Strict,
         value_enum
     )]
-    reader_mode: RDFReaderModeCli,
+    pub reader_mode: RDFReaderModeCli,
 
     #[arg(
         short = 'e',
@@ -601,7 +604,7 @@ pub struct ShexValidateArgs {
         value_name = "NAME",
         help = "Endpoint with RDF data (name or URL)"
     )]
-    endpoint: Option<String>,
+    pub endpoint: Option<String>,
 
     #[arg(
         short = 'r',
@@ -611,7 +614,7 @@ pub struct ShexValidateArgs {
         help = "Ouput result format",
         default_value_t = ResultShExValidationFormatCli::Details
     )]
-    result_format: ResultShExValidationFormatCli,
+    pub result_format: ResultShExValidationFormatCli,
 
     #[command(flatten)]
     pub common: CommonArgsAll,
@@ -621,7 +624,7 @@ pub struct ShexValidateArgs {
 #[derive(Debug, Clone, Args)]
 pub struct ShaclValidateArgs {
     #[clap(value_parser = clap::value_parser!(InputSpec))]
-    data: Vec<InputSpec>,
+    pub data: Vec<InputSpec>,
 
     #[arg(
         short = 't',
@@ -631,14 +634,14 @@ pub struct ShaclValidateArgs {
         help= "RDF Data format",
         default_value_t = DataFormatCli::Turtle
     )]
-    data_format: DataFormatCli,
+    pub data_format: DataFormatCli,
 
     #[arg(
         long = "base-data",
         value_name = "IRI",
         help = "Base IRI (used to resolve relative IRIs in RDF data)"
     )]
-    base_data: Option<IriS>,
+    pub base_data: Option<IriS>,
 
     /// RDF Reader mode
     #[arg(
@@ -649,7 +652,7 @@ pub struct ShaclValidateArgs {
         default_value_t = RDFReaderModeCli::Strict,
         value_enum
     )]
-    reader_mode: RDFReaderModeCli,
+    pub reader_mode: RDFReaderModeCli,
 
     #[arg(
         short = 's',
@@ -657,7 +660,7 @@ pub struct ShaclValidateArgs {
         value_name = "INPUT",
         help = "Shapes graph: file, URI or -, if not set, it assumes the shapes come from the data"
     )]
-    shapes: Option<InputSpec>,
+    pub shapes: Option<InputSpec>,
 
     #[arg(
         short = 'f',
@@ -666,14 +669,14 @@ pub struct ShaclValidateArgs {
         value_name = "FORMAT",
         help = "Shapes file format"
     )]
-    shapes_format: Option<ShaclFormatCli>,
+    pub shapes_format: Option<ShaclFormatCli>,
 
     #[arg(
         long = "base-shapes",
         value_name = "IRI",
         help = "Base IRI (used to resolve relative IRIs in Shapes)"
     )]
-    base_shapes: Option<IriS>,
+    pub base_shapes: Option<IriS>,
 
     #[arg(
         short = 'e',
@@ -681,7 +684,7 @@ pub struct ShaclValidateArgs {
         value_name = "ENDPOINT",
         help = "Endpoint with RDF data (URL or name)"
     )]
-    endpoint: Option<String>,
+    pub endpoint: Option<String>,
 
     /// Execution mode
     #[arg(
@@ -693,7 +696,7 @@ pub struct ShaclValidateArgs {
         default_value_t = ShaclValidationModeCli::Native,
         value_enum
     )]
-    mode: ShaclValidationModeCli,
+    pub mode: ShaclValidationModeCli,
 
     #[arg(
         short = 'r',
@@ -703,7 +706,7 @@ pub struct ShaclValidateArgs {
         help = "Ouput result format",
         default_value_t = ResultShaclValidationFormatCli::Details
     )]
-    result_format: ResultShaclValidationFormatCli,
+    pub result_format: ResultShaclValidationFormatCli,
 
     #[arg(
         long = "sort_by",
@@ -713,7 +716,7 @@ pub struct ShaclValidateArgs {
         default_value_t = SortByShaclValidationReportCli::Severity,
         value_enum
     )]
-    sort_by: SortByShaclValidationReportCli,
+    pub sort_by: SortByShaclValidationReportCli,
 
     #[command(flatten)]
     pub common: CommonArgsAll,
@@ -1313,4 +1316,59 @@ pub struct GenerateArgs {
 
     #[command(flatten)]
     pub common: CommonArgsAll,
+}
+
+/// Arguments for the `pgschema-validate` command
+#[derive(Debug, Clone, Args)]
+pub struct PgSchemaValidateArgs {
+    #[arg(
+        short = 's',
+        long = "schema",
+        value_name = "INPUT",
+        help = "PGSchema file, URI or - (for stdin)"
+    )]
+    pub schema: Option<InputSpec>,
+
+    #[clap(value_parser = clap::value_parser!(InputSpec))]
+    pub data: Vec<InputSpec>,
+
+    #[arg(
+        short = 't',
+        long = "data-format",
+        value_name = "FORMAT",
+        ignore_case = true,
+        help = "Property Graph data format",
+        default_value_t = DataFormatCli::Pg
+    )]
+    pub data_format: DataFormatCli,
+
+    #[arg(
+        short = 'm',
+        long = "shapemap",
+        value_name = "INPUT",
+        help = "ShapeMap used for validation, FILE, URI or - for stdin"
+    )]
+    pub shapemap: Option<InputSpec>,
+
+    #[arg(
+        long = "shapemap-format",
+        value_name = "FORMAT",
+        ignore_case = true,
+        help = "ShapeMap format",
+        default_value_t = ShapeMapFormatCli::Compact,
+    )]
+    pub shapemap_format: ShapeMapFormatCli,
+
+    #[arg(
+        short = 'r',
+        long = "result-format",
+        ignore_case = true,
+        value_name = "FORMAT",
+        help = "Output result format",
+        default_value_t = PgSchemaResultFormatCli::Compact
+    )]
+    pub result_validation_format: PgSchemaResultFormatCli,
+
+    #[command(flatten)]
+    pub common: CommonArgsOutputForceOverWrite,
 }

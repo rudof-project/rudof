@@ -33,9 +33,9 @@ use crate::{
     InputSpec, RudofConfig, RudofError, ShapesGraphSource, UrlSpec,
     compare::{InputCompareFormat, InputCompareMode},
     rdf_config::RdfConfigResultFormat,
-    rdf_reader_mode::RDFReaderMode,
+    rdf_reader_mode::RDFReaderMode, data_format::DataFormat,
 };
-use iri_s::IriS;
+use iri_s::{IriS, MimeType};
 use rdf_config::RdfConfigModel;
 // use shex_validation::SchemaWithoutImports;
 use rudof_rdf::rdf_core::{FocusRDF, Rdf, query::QueryRDF, visualizer::VisualRDFGraph};
@@ -1252,6 +1252,57 @@ impl Rudof {
                 error: e.to_string(),
             })?;
         Ok(selector)
+    }
+
+    pub fn load_data(
+        &mut self,
+        data: &[InputSpec],
+        data_format: &DataFormat,
+        base: &Option<IriS>,
+        endpoint: &Option<String>,
+        reader_mode: &ReaderMode,
+        allow_no_data: bool,
+    ) -> Result<()> {
+        match (data.is_empty(), endpoint) {
+            (true, None) => {
+                if allow_no_data {
+                    self.reset_data();
+                    Ok(())
+                } else {
+                    Err(RudofError::MissingDataAndEndpoint)
+                }
+            }
+            (false, None) => {
+                let rdf_format:RDFFormat = data_format.try_into()
+                    .map_err(|e| RudofError::DataFormatError { error: e })?;
+                
+                for data_input in data {
+                    let mut data_reader = data_input
+                        .open_read(Some(data_format.mime_type()), "RDF data")
+                        .map_err(|e| RudofError::RDFDataReadError {
+                            source_name: data_input.source_name(),
+                            mime_type: data_format.mime_type().to_string(),
+                            error: e.to_string(),
+                        })?;
+                    
+                    let base = self.get_base_iri(base)?;
+                    self.read_data(
+                        &mut data_reader,
+                        data_input.source_name().as_str(),
+                        &rdf_format,
+                        Some(base.as_str()),
+                        reader_mode,
+                        true,
+                    )?;
+                }
+                Ok(())
+            }
+            (true, Some(endpoint)) => {
+                let (name, _) = self.get_endpoint(endpoint)?;
+                self.use_endpoint(name.as_str())
+            }
+            (false, Some(_)) => Err(RudofError::BothDataAndEndpointSpecified),
+        }
     }
 }
 
