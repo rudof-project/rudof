@@ -40,5 +40,9 @@ tokio.workspace = true
 toml.workspace = true
 url.workspace = true
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tokio = {workspace = true, features = ["full"] }
+oxigraph = { workspace = true, features = ["http-client-rustls-native"] }
+
 [dev-dependencies]
 proptest.workspace = true

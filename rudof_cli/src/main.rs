@@ -1,19 +1,20 @@
-extern crate anyhow;
-extern crate clap;
-
-use anyhow::{Result, bail};
-use clap::Parser;
-
-use rudof_cli::cli::parser::{Cli, Command};
-use rudof_cli::commands::{CommandContext, CommandFactory};
-
+#[cfg(not(target_family = "wasm"))]
+use rudof_cli::{
+    cli::parser::{Cli, Command},
+    commands::{CommandContext, CommandFactory},
+};
+#[cfg(not(target_family = "wasm"))]
 use std::{env, io};
+#[cfg(not(target_family = "wasm"))]
+use tracing_subscriber::{filter::EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::{filter::EnvFilter, fmt};
+#[cfg(target_family = "wasm")]
+fn main() {}
 
-fn main() -> Result<()> {
+#[cfg(not(target_family = "wasm"))]
+fn main() -> anyhow::Result<()> {
+    use clap::Parser;
+
     // Initialize logging, environment variables, and global settings
     setup();
 
@@ -24,12 +25,13 @@ fn main() -> Result<()> {
     // Dispatch the command if present, otherwise exit with a clean error message
     match &cli.command {
         Some(cmd) => execute(cmd, cli.debug)?,
-        None => bail!("Command not specified. Use --help for available commands."),
+        None => anyhow::bail!("Command not specified. Use --help for available commands."),
     }
 
     Ok(())
 }
 
+#[cfg(not(target_family = "wasm"))]
 /// Sets up the application environment including logging and signal handling.
 fn setup() {
     clientele::dotenv().ok();
@@ -57,8 +59,9 @@ fn setup() {
     tracing::trace!("rudof running with tracing filter {}", env_filter);
 }
 
+#[cfg(not(target_family = "wasm"))]
 /// Orchestrates the command lifecycle: Creation -> Validation -> Execution.
-fn execute(cli_command: &Command, debug: u8) -> Result<()> {
+fn execute(cli_command: &Command, debug: u8) -> anyhow::Result<()> {
     // Convert CLI enum into a Command Trait Object
     let command = CommandFactory::create(cli_command.clone())?;
 
