@@ -2,14 +2,15 @@
 
 use crate::iri;
 use crate::{IriS, iri_once, static_once};
-use proptest::prelude::*;
 use std::str::FromStr;
 
 const URI_REGEX: &str = r"https?://[a-zA-Z0-9]{3,}(\.[a-zA-Z0-9]{3,})+(\/[a-zA-Z0-9/]{1,3})*\/";
 const PATH_REGEX: &str = r"([a-zA-Z0-9_\-]{3,5}/){1,10}";
 const FILE_REGEX: &str = concat!("file:///", r"([a-zA-Z0-9_\-]{3,5}/){1,10}");
 
+#[cfg(test)]
 mod tests {
+    use proptest::prelude::*;
     use super::*;
     use oxrdf::NamedNode;
 
@@ -86,7 +87,9 @@ mod tests_macros_static {
     }
 }
 
+#[cfg(test)]
 mod tests_macros {
+    use proptest::prelude::*;
     use super::*;
 
     proptest! {
