@@ -772,8 +772,10 @@ async fn make_sparql_query_select_async(
     let url = Url::parse_with_params(endpoint_iri.as_str(), &[("query", query_str)])?;
 
     // Execute request and get response body
-    let body = client.get(url).send().await?.text().await?;
-    parse_sparql_json_results(&body)
+    // let response = client.get(url).send().await?;
+    // let body = response.text().await.unwrap();
+    unimplemented!()
+    // parse_sparql_json_results(&body)
 }
 
 /// Executes a SPARQL CONSTRUCT query asynchronously.
