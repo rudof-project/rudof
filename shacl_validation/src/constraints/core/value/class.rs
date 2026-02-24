@@ -14,9 +14,9 @@ use rudof_rdf::rdf_core::{
     term::Term,
     vocab::{rdf_type, rdfs_subclass_of},
 };
-use shacl_ir::compiled::component_ir::Class;
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::components::Class;
 use shacl_ir::schema_ir::SchemaIR;
 use std::fmt::Debug;
 
