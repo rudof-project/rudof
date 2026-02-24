@@ -30,8 +30,14 @@ pub(crate) fn shapemap_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Vec<S
         "shapemap_statement",
         map_error(
             move |i| {
-                let (i, (a, _, ass, _, _)) =
-                    all_consuming(tuple((association, tws0, rest_associations, tws0, opt(char(',')))))(i)?;
+                let (i, (a, _, ass, _, _, _)) = all_consuming(tuple((
+                    association,
+                    tws0,
+                    rest_associations,
+                    tws0,
+                    opt(char(',')),
+                    tws0,
+                )))(i)?;
                 let mut rs = vec![a];
                 for a in ass {
                     rs.push(a);
@@ -268,5 +274,40 @@ mod tests {
         let (_, value) = focus(input).unwrap();
         let expected = Pattern::focus();
         assert_eq!(value, expected);
+    }
+
+    #[test]
+    fn test_shapemap_statement_no_trailing_comma() {
+        let input = Span::new(":a@:A");
+        let (_, stmts) = shapemap_statement()(input).unwrap();
+        assert_eq!(stmts.len(), 1);
+    }
+
+    #[test]
+    fn test_shapemap_statement_with_trailing_comma() {
+        let input = Span::new(":a@:A,");
+        let (_, stmts) = shapemap_statement()(input).unwrap();
+        assert_eq!(stmts.len(), 1);
+    }
+
+    #[test]
+    fn test_shapemap_statement_multiple_no_trailing_comma() {
+        let input = Span::new(":a@:A, :b@:B");
+        let (_, stmts) = shapemap_statement()(input).unwrap();
+        assert_eq!(stmts.len(), 2);
+    }
+
+    #[test]
+    fn test_shapemap_statement_multiple_with_trailing_comma() {
+        let input = Span::new(":a@:A, :b@:B,");
+        let (_, stmts) = shapemap_statement()(input).unwrap();
+        assert_eq!(stmts.len(), 2);
+    }
+
+    #[test]
+    fn test_shapemap_statement_multiple_with_trailing_comma_and_space() {
+        let input = Span::new(":a@:A, :b@:B, ");
+        let (_, stmts) = shapemap_statement()(input).unwrap();
+        assert_eq!(stmts.len(), 2);
     }
 }

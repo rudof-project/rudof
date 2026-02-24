@@ -96,7 +96,7 @@ pub enum ValidatorError {
     #[error(transparent)]
     PrefixMapError(#[from] PrefixMapError),
 
-    #[error("ShapeLabel not found {shape_label:?}: {error}")]
+    #[error("ShapeLabel not found {shape_label}: {error}")]
     ShapeLabelNotFoundError { shape_label: ShapeExprLabel, error: String },
 
     #[error("And error: shape expression {shape_expr} failed for node {node}: {errors}")]

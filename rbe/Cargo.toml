@@ -1,6 +1,6 @@
 [package]
 name = "rbe"
-version = "0.1.121"
+version = "0.2.1"
 authors.workspace = true
 description.workspace = true
 edition.workspace = true
@@ -22,3 +22,4 @@ tracing = { workspace = true }
 
 [dev-dependencies]
 indoc.workspace = true
+tracing-test.workspace = true

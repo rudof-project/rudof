@@ -1,6 +1,6 @@
 [package]
 name = "pyrudof"
-version = "0.1.147"
+version = "0.2.2"
 documentation = "https://rudof-project.github.io/rudof/"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
@@ -23,10 +23,12 @@ name = "pyrudof"
 crate-type = ["cdylib", "rlib"]
 doctest = false
 
+[features]
+extension-module = ["pyo3/extension-module"]
+
 [dependencies]
 pyo3 = { version = "0.26", features = [
     "abi3-py37",
-    "extension-module",
     "experimental-inspect",
 ] }
 # pyo3-stub-gen = { version = "0.16.1" }

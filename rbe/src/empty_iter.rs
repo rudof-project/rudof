@@ -80,7 +80,21 @@ where
                 card: (*card).clone(),
             }
         },
-        _ => todo!(),
+        Rbe::Fail { error } => Rbe1::Fail {
+            error: RbeError::MsgError {
+                msg: format!("{error}"),
+            },
+        },
+        Rbe::Star { value } => Rbe1::Star {
+            expr: Box::new(cnv_rbe(value, table)),
+        },
+        Rbe::Plus { value } => Rbe1::Plus {
+            expr: Box::new(cnv_rbe(value, table)),
+        },
+        Rbe::Repeat { value, card } => Rbe1::Repeat {
+            expr: Box::new(cnv_rbe(value, table)),
+            card: (*card).clone(),
+        },
     }
 }
 
@@ -100,4 +114,146 @@ where
     R: Ref,
 {
     table.get_key(c).unwrap().clone()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{Cardinality, Max, Min, SingleCond};
+
+    impl Key for u8 {}
+    impl Value for u16 {}
+    impl Ref for u32 {}
+
+    type K = u8;
+    type V = u16;
+    type R = u32;
+
+    fn make_table_with_symbol() -> (RbeTable<K, V, R>, Component) {
+        let mut table = RbeTable::new();
+        let cond: MatchCond<K, V, R> =
+            MatchCond::single(SingleCond::new().with_name("any").with_cond(|_v| Ok(Pending::new())));
+        let c = table.add_component(1, &cond);
+        (table, c)
+    }
+
+    #[test]
+    fn cnv_rbe_empty() {
+        let table: RbeTable<K, V, R> = RbeTable::new();
+        let rbe = Rbe::Empty;
+        let result = cnv_rbe(&rbe, &table);
+        assert_eq!(result, Rbe1::Empty);
+    }
+
+    #[test]
+    fn cnv_rbe_symbol() {
+        let (table, c) = make_table_with_symbol();
+        let rbe = Rbe::symbol(c, 1, Max::IntMax(3));
+        let result = cnv_rbe(&rbe, &table);
+        match result {
+            Rbe1::Symbol { key, card, .. } => {
+                assert_eq!(key, 1);
+                assert_eq!(card, Cardinality::from(Min::from(1), Max::IntMax(3)));
+            },
+            other => panic!("Expected Symbol, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn cnv_rbe_and() {
+        let (table, c) = make_table_with_symbol();
+        let rbe = Rbe::and(vec![Rbe::Empty, Rbe::symbol(c, 1, Max::IntMax(1))]);
+        let result = cnv_rbe(&rbe, &table);
+        match result {
+            Rbe1::And { exprs } => {
+                assert_eq!(exprs.len(), 2);
+                assert_eq!(exprs[0], Rbe1::Empty);
+                assert!(matches!(exprs[1], Rbe1::Symbol { .. }));
+            },
+            other => panic!("Expected And, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn cnv_rbe_or() {
+        let (table, c) = make_table_with_symbol();
+        let rbe = Rbe::or(vec![Rbe::Empty, Rbe::symbol(c, 0, Max::IntMax(1))]);
+        let result = cnv_rbe(&rbe, &table);
+        match result {
+            Rbe1::Or { exprs } => {
+                assert_eq!(exprs.len(), 2);
+                assert_eq!(exprs[0], Rbe1::Empty);
+                assert!(matches!(exprs[1], Rbe1::Symbol { .. }));
+            },
+            other => panic!("Expected Or, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn cnv_rbe_star() {
+        let (table, c) = make_table_with_symbol();
+        let rbe = Rbe::star(Rbe::symbol(c, 1, Max::IntMax(1)));
+        let result = cnv_rbe(&rbe, &table);
+        match result {
+            Rbe1::Star { expr } => {
+                assert!(matches!(*expr, Rbe1::Symbol { .. }));
+            },
+            other => panic!("Expected Star, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn cnv_rbe_plus() {
+        let (table, c) = make_table_with_symbol();
+        let rbe = Rbe::plus(Rbe::symbol(c, 1, Max::IntMax(1)));
+        let result = cnv_rbe(&rbe, &table);
+        match result {
+            Rbe1::Plus { expr } => {
+                assert!(matches!(*expr, Rbe1::Symbol { .. }));
+            },
+            other => panic!("Expected Plus, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn cnv_rbe_repeat() {
+        let (table, c) = make_table_with_symbol();
+        let rbe = Rbe::repeat(Rbe::symbol(c, 1, Max::IntMax(1)), 2, Max::IntMax(5));
+        let result = cnv_rbe(&rbe, &table);
+        match result {
+            Rbe1::Repeat { expr, card } => {
+                assert!(matches!(*expr, Rbe1::Symbol { .. }));
+                assert_eq!(card, Cardinality::from(Min::from(2), Max::IntMax(5)));
+            },
+            other => panic!("Expected Repeat, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn cnv_rbe_fail() {
+        let table: RbeTable<K, V, R> = RbeTable::new();
+        let rbe = Rbe::Fail {
+            error: crate::deriv_error::DerivError::MkOrValuesFail,
+        };
+        let result = cnv_rbe(&rbe, &table);
+        assert!(matches!(result, Rbe1::Fail { .. }));
+    }
+
+    #[test]
+    fn cnv_rbe_nested_and_or() {
+        let (table, c) = make_table_with_symbol();
+        let rbe = Rbe::and(vec![
+            Rbe::or(vec![Rbe::Empty, Rbe::symbol(c, 1, Max::IntMax(1))]),
+            Rbe::Empty,
+        ]);
+        let result = cnv_rbe(&rbe, &table);
+        match result {
+            Rbe1::And { exprs } => {
+                assert_eq!(exprs.len(), 2);
+                assert!(matches!(exprs[0], Rbe1::Or { .. }));
+                assert_eq!(exprs[1], Rbe1::Empty);
+            },
+            other => panic!("Expected And, got {:?}", other),
+        }
+    }
 }

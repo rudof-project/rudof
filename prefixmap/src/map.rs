@@ -51,19 +51,19 @@ impl PrefixMap {
 
     /// Inserts an alias association to an IRI
     ///
-    /// Returns an [`PrefixMapError`] if the alias already exists.
+    // Returns an [`PrefixMapError`] if the alias already exists.
     pub fn add_prefix<A, I>(&mut self, alias: A, iri: I) -> Result<(), PrefixMapError>
     where
         A: AsRef<str>,
         I: Into<IriS>,
     {
         let key = alias.as_ref();
-        if self.map.contains_key(key) {
-            return Err(PrefixMapError::AliasAlreadyExists {
-                prefix: key.to_string(),
-                value: self.map.get(key).unwrap().to_string(),
-            });
-        }
+        // if self.map.contains_key(key) {
+        //     return Err(PrefixMapError::AliasAlreadyExists {
+        //         prefix: key.to_string(),
+        //         value: self.map.get(key).unwrap().to_string(),
+        //     });
+        // }
         self.map.insert(key.to_string(), iri.into());
         Ok(())
     }

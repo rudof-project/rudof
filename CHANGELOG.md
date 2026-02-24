@@ -7,6 +7,51 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.2.5
+
+### Fixed 
+
+Repaires Jobs for macos publishing
+
+## v0.2.3/v0.2.4
+
+### Fixed
+
+Change in docker publishing artifact so it works. Issue: https://github.com/rudof-project/rudof/issues/505
+
+## v0.2.2
+### Added
+- Now the shex validator continues validating a shapemap in case a shape label is not found. The previous behaviour failed. Issue #502
+
+### Changed
+- shex_validator: validate_shapemap2 renamed to validate_shapemap
+
+## v0.2.1
+### Added
+- New methods in Python's prefixmap so it can be tested and we publish a new version
+
+### Changed
+- Shapemaps allow an optional trailing comma instead, [issue 501](https://github.com/rudof-project/rudof/issues/501)
+
+## v0.2.0 
+
+We created a new minor release 0.2.0 to reset the number (0.1.149) and to reflect that this is the first release contains several contributions from 2 new core developers: @samuel-bustamante and @algarfer
+
+### Added
+- Option validation mode = PGSchema in rudof_cli
+
+### Fixed
+- Regression bug in handling of prefixmap declarations: https://github.com/rudof-project/rudof/issues/497
+- Unimplemented behaviour in regular bag expressions like `(a;b)*` has now been implemented
+
+### Changed
+### Removed
+
+## v0.1.148
+
+### Added
+- Improved rudof_generate
+
 ## v0.1.147
 
 ### Added

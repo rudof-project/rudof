@@ -296,7 +296,7 @@ pub enum Command {
         #[arg(short = 'M', long = "mode",
             value_name = "MODE",
             ignore_case = true,
-            help = "Validation mode (ShEx or SHACL)",
+            help = "Validation mode (ShEx, SHACL or PGSchema)",
             default_value_t = ValidationMode::ShEx
         )]
         validation_mode: ValidationMode,

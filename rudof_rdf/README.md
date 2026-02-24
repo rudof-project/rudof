@@ -49,4 +49,5 @@ The `rudof_rdf` crate is a foundational dependency for many other Rudof crates:
 - `shex_testsuite`, `shapes_comparator`, `shapes_converter`, `sparql_service`, and others.
 
 ## 🛠️ Usage
-The `rudof_rdf` crate is not typically used directly by end-users, but rather as a building block for higher-level libraries and applications in the Rudof project. It provides the essential types and traits for representing RDF graphs, parsing and serializing RDF data, executing SPARQL queries, and integrating with other semantic web technologies.
+The `rudof_rdf` crate is not typically used directly by end-users, but rather as a building block for higher-level libraries and applications in the Rudof project. 
+It provides the essential types and traits for representing RDF graphs, parsing and serializing RDF data, executing SPARQL queries, and integrating with other semantic web technologies.

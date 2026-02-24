@@ -47,7 +47,10 @@ where
     A: PartialEq + Eq + Hash + Clone + fmt::Debug + fmt::Display,
 {
     pub fn match_bag(&self, bag: &Bag<A>, open: bool) -> Result<(), DerivError<A>> {
-        match &self.deriv_bag(bag, open, &self.symbols()) {
+        tracing::trace!("Matching bag {bag} against RBE {self} with open={open}");
+        let deriv = self.deriv_bag(bag, open, &self.symbols());
+        tracing::trace!("Deriv of RBE {self} with bag {bag} and open={open} is {deriv}");
+        match &deriv {
             Rbe::Fail { error } => Err(error.clone()),
             d => {
                 if d.nullable() {
@@ -263,7 +266,7 @@ where
             },
             Rbe::Star { ref value } => {
                 let d = value.deriv(x, n, open, controlled);
-                Self::mk_and(&d, value)
+                Self::mk_and(&d, &Rbe::Star { value: value.clone() })
             },
         }
     }
@@ -439,10 +442,28 @@ where
             Rbe::Fail { error } => write!(dest, "Fail {{{error:?}}}"),
             Rbe::Empty => write!(dest, "Empty"),
             Rbe::Symbol { value, card } => write!(dest, "{value:?}{card:?}"),
-            Rbe::And { values } => values.iter().try_for_each(|value| write!(dest, "{value:?};")),
-            Rbe::Or { values } => values.iter().try_for_each(|value| write!(dest, "{value:?}|")),
-            Rbe::Star { value } => write!(dest, "{value:?}*"),
-            Rbe::Plus { value } => write!(dest, "{value:?}+"),
+            Rbe::And { values } => {
+                let parts: Vec<String> = values
+                    .iter()
+                    .map(|v| {
+                        if matches!(v, Rbe::Or { .. }) {
+                            format!("({v:?})")
+                        } else {
+                            format!("{v:?}")
+                        }
+                    })
+                    .collect();
+                write!(dest, "{}", parts.join(";"))
+            },
+            Rbe::Or { values } => {
+                write!(
+                    dest,
+                    "{}",
+                    values.iter().map(|v| format!("{v:?}")).collect::<Vec<_>>().join("|")
+                )
+            },
+            Rbe::Star { value } => write!(dest, "({value:?})*"),
+            Rbe::Plus { value } => write!(dest, "({value:?})+"),
             Rbe::Repeat { value, card } => write!(dest, "({value:?}){card:?}"),
         }
     }
@@ -457,10 +478,28 @@ where
             Rbe::Fail { error } => write!(dest, "Fail {{{error}}}"),
             Rbe::Empty => write!(dest, "Empty"),
             Rbe::Symbol { value, card } => write!(dest, "{value}{card}"),
-            Rbe::And { values } => values.iter().try_for_each(|value| write!(dest, "{value};")),
-            Rbe::Or { values } => values.iter().try_for_each(|value| write!(dest, "{value}|")),
-            Rbe::Star { value } => write!(dest, "{value}*"),
-            Rbe::Plus { value } => write!(dest, "{value}+"),
+            Rbe::And { values } => {
+                let parts: Vec<String> = values
+                    .iter()
+                    .map(|v| {
+                        if matches!(v, Rbe::Or { .. }) {
+                            format!("({v})")
+                        } else {
+                            format!("{v}")
+                        }
+                    })
+                    .collect();
+                write!(dest, "{}", parts.join(";"))
+            },
+            Rbe::Or { values } => {
+                write!(
+                    dest,
+                    "{}",
+                    values.iter().map(|v| format!("{v}")).collect::<Vec<_>>().join("|")
+                )
+            },
+            Rbe::Star { value } => write!(dest, "({value})*"),
+            Rbe::Plus { value } => write!(dest, "({value})+"),
             Rbe::Repeat { value, card } => write!(dest, "({value}){card}"),
         }
     }
@@ -469,6 +508,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tracing_test::traced_test;
     // use indoc::indoc;
     // use test_log::test;
 
@@ -583,6 +623,50 @@ mod tests {
         assert!(rbe.match_bag(&Bag::from(['c']), false).is_err());
     }
 
+    #[traced_test]
+    #[test]
+    fn match_bag_a_and_b_star_with_a_b() {
+        // (a;b)* #= a;b
+        let rbe = Rbe::star(Rbe::and(vec![
+            Rbe::symbol('a', 1, Max::IntMax(1)),
+            Rbe::symbol('b', 1, Max::IntMax(1)),
+        ]));
+        assert_eq!(rbe.match_bag(&Bag::from(['a', 'b']), true), Ok(()));
+    }
+
+    #[traced_test]
+    #[test]
+    fn no_match_bag_a_and_b_star_with_a() {
+        // (a;b)* #= a;b
+        let rbe = Rbe::star(Rbe::and(vec![
+            Rbe::symbol('a', 1, Max::IntMax(1)),
+            Rbe::symbol('b', 1, Max::IntMax(1)),
+        ]));
+        assert!(rbe.match_bag(&Bag::from(['a']), true).is_err());
+    }
+
+    #[traced_test]
+    #[test]
+    fn no_match_bag_a_and_b_star_with_b() {
+        // (a;b)* #= a;b
+        let rbe = Rbe::star(Rbe::and(vec![
+            Rbe::symbol('a', 1, Max::IntMax(1)),
+            Rbe::symbol('b', 1, Max::IntMax(1)),
+        ]));
+        assert!(rbe.match_bag(&Bag::from(['b']), true).is_err());
+    }
+
+    #[traced_test]
+    #[test]
+    fn match_bag_a_and_b_plus_with_a_b() {
+        // (a;b)+ #= a;b
+        let rbe = Rbe::plus(Rbe::and(vec![
+            Rbe::symbol('a', 1, Max::IntMax(1)),
+            Rbe::symbol('b', 1, Max::IntMax(1)),
+        ]));
+        assert_eq!(rbe.match_bag(&Bag::from(['a', 'b']), true), Ok(()));
+    }
+
     /* I comment this test because it fails with
        Result::unwrap()` on an `Err` value: Error { inner: UnsupportedType(Some("Rbe")) }
     #[test]
@@ -598,6 +682,62 @@ mod tests {
         let rbe: String = toml::to_string(&rbe).unwrap();
         assert_eq!(rbe, expected);
     }*/
+
+    #[test]
+    fn display_or_inside_and_adds_parens() {
+        // (a|b);c  — Or child of And must be parenthesised
+        let rbe: Rbe<char> = Rbe::and(vec![
+            Rbe::or(vec![
+                Rbe::symbol('a', 1, Max::IntMax(1)),
+                Rbe::symbol('b', 1, Max::IntMax(1)),
+            ]),
+            Rbe::symbol('c', 1, Max::IntMax(1)),
+        ]);
+        // Display: card {1,1} renders as "" (empty), so symbols appear bare
+        assert_eq!(format!("{rbe}"), "(a|b);c");
+    }
+
+    #[test]
+    fn debug_or_inside_and_adds_parens() {
+        // Debug variant: card {1,1} renders as {1, 1}, chars as 'a'
+        let rbe: Rbe<char> = Rbe::and(vec![
+            Rbe::or(vec![
+                Rbe::symbol('a', 1, Max::IntMax(1)),
+                Rbe::symbol('b', 1, Max::IntMax(1)),
+            ]),
+            Rbe::symbol('c', 1, Max::IntMax(1)),
+        ]);
+        assert_eq!(format!("{rbe:?}"), "('a'{1, 1}|'b'{1, 1});'c'{1, 1}");
+    }
+
+    #[test]
+    fn display_and_inside_or_no_extra_parens() {
+        // a;b|c  — And child of Or needs no extra parens (And binds tighter than Or)
+        let rbe: Rbe<char> = Rbe::or(vec![
+            Rbe::and(vec![
+                Rbe::symbol('a', 1, Max::IntMax(1)),
+                Rbe::symbol('b', 1, Max::IntMax(1)),
+            ]),
+            Rbe::symbol('c', 1, Max::IntMax(1)),
+        ]);
+        assert_eq!(format!("{rbe}"), "a;b|c");
+    }
+
+    #[test]
+    fn display_nested_or_inside_and_deep() {
+        // (a;b|c);d — nested Or at any depth still gets parens when inside And
+        let rbe: Rbe<char> = Rbe::and(vec![
+            Rbe::or(vec![
+                Rbe::and(vec![
+                    Rbe::symbol('a', 1, Max::IntMax(1)),
+                    Rbe::symbol('b', 1, Max::IntMax(1)),
+                ]),
+                Rbe::symbol('c', 1, Max::IntMax(1)),
+            ]),
+            Rbe::symbol('d', 1, Max::IntMax(1)),
+        ]);
+        assert_eq!(format!("{rbe}"), "(a;b|c);d");
+    }
 
     #[test]
     fn test_deserialize_rbe() {
