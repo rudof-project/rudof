@@ -66,7 +66,7 @@ pub enum ComponentIR {
 }
 
 impl ComponentIR {
-    /// Compiles a an AST SHACL component to a IR SHACL Component
+    /// Compiles an AST SHACL component to an IR SHACL Component
     /// It returns None for components that are not represented in the IR,
     /// such as sh:closed and sh:deactivated.
     /// It returns a vector of (PosNeg, ShapeLabelIdx) pairs for components that are represented in the IR.
