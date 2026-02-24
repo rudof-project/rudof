@@ -1,6 +1,7 @@
 use crate::cli::parser::GenerateArgs;
 use crate::commands::base::{Command, CommandContext};
-use anyhow::Result;
+use anyhow::{Result, anyhow};
+use rudof_lib::{Rudof, RudofConfig};
 
 /// Implementation of the `generate` command.
 ///
@@ -25,7 +26,28 @@ impl Command for GenerateCommand {
 
     /// Executes the Generate command logic.
     fn execute(&self, _ctx: &mut CommandContext) -> Result<()> {
-        println!("Generate command executed");
+        // Create tokio runtime for async execution
+        let runtime =
+            tokio::runtime::Runtime::new().map_err(|e| anyhow!("Failed to create tokio runtime: {e}"))?;
+
+        runtime.block_on(async {
+            // Create a temporary Rudof instance for generation (doesn't need existing state)
+            let rudof = Rudof::new(&RudofConfig::default_config()?)?;
+
+            rudof
+                .generate_data(
+                    &self.args.schema,
+                    &(&self.args.schema_format).into(),
+                    self.args.entity_count,
+                    &self.args.common.output,
+                    &(&self.args.result_format).into(),
+                    self.args.seed,
+                    self.args.parallel,
+                    &self.args.common.config,
+                )
+                .await
+        })?;
+
         Ok(())
     }
 }

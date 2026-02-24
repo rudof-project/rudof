@@ -338,7 +338,7 @@ pub struct PgschemaArgs {
         value_name = "INPUT",
         help = "Schema, FILE, URI or - for stdin"
     )]
-    schema: InputSpec,
+    pub schema: InputSpec,
 
     #[arg(
         short = 'f',
@@ -349,7 +349,7 @@ pub struct PgschemaArgs {
         default_value_t = PgSchemaFormatCli::PgSchemaC,
         value_enum
     )]
-    schema_format: PgSchemaFormatCli,
+    pub schema_format: PgSchemaFormatCli,
 
     #[arg(
         short = 'r',
@@ -360,13 +360,13 @@ pub struct PgschemaArgs {
         default_value_t = PgSchemaFormatCli::PgSchemaC,
         value_enum
     )]
-    result_schema_format: PgSchemaFormatCli,
+    pub result_schema_format: PgSchemaFormatCli,
 
     #[arg(short = 't', value_name = "BOOL", help = "Show processing time", long = "show-time")]
-    show_time: Option<bool>,
+    pub show_time: Option<bool>,
 
     #[arg(long = "show-schema", value_name = "BOOL", help = "Show schema")]
-    show_schema: Option<bool>,
+    pub show_schema: Option<bool>,
 
     #[command(flatten)]
     pub common: CommonArgsAll,
@@ -726,7 +726,7 @@ pub struct ShaclValidateArgs {
 #[derive(Debug, Clone, Args)]
 pub struct DataArgs {
     #[clap(value_parser = clap::value_parser!(InputSpec))]
-    data: Vec<InputSpec>,
+    pub data: Vec<InputSpec>,
 
     #[arg(
         short = 't',
@@ -736,10 +736,10 @@ pub struct DataArgs {
         help = "RDF Data format",
         default_value_t = DataFormatCli::Turtle
     )]
-    data_format: DataFormatCli,
+    pub data_format: DataFormatCli,
 
     #[arg(short = 'b', long = "base", value_name = "IRI", help = "Base IRI")]
-    base: Option<IriS>,
+    pub base: Option<IriS>,
 
     /// RDF Reader mode
     #[arg(
@@ -750,7 +750,7 @@ pub struct DataArgs {
         default_value_t = RDFReaderModeCli::Strict,
         value_enum
     )]
-    reader_mode: RDFReaderModeCli,
+    pub reader_mode: RDFReaderModeCli,
 
     #[arg(
         short = 'r',
@@ -760,7 +760,7 @@ pub struct DataArgs {
         help = "Ouput result format",
         default_value_t = ResultDataFormatCli::Turtle
     )]
-    result_format: ResultDataFormatCli,
+    pub result_format: ResultDataFormatCli,
 
     #[command(flatten)]
     pub common: CommonArgsAll,
@@ -770,7 +770,7 @@ pub struct DataArgs {
 #[derive(Debug, Clone, Args)]
 pub struct NodeArgs {
     #[clap(value_parser = clap::value_parser!(InputSpec))]
-    data: Vec<InputSpec>,
+    pub data: Vec<InputSpec>,
 
     #[arg(
         short = 'n',
@@ -778,7 +778,7 @@ pub struct NodeArgs {
         value_name = "Node",
         help = "Node to show information (can be a URI or prefixed name)"
     )]
-    node: String,
+    pub node: String,
 
     #[arg(
         short = 't',
@@ -788,7 +788,7 @@ pub struct NodeArgs {
         help = "RDF Data format",
         default_value_t = DataFormatCli::Turtle
     )]
-    data_format: DataFormatCli,
+    pub data_format: DataFormatCli,
 
     #[arg(
         short = 'e',
@@ -796,10 +796,10 @@ pub struct NodeArgs {
         value_name = "Endpoint",
         help = "Endpoint with RDF data (URL or name)"
     )]
-    endpoint: Option<String>,
+    pub endpoint: Option<String>,
 
     #[arg(short = 'b', long = "base", value_name = "IRI", help = "Base IRI")]
-    base: Option<IriS>,
+    pub base: Option<IriS>,
 
     #[arg(
         long = "reader-mode",
@@ -809,7 +809,7 @@ pub struct NodeArgs {
         default_value_t = RDFReaderModeCli::Strict,
         value_enum
     )]
-    reader_mode: RDFReaderModeCli,
+    pub reader_mode: RDFReaderModeCli,
 
     #[arg(
         short = 'm',
@@ -819,10 +819,10 @@ pub struct NodeArgs {
         help = "Mode used to show the node information",
         default_value_t = ShowNodeModeCli::Outgoing
     )]
-    show_node_mode: ShowNodeModeCli,
+    pub show_node_mode: ShowNodeModeCli,
 
     #[arg(long = "show hyperlinks", help = "Show hyperlinks in the output")]
-    show_hyperlinks: bool,
+    pub show_hyperlinks: bool,
 
     #[arg(
         short = 'p',
@@ -830,7 +830,7 @@ pub struct NodeArgs {
         value_name = "PREDICATES",
         help = "List of predicates to show"
     )]
-    predicates: Vec<String>,
+    pub predicates: Vec<String>,
 
     #[arg(
         short = 'd',
@@ -839,7 +839,7 @@ pub struct NodeArgs {
         help = "outgoing number of levels, default = 1",
         default_value_t = 1
     )]
-    depth: usize,
+    pub depth: usize,
 
     #[command(flatten)]
     pub common: CommonArgsAll,
@@ -849,7 +849,7 @@ pub struct NodeArgs {
 #[derive(Debug, Clone, Args)]
 pub struct ShaclArgs {
     #[clap(value_parser = clap::value_parser!(InputSpec))]
-    data: Vec<InputSpec>,
+    pub data: Vec<InputSpec>,
 
     #[arg(
         short = 't',
@@ -859,7 +859,7 @@ pub struct ShaclArgs {
         help = "RDF Data format",
         default_value_t = DataFormatCli::Turtle
     )]
-    data_format: DataFormatCli,
+    pub data_format: DataFormatCli,
 
     #[arg(
         long = "reader-mode",
@@ -869,7 +869,7 @@ pub struct ShaclArgs {
         default_value_t = RDFReaderModeCli::Strict,
         value_enum
     )]
-    reader_mode: RDFReaderModeCli,
+    pub reader_mode: RDFReaderModeCli,
 
     #[arg(
         short = 'e',
@@ -877,7 +877,7 @@ pub struct ShaclArgs {
         value_name = "Endpoint",
         help = "Endpoint with RDF data (URL or name)"
     )]
-    endpoint: Option<String>,
+    pub endpoint: Option<String>,
 
     #[arg(
         short = 's',
@@ -885,7 +885,7 @@ pub struct ShaclArgs {
         value_name = "INPUT",
         help = "Shapes graph: File, URI or - for stdin, if not set, it assumes the shapes come from the data"
     )]
-    shapes: Option<InputSpec>,
+    pub shapes: Option<InputSpec>,
 
     #[arg(
         short = 'f',
@@ -894,21 +894,21 @@ pub struct ShaclArgs {
         value_name = "FORMAT",
         help = "Shapes file format"
     )]
-    shapes_format: Option<ShaclFormatCli>,
+    pub shapes_format: Option<ShaclFormatCli>,
 
     #[arg(
         long = "base-data",
         value_name = "IRI",
         help = "Base RDF Data (used to resolve relative IRIs in RDF data)"
     )]
-    base_data: Option<IriS>,
+    pub base_data: Option<IriS>,
 
     #[arg(
         long = "base-shapes",
         value_name = "IRI",
         help = "Base RDF Data (used to resolve relative IRIs in Shapes)"
     )]
-    base_shapes: Option<IriS>,
+    pub base_shapes: Option<IriS>,
 
     #[arg(
         short = 'r',
@@ -918,7 +918,7 @@ pub struct ShaclArgs {
         help = "Result shapes format",
         default_value_t = ShaclFormatCli::Internal
     )]
-    result_shapes_format: ShaclFormatCli,
+    pub result_shapes_format: ShaclFormatCli,
 
     #[command(flatten)]
     pub common: CommonArgsAll,
@@ -928,7 +928,7 @@ pub struct ShaclArgs {
 #[derive(Debug, Clone, Args)]
 pub struct DCTapArgs {
     #[arg(short = 's', long = "source-file", value_name = "FILE", help = "DCTap source file")]
-    file: InputSpec,
+    pub file: InputSpec,
 
     #[arg(
         short = 'f',
@@ -938,7 +938,7 @@ pub struct DCTapArgs {
         help = "DCTap file format",
         default_value_t = DCTapFormatCli::Csv
     )]
-    format: DCTapFormatCli,
+    pub format: DCTapFormatCli,
 
     #[arg(
         short = 'r',
@@ -948,7 +948,7 @@ pub struct DCTapArgs {
         help = "Ouput results format",
         default_value_t = DCTapResultFormatCli::Internal
     )]
-    result_format: DCTapResultFormatCli,
+    pub result_format: DCTapResultFormatCli,
 
     #[command(flatten)]
     pub common: CommonArgsAll,
@@ -1212,7 +1212,7 @@ pub struct ServiceArgs {
 #[derive(Debug, Clone, Args)]
 pub struct QueryArgs {
     #[clap(value_parser = clap::value_parser!(InputSpec))]
-    data: Vec<InputSpec>,
+    pub data: Vec<InputSpec>,
 
     #[arg(
         short = 't',
@@ -1222,7 +1222,7 @@ pub struct QueryArgs {
         help = "RDF Data format",
         default_value_t = DataFormatCli::Turtle
     )]
-    data_format: DataFormatCli,
+    pub data_format: DataFormatCli,
 
     #[arg(
         short = 'b',
@@ -1230,7 +1230,7 @@ pub struct QueryArgs {
         value_name = "IRI",
         help = "Base IRI (used to resolve relative IRIs in RDF data)"
     )]
-    base: Option<IriS>,
+    pub base: Option<IriS>,
 
     #[arg(long = "query-type",
         value_name = "TYPE",
@@ -1239,7 +1239,7 @@ pub struct QueryArgs {
         default_value_t = QueryTypeCli::Select,
         value_enum
     )]
-    query_type: QueryTypeCli,
+    pub query_type: QueryTypeCli,
 
     #[arg(
         long = "reader-mode",
@@ -1249,10 +1249,10 @@ pub struct QueryArgs {
         default_value_t = RDFReaderModeCli::Strict,
             value_enum
     )]
-    reader_mode: RDFReaderModeCli,
+    pub reader_mode: RDFReaderModeCli,
 
     #[arg(short = 'q', long = "query", value_name = "INPUT", help = "SPARQL query")]
-    query: InputSpec,
+    pub query: InputSpec,
 
     #[arg(
         short = 'e',
@@ -1260,7 +1260,7 @@ pub struct QueryArgs {
         value_name = "Endpoint",
         help = "Endpoint with RDF data (URL or name)"
     )]
-    endpoint: Option<String>,
+    pub endpoint: Option<String>,
 
     #[arg(
         short = 'r',
@@ -1270,7 +1270,7 @@ pub struct QueryArgs {
         help = "Result query format",
         default_value_t = ResultQueryFormatCli::Internal
     )]
-    result_query_format: ResultQueryFormatCli,
+    pub result_query_format: ResultQueryFormatCli,
 
     #[command(flatten)]
     pub common: CommonArgsAll,
@@ -1280,7 +1280,7 @@ pub struct QueryArgs {
 #[derive(Debug, Clone, Args)]
 pub struct GenerateArgs {
     #[arg(short = 's', long = "schema", value_name = "Schema file (ShEx or SHACL)")]
-    schema: InputSpec,
+    pub schema: InputSpec,
 
     #[arg(
         short = 'f',
@@ -1289,7 +1289,7 @@ pub struct GenerateArgs {
         value_name = "Schema format",
         default_value_t = GenerateSchemaFormatCli::Auto
     )]
-    schema_format: GenerateSchemaFormatCli,
+    pub schema_format: GenerateSchemaFormatCli,
 
     #[arg(
         short = 'n',
@@ -1297,7 +1297,7 @@ pub struct GenerateArgs {
         value_name = "Number of entities to generate",
         default_value_t = 10
     )]
-    entity_count: usize,
+    pub entity_count: usize,
 
     #[arg(
         short = 'r',
@@ -1306,13 +1306,13 @@ pub struct GenerateArgs {
         value_name = "Output RDF format",
         default_value_t = DataFormatCli::Turtle
     )]
-    result_format: DataFormatCli,
+    pub result_format: DataFormatCli,
 
     #[arg(long = "seed", value_name = "Random seed for reproducible generation")]
-    seed: Option<u64>,
+    pub seed: Option<u64>,
 
     #[arg(short = 'p', long = "parallel", value_name = "Number of parallel threads")]
-    parallel: Option<usize>,
+    pub parallel: Option<usize>,
 
     #[command(flatten)]
     pub common: CommonArgsAll,

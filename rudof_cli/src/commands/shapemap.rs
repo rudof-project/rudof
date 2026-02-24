@@ -1,6 +1,8 @@
 use crate::cli::parser::ShapemapArgs;
 use crate::commands::base::{Command, CommandContext};
+use crate::output::ColorSupport;
 use anyhow::Result;
+use rudof_lib::{shapemap_format::ShapeMapFormat, ShapeMapFormatter, ShapeMapFormat as ShexAstShapeMapFormat};
 
 /// Implementation of the `shapemap` command.
 ///
@@ -24,8 +26,24 @@ impl Command for ShapemapCommand {
     }
 
     /// Executes the shapemap logic.
-    fn execute(&self, _ctx: &mut CommandContext) -> Result<()> {
-        println!("Shapemap command executed");
+    fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
+        // Convert CLI types to library types
+        let reader = self.args.shapemap.open_read(None, "ShapeMap")?;
+        let result_format: ShapeMapFormat = (&self.args.result_shapemap_format).into();
+        let result_format: ShexAstShapeMapFormat = result_format.into();
+        let shapemap_format: ShapeMapFormat = (&self.args.shapemap_format).into();
+        let shapemap_format: ShexAstShapeMapFormat = shapemap_format.into();
+        let formatter = match ctx.color {
+            ColorSupport::NoColor => ShapeMapFormatter::default().without_colors(),
+            _ => ShapeMapFormatter::default(),
+        };
+
+        // Load shapemap into rudof
+        ctx.rudof.read_shapemap(reader, self.args.shapemap.source_name().as_str(), &shapemap_format)?;
+
+        // Write results in the requested format
+        ctx.rudof.serialize_shapemap(&result_format, &formatter, &mut ctx.writer)?;
+
         Ok(())
     }
 }

@@ -1,6 +1,8 @@
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
+use rudof_rdf::rdf_core::RDFFormat;
+
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum ResultDataFormat {
     Turtle,
@@ -51,6 +53,38 @@ impl FromStr for ResultDataFormat {
             "svg" => Ok(ResultDataFormat::Svg),
             "png" => Ok(ResultDataFormat::Png),
             _ => Err(format!("Unsupported data format: {}", s)),
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+pub enum VisualFormat {
+    PlantUML,
+    Svg,
+    Png,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+pub enum CheckResultDataFormat {
+    RDFFormat(RDFFormat),
+    VisualFormat(VisualFormat),
+}
+
+impl TryFrom<ResultDataFormat> for CheckResultDataFormat {
+    type Error = String;
+
+    fn try_from(rdf_format: ResultDataFormat) -> Result<Self, Self::Error> {
+        match rdf_format {
+            ResultDataFormat::Turtle => Ok(CheckResultDataFormat::RDFFormat(RDFFormat::Turtle)),
+            ResultDataFormat::N3 => Ok(CheckResultDataFormat::RDFFormat(RDFFormat::N3)),
+            ResultDataFormat::NTriples => Ok(CheckResultDataFormat::RDFFormat(RDFFormat::NTriples)),
+            ResultDataFormat::RdfXml => Ok(CheckResultDataFormat::RDFFormat(RDFFormat::Rdfxml)),
+            ResultDataFormat::TriG => Ok(CheckResultDataFormat::RDFFormat(RDFFormat::TriG)),
+            ResultDataFormat::NQuads => Ok(CheckResultDataFormat::RDFFormat(RDFFormat::NQuads)),
+            ResultDataFormat::PlantUML => Ok(CheckResultDataFormat::VisualFormat(VisualFormat::PlantUML)),
+            ResultDataFormat::Svg => Ok(CheckResultDataFormat::VisualFormat(VisualFormat::Svg)),
+            ResultDataFormat::Png => Ok(CheckResultDataFormat::VisualFormat(VisualFormat::Png)),
+            unsupported => Err(format!("Unsupported result data format (to do): {}", unsupported)),
         }
     }
 }

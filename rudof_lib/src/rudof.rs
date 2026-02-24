@@ -32,12 +32,27 @@ pub type Result<T> = result::Result<T, RudofError>;
 use crate::{
     InputSpec, RudofConfig, RudofError, ShapesGraphSource, UrlSpec,
     compare::{InputCompareFormat, InputCompareMode},
+    data_format::DataFormat,
+    dctap_result_format::DCTapResultFormat,
+    generate_schema_format::GenerateSchemaFormat,
+    node_info::{NodeInfo, NodeInfoOptions, format_node_info_list, get_node_info},
     rdf_config::RdfConfigResultFormat,
-    rdf_reader_mode::RDFReaderMode, data_format::DataFormat,
+    rdf_reader_mode::RDFReaderMode,
+    selector::parse_node_selector,
+    query_result_format::ResultQueryFormat, query_type::QueryType,
+    query::execute_query,
 };
 use iri_s::{IriS, MimeType};
 use rdf_config::RdfConfigModel;
 // use shex_validation::SchemaWithoutImports;
+use pgschema::{
+    parser::{map_builder::MapBuilder, pg_builder::PgBuilder, pgs_builder::PgsBuilder},
+    pg::PropertyGraph,
+    pgs::PropertyGraphSchema,
+    type_map::TypeMap,
+    validation_result::ValidationResult,
+};
+use rudof_generate::{DataGenerator, GeneratorConfig, config::OutputFormat};
 use rudof_rdf::rdf_core::{FocusRDF, Rdf, query::QueryRDF, visualizer::VisualRDFGraph};
 use rudof_rdf::rdf_impl::SparqlEndpoint;
 use shacl_rdf::{ShaclParser, ShaclWriter};
@@ -54,7 +69,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 use std::str::FromStr;
-use std::{env, io, result};
+use std::{env, io, path::PathBuf, result};
 use tracing::trace;
 #[cfg(not(target_family = "wasm"))]
 use url::Url;
@@ -1271,11 +1286,12 @@ impl Rudof {
                 } else {
                     Err(RudofError::MissingDataAndEndpoint)
                 }
-            }
+            },
             (false, None) => {
-                let rdf_format:RDFFormat = data_format.try_into()
+                let rdf_format: RDFFormat = data_format
+                    .try_into()
                     .map_err(|e| RudofError::DataFormatError { error: e })?;
-                
+
                 for data_input in data {
                     let mut data_reader = data_input
                         .open_read(Some(data_format.mime_type()), "RDF data")
@@ -1284,7 +1300,7 @@ impl Rudof {
                             mime_type: data_format.mime_type().to_string(),
                             error: e.to_string(),
                         })?;
-                    
+
                     let base = self.get_base_iri(base)?;
                     self.read_data(
                         &mut data_reader,
@@ -1296,13 +1312,778 @@ impl Rudof {
                     )?;
                 }
                 Ok(())
-            }
+            },
             (true, Some(endpoint)) => {
                 let (name, _) = self.get_endpoint(endpoint)?;
                 self.use_endpoint(name.as_str())
-            }
+            },
             (false, Some(_)) => Err(RudofError::BothDataAndEndpointSpecified),
         }
+    }
+
+    /// Loads a ShEx schema from an InputSpec.
+    ///
+    /// This is a high-level method that handles:
+    /// - Opening the input source
+    /// - Determining the schema format
+    /// - Resolving the base IRI
+    /// - Parsing the schema
+    ///
+    /// # Arguments
+    /// * `input` - The input specification (file, URL, or stdin)
+    /// * `schema_format` - Optional format (defaults to ShExC)
+    /// * `base` - Optional base IRI (uses config or current dir if not provided)
+    /// * `reader_mode` - Reader mode for parsing
+    pub fn load_shex_schema(
+        &mut self,
+        input: &InputSpec,
+        schema_format: &Option<ShExFormat>,
+        base: &Option<IriS>,
+        reader_mode: &ReaderMode,
+    ) -> Result<()> {
+        use iri_s::MimeType;
+
+        let schema_format = schema_format.clone().unwrap_or(ShExFormat::ShExC);
+
+        // Open the schema reader
+        let schema_reader = input
+            .open_read(Some(schema_format.mime_type()), "ShEx Schema")
+            .map_err(|e| RudofError::ReadingPathContext {
+                path: input.source_name().to_string(),
+                error: e.to_string(),
+                context: "ShEx Schema".to_string(),
+            })?;
+
+        // Resolve base IRI
+        let base_iri = self.get_base_iri(base)?;
+
+        // Read the schema
+        self.read_shex(
+            schema_reader,
+            &schema_format,
+            Some(base_iri.as_str()),
+            reader_mode,
+            Some(&input.source_name()),
+        )?;
+
+        Ok(())
+    }
+
+    /// Loads a shapemap from an InputSpec.
+    ///
+    /// # Arguments
+    /// * `input` - The input specification for the shapemap
+    /// * `shapemap_format` - The format of the shapemap
+    pub fn load_shapemap(&mut self, input: &InputSpec, shapemap_format: &ShapeMapFormat) -> Result<()> {
+        let shapemap_reader = input
+            .open_read(None, "ShapeMap")
+            .map_err(|e| RudofError::ShapeMapParseError {
+                source_name: input.source_name(),
+                str: input.source_name().to_string(),
+                error: e.to_string(),
+            })?;
+
+        self.read_shapemap(shapemap_reader, input.source_name().as_str(), shapemap_format)?;
+
+        Ok(())
+    }
+
+    /// Adds a node and shape selector to the current shapemap.
+    ///
+    /// This method handles the logic of combining node and shape selectors:
+    /// - If only node is provided, uses START shape
+    /// - If both are provided, uses the specified shape
+    /// - If neither is provided, does nothing
+    /// - If only shape is provided, logs a warning (shape without node is ignored)
+    ///
+    /// # Arguments
+    /// * `node` - Optional node selector string
+    /// * `shape` - Optional shape selector string
+    pub fn add_node_shape_to_shapemap(&mut self, node: &Option<String>, shape: &Option<String>) -> Result<()> {
+        match (node, shape) {
+            (None, None) => {
+                // Nothing to do
+                Ok(())
+            },
+            (Some(node_str), None) => {
+                let node_selector = crate::parse_node_selector(node_str)?;
+                let shape_selector = crate::selector::start();
+                self.shapemap_add_node_shape_selectors(node_selector, shape_selector);
+                Ok(())
+            },
+            (Some(node_str), Some(shape_str)) => {
+                let node_selector = crate::parse_node_selector(node_str)?;
+                let shape_selector = crate::parse_shape_selector(shape_str)?;
+                self.shapemap_add_node_shape_selectors(node_selector, shape_selector);
+                Ok(())
+            },
+            (None, Some(shape_str)) => {
+                tracing::debug!("Shape label {shape_str} ignored because no node selector was provided");
+                Ok(())
+            },
+        }
+    }
+
+    /// Performs complete ShEx validation workflow.
+    ///
+    /// This is a high-level method that:
+    /// 1. Loads the ShEx schema (if not already loaded)
+    /// 2. Loads the shapemap (if provided)
+    /// 3. Adds individual node/shape pairs (if provided)
+    /// 4. Performs the validation
+    ///
+    /// # Arguments
+    /// * `schema` - Optional schema input (if None, uses already loaded schema)
+    /// * `schema_format` - Schema format
+    /// * `base_schema` - Base IRI for schema resolution
+    /// * `reader_mode` - Reader mode for parsing
+    /// * `shapemap` - Optional shapemap input
+    /// * `shapemap_format` - Shapemap format
+    /// * `node` - Optional node selector
+    /// * `shape` - Optional shape selector
+    ///
+    /// # Returns
+    /// The validation result as a ResultShapeMap
+    #[allow(clippy::too_many_arguments)]
+    pub fn validate_shex_complete(
+        &mut self,
+        schema: &Option<InputSpec>,
+        schema_format: &Option<ShExFormat>,
+        base_schema: &Option<IriS>,
+        reader_mode: &ReaderMode,
+        shapemap: &Option<InputSpec>,
+        shapemap_format: &ShapeMapFormat,
+        node: &Option<String>,
+        shape: &Option<String>,
+    ) -> Result<ResultShapeMap> {
+        // Load schema if provided
+        if let Some(schema_input) = schema {
+            self.load_shex_schema(schema_input, schema_format, base_schema, reader_mode)?;
+        }
+
+        // Load shapemap if provided
+        if let Some(shapemap_input) = shapemap {
+            self.load_shapemap(shapemap_input, shapemap_format)?;
+        }
+
+        // Add individual node/shape pair if provided
+        self.add_node_shape_to_shapemap(node, shape)?;
+
+        // Perform validation
+        self.validate_shex()
+    }
+
+    /// Validates that the ShEx schema is well-formed.
+    ///
+    /// Specifically checks for negative cycles in shape dependencies,
+    /// which would make the schema invalid.
+    ///
+    /// # Returns
+    /// Ok if the schema is well-formed, Err if negative cycles are detected
+    pub fn validate_shex_schema_well_formed(&self) -> Result<()> {
+        if self.config.shex_config().check_well_formed() {
+            if let Some(shex_ir) = self.get_shex_ir() {
+                if shex_ir.has_neg_cycle() {
+                    return Err(RudofError::Generic {
+                        error: format!("Schema contains negative cycles: {:?}", shex_ir.neg_cycles()),
+                    });
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Serializes a specific shape from the current ShEx schema.
+    ///
+    /// # Arguments
+    /// * `shape_label` - String representation of the shape selector
+    /// * `format` - Output format for serialization
+    /// * `formatter` - Formatter for pretty-printing
+    /// * `writer` - Output writer
+    pub fn serialize_shape_by_label<W: io::Write>(
+        &self,
+        shape_label: &str,
+        format: &ShExFormat,
+        formatter: &shex_ast::compact::ShExFormatter,
+        writer: &mut W,
+    ) -> Result<()> {
+        let shape_selector = self.parse_shape_selector(shape_label)?;
+        self.serialize_shape_current_shex(&shape_selector, format, formatter, writer)?;
+        Ok(())
+    }
+
+    /// Gets statistics about the ShEx schema's internal representation.
+    ///
+    /// Returns information such as:
+    /// - Number of shapes with N extends
+    /// - Local vs total shape counts
+    /// - Shape labels and their sources
+    /// - Dependencies between shapes
+    ///
+    /// # Returns
+    /// A ShExStatistics struct containing all relevant metrics
+    pub fn get_shex_statistics(&self) -> Result<ShExStatistics> {
+        let shex_ir = self.get_shex_ir().ok_or_else(|| RudofError::Generic {
+            error: "Schema was not compiled to IR".to_string(),
+        })?;
+
+        Ok(ShExStatistics {
+            extends_count: shex_ir.count_extends(),
+            local_shapes_count: shex_ir.local_shapes_count(),
+            total_shapes_count: shex_ir.total_shapes_count(),
+            shapes: shex_ir
+                .shapes()
+                .map(|(l, s, e)| (l.clone(), s.clone(), e.clone()))
+                .collect(),
+            dependencies: shex_ir.dependencies(),
+            has_imports: !shex_ir.imported_schemas().is_empty(),
+            neg_cycles: shex_ir.neg_cycles(),
+        })
+    }
+
+    /// Loads a SHACL schema from an InputSpec.
+    ///
+    /// This is a high-level method that handles:
+    /// - Opening the input source
+    /// - Determining the schema format
+    /// - Resolving the base IRI
+    /// - Parsing the schema
+    ///
+    /// # Arguments
+    /// * `input` - The input specification (file, URL, or stdin)
+    /// * `schema_format` - The SHACL format
+    /// * `base` - Optional base IRI (uses config or current dir if not provided)
+    /// * `reader_mode` - Reader mode for parsing
+    pub fn load_shacl_schema(
+        &mut self,
+        input: &InputSpec,
+        schema_format: &ShaclFormat,
+        base: &Option<IriS>,
+        reader_mode: &ReaderMode,
+    ) -> Result<()> {
+        // Open the schema reader
+        let mime_type = schema_format.mime_type();
+        let mut schema_reader =
+            input
+                .open_read(Some(mime_type), "SHACL shapes")
+                .map_err(|e| RudofError::ReadingPathContext {
+                    path: input.source_name().to_string(),
+                    error: e.to_string(),
+                    context: "SHACL Schema".to_string(),
+                })?;
+
+        // Resolve base IRI
+        let base_iri = self.get_base_iri(base)?;
+
+        // Read the SHACL schema
+        self.read_shacl(
+            &mut schema_reader,
+            &input.source_name(),
+            schema_format,
+            Some(base_iri.as_str()),
+            reader_mode,
+        )?;
+
+        Ok(())
+    }
+
+    /// Reads Property Graph data from a reader.
+    ///
+    /// # Arguments
+    /// * `reader` - The reader to read PG data from
+    /// * `_data_format` - The format of the PG data (currently unused, assumes PG format)
+    ///
+    /// # Returns
+    /// A PropertyGraph parsed from the reader
+    pub fn get_pg_data<R: io::Read>(&self, reader: &mut R, _data_format: &DataFormat) -> Result<PropertyGraph> {
+        let mut data_content = String::new();
+        reader.read_to_string(&mut data_content)?;
+        let graph = match PgBuilder::new().parse_pg(data_content.as_str()) {
+            Ok(graph) => graph,
+            Err(e) => {
+                return Err(RudofError::PGDataParseError {
+                    source_name: "reader".to_string(),
+                    error: format!("Failed to parse graph: {}", e),
+                });
+            },
+        };
+        Ok(graph)
+    }
+
+    /// Loads Property Graph data from multiple input sources.
+    ///
+    /// This is a high-level method that handles opening and merging multiple PG data sources.
+    ///
+    /// # Arguments
+    /// * `data` - Slice of input specifications for PG data
+    /// * `data_format` - Format of the PG data
+    ///
+    /// # Returns
+    /// A merged PropertyGraph containing all data
+    pub fn load_pg_data(&self, data: &[InputSpec], data_format: &DataFormat) -> Result<PropertyGraph> {
+        let mut graph = PropertyGraph::new();
+
+        for data_input in data {
+            let mut data_reader =
+                data_input
+                    .open_read(None, "PG data")
+                    .map_err(|e| RudofError::ReadingPathContext {
+                        path: data_input.source_name().to_string(),
+                        error: e.to_string(),
+                        context: "PG Data".to_string(),
+                    })?;
+
+            let new_graph = self.get_pg_data(&mut data_reader, data_format)?;
+            graph.merge(&new_graph);
+        }
+
+        Ok(graph)
+    }
+
+    /// Loads a PGSchema from an input source.
+    ///
+    /// # Arguments
+    /// * `schema_input` - The input specification for the schema
+    ///
+    /// # Returns
+    /// The parsed PgSchema
+    pub fn load_pg_schema(&self, schema_input: &InputSpec) -> Result<PropertyGraphSchema> {
+        let mut schema_reader =
+            schema_input
+                .open_read(None, "PGSchema")
+                .map_err(|e| RudofError::ReadingPathContext {
+                    path: schema_input.source_name().to_string(),
+                    error: e.to_string(),
+                    context: "PGSchema".to_string(),
+                })?;
+
+        self.read_pg_schema(&mut schema_reader)
+            .map_err(|e| RudofError::PGSchemaParseError {
+                source_name: schema_input.source_name(),
+                error: format!("{e}"),
+            })
+    }
+
+    /// Reads a Property Graph schema from a reader
+    ///
+    /// # Arguments
+    /// * `reader` - The reader to read PG schema from
+    ///
+    /// # Returns
+    /// The parsed PropertyGraphSchema
+    pub fn get_schema<R: io::Read>(&self, reader: &mut R) -> Result<PropertyGraphSchema> {
+        let mut schema_content = String::new();
+        reader
+            .read_to_string(&mut schema_content)
+            .map_err(|e| RudofError::ReadError { error: format!("{e}") })?;
+        let schema = match PgsBuilder::new().parse_pgs(schema_content.as_str()) {
+            Ok(schema) => schema,
+            Err(e) => {
+                return Err(RudofError::PGSchemaParseError {
+                    source_name: "reader".to_string(),
+                    error: format!("Failed to parse schema: {}", e),
+                });
+            },
+        };
+        Ok(schema)
+    }
+
+    /// Reads a Property Graph type map from a reader
+    ///
+    /// # Arguments
+    /// * `reader` - The reader to read type map from
+    ///
+    /// # Returns
+    /// The parsed TypeMap
+    pub fn get_map<R: io::Read>(&self, reader: &mut R) -> Result<TypeMap> {
+        let mut map_content = String::new();
+        reader
+            .read_to_string(&mut map_content)
+            .map_err(|e| RudofError::ReadError { error: format!("{e}") })?;
+        let map = match MapBuilder::new().parse_map(map_content.as_str()) {
+            Ok(map) => map,
+            Err(e) => {
+                return Err(RudofError::PGTypeMapParseError {
+                    source_name: "reader".to_string(),
+                    error: format!("Failed to parse type map: {}", e),
+                });
+            },
+        };
+        Ok(map)
+    }
+
+    /// Reads a PGSchema from a reader.
+    fn read_pg_schema<R: io::Read>(&self, reader: &mut R) -> Result<PropertyGraphSchema> {
+        // Delegate to existing get_schema logic from pgschema crate
+        // Assuming get_schema is available from pgschema crate
+        self.get_schema(reader).map_err(|e| RudofError::PGSchemaParseError {
+            source_name: "reader".to_string(),
+            error: format!("{e}"),
+        })
+    }
+
+    /// Loads a TypeMap from an input source.
+    ///
+    /// # Arguments
+    /// * `map_input` - The input specification for the type map
+    ///
+    /// # Returns
+    /// The parsed TypeMap
+    pub fn load_pg_typemap(&self, map_input: &InputSpec) -> Result<TypeMap> {
+        let mut map_reader = map_input
+            .open_read(None, "type map")
+            .map_err(|e| RudofError::ReadingPathContext {
+                path: map_input.source_name().to_string(),
+                error: e.to_string(),
+                context: "PG TypeMap".to_string(),
+            })?;
+
+        self.read_pg_typemap(&mut map_reader)
+            .map_err(|e| RudofError::PGTypeMapParseError {
+                source_name: map_input.source_name(),
+                error: format!("{e}"),
+            })
+    }
+
+    /// Reads a TypeMap from a reader.
+    fn read_pg_typemap<R: io::Read>(&self, reader: &mut R) -> Result<TypeMap> {
+        // Delegate to existing get_map logic from pgschema crate
+        // Assuming get_map is available from pgschema crate
+        self.get_map(reader).map_err(|e| RudofError::PGTypeMapParseError {
+            source_name: "reader".to_string(),
+            error: format!("{e}"),
+        })
+    }
+
+    /// Validates Property Graph data against a PGSchema using a TypeMap.
+    ///
+    /// This is a high-level method that performs the complete validation workflow.
+    ///
+    /// # Arguments
+    /// * `schema` - The PGSchema to validate against
+    /// * `graph` - The PropertyGraph data to validate
+    /// * `type_map` - The TypeMap defining the mapping
+    ///
+    /// # Returns
+    /// The validation result
+    pub fn validate_pgschema(
+        &self,
+        schema: &PropertyGraphSchema,
+        graph: &PropertyGraph,
+        type_map: &TypeMap,
+    ) -> Result<ValidationResult> {
+        type_map
+            .validate(schema, graph)
+            .map_err(|e| RudofError::PGSchemaValidationError { error: format!("{e}") })
+    }
+
+    /// Parses a node selector string into a NodeSelector.
+    pub fn parse_node_selector(&self, node_str: &str) -> Result<NodeSelector> {
+        parse_node_selector(node_str)
+    }
+
+    /// Gets node information for a given node selector.
+    ///
+    /// This is a high-level method that retrieves information about nodes
+    /// in the current RDF data based on the selector and options.
+    pub fn get_node_info(
+        &self,
+        node_selector: NodeSelector,
+        predicates: &[String],
+        options: &NodeInfoOptions,
+    ) -> Result<Vec<NodeInfo<RdfData>>> {
+        get_node_info(&self.rdf_data, node_selector, predicates, options)
+            .map_err(|e| RudofError::NodeInfoError { error: format!("{e}") })
+    }
+
+    /// Formats node information to a writer.
+    ///
+    /// This handles the display formatting of node information including
+    /// tree structures for outgoing/incoming arcs.
+    pub fn format_node_info<W: io::Write>(
+        &self,
+        node_infos: &[NodeInfo<RdfData>],
+        writer: &mut W,
+        options: &NodeInfoOptions,
+    ) -> Result<()> {
+        format_node_info_list(node_infos, &self.rdf_data, writer, options)
+            .map_err(|e| RudofError::NodeInfoFormatError { error: format!("{e}") })
+    }
+
+    /// High-level method to show node information.
+    ///
+    /// This encapsulates the complete workflow: parsing the node selector,
+    /// retrieving node info, and writing formatted output.
+    ///
+    /// # Arguments
+    /// * `node_str` - Node selector string (e.g., "http://example/node" or "prefix:local")
+    /// * `predicates` - Optional predicates to filter outgoing arcs
+    /// * `show_mode` - Mode for showing arcs (outgoing, incoming, or both)
+    /// * `depth` - Depth for recursive traversal
+    /// * `writer` - Output writer
+    pub fn show_node_info<W: io::Write>(
+        &self,
+        node_str: &str,
+        predicates: &[String],
+        show_mode: &str, // "outgoing", "incoming", "both"
+        depth: usize,
+        writer: &mut W,
+    ) -> Result<()> {
+        // Parse node selector
+        let node_selector = parse_node_selector(node_str).map_err(|e| RudofError::NodeSelectorParseError {
+            node_selector: node_str.to_string(),
+            error: format!("{e}"),
+        })?;
+
+        tracing::debug!("Node info with node selector: {node_selector:?}");
+
+        // Build options from mode
+        let options = NodeInfoOptions::from_mode_str(show_mode)
+            .map_err(|e| RudofError::InvalidNodeInfoMode {
+                mode: show_mode.to_string(),
+                error: format!("{e}"),
+            })?
+            .with_depth(depth);
+
+        // Get node info
+        let node_infos = get_node_info(&self.rdf_data, node_selector, predicates, &options)
+            .map_err(|e| RudofError::NodeInfoError { error: format!("{e}") })?;
+
+        // Format output
+        format_node_info_list(&node_infos, &self.rdf_data, writer, &options)
+            .map_err(|e| RudofError::NodeInfoFormatError { error: format!("{e}") })?;
+
+        Ok(())
+    }
+
+    /// High-level SHACL schema extraction from data.
+    ///
+    /// Extracts SHACL schema from current RDF data, optionally merging with
+    /// an external schema file, and serializes to writer.
+    ///
+    /// # Arguments
+    /// * `shapes` - Optional external schema to merge
+    /// * `shapes_format` - Format of external schema
+    /// * `base_shapes` - Base IRI for external schema
+    /// * `reader_mode` - Reader mode for parsing external schema
+    /// * `result_format` - Format for serializing result
+    /// * `writer` - Output writer
+    pub fn shacl_extract<W: io::Write>(
+        &mut self,
+        shapes: &Option<InputSpec>,
+        shapes_format: &Option<ShaclFormat>,
+        base_shapes: &Option<IriS>,
+        reader_mode: &ReaderMode,
+        result_format: &ShaclFormat,
+        writer: &mut W,
+    ) -> Result<()> {
+        // Load external schema if provided
+        if let Some(schema_input) = shapes {
+            let fmt = shapes_format.clone().unwrap_or_default();
+            self.load_shacl_schema(schema_input, &fmt, base_shapes, reader_mode)?;
+            tracing::trace!("Compiling SHACL schema from shapes graph");
+            self.compile_shacl(&ShapesGraphSource::CurrentSchema)?;
+        } else {
+            self.compile_shacl(&ShapesGraphSource::CurrentData)?;
+        }
+
+        self.serialize_shacl(&result_format, writer)?;
+
+        if tracing::enabled!(tracing::Level::DEBUG) {
+            match self.get_shacl_ir() {
+                Some(ir) => tracing::debug!("SHACL IR: {}", ir),
+                None => tracing::debug!("No SHACL IR available"),
+            }
+        }
+
+        Ok(())
+    }
+
+    /// High-level DCTAP read and serialize workflow.
+    ///
+    /// Reads a DCTAP file (CSV or Excel formats) and serializes it to the requested output format.
+    ///
+    /// # Arguments
+    /// * `input` - Input source (file, URL, stdin, or string)
+    /// * `format` - Input format (CSV, XLSX, XLSB, XLSM, XLS)
+    /// * `result_format` - Output format (Internal or JSON)
+    /// * `writer` - Output writer
+    pub fn process_dctap<W: io::Write>(
+        &mut self,
+        input: &InputSpec,
+        format: &DCTAPFormat,
+        result_format: &DCTapResultFormat,
+        writer: &mut W,
+    ) -> Result<()> {
+        // Read DCTAP based on format and input type
+        self.read_dctap_input(input, format)?;
+
+        // Serialize to requested output format
+        if let Some(dctap) = self.get_dctap() {
+            match result_format {
+                DCTapResultFormat::Internal => {
+                    writeln!(writer, "{dctap}")?;
+                },
+                DCTapResultFormat::Json => {
+                    let json_str =
+                        serde_json::to_string_pretty(&dctap).map_err(|e| RudofError::DCTapSerializationError {
+                            format: "JSON".to_string(),
+                            error: format!("{e}"),
+                        })?;
+                    writeln!(writer, "{json_str}")?;
+                },
+            }
+            Ok(())
+        } else {
+            Err(RudofError::NoDCTAPData)
+        }
+    }
+
+    /// Internal helper to read DCTAP from various input sources.
+    /// Handles the format-specific logic (CSV vs Excel).
+    fn read_dctap_input(&mut self, input: &InputSpec, format: &DCTAPFormat) -> Result<()> {
+        match format {
+            // CSV can be read from any InputSpec (including stdin, URL, string)
+            DCTAPFormat::Csv => {
+                let reader = input.open_read(None, "DCTAP").map_err(|e| RudofError::InputSpecError {
+                    context: "DCTAP".to_string(),
+                    error: format!("{e}"),
+                })?;
+                self.read_dctap(reader, &format)?;
+                Ok(())
+            },
+            // Excel formats require a file path (cannot read from stdin/URL/string)
+            _ => match input {
+                InputSpec::Path(path_buf) => {
+                    self.read_dctap_path(path_buf, &format)?;
+                    Ok(())
+                },
+                InputSpec::Stdin => Err(RudofError::DCTapExcelFromStdin),
+                InputSpec::Url(_) => Err(RudofError::DCTapExcelFromUrl),
+                InputSpec::Str(_) => Err(RudofError::DCTapExcelFromString),
+            },
+        }
+    }
+
+    /// High-level data generation from schema.
+    ///
+    /// Generates RDF data based on a ShEx or SHACL schema.
+    ///
+    /// # Arguments
+    /// * `schema` - Input schema source (must be a file path)
+    /// * `schema_format` - Schema format (Auto, ShEx, or SHACL)
+    /// * `entity_count` - Number of entities to generate
+    /// * `output` - Optional output path override
+    /// * `result_format` - Output RDF format
+    /// * `seed` - Optional random seed for reproducibility
+    /// * `parallel` - Optional number of parallel worker threads
+    /// * `config_file` - Optional configuration file path
+    pub async fn generate_data(
+        &self,
+        schema: &InputSpec,
+        schema_format: &GenerateSchemaFormat,
+        entity_count: usize,
+        output: &Option<PathBuf>,
+        result_format: &DataFormat,
+        seed: Option<u64>,
+        parallel: Option<usize>,
+        config_file: &Option<PathBuf>,
+    ) -> Result<()> {
+        // Load or create configuration
+        let mut config = if let Some(config_path) = config_file {
+            if config_path.extension().and_then(|s| s.to_str()) == Some("toml") {
+                GeneratorConfig::from_toml_file(config_path)
+                    .map_err(|e| RudofError::GeneratorConfigError { error: format!("{e}") })?
+            } else {
+                GeneratorConfig::from_json_file(config_path)
+                    .map_err(|e| RudofError::GeneratorConfigError { error: format!("{e}") })?
+            }
+        } else {
+            GeneratorConfig::default()
+        };
+
+        // Apply CLI overrides
+        config.generation.entity_count = entity_count;
+
+        if let Some(output_path) = output {
+            config.output.path = output_path.clone();
+        }
+
+        if let Some(seed_value) = seed {
+            config.generation.seed = Some(seed_value);
+        }
+
+        if let Some(threads) = parallel {
+            config.parallel.worker_threads = Some(threads);
+        }
+
+        // Determine output format (only Turtle and NTriples are supported)
+        config.output.format = match result_format {
+            DataFormat::Turtle | DataFormat::TriG | DataFormat::N3 => OutputFormat::Turtle,
+            _ => OutputFormat::NTriples,
+        };
+
+        // Get schema path - must be a file path
+        let schema_path = match schema {
+            InputSpec::Path(path) => path.clone(),
+            InputSpec::Stdin => {
+                return Err(RudofError::GenerateSchemaFromStdin);
+            },
+            InputSpec::Url(url) => {
+                return Err(RudofError::GenerateSchemaFromUrl { url: url.to_string() });
+            },
+            InputSpec::Str(s) => {
+                return Err(RudofError::GenerateSchemaFromString { content: s.clone() });
+            },
+        };
+
+        // Create generator
+        let mut generator =
+            DataGenerator::new(config).map_err(|e| RudofError::DataGeneratorCreationError { error: format!("{e}") })?;
+
+        // Load schema based on format
+        match schema_format {
+            GenerateSchemaFormat::Auto => {
+                generator
+                    .load_schema_auto(&schema_path)
+                    .await
+                    .map_err(|e| RudofError::SchemaLoadError { error: format!("{e}") })?;
+            },
+            GenerateSchemaFormat::ShEx => {
+                generator
+                    .load_shex_schema(&schema_path)
+                    .await
+                    .map_err(|e| RudofError::SchemaLoadError { error: format!("{e}") })?;
+            },
+            GenerateSchemaFormat::Shacl => {
+                generator
+                    .load_shacl_schema(&schema_path)
+                    .await
+                    .map_err(|e| RudofError::SchemaLoadError { error: format!("{e}") })?;
+            },
+        }
+
+        // Generate data
+        generator
+            .generate()
+            .await
+            .map_err(|e| RudofError::DataGenerationError { error: format!("{e}") })?;
+
+        Ok(())
+    }
+
+    /// High-level query execution.
+    /// 
+    /// Executes a SPARQL query against the current RDF data.
+    pub fn execute_query<W: io::Write>(
+        &mut self,
+        query: &InputSpec,
+        query_type: &QueryType,
+        result_format: &ResultQueryFormat,
+        writer: &mut W,
+    ) -> Result<()> {
+        execute_query(self, query, query_type, result_format, writer)
+            .map_err(|e| RudofError::QueryExecutionError { error: format!("{e}") })
     }
 }
 
@@ -1363,6 +2144,35 @@ pub fn show_triple_exprs(idx: &ShapeLabelIdx, schema: &SchemaIR, writer: &mut im
         trace!("No triple expressions for shape {idx}");
         Ok(())
     }
+}
+
+// ============================================================================
+// Supporting Types
+// ============================================================================
+
+/// Statistics and metadata about a compiled ShEx schema.
+#[derive(Debug, Clone)]
+pub struct ShExStatistics {
+    /// Count of shapes grouped by number of extends clauses
+    pub extends_count: std::collections::HashMap<usize, usize>,
+
+    /// Number of locally defined shapes
+    pub local_shapes_count: usize,
+
+    /// Total number of shapes (including imported)
+    pub total_shapes_count: usize,
+
+    /// List of (label, source, expression) tuples for all shapes
+    pub shapes: Vec<(ShapeLabel, IriS, shex_ast::ir::shape_expr::ShapeExpr)>,
+
+    /// List of (source, positive/negative, target) dependency tuples
+    pub dependencies: Vec<(ShapeLabel, shex_ast::ir::dependency_graph::PosNeg, ShapeLabel)>,
+
+    /// Whether the schema has imported schemas
+    pub has_imports: bool,
+
+    /// List of negative cycles detected in the schema
+    pub neg_cycles: Vec<Vec<(ShapeLabelIdx, ShapeLabelIdx, Vec<ShapeLabelIdx>)>>,
 }
 
 #[cfg(test)]

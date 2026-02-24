@@ -46,7 +46,7 @@ pub use oxrdf;
 pub use rudof::*;
 pub use rudof_config::*;
 pub use rudof_error::*;
-pub use rudof_rdf;
+pub use rudof_rdf::*;
 pub use selector::*;
 pub use shacl_ir;
 pub use shacl_validation;

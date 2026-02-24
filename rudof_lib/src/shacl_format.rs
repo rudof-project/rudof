@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
-
+use shacl_ast::ShaclFormat as ShaclAstShaclFormat;
 use iri_s::MimeType;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
@@ -14,6 +14,29 @@ pub enum ShaclFormat {
     N3,
     NQuads,
     JsonLd,
+}
+
+// Convert from CLI ShaclFormat to shacl_ast::ShaclFormat (library type)
+impl From<ShaclFormat> for ShaclAstShaclFormat {
+    fn from(format: ShaclFormat) -> Self {
+        match format {
+            ShaclFormat::Turtle => ShaclAstShaclFormat::Turtle,
+            ShaclFormat::RdfXml => ShaclAstShaclFormat::RdfXml,
+            ShaclFormat::NTriples => ShaclAstShaclFormat::NTriples,
+            ShaclFormat::TriG => ShaclAstShaclFormat::TriG,
+            ShaclFormat::N3 => ShaclAstShaclFormat::N3,
+            ShaclFormat::NQuads => ShaclAstShaclFormat::NQuads,
+            ShaclFormat::Internal => ShaclAstShaclFormat::Internal,
+            ShaclFormat::JsonLd => ShaclAstShaclFormat::JsonLd,
+        }
+    }
+}
+
+// Convert from reference &ShaclFormat to ShaclAstShaclFormat
+impl From<&ShaclFormat> for ShaclAstShaclFormat {
+    fn from(format: &ShaclFormat) -> Self {
+        (*format).into()
+    }
 }
 
 impl MimeType for ShaclFormat {

@@ -1,5 +1,6 @@
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
+use dctap::dctap_format::DCTAPFormat;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum DCTapFormat {
@@ -36,6 +37,18 @@ impl FromStr for DCTapFormat {
                 "Unknown DC-TAP format: '{}'. Supported: csv, xlsx, xlsb, xlsm, xls",
                 s
             )),
+        }
+    }
+}
+
+impl From<DCTapFormat> for DCTAPFormat {
+    fn from(format: DCTapFormat) -> Self {
+        match format {
+            DCTapFormat::Csv => DCTAPFormat::Csv,
+            DCTapFormat::Xlsx => DCTAPFormat::Xlsx,
+            DCTapFormat::Xlsb => DCTAPFormat::Xlsb,
+            DCTapFormat::Xlsm => DCTAPFormat::Xlsm,
+            DCTapFormat::Xls => DCTAPFormat::Xls,
         }
     }
 }

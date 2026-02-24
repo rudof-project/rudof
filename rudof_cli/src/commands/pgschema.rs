@@ -24,8 +24,13 @@ impl Command for PgschemaCommand {
     }
 
     /// Executes the Property Graph Schema command logic.
-    fn execute(&self, _ctx: &mut CommandContext) -> Result<()> {
-        println!("Pgschema command executed");
+    fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
+        let mut reader = self.args.schema.open_read(None, "PGSchema")?;
+
+        let schema = ctx.rudof.get_schema(&mut reader)?;
+
+        write!(ctx.writer, "{schema}")?;
+        
         Ok(())
     }
 }

@@ -27,6 +27,7 @@ iri_s.workspace = true
 mie.workspace = true
 oxrdf = { workspace = true, features = ["oxsdatatypes"] }
 prefixmap.workspace = true
+pgschema.workspace = true
 rdf_config.workspace = true
 reqwest.workspace = true
 serde.workspace = true
@@ -41,6 +42,7 @@ shex_ast.workspace = true
 shex_validation.workspace = true
 spargebra.workspace = true
 sparql_service.workspace = true
+rudof_generate.workspace = true
 rudof_rdf.workspace = true
 termtree.workspace = true
 thiserror.workspace = true
