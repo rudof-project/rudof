@@ -4,11 +4,11 @@
 
 </div>
 
-## 🚀 Overview
+## Overview
 
 The `rudof_rdf` crate is a core component of the Rudof project, providing foundational data structures, utilities, and algorithms for working with RDF (Resource Description Framework) data in Rust. It is designed to support parsing, querying, manipulating, and visualizing RDF graphs, and serves as the backbone for higher-level crates in the Rudof ecosystem.
 
-## 📦 Architecture and Package Structure
+## Architecture and Package Structure
 
 The crate is organized into several key modules:
 
@@ -25,7 +25,7 @@ The crate is organized into several key modules:
   - `sparql_endpoint`: SPARQL endpoint integration
   - `oxrdf_impl`: Integration with the oxrdf crate
 
-## 📚 Dependencies
+## Dependencies
 
 ### Main Dependencies
 
@@ -48,6 +48,6 @@ The `rudof_rdf` crate is a foundational dependency for many other Rudof crates:
 - `shex_ast`, `shex_validation`: ShEx (Shape Expressions) support.
 - `shex_testsuite`, `shapes_comparator`, `shapes_converter`, `sparql_service`, and others.
 
-## 🛠️ Usage
+## Usage
 The `rudof_rdf` crate is not typically used directly by end-users, but rather as a building block for higher-level libraries and applications in the Rudof project. 
 It provides the essential types and traits for representing RDF graphs, parsing and serializing RDF data, executing SPARQL queries, and integrating with other semantic web technologies.
