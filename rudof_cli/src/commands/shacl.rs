@@ -1,7 +1,9 @@
 use crate::cli::parser::ShaclArgs;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::Result;
-use rudof_lib::{ReaderMode, rdf_reader_mode::RDFReaderMode, shacl_format::ShaclFormat, ShaclFormat as ShaclAstShaclFormat};
+use rudof_lib::{
+    ReaderMode, ShaclFormat as ShaclAstShaclFormat, rdf_reader_mode::RDFReaderMode, shacl_format::ShaclFormat,
+};
 
 /// Implementation of the `shacl` command.
 ///
@@ -25,6 +27,7 @@ impl Command for ShaclCommand {
     }
 
     /// Executes the Shacl command logic.
+    #[allow(clippy::unnecessary_fallible_conversions)]
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
         let reader_mode: RDFReaderMode = (&self.args.reader_mode).into();
         let reader_mode: ReaderMode = reader_mode.into();

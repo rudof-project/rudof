@@ -2,7 +2,7 @@ use crate::cli::parser::ShapemapArgs;
 use crate::commands::base::{Command, CommandContext};
 use crate::output::ColorSupport;
 use anyhow::Result;
-use rudof_lib::{shapemap_format::ShapeMapFormat, ShapeMapFormatter, ShapeMapFormat as ShexAstShapeMapFormat};
+use rudof_lib::{ShapeMapFormat as ShexAstShapeMapFormat, ShapeMapFormatter, shapemap_format::ShapeMapFormat};
 
 /// Implementation of the `shapemap` command.
 ///
@@ -39,10 +39,12 @@ impl Command for ShapemapCommand {
         };
 
         // Load shapemap into rudof
-        ctx.rudof.read_shapemap(reader, self.args.shapemap.source_name().as_str(), &shapemap_format)?;
+        ctx.rudof
+            .read_shapemap(reader, self.args.shapemap.source_name().as_str(), &shapemap_format)?;
 
         // Write results in the requested format
-        ctx.rudof.serialize_shapemap(&result_format, &formatter, &mut ctx.writer)?;
+        ctx.rudof
+            .serialize_shapemap(&result_format, &formatter, &mut ctx.writer)?;
 
         Ok(())
     }

@@ -1,6 +1,6 @@
+use dctap::dctap_format::DCTAPFormat;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
-use dctap::dctap_format::DCTAPFormat;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum DCTapFormat {

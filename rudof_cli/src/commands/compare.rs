@@ -50,7 +50,7 @@ impl Command for CompareCommand {
             Some(&self.args.schema1.source_name()),
             Some(&self.args.schema2.source_name()),
         )?;
-        
+
         match self.args.result_format {
             ResultCompareFormatCli::Internal => {
                 writeln!(ctx.writer, "{shaco}")?;
@@ -60,7 +60,7 @@ impl Command for CompareCommand {
                 writeln!(ctx.writer, "{json}")?;
             },
         }
-        
+
         Ok(())
     }
 }

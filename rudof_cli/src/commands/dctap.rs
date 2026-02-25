@@ -1,7 +1,7 @@
 use crate::cli::parser::DCTapArgs;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::Result;
-use rudof_lib::{dctap_format::DCTapFormat, DCTAPFormat};
+use rudof_lib::{DCTAPFormat, dctap_format::DCTapFormat};
 
 /// Implementation of the `dctap` command.
 ///
@@ -30,12 +30,8 @@ impl Command for DctapCommand {
         let format: DCTAPFormat = format.into();
         let result_format = (&self.args.result_format).into();
 
-        ctx.rudof.process_dctap(
-            &self.args.file,
-            &format,
-            &result_format,
-            &mut ctx.writer,
-        )?;
+        ctx.rudof
+            .process_dctap(&self.args.file, &format, &result_format, &mut ctx.writer)?;
 
         Ok(())
     }

@@ -1,6 +1,9 @@
 use crate::cli::parser::{ConvertArgs, ShexArgs};
 use crate::cli::wrappers::{InputConvertModeCli, OutputConvertModeCli};
-use crate::commands::{ShexCommand, base::{Command, CommandContext}};
+use crate::commands::{
+    ShexCommand,
+    base::{Command, CommandContext},
+};
 use crate::output::ColorSupport;
 use anyhow::{Result, anyhow};
 use rudof_lib::{
@@ -99,7 +102,7 @@ impl Command for ConvertCommand {
                 let maybe_shape = match &self.args.shape {
                     None => None,
                     Some(shape_str) => {
-                        let iri_shape = ShapeMapParser::parse_iri_ref(&shape_str)?;
+                        let iri_shape = ShapeMapParser::parse_iri_ref(shape_str)?;
                         Some(iri_shape)
                     },
                 };

@@ -1,11 +1,11 @@
 use crate::cli::wrappers::{
     DCTapFormatCli, DCTapResultFormatCli, DataFormatCli, GenerateSchemaFormatCli, InputCompareFormatCli,
     InputCompareModeCli, InputConvertFormatCli, InputConvertModeCli, OutputConvertFormatCli, OutputConvertModeCli,
-    PgSchemaFormatCli, QueryTypeCli, RDFReaderModeCli, RdfConfigFormatCli, RdfConfigResultFormatCli,
-    ResultCompareFormatCli, ResultDataFormatCli, ResultQueryFormatCli, ResultServiceFormatCli,
-    ResultShExValidationFormatCli, ResultShaclValidationFormatCli, ResultValidationFormatCli, ShExFormatCli,
-    ShaclFormatCli, ShaclValidationModeCli, ShapeMapFormatCli, ShowNodeModeCli, SortByResultShapeMapCli,
-    SortByShaclValidationReportCli, SortByValidateCli, ValidationModeCli, PgSchemaResultFormatCli,
+    PgSchemaFormatCli, PgSchemaResultFormatCli, QueryTypeCli, RDFReaderModeCli, RdfConfigFormatCli,
+    RdfConfigResultFormatCli, ResultCompareFormatCli, ResultDataFormatCli, ResultQueryFormatCli,
+    ResultServiceFormatCli, ResultShExValidationFormatCli, ResultShaclValidationFormatCli, ResultValidationFormatCli,
+    ShExFormatCli, ShaclFormatCli, ShaclValidationModeCli, ShapeMapFormatCli, ShowNodeModeCli, SortByResultShapeMapCli,
+    SortByShaclValidationReportCli, SortByValidateCli, ValidationModeCli,
 };
 use clap::{Args, Parser, Subcommand};
 use rudof_lib::{InputSpec, IriS};
@@ -53,7 +53,7 @@ pub enum Command {
     /// Show information about a node in an RDF Graph
     Node(NodeArgs),
     /// Show information about SHACL shapes
-    /// The SHACL schema can be passed through the data options or the optional schema options to provide an interface similar 
+    /// The SHACL schema can be passed through the data options or the optional schema options to provide an interface similar
     /// to Shacl-validate
     Shacl(ShaclArgs),
     // Show information and process DCTAP files

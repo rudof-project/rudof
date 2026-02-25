@@ -42,8 +42,8 @@ impl ShexValidateCommand {
                 result.as_csv(writer, sort_by.into(), true)?;
             },
             ShapeMapFormat::Internal | ShapeMapFormat::Json => {
-                let str = serde_json::to_string_pretty(&result)
-                    .map_err(|e| anyhow!("JSON serialization error: {}", e))?;
+                let str =
+                    serde_json::to_string_pretty(&result).map_err(|e| anyhow!("JSON serialization error: {}", e))?;
                 writeln!(writer, "{str}")?;
             },
             ShapeMapFormat::Details => {

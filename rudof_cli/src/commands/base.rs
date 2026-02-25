@@ -1,12 +1,12 @@
 use crate::cli::parser::{Command as CliCommand, CommonArgs, CommonArgsAll, CommonArgsOutputForceOverWrite};
 use crate::commands::{
     CompareCommand, ConvertCommand, DataCommand, DctapCommand, GenerateCommand, McpCommand, NodeCommand,
-    PgschemaCommand, QueryCommand, RdfConfigCommand, ServiceCommand, ShaclCommand, ShaclValidateCommand,
-    ShapemapCommand, ShexCommand, ShexValidateCommand, ValidateCommand, PgSchemaValidateCommand,
+    PgSchemaValidateCommand, PgschemaCommand, QueryCommand, RdfConfigCommand, ServiceCommand, ShaclCommand,
+    ShaclValidateCommand, ShapemapCommand, ShexCommand, ShexValidateCommand, ValidateCommand,
 };
 use crate::output::{ColorSupport, get_writer};
 use anyhow::Result;
-use rudof_lib::{RudofConfig, Rudof};
+use rudof_lib::{Rudof, RudofConfig};
 use std::io::Write;
 
 // ============================================================================
@@ -47,12 +47,7 @@ pub struct CommandContext {
 }
 
 impl CommandContext {
-    pub fn new(
-        writer: Box<dyn Write>,
-        rudof: Rudof,
-        debug_level: u8,
-        color: ColorSupport,
-    ) -> Self {
+    pub fn new(writer: Box<dyn Write>, rudof: Rudof, debug_level: u8, color: ColorSupport) -> Self {
         Self {
             writer,
             rudof,

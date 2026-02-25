@@ -2,10 +2,13 @@ use crate::cli::parser::ShaclValidateArgs;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::{Result, anyhow};
 use rudof_lib::{
-    ReaderMode, ShaclFormat as ShaclAstShaclFormat, ShaclValidationMode, ShapesGraphSource,
-    rdf_reader_mode::RDFReaderMode, result_shacl_validation_format::{cnv_sort_mode_report, result_format_to_rdf_format},
+    InMemoryGraph, ReaderMode, ShaclFormat as ShaclAstShaclFormat, ShaclValidationMode, ShapesGraphSource,
+    ValidationReport,
+    rdf_reader_mode::RDFReaderMode,
     result_shacl_validation_format::{ResultShaclValidationFormat, SortByShaclValidationReport},
-    shacl_format::ShaclFormat, terminal_width::terminal_width, InMemoryGraph, ValidationReport,
+    result_shacl_validation_format::{cnv_sort_mode_report, result_format_to_rdf_format},
+    shacl_format::ShaclFormat,
+    terminal_width::terminal_width,
 };
 use rudof_rdf::rdf_core::BuildRDF;
 use std::io::Write;
@@ -56,10 +59,14 @@ impl ShaclValidateCommand {
                 report.show_as_table(writer, sort_mode, true, terminal_width)?;
                 Ok(())
             },
-            ResultShaclValidationFormat::Json => Err(anyhow!("Generation of JSON for SHACL validation report is not implemented yet")),
+            ResultShaclValidationFormat::Json => Err(anyhow!(
+                "Generation of JSON for SHACL validation report is not implemented yet"
+            )),
             _ => {
                 let mut rdf_writer = InMemoryGraph::new();
-                report.to_rdf(&mut rdf_writer).map_err(|e| anyhow!("Error converting SHACL validation report to RDF: {}", e))?;
+                report
+                    .to_rdf(&mut rdf_writer)
+                    .map_err(|e| anyhow!("Error converting SHACL validation report to RDF: {}", e))?;
                 let rdf_format = result_format_to_rdf_format(format)?;
                 rdf_writer
                     .serialize(&rdf_format, &mut writer)
@@ -77,6 +84,7 @@ impl Command for ShaclValidateCommand {
     }
 
     /// Executes the shacl-validate logic.
+    #[allow(clippy::unnecessary_fallible_conversions)]
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
         // Convert CLI types to library types
         let reader_mode: RDFReaderMode = (&self.args.reader_mode).into();

@@ -27,8 +27,7 @@ impl Command for GenerateCommand {
     /// Executes the Generate command logic.
     fn execute(&self, _ctx: &mut CommandContext) -> Result<()> {
         // Create tokio runtime for async execution
-        let runtime =
-            tokio::runtime::Runtime::new().map_err(|e| anyhow!("Failed to create tokio runtime: {e}"))?;
+        let runtime = tokio::runtime::Runtime::new().map_err(|e| anyhow!("Failed to create tokio runtime: {e}"))?;
 
         runtime.block_on(async {
             // Create a temporary Rudof instance for generation (doesn't need existing state)

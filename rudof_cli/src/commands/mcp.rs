@@ -1,7 +1,7 @@
 use crate::cli::parser::McpArgs;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::Result;
-use rudof_mcp::server::{run_mcp, McpConfig};
+use rudof_mcp::server::{McpConfig, run_mcp};
 
 /// Implementation of the `mcp` command.
 ///

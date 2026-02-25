@@ -2,7 +2,7 @@ use crate::cli::parser::ServiceArgs;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::Result;
 use iri_s::MimeType;
-use rudof_lib::{data::data_format2rdf_format, rdf_reader_mode::RDFReaderMode, data_format::DataFormat, ReaderMode};
+use rudof_lib::{ReaderMode, data::data_format2rdf_format, data_format::DataFormat, rdf_reader_mode::RDFReaderMode};
 
 /// Implementation of the `service` command.
 ///
@@ -38,8 +38,8 @@ impl Command for ServiceCommand {
         let service_config = ctx.rudof.config().service_config();
         let base = service_config.base.as_ref().map(|i| i.as_str());
 
-        let reader_mode:RDFReaderMode = (&self.args.reader_mode).into();
-        let reader_mode:ReaderMode = reader_mode.into();
+        let reader_mode: RDFReaderMode = (&self.args.reader_mode).into();
+        let reader_mode: ReaderMode = reader_mode.into();
 
         ctx.rudof.read_service_description(
             &mut reader,

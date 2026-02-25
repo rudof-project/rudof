@@ -1,7 +1,7 @@
+use iri_s::MimeType;
+use shacl_ast::ShaclFormat as ShaclAstShaclFormat;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
-use shacl_ast::ShaclFormat as ShaclAstShaclFormat;
-use iri_s::MimeType;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
 pub enum ShaclFormat {

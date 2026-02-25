@@ -30,7 +30,7 @@ impl Command for PgschemaCommand {
         let schema = ctx.rudof.get_schema(&mut reader)?;
 
         write!(ctx.writer, "{schema}")?;
-        
+
         Ok(())
     }
 }

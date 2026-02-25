@@ -3,9 +3,12 @@ use crate::commands::base::{Command, CommandContext};
 use anyhow::Result;
 use rudof_lib::{
     ReaderMode,
+    rdf_core::visualizer::{
+        VisualRDFGraph,
+        uml_converter::{ImageFormat, UmlGenerationMode},
+    },
     rdf_reader_mode::RDFReaderMode,
     result_data_format::{CheckResultDataFormat, ResultDataFormat, VisualFormat},
-    rdf_core::visualizer::{VisualRDFGraph, uml_converter::{ImageFormat, UmlGenerationMode}},
 };
 use rudof_rdf::rdf_core::visualizer::uml_converter::UmlConverter;
 
@@ -56,15 +59,22 @@ impl Command for DataCommand {
             CheckResultDataFormat::VisualFormat(VisualFormat::PlantUML) => {
                 ctx.rudof.data2plant_uml(&mut ctx.writer)?;
             },
-            CheckResultDataFormat::VisualFormat(VisualFormat::Svg) | CheckResultDataFormat::VisualFormat(VisualFormat::Png) => {
+            CheckResultDataFormat::VisualFormat(VisualFormat::Svg)
+            | CheckResultDataFormat::VisualFormat(VisualFormat::Png) => {
                 let rdf = ctx.rudof.get_rdf_data();
-                let uml_converter = VisualRDFGraph::from_rdf(rdf, ctx.rudof.config().rdf_data_config().rdf_visualization_config())?;
+                let uml_converter =
+                    VisualRDFGraph::from_rdf(rdf, ctx.rudof.config().rdf_data_config().rdf_visualization_config())?;
                 let format = match result_format {
                     ResultDataFormat::Svg => ImageFormat::SVG,
                     ResultDataFormat::Png => ImageFormat::PNG,
                     _ => unreachable!(),
                 };
-                uml_converter.as_image(&mut ctx.writer, format, &UmlGenerationMode::all(), ctx.rudof.config().plantuml_path())?;
+                uml_converter.as_image(
+                    &mut ctx.writer,
+                    format,
+                    &UmlGenerationMode::all(),
+                    ctx.rudof.config().plantuml_path(),
+                )?;
             },
         }
 

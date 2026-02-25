@@ -44,7 +44,7 @@ impl Command for NodeCommand {
         ctx.rudof.show_node_info(
             &self.args.node,
             &self.args.predicates,
-            &self.args.show_node_mode.to_string(), 
+            &self.args.show_node_mode.to_string(),
             self.args.depth,
             &mut ctx.writer,
         )?;

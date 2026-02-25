@@ -8,15 +8,15 @@ use crate::PyRudofConfig;
 use pyo3::{Bound, Py, PyAny, PyErr, PyRef, PyRefMut, PyResult, Python, exceptions::PyValueError, pyclass, pymethods};
 use pythonize::pythonize;
 use rudof_lib::{
-    CoShaMo, CompareSchemaFormat, CompareSchemaMode, DCTAP, DCTAPFormat, InputSpec, InputSpecError,
-    InputSpecReader, Mie, MimeType, Object, QueryResultFormat, QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat,
-    RdfData, ReaderMode, ResultShapeMap, Rudof, RudofError, ServiceDescription, ServiceDescriptionFormat, ShExFormat,
+    CoShaMo, CompareSchemaFormat, CompareSchemaMode, DCTAP, DCTAPFormat, InputSpec, InputSpecError, InputSpecReader,
+    Mie, MimeType, Object, QueryResultFormat, QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat, RdfData,
+    ReaderMode, ResultShapeMap, Rudof, RudofError, ServiceDescription, ServiceDescriptionFormat, ShExFormat,
     ShExFormatter, ShExSchema, ShaCo, ShaclFormat, ShaclSchemaIR, ShaclValidationMode, ShapeLabel, ShapeMapFormat,
     ShapeMapFormatter, ShapesGraphSource, SortMode, UmlGenerationMode, ValidationReport, ValidationStatus, VarName,
+    compare::{InputCompareFormat, InputCompareMode},
     node_info::{format_node_info_list, get_node_info},
     parse_node_selector,
     shacl_validation::validation_report::{report::SortModeReport, result::ValidationResult},
-    compare::{InputCompareFormat, InputCompareMode},
 };
 use std::{
     ffi::OsStr,

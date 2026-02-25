@@ -1,7 +1,7 @@
 use crate::cli::parser::PgSchemaValidateArgs;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::Result;
-use rudof_lib::{pgschema_format::PgSchemaResultFormat, data_format::DataFormat};
+use rudof_lib::{data_format::DataFormat, pgschema_format::PgSchemaResultFormat};
 
 /// Implementation of the `pgschema-validate` command.
 ///

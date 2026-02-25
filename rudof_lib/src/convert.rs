@@ -1,16 +1,21 @@
 use crate::{
-    dctap_format::DCTapFormat, shacl_format::ShaclFormat, shex_format::ShExFormat, RudofError, InputSpec, RudofConfig,
-    ReaderMode, Rudof, ShExFormatter, shacl::{add_shacl_schema_rudof, shacl_format_convert}, shex::{parse_shex_schema, serialize_shex_rudof},
-    UmlGenerationMode, rdf_core::visualizer::uml_converter::ImageFormat, data::get_base,
+    InputSpec, ReaderMode, Rudof, RudofConfig, RudofError, ShExFormatter, UmlGenerationMode,
+    data::get_base,
+    dctap_format::DCTapFormat,
+    rdf_core::visualizer::uml_converter::ImageFormat,
+    shacl::{add_shacl_schema_rudof, shacl_format_convert},
+    shacl_format::ShaclFormat,
+    shex::{parse_shex_schema, serialize_shex_rudof},
+    shex_format::ShExFormat,
 };
+use iri_s::{IriS, MimeType};
+use prefixmap::IriRef;
 use rudof_rdf::rdf_core::visualizer::uml_converter::UmlConverter;
 use shapes_converter::{ShEx2Html, ShEx2Sparql, ShEx2Uml, Shacl2ShEx, Tap2ShEx};
 use std::fmt::{Display, Formatter};
-use std::str::FromStr;
-use std::path::{Path, PathBuf};
 use std::io::Write;
-use iri_s::{IriS, MimeType};
-use prefixmap::IriRef;
+use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum InputConvertMode {
@@ -224,7 +229,7 @@ pub fn run_shacl2shex(
     config: &RudofConfig,
     reader_mode: &ReaderMode,
     formatter: &ShExFormatter,
-    writer: &mut Box<dyn Write>
+    writer: &mut Box<dyn Write>,
 ) -> Result<(), RudofError> {
     let schema_format = match format {
         InputConvertFormat::Turtle => Ok(ShaclFormat::Turtle),
@@ -246,7 +251,7 @@ pub fn run_shacl2shex(
         &rudof,
         converter.current_shex(),
         &result_schema_format,
-        &formatter,
+        formatter,
         writer,
     )?;
     Ok(())
@@ -260,7 +265,7 @@ pub fn run_shex2uml(
     maybe_shape: &Option<String>,
     config: &RudofConfig,
     reader_mode: &ReaderMode,
-    writer: &mut Box<dyn Write>
+    writer: &mut Box<dyn Write>,
 ) -> Result<(), RudofError> {
     let schema_format = format
         .to_shex_format()
@@ -407,7 +412,7 @@ pub fn run_shex2sparql(
     shape: Option<IriRef>,
     config: &RudofConfig,
     reader_mode: &ReaderMode,
-    writer: &mut Box<dyn Write>
+    writer: &mut Box<dyn Write>,
 ) -> Result<(), RudofError> {
     let schema_format = format
         .to_shex_format()
@@ -449,7 +454,7 @@ pub fn run_tap2shex(
     let result_schema_format = result_format
         .to_shex_format()
         .map_err(|e| RudofError::UnsupportedShExInputFormat { format: e })?;
-    serialize_shex_rudof(&rudof, &shex, &result_schema_format, &formatter, writer)?;
+    serialize_shex_rudof(&rudof, &shex, &result_schema_format, formatter, writer)?;
     Ok(())
 }
 
@@ -459,7 +464,7 @@ pub fn run_tap2uml(
     maybe_shape: &Option<String>,
     result_format: &OutputConvertFormat,
     config: &RudofConfig,
-    writer: &mut Box<dyn Write>
+    writer: &mut Box<dyn Write>,
 ) -> Result<(), RudofError> {
     let mut rudof = Rudof::new(config)?;
     let tap_format = format
@@ -492,13 +497,13 @@ pub fn run_shacl_convert(
     output_format: &ShaclFormat,
     reader_mode: &ReaderMode,
     config: &RudofConfig,
-    writer: &mut Box<dyn Write>
+    writer: &mut Box<dyn Write>,
 ) -> Result<(), RudofError> {
     let mut rudof = Rudof::new(config)?;
     let mime_type = input_format.mime_type();
-    let mut reader = input.open_read(Some(mime_type), "SHACL shapes").map_err(|e| {
-        RudofError::SHACLParseError { error: (e.to_string()) }
-    })?;
+    let mut reader = input
+        .open_read(Some(mime_type), "SHACL shapes")
+        .map_err(|e| RudofError::SHACLParseError { error: (e.to_string()) })?;
     let input_format = shacl_format_convert(*input_format)?;
     let base = get_base(input, config, base)?;
     rudof.read_shacl(

@@ -2,7 +2,9 @@ use crate::cli::parser::ShexArgs;
 use crate::commands::base::{Command, CommandContext};
 use crate::output::ColorSupport;
 use anyhow::Result;
-use rudof_lib::{ReaderMode, ShExFormatter, rdf_reader_mode::RDFReaderMode, ShExFormat as ShExAstShExFormat, shex_format::ShExFormat};
+use rudof_lib::{
+    ReaderMode, ShExFormat as ShExAstShExFormat, ShExFormatter, rdf_reader_mode::RDFReaderMode, shex_format::ShExFormat,
+};
 use std::{
     io::{self, Write},
     time::Instant,
@@ -139,6 +141,7 @@ impl Command for ShexCommand {
     /// 3. Validate schema well-formedness
     /// 4. Output requested information (shape, schema, statistics)
     /// 5. Show timing information if requested
+    #[allow(clippy::unnecessary_fallible_conversions)]
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
         let timer = Instant::now();
 
@@ -148,7 +151,7 @@ impl Command for ShexCommand {
         // Load schema
         let schema_format: ShExFormat = (&self.args.schema_format).into();
         let schema_format: ShExAstShExFormat = schema_format.try_into()?;
-        let result_format: ShExFormat  = (&self.args.result_schema_format).into();
+        let result_format: ShExFormat = (&self.args.result_schema_format).into();
         let result_format: ShExAstShExFormat = result_format.try_into()?;
         let reader_mode: ReaderMode = RDFReaderMode::from(&self.args.reader_mode).into();
 

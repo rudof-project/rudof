@@ -1,4 +1,6 @@
-use crate::cli::parser::{PgSchemaValidateArgs, ShaclValidateArgs, ShexValidateArgs, ValidateArgs, CommonArgsOutputForceOverWrite};
+use crate::cli::parser::{
+    CommonArgsOutputForceOverWrite, PgSchemaValidateArgs, ShaclValidateArgs, ShexValidateArgs, ValidateArgs,
+};
 use crate::cli::wrappers::ValidationModeCli;
 use crate::commands::{
     PgSchemaValidateCommand, ShaclValidateCommand, ShexValidateCommand,
@@ -27,7 +29,7 @@ impl ValidateCommand {
             schema: self.args.schema.clone(),
             schema_format: self.args.schema_format.clone(),
             shapemap: self.args.shapemap.clone(),
-            shapemap_format: self.args.shapemap_format.clone().into(),
+            shapemap_format: self.args.shapemap_format.clone(),
             node: self.args.node.clone(),
             sort_by: self.args.sort_by.clone().into(),
             shape: self.args.shape.clone(),
@@ -49,10 +51,7 @@ impl ValidateCommand {
             base_data: self.args.base_data.clone(),
             reader_mode: self.args.reader_mode.clone(),
             shapes: self.args.schema.clone(),
-            shapes_format: match self.args.schema_format.clone() {
-                Some(f) => Some(f.try_into().unwrap()),
-                None => None,
-            },
+            shapes_format: self.args.schema_format.clone().map(|f| f.try_into().unwrap()),
             base_shapes: self.args.base_schema.clone(),
             endpoint: self.args.endpoint.clone(),
             mode: self.args.shacl_validation_mode.clone(),

@@ -1199,7 +1199,7 @@ impl Rudof {
                     .to_shex_format()
                     .map_err(|e| RudofError::InvalidCompareSchemaFormat {
                         format: format!("{format:?}"),
-                        error: format!("{e}"),
+                        error: e.to_string(),
                     })?;
                 let shex = self.read_shex_only(reader, &shex_format, base, reader_mode, source_name)?;
                 let mut converter = CoShaMoConverter::new(&comparator_config);
@@ -1208,7 +1208,7 @@ impl Rudof {
                         .populate_from_shex(&shex, label)
                         .map_err(|e| RudofError::CoShaMoFromShExError {
                             schema: format!("{shex:?}"),
-                            error: format!("{e}"),
+                            error: e.to_string(),
                         })?;
                 Ok(coshamo)
             },
@@ -1482,14 +1482,13 @@ impl Rudof {
     /// # Returns
     /// Ok if the schema is well-formed, Err if negative cycles are detected
     pub fn validate_shex_schema_well_formed(&self) -> Result<()> {
-        if self.config.shex_config().check_well_formed() {
-            if let Some(shex_ir) = self.get_shex_ir() {
-                if shex_ir.has_neg_cycle() {
-                    return Err(RudofError::Generic {
-                        error: format!("Schema contains negative cycles: {:?}", shex_ir.neg_cycles()),
-                    });
-                }
-            }
+        if self.config.shex_config().check_well_formed()
+            && let Some(shex_ir) = self.get_shex_ir()
+            && shex_ir.has_neg_cycle()
+        {
+            return Err(RudofError::Generic {
+                error: format!("Schema contains negative cycles: {:?}", shex_ir.neg_cycles()),
+            });
         }
         Ok(())
     }
@@ -1888,7 +1887,7 @@ impl Rudof {
             self.compile_shacl(&ShapesGraphSource::CurrentData)?;
         }
 
-        self.serialize_shacl(&result_format, writer)?;
+        self.serialize_shacl(result_format, writer)?;
 
         if tracing::enabled!(tracing::Level::DEBUG) {
             match self.get_shacl_ir() {
@@ -1950,13 +1949,13 @@ impl Rudof {
                     context: "DCTAP".to_string(),
                     error: format!("{e}"),
                 })?;
-                self.read_dctap(reader, &format)?;
+                self.read_dctap(reader, format)?;
                 Ok(())
             },
             // Excel formats require a file path (cannot read from stdin/URL/string)
             _ => match input {
                 InputSpec::Path(path_buf) => {
-                    self.read_dctap_path(path_buf, &format)?;
+                    self.read_dctap_path(path_buf, format)?;
                     Ok(())
                 },
                 InputSpec::Stdin => Err(RudofError::DCTapExcelFromStdin),

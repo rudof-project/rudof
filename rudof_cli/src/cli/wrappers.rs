@@ -1,4 +1,6 @@
+use anyhow::{Result as AnyhowResult, bail};
 use clap::ValueEnum;
+use iri_s::MimeType;
 use rudof_lib::{
     ShaclValidationMode,
     compare::{InputCompareFormat, InputCompareMode, ResultCompareFormat},
@@ -25,9 +27,7 @@ use rudof_lib::{
     sort_by_result_shape_map::SortByResultShapeMap,
     validation_mode::ValidationMode,
 };
-use std::{fmt::{Display, Formatter, Result}};
-use iri_s::MimeType;
-use anyhow::{Result as AnyhowResult, bail};
+use std::fmt::{Display, Formatter, Result};
 
 /// CLI wrapper macro for rudof_lib types.
 ///
@@ -45,33 +45,6 @@ use anyhow::{Result as AnyhowResult, bail};
 /// - `FromStr` (for parsing from strings)
 /// - `Display` (for converting to strings)
 /// - `MimeType` (if using `with_mime_type`)
-///
-/// # Syntax:
-/// ```no_run
-/// // Without MimeType
-/// cli_wrapper!(CliTypeName, LibTypeName, { Variant1, Variant2, ... });
-///
-/// // With MimeType
-/// cli_wrapper!(CliTypeName, LibTypeName, { Variant1, Variant2, ... }, with_mime_type);
-/// ```
-///
-/// # Example:
-/// ```no_run
-/// // Regular wrapper
-/// cli_wrapper!(
-///     ShaclFormatCli,
-///     ShaclFormat,
-///     { Internal, Turtle, NTriples, RdfXml }
-/// );
-///
-/// // With MimeType support
-/// cli_wrapper!(
-///     InputCompareFormatCli,
-///     InputCompareFormat,
-///     { ShExC, ShExJ, Turtle, RdfXml, NTriples },
-///     with_mime_type
-/// );
-/// ```
 #[macro_export]
 macro_rules! cli_wrapper {
     // Version WITHOUT MimeType
@@ -664,7 +637,10 @@ impl TryFrom<InputConvertFormatCli> for ShExFormatCli {
             InputConvertFormatCli::ShExC => Ok(ShExFormatCli::ShExC),
             InputConvertFormatCli::ShExJ => Ok(ShExFormatCli::ShExJ),
             InputConvertFormatCli::Turtle => Ok(ShExFormatCli::Turtle),
-            _ => bail!("The specified input format {:?} cannot be converted to a ShEx format", val),       
+            _ => bail!(
+                "The specified input format {:?} cannot be converted to a ShEx format",
+                val
+            ),
         }
     }
 }
@@ -678,8 +654,10 @@ impl TryFrom<OutputConvertFormatCli> for ShExFormatCli {
             OutputConvertFormatCli::ShExC => Ok(ShExFormatCli::ShExC),
             OutputConvertFormatCli::ShExJ => Ok(ShExFormatCli::ShExJ),
             OutputConvertFormatCli::Turtle => Ok(ShExFormatCli::Turtle),
-            _ => bail!("The specified output format {:?} cannot be converted to a ShEx format", val),       
+            _ => bail!(
+                "The specified output format {:?} cannot be converted to a ShEx format",
+                val
+            ),
         }
     }
 }
-
