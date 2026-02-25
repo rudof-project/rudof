@@ -30,8 +30,9 @@ use crate::schema_ir::SchemaIR;
 use crate::shape_label_idx::ShapeLabelIdx;
 use iri_s::IriS;
 use rudof_rdf::rdf_core::Rdf;
+use rudof_rdf::rdf_core::vocabs::ShaclVocab;
+use shacl_ast::ShaclSchema;
 use shacl_ast::component::Component;
-use shacl_ast::{ShaclSchema, ShaclVocab};
 use std::collections::HashSet;
 use std::fmt::Display;
 

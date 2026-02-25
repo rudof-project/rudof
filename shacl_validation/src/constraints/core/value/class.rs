@@ -8,12 +8,8 @@ use crate::shacl_engine::engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
-use rudof_rdf::rdf_core::{
-    NeighsRDF, SHACLPath,
-    query::QueryRDF,
-    term::Term,
-    vocab::{rdf_type, rdfs_subclass_of},
-};
+use rudof_rdf::rdf_core::vocabs::{RdfVocab, RdfsVocab};
+use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF, term::Term};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::components::Class;
@@ -39,13 +35,13 @@ impl<S: NeighsRDF + 'static> NativeValidator<S> for Class {
             let class_term = &S::object_as_term(self.class_rule());
 
             let is_class_valid = store
-                .objects_for(value_node, &rdf_type().clone().into())
+                .objects_for(value_node, &RdfVocab::rdf_type().clone().into())
                 .unwrap_or_default()
                 .iter()
                 .any(|ctype| {
                     ctype == class_term
                         || store
-                            .objects_for(ctype, &rdfs_subclass_of().clone().into())
+                            .objects_for(ctype, &RdfsVocab::rdfs_subclass_of_str().clone().into())
                             .unwrap_or_default()
                             .contains(class_term)
                 });
