@@ -32,18 +32,17 @@ use std::fmt::{Display, Formatter, Result};
 /// CLI wrapper macro for rudof_lib types.
 ///
 /// This macro creates a CLI-friendly enum wrapper around a core library type,
-/// adding `clap::ValueEnum` support while delegating all logic to the lib type.
+/// adding `clap::ValueEnum` support while delegating conversion logic to the lib type.
 ///
 /// # What it generates:
 /// - An enum with `#[derive(ValueEnum)]` for CLI parsing
-/// - `From<&CliType> -> LibType` conversion using Display + FromStr
-/// - `Display` implementation that delegates to the lib type
+/// - `From<&CliType> -> LibType` conversion using `Display` + `FromStr`
+/// - `Display` implementation via `clap::ValueEnum::to_possible_value()` (avoids recursion)
 /// - Optional `MimeType` implementation (if `with_mime_type` is specified)
 ///
 /// # Requirements:
 /// The core library type must implement:
-/// - `FromStr` (for parsing from strings)
-/// - `Display` (for converting to strings)
+/// - `FromStr` (for parsing the lowercase variant name produced by `Display`)
 /// - `MimeType` (if using `with_mime_type`)
 #[macro_export]
 macro_rules! cli_wrapper {
@@ -73,11 +72,11 @@ macro_rules! cli_wrapper {
             }
         }
 
-        /// Display implementation that delegates to the core library type.
+        /// Display implementation using clap's ValueEnum to avoid recursion.
         impl Display for $cli {
             fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-                let core_value: $core = self.into();
-                write!(f, "{}", core_value)
+                let val = self.to_possible_value().expect("no skipped variants");
+                write!(f, "{}", val.get_name())
             }
         }
     };
@@ -109,11 +108,11 @@ macro_rules! cli_wrapper {
             }
         }
 
-        /// Display implementation that delegates to the core library type.
+        /// Display implementation using clap's ValueEnum to avoid recursion.
         impl Display for $cli {
             fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-                let core_value: $core = self.into();
-                write!(f, "{}", core_value)
+                let val = self.to_possible_value().expect("no skipped variants");
+                write!(f, "{}", val.get_name())
             }
         }
 
