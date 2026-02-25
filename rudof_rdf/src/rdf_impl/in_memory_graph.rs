@@ -1,10 +1,10 @@
 use crate::rdf_core::{
     AsyncRDF, BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf,
     query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions, VarName},
-    vocab::rdf_type as vocab_rdf_type,
 };
 use crate::rdf_impl::in_memory_graph_error::InMemoryGraphError;
 
+use crate::rdf_core::vocabs::RdfVocab;
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
@@ -1026,7 +1026,7 @@ fn cnv_rdf_format(rdf_format: &RDFFormat) -> RdfFormat {
 ///
 /// An Oxigraph named node representing `rdf:type`.
 fn rdf_type() -> OxNamedNode {
-    OxNamedNode::new_unchecked(vocab_rdf_type().as_str())
+    OxNamedNode::new_unchecked(RdfVocab::RDF_TYPE)
 }
 
 /// Converts a triple reference to a quad with the specified graph name.

@@ -5,7 +5,7 @@ use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{
     NonEmptyValuesPropertyParser, ObjectParser, SuccessParser,
 };
 use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
-use shacl_ast::ShaclVocab;
+use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use shacl_ast::node_shape::NodeShape;
 
 pub(crate) fn node_shape<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = NodeShape<RDF>> {

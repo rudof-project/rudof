@@ -4,8 +4,8 @@ use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{
 };
 use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
 use rudof_rdf::rdf_core::term::Iri;
+use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{FocusRDF, RDFError};
-use shacl_ast::ShaclVocab;
 use shacl_ast::component::Component;
 use std::collections::HashSet;
 

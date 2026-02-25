@@ -5,7 +5,7 @@ use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{
     FocusParser, HasTypeParser, ObjectParser, SetFocusParser, SuccessParser,
 };
 use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
-use shacl_ast::ShaclVocab;
+use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use shacl_ast::property_shape::PropertyShape;
 
 pub(crate) fn property_shape<RDF: FocusRDF + 'static>() -> impl RDFNodeParse<RDF, Output = PropertyShape<RDF>> {

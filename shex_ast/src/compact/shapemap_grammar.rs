@@ -15,7 +15,7 @@ use nom::{
     sequence::tuple,
 };
 use prefixmap::IriRef;
-use rudof_rdf::rdf_core::vocab::rdf_type as rdf_type_vocab;
+use rudof_rdf::rdf_core::vocabs::RdfVocab;
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum ShapeMapStatement {
@@ -149,7 +149,7 @@ fn predicate(i: Span) -> IRes<IriRef> {
 
 fn rdf_type(i: Span) -> IRes<IriRef> {
     let (i, _) = tag("a")(i)?;
-    let rdf_type: IriRef = IriRef::iri(rdf_type_vocab().clone());
+    let rdf_type: IriRef = IriRef::iri(RdfVocab::rdf_type().clone());
     Ok((i, rdf_type))
 }
 
@@ -184,7 +184,6 @@ fn close_curly(i: Span) -> IRes<char> {
 #[cfg(test)]
 mod tests {
     use prefixmap::IriRef;
-    use rudof_rdf::rdf_core::vocab::rdf_type as rdf_type_vocab;
 
     use crate::shapemap::ShapeSelector;
 
@@ -224,7 +223,7 @@ mod tests {
         let expected = ShapeMapStatement::Association {
             node_selector: NodeSelector::triple_pattern(
                 Pattern::focus(),
-                SHACLPathRef::predicate(IriRef::iri(rdf_type_vocab().clone())),
+                SHACLPathRef::predicate(IriRef::iri(RdfVocab::rdf_type().clone())),
                 Pattern::prefixed("", "Person"),
             ),
             shape_selector: ShapeSelector::prefixed("", "label"),
@@ -238,7 +237,7 @@ mod tests {
         let (_, tp) = triple_pattern(input).unwrap();
         let expected = NodeSelector::triple_pattern(
             Pattern::focus(),
-            SHACLPathRef::predicate(IriRef::iri(rdf_type_vocab().clone())),
+            SHACLPathRef::predicate(IriRef::iri(RdfVocab::rdf_type().clone())),
             Pattern::prefixed("", "Person"),
         );
         assert_eq!(tp, expected);
@@ -250,7 +249,7 @@ mod tests {
         let (_, value) = triple_pattern_inner(input).unwrap();
         let expected = NodeSelector::triple_pattern(
             Pattern::focus(),
-            SHACLPathRef::predicate(IriRef::iri(rdf_type_vocab().clone())),
+            SHACLPathRef::predicate(IriRef::iri(RdfVocab::rdf_type().clone())),
             Pattern::prefixed("", "Person"),
         );
         assert_eq!(value, expected);
@@ -262,7 +261,7 @@ mod tests {
         let (_, value) = focus_object(input).unwrap();
         let expected = NodeSelector::triple_pattern(
             Pattern::focus(),
-            SHACLPathRef::predicate(IriRef::iri(rdf_type_vocab().clone())),
+            SHACLPathRef::predicate(IriRef::iri(RdfVocab::rdf_type().clone())),
             Pattern::prefixed("", "Person"),
         );
         assert_eq!(value, expected);

@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
-use crate::ShaclVocab;
 use prefixmap::IriRef;
+use rudof_rdf::rdf_core::vocabs::{RdfVocab, RdfsVocab, ShaclVocab};
 use rudof_rdf::rdf_core::{
     BuildRDF, Rdf,
     term::Object,
@@ -66,7 +66,7 @@ impl<RDF: Rdf> Target<RDF> {
             ),
             Target::ImplicitClass(_class) => {
                 // TODO: Review this code and in SHACL 1.2, add sh_shape_class ?
-                rdf.add_triple(node, rdf_type().clone(), rdfs_class().clone())
+                rdf.add_triple(node, RdfVocab::rdf_type().clone(), RdfsVocab::rdfs_class().clone())
             },
             Target::WrongNode(_) => todo!(),
             Target::WrongClass(_) => todo!(),

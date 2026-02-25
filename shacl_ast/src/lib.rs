@@ -5,10 +5,7 @@
 
 #![deny(rust_2018_idioms)]
 pub mod ast;
-mod node_expr_vocab;
-pub mod shacl_vocab;
 pub use ast::*;
-pub use shacl_vocab::*;
 
 /// SHACL Formats supported. Mostly RDF formats
 /// In the future, we could also support SHACL Compact format

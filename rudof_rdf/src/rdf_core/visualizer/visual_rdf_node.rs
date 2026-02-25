@@ -1,8 +1,8 @@
+use crate::rdf_core::vocabs::RdfVocab;
 use crate::rdf_core::{
     NeighsRDF, RDFError, Rdf,
     term::{Iri, IriOrBlankNode, Object},
     visualizer::{NodeId, VisualRDFGraph, errors::RdfVisualizerError},
-    vocab::rdf_reifies,
 };
 use std::fmt::Display;
 
@@ -40,7 +40,7 @@ impl VisualRDFNode {
     /// # Returns
     /// * `VisualRDFNode` - The created visual node
     pub fn from_predicate<R: Rdf>(rdf: &R, predicate: &R::IRI) -> VisualRDFNode {
-        if predicate.as_str() == rdf_reifies().as_str() {
+        if predicate.as_str() == RdfVocab::RDF_REIFIES {
             VisualRDFNode::Reifies
         } else {
             let iri_label = rdf.qualify_iri(predicate);

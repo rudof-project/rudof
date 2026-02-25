@@ -5,7 +5,7 @@ use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
 use rudof_rdf::rdf_core::{FocusRDF, RDFError, SHACLPath};
-use shacl_ast::ShaclVocab;
+use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use shacl_ast::component::Component;
 use std::collections::HashSet;
 use std::marker::PhantomData;

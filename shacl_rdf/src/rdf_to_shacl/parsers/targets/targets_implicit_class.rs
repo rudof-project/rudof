@@ -1,12 +1,11 @@
 use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{FocusParser, InstancesParser};
 use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
-use rudof_rdf::rdf_core::vocab::rdfs_class;
+use rudof_rdf::rdf_core::vocabs::{RdfsVocab, ShaclVocab};
 use rudof_rdf::rdf_core::{FocusRDF, RDFError};
-use shacl_ast::ShaclVocab;
 use shacl_ast::target::Target;
 
 pub(crate) fn targets_implicit_class<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<Target<RDF>>> {
-    InstancesParser::new(rdfs_class().clone())
+    InstancesParser::new(RdfsVocab::rdfs_class().clone())
         .and(InstancesParser::new(ShaclVocab::sh_property_shape().clone()))
         .and(InstancesParser::new(ShaclVocab::sh_node_shape().clone()))
         .and(FocusParser::new())

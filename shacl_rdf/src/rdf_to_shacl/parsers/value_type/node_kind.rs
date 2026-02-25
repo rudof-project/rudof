@@ -2,8 +2,8 @@ use crate::error::ShaclParserError;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::ValuesPropertyParser;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
 use rudof_rdf::rdf_core::term::Iri;
+use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{FocusRDF, Rdf};
-use shacl_ast::ShaclVocab;
 use shacl_ast::component::Component;
 use shacl_ast::node_kind::NodeKind;
 

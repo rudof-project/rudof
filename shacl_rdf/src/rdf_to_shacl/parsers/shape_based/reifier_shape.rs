@@ -1,7 +1,7 @@
 use rudof_rdf::rdf_core::FocusRDF;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{SingleBoolPropertyParser, ValuesPropertyParser};
 use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
-use shacl_ast::ShaclVocab;
+use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use shacl_ast::reifier_info::ReifierInfo;
 
 pub(crate) fn reifier_shape<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Option<ReifierInfo>> {

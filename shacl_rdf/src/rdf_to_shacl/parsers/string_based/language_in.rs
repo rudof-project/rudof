@@ -2,8 +2,8 @@ use super::super::parse_components_for_iri;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::ListParser;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
 use rudof_rdf::rdf_core::term::literal::Lang;
+use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{FocusRDF, RDFError};
-use shacl_ast::ShaclVocab;
 use shacl_ast::component::Component;
 
 pub(crate) fn language_in<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>> {

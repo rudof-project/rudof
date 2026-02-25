@@ -2,6 +2,7 @@ use crate::error::ShaclParserError;
 use crate::rdf_to_shacl::parsers::{node_shape, property_shape};
 use prefixmap::PrefixMap;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::ParserExt;
+use rudof_rdf::rdf_core::vocabs::{RdfVocab, ShaclVocab};
 use rudof_rdf::rdf_core::{
     Any, FocusRDF, RDFError, Rdf,
     parser::{
@@ -12,9 +13,8 @@ use rudof_rdf::rdf_core::{
         },
     },
     term::{Object, Triple},
-    vocab::rdf_type,
 };
-use shacl_ast::{ShaclVocab, schema::ShaclSchema, shape::Shape};
+use shacl_ast::{schema::ShaclSchema, shape::Shape};
 use std::collections::{HashMap, HashSet};
 
 /// State used during the parsing process
@@ -280,7 +280,7 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
     }
 
     fn rdf_type_iri() -> RDF::IRI {
-        rdf_type().clone().into()
+        RdfVocab::rdf_type().clone().into()
     }
 
     fn sh_node_shape_iri() -> RDF::Term {

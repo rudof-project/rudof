@@ -2,7 +2,7 @@ use prefixmap::IriRef;
 use rudof_rdf::rdf_core::FocusRDF;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::SingleIriPropertyParser;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
-use shacl_ast::ShaclVocab;
+use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use shacl_ast::severity::Severity;
 
 pub(crate) fn severity<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Severity> {

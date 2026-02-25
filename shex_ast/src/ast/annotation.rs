@@ -2,7 +2,7 @@ use iri_s::IriS;
 use prefixmap::Deref;
 use prefixmap::IriRef;
 use prefixmap::error::DerefError;
-use rudof_rdf::rdf_core::vocab::rdfs_label;
+use rudof_rdf::rdf_core::vocabs::RdfsVocab;
 use serde::ser::SerializeMap;
 use serde::{
     Deserialize, Serialize, Serializer,
@@ -25,7 +25,7 @@ impl Annotation {
 
     pub fn rdfs_label(str: &str) -> Annotation {
         Annotation {
-            predicate: IriRef::iri(rdfs_label().clone()),
+            predicate: IriRef::iri(RdfsVocab::rdfs_label().clone()),
             object: ObjectValue::str(str),
         }
     }
