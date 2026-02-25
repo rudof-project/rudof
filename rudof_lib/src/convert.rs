@@ -1,6 +1,16 @@
-use crate::{dctap_format::DCTapFormat, shacl_format::ShaclFormat, shex_format::ShExFormat};
+use crate::{
+    dctap_format::DCTapFormat, shacl_format::ShaclFormat, shex_format::ShExFormat, RudofError, InputSpec, RudofConfig,
+    ReaderMode, Rudof, ShExFormatter, shacl::{add_shacl_schema_rudof, shacl_format_convert}, shex::{parse_shex_schema, serialize_shex_rudof},
+    UmlGenerationMode, rdf_core::visualizer::uml_converter::ImageFormat, data::get_base,
+};
+use rudof_rdf::rdf_core::visualizer::uml_converter::UmlConverter;
+use shapes_converter::{ShEx2Html, ShEx2Sparql, ShEx2Uml, Shacl2ShEx, Tap2ShEx};
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
+use std::path::{Path, PathBuf};
+use std::io::Write;
+use iri_s::{IriS, MimeType};
+use prefixmap::IriRef;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum InputConvertMode {
@@ -204,4 +214,301 @@ impl FromStr for OutputConvertMode {
             )),
         }
     }
+}
+
+pub fn run_shacl2shex(
+    input: &InputSpec,
+    format: &InputConvertFormat,
+    base: &Option<IriS>,
+    result_format: &OutputConvertFormat,
+    config: &RudofConfig,
+    reader_mode: &ReaderMode,
+    formatter: &ShExFormatter,
+    writer: &mut Box<dyn Write>
+) -> Result<(), RudofError> {
+    let schema_format = match format {
+        InputConvertFormat::Turtle => Ok(ShaclFormat::Turtle),
+        _ => Err(RudofError::UnsupportedShaclInputFormat {
+            format: format.to_string(),
+        }),
+    }?;
+    let mut rudof = Rudof::new(config)?;
+    add_shacl_schema_rudof(&mut rudof, input, &schema_format, base, reader_mode, config)?;
+    let shacl_schema = rudof.get_shacl().ok_or(RudofError::NoShaclSchemaFound)?;
+    let mut converter = Shacl2ShEx::new(&config.shacl2shex_config());
+    converter
+        .convert(shacl_schema)
+        .map_err(|e| RudofError::Shacl2ShExError { error: e.to_string() })?;
+    let result_schema_format = result_format
+        .to_shex_format()
+        .map_err(|e| RudofError::UnsupportedShExInputFormat { format: e })?;
+    serialize_shex_rudof(
+        &rudof,
+        converter.current_shex(),
+        &result_schema_format,
+        &formatter,
+        writer,
+    )?;
+    Ok(())
+}
+
+pub fn run_shex2uml(
+    input: &InputSpec,
+    format: &InputConvertFormat,
+    base: &Option<IriS>,
+    result_format: &OutputConvertFormat,
+    maybe_shape: &Option<String>,
+    config: &RudofConfig,
+    reader_mode: &ReaderMode,
+    writer: &mut Box<dyn Write>
+) -> Result<(), RudofError> {
+    let schema_format = format
+        .to_shex_format()
+        .map_err(|e| RudofError::UnsupportedShExInputFormat { format: e })?;
+    let mut rudof = Rudof::new(config)?;
+    parse_shex_schema(&mut rudof, input, &schema_format, base, reader_mode, config).map_err(|e| {
+        RudofError::ShExCParserError {
+            error: e.to_string(),
+            source_name: input.to_string(),
+        }
+    })?;
+    let schema = rudof.get_shex().ok_or(RudofError::NoShExSchema)?;
+    let mut converter = ShEx2Uml::new(&config.shex2uml_config());
+    converter
+        .convert(schema)
+        .map_err(|e| RudofError::ShEx2UmlError { error: e.to_string() })?;
+    generate_uml_output(
+        converter,
+        maybe_shape,
+        writer,
+        result_format,
+        config.shex2uml_config().plantuml_path(),
+    )
+}
+
+pub fn generate_uml_output<P: AsRef<Path>>(
+    uml_converter: ShEx2Uml,
+    maybe_shape: &Option<String>,
+    writer: &mut Box<dyn Write>,
+    result_format: &OutputConvertFormat,
+    plantuml_path: P,
+) -> Result<(), RudofError> {
+    let mode = if let Some(str) = maybe_shape {
+        UmlGenerationMode::neighs(str)
+    } else {
+        UmlGenerationMode::all()
+    };
+    match result_format {
+        OutputConvertFormat::PlantUML | OutputConvertFormat::Default => {
+            uml_converter
+                .as_plantuml(writer, &mode)
+                .map_err(|e| RudofError::ShEx2PlantUmlErrorAsPlantUML { error: e.to_string() })?;
+            Ok(())
+        },
+        OutputConvertFormat::Svg => {
+            uml_converter
+                .as_image(writer, ImageFormat::SVG, &mode, plantuml_path)
+                .map_err(|e| RudofError::ShEx2PlantUmlError { error: e.to_string() })?;
+            Ok(())
+        },
+        OutputConvertFormat::Png => {
+            uml_converter
+                .as_image(writer, ImageFormat::PNG, &mode, plantuml_path)
+                .map_err(|e| RudofError::ShEx2PlantUmlError { error: e.to_string() })?;
+            Ok(())
+        },
+        _ => Err(RudofError::UnsupportedUmlOutputFormat {
+            format: result_format.to_string(),
+        }),
+    }
+}
+
+pub fn run_shex2html<P: AsRef<Path>>(
+    input: &InputSpec,
+    format: &InputConvertFormat,
+    base: &Option<IriS>,
+    output_folder: P,
+    template_folder: &Option<PathBuf>,
+    config: &RudofConfig,
+    reader_mode: &ReaderMode,
+) -> Result<(), RudofError> {
+    let schema_format = format
+        .to_shex_format()
+        .map_err(|e| RudofError::UnsupportedShExInputFormat { format: e })?;
+    let mut rudof = Rudof::new(config)?;
+    parse_shex_schema(&mut rudof, input, &schema_format, base, reader_mode, config).map_err(|e| {
+        RudofError::ShExCParserError {
+            error: e.to_string(),
+            source_name: input.to_string(),
+        }
+    })?;
+    let schema = rudof.get_shex().ok_or(RudofError::NoShExSchema)?;
+    let shex2html_config = config.shex2html_config();
+    let html_config = shex2html_config.clone().with_target_folder(output_folder.as_ref());
+    let mut converter = ShEx2Html::new(html_config);
+    converter
+        .convert(schema)
+        .map_err(|e| RudofError::ShEx2HtmlError { error: e.to_string() })?;
+    let resolved_template = match template_folder {
+        Some(tf) => tf.to_path_buf(),
+        None => shex2html_config
+            .template_folder
+            .map(PathBuf::from)
+            .ok_or(RudofError::NoTemplateFolder)?,
+    };
+    converter
+        .export_schema(resolved_template)
+        .map_err(|e| RudofError::ShEx2HtmlError { error: e.to_string() })?;
+    Ok(())
+}
+
+pub fn run_tap2html<P: AsRef<Path>>(
+    input: &InputSpec,
+    format: &InputConvertFormat,
+    output_folder: P,
+    template_folder: &Option<PathBuf>,
+    config: &RudofConfig,
+) -> Result<(), RudofError> {
+    let mut rudof = Rudof::new(config)?;
+    let dctap_format = format
+        .to_dctap_format()
+        .map_err(|e| RudofError::UnsupportedDCTAPInputFormat { format: e })?;
+    rudof.read_dctap_input(input, &dctap_format.into())?;
+    let dctap = rudof.get_dctap().ok_or(RudofError::NoDCTAP)?;
+    let converter_tap = Tap2ShEx::new(&config.tap2shex_config());
+    let shex = converter_tap
+        .convert(dctap)
+        .map_err(|e| RudofError::Tap2ShExError { error: e.to_string() })?;
+    let shex2html_config = config
+        .shex2html_config()
+        .clone()
+        .with_target_folder(output_folder.as_ref());
+    let mut converter = ShEx2Html::new(shex2html_config.clone());
+    converter
+        .convert(&shex)
+        .map_err(|e| RudofError::ShEx2HtmlError { error: e.to_string() })?;
+    let resolved_template = match template_folder {
+        Some(tf) => tf.to_path_buf(),
+        None => shex2html_config
+            .template_folder
+            .map(PathBuf::from)
+            .ok_or(RudofError::NoTemplateFolder)?,
+    };
+    converter
+        .export_schema(resolved_template)
+        .map_err(|e| RudofError::ShEx2HtmlError { error: e.to_string() })?;
+    Ok(())
+}
+
+pub fn run_shex2sparql(
+    input: &InputSpec,
+    format: &InputConvertFormat,
+    base: &Option<IriS>,
+    shape: Option<IriRef>,
+    config: &RudofConfig,
+    reader_mode: &ReaderMode,
+    writer: &mut Box<dyn Write>
+) -> Result<(), RudofError> {
+    let schema_format = format
+        .to_shex_format()
+        .map_err(|e| RudofError::UnsupportedShExInputFormat { format: e })?;
+    let mut rudof = Rudof::new(config)?;
+    parse_shex_schema(&mut rudof, input, &schema_format, base, reader_mode, config).map_err(|e| {
+        RudofError::ShExCParserError {
+            error: e.to_string(),
+            source_name: input.to_string(),
+        }
+    })?;
+    let schema = rudof.get_shex().ok_or(RudofError::NoShExSchema)?;
+    let converter = ShEx2Sparql::new(&config.shex2sparql_config());
+    let sparql = converter
+        .convert(schema, shape)
+        .map_err(|e| RudofError::ShEx2SparqlError { error: e.to_string() })?;
+    write!(writer, "{sparql}").map_err(|e| RudofError::WritingOutputError { error: e.to_string() })?;
+    Ok(())
+}
+
+pub fn run_tap2shex(
+    input_path: &InputSpec,
+    format: &InputConvertFormat,
+    result_format: &OutputConvertFormat,
+    config: &RudofConfig,
+    writer: &mut Box<dyn Write>,
+    formatter: &ShExFormatter,
+) -> Result<(), RudofError> {
+    let mut rudof = Rudof::new(config)?;
+    let tap_format = format
+        .to_dctap_format()
+        .map_err(|e| RudofError::UnsupportedDCTAPInputFormat { format: e })?;
+    rudof.read_dctap_input(input_path, &tap_format.into())?;
+    let dctap = rudof.get_dctap().ok_or(RudofError::NoDCTAP)?;
+    let converter = Tap2ShEx::new(&config.tap2shex_config());
+    let shex = converter
+        .convert(dctap)
+        .map_err(|e| RudofError::Tap2ShExError { error: e.to_string() })?;
+    let result_schema_format = result_format
+        .to_shex_format()
+        .map_err(|e| RudofError::UnsupportedShExInputFormat { format: e })?;
+    serialize_shex_rudof(&rudof, &shex, &result_schema_format, &formatter, writer)?;
+    Ok(())
+}
+
+pub fn run_tap2uml(
+    input_path: &InputSpec,
+    format: &InputConvertFormat,
+    maybe_shape: &Option<String>,
+    result_format: &OutputConvertFormat,
+    config: &RudofConfig,
+    writer: &mut Box<dyn Write>
+) -> Result<(), RudofError> {
+    let mut rudof = Rudof::new(config)?;
+    let tap_format = format
+        .to_dctap_format()
+        .map_err(|e| RudofError::UnsupportedDCTAPInputFormat { format: e })?;
+    rudof.read_dctap_input(input_path, &tap_format.into())?;
+    let dctap = rudof.get_dctap().ok_or(RudofError::NoDCTAP)?;
+    let converter_shex = Tap2ShEx::new(&config.tap2shex_config());
+    let shex = converter_shex
+        .convert(dctap)
+        .map_err(|e| RudofError::Tap2ShExError { error: e.to_string() })?;
+    let mut converter_uml = ShEx2Uml::new(&config.shex2uml_config());
+    converter_uml
+        .convert(&shex)
+        .map_err(|e| RudofError::ShEx2UmlError { error: e.to_string() })?;
+    generate_uml_output(
+        converter_uml,
+        maybe_shape,
+        writer,
+        result_format,
+        config.shex2uml_config().plantuml_path(),
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn run_shacl_convert(
+    input: &InputSpec,
+    input_format: &ShaclFormat,
+    base: &Option<IriS>,
+    output_format: &ShaclFormat,
+    reader_mode: &ReaderMode,
+    config: &RudofConfig,
+    writer: &mut Box<dyn Write>
+) -> Result<(), RudofError> {
+    let mut rudof = Rudof::new(config)?;
+    let mime_type = input_format.mime_type();
+    let mut reader = input.open_read(Some(mime_type), "SHACL shapes").map_err(|e| {
+        RudofError::SHACLParseError { error: (e.to_string()) }
+    })?;
+    let input_format = shacl_format_convert(*input_format)?;
+    let base = get_base(input, config, base)?;
+    rudof.read_shacl(
+        &mut reader,
+        &input.to_string(),
+        &input_format,
+        base.as_deref(),
+        reader_mode,
+    )?;
+    let output_format = shacl_format_convert(*output_format)?;
+    rudof.serialize_shacl(&output_format, writer)?;
+    Ok(())
 }

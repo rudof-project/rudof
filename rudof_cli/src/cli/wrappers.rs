@@ -25,7 +25,7 @@ use rudof_lib::{
     sort_by_result_shape_map::SortByResultShapeMap,
     validation_mode::ValidationMode,
 };
-use std::fmt::{Display, Formatter, Result};
+use std::{fmt::{Display, Formatter, Result}};
 use iri_s::MimeType;
 use anyhow::{Result as AnyhowResult, bail};
 
@@ -651,6 +651,34 @@ impl TryFrom<ResultValidationFormatCli> for PgSchemaResultFormatCli {
             ResultValidationFormatCli::TriG => todo!("PGSchema validation doesn't support TriG result format"),
             ResultValidationFormatCli::N3 => todo!("PGSchema validation doesn't support N3 result format"),
             ResultValidationFormatCli::NQuads => todo!("PGSchema validation doesn't support NQuads result format"),
+        }
+    }
+}
+
+// Convert InputConvertFormatCli -> ShexFormatCli
+impl TryFrom<InputConvertFormatCli> for ShExFormatCli {
+    type Error = anyhow::Error;
+
+    fn try_from(val: InputConvertFormatCli) -> AnyhowResult<Self, Self::Error> {
+        match val {
+            InputConvertFormatCli::ShExC => Ok(ShExFormatCli::ShExC),
+            InputConvertFormatCli::ShExJ => Ok(ShExFormatCli::ShExJ),
+            InputConvertFormatCli::Turtle => Ok(ShExFormatCli::Turtle),
+            _ => bail!("The specified input format {:?} cannot be converted to a ShEx format", val),       
+        }
+    }
+}
+
+// Convert OutputConvertFormatCli -> ShexFormatCli
+impl TryFrom<OutputConvertFormatCli> for ShExFormatCli {
+    type Error = anyhow::Error;
+
+    fn try_from(val: OutputConvertFormatCli) -> AnyhowResult<Self, Self::Error> {
+        match val {
+            OutputConvertFormatCli::ShExC => Ok(ShExFormatCli::ShExC),
+            OutputConvertFormatCli::ShExJ => Ok(ShExFormatCli::ShExJ),
+            OutputConvertFormatCli::Turtle => Ok(ShExFormatCli::Turtle),
+            _ => bail!("The specified output format {:?} cannot be converted to a ShEx format", val),       
         }
     }
 }

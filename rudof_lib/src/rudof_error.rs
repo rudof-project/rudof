@@ -510,4 +510,43 @@ pub enum RudofError {
 
     #[error("Query execution error: {error}")]
     QueryExecutionError { error: String },
+
+    #[error("Unsupported input convert format for SHACL: {format}")]
+    UnsupportedShaclInputFormat { format: String },
+
+    #[error("Unsupported input convert format for ShEx: {format}")]
+    UnsupportedShExInputFormat { format: String },
+
+    #[error("Unsupported input convert format for DCTAP: {format}")]
+    UnsupportedDCTAPInputFormat { format: String },
+
+    #[error("No ShEx schema found after parsing")]
+    NoShExSchema,
+
+    #[error("No SHACL schema found after parsing")]
+    NoShaclSchemaFound,
+
+    #[error("Shacl2ShEx conversion error: {error}")]
+    Shacl2ShExError { error: String },
+
+    #[error("ShEx2UML conversion error: {error}")]
+    ShEx2UmlError { error: String },
+
+    #[error("ShEx2HTML conversion error: {error}")]
+    ShEx2HtmlError { error: String },
+
+    #[error("ShEx2SPARQL conversion error: {error}")]
+    ShEx2SparqlError { error: String },
+
+    #[error("Tap2ShEx conversion error: {error}")]
+    Tap2ShExError { error: String },
+
+    #[error("No template folder specified in config or command line")]
+    NoTemplateFolder,
+
+    #[error("UML output format {format} is not supported")]
+    UnsupportedUmlOutputFormat { format: String },
+
+    #[error("Writing output error: {error}")]
+    WritingOutputError { error: String },
 }

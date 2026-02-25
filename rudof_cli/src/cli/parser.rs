@@ -964,7 +964,7 @@ pub struct ConvertArgs {
         value_name = "MODE",
         help = "Input mode"
     )]
-    input_mode: InputConvertModeCli,
+    pub input_mode: InputConvertModeCli,
 
     #[arg(
         short = 's',
@@ -972,7 +972,7 @@ pub struct ConvertArgs {
         value_name = "INPUT",
         help = "Source file name (URI, file or - for stdin)"
     )]
-    file: InputSpec,
+    pub file: InputSpec,
 
     #[arg(
         short = 'f',
@@ -982,7 +982,7 @@ pub struct ConvertArgs {
         help = "Input file format",
         default_value_t = InputConvertFormatCli::ShExC
     )]
-    format: InputConvertFormatCli,
+    pub format: InputConvertFormatCli,
 
     #[arg(
         short = 'b',
@@ -990,7 +990,7 @@ pub struct ConvertArgs {
         value_name = "IRI",
         help = "Base IRI (used to resolve relative IRIs)"
     )]
-    base: Option<IriS>,
+    pub base: Option<IriS>,
 
     #[arg(
         short = 'r',
@@ -1000,10 +1000,10 @@ pub struct ConvertArgs {
         help = "Result format",
         default_value_t = OutputConvertFormatCli::Default
     )]
-    result_format: OutputConvertFormatCli,
+    pub result_format: OutputConvertFormatCli,
 
     #[arg(short = 't', long = "target-folder", value_name = "FOLDER", help = "Target folder")]
-    target_folder: Option<PathBuf>,
+    pub target_folder: Option<PathBuf>,
 
     #[arg(
         short = 'e',
@@ -1012,7 +1012,7 @@ pub struct ConvertArgs {
         value_name = "FOLDER",
         help = "Templates folder"
     )]
-    template_folder: Option<PathBuf>,
+    pub template_folder: Option<PathBuf>,
 
     #[arg(
         short = 'l',
@@ -1020,7 +1020,7 @@ pub struct ConvertArgs {
         value_name = "LABEL",
         help = "shape label (default = START)"
     )]
-    shape: Option<String>,
+    pub shape: Option<String>,
 
     #[arg(
         long = "reader-mode",
@@ -1030,7 +1030,7 @@ pub struct ConvertArgs {
         default_value_t = RDFReaderModeCli::Strict,
         value_enum
     )]
-    reader_mode: RDFReaderModeCli,
+    pub reader_mode: RDFReaderModeCli,
 
     #[arg(
         short = 'x',
@@ -1039,10 +1039,10 @@ pub struct ConvertArgs {
         value_name = "MODE",
         help = "Result mode for conversion"
     )]
-    output_mode: OutputConvertModeCli,
+    pub output_mode: OutputConvertModeCli,
 
     #[arg(long = "show-time", help = "Show processing time")]
-    show_time: Option<bool>,
+    pub show_time: Option<bool>,
 
     #[command(flatten)]
     pub common: CommonArgsAll,

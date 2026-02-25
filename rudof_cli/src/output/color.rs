@@ -52,6 +52,7 @@ pub fn detect_color_support_cached() -> ColorSupport {
 
 /// Represents a standard output stream.
 #[derive(Clone, Copy, Debug)]
+#[allow(dead_code)]
 enum Stream {
     Stdout = 0,
     Stderr = 1,
@@ -171,15 +172,6 @@ fn check_colorterm_16m(colorterm: &str) -> bool {
 
 fn check_term_16m(term: &str) -> bool {
     term.ends_with("direct") || term.ends_with("truecolor")
-}
-
-fn check_256_color(term: &str) -> bool {
-    term.ends_with("256") || term.ends_with("256color")
-}
-
-/// Detects color support for a specific stream without caching.
-fn on(stream: Stream) -> Option<ColorLevel> {
-    translate_level(supports_color(stream))
 }
 
 /// Detects color support for a specific stream, caching the result.

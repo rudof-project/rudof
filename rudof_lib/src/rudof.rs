@@ -36,11 +36,12 @@ use crate::{
     dctap_result_format::DCTapResultFormat,
     generate_schema_format::GenerateSchemaFormat,
     node_info::{NodeInfo, NodeInfoOptions, format_node_info_list, get_node_info},
+    query::execute_query,
+    query_result_format::ResultQueryFormat,
+    query_type::QueryType,
     rdf_config::RdfConfigResultFormat,
     rdf_reader_mode::RDFReaderMode,
     selector::parse_node_selector,
-    query_result_format::ResultQueryFormat, query_type::QueryType,
-    query::execute_query,
 };
 use iri_s::{IriS, MimeType};
 use rdf_config::RdfConfigModel;
@@ -1941,7 +1942,7 @@ impl Rudof {
 
     /// Internal helper to read DCTAP from various input sources.
     /// Handles the format-specific logic (CSV vs Excel).
-    fn read_dctap_input(&mut self, input: &InputSpec, format: &DCTAPFormat) -> Result<()> {
+    pub fn read_dctap_input(&mut self, input: &InputSpec, format: &DCTAPFormat) -> Result<()> {
         match format {
             // CSV can be read from any InputSpec (including stdin, URL, string)
             DCTAPFormat::Csv => {
@@ -2073,7 +2074,7 @@ impl Rudof {
     }
 
     /// High-level query execution.
-    /// 
+    ///
     /// Executes a SPARQL query against the current RDF data.
     pub fn execute_query<W: io::Write>(
         &mut self,
