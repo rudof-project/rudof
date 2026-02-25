@@ -1,6 +1,6 @@
 use super::compiled_shacl_error::CompiledShaclError;
 use iri_s::IriS;
-use shacl_ast::ShaclVocab;
+use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use shacl_ast::severity::Severity;
 use std::fmt::Display;
 

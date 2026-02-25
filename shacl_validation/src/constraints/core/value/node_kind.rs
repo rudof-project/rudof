@@ -13,8 +13,8 @@ use indoc::formatdoc;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF, term::Term};
 use shacl_ast::node_kind::NodeKind;
 use shacl_ir::compiled::component_ir::ComponentIR;
-use shacl_ir::compiled::component_ir::Nodekind;
 use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::components::Nodekind;
 use shacl_ir::schema_ir::SchemaIR;
 use std::fmt::Debug;
 

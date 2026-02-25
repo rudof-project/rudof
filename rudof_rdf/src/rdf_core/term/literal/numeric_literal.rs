@@ -1,14 +1,8 @@
 use core::fmt;
 use std::fmt::Display;
 
-use crate::rdf_core::{
-    RDFError,
-    vocab::{
-        xsd_byte, xsd_decimal, xsd_double, xsd_float, xsd_integer, xsd_long, xsd_negative_integer,
-        xsd_non_negative_integer, xsd_non_positive_integer, xsd_positive_integer, xsd_short, xsd_unsigned_byte,
-        xsd_unsigned_int, xsd_unsigned_long, xsd_unsigned_short,
-    },
-};
+use crate::rdf_core::RDFError;
+use crate::rdf_core::vocabs::XsdVocab;
 use rust_decimal::{
     Decimal,
     prelude::{FromPrimitive, ToPrimitive},
@@ -65,21 +59,21 @@ impl NumericLiteral {
     /// Each variant maps to its corresponding XML Schema datatype.
     pub fn datatype(&self) -> &str {
         match self {
-            NumericLiteral::Integer(_) => xsd_integer().as_str(),
-            NumericLiteral::Decimal(_) => xsd_decimal().as_str(),
-            NumericLiteral::Double(_) => xsd_double().as_str(),
-            NumericLiteral::Long(_) => xsd_long().as_str(),
-            NumericLiteral::Float(_) => xsd_float().as_str(),
-            NumericLiteral::Byte(_) => xsd_byte().as_str(),
-            NumericLiteral::Short(_) => xsd_short().as_str(),
-            NumericLiteral::NonNegativeInteger(_) => xsd_non_negative_integer().as_str(),
-            NumericLiteral::UnsignedLong(_) => xsd_unsigned_long().as_str(),
-            NumericLiteral::UnsignedInt(_) => xsd_unsigned_int().as_str(),
-            NumericLiteral::UnsignedShort(_) => xsd_unsigned_short().as_str(),
-            NumericLiteral::UnsignedByte(_) => xsd_unsigned_byte().as_str(),
-            NumericLiteral::PositiveInteger(_) => xsd_positive_integer().as_str(),
-            NumericLiteral::NegativeInteger(_) => xsd_negative_integer().as_str(),
-            NumericLiteral::NonPositiveInteger(_) => xsd_non_positive_integer().as_str(),
+            NumericLiteral::Integer(_) => XsdVocab::XSD_INTEGER,
+            NumericLiteral::Decimal(_) => XsdVocab::XSD_DECIMAL,
+            NumericLiteral::Double(_) => XsdVocab::XSD_DOUBLE,
+            NumericLiteral::Long(_) => XsdVocab::XSD_LONG,
+            NumericLiteral::Float(_) => XsdVocab::XSD_FLOAT,
+            NumericLiteral::Byte(_) => XsdVocab::XSD_BYTE,
+            NumericLiteral::Short(_) => XsdVocab::XSD_SHORT,
+            NumericLiteral::NonNegativeInteger(_) => XsdVocab::XSD_NON_NEGATIVE_INTEGER,
+            NumericLiteral::UnsignedLong(_) => XsdVocab::XSD_UNSIGNED_LONG,
+            NumericLiteral::UnsignedInt(_) => XsdVocab::XSD_UNSIGNED_INT,
+            NumericLiteral::UnsignedShort(_) => XsdVocab::XSD_UNSIGNED_SHORT,
+            NumericLiteral::UnsignedByte(_) => XsdVocab::XSD_UNSIGNED_BYTE,
+            NumericLiteral::PositiveInteger(_) => XsdVocab::XSD_POSITIVE_INTEGER,
+            NumericLiteral::NegativeInteger(_) => XsdVocab::XSD_NEGATIVE_INTEGER,
+            NumericLiteral::NonPositiveInteger(_) => XsdVocab::XSD_NON_POSITIVE_INTEGER,
         }
     }
 

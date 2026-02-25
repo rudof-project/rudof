@@ -10,8 +10,8 @@ use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF};
 use shacl_ir::compiled::component_ir::ComponentIR;
-use shacl_ir::compiled::component_ir::MinExclusive;
 use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::components::MinExclusive;
 use shacl_ir::schema_ir::SchemaIR;
 use std::fmt::Debug;
 

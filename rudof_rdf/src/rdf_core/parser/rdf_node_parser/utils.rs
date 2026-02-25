@@ -1,3 +1,4 @@
+use crate::rdf_core::vocabs::RdfVocab;
 use crate::rdf_core::{
     FocusRDF, RDFError,
     parser::rdf_node_parser::{RDFNodeParse, constructors::SingleValuePropertyParser},
@@ -5,7 +6,6 @@ use crate::rdf_core::{
         Iri, IriOrBlankNode,
         literal::{ConcreteLiteral, Literal, NumericLiteral},
     },
-    vocab::{rdf_first, rdf_nil, rdf_rest},
 };
 use iri_s::{IriS, iri};
 
@@ -299,18 +299,18 @@ where
     }
 
     // Recursive case: extract first and rest
-    let first = SingleValuePropertyParser::new(rdf_first().clone())
+    let first = SingleValuePropertyParser::new(RdfVocab::rdf_first().clone())
         .parse_focused(rdf)
         .map_err(|e| RDFError::PropertyNotFoundError {
-            property: rdf_first().to_string(),
+            property: RdfVocab::rdf_first().to_string(),
             subject: focus.to_string(),
             err: Box::new(e),
         })?;
 
-    let rest = SingleValuePropertyParser::new(rdf_rest().clone())
+    let rest = SingleValuePropertyParser::new(RdfVocab::rdf_rest().clone())
         .parse_focused(rdf)
         .map_err(|e| RDFError::PropertyNotFoundError {
-            property: rdf_rest().to_string(),
+            property: RdfVocab::rdf_rest().to_string(),
             subject: focus.to_string(),
             err: Box::new(e),
         })?;
@@ -335,7 +335,7 @@ where
 {
     let tmp: Result<RDF::IRI, _> = <RDF::Term as TryInto<RDF::IRI>>::try_into(node.clone());
     match tmp {
-        Ok(iri) => iri.as_str() == rdf_nil().as_str(),
+        Ok(iri) => iri.as_str() == RdfVocab::RDF_NIL,
         Err(_) => false,
     }
 }

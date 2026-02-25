@@ -6,10 +6,10 @@ use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use iri_s::IriS;
+use rudof_rdf::rdf_core::vocabs::{RdfVocab, RdfsVocab};
 use rudof_rdf::rdf_core::{
     NeighsRDF, SHACLPath,
     term::{Object, Term, Triple},
-    vocab::{rdf_type, rdfs_subclass_of},
 };
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
@@ -117,14 +117,14 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
         // TODO: Replace by shacl_instances_of
         let term: S::Term = subject.clone().into();
         let targets = store
-            .subjects_for(&rdf_type().clone().into(), &term)
+            .subjects_for(&RdfVocab::rdf_type().clone().into(), &term)
             .map_err(|e| ValidateError::InstanceOf {
                 term: term.to_string(),
                 error: e.to_string(),
             })?;
 
         let subclass_targets = store
-            .subjects_for(&rdfs_subclass_of().clone().into(), &term)
+            .subjects_for(&RdfsVocab::rdfs_subclass_of_str().clone().into(), &term)
             .map_err(|e| ValidateError::SubClassOf {
                 term: term.to_string(),
                 error: e.to_string(),
@@ -132,7 +132,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
             .into_iter()
             .flat_map(move |subclass| {
                 store
-                    .subjects_for(&rdf_type().clone().into(), &subclass)
+                    .subjects_for(&RdfVocab::rdf_type().clone().into(), &subclass)
                     .map_err(|e| ValidateError::SubClassOf {
                         term: subclass.to_string(),
                         error: e.to_string(),

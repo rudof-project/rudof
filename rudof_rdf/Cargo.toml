@@ -24,6 +24,7 @@ oxrdfio.workspace = true
 oxrdfxml.workspace = true
 oxsdatatypes.workspace = true
 oxttl.workspace = true
+paste.workspace = true
 prefixmap.workspace = true
 proptest.workspace = true
 regex.workspace = true

@@ -1,11 +1,6 @@
 use crate::rdf_core::{
     RDFError,
     term::literal::{Lang, NumericLiteral, XsdDateTime},
-    vocab::{
-        rdf_lang, xsd_boolean, xsd_byte, xsd_date_time, xsd_decimal, xsd_double, xsd_float, xsd_integer, xsd_long,
-        xsd_negative_integer, xsd_non_negative_integer, xsd_non_positive_integer, xsd_positive_integer, xsd_short,
-        xsd_string, xsd_unsigned_byte, xsd_unsigned_int, xsd_unsigned_long, xsd_unsigned_short,
-    },
 };
 use rust_decimal::Decimal;
 use std::{
@@ -14,6 +9,7 @@ use std::{
     result,
 };
 
+use crate::rdf_core::vocabs::{RdfVocab, XsdVocab};
 use iri_s::IriS;
 use prefixmap::{Deref, DerefError, IriRef, PrefixMap};
 use serde::{Deserialize, Serialize, Serializer};
@@ -618,14 +614,14 @@ impl ConcreteLiteral {
         match self {
             Self::DatatypeLiteral { datatype, .. } | Self::WrongDatatypeLiteral { datatype, .. } => datatype.clone(),
 
-            Self::StringLiteral { lang: None, .. } => IriRef::iri(IriS::new_unchecked(xsd_string().as_str())),
+            Self::StringLiteral { lang: None, .. } => IriRef::iri(IriS::new_unchecked(XsdVocab::XSD_STRING)),
 
-            Self::StringLiteral { lang: Some(_), .. } => IriRef::iri(IriS::new_unchecked(rdf_lang().as_str())),
+            Self::StringLiteral { lang: Some(_), .. } => IriRef::iri(IriS::new_unchecked(RdfVocab::RDF_LANG_STRING)),
 
             Self::NumericLiteral(nl) => IriRef::iri(IriS::new_unchecked(nl.datatype())),
 
-            Self::BooleanLiteral(_) => IriRef::iri(IriS::new_unchecked(xsd_boolean().as_str())),
-            Self::DatetimeLiteral(_) => IriRef::iri(IriS::new_unchecked(xsd_date_time().as_str())),
+            Self::BooleanLiteral(_) => IriRef::iri(IriS::new_unchecked(XsdVocab::XSD_BOOLEAN)),
+            Self::DatetimeLiteral(_) => IriRef::iri(IriS::new_unchecked(XsdVocab::XSD_DATE_TIME)),
         }
     }
 
@@ -1138,81 +1134,81 @@ fn check_literal_datatype(lexical_form: &str, datatype: &IriRef) -> Result<Concr
 
     // Check all XSD types using appropriate macro
     check_xsd_type!(
-        xsd_integer().as_str(),
+        XsdVocab::XSD_INTEGER,
         ConcreteLiteral::parse_integer,
         ConcreteLiteral::integer
     );
-    check_xsd_type!(xsd_long().as_str(), ConcreteLiteral::parse_long, ConcreteLiteral::long);
+    check_xsd_type!(XsdVocab::XSD_LONG, ConcreteLiteral::parse_long, ConcreteLiteral::long);
     check_xsd_type!(
-        xsd_double().as_str(),
+        XsdVocab::XSD_DOUBLE,
         ConcreteLiteral::parse_double,
         ConcreteLiteral::double
     );
     check_xsd_type!(
-        xsd_boolean().as_str(),
+        XsdVocab::XSD_BOOLEAN,
         ConcreteLiteral::parse_bool,
         ConcreteLiteral::boolean
     );
     check_xsd_type!(
-        xsd_float().as_str(),
+        XsdVocab::XSD_FLOAT,
         ConcreteLiteral::parse_float,
         ConcreteLiteral::float
     );
     check_xsd_type!(
-        xsd_decimal().as_str(),
+        XsdVocab::XSD_DECIMAL,
         ConcreteLiteral::parse_decimal,
         ConcreteLiteral::decimal
     );
-    check_xsd_type!(xsd_byte().as_str(), ConcreteLiteral::parse_byte, ConcreteLiteral::byte);
+    check_xsd_type!(XsdVocab::XSD_BYTE, ConcreteLiteral::parse_byte, ConcreteLiteral::byte);
     check_xsd_type!(
-        xsd_short().as_str(),
+        XsdVocab::XSD_SHORT,
         ConcreteLiteral::parse_short,
         ConcreteLiteral::short
     );
     check_xsd_type!(
-        xsd_unsigned_int().as_str(),
+        XsdVocab::XSD_UNSIGNED_INT,
         ConcreteLiteral::parse_unsigned_int,
         ConcreteLiteral::unsigned_int
     );
     check_xsd_type!(
-        xsd_unsigned_long().as_str(),
+        XsdVocab::XSD_UNSIGNED_LONG,
         ConcreteLiteral::parse_unsigned_long,
         ConcreteLiteral::unsigned_long
     );
     check_xsd_type!(
-        xsd_unsigned_byte().as_str(),
+        XsdVocab::XSD_UNSIGNED_BYTE,
         ConcreteLiteral::parse_unsigned_byte,
         ConcreteLiteral::unsigned_byte
     );
     check_xsd_type!(
-        xsd_unsigned_short().as_str(),
+        XsdVocab::XSD_UNSIGNED_SHORT,
         ConcreteLiteral::parse_unsigned_short,
         ConcreteLiteral::unsigned_short
     );
     check_xsd_type!(
-        xsd_non_negative_integer().as_str(),
+        XsdVocab::XSD_NON_NEGATIVE_INTEGER,
         ConcreteLiteral::parse_non_negative_integer,
         ConcreteLiteral::non_negative_integer
     );
 
     // These constructors return Result and need special handling
     check_xsd_type_result!(
-        xsd_negative_integer().as_str(),
+        XsdVocab::XSD_NEGATIVE_INTEGER,
         ConcreteLiteral::parse_negative_integer,
         ConcreteLiteral::negative_integer
     );
     check_xsd_type_result!(
-        xsd_positive_integer().as_str(),
+        XsdVocab::XSD_POSITIVE_INTEGER,
         ConcreteLiteral::parse_positive_integer,
         ConcreteLiteral::positive_integer
     );
     check_xsd_type_result!(
-        xsd_non_positive_integer().as_str(),
+        XsdVocab::XSD_NON_POSITIVE_INTEGER,
         ConcreteLiteral::parse_non_positive_integer,
         ConcreteLiteral::non_positive_integer
     );
     check_xsd_type!(
-        xsd_date_time().as_str(),
+        XsdVocab::XSD_DATE_TIME,
         ConcreteLiteral::parse_datetime,
         ConcreteLiteral::datetime
     );

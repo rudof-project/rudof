@@ -1,11 +1,8 @@
 use crate::common::shacl_test::ShaclTest;
 use crate::common::testsuite_error::TestSuiteError;
 use oxrdf::{NamedNode, NamedOrBlankNode as OxSubject, Term as OxTerm};
-use rudof_rdf::rdf_core::{
-    Any, NeighsRDF, RDFFormat,
-    term::Triple,
-    vocab::{rdf_first, rdf_rest},
-};
+use rudof_rdf::rdf_core::vocabs::RdfVocab;
+use rudof_rdf::rdf_core::{Any, NeighsRDF, RDFFormat, term::Triple};
 use shacl_rdf::ShaclParser;
 use shacl_validation::shacl_validation_vocab;
 use shacl_validation::store::Store;
@@ -60,7 +57,7 @@ impl Manifest {
         if let Some(mut subject) = entry_subject {
             loop {
                 let inner_subject: OxSubject = subject.clone().try_into().unwrap();
-                let rdf_first: NamedNode = rdf_first().clone().into();
+                let rdf_first: NamedNode = RdfVocab::rdf_first().clone().into();
                 match store
                     .triples_matching(&inner_subject, &rdf_first, &Any)
                     .map_err(|e| Box::new(e.into()))?
@@ -71,7 +68,7 @@ impl Manifest {
                     None => break,
                 };
 
-                let rdf_rest: NamedNode = rdf_rest().clone().into();
+                let rdf_rest: NamedNode = RdfVocab::rdf_rest().clone().into();
                 subject = match store
                     .triples_matching(&inner_subject, &rdf_rest, &Any)
                     .map_err(|e| Box::new(e.into()))?

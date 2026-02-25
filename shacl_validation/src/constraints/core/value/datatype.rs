@@ -14,8 +14,8 @@ use rudof_rdf::rdf_core::{
     term::literal::{ConcreteLiteral, Literal as _},
 };
 use shacl_ir::compiled::component_ir::ComponentIR;
-use shacl_ir::compiled::component_ir::Datatype;
 use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::components::Datatype;
 use shacl_ir::schema_ir::SchemaIR;
 use std::fmt::Debug;
 use tracing::trace;

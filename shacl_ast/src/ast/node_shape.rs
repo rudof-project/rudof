@@ -1,5 +1,6 @@
-use crate::{ShaclVocab, component::Component, message_map::MessageMap, severity::Severity, target::Target};
+use crate::{component::Component, message_map::MessageMap, severity::Severity, target::Target};
 use iri_s::IriS;
+use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{BuildRDF, Rdf, term::Object};
 use std::collections::HashSet;
 use std::fmt::Display;
@@ -71,6 +72,8 @@ impl<RDF: Rdf> NodeShape<RDF> {
 
     pub fn is_deactivated(&self) -> bool {
         for component in &self.components {
+            // TODO - For NodeExpr, do not delete
+            // if let Component::Deactivated(NodeExpr::Literal(ConcreteLiteral::BooleanLiteral(true))) = component {
             if let Component::Deactivated(true) = component {
                 return true;
             }
@@ -108,10 +111,7 @@ impl<RDF: Rdf> NodeShape<RDF> {
     }
 
     // TODO: this is a bit ugly
-    pub fn write<B>(&self, rdf: &mut B) -> Result<(), B::Err>
-    where
-        B: BuildRDF,
-    {
+    pub fn write<B: BuildRDF>(&self, rdf: &mut B) -> Result<(), B::Err> {
         let id: B::Subject = self.id.clone().try_into().map_err(|_| unreachable!())?;
         rdf.add_type(id.clone(), ShaclVocab::sh_node_shape().clone())?;
 

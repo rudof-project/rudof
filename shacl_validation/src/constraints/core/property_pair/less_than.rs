@@ -10,8 +10,8 @@ use rudof_rdf::rdf_core::{
     term::{Object, Triple},
 };
 use shacl_ir::compiled::component_ir::ComponentIR;
-use shacl_ir::compiled::component_ir::LessThan;
 use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::components::LessThan;
 use shacl_ir::schema_ir::SchemaIR;
 use std::fmt::Debug;
 

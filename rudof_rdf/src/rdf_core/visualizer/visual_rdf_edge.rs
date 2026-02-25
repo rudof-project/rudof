@@ -1,4 +1,5 @@
-use crate::rdf_core::{Rdf, term::Iri, vocab::rdf_reifies};
+use crate::rdf_core::vocabs::RdfVocab;
+use crate::rdf_core::{Rdf, term::Iri};
 use std::fmt::Display;
 
 /// Represents an edge in a visual RDF graph.
@@ -31,7 +32,7 @@ impl VisualRDFEdge {
     /// # Returns
     /// * `VisualRDFEdge` - The corresponding visual edge
     pub fn from_iri<R: Rdf>(rdf: &R, iri: &R::IRI) -> Self {
-        if iri.as_str() == rdf_reifies().as_str() {
+        if iri.as_str() == RdfVocab::RDF_REIFIES {
             return VisualRDFEdge::Reifies;
         }
         let iri_label = R::qualify_iri(rdf, iri);
@@ -49,7 +50,7 @@ impl VisualRDFEdge {
     pub fn as_plantuml_link(&self) -> String {
         match self {
             VisualRDFEdge::Iri { label, url } => format!("[[{url} {label}]]"),
-            VisualRDFEdge::Reifies => format!("[[{} {}]]", rdf_reifies().as_str(), "reifies"),
+            VisualRDFEdge::Reifies => format!("[[{} {}]]", RdfVocab::RDF_REIFIES, "reifies"),
         }
     }
 

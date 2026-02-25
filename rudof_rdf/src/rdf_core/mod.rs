@@ -13,7 +13,7 @@ mod shacl_path;
 pub mod term;
 pub mod utils;
 pub mod visualizer;
-pub mod vocab;
+pub mod vocabs;
 
 pub use async_rdf::AsyncRDF;
 pub use build_rdf::BuildRDF;

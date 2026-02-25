@@ -1,13 +1,12 @@
+use crate::rdf_core::vocabs::RdfVocab;
 use crate::rdf_core::{
     Any, Matcher, RDFError, Rdf, SHACLPath,
     term::{Object, Triple},
-    vocab::{rdf_reifies, rdf_type},
 };
 use std::{
     collections::{HashMap, HashSet},
     vec::IntoIter,
 };
-
 //----------------------------------------------------------------
 // Type aliases for common RDF navigation patterns
 //----------------------------------------------------------------
@@ -227,7 +226,7 @@ pub trait NeighsRDF: Rdf {
     where
         O: Matcher<Self::Term>,
     {
-        let rdf_type: Self::IRI = rdf_type().clone().into();
+        let rdf_type: Self::IRI = RdfVocab::rdf_type().clone().into();
         let subjects: HashSet<_> = self
             .triples_matching(&Any, &rdf_type, cls)?
             .map(Triple::into_subject)
@@ -246,7 +245,7 @@ pub trait NeighsRDF: Rdf {
     /// * `triple` - The triple to find reifiers for
     fn reifiers_of_triple(&self, triple: &Self::Triple) -> Result<impl Iterator<Item = Self::Subject>, Self::Err> {
         let triple_term = Self::triple_as_term(triple);
-        let rdf_reifies: Self::IRI = rdf_reifies().clone().into();
+        let rdf_reifies: Self::IRI = RdfVocab::rdf_reifies().clone().into();
         let reifiers = Self::triples_with_predicate_object(self, &rdf_reifies, &triple_term)?
             .map(|t| t.into_subject())
             .collect::<HashSet<_>>();

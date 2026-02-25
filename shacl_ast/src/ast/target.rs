@@ -1,12 +1,8 @@
 use std::fmt::Display;
 
-use crate::ShaclVocab;
 use prefixmap::IriRef;
-use rudof_rdf::rdf_core::{
-    BuildRDF, Rdf,
-    term::Object,
-    vocab::{rdf_type, rdfs_class},
-};
+use rudof_rdf::rdf_core::vocabs::{RdfVocab, RdfsVocab, ShaclVocab};
+use rudof_rdf::rdf_core::{BuildRDF, Rdf, term::Object};
 
 /// Represents target declarations
 #[derive(Debug)]
@@ -14,7 +10,7 @@ pub enum Target<S: Rdf>
 where
     S::Term: Clone,
 {
-    Node(Object), // TODO: Shacl12: Extend to Node Expressions
+    Node(Object), // TODO - Replace with NodeExpr
     Class(Object),
     SubjectsOf(IriRef),
     ObjectsOf(IriRef),
@@ -28,8 +24,9 @@ where
     WrongImplicitClass(S::Term),
 }
 
-impl<S: Rdf> Target<S> {
+impl<RDF: Rdf> Target<RDF> {
     pub fn target_node(node: Object) -> Self {
+        // TODO - Replace with NodeExpr
         Target::Node(node)
     }
     pub fn target_class(node: Object) -> Self {
@@ -44,11 +41,8 @@ impl<S: Rdf> Target<S> {
     pub fn target_implicit_class(node: Object) -> Self {
         Target::ImplicitClass(node)
     }
-    pub fn write<RDF>(&self, rdf_node: &Object, rdf: &mut RDF) -> Result<(), RDF::Err>
-    where
-        RDF: BuildRDF,
-    {
-        let node: RDF::Subject = rdf_node.clone().try_into().map_err(|_| unreachable!())?;
+    pub fn write<B: BuildRDF>(&self, rdf_node: &Object, rdf: &mut B) -> Result<(), B::Err> {
+        let node: B::Subject = rdf_node.clone().try_into().map_err(|_| unreachable!())?;
         match self {
             Target::Node(target_rdf_node) => {
                 rdf.add_triple(node, ShaclVocab::sh_target_node().clone(), target_rdf_node.clone())
@@ -68,7 +62,7 @@ impl<S: Rdf> Target<S> {
             ),
             Target::ImplicitClass(_class) => {
                 // TODO: Review this code and in SHACL 1.2, add sh_shape_class ?
-                rdf.add_triple(node, rdf_type().clone(), rdfs_class().clone())
+                rdf.add_triple(node, RdfVocab::rdf_type().clone(), RdfsVocab::rdfs_class().clone())
             },
             Target::WrongNode(_) => todo!(),
             Target::WrongClass(_) => todo!(),
