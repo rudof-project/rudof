@@ -1,7 +1,8 @@
-use iri_s::{IriS, iri};
 use crate::{node_kind::NodeKind, value::Value};
+use iri_s::{IriS, iri};
 use itertools::Itertools;
 use prefixmap::IriRef;
+use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{
     BuildRDF,
     term::{
@@ -9,7 +10,6 @@ use rudof_rdf::rdf_core::{
         literal::{ConcreteLiteral, Lang},
     },
 };
-use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use std::collections::HashSet;
 use std::fmt::Display;
 

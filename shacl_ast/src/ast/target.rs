@@ -2,10 +2,7 @@ use std::fmt::Display;
 
 use prefixmap::IriRef;
 use rudof_rdf::rdf_core::vocabs::{RdfVocab, RdfsVocab, ShaclVocab};
-use rudof_rdf::rdf_core::{
-    BuildRDF, Rdf,
-    term::Object,
-};
+use rudof_rdf::rdf_core::{BuildRDF, Rdf, term::Object};
 
 /// Represents target declarations
 #[derive(Debug)]
