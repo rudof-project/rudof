@@ -4,7 +4,7 @@ use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use shacl_ast::component::Component;
 
-pub(crate) fn max_length<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>> {
+pub(crate) fn max_length<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component<RDF>>> {
     IntegersPropertyParser::new(ShaclVocab::sh_max_length().clone())
         .map(|ns| ns.into_iter().map(Component::MaxLength).collect())
 }

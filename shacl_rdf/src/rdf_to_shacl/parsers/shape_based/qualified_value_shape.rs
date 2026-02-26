@@ -5,7 +5,7 @@ use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
-use rudof_rdf::rdf_core::{FocusRDF, RDFError, SHACLPath};
+use rudof_rdf::rdf_core::{FocusRDF, RDFError, Rdf, SHACLPath};
 use shacl_ast::component::Component;
 use std::collections::HashSet;
 use std::marker::PhantomData;
@@ -69,7 +69,7 @@ where
     }
 }
 
-pub(crate) fn qualified_value_shape<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>> {
+pub(crate) fn qualified_value_shape<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component<RDF>>> {
     ObjectsPropertyParser::new(ShaclVocab::sh_qualified_value_shape().clone()).then(|qvs| {
         let set = qvs.into_iter().collect();
         parse_qualified_value_shape::<RDF>(set)
@@ -98,7 +98,9 @@ fn qualified_value_shape_siblings<RDF: FocusRDF>() -> QualifiedValueShapeSibling
     }
 }
 
-fn parse_qualified_value_shape<RDF: FocusRDF>(qvs: HashSet<Object>) -> impl RDFNodeParse<RDF, Output = Vec<Component>> {
+fn parse_qualified_value_shape<RDF: FocusRDF>(
+    qvs: HashSet<Object>,
+) -> impl RDFNodeParse<RDF, Output = Vec<Component<RDF>>> {
     qualified_value_shape_disjoint_parser()
         .and(qualified_min_count_parser())
         .and(qualified_max_count_parser())
@@ -114,13 +116,13 @@ fn parse_qualified_value_shape<RDF: FocusRDF>(qvs: HashSet<Object>) -> impl RDFN
         })
 }
 
-fn build_qualified_shape(
+fn build_qualified_shape<RDF: Rdf>(
     terms: HashSet<Object>,
     disjoint: Option<bool>,
     q_min_count: Option<isize>,
     q_max_count: Option<isize>,
     siblings: Vec<Object>,
-) -> Vec<Component> {
+) -> Vec<Component<RDF>> {
     let mut result = Vec::new();
     for term in terms {
         let shape = Component::QualifiedValueShape {

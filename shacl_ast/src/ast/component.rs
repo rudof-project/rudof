@@ -4,7 +4,7 @@ use itertools::Itertools;
 use prefixmap::IriRef;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{
-    BuildRDF,
+    BuildRDF, Rdf,
     term::{
         Object,
         literal::{ConcreteLiteral, Lang},
@@ -16,6 +16,7 @@ use std::fmt::Display;
 // #[derive(Debug)] // TODO - For Node Expr, do not clean
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Component {
+pub enum Component<RDF: Rdf> {
     Class(Object),
     Datatype(IriRef),
     NodeKind(NodeKind),
@@ -58,7 +59,7 @@ pub enum Component {
     Deactivated(bool), // TODO - Change to Node Expr
 }
 
-impl Component {
+impl<RDF: Rdf> Component<RDF> {
     pub fn write<B: BuildRDF>(&self, rdf_node: &Object, rdf: &mut B) -> Result<(), B::Err> {
         match self {
             Self::Class(rdf_node) => {
@@ -265,7 +266,7 @@ impl Component {
     }
 }
 
-impl Display for Component {
+impl<RDF: Rdf> Display for Component<RDF> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Component::Class(cls) => write!(f, "class({cls})"),
@@ -347,8 +348,8 @@ impl Display for Component {
     }
 }
 
-impl From<Component> for IriS {
-    fn from(value: Component) -> Self {
+impl<RDF: Rdf> From<Component<RDF>> for IriS {
+    fn from(value: Component<RDF>) -> Self {
         match value {
             Component::Class(_) => ShaclVocab::sh_class().clone(),
             Component::Datatype(_) => ShaclVocab::sh_datatype().clone(),

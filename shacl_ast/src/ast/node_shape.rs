@@ -11,7 +11,7 @@ where
     RDF::Term: Clone,
 {
     id: Object,
-    components: Vec<Component>,
+    components: Vec<Component<RDF>>,
     targets: Vec<Target<RDF>>,
     property_shapes: Vec<Object>,
     // closed: bool,
@@ -61,7 +61,7 @@ impl<RDF: Rdf> NodeShape<RDF> {
         self
     }
 
-    pub fn with_components(mut self, components: Vec<Component>) -> Self {
+    pub fn with_components(mut self, components: Vec<Component<RDF>>) -> Self {
         self.components = components;
         self
     }
@@ -98,7 +98,7 @@ impl<RDF: Rdf> NodeShape<RDF> {
         self.severity.to_owned()
     }
 
-    pub fn components(&self) -> &Vec<Component> {
+    pub fn components(&self) -> &Vec<Component<RDF>> {
         &self.components
     }
 

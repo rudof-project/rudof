@@ -10,10 +10,10 @@ use shacl_ast::value::Value;
 pub(super) fn parse_components_for_iri<RDF, P>(
     iri: IriS,
     component_parser: P,
-) -> impl RDFNodeParse<RDF, Output = Vec<Component>>
+) -> impl RDFNodeParse<RDF, Output = Vec<Component<RDF>>>
 where
     RDF: FocusRDF,
-    P: RDFNodeParse<RDF, Output = Component>,
+    P: RDFNodeParse<RDF, Output = Component<RDF>>,
 {
     component_parser.map_property(iri)
 }

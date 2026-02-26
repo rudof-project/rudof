@@ -4,7 +4,7 @@ use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use shacl_ast::component::Component;
 
-pub(crate) fn pattern<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>> {
+pub(crate) fn pattern<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component<RDF>>> {
     SingleStringPropertyParser::new(ShaclVocab::sh_flags().clone())
         .optional()
         .then(move |maybe_flags| {

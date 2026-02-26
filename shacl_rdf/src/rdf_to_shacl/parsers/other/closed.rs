@@ -9,7 +9,7 @@ use rudof_rdf::rdf_core::{FocusRDF, RDFError};
 use shacl_ast::component::Component;
 use std::collections::HashSet;
 
-pub(crate) fn closed<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>> {
+pub(crate) fn closed<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component<RDF>>> {
     SingleBoolPropertyParser::new(ShaclVocab::sh_closed().clone())
         .optional()
         .then(move |maybe_closed| {

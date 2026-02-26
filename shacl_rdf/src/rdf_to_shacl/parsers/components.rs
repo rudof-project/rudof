@@ -7,11 +7,11 @@ use rudof_rdf::rdf_core::FocusRDF;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
 use shacl_ast::component::Component;
 
-pub(crate) fn components<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>>
+pub(crate) fn components<RDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component<RDF>>>
 where
     RDF: FocusRDF,
 {
-    let parsers: Vec<Box<dyn RDFNodeParse<RDF, Output = Vec<Component>>>> = vec![
+    let parsers: Vec<Box<dyn RDFNodeParse<RDF, Output = Vec<Component<RDF>>>>> = vec![
         // Value type
         Box::new(node_kind()),
         Box::new(datatype()),

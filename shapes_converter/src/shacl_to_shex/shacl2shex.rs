@@ -279,7 +279,10 @@ impl Shacl2ShEx {
         Ok(TripleExpr::triple_constraint(negated, inverse, predicate, se, min, max))
     }
 
-    pub fn components2shape_expr(&self, components: &Vec<Component>) -> Result<Option<ShapeExpr>, Shacl2ShExError> {
+    pub fn components2shape_expr<RDF: Rdf>(
+        &self,
+        components: &Vec<Component<RDF>>,
+    ) -> Result<Option<ShapeExpr>, Shacl2ShExError> {
         let mut ses = Vec::new();
         for c in components {
             let se = self.component2shape_expr(c)?;
@@ -295,7 +298,6 @@ impl Shacl2ShEx {
                 },
                 _ => {
                     // Err(Shacl2ShExError::not_implemented("Conversion of shapes with multiple components is not implemented yet: {components:?}"))}
-                    debug!("More than one component: {components:?}, taking only the first one");
                     let se = &ses[0];
                     Ok(Some(se.clone()))
                 },
@@ -317,7 +319,7 @@ impl Shacl2ShEx {
         Ok(se)
     }
 
-    pub fn component2shape_expr(&self, component: &Component) -> Result<ShapeExpr, Shacl2ShExError> {
+    pub fn component2shape_expr<RDF: Rdf>(&self, component: &Component<RDF>) -> Result<ShapeExpr, Shacl2ShExError> {
         match component {
             Component::Class(cls) => {
                 debug!(

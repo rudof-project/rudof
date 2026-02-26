@@ -5,14 +5,14 @@ use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{FocusRDF, RDFError, Rdf};
 use shacl_ast::component::Component;
 
-pub(crate) fn xone<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>> {
+pub(crate) fn xone<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component<RDF>>> {
     parse_components_for_iri(
         ShaclVocab::sh_xone().clone(),
         ListParser::new().flat_map(cnv_xone_list::<RDF>),
     )
 }
 
-fn cnv_xone_list<RDF: Rdf>(ls: Vec<RDF::Term>) -> Result<Component, RDFError> {
+fn cnv_xone_list<RDF: Rdf>(ls: Vec<RDF::Term>) -> Result<Component<RDF>, RDFError> {
     let shapes: Vec<_> = terms_as_nodes::<RDF>(ls)?; // ls.into_iter().map(|t| t.try_into()).collect();
     Ok(Component::Xone(shapes))
 }

@@ -73,7 +73,7 @@ impl ComponentIR {
     /// It returns a vector of (PosNeg, ShapeLabelIdx) pairs for components that are represented in the IR.
     /// The vector is list of dependant shapes for cases with recursion
     pub fn compile<S: Rdf>(
-        component: Component,
+        component: Component<S>,
         schema: &ShaclSchema<S>,
         schema_ir: &mut SchemaIR,
     ) -> Result<Option<ComponentIR>, Box<CompiledShaclError>> {

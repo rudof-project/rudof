@@ -7,13 +7,13 @@ use rudof_rdf::rdf_core::{FocusRDF, Rdf};
 use shacl_ast::component::Component;
 use shacl_ast::node_kind::NodeKind;
 
-pub(crate) fn node_kind<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component>> {
+pub(crate) fn node_kind<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<Component<RDF>>> {
     ValuesPropertyParser::new(ShaclVocab::sh_node_kind().clone()).flat_map(|ns| {
         let nks: Vec<_> = ns
             .into_iter()
             .flat_map(|term| {
                 let nk = term_to_node_kind::<RDF>(term)?;
-                Ok::<Component, ShaclParserError>(Component::NodeKind(nk))
+                Ok::<Component<RDF>, ShaclParserError>(Component::NodeKind(nk))
             })
             .collect();
         Ok(nks)

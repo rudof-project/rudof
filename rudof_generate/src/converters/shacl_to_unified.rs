@@ -2,7 +2,7 @@ use crate::unified_constraints::{
     NodeKind, UnifiedConstraint, UnifiedConstraintModel, UnifiedPropertyConstraint, UnifiedShape, Value,
 };
 use crate::{DataGeneratorError, Result};
-use rudof_rdf::rdf_core::{RDFFormat, term::literal::ConcreteLiteral};
+use rudof_rdf::rdf_core::{RDFFormat, Rdf, term::literal::ConcreteLiteral};
 use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use shacl_ast::{
     ShaclSchema, component::Component, node_shape::NodeShape, property_shape::PropertyShape, shape::Shape as ShaclShape,
@@ -124,7 +124,7 @@ impl ShaclToUnified {
         })
     }
 
-    fn extract_cardinality(&self, components: &[Component]) -> (Option<u32>, Option<u32>) {
+    fn extract_cardinality<RDF: Rdf>(&self, components: &[Component<RDF>]) -> (Option<u32>, Option<u32>) {
         let mut min_cardinality = None;
         let mut max_cardinality = None;
 
@@ -147,7 +147,7 @@ impl ShaclToUnified {
         (min_cardinality, max_cardinality)
     }
 
-    fn convert_component(&self, component: &Component, constraints: &mut Vec<UnifiedConstraint>) {
+    fn convert_component<RDF: Rdf>(&self, component: &Component<RDF>, constraints: &mut Vec<UnifiedConstraint>) {
         match component {
             Component::Datatype(datatype) => {
                 constraints.push(UnifiedConstraint::Datatype(datatype.to_string()));
