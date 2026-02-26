@@ -11,7 +11,7 @@ pub use rudof_rdf::rdf_core::{
 };
 pub use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 pub use shacl_ast::ShaclFormat;
-pub use shacl_ast::ast::ShaclSchema;
+pub use shacl_ast::ShaclSchema;
 pub use shacl_ir::compiled::schema_ir::SchemaIR as ShaclSchemaIR;
 pub use shacl_validation::shacl_processor::ShaclValidationMode;
 pub use shacl_validation::validation_report::report::ValidationReport;

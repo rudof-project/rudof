@@ -89,7 +89,7 @@ impl NumericLiteral {
     pub fn non_positive_integer(n: i128) -> Result<NumericLiteral, RDFError> {
         if n > 0 {
             return Err(RDFError::ConversionError {
-                msg: ("nonPositiveInteger (must be <= 0)".to_string()),
+                msg: "nonPositiveInteger (must be <= 0)".to_string(),
             });
         }
         Ok(NumericLiteral::NonPositiveInteger(n))
@@ -107,7 +107,7 @@ impl NumericLiteral {
     pub fn positive_integer(n: u128) -> Result<NumericLiteral, RDFError> {
         if n == 0 {
             return Err(RDFError::ConversionError {
-                msg: ("positiveInteger (must be > 0)".to_string()),
+                msg: "positiveInteger (must be > 0)".to_string(),
             });
         }
         Ok(NumericLiteral::PositiveInteger(n))
@@ -120,7 +120,7 @@ impl NumericLiteral {
     pub fn negative_integer(n: i128) -> Result<NumericLiteral, RDFError> {
         if n >= 0 {
             return Err(RDFError::ConversionError {
-                msg: ("negativeInteger (must be < 0)".to_string()),
+                msg: "negativeInteger (must be < 0)".to_string(),
             });
         }
         Ok(NumericLiteral::NegativeInteger(n))

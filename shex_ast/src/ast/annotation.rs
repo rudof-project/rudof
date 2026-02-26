@@ -1,3 +1,4 @@
+use super::object_value::ObjectValue;
 use iri_s::IriS;
 use prefixmap::Deref;
 use prefixmap::IriRef;
@@ -9,8 +10,6 @@ use serde::{
     de::{self, MapAccess, Visitor},
 };
 use std::{fmt, result};
-
-use super::object_value::ObjectValue;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Annotation {

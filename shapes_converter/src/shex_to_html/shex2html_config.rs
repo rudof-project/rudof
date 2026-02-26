@@ -3,13 +3,12 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use crate::ShEx2UmlConfig;
 use iri_s::IriS;
 use rudof_rdf::rdf_core::vocabs::RdfsVocab;
 use serde::{Deserialize, Serialize};
 use shex_validation::ShExConfig;
 use thiserror::Error;
-
-use crate::ShEx2UmlConfig;
 
 pub const DEFAULT_COLOR_PROPERTY_NAME: &str = "blue";
 pub const DEFAULT_LANDING_PAGE_NAME: &str = "index.html";
