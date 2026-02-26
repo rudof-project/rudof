@@ -3,7 +3,6 @@ use prefixmap::IriRef;
 use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
 use rudof_rdf::rdf_core::term::{IriOrBlankNode, Object};
 use rudof_rdf::rdf_core::{Rdf, SHACLPath};
-use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
 #[allow(dead_code)]
@@ -12,13 +11,6 @@ pub enum NodeExpr<RDF: Rdf> {
     // Constants
     Iri(IriRef),
     Literal(ConcreteLiteral),
-
-    // Blank Node
-    NamedParameterFn(HashMap<IriRef, NodeExpr<RDF>>),
-    ListParameterFn {
-        property: IriRef,
-        args: Vec<NodeExpr<RDF>>,
-    },
 
     // Basic expressions
     Empty,
@@ -87,18 +79,6 @@ impl<RDF: Rdf> Display for NodeExpr<RDF> {
         match self {
             NodeExpr::Iri(i) => write!(f, "iri({i})"),
             NodeExpr::Literal(l) => write!(f, "literal({l})"),
-            NodeExpr::NamedParameterFn(map) => {
-                let params = map
-                    .iter()
-                    .map(|(k, v)| format!("{}: {}", k, v))
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                write!(f, "namedParameterFn({params})")
-            },
-            NodeExpr::ListParameterFn { args, property } => {
-                let args_str = args.iter().map(|arg| arg.to_string()).collect::<Vec<_>>().join(", ");
-                write!(f, "listParameterFn({property}, {args_str})")
-            },
             NodeExpr::Empty => write!(f, "empty"),
             NodeExpr::Var(v) => write!(f, "var({v})"),
             NodeExpr::List(l) => write!(
@@ -154,11 +134,6 @@ impl<RDF: Rdf> Clone for NodeExpr<RDF> {
         match self {
             NodeExpr::Iri(i) => NodeExpr::Iri(i.clone()),
             NodeExpr::Literal(l) => NodeExpr::Literal(l.clone()),
-            NodeExpr::NamedParameterFn(map) => NodeExpr::NamedParameterFn(map.clone()),
-            NodeExpr::ListParameterFn { property, args } => NodeExpr::ListParameterFn {
-                property: property.clone(),
-                args: args.clone(),
-            },
             NodeExpr::Empty => NodeExpr::Empty,
             NodeExpr::Var(v) => NodeExpr::Var(v.clone()),
             NodeExpr::List(l) => NodeExpr::List(l.clone()),
@@ -222,11 +197,6 @@ impl<RDF: Rdf> PartialEq for NodeExpr<RDF> {
         match (self, other) {
             (NodeExpr::Iri(l), NodeExpr::Iri(r)) => l == r,
             (NodeExpr::Literal(l), NodeExpr::Literal(r)) => l == r,
-            (NodeExpr::NamedParameterFn(l), NodeExpr::NamedParameterFn(r)) => l == r,
-            (
-                NodeExpr::ListParameterFn { args: al, property: pl },
-                NodeExpr::ListParameterFn { args: ar, property: pr },
-            ) => al == ar && pl == pr,
             (NodeExpr::Empty, NodeExpr::Empty) => true,
             (NodeExpr::Var(l), NodeExpr::Var(r)) => l == r,
             (NodeExpr::List(l), NodeExpr::List(r)) => l == r,
