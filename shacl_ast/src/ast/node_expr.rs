@@ -23,8 +23,8 @@ pub enum NodeExpr<RDF: Rdf> {
     Exists(Box<NodeExpr<RDF>>),
     IfExpression {
         if_condition: Box<NodeExpr<RDF>>,
-        then: Box<NodeExpr<RDF>>,
-        else_expression: Box<NodeExpr<RDF>>,
+        then: Option<Box<NodeExpr<RDF>>>,
+        else_expression: Option<Box<NodeExpr<RDF>>>,
     },
 
     // List expressions
@@ -99,7 +99,20 @@ impl<RDF: Rdf> Display for NodeExpr<RDF> {
                 then,
                 else_expression,
             } => {
-                write!(f, "if({if_condition} then {then} else {else_expression})")
+                write!(
+                    f,
+                    "if({if_condition}{}{})",
+                    if let Some(then) = then {
+                        format!(" then {then}")
+                    } else {
+                        "".to_string()
+                    },
+                    if let Some(else_) = else_expression {
+                        format!(" else {else_}")
+                    } else {
+                        "".to_string()
+                    }
+                )
             },
             NodeExpr::Distinct(d) => write!(f, "distinct({d})"),
             NodeExpr::Intersection(i) => write!(
