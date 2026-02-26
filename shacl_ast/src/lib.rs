@@ -4,7 +4,7 @@
 //!
 
 #![deny(rust_2018_idioms)]
-pub mod ast;
+mod ast;
 pub use ast::*;
 
 /// SHACL Formats supported. Mostly RDF formats
