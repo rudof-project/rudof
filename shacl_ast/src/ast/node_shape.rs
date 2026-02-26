@@ -1,5 +1,6 @@
-use crate::{component::Component, message_map::MessageMap, severity::Severity, target::Target};
+use crate::{NodeExpr, component::Component, message_map::MessageMap, severity::Severity, target::Target};
 use iri_s::IriS;
+use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{BuildRDF, Rdf, term::Object};
 use std::collections::HashSet;
@@ -72,9 +73,7 @@ impl<RDF: Rdf> NodeShape<RDF> {
 
     pub fn is_deactivated(&self) -> bool {
         for component in &self.components {
-            // TODO - For NodeExpr, do not delete
-            // if let Component::Deactivated(NodeExpr::Literal(ConcreteLiteral::BooleanLiteral(true))) = component {
-            if let Component::Deactivated(true) = component {
+            if let Component::Deactivated(NodeExpr::Literal(ConcreteLiteral::BooleanLiteral(true))) = component {
                 return true;
             }
         }

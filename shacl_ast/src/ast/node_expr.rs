@@ -5,7 +5,6 @@ use rudof_rdf::rdf_core::term::{IriOrBlankNode, Object};
 use rudof_rdf::rdf_core::{Rdf, SHACLPath};
 use std::fmt::{Display, Formatter};
 
-#[allow(dead_code)]
 #[derive(Debug)]
 pub enum NodeExpr<RDF: Rdf> {
     // Constants

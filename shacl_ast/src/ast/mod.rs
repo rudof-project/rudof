@@ -12,5 +12,6 @@ pub mod shape;
 pub mod target;
 pub mod value;
 
+pub use node_expr::NodeExpr;
 pub use schema::*;
 pub use shacl_error::*;
