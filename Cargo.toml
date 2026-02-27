@@ -283,6 +283,7 @@ once_cell = "1.18.0"
 openssl = { version = "0.10", features = ["vendored"] }
 oxigraph = { version = "0.5.2", default-features = false, features = [
     "rdf-12",
+    "http-client-native-tls",
 ] }
 oxilangtag = { version = "0.1.5", features = ["serde"] }
 oxiri = { version = "0.2.11" }
