@@ -61,7 +61,7 @@ pub fn run_shacl(
     }?;
 
     let shacl_format = shacl_format_convert(*result_shapes_format)?;
-    rudof.serialize_shacl(&shacl_format, &mut writer)?;
+    rudof.serialize_shacl(Some(&shacl_format), &mut writer)?;
     if enabled!(Level::DEBUG) {
         match rudof.get_shacl_ir() {
             Some(ir) => debug!("SHACL IR: {}", ir),
@@ -91,12 +91,12 @@ pub fn run_shacl_convert(
     rudof.read_shacl(
         &mut reader,
         &input.to_string(),
-        &input_format,
+        Some(&input_format),
         base.as_deref(),
-        reader_mode,
+        Some(reader_mode),
     )?;
     let output_format = shacl_format_convert(*output_format)?;
-    rudof.serialize_shacl(&output_format, &mut writer)?;
+    rudof.serialize_shacl(Some(&output_format), &mut writer)?;
     Ok(())
 }
 
@@ -134,9 +134,9 @@ pub fn run_validate_shacl(
     let validation_report = if let Some(schema) = schema {
         let shapes_format = (*shapes_format).unwrap_or_default();
         add_shacl_schema_rudof(&mut rudof, schema, &shapes_format, base_shapes, reader_mode, config)?;
-        rudof.validate_shacl(&mode, &ShapesGraphSource::current_schema())
+        rudof.validate_shacl(Some(&mode), Some(&ShapesGraphSource::current_schema()))
     } else {
-        rudof.validate_shacl(&mode, &ShapesGraphSource::current_data())
+        rudof.validate_shacl(Some(&mode), Some(&ShapesGraphSource::current_data()))
     }?;
     write_validation_report(writer, result_format, validation_report, sort_by)?;
     Ok(())

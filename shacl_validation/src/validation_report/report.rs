@@ -179,9 +179,12 @@ impl ValidationReport {
         &self,
         mut writer: W,
         _sort_mode: SortModeReport,
-        with_details: bool,
-        terminal_width: usize,
+        with_details: Option<bool>,
+        terminal_width: Option<usize>,
     ) -> Result<(), Error> {
+        let with_details = with_details.unwrap_or(false);
+        let terminal_width = terminal_width.unwrap_or(80);
+
         let mut builder = Builder::default();
         if with_details {
             builder.push_record([

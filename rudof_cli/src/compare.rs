@@ -105,7 +105,7 @@ pub fn read_shex(
         .to_shex_format()
         .unwrap_or_else(|_| panic!("ShEx format1 {format}"));
     let base = base.as_ref().map(|iri| iri.as_str());
-    rudof.read_shex(reader, &shex_format1, base, reader_mode, source_name)?;
+    rudof.read_shex(reader, Some(&shex_format1), base, Some(reader_mode), source_name)?;
     if let Some(schema) = rudof.get_shex() {
         debug!("Schema read: {schema}");
         Ok(schema.clone())

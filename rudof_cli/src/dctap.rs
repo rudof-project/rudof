@@ -47,7 +47,7 @@ pub fn parse_dctap(rudof: &mut Rudof, input: &InputSpec, format: &CliDCTapFormat
     match format {
         CliDCTapFormat::Csv => {
             let reader = input.open_read(None, "DCTAP")?;
-            rudof.read_dctap(reader, &dctap_format)?;
+            rudof.read_dctap(reader, Some(&dctap_format))?;
             Ok(())
         },
         _ => match input {

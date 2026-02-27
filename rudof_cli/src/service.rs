@@ -27,16 +27,16 @@ pub fn run_service(
     rudof.read_service_description(
         &mut reader,
         input.source_name().as_str(),
-        &rdf_format,
+        Some(&rdf_format),
         base,
-        &reader_mode,
+        Some(&reader_mode),
     )?;
     match result_format {
         ResultServiceFormat::Internal => {
-            rudof.serialize_service_description(&ServiceDescriptionFormat::Internal, &mut writer)?;
+            rudof.serialize_service_description(Some(&ServiceDescriptionFormat::Internal), &mut writer)?;
         },
         ResultServiceFormat::Mie => {
-            rudof.serialize_service_description(&ServiceDescriptionFormat::Mie, &mut writer)?;
+            rudof.serialize_service_description(Some(&ServiceDescriptionFormat::Mie), &mut writer)?;
         },
         ResultServiceFormat::Json => {
             let json = serde_json::to_string_pretty(&rudof.get_service_description())?;

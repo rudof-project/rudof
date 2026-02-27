@@ -266,7 +266,7 @@ pub async fn export_rdf_data_impl(
     };
 
     let mut v = Vec::new();
-    rudof.serialize_data(&parsed_format, &mut v).map_err(|e| {
+    rudof.serialize_data(Some(&parsed_format), &mut v).map_err(|e| {
         internal_error(
             "Serialization error",
             e.to_string(),

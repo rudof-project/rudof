@@ -22,13 +22,13 @@ pub fn run_shapemap(
     let mut rudof = Rudof::new(&rudof_config)?;
     let shapemap_format = shapemap_format_convert(shapemap_format);
     let reader = input.open_read(None, "ShapeMap")?;
-    rudof.read_shapemap(reader, input.source_name().as_str(), &shapemap_format)?;
+    rudof.read_shapemap(reader, input.source_name().as_str(), Some(&shapemap_format))?;
     let result_format = shapemap_format_convert(result_format);
     let formatter = match color {
         ColorSupport::WithColor => ShapeMapFormatter::default(),
         ColorSupport::NoColor => ShapeMapFormatter::default().without_colors(),
     };
-    rudof.serialize_shapemap(&result_format, &formatter, &mut writer)?;
+    rudof.serialize_shapemap(Some(&result_format), &formatter, &mut writer)?;
     Ok(())
 }
 
