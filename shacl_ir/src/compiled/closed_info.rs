@@ -48,7 +48,7 @@ impl ClosedInfo {
         let (is_closed, ignored_properties) = shape.closed_component();
         if is_closed {
             let ignored_properties: HashSet<IriS> = ignored_properties.into_iter().collect();
-            let defined_properties = defined_properties_for(&shape.property_shapes(), schema)?;
+            let defined_properties = defined_properties_for(shape.property_shapes(), schema)?;
             let all_properties = defined_properties
                 .union(&ignored_properties)
                 .cloned()
@@ -70,7 +70,7 @@ impl ClosedInfo {
         let (is_closed, ignored_properties) = shape.closed_component();
         if is_closed {
             let ignored_properties: HashSet<IriS> = ignored_properties.into_iter().collect();
-            let defined_properties = defined_properties_for(&shape.property_shapes(), schema)?;
+            let defined_properties = defined_properties_for(shape.property_shapes(), schema)?;
             let all_properties = defined_properties
                 .union(&ignored_properties)
                 .cloned()
