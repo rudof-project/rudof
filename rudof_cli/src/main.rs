@@ -184,6 +184,7 @@ fn main() -> Result<()> {
             force_overwrite,
             reader_mode,
             config,
+            ..
         }) => {
             let config = get_config(config)?;
             if let Some(show_dependencies) = show_dependencies {
@@ -201,7 +202,7 @@ fn main() -> Result<()> {
                 result_schema_format,
                 output,
                 show_time,
-                show_schema.unwrap_or_default(),
+                *show_schema,
                 compile.unwrap_or_default(),
                 *force_overwrite,
                 &reader_mode.into(),
@@ -437,12 +438,14 @@ fn main() -> Result<()> {
             shapemap,
             shapemap_format,
             result_shapemap_format,
+            base,
             output,
             force_overwrite,
         }) => run_shapemap(
             shapemap,
             shapemap_format,
             result_shapemap_format,
+            base,
             output,
             *force_overwrite,
         ),

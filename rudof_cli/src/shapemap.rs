@@ -14,6 +14,7 @@ pub fn run_shapemap(
     input: &InputSpec,
     shapemap_format: &CliShapeMapFormat,
     result_format: &CliShapeMapFormat,
+    base: &Option<IriS>,
     output: &Option<PathBuf>,
     force_overwrite: bool,
 ) -> Result<()> {
@@ -22,7 +23,7 @@ pub fn run_shapemap(
     let mut rudof = Rudof::new(&rudof_config)?;
     let shapemap_format = shapemap_format_convert(shapemap_format);
     let reader = input.open_read(None, "ShapeMap")?;
-    rudof.read_shapemap(reader, input.source_name().as_str(), &shapemap_format)?;
+    rudof.read_shapemap(reader, input.source_name().as_str(), &shapemap_format, base)?;
     let result_format = shapemap_format_convert(result_format);
     let formatter = match color {
         ColorSupport::WithColor => ShapeMapFormatter::default(),

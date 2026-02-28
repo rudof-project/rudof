@@ -19,7 +19,7 @@ pub fn validate_shex<W: Write>(
     rudof: &mut Rudof,
     schema: &Option<InputSpec>,
     schema_format: &Option<CliShExFormat>,
-    base_schema: &Option<IriS>,
+    base: &Option<IriS>,
     reader_mode: &ReaderMode,
     maybe_node: &Option<String>,
     maybe_shape: &Option<String>,
@@ -41,7 +41,7 @@ pub fn validate_shex<W: Write>(
             })?;
         let schema_format = schema_format.try_into()?;
 
-        let base_iri = get_base(config, base_schema)?;
+        let base_iri = get_base(config, base)?;
 
         rudof.read_shex(
             schema_reader,
@@ -63,7 +63,12 @@ pub fn validate_shex<W: Write>(
                         error: e.to_string(),
                     })?;
 
-            rudof.read_shapemap(shapemap_reader, shapemap_spec.source_name().as_str(), &shapemap_format)?;
+            rudof.read_shapemap(
+                shapemap_reader,
+                shapemap_spec.source_name().as_str(),
+                &shapemap_format,
+                base,
+            )?;
         }
 
         // If individual node/shapes are declared add them to current shape map
