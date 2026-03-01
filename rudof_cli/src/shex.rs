@@ -151,6 +151,10 @@ pub fn run_validate_shex(
 ) -> Result<()> {
     let mut rudof = Rudof::new(config)?;
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
+    trace!(
+        "Running ShEx validation with schema: {:?}, base_schema: {:?} and data: {:?}, base_data: {:?}",
+        schema, base_schema, data, base_data
+    );
 
     get_data_rudof(
         &mut rudof,

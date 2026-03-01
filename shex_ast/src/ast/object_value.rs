@@ -1,7 +1,7 @@
 use iri_s::IriS;
 use iri_s::error::IriSError;
 use prefixmap::error::DerefError;
-use prefixmap::{Deref, IriRef};
+use prefixmap::{DerefIri, IriRef};
 use rudof_rdf::rdf_core::term::{
     Object,
     literal::{ConcreteLiteral, Lang, NumericLiteral},
@@ -84,15 +84,15 @@ impl ObjectValue {
     }
 }
 
-impl Deref for ObjectValue {
-    fn deref(self, base: Option<&IriS>, prefixmap: Option<&prefixmap::PrefixMap>) -> Result<Self, DerefError> {
+impl DerefIri for ObjectValue {
+    fn deref_iri(self, base: Option<&IriS>, prefixmap: Option<&prefixmap::PrefixMap>) -> Result<Self, DerefError> {
         match self {
             ObjectValue::IriRef(iri_ref) => {
-                let new_iri_ref = iri_ref.deref(base, prefixmap)?;
+                let new_iri_ref = iri_ref.deref_iri(base, prefixmap)?;
                 Ok(ObjectValue::IriRef(new_iri_ref))
             },
             ObjectValue::Literal(lit) => {
-                let new_lit = lit.deref(base, prefixmap)?;
+                let new_lit = lit.deref_iri(base, prefixmap)?;
                 Ok(ObjectValue::Literal(new_lit))
             },
         }

@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use crate::ColorSupport;
 use crate::writer::get_writer;
 use anyhow::Result;
+use iri_s::IriS;
 use rudof_lib::InputSpec;
 use rudof_lib::Rudof;
 use rudof_lib::RudofConfig;

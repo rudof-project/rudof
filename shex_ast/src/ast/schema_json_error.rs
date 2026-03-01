@@ -6,6 +6,8 @@ use thiserror::Error;
 
 #[derive(Error, Debug, Clone)]
 pub enum SchemaJsonError {
+    #[error("Error dereferencing IRI: {error}")]
+    DerefError { error: String }, // We need to clone errors so we use String instead of DerefError
     #[error("ShapeLabel {value} is not valid: {error}")]
     InvalidShapeLabel {
         value: String,

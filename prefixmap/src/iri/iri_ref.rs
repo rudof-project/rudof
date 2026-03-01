@@ -1,6 +1,6 @@
 use crate::PrefixMap;
 use crate::error::{DerefError, IriRefError, PrefixMapError};
-use crate::iri::deref::Deref;
+use crate::iri::deref_iri::DerefIri;
 use iri_s::IriS;
 use iri_s::error::IriSError;
 use serde::Serialize;
@@ -58,8 +58,8 @@ impl IriRef {
     }
 }
 
-impl Deref for IriRef {
-    fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
+impl DerefIri for IriRef {
+    fn deref_iri(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
         match self {
             IriRef::Iri(iri_s) => {
                 let resolved = match base {

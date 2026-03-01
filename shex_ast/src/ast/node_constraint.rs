@@ -1,7 +1,7 @@
 use std::fmt;
 
 use prefixmap::error::DerefError;
-use prefixmap::{Deref, IriRef};
+use prefixmap::{DerefIri, IriRef};
 use rudof_rdf::rdf_core::term::literal::NumericLiteral;
 use serde::{
     Deserialize, Serialize, Serializer,
@@ -145,13 +145,13 @@ impl NodeConstraint {
     }
 }
 
-impl Deref for NodeConstraint {
-    fn deref(self, base: Option<&iri_s::IriS>, prefixmap: Option<&prefixmap::PrefixMap>) -> Result<Self, DerefError>
+impl DerefIri for NodeConstraint {
+    fn deref_iri(self, base: Option<&iri_s::IriS>, prefixmap: Option<&prefixmap::PrefixMap>) -> Result<Self, DerefError>
     where
         Self: Sized,
     {
-        let datatype = self.datatype().deref(base, prefixmap)?;
-        let values = self.values.deref(base, prefixmap)?;
+        let datatype = self.datatype().deref_iri(base, prefixmap)?;
+        let values = self.values().deref_iri(base, prefixmap)?;
         Ok(NodeConstraint {
             node_kind: self.node_kind.clone(),
             datatype,

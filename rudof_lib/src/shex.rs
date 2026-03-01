@@ -67,7 +67,7 @@ pub fn validate_shex<W: Write>(
                 shapemap_reader,
                 shapemap_spec.source_name().as_str(),
                 &shapemap_format,
-                base,
+                &Some(base_iri.clone()),
             )?;
         }
 
@@ -78,12 +78,22 @@ pub fn validate_shex<W: Write>(
             },
             (Some(node_str), None) => {
                 let node_selector = parse_node_selector(node_str)?;
-                rudof.shapemap_add_node_shape_selectors(node_selector, start())
+                rudof.shapemap_add_node_shape_selectors(
+                    node_selector,
+                    &Some(base_iri.clone()),
+                    start(),
+                    &Some(base_iri.clone()),
+                )?
             },
             (Some(node_str), Some(shape_str)) => {
                 let node_selector = parse_node_selector(node_str)?;
                 let shape_selector = parse_shape_selector(shape_str)?;
-                rudof.shapemap_add_node_shape_selectors(node_selector, shape_selector);
+                rudof.shapemap_add_node_shape_selectors(
+                    node_selector,
+                    &Some(base_iri.clone()),
+                    shape_selector,
+                    &Some(base_iri.clone()),
+                )?
             },
             (None, Some(shape_str)) => {
                 tracing::debug!("Shape label {shape_str} ignored because noshapemap has also been provided")

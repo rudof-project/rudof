@@ -8,12 +8,14 @@ use crate::shapemap::NodeSelector;
 use crate::shapemap::ShapeSelector;
 use crate::shapemap::query_shape_map::QueryShapeMap;
 use crate::tws0;
+use iri_s::IriS;
 use nom::Err;
 use prefixmap::IriRef;
 use prefixmap::PrefixMap;
 use std::fs;
 use std::path::Path;
 use tracing::debug;
+use tracing::trace;
 
 type Result<A> = std::result::Result<A, ParseError>;
 
@@ -27,8 +29,11 @@ impl ShapeMapParser<'_> {
     pub fn parse(
         src: &str,
         nodes_prefixmap: &Option<PrefixMap>,
+        base_nodes: &Option<IriS>,
         shapes_prefixmap: &Option<PrefixMap>,
+        base_shapes: &Option<IriS>,
     ) -> Result<QueryShapeMap> {
+        trace!("Parsing shapemap with src: {src} and base_nodes: {base_nodes:?} and base_shapes: {base_shapes:?}");
         let mut query_shapemap = QueryShapeMap::new();
         if let Some(pm) = nodes_prefixmap {
             query_shapemap = query_shapemap.with_nodes_prefixmap(pm)
@@ -47,8 +52,10 @@ impl ShapeMapParser<'_> {
                         node_selector,
                         shape_selector,
                     } => {
-                        // tracing::debug!("Association {node_selector:?}@{shape_selector:?}");
-                        query_shapemap.add_association(node_selector, shape_selector);
+                        tracing::debug!(
+                            "Association {node_selector:?}@{shape_selector:?} with base_nodes: {base_nodes:?} and base_shapes: {base_shapes:?}"
+                        );
+                        query_shapemap.add_association(node_selector, base_nodes, shape_selector, base_shapes)?;
                     },
                 }
             }
@@ -59,10 +66,12 @@ impl ShapeMapParser<'_> {
     pub fn parse_buf(
         path: &Path,
         nodes_prefixmap: &Option<PrefixMap>,
+        base_nodes: &Option<IriS>,
         shapes_prefixmap: &Option<PrefixMap>,
+        base_shapes: &Option<IriS>,
     ) -> Result<QueryShapeMap> {
         let data = fs::read_to_string(path)?;
-        let query_shapemap = ShapeMapParser::parse(&data, nodes_prefixmap, shapes_prefixmap)?;
+        let query_shapemap = ShapeMapParser::parse(&data, nodes_prefixmap, base_nodes, shapes_prefixmap, base_shapes)?;
         Ok(query_shapemap)
     }
 
@@ -186,14 +195,25 @@ mod tests {
             .add_prefix("", IriS::new_unchecked("http://example.org/shapes/"))
             .unwrap();
 
-        let parsed_shapemap =
-            ShapeMapParser::parse(str, &Some(nodes_prefixmap.clone()), &Some(shapes_prefixmap.clone())).unwrap();
+        let parsed_shapemap = ShapeMapParser::parse(
+            str,
+            &Some(nodes_prefixmap.clone()),
+            &None,
+            &Some(shapes_prefixmap.clone()),
+            &None,
+        )
+        .unwrap();
 
         let mut expected = QueryShapeMap::new()
             .with_nodes_prefixmap(&nodes_prefixmap)
             .with_shapes_prefixmap(&shapes_prefixmap);
 
-        expected.add_association(NodeSelector::prefixed("", "a"), ShapeSelector::prefixed("", "S"));
+        expected.add_association(
+            NodeSelector::prefixed("", "a"),
+            &None,
+            ShapeSelector::prefixed("", "S"),
+            &None,
+        );
         assert_eq!(parsed_shapemap, expected)
     }
 }
