@@ -1328,7 +1328,7 @@ pub fn show_triple_exprs(idx: &ShapeLabelIdx, schema: &SchemaIR, writer: &mut im
 
 #[cfg(test)]
 mod tests {
-    use iri_s::iri;
+    use iri_s::{IriS, iri};
     use shacl_ast::ShaclFormat;
     use shacl_validation::shacl_processor::ShaclValidationMode;
     use shex_ast::ShExFormat;
@@ -1375,7 +1375,12 @@ mod tests {
             )
             .unwrap();
         rudof
-            .read_shapemap(shapemap.as_bytes(), "Test", &ShapeMapFormat::default(), &None)
+            .read_shapemap(
+                shapemap.as_bytes(),
+                "Test",
+                &ShapeMapFormat::default(),
+                &Some(IriS::new_unchecked("http://example/")),
+            )
             .unwrap();
         let result = rudof.validate_shex().unwrap();
         let node = Node::iri(iri!("http://example/x"));
