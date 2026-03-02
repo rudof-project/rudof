@@ -7,6 +7,11 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.2.7 
+
+### Fixed
+- Removed unneeded dependency on `rust_decimal_macros` from `rudof_rdf`
+
 ## v0.2.6
 ### Fixed
 - Relative IRIs are now parsed consistently in shapemaps, RDF data and ShEx solving issue #520
