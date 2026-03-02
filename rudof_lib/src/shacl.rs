@@ -35,7 +35,13 @@ pub fn add_shacl_schema_rudof(
     let reader_name = schema.to_string();
     let shapes_format = shacl_format_convert(*shapes_format)?;
     let base = get_base(schema, config, base_shapes)?;
-    rudof.read_shacl(&mut reader, &reader_name, &shapes_format, base.as_deref(), reader_mode)?;
+    rudof.read_shacl(
+        &mut reader,
+        &reader_name,
+        Some(&shapes_format),
+        base.as_deref(),
+        Some(reader_mode),
+    )?;
     Ok(())
 }
 
@@ -75,11 +81,11 @@ pub fn write_validation_report<W: Write>(
             Ok(())
         },
         ResultShaclValidationFormat::Compact => {
-            report.show_as_table(writer, sort_mode, false, terminal_width)?;
+            report.show_as_table(writer, sort_mode, Some(false), Some(terminal_width))?;
             Ok(())
         },
         ResultShaclValidationFormat::Details => {
-            report.show_as_table(writer, sort_mode, true, terminal_width)?;
+            report.show_as_table(writer, sort_mode, Some(true), Some(terminal_width))?;
             Ok(())
         },
         ResultShaclValidationFormat::Json => Err(RudofError::NotImplemented {

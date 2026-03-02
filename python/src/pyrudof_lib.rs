@@ -161,15 +161,22 @@ impl PyRudof {
     ///
     /// Note:
     ///     Colors require a terminal with ANSI escape sequence support.
+    #[pyo3(signature = (node_selector, predicates=None, show_outgoing=None, show_incoming=None, show_colors=None, depth=None))]
     pub fn node_info(
         &mut self,
         node_selector: &str,
-        predicates: Vec<String>,
-        show_outgoing: bool,
-        show_incoming: bool,
-        show_colors: bool,
-        depth: usize,
+        predicates: Option<Vec<String>>,
+        show_outgoing: Option<bool>,
+        show_incoming: Option<bool>,
+        show_colors: Option<bool>,
+        depth: Option<usize>,
     ) -> PyResult<String> {
+        let predicates = predicates.unwrap_or_default();
+        let show_outgoing = show_outgoing.unwrap_or(true);
+        let show_incoming = show_incoming.unwrap_or(false);
+        let show_colors = show_colors.unwrap_or(true);
+        let depth = depth.unwrap_or(1);
+
         let node_selector = parse_node_selector(node_selector).map_err(cnv_err)?;
         let options = rudof_lib::node_info::NodeInfoOptions {
             show_outgoing,
@@ -270,19 +277,27 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If file/URL cannot be read or data is malformed (in Strict mode).
+    #[pyo3(signature = (input, format=None, base=None, reader_mode=None, merge=None))]
     pub fn read_data(
         &mut self,
         input: &str,
-        format: &PyRDFFormat,
+        format: Option<&PyRDFFormat>,
         base: Option<&str>,
-        reader_mode: &PyReaderMode,
-        merge: bool,
+        reader_mode: Option<&PyReaderMode>,
+        merge: Option<bool>,
     ) -> PyResult<()> {
         let reader_mode = cnv_reader_mode(reader_mode);
         let format = cnv_rdf_format(format);
-        let mut reader = get_reader(input, Some(format.mime_type()), "RDF data")?;
+
+        let mime = if let Some(format) = format {
+            format.mime_type()
+        } else {
+            RDFFormat::Turtle.mime_type()
+        };
+
+        let mut reader = get_reader(input, Some(mime), "RDF data")?;
         self.inner
-            .read_data(&mut reader, "String", &format, base, &reader_mode, merge)
+            .read_data(&mut reader, "String", format, base, reader_mode, merge)
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -301,18 +316,20 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If data is malformed.
+    #[pyo3(signature = (input, format=None, base=None, reader_mode=None, merge=None))]
     pub fn read_data_str(
         &mut self,
         input: &str,
-        format: &PyRDFFormat,
+        format: Option<&PyRDFFormat>,
         base: Option<&str>,
-        reader_mode: &PyReaderMode,
-        merge: bool,
+        reader_mode: Option<&PyReaderMode>,
+        merge: Option<bool>,
     ) -> PyResult<()> {
         let reader_mode = cnv_reader_mode(reader_mode);
         let format = cnv_rdf_format(format);
+
         self.inner
-            .read_data(&mut input.as_bytes(), "String", &format, base, &reader_mode, merge)
+            .read_data(&mut input.as_bytes(), "String", format, base, reader_mode, merge)
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -327,11 +344,12 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If serialization fails.
-    pub fn serialize_data(&self, format: &PyRDFFormat) -> PyResult<String> {
+    #[pyo3(signature = (format=None))]
+    pub fn serialize_data(&self, format: Option<&PyRDFFormat>) -> PyResult<String> {
         let mut v = Vec::new();
         let format = cnv_rdf_format(format);
         self.inner
-            .serialize_data(&format, &mut v)
+            .serialize_data(format, &mut v)
             .map_err(|e| RudofError::SerializingData { error: format!("{e}") })
             .map_err(cnv_err)?;
         let str = String::from_utf8(v)
@@ -351,17 +369,20 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If schema is malformed.
+    #[pyo3(signature = (input, format=None, base=None, reader_mode=None))]
     pub fn read_shex_str(
         &mut self,
         input: &str,
-        format: &PyShExFormat,
+        format: Option<&PyShExFormat>,
         base: Option<&str>,
-        reader_mode: &PyReaderMode,
+        reader_mode: Option<&PyReaderMode>,
     ) -> PyResult<()> {
         let format = cnv_shex_format(format);
+        let reader_mode = cnv_reader_mode(reader_mode);
+
         self.inner.reset_shex();
         self.inner
-            .read_shex(input.as_bytes(), &format, base, &reader_mode.into(), Some("string"))
+            .read_shex(input.as_bytes(), format, base, reader_mode, Some("string"))
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -376,18 +397,27 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If file/URL cannot be read or schema is malformed.
+    #[pyo3(signature = (input, format=None, base=None, reader_mode=None))]
     pub fn read_shex(
         &mut self,
         input: &str,
-        format: &PyShExFormat,
+        format: Option<&PyShExFormat>,
         base: Option<&str>,
-        reader_mode: &PyReaderMode,
+        reader_mode: Option<&PyReaderMode>,
     ) -> PyResult<()> {
         let format = cnv_shex_format(format);
+        let reader_mode = cnv_reader_mode(reader_mode);
+
+        let mime = if let Some(format) = format {
+            format.mime_type()
+        } else {
+            ShExFormat::ShExC.mime_type()
+        };
+
         self.inner.reset_shex();
-        let reader = get_reader(input, Some(format.mime_type()), "ShEx schema")?;
+        let reader = get_reader(input, Some(mime), "ShEx schema")?;
         self.inner
-            .read_shex(reader, &format, base, &reader_mode.into(), Some("string"))
+            .read_shex(reader, format, base, reader_mode, Some("string"))
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -403,11 +433,16 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If no schema is loaded or serialization fails.
-    pub fn serialize_current_shex(&self, formatter: &PyShExFormatter, format: &PyShExFormat) -> PyResult<String> {
+    #[pyo3(signature = (formatter, format=None))]
+    pub fn serialize_current_shex(
+        &self,
+        formatter: &PyShExFormatter,
+        format: Option<&PyShExFormat>,
+    ) -> PyResult<String> {
         let mut v = Vec::new();
         let format = cnv_shex_format(format);
         self.inner
-            .serialize_current_shex(&format, &formatter.inner, &mut v)
+            .serialize_current_shex(format, &formatter.inner, &mut v)
             .map_err(|e| RudofError::SerializingShEx { error: format!("{e}") })
             .map_err(cnv_err)?;
         let str = String::from_utf8(v)
@@ -425,16 +460,17 @@ impl PyRudof {
     ///
     /// Returns:
     ///     str: Serialized ShEx schema.
+    #[pyo3(signature = (shex, formatter, format=None))]
     pub fn serialize_shex(
         &self,
         shex: &PyShExSchema,
         formatter: &PyShExFormatter,
-        format: &PyShExFormat,
+        format: Option<&PyShExFormat>,
     ) -> PyResult<String> {
         let mut v = Vec::new();
         let format = cnv_shex_format(format);
         self.inner
-            .serialize_shex(&shex.inner, &format, &formatter.inner, &mut v)
+            .serialize_shex(&shex.inner, format, &formatter.inner, &mut v)
             .map_err(|e| RudofError::SerializingShEx { error: format!("{e}") })
             .map_err(cnv_err)?;
         let str = String::from_utf8(v)
@@ -453,18 +489,19 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If shapes are malformed.
+    #[pyo3(signature = (input, format=None, base=None, reader_mode=None))]
     pub fn read_shacl_str(
         &mut self,
         input: &str,
-        format: &PyShaclFormat,
+        format: Option<&PyShaclFormat>,
         base: Option<&str>,
-        reader_mode: &PyReaderMode,
+        reader_mode: Option<&PyReaderMode>,
     ) -> PyResult<()> {
         let format = cnv_shacl_format(format);
         let reader_mode = cnv_reader_mode(reader_mode);
         self.inner.reset_shacl();
         self.inner
-            .read_shacl(&mut input.as_bytes(), input, &format, base, &reader_mode)
+            .read_shacl(&mut input.as_bytes(), input, format, base, reader_mode)
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -479,19 +516,27 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If file/URL cannot be read or shapes are malformed.
+    #[pyo3(signature = (input, format=None, base=None, reader_mode=None))]
     pub fn read_shacl(
         &mut self,
         input: &str,
-        format: &PyShaclFormat,
+        format: Option<&PyShaclFormat>,
         base: Option<&str>,
-        reader_mode: &PyReaderMode,
+        reader_mode: Option<&PyReaderMode>,
     ) -> PyResult<()> {
         let format = cnv_shacl_format(format);
-        let mut reader = get_reader(input, Some(format.mime_type()), "SHACL shapes graph")?;
+
+        let mime = if let Some(format) = format {
+            format.mime_type()
+        } else {
+            ShaclFormat::Turtle.mime_type()
+        };
+
+        let mut reader = get_reader(input, Some(mime), "SHACL shapes graph")?;
         self.inner.reset_shacl();
         let reader_mode = cnv_reader_mode(reader_mode);
         self.inner
-            .read_shacl(&mut reader, input, &format, base, &reader_mode)
+            .read_shacl(&mut reader, input, format, base, reader_mode)
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -506,11 +551,12 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If no shapes are loaded or serialization fails.
-    pub fn serialize_shacl(&self, format: &PyShaclFormat) -> PyResult<String> {
+    #[pyo3(signature = (format=None))]
+    pub fn serialize_shacl(&self, format: Option<&PyShaclFormat>) -> PyResult<String> {
         let mut v = Vec::new();
         let format = cnv_shacl_format(format);
         self.inner
-            .serialize_shacl(&format, &mut v)
+            .serialize_shacl(format, &mut v)
             .map_err(|e| RudofError::SerializingShacl { error: format!("{e}") })
             .map_err(cnv_err)?;
         let str = String::from_utf8(v)
@@ -531,8 +577,9 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If ShapeMap is malformed.
-    pub fn read_shapemap_str(&mut self, str: &str, format: &PyShapeMapFormat) -> PyResult<()> {
-        let format = cnv_shapemap_format(format);
+    #[pyo3(signature = (str, format=None))]
+    pub fn read_shapemap_str(&mut self, str: &str, format: Option<&PyShapeMapFormat>) -> PyResult<()> {
+        let format = cnv_shapemap_format(format).unwrap_or(&ShapeMapFormat::Compact);
         self.inner
             .read_shapemap(str.as_bytes(), "String", &format, &None)
             .map_err(cnv_err)?;
@@ -547,9 +594,18 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If file/URL cannot be read or ShapeMap is malformed.
-    pub fn read_shapemap(&mut self, input: &str, format: &PyShapeMapFormat) -> PyResult<()> {
+    #[pyo3(signature = (input, format=None))]
+    pub fn read_shapemap(&mut self, input: &str, format: Option<&PyShapeMapFormat>) -> PyResult<()> {
         let format = cnv_shapemap_format(format);
-        let reader = get_reader(input, Some(format.mime_type()), "Shapemap")?;
+        let mime = if let Some(format) = format {
+            format.mime_type()
+        } else {
+            ShapeMapFormat::Compact.mime_type()
+        };
+
+        let reader = get_reader(input, Some(mime), "Shapemap")?;
+
+        let format = format.unwrap_or(&ShapeMapFormat::Compact);
         self.inner
             .read_shapemap(reader, input, &format, &None)
             .map_err(cnv_err)?;
@@ -568,11 +624,16 @@ impl PyRudof {
     /// Raises:
     ///     RudofError: If serialization fails or if the resulting bytes cannot be converted
     ///     into a valid UTF-8 string
-    pub fn serialize_shapemap(&self, formatter: &PyShapeMapFormatter, format: &PyShapeMapFormat) -> PyResult<String> {
+    #[pyo3(signature = (formatter, format=None))]
+    pub fn serialize_shapemap(
+        &self,
+        formatter: &PyShapeMapFormatter,
+        format: Option<&PyShapeMapFormat>,
+    ) -> PyResult<String> {
         let mut v = Vec::new();
         let format = cnv_shapemap_format(format);
         self.inner
-            .serialize_shapemap(&format, &formatter.inner, &mut v)
+            .serialize_shapemap(format, &formatter.inner, &mut v)
             .map_err(|e| RudofError::SerializingShacl { error: format!("{e}") })
             .map_err(cnv_err)?;
         let str = String::from_utf8(v)
@@ -619,17 +680,15 @@ impl PyRudof {
     /// Note:
     ///     - Native mode is recommended for production (faster)
     ///     - SPARQL mode useful for debugging complex constraints
+    #[pyo3(signature = (mode=None, shapes_graph_source=None))]
     pub fn validate_shacl(
         &mut self,
-        mode: &PyShaclValidationMode,
-        shapes_graph_source: &PyShapesGraphSource,
+        mode: Option<&PyShaclValidationMode>,
+        shapes_graph_source: Option<&PyShapesGraphSource>,
     ) -> PyResult<PyValidationReport> {
         let mode = cnv_shacl_validation_mode(mode);
         let shapes_graph_source = cnv_shapes_graph_source(shapes_graph_source);
-        let result = self
-            .inner
-            .validate_shacl(&mode, &shapes_graph_source)
-            .map_err(cnv_err)?;
+        let result = self.inner.validate_shacl(mode, shapes_graph_source).map_err(cnv_err)?;
         Ok(PyValidationReport { inner: result })
     }
 
@@ -641,10 +700,11 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If DCTAP data is malformed.
-    pub fn read_dctap_str(&mut self, input: &str, format: &PyDCTapFormat) -> PyResult<()> {
+    #[pyo3(signature = (input, format=None))]
+    pub fn read_dctap_str(&mut self, input: &str, format: Option<&PyDCTapFormat>) -> PyResult<()> {
         self.inner.reset_dctap();
         let format = cnv_dctap_format(format);
-        self.inner.read_dctap(input.as_bytes(), &format).map_err(cnv_err)?;
+        self.inner.read_dctap(input.as_bytes(), format).map_err(cnv_err)?;
         Ok(())
     }
 
@@ -656,11 +716,12 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If file cannot be read or data is malformed.
-    pub fn read_dctap_path(&mut self, path_name: &str, format: &PyDCTapFormat) -> PyResult<()> {
+    #[pyo3(signature = (path_name, format=None))]
+    pub fn read_dctap_path(&mut self, path_name: &str, format: Option<&PyDCTapFormat>) -> PyResult<()> {
         let reader = get_path_reader(path_name, "DCTAP data")?;
         self.inner.reset_dctap();
         let format = cnv_dctap_format(format);
-        self.inner.read_dctap(reader, &format).map_err(cnv_err)?;
+        self.inner.read_dctap(reader, format).map_err(cnv_err)?;
         Ok(())
     }
 
@@ -701,9 +762,10 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If query is malformed or execution fails.
-    pub fn run_query_construct_str(&mut self, input: &str, format: &PyQueryResultFormat) -> PyResult<String> {
+    #[pyo3(signature = (input, format=None))]
+    pub fn run_query_construct_str(&mut self, input: &str, format: Option<&PyQueryResultFormat>) -> PyResult<String> {
         let format = cnv_query_result_format(format);
-        let str = self.inner.run_query_construct_str(input, &format).map_err(cnv_err)?;
+        let str = self.inner.run_query_construct_str(input, format).map_err(cnv_err)?;
         Ok(str)
     }
 
@@ -768,9 +830,10 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If no query is loaded or it's not a CONSTRUCT query.
-    pub fn run_current_query_construct(&mut self, format: &PyQueryResultFormat) -> PyResult<String> {
+    #[pyo3(signature = (format=None))]
+    pub fn run_current_query_construct(&mut self, format: Option<&PyQueryResultFormat>) -> PyResult<String> {
         let format = cnv_query_result_format(format);
-        let str = self.inner.run_current_query_construct(&format).map_err(cnv_err)?;
+        let str = self.inner.run_current_query_construct(format).map_err(cnv_err)?;
         Ok(str)
     }
 
@@ -833,18 +896,25 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If file/URL cannot be read or data is malformed.
+    #[pyo3(signature = (input, format=None, base=None, reader_mode=None))]
     pub fn read_service_description(
         &mut self,
         input: &str,
-        format: &PyRDFFormat,
+        format: Option<&PyRDFFormat>,
         base: Option<&str>,
-        reader_mode: &PyReaderMode,
+        reader_mode: Option<&PyReaderMode>,
     ) -> PyResult<()> {
         let reader_mode = cnv_reader_mode(reader_mode);
         let format = cnv_rdf_format(format);
-        let mut reader = get_reader(input, Some(format.mime_type()), "Service Description")?;
+        let mime = if let Some(format) = format {
+            format.mime_type()
+        } else {
+            RDFFormat::Turtle.mime_type()
+        };
+
+        let mut reader = get_reader(input, Some(mime), "Service Description")?;
         self.inner
-            .read_service_description(&mut reader, "String", &format, base, &reader_mode)
+            .read_service_description(&mut reader, "String", format, base, reader_mode)
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -859,17 +929,19 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If data is malformed.
+    #[pyo3(signature = (input, format=None, base=None, reader_mode=None))]
     pub fn read_service_description_str(
         &mut self,
         input: &str,
-        format: &PyRDFFormat,
+        format: Option<&PyRDFFormat>,
         base: Option<&str>,
-        reader_mode: &PyReaderMode,
+        reader_mode: Option<&PyReaderMode>,
     ) -> PyResult<()> {
         let reader_mode = cnv_reader_mode(reader_mode);
         let format = cnv_rdf_format(format);
+
         self.inner
-            .read_service_description(&mut input.as_bytes(), "String", &format, base, &reader_mode)
+            .read_service_description(&mut input.as_bytes(), "String", format, base, reader_mode)
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -882,12 +954,17 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If no description is loaded or file cannot be written.
-    pub fn serialize_service_description(&self, output: &str, format: &PyServiceDescriptionFormat) -> PyResult<()> {
+    #[pyo3(signature = (output, format=None))]
+    pub fn serialize_service_description(
+        &self,
+        output: &str,
+        format: Option<&PyServiceDescriptionFormat>,
+    ) -> PyResult<()> {
         let file = File::create(output)?;
         let mut writer = BufWriter::new(file);
         let service_description_format = cnv_service_description_format(format);
         self.inner
-            .serialize_service_description(&service_description_format, &mut writer)
+            .serialize_service_description(service_description_format, &mut writer)
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -1001,29 +1078,26 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If schema is malformed or conversion fails.
+    #[pyo3(signature = (schema, mode=None, format=None, base=None, reader_mode=None, label=None))]
     pub fn get_coshamo_str(
         &mut self,
         schema: &str,
-        mode: &str,
-        format: &str,
+        mode: Option<&str>,
+        format: Option<&str>,
         base: Option<&str>,
-        reader_mode: &PyReaderMode,
+        reader_mode: Option<&PyReaderMode>,
         label: Option<&str>,
     ) -> PyResult<PyCoShaMo> {
+        let format = format.unwrap_or("turtle");
+        let mode = mode.unwrap_or("shex");
+        let reader_mode = cnv_reader_mode(reader_mode);
+
         let format = CompareSchemaFormat::from_str(format).map_err(cnv_comparator_err)?;
         let mode = CompareSchemaMode::from_str(mode).map_err(cnv_comparator_err)?;
         let mut reader = schema.as_bytes();
         let coshamo = self
             .inner
-            .get_coshamo(
-                &mut reader,
-                &mode,
-                &format,
-                base,
-                &reader_mode.into(),
-                label,
-                Some("string"),
-            )
+            .get_coshamo(&mut reader, &mode, &format, base, reader_mode, label, Some("string"))
             .map_err(PyRudofError::from)?;
         Ok(PyCoShaMo { inner: coshamo })
     }
@@ -1055,16 +1129,22 @@ impl PyRudof {
         &mut self,
         schema1: &str,
         schema2: &str,
-        mode1: &str,
-        mode2: &str,
-        format1: &str,
-        format2: &str,
+        mode1: Option<&str>,
+        mode2: Option<&str>,
+        format1: Option<&str>,
+        format2: Option<&str>,
         base1: Option<&str>,
         base2: Option<&str>,
         label1: Option<&str>,
         label2: Option<&str>,
-        reader_mode: &PyReaderMode,
+        reader_mode: Option<&PyReaderMode>,
     ) -> PyResult<PyShaCo> {
+        let mode1 = mode1.unwrap_or("shex");
+        let mode2 = mode2.unwrap_or("shex");
+        let format1 = format1.unwrap_or("turtle");
+        let format2 = format2.unwrap_or("turtle");
+        let reader_mode = cnv_reader_mode(reader_mode);
+
         let format1 = CompareSchemaFormat::from_str(format1).map_err(cnv_comparator_err)?;
         let format2 = CompareSchemaFormat::from_str(format2).map_err(cnv_comparator_err)?;
         let mode1 = CompareSchemaMode::from_str(mode1).map_err(cnv_comparator_err)?;
@@ -1077,7 +1157,7 @@ impl PyRudof {
                 &mode1,
                 &format1,
                 base1,
-                &reader_mode.into(),
+                reader_mode,
                 label1,
                 Some("string"),
             )
@@ -1091,7 +1171,7 @@ impl PyRudof {
                 &mode2,
                 &format2,
                 base2,
-                &reader_mode.into(),
+                reader_mode,
                 label2,
                 Some("string"),
             )
@@ -1490,11 +1570,12 @@ impl PyServiceDescription {
     ///
     /// Raises:
     ///     RudofError: If serialization fails for any reason.
-    pub fn serialize(&self, format: &PyServiceDescriptionFormat) -> PyResult<String> {
+    #[pyo3(signature = (format=None))]
+    pub fn serialize(&self, format: Option<&PyServiceDescriptionFormat>) -> PyResult<String> {
         let mut v = Vec::new();
         let service_description_format = cnv_service_description_format(format);
         self.inner
-            .serialize(&service_description_format, &mut v)
+            .serialize(service_description_format, &mut v)
             .map_err(|e| RudofError::SerializingServiceDescription { error: format!("{e}") })
             .map_err(cnv_err)?;
         let str = String::from_utf8(v)
@@ -1919,17 +2000,20 @@ impl PyResultShapeMap {
     ///
     /// Raises:
     ///     PyRudofError: If an error occurs during table formatting.
+    #[pyo3(signature = (sort_mode=None, with_details=None, terminal_width=None))]
     pub fn show_as_table(
         &self,
-        sort_mode: &PySortModeResultMap,
-        with_details: bool,
-        terminal_width: usize,
+        sort_mode: Option<&PySortModeResultMap>,
+        with_details: Option<bool>,
+        terminal_width: Option<usize>,
     ) -> PyResult<String> {
         let capture = CaptureWriter::new();
         let capture_clone = capture.clone();
         let boxed: Box<dyn Write> = Box::new(capture);
+        let sort_mode = cnv_sort_mode(sort_mode);
+
         self.inner
-            .as_table(boxed, sort_mode.into(), with_details, terminal_width)
+            .as_table(boxed, sort_mode, with_details, terminal_width)
             .map_err(|e| PyRudofError::str(format!("Error converting ResultShapeMap to table: {e}")))?;
         let result = capture_clone.to_string();
         Ok(result)
@@ -2002,7 +2086,8 @@ impl PyValidationReport {
     /// Note:
     ///     The table uses fixed-width columns and may include ANSI colors if
     ///     the underlying formatter is configured for terminal output.
-    pub fn show_as_table(&self, with_details: bool, terminal_width: usize) -> PyResult<String> {
+    #[pyo3(signature = (with_details=None, terminal_width=None))]
+    pub fn show_as_table(&self, with_details: Option<bool>, terminal_width: Option<usize>) -> PyResult<String> {
         let result = &self.inner;
         let capture = CaptureWriter::new();
         let capture_clone = capture.clone();
@@ -2271,10 +2356,12 @@ fn cnv_comparator_err(e: ComparatorError) -> PyErr {
 ///
 /// Returns:
 ///     DCTAPFormat: Corresponding Rust DCTAP format.
-fn cnv_dctap_format(format: &PyDCTapFormat) -> DCTAPFormat {
-    match format {
-        PyDCTapFormat::CSV => DCTAPFormat::Csv,
-        PyDCTapFormat::XLSX => DCTAPFormat::Xlsx,
+fn cnv_dctap_format(format: Option<&PyDCTapFormat>) -> Option<&DCTAPFormat> {
+    format?;
+
+    match format.unwrap() {
+        PyDCTapFormat::CSV => Some(&DCTAPFormat::Csv),
+        PyDCTapFormat::XLSX => Some(&DCTAPFormat::Xlsx),
     }
 }
 
@@ -2285,10 +2372,12 @@ fn cnv_dctap_format(format: &PyDCTapFormat) -> DCTAPFormat {
 ///
 /// Returns:
 ///     ReaderMode: Corresponding Rust reader mode.
-fn cnv_reader_mode(format: &PyReaderMode) -> ReaderMode {
-    match format {
-        PyReaderMode::Lax => ReaderMode::Lax,
-        PyReaderMode::Strict => ReaderMode::Strict,
+fn cnv_reader_mode(format: Option<&PyReaderMode>) -> Option<&ReaderMode> {
+    format?;
+
+    match format.unwrap() {
+        PyReaderMode::Lax => Some(&ReaderMode::Lax),
+        PyReaderMode::Strict => Some(&ReaderMode::Strict),
     }
 }
 
@@ -2299,11 +2388,13 @@ fn cnv_reader_mode(format: &PyReaderMode) -> ReaderMode {
 ///
 /// Returns:
 ///     ServiceDescriptionFormat: Corresponding Rust enum.
-fn cnv_service_description_format(format: &PyServiceDescriptionFormat) -> ServiceDescriptionFormat {
-    match format {
-        PyServiceDescriptionFormat::Internal => ServiceDescriptionFormat::Internal,
-        PyServiceDescriptionFormat::Mie => ServiceDescriptionFormat::Mie,
-        PyServiceDescriptionFormat::Json => ServiceDescriptionFormat::Json,
+fn cnv_service_description_format(format: Option<&PyServiceDescriptionFormat>) -> Option<&ServiceDescriptionFormat> {
+    format?;
+
+    match format.unwrap() {
+        PyServiceDescriptionFormat::Internal => Some(&ServiceDescriptionFormat::Internal),
+        PyServiceDescriptionFormat::Mie => Some(&ServiceDescriptionFormat::Mie),
+        PyServiceDescriptionFormat::Json => Some(&ServiceDescriptionFormat::Json),
     }
 }
 
@@ -2314,15 +2405,17 @@ fn cnv_service_description_format(format: &PyServiceDescriptionFormat) -> Servic
 ///
 /// Returns:
 ///     RDFFormat: Corresponding Rust enum.
-fn cnv_rdf_format(format: &PyRDFFormat) -> RDFFormat {
-    match format {
-        PyRDFFormat::Turtle => RDFFormat::Turtle,
-        PyRDFFormat::NTriples => RDFFormat::NTriples,
-        PyRDFFormat::Rdfxml => RDFFormat::Rdfxml,
-        PyRDFFormat::TriG => RDFFormat::TriG,
-        PyRDFFormat::N3 => RDFFormat::N3,
-        PyRDFFormat::NQuads => RDFFormat::NQuads,
-        PyRDFFormat::JsonLd => RDFFormat::JsonLd,
+fn cnv_rdf_format(format: Option<&PyRDFFormat>) -> Option<&RDFFormat> {
+    format?;
+
+    match format.unwrap() {
+        PyRDFFormat::Turtle => Some(&RDFFormat::Turtle),
+        PyRDFFormat::NTriples => Some(&RDFFormat::NTriples),
+        PyRDFFormat::Rdfxml => Some(&RDFFormat::Rdfxml),
+        PyRDFFormat::TriG => Some(&RDFFormat::TriG),
+        PyRDFFormat::N3 => Some(&RDFFormat::N3),
+        PyRDFFormat::NQuads => Some(&RDFFormat::NQuads),
+        PyRDFFormat::JsonLd => Some(&RDFFormat::JsonLd),
     }
 }
 
@@ -2333,10 +2426,12 @@ fn cnv_rdf_format(format: &PyRDFFormat) -> RDFFormat {
 ///
 /// Returns:
 ///     ShapeMapFormat: Corresponding Rust enum.
-fn cnv_shapemap_format(format: &PyShapeMapFormat) -> ShapeMapFormat {
-    match format {
-        PyShapeMapFormat::Compact => ShapeMapFormat::Compact,
-        PyShapeMapFormat::JSON => ShapeMapFormat::Json,
+fn cnv_shapemap_format(format: Option<&PyShapeMapFormat>) -> Option<&ShapeMapFormat> {
+    format?;
+
+    match format.unwrap() {
+        PyShapeMapFormat::Compact => Some(&ShapeMapFormat::Compact),
+        PyShapeMapFormat::JSON => Some(&ShapeMapFormat::Json),
     }
 }
 
@@ -2347,11 +2442,13 @@ fn cnv_shapemap_format(format: &PyShapeMapFormat) -> ShapeMapFormat {
 ///
 /// Returns:
 ///     ShExFormat: Corresponding Rust enum.
-fn cnv_shex_format(format: &PyShExFormat) -> ShExFormat {
-    match format {
-        PyShExFormat::ShExC => ShExFormat::ShExC,
-        PyShExFormat::ShExJ => ShExFormat::ShExJ,
-        PyShExFormat::Turtle => ShExFormat::RDFFormat(RDFFormat::Turtle),
+fn cnv_shex_format(format: Option<&PyShExFormat>) -> Option<&ShExFormat> {
+    format?;
+
+    match format.unwrap() {
+        PyShExFormat::ShExC => Some(&ShExFormat::ShExC),
+        PyShExFormat::ShExJ => Some(&ShExFormat::ShExJ),
+        PyShExFormat::Turtle => Some(&ShExFormat::RDFFormat(RDFFormat::Turtle)),
     }
 }
 
@@ -2362,14 +2459,16 @@ fn cnv_shex_format(format: &PyShExFormat) -> ShExFormat {
 ///
 /// Returns:
 ///     ShaclFormat: Corresponding Rust enum.
-fn cnv_shacl_format(format: &PyShaclFormat) -> ShaclFormat {
-    match format {
-        PyShaclFormat::Turtle => ShaclFormat::Turtle,
-        PyShaclFormat::NTriples => ShaclFormat::NTriples,
-        PyShaclFormat::Rdfxml => ShaclFormat::RdfXml,
-        PyShaclFormat::TriG => ShaclFormat::TriG,
-        PyShaclFormat::N3 => ShaclFormat::N3,
-        PyShaclFormat::NQuads => ShaclFormat::NQuads,
+fn cnv_shacl_format(format: Option<&PyShaclFormat>) -> Option<&ShaclFormat> {
+    format?;
+
+    match format.unwrap() {
+        PyShaclFormat::Turtle => Some(&ShaclFormat::Turtle),
+        PyShaclFormat::NTriples => Some(&ShaclFormat::NTriples),
+        PyShaclFormat::Rdfxml => Some(&ShaclFormat::RdfXml),
+        PyShaclFormat::TriG => Some(&ShaclFormat::TriG),
+        PyShaclFormat::N3 => Some(&ShaclFormat::N3),
+        PyShaclFormat::NQuads => Some(&ShaclFormat::NQuads),
     }
 }
 
@@ -2380,10 +2479,12 @@ fn cnv_shacl_format(format: &PyShaclFormat) -> ShaclFormat {
 ///
 /// Returns:
 ///     ShaclValidationMode: Corresponding Rust enum.
-fn cnv_shacl_validation_mode(mode: &PyShaclValidationMode) -> ShaclValidationMode {
-    match mode {
-        PyShaclValidationMode::Native => ShaclValidationMode::Native,
-        PyShaclValidationMode::Sparql => ShaclValidationMode::Sparql,
+fn cnv_shacl_validation_mode(mode: Option<&PyShaclValidationMode>) -> Option<&ShaclValidationMode> {
+    mode?;
+
+    match mode.unwrap() {
+        PyShaclValidationMode::Native => Some(&ShaclValidationMode::Native),
+        PyShaclValidationMode::Sparql => Some(&ShaclValidationMode::Sparql),
     }
 }
 
@@ -2394,10 +2495,12 @@ fn cnv_shacl_validation_mode(mode: &PyShaclValidationMode) -> ShaclValidationMod
 ///
 /// Returns:
 ///     ShapesGraphSource: Corresponding Rust enum.
-fn cnv_shapes_graph_source(sgs: &PyShapesGraphSource) -> ShapesGraphSource {
-    match sgs {
-        PyShapesGraphSource::CurrentData => ShapesGraphSource::CurrentData,
-        PyShapesGraphSource::CurrentSchema => ShapesGraphSource::CurrentSchema,
+fn cnv_shapes_graph_source(sgs: Option<&PyShapesGraphSource>) -> Option<&ShapesGraphSource> {
+    sgs?;
+
+    match sgs.unwrap() {
+        PyShapesGraphSource::CurrentData => Some(&ShapesGraphSource::CurrentData),
+        PyShapesGraphSource::CurrentSchema => Some(&ShapesGraphSource::CurrentSchema),
     }
 }
 
@@ -2408,15 +2511,35 @@ fn cnv_shapes_graph_source(sgs: &PyShapesGraphSource) -> ShapesGraphSource {
 ///
 /// Returns:
 ///     QueryResultFormat: Corresponding Rust enum.
-fn cnv_query_result_format(format: &PyQueryResultFormat) -> QueryResultFormat {
-    match format {
-        PyQueryResultFormat::Turtle => QueryResultFormat::Turtle,
-        PyQueryResultFormat::NTriples => QueryResultFormat::NTriples,
-        PyQueryResultFormat::Rdfxml => QueryResultFormat::RdfXml,
-        PyQueryResultFormat::CSV => QueryResultFormat::Csv,
-        PyQueryResultFormat::TriG => QueryResultFormat::TriG,
-        PyQueryResultFormat::N3 => QueryResultFormat::N3,
-        PyQueryResultFormat::NQuads => QueryResultFormat::NQuads,
+fn cnv_query_result_format(format: Option<&PyQueryResultFormat>) -> Option<&QueryResultFormat> {
+    format?;
+
+    match format.unwrap() {
+        PyQueryResultFormat::Turtle => Some(&QueryResultFormat::Turtle),
+        PyQueryResultFormat::NTriples => Some(&QueryResultFormat::NTriples),
+        PyQueryResultFormat::Rdfxml => Some(&QueryResultFormat::RdfXml),
+        PyQueryResultFormat::CSV => Some(&QueryResultFormat::Csv),
+        PyQueryResultFormat::TriG => Some(&QueryResultFormat::TriG),
+        PyQueryResultFormat::N3 => Some(&QueryResultFormat::N3),
+        PyQueryResultFormat::NQuads => Some(&QueryResultFormat::NQuads),
+    }
+}
+
+/// Converts a Python sort mode result map into the corresponding Rust `SortMode`.
+///
+/// Args:
+///     format (PySortModeResultMap): Python enum for sort mode result format.
+///
+/// Returns:
+///     SortMode: Corresponding Rust enum.
+fn cnv_sort_mode(mode: Option<&PySortModeResultMap>) -> Option<&SortMode> {
+    mode?;
+
+    match mode.unwrap() {
+        PySortModeResultMap::Node => Some(&SortMode::Node),
+        PySortModeResultMap::Shape => Some(&SortMode::Shape),
+        PySortModeResultMap::Status => Some(&SortMode::Status),
+        PySortModeResultMap::Details => Some(&SortMode::Details),
     }
 }
 

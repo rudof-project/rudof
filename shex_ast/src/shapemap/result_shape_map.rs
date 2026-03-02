@@ -185,7 +185,7 @@ impl ResultShapeMap {
         let mut wtr = csv::Writer::from_writer(writer);
         wtr.write_record(["node", "shape", "status", "details"])?;
 
-        let cmp = self.get_comparator(sort_mode);
+        let cmp = self.get_comparator(&sort_mode);
         for (node, label, status) in self.iter().sorted_by(cmp) {
             let node_label = show_node(node, &self.nodes_prefixmap());
             let shape_label = show_shapelabel(label, &self.shapes_prefixmap());
@@ -228,10 +228,14 @@ impl ResultShapeMap {
     pub fn as_table<W: Write>(
         &self,
         mut writer: W,
-        sort_mode: SortMode,
-        with_details: bool,
-        terminal_width: usize,
+        sort_mode: Option<&SortMode>,
+        with_details: Option<bool>,
+        terminal_width: Option<usize>,
     ) -> Result<(), Error> {
+        let with_details = with_details.unwrap_or(false);
+        let terminal_width = terminal_width.unwrap_or(80);
+        let sort_mode = sort_mode.unwrap_or(&SortMode::Node);
+
         let mut builder = Builder::default();
         if with_details {
             builder.push_record(["Node", "Shape", "Status", "Details"]);
@@ -284,7 +288,7 @@ impl ResultShapeMap {
 
     fn get_comparator(
         &self,
-        sort_mode: SortMode,
+        sort_mode: &SortMode,
     ) -> impl FnMut(&(&Node, &ShapeLabel, &ValidationStatus), &(&Node, &ShapeLabel, &ValidationStatus)) -> std::cmp::Ordering
     {
         match sort_mode {

@@ -161,7 +161,9 @@ impl ServiceDescription {
         mie
     }
 
-    pub fn serialize<W: io::Write>(&self, format: &crate::ServiceDescriptionFormat, writer: &mut W) -> io::Result<()> {
+    pub fn serialize<W: io::Write>(&self, format: Option<&ServiceDescriptionFormat>, writer: &mut W) -> io::Result<()> {
+        let format = format.unwrap_or(&ServiceDescriptionFormat::Json);
+
         match format {
             ServiceDescriptionFormat::Internal => writer.write_all(self.to_string().as_bytes()),
             ServiceDescriptionFormat::Mie => {

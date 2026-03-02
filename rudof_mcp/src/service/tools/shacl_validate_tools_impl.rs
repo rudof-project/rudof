@@ -183,9 +183,9 @@ pub async fn validate_shacl_impl(
                 Some(json!({"operation":"validate_shacl_impl", "phase":"add_shacl_schema"})),
             )
         })?;
-        rudof.validate_shacl(&parsed_mode, &ShapesGraphSource::current_schema())
+        rudof.validate_shacl(Some(&parsed_mode), Some(&ShapesGraphSource::current_schema()))
     } else {
-        rudof.validate_shacl(&parsed_mode, &ShapesGraphSource::current_data())
+        rudof.validate_shacl(Some(&parsed_mode), Some(&ShapesGraphSource::current_data()))
     }
     .map_err(|e| {
         internal_error(

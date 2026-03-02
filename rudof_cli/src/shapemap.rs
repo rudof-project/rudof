@@ -30,7 +30,7 @@ pub fn run_shapemap(
         ColorSupport::WithColor => ShapeMapFormatter::default(),
         ColorSupport::NoColor => ShapeMapFormatter::default().without_colors(),
     };
-    rudof.serialize_shapemap(&result_format, &formatter, &mut writer)?;
+    rudof.serialize_shapemap(Some(&result_format), &formatter, &mut writer)?;
     Ok(())
 }
 
