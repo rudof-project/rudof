@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use iri_s::IriS;
-use rudof_rdf::rdf_core::Rdf;
+use rudof_rdf::rdf_core::{Rdf, term::Object};
 use shacl_ast::{ShaclError, ShaclSchema, node_shape::NodeShape, property_shape::PropertyShape, shape::Shape};
 
 #[derive(Debug, Clone, Default)]
@@ -48,7 +48,7 @@ impl ClosedInfo {
         let (is_closed, ignored_properties) = shape.closed_component();
         if is_closed {
             let ignored_properties: HashSet<IriS> = ignored_properties.into_iter().collect();
-            let defined_properties = defined_properties(shape, schema)?;
+            let defined_properties = defined_properties_for(shape.property_shapes(), schema)?;
             let all_properties = defined_properties
                 .union(&ignored_properties)
                 .cloned()
@@ -70,7 +70,7 @@ impl ClosedInfo {
         let (is_closed, ignored_properties) = shape.closed_component();
         if is_closed {
             let ignored_properties: HashSet<IriS> = ignored_properties.into_iter().collect();
-            let defined_properties = defined_properties_property_shape(shape, schema)?;
+            let defined_properties = defined_properties_for(shape.property_shapes(), schema)?;
             let all_properties = defined_properties
                 .union(&ignored_properties)
                 .cloned()
@@ -86,10 +86,9 @@ impl ClosedInfo {
     }
 }
 
-// TODO: Refactor to avoid code duplication between this method and the next one
-fn defined_properties<R: Rdf>(shape: &NodeShape<R>, schema: &ShaclSchema<R>) -> Result<HashSet<IriS>, ShaclError> {
+fn defined_properties_for<R: Rdf>(properties: &[Object], schema: &ShaclSchema<R>) -> Result<HashSet<IriS>, ShaclError> {
     let mut defined_properties: HashSet<IriS> = HashSet::new();
-    for property_shape_ref in shape.property_shapes() {
+    for property_shape_ref in properties {
         let property_shape = schema
             .get_shape(property_shape_ref)
             .ok_or_else(|| ShaclError::ShapeNotFound {
@@ -97,8 +96,12 @@ fn defined_properties<R: Rdf>(shape: &NodeShape<R>, schema: &ShaclSchema<R>) -> 
             })?;
         match property_shape {
             Shape::PropertyShape(ps) => {
-                let pred = ps.path().pred().unwrap();
-                defined_properties.insert(pred.clone());
+                // Better to ignore complex paths then make Rudof crash
+                // Also, paths like [ sh:inversePath ex:path ] should be ignored, as that does not
+                // add an expected property
+                if let Some(pred) = ps.path().pred() {
+                    defined_properties.insert(pred.clone());
+                }
             },
             _ => {
                 return Err(ShaclError::ShapeNotFound {
@@ -107,31 +110,6 @@ fn defined_properties<R: Rdf>(shape: &NodeShape<R>, schema: &ShaclSchema<R>) -> 
             },
         }
     }
-    Ok(defined_properties)
-}
 
-fn defined_properties_property_shape<R: Rdf>(
-    shape: &PropertyShape<R>,
-    schema: &ShaclSchema<R>,
-) -> Result<HashSet<IriS>, ShaclError> {
-    let mut defined_properties: HashSet<IriS> = HashSet::new();
-    for property_shape_ref in shape.property_shapes() {
-        let property_shape = schema
-            .get_shape(property_shape_ref)
-            .ok_or_else(|| ShaclError::ShapeNotFound {
-                shape: Box::new(property_shape_ref.clone()),
-            })?;
-        match property_shape {
-            Shape::PropertyShape(ps) => {
-                let pred = ps.path().pred().unwrap();
-                defined_properties.insert(pred.clone());
-            },
-            _ => {
-                return Err(ShaclError::ShapeNotFound {
-                    shape: Box::new(property_shape_ref.clone()),
-                });
-            },
-        }
-    }
     Ok(defined_properties)
 }
