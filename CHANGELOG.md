@@ -8,6 +8,8 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Removed
 
 ## v0.2.6
+### Fixed
+- Relative IRIs are now parsed consistently in shapemaps, RDF data and ShEx solving issue #520
 
 ### Changed
 - Option `show-schema` has been changed to use the negatable pattern with `show_schema` as a flag that can be overriden by `no_show_schema` which seems more ergonomic.
