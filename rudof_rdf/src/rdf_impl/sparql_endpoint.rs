@@ -14,11 +14,14 @@ use oxrdf::{
 };
 use prefixmap::PrefixMap;
 use regex::Regex;
+use reqwest::header::{ACCEPT, HeaderMap, HeaderValue, USER_AGENT};
 use serde::{Serialize, ser::SerializeStruct};
 use sparesults::{
     QueryResultsFormat, QueryResultsParser, QuerySolution as OxQuerySolution, ReaderQueryResultsParserOutput,
 };
+use std::collections::HashMap;
 use std::{collections::HashSet, fmt::Display, hash::Hash, str::FromStr, sync::Arc};
+use tokio::sync::RwLock;
 use url::Url;
 
 /// Type alias for Result with SparqlEndpointError.
@@ -45,14 +48,8 @@ pub struct SparqlEndpoint {
     /// HTTP client configured for SELECT queries (expects JSON results).
     client: Arc<reqwest::Client>,
 
-    /// HTTP client configured for CONSTRUCT queries with Turtle format.
-    client_construct_turtle: Arc<reqwest::Client>,
-
-    /// HTTP client configured for CONSTRUCT queries with RDF/XML format.
-    client_construct_rdfxml: Arc<reqwest::Client>,
-
-    /// HTTP client configured for CONSTRUCT queries with JSON-LD format.
-    client_construct_jsonld: Arc<reqwest::Client>,
+    /// Cache of HTTP clients for CONSTRUCT queries
+    construct_clients: Arc<RwLock<HashMap<QueryResultFormat, Arc<reqwest::Client>>>>,
 }
 
 impl PartialEq for SparqlEndpoint {
@@ -115,17 +112,12 @@ impl SparqlEndpoint {
     /// ```
     pub fn new(iri: &IriS, prefixmap: &PrefixMap) -> Result<SparqlEndpoint> {
         let client = Arc::new(sparql_client()?);
-        let client_construct_turtle = Arc::new(sparql_client_construct_turtle()?);
-        let client_construct_jsonld = Arc::new(sparql_client_construct_jsonld()?);
-        let client_construct_rdfxml = Arc::new(sparql_client_construct_rdfxml()?);
 
         Ok(SparqlEndpoint {
             endpoint_iri: iri.clone(),
             prefixmap: Arc::new(prefixmap.clone()),
             client,
-            client_construct_turtle,
-            client_construct_rdfxml,
-            client_construct_jsonld,
+            construct_clients: Arc::new(RwLock::new(HashMap::new())),
         })
     }
 
@@ -299,18 +291,28 @@ impl SparqlEndpoint {
     /// ```
     pub async fn query_construct_async(&self, query: &str, format: &QueryResultFormat) -> Result<String> {
         // Select the appropriate client based on the requested format
-        let client = match format {
-            QueryResultFormat::Turtle => &self.client_construct_turtle,
-            QueryResultFormat::RdfXml => &self.client_construct_rdfxml,
-            QueryResultFormat::JsonLd => &self.client_construct_jsonld,
-            _ => {
-                return Err(SparqlEndpointError::UnsupportedConstructFormat {
-                    format: format.to_string(),
-                });
-            },
-        };
+        let client = self.get_construct_client(format).await?;
 
-        make_sparql_query_construct_async(query, client, &self.endpoint_iri, format).await
+        make_sparql_query_construct_async(query, &client, &self.endpoint_iri, format).await
+    }
+
+    /// Retrieves or creates an HTTP client for the given `[[QueryResultFormat]]`
+    async fn get_construct_client(&self, format: &QueryResultFormat) -> Result<Arc<reqwest::Client>> {
+        {
+            let map = self.construct_clients.read().await;
+            if let Some(client) = map.get(format) {
+                return Ok(client.clone());
+            }
+        }
+        let mut headers = HeaderMap::new();
+        headers.insert(ACCEPT, HeaderValue::from_static(format.mime_type()));
+        headers.insert(USER_AGENT, HeaderValue::from_static("rudof"));
+
+        let client = reqwest::Client::builder().default_headers(headers).build()?;
+        let client = Arc::new(client);
+
+        let mut map = self.construct_clients.write().await;
+        Ok(map.entry(format.clone()).or_insert_with(|| client.clone()).clone())
     }
 
     /// Executes a SPARQL ASK query asynchronously.
@@ -377,17 +379,12 @@ impl FromStr for SparqlEndpoint {
             // Parse IRI from angle brackets
             let iri_s = IriS::from_str(&iri_str[1])?;
             let client = Arc::new(sparql_client()?);
-            let client_construct_turtle = Arc::new(sparql_client_construct_turtle()?);
-            let client_construct_rdfxml = Arc::new(sparql_client_construct_rdfxml()?);
-            let client_construct_jsonld = Arc::new(sparql_client_construct_jsonld()?);
 
             Ok(SparqlEndpoint {
                 endpoint_iri: iri_s,
                 prefixmap: Arc::new(PrefixMap::new()),
                 client,
-                client_construct_turtle,
-                client_construct_rdfxml,
-                client_construct_jsonld,
+                construct_clients: Arc::new(RwLock::new(HashMap::new())),
             })
         } else {
             // Try to match predefined endpoint names
@@ -709,38 +706,6 @@ fn sparql_client() -> Result<reqwest::Client> {
     let client = reqwest::Client::builder().default_headers(headers).build()?;
     Ok(client)
 }
-
-/// Macro to generate HTTP client creation functions for different CONSTRUCT formats.
-///
-/// This reduces code duplication by generating similar functions with different
-/// Accept headers.
-///
-/// # Parameters
-///
-/// * `$accept_header` - The MIME type to set in the Accept header
-/// * `$func_name` - The name of the generated function
-macro_rules! create_construct_client {
-    ($accept_header:expr, $func_name:ident) => {
-        /// Creates an HTTP client configured for SPARQL CONSTRUCT queries.
-        ///
-        /// Sets the Accept header to the specified format and includes a custom User-Agent.
-        fn $func_name() -> Result<reqwest::Client> {
-            use reqwest::header::{self, ACCEPT, USER_AGENT};
-
-            let mut headers = header::HeaderMap::new();
-            headers.insert(ACCEPT, header::HeaderValue::from_static($accept_header));
-            headers.insert(USER_AGENT, header::HeaderValue::from_static("rudof"));
-
-            let client = reqwest::Client::builder().default_headers(headers).build()?;
-            Ok(client)
-        }
-    };
-}
-
-// Generate client creation functions for each CONSTRUCT format
-create_construct_client!("text/turtle", sparql_client_construct_turtle);
-create_construct_client!("application/ld+json", sparql_client_construct_jsonld);
-create_construct_client!("application/rdf+xml", sparql_client_construct_rdfxml);
 
 /// Executes a SPARQL SELECT query asynchronously.
 ///

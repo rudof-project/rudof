@@ -1,7 +1,7 @@
 use std::{fmt::Display, str::FromStr};
 
 /// Represents RDF serialization formats for query results.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum QueryResultFormat {
     /// Turtle (Terse RDF Triple Language) format.
     Turtle,
@@ -19,6 +19,21 @@ pub enum QueryResultFormat {
     N3,
     /// N-Quads format.
     NQuads,
+}
+
+impl QueryResultFormat {
+    pub fn mime_type(&self) -> &'static str {
+        match self {
+            QueryResultFormat::Turtle => "text/turtle",
+            QueryResultFormat::NTriples => "application/n-triples",
+            QueryResultFormat::JsonLd => "application/ld+json",
+            QueryResultFormat::RdfXml => "application/rdf+xml",
+            QueryResultFormat::Csv => "text/csv",
+            QueryResultFormat::TriG => "application/trig",
+            QueryResultFormat::N3 => "text/n3",
+            QueryResultFormat::NQuads => "application/n-quads",
+        }
+    }
 }
 
 impl Display for QueryResultFormat {
