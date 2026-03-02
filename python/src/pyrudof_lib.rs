@@ -604,6 +604,7 @@ impl PyRudof {
         };
 
         let reader = get_reader(input, Some(mime), "Shapemap")?;
+
         let format = format.unwrap_or(&ShapeMapFormat::Compact);
         self.inner
             .read_shapemap(reader, input, &format, &None)
