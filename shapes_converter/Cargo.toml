@@ -1,6 +1,6 @@
 [package]
 name = "shapes_converter"
-version = "0.2.3"
+version = "0.2.4"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shapes_converter"
