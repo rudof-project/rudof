@@ -132,6 +132,10 @@ pub enum Command {
         )]
         output: Option<PathBuf>,
 
+        #[arg(short = 'b', long = "base", value_name = "IRI", help = "Base IRI to resolve relative IRIs")]
+        base: Option<IriS>,
+
+
         #[arg(
             long = "force-overwrite",
             value_name = "BOOL",
@@ -177,8 +181,22 @@ pub enum Command {
         #[arg(short = 't', value_name = "BOOL", help = "Show processing time", long = "show-time")]
         show_time: Option<bool>,
 
-        #[arg(long = "show-schema", value_name = "BOOL", help = "Show schema")]
-        show_schema: Option<bool>,
+        /// Show the schema (default)
+        #[arg(
+        long = "show-schema", 
+        default_value_t = true, 
+        action = clap::ArgAction::SetTrue,
+        overrides_with = "no_show_schema"
+        )]
+        show_schema: bool,
+
+        /// Hide the schema
+        #[arg(
+        long = "no-show-schema", 
+        action = clap::ArgAction::SetFalse, 
+        overrides_with = "show_schema"
+        )]
+        no_show_schema: bool,
 
         #[arg(long = "statistics", value_name = "BOOL", help = "Show statistics about the schema")]
         show_statistics: Option<bool>,

@@ -1091,17 +1091,39 @@ impl Rudof {
     }
 
     /// Add a pair of node selector and shape selector to the current shapemap
-    pub fn shapemap_add_node_shape_selectors(&mut self, node: NodeSelector, shape: ShapeSelector) {
+    pub fn shapemap_add_node_shape_selectors(
+        &mut self,
+        node: NodeSelector,
+        base_nodes: &Option<IriS>,
+        shape: ShapeSelector,
+        base_shapes: &Option<IriS>,
+    ) -> Result<()> {
+        let node_selector = format!("{node:?}");
+        let shape_selector = format!("{shape:?}");
         match &mut self.shapemap {
             None => {
                 let mut shapemap = QueryShapeMap::new();
-                shapemap.add_association(node, shape);
-                self.shapemap = Some(shapemap)
+                shapemap
+                    .add_association(node, base_nodes, shape, base_shapes)
+                    .map_err(|e| RudofError::AddingNodeShapeSelectorToShapemap {
+                        node_selector,
+                        shape_selector,
+                        error: format!("{e}"),
+                    })?;
+                self.shapemap = Some(shapemap);
+                Ok(())
             },
             Some(sm) => {
-                sm.add_association(node, shape);
+                sm.add_association(node, base_nodes, shape, base_shapes).map_err(|e| {
+                    RudofError::AddingNodeShapeSelectorToShapemap {
+                        node_selector,
+                        shape_selector,
+                        error: format!("{e}"),
+                    }
+                })?;
+                Ok(())
             },
-        };
+        }
     }
 
     /// Read a shapemap
@@ -1110,7 +1132,9 @@ impl Rudof {
         mut reader: R,
         reader_name: &str,
         shapemap_format: &ShapeMapFormat,
+        base: &Option<IriS>,
     ) -> Result<()> {
+        trace!("Reading shapemap from reader {reader_name} with format {shapemap_format:?} and base {base:?}");
         let mut v = Vec::new();
         reader
             .read_to_end(&mut v)
@@ -1118,13 +1142,18 @@ impl Rudof {
         let s = String::from_utf8(v).map_err(|e| RudofError::Utf8Error { error: format!("{e}") })?;
         let shapemap = match shapemap_format {
             ShapeMapFormat::Compact => {
-                let shapemap =
-                    ShapeMapParser::parse(s.as_str(), &Some(self.nodes_prefixmap()), &self.shex_shapes_prefixmap())
-                        .map_err(|e| RudofError::ShapeMapParseError {
-                            source_name: reader_name.to_string(),
-                            str: s.to_string(),
-                            error: format!("{e}"),
-                        })?;
+                let shapemap = ShapeMapParser::parse(
+                    s.as_str(),
+                    &Some(self.nodes_prefixmap()),
+                    base,
+                    &self.shex_shapes_prefixmap(),
+                    base,
+                )
+                .map_err(|e| RudofError::ShapeMapParseError {
+                    source_name: reader_name.to_string(),
+                    str: s.to_string(),
+                    error: format!("{e}"),
+                })?;
                 Ok::<QueryShapeMap, RudofError>(shapemap)
             },
             _ => todo!(),
@@ -1299,7 +1328,7 @@ mod tests {
             )
             .unwrap();
         rudof
-            .read_shapemap(shapemap.as_bytes(), "Test", &ShapeMapFormat::default())
+            .read_shapemap(shapemap.as_bytes(), "Test", &ShapeMapFormat::default(), &None)
             .unwrap();
         let result = rudof.validate_shex().unwrap();
         let node = Node::iri(iri!("http://example/x"));
@@ -1328,7 +1357,7 @@ mod tests {
             .read_shex(shex.as_bytes(), &ShExFormat::ShExC, None, &ReaderMode::Strict, None)
             .unwrap();
         rudof
-            .read_shapemap(shapemap.as_bytes(), "Test", &ShapeMapFormat::default())
+            .read_shapemap(shapemap.as_bytes(), "Test", &ShapeMapFormat::default(), &None)
             .unwrap();
         let result = rudof.validate_shex().unwrap();
         let node = Node::iri(iri!("http://example/x"));
@@ -1357,7 +1386,7 @@ mod tests {
             .read_shex(shex.as_bytes(), &ShExFormat::ShExC, None, &ReaderMode::Strict, None)
             .unwrap();
         rudof
-            .read_shapemap(shapemap.as_bytes(), "Test", &ShapeMapFormat::default())
+            .read_shapemap(shapemap.as_bytes(), "Test", &ShapeMapFormat::default(), &None)
             .unwrap();
         let result = rudof.validate_shex().unwrap();
         let node = Node::iri(iri!("http://example/x"));

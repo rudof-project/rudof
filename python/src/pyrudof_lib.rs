@@ -534,7 +534,7 @@ impl PyRudof {
     pub fn read_shapemap_str(&mut self, str: &str, format: &PyShapeMapFormat) -> PyResult<()> {
         let format = cnv_shapemap_format(format);
         self.inner
-            .read_shapemap(str.as_bytes(), "String", &format)
+            .read_shapemap(str.as_bytes(), "String", &format, &None)
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -550,7 +550,9 @@ impl PyRudof {
     pub fn read_shapemap(&mut self, input: &str, format: &PyShapeMapFormat) -> PyResult<()> {
         let format = cnv_shapemap_format(format);
         let reader = get_reader(input, Some(format.mime_type()), "Shapemap")?;
-        self.inner.read_shapemap(reader, input, &format).map_err(cnv_err)?;
+        self.inner
+            .read_shapemap(reader, input, &format, &None)
+            .map_err(cnv_err)?;
         Ok(())
     }
 
