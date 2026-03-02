@@ -44,7 +44,14 @@ impl QueryShapeMap {
         shape_selector: ShapeSelector,
         base_shapes: &Option<IriS>,
     ) -> Result<(), DerefError> {
-        let association = Association::new(node_selector, base_nodes, shape_selector, base_shapes)?;
+        let association = Association::new(
+            node_selector,
+            base_nodes,
+            Some(&self.nodes_prefixmap),
+            shape_selector,
+            base_shapes,
+            Some(&self.shapes_prefixmap),
+        )?;
         self.associations.push(association);
         Ok(())
     }
