@@ -37,6 +37,7 @@ use std::env;
 use std::io;
 use std::path::PathBuf;
 use std::result::Result::Ok;
+use tracing::trace;
 // use tracing::level_filters::LevelFilter;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::{filter::EnvFilter, fmt};
@@ -75,7 +76,7 @@ fn main() -> Result<()> {
         .with(fmt_layer)
         .init();
 
-    tracing::trace!("rudof running with tracing filter {}", env_filter);
+    trace!("rudof running with tracing filter {}", env_filter);
 
     match &cli.command {
         Some(Command::Compare {
@@ -184,6 +185,7 @@ fn main() -> Result<()> {
             force_overwrite,
             reader_mode,
             config,
+            ..
         }) => {
             let config = get_config(config)?;
             if let Some(show_dependencies) = show_dependencies {
@@ -201,7 +203,7 @@ fn main() -> Result<()> {
                 result_schema_format,
                 output,
                 show_time,
-                show_schema.unwrap_or_default(),
+                *show_schema,
                 compile.unwrap_or_default(),
                 *force_overwrite,
                 &reader_mode.into(),
@@ -437,12 +439,14 @@ fn main() -> Result<()> {
             shapemap,
             shapemap_format,
             result_shapemap_format,
+            base,
             output,
             force_overwrite,
         }) => run_shapemap(
             shapemap,
             shapemap_format,
             result_shapemap_format,
+            base,
             output,
             *force_overwrite,
         ),

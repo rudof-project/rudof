@@ -1,6 +1,7 @@
 use crate::shapemap::{Association, NodeSelector, ShapeSelector, ShapemapError};
 use crate::{Node, ShapeExprLabel, ir::shape_label::ShapeLabel, object_value::ObjectValue};
-use prefixmap::PrefixMap;
+use iri_s::IriS;
+use prefixmap::{DerefError, PrefixMap};
 use rudof_rdf::rdf_core::query::QueryRDF;
 use serde::Serialize;
 use std::fmt::Display;
@@ -36,9 +37,16 @@ impl QueryShapeMap {
         self
     }
 
-    pub fn add_association(&mut self, node_selector: NodeSelector, shape_selector: ShapeSelector) {
-        let association = Association::new(node_selector, shape_selector);
-        self.associations.push(association)
+    pub fn add_association(
+        &mut self,
+        node_selector: NodeSelector,
+        base_nodes: &Option<IriS>,
+        shape_selector: ShapeSelector,
+        base_shapes: &Option<IriS>,
+    ) -> Result<(), DerefError> {
+        let association = Association::new(node_selector, base_nodes, shape_selector, base_shapes)?;
+        self.associations.push(association);
+        Ok(())
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &Association> + '_ {
@@ -65,7 +73,13 @@ impl QueryShapeMap {
         let mut sm = QueryShapeMap::new();
         let object_value: ObjectValue = node.try_into()?;
         let shape: ShapeExprLabel = shape.into();
-        sm.add_association(NodeSelector::Node(object_value), ShapeSelector::label(shape));
+        sm.add_association(
+            NodeSelector::Node(object_value),
+            &None,
+            ShapeSelector::label(shape),
+            &None,
+        )
+        .map_err(|e| crate::SchemaJsonError::DerefError { error: e.to_string() })?;
         Ok(sm)
     }
 }
