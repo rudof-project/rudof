@@ -1,5 +1,6 @@
 use crate::ShapeExprLabel;
-use prefixmap::IriRef;
+use iri_s::IriS;
+use prefixmap::{DerefIri, IriRef};
 use serde::Serialize;
 use std::fmt::Display;
 
@@ -45,6 +46,25 @@ impl Display for ShapeSelector {
         match self {
             ShapeSelector::Label(label) => write!(f, "{label}"),
             ShapeSelector::Start => write!(f, "START"),
+        }
+    }
+}
+
+impl DerefIri for ShapeSelector {
+    fn deref_iri(
+        self,
+        base: Option<&IriS>,
+        prefixmap: Option<&prefixmap::PrefixMap>,
+    ) -> Result<Self, prefixmap::DerefError>
+    where
+        Self: Sized,
+    {
+        match self {
+            ShapeSelector::Label(shape_expr_label) => {
+                let resolved = shape_expr_label.deref_iri(base, prefixmap)?;
+                Ok(ShapeSelector::Label(resolved))
+            },
+            ShapeSelector::Start => Ok(ShapeSelector::Start),
         }
     }
 }

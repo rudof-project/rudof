@@ -579,9 +579,9 @@ impl PyRudof {
     ///     RudofError: If ShapeMap is malformed.
     #[pyo3(signature = (str, format=None))]
     pub fn read_shapemap_str(&mut self, str: &str, format: Option<&PyShapeMapFormat>) -> PyResult<()> {
-        let format = cnv_shapemap_format(format);
+        let format = cnv_shapemap_format(format).unwrap_or(&ShapeMapFormat::Compact);
         self.inner
-            .read_shapemap(str.as_bytes(), "String", format)
+            .read_shapemap(str.as_bytes(), "String", &format, &None)
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -604,7 +604,11 @@ impl PyRudof {
         };
 
         let reader = get_reader(input, Some(mime), "Shapemap")?;
-        self.inner.read_shapemap(reader, input, format).map_err(cnv_err)?;
+
+        let format = format.unwrap_or(&ShapeMapFormat::Compact);
+        self.inner
+            .read_shapemap(reader, input, &format, &None)
+            .map_err(cnv_err)?;
         Ok(())
     }
 

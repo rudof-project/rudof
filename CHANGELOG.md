@@ -7,6 +7,17 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.2.6
+### Fixed
+- Relative IRIs are now parsed consistently in shapemaps, RDF data and ShEx solving issue #520
+- All the python default values are configured properly (as is stated in the docs).
+Also fixed an issue related #516 to remove an openssl dependency.
+- Fixes #514.
+
+### Changed
+- Option `show-schema` has been changed to use the negatable pattern with `show_schema` as a flag that can be overriden by `no_show_schema` which seems more ergonomic.
+- trait `Deref` renamed as `DerefIri` and method `deref` as `deref_iri` to avoid conflicts with the existing `deref` keyword
+
 ## v0.2.5
 
 ### Fixed 

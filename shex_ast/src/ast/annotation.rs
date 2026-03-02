@@ -1,5 +1,5 @@
 use iri_s::IriS;
-use prefixmap::Deref;
+use prefixmap::DerefIri;
 use prefixmap::IriRef;
 use prefixmap::error::DerefError;
 use rudof_rdf::rdf_core::vocabs::RdfsVocab;
@@ -46,10 +46,10 @@ impl Annotation {
     }
 }
 
-impl Deref for Annotation {
-    fn deref(self, base: Option<&IriS>, prefixmap: Option<&prefixmap::PrefixMap>) -> Result<Self, DerefError> {
-        let new_pred = self.predicate.deref(base, prefixmap)?;
-        let new_obj = self.object.deref(base, prefixmap)?;
+impl DerefIri for Annotation {
+    fn deref_iri(self, base: Option<&IriS>, prefixmap: Option<&prefixmap::PrefixMap>) -> Result<Self, DerefError> {
+        let new_pred = self.predicate.deref_iri(base, prefixmap)?;
+        let new_obj = self.object.deref_iri(base, prefixmap)?;
         Ok(Annotation {
             predicate: new_pred,
             object: new_obj,
