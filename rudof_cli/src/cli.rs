@@ -132,9 +132,13 @@ pub enum Command {
         )]
         output: Option<PathBuf>,
 
-        #[arg(short = 'b', long = "base", value_name = "IRI", help = "Base IRI to resolve relative IRIs")]
+        #[arg(
+            short = 'b',
+            long = "base",
+            value_name = "IRI",
+            help = "Base IRI to resolve relative IRIs"
+        )]
         base: Option<IriS>,
-
 
         #[arg(
             long = "force-overwrite",
@@ -184,7 +188,7 @@ pub enum Command {
         /// Show the schema (default)
         #[arg(
         long = "show-schema", 
-        default_value_t = true, 
+        default_value_t = true,
         action = clap::ArgAction::SetTrue,
         overrides_with = "no_show_schema"
         )]
@@ -193,7 +197,7 @@ pub enum Command {
         /// Hide the schema
         #[arg(
         long = "no-show-schema", 
-        action = clap::ArgAction::SetFalse, 
+        action = clap::ArgAction::SetFalse,
         overrides_with = "show_schema"
         )]
         no_show_schema: bool,
