@@ -348,7 +348,7 @@ term_size = "0.3.2"
 termtree = { version = "0.4" }
 thiserror = "2.0"
 time = { version = "0.3", features = ["macros", "parsing", "serde"] }
-tokio = { version = "1.47.1", features = ["full"] }
+tokio = { version = "1.47.1" }
 tokio-util = "0.7"
 tokio-test = "0.4"
 toml = "0.9"
