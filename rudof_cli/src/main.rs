@@ -37,6 +37,7 @@ use std::env;
 use std::io;
 use std::path::PathBuf;
 use std::result::Result::Ok;
+use tracing::trace;
 // use tracing::level_filters::LevelFilter;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::{filter::EnvFilter, fmt};
@@ -75,7 +76,7 @@ fn main() -> Result<()> {
         .with(fmt_layer)
         .init();
 
-    tracing::trace!("rudof running with tracing filter {}", env_filter);
+    trace!("rudof running with tracing filter {}", env_filter);
 
     match &cli.command {
         Some(Command::Compare {

@@ -6,7 +6,6 @@ use rudof_rdf::rdf_core::query::QueryRDF;
 use serde::Serialize;
 use std::fmt::Display;
 use std::iter::once;
-use std::ops::Deref;
 use tracing::trace;
 
 /// Combines a [`NodeSelector`] with a [`ShapeExprLabel`]

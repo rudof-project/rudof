@@ -149,6 +149,7 @@ pub fn run_validate_shex(
     config: &RudofConfig,
     force_overwrite: bool,
 ) -> Result<()> {
+    trace!("validate_shex: config: {config:?}");
     let mut rudof = Rudof::new(config)?;
     let (mut writer, _color) = get_writer(output, force_overwrite)?;
     trace!(

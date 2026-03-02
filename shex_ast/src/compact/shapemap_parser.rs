@@ -208,12 +208,14 @@ mod tests {
             .with_nodes_prefixmap(&nodes_prefixmap)
             .with_shapes_prefixmap(&shapes_prefixmap);
 
-        expected.add_association(
-            NodeSelector::prefixed("", "a"),
-            &None,
-            ShapeSelector::prefixed("", "S"),
-            &None,
-        );
+        expected
+            .add_association(
+                NodeSelector::prefixed("", "a"),
+                &None,
+                ShapeSelector::prefixed("", "S"),
+                &None,
+            )
+            .unwrap();
         assert_eq!(parsed_shapemap, expected)
     }
 }

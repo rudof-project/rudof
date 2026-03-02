@@ -44,12 +44,12 @@ use shex_ast::compact::ShExParser;
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::shapemap::{NodeSelector, ShapeSelector};
 use shex_ast::{ResolveMethod, ShExFormat, ShapeLabelIdx};
+use std::fmt::Debug;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 use std::str::FromStr;
 use std::{env, io, result};
-use std::{fmt::Debug, ops::Deref};
 use tracing::trace;
 #[cfg(not(target_family = "wasm"))]
 use url::Url;
