@@ -5,7 +5,6 @@ use prefixmap::{DerefError, PrefixMap};
 use rudof_rdf::rdf_core::query::QueryRDF;
 use serde::Serialize;
 use std::fmt::Display;
-use iri_s::IriS;
 use tracing::trace;
 
 #[derive(Debug, Default, PartialEq, Clone, Serialize)]

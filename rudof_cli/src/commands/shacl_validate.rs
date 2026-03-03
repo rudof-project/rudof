@@ -52,11 +52,11 @@ impl ShaclValidateCommand {
                 Ok(())
             },
             ResultShaclValidationFormat::Compact => {
-                report.show_as_table(writer, sort_mode, false, terminal_width)?;
+                report.show_as_table(writer, sort_mode, Some(false), Some(terminal_width))?;
                 Ok(())
             },
             ResultShaclValidationFormat::Details => {
-                report.show_as_table(writer, sort_mode, true, terminal_width)?;
+                report.show_as_table(writer, sort_mode, Some(true), Some(terminal_width))?;
                 Ok(())
             },
             ResultShaclValidationFormat::Json => Err(anyhow!(
@@ -118,7 +118,7 @@ impl Command for ShaclValidateCommand {
         };
 
         // Perform SHACL validation
-        let validation_report = ctx.rudof.validate_shacl(&shacl_validation_mode, &shapes_graph_source)?;
+        let validation_report = ctx.rudof.validate_shacl(Some(&shacl_validation_mode), Some(&shapes_graph_source))?;
 
         // Write the validation report to output
         self.write_validation_report(&mut ctx.writer, &result_format, validation_report, &sort_by)?;

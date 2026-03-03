@@ -325,8 +325,8 @@ impl Rudof {
         source_name2: Option<&str>,
     ) -> Result<ShaCo> {
         let reader_mode: ReaderMode = reader_mode.into();
-        let coshamo1 = self.get_coshamo(reader1, &mode1, &format1, base1, &reader_mode, label1, source_name1)?;
-        let coshamo2 = self.get_coshamo(reader2, &mode2, &format2, base2, &reader_mode, label2, source_name2)?;
+        let coshamo1 = self.get_coshamo(reader1, &mode1, &format1, base1, Some(&reader_mode), label1, source_name1)?;
+        let coshamo2 = self.get_coshamo(reader2, &mode2, &format2, base2, Some(&reader_mode), label2, source_name2)?;
         Ok(coshamo1.compare(&coshamo2))
     }
 
@@ -1367,10 +1367,10 @@ impl Rudof {
                     self.read_data(
                         &mut data_reader,
                         data_input.source_name().as_str(),
-                        &rdf_format,
+                        Some(&rdf_format),
                         Some(base.as_str()),
-                        reader_mode,
-                        true,
+                        Some(reader_mode),
+                        Some(true),
                     )?;
                 }
                 Ok(())
@@ -1422,9 +1422,9 @@ impl Rudof {
         // Read the schema
         self.read_shex(
             schema_reader,
-            &schema_format,
+            Some(&schema_format),
             Some(base_iri.as_str()),
-            reader_mode,
+            Some(reader_mode),
             Some(&input.source_name()),
         )?;
 
@@ -1642,9 +1642,9 @@ impl Rudof {
         self.read_shacl(
             &mut schema_reader,
             &input.source_name(),
-            schema_format,
+            Some(schema_format),
             Some(base_iri.as_str()),
-            reader_mode,
+            Some(reader_mode),
         )?;
 
         Ok(())
@@ -1950,7 +1950,7 @@ impl Rudof {
             self.compile_shacl(&ShapesGraphSource::CurrentData)?;
         }
 
-        self.serialize_shacl(result_format, writer)?;
+        self.serialize_shacl(Some(result_format), writer)?;
 
         if tracing::enabled!(tracing::Level::DEBUG) {
             match self.get_shacl_ir() {
@@ -2012,7 +2012,7 @@ impl Rudof {
                     context: "DCTAP".to_string(),
                     error: format!("{e}"),
                 })?;
-                self.read_dctap(reader, format)?;
+                self.read_dctap(reader, Some(format))?;
                 Ok(())
             },
             // Excel formats require a file path (cannot read from stdin/URL/string)
@@ -2320,9 +2320,9 @@ mod tests {
         rudof
             .read_shex(
                 shex.as_bytes(),
-                &ShExFormat::ShExC,
+                Some(&ShExFormat::ShExC),
                 None,
-                &ReaderMode::Strict,
+                Some(&ReaderMode::Strict),
                 None,
             )
             .unwrap();
@@ -2355,9 +2355,9 @@ mod tests {
         rudof
             .read_shex(
                 shex.as_bytes(),
-                &ShExFormat::ShExC,
+                Some(&ShExFormat::ShExC),
                 None,
-                &ReaderMode::Strict,
+                Some(&ReaderMode::Strict),
                 None,
             )
             .unwrap();
@@ -2411,8 +2411,8 @@ mod tests {
             .unwrap();
         let result = rudof
             .validate_shacl(
-                &ShaclValidationMode::Native,
-                &crate::ShapesGraphSource::CurrentSchema,
+                Some(&ShaclValidationMode::Native),
+                Some(&crate::ShapesGraphSource::CurrentSchema),
             )
             .unwrap();
         assert!(result.results().is_empty())
@@ -2459,8 +2459,8 @@ mod tests {
             .unwrap();
         let result = rudof
             .validate_shacl(
-                &ShaclValidationMode::Native,
-                &crate::ShapesGraphSource::CurrentSchema,
+                Some(&ShaclValidationMode::Native),
+                Some(&crate::ShapesGraphSource::CurrentSchema),
             )
             .unwrap();
         assert!(!result.conforms())
@@ -2496,8 +2496,8 @@ mod tests {
             .unwrap();
         let result = rudof
             .validate_shacl(
-                &ShaclValidationMode::Native,
-                &crate::ShapesGraphSource::CurrentData,
+                Some(&ShaclValidationMode::Native),
+                Some(&crate::ShapesGraphSource::CurrentData),
             )
             .unwrap();
         assert!(!result.conforms())
@@ -2533,8 +2533,8 @@ mod tests {
             .unwrap();
         let result = rudof
             .validate_shacl(
-                &ShaclValidationMode::Native,
-                &crate::ShapesGraphSource::CurrentData,
+                Some(&ShaclValidationMode::Native),
+                Some(&crate::ShapesGraphSource::CurrentData),
             )
             .unwrap();
         assert!(result.conforms())

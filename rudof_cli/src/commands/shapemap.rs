@@ -44,7 +44,7 @@ impl Command for ShapemapCommand {
 
         // Write results in the requested format
         ctx.rudof
-            .serialize_shapemap(&result_format, &formatter, &mut ctx.writer)?;
+            .serialize_shapemap(Some(&result_format), &formatter, &mut ctx.writer)?;
 
         Ok(())
     }

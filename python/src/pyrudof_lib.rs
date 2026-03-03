@@ -1093,8 +1093,8 @@ impl PyRudof {
         let mode = mode.unwrap_or("shex");
         let reader_mode = cnv_reader_mode(reader_mode);
 
-        let format = CompareSchemaFormat::from_str(format).map_err(cnv_comparator_err)?;
-        let mode = CompareSchemaMode::from_str(mode).map_err(cnv_comparator_err)?;
+        let format = InputCompareFormat::from_str(format).map_err(cnv_string_err)?;
+        let mode = InputCompareMode::from_str(mode).map_err(cnv_string_err)?;
         let mut reader = schema.as_bytes();
         let coshamo = self
             .inner
@@ -1146,10 +1146,10 @@ impl PyRudof {
         let format2 = format2.unwrap_or("turtle");
         let reader_mode = cnv_reader_mode(reader_mode);
 
-        let format1 = CompareSchemaFormat::from_str(format1).map_err(cnv_comparator_err)?;
-        let format2 = CompareSchemaFormat::from_str(format2).map_err(cnv_comparator_err)?;
-        let mode1 = CompareSchemaMode::from_str(mode1).map_err(cnv_comparator_err)?;
-        let mode2 = CompareSchemaMode::from_str(mode2).map_err(cnv_comparator_err)?;
+        let format1 = InputCompareFormat::from_str(format1).map_err(cnv_string_err)?;
+        let format2 = InputCompareFormat::from_str(format2).map_err(cnv_string_err)?;
+        let mode1 = InputCompareMode::from_str(mode1).map_err(cnv_string_err)?;
+        let mode2 = InputCompareMode::from_str(mode2).map_err(cnv_string_err)?;
         let mut reader1 = schema1.as_bytes();
         let coshamo1 = self
             .inner

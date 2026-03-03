@@ -509,11 +509,11 @@ pub fn run_shacl_convert(
     rudof.read_shacl(
         &mut reader,
         &input.to_string(),
-        &input_format,
+        Some(&input_format),
         base.as_deref(),
-        reader_mode,
+        Some(reader_mode),
     )?;
     let output_format = shacl_format_convert(*output_format)?;
-    rudof.serialize_shacl(&output_format, writer)?;
+    rudof.serialize_shacl(Some(&output_format), writer)?;
     Ok(())
 }

@@ -19,7 +19,6 @@ pub mod shapemap_config;
 pub mod shapemap_error;
 pub mod shapemap_state;
 pub mod validation_status;
-pub mod pattern;
 
 pub use association::*;
 pub use conformant_info::*;
@@ -35,7 +34,6 @@ pub use shapemap_config::*;
 pub use shapemap_error::*;
 pub use shapemap_state::*;
 pub use validation_status::*;
-pub use pattern::*;
 
 /// Format of Shapemap files
 #[derive(Debug, Clone, PartialEq, Default)]
