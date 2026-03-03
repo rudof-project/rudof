@@ -1,5 +1,5 @@
 use prefixmap::error::PrefixMapError;
-use prefixmap::{IriRef, PrefixMap, DerefIri};
+use prefixmap::{DerefIri, IriRef, PrefixMap};
 use rudof_rdf::rdf_core::SHACLPath;
 use serde::Serialize;
 

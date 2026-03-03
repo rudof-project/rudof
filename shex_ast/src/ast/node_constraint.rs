@@ -151,7 +151,7 @@ impl DerefIri for NodeConstraint {
         Self: Sized,
     {
         let datatype = self.datatype().deref_iri(base, prefixmap)?;
-        let values = self.values.deref_iri(base, prefixmap)?;
+        let values = self.values().deref_iri(base, prefixmap)?;
         Ok(NodeConstraint {
             node_kind: self.node_kind.clone(),
             datatype,

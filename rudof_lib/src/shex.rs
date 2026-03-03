@@ -8,7 +8,7 @@ use iri_s::MimeType;
 use rudof_rdf::rdf_core::RDFFormat;
 use rudof_rdf::rdf_impl::ReaderMode;
 use shex_ast::ShExFormat;
-use shex_ast::shapemap::ResultShapeMap;
+use shex_ast::shapemap::{ResultShapeMap, SortMode};
 use std::io::Write;
 use tracing::info;
 #[cfg(not(target_family = "wasm"))]
@@ -45,9 +45,9 @@ pub fn validate_shex<W: Write>(
 
         rudof.read_shex(
             schema_reader,
-            &schema_format,
+            Some(&schema_format),
             Some(base_iri.as_str()),
-            reader_mode,
+            Some(reader_mode),
             Some(&schema.source_name()),
         )?;
 
@@ -139,14 +139,16 @@ fn write_result_shapemap<W: Write>(
     result: ResultShapeMap,
     sort_by: &SortByResultShapeMap,
 ) -> Result<(), RudofError> {
+    let sort_by = cnv_sort_by(sort_by);
+
     match format {
         CliShapeMapFormat::Compact => {
             writeln!(writer, "Result:")?;
-            result.as_table(writer, sort_by.into(), false, terminal_width())?;
+            result.as_table(writer, Some(&sort_by), Some(false), Some(terminal_width()))?;
         },
         CliShapeMapFormat::Csv => {
             info!("Serializing result as CSV");
-            result.as_csv(writer, sort_by.into(), true)?;
+            result.as_csv(writer, sort_by, true)?;
         },
         CliShapeMapFormat::Internal => {
             let str =
@@ -160,7 +162,7 @@ fn write_result_shapemap<W: Write>(
         },
         CliShapeMapFormat::Details => {
             writeln!(writer, "Result:")?;
-            result.as_table(writer, sort_by.into(), true, terminal_width())?;
+            result.as_table(writer, Some(&sort_by), Some(true), Some(terminal_width()))?;
         },
     }
     Ok(())
@@ -190,9 +192,9 @@ pub fn parse_shex_schema(
 
     rudof.read_shex(
         reader,
-        &shex_format,
+        Some(&shex_format),
         Some(base_iri.as_str()),
-        reader_mode,
+        Some(reader_mode),
         Some(&input.source_name()),
     )?;
 
@@ -225,7 +227,7 @@ pub fn serialize_current_shex_rudof<W: Write>(
     writer: &mut W,
 ) -> Result<(), RudofError> {
     let shex_format = shex_format_convert(result_schema_format);
-    rudof.serialize_current_shex(&shex_format, formatter, writer)?;
+    rudof.serialize_current_shex(Some(&shex_format), formatter, writer)?;
     Ok(())
 }
 
@@ -251,6 +253,15 @@ pub fn serialize_shex_rudof<W: Write>(
     writer: &mut W,
 ) -> Result<(), RudofError> {
     let shex_format = (*result_schema_format).try_into()?;
-    rudof.serialize_shex(shex, &shex_format, formatter, writer)?;
+    rudof.serialize_shex(shex, Some(&shex_format), formatter, writer)?;
     Ok(())
+}
+
+fn cnv_sort_by(sort_by: &SortByResultShapeMap) -> SortMode {
+    match sort_by {
+        SortByResultShapeMap::Node => SortMode::Node,
+        SortByResultShapeMap::Shape => SortMode::Shape,
+        SortByResultShapeMap::Status => SortMode::Shape,
+        SortByResultShapeMap::Details => SortMode::Details,
+    }
 }

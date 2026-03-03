@@ -1,4 +1,5 @@
 use crate::object_value::ObjectValue;
+use crate::shapemap::Pattern;
 use crate::shapemap::SHACLPathRef;
 use crate::shapemap::ShapemapError;
 use crate::shapemap::Pattern;

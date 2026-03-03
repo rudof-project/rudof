@@ -1,6 +1,7 @@
 use crate::shapemap::{Association, NodeSelector, ShapeSelector, ShapemapError};
 use crate::{Node, ShapeExprLabel, ir::shape_label::ShapeLabel, object_value::ObjectValue};
-use prefixmap::{PrefixMap, DerefError};
+use iri_s::IriS;
+use prefixmap::{DerefError, PrefixMap};
 use rudof_rdf::rdf_core::query::QueryRDF;
 use serde::Serialize;
 use std::fmt::Display;
@@ -64,10 +65,10 @@ impl QueryShapeMap {
     where
         R: QueryRDF,
     {
-        trace!("node_shapes... pairs from QueryShapeMap: {:?}", self);
+        trace!("node_shapes, pairs from QueryShapeMap: {}", self);
         let mut result = Vec::new();
         for assoc in self.iter() {
-            trace!("Processing association: {:?}", assoc);
+            trace!("Processing association: {}", assoc);
             let node_shapes = assoc.iter_node_shape(rdf)?;
             for pair in node_shapes {
                 result.push(pair)
@@ -93,10 +94,13 @@ impl QueryShapeMap {
 
 impl Display for QueryShapeMap {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            serde_json::to_string_pretty(&self).map_err(|_| std::fmt::Error)?
-        )
+        let mut iter = self.associations.iter();
+        if let Some(first) = iter.next() {
+            write!(f, "{first}")?;
+            for assoc in iter {
+                write!(f, ",\n{assoc}")?;
+            }
+        }
+        Ok(())
     }
 }

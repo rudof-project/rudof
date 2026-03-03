@@ -188,15 +188,15 @@ impl ShaclToUnified {
                 let unified_val = self.convert_literal_to_value(val);
                 constraints.push(UnifiedConstraint::MaxExclusive(unified_val));
             },
-            Component::HasValue { value } => {
+            Component::HasValue(value) => {
                 let unified_val = self.convert_value_to_unified_value(value);
                 constraints.push(UnifiedConstraint::HasValue(unified_val));
             },
-            Component::In { values } => {
+            Component::In(values) => {
                 let unified_vals: Vec<Value> = values.iter().map(|v| self.convert_value_to_unified_value(v)).collect();
                 constraints.push(UnifiedConstraint::In(unified_vals));
             },
-            Component::Node { shape } => {
+            Component::Node(shape) => {
                 constraints.push(UnifiedConstraint::ShapeReference(shape.to_string()));
             },
             _ => {

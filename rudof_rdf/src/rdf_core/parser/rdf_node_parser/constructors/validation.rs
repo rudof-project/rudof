@@ -1,8 +1,8 @@
+use crate::rdf_core::vocabs::RdfVocab;
 use crate::rdf_core::{
     FocusRDF, RDFError,
     parser::rdf_node_parser::{RDFNodeParse, constructors::TypeParser},
     term::Iri,
-    vocab::rdf_nil,
 };
 use iri_s::IriS;
 use std::marker::PhantomData;
@@ -126,7 +126,7 @@ where
         let focus = rdf.get_focus().ok_or(RDFError::NoFocusNodeError)?;
 
         let is_nil = match TryInto::<RDF::IRI>::try_into(focus.clone()) {
-            Ok(iri) => iri.as_str() == rdf_nil().as_str(),
+            Ok(iri) => iri.as_str() == RdfVocab::RDF_NIL,
             Err(_) => false,
         };
 

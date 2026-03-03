@@ -1,3 +1,4 @@
+use crate::rdf_core::vocabs::RdfVocab;
 use crate::rdf_core::{
     FocusRDF, RDFError,
     parser::rdf_node_parser::{
@@ -5,7 +6,6 @@ use crate::rdf_core::{
         constructors::{SingleValuePropertyParser, SubjectsWithValuePropertyParser},
     },
     term::Iri,
-    vocab::rdf_type,
 };
 use iri_s::IriS;
 use std::{collections::HashMap, marker::PhantomData};
@@ -35,7 +35,7 @@ where
     type Output = RDF::Term;
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
-        SingleValuePropertyParser::new(rdf_type().clone()).parse_focused(rdf)
+        SingleValuePropertyParser::new(RdfVocab::rdf_type().clone()).parse_focused(rdf)
     }
 }
 
@@ -152,7 +152,7 @@ where
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
         let type_term: RDF::Term = self.expected_type.clone().into();
-        let pred: RDF::IRI = rdf_type().clone().into();
+        let pred: RDF::IRI = RdfVocab::rdf_type().clone().into();
 
         SubjectsWithValuePropertyParser::new(pred, type_term).parse_focused(rdf)
     }

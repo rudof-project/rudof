@@ -1,6 +1,6 @@
-use crate::ShaclVocab;
 use iri_s::IriS;
 use prefixmap::{IriRef, IriRefError};
+use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use std::fmt::Display;
 
 #[derive(Debug, Clone, PartialEq)]

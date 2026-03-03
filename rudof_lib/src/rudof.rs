@@ -376,7 +376,9 @@ impl Rudof {
         }
     }
 
-    pub fn serialize_data<W: io::Write>(&self, format: &RDFFormat, writer: &mut W) -> Result<()> {
+    pub fn serialize_data<W: io::Write>(&self, format: Option<&RDFFormat>, writer: &mut W) -> Result<()> {
+        let format = format.unwrap_or(&RDFFormat::Turtle);
+
         self.rdf_data
             .serialize(format, writer)
             .map_err(|e| RudofError::SerializingData { error: format!("{e}") })
@@ -385,10 +387,12 @@ impl Rudof {
     /// Serialize the current ShapeMap
     pub fn serialize_shapemap<W: io::Write>(
         &self,
-        format: &ShapeMapFormat,
+        format: Option<&ShapeMapFormat>,
         formatter: &ShapeMapFormatter,
         writer: &mut W,
     ) -> Result<()> {
+        let format = format.unwrap_or(&ShapeMapFormat::Compact);
+
         if let Some(shapemap) = &self.shapemap {
             match format {
                 ShapeMapFormat::Compact => {
@@ -419,10 +423,12 @@ impl Rudof {
     pub fn serialize_shex<W: io::Write>(
         &self,
         shex: &ShExSchema,
-        format: &ShExFormat,
+        format: Option<&ShExFormat>,
         formatter: &ShExFormatter,
         writer: &mut W,
     ) -> Result<()> {
+        let format = format.unwrap_or(&ShExFormat::ShExC);
+
         match format {
             ShExFormat::ShExC => {
                 formatter
@@ -489,7 +495,7 @@ impl Rudof {
     /// Serialize the current ShEx Schema
     pub fn serialize_current_shex<W: io::Write>(
         &self,
-        format: &ShExFormat,
+        format: Option<&ShExFormat>,
         formatter: &ShExFormatter,
         writer: &mut W,
     ) -> Result<()> {
@@ -500,7 +506,9 @@ impl Rudof {
         }
     }
 
-    pub fn run_query_construct_str(&mut self, str: &str, result_format: &QueryResultFormat) -> Result<String> {
+    pub fn run_query_construct_str(&mut self, str: &str, result_format: Option<&QueryResultFormat>) -> Result<String> {
+        let result_format = result_format.unwrap_or(&QueryResultFormat::Turtle);
+
         self.rdf_data
             .check_store()
             .map_err(|e| RudofError::StorageError { error: format!("{e}") })?;
@@ -523,7 +531,7 @@ impl Rudof {
         reader
             .read_to_string(&mut str)
             .map_err(|e| RudofError::ReadError { error: format!("{e}") })?;
-        self.run_query_construct_str(str.as_str(), query_format)
+        self.run_query_construct_str(str.as_str(), Some(query_format))
     }
 
     pub fn run_query_select_str(&mut self, str: &str) -> Result<QuerySolutions<RdfData>> {
@@ -547,7 +555,9 @@ impl Rudof {
         self.run_query_select_str(str.as_str())
     }
 
-    pub fn serialize_shacl<W: io::Write>(&self, format: &ShaclFormat, writer: &mut W) -> Result<()> {
+    pub fn serialize_shacl<W: io::Write>(&self, format: Option<&ShaclFormat>, writer: &mut W) -> Result<()> {
+        let format = format.unwrap_or(&ShaclFormat::Turtle);
+
         if let Some(shacl) = &self.shacl_schema {
             match format {
                 ShaclFormat::Internal => write!(writer, "{shacl}")
@@ -597,10 +607,13 @@ impl Rudof {
         &mut self,
         reader: &mut R,
         reader_name: &str,
-        format: &ShaclFormat,
+        format: Option<&ShaclFormat>,
         base: Option<&str>,
-        reader_mode: &ReaderMode,
+        reader_mode: Option<&ReaderMode>,
     ) -> Result<()> {
+        let format = format.unwrap_or(&ShaclFormat::Turtle);
+        let reader_mode = reader_mode.unwrap_or(&ReaderMode::Lax);
+
         let format = match format {
             ShaclFormat::Internal => Err(RudofError::InternalSHACLFormatNonReadable),
             ShaclFormat::Turtle => Ok(RDFFormat::Turtle),
@@ -687,7 +700,9 @@ impl Rudof {
 
     /// Reads a `DCTAP` and replaces the current one
     /// - `format` indicates the DCTAP format
-    pub fn read_dctap<R: io::Read>(&mut self, reader: R, format: &DCTAPFormat) -> Result<()> {
+    pub fn read_dctap<R: io::Read>(&mut self, reader: R, format: Option<&DCTAPFormat>) -> Result<()> {
+        let format = format.unwrap_or(&DCTAPFormat::Csv);
+
         let dctap = match format {
             DCTAPFormat::Csv => {
                 let dctap = DCTAP::from_reader(reader, &self.config.tap_config())
@@ -774,7 +789,7 @@ impl Rudof {
     /// Runs the current SPARQL query if it is a CONSTRUCT query
     /// Returns the result serialized according to `format`
     /// If the current query is not a CONSTRUCT query, returns an error
-    pub fn run_current_query_construct(&mut self, format: &QueryResultFormat) -> Result<String> {
+    pub fn run_current_query_construct(&mut self, format: Option<&QueryResultFormat>) -> Result<String> {
         if let Some(sparql_query) = &self.sparql_query {
             if sparql_query.is_construct() {
                 self.run_query_construct_str(&sparql_query.to_string(), format)
@@ -795,11 +810,14 @@ impl Rudof {
     pub fn read_shex<R: io::Read>(
         &mut self,
         reader: R,
-        format: &ShExFormat,
+        format: Option<&ShExFormat>,
         base: Option<&str>,
-        reader_mode: &ReaderMode,
+        reader_mode: Option<&ReaderMode>,
         source_name: Option<&str>,
     ) -> Result<()> {
+        let format = format.unwrap_or(&ShExFormat::ShExC);
+        let reader_mode = reader_mode.unwrap_or(&ReaderMode::Lax);
+
         let schema_ast = self.read_shex_only(reader, format, base, reader_mode, source_name)?;
         self.shex_schema = Some(schema_ast.clone());
         trace!("Schema AST read: {schema_ast}");
@@ -912,10 +930,13 @@ impl Rudof {
         &mut self,
         reader: &mut R,
         source_name: &str,
-        format: &RDFFormat,
+        format: Option<&RDFFormat>,
         base: Option<&str>,
-        reader_mode: &ReaderMode,
+        reader_mode: Option<&ReaderMode>,
     ) -> Result<()> {
+        let format = format.unwrap_or(&RDFFormat::Turtle);
+        let reader_mode = reader_mode.unwrap_or(&ReaderMode::Lax);
+
         let service_description = ServiceDescription::from_reader(reader, source_name, format, base, reader_mode)
             .map_err(|e| RudofError::ReadingServiceDescription { error: format!("{e}") })?;
         self.service_description = Some(service_description);
@@ -937,9 +958,9 @@ impl Rudof {
         self.read_service_description(
             &mut reader,
             path.as_ref().display().to_string().as_str(),
-            format,
+            Some(format),
             base,
-            reader_mode,
+            Some(reader_mode),
         )
     }
 
@@ -961,17 +982,19 @@ impl Rudof {
                 url: url_str.to_string(),
                 error: format!("{e}"),
             })?;
-        self.read_service_description(&mut reader, url_str, format, base, reader_mode)
+        self.read_service_description(&mut reader, url_str, Some(format), base, Some(reader_mode))
     }
 
     pub fn serialize_service_description<W: io::Write>(
         &self,
-        format: &ServiceDescriptionFormat,
+        format: Option<&ServiceDescriptionFormat>,
         writer: &mut W,
     ) -> Result<()> {
+        let format = format.unwrap_or(&ServiceDescriptionFormat::Internal);
+
         if let Some(service_description) = &self.service_description {
             service_description
-                .serialize(format, writer)
+                .serialize(Some(format), writer)
                 .map_err(|e| RudofError::SerializingServiceDescription { error: format!("{e}") })
         } else {
             Err(RudofError::NoServiceDescriptionToSerialize)
@@ -987,9 +1010,12 @@ impl Rudof {
     /// If there is no current SHACL schema, it tries to get it from the current RDF data
     pub fn validate_shacl(
         &mut self,
-        mode: &ShaclValidationMode,
-        shapes_graph_source: &ShapesGraphSource,
+        mode: Option<&ShaclValidationMode>,
+        shapes_graph_source: Option<&ShapesGraphSource>,
     ) -> Result<ValidationReport> {
+        let mode = mode.unwrap_or(&ShaclValidationMode::Native);
+        let shapes_graph_source = shapes_graph_source.unwrap_or(&ShapesGraphSource::CurrentSchema);
+
         self.compile_shacl(shapes_graph_source)?;
         let compiled_schema = self.shacl_schema_ir.as_ref().ok_or(RudofError::NoShaclSchema {})?;
         let shacl_schema = self.shacl_schema.as_ref().ok_or(RudofError::NoShaclSchema {})?;
@@ -1050,7 +1076,7 @@ impl Rudof {
                 Some(shapemap) => {
                     let schema = validator.schema().clone();
                     let result = validator
-                        .validate_shapemap2(
+                        .validate_shapemap(
                             shapemap,
                             &self.rdf_data,
                             &schema,
@@ -1087,11 +1113,15 @@ impl Rudof {
         &mut self,
         reader: &mut R,
         source_name: &str,
-        format: &RDFFormat,
+        format: Option<&RDFFormat>,
         base: Option<&str>,
-        reader_mode: &ReaderMode,
-        merge: bool,
+        reader_mode: Option<&ReaderMode>,
+        merge: Option<bool>,
     ) -> Result<()> {
+        let format = format.unwrap_or(&RDFFormat::Turtle);
+        let reader_mode = reader_mode.unwrap_or(&ReaderMode::Lax);
+        let merge = merge.unwrap_or(false);
+
         if !merge {
             self.rdf_data = RdfData::new();
         }
@@ -1214,11 +1244,13 @@ impl Rudof {
         mode: &InputCompareMode,
         format: &InputCompareFormat,
         base: Option<&str>,
-        reader_mode: &ReaderMode,
+        reader_mode: Option<&ReaderMode>,
         label: Option<&str>,
         source_name: Option<&str>,
     ) -> Result<CoShaMo> {
         let comparator_config = self.config().comparator_config();
+        let reader_mode = reader_mode.unwrap_or(&ReaderMode::Lax);
+
         match mode {
             InputCompareMode::Shacl => Err(RudofError::NotImplemented {
                 msg: "Not yet implemented comparison between SHACL schemas".to_string(),
@@ -2238,19 +2270,19 @@ mod tests {
             .read_data(
                 &mut data.as_bytes(),
                 "test",
-                &RDFFormat::Turtle,
+                Some(&RDFFormat::Turtle),
                 None,
-                &ReaderMode::Strict,
-                false,
+                Some(&ReaderMode::Strict),
+                Some(false),
             )
             .unwrap();
 
         rudof
             .read_shex(
                 shex.as_bytes(),
-                &ShExFormat::ShExC,
+                Some(&ShExFormat::ShExC),
                 None,
-                &ReaderMode::Strict,
+                Some(&ReaderMode::Strict),
                 Some("test"),
             )
             .unwrap();
@@ -2278,10 +2310,10 @@ mod tests {
             .read_data(
                 &mut data.as_bytes(),
                 "test",
-                &RDFFormat::Turtle,
+                Some(&RDFFormat::Turtle),
                 None,
-                &ReaderMode::Strict,
-                false,
+                Some(&ReaderMode::Strict),
+                Some(false),
             )
             .unwrap();
 
@@ -2313,10 +2345,10 @@ mod tests {
             .read_data(
                 &mut data.as_bytes(),
                 "test",
-                &RDFFormat::Turtle,
+                Some(&RDFFormat::Turtle),
                 None,
-                &ReaderMode::Strict,
-                false,
+                Some(&ReaderMode::Strict),
+                Some(false),
             )
             .unwrap();
 
@@ -2361,10 +2393,10 @@ mod tests {
             .read_data(
                 &mut data.as_bytes(),
                 "test",
-                &RDFFormat::Turtle,
+                Some(&RDFFormat::Turtle),
                 None,
-                &ReaderMode::Strict,
-                false,
+                Some(&ReaderMode::Strict),
+                Some(false),
             )
             .unwrap();
 
@@ -2372,9 +2404,9 @@ mod tests {
             .read_shacl(
                 &mut shacl.as_bytes(),
                 "test",
-                &ShaclFormat::Turtle,
+                Some(&ShaclFormat::Turtle),
                 None,
-                &ReaderMode::Lax,
+                Some(&ReaderMode::Lax),
             )
             .unwrap();
         let result = rudof
@@ -2409,10 +2441,10 @@ mod tests {
             .read_data(
                 &mut data.as_bytes(),
                 "test",
-                &RDFFormat::Turtle,
+                Some(&RDFFormat::Turtle),
                 None,
-                &ReaderMode::Strict,
-                false,
+                Some(&ReaderMode::Strict),
+                Some(false),
             )
             .unwrap();
 
@@ -2420,9 +2452,9 @@ mod tests {
             .read_shacl(
                 &mut shacl.as_bytes(),
                 "test",
-                &ShaclFormat::Turtle,
+                Some(&ShaclFormat::Turtle),
                 None,
-                &ReaderMode::Lax,
+                Some(&ReaderMode::Lax),
             )
             .unwrap();
         let result = rudof
@@ -2456,10 +2488,10 @@ mod tests {
             .read_data(
                 &mut data.as_bytes(),
                 "test",
-                &RDFFormat::Turtle,
+                Some(&RDFFormat::Turtle),
                 None,
-                &ReaderMode::Strict,
-                false,
+                Some(&ReaderMode::Strict),
+                Some(false),
             )
             .unwrap();
         let result = rudof
@@ -2493,10 +2525,10 @@ mod tests {
             .read_data(
                 &mut data.as_bytes(),
                 "test",
-                &RDFFormat::Turtle,
+                Some(&RDFFormat::Turtle),
                 None,
-                &ReaderMode::Strict,
-                false,
+                Some(&ReaderMode::Strict),
+                Some(false),
             )
             .unwrap();
         let result = rudof

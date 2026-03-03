@@ -25,7 +25,11 @@ impl SemAct {
 }
 
 impl DerefIri for SemAct {
-    fn deref_iri(self, base: Option<&iri_s::IriS>, prefixmap: Option<&prefixmap::PrefixMap>) -> Result<Self, DerefError> {
+    fn deref_iri(
+        self,
+        base: Option<&iri_s::IriS>,
+        prefixmap: Option<&prefixmap::PrefixMap>,
+    ) -> Result<Self, DerefError> {
         let new_name = self.name.deref_iri(base, prefixmap)?;
         Ok(SemAct {
             name: new_name,

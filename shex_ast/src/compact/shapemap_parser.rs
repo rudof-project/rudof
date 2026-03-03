@@ -8,13 +8,14 @@ use crate::shapemap::NodeSelector;
 use crate::shapemap::ShapeSelector;
 use crate::shapemap::query_shape_map::QueryShapeMap;
 use crate::tws0;
+use iri_s::IriS;
 use nom::Err;
 use prefixmap::IriRef;
 use prefixmap::PrefixMap;
 use std::fs;
 use std::path::Path;
 use tracing::debug;
-use iri_s::IriS;
+use tracing::trace;
 
 type Result<A> = std::result::Result<A, ParseError>;
 
@@ -32,6 +33,7 @@ impl ShapeMapParser<'_> {
         shapes_prefixmap: &Option<PrefixMap>,
         base_shapes: &Option<IriS>,
     ) -> Result<QueryShapeMap> {
+        trace!("Parsing shapemap with src: {src} and base_nodes: {base_nodes:?} and base_shapes: {base_shapes:?}");
         let mut query_shapemap = QueryShapeMap::new();
         if let Some(pm) = nodes_prefixmap {
             query_shapemap = query_shapemap.with_nodes_prefixmap(pm)

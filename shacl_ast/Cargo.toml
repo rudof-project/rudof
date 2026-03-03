@@ -1,6 +1,6 @@
 [package]
 name = "shacl_ast"
-version = "0.1.147"
+version = "0.2.6"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shacl_ast"
@@ -19,7 +19,6 @@ repository.workspace = true
 const_format.workspace = true
 iri_s.workspace = true
 itertools.workspace = true
-paste.workspace = true
 prefixmap.workspace = true
 rudof_rdf.workspace = true
 thiserror.workspace = true

@@ -55,6 +55,7 @@ jobs:
           cargo +nightly tarpaulin \
             --all-features \
             --workspace \
+            --exclude pyrudof \
             --timeout 120 \
             --no-dead-code \
             --engine llvm \

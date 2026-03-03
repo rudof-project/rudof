@@ -91,10 +91,10 @@ pub fn get_data_rudof(
                 rudof.read_data(
                     &mut data_reader,
                     data_input.source_name().as_str(),
-                    &rdf_format,
+                    Some(&rdf_format),
                     base.as_deref(),
-                    reader_mode,
-                    true,
+                    Some(reader_mode),
+                    Some(true),
                 )?;
             }
             Ok(())

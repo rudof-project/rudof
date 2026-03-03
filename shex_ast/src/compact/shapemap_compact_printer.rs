@@ -1,6 +1,6 @@
 use crate::ObjectValue;
-use crate::shapemap::SHACLPathRef;
 use crate::shapemap::Pattern;
+use crate::shapemap::SHACLPathRef;
 use crate::shapemap::{Association, NodeSelector, ShapeSelector, query_shape_map::QueryShapeMap};
 use crate::{keyword, pp_label, pp_object_value};
 use colored::*;
