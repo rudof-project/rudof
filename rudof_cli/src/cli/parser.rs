@@ -8,6 +8,7 @@ use crate::cli::wrappers::{
     SortByShaclValidationReportCli, SortByValidateCli, ValidationModeCli,
 };
 use clap::{Args, Parser, Subcommand};
+use clap_complete_command::Shell;
 use rudof_lib::{InputSpec, IriS};
 use rudof_mcp::server::TransportType;
 use std::path::PathBuf;
@@ -19,6 +20,7 @@ use std::path::PathBuf;
 #[derive(Parser, Debug)]
 #[command(author, version, about)]
 #[command(
+    name = "rudof",
     arg_required_else_help = true,
     long_about = None // Automatically uses the Doc Comment above
 )]
@@ -73,6 +75,8 @@ pub enum Command {
     Generate(GenerateArgs),
     /// Validate Property Graph data using PGSchema
     PgSchemaValidate(PgSchemaValidateArgs),
+    /// Generates a shell completion script for the specified shell
+    Completion(CompletionArgs),
 }
 
 // ============================================================================
@@ -1368,6 +1372,16 @@ pub struct PgSchemaValidateArgs {
         default_value_t = PgSchemaResultFormatCli::Compact
     )]
     pub result_validation_format: PgSchemaResultFormatCli,
+
+    #[command(flatten)]
+    pub common: CommonArgsOutputForceOverWrite,
+}
+
+/// Arguments for the `completion` command
+#[derive(Debug, Clone, Args)]
+pub struct CompletionArgs {
+    #[clap(value_parser = clap::value_parser!(Shell))]
+    pub shell: Shell,
 
     #[command(flatten)]
     pub common: CommonArgsOutputForceOverWrite,
