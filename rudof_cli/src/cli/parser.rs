@@ -845,7 +845,7 @@ pub struct NodeArgs {
     )]
     pub show_node_mode: ShowNodeModeCli,
 
-    #[arg(long = "show hyperlinks", help = "Show hyperlinks in the output")]
+    #[arg(long = "show-hyperlinks", help = "Show hyperlinks in the output")]
     pub show_hyperlinks: bool,
 
     #[arg(
