@@ -118,7 +118,9 @@ impl Command for ShaclValidateCommand {
         };
 
         // Perform SHACL validation
-        let validation_report = ctx.rudof.validate_shacl(Some(&shacl_validation_mode), Some(&shapes_graph_source))?;
+        let validation_report = ctx
+            .rudof
+            .validate_shacl(Some(&shacl_validation_mode), Some(&shapes_graph_source))?;
 
         // Write the validation report to output
         self.write_validation_report(&mut ctx.writer, &result_format, validation_report, &sort_by)?;

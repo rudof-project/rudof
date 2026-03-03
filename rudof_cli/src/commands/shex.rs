@@ -58,9 +58,10 @@ impl ShexCommand {
         ctx: &mut CommandContext,
         format: &shex_ast::shex_format::ShExFormat,
     ) -> Result<()> {
-        if self.args.show_schema == true {
+        if self.args.show_schema {
             let formatter = Self::get_formatter(&ctx.color);
-            ctx.rudof.serialize_current_shex(Some(format), &formatter, &mut ctx.writer)?;
+            ctx.rudof
+                .serialize_current_shex(Some(format), &formatter, &mut ctx.writer)?;
         }
         Ok(())
     }

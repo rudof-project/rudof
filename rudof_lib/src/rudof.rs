@@ -325,8 +325,24 @@ impl Rudof {
         source_name2: Option<&str>,
     ) -> Result<ShaCo> {
         let reader_mode: ReaderMode = reader_mode.into();
-        let coshamo1 = self.get_coshamo(reader1, &mode1, &format1, base1, Some(&reader_mode), label1, source_name1)?;
-        let coshamo2 = self.get_coshamo(reader2, &mode2, &format2, base2, Some(&reader_mode), label2, source_name2)?;
+        let coshamo1 = self.get_coshamo(
+            reader1,
+            &mode1,
+            &format1,
+            base1,
+            Some(&reader_mode),
+            label1,
+            source_name1,
+        )?;
+        let coshamo2 = self.get_coshamo(
+            reader2,
+            &mode2,
+            &format2,
+            base2,
+            Some(&reader_mode),
+            label2,
+            source_name2,
+        )?;
         Ok(coshamo1.compare(&coshamo2))
     }
 
@@ -1437,7 +1453,12 @@ impl Rudof {
     /// * `input` - The input specification for the shapemap
     /// * `shapemap_format` - The format of the shapemap
     /// * `base` - Optional base IRI for resolving relative IRIs in the shapemap
-    pub fn load_shapemap(&mut self, input: &InputSpec, shapemap_format: &ShapeMapFormat, base: &Option<IriS>) -> Result<()> {
+    pub fn load_shapemap(
+        &mut self,
+        input: &InputSpec,
+        shapemap_format: &ShapeMapFormat,
+        base: &Option<IriS>,
+    ) -> Result<()> {
         let shapemap_reader = input
             .open_read(None, "ShapeMap")
             .map_err(|e| RudofError::ShapeMapParseError {
@@ -1463,7 +1484,12 @@ impl Rudof {
     /// * `node` - Optional node selector string
     /// * `shape` - Optional shape selector string
     /// * `base` - Optional base IRI for resolving relative IRIs in node and shape selectors
-    pub fn add_node_shape_to_shapemap(&mut self, node: &Option<String>, shape: &Option<String>, base: &Option<IriS>) -> Result<()> {
+    pub fn add_node_shape_to_shapemap(
+        &mut self,
+        node: &Option<String>,
+        shape: &Option<String>,
+        base: &Option<IriS>,
+    ) -> Result<()> {
         match (node, shape) {
             (None, None) => {
                 // Nothing to do

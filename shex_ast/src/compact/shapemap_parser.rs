@@ -26,7 +26,7 @@ pub struct ShapeMapParser<'a> {
 impl ShapeMapParser<'_> {
     /// Parse a ShapeMap that uses [ShapeMap compact syntax](https://shexspec.github.io/shape-map/#grammar)
     ///
-     pub fn parse(
+    pub fn parse(
         src: &str,
         nodes_prefixmap: &Option<PrefixMap>,
         base_nodes: &Option<IriS>,
@@ -74,7 +74,6 @@ impl ShapeMapParser<'_> {
         let query_shapemap = ShapeMapParser::parse(&data, nodes_prefixmap, base_nodes, shapes_prefixmap, base_shapes)?;
         Ok(query_shapemap)
     }
-
 
     pub fn parse_shape_selector(str: &str) -> Result<ShapeSelector> {
         let span = Span::new(str);
