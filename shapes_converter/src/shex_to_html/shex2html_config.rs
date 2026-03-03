@@ -4,7 +4,7 @@ use std::{
 };
 
 use iri_s::IriS;
-use rudof_rdf::rdf_core::vocab::rdfs_label;
+use rudof_rdf::rdf_core::vocabs::RdfsVocab;
 use serde::{Deserialize, Serialize};
 use shex_validation::ShExConfig;
 use thiserror::Error;
@@ -42,7 +42,7 @@ impl Default for ShEx2HtmlConfig {
             css_file_name: Some("shex2html.css".to_string()),
             target_folder: None,
             color_property_name: Some(DEFAULT_COLOR_PROPERTY_NAME.to_string()),
-            annotation_label: vec![rdfs_label().clone()],
+            annotation_label: vec![RdfsVocab::rdfs_label().clone()],
             replace_iri_by_label: None,
             embed_svg_schema: true,
             embed_svg_shape: true,

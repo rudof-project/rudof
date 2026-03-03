@@ -1,6 +1,6 @@
 [package]
 name = "rudof_rdf"
-version = "0.1.147"
+version = "0.2.6"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/rdf"
@@ -24,12 +24,13 @@ oxrdfio.workspace = true
 oxrdfxml.workspace = true
 oxsdatatypes.workspace = true
 oxttl.workspace = true
+paste.workspace = true
 prefixmap.workspace = true
 proptest.workspace = true
 regex.workspace = true
 reqwest.workspace = true
 rust_decimal.workspace = true
-rust_decimal_macros.workspace = true
+# rust_decimal_macros.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 sparesults.workspace = true

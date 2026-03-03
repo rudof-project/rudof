@@ -6,7 +6,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 use prefixmap::error::DerefError;
-use prefixmap::{Deref, IriRef};
+use prefixmap::{DerefIri, IriRef};
 use thiserror::Error;
 
 use crate::ir::shape_label::ShapeLabel;
@@ -53,14 +53,14 @@ impl ShapeExprLabel {
     }
 }
 
-impl Deref for ShapeExprLabel {
-    fn deref(self, base: Option<&IriS>, prefixmap: Option<&prefixmap::PrefixMap>) -> Result<Self, DerefError>
+impl DerefIri for ShapeExprLabel {
+    fn deref_iri(self, base: Option<&IriS>, prefixmap: Option<&prefixmap::PrefixMap>) -> Result<Self, DerefError>
     where
         Self: Sized,
     {
         match self {
             ShapeExprLabel::IriRef { value } => {
-                let new_value = value.deref(base, prefixmap)?;
+                let new_value = value.deref_iri(base, prefixmap)?;
                 Ok(ShapeExprLabel::IriRef { value: new_value })
             },
             ShapeExprLabel::BNode { value } => Ok(ShapeExprLabel::BNode { value: value.clone() }),

@@ -8,7 +8,7 @@ use iri_s::MimeType;
 use rudof_rdf::rdf_core::RDFFormat;
 use rudof_rdf::rdf_impl::ReaderMode;
 use shex_ast::ShExFormat;
-use shex_ast::shapemap::ResultShapeMap;
+use shex_ast::shapemap::{ResultShapeMap, SortMode};
 use std::io::Write;
 use tracing::info;
 #[cfg(not(target_family = "wasm"))]
@@ -19,7 +19,7 @@ pub fn validate_shex<W: Write>(
     rudof: &mut Rudof,
     schema: &Option<InputSpec>,
     schema_format: &Option<CliShExFormat>,
-    base_schema: &Option<IriS>,
+    base: &Option<IriS>,
     reader_mode: &ReaderMode,
     maybe_node: &Option<String>,
     maybe_shape: &Option<String>,
@@ -41,13 +41,13 @@ pub fn validate_shex<W: Write>(
             })?;
         let schema_format = schema_format.try_into()?;
 
-        let base_iri = get_base(config, base_schema)?;
+        let base_iri = get_base(config, base)?;
 
         rudof.read_shex(
             schema_reader,
-            &schema_format,
+            Some(&schema_format),
             Some(base_iri.as_str()),
-            reader_mode,
+            Some(reader_mode),
             Some(&schema.source_name()),
         )?;
 
@@ -63,7 +63,12 @@ pub fn validate_shex<W: Write>(
                         error: e.to_string(),
                     })?;
 
-            rudof.read_shapemap(shapemap_reader, shapemap_spec.source_name().as_str(), &shapemap_format)?;
+            rudof.read_shapemap(
+                shapemap_reader,
+                shapemap_spec.source_name().as_str(),
+                &shapemap_format,
+                &Some(base_iri.clone()),
+            )?;
         }
 
         // If individual node/shapes are declared add them to current shape map
@@ -73,12 +78,22 @@ pub fn validate_shex<W: Write>(
             },
             (Some(node_str), None) => {
                 let node_selector = parse_node_selector(node_str)?;
-                rudof.shapemap_add_node_shape_selectors(node_selector, start())
+                rudof.shapemap_add_node_shape_selectors(
+                    node_selector,
+                    &Some(base_iri.clone()),
+                    start(),
+                    &Some(base_iri.clone()),
+                )?
             },
             (Some(node_str), Some(shape_str)) => {
                 let node_selector = parse_node_selector(node_str)?;
                 let shape_selector = parse_shape_selector(shape_str)?;
-                rudof.shapemap_add_node_shape_selectors(node_selector, shape_selector);
+                rudof.shapemap_add_node_shape_selectors(
+                    node_selector,
+                    &Some(base_iri.clone()),
+                    shape_selector,
+                    &Some(base_iri.clone()),
+                )?
             },
             (None, Some(shape_str)) => {
                 tracing::debug!("Shape label {shape_str} ignored because noshapemap has also been provided")
@@ -124,14 +139,16 @@ fn write_result_shapemap<W: Write>(
     result: ResultShapeMap,
     sort_by: &SortByResultShapeMap,
 ) -> Result<(), RudofError> {
+    let sort_by = cnv_sort_by(sort_by);
+
     match format {
         CliShapeMapFormat::Compact => {
             writeln!(writer, "Result:")?;
-            result.as_table(writer, sort_by.into(), false, terminal_width())?;
+            result.as_table(writer, Some(&sort_by), Some(false), Some(terminal_width()))?;
         },
         CliShapeMapFormat::Csv => {
             info!("Serializing result as CSV");
-            result.as_csv(writer, sort_by.into(), true)?;
+            result.as_csv(writer, sort_by, true)?;
         },
         CliShapeMapFormat::Internal => {
             let str =
@@ -145,7 +162,7 @@ fn write_result_shapemap<W: Write>(
         },
         CliShapeMapFormat::Details => {
             writeln!(writer, "Result:")?;
-            result.as_table(writer, sort_by.into(), true, terminal_width())?;
+            result.as_table(writer, Some(&sort_by), Some(true), Some(terminal_width()))?;
         },
     }
     Ok(())
@@ -175,9 +192,9 @@ pub fn parse_shex_schema(
 
     rudof.read_shex(
         reader,
-        &shex_format,
+        Some(&shex_format),
         Some(base_iri.as_str()),
-        reader_mode,
+        Some(reader_mode),
         Some(&input.source_name()),
     )?;
 
@@ -210,7 +227,7 @@ pub fn serialize_current_shex_rudof<W: Write>(
     writer: &mut W,
 ) -> Result<(), RudofError> {
     let shex_format = shex_format_convert(result_schema_format);
-    rudof.serialize_current_shex(&shex_format, formatter, writer)?;
+    rudof.serialize_current_shex(Some(&shex_format), formatter, writer)?;
     Ok(())
 }
 
@@ -236,6 +253,15 @@ pub fn serialize_shex_rudof<W: Write>(
     writer: &mut W,
 ) -> Result<(), RudofError> {
     let shex_format = (*result_schema_format).try_into()?;
-    rudof.serialize_shex(shex, &shex_format, formatter, writer)?;
+    rudof.serialize_shex(shex, Some(&shex_format), formatter, writer)?;
     Ok(())
+}
+
+fn cnv_sort_by(sort_by: &SortByResultShapeMap) -> SortMode {
+    match sort_by {
+        SortByResultShapeMap::Node => SortMode::Node,
+        SortByResultShapeMap::Shape => SortMode::Shape,
+        SortByResultShapeMap::Status => SortMode::Shape,
+        SortByResultShapeMap::Details => SortMode::Details,
+    }
 }

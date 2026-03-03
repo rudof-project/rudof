@@ -341,7 +341,8 @@ where
                         Some(Ok(pending))
                     },
                     Err(err) => {
-                        trace!("### Skipped error: {err}!!!!\n");
+                        trace!("### Rbe {} does not match bag {}, error: {err}", self.rbe, bag);
+                        trace!("### Skipped error: {err}!\n");
                         self.next()
                     },
                 }

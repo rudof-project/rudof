@@ -33,7 +33,6 @@ use regex::Regex;
 use rudof_rdf::rdf_core::{
     RDFError,
     term::literal::{ConcreteLiteral, Lang, NumericLiteral},
-    vocab::rdf_type as rdf_type_vocab,
 };
 use std::{collections::VecDeque, fmt::Debug};
 use thiserror::Error;
@@ -1468,6 +1467,8 @@ pub fn hex_refactor(input: Span) -> IRes<Span> {
 }
 
 use nom::Slice;
+use rudof_rdf::rdf_core::vocabs::RdfVocab;
+
 pub fn re_find<'a>(re: &'a Lazy<Regex>) -> impl Fn(Span<'a>) -> IRes<'a, Span<'a>> {
     move |i| {
         let str = i.fragment();
@@ -1700,7 +1701,7 @@ fn integer_or_star(i: Span) -> IRes<i32> {
 /// `[69] <RDF_TYPE> ::= "a"`
 fn rdf_type(i: Span) -> IRes<IriRef> {
     let (i, _) = tag("a")(i)?;
-    let rdf_type: IriRef = IriRef::iri(rdf_type_vocab().clone());
+    let rdf_type: IriRef = IriRef::iri(RdfVocab::rdf_type().clone());
     Ok((i, rdf_type))
 }
 

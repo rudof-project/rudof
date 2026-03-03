@@ -5,7 +5,7 @@ use std::{
 };
 
 use iri_s::IriS;
-use rudof_rdf::rdf_core::vocab::rdfs_label;
+use rudof_rdf::rdf_core::vocabs::RdfsVocab;
 use serde::{Deserialize, Serialize};
 use shex_validation::ShExConfig;
 use thiserror::Error;
@@ -24,7 +24,7 @@ pub struct ShEx2UmlConfig {
 impl ShEx2UmlConfig {
     pub fn new() -> ShEx2UmlConfig {
         Self {
-            annotation_label: vec![rdfs_label().clone()],
+            annotation_label: vec![RdfsVocab::rdfs_label().clone()],
             replace_iri_by_label: None,
             shex: Some(ShExConfig::default()),
             shadowing: Some(true),

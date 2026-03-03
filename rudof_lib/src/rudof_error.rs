@@ -11,6 +11,12 @@ use crate::data_format::DataFormatError;
 
 #[derive(Error, Debug)]
 pub enum RudofError {
+    #[error("Error adding node {node_selector} with shape {shape_selector} to shapemap: {error}")]
+    AddingNodeShapeSelectorToShapemap {
+        node_selector: String,
+        shape_selector: String,
+        error: String,
+    },
     #[error("Data format error: {error}")]
     DataFormatError { error: DataFormatError },
     #[error("Error qualifying object {object}: {error}")]

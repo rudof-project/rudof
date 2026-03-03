@@ -1,36 +1,9 @@
-use const_format::concatcp;
-use iri_s::IriS;
-use std::sync::OnceLock;
-
-// TODO - Move this to a vocab / utils crate
-
-#[macro_export]
-macro_rules! vocab_term {
-    ($voc:ident, $name:ident, $suffix:literal) => {
-        impl $voc {
-            pub const $name: &'static str = concatcp!($voc::BASE, $suffix);
-
-            paste::paste! {
-                pub fn [<$name:lower>]() -> &'static IriS {
-                    static IRI: OnceLock<IriS> = OnceLock::new();
-                    IRI.get_or_init(|| IriS::new_unchecked(Self::$name))
-                }
-            }
-        }
-    };
-}
-
-pub trait RdfVocabulary {
-    const BASE: &'static str;
-
-    fn base_iri() -> &'static IriS {
-        static IRI: OnceLock<IriS> = OnceLock::new();
-        IRI.get_or_init(|| IriS::new_unchecked(Self::BASE))
-    }
-}
+use crate::rdf_core::vocabs::RdfVocabulary;
+use crate::vocab_term;
 
 pub struct ShaclVocab;
 
+/// SHACL vocabulary terms
 impl RdfVocabulary for ShaclVocab {
     const BASE: &'static str = "http://www.w3.org/ns/shacl#";
 }
@@ -145,6 +118,10 @@ vocab_term!(
     "ReifierShapeConstraintComponent"
 ); // SHACL 1.2
 
+// TODO - For node expressions, do not delete
+// vocab_term!(ShaclVocab, SH_DEFAULT_VALUE, "defaultValue");
+// vocab_term!(ShaclVocab, SH_VALUES, "values");
+
 // Targets
 vocab_term!(ShaclVocab, SH_TARGET_NODE, "targetNode");
 vocab_term!(ShaclVocab, SH_TARGET_CLASS, "targetClass");
@@ -154,3 +131,10 @@ vocab_term!(ShaclVocab, SH_TARGET_OBJECTS_OF, "targetObjectsOf");
 // SPARQL
 vocab_term!(ShaclVocab, SH_SOURCE_CONSTRAINT, "sourceConstraint");
 vocab_term!(ShaclVocab, SH_CLOSED_CONSTRAINT_COMPONENT, "ClosedConstraintComponent");
+
+// SHACL Paths
+vocab_term!(ShaclVocab, SH_ALTERNATIVE_PATH, "alternativePath");
+vocab_term!(ShaclVocab, SH_ZERO_OR_ONE_PATH, "zeroOrOnePath");
+vocab_term!(ShaclVocab, SH_ZERO_OR_MORE_PATH, "zeroOrMorePath");
+vocab_term!(ShaclVocab, SH_ONE_OR_MORE_PATH, "oneOrMorePath");
+vocab_term!(ShaclVocab, SH_INVERSE_PATH, "inversePath");

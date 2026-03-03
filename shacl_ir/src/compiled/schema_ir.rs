@@ -74,13 +74,13 @@ impl SchemaIR {
         sref: Object,
     ) -> Result<Either<ShapeLabelIdx, ShapeLabelIdx>, Box<CompiledShaclError>> {
         match self.labels_idx_map.entry(sref.clone()) {
-            Entry::Occupied(entry) => Ok(Either::Left(*entry.get())),
+            Entry::Occupied(entry) => Ok(Left(*entry.get())),
             Entry::Vacant(entry) => {
                 let label_idx = ShapeLabelIdx::new(self.shape_label_counter);
                 self.shape_label_counter += 1;
                 entry.insert(label_idx);
                 self.idx_labels_map.insert(label_idx, sref);
-                Ok(Either::Right(label_idx))
+                Ok(Right(label_idx))
             },
         }
     }

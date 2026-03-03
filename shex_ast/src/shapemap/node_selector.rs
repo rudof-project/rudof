@@ -1,7 +1,9 @@
 use crate::object_value::ObjectValue;
+use crate::shapemap::Pattern;
 use crate::shapemap::SHACLPathRef;
 use crate::shapemap::ShapemapError;
 use iri_s::IriS;
+use prefixmap::DerefIri;
 use prefixmap::IriRef;
 use prefixmap::PrefixMap;
 use prefixmap::error::PrefixMapError;
@@ -161,41 +163,6 @@ impl NodeSelect for NodeSelector {
         }
     }
 }
-#[derive(Debug, PartialEq, Clone, Serialize)]
-
-pub enum Pattern {
-    Node(ObjectValue),
-    Wildcard,
-    Focus,
-}
-
-impl Pattern {
-    pub fn focus() -> Self {
-        Pattern::Focus
-    }
-
-    pub fn wildcard() -> Self {
-        Pattern::Wildcard
-    }
-
-    pub fn node(obj: ObjectValue) -> Self {
-        Pattern::Node(obj)
-    }
-
-    pub fn prefixed(prefix: &str, local: &str) -> Self {
-        Pattern::Node(ObjectValue::iri_ref(IriRef::prefixed(prefix, local)))
-    }
-}
-
-impl Display for Pattern {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Pattern::Node(object_value) => write!(f, "{object_value}"),
-            Pattern::Wildcard => write!(f, "_"),
-            Pattern::Focus => write!(f, "FOCUS"),
-        }
-    }
-}
 
 #[allow(dead_code)]
 trait NodeSelect {
@@ -246,6 +213,31 @@ impl Display for NodeSelector {
                 Ok(())
             },
             NodeSelector::Generic { iri: _, param: _ } => todo!(),
+        }
+    }
+}
+
+impl DerefIri for NodeSelector {
+    fn deref_iri(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, prefixmap::DerefError>
+    where
+        Self: Sized,
+    {
+        match self {
+            NodeSelector::Node(object_value) => {
+                let deref = object_value.deref_iri(base, prefixmap)?;
+                Ok(NodeSelector::Node(deref))
+            },
+            NodeSelector::TriplePattern { subject, path, object } => {
+                let subject = subject.deref_iri(base, prefixmap)?;
+                let path = path.deref_iri(base, prefixmap)?;
+                let object = object.deref_iri(base, prefixmap)?;
+                Ok(NodeSelector::TriplePattern { subject, path, object })
+            },
+            NodeSelector::Sparql { query } => {
+                // TODO: Maybe deref SPARQL query...
+                Ok(NodeSelector::Sparql { query })
+            },
+            NodeSelector::Generic { iri, param } => Ok(NodeSelector::Generic { iri, param }),
         }
     }
 }

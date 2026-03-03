@@ -1,5 +1,6 @@
 pub mod component;
 pub mod message_map;
+mod node_expr;
 pub mod node_kind;
 pub mod node_shape;
 pub mod property_shape;

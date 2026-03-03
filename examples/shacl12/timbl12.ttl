@@ -1,0 +1,39 @@
+prefix ex:       <http://example.org/>
+prefix sh:       <http://www.w3.org/ns/shacl#>
+prefix xsd:      <http://www.w3.org/2001/XMLSchema#>
+prefix rdfs:     <http://www.w3.org/2000/01/rdf-schema#>
+prefix schema:   <http://schema.org/>
+prefix :         <http://example.org/>
+
+:Researcher a sh:NodeShape ;
+ sh:targetClass :Human ;
+ sh:property [
+   sh:path :employer ;
+   sh:nodeKind sh:IRI ;
+   sh:reifierShape ex:EmployerQualifier ;
+   sh:reificationRequired true 
+] .
+
+:EmployerQualifier a sh:NodeShape ;
+ sh:property [ sh:path :start ;
+  sh:datatype xsd:gYear ;
+  sh:minCount 1 ; sh:maxCount 1 
+ ];
+ sh:property [ sh:path :end ;
+  sh:datatype xsd:gYear ;
+  sh:minCount 1 ; sh:maxCount 1 
+ ] .
+
+:timbl a :Human ;
+  rdfs:label "Tim Berners Lee" ;
+  :employer :CERN 
+  {| :start "1984"^^xsd:gYear ;
+     :end   "1994"^^xsd:gYear |}
+  {| :start "1980"^^xsd:gYear ;
+     :end   "1980"^^xsd:gYear |} .
+
+:other a :Human ;
+  rdfs:label "Other" ;
+  :employer :CERN 
+  {| :start "1984"^^xsd:gYear ;
+     :end   "1994"^^xsd:gYear |} .

@@ -305,8 +305,15 @@ Options:
 ### Validation conformance tests for ShEx
 
 ```sh
-cargo run -p shex_testsuite -- -m shex_testsuite/shexTest/validation/manifest.jsonld validation
+cargo run -p shex_testsuite -- -m shex_testsuite/shexTest/validation/manifest.jsonld 
 ```
+If you want to see the failed tests, you can run:
+
+```sh
+cargo run -p shex_testsuite -- -m shex_testsuite/shexTest/validation/manifest.jsonld -p failed
+```
+
+
 
 ### Schemas tests
 

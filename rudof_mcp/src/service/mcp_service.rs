@@ -155,10 +155,10 @@ impl RudofMcpService {
             if let Err(e) = rudof.read_data(
                 &mut cursor,
                 "persisted_state",
-                &RDFFormat::NTriples,
+                Some(&RDFFormat::NTriples),
                 None,
-                &ReaderMode::default(),
-                false,
+                Some(&ReaderMode::default()),
+                Some(false),
             ) {
                 tracing::warn!("Failed to restore persisted RDF data: {}", e);
             } else {
@@ -198,7 +198,7 @@ impl RudofMcpService {
         // Serialize RDF data to N-Triples format
         let mut buffer = Vec::new();
         rudof
-            .serialize_data(&RDFFormat::NTriples, &mut buffer)
+            .serialize_data(Some(&RDFFormat::NTriples), &mut buffer)
             .map_err(|e| state::StatePersistenceError::RdfSerialization(e.to_string()))?;
 
         let rdf_ntriples = String::from_utf8(buffer).map_err(|e| state::StatePersistenceError::Json(e.to_string()))?;

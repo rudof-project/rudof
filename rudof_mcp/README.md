@@ -8,37 +8,37 @@ A powerful Model Context Protocol server for RDF validation, querying, and data 
 
 ---
 
-## 🚀 Overview
+## Overview
 
 Rudof MCP is a comprehensive [Model Context Protocol](https://modelcontextprotocol.io/) server implementation that exposes the powerful **Rudof** library to AI assistants and MCP-compatible clients. Seamlessly integrate RDF validation, SPARQL querying, and semantic data transformation into your AI workflows.
 
 ### What Can You Do?
 
-- 📊 **Load & Manipulate RDF Data** — From files, URLs, or SPARQL endpoints
-- ✅ **Validate RDF Data** — Against ShEx and SHACL schemas
-- 🔍 **Execute SPARQL Queries** — SELECT, CONSTRUCT, and ASK
-- 🧭 **Explore RDF Graphs** — Through intuitive node inspection tools
-- 🔄 **Convert Schemas** — Between different serialization formats
-- 📈 **Visualize Data** — Generate PlantUML diagrams and images
+- **Load & Manipulate RDF Data** — From files, URLs, or SPARQL endpoints
+- **Validate RDF Data** — Against ShEx and SHACL schemas
+- **Execute SPARQL Queries** — SELECT, CONSTRUCT, and ASK
+- **Explore RDF Graphs** — Through intuitive node inspection tools
+- **Convert Schemas** — Between different serialization formats
+- **Visualize Data** — Generate PlantUML diagrams and images
 
 
-## 🔌 Transport Types
+## Transport Types
 
 ### Stdio Transport
 
 **Perfect for:**
-- 🔧 CLI tools, command-line interfaces and IDE extensions (VSCode, IntelliJ, etc.)
-- 💻 Local process-to-process communication
-- 👤 Single client connections
+- CLI tools, command-line interfaces and IDE extensions (VSCode, IntelliJ, etc.)
+- Local process-to-process communication
+- Single client connections
 
 The client launches the MCP server as a subprocess, with communication via stdin/stdout using JSON-RPC messages.
 
 ### Streamable HTTP Transport
 
 **Ideal for:**
-- 🌐 Web-based MCP clients
-- 🔗 Remote connections over HTTP/HTTPS
-- 👥 Multiple concurrent client connections
+- Web-based MCP clients
+- Remote connections over HTTP/HTTPS
+- Multiple concurrent client connections
 
 **Features:**
 - JSON-RPC over HTTP POST
@@ -47,19 +47,19 @@ The client launches the MCP server as a subprocess, with communication via stdin
 - Origin header validation for security
 
 
-## 🎯 MCP Capabilities
+## MCP Capabilities
 
 | Capability | Description |
 |------------|-------------|
-| **🛠️ Tools** | 10+ tools for validation, querying, and data operations |
-| **📝 Prompts** | Guided templates for common validation workflows |
-| **📦 Resources** | Access to current RDF data in multiple formats |
-| **📋 Logging** | Real-time log notifications with RFC 5424 level filtering |
-| **⌨️ Completions** | Argument completions for tools and prompts |
-| **⚡ Tasks** | Async task support for long-running operations (SEP-1686) |
+| **Tools** | 10+ tools for validation, querying, and data operations |
+| **Prompts** | Guided templates for common validation workflows |
+| **Resources** | Access to current RDF data in multiple formats |
+| **Logging** | Real-time log notifications with RFC 5424 level filtering |
+| **Completions** | Argument completions for tools and prompts |
+| **Tasks** | Async task support for long-running operations (SEP-1686) |
 
 
-## 🛠️ Available Tools
+## Available Tools
 
 ### Data Management
 
@@ -99,7 +99,7 @@ The client launches the MCP server as a subprocess, with communication via stdin
 | `validate_shacl` | Validate RDF data against a SHACL schema |
 
 
-## 📝 Interactive Prompts
+## Interactive Prompts
 
 Guided templates for common workflows:
 
@@ -111,7 +111,7 @@ Guided templates for common workflows:
 | `sparql_builder` | Interactive helper for building SPARQL queries |
 
 
-## 📦 Available Resources
+## Available Resources
 
 The server exposes RDF data and metadata through MCP resources with support for pagination and subscriptions.
 
@@ -159,17 +159,17 @@ The server exposes RDF data and metadata through MCP resources with support for 
 | `rudof://formats/shacl-validation-sort-options` | SHACL Validation Sort Options | Available sort options for results |
 
 
-## 🔒 Security
+## Security
 
 The HTTP transport implements comprehensive MCP specification security requirements:
 
-- ✅ **Origin Validation** — Invalid Origin headers return HTTP 403 Forbidden
-- ✅ **Protocol Version Validation** — Invalid versions return HTTP 400 Bad Request
-- ✅ **Session Management** — Explicit session termination via HTTP DELETE
+- **Origin Validation** — Invalid Origin headers return HTTP 403 Forbidden
+- **Protocol Version Validation** — Invalid versions return HTTP 400 Bad Request
+- **Session Management** — Explicit session termination via HTTP DELETE
 
 ---
 
-## 📚 Dependencies
+## Dependencies
 
 Built on robust, well-maintained libraries:
 
@@ -183,7 +183,7 @@ Built on robust, well-maintained libraries:
 
 <div align="center">
 
-*For more information about the Model Context Protocol, visit the [official MCP documentation](https://modelcontextprotocol.io/)📖.*
+*For more information about the Model Context Protocol, visit the [official MCP documentation](https://modelcontextprotocol.io/).*
 
 </div>
 

@@ -36,7 +36,7 @@ mod parser_tests {
         };
 
         match shape.components().first().unwrap() {
-            Component::LanguageIn { langs } => {
+            Component::LanguageIn(langs) => {
                 assert_eq!(langs.len(), 2);
                 assert_eq!(langs[0], Lang::new("en").unwrap());
                 assert_eq!(langs[1], Lang::new("fr").unwrap());

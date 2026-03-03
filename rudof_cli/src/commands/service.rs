@@ -44,9 +44,9 @@ impl Command for ServiceCommand {
         ctx.rudof.read_service_description(
             &mut reader,
             self.args.service.source_name().as_str(),
-            &rdf_format,
+            Some(&rdf_format),
             base,
-            &reader_mode,
+            Some(&reader_mode),
         )?;
 
         Ok(())

@@ -2,8 +2,9 @@ use std::collections::HashSet;
 use std::fmt::Display;
 
 use crate::reifier_info::ReifierInfo;
-use crate::{ShaclVocab, component::Component, message_map::MessageMap, severity::Severity, target::Target};
+use crate::{component::Component, message_map::MessageMap, severity::Severity, target::Target};
 use iri_s::IriS;
+use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{
     BuildRDF, Rdf, SHACLPath,
     term::{Object, literal::NumericLiteral},
@@ -28,6 +29,10 @@ pub struct PropertyShape<RDF: Rdf> {
     group: Option<Object>,
     // source_iri: Option<IriRef>,
     // annotations: Vec<(IriRef, RDFNode)>,
+
+    // TODO - For NodeExpr, do not delete
+    // default_value: Option<NodeExpr<RDF>>, // ONLY WHEN PATH IS PREDICATE PATH
+    // values: Option<NodeExpr<RDF>>,        // ONLY WHEN PATH IS PREDICATE PATH
 }
 
 impl<RDF: Rdf> PropertyShape<RDF> {
@@ -49,6 +54,10 @@ impl<RDF: Rdf> PropertyShape<RDF> {
             group: None,
             reifier_info: None, // source_iri: None,
                                 // annotations: Vec::new()
+
+                                // TODO - For NodeExpr, do not delete
+                                // default_value: None,
+                                // values: None,
         }
     }
 
@@ -123,6 +132,17 @@ impl<RDF: Rdf> PropertyShape<RDF> {
         self
     }
 
+    // TODO - For NodeExpr, do not delete
+    // pub fn with_values(mut self, values: Option<NodeExpr<RDF>>) -> Self {
+    //     self.values = values;
+    //     self
+    // }
+    //
+    // pub fn with_default_value(mut self, default_value: Option<NodeExpr<RDF>>) -> Self {
+    //     self.default_value = default_value;
+    //     self
+    // }
+
     pub fn id(&self) -> &Object {
         &self.id
     }
@@ -163,11 +183,17 @@ impl<RDF: Rdf> PropertyShape<RDF> {
         &self.property_shapes
     }
 
+    // TODO - For NodeExpr, do not delete
+    // pub fn values(&self) -> Option<&NodeExpr<RDF>> {
+    //     self.values.as_ref()
+    // }
+    //
+    // pub fn default_value(&self) -> Option<&NodeExpr<RDF>> {
+    //     self.default_value.as_ref()
+    // }
+
     // TODO: this is a bit ugly
-    pub fn write<B>(&self, rdf: &mut B) -> Result<(), B::Err>
-    where
-        B: BuildRDF,
-    {
+    pub fn write<B: BuildRDF>(&self, rdf: &mut B) -> Result<(), B::Err> {
         let id: B::Subject = self.id.clone().try_into().map_err(|_| unreachable!())?;
         rdf.add_type(id.clone(), ShaclVocab::sh_property_shape().clone())?;
 
@@ -274,8 +300,14 @@ impl<RDF: Rdf> Display for PropertyShape<RDF> {
         for component in self.components.iter() {
             writeln!(f, "       {component}")?
         }
-        write!(f, "}}")?;
-        Ok(())
+        // TODO - For NodeExpr, do not delete
+        // if let Some(v) = &self.default_value {
+        //     writeln!(f, "       default_value: {}", v)?;
+        // }
+        // if let Some(v) = &self.values {
+        //     writeln!(f, "       values: {}", v)?;
+        // }
+        write!(f, "}}")
     }
 }
 
@@ -295,6 +327,9 @@ impl<RDF: Rdf> Clone for PropertyShape<RDF> {
             order: self.order.clone(),
             group: self.group.clone(),
             reifier_info: self.reifier_info.clone(),
+            // TODO - For NodeExpr, do not delete
+            // default_value: self.default_value.clone(),
+            // values: self.values.clone(),
         }
     }
 }
@@ -313,5 +348,9 @@ impl<RDF: Rdf> PartialEq for PropertyShape<RDF> {
             && self.description == other.description
             && self.order == other.order
             && self.group == other.group
+
+        // TODO - For NodeExpr, do not delete
+        // && self.default_value == other.default_value
+        // && self.values == other.values
     }
 }

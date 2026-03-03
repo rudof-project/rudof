@@ -36,7 +36,7 @@ impl ShexValidateCommand {
         match format {
             ShapeMapFormat::Compact => {
                 writeln!(writer, "Result:")?;
-                result.as_table(writer, sort_by.into(), false, terminal_width())?;
+                result.as_table(writer, Some(&sort_by.into()), Some(false), Some(terminal_width()))?;
             },
             ShapeMapFormat::Csv => {
                 result.as_csv(writer, sort_by.into(), true)?;
@@ -48,7 +48,7 @@ impl ShexValidateCommand {
             },
             ShapeMapFormat::Details => {
                 writeln!(writer, "Result:")?;
-                result.as_table(writer, sort_by.into(), true, terminal_width())?;
+                result.as_table(writer, Some(&sort_by.into()), Some(true), Some(terminal_width()))?;
             },
         }
         Ok(())

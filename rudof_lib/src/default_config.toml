@@ -1,5 +1,5 @@
 [rdf_data]
-base = "http://example.org/"
+base = "http://base/"
 
 # Wikidata endpoint
 [rdf_data.endpoints.wikidata]

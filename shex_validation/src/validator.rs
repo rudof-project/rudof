@@ -103,7 +103,7 @@ impl Validator {
             })
     }
 
-    pub fn validate_shapemap2<S>(
+    pub fn validate_shapemap<S>(
         &self,
         shapemap: &QueryShapeMap,
         rdf: &S,
@@ -114,52 +114,82 @@ impl Validator {
         S: NeighsRDF + QueryRDF,
     {
         let mut engine = Engine::new(&self.config);
-        self.fill_pending(&mut engine, shapemap, rdf, schema)?;
+        let failures = self.fill_pending(&mut engine, shapemap, rdf, schema)?;
         trace!("Filled pending atoms: {:?}", engine.pending());
         engine.validate_pending(rdf, schema)?;
-        let result = self.result_map(&mut engine, maybe_nodes_prefixmap)?;
+        let mut result = self.result_map(&mut engine, maybe_nodes_prefixmap)?;
+        for (node, shape_label, error_msg) in failures {
+            let status = ValidationStatus::non_conformant(error_msg, Value::Null);
+            let node_str = node.to_string();
+            let label_str = shape_label.to_string();
+            result
+                .add_result(node, shape_label, status)
+                .map_err(|e| ValidatorError::AddingNonConformantError {
+                    node: node_str,
+                    label: label_str,
+                    error: format!("{e}"),
+                })?;
+        }
         Ok(result)
     }
 
-    fn fill_pending<S>(&self, engine: &mut Engine, shapemap: &QueryShapeMap, rdf: &S, schema: &SchemaIR) -> Result<()>
+    fn fill_pending<S>(
+        &self,
+        engine: &mut Engine,
+        shapemap: &QueryShapeMap,
+        rdf: &S,
+        schema: &SchemaIR,
+    ) -> Result<Vec<(Node, ShapeLabel, String)>>
     where
         S: QueryRDF,
     {
-        trace!(
-            "fill_pending: Filling pending atoms from QueryShapeMap...: {:?}",
-            shapemap
-        );
         let pairs = shapemap
             .node_shapes(rdf)
             .map_err(|e| ValidatorError::ShapeMapError { error: e.to_string() })?;
         trace!(
-            "fill_pending: After filling pending atoms from QueryShapeMap...: {:?}",
+            "fill_pending: After filling pending atoms from QueryShapeMap: {}",
             shapemap
         );
+        let mut failures = Vec::new();
         for (node, label) in pairs.iter() {
-            let idx = self.get_shape_expr_label(label, schema)?;
-            let node = S::term_as_object(node).map_err(|e| ValidatorError::FillingShapeMapNodes {
-                node: node.to_string(),
-                error: e.to_string(),
-            })?;
-            engine.add_pending(Node::new(node), idx);
-        }
-        Ok(())
-    }
-
-    /*fn node_from_object_value<S>(&self, value: &ObjectValue, rdf: &S) -> Result<Node>
-    where
-        S: NeighsRDF,
-    {
-        match value {
-            ObjectValue::IriRef(IriRef::Iri(iri)) => Ok(Node::iri(iri.clone())),
-            ObjectValue::IriRef(IriRef::Prefixed { prefix, local }) => {
-                let iri = rdf.resolve_prefix_local(prefix, local)?;
-                Ok(Node::iri(iri.clone()))
+            match self.get_shape_expr_label(label, schema) {
+                Err(e) => {
+                    match ShapeLabel::from_shape_expr_label(label, &schema.prefixmap()) {
+                        Ok(shape_label) => match S::term_as_object(node) {
+                            Ok(obj_node) => {
+                                failures.push((Node::new(obj_node), shape_label, e.to_string()));
+                            },
+                            Err(node_err) => {
+                                trace!(
+                                    "fill_pending: Could not convert node {} while handling missing label error: {}",
+                                    node, node_err
+                                );
+                                // TODO: Should we push a failure for this case as well?
+                                // It would be a bit redundant with the error message we already have, but it would allow us to report the node in the result map as well.
+                            },
+                        },
+                        Err(label_err) => {
+                            trace!(
+                                "fill_pending: Could not convert shape label {} while handling missing label error: {}",
+                                label, label_err
+                            );
+                            // TODO: Should we push a failure for this case as well?
+                            // It would be a bit redundant with the error message we already have,
+                            // but it would allow us to report the label in the result map as well.
+                        },
+                    }
+                },
+                Ok(idx) => {
+                    let node = S::term_as_object(node).map_err(|e| ValidatorError::FillingShapeMapNodes {
+                        node: node.to_string(),
+                        error: e.to_string(),
+                    })?;
+                    engine.add_pending(Node::new(node), idx);
+                },
             }
-            ObjectValue::Literal(lit) => Ok(Node::literal(lit.clone())),
         }
-    }*/
+        Ok(failures)
+    }
 
     fn get_shape_label(&self, idx: &ShapeLabelIdx) -> Result<&ShapeLabel> {
         let info = self.schema.find_shape_idx(idx).unwrap();
@@ -228,11 +258,6 @@ impl Validator {
         self.schema.prefixmap()
     }
 }
-
-/*fn find_shape_idx<'a>(idx: &'a ShapeLabelIdx, schema: &'a SchemaIR) -> &'a ShapeExpr {
-    let (_label, se) = schema.find_shape_idx(idx).unwrap();
-    se
-}*/
 
 fn show_errors(errors: &[ValidatorError]) -> String {
     let mut result = String::new();
@@ -303,14 +328,6 @@ fn show_reasons(reasons: &[Reason], nodes_prefixmap: &PrefixMap, schema: &Schema
     }
     Ok(result)
 }
-
-/*
-fn show(atom: &Atom) -> String {
-    match atom {
-        Atom::Pos((node, idx)) => format!("+({node},{idx})"),
-        Atom::Neg((node, idx)) => format!("!({node},{idx})"),
-    }
-}*/
 
 #[cfg(test)]
 mod tests {}

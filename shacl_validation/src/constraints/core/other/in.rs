@@ -9,8 +9,8 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF};
 use shacl_ir::compiled::component_ir::ComponentIR;
-use shacl_ir::compiled::component_ir::In;
 use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::components::In;
 use shacl_ir::schema_ir::SchemaIR;
 use std::fmt::Debug;
 

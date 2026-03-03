@@ -40,11 +40,11 @@ impl Command for ShapemapCommand {
 
         // Load shapemap into rudof
         ctx.rudof
-            .read_shapemap(reader, self.args.shapemap.source_name().as_str(), &shapemap_format)?;
+            .read_shapemap(reader, self.args.shapemap.source_name().as_str(), &shapemap_format, &self.args.base)?;
 
         // Write results in the requested format
         ctx.rudof
-            .serialize_shapemap(&result_format, &formatter, &mut ctx.writer)?;
+            .serialize_shapemap(Some(&result_format), &formatter, &mut ctx.writer)?;
 
         Ok(())
     }
