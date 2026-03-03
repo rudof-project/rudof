@@ -15,7 +15,7 @@ use std::{
 };
 
 use iri_s::IriS;
-use prefixmap::{Deref, DerefError, IriRef, PrefixMap};
+use prefixmap::{DerefIri, DerefError, IriRef, PrefixMap};
 use serde::{Deserialize, Serialize, Serializer};
 
 /// Types that implement this trait can be used as RDF Literals.
@@ -960,7 +960,7 @@ impl Display for ConcreteLiteral {
     }
 }
 
-impl Deref for ConcreteLiteral {
+impl DerefIri for ConcreteLiteral {
     /// Resolves IRIs and prefixes contained in the literal.
     ///
     /// - Value-based literals (`NumericLiteral`, `BooleanLiteral`, `DatetimeLiteral`, `StringLiteral`) are cloned directly.
@@ -970,7 +970,7 @@ impl Deref for ConcreteLiteral {
     /// # Errors
     ///
     /// Returns `DerefError` if datatype resolution fails.
-    fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
+    fn deref_iri(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
         match self {
             Self::NumericLiteral(_) | Self::BooleanLiteral(_) | Self::DatetimeLiteral(_) => Ok(self.clone()),
             Self::StringLiteral { .. } => Ok(self.clone()),
@@ -979,7 +979,7 @@ impl Deref for ConcreteLiteral {
             | Self::WrongDatatypeLiteral {
                 lexical_form, datatype, ..
             } => {
-                let dt = datatype.deref(base, prefixmap)?;
+                let dt = datatype.deref_iri(base, prefixmap)?;
                 Ok(Self::DatatypeLiteral {
                     lexical_form: lexical_form.clone(),
                     datatype: dt,

@@ -3,7 +3,7 @@ use std::{result, str::FromStr};
 use iri_s::IriS;
 use iri_s::error::IriSError;
 use prefixmap::error::DerefError;
-use prefixmap::{Deref, IriRef, PrefixMap};
+use prefixmap::{DerefIri, IriRef, PrefixMap};
 use serde::{Deserialize, Serialize, Serializer};
 
 use crate::ast::serde_string_or_struct::*;
@@ -467,8 +467,8 @@ impl TripleExpr {
     }
 }
 
-impl Deref for TripleExpr {
-    fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
+impl DerefIri for TripleExpr {
+    fn deref_iri(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
         match self {
             TripleExpr::EachOf {
                 id,
@@ -478,10 +478,10 @@ impl Deref for TripleExpr {
                 sem_acts,
                 annotations,
             } => {
-                let id = id.deref(base, prefixmap)?;
-                let annotations = annotations.deref(base, prefixmap)?;
-                let sem_acts = sem_acts.deref(base, prefixmap)?;
-                let expressions = expressions.deref(base, prefixmap)?;
+                let id = id.deref_iri(base, prefixmap)?;
+                let annotations = annotations.deref_iri(base, prefixmap)?;
+                let sem_acts = sem_acts.deref_iri(base, prefixmap)?;
+                let expressions = expressions.deref_iri(base, prefixmap)?;
                 Ok(TripleExpr::EachOf {
                     id,
                     expressions,
@@ -499,10 +499,10 @@ impl Deref for TripleExpr {
                 sem_acts,
                 annotations,
             } => {
-                let id = id.deref(base, prefixmap)?;
-                let annotations = annotations.deref(base, prefixmap)?;
-                let sem_acts = sem_acts.deref(base, prefixmap)?;
-                let expressions = expressions.deref(base, prefixmap)?;
+                let id = id.deref_iri(base, prefixmap)?;
+                let annotations = annotations.deref_iri(base, prefixmap)?;
+                let sem_acts = sem_acts.deref_iri(base, prefixmap)?;
+                let expressions = expressions.deref_iri(base, prefixmap)?;
                 Ok(TripleExpr::OneOf {
                     id,
                     expressions,
@@ -523,11 +523,11 @@ impl Deref for TripleExpr {
                 sem_acts,
                 annotations,
             } => {
-                let id = id.deref(base, prefixmap)?;
-                let annotations = annotations.deref(base, prefixmap)?;
-                let sem_acts = sem_acts.deref(base, prefixmap)?;
-                let predicate = predicate.deref(base, prefixmap)?;
-                let value_expr = value_expr.deref(base, prefixmap)?;
+                let id = id.deref_iri(base, prefixmap)?;
+                let annotations = annotations.deref_iri(base, prefixmap)?;
+                let sem_acts = sem_acts.deref_iri(base, prefixmap)?;
+                let predicate = predicate.deref_iri(base, prefixmap)?;
+                let value_expr = value_expr.deref_iri(base, prefixmap)?;
                 Ok(TripleExpr::TripleConstraint {
                     id,
                     negated,
@@ -541,7 +541,7 @@ impl Deref for TripleExpr {
                 })
             },
             TripleExpr::Ref(label) => {
-                let label = label.deref(base, prefixmap)?;
+                let label = label.deref_iri(base, prefixmap)?;
                 Ok(TripleExpr::Ref(label))
             },
         }
@@ -581,9 +581,9 @@ pub struct TripleExprWrapper {
 
 impl TripleExprWrapper {}
 
-impl Deref for TripleExprWrapper {
-    fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
-        let te = self.te.deref(base, prefixmap)?;
+impl DerefIri for TripleExprWrapper {
+    fn deref_iri(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
+        let te = self.te.deref_iri(base, prefixmap)?;
         Ok(TripleExprWrapper { te })
     }
 }

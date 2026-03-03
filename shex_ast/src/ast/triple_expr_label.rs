@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
 use prefixmap::error::DerefError;
-use prefixmap::{Deref, IriRef};
+use prefixmap::{DerefIri, IriRef};
 
 use super::bnode::BNode;
 
@@ -14,14 +14,14 @@ pub enum TripleExprLabel {
     BNode { value: BNode },
 }
 
-impl Deref for TripleExprLabel {
-    fn deref(self, base: Option<&iri_s::IriS>, prefixmap: Option<&prefixmap::PrefixMap>) -> Result<Self, DerefError>
+impl DerefIri for TripleExprLabel {
+    fn deref_iri(self, base: Option<&iri_s::IriS>, prefixmap: Option<&prefixmap::PrefixMap>) -> Result<Self, DerefError>
     where
         Self: Sized,
     {
         match self {
             TripleExprLabel::IriRef { value } => {
-                let new_value = value.deref(base, prefixmap)?;
+                let new_value = value.deref_iri(base, prefixmap)?;
                 Ok(TripleExprLabel::IriRef { value: new_value })
             },
             TripleExprLabel::BNode { value } => Ok(TripleExprLabel::BNode { value: value.clone() }),

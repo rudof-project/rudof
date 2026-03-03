@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{Annotation, SemAct, ShapeExprLabel, TripleExpr, TripleExprWrapper};
 use prefixmap::error::DerefError;
-use prefixmap::{Deref, IriRef};
+use prefixmap::{DerefIri, IriRef};
 
 #[derive(Deserialize, Serialize, Debug, Default, PartialEq, Clone)]
 pub struct Shape {
@@ -98,14 +98,14 @@ impl Shape {
     }
 }
 
-impl Deref for Shape {
-    fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
+impl DerefIri for Shape {
+    fn deref_iri(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
         let new_extra = match &self.extra {
             None => None,
             Some(es) => {
                 let mut ves = Vec::new();
                 for e in es {
-                    ves.push(e.clone().deref(base, prefixmap)?);
+                    ves.push(e.clone().deref_iri(base, prefixmap)?);
                 }
                 Some(ves)
             },
@@ -113,7 +113,7 @@ impl Deref for Shape {
         let new_expr = match &self.expression {
             None => None,
             Some(expr) => {
-                let ed = expr.clone().deref(base, prefixmap)?;
+                let ed = expr.clone().deref_iri(base, prefixmap)?;
                 Some(ed)
             },
         };
@@ -122,7 +122,7 @@ impl Deref for Shape {
             Some(anns) => {
                 let mut new_as = Vec::new();
                 for a in anns {
-                    new_as.push(a.clone().deref(base, prefixmap)?);
+                    new_as.push(a.clone().deref_iri(base, prefixmap)?);
                 }
                 Some(new_as)
             },
@@ -132,7 +132,7 @@ impl Deref for Shape {
             Some(sem_acts) => {
                 let mut new_sas = Vec::new();
                 for sa in sem_acts {
-                    new_sas.push(sa.clone().deref(base, prefixmap)?);
+                    new_sas.push(sa.clone().deref_iri(base, prefixmap)?);
                 }
                 Some(new_sas)
             },
@@ -142,7 +142,7 @@ impl Deref for Shape {
             Some(extends) => {
                 let mut new_extends = Vec::new();
                 for e in extends {
-                    new_extends.push(e.clone().deref(base, prefixmap)?);
+                    new_extends.push(e.clone().deref_iri(base, prefixmap)?);
                 }
                 Some(new_extends)
             },

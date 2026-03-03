@@ -2,7 +2,7 @@
 
 use crate::PrefixMap;
 use crate::iri::IriRef;
-use crate::iri::deref::Deref;
+use crate::iri::deref_iri::DerefIri;
 use iri_s::IriS;
 use proptest::prelude::*;
 use std::borrow::Cow;
@@ -27,7 +27,7 @@ mod deref_tests {
             let pm = PrefixMap::basic();
             let (iri, iris_ref) = iri_iris_ref_gen(prefix.clone(), local, uri);
 
-            let deref_iri = iris_ref.deref(None, Some(&pm));
+            let deref_iri = iris_ref.deref_iri(None, Some(&pm));
             if prefix.is_empty() {
                 assert_eq!(deref_iri.unwrap(), IriRef::Iri(iri));
             }
@@ -38,7 +38,7 @@ mod deref_tests {
             let pm = PrefixMap::basic();
             let (iri, iris_ref) = iri_iris_ref_gen(prefix.clone(), local, uri);
 
-            let deref_iri = Some(iris_ref).deref(None, Some(&pm));
+            let deref_iri = Some(iris_ref).deref_iri(None, Some(&pm));
             if prefix.is_empty() {
                 assert_eq!(deref_iri.unwrap(), Some(IriRef::Iri(iri)));
             }
@@ -49,7 +49,7 @@ mod deref_tests {
             let pm = PrefixMap::basic();
             let (iri, iris_ref) = iri_iris_ref_gen(prefix.clone(), local, uri);
 
-            let deref_iri = Box::new(iris_ref).deref(None, Some(&pm));
+            let deref_iri = Box::new(iris_ref).deref_iri(None, Some(&pm));
             if prefix.is_empty() {
                 assert_eq!(deref_iri.unwrap(), Box::new(IriRef::Iri(iri)));
             }
@@ -66,7 +66,7 @@ mod deref_tests {
                 result.push(IriRef::Iri(IriS::new(&format!("https://example.org/{}", local.clone()))?));
             }
 
-            let deref_iri = iris_ref.deref(None, Some(&pm));
+            let deref_iri = iris_ref.deref_iri(None, Some(&pm));
             assert_eq!(deref_iri.unwrap(), result);
         }
     }

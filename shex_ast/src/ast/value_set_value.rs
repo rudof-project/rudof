@@ -6,7 +6,7 @@ use crate::language_exclusion::LanguageExclusion;
 use crate::literal_exclusion::LiteralExclusion;
 use iri_s::error::IriSError;
 use prefixmap::error::DerefError;
-use prefixmap::{Deref, IriRef};
+use prefixmap::{DerefIri, IriRef};
 use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, Lang};
 use rust_decimal::Decimal;
 use serde::ser::SerializeMap;
@@ -91,14 +91,14 @@ impl ValueSetValue {
     }
 }
 
-impl Deref for ValueSetValue {
-    fn deref(self, base: Option<&iri_s::IriS>, prefixmap: Option<&prefixmap::PrefixMap>) -> Result<Self, DerefError>
+impl DerefIri for ValueSetValue {
+    fn deref_iri(self, base: Option<&iri_s::IriS>, prefixmap: Option<&prefixmap::PrefixMap>) -> Result<Self, DerefError>
     where
         Self: Sized,
     {
         match self {
             ValueSetValue::ObjectValue(ov) => {
-                let ov = ov.deref(base, prefixmap)?;
+                let ov = ov.deref_iri(base, prefixmap)?;
                 Ok(ValueSetValue::ObjectValue(ov))
             },
             ValueSetValue::Language { language_tag } => Ok(ValueSetValue::Language {

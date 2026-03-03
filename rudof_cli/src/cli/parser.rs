@@ -242,6 +242,14 @@ pub struct ShapemapArgs {
     pub shapemap_format: ShapeMapFormatCli,
 
     #[arg(
+        short = 'b',
+        long = "base",
+        value_name = "IRI",
+        help = "Base IRI to resolve relative IRIs"
+    )]
+    pub base: Option<IriS>,
+
+    #[arg(
         short = 'r',
         long = "result-format",
         value_name = "FORMAT",
@@ -292,8 +300,20 @@ pub struct ShexArgs {
     #[arg(short = 't', value_name = "BOOL", help = "Show processing time", long = "show-time")]
     pub show_time: Option<bool>,
 
-    #[arg(long = "show-schema", value_name = "BOOL", help = "Show schema")]
-    pub show_schema: Option<bool>,
+    #[arg(
+        long = "show-schema", 
+        default_value_t = true,
+        action = clap::ArgAction::SetTrue,
+        overrides_with = "no_show_schema"
+    )]
+    pub show_schema: bool,
+
+    #[arg(
+        long = "no-show-schema", 
+        action = clap::ArgAction::SetFalse,
+        overrides_with = "show_schema"
+    )]
+    pub no_show_schema: bool,
 
     #[arg(long = "statistics", value_name = "BOOL", help = "Show statistics about the schema")]
     pub show_statistics: Option<bool>,

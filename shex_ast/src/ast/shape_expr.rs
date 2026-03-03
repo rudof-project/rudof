@@ -1,6 +1,6 @@
 use iri_s::IriS;
 use prefixmap::error::DerefError;
-use prefixmap::{Deref, IriRef, PrefixMap};
+use prefixmap::{DerefIri, IriRef, PrefixMap};
 use serde::{Deserialize, Serialize, Serializer};
 use std::str::FromStr;
 
@@ -19,9 +19,9 @@ pub struct ShapeExprWrapper {
     pub se: ShapeExpr,
 }
 
-impl Deref for ShapeExprWrapper {
-    fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
-        let se = self.se.deref(base, prefixmap)?;
+impl DerefIri for ShapeExprWrapper {
+    fn deref_iri(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
+        let se = self.se.deref_iri(base, prefixmap)?;
         let sew = ShapeExprWrapper { se };
         Ok(sew)
     }
@@ -167,35 +167,35 @@ impl Default for ShapeExpr {
     }
 }
 
-impl Deref for ShapeExpr {
-    fn deref(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
+impl DerefIri for ShapeExpr {
+    fn deref_iri(self, base: Option<&IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, DerefError> {
         match self {
             ShapeExpr::External => Ok(ShapeExpr::External),
             ShapeExpr::ShapeAnd { shape_exprs } => {
-                let shape_exprs = shape_exprs.deref(base, prefixmap)?;
+                let shape_exprs = shape_exprs.deref_iri(base, prefixmap)?;
                 Ok(ShapeExpr::ShapeAnd {
                     shape_exprs: shape_exprs.clone(),
                 })
             },
             ShapeExpr::ShapeOr { shape_exprs } => {
-                let shape_exprs = shape_exprs.deref(base, prefixmap)?;
+                let shape_exprs = shape_exprs.deref_iri(base, prefixmap)?;
                 Ok(ShapeExpr::ShapeOr {
                     shape_exprs: shape_exprs.clone(),
                 })
             },
             ShapeExpr::ShapeNot { shape_expr } => Ok(ShapeExpr::ShapeNot {
-                shape_expr: shape_expr.deref(base, prefixmap)?,
+                shape_expr: shape_expr.deref_iri(base, prefixmap)?,
             }),
             ShapeExpr::Shape(shape) => {
-                let shape = shape.deref(base, prefixmap)?;
+                let shape = shape.deref_iri(base, prefixmap)?;
                 Ok(ShapeExpr::Shape(shape))
             },
             ShapeExpr::Ref(ref_) => {
-                let ref_ = ref_.deref(base, prefixmap)?;
+                let ref_ = ref_.deref_iri(base, prefixmap)?;
                 Ok(ShapeExpr::Ref(ref_))
             },
             ShapeExpr::NodeConstraint(nc) => {
-                let nc = nc.deref(base, prefixmap)?;
+                let nc = nc.deref_iri(base, prefixmap)?;
                 Ok(ShapeExpr::NodeConstraint(nc))
             },
         }

@@ -3,7 +3,7 @@ use crate::Annotation;
 use crate::ShapeExprLabel;
 use crate::ast::deserialize_string_or_struct;
 use crate::ast::serialize_string_or_struct;
-use prefixmap::Deref;
+use prefixmap::DerefIri;
 use prefixmap::error::DerefError;
 use serde::{Deserialize, Serialize};
 
@@ -53,13 +53,13 @@ impl ShapeDecl {
     }
 }
 
-impl Deref for ShapeDecl {
-    fn deref(self, base: Option<&iri_s::IriS>, prefixmap: Option<&prefixmap::PrefixMap>) -> Result<Self, DerefError>
+impl DerefIri for ShapeDecl {
+    fn deref_iri(self, base: Option<&iri_s::IriS>, prefixmap: Option<&prefixmap::PrefixMap>) -> Result<Self, DerefError>
     where
         Self: Sized,
     {
-        let id = self.id.deref(base, prefixmap)?;
-        let shape_expr = self.shape_expr.deref(base, prefixmap)?;
+        let id = self.id.deref_iri(base, prefixmap)?;
+        let shape_expr = self.shape_expr.deref_iri(base, prefixmap)?;
         Ok(ShapeDecl {
             type_: self.type_.clone(),
             is_abstract: self.is_abstract,

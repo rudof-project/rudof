@@ -1,6 +1,8 @@
 use crate::ShapeExprLabel;
 use prefixmap::IriRef;
+use prefixmap::DerefIri;
 use serde::Serialize;
+use iri_s::IriS;
 
 /// A ShapeSelector following [ShapeMap spec](https://shexspec.github.io/shape-map/#shapemap-structure) can be used to select shape expressions to validate
 ///
@@ -35,6 +37,25 @@ impl ShapeSelector {
         match self {
             ShapeSelector::Label(label) => std::iter::once(label),
             ShapeSelector::Start => std::iter::once(&ShapeExprLabel::Start),
+        }
+    }
+}
+
+impl DerefIri for ShapeSelector {
+    fn deref_iri(
+        self,
+        base: Option<&IriS>,
+        prefixmap: Option<&prefixmap::PrefixMap>,
+    ) -> Result<Self, prefixmap::DerefError>
+    where
+        Self: Sized,
+    {
+        match self {
+            ShapeSelector::Label(shape_expr_label) => {
+                let resolved = shape_expr_label.deref_iri(base, prefixmap)?;
+                Ok(ShapeSelector::Label(resolved))
+            },
+            ShapeSelector::Start => Ok(ShapeSelector::Start),
         }
     }
 }
