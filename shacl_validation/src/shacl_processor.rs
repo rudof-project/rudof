@@ -7,7 +7,6 @@ use crate::store::graph::Graph;
 use crate::store::sparql::Endpoint;
 use crate::validate_error::ValidateError;
 use crate::validation_report::report::ValidationReport;
-use clap::ValueEnum;
 use prefixmap::PrefixMap;
 use rudof_rdf::rdf_core::{NeighsRDF, RDFFormat};
 use rudof_rdf::rdf_impl::SparqlEndpoint;
@@ -15,9 +14,12 @@ use shacl_ir::compiled::schema_ir::SchemaIR;
 use sparql_service::RdfData;
 use std::fmt::Debug;
 use std::path::Path;
-use std::str::FromStr;
+use std::{
+    fmt::{Display, Formatter},
+    str::FromStr,
+};
 
-#[derive(ValueEnum, Copy, Clone, Debug, PartialEq, Default)]
+#[derive(Copy, Clone, Debug, PartialEq, Default)]
 /// Backend used for the validation.
 ///
 /// According to the SHACL Recommendation, there exists no concrete method for
@@ -31,6 +33,15 @@ pub enum ShaclValidationMode {
     Sparql,
 }
 
+impl Display for ShaclValidationMode {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            ShaclValidationMode::Native => write!(dest, "native"),
+            ShaclValidationMode::Sparql => write!(dest, "sparql"),
+        }
+    }
+}
+
 impl FromStr for ShaclValidationMode {
     type Err = String;
 
@@ -38,7 +49,7 @@ impl FromStr for ShaclValidationMode {
         match s.to_lowercase().as_str() {
             "native" => Ok(ShaclValidationMode::Native),
             "sparql" => Ok(ShaclValidationMode::Sparql),
-            other => Err(format!("Unsupported SHACL validation mode: {other}")),
+            other => Err(format!("Unsupported SHACL validation mode: {}", other)),
         }
     }
 }

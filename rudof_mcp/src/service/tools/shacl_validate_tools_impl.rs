@@ -9,7 +9,7 @@ use rudof_lib::{
     InputSpec, RudofConfig, ShaclValidationMode,
     result_shacl_validation_format::{ResultShaclValidationFormat, SortByShaclValidationReport},
     shacl::{add_shacl_schema_rudof, write_validation_report},
-    shacl_format::CliShaclFormat,
+    shacl_format::ShaclFormat,
     shapes_graph_source::ShapesGraphSource,
 };
 use rudof_rdf::rdf_impl::ReaderMode;
@@ -96,8 +96,8 @@ pub async fn validate_shacl_impl(
 
     let shape_spec: Option<InputSpec> = shape.as_ref().map(|s| InputSpec::Str(s.clone()));
 
-    let parsed_shape_format: Option<CliShaclFormat> = match shape_format {
-        Some(s) => match CliShaclFormat::from_str(&s) {
+    let parsed_shape_format: Option<ShaclFormat> = match shape_format {
+        Some(s) => match ShaclFormat::from_str(&s) {
             Ok(fmt) => Some(fmt),
             Err(e) => {
                 return Ok(ToolExecutionError::with_hint(

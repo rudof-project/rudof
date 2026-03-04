@@ -1,14 +1,13 @@
-use clap::ValueEnum;
 use iri_s::MimeType;
 use rudof_rdf::rdf_core::RDFFormat;
-use std::fmt::{Display, Formatter};
+use std::{
+    fmt::{Display, Formatter},
+    str::FromStr,
+};
 use thiserror::Error;
 
-// Represents the various RDF data serialization formats
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-#[clap(rename_all = "lower")]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum DataFormat {
-    // RDF formats
     Turtle,
     NTriples,
     RdfXml,
@@ -16,11 +15,18 @@ pub enum DataFormat {
     N3,
     NQuads,
     JsonLd,
-    // For property graphs
     Pg,
 }
 
-// Converts a `DataFormat` into the corresponding `RDFFormat` from the `srdf` crate.
+#[derive(Error, Clone, Debug)]
+pub enum DataFormatError {
+    #[error("Non-RDF format: {format}")]
+    NonRdfFormat { format: String },
+
+    #[error("Unknown data format: {format}")]
+    UnknownFormat { format: String },
+}
+
 impl TryFrom<DataFormat> for RDFFormat {
     type Error = DataFormatError;
 
@@ -40,13 +46,14 @@ impl TryFrom<DataFormat> for RDFFormat {
     }
 }
 
-#[derive(Error, Clone, Debug)]
-pub enum DataFormatError {
-    #[error("Non RDF format: {format}")]
-    NonRdfFormat { format: String },
+impl TryFrom<&DataFormat> for RDFFormat {
+    type Error = DataFormatError;
+
+    fn try_from(value: &DataFormat) -> Result<Self, Self::Error> {
+        (*value).try_into()
+    }
 }
 
-// Converts an `RDFFormat` from the `srdf` crate into the corresponding `DataFormat`.
 impl From<RDFFormat> for DataFormat {
     fn from(val: RDFFormat) -> Self {
         match val {
@@ -61,7 +68,6 @@ impl From<RDFFormat> for DataFormat {
     }
 }
 
-// Provides a string representation of the data format for display purposes.
 impl Display for DataFormat {
     fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
@@ -77,7 +83,26 @@ impl Display for DataFormat {
     }
 }
 
-// Provides the MIME type for each `DataFormat`.
+impl FromStr for DataFormat {
+    type Err = DataFormatError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "turtle" => Ok(DataFormat::Turtle),
+            "ntriples" => Ok(DataFormat::NTriples),
+            "rdfxml" => Ok(DataFormat::RdfXml),
+            "trig" => Ok(DataFormat::TriG),
+            "n3" => Ok(DataFormat::N3),
+            "nquads" => Ok(DataFormat::NQuads),
+            "jsonld" => Ok(DataFormat::JsonLd),
+            "pg" => Ok(DataFormat::Pg),
+            other => Err(DataFormatError::UnknownFormat {
+                format: other.to_string(),
+            }),
+        }
+    }
+}
+
 impl MimeType for DataFormat {
     fn mime_type(&self) -> &'static str {
         match self {

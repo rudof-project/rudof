@@ -254,6 +254,7 @@ base64 = "0.22.1"
 calamine = { version = "0.31" }
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4.5", features = ["derive"] }
+clap_complete_command.version = "0.6.1"
 clientele = { version = "0.3.8", default-features = false, features = [
     "dotenv",
     "subcommands",
@@ -273,6 +274,7 @@ indexmap = { version = "2", features = ["serde"] }
 indoc = "2"
 ipnetwork = "0.21"
 iri_s = { version = "0.1.90", path = "./iri_s" }
+is_ci = "1.0"
 itertools = "0.14"
 josekit = "0.10.3"
 lazy-regex = "3.4"

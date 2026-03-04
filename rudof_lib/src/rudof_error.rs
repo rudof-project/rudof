@@ -441,4 +441,118 @@ pub enum RudofError {
 
     #[error("WASM error: {0}")]
     WASMError(String),
+
+    #[error("Error serializing RDF Config: {error}")]
+    SerializingRdfConfig { error: String },
+
+    #[error("No RDF Config to serialize")]
+    NoRdfConfigToSerialize,
+
+    #[error("Error parsing PG data from {source_name}: {error}")]
+    PGDataParseError { source_name: String, error: String },
+
+    #[error("Error parsing PGSchema from {source_name}: {error}")]
+    PGSchemaParseError { source_name: String, error: String },
+
+    #[error("Error parsing PG TypeMap from {source_name}: {error}")]
+    PGTypeMapParseError { source_name: String, error: String },
+
+    #[error("PGSchema validation error: {error}")]
+    PGSchemaValidationError { error: String },
+
+    #[error("Missing required PGSchema for validation")]
+    MissingPGSchema,
+
+    #[error("Missing required TypeMap for PGSchema validation")]
+    MissingPGTypeMap,
+
+    #[error("Error getting node info: {error}")]
+    NodeInfoError { error: String },
+
+    #[error("Invalid node info mode '{mode}': {error}")]
+    InvalidNodeInfoMode { mode: String, error: String },
+
+    #[error("Error writing validation report: {error}")]
+    ValidationReportError { error: String },
+
+    #[error("No DCTAP data available")]
+    NoDCTAPData,
+
+    #[error("Error serializing DCTAP to {format}: {error}")]
+    DCTapSerializationError { format: String, error: String },
+
+    #[error("Cannot read Excel DCTAP file from stdin")]
+    DCTapExcelFromStdin,
+
+    #[error("Reading Excel DCTAP files from URIs is not implemented yet")]
+    DCTapExcelFromUrl,
+
+    #[error("Reading Excel DCTAP files from strings is not implemented yet")]
+    DCTapExcelFromString,
+
+    #[error("Input spec error in context '{context}': {error}")]
+    InputSpecError { context: String, error: String },
+
+    #[error("Schema must be a file path for data generation, stdin is not supported")]
+    GenerateSchemaFromStdin,
+
+    #[error("Schema from URL is not supported yet for data generation: {url}")]
+    GenerateSchemaFromUrl { url: String },
+
+    #[error("Schema from string is not supported for data generation")]
+    GenerateSchemaFromString { content: String },
+
+    #[error("Data generation error: {error}")]
+    DataGenerationError { error: String },
+
+    #[error("Generator configuration error: {error}")]
+    GeneratorConfigError { error: String },
+
+    #[error("Data generator creation error: {error}")]
+    DataGeneratorCreationError { error: String },
+
+    #[error("Schema load error: {error}")]
+    SchemaLoadError { error: String },
+
+    #[error("Query execution error: {error}")]
+    QueryExecutionError { error: String },
+
+    #[error("Unsupported input convert format for SHACL: {format}")]
+    UnsupportedShaclInputFormat { format: String },
+
+    #[error("Unsupported input convert format for ShEx: {format}")]
+    UnsupportedShExInputFormat { format: String },
+
+    #[error("Unsupported input convert format for DCTAP: {format}")]
+    UnsupportedDCTAPInputFormat { format: String },
+
+    #[error("No ShEx schema found after parsing")]
+    NoShExSchema,
+
+    #[error("No SHACL schema found after parsing")]
+    NoShaclSchemaFound,
+
+    #[error("Shacl2ShEx conversion error: {error}")]
+    Shacl2ShExError { error: String },
+
+    #[error("ShEx2UML conversion error: {error}")]
+    ShEx2UmlError { error: String },
+
+    #[error("ShEx2HTML conversion error: {error}")]
+    ShEx2HtmlError { error: String },
+
+    #[error("ShEx2SPARQL conversion error: {error}")]
+    ShEx2SparqlError { error: String },
+
+    #[error("Tap2ShEx conversion error: {error}")]
+    Tap2ShExError { error: String },
+
+    #[error("No template folder specified in config or command line")]
+    NoTemplateFolder,
+
+    #[error("UML output format {format} is not supported")]
+    UnsupportedUmlOutputFormat { format: String },
+
+    #[error("Writing output error: {error}")]
+    WritingOutputError { error: String },
 }

@@ -16,9 +16,11 @@ name = "rudof"
 [dependencies]
 anyhow.workspace = true
 clap.workspace = true
+clap_complete_command.workspace = true
 clientele.workspace = true
 dctap.workspace = true
 iri_s.workspace = true
+is_ci.workspace = true
 oxrdf.workspace = true
 pgschema.workspace = true
 prefixmap.workspace = true

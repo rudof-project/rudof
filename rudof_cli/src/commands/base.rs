@@ -1,0 +1,222 @@
+use crate::cli::parser::{Command as CliCommand, CommonArgs, CommonArgsAll, CommonArgsOutputForceOverWrite};
+use crate::commands::{
+    CompareCommand, CompletionCommand, ConvertCommand, DataCommand, DctapCommand, GenerateCommand, McpCommand,
+    NodeCommand, PgSchemaValidateCommand, PgschemaCommand, QueryCommand, RdfConfigCommand, ServiceCommand,
+    ShaclCommand, ShaclValidateCommand, ShapemapCommand, ShexCommand, ShexValidateCommand, ValidateCommand,
+};
+use crate::output::{ColorSupport, get_writer};
+use anyhow::Result;
+use rudof_lib::{Rudof, RudofConfig};
+use std::io::Write;
+
+// ============================================================================
+// Command Trait
+// ============================================================================
+
+/// The core command trait that all commands must implement
+pub trait Command: Send + Sync {
+    /// Executes the command's logic using the provided [CommandContext].
+    fn execute(&self, ctx: &mut CommandContext) -> Result<()>;
+
+    /// Returns a static string identifying the command.
+    ///
+    /// Useful for logging, telemetry, and debugging.
+    fn name(&self) -> &'static str;
+}
+
+// ============================================================================
+// Command Context
+// ============================================================================
+
+/// The shared environment and state required for command execution.
+///
+/// This structure bundles output handles, global configuration,
+/// and UI preferences (like color and verbosity).
+pub struct CommandContext {
+    /// Output writer (stdout, file, etc.)
+    pub writer: Box<dyn Write>,
+
+    /// Rudof (from rudof_lib)
+    pub rudof: Rudof,
+
+    /// Debug level
+    pub debug_level: u8,
+
+    /// Color support
+    pub color: ColorSupport,
+}
+
+impl CommandContext {
+    pub fn new(writer: Box<dyn Write>, rudof: Rudof, debug_level: u8, color: ColorSupport) -> Self {
+        Self {
+            writer,
+            rudof,
+            debug_level,
+            color,
+        }
+    }
+
+    /// Initializes a [CommandContext] from the parsed [CliCommand].
+    ///
+    /// This method handles loading the configuration file and
+    /// initializing the output writer based on CLI flags.
+    pub fn from_cli(cmd: &CliCommand, debug: u8) -> Result<Self> {
+        let common = extract_common(cmd);
+
+        // Load config
+        let config = match &common.config() {
+            Some(path) => RudofConfig::from_path(path)?,
+            None => RudofConfig::default_config()?,
+        };
+
+        // Initialize Rudof with the loaded configuration
+        let rudof = Rudof::new(&config)?;
+
+        // Determine the appropriate writer and detect color support
+        let (writer, color) = get_writer(&common.output().cloned(), common.force_overwrite())?;
+
+        Ok(Self {
+            writer,
+            rudof,
+            debug_level: debug,
+            color,
+        })
+    }
+
+    /// Returns true if the output supports and is configured for ANSI colors.
+    pub fn use_color(&self) -> bool {
+        self.color.enabled()
+    }
+}
+
+// ============================================================================
+// Command Factory
+// ============================================================================
+
+/// Responsible for instantiating [Command] implementations based on CLI input.
+pub struct CommandFactory;
+
+impl CommandFactory {
+    /// Maps a [CliCommand] enum variant to its corresponding [Command] trait object.
+    pub fn create(cli_command: CliCommand) -> Result<Box<dyn Command>> {
+        match cli_command {
+            CliCommand::Mcp(args) => Ok(Box::new(McpCommand::new(args))),
+            CliCommand::Shapemap(args) => Ok(Box::new(ShapemapCommand::new(args))),
+            CliCommand::Shex(args) => Ok(Box::new(ShexCommand::new(args))),
+            CliCommand::Pgschema(args) => Ok(Box::new(PgschemaCommand::new(args))),
+            CliCommand::Validate(args) => Ok(Box::new(ValidateCommand::new(args))),
+            CliCommand::ShexValidate(args) => Ok(Box::new(ShexValidateCommand::new(args))),
+            CliCommand::ShaclValidate(args) => Ok(Box::new(ShaclValidateCommand::new(args))),
+            CliCommand::Data(args) => Ok(Box::new(DataCommand::new(args))),
+            CliCommand::Node(args) => Ok(Box::new(NodeCommand::new(args))),
+            CliCommand::Shacl(args) => Ok(Box::new(ShaclCommand::new(args))),
+            CliCommand::DCTap(args) => Ok(Box::new(DctapCommand::new(args))),
+            CliCommand::Convert(args) => Ok(Box::new(ConvertCommand::new(args))),
+            CliCommand::Compare(args) => Ok(Box::new(CompareCommand::new(args))),
+            CliCommand::RdfConfig(args) => Ok(Box::new(RdfConfigCommand::new(args))),
+            CliCommand::Service(args) => Ok(Box::new(ServiceCommand::new(args))),
+            CliCommand::Query(args) => Ok(Box::new(QueryCommand::new(args))),
+            CliCommand::Generate(args) => Ok(Box::new(GenerateCommand::new(args))),
+            CliCommand::PgSchemaValidate(args) => Ok(Box::new(PgSchemaValidateCommand::new(args))),
+            CliCommand::Completion(args) => Ok(Box::new(CompletionCommand::new(args))),
+        }
+    }
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/// Helper function to extract [CommonArgs] from any [CliCommand] variant.
+fn extract_common(cmd: &CliCommand) -> CommonArgs {
+    match cmd {
+        CliCommand::Mcp(_) => CommonArgs::None,
+        CliCommand::Shapemap(a) => CommonArgs::OutputForceOverWrite(CommonArgsOutputForceOverWrite {
+            output: a.common.output.clone(),
+            force_overwrite: a.common.force_overwrite,
+        }),
+        CliCommand::Shex(a) => CommonArgs::All(CommonArgsAll {
+            config: a.common.config.clone(),
+            output: a.common.output.clone(),
+            force_overwrite: a.common.force_overwrite,
+        }),
+        CliCommand::Pgschema(a) => CommonArgs::All(CommonArgsAll {
+            config: a.common.config.clone(),
+            output: a.common.output.clone(),
+            force_overwrite: a.common.force_overwrite,
+        }),
+        CliCommand::Validate(a) => CommonArgs::All(CommonArgsAll {
+            config: a.common.config.clone(),
+            output: a.common.output.clone(),
+            force_overwrite: a.common.force_overwrite,
+        }),
+        CliCommand::ShexValidate(a) => CommonArgs::All(CommonArgsAll {
+            config: a.common.config.clone(),
+            output: a.common.output.clone(),
+            force_overwrite: a.common.force_overwrite,
+        }),
+        CliCommand::ShaclValidate(a) => CommonArgs::All(CommonArgsAll {
+            config: a.common.config.clone(),
+            output: a.common.output.clone(),
+            force_overwrite: a.common.force_overwrite,
+        }),
+        CliCommand::Data(a) => CommonArgs::All(CommonArgsAll {
+            config: a.common.config.clone(),
+            output: a.common.output.clone(),
+            force_overwrite: a.common.force_overwrite,
+        }),
+        CliCommand::Node(a) => CommonArgs::All(CommonArgsAll {
+            config: a.common.config.clone(),
+            output: a.common.output.clone(),
+            force_overwrite: a.common.force_overwrite,
+        }),
+        CliCommand::Shacl(a) => CommonArgs::All(CommonArgsAll {
+            config: a.common.config.clone(),
+            output: a.common.output.clone(),
+            force_overwrite: a.common.force_overwrite,
+        }),
+        CliCommand::DCTap(a) => CommonArgs::All(CommonArgsAll {
+            config: a.common.config.clone(),
+            output: a.common.output.clone(),
+            force_overwrite: a.common.force_overwrite,
+        }),
+        CliCommand::Convert(a) => CommonArgs::All(CommonArgsAll {
+            config: a.common.config.clone(),
+            output: a.common.output.clone(),
+            force_overwrite: a.common.force_overwrite,
+        }),
+        CliCommand::Compare(a) => CommonArgs::All(CommonArgsAll {
+            config: a.common.config.clone(),
+            output: a.common.output.clone(),
+            force_overwrite: a.common.force_overwrite,
+        }),
+        CliCommand::RdfConfig(a) => CommonArgs::All(CommonArgsAll {
+            config: a.common.config.clone(),
+            output: a.common.output.clone(),
+            force_overwrite: a.common.force_overwrite,
+        }),
+        CliCommand::Service(a) => CommonArgs::All(CommonArgsAll {
+            config: a.common.config.clone(),
+            output: a.common.output.clone(),
+            force_overwrite: a.common.force_overwrite,
+        }),
+        CliCommand::Query(a) => CommonArgs::All(CommonArgsAll {
+            config: a.common.config.clone(),
+            output: a.common.output.clone(),
+            force_overwrite: a.common.force_overwrite,
+        }),
+        CliCommand::Generate(a) => CommonArgs::All(CommonArgsAll {
+            config: a.common.config.clone(),
+            output: a.common.output.clone(),
+            force_overwrite: a.common.force_overwrite,
+        }),
+        CliCommand::PgSchemaValidate(a) => CommonArgs::OutputForceOverWrite(CommonArgsOutputForceOverWrite {
+            output: a.common.output.clone(),
+            force_overwrite: a.common.force_overwrite,
+        }),
+        CliCommand::Completion(a) => CommonArgs::OutputForceOverWrite(CommonArgsOutputForceOverWrite {
+            output: a.common.output.clone(),
+            force_overwrite: a.common.force_overwrite,
+        }),
+    }
+}

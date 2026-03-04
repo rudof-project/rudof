@@ -1,5 +1,4 @@
 use crate::RudofError;
-use clap::ValueEnum;
 use iri_s::MimeType;
 use shex_ast::ShExFormat as ShExAstShExFormat;
 use std::{
@@ -7,8 +6,7 @@ use std::{
     str::FromStr,
 };
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
-#[clap(rename_all = "lower")]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
 pub enum ShExFormat {
     Internal,
     Simple,
@@ -74,6 +72,14 @@ impl TryFrom<ShExFormat> for ShExAstShExFormat {
                 msg: format!("ShEx format {other:?} validation not yet implemented"),
             }),
         }
+    }
+}
+
+impl TryFrom<&ShExFormat> for ShExAstShExFormat {
+    type Error = RudofError;
+
+    fn try_from(format: &ShExFormat) -> Result<Self, Self::Error> {
+        (*format).try_into()
     }
 }
 

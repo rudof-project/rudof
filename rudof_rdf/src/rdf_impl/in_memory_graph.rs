@@ -26,7 +26,7 @@ use serde::{Serialize, ser::SerializeStruct};
 use sparesults::QuerySolution as SparQuerySolution;
 use std::collections::{HashMap, HashSet};
 use std::{
-    fmt::Debug,
+    fmt::{Debug, Display, Formatter},
     fs::File,
     io::{self, BufReader, Cursor, Write},
     path::Path,
@@ -1087,7 +1087,7 @@ fn handle_parse_error<T, E: std::fmt::Display>(
 ///
 /// * `Strict` - Stops when there is an error
 /// * `Lax` - Emits a warning and continues processing
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Default)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Debug)]
 pub enum ReaderMode {
     /// Stops when there is an error.
     #[default]
@@ -1112,6 +1112,15 @@ impl FromStr for ReaderMode {
             "strict" => Ok(ReaderMode::Strict),
             "lax" => Ok(ReaderMode::Lax),
             _ => Err(format!("Unknown reader mode format: {s}. Expected 'strict' or 'lax'")),
+        }
+    }
+}
+
+impl Display for ReaderMode {
+    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match &self {
+            ReaderMode::Strict => write!(dest, "strict"),
+            ReaderMode::Lax => write!(dest, "lax"),
         }
     }
 }

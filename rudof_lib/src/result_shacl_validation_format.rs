@@ -1,4 +1,3 @@
-use clap::ValueEnum;
 use rudof_rdf::rdf_core::RDFFormat;
 use shacl_validation::validation_report::report::SortModeReport;
 use std::fmt::{Display, Formatter};
@@ -6,8 +5,7 @@ use std::str::FromStr;
 
 use crate::RudofError;
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
-#[clap(rename_all = "lower")]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
 pub enum ResultShaclValidationFormat {
     #[default]
     Details,
@@ -77,8 +75,7 @@ impl FromStr for ResultShaclValidationFormat {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
-#[clap(rename_all = "lower")]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
 pub enum SortByShaclValidationReport {
     #[default]
     Severity,
