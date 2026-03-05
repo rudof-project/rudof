@@ -94,7 +94,7 @@ impl Command for ShexValidateCommand {
                 &shapemap_format.into(),
                 &self.args.node,
                 &self.args.shape,
-                &self.args.base_data
+                &self.args.base_data,
             )
             .map_err(anyhow::Error::from)?;
 

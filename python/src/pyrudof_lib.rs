@@ -581,27 +581,41 @@ impl PyRudof {
     /// Raises:
     ///     RudofError: If ShapeMap is malformed.
     #[pyo3(signature = (str, format=None, base_nodes=None, base_shapes=None))]
-    pub fn read_shapemap_str(&mut self, str: &str, format: Option<&PyShapeMapFormat>, base_nodes: Option<&str>, base_shapes: Option<&str>) -> PyResult<()> {
+    pub fn read_shapemap_str(
+        &mut self,
+        str: &str,
+        format: Option<&PyShapeMapFormat>,
+        base_nodes: Option<&str>,
+        base_shapes: Option<&str>,
+    ) -> PyResult<()> {
         let format = cnv_shapemap_format(format).unwrap_or(&ShapeMapFormat::Compact);
 
         let base_nodes_iri = if let Some(base) = base_nodes {
-            Some(IriS::from_str(base).map_err(|e| RudofError::BaseIriError {
-                str: base.to_string(),
-                error: format!("{e}"),
-            }).map_err(cnv_err)?)
+            Some(
+                IriS::from_str(base)
+                    .map_err(|e| RudofError::BaseIriError {
+                        str: base.to_string(),
+                        error: format!("{e}"),
+                    })
+                    .map_err(cnv_err)?,
+            )
         } else {
             None
         };
 
         let base_shapes_iri = if let Some(base) = base_shapes {
-            Some(IriS::from_str(base).map_err(|e| RudofError::BaseIriError {
-                str: base.to_string(),
-                error: format!("{e}"),
-            }).map_err(cnv_err)?)
+            Some(
+                IriS::from_str(base)
+                    .map_err(|e| RudofError::BaseIriError {
+                        str: base.to_string(),
+                        error: format!("{e}"),
+                    })
+                    .map_err(cnv_err)?,
+            )
         } else {
             None
         };
-        
+
         self.inner
             .read_shapemap(str.as_bytes(), "String", format, &base_nodes_iri, &base_shapes_iri)
             .map_err(cnv_err)?;
@@ -619,7 +633,13 @@ impl PyRudof {
     /// Raises:
     ///     RudofError: If file/URL cannot be read or ShapeMap is malformed.
     #[pyo3(signature = (input, format=None, base_nodes=None, base_shapes=None))]
-    pub fn read_shapemap(&mut self, input: &str, format: Option<&PyShapeMapFormat>, base_nodes: Option<&str>, base_shapes: Option<&str>) -> PyResult<()> {
+    pub fn read_shapemap(
+        &mut self,
+        input: &str,
+        format: Option<&PyShapeMapFormat>,
+        base_nodes: Option<&str>,
+        base_shapes: Option<&str>,
+    ) -> PyResult<()> {
         let format = cnv_shapemap_format(format);
         let mime = if let Some(format) = format {
             format.mime_type()
@@ -630,19 +650,27 @@ impl PyRudof {
         let reader = get_reader(input, Some(mime), "Shapemap")?;
 
         let base_nodes_iri = if let Some(base) = base_nodes {
-            Some(IriS::from_str(base).map_err(|e| RudofError::BaseIriError {
-                str: base.to_string(),
-                error: format!("{e}"),
-            }).map_err(cnv_err)?)
+            Some(
+                IriS::from_str(base)
+                    .map_err(|e| RudofError::BaseIriError {
+                        str: base.to_string(),
+                        error: format!("{e}"),
+                    })
+                    .map_err(cnv_err)?,
+            )
         } else {
             None
         };
 
         let base_shapes_iri = if let Some(base) = base_shapes {
-            Some(IriS::from_str(base).map_err(|e| RudofError::BaseIriError {
-                str: base.to_string(),
-                error: format!("{e}"),
-            }).map_err(cnv_err)?)
+            Some(
+                IriS::from_str(base)
+                    .map_err(|e| RudofError::BaseIriError {
+                        str: base.to_string(),
+                        error: format!("{e}"),
+                    })
+                    .map_err(cnv_err)?,
+            )
         } else {
             None
         };

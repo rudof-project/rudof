@@ -1566,16 +1566,11 @@ impl Rudof {
 
         // Load shapemap if provided
         if let Some(shapemap_input) = shapemap {
-            self.load_shapemap(
-                shapemap_input,
-                shapemap_format,
-                base_data,
-                base_schema,
-            )?;
+            self.load_shapemap(shapemap_input, shapemap_format, base_data, base_schema)?;
         }
 
         // Add individual node/shape pair if provided
-        self.add_node_shape_to_shapemap(node, shape, base_data,base_schema)?;
+        self.add_node_shape_to_shapemap(node, shape, base_data, base_schema)?;
 
         // Perform validation
         self.validate_shex()
