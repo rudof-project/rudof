@@ -43,7 +43,8 @@ impl Command for ShapemapCommand {
             reader,
             self.args.shapemap.source_name().as_str(),
             &shapemap_format,
-            &self.args.base,
+            &self.args.base_data,
+            &self.args.base_schema,
         )?;
 
         // Write results in the requested format

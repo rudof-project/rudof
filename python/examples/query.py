@@ -1,4 +1,4 @@
-from pyrudof import Rudof, RudofConfig, QuerySolutions
+from pyrudof import Rudof, RudofConfig
 
 rudof = Rudof(RudofConfig())
 rdf = """prefix : <http://example.org/>

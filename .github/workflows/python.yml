@@ -4,7 +4,6 @@ on:
   push:
     paths-ignore:
       - "docs/**"
-      - "examples/**"
       - ".github/**"
       - "**/LICENSE*"
       - "**/README*"
@@ -16,7 +15,6 @@ on:
   pull_request:
     paths-ignore:
       - "docs/**"
-      - "examples/**"
       - ".github/**"
       - "**/LICENSE*"
       - "**/README*"
@@ -84,6 +82,9 @@ jobs:
         run: python3 -m pip install -vv pyrudof --find-links=python/dist --no-index
       - name: Test Built Wheel
         run: cd python/tests && python3 -m unittest discover -vvv
+      - name: Check examples.rst is up to date
+        if: matrix.target == 'x86_64'
+        run: python3 python/docs/generate_examples_doc.py --check
 
   windows:
     runs-on: Windows-2022

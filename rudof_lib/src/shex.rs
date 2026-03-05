@@ -19,7 +19,8 @@ pub fn validate_shex<W: Write>(
     rudof: &mut Rudof,
     schema: &Option<InputSpec>,
     schema_format: &Option<CliShExFormat>,
-    base: &Option<IriS>,
+    base_schema: &Option<IriS>,
+    base_data: &Option<IriS>,
     reader_mode: &ReaderMode,
     maybe_node: &Option<String>,
     maybe_shape: &Option<String>,
@@ -41,7 +42,7 @@ pub fn validate_shex<W: Write>(
             })?;
         let schema_format = schema_format.try_into()?;
 
-        let base_iri = get_base(config, base)?;
+        let base_iri = get_base(config, base_schema)?;
 
         rudof.read_shex(
             schema_reader,
@@ -67,7 +68,8 @@ pub fn validate_shex<W: Write>(
                 shapemap_reader,
                 shapemap_spec.source_name().as_str(),
                 &shapemap_format,
-                &Some(base_iri.clone()),
+                base_data,
+                base_schema,
             )?;
         }
 
@@ -78,22 +80,12 @@ pub fn validate_shex<W: Write>(
             },
             (Some(node_str), None) => {
                 let node_selector = parse_node_selector(node_str)?;
-                rudof.shapemap_add_node_shape_selectors(
-                    node_selector,
-                    &Some(base_iri.clone()),
-                    start(),
-                    &Some(base_iri.clone()),
-                )?
+                rudof.shapemap_add_node_shape_selectors(node_selector, base_data, start(), base_schema)?
             },
             (Some(node_str), Some(shape_str)) => {
                 let node_selector = parse_node_selector(node_str)?;
                 let shape_selector = parse_shape_selector(shape_str)?;
-                rudof.shapemap_add_node_shape_selectors(
-                    node_selector,
-                    &Some(base_iri.clone()),
-                    shape_selector,
-                    &Some(base_iri.clone()),
-                )?
+                rudof.shapemap_add_node_shape_selectors(node_selector, base_data, shape_selector, base_schema)?
             },
             (None, Some(shape_str)) => {
                 tracing::debug!("Shape label {shape_str} ignored because noshapemap has also been provided")

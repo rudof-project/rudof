@@ -31,6 +31,9 @@ pub struct ValidateShexRequest {
     /// Base IRI for resolving relative IRIs in schema
     pub base_schema: Option<String>,
 
+    /// Base IRI for resolving relative IRIs in data/nodes (new)
+    pub base_data: Option<String>,
+
     /// Reader mode for parsing.
     /// Supported: strict, lax
     pub reader_mode: Option<String>,
@@ -94,6 +97,7 @@ pub async fn validate_shex_impl(
         schema,
         schema_format,
         base_schema,
+        base_data,
         reader_mode,
         maybe_node,
         maybe_shape,
@@ -131,6 +135,20 @@ pub async fn validate_shex_impl(
                 return Ok(ToolExecutionError::with_hint(
                     format!("Invalid base IRI '{}': {}", s, e),
                     "Provide a valid absolute IRI (e.g., 'http://example.org/base/')",
+                )
+                .into_call_tool_result());
+            },
+        },
+        None => None,
+    };
+
+    let parsed_base_data: Option<IriS> = match base_data.as_deref() {
+        Some(s) => match IriS::from_str(s) {
+            Ok(iri) => Some(iri),
+            Err(e) => {
+                return Ok(ToolExecutionError::with_hint(
+                    format!("Invalid base_data IRI '{}': {}", s, e),
+                    "Provide a valid absolute IRI (e.g., 'http://example.org/data/')",
                 )
                 .into_call_tool_result());
             },
@@ -210,6 +228,7 @@ pub async fn validate_shex_impl(
         &shcema_spec,
         &parsed_schema_format,
         &parsed_base_schema,
+        &parsed_base_data,
         &parsed_reader_mode,
         &maybe_node,
         &maybe_shape,
