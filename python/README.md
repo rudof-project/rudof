@@ -92,26 +92,20 @@ Examples that require network access, a PlantUML JAR, or special runtimes are ma
 | `test_shacl.py` | SHACL validation API |
 | `test_generate.py` | `GeneratorConfig` / `DataGenerator` API |
 
-### CI integration
-
-The [GitHub Actions workflow](../.github/workflows/python.yml) builds wheels on **Linux, Windows, and macOS**, then runs the full test suite including example tests on every push and pull request. The CI also verifies that `examples.rst` is up to date via `generate_examples_doc.py --check`.
-
 ## Examples and documentation
 
 ### Single source of truth
 
 The example system is designed to **eliminate duplication**. Code lives in one place only:
 
-```
-examples/*.py          →  the executable code (authoritative)
-examples/examples.toml →  metadata: title, description, category, files, expected_output, skip_test
-```
+- **examples/*.py**: the executable code (authoritative)
+- **examples/examples.toml**: metadata: title, description, category, files, expected_output, skip_test
 
 Both the test suite and the documentation generator read from these two sources. There is no inline code in the registry or in the RST file.
 
 ### Adding a new example
 
-1. **Create** a `.py` file in `python/examples/` — it must be a runnable script that prints output.
+1. **Create** a `.py` file in `python/examples/` (it must be a runnable script that prints output).
 
 2. **Register** it in `examples/examples.toml`:
 
@@ -140,7 +134,7 @@ Both the test suite and the documentation generator read from these two sources.
    python python/docs/generate_examples_doc.py --update
    ```
 
-5. **Verify** the docs are in sync (this is what CI runs):
+5. **Verify** the docs are in sync:
 
    ```sh
    python python/docs/generate_examples_doc.py --check

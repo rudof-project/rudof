@@ -57,8 +57,8 @@ They require plantuml jar and are not executed during automated testing."""
 
 [categories.utility]
 title = "Utility & Introspection"
-description = """Miscellaneous utilities: inspecting the pyrudof module, listing available
-classes, and writing unit tests against pyrudof."""
+description = """Miscellaneous utilities: inspecting the pyrudof module and listing available
+classes."""
 
 # ===========================================================================
 # Category order (controls the order in which sections appear in the docs)
