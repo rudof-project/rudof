@@ -111,19 +111,17 @@ where
                         Ok(_) => {
                             pairs_found += 1;
                             pairs.push((key.clone(), value.clone(), *component, cond.clone()));
-                        }
+                        },
                         Err(err) => {
-                            trace!(
-                                "Pre-filter: condition {cond} rejected value {value} for component {component}"
-                            );
+                            trace!("Pre-filter: condition {cond} rejected value {value} for component {component}");
                             last_err = Some(err);
-                        }
+                        },
                     }
                 }
-                if pairs.is_empty() {
-                    if let Some(err) = last_err {
-                        return Err(err);
-                    }
+                if pairs.is_empty()
+                    && let Some(err) = last_err
+                {
+                    return Err(err);
                 }
             } else {
                 for component in components {
