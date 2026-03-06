@@ -26,7 +26,6 @@ oxsdatatypes.workspace = true
 oxttl.workspace = true
 paste.workspace = true
 prefixmap.workspace = true
-proptest.workspace = true
 regex.workspace = true
 reqwest.workspace = true
 rust_decimal.workspace = true
@@ -41,3 +40,6 @@ thiserror.workspace = true
 tokio.workspace = true
 toml.workspace = true
 url.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
