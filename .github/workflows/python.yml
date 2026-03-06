@@ -4,7 +4,6 @@ on:
   push:
     paths-ignore:
       - "docs/**"
-      - "examples/**"
       - ".github/**"
       - "**/LICENSE*"
       - "**/README*"
@@ -16,7 +15,6 @@ on:
   pull_request:
     paths-ignore:
       - "docs/**"
-      - "examples/**"
       - ".github/**"
       - "**/LICENSE*"
       - "**/README*"

@@ -28,5 +28,6 @@ __pycache__/
 dist/
 tutorials
 python/temp/
+python/docs/_build/
 
 **/proptest-regressions

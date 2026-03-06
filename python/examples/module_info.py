@@ -1,3 +1,3 @@
-from pyrudof import Rudof, RudofConfig
+import pyrudof
 
-print(Rudof.__file__)
+print(pyrudof.__file__)

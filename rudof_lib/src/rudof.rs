@@ -1200,9 +1200,12 @@ impl Rudof {
         mut reader: R,
         reader_name: &str,
         shapemap_format: &ShapeMapFormat,
-        base: &Option<IriS>,
+        base_nodes: &Option<IriS>,
+        base_shapes: &Option<IriS>,
     ) -> Result<()> {
-        trace!("Reading shapemap from reader {reader_name} with format {shapemap_format:?} and base {base:?}");
+        trace!(
+            "Reading shapemap from reader {reader_name} with format {shapemap_format:?}, base_nodes: {base_nodes:?}, base_shapes: {base_shapes:?}"
+        );
         let mut v = Vec::new();
         reader
             .read_to_end(&mut v)
@@ -1213,9 +1216,9 @@ impl Rudof {
                 let shapemap = ShapeMapParser::parse(
                     s.as_str(),
                     &Some(self.nodes_prefixmap()),
-                    base,
+                    base_nodes,
                     &self.shex_shapes_prefixmap(),
-                    base,
+                    base_shapes,
                 )
                 .map_err(|e| RudofError::ShapeMapParseError {
                     source_name: reader_name.to_string(),
@@ -1452,12 +1455,14 @@ impl Rudof {
     /// # Arguments
     /// * `input` - The input specification for the shapemap
     /// * `shapemap_format` - The format of the shapemap
-    /// * `base` - Optional base IRI for resolving relative IRIs in the shapemap
+    /// * `base_nodes` - Optional base IRI for resolving relative IRIs in node selectors
+    /// * `base_shapes` - Optional base IRI for resolving relative IRIs in shape selectors
     pub fn load_shapemap(
         &mut self,
         input: &InputSpec,
         shapemap_format: &ShapeMapFormat,
-        base: &Option<IriS>,
+        base_nodes: &Option<IriS>,
+        base_shapes: &Option<IriS>,
     ) -> Result<()> {
         let shapemap_reader = input
             .open_read(None, "ShapeMap")
@@ -1467,7 +1472,16 @@ impl Rudof {
                 error: e.to_string(),
             })?;
 
-        self.read_shapemap(shapemap_reader, input.source_name().as_str(), shapemap_format, base)?;
+        let base_nodes = self.get_base_iri(base_nodes)?;
+        let base_shapes = self.get_base_iri(base_shapes)?;
+
+        self.read_shapemap(
+            shapemap_reader,
+            input.source_name().as_str(),
+            shapemap_format,
+            &Some(base_nodes),
+            &Some(base_shapes),
+        )?;
 
         Ok(())
     }
@@ -1488,8 +1502,12 @@ impl Rudof {
         &mut self,
         node: &Option<String>,
         shape: &Option<String>,
-        base: &Option<IriS>,
+        base_nodes: &Option<IriS>,
+        base_shapes: &Option<IriS>,
     ) -> Result<()> {
+        let base_nodes = self.get_base_iri(base_nodes)?;
+        let base_shapes = self.get_base_iri(base_shapes)?;
+
         match (node, shape) {
             (None, None) => {
                 // Nothing to do
@@ -1498,13 +1516,23 @@ impl Rudof {
             (Some(node_str), None) => {
                 let node_selector = crate::parse_node_selector(node_str)?;
                 let shape_selector = crate::selector::start();
-                self.shapemap_add_node_shape_selectors(node_selector, base, shape_selector, base)?;
+                self.shapemap_add_node_shape_selectors(
+                    node_selector,
+                    &Some(base_nodes),
+                    shape_selector,
+                    &Some(base_shapes),
+                )?;
                 Ok(())
             },
             (Some(node_str), Some(shape_str)) => {
                 let node_selector = crate::parse_node_selector(node_str)?;
                 let shape_selector = crate::parse_shape_selector(shape_str)?;
-                self.shapemap_add_node_shape_selectors(node_selector, base, shape_selector, base)?;
+                self.shapemap_add_node_shape_selectors(
+                    node_selector,
+                    &Some(base_nodes),
+                    shape_selector,
+                    &Some(base_shapes),
+                )?;
                 Ok(())
             },
             (None, Some(shape_str)) => {
@@ -1545,6 +1573,7 @@ impl Rudof {
         shapemap_format: &ShapeMapFormat,
         node: &Option<String>,
         shape: &Option<String>,
+        base_data: &Option<IriS>,
     ) -> Result<ResultShapeMap> {
         // Load schema if provided
         if let Some(schema_input) = schema {
@@ -1553,11 +1582,11 @@ impl Rudof {
 
         // Load shapemap if provided
         if let Some(shapemap_input) = shapemap {
-            self.load_shapemap(shapemap_input, shapemap_format, base_schema)?;
+            self.load_shapemap(shapemap_input, shapemap_format, base_data, base_schema)?;
         }
 
         // Add individual node/shape pair if provided
-        self.add_node_shape_to_shapemap(node, shape, base_schema)?;
+        self.add_node_shape_to_shapemap(node, shape, base_data, base_schema)?;
 
         // Perform validation
         self.validate_shex()
@@ -2318,6 +2347,7 @@ mod tests {
                 "Test",
                 &ShapeMapFormat::default(),
                 &Some(IriS::new_unchecked("http://example/")),
+                &Some(IriS::new_unchecked("http://example/")),
             )
             .unwrap();
         let result = rudof.validate_shex().unwrap();
@@ -2353,7 +2383,7 @@ mod tests {
             )
             .unwrap();
         rudof
-            .read_shapemap(shapemap.as_bytes(), "Test", &ShapeMapFormat::default(), &None)
+            .read_shapemap(shapemap.as_bytes(), "Test", &ShapeMapFormat::default(), &None, &None)
             .unwrap();
         let result = rudof.validate_shex().unwrap();
         let node = Node::iri(iri!("http://example/x"));
@@ -2388,7 +2418,7 @@ mod tests {
             )
             .unwrap();
         rudof
-            .read_shapemap(shapemap.as_bytes(), "Test", &ShapeMapFormat::default(), &None)
+            .read_shapemap(shapemap.as_bytes(), "Test", &ShapeMapFormat::default(), &None, &None)
             .unwrap();
         let result = rudof.validate_shex().unwrap();
         let node = Node::iri(iri!("http://example/x"));

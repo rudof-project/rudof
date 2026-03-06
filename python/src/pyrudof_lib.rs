@@ -9,7 +9,7 @@ use pyo3::{Bound, Py, PyAny, PyErr, PyRef, PyRefMut, PyResult, Python, exception
 use pythonize::pythonize;
 use rudof_lib::{
     CoShaMo, CompareSchemaFormat, CompareSchemaMode, DCTAP, DCTAPFormat, InputSpec, InputSpecError, InputSpecReader,
-    Mie, MimeType, Object, QueryResultFormat, QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat, RdfData,
+    IriS, Mie, MimeType, Object, QueryResultFormat, QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat, RdfData,
     ReaderMode, ResultShapeMap, Rudof, RudofError, ServiceDescription, ServiceDescriptionFormat, ShExFormat,
     ShExFormatter, ShExSchema, ShaCo, ShaclFormat, ShaclSchemaIR, ShaclValidationMode, ShapeLabel, ShapeMapFormat,
     ShapeMapFormatter, ShapesGraphSource, SortMode, UmlGenerationMode, ValidationReport, ValidationStatus, VarName,
@@ -575,14 +575,49 @@ impl PyRudof {
     /// Args:
     ///     str (str): String containing the ShapeMap.
     ///     format (ShapeMapFormat, optional): ShapeMap format. Defaults to ``ShapeMapFormat.Compact``.
+    ///     base_nodes (str, optional): Base IRI for resolving node IRIs. Defaults to ``None``.
+    ///     base_shapes (str, optional): Base IRI for resolving shape IRIs. Defaults to ``None``.
     ///
     /// Raises:
     ///     RudofError: If ShapeMap is malformed.
-    #[pyo3(signature = (str, format=None))]
-    pub fn read_shapemap_str(&mut self, str: &str, format: Option<&PyShapeMapFormat>) -> PyResult<()> {
+    #[pyo3(signature = (str, format=None, base_nodes=None, base_shapes=None))]
+    pub fn read_shapemap_str(
+        &mut self,
+        str: &str,
+        format: Option<&PyShapeMapFormat>,
+        base_nodes: Option<&str>,
+        base_shapes: Option<&str>,
+    ) -> PyResult<()> {
         let format = cnv_shapemap_format(format).unwrap_or(&ShapeMapFormat::Compact);
+
+        let base_nodes_iri = if let Some(base) = base_nodes {
+            Some(
+                IriS::from_str(base)
+                    .map_err(|e| RudofError::BaseIriError {
+                        str: base.to_string(),
+                        error: format!("{e}"),
+                    })
+                    .map_err(cnv_err)?,
+            )
+        } else {
+            None
+        };
+
+        let base_shapes_iri = if let Some(base) = base_shapes {
+            Some(
+                IriS::from_str(base)
+                    .map_err(|e| RudofError::BaseIriError {
+                        str: base.to_string(),
+                        error: format!("{e}"),
+                    })
+                    .map_err(cnv_err)?,
+            )
+        } else {
+            None
+        };
+
         self.inner
-            .read_shapemap(str.as_bytes(), "String", format, &None)
+            .read_shapemap(str.as_bytes(), "String", format, &base_nodes_iri, &base_shapes_iri)
             .map_err(cnv_err)?;
         Ok(())
     }
@@ -592,11 +627,19 @@ impl PyRudof {
     /// Args:
     ///     input (str): File path or URL to the ShapeMap.
     ///     format (ShapeMapFormat, optional): Format. Defaults to ``ShapeMapFormat.Compact``.
+    ///     base_nodes (str, optional): Base IRI for resolving node IRIs. Defaults to ``None``.
+    ///     base_shapes (str, optional): Base IRI for resolving shape IRIs. Defaults to ``None``.
     ///
     /// Raises:
     ///     RudofError: If file/URL cannot be read or ShapeMap is malformed.
-    #[pyo3(signature = (input, format=None))]
-    pub fn read_shapemap(&mut self, input: &str, format: Option<&PyShapeMapFormat>) -> PyResult<()> {
+    #[pyo3(signature = (input, format=None, base_nodes=None, base_shapes=None))]
+    pub fn read_shapemap(
+        &mut self,
+        input: &str,
+        format: Option<&PyShapeMapFormat>,
+        base_nodes: Option<&str>,
+        base_shapes: Option<&str>,
+    ) -> PyResult<()> {
         let format = cnv_shapemap_format(format);
         let mime = if let Some(format) = format {
             format.mime_type()
@@ -606,9 +649,35 @@ impl PyRudof {
 
         let reader = get_reader(input, Some(mime), "Shapemap")?;
 
+        let base_nodes_iri = if let Some(base) = base_nodes {
+            Some(
+                IriS::from_str(base)
+                    .map_err(|e| RudofError::BaseIriError {
+                        str: base.to_string(),
+                        error: format!("{e}"),
+                    })
+                    .map_err(cnv_err)?,
+            )
+        } else {
+            None
+        };
+
+        let base_shapes_iri = if let Some(base) = base_shapes {
+            Some(
+                IriS::from_str(base)
+                    .map_err(|e| RudofError::BaseIriError {
+                        str: base.to_string(),
+                        error: format!("{e}"),
+                    })
+                    .map_err(cnv_err)?,
+            )
+        } else {
+            None
+        };
+
         let format = format.unwrap_or(&ShapeMapFormat::Compact);
         self.inner
-            .read_shapemap(reader, input, format, &None)
+            .read_shapemap(reader, input, format, &base_nodes_iri, &base_shapes_iri)
             .map_err(cnv_err)?;
         Ok(())
     }

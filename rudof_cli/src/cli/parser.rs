@@ -245,13 +245,11 @@ pub struct ShapemapArgs {
     )]
     pub shapemap_format: ShapeMapFormatCli,
 
-    #[arg(
-        short = 'b',
-        long = "base",
-        value_name = "IRI",
-        help = "Base IRI to resolve relative IRIs"
-    )]
-    pub base: Option<IriS>,
+    #[arg(long = "base-data", value_name = "IRI", help = "Base IRI for data")]
+    pub base_data: Option<IriS>,
+
+    #[arg(long = "base-schema", value_name = "IRI", help = "Base IRI for Schema")]
+    pub base_schema: Option<IriS>,
 
     #[arg(
         short = 'r',

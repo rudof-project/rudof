@@ -158,7 +158,7 @@ def example_schema_formats():
 
     # SHACL schema
     config_shacl = pyrudof.GeneratorConfig()
-    config_shacl.set_schema_format(pyrudof.SchemaFormat.SHACL)
+    config_shacl.set_schema_format(pyrudof.SchemaFormat.Shacl)
     config_shacl.set_entity_count(20)
     config_shacl.set_output_path("/tmp/shacl_output.ttl")
     gen2 = pyrudof.DataGenerator(config_shacl)
