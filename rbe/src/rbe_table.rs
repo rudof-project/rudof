@@ -100,12 +100,37 @@ where
         for (key, value) in &values {
             let components = self.key_components.get(key).unwrap_or(&cs_empty);
             let mut pairs = Vec::new();
-            for component in components {
-                // TODO: Add some better error control to replace unwrap()?
-                //  This should mark an internal error anyway
-                let cond = self.component_cond.get(component).unwrap();
-                pairs_found += 1;
-                pairs.push((key.clone(), value.clone(), *component, cond.clone()));
+            if components.len() > 1 {
+                // Multiple components for this key: pre-filter by checking
+                // which components can actually accept this value, to avoid
+                // generating invalid cartesian product combinations.
+                let mut last_err = None;
+                for component in components {
+                    let cond = self.component_cond.get(component).unwrap();
+                    match cond.matches(value) {
+                        Ok(_) => {
+                            pairs_found += 1;
+                            pairs.push((key.clone(), value.clone(), *component, cond.clone()));
+                        }
+                        Err(err) => {
+                            trace!(
+                                "Pre-filter: condition {cond} rejected value {value} for component {component}"
+                            );
+                            last_err = Some(err);
+                        }
+                    }
+                }
+                if pairs.is_empty() {
+                    if let Some(err) = last_err {
+                        return Err(err);
+                    }
+                }
+            } else {
+                for component in components {
+                    let cond = self.component_cond.get(component).unwrap();
+                    pairs_found += 1;
+                    pairs.push((key.clone(), value.clone(), *component, cond.clone()));
+                }
             }
             candidates.push(pairs);
         }
@@ -571,5 +596,92 @@ mod tests {
                 msg: "Value b!='a'".to_string()
             }))
         );
+    }
+
+    /// Reproduces the bug where two strict conditions on the same key
+    /// (e.g. `a [ex:Person] ; a [ex:Employee]`) failed because the
+    /// cartesian product tried invalid pairings before valid ones.
+    #[test]
+    fn test_rbe_table_5_same_key_strict_conditions() {
+        // { p x; p y } == { p is_x; p is_y }
+        // Each value should match exactly one condition.
+        let is_x: MatchCond<char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("is_x").with_cond(move |v| {
+                if *v == 'x' {
+                    Ok(Pending::new())
+                } else {
+                    Err(rbe_error::RbeError::MsgError {
+                        msg: format!("Value {v}!='x'"),
+                    })
+                }
+            }));
+
+        let is_y: MatchCond<char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("is_y").with_cond(move |v| {
+                if *v == 'y' {
+                    Ok(Pending::new())
+                } else {
+                    Err(rbe_error::RbeError::MsgError {
+                        msg: format!("Value {v}!='y'"),
+                    })
+                }
+            }));
+
+        let vs = vec![('p', 'x'), ('p', 'y')];
+
+        // rbe_table = { p is_x ; p is_y }
+        let mut rbe_table = RbeTable::new();
+        let c1 = rbe_table.add_component('p', &is_x);
+        let c2 = rbe_table.add_component('p', &is_y);
+        rbe_table.with_rbe(Rbe::and(vec![
+            Rbe::symbol(c1, 1, Max::IntMax(1)),
+            Rbe::symbol(c2, 1, Max::IntMax(1)),
+        ]));
+
+        let mut iter = rbe_table.matches(vs).unwrap();
+
+        assert_eq!(iter.next(), Some(Ok(Pending::new())));
+        assert_eq!(iter.next(), None);
+    }
+
+    /// Same key, two strict conditions, but one value doesn't match any.
+    #[test]
+    fn test_rbe_table_6_same_key_strict_no_match() {
+        let is_x: MatchCond<char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("is_x").with_cond(move |v| {
+                if *v == 'x' {
+                    Ok(Pending::new())
+                } else {
+                    Err(rbe_error::RbeError::MsgError {
+                        msg: format!("Value {v}!='x'"),
+                    })
+                }
+            }));
+
+        let is_y: MatchCond<char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("is_y").with_cond(move |v| {
+                if *v == 'y' {
+                    Ok(Pending::new())
+                } else {
+                    Err(rbe_error::RbeError::MsgError {
+                        msg: format!("Value {v}!='y'"),
+                    })
+                }
+            }));
+
+        // Value 'z' doesn't match is_x or is_y
+        let vs = vec![('p', 'x'), ('p', 'z')];
+
+        let mut rbe_table = RbeTable::new();
+        let c1 = rbe_table.add_component('p', &is_x);
+        let c2 = rbe_table.add_component('p', &is_y);
+        rbe_table.with_rbe(Rbe::and(vec![
+            Rbe::symbol(c1, 1, Max::IntMax(1)),
+            Rbe::symbol(c2, 1, Max::IntMax(1)),
+        ]));
+
+        // matches() itself returns Err because 'z' matches no component
+        let result = rbe_table.matches(vs);
+        assert!(result.is_err());
     }
 }
