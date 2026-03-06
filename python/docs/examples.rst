@@ -1729,8 +1729,8 @@ Convert a ShEx schema into a PlantUML class diagram
 Utility & Introspection
 -----------------------
 
-Miscellaneous utilities: inspecting the pyrudof module, listing available
-classes, and writing unit tests against pyrudof.
+Miscellaneous utilities: inspecting the pyrudof module and listing available
+classes.
 
 
 Module Info

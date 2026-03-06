@@ -1472,12 +1472,15 @@ impl Rudof {
                 error: e.to_string(),
             })?;
 
+        let base_nodes = self.get_base_iri(base_nodes)?;
+        let base_shapes = self.get_base_iri(base_shapes)?;
+
         self.read_shapemap(
             shapemap_reader,
             input.source_name().as_str(),
             shapemap_format,
-            base_nodes,
-            base_shapes,
+            &Some(base_nodes),
+            &Some(base_shapes),
         )?;
 
         Ok(())
@@ -1502,6 +1505,9 @@ impl Rudof {
         base_nodes: &Option<IriS>,
         base_shapes: &Option<IriS>,
     ) -> Result<()> {
+        let base_nodes = self.get_base_iri(base_nodes)?;
+        let base_shapes = self.get_base_iri(base_shapes)?;
+
         match (node, shape) {
             (None, None) => {
                 // Nothing to do
@@ -1510,13 +1516,23 @@ impl Rudof {
             (Some(node_str), None) => {
                 let node_selector = crate::parse_node_selector(node_str)?;
                 let shape_selector = crate::selector::start();
-                self.shapemap_add_node_shape_selectors(node_selector, base_nodes, shape_selector, base_shapes)?;
+                self.shapemap_add_node_shape_selectors(
+                    node_selector,
+                    &Some(base_nodes),
+                    shape_selector,
+                    &Some(base_shapes),
+                )?;
                 Ok(())
             },
             (Some(node_str), Some(shape_str)) => {
                 let node_selector = crate::parse_node_selector(node_str)?;
                 let shape_selector = crate::parse_shape_selector(shape_str)?;
-                self.shapemap_add_node_shape_selectors(node_selector, base_nodes, shape_selector, base_shapes)?;
+                self.shapemap_add_node_shape_selectors(
+                    node_selector,
+                    &Some(base_nodes),
+                    shape_selector,
+                    &Some(base_shapes),
+                )?;
                 Ok(())
             },
             (None, Some(shape_str)) => {
