@@ -11,6 +11,14 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ### Fixed
 - Removed unneeded dependency on `rust_decimal_macros` from `rudof_rdf`
+- Solved issue #531: ShEx validation fails when using multiple a [...] constraints for different classes in the same shape
+- Solved issues #526, #520, #506 and #513 about prefix maprelative IRIs issue and automatic Python docs examples generation with tests
+- Refactored Internal CLI implementation: #418, #433
+
+### Added
+- Added command to generate Shell completion scripts #524
+- Added more query formats: #523
+- Added support to dereference shapemaps against a base IRI #521
 
 ## v0.2.6
 ### Fixed
