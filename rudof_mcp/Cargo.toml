@@ -9,6 +9,9 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
+[[bin]]
+name = "rudof-mcp"
+path = "src/bin/rudof-mcp.rs"
 
 [dependencies]
 anyhow.workspace = true

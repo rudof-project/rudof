@@ -1,0 +1,53 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.rudof-project/rudof-mcp",
+  "title": "Rudof MCP Server",
+  "description": "A powerful Model Context Protocol server for RDF validation, querying, and data transformation. Provides seamless integration of RDF data validation (ShEx, SHACL), SPARQL querying, and semantic data transformation into AI workflows.",
+  "version": "0.2.7",
+  "repository": {
+    "url": "https://github.com/rudof-project/rudof",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "mcpb",
+      "identifier": "https://github.com/rudof-project/rudof/releases/download/v0.2.7/rudof-mcp/rudof-mcp_v0.2.7_x86_64_linux_gnu",
+      "fileSha256": "PLACEHOLDER_LINUX_X64_SHA256",
+      "platforms": ["linux"],
+      "architectures": ["x64"],
+      "transport": {
+        "type": "stdio"
+      }
+    },
+    {
+      "registryType": "mcpb",
+      "identifier": "https://github.com/rudof-project/rudof/releases/download/v0.2.7/rudof-mcp/rudof-mcp_v0.2.7_x86_64_apple",
+      "fileSha256": "PLACEHOLDER_MACOS_X64_SHA256",
+      "platforms": ["darwin"],
+      "architectures": ["x64"],
+      "transport": {
+        "type": "stdio"
+      }
+    },
+    {
+      "registryType": "mcpb",
+      "identifier": "https://github.com/rudof-project/rudof/releases/download/v0.2.7/rudof-mcp/rudof-mcp_v0.2.7_aarch64_apple",
+      "fileSha256": "PLACEHOLDER_MACOS_ARM64_SHA256",
+      "platforms": ["darwin"],
+      "architectures": ["arm64"],
+      "transport": {
+        "type": "stdio"
+      }
+    },
+    {
+      "registryType": "mcpb",
+      "identifier": "https://github.com/rudof-project/rudof/releases/download/v0.2.7/rudof-mcp/rudof-mcp_v0.2.7_x86_64_windows_msvc.exe",
+      "fileSha256": "PLACEHOLDER_WINDOWS_X64_SHA256",
+      "platforms": ["win32"],
+      "architectures": ["x64"],
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

@@ -41,6 +41,20 @@ jobs:
         with:
           files: |
             ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_linux_gnu
+      - name: Build rudof-mcp binary for x86_64 architecture
+        run: cargo build --release -p rudof_mcp --bin rudof-mcp
+      - name: Create rudof-mcp directory for MCPB compliance
+        run: mkdir -p rudof-mcp
+      - name: Copy and rename rudof-mcp binary
+        run: cp target/release/rudof-mcp rudof-mcp/rudof-mcp_${{ github.event.release.tag_name }}_x86_64_linux_gnu
+      - name: Generate SHA-256 hash for rudof-mcp binary
+        run: sha256sum rudof-mcp/rudof-mcp_${{ github.event.release.tag_name }}_x86_64_linux_gnu > rudof-mcp/rudof-mcp_${{ github.event.release.tag_name }}_x86_64_linux_gnu.sha256
+      - name: Upload rudof-mcp binary and hash to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            rudof-mcp/rudof-mcp_${{ github.event.release.tag_name }}_x86_64_linux_gnu
+            rudof-mcp/rudof-mcp_${{ github.event.release.tag_name }}_x86_64_linux_gnu.sha256
 
   mac:
     runs-on: macos-latest
@@ -85,6 +99,30 @@ jobs:
           files: |
             ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_apple
             ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_aarch64_apple
+      
+      # Build and upload rudof-mcp binaries (for MCP registry)
+      - name: Build rudof-mcp binary for x86_64 architecture
+        run: cargo build --release -p rudof_mcp --bin rudof-mcp
+      - name: Build rudof-mcp binary for aarch64 architecture
+        run: cargo build --release -p rudof_mcp --bin rudof-mcp --target aarch64-apple-darwin
+      - name: Create rudof-mcp directory for MCPB compliance
+        run: mkdir -p rudof-mcp
+      - name: Copy and rename rudof-mcp x86_64 binary
+        run: cp target/release/rudof-mcp rudof-mcp/rudof-mcp_${{ github.event.release.tag_name }}_x86_64_apple
+      - name: Copy and rename rudof-mcp aarch64 binary
+        run: cp target/aarch64-apple-darwin/release/rudof-mcp rudof-mcp/rudof-mcp_${{ github.event.release.tag_name }}_aarch64_apple
+      - name: Generate SHA-256 hash for rudof-mcp x86_64 binary
+        run: shasum -a 256 rudof-mcp/rudof-mcp_${{ github.event.release.tag_name }}_x86_64_apple > rudof-mcp/rudof-mcp_${{ github.event.release.tag_name }}_x86_64_apple.sha256
+      - name: Generate SHA-256 hash for rudof-mcp aarch64 binary
+        run: shasum -a 256 rudof-mcp/rudof-mcp_${{ github.event.release.tag_name }}_aarch64_apple > rudof-mcp/rudof-mcp_${{ github.event.release.tag_name }}_aarch64_apple.sha256
+      - name: Upload rudof-mcp binaries and hashes to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            rudof-mcp/rudof-mcp_${{ github.event.release.tag_name }}_x86_64_apple
+            rudof-mcp/rudof-mcp_${{ github.event.release.tag_name }}_x86_64_apple.sha256
+            rudof-mcp/rudof-mcp_${{ github.event.release.tag_name }}_aarch64_apple
+            rudof-mcp/rudof-mcp_${{ github.event.release.tag_name }}_aarch64_apple.sha256
 
   windows:
     runs-on: windows-latest
@@ -126,6 +164,24 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: ${{ vars.BINARY_NAME }}_${{ github.event.release.tag_name }}_x86_64_windows_msvc.exe
+      
+      # Build and upload rudof-mcp binary (for MCP registry)
+      - name: Build rudof-mcp binary for x86_64 architecture
+        run: cargo build --release -p rudof_mcp --bin rudof-mcp
+      - name: Create rudof-mcp directory for MCPB compliance
+        run: New-Item -ItemType Directory -Force -Path rudof-mcp
+      - name: Copy and rename rudof-mcp binary
+        run: Copy-Item target/release/rudof-mcp.exe rudof-mcp/rudof-mcp_${{ github.event.release.tag_name }}_x86_64_windows_msvc.exe
+      - name: Generate SHA-256 hash for rudof-mcp binary
+        run: |
+          $hash = (Get-FileHash -Algorithm SHA256 "rudof-mcp/rudof-mcp_${{ github.event.release.tag_name }}_x86_64_windows_msvc.exe").Hash.ToLower()
+          "$hash  rudof-mcp/rudof-mcp_${{ github.event.release.tag_name }}_x86_64_windows_msvc.exe" | Out-File -Encoding ASCII "rudof-mcp/rudof-mcp_${{ github.event.release.tag_name }}_x86_64_windows_msvc.exe.sha256"
+      - name: Upload rudof-mcp binary and hash to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            rudof-mcp/rudof-mcp_${{ github.event.release.tag_name }}_x86_64_windows_msvc.exe
+            rudof-mcp/rudof-mcp_${{ github.event.release.tag_name }}_x86_64_windows_msvc.exe.sha256
 
   deb:
     runs-on: ubuntu-latest
