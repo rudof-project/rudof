@@ -17,7 +17,8 @@ pub(crate) mod api;
 pub mod errors;
 pub mod formats;
 mod rudof;
-pub mod types;
+mod types;
 pub(crate) mod utils;
 
 pub use rudof::*;
+pub use types::Iri;

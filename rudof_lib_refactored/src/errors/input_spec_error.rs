@@ -52,4 +52,8 @@ pub enum InputSpecError {
     /// Failed to parse a string as a URL.
     #[error("Error parsing URL from string '{str}': {error}")]
     UrlParseError { str: String, error: String },
+
+    /// Operation not supported in WASM environment.
+    #[error("Operation '{operation}' is not supported in WASM environment")]
+    WasmNotSupported { operation: String },
 }

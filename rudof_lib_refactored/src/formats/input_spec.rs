@@ -15,7 +15,7 @@ use std::{
 };
 use url::Url;
 #[allow(unused_imports)]
-use crate::errors::{InputSpecError, WASMError, RudofError};
+use crate::errors::{InputSpecError};
 
 /// Specification for different input sources in Rudof.
 ///
@@ -72,7 +72,7 @@ impl InputSpec {
     /// Converts the InputSpec to an IRI (Internationalized Resource Identifier).
     ///
     /// File paths are converted to file:// URLs, and other sources get appropriate IRI representations.
-    pub fn as_iri(&self) -> Result<IriS, RudofError> {
+    pub fn as_iri(&self) -> Result<IriS, InputSpecError> {
         match self {
             #[cfg(not(target_family = "wasm"))]
             InputSpec::Path(path) => {
@@ -85,7 +85,7 @@ impl InputSpec {
                 Ok(IriS::new_unchecked(url.as_str()))
             },
             #[cfg(target_family = "wasm")]
-            InputSpec::Path(_) => Err(WASMError::FilePathNotSupported.into()),
+            InputSpec::Path(_) => Err(InputSpecError::WasmNotSupported { operation: "File path operations".to_string() }),
             InputSpec::Stdin => Ok(IriS::new_unchecked("file://stdin")),
             InputSpec::Str(_s) => Ok(IriS::new_unchecked("file://str")),
             InputSpec::Url(url) => Ok(IriS::new_unchecked(url.to_string().as_str())),
@@ -103,7 +103,7 @@ impl InputSpec {
     ///
     /// # Note
     /// The initial version of this code was inspired by [patharg](https://github.com/jwodder/patharg/blob/edd912e865143646fd7bb4c7796aa919fa5622b3/src/lib.rs#L264)
-    pub fn open_read(&self, accept: Option<&str>, context_error: &str) -> Result<InputSpecReader, RudofError> {
+    pub fn open_read(&self, accept: Option<&str>, context_error: &str) -> Result<InputSpecReader, InputSpecError> {
         match self {
             InputSpec::Stdin => Ok(Either::Left(io::stdin().lock())),
             InputSpec::Path(p) => match fs::File::open(p) {
@@ -156,7 +156,7 @@ impl InputSpec {
     /// Attempts to guess a base IRI for the input source.
     ///
     /// Used when no explicit base IRI is provided for relative IRI resolution.
-    pub fn guess_base(&self) -> Result<String, RudofError> {
+    pub fn guess_base(&self) -> Result<String, InputSpecError> {
         match self {
             #[cfg(not(target_family = "wasm"))]
             InputSpec::Path(path) => {
@@ -170,7 +170,7 @@ impl InputSpec {
                 Ok(url.to_string())
             },
             #[cfg(target_family = "wasm")]
-            InputSpec::Path(_) => Err(WASMError::FilePathNotSupported.into()),
+            InputSpec::Path(_) => Err(InputSpecError::WasmNotSupported { operation: "File path operations".to_string() }),
             InputSpec::Stdin => Ok("stdin://".to_string()),
             InputSpec::Url(url_spec) => Ok(url_spec.url.to_string()),
             InputSpec::Str(_) => Ok("string://".to_string()),

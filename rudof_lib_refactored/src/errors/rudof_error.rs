@@ -8,10 +8,6 @@ pub enum RudofError {
     #[error("Input specification error: {0}")]
     InputSpec(#[from] InputSpecError),
 
-    /// WebAssembly environment limitation errors.
-    #[error("WASM error: {0}")]
-    WASM(#[from] WASMError),
-
     /// ShapeMap errors.
     #[error("ShapeMap error: {0}")]
     ShapeMap(#[from] ShapeMapError),
@@ -63,6 +59,10 @@ pub enum RudofError {
     /// Generate synthetic RDF data errors.
     #[error("Generate error: {0}")]
     Generate(#[from] GenerationError),
+
+    /// IRI-related errors.
+    #[error("IRI error: {0}")]
+    Iri(#[from] IriError),
 
     /// The requested operation is not yet implemented.
     #[error("Not implemented: {msg}")]
