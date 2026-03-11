@@ -1,0 +1,31 @@
+[package]
+name = "rudof_lib_refactored"
+version = "0.2.7"
+authors.workspace = true
+description.workspace = true
+documentation = "https://docs.rs/rudof_lib"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+include = [
+    "src/**/*.rs",
+    "src/default_config.toml",
+    "Cargo.toml",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE",
+]
+
+[dependencies]
+dctap.workspace = true
+either.workspace = true
+iri_s.workspace = true
+reqwest.workspace = true
+rudof_rdf.workspace = true
+serde.workspace = true
+shacl_ast.workspace = true
+shacl_validation.workspace = true
+shex_ast.workspace = true
+thiserror.workspace = true
+url.workspace = true
