@@ -1,6 +1,6 @@
 use super::{Name, UmlCardinality, ValueConstraint};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct UmlEntry {
     pub name: Name,
     pub value_constraint: ValueConstraint,

@@ -219,21 +219,32 @@ impl ShEx2Uml {
         current_card: &UmlCardinality,
     ) -> Result<ValueConstraint, ShEx2UmlError> {
         match value_expr {
-            ShapeExpr::ShapeOr { shape_exprs } => Err(ShEx2UmlError::not_implemented(
-                format!("ShapeExpr::ShapeOr in value_expr2value_constraint not implemented yet: {shape_exprs:?}")
-                    .as_str(),
-            )),
-            ShapeExpr::ShapeAnd { shape_exprs } => Err(ShEx2UmlError::not_implemented(
-                format!("ShapeExpr::ShapeAnd in value_expr2value_constraint not implemented yet: {shape_exprs:?}")
-                    .as_str(),
-            )),
-            ShapeExpr::ShapeNot { shape_expr } => Err(ShEx2UmlError::not_implemented(
-                format!("ShapeExpr::ShapeNot in value_expr2value_constraint not implemented yet: {shape_expr:?}")
-                    .as_str(),
-            )),
+            ShapeExpr::ShapeOr { shape_exprs } => {
+                let mut vcs = Vec::new();
+                for se in shape_exprs {
+                    let vc =
+                        self.value_expr2value_constraint(&se.se, current_node_id, current_predicate, current_card)?;
+                    vcs.push(vc);
+                }
+                Ok(ValueConstraint::Or { values: vcs })
+            },
+            ShapeExpr::ShapeAnd { shape_exprs } => {
+                let mut vcs = Vec::new();
+                for se in shape_exprs {
+                    let vc =
+                        self.value_expr2value_constraint(&se.se, current_node_id, current_predicate, current_card)?;
+                    vcs.push(vc);
+                }
+                Ok(ValueConstraint::And { values: vcs })
+            },
+            ShapeExpr::ShapeNot { shape_expr } => {
+                let vc =
+                    self.value_expr2value_constraint(&shape_expr.se, current_node_id, current_predicate, current_card)?;
+                Ok(ValueConstraint::Not { value: Box::new(vc) })
+            },
             ShapeExpr::NodeConstraint(nc) => {
                 let maybe_nk = cnv_nodekind(nc.node_kind())?;
-                let maybe_dt = cnv_datatype(nc.datatype())?;
+                let maybe_dt = cnv_datatype(nc.datatype(), &self.current_prefixmap)?;
                 let maybe_facets = cnv_facets(nc.facets())?;
                 let maybe_values = cnv_values(nc.values())?;
                 Ok(mk_and(vec![maybe_nk, maybe_dt, maybe_facets, maybe_values]))
@@ -365,9 +376,9 @@ fn cnv_nodekind(maybe_nk: Option<NodeKind>) -> Result<Option<ValueConstraint>, S
     }
 }
 
-fn cnv_datatype(maybe_dt: Option<IriRef>) -> Result<Option<ValueConstraint>, ShEx2UmlError> {
+fn cnv_datatype(maybe_dt: Option<IriRef>, prefixmap: &PrefixMap) -> Result<Option<ValueConstraint>, ShEx2UmlError> {
     if let Some(dt) = maybe_dt {
-        let name = iri_ref2name(&dt, &ShEx2UmlConfig::default(), &None, &PrefixMap::new())?;
+        let name = iri_ref2name(&dt, &ShEx2UmlConfig::default(), &None, prefixmap)?;
         Ok(Some(ValueConstraint::datatype(name)))
     } else {
         Ok(None)
@@ -463,10 +474,16 @@ fn mk_and(values: Vec<Option<ValueConstraint>>) -> ValueConstraint {
 
 #[cfg(test)]
 mod tests {
-    // use super::*;
-    // use shex_compact::ShExParser;
+    use std::backtrace;
 
-    /*    #[test]
+    use iri_s::iri;
+    use shex_ast::ShExParser;
+
+    use crate::shex_to_uml::UmlLink;
+
+    use super::*;
+
+    #[test]
     fn test_simple() {
         let shex_str = "\
     prefix : <http://example.org/>
@@ -474,19 +491,181 @@ mod tests {
 
     :Person {
       :name xsd:string ;
-      :knows @:Person  ;
-      :works_for @:Course * ;
+    }";
+
+        let mut expected_uml = Uml::new();
+
+        let mut person = UmlClass::new(Name::new(":Person", Some("http://example.org/Person")));
+        person.add_entry(UmlEntry::new(
+            Name::new(":name", Some("http://example.org/name")),
+            ValueConstraint::datatype(Name::new("xsd:string", Some("http://www.w3.org/2001/XMLSchema#string"))),
+            UmlCardinality::OneOne,
+        ));
+        let (person_node, _found) = expected_uml.get_node_adding_label(":Person");
+        expected_uml
+            .add_component(person_node, UmlComponent::class(person))
+            .unwrap();
+        let shex = ShExParser::parse(shex_str, None, &iri!("http://example.org/")).unwrap();
+        let mut converter = ShEx2Uml::new(&ShEx2UmlConfig::default());
+        converter.convert(&shex).unwrap();
+        let converted_uml = converter.current_uml;
+        assert_eq!(converted_uml, expected_uml);
     }
 
-    :Course {
-      :name xsd:string
+    #[test]
+    fn test_simple_recursive() {
+        let shex_str = "\
+    prefix : <http://example.org/>
+    prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+    :Person {
+      :name xsd:string  ;
+      :knows @:Person * ;
     }";
+
         let mut expected_uml = Uml::new();
-        expected_uml.add_label(Name::new(":Person", Some("http://example.org/Person")));
-        expected_uml.add_label(Name::new(":Course", Some("http://example.org/Course")));
-        let shex = ShExParser::parse(shex_str, None).unwrap();
-        let converter = ShEx2Uml::new(ShEx2UmlConfig::default());
-        let converted_uml = converter.convert(&shex).unwrap();
+
+        let mut person = UmlClass::new(Name::new(":Person", Some("http://example.org/Person")));
+        person.add_entry(UmlEntry::new(
+            Name::new(":name", Some("http://example.org/name")),
+            ValueConstraint::datatype(Name::new("xsd:string", Some("http://www.w3.org/2001/XMLSchema#string"))),
+            UmlCardinality::OneOne,
+        ));
+        let (person_node, _found) = expected_uml.get_node_adding_label(":Person");
+        expected_uml
+            .add_component(person_node, UmlComponent::class(person))
+            .unwrap();
+        expected_uml.make_link(
+            person_node,
+            person_node,
+            Name::new(":knows", Some("http://example.org/knows")),
+            UmlCardinality::Star,
+        );
+        let shex = ShExParser::parse(shex_str, None, &iri!("http://example.org/")).unwrap();
+        let mut converter = ShEx2Uml::new(&ShEx2UmlConfig::default());
+        converter.convert(&shex).unwrap();
+        let converted_uml = converter.current_uml;
         assert_eq!(converted_uml, expected_uml);
-    } */
+    }
+
+    #[test]
+    fn test_two_shapes() {
+        let shex_str = "\
+    prefix : <http://example.org/>
+    prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+    :Person {
+      :name xsd:string  ;
+      :worksFor @:Company * ;
+    }
+    
+    :Company {
+      :name xsd:string ;
+    }";
+
+        let mut expected_uml = Uml::new();
+
+        let mut person = UmlClass::new(Name::new(":Person", Some("http://example.org/Person")));
+        person.add_entry(UmlEntry::new(
+            Name::new(":name", Some("http://example.org/name")),
+            ValueConstraint::datatype(Name::new("xsd:string", Some("http://www.w3.org/2001/XMLSchema#string"))),
+            UmlCardinality::OneOne,
+        ));
+        let mut company = UmlClass::new(Name::new(":Company", Some("http://example.org/Company")));
+        company.add_entry(UmlEntry::new(
+            Name::new(":name", Some("http://example.org/name")),
+            ValueConstraint::datatype(Name::new("xsd:string", Some("http://www.w3.org/2001/XMLSchema#string"))),
+            UmlCardinality::OneOne,
+        ));
+        let (person_node, _found) = expected_uml.get_node_adding_label(":Person");
+        let (company_node, _found) = expected_uml.get_node_adding_label(":Company");
+
+        expected_uml
+            .add_component(person_node, UmlComponent::class(person))
+            .unwrap();
+        expected_uml
+            .add_component(company_node, UmlComponent::class(company))
+            .unwrap();
+
+        expected_uml.make_link(
+            person_node,
+            company_node,
+            Name::new(":worksFor", Some("http://example.org/worksFor")),
+            UmlCardinality::Star,
+        );
+        let shex = ShExParser::parse(shex_str, None, &iri!("http://example.org/")).unwrap();
+        let mut converter = ShEx2Uml::new(&ShEx2UmlConfig::default());
+        converter.convert(&shex).unwrap();
+        let converted_uml = converter.current_uml;
+        assert_eq!(converted_uml, expected_uml);
+    }
+
+    #[test]
+    fn test_disjunction_datatypes() {
+        let shex_str = "\
+    prefix : <http://example.org/>
+    prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+    :A {
+      :code xsd:string OR xsd:integer ;
+    }";
+
+        let mut expected_uml = Uml::new();
+
+        let mut a = UmlClass::new(Name::new(":A", Some("http://example.org/A")));
+        a.add_entry(UmlEntry::new(
+            Name::new(":code", Some("http://example.org/code")),
+            ValueConstraint::Or {
+                values: vec![
+                    ValueConstraint::datatype(Name::new("xsd:string", Some("http://www.w3.org/2001/XMLSchema#string"))),
+                    ValueConstraint::datatype(Name::new(
+                        "xsd:integer",
+                        Some("http://www.w3.org/2001/XMLSchema#integer"),
+                    )),
+                ],
+            },
+            UmlCardinality::OneOne,
+        ));
+        let (a_node, _found) = expected_uml.get_node_adding_label(":A");
+
+        expected_uml.add_component(a_node, UmlComponent::class(a)).unwrap();
+
+        let shex = ShExParser::parse(shex_str, None, &iri!("http://example.org/")).unwrap();
+        let mut converter = ShEx2Uml::new(&ShEx2UmlConfig::default());
+        converter.convert(&shex).unwrap();
+        let converted_uml = converter.current_uml;
+        assert_eq!(converted_uml, expected_uml);
+    }
+
+    #[test]
+    fn test_disjunction_shapes() {
+        let shex_str = "\
+    prefix : <http://example.org/>
+    prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+    :A {
+      :code @:A OR @:B ;
+    }";
+
+        let mut expected_uml = Uml::new();
+
+        let a = UmlClass::new(Name::new(":A", Some("http://example.org/A")));
+        let (a_node, _found) = expected_uml.get_node_adding_label(":A");
+        let b = UmlClass::new(Name::new(":B", Some("http://example.org/B")));
+        let (b_node, _found) = expected_uml.get_node_adding_label(":B");
+        let c = UmlClass::new(Name::new(":C", Some("http://example.org/C")));
+        let (c_node, _found) = expected_uml.get_node_adding_label(":C");
+        let or = UmlComponent::or(vec![UmlComponent::class(b.clone()), UmlComponent::class(c.clone())].into_iter());
+        let (or_node, _found) = expected_uml.get_node_adding_label("OR");
+        expected_uml.add_component(a_node, UmlComponent::class(a)).unwrap();
+        expected_uml.add_component(b_node, UmlComponent::class(b)).unwrap();
+        expected_uml.add_component(c_node, UmlComponent::class(c)).unwrap();
+        expected_uml.add_component(or_node, or).unwrap();
+
+        let shex = ShExParser::parse(shex_str, None, &iri!("http://example.org/")).unwrap();
+        let mut converter = ShEx2Uml::new(&ShEx2UmlConfig::default());
+        converter.convert(&shex).unwrap();
+        let converted_uml = converter.current_uml;
+        assert_eq!(converted_uml, expected_uml);
+    }
 }

@@ -318,6 +318,18 @@ fn value_constraint2plantuml(vc: &ValueConstraint, config: &ShEx2UmlConfig) -> S
             acc.push_str(vc_str.as_str());
             acc
         }),
+        ValueConstraint::Or { values } => values.iter().fold(String::new(), |mut acc, vc| {
+            let vc_str = value_constraint2plantuml(vc, config);
+            if !acc.is_empty() {
+                acc.push(' ');
+            }
+            acc.push_str(vc_str.as_str());
+            acc
+        }),
+        ValueConstraint::Not { value } => {
+            let vc_str = value_constraint2plantuml(value, config);
+            format!("NOT {vc_str}")
+        },
     }
 }
 

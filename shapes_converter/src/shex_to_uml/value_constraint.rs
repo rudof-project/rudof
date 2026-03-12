@@ -1,6 +1,6 @@
 use super::Name;
 
-#[derive(Debug, PartialEq, Default)]
+#[derive(Debug, PartialEq, Clone, Default)]
 pub enum ValueConstraint {
     #[default]
     Any,
@@ -12,6 +12,12 @@ pub enum ValueConstraint {
     None,
     And {
         values: Vec<ValueConstraint>,
+    },
+    Or {
+        values: Vec<ValueConstraint>,
+    },
+    Not {
+        value: Box<ValueConstraint>,
     },
 }
 
