@@ -1,9 +1,13 @@
+use std::collections::HashSet;
+
+use crate::shex_to_uml::NodeId;
+
 use super::UmlClass;
 
 #[derive(Debug, PartialEq)]
 pub enum UmlComponent {
     UmlClass(UmlClass),
-    Or { exprs: Vec<UmlComponent> },
+    Or { exprs: HashSet<NodeId> },
     Not { expr: Box<UmlComponent> },
     And { exprs: Vec<UmlComponent> },
 }
@@ -13,7 +17,7 @@ impl UmlComponent {
         UmlComponent::UmlClass(class)
     }
 
-    pub fn or<I: Iterator<Item = UmlComponent>>(cs: I) -> UmlComponent {
-        UmlComponent::Or { exprs: cs.collect() }
+    pub fn or(nodes: HashSet<NodeId>) -> UmlComponent {
+        UmlComponent::Or { exprs: nodes }
     }
 }

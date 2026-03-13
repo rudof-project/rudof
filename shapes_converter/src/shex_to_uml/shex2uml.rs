@@ -1,11 +1,15 @@
+use std::collections::HashSet;
 use std::io::Write;
 
+use either::Either;
 use prefixmap::error::PrefixMapError;
 use prefixmap::{IriRef, PrefixMap};
 use rudof_rdf::rdf_core::visualizer::uml_converter::{UmlConverter, UmlGenerationMode, errors::UmlConverterError};
 use shex_ast::{
-    Annotation, NodeKind, ObjectValue, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr, ValueSetValue, XsFacet,
+    Annotation, NodeKind, ObjectValue, Schema, Shape, ShapeExpr, ShapeExprLabel, ShapeExprWrapper, TripleExpr,
+    ValueSetValue, XsFacet,
 };
+use tracing::{info, trace};
 
 use crate::{
     find_annotation, object_value2string,
@@ -79,7 +83,7 @@ impl ShEx2Uml {
     ) -> Result<UmlComponent, ShEx2UmlError> {
         match shape_expr {
             ShapeExpr::Shape(shape) => self.shape2component(name, shape, current_node_id),
-            ShapeExpr::ShapeOr { shape_exprs } => {
+            /*ShapeExpr::ShapeOr { shape_exprs } => {
                 let cs: Vec<_> = shape_exprs
                     .iter()
                     .flat_map(|se| {
@@ -88,7 +92,7 @@ impl ShEx2Uml {
                     })
                     .collect();
                 Ok(UmlComponent::or(cs.into_iter()))
-            },
+            }, */
             other => Err(ShEx2UmlError::not_implemented(
                 format!("Complex shape expressions are not implemented yet\nShape: {other:?}").as_str(),
             )),
@@ -220,13 +224,23 @@ impl ShEx2Uml {
     ) -> Result<ValueConstraint, ShEx2UmlError> {
         match value_expr {
             ShapeExpr::ShapeOr { shape_exprs } => {
-                let mut vcs = Vec::new();
-                for se in shape_exprs {
-                    let vc =
-                        self.value_expr2value_constraint(&se.se, current_node_id, current_predicate, current_card)?;
-                    vcs.push(vc);
+                trace!(
+                    "Processing ShapeOr for predicate {} with cardinality {} in node {}",
+                    current_predicate.name(),
+                    current_card,
+                    current_node_id
+                );
+                if let Either::Right(refs) = all_references(shape_exprs) {
+                    self.value_constraint_for_all_references(current_node_id, current_predicate, current_card, &refs)?;
+                    return Ok(ValueConstraint::None);
                 }
-                Ok(ValueConstraint::Or { values: vcs })
+                if let Either::Right(datatypes) = all_datatypes(shape_exprs) {
+                    todo!()
+                }
+                Err(ShEx2UmlError::not_implemented(
+                    format!("ShapeOr has shapes_exprs which are not all references or datatypes: {shape_exprs:?}")
+                        .as_str(),
+                ))
             },
             ShapeExpr::ShapeAnd { shape_exprs } => {
                 let mut vcs = Vec::new();
@@ -276,6 +290,65 @@ impl ShEx2Uml {
             },
         }
     }
+
+    /// When the value expression is a ShapeOr and all the shape expressions are references, we can create an Or component with the nodes corresponding to the references as values.
+    fn value_constraint_for_all_references(
+        &mut self,
+        current_node_id: &NodeId,
+        current_predicate: &Name,
+        current_card: &UmlCardinality,
+        labels: &[ShapeExprLabel],
+    ) -> Result<(), ShEx2UmlError> {
+        let mut nodes = HashSet::new();
+        for label in labels {
+            let mut name = self.shape_label2name(&label)?;
+            let (node_id, _found) = self.current_uml.get_node_adding_label(&name.name());
+            nodes.insert(node_id);
+        }
+        let or = UmlComponent::or(nodes.clone());
+        let (or_node, _found) = self.current_uml.get_node_adding_label("OR");
+        self.current_uml.add_component(or_node, or)?;
+        self.current_uml.make_link(
+            current_node_id.clone(),
+            or_node,
+            current_predicate.clone(),
+            current_card.clone(),
+        );
+        for node in nodes {
+            self.current_uml
+                .make_link(or_node, node, Name::new("", None), UmlCardinality::OneOne);
+        }
+        Ok(())
+    }
+}
+
+fn all_references(shape_exprs: &[ShapeExprWrapper]) -> Either<(), Vec<ShapeExprLabel>> {
+    let mut labels = Vec::new();
+    for se in shape_exprs {
+        if let ShapeExpr::Ref(r) = &se.se {
+            labels.push(r.clone())
+        } else {
+            return Either::Left(());
+        }
+    }
+    Either::Right(labels)
+}
+
+fn all_datatypes(shape_exprs: &[ShapeExprWrapper]) -> Either<(), Vec<Name>> {
+    let mut names = Vec::new();
+    for se in shape_exprs {
+        if let ShapeExpr::NodeConstraint(nc) = &se.se {
+            if let Some(dt) = nc.datatype() {
+                let name = iri_ref2name(&dt, &ShEx2UmlConfig::default(), &None, &PrefixMap::new()).unwrap();
+                names.push(name)
+            } else {
+                return Either::Left(());
+            }
+        } else {
+            return Either::Left(());
+        }
+    }
+    Either::Right(names)
 }
 
 fn value_set2value_constraint(
@@ -474,14 +547,10 @@ fn mk_and(values: Vec<Option<ValueConstraint>>) -> ValueConstraint {
 
 #[cfg(test)]
 mod tests {
-    use std::backtrace;
-
+    use super::*;
     use iri_s::iri;
     use shex_ast::ShExParser;
-
-    use crate::shex_to_uml::UmlLink;
-
-    use super::*;
+    use tracing_test::traced_test;
 
     #[test]
     fn test_simple() {
@@ -637,6 +706,7 @@ mod tests {
         assert_eq!(converted_uml, expected_uml);
     }
 
+    #[traced_test]
     #[test]
     fn test_disjunction_shapes() {
         let shex_str = "\
@@ -655,12 +725,20 @@ mod tests {
         let (b_node, _found) = expected_uml.get_node_adding_label(":B");
         let c = UmlClass::new(Name::new(":C", Some("http://example.org/C")));
         let (c_node, _found) = expected_uml.get_node_adding_label(":C");
-        let or = UmlComponent::or(vec![UmlComponent::class(b.clone()), UmlComponent::class(c.clone())].into_iter());
+        let or = UmlComponent::or(HashSet::from([b_node, c_node]));
         let (or_node, _found) = expected_uml.get_node_adding_label("OR");
         expected_uml.add_component(a_node, UmlComponent::class(a)).unwrap();
         expected_uml.add_component(b_node, UmlComponent::class(b)).unwrap();
         expected_uml.add_component(c_node, UmlComponent::class(c)).unwrap();
         expected_uml.add_component(or_node, or).unwrap();
+        expected_uml.make_link(
+            a_node,
+            or_node,
+            Name::new(":code", Some("http://example.org/code")),
+            UmlCardinality::OneOne,
+        );
+        expected_uml.make_link(or_node, b_node, Name::new("", None), UmlCardinality::OneOne);
+        expected_uml.make_link(or_node, c_node, Name::new("", None), UmlCardinality::OneOne);
 
         let shex = ShExParser::parse(shex_str, None, &iri!("http://example.org/")).unwrap();
         let mut converter = ShEx2Uml::new(&ShEx2UmlConfig::default());

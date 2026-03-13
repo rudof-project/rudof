@@ -143,6 +143,10 @@ impl NodeConstraint {
         self.values = Some(values);
         self
     }
+
+    pub fn is_datatype(&self) -> bool {
+        self.datatype.is_some() && self.node_kind.is_none() && self.xs_facet.is_none() && self.values.is_none()
+    }
 }
 
 impl DerefIri for NodeConstraint {
