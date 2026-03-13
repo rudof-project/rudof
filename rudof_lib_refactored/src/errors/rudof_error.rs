@@ -4,6 +4,10 @@ use crate::errors::*;
 /// Main error type that encompasses all error categories in Rudof
 #[derive(Error, Debug)]
 pub enum RudofError {
+    /// Configuration errors.
+    #[error("Configuration error: {0}")]
+    Config(#[from] ConfigError),
+
     /// Input specification and source errors.
     #[error("Input specification error: {0}")]
     InputSpec(#[from] InputSpecError),

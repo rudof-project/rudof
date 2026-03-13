@@ -20,12 +20,22 @@ include = [
 [dependencies]
 dctap.workspace = true
 either.workspace = true
+oxrdf = { workspace = true, features = ["oxsdatatypes"] }
 iri_s.workspace = true
+prefixmap.workspace = true
+pgschema.workspace = true
+rdf_config.workspace = true
 reqwest.workspace = true
 rudof_rdf.workspace = true
 serde.workspace = true
 shacl_ast.workspace = true
+shacl_ir.workspace = true
 shacl_validation.workspace = true
+shapes_comparator.workspace = true
+shapes_converter.workspace = true
 shex_ast.workspace = true
+shex_validation.workspace = true
+sparql_service.workspace = true
 thiserror.workspace = true
+toml.workspace = true
 url.workspace = true

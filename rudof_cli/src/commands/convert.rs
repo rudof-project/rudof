@@ -28,6 +28,7 @@ impl ConvertCommand {
     pub fn new(args: ConvertArgs) -> Self {
         Self { args }
     }
+    
     /// Convert ValidateArgs to ShexValidateArgs
     fn to_shex_args(&self) -> ShexArgs {
         ShexArgs {

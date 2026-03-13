@@ -1,4 +1,5 @@
 mod comparison_error;
+mod config_error;
 mod conversion_error;
 mod data_error;
 mod dctap_error;
@@ -17,6 +18,7 @@ mod shex_error;
 mod validation_error;
 
 pub use comparison_error::ComparisonError;
+pub use config_error::ConfigError;
 pub use conversion_error::ConversionError;
 pub use data_error::DataError;
 pub use dctap_error::DCTapError;

@@ -3,6 +3,10 @@ use thiserror::Error;
 /// Errors that can occur during data handling operations in Rudof.
 #[derive(Error, Debug)]
 pub enum DataError {
+    /// Error applying RDF data configuration.
+    #[error("Error applying RDF data configuration: {error}")]
+    RdfDataConfig { error: String },
+
     /// Attempted to use a non-RDF format in an RDF-only context.
     #[error("Non-RDF format: {format}")]
     NonRdfFormat { format: String },

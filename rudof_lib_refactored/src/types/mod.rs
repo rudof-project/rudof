@@ -1,3 +1,5 @@
-mod iri;
+mod data;
+mod query;
 
-pub use iri::Iri;
+pub(crate) use data::Data;
+pub(crate) use query::QueryResult;
