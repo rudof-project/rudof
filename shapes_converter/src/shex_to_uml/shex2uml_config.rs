@@ -16,8 +16,14 @@ pub const DEFAULT_REPLACE_IRI_BY_LABEL: bool = true;
 pub struct ShEx2UmlConfig {
     pub plantuml_path: Option<PathBuf>,
     pub annotation_label: Vec<IriS>,
+    /// Whether to replace IRIs by their labels in the generated PlantUML diagram. If `None`, the default is `true`.
     pub replace_iri_by_label: Option<bool>,
+    /// Whether to use shadowing in the generated PlantUML diagram. If `None`, the default is `true`.
     pub shadowing: Option<bool>,
+    /// Whether to use orthogonal lines in the generated PlantUML diagram. If `None`, the default is `false`.
+    pub ortho: Option<bool>,
+
+    /// Configuration for ShEx. If `None`, the default configuration is used.
     pub shex: Option<ShExConfig>,
 }
 
@@ -28,6 +34,8 @@ impl ShEx2UmlConfig {
             replace_iri_by_label: None,
             shex: Some(ShExConfig::default()),
             shadowing: Some(true),
+
+            ortho: Some(false),
             plantuml_path: None,
         }
     }

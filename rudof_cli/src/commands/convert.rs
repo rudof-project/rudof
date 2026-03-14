@@ -29,13 +29,25 @@ impl ConvertCommand {
         Self { args }
     }
     /// Convert ValidateArgs to ShexValidateArgs
-    fn to_shex_args(&self) -> ShexArgs {
-        ShexArgs {
+    fn to_shex_args(&self) -> Result<ShexArgs> {
+        let schema_format = self.args.format.clone().try_into().map_err(|_| {
+            anyhow!(
+                "The specified format '{}' is not supported for ShEx conversion",
+                self.args.format
+            )
+        })?;
+        let result_schema_format = self.args.result_format.clone().try_into().map_err(|_| {
+            anyhow!(
+                "The specified result format '{}' is not supported for ShEx conversion",
+                self.args.result_format
+            )
+        })?;
+        Ok(ShexArgs {
             schema: self.args.file.clone(),
-            schema_format: self.args.format.clone().try_into().unwrap(),
+            schema_format,
             shape: None,
             base: self.args.base.clone(),
-            result_schema_format: self.args.result_format.clone().try_into().unwrap(),
+            result_schema_format,
             common: self.args.common.clone(),
             show_time: self.args.show_time,
             show_schema: true,
@@ -44,7 +56,7 @@ impl ConvertCommand {
             reader_mode: self.args.reader_mode.clone(),
             show_dependencies: Some(false),
             show_statistics: Some(false),
-        }
+        })
     }
 }
 
@@ -65,7 +77,7 @@ impl Command for ConvertCommand {
 
         match (&self.args.input_mode, &self.args.output_mode) {
             (InputConvertModeCli::ShEx, OutputConvertModeCli::ShEx) => {
-                let shex_args = self.to_shex_args();
+                let shex_args = self.to_shex_args()?;
                 let cmd = ShexCommand::new(shex_args);
                 cmd.execute(ctx)
             },

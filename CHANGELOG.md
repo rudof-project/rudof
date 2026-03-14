@@ -7,6 +7,11 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.2.8
+
+### Fixed
+- Removed 2 unwraps in convert that panicked when the formats to convert to ShEx were wrong
+
 ## v0.2.7 
 
 ### Fixed

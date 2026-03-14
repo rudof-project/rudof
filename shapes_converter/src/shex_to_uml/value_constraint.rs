@@ -25,4 +25,16 @@ impl ValueConstraint {
     pub fn datatype(name: Name) -> ValueConstraint {
         ValueConstraint::Datatype(name)
     }
+
+    pub fn or(values: Vec<ValueConstraint>) -> ValueConstraint {
+        ValueConstraint::Or { values }
+    }
+
+    pub fn and(values: Vec<ValueConstraint>) -> ValueConstraint {
+        ValueConstraint::And { values }
+    }
+
+    pub fn not(value: ValueConstraint) -> ValueConstraint {
+        ValueConstraint::Not { value: Box::new(value) }
+    }
 }
