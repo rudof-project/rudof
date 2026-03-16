@@ -126,9 +126,9 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
         // Check if there are extra properties but the shape is closed
         let mut closed_validation_results = Vec::new();
         if self.closed() {
-            for focus_node in uncached_focus_nodes.iter() {
-                let allowed_properties: HashSet<IriS> = self.allowed_properties();
+            let allowed_properties: HashSet<IriS> = self.allowed_properties();
 
+            for focus_node in uncached_focus_nodes.iter() {
                 let all_properties: HashSet<IriS> = match S::term_as_subject(focus_node) {
                     Ok(subj) => {
                         let ts = store
@@ -143,7 +143,7 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
                 }?;
 
                 let invalid_properties: Vec<IriS> = all_properties
-                    .difference(&allowed_properties.iter().cloned().collect())
+                    .difference(&allowed_properties)
                     .cloned()
                     .collect();
 
