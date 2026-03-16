@@ -7,8 +7,8 @@ use crate::value_nodes::ValueNodes;
 use iri_s::IriS;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{
-    NeighsRDF, Rdf, SHACLPath,
-    term::{Object, Triple},
+    term::{Object, Triple}, NeighsRDF, Rdf,
+    SHACLPath,
 };
 use shacl_ir::compiled::property_shape::PropertyShapeIR;
 use shacl_ir::compiled::shape::ShapeIR;
@@ -52,9 +52,37 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
         };
         trace!("Focus nodes for shape {}: {focus_nodes}", self.id());
 
+        // Resolve the ShapeLabelIdx for the current shape (used for memoization)
+        let shape_idx = shapes_graph.get_shape_idx(self.id());
+
+        // Check the cache: filter out focus nodes that have already been validated
+        // and collect their cached results
+        let mut cached_results: Vec<ValidationResult> = Vec::new();
+        let uncached_focus_nodes: FocusNodes<S> = if let Some(idx) = shape_idx {
+            let mut uncached = Vec::new();
+            for focus_node in focus_nodes.iter() {
+                let node_object = S::term_as_object(focus_node);
+                if let Ok(ref obj) = node_object {
+                    if let Some(results) = runner.get_cached_results(obj, idx) {
+                        cached_results.extend(results.iter().cloned());
+                        continue;
+                    }
+                }
+                uncached.push(focus_node.clone());
+            }
+            FocusNodes::from_iter(uncached)
+        } else {
+            focus_nodes.clone()
+        };
+
+        // If all focus nodes were cached, return early
+        if uncached_focus_nodes.is_empty() {
+            return Ok(cached_results);
+        }
+
         // ValueNodes = set of nodes that are going to be used during validation.
-        // This set of nodes is obtained from the set of focus nodes
-        let value_nodes = self.value_nodes(store, &focus_nodes, runner)?;
+        // This set of nodes is obtained from the set of (uncached) focus nodes
+        let value_nodes = self.value_nodes(store, &uncached_focus_nodes, runner)?;
         trace!("Value nodes for shape {}: {value_nodes}", self.id());
 
         let components = self.components();
@@ -91,14 +119,14 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
                     prop_shape
                 )
             });
-            let results = shape.validate(store, runner, Some(&focus_nodes), Some(self), shapes_graph)?;
+            let results = shape.validate(store, runner, Some(&uncached_focus_nodes), Some(self), shapes_graph)?;
             property_shapes_validation_results.extend(results);
         }
 
         // Check if there are extra properties but the shape is closed
         let mut closed_validation_results = Vec::new();
         if self.closed() {
-            for focus_node in focus_nodes.iter() {
+            for focus_node in uncached_focus_nodes.iter() {
                 let allowed_properties: HashSet<IriS> = self.allowed_properties();
 
                 let all_properties: HashSet<IriS> = match S::term_as_subject(focus_node) {
@@ -138,22 +166,40 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
                 runner,
                 source_shape,
                 &reifier_info,
-                &focus_nodes,
+                &uncached_focus_nodes,
                 shapes_graph,
             )?
         } else {
             Vec::new()
         };
 
-        // Collect all validation results
-        let validation_results = component_validation_results
+        // Collect all NEW validation results (from uncached focus nodes)
+        let new_results: Vec<ValidationResult> = component_validation_results
             .into_iter()
             .chain(property_shapes_validation_results)
             .chain(closed_validation_results)
             .chain(reification_results)
             .collect();
 
-        Ok(validation_results)
+        // Record new results in the cache per focus node
+        if let Some(idx) = shape_idx {
+            // Group results by focus node for caching
+            for focus_node in uncached_focus_nodes.iter() {
+                if let Ok(node_object) = S::term_as_object(focus_node) {
+                    let node_results: Vec<ValidationResult> = new_results
+                        .iter()
+                        .filter(|r| r.focus_node() == &node_object)
+                        .cloned()
+                        .collect();
+                    runner.record_validation(node_object, idx, node_results);
+                }
+            }
+        }
+
+        // Merge cached results with newly computed results
+        let mut all_results = cached_results;
+        all_results.extend(new_results);
+        Ok(all_results)
     }
 }
 

@@ -77,4 +77,7 @@ pub trait Engine<S: NeighsRDF> {
     fn record_validation(&mut self, node: Object, shape_idx: ShapeLabelIdx, results: Vec<ValidationResult>);
 
     fn has_validated(&self, node: &Object, shape_idx: ShapeLabelIdx) -> bool;
+
+    /// Returns the cached validation results for a given `(node, shape_idx)` pair, if any.
+    fn get_cached_results(&self, node: &Object, shape_idx: ShapeLabelIdx) -> Option<&Vec<ValidationResult>>;
 }

@@ -3,6 +3,7 @@ use crate::constraints::ShaclComponent;
 use crate::focus_nodes::FocusNodes;
 use crate::shacl_engine::engine::Engine;
 use crate::validate_error::ValidateError;
+use crate::validation_cache::ValidationCache;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use iri_s::IriS;
@@ -15,17 +16,16 @@ use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
 use shacl_ir::shape_label_idx::ShapeLabelIdx;
-use std::collections::HashMap;
 use std::fmt::Debug;
 
 pub struct NativeEngine {
-    cached_validations: HashMap<Object, HashMap<ShapeLabelIdx, Vec<ValidationResult>>>,
+    cache: ValidationCache,
 }
 
 impl NativeEngine {
     pub fn new() -> Self {
         Self {
-            cached_validations: Default::default(),
+            cache: ValidationCache::new(),
         }
     }
 }
@@ -145,16 +145,14 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
     }
 
     fn record_validation(&mut self, node: Object, shape_idx: ShapeLabelIdx, results: Vec<ValidationResult>) {
-        self.cached_validations
-            .entry(node)
-            .or_default()
-            .insert(shape_idx, results);
+        self.cache.record(node, shape_idx, results);
     }
 
     fn has_validated(&self, node: &Object, shape_idx: ShapeLabelIdx) -> bool {
-        self.cached_validations
-            .get(node)
-            .and_then(|shape_map| shape_map.get(&shape_idx))
-            .is_some()
+        self.cache.has_validated(node, shape_idx)
+    }
+
+    fn get_cached_results(&self, node: &Object, shape_idx: ShapeLabelIdx) -> Option<&Vec<ValidationResult>> {
+        self.cache.get_results(node, shape_idx)
     }
 }
