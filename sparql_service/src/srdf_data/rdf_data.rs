@@ -173,6 +173,20 @@ impl RdfData {
         }
     }
 
+    /// Merges an already-parsed [`InMemoryGraph`] into the current RDF data.
+    ///
+    /// This is used to combine independently parsed graphs, e.g. when loading
+    /// multiple inputs in parallel.
+    pub fn merge_graph(&mut self, other: InMemoryGraph) -> Result<(), RdfDataError> {
+        match &mut self.graph {
+            Some(graph) => graph.merge_graph(other).map_err(|e| RdfDataError::SRDFGraphError { err: Box::new(e) }),
+            None => {
+                self.graph = Some(other);
+                Ok(())
+            },
+        }
+    }
+
     /// Creates an RdfData from an endpoint
     pub fn from_endpoint(name: &str, endpoint: SparqlEndpoint) -> RdfData {
         RdfData {

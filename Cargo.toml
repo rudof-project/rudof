@@ -294,7 +294,7 @@ oxrdf = { version = "0.3.0", features = ["oxsdatatypes", "rdf-12"] }
 oxrdfio = { version = "0.2.0", features = ["rdf-12"] }
 oxrdfxml = { version = "0.2.0" }
 oxsdatatypes = "0.2.2"
-oxttl = { version = "0.2.0", features = ["rdf-12"] }
+oxttl = { version = "0.2.0", features = ["rdf-12", "async-tokio"] }
 paste = "1.0.15"
 pgschema = { version = "0.1.5", path = "./pgschema" }
 petgraph = { version = "0.8" }

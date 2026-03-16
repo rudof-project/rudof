@@ -170,6 +170,9 @@ pub enum RudofError {
         error: String,
     },
 
+    #[error("Tokio task join error: {error}")]
+    JoinError { error: String },
+
     #[error("Utf8 error: {error} ")]
     Utf8Error { error: String },
 

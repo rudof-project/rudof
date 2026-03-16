@@ -32,6 +32,7 @@ use std::{
     path::Path,
     str::FromStr,
 };
+use tokio::io::AsyncRead;
 
 /// An RDF graph stored entirely in memory.
 ///
@@ -562,6 +563,185 @@ impl InMemoryGraph {
     /// Returns a reference to the prefix map.
     pub fn prefixmap(&self) -> &PrefixMap {
         &self.pm
+    }
+
+    /// Merges all triples from another graph into this graph.
+    ///
+    /// Copies all triples and merges all prefixes from `other` into `self`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if prefix merging fails.
+    pub fn merge_graph(&mut self, other: InMemoryGraph) -> Result<(), InMemoryGraphError> {
+        for triple in other.graph.iter() {
+            self.graph.insert(triple);
+        }
+        self.merge_prefixes(other.pm)?;
+        if self.base.is_none() {
+            self.base = other.base;
+        }
+        Ok(())
+    }
+
+    /// Merges RDF data from an async reader into the current graph.
+    ///
+    /// Uses the `async-tokio` feature of `oxttl` to parse Turtle, N-Triples, and N-Quads
+    /// asynchronously. Other formats fall back to synchronous parsing via an intermediate
+    /// byte buffer.
+    ///
+    /// # Parameters
+    ///
+    /// * `reader` - Async input stream containing RDF data
+    /// * `source_name` - Name used for error reporting
+    /// * `format` - RDF serialization format
+    /// * `base` - Optional base IRI for resolving relative IRIs
+    /// * `reader_mode` - Controls error handling (strict or lax)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if parsing fails in strict mode or if I/O errors occur.
+    pub async fn merge_from_async_reader<R: AsyncRead + Unpin>(
+        &mut self,
+        reader: R,
+        source_name: &str,
+        format: &RDFFormat,
+        base: Option<&str>,
+        reader_mode: &ReaderMode,
+    ) -> Result<(), InMemoryGraphError> {
+        match format {
+            RDFFormat::Turtle => {
+                self.parse_turtle_async(reader, source_name, base, reader_mode).await?;
+            },
+            RDFFormat::NTriples => {
+                self.parse_ntriples_async(reader, reader_mode).await?;
+            },
+            RDFFormat::NQuads => {
+                self.parse_nquads_async(reader, reader_mode).await?;
+            },
+            _ => {
+                // For formats without native async support, buffer all bytes then parse
+                // synchronously.
+                use tokio::io::AsyncReadExt;
+                let mut reader = reader;
+                let mut buffer = Vec::new();
+                reader.read_to_end(&mut buffer).await.map_err(|e| InMemoryGraphError::IOError { err: e })?;
+                self.merge_from_reader(&mut buffer.as_slice(), source_name, format, base, reader_mode)?;
+            },
+        }
+        Ok(())
+    }
+
+    /// Builds a new graph from an async reader.
+    ///
+    /// This is a convenience constructor that creates an empty graph and merges
+    /// data from the async reader.
+    ///
+    /// # Parameters
+    ///
+    /// * `reader` - Async input stream containing RDF data
+    /// * `source_name` - Name used for error reporting
+    /// * `format` - RDF serialization format
+    /// * `base` - Optional base IRI for resolving relative IRIs
+    /// * `reader_mode` - Controls error handling (strict or lax)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if parsing fails.
+    pub async fn from_async_reader<R: AsyncRead + Unpin>(
+        reader: R,
+        source_name: &str,
+        format: &RDFFormat,
+        base: Option<&str>,
+        reader_mode: &ReaderMode,
+    ) -> Result<InMemoryGraph, InMemoryGraphError> {
+        let mut graph = InMemoryGraph::new();
+        graph.merge_from_async_reader(reader, source_name, format, base, reader_mode).await?;
+        Ok(graph)
+    }
+
+    /// Parses Turtle data from an async reader and merges it into the graph.
+    async fn parse_turtle_async<R: AsyncRead + Unpin>(
+        &mut self,
+        reader: R,
+        source_name: &str,
+        base: Option<&str>,
+        reader_mode: &ReaderMode,
+    ) -> Result<(), InMemoryGraphError> {
+        let turtle_parser = match base {
+            None => TurtleParser::new(),
+            Some(iri) => TurtleParser::new().with_base_iri(iri)?,
+        };
+
+        let mut parser = turtle_parser.for_tokio_async_reader(reader);
+
+        while let Some(triple_result) = parser.next().await {
+            let triple =
+                match handle_parse_error(triple_result, reader_mode, |e| InMemoryGraphError::TurtleParseError {
+                    source_name: source_name.to_string(),
+                    error: e,
+                })? {
+                    Some(t) => t,
+                    None => continue,
+                };
+            self.graph.insert(triple.as_ref());
+        }
+
+        let prefixes: HashMap<&str, &str> = parser.prefixes().collect();
+        self.base = match (&self.base, base) {
+            (None, None) => None,
+            (Some(b), None) => Some(b.clone()),
+            (_, Some(b)) => Some(IriS::new_unchecked(b)),
+        };
+        let pm = PrefixMap::from_hashmap(prefixes)?;
+        self.merge_prefixes(pm)?;
+
+        Ok(())
+    }
+
+    /// Parses N-Triples data from an async reader and merges it into the graph.
+    async fn parse_ntriples_async<R: AsyncRead + Unpin>(
+        &mut self,
+        reader: R,
+        reader_mode: &ReaderMode,
+    ) -> Result<(), InMemoryGraphError> {
+        let parser = NTriplesParser::new();
+        let mut stream = parser.for_tokio_async_reader(reader);
+
+        while let Some(triple_result) = stream.next().await {
+            let triple = match handle_parse_error(triple_result, reader_mode, |e| InMemoryGraphError::NTriplesError {
+                data: "Reading N-Triples".to_string(),
+                error: e,
+            })? {
+                Some(t) => t,
+                None => continue,
+            };
+            self.graph.insert(triple.as_ref());
+        }
+
+        Ok(())
+    }
+
+    /// Parses N-Quads data from an async reader and merges it into the graph.
+    async fn parse_nquads_async<R: AsyncRead + Unpin>(
+        &mut self,
+        reader: R,
+        reader_mode: &ReaderMode,
+    ) -> Result<(), InMemoryGraphError> {
+        let parser = NQuadsParser::new();
+        let mut stream = parser.for_tokio_async_reader(reader);
+
+        while let Some(triple_result) = stream.next().await {
+            let triple = match handle_parse_error(triple_result, reader_mode, |e| InMemoryGraphError::NQuadsError {
+                data: "Reading NQuads".to_string(),
+                error: e,
+            })? {
+                Some(t) => t,
+                None => continue,
+            };
+            self.graph.insert(triple.as_ref());
+        }
+
+        Ok(())
     }
 }
 

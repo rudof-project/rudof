@@ -1402,6 +1402,137 @@ impl Rudof {
         }
     }
 
+    /// Loads RDF data from multiple inputs in parallel using async tokio tasks.
+    ///
+    /// When multiple `data` inputs are provided, each is read into memory and parsed
+    /// concurrently using `tokio::task::spawn_blocking`, and the resulting graphs are
+    /// merged into the current RDF data store. The per-file I/O and parsing work runs
+    /// on the blocking-thread pool so it does not block the async runtime.
+    ///
+    /// For a single input or SPARQL-endpoint usage, the behaviour is identical to
+    /// [`load_data`](Self::load_data).
+    ///
+    /// # Arguments
+    /// * `data` - Slice of input specifications (files, URLs, or inline strings)
+    /// * `data_format` - RDF serialization format shared by all inputs
+    /// * `base` - Optional base IRI; resolved from config or current directory if absent
+    /// * `endpoint` - Optional SPARQL endpoint (mutually exclusive with `data`)
+    /// * `reader_mode` - Error-handling strategy (`Strict` or `Lax`)
+    /// * `allow_no_data` - If `true`, an empty `data` slice without an endpoint resets
+    ///   the graph instead of returning an error
+    pub async fn load_data_parallel(
+        &mut self,
+        data: &[InputSpec],
+        data_format: &DataFormat,
+        base: &Option<IriS>,
+        endpoint: &Option<String>,
+        reader_mode: &ReaderMode,
+        allow_no_data: bool,
+    ) -> Result<()> {
+        match (data.is_empty(), endpoint) {
+            (true, None) => {
+                if allow_no_data {
+                    self.reset_data();
+                    Ok(())
+                } else {
+                    Err(RudofError::MissingDataAndEndpoint)
+                }
+            },
+            (false, None) => {
+                let rdf_format: RDFFormat = data_format
+                    .try_into()
+                    .map_err(|e| RudofError::DataFormatError { error: e })?;
+
+                // Collect (bytes, source_name, base_iri) for each input in parallel.
+                // The I/O is blocking, so we move it onto the blocking thread pool.
+                let mut read_tasks = Vec::with_capacity(data.len());
+                for data_input in data {
+                    let input = data_input.clone();
+                    let mime = data_format.mime_type().to_string();
+                    read_tasks.push(tokio::task::spawn_blocking(move || {
+                        use std::io::Read;
+                        let mut reader = input.open_read(Some(&mime), "RDF data").map_err(|e| {
+                            RudofError::RDFDataReadError {
+                                source_name: input.source_name(),
+                                mime_type: mime.clone(),
+                                error: e.to_string(),
+                            }
+                        })?;
+                        let mut bytes = Vec::new();
+                        reader.read_to_end(&mut bytes).map_err(|e| RudofError::RDFDataReadError {
+                            source_name: input.source_name(),
+                            mime_type: mime.clone(),
+                            error: e.to_string(),
+                        })?;
+                        Ok::<(Vec<u8>, String), RudofError>((bytes, input.source_name()))
+                    }));
+                }
+
+                // Resolve base IRI once (uses self, must be done outside the tasks).
+                let base_iri = self.get_base_iri(base)?;
+                let base_str = base_iri.to_string();
+
+                // Wait for all reads to complete.
+                let read_results: Vec<(Vec<u8>, String)> = {
+                    let mut results = Vec::with_capacity(read_tasks.len());
+                    for task in read_tasks {
+                        let (bytes, source_name) = task
+                            .await
+                            .map_err(|e| RudofError::JoinError { error: e.to_string() })??;
+                        results.push((bytes, source_name));
+                    }
+                    results
+                };
+
+                // Parse each byte buffer into its own InMemoryGraph, in parallel.
+                let mut parse_tasks = Vec::with_capacity(read_results.len());
+                for (bytes, source_name) in read_results {
+                    let format = rdf_format.clone();
+                    let base_s = base_str.clone();
+                    let reader_mode_copy = *reader_mode;
+                    parse_tasks.push(tokio::task::spawn_blocking(move || {
+                        InMemoryGraph::from_reader(
+                            &mut bytes.as_slice(),
+                            &source_name,
+                            &format,
+                            Some(base_s.as_str()),
+                            &reader_mode_copy,
+                        )
+                        .map_err(|e| RudofError::MergeRDFDataFromReader {
+                            source_name: source_name.clone(),
+                            format: format!("{format:?}"),
+                            base: base_s.clone(),
+                            reader_mode: format!("{reader_mode_copy:?}"),
+                            error: format!("{e}"),
+                        })
+                    }));
+                }
+
+                // Reset the current RDF data before merging parsed results.
+                self.rdf_data = RdfData::new();
+                for task in parse_tasks {
+                    let graph = task.await.map_err(|e| RudofError::JoinError { error: e.to_string() })??;
+                    self.rdf_data
+                        .merge_graph(graph)
+                        .map_err(|e| RudofError::MergeRDFDataFromReader {
+                            source_name: "parallel merge".to_string(),
+                            format: format!("{rdf_format:?}"),
+                            base: base_str.clone(),
+                            reader_mode: format!("{reader_mode:?}"),
+                            error: format!("{e}"),
+                        })?;
+                }
+
+                Ok(())
+            },
+            (true, Some(endpoint)) => {
+                let (name, _) = self.get_endpoint(endpoint)?;
+                self.use_endpoint(name.as_str())
+            },
+            (false, Some(_)) => Err(RudofError::BothDataAndEndpointSpecified),
+        }
+    }
+
     /// Loads a ShEx schema from an InputSpec.
     ///
     /// This is a high-level method that handles:
@@ -2304,6 +2435,8 @@ mod tests {
 
     use super::Rudof;
     use crate::RudofConfig;
+    use crate::data_format::DataFormat;
+    use crate::input_spec::InputSpec;
     use rudof_rdf::rdf_core::RDFFormat;
     use rudof_rdf::rdf_impl::ReaderMode;
 
@@ -2594,5 +2727,31 @@ mod tests {
             )
             .unwrap();
         assert!(result.conforms())
+    }
+
+    #[tokio::test]
+    async fn test_load_data_parallel_single() {
+        let data1 = r#"prefix : <http://example.org/>
+        :x :p 1 .
+        "#;
+        let data2 = r#"prefix : <http://example.org/>
+        :y :p 2 .
+        "#;
+        let mut rudof = Rudof::new(&RudofConfig::new().unwrap()).unwrap();
+        rudof
+            .load_data_parallel(
+                &[InputSpec::Str(data1.to_string()), InputSpec::Str(data2.to_string())],
+                &DataFormat::Turtle,
+                &None,
+                &None,
+                &ReaderMode::Lax,
+                false,
+            )
+            .await
+            .unwrap();
+
+        // Both triples from data1 and data2 should be present in the merged graph.
+        let count = rudof.get_rdf_data().graph().map(|g| g.len()).unwrap_or(0);
+        assert_eq!(count, 2, "Expected 2 triples (one from each parallel input), found {count}");
     }
 }
