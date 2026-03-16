@@ -76,7 +76,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
         if node.is_blank_node() {
             Err(Box::new(ValidateError::TargetNodeBlankNode))
         } else {
-            Ok(FocusNodes::from_iter(std::iter::once(node.clone())))
+            Ok(FocusNodes::single(node.clone()))
         }
     }
 

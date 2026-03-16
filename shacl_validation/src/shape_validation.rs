@@ -47,7 +47,7 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
 
         // Get focus nodes
         let focus_nodes = match targets {
-            Some(targets) => targets.to_owned(),
+            Some(targets) => targets.clone(),
             None => self.focus_nodes(store, runner),
         };
         trace!("Focus nodes for shape {}: {focus_nodes}", self.id());
@@ -323,7 +323,7 @@ impl<S: Rdf> ValueNodesOps<S> for NodeShapeIR {
         let value_nodes = focus_nodes.iter().map(|focus_node| {
             (
                 focus_node.clone(),
-                FocusNodes::from_iter(std::iter::once(focus_node.clone())),
+                FocusNodes::single(focus_node.clone()),
             )
         });
         Ok(ValueNodes::new(value_nodes))
