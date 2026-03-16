@@ -1,5 +1,5 @@
 use iri_s::IriS;
-use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, term::Object};
+use rudof_rdf::rdf_core::{term::Object, NeighsRDF, SHACLPath};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::property_shape::PropertyShapeIR;
 use shacl_ir::compiled::shape::ShapeIR;
@@ -13,6 +13,13 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 
 pub trait Engine<S: NeighsRDF> {
+    /// Pre-builds internal indexes from the data graph for faster target resolution.
+    ///
+    /// This should be called **once** before the validation loop starts.
+    fn build_indexes(&mut self, _store: &S) -> Result<(), Box<ValidateError>> {
+        Ok(())
+    }
+
     #[allow(clippy::too_many_arguments)]
     fn evaluate(
         &mut self,

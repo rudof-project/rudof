@@ -99,4 +99,7 @@ pub enum ValidateError {
         predicate: String,
         error: String,
     },
+
+    #[error("Error building class instance index: {error}")]
+    ClassIndexBuild { error: String },
 }

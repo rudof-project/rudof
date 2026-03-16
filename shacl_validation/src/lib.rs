@@ -1,5 +1,6 @@
 #![doc = include_str!("../README.md")]
 
+pub mod class_index;
 pub mod constraints;
 pub mod focus_nodes;
 mod helpers;

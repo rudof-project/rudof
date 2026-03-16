@@ -1,3 +1,4 @@
+use crate::class_index::ClassIndex;
 use crate::constraints::NativeDeref;
 use crate::constraints::ShaclComponent;
 use crate::focus_nodes::FocusNodes;
@@ -9,8 +10,8 @@ use crate::value_nodes::ValueNodes;
 use iri_s::IriS;
 use rudof_rdf::rdf_core::vocabs::{RdfVocab, RdfsVocab};
 use rudof_rdf::rdf_core::{
-    NeighsRDF, SHACLPath,
-    term::{Object, Term, Triple},
+    term::{Object, Term, Triple}, NeighsRDF,
+    SHACLPath,
 };
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
@@ -20,12 +21,16 @@ use std::fmt::Debug;
 
 pub struct NativeEngine {
     cache: ValidationCache,
+    /// Pre-built inverted index mapping classes to their instances and subclasses.
+    /// Built once via `build_indexes()` before validation starts.
+    class_index: Option<ClassIndex>,
 }
 
 impl NativeEngine {
     pub fn new() -> Self {
         Self {
             cache: ValidationCache::new(),
+            class_index: None,
         }
     }
 }
@@ -37,6 +42,11 @@ impl Default for NativeEngine {
 }
 
 impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
+    fn build_indexes(&mut self, store: &S) -> Result<(), Box<ValidateError>> {
+        self.class_index = Some(ClassIndex::build::<S>(store)?);
+        Ok(())
+    }
+
     fn evaluate(
         &mut self,
         store: &S,
@@ -81,7 +91,15 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
     }
 
     fn target_class(&self, store: &S, class: &Object) -> Result<FocusNodes<S>, Box<ValidateError>> {
-        // TODO: this should not be necessary, check in others triples_matching calls
+        // use the pre-built class index (O(1) lookup)
+        if let Some(index) = &self.class_index {
+            let focus_nodes = index
+                .instances_of(class)
+                .map(|obj| -> S::Term { obj.clone().into() });
+            return Ok(FocusNodes::from_iter(focus_nodes));
+        }
+
+        // Fallback: full graph scan (for backwards compatibility if index wasn't built)
         let cls: S::Term = class.clone().into();
         let focus_nodes = store
             .shacl_instances_of(&cls)
@@ -114,7 +132,14 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
     }
 
     fn implicit_target_class(&self, store: &S, subject: &Object) -> Result<FocusNodes<S>, Box<ValidateError>> {
-        // TODO: Replace by shacl_instances_of
+        // use the pre-built class index (O(1) lookup)
+        if let Some(index) = &self.class_index {
+            let instances = index.instances_of_with_subclasses(subject);
+            let focus_nodes = instances.into_iter().map(|obj| -> S::Term { obj.into() });
+            return Ok(FocusNodes::from_iter(focus_nodes));
+        }
+
+        // Fallback: full graph scan (for backwards compatibility if index wasn't built)
         let term: S::Term = subject.clone().into();
         let targets = store
             .subjects_for(&RdfVocab::rdf_type().clone().into(), &term)

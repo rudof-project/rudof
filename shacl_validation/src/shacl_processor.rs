@@ -2,9 +2,9 @@ use crate::shacl_engine::engine::Engine;
 use crate::shacl_engine::native::NativeEngine;
 use crate::shacl_engine::sparql::SparqlEngine;
 use crate::shape_validation::Validate;
-use crate::store::Store;
 use crate::store::graph::Graph;
 use crate::store::sparql::Endpoint;
+use crate::store::Store;
 use crate::validate_error::ValidateError;
 use crate::validation_report::report::ValidationReport;
 use prefixmap::PrefixMap;
@@ -111,6 +111,8 @@ impl ShaclProcessor<RdfData> for RdfDataValidation {
             ShaclValidationMode::Sparql => Box::new(SparqlEngine::new()),
         };
 
+        runner.build_indexes(&self.data)?;
+
         for (_, shape) in shapes_graph.iter_with_targets() {
             tracing::debug!("ShaclProcessor.validate with shape {}", shape.id());
             let results = shape.validate(&self.data, &mut (*runner), None, Some(shape), shapes_graph)?;
@@ -191,6 +193,8 @@ impl ShaclProcessor<RdfData> for GraphValidation {
             ShaclValidationMode::Sparql => Box::new(SparqlEngine::new()),
         };
 
+        runner.build_indexes(store)?;
+
         for (_, shape) in shapes_graph.iter_with_targets() {
             tracing::debug!("ShaclProcessor.validate with shape {}", shape.id());
             let results = shape.validate(store, &mut (*runner), None, Some(shape), shapes_graph)?;
@@ -244,7 +248,8 @@ impl ShaclProcessor<SparqlEndpoint> for EndpointValidation {
             ShaclValidationMode::Sparql => Box::new(SparqlEngine::new()),
         };
 
-        // for each shape in the schema that has at least rust-analyzer-diagnostics-view:/diagnostic%20message%20[17]?17#file:///home/labra/src/rust/rudof/shacl_validation/src/shacl_processor.rsone target
+        runner.build_indexes(store)?;
+
         for (_, shape) in shapes_graph.iter_with_targets() {
             tracing::debug!("ShaclProcessor.validate with shape {}", shape.id());
             let results = shape.validate(store, &mut (*runner), None, Some(shape), shapes_graph)?;
