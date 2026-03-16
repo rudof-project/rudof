@@ -6,7 +6,7 @@ use crate::commands::{
 };
 use crate::output::{ColorSupport, get_writer};
 use anyhow::Result;
-use rudof_lib::{Rudof, RudofConfig};
+use rudof_lib_refactored::{Rudof, RudofConfig};
 use std::io::Write;
 
 // ============================================================================
@@ -66,7 +66,7 @@ impl CommandContext {
         // Load config
         let config = match &common.config() {
             Some(path) => RudofConfig::from_path(path)?,
-            None => RudofConfig::default_config()?,
+            None => RudofConfig::default(),
         };
 
         // Initialize Rudof with the loaded configuration

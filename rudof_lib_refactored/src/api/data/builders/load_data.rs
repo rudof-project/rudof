@@ -1,0 +1,74 @@
+use crate::{Rudof, Result, api::data::DataOperations, formats::{InputSpec, DataFormat, DataReaderMode}};
+
+/// Builder for `load_data` operation.
+///
+/// Provides a fluent interface for configuring and executing data loading
+/// operations with optional parameters.
+pub struct LoadDataBuilder<'a> {
+    rudof: &'a mut Rudof,
+    data: &'a [InputSpec],
+    data_format: Option<&'a DataFormat>,
+    base: Option<&'a str>,
+    reader_mode: Option<&'a DataReaderMode>,
+}
+
+impl<'a> LoadDataBuilder<'a> {
+    /// Creates a new builder instance.
+    ///
+    /// This is called internally by `Rudof::load_data()` and should not
+    /// be constructed directly.
+    pub(crate) fn new(rudof: &'a mut Rudof, data: &'a [InputSpec]) -> Self {
+        Self {
+            rudof,
+            data,
+            data_format: None,
+            base: None,
+            reader_mode: None,
+        }
+    }
+
+    /// Sets the data format for loading.
+    ///
+    /// # Arguments
+    ///
+    /// * `data_format` - The format to use when loading the data
+    pub fn with_data_format(mut self, data_format: &'a DataFormat) -> Self {
+        self.data_format = Some(data_format);
+        self
+    }
+
+    /// Sets the base URI for resolving relative URIs.
+    ///
+    /// # Arguments
+    ///
+    /// * `base` - The base URI to use for resolution
+    pub fn with_base(mut self, base: &'a str) -> Self {
+        self.base = Some(base);
+        self
+    }
+
+    /// Sets the reader mode for data loading.
+    ///
+    /// # Arguments
+    ///
+    /// * `reader_mode` - The reading mode to apply during data loading
+    pub fn with_reader_mode(mut self, reader_mode: &'a DataReaderMode) -> Self {
+        self.reader_mode = Some(reader_mode);
+        self
+    }
+
+    /// Executes the data loading operation with the configured parameters.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the data cannot be loaded or parsed.
+    pub fn execute(self) -> Result<()> {
+        <Rudof as DataOperations>::load_data(
+            self.rudof,
+            self.data,
+            self.data_format,
+            self.base,
+            self.reader_mode,
+        )
+    }
+}

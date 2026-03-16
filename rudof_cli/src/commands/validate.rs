@@ -1,12 +1,11 @@
 use crate::cli::parser::{
     CommonArgsOutputForceOverWrite, PgSchemaValidateArgs, ShaclValidateArgs, ShexValidateArgs, ValidateArgs,
 };
-use crate::cli::wrappers::ValidationModeCli;
 use crate::commands::{
     PgSchemaValidateCommand, ShaclValidateCommand, ShexValidateCommand,
     base::{Command, CommandContext},
 };
-use anyhow::Result;
+use anyhow::{Ok, Result};
 
 /// Implementation of the `validate` command.
 ///
@@ -86,22 +85,23 @@ impl Command for ValidateCommand {
 
     /// Executes the validate logic.
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
-        match self.args.validation_mode {
-            ValidationModeCli::ShEx => {
-                let shex_args = self.to_shex_args();
-                let cmd = ShexValidateCommand::new(shex_args);
-                cmd.execute(ctx)
-            },
-            ValidationModeCli::Shacl => {
-                let shacl_args = self.to_shacl_args();
-                let cmd = ShaclValidateCommand::new(shacl_args);
-                cmd.execute(ctx)
-            },
-            ValidationModeCli::PGSchema => {
-                let pgschema_args = self.to_pgschema_args();
-                let cmd = PgSchemaValidateCommand::new(pgschema_args);
-                cmd.execute(ctx)
-            },
-        }
+        // match self.args.validation_mode {
+        //     ValidationModeCli::ShEx => {
+        //         let shex_args = self.to_shex_args();
+        //         let cmd = ShexValidateCommand::new(shex_args);
+        //         cmd.execute(ctx)
+        //     },
+        //     ValidationModeCli::Shacl => {
+        //         let shacl_args = self.to_shacl_args();
+        //         let cmd = ShaclValidateCommand::new(shacl_args);
+        //         cmd.execute(ctx)
+        //     },
+        //     ValidationModeCli::PGSchema => {
+        //         let pgschema_args = self.to_pgschema_args();
+        //         let cmd = PgSchemaValidateCommand::new(pgschema_args);
+        //         cmd.execute(ctx)
+        //     },
+        // }
+        Ok(())
     }
 }

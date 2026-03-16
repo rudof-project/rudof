@@ -37,8 +37,8 @@ pub struct RudofConfig {
 
 impl RudofConfig {
     /// Creates a new `RudofConfig` with default settings.
-    pub fn new() -> Result<Self, ConfigError> {
-         RudofConfig::from_str(DEFAULT_CONFIG)
+    pub fn new() -> Self {
+        RudofConfig::from_str(DEFAULT_CONFIG).unwrap()
     }
 
     /// Loads a `RudofConfig` from a TOML file.
@@ -190,6 +190,12 @@ impl RudofConfig {
             None => ShExConfig::default(),
             Some(cfg) => cfg.clone(),
         }
+    }
+}
+
+impl Default for RudofConfig {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
