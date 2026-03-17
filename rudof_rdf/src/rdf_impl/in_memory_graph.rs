@@ -682,96 +682,6 @@ impl NeighsRDF for InMemoryGraph {
         Ok(self.graph.iter().map(TripleRef::into_owned))
     }
 
-    /// Returns an iterator over triples with a specific subject.
-    ///
-    /// This is optimized to use the underlying graph's subject index.
-    ///
-    /// # Parameters
-    ///
-    /// * `subject` - The subject to filter by
-    fn triples_with_subject(&self, subject: &Self::Subject) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
-        let triples: Vec<_> = self
-            .graph
-            .triples_for_subject(subject)
-            .map(TripleRef::into_owned)
-            .collect();
-        Ok(triples.into_iter())
-    }
-
-    /// Returns all triples with the specified subject and predicate.
-    ///
-    /// Uses the oxrdf SPO index directly for O(k) lookup.
-    ///
-    /// # Arguments
-    ///
-    /// * `subject` - The subject to match
-    /// * `predicate` - The predicate to match
-    fn triples_with_subject_predicate(
-        &self,
-        subject: &Self::Subject,
-        predicate: &Self::IRI,
-    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
-        let triples: Vec<_> = self
-            .graph
-            .objects_for_subject_predicate(OxSubjectRef::from(subject), NamedNodeRef::from(predicate))
-            .map(|o| OxTriple::new(subject.clone(), predicate.clone(), o.into_owned()))
-            .collect();
-        Ok(triples.into_iter())
-    }
-
-    /// Returns all triples with the specified predicate.
-    ///
-    /// Uses the oxrdf POS index directly for O(k) lookup.
-    ///
-    /// # Arguments
-    ///
-    /// * `predicate` - The predicate to match
-    fn triples_with_predicate(&self, predicate: &Self::IRI) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
-        let triples: Vec<_> = self
-            .graph
-            .triples_for_predicate(NamedNodeRef::from(predicate))
-            .map(TripleRef::into_owned)
-            .collect();
-        Ok(triples.into_iter())
-    }
-
-    /// Returns all triples with the specified predicate and object.
-    ///
-    /// Uses the oxrdf POS index directly for O(k) lookup.
-    ///
-    /// # Arguments
-    ///
-    /// * `predicate` - The predicate to match
-    /// * `object` - The object to match
-    fn triples_with_predicate_object(
-        &self,
-        predicate: &Self::IRI,
-        object: &Self::Term,
-    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
-        let triples: Vec<_> = self
-            .graph
-            .subjects_for_predicate_object(NamedNodeRef::from(predicate), TermRef::from(object))
-            .map(|s| OxTriple::new(s.into_owned(), predicate.clone(), object.clone()))
-            .collect();
-        Ok(triples.into_iter())
-    }
-
-    /// Returns all triples with the specified object.
-    ///
-    /// Uses the oxrdf OSP index directly for O(k) lookup.
-    ///
-    /// # Arguments
-    ///
-    /// * `object` - The object to match
-    fn triples_with_object(&self, object: &Self::Term) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
-        let triples: Vec<_> = self
-            .graph
-            .triples_for_object(TermRef::from(object))
-            .map(TripleRef::into_owned)
-            .collect();
-        Ok(triples.into_iter())
-    }
-
     /// Returns an iterator over triples matching a pattern.
     ///
     /// Uses the appropriate oxrdf index based on which positions are concrete
@@ -791,34 +701,72 @@ impl NeighsRDF for InMemoryGraph {
         subject: &S,
         predicate: &P,
         object: &O,
-    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err>
+    ) -> Result<impl Iterator<Item = Self::Triple> + '_, Self::Err>
     where
         S: Matcher<Self::Subject>,
         P: Matcher<Self::IRI>,
         O: Matcher<Self::Term>,
     {
-        // Dispatch to the most specific oxrdf index based on which positions are bound,
-        // avoiding a full scan.
-        let triples: Vec<OxTriple> = match (subject.value(), predicate.value(), object.value()) {
-            (Some(s), Some(p), Some(o)) => self
-                .graph
-                .contains(TripleRef::new(
+        // Dispatch to the tightest available index to avoid full scans.
+        let result: Box<dyn Iterator<Item = OxTriple> + '_> = match (subject.value(), predicate.value(), object.value())
+        {
+            (Some(s), Some(p), Some(o)) => {
+                let found = self.graph.contains(TripleRef::new(
                     OxSubjectRef::from(s),
                     NamedNodeRef::from(p),
                     TermRef::from(o),
-                ))
-                .then_some(OxTriple::new(s.clone(), p.clone(), o.clone()))
-                .into_iter()
-                .collect(),
-            (Some(s), Some(p), None) => self.triples_with_subject_predicate(s, p)?.collect(),
-            (Some(s), None, Some(o)) => self.triples_with_subject(s)?.filter(|t| t.object == *o).collect(),
-            (Some(s), None, None) => self.triples_with_subject(s)?.collect(),
-            (None, Some(p), Some(o)) => self.triples_with_predicate_object(p, o)?.collect(),
-            (None, Some(p), None) => self.triples_with_predicate(p)?.collect(),
-            (None, None, Some(o)) => self.triples_with_object(o)?.collect(),
-            (None, None, None) => self.graph.iter().map(TripleRef::into_owned).collect(),
+                ));
+                let s = s.clone();
+                let p = p.clone();
+                let o = o.clone();
+                Box::new(found.then(|| OxTriple::new(s, p, o)).into_iter())
+            },
+            (Some(s), Some(p), None) => {
+                let s_owned = s.clone();
+                let p_owned = p.clone();
+                Box::new(
+                    self.graph
+                        .objects_for_subject_predicate(OxSubjectRef::from(s), NamedNodeRef::from(p))
+                        .map(move |o| OxTriple::new(s_owned.clone(), p_owned.clone(), o.into_owned())),
+                )
+            },
+            (Some(s), None, Some(o)) => {
+                let o_owned = o.clone();
+                Box::new(
+                    self.graph
+                        .triples_for_subject(OxSubjectRef::from(s))
+                        .map(TripleRef::into_owned)
+                        .filter(move |t| t.object == o_owned),
+                )
+            },
+            (Some(s), None, None) => Box::new(
+                self.graph
+                    .triples_for_subject(OxSubjectRef::from(s))
+                    .map(TripleRef::into_owned),
+            ),
+            (None, Some(p), Some(o)) => {
+                let p_owned = p.clone();
+                let o_owned = o.clone();
+                Box::new(
+                    self.graph
+                        .subjects_for_predicate_object(NamedNodeRef::from(p), TermRef::from(o))
+                        .map(move |s| OxTriple::new(s.into_owned(), p_owned.clone(), o_owned.clone())),
+                )
+            },
+            (None, Some(p), None) => Box::new(
+                self.graph
+                    .triples_for_predicate(NamedNodeRef::from(p))
+                    .map(TripleRef::into_owned),
+            ),
+            (None, None, Some(o)) => Box::new(
+                self.graph
+                    .triples_for_object(TermRef::from(o))
+                    .map(TripleRef::into_owned),
+            ),
+            (None, None, None) => Box::new(self.graph.iter().map(TripleRef::into_owned)),
         };
-        Ok(triples.into_iter())
+
+        Ok(result)
     }
 }
 

@@ -79,7 +79,7 @@ pub trait NeighsRDF: Rdf {
         subject: &S,
         predicate: &P,
         object: &O,
-    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err>
+    ) -> Result<impl Iterator<Item = Self::Triple> + '_, Self::Err>
     where
         S: Matcher<Self::Subject>,
         P: Matcher<Self::IRI>,
@@ -92,7 +92,10 @@ pub trait NeighsRDF: Rdf {
     /// # Arguments
     ///
     /// * `subject` - The subject to match
-    fn triples_with_subject(&self, subject: &Self::Subject) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
+    fn triples_with_subject(
+        &self,
+        subject: &Self::Subject,
+    ) -> Result<impl Iterator<Item = Self::Triple> + '_, Self::Err> {
         self.triples_matching(subject, &Any, &Any)
     }
 
@@ -108,7 +111,7 @@ pub trait NeighsRDF: Rdf {
         &self,
         subject: &Self::Subject,
         predicate: &Self::IRI,
-    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
+    ) -> Result<impl Iterator<Item = Self::Triple> + '_, Self::Err> {
         self.triples_matching(subject, predicate, &Any)
     }
 
@@ -119,7 +122,10 @@ pub trait NeighsRDF: Rdf {
     /// # Arguments
     ///
     /// * `predicate` - The predicate to match
-    fn triples_with_predicate(&self, predicate: &Self::IRI) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
+    fn triples_with_predicate(
+        &self,
+        predicate: &Self::IRI,
+    ) -> Result<impl Iterator<Item = Self::Triple> + '_, Self::Err> {
         self.triples_matching(&Any, predicate, &Any)
     }
 
@@ -135,7 +141,7 @@ pub trait NeighsRDF: Rdf {
         &self,
         predicate: &Self::IRI,
         object: &Self::Term,
-    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
+    ) -> Result<impl Iterator<Item = Self::Triple> + '_, Self::Err> {
         self.triples_matching(&Any, predicate, object)
     }
 
@@ -146,7 +152,7 @@ pub trait NeighsRDF: Rdf {
     /// # Arguments
     ///
     /// * `object` - The object to match
-    fn triples_with_object(&self, object: &Self::Term) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
+    fn triples_with_object(&self, object: &Self::Term) -> Result<impl Iterator<Item = Self::Triple> + '_, Self::Err> {
         self.triples_matching(&Any, &Any, object)
     }
 
