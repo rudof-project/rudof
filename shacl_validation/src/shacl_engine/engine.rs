@@ -1,5 +1,5 @@
 use iri_s::IriS;
-use rudof_rdf::rdf_core::{term::Object, NeighsRDF, SHACLPath};
+use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, term::Object};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::property_shape::PropertyShapeIR;
 use shacl_ir::compiled::shape::ShapeIR;

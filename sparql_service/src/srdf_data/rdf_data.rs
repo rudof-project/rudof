@@ -10,13 +10,13 @@ use oxrdf::{
 use prefixmap::PrefixMap;
 use rudof_rdf::{
     rdf_core::{
-        query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions, VarName}, BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf,
-        RdfDataConfig,
+        BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf, RdfDataConfig,
+        query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions, VarName},
     },
     rdf_impl::{InMemoryGraph, ReaderMode, SparqlEndpoint},
 };
-use serde::ser::SerializeStruct;
 use serde::Serialize;
+use serde::ser::SerializeStruct;
 use sparesults::QuerySolution as SparQuerySolution;
 use std::collections::HashMap;
 use std::fmt::Debug;

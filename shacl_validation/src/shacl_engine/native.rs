@@ -10,8 +10,8 @@ use crate::value_nodes::ValueNodes;
 use iri_s::IriS;
 use rudof_rdf::rdf_core::vocabs::{RdfVocab, RdfsVocab};
 use rudof_rdf::rdf_core::{
-    term::{Object, Term, Triple}, NeighsRDF,
-    SHACLPath,
+    NeighsRDF, SHACLPath,
+    term::{Object, Term, Triple},
 };
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
@@ -93,9 +93,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
     fn target_class(&self, store: &S, class: &Object) -> Result<FocusNodes<S>, Box<ValidateError>> {
         // use the pre-built class index (O(1) lookup)
         if let Some(index) = &self.class_index {
-            let focus_nodes = index
-                .instances_of(class)
-                .map(|obj| -> S::Term { obj.clone().into() });
+            let focus_nodes = index.instances_of(class).map(|obj| -> S::Term { obj.clone().into() });
             return Ok(FocusNodes::from_iter(focus_nodes));
         }
 

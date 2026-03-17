@@ -1,6 +1,6 @@
+use rudof_rdf::rdf_core::NeighsRDF;
 use rudof_rdf::rdf_core::term::{Object, Triple};
 use rudof_rdf::rdf_core::vocabs::{RdfVocab, RdfsVocab};
-use rudof_rdf::rdf_core::NeighsRDF;
 use std::collections::{HashMap, HashSet};
 
 use crate::validate_error::ValidateError;
@@ -34,9 +34,10 @@ impl ClassIndex {
         let rdf_type: S::IRI = RdfVocab::rdf_type().clone().into();
         let rdfs_subclass_of: S::IRI = RdfsVocab::rdfs_subclass_of_str().clone().into();
 
-        for triple in store.triples().map_err(|e| ValidateError::ClassIndexBuild {
-            error: e.to_string(),
-        })? {
+        for triple in store
+            .triples()
+            .map_err(|e| ValidateError::ClassIndexBuild { error: e.to_string() })?
+        {
             let (subj, pred, obj) = triple.into_components();
 
             if pred == rdf_type {
@@ -64,18 +65,12 @@ impl ClassIndex {
 
     /// Returns the set of direct instances of the given class.
     pub fn instances_of(&self, class: &Object) -> impl Iterator<Item = &Object> {
-        self.class_instances
-            .get(class)
-            .into_iter()
-            .flat_map(|set| set.iter())
+        self.class_instances.get(class).into_iter().flat_map(|set| set.iter())
     }
 
     /// Returns the set of direct subclasses of the given class.
     pub fn subclasses_of(&self, class: &Object) -> impl Iterator<Item = &Object> {
-        self.subclass_map
-            .get(class)
-            .into_iter()
-            .flat_map(|set| set.iter())
+        self.subclass_map.get(class).into_iter().flat_map(|set| set.iter())
     }
 
     /// Returns instances of the class and instances of all its direct subclasses.
@@ -89,5 +84,3 @@ impl ClassIndex {
         result
     }
 }
-
-

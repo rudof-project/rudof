@@ -16,9 +16,7 @@ pub struct ValidationCache {
 
 impl ValidationCache {
     pub fn new() -> Self {
-        Self {
-            cache: HashMap::new(),
-        }
+        Self { cache: HashMap::new() }
     }
 
     /// Record the validation results for a given `(node, shape_idx)` pair.
@@ -36,4 +34,3 @@ impl ValidationCache {
         self.cache.get(&(node.clone(), shape_idx))
     }
 }
-

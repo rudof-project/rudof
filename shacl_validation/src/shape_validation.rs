@@ -7,8 +7,8 @@ use crate::value_nodes::ValueNodes;
 use iri_s::IriS;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{
-    term::{Object, Triple}, NeighsRDF, Rdf,
-    SHACLPath,
+    NeighsRDF, Rdf, SHACLPath,
+    term::{Object, Triple},
 };
 use shacl_ir::compiled::property_shape::PropertyShapeIR;
 use shacl_ir::compiled::shape::ShapeIR;
@@ -62,11 +62,11 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
             let mut uncached = Vec::new();
             for focus_node in focus_nodes.iter() {
                 let node_object = S::term_as_object(focus_node);
-                if let Ok(ref obj) = node_object {
-                    if let Some(results) = runner.get_cached_results(obj, idx) {
-                        cached_results.extend(results.iter().cloned());
-                        continue;
-                    }
+                if let Ok(ref obj) = node_object
+                    && let Some(results) = runner.get_cached_results(obj, idx)
+                {
+                    cached_results.extend(results.iter().cloned());
+                    continue;
                 }
                 uncached.push(focus_node.clone());
             }
@@ -142,10 +142,7 @@ impl<S: NeighsRDF + Debug> Validate<S> for ShapeIR {
                     Err(_) => Ok::<HashSet<IriS>, ValidateError>(HashSet::new()),
                 }?;
 
-                let invalid_properties: Vec<IriS> = all_properties
-                    .difference(&allowed_properties)
-                    .cloned()
-                    .collect();
+                let invalid_properties: Vec<IriS> = all_properties.difference(&allowed_properties).cloned().collect();
 
                 for property in invalid_properties {
                     let vr_single = ValidationResult::new(
@@ -320,12 +317,9 @@ impl<S: Rdf> ValueNodesOps<S> for NodeShapeIR {
         focus_nodes: &FocusNodes<S>,
         _: &dyn Engine<S>,
     ) -> Result<ValueNodes<S>, Box<ValidateError>> {
-        let value_nodes = focus_nodes.iter().map(|focus_node| {
-            (
-                focus_node.clone(),
-                FocusNodes::single(focus_node.clone()),
-            )
-        });
+        let value_nodes = focus_nodes
+            .iter()
+            .map(|focus_node| (focus_node.clone(), FocusNodes::single(focus_node.clone())));
         Ok(ValueNodes::new(value_nodes))
     }
 }
