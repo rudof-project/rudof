@@ -25,6 +25,7 @@ use prefixmap::{PrefixMapError, map::*};
 use serde::{Serialize, ser::SerializeStruct};
 use sparesults::QuerySolution as SparQuerySolution;
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 use std::{
     fmt::{Debug, Display, Formatter},
     fs::File,
@@ -44,7 +45,7 @@ pub struct InMemoryGraph {
     focus: Option<OxTerm>,
 
     /// Underlying RDF graph.
-    graph: Graph,
+    graph: Arc<Graph>,
 
     /// Prefix map used for CURIE resolution and qualification.
     pm: PrefixMap,
@@ -192,7 +193,7 @@ impl InMemoryGraph {
                     Some(t) => t,
                     None => continue,
                 };
-            self.graph.insert(triple.as_ref());
+            Arc::make_mut(&mut self.graph).insert(triple.as_ref());
         }
 
         let prefixes: HashMap<&str, &str> = turtle_reader.prefixes().collect();
@@ -233,7 +234,7 @@ impl InMemoryGraph {
                 Some(t) => t,
                 None => continue,
             };
-            self.graph.insert(triple.as_ref());
+            Arc::make_mut(&mut self.graph).insert(triple.as_ref());
         }
 
         Ok(())
@@ -266,7 +267,7 @@ impl InMemoryGraph {
                 None => continue,
             };
             let triple_ref = cnv_triple(&triple);
-            self.graph.insert(triple_ref);
+            Arc::make_mut(&mut self.graph).insert(triple_ref);
         }
 
         Ok(())
@@ -298,7 +299,7 @@ impl InMemoryGraph {
                 Some(t) => t,
                 None => continue,
             };
-            self.graph.insert(triple.as_ref());
+            Arc::make_mut(&mut self.graph).insert(triple.as_ref());
         }
 
         Ok(())
@@ -330,7 +331,7 @@ impl InMemoryGraph {
                 Some(t) => t,
                 None => continue,
             };
-            self.graph.insert(triple.as_ref());
+            Arc::make_mut(&mut self.graph).insert(triple.as_ref());
         }
 
         Ok(())
@@ -470,7 +471,7 @@ impl InMemoryGraph {
         O: Into<TermRef<'a>>,
     {
         let triple = TripleRef::new(subj.into(), pred.into(), obj.into());
-        self.graph.insert(triple);
+        Arc::make_mut(&mut self.graph).insert(triple);
         Ok(())
     }
 
@@ -1000,7 +1001,7 @@ impl BuildRDF for InMemoryGraph {
         O: Into<Self::Term>,
     {
         let triple = OxTriple::new(subj.into(), pred.into(), obj.into());
-        self.graph.insert(&triple);
+        Arc::make_mut(&mut self.graph).insert(&triple);
         Ok(())
     }
 
@@ -1018,7 +1019,7 @@ impl BuildRDF for InMemoryGraph {
         O: Into<Self::Term>,
     {
         let triple = OxTriple::new(subj.into(), pred.into(), obj.into());
-        self.graph.remove(&triple);
+        Arc::make_mut(&mut self.graph).remove(&triple);
         Ok(())
     }
 
@@ -1036,7 +1037,7 @@ impl BuildRDF for InMemoryGraph {
         T: Into<Self::Term>,
     {
         let triple = OxTriple::new(node.into(), rdf_type(), type_.into());
-        self.graph.insert(&triple);
+        Arc::make_mut(&mut self.graph).insert(&triple);
         Ok(())
     }
 
@@ -1048,7 +1049,7 @@ impl BuildRDF for InMemoryGraph {
     fn empty() -> Self {
         InMemoryGraph {
             focus: None,
-            graph: Graph::new(),
+            graph: Graph::new().into(),
             pm: PrefixMap::new(),
             base: None,
             bnode_counter: 0,
