@@ -10,13 +10,13 @@ use oxrdf::{
 use prefixmap::PrefixMap;
 use rudof_rdf::{
     rdf_core::{
-        BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf, RdfDataConfig,
-        query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions, VarName},
+        query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions, VarName}, BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf,
+        RdfDataConfig,
     },
     rdf_impl::{InMemoryGraph, ReaderMode, SparqlEndpoint},
 };
-use serde::Serialize;
 use serde::ser::SerializeStruct;
+use serde::Serialize;
 use sparesults::QuerySolution as SparQuerySolution;
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -106,12 +106,10 @@ impl RdfData {
 
     /// Creates an RdfData from an in-memory RDF Graph
     pub fn from_graph(graph: InMemoryGraph) -> Result<RdfData, RdfDataError> {
-        let store = Store::new()?;
-        store.bulk_loader().load_quads(graph.quads())?;
         Ok(RdfData {
             endpoints: HashMap::new(),
             graph: Some(graph),
-            store: Some(store),
+            store: None,
             focus: None,
             use_endpoints: HashMap::new(),
         })
