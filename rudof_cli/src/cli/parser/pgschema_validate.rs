@@ -12,7 +12,7 @@ pub struct PgSchemaValidateArgs {
         value_name = "INPUT",
         help = "PGSchema file, URI or - (for stdin)"
     )]
-    pub schema: Option<InputSpec>,
+    pub schema: InputSpec,
 
     #[clap(value_parser = clap::value_parser!(InputSpec))]
     pub data: Vec<InputSpec>,
@@ -33,7 +33,7 @@ pub struct PgSchemaValidateArgs {
         value_name = "INPUT",
         help = "ShapeMap used for validation, FILE, URI or - for stdin"
     )]
-    pub shapemap: Option<InputSpec>,
+    pub shapemap: InputSpec,
 
     #[arg(
         long = "shapemap-format",

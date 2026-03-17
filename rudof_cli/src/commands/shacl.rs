@@ -1,9 +1,6 @@
 use crate::cli::parser::ShaclArgs;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::Result;
-use rudof_lib::{
-    ReaderMode, ShaclFormat as ShaclAstShaclFormat, rdf_reader_mode::RDFReaderMode, shacl_format::ShaclFormat,
-};
 
 /// Implementation of the `shacl` command.
 ///
@@ -29,32 +26,24 @@ impl Command for ShaclCommand {
     /// Executes the Shacl command logic.
     #[allow(clippy::unnecessary_fallible_conversions)]
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
-        let reader_mode: RDFReaderMode = (&self.args.reader_mode).into();
-        let reader_mode: ReaderMode = reader_mode.into();
-        let schema_format: Option<ShaclFormat> = self.args.shapes_format.as_ref().map(|f| f.into());
-        let schema_format: Option<ShaclAstShaclFormat> = schema_format.as_ref().map(|f| f.try_into()).transpose()?;
-        let result_shapes_format: ShaclFormat = (&self.args.result_shapes_format).into();
-        let result_shapes_format: ShaclAstShaclFormat = result_shapes_format.try_into()?;
+        let data_format = self.args.data_format.into();
+        let reader_mode = self.args.reader_mode.into();
+        let shacl_schema_format = self.args.shapes_format.into();
+        let result_format = self.args.result_shapes_format.into();
 
-        // Load RDF data
-        ctx.rudof.load_data(
-            &self.args.data,
-            &(&self.args.data_format).into(),
-            &self.args.base_data,
-            &self.args.endpoint,
-            &reader_mode,
-            true,
-        )?;
+        let mut loading = ctx.rudof.load_data(&self.args.data).with_data_format(&data_format).with_reader_mode(&reader_mode);
+        if let Some(base) = self.args.base_data.as_deref() { loading = loading.with_base(base); }
+        if let Some(endpoint) = self.args.endpoint.as_deref() { loading = loading.with_endpoint(endpoint); }
+        loading.execute()?;
 
-        // Extract and serialize SHACL schema
-        ctx.rudof.shacl_extract(
-            &self.args.shapes,
-            &schema_format,
-            &self.args.base_shapes,
-            &reader_mode,
-            &result_shapes_format,
-            &mut ctx.writer,
-        )?;
+        let mut loading_schema = ctx.rudof.load_shacl_schema()
+            .with_schema_format(&shacl_schema_format)
+            .with_reader_mode(&reader_mode);
+        if let Some(shacl_schema) = &self.args.shapes { loading_schema = loading_schema.with_schema(shacl_schema); }
+        if let Some(base) = self.args.base_shapes.as_deref() { loading_schema = loading_schema.with_base(base); }
+        loading_schema.execute()?;
+
+        ctx.rudof.serialize_shacl_schema(&mut ctx.writer).with_format(&result_format).execute()?;
 
         Ok(())
     }

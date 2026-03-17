@@ -5,6 +5,7 @@ pub fn load_data(
     data: &[InputSpec],
     data_format: Option<&DataFormat>,
     base: Option<&str>,
+    endpoint: Option<&str>,
     reader_mode: Option<&DataReaderMode>,
 ) -> Result<()> {
     todo!()

@@ -50,9 +50,10 @@ pub struct ShaclValidateArgs {
         long = "shapes-format",
         ignore_case = true,
         value_name = "FORMAT",
-        help = "Shapes file format"
+        help = "Shapes file format",
+        default_value_t = ShaclFormatCli::Turtle
     )]
-    pub shapes_format: Option<ShaclFormatCli>,
+    pub shapes_format: ShaclFormatCli,
 
     #[arg(
         long = "base-shapes",

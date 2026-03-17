@@ -59,7 +59,7 @@ pub struct NodeArgs {
     pub show_node_mode: NodeInspectionModeCli,
 
     #[arg(long = "show-hyperlinks", help = "Show hyperlinks in the output")]
-    pub show_hyperlinks: bool,
+    pub show_hyperlinks: Option<bool>,
 
     #[arg(
         short = 'p',
@@ -67,7 +67,7 @@ pub struct NodeArgs {
         value_name = "PREDICATES",
         help = "List of predicates to show"
     )]
-    pub predicates: Vec<String>,
+    pub predicates: Option<Vec<String>>,
 
     #[arg(
         short = 'd',

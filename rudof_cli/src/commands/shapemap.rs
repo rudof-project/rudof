@@ -1,8 +1,6 @@
 use crate::cli::parser::ShapemapArgs;
 use crate::commands::base::{Command, CommandContext};
-use crate::output::ColorSupport;
 use anyhow::Result;
-use rudof_lib::{ShapeMapFormat as ShexAstShapeMapFormat, ShapeMapFormatter, shapemap_format::ShapeMapFormat};
 
 /// Implementation of the `shapemap` command.
 ///
@@ -27,29 +25,15 @@ impl Command for ShapemapCommand {
 
     /// Executes the shapemap logic.
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
-        // Convert CLI types to library types
-        let reader = self.args.shapemap.open_read(None, "ShapeMap")?;
-        let result_format: ShapeMapFormat = (&self.args.result_shapemap_format).into();
-        let result_format: ShexAstShapeMapFormat = result_format.into();
-        let shapemap_format: ShapeMapFormat = (&self.args.shapemap_format).into();
-        let shapemap_format: ShexAstShapeMapFormat = shapemap_format.into();
-        let formatter = match ctx.color {
-            ColorSupport::NoColor => ShapeMapFormatter::default().without_colors(),
-            _ => ShapeMapFormatter::default(),
-        };
+        let format = self.args.shapemap_format.into();
+        let result_format = self.args.result_shapemap_format.into();
 
-        // Load shapemap into rudof
-        ctx.rudof.read_shapemap(
-            reader,
-            self.args.shapemap.source_name().as_str(),
-            &shapemap_format,
-            &self.args.base_data,
-            &self.args.base_schema,
-        )?;
+        let mut shapemap_loading = ctx.rudof.load_shapemap(&self.args.shapemap).with_shapemap_format(&format);
+        if let Some(base_data) = self.args.base_data.as_deref() { shapemap_loading = shapemap_loading.with_base_nodes(base_data); }
+        if let Some(base_schema) = self.args.base_schema.as_deref() { shapemap_loading = shapemap_loading.with_base_shapes(base_schema); } 
+        shapemap_loading.execute()?;
 
-        // Write results in the requested format
-        ctx.rudof
-            .serialize_shapemap(Some(&result_format), &formatter, &mut ctx.writer)?;
+        ctx.rudof.serialize_shapemap(&mut ctx.writer).with_shapemap_format(&result_format).execute()?;
 
         Ok(())
     }

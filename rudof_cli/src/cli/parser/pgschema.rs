@@ -26,6 +26,13 @@ pub struct PgschemaArgs {
     pub schema_format: PgSchemaFormatCli,
 
     #[arg(
+        long = "base",
+        value_name = "IRI",
+        help = "Base Schema (used to resolve relative IRIs in Schema)"
+    )]
+    pub base: Option<String>,
+
+    #[arg(
         short = 'r',
         long = "result-format",
         ignore_case = true,

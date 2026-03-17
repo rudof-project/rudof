@@ -25,22 +25,29 @@ impl Command for CompareCommand {
 
     /// Executes the Compare command logic.
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
-        ctx.rudof.show_schema_comparison(
+        let format1 = self.args.format1.into();
+        let format2 = self.args.format2.into();
+        let input_mode1 = self.args.input_mode1.into();
+        let input_mode2 = self.args.input_mode2.into();
+        let result_format = self.args.result_format.into();
+
+        let mut comparison = ctx.rudof.show_schema_comparison(
             &self.args.schema1, 
-            &self.args.schema2, 
-            self.args.base1.as_deref(), 
-            self.args.base2.as_deref(), 
-            Some(&self.args.reader_mode.into()), 
-            &self.args.format1.into(), 
-            &self.args.format2.into(), 
-            &self.args.input_mode1.into(), 
-            &self.args.input_mode2.into(), 
-            self.args.shape1.as_deref(), 
-            self.args.shape2.as_deref(), 
-            self.args.show_time, 
-            Some(&self.args.result_format.into()), 
+            &self.args.schema2,
+            &format1, 
+            &format2,
+            &input_mode1, 
+            &input_mode2,
             &mut ctx.writer
-        );
+        ).with_result_format(&result_format);
+
+        if let Some(base1) = self.args.base1.as_deref() { comparison = comparison.with_base1(base1); }
+        if let Some(base2) = self.args.base2.as_deref() { comparison = comparison.with_base2(base2); }
+        if let Some(shape1) = self.args.shape1.as_deref() { comparison = comparison.with_shape1(shape1); }
+        if let Some(shape2) = self.args.shape2.as_deref() { comparison = comparison.with_shape2(shape2); }
+        if let Some(show_time) = self.args.show_time { comparison = comparison.with_show_time(show_time); }
+        
+        comparison.execute()?;
 
         Ok(())
     }

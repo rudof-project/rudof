@@ -25,14 +25,16 @@ impl Command for DataCommand {
 
     /// Executes the Data command logic.
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
-        ctx.rudof.load_data(
-            &self.args.data, 
-            Some(&self.args.data_format.into()), 
-            self.args.base.as_deref(), 
-            Some(&self.args.reader_mode.into()),
-        );
+        let data_format = self.args.data_format.into();
+        let reader_mode = self.args.reader_mode.into();
+        let result_format = self.args.result_format.into();
 
-        ctx.rudof.serialize_data(Some(&self.args.result_format.into()), &mut ctx.writer);
+        let mut loading = ctx.rudof.load_data(&self.args.data).with_data_format(&data_format).with_reader_mode(&reader_mode);
+        if let Some(base) = self.args.base.as_deref() { loading = loading.with_base(base); }
+        if let Some(endpoint) = self.args.endpoint.as_deref() { loading = loading.with_endpoint(endpoint); }
+        loading.execute()?;
+
+        ctx.rudof.serialize_data(&mut ctx.writer).with_format(&result_format).execute()?;
 
         Ok(())
     }

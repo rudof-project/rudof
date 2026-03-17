@@ -17,6 +17,7 @@ pub trait DataOperations {
     /// * `data` - Array of input specifications defining data sources
     /// * `data_format` - The RDF format of the input data (uses default if None)
     /// * `base` - Optional base IRI for resolving relative IRIs (uses default if None)
+    /// * `endpoint` - Optional SPARQL endpoint URL to load data from. If stablished it overrides data (uses None by default)
     /// * `reader_mode` - The parsing mode (uses default if None) 
     ///
     /// # Errors
@@ -27,6 +28,7 @@ pub trait DataOperations {
         data: &[InputSpec],
         data_format: Option<&DataFormat>,
         base: Option<&str>,
+        endpoint: Option<&str>,
         reader_mode: Option<&DataReaderMode>,
     ) -> Result<()>;
 
@@ -117,9 +119,10 @@ impl DataOperations for Rudof {
         data: &[InputSpec],
         data_format: Option<&DataFormat>,
         base: Option<&str>,
+        endpoint: Option<&str>,
         reader_mode: Option<&DataReaderMode>,
     ) -> Result<()> {
-        load_data(self, data, data_format, base, reader_mode)
+        load_data(self, data, data_format, base, endpoint, reader_mode)
     }
 
     fn serialize_data<W: io::Write>(

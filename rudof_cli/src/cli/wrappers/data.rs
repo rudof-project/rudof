@@ -3,7 +3,6 @@ use rudof_lib_refactored::formats::{DataReaderMode, DataFormat, ResultDataFormat
 use clap::ValueEnum;
 use std::fmt::{Display, Formatter, Result};
 
-// CLI wrapper for rudof_lib::rdf_reader_mode::RDFReaderMode.
 cli_wrapper!(
     DataReaderModeCli,
     DataReaderMode,
@@ -13,7 +12,6 @@ cli_wrapper!(
     }
 );
 
-// CLI wrapper for rudof_lib::data_format::DataFormat.
 cli_wrapper!(
     DataFormatCli,
     DataFormat,
@@ -29,7 +27,6 @@ cli_wrapper!(
     }
 );
 
-// CLI wrapper for rudof_lib::result_data_format::ResultDataFormat.
 cli_wrapper!(
     ResultDataFormatCli,
     ResultDataFormat,

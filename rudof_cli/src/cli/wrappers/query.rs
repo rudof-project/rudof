@@ -3,7 +3,6 @@ use rudof_lib_refactored::formats::{QueryType, ResultQueryFormat};
 use clap::ValueEnum;
 use std::fmt::{Display, Formatter, Result};
 
-// CLI wrapper for rudof_lib::query_type::QueryType.
 cli_wrapper!(
     QueryTypeCli,
     QueryType,
@@ -15,7 +14,6 @@ cli_wrapper!(
     }
 );
 
-// CLI wrapper for rudof_lib::query_result_format::ResultQueryFormat.
 cli_wrapper!(
     ResultQueryFormatCli,
     ResultQueryFormat,

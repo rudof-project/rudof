@@ -3,7 +3,6 @@ use rudof_lib_refactored::formats::{ComparisonFormat, ComparisonMode, ResultComp
 use clap::ValueEnum;
 use std::fmt::{Display, Formatter, Result};
 
-// CLI wrapper for rudof_lib::compare::InputCompareMode.
 cli_wrapper!(
     ComparisonModeCli,
     ComparisonMode,
@@ -15,7 +14,6 @@ cli_wrapper!(
     }
 );
 
-// CLI wrapper for rudof_lib::compare::InputCompareFormat.
 cli_wrapper!(
     ComparisonFormatCli,
     ComparisonFormat,
@@ -28,7 +26,6 @@ cli_wrapper!(
     }
 );
 
-// CLI wrapper for rudof_lib::compare::ResultCompareFormat.
 cli_wrapper!(
     ResultComparisonFormatCli,
     ResultComparisonFormat,

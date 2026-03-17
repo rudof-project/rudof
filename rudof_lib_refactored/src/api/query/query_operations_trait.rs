@@ -43,17 +43,10 @@ pub trait QueryOperations {
 
     /// Executes the currently loaded query.
     ///
-    /// If `endpoint` is not specified, the query is executed against the loaded RDF data.
-    /// If `endpoint` is specified, the query is executed against that SPARQL endpoint.
-    ///
-    /// # Arguments
-    ///
-    /// * `endpoint` - Optional name or URL of the SPARQL endpoint to query
-    ///
     /// # Errors
     ///
     /// Returns an error if no query is loaded, or if query execution fails.
-    fn run_query(&mut self, endpoint: Option<&str>) -> Result<()>;
+    fn run_query(&mut self) -> Result<()>;
 
     /// Serializes the query results to a writer.
     ///
@@ -92,8 +85,8 @@ impl QueryOperations for crate::Rudof {
         reset_query(self)
     }
 
-    fn run_query(&mut self, endpoint: Option<&str>) -> Result<()> {
-        run_query(self, endpoint)
+    fn run_query(&mut self) -> Result<()> {
+        run_query(self)
     }
 
     fn serialize_query_results<W: io::Write>(

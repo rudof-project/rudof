@@ -3,7 +3,6 @@ use rudof_lib_refactored::formats::{DCTapFormat, ResultDCTapFormat};
 use clap::ValueEnum;
 use std::fmt::{Display, Formatter, Result};
 
-// CLI wrapper for rudof_lib::dctap_format::DCTapFormat.
 cli_wrapper!(
     DCTapFormatCli,
     DCTapFormat,
@@ -16,7 +15,6 @@ cli_wrapper!(
     }
 );
 
-// CLI wrapper for rudof_lib::dctap_result_format::DCTapResultFormat.
 cli_wrapper!(
     ResultDCTapFormatCli,
     ResultDCTapFormat,

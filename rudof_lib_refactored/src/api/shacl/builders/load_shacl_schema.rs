@@ -6,7 +6,7 @@ use crate::{Rudof, Result, api::shacl::ShaclOperations, formats::{InputSpec, Sha
 /// operations with optional parameters.
 pub struct LoadShaclSchemaBuilder<'a> {
     rudof: &'a mut Rudof,
-    schema: &'a InputSpec,
+    schema: Option<&'a InputSpec>,
     schema_format: Option<&'a ShaclFormat>,
     base: Option<&'a str>,
     reader_mode: Option<&'a DataReaderMode>,
@@ -17,14 +17,24 @@ impl<'a> LoadShaclSchemaBuilder<'a> {
     ///
     /// This is called internally by `Rudof::load_shacl_schema()` and should not
     /// be constructed directly.
-    pub(crate) fn new(rudof: &'a mut Rudof, schema: &'a InputSpec) -> Self {
+    pub(crate) fn new(rudof: &'a mut Rudof) -> Self {
         Self {
             rudof,
-            schema,
+            schema: None,
             schema_format: None,
             base: None,
             reader_mode: None,
         }
+    }
+
+    /// Sets the SHACL schema to load.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `schema` - The input specification for the SHACL schema (e.g., file path, URL, or string content)
+    pub fn with_schema(mut self, schema: &'a InputSpec) -> Self {
+        self.schema = Some(schema);
+        self
     }
 
     /// Sets the SHACL schema format.

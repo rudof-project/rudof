@@ -25,9 +25,12 @@ impl Command for DctapCommand {
 
     /// Executes the DCTap server logic.
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
-        ctx.rudof.load_dctap(&self.args.file, Some(&self.args.format.into()));
+        let format = self.args.format.into();
+        let result_format = self.args.result_format.into();
 
-        ctx.rudof.serialize_dctap(Some(&self.args.result_format.into()), &mut ctx.writer);
+        ctx.rudof.load_dctap(&self.args.file).with_format(&format).execute()?;
+
+        ctx.rudof.serialize_dctap(&mut ctx.writer).with_format(&result_format).execute()?;
 
         Ok(())
     }

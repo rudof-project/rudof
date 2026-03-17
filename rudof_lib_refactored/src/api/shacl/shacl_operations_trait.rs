@@ -1,30 +1,35 @@
 use crate::{
     Result,
-    formats::{InputSpec, ShaclFormat, DataReaderMode, ShaclValidationMode, ShaclValidationSortByMode},
     api::shacl::implementations::{
-        load_shacl_schema, load_shapes, reset_shacl_validation, reset_shapes, reset_shacl_schema,
-        serialize_shacl_schema, serialize_shacl_validation_results, serialize_shapes, validate_shacl
-    }
+        load_shacl_schema, reset_shacl_schema, reset_shacl_validation, serialize_shacl_schema,
+        serialize_shacl_validation_results, validate_shacl,
+    },
+    formats::{DataReaderMode, InputSpec, ShaclFormat, ShaclValidationMode, ShaclValidationSortByMode},
 };
 use std::io;
 
 /// Operations for SHACL (Shapes Constraint Language) validation.
 pub trait ShaclOperations {
-    /// Loads a SHACL schema from an input specification.
+    /// Loads a SHACL schema from an input specification or from the currently loaded data.
+    ///
+    /// If `schema` is provided, the method loads the SHACL shapes from the specified input
+    /// using the optional `schema_format`, `base`, and `reader_mode`.
+    /// If `schema` is `None`, the method treats the currently loaded RDF data graph
+    /// as the SHACL shapes graph.
     ///
     /// # Arguments
     ///
-    /// * `schema` - Input specification defining the schema source
+    /// * `schema` - Optional input specification defining the schema source
     /// * `schema_format` - Optional SHACL format (uses default if None)
     /// * `base` - Optional base IRI for resolving relative IRIs (uses default if None)
-    /// * `reader_mode` - The parsing mode (uses default if None)
+    /// * `reader_mode` - Optional parsing mode (uses default if None)
     ///
     /// # Errors
     ///
     /// Returns an error if the schema cannot be parsed or loaded.
     fn load_shacl_schema(
         &mut self,
-        schema: &InputSpec,
+        schema: Option<&InputSpec>,
         schema_format: Option<&ShaclFormat>,
         base: Option<&str>,
         reader_mode: Option<&DataReaderMode>,
@@ -40,53 +45,10 @@ pub trait ShaclOperations {
     /// # Errors
     ///
     /// Returns an error if no schema is loaded or serialization fails.
-    fn serialize_shacl_schema<W: io::Write>(
-        &self, 
-        format: Option<&ShaclFormat>, 
-        writer: &mut W
-    ) -> Result<()>;
+    fn serialize_shacl_schema<W: io::Write>(&self, format: Option<&ShaclFormat>, writer: &mut W) -> Result<()>;
 
     /// Resets the SHACL schema.
     fn reset_shacl_schema(&mut self);
-
-    /// Loads SHACL shapes from an input specification.
-    ///
-    /// # Arguments
-    ///
-    /// * `shapes` - Input specification defining the shapes source
-    /// * `format` - Optional SHACL format (uses default if None)
-    /// * `base` - Optional base IRI for resolving relative IRIs (uses default if None)
-    /// * `reader_mode` - The parsing mode (uses default if None)
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the shapes cannot be parsed or loaded.
-    fn load_shapes(
-        &mut self,
-        shapes: &InputSpec,
-        format: Option<&ShaclFormat>,
-        base: Option<&str>,
-        reader_mode: Option<&DataReaderMode>,
-    ) -> Result<()>;
-
-    /// Serializes the current SHACL shapes to a writer.
-    ///
-    /// # Arguments
-    ///
-    /// * `format` - Optional output format (uses default if None)
-    /// * `writer` - The destination to write to
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if no shapes are loaded or serialization fails.
-    fn serialize_shapes<W: io::Write>(
-        &self,
-        format: Option<&ShaclFormat>,
-        writer: &mut W,
-    ) -> Result<()>;
-
-    /// Resets the current SHACL shapes.
-    fn reset_shapes(&mut self);
 
     /// Validates the current RDF data using the loaded SHACL schema and shapes.
     ///
@@ -100,10 +62,7 @@ pub trait ShaclOperations {
     /// # Errors
     ///
     /// Returns an error if no SHACL schema or shapes is loaded.
-    fn validate_shacl(
-        &mut self, 
-        mode: Option<&ShaclValidationMode>,
-    ) -> Result<()>;
+    fn validate_shacl(&mut self, mode: Option<&ShaclValidationMode>) -> Result<()>;
 
     /// Serializes the SHACL validation results to a writer.
     ///
@@ -128,7 +87,7 @@ pub trait ShaclOperations {
 impl ShaclOperations for crate::Rudof {
     fn load_shacl_schema(
         &mut self,
-        schema: &InputSpec,
+        schema: Option<&InputSpec>,
         schema_format: Option<&ShaclFormat>,
         base: Option<&str>,
         reader_mode: Option<&DataReaderMode>,
@@ -136,11 +95,7 @@ impl ShaclOperations for crate::Rudof {
         load_shacl_schema(self, schema, schema_format, base, reader_mode)
     }
 
-    fn serialize_shacl_schema<W: io::Write>(
-        &self, 
-        format: Option<&ShaclFormat>, 
-        writer: &mut W
-    ) -> Result<()> {
+    fn serialize_shacl_schema<W: io::Write>(&self, format: Option<&ShaclFormat>, writer: &mut W) -> Result<()> {
         serialize_shacl_schema(self, format, writer)
     }
 
@@ -148,32 +103,7 @@ impl ShaclOperations for crate::Rudof {
         reset_shacl_schema(self)
     }
 
-    fn load_shapes(
-        &mut self,
-        shapes: &InputSpec,
-        format: Option<&ShaclFormat>,
-        base: Option<&str>,
-        reader_mode: Option<&DataReaderMode>,
-    ) -> Result<()> {
-        load_shapes(self, shapes, format, base, reader_mode)
-    }
-
-    fn serialize_shapes<W: io::Write>(
-        &self,
-        format: Option<&ShaclFormat>,
-        writer: &mut W,
-    ) -> Result<()> {
-        serialize_shapes(self, format, writer)
-    }
-
-    fn reset_shapes(&mut self) {
-        reset_shapes(self)
-    }
-
-    fn validate_shacl(
-        &mut self, 
-        mode: Option<&ShaclValidationMode>,
-    ) -> Result<()> {
+    fn validate_shacl(&mut self, mode: Option<&ShaclValidationMode>) -> Result<()> {
         validate_shacl(self, mode)
     }
 

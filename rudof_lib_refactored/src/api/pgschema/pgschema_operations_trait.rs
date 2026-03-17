@@ -15,13 +15,14 @@ pub trait PgSchemaOperations {
     /// # Arguments
     ///
     /// * `pg_schema` - Input specification defining the Property Graph schema source
+    /// * `base_schema` - Optional base IRI for resolving relative IRIs in the schema
     ///
     /// # Errors
     ///
     /// Returns an error if the Property Graph schema cannot be parsed or loaded.
     fn load_pgschema(
         &mut self,
-        pg_schema: &InputSpec,
+        pg_schema: &InputSpec
     ) -> Result<()>;
 
     /// Serializes the current Property Graph schema to a writer.
@@ -46,7 +47,7 @@ pub trait PgSchemaOperations {
     /// # Errors
     ///
     /// Returns an error if no pgschema or shapemap is loaded.
-    fn run_pgschema_validation(&mut self) -> Result<()>;
+    fn validate_pgschema(&mut self) -> Result<()>;
 
     /// Serializes the Property Graph schema validation results to a writer.
     ///
@@ -87,7 +88,7 @@ impl PgSchemaOperations for crate::Rudof {
         reset_pgschema(self)
     }
 
-    fn run_pgschema_validation(&mut self) -> Result<()> {
+    fn validate_pgschema(&mut self) -> Result<()> {
         run_pgschema_validation(self)
     }
 

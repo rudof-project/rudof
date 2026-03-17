@@ -32,9 +32,10 @@ pub struct ValidateArgs {
         long = "schema-format",
         ignore_case = true,
         value_name = "FORMAT",
-        help = "Schema format"
+        help = "Schema format",
+        default_value_t = ShExFormatCli::ShExC
     )]
-    pub schema_format: Option<ShExFormatCli>,
+    pub schema_format: ShExFormatCli,
 
     #[arg(
         short = 'm',

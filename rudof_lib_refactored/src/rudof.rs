@@ -32,7 +32,6 @@ use crate::{
         },
         shacl::builders::{
             LoadShaclSchemaBuilder, SerializeShaclSchemaBuilder, ResetShaclSchemaBuilder,
-            LoadShapesBuilder, SerializeShapesBuilder, ResetShapesBuilder,
             ValidateShaclBuilder, SerializeShaclValidationResultsBuilder, ResetShaclValidationBuilder,
         },
         query::builders::{
@@ -45,7 +44,7 @@ use crate::{
         rdf_config::builders::{LoadRdfConfigBuilder, SerializeRdfConfigBuilder, ResetRdfConfigBuilder},
         pgschema::builders::{
             LoadPgSchemaBuilder, SerializePgSchemaBuilder, ResetPgSchemaBuilder,
-            RunPgSchemaValidationBuilder, SerializePgSchemaValidationResultsBuilder, ResetPgSchemaValidationBuilder,
+            PgSchemaValidationBuilder, SerializePgSchemaValidationResultsBuilder, ResetPgSchemaValidationBuilder,
         },
         generation::builders::GenerateDataBuilder,
     },
@@ -243,9 +242,8 @@ impl Rudof {
 
     pub fn load_shacl_schema<'a>(
         &'a mut self,
-        schema: &'a InputSpec,
     ) -> LoadShaclSchemaBuilder<'a> {
-        LoadShaclSchemaBuilder::new(self, schema)
+        LoadShaclSchemaBuilder::new(self)
     }
 
     pub fn serialize_shacl_schema<'a, W: io::Write>(
@@ -257,24 +255,6 @@ impl Rudof {
 
     pub fn reset_shacl_schema<'a>(&'a mut self) -> ResetShaclSchemaBuilder<'a> {
         ResetShaclSchemaBuilder::new(self)
-    }
-
-    pub fn load_shapes<'a>(
-        &'a mut self,
-        shapes: &'a InputSpec,
-    ) -> LoadShapesBuilder<'a> {
-        LoadShapesBuilder::new(self, shapes)
-    }
-
-    pub fn serialize_shapes<'a, W: io::Write>(
-        &'a self,
-        writer: &'a mut W,
-    ) -> SerializeShapesBuilder<'a, W> {
-        SerializeShapesBuilder::new(self, writer)
-    }
-
-    pub fn reset_shapes<'a>(&'a mut self) -> ResetShapesBuilder<'a> {
-        ResetShapesBuilder::new(self)
     }
 
     pub fn validate_shacl<'a>(&'a mut self) -> ValidateShaclBuilder<'a> {
@@ -426,8 +406,8 @@ impl Rudof {
         ResetPgSchemaBuilder::new(self)
     }
 
-    pub fn run_pgschema_validation<'a>(&'a mut self) -> RunPgSchemaValidationBuilder<'a> {
-        RunPgSchemaValidationBuilder::new(self)
+    pub fn validate_pgschema<'a>(&'a mut self) -> PgSchemaValidationBuilder<'a> {
+        PgSchemaValidationBuilder::new(self)
     }
 
     pub fn serialize_pgschema_validation_results<'a,W: io::Write>(

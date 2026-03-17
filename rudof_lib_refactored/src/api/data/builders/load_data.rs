@@ -9,6 +9,7 @@ pub struct LoadDataBuilder<'a> {
     data: &'a [InputSpec],
     data_format: Option<&'a DataFormat>,
     base: Option<&'a str>,
+    endpoint: Option<&'a str>,
     reader_mode: Option<&'a DataReaderMode>,
 }
 
@@ -23,6 +24,7 @@ impl<'a> LoadDataBuilder<'a> {
             data,
             data_format: None,
             base: None,
+            endpoint: None,
             reader_mode: None,
         }
     }
@@ -57,6 +59,16 @@ impl<'a> LoadDataBuilder<'a> {
         self
     }
 
+    /// Sets the SPARQL endpoint for loading data.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `endpoint` - The SPARQL endpoint URL to load data from
+     pub fn with_endpoint(mut self, endpoint: &'a str) -> Self {
+        self.endpoint = Some(endpoint);
+        self
+    }
+
     /// Executes the data loading operation with the configured parameters.
     ///
     /// # Errors
@@ -68,6 +80,8 @@ impl<'a> LoadDataBuilder<'a> {
             self.data,
             self.data_format,
             self.base,
+            self.endpoint,
+
             self.reader_mode,
         )
     }

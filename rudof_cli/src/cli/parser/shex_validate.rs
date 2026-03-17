@@ -15,19 +15,20 @@ pub struct ShexValidateArgs {
         value_name = "INPUT",
         help = "Schema file name, URI or - (for stdin)"
     )]
-    pub schema: Option<InputSpec>,
+    pub schema: InputSpec,
 
     #[arg(
         short = 'f',
         long = "schema-format",
         ignore_case = true,
         value_name = "FORMAT",
-        help = "ShEx Schema format"
+        help = "ShEx Schema format",
+        default_value_t = ShExFormatCli::ShExC
     )]
-    pub schema_format: Option<ShExFormatCli>,
+    pub schema_format: ShExFormatCli,
 
     #[arg(short = 'm', long = "shapemap", value_name = "INPUT", help = "ShapeMap")]
-    pub shapemap: Option<InputSpec>,
+    pub shapemap: InputSpec,
 
     #[arg(
         long = "shapemap-format",

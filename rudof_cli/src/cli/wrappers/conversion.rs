@@ -5,8 +5,6 @@ use rudof_lib_refactored::formats::{
 use clap::ValueEnum;
 use std::fmt::{Display, Formatter, Result};
 
-
-// CLI wrapper for rudof_lib::convert::InputConvertMode.
 cli_wrapper!(
     ConversionFormatCli,
     ConversionFormat,
@@ -19,7 +17,6 @@ cli_wrapper!(
     }
 );
 
-// CLI wrapper for rudof_lib::convert::InputConvertFormat.
 cli_wrapper!(
     ConversionModeCli,
     ConversionMode,
@@ -30,7 +27,6 @@ cli_wrapper!(
     }
 );
 
-// CLI wrapper for rudof_lib::convert::OutputConvertFormat.
 cli_wrapper!(
     ResultConversionFormatCli,
     ResultConversionFormat,
@@ -48,7 +44,6 @@ cli_wrapper!(
     }
 );
 
-// CLI wrapper for rudof_lib::convert::OutputConvertMode.
 cli_wrapper!(
     ResultConversionModeCli,
     ResultConversionMode,

@@ -6,7 +6,6 @@ use crate::{Rudof, Result, api::query::QueryOperations};
 /// with optional parameters.
 pub struct RunQueryBuilder<'a> {
     rudof: &'a mut Rudof,
-    endpoint: Option<&'a str>,
 }
 
 impl<'a> RunQueryBuilder<'a> {
@@ -17,18 +16,7 @@ impl<'a> RunQueryBuilder<'a> {
     pub(crate) fn new(rudof: &'a mut Rudof) -> Self {
         Self {
             rudof,
-            endpoint: None,
         }
-    }
-
-    /// Sets the SPARQL endpoint to query.
-    ///
-    /// # Arguments
-    ///
-    /// * `endpoint` - The name or URL of the SPARQL endpoint
-    pub fn with_endpoint(mut self, endpoint: &'a str) -> Self {
-        self.endpoint = Some(endpoint);
-        self
     }
 
     /// Executes the query operation with the configured parameters.
@@ -39,6 +27,6 @@ impl<'a> RunQueryBuilder<'a> {
     ///
     /// Returns an error if no query is loaded or query execution fails.
     pub fn execute(self) -> Result<()> {
-        <Rudof as QueryOperations>::run_query(self.rudof, self.endpoint)
+        <Rudof as QueryOperations>::run_query(self.rudof)
     }
 }
