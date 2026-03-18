@@ -29,7 +29,7 @@ impl<'a, W: io::Write> SerializeShaclSchemaBuilder<'a, W> {
     /// # Arguments
     ///
     /// * `format` - The format to use when serializing the schema
-    pub fn with_format(mut self, format: &'a ShaclFormat) -> Self {
+    pub fn with_schema_format(mut self, format: &'a ShaclFormat) -> Self {
         self.format = Some(format);
         self
     }

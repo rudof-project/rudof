@@ -14,7 +14,7 @@ use crate::{
     RudofConfig, 
     errors::RudofError,
     formats::{
-        InputSpec, QueryType, ComparisonFormat, ComparisonMode, ConversionFormat, ConversionMode, 
+        InputSpec, ComparisonFormat, ComparisonMode, ConversionFormat, ConversionMode, 
         ResultConversionFormat, ResultConversionMode, GenerationSchemaFormat
     },
     types::{Data, QueryResult},
@@ -26,7 +26,7 @@ use crate::{
             SerializeServiceDescriptionBuilder, ResetServiceDescriptionBuilder,
         },
         shex::builders::{
-            LoadShexSchemaBuilder, SerializeShexSchemaBuilder, ResetShexSchemaBuilder,
+            CheckShexSchemaBuilder, LoadShexSchemaBuilder, SerializeShexSchemaBuilder, ResetShexSchemaBuilder,
             LoadShapemapBuilder, SerializeShapemapBuilder, ResetShapemapBuilder,
             ValidateShexBuilder, SerializeShexValidationResultsBuilder, ResetShexBuilder,
         },
@@ -192,6 +192,14 @@ impl Rudof {
         LoadShexSchemaBuilder::new(self, schema)
     }
 
+    pub fn check_shex_schema<'a, W: io::Write>(
+        &'a self,
+        schema: &'a InputSpec,
+        writer: &'a mut W
+    ) -> CheckShexSchemaBuilder<'a, W> {
+        CheckShexSchemaBuilder::new(self, schema, writer)
+    }
+
     pub fn serialize_shex_schema<'a, W: io::Write>(
         &'a self,
         writer: &'a mut W
@@ -279,9 +287,8 @@ impl Rudof {
     pub fn load_query<'a>(
         &'a mut self,
         query: &'a InputSpec,
-        query_type: &'a QueryType,
     ) -> LoadQueryBuilder<'a> {
-        LoadQueryBuilder::new(self, query, query_type)
+        LoadQueryBuilder::new(self, query)
     }
 
     pub fn serialize_query<'a, W: io::Write>(&'a self, writer: &'a mut W) -> SerializeQueryBuilder<'a, W> {

@@ -1,6 +1,7 @@
 use crate::cli::parser::ShexValidateArgs;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::Result;
+use shacl_validation::validation_report::result;
 
 /// Implementation of the `shex-validate` command.
 ///
@@ -30,6 +31,7 @@ impl Command for ShexValidateCommand {
         let schema_format = self.args.schema_format.into();
         let shapemap_format = self.args.shapemap_format.into();
         let sort_order = self.args.sort_by.into();
+        let result_format = self.args.result_format.into();
 
         let mut loading = ctx.rudof.load_data(&self.args.data).with_data_format(&data_format).with_reader_mode(&reader_mode);
         if let Some(base) = self.args.base_data.as_deref() { loading = loading.with_base(base); }
@@ -49,7 +51,10 @@ impl Command for ShexValidateCommand {
 
         ctx.rudof.validate_shex().execute()?;
 
-        ctx.rudof.serialize_shex_validation_results(&mut ctx.writer).with_sort_order(&sort_order).execute()?;
+        ctx.rudof.serialize_shex_validation_results(&mut ctx.writer)
+            .with_sort_order(&sort_order)
+            .with_result_format(&result_format)
+            .execute()?;
 
         Ok(())
     }

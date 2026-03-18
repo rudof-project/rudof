@@ -1,25 +1,17 @@
 use crate::service::{errors::*, mcp_service::RudofMcpService};
-use iri_s::IriS;
 use rmcp::{
     ErrorData as McpError,
     handler::server::wrapper::Parameters,
     model::{CallToolResult, Content},
 };
-use rudof_lib::{
-    InputSpec, RudofConfig, ShaclValidationMode,
-    result_shacl_validation_format::{ResultShaclValidationFormat, SortByShaclValidationReport},
-    shacl::{add_shacl_schema_rudof, write_validation_report},
-    shacl_format::ShaclFormat,
-    shapes_graph_source::ShapesGraphSource,
+use rudof_lib_refactored::{
+    formats::{InputSpec, ResultShaclValidationFormat, ShaclFormat, ShaclValidationMode, ShaclValidationSortByMode},
 };
-use rudof_rdf::rdf_impl::ReaderMode;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::io::Cursor;
 use std::str::FromStr;
-
-use super::helpers::*;
 
 /// Request parameters for SHACL validation.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -33,10 +25,6 @@ pub struct ValidateShaclRequest {
 
     /// Base IRI for resolving relative IRIs in shapes
     pub base_shape: Option<String>,
-
-    /// Reader mode for parsing.
-    /// Supported: strict, lax
-    pub reader_mode: Option<String>,
 
     /// Validation engine mode.
     /// Supported: native, sparql
@@ -85,130 +73,114 @@ pub async fn validate_shacl_impl(
         shape,
         shape_format,
         base_shape,
-        reader_mode,
         mode,
         result_format,
         sort_by,
     }): Parameters<ValidateShaclRequest>,
 ) -> Result<CallToolResult, McpError> {
-    let result_format_str = result_format.clone().unwrap_or_else(|| "compact".to_string());
-    let sort_by_str = sort_by.clone().unwrap_or_else(|| "node".to_string());
-
-    let shape_spec: Option<InputSpec> = shape.as_ref().map(|s| InputSpec::Str(s.clone()));
-
-    let parsed_shape_format: Option<ShaclFormat> = match shape_format {
-        Some(s) => match ShaclFormat::from_str(&s) {
-            Ok(fmt) => Some(fmt),
-            Err(e) => {
-                return Ok(ToolExecutionError::with_hint(
-                    format!("Invalid shape format '{}': {}", s, e),
-                    format!("Supported formats: {}", SHACL_FORMATS),
-                )
-                .into_call_tool_result());
-            },
-        },
-        None => None,
-    };
-
-    let parsed_base_shape: Option<IriS> = match parse_optional_iri(base_shape.as_deref(), "base shape IRI") {
-        Ok(iri) => iri,
-        Err(e) => return Ok(e.into_call_tool_result()),
-    };
-
-    let parsed_reader_mode: ReaderMode = match parse_optional_reader_mode(reader_mode.as_deref()) {
-        Ok(mode) => mode,
-        Err(e) => return Ok(e.into_call_tool_result()),
-    };
-
-    let parsed_mode: ShaclValidationMode = match mode {
-        Some(s) => match ShaclValidationMode::from_str(&s) {
-            Ok(m) => m,
-            Err(e) => {
-                return Ok(ToolExecutionError::with_hint(
-                    format!("Invalid validation mode '{}': {}", s, e),
-                    "Supported modes: native, sparql",
-                )
-                .into_call_tool_result());
-            },
-        },
-        None => ShaclValidationMode::Native,
-    };
-
-    let parsed_result_format: ResultShaclValidationFormat = match result_format {
-        Some(s) => match ResultShaclValidationFormat::from_str(&s) {
-            Ok(fmt) => fmt,
-            Err(e) => {
-                return Ok(ToolExecutionError::with_hint(
-                    format!("Invalid result format '{}': {}", s, e),
-                    format!("Supported formats: {}", SHACL_RESULT_FORMATS),
-                )
-                .into_call_tool_result());
-            },
-        },
-        None => ResultShaclValidationFormat::Details,
-    };
-
-    let parsed_sort_by: SortByShaclValidationReport = match sort_by {
-        Some(s) => match SortByShaclValidationReport::from_str(&s) {
-            Ok(order) => order,
-            Err(e) => {
-                return Ok(ToolExecutionError::with_hint(
-                    format!("Invalid sort order '{}': {}", s, e),
-                    format!("Supported sort orders: {}", SHACL_SORT_BY_MODES),
-                )
-                .into_call_tool_result());
-            },
-        },
-        None => SortByShaclValidationReport::Severity,
-    };
-
-    let rudof_config = RudofConfig::new().unwrap();
-
     let mut rudof = service.rudof.lock().await;
 
-    let validation_report = if let Some(shape_spec) = shape_spec {
-        let shapes_format = parsed_shape_format.unwrap_or_default();
-        add_shacl_schema_rudof(
-            &mut rudof,
-            &shape_spec,
-            &shapes_format,
-            &parsed_base_shape,
-            &parsed_reader_mode,
-            &rudof_config,
-        )
-        .map_err(|e| {
+    let mut parsed_shapes = None;
+    if let Some(shape) = shape.as_deref() {
+        parsed_shapes = Some(InputSpec::from_str(shape).map_err(|e| {
             internal_error(
-                "Add SHACL Schema error",
+                "Shacl validation error",
                 e.to_string(),
-                Some(json!({"operation":"validate_shacl_impl", "phase":"add_shacl_schema"})),
+                Some(json!({"operation":"validate_shacl","phase":"parse_shapes"})),
             )
-        })?;
-        rudof.validate_shacl(Some(&parsed_mode), Some(&ShapesGraphSource::current_schema()))
-    } else {
-        rudof.validate_shacl(Some(&parsed_mode), Some(&ShapesGraphSource::current_data()))
+        })?);
     }
-    .map_err(|e| {
-        internal_error(
-            "Validate SHACL error",
-            e.to_string(),
-            Some(json!({"operation":"validate_shacl_impl", "phase":"validate_shacl"})),
-        )
-    })?;
-    let mut output_buffer = Cursor::new(Vec::new());
 
-    write_validation_report(
-        &mut output_buffer,
-        &parsed_result_format,
-        validation_report,
-        &parsed_sort_by,
-    )
-    .map_err(|e| {
+    let mut parsed_shapes_format = None;
+    if let Some(shape_format) = shape_format.as_deref() {
+        parsed_shapes_format = Some(ShaclFormat::from_str(shape_format).map_err(|e| {
+            internal_error(
+                "Shacl validation error",
+                e.to_string(),
+                Some(json!({"operation":"validate_shacl","phase":"parse_shape_format"})),
+            )
+        })?);
+    }
+
+    let mut parsed_mode = None;
+    if let Some(mode) = mode.as_deref() {
+        parsed_mode = Some(ShaclValidationMode::from_str(mode).map_err(|e| {
+            internal_error(
+                "Shacl validation error",
+                e.to_string(),
+                Some(json!({"operation":"validate_shacl","phase":"parse_validation_mode"})),
+            )
+        })?);
+    }
+
+    let mut parsed_result_format = None;
+    if let Some(result_format) = result_format.as_deref() {
+        parsed_result_format = Some(ResultShaclValidationFormat::from_str(result_format).map_err(|e| {
+            internal_error(
+                "Shacl validation error",
+                e.to_string(),
+                Some(json!({"operation":"validate_shacl","phase":"parse_result_format"})),
+            )
+        })?);
+    }
+
+    let mut parsed_sort_by = None;
+    if let Some(sort_by) = sort_by.as_deref() {
+        parsed_sort_by = Some(ShaclValidationSortByMode::from_str(sort_by).map_err(|e| {
+            internal_error(
+                "Shacl validation error",
+                e.to_string(),
+                Some(json!({"operation":"validate_shacl","phase":"parse_sort_by"})),
+            )
+        })?);
+    }
+
+    let mut loading_shacl_schema = rudof.load_shacl_schema();
+    if let Some(shape) = &parsed_shapes {
+        loading_shacl_schema = loading_shacl_schema.with_schema(shape)
+    }
+    if let Some(shape_format) = &parsed_shapes_format {
+        loading_shacl_schema = loading_shacl_schema.with_schema_format(shape_format);
+    }
+    if let Some(base_shape) = base_shape.as_deref() {
+        loading_shacl_schema = loading_shacl_schema.with_base(base_shape);
+    }
+    loading_shacl_schema.execute().map_err(|e| {
         internal_error(
-            "Write validation report error",
+            "Shacl validation error",
             e.to_string(),
-            Some(json!({"operation":"validate_shacl_impl", "phase":"write_validation_report"})),
+            Some(json!({"operation":"validate_shacl","phase":"load_shacl_schema"})),
         )
     })?;
+
+    let mut validation = rudof.validate_shacl();
+    if let Some(mode) = &parsed_mode {
+        validation = validation.with_mode(mode);
+    }
+    validation.execute().map_err(|e| {
+        internal_error(
+            "Shacl validation error",
+            e.to_string(),
+            Some(json!({"operation":"validate_shacl","phase":"execute_validation"})),
+        )
+    })?;
+
+    let mut output_buffer = Cursor::new(Vec::new());
+    let mut serialization = rudof.serialize_shacl_validation_results(&mut output_buffer);
+    if let Some(result_format) = &parsed_result_format {
+        serialization = serialization.with_result_format(result_format);
+    }
+    if let Some(sort_by) = &parsed_sort_by {
+        serialization = serialization.with_sort_order(sort_by);
+    }
+    serialization.execute().map_err(|e| {
+        internal_error(
+            "Shacl validation error",
+            e.to_string(),
+            Some(json!({"operation":"validate_shacl","phase":"serialize_validation_results"})),
+        )
+    })?;
+
     let output_bytes = output_buffer.into_inner();
     let output_str = String::from_utf8(output_bytes).map_err(|e| {
         internal_error(
@@ -222,6 +194,16 @@ pub async fn validate_shacl_impl(
     let result_size_bytes = output_str.len();
     let result_lines = output_str.lines().count();
 
+    let result_format_str = if let Some(format) = &parsed_result_format {
+        format.to_string()
+    } else {
+         "turtle".to_string()
+    };
+    let sort_by_str = if let Some(sort_by) = &parsed_sort_by {
+        sort_by.to_string()
+    } else {
+        "severity".to_string()
+    };
     let response = ValidateShaclResponse {
         results: output_str.to_string(),
         result_format: result_format_str.clone(),

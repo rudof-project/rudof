@@ -3,7 +3,7 @@
 //! This module contains the main [`RudofMcpService`] struct which implements
 //! the MCP `ServerHandler` trait and manages all server state.
 
-use std::{collections::HashMap, io::Cursor, sync::Arc};
+use std::{collections::HashMap,  sync::Arc};
 use tokio::sync::{Mutex, RwLock};
 
 use crate::service::{prompts, state, tasks::TaskStore, tools};
@@ -13,7 +13,7 @@ use rmcp::{
     model::{LoggingLevel, ResourceUpdatedNotificationParam},
     service::RequestContext,
 };
-use rudof_lib::{RDFFormat, ReaderMode, Rudof, RudofConfig};
+use rudof_lib_refactored::{formats::{DataFormat, InputSpec, ResultDataFormat}, Rudof, RudofConfig};
 
 /// Errors that can occur when creating a [`RudofMcpService`].
 ///
@@ -139,7 +139,7 @@ impl RudofMcpService {
     /// Returns an error if Rudof configuration or initialization fails.
     /// State loading failures are logged but don't prevent service creation.
     pub fn try_new() -> Result<Self, ServiceCreationError> {
-        let rudof_config = RudofConfig::new().map_err(|e| ServiceCreationError::ConfigError(e.to_string()))?;
+        let rudof_config = RudofConfig::new();
         let mut rudof = Rudof::new(&rudof_config).map_err(|e| ServiceCreationError::RudofError(e.to_string()))?;
 
         // Attempt to load persisted state (for Docker ephemeral containers)
@@ -151,15 +151,10 @@ impl RudofMcpService {
                 "Restoring {} triples from persisted state",
                 persisted_state.triple_count.unwrap_or(0)
             );
-            let mut cursor = Cursor::new(rdf_ntriples.as_bytes());
-            if let Err(e) = rudof.read_data(
-                &mut cursor,
-                "persisted_state",
-                Some(&RDFFormat::NTriples),
-                None,
-                Some(&ReaderMode::default()),
-                Some(false),
-            ) {
+            // Load persisted N-Triples string into Rudof using an in-memory InputSpec
+            let spec = InputSpec::Str(rdf_ntriples.clone());
+            let data_specs = vec![spec];
+            if let Err(e) = rudof.load_data(&data_specs).with_data_format(&DataFormat::NTriples).execute() {
                 tracing::warn!("Failed to restore persisted RDF data: {}", e);
             } else {
                 tracing::info!("Successfully restored RDF data from persisted state");
@@ -196,12 +191,13 @@ impl RudofMcpService {
         let rudof = self.rudof.lock().await;
 
         // Serialize RDF data to N-Triples format
-        let mut buffer = Vec::new();
-        rudof
-            .serialize_data(Some(&RDFFormat::NTriples), &mut buffer)
+        let mut v = Vec::new();
+        rudof.serialize_data(&mut v)
+            .with_format(&ResultDataFormat::NTriples)
+            .execute()
             .map_err(|e| state::StatePersistenceError::RdfSerialization(e.to_string()))?;
 
-        let rdf_ntriples = String::from_utf8(buffer).map_err(|e| state::StatePersistenceError::Json(e.to_string()))?;
+        let rdf_ntriples = String::from_utf8(v).map_err(|e| state::StatePersistenceError::Json(e.to_string()))?;
 
         // Count triples (count lines that aren't empty or comments)
         let triple_count = rdf_ntriples

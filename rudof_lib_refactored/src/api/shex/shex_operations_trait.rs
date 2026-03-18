@@ -1,11 +1,10 @@
+use shacl_validation::validation_report::result;
+
 use crate::{
-    Result,
-    formats::{InputSpec, ShExFormat, DataReaderMode, ShapeMapFormat, ShExValidationSortByMode},
-    api::shex::implementations::{
-        load_shapemap, load_shex_schema, reset_shapemap, reset_shex_schema, reset_shex,
-        serialize_shapemap, serialize_shex_schema, serialize_shex_validation_results,
-        validate_shex
-    }
+    Result, api::shex::implementations::{
+        check_shex_schema, load_shapemap, load_shex_schema, reset_shapemap, reset_shex, reset_shex_schema, serialize_shapemap, serialize_shex_schema, 
+        serialize_shex_validation_results, validate_shex
+    }, formats::{DataReaderMode, InputSpec, ShExFormat, ShExValidationSortByMode, ShapeMapFormat, ResultShExValidationFormat}
 };
 use std::io;
 
@@ -31,6 +30,24 @@ pub trait ShExOperations {
         reader_mode: Option<&DataReaderMode>,
     ) -> Result<()>;
 
+    /// Checks if a ShEx schema is valid.
+    /// 
+    /// # Arguments
+    /// * `schema` - Input specification defining the schema source
+    /// * `schema_format` - Optional ShEx format (uses default if None)
+    /// * `base_schema` - Optional base IRI for resolving relative IRIs in the schema (uses default if None)
+    /// * `writer` - The destination to write validation messages to
+    /// 
+    /// # Errors
+    /// Returns an error occurred while checking the schema
+    fn check_shex_schema<W: io::Write>(
+        &self,
+        schema: &InputSpec,
+        schema_format: Option<&ShExFormat>,
+        base_schema: Option<&str>,
+        writer: &mut W
+    ) -> Result<()>;
+
     /// Serializes the current ShEx schema to a writer.
     ///
     /// # Arguments
@@ -52,6 +69,7 @@ pub trait ShExOperations {
         show_statistics: Option<bool>,
         show_dependencies: Option<bool>,
         show_time: Option<bool>,
+        result_schema_format: Option<&ShExFormat>,
         writer: &mut W
     ) -> Result<()>;
 
@@ -117,6 +135,7 @@ pub trait ShExOperations {
     fn serialize_shex_validation_results<W: io::Write>(
         &self,
         sort_order: Option<&ShExValidationSortByMode>,
+        result_format: Option<&ResultShExValidationFormat>,
         writer: &mut W,
     ) -> Result<()>;
 
@@ -135,6 +154,16 @@ impl ShExOperations for crate::Rudof {
         load_shex_schema(self, schema, schema_format, base_schema, reader_mode)
     }
 
+    fn check_shex_schema<W: io::Write>(
+            &self,
+            schema: &InputSpec,
+            schema_format: Option<&ShExFormat>,
+            base_schema: Option<&str>,
+            writer: &mut W
+    ) -> Result<()> {
+        check_shex_schema(self, schema, schema_format, base_schema, writer)
+    }
+
     fn serialize_shex_schema<W: io::Write>(
         &self,
         shape_label: Option<&str>,
@@ -142,9 +171,10 @@ impl ShExOperations for crate::Rudof {
         show_statistics: Option<bool>,
         show_dependencies: Option<bool>,
         show_time: Option<bool>,
+        result_schema_format: Option<&ShExFormat>,
         writer: &mut W
     ) -> Result<()> {
-        serialize_shex_schema(self, shape_label, show_schema, show_statistics, show_dependencies, show_time, writer)
+        serialize_shex_schema(self, shape_label, show_schema, show_statistics, show_dependencies, show_time, result_schema_format, writer)
     }
 
     fn reset_shex_schema(&mut self) {
@@ -180,9 +210,10 @@ impl ShExOperations for crate::Rudof {
     fn serialize_shex_validation_results<W: io::Write>(
         &self,
         sort_order: Option<&ShExValidationSortByMode>,
+        result_format: Option<&ResultShExValidationFormat>,
         writer: &mut W,
     ) -> Result<()> {
-        serialize_shex_validation_results(self, sort_order, writer)
+        serialize_shex_validation_results(self, sort_order, result_format, writer)
     }
 
     fn reset_shex(&mut self) {

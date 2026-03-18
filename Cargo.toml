@@ -315,7 +315,7 @@ reqwest = { version = "0.12", default-features = false, features = [
     "rustls-tls",
     "rustls-tls-native-roots",
 ] }
-rmcp = { version = "0.14.0", features = [
+rmcp = { version = "=0.14.0", features = [
     "client",
     "server",
     "transport-io",

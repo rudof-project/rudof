@@ -4,10 +4,8 @@ use rmcp::{
     handler::server::wrapper::Parameters,
     model::{CallToolResult, Content},
 };
-use rudof_lib::{
-    InputSpec, RDFFormat, ReaderMode,
-    data::{export_rdf_to_image, get_data_rudof, parse_image_format, parse_optional_base_iri},
-    data_format::DataFormat,
+use rudof_lib_refactored::{
+    formats::{InputSpec, DataFormat, ResultDataFormat},
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -132,7 +130,6 @@ pub async fn load_rdf_data_from_sources_impl(
         endpoint,
     }) = params;
     let mut rudof = service.rudof.lock().await;
-    let config = rudof.config().clone();
 
     // Parse data specifications - return Tool Execution Error for invalid input
     let data_specs: Vec<InputSpec> = match data
@@ -150,22 +147,10 @@ pub async fn load_rdf_data_from_sources_impl(
         },
     };
 
-    // Parse base IRI - return Tool Execution Error for malformed IRI
-    let base_iri = match parse_optional_base_iri(base) {
-        Ok(iri) => iri,
-        Err(e) => {
-            return Ok(ToolExecutionError::with_hint(
-                format!("Invalid base IRI: {}", e),
-                "Provide a valid absolute IRI (e.g., 'http://example.org/base/')",
-            )
-            .into_call_tool_result());
-        },
-    };
-
     // Parse data format - return Tool Execution Error for unsupported format
     let data_format_str = data_format.as_deref().unwrap_or("turtle");
-    let parsed_data_format: DataFormat = match RDFFormat::from_str(data_format_str) {
-        Ok(fmt) => fmt.into(),
+    let parsed_data_format: DataFormat = match DataFormat::from_str(data_format_str) {
+        Ok(fmt) => fmt,
         Err(e) => {
             return Ok(ToolExecutionError::with_hint(
                 format!("Invalid data format '{}': {}", data_format_str, e),
@@ -174,18 +159,11 @@ pub async fn load_rdf_data_from_sources_impl(
             .into_call_tool_result());
         },
     };
-
-    get_data_rudof(
-        &mut rudof,
-        &data_specs,
-        &parsed_data_format,
-        &base_iri,
-        &endpoint,
-        &ReaderMode::default(),
-        &config,
-        false,
-    )
-    .map_err(|e| {
+    
+    let mut data_loading = rudof.load_data(&data_specs).with_data_format(&parsed_data_format);
+    if let Some(endpoint) = endpoint.as_deref() { data_loading = data_loading.with_endpoint(endpoint); }
+    if let Some(base) = base.as_deref() { data_loading = data_loading.with_base(base); }
+    data_loading.execute().map_err(|e| {
         internal_error(
             "RDF load error",
             e.to_string(),
@@ -254,7 +232,7 @@ pub async fn export_rdf_data_impl(
     let format_str = format.as_deref().unwrap_or("turtle");
 
     // Parse format - return Tool Execution Error for unsupported format
-    let parsed_format = match RDFFormat::from_str(format_str) {
+    let parsed_format = match ResultDataFormat::from_str(format_str) {
         Ok(fmt) => fmt,
         Err(e) => {
             return Ok(ToolExecutionError::with_hint(
@@ -266,13 +244,16 @@ pub async fn export_rdf_data_impl(
     };
 
     let mut v = Vec::new();
-    rudof.serialize_data(Some(&parsed_format), &mut v).map_err(|e| {
-        internal_error(
-            "Serialization error",
-            e.to_string(),
-            Some(json!({"operation":"export_rdf_data_impl", "phase":"serialize_data"})),
-        )
-    })?;
+    rudof.serialize_data(&mut v)
+        .with_format(&parsed_format)
+        .execute()
+        .map_err(|e| {
+            internal_error(
+                "Serialization error",
+                e.to_string(),
+                Some(json!({"operation":"export_rdf_data_impl", "phase":"serialize_data"})),
+            )
+        })?;
 
     let size_bytes = v.len();
     let str = String::from_utf8(v).map_err(|e| {
@@ -314,13 +295,16 @@ pub async fn export_plantuml_impl(
     let rudof = service.rudof.lock().await;
     let mut v = Vec::new();
 
-    rudof.data2plant_uml(&mut v).map_err(|e| {
-        internal_error(
-            "Serialization error",
-            e.to_string(),
-            Some(json!({"operation":"export_plantuml_impl", "phase":"serialize_data"})),
-        )
-    })?;
+    rudof.serialize_data(&mut v)
+        .with_format(&ResultDataFormat::PlantUML)
+        .execute()
+        .map_err(|e| {
+            internal_error(
+                "Serialization error",
+                e.to_string(),
+                Some(json!({"operation":"export_plantuml_impl", "phase":"serialize_data"})),
+            )
+        })?;
 
     let str = String::from_utf8(v).map_err(|e| {
         internal_error(
@@ -365,7 +349,7 @@ pub async fn export_image_impl(
     let rudof = service.rudof.lock().await;
 
     // Parse image format - return Tool Execution Error for unsupported format
-    let format = match parse_image_format(&image_format) {
+    let format = match ResultDataFormat::from_str(&image_format) {
         Ok(fmt) => fmt,
         Err(e) => {
             return Ok(ToolExecutionError::with_hint(
@@ -376,13 +360,18 @@ pub async fn export_image_impl(
         },
     };
 
-    let v = export_rdf_to_image(&rudof, format).map_err(|e| {
-        internal_error(
-            "Export rdf to image error",
-            e.to_string(),
-            Some(json!({"operation":"export_image_impl", "phase":"export_rdf_to_image"})),
-        )
-    })?;
+    let mut v = Vec::new();
+
+    rudof.serialize_data(&mut v)
+        .with_format(&format)
+        .execute()
+        .map_err(|e| {
+            internal_error(
+                "Serialization error",
+                e.to_string(),
+                Some(json!({"operation":"export_image_impl", "phase":"serialize_data"})),
+            )
+        })?;
 
     let size_bytes = v.len();
     let base64_data = general_purpose::STANDARD.encode(&v);

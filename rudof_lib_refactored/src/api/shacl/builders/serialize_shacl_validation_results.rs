@@ -1,4 +1,4 @@
-use crate::{Rudof, Result, api::shacl::ShaclOperations, formats::ShaclValidationSortByMode};
+use crate::{Rudof, Result, api::shacl::ShaclOperations, formats::{ShaclValidationSortByMode, ResultShaclValidationFormat}};
 use std::io;
 
 /// Builder for `serialize_shacl_validation_results` operation.
@@ -9,6 +9,7 @@ pub struct SerializeShaclValidationResultsBuilder<'a, W: io::Write> {
     rudof: &'a Rudof,
     writer: &'a mut W,
     sort_order: Option<&'a ShaclValidationSortByMode>,
+    result_format: Option<&'a ResultShaclValidationFormat>,
 }
 
 impl<'a, W: io::Write> SerializeShaclValidationResultsBuilder<'a, W> {
@@ -21,6 +22,7 @@ impl<'a, W: io::Write> SerializeShaclValidationResultsBuilder<'a, W> {
             rudof,
             writer,
             sort_order: None,
+            result_format: None,
         }
     }
 
@@ -34,6 +36,16 @@ impl<'a, W: io::Write> SerializeShaclValidationResultsBuilder<'a, W> {
         self
     }
 
+    /// Sets the output format for validation results.
+    ///
+    /// # Arguments
+    /// 
+    /// * `result_format` - The format in which to serialize validation results
+    pub fn with_result_format(mut self, result_format: &'a ResultShaclValidationFormat) -> Self {
+        self.result_format = Some(result_format);
+        self
+    }
+
     /// Executes the validation results serialization operation with the configured parameters.
     ///
     /// # Errors
@@ -43,6 +55,7 @@ impl<'a, W: io::Write> SerializeShaclValidationResultsBuilder<'a, W> {
         <Rudof as ShaclOperations>::serialize_shacl_validation_results(
             self.rudof,
             self.sort_order,
+            self.result_format,
             self.writer,
         )
     }

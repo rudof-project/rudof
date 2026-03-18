@@ -1,6 +1,7 @@
 use crate::cli::parser::ShaclValidateArgs;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::Result;
+use shacl_validation::validation_report::result;
 
 /// Implementation of the `shacl-validate` command.
 ///
@@ -24,13 +25,13 @@ impl Command for ShaclValidateCommand {
     }
 
     /// Executes the shacl-validate logic.
-    #[allow(clippy::unnecessary_fallible_conversions)]
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
         let data_format = self.args.data_format.into();
         let reader_mode = self.args.reader_mode.into();
         let shacl_schema_format = self.args.shapes_format.into();
         let shacl_validation_mode = self.args.mode.into();
         let sort_order = self.args.sort_by.into();
+        let result_format = self.args.result_format.into();
 
         let mut loading = ctx.rudof.load_data(&self.args.data).with_data_format(&data_format).with_reader_mode(&reader_mode);
         if let Some(base) = self.args.base_data.as_deref() { loading = loading.with_base(base); }
@@ -46,7 +47,10 @@ impl Command for ShaclValidateCommand {
 
         ctx.rudof.validate_shacl().with_mode(&shacl_validation_mode).execute()?;
 
-        ctx.rudof.serialize_shacl_validation_results(&mut ctx.writer).with_sort_order(&sort_order).execute()?;
+        ctx.rudof.serialize_shacl_validation_results(&mut ctx.writer)
+            .with_sort_order(&sort_order)
+            .with_result_format(&result_format)
+            .execute()?;
 
         Ok(())
     }

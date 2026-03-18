@@ -7,7 +7,7 @@ use crate::{Rudof, Result, api::query::QueryOperations, formats::{InputSpec, Que
 pub struct LoadQueryBuilder<'a> {
     rudof: &'a mut Rudof,
     query: &'a InputSpec,
-    query_type: &'a QueryType,
+    query_type: Option<&'a QueryType>,
 }
 
 impl<'a> LoadQueryBuilder<'a> {
@@ -15,12 +15,20 @@ impl<'a> LoadQueryBuilder<'a> {
     ///
     /// This is called internally by `Rudof::load_query()` and should not
     /// be constructed directly.
-    pub(crate) fn new(rudof: &'a mut Rudof, query: &'a InputSpec, query_type: &'a QueryType) -> Self {
+    pub(crate) fn new(rudof: &'a mut Rudof, query: &'a InputSpec) -> Self {
         Self {
             rudof,
             query,
-            query_type,
+            query_type: None,
         }
+    }
+
+    /// Sets the query type (e.g. SELECT).
+    ///
+    /// If not set, Rudof will attempt to auto-detect the query type.
+    pub fn with_query_type(mut self, query_type: &'a QueryType) -> Self {
+        self.query_type = Some(query_type);
+        self
     }
 
     /// Executes the query loading operation.

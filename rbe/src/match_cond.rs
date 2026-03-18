@@ -66,7 +66,7 @@ where
 
     pub fn simple(
         name: &str,
-        cond: impl Fn(&V) -> Result<Pending<V, R>, RbeError<K, V, R>> + Clone + 'static + Sync,
+        cond: impl Fn(&V) -> Result<Pending<V, R>, RbeError<K, V, R>> + Clone + 'static + Sync + Send,
     ) -> Self {
         MatchCond::single(SingleCond::new().with_name(name).with_cond(cond))
     }
@@ -133,7 +133,7 @@ where
     name: Option<String>,
 
     #[serde(skip)]
-    cond: Vec<Box<dyn Cond<K, V, R>>>,
+    cond: Vec<Box<dyn Cond<K, V, R> + Send + Sync>>,
 }
 
 unsafe impl<K, V, R> Sync for SingleCond<K, V, R>
@@ -148,13 +148,13 @@ where
 /// capture some values in the condition closure.
 /// This pattern is inspired by the answer in this thread:
 /// https://users.rust-lang.org/t/how-to-clone-a-boxed-closure/31035
-trait Cond<K, V, R>: Sync
+trait Cond<K, V, R>: Sync + Send
 where
     K: Key,
     V: Value,
     R: Ref,
 {
-    fn clone_box(&self) -> Box<dyn Cond<K, V, R> + Sync>;
+    fn clone_box(&self) -> Box<dyn Cond<K, V, R> + Sync + Send>;
     fn call(&self, v: &V) -> Result<Pending<V, R>, RbeError<K, V, R>>;
 }
 
@@ -163,9 +163,9 @@ where
     K: Key,
     V: Value,
     R: Ref,
-    F: 'static + Fn(&V) -> Result<Pending<V, R>, RbeError<K, V, R>> + Clone + Sync,
+    F: 'static + Fn(&V) -> Result<Pending<V, R>, RbeError<K, V, R>> + Clone + Sync + Send,
 {
-    fn clone_box(&self) -> Box<dyn Cond<K, V, R> + Sync> {
+    fn clone_box(&self) -> Box<dyn Cond<K, V, R> + Sync + Send> {
         Box::new(self.clone())
     }
 
@@ -174,7 +174,7 @@ where
     }
 }
 
-impl<K, V, R> Clone for Box<dyn Cond<K, V, R>>
+impl<K, V, R> Clone for Box<dyn Cond<K, V, R> + Send + Sync>
 where
     K: Key,
     V: Value,
@@ -204,21 +204,7 @@ where
     fn clone(&self) -> Self {
         SingleCond {
             name: self.name.clone(),
-            cond: {
-                let mut r = Vec::new();
-                for c in self.cond.iter() {
-                    r.push(c.clone())
-                }
-                r
-                // self.cond.into_iter().map(|c| (*c).clone_box()).collect()
-            }, /*            match &self.cond {
-                   Option::None => {
-                       None
-                   },
-                   Option::Some(f) => {
-                       Some((*f).clone())
-                   }
-               } */
+            cond: self.cond.iter().map(Clone::clone).collect(),
         }
     }
 }
@@ -251,7 +237,7 @@ where
 
     pub fn with_cond(
         mut self,
-        cond: impl Fn(&V) -> Result<Pending<V, R>, RbeError<K, V, R>> + Clone + 'static + Sync,
+        cond: impl Fn(&V) -> Result<Pending<V, R>, RbeError<K, V, R>> + Clone + 'static + Sync + Send,
     ) -> Self {
         self.cond.push(Box::new(cond));
         self

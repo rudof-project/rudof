@@ -4,7 +4,7 @@ use rmcp::{
     ErrorData as McpError,
     model::{Annotated, RawResource, ReadResourceResult, ResourceContents},
 };
-use rudof_lib::RDFFormat;
+use rudof_lib_refactored::formats::ResultDataFormat;
 use serde_json::json;
 use std::str::FromStr;
 
@@ -146,7 +146,7 @@ pub async fn export_rdf_data(
 ) -> Result<ReadResourceResult, McpError> {
     let rudof = service.rudof.lock().await;
 
-    let rdf_format = RDFFormat::from_str(format_str).map_err(|e| {
+    let rdf_format = ResultDataFormat::from_str(format_str).map_err(|e| {
         invalid_request_error(
             "Serialization error",
             e.to_string(),
@@ -155,13 +155,16 @@ pub async fn export_rdf_data(
     })?;
 
     let mut buffer = Vec::new();
-    rudof.serialize_data(Some(&rdf_format), &mut buffer).map_err(|e| {
-        internal_error(
-            "Serialization error",
-            e.to_string(),
-            Some(json!({"operation":"export_rdf_data", "phase":"serialize_data"})),
-        )
-    })?;
+    rudof.serialize_data(&mut buffer)
+        .with_format(&rdf_format)
+        .execute()
+        .map_err(|e| {
+            internal_error(
+                "Serialization error",
+                e.to_string(),
+                Some(json!({"operation":"export_rdf_data", "phase":"serialize_data"})),
+            )
+        })?;
 
     let text = String::from_utf8(buffer).map_err(|e| {
         internal_error(

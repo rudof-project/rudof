@@ -16,7 +16,8 @@ pub trait QueryOperations {
     /// # Arguments
     ///
     /// * `query` - Input specification defining the query source
-    /// * `query_type` - The type of query (SELECT, CONSTRUCT, etc.)
+    /// * `query_type` - Optional type of query (SELECT, CONSTRUCT, etc.). 
+    /// If None, Rudof will attempt to auto-detect the query type.
     ///
     /// # Errors
     ///
@@ -24,7 +25,7 @@ pub trait QueryOperations {
     fn load_query(
         &mut self,
         query: &InputSpec,
-        query_type: &QueryType,
+        query_type: Option<&QueryType>,
     ) -> Result<()>;
 
     /// Serializes the currently loaded query to a writer.
@@ -72,7 +73,7 @@ impl QueryOperations for crate::Rudof {
     fn load_query(
         &mut self,
         query: &InputSpec,
-        query_type: &QueryType,
+        query_type: Option<&QueryType>,
     ) -> Result<()> {
         load_query(self, query, query_type)
     }

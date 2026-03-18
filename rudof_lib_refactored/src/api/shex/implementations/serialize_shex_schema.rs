@@ -1,4 +1,4 @@
-use crate::{Rudof, Result};
+use crate::{Rudof, Result, formats::ShExFormat};
 use std::io;
 
 pub fn serialize_shex_schema<W: io::Write>(
@@ -8,6 +8,7 @@ pub fn serialize_shex_schema<W: io::Write>(
     show_statistics: Option<bool>,
     show_dependencies: Option<bool>,
     show_time: Option<bool>,
+    result_schema_format: Option<&ShExFormat>,
     writer: &mut W,
 ) -> Result<()> {
     todo!()

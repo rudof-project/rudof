@@ -34,7 +34,9 @@ impl Command for QueryCommand {
         if let Some(endpoint) = self.args.endpoint.as_deref() { loading = loading.with_endpoint(endpoint); }
         loading.execute()?;
 
-        ctx.rudof.load_query(&self.args.query, &query_type).execute()?;
+        ctx.rudof.load_query(&self.args.query)
+            .with_query_type(&query_type)
+            .execute()?;
 
         ctx.rudof.run_query().execute()?;
 

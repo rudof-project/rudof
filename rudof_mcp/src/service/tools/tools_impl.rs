@@ -117,21 +117,6 @@ impl RudofMcpService {
         check_shex_impl(self, params).await
     }
 
-    /// Get detailed information about a specific shape in a ShEx schema.
-    #[tool(name = "shape_info", description = "Obtain information about a specific ShEx shape")]
-    pub async fn shape_info(&self, params: Parameters<ShapeInfoRequest>) -> Result<CallToolResult, McpError> {
-        shape_info_impl(self, params).await
-    }
-
-    /// Convert a ShEx schema between different serialization formats.
-    #[tool(
-        name = "convert_shex",
-        description = "Convert a ShEx schema between supported formats (shexc, shexj, turtle)"
-    )]
-    pub async fn convert_shex(&self, params: Parameters<ConvertShexRequest>) -> Result<CallToolResult, McpError> {
-        convert_shex_impl(self, params).await
-    }
-
     /// Parse and display a ShEx schema with optional analysis features.
     #[tool(
         name = "show_shex",
@@ -251,26 +236,6 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
             },
             "check_shex" => {
                 tool.title = Some("Check ShEx Schema Well-Formedness".to_string());
-                tool.annotations = Some(
-                    rmcp::model::ToolAnnotations::new()
-                        .read_only(true)
-                        .destructive(false)
-                        .idempotent(true)
-                        .open_world(false),
-                );
-            },
-            "shape_info" => {
-                tool.title = Some("Show ShEx Shape Info".to_string());
-                tool.annotations = Some(
-                    rmcp::model::ToolAnnotations::new()
-                        .read_only(true)
-                        .destructive(false)
-                        .idempotent(true)
-                        .open_world(false),
-                );
-            },
-            "convert_shex" => {
-                tool.title = Some("Convert ShEx Schema Formats".to_string());
                 tool.annotations = Some(
                     rmcp::model::ToolAnnotations::new()
                         .read_only(true)

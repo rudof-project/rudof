@@ -1,4 +1,4 @@
-use crate::{Rudof, Result, api::shex::ShExOperations};
+use crate::{Rudof, Result, api::shex::ShExOperations, formats::ShExFormat};
 use std::io;
 
 /// Builder for `serialize_shex_schema` operation.
@@ -13,6 +13,7 @@ pub struct SerializeShexSchemaBuilder<'a, W: io::Write> {
     show_statistics: Option<bool>,
     show_dependencies: Option<bool>,
     show_time: Option<bool>,
+    result_schema_format: Option<&'a ShExFormat>,
 }
 
 impl<'a, W: io::Write> SerializeShexSchemaBuilder<'a, W> {
@@ -29,6 +30,7 @@ impl<'a, W: io::Write> SerializeShexSchemaBuilder<'a, W> {
             show_statistics: None,
             show_dependencies: None,
             show_time: None,
+            result_schema_format: None,
         }
     }
 
@@ -82,6 +84,16 @@ impl<'a, W: io::Write> SerializeShexSchemaBuilder<'a, W> {
         self
     }
 
+    /// Sets the format for the result schema.
+    /// 
+    /// # Arguments
+    ///
+    /// * `result_schema_format` - The format to serialize the result schema
+    pub fn with_schema_format(mut self, result_schema_format: &'a ShExFormat) -> Self {
+        self.result_schema_format = Some(result_schema_format);
+        self
+    }
+
     /// Executes the schema serialization operation with the configured parameters.
     ///
     /// # Errors
@@ -95,6 +107,7 @@ impl<'a, W: io::Write> SerializeShexSchemaBuilder<'a, W> {
             self.show_statistics,
             self.show_dependencies,
             self.show_time,
+            self.result_schema_format,
             self.writer,
         )
     }

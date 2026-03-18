@@ -1,3 +1,4 @@
+mod check_shex_schema;
 mod load_shex_schema;
 mod serialize_shex_schema;
 mod reset_shex_schema;
@@ -8,6 +9,7 @@ mod validate_shex;
 mod serialize_shex_validation_results;
 mod reset_shex;
 
+pub use check_shex_schema::CheckShexSchemaBuilder;
 pub use load_shex_schema::LoadShexSchemaBuilder;
 pub use serialize_shex_schema::SerializeShexSchemaBuilder;
 pub use reset_shex_schema::ResetShexSchemaBuilder;

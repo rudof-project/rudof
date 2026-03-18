@@ -43,7 +43,7 @@ impl Command for ShaclCommand {
         if let Some(base) = self.args.base_shapes.as_deref() { loading_schema = loading_schema.with_base(base); }
         loading_schema.execute()?;
 
-        ctx.rudof.serialize_shacl_schema(&mut ctx.writer).with_format(&result_format).execute()?;
+        ctx.rudof.serialize_shacl_schema(&mut ctx.writer).with_schema_format(&result_format).execute()?;
 
         Ok(())
     }

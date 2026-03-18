@@ -4,7 +4,7 @@ use crate::{
         load_shacl_schema, reset_shacl_schema, reset_shacl_validation, serialize_shacl_schema,
         serialize_shacl_validation_results, validate_shacl,
     },
-    formats::{DataReaderMode, InputSpec, ShaclFormat, ShaclValidationMode, ShaclValidationSortByMode},
+    formats::{DataReaderMode, InputSpec, ShaclFormat, ShaclValidationMode, ShaclValidationSortByMode, ResultShaclValidationFormat},
 };
 use std::io;
 
@@ -77,6 +77,7 @@ pub trait ShaclOperations {
     fn serialize_shacl_validation_results<W: io::Write>(
         &self,
         sort_order: Option<&ShaclValidationSortByMode>,
+        result_format: Option<&ResultShaclValidationFormat>,
         writer: &mut W,
     ) -> Result<()>;
 
@@ -110,9 +111,10 @@ impl ShaclOperations for crate::Rudof {
     fn serialize_shacl_validation_results<W: io::Write>(
         &self,
         sort_order: Option<&ShaclValidationSortByMode>,
+        result_format: Option<&ResultShaclValidationFormat>,
         writer: &mut W,
     ) -> Result<()> {
-        serialize_shacl_validation_results(self, sort_order, writer)
+        serialize_shacl_validation_results(self, sort_order, result_format, writer)
     }
 
     fn reset_shacl_validation(&mut self) {

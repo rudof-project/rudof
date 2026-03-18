@@ -4,11 +4,8 @@ use rmcp::{
     handler::server::wrapper::Parameters,
     model::{CallToolResult, Content, CreateMessageRequestParams, Role, SamplingMessage},
 };
-use rudof_lib::{
-    InputSpec,
-    query::{detect_query_type, execute_query},
-    query_result_format::ResultQueryFormat,
-    query_type::QueryType,
+use rudof_lib_refactored::{
+    formats::{InputSpec, ResultQueryFormat},
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -40,12 +37,8 @@ pub struct ExecuteSparqlQueryRequest {
 /// Response containing query execution results.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct QueryExecutionResponse {
-    /// Type of query that was executed (SELECT, CONSTRUCT, ASK)
-    pub query_type: String,
     /// Format used for the results
     pub result_format: String,
-    /// Execution status
-    pub status: String,
     /// Query results as a string
     pub results: String,
     /// Size of the results in bytes
@@ -196,60 +189,52 @@ pub async fn execute_sparql_query_impl(
         },
     };
 
-    // Detect query type - return Tool Execution Error if unrecognizable
-    let query_type_str = match detect_query_type(&sparql_query) {
-        Some(qt) => qt,
-        None => {
-            return Ok(ToolExecutionError::with_hint(
-                "Cannot determine query type",
-                "Ensure the query starts with SELECT, CONSTRUCT, ASK",
-            )
-            .into_call_tool_result());
-        },
-    };
-
-    // Parse query type
-    let parsed_query_type = match QueryType::from_str(&query_type_str) {
-        Ok(qt) => qt,
-        Err(e) => {
-            return Ok(ToolExecutionError::with_hint(
-                format!("Invalid query type: {}", e),
-                "Supported query types: SELECT, CONSTRUCT, ASK",
-            )
-            .into_call_tool_result());
-        },
-    };
-
     // Parse result format - return Tool Execution Error for invalid format
-    let result_format_str = result_format.as_deref().unwrap_or("Internal");
-    let parsed_result_format = match ResultQueryFormat::from_str(result_format_str) {
-        Ok(fmt) => fmt,
-        Err(e) => {
-            return Ok(ToolExecutionError::with_hint(
-                format!("Invalid result format '{}': {}", result_format_str, e),
-                format!("Supported formats: {}", SPARQL_RESULT_FORMATS),
-            )
-            .into_call_tool_result());
-        },
-    };
+    let mut result_format_parsed = None;
+    if let Some(result_format) = result_format {
+        match ResultQueryFormat::from_str(&result_format) {
+            Ok(fmt) => result_format_parsed = Some(fmt),
+            Err(e) => {
+                return Ok(ToolExecutionError::with_hint(
+                    format!("Invalid result format '{}': {}", result_format, e),
+                    format!("Supported formats: {}", SPARQL_RESULT_FORMATS),
+                )
+                .into_call_tool_result());
+            },
+        }
+    }
 
     let query_spec = InputSpec::Str(sparql_query.clone());
 
     let mut rudof = service.rudof.lock().await;
-    let mut output_buffer = Cursor::new(Vec::new());
 
-    execute_query(
-        &mut rudof,
-        &query_spec,
-        &parsed_query_type,
-        &parsed_result_format,
-        &mut output_buffer,
-    )
-    .map_err(|e| {
+    rudof.load_query(&query_spec).execute().map_err(|e| {
         internal_error(
             "Query execution error",
             e.to_string(),
             Some(json!({"operation":"execute_sparql_query_impl", "phase":"execute_query"})),
+        )
+    })?;
+
+    rudof.run_query().execute().map_err(|e| {
+        internal_error(
+            "Query execution error",
+            e.to_string(),
+            Some(json!({"operation":"execute_sparql_query_impl", "phase":"run_query"})),
+        )
+    })?;
+
+    let mut output_buffer = Cursor::new(Vec::new());
+
+    let mut serialization = rudof.serialize_query_results(&mut output_buffer);
+    if let Some(result_format_parsed) = &result_format_parsed {
+        serialization = serialization.with_result_format(result_format_parsed);
+    }
+    serialization.execute().map_err(|e| {
+        internal_error(
+            "Query results serialization error",
+            e.to_string(),
+            Some(json!({"operation":"execute_sparql_query_impl", "phase":"serialize_results"})),
         )
     })?;
 
@@ -261,14 +246,18 @@ pub async fn execute_sparql_query_impl(
             Some(json!({"operation":"execute_sparql_query_impl", "phase":"utf8_conversion"})),
         )
     })?;
+
     // Calculate metadata
     let result_size_bytes = output_str.len();
     let result_lines = output_str.lines().count();
 
+    let result_format_str = if let Some(fmt) = result_format_parsed {
+        fmt.to_string()
+    } else {
+        "turtle".to_string()
+    };
     let response = QueryExecutionResponse {
-        query_type: query_type_str.clone(),
-        result_format: result_format_str.to_string(),
-        status: "success".to_string(),
+        result_format: result_format_str.clone(),
         results: output_str.to_string(),
         result_size_bytes,
         result_lines,
@@ -285,12 +274,10 @@ pub async fn execute_sparql_query_impl(
     // Create a summary text
     let summary = format!(
         "# SPARQL Query Execution\n\n\
-        **Status:** ✓ Success\n\
-        **Query Type:** {}\n\
         **Result Format:** {}\n\
         **Result Size:** {} bytes\n\
         **Result Lines:** {}\n",
-        query_type_str, result_format_str, result_size_bytes, result_lines
+        result_format_str, result_size_bytes, result_lines
     );
 
     let query_display = format!("## Query\n\n```sparql\n{}\n```", sparql_query);
