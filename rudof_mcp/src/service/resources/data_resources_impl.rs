@@ -156,7 +156,7 @@ pub async fn export_rdf_data(
 
     let mut buffer = Vec::new();
     rudof.serialize_data(&mut buffer)
-        .with_format(&rdf_format)
+        .with_result_data_format(&rdf_format)
         .execute()
         .map_err(|e| {
             internal_error(

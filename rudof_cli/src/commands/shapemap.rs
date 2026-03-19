@@ -33,7 +33,7 @@ impl Command for ShapemapCommand {
         if let Some(base_schema) = self.args.base_schema.as_deref() { shapemap_loading = shapemap_loading.with_base_shapes(base_schema); } 
         shapemap_loading.execute()?;
 
-        ctx.rudof.serialize_shapemap(&mut ctx.writer).with_shapemap_format(&result_format).execute()?;
+        ctx.rudof.serialize_shapemap(&mut ctx.writer).with_result_shapemap_format(&result_format).execute()?;
 
         Ok(())
     }

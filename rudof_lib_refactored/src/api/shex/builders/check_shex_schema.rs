@@ -28,7 +28,7 @@ impl<'a, W: std::io::Write> CheckShexSchemaBuilder<'a, W> {
     /// # Arguments
     /// 
     /// * `schema_format` - The format to use when checking the schema
-    pub fn with_schema_format(mut self, schema_format: &'a crate::formats::ShExFormat) -> Self {
+    pub fn with_shex_schema_format(mut self, schema_format: &'a crate::formats::ShExFormat) -> Self {
         self.schema_format = Some(schema_format);
         self
     }

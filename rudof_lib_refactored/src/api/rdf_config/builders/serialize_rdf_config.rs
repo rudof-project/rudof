@@ -6,7 +6,7 @@ use std::io;
 /// Provides a fluent interface for configuring and executing RDF-config serialization operations.
 pub struct SerializeRdfConfigBuilder<'a, W: io::Write> {
     rudof: &'a Rudof,
-    format: Option<&'a ResultRdfConfigFormat>,
+    result_rdf_config_format: Option<&'a ResultRdfConfigFormat>,
     writer: &'a mut W,
 }
 
@@ -18,7 +18,7 @@ impl<'a, W: io::Write> SerializeRdfConfigBuilder<'a, W> {
     pub(crate) fn new(rudof: &'a Rudof, writer: &'a mut W) -> Self {
         Self {
             rudof,
-            format: None,
+            result_rdf_config_format: None,
             writer,
         }
     }
@@ -27,9 +27,9 @@ impl<'a, W: io::Write> SerializeRdfConfigBuilder<'a, W> {
     ///
     /// # Arguments
     ///
-    /// * `format` - The format of the RDF-config
-    pub fn with_format(mut self, format: &'a ResultRdfConfigFormat) -> Self {
-        self.format = Some(format);
+    /// * `result_rdf_config_format` - The format of the RDF-config
+    pub fn with_result_rdf_config_format(mut self, format: &'a ResultRdfConfigFormat) -> Self {
+        self.result_rdf_config_format = Some(format);
         self
     }
 
@@ -39,6 +39,6 @@ impl<'a, W: io::Write> SerializeRdfConfigBuilder<'a, W> {
     ///
     /// Returns an error if the RDF-config cannot be serialized.
     pub fn execute(self) -> Result<()> {
-        <Rudof as RdfConfigOperations>::serialize_rdf_config(self.rudof, self.format, self.writer)
+        <Rudof as RdfConfigOperations>::serialize_rdf_config(self.rudof, self.result_rdf_config_format, self.writer)
     }
 }

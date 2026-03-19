@@ -71,4 +71,8 @@ pub enum RudofError {
     /// The requested operation is not yet implemented.
     #[error("Not implemented: {msg}")]
     NotImplemented { msg: String },
+
+    /// A generic error with a message.
+    #[error("Error: {error}")]
+    Generic { error: String },
 }

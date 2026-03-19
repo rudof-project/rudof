@@ -7,7 +7,7 @@ use crate::{Rudof, Result, api::dctap::DctapOperations, formats::{InputSpec, DCT
 pub struct LoadDctapBuilder<'a> {
     rudof: &'a mut Rudof,
     dctap: &'a InputSpec,
-    format: Option<&'a DCTapFormat>,
+    dctap_format: Option<&'a DCTapFormat>,
 }
 
 impl<'a> LoadDctapBuilder<'a> {
@@ -19,7 +19,7 @@ impl<'a> LoadDctapBuilder<'a> {
         Self {
             rudof,
             dctap,
-            format: None,
+            dctap_format: None,
         }
     }
 
@@ -27,9 +27,9 @@ impl<'a> LoadDctapBuilder<'a> {
     ///
     /// # Arguments
     ///
-    /// * `format` - The format to use when loading the DC-TAP profile
-    pub fn with_format(mut self, format: &'a DCTapFormat) -> Self {
-        self.format = Some(format);
+    /// * `dctap_format` - The format to use when loading the DC-TAP profile
+    pub fn with_dctap_format(mut self, dctap_format: &'a DCTapFormat) -> Self {
+        self.dctap_format = Some(dctap_format);
         self
     }
 
@@ -39,6 +39,6 @@ impl<'a> LoadDctapBuilder<'a> {
     ///
     /// Returns an error if the DC-TAP profile cannot be loaded or parsed.
     pub fn execute(self) -> Result<()> {
-        <Rudof as DctapOperations>::load_dctap(self.rudof, self.dctap, self.format)
+        <Rudof as DctapOperations>::load_dctap(self.rudof, self.dctap, self.dctap_format)
     }
 }

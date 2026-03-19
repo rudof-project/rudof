@@ -39,13 +39,13 @@ pub trait ShaclOperations {
     ///
     /// # Arguments
     ///
-    /// * `format` - Optional output format (uses default if None)
+    /// * `shacl_format` - Optional output format (uses default if None)
     /// * `writer` - The destination to write to
     ///
     /// # Errors
     ///
     /// Returns an error if no schema is loaded or serialization fails.
-    fn serialize_shacl_schema<W: io::Write>(&self, format: Option<&ShaclFormat>, writer: &mut W) -> Result<()>;
+    fn serialize_shacl_schema<W: io::Write>(&self, shacl_format: Option<&ShaclFormat>, writer: &mut W) -> Result<()>;
 
     /// Resets the SHACL schema.
     fn reset_shacl_schema(&mut self);
@@ -68,7 +68,8 @@ pub trait ShaclOperations {
     ///
     /// # Arguments
     ///
-    /// * `sort_order` - Optional sorting mode for the validation results (uses default order if None)
+    /// * `shacl_validation_sort_order_mode` - Optional sorting mode for the validation results (uses default order if None)
+    /// * `result_shacl_validation_format` - Optional output format for validation results (uses default if None)
     /// * `writer` - The destination to write to
     ///
     /// # Errors
@@ -76,8 +77,8 @@ pub trait ShaclOperations {
     /// Returns an error if no validation results are available.
     fn serialize_shacl_validation_results<W: io::Write>(
         &self,
-        sort_order: Option<&ShaclValidationSortByMode>,
-        result_format: Option<&ResultShaclValidationFormat>,
+        shacl_validation_sort_order_mode: Option<&ShaclValidationSortByMode>,
+        result_shacl_validation_format: Option<&ResultShaclValidationFormat>,
         writer: &mut W,
     ) -> Result<()>;
 
@@ -96,8 +97,8 @@ impl ShaclOperations for crate::Rudof {
         load_shacl_schema(self, schema, schema_format, base, reader_mode)
     }
 
-    fn serialize_shacl_schema<W: io::Write>(&self, format: Option<&ShaclFormat>, writer: &mut W) -> Result<()> {
-        serialize_shacl_schema(self, format, writer)
+    fn serialize_shacl_schema<W: io::Write>(&self, shacl_format: Option<&ShaclFormat>, writer: &mut W) -> Result<()> {
+        serialize_shacl_schema(self, shacl_format, writer)
     }
 
     fn reset_shacl_schema(&mut self) {
@@ -110,11 +111,11 @@ impl ShaclOperations for crate::Rudof {
 
     fn serialize_shacl_validation_results<W: io::Write>(
         &self,
-        sort_order: Option<&ShaclValidationSortByMode>,
-        result_format: Option<&ResultShaclValidationFormat>,
+        shacl_validation_sort_order_mode: Option<&ShaclValidationSortByMode>,
+        result_shacl_validation_format: Option<&ResultShaclValidationFormat>,
         writer: &mut W,
     ) -> Result<()> {
-        serialize_shacl_validation_results(self, sort_order, result_format, writer)
+        serialize_shacl_validation_results(self, shacl_validation_sort_order_mode, result_shacl_validation_format, writer)
     }
 
     fn reset_shacl_validation(&mut self) {

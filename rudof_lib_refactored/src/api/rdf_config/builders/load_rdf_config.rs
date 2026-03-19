@@ -6,7 +6,7 @@ use crate::{Rudof, Result, api::rdf_config::RdfConfigOperations, formats::{Input
 pub struct LoadRdfConfigBuilder<'a> {
     rudof: &'a mut Rudof,
     rdf_config: &'a InputSpec,
-    format: Option<&'a RdfConfigFormat>,
+    rdf_config_format: Option<&'a RdfConfigFormat>,
 }
 
 impl<'a> LoadRdfConfigBuilder<'a> {
@@ -18,7 +18,7 @@ impl<'a> LoadRdfConfigBuilder<'a> {
         Self {
             rudof,
             rdf_config,
-            format: None,
+            rdf_config_format: None,
         }
     }
 
@@ -26,9 +26,9 @@ impl<'a> LoadRdfConfigBuilder<'a> {
     ///
     /// # Arguments
     ///
-    /// * `format` - The format of the RDF-config
-    pub fn with_format(mut self, format: &'a RdfConfigFormat) -> Self {
-        self.format = Some(format);
+    /// * `rdf_config_format` - The format of the RDF-config
+    pub fn with_rdf_config_format(mut self, rdf_config_format: &'a RdfConfigFormat) -> Self {
+        self.rdf_config_format = Some(rdf_config_format);
         self
     }
 
@@ -38,6 +38,6 @@ impl<'a> LoadRdfConfigBuilder<'a> {
     ///
     /// Returns an error if the RDF-config cannot be parsed or loaded.
     pub fn execute(self) -> Result<()> {
-        <Rudof as RdfConfigOperations>::load_rdf_config(self.rudof, self.rdf_config, self.format)
+        <Rudof as RdfConfigOperations>::load_rdf_config(self.rudof, self.rdf_config, self.rdf_config_format)
     }
 }

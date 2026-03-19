@@ -135,12 +135,12 @@ pub async fn validate_shacl_impl(
         })?);
     }
 
-    let mut loading_shacl_schema = rudof.load_shacl_schema();
+    let mut loading_shacl_schema = rudof.load_shacl_shapes();
     if let Some(shape) = &parsed_shapes {
-        loading_shacl_schema = loading_shacl_schema.with_schema(shape)
+        loading_shacl_schema = loading_shacl_schema.with_shacl_schema(shape)
     }
     if let Some(shape_format) = &parsed_shapes_format {
-        loading_shacl_schema = loading_shacl_schema.with_schema_format(shape_format);
+        loading_shacl_schema = loading_shacl_schema.with_shacl_schema_format(shape_format);
     }
     if let Some(base_shape) = base_shape.as_deref() {
         loading_shacl_schema = loading_shacl_schema.with_base(base_shape);
@@ -155,7 +155,7 @@ pub async fn validate_shacl_impl(
 
     let mut validation = rudof.validate_shacl();
     if let Some(mode) = &parsed_mode {
-        validation = validation.with_mode(mode);
+        validation = validation.with_shacl_validation_mode(mode);
     }
     validation.execute().map_err(|e| {
         internal_error(
@@ -168,10 +168,10 @@ pub async fn validate_shacl_impl(
     let mut output_buffer = Cursor::new(Vec::new());
     let mut serialization = rudof.serialize_shacl_validation_results(&mut output_buffer);
     if let Some(result_format) = &parsed_result_format {
-        serialization = serialization.with_result_format(result_format);
+        serialization = serialization.with_result_shacl_validation_format(result_format);
     }
     if let Some(sort_by) = &parsed_sort_by {
-        serialization = serialization.with_sort_order(sort_by);
+        serialization = serialization.with_shacl_validation_sort_order_mode(sort_by);
     }
     serialization.execute().map_err(|e| {
         internal_error(

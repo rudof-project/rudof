@@ -8,7 +8,7 @@ use std::io;
 pub struct SerializeQueryResultsBuilder<'a, W: io::Write> {
     rudof: &'a Rudof,
     writer: &'a mut W,
-    result_format: Option<&'a ResultQueryFormat>,
+    result_query_format: Option<&'a ResultQueryFormat>,
 }
 
 impl<'a, W: io::Write> SerializeQueryResultsBuilder<'a, W> {
@@ -20,7 +20,7 @@ impl<'a, W: io::Write> SerializeQueryResultsBuilder<'a, W> {
         Self {
             rudof,
             writer,
-            result_format: None,
+            result_query_format: None,
         }
     }
 
@@ -28,9 +28,9 @@ impl<'a, W: io::Write> SerializeQueryResultsBuilder<'a, W> {
     ///
     /// # Arguments
     ///
-    /// * `result_format` - The format to use when serializing the results
-    pub fn with_result_format(mut self, result_format: &'a ResultQueryFormat) -> Self {
-        self.result_format = Some(result_format);
+    /// * `result_query_format` - The format to use when serializing the results
+    pub fn with_result_query_format(mut self, result_query_format: &'a ResultQueryFormat) -> Self {
+        self.result_query_format = Some(result_query_format);
         self
     }
 
@@ -42,7 +42,7 @@ impl<'a, W: io::Write> SerializeQueryResultsBuilder<'a, W> {
     pub fn execute(self) -> Result<()> {
         <Rudof as QueryOperations>::serialize_query_results(
             self.rudof,
-            self.result_format,
+            self.result_query_format,
             self.writer,
         )
     }

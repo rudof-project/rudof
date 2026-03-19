@@ -40,8 +40,8 @@ impl Command for ShexValidateCommand {
 
         let mut shex_schema_loading = ctx.rudof.load_shex_schema(&self.args.schema)
             .with_reader_mode(&reader_mode)
-            .with_schema_format(&schema_format);
-        if let Some(base) = self.args.base_schema.as_deref() { shex_schema_loading  = shex_schema_loading.with_base_schema(base); }
+            .with_shex_schema_format(&schema_format);
+        if let Some(base) = self.args.base_schema.as_deref() { shex_schema_loading  = shex_schema_loading.with_base(base); }
         shex_schema_loading.execute()?;
 
         let mut shapemap_loading = ctx.rudof.load_shapemap(&self.args.shapemap).with_shapemap_format(&shapemap_format);
@@ -52,8 +52,8 @@ impl Command for ShexValidateCommand {
         ctx.rudof.validate_shex().execute()?;
 
         ctx.rudof.serialize_shex_validation_results(&mut ctx.writer)
-            .with_sort_order(&sort_order)
-            .with_result_format(&result_format)
+            .with_shex_validation_sort_order_mode(&sort_order)
+            .with_result_shex_validation_format(&result_format)
             .execute()?;
 
         Ok(())

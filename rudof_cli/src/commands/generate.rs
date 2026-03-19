@@ -41,7 +41,7 @@ impl Command for GenerateCommand {
                 &schema_format, 
                 self.args.entity_count
             )
-            .with_result_format(&result_format);
+            .with_result_generation_format(&result_format);
 
             if let Some(seed) = self.args.seed { generation = generation.with_seed(seed); }
             if let Some(parallel) = self.args.parallel { generation = generation.with_parallel(parallel); }

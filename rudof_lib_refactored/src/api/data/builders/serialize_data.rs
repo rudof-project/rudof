@@ -8,7 +8,7 @@ use std::io;
 pub struct SerializeDataBuilder<'a, W: io::Write> {
     rudof: &'a Rudof,
     writer: &'a mut W,
-    format: Option<&'a ResultDataFormat>,
+    result_data_format: Option<&'a ResultDataFormat>,
 }
 
 impl<'a, W: io::Write> SerializeDataBuilder<'a, W> {
@@ -20,7 +20,7 @@ impl<'a, W: io::Write> SerializeDataBuilder<'a, W> {
         Self {
             rudof,
             writer,
-            format: None,
+            result_data_format: None,
         }
     }
 
@@ -28,9 +28,9 @@ impl<'a, W: io::Write> SerializeDataBuilder<'a, W> {
     ///
     /// # Arguments
     ///
-    /// * `format` - The format to use when serializing the data
-    pub fn with_format(mut self, format: &'a ResultDataFormat) -> Self {
-        self.format = Some(format);
+    /// * `result_data_format` - The format to use when serializing the data
+    pub fn with_result_data_format(mut self, result_data_format: &'a ResultDataFormat) -> Self {
+        self.result_data_format = Some(result_data_format);
         self
     }
 
@@ -40,6 +40,6 @@ impl<'a, W: io::Write> SerializeDataBuilder<'a, W> {
     ///
     /// Returns an error if the data cannot be serialized or written.
     pub fn execute(self) -> Result<()> {
-        <Rudof as DataOperations>::serialize_data(self.rudof, self.format, self.writer)
+        <Rudof as DataOperations>::serialize_data(self.rudof, self.result_data_format, self.writer)
     }
 }

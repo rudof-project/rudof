@@ -161,10 +161,10 @@ pub async fn validate_shex_impl(
 
     let mut shex_schema_loading = rudof.load_shex_schema(&parsed_schema);
     if let Some(base_schema) = base_schema.as_deref() {
-        shex_schema_loading = shex_schema_loading.with_base_schema(base_schema);
+        shex_schema_loading = shex_schema_loading.with_base(base_schema);
     }
     if let Some(schema_format) = &parsed_schema_format {
-        shex_schema_loading = shex_schema_loading.with_schema_format(schema_format);
+        shex_schema_loading = shex_schema_loading.with_shex_schema_format(schema_format);
     }
     shex_schema_loading.execute().map_err(|e| {
         internal_error(
@@ -203,10 +203,10 @@ pub async fn validate_shex_impl(
     let mut output_buffer = Cursor::new(Vec::new());
     let mut serialization = rudof.serialize_shex_validation_results(&mut output_buffer);
     if let Some(sort_by) = &parsed_sort_by {
-        serialization = serialization.with_sort_order(sort_by);
+        serialization = serialization.with_shex_validation_sort_order_mode(sort_by);
     }
     if let Some(result_format) = &parsed_result_format {
-        serialization = serialization.with_result_format(result_format);
+        serialization = serialization.with_result_shex_validation_format(result_format);
     }
     serialization.execute().map_err(|e| {
         internal_error(

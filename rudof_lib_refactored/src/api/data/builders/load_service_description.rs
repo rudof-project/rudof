@@ -7,8 +7,9 @@ use crate::{Rudof, Result, api::data::DataOperations, formats::{InputSpec, DataF
 pub struct LoadServiceDescriptionBuilder<'a> {
     rudof: &'a mut Rudof,
     service: &'a InputSpec,
-    format: Option<&'a DataFormat>,
+    data_format: Option<&'a DataFormat>,
     reader_mode: Option<&'a DataReaderMode>,
+    base: Option<&'a str>,
 }
 
 impl<'a> LoadServiceDescriptionBuilder<'a> {
@@ -20,8 +21,9 @@ impl<'a> LoadServiceDescriptionBuilder<'a> {
         Self {
             rudof,
             service,
-            format: None,
+            data_format: None,
             reader_mode: None,
+            base: None,
         }
     }
 
@@ -29,9 +31,9 @@ impl<'a> LoadServiceDescriptionBuilder<'a> {
     ///
     /// # Arguments
     ///
-    /// * `format` - The format to use when loading the service description
-    pub fn with_format(mut self, format: &'a DataFormat) -> Self {
-        self.format = Some(format);
+    /// * `data_format` - The format to use when loading the service description
+    pub fn with_data_format(mut self, data_format: &'a DataFormat) -> Self {
+        self.data_format = Some(data_format);
         self
     }
 
@@ -45,6 +47,16 @@ impl<'a> LoadServiceDescriptionBuilder<'a> {
         self
     }
 
+    /// Sets the base URI for resolving relative IRIs in the service description.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `base` - The base URI to use for resolving relative IRIs in the service description
+    pub fn with_base(mut self, base: &'a str) -> Self {
+        self.base = Some(base);
+        self
+    }
+
     /// Executes the service description loading operation with the configured parameters.
     ///
     /// # Errors
@@ -54,8 +66,9 @@ impl<'a> LoadServiceDescriptionBuilder<'a> {
         <Rudof as DataOperations>::load_service_description(
             self.rudof,
             self.service,
-            self.format,
+            self.data_format,
             self.reader_mode,
+            self.base,
         )
     }
 }

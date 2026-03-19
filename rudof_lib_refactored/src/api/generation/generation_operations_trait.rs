@@ -12,7 +12,7 @@ pub trait GenerationOperations {
     ///
     /// * `schema` - Input specification defining the schema source
     /// * `schema_format` - Format of the input schema (ShEx or SHACL)
-    /// * `result_format` - Optional output format for the generated RDF data (uses default if None)
+    /// * `result_generation_format` - Optional output format for the generated RDF data (uses default if None)
     /// * `number_entities` - Number of entities to generate
     /// * `seed` - Optional random seed for reproducible generation (uses random seed if None)
     /// * `parallel` - Optional number of parallel threads (uses 2 by default)
@@ -24,7 +24,7 @@ pub trait GenerationOperations {
         &self,
         schema: &InputSpec,
         schema_format: &GenerationSchemaFormat,
-        result_format: Option<&DataFormat>,
+        result_generation_format: Option<&DataFormat>,
         number_entities: usize,
         seed: Option<u64>,
         parallel: Option<usize>,
@@ -36,11 +36,11 @@ impl GenerationOperations for Rudof {
         &self,
         schema: &InputSpec,
         schema_format: &GenerationSchemaFormat,
-        result_format: Option<&DataFormat>,
+        result_generation_format: Option<&DataFormat>,
         number_entities: usize,
         seed: Option<u64>,
         parallel: Option<usize>,
     ) -> Result<()> {
-        generate_data(self, schema, schema_format, result_format, number_entities, seed, parallel)
+        generate_data(self, schema, schema_format, result_generation_format, number_entities, seed, parallel)
     }
 }

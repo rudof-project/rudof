@@ -7,6 +7,7 @@ pub fn load_data(
     base: Option<&str>,
     endpoint: Option<&str>,
     reader_mode: Option<&DataReaderMode>,
+    merge: Option<bool>,
 ) -> Result<()> {
     todo!()
 }

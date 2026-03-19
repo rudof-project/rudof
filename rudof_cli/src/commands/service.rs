@@ -29,12 +29,15 @@ impl Command for ServiceCommand {
         let format = self.args.service_format.into();
         let result_format = self.args.result_service_format.into();
 
-        ctx.rudof.load_service_description(&self.args.service)
-            .with_format(&format)
-            .with_reader_mode(&reader_mode)
-            .execute()?;
+        let mut load_service_description = ctx.rudof.load_service_description(&self.args.service)
+            .with_data_format(&format)
+            .with_reader_mode(&reader_mode);
+        if let Some(base) = &self.args.base_data.as_deref() {
+            load_service_description = load_service_description.with_base(base);
+        }
+        load_service_description.execute()?;
 
-        ctx.rudof.serialize_service_description(&mut ctx.writer).with_format(&result_format).execute()?;
+        ctx.rudof.serialize_service_description(&mut ctx.writer).with_result_service_format(&result_format).execute()?;
 
         Ok(())
     }

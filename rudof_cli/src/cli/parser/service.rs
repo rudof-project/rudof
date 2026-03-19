@@ -38,6 +38,13 @@ pub struct ServiceArgs {
     )]
     pub reader_mode: DataReaderModeCli,
 
+    #[arg(
+        long = "base",
+        value_name = "IRI",
+        help = "Base used to resolve relative IRIs in the service description"
+    )]
+    pub base_data: Option<String>,
+
     #[command(flatten)]
     pub common: CommonArgsAll,
 }

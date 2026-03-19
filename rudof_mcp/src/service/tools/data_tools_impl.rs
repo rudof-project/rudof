@@ -245,7 +245,7 @@ pub async fn export_rdf_data_impl(
 
     let mut v = Vec::new();
     rudof.serialize_data(&mut v)
-        .with_format(&parsed_format)
+        .with_result_data_format(&parsed_format)
         .execute()
         .map_err(|e| {
             internal_error(
@@ -296,7 +296,7 @@ pub async fn export_plantuml_impl(
     let mut v = Vec::new();
 
     rudof.serialize_data(&mut v)
-        .with_format(&ResultDataFormat::PlantUML)
+        .with_result_data_format(&ResultDataFormat::PlantUML)
         .execute()
         .map_err(|e| {
             internal_error(
@@ -363,7 +363,7 @@ pub async fn export_image_impl(
     let mut v = Vec::new();
 
     rudof.serialize_data(&mut v)
-        .with_format(&format)
+        .with_result_data_format(&format)
         .execute()
         .map_err(|e| {
             internal_error(

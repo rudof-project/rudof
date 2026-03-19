@@ -8,7 +8,7 @@ pub struct GenerateDataBuilder<'a> {
 	rudof: &'a Rudof,
 	schema: &'a InputSpec,
 	schema_format: &'a GenerationSchemaFormat,
-	result_format: Option<&'a DataFormat>,
+	result_generation_format: Option<&'a DataFormat>,
 	number_entities: usize,
 	seed: Option<u64>,
 	parallel: Option<usize>,
@@ -29,7 +29,7 @@ impl<'a> GenerateDataBuilder<'a> {
 			rudof,
 			schema,
 			schema_format,
-			result_format: None,
+			result_generation_format: None,
 			number_entities,
 			seed: None,
 			parallel: None,
@@ -37,8 +37,8 @@ impl<'a> GenerateDataBuilder<'a> {
 	}
 
 	/// Set the desired output data format for the generated RDF.
-	pub fn with_result_format(mut self, format: &'a DataFormat) -> Self {
-		self.result_format = Some(format);
+	pub fn with_result_generation_format(mut self, result_generation_format: &'a DataFormat) -> Self {
+		self.result_generation_format = Some(result_generation_format);
 		self
 	}
 
@@ -65,7 +65,7 @@ impl<'a> GenerateDataBuilder<'a> {
 			self.rudof,
 			self.schema,
 			self.schema_format,
-			self.result_format,
+			self.result_generation_format,
 			self.number_entities,
 			self.seed,
 			self.parallel,

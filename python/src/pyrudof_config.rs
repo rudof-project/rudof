@@ -6,9 +6,7 @@
 use std::path::Path;
 
 use pyo3::{PyErr, PyResult, Python, pyclass, pymethods};
-use rudof_lib::{RudofConfig, RudofError};
-
-use crate::PyRudofError;
+use rudof_lib_refactored::{RudofConfig, errors::{RudofError, ConfigError}};
 
 /// Contains the configuration parameters for Rudof.
 ///
@@ -28,7 +26,7 @@ impl PyRudofConfig {
     #[new]
     pub fn __init__(py: Python<'_>) -> PyResult<Self> {
         py.detach(|| {
-            let rudof_config = RudofConfig::new().map_err(cnv_err)?;
+            let rudof_config = RudofConfig::new();
             Ok(Self { inner: rudof_config })
         })
     }
@@ -46,20 +44,16 @@ impl PyRudofConfig {
     #[staticmethod]
     pub fn from_path(path: &str) -> PyResult<Self> {
         let path = Path::new(path);
-        let rudof_config = RudofConfig::from_path(path).map_err(cnv_err)?;
+        let rudof_config = RudofConfig::from_path(path).map_err(cnv_config_err)?;
         Ok(PyRudofConfig { inner: rudof_config })
     }
 }
 
-/// Converts a `RudofError` into a Python exception.
-///
-/// Args:
-///     e (RudofError): The Rust error to convert.
-///
-/// Returns:
-///     PyErr: A Python exception corresponding to the Rust error.
-fn cnv_err(e: RudofError) -> PyErr {
-    let e: PyRudofError = e.into();
-    let e: PyErr = e.into();
-    e
+/// Convert a `ConfigError` into a Python exception by first turning it
+/// into a `RudofError` and delegating to the shared `cnv_err` helper.
+fn cnv_config_err(e: ConfigError) -> PyErr {
+    let r: RudofError = e.into();
+    crate::pyrudof_lib::cnv_err(r)
 }
+
+

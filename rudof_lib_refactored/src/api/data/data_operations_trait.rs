@@ -3,7 +3,7 @@ use crate::{
     formats::{DataFormat, ResultDataFormat, InputSpec, DataReaderMode, NodeInspectionMode, ResultServiceFormat},
     api::data::implementations::{
         load_data, serialize_data, reset_data, load_service_description, serialize_service_description,
-        reset_service_description, show_node_info
+        reset_service_description, show_node_info, list_endpoints
     }
 };
 use std::io;
@@ -30,13 +30,14 @@ pub trait DataOperations {
         base: Option<&str>,
         endpoint: Option<&str>,
         reader_mode: Option<&DataReaderMode>,
+        merge: Option<bool>,
     ) -> Result<()>;
 
     /// Serializes the current RDF data to a writer.
     ///
     /// # Arguments
     ///
-    /// * `format` - Optional output format (uses default if None)
+    /// * `result_data_format` - Optional output format (uses default if None)
     /// * `writer` - The destination to write the serialized data to
     ///
     /// # Errors
@@ -44,7 +45,7 @@ pub trait DataOperations {
     /// Returns an error if serialization fails.
     fn serialize_data<W: io::Write>(
         &self, 
-        format: Option<&ResultDataFormat>, 
+        result_data_format: Option<&ResultDataFormat>, 
         writer: &mut W
     ) -> Result<()>;
 
@@ -56,8 +57,9 @@ pub trait DataOperations {
     /// # Arguments
     ///
     /// * `service` - Input specification defining the service description source
-    /// * `format` - Optional format (uses default if None)
+    /// * `data_format` - Optional format (uses default if None)
     /// * `reader_mode` - Optional parsing mode (uses default if None)
+    /// * `base` - Optional base IRI for resolving relative IRIs in the service description (uses default if None)
     ///
     /// # Errors
     ///
@@ -65,15 +67,16 @@ pub trait DataOperations {
     fn load_service_description(
         &mut self,
         service: &InputSpec,
-        format: Option<&DataFormat>,
+        data_format: Option<&DataFormat>,
         reader_mode: Option<&DataReaderMode>,
+        base: Option<&str>,
     ) -> Result<()>;
 
     /// Serializes the current service description to a writer.
     ///
     /// # Arguments
     ///
-    /// * `format` - Optional output format for the service description (uses default if None)
+    /// * `result_service_format` - Optional output format for the service description (uses default if None)
     /// * `writer` - The destination to write the serialized service description to
     ///
     /// # Errors
@@ -81,7 +84,7 @@ pub trait DataOperations {
     /// Returns an error if no service description is loaded or serialization fails.
     fn serialize_service_description<W: io::Write>(
         &self,
-        format: Option<&ResultServiceFormat>,
+        result_service_format: Option<&ResultServiceFormat>,
         writer: &mut W,
     ) -> Result<()>;
 
@@ -97,6 +100,7 @@ pub trait DataOperations {
     /// * `show_node_mode` - Optional inspection mode controlling the level of detail (uses default if None)
     /// * `depth` - Optional maximum traversal depth when expanding related nodes (uses 1 by default)
     /// * `show_hyperlinks` - Whether hyperlinks should be included in the output (uses false by default)
+    /// * `show_colors` - Whether colored output should be used (uses false by default)
     /// * `writer` - The destination to write the node information to
     ///
     /// # Errors
@@ -109,8 +113,15 @@ pub trait DataOperations {
         show_node_mode: Option<&NodeInspectionMode>,
         depth: Option<usize>,
         show_hyperlinks: Option<bool>,
+        show_colors: Option<bool>,
         writer: &mut W,
     ) -> Result<()>;
+
+    /// Lists known SPARQL endpoints.
+    /// 
+    /// Returns:
+    ///     List of (name, url) tuples for known endpoints.
+    fn list_endpoints(&self) -> Vec<(String, String)>;
 }
 
 impl DataOperations for Rudof {
@@ -121,16 +132,17 @@ impl DataOperations for Rudof {
         base: Option<&str>,
         endpoint: Option<&str>,
         reader_mode: Option<&DataReaderMode>,
+        merge: Option<bool>,
     ) -> Result<()> {
-        load_data(self, data, data_format, base, endpoint, reader_mode)
+        load_data(self, data, data_format, base, endpoint, reader_mode, merge)
     }
 
     fn serialize_data<W: io::Write>(
         &self, 
-        format: Option<&ResultDataFormat>, 
+        result_data_format: Option<&ResultDataFormat>, 
         writer: &mut W
     ) -> Result<()> {
-        serialize_data(self, format, writer)
+        serialize_data(self, result_data_format, writer)
     }
 
     fn reset_data(&mut self) {
@@ -140,18 +152,19 @@ impl DataOperations for Rudof {
     fn load_service_description(
         &mut self,
         service: &InputSpec,
-        format: Option<&DataFormat>,
+        data_format: Option<&DataFormat>,
         reader_mode: Option<&DataReaderMode>,
+        base: Option<&str>,
     ) -> Result<()> {
-        load_service_description(self, service, format, reader_mode)
+        load_service_description(self, service, data_format, reader_mode, base)
     }
 
     fn serialize_service_description<W: io::Write>(
         &self,
-        format: Option<&ResultServiceFormat>,
+        result_service_format: Option<&ResultServiceFormat>,
         writer: &mut W,
     ) -> Result<()> {
-        serialize_service_description(self, format, writer)
+        serialize_service_description(self, result_service_format, writer)
     }
 
     fn reset_service_description(&mut self) {
@@ -165,8 +178,13 @@ impl DataOperations for Rudof {
         show_node_mode: Option<&NodeInspectionMode>,
         depth: Option<usize>,
         show_hyperlinks: Option<bool>,
+        show_colors: Option<bool>,
         writer: &mut W,
     ) -> Result<()> {
-        show_node_info(self, node, predicates, show_node_mode, depth, show_hyperlinks, writer)
+        show_node_info(self, node, predicates, show_node_mode, depth, show_hyperlinks, show_colors, writer)
+    }
+
+    fn list_endpoints(&self) -> Vec<(String, String)> {
+        list_endpoints(self)
     }
 }

@@ -23,7 +23,7 @@ use crate::{
         data::builders::{
             ShowNodeInfoBuilder, LoadDataBuilder, ResetDataBuilder,
             LoadServiceDescriptionBuilder, SerializeDataBuilder,
-            SerializeServiceDescriptionBuilder, ResetServiceDescriptionBuilder,
+            SerializeServiceDescriptionBuilder, ResetServiceDescriptionBuilder, ListEndpointsBuilder
         },
         shex::builders::{
             CheckShexSchemaBuilder, LoadShexSchemaBuilder, SerializeShexSchemaBuilder, ResetShexSchemaBuilder,
@@ -31,7 +31,7 @@ use crate::{
             ValidateShexBuilder, SerializeShexValidationResultsBuilder, ResetShexBuilder,
         },
         shacl::builders::{
-            LoadShaclSchemaBuilder, SerializeShaclSchemaBuilder, ResetShaclSchemaBuilder,
+            LoadShaclShapesBuilder, SerializeShaclShapesBuilder, ResetShaclShapesBuilder,
             ValidateShaclBuilder, SerializeShaclValidationResultsBuilder, ResetShaclValidationBuilder,
         },
         query::builders::{
@@ -65,11 +65,11 @@ pub struct Rudof {
     /// Current Data
     data: Option<Data>,
 
-    /// Current SHACL Schema
-    shacl_schema: Option<ShaclSchema<RdfData>>,
+    /// Current SHACL Shapes
+    shacl_shapes: Option<ShaclSchema<RdfData>>,
 
     /// Current SHACL Schema Internal Representation
-    shacl_schema_ir: Option<ShaclSchemaIR>,
+    shacl_shapes_ir: Option<ShaclSchemaIR>,
 
     /// Current SHACL validation results
     shacl_validation_results: Option<ValidationReport>,
@@ -181,6 +181,10 @@ impl Rudof {
         ShowNodeInfoBuilder::new(self, node, writer)
     }
 
+    pub fn list_endpoints<'a>(&'a self) -> ListEndpointsBuilder<'a> {
+        ListEndpointsBuilder::new(self)
+    }
+
     // ========================================================================
     // ShExOperations methods
     // ========================================================================
@@ -248,21 +252,21 @@ impl Rudof {
     // ShaclOperations methods
     // ========================================================================
 
-    pub fn load_shacl_schema<'a>(
+    pub fn load_shacl_shapes<'a>(
         &'a mut self,
-    ) -> LoadShaclSchemaBuilder<'a> {
-        LoadShaclSchemaBuilder::new(self)
+    ) -> LoadShaclShapesBuilder<'a> {
+        LoadShaclShapesBuilder::new(self)
     }
 
-    pub fn serialize_shacl_schema<'a, W: io::Write>(
+    pub fn serialize_shacl_shapes<'a, W: io::Write>(
         &'a self, 
         writer: &'a mut W
-    ) -> SerializeShaclSchemaBuilder<'a, W> {
-        SerializeShaclSchemaBuilder::new(self, writer)
+    ) -> SerializeShaclShapesBuilder<'a, W> {
+        SerializeShaclShapesBuilder::new(self, writer)
     }
 
-    pub fn reset_shacl_schema<'a>(&'a mut self) -> ResetShaclSchemaBuilder<'a> {
-        ResetShaclSchemaBuilder::new(self)
+    pub fn reset_shacl_shapes<'a>(&'a mut self) -> ResetShaclShapesBuilder<'a> {
+        ResetShaclShapesBuilder::new(self)
     }
 
     pub fn validate_shacl<'a>(&'a mut self) -> ValidateShaclBuilder<'a> {

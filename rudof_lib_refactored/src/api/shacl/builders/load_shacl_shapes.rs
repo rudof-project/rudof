@@ -4,7 +4,7 @@ use crate::{Rudof, Result, api::shacl::ShaclOperations, formats::{InputSpec, Sha
 ///
 /// Provides a fluent interface for configuring and executing schema loading
 /// operations with optional parameters.
-pub struct LoadShaclSchemaBuilder<'a> {
+pub struct LoadShaclShapesBuilder<'a> {
     rudof: &'a mut Rudof,
     schema: Option<&'a InputSpec>,
     schema_format: Option<&'a ShaclFormat>,
@@ -12,7 +12,7 @@ pub struct LoadShaclSchemaBuilder<'a> {
     reader_mode: Option<&'a DataReaderMode>,
 }
 
-impl<'a> LoadShaclSchemaBuilder<'a> {
+impl<'a> LoadShaclShapesBuilder<'a> {
     /// Creates a new builder instance.
     ///
     /// This is called internally by `Rudof::load_shacl_schema()` and should not
@@ -32,7 +32,7 @@ impl<'a> LoadShaclSchemaBuilder<'a> {
     /// # Arguments
     /// 
     /// * `schema` - The input specification for the SHACL schema (e.g., file path, URL, or string content)
-    pub fn with_schema(mut self, schema: &'a InputSpec) -> Self {
+    pub fn with_shacl_schema(mut self, schema: &'a InputSpec) -> Self {
         self.schema = Some(schema);
         self
     }
@@ -42,7 +42,7 @@ impl<'a> LoadShaclSchemaBuilder<'a> {
     /// # Arguments
     ///
     /// * `schema_format` - The format to use when loading the schema
-    pub fn with_schema_format(mut self, schema_format: &'a ShaclFormat) -> Self {
+    pub fn with_shacl_schema_format(mut self, schema_format: &'a ShaclFormat) -> Self {
         self.schema_format = Some(schema_format);
         self
     }

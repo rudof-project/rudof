@@ -4,7 +4,7 @@ use crate::{Result, Rudof, formats::{InputSpec, DCTapFormat}};
 pub fn load_dctap(
     rudof: &mut Rudof,
     dctap: &InputSpec,
-    format: Option<&DCTapFormat>,
+    dctap_format: Option<&DCTapFormat>,
 ) -> Result<()> {
     todo!()
 }

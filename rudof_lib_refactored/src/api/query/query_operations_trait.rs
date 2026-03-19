@@ -61,7 +61,7 @@ pub trait QueryOperations {
     /// Returns an error if no query results are available or serialization fails.
     fn serialize_query_results<W: io::Write>(
         &self, 
-        result_format: Option<&ResultQueryFormat>, 
+        result_query_format: Option<&ResultQueryFormat>, 
         writer: &mut W
     ) -> Result<()>;
 
@@ -92,10 +92,10 @@ impl QueryOperations for crate::Rudof {
 
     fn serialize_query_results<W: io::Write>(
         &self, 
-        result_format: Option<&ResultQueryFormat>, 
+        result_query_format: Option<&ResultQueryFormat>, 
         writer: &mut W
     ) -> Result<()> {
-        serialize_query_results(self, result_format, writer)
+        serialize_query_results(self, result_query_format, writer)
     }
 
     fn reset_query_results(&mut self) {

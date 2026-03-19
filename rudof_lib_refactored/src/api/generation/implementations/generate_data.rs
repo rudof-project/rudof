@@ -7,7 +7,7 @@ pub fn generate_data(
     rudof: &Rudof,
     schema: &InputSpec,
     schema_format: &GenerationSchemaFormat,
-    result_format: Option<&DataFormat>,
+    result_generation_format: Option<&DataFormat>,
     number_entities: usize,
     seed: Option<u64>,
     parallel: Option<usize>,

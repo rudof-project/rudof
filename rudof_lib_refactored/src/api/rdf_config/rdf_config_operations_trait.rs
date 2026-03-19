@@ -16,7 +16,7 @@ pub trait RdfConfigOperations {
     /// # Arguments
     ///
     /// * `rdf_config` - Input specification defining the RDF-config source
-    /// * `format` - Optional RDF-config format (uses default if None)
+    /// * `rdf_config_format` - Optional RDF-config format (uses default if None)
     ///
     /// # Errors
     ///
@@ -24,14 +24,14 @@ pub trait RdfConfigOperations {
     fn load_rdf_config(
         &mut self,
         rdf_config: &InputSpec,
-        format: Option<&RdfConfigFormat>,
+        rdf_config_format: Option<&RdfConfigFormat>,
     ) -> Result<()>;
 
     /// Serializes the current RDF-config model to a writer.
     ///
     /// # Arguments
     ///
-    /// * `format` - Optional output format for the RDF-config model (uses default if None)
+    /// * `result_rdf_config_format` - Optional output format for the RDF-config model (uses default if None)
     /// * `writer` - The destination to write the serialized RDF-config model to
     ///
     /// # Errors
@@ -39,7 +39,7 @@ pub trait RdfConfigOperations {
     /// Returns an error if no RDF-config model is loaded or serialization fails.
     fn serialize_rdf_config<W: io::Write>(
         &self,
-        format: Option<&ResultRdfConfigFormat>,
+        result_rdf_config_format: Option<&ResultRdfConfigFormat>,
         writer: &mut W,
     ) -> Result<()>;
 
@@ -51,17 +51,17 @@ impl RdfConfigOperations for crate::Rudof {
     fn load_rdf_config(
         &mut self,
         rdf_config: &InputSpec,
-        format: Option<&RdfConfigFormat>,
+        rdf_config_format: Option<&RdfConfigFormat>,
     ) -> Result<()> {
-        load_rdf_config(self, rdf_config, format)
+        load_rdf_config(self, rdf_config, rdf_config_format)
     }
 
     fn serialize_rdf_config<W: io::Write>(
         &self,
-        format: Option<&ResultRdfConfigFormat>,
+        result_rdf_config_format: Option<&ResultRdfConfigFormat>,
         writer: &mut W,
     ) -> Result<()> {
-        serialize_rdf_config(self, format, writer)
+        serialize_rdf_config(self, result_rdf_config_format, writer)
     }
 
     fn reset_rdf_config(&mut self) {

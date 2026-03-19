@@ -26,7 +26,7 @@ impl<'a> ValidateShaclBuilder<'a> {
     /// # Arguments
     ///
     /// * `mode` - The validation mode to use
-    pub fn with_mode(mut self, mode: &'a ShaclValidationMode) -> Self {
+    pub fn with_shacl_validation_mode(mut self, mode: &'a ShaclValidationMode) -> Self {
         self.mode = Some(mode);
         self
     }

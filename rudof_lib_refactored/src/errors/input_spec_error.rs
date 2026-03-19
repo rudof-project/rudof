@@ -5,6 +5,10 @@ use std::path::PathBuf;
 /// Errors that can occur when working with input specifications.
 #[derive(Error, Debug)]
 pub enum InputSpecError {
+    /// The input data is invalid or cannot be processed.
+    #[error("The input data is invalid or cannot be processed: {error}")]
+    InvalidInput { error: String },
+
     /// Failed to resolve a path to an absolute path.
     #[error("Cannot get absolute path for '{path}': {error}")]
     AbsolutePathError { path: String, error: io::Error },

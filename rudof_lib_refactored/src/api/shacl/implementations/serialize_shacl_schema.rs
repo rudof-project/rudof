@@ -3,7 +3,7 @@ use std::io;
 
 pub fn serialize_shacl_schema<W: io::Write>(
     rudof: &Rudof,
-    format: Option<&ShaclFormat>,
+    shacl_format: Option<&ShaclFormat>,
     writer: &mut W,
 ) -> Result<()> {
     todo!()

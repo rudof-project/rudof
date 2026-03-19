@@ -8,7 +8,7 @@ use std::io;
 pub struct SerializeServiceDescriptionBuilder<'a, W: io::Write> {
     rudof: &'a Rudof,
     writer: &'a mut W,
-    format: Option<&'a ResultServiceFormat>,
+    result_service_format: Option<&'a ResultServiceFormat>,
 }
 
 impl<'a, W: io::Write> SerializeServiceDescriptionBuilder<'a, W> {
@@ -20,7 +20,7 @@ impl<'a, W: io::Write> SerializeServiceDescriptionBuilder<'a, W> {
         Self {
             rudof,
             writer,
-            format: None,
+            result_service_format: None,
         }
     }
 
@@ -28,9 +28,9 @@ impl<'a, W: io::Write> SerializeServiceDescriptionBuilder<'a, W> {
     ///
     /// # Arguments
     ///
-    /// * `format` - The format to use when serializing the service description
-    pub fn with_format(mut self, format: &'a ResultServiceFormat) -> Self {
-        self.format = Some(format);
+    /// * `result_service_format` - The result_service_format to use when serializing the service description
+    pub fn with_result_service_format(mut self, result_service_format: &'a ResultServiceFormat) -> Self {
+        self.result_service_format = Some(result_service_format);
         self
     }
 
@@ -42,7 +42,7 @@ impl<'a, W: io::Write> SerializeServiceDescriptionBuilder<'a, W> {
     pub fn execute(self) -> Result<()> {
         <Rudof as DataOperations>::serialize_service_description(
             self.rudof,
-            self.format,
+            self.result_service_format,
             self.writer,
         )
     }

@@ -13,7 +13,7 @@ pub struct SerializeShexSchemaBuilder<'a, W: io::Write> {
     show_statistics: Option<bool>,
     show_dependencies: Option<bool>,
     show_time: Option<bool>,
-    result_schema_format: Option<&'a ShExFormat>,
+    shex_format: Option<&'a ShExFormat>,
 }
 
 impl<'a, W: io::Write> SerializeShexSchemaBuilder<'a, W> {
@@ -30,7 +30,7 @@ impl<'a, W: io::Write> SerializeShexSchemaBuilder<'a, W> {
             show_statistics: None,
             show_dependencies: None,
             show_time: None,
-            result_schema_format: None,
+            shex_format: None,
         }
     }
 
@@ -39,7 +39,7 @@ impl<'a, W: io::Write> SerializeShexSchemaBuilder<'a, W> {
     /// # Arguments
     ///
     /// * `shape_label` - The shape label to serialize (serializes entire schema if None)
-    pub fn with_shape_label(mut self, shape_label: &'a str) -> Self {
+    pub fn with_shape(mut self, shape_label: &'a str) -> Self {
         self.shape_label = Some(shape_label);
         self
     }
@@ -88,9 +88,9 @@ impl<'a, W: io::Write> SerializeShexSchemaBuilder<'a, W> {
     /// 
     /// # Arguments
     ///
-    /// * `result_schema_format` - The format to serialize the result schema
-    pub fn with_schema_format(mut self, result_schema_format: &'a ShExFormat) -> Self {
-        self.result_schema_format = Some(result_schema_format);
+    /// * `shex_format` - The format to serialize the result schema
+    pub fn with_result_shex_format(mut self, shex_format: &'a ShExFormat) -> Self {
+        self.shex_format = Some(shex_format);
         self
     }
 
@@ -107,7 +107,7 @@ impl<'a, W: io::Write> SerializeShexSchemaBuilder<'a, W> {
             self.show_statistics,
             self.show_dependencies,
             self.show_time,
-            self.result_schema_format,
+            self.shex_format,
             self.writer,
         )
     }

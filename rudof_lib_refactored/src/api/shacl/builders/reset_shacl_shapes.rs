@@ -4,14 +4,14 @@ use crate::{Rudof, api::shacl::ShaclOperations};
 ///
 /// Provides a fluent interface for configuring and executing schema reset
 /// operations.
-pub struct ResetShaclSchemaBuilder<'a> {
+pub struct ResetShaclShapesBuilder<'a> {
     rudof: &'a mut Rudof,
 }
 
-impl<'a> ResetShaclSchemaBuilder<'a> {
+impl<'a> ResetShaclShapesBuilder<'a> {
     /// Creates a new builder instance.
     ///
-    /// This is called internally by `Rudof::reset_shacl_schema()` and should not
+    /// This is called internally by `Rudof::reset_shacl_shapes()` and should not
     /// be constructed directly.
     pub(crate) fn new(rudof: &'a mut Rudof) -> Self {
         Self { rudof }

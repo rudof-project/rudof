@@ -57,6 +57,7 @@ pub trait ShExOperations {
     /// * `show_statistics` - Whether to include statistics in the output (false by default)
     /// * `show_dependencies` - Whether to show shape dependencies (false by default)
     /// * `show_time` - Whether to include timing information (false by default)
+    /// * `shex_format` - Optional format to serialize the schema (uses default if None)
     /// * `writer` - The destination to write to
     ///
     /// # Errors
@@ -69,7 +70,7 @@ pub trait ShExOperations {
         show_statistics: Option<bool>,
         show_dependencies: Option<bool>,
         show_time: Option<bool>,
-        result_schema_format: Option<&ShExFormat>,
+        shex_format: Option<&ShExFormat>,
         writer: &mut W
     ) -> Result<()>;
 
@@ -127,6 +128,7 @@ pub trait ShExOperations {
     /// # Arguments
     ///
     /// * `sort_order` - Optional sorting mode for the validation results (uses default order if None)
+    /// * `result_shex_validation_format` - Optional format to serialize validation results (uses default if None)
     /// * `writer` - The destination to write to
     ///
     /// # Errors
@@ -135,7 +137,7 @@ pub trait ShExOperations {
     fn serialize_shex_validation_results<W: io::Write>(
         &self,
         sort_order: Option<&ShExValidationSortByMode>,
-        result_format: Option<&ResultShExValidationFormat>,
+        result_shex_validation_format: Option<&ResultShExValidationFormat>,
         writer: &mut W,
     ) -> Result<()>;
 
@@ -171,10 +173,10 @@ impl ShExOperations for crate::Rudof {
         show_statistics: Option<bool>,
         show_dependencies: Option<bool>,
         show_time: Option<bool>,
-        result_schema_format: Option<&ShExFormat>,
+        shex_format: Option<&ShExFormat>,
         writer: &mut W
     ) -> Result<()> {
-        serialize_shex_schema(self, shape_label, show_schema, show_statistics, show_dependencies, show_time, result_schema_format, writer)
+        serialize_shex_schema(self, shape_label, show_schema, show_statistics, show_dependencies, show_time, shex_format, writer)
     }
 
     fn reset_shex_schema(&mut self) {
@@ -210,10 +212,10 @@ impl ShExOperations for crate::Rudof {
     fn serialize_shex_validation_results<W: io::Write>(
         &self,
         sort_order: Option<&ShExValidationSortByMode>,
-        result_format: Option<&ResultShExValidationFormat>,
+        result_shex_validation_format: Option<&ResultShExValidationFormat>,
         writer: &mut W,
     ) -> Result<()> {
-        serialize_shex_validation_results(self, sort_order, result_format, writer)
+        serialize_shex_validation_results(self, sort_order, result_shex_validation_format, writer)
     }
 
     fn reset_shex(&mut self) {

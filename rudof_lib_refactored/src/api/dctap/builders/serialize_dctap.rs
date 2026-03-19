@@ -8,7 +8,7 @@ use std::io;
 pub struct SerializeDctapBuilder<'a, W: io::Write> {
     rudof: &'a Rudof,
     writer: &'a mut W,
-    format: Option<&'a ResultDCTapFormat>,
+    result_dctap_format: Option<&'a ResultDCTapFormat>,
 }
 
 impl<'a, W: io::Write> SerializeDctapBuilder<'a, W> {
@@ -20,7 +20,7 @@ impl<'a, W: io::Write> SerializeDctapBuilder<'a, W> {
         Self {
             rudof,
             writer,
-            format: None,
+            result_dctap_format: None,
         }
     }
 
@@ -28,9 +28,9 @@ impl<'a, W: io::Write> SerializeDctapBuilder<'a, W> {
     ///
     /// # Arguments
     ///
-    /// * `format` - The format to use when serializing the DC-TAP profile
-    pub fn with_format(mut self, format: &'a ResultDCTapFormat) -> Self {
-        self.format = Some(format);
+    /// * `result_dctap_format` - The format to use when serializing the DC-TAP profile
+    pub fn with_result_dctap_format(mut self, result_dctap_format: &'a ResultDCTapFormat) -> Self {
+        self.result_dctap_format = Some(result_dctap_format);
         self
     }
 
@@ -40,6 +40,6 @@ impl<'a, W: io::Write> SerializeDctapBuilder<'a, W> {
     ///
     /// Returns an error if the DC-TAP profile cannot be serialized or written.
     pub fn execute(self) -> Result<()> {
-        <Rudof as DctapOperations>::serialize_dctap(self.rudof, self.format, self.writer)
+        <Rudof as DctapOperations>::serialize_dctap(self.rudof, self.result_dctap_format, self.writer)
     }
 }

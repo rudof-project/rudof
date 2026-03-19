@@ -6,7 +6,7 @@ use std::io;
 
 pub fn serialize_rdf_config<W: io::Write>(
     rudof: &Rudof,
-    format: Option<&ResultRdfConfigFormat>,
+    result_rdf_config_format: Option<&ResultRdfConfigFormat>,
     writer: &mut W,
 ) -> Result<()> {
     todo!()

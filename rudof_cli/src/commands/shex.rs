@@ -31,15 +31,15 @@ impl Command for ShexCommand {
 
         let mut shex_schema_loading = ctx.rudof.load_shex_schema(&self.args.schema)
             .with_reader_mode(&reader_mode)
-            .with_schema_format(&schema_format);
-        if let Some(base) = &self.args.base { shex_schema_loading = shex_schema_loading.with_base_schema(base); }
+            .with_shex_schema_format(&schema_format);
+        if let Some(base) = &self.args.base { shex_schema_loading = shex_schema_loading.with_base(base); }
         shex_schema_loading.execute()?;
 
         let mut shex_serialization = ctx.rudof.serialize_shex_schema(&mut ctx.writer)
         .with_show_schema(self.args.show_schema)
-        .with_schema_format(&result_schema_format);
+        .with_result_shex_format(&result_schema_format);
 
-        if let Some(shape_label) = self.args.shape.as_deref() { shex_serialization = shex_serialization.with_shape_label(shape_label); }
+        if let Some(shape_label) = self.args.shape.as_deref() { shex_serialization = shex_serialization.with_shape(shape_label); }
         if let Some(show_statistics) = self.args.show_statistics { shex_serialization = shex_serialization.with_show_statistics(show_statistics); }
         if let Some (show_dependencies) = self.args.show_dependencies { shex_serialization = shex_serialization.with_show_dependencies(show_dependencies); }
         if let Some(show_time) = self.args.show_time { shex_serialization = shex_serialization.with_show_time(show_time); }

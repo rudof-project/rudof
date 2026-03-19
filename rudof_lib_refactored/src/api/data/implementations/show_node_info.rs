@@ -8,6 +8,7 @@ pub fn show_node_info<W: io::Write>(
     show_node_mode: Option<&NodeInspectionMode>,
     depth: Option<usize>,
     show_hyperlinks: Option<bool>,
+    show_colors: Option<bool>,
     writer: &mut W,
 ) -> Result<()> {
     todo!()

@@ -11,6 +11,7 @@ pub struct LoadDataBuilder<'a> {
     base: Option<&'a str>,
     endpoint: Option<&'a str>,
     reader_mode: Option<&'a DataReaderMode>,
+    merge: Option<bool>,
 }
 
 impl<'a> LoadDataBuilder<'a> {
@@ -26,6 +27,7 @@ impl<'a> LoadDataBuilder<'a> {
             base: None,
             endpoint: None,
             reader_mode: None,
+            merge: None,
         }
     }
 
@@ -69,6 +71,16 @@ impl<'a> LoadDataBuilder<'a> {
         self
     }
 
+    /// Sets whether to merge the loaded data with existing data.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `merge` - If true, the loaded data will be merged with existing data; if false, it will replace existing data
+    pub fn with_merge(mut self, merge: bool) -> Self {
+        self.merge = Some(merge);
+        self
+    }
+
     /// Executes the data loading operation with the configured parameters.
     ///
     /// # Errors
@@ -81,8 +93,8 @@ impl<'a> LoadDataBuilder<'a> {
             self.data_format,
             self.base,
             self.endpoint,
-
             self.reader_mode,
+            self.merge,
         )
     }
 }

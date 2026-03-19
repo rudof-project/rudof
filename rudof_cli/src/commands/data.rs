@@ -34,7 +34,7 @@ impl Command for DataCommand {
         if let Some(endpoint) = self.args.endpoint.as_deref() { loading = loading.with_endpoint(endpoint); }
         loading.execute()?;
 
-        ctx.rudof.serialize_data(&mut ctx.writer).with_format(&result_format).execute()?;
+        ctx.rudof.serialize_data(&mut ctx.writer).with_result_data_format(&result_format).execute()?;
 
         Ok(())
     }

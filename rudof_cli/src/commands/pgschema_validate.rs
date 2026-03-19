@@ -37,7 +37,7 @@ impl Command for PgSchemaValidateCommand {
 
         ctx.rudof.validate_pgschema().execute()?;
 
-        ctx.rudof.serialize_pgschema_validation_results(&mut ctx.writer).with_format(&result_format).execute()?;
+        ctx.rudof.serialize_pgschema_validation_results(&mut ctx.writer).with_result_pg_schema_validation_format(&result_format).execute()?;
 
         Ok(())
     }

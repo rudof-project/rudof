@@ -13,6 +13,7 @@ pub struct ShowNodeInfoBuilder<'a, W: io::Write> {
     show_node_mode: Option<&'a NodeInspectionMode>,
     depth: Option<usize>,
     show_hyperlinks: Option<bool>,
+    show_colors: Option<bool>,
 }
 
 impl<'a, W: io::Write> ShowNodeInfoBuilder<'a, W> {
@@ -29,6 +30,7 @@ impl<'a, W: io::Write> ShowNodeInfoBuilder<'a, W> {
             show_node_mode: None,
             depth: None,
             show_hyperlinks: None,
+            show_colors: None,
         }
     }
 
@@ -72,6 +74,16 @@ impl<'a, W: io::Write> ShowNodeInfoBuilder<'a, W> {
         self
     }
 
+    /// Sets whether to use colored output.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `show_colors` - Whether to use colored output
+    pub fn with_show_colors(mut self, show_colors: bool) -> Self {
+        self.show_colors = Some(show_colors);
+        self
+    }
+
     /// Executes the node inspection operation with the configured parameters.
     ///
     /// # Errors
@@ -85,6 +97,7 @@ impl<'a, W: io::Write> ShowNodeInfoBuilder<'a, W> {
             self.show_node_mode,
             self.depth,
             self.show_hyperlinks,
+            self.show_colors,
             self.writer,
         )
     }

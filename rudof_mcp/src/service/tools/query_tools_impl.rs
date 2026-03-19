@@ -228,7 +228,7 @@ pub async fn execute_sparql_query_impl(
 
     let mut serialization = rudof.serialize_query_results(&mut output_buffer);
     if let Some(result_format_parsed) = &result_format_parsed {
-        serialization = serialization.with_result_format(result_format_parsed);
+        serialization = serialization.with_result_query_format(result_format_parsed);
     }
     serialization.execute().map_err(|e| {
         internal_error(

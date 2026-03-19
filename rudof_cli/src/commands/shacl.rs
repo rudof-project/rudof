@@ -36,14 +36,14 @@ impl Command for ShaclCommand {
         if let Some(endpoint) = self.args.endpoint.as_deref() { loading = loading.with_endpoint(endpoint); }
         loading.execute()?;
 
-        let mut loading_schema = ctx.rudof.load_shacl_schema()
-            .with_schema_format(&shacl_schema_format)
+        let mut loading_schema = ctx.rudof.load_shacl_shapes()
+            .with_shacl_schema_format(&shacl_schema_format)
             .with_reader_mode(&reader_mode);
-        if let Some(shacl_schema) = &self.args.shapes { loading_schema = loading_schema.with_schema(shacl_schema); }
+        if let Some(shacl_schema) = &self.args.shapes { loading_schema = loading_schema.with_shacl_schema(shacl_schema); }
         if let Some(base) = self.args.base_shapes.as_deref() { loading_schema = loading_schema.with_base(base); }
         loading_schema.execute()?;
 
-        ctx.rudof.serialize_shacl_schema(&mut ctx.writer).with_schema_format(&result_format).execute()?;
+        ctx.rudof.serialize_shacl_shapes(&mut ctx.writer).with_shacl_result_format(&result_format).execute()?;
 
         Ok(())
     }

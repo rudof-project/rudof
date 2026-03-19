@@ -8,8 +8,8 @@ use std::io;
 pub struct SerializeShexValidationResultsBuilder<'a, W: io::Write> {
     rudof: &'a Rudof,
     writer: &'a mut W,
-    sort_order: Option<&'a ShExValidationSortByMode>,
-    result_format: Option<&'a ResultShExValidationFormat>,
+    shex_validation_sort_order_mode: Option<&'a ShExValidationSortByMode>,
+    result_shex_validation_format: Option<&'a ResultShExValidationFormat>,
 }
 
 impl<'a, W: io::Write> SerializeShexValidationResultsBuilder<'a, W> {
@@ -21,8 +21,8 @@ impl<'a, W: io::Write> SerializeShexValidationResultsBuilder<'a, W> {
         Self {
             rudof,
             writer,
-            sort_order: None,
-            result_format: None,
+            shex_validation_sort_order_mode: None,
+            result_shex_validation_format: None,
         }
     }
 
@@ -30,9 +30,9 @@ impl<'a, W: io::Write> SerializeShexValidationResultsBuilder<'a, W> {
     ///
     /// # Arguments
     ///
-    /// * `sort_order` - The sorting mode to apply to validation results
-    pub fn with_sort_order(mut self, sort_order: &'a ShExValidationSortByMode) -> Self {
-        self.sort_order = Some(sort_order);
+    /// * `shex_validation_sort_order_mode` - The sorting mode to apply to validation results
+    pub fn with_shex_validation_sort_order_mode(mut self, shex_validation_sort_order_mode: &'a ShExValidationSortByMode) -> Self {
+        self.shex_validation_sort_order_mode = Some(shex_validation_sort_order_mode);
         self
     }
 
@@ -40,9 +40,9 @@ impl<'a, W: io::Write> SerializeShexValidationResultsBuilder<'a, W> {
     /// 
     /// # Arguments
     /// 
-    /// * `result_format` - The format in which to serialize validation results
-    pub fn with_result_format(mut self, result_format: &'a ResultShExValidationFormat) -> Self {
-        self.result_format = Some(result_format);
+    /// * `result_shex_validation_format` - The format in which to serialize validation results
+    pub fn with_result_shex_validation_format(mut self, result_shex_validation_format: &'a ResultShExValidationFormat) -> Self {
+        self.result_shex_validation_format = Some(result_shex_validation_format);
         self
     }
 
@@ -54,8 +54,8 @@ impl<'a, W: io::Write> SerializeShexValidationResultsBuilder<'a, W> {
     pub fn execute(self) -> Result<()> {
         <Rudof as ShExOperations>::serialize_shex_validation_results(
             self.rudof,
-            self.sort_order,
-            self.result_format,
+            self.shex_validation_sort_order_mode,
+            self.result_shex_validation_format,
             self.writer,
         )
     }

@@ -193,7 +193,7 @@ impl RudofMcpService {
         // Serialize RDF data to N-Triples format
         let mut v = Vec::new();
         rudof.serialize_data(&mut v)
-            .with_format(&ResultDataFormat::NTriples)
+            .with_result_data_format(&ResultDataFormat::NTriples)
             .execute()
             .map_err(|e| state::StatePersistenceError::RdfSerialization(e.to_string()))?;
 

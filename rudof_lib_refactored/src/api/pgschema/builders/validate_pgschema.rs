@@ -2,7 +2,7 @@ use crate::{Rudof, Result, api::pgschema::PgSchemaOperations};
 
 /// Builder for the `run_pgschema_validation` operation.
 pub struct PgSchemaValidationBuilder<'a> {
-    rudof: &'a mut Rudof
+    rudof: &'a mut Rudof,
 }
 
 impl<'a> PgSchemaValidationBuilder<'a> {

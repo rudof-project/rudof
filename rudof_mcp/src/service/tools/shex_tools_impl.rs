@@ -119,10 +119,10 @@ pub async fn show_shex_impl(
 
     let mut shex_schema_loading = rudof.load_shex_schema(&parsed_schema);
     if let Some(base_schema) = base_schema.as_deref() {
-        shex_schema_loading = shex_schema_loading.with_base_schema(base_schema);
+        shex_schema_loading = shex_schema_loading.with_base(base_schema);
     }
     if let Some(schema_format) = &parsed_schema_format {
-        shex_schema_loading = shex_schema_loading.with_schema_format(schema_format);
+        shex_schema_loading = shex_schema_loading.with_shex_schema_format(schema_format);
     }
     shex_schema_loading.execute().map_err(|e| {
         internal_error(
@@ -135,7 +135,7 @@ pub async fn show_shex_impl(
     let mut output_buffer = Cursor::new(Vec::new());
     let mut serialization = rudof.serialize_shex_schema(&mut output_buffer);
     if let Some(result_schema_format) = &parsed_result_format {
-        serialization = serialization.with_schema_format(result_schema_format);
+        serialization = serialization.with_result_shex_format(result_schema_format);
     }
     if let Some(show_schema) = show_schema {
         serialization = serialization.with_show_schema(show_schema);
@@ -150,7 +150,7 @@ pub async fn show_shex_impl(
         serialization = serialization.with_show_statistics(show_statistics);
     }
     if let Some(shape_selector) = shape.as_deref() {
-        serialization = serialization.with_shape_label(shape_selector);
+        serialization = serialization.with_shape(shape_selector);
     }
     serialization.execute().map_err(|e| {
         internal_error(
@@ -267,7 +267,7 @@ pub async fn check_shex_impl(
         checking = checking.with_base_schema(base_schema);
     }
     if let Some(schema_format) = &parsed_schema_format {
-        checking = checking.with_schema_format(schema_format);
+        checking = checking.with_shex_schema_format(schema_format);
     }
     checking.execute().map_err(|e| {
         internal_error(

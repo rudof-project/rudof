@@ -12,7 +12,7 @@ pub trait DctapOperations {
     /// # Arguments
     ///
     /// * `dctap` - Input specification defining the DC-TAP source
-    /// * `format` - Optional DC-TAP format (uses default if None)
+    /// * `dctap_format` - Optional DC-TAP format (uses default if None)
     ///
     /// # Errors
     ///
@@ -20,14 +20,14 @@ pub trait DctapOperations {
     fn load_dctap(
         &mut self,
         dctap: &InputSpec,
-        format: Option<&DCTapFormat>,
+        dctap_format: Option<&DCTapFormat>,
     ) -> Result<()>;
 
     /// Serializes the current DC-TAP profile to a writer.
     ///
     /// # Arguments
     ///
-    /// * `format` - Optional output format for the DC-TAP profile (uses default if None)
+    /// * `result_dctap_format` - Optional output format for the DC-TAP profile (uses default if None)
     /// * `writer` - The destination to write the serialized DC-TAP profile to
     ///
     /// # Errors
@@ -35,7 +35,7 @@ pub trait DctapOperations {
     /// Returns an error if no DC-TAP profile is loaded or serialization fails.
     fn serialize_dctap<W: io::Write>(
         &self,
-        format: Option<&ResultDCTapFormat>,
+        result_dctap_format: Option<&ResultDCTapFormat>,
         writer: &mut W,
     ) -> Result<()>;
 
@@ -47,17 +47,17 @@ impl DctapOperations for crate::Rudof {
     fn load_dctap(
         &mut self,
         dctap: &InputSpec,
-        format: Option<&DCTapFormat>,
+        dctap_format: Option<&DCTapFormat>,
     ) -> Result<()> {
-        load_dctap(self,dctap, format)
+        load_dctap(self,dctap, dctap_format)
     }
 
     fn serialize_dctap<W: io::Write>(
         &self,
-        format: Option<&ResultDCTapFormat>,
+        result_dctap_format: Option<&ResultDCTapFormat>,
         writer: &mut W,
     ) -> Result<()> {
-        serialize_dctap(self, format, writer)
+        serialize_dctap(self, result_dctap_format, writer)
     }
 
     fn reset_dctap(&mut self) {

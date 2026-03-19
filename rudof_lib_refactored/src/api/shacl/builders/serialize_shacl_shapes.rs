@@ -5,13 +5,13 @@ use std::io;
 ///
 /// Provides a fluent interface for configuring and executing schema serialization
 /// operations with optional parameters.
-pub struct SerializeShaclSchemaBuilder<'a, W: io::Write> {
+pub struct SerializeShaclShapesBuilder<'a, W: io::Write> {
     rudof: &'a Rudof,
     writer: &'a mut W,
-    format: Option<&'a ShaclFormat>,
+    shacl_format: Option<&'a ShaclFormat>,
 }
 
-impl<'a, W: io::Write> SerializeShaclSchemaBuilder<'a, W> {
+impl<'a, W: io::Write> SerializeShaclShapesBuilder<'a, W> {
     /// Creates a new builder instance.
     ///
     /// This is called internally by `Rudof::serialize_shacl_schema()` and should not
@@ -20,7 +20,7 @@ impl<'a, W: io::Write> SerializeShaclSchemaBuilder<'a, W> {
         Self {
             rudof,
             writer,
-            format: None,
+            shacl_format: None,
         }
     }
 
@@ -28,9 +28,9 @@ impl<'a, W: io::Write> SerializeShaclSchemaBuilder<'a, W> {
     ///
     /// # Arguments
     ///
-    /// * `format` - The format to use when serializing the schema
-    pub fn with_schema_format(mut self, format: &'a ShaclFormat) -> Self {
-        self.format = Some(format);
+    /// * `shacl_format` - The format to use when serializing the schema
+    pub fn with_shacl_result_format(mut self, shacl_format: &'a ShaclFormat) -> Self {
+        self.shacl_format = Some(shacl_format);
         self
     }
 
@@ -42,7 +42,7 @@ impl<'a, W: io::Write> SerializeShaclSchemaBuilder<'a, W> {
     pub fn execute(self) -> Result<()> {
         <Rudof as ShaclOperations>::serialize_shacl_schema(
             self.rudof,
-            self.format,
+            self.shacl_format,
             self.writer,
         )
     }

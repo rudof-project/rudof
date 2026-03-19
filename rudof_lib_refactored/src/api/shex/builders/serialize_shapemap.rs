@@ -29,7 +29,7 @@ impl<'a, W: io::Write> SerializeShapemapBuilder<'a, W> {
     /// # Arguments
     ///
     /// * `shapemap_format` - The format to use when serializing the shape map
-    pub fn with_shapemap_format(mut self, shapemap_format: &'a ShapeMapFormat) -> Self {
+    pub fn with_result_shapemap_format(mut self, shapemap_format: &'a ShapeMapFormat) -> Self {
         self.shapemap_format = Some(shapemap_format);
         self
     }

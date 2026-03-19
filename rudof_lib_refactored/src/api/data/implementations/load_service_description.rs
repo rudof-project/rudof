@@ -6,8 +6,9 @@ use crate::{
 pub fn load_service_description(
     rudof: &mut Rudof,
     service: &InputSpec,
-    format: Option<&DataFormat>,
+    data_format: Option<&DataFormat>,
     reader_mode: Option<&DataReaderMode>,
+    base: Option<&str>,
 ) -> Result<()> {
     todo!()
 }

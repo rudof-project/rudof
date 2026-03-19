@@ -32,7 +32,7 @@ impl<'a> LoadShexSchemaBuilder<'a> {
     /// # Arguments
     ///
     /// * `schema_format` - The format to use when loading the schema
-    pub fn with_schema_format(mut self, schema_format: &'a ShExFormat) -> Self {
+    pub fn with_shex_schema_format(mut self, schema_format: &'a ShExFormat) -> Self {
         self.schema_format = Some(schema_format);
         self
     }
@@ -42,7 +42,7 @@ impl<'a> LoadShexSchemaBuilder<'a> {
     /// # Arguments
     ///
     /// * `base_schema` - The base IRI to use for resolution
-    pub fn with_base_schema(mut self, base_schema: &'a str) -> Self {
+    pub fn with_base(mut self, base_schema: &'a str) -> Self {
         self.base_schema = Some(base_schema);
         self
     }
