@@ -104,7 +104,20 @@ fn statement_to_triple_expr(statement: &TapStatement, config: &Tap2ShExConfig) -
     let value_expr = if let Some(nc) = parse_node_constraint(statement, config)? {
         Some(ShapeExpr::node_constraint(nc))
     } else {
-        parse_shape_ref(statement, config)?.map(ShapeExpr::iri_ref)
+        let refs_ = parse_shape_ref(statement, config)?;
+        if let Some(refs) = refs_ {
+            if refs.len() == 1 {
+                Some(ShapeExpr::iri_ref(refs[0].clone()))
+            } else {
+                let mut shape_refs = Vec::new();
+                for r in refs {
+                    shape_refs.push(ShapeExpr::iri_ref(r))
+                }
+                Some(ShapeExpr::or(shape_refs))
+            }
+        } else {
+            None
+        }
     };
     let mut te = TripleExpr::triple_constraint(None, None, IriRef::Iri(pred), value_expr, min, max);
     if let Some(label) = statement.property_label() {
@@ -198,14 +211,28 @@ fn parse_value_set_value(value: &Value, config: &Tap2ShExConfig, line: u64) -> R
     }
 }
 
+fn parse_single_shape_ref(s: &ShapeId, config: &Tap2ShExConfig) -> Result<IriRef, Tap2ShExError> {
+    let iri = shape_id2iri(&s, config).map_err(|e| Tap2ShExError::ParsingValueShape {
+        line: 0,
+        error: Box::new(e),
+    })?;
+    Ok(IriRef::iri(iri))
+}
+
 #[allow(clippy::result_large_err)]
-fn parse_shape_ref(statement: &TapStatement, config: &Tap2ShExConfig) -> Result<Option<IriRef>, Tap2ShExError> {
-    if let Some(shape_id) = statement.value_shape() {
-        let iri = shape_id2iri(&shape_id, config).map_err(|e| Tap2ShExError::ParsingValueShape {
-            line: statement.source_line_number(),
-            error: Box::new(e),
-        })?;
-        Ok(Some(IriRef::iri(iri)))
+fn parse_shape_ref(statement: &TapStatement, config: &Tap2ShExConfig) -> Result<Option<Vec<IriRef>>, Tap2ShExError> {
+    if let Some(shape_ids) = statement.value_shape() {
+        let line_no = shape_ids.line();
+        let mut shapes = Vec::new();
+        for s in shape_ids.str().split_whitespace() {
+            if s == "OR" {
+                continue;
+            }
+            let sid = ShapeId::new(s, line_no);
+            let iri = parse_single_shape_ref(&sid, config)?;
+            shapes.push(iri);
+        }
+        Ok(Some(shapes))
     } else {
         Ok(None)
     }

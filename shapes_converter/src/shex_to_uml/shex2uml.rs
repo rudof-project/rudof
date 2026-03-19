@@ -229,10 +229,15 @@ impl ShEx2Uml {
         match value_expr {
             ShapeExpr::ShapeOr { shape_exprs } => {
                 trace!(
-                    "Processing ShapeOr for predicate {} with cardinality {} in node {}",
+                    "Processing ShapeOr for predicate {} with cardinality {} in node {},\nshape_exprs = {}",
                     current_predicate.name(),
                     current_card,
-                    current_node_id
+                    current_node_id,
+                    shape_exprs
+                        .iter()
+                        .map(|se| format!("{:?}", se.se))
+                        .collect::<Vec<String>>()
+                        .join(", ")
                 );
                 if let Either::Right(refs) = all_references(shape_exprs) {
                     self.component_for_all_references(
@@ -259,6 +264,7 @@ impl ShEx2Uml {
                     current_card,
                     current_node_id
                 );
+                // If all shape_exprs are references we can create an And component with the nodes corresponding to the references as values.
                 if let Either::Right(refs) = all_references(shape_exprs) {
                     self.component_for_all_references(
                         current_node_id,
@@ -269,12 +275,22 @@ impl ShEx2Uml {
                     )?;
                     return Ok(ValueConstraint::None);
                 }
+
+                // If all shape_exprs can be inlined we can create a single value constraint for them
                 if let Either::Right(datatypes) = all_datatypes(shape_exprs, &self.current_prefixmap) {
                     return self.value_constraint_for_all_datatypes(&datatypes, &UmlLabelType::And);
                 }
+
                 Err(ShEx2UmlError::not_implemented(
-                    format!("ShapeOr has shapes_exprs which are not all references or datatypes: {shape_exprs:?}")
-                        .as_str(),
+                    format!(
+                        "ShapeAnd has shapes_exprs which are not all references or datatypes: {}",
+                        shape_exprs
+                            .iter()
+                            .map(|se| format!("{:?}", se.se))
+                            .collect::<Vec<String>>()
+                            .join(", ")
+                    )
+                    .as_str(),
                 ))
             },
             ShapeExpr::ShapeNot { shape_expr } => {
@@ -309,7 +325,7 @@ impl ShEx2Uml {
                 let maybe_nk = cnv_nodekind(nc.node_kind())?;
                 let maybe_dt = cnv_datatype(nc.datatype(), &self.current_prefixmap)?;
                 let maybe_facets = cnv_facets(nc.facets())?;
-                let maybe_values = cnv_values(nc.values())?;
+                let maybe_values = cnv_values(nc.values(), &self.current_prefixmap)?;
                 Ok(mk_and(vec![maybe_nk, maybe_dt, maybe_facets, maybe_values]))
             },
             ShapeExpr::Shape(s) => Err(ShEx2UmlError::not_implemented(
@@ -572,9 +588,12 @@ fn cnv_facets(maybe_facets: Option<Vec<XsFacet>>) -> Result<Option<ValueConstrai
     }
 }
 
-fn cnv_values(maybe_values: Option<Vec<ValueSetValue>>) -> Result<Option<ValueConstraint>, ShEx2UmlError> {
+fn cnv_values(
+    maybe_values: Option<Vec<ValueSetValue>>,
+    prefixmap: &PrefixMap,
+) -> Result<Option<ValueConstraint>, ShEx2UmlError> {
     if let Some(values) = maybe_values {
-        let value_set_constraint = value_set2value_constraint(&values, &ShEx2UmlConfig::default(), &PrefixMap::new())?;
+        let value_set_constraint = value_set2value_constraint(&values, &ShEx2UmlConfig::default(), prefixmap)?;
         Ok(Some(ValueConstraint::ValueSet(value_set_constraint)))
     } else {
         Ok(None)

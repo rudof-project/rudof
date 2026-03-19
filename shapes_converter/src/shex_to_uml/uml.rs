@@ -1,3 +1,6 @@
+use serde::Deserialize;
+use serde::Serialize;
+
 use super::Name;
 use super::NodeId;
 use super::ShEx2UmlConfig;
@@ -20,6 +23,31 @@ pub enum UmlLabelType {
     Or,
     Not,
     And,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+pub enum LineType {
+    Orthogonal,
+    Polyline,
+    Default,
+}
+
+impl Default for LineType {
+    fn default() -> Self {
+        LineType::Default
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+pub enum Direction {
+    LeftToRight,
+    TopToBottom,
+}
+
+impl Default for Direction {
+    fn default() -> Self {
+        Direction::TopToBottom
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -261,8 +289,23 @@ impl Uml {
     fn preamble(&self, writer: &mut impl Write, config: &ShEx2UmlConfig) -> Result<(), UmlError> {
         writeln!(writer, "hide empty members")?;
 
-        if config.ortho.unwrap_or_default() {
-            writeln!(writer, "skinparam linetype ortho")?;
+        match config.direction.clone().unwrap_or_default() {
+            Direction::LeftToRight => {
+                writeln!(writer, "left to right direction")?;
+            },
+            Direction::TopToBottom => {
+                writeln!(writer, "top to bottom direction")?;
+            },
+        }
+
+        match config.line_type.clone().unwrap_or_default() {
+            LineType::Orthogonal => {
+                writeln!(writer, "skinparam linetype ortho")?;
+            },
+            LineType::Polyline => {
+                writeln!(writer, "skinparam linetype polyline")?;
+            },
+            LineType::Default => {},
         }
 
         // Hide the class attribute icon

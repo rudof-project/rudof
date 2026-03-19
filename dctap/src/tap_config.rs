@@ -74,6 +74,12 @@ pub struct TapConfig {
     /// <div class="warning">This field is experimental and the syntax may change</div>
     ///
     empty_property_placeholder: Option<PlaceholderResolver>,
+
+    /// String that is used to separate values in a value shape cell. The default value is whitespace.
+    ///
+    /// <div class="warning">This field is experimental and the syntax may change</div>
+    ///
+    value_shape_delimiter: Option<String>,
 }
 
 impl TapConfig {

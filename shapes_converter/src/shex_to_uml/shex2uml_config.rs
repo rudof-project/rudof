@@ -10,18 +10,28 @@ use serde::{Deserialize, Serialize};
 use shex_validation::ShExConfig;
 use thiserror::Error;
 
+use crate::shex_to_uml::{Direction, LineType};
+
 pub const DEFAULT_REPLACE_IRI_BY_LABEL: bool = true;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct ShEx2UmlConfig {
     pub plantuml_path: Option<PathBuf>,
+
+    /// A list of IRIs to use as annotation labels in the generated PlantUML diagram. If empty, the default is `rdfs:label`.
     pub annotation_label: Vec<IriS>,
+
     /// Whether to replace IRIs by their labels in the generated PlantUML diagram. If `None`, the default is `true`.
     pub replace_iri_by_label: Option<bool>,
+
     /// Whether to use shadowing in the generated PlantUML diagram. If `None`, the default is `true`.
     pub shadowing: Option<bool>,
-    /// Whether to use orthogonal lines in the generated PlantUML diagram. If `None`, the default is `false`.
-    pub ortho: Option<bool>,
+
+    /// The line type to use in the generated PlantUML diagram. If `None`, the default is `LineType::Polyline`.
+    pub line_type: Option<LineType>,
+
+    /// The direction of the generated PlantUML diagram. If `None`, the default is `Direction::TopToBottom`.
+    pub direction: Option<Direction>,
 
     /// Configuration for ShEx. If `None`, the default configuration is used.
     pub shex: Option<ShExConfig>,
@@ -35,7 +45,8 @@ impl ShEx2UmlConfig {
             shex: Some(ShExConfig::default()),
             shadowing: Some(true),
 
-            ortho: Some(false),
+            line_type: Some(LineType::default()),
+            direction: Some(Direction::default()),
             plantuml_path: None,
         }
     }
