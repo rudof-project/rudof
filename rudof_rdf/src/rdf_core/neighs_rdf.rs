@@ -15,8 +15,6 @@ use std::{
 pub type IncomingArcs<R> = HashMap<<R as Rdf>::IRI, HashSet<<R as Rdf>::Subject>>;
 /// Maps predicates to sets of objects (forward navigation)
 pub type OutgoingArcs<R> = HashMap<<R as Rdf>::IRI, HashSet<<R as Rdf>::Term>>;
-/// Filtered outgoing arcs with remainder predicates
-pub type OutgoingArcsFromList<R> = (OutgoingArcs<R>, Vec<<R as Rdf>::IRI>);
 
 /// Trait for navigating RDF graphs and querying triples.
 ///
@@ -204,20 +202,17 @@ pub trait NeighsRDF: Rdf {
         &self,
         subject: &Self::Subject,
         preds: &[Self::IRI],
-    ) -> Result<OutgoingArcsFromList<Self>, Self::Err> {
+    ) -> Result<OutgoingArcs<Self>, Self::Err> {
         let mut results = OutgoingArcs::<Self>::new();
-        let mut remainder = Vec::new();
 
-        for triple in self.triples_with_subject(subject)? {
-            let (_, p, o) = triple.into_components();
-            if preds.contains(&p) {
-                results.entry(p).or_default().insert(o);
-            } else {
-                remainder.push(p)
+        for p in preds {
+            let triples = self.triples_with_subject_predicate(subject, p)?;
+            for t in triples {
+                results.entry(p.clone()).or_default().insert(t.obj().clone());
             }
         }
 
-        Ok((results, remainder))
+        Ok(results)
     }
 
     /// Returns all subjects that are instances of the specified class.
