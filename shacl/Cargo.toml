@@ -1,0 +1,12 @@
+[package]
+name = 'shacl'
+version = "0.2.6"
+authors.workspace = true
+description = "A SHACL validator for RDF data, implemented in Rust."
+documentation = "https://docs.rs/shacl"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
