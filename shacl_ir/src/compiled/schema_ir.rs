@@ -110,6 +110,11 @@ impl SchemaIR {
         self.iter().filter(|(_, shape)| !shape.targets().is_empty())
     }
 
+    /// Returns the `ShapeLabelIdx` for the given shape reference `Object`, if it exists.
+    pub fn get_shape_idx(&self, sref: &Object) -> Option<ShapeLabelIdx> {
+        self.labels_idx_map.get(sref).copied()
+    }
+
     pub fn get_shape(&self, sref: &Object) -> Option<&ShapeIR> {
         self.labels_idx_map.get(sref).map(|label_idx| {
             self.shapes

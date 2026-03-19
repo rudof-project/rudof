@@ -1,5 +1,6 @@
 #![doc = include_str!("../README.md")]
 
+pub mod class_index;
 pub mod constraints;
 pub mod focus_nodes;
 mod helpers;
@@ -15,6 +16,7 @@ pub mod shape_validation;
 /// shapes graphs.
 pub mod store;
 pub mod validate_error;
+pub mod validation_cache;
 /// The result of the validation process.
 pub mod validation_report;
 pub mod value_nodes;

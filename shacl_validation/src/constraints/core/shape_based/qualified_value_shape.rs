@@ -39,7 +39,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
             let mut valid_counter = 0;
             // Count how many nodes conform to the shape
             for node in nodes.iter() {
-                let focus_nodes = FocusNodes::from_iter(std::iter::once(node.clone()));
+                let focus_nodes = FocusNodes::single(node.clone());
                 let shape = get_shape_from_idx(shapes_graph, self.shape())?;
                 let inner_results = shape.validate(store, engine, Some(&focus_nodes), Some(&shape), shapes_graph);
                 let mut is_valid = match inner_results {

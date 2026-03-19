@@ -13,6 +13,13 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 
 pub trait Engine<S: NeighsRDF> {
+    /// Pre-builds internal indexes from the data graph for faster target resolution.
+    ///
+    /// This should be called **once** before the validation loop starts.
+    fn build_indexes(&mut self, _store: &S) -> Result<(), Box<ValidateError>> {
+        Ok(())
+    }
+
     #[allow(clippy::too_many_arguments)]
     fn evaluate(
         &mut self,
@@ -77,4 +84,7 @@ pub trait Engine<S: NeighsRDF> {
     fn record_validation(&mut self, node: Object, shape_idx: ShapeLabelIdx, results: Vec<ValidationResult>);
 
     fn has_validated(&self, node: &Object, shape_idx: ShapeLabelIdx) -> bool;
+
+    /// Returns the cached validation results for a given `(node, shape_idx)` pair, if any.
+    fn get_cached_results(&self, node: &Object, shape_idx: ShapeLabelIdx) -> Option<&Vec<ValidationResult>>;
 }

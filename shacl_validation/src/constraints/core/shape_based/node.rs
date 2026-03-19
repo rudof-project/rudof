@@ -39,7 +39,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
             );
             for node in nodes.iter() {
                 let node_object = S::term_as_object(node)?;
-                let focus_nodes = FocusNodes::from_iter(std::iter::once(node.clone()));
+                let focus_nodes = FocusNodes::single(node.clone());
                 if engine.has_validated(&node_object, *shape_idx) {
                     trace!(
                         "Skipping validation for Node constraint for shape {} and node: {focus_node} since already validated",
@@ -47,7 +47,6 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
                     );
                     continue;
                 }
-                engine.record_validation(node_object.clone(), *shape_idx, Vec::new());
                 let inner_results = node_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
                 let is_valid = match inner_results {
                     Err(_) => false,

@@ -31,7 +31,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for And {
         let mut validation_results = Vec::new();
         for (_focus_node, nodes) in value_nodes.iter() {
             for node in nodes.iter() {
-                let focus_nodes = FocusNodes::from_iter(std::iter::once(node.clone()));
+                let focus_nodes = FocusNodes::single(node.clone());
                 let mut all_conform = true;
                 for shape_idx in self.shapes().iter() {
                     let shape = get_shape_from_idx(shapes_graph, shape_idx)?;

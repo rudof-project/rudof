@@ -171,7 +171,7 @@ fn get_outgoing_arcs<S: NeighsRDF>(
         Ok(map_vec)
     } else {
         let preds = convert_predicates(predicates, rdf)?;
-        let (map, _) = rdf
+        let map = rdf
             .outgoing_arcs_from_list(subject, &preds)
             .map_err(|e| RudofError::OutgoingArcs {
                 subject: rdf.qualify_subject(subject),
@@ -220,7 +220,7 @@ fn get_outgoing_arcs_depth<S: NeighsRDF>(
         Ok(result)
     } else {
         let preds = convert_predicates(predicates, rdf)?;
-        let (map, _) = rdf
+        let map = rdf
             .outgoing_arcs_from_list(subject, &preds)
             .map_err(|e| RudofError::OutgoingArcs {
                 subject: rdf.qualify_subject(subject),

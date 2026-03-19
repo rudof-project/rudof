@@ -560,7 +560,7 @@ impl NeighsRDF for SparqlEndpoint {
         subject: &S,
         predicate: &P,
         object: &O,
-    ) -> Result<impl Iterator<Item = Self::Triple>>
+    ) -> Result<impl Iterator<Item = Self::Triple> + '_>
     where
         S: Matcher<Self::Subject>,
         P: Matcher<Self::IRI>,
