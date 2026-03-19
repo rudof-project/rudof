@@ -137,6 +137,13 @@ impl TapConfig {
     pub fn empty_property_placeholder(&self) -> Option<PlaceholderResolver> {
         self.empty_property_placeholder.clone()
     }
+
+    pub fn value_shape_delimiter(&self) -> &str {
+        match &self.value_shape_delimiter {
+            None => " ",
+            Some(s) => s.as_str(),
+        }
+    }
 }
 
 impl FromStr for TapConfig {

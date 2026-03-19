@@ -134,11 +134,12 @@ title = "Title"
 # [shacl2shex.shacl] # ShaclConfig
 # add_target_class = true/false # if true, add rdf:type for sh:targetClass declarations
 
-# [tap]
-# delimiter = ','
-# quote = '"'
-# flexible = true/false
-picklist_delimiter = '|'
+[tap]
+delimiter = ','
+quote = '"'
+flexible = true
+picklist_delimiter = ' '
+
 # [tap.property_place_holders]
 # empty_property_placeholder = "stem"
 

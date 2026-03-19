@@ -9,6 +9,7 @@ use shex_ast::{
     Annotation, NodeConstraint, ObjectValue, Schema, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel, TripleExpr,
     ValueSetValue,
 };
+use tracing::trace;
 
 use crate::{Tap2ShExConfig, Tap2ShExError};
 pub struct Tap2ShEx {
@@ -163,8 +164,8 @@ fn parse_node_constraint(
 ) -> Result<Option<NodeConstraint>, Tap2ShExError> {
     let mut nc = NodeConstraint::new();
     let mut changed = false;
-    if let Some(datatype) = statement.value_datatype() {
-        let iri = datatype_id2iri(&datatype, config)?;
+    for datatype in statement.value_datatype() {
+        let iri = datatype_id2iri(datatype, config)?;
         changed = true;
         nc.add_datatype(IriRef::iri(iri));
     }
@@ -186,6 +187,7 @@ fn parse_constraint(
         ValueConstraint::PickList(values) => {
             let mut value_set_values: Vec<ValueSetValue> = Vec::new();
             for v in values {
+                trace!("Parsing value set value: {v}");
                 let value_set_value = parse_value_set_value(v, config, line)?;
                 value_set_values.push(value_set_value)
             }
@@ -225,7 +227,7 @@ fn parse_shape_ref(statement: &TapStatement, config: &Tap2ShExConfig) -> Result<
         let line_no = shape_ids.line();
         let mut shapes = Vec::new();
         for s in shape_ids.str().split_whitespace() {
-            if s == "OR" {
+            if s == config.tap_config().value_shape_delimiter() {
                 continue;
             }
             let sid = ShapeId::new(s, line_no);
