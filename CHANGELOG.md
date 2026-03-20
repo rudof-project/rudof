@@ -9,7 +9,12 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ## v0.2.8
 
+### Added
+- Support for more than one value in ValueShape in DCTAP
+- Added support to visualizing more comples Shapes wihch can have references in ShEx and DCTAP
+
 ### Fixed
+- Small error in DCTAP with prefix maps in value shapes 
 - Removed 2 unwraps in convert that panicked when the formats to convert to ShEx were wrong
 
 ## v0.2.7 
