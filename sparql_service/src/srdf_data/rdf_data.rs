@@ -20,8 +20,8 @@ use serde::ser::SerializeStruct;
 use sparesults::QuerySolution as SparQuerySolution;
 use std::collections::HashMap;
 use std::fmt::Debug;
-use std::io;
 use std::str::FromStr;
+use std::{io, iter};
 use tracing::trace;
 
 /// Generic abstraction that represents RDF Data which can be  behind SPARQL endpoints or an in-memory graph or both
@@ -106,12 +106,10 @@ impl RdfData {
 
     /// Creates an RdfData from an in-memory RDF Graph
     pub fn from_graph(graph: InMemoryGraph) -> Result<RdfData, RdfDataError> {
-        let store = Store::new()?;
-        store.bulk_loader().load_quads(graph.quads())?;
         Ok(RdfData {
             endpoints: HashMap::new(),
             graph: Some(graph),
-            store: Some(store),
+            store: None,
             focus: None,
             use_endpoints: HashMap::new(),
         })
@@ -466,7 +464,13 @@ fn cnv_query_solution(qs: SparQuerySolution) -> QuerySolution<RdfData> {
 
 impl NeighsRDF for RdfData {
     fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
-        let graph_triples = self.graph.iter().flat_map(NeighsRDF::triples).flatten();
+        let iter: Box<dyn Iterator<Item = OxTriple> + '_> = match &self.graph {
+            None => Box::new(iter::empty()),
+            Some(g) => Box::new(
+                g.triples()
+                    .map_err(|e| RdfDataError::SRDFGraphError { err: Box::new(e) })?,
+            ),
+        };
         // We ignore the triples from the endpoints for now as it can be very expensive
         /*let endpoints_triples = self
             .use_endpoints
@@ -474,7 +478,7 @@ impl NeighsRDF for RdfData {
             .flat_map(|(_name, e)| NeighsRDF::triples(e))
             .flatten();
         Ok(graph_triples.chain(endpoints_triples))*/
-        Ok(graph_triples)
+        Ok(iter)
     }
 
     fn triples_matching<S, P, O>(
@@ -482,26 +486,26 @@ impl NeighsRDF for RdfData {
         subject: &S,
         predicate: &P,
         object: &O,
-    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err>
+    ) -> Result<impl Iterator<Item = Self::Triple> + '_, Self::Err>
     where
         S: Matcher<Self::Subject>,
         P: Matcher<Self::IRI>,
         O: Matcher<Self::Term>,
     {
-        let s1 = subject;
-        let p1 = predicate;
-        let o1 = object;
-        let graph_triples = self
-            .graph
-            .iter()
-            .flat_map(move |g| NeighsRDF::triples_matching(g, s1, p1, o1))
-            .flatten();
-        let endpoints_triples = self
-            .use_endpoints
-            .iter()
-            .flat_map(move |(_name, e)| NeighsRDF::triples_matching(e, subject, predicate, object))
-            .flatten();
-        Ok(graph_triples.chain(endpoints_triples))
+        let graph_iter: Box<dyn Iterator<Item = OxTriple> + '_> = match &self.graph {
+            None => Box::new(iter::empty()),
+            Some(g) => Box::new(
+                g.triples_matching(subject, predicate, object)
+                    .map_err(|e| RdfDataError::SRDFGraphError { err: Box::new(e) })?,
+            ),
+        };
+
+        let mut endpoint_triples: Vec<OxTriple> = Vec::new();
+        for e in self.use_endpoints.values() {
+            endpoint_triples.extend(e.triples_matching(subject, predicate, object)?);
+        }
+
+        Ok(graph_iter.chain(endpoint_triples))
     }
 }
 

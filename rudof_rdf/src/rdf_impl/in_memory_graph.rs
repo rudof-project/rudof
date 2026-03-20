@@ -25,6 +25,7 @@ use prefixmap::{PrefixMapError, map::*};
 use serde::{Serialize, ser::SerializeStruct};
 use sparesults::QuerySolution as SparQuerySolution;
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 use std::{
     fmt::{Debug, Display, Formatter},
     fs::File,
@@ -44,7 +45,7 @@ pub struct InMemoryGraph {
     focus: Option<OxTerm>,
 
     /// Underlying RDF graph.
-    graph: Graph,
+    graph: Arc<Graph>,
 
     /// Prefix map used for CURIE resolution and qualification.
     pm: PrefixMap,
@@ -192,7 +193,7 @@ impl InMemoryGraph {
                     Some(t) => t,
                     None => continue,
                 };
-            self.graph.insert(triple.as_ref());
+            Arc::make_mut(&mut self.graph).insert(triple.as_ref());
         }
 
         let prefixes: HashMap<&str, &str> = turtle_reader.prefixes().collect();
@@ -233,7 +234,7 @@ impl InMemoryGraph {
                 Some(t) => t,
                 None => continue,
             };
-            self.graph.insert(triple.as_ref());
+            Arc::make_mut(&mut self.graph).insert(triple.as_ref());
         }
 
         Ok(())
@@ -266,7 +267,7 @@ impl InMemoryGraph {
                 None => continue,
             };
             let triple_ref = cnv_triple(&triple);
-            self.graph.insert(triple_ref);
+            Arc::make_mut(&mut self.graph).insert(triple_ref);
         }
 
         Ok(())
@@ -298,7 +299,7 @@ impl InMemoryGraph {
                 Some(t) => t,
                 None => continue,
             };
-            self.graph.insert(triple.as_ref());
+            Arc::make_mut(&mut self.graph).insert(triple.as_ref());
         }
 
         Ok(())
@@ -330,7 +331,7 @@ impl InMemoryGraph {
                 Some(t) => t,
                 None => continue,
             };
-            self.graph.insert(triple.as_ref());
+            Arc::make_mut(&mut self.graph).insert(triple.as_ref());
         }
 
         Ok(())
@@ -470,7 +471,7 @@ impl InMemoryGraph {
         O: Into<TermRef<'a>>,
     {
         let triple = TripleRef::new(subj.into(), pred.into(), obj.into());
-        self.graph.insert(triple);
+        Arc::make_mut(&mut self.graph).insert(triple);
         Ok(())
     }
 
@@ -681,96 +682,6 @@ impl NeighsRDF for InMemoryGraph {
         Ok(self.graph.iter().map(TripleRef::into_owned))
     }
 
-    /// Returns an iterator over triples with a specific subject.
-    ///
-    /// This is optimized to use the underlying graph's subject index.
-    ///
-    /// # Parameters
-    ///
-    /// * `subject` - The subject to filter by
-    fn triples_with_subject(&self, subject: &Self::Subject) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
-        let triples: Vec<_> = self
-            .graph
-            .triples_for_subject(subject)
-            .map(TripleRef::into_owned)
-            .collect();
-        Ok(triples.into_iter())
-    }
-
-    /// Returns all triples with the specified subject and predicate.
-    ///
-    /// Uses the oxrdf SPO index directly for O(k) lookup.
-    ///
-    /// # Arguments
-    ///
-    /// * `subject` - The subject to match
-    /// * `predicate` - The predicate to match
-    fn triples_with_subject_predicate(
-        &self,
-        subject: &Self::Subject,
-        predicate: &Self::IRI,
-    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
-        let triples: Vec<_> = self
-            .graph
-            .objects_for_subject_predicate(OxSubjectRef::from(subject), NamedNodeRef::from(predicate))
-            .map(|o| OxTriple::new(subject.clone(), predicate.clone(), o.into_owned()))
-            .collect();
-        Ok(triples.into_iter())
-    }
-
-    /// Returns all triples with the specified predicate.
-    ///
-    /// Uses the oxrdf POS index directly for O(k) lookup.
-    ///
-    /// # Arguments
-    ///
-    /// * `predicate` - The predicate to match
-    fn triples_with_predicate(&self, predicate: &Self::IRI) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
-        let triples: Vec<_> = self
-            .graph
-            .triples_for_predicate(NamedNodeRef::from(predicate))
-            .map(TripleRef::into_owned)
-            .collect();
-        Ok(triples.into_iter())
-    }
-
-    /// Returns all triples with the specified predicate and object.
-    ///
-    /// Uses the oxrdf POS index directly for O(k) lookup.
-    ///
-    /// # Arguments
-    ///
-    /// * `predicate` - The predicate to match
-    /// * `object` - The object to match
-    fn triples_with_predicate_object(
-        &self,
-        predicate: &Self::IRI,
-        object: &Self::Term,
-    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
-        let triples: Vec<_> = self
-            .graph
-            .subjects_for_predicate_object(NamedNodeRef::from(predicate), TermRef::from(object))
-            .map(|s| OxTriple::new(s.into_owned(), predicate.clone(), object.clone()))
-            .collect();
-        Ok(triples.into_iter())
-    }
-
-    /// Returns all triples with the specified object.
-    ///
-    /// Uses the oxrdf OSP index directly for O(k) lookup.
-    ///
-    /// # Arguments
-    ///
-    /// * `object` - The object to match
-    fn triples_with_object(&self, object: &Self::Term) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
-        let triples: Vec<_> = self
-            .graph
-            .triples_for_object(TermRef::from(object))
-            .map(TripleRef::into_owned)
-            .collect();
-        Ok(triples.into_iter())
-    }
-
     /// Returns an iterator over triples matching a pattern.
     ///
     /// Uses the appropriate oxrdf index based on which positions are concrete
@@ -790,34 +701,72 @@ impl NeighsRDF for InMemoryGraph {
         subject: &S,
         predicate: &P,
         object: &O,
-    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err>
+    ) -> Result<impl Iterator<Item = Self::Triple> + '_, Self::Err>
     where
         S: Matcher<Self::Subject>,
         P: Matcher<Self::IRI>,
         O: Matcher<Self::Term>,
     {
-        // Dispatch to the most specific oxrdf index based on which positions are bound,
-        // avoiding a full scan.
-        let triples: Vec<OxTriple> = match (subject.value(), predicate.value(), object.value()) {
-            (Some(s), Some(p), Some(o)) => self
-                .graph
-                .contains(TripleRef::new(
+        // Dispatch to the tightest available index to avoid full scans.
+        let result: Box<dyn Iterator<Item = OxTriple> + '_> = match (subject.value(), predicate.value(), object.value())
+        {
+            (Some(s), Some(p), Some(o)) => {
+                let found = self.graph.contains(TripleRef::new(
                     OxSubjectRef::from(s),
                     NamedNodeRef::from(p),
                     TermRef::from(o),
-                ))
-                .then_some(OxTriple::new(s.clone(), p.clone(), o.clone()))
-                .into_iter()
-                .collect(),
-            (Some(s), Some(p), None) => self.triples_with_subject_predicate(s, p)?.collect(),
-            (Some(s), None, Some(o)) => self.triples_with_subject(s)?.filter(|t| t.object == *o).collect(),
-            (Some(s), None, None) => self.triples_with_subject(s)?.collect(),
-            (None, Some(p), Some(o)) => self.triples_with_predicate_object(p, o)?.collect(),
-            (None, Some(p), None) => self.triples_with_predicate(p)?.collect(),
-            (None, None, Some(o)) => self.triples_with_object(o)?.collect(),
-            (None, None, None) => self.graph.iter().map(TripleRef::into_owned).collect(),
+                ));
+                let s = s.clone();
+                let p = p.clone();
+                let o = o.clone();
+                Box::new(found.then(|| OxTriple::new(s, p, o)).into_iter())
+            },
+            (Some(s), Some(p), None) => {
+                let s_owned = s.clone();
+                let p_owned = p.clone();
+                Box::new(
+                    self.graph
+                        .objects_for_subject_predicate(OxSubjectRef::from(s), NamedNodeRef::from(p))
+                        .map(move |o| OxTriple::new(s_owned.clone(), p_owned.clone(), o.into_owned())),
+                )
+            },
+            (Some(s), None, Some(o)) => {
+                let o_owned = o.clone();
+                Box::new(
+                    self.graph
+                        .triples_for_subject(OxSubjectRef::from(s))
+                        .map(TripleRef::into_owned)
+                        .filter(move |t| t.object == o_owned),
+                )
+            },
+            (Some(s), None, None) => Box::new(
+                self.graph
+                    .triples_for_subject(OxSubjectRef::from(s))
+                    .map(TripleRef::into_owned),
+            ),
+            (None, Some(p), Some(o)) => {
+                let p_owned = p.clone();
+                let o_owned = o.clone();
+                Box::new(
+                    self.graph
+                        .subjects_for_predicate_object(NamedNodeRef::from(p), TermRef::from(o))
+                        .map(move |s| OxTriple::new(s.into_owned(), p_owned.clone(), o_owned.clone())),
+                )
+            },
+            (None, Some(p), None) => Box::new(
+                self.graph
+                    .triples_for_predicate(NamedNodeRef::from(p))
+                    .map(TripleRef::into_owned),
+            ),
+            (None, None, Some(o)) => Box::new(
+                self.graph
+                    .triples_for_object(TermRef::from(o))
+                    .map(TripleRef::into_owned),
+            ),
+            (None, None, None) => Box::new(self.graph.iter().map(TripleRef::into_owned)),
         };
-        Ok(triples.into_iter())
+
+        Ok(result)
     }
 }
 
@@ -1000,7 +949,7 @@ impl BuildRDF for InMemoryGraph {
         O: Into<Self::Term>,
     {
         let triple = OxTriple::new(subj.into(), pred.into(), obj.into());
-        self.graph.insert(&triple);
+        Arc::make_mut(&mut self.graph).insert(&triple);
         Ok(())
     }
 
@@ -1018,7 +967,7 @@ impl BuildRDF for InMemoryGraph {
         O: Into<Self::Term>,
     {
         let triple = OxTriple::new(subj.into(), pred.into(), obj.into());
-        self.graph.remove(&triple);
+        Arc::make_mut(&mut self.graph).remove(&triple);
         Ok(())
     }
 
@@ -1036,7 +985,7 @@ impl BuildRDF for InMemoryGraph {
         T: Into<Self::Term>,
     {
         let triple = OxTriple::new(node.into(), rdf_type(), type_.into());
-        self.graph.insert(&triple);
+        Arc::make_mut(&mut self.graph).insert(&triple);
         Ok(())
     }
 
@@ -1048,7 +997,7 @@ impl BuildRDF for InMemoryGraph {
     fn empty() -> Self {
         InMemoryGraph {
             focus: None,
-            graph: Graph::new(),
+            graph: Graph::new().into(),
             pm: PrefixMap::new(),
             base: None,
             bnode_counter: 0,

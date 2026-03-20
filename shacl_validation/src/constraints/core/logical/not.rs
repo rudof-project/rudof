@@ -45,7 +45,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Not {
             );
             for node in nodes.iter() {
                 info!("Validating NOT constraint for node: {node}");
-                let focus_nodes = FocusNodes::from_iter(std::iter::once(node.clone()));
+                let focus_nodes = FocusNodes::single(node.clone());
                 let not_shape = get_shape_from_idx(shapes_graph, self.shape())?;
                 debug!("Validating NOT constraint with internal shape {}", not_shape.id());
                 let inner_results = not_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);

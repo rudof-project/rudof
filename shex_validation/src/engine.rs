@@ -17,7 +17,6 @@ use shex_ast::Expr;
 use shex_ast::Node;
 use shex_ast::Pred;
 use shex_ast::ShapeLabelIdx;
-use shex_ast::ir::preds::Preds;
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::shape::Shape;
 use shex_ast::ir::shape_expr::ShapeExpr;
@@ -31,7 +30,6 @@ type Result<T> = std::result::Result<T, ValidatorError>;
 type Atom = atom::Atom<(Node, ShapeLabelIdx)>;
 type NegAtom = (Node, ShapeLabelIdx);
 type PosAtom = (Node, ShapeLabelIdx);
-type Neighs = (Vec<(Pred, Node)>, Vec<Pred>);
 type ValidationResult = Either<Vec<ValidatorError>, Vec<Reason>>;
 type Typing = HashSet<(Node, ShapeLabelIdx)>;
 
@@ -222,7 +220,7 @@ impl Engine {
             let references = se.references(schema);
             // trace!("References in shape expr: {:?}", references);
             let preds = references.keys().cloned().collect::<Vec<_>>();
-            let (neighs, _remainder) = self.neighs(node, preds, rdf)?;
+            let neighs = self.neighs(node, preds, rdf)?;
             for (pred, neigh_node) in neighs {
                 if let Some(idx_list) = references.get(&pred) {
                     for idx in idx_list {
@@ -569,16 +567,8 @@ impl Engine {
         R: QueryRDF + NeighsRDF,
     {
         debug!("check_node_shape: node = {node}, shape = {idx} [No extends]");
-        let (values, remainder) = self.neighs(node, shape.preds(), rdf)?;
-        if shape.is_closed() && !remainder.is_empty() {
-            trace!("Closed shape with remainder preds: {remainder:?}");
-            fail(ValidatorError::ClosedShapeWithRemainderPreds {
-                remainder: Preds::new(remainder),
-                declared: Preds::new(shape.preds().into_iter().collect()),
-            })
-        } else {
-            check_expr_neigh(shape.triple_expr(), &values, node, shape, idx, typing)
-        }
+        let values = self.neighs(node, shape.preds(), rdf)?;
+        check_expr_neigh(shape.triple_expr(), &values, node, shape, idx, typing)
     }
 
     pub(crate) fn check_node_shape_extends<R>(
@@ -599,14 +589,7 @@ impl Engine {
             "Predicates in this shape with extends: [{}]",
             preds_extends.iter().map(|p| p.to_string()).join(", ")
         );
-        let (values, remainder) = self.neighs(node, preds_extends, rdf)?;
-        if shape.is_closed() && !remainder.is_empty() {
-            trace!("Closed shape with remainder preds: {remainder:?}");
-            return fail(ValidatorError::ClosedShapeWithRemainderPreds {
-                remainder: Preds::new(remainder),
-                declared: Preds::new(shape.preds().into_iter().collect()),
-            });
-        }
+        let values = self.neighs(node, preds_extends, rdf)?;
         trace!(
             "Neighs of {node} [{}]",
             values.iter().map(|(p, v)| format!("{p} {v}")).join(", ")
@@ -697,14 +680,14 @@ impl Engine {
     /// Returns a tuple (values, remainder) where:
     /// - values is a list of pairs (pred, obj) where obj is an object of the node for the given pred
     /// - remainder is a list of predicates for which there are no objects
-    pub(crate) fn neighs<S>(&self, node: &Node, preds: Vec<Pred>, rdf: &S) -> Result<Neighs>
+    pub(crate) fn neighs<S>(&self, node: &Node, preds: Vec<Pred>, rdf: &S) -> Result<Vec<(Pred, Node)>>
     where
         S: QueryRDF + NeighsRDF,
     {
         let node = self.get_rdf_node(node, rdf);
         let list: Vec<_> = preds.iter().map(|pred| pred.iri().clone().into()).collect();
         if let Ok(subject) = S::term_as_subject(&node) {
-            let (outgoing_arcs, remainder) = rdf
+            let outgoing_arcs = rdf
                 .outgoing_arcs_from_list(&subject, &list)
                 .map_err(|e| self.cnv_err::<S>(e))?;
             let mut result = Vec::new();
@@ -715,14 +698,9 @@ impl Engine {
                     result.push((iri.clone(), object))
                 }
             }
-            let mut remainder_preds = Vec::new();
-            for r in remainder {
-                let iri_r = self.cnv_iri::<S>(r.clone());
-                remainder_preds.push(iri_r)
-            }
-            Ok((result, remainder_preds))
+            Ok(result)
         } else {
-            Ok((Vec::new(), Vec::new()))
+            Ok(Vec::new())
         }
     }
 
