@@ -1,11 +1,10 @@
-use std::fmt::Display;
-
 use iri_s::IriS;
 use prefixmap::IriRef;
 use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub enum Value {
+pub(crate) enum Value {
     Iri(IriRef),
     Literal(ConcreteLiteral),
 }
@@ -23,7 +22,7 @@ impl From<ConcreteLiteral> for Value {
 }
 
 impl Display for Value {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Value::Iri(iri) => write!(f, "value({iri})"),
             Value::Literal(lit) => write!(f, "literal({lit})"),
