@@ -10,4 +10,9 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
+itertools.workspace = true
 iri_s.workspace = true
+petgraph.workspace = true
+prefixmap.workspace = true
+rudof_rdf.workspace = true
+thiserror.workspace = true
