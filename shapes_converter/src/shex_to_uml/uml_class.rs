@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use super::{Name, NodeId, UmlEntry};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 
 pub struct UmlClass {
     name: Name,

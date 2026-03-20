@@ -28,7 +28,7 @@ pub enum Tap2ShExError {
 
     #[error("Multiple value expressions in statement: value_datatype: {value_datatype:?}, value_shape: {value_shape} ")]
     MultipleValueExprInStatement {
-        value_datatype: DatatypeId,
+        value_datatype: Vec<DatatypeId>,
         value_shape: ShapeId,
     },
 

@@ -1,6 +1,6 @@
 use super::Name;
 
-#[derive(Debug, PartialEq, Default)]
+#[derive(Debug, PartialEq, Clone, Default)]
 pub enum ValueConstraint {
     #[default]
     Any,
@@ -13,10 +13,29 @@ pub enum ValueConstraint {
     And {
         values: Vec<ValueConstraint>,
     },
+    Or {
+        values: Vec<ValueConstraint>,
+    },
+    Not {
+        value: Box<ValueConstraint>,
+    },
 }
 
 impl ValueConstraint {
     pub fn datatype(name: Name) -> ValueConstraint {
         ValueConstraint::Datatype(name)
+    }
+
+    pub fn or(values: Vec<ValueConstraint>) -> ValueConstraint {
+        ValueConstraint::Or { values }
+    }
+
+    pub fn and(values: Vec<ValueConstraint>) -> ValueConstraint {
+        ValueConstraint::And { values }
+    }
+
+    /// Negates a value constraint.
+    pub fn not_value(value: ValueConstraint) -> ValueConstraint {
+        ValueConstraint::Not { value: Box::new(value) }
     }
 }

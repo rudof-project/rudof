@@ -159,6 +159,14 @@ impl ShapeExpr {
             _ => todo!(),
         }
     }
+
+    pub fn is_ref(&self) -> bool {
+        matches!(self, Self::Ref(_))
+    }
+
+    pub fn is_datatype(&self) -> bool {
+        matches!(self, Self::NodeConstraint(nc) if nc.is_datatype())
+    }
 }
 
 impl Default for ShapeExpr {
