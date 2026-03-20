@@ -34,7 +34,8 @@ impl ValueConstraint {
         ValueConstraint::And { values }
     }
 
-    pub fn not(value: ValueConstraint) -> ValueConstraint {
+    /// Negates a value constraint.
+    pub fn not_value(value: ValueConstraint) -> ValueConstraint {
         ValueConstraint::Not { value: Box::new(value) }
     }
 }

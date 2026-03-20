@@ -1,6 +1,3 @@
-use serde::Deserialize;
-use serde::Serialize;
-
 use super::Name;
 use super::NodeId;
 use super::ShEx2UmlConfig;
@@ -10,6 +7,8 @@ use super::UmlEntry;
 use super::UmlError;
 use super::UmlLink;
 use super::ValueConstraint;
+use serde::Deserialize;
+use serde::Serialize;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -25,29 +24,19 @@ pub enum UmlLabelType {
     And,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize, Default)]
 pub enum LineType {
     Orthogonal,
     Polyline,
+    #[default]
     Default,
 }
 
-impl Default for LineType {
-    fn default() -> Self {
-        LineType::Default
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize, Default)]
 pub enum Direction {
     LeftToRight,
+    #[default]
     TopToBottom,
-}
-
-impl Default for Direction {
-    fn default() -> Self {
-        Direction::TopToBottom
-    }
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]

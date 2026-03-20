@@ -368,7 +368,7 @@ impl ShEx2Uml {
     ) -> Result<(), ShEx2UmlError> {
         let mut nodes = BTreeSet::new();
         for label in labels {
-            let name = self.shape_label2name(&label)?;
+            let name = self.shape_label2name(label)?;
             let label = UmlLabel::Class(name.name());
             let (node_id, _found) = self.current_uml.get_node_adding_label(&label);
             nodes.insert(node_id);
@@ -390,7 +390,7 @@ impl ShEx2Uml {
                 ));
             },
         };
-        let component_idx = self.current_uml.get_logical_component_idx(&nodes, &label_type);
+        let component_idx = self.current_uml.get_logical_component_idx(&nodes, label_type);
         let component_label = UmlLabel::mk_logical_label(label_type, component_idx);
         let (component_node, _found) = self.current_uml.get_node_adding_label(&component_label);
         if self.current_uml.get_component(&component_node).is_none() {
@@ -401,7 +401,7 @@ impl ShEx2Uml {
             }
         }
         self.current_uml.make_link(
-            current_node_id.clone(),
+            *current_node_id,
             component_node,
             current_predicate.clone(),
             current_card.clone(),
@@ -428,13 +428,11 @@ impl ShEx2Uml {
                         "ShapeNot with more than one shape_expr is not implemented yet",
                     ));
                 }
-                Ok(ValueConstraint::not(vcs.into_iter().next().unwrap()))
+                Ok(ValueConstraint::not_value(vcs.into_iter().next().unwrap()))
             },
-            UmlLabelType::Class => {
-                return Err(ShEx2UmlError::not_implemented(
-                    "internalError: ShapeNot with a LabelType Class",
-                ));
-            },
+            UmlLabelType::Class => Err(ShEx2UmlError::not_implemented(
+                "internalError: ShapeNot with a LabelType Class",
+            )),
         }
     }
 }
@@ -456,7 +454,7 @@ fn all_datatypes(shape_exprs: &[ShapeExprWrapper], prefixmap: &PrefixMap) -> Eit
     for se in shape_exprs {
         if let ShapeExpr::NodeConstraint(nc) = &se.se {
             if let Some(dt) = nc.datatype() {
-                let name = iri_ref2name(&dt, &ShEx2UmlConfig::default(), &None, &prefixmap).unwrap();
+                let name = iri_ref2name(&dt, &ShEx2UmlConfig::default(), &None, prefixmap).unwrap();
                 names.push(name)
             } else {
                 return Either::Left(());

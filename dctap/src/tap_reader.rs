@@ -291,9 +291,7 @@ impl<R: io::Read> TapReader<R> {
         if let Some(str) = self.state.headers().value_datatype(rcd)
             && let Some(clean_str) = strip_whitespace(&str)
         {
-            let datatypes: Vec<DatatypeId> = get_strs(clean_str)
-                .map(|s| DatatypeId::new(s, pos.line()))
-                .collect();
+            let datatypes: Vec<DatatypeId> = get_strs(clean_str).map(|s| DatatypeId::new(s, pos.line())).collect();
             statement.set_value_datatype(&datatypes);
         }
     }

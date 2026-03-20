@@ -102,29 +102,61 @@ fn statement_to_triple_expr(statement: &TapStatement, config: &Tap2ShExConfig) -
     let pred = property_id2iri(&statement.property_id(), config)?;
     let min = get_min(statement.mandatory());
     let max = get_max(statement.repeatable());
-    let value_expr = if let Some(nc) = parse_node_constraint(statement, config)? {
-        Some(ShapeExpr::node_constraint(nc))
-    } else {
-        let refs_ = parse_shape_ref(statement, config)?;
-        if let Some(refs) = refs_ {
-            if refs.len() == 1 {
-                Some(ShapeExpr::iri_ref(refs[0].clone()))
-            } else {
-                let mut shape_refs = Vec::new();
-                for r in refs {
-                    shape_refs.push(ShapeExpr::iri_ref(r))
-                }
-                Some(ShapeExpr::or(shape_refs))
-            }
-        } else {
-            None
-        }
-    };
+
+    let value_expr = statement_to_value_expr(statement, config)?;
     let mut te = TripleExpr::triple_constraint(None, None, IriRef::Iri(pred), value_expr, min, max);
     if let Some(label) = statement.property_label() {
         te.add_annotation(Annotation::rdfs_label(label))
     }
     Ok(te)
+}
+
+#[allow(clippy::result_large_err)]
+fn statement_to_value_expr(
+    statement: &TapStatement,
+    config: &Tap2ShExConfig,
+) -> Result<Option<ShapeExpr>, Tap2ShExError> {
+    let mut se: Option<ShapeExpr> = None;
+    parse_node_constraint(statement, &mut se, config)?;
+    parse_shape_ref(statement, &mut se, config)?;
+    Ok(se)
+}
+
+#[allow(clippy::result_large_err)]
+fn parse_shape_ref(
+    statement: &TapStatement,
+    shape_expr: &mut Option<ShapeExpr>,
+    config: &Tap2ShExConfig,
+) -> Result<(), Tap2ShExError> {
+    if let Some(shape_refs) = statement.value_shape() {
+        let line_no = shape_refs.line();
+        let mut shapes = Vec::new();
+        for s in shape_refs.str().split_whitespace() {
+            if s == config.tap_config().value_shape_delimiter() {
+                continue;
+            }
+            let sid = ShapeId::new(s, line_no);
+            let iri = parse_single_shape_ref(&sid, config)?;
+            shapes.push(ShapeExpr::iri_ref(iri));
+        }
+        match &shapes[..] {
+            [] => return Ok(()),
+            [shape] => {
+                *shape_expr = match shape_expr {
+                    Some(se) => Some(ShapeExpr::and(vec![se.clone(), shape.clone()])),
+                    None => Some(shape.clone()),
+                };
+            },
+            _ => {
+                let shape_ref_expr = ShapeExpr::or(shapes);
+                *shape_expr = match shape_expr {
+                    Some(se) => Some(ShapeExpr::and(vec![se.clone(), shape_ref_expr])),
+                    None => Some(shape_ref_expr),
+                };
+            },
+        }
+    }
+    Ok(())
 }
 
 fn get_min(mandatory: Option<bool>) -> Option<i32> {
@@ -160,20 +192,40 @@ fn property_id2iri<'a>(property_id: &'a PropertyId, config: &'a Tap2ShExConfig) 
 #[allow(clippy::result_large_err)]
 fn parse_node_constraint(
     statement: &TapStatement,
+    shape_expr: &mut Option<ShapeExpr>,
     config: &Tap2ShExConfig,
-) -> Result<Option<NodeConstraint>, Tap2ShExError> {
-    let mut nc = NodeConstraint::new();
-    let mut changed = false;
-    for datatype in statement.value_datatype() {
-        let iri = datatype_id2iri(datatype, config)?;
-        changed = true;
-        nc.add_datatype(IriRef::iri(iri));
+) -> Result<(), Tap2ShExError> {
+    match statement.value_datatype() {
+        [] => {
+            if let Some(constraint) = statement.value_constraint() {
+                let mut nc = NodeConstraint::new();
+                parse_constraint(constraint, config, &mut nc, statement.source_line_number())?;
+                *shape_expr = Some(ShapeExpr::node_constraint(nc));
+            }
+        },
+        [datatype] => {
+            let mut nc = NodeConstraint::new();
+            let iri = datatype_id2iri(datatype, config)?;
+            nc.add_datatype(IriRef::iri(iri));
+            if let Some(constraint) = statement.value_constraint() {
+                parse_constraint(constraint, config, &mut nc, statement.source_line_number())?;
+            }
+        },
+        datatypes => {
+            let mut shape_exprs = Vec::new();
+            for datatype in datatypes {
+                let mut nc = NodeConstraint::new();
+                let iri = datatype_id2iri(datatype, config)?;
+                nc.add_datatype(IriRef::iri(iri));
+                if let Some(constraint) = statement.value_constraint() {
+                    parse_constraint(constraint, config, &mut nc, statement.source_line_number())?;
+                }
+                shape_exprs.push(ShapeExpr::node_constraint(nc));
+            }
+            *shape_expr = Some(ShapeExpr::or(shape_exprs));
+        },
     }
-    if let Some(constraint) = statement.value_constraint() {
-        parse_constraint(constraint, config, &mut nc, statement.source_line_number())?;
-        changed = true;
-    }
-    if changed { Ok(Some(nc)) } else { Ok(None) }
+    Ok(())
 }
 
 #[allow(clippy::result_large_err)]
@@ -213,16 +265,16 @@ fn parse_value_set_value(value: &Value, config: &Tap2ShExConfig, line: u64) -> R
     }
 }
 
+#[allow(clippy::result_large_err)]
 fn parse_single_shape_ref(s: &ShapeId, config: &Tap2ShExConfig) -> Result<IriRef, Tap2ShExError> {
-    let iri = shape_id2iri(&s, config).map_err(|e| Tap2ShExError::ParsingValueShape {
+    let iri = shape_id2iri(s, config).map_err(|e| Tap2ShExError::ParsingValueShape {
         line: 0,
         error: Box::new(e),
     })?;
     Ok(IriRef::iri(iri))
 }
 
-#[allow(clippy::result_large_err)]
-fn parse_shape_ref(statement: &TapStatement, config: &Tap2ShExConfig) -> Result<Option<Vec<IriRef>>, Tap2ShExError> {
+/*fn parse_shape_ref(statement: &TapStatement, config: &Tap2ShExConfig) -> Result<Option<Vec<IriRef>>, Tap2ShExError> {
     if let Some(shape_ids) = statement.value_shape() {
         let line_no = shape_ids.line();
         let mut shapes = Vec::new();
@@ -238,4 +290,4 @@ fn parse_shape_ref(statement: &TapStatement, config: &Tap2ShExConfig) -> Result<
     } else {
         Ok(None)
     }
-}
+}*/
