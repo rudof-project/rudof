@@ -1,4 +1,4 @@
-use crate::manifest_mode::ManifestMode;
+use crate::manifest_mode::{ManifestMode, ManifestShExSyntaxMode};
 use serde::{Deserialize, Serialize};
 use std::{fs, io};
 use thiserror::Error;
@@ -8,6 +8,7 @@ pub struct Config {
     pub manifest_mode: ManifestMode,
     pub excluded_entries: Vec<String>,
     pub single_entries: Option<Vec<String>>,
+    pub manifest_shex_syntax_mode: Option<ManifestShExSyntaxMode>,
 }
 
 #[derive(Error, Debug)]
@@ -47,6 +48,7 @@ mod tests {
             manifest_mode: ManifestMode::Schemas,
             excluded_entries: vec!["entry1".to_string(), "entry2".to_string()],
             single_entries: None,
+            manifest_shex_syntax_mode: None,
         };
         let sample_parsed = serde_json::from_str::<Config>(sample_str).unwrap();
         assert_eq!(sample_parsed, sample);
