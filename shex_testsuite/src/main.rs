@@ -1,7 +1,6 @@
 use anyhow::{Context, Result, bail};
 use clap::Parser;
 use shex_testsuite::manifest_mode::ManifestMode;
-use shex_testsuite::manifest_run_result::ManifestRunResult;
 use shex_testsuite::manifest_schemas::ManifestSchemas;
 use shex_testsuite::print_result_mode::PrintResultMode;
 use shex_testsuite::{
@@ -15,10 +14,9 @@ use std::{
     fs,
     path::{Path, PathBuf},
 };
+use tracing::trace;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::{filter::EnvFilter, fmt};
-
-use tracing::debug;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -117,7 +115,7 @@ fn main() -> Result<()> {
 
     let manifest = {
         let path_buf = manifest_path.canonicalize()?;
-        debug!("path_buf: {}", &path_buf.display());
+        trace!("path_buf: {}", &path_buf.display());
         let manifest_str = fs::read_to_string(manifest_path)
             .with_context(|| format!("Failed to read manifest: {}", manifest_path.display()))?;
 
@@ -145,81 +143,10 @@ fn main() -> Result<()> {
         cli.trait_name,
     );
 
-    print_result(result, cli.print_result_mode);
+    cli.print_result_mode.print_result(result);
     Ok(())
 }
 
 fn parse_config(file_name: String) -> Result<Config, ConfigError> {
     Config::from_file(file_name.as_str())
-}
-
-fn print_basic(result: &ManifestRunResult) {
-    let (npassed, nskipped, nfailed, npanicked) = (
-        result.passed.len(),
-        result.skipped.len(),
-        result.failed.len(),
-        result.panicked.len(),
-    );
-    let overview = format!("Passed: {npassed}, Failed: {nfailed}, Skipped: {nskipped}, Not implemented: {npanicked}",);
-    println!("{overview}");
-}
-
-fn print_failed(result: &ManifestRunResult) {
-    println!("--- Failed ---");
-    for (name, err) in &result.failed {
-        println!("{name} {err}");
-    }
-}
-
-fn print_failed_simple(result: &ManifestRunResult) {
-    println!("--- Failed ---");
-    let mut sorted_names = result.failed.iter().map(|(name, _)| name).collect::<Vec<&String>>();
-    sorted_names.sort();
-    for name in &sorted_names {
-        println!("{name}");
-    }
-}
-
-fn print_panicked(result: &ManifestRunResult) {
-    println!("--- Not implemented ---");
-    for (name, _err) in &result.panicked {
-        println!("{name}");
-    }
-}
-
-fn print_passed(result: &ManifestRunResult) {
-    println!("--- Passed ---");
-    for name in &result.passed {
-        println!("{name}");
-    }
-}
-
-fn print_result(result: ManifestRunResult, print_result_mode: PrintResultMode) {
-    match print_result_mode {
-        PrintResultMode::Basic => {
-            print_basic(&result);
-        },
-        PrintResultMode::All => {
-            print_passed(&result);
-            print_failed(&result);
-            print_panicked(&result);
-            print_basic(&result);
-        },
-        PrintResultMode::Failed => {
-            print_failed(&result);
-            print_basic(&result);
-        },
-        PrintResultMode::FailedSimple => {
-            print_failed_simple(&result);
-            print_basic(&result);
-        },
-        PrintResultMode::Passed => {
-            print_passed(&result);
-            print_basic(&result);
-        },
-        PrintResultMode::NotImplemented => {
-            print_panicked(&result);
-            print_basic(&result);
-        },
-    }
 }
