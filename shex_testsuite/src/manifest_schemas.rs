@@ -248,6 +248,10 @@ impl Manifest for ManifestSchemas {
             Some(entry) => entry.run(base),
         }
     }
+
+    fn has_traits(&self, _name: &str) -> Result<Vec<std::string::String>, Box<ManifestError>> {
+        todo!()
+    }
 }
 
 #[cfg(test)]

@@ -67,6 +67,10 @@ impl Manifest for ManifestNegativeSyntax {
             Some(entry) => entry.run(base),
         }
     }
+
+    fn has_traits(&self, _name: &str) -> Result<Vec<std::string::String>, Box<ManifestError>> {
+        todo!()
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]

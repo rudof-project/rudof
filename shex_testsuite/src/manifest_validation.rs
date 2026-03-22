@@ -184,6 +184,13 @@ fn parse_schema(path: &Path, _base: Option<&str>, entry_name: &String) -> Result
 }
 
 impl ValidationEntry {
+    pub fn traits(&self) -> Vec<String> {
+        match &self.trait_ {
+            None => Vec::new(),
+            Some(traits) => traits.clone(),
+        }
+    }
+
     pub fn run(&self, folder: &Path) -> Result<(), Box<ManifestError>> {
         let path_absolute = folder.canonicalize().map_err(|err| ManifestError::AbsolutePathError {
             base: folder.to_string_lossy().to_string().into(),
@@ -369,7 +376,6 @@ fn parse_type(str: &str) -> Result<ValidationType, Box<ManifestError>> {
 
 #[cfg(not(target_family = "wasm"))]
 fn path_to_iri(path: &Path) -> Result<IriS, Box<ManifestError>> {
-    trace!("Converting path to IRI: {}", path.display());
     let canonical = path.canonicalize().map_err(|err| {
         Box::new(ManifestError::AbsolutePathError {
             base: path.to_string_lossy().to_string().into(),
@@ -380,7 +386,6 @@ fn path_to_iri(path: &Path) -> Result<IriS, Box<ManifestError>> {
         path: path.to_path_buf(),
     })?;
     let iri = IriS::new_unchecked(url.as_str());
-    trace!("IRI converted: {iri}");
     Ok(iri)
 }
 
@@ -415,6 +420,13 @@ impl Manifest for ManifestValidation {
         match self.map.get(name) {
             None => Err(Box::new(ManifestError::NotFoundEntry { name: name.to_string() })),
             Some(entry) => entry.run(base),
+        }
+    }
+
+    fn has_traits(&self, name: &str) -> Result<Vec<String>, Box<ManifestError>> {
+        match self.map.get(name) {
+            None => Err(Box::new(ManifestError::NotFoundEntry { name: name.to_string() })),
+            Some(entry) => Ok(entry.traits().clone()),
         }
     }
 }
