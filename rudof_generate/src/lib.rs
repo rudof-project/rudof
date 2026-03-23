@@ -1,26 +1,33 @@
-#[cfg(target_family = "wasm")]
-compile_error!("The `rudof_generate` crate is not supported in WebAssembly environments");
-
+#[cfg(not(target_family = "wasm"))]
 pub mod config;
+#[cfg(not(target_family = "wasm"))]
 pub mod converters;
+#[cfg(not(target_family = "wasm"))]
 pub mod errors;
+#[cfg(not(target_family = "wasm"))]
 pub mod field_generators;
+#[cfg(not(target_family = "wasm"))]
 pub mod output;
+#[cfg(not(target_family = "wasm"))]
 pub mod parallel_generation;
+#[cfg(not(target_family = "wasm"))]
 pub mod shape_processing;
+#[cfg(not(target_family = "wasm"))]
 pub mod unified_constraints;
-#[cfg(target_family = "wasm")]
-mod wasm_stubs;
+// #[cfg(target_family = "wasm")]
+// mod wasm_stubs;
 
+#[cfg(not(target_family = "wasm"))]
 pub use config::{GeneratorConfig, SchemaFormat};
+#[cfg(not(target_family = "wasm"))]
 pub use errors::{DataGeneratorError, Result};
 
-use crate::output::OutputWriter;
-use crate::parallel_generation::ParallelGenerator;
-use crate::shape_processing::ShapeProcessor;
-use std::path::Path;
-use std::str::FromStr;
+#[cfg(not(target_family = "wasm"))]
+use crate::{output::OutputWriter, parallel_generation::ParallelGenerator, shape_processing::ShapeProcessor};
+#[cfg(not(target_family = "wasm"))]
+use std::{path::Path, str::FromStr};
 
+#[cfg(not(target_family = "wasm"))]
 /// Main data generator interface
 pub struct DataGenerator {
     config: GeneratorConfig,
@@ -29,6 +36,7 @@ pub struct DataGenerator {
     writer: OutputWriter,
 }
 
+#[cfg(not(target_family = "wasm"))]
 impl DataGenerator {
     /// Create a new data generator with the given configuration
     pub fn new(config: GeneratorConfig) -> Result<Self> {
