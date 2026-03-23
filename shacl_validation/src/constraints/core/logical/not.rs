@@ -18,10 +18,7 @@ use tracing::info;
 use tracing::trace;
 
 #[cfg(feature = "sparql")]
-use {
-    crate::constraints::SparqlValidator,
-    crate::shacl_engine::sparql::SparqlEngine,
-};
+use {crate::constraints::SparqlValidator, crate::shacl_engine::sparql::SparqlEngine};
 
 impl<S: NeighsRDF + Debug> Validator<S> for Not {
     fn validate(

@@ -16,10 +16,7 @@ use std::fmt::Debug;
 use tracing::debug;
 
 #[cfg(feature = "sparql")]
-use {
-    crate::constraints::SparqlValidator,
-    crate::shacl_engine::sparql::SparqlEngine,
-};
+use {crate::constraints::SparqlValidator, crate::shacl_engine::sparql::SparqlEngine};
 
 impl<S: NeighsRDF + Debug> Validator<S> for Or {
     fn validate(

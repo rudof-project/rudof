@@ -13,13 +13,13 @@ use rudof_rdf::{
     rdf_impl::{InMemoryGraph, ReaderMode},
 };
 use serde::{Deserialize, Serialize};
+#[cfg(not(target_family = "wasm"))]
+use std::path::Path;
 use std::{
     collections::{HashMap, HashSet},
     fmt::Display,
     io::{self},
 };
-#[cfg(not(target_family = "wasm"))]
-use std::path::Path;
 
 /// Describes the service description of a SPARQL endpoint
 /// The description is parsed from RDF according to the

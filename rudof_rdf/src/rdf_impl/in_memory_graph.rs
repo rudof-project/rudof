@@ -19,11 +19,6 @@ use oxrdfxml::RdfXmlParser;
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
 use prefixmap::{PrefixMapError, map::*};
 use serde::{Serialize, ser::SerializeStruct};
-#[cfg(feature = "sparql")]
-use {
-    oxigraph::{sparql::{QueryResults, SparqlEvaluator}, store::Store},
-    sparesults::QuerySolution as SparQuerySolution,
-};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::{
@@ -33,6 +28,14 @@ use std::{
 };
 #[cfg(not(target_family = "wasm"))]
 use std::{fs::File, path::Path};
+#[cfg(feature = "sparql")]
+use {
+    oxigraph::{
+        sparql::{QueryResults, SparqlEvaluator},
+        store::Store,
+    },
+    sparesults::QuerySolution as SparQuerySolution,
+};
 
 /// An RDF graph stored entirely in memory.
 ///
@@ -475,7 +478,6 @@ impl InMemoryGraph {
         Arc::make_mut(&mut self.graph).insert(triple);
         Ok(())
     }
-
 }
 
 #[cfg(not(target_family = "wasm"))]

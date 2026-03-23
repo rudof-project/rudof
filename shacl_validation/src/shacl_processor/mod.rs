@@ -1,19 +1,14 @@
 use crate::shacl_engine::engine::Engine;
 use crate::shacl_engine::native::NativeEngine;
 use crate::shape_validation::Validate;
-use crate::store::Store;
 use crate::store::Graph;
+use crate::store::Store;
 use crate::validate_error::ValidateError;
 use crate::validation_report::report::ValidationReport;
 use rudof_rdf::rdf_core::{NeighsRDF, RDFFormat};
-use shacl_ir::compiled::schema_ir::SchemaIR;
 #[cfg(not(feature = "sparql"))]
 use rudof_rdf::rdf_impl::InMemoryGraph;
-#[cfg(feature = "sparql")]
-use {
-    crate::shacl_engine::sparql::SparqlEngine,
-    sparql_service::RdfData,
-};
+use shacl_ir::compiled::schema_ir::SchemaIR;
 use std::fmt::Debug;
 #[cfg(not(target_family = "wasm"))]
 use std::path::Path;
@@ -21,6 +16,8 @@ use std::{
     fmt::{Display, Formatter},
     str::FromStr,
 };
+#[cfg(feature = "sparql")]
+use {crate::shacl_engine::sparql::SparqlEngine, sparql_service::RdfData};
 
 #[cfg(feature = "sparql")]
 mod sparql;

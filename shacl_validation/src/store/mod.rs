@@ -6,15 +6,15 @@ use shacl_ir::compiled_shacl_error::CompiledShaclError;
 use shacl_rdf::ShaclParser;
 use std::io::BufRead;
 
-#[cfg(feature = "sparql")]
-mod graph_sparql;
 #[cfg(not(feature = "sparql"))]
 mod graph_native;
-
 #[cfg(feature = "sparql")]
-pub use graph_sparql::Graph;
+mod graph_sparql;
+
 #[cfg(not(feature = "sparql"))]
 pub use graph_native::Graph;
+#[cfg(feature = "sparql")]
+pub use graph_sparql::Graph;
 
 #[cfg(feature = "sparql")]
 pub mod sparql;

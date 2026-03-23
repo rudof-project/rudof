@@ -15,10 +15,7 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 
 #[cfg(feature = "sparql")]
-use {
-    crate::constraints::SparqlValidator,
-    crate::shacl_engine::sparql::SparqlEngine,
-};
+use {crate::constraints::SparqlValidator, crate::shacl_engine::sparql::SparqlEngine};
 
 impl<S: NeighsRDF + Debug> Validator<S> for LanguageIn {
     fn validate(

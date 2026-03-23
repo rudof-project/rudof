@@ -1,7 +1,7 @@
 use constraint_error::ConstraintError;
-use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 #[cfg(feature = "sparql")]
 use rudof_rdf::rdf_core::query::QueryRDF;
+use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;

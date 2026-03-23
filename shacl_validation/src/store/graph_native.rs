@@ -12,7 +12,9 @@ pub struct Graph {
 
 impl Default for Graph {
     fn default() -> Self {
-        Self { store: InMemoryGraph::default() }
+        Self {
+            store: InMemoryGraph::default(),
+        }
     }
 }
 

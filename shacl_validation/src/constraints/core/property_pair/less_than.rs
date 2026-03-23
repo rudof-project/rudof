@@ -14,10 +14,7 @@ use shacl_ir::schema_ir::SchemaIR;
 use std::fmt::Debug;
 
 #[cfg(feature = "sparql")]
-use {
-    crate::constraints::SparqlValidator,
-    rudof_rdf::rdf_core::query::QueryRDF,
-};
+use {crate::constraints::SparqlValidator, rudof_rdf::rdf_core::query::QueryRDF};
 
 impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for LessThan {
     fn validate_native(

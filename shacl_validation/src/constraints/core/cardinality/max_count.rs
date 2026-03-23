@@ -17,8 +17,7 @@ use crate::value_nodes::ValueNodes;
 
 #[cfg(feature = "sparql")]
 use {
-    crate::constraints::SparqlValidator,
-    crate::shacl_engine::sparql::SparqlEngine,
+    crate::constraints::SparqlValidator, crate::shacl_engine::sparql::SparqlEngine,
     rudof_rdf::rdf_core::query::QueryRDF,
 };
 
