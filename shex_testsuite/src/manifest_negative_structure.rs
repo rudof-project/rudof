@@ -1,6 +1,9 @@
 use std::{collections::HashMap, path::Path};
 
-use crate::{context_entry_value::ContextEntryValue, manifest::Manifest, manifest_error::ManifestError};
+use crate::{
+    context_entry_value::ContextEntryValue, manifest::Manifest, manifest_error::ManifestError,
+    manifest_mode::ManifestShExSyntaxMode,
+};
 use serde::{Deserialize, Serialize};
 use tracing::debug;
 
@@ -87,7 +90,12 @@ impl Manifest for ManifestNegativeStructure {
         self.entry_names.clone() // iter().map(|n| n.clone()).collect()
     }
 
-    fn run_entry(&self, name: &str, base: &Path) -> Result<(), Box<ManifestError>> {
+    fn run_entry(
+        &self,
+        name: &str,
+        base: &Path,
+        _manifest_shex_syntax_mode: ManifestShExSyntaxMode,
+    ) -> Result<(), Box<ManifestError>> {
         match self.map.get(name) {
             None => Err(Box::new(ManifestError::NotFoundEntry { name: name.to_string() })),
             Some(entry) => entry.run(base),

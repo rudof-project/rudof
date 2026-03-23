@@ -31,6 +31,10 @@ impl Config {
             error: e,
         })
     }
+
+    pub fn manifest_shex_syntax_mode(&self) -> ManifestShExSyntaxMode {
+        self.manifest_shex_syntax_mode.unwrap_or(ManifestShExSyntaxMode::ShExC)
+    }
 }
 
 #[cfg(test)]
