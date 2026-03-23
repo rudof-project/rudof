@@ -1318,7 +1318,7 @@ fn raw_numeric_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NumericLiteral>
     map_error(
         move |i| {
             alt((
-                integer_literal(), // Asegúrate de que este no devuelva Result interno
+                integer_literal(),
                 |i| {
                     let (i, val) = double(i)?;
                     match NumericLiteral::decimal_from_f64(val) {

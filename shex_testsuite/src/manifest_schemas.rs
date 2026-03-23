@@ -250,7 +250,7 @@ impl Manifest for ManifestSchemas {
     }
 
     fn has_traits(&self, _name: &str) -> Result<Vec<std::string::String>, Box<ManifestError>> {
-        todo!()
+        Ok(vec![])
     }
 }
 
