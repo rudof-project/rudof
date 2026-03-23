@@ -386,23 +386,24 @@ impl PartialEq for NumericLiteral {
             (NumericLiteral::Float(a), NumericLiteral::Float(b)) => a.to_bits() == b.to_bits(),
             _ => {
                 // Same variant and same value
-                core::mem::discriminant(self) == core::mem::discriminant(other) && match (self, other) {
-                    (NumericLiteral::Integer(a), NumericLiteral::Integer(b)) => a == b,
-                    (NumericLiteral::Byte(a), NumericLiteral::Byte(b)) => a == b,
-                    (NumericLiteral::Short(a), NumericLiteral::Short(b)) => a == b,
-                    (NumericLiteral::NonNegativeInteger(a), NumericLiteral::NonNegativeInteger(b)) => a == b,
-                    (NumericLiteral::UnsignedLong(a), NumericLiteral::UnsignedLong(b)) => a == b,
-                    (NumericLiteral::UnsignedInt(a), NumericLiteral::UnsignedInt(b)) => a == b,
-                    (NumericLiteral::UnsignedShort(a), NumericLiteral::UnsignedShort(b)) => a == b,
-                    (NumericLiteral::UnsignedByte(a), NumericLiteral::UnsignedByte(b)) => a == b,
-                    (NumericLiteral::PositiveInteger(a), NumericLiteral::PositiveInteger(b)) => a == b,
-                    (NumericLiteral::NegativeInteger(a), NumericLiteral::NegativeInteger(b)) => a == b,
-                    (NumericLiteral::NonPositiveInteger(a), NumericLiteral::NonPositiveInteger(b)) => a == b,
-                    (NumericLiteral::Long(a), NumericLiteral::Long(b)) => a == b,
-                    (NumericLiteral::Decimal(a), NumericLiteral::Decimal(b)) => a == b,
-                    _ => false,
-                }
-            }
+                core::mem::discriminant(self) == core::mem::discriminant(other)
+                    && match (self, other) {
+                        (NumericLiteral::Integer(a), NumericLiteral::Integer(b)) => a == b,
+                        (NumericLiteral::Byte(a), NumericLiteral::Byte(b)) => a == b,
+                        (NumericLiteral::Short(a), NumericLiteral::Short(b)) => a == b,
+                        (NumericLiteral::NonNegativeInteger(a), NumericLiteral::NonNegativeInteger(b)) => a == b,
+                        (NumericLiteral::UnsignedLong(a), NumericLiteral::UnsignedLong(b)) => a == b,
+                        (NumericLiteral::UnsignedInt(a), NumericLiteral::UnsignedInt(b)) => a == b,
+                        (NumericLiteral::UnsignedShort(a), NumericLiteral::UnsignedShort(b)) => a == b,
+                        (NumericLiteral::UnsignedByte(a), NumericLiteral::UnsignedByte(b)) => a == b,
+                        (NumericLiteral::PositiveInteger(a), NumericLiteral::PositiveInteger(b)) => a == b,
+                        (NumericLiteral::NegativeInteger(a), NumericLiteral::NegativeInteger(b)) => a == b,
+                        (NumericLiteral::NonPositiveInteger(a), NumericLiteral::NonPositiveInteger(b)) => a == b,
+                        (NumericLiteral::Long(a), NumericLiteral::Long(b)) => a == b,
+                        (NumericLiteral::Decimal(a), NumericLiteral::Decimal(b)) => a == b,
+                        _ => false,
+                    }
+            },
         }
     }
 }
@@ -422,12 +423,12 @@ impl Hash for NumericLiteral {
             NumericLiteral::Double(d) => {
                 d.to_bits().hash(state);
                 return;
-            }
+            },
             NumericLiteral::Float(f) => {
                 f.to_bits().hash(state);
                 return;
-            }
-            _ => {}
+            },
+            _ => {},
         }
 
         // Otherwise, hash discriminant and concrete value
@@ -446,7 +447,7 @@ impl Hash for NumericLiteral {
             NumericLiteral::NonPositiveInteger(n) => n.hash(state),
             NumericLiteral::Long(l) => l.hash(state),
             NumericLiteral::Decimal(d) => d.hash(state),
-            _ => {}
+            _ => {},
         }
     }
 }
