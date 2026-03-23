@@ -1317,8 +1317,10 @@ fn numeric_literal(i: Span) -> IRes<NumericLiteral> {
 fn raw_numeric_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NumericLiteral> {
     map_error(
         move |i| {
+            // Prefer parsing doubles and decimals before integer to avoid
+            // integer consuming the leading digits of a floating-point literal
+            // (e.g., `5.5E0`) and leaving trailing characters that break parsing.
             alt((
-                integer_literal(),
                 |i| {
                     let (i, val) = double(i)?;
                     match NumericLiteral::decimal_from_f64(val) {
@@ -1327,6 +1329,7 @@ fn raw_numeric_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NumericLiteral>
                     }
                 },
                 decimal,
+                integer_literal(),
             ))(i)
         },
         || ShExParseError::NumericLiteral,
