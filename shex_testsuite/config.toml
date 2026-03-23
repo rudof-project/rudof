@@ -1,6 +1,8 @@
 # Possible modes are: Validation, Schemas, NegativeSyntax, NegativeStructure
 manifest_mode = "Validation"
 
+manifest_shex_syntax_mode = "ShExC"
+
 # List of entries that are excluded from the manifest run
 excluded_entries = [
   "1val1emptylanguageStemMinuslanguage3_passLAtfr-be-fbcl",
@@ -32,5 +34,5 @@ excluded_entries = [
   "PstarT",
   "PTstar",
   "PstarTstar",
-  "P2T2"
+  "P2T2",
 ]

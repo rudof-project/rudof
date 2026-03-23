@@ -1,4 +1,5 @@
 use crate::manifest_error::ManifestError;
+use crate::manifest_mode::ManifestShExSyntaxMode;
 use crate::manifest_run_mode::ManifestRunMode;
 use crate::manifest_run_result::ManifestRunResult;
 use std::panic::{AssertUnwindSafe, catch_unwind};
@@ -13,7 +14,12 @@ pub trait Manifest {
 
     fn has_traits(&self, name: &str) -> Result<Vec<String>, Box<ManifestError>>;
 
-    fn run_entry(&self, name: &str, base: &Path) -> Result<(), Box<ManifestError>>;
+    fn run_entry(
+        &self,
+        name: &str,
+        base: &Path,
+        manifest_shex_syntax_mode: ManifestShExSyntaxMode,
+    ) -> Result<(), Box<ManifestError>>;
 
     fn should_run_entry_name(
         &self,
@@ -46,10 +52,11 @@ pub trait Manifest {
         base: &Path,
         single_entries: &Option<Vec<String>>,
         allowed_traits: &Option<Vec<String>>,
+        manifest_shex_syntax_mode: ManifestShExSyntaxMode,
     ) -> Result<bool, Box<ManifestError>> {
         let condition = Self::should_run_entry_name(self, single_entries, entry_name, allowed_traits)?;
         if condition {
-            self.run_entry(entry_name, base)?;
+            self.run_entry(entry_name, base, manifest_shex_syntax_mode)?;
             Ok(true)
         } else {
             Ok(false)
@@ -63,6 +70,7 @@ pub trait Manifest {
         excluded_entries: Vec<String>,
         single_entries: Option<Vec<String>>,
         allowed_traits: Option<Vec<String>>,
+        manifest_shex_syntax_mode: ManifestShExSyntaxMode,
     ) -> ManifestRunResult {
         /*trace!(
             "Running manifest with mode: {mode:?}, excluded_entries: {:?}, single_entries: {:?}, allowed_traits: {:?}",
@@ -79,7 +87,7 @@ pub trait Manifest {
                 let traits = allowed_traits.clone();
                 // We use catch_unwind to catch any panics that occur during the execution of the entry, and treat them as test failures
                 let safe_result = catch_unwind(AssertUnwindSafe(move || {
-                    self.conditional_run(entry_name, base, &entries, &traits)
+                    self.conditional_run(entry_name, base, &entries, &traits, manifest_shex_syntax_mode)
                 }));
                 match safe_result {
                     Ok(Ok(true)) => {

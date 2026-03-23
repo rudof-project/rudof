@@ -52,4 +52,41 @@ cargo run -p shex_testsuite -- -m shex_testsuite/shexTest/validation/manifest.js
 ```
 
 
-### 
+### Run tests of some specific trait
+
+```sh
+cargo run -p shex_testsuite -- -m shex_testsuite/shexTest/validation/manifest.jsonld -t sht:TriplePattern
+```
+
+### To choose between running the tests with JSON-LD or Compact syntax
+
+ShExC syntax
+
+```sh
+cargo run -p shex_testsuite -- -m shex_testsuite/shexTest/validation/manifest.jsonld -p failed-simple --shex_syntax shexc
+. . .
+Passed: 1057, Failed: 87, Skipped: 22, Not implemented: 0
+```
+
+JSON-LD syntax
+
+```sh
+cargo run -p shex_testsuite -- -m shex_testsuite/shexTest/validation/manifest.jsonld -p failed-simple --shex_syntax shexj
+. . .
+Passed: 1062, Failed: 82, Skipped: 22, Not implemented: 0
+```
+
+At this moment the main difference between both is:
+
+```
+Tests that fail in ShExC
+1dotNS2SingleComment_pass-noOthers
+1dotNS2_pass-noOthers
+1dotNSdefault_pass-noOthers
+1val1emptylanguageStem_fail-empty
+1val1emptylanguageStem_fail-integer
+1val1emptylanguageStem_fail-literal
+
+Tests that fail in JSON
+nPlus1
+```

@@ -1,6 +1,6 @@
 use anyhow::{Context, Result, bail};
 use clap::Parser;
-use shex_testsuite::manifest_mode::ManifestMode;
+use shex_testsuite::manifest_mode::{ManifestMode, ManifestShExSyntaxMode};
 use shex_testsuite::manifest_schemas::ManifestSchemas;
 use shex_testsuite::print_result_mode::PrintResultMode;
 use shex_testsuite::{
@@ -43,6 +43,9 @@ struct Cli {
 
     #[arg(value_enum, short = 'f', long="manifest_mode", default_value = None)]
     manifest_mode: Option<ManifestMode>,
+
+    #[arg(value_enum, short = 's', long="shex_syntax", default_value = None)]
+    shex_syntax: Option<ManifestShExSyntaxMode>,
 
     #[arg(value_enum, short='p', long="print_result_mode", default_value_t = PrintResultMode::Basic)]
     print_result_mode: PrintResultMode,
@@ -128,19 +131,26 @@ fn main() -> Result<()> {
         parse_manifest(manifest_str, manifest_mode)?
     };
 
-    let entries = match (cli.entry_name, config.single_entries) {
+    let entries = match (cli.entry_name, config.single_entries.clone()) {
         (None, None) => None,
         (None, Some(es)) => Some(es),
         (Some(es), None) => Some(es),
         (Some(es), Some(_)) => Some(es),
     };
 
+    let shex_syntax_mode = if let Some(ssm) = cli.shex_syntax {
+        ssm
+    } else {
+        config.manifest_shex_syntax_mode()
+    };
+
     let result = manifest.run(
         &base,
         cli.manifest_run_mode,
-        config.excluded_entries,
+        config.excluded_entries.clone(),
         entries,
         cli.trait_name,
+        shex_syntax_mode,
     );
 
     cli.print_result_mode.print_result(result);

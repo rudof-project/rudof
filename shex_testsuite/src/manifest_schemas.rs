@@ -1,6 +1,6 @@
-use crate::context_entry_value::ContextEntryValue;
 use crate::manifest::Manifest;
 use crate::manifest_error::ManifestError;
+use crate::{context_entry_value::ContextEntryValue, manifest_mode::ManifestShExSyntaxMode};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
@@ -242,7 +242,12 @@ impl Manifest for ManifestSchemas {
         self.entry_names.clone() // iter().map(|n| n.clone()).collect()
     }
 
-    fn run_entry(&self, name: &str, base: &Path) -> Result<(), Box<ManifestError>> {
+    fn run_entry(
+        &self,
+        name: &str,
+        base: &Path,
+        _manifest_shex_syntax_mode: ManifestShExSyntaxMode,
+    ) -> Result<(), Box<ManifestError>> {
         match self.map.get(name) {
             None => Err(Box::new(ManifestError::NotFoundEntry { name: name.to_string() })),
             Some(entry) => entry.run(base),
@@ -250,7 +255,7 @@ impl Manifest for ManifestSchemas {
     }
 
     fn has_traits(&self, _name: &str) -> Result<Vec<std::string::String>, Box<ManifestError>> {
-        Ok(vec![])
+        Ok(Vec::new())
     }
 }
 
