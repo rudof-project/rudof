@@ -1,4 +1,5 @@
 use crate::constraints::NativeValidator;
+#[cfg(feature = "sparql")]
 use crate::constraints::SparqlValidator;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::helpers::constraint::validate_ask_with;
@@ -62,6 +63,7 @@ impl<S: NeighsRDF + 'static> NativeValidator<S> for Class {
     }
 }
 
+#[cfg(feature = "sparql")]
 impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Class {
     fn validate_sparql(
         &self,

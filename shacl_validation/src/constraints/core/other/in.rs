@@ -1,18 +1,23 @@
-use crate::constraints::SparqlValidator;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::{NativeValidator, Validator};
 use crate::helpers::constraint::validate_with;
 use crate::iteration_strategy::ValueNodeIteration;
 use crate::shacl_engine::Engine;
-use crate::shacl_engine::sparql::SparqlEngine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
-use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF};
+use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::components::In;
 use shacl_ir::schema_ir::SchemaIR;
 use std::fmt::Debug;
+
+#[cfg(feature = "sparql")]
+use {
+    crate::constraints::SparqlValidator,
+    crate::shacl_engine::sparql::SparqlEngine,
+    rudof_rdf::rdf_core::query::QueryRDF,
+};
 
 impl<S: NeighsRDF + Debug> Validator<S> for In {
     fn validate(
@@ -68,6 +73,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for In {
     }
 }
 
+#[cfg(feature = "sparql")]
 impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for In {
     fn validate_sparql(
         &self,

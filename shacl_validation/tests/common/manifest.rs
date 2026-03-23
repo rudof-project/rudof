@@ -6,7 +6,7 @@ use rudof_rdf::rdf_core::{Any, NeighsRDF, RDFFormat, term::Triple};
 use shacl_rdf::ShaclParser;
 use shacl_validation::shacl_validation_vocab;
 use shacl_validation::store::Store;
-use shacl_validation::store::graph::Graph;
+use shacl_validation::store::Graph;
 use shacl_validation::validation_report::report::ValidationReport;
 use sparql_service::RdfData;
 use std::{collections::HashSet, path::Path};

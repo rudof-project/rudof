@@ -1,17 +1,22 @@
 use crate::constraints::NativeValidator;
-use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::shacl_engine::Engine;
-use crate::shacl_engine::sparql::SparqlEngine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
-use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF};
+use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::components::Closed;
 use shacl_ir::schema_ir::SchemaIR;
 use std::fmt::Debug;
+
+#[cfg(feature = "sparql")]
+use {
+    crate::constraints::SparqlValidator,
+    crate::shacl_engine::sparql::SparqlEngine,
+    rudof_rdf::rdf_core::query::QueryRDF,
+};
 
 impl<S: NeighsRDF + Debug> Validator<S> for Closed {
     fn validate(
@@ -54,6 +59,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Closed {
     }
 }
 
+#[cfg(feature = "sparql")]
 impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for Closed {
     fn validate_sparql(
         &self,

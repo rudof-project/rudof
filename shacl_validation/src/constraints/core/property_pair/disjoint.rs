@@ -1,4 +1,5 @@
 use crate::constraints::NativeValidator;
+#[cfg(feature = "sparql")]
 use crate::constraints::SparqlValidator;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::helpers::constraint::validate_with_focus;
@@ -66,6 +67,7 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for Disjoint {
     }
 }
 
+#[cfg(feature = "sparql")]
 impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Disjoint {
     fn validate_sparql(
         &self,

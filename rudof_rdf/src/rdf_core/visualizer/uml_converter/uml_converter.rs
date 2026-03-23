@@ -1,11 +1,10 @@
 use crate::rdf_core::visualizer::uml_converter::errors::UmlConverterError;
-use std::{
-    fs::File,
-    io::{self, Write},
-    path::Path,
-    process::Command,
+use std::io::Write;
+#[cfg(not(target_family = "wasm"))]
+use {
+    std::{fs::File, io, path::Path, process::Command},
+    tempfile::TempDir,
 };
-use tempfile::TempDir;
 
 /// Trait for converting data structures to PlantUML format.
 ///
@@ -35,6 +34,7 @@ pub trait UmlConverter {
     ///
     /// # Returns
     /// * `Result<(), UmlConverterError>` - Ok if successful, Err with details on failure
+    #[cfg(not(target_family = "wasm"))]
     fn as_image<W: Write, P: AsRef<Path>>(
         &self,
         writer: &mut W,
@@ -122,6 +122,7 @@ pub trait UmlConverter {
     ///
     /// # Returns
     /// * `Result<(), UmlConverterError>` - Ok if successful, Err with details on failure
+    #[cfg(not(target_family = "wasm"))]
     fn save_uml_to_tempfile(
         &self,
         tempfile_path: &std::path::Path,
@@ -151,6 +152,7 @@ pub trait UmlConverter {
 ///
 /// # Returns
 /// * `Result<(), io::Error>` - Ok if Java is available, Err otherwise
+#[cfg(not(target_family = "wasm"))]
 fn check_java_installed() -> Result<(), io::Error> {
     let output = Command::new("java").arg("-version").output()?;
     if output.status.success() {
@@ -170,6 +172,7 @@ fn check_java_installed() -> Result<(), io::Error> {
 ///
 /// # Returns
 /// * `Result<(), io::Error>` - Ok if the jar is valid, Err otherwise
+#[cfg(not(target_family = "wasm"))]
 fn check_plantuml_jar<P: AsRef<Path>>(plantuml_path: P) -> Result<(), io::Error> {
     if plantuml_path.as_ref().exists() {
         // Test the jar by running PlantUML with -version flag

@@ -6,7 +6,17 @@ use shacl_ir::compiled_shacl_error::CompiledShaclError;
 use shacl_rdf::ShaclParser;
 use std::io::BufRead;
 
-pub mod graph;
+#[cfg(feature = "sparql")]
+mod graph_sparql;
+#[cfg(not(feature = "sparql"))]
+mod graph_native;
+
+#[cfg(feature = "sparql")]
+pub use graph_sparql::Graph;
+#[cfg(not(feature = "sparql"))]
+pub use graph_native::Graph;
+
+#[cfg(feature = "sparql")]
 pub mod sparql;
 
 pub trait Store<S> {

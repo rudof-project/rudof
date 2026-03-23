@@ -8,10 +8,6 @@ use crate::rdf_core::vocabs::RdfVocab;
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
-use oxigraph::{
-    sparql::{QueryResults, SparqlEvaluator},
-    store::Store,
-};
 use oxjsonld::JsonLdParser;
 use oxrdf::{
     BlankNode as OxBlankNode, Graph, GraphName, Literal as OxLiteral, NamedNode as OxNamedNode, NamedNodeRef,
@@ -23,16 +19,20 @@ use oxrdfxml::RdfXmlParser;
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
 use prefixmap::{PrefixMapError, map::*};
 use serde::{Serialize, ser::SerializeStruct};
-use sparesults::QuerySolution as SparQuerySolution;
+#[cfg(feature = "sparql")]
+use {
+    oxigraph::{sparql::{QueryResults, SparqlEvaluator}, store::Store},
+    sparesults::QuerySolution as SparQuerySolution,
+};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::{
     fmt::{Debug, Display, Formatter},
-    fs::File,
     io::{self, BufReader, Cursor, Write},
-    path::Path,
     str::FromStr,
 };
+#[cfg(not(target_family = "wasm"))]
+use std::{fs::File, path::Path};
 
 /// An RDF graph stored entirely in memory.
 ///
@@ -57,6 +57,7 @@ pub struct InMemoryGraph {
     bnode_counter: usize,
 
     /// Optional Oxigraph store used for SPARQL evaluation.
+    #[cfg(feature = "sparql")]
     store: Option<Store>,
 }
 
@@ -475,6 +476,10 @@ impl InMemoryGraph {
         Ok(())
     }
 
+}
+
+#[cfg(not(target_family = "wasm"))]
+impl InMemoryGraph {
     /// Merges RDF data from a filesystem path.
     ///
     /// Opens the file and delegates to [`merge_from_reader`](Self::merge_from_reader).
@@ -559,7 +564,9 @@ impl InMemoryGraph {
         let data_path = folder.join(data);
         Self::from_path(&data_path, format, base, reader_mode)
     }
+}
 
+impl InMemoryGraph {
     /// Returns a reference to the prefix map.
     pub fn prefixmap(&self) -> &PrefixMap {
         &self.pm
@@ -1001,6 +1008,7 @@ impl BuildRDF for InMemoryGraph {
             pm: PrefixMap::new(),
             base: None,
             bnode_counter: 0,
+            #[cfg(feature = "sparql")]
             store: None,
         }
     }
@@ -1178,6 +1186,7 @@ fn cnv_triple(t: &OxTriple) -> TripleRef<'_> {
     )
 }
 
+#[cfg(feature = "sparql")]
 impl QueryRDF for InMemoryGraph {
     fn query_construct(&self, _query_str: &str, _format: &QueryResultFormat) -> Result<String, InMemoryGraphError>
     where
@@ -1256,6 +1265,7 @@ impl QueryRDF for InMemoryGraph {
 /// # Returns
 ///
 /// A vector of query solutions.
+#[cfg(feature = "sparql")]
 fn cnv_query_results(query_results: QueryResults) -> Result<Vec<QuerySolution<InMemoryGraph>>, InMemoryGraphError> {
     let QueryResults::Solutions(solutions) = query_results else {
         return Ok(Vec::new());
@@ -1283,6 +1293,7 @@ fn cnv_query_results(query_results: QueryResults) -> Result<Vec<QuerySolution<In
 /// # Returns
 ///
 /// An internal query solution with variables and values.
+#[cfg(feature = "sparql")]
 fn cnv_query_solution(qs: SparQuerySolution) -> QuerySolution<InMemoryGraph> {
     let mut variables = Vec::new();
     let mut values = Vec::new();
