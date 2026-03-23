@@ -1,5 +1,5 @@
 use iri_s::IriS;
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 
 /// sh:equals specifies the condition that the set of all value nodes is equal
 /// to the set of objects of the triples that have the focus node as subject and
@@ -7,7 +7,7 @@ use std::fmt::Display;
 ///
 /// https://www.w3.org/TR/shacl/#EqualsConstraintComponent
 #[derive(Debug, Clone)]
-pub struct Equals {
+pub(crate) struct Equals {
     iri: IriS,
 }
 
@@ -22,7 +22,7 @@ impl Equals {
 }
 
 impl Display for Equals {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "Equals: {}", self.iri())
     }
 }

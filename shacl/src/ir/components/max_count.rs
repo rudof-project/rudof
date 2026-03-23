@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 
 /// sh:maxCount specifies the maximum number of value nodes that satisfy the
 /// condition.
@@ -7,7 +7,7 @@ use std::fmt::Display;
 /// - DEF: If the number of value nodes is greater than $maxCount, there is a
 ///   validation result.
 #[derive(Debug, Clone)]
-pub struct MaxCount {
+pub(crate) struct MaxCount {
     max_count: usize,
 }
 
@@ -24,7 +24,7 @@ impl MaxCount {
 }
 
 impl Display for MaxCount {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "MaxCount: {}", self.max_count())
     }
 }

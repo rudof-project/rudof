@@ -1,12 +1,12 @@
-use crate::shape_label_idx::ShapeLabelIdx;
-use std::fmt::Display;
+use crate::ir::shape_label_idx::ShapeLabelIdx;
+use std::fmt::{Display, Formatter};
 
 /// sh:node specifies the condition that each value node conforms to the given
 /// node shape.
 ///
 /// https://www.w3.org/TR/shacl/#NodeShapeComponent
 #[derive(Debug, Clone)]
-pub struct Node {
+pub(crate) struct Node {
     shape: ShapeLabelIdx,
 }
 
@@ -21,7 +21,7 @@ impl Node {
 }
 
 impl Display for Node {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "Node [{}]", self.shape())
     }
 }

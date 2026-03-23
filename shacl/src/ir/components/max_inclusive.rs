@@ -1,9 +1,9 @@
 use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 
 /// https://www.w3.org/TR/shacl/#MaxInclusiveConstraintComponent
 #[derive(Debug, Clone)]
-pub struct MaxInclusive {
+pub(crate) struct MaxInclusive {
     max_inclusive: ConcreteLiteral,
 }
 
@@ -18,7 +18,7 @@ impl MaxInclusive {
 }
 
 impl Display for MaxInclusive {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "MaxInclusive: {}", self.max_inclusive())
     }
 }

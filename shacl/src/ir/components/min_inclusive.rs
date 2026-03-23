@@ -1,9 +1,9 @@
 use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 
 /// https://www.w3.org/TR/shacl/#MinInclusiveConstraintComponent
 #[derive(Debug, Clone)]
-pub struct MinInclusive {
+pub(crate) struct MinInclusive {
     min_inclusive: ConcreteLiteral,
 }
 
@@ -12,13 +12,13 @@ impl MinInclusive {
         MinInclusive { min_inclusive: literal }
     }
 
-    pub fn min_inclusive_value(&self) -> &ConcreteLiteral {
+    pub fn min_inclusive(&self) -> &ConcreteLiteral {
         &self.min_inclusive
     }
 }
 
 impl Display for MinInclusive {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "MinInclusive: {}", self.min_inclusive)
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "MinInclusive: {}", self.min_inclusive())
     }
 }

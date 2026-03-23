@@ -1,5 +1,5 @@
 use iri_s::IriS;
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 
 /// sh:disjoint specifies the condition that the set of value nodes is disjoint
 /// with the set of objects of the triples that have the focus node as subject
@@ -7,7 +7,7 @@ use std::fmt::Display;
 ///
 /// https://www.w3.org/TR/shacl/#DisjointConstraintComponent
 #[derive(Debug, Clone)]
-pub struct Disjoint {
+pub(crate) struct Disjoint {
     iri: IriS,
 }
 
@@ -22,7 +22,7 @@ impl Disjoint {
 }
 
 impl Display for Disjoint {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "Disjoint: {}", self.iri())
     }
 }

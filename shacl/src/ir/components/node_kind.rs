@@ -1,12 +1,13 @@
-use shacl_ast::node_kind::NodeKind;
-use std::fmt::Display;
+use crate::types::NodeKind;
+use std::fmt::{Display, Formatter};
+
 
 /// sh:nodeKind specifies a condition to be satisfied by the RDF node kind of
 /// each value node.
 ///
 /// https://www.w3.org/TR/shacl/#NodeKindConstraintComponent
 #[derive(Debug, Clone)]
-pub struct Nodekind {
+pub(crate) struct Nodekind {
     node_kind: NodeKind,
 }
 
@@ -21,7 +22,7 @@ impl Nodekind {
 }
 
 impl Display for Nodekind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "NodeKind: {:?}", self.node_kind())
     }
 }

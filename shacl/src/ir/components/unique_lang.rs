@@ -1,11 +1,11 @@
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 
 /// The property sh:uniqueLang can be set to true to specify that no pair of
 ///  value nodes may use the same language tag.
 ///
 /// https://www.w3.org/TR/shacl/#UniqueLangConstraintComponent
 #[derive(Debug, Clone)]
-pub struct UniqueLang {
+pub(crate) struct UniqueLang {
     unique_lang: bool,
 }
 
@@ -20,7 +20,7 @@ impl UniqueLang {
 }
 
 impl Display for UniqueLang {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "UniqueLang: {}", self.unique_lang())
     }
 }

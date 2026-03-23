@@ -1,9 +1,9 @@
 use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 
 /// https://www.w3.org/TR/shacl/#MinExclusiveConstraintComponent
 #[derive(Debug, Clone)]
-pub struct MinExclusive {
+pub(crate) struct MinExclusive {
     min_exclusive: ConcreteLiteral,
 }
 
@@ -18,7 +18,7 @@ impl MinExclusive {
 }
 
 impl Display for MinExclusive {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "MinExclusive: {}", self.min_exclusive())
     }
 }

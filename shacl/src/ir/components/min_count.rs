@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 
 /// sh:minCount specifies the minimum number of value nodes that satisfy the
 /// condition. If the minimum cardinality value is 0 then this constraint is
@@ -8,7 +8,7 @@ use std::fmt::Display;
 /// - DEF: If the number of value nodes is less than $minCount, there is a
 ///   validation result.
 #[derive(Debug, Clone)]
-pub struct MinCount {
+pub(crate) struct MinCount {
     min_count: usize,
 }
 
@@ -25,7 +25,7 @@ impl MinCount {
 }
 
 impl Display for MinCount {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "MinCount: {}", self.min_count())
     }
 }

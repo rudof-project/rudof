@@ -1,9 +1,9 @@
 use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 
 /// https://www.w3.org/TR/shacl/#MaxExclusiveConstraintComponent
 #[derive(Debug, Clone)]
-pub struct MaxExclusive {
+pub(crate) struct MaxExclusive {
     max_exclusive: ConcreteLiteral,
 }
 
@@ -18,7 +18,7 @@ impl MaxExclusive {
 }
 
 impl Display for MaxExclusive {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "MaxExclusive: {}", self.max_exclusive())
     }
 }

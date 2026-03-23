@@ -1,12 +1,12 @@
 use iri_s::IriS;
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 
 /// sh:datatype specifies a condition to be satisfied with regards to the
 /// datatype of each value node.
 ///
 /// https://www.w3.org/TR/shacl/#ClassConstraintComponent
 #[derive(Debug, Clone)]
-pub struct Datatype {
+pub(crate) struct Datatype {
     datatype: IriS,
 }
 
@@ -21,7 +21,7 @@ impl Datatype {
 }
 
 impl Display for Datatype {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "Datatype: {}", self.datatype())
     }
 }

@@ -1,14 +1,13 @@
-use crate::shape_label_idx::ShapeLabelIdx;
-use std::fmt::Display;
+use crate::ir::shape_label_idx::ShapeLabelIdx;
+use std::fmt::{Display, Formatter};
 
 /// sh:or specifies the condition that each value node conforms to at least one
 /// of the provided shapes. This is comparable to disjunction and the logical
 /// "or" operator.
 ///
 /// https://www.w3.org/TR/shacl/#AndConstraintComponent
-
 #[derive(Debug, Clone)]
-pub struct Or {
+pub(crate) struct Or {
     shapes: Vec<ShapeLabelIdx>,
 }
 
@@ -23,15 +22,12 @@ impl Or {
 }
 
 impl Display for Or {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Or[{}]",
-            self.shapes()
-                .iter()
-                .map(|s| s.to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Or [{}]", self.shapes()
+            .iter()
+            .map(|s| s.to_string())
+            .collect::<Vec<_>>()
+            .join(", ")
         )
     }
 }

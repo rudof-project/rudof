@@ -12,17 +12,14 @@ use iri_s::IriS;
 ///
 /// https://www.w3.org/TR/shacl/#ClosedConstraintComponent
 #[derive(Debug, Clone)]
-pub struct Closed {
+pub(crate) struct Closed {
     is_closed: bool,
     ignored_properties: Vec<IriS>,
 }
 
 impl Closed {
     pub fn new(is_closed: bool, ignored_properties: Vec<IriS>) -> Self {
-        Closed {
-            is_closed,
-            ignored_properties,
-        }
+        Closed { is_closed, ignored_properties }
     }
 
     pub fn is_closed(&self) -> bool {

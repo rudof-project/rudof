@@ -1,5 +1,5 @@
 use iri_s::IriS;
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 
 /// LessThanOrEquals Constraint Component.
 ///
@@ -9,7 +9,7 @@ use std::fmt::Display;
 ///
 /// https://www.w3.org/TR/shacl/#LessThanOrEqualsConstraintComponent
 #[derive(Debug, Clone)]
-pub struct LessThanOrEquals {
+pub(crate) struct LessThanOrEquals {
     iri: IriS,
 }
 
@@ -24,7 +24,7 @@ impl LessThanOrEquals {
 }
 
 impl Display for LessThanOrEquals {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "LessThanOrEquals: {}", self.iri())
     }
 }

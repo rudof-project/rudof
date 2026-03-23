@@ -1,12 +1,12 @@
 use rudof_rdf::rdf_core::term::Object;
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 
 /// The condition specified by sh:class is that each value node is a SHACL
 /// instance of a given type.
 ///
 /// https://www.w3.org/TR/shacl/#ClassConstraintComponent
 #[derive(Debug, Clone)]
-pub struct Class {
+pub(crate) struct Class {
     class_rule: Object,
 }
 
@@ -21,7 +21,7 @@ impl Class {
 }
 
 impl Display for Class {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "Class: {}", self.class_rule())
     }
 }

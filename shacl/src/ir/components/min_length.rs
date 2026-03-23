@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 
 /// sh:minLength specifies the minimum string length of each value node that
 /// satisfies the condition. This can be applied to any literals and IRIs, but
@@ -6,7 +6,7 @@ use std::fmt::Display;
 ///
 /// https://www.w3.org/TR/shacl/#MinLengthConstraintComponent
 #[derive(Debug, Clone)]
-pub struct MinLength {
+pub(crate) struct MinLength {
     min_length: isize,
 }
 
@@ -21,7 +21,7 @@ impl MinLength {
 }
 
 impl Display for MinLength {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "MinLength: {}", self.min_length())
     }
 }

@@ -1,5 +1,5 @@
-use crate::shape_label_idx::ShapeLabelIdx;
-use std::fmt::Display;
+use crate::ir::shape_label_idx::ShapeLabelIdx;
+use std::fmt::{Display, Formatter};
 
 /// QualifiedValueShape Constraint Component.
 ///
@@ -10,7 +10,7 @@ use std::fmt::Display;
 ///
 /// https://www.w3.org/TR/shacl/#QualifiedValueShapeConstraintComponent
 #[derive(Debug, Clone)]
-pub struct QualifiedValueShape {
+pub(crate) struct QualifiedValueShape {
     shape: ShapeLabelIdx,
     qualified_min_count: Option<isize>,
     qualified_max_count: Option<isize>,
@@ -47,17 +47,17 @@ impl QualifiedValueShape {
         self.qualified_max_count
     }
 
-    pub fn siblings(&self) -> &Vec<ShapeLabelIdx> {
-        &self.siblings
-    }
-
     pub fn qualified_value_shapes_disjoint(&self) -> Option<bool> {
         self.qualified_value_shapes_disjoint
+    }
+
+    pub fn siblings(&self) -> &Vec<ShapeLabelIdx> {
+        &self.siblings
     }
 }
 
 impl Display for QualifiedValueShape {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "QualifiedValueShape: shape: {}, qualifiedMinCount: {:?}, qualifiedMaxCount: {:?}, qualifiedValueShapesDisjoint: {:?}{}",

@@ -1,12 +1,12 @@
 use rudof_rdf::rdf_core::term::literal::Lang;
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 
 /// The condition specified by sh:languageIn is that the allowed language tags
 /// for each value node are limited by a given list of language tags.
 ///
 /// https://www.w3.org/TR/shacl/#LanguageInConstraintComponent
 #[derive(Debug, Clone)]
-pub struct LanguageIn {
+pub(crate) struct LanguageIn {
     langs: Vec<Lang>,
 }
 
@@ -21,9 +21,8 @@ impl LanguageIn {
 }
 
 impl Display for LanguageIn {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let langs = self
-            .langs()
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let langs = self.langs()
             .iter()
             .map(|l| l.to_string())
             .collect::<Vec<_>>()

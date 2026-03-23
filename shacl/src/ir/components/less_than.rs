@@ -1,5 +1,5 @@
 use iri_s::IriS;
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 
 /// sh:lessThan specifies the condition that each value node is smaller than all
 /// the objects of the triples that have the focus node as subject and the
@@ -7,7 +7,7 @@ use std::fmt::Display;
 ///
 /// https://www.w3.org/TR/shacl/#LessThanConstraintComponent
 #[derive(Debug, Clone)]
-pub struct LessThan {
+pub(crate) struct LessThan {
     iri: IriS,
 }
 
@@ -22,7 +22,7 @@ impl LessThan {
 }
 
 impl Display for LessThan {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "LessThan: {}", self.iri())
     }
 }
