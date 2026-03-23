@@ -2,7 +2,7 @@ use rudof_rdf::rdf_core::RdfDataConfig;
 use serde::{Deserialize, Serialize};
 use std::io::Read;
 #[cfg(not(target_family = "wasm"))]
-use std::{io, path::Path};
+use std::path::Path;
 use thiserror::Error;
 
 /// This struct can be used to define configuration of RDF data readers
