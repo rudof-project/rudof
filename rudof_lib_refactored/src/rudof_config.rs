@@ -21,18 +21,18 @@ const DEFAULT_CONFIG: &str = include_str!("default_config.toml");
 /// and visualization settings.
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 pub struct RudofConfig {
-    rdf_data: Option<RdfDataConfig>,
-    shex: Option<ShExConfig>,
-    shex_validator: Option<ValidatorConfig>,
-    shex2uml: Option<ShEx2UmlConfig>,
-    shex2html: Option<ShEx2HtmlConfig>,
-    shacl2shex: Option<Shacl2ShExConfig>,
-    tap: Option<TapConfig>,
-    tap2shex: Option<Tap2ShExConfig>,
-    shex2sparql: Option<ShEx2SparqlConfig>,
-    service: Option<ServiceConfig>,
-    plantuml_path: Option<PathBuf>,
-    comparator: Option<ComparatorConfig>,
+    pub(crate) rdf_data: Option<RdfDataConfig>,
+    pub(crate) shex: Option<ShExConfig>,
+    pub(crate) shex_validator: Option<ValidatorConfig>,
+    pub(crate) shex2uml: Option<ShEx2UmlConfig>,
+    pub(crate) shex2html: Option<ShEx2HtmlConfig>,
+    pub(crate) shacl2shex: Option<Shacl2ShExConfig>,
+    pub(crate) tap: Option<TapConfig>,
+    pub(crate) tap2shex: Option<Tap2ShExConfig>,
+    pub(crate) shex2sparql: Option<ShEx2SparqlConfig>,
+    pub(crate) service: Option<ServiceConfig>,
+    pub(crate) plantuml_path: Option<PathBuf>,
+    pub(crate) comparator: Option<ComparatorConfig>,
 }
 
 impl RudofConfig {
@@ -185,7 +185,7 @@ impl RudofConfig {
     /// Returns the ShEx schema configuration.
     ///
     /// Returns a default configuration if none was specified.
-    fn shex_config(&self) -> ShExConfig {
+    pub(crate) fn shex_config(&self) -> ShExConfig {
         match &self.shex {
             None => ShExConfig::default(),
             Some(cfg) => cfg.clone(),

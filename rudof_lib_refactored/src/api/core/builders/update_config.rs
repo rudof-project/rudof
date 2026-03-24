@@ -5,7 +5,7 @@ use crate::{Rudof, api::core::CoreOperations, RudofConfig};
 /// Provides a fluent interface for configuring and executing configuration updates.
 pub struct UpdateConfigBuilder<'a> {
     rudof: &'a mut Rudof,
-    config: &'a RudofConfig,
+    config: RudofConfig,
 }
 
 impl<'a> UpdateConfigBuilder<'a> {
@@ -13,7 +13,7 @@ impl<'a> UpdateConfigBuilder<'a> {
     ///
     /// This is called internally by `Rudof::update_config()` and should not
     /// be constructed directly.
-    pub(crate) fn new(rudof: &'a mut Rudof, config: &'a RudofConfig) -> Self {
+    pub(crate) fn new(rudof: &'a mut Rudof, config: RudofConfig) -> Self {
         Self { rudof, config }
     }
 

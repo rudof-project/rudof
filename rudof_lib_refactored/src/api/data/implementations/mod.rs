@@ -6,6 +6,12 @@ mod reset_service_description;
 mod serialize_data;
 mod serialize_service_description;
 mod show_node_info;
+#[cfg(test)]
+mod tests{
+    mod show_node_info_tests;
+    mod load_data_tests;
+    mod load_service_description_tests;
+}
 
 pub use list_endpoints::list_endpoints;
 pub use load_data::load_data;

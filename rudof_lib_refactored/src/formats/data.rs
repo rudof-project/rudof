@@ -1,5 +1,5 @@
 use iri_s::MimeType;
-use rudof_rdf::{rdf_impl::ReaderMode, rdf_core::RDFFormat};
+use rudof_rdf::{rdf_core::{RDFFormat, visualizer::uml_converter::ImageFormat}, rdf_impl::ReaderMode};
 use crate::errors::DataError;
 use std::{
     fmt::{Display, Formatter},
@@ -216,6 +216,24 @@ impl Display for DataReaderMode {
 // ResultDataFormat
 // ============================================================================
 
+impl ResultDataFormat {
+    pub fn is_image_visualization_format(&self) -> bool {
+        matches!(self, ResultDataFormat::Svg | ResultDataFormat::Png)
+    }
+
+    pub fn is_rdf_format(&self) -> bool {
+        matches!(
+            self,
+            ResultDataFormat::Turtle
+                | ResultDataFormat::NTriples
+                | ResultDataFormat::RdfXml
+                | ResultDataFormat::TriG
+                | ResultDataFormat::N3
+                | ResultDataFormat::NQuads
+        )
+    }
+}
+
 impl FromStr for ResultDataFormat {
     type Err = DataError;
 
@@ -253,6 +271,38 @@ impl Display for ResultDataFormat {
             ResultDataFormat::PlantUML => write!(dest, "plantuml"),
             ResultDataFormat::Svg => write!(dest, "svg"),
             ResultDataFormat::Png => write!(dest, "png"),
+        }
+    }
+}
+
+impl TryFrom<ResultDataFormat> for RDFFormat {
+    type Error = DataError;
+
+    fn try_from(value: ResultDataFormat) -> Result<Self, Self::Error> {
+        match value {
+            ResultDataFormat::Turtle => Ok(RDFFormat::Turtle),
+            ResultDataFormat::NTriples => Ok(RDFFormat::NTriples),
+            ResultDataFormat::RdfXml => Ok(RDFFormat::Rdfxml),
+            ResultDataFormat::TriG => Ok(RDFFormat::TriG),
+            ResultDataFormat::N3 => Ok(RDFFormat::N3),
+            ResultDataFormat::NQuads => Ok(RDFFormat::NQuads),
+            _ => Err(DataError::NonRdfFormat {
+                format: value.to_string(),
+            }),
+        }
+    }
+}
+
+impl TryFrom<ResultDataFormat> for ImageFormat {
+    type Error = DataError;
+
+    fn try_from(value: ResultDataFormat) -> Result<Self, Self::Error> {
+        match value {
+            ResultDataFormat::Svg => Ok(ImageFormat::SVG),
+            ResultDataFormat::Png => Ok(ImageFormat::PNG),
+            _ => Err(DataError::NonImageVisualizationFormat {
+                format: value.to_string(),
+            }),
         }
     }
 }

@@ -14,7 +14,7 @@ pub trait DataOperations {
     ///
     /// # Arguments
     ///
-    /// * `data` - Array of input specifications defining data sources
+    /// * `data` - Optional array of input specifications defining data sources (uses None by default)
     /// * `data_format` - The RDF format of the input data (uses default if None)
     /// * `base` - Optional base IRI for resolving relative IRIs (uses default if None)
     /// * `endpoint` - Optional SPARQL endpoint URL to load data from. If stablished it overrides data (uses None by default)
@@ -25,7 +25,7 @@ pub trait DataOperations {
     /// Returns an error if the data cannot be parsed or loaded.
     fn load_data(
         &mut self,
-        data: &[InputSpec],
+        data: Option<&[InputSpec]>,
         data_format: Option<&DataFormat>,
         base: Option<&str>,
         endpoint: Option<&str>,
@@ -44,7 +44,7 @@ pub trait DataOperations {
     ///
     /// Returns an error if serialization fails.
     fn serialize_data<W: io::Write>(
-        &self, 
+        &mut self, 
         result_data_format: Option<&ResultDataFormat>, 
         writer: &mut W
     ) -> Result<()>;
@@ -107,7 +107,7 @@ pub trait DataOperations {
     ///
     /// Returns an error if the node information cannot be retrieved or serialized.
     fn show_node_info<W: io::Write>(
-        &self,
+        &mut self,
         node: &str,
         predicates: Option<&[String]>,
         show_node_mode: Option<&NodeInspectionMode>,
@@ -117,17 +117,17 @@ pub trait DataOperations {
         writer: &mut W,
     ) -> Result<()>;
 
-    /// Lists known SPARQL endpoints.
+    /// Lists the registered SPARQL endpoints.
     /// 
     /// Returns:
     ///     List of (name, url) tuples for known endpoints.
-    fn list_endpoints(&self) -> Vec<(String, String)>;
+    fn list_endpoints(&mut self) -> Result<Vec<(String, String)>>;
 }
 
 impl DataOperations for Rudof {
     fn load_data(
         &mut self,
-        data: &[InputSpec],
+        data: Option<&[InputSpec]>,
         data_format: Option<&DataFormat>,
         base: Option<&str>,
         endpoint: Option<&str>,
@@ -138,7 +138,7 @@ impl DataOperations for Rudof {
     }
 
     fn serialize_data<W: io::Write>(
-        &self, 
+        &mut self, 
         result_data_format: Option<&ResultDataFormat>, 
         writer: &mut W
     ) -> Result<()> {
@@ -172,7 +172,7 @@ impl DataOperations for Rudof {
     }
 
     fn show_node_info<W: io::Write>(
-        &self,
+        &mut self,
         node: &str,
         predicates: Option<&[String]>,
         show_node_mode: Option<&NodeInspectionMode>,
@@ -184,7 +184,7 @@ impl DataOperations for Rudof {
         show_node_info(self, node, predicates, show_node_mode, depth, show_hyperlinks, show_colors, writer)
     }
 
-    fn list_endpoints(&self) -> Vec<(String, String)> {
+    fn list_endpoints(&mut self) -> Result<Vec<(String, String)>> {
         list_endpoints(self)
     }
 }

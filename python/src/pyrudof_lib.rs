@@ -58,7 +58,7 @@ impl PyRudof {
     ///     RudofError: If initialization fails due to invalid configuration.
     #[new]
     pub fn __init__(config: &PyRudofConfig) -> PyResult<Self> {
-        let rudof = Rudof::new(&config.inner).map_err(PyRudofError::from)?;
+        let rudof = Rudof::new(config.inner.clone());
         Ok(Self { inner: rudof })
     }
 
@@ -70,7 +70,7 @@ impl PyRudof {
     /// Note:
     ///     This does not affect already-loaded data or schemas, only future operations.
     pub fn update_config(&mut self, config: &PyRudofConfig) {
-        self.inner.update_config(&config.inner).execute();
+        self.inner.update_config(config.inner.clone()).execute();
     }
 
     /// Clears the current RDF data graph.
@@ -248,7 +248,7 @@ impl PyRudof {
     /// Loads RDF data from a string, file path or URL.
     ///
     /// Args:
-    ///     input (str): String, file path or URL to the RDF data.
+    ///     input (str): String, file path or URL to the RDF data. Defaults to ``None``.
     ///         Examples: ``"data.ttl"``, ``"http://example.org/data.rdf"``
     ///     format (RDFFormat, optional): Serialization format. Defaults to ``RDFFormat.Turtle``.
     ///         Available: Turtle, NTriples, Rdfxml, TriG, N3, NQuads, JsonLd
@@ -261,10 +261,10 @@ impl PyRudof {
     ///
     /// Raises:
     ///     RudofError: If String/file/URL cannot be read or data is malformed (in Strict mode).
-    #[pyo3(signature = (input, format=None, base=None, reader_mode=None, merge=None))]
+    #[pyo3(signature = (input = None, format=None, base=None, reader_mode=None, merge=None))]
     pub fn read_data(
         &mut self,
-        input: &str,
+        input: Option<&str>,
         format: Option<&PyRDFFormat>,
         base: Option<&str>,
         reader_mode: Option<&PyReaderMode>,
@@ -273,14 +273,19 @@ impl PyRudof {
         let reader_mode = cnv_reader_mode(reader_mode);
         let format = cnv_rdf_format(format);
 
-        let input = InputSpec::from_str(input)
-            .map_err(|e| InputSpecError::InvalidInput {
-                error: { e.to_string() },
-            })
-            .map_err(|e| cnv_err(e.into()))?;
-        let inputs = vec![input];
+        let mut parsed_input = None;
+        if let Some(input) = input {
+            parsed_input = Some(vec![InputSpec::from_str(input)
+                .map_err(|e| InputSpecError::InvalidInput {
+                    error: { e.to_string() },
+                })
+                .map_err(|e| cnv_err(e.into()))?]);  
+        }
 
-        let mut load_data = self.inner.load_data(&inputs);
+        let mut load_data = self.inner.load_data();
+        if let Some(input) = &parsed_input {
+            load_data = load_data.with_data(input);
+        }
         if let Some(format) = format {
             load_data = load_data.with_data_format(format);
         }
@@ -1051,8 +1056,8 @@ impl PyRudof {
     ///
     /// Returns:
     ///     list[tuple[str, str]]: List of (name, url) tuples for known endpoints.
-    pub fn list_endpoints(&self) -> PyResult<Vec<(String, String)>> {
-        let endpoints = self.inner.list_endpoints().execute();
+    pub fn list_endpoints(&mut self) -> PyResult<Vec<(String, String)>> {
+        let endpoints = self.inner.list_endpoints().execute().map_err(cnv_err)?;
         Ok(endpoints)
     }
 

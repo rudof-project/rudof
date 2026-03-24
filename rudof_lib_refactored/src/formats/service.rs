@@ -1,6 +1,7 @@
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 use crate::errors::ServiceError;
+pub use sparql_service::ServiceDescriptionFormat;
 
 /// Output formats for SPARQL service description results supported by Rudof.
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
@@ -25,6 +26,16 @@ impl FromStr for ResultServiceFormat {
             other => Err(ServiceError::UnsupportedResultServiceFormat {
                 format: other.to_string(),
             }),
+        }
+    }
+}
+
+impl From<ResultServiceFormat> for ServiceDescriptionFormat {
+    fn from(format: ResultServiceFormat) -> Self {
+        match format {
+            ResultServiceFormat::Internal => ServiceDescriptionFormat::Internal,
+            ResultServiceFormat::Mie => ServiceDescriptionFormat::Mie,
+            ResultServiceFormat::Json => ServiceDescriptionFormat::Json,
         }
     }
 }

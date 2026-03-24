@@ -31,7 +31,7 @@ impl Command for GenerateCommand {
 
         runtime.block_on(async {
             // Create a temporary Rudof instance for generation (doesn't need existing state)
-            let rudof = Rudof::new(&RudofConfig::default()).unwrap();
+            let rudof = Rudof::new(RudofConfig::default());
 
             let schema_format = self.args.schema_format.into();
             let result_format = self.args.result_format.into();

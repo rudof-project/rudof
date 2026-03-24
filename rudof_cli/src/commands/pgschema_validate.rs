@@ -29,7 +29,10 @@ impl Command for PgSchemaValidateCommand {
         let shapemap_format = self.args.shapemap_format.into();
         let result_format = self.args.result_validation_format.into();
 
-        ctx.rudof.load_data(&self.args.data).with_data_format(&data_format).execute()?;
+        ctx.rudof.load_data()
+            .with_data(&self.args.data)
+            .with_data_format(&data_format)
+            .execute()?;
 
         ctx.rudof.load_pg_schema(&self.args.schema).execute()?;
 

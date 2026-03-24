@@ -1,5 +1,6 @@
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
+
 use crate::errors::NodeInspectionError;
 
 /// Node inspection modes supported by Rudof.
@@ -14,6 +15,16 @@ pub enum NodeInspectionMode {
     /// Show both incoming and outgoing arcs
     #[default]
     Both,
+}
+
+impl NodeInspectionMode {
+    pub fn show_outgoing(&self) -> bool {
+        matches!(self, NodeInspectionMode::Outgoing | NodeInspectionMode::Both)
+    }
+
+    pub fn show_incoming(&self) -> bool {
+        matches!(self, NodeInspectionMode::Incoming | NodeInspectionMode::Both)
+    }
 }
 
 impl Display for NodeInspectionMode {

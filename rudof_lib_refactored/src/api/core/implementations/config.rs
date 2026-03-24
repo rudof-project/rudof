@@ -1,5 +1,5 @@
 use crate::{Rudof, RudofConfig};
 
-pub fn config(rudof: &Rudof) -> RudofConfig {
-    todo!()
+pub fn config(rudof: &Rudof) -> &RudofConfig {
+    &rudof.config
 }

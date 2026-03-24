@@ -160,7 +160,7 @@ pub async fn load_rdf_data_from_sources_impl(
         },
     };
     
-    let mut data_loading = rudof.load_data(&data_specs).with_data_format(&parsed_data_format);
+    let mut data_loading = rudof.load_data().with_data(&data_specs).with_data_format(&parsed_data_format);
     if let Some(endpoint) = endpoint.as_deref() { data_loading = data_loading.with_endpoint(endpoint); }
     if let Some(base) = base.as_deref() { data_loading = data_loading.with_base(base); }
     data_loading.execute().map_err(|e| {

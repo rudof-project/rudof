@@ -29,7 +29,10 @@ impl Command for NodeCommand {
         let reader_mode = self.args.reader_mode.into();
         let show_node_mode = self.args.show_node_mode.into();
 
-        let mut loading = ctx.rudof.load_data(&self.args.data).with_data_format(&data_format).with_reader_mode(&reader_mode);
+        let mut loading = ctx.rudof.load_data()
+            .with_data(&self.args.data)
+            .with_data_format(&data_format)
+            .with_reader_mode(&reader_mode);
         if let Some(base) = self.args.base.as_deref() { loading = loading.with_base(base); }
         if let Some(endpoint) = self.args.endpoint.as_deref() { loading = loading.with_endpoint(endpoint); }
         loading.execute()?;

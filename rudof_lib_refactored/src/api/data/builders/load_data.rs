@@ -6,7 +6,7 @@ use crate::{Rudof, Result, api::data::DataOperations, formats::{InputSpec, DataF
 /// operations with optional parameters.
 pub struct LoadDataBuilder<'a> {
     rudof: &'a mut Rudof,
-    data: &'a [InputSpec],
+    data: Option<&'a [InputSpec]>,
     data_format: Option<&'a DataFormat>,
     base: Option<&'a str>,
     endpoint: Option<&'a str>,
@@ -19,16 +19,26 @@ impl<'a> LoadDataBuilder<'a> {
     ///
     /// This is called internally by `Rudof::load_data()` and should not
     /// be constructed directly.
-    pub(crate) fn new(rudof: &'a mut Rudof, data: &'a [InputSpec]) -> Self {
+    pub(crate) fn new(rudof: &'a mut Rudof) -> Self {
         Self {
             rudof,
-            data,
+            data: None,
             data_format: None,
             base: None,
             endpoint: None,
             reader_mode: None,
             merge: None,
         }
+    }
+
+    /// Sets the data to be loaded.
+    ///
+    /// # Arguments
+    /// 
+    /// * `data` - A slice of `InputSpec` defining the data sources to load
+    pub fn with_data(mut self, data: &'a [InputSpec]) -> Self {
+        self.data = Some(data);
+        self
     }
 
     /// Sets the data format for loading.

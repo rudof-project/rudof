@@ -6,7 +6,7 @@ use std::io;
 /// Provides a fluent interface for configuring and executing node inspection
 /// operations with optional parameters.
 pub struct ShowNodeInfoBuilder<'a, W: io::Write> {
-    rudof: &'a Rudof,
+    rudof: &'a mut Rudof,
     node: &'a str,
     writer: &'a mut W,
     predicates: Option<&'a [String]>,
@@ -21,7 +21,7 @@ impl<'a, W: io::Write> ShowNodeInfoBuilder<'a, W> {
     ///
     /// This is called internally by `Rudof::show_node_info()` and should not
     /// be constructed directly.
-    pub(crate) fn new(rudof: &'a Rudof, node: &'a str, writer: &'a mut W) -> Self {
+    pub(crate) fn new(rudof: &'a mut Rudof, node: &'a str, writer: &'a mut W) -> Self {
         Self {
             rudof,
             node,

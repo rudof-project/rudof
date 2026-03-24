@@ -19,7 +19,7 @@ impl<'a> ConfigBuilder<'a> {
     /// Executes the config check operation.
     ///
     /// This retrieves the config information from the Rudof instance.
-    pub fn execute(self) -> RudofConfig {
+    pub fn execute(self) -> &'a RudofConfig {
         <Rudof as CoreOperations>::config(self.rudof)
     }
 }

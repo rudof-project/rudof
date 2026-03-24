@@ -33,7 +33,10 @@ impl Command for ShexValidateCommand {
         let sort_order = self.args.sort_by.into();
         let result_format = self.args.result_format.into();
 
-        let mut loading = ctx.rudof.load_data(&self.args.data).with_data_format(&data_format).with_reader_mode(&reader_mode);
+        let mut loading = ctx.rudof.load_data()
+            .with_data(&self.args.data)
+            .with_data_format(&data_format)
+            .with_reader_mode(&reader_mode);
         if let Some(base) = self.args.base_data.as_deref() { loading = loading.with_base(base); }
         if let Some(endpoint) = self.args.endpoint.as_deref() { loading = loading.with_endpoint(endpoint); }
         loading.execute()?;

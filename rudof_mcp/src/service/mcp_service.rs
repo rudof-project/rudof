@@ -140,7 +140,7 @@ impl RudofMcpService {
     /// State loading failures are logged but don't prevent service creation.
     pub fn try_new() -> Result<Self, ServiceCreationError> {
         let rudof_config = RudofConfig::new();
-        let mut rudof = Rudof::new(&rudof_config).map_err(|e| ServiceCreationError::RudofError(e.to_string()))?;
+        let mut rudof = Rudof::new(rudof_config);
 
         // Attempt to load persisted state (for Docker ephemeral containers)
         if let Some(persisted_state) = state::load_state()
@@ -154,7 +154,10 @@ impl RudofMcpService {
             // Load persisted N-Triples string into Rudof using an in-memory InputSpec
             let spec = InputSpec::Str(rdf_ntriples.clone());
             let data_specs = vec![spec];
-            if let Err(e) = rudof.load_data(&data_specs).with_data_format(&DataFormat::NTriples).execute() {
+            if let Err(e) = rudof.load_data()
+                .with_data(&data_specs)
+                .with_data_format(&DataFormat::NTriples)
+                .execute() {
                 tracing::warn!("Failed to restore persisted RDF data: {}", e);
             } else {
                 tracing::info!("Successfully restored RDF data from persisted state");

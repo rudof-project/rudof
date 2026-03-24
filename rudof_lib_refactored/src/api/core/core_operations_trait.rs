@@ -1,6 +1,6 @@
 use crate::{
-    Result, RudofConfig,
-    api::core::implementations::{reset_all, update_config, config, version},
+    Result, Rudof, RudofConfig,
+    api::core::implementations::{new, reset_all, update_config, config, version},
 };
 
 /// Core operations for Rudof initialization and configuration.
@@ -14,28 +14,28 @@ pub trait CoreOperations: Sized {
     /// # Errors
     ///
     /// Returns an error if the RDF data cannot be initialized with the given configuration.
-    fn new(config: &RudofConfig) -> Result<Self>;
+    fn new(config: RudofConfig) -> Self;
 
     /// Returns the version string of Rudof.
     ///
     /// # Returns
     ///
     /// A string containing the version number.
-    fn version(&self) -> String;
+    fn version(&self) -> &str;
 
     /// Returns the current configuration.
     ///
     /// # Returns
     ///
     /// The `RudofConfig` instance.
-    fn config(&self) -> RudofConfig;
+    fn config(&self) -> &RudofConfig;
 
     /// Updates the configuration of this Rudof instance.
     ///
     /// # Arguments
     ///
     /// * `config` - The new configuration to apply
-    fn update_config(&mut self, config: &RudofConfig);
+    fn update_config(&mut self, config: RudofConfig);
 
     /// Resets all state in this Rudof instance.
     ///
@@ -44,20 +44,20 @@ pub trait CoreOperations: Sized {
     fn reset_all(&mut self);
 }
 
-impl CoreOperations for crate::Rudof {
-    fn new(config: &RudofConfig) -> Result<Self> {
-        todo!()
+impl CoreOperations for Rudof {
+    fn new(config: RudofConfig) -> Self {
+        new(config)
     }
 
-    fn version(&self) -> String {
+    fn version(&self) -> &str {
         version(self)
     }
 
-    fn config(&self) -> RudofConfig {
+    fn config(&self) -> &RudofConfig {
         config(self)
     }
 
-    fn update_config(&mut self, config: &RudofConfig) {
+    fn update_config(&mut self, config: RudofConfig) {
         update_config(self, config)
     }
 

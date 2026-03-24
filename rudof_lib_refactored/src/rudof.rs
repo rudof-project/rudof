@@ -57,55 +57,55 @@ pub type Result<T> = std::result::Result<T, RudofError>;
 #[derive(Debug)]
 pub struct Rudof {
     /// Version of Rudof
-    version: String,
+    pub(crate) version: String,
 
     /// Current configuration
-    config: RudofConfig,
+    pub(crate) config: RudofConfig,
 
     /// Current Data
-    data: Option<Data>,
+    pub(crate) data: Option<Data>,
 
     /// Current SHACL Shapes
-    shacl_shapes: Option<ShaclSchema<RdfData>>,
+    pub(crate) shacl_shapes: Option<ShaclSchema<RdfData>>,
 
     /// Current SHACL Schema Internal Representation
-    shacl_shapes_ir: Option<ShaclSchemaIR>,
+    pub(crate) shacl_shapes_ir: Option<ShaclSchemaIR>,
 
     /// Current SHACL validation results
-    shacl_validation_results: Option<ValidationReport>,
+    pub(crate) shacl_validation_results: Option<ValidationReport>,
 
     /// Current ShEx Schema
-    shex_schema: Option<ShExSchema>,
+    pub(crate) shex_schema: Option<ShExSchema>,
 
     /// ShEx Schema Internal Representation
-    shex_schema_ir: Option<ShExSchemaIR>,
+    pub(crate) shex_schema_ir: Option<ShExSchemaIR>,
 
     /// Current ShEx validation results
-    shex_validation_results: Option<ResultShapeMap>,
+    pub(crate) shex_validation_results: Option<ResultShapeMap>,
 
     /// Current PGSchema
-    pg_schema: Option<PropertyGraphSchema>,
+    pub(crate) pg_schema: Option<PropertyGraphSchema>,
 
     /// Current PGSchema validation results
-    pg_schema_validation_results: Option<ValidationResult>,
+    pub(crate) pg_schema_validation_results: Option<ValidationResult>,
 
     /// Current Shape Map
-    shapemap: Option<QueryShapeMap>,
+    pub(crate) shapemap: Option<QueryShapeMap>,
 
     /// Current SPARQL Query
-    sparql_query: Option<SparqlQuery>,
+    pub(crate) sparql_query: Option<SparqlQuery>,
 
     /// Current query results
-    query_results: Option<QueryResult>,
+    pub(crate) query_results: Option<QueryResult>,
 
     /// Current DCTAP
-    dctap: Option<DCTAP>,
+    pub(crate) dctap: Option<DCTAP>,
 
     /// Current Service Description
-    service_description: Option<ServiceDescription>,
+    pub(crate) service_description: Option<ServiceDescription>,
 
     /// Current rdf_config model
-    rdf_config: Option<RdfConfigModel>,
+    pub(crate) rdf_config: Option<RdfConfigModel>,
 }
 
 impl Rudof {
@@ -113,7 +113,7 @@ impl Rudof {
     // RudofCore methods
     // ========================================================================
     
-    pub fn new(config: &RudofConfig) -> Result<Self> {
+    pub fn new(config: RudofConfig) -> Self {
         <Self as CoreOperations>::new(config)
     }
 
@@ -125,7 +125,7 @@ impl Rudof {
         ConfigBuilder::new(self)
     }
 
-    pub fn update_config<'a>(&'a mut self, config: &'a RudofConfig) -> UpdateConfigBuilder<'a> {
+    pub fn update_config<'a>(&'a mut self, config: RudofConfig) -> UpdateConfigBuilder<'a> {
         UpdateConfigBuilder::new(self, config)
     }
 
@@ -139,13 +139,12 @@ impl Rudof {
 
     pub fn load_data<'a>(
         &'a mut self,
-        data: &'a [InputSpec],
     ) -> LoadDataBuilder<'a> {
-        LoadDataBuilder::new(self, data)
+        LoadDataBuilder::new(self)
     }
 
     pub fn serialize_data<'a, W: io::Write>(
-        &'a self, 
+        &'a mut self, 
         writer: &'a mut W
     ) -> SerializeDataBuilder<'a, W> {
         SerializeDataBuilder::new(self, writer)
@@ -174,14 +173,14 @@ impl Rudof {
     }
 
     pub fn show_node_info<'a, W: io::Write>(
-        &'a self,
+        &'a mut self,
         node: &'a str,
         writer: &'a mut W,
     ) -> ShowNodeInfoBuilder<'a, W> {
         ShowNodeInfoBuilder::new(self, node, writer)
     }
 
-    pub fn list_endpoints<'a>(&'a self) -> ListEndpointsBuilder<'a> {
+    pub fn list_endpoints<'a>(&'a mut self) -> ListEndpointsBuilder<'a> {
         ListEndpointsBuilder::new(self)
     }
 

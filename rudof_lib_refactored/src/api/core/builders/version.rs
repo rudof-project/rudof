@@ -19,7 +19,7 @@ impl<'a> VersionBuilder<'a> {
     /// Executes the version check operation.
     ///
     /// This retrieves the version information from the Rudof instance.
-    pub fn execute(self) -> String {
+    pub fn execute(self) -> &'a str {
         <Rudof as CoreOperations>::version(self.rudof)
     }
 }

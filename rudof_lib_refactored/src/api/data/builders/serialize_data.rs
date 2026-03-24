@@ -6,7 +6,7 @@ use std::io;
 /// Provides a fluent interface for configuring and executing data serialization
 /// operations with optional parameters.
 pub struct SerializeDataBuilder<'a, W: io::Write> {
-    rudof: &'a Rudof,
+    rudof: &'a mut Rudof,
     writer: &'a mut W,
     result_data_format: Option<&'a ResultDataFormat>,
 }
@@ -16,7 +16,7 @@ impl<'a, W: io::Write> SerializeDataBuilder<'a, W> {
     ///
     /// This is called internally by `Rudof::serialize_data()` and should not
     /// be constructed directly.
-    pub(crate) fn new(rudof: &'a Rudof, writer: &'a mut W) -> Self {
+    pub(crate) fn new(rudof: &'a mut Rudof, writer: &'a mut W) -> Self {
         Self {
             rudof,
             writer,
