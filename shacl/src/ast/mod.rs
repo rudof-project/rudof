@@ -8,6 +8,7 @@ mod property_shape;
 mod schema;
 mod shape;
 pub(crate) mod error;
+mod node_expr;
 
 pub(crate) use component::ASTComponent;
 pub(crate) use node_shape::ASTNodeShape;
