@@ -1,5 +1,7 @@
 use constraint_error::ConstraintError;
-use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF};
+#[cfg(feature = "sparql")]
+use rudof_rdf::rdf_core::query::QueryRDF;
+use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::schema_ir::SchemaIR;
@@ -44,6 +46,7 @@ pub trait NativeValidator<S: NeighsRDF> {
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 
+#[cfg(feature = "sparql")]
 pub trait SparqlValidator<S: QueryRDF + Debug> {
     #[allow(clippy::too_many_arguments)]
     fn validate_sparql(
@@ -159,12 +162,14 @@ impl<S: NeighsRDF + Debug + 'static> NativeDeref for ShaclComponent<'_, S> {
     QualifiedValueShape
 );*/
 
+#[cfg(feature = "sparql")]
 pub trait SparqlDeref {
     type Target: ?Sized;
 
     fn deref(&self) -> &Self::Target;
 }
 
+#[cfg(feature = "sparql")]
 impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlDeref for ShaclComponent<'_, S> {
     type Target = dyn SparqlValidator<S>;
 

@@ -1,8 +1,7 @@
-use std::path::Path;
-
 use rudof_rdf::rdf_core::RDFFormat;
 use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use sparql_service::RdfData;
+use std::path::Path;
 
 use crate::validate_error::ValidateError;
 
@@ -23,13 +22,9 @@ impl Graph {
         Graph::default()
     }
 
+    #[cfg(not(target_family = "wasm"))]
     pub fn from_path(path: &Path, rdf_format: RDFFormat, base: Option<&str>) -> Result<Self, Box<ValidateError>> {
-        match InMemoryGraph::from_path(
-            path,
-            &rdf_format,
-            base,
-            &ReaderMode::default(), // TODO: this should be revisited
-        ) {
+        match InMemoryGraph::from_path(path, &rdf_format, base, &ReaderMode::default()) {
             Ok(store) => Ok(Self {
                 store: RdfData::from_graph(store).map_err(|e| Box::new(ValidateError::RdfDataError(e)))?,
             }),

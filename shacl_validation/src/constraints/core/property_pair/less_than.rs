@@ -1,12 +1,10 @@
 use crate::constraints::NativeValidator;
-use crate::constraints::SparqlValidator;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::shacl_engine::Engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use rudof_rdf::rdf_core::{
     NeighsRDF, Rdf, SHACLPath,
-    query::QueryRDF,
     term::{Object, Triple},
 };
 use shacl_ir::compiled::component_ir::ComponentIR;
@@ -14,6 +12,9 @@ use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::components::LessThan;
 use shacl_ir::schema_ir::SchemaIR;
 use std::fmt::Debug;
+
+#[cfg(feature = "sparql")]
+use {crate::constraints::SparqlValidator, rudof_rdf::rdf_core::query::QueryRDF};
 
 impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for LessThan {
     fn validate_native(
@@ -78,6 +79,7 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for LessThan {
     }
 }
 
+#[cfg(feature = "sparql")]
 impl<R: QueryRDF + Debug + 'static> SparqlValidator<R> for LessThan {
     fn validate_sparql(
         &self,

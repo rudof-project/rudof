@@ -58,7 +58,7 @@ use rudof_rdf::rdf_core::{FocusRDF, Rdf, query::QueryRDF, visualizer::VisualRDFG
 use rudof_rdf::rdf_impl::SparqlEndpoint;
 use shacl_rdf::{ShaclParser, ShaclWriter};
 use shacl_validation::shacl_processor::{GraphValidation, ShaclProcessor};
-use shacl_validation::store::graph::Graph;
+use shacl_validation::store::Graph;
 use shapes_comparator::CoShaMoConverter;
 use shapes_converter::{ShEx2Uml, Tap2ShEx};
 use shex_ast::compact::ShExParser;
