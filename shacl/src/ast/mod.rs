@@ -9,6 +9,7 @@ mod schema;
 mod shape;
 pub(crate) mod error;
 mod node_expr;
+mod reifier_info;
 
 pub(crate) use component::ASTComponent;
 pub(crate) use node_shape::ASTNodeShape;

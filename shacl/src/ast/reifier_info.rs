@@ -1,0 +1,35 @@
+use itertools::Itertools;
+use rudof_rdf::rdf_core::term::Object;
+use std::fmt::{Display, Formatter};
+
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct ReifierInfo {
+    reification_required: bool,
+    reifier_shape: Vec<Object>,
+}
+
+impl ReifierInfo {
+    pub fn new(reification_required: bool, reifier_shape: Vec<Object>) -> Self {
+        ReifierInfo { reification_required, reifier_shape }
+    }
+
+    pub fn reification_required(&self) -> bool {
+       self.reification_required
+    }
+
+    pub fn reifier_shape(&self) -> &Vec<Object> {
+        &self.reifier_shape
+    }
+}
+
+impl Display for ReifierInfo {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ReifierInfo {{ reificationRequired: {}, reifierShape: {} }}",
+            self.reification_required,
+            self.reifier_shape()
+                   .iter()
+                   .map(|node| node.to_string())
+                   .join(", ")
+        )
+    }
+}
