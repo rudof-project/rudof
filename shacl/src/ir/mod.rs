@@ -5,6 +5,7 @@
 mod shape_label_idx;
 mod error;
 mod shape;
+mod node_shape;
 mod property_shape;
 mod reifier_info;
 
