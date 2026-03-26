@@ -29,7 +29,6 @@ use nom::{
 use nom_locate::LocatedSpan;
 use prefixmap::IriRef;
 use regex::Regex;
-// use shex_ast::IriOrStr;
 use rudof_rdf::rdf_core::{
     RDFError,
     term::literal::{ConcreteLiteral, Lang, NumericLiteral},

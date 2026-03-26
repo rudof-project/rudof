@@ -65,7 +65,7 @@ ShExC syntax
 ```sh
 cargo run -p shex_testsuite -- -m shex_testsuite/shexTest/validation/manifest.jsonld -p failed-simple --shex_syntax shexc
 . . .
-Passed: 1060, Failed: 84, Skipped: 22, Not implemented: 0
+Passed: 1063, Failed: 81, Skipped: 22, Not implemented: 0
 ```
 
 JSON-LD syntax
@@ -79,14 +79,5 @@ Passed: 1062, Failed: 82, Skipped: 22, Not implemented: 0
 At this moment the main difference between both is:
 
 ```
-Tests that fail in ShExC
-1dotNS2SingleComment_pass-noOthers
-1dotNS2_pass-noOthers
-1dotNSdefault_pass-noOthers
-1val1emptylanguageStem_fail-empty
-1val1emptylanguageStem_fail-integer
-1val1emptylanguageStem_fail-literal
-
-Tests that fail in JSON
 nPlus1
 ```
