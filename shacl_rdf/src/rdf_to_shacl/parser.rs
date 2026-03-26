@@ -16,25 +16,6 @@ use rudof_rdf::rdf_core::{
 };
 use shacl_ast::{schema::ShaclSchema, shape::Shape};
 use std::collections::{HashMap, HashSet};
-
-/// State used during the parsing process
-/// This is used to keep track of pending shapes to be parsed
-struct State {
-    pending: Vec<Object>,
-}
-
-impl State {
-    fn pop_pending(&mut self) -> Option<Object> {
-        self.pending.pop()
-    }
-}
-
-impl From<Vec<Object>> for State {
-    fn from(value: Vec<Object>) -> Self {
-        Self { pending: value }
-    }
-}
-
 pub struct ShaclParser<RDF: FocusRDF> {
     rdf_parser: RDFParse<RDF>,
     shapes: HashMap<Object, Shape<RDF>>,
