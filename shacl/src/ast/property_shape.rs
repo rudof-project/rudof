@@ -1,8 +1,12 @@
-use crate::ast::ASTComponent;
-use crate::types::{MessageMap, ReifierInfo, Severity, Target};
+use crate::ast::error::ASTError;
+use crate::ast::reifier_info::ReifierInfo;
+use crate::ast::{ASTComponent, ASTSchema};
+use crate::types::{defined_properties_for, ClosedInfo, MessageMap, Severity, Target};
+use iri_s::IriS;
 use rudof_rdf::rdf_core::term::literal::NumericLiteral;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::SHACLPath;
+use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -164,6 +168,19 @@ impl ASTPropertyShape {
 
     pub fn property_shapes(&self) -> &Vec<Object> {
         &self.property_shapes
+    }
+
+    pub fn get_closed_info(&self, ast: &ASTSchema) -> Result<ClosedInfo, ASTError> {
+        let (is_closed, ignored_properties) = self.closed_component();
+        if is_closed {
+            let defined_properties = defined_properties_for(self.property_shapes(), ast)?;
+            Ok(ClosedInfo::Yes {
+                ignored_properties,
+                defined_properties
+            })
+        } else {
+            Ok(ClosedInfo::No)
+        }
     }
 }
 

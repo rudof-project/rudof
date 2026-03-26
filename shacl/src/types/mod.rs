@@ -4,7 +4,9 @@ mod value;
 mod message_map;
 mod target;
 mod severity;
+mod closed_info;
 
+pub(crate) use closed_info::{defined_properties_for, ClosedInfo};
 pub(crate) use message_map::MessageMap;
 pub(crate) use node_kind::NodeKind;
 pub(crate) use severity::Severity;
