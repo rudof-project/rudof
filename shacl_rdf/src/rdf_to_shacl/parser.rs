@@ -15,11 +15,9 @@ use rudof_rdf::rdf_core::{
     term::{Object, Triple},
 };
 use shacl_ast::{schema::ShaclSchema, shape::Shape};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 impl<RDF: FocusRDF> ShaclParser<RDF> {
-    pub fn parse(&mut self) -> Result<ShaclSchema<RDF>, ShaclParserError> {
-        let prefixmap: PrefixMap = self.rdf_parser.prefixmap().unwrap_or_default();
 
         let mut state: State = self.shapes_candidates()?.into();
         while let Some(node) = state.pop_pending() {

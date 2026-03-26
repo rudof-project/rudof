@@ -1,11 +1,11 @@
+use crate::ast::error::ASTError;
 use iri_s::error::IriSError;
 use prefixmap::PrefixMapError;
 use rudof_rdf::rdf_core::RDFError;
-use shacl_ast::ShaclError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum ShaclParserError {
+pub(crate) enum ShaclParserError {
     #[error("RDF parse error: {err}")]
     RDFParseError {
         #[from]
@@ -45,10 +45,10 @@ pub enum ShaclParserError {
     #[error("Unknown NodeKind, found: {term}")]
     UnknownNodeKind { term: String },
 
-    #[error("SHACL error: {err}")]
-    ShaclError {
+    #[error("SHACL AST error: {err}")]
+    ASTError {
         #[from]
-        err: ShaclError,
+        err: ASTError,
     },
 
     #[error("Custom error: {msg}")]
