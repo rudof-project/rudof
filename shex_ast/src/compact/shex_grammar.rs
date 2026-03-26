@@ -1183,9 +1183,8 @@ fn language_range2<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ValueSetValue> {
             move |i| {
                 let (i, (_, _, exclusions)) = tuple((token_tws("@"), token_tws("~"), language_exclusions))(i)?;
                 let v = if exclusions.is_empty() {
-                    ValueSetValue::LanguageStemRange {
+                    ValueSetValue::LanguageStem {
                         stem: LangOrWildcard::wildcard(),
-                        exclusions: None,
                     }
                 } else {
                     ValueSetValue::LanguageStemRange {
