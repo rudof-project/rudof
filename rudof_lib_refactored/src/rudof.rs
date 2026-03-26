@@ -10,6 +10,7 @@ use shex_ast::shapemap::{QueryShapeMap, ResultShapeMap};
 use dctap::DCTap as DCTAP;
 use rudof_rdf::rdf_core::query::SparqlQuery;
 use rdf_config::RdfConfigModel;
+use shex_validation::Validator as ShExValidator;
 use crate::{
     RudofConfig, 
     errors::RudofError,
@@ -79,6 +80,9 @@ pub struct Rudof {
 
     /// ShEx Schema Internal Representation
     pub(crate) shex_schema_ir: Option<ShExSchemaIR>,
+
+    /// Current ShEx validator. It holds the compiled schema and the validator which can be reused several times if needed
+    pub(crate) shex_validator: Option<ShExValidator>,
 
     /// Current ShEx validation results
     pub(crate) shex_validation_results: Option<ResultShapeMap>,

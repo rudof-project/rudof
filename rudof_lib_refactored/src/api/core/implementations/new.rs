@@ -19,5 +19,6 @@ pub fn new(config: RudofConfig) -> Rudof {
         dctap: None,
         service_description: None,
         rdf_config: None,
+        shex_validator: None,
     }
 }

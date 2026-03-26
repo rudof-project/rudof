@@ -3,6 +3,7 @@ use iri_s::IriS;
 use std::{env, str::FromStr};
 #[cfg(not(target_family = "wasm"))]
 use url::Url;
+use crossterm::terminal;
 
 pub fn get_base_iri(rudof: &mut Rudof, base_iri: Option<&str>) -> Result<IriS> {
     if let Some(base_iri) = base_iri.as_deref() {
@@ -32,5 +33,25 @@ pub fn get_base_iri(rudof: &mut Rudof, base_iri: Option<&str>) -> Result<IriS> {
             })?;
             Ok(url.into())
         }
+    }
+}
+
+const MAX_TERMINAL_WIDTH: usize = 100;
+const DEFAULT_TERMINAL_WIDTH: usize = 80;
+
+pub fn terminal_width() -> usize {
+    if let Ok((cols, _)) = terminal::size() {
+        let w = sanitize_width(cols as usize);
+        w
+    } else {
+        DEFAULT_TERMINAL_WIDTH
+    }
+}
+
+fn sanitize_width(width: usize) -> usize {
+    match width {
+        w if w > MAX_TERMINAL_WIDTH => MAX_TERMINAL_WIDTH,
+        w if w < 40 => DEFAULT_TERMINAL_WIDTH,
+        w => w,
     }
 }

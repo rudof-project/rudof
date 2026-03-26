@@ -13,6 +13,7 @@ pub struct SerializeShexSchemaBuilder<'a, W: io::Write> {
     show_statistics: Option<bool>,
     show_dependencies: Option<bool>,
     show_time: Option<bool>,
+    show_colors: Option<bool>,
     shex_format: Option<&'a ShExFormat>,
 }
 
@@ -30,6 +31,7 @@ impl<'a, W: io::Write> SerializeShexSchemaBuilder<'a, W> {
             show_statistics: None,
             show_dependencies: None,
             show_time: None,
+            show_colors: None,
             shex_format: None,
         }
     }
@@ -107,6 +109,7 @@ impl<'a, W: io::Write> SerializeShexSchemaBuilder<'a, W> {
             self.show_statistics,
             self.show_dependencies,
             self.show_time,
+            self.show_colors,
             self.shex_format,
             self.writer,
         )

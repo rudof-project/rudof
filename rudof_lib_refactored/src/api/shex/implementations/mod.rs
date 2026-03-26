@@ -9,6 +9,14 @@ mod validate_shex;
 mod serialize_shex_validation_results;
 mod reset_shex;
 
+#[cfg(test)]
+mod tests{
+    mod check_shex_schema_tests;
+    mod load_shapemap_tests;
+    mod load_shex_schema_tests;
+    mod validate_shex_tests;
+}
+
 pub use check_shex_schema::check_shex_schema;
 pub use load_shex_schema::load_shex_schema;
 pub use serialize_shex_schema::serialize_shex_schema;

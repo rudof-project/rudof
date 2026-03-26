@@ -70,11 +70,3 @@ impl Read for Response {
         Err(Error::other("Reading HTTP response is not implemented in WASM target"))
     }
 }
-
-/// Returns the terminal width for WASM environments.
-///
-/// # Returns
-/// Always returns 0 as terminal operations are not available in WASM.
-pub fn terminal_width() -> usize {
-    0
-}

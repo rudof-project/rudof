@@ -7,6 +7,7 @@ use std::io;
 /// operations with optional parameters.
 pub struct SerializeShapemapBuilder<'a, W: io::Write> {
     rudof: &'a Rudof,
+    show_colors: Option<bool>,
     writer: &'a mut W,
     shapemap_format: Option<&'a ShapeMapFormat>,
 }
@@ -21,6 +22,7 @@ impl<'a, W: io::Write> SerializeShapemapBuilder<'a, W> {
             rudof,
             writer,
             shapemap_format: None,
+            show_colors: None,
         }
     }
 
@@ -34,6 +36,16 @@ impl<'a, W: io::Write> SerializeShapemapBuilder<'a, W> {
         self
     }
 
+    /// Sets whether to use colors in the output.
+    ///
+    /// # Arguments
+    ///
+    /// * `show_colors` - Whether to use colors in the output
+    pub fn with_show_colors(mut self, show_colors: bool) -> Self {
+        self.show_colors = Some(show_colors);
+        self
+    }
+
     /// Executes the shape map serialization operation with the configured parameters.
     ///
     /// # Errors
@@ -43,6 +55,7 @@ impl<'a, W: io::Write> SerializeShapemapBuilder<'a, W> {
         <Rudof as ShExOperations>::serialize_shapemap(
             self.rudof,
             self.shapemap_format,
+            self.show_colors,
             self.writer,
         )
     }

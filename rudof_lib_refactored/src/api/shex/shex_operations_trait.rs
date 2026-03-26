@@ -46,7 +46,7 @@ pub trait ShExOperations {
         schema_format: Option<&ShExFormat>,
         base_schema: Option<&str>,
         writer: &mut W
-    ) -> Result<()>;
+    ) -> Result<bool>;
 
     /// Serializes the current ShEx schema to a writer.
     ///
@@ -57,6 +57,7 @@ pub trait ShExOperations {
     /// * `show_statistics` - Whether to include statistics in the output (false by default)
     /// * `show_dependencies` - Whether to show shape dependencies (false by default)
     /// * `show_time` - Whether to include timing information (false by default)
+    /// * `show_colors` - Whether to use colors in the output (false by default)
     /// * `shex_format` - Optional format to serialize the schema (uses default if None)
     /// * `writer` - The destination to write to
     ///
@@ -70,6 +71,7 @@ pub trait ShExOperations {
         show_statistics: Option<bool>,
         show_dependencies: Option<bool>,
         show_time: Option<bool>,
+        show_colors: Option<bool>,
         shex_format: Option<&ShExFormat>,
         writer: &mut W
     ) -> Result<()>;
@@ -102,6 +104,7 @@ pub trait ShExOperations {
     /// # Arguments
     ///
     /// * `shapemap_format` - Optional output format (uses default if None)
+    /// * `show_colors` - Whether to use colors in the output (false by default)
     /// * `writer` - The destination to write to
     ///
     /// # Errors
@@ -110,6 +113,7 @@ pub trait ShExOperations {
     fn serialize_shapemap<W: io::Write>(
         &self,
         shapemap_format: Option<&ShapeMapFormat>,
+        show_colors: Option<bool>,
         writer: &mut W,
     ) -> Result<()>;
 
@@ -162,7 +166,7 @@ impl ShExOperations for crate::Rudof {
             schema_format: Option<&ShExFormat>,
             base_schema: Option<&str>,
             writer: &mut W
-    ) -> Result<()> {
+    ) -> Result<bool> {
         check_shex_schema(self, schema, schema_format, base_schema, writer)
     }
 
@@ -173,10 +177,11 @@ impl ShExOperations for crate::Rudof {
         show_statistics: Option<bool>,
         show_dependencies: Option<bool>,
         show_time: Option<bool>,
+        show_colors: Option<bool>,
         shex_format: Option<&ShExFormat>,
         writer: &mut W
     ) -> Result<()> {
-        serialize_shex_schema(self, shape_label, show_schema, show_statistics, show_dependencies, show_time, shex_format, writer)
+        serialize_shex_schema(self, shape_label, show_schema, show_statistics, show_dependencies, show_time, show_colors, shex_format, writer)
     }
 
     fn reset_shex_schema(&mut self) {
@@ -196,9 +201,10 @@ impl ShExOperations for crate::Rudof {
     fn serialize_shapemap<W: io::Write>(
         &self,
         shapemap_format: Option<&ShapeMapFormat>,
+        show_colors: Option<bool>,
         writer: &mut W,
     ) -> Result<()> {
-        serialize_shapemap(self, shapemap_format, writer)
+        serialize_shapemap(self, shapemap_format, show_colors, writer)
     }
 
     fn reset_shapemap(&mut self) {

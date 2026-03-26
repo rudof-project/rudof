@@ -57,17 +57,6 @@ pub fn show_node_info<W: io::Write>(
 /// 1. Resolves the node selector to concrete nodes
 /// 2. For each node, gathers outgoing and incoming arcs based on configuration
 /// 3. Returns a list of `NodeInfo` structures
-///
-/// # Type Parameters
-///
-/// * `R` - The RDF graph type implementing necessary traits
-///
-/// # Errors
-///
-/// Returns an error if:
-/// * Node resolution fails
-/// * Arc retrieval fails
-/// * Subject conversion fails
 fn collect_node_information<R>(
     rdf: &R,
     node_selector: NodeSelector,
@@ -89,11 +78,6 @@ where
 }
 
 /// Builds complete information for a single node.
-///
-/// # Errors
-///
-/// Returns an error if the term cannot be converted to a subject or if
-/// arc retrieval fails.
 fn build_node_info<R>(
     rdf: &R,
     node: &R::Term,
@@ -141,10 +125,6 @@ where
 ///
 /// * `depth = 1`: Returns only direct neighbors as `OutgoingNeighsNode::Term`
 /// * `depth > 1`: Recursively traverses, storing nested relationships in `OutgoingNeighsNode::More`
-///
-/// # Errors
-///
-/// Returns an error if arc retrieval or recursive traversal fails.
 fn collect_outgoing_arcs_recursive<S: NeighsRDF>(
     rdf: &S,
     subject: &S::Subject,
@@ -219,18 +199,6 @@ fn collect_outgoing_arcs_recursive<S: NeighsRDF>(
 /// Retrieves outgoing arcs for a subject with optional predicate filtering.
 ///
 /// This is a non-recursive version that returns a simple HashMap of predicates to terms.
-///
-/// # Arguments
-///
-/// * `rdf` - The RDF graph
-/// * `subject` - The subject node
-/// * `predicates` - List of predicate strings to filter (empty = all predicates)
-///
-/// # Errors
-///
-/// Returns an error if:
-/// * Arc retrieval from the graph fails
-/// * Predicate conversion fails
 fn collect_outgoing_arcs<S: NeighsRDF>(
     rdf: &S,
     subject: &S::Subject,
@@ -264,10 +232,6 @@ fn collect_outgoing_arcs<S: NeighsRDF>(
 ///
 /// * `depth = 1`: Returns only direct parents as `IncomingNeighsNode::Term`
 /// * `depth > 1`: Recursively traverses upward, storing nested relationships
-///
-/// # Errors
-///
-/// Returns an error if arc retrieval or recursive traversal fails.
 fn collect_incoming_arcs_recursive<S: NeighsRDF>(
     rdf: &S,
     subject: &S::Subject,
@@ -321,10 +285,6 @@ fn collect_incoming_arcs_recursive<S: NeighsRDF>(
 /// Retrieves incoming arcs for a subject (non-recursive).
 ///
 /// Finds all subjects that have this node as an object.
-///
-/// # Errors
-///
-/// Returns an error if arc retrieval from the graph fails.
 fn collect_incoming_arcs<S: NeighsRDF>(
     rdf: &S,
     subject: &S::Subject,
@@ -345,10 +305,6 @@ fn collect_incoming_arcs<S: NeighsRDF>(
 
 
 /// Writes formatted node information for multiple nodes.
-///
-/// # Errors
-///
-/// Returns an error if writing to the output stream fails.
 fn write_node_information_list<S: NeighsRDF, W: io::Write>(
     node_infos: &[NodeInfo<S>],
     rdf: &S,
@@ -366,13 +322,6 @@ fn write_node_information_list<S: NeighsRDF, W: io::Write>(
 /// Outputs:
 /// * Outgoing arcs as a tree (if enabled)
 /// * Incoming arcs as a tree (if enabled)
-///
-/// # Errors
-///
-/// Returns an error if:
-/// * Subject qualification fails
-/// * Tree construction fails
-/// * Writing to the output stream fails
 fn write_node_information<S: NeighsRDF, W: io::Write>(
     node_info: &NodeInfo<S>,
     rdf: &S,
@@ -421,17 +370,6 @@ fn write_node_information<S: NeighsRDF, W: io::Write>(
 }
 
 /// Recursively builds a tree representation of outgoing arcs.
-///
-/// # Arguments
-///
-/// * `tree` - Mutable tree to append nodes to
-/// * `outgoing_arcs` - Map of predicates to neighbor nodes
-/// * `rdf` - RDF graph for qualification
-/// * `config` - Display configuration
-///
-/// # Errors
-///
-/// Returns an error if term qualification fails.
 fn build_outgoing_tree<S: NeighsRDF>(
     tree: &mut Tree<String>,
     outgoing_arcs: &HashMap<S::IRI, Vec<OutgoingNeighsNode<S>>>,
@@ -473,17 +411,6 @@ fn build_outgoing_tree<S: NeighsRDF>(
 }
 
 /// Recursively builds a tree representation of incoming arcs.
-///
-/// # Arguments
-///
-/// * `tree` - Mutable tree to append nodes to
-/// * `incoming_arcs` - Map of predicates to neighbor nodes
-/// * `rdf` - RDF graph for qualification
-/// * `config` - Display configuration
-///
-/// # Errors
-///
-/// Returns an error if term qualification fails.
 fn build_incoming_tree<S: NeighsRDF>(
     tree: &mut Tree<String>,
     incoming_arcs: &HashMap<S::IRI, Vec<IncomingNeighsNode<S>>>,
@@ -554,10 +481,6 @@ fn create_outgoing_glyphs() -> termtree::GlyphPalette {
 /// * Full IRIs: `<http://example.org/node>`
 /// * Prefixed names: `ex:node`
 /// * Blank nodes: `_:b1`
-///
-/// # Errors
-///
-/// Returns an error if the string cannot be parsed as a valid node selector.
 fn parse_node_selector(node_str: &str) -> Result<NodeSelector> {
     ShapeMapParser::parse_node_selector(node_str)
         .map_err(|e| DataError::FailedNodeSelectorParse {
@@ -567,14 +490,6 @@ fn parse_node_selector(node_str: &str) -> Result<NodeSelector> {
 }
 
 /// Parses an IRI reference string into a structured `IriRef`.
-///
-/// # Arguments
-///
-/// * `iri` - IRI string in either full or prefixed form
-///
-/// # Errors
-///
-/// Returns an error if the IRI string is malformed.
 fn parse_iri_ref(iri: &str) -> Result<IriRef> {
     ShapeMapParser::parse_iri_ref(iri)
         .map_err(|e| DataError::FailedIriRefParse {
@@ -587,17 +502,6 @@ fn parse_iri_ref(iri: &str) -> Result<IriRef> {
 /// Converts predicate strings to IRI objects.
 ///
 /// Handles both prefixed names (e.g., `"rdf:type"`) and full IRIs.
-///
-/// # Arguments
-///
-/// * `predicates` - List of predicate strings
-/// * `rdf` - RDF graph for prefix resolution
-///
-/// # Errors
-///
-/// Returns an error if:
-/// * IRI parsing fails
-/// * Prefix resolution fails
 fn convert_predicate_strings_to_iris<S>(
     predicates: &[String],
     rdf: &S,
@@ -628,18 +532,6 @@ where
 }
 
 /// Converts a subject to its qualified string representation.
-///
-/// Uses the graph's prefix map to shorten IRIs when possible.
-///
-/// # Arguments
-///
-/// * `rdf` - RDF graph containing prefix mappings
-/// * `subject` - Subject to qualify
-/// * `show_colors` - Whether to include ANSI color codes
-///
-/// # Errors
-///
-/// Returns an error if term conversion fails.
 fn qualify_subject<S: NeighsRDF>(
     rdf: &S,
     subject: &S::Subject,
@@ -665,12 +557,6 @@ fn qualify_subject<S: NeighsRDF>(
 }
 
 /// Converts an IRI to its qualified string representation.
-///
-/// # Arguments
-///
-/// * `rdf` - RDF graph containing prefix mappings
-/// * `iri` - IRI to qualify
-/// * `show_colors` - Whether to include ANSI color codes
 fn qualify_iri<S: NeighsRDF>(rdf: &S, iri: &S::IRI, show_colors: bool) -> String {
     if show_colors {
         rdf.qualify_iri(iri)
@@ -687,16 +573,6 @@ fn qualify_iri<S: NeighsRDF>(rdf: &S, iri: &S::IRI, show_colors: bool) -> String
 }
 
 /// Converts an RDF term to its qualified string representation.
-///
-/// # Arguments
-///
-/// * `rdf` - RDF graph containing prefix mappings
-/// * `term` - Term to qualify (IRI, blank node, or literal)
-/// * `show_colors` - Whether to include ANSI color codes
-///
-/// # Errors
-///
-/// Returns an error if term conversion fails.
 fn qualify_term<S: NeighsRDF>(
     rdf: &S,
     term: &S::Term,
@@ -729,7 +605,7 @@ struct NodeDisplayConfig {
     predicates: Vec<String>,
     mode: NodeInspectionMode,
     depth: usize,
-    show_hyperlinks: bool,
+    _show_hyperlinks: bool,
     show_colors: bool,
 }
 
@@ -750,7 +626,7 @@ impl NodeDisplayConfig {
                 .copied()
                 .unwrap_or_default(),
             depth: depth.unwrap_or(1),
-            show_hyperlinks: show_hyperlinks.unwrap_or(false),
+            _show_hyperlinks: show_hyperlinks.unwrap_or(false),
             show_colors: show_colors.unwrap_or(true),
         }
     }

@@ -408,7 +408,8 @@ impl SchemaIR {
 
     pub fn show_shape_idx(&self, idx: &ShapeLabelIdx, width: usize) -> String {
         let mut result = String::new();
-        if let Some(info) = self.find_shape_idx(idx) {
+        let idx_resolved = self.resolve_shape_ref(idx);
+        if let Some(info) = self.find_shape_idx(&idx_resolved) {
             match info.label() {
                 Some(label) => {
                     result.push_str(
@@ -489,6 +490,117 @@ impl SchemaIR {
         let show_cond = |node: &Node| node.show_qualified(&self.prefixmap()).to_string();
         let rbe = shape.triple_expr().show_rbe_table(show_pred, show_cond, width);
         format!("{extends}{closed}{extra}{{{rbe}}}")
+    }
+
+    pub fn format_cycle_details(
+        &self,
+        cycle_edges: &[(ShapeLabelIdx, ShapeLabelIdx, Vec<ShapeLabelIdx>)],
+    ) -> (Vec<String>, Vec<String>) {
+        use std::collections::HashSet;
+
+        if cycle_edges.is_empty() {
+            return (Vec::new(), Vec::new());
+        }
+
+        let mut labeled_shapes = HashSet::new();
+        for (_, _, shapes) in cycle_edges {
+            for shape_idx in shapes {
+                if self.shape_label_from_idx(shape_idx).is_some() {
+                    labeled_shapes.insert(*shape_idx);
+                }
+            }
+        }
+
+        let mut shapes_list: Vec<_> = labeled_shapes
+            .iter()
+            .map(|idx| {
+                if let Some(label) = self.shape_label_from_idx(idx) {
+                    self.show_label(label)
+                } else {
+                    format!("@{}", idx)
+                }
+            })
+            .collect();
+        shapes_list.sort();
+
+        let mut edges = Vec::new();
+        for (from_idx, to_idx, shapes_in_path) in cycle_edges {
+            let from_resolved = self.resolve_shape_ref(from_idx);
+            let to_resolved = self.resolve_shape_ref(to_idx);
+
+            let from_str = if let Some(label) = self.shape_label_from_idx(&from_resolved) {
+                self.show_label(label)
+            } else {
+                format!("@{}", from_resolved)
+            };
+
+            let to_str = if let Some(label) = self.shape_label_from_idx(&to_resolved) {
+                self.show_label(label)
+            } else {
+                format!("@{}", to_resolved)
+            };
+
+            let mut path_parts = vec![from_str.clone()];
+
+            for shape_idx in shapes_in_path {
+                let resolved = self.resolve_shape_ref(shape_idx);
+                if resolved == from_resolved || resolved == to_resolved {
+                    continue;
+                }
+
+                let shape_str = if let Some(label) = self.shape_label_from_idx(&resolved) {
+                    self.show_label(label)
+                } else {
+                    format!("@{}", resolved)
+                };
+                path_parts.push(shape_str);
+            }
+
+            path_parts.push(to_str.clone());
+
+            let first_part = format!("{} <--[NOT]-- {}", path_parts[0], path_parts[1]);
+            let positive_path = path_parts[2..path_parts.len()].join(" <-- ");
+
+            let path = format!("{} <-- {}", first_part, positive_path);
+
+            edges.push(path);
+        }
+
+        (shapes_list, edges)
+    }
+
+    fn resolve_shape_ref(&self, idx: &ShapeLabelIdx) -> ShapeLabelIdx {
+        if self.shape_label_from_idx(idx).is_some() {
+            return *idx;
+        }
+
+        if let Some(info) = self.find_shape_idx(idx) {
+            match info.expr() {
+                ShapeExpr::Ref { idx: ref_idx } => self.resolve_shape_ref(ref_idx),
+                ShapeExpr::ShapeNot { expr } => self.resolve_shape_ref(expr),
+                ShapeExpr::ShapeAnd { exprs } => {
+                    for e in exprs {
+                        let resolved = self.resolve_shape_ref(e);
+                        if self.shape_label_from_idx(&resolved).is_some() {
+                            return resolved;
+                        }
+                    }
+                    *idx
+                },
+                ShapeExpr::ShapeOr { exprs } => {
+                    for e in exprs {
+                        let resolved = self.resolve_shape_ref(e);
+                        if self.shape_label_from_idx(&resolved).is_some() {
+                            return resolved;
+                        }
+                    }
+                    *idx
+                },
+                _ => *idx,
+            }
+        } else {
+            *idx
+        }
     }
 }
 

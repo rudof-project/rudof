@@ -28,6 +28,7 @@ rdf_config.workspace = true
 reqwest.workspace = true
 rudof_rdf.workspace = true
 serde.workspace = true
+serde_json.workspace = true
 shacl_ast.workspace = true
 shacl_ir.workspace = true
 shacl_validation.workspace = true
@@ -39,4 +40,7 @@ sparql_service.workspace = true
 termtree.workspace = true
 thiserror.workspace = true
 toml.workspace = true
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+crossterm.workspace = true
 url.workspace = true

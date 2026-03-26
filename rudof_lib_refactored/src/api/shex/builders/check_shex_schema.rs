@@ -44,7 +44,7 @@ impl<'a, W: std::io::Write> CheckShexSchemaBuilder<'a, W> {
     }
 
     /// Executes the schema checking operation with the configured parameters.
-    pub fn execute(self) -> Result<()> {
+    pub fn execute(self) -> Result<bool> {
         <Rudof as ShExOperations>::check_shex_schema(self.rudof, self.schema, self.schema_format, self.base_schema, self.writer)
     }
 }

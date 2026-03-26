@@ -1,11 +1,11 @@
+use crate::errors::ConfigError;
 use dctap::TapConfig;
 use rudof_rdf::rdf_core::RdfDataConfig;
+use serde::{Deserialize, Serialize};
 use shapes_comparator::ComparatorConfig;
 use shapes_converter::{ShEx2HtmlConfig, ShEx2SparqlConfig, ShEx2UmlConfig, Shacl2ShExConfig, Tap2ShExConfig};
 use shex_validation::{ShExConfig, ValidatorConfig};
 use sparql_service::ServiceConfig;
-use crate::errors::ConfigError;
-use serde::{Deserialize, Serialize};
 use std::env;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -58,11 +58,10 @@ impl RudofConfig {
             error: e,
         })?;
         let mut s = String::new();
-        f.read_to_string(&mut s)
-            .map_err(|e| ConfigError::ReadFromPath {
-                path: path_name.clone(),
-                error: e,
-            })?;
+        f.read_to_string(&mut s).map_err(|e| ConfigError::ReadFromPath {
+            path: path_name.clone(),
+            error: e,
+        })?;
 
         let config: RudofConfig = toml::from_str(s.as_str()).map_err(|e| ConfigError::TomlParseFromPath {
             path: path_name.clone(),
@@ -120,6 +119,16 @@ impl RudofConfig {
             let mut shex_config = ShExConfig::default();
             shex_config.without_showing_stats();
             self.shex = Some(shex_config);
+        }
+    }
+
+    /// Returns the ShEx validator configuration.
+    ///
+    /// Returns a default configuration if none was specified.
+    pub fn validator_config(&self) -> ValidatorConfig {
+        match &self.shex_validator {
+            None => ValidatorConfig::default(),
+            Some(cfg) => cfg.clone(),
         }
     }
 
