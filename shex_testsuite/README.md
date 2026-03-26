@@ -65,7 +65,7 @@ ShExC syntax
 ```sh
 cargo run -p shex_testsuite -- -m shex_testsuite/shexTest/validation/manifest.jsonld -p failed-simple --shex_syntax shexc
 . . .
-Passed: 1057, Failed: 87, Skipped: 22, Not implemented: 0
+Passed: 1060, Failed: 84, Skipped: 22, Not implemented: 0
 ```
 
 JSON-LD syntax
