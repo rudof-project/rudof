@@ -1,14 +1,13 @@
-use crate::{
-    compiled::compile_shape, compiled_shacl_error::CompiledShaclError, schema_ir::SchemaIR,
-    shape_label_idx::ShapeLabelIdx,
-};
+use crate::ast::{ASTPropertyShape, ASTSchema};
+use crate::ir::error::IRError;
+use crate::ir::schema::IRSchema;
+use crate::ir::shape_label_idx::ShapeLabelIdx;
 use iri_s::IriS;
-use rudof_rdf::rdf_core::{Rdf, SHACLPath};
-use shacl_ast::{ShaclSchema, property_shape::PropertyShape};
-use std::fmt::Display;
+use rudof_rdf::rdf_core::SHACLPath;
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, Default)]
-pub struct ReifierInfo {
+pub(crate) struct ReifierInfo {
     reification_required: bool,
     reifier_shape: Vec<ShapeLabelIdx>,
     predicate: IriS,
@@ -27,31 +26,30 @@ impl ReifierInfo {
         &self.predicate
     }
 
-    pub fn get_reifier_info_property_shape<R: Rdf>(
-        shape: &PropertyShape<R>,
-        schema: &ShaclSchema<R>,
-        schema_ir: &mut SchemaIR,
-    ) -> Result<Option<Self>, Box<CompiledShaclError>> {
+    pub fn get_reifier_info(
+        shape: &ASTPropertyShape,
+        ast: &ASTSchema,
+        ir: &mut IRSchema,
+    ) -> Result<Option<Self>, IRError> {
         if let Some(reifier_info) = shape.reifier_info() {
             let mut compiled_shapes = Vec::new();
-            for shape_node in reifier_info.reifier_shape() {
-                let compiled_shape = compile_shape(shape_node, schema, schema_ir)?;
-                compiled_shapes.push(compiled_shape);
+            for shape in reifier_info.reifier_shape() {
+                let idx = ir.register_shape(shape, None, ast)?;
+                compiled_shapes.push(idx);
             }
-            let path = shape.path();
-            let predicate = match path {
-                SHACLPath::Predicate { pred } => pred.clone(),
+            let predicate = match shape.path() {
+                SHACLPath::Predicate { pred } => pred,
                 other => {
-                    return Err(Box::new(CompiledShaclError::InvalidReifierShapePath {
+                    return Err(IRError::InvalidReifierShapePath {
                         shape_id: Box::new(shape.id().clone()),
                         path: other.to_string(),
-                    }));
-                },
+                    })
+                }
             };
             Ok(Some(Self {
                 reification_required: reifier_info.reification_required(),
                 reifier_shape: compiled_shapes,
-                predicate,
+                predicate: predicate.clone(),
             }))
         } else {
             Ok(None)
@@ -60,7 +58,7 @@ impl ReifierInfo {
 }
 
 impl Display for ReifierInfo {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "ReifierInfo(reification_required: {}, reifier_shape count: {}, predicate: {})",
