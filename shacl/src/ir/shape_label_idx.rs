@@ -1,7 +1,7 @@
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy, Debug, Default)]
-pub struct ShapeLabelIdx(usize);
+pub(crate) struct ShapeLabelIdx(usize);
 
 impl ShapeLabelIdx {
     pub fn new(idx: usize) -> Self {
@@ -10,13 +10,13 @@ impl ShapeLabelIdx {
 }
 
 impl Display for ShapeLabelIdx {
-    fn fmt(&self, dest: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(dest, "{}", self.0)
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
 impl From<usize> for ShapeLabelIdx {
-    fn from(idx: usize) -> Self {
-        ShapeLabelIdx(idx)
+    fn from(value: usize) -> Self {
+        ShapeLabelIdx(value)
     }
 }
