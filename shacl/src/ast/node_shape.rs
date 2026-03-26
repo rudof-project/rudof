@@ -76,6 +76,27 @@ impl ASTNodeShape {
         &self.property_shapes
     }
 
+
+    pub fn is_deactivated(&self) -> bool { // TODO - Adapt for node expr since the expr needs to be computed
+        for component in &self.components {
+            if let ASTComponent::Deactivated(true) = component {
+                return true;
+            }
+        }
+        false
+    }
+
+    fn closed_component(&self) -> (bool, HashSet<IriS>) {
+        for component in self.components() {
+            if let ASTComponent::Closed {
+                is_closed, ignored_properties
+            } = component {
+                return (*is_closed, ignored_properties.clone());
+            }
+        }
+        (false, HashSet::new())
+    }
+
     pub fn get_closed_info(&self, ast: &ASTSchema) -> Result<ClosedInfo, ASTError> {
         let (is_closed, ignored_properties) = self.closed_component();
         if is_closed {
