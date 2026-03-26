@@ -150,8 +150,8 @@ impl ASTPropertyShape {
         &self.closed
     }
 
-    pub fn is_deactivated(&self) -> &bool {
-        &self.deactivated
+    pub fn is_deactivated(&self) -> bool {
+        self.deactivated
     }
 
     pub fn severity(&self) -> Option<&Severity> {
@@ -168,6 +168,14 @@ impl ASTPropertyShape {
 
     pub fn property_shapes(&self) -> &Vec<Object> {
         &self.property_shapes
+    }
+
+    pub fn order(&self) -> Option<&NumericLiteral> {
+        self.order.as_ref()
+    }
+
+    pub fn group(&self) -> Option<&Object> {
+        self.group.as_ref()
     }
 
     fn closed_component(&self) -> (bool, HashSet<IriS>) {

@@ -76,6 +76,13 @@ impl ASTNodeShape {
         &self.property_shapes
     }
 
+    pub fn name(&self) -> &MessageMap {
+        &self.name
+    }
+    
+    pub fn description(&self) -> &MessageMap {
+        &self.description
+    }
 
     pub fn is_deactivated(&self) -> bool { // TODO - Adapt for node expr since the expr needs to be computed
         for component in &self.components {
@@ -108,6 +115,10 @@ impl ASTNodeShape {
         } else {
             Ok(ClosedInfo::No)
         }
+    }
+    
+    pub fn group(&self) -> Option<&Object> {
+        self.group.as_ref()
     }
 }
 
