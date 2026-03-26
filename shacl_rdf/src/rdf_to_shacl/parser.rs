@@ -16,19 +16,8 @@ use rudof_rdf::rdf_core::{
 };
 use shacl_ast::{schema::ShaclSchema, shape::Shape};
 use std::collections::{HashMap, HashSet};
-pub struct ShaclParser<RDF: FocusRDF> {
-    rdf_parser: RDFParse<RDF>,
-    shapes: HashMap<Object, Shape<RDF>>,
-}
 
 impl<RDF: FocusRDF> ShaclParser<RDF> {
-    pub fn new(rdf: RDF) -> ShaclParser<RDF> {
-        ShaclParser {
-            rdf_parser: RDFParse::new(rdf),
-            shapes: HashMap::new(),
-        }
-    }
-
     pub fn parse(&mut self) -> Result<ShaclSchema<RDF>, ShaclParserError> {
         let prefixmap: PrefixMap = self.rdf_parser.prefixmap().unwrap_or_default();
 
