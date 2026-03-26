@@ -1,5 +1,7 @@
 use iri_s::IriS;
 use rudof_rdf::rdf_core::term::Object;
+use rudof_rdf::rdf_core::vocabs::{RdfVocab, RdfsVocab, ShaclVocab};
+use rudof_rdf::rdf_core::BuildRDF;
 use std::fmt::{Display, Formatter};
 
 /// Represents target declarations
@@ -18,6 +20,26 @@ pub(crate) enum Target {
     WrongSubjectsOf(Object),
     WrongObjectsOf(Object),
     WrongImplicitClass(Object),
+}
+
+impl Target {
+    pub fn register<RDF: BuildRDF>(&self, id: &Object, graph: &mut RDF) -> Result<(), RDF::Err> {
+        let node: RDF::Subject = id.clone().try_into().map_err(|_| unreachable!())?;
+
+        match self {
+            Target::Node(n) => graph.add_triple(node, ShaclVocab::sh_target_node().clone(), n.clone()),
+            Target::Class(c) => graph.add_triple(node, ShaclVocab::sh_target_class().clone(), c.clone()),
+            Target::SubjectsOf(s) => graph.add_triple(node, ShaclVocab::sh_target_subjects_of().clone(), s.clone()),
+            Target::ObjectsOf(o) => graph.add_triple(node, ShaclVocab::sh_target_objects_of().clone(), o.clone()),
+            // TODO - Review this code and in SHACL 1.2, add sh_shape_class ?
+            Target::ImplicitClass(_) => graph.add_triple(node, RdfVocab::rdf_type().clone(), RdfsVocab::rdfs_class().clone()),
+            Target::WrongNode(_) => todo!(),
+            Target::WrongClass(_) => todo!(),
+            Target::WrongSubjectsOf(_) => todo!(),
+            Target::WrongObjectsOf(_) => todo!(),
+            Target::WrongImplicitClass(_) => todo!(),
+        }
+    }
 }
 
 impl Display for Target {
