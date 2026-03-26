@@ -4,6 +4,7 @@
 
 mod shape_label_idx;
 mod error;
+mod shape;
 mod reifier_info;
 
 pub(crate) use reifier_info::ReifierInfo;
