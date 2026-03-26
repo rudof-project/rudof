@@ -1,5 +1,4 @@
 use iri_s::IriS;
-use prefixmap::IriRefError;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use std::fmt::{Display, Formatter};
 
@@ -26,16 +25,15 @@ impl From<&IriS> for Severity {
     }
 }
 
-impl TryFrom<Severity> for IriS {
-    type Error = IriRefError;
-    fn try_from(value: Severity) -> Result<Self, Self::Error> {
+impl From<Severity> for IriS {
+    fn from(value: Severity) -> Self {
         match value {
-            Severity::Trace => Ok(ShaclVocab::sh_trace().clone()),
-            Severity::Debug => Ok(ShaclVocab::sh_debug().clone()),
-            Severity::Info => Ok(ShaclVocab::sh_info().clone()),
-            Severity::Warning => Ok(ShaclVocab::sh_warning().clone()),
-            Severity::Violation => Ok(ShaclVocab::sh_violation().clone()),
-            Severity::Generic(iri) => Ok(iri),
+            Severity::Trace => ShaclVocab::sh_trace().clone(),
+            Severity::Debug => ShaclVocab::sh_debug().clone(),
+            Severity::Info => ShaclVocab::sh_info().clone(),
+            Severity::Warning => ShaclVocab::sh_warning().clone(),
+            Severity::Violation => ShaclVocab::sh_violation().clone(),
+            Severity::Generic(iri) => iri,
         }
     }
 }
