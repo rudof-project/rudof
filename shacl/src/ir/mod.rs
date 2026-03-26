@@ -7,6 +7,7 @@ mod error;
 mod shape;
 mod node_shape;
 mod property_shape;
+mod dependency_graph;
 mod reifier_info;
 
 pub(crate) use reifier_info::ReifierInfo;
