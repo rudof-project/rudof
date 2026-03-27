@@ -571,7 +571,10 @@ impl Engine {
         debug!("check_node_shape: node = {node}, shape = {idx} [No extends]");
         let (values, reminder) = self.neighs(node, shape.preds(), rdf)?;
         if shape.is_closed() && !reminder.is_empty() {
-            return fail(ValidatorError::ClosedShapeWithRemainderPreds { remainder: Preds::new(reminder), declared: Preds::new(shape.preds().into_iter().collect()) })
+            return fail(ValidatorError::ClosedShapeWithRemainderPreds {
+                remainder: Preds::new(reminder),
+                declared: Preds::new(shape.preds().into_iter().collect()),
+            });
         }
         check_expr_neigh(shape.triple_expr(), &values, node, shape, idx, typing)
     }
@@ -596,7 +599,10 @@ impl Engine {
         );
         let (values, reminder) = self.neighs(node, preds_extends, rdf)?;
         if shape.is_closed() && !reminder.is_empty() {
-            return fail(ValidatorError::ClosedShapeWithRemainderPreds { remainder: Preds::new(reminder), declared: Preds::new(shape.preds().into_iter().collect()) })
+            return fail(ValidatorError::ClosedShapeWithRemainderPreds {
+                remainder: Preds::new(reminder),
+                declared: Preds::new(shape.preds().into_iter().collect()),
+            });
         }
         trace!(
             "Neighs of {node} [{}]",
