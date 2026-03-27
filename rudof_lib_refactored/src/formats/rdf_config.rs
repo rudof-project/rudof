@@ -1,6 +1,7 @@
 use std::fmt::Display;
 use std::str::FromStr;
 use crate::errors::RdfConfigError;
+use rdf_config::RdfConfigFormat as RdfConfigFormatEnum;
 
 /// RDF-config file formats supported by Rudof.
 ///
@@ -74,6 +75,15 @@ impl Display for ResultRdfConfigFormat {
         match self {
             ResultRdfConfigFormat::Internal => write!(f, "internal"),
             ResultRdfConfigFormat::Yaml => write!(f, "yaml"),
+        }
+    }
+}
+
+impl From<ResultRdfConfigFormat> for RdfConfigFormatEnum {
+    fn from(format: ResultRdfConfigFormat) -> Self {
+        match format {
+            ResultRdfConfigFormat::Internal => RdfConfigFormatEnum::Internal,
+            ResultRdfConfigFormat::Yaml => RdfConfigFormatEnum::Yaml,
         }
     }
 }

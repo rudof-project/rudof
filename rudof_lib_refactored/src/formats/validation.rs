@@ -5,6 +5,7 @@ use std::{
 use shex_ast::shapemap::result_shape_map::SortMode;
 use shacl_validation::validation_report::report::SortModeReport;
 use rudof_rdf::rdf_core::RDFFormat;
+use shacl_validation::shacl_processor::ShaclValidationMode as ShaclValidationModeReport;
 use crate::{formats::ShapeMapFormat, errors::ValidationError};
 
 /// Validation modes supported by Rudof.
@@ -227,6 +228,15 @@ impl FromStr for ShaclValidationMode {
             other => Err(ValidationError::UnsupportedSHACLValidationMode {
                 mode: other.to_string(),
             }),
+        }
+    }
+}
+
+impl From<ShaclValidationMode> for ShaclValidationModeReport {
+    fn from(mode: ShaclValidationMode) -> Self {
+        match mode {
+            ShaclValidationMode::Native => ShaclValidationModeReport::Native,
+            ShaclValidationMode::Sparql => ShaclValidationModeReport::Sparql,
         }
     }
 }

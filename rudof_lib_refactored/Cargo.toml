@@ -31,6 +31,7 @@ serde.workspace = true
 serde_json.workspace = true
 shacl_ast.workspace = true
 shacl_ir.workspace = true
+shacl_rdf.workspace = true
 shacl_validation.workspace = true
 shapes_comparator.workspace = true
 shapes_converter.workspace = true

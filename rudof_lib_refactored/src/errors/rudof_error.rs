@@ -20,6 +20,10 @@ pub enum RudofError {
     #[error("ShEx error: {0}")]
     ShEx(#[from] ShExError),
 
+    /// SHACL schema errors.
+    #[error("SHACL error: {0}")]
+    SHACL(#[from] ShaclError),
+
     /// Property Graph schema errors.
     #[error("Property Graph schema error: {0}")]
     PgSchema(#[from] PgSchemaError),

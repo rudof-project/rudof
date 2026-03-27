@@ -1,4 +1,5 @@
 use iri_s::MimeType;
+use rudof_rdf::rdf_core::RDFFormat;
 use shacl_ast::ShaclFormat as ShaclAstShaclFormat;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
@@ -44,6 +45,23 @@ impl From<ShaclFormat> for ShaclAstShaclFormat {
 impl From<&ShaclFormat> for ShaclAstShaclFormat {
     fn from(format: &ShaclFormat) -> Self {
         (*format).into()
+    }
+}
+
+impl TryFrom<ShaclFormat> for RDFFormat {
+    type Error = ShaclError;
+
+    fn try_from(format: ShaclFormat) -> Result<Self, Self::Error> {
+        match format {
+            ShaclFormat::Turtle => Ok(RDFFormat::Turtle),
+            ShaclFormat::RdfXml => Ok(RDFFormat::Rdfxml),
+            ShaclFormat::NTriples => Ok(RDFFormat::NTriples),
+            ShaclFormat::TriG => Ok(RDFFormat::TriG),
+            ShaclFormat::N3 => Ok(RDFFormat::N3),
+            ShaclFormat::NQuads => Ok(RDFFormat::NQuads),
+            ShaclFormat::JsonLd => Ok(RDFFormat::JsonLd),
+            ShaclFormat::Internal => Err(ShaclError::InternalSHACLFormatNonReadable),
+        }
     }
 }
 
