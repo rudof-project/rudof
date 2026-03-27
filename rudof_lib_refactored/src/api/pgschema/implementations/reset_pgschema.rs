@@ -1,5 +1,5 @@
 use crate::Rudof;
 
 pub fn reset_pgschema(rudof: &mut Rudof) {
-	todo!()
+	rudof.pg_schema = None;
 }

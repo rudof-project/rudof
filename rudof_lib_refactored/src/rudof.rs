@@ -1,5 +1,5 @@
 use sparql_service::RdfData;
-use pgschema::{validation_result::ValidationResult, pgs::PropertyGraphSchema};
+use pgschema::{type_map::TypeMap, validation_result::ValidationResult, pgs::PropertyGraphSchema};
 use shacl_ast::ast::ShaclSchema;
 use shacl_ir::compiled::schema_ir::SchemaIR as ShaclSchemaIR;
 use shacl_validation::validation_report::report::ValidationReport;
@@ -46,6 +46,7 @@ use crate::{
         pgschema::builders::{
             LoadPgSchemaBuilder, SerializePgSchemaBuilder, ResetPgSchemaBuilder,
             PgSchemaValidationBuilder, SerializePgSchemaValidationResultsBuilder, ResetPgSchemaValidationBuilder,
+            LoadTypemapBuilder, ResetTypemapBuilder
         },
         generation::builders::GenerateDataBuilder,
     },
@@ -81,6 +82,9 @@ pub struct Rudof {
     /// ShEx Schema Internal Representation
     pub(crate) shex_schema_ir: Option<ShExSchemaIR>,
 
+    /// Current Shape Map
+    pub(crate) shapemap: Option<QueryShapeMap>,
+
     /// Current ShEx validator. It holds the compiled schema and the validator which can be reused several times if needed
     pub(crate) shex_validator: Option<ShExValidator>,
 
@@ -90,11 +94,11 @@ pub struct Rudof {
     /// Current PGSchema
     pub(crate) pg_schema: Option<PropertyGraphSchema>,
 
+    /// Current typemap
+    pub(crate) typemap: Option<TypeMap>,
+
     /// Current PGSchema validation results
     pub(crate) pg_schema_validation_results: Option<ValidationResult>,
-
-    /// Current Shape Map
-    pub(crate) shapemap: Option<QueryShapeMap>,
 
     /// Current SPARQL Query
     pub(crate) sparql_query: Option<SparqlQuery>,
@@ -418,6 +422,17 @@ impl Rudof {
 
     pub fn reset_pg_schema<'a>(&'a mut self) -> ResetPgSchemaBuilder<'a> {
         ResetPgSchemaBuilder::new(self)
+    }
+
+    pub fn load_typemap<'a>(
+        &'a mut self,
+        typemap: &'a InputSpec,
+    ) -> LoadTypemapBuilder<'a> {
+        LoadTypemapBuilder::new(self, typemap)
+    }
+
+    pub fn reset_typemap<'a>(&'a mut self) -> ResetTypemapBuilder<'a> {
+        ResetTypemapBuilder::new(self)
     }
 
     pub fn validate_pgschema<'a>(&'a mut self) -> PgSchemaValidationBuilder<'a> {

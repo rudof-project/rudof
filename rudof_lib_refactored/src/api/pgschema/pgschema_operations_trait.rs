@@ -2,8 +2,9 @@ use crate::{
     Result,
     formats::{InputSpec, ResultPgSchemaValidationFormat, PgSchemaFormat},
     api::pgschema::implementations::{
-        load_pgschema, serialize_pgschema, reset_pgschema, run_pgschema_validation,
+        load_pgschema, serialize_pgschema, reset_pgschema, validate_pgschema,
         serialize_pgschema_validation_results, reset_pgschema_validation,
+        load_typemap, reset_typemap,
     }
 };
 use std::io;
@@ -45,6 +46,18 @@ pub trait PgSchemaOperations {
     /// Resets the current Property Graph schema.
     fn reset_pgschema(&mut self);
 
+    /// Loads a typemap from an input specification.
+    /// 
+    /// # Arguments
+    /// * `typemap` - Input specification defining the typemap source
+    /// 
+    /// # Errors
+    /// Returns an error if the typemap cannot be parsed or loaded.
+    fn load_typemap(&mut self, typemap: &InputSpec) -> Result<()>;
+
+    /// Resets the current typemap.
+    fn reset_typemap(&mut self);
+
     /// Runs validation on the Property Graph schema using the loaded pgschema and shape map.
     ///
     /// # Errors
@@ -57,6 +70,7 @@ pub trait PgSchemaOperations {
     /// # Arguments
     ///
     /// * `result_pg_schema_validation_format` - Optional output format for the validation results (uses default if None)
+    /// * `show_colors` - Optional flag to indicate whether to include ANSI color codes in the output (defaults to true if None)
     /// * `writer` - The destination to write the serialized validation results to
     ///
     /// # Errors
@@ -65,6 +79,7 @@ pub trait PgSchemaOperations {
     fn serialize_pgschema_validation_results<W: io::Write>(
         &self,
         result_pg_schema_validation_format: Option<&ResultPgSchemaValidationFormat>,
+        show_colors: Option<bool>,
         writer: &mut W,
     ) -> Result<()>;
 
@@ -93,16 +108,25 @@ impl PgSchemaOperations for crate::Rudof {
         reset_pgschema(self)
     }
 
+    fn load_typemap(&mut self, typemap: &InputSpec) -> Result<()> {
+        load_typemap(self, typemap)
+    }
+
+    fn reset_typemap(&mut self) {
+        reset_typemap(self)
+    }
+
     fn validate_pgschema(&mut self) -> Result<()> {
-        run_pgschema_validation(self)
+        validate_pgschema(self)
     }
 
     fn serialize_pgschema_validation_results<W: io::Write>(
         &self,
         result_pg_schema_validation_format: Option<&ResultPgSchemaValidationFormat>,
+        show_colors: Option<bool>,
         writer: &mut W,
     ) -> Result<()> {
-        serialize_pgschema_validation_results(self, result_pg_schema_validation_format, writer)
+        serialize_pgschema_validation_results(self, result_pg_schema_validation_format, show_colors, writer)
     }
 
     fn reset_pgschema_validation(&mut self) {

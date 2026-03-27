@@ -1,4 +1,5 @@
 use iri_s::MimeType;
+use rudof_generate::config::OutputFormat;
 use rudof_rdf::{rdf_core::{RDFFormat, visualizer::uml_converter::ImageFormat}, rdf_impl::ReaderMode};
 use crate::errors::DataError;
 use std::{
@@ -118,6 +119,16 @@ impl From<RDFFormat> for DataFormat {
             RDFFormat::JsonLd => DataFormat::JsonLd,
         }
     }
+}
+
+impl From<DataFormat> for OutputFormat {
+    fn from(value: DataFormat) -> Self {
+        match value {
+            DataFormat::Turtle | DataFormat::TriG | DataFormat::N3 => OutputFormat::Turtle,
+            _ => OutputFormat::NTriples,
+        }
+    }
+
 }
 
 impl FromStr for DataFormat {

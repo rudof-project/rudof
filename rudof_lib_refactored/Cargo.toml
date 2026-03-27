@@ -26,6 +26,7 @@ prefixmap.workspace = true
 pgschema.workspace = true
 rdf_config.workspace = true
 reqwest.workspace = true
+rudof_generate.workspace = true
 rudof_rdf.workspace = true
 serde.workspace = true
 serde_json.workspace = true

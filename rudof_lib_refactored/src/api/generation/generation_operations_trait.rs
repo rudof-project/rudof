@@ -3,6 +3,7 @@ use crate::{
     formats::{InputSpec, GenerationSchemaFormat, DataFormat},
     api::generation::implementations::generate_data
 };
+use std::path::PathBuf;
 
 /// Operations for generating RDF data.
 pub trait GenerationOperations {
@@ -13,6 +14,8 @@ pub trait GenerationOperations {
     /// * `schema` - Input specification defining the schema source
     /// * `schema_format` - Format of the input schema (ShEx or SHACL)
     /// * `result_generation_format` - Optional output format for the generated RDF data (uses default if None)
+    /// * `output` - Optional file path to write the generated data (prints to console if None)
+    /// * `config_file` - Optional path to a configuration file for generation settings
     /// * `number_entities` - Number of entities to generate
     /// * `seed` - Optional random seed for reproducible generation (uses random seed if None)
     /// * `parallel` - Optional number of parallel threads (uses 2 by default)
@@ -20,11 +23,13 @@ pub trait GenerationOperations {
     /// # Errors
     ///
     /// Returns an error if the schema cannot be parsed, loaded, or if data generation fails.
-    fn generate_data(
+    async fn generate_data(
         &self,
         schema: &InputSpec,
         schema_format: &GenerationSchemaFormat,
         result_generation_format: Option<&DataFormat>,
+        output: Option<&PathBuf>,
+        config_file: Option<&PathBuf>,
         number_entities: usize,
         seed: Option<u64>,
         parallel: Option<usize>,
@@ -32,15 +37,17 @@ pub trait GenerationOperations {
 }
 
 impl GenerationOperations for Rudof {
-    fn generate_data(
+    async fn generate_data(
         &self,
         schema: &InputSpec,
         schema_format: &GenerationSchemaFormat,
         result_generation_format: Option<&DataFormat>,
+        output: Option<&PathBuf>,
+        config_file: Option<&PathBuf>,
         number_entities: usize,
         seed: Option<u64>,
         parallel: Option<usize>,
     ) -> Result<()> {
-        generate_data(self, schema, schema_format, result_generation_format, number_entities, seed, parallel)
+        generate_data(self, schema, schema_format, result_generation_format, output, config_file, number_entities, seed, parallel).await
     }
 }
