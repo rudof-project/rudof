@@ -21,7 +21,7 @@ use rudof_rdf::rdf_core::term::{
     Object,
     literal::{ConcreteLiteral, NumericLiteral},
 };
-use tracing::{debug, trace};
+use tracing::{debug, info, trace};
 
 #[derive(Debug, Default)]
 /// AST2IR compile a Schema in AST (JSON) to IR (Intermediate Representation).
@@ -261,7 +261,6 @@ impl AST2IR {
                     },
                 };
                 let preds = Self::get_preds_shape(shape);
-                // let references = self.get_references_shape(shape, compiled_schema);
                 let extends = shape
                     .extends()
                     .iter()
@@ -276,7 +275,6 @@ impl AST2IR {
                     Self::cnv_annotations(&shape.annotations),
                     preds,
                     extends,
-                    // references,
                 );
                 Ok(ShapeExpr::Shape(Box::new(shape)))
             },
@@ -294,7 +292,6 @@ impl AST2IR {
             },
             ast::ShapeExpr::External => Ok(ShapeExpr::External {}),
         }?;
-        //compiled_schema.replace_shape(idx, result.clone());
         trace!("Result of compilation: {result}");
         Ok(result)
     }
@@ -338,8 +335,8 @@ impl AST2IR {
     }
 
     fn cnv_sem_acts(sem_acts: &Option<Vec<ast::SemAct>>) -> Vec<SemAct> {
-        if let Some(_vs) = sem_acts {
-            // TODO
+        if let Some(actions) = sem_acts {
+            info!("Converting semantic actions: {actions:?}");
             Vec::new()
         } else {
             Vec::new()
@@ -368,7 +365,7 @@ impl AST2IR {
                 expressions,
                 min,
                 max,
-                sem_acts: _,
+                sem_acts,
                 annotations: _,
             } => {
                 let mut cs = Vec::new();
@@ -377,6 +374,7 @@ impl AST2IR {
                     cs.push(c)
                 }
                 let card = self.cnv_min_max(min, max)?;
+                info!("Semantic actions in EachOf: {sem_acts:?}");
                 Ok(Self::mk_card_group(Rbe::and(cs), card))
             },
             ast::TripleExpr::OneOf {
@@ -384,7 +382,7 @@ impl AST2IR {
                 expressions,
                 min,
                 max,
-                sem_acts: _,
+                sem_acts,
                 annotations: _,
             } => {
                 let mut cs = Vec::new();
@@ -393,6 +391,7 @@ impl AST2IR {
                     cs.push(c)
                 }
                 let card = self.cnv_min_max(min, max)?;
+                info!("Semantic actions in OneOf: {sem_acts:?}");
                 Ok(Self::mk_card_group(Rbe::or(cs), card))
             },
             ast::TripleExpr::TripleConstraint {
@@ -403,7 +402,7 @@ impl AST2IR {
                 value_expr,
                 min,
                 max,
-                sem_acts: _,
+                sem_acts,
                 annotations: _,
             } => {
                 let min = self.cnv_min(min)?;
@@ -411,7 +410,7 @@ impl AST2IR {
                 let iri = Self::cnv_predicate(predicate)?;
                 let (cond, _display) = self.value_expr2match_cond(value_expr, compiled_schema, source_iri)?;
                 let c = current_table.add_component(iri, &cond);
-                trace!("triple_expr2rbe: TripleConstraint: added component {c:?} to RBE table");
+                info!("Semantic actions in Triple constraint: {sem_acts:?}");
                 Ok(Rbe::symbol(c, min.value, max))
             },
             ast::TripleExpr::Ref(r) => Err(Box::new(SchemaIRError::Todo {
