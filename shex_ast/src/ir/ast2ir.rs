@@ -267,11 +267,13 @@ impl AST2IR {
                     .map(|s| self.ref2idx(s, compiled_schema))
                     .collect::<CResult<Vec<_>>>()?;
 
+                let sem_acts = self.cnv_sem_actions(&shape.sem_acts)?;
+
                 let shape = Shape::new(
                     Self::cnv_closed(&shape.closed),
                     new_extra,
                     rbe_table,
-                    Self::cnv_sem_acts(&shape.sem_acts),
+                    sem_acts,
                     Self::cnv_annotations(&shape.annotations),
                     preds,
                     extends,
@@ -334,14 +336,17 @@ impl AST2IR {
         }
     }
 
-    fn cnv_sem_acts(sem_acts: &Option<Vec<ast::SemAct>>) -> Vec<SemAct> {
+    /*fn cnv_sem_acts(sem_acts: &Option<Vec<ast::SemAct>>) -> Vec<SemAct> {
+        let mut actions = Vec::new();
         if let Some(actions) = sem_acts {
             info!("Converting semantic actions: {actions:?}");
-            Vec::new()
-        } else {
-            Vec::new()
+            for a in actions {
+                let action = cnv_sem_action(a);
+                actions.push(action);
+            }
         }
-    }
+        actions
+    }*/
 
     fn cnv_annotations(annotations: &Option<Vec<ast::Annotation>>) -> Vec<Annotation> {
         if let Some(_anns) = annotations {
