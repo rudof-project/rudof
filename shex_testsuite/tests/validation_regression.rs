@@ -1,8 +1,5 @@
 use shex_testsuite::{
-    config::Config,
-    manifest::Manifest,
-    manifest_mode::ManifestShExSyntaxMode,
-    manifest_run_mode::ManifestRunMode,
+    config::Config, manifest::Manifest, manifest_mode::ManifestShExSyntaxMode, manifest_run_mode::ManifestRunMode,
     manifest_validation::ManifestValidation,
 };
 use std::{collections::BTreeSet, fs, path::Path};
@@ -57,8 +54,11 @@ fn validation_regression() {
     }
 
     let baseline_content = fs::read_to_string(&baseline_path).expect("Failed to read baseline");
-    let baseline_failing: BTreeSet<String> =
-        baseline_content.lines().filter(|l| !l.trim().is_empty()).map(str::to_string).collect();
+    let baseline_failing: BTreeSet<String> = baseline_content
+        .lines()
+        .filter(|l| !l.trim().is_empty())
+        .map(str::to_string)
+        .collect();
 
     let regressions: Vec<&String> = current_failing.difference(&baseline_failing).collect();
     let improvements: Vec<&String> = baseline_failing.difference(&current_failing).collect();
@@ -80,7 +80,11 @@ fn validation_regression() {
 
     if !regressions.is_empty() {
         let names = regressions.iter().map(|s| s.as_str()).collect::<Vec<_>>().join("\n  ");
-        messages.push(format!("REGRESSION: {} new test(s) failing:\n  {}", regressions.len(), names));
+        messages.push(format!(
+            "REGRESSION: {} new test(s) failing:\n  {}",
+            regressions.len(),
+            names
+        ));
     }
 
     if !messages.is_empty() {
