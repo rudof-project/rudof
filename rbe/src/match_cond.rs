@@ -7,7 +7,7 @@ use std::fmt::{Display, Formatter};
 use std::hash::Hasher;
 
 /// A `MatchCond` represents a matching condition
-/// It can be a single condition or a combination of the logical operators `And`, `Or` and `Not`
+/// It can be a single condition or a combination of the logical operator `And`
 #[derive(PartialEq, Eq, Hash, Clone, Serialize, Debug, Deserialize)]
 pub enum MatchCond<K, V, R>
 where
@@ -18,8 +18,6 @@ where
     Single(SingleCond<K, V, R>),
     Ref(R),
     And(Vec<MatchCond<K, V, R>>),
-    // Or(Vec<MatchCond<K, V, R>>),
-    // Not(Box<MatchCond<K, V, R>>),
 }
 
 unsafe impl<K, V, R> Sync for MatchCond<K, V, R>

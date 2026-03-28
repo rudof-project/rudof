@@ -408,15 +408,30 @@ impl AST2IR {
                 let min = self.cnv_min(min)?;
                 let max = self.cnv_max(max)?;
                 let iri = Self::cnv_predicate(predicate)?;
-                let (cond, _display) = self.value_expr2match_cond(value_expr, compiled_schema, source_iri)?;
-                let c = current_table.add_component(iri, &cond);
                 info!("Semantic actions in Triple constraint: {sem_acts:?}");
+                let actions = self.cnv_sem_actions(sem_acts)?;
+                let (cond, _display) = self.value_expr2match_cond(value_expr, actions, compiled_schema, source_iri)?;
+                let c = current_table.add_component(iri, &cond);
                 Ok(Rbe::symbol(c, min.value, max))
             },
             ast::TripleExpr::Ref(r) => Err(Box::new(SchemaIRError::Todo {
                 msg: format!("TripleExprRef {r:?}"),
             })),
         }
+    }
+
+    fn cnv_sem_actions(&self, sem_acts: &Option<Vec<ast::SemAct>>) -> CResult<Vec<SemAct>> {
+        if let Some(actions) = sem_acts {
+            info!("Converting semantic actions: {actions:?}");
+            Ok(actions.iter().map(|a| self.cnv_sem_action(a)).collect())
+        } else {
+            Ok(Vec::new())
+        }
+    }
+
+    fn cnv_sem_action(&self, sem_act: &ast::SemAct) -> SemAct {
+        // TODO
+        todo!() // SemAct::new(iri!("http://example.com/semact/"), None)
     }
 
     fn cnv_predicate(predicate: &IriRef) -> CResult<Pred> {
@@ -465,11 +480,12 @@ impl AST2IR {
 
     fn value_expr2match_cond(
         &self,
-        ve: &Option<Box<ast::ShapeExpr>>,
+        value_expr: &Option<Box<ast::ShapeExpr>>,
+        actions: Vec<SemAct>,
         compiled_schema: &mut SchemaIR,
         source_iri: &IriS,
     ) -> CResult<(Cond, String)> {
-        if let Some(se) = ve.as_deref() {
+        if let Some(se) = value_expr.as_deref() {
             match se {
                 ast::ShapeExpr::NodeConstraint(nc) => self.cnv_node_constraint(
                     &nc.node_kind(),

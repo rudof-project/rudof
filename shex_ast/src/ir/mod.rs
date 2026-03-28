@@ -1,3 +1,4 @@
+pub mod actions;
 pub mod annotation;
 pub mod ast2ir;
 pub mod dependency_graph;
@@ -21,3 +22,5 @@ pub mod triple_expr_idx;
 pub mod value_set;
 pub mod value_set_value;
 pub mod xs_facet;
+
+pub use actions::*;
