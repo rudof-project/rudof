@@ -1,0 +1,6 @@
+prefix : <http://example.org/>
+prefix test: <http://shex.io/extensions/Test/>
+:S {
+   :p . %test: { print(s) %}
+        %test: { print(o) %}
+}

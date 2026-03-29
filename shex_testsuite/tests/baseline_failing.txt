@@ -1,6 +1,6 @@
 1dot-relative_pass-relative-shape
 1dot-relative_pass-short-shape
-1dotCode3fail_abort
+1dotNoCode3_pass
 1focusPattern-dot_pass-iri-match
 1inversedotAnnot3_pass
 1inversedotCode1_pass

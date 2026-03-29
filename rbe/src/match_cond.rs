@@ -7,7 +7,7 @@ use std::fmt::{Display, Formatter};
 use std::hash::Hasher;
 
 /// A `MatchCond` represents a matching condition
-/// It can be a single condition or a combination of the logical operators `And`, `Or` and `Not`
+/// It can be a single condition or a combination of the logical operator `And`
 #[derive(PartialEq, Eq, Hash, Clone, Serialize, Debug, Deserialize)]
 pub enum MatchCond<K, V, R>
 where
@@ -18,8 +18,6 @@ where
     Single(SingleCond<K, V, R>),
     Ref(R),
     And(Vec<MatchCond<K, V, R>>),
-    // Or(Vec<MatchCond<K, V, R>>),
-    // Not(Box<MatchCond<K, V, R>>),
 }
 
 unsafe impl<K, V, R> Sync for MatchCond<K, V, R>
@@ -40,6 +38,10 @@ where
         MatchCond::Single(SingleCond::new())
     }
 
+    pub fn and(conds: Vec<MatchCond<K, V, R>>) -> MatchCond<K, V, R> {
+        MatchCond::And(conds)
+    }
+
     pub fn empty() -> MatchCond<K, V, R> {
         MatchCond::Single(SingleCond::new().with_name("empty"))
     }
@@ -52,8 +54,8 @@ where
         match self {
             MatchCond::Single(single) => single.matches(value),
             MatchCond::Ref(r) => Ok(Pending::from_pair(value.clone(), r.clone())),
-            MatchCond::And(vs) => vs.iter().try_fold(Pending::new(), |mut current, c| {
-                let new_pending = c.matches(value)?;
+            MatchCond::And(vs) => vs.iter().try_fold(Pending::new(), |mut current, cond| {
+                let new_pending = cond.matches(value)?;
                 current.merge(new_pending);
                 Ok(current)
             }),

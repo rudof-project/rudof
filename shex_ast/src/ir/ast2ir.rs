@@ -1,11 +1,16 @@
+use std::sync::Arc;
+
 use super::node_constraint::NodeConstraint;
 use crate::ir::annotation::Annotation;
 use crate::ir::object_value::ObjectValue;
 use crate::ir::schema_ir::SchemaIR;
 use crate::ir::sem_act::SemAct;
+use crate::ir::semantic_action_extension::SemanticActionExtension;
+use crate::ir::semantic_actions_registry::SemanticActionsRegistry;
 use crate::ir::shape::Shape;
 use crate::ir::shape_expr::ShapeExpr;
 use crate::ir::shape_label::ShapeLabel;
+use crate::ir::test_action_extension::TestActionExtension;
 use crate::ir::value_set::ValueSet;
 use crate::ir::value_set_value::ValueSetValue;
 use crate::{CResult, Cond, Node, Pred, ResolveMethod, ShExFormat, ShExParser, ir};
@@ -21,20 +26,24 @@ use rudof_rdf::rdf_core::term::{
     Object,
     literal::{ConcreteLiteral, NumericLiteral},
 };
-use tracing::{debug, trace};
+use tracing::{debug, info, trace};
 
 #[derive(Debug, Default)]
 /// AST2IR compile a Schema in AST (JSON) to IR (Intermediate Representation).
 pub struct AST2IR {
     shape_decls_counter: usize,
     resolve_method: ResolveMethod,
+    semantic_actions_registry: SemanticActionsRegistry,
 }
 
 impl AST2IR {
     pub fn new(resolve_method: &ResolveMethod) -> Self {
+        let mut semantic_actions_registry = SemanticActionsRegistry::new();
+        semantic_actions_registry.register(Box::new(TestActionExtension::new()));
         Self {
             resolve_method: resolve_method.clone(),
             shape_decls_counter: 0,
+            semantic_actions_registry,
         }
     }
 
@@ -261,22 +270,22 @@ impl AST2IR {
                     },
                 };
                 let preds = Self::get_preds_shape(shape);
-                // let references = self.get_references_shape(shape, compiled_schema);
                 let extends = shape
                     .extends()
                     .iter()
                     .map(|s| self.ref2idx(s, compiled_schema))
                     .collect::<CResult<Vec<_>>>()?;
 
+                let sem_acts = self.cnv_sem_actions(&shape.sem_acts, &compiled_schema.prefixmap())?;
+
                 let shape = Shape::new(
                     Self::cnv_closed(&shape.closed),
                     new_extra,
                     rbe_table,
-                    Self::cnv_sem_acts(&shape.sem_acts),
+                    sem_acts,
                     Self::cnv_annotations(&shape.annotations),
                     preds,
                     extends,
-                    // references,
                 );
                 Ok(ShapeExpr::Shape(Box::new(shape)))
             },
@@ -294,7 +303,6 @@ impl AST2IR {
             },
             ast::ShapeExpr::External => Ok(ShapeExpr::External {}),
         }?;
-        //compiled_schema.replace_shape(idx, result.clone());
         trace!("Result of compilation: {result}");
         Ok(result)
     }
@@ -337,14 +345,17 @@ impl AST2IR {
         }
     }
 
-    fn cnv_sem_acts(sem_acts: &Option<Vec<ast::SemAct>>) -> Vec<SemAct> {
-        if let Some(_vs) = sem_acts {
-            // TODO
-            Vec::new()
-        } else {
-            Vec::new()
+    /*fn cnv_sem_acts(sem_acts: &Option<Vec<ast::SemAct>>) -> Vec<SemAct> {
+        let mut actions = Vec::new();
+        if let Some(actions) = sem_acts {
+            info!("Converting semantic actions: {actions:?}");
+            for a in actions {
+                let action = cnv_sem_action(a);
+                actions.push(action);
+            }
         }
-    }
+        actions
+    }*/
 
     fn cnv_annotations(annotations: &Option<Vec<ast::Annotation>>) -> Vec<Annotation> {
         if let Some(_anns) = annotations {
@@ -368,7 +379,7 @@ impl AST2IR {
                 expressions,
                 min,
                 max,
-                sem_acts: _,
+                sem_acts,
                 annotations: _,
             } => {
                 let mut cs = Vec::new();
@@ -377,6 +388,7 @@ impl AST2IR {
                     cs.push(c)
                 }
                 let card = self.cnv_min_max(min, max)?;
+                info!("Semantic actions in EachOf: {sem_acts:?}");
                 Ok(Self::mk_card_group(Rbe::and(cs), card))
             },
             ast::TripleExpr::OneOf {
@@ -384,7 +396,7 @@ impl AST2IR {
                 expressions,
                 min,
                 max,
-                sem_acts: _,
+                sem_acts,
                 annotations: _,
             } => {
                 let mut cs = Vec::new();
@@ -393,6 +405,7 @@ impl AST2IR {
                     cs.push(c)
                 }
                 let card = self.cnv_min_max(min, max)?;
+                info!("Semantic actions in OneOf: {sem_acts:?}");
                 Ok(Self::mk_card_group(Rbe::or(cs), card))
             },
             ast::TripleExpr::TripleConstraint {
@@ -403,21 +416,35 @@ impl AST2IR {
                 value_expr,
                 min,
                 max,
-                sem_acts: _,
+                sem_acts,
                 annotations: _,
             } => {
                 let min = self.cnv_min(min)?;
                 let max = self.cnv_max(max)?;
                 let iri = Self::cnv_predicate(predicate)?;
-                let (cond, _display) = self.value_expr2match_cond(value_expr, compiled_schema, source_iri)?;
+                let actions = self.cnv_sem_actions(sem_acts, &compiled_schema.prefixmap())?;
+                let (cond, _display) = self.value_expr2match_cond(value_expr, actions, compiled_schema, source_iri)?;
                 let c = current_table.add_component(iri, &cond);
-                trace!("triple_expr2rbe: TripleConstraint: added component {c:?} to RBE table");
                 Ok(Rbe::symbol(c, min.value, max))
             },
             ast::TripleExpr::Ref(r) => Err(Box::new(SchemaIRError::Todo {
                 msg: format!("TripleExprRef {r:?}"),
             })),
         }
+    }
+
+    fn cnv_sem_actions(&self, sem_acts: &Option<Vec<ast::SemAct>>, prefixmap: &PrefixMap) -> CResult<Vec<SemAct>> {
+        if let Some(actions) = sem_acts {
+            info!("Converting semantic actions: {actions:?}");
+            actions.iter().map(|a| self.cnv_sem_action(a, prefixmap)).collect()
+        } else {
+            Ok(Vec::new())
+        }
+    }
+
+    fn cnv_sem_action(&self, sem_act: &ast::SemAct, prefixmap: &PrefixMap) -> CResult<SemAct> {
+        let iri_s = cnv_iri_ref(&sem_act.name(), prefixmap)?;
+        Ok(SemAct::new(iri_s, sem_act.code()))
     }
 
     fn cnv_predicate(predicate: &IriRef) -> CResult<Pred> {
@@ -466,11 +493,26 @@ impl AST2IR {
 
     fn value_expr2match_cond(
         &self,
-        ve: &Option<Box<ast::ShapeExpr>>,
+        value_expr: &Option<Box<ast::ShapeExpr>>,
+        actions: Vec<SemAct>,
         compiled_schema: &mut SchemaIR,
         source_iri: &IriS,
     ) -> CResult<(Cond, String)> {
-        if let Some(se) = ve.as_deref() {
+        let mut sem_actions_conds = actions
+            .iter()
+            .map(|a| {
+                let semantic_action_code = self
+                    .semantic_actions_registry
+                    .find_code(a.name())
+                    .map_err(|e| Box::new(SchemaIRError::SemanticActionError { error: e.to_string() }))?;
+                Ok(mk_cond_sem_act(
+                    a.name().clone(),
+                    semantic_action_code,
+                    a.code().cloned(),
+                ))
+            })
+            .collect::<Result<Vec<_>, Box<SchemaIRError>>>()?;
+        let (cond, display) = if let Some(se) = value_expr.as_deref() {
             match se {
                 ast::ShapeExpr::NodeConstraint(nc) => self.cnv_node_constraint(
                     &nc.node_kind(),
@@ -546,6 +588,15 @@ impl AST2IR {
             }
         } else {
             Ok((MatchCond::single(SingleCond::new().with_name(".")), ".".to_string()))
+        }?;
+        if !sem_actions_conds.is_empty() {
+            sem_actions_conds.push(cond);
+            Ok((
+                MatchCond::and(sem_actions_conds),
+                format!("value expression {} + semantic actions", display),
+            ))
+        } else {
+            Ok((cond, display))
         }
     }
 
@@ -676,6 +727,26 @@ fn options2match_cond<T: IntoIterator<Item = Option<(Cond, String)>>>(os: T) -> 
 
 fn mk_cond_ref(idx: ShapeLabelIdx) -> Cond {
     MatchCond::ref_(idx)
+}
+
+fn mk_cond_sem_act(
+    name: IriS,
+    semantic_action_code: Arc<dyn SemanticActionExtension + Send + Sync>,
+    code: Option<String>,
+) -> Cond {
+    MatchCond::single(
+        SingleCond::new()
+            .with_name(name.as_str())
+            .with_cond(move |value: &Node| {
+                let s = value.to_string();
+                semantic_action_code
+                    .run_action(code.as_deref(), Some(s.as_str()), None, None)
+                    .map(|()| Pending::new())
+                    .map_err(|e| RbeError::MsgError {
+                        msg: format!("Semantic action error for {name}: {e}"),
+                    })
+            }),
+    )
 }
 
 fn mk_cond_datatype(datatype: &IriS, prefixmap: &PrefixMap) -> Cond {

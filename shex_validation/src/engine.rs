@@ -568,7 +568,7 @@ impl Engine {
     where
         R: QueryRDF + NeighsRDF,
     {
-        debug!("check_node_shape: node = {node}, shape = {idx} [No extends]");
+        trace!("check_node_shape: node = {node}, shape = {idx} [No extends]");
         let (values, reminder) = self.neighs(node, shape.preds(), rdf)?;
         if shape.is_closed() && !reminder.is_empty() {
             return fail(ValidatorError::ClosedShapeWithRemainderPreds {
@@ -591,7 +591,7 @@ impl Engine {
     where
         R: NeighsRDF + QueryRDF,
     {
-        debug!("check_node_shape_extends: node={node}, shape={idx}");
+        trace!("check_node_shape_extends: node={node}, shape={idx}");
         let preds_extends = Vec::from_iter(schema.get_preds_extends(idx));
         trace!(
             "Predicates in this shape with extends: [{}]",
@@ -765,38 +765,6 @@ fn fail(err: ValidatorError) -> Result<ValidationResult> {
     Ok(Either::Left(vec![err]))
 }
 
-fn show_result(
-    result: &Either<Vec<ValidatorError>, Vec<Reason>>,
-    nodes_prefixmap: &PrefixMap,
-    schema: &SchemaIR,
-    width: usize,
-) -> Result<String> {
-    match result {
-        Either::Left(errors) => {
-            let es: Vec<Result<String>> = errors
-                .iter()
-                .map(|e| {
-                    e.show_qualified(nodes_prefixmap, schema)
-                        .map_err(ValidatorError::PrefixMapError)
-                })
-                .collect();
-            let vs: Vec<String> = es.into_iter().collect::<Result<Vec<_>>>()?;
-            Ok(vs.join(", "))
-        },
-        Either::Right(reasons) => {
-            let rs: Vec<Result<String>> = reasons
-                .iter()
-                .map(|r| {
-                    r.show_qualified(nodes_prefixmap, schema, width)
-                        .map_err(ValidatorError::PrefixMapError)
-                })
-                .collect();
-            let vs: Vec<String> = rs.into_iter().collect::<Result<Vec<_>>>()?;
-            Ok(vs.join(", "))
-        },
-    }
-}
-
 fn check_exprs_neigh(
     exprs: &[Expr],
     neighs: &[(Pred, Node)],
@@ -831,7 +799,7 @@ fn check_expr_neigh(
     idx: &ShapeLabelIdx,
     typing: &Typing,
 ) -> Result<ValidationResult> {
-    debug!(
+    trace!(
         "Checking expr {} with neighs: [{}]",
         expr,
         neighs.iter().map(|(p, o)| format!("{p} {o}")).join(", ")
@@ -839,7 +807,7 @@ fn check_expr_neigh(
     let result_iter = expr.matches(neighs.to_vec())?;
     let mut errors = Vec::new();
     for result in result_iter {
-        debug!(
+        trace!(
             "Result of {expr} with neighs: {}: {:?}",
             neighs.iter().map(|(p, o)| format!("{p} {o}")).join(", "),
             result
@@ -908,4 +876,36 @@ fn show_partition(partition: &[PartitionInfo]) -> String {
             format!("{} -> [{}]", label_str, neighs_str)
         })
         .join(" | ")
+}
+
+fn show_result(
+    result: &Either<Vec<ValidatorError>, Vec<Reason>>,
+    nodes_prefixmap: &PrefixMap,
+    schema: &SchemaIR,
+    width: usize,
+) -> Result<String> {
+    match result {
+        Either::Left(errors) => {
+            let es: Vec<Result<String>> = errors
+                .iter()
+                .map(|e| {
+                    e.show_qualified(nodes_prefixmap, schema)
+                        .map_err(ValidatorError::PrefixMapError)
+                })
+                .collect();
+            let vs: Vec<String> = es.into_iter().collect::<Result<Vec<_>>>()?;
+            Ok(vs.join(", "))
+        },
+        Either::Right(reasons) => {
+            let rs: Vec<Result<String>> = reasons
+                .iter()
+                .map(|r| {
+                    r.show_qualified(nodes_prefixmap, schema, width)
+                        .map_err(ValidatorError::PrefixMapError)
+                })
+                .collect();
+            let vs: Vec<String> = rs.into_iter().collect::<Result<Vec<_>>>()?;
+            Ok(vs.join(", "))
+        },
+    }
 }
