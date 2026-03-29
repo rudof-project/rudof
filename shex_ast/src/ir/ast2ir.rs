@@ -267,7 +267,7 @@ impl AST2IR {
                     .map(|s| self.ref2idx(s, compiled_schema))
                     .collect::<CResult<Vec<_>>>()?;
 
-                let sem_acts = self.cnv_sem_actions(&shape.sem_acts)?;
+                let sem_acts = self.cnv_sem_actions(&shape.sem_acts, &compiled_schema.prefixmap())?;
 
                 let shape = Shape::new(
                     Self::cnv_closed(&shape.closed),
@@ -414,7 +414,8 @@ impl AST2IR {
                 let max = self.cnv_max(max)?;
                 let iri = Self::cnv_predicate(predicate)?;
                 info!("Semantic actions in Triple constraint: {sem_acts:?}");
-                let actions = self.cnv_sem_actions(sem_acts)?;
+                let actions = self.cnv_sem_actions(sem_acts, &compiled_schema.prefixmap())?;
+                info!("Actions converted...before value_expr2match_cond");
                 let (cond, _display) = self.value_expr2match_cond(value_expr, actions, compiled_schema, source_iri)?;
                 let c = current_table.add_component(iri, &cond);
                 Ok(Rbe::symbol(c, min.value, max))
@@ -425,18 +426,18 @@ impl AST2IR {
         }
     }
 
-    fn cnv_sem_actions(&self, sem_acts: &Option<Vec<ast::SemAct>>) -> CResult<Vec<SemAct>> {
+    fn cnv_sem_actions(&self, sem_acts: &Option<Vec<ast::SemAct>>, prefixmap: &PrefixMap) -> CResult<Vec<SemAct>> {
         if let Some(actions) = sem_acts {
             info!("Converting semantic actions: {actions:?}");
-            Ok(actions.iter().map(|a| self.cnv_sem_action(a)).collect())
+            actions.iter().map(|a| self.cnv_sem_action(a, prefixmap)).collect()
         } else {
             Ok(Vec::new())
         }
     }
 
-    fn cnv_sem_action(&self, sem_act: &ast::SemAct) -> SemAct {
-        // TODO
-        todo!() // SemAct::new(iri!("http://example.com/semact/"), None)
+    fn cnv_sem_action(&self, sem_act: &ast::SemAct, prefixmap: &PrefixMap) -> CResult<SemAct> {
+        let iri_s = cnv_iri_ref(&sem_act.name(), prefixmap)?;
+        Ok(SemAct::new(iri_s, sem_act.code()))
     }
 
     fn cnv_predicate(predicate: &IriRef) -> CResult<Pred> {
@@ -491,6 +492,10 @@ impl AST2IR {
         source_iri: &IriS,
     ) -> CResult<(Cond, String)> {
         if let Some(se) = value_expr.as_deref() {
+            info!(
+                "value_expr2match_cond, se: {se:?}, actions: {}",
+                actions.iter().map(|a| a.name().as_str()).collect::<Vec<_>>().join(", ")
+            );
             match se {
                 ast::ShapeExpr::NodeConstraint(nc) => self.cnv_node_constraint(
                     &nc.node_kind(),
@@ -565,7 +570,16 @@ impl AST2IR {
                 ast::ShapeExpr::External => todo("value_expr2match_cond: ShapeExternal"),
             }
         } else {
-            Ok((MatchCond::single(SingleCond::new().with_name(".")), ".".to_string()))
+            info!(
+                "No value_expr...semantic actions: {}",
+                actions.iter().map(|a| a.name().as_str()).collect::<Vec<_>>().join(", ")
+            );
+            let conds = actions
+                .iter()
+                .map(|a| mk_cond_sem_act(a.name().clone()))
+                .collect::<Vec<_>>();
+            Ok((MatchCond::and(conds), "semantic actions".to_string()))
+            // Ok((MatchCond::single(SingleCond::new().with_name(".")), ".".to_string()))
         }
     }
 
@@ -696,6 +710,19 @@ fn options2match_cond<T: IntoIterator<Item = Option<(Cond, String)>>>(os: T) -> 
 
 fn mk_cond_ref(idx: ShapeLabelIdx) -> Cond {
     MatchCond::ref_(idx)
+}
+
+fn mk_cond_sem_act(name: IriS, // add parameter...
+) -> Cond {
+    MatchCond::single(
+        SingleCond::new()
+            .with_name(name.as_str())
+            .with_cond(move |value: &Node| {
+                // Implement the condition logic here
+                println!("Executing semantic action: {} with node: {value}", name);
+                Ok(Pending::new())
+            }),
+    )
 }
 
 fn mk_cond_datatype(datatype: &IriS, prefixmap: &PrefixMap) -> Cond {

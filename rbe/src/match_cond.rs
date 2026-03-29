@@ -38,6 +38,10 @@ where
         MatchCond::Single(SingleCond::new())
     }
 
+    pub fn and(conds: Vec<MatchCond<K, V, R>>) -> MatchCond<K, V, R> {
+        MatchCond::And(conds)
+    }
+
     pub fn empty() -> MatchCond<K, V, R> {
         MatchCond::Single(SingleCond::new().with_name("empty"))
     }
