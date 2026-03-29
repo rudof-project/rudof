@@ -1,11 +1,16 @@
+use std::sync::Arc;
+
 use super::node_constraint::NodeConstraint;
 use crate::ir::annotation::Annotation;
 use crate::ir::object_value::ObjectValue;
 use crate::ir::schema_ir::SchemaIR;
 use crate::ir::sem_act::SemAct;
+use crate::ir::semantic_action_extension::SemanticActionExtension;
+use crate::ir::semantic_actions_registry::SemanticActionsRegistry;
 use crate::ir::shape::Shape;
 use crate::ir::shape_expr::ShapeExpr;
 use crate::ir::shape_label::ShapeLabel;
+use crate::ir::test_action_extension::TestActionExtension;
 use crate::ir::value_set::ValueSet;
 use crate::ir::value_set_value::ValueSetValue;
 use crate::{CResult, Cond, Node, Pred, ResolveMethod, ShExFormat, ShExParser, ir};
@@ -28,13 +33,17 @@ use tracing::{debug, info, trace};
 pub struct AST2IR {
     shape_decls_counter: usize,
     resolve_method: ResolveMethod,
+    semantic_actions_registry: SemanticActionsRegistry,
 }
 
 impl AST2IR {
     pub fn new(resolve_method: &ResolveMethod) -> Self {
+        let mut semantic_actions_registry = SemanticActionsRegistry::new();
+        semantic_actions_registry.register(Box::new(TestActionExtension::new()));
         Self {
             resolve_method: resolve_method.clone(),
             shape_decls_counter: 0,
+            semantic_actions_registry,
         }
     }
 
@@ -413,9 +422,7 @@ impl AST2IR {
                 let min = self.cnv_min(min)?;
                 let max = self.cnv_max(max)?;
                 let iri = Self::cnv_predicate(predicate)?;
-                info!("Semantic actions in Triple constraint: {sem_acts:?}");
                 let actions = self.cnv_sem_actions(sem_acts, &compiled_schema.prefixmap())?;
-                info!("Actions converted...before value_expr2match_cond");
                 let (cond, _display) = self.value_expr2match_cond(value_expr, actions, compiled_schema, source_iri)?;
                 let c = current_table.add_component(iri, &cond);
                 Ok(Rbe::symbol(c, min.value, max))
@@ -491,11 +498,21 @@ impl AST2IR {
         compiled_schema: &mut SchemaIR,
         source_iri: &IriS,
     ) -> CResult<(Cond, String)> {
-        if let Some(se) = value_expr.as_deref() {
-            info!(
-                "value_expr2match_cond, se: {se:?}, actions: {}",
-                actions.iter().map(|a| a.name().as_str()).collect::<Vec<_>>().join(", ")
-            );
+        let mut sem_actions_conds = actions
+            .iter()
+            .map(|a| {
+                let semantic_action_code = self
+                    .semantic_actions_registry
+                    .find_code(a.name())
+                    .map_err(|e| Box::new(SchemaIRError::SemanticActionError { error: e.to_string() }))?;
+                Ok(mk_cond_sem_act(
+                    a.name().clone(),
+                    semantic_action_code,
+                    a.code().cloned(),
+                ))
+            })
+            .collect::<Result<Vec<_>, Box<SchemaIRError>>>()?;
+        let (cond, display) = if let Some(se) = value_expr.as_deref() {
             match se {
                 ast::ShapeExpr::NodeConstraint(nc) => self.cnv_node_constraint(
                     &nc.node_kind(),
@@ -570,16 +587,16 @@ impl AST2IR {
                 ast::ShapeExpr::External => todo("value_expr2match_cond: ShapeExternal"),
             }
         } else {
-            info!(
-                "No value_expr...semantic actions: {}",
-                actions.iter().map(|a| a.name().as_str()).collect::<Vec<_>>().join(", ")
-            );
-            let conds = actions
-                .iter()
-                .map(|a| mk_cond_sem_act(a.name().clone()))
-                .collect::<Vec<_>>();
-            Ok((MatchCond::and(conds), "semantic actions".to_string()))
-            // Ok((MatchCond::single(SingleCond::new().with_name(".")), ".".to_string()))
+            Ok((MatchCond::single(SingleCond::new().with_name(".")), ".".to_string()))
+        }?;
+        if !sem_actions_conds.is_empty() {
+            sem_actions_conds.push(cond);
+            Ok((
+                MatchCond::and(sem_actions_conds),
+                format!("value expression {} + semantic actions", display),
+            ))
+        } else {
+            Ok((cond, display))
         }
     }
 
@@ -712,15 +729,22 @@ fn mk_cond_ref(idx: ShapeLabelIdx) -> Cond {
     MatchCond::ref_(idx)
 }
 
-fn mk_cond_sem_act(name: IriS, // add parameter...
+fn mk_cond_sem_act(
+    name: IriS,
+    semantic_action_code: Arc<dyn SemanticActionExtension + Send + Sync>,
+    code: Option<String>,
 ) -> Cond {
     MatchCond::single(
         SingleCond::new()
             .with_name(name.as_str())
             .with_cond(move |value: &Node| {
-                // Implement the condition logic here
-                println!("Executing semantic action: {} with node: {value}", name);
-                Ok(Pending::new())
+                let s = value.to_string();
+                semantic_action_code
+                    .run_action(code.as_deref(), Some(s.as_str()), None, None)
+                    .map(|()| Pending::new())
+                    .map_err(|e| RbeError::MsgError {
+                        msg: format!("Semantic action error for {name}: {e}"),
+                    })
             }),
     )
 }

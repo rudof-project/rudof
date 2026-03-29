@@ -22,6 +22,12 @@ impl TestActionExtension {
     }
 }
 
+impl Default for TestActionExtension {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SemanticActionExtension for TestActionExtension {
     fn action_iri(&self) -> iri_s::IriS {
         iri!("http://shex.io/extensions/Test/")
@@ -34,7 +40,11 @@ impl SemanticActionExtension for TestActionExtension {
         p: Option<&str>,
         o: Option<&str>,
     ) -> Result<(), SemanticActionError> {
-        let code = parameter.ok_or(SemanticActionError::ExpectedParameterButEmpty)?;
+        let code = if let Some(parameter) = parameter {
+            parameter
+        } else {
+            return Ok(()); // No parameter means no action, so we succeed silently.
+        };
 
         // Pattern from the Test extension spec:
         //   ^ *(fail|print) *\( *(?:("(?:[^\\"]|\\\\|\\")*")|([spo])) *\) *$
@@ -62,11 +72,21 @@ impl SemanticActionExtension for TestActionExtension {
                 "o" => o,
                 _ => unreachable!("regex only matches s, p, or o"),
             };
+            /* TODO:
+               The following code raises an error if the variable is not in the binding
+               By now, we return an empty string and raise a warning
             binding
                 .ok_or_else(|| SemanticActionError::UnresolvedVariable {
                     variable: particle.to_string(),
                 })?
-                .to_string()
+                .to_string()*/
+            match binding {
+                Some(str) => str.to_string(),
+                None => {
+                    eprintln!("Warning: Unresolved variable {particle} in Test semact: no binding provided");
+                    String::new()
+                },
+            }
         };
 
         match directive {

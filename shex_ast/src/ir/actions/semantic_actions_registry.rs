@@ -1,3 +1,5 @@
+use std::{fmt, sync::Arc};
+
 use iri_s::IriS;
 
 use crate::ir::actions::{
@@ -5,7 +7,7 @@ use crate::ir::actions::{
 };
 
 pub struct SemanticActionsRegistry {
-    extensions: Vec<Box<dyn SemanticActionExtension>>,
+    extensions: Vec<Arc<dyn SemanticActionExtension + Send + Sync>>,
 }
 
 impl SemanticActionsRegistry {
@@ -13,10 +15,28 @@ impl SemanticActionsRegistry {
         Self { extensions: Vec::new() }
     }
 
-    pub fn register(&mut self, extension: Box<dyn SemanticActionExtension>) {
-        self.extensions.push(extension);
+    pub fn register(&mut self, extension: Box<dyn SemanticActionExtension + Send + Sync>) {
+        self.extensions.push(Arc::from(extension));
     }
 
+    /// Find the extension registered for `action_iri`.
+    ///
+    /// Returns a cloned `Arc` to the extension so the caller can embed it in a
+    /// long-lived closure (e.g. a `MatchCond`).
+    pub fn find_code(
+        &self,
+        action_iri: &IriS,
+    ) -> Result<Arc<dyn SemanticActionExtension + Send + Sync>, SemanticActionError> {
+        self.extensions
+            .iter()
+            .find(|e| &e.action_iri() == action_iri)
+            .cloned()
+            .ok_or_else(|| SemanticActionError::UnknownExtension {
+                iri: action_iri.to_string(),
+            })
+    }
+
+    /// Run the action identified by `action_iri` with the given parameters.
     pub fn run_action(
         &self,
         action_iri: &IriS,
@@ -33,6 +53,20 @@ impl SemanticActionsRegistry {
                 iri: action_iri.to_string(),
             })?;
         ext.run_action(parameter, s, p, o)
+    }
+}
+
+impl fmt::Debug for SemanticActionsRegistry {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("SemanticActionsRegistry")
+            .field("extensions_count", &self.extensions.len())
+            .finish()
+    }
+}
+
+impl Default for SemanticActionsRegistry {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -85,5 +119,18 @@ mod tests {
             .run_action(&test_iri(), Some(r#"print("x")"#), None, None, None)
             .unwrap_err();
         assert!(matches!(err, SemanticActionError::UnknownExtension { .. }));
+    }
+
+    #[test]
+    fn find_code_returns_extension() {
+        let ext = registry_with_test().find_code(&test_iri()).unwrap();
+        assert_eq!(ext.action_iri(), test_iri());
+    }
+
+    #[test]
+    fn find_code_unknown_returns_error() {
+        let unknown = iri!("http://example.org/unknown/");
+        let result = registry_with_test().find_code(&unknown);
+        assert!(matches!(result, Err(SemanticActionError::UnknownExtension { .. })));
     }
 }
