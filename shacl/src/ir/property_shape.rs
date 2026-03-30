@@ -1,5 +1,6 @@
 use crate::ast::{ASTPropertyShape, ASTSchema};
 use crate::ir::component::IRComponent;
+use crate::ir::dependency_graph::{DependencyGraph, PosNeg};
 use crate::ir::error::IRError;
 use crate::ir::schema::IRSchema;
 use crate::ir::shape::IRShape;
@@ -256,5 +257,23 @@ impl IRPropertyShape {
         }
 
         Ok(())
+    }
+}
+
+impl IRPropertyShape {
+    pub fn add_edges(&self, idx: ShapeLabelIdx, dg: &mut DependencyGraph, posneg: PosNeg, ir: &IRSchema, cache: &mut HashSet<ShapeLabelIdx>) {
+        for component in &self.components {
+            component.add_edges(idx, dg, posneg, ir, cache);
+        }
+
+        for prop_shape_idx in &self.property_shapes {
+            if let Some(shape) = ir.get_shape_from_idx(prop_shape_idx) {
+                dg.add_edge(idx, *prop_shape_idx, posneg);
+                if !cache.contains(prop_shape_idx) {
+                    cache.insert(*prop_shape_idx);
+                    shape.add_edges(*prop_shape_idx, dg, posneg, ir, cache);
+                }
+            }
+        }
     }
 }
