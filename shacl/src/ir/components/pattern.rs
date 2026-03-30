@@ -15,7 +15,7 @@ pub(crate) struct Pattern {
 }
 
 impl Pattern {
-    pub fn new(pattern: String, flags: Option<String>) -> Result<Self, Box<IRError>> {
+    pub fn new(pattern: String, flags: Option<String>) -> Result<Self, IRError> {
         let regex = RDFRegex::new(&pattern, flags.as_deref()).map_err(|e| IRError::InvalidRegex {
             pattern: pattern.clone(),
             flags: flags.clone(),
