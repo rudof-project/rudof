@@ -1,5 +1,6 @@
 use crate::ast::{ASTSchema, ASTShape};
 use crate::ir::component::IRComponent;
+use crate::ir::dependency_graph::{DependencyGraph, PosNeg};
 use crate::ir::error::IRError;
 use crate::ir::node_shape::IRNodeShape;
 use crate::ir::property_shape::IRPropertyShape;
@@ -170,6 +171,15 @@ impl IRShape {
         match self {
             IRShape::NodeShape(ns) => ns.register(graph, shapes_map),
             IRShape::PropertyShape(ps) => ps.register(graph, shapes_map),
+        }
+    }
+}
+
+impl IRShape {
+    pub fn add_edges(&self, idx: ShapeLabelIdx, dg: &mut DependencyGraph, posneg: PosNeg, ir: &IRSchema, cache: &mut HashSet<ShapeLabelIdx>) {
+        match self {
+            IRShape::NodeShape(ns) => ns.add_edges(idx, dg, posneg, ir, cache),
+            IRShape::PropertyShape(ps) => ps.add_edges(idx, dg, posneg, ir, cache),
         }
     }
 }
