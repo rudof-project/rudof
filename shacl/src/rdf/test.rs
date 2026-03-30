@@ -38,6 +38,7 @@ mod tests {
         }
     }
 
+    #[test]
     fn test_parse_shacl_rdf() {
         let graph = r#"
             @prefix sh: <http://www.w3.org/ns/shacl#> .

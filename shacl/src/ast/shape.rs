@@ -54,6 +54,7 @@ mod tests {
     use iri_s::iri;
     use rudof_rdf::rdf_core::term::Object;
 
+    #[test]
     fn test_clone() {
         let ns = ASTNodeShape::new(Object::Iri(iri!("http://example.org/id")));
         let s1 = ASTShape::node_shape(ns);

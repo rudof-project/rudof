@@ -55,6 +55,7 @@ mod tests {
         ShaclParser::new(rdf).parse().unwrap().try_into().unwrap()
     }
 
+    #[test]
     fn test_schema_iterator() {
         let schema = load_schema(SCHEMA);
         let actual = schema.iter_with_targets().count();
