@@ -3,7 +3,7 @@ use crate::ast::property_shape::ASTPropertyShape;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug)]
-pub(crate) enum ASTShape {
+pub enum ASTShape {
     NodeShape(Box<ASTNodeShape>),
     PropertyShape(Box<ASTPropertyShape>),
 }

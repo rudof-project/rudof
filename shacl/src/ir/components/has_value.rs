@@ -6,7 +6,7 @@ use std::fmt::{Display, Formatter};
 ///
 /// https://www.w3.org/TR/shacl/#HasValueConstraintComponent
 #[derive(Debug, Clone)]
-pub(crate) struct HasValue {
+pub struct HasValue {
     value: Object,
 }
 

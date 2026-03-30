@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter};
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy, Debug, Default)]
-pub(crate) struct ShapeLabelIdx(usize);
+pub struct ShapeLabelIdx(usize);
 
 impl ShapeLabelIdx {
     pub fn new(idx: usize) -> Self {

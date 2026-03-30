@@ -3,7 +3,7 @@ use rudof_rdf::rdf_core::term::Object;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) struct ReifierInfo {
+pub struct ReifierInfo {
     reification_required: bool,
     reifier_shape: Vec<Object>,
 }

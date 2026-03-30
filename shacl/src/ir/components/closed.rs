@@ -12,7 +12,7 @@ use iri_s::IriS;
 ///
 /// https://www.w3.org/TR/shacl/#ClosedConstraintComponent
 #[derive(Debug, Clone)]
-pub(crate) struct Closed {
+pub struct Closed {
     is_closed: bool,
     ignored_properties: Vec<IriS>,
 }

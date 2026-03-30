@@ -7,7 +7,7 @@ use rudof_rdf::rdf_core::SHACLPath;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, Default)]
-pub(crate) struct ReifierInfo {
+pub struct ReifierInfo {
     reification_required: bool,
     reifier_shape: Vec<ShapeLabelIdx>,
     predicate: IriS,

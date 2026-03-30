@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub(crate) enum NodeKind {
+pub enum NodeKind {
     Iri,
     Lit,
     BNode,

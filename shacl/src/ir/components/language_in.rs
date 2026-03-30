@@ -6,7 +6,7 @@ use std::fmt::{Display, Formatter};
 ///
 /// https://www.w3.org/TR/shacl/#LanguageInConstraintComponent
 #[derive(Debug, Clone)]
-pub(crate) struct LanguageIn {
+pub struct LanguageIn {
     langs: Vec<Lang>,
 }
 

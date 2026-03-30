@@ -3,7 +3,7 @@ use crate::rdf::error::ShaclWriterError;
 use rudof_rdf::rdf_core::{BuildRDF, RDFFormat};
 use std::io::Write;
 
-pub(crate) struct ShaclWriter<RDF: BuildRDF> {
+pub struct ShaclWriter<RDF: BuildRDF> {
     rdf: RDF,
 }
 

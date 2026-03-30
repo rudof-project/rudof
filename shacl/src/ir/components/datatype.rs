@@ -6,7 +6,7 @@ use std::fmt::{Display, Formatter};
 ///
 /// https://www.w3.org/TR/shacl/#ClassConstraintComponent
 #[derive(Debug, Clone)]
-pub(crate) struct Datatype {
+pub struct Datatype {
     datatype: IriS,
 }
 

@@ -5,7 +5,7 @@ use rudof_rdf::rdf_core::RDFError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub(crate) enum ShaclParserError {
+pub enum ShaclParserError {
     #[error("RDF parse error: {err}")]
     RDFParseError {
         #[from]

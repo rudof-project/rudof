@@ -10,7 +10,7 @@ use std::fmt::{Display, Formatter};
 
 // TODO - For node expr only derive Debug (maybe)
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub(crate) enum ASTComponent {
+pub enum ASTComponent {
     Class(Object),
     Datatype(IriRef),
     NodeKind(NodeKind),

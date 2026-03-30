@@ -7,7 +7,7 @@ use std::fmt::{Display, Formatter};
 ///
 /// https://www.w3.org/TR/shacl/#NodeKindConstraintComponent
 #[derive(Debug, Clone)]
-pub(crate) struct Nodekind {
+pub struct Nodekind {
     node_kind: NodeKind,
 }
 

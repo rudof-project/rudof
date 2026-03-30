@@ -7,14 +7,14 @@ use petgraph::{Directed, Outgoing};
 use std::fmt::{Display, Formatter};
 
 #[derive(Default, Debug, Clone)]
-pub(crate) struct DependencyGraph {
-    graph: GraphMap<ShapeLabelIdx, PosNeg, Directed>
+pub struct DependencyGraph {
+    graph: GraphMap<ShapeLabelIdx, PosNeg, Directed>,
 }
 
 /// Iterator over the edges of the dependency graph
 /// The iterator yields tuples of the form (from, posneg, to)
-pub(crate) struct DependencyGraphIter<'a> {
-    inner: AllEdges<'a, ShapeLabelIdx, PosNeg, Directed>
+pub struct DependencyGraphIter<'a> {
+    inner: AllEdges<'a, ShapeLabelIdx, PosNeg, Directed>,
 }
 
 impl Iterator for DependencyGraphIter<'_> {
@@ -26,7 +26,7 @@ impl Iterator for DependencyGraphIter<'_> {
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum PosNeg {
+pub enum PosNeg {
     #[default]
     Pos,
     Neg

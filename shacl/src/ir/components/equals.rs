@@ -7,7 +7,7 @@ use std::fmt::{Display, Formatter};
 ///
 /// https://www.w3.org/TR/shacl/#EqualsConstraintComponent
 #[derive(Debug, Clone)]
-pub(crate) struct Equals {
+pub struct Equals {
     iri: IriS,
 }
 

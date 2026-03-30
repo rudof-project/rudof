@@ -7,7 +7,7 @@ use std::fmt::{Display, Formatter};
 /// - DEF: If the number of value nodes is greater than $maxCount, there is a
 ///   validation result.
 #[derive(Debug, Clone)]
-pub(crate) struct MaxCount {
+pub struct MaxCount {
     max_count: usize,
 }
 

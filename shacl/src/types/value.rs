@@ -4,7 +4,7 @@ use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub(crate) enum Value {
+pub enum Value {
     Iri(IriRef),
     Literal(ConcreteLiteral),
 }

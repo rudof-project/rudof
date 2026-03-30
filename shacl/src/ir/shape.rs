@@ -15,7 +15,7 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone)]
-pub(crate) enum IRShape {
+pub enum IRShape {
     NodeShape(Box<IRNodeShape>),
     PropertyShape(Box<IRPropertyShape>),
 }

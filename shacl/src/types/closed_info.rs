@@ -5,7 +5,7 @@ use rudof_rdf::rdf_core::term::Object;
 use std::collections::HashSet;
 
 #[derive(Debug, Clone, Default)]
-pub(crate) enum ClosedInfo {
+pub enum ClosedInfo {
     Yes {
         /// Properties that have been declared as ignored
         ignored_properties: HashSet<IriS>,

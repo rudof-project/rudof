@@ -6,7 +6,7 @@ use rudof_rdf::rdf_impl::InMemoryGraphError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub(crate) enum IRError {
+pub enum IRError {
     #[error("Duplicate shape: {shape}")]
     DuplicateShape { shape: Box<Object> },
 

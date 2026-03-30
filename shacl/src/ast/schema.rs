@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, Default)]
-pub(crate) struct ASTSchema {
+pub struct ASTSchema {
     // imports: Vec<IriS>
     // entailments: Vec<IriS>
     shapes: HashMap<Object, ASTShape>,

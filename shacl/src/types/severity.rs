@@ -3,7 +3,7 @@ use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use std::fmt::{Display, Formatter};
 
 #[derive(Hash, Debug, Clone, PartialEq, Eq)]
-pub(crate) enum Severity {
+pub enum Severity {
     Trace,
     Debug,
     Info,

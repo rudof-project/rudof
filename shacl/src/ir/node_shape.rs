@@ -13,7 +13,7 @@ use rudof_rdf::rdf_core::BuildRDF;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone)]
-pub(crate) struct IRNodeShape {
+pub struct IRNodeShape {
     id: Object,
     components: Vec<IRComponent>,
     targets: Vec<Target>,

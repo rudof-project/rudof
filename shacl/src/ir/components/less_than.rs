@@ -7,7 +7,7 @@ use std::fmt::{Display, Formatter};
 ///
 /// https://www.w3.org/TR/shacl/#LessThanConstraintComponent
 #[derive(Debug, Clone)]
-pub(crate) struct LessThan {
+pub struct LessThan {
     iri: IriS,
 }
 

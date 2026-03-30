@@ -5,7 +5,7 @@ use std::fmt::{Display, Formatter};
 ///
 /// https://www.w3.org/TR/shacl/#UniqueLangConstraintComponent
 #[derive(Debug, Clone)]
-pub(crate) struct UniqueLang {
+pub struct UniqueLang {
     unique_lang: bool,
 }
 

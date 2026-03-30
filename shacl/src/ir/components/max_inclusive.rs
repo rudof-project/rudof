@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter};
 
 /// https://www.w3.org/TR/shacl/#MaxInclusiveConstraintComponent
 #[derive(Debug, Clone)]
-pub(crate) struct MaxInclusive {
+pub struct MaxInclusive {
     max_inclusive: ConcreteLiteral,
 }
 

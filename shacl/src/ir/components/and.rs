@@ -6,8 +6,8 @@ use std::fmt::{Display, Formatter};
 ///
 /// https://www.w3.org/TR/shacl/#AndConstraintComponent
 #[derive(Debug, Clone)]
-pub(crate) struct And {
-    shapes: Vec<ShapeLabelIdx>
+pub struct And {
+    shapes: Vec<ShapeLabelIdx>,
 }
 
 impl And {

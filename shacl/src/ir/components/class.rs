@@ -6,7 +6,7 @@ use std::fmt::{Display, Formatter};
 ///
 /// https://www.w3.org/TR/shacl/#ClassConstraintComponent
 #[derive(Debug, Clone)]
-pub(crate) struct Class {
+pub struct Class {
     class_rule: Object,
 }
 

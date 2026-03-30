@@ -6,7 +6,7 @@ use std::fmt::{Display, Formatter};
 ///
 /// https://www.w3.org/TR/shacl/#MaxLengthConstraintComponent
 #[derive(Debug, Clone)]
-pub(crate) struct MaxLength {
+pub struct MaxLength {
     max_length: isize,
 }
 

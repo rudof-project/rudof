@@ -10,7 +10,7 @@ use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) struct ASTPropertyShape {
+pub struct ASTPropertyShape {
     id: Object,
     path: SHACLPath,
     components: Vec<ASTComponent>,

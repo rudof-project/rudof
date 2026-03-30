@@ -8,7 +8,7 @@ use std::fmt::{Display, Formatter};
 /// https://www.w3.org/TR/shacl/#PropertyShapeComponent
 #[derive(Debug, Clone)]
 // TODO - Maybe remove pattern and flags and pick them from RDFRegex
-pub(crate) struct Pattern {
+pub struct Pattern {
     pattern: String,
     flags: Option<String>,
     regex: RDFRegex,

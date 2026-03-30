@@ -8,7 +8,7 @@ use std::fmt::{Display, Formatter};
 /// - DEF: If the number of value nodes is less than $minCount, there is a
 ///   validation result.
 #[derive(Debug, Clone)]
-pub(crate) struct MinCount {
+pub struct MinCount {
     min_count: usize,
 }
 

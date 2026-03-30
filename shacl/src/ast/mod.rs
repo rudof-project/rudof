@@ -11,8 +11,9 @@ pub(crate) mod error;
 mod node_expr;
 mod reifier_info;
 
-pub(crate) use component::ASTComponent;
-pub(crate) use node_shape::ASTNodeShape;
-pub(crate) use property_shape::ASTPropertyShape;
-pub(crate) use schema::ASTSchema;
-pub(crate) use shape::ASTShape;
+pub use component::ASTComponent;
+pub use node_shape::ASTNodeShape;
+pub use property_shape::ASTPropertyShape;
+pub use reifier_info::ReifierInfo;
+pub use schema::ASTSchema;
+pub use shape::ASTShape;

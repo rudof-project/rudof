@@ -7,7 +7,7 @@ use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) struct ASTNodeShape {
+pub struct ASTNodeShape {
     id: Object,
     components: Vec<ASTComponent>,
     targets: Vec<Target>,

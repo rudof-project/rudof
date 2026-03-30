@@ -6,10 +6,11 @@ mod target;
 mod severity;
 mod closed_info;
 
-pub(crate) use closed_info::{defined_properties_for, ClosedInfo};
-pub(crate) use message_map::MessageMap;
-pub(crate) use node_kind::NodeKind;
-pub(crate) use severity::Severity;
+pub use closed_info::ClosedInfo;
+pub(crate) use closed_info::defined_properties_for;
+pub use message_map::MessageMap;
+pub use node_kind::NodeKind;
+pub use severity::Severity;
 pub use shacl_format::ShaclFormat;
-pub(crate) use target::Target;
-pub(crate) use value::Value;
+pub use target::Target;
+pub use value::Value;

@@ -10,7 +10,7 @@ use std::fmt::{Display, Formatter};
 ///
 /// https://www.w3.org/TR/shacl/#QualifiedValueShapeConstraintComponent
 #[derive(Debug, Clone)]
-pub(crate) struct QualifiedValueShape {
+pub struct QualifiedValueShape {
     shape: ShapeLabelIdx,
     qualified_min_count: Option<isize>,
     qualified_max_count: Option<isize>,

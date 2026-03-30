@@ -15,7 +15,7 @@ use rudof_rdf::rdf_core::{BuildRDF, SHACLPath};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone)]
-pub(crate) struct IRPropertyShape {
+pub struct IRPropertyShape {
     id: Object,
     path: SHACLPath,
     components: Vec<IRComponent>,

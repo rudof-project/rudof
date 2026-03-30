@@ -17,7 +17,7 @@ use std::fmt::{Display, Formatter};
 use std::io::{Cursor, Read};
 
 #[derive(Clone, Debug)]
-pub(crate) struct IRSchema {
+pub struct IRSchema {
     // imports: Vec<IriS>
     // entailments: Vec<IriS>
 

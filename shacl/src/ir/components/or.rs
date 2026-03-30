@@ -7,7 +7,7 @@ use std::fmt::{Display, Formatter};
 ///
 /// https://www.w3.org/TR/shacl/#AndConstraintComponent
 #[derive(Debug, Clone)]
-pub(crate) struct Or {
+pub struct Or {
     shapes: Vec<ShapeLabelIdx>,
 }
 

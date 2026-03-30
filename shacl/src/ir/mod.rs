@@ -8,19 +8,27 @@ use prefixmap::IriRef;
 use rudof_rdf::rdf_core::term::Object;
 
 mod component;
-mod components;
-mod shape_label_idx;
-mod error;
 mod shape;
+pub mod components;
+pub(crate) mod error;
 mod node_shape;
 mod property_shape;
 mod dependency_graph;
 mod schema;
 mod reifier_info;
+mod shape_label_idx;
 mod test;
 
-pub(crate) use reifier_info::ReifierInfo;
-pub(crate) use schema::IRSchema;
+pub use component::IRComponent;
+pub use dependency_graph::DependencyGraph;
+pub use dependency_graph::DependencyGraphIter;
+pub use dependency_graph::PosNeg;
+pub use node_shape::IRNodeShape;
+pub use property_shape::IRPropertyShape;
+pub use reifier_info::ReifierInfo;
+pub use schema::IRSchema;
+pub use shape::IRShape;
+pub use shape_label_idx::ShapeLabelIdx;
 
 fn convert_iri_ref(iri_ref: IriRef) -> Result<IriS, IRError> {
     let iri = iri_ref.get_iri().map_err(|err| {

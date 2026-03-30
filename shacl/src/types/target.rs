@@ -6,7 +6,7 @@ use std::fmt::{Display, Formatter};
 
 /// Represents target declarations
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) enum Target {
+pub enum Target {
     Node(Object), // TODO - Replace with node expr
     Class(Object),
     SubjectsOf(IriS),

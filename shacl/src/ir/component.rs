@@ -17,7 +17,7 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone)]
 // TODO - Add closed and deactivated
-pub(crate) enum IRComponent {
+pub enum IRComponent {
     Class(Class),
     Datatype(Datatype),
     NodeKind(Nodekind),

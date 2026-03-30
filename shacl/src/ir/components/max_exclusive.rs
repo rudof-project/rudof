@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter};
 
 /// https://www.w3.org/TR/shacl/#MaxExclusiveConstraintComponent
 #[derive(Debug, Clone)]
-pub(crate) struct MaxExclusive {
+pub struct MaxExclusive {
     max_exclusive: ConcreteLiteral,
 }
 

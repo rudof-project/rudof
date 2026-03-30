@@ -7,5 +7,6 @@ mod writer;
 pub mod error;
 mod test;
 
-pub(crate) use parser::ShaclParser;
+pub use parser::ShaclParser;
 pub(crate) use parsers::State;
+pub use writer::ShaclWriter;

@@ -13,7 +13,7 @@ use rudof_rdf::rdf_core::vocabs::{RdfVocab, ShaclVocab};
 use rudof_rdf::rdf_core::{Any, FocusRDF, Matcher, Rdf};
 use std::collections::{HashMap, HashSet};
 
-pub(crate) struct ShaclParser<RDF: FocusRDF> {
+pub struct ShaclParser<RDF: FocusRDF> {
     rdf_parser: RDFParse<RDF>,
     shapes: HashMap<Object, ASTShape>,
 }
