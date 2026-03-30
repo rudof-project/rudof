@@ -13,23 +13,21 @@ use rudof_rdf::rdf_core::{
     query::QueryRDF,
     term::{Iri as _, Term, literal::Literal as _},
 };
-use shacl_ir::compiled::component_ir::ComponentIR;
-use shacl_ir::compiled::shape::ShapeIR;
-use shacl_ir::components::MaxLength;
-use shacl_ir::schema_ir::SchemaIR;
+use shacl::ir::components::MaxLength;
+use shacl::ir::{IRComponent, IRSchema, IRShape};
 use std::fmt::Debug;
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxLength {
     fn validate_native<'a>(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         _: &S,
         _engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        _shapes_graph: &SchemaIR,
+        _source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        _shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_length = |value_node: &S::Term| {
             if value_node.is_blank_node() {
@@ -67,13 +65,13 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxLength {
 impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MaxLength {
     fn validate_sparql(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        _shapes_graph: &SchemaIR,
+        _source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        _shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_length_value = self.max_length();
 

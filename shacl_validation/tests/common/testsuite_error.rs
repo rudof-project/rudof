@@ -1,6 +1,5 @@
 use oxrdf::TryFromTermError;
-use shacl_ir::compiled_shacl_error::CompiledShaclError;
-use shacl_rdf::error::ShaclParserError;
+use shacl::error::{IRError, ShaclParserError};
 use shacl_validation::validation_report::validation_report_error::ReportError;
 use sparql_service::RdfDataError;
 use std::io::Error;
@@ -21,7 +20,7 @@ pub enum TestSuiteError {
     RdfData(#[from] RdfDataError),
 
     #[error(transparent)]
-    CompilingShapes(#[from] CompiledShaclError),
+    CompilingShapes(#[from] IRError),
 
     #[error("Validation error: {error}")]
     Validation { error: String },

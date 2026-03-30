@@ -8,7 +8,7 @@ use rudof_rdf::rdf_core::{
     BuildRDF, FocusRDF, Rdf, SHACLPath,
     term::{IriOrBlankNode, Object},
 };
-use shacl_ir::severity::CompiledSeverity;
+use shacl::types::Severity;
 use std::{
     fmt::{Debug, Display},
     io::{Error, Write},
@@ -105,14 +105,14 @@ impl ValidationReport {
     pub fn count_violations(&self) -> usize {
         self.results
             .iter()
-            .filter(|r| r.severity() == &CompiledSeverity::Violation)
+            .filter(|r| r.severity() == &Severity::Violation)
             .count()
     }
 
     pub fn count_warnings(&self) -> usize {
         self.results
             .iter()
-            .filter(|r| r.severity() == &CompiledSeverity::Warning)
+            .filter(|r| r.severity() == &Severity::Warning)
             .count()
     }
 
@@ -336,8 +336,8 @@ impl Display for ValidationReport {
     }
 }
 
-fn show_severity(severity: &CompiledSeverity, shacl_prefixmap: &PrefixMap) -> String {
-    shacl_prefixmap.qualify(&severity.to_iri())
+fn show_severity(severity: &Severity, shacl_prefixmap: &PrefixMap) -> String {
+    shacl_prefixmap.qualify(&severity.into())
 }
 
 fn show_object(object: &Object, shacl_prefixmap: &PrefixMap) -> String {
@@ -390,14 +390,14 @@ fn show_path_opt(object: Option<&SHACLPath>, shacl_prefixmap: &PrefixMap) -> Str
     }
 }
 
-fn calculate_color(severity: &CompiledSeverity, report: &ValidationReport) -> Color {
+fn calculate_color(severity: &Severity, report: &ValidationReport) -> Color {
     match severity {
-        CompiledSeverity::Violation => report.fail_color.unwrap_or(Color::Red),
-        CompiledSeverity::Info => report.info_color.unwrap_or(Color::Blue),
-        CompiledSeverity::Warning => report.warning_color.unwrap_or(Color::Yellow),
-        CompiledSeverity::Debug => report.debug_color.unwrap_or(Color::Magenta),
-        CompiledSeverity::Trace => report.trace_color.unwrap_or(Color::Cyan),
-        CompiledSeverity::Generic(_) => Color::White,
+        Severity::Violation => report.fail_color.unwrap_or(Color::Red),
+        Severity::Info => report.info_color.unwrap_or(Color::Blue),
+        Severity::Warning => report.warning_color.unwrap_or(Color::Yellow),
+        Severity::Debug => report.debug_color.unwrap_or(Color::Magenta),
+        Severity::Trace => report.trace_color.unwrap_or(Color::Cyan),
+        Severity::Generic(_) => Color::White,
     }
 }
 

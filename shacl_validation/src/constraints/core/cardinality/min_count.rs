@@ -10,23 +10,21 @@ use crate::shacl_engine::sparql::SparqlEngine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF};
-use shacl_ir::compiled::component_ir::ComponentIR;
-use shacl_ir::compiled::shape::ShapeIR;
-use shacl_ir::components::MinCount;
-use shacl_ir::schema_ir::SchemaIR;
+use shacl::ir::components::MinCount;
+use shacl::ir::{IRComponent, IRSchema, IRShape};
 use std::fmt::Debug;
 
 impl<S: NeighsRDF + Debug> Validator<S> for MinCount {
     fn validate(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         _: &S,
         _: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        _shapes_graph: &SchemaIR,
+        _source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        _shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         tracing::debug!("Validating minCount with shape {}", shape.id());
         if self.min_count() == 0 {
@@ -50,14 +48,14 @@ impl<S: NeighsRDF + Debug> Validator<S> for MinCount {
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinCount {
     fn validate_native(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         store: &S,
         engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        shapes_graph: &SchemaIR,
+        source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         tracing::debug!("Validate native minCount with shape: {}", shape.id());
         self.validate(
@@ -76,13 +74,13 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinCount {
 impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for MinCount {
     fn validate_sparql(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        shapes_graph: &SchemaIR,
+        source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,

@@ -1,8 +1,6 @@
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF};
-use shacl_ir::compiled::component_ir::ComponentIR;
-use shacl_ir::compiled::shape::ShapeIR;
-use shacl_ir::components::MaxCount;
-use shacl_ir::schema_ir::SchemaIR;
+use shacl::ir::components::MaxCount;
+use shacl::ir::{IRComponent, IRSchema, IRShape};
 use std::fmt::Debug;
 
 use crate::constraints::NativeValidator;
@@ -20,14 +18,14 @@ use crate::value_nodes::ValueNodes;
 impl<S: NeighsRDF + Debug> Validator<S> for MaxCount {
     fn validate(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         _: &S,
         _: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        _shapes_graph: &SchemaIR,
+        _source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        _shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_count = |targets: &FocusNodes<S>| targets.len() > self.max_count();
         let message = format!("MaxCount({}) not satisfied", self.max_count());
@@ -46,14 +44,14 @@ impl<S: NeighsRDF + Debug> Validator<S> for MaxCount {
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxCount {
     fn validate_native(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         store: &S,
         engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        shapes_graph: &SchemaIR,
+        source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -71,13 +69,13 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxCount {
 impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for MaxCount {
     fn validate_sparql(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        shapes_graph: &SchemaIR,
+        source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,

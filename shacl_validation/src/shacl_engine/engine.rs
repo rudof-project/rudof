@@ -1,11 +1,7 @@
 use iri_s::IriS;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, term::Object};
-use shacl_ir::compiled::component_ir::ComponentIR;
-use shacl_ir::compiled::property_shape::PropertyShapeIR;
-use shacl_ir::compiled::shape::ShapeIR;
-use shacl_ir::compiled::target::CompiledTarget;
-use shacl_ir::schema_ir::SchemaIR;
-use shacl_ir::shape_label_idx::ShapeLabelIdx;
+use shacl::ir::{IRComponent, IRPropertyShape, IRSchema, IRShape, ShapeLabelIdx};
+use shacl::types::Target;
 
 use crate::focus_nodes::FocusNodes;
 use crate::validate_error::ValidateError;
@@ -24,28 +20,28 @@ pub trait Engine<S: NeighsRDF> {
     fn evaluate(
         &mut self,
         store: &S,
-        shape: &ShapeIR,
-        component: &ComponentIR,
+        shape: &IRShape,
+        component: &IRComponent,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        shapes_graph: &SchemaIR,
+        source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, Box<ValidateError>>;
 
-    fn focus_nodes(&self, store: &S, targets: &[CompiledTarget]) -> Result<FocusNodes<S>, Box<ValidateError>> {
+    fn focus_nodes(&self, store: &S, targets: &[Target]) -> Result<FocusNodes<S>, Box<ValidateError>> {
         let targets_iter: Vec<FocusNodes<S>> = targets
             .iter()
             .flat_map(|target| match target {
-                CompiledTarget::Node(node) => self.target_node(store, node),
-                CompiledTarget::Class(class) => self.target_class(store, class),
-                CompiledTarget::SubjectsOf(predicate) => self.target_subject_of(store, predicate),
-                CompiledTarget::ObjectsOf(predicate) => self.target_object_of(store, predicate),
-                CompiledTarget::ImplicitClass(node) => self.implicit_target_class(store, node),
-                CompiledTarget::WrongTargetNode(_) => todo!(),
-                CompiledTarget::WrongTargetClass(_) => todo!(),
-                CompiledTarget::WrongSubjectsOf(_) => todo!(),
-                CompiledTarget::WrongObjectsOf(_) => todo!(),
-                CompiledTarget::WrongImplicitClass(_) => todo!(),
+                Target::Node(node) => self.target_node(store, node),
+                Target::Class(class) => self.target_class(store, class),
+                Target::SubjectsOf(predicate) => self.target_subject_of(store, predicate),
+                Target::ObjectsOf(predicate) => self.target_object_of(store, predicate),
+                Target::ImplicitClass(node) => self.implicit_target_class(store, node),
+                Target::WrongNode(_) => todo!(),
+                Target::WrongClass(_) => todo!(),
+                Target::WrongSubjectsOf(_) => todo!(),
+                Target::WrongObjectsOf(_) => todo!(),
+                Target::WrongImplicitClass(_) => todo!(),
             })
             .collect();
         let ts = targets_iter.into_iter().flatten();
@@ -67,7 +63,7 @@ pub trait Engine<S: NeighsRDF> {
     fn path(
         &self,
         store: &S,
-        shape: &PropertyShapeIR,
+        shape: &IRPropertyShape,
         focus_node: &S::Term,
     ) -> Result<FocusNodes<S>, Box<ValidateError>> {
         let nodes =

@@ -7,24 +7,22 @@ use crate::shacl_engine::engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use rudof_rdf::rdf_core::{NeighsRDF, Rdf, SHACLPath, query::QueryRDF, term::Triple};
-use shacl_ir::compiled::component_ir::ComponentIR;
-use shacl_ir::compiled::shape::ShapeIR;
-use shacl_ir::components::Disjoint;
-use shacl_ir::schema_ir::SchemaIR;
+use shacl::ir::components::Disjoint;
+use shacl::ir::{IRComponent, IRSchema, IRShape};
 use std::fmt::Debug;
 use tracing::debug;
 
 impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for Disjoint {
     fn validate_native(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         store: &R,
         _engine: &mut dyn engine::Engine<R>,
         value_nodes: &ValueNodes<R>,
-        _source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        _shapes_graph: &SchemaIR,
+        _source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        _shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let check = |focus: &R::Term, value_node: &R::Term| {
             let subject: R::Subject = <R as Rdf>::term_as_subject(focus).unwrap();
@@ -69,13 +67,13 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for Disjoint {
 impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Disjoint {
     fn validate_sparql(
         &self,
-        _component: &ComponentIR,
-        _shape: &ShapeIR,
+        _component: &IRComponent,
+        _shape: &IRShape,
         _store: &S,
         _value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&ShapeIR>,
-        _maybe_path: Option<SHACLPath>,
-        _shapes_graph: &SchemaIR,
+        _source_shape: Option<&IRShape>,
+        _maybe_path: Option<&SHACLPath>,
+        _shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented("Disjoint".to_string()))
     }

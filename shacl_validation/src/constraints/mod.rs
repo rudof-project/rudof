@@ -1,9 +1,6 @@
 use constraint_error::ConstraintError;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF};
-use shacl_ir::compiled::component_ir::ComponentIR;
-use shacl_ir::compiled::shape::ShapeIR;
-use shacl_ir::schema_ir::SchemaIR;
-use shacl_ir::shape_label_idx::ShapeLabelIdx;
+use shacl::ir::{IRComponent, IRSchema, IRShape, ShapeLabelIdx};
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
@@ -18,14 +15,14 @@ pub trait Validator<S: NeighsRDF + Debug> {
     #[allow(clippy::too_many_arguments)]
     fn validate(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         store: &S,
         engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        shapes_graph: &SchemaIR,
+        source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 
@@ -33,14 +30,14 @@ pub trait NativeValidator<S: NeighsRDF> {
     #[allow(clippy::too_many_arguments)]
     fn validate_native(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         store: &S,
         engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        shapes_graph: &SchemaIR,
+        source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 
@@ -48,13 +45,13 @@ pub trait SparqlValidator<S: QueryRDF + Debug> {
     #[allow(clippy::too_many_arguments)]
     fn validate_sparql(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        shapes_graph: &SchemaIR,
+        source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 
@@ -76,19 +73,19 @@ pub trait NativeDeref {
 }
 
 pub struct ShaclComponent<'a, S> {
-    component: &'a ComponentIR,
+    component: &'a IRComponent,
     _marker: PhantomData<S>,
 }
 
 impl<'a, S> ShaclComponent<'a, S> {
-    pub fn new(component: &'a ComponentIR) -> Self {
+    pub fn new(component: &'a IRComponent) -> Self {
         ShaclComponent {
             component,
             _marker: PhantomData,
         }
     }
 
-    pub fn component(&self) -> &ComponentIR {
+    pub fn component(&self) -> &IRComponent {
         self.component
     }
 }
@@ -98,32 +95,32 @@ impl<S: NeighsRDF + Debug + 'static> NativeDeref for ShaclComponent<'_, S> {
 
     fn deref(&self) -> &Self::Target {
         match self.component() {
-            ComponentIR::Class(inner) => inner,
-            ComponentIR::Datatype(inner) => inner,
-            ComponentIR::NodeKind(inner) => inner,
-            ComponentIR::MinCount(inner) => inner,
-            ComponentIR::MaxCount(inner) => inner,
-            ComponentIR::MinExclusive(inner) => inner,
-            ComponentIR::MaxExclusive(inner) => inner,
-            ComponentIR::MinInclusive(inner) => inner,
-            ComponentIR::MaxInclusive(inner) => inner,
-            ComponentIR::MinLength(inner) => inner,
-            ComponentIR::MaxLength(inner) => inner,
-            ComponentIR::Pattern(inner) => inner,
-            ComponentIR::UniqueLang(inner) => inner,
-            ComponentIR::LanguageIn(inner) => inner,
-            ComponentIR::Equals(inner) => inner,
-            ComponentIR::Disjoint(inner) => inner,
-            ComponentIR::LessThan(inner) => inner,
-            ComponentIR::LessThanOrEquals(inner) => inner,
-            ComponentIR::Or(inner) => inner,
-            ComponentIR::And(inner) => inner,
-            ComponentIR::Not(inner) => inner,
-            ComponentIR::Xone(inner) => inner,
-            ComponentIR::Node(inner) => inner,
-            ComponentIR::HasValue(inner) => inner,
-            ComponentIR::In(inner) => inner,
-            ComponentIR::QualifiedValueShape(inner) => inner,
+            IRComponent::Class(inner) => inner,
+            IRComponent::Datatype(inner) => inner,
+            IRComponent::NodeKind(inner) => inner,
+            IRComponent::MinCount(inner) => inner,
+            IRComponent::MaxCount(inner) => inner,
+            IRComponent::MinExclusive(inner) => inner,
+            IRComponent::MaxExclusive(inner) => inner,
+            IRComponent::MinInclusive(inner) => inner,
+            IRComponent::MaxInclusive(inner) => inner,
+            IRComponent::MinLength(inner) => inner,
+            IRComponent::MaxLength(inner) => inner,
+            IRComponent::Pattern(inner) => inner,
+            IRComponent::UniqueLang(inner) => inner,
+            IRComponent::LanguageIn(inner) => inner,
+            IRComponent::Equals(inner) => inner,
+            IRComponent::Disjoint(inner) => inner,
+            IRComponent::LessThan(inner) => inner,
+            IRComponent::LessThanOrEquals(inner) => inner,
+            IRComponent::Or(inner) => inner,
+            IRComponent::And(inner) => inner,
+            IRComponent::Not(inner) => inner,
+            IRComponent::Xone(inner) => inner,
+            IRComponent::Node(inner) => inner,
+            IRComponent::HasValue(inner) => inner,
+            IRComponent::In(inner) => inner,
+            IRComponent::QualifiedValueShape(inner) => inner,
         }
     }
 }
@@ -170,32 +167,32 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlDeref for ShaclComponent<'
 
     fn deref(&self) -> &Self::Target {
         match self.component() {
-            ComponentIR::Class(inner) => inner,
-            ComponentIR::Datatype(inner) => inner,
-            ComponentIR::NodeKind(inner) => inner,
-            ComponentIR::MinCount(inner) => inner,
-            ComponentIR::MaxCount(inner) => inner,
-            ComponentIR::MinExclusive(inner) => inner,
-            ComponentIR::MaxExclusive(inner) => inner,
-            ComponentIR::MinInclusive(inner) => inner,
-            ComponentIR::MaxInclusive(inner) => inner,
-            ComponentIR::MinLength(inner) => inner,
-            ComponentIR::MaxLength(inner) => inner,
-            ComponentIR::Pattern(inner) => inner,
-            ComponentIR::UniqueLang(inner) => inner,
-            ComponentIR::LanguageIn(inner) => inner,
-            ComponentIR::Equals(inner) => inner,
-            ComponentIR::Disjoint(inner) => inner,
-            ComponentIR::LessThan(inner) => inner,
-            ComponentIR::LessThanOrEquals(inner) => inner,
-            ComponentIR::Or(inner) => inner,
-            ComponentIR::And(inner) => inner,
-            ComponentIR::Not(inner) => inner,
-            ComponentIR::Xone(inner) => inner,
-            ComponentIR::Node(inner) => inner,
-            ComponentIR::HasValue(inner) => inner,
-            ComponentIR::In(inner) => inner,
-            ComponentIR::QualifiedValueShape(inner) => inner,
+            IRComponent::Class(inner) => inner,
+            IRComponent::Datatype(inner) => inner,
+            IRComponent::NodeKind(inner) => inner,
+            IRComponent::MinCount(inner) => inner,
+            IRComponent::MaxCount(inner) => inner,
+            IRComponent::MinExclusive(inner) => inner,
+            IRComponent::MaxExclusive(inner) => inner,
+            IRComponent::MinInclusive(inner) => inner,
+            IRComponent::MaxInclusive(inner) => inner,
+            IRComponent::MinLength(inner) => inner,
+            IRComponent::MaxLength(inner) => inner,
+            IRComponent::Pattern(inner) => inner,
+            IRComponent::UniqueLang(inner) => inner,
+            IRComponent::LanguageIn(inner) => inner,
+            IRComponent::Equals(inner) => inner,
+            IRComponent::Disjoint(inner) => inner,
+            IRComponent::LessThan(inner) => inner,
+            IRComponent::LessThanOrEquals(inner) => inner,
+            IRComponent::Or(inner) => inner,
+            IRComponent::And(inner) => inner,
+            IRComponent::Not(inner) => inner,
+            IRComponent::Xone(inner) => inner,
+            IRComponent::Node(inner) => inner,
+            IRComponent::HasValue(inner) => inner,
+            IRComponent::In(inner) => inner,
+            IRComponent::QualifiedValueShape(inner) => inner,
         }
     }
 
@@ -231,7 +228,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlDeref for ShaclComponent<'
     ); */
 }
 
-pub fn get_shape_from_idx(shapes_graph: &SchemaIR, shape_idx: &ShapeLabelIdx) -> Result<ShapeIR, ConstraintError> {
+pub fn get_shape_from_idx(shapes_graph: &IRSchema, shape_idx: &ShapeLabelIdx) -> Result<IRShape, ConstraintError> {
     shapes_graph
         .get_shape_from_idx(shape_idx)
         .ok_or_else(|| ConstraintError::InternalError {

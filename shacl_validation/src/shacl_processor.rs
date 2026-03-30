@@ -10,7 +10,7 @@ use crate::validation_report::report::ValidationReport;
 use prefixmap::PrefixMap;
 use rudof_rdf::rdf_core::{NeighsRDF, RDFFormat};
 use rudof_rdf::rdf_impl::SparqlEndpoint;
-use shacl_ir::compiled::schema_ir::SchemaIR;
+use shacl::ir::IRSchema;
 use sparql_service::RdfData;
 use std::fmt::Debug;
 use std::path::Path;
@@ -71,7 +71,7 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug> {
     /// # Arguments
     ///
     /// * `shapes_graph` - A compiled SHACL shapes graph
-    fn validate(&mut self, shapes_graph: &SchemaIR) -> Result<ValidationReport, Box<ValidateError>>; /*  {
+    fn validate(&mut self, shapes_graph: &IRSchema) -> Result<ValidationReport, Box<ValidateError>>; /*  {
     // we initialize the validation report to empty
     let mut validation_results = Vec::new();
     let store = self.store();
@@ -104,7 +104,7 @@ impl RdfDataValidation {
 }
 
 impl ShaclProcessor<RdfData> for RdfDataValidation {
-    fn validate(&mut self, shapes_graph: &SchemaIR) -> Result<ValidationReport, Box<ValidateError>> {
+    fn validate(&mut self, shapes_graph: &IRSchema) -> Result<ValidationReport, Box<ValidateError>> {
         let mut validation_results = Vec::new();
         let mut runner: Box<dyn Engine<RdfData>> = match self.mode {
             ShaclValidationMode::Native => Box::new(NativeEngine::new()),
@@ -122,7 +122,7 @@ impl ShaclProcessor<RdfData> for RdfDataValidation {
         // return the possibly empty validation report
         Ok(ValidationReport::new()
             .with_results(validation_results)
-            .with_prefixmap(shapes_graph.prefix_map()))
+            .with_prefixmap(shapes_graph.prefix_map().clone()))
     }
 }
 /*  fn store(&self) -> &RdfData {
@@ -185,7 +185,7 @@ impl GraphValidation {
 }
 
 impl ShaclProcessor<RdfData> for GraphValidation {
-    fn validate(&mut self, shapes_graph: &SchemaIR) -> Result<ValidationReport, Box<ValidateError>> {
+    fn validate(&mut self, shapes_graph: &IRSchema) -> Result<ValidationReport, Box<ValidateError>> {
         let mut validation_results = Vec::new();
         let store = self.store.store();
         let mut runner: Box<dyn Engine<RdfData>> = match self.mode {
@@ -204,7 +204,7 @@ impl ShaclProcessor<RdfData> for GraphValidation {
         // return the possibly empty validation report
         Ok(ValidationReport::new()
             .with_results(validation_results)
-            .with_prefixmap(shapes_graph.prefix_map()))
+            .with_prefixmap(shapes_graph.prefix_map().clone()))
     }
     /*fn store(&self) -> &RdfData {
         self.store.store()
@@ -239,7 +239,7 @@ impl EndpointValidation {
 }
 
 impl ShaclProcessor<SparqlEndpoint> for EndpointValidation {
-    fn validate(&mut self, shapes_graph: &SchemaIR) -> Result<ValidationReport, Box<ValidateError>> {
+    fn validate(&mut self, shapes_graph: &IRSchema) -> Result<ValidationReport, Box<ValidateError>> {
         // we initialize the validation report to empty
         let mut validation_results = Vec::new();
         let store = self.store.store();
@@ -259,7 +259,7 @@ impl ShaclProcessor<SparqlEndpoint> for EndpointValidation {
         // return the possibly empty validation report
         Ok(ValidationReport::new()
             .with_results(validation_results)
-            .with_prefixmap(shapes_graph.prefix_map()))
+            .with_prefixmap(shapes_graph.prefix_map().clone()))
     }
     /*fn store(&self) -> &SRDFSparql {
         self.store.store()

@@ -2,7 +2,7 @@ mod common;
 
 use crate::common::manifest::Manifest;
 use common::testsuite_error::TestSuiteError;
-use shacl_ir::compiled_shacl_error::CompiledShaclError;
+use shacl::error::IRError;
 use shacl_validation::shacl_processor::RdfDataValidation;
 use shacl_validation::shacl_processor::ShaclProcessor;
 use shacl_validation::shacl_processor::ShaclValidationMode;
@@ -20,12 +20,10 @@ fn test(
 
     for test in tests {
         let mut validator = RdfDataValidation::from_rdf_data(test.data, mode);
-        let test_shapes =
-            test.shapes
-                .try_into()
-                .map_err(|e: Box<CompiledShaclError>| TestSuiteError::TestShapesCompilation {
-                    error: (*e).to_string(),
-                })?;
+        let test_shapes = test
+            .shapes
+            .try_into()
+            .map_err(|e: IRError| TestSuiteError::TestShapesCompilation { error: e.to_string() })?;
         let report = validator
             .validate(&test_shapes)
             .map_err(|e| TestSuiteError::Validation { error: e.to_string() })?;

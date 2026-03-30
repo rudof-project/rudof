@@ -1,6 +1,6 @@
 use crate::validation_report::result::ValidationResult;
 use rudof_rdf::rdf_core::term::Object;
-use shacl_ir::shape_label_idx::ShapeLabelIdx;
+use shacl::ir::ShapeLabelIdx;
 use std::collections::HashMap;
 
 /// A shared cache for SHACL validation results.

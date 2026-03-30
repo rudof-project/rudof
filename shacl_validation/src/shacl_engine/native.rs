@@ -13,10 +13,7 @@ use rudof_rdf::rdf_core::{
     NeighsRDF, SHACLPath,
     term::{Object, Term, Triple},
 };
-use shacl_ir::compiled::component_ir::ComponentIR;
-use shacl_ir::compiled::shape::ShapeIR;
-use shacl_ir::schema_ir::SchemaIR;
-use shacl_ir::shape_label_idx::ShapeLabelIdx;
+use shacl::ir::{IRComponent, IRSchema, IRShape, ShapeLabelIdx};
 use std::fmt::Debug;
 
 pub struct NativeEngine {
@@ -50,12 +47,12 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
     fn evaluate(
         &mut self,
         store: &S,
-        shape: &ShapeIR,
-        component: &ComponentIR,
+        shape: &IRShape,
+        component: &IRComponent,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        shapes_graph: &SchemaIR,
+        source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, Box<ValidateError>> {
         tracing::debug!("evaluate [NativeEngine] with shape {}", shape.id());
         let shacl_component = ShaclComponent::new(component);

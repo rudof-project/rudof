@@ -3,7 +3,7 @@ use std::io::Write;
 use iri_s::{IriS, MimeType};
 use rudof_rdf::rdf_core::BuildRDF;
 use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
-use shacl_ast::ShaclFormat;
+use shacl::types::ShaclFormat;
 use shacl_validation::validation_report::report::ValidationReport;
 
 use crate::{

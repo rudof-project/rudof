@@ -1,13 +1,13 @@
 use crate::unified_constraints::{
-    NodeKind, UnifiedConstraint, UnifiedConstraintModel, UnifiedPropertyConstraint, UnifiedShape, Value,
+    NodeKind as UnifiedNodeKind, UnifiedConstraint, UnifiedConstraintModel, UnifiedPropertyConstraint, UnifiedShape,
+    Value as UnifiedValue,
 };
 use crate::{DataGeneratorError, Result};
 use rudof_rdf::rdf_core::{RDFFormat, term::literal::ConcreteLiteral};
 use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
-use shacl_ast::{
-    ShaclSchema, component::Component, node_shape::NodeShape, property_shape::PropertyShape, shape::Shape as ShaclShape,
-};
-use shacl_rdf::ShaclParser;
+use shacl::ast::{ASTComponent, ASTNodeShape, ASTPropertyShape, ASTSchema, ASTShape};
+use shacl::rdf::ShaclParser;
+use shacl::types::{NodeKind, Target, Value};
 use std::fs;
 use std::path::Path;
 
@@ -48,12 +48,12 @@ impl ShaclToUnified {
         self.convert_shacl_schema(&schema).await
     }
 
-    async fn convert_shacl_schema(&self, schema: &ShaclSchema<InMemoryGraph>) -> Result<UnifiedConstraintModel> {
+    async fn convert_shacl_schema(&self, schema: &ASTSchema) -> Result<UnifiedConstraintModel> {
         let mut model = UnifiedConstraintModel::new();
 
         // Get all shapes from the schema
         for (_shape_ref, shape) in schema.iter() {
-            if let ShaclShape::NodeShape(node_shape) = shape {
+            if let ASTShape::NodeShape(node_shape) = shape {
                 let unified_shape = self.convert_node_shape(node_shape.as_ref(), schema);
                 model.add_shape(unified_shape);
             }
@@ -62,23 +62,19 @@ impl ShaclToUnified {
         Ok(model)
     }
 
-    fn convert_node_shape(
-        &self,
-        node_shape: &NodeShape<InMemoryGraph>,
-        schema: &ShaclSchema<InMemoryGraph>,
-    ) -> UnifiedShape {
+    fn convert_node_shape(&self, node_shape: &ASTNodeShape, schema: &ASTSchema) -> UnifiedShape {
         let shape_id = node_shape.id().to_string();
         let mut properties = Vec::new();
 
         // Extract target class if available
         let target_class = node_shape.targets().first().and_then(|target| match target {
-            shacl_ast::target::Target::Class(tc) => Some(tc.to_string()),
+            Target::Class(tc) => Some(tc.to_string()),
             _ => None,
         });
 
         // Process property shapes
         for prop_ref in node_shape.property_shapes() {
-            if let Some(ShaclShape::PropertyShape(prop_shape)) = schema.get_shape(prop_ref)
+            if let Some(ASTShape::PropertyShape(prop_shape)) = schema.get_shape(prop_ref)
                 && let Some(unified_prop) = self.convert_property_shape(prop_shape)
             {
                 properties.push(unified_prop);
@@ -97,7 +93,7 @@ impl ShaclToUnified {
         }
     }
 
-    fn convert_property_shape(&self, prop_shape: &PropertyShape<InMemoryGraph>) -> Option<UnifiedPropertyConstraint> {
+    fn convert_property_shape(&self, prop_shape: &ASTPropertyShape) -> Option<UnifiedPropertyConstraint> {
         let property_iri = prop_shape.path().to_string();
         let mut constraints = Vec::new();
 
@@ -124,18 +120,18 @@ impl ShaclToUnified {
         })
     }
 
-    fn extract_cardinality(&self, components: &[Component]) -> (Option<u32>, Option<u32>) {
+    fn extract_cardinality(&self, components: &[ASTComponent]) -> (Option<u32>, Option<u32>) {
         let mut min_cardinality = None;
         let mut max_cardinality = None;
 
         for component in components {
             match component {
-                Component::MinCount(min) => {
+                ASTComponent::MinCount(min) => {
                     if *min >= 0 {
                         min_cardinality = Some(*min as u32);
                     }
                 },
-                Component::MaxCount(max) => {
+                ASTComponent::MaxCount(max) => {
                     if *max >= 0 {
                         max_cardinality = Some(*max as u32);
                     }
@@ -147,56 +143,57 @@ impl ShaclToUnified {
         (min_cardinality, max_cardinality)
     }
 
-    fn convert_component(&self, component: &Component, constraints: &mut Vec<UnifiedConstraint>) {
+    fn convert_component(&self, component: &ASTComponent, constraints: &mut Vec<UnifiedConstraint>) {
         match component {
-            Component::Datatype(datatype) => {
+            ASTComponent::Datatype(datatype) => {
                 constraints.push(UnifiedConstraint::Datatype(datatype.to_string()));
             },
-            Component::NodeKind(node_kind) => {
+            ASTComponent::NodeKind(node_kind) => {
                 let unified_nk = match *node_kind {
-                    shacl_ast::node_kind::NodeKind::Iri => NodeKind::Iri,
-                    shacl_ast::node_kind::NodeKind::BlankNode => NodeKind::BlankNode,
-                    shacl_ast::node_kind::NodeKind::Literal => NodeKind::Literal,
-                    shacl_ast::node_kind::NodeKind::BlankNodeOrIri => NodeKind::BlankNodeOrIri,
-                    shacl_ast::node_kind::NodeKind::BlankNodeOrLiteral => NodeKind::BlankNodeOrLiteral,
-                    shacl_ast::node_kind::NodeKind::IRIOrLiteral => NodeKind::IriOrLiteral,
+                    NodeKind::Iri => UnifiedNodeKind::Iri,
+                    NodeKind::BNode => UnifiedNodeKind::BlankNode,
+                    NodeKind::Lit => UnifiedNodeKind::Literal,
+                    NodeKind::BNodeOrIri => UnifiedNodeKind::BlankNodeOrIri,
+                    NodeKind::BNodeOrLit => UnifiedNodeKind::BlankNodeOrLiteral,
+                    NodeKind::IriOrLit => UnifiedNodeKind::IriOrLiteral,
                 };
                 constraints.push(UnifiedConstraint::NodeKind(unified_nk));
             },
-            Component::Pattern { pattern, .. } => {
+            ASTComponent::Pattern { pattern, .. } => {
                 constraints.push(UnifiedConstraint::Pattern(pattern.clone()));
             },
-            Component::MinLength(min_len) => {
+            ASTComponent::MinLength(min_len) => {
                 constraints.push(UnifiedConstraint::MinLength(*min_len as u32));
             },
-            Component::MaxLength(max_len) => {
+            ASTComponent::MaxLength(max_len) => {
                 constraints.push(UnifiedConstraint::MaxLength(*max_len as u32));
             },
-            Component::MinInclusive(val) => {
+            ASTComponent::MinInclusive(val) => {
                 let unified_val = self.convert_literal_to_value(val);
                 constraints.push(UnifiedConstraint::MinInclusive(unified_val));
             },
-            Component::MaxInclusive(val) => {
+            ASTComponent::MaxInclusive(val) => {
                 let unified_val = self.convert_literal_to_value(val);
                 constraints.push(UnifiedConstraint::MaxInclusive(unified_val));
             },
-            Component::MinExclusive(val) => {
+            ASTComponent::MinExclusive(val) => {
                 let unified_val = self.convert_literal_to_value(val);
                 constraints.push(UnifiedConstraint::MinExclusive(unified_val));
             },
-            Component::MaxExclusive(val) => {
+            ASTComponent::MaxExclusive(val) => {
                 let unified_val = self.convert_literal_to_value(val);
                 constraints.push(UnifiedConstraint::MaxExclusive(unified_val));
             },
-            Component::HasValue(value) => {
+            ASTComponent::HasValue(value) => {
                 let unified_val = self.convert_value_to_unified_value(value);
                 constraints.push(UnifiedConstraint::HasValue(unified_val));
             },
-            Component::In(values) => {
-                let unified_vals: Vec<Value> = values.iter().map(|v| self.convert_value_to_unified_value(v)).collect();
+            ASTComponent::In(values) => {
+                let unified_vals: Vec<UnifiedValue> =
+                    values.iter().map(|v| self.convert_value_to_unified_value(v)).collect();
                 constraints.push(UnifiedConstraint::In(unified_vals));
             },
-            Component::Node(shape) => {
+            ASTComponent::Node(shape) => {
                 constraints.push(UnifiedConstraint::ShapeReference(shape.to_string()));
             },
             _ => {
@@ -206,16 +203,16 @@ impl ShaclToUnified {
         }
     }
 
-    fn convert_literal_to_value(&self, literal: &ConcreteLiteral) -> Value {
+    fn convert_literal_to_value(&self, literal: &ConcreteLiteral) -> UnifiedValue {
         // Simple conversion - in practice you'd want more sophisticated handling
-        Value::Literal(literal.lexical_form().to_string(), Some(literal.datatype().to_string()))
+        UnifiedValue::Literal(literal.lexical_form().to_string(), Some(literal.datatype().to_string()))
     }
 
-    fn convert_value_to_unified_value(&self, value: &shacl_ast::value::Value) -> Value {
+    fn convert_value_to_unified_value(&self, value: &Value) -> UnifiedValue {
         match value {
-            shacl_ast::value::Value::Iri(iri) => Value::Iri(iri.to_string()),
-            shacl_ast::value::Value::Literal(lit) => {
-                Value::Literal(lit.lexical_form().to_string(), Some(lit.datatype().to_string()))
+            Value::Iri(iri) => UnifiedValue::Iri(iri.to_string()),
+            Value::Literal(lit) => {
+                UnifiedValue::Literal(lit.lexical_form().to_string(), Some(lit.datatype().to_string()))
             },
         }
     }

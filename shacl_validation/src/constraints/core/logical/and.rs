@@ -10,23 +10,21 @@ use crate::shape_validation::Validate;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF};
-use shacl_ir::compiled::component_ir::ComponentIR;
-use shacl_ir::compiled::shape::ShapeIR;
-use shacl_ir::components::And;
-use shacl_ir::schema_ir::SchemaIR;
+use shacl::ir::components::And;
+use shacl::ir::{IRComponent, IRSchema, IRShape};
 use std::fmt::Debug;
 
 impl<S: NeighsRDF + Debug> Validator<S> for And {
     fn validate(
         &self,
-        _component: &ComponentIR,
-        _shape: &ShapeIR,
+        _component: &IRComponent,
+        _shape: &IRShape,
         store: &S,
         engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&ShapeIR>,
-        _maybe_path: Option<SHACLPath>,
-        shapes_graph: &SchemaIR,
+        _source_shape: Option<&IRShape>,
+        _maybe_path: Option<&SHACLPath>,
+        shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let mut validation_results = Vec::new();
         for (_focus_node, nodes) in value_nodes.iter() {
@@ -66,14 +64,14 @@ impl<S: NeighsRDF + Debug> Validator<S> for And {
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for And {
     fn validate_native(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         store: &S,
         engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        shapes_graph: &SchemaIR,
+        source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -91,13 +89,13 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for And {
 impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for And {
     fn validate_sparql(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        shapes_graph: &SchemaIR,
+        source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,

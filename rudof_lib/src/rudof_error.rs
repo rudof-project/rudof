@@ -1,13 +1,11 @@
 use std::io;
 
+use crate::data_format::DataFormatError;
 use iri_s::IriS;
 use rudof_rdf::rdf_impl::SparqlEndpointError;
-use shacl_ast::ShaclSchema;
-use shacl_ir::compiled_shacl_error::CompiledShaclError;
-use sparql_service::RdfData;
+use shacl::ast::ASTSchema;
+use shacl::error::IRError;
 use thiserror::Error;
-
-use crate::data_format::DataFormatError;
 
 #[derive(Error, Debug)]
 pub enum RudofError {
@@ -103,7 +101,7 @@ pub enum RudofError {
     RdfConfigReadError { error: String },
 
     #[error("Compiling SHACL: {error}")]
-    ShaclCompilation { error: Box<CompiledShaclError> },
+    ShaclCompilation { error: IRError },
 
     #[error("Error reading config file from path {path}: {error}")]
     RudofConfigFromPathError { path: String, error: io::Error },
@@ -216,16 +214,10 @@ pub enum RudofError {
     SHACLParseError { error: String },
 
     #[error("SHACL Compilation from schema {schema} error: {error}")]
-    SHACLCompilationError {
-        error: String,
-        schema: Box<ShaclSchema<RdfData>>,
-    },
+    SHACLCompilationError { error: String, schema: Box<ASTSchema> },
 
     #[error("SHACL Validation from schema {schema} error: {error}")]
-    SHACLValidationError {
-        error: String,
-        schema: Box<ShaclSchema<RdfData>>,
-    },
+    SHACLValidationError { error: String, schema: Box<ASTSchema> },
 
     #[error("Creating Endpoint validation for SHACL from endpoint {endpoint:?}. error: {error}")]
     SHACLEndpointValidationCreation {

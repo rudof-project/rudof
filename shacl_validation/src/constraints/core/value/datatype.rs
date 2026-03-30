@@ -13,24 +13,22 @@ use rudof_rdf::rdf_core::{
     query::QueryRDF,
     term::literal::{ConcreteLiteral, Literal as _},
 };
-use shacl_ir::compiled::component_ir::ComponentIR;
-use shacl_ir::compiled::shape::ShapeIR;
-use shacl_ir::components::Datatype;
-use shacl_ir::schema_ir::SchemaIR;
+use shacl::ir::components::Datatype;
+use shacl::ir::{IRComponent, IRSchema, IRShape};
 use std::fmt::Debug;
 use tracing::trace;
 
 impl<R: NeighsRDF + Debug> Validator<R> for Datatype {
     fn validate(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         _: &R,
         _: &mut dyn Engine<R>,
         value_nodes: &ValueNodes<R>,
-        _source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        shapes_graph: &SchemaIR,
+        _source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let check = |value_node: &R::Term| {
             trace!("sh:datatype: Checking {value_node} as datatype {}", self.datatype());
@@ -76,14 +74,14 @@ impl<R: NeighsRDF + Debug> Validator<R> for Datatype {
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Datatype {
     fn validate_native(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         store: &S,
         engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        shapes_graph: &SchemaIR,
+        source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -101,13 +99,13 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Datatype {
 impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for Datatype {
     fn validate_sparql(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        shapes_graph: &SchemaIR,
+        source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,

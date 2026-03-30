@@ -9,23 +9,21 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF};
-use shacl_ir::compiled::component_ir::ComponentIR;
-use shacl_ir::compiled::shape::ShapeIR;
-use shacl_ir::components::MaxInclusive;
-use shacl_ir::schema_ir::SchemaIR;
+use shacl::ir::components::MaxInclusive;
+use shacl::ir::{IRComponent, IRSchema, IRShape};
 use std::fmt::Debug;
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxInclusive {
     fn validate_native(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         _store: &S,
         _engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        _shapes_graph: &SchemaIR,
+        _source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        _shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_inclusive = |node: &S::Term| match S::term_as_sliteral(node) {
             Ok(lit) => lit.partial_cmp(self.max_inclusive()).map(|o| o.is_gt()).unwrap_or(true),
@@ -47,13 +45,13 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxInclusive {
 impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MaxInclusive {
     fn validate_sparql(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        _shapes_graph: &SchemaIR,
+        _source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        _shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_inclusive_value = self.max_inclusive().clone();
 

@@ -9,38 +9,36 @@ use rudof_rdf::rdf_core::{
     query::QueryRDF,
     term::{Object, Triple},
 };
-use shacl_ir::compiled::component_ir::ComponentIR;
-use shacl_ir::compiled::shape::ShapeIR;
-use shacl_ir::components::LessThan;
-use shacl_ir::schema_ir::SchemaIR;
+use shacl::ir::components::LessThan;
+use shacl::ir::{IRComponent, IRSchema, IRShape};
 use std::fmt::Debug;
 
 impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for LessThan {
     fn validate_native(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         store: &R,
         _engine: &mut dyn Engine<R>,
         value_nodes: &ValueNodes<R>,
-        _source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        _shapes_graph: &SchemaIR,
+        _source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        _shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let mut validation_results = Vec::new();
         let component = Object::iri(component.into());
 
         for (focus_node, nodes) in value_nodes.iter() {
-            let subject: R::Subject = <R as Rdf>::term_as_subject(focus_node).unwrap();
+            let subject: R::Subject = <R as Rdf>::term_as_subject(focus_node)?;
             let iri_owned: R::IRI = self.iri().clone().into();
             match store.triples_with_subject_predicate(&subject, &iri_owned) {
                 Ok(triples_iter) => {
                     // Collect nodes to compare
                     for triple in triples_iter {
                         let value = triple.obj();
-                        let node1 = <R as Rdf>::term_as_object(value).unwrap();
+                        let node1 = <R as Rdf>::term_as_object(value)?;
                         for value2 in nodes.iter() {
-                            let node2 = <R as Rdf>::term_as_object(value2).unwrap();
+                            let node2 = <R as Rdf>::term_as_object(value2)?;
                             let message = match node2.partial_cmp(&node1) {
                                 None => Some(format!(
                                     "LessThan constraint violated: {node1} is not comparable to {node2}"
@@ -54,7 +52,7 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for LessThan {
                                 let validation_result =
                                     ValidationResult::new(shape.id().clone(), component.clone(), shape.severity())
                                         .with_message(msg.as_str())
-                                        .with_path(maybe_path.clone());
+                                        .with_path(maybe_path.cloned());
                                 validation_results.push(validation_result);
                             }
                         }
@@ -69,7 +67,7 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for LessThan {
                     let validation_result =
                         ValidationResult::new(shape.id().clone(), component.clone(), shape.severity())
                             .with_message(message.as_str())
-                            .with_path(maybe_path.clone());
+                            .with_path(maybe_path.cloned());
                     validation_results.push(validation_result);
                 },
             };
@@ -81,13 +79,13 @@ impl<R: NeighsRDF + Debug + 'static> NativeValidator<R> for LessThan {
 impl<R: QueryRDF + Debug + 'static> SparqlValidator<R> for LessThan {
     fn validate_sparql(
         &self,
-        _component: &ComponentIR,
-        _shape: &ShapeIR,
+        _component: &IRComponent,
+        _shape: &IRShape,
         _store: &R,
         _value_nodes: &ValueNodes<R>,
-        _source_shape: Option<&ShapeIR>,
-        _maybe_path: Option<SHACLPath>,
-        _shapes_graph: &SchemaIR,
+        _source_shape: Option<&IRShape>,
+        _maybe_path: Option<&SHACLPath>,
+        _shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented("LessThan".to_string()))
     }

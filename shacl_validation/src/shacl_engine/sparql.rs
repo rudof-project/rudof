@@ -14,10 +14,7 @@ use rudof_rdf::rdf_core::{
     query::QueryRDF,
     term::{Object, Term},
 };
-use shacl_ir::compiled::component_ir::ComponentIR;
-use shacl_ir::compiled::shape::ShapeIR;
-use shacl_ir::schema_ir::SchemaIR;
-use shacl_ir::shape_label_idx::ShapeLabelIdx;
+use shacl::ir::{IRComponent, IRSchema, IRShape, ShapeLabelIdx};
 use std::fmt::Debug;
 
 pub struct SparqlEngine {
@@ -42,12 +39,12 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
     fn evaluate(
         &mut self,
         store: &S,
-        shape: &ShapeIR,
-        component: &ComponentIR,
+        shape: &IRShape,
+        component: &IRComponent,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        shape_graph: &SchemaIR,
+        source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        shape_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, Box<ValidateError>> {
         let shacl_component = ShaclComponent::new(component);
         let validator = shacl_component.deref();

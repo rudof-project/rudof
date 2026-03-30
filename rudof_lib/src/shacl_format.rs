@@ -1,5 +1,5 @@
 use iri_s::MimeType;
-use shacl_ast::ShaclFormat as ShaclAstShaclFormat;
+use shacl::types::ShaclFormat as InnerShaclFormat;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
@@ -17,23 +17,23 @@ pub enum ShaclFormat {
 }
 
 // Convert from CLI ShaclFormat to shacl_ast::ShaclFormat (library type)
-impl From<ShaclFormat> for ShaclAstShaclFormat {
+impl From<ShaclFormat> for InnerShaclFormat {
     fn from(format: ShaclFormat) -> Self {
         match format {
-            ShaclFormat::Turtle => ShaclAstShaclFormat::Turtle,
-            ShaclFormat::RdfXml => ShaclAstShaclFormat::RdfXml,
-            ShaclFormat::NTriples => ShaclAstShaclFormat::NTriples,
-            ShaclFormat::TriG => ShaclAstShaclFormat::TriG,
-            ShaclFormat::N3 => ShaclAstShaclFormat::N3,
-            ShaclFormat::NQuads => ShaclAstShaclFormat::NQuads,
-            ShaclFormat::Internal => ShaclAstShaclFormat::Internal,
-            ShaclFormat::JsonLd => ShaclAstShaclFormat::JsonLd,
+            ShaclFormat::Turtle => InnerShaclFormat::Turtle,
+            ShaclFormat::RdfXml => InnerShaclFormat::RdfXml,
+            ShaclFormat::NTriples => InnerShaclFormat::NTriples,
+            ShaclFormat::TriG => InnerShaclFormat::TriG,
+            ShaclFormat::N3 => InnerShaclFormat::N3,
+            ShaclFormat::NQuads => InnerShaclFormat::NQuads,
+            ShaclFormat::Internal => InnerShaclFormat::Internal,
+            ShaclFormat::JsonLd => InnerShaclFormat::JsonLd,
         }
     }
 }
 
 // Convert from reference &ShaclFormat to ShaclAstShaclFormat
-impl From<&ShaclFormat> for ShaclAstShaclFormat {
+impl From<&ShaclFormat> for InnerShaclFormat {
     fn from(format: &ShaclFormat) -> Self {
         (*format).into()
     }

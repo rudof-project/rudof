@@ -9,23 +9,21 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF};
-use shacl_ir::compiled::component_ir::ComponentIR;
-use shacl_ir::compiled::shape::ShapeIR;
-use shacl_ir::components::MaxExclusive;
-use shacl_ir::schema_ir::SchemaIR;
+use shacl::ir::components::MaxExclusive;
+use shacl::ir::{IRComponent, IRSchema, IRShape};
 use std::fmt::Debug;
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxExclusive {
     fn validate_native(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         _store: &S,
         _engine: &mut dyn engine::Engine<S>,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        _shapes_graph: &SchemaIR,
+        _source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        _shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_exclusive = |node: &S::Term| match S::term_as_sliteral(node) {
             Ok(lit) => lit.partial_cmp(self.max_exclusive()).map(|o| o.is_ge()).unwrap_or(true),
@@ -47,13 +45,13 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxExclusive {
 impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MaxExclusive {
     fn validate_sparql(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        _shapes_graph: &SchemaIR,
+        _source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        _shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let max_exclusive_value = self.max_exclusive().clone();
 

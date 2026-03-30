@@ -8,10 +8,10 @@ use crate::PyRudofConfig;
 use pyo3::{Bound, Py, PyAny, PyErr, PyRef, PyRefMut, PyResult, Python, exceptions::PyValueError, pyclass, pymethods};
 use pythonize::pythonize;
 use rudof_lib::{
-    CoShaMo, CompareSchemaFormat, CompareSchemaMode, DCTAP, DCTAPFormat, InputSpec, InputSpecError, InputSpecReader,
-    IriS, Mie, MimeType, Object, QueryResultFormat, QueryShapeMap, QuerySolution, QuerySolutions, RDFFormat, RdfData,
-    ReaderMode, ResultShapeMap, Rudof, RudofError, ServiceDescription, ServiceDescriptionFormat, ShExFormat,
-    ShExFormatter, ShExSchema, ShaCo, ShaclFormat, ShaclSchemaIR, ShaclValidationMode, ShapeLabel, ShapeMapFormat,
+    CoShaMo, CompareSchemaFormat, CompareSchemaMode, DCTAP, DCTAPFormat, IRSchema, InputSpec, InputSpecError,
+    InputSpecReader, IriS, Mie, MimeType, Object, QueryResultFormat, QueryShapeMap, QuerySolution, QuerySolutions,
+    RDFFormat, RdfData, ReaderMode, ResultShapeMap, Rudof, RudofError, ServiceDescription, ServiceDescriptionFormat,
+    ShExFormat, ShExFormatter, ShExSchema, ShaCo, ShaclFormat, ShaclValidationMode, ShapeLabel, ShapeMapFormat,
     ShapeMapFormatter, ShapesGraphSource, SortMode, UmlGenerationMode, ValidationReport, ValidationStatus, VarName,
     compare::{InputCompareFormat, InputCompareMode},
     node_info::{format_node_info_list, get_node_info},
@@ -1850,7 +1850,7 @@ impl PyCompareSchemaMode {
 #[pyclass(name = "ShaclSchema")]
 pub struct PyShaclSchema {
     /// Internal Rust struct holding the SHACL schema intermediate representation.
-    inner: ShaclSchemaIR,
+    inner: IRSchema,
 }
 
 #[pymethods]

@@ -3,7 +3,6 @@ use std::io::Cursor;
 use anyhow::*;
 use prefixmap::PrefixMap;
 use rudof_rdf::rdf_core::RDFFormat;
-use shacl_ir::schema_ir::SchemaIR;
 use shacl_validation::shacl_processor::EndpointValidation;
 use shacl_validation::shacl_processor::ShaclProcessor as _;
 use shacl_validation::shacl_processor::ShaclValidationMode;
@@ -28,7 +27,7 @@ fn main() -> Result<()> {
             ] .
     "#;
 
-    let schema: SchemaIR = ShaclDataManager::load(&mut Cursor::new(shacl), "Test", RDFFormat::Turtle, None)?;
+    let schema = ShaclDataManager::load(&mut Cursor::new(shacl), "Test", RDFFormat::Turtle, None)?;
 
     let mut endpoint_validation = EndpointValidation::new(
         "https://query.wikidata.org/sparql",

@@ -11,10 +11,8 @@ use rudof_rdf::rdf_core::{
     query::QueryRDF,
     term::{Object, literal::Literal},
 };
-use shacl_ir::compiled::component_ir::ComponentIR;
-use shacl_ir::compiled::shape::ShapeIR;
-use shacl_ir::components::UniqueLang;
-use shacl_ir::schema_ir::SchemaIR;
+use shacl::ir::components::UniqueLang;
+use shacl::ir::{IRComponent, IRSchema, IRShape};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use tracing::debug;
@@ -22,14 +20,14 @@ use tracing::debug;
 impl<S: NeighsRDF + Debug> Validator<S> for UniqueLang {
     fn validate(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         _: &S,
         _: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        _shapes_graph: &SchemaIR,
+        _source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        _shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         // If unique_lang is not activated, just return without any check
         if !self.unique_lang() {
@@ -65,7 +63,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for UniqueLang {
                     );
                     let validation_result = ValidationResult::new(shape.id().clone(), component, shape.severity())
                         .with_message(message.as_str())
-                        .with_path(maybe_path.clone());
+                        .with_path(maybe_path.cloned());
                     validation_results.push(validation_result);
                 }
             }
@@ -77,14 +75,14 @@ impl<S: NeighsRDF + Debug> Validator<S> for UniqueLang {
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for UniqueLang {
     fn validate_native(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         store: &S,
         engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        shapes_graph: &SchemaIR,
+        source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -102,13 +100,13 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for UniqueLang {
 impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for UniqueLang {
     fn validate_sparql(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        shapes_graph: &SchemaIR,
+        source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,

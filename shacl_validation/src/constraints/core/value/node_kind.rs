@@ -11,38 +11,36 @@ use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF, term::Term};
-use shacl_ast::node_kind::NodeKind;
-use shacl_ir::compiled::component_ir::ComponentIR;
-use shacl_ir::compiled::shape::ShapeIR;
-use shacl_ir::components::Nodekind;
-use shacl_ir::schema_ir::SchemaIR;
+use shacl::ir::components::Nodekind as NodeKindComponent;
+use shacl::ir::{IRComponent, IRSchema, IRShape};
+use shacl::types::NodeKind;
 use std::fmt::Debug;
 
-impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Nodekind {
+impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for NodeKindComponent {
     fn validate_native(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         _: &S,
         _engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        _shapes_graph: &SchemaIR,
+        _source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        _shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node_kind = |value_node: &S::Term| {
             match (value_node.is_blank_node(), value_node.is_iri(), value_node.is_literal()) {
                 (true, false, false) => matches!(
                     self.node_kind(),
-                    NodeKind::BlankNode | NodeKind::BlankNodeOrIri | NodeKind::BlankNodeOrLiteral
+                    NodeKind::BNode | NodeKind::BNodeOrIri | NodeKind::BNodeOrLit
                 ),
                 (false, true, false) => matches!(
                     self.node_kind(),
-                    NodeKind::Iri | NodeKind::IRIOrLiteral | NodeKind::BlankNodeOrIri
+                    NodeKind::Iri | NodeKind::IriOrLit | NodeKind::BNodeOrIri
                 ),
                 (false, false, true) => matches!(
                     self.node_kind(),
-                    NodeKind::Literal | NodeKind::IRIOrLiteral | NodeKind::BlankNodeOrLiteral
+                    NodeKind::Lit | NodeKind::IriOrLit | NodeKind::BNodeOrLit
                 ),
                 _ => false,
             }
@@ -65,16 +63,16 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Nodekind {
     }
 }
 
-impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Nodekind {
+impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for NodeKindComponent {
     fn validate_sparql(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        _shapes_graph: &SchemaIR,
+        _source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        _shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let node_kind = self.node_kind().clone();
 

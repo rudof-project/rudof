@@ -10,10 +10,8 @@ use crate::shape_validation::Validate;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF, term::Object};
-use shacl_ir::compiled::component_ir::ComponentIR;
-use shacl_ir::compiled::shape::ShapeIR;
-use shacl_ir::components::QualifiedValueShape;
-use shacl_ir::schema_ir::SchemaIR;
+use shacl::ir::components::QualifiedValueShape;
+use shacl::ir::{IRComponent, IRSchema, IRShape};
 use std::collections::HashSet;
 use std::fmt::Debug;
 use tracing::trace;
@@ -21,14 +19,14 @@ use tracing::trace;
 impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
     fn validate(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         store: &S,
         engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        shapes_graph: &SchemaIR,
+        _source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         // TODO: It works but it returns duplicated validation results
         // I tried to use a HashSet but it still doesn't remove duplicates...
@@ -102,7 +100,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                 );
                 let validation_result = ValidationResult::new(shape.id().clone(), component.clone(), shape.severity())
                     .with_message(message.as_str())
-                    .with_path(maybe_path.clone());
+                    .with_path(maybe_path.cloned());
                 validation_results.insert(validation_result);
             }
             if let Some(max_count) = self.qualified_max_count()
@@ -114,7 +112,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                 );
                 let validation_result = ValidationResult::new(shape.id().clone(), component.clone(), shape.severity())
                     .with_message(message.as_str())
-                    .with_path(maybe_path.clone());
+                    .with_path(maybe_path.cloned());
                 validation_results.insert(validation_result);
             }
         }
@@ -125,14 +123,14 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for QualifiedValueShape {
     fn validate_native(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         store: &S,
         engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        shapes_graph: &SchemaIR,
+        source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -150,13 +148,13 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for QualifiedValueShape 
 impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for QualifiedValueShape {
     fn validate_sparql(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        shape_graph: &SchemaIR,
+        source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        shape_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,

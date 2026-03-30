@@ -3,7 +3,7 @@ use crate::common::testsuite_error::TestSuiteError;
 use oxrdf::{NamedNode, NamedOrBlankNode as OxSubject, Term as OxTerm};
 use rudof_rdf::rdf_core::vocabs::RdfVocab;
 use rudof_rdf::rdf_core::{Any, NeighsRDF, RDFFormat, term::Triple};
-use shacl_rdf::ShaclParser;
+use shacl::rdf::ShaclParser;
 use shacl_validation::shacl_validation_vocab;
 use shacl_validation::store::Store;
 use shacl_validation::store::graph::Graph;

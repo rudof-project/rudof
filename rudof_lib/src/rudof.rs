@@ -10,9 +10,9 @@ pub use rudof_rdf::rdf_core::{
     visualizer::uml_converter::UmlGenerationMode,
 };
 pub use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
-pub use shacl_ast::ShaclFormat;
-pub use shacl_ast::ast::ShaclSchema;
-pub use shacl_ir::compiled::schema_ir::SchemaIR as ShaclSchemaIR;
+pub use shacl::ast::ASTSchema;
+pub use shacl::ir::IRSchema;
+pub use shacl::types::ShaclFormat;
 pub use shacl_validation::shacl_processor::ShaclValidationMode;
 pub use shacl_validation::validation_report::report::ValidationReport;
 pub use shapes_comparator::{CoShaMo, ComparatorError, CompareSchemaFormat, CompareSchemaMode, ShaCo};
@@ -56,7 +56,8 @@ use pgschema::{
 use rudof_generate::{DataGenerator, GeneratorConfig, config::OutputFormat};
 use rudof_rdf::rdf_core::{FocusRDF, Rdf, query::QueryRDF, visualizer::VisualRDFGraph};
 use rudof_rdf::rdf_impl::SparqlEndpoint;
-use shacl_rdf::{ShaclParser, ShaclWriter};
+use shacl::error::IRError;
+use shacl::rdf::{ShaclParser, ShaclWriter};
 use shacl_validation::shacl_processor::{GraphValidation, ShaclProcessor};
 use shacl_validation::store::graph::Graph;
 use shapes_comparator::CoShaMoConverter;
@@ -88,10 +89,10 @@ pub struct Rudof {
     rdf_data: RdfData,
 
     /// Current SHACL Schema
-    shacl_schema: Option<ShaclSchema<RdfData>>,
+    shacl_schema: Option<ASTSchema>,
 
     /// Current SHACL Schema Internal Representation
-    shacl_schema_ir: Option<ShaclSchemaIR>,
+    shacl_schema_ir: Option<IRSchema>,
 
     /// Current ShEx Schema
     shex_schema: Option<ShExSchema>,
@@ -235,13 +236,13 @@ impl Rudof {
     pub fn get_shacl_from_data(&mut self) -> Result<()> {
         let schema = shacl_schema_from_data(self.rdf_data.clone())?;
         self.shacl_schema = Some(schema.clone());
-        let shacl_ir = ShaclSchemaIR::compile(&schema).map_err(|e| RudofError::ShaclCompilation { error: e })?;
+        let shacl_ir = IRSchema::compile(&schema).map_err(|e| RudofError::ShaclCompilation { error: e })?;
         self.shacl_schema_ir = Some(shacl_ir);
         Ok(())
     }
 
     /// Get the current SHACL
-    pub fn get_shacl(&self) -> Option<&ShaclSchema<RdfData>> {
+    pub fn get_shacl(&self) -> Option<&ASTSchema> {
         self.shacl_schema.as_ref()
     }
 
@@ -251,7 +252,7 @@ impl Rudof {
     }
 
     /// Get the current SHACL Schema Internal Representation
-    pub fn get_shacl_ir(&self) -> Option<&ShaclSchemaIR> {
+    pub fn get_shacl_ir(&self) -> Option<&IRSchema> {
         self.shacl_schema_ir.as_ref()
     }
 
@@ -581,7 +582,10 @@ impl Rudof {
                 _ => {
                     let data_format = shacl_format2rdf_format(format)?;
                     let mut shacl_writer: ShaclWriter<RdfData> = ShaclWriter::new();
-                    shacl_writer.write(shacl).map_err(|e| RudofError::WritingSHACL {
+                    let ir = shacl
+                        .try_into()
+                        .map_err(|e: IRError| RudofError::CompilingSchemaError { error: e.to_string() })?;
+                    shacl_writer.register(&ir).map_err(|e| RudofError::WritingSHACL {
                         shacl: format!("{:?}", shacl.clone()),
                         error: format!("{e}"),
                     })?;
@@ -1050,22 +1054,18 @@ impl Rudof {
         let (compiled_schema, ast_schema) = match shapes_graph_source {
             ShapesGraphSource::CurrentSchema if self.shacl_schema.is_some() => {
                 let ast_schema = self.shacl_schema.as_ref().unwrap();
-                let compiled_schema =
-                    ShaclSchemaIR::compile(ast_schema).map_err(|e| RudofError::SHACLCompilationError {
-                        error: e.to_string(),
-                        schema: Box::new(ast_schema.clone()),
-                    })?;
-                Ok::<(shacl_ir::schema_ir::SchemaIR, shacl_ast::ShaclSchema<RdfData>), RudofError>((
-                    compiled_schema,
-                    ast_schema.clone(),
-                ))
+                let compiled_schema = IRSchema::compile(ast_schema).map_err(|e| RudofError::SHACLCompilationError {
+                    error: e.to_string(),
+                    schema: Box::new(ast_schema.clone()),
+                })?;
+                Ok::<(IRSchema, ASTSchema), RudofError>((compiled_schema, ast_schema.clone()))
             },
             // If self.shacl_schema is None or shapes_graph_source is CurrentData
             // We extract the SHACL schema from the current RDF data
             _ => {
                 let ast_schema = shacl_schema_from_data(self.rdf_data.clone())?;
                 let compiled_schema =
-                    ShaclSchemaIR::compile(&ast_schema).map_err(|e| RudofError::SHACLCompilationError {
+                    IRSchema::compile(&ast_schema).map_err(|e| RudofError::SHACLCompilationError {
                         error: e.to_string(),
                         schema: Box::new(ast_schema.clone()),
                     })?;
@@ -2212,7 +2212,7 @@ fn cnv_rdf_config_format(format: &RdfConfigResultFormat) -> &rdf_config::RdfConf
     }
 }
 
-fn shacl_schema_from_data<RDF: FocusRDF + Debug>(rdf_data: RDF) -> Result<ShaclSchema<RDF>> {
+fn shacl_schema_from_data<RDF: FocusRDF + Debug>(rdf_data: RDF) -> Result<ASTSchema> {
     let schema = ShaclParser::new(rdf_data)
         .parse()
         .map_err(|e| RudofError::SHACLParseError { error: format!("{e}") })?;
@@ -2296,7 +2296,7 @@ pub struct ShExStatistics {
 #[cfg(test)]
 mod tests {
     use iri_s::{IriS, iri};
-    use shacl_ast::ShaclFormat;
+    use shacl::types::ShaclFormat;
     use shacl_validation::shacl_processor::ShaclValidationMode;
     use shex_ast::ShExFormat;
     use shex_ast::shapemap::ShapeMapFormat;

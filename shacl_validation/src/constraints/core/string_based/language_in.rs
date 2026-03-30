@@ -1,8 +1,6 @@
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF, term::literal::Literal};
-use shacl_ir::compiled::component_ir::ComponentIR;
-use shacl_ir::compiled::shape::ShapeIR;
-use shacl_ir::components::LanguageIn;
-use shacl_ir::schema_ir::SchemaIR;
+use shacl::ir::components::LanguageIn;
+use shacl::ir::{IRComponent, IRSchema, IRShape};
 use std::fmt::Debug;
 
 use crate::constraints::NativeValidator;
@@ -19,14 +17,14 @@ use crate::value_nodes::ValueNodes;
 impl<S: NeighsRDF + Debug> Validator<S> for LanguageIn {
     fn validate(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         _: &S,
         _: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        _shapes_graph: &SchemaIR,
+        _source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        _shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let language_in = |value_node: &S::Term| {
             if let Ok(literal) = S::term_as_literal(value_node) {
@@ -61,14 +59,14 @@ impl<S: NeighsRDF + Debug> Validator<S> for LanguageIn {
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LanguageIn {
     fn validate_native<'a>(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         store: &S,
         engine: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        shapes_graph: &SchemaIR,
+        source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,
@@ -86,13 +84,13 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LanguageIn {
 impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for LanguageIn {
     fn validate_sparql(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        shapes_graph: &SchemaIR,
+        source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         self.validate(
             component,

@@ -1,7 +1,8 @@
 use super::validation_report_error::{ReportError, ResultError};
+use iri_s::IriS;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{BuildRDF, FocusRDF, NeighsRDF, SHACLPath, term::Object};
-use shacl_ir::severity::CompiledSeverity;
+use shacl::types::Severity;
 use std::fmt::{Debug, Display};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -13,12 +14,12 @@ pub struct ValidationResult {
     constraint_component: Object, // required
     details: Option<Vec<Object>>, // optional
     message: Option<String>,      // optional
-    severity: CompiledSeverity,   // required
+    severity: Severity,           // required
 }
 
 impl ValidationResult {
     // Creates a new validation result
-    pub fn new(focus_node: Object, constraint_component: Object, severity: CompiledSeverity) -> Self {
+    pub fn new(focus_node: Object, constraint_component: Object, severity: Severity) -> Self {
         Self {
             focus_node,
             path: None,
@@ -80,7 +81,7 @@ impl ValidationResult {
         &self.constraint_component
     }
 
-    pub fn severity(&self) -> &CompiledSeverity {
+    pub fn severity(&self) -> &Severity {
         &self.severity
     }
 }
@@ -105,12 +106,7 @@ impl ValidationResult {
                 predicate: ShaclVocab::sh_result_severity().to_string(),
                 error: e.to_string(),
             })? {
-            Some(Object::Iri(severity)) => {
-                CompiledSeverity::from_iri(&severity).ok_or_else(|| ResultError::WrongIRIForSeverity {
-                    field: "Severity".to_owned(),
-                    value: format!("{severity}"),
-                })?
-            },
+            Some(Object::Iri(severity)) => (&severity).into(),
             Some(other) => {
                 return Err(ResultError::WrongNodeForSeverity {
                     field: "Severity".to_owned(),
@@ -196,7 +192,7 @@ impl ValidationResult {
             .map_err(|e| ReportError::ValidationError {
                 msg: format!("Error adding source constraint component to validation result: {e}"),
             })?;
-        let severity: RDF::Term = self.severity().to_iri().into();
+        let severity: RDF::Term = <&Severity as Into<IriS>>::into(self.severity()).into();
         rdf_writer
             .add_triple(report_node.clone(), ShaclVocab::sh_result_severity().clone(), severity)
             .map_err(|e| ReportError::ValidationError {

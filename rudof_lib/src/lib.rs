@@ -48,7 +48,6 @@ pub use rudof_config::*;
 pub use rudof_error::*;
 pub use rudof_rdf::*;
 pub use selector::*;
-pub use shacl_ir;
 pub use shacl_validation;
 pub use shapes_graph_source::*;
 pub use shex_ast::*;

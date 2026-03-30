@@ -13,24 +13,22 @@ use rudof_rdf::rdf_core::{
     query::QueryRDF,
     term::{Iri as _, Term, literal::Literal as _},
 };
-use shacl_ir::compiled::component_ir::ComponentIR;
-use shacl_ir::compiled::shape::ShapeIR;
-use shacl_ir::components::MinLength;
-use shacl_ir::schema_ir::SchemaIR;
+use shacl::ir::components::MinLength;
+use shacl::ir::{IRComponent, IRSchema, IRShape};
 use std::fmt::Debug;
 use tracing::debug;
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinLength {
     fn validate_native<'a>(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         _store: &S,
         _engine: &mut dyn engine::Engine<S>,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        _shapes_graph: &SchemaIR,
+        _source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        _shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         debug!("Maybe_path: {:?}", maybe_path);
         let min_length = |value_node: &S::Term| {
@@ -69,13 +67,13 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinLength {
 impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MinLength {
     fn validate_sparql(
         &self,
-        component: &ComponentIR,
-        shape: &ShapeIR,
+        component: &IRComponent,
+        shape: &IRShape,
         store: &S,
         value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&ShapeIR>,
-        maybe_path: Option<SHACLPath>,
-        _shapes_graph: &SchemaIR,
+        _source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        _shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let min_length_value = self.min_length();
 

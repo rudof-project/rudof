@@ -4,9 +4,8 @@ use crate::helpers::helper_error::SRDFError;
 // use oxiri::IriParseError;
 use rudof_rdf::rdf_core::RDFError;
 use rudof_rdf::rdf_impl::InMemoryGraphError;
-use shacl_ir::compiled::compiled_shacl_error::CompiledShaclError;
-use shacl_ir::shape_label_idx::ShapeLabelIdx;
-use shacl_rdf::error::ShaclParserError;
+use shacl::error::{IRError, ShaclParserError};
+use shacl::ir::ShapeLabelIdx;
 use sparql_service::RdfDataError;
 use thiserror::Error;
 
@@ -80,7 +79,7 @@ pub enum ValidateError {
     TargetClassError { msg: String },
 
     #[error("Error during the compilation of the Schema, {error}")]
-    CompiledShacl { error: Box<CompiledShaclError> },
+    CompiledShacl { error: Box<IRError> },
 
     #[error("Not yet implemented: {msg}")]
     NotImplemented { msg: String },
