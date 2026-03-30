@@ -15,3 +15,4 @@ pub(crate) use component::ASTComponent;
 pub(crate) use node_shape::ASTNodeShape;
 pub(crate) use property_shape::ASTPropertyShape;
 pub(crate) use schema::ASTSchema;
+pub(crate) use shape::ASTShape;

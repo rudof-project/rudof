@@ -47,3 +47,17 @@ impl PartialEq for ASTShape {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::ast::{ASTNodeShape, ASTShape};
+    use iri_s::iri;
+    use rudof_rdf::rdf_core::term::Object;
+
+    fn test_clone() {
+        let ns = ASTNodeShape::new(Object::Iri(iri!("http://example.org/id")));
+        let s1 = ASTShape::node_shape(ns);
+        let s2 = s1.clone();
+        assert_eq!(s1, s2)
+    }
+}
