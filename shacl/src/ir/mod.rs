@@ -7,6 +7,7 @@ use iri_s::IriS;
 use prefixmap::IriRef;
 use rudof_rdf::rdf_core::term::Object;
 
+mod component;
 mod components;
 mod shape_label_idx;
 mod error;
