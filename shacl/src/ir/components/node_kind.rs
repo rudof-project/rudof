@@ -1,7 +1,6 @@
 use crate::types::NodeKind;
 use std::fmt::{Display, Formatter};
 
-
 /// sh:nodeKind specifies a condition to be satisfied by the RDF node kind of
 /// each value node.
 ///

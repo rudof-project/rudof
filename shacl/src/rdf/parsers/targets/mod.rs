@@ -1,6 +1,6 @@
 use crate::types::Target;
-use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
 use rudof_rdf::rdf_core::FocusRDF;
+use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
 
 mod class;
 mod implicit_class;

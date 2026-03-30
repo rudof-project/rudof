@@ -1,12 +1,11 @@
-
 #[cfg(test)]
 mod tests {
     use crate::ast::{ASTComponent, ASTNodeShape, ASTShape};
     use crate::rdf::ShaclParser;
     use crate::types::Target;
     use iri_s::iri;
-    use rudof_rdf::rdf_core::term::Object;
     use rudof_rdf::rdf_core::RDFFormat;
+    use rudof_rdf::rdf_core::term::Object;
     use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 
     #[test]
@@ -22,12 +21,7 @@ mod tests {
         "#;
 
         let shape_id = Object::iri(iri!("http://example.org/TestShape"));
-        let graph = InMemoryGraph::from_str(
-            shape,
-            &RDFFormat::Turtle,
-            None,
-            &ReaderMode::default()
-        ).unwrap();
+        let graph = InMemoryGraph::from_str(shape, &RDFFormat::Turtle, None, &ReaderMode::default()).unwrap();
         let ast = ShaclParser::new(graph).parse().unwrap();
         let shape = match ast.get_shape(&shape_id).unwrap() {
             ASTShape::NodeShape(ns) => ns,
@@ -39,7 +33,7 @@ mod tests {
                 assert_eq!(langs.len(), 2);
                 assert_eq!(langs[0].as_str(), "en");
                 assert_eq!(langs[1].as_str(), "fr");
-            }
+            },
             _ => unreachable!(),
         }
     }
@@ -56,13 +50,9 @@ mod tests {
 
         let rdf = InMemoryGraph::from_str(graph, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
         let ast = ShaclParser::new(rdf).parse().unwrap();
-        let shape = ast
-            .get_shape(&shape_id)
-            .unwrap();
+        let shape = ast.get_shape(&shape_id).unwrap();
         let expected_node_shape = ASTNodeShape::new(shape_id)
-            .with_targets(vec![Target::Class(
-                Object::iri(iri!("http://example.org/TargetClass"))
-            )]);
+            .with_targets(vec![Target::Class(Object::iri(iri!("http://example.org/TargetClass")))]);
 
         let expected_shape = ASTShape::node_shape(expected_node_shape);
         assert_eq!(*shape, expected_shape);

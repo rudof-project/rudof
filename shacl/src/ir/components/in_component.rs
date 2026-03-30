@@ -22,7 +22,8 @@ impl In {
 
 impl Display for In {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let values = self.values()
+        let values = self
+            .values()
             .iter()
             .map(|v| v.to_string())
             .collect::<Vec<_>>()

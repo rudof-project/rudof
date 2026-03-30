@@ -20,7 +20,7 @@ impl From<&IriS> for Severity {
             ShaclVocab::SH_INFO => Severity::Info,
             ShaclVocab::SH_WARNING => Severity::Warning,
             ShaclVocab::SH_VIOLATION => Severity::Violation,
-            _ => Severity::Generic(value.clone())
+            _ => Severity::Generic(value.clone()),
         }
     }
 }

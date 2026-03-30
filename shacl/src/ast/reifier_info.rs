@@ -10,11 +10,14 @@ pub struct ReifierInfo {
 
 impl ReifierInfo {
     pub fn new(reification_required: bool, reifier_shape: Vec<Object>) -> Self {
-        ReifierInfo { reification_required, reifier_shape }
+        ReifierInfo {
+            reification_required,
+            reifier_shape,
+        }
     }
 
     pub fn reification_required(&self) -> bool {
-       self.reification_required
+        self.reification_required
     }
 
     pub fn reifier_shape(&self) -> &Vec<Object> {
@@ -24,12 +27,11 @@ impl ReifierInfo {
 
 impl Display for ReifierInfo {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "ReifierInfo {{ reificationRequired: {}, reifierShape: {} }}",
+        write!(
+            f,
+            "ReifierInfo {{ reificationRequired: {}, reifierShape: {} }}",
             self.reification_required,
-            self.reifier_shape()
-                   .iter()
-                   .map(|node| node.to_string())
-                   .join(", ")
+            self.reifier_shape().iter().map(|node| node.to_string()).join(", ")
         )
     }
 }

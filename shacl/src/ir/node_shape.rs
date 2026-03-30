@@ -7,9 +7,9 @@ use crate::ir::shape::IRShape;
 use crate::ir::shape_label_idx::ShapeLabelIdx;
 use crate::types::{ClosedInfo, MessageMap, Severity, Target};
 use iri_s::IriS;
+use rudof_rdf::rdf_core::BuildRDF;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
-use rudof_rdf::rdf_core::BuildRDF;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone)]
@@ -106,9 +106,7 @@ impl IRNodeShape {
     }
 
     pub fn allowed_properties(&self) -> HashSet<IriS> {
-        self.closed_info
-            .allowed_properties()
-            .unwrap_or_else(HashSet::new)
+        self.closed_info.allowed_properties().unwrap_or_default()
     }
 
     pub fn components(&self) -> &Vec<IRComponent> {
@@ -174,9 +172,12 @@ impl IRNodeShape {
 }
 
 impl IRNodeShape {
-
     // TODO - Maybe change error type
-    pub fn register<RDF: BuildRDF>(&self, graph: &mut RDF, shapes_map: &HashMap<ShapeLabelIdx, IRShape>) -> Result<(), RDF::Err> {
+    pub fn register<RDF: BuildRDF>(
+        &self,
+        graph: &mut RDF,
+        shapes_map: &HashMap<ShapeLabelIdx, IRShape>,
+    ) -> Result<(), RDF::Err> {
         let id: RDF::Subject = self.id.clone().try_into().map_err(|_| unreachable!())?;
         graph.add_type(id.clone(), ShaclVocab::sh_node_shape().clone())?;
 
@@ -202,9 +203,7 @@ impl IRNodeShape {
             .iter()
             .try_for_each(|c| c.register(&self.id, graph, shapes_map))?;
 
-        self.targets
-            .iter()
-            .try_for_each(|t| t.register(&self.id, graph))?;
+        self.targets.iter().try_for_each(|t| t.register(&self.id, graph))?;
 
         self.property_shapes.iter().try_for_each(|idx| {
             // TODO - Throw error instead of unwrap
@@ -226,7 +225,14 @@ impl IRNodeShape {
 }
 
 impl IRNodeShape {
-    pub fn add_edges(&self, idx: ShapeLabelIdx, dg: &mut DependencyGraph, posneg: PosNeg, ir: &IRSchema, cache: &mut HashSet<ShapeLabelIdx>) {
+    pub fn add_edges(
+        &self,
+        idx: ShapeLabelIdx,
+        dg: &mut DependencyGraph,
+        posneg: PosNeg,
+        ir: &IRSchema,
+        cache: &mut HashSet<ShapeLabelIdx>,
+    ) {
         for component in &self.components {
             component.add_edges(idx, dg, posneg, ir, cache);
         }

@@ -1,17 +1,17 @@
-mod state;
-mod utils;
-mod components;
 mod cardinality;
+mod components;
 mod logical;
 mod non_shape;
 mod other;
 mod property_pair;
 mod shape_based;
+mod shape_type;
+mod state;
+mod string_based;
 mod targets;
+mod utils;
 mod value_range;
 mod value_type;
-mod shape_type;
-mod string_based;
 
 pub(crate) use cardinality::{max_count, min_count};
 pub(crate) use logical::{and, not, or, xone};

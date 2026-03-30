@@ -39,10 +39,13 @@ impl ClosedInfo {
     /// Allowed properties are the union of ignored properties and the properties that are defined in a shape
     pub fn allowed_properties(&self) -> Option<HashSet<IriS>> {
         match self {
-            ClosedInfo::Yes { defined_properties, ignored_properties } => {
+            ClosedInfo::Yes {
+                defined_properties,
+                ignored_properties,
+            } => {
                 let result = defined_properties.union(ignored_properties).cloned().collect();
                 Some(result)
-            }
+            },
             ClosedInfo::No => None,
         }
     }
@@ -51,10 +54,9 @@ impl ClosedInfo {
 pub(crate) fn defined_properties_for(properties: &[Object], ast: &ASTSchema) -> Result<HashSet<IriS>, ASTError> {
     let mut defined_properties = HashSet::new();
     for prop_shape_ref in properties {
-        let prop_shape = ast.get_shape(prop_shape_ref)
-            .ok_or_else(|| ASTError::ShapeNotFound {
-                shape: Box::new(prop_shape_ref.clone()),
-            })?;
+        let prop_shape = ast.get_shape(prop_shape_ref).ok_or_else(|| ASTError::ShapeNotFound {
+            shape: Box::new(prop_shape_ref.clone()),
+        })?;
         match prop_shape {
             ASTShape::PropertyShape(ps) => {
                 // Better to ignore complex paths then make Rudof crash
@@ -64,9 +66,11 @@ pub(crate) fn defined_properties_for(properties: &[Object], ast: &ASTSchema) -> 
                     defined_properties.insert(pred.clone());
                 }
             },
-            _ => return Err(ASTError::ShapeNotFound {
-                shape: Box::new(prop_shape_ref.clone()),
-            }),
+            _ => {
+                return Err(ASTError::ShapeNotFound {
+                    shape: Box::new(prop_shape_ref.clone()),
+                });
+            },
         }
     }
 

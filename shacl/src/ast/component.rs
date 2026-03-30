@@ -2,8 +2,8 @@ use crate::types::{NodeKind, Value};
 use iri_s::IriS;
 use itertools::Itertools;
 use prefixmap::IriRef;
-use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, Lang};
 use rudof_rdf::rdf_core::term::Object;
+use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, Lang};
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
@@ -22,7 +22,10 @@ pub enum ASTComponent {
     MaxInclusive(ConcreteLiteral),
     MinLength(isize),
     MaxLength(isize),
-    Pattern { pattern: String, flags: Option<String> },
+    Pattern {
+        pattern: String,
+        flags: Option<String>,
+    },
     UniqueLang(bool),
     LanguageIn(Vec<Lang>),
     Equals(IriRef),
@@ -33,7 +36,10 @@ pub enum ASTComponent {
     And(Vec<Object>),
     Not(Object),
     Xone(Vec<Object>),
-    Closed { is_closed: bool, ignored_properties: HashSet<IriS> },
+    Closed {
+        is_closed: bool,
+        ignored_properties: HashSet<IriS>,
+    },
     Node(Object),
     HasValue(Value),
     In(Vec<Value>),
@@ -64,10 +70,10 @@ impl Display for ASTComponent {
             ASTComponent::Pattern { pattern, flags } => match flags {
                 None => write!(f, "pattern({pattern})"),
                 Some(flags) => write!(f, "pattern({pattern}, {flags})"),
-            }
+            },
             ASTComponent::UniqueLang(l) => write!(f, "uniqueLang({l})"),
             ASTComponent::LanguageIn(l) => {
-               let str = l.iter().map(|s| s.to_string()).join(", ");
+                let str = l.iter().map(|s| s.to_string()).join(", ");
                 write!(f, "languageIn[{str}]")
             },
             ASTComponent::Equals(iri) => write!(f, "equals({iri})"),
@@ -77,22 +83,29 @@ impl Display for ASTComponent {
             ASTComponent::Or(obj) => {
                 let str = obj.iter().map(|s| s.to_string()).join(", ");
                 write!(f, "or[{str}]")
-            }
+            },
             ASTComponent::And(obj) => {
                 let str = obj.iter().map(|s| s.to_string()).join(", ");
                 write!(f, "and[{str}]")
-            }
+            },
             ASTComponent::Not(obj) => write!(f, "not({obj})"),
             ASTComponent::Xone(obj) => {
                 let str = obj.iter().map(|s| s.to_string()).join(", ");
                 write!(f, "xone[{str}]")
-            }
-            ASTComponent::Closed { is_closed, ignored_properties } => write!(f,
-                                                                             "closed({is_closed}{})",
-                                                                             if ignored_properties.is_empty() {
+            },
+            ASTComponent::Closed {
+                is_closed,
+                ignored_properties,
+            } => write!(
+                f,
+                "closed({is_closed}{})",
+                if ignored_properties.is_empty() {
                     "".to_string()
                 } else {
-                    format!(", Ignored props: [{}]", ignored_properties.iter().map(|p|p.to_string()).join(", "))
+                    format!(
+                        ", Ignored props: [{}]",
+                        ignored_properties.iter().map(|p| p.to_string()).join(", ")
+                    )
                 }
             ),
             ASTComponent::Node(obj) => write!(f, "node({obj})"),
@@ -100,23 +113,25 @@ impl Display for ASTComponent {
             ASTComponent::In(v) => {
                 let str = v.iter().map(|v| v.to_string()).join(", ");
                 write!(f, "in[{str}]")
-            }
+            },
             ASTComponent::QualifiedValueShape {
                 shape,
                 disjoint,
                 siblings,
                 q_max_count,
-                q_min_count
+                q_min_count,
             } => {
-              write!(f, "qualifiedValueShape(shape: {shape}, qualified_min_count: {q_min_count:?}, qualified_max_count: {q_max_count:?}, qualified_value_shape_disjoint: {disjoint:?}{}",
-                  if siblings.is_empty() {
-                      "".to_string()
-                  } else {
-                      format!(", siblings: [{}]", siblings.iter().map(|s| s.to_string()).join(", "))
-                  }
-              )
+                write!(
+                    f,
+                    "qualifiedValueShape(shape: {shape}, qualified_min_count: {q_min_count:?}, qualified_max_count: {q_max_count:?}, qualified_value_shape_disjoint: {disjoint:?}{}",
+                    if siblings.is_empty() {
+                        "".to_string()
+                    } else {
+                        format!(", siblings: [{}]", siblings.iter().map(|s| s.to_string()).join(", "))
+                    }
+                )
             },
-            ASTComponent::Deactivated(b) => write!(f, "deactivated({b})")
+            ASTComponent::Deactivated(b) => write!(f, "deactivated({b})"),
         }
     }
 }

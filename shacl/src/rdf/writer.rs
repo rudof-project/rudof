@@ -9,7 +9,7 @@ pub struct ShaclWriter<RDF: BuildRDF> {
 
 impl<RDF: BuildRDF> ShaclWriter<RDF> {
     pub fn new() -> Self {
-        Self { rdf: RDF::empty(), }
+        Self { rdf: RDF::empty() }
     }
 
     pub fn register(&mut self, ir: &IRSchema) -> Result<(), ShaclWriterError> {

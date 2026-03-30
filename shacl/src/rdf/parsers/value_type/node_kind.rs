@@ -8,17 +8,16 @@ use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{FocusRDF, Rdf};
 
 pub(crate) fn node_kind<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<ASTComponent>> {
-    ValuesPropertyParser::new(ShaclVocab::sh_node_kind().clone())
-        .flat_map(|ns| {
-            let nks: Vec<_> = ns
-                .into_iter()
-                .flat_map(|term| {
-                    let nk = term_to_node_kind::<RDF>(term)?;
-                    Ok::<ASTComponent, ShaclParserError>(ASTComponent::NodeKind(nk))
-                })
-                .collect();
-            Ok(nks)
-        })
+    ValuesPropertyParser::new(ShaclVocab::sh_node_kind().clone()).flat_map(|ns| {
+        let nks: Vec<_> = ns
+            .into_iter()
+            .flat_map(|term| {
+                let nk = term_to_node_kind::<RDF>(term)?;
+                Ok::<ASTComponent, ShaclParserError>(ASTComponent::NodeKind(nk))
+            })
+            .collect();
+        Ok(nks)
+    })
 }
 
 fn term_to_node_kind<RDF: Rdf>(term: RDF::Term) -> Result<NodeKind, ShaclParserError> {
@@ -35,8 +34,6 @@ fn term_to_node_kind<RDF: Rdf>(term: RDF::Term) -> Result<NodeKind, ShaclParserE
         ShaclVocab::SH_BLANK_NODE_OR_IRI => Ok(NodeKind::BNodeOrIri),
         ShaclVocab::SH_BLANK_NODE_OR_LITERAL => Ok(NodeKind::BNodeOrLit),
         ShaclVocab::SH_IRI_OR_LITERAL => Ok(NodeKind::IriOrLit),
-        _ => Err(ShaclParserError::UnknownNodeKind {
-            term: term_name
-        }),
+        _ => Err(ShaclParserError::UnknownNodeKind { term: term_name }),
     }
 }

@@ -3,13 +3,13 @@
 //! This project started as a re-implementation in Rust of [SHACL-s](https://github.com/weso/shacl-s).
 
 mod component;
-mod node_shape;
-mod property_shape;
-mod schema;
-mod shape;
 pub(crate) mod error;
 mod node_expr;
+mod node_shape;
+mod property_shape;
 mod reifier_info;
+mod schema;
+mod shape;
 
 pub use component::ASTComponent;
 pub use node_shape::ASTNodeShape;

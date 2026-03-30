@@ -23,11 +23,14 @@ impl Xone {
 
 impl Display for Xone {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Xone[{}]", self.shapes()
-            .iter()
-            .map(|s| s.to_string())
-            .collect::<Vec<_>>()
-            .join(", ")
+        write!(
+            f,
+            "Xone[{}]",
+            self.shapes()
+                .iter()
+                .map(|s| s.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
         )
     }
 }

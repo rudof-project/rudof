@@ -23,11 +23,14 @@ impl Or {
 
 impl Display for Or {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Or [{}]", self.shapes()
-            .iter()
-            .map(|s| s.to_string())
-            .collect::<Vec<_>>()
-            .join(", ")
+        write!(
+            f,
+            "Or [{}]",
+            self.shapes()
+                .iter()
+                .map(|s| s.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
         )
     }
 }

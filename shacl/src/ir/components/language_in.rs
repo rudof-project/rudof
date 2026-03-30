@@ -22,7 +22,8 @@ impl LanguageIn {
 
 impl Display for LanguageIn {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let langs = self.langs()
+        let langs = self
+            .langs()
             .iter()
             .map(|l| l.to_string())
             .collect::<Vec<_>>()

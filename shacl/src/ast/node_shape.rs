@@ -1,6 +1,6 @@
 use crate::ast::error::ASTError;
 use crate::ast::{ASTComponent, ASTSchema};
-use crate::types::{defined_properties_for, ClosedInfo, MessageMap, Severity, Target};
+use crate::types::{ClosedInfo, MessageMap, Severity, Target, defined_properties_for};
 use iri_s::IriS;
 use rudof_rdf::rdf_core::term::Object;
 use std::collections::HashSet;
@@ -79,12 +79,13 @@ impl ASTNodeShape {
     pub fn name(&self) -> &MessageMap {
         &self.name
     }
-    
+
     pub fn description(&self) -> &MessageMap {
         &self.description
     }
 
-    pub fn is_deactivated(&self) -> bool { // TODO - Adapt for node expr since the expr needs to be computed
+    pub fn is_deactivated(&self) -> bool {
+        // TODO - Adapt for node expr since the expr needs to be computed
         for component in &self.components {
             if let ASTComponent::Deactivated(true) = component {
                 return true;
@@ -96,8 +97,10 @@ impl ASTNodeShape {
     fn closed_component(&self) -> (bool, HashSet<IriS>) {
         for component in self.components() {
             if let ASTComponent::Closed {
-                is_closed, ignored_properties
-            } = component {
+                is_closed,
+                ignored_properties,
+            } = component
+            {
                 return (*is_closed, ignored_properties.clone());
             }
         }
@@ -116,7 +119,7 @@ impl ASTNodeShape {
             Ok(ClosedInfo::No)
         }
     }
-    
+
     pub fn group(&self) -> Option<&Object> {
         self.group.as_ref()
     }

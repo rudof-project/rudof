@@ -22,11 +22,14 @@ impl And {
 
 impl Display for And {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "And [{}]", self.shapes()
-            .iter()
-            .map(|s| s.to_string())
-            .collect::<Vec<_>>()
-            .join(", ")
+        write!(
+            f,
+            "And [{}]",
+            self.shapes()
+                .iter()
+                .map(|s| s.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
         )
     }
 }

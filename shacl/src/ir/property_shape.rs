@@ -1,15 +1,15 @@
 use crate::ast::{ASTPropertyShape, ASTSchema};
+use crate::ir::ReifierInfo;
 use crate::ir::component::IRComponent;
 use crate::ir::dependency_graph::{DependencyGraph, PosNeg};
 use crate::ir::error::IRError;
 use crate::ir::schema::IRSchema;
 use crate::ir::shape::IRShape;
 use crate::ir::shape_label_idx::ShapeLabelIdx;
-use crate::ir::ReifierInfo;
 use crate::types::{ClosedInfo, MessageMap, Severity, Target};
 use iri_s::IriS;
-use rudof_rdf::rdf_core::term::literal::NumericLiteral;
 use rudof_rdf::rdf_core::term::Object;
+use rudof_rdf::rdf_core::term::literal::NumericLiteral;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{BuildRDF, SHACLPath};
 use std::collections::{HashMap, HashSet};
@@ -111,9 +111,7 @@ impl IRPropertyShape {
     }
 
     pub fn allowed_properties(&self) -> HashSet<IriS> {
-        self.closed_info
-            .allowed_properties()
-            .unwrap_or_else(HashSet::new)
+        self.closed_info.allowed_properties().unwrap_or_default()
     }
 
     pub fn path(&self) -> &SHACLPath {
@@ -130,15 +128,15 @@ impl IRPropertyShape {
             Some(severity) => severity.clone(),
         }
     }
-    
+
     pub fn components(&self) -> &Vec<IRComponent> {
         &self.components
     }
-    
+
     pub fn targets(&self) -> &Vec<Target> {
         &self.targets
     }
-    
+
     pub fn property_shapes(&self) -> &Vec<ShapeLabelIdx> {
         &self.property_shapes
     }
@@ -163,11 +161,7 @@ impl IRPropertyShape {
 
         let reifier_info = ReifierInfo::get_reifier_info(shape, ast, ir)?;
 
-        let compiled_prop_shape = IRPropertyShape::new(
-            shape.id().clone(),
-            shape.path().to_owned(),
-            closed_info
-        )
+        let compiled_prop_shape = IRPropertyShape::new(shape.id().clone(), shape.path().to_owned(), closed_info)
             .with_components(compiled_components)
             .with_targets(shape.targets().to_owned())
             .with_property_shapes(compiled_prop_shapes)
@@ -184,7 +178,11 @@ impl IRPropertyShape {
 }
 
 impl IRPropertyShape {
-    pub fn register<RDF: BuildRDF>(&self, graph: &mut RDF, shapes_map: &HashMap<ShapeLabelIdx, IRShape>) -> Result<(), RDF::Err> {
+    pub fn register<RDF: BuildRDF>(
+        &self,
+        graph: &mut RDF,
+        shapes_map: &HashMap<ShapeLabelIdx, IRShape>,
+    ) -> Result<(), RDF::Err> {
         let id: RDF::Subject = self.id.clone().try_into().map_err(|_| unreachable!())?;
         graph.add_type(id.clone(), ShaclVocab::sh_property_shape().clone())?;
 
@@ -208,7 +206,7 @@ impl IRPropertyShape {
 
         if let Some(order) = &self.order {
             let lit: RDF::Literal = match order {
-                NumericLiteral::Integer(i) => i.clone().into(),
+                NumericLiteral::Integer(i) => (*i).into(),
                 NumericLiteral::Byte(_) => todo!(),
                 NumericLiteral::Short(_) => todo!(),
                 NumericLiteral::NonNegativeInteger(_) => todo!(),
@@ -221,7 +219,7 @@ impl IRPropertyShape {
                 NumericLiteral::NonPositiveInteger(_) => todo!(),
                 NumericLiteral::Long(_) => todo!(),
                 NumericLiteral::Decimal(_) => todo!(),
-                NumericLiteral::Double(f) => f.clone().into(),
+                NumericLiteral::Double(f) => (*f).into(),
                 NumericLiteral::Float(f) => f.to_string().into(),
             };
 
@@ -261,7 +259,14 @@ impl IRPropertyShape {
 }
 
 impl IRPropertyShape {
-    pub fn add_edges(&self, idx: ShapeLabelIdx, dg: &mut DependencyGraph, posneg: PosNeg, ir: &IRSchema, cache: &mut HashSet<ShapeLabelIdx>) {
+    pub fn add_edges(
+        &self,
+        idx: ShapeLabelIdx,
+        dg: &mut DependencyGraph,
+        posneg: PosNeg,
+        ir: &IRSchema,
+        cache: &mut HashSet<ShapeLabelIdx>,
+    ) {
         for component in &self.components {
             component.add_edges(idx, dg, posneg, ir, cache);
         }

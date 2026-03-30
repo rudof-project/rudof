@@ -9,11 +9,9 @@ pub(crate) fn node<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<ASTCo
     parse_components_for_iri(
         ShaclVocab::sh_node().clone(),
         TermParser::new().flat_map(|t| {
-            let shape = RDF::term_as_object(&t)
-                .map_err(|_| RDFError::FailedTermToRDFNodeError {
-                    term: t.to_string()
-                })?;
+            let shape =
+                RDF::term_as_object(&t).map_err(|_| RDFError::FailedTermToRDFNodeError { term: t.to_string() })?;
             Ok(ASTComponent::Node(shape))
-        })
+        }),
     )
 }

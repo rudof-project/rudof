@@ -9,10 +9,9 @@ pub(crate) fn not<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<ASTCom
     parse_components_for_iri(
         ShaclVocab::sh_not().clone(),
         TermParser::new().flat_map(|t| {
-            let shape = RDF::term_as_object(&t).map_err(|_| RDFError::FailedTermToRDFNodeError {
-                term: t.to_string()
-            })?;
+            let shape =
+                RDF::term_as_object(&t).map_err(|_| RDFError::FailedTermToRDFNodeError { term: t.to_string() })?;
             Ok(ASTComponent::Not(shape))
-        })
+        }),
     )
 }

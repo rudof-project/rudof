@@ -1,4 +1,5 @@
 use crate::ast::{ASTSchema, ASTShape};
+use crate::ir::ReifierInfo;
 use crate::ir::component::IRComponent;
 use crate::ir::dependency_graph::{DependencyGraph, PosNeg};
 use crate::ir::error::IRError;
@@ -6,7 +7,6 @@ use crate::ir::node_shape::IRNodeShape;
 use crate::ir::property_shape::IRPropertyShape;
 use crate::ir::schema::IRSchema;
 use crate::ir::shape_label_idx::ShapeLabelIdx;
-use crate::ir::ReifierInfo;
 use crate::types::{Severity, Target};
 use iri_s::IriS;
 use rudof_rdf::rdf_core::term::Object;
@@ -46,7 +46,7 @@ impl IRShape {
     pub fn path(&self) -> Option<&SHACLPath> {
         match self {
             IRShape::NodeShape(_) => None,
-            IRShape::PropertyShape(ps) => Some(ps.path())
+            IRShape::PropertyShape(ps) => Some(ps.path()),
         }
     }
 
@@ -106,11 +106,11 @@ impl IRShape {
             ASTShape::NodeShape(shape) => {
                 let shape = IRNodeShape::compile(shape, ast, ir)?;
                 IRShape::node_shape(shape)
-            }
+            },
             ASTShape::PropertyShape(shape) => {
                 let shape = IRPropertyShape::compile(shape, ast, ir)?;
                 IRShape::property_shape(shape)
-            }
+            },
         };
         Ok(shape)
     }
@@ -124,13 +124,16 @@ impl Display for IRShape {
                 writeln!(f, "PropertyShape")?;
                 writeln!(f, " path: {}", shape.path())?;
                 if let Some(reifier_info) = shape.reifier_info() {
-                    writeln!(f, " reifier info: reification required: {}, reifier shapes: [{}]",
+                    writeln!(
+                        f,
+                        " reifier info: reification required: {}, reifier shapes: [{}]",
                         reifier_info.reification_required(),
-                        reifier_info.reifier_shape()
-                                 .iter()
-                                 .map(|s| s.to_string())
-                                 .collect::<Vec<_>>()
-                                 .join(", ")
+                        reifier_info
+                            .reifier_shape()
+                            .iter()
+                            .map(|s| s.to_string())
+                            .collect::<Vec<_>>()
+                            .join(", ")
                     )?;
                 }
             },
@@ -160,11 +163,10 @@ impl Display for IRShape {
         }
         let mut property_shapes = self.property_shapes().iter().peekable();
         if property_shapes.peek().is_some() {
-            writeln!(f, " Property Shapes: [{}]",
-                property_shapes
-                    .map(|ps| ps.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", ")
+            writeln!(
+                f,
+                " Property Shapes: [{}]",
+                property_shapes.map(|ps| ps.to_string()).collect::<Vec<_>>().join(", ")
             )?;
         }
 
@@ -173,9 +175,12 @@ impl Display for IRShape {
 }
 
 impl IRShape {
-
     // TODO - Maybe change error to IRError
-    pub fn register<RDF: BuildRDF>(&self, graph: &mut RDF, shapes_map: &HashMap<ShapeLabelIdx, IRShape>) -> Result<(), RDF::Err> {
+    pub fn register<RDF: BuildRDF>(
+        &self,
+        graph: &mut RDF,
+        shapes_map: &HashMap<ShapeLabelIdx, IRShape>,
+    ) -> Result<(), RDF::Err> {
         match self {
             IRShape::NodeShape(ns) => ns.register(graph, shapes_map),
             IRShape::PropertyShape(ps) => ps.register(graph, shapes_map),
@@ -184,7 +189,14 @@ impl IRShape {
 }
 
 impl IRShape {
-    pub fn add_edges(&self, idx: ShapeLabelIdx, dg: &mut DependencyGraph, posneg: PosNeg, ir: &IRSchema, cache: &mut HashSet<ShapeLabelIdx>) {
+    pub fn add_edges(
+        &self,
+        idx: ShapeLabelIdx,
+        dg: &mut DependencyGraph,
+        posneg: PosNeg,
+        ir: &IRSchema,
+        cache: &mut HashSet<ShapeLabelIdx>,
+    ) {
         match self {
             IRShape::NodeShape(ns) => ns.add_edges(idx, dg, posneg, ir, cache),
             IRShape::PropertyShape(ps) => ps.add_edges(idx, dg, posneg, ir, cache),

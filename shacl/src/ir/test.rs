@@ -1,4 +1,3 @@
-
 #[cfg(test)]
 mod tests {
     use crate::ir::IRSchema;
@@ -49,14 +48,11 @@ mod tests {
             "String",
             &RDFFormat::Turtle,
             None,
-            &ReaderMode::default()
-        ).unwrap();
+            &ReaderMode::default(),
+        )
+        .unwrap();
 
-        ShaclParser::new(rdf)
-            .parse()
-            .unwrap()
-            .try_into()
-            .unwrap()
+        ShaclParser::new(rdf).parse().unwrap().try_into().unwrap()
     }
 
     fn test_schema_iterator() {

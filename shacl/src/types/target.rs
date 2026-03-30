@@ -1,7 +1,7 @@
 use iri_s::IriS;
+use rudof_rdf::rdf_core::BuildRDF;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::vocabs::{RdfVocab, RdfsVocab, ShaclVocab};
-use rudof_rdf::rdf_core::BuildRDF;
 use std::fmt::{Display, Formatter};
 
 /// Represents target declarations
@@ -32,7 +32,9 @@ impl Target {
             Target::SubjectsOf(s) => graph.add_triple(node, ShaclVocab::sh_target_subjects_of().clone(), s.clone()),
             Target::ObjectsOf(o) => graph.add_triple(node, ShaclVocab::sh_target_objects_of().clone(), o.clone()),
             // TODO - Review this code and in SHACL 1.2, add sh_shape_class ?
-            Target::ImplicitClass(_) => graph.add_triple(node, RdfVocab::rdf_type().clone(), RdfsVocab::rdfs_class().clone()),
+            Target::ImplicitClass(_) => {
+                graph.add_triple(node, RdfVocab::rdf_type().clone(), RdfsVocab::rdfs_class().clone())
+            },
             Target::WrongNode(_) => todo!(),
             Target::WrongClass(_) => todo!(),
             Target::WrongSubjectsOf(_) => todo!(),

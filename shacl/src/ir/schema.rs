@@ -3,10 +3,10 @@ use crate::ir::dependency_graph::{DependencyGraph, PosNeg};
 use crate::ir::error::IRError;
 use crate::ir::shape::IRShape;
 use crate::ir::shape_label_idx::ShapeLabelIdx;
-use crate::rdf::error::ShaclWriterError;
 use crate::rdf::ShaclParser;
+use crate::rdf::error::ShaclWriterError;
 use iri_s::IriS;
-use log::{info, warn};
+use log::warn;
 use prefixmap::PrefixMap;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::vocabs::{RdfVocab, RdfVocabulary, ShaclVocab, XsdVocab};
@@ -20,7 +20,6 @@ use std::io::{Cursor, Read};
 pub struct IRSchema {
     // imports: Vec<IriS>
     // entailments: Vec<IriS>
-
     labels_idx_map: HashMap<Object, ShapeLabelIdx>,
 
     shapes: HashMap<ShapeLabelIdx, IRShape>,
@@ -42,16 +41,26 @@ impl IRSchema {
         }
     }
 
-    pub fn from_reader<R: Read>(reader: &mut R, source_name: &str, format: &RDFFormat, base: Option<&str>, reader_mode: &ReaderMode) -> Result<Self, IRError> {
+    pub fn from_reader<R: Read>(
+        reader: &mut R,
+        source_name: &str,
+        format: &RDFFormat,
+        base: Option<&str>,
+        reader_mode: &ReaderMode,
+    ) -> Result<Self, IRError> {
         let mut graph = InMemoryGraph::new();
         graph.merge_from_reader(reader, source_name, format, base, reader_mode)?;
-        let ast = ShaclParser::new(graph)
-            .parse()?;
+        let ast = ShaclParser::new(graph).parse()?;
 
         ast.try_into()
     }
 
-    pub fn from_str(data: &str, format: &RDFFormat, base: Option<&str>, reader_mode: &ReaderMode) -> Result<Self, IRError> {
+    pub fn from_str(
+        data: &str,
+        format: &RDFFormat,
+        base: Option<&str>,
+        reader_mode: &ReaderMode,
+    ) -> Result<Self, IRError> {
         Self::from_reader(&mut Cursor::new(data), "String", format, base, reader_mode)
     }
 
@@ -107,7 +116,12 @@ impl IRSchema {
         out
     }
 
-    pub fn register_shape(&mut self, id: &Object, shape: Option<&ASTShape>, ast: &ASTSchema) -> Result<ShapeLabelIdx, IRError> {
+    pub fn register_shape(
+        &mut self,
+        id: &Object,
+        shape: Option<&ASTShape>,
+        ast: &ASTSchema,
+    ) -> Result<ShapeLabelIdx, IRError> {
         let shape = match shape {
             None => ast.get_shape(id).ok_or(IRError::ShapeNotFound {
                 shape: Box::new(id.clone()),
@@ -122,22 +136,17 @@ impl IRSchema {
                 let compiled = IRShape::compile(shape, ast, self)?;
                 self.shapes.insert(label_idx, compiled);
                 Ok(label_idx)
-            }
-            Some(idx) => Ok(idx.clone()),
+            },
+            Some(idx) => Ok(*idx),
         }
     }
 
     pub fn register_shapes(&mut self, ids: Vec<Object>, ast: &ASTSchema) -> Result<Vec<ShapeLabelIdx>, IRError> {
-        ids.into_iter()
-            .map(|id| {
-                self.register_shape(&id, None, ast)
-            })
-            .collect()
+        ids.into_iter().map(|id| self.register_shape(&id, None, ast)).collect()
     }
 
     pub fn compile(ast: &ASTSchema) -> Result<Self, IRError> {
-        let mut schema_ir = Self::new(ast.prefixmap().clone())
-            .with_base(ast.base().cloned());
+        let mut schema_ir = Self::new(ast.prefixmap().clone()).with_base(ast.base().cloned());
 
         for (id, shape) in ast.iter() {
             schema_ir.register_shape(id, Some(shape), ast)?;
@@ -146,12 +155,18 @@ impl IRSchema {
         schema_ir.build_dependency_graph();
 
         if schema_ir.dependency_graph.has_cycles() {
-            warn!("The dependency graph has cycles. This is known as a recursive schema and the SHACL semantics for these schemas is implementation dependent");
-            warn!("More information about recursive schemas can be found at https://www.w3.org/TR/shacl/#shapes-recursion");
+            warn!(
+                "The dependency graph has cycles. This is known as a recursive schema and the SHACL semantics for these schemas is implementation dependent"
+            );
+            warn!(
+                "More information about recursive schemas can be found at https://www.w3.org/TR/shacl/#shapes-recursion"
+            );
         }
 
         if schema_ir.dependency_graph.has_neg_cycle() {
-            warn!("Warning: The dependency graph has negative cycles. This may lead to unexpected behavior in SHACL validation due to non-stratified negation");
+            warn!(
+                "Warning: The dependency graph has negative cycles. This may lead to unexpected behavior in SHACL validation due to non-stratified negation"
+            );
         }
 
         Ok(schema_ir)
@@ -191,29 +206,28 @@ impl IRSchema {
     pub fn build_graph<RDF: BuildRDF>(&self) -> Result<RDF, ShaclWriterError> {
         let mut graph = RDF::empty();
 
-        graph.add_prefix_map(self.prefixmap.clone()).map_err(|err| ShaclWriterError::AddPrefixMap {
-            msg: err.to_string(),
-        })?;
+        graph
+            .add_prefix_map(self.prefixmap.clone())
+            .map_err(|err| ShaclWriterError::AddPrefixMap { msg: err.to_string() })?;
         let _ = graph.add_prefix("rdf", RdfVocab::base_iri());
         let _ = graph.add_prefix("xsd", XsdVocab::base_iri());
         let _ = graph.add_prefix("sh", ShaclVocab::base_iri());
 
-        graph.add_base(&self.base().cloned()).map_err(|err| ShaclWriterError::AddBase {
-            msg: err.to_string(),
-        })?;
+        graph
+            .add_base(&self.base().cloned())
+            .map_err(|err| ShaclWriterError::AddBase { msg: err.to_string() })?;
 
-        self.labels_idx_map
-            .iter()
-            .try_for_each(|(id, idx)| {
-                let shape = self.shapes.get(idx).ok_or(ShaclWriterError::Write {
-                    msg: format!("Shape with index {idx} not found for id {id}"),
-                })?;
-
-                shape.register(&mut graph, &self.shapes)
-                    .map_err(|err| ShaclWriterError::Write {
-                        msg: format!("Error registering shape with id {id} and index {idx}: {err}"),
-                    })
+        self.labels_idx_map.iter().try_for_each(|(id, idx)| {
+            let shape = self.shapes.get(idx).ok_or(ShaclWriterError::Write {
+                msg: format!("Shape with index {idx} not found for id {id}"),
             })?;
+
+            shape
+                .register(&mut graph, &self.shapes)
+                .map_err(|err| ShaclWriterError::Write {
+                    msg: format!("Error registering shape with id {id} and index {idx}: {err}"),
+                })
+        })?;
 
         Ok(graph)
     }

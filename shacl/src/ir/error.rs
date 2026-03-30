@@ -10,7 +10,9 @@ pub enum IRError {
     #[error("Duplicate shape: {shape}")]
     DuplicateShape { shape: Box<Object> },
 
-    #[error("Invalid path for property shape with reifier shape {shape_id}, the path must be a single predicate, but got: {path}")]
+    #[error(
+        "Invalid path for property shape with reifier shape {shape_id}, the path must be a single predicate, but got: {path}"
+    )]
     InvalidReifierShapePath { shape_id: Box<Object>, path: String },
 
     #[error("Conversion from IriRef {iri_ref} failed: {err}")]
@@ -25,7 +27,7 @@ pub enum IRError {
     #[error("RDF error: {err}")]
     RdfGraphError {
         #[from]
-        err: InMemoryGraphError
+        err: InMemoryGraphError,
     },
 
     #[error("SHACL parser error: {err}")]
@@ -37,7 +39,7 @@ pub enum IRError {
     #[error("ASTError: {source}")]
     ASTError {
         #[from]
-        source: ASTError
+        source: ASTError,
     },
 
     #[error("Invalid regex pattern ({pattern}) with flags ({}): {error}", flags.as_deref().unwrap_or("None"))]

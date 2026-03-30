@@ -8,14 +8,14 @@ use prefixmap::IriRef;
 use rudof_rdf::rdf_core::term::Object;
 
 mod component;
-mod shape;
 pub mod components;
+mod dependency_graph;
 pub(crate) mod error;
 mod node_shape;
 mod property_shape;
-mod dependency_graph;
-mod schema;
 mod reifier_info;
+mod schema;
+mod shape;
 mod shape_label_idx;
 mod test;
 
@@ -31,11 +31,9 @@ pub use shape::IRShape;
 pub use shape_label_idx::ShapeLabelIdx;
 
 fn convert_iri_ref(iri_ref: IriRef) -> Result<IriS, IRError> {
-    let iri = iri_ref.get_iri().map_err(|err| {
-        IRError::IriRefConversion {
-            iri_ref: iri_ref.to_string(),
-            err: err.to_string(),
-        }
+    let iri = iri_ref.get_iri().map_err(|err| IRError::IriRefConversion {
+        iri_ref: iri_ref.to_string(),
+        err: err.to_string(),
     })?;
 
     Ok(iri.clone())

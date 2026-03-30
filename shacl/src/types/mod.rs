@@ -1,10 +1,10 @@
-mod shacl_format;
-mod node_kind;
-mod value;
-mod message_map;
-mod target;
-mod severity;
 mod closed_info;
+mod message_map;
+mod node_kind;
+mod severity;
+mod shacl_format;
+mod target;
+mod value;
 
 pub use closed_info::ClosedInfo;
 pub(crate) use closed_info::defined_properties_for;

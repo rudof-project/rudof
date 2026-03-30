@@ -43,8 +43,8 @@ impl ReifierInfo {
                     return Err(IRError::InvalidReifierShapePath {
                         shape_id: Box::new(shape.id().clone()),
                         path: other.to_string(),
-                    })
-                }
+                    });
+                },
             };
             Ok(Some(Self {
                 reification_required: reifier_info.reification_required(),

@@ -19,7 +19,10 @@ pub struct Closed {
 
 impl Closed {
     pub fn new(is_closed: bool, ignored_properties: Vec<IriS>) -> Self {
-        Closed { is_closed, ignored_properties }
+        Closed {
+            is_closed,
+            ignored_properties,
+        }
     }
 
     pub fn is_closed(&self) -> bool {

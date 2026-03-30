@@ -1,8 +1,10 @@
 use crate::ast::ASTComponent;
-use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{ObjectsPropertyParser, SingleBoolPropertyParser, SingleIntegerPropertyParser};
+use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{
+    ObjectsPropertyParser, SingleBoolPropertyParser, SingleIntegerPropertyParser,
+};
 use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
-use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
 use rudof_rdf::rdf_core::term::Object;
+use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{FocusRDF, RDFError, SHACLPath};
 use std::collections::HashSet;
@@ -32,7 +34,8 @@ impl<RDF: FocusRDF> RDFNodeParse<RDF> for QualifiedValueShapeSiblings<RDF> {
             None => Err(RDFError::NoFocusNodeError),
             Some(focus) => {
                 let mut siblings = Vec::new();
-                let maybe_disjoint = rdf.object_for(focus, &ShaclVocab::sh_qualified_value_shapes_disjoint().clone().into())?;
+                let maybe_disjoint =
+                    rdf.object_for(focus, &ShaclVocab::sh_qualified_value_shapes_disjoint().clone().into())?;
                 if let Some(disjoint) = maybe_disjoint {
                     match disjoint {
                         Object::Literal(ConcreteLiteral::BooleanLiteral(true)) => {
@@ -46,7 +49,7 @@ impl<RDF: FocusRDF> RDFNodeParse<RDF> for QualifiedValueShapeSiblings<RDF> {
                                     )?;
                                     for sibling in candidate_siblings {
                                         if !qvs.contains(&sibling) {
-                                            let sibling_node  = RDF::term_as_object(&sibling)?;
+                                            let sibling_node = RDF::term_as_object(&sibling)?;
                                             siblings.push(sibling_node);
                                         }
                                     }
@@ -58,15 +61,14 @@ impl<RDF: FocusRDF> RDFNodeParse<RDF> for QualifiedValueShapeSiblings<RDF> {
                     }
                 }
                 Ok(siblings)
-            }
+            },
         }
     }
 }
 
 pub(crate) fn qualified_value_shape<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<ASTComponent>> {
-    ObjectsPropertyParser::new(ShaclVocab::sh_qualified_value_shape().clone()).then(|qvs| {
-        parse_qualified_value_shape::<RDF>(qvs.into_iter().collect())
-    })
+    ObjectsPropertyParser::new(ShaclVocab::sh_qualified_value_shape().clone())
+        .then(|qvs| parse_qualified_value_shape::<RDF>(qvs.into_iter().collect()))
 }
 
 fn qualified_value_shape_disjoint_parser<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Option<bool>> {
@@ -86,22 +88,36 @@ fn qualified_value_shape_siblings<RDF: FocusRDF>() -> QualifiedValueShapeSibling
         _marker: PhantomData,
         property_qualified_value_shape_path: SHACLPath::sequence(vec![
             SHACLPath::iri(ShaclVocab::sh_property().clone()),
-            SHACLPath::iri(ShaclVocab::sh_qualified_value_shape().clone())
+            SHACLPath::iri(ShaclVocab::sh_qualified_value_shape().clone()),
         ]),
     }
 }
 
-fn parse_qualified_value_shape<RDF: FocusRDF>(qvs: HashSet<Object>) -> impl RDFNodeParse<RDF, Output = Vec<ASTComponent>> {
+fn parse_qualified_value_shape<RDF: FocusRDF>(
+    qvs: HashSet<Object>,
+) -> impl RDFNodeParse<RDF, Output = Vec<ASTComponent>> {
     qualified_value_shape_disjoint_parser()
         .and(qualified_min_count_parser())
         .and(qualified_max_count_parser())
         .and(qualified_value_shape_siblings())
         .flat_map(move |(((maybe_disjoint, maybe_mins), maybe_maxs), siblings)| {
-            Ok(build_qualified_shape(qvs.clone(), maybe_disjoint, maybe_mins, maybe_maxs, siblings))
+            Ok(build_qualified_shape(
+                qvs.clone(),
+                maybe_disjoint,
+                maybe_mins,
+                maybe_maxs,
+                siblings,
+            ))
         })
 }
 
-fn build_qualified_shape(terms: HashSet<Object>, disjoint: Option<bool>, q_min_count: Option<isize>, q_max_count: Option<isize>, siblings: Vec<Object>) -> Vec<ASTComponent> {
+fn build_qualified_shape(
+    terms: HashSet<Object>,
+    disjoint: Option<bool>,
+    q_min_count: Option<isize>,
+    q_max_count: Option<isize>,
+    siblings: Vec<Object>,
+) -> Vec<ASTComponent> {
     let mut result = Vec::new();
     for term in terms {
         let shape = ASTComponent::QualifiedValueShape {

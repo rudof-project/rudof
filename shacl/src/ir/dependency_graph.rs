@@ -29,7 +29,7 @@ impl Iterator for DependencyGraphIter<'_> {
 pub enum PosNeg {
     #[default]
     Pos,
-    Neg
+    Neg,
 }
 
 impl DependencyGraph {
@@ -45,7 +45,7 @@ impl DependencyGraph {
             for node in component.iter().as_slice() {
                 let edges = self.graph.edges_directed(*node, Outgoing);
                 for edge in edges {
-                    if component.contains(&edge.target()) && edge.weight().value() == false {
+                    if component.contains(&edge.target()) && !edge.weight().value() {
                         let mut shapes = Vec::new();
                         for node in component.iter() {
                             shapes.push(*node);

@@ -1,8 +1,8 @@
 use crate::ast::ASTShape;
 use prefixmap::IriRef;
+use rudof_rdf::rdf_core::SHACLPath;
 use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
 use rudof_rdf::rdf_core::term::{IriOrBlankNode, Object};
-use rudof_rdf::rdf_core::SHACLPath;
 use std::fmt::{Display, Formatter};
 
 #[allow(dead_code)]
@@ -18,7 +18,7 @@ pub(crate) enum NodeExpr {
     List(Vec<Object>),
     PathValues {
         path: SHACLPath,
-        focus_node: Option<Box<NodeExpr>>
+        focus_node: Option<Box<NodeExpr>>,
     },
     Exists(Box<NodeExpr>),
     IfExpression {
@@ -56,7 +56,7 @@ pub(crate) enum NodeExpr {
     },
     FindFirst {
         find_first: ASTShape,
-        nodes: Box<NodeExpr>
+        nodes: Box<NodeExpr>,
     },
     MatchAll {
         match_all: ASTShape,
@@ -93,11 +93,15 @@ impl Display for NodeExpr {
                 };
 
                 write!(f, "pathValues({path}, {fnode})")
-            }
+            },
             NodeExpr::Exists(e) => write!(f, "exists({e})"),
-            NodeExpr::IfExpression { if_condition, then, else_expression } => {
+            NodeExpr::IfExpression {
+                if_condition,
+                then,
+                else_expression,
+            } => {
                 write!(f, "if({if_condition} then {then} else {else_expression})")
-            }
+            },
             NodeExpr::Distinct(d) => write!(f, "distinct({d})"),
             NodeExpr::Intersection(i) => write!(
                 f,

@@ -1,7 +1,7 @@
 mod node;
 mod property;
-mod reifier_shape;
 mod qualified_value_shape;
+mod reifier_shape;
 
 pub(crate) use node::node;
 pub(crate) use property::property;
