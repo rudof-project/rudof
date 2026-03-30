@@ -38,6 +38,19 @@ impl From<Severity> for IriS {
     }
 }
 
+impl From<&Severity> for IriS {
+    fn from(value: &Severity) -> Self {
+        match value {
+            Severity::Trace => ShaclVocab::sh_trace().clone(),
+            Severity::Debug => ShaclVocab::sh_debug().clone(),
+            Severity::Info => ShaclVocab::sh_info().clone(),
+            Severity::Warning => ShaclVocab::sh_warning().clone(),
+            Severity::Violation => ShaclVocab::sh_violation().clone(),
+            Severity::Generic(iri) => iri.clone(),
+        }
+    }
+}
+
 impl Display for Severity {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
