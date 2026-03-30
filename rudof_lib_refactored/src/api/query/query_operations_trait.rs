@@ -44,10 +44,14 @@ pub trait QueryOperations {
 
     /// Executes the currently loaded query.
     ///
+    /// # Arguments
+    /// 
+    /// * `result_query_format` - Optional format for the query results.
+    /// 
     /// # Errors
     ///
     /// Returns an error if no query is loaded, or if query execution fails.
-    fn run_query(&mut self) -> Result<()>;
+    fn run_query(&mut self, result_query_format: Option<&ResultQueryFormat>) -> Result<()>;
 
     /// Serializes the query results to a writer.
     ///
@@ -86,8 +90,8 @@ impl QueryOperations for crate::Rudof {
         reset_query(self)
     }
 
-    fn run_query(&mut self) -> Result<()> {
-        run_query(self)
+    fn run_query(&mut self, result_query_format: Option<&ResultQueryFormat>) -> Result<()> {
+        run_query(self, result_query_format)
     }
 
     fn serialize_query_results<W: io::Write>(

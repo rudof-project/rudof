@@ -1,5 +1,7 @@
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
+use rudof_rdf::rdf_core::query::QueryResultFormat;
+
 use crate::errors::QueryError;
 
 /// Output formats for SPARQL query results supported by Rudof.
@@ -54,6 +56,22 @@ impl Display for ResultQueryFormat {
             ResultQueryFormat::TriG => write!(dest, "trig"),
             ResultQueryFormat::N3 => write!(dest, "n3"),
             ResultQueryFormat::NQuads => write!(dest, "nquads"),
+        }
+    }
+}
+
+impl From<ResultQueryFormat> for QueryResultFormat {
+    fn from(format: ResultQueryFormat) -> Self {
+        match format {
+            ResultQueryFormat::Internal => QueryResultFormat::Turtle,
+            ResultQueryFormat::Turtle => QueryResultFormat::Turtle,
+            ResultQueryFormat::NTriples => QueryResultFormat::NTriples,
+            ResultQueryFormat::JsonLd => QueryResultFormat::JsonLd,
+            ResultQueryFormat::RdfXml => QueryResultFormat::RdfXml,
+            ResultQueryFormat::Csv => QueryResultFormat::Csv,
+            ResultQueryFormat::TriG => QueryResultFormat::TriG,
+            ResultQueryFormat::N3 => QueryResultFormat::N3,
+            ResultQueryFormat::NQuads => QueryResultFormat::NQuads,
         }
     }
 }

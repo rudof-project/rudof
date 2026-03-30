@@ -1,4 +1,4 @@
-use crate::{Rudof, Result, api::query::QueryOperations};
+use crate::{Rudof, Result, api::query::QueryOperations, formats::ResultQueryFormat};
 
 /// Builder for `run_query` operation.
 ///
@@ -6,6 +6,7 @@ use crate::{Rudof, Result, api::query::QueryOperations};
 /// with optional parameters.
 pub struct RunQueryBuilder<'a> {
     rudof: &'a mut Rudof,
+    result_query_format: Option<&'a ResultQueryFormat>,
 }
 
 impl<'a> RunQueryBuilder<'a> {
@@ -16,7 +17,17 @@ impl<'a> RunQueryBuilder<'a> {
     pub(crate) fn new(rudof: &'a mut Rudof) -> Self {
         Self {
             rudof,
+            result_query_format: None,
         }
+    }
+
+    /// Sets the desired format for the query results.
+    /// 
+    /// # Arguments
+    /// * `format` - The format to serialize query results.
+    pub fn with_result_query_format(mut self, format: &'a ResultQueryFormat) -> Self {
+        self.result_query_format = Some(format);
+        self
     }
 
     /// Executes the query operation with the configured parameters.
@@ -27,6 +38,6 @@ impl<'a> RunQueryBuilder<'a> {
     ///
     /// Returns an error if no query is loaded or query execution fails.
     pub fn execute(self) -> Result<()> {
-        <Rudof as QueryOperations>::run_query(self.rudof)
+        <Rudof as QueryOperations>::run_query(self.rudof, self.result_query_format)
     }
 }

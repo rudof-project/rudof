@@ -101,7 +101,7 @@ pub struct Rudof {
     pub(crate) pg_schema_validation_results: Option<ValidationResult>,
 
     /// Current SPARQL Query
-    pub(crate) sparql_query: Option<SparqlQuery>,
+    pub(crate) query: Option<SparqlQuery>,
 
     /// Current query results
     pub(crate) query_results: Option<QueryResult>,

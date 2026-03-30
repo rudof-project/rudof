@@ -1,9 +1,10 @@
-use crate::{Result, Rudof, errors::IriError};
+use crate::{Result, Rudof, errors::IriError, formats::QueryType};
+use crossterm::terminal;
 use iri_s::IriS;
+use rudof_rdf::rdf_core::query::SparqlQuery;
 use std::{env, str::FromStr};
 #[cfg(not(target_family = "wasm"))]
 use url::Url;
-use crossterm::terminal;
 
 pub fn get_base_iri(rudof: &mut Rudof, base_iri: Option<&str>) -> Result<IriS> {
     if let Some(base_iri) = base_iri.as_deref() {
@@ -53,5 +54,18 @@ fn sanitize_width(width: usize) -> usize {
         w if w > MAX_TERMINAL_WIDTH => MAX_TERMINAL_WIDTH,
         w if w < 40 => DEFAULT_TERMINAL_WIDTH,
         w => w,
+    }
+}
+
+// Detect query type from SPARQL string
+pub fn detect_query_type(query: &SparqlQuery) -> QueryType {
+    if query.is_select() {
+        QueryType::Select
+    } else if query.is_construct() {
+        QueryType::Construct
+    } else if query.is_ask() {
+        QueryType::Ask
+    } else {
+        QueryType::Describe
     }
 }
