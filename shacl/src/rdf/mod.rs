@@ -5,3 +5,6 @@ mod parsers;
 mod parser;
 mod writer;
 pub mod error;
+
+pub(crate) use parser::ShaclParser;
+pub(crate) use parsers::State;

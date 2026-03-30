@@ -7,7 +7,7 @@ pub(crate) struct State {
 }
 
 impl State {
-    fn pop_pending(&mut self) -> Option<Object> {
+    pub fn pop_pending(&mut self) -> Option<Object> {
         self.pending.pop()
     }
 }
