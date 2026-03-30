@@ -38,4 +38,26 @@ pub enum ConversionError {
     /// The result conversion format cannot be used for SHACL conversion.
     #[error("Cannot use output format '{format}' for SHACL conversion. Supported formats: 'default', 'turtle'")]
     UnsupportedResultConversionFormatToShacl { format: String },
+
+    /// The conversion is not supported by Rudof.
+    #[error("Unsupported conversion from '{input_mode}' to '{output_mode}'.")]
+    UnsupportedConversion { input_mode: String, output_mode: String },
+
+    /// Errors related to specifying the data source.
+    #[error("Data source specification error: {message}")]
+    DataSourceSpec { message: String },
+
+    /// The format cannot be converted to RDF.
+    #[error("Cannot convert format '{format}' to RDF. Supported formats for RDF: 'turtle'")]
+    UnsupportedConversionToRDFFormat { format: String },
+
+    /// A generic conversion error with details about the input mode, output mode, formats, and the underlying error message.
+    #[error("Conversion error from '{input_mode}' to '{output_mode}' with input format '{input_format}' and output format '{output_format}': {error}")]
+    ConversionError {
+        input_mode: String,
+        output_mode: String,
+        input_format: String,
+        output_format: String,
+        error: String,
+    },
 }

@@ -1,5 +1,6 @@
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
+
 use crate::{errors::ConversionError, formats::{DCTapFormat, ShaclFormat, ShExFormat}};
 
 /// Conversion input modes supported by Rudof.

@@ -6,7 +6,7 @@ use std::io;
 /// Provides a fluent interface for configuring and executing schema conversion
 /// operations with optional parameters.
 pub struct ShowSchemaConversionBuilder<'a, W: io::Write> {
-    rudof: &'a Rudof,
+    rudof: &'a mut Rudof,
     schema: &'a InputSpec,
     input_mode: &'a ConversionMode,
     output_mode: &'a ResultConversionMode,
@@ -17,6 +17,8 @@ pub struct ShowSchemaConversionBuilder<'a, W: io::Write> {
     reader_mode: Option<&'a DataReaderMode>,
     shape: Option<&'a str>,
     show_time: Option<bool>,
+    templates_folder: Option<&'a std::path::Path>,
+    output_folder: Option<&'a std::path::Path>,
 }
 
 impl<'a, W: io::Write> ShowSchemaConversionBuilder<'a, W> {
@@ -25,7 +27,7 @@ impl<'a, W: io::Write> ShowSchemaConversionBuilder<'a, W> {
     /// This is called internally by `Rudof::show_schema_conversion()` and should not
     /// be constructed directly.
     pub(crate) fn new(
-        rudof: &'a Rudof,
+        rudof: &'a mut Rudof,
         schema: &'a InputSpec,
         input_mode: &'a ConversionMode,
         output_mode: &'a ResultConversionMode,
@@ -45,6 +47,8 @@ impl<'a, W: io::Write> ShowSchemaConversionBuilder<'a, W> {
             reader_mode: None,
             shape: None,
             show_time: None,
+            templates_folder: None,
+            output_folder: None,
         }
     }
 
@@ -88,6 +92,26 @@ impl<'a, W: io::Write> ShowSchemaConversionBuilder<'a, W> {
         self
     }
 
+    /// Sets the templates folder for conversion (if applicable).
+    ///
+    /// # Arguments
+    ///
+    /// * `templates_folder` - Path to a folder containing templates for conversion
+    pub fn with_templates_folder(mut self, templates_folder: &'a std::path::Path) -> Self {
+        self.templates_folder = Some(templates_folder);
+        self
+    }
+
+    /// Sets the output folder for writing conversion results.
+    ///
+    /// # Arguments
+    ///
+    /// * `output_folder` - Path to a folder where output files should be written
+    pub fn with_output_folder(mut self, output_folder: &'a std::path::Path) -> Self {
+        self.output_folder = Some(output_folder);
+        self
+    }
+
     /// Executes the schema conversion operation with the configured parameters.
     ///
     /// # Errors
@@ -105,6 +129,8 @@ impl<'a, W: io::Write> ShowSchemaConversionBuilder<'a, W> {
             self.output_format,
             self.shape,
             self.show_time,
+            self.templates_folder,
+            self.output_folder,
             self.writer,
         )
     }

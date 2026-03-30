@@ -23,13 +23,15 @@ pub trait ConversionOperations {
     /// * `output_format` - Format of the output schema
     /// * `shape` - Optional shape identifier to focus the conversion on a specific shape
     /// * `show_time` - Whether to include timing information in the conversion output (false by default)
+    /// * `templates_folder` - Optional path to a folder containing templates for conversion (if applicable)
+    /// * `output_folder` - Optional path to a folder where output files should be written
     /// * `writer` - The destination to write the converted schema to
     ///
     /// # Errors
     ///
     /// Returns an error if the schema cannot be loaded, converted, or serialized.
     fn show_schema_conversion<W: io::Write>(
-        &self,
+        &mut self,
         schema: &InputSpec,
         base: Option<&str>,
         reader_mode: Option<&DataReaderMode>,
@@ -39,13 +41,15 @@ pub trait ConversionOperations {
         output_format: &ResultConversionFormat,
         shape: Option<&str>,
         show_time: Option<bool>,
+        templates_folder: Option<&std::path::Path>,
+        output_folder: Option<&std::path::Path>,
         writer: &mut W,
     ) -> Result<()>;
 }
 
 impl ConversionOperations for crate::Rudof {
     fn show_schema_conversion<W: io::Write>(
-        &self,
+        &mut self,
         schema: &InputSpec,
         base: Option<&str>,
         reader_mode: Option<&DataReaderMode>,
@@ -55,9 +59,11 @@ impl ConversionOperations for crate::Rudof {
         output_format: &ResultConversionFormat,
         shape: Option<&str>,
         show_time: Option<bool>,
+        templates_folder: Option<&std::path::Path>,
+        output_folder: Option<&std::path::Path>,
         writer: &mut W,
     ) -> Result<()> {
         show_schema_conversion(self, schema, base, reader_mode, input_mode, output_mode,
-            input_format, output_format, shape, show_time, writer)
+            input_format, output_format, shape, show_time, templates_folder, output_folder, writer)
     }
 }

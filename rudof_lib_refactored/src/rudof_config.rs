@@ -191,6 +191,30 @@ impl RudofConfig {
         }
     }
 
+    // ---------------------------------------------------------------------------
+    // Conversion configurations
+    // ---------------------------------------------------------------------------
+
+    pub fn shex2sparql_config(&self) -> ShEx2SparqlConfig {
+        self.shex2sparql.clone().unwrap_or_default()
+    }
+
+    pub fn shex2uml_config(&self) -> ShEx2UmlConfig {
+        self.shex2uml.clone().unwrap_or_default()
+    }
+
+    pub fn shex2html_config(&self) -> ShEx2HtmlConfig {
+        self.shex2html.clone().unwrap_or_default()
+    }
+
+    pub fn shacl2shex_config(&self) -> Shacl2ShExConfig {
+        self.shacl2shex.clone().unwrap_or_default()
+    }
+
+    pub fn tap2shex_config(&self) -> Tap2ShExConfig {
+        self.tap2shex.clone().unwrap_or_default()
+    }
+
     // ----------------------------------------------------------------------------
     // Helper methods to access specific configurations with defaults
     // ----------------------------------------------------------------------------

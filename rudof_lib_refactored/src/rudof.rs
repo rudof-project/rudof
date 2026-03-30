@@ -347,7 +347,7 @@ impl Rudof {
     // ========================================================================
 
     pub fn show_schema_conversion<'a, W: io::Write>(
-        &'a self,
+        &'a mut self,
         schema: &'a InputSpec,
         input_mode: &'a ConversionMode,
         output_mode: &'a ResultConversionMode,
