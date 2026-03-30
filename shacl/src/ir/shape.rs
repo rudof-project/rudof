@@ -21,6 +21,14 @@ pub(crate) enum IRShape {
 }
 
 impl IRShape {
+    pub fn node_shape(ns: IRNodeShape) -> Self {
+        Self::NodeShape(Box::new(ns))
+    }
+
+    pub fn property_shape(ps: IRPropertyShape) -> Self {
+        Self::PropertyShape(Box::new(ps))
+    }
+
     pub fn deactivated(&self) -> bool {
         match self {
             IRShape::NodeShape(ns) => ns.deactivated(),
@@ -97,11 +105,11 @@ impl IRShape {
         let shape = match shape {
             ASTShape::NodeShape(shape) => {
                 let shape = IRNodeShape::compile(shape, ast, ir)?;
-                IRShape::NodeShape(Box::new(shape))
+                IRShape::node_shape(shape)
             }
             ASTShape::PropertyShape(shape) => {
                 let shape = IRPropertyShape::compile(shape, ast, ir)?;
-                IRShape::PropertyShape(Box::new(shape))
+                IRShape::property_shape(shape)
             }
         };
         Ok(shape)
