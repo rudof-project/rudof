@@ -1,9 +1,5 @@
 use crate::ast::{ASTComponent, ASTSchema};
-use crate::ir::components::{
-    And, Class, Datatype, Disjoint, Equals, HasValue, In, LanguageIn, LessThan, LessThanOrEquals, MaxCount,
-    MaxExclusive, MaxInclusive, MaxLength, MinCount, MinExclusive, MinInclusive, MinLength, Node, Nodekind, Not, Or,
-    Pattern, QualifiedValueShape, UniqueLang, Xone,
-};
+use crate::ir::components::{And, Class, Closed, Datatype, Deactivated, Disjoint, Equals, HasValue, In, LanguageIn, LessThan, LessThanOrEquals, MaxCount, MaxExclusive, MaxInclusive, MaxLength, MinCount, MinExclusive, MinInclusive, MinLength, Node, Nodekind, Not, Or, Pattern, QualifiedValueShape, UniqueLang, Xone};
 use crate::ir::dependency_graph::{DependencyGraph, PosNeg};
 use crate::ir::error::IRError;
 use crate::ir::schema::IRSchema;
@@ -20,7 +16,6 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone)]
-// TODO - Add closed and deactivated
 pub enum IRComponent {
     Class(Class),
     Datatype(Datatype),
@@ -48,6 +43,8 @@ pub enum IRComponent {
     HasValue(HasValue),
     In(In),
     QualifiedValueShape(QualifiedValueShape),
+    Closed(Closed),
+    Deactivated(Deactivated),
 }
 
 impl IRComponent {
@@ -287,38 +284,20 @@ impl IRComponent {
                     graph,
                 )
             },
+            IRComponent::Closed(closed) => {
+                register_boolean(closed.is_closed(), ShaclVocab::sh_closed(), id, graph)?;
+
+                closed.ignored_properties()
+                    .iter().try_for_each(|iri| {
+                    register_iri(iri, ShaclVocab::sh_ignored_properties(), id, graph)
+                })
+            },
+            IRComponent::Deactivated(deactivated) => { // TODO - Adapt for node expression
+                register_boolean(deactivated.is_deactivated(), ShaclVocab::sh_deactivated(), id, graph)
+            },
         }
     }
 }
-
-// For reference
-// impl Component {
-//     pub fn write<B: BuildRDF>(&self, rdf_node: &Object, rdf: &mut B) -> Result<(), B::Err> {
-//         match self {
-//             Self::Closed {
-//                 is_closed,
-//                 ignored_properties,
-//             } => {
-//                 Self::write_boolean(*is_closed, ShaclVocab::SH_CLOSED, rdf_node, rdf)?;
-//
-//                 ignored_properties.iter().try_for_each(|iri| {
-//                     let iri_ref = IriRef::Iri(iri.clone());
-//                     Self::write_iri(&iri_ref, ShaclVocab::SH_IGNORED_PROPERTIES, rdf_node, rdf)
-//                 })?;
-//             },
-//             Self::Deactivated(value) => {
-//                 Self::write_boolean(*value, ShaclVocab::SH_DEACTIVATED, rdf_node, rdf)?;
-//                 // TODO - For Node Expr, do not delete
-//                 // if let NodeExpr::Literal(ConcreteLiteral::BooleanLiteral(lit)) = value {
-//                 //     Self::write_boolean(*lit, ShaclVocab::SH_DEACTIVATED, rdf_node, rdf)
-//                 // } else {
-//                 //     todo!() // TODO - Launch error, since sh:deactivated only accepts boolean literals
-//                 // }?
-//             },
-//         }
-//         Ok(())
-//     }
-// }
 
 impl IRComponent {
     pub fn add_edges(
@@ -412,6 +391,8 @@ impl IRComponent {
                 //     dg.add_edge(idx, *sibling, posneg);
                 // }
             },
+            IRComponent::Closed(_) => {},
+            IRComponent::Deactivated(_) => {},
         }
     }
 }
@@ -490,6 +471,8 @@ impl From<&IRComponent> for IriS {
             IRComponent::HasValue(_) => ShaclVocab::sh_has_value(),
             IRComponent::In(_) => ShaclVocab::sh_in(),
             IRComponent::QualifiedValueShape(_) => ShaclVocab::sh_qualified_value_shape(),
+            IRComponent::Closed(_) => ShaclVocab::sh_closed(),
+            IRComponent::Deactivated(_) => ShaclVocab::sh_deactivated(),
         }
     }
 }
@@ -523,6 +506,8 @@ impl Display for IRComponent {
             IRComponent::HasValue(v) => write!(f, " HasValue({v})"),
             IRComponent::In(vs) => write!(f, " {vs}"),
             IRComponent::QualifiedValueShape(qvs) => write!(f, " {qvs}"),
+            IRComponent::Closed(closed) => write!(f, "{closed}"),
+            IRComponent::Deactivated(deactivated) => write!(f, "{deactivated}"),
         }
     }
 }
