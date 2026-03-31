@@ -1,10 +1,9 @@
 use crate::common::shacl_test::ShaclTest;
 use crate::common::testsuite_error::TestSuiteError;
 use oxrdf::{NamedNode, NamedOrBlankNode as OxSubject, Term as OxTerm};
-use rudof_rdf::rdf_core::vocabs::RdfVocab;
+use rudof_rdf::rdf_core::vocabs::{RdfVocab, ShaclTestVocab, TestManifestVocab};
 use rudof_rdf::rdf_core::{Any, NeighsRDF, RDFFormat, term::Triple};
 use shacl::rdf::ShaclParser;
-use shacl_validation::shacl_validation_vocab;
 use shacl_validation::store::Store;
 use shacl_validation::store::graph::Graph;
 use shacl_validation::validation_report::report::ValidationReport;
@@ -47,7 +46,7 @@ impl Manifest {
     fn parse_entries(store: &mut RdfData, subject: OxSubject) -> Result<HashSet<OxTerm>, Box<TestSuiteError>> {
         let mut entry_terms = HashSet::new();
 
-        let mf_entries: NamedNode = shacl_validation_vocab::mf_entries().clone().into();
+        let mf_entries: NamedNode = TestManifestVocab::mf_entries().into();
         let entry_subject = store
             .triples_matching(&subject, &mf_entries, &Any)
             .map_err(|e| Box::new(e.into()))?
@@ -97,7 +96,7 @@ impl Manifest {
                 },
             };
 
-            let mf_action: NamedNode = shacl_validation_vocab::mf_action().clone().into();
+            let mf_action: NamedNode = TestManifestVocab::mf_action().into();
             let action: OxSubject = match self
                 .store
                 .triples_matching(&entry, &mf_action, &Any)
@@ -115,7 +114,7 @@ impl Manifest {
                 },
             };
 
-            let mf_result: NamedNode = shacl_validation_vocab::mf_result().clone().into();
+            let mf_result: NamedNode = TestManifestVocab::mf_result().into();
             let results = self
                 .store
                 .triples_matching(&entry, &mf_result, &Any)
@@ -127,7 +126,7 @@ impl Manifest {
             let report = ValidationReport::parse(&mut self.store, results)
                 .map_err(|e| Box::new(TestSuiteError::Validation { error: e.to_string() }))?;
 
-            let sht_data_graph: NamedNode = shacl_validation_vocab::sht_data_graph().clone().into();
+            let sht_data_graph: NamedNode = ShaclTestVocab::sht_data_graph().into();
             let data_graph_iri = self
                 .store
                 .triples_matching(&action, &sht_data_graph, &Any)
@@ -136,7 +135,7 @@ impl Manifest {
                 .next()
                 .unwrap();
 
-            let sht_shapes_graph: NamedNode = shacl_validation_vocab::sht_shapes_graph().clone().into();
+            let sht_shapes_graph: NamedNode = ShaclTestVocab::sht_shapes_graph().into();
             let shapes_graph_iri = self
                 .store
                 .triples_matching(&action, &sht_shapes_graph, &Any)

@@ -12,12 +12,18 @@ mod rdfs;
 mod shacl;
 mod shacl_node_expression;
 mod xsd;
+mod shacl_test;
+mod test_manifest;
+mod shexr;
 
 pub use rdf::RdfVocab;
 pub use rdfs::RdfsVocab;
 pub use shacl::ShaclVocab;
 pub use shacl_node_expression::ShaclNodeExprVocab;
 pub use xsd::XsdVocab;
+pub use shacl_test::ShaclTestVocab;
+pub use test_manifest::TestManifestVocab;
+pub use shexr::ShexRVocab;
 
 #[macro_export]
 macro_rules! vocab_term {
@@ -31,6 +37,7 @@ macro_rules! vocab_term {
                     IRI.get_or_init(|| iri_s::IriS::new_unchecked(Self::$name))
                 }
 
+                #[inline]
                 pub fn [<$name:lower>]() -> iri_s::IriS {
                     Self::[<$name:lower _ref>]().clone()
                 }

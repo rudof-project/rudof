@@ -10,7 +10,6 @@ pub mod shacl_engine;
 /// The SHACL processor implementation, used for validating a data graph against
 /// a shapes graph and obtaining a Validation Report as a result.
 pub mod shacl_processor;
-pub mod shacl_validation_vocab;
 pub mod shape_validation;
 /// Utilities for handling local graphs (serialized), SPARQL endpoints and SHACL
 /// shapes graphs.
