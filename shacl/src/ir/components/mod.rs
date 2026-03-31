@@ -25,6 +25,7 @@ mod pattern;
 mod qualified_value_shape;
 mod unique_lang;
 mod xone;
+mod deactivated;
 
 pub use and::And;
 pub use class::Class;
@@ -53,3 +54,4 @@ pub use pattern::Pattern;
 pub use qualified_value_shape::QualifiedValueShape;
 pub use unique_lang::UniqueLang;
 pub use xone::Xone;
+pub use deactivated::Deactivated;
