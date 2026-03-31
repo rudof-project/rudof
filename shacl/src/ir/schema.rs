@@ -6,7 +6,7 @@ use crate::ir::shape_label_idx::ShapeLabelIdx;
 use crate::rdf::ShaclParser;
 use crate::rdf::error::ShaclWriterError;
 use iri_s::IriS;
-use log::warn;
+use tracing::warn;
 use prefixmap::PrefixMap;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::vocabs::{RdfVocab, RdfVocabulary, ShaclVocab, XsdVocab};
