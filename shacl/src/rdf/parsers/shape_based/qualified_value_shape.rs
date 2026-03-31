@@ -35,13 +35,13 @@ impl<RDF: FocusRDF> RDFNodeParse<RDF> for QualifiedValueShapeSiblings<RDF> {
             Some(focus) => {
                 let mut siblings = Vec::new();
                 let maybe_disjoint =
-                    rdf.object_for(focus, &ShaclVocab::sh_qualified_value_shapes_disjoint().clone().into())?;
+                    rdf.object_for(focus, &ShaclVocab::sh_qualified_value_shapes_disjoint().into())?;
                 if let Some(disjoint) = maybe_disjoint {
                     match disjoint {
                         Object::Literal(ConcreteLiteral::BooleanLiteral(true)) => {
-                            let qvs = rdf.objects_for(focus, &ShaclVocab::sh_qualified_value_shape().clone().into())?;
+                            let qvs = rdf.objects_for(focus, &ShaclVocab::sh_qualified_value_shape().into())?;
                             if !qvs.is_empty() {
-                                let ps = rdf.subjects_for(&ShaclVocab::sh_property().clone().into(), focus)?;
+                                let ps = rdf.subjects_for(&ShaclVocab::sh_property().into(), focus)?;
                                 for property_parent in ps {
                                     let candidate_siblings = rdf.objects_for_shacl_path(
                                         &property_parent,
@@ -67,28 +67,28 @@ impl<RDF: FocusRDF> RDFNodeParse<RDF> for QualifiedValueShapeSiblings<RDF> {
 }
 
 pub(crate) fn qualified_value_shape<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<ASTComponent>> {
-    ObjectsPropertyParser::new(ShaclVocab::sh_qualified_value_shape().clone())
+    ObjectsPropertyParser::new(ShaclVocab::sh_qualified_value_shape())
         .then(|qvs| parse_qualified_value_shape::<RDF>(qvs.into_iter().collect()))
 }
 
 fn qualified_value_shape_disjoint_parser<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Option<bool>> {
-    SingleBoolPropertyParser::new(ShaclVocab::sh_qualified_value_shapes_disjoint().clone()).optional()
+    SingleBoolPropertyParser::new(ShaclVocab::sh_qualified_value_shapes_disjoint()).optional()
 }
 
 fn qualified_min_count_parser<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Option<isize>> {
-    SingleIntegerPropertyParser::new(ShaclVocab::sh_qualified_min_count().clone()).optional()
+    SingleIntegerPropertyParser::new(ShaclVocab::sh_qualified_min_count()).optional()
 }
 
 fn qualified_max_count_parser<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Option<isize>> {
-    SingleIntegerPropertyParser::new(ShaclVocab::sh_qualified_max_count().clone()).optional()
+    SingleIntegerPropertyParser::new(ShaclVocab::sh_qualified_max_count()).optional()
 }
 
 fn qualified_value_shape_siblings<RDF: FocusRDF>() -> QualifiedValueShapeSiblings<RDF> {
     QualifiedValueShapeSiblings {
         _marker: PhantomData,
         property_qualified_value_shape_path: SHACLPath::sequence(vec![
-            SHACLPath::iri(ShaclVocab::sh_property().clone()),
-            SHACLPath::iri(ShaclVocab::sh_qualified_value_shape().clone()),
+            SHACLPath::iri(ShaclVocab::sh_property()),
+            SHACLPath::iri(ShaclVocab::sh_qualified_value_shape()),
         ]),
     }
 }

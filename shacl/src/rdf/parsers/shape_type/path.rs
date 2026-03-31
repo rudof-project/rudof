@@ -4,5 +4,5 @@ use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{FocusRDF, SHACLPath};
 
 pub(crate) fn path<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = SHACLPath> {
-    SingleValuePropertyParser::new(ShaclVocab::sh_path().clone()).then(ShaclPathParser::new)
+    SingleValuePropertyParser::new(ShaclVocab::sh_path()).then(ShaclPathParser::new)
 }

@@ -57,7 +57,7 @@ impl Manifest {
         if let Some(mut subject) = entry_subject {
             loop {
                 let inner_subject: OxSubject = subject.clone().try_into().unwrap();
-                let rdf_first: NamedNode = RdfVocab::rdf_first().clone().into();
+                let rdf_first: NamedNode = RdfVocab::rdf_first().into();
                 match store
                     .triples_matching(&inner_subject, &rdf_first, &Any)
                     .map_err(|e| Box::new(e.into()))?
@@ -68,7 +68,7 @@ impl Manifest {
                     None => break,
                 };
 
-                let rdf_rest: NamedNode = RdfVocab::rdf_rest().clone().into();
+                let rdf_rest: NamedNode = RdfVocab::rdf_rest().into();
                 subject = match store
                     .triples_matching(&inner_subject, &rdf_rest, &Any)
                     .map_err(|e| Box::new(e.into()))?

@@ -7,7 +7,7 @@ use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 
 pub(crate) fn in_component<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<ASTComponent>> {
     parse_components_for_iri(
-        ShaclVocab::sh_in().clone(),
+        ShaclVocab::sh_in(),
         ListParser::new().flat_map(|ls| {
             let values = ls
                 .iter()

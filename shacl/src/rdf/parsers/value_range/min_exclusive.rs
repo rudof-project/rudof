@@ -5,6 +5,6 @@ use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 
 pub(crate) fn min_exclusive<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<ASTComponent>> {
-    LiteralsPropertyParser::new(ShaclVocab::sh_min_exclusive().clone())
+    LiteralsPropertyParser::new(ShaclVocab::sh_min_exclusive())
         .map(|ns| ns.into_iter().map(ASTComponent::MinExclusive).collect())
 }

@@ -26,9 +26,13 @@ macro_rules! vocab_term {
             pub const $name: &'static str = const_format::concatcp!($voc::BASE, $suffix);
 
             paste::paste! {
-                pub fn [<$name:lower>]() -> &'static iri_s::IriS {
+                pub fn [<$name:lower _ref>]() -> &'static iri_s::IriS {
                     static IRI: std::sync::OnceLock<iri_s::IriS> = std::sync::OnceLock::new();
                     IRI.get_or_init(|| iri_s::IriS::new_unchecked(Self::$name))
+                }
+
+                pub fn [<$name:lower>]() -> iri_s::IriS {
+                    Self::[<$name:lower _ref>]().clone()
                 }
             }
         }

@@ -5,9 +5,9 @@ use rudof_rdf::rdf_core::vocabs::{RdfsVocab, ShaclVocab};
 use rudof_rdf::rdf_core::{FocusRDF, RDFError};
 
 pub(crate) fn targets_implicit_class<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<Target>> {
-    InstancesParser::new(RdfsVocab::rdfs_class().clone())
-        .and(InstancesParser::new(ShaclVocab::sh_property_shape().clone()))
-        .and(InstancesParser::new(ShaclVocab::sh_node_shape().clone()))
+    InstancesParser::new(RdfsVocab::rdfs_class())
+        .and(InstancesParser::new(ShaclVocab::sh_property_shape()))
+        .and(InstancesParser::new(ShaclVocab::sh_node_shape()))
         .and(FocusParser::new())
         .flat_map(
             move |(((class, property_shapes), node_shapes), focus): (_, RDF::Term)| {

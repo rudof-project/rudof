@@ -24,7 +24,7 @@ pub struct ShEx2UmlConfig {
 impl ShEx2UmlConfig {
     pub fn new() -> ShEx2UmlConfig {
         Self {
-            annotation_label: vec![RdfsVocab::rdfs_label().clone()],
+            annotation_label: vec![RdfsVocab::rdfs_label()],
             replace_iri_by_label: None,
             shex: Some(ShExConfig::default()),
             shadowing: Some(true),

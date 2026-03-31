@@ -31,8 +31,8 @@ impl ClassIndex {
         let mut class_instances: HashMap<Object, HashSet<Object>> = HashMap::new();
         let mut subclass_map: HashMap<Object, HashSet<Object>> = HashMap::new();
 
-        let rdf_type: S::IRI = RdfVocab::rdf_type().clone().into();
-        let rdfs_subclass_of: S::IRI = RdfsVocab::rdfs_subclass_of_str().clone().into();
+        let rdf_type: S::IRI = RdfVocab::rdf_type().into();
+        let rdfs_subclass_of: S::IRI = RdfsVocab::rdfs_subclass_of_str().into();
 
         for triple in store
             .triples()

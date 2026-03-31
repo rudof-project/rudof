@@ -25,7 +25,7 @@ impl Annotation {
 
     pub fn rdfs_label(str: &str) -> Annotation {
         Annotation {
-            predicate: IriRef::iri(RdfsVocab::rdfs_label().clone()),
+            predicate: IriRef::iri(RdfsVocab::rdfs_label()),
             object: ObjectValue::str(str),
         }
     }

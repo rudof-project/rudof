@@ -5,7 +5,7 @@ use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 
 pub(crate) fn targets_node<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<Target>> {
-    ObjectsPropertyParser::new(ShaclVocab::sh_target_node().clone()).flat_map(|ts| {
+    ObjectsPropertyParser::new(ShaclVocab::sh_target_node()).flat_map(|ts| {
         let result = ts.into_iter().map(Target::Node).collect();
         Ok(result)
     })

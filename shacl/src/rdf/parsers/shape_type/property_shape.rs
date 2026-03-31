@@ -10,7 +10,7 @@ use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 
 pub(crate) fn property_shape<RDF: FocusRDF + 'static>() -> impl RDFNodeParse<RDF, Output = ASTPropertyShape> {
     FocusParser::new().then(move |focus: RDF::Term| {
-        HasTypeParser::new(ShaclVocab::sh_property_shape().clone())
+        HasTypeParser::new(ShaclVocab::sh_property_shape())
             .optional()
             .with(
                 ObjectParser::new()

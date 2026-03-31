@@ -149,7 +149,7 @@ fn predicate(i: Span) -> IRes<IriRef> {
 
 fn rdf_type(i: Span) -> IRes<IriRef> {
     let (i, _) = tag("a")(i)?;
-    let rdf_type: IriRef = IriRef::iri(RdfVocab::rdf_type().clone());
+    let rdf_type: IriRef = IriRef::iri(RdfVocab::rdf_type());
     Ok((i, rdf_type))
 }
 
@@ -223,7 +223,7 @@ mod tests {
         let expected = ShapeMapStatement::Association {
             node_selector: NodeSelector::triple_pattern(
                 Pattern::focus(),
-                SHACLPathRef::predicate(IriRef::iri(RdfVocab::rdf_type().clone())),
+                SHACLPathRef::predicate(IriRef::iri(RdfVocab::rdf_type())),
                 Pattern::prefixed("", "Person"),
             ),
             shape_selector: ShapeSelector::prefixed("", "label"),
@@ -237,7 +237,7 @@ mod tests {
         let (_, tp) = triple_pattern(input).unwrap();
         let expected = NodeSelector::triple_pattern(
             Pattern::focus(),
-            SHACLPathRef::predicate(IriRef::iri(RdfVocab::rdf_type().clone())),
+            SHACLPathRef::predicate(IriRef::iri(RdfVocab::rdf_type())),
             Pattern::prefixed("", "Person"),
         );
         assert_eq!(tp, expected);
@@ -249,7 +249,7 @@ mod tests {
         let (_, value) = triple_pattern_inner(input).unwrap();
         let expected = NodeSelector::triple_pattern(
             Pattern::focus(),
-            SHACLPathRef::predicate(IriRef::iri(RdfVocab::rdf_type().clone())),
+            SHACLPathRef::predicate(IriRef::iri(RdfVocab::rdf_type())),
             Pattern::prefixed("", "Person"),
         );
         assert_eq!(value, expected);
@@ -261,7 +261,7 @@ mod tests {
         let (_, value) = focus_object(input).unwrap();
         let expected = NodeSelector::triple_pattern(
             Pattern::focus(),
-            SHACLPathRef::predicate(IriRef::iri(RdfVocab::rdf_type().clone())),
+            SHACLPathRef::predicate(IriRef::iri(RdfVocab::rdf_type())),
             Pattern::prefixed("", "Person"),
         );
         assert_eq!(value, expected);

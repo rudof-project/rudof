@@ -10,7 +10,7 @@ use rudof_rdf::rdf_core::{FocusRDF, RDFError};
 use std::collections::HashSet;
 
 pub(crate) fn closed<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<ASTComponent>> {
-    SingleBoolPropertyParser::new(ShaclVocab::sh_closed().clone())
+    SingleBoolPropertyParser::new(ShaclVocab::sh_closed())
         .optional()
         .then(move |maybe_closed| {
             ignored_properties().map(move |is| {
@@ -25,7 +25,7 @@ pub(crate) fn closed<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<AST
 }
 
 fn ignored_properties<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = HashSet<IriS>> {
-    SingleValuePropertyAsListParser::new(ShaclVocab::sh_ignored_properties().clone())
+    SingleValuePropertyAsListParser::new(ShaclVocab::sh_ignored_properties())
         .optional()
         .flat_map(|is| match is {
             None => Ok(HashSet::new()),

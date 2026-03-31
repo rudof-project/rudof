@@ -144,7 +144,7 @@ impl<S: NeighsRDF + Debug> Validate<S> for IRShape {
                 for property in invalid_properties {
                     let vr_single = ValidationResult::new(
                         self.id().clone(),
-                        Object::iri(ShaclVocab::sh_closed_constraint_component().clone()),
+                        Object::iri(ShaclVocab::sh_closed_constraint_component()),
                         self.severity(),
                     )
                     .with_path(Some(SHACLPath::iri(property)));
@@ -237,7 +237,7 @@ where
                 if reifier_subjects.is_empty() && reifier_info.reification_required() {
                     let vr_single = ValidationResult::new(
                         shape.id().clone(),
-                        Object::iri(ShaclVocab::sh_reifier_shape_constraint_component().clone()),
+                        Object::iri(ShaclVocab::sh_reifier_shape_constraint_component()),
                         shape.severity(),
                     )
                     .with_message(&format!(

@@ -8,7 +8,7 @@ use rudof_rdf::rdf_core::{FocusRDF, RDFError};
 
 pub(crate) fn language_in<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<ASTComponent>> {
     parse_components_for_iri(
-        ShaclVocab::sh_language_in().clone(),
+        ShaclVocab::sh_language_in(),
         ListParser::new().flat_map(cnv_language_in_list::<RDF>),
     )
 }

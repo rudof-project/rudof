@@ -27,13 +27,13 @@ impl Target {
         let node: RDF::Subject = id.clone().try_into().map_err(|_| unreachable!())?;
 
         match self {
-            Target::Node(n) => graph.add_triple(node, ShaclVocab::sh_target_node().clone(), n.clone()),
-            Target::Class(c) => graph.add_triple(node, ShaclVocab::sh_target_class().clone(), c.clone()),
-            Target::SubjectsOf(s) => graph.add_triple(node, ShaclVocab::sh_target_subjects_of().clone(), s.clone()),
-            Target::ObjectsOf(o) => graph.add_triple(node, ShaclVocab::sh_target_objects_of().clone(), o.clone()),
+            Target::Node(n) => graph.add_triple(node, ShaclVocab::sh_target_node(), n.clone()),
+            Target::Class(c) => graph.add_triple(node, ShaclVocab::sh_target_class(), c.clone()),
+            Target::SubjectsOf(s) => graph.add_triple(node, ShaclVocab::sh_target_subjects_of(), s.clone()),
+            Target::ObjectsOf(o) => graph.add_triple(node, ShaclVocab::sh_target_objects_of(), o.clone()),
             // TODO - Review this code and in SHACL 1.2, add sh_shape_class ?
             Target::ImplicitClass(_) => {
-                graph.add_triple(node, RdfVocab::rdf_type().clone(), RdfsVocab::rdfs_class().clone())
+                graph.add_triple(node, RdfVocab::rdf_type().clone(), RdfsVocab::rdfs_class())
             },
             Target::WrongNode(_) => todo!(),
             Target::WrongClass(_) => todo!(),

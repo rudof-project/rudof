@@ -33,13 +33,13 @@ impl<S: NeighsRDF + 'static> NativeValidator<S> for Class {
             let class_term = &S::object_as_term(self.class_rule());
 
             let is_class_valid = store
-                .objects_for(value_node, &RdfVocab::rdf_type().clone().into())
+                .objects_for(value_node, &RdfVocab::rdf_type().into())
                 .unwrap_or_default()
                 .iter()
                 .any(|ctype| {
                     ctype == class_term
                         || store
-                            .objects_for(ctype, &RdfsVocab::rdfs_subclass_of_str().clone().into())
+                            .objects_for(ctype, &RdfsVocab::rdfs_subclass_of_str().into())
                             .unwrap_or_default()
                             .contains(class_term)
                 });

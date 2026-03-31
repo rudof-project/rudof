@@ -7,7 +7,7 @@ use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 
 pub(crate) fn has_value<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<ASTComponent>> {
     parse_components_for_iri(
-        ShaclVocab::sh_has_value().clone(),
+        ShaclVocab::sh_has_value(),
         TermParser::new().flat_map(|term| {
             let value = term_to_value::<RDF>(&term, "parsing hasValue")?;
             Ok(ASTComponent::HasValue(value))

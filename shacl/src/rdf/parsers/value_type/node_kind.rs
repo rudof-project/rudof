@@ -8,7 +8,7 @@ use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{FocusRDF, Rdf};
 
 pub(crate) fn node_kind<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<ASTComponent>> {
-    ValuesPropertyParser::new(ShaclVocab::sh_node_kind().clone()).flat_map(|ns| {
+    ValuesPropertyParser::new(ShaclVocab::sh_node_kind()).flat_map(|ns| {
         let nks: Vec<_> = ns
             .into_iter()
             .flat_map(|term| {

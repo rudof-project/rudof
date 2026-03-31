@@ -5,10 +5,10 @@ use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 
 pub(crate) fn pattern<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<ASTComponent>> {
-    SingleStringPropertyParser::new(ShaclVocab::sh_flags().clone())
+    SingleStringPropertyParser::new(ShaclVocab::sh_flags())
         .optional()
         .then(move |maybe_flags| {
-            StringsPropertyParser::new(ShaclVocab::sh_pattern().clone()).flat_map(move |strs| match strs.len() {
+            StringsPropertyParser::new(ShaclVocab::sh_pattern()).flat_map(move |strs| match strs.len() {
                 0 => Ok(Vec::new()),
                 1 => {
                     let pattern = strs.first().unwrap().clone();

@@ -9,7 +9,7 @@ use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 
 pub(crate) fn node_shape<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = ASTNodeShape> {
-    NonEmptyValuesPropertyParser::new(ShaclVocab::sh_path().clone())
+    NonEmptyValuesPropertyParser::new(ShaclVocab::sh_path())
         .not()
         .with(
             ObjectParser::new()

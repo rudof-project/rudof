@@ -6,7 +6,7 @@ use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 
 pub(crate) fn less_than<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<ASTComponent>> {
-    IrisPropertyParser::new(ShaclVocab::sh_less_than().clone()).map(|ns| {
+    IrisPropertyParser::new(ShaclVocab::sh_less_than()).map(|ns| {
         ns.into_iter()
             .map(|n| {
                 let iri = IriRef::iri(n);

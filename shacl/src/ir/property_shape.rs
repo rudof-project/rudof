@@ -184,7 +184,7 @@ impl IRPropertyShape {
         shapes_map: &HashMap<ShapeLabelIdx, IRShape>,
     ) -> Result<(), RDF::Err> {
         let id: RDF::Subject = self.id.clone().try_into().map_err(|_| unreachable!())?;
-        graph.add_type(id.clone(), ShaclVocab::sh_property_shape().clone())?;
+        graph.add_type(id.clone(), ShaclVocab::sh_property_shape())?;
 
         self.name.iter().try_for_each(|(lang, value)| {
             let lit: RDF::Literal = match lang {
@@ -192,7 +192,7 @@ impl IRPropertyShape {
                 Some(_) => todo!(),
             };
 
-            graph.add_triple(id.clone(), ShaclVocab::sh_name().clone(), lit)
+            graph.add_triple(id.clone(), ShaclVocab::sh_name(), lit)
         })?;
 
         self.description.iter().try_for_each(|(lang, value)| {
@@ -201,7 +201,7 @@ impl IRPropertyShape {
                 Some(_) => todo!(),
             };
 
-            graph.add_triple(id.clone(), ShaclVocab::sh_description().clone(), lit)
+            graph.add_triple(id.clone(), ShaclVocab::sh_description(), lit)
         })?;
 
         if let Some(order) = &self.order {
@@ -223,15 +223,15 @@ impl IRPropertyShape {
                 NumericLiteral::Float(f) => f.to_string().into(),
             };
 
-            graph.add_triple(id.clone(), ShaclVocab::sh_order().clone(), lit)?;
+            graph.add_triple(id.clone(), ShaclVocab::sh_order(), lit)?;
         }
 
         if let Some(group) = &self.group {
-            graph.add_triple(id.clone(), ShaclVocab::sh_group().clone(), group.clone())?;
+            graph.add_triple(id.clone(), ShaclVocab::sh_group(), group.clone())?;
         }
 
         if let SHACLPath::Predicate { pred } = &self.path {
-            graph.add_triple(id.clone(), ShaclVocab::sh_path().clone(), pred.clone())?;
+            graph.add_triple(id.clone(), ShaclVocab::sh_path(), pred.clone())?;
         } else {
             unimplemented!()
         }
@@ -247,11 +247,11 @@ impl IRPropertyShape {
         if self.deactivated {
             let lit: RDF::Literal = "true".to_string().into();
 
-            graph.add_triple(id.clone(), ShaclVocab::sh_deactivated().clone(), lit)?;
+            graph.add_triple(id.clone(), ShaclVocab::sh_deactivated(), lit)?;
         }
 
         if let Some(severity) = &self.severity {
-            graph.add_triple::<_, _, IriS>(id.clone(), ShaclVocab::sh_severity().clone(), severity.clone().into())?;
+            graph.add_triple::<_, _, IriS>(id.clone(), ShaclVocab::sh_severity(), severity.clone().into())?;
         }
 
         Ok(())

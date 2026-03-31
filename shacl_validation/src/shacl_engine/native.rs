@@ -137,14 +137,14 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
         // Fallback: full graph scan (for backwards compatibility if index wasn't built)
         let term: S::Term = subject.clone().into();
         let targets = store
-            .subjects_for(&RdfVocab::rdf_type().clone().into(), &term)
+            .subjects_for(&RdfVocab::rdf_type().into(), &term)
             .map_err(|e| ValidateError::InstanceOf {
                 term: term.to_string(),
                 error: e.to_string(),
             })?;
 
         let subclass_targets = store
-            .subjects_for(&RdfsVocab::rdfs_subclass_of_str().clone().into(), &term)
+            .subjects_for(&RdfsVocab::rdfs_subclass_of_str().into(), &term)
             .map_err(|e| ValidateError::SubClassOf {
                 term: term.to_string(),
                 error: e.to_string(),
@@ -152,7 +152,7 @@ impl<S: NeighsRDF + Debug + 'static> Engine<S> for NativeEngine {
             .into_iter()
             .flat_map(move |subclass| {
                 store
-                    .subjects_for(&RdfVocab::rdf_type().clone().into(), &subclass)
+                    .subjects_for(&RdfVocab::rdf_type().into(), &subclass)
                     .map_err(|e| ValidateError::SubClassOf {
                         term: subclass.to_string(),
                         error: e.to_string(),

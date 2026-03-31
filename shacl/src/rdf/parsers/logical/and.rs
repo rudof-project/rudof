@@ -7,7 +7,7 @@ use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 
 pub(crate) fn and<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<ASTComponent>> {
     parse_components_for_iri(
-        ShaclVocab::sh_and().clone(),
+        ShaclVocab::sh_and(),
         ListParser::new().flat_map(|ls| {
             let shapes: Vec<_> = terms_as_nodes::<RDF>(ls)?;
             Ok(ASTComponent::And(shapes))

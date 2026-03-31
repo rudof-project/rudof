@@ -86,10 +86,10 @@ impl ValidationReport {
     pub fn parse<S: FocusRDF>(store: &mut S, subject: S::Term) -> Result<Self, ReportError> {
         let mut results = Vec::new();
         for result in store
-            .objects_for(&subject, &ShaclVocab::sh_result().clone().into())
+            .objects_for(&subject, &ShaclVocab::sh_result().into())
             .map_err(|e| ReportError::ObjectsFor {
                 subject: subject.to_string(),
-                predicate: ShaclVocab::sh_result().to_string(),
+                predicate: ShaclVocab::SH_RESULT.to_string(),
                 error: e.to_string(),
             })?
         {
@@ -121,7 +121,7 @@ impl ValidationReport {
         RDF: BuildRDF + Sized,
     {
         rdf_writer
-            .add_prefix("sh", ShaclVocab::sh())
+            .add_prefix("sh", ShaclVocab::sh_ref())
             .map_err(|e| ReportError::ValidationError {
                 msg: format!("Error adding prefix to RDF: {e}"),
             })?;
@@ -132,13 +132,13 @@ impl ValidationReport {
             })?
             .into();
         rdf_writer
-            .add_type(report_node.clone(), ShaclVocab::sh_validation_report().clone())
+            .add_type(report_node.clone(), ShaclVocab::sh_validation_report())
             .map_err(|e| ReportError::ValidationError {
                 msg: format!("Error type ValidationReport to bnode: {e}"),
             })?;
 
-        let conforms: <RDF as Rdf>::IRI = ShaclVocab::sh_conforms().clone().into();
-        let sh_result: <RDF as Rdf>::IRI = ShaclVocab::sh_result().clone().into();
+        let conforms: <RDF as Rdf>::IRI = ShaclVocab::sh_conforms().into();
+        let sh_result: <RDF as Rdf>::IRI = ShaclVocab::sh_result().into();
         if self.results.is_empty() {
             let rdf_true: <RDF as Rdf>::Term = Object::boolean(true).into();
             rdf_writer

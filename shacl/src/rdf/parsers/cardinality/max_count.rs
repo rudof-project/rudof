@@ -5,6 +5,6 @@ use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 
 pub(crate) fn max_count<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<ASTComponent>> {
-    IntegersPropertyParser::new(ShaclVocab::sh_max_count().clone())
+    IntegersPropertyParser::new(ShaclVocab::sh_max_count())
         .map(|ns| ns.into_iter().map(ASTComponent::MaxCount).collect())
 }

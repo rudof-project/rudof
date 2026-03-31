@@ -28,11 +28,11 @@ impl From<&IriS> for Severity {
 impl From<Severity> for IriS {
     fn from(value: Severity) -> Self {
         match value {
-            Severity::Trace => ShaclVocab::sh_trace().clone(),
-            Severity::Debug => ShaclVocab::sh_debug().clone(),
-            Severity::Info => ShaclVocab::sh_info().clone(),
-            Severity::Warning => ShaclVocab::sh_warning().clone(),
-            Severity::Violation => ShaclVocab::sh_violation().clone(),
+            Severity::Trace => ShaclVocab::sh_trace(),
+            Severity::Debug => ShaclVocab::sh_debug(),
+            Severity::Info => ShaclVocab::sh_info(),
+            Severity::Warning => ShaclVocab::sh_warning(),
+            Severity::Violation => ShaclVocab::sh_violation(),
             Severity::Generic(iri) => iri,
         }
     }
@@ -41,11 +41,11 @@ impl From<Severity> for IriS {
 impl From<&Severity> for IriS {
     fn from(value: &Severity) -> Self {
         match value {
-            Severity::Trace => ShaclVocab::sh_trace().clone(),
-            Severity::Debug => ShaclVocab::sh_debug().clone(),
-            Severity::Info => ShaclVocab::sh_info().clone(),
-            Severity::Warning => ShaclVocab::sh_warning().clone(),
-            Severity::Violation => ShaclVocab::sh_violation().clone(),
+            Severity::Trace => ShaclVocab::sh_trace(),
+            Severity::Debug => ShaclVocab::sh_debug(),
+            Severity::Info => ShaclVocab::sh_info(),
+            Severity::Warning => ShaclVocab::sh_warning(),
+            Severity::Violation => ShaclVocab::sh_violation(),
             Severity::Generic(iri) => iri.clone(),
         }
     }

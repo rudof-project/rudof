@@ -7,7 +7,7 @@ use rudof_rdf::rdf_core::{FocusRDF, RDFError};
 
 pub(crate) fn not<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<ASTComponent>> {
     parse_components_for_iri(
-        ShaclVocab::sh_not().clone(),
+        ShaclVocab::sh_not(),
         TermParser::new().flat_map(|t| {
             let shape =
                 RDF::term_as_object(&t).map_err(|_| RDFError::FailedTermToRDFNodeError { term: t.to_string() })?;

@@ -65,57 +65,57 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
         // instances of `sh:NodeShape`
         let mut node_shapes_instances = self.get_triples::<_, RDF::IRI, RDF::Term>(
             &Any,
-            &RdfVocab::rdf_type().clone().into(),
-            &ShaclVocab::sh_node_shape().clone().into(),
+            &RdfVocab::rdf_type().into(),
+            &ShaclVocab::sh_node_shape().into(),
         )?;
         // instances of `sh:PropertyShape`
         let property_shapes_instances = self.get_triples::<_, RDF::IRI, RDF::Term>(
             &Any,
-            &RdfVocab::rdf_type().clone().into(),
-            &ShaclVocab::sh_property_shape().clone().into(),
+            &RdfVocab::rdf_type().into(),
+            &ShaclVocab::sh_property_shape().into(),
         )?;
         // instances of `sh:Shape`
         let shape_instances = self.get_triples::<_, RDF::IRI, RDF::Term>(
             &Any,
-            &RdfVocab::rdf_type().clone().into(),
-            &ShaclVocab::sh_shape().clone().into(),
+            &RdfVocab::rdf_type().into(),
+            &ShaclVocab::sh_shape().into(),
         )?;
         // subjects of sh:targetClass
         let subjects_target_class =
-            self.get_triples::<_, RDF::IRI, _>(&Any, &ShaclVocab::sh_target_class().clone().into(), &Any)?;
+            self.get_triples::<_, RDF::IRI, _>(&Any, &ShaclVocab::sh_target_class().into(), &Any)?;
         // subjects of sh:targetSubjectsOf
         let subjects_target_subjects_of =
-            self.get_triples::<_, RDF::IRI, _>(&Any, &ShaclVocab::sh_target_subjects_of().clone().into(), &Any)?;
+            self.get_triples::<_, RDF::IRI, _>(&Any, &ShaclVocab::sh_target_subjects_of().into(), &Any)?;
         // subjects of sh:targetObjectsOf
         let subjects_target_objects_of =
-            self.get_triples::<_, RDF::IRI, _>(&Any, &ShaclVocab::sh_target_objects_of().clone().into(), &Any)?;
+            self.get_triples::<_, RDF::IRI, _>(&Any, &ShaclVocab::sh_target_objects_of().into(), &Any)?;
         // subjects of sh:targetNode
         let subjects_target_node =
-            self.get_triples::<_, RDF::IRI, _>(&Any, &ShaclVocab::sh_target_node().clone().into(), &Any)?;
+            self.get_triples::<_, RDF::IRI, _>(&Any, &ShaclVocab::sh_target_node().into(), &Any)?;
         // Search shape expecting parameters: https://www.w3.org/TR/shacl12-core/#dfn-shape-expecting
         // elements of `sh:and` list
-        let sh_and_values = self.get_triples_list(&ShaclVocab::sh_and().clone().into(), "sh:and", |v| {
+        let sh_and_values = self.get_triples_list(&ShaclVocab::sh_and().into(), "sh:and", |v| {
             ShaclParserError::AndValueNoSubject { term: v.to_string() }
         })?;
         // elements of `sh:or` list
-        let sh_or_values = self.get_triples_list(&ShaclVocab::sh_or().clone().into(), "sh:or", |v| {
+        let sh_or_values = self.get_triples_list(&ShaclVocab::sh_or().into(), "sh:or", |v| {
             ShaclParserError::OrValueNoObject { term: v.to_string() }
         })?;
         // elements of `sh:not` list
-        let sh_not_values = self.objects_with_predicate(&ShaclVocab::sh_not().clone().into())?;
+        let sh_not_values = self.objects_with_predicate(&ShaclVocab::sh_not().into())?;
         // subjects with property `sh:property`
-        let subjects_property = self.objects_with_predicate(&ShaclVocab::sh_property().clone().into())?;
+        let subjects_property = self.objects_with_predicate(&ShaclVocab::sh_property().into())?;
         // elements of `sh:node` list
         let sh_qualified_value_shape_nodes =
-            self.objects_with_predicate(&ShaclVocab::sh_qualified_value_shape().clone().into())?;
+            self.objects_with_predicate(&ShaclVocab::sh_qualified_value_shape().into())?;
         // elements of `sh:node` list
-        let sh_node_values = self.objects_with_predicate(&ShaclVocab::sh_node().clone().into())?;
+        let sh_node_values = self.objects_with_predicate(&ShaclVocab::sh_node().into())?;
         // elements of `sh:xone` list
-        let sh_xone_values = self.get_triples_list(&ShaclVocab::sh_xone().clone().into(), "sh:xone", |v| {
+        let sh_xone_values = self.get_triples_list(&ShaclVocab::sh_xone().into(), "sh:xone", |v| {
             ShaclParserError::XOneValueNoSubject { term: v.to_string() }
         })?;
         // elements of `sh:reifierShape` list
-        let sh_reifier_shape_values = self.objects_with_predicate(&ShaclVocab::sh_reifier_shape().clone().into())?;
+        let sh_reifier_shape_values = self.objects_with_predicate(&ShaclVocab::sh_reifier_shape().into())?;
 
         node_shapes_instances.extend(property_shapes_instances);
         node_shapes_instances.extend(shape_instances);
