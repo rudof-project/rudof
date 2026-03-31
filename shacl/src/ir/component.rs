@@ -159,7 +159,7 @@ impl IRComponent {
                     NodeKind::Iri => ShaclVocab::sh_iri_ref(),
                     _ => unimplemented!(),
                 };
-                register_iri(&iri, ShaclVocab::sh_datatype(), id, graph)
+                register_iri(iri, ShaclVocab::sh_datatype(), id, graph)
             },
             IRComponent::MinCount(mc) => {
                 register_integer(mc.min_count() as isize, ShaclVocab::sh_min_count(), id, graph)
