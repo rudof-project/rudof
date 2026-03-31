@@ -146,9 +146,8 @@ impl IRPropertyShape {
     pub fn compile(shape: &ASTPropertyShape, ast: &ASTSchema, ir: &mut IRSchema) -> Result<Self, IRError> {
         let mut compiled_components = Vec::new();
         for component in shape.components() {
-            if let Some(component) = IRComponent::compile(component, ast, ir)? {
-                compiled_components.push(component);
-            }
+            let component = IRComponent::compile(component, ast, ir)?;
+            compiled_components.push(component);
         }
 
         let mut compiled_prop_shapes = Vec::new();

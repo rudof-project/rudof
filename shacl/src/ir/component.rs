@@ -14,6 +14,7 @@ use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
+use itertools::Itertools;
 
 #[derive(Debug, Clone)]
 pub enum IRComponent {
@@ -54,60 +55,61 @@ impl IRComponent {
     /// It returns a vector of (PosNeg, ShapeLabelIdx) pairs for components that are represented in the IR.
     /// The vector is list of dependant shapes for cases with recursion
     // TODO - Update comment to match current behaviour
-    // TODO - Remove Option<Self> and replace with Self, so the serialization can be done and the node expr can be computed
-    pub fn compile(component: &ASTComponent, ast: &ASTSchema, ir: &mut IRSchema) -> Result<Option<Self>, IRError> {
+    pub fn compile(component: &ASTComponent, ast: &ASTSchema, ir: &mut IRSchema) -> Result<Self, IRError> {
         let result = match component.clone() {
-            ASTComponent::Class(object) => Some(IRComponent::Class(Class::new(object))),
-            ASTComponent::Datatype(iri) => Some(IRComponent::Datatype(Datatype::new(convert_iri_ref(iri)?))),
-            ASTComponent::NodeKind(nk) => Some(IRComponent::NodeKind(Nodekind::new(nk))),
-            ASTComponent::MinCount(n) => Some(IRComponent::MinCount(MinCount::new(n))),
-            ASTComponent::MaxCount(n) => Some(IRComponent::MaxCount(MaxCount::new(n))),
-            ASTComponent::MinExclusive(lit) => Some(IRComponent::MinExclusive(MinExclusive::new(lit))),
-            ASTComponent::MaxExclusive(lit) => Some(IRComponent::MaxExclusive(MaxExclusive::new(lit))),
-            ASTComponent::MinInclusive(lit) => Some(IRComponent::MinInclusive(MinInclusive::new(lit))),
-            ASTComponent::MaxInclusive(lit) => Some(IRComponent::MaxInclusive(MaxInclusive::new(lit))),
-            ASTComponent::MinLength(l) => Some(IRComponent::MinLength(MinLength::new(l))),
-            ASTComponent::MaxLength(l) => Some(IRComponent::MaxLength(MaxLength::new(l))),
+            ASTComponent::Class(object) => IRComponent::Class(Class::new(object)),
+            ASTComponent::Datatype(iri) => IRComponent::Datatype(Datatype::new(convert_iri_ref(iri)?)),
+            ASTComponent::NodeKind(nk) => IRComponent::NodeKind(Nodekind::new(nk)),
+            ASTComponent::MinCount(n) => IRComponent::MinCount(MinCount::new(n)),
+            ASTComponent::MaxCount(n) => IRComponent::MaxCount(MaxCount::new(n)),
+            ASTComponent::MinExclusive(lit) => IRComponent::MinExclusive(MinExclusive::new(lit)),
+            ASTComponent::MaxExclusive(lit) => IRComponent::MaxExclusive(MaxExclusive::new(lit)),
+            ASTComponent::MinInclusive(lit) => IRComponent::MinInclusive(MinInclusive::new(lit)),
+            ASTComponent::MaxInclusive(lit) => IRComponent::MaxInclusive(MaxInclusive::new(lit)),
+            ASTComponent::MinLength(l) => IRComponent::MinLength(MinLength::new(l)),
+            ASTComponent::MaxLength(l) => IRComponent::MaxLength(MaxLength::new(l)),
             ASTComponent::Pattern { pattern, flags } => {
                 let pattern = Pattern::new(pattern, flags)?;
-                Some(IRComponent::Pattern(pattern))
+                IRComponent::Pattern(pattern)
             },
-            ASTComponent::UniqueLang(lang) => Some(IRComponent::UniqueLang(UniqueLang::new(lang))),
-            ASTComponent::LanguageIn(langs) => Some(IRComponent::LanguageIn(LanguageIn::new(langs))),
-            ASTComponent::Equals(iri) => Some(IRComponent::Equals(Equals::new(convert_iri_ref(iri)?))),
-            ASTComponent::Disjoint(iri) => Some(IRComponent::Disjoint(Disjoint::new(convert_iri_ref(iri)?))),
-            ASTComponent::LessThan(iri) => Some(IRComponent::LessThan(LessThan::new(convert_iri_ref(iri)?))),
-            ASTComponent::LessThanOrEquals(iri) => Some(IRComponent::LessThanOrEquals(LessThanOrEquals::new(
+            ASTComponent::UniqueLang(lang) => IRComponent::UniqueLang(UniqueLang::new(lang)),
+            ASTComponent::LanguageIn(langs) => IRComponent::LanguageIn(LanguageIn::new(langs)),
+            ASTComponent::Equals(iri) => IRComponent::Equals(Equals::new(convert_iri_ref(iri)?)),
+            ASTComponent::Disjoint(iri) => IRComponent::Disjoint(Disjoint::new(convert_iri_ref(iri)?)),
+            ASTComponent::LessThan(iri) => IRComponent::LessThan(LessThan::new(convert_iri_ref(iri)?)),
+            ASTComponent::LessThanOrEquals(iri) => IRComponent::LessThanOrEquals(LessThanOrEquals::new(
                 convert_iri_ref(iri)?,
-            ))),
+            )),
             ASTComponent::Or(objs) => {
                 let idxs = ir.register_shapes(objs, ast)?;
-                Some(IRComponent::Or(Or::new(idxs)))
+                IRComponent::Or(Or::new(idxs))
             },
             ASTComponent::And(objs) => {
                 let idxs = ir.register_shapes(objs, ast)?;
-                Some(IRComponent::And(And::new(idxs)))
+                IRComponent::And(And::new(idxs))
             },
             ASTComponent::Not(obj) => {
                 let idx = ir.register_shape(&obj, None, ast)?;
-                Some(IRComponent::Not(Not::new(idx)))
+                IRComponent::Not(Not::new(idx))
             },
             ASTComponent::Xone(objs) => {
                 let idxs = ir.register_shapes(objs, ast)?;
-                Some(IRComponent::Xone(Xone::new(idxs)))
+                IRComponent::Xone(Xone::new(idxs))
             },
-            ASTComponent::Closed { .. } => None, // TODO - Change for serialization
+            ASTComponent::Closed { is_closed, ignored_properties } => {
+                IRComponent::Closed(Closed::new(is_closed, ignored_properties.into_iter().collect_vec()))
+            },
             ASTComponent::Node(obj) => {
                 let idx = ir.register_shape(&obj, None, ast)?;
-                Some(IRComponent::Node(Node::new(idx)))
+                IRComponent::Node(Node::new(idx))
             },
             ASTComponent::HasValue(val) => {
                 let term = convert_value(val)?;
-                Some(IRComponent::HasValue(HasValue::new(term)))
+                IRComponent::HasValue(HasValue::new(term))
             },
             ASTComponent::In(vals) => {
                 let terms = vals.into_iter().map(convert_value).collect::<Result<Vec<_>, _>>()?;
-                Some(IRComponent::In(In::new(terms)))
+                IRComponent::In(In::new(terms))
             },
             ASTComponent::QualifiedValueShape {
                 shape,
@@ -119,15 +121,17 @@ impl IRComponent {
                 let idx = ir.register_shape(&shape, None, ast)?;
                 let compiled_siblings = ir.register_shapes(siblings, ast)?;
 
-                Some(IRComponent::QualifiedValueShape(QualifiedValueShape::new(
+                IRComponent::QualifiedValueShape(QualifiedValueShape::new(
                     idx,
                     q_min_count,
                     q_max_count,
                     disjoint,
                     compiled_siblings,
-                )))
+                ))
             },
-            ASTComponent::Deactivated(_) => None, // TODO - Change for node expr
+            ASTComponent::Deactivated(d) => { // TODO - Change for node expr
+                IRComponent::Deactivated(Deactivated::new(d))
+            },
         };
 
         Ok(result)

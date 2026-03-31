@@ -143,9 +143,8 @@ impl IRNodeShape {
     pub fn compile(shape: &ASTNodeShape, ast: &ASTSchema, ir: &mut IRSchema) -> Result<Self, IRError> {
         let mut compiled_components = Vec::new();
         for component in shape.components() {
-            if let Some(compiled) = IRComponent::compile(component, ast, ir)? {
-                compiled_components.push(compiled);
-            }
+            let compiled = IRComponent::compile(component, ast, ir)?;
+            compiled_components.push(compiled);
         }
 
         let mut compiled_prop_shapes = Vec::new();
