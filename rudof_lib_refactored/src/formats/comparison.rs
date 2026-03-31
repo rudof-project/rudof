@@ -38,8 +38,9 @@ pub enum ComparisonFormat {
 /// Output formats for schema comparison results supported by Rudof.
 ///
 /// Represents serialization formats for the results of schema comparison operations.
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub enum ResultComparisonFormat {
+    #[default]
     Internal,
     Json,
 }

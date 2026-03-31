@@ -215,6 +215,17 @@ impl RudofConfig {
         self.tap2shex.clone().unwrap_or_default()
     }
 
+    // ---------------------------------------------------------------------------
+    // Comparison configuration
+    // ---------------------------------------------------------------------------
+
+    pub fn comparator_config(&self) -> ComparatorConfig {
+        match self.comparator {
+            None => ComparatorConfig::new(),
+            Some(ref cfg) => cfg.clone(),
+        }
+    }
+
     // ----------------------------------------------------------------------------
     // Helper methods to access specific configurations with defaults
     // ----------------------------------------------------------------------------

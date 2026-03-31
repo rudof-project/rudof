@@ -330,7 +330,7 @@ impl Rudof {
     // ========================================================================
 
     pub fn show_schema_comparison<'a, W: io::Write>(
-        &'a self,
+        &'a mut self,
         schema1: &'a InputSpec,
         schema2: &'a InputSpec,
         format1: &'a ComparisonFormat,

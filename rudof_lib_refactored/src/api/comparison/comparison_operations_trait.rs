@@ -34,7 +34,7 @@ pub trait ComparisonOperations {
     ///
     /// Returns an error if schemas cannot be loaded, compared, or serialized.
     fn show_schema_comparison<W: io::Write>(
-        &self,
+        &mut self,
         schema1: &InputSpec,
         schema2: &InputSpec,
         base1: Option<&str>,
@@ -54,7 +54,7 @@ pub trait ComparisonOperations {
 
 impl ComparisonOperations for crate::Rudof {
     fn show_schema_comparison<W: io::Write>(
-        &self,
+        &mut self,
         schema1: &InputSpec,
         schema2: &InputSpec,
         base1: Option<&str>,

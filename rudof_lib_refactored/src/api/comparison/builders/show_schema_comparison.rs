@@ -6,7 +6,7 @@ use std::io;
 /// Provides a fluent interface for configuring and executing schema comparison
 /// operations with optional parameters.
 pub struct ShowSchemaComparisonBuilder<'a, W: io::Write> {
-    rudof: &'a Rudof,
+    rudof: &'a mut Rudof,
     schema1: &'a InputSpec,
     schema2: &'a InputSpec,
     format1: &'a ComparisonFormat,
@@ -29,7 +29,7 @@ impl<'a, W: io::Write> ShowSchemaComparisonBuilder<'a, W> {
     /// This is called internally by `Rudof::show_schema_comparison()` and should not
     /// be constructed directly.
     pub(crate) fn new(
-        rudof: &'a Rudof,
+        rudof: &'a mut Rudof,
         schema1: &'a InputSpec,
         schema2: &'a InputSpec,
         format1: &'a ComparisonFormat,
