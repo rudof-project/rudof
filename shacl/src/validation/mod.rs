@@ -1,1 +1,2 @@
+mod mode;
 mod report;

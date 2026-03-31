@@ -19,41 +19,6 @@ use std::{
     str::FromStr,
 };
 
-#[derive(Copy, Clone, Debug, PartialEq, Default)]
-/// Backend used for the validation.
-///
-/// According to the SHACL Recommendation, there exists no concrete method for
-/// implementing SHACL. Thus, by choosing your preferred SHACL Validation Mode,
-/// the user can select which engine is used for the validation.
-pub enum ShaclValidationMode {
-    /// Rust native engine using functions implemented with Rust native code
-    #[default]
-    Native,
-    /// SPARQL-based engine using SPARQL queries to validate the data
-    Sparql,
-}
-
-impl Display for ShaclValidationMode {
-    fn fmt(&self, dest: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self {
-            ShaclValidationMode::Native => write!(dest, "native"),
-            ShaclValidationMode::Sparql => write!(dest, "sparql"),
-        }
-    }
-}
-
-impl FromStr for ShaclValidationMode {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "native" => Ok(ShaclValidationMode::Native),
-            "sparql" => Ok(ShaclValidationMode::Sparql),
-            other => Err(format!("Unsupported SHACL validation mode: {}", other)),
-        }
-    }
-}
-
 /// The basic operations of the SHACL Processor.
 ///
 /// The ShaclProcessor trait is the one in charge of applying the SHACL
