@@ -6,3 +6,4 @@ pub mod shape_based;
 pub mod string_based;
 pub mod value;
 pub mod value_range;
+mod non_shape;
