@@ -37,7 +37,7 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
             .into();
 
         while let Some(node) = state.pop_pending() {
-            if self.shapes.contains_key(&node) {
+            if !self.shapes.contains_key(&node) {
                 self.rdf_parser.rdf_mut().set_focus(&node.clone().into());
                 let shape = shape()
                     .parse_focused(self.rdf_parser.rdf_mut())
