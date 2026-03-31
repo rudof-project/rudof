@@ -400,16 +400,3 @@ fn calculate_color(severity: &Severity, report: &ValidationReport) -> Color {
         Severity::Generic(_) => Color::White,
     }
 }
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
-pub enum SortModeReport {
-    #[default]
-    Node,
-    Severity,
-    Shape,
-    Component,
-    Source,
-    Path,
-    Value,
-    Details,
-}
