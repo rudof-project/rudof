@@ -4,11 +4,10 @@ use crate::shacl_engine::engine::Engine;
 use crate::validate_error::ValidateError;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
-use iri_s::IriS;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{
     NeighsRDF, Rdf, SHACLPath,
-    term::{Object, Triple},
+    term::Object,
 };
 use shacl::ir::{IRNodeShape, IRPropertyShape, IRSchema, IRShape, ReifierInfo};
 use std::{collections::HashSet, fmt::Debug};
@@ -120,39 +119,6 @@ impl<S: NeighsRDF + Debug> Validate<S> for IRShape {
             property_shapes_validation_results.extend(results);
         }
 
-        // Check if there are extra properties but the shape is closed
-        let mut closed_validation_results = Vec::new();
-        if self.closed() {
-            let allowed_properties: HashSet<IriS> = self.allowed_properties();
-
-            for focus_node in uncached_focus_nodes.iter() {
-                let all_properties: HashSet<IriS> = match S::term_as_subject(focus_node) {
-                    Ok(subj) => {
-                        let ts = store
-                            .triples_with_subject(&subj)
-                            .map_err(|e| ValidateError::TriplesWithSubject {
-                                subject: format!("{focus_node:?}"),
-                                error: e.to_string(),
-                            })?;
-                        Ok::<HashSet<IriS>, ValidateError>(ts.map(|t| t.pred().clone().into()).collect())
-                    },
-                    Err(_) => Ok::<HashSet<IriS>, ValidateError>(HashSet::new()),
-                }?;
-
-                let invalid_properties: Vec<IriS> = all_properties.difference(&allowed_properties).cloned().collect();
-
-                for property in invalid_properties {
-                    let vr_single = ValidationResult::new(
-                        self.id().clone(),
-                        Object::iri(ShaclVocab::sh_closed_constraint_component()),
-                        self.severity(),
-                    )
-                    .with_path(Some(SHACLPath::iri(property)));
-                    closed_validation_results.push(vr_single);
-                }
-            }
-        }
-
         let reification_results = if let Some(reifier_info) = self.reifier_info() {
             validate_reifiers(
                 self,
@@ -171,7 +137,6 @@ impl<S: NeighsRDF + Debug> Validate<S> for IRShape {
         let new_results: Vec<ValidationResult> = component_validation_results
             .into_iter()
             .chain(property_shapes_validation_results)
-            .chain(closed_validation_results)
             .chain(reification_results)
             .collect();
 
