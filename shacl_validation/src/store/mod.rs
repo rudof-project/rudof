@@ -8,10 +8,6 @@ use std::io::BufRead;
 pub mod graph;
 pub mod sparql;
 
-pub trait Store<S> {
-    fn store(&self) -> &S;
-}
-
 pub struct ShaclDataManager;
 
 impl ShaclDataManager {
