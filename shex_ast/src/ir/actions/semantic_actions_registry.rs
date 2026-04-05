@@ -1,10 +1,8 @@
-use std::{fmt, sync::Arc};
-
-use iri_s::IriS;
-
 use crate::ir::actions::{
     semantic_action_error::SemanticActionError, semantic_action_extension::SemanticActionExtension,
 };
+use iri_s::IriS;
+use std::{fmt, sync::Arc};
 
 pub struct SemanticActionsRegistry {
     extensions: Vec<Arc<dyn SemanticActionExtension + Send + Sync>>,
@@ -13,6 +11,14 @@ pub struct SemanticActionsRegistry {
 impl SemanticActionsRegistry {
     pub fn new() -> Self {
         Self { extensions: Vec::new() }
+    }
+
+    /// Create a registry with the given extensions pre-registered.
+    pub fn with(mut self, extensions: Vec<Box<dyn SemanticActionExtension + Send + Sync>>) -> Self {
+        for ext in extensions {
+            self.register(ext);
+        }
+        self
     }
 
     pub fn register(&mut self, extension: Box<dyn SemanticActionExtension + Send + Sync>) {

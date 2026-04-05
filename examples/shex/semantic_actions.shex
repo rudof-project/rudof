@@ -1,6 +1,10 @@
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX Map: <http://shex.io/extensions/Map/>
 prefix : <http://example.org/>
-prefix test: <http://shex.io/extensions/Test/>
-:S {
-   :p . %test: { print(s) %}
-        %test: { print(o) %}
+
+
+:Person {
+  :name  xsd:string    %Map:{ :name %} ;
+  :age   xsd:integer ? %Map:{ :age %} ;
+  :knows @:Person *
 }

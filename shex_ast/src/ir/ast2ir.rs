@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use super::node_constraint::NodeConstraint;
 use crate::ir::annotation::Annotation;
+use crate::ir::map_action_extension::MapActionExtension;
 use crate::ir::object_value::ObjectValue;
 use crate::ir::schema_ir::SchemaIR;
 use crate::ir::sem_act::SemAct;
@@ -38,8 +39,10 @@ pub struct AST2IR {
 
 impl AST2IR {
     pub fn new(resolve_method: &ResolveMethod) -> Self {
-        let mut semantic_actions_registry = SemanticActionsRegistry::new();
-        semantic_actions_registry.register(Box::new(TestActionExtension::new()));
+        let semantic_actions_registry = SemanticActionsRegistry::new().with(vec![
+            Box::new(TestActionExtension::new()),
+            Box::new(MapActionExtension::new()),
+        ]);
         Self {
             resolve_method: resolve_method.clone(),
             shape_decls_counter: 0,
@@ -388,7 +391,9 @@ impl AST2IR {
                     cs.push(c)
                 }
                 let card = self.cnv_min_max(min, max)?;
-                info!("Semantic actions in EachOf: {sem_acts:?}");
+                if sem_acts.is_some() {
+                    info!("Semantic actions in EachOf ignored: {sem_acts:?}");
+                }
                 Ok(Self::mk_card_group(Rbe::and(cs), card))
             },
             ast::TripleExpr::OneOf {
@@ -405,7 +410,9 @@ impl AST2IR {
                     cs.push(c)
                 }
                 let card = self.cnv_min_max(min, max)?;
-                info!("Semantic actions in OneOf: {sem_acts:?}");
+                if sem_acts.is_some() {
+                    info!("Semantic actions in OneOf ignored: {sem_acts:?}");
+                }
                 Ok(Self::mk_card_group(Rbe::or(cs), card))
             },
             ast::TripleExpr::TripleConstraint {
@@ -435,7 +442,6 @@ impl AST2IR {
 
     fn cnv_sem_actions(&self, sem_acts: &Option<Vec<ast::SemAct>>, prefixmap: &PrefixMap) -> CResult<Vec<SemAct>> {
         if let Some(actions) = sem_acts {
-            info!("Converting semantic actions: {actions:?}");
             actions.iter().map(|a| self.cnv_sem_action(a, prefixmap)).collect()
         } else {
             Ok(Vec::new())
