@@ -1,7 +1,10 @@
-use crate::cli::wrappers::{DataFormatCli, DataReaderModeCli, ResultShaclValidationFormatCli,  ShaclFormatCli, ShaclValidationModeCli, ShaclValidationSortByModeCli};
 use crate::cli::parser::CommonArgsAll;
+use crate::cli::wrappers::{
+    DataFormatCli, DataReaderModeCli, ResultShaclValidationFormatCli, ShaclFormatCli, ShaclValidationModeCli,
+    ShaclValidationSortByModeCli,
+};
 use clap::Args;
-use rudof_lib_refactored::formats::InputSpec;
+use rudof_lib::formats::InputSpec;
 
 /// Arguments for the `shacl-validate` command
 #[derive(Debug, Clone, Args)]

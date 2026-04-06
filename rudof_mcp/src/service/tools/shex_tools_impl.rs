@@ -4,7 +4,7 @@ use rmcp::{
     handler::server::wrapper::Parameters,
     model::{CallToolResult, Content},
 };
-use rudof_lib_refactored::formats::{InputSpec, ShExFormat};
+use rudof_lib::formats::{InputSpec, ShExFormat};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -194,7 +194,10 @@ pub async fn show_shex_impl(
 
     // Optionally append elapsed time to the human-readable summary
     let mut contents = vec![];
-    contents.push(Content::text(format!("## Schema Serialized\n\n```shex\n{}\n```", output_str)));
+    contents.push(Content::text(format!(
+        "## Schema Serialized\n\n```shex\n{}\n```",
+        output_str
+    )));
 
     let mut result = CallToolResult::success(contents);
     result.structured_content = Some(structured);
@@ -264,7 +267,7 @@ pub async fn check_shex_impl(
     let mut output_buffer = Cursor::new(Vec::new());
     let mut checking = rudof.check_shex_schema(&parsed_schema, &mut output_buffer);
     if let Some(base_schema) = base_schema.as_deref() {
-        checking = checking.with_base_schema(base_schema);
+        checking = checking.with_base(base_schema);
     }
     if let Some(schema_format) = &parsed_schema_format {
         checking = checking.with_shex_schema_format(schema_format);
@@ -300,7 +303,10 @@ pub async fn check_shex_impl(
 
     // Optionally append elapsed time to the human-readable summary
     let mut contents = vec![];
-    contents.push(Content::text(format!("## Schema Serialized\n\n```shex\n{}\n```", output_str)));
+    contents.push(Content::text(format!(
+        "## Schema Serialized\n\n```shex\n{}\n```",
+        output_str
+    )));
 
     let mut result = CallToolResult::success(contents);
     result.structured_content = Some(structured);

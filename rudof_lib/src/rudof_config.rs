@@ -1,4 +1,4 @@
-use crate::RudofError;
+use crate::errors::ConfigError;
 use dctap::TapConfig;
 use rudof_rdf::rdf_core::RdfDataConfig;
 use serde::{Deserialize, Serialize};
@@ -11,159 +11,116 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
+/// Embedded default configuration in TOML format.
 const DEFAULT_CONFIG: &str = include_str!("default_config.toml");
 
-/// `rudof_config` describes the configuration of Rudof
+/// Main configuration structure for Rudof.
 ///
+/// This structure encapsulates all configuration options for Rudof operations,
+/// including RDF data handling, schema validation (ShEx and SHACL), conversions,
+/// and visualization settings.
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 pub struct RudofConfig {
-    rdf_data: Option<RdfDataConfig>,
-    shex: Option<ShExConfig>,
-    shex_validator: Option<ValidatorConfig>,
-    shex2uml: Option<ShEx2UmlConfig>,
-    shex2html: Option<ShEx2HtmlConfig>,
-    shacl2shex: Option<Shacl2ShExConfig>,
-    tap: Option<TapConfig>,
-    tap2shex: Option<Tap2ShExConfig>,
-    shex2sparql: Option<ShEx2SparqlConfig>,
-    service: Option<ServiceConfig>,
-    plantuml_path: Option<PathBuf>,
-    comparator: Option<ComparatorConfig>,
+    pub(crate) rdf_data: Option<RdfDataConfig>,
+    pub(crate) shex: Option<ShExConfig>,
+    pub(crate) shex_validator: Option<ValidatorConfig>,
+    pub(crate) shex2uml: Option<ShEx2UmlConfig>,
+    pub(crate) shex2html: Option<ShEx2HtmlConfig>,
+    pub(crate) shacl2shex: Option<Shacl2ShExConfig>,
+    pub(crate) tap: Option<TapConfig>,
+    pub(crate) tap2shex: Option<Tap2ShExConfig>,
+    pub(crate) shex2sparql: Option<ShEx2SparqlConfig>,
+    pub(crate) service: Option<ServiceConfig>,
+    pub(crate) plantuml_path: Option<PathBuf>,
+    pub(crate) comparator: Option<ComparatorConfig>,
 }
 
 impl RudofConfig {
-    pub fn new() -> Result<RudofConfig, RudofError> {
-        RudofConfig::default_config()
+    /// Creates a new `RudofConfig` with default settings.
+    pub fn new() -> Self {
+        RudofConfig::from_str(DEFAULT_CONFIG).unwrap()
     }
 
-    /// Returns the default config which is read from the embedded default_config.toml
-    pub fn default_config() -> Result<RudofConfig, RudofError> {
-        RudofConfig::from_str(DEFAULT_CONFIG)
-    }
-
-    pub fn with_rdf_data_config(mut self, rdf_data_config: RdfDataConfig) -> Self {
-        self.rdf_data = Some(rdf_data_config);
-        self
-    }
-
-    pub fn with_shex_validator_config(mut self, shex_validator_config: ValidatorConfig) -> Self {
-        self.shex_validator = Some(shex_validator_config);
-        self
-    }
-
-    pub fn with_shex_config(mut self, shex_config: ShExConfig) -> Self {
-        self.shex = Some(shex_config);
-        self
-    }
-
-    /// Obtain a RudofConfig from a path file in TOML
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<RudofConfig, RudofError> {
+    /// Loads a `RudofConfig` from a TOML file.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - Path to the TOML configuration file
+    ///
+    /// # Errors
+    ///
+    /// * [`ConfigError::ReadFromPath`] - If the file cannot be opened or read
+    /// * [`ConfigError::TomlParseFromPath`] - If the TOML content is invalid
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, ConfigError> {
         let path_name = path.as_ref().display().to_string();
-        let mut f = std::fs::File::open(path).map_err(|e| RudofError::RudofConfigFromPathError {
+        let mut f = std::fs::File::open(path).map_err(|e| ConfigError::ReadFromPath {
             path: path_name.clone(),
             error: e,
         })?;
         let mut s = String::new();
-        f.read_to_string(&mut s)
-            .map_err(|e| RudofError::RudofConfigFromPathError {
-                path: path_name.clone(),
-                error: e,
-            })?;
+        f.read_to_string(&mut s).map_err(|e| ConfigError::ReadFromPath {
+            path: path_name.clone(),
+            error: e,
+        })?;
 
-        let config: RudofConfig = toml::from_str(s.as_str()).map_err(|e| RudofError::RudofConfigTomlError {
+        let config: RudofConfig = toml::from_str(s.as_str()).map_err(|e| ConfigError::TomlParseFromPath {
             path: path_name.clone(),
             error: e,
         })?;
         Ok(config)
     }
 
-    pub fn validator_config(&self) -> ValidatorConfig {
-        match &self.shex_validator {
-            None => ValidatorConfig::default(),
-            Some(cfg) => cfg.clone(),
-        }
+    // ---------------------------------------------------------------------------
+    // Dctap configuration
+    // ---------------------------------------------------------------------------
+
+    /// Returns the configuration for Dctap.
+    pub fn dctap_config(&self) -> TapConfig {
+        self.tap.clone().unwrap_or_default()
     }
 
-    pub fn comparator_config(&self) -> ComparatorConfig {
-        match self.comparator {
-            None => ComparatorConfig::new(),
-            Some(ref cfg) => cfg.clone(),
-        }
-    }
+    // ---------------------------------------------------------------------------
+    // ShEx configuration
+    // ---------------------------------------------------------------------------
 
-    pub fn shex_config(&self) -> ShExConfig {
-        match &self.shex {
-            None => ShExConfig::default(),
-            Some(cfg) => cfg.clone(),
-        }
-    }
-
+    /// Returns whether to show shape extends in ShEx schemas.
+    ///
+    /// Defaults to `false` if not configured.
     pub fn show_extends(&self) -> bool {
         self.shex_config().show_extends.unwrap_or(false)
     }
 
+    /// Returns whether to show imports in ShEx schemas.
+    ///
+    /// Defaults to `false` if not configured.
     pub fn show_imports(&self) -> bool {
         self.shex_config().show_extends.unwrap_or(false)
     }
 
+    /// Returns whether to show shapes in ShEx schemas.
+    ///
+    /// Defaults to `false` if not configured.
     pub fn show_shapes(&self) -> bool {
         self.shex_config().show_shapes.unwrap_or(false)
     }
 
+    /// Returns whether to show dependencies in ShEx schemas.
+    ///
+    /// Defaults to `false` if not configured.
     pub fn show_dependencies(&self) -> bool {
         self.shex_config().show_dependencies.unwrap_or(false)
     }
 
+    /// Returns whether to show the internal representation (IR) of  ShEx schemas.
+    ///
+    /// Defaults to `true` if not configured.
     pub fn show_ir(&self) -> bool {
         self.shex_config().show_ir.unwrap_or(true)
     }
 
-    pub fn rdf_data_config(&self) -> RdfDataConfig {
-        self.rdf_data.clone().unwrap_or_default()
-    }
-
-    pub fn tap_config(&self) -> TapConfig {
-        self.tap.clone().unwrap_or_default()
-    }
-
-    pub fn tap2shex_config(&self) -> Tap2ShExConfig {
-        self.tap2shex.clone().unwrap_or_default()
-    }
-
-    pub fn shex2uml_config(&self) -> ShEx2UmlConfig {
-        self.shex2uml.clone().unwrap_or_default()
-    }
-
-    pub fn shex2html_config(&self) -> ShEx2HtmlConfig {
-        self.shex2html.clone().unwrap_or_default()
-    }
-
-    pub fn service_config(&self) -> ServiceConfig {
-        self.service.clone().unwrap_or_default()
-    }
-
-    pub fn shex2sparql_config(&self) -> ShEx2SparqlConfig {
-        self.shex2sparql.clone().unwrap_or_default()
-    }
-
-    pub fn shacl2shex_config(&self) -> Shacl2ShExConfig {
-        self.shacl2shex.clone().unwrap_or_default()
-    }
-
-    pub fn rdf_data_base(&self) -> Option<&str> {
-        match &self.rdf_data {
-            None => None,
-            Some(rdf_data_config) => rdf_data_config.base.as_ref().map(|i| i.as_str()),
-        }
-    }
-
-    pub fn automatic_base(&self) -> bool {
-        match &self.rdf_data {
-            None => true,
-            Some(rdf_data_config) => rdf_data_config.automatic_base.unwrap_or(true),
-        }
-    }
-
+    /// Disables statistics display in ShEx operations.
+    ///
+    /// If no ShEx configuration exists, creates one with statistics disabled.
     pub fn shex_without_showing_stats(&mut self) {
         if let Some(shex_config) = &mut self.shex {
             shex_config.without_showing_stats();
@@ -174,11 +131,56 @@ impl RudofConfig {
         }
     }
 
+    /// Returns the ShEx validator configuration.
+    ///
+    /// Returns a default configuration if none was specified.
+    pub fn validator_config(&self) -> ValidatorConfig {
+        match &self.shex_validator {
+            None => ValidatorConfig::default(),
+            Some(cfg) => cfg.clone(),
+        }
+    }
+
+    // ---------------------------------------------------------------------------
+    // RDF data configuration
+    // ---------------------------------------------------------------------------
+
+    /// Returns the base IRI for RDF data, if configured.
+    ///
+    /// Returns `None` if no base IRI is set in the configuration.
+    pub fn rdf_data_base(&self) -> Option<&str> {
+        match &self.rdf_data {
+            None => None,
+            Some(rdf_data_config) => rdf_data_config.base.as_ref().map(|i| i.as_str()),
+        }
+    }
+
+    /// Returns whether automatic base IRI detection is enabled.
+    ///
+    /// Defaults to `true` if not configured.
+    pub fn automatic_base(&self) -> bool {
+        match &self.rdf_data {
+            None => true,
+            Some(rdf_data_config) => rdf_data_config.automatic_base.unwrap_or(true),
+        }
+    }
+
+    /// Sets the PlantUML executable path using the builder pattern.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - Path to the PlantUML executable or JAR file
     pub fn with_plantuml_path<P: AsRef<Path>>(mut self, path: P) -> Self {
         self.plantuml_path = Some(path.as_ref().to_owned());
         self
     }
 
+    /// Returns the path to the PlantUML executable.
+    ///
+    /// The path is determined in the following order:
+    /// 1. The explicitly configured path via [`with_plantuml_path`](Self::with_plantuml_path)
+    /// 2. The `PLANTUML` environment variable
+    /// 3. The current working directory
     pub fn plantuml_path(&self) -> PathBuf {
         if let Some(path) = &self.plantuml_path {
             path.to_owned()
@@ -189,43 +191,85 @@ impl RudofConfig {
             }
         }
     }
-}
 
-impl FromStr for RudofConfig {
-    type Err = RudofError;
+    // ---------------------------------------------------------------------------
+    // Conversion configurations
+    // ---------------------------------------------------------------------------
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        toml::from_str(s).map_err(|e| RudofError::RudofConfigFromStrError {
-            str: s.to_string(),
-            error: e.to_string(),
-        })
+    /// Returns the configuration for converting ShEx to SPARQL.
+    pub fn shex2sparql_config(&self) -> ShEx2SparqlConfig {
+        self.shex2sparql.clone().unwrap_or_default()
+    }
+
+    /// Returns the configuration for converting ShEx to UML.
+    pub fn shex2uml_config(&self) -> ShEx2UmlConfig {
+        self.shex2uml.clone().unwrap_or_default()
+    }
+
+    /// Returns the configuration for converting ShEx to HTML.
+    pub fn shex2html_config(&self) -> ShEx2HtmlConfig {
+        self.shex2html.clone().unwrap_or_default()
+    }
+
+    /// Returns the configuration for converting SHACL to ShEx.
+    pub fn shacl2shex_config(&self) -> Shacl2ShExConfig {
+        self.shacl2shex.clone().unwrap_or_default()
+    }
+
+    /// Returns the configuration for converting Dctap to ShEx.
+    pub fn tap2shex_config(&self) -> Tap2ShExConfig {
+        self.tap2shex.clone().unwrap_or_default()
+    }
+
+    // ---------------------------------------------------------------------------
+    // Comparison configuration
+    // ---------------------------------------------------------------------------
+
+    /// Returns the configuration used for comparing shapes.
+    pub fn comparator_config(&self) -> ComparatorConfig {
+        match self.comparator {
+            None => ComparatorConfig::new(),
+            Some(ref cfg) => cfg.clone(),
+        }
+    }
+
+    // ----------------------------------------------------------------------------
+    // Helper methods to access specific configurations with defaults
+    // ----------------------------------------------------------------------------
+
+    pub(crate) fn rdf_data_config(&self) -> RdfDataConfig {
+        self.rdf_data.clone().unwrap_or_default()
+    }
+
+    /// Returns the ShEx schema configuration.
+    ///
+    /// Returns a default configuration if none was specified.
+    pub(crate) fn shex_config(&self) -> ShExConfig {
+        match &self.shex {
+            None => ShExConfig::default(),
+            Some(cfg) => cfg.clone(),
+        }
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use iri_s::iri;
+impl Default for RudofConfig {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
-    use super::*;
+impl FromStr for RudofConfig {
+    type Err = ConfigError;
 
-    #[test]
-    fn test_rudof_config() {
-        let s = r#"[tap2shex]
-base_iri = "http://example.org/"
-
-[tap2shex.prefixmap]
-dct = "http://purl.org/dc/terms/"
-rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-foaf = "http://xmlns.com/foaf/0.1/"
-xsd = "http://www.w3.org/2001/XMLSchema#"
-sdo = "https://schema.org/"
-ex = "http://example.org/"
-"#;
-        let config = RudofConfig::from_str(s).unwrap();
-        assert_eq!(config.tap2shex_config().base_iri.unwrap(), iri!("http://example.org/"));
-        assert_eq!(
-            config.tap2shex_config().prefixmap().find("sdo").unwrap().clone(),
-            iri!("https://schema.org/")
-        );
+    /// Parses a `RudofConfig` from a TOML string.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ConfigError::TomlParseFromString`] if the TOML content is invalid.
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        toml::from_str(s).map_err(|e| ConfigError::TomlParseFromString {
+            content: s.to_string(),
+            error: e,
+        })
     }
 }

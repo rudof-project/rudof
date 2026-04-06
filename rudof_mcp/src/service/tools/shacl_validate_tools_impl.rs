@@ -4,8 +4,8 @@ use rmcp::{
     handler::server::wrapper::Parameters,
     model::{CallToolResult, Content},
 };
-use rudof_lib_refactored::{
-    formats::{InputSpec, ResultShaclValidationFormat, ShaclFormat, ShaclValidationMode, ShaclValidationSortByMode},
+use rudof_lib::formats::{
+    InputSpec, ResultShaclValidationFormat, ShaclFormat, ShaclValidationMode, ShaclValidationSortByMode,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -197,7 +197,7 @@ pub async fn validate_shacl_impl(
     let result_format_str = if let Some(format) = &parsed_result_format {
         format.to_string()
     } else {
-         "turtle".to_string()
+        "turtle".to_string()
     };
     let sort_by_str = if let Some(sort_by) = &parsed_sort_by {
         sort_by.to_string()

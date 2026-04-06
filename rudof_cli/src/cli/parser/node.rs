@@ -1,7 +1,7 @@
-use crate::cli::wrappers::{DataFormatCli, DataReaderModeCli, NodeInspectionModeCli};
 use crate::cli::parser::CommonArgsAll;
+use crate::cli::wrappers::{DataFormatCli, DataReaderModeCli, NodeInspectionModeCli};
 use clap::Args;
-use rudof_lib_refactored::formats::InputSpec;
+use rudof_lib::formats::InputSpec;
 
 /// Arguments for the `node` command
 #[derive(Debug, Clone, Args)]

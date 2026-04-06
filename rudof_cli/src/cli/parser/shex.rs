@@ -1,7 +1,7 @@
-use crate::cli::wrappers::{DataReaderModeCli, ShExFormatCli};
 use crate::cli::parser::CommonArgsAll;
+use crate::cli::wrappers::{DataReaderModeCli, ShExFormatCli};
 use clap::Args;
-use rudof_lib_refactored::formats::InputSpec;
+use rudof_lib::formats::InputSpec;
 
 /// Arguments for the `shex` command
 #[derive(Debug, Clone, Args)]

@@ -1,7 +1,7 @@
-use crate::cli::wrappers::{RdfConfigFormatCli, ResultRdfConfigFormatCli};
 use crate::cli::parser::CommonArgsAll;
+use crate::cli::wrappers::{RdfConfigFormatCli, ResultRdfConfigFormatCli};
 use clap::Args;
-use rudof_lib_refactored::formats::InputSpec;
+use rudof_lib::formats::InputSpec;
 
 /// Arguments for the `rdf-config` command
 #[derive(Debug, Clone, Args)]

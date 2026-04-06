@@ -6,7 +6,7 @@ use crate::commands::{
 };
 use crate::output::{ColorSupport, get_writer};
 use anyhow::Result;
-use rudof_lib_refactored::{Rudof, RudofConfig};
+use rudof_lib::{Rudof, RudofConfig};
 use std::io::Write;
 
 // ============================================================================

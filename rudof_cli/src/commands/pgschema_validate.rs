@@ -26,21 +26,24 @@ impl Command for PgSchemaValidateCommand {
     /// Executes the PgSchema Validate command logic.
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
         let data_format = self.args.data_format.into();
-        let shapemap_format = self.args.shapemap_format.into();
         let result_format = self.args.result_validation_format.into();
 
-        ctx.rudof.load_data()
+        ctx.rudof
+            .load_data()
             .with_data(&self.args.data)
             .with_data_format(&data_format)
             .execute()?;
 
         ctx.rudof.load_pg_schema(&self.args.schema).execute()?;
 
-        ctx.rudof.load_shapemap(&self.args.shapemap).with_shapemap_format(&shapemap_format).execute()?;
+        ctx.rudof.load_typemap(&self.args.typemap).execute()?;
 
         ctx.rudof.validate_pgschema().execute()?;
 
-        ctx.rudof.serialize_pgschema_validation_results(&mut ctx.writer).with_result_pg_schema_validation_format(&result_format).execute()?;
+        ctx.rudof
+            .serialize_pgschema_validation_results(&mut ctx.writer)
+            .with_result_pg_schema_validation_format(&result_format)
+            .execute()?;
 
         Ok(())
     }

@@ -4,9 +4,7 @@ use rmcp::{
     handler::server::wrapper::Parameters,
     model::{CallToolResult, Content},
 };
-use rudof_lib_refactored::{
-    formats::{InputSpec, DataFormat, ResultDataFormat},
-};
+use rudof_lib::formats::{DataFormat, InputSpec, ResultDataFormat};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -159,10 +157,17 @@ pub async fn load_rdf_data_from_sources_impl(
             .into_call_tool_result());
         },
     };
-    
-    let mut data_loading = rudof.load_data().with_data(&data_specs).with_data_format(&parsed_data_format);
-    if let Some(endpoint) = endpoint.as_deref() { data_loading = data_loading.with_endpoint(endpoint); }
-    if let Some(base) = base.as_deref() { data_loading = data_loading.with_base(base); }
+
+    let mut data_loading = rudof
+        .load_data()
+        .with_data(&data_specs)
+        .with_data_format(&parsed_data_format);
+    if let Some(endpoint) = endpoint.as_deref() {
+        data_loading = data_loading.with_endpoint(endpoint);
+    }
+    if let Some(base) = base.as_deref() {
+        data_loading = data_loading.with_base(base);
+    }
     data_loading.execute().map_err(|e| {
         internal_error(
             "RDF load error",
@@ -228,7 +233,7 @@ pub async fn export_rdf_data_impl(
     params: Parameters<ExportRdfDataRequest>,
 ) -> Result<CallToolResult, McpError> {
     let Parameters(ExportRdfDataRequest { format }) = params;
-    let rudof = service.rudof.lock().await;
+    let mut rudof = service.rudof.lock().await;
     let format_str = format.as_deref().unwrap_or("turtle");
 
     // Parse format - return Tool Execution Error for unsupported format
@@ -244,7 +249,8 @@ pub async fn export_rdf_data_impl(
     };
 
     let mut v = Vec::new();
-    rudof.serialize_data(&mut v)
+    rudof
+        .serialize_data(&mut v)
         .with_result_data_format(&parsed_format)
         .execute()
         .map_err(|e| {
@@ -292,10 +298,11 @@ pub async fn export_plantuml_impl(
     service: &RudofMcpService,
     _params: Parameters<EmptyRequest>,
 ) -> Result<CallToolResult, McpError> {
-    let rudof = service.rudof.lock().await;
+    let mut rudof = service.rudof.lock().await;
     let mut v = Vec::new();
 
-    rudof.serialize_data(&mut v)
+    rudof
+        .serialize_data(&mut v)
         .with_result_data_format(&ResultDataFormat::PlantUML)
         .execute()
         .map_err(|e| {
@@ -346,7 +353,7 @@ pub async fn export_image_impl(
     params: Parameters<ExportImageRequest>,
 ) -> Result<CallToolResult, McpError> {
     let Parameters(ExportImageRequest { image_format }) = params;
-    let rudof = service.rudof.lock().await;
+    let mut rudof = service.rudof.lock().await;
 
     // Parse image format - return Tool Execution Error for unsupported format
     let format = match ResultDataFormat::from_str(&image_format) {
@@ -362,7 +369,8 @@ pub async fn export_image_impl(
 
     let mut v = Vec::new();
 
-    rudof.serialize_data(&mut v)
+    rudof
+        .serialize_data(&mut v)
         .with_result_data_format(&format)
         .execute()
         .map_err(|e| {

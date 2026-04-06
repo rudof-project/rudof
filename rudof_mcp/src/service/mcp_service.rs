@@ -3,7 +3,7 @@
 //! This module contains the main [`RudofMcpService`] struct which implements
 //! the MCP `ServerHandler` trait and manages all server state.
 
-use std::{collections::HashMap,  sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 use tokio::sync::{Mutex, RwLock};
 
 use crate::service::{prompts, state, tasks::TaskStore, tools};
@@ -13,7 +13,10 @@ use rmcp::{
     model::{LoggingLevel, ResourceUpdatedNotificationParam},
     service::RequestContext,
 };
-use rudof_lib_refactored::{formats::{DataFormat, InputSpec, ResultDataFormat}, Rudof, RudofConfig};
+use rudof_lib::{
+    Rudof, RudofConfig,
+    formats::{DataFormat, InputSpec, ResultDataFormat},
+};
 
 /// Errors that can occur when creating a [`RudofMcpService`].
 ///
@@ -154,10 +157,12 @@ impl RudofMcpService {
             // Load persisted N-Triples string into Rudof using an in-memory InputSpec
             let spec = InputSpec::Str(rdf_ntriples.clone());
             let data_specs = vec![spec];
-            if let Err(e) = rudof.load_data()
+            if let Err(e) = rudof
+                .load_data()
                 .with_data(&data_specs)
                 .with_data_format(&DataFormat::NTriples)
-                .execute() {
+                .execute()
+            {
                 tracing::warn!("Failed to restore persisted RDF data: {}", e);
             } else {
                 tracing::info!("Successfully restored RDF data from persisted state");
@@ -191,11 +196,12 @@ impl RudofMcpService {
             return Ok(false);
         }
 
-        let rudof = self.rudof.lock().await;
+        let mut rudof = self.rudof.lock().await;
 
         // Serialize RDF data to N-Triples format
         let mut v = Vec::new();
-        rudof.serialize_data(&mut v)
+        rudof
+            .serialize_data(&mut v)
             .with_result_data_format(&ResultDataFormat::NTriples)
             .execute()
             .map_err(|e| state::StatePersistenceError::RdfSerialization(e.to_string()))?;

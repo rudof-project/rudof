@@ -1,6 +1,6 @@
 use crate::cli_wrapper;
-use rudof_lib_refactored::formats::{QueryType, ResultQueryFormat};
 use clap::ValueEnum;
+use rudof_lib::formats::{QueryType, ResultQueryFormat};
 use std::fmt::{Display, Formatter, Result};
 
 cli_wrapper!(

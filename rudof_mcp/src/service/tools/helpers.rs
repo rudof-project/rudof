@@ -1,6 +1,4 @@
-use iri_s::IriS;
 use rmcp::{model::CallToolResult, model::Content};
-use rudof_rdf::rdf_impl::ReaderMode;
 use std::str::FromStr;
 
 /// Result type for parsing operations that may produce tool execution errors.
@@ -63,36 +61,6 @@ impl std::fmt::Display for ToolExecutionError {
 
 impl std::error::Error for ToolExecutionError {}
 
-/// Parse an optional format string into a typed format.
-///
-/// Returns a `ToolExecutionError` if the format is invalid, which should be
-/// converted to a `CallToolResult` with `isError: true` to allow LLM self-correction.
-///
-/// # Type Parameters
-///
-/// * `F` - The format type to parse into (must implement `FromStr` and `Default`)
-///
-/// # Arguments
-///
-/// * `format` - Optional format string to parse
-/// * `format_name` - Human-readable name for error messages (e.g., "RDF format")
-/// * `valid_values` - Comma-separated list of valid values for hints
-pub fn parse_optional_format<F>(format: Option<&str>, format_name: &str, valid_values: &str) -> ToolResult<F>
-where
-    F: FromStr + Default,
-    F::Err: std::fmt::Display,
-{
-    match format {
-        Some(s) => F::from_str(s).map_err(|e| {
-            ToolExecutionError::with_hint(
-                format!("Invalid {}: {}", format_name, e),
-                format!("Supported values: {}", valid_values),
-            )
-        }),
-        None => Ok(F::default()),
-    }
-}
-
 /// Parse a required format string into a typed format.
 ///
 /// Returns a `ToolExecutionError` if the format is invalid or missing.
@@ -120,53 +88,20 @@ where
     })
 }
 
-/// Parse an optional IRI string.
-///
-/// Returns a `ToolExecutionError` if the IRI is malformed.
-///
-/// # Arguments
-///
-/// * `iri` - Optional IRI string to parse
-/// * `field_name` - Human-readable name for error messages (e.g., "base IRI")
-pub fn parse_optional_iri(iri: Option<&str>, field_name: &str) -> ToolResult<Option<IriS>> {
-    match iri {
-        Some(s) => IriS::from_str(s).map(Some).map_err(|e| {
-            ToolExecutionError::with_hint(
-                format!("Invalid {}: {}", field_name, e),
-                "Provide a valid absolute IRI (e.g., 'http://example.org/base/')",
-            )
-        }),
-        None => Ok(None),
-    }
-}
-
-/// Parse an optional reader mode string.
-///
-/// Returns a `ToolExecutionError` if the mode is invalid.
-///
-/// # Arguments
-///
-/// * `mode` - Optional reader mode string
-pub fn parse_optional_reader_mode(mode: Option<&str>) -> ToolResult<ReaderMode> {
-    match mode {
-        Some(s) => ReaderMode::from_str(s).map_err(|e| {
-            ToolExecutionError::with_hint(format!("Invalid reader mode: {}", e), "Supported values: strict, lax")
-        }),
-        None => Ok(ReaderMode::Strict),
-    }
-}
-
 /// Supported RDF formats as a constant for documentation and hints.
 pub const RDF_FORMATS: &str = "turtle, ntriples, rdfxml, jsonld, trig, nquads, n3";
 
 /// Supported ShEx formats as a constant for documentation and hints.
+#[allow(dead_code)]
 pub const SHEX_FORMATS: &str =
     "shexc, shexj, turtle, ntriples, rdfxml, trig, n3, nquads, json, jsonld, internal, simple";
 
 /// Supported SHACL formats as a constant for documentation and hints.
+#[allow(dead_code)]
 pub const SHACL_FORMATS: &str = "turtle, ntriples, rdfxml, jsonld, trig, n3, nquads, internal";
 
 /// Supported ShapeMap formats as a constant for documentation and hints.
+#[allow(dead_code)]
 pub const SHAPEMAP_FORMATS: &str = "compact, json, internal, details, csv";
 
 /// Supported image formats as a constant for documentation and hints.
@@ -176,20 +111,25 @@ pub const IMAGE_FORMATS: &str = "svg, png";
 pub const SPARQL_RESULT_FORMATS: &str = "internal, turtle, ntriples, json-ld, rdf-xml, csv, trig, n3, nquads";
 
 /// Supported ShEx validation result formats as a constant.
+#[allow(dead_code)]
 pub const SHEX_RESULT_FORMATS: &str = "compact, details, json, csv, turtle, ntriples, rdfxml, trig, n3, nquads";
 
 /// Supported SHACL validation result formats as a constant.
+#[allow(dead_code)]
 pub const SHACL_RESULT_FORMATS: &str =
     "compact, details, minimal, json, csv, turtle, ntriples, rdfxml, trig, n3, nquads";
 
 /// Supported reader modes as a constant.
+#[allow(dead_code)]
 pub const READER_MODES: &str = "strict, lax";
 
 /// Supported node info modes as a constant.
 pub const NODE_INFO_MODES: &str = "outgoing, incoming, both";
 
 /// Supported ShEx validation result sort modes as a constant.
+#[allow(dead_code)]
 pub const SHEX_SORT_BY_MODES: &str = "node, shape, status, details";
 
 /// Supported SHACL validation result sort modes as a constant.
+#[allow(dead_code)]
 pub const SHACL_SORT_BY_MODES: &str = "severity, node, component, value, path, sourceshape, details";

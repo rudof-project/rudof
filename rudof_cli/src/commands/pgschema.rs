@@ -1,7 +1,6 @@
 use crate::cli::parser::PgschemaArgs;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::Result;
-use pgschema::parser::pg;
 
 /// Implementation of the `pgschema` command.
 ///
@@ -29,9 +28,15 @@ impl Command for PgschemaCommand {
         let pg_schema_format = self.args.schema_format.into();
         let result_pg_schema_format = self.args.result_schema_format.into();
 
-        ctx.rudof.load_pg_schema(&self.args.schema).with_pg_schema_format(&pg_schema_format).execute()?;
+        ctx.rudof
+            .load_pg_schema(&self.args.schema)
+            .with_pg_schema_format(&pg_schema_format)
+            .execute()?;
 
-        ctx.rudof.serialize_pg_schema(&mut ctx.writer).with_result_pg_schema_format(&result_pg_schema_format).execute()?;
+        ctx.rudof
+            .serialize_pg_schema(&mut ctx.writer)
+            .with_result_pg_schema_format(&result_pg_schema_format)
+            .execute()?;
 
         Ok(())
     }

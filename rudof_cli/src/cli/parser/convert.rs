@@ -1,7 +1,9 @@
-use crate::cli::wrappers::{ConversionFormatCli, ConversionModeCli, ResultConversionFormatCli, ResultConversionModeCli, DataReaderModeCli};
 use crate::cli::parser::CommonArgsAll;
+use crate::cli::wrappers::{
+    ConversionFormatCli, ConversionModeCli, DataReaderModeCli, ResultConversionFormatCli, ResultConversionModeCli,
+};
 use clap::Args;
-use rudof_lib_refactored::formats::InputSpec;
+use rudof_lib::formats::InputSpec;
 use std::path::PathBuf;
 
 /// Arguments for the `convert` command

@@ -4,7 +4,7 @@ use rmcp::{
     ErrorData as McpError,
     model::{Annotated, RawResource, ReadResourceResult, ResourceContents},
 };
-use rudof_lib_refactored::formats::ResultDataFormat;
+use rudof_lib::formats::ResultDataFormat;
 use serde_json::json;
 use std::str::FromStr;
 
@@ -144,7 +144,7 @@ pub async fn export_rdf_data(
     uri: &str,
     format_str: &str,
 ) -> Result<ReadResourceResult, McpError> {
-    let rudof = service.rudof.lock().await;
+    let mut rudof = service.rudof.lock().await;
 
     let rdf_format = ResultDataFormat::from_str(format_str).map_err(|e| {
         invalid_request_error(
@@ -155,7 +155,8 @@ pub async fn export_rdf_data(
     })?;
 
     let mut buffer = Vec::new();
-    rudof.serialize_data(&mut buffer)
+    rudof
+        .serialize_data(&mut buffer)
         .with_result_data_format(&rdf_format)
         .execute()
         .map_err(|e| {

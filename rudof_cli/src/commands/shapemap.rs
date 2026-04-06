@@ -28,12 +28,22 @@ impl Command for ShapemapCommand {
         let format = self.args.shapemap_format.into();
         let result_format = self.args.result_shapemap_format.into();
 
-        let mut shapemap_loading = ctx.rudof.load_shapemap(&self.args.shapemap).with_shapemap_format(&format);
-        if let Some(base_data) = self.args.base_data.as_deref() { shapemap_loading = shapemap_loading.with_base_nodes(base_data); }
-        if let Some(base_schema) = self.args.base_schema.as_deref() { shapemap_loading = shapemap_loading.with_base_shapes(base_schema); } 
+        let mut shapemap_loading = ctx
+            .rudof
+            .load_shapemap(&self.args.shapemap)
+            .with_shapemap_format(&format);
+        if let Some(base_data) = self.args.base_data.as_deref() {
+            shapemap_loading = shapemap_loading.with_base_nodes(base_data);
+        }
+        if let Some(base_schema) = self.args.base_schema.as_deref() {
+            shapemap_loading = shapemap_loading.with_base_shapes(base_schema);
+        }
         shapemap_loading.execute()?;
 
-        ctx.rudof.serialize_shapemap(&mut ctx.writer).with_result_shapemap_format(&result_format).execute()?;
+        ctx.rudof
+            .serialize_shapemap(&mut ctx.writer)
+            .with_result_shapemap_format(&result_format)
+            .execute()?;
 
         Ok(())
     }

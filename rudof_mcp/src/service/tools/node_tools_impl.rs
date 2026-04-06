@@ -4,7 +4,7 @@ use rmcp::{
     handler::server::wrapper::Parameters,
     model::{CallToolResult, Content},
 };
-use rudof_lib_refactored::formats::NodeInspectionMode;
+use rudof_lib::formats::NodeInspectionMode;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -94,7 +94,7 @@ pub async fn node_info_impl(
         show_hyperlinks,
     }): Parameters<NodeInfoRequest>,
 ) -> Result<CallToolResult, McpError> {
-    let rudof = service.rudof.lock().await;
+    let mut rudof = service.rudof.lock().await;
 
     // Parse mode - return Tool Execution Error for invalid mode
     let mut parsed_mode = None;
@@ -125,6 +125,8 @@ pub async fn node_info_impl(
     if let Some(show_hyperlinks) = show_hyperlinks {
         showing_node_info = showing_node_info.with_show_hyperlinks(show_hyperlinks);
     }
+
+    #[allow(unused_must_use)]
     showing_node_info.execute().map_err(|e| {
         ToolExecutionError::with_hint(
             format!("Node not found: {}", e),

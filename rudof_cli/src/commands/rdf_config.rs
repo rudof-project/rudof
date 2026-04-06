@@ -28,9 +28,15 @@ impl Command for RdfConfigCommand {
         let format = self.args.format.into();
         let result_format = self.args.result_format.into();
 
-        ctx.rudof.load_rdf_config(&self.args.input).with_rdf_config_format(&format).execute()?;
+        ctx.rudof
+            .load_rdf_config(&self.args.input)
+            .with_rdf_config_format(&format)
+            .execute()?;
 
-        ctx.rudof.serialize_rdf_config(&mut ctx.writer).with_result_rdf_config_format(&result_format).execute()?;
+        ctx.rudof
+            .serialize_rdf_config(&mut ctx.writer)
+            .with_result_rdf_config_format(&result_format)
+            .execute()?;
 
         Ok(())
     }

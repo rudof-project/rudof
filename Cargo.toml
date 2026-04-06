@@ -13,7 +13,6 @@ members = [
     "rudof_rdf",
     "rudof_cli",
     "rudof_lib",
-    "rudof_lib_refactored",
     "rudof_mcp",
     "rudof_generate",
     "shacl_ast",
@@ -326,7 +325,6 @@ rudof_cli = { version = "0.2.0", path = "./rudof_cli" }
 rudof_rdf = { version = "0.2.2", path = "./rudof_rdf" }
 rudof_generate = { version = "0.2.1", path = "./rudof_generate" }
 rudof_lib = { version = "0.2.0", path = "./rudof_lib" }
-rudof_lib_refactored = { version = "0.2.0", path = "./rudof_lib_refactored" }
 rudof_mcp = { version = "0.2.0", path = "./rudof_mcp" }
 rust_decimal = "1.38"
 rust_decimal_macros = "1.38"

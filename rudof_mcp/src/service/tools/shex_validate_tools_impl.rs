@@ -4,9 +4,7 @@ use rmcp::{
     handler::server::wrapper::Parameters,
     model::{CallToolResult, Content},
 };
-use rudof_lib_refactored::{
-    formats::{InputSpec, ResultShExValidationFormat, ShapeMapFormat, ShExFormat, ShExValidationSortByMode},
-};
+use rudof_lib::formats::{InputSpec, ResultShExValidationFormat, ShExFormat, ShExValidationSortByMode, ShapeMapFormat};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;

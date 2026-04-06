@@ -1,7 +1,7 @@
-use crate::cli::wrappers::{DataFormatCli, ResultPgSchemaValidationFormatCli, ShapeMapFormatCli};
 use crate::cli::parser::CommonArgsOutputForceOverWrite;
+use crate::cli::wrappers::{DataFormatCli, ResultPgSchemaValidationFormatCli};
 use clap::Args;
-use rudof_lib_refactored::formats::InputSpec;
+use rudof_lib::formats::InputSpec;
 
 /// Arguments for the `pgschema-validate` command
 #[derive(Debug, Clone, Args)]
@@ -29,20 +29,11 @@ pub struct PgSchemaValidateArgs {
 
     #[arg(
         short = 'm',
-        long = "shapemap",
+        long = "typemap",
         value_name = "INPUT",
-        help = "ShapeMap used for validation, FILE, URI or - for stdin"
+        help = "Type map used for validation, FILE, URI or - for stdin"
     )]
-    pub shapemap: InputSpec,
-
-    #[arg(
-        long = "shapemap-format",
-        value_name = "FORMAT",
-        ignore_case = true,
-        help = "ShapeMap format",
-        default_value_t = ShapeMapFormatCli::Compact,
-    )]
-    pub shapemap_format: ShapeMapFormatCli,
+    pub typemap: InputSpec,
 
     #[arg(
         short = 'r',

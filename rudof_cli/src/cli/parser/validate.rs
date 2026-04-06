@@ -1,9 +1,10 @@
-use crate::cli::wrappers::{
-    DataFormatCli, DataReaderModeCli, ResultValidationFormatCli, ShExFormatCli,ShaclValidationModeCli, ShapeMapFormatCli, ValidationModeCli, ValidationSortByModeCli
-};
 use crate::cli::parser::CommonArgsAll;
+use crate::cli::wrappers::{
+    DataFormatCli, DataReaderModeCli, ResultValidationFormatCli, ShExFormatCli, ShaclValidationModeCli,
+    ShapeMapFormatCli, ValidationModeCli, ValidationSortByModeCli,
+};
 use clap::Args;
-use rudof_lib_refactored::formats::InputSpec;
+use rudof_lib::formats::InputSpec;
 
 /// Arguments for the `validate` command
 #[derive(Debug, Clone, Args)]

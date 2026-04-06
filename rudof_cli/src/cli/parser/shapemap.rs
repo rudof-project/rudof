@@ -1,7 +1,7 @@
-use crate::cli::wrappers::ShapeMapFormatCli;
 use crate::cli::parser::CommonArgsOutputForceOverWrite;
+use crate::cli::wrappers::ShapeMapFormatCli;
 use clap::Args;
-use rudof_lib_refactored::formats::InputSpec;
+use rudof_lib::formats::InputSpec;
 
 /// Arguments for the `shapemap` command
 #[derive(Debug, Clone, Args)]

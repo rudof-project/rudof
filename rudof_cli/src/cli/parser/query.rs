@@ -1,7 +1,7 @@
-use crate::cli::wrappers::{DataFormatCli, QueryTypeCli, DataReaderModeCli, ResultQueryFormatCli};
 use crate::cli::parser::CommonArgsAll;
+use crate::cli::wrappers::{DataFormatCli, DataReaderModeCli, QueryTypeCli, ResultQueryFormatCli};
 use clap::Args;
-use rudof_lib_refactored::formats::InputSpec;
+use rudof_lib::formats::InputSpec;
 
 /// Arguments for the `query` command
 #[derive(Debug, Clone, Args)]

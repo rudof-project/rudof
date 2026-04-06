@@ -6,7 +6,10 @@
 use std::path::Path;
 
 use pyo3::{PyErr, PyResult, Python, pyclass, pymethods};
-use rudof_lib_refactored::{RudofConfig, errors::{RudofError, ConfigError}};
+use rudof_lib::{
+    RudofConfig,
+    errors::{ConfigError, RudofError},
+};
 
 /// Contains the configuration parameters for Rudof.
 ///
@@ -55,5 +58,3 @@ fn cnv_config_err(e: ConfigError) -> PyErr {
     let r: RudofError = e.into();
     crate::pyrudof_lib::cnv_err(r)
 }
-
-

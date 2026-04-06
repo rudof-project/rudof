@@ -1,7 +1,10 @@
-use crate::cli::wrappers::{DataFormatCli, DataReaderModeCli, ResultShExValidationFormatCli, ShExFormatCli, ShapeMapFormatCli, ShExValidationSortByModeCli};
 use crate::cli::parser::CommonArgsAll;
+use crate::cli::wrappers::{
+    DataFormatCli, DataReaderModeCli, ResultShExValidationFormatCli, ShExFormatCli, ShExValidationSortByModeCli,
+    ShapeMapFormatCli,
+};
 use clap::Args;
-use rudof_lib_refactored::formats::InputSpec;
+use rudof_lib::formats::InputSpec;
 
 /// Arguments for the `shex-validate` command
 #[derive(Debug, Clone, Args)]

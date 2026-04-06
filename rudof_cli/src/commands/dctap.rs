@@ -28,9 +28,15 @@ impl Command for DctapCommand {
         let format = self.args.format.into();
         let result_format = self.args.result_format.into();
 
-        ctx.rudof.load_dctap(&self.args.file).with_dctap_format(&format).execute()?;
+        ctx.rudof
+            .load_dctap(&self.args.file)
+            .with_dctap_format(&format)
+            .execute()?;
 
-        ctx.rudof.serialize_dctap(&mut ctx.writer).with_result_dctap_format(&result_format).execute()?;
+        ctx.rudof
+            .serialize_dctap(&mut ctx.writer)
+            .with_result_dctap_format(&result_format)
+            .execute()?;
 
         Ok(())
     }

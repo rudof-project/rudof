@@ -1,7 +1,7 @@
 use crate::cli::parser::GenerateArgs;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::{Result, anyhow};
-use rudof_lib_refactored::{Rudof, RudofConfig};
+use rudof_lib::{Rudof, RudofConfig};
 
 /// Implementation of the `generate` command.
 ///
@@ -36,17 +36,21 @@ impl Command for GenerateCommand {
             let schema_format = self.args.schema_format.into();
             let result_format = self.args.result_format.into();
 
-            let mut generation = rudof.generate_data(
-                &self.args.schema,
-                &schema_format, 
-                self.args.entity_count
-            )
-            .with_result_generation_format(&result_format);
+            let mut generation = rudof
+                .generate_data(&self.args.schema, &schema_format, self.args.entity_count)
+                .with_result_generation_format(&result_format);
 
-            if let Some(seed) = self.args.seed { generation = generation.with_seed(seed); }
-            if let Some(parallel) = self.args.parallel { generation = generation.with_parallel(parallel); }
+            if let Some(seed) = self.args.seed {
+                generation = generation.with_seed(seed);
+            }
+            if let Some(parallel) = self.args.parallel {
+                generation = generation.with_parallel(parallel);
+            }
+            if let Some(output) = &self.args.common.output {
+                generation = generation.with_output(output);
+            }
 
-            generation.execute()
+            generation.execute().await
         })?;
 
         Ok(())

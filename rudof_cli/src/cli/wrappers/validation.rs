@@ -1,15 +1,12 @@
+use crate::cli::wrappers::{ShExFormatCli, ShaclFormatCli};
 use crate::cli_wrapper;
-use crate::cli::wrappers::{
-    ShExFormatCli, ShaclFormatCli
-};
-use rudof_lib_refactored::formats::{
-    ValidationMode, ValidationSortByMode, ShaclValidationMode, ResultShaclValidationFormat,
-    ShaclValidationSortByMode, ShExValidationSortByMode, ResultShExValidationFormat, ResultValidationFormat,
-    ResultPgSchemaValidationFormat
-};
+use anyhow::{Result as AnyhowResult, bail};
 use clap::ValueEnum;
+use rudof_lib::formats::{
+    ResultPgSchemaValidationFormat, ResultShExValidationFormat, ResultShaclValidationFormat, ResultValidationFormat,
+    ShExValidationSortByMode, ShaclValidationMode, ShaclValidationSortByMode, ValidationMode, ValidationSortByMode,
+};
 use std::fmt::{Display, Formatter, Result};
-use anyhow::{bail, Result as AnyhowResult};
 
 cli_wrapper!(
     ValidationModeCli,

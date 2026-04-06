@@ -1,7 +1,7 @@
-use crate::cli::wrappers::{DataFormatCli, GenerationSchemaFormatCli};
 use crate::cli::parser::CommonArgsAll;
+use crate::cli::wrappers::{DataFormatCli, GenerationSchemaFormatCli};
 use clap::Args;
-use rudof_lib_refactored::formats::InputSpec;
+use rudof_lib::formats::InputSpec;
 
 /// Arguments for the `generate` command
 #[derive(Debug, Clone, Args)]

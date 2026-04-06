@@ -1,8 +1,6 @@
 use crate::cli_wrapper;
-use rudof_lib_refactored::formats::{
-    ConversionFormat, ConversionMode, ResultConversionFormat, ResultConversionMode
-};
 use clap::ValueEnum;
+use rudof_lib::formats::{ConversionFormat, ConversionMode, ResultConversionFormat, ResultConversionMode};
 use std::fmt::{Display, Formatter, Result};
 
 cli_wrapper!(

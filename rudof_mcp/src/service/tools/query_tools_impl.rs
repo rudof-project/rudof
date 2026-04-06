@@ -4,9 +4,7 @@ use rmcp::{
     handler::server::wrapper::Parameters,
     model::{CallToolResult, Content, CreateMessageRequestParams, Role, SamplingMessage},
 };
-use rudof_lib_refactored::{
-    formats::{InputSpec, ResultQueryFormat},
-};
+use rudof_lib::formats::{InputSpec, ResultQueryFormat};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;

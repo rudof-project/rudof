@@ -1,0 +1,23 @@
+mod load_pgschema;
+mod load_typemap;
+mod reset_pgschema;
+mod reset_pgschema_validation;
+mod reset_typemap;
+mod serialize_pgschema;
+mod serialize_pgschema_validation_results;
+mod validate_pgschema;
+
+pub use load_pgschema::load_pgschema;
+pub use load_typemap::load_typemap;
+pub use reset_pgschema::reset_pgschema;
+pub use reset_pgschema_validation::reset_pgschema_validation;
+pub use reset_typemap::reset_typemap;
+pub use serialize_pgschema::serialize_pgschema;
+pub use serialize_pgschema_validation_results::serialize_pgschema_validation_results;
+pub use validate_pgschema::validate_pgschema;
+
+#[cfg(test)]
+mod tests {
+    mod load_pgschema_tests;
+    mod validate_pgschema_tests;
+}
