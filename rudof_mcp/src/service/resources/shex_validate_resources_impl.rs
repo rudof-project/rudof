@@ -176,14 +176,14 @@ fn get_shex_formats(uri: &str) -> Result<ReadResourceResult, McpError> {
         "default": "shexc"
     });
 
-    Ok(ReadResourceResult {
-        contents: vec![ResourceContents::TextResourceContents {
+    Ok(ReadResourceResult::new(vec![
+        ResourceContents::TextResourceContents {
             uri: uri.to_string(),
             mime_type: Some("application/json".to_string()),
             text: serde_json::to_string_pretty(&formats).unwrap(),
             meta: None,
-        }],
-    })
+        },
+    ]))
 }
 
 fn get_shex_validation_result_formats(uri: &str) -> Result<ReadResourceResult, McpError> {
@@ -251,14 +251,14 @@ fn get_shex_validation_result_formats(uri: &str) -> Result<ReadResourceResult, M
         "default": "details"
     });
 
-    Ok(ReadResourceResult {
-        contents: vec![ResourceContents::TextResourceContents {
+    Ok(ReadResourceResult::new(vec![
+        ResourceContents::TextResourceContents {
             uri: uri.to_string(),
             mime_type: Some("application/json".to_string()),
             text: serde_json::to_string_pretty(&formats).unwrap(),
             meta: None,
-        }],
-    })
+        },
+    ]))
 }
 
 fn get_reader_modes(uri: &str) -> Result<ReadResourceResult, McpError> {
@@ -278,14 +278,14 @@ fn get_reader_modes(uri: &str) -> Result<ReadResourceResult, McpError> {
         "default": "strict"
     });
 
-    Ok(ReadResourceResult {
-        contents: vec![ResourceContents::TextResourceContents {
+    Ok(ReadResourceResult::new(vec![
+        ResourceContents::TextResourceContents {
             uri: uri.to_string(),
             mime_type: Some("application/json".to_string()),
             text: serde_json::to_string_pretty(&modes).unwrap(),
             meta: None,
-        }],
-    })
+        },
+    ]))
 }
 
 /// Returns the available sort options for ShEx validation results.
@@ -316,12 +316,12 @@ fn get_shex_validation_sort_options(uri: &str) -> Result<ReadResourceResult, Mcp
         "default": "node"
     });
 
-    Ok(ReadResourceResult {
-        contents: vec![ResourceContents::TextResourceContents {
+    Ok(ReadResourceResult::new(vec![
+        ResourceContents::TextResourceContents {
             uri: uri.to_string(),
             mime_type: Some("application/json".to_string()),
             text: serde_json::to_string_pretty(&options).unwrap(),
             meta: None,
-        }],
-    })
+        },
+    ]))
 }

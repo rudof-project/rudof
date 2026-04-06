@@ -80,14 +80,14 @@ fn get_query_types(uri: &str) -> Result<ReadResourceResult, McpError> {
         ]
     });
 
-    Ok(ReadResourceResult {
-        contents: vec![ResourceContents::TextResourceContents {
+    Ok(ReadResourceResult::new(vec![
+        ResourceContents::TextResourceContents {
             uri: uri.to_string(),
             mime_type: Some("application/json".to_string()),
             text: serde_json::to_string_pretty(&types).unwrap(),
             meta: None,
-        }],
-    })
+        },
+    ]))
 }
 
 fn get_query_result_formats(uri: &str) -> Result<ReadResourceResult, McpError> {
@@ -157,12 +157,12 @@ fn get_query_result_formats(uri: &str) -> Result<ReadResourceResult, McpError> {
         "default": "internal"
     });
 
-    Ok(ReadResourceResult {
-        contents: vec![ResourceContents::TextResourceContents {
+    Ok(ReadResourceResult::new(vec![
+        ResourceContents::TextResourceContents {
             uri: uri.to_string(),
             mime_type: Some("application/json".to_string()),
             text: serde_json::to_string_pretty(&formats).unwrap(),
             meta: None,
-        }],
-    })
+        },
+    ]))
 }

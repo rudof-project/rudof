@@ -14,11 +14,6 @@ use super::helpers::*;
 use crate::service::{errors::*, mcp_service::RudofMcpService};
 
 /// Request parameters for loading RDF data from various sources.
-///
-/// Supports loading from:
-/// - Local file paths (e.g., `/path/to/data.ttl`)
-/// - URLs (e.g., `https://example.org/data.ttl`)
-/// - Raw RDF content as a string
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct LoadRdfDataFromSourcesRequest {
     /// List of data sources to load. Each source can be:
@@ -43,8 +38,6 @@ pub struct LoadRdfDataFromSourcesRequest {
 /// Response after successfully loading RDF data.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct LoadRdfDataFromSourcesResponse {
-    /// Human-readable message confirming the data load
-    pub message: String,
     /// Number of data sources that were processed
     pub sources_count: usize,
     /// RDF format that was used for parsing
@@ -178,10 +171,6 @@ pub async fn load_rdf_data_from_sources_impl(
 
     let sources_count = data_specs.len();
     let response = LoadRdfDataFromSourcesResponse {
-        message: format!(
-            "Successfully loaded RDF data from {} source(s) in {} format",
-            sources_count, data_format_str
-        ),
         sources_count,
         format: data_format_str.to_string(),
     };
@@ -193,26 +182,19 @@ pub async fn load_rdf_data_from_sources_impl(
             Some(json!({"operation":"load_rdf_data_from_sources_impl", "phase":"serialize_response"})),
         )
     })?;
-    let mut result = CallToolResult::success(vec![Content::text(response.message.clone())]);
+
+    let summary = format!(
+        "Successfully loaded RDF data from {} source(s) in {} format",
+        sources_count, data_format_str
+    );
+
+    let mut result = CallToolResult::success(vec![
+        Content::text(summary),
+    ]);
     result.structured_content = Some(structured);
 
-    // Release the lock before async operations (notifications and persistence)
+    // Release the lock before async operations (persistence)
     drop(rudof);
-
-    // Notify subscribers that all current-data resources have been updated
-    const DATA_RESOURCE_URIS: &[&str] = &[
-        "rudof://current-data",
-        "rudof://current-data/ntriples",
-        "rudof://current-data/rdfxml",
-        "rudof://current-data/jsonld",
-        "rudof://current-data/trig",
-        "rudof://current-data/nquads",
-        "rudof://current-data/n3",
-    ];
-
-    for uri in DATA_RESOURCE_URIS {
-        service.notify_resource_updated((*uri).to_string()).await;
-    }
 
     // Persist state for Docker ephemeral container support
     if let Err(e) = service.persist_state().await {
@@ -283,8 +265,15 @@ pub async fn export_rdf_data_impl(
         )
     })?;
 
-    let formatted_data = format!("```{}\n{}\n```", format_str, str);
-    let mut result = CallToolResult::success(vec![Content::text(formatted_data)]);
+    let preview = code_block_preview(format_str, &str, DEFAULT_CONTENT_PREVIEW_CHARS);
+    let summary = format!(
+        "RDF export completed.\nFormat: {}\nSize: {} bytes",
+        format_str, size_bytes
+    );
+    let mut result = CallToolResult::success(vec![
+        Content::text(summary),
+        Content::text(format!("## Data Preview\n\n{}", preview)),
+    ]);
     result.structured_content = Some(structured);
 
     Ok(result)
@@ -334,9 +323,12 @@ pub async fn export_plantuml_impl(
         )
     })?;
 
-    // Format as PlantUML code block
-    let formatted_data = format!("```plantuml\n{}\n```", str);
-    let mut result = CallToolResult::success(vec![Content::text(formatted_data)]);
+    let preview = code_block_preview("plantuml", &str, DEFAULT_CONTENT_PREVIEW_CHARS);
+    let summary = format!("PlantUML export completed. Size: {} chars", size);
+    let mut result = CallToolResult::success(vec![
+        Content::text(summary),
+        Content::text(format!("## Diagram Preview\n\n{}", preview)),
+    ]);
     result.structured_content = Some(structured);
 
     Ok(result)
@@ -404,13 +396,12 @@ pub async fn export_image_impl(
         )
     })?;
 
-    let description = format!(
+    let summary = format!(
         "Image generated successfully ({} format, {} bytes)",
         image_format, size_bytes
     );
 
-    let mut result = CallToolResult::success(vec![Content::text(description), Content::image(base64_data, mime_type)]);
-
+    let mut result = CallToolResult::success(vec![Content::text(summary), Content::image(base64_data, mime_type)]);
     result.structured_content = Some(structured);
 
     Ok(result)

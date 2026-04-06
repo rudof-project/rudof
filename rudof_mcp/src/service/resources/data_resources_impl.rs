@@ -147,8 +147,8 @@ pub async fn export_rdf_data(
     let mut rudof = service.rudof.lock().await;
 
     let rdf_format = ResultDataFormat::from_str(format_str).map_err(|e| {
-        invalid_request_error(
-            "Serialization error",
+        invalid_params_error(
+            "Invalid format parameter",
             e.to_string(),
             Some(json!({"phase":"parse_format","param":"format","value":format_str})),
         )
@@ -186,14 +186,14 @@ pub async fn export_rdf_data(
         _ => "text/plain",
     };
 
-    Ok(ReadResourceResult {
-        contents: vec![ResourceContents::TextResourceContents {
+    Ok(ReadResourceResult::new(vec![
+        ResourceContents::TextResourceContents {
             uri: uri.to_string(),
             mime_type: Some(mime_type.to_string()),
             text,
             meta: None,
-        }],
-    })
+        },
+    ]))
 }
 
 fn get_rdf_formats(uri: &str) -> Result<ReadResourceResult, McpError> {
@@ -252,12 +252,12 @@ fn get_rdf_formats(uri: &str) -> Result<ReadResourceResult, McpError> {
         "default": "turtle"
     });
 
-    Ok(ReadResourceResult {
-        contents: vec![ResourceContents::TextResourceContents {
+    Ok(ReadResourceResult::new(vec![
+        ResourceContents::TextResourceContents {
             uri: uri.to_string(),
             mime_type: Some("application/json".to_string()),
             text: serde_json::to_string_pretty(&formats).unwrap(),
             meta: None,
-        }],
-    })
+        },
+    ]))
 }

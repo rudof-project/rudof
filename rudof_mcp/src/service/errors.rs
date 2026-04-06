@@ -18,6 +18,9 @@ pub enum ErrorKind {
     ResourceNotFound,
 
     /// The request parameters were invalid or malformed.
+    InvalidParams,
+
+    /// The request parameters were invalid or malformed.
     InvalidRequest,
 
     /// An internal server error occurred.
@@ -50,6 +53,14 @@ pub fn internal_error(message: &'static str, cause: impl Into<String>, context: 
 /// * `context` - Optional JSON object with debugging context
 pub fn invalid_request_error(message: &'static str, cause: impl Into<String>, context: Option<Value>) -> McpError {
     mk_error(ErrorKind::InvalidRequest, message, Some(cause.into()), context)
+}
+
+/// Create an invalid params error response.
+///
+/// Use this when a specific request parameter value is invalid,
+/// malformed, or unsupported.
+pub fn invalid_params_error(message: &'static str, cause: impl Into<String>, context: Option<Value>) -> McpError {
+    mk_error(ErrorKind::InvalidParams, message, Some(cause.into()), context)
 }
 
 /// Create a resource not found error response.
@@ -89,12 +100,23 @@ fn mk_error(kind: ErrorKind, message: &'static str, cause: Option<String>, conte
         map.insert("cause".to_string(), json!(c));
     }
 
-    tracing::error!(?message, ?map, "MCP error occurred");
+    match kind {
+        ErrorKind::Internal => {
+            tracing::error!(?message, ?map, "MCP internal error occurred");
+        },
+        ErrorKind::InvalidParams | ErrorKind::InvalidRequest => {
+            tracing::warn!(?message, ?map, "MCP client request error occurred");
+        },
+        ErrorKind::ResourceNotFound => {
+            tracing::warn!(?message, ?map, "MCP resource not found");
+        },
+    }
 
     let value = Some(Value::Object(map));
 
     match kind {
         ErrorKind::ResourceNotFound => McpError::resource_not_found(message, value),
+        ErrorKind::InvalidParams => McpError::invalid_params(message, value),
         ErrorKind::InvalidRequest => McpError::invalid_request(message, value),
         ErrorKind::Internal => McpError::internal_error(message, value),
     }

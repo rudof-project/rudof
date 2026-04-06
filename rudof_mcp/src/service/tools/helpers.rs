@@ -88,6 +88,64 @@ where
     })
 }
 
+/// Parse a required input value and return a recoverable tool error when invalid.
+pub fn parse_value_with_hint<T, E, F>(
+    value: &str,
+    value_name: &str,
+    hint: &str,
+    parser: F,
+) -> ToolResult<T>
+where
+    F: FnOnce(&str) -> Result<T, E>,
+    E: std::fmt::Display,
+{
+    parser(value).map_err(|e| {
+        ToolExecutionError::with_hint(
+            format!("Invalid {}: {}", value_name, e),
+            hint.to_string(),
+        )
+    })
+}
+
+/// Parse an optional input value and return a recoverable tool error when invalid.
+pub fn parse_optional_value_with_hint<T, E, F>(
+    value: Option<&str>,
+    value_name: &str,
+    hint: &str,
+    parser: F,
+) -> ToolResult<Option<T>>
+where
+    F: Fn(&str) -> Result<T, E>,
+    E: std::fmt::Display,
+{
+    value
+        .map(|raw| parse_value_with_hint(raw, value_name, hint, &parser))
+        .transpose()
+}
+
+/// Default maximum characters included in text previews sent in `content`.
+pub const DEFAULT_CONTENT_PREVIEW_CHARS: usize = 1200;
+
+/// Build a bounded preview of a potentially large text payload.
+pub fn preview_text(text: &str, max_chars: usize) -> (String, bool) {
+    let total_chars = text.chars().count();
+    if total_chars <= max_chars {
+        (text.to_string(), false)
+    } else {
+        (text.chars().take(max_chars).collect(), true)
+    }
+}
+
+/// Build a Markdown code block preview and append truncation notice when needed.
+pub fn code_block_preview(language: &str, text: &str, max_chars: usize) -> String {
+    let (preview, truncated) = preview_text(text, max_chars);
+    let mut block = format!("```{}\n{}\n```", language, preview);
+    if truncated {
+        block.push_str("\n\nPreview truncated. Full output is available in structuredContent.");
+    }
+    block
+}
+
 /// Supported RDF formats as a constant for documentation and hints.
 pub const RDF_FORMATS: &str = "turtle, ntriples, rdfxml, jsonld, trig, nquads, n3";
 

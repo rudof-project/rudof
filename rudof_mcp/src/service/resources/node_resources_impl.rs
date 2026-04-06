@@ -59,12 +59,12 @@ fn get_node_modes(uri: &str) -> Result<ReadResourceResult, McpError> {
         "default": "both"
     });
 
-    Ok(ReadResourceResult {
-        contents: vec![ResourceContents::TextResourceContents {
+    Ok(ReadResourceResult::new(vec![
+        ResourceContents::TextResourceContents {
             uri: uri.to_string(),
             mime_type: Some("application/json".to_string()),
             text: serde_json::to_string_pretty(&modes).unwrap(),
             meta: None,
-        }],
-    })
+        },
+    ]))
 }

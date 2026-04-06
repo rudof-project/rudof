@@ -67,7 +67,7 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
             "compact, details, minimal, json, csv, turtle",
         ),
         _ => {
-            return Err(McpError::invalid_request(
+            return Err(McpError::invalid_params(
                 "Unsupported validation technology. Use 'shex' or 'shacl'.",
                 None,
             ));
@@ -142,23 +142,20 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
         ),
     ];
 
-    Ok(GetPromptResult {
-        description: Some(format!(
-            "{} validation guide{}{}",
-            technology.to_uppercase(),
-            if let Some(n) = args.node.as_deref() {
-                format!(" for node {n}")
-            } else {
-                String::new()
-            },
-            if let Some(s) = args.shape.as_deref() {
-                format!(" against shape {s}")
-            } else {
-                String::new()
-            },
-        )),
-        messages,
-    })
+    Ok(GetPromptResult::new(messages).with_description(format!(
+        "{} validation guide{}{}",
+        technology.to_uppercase(),
+        if let Some(n) = args.node.as_deref() {
+            format!(" for node {n}")
+        } else {
+            String::new()
+        },
+        if let Some(s) = args.shape.as_deref() {
+            format!(" against shape {s}")
+        } else {
+            String::new()
+        },
+    )))
 }
 
 /// Arguments for the SPARQL query builder prompt.
@@ -284,8 +281,8 @@ SELECT (COUNT(*) AS ?count) WHERE { ?s ?p ?o }"#,
         ),
     ];
 
-    Ok(GetPromptResult {
-        description: Some(format!("SPARQL {} query builder: {}", query_type, description)),
-        messages,
-    })
+    Ok(GetPromptResult::new(messages).with_description(format!(
+        "SPARQL {} query builder: {}",
+        query_type, description
+    )))
 }

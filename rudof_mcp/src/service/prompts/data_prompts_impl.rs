@@ -91,8 +91,8 @@ pub async fn analyze_rdf_data_prompt_impl(
         ),
     ];
 
-    Ok(GetPromptResult {
-        description: Some(format!("RDF data analysis guide focusing on {}", focus_description)),
-        messages,
-    })
+    Ok(GetPromptResult::new(messages).with_description(format!(
+        "RDF data analysis guide focusing on {}",
+        focus_description
+    )))
 }

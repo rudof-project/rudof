@@ -6,6 +6,7 @@
 
 use crate::service::errors::*;
 use crate::service::mcp_service::RudofMcpService;
+use crate::service::pagination::parse_cursor;
 use rmcp::{
     ErrorData as McpError, RoleServer,
     model::{
@@ -42,9 +43,9 @@ pub async fn list_resources(
     // Handle pagination if requested
     let (resources, next_cursor) = if let Some(params) = request {
         let page_size = 20;
-        let cursor = params.cursor.and_then(|c| c.parse::<usize>().ok()).unwrap_or(0);
+        let cursor = parse_cursor(params.cursor, all_resources.len(), "resources/list")?;
 
-        let start = cursor;
+        let start = cursor.min(all_resources.len());
         let end = std::cmp::min(start + page_size, all_resources.len());
 
         let page_resources = all_resources[start..end].to_vec();

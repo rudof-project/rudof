@@ -4,17 +4,18 @@
 //! handling all MCP protocol requests including:
 //!
 //! - **Initialization**: Server capabilities and metadata
-//! - **Tools**: Listing and executing validation/query tools
+//! - **Tools**: Listing and executing tools
 //! - **Prompts**: Listing and retrieving prompt templates
-//! - **Resources**: Listing, reading, and subscribing to RDF data
+//! - **Resources**: Listing and reading resources
 //! - **Completions**: Argument suggestions for tools and prompts
 //! - **Logging**: Dynamic log level configuration
-//! - **Tasks**: Async task management (SEP-1686)
+//! - **Pagination**: Cursor-based pagination for listing promprts, resources and tools
 //! ```
 
 use crate::service::logging::{LogData, send_log};
 use crate::service::mcp_service::RudofMcpService;
-use crate::service::{resource_templates, resources::*};
+use crate::service::pagination::parse_cursor;
+use crate::service::{errors::*, resource_templates, resources::*};
 use rmcp::{
     ErrorData as McpError, RoleServer, ServerHandler,
     handler::server::tool::ToolCallContext,
@@ -23,6 +24,32 @@ use rmcp::{
 };
 use serde_json::json;
 
+fn task_not_found_error(task_id: &str) -> McpError {
+    invalid_params_error(
+        "Invalid task id",
+        format!("Task not found: {task_id}"),
+        Some(json!({"param":"task_id","value":task_id})),
+    )
+}
+
+fn task_result_not_ready_error(task_id: &str, status: TaskStatus) -> McpError {
+    invalid_request_error(
+        "Task result is not available yet",
+        format!(
+            "Task status is {status:?}. Poll tasks/get until status is Completed or Failed."
+        ),
+        Some(json!({"task_id":task_id, "status":format!("{status:?}")})),
+    )
+}
+
+fn task_cancel_not_allowed_error(task_id: &str, status: TaskStatus) -> McpError {
+    invalid_request_error(
+        "Task cannot be cancelled",
+        format!("Task {task_id} is already in terminal state {status:?}"),
+        Some(json!({"task_id":task_id, "status":format!("{status:?}")})),
+    )
+}
+
 impl ServerHandler for RudofMcpService {
     /// Returns server metadata including protocol version, capabilities, and implementation info.
     ///
@@ -30,42 +57,32 @@ impl ServerHandler for RudofMcpService {
     ///
     /// - **tools**: Available
     /// - **prompts**: Available
-    /// - **resources**: Available with `subscribe` and `list_changed` support
+    /// - **resources**: Available
     /// - **logging**: Enabled for client-side log filtering
     /// - **completions**: Enabled for argument suggestions
-    /// - **tasks**: SEP-1686 async task support
     fn get_info(&self) -> ServerInfo {
         tracing::debug!("Generating ServerInfo");
 
-        let mut logging_meta = serde_json::Map::new();
-        logging_meta.insert("enabled".to_string(), json!(true));
+        let capabilities = ServerCapabilities::builder()
+            .enable_logging_with(serde_json::Map::new())
+            .enable_prompts_with(PromptsCapability { list_changed: Some(false) })
+            .enable_resources_with(ResourcesCapability {
+                subscribe: Some(false),
+                list_changed: Some(false),
+            })
+            .enable_tools_with(ToolsCapability { list_changed: Some(false) })
+            .enable_completions_with(serde_json::Map::new())
+            .build();
 
-        let mut task_cap = serde_json::Map::new();
-        task_cap.insert("supported".to_string(), json!(true));
-
-        ServerInfo {
-            protocol_version: ProtocolVersion::LATEST,
-            capabilities: ServerCapabilities {
-                experimental: None,
-                logging: Some(logging_meta),
-                prompts: Some(PromptsCapability { list_changed: None }),
-                resources: Some(ResourcesCapability {
-                    subscribe: Some(true),
-                    list_changed: Some(true),
-                }),
-                tools: Some(ToolsCapability { list_changed: None }),
-                completions: Some(serde_json::Map::new()),
-                tasks: Some(TasksCapability::server_default()),
-            },
-            server_info: Implementation::from_build_env(),
-            instructions: Some(
+        ServerInfo::new(capabilities)
+            .with_protocol_version(ProtocolVersion::LATEST)
+            .with_server_info(Implementation::from_build_env())
+            .with_instructions(
                 "This MCP server exposes Rudof tools and prompts. Rudof is a comprehensive
             library that implements Shape Expressions (ShEx), SHACL, DCTAP, and other technologies in the
             RDF ecosystem, enabling schema validation, data transformation, and semantic web
-            operations."
-                    .to_string(),
-            ),
-        }
+            operations.",
+            )
     }
 
     /// Return a list of available tools using the generated ToolRouter.
@@ -81,9 +98,9 @@ impl ServerHandler for RudofMcpService {
         // Handle pagination if requested
         let (tools, next_cursor) = if let Some(params) = request {
             let page_size = 20;
-            let cursor = params.cursor.and_then(|c| c.parse::<usize>().ok()).unwrap_or(0);
+            let cursor = parse_cursor(params.cursor, all_tools.len(), "tools/list")?;
 
-            let start = cursor;
+            let start = cursor.min(all_tools.len());
             let end = std::cmp::min(start + page_size, all_tools.len());
 
             let page_tools = all_tools[start..end].to_vec();
@@ -117,9 +134,9 @@ impl ServerHandler for RudofMcpService {
         // Handle pagination if requested
         let (prompts, next_cursor) = if let Some(params) = request {
             let page_size = 20;
-            let cursor = params.cursor.and_then(|c| c.parse::<usize>().ok()).unwrap_or(0);
+            let cursor = parse_cursor(params.cursor, all_prompts.len(), "prompts/list")?;
 
-            let start = cursor;
+            let start = cursor.min(all_prompts.len());
             let end = std::cmp::min(start + page_size, all_prompts.len());
 
             let page_prompts = all_prompts[start..end].to_vec();
@@ -156,14 +173,13 @@ impl ServerHandler for RudofMcpService {
     /// Read a resource by URI
     async fn read_resource(
         &self,
-        ReadResourceRequestParams { uri, .. }: ReadResourceRequestParams,
+        request: ReadResourceRequestParams,
         _context: RequestContext<RoleServer>,
     ) -> Result<ReadResourceResult, McpError> {
-        tracing::debug!(%uri, "Reading resource");
+        tracing::debug!(uri = %request.uri, "Reading resource");
 
         // Delegate read handling to resources module
-        let req = ReadResourceRequestParams { uri, meta: None };
-        read_resource(self, req).await
+        read_resource(self, request).await
     }
 
     /// Return a list of available resource templates
@@ -231,64 +247,60 @@ impl ServerHandler for RudofMcpService {
         context: RequestContext<RoleServer>,
     ) -> Result<CallToolResult, McpError> {
         tracing::debug!(tool_name = %request.name, "Tool call requested");
-        // Store the context so tools can access it for notifications
-        {
-            let mut ctx_guard = self.current_context.write().await;
-            *ctx_guard = Some(context.clone());
-        }
 
-        // Send debug log for tool invocation (respects log level filtering)
-        let tool_name = request.name.clone();
-        let log_data = LogData::new("Tool invocation started")
-            .with_field("tool_name", tool_name.clone())
-            .with_field("has_arguments", request.arguments.is_some());
-        send_log(
-            LoggingLevel::Debug,
-            Some("tools".to_string()),
-            log_data,
-            self.current_min_log_level.clone(),
-            &context.peer,
-        )
-        .await;
+        RudofMcpService::with_request_context(context.clone(), async {
+            // Send debug log for tool invocation (respects log level filtering)
+            let tool_name = request.name.clone();
+            let log_data = LogData::new("Tool invocation started")
+                .with_field("tool_name", tool_name.clone())
+                .with_field("has_arguments", request.arguments.is_some());
+            send_log(
+                LoggingLevel::Debug,
+                Some("tools".to_string()),
+                log_data,
+                self.current_min_log_level.clone(),
+                self.log_rate_limiter.clone(),
+                &context.peer,
+            )
+            .await;
 
-        let ctx = ToolCallContext::new(self, request, context.clone());
-        let result = self.tool_router.call(ctx).await;
+            let ctx = ToolCallContext::new(self, request, context.clone());
+            let result = self.tool_router.call(ctx).await;
 
-        // Log tool completion (respects log level filtering)
-        match &result {
-            Ok(_) => {
-                let log_data = LogData::new("Tool executed successfully").with_field("tool_name", tool_name.clone());
-                send_log(
-                    LoggingLevel::Debug,
-                    Some("tools".to_string()),
-                    log_data,
-                    self.current_min_log_level.clone(),
-                    &context.peer,
-                )
-                .await;
-            },
-            Err(e) => {
-                let log_data = LogData::new("Tool execution failed")
-                    .with_field("tool_name", tool_name.clone())
-                    .with_field("error", e.message.clone());
-                send_log(
-                    LoggingLevel::Error,
-                    Some("tools".to_string()),
-                    log_data,
-                    self.current_min_log_level.clone(),
-                    &context.peer,
-                )
-                .await;
-            },
-        }
+            // Log tool completion (respects log level filtering)
+            match &result {
+                Ok(_) => {
+                    let log_data =
+                        LogData::new("Tool executed successfully").with_field("tool_name", tool_name.clone());
+                    send_log(
+                        LoggingLevel::Debug,
+                        Some("tools".to_string()),
+                        log_data,
+                        self.current_min_log_level.clone(),
+                        self.log_rate_limiter.clone(),
+                        &context.peer,
+                    )
+                    .await;
+                },
+                Err(_) => {
+                    let log_data = LogData::new("Tool execution failed")
+                        .with_field("tool_name", tool_name.clone())
+                        .with_field("error", "[redacted]");
+                    send_log(
+                        LoggingLevel::Error,
+                        Some("tools".to_string()),
+                        log_data,
+                        self.current_min_log_level.clone(),
+                        self.log_rate_limiter.clone(),
+                        &context.peer,
+                    )
+                    .await;
+                },
+            }
 
-        // Clear the context after the tool call
-        {
-            let mut ctx_guard = self.current_context.write().await;
-            *ctx_guard = None;
-        }
-
-        result
+            result
+        })
+        .await
     }
 
     // Construct a PromptContext and delegate to the generated router
@@ -305,7 +317,7 @@ impl ServerHandler for RudofMcpService {
         Ok(result)
     }
 
-    // Handle completion requests for tool/prompt arguments
+    // Handle completion requests for prompt/resource arguments
     async fn complete(
         &self,
         request: CompleteRequestParams,
@@ -321,51 +333,10 @@ impl ServerHandler for RudofMcpService {
             },
         };
 
-        Ok(CompleteResult {
-            completion: CompletionInfo {
-                values: completions,
-                total: None,
-                has_more: Some(false),
-            },
-        })
-    }
+        let completion = CompletionInfo::with_pagination(completions, None, false)
+            .map_err(|e| McpError::invalid_params(e, None))?;
 
-    // Handle resource subscription requests
-    async fn subscribe(
-        &self,
-        request: SubscribeRequestParams,
-        _context: RequestContext<RoleServer>,
-    ) -> Result<(), McpError> {
-        let uri = request.uri;
-        // Generate a simple subscriber ID using timestamp
-        let subscriber_id = format!(
-            "sub_{}",
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos()
-        );
-
-        // Store the subscription
-        self.subscribe_resource(uri.clone(), subscriber_id).await;
-
-        Ok(())
-    }
-
-    // Handle resource unsubscription requests
-    async fn unsubscribe(
-        &self,
-        request: UnsubscribeRequestParams,
-        _context: RequestContext<RoleServer>,
-    ) -> Result<(), McpError> {
-        let uri = request.uri;
-
-        let subscribers = self.get_resource_subscribers(&uri).await;
-        for subscriber_id in subscribers {
-            self.unsubscribe_resource(&uri, &subscriber_id).await;
-        }
-
-        Ok(())
+        Ok(CompleteResult::new(completion))
     }
 
     // Handle notification when client is initialized
@@ -405,152 +376,5 @@ impl ServerHandler for RudofMcpService {
     async fn ping(&self, _context: RequestContext<RoleServer>) -> Result<(), McpError> {
         tracing::debug!("Ping received");
         Ok(())
-    }
-
-    /// Enqueue a task for async execution (SEP-1686).
-    ///
-    /// This method creates a task entry and spawns a background worker to execute
-    /// the tool asynchronously. The client can poll for status using `get_task_info`
-    /// and retrieve results with `get_task_result` once completed.
-    ///
-    /// # Flow
-    /// 1. Task is enqueued with `Working` status
-    /// 2. Background worker spawned via `tokio::spawn`
-    /// 3. Worker executes the tool via `tool_router`
-    /// 4. On success: `task_store.complete()` is called
-    /// 5. On failure: `task_store.fail()` is called
-    /// 6. Client polls until terminal state (Completed/Failed/Cancelled)
-    async fn enqueue_task(
-        &self,
-        request: CallToolRequestParams,
-        context: RequestContext<RoleServer>,
-    ) -> Result<CreateTaskResult, McpError> {
-        tracing::debug!(tool_name = %request.name, "Enqueuing task for async execution");
-
-        // 1. Enqueue the task to get a task_id
-        let result = self.task_store.enqueue().await;
-        let task_id = result.task.task_id.clone();
-
-        tracing::debug!(
-            task_id = %task_id,
-            status = ?result.task.status,
-            "Task enqueued, spawning background worker"
-        );
-
-        // 2. Spawn background worker to execute the tool
-        let service = self.clone();
-        let tool_request = request.clone();
-
-        tokio::spawn(async move {
-            tracing::debug!(task_id = %task_id, tool_name = %tool_request.name, "Background worker started");
-
-            // Update status to indicate execution has started
-            service
-                .task_store
-                .update_status(
-                    &task_id,
-                    rmcp::model::TaskStatus::Working,
-                    Some(format!("Executing tool: {}", tool_request.name)),
-                )
-                .await;
-
-            // Build the tool call context and execute
-            // Note: We use the cloned context; the cancellation token is shared
-            let ctx = rmcp::handler::server::tool::ToolCallContext::new(&service, tool_request.clone(), context);
-
-            match service.tool_router.call(ctx).await {
-                Ok(tool_result) => {
-                    tracing::debug!(task_id = %task_id, "Task completed successfully");
-                    service.task_store.complete(&task_id, tool_result).await;
-                },
-                Err(e) => {
-                    tracing::error!(task_id = %task_id, error = ?e, "Task failed");
-                    service.task_store.fail(&task_id, e.message.to_string()).await;
-                },
-            }
-        });
-
-        // 3. Return immediately with task info (client will poll for results)
-        Ok(result)
-    }
-
-    // List all tasks with optional pagination (SEP-1686)
-    async fn list_tasks(
-        &self,
-        request: Option<PaginatedRequestParams>,
-        _context: RequestContext<RoleServer>,
-    ) -> Result<ListTasksResult, McpError> {
-        tracing::debug!("Listing tasks");
-        Ok(self.task_store.list(request).await)
-    }
-
-    // Get information about a specific task (SEP-1686)
-    async fn get_task_info(
-        &self,
-        request: GetTaskInfoParams,
-        _context: RequestContext<RoleServer>,
-    ) -> Result<GetTaskInfoResult, McpError> {
-        tracing::debug!(task_id = %request.task_id, "Getting task info");
-
-        self.task_store
-            .get_info(request.clone())
-            .await
-            .ok_or_else(|| McpError::resource_not_found(format!("Task not found: {}", request.task_id), None))
-    }
-
-    // Get the result of a completed task (SEP-1686)
-    async fn get_task_result(
-        &self,
-        request: GetTaskResultParams,
-        _context: RequestContext<RoleServer>,
-    ) -> Result<TaskResult, McpError> {
-        tracing::debug!(task_id = %request.task_id, "Getting task result");
-
-        // First check if task exists and its status
-        let info = self
-            .task_store
-            .get_info(GetTaskInfoParams {
-                task_id: request.task_id.clone(),
-                meta: None,
-            })
-            .await;
-
-        match info {
-            None => Err(McpError::resource_not_found(
-                format!("Task not found: {}", request.task_id),
-                None,
-            )),
-            Some(task_info) => {
-                let task = task_info.task.ok_or_else(|| {
-                    McpError::resource_not_found(format!("Task not found: {}", request.task_id), None)
-                })?;
-                match task.status {
-                    TaskStatus::Working | TaskStatus::InputRequired => {
-                        Err(McpError::invalid_request("Task is still in progress", None))
-                    },
-                    TaskStatus::Cancelled => Err(McpError::invalid_request("Task was cancelled", None)),
-                    TaskStatus::Completed | TaskStatus::Failed => self
-                        .task_store
-                        .get_result(request.clone())
-                        .await
-                        .ok_or_else(|| McpError::internal_error("Task result not available", None)),
-                }
-            },
-        }
-    }
-
-    // Cancel a running task (SEP-1686)
-    async fn cancel_task(
-        &self,
-        request: CancelTaskParams,
-        _context: RequestContext<RoleServer>,
-    ) -> Result<(), McpError> {
-        tracing::debug!(task_id = %request.task_id, "Cancelling task");
-
-        self.task_store
-            .cancel(request.clone())
-            .await
-            .map(|_| ())
-            .ok_or_else(|| McpError::invalid_request(format!("Cannot cancel task: {}", request.task_id), None))
     }
 }

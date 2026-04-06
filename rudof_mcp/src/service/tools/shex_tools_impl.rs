@@ -11,6 +11,8 @@ use serde_json::json;
 use std::io::Cursor;
 use std::str::FromStr;
 
+use super::helpers::*;
+
 /// Request parameters for displaying a ShEx schema.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ShowShexRequest {
@@ -33,18 +35,6 @@ pub struct ShowShexRequest {
     /// Supported: shexc, shexj, turtle, ntriples, rdfxml, trig, n3, nquads, json, jsonld, internal, simple
     /// Default: shexc
     pub result_schema_format: Option<String>,
-
-    /// Include the full schema in output (default: true)
-    pub show_schema: Option<bool>,
-
-    /// Include processing time information
-    pub show_time: Option<bool>,
-
-    /// Include shape dependency analysis
-    pub show_dependencies: Option<bool>,
-
-    /// Include schema statistics (shape counts, extends info)
-    pub show_statistics: Option<bool>,
 }
 
 /// Response from displaying a ShEx schema.
@@ -56,8 +46,6 @@ pub struct ShowShexResponse {
     pub result_format: String,
     /// Size of results in bytes
     pub result_size_bytes: usize,
-    /// Number of lines in result
-    pub result_lines: usize,
 }
 
 /// Parse and display a ShEx schema with optional analysis features.
@@ -79,43 +67,41 @@ pub async fn show_shex_impl(
         base_schema,
         shape,
         result_schema_format,
-        show_schema,
-        show_time,
-        show_dependencies,
-        show_statistics,
     }): Parameters<ShowShexRequest>,
 ) -> Result<CallToolResult, McpError> {
     let mut rudof = service.rudof.lock().await;
 
-    let parsed_schema = InputSpec::from_str(&schema).map_err(|e| {
-        internal_error(
-            "ShEx error",
-            e.to_string(),
-            Some(json!({"operation":"show_shex","phase":"parse_schema"})),
-        )
-    })?;
+    let shex_format_hint = format!("Supported values: {}", SHEX_FORMATS);
 
-    let mut parsed_schema_format = None;
-    if let Some(schema_format) = schema_format.as_deref() {
-        parsed_schema_format = Some(ShExFormat::from_str(schema_format).map_err(|e| {
-            internal_error(
-                "ShEx error",
-                e.to_string(),
-                Some(json!({"operation":"show_shex","phase":"parse_schema_format"})),
-            )
-        })?);
-    }
+    let parsed_schema = match parse_value_with_hint(
+        &schema,
+        "schema",
+        "Provide valid schema content, URL, or file path",
+        InputSpec::from_str,
+    ) {
+        Ok(value) => value,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
 
-    let mut parsed_result_format = None;
-    if let Some(result_schema_format) = result_schema_format.as_deref() {
-        parsed_result_format = Some(ShExFormat::from_str(result_schema_format).map_err(|e| {
-            internal_error(
-                "ShEx error",
-                e.to_string(),
-                Some(json!({"operation":"show_shex","phase":"parse_result_schema_format"})),
-            )
-        })?);
-    }
+    let parsed_schema_format = match parse_optional_value_with_hint(
+        schema_format.as_deref(),
+        "schema format",
+        &shex_format_hint,
+        ShExFormat::from_str,
+    ) {
+        Ok(value) => value,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
+
+    let parsed_result_format = match parse_optional_value_with_hint(
+        result_schema_format.as_deref(),
+        "result schema format",
+        &shex_format_hint,
+        ShExFormat::from_str,
+    ) {
+        Ok(value) => value,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
 
     let mut shex_schema_loading = rudof.load_shex_schema(&parsed_schema);
     if let Some(base_schema) = base_schema.as_deref() {
@@ -137,28 +123,20 @@ pub async fn show_shex_impl(
     if let Some(result_schema_format) = &parsed_result_format {
         serialization = serialization.with_result_shex_format(result_schema_format);
     }
-    if let Some(show_schema) = show_schema {
-        serialization = serialization.with_show_schema(show_schema);
-    }
-    if let Some(show_time) = show_time {
-        serialization = serialization.with_show_time(show_time);
-    }
-    if let Some(show_dependencies) = show_dependencies {
-        serialization = serialization.with_show_dependencies(show_dependencies);
-    }
-    if let Some(show_statistics) = show_statistics {
-        serialization = serialization.with_show_statistics(show_statistics);
-    }
     if let Some(shape_selector) = shape.as_deref() {
         serialization = serialization.with_shape(shape_selector);
     }
-    serialization.execute().map_err(|e| {
-        internal_error(
-            "ShEx error",
-            e.to_string(),
-            Some(json!({"operation":"show_shex","phase":"serialize_schema"})),
-        )
-    })?;
+    serialization
+        .with_show_schema(true)
+        .with_show_dependencies(true)
+        .with_show_statistics(true)
+        .execute().map_err(|e| {
+            internal_error(
+                "ShEx error",
+                e.to_string(),
+                Some(json!({"operation":"show_shex","phase":"serialize_schema"})),
+            )
+        })?;
 
     let output_bytes = output_buffer.into_inner();
     let output_str = String::from_utf8(output_bytes).map_err(|e| {
@@ -170,7 +148,6 @@ pub async fn show_shex_impl(
     })?;
 
     let result_size_bytes = output_str.len();
-    let result_lines = output_str.lines().count();
 
     let result_format_str = if let Some(fmt) = parsed_result_format {
         fmt.to_string()
@@ -179,9 +156,8 @@ pub async fn show_shex_impl(
     };
     let response = ShowShexResponse {
         results: output_str.clone(),
-        result_format: result_format_str,
+        result_format: result_format_str.clone(),
         result_size_bytes,
-        result_lines,
     };
 
     let structured = serde_json::to_value(&response).map_err(|e| {
@@ -192,14 +168,26 @@ pub async fn show_shex_impl(
         )
     })?;
 
-    // Optionally append elapsed time to the human-readable summary
-    let mut contents = vec![];
-    contents.push(Content::text(format!(
-        "## Schema Serialized\n\n```shex\n{}\n```",
-        output_str
-    )));
+    let summary = format!(
+        "ShEx schema serialized.\nResult format: {}\nResult size: {} bytes",
+        result_format_str, result_size_bytes
+    );
 
-    let mut result = CallToolResult::success(contents);
+    let preview_language = match response.result_format.to_lowercase().as_str() {
+        "json" | "jsonld" | "shexj" => "json",
+        "turtle" | "n3" => "turtle",
+        "ntriples" | "nquads" => "ntriples",
+        "rdfxml" => "xml",
+        "trig" => "trig",
+        "shexc" => "shex",
+        _ => "text",
+    };
+    let results_preview = code_block_preview(preview_language, &output_str, DEFAULT_CONTENT_PREVIEW_CHARS);
+
+    let mut result = CallToolResult::success(vec![
+        Content::text(summary),
+        Content::text(format!("## Results Preview\n\n{}", results_preview)),
+    ]);
     result.structured_content = Some(structured);
 
     Ok(result)
@@ -245,24 +233,27 @@ pub async fn check_shex_impl(
 ) -> Result<CallToolResult, McpError> {
     let rudof = service.rudof.lock().await;
 
-    let parsed_schema = InputSpec::from_str(&schema).map_err(|e| {
-        internal_error(
-            "ShEx error",
-            e.to_string(),
-            Some(json!({"operation":"check_shex_impl","phase":"parse_schema"})),
-        )
-    })?;
+    let shex_format_hint = format!("Supported values: {}", SHEX_FORMATS);
 
-    let mut parsed_schema_format = None;
-    if let Some(schema_format) = schema_format.as_deref() {
-        parsed_schema_format = Some(ShExFormat::from_str(schema_format).map_err(|e| {
-            internal_error(
-                "ShEx error",
-                e.to_string(),
-                Some(json!({"operation":"check_shex_impl","phase":"parse_schema_format"})),
-            )
-        })?);
-    }
+    let parsed_schema = match parse_value_with_hint(
+        &schema,
+        "schema",
+        "Provide valid schema content, URL, or file path",
+        InputSpec::from_str,
+    ) {
+        Ok(value) => value,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
+
+    let parsed_schema_format = match parse_optional_value_with_hint(
+        schema_format.as_deref(),
+        "schema format",
+        &shex_format_hint,
+        ShExFormat::from_str,
+    ) {
+        Ok(value) => value,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
 
     let mut output_buffer = Cursor::new(Vec::new());
     let mut checking = rudof.check_shex_schema(&parsed_schema, &mut output_buffer);
@@ -301,14 +292,18 @@ pub async fn check_shex_impl(
         )
     })?;
 
-    // Optionally append elapsed time to the human-readable summary
-    let mut contents = vec![];
-    contents.push(Content::text(format!(
-        "## Schema Serialized\n\n```shex\n{}\n```",
-        output_str
-    )));
+    let result_size_chars = output_str.chars().count();
+    let summary = format!(
+        "ShEx schema checked.\nResult size: {} chars",
+        result_size_chars
+    );
 
-    let mut result = CallToolResult::success(contents);
+    let results_preview = code_block_preview("text", &output_str, DEFAULT_CONTENT_PREVIEW_CHARS);
+
+    let mut result = CallToolResult::success(vec![
+        Content::text(summary),
+        Content::text(format!("## Results Preview\n\n{}", results_preview)),
+    ]);
     result.structured_content = Some(structured);
 
     Ok(result)

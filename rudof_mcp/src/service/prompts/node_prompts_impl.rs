@@ -115,11 +115,8 @@ pub async fn explore_rdf_node_prompt_impl(
         ),
     ];
 
-    Ok(GetPromptResult {
-        description: Some(format!(
-            "Explore RDF node {} ({}, predicates: {})",
-            node, mode_description, predicates_display
-        )),
-        messages,
-    })
+    Ok(GetPromptResult::new(messages).with_description(format!(
+        "Explore RDF node {} ({}, predicates: {})",
+        node, mode_description, predicates_display
+    )))
 }

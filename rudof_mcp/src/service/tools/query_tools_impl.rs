@@ -2,7 +2,7 @@ use crate::service::{errors::*, mcp_service::*};
 use rmcp::{
     ErrorData as McpError,
     handler::server::wrapper::Parameters,
-    model::{CallToolResult, Content, CreateMessageRequestParams, Role, SamplingMessage},
+    model::{CallToolResult, Content, CreateMessageRequestParams, SamplingMessage},
 };
 use rudof_lib::formats::{InputSpec, ResultQueryFormat};
 use schemars::JsonSchema;
@@ -35,14 +35,14 @@ pub struct ExecuteSparqlQueryRequest {
 /// Response containing query execution results.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct QueryExecutionResponse {
-    /// Format used for the results
-    pub result_format: String,
+    /// The SPARQL query that was executed (either provided directly or generated from natural language)
+    pub query: String,
     /// Query results as a string
     pub results: String,
+    /// Format used for the results
+    pub result_format: String,
     /// Size of the results in bytes
     pub result_size_bytes: usize,
-    /// Number of lines in the result
-    pub result_lines: usize,
 }
 
 /// Generate a SPARQL query from natural language using rmcp sampling.
@@ -50,7 +50,6 @@ pub struct QueryExecutionResponse {
 /// Uses the MCP sampling capability to request LLM assistance in
 /// converting natural language to SPARQL.
 async fn generate_sparql_from_natural_language(
-    service: &RudofMcpService,
     natural_language: &str,
 ) -> Result<String, McpError> {
     let system_message = r#"You are a SPARQL query expert. Convert natural language questions into valid SPARQL queries.
@@ -63,8 +62,7 @@ async fn generate_sparql_from_natural_language(
     let user_message = format!("Generate a SPARQL query for: {}", natural_language);
 
     // Get the current request context to access the peer for sampling
-    let context_guard = service.current_context.read().await;
-    let context = context_guard.as_ref().ok_or_else(|| {
+    let context = RudofMcpService::current_request_context().ok_or_else(|| {
         internal_error(
             "Sampling context error",
             "Request context not found",
@@ -72,28 +70,13 @@ async fn generate_sparql_from_natural_language(
         )
     })?;
 
-    // Create sampling request with messages
-    let sampling_request = CreateMessageRequestParams {
-        meta: None,
-        task: None,
-        messages: vec![
-            SamplingMessage {
-                role: Role::User,
-                content: Content::text(system_message),
-            },
-            SamplingMessage {
-                role: Role::User,
-                content: Content::text(user_message.clone()),
-            },
-        ],
-        model_preferences: None,
-        system_prompt: None,
-        include_context: None,
-        temperature: Some(0.3),
-        max_tokens: 512,
-        stop_sequences: None,
-        metadata: None,
-    };
+    // Create sampling request with system prompt and user message.
+    let sampling_request = CreateMessageRequestParams::new(
+        vec![SamplingMessage::user_text(user_message.clone())],
+        512,
+    )
+    .with_system_prompt(system_message)
+    .with_temperature(0.1); // Low temperature for more deterministic output
 
     // Send sampling request through rmcp
     let response = context.peer.create_message(sampling_request).await.map_err(|e| {
@@ -104,17 +87,21 @@ async fn generate_sparql_from_natural_language(
         )
     })?;
 
-    // Extract text from the SamplingMessage content in the response
-    // The response.message.content is of type Content
-    let generated_query = if let Some(text_content) = response.message.content.as_text() {
-        text_content.text.clone()
-    } else {
-        return Err(internal_error(
-            "Sampling response error",
-            "Expected text response from LLM",
-            Some(json!({"operation":"generate_sparql_from_natural_language","phase":"extract_response_text"})),
-        ));
-    };
+    // Extract the first text fragment from the sampling response.
+    let generated_query = response
+        .message
+        .content
+        .iter()
+        .find_map(|content| content.as_text().map(|text| text.text.clone()))
+        .ok_or_else(|| {
+            internal_error(
+                "Sampling response error",
+                "Expected text response from LLM",
+                Some(
+                    json!({"operation":"generate_sparql_from_natural_language","phase":"extract_response_text"}),
+                ),
+            )
+        })?;
 
     // Clean up any markdown code blocks that might have been generated
     let cleaned_query = if generated_query.starts_with("```") {
@@ -170,7 +157,7 @@ pub async fn execute_sparql_query_impl(
         },
         (None, Some(nl)) => {
             // Natural language query provided - generate SPARQL using rmcp sampling
-            generate_sparql_from_natural_language(service, &nl).await?
+            generate_sparql_from_natural_language(&nl).await?
         },
         (Some(_), Some(_)) => {
             return Ok(ToolExecutionError::new(
@@ -247,7 +234,6 @@ pub async fn execute_sparql_query_impl(
 
     // Calculate metadata
     let result_size_bytes = output_str.len();
-    let result_lines = output_str.lines().count();
 
     let result_format_str = if let Some(fmt) = result_format_parsed {
         fmt.to_string()
@@ -255,10 +241,10 @@ pub async fn execute_sparql_query_impl(
         "turtle".to_string()
     };
     let response = QueryExecutionResponse {
+        query: sparql_query.clone(),
         result_format: result_format_str.clone(),
         results: output_str.to_string(),
         result_size_bytes,
-        result_lines,
     };
 
     let structured = serde_json::to_value(&response).map_err(|e| {
@@ -269,32 +255,28 @@ pub async fn execute_sparql_query_impl(
         )
     })?;
 
-    // Create a summary text
     let summary = format!(
-        "# SPARQL Query Execution\n\n\
-        **Result Format:** {}\n\
-        **Result Size:** {} bytes\n\
-        **Result Lines:** {}\n",
-        result_format_str, result_size_bytes, result_lines
+        "SPARQL query executed.\nResult format: {}\nResult size: {} bytes",
+        result_format_str, result_size_bytes
     );
 
-    let query_display = format!("## Query\n\n```sparql\n{}\n```", sparql_query);
+    let query_display = code_block_preview("sparql", &sparql_query, 600);
 
-    // Format results based on the format type
-    let results_display = match result_format_str.to_lowercase().as_str() {
-        "csv" => format!("## Results\n\n```csv\n{}\n```", output_str),
-        "jsonld" | "json" => format!("## Results\n\n```json\n{}\n```", output_str),
-        "turtle" | "n3" => format!("## Results\n\n```turtle\n{}\n```", output_str),
-        "ntriples" | "nquads" => format!("## Results\n\n```ntriples\n{}\n```", output_str),
-        "rdfxml" => format!("## Results\n\n```xml\n{}\n```", output_str),
-        "trig" => format!("## Results\n\n```trig\n{}\n```", output_str),
-        _ => format!("## Results\n\n```\n{}\n```", output_str),
+    let results_language = match result_format_str.to_lowercase().as_str() {
+        "csv" => "csv",
+        "jsonld" | "json" => "json",
+        "turtle" | "n3" => "turtle",
+        "ntriples" | "nquads" => "ntriples",
+        "rdfxml" => "xml",
+        "trig" => "trig",
+        _ => "text",
     };
+    let results_display = code_block_preview(results_language, &output_str, DEFAULT_CONTENT_PREVIEW_CHARS);
 
     let mut result = CallToolResult::success(vec![
         Content::text(summary),
-        Content::text(query_display),
-        Content::text(results_display),
+        Content::text(format!("## Query Preview\n\n{}", query_display)),
+        Content::text(format!("## Results Preview\n\n{}", results_display)),
     ]);
     result.structured_content = Some(structured);
 

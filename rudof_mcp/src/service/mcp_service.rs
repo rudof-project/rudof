@@ -3,20 +3,24 @@
 //! This module contains the main [`RudofMcpService`] struct which implements
 //! the MCP `ServerHandler` trait and manages all server state.
 
-use std::{collections::HashMap, sync::Arc};
+use std::{future::Future, sync::Arc};
 use tokio::sync::{Mutex, RwLock};
 
-use crate::service::{prompts, state, tasks::TaskStore, tools};
+use crate::service::{logging::LogRateLimiter, prompts, state, tools};
 use rmcp::{
     RoleServer,
     handler::server::router::{prompt::PromptRouter, tool::ToolRouter},
-    model::{LoggingLevel, ResourceUpdatedNotificationParam},
+    model::{LoggingLevel},
     service::RequestContext,
 };
 use rudof_lib::{
     Rudof, RudofConfig,
     formats::{DataFormat, InputSpec, ResultDataFormat},
 };
+
+tokio::task_local! {
+    static REQUEST_CONTEXT: RequestContext<RoleServer>;
+}
 
 /// Errors that can occur when creating a [`RudofMcpService`].
 ///
@@ -53,33 +57,22 @@ impl std::error::Error for ServiceCreationError {}
 /// This struct implements the [`rmcp::ServerHandler`] trait and serves as the
 /// central coordinator for all MCP protocol interactions. It manages:
 ///
-/// - **Tool execution**: Routes tool calls to appropriate handlers for
-///   RDF validation, SPARQL queries, and data transformations
-/// - **Prompt templates**: Provides guided interaction templates for
-///   common validation and query workflows
+/// - **Tool execution**: Routes tool calls to appropriate handlers
+/// - **Prompt templates**: Provides guided interaction templates for common workflows
 /// - **Resource access**: Exposes RDF data through MCP's resource protocol
-///   with support for multiple serialization formats
-/// - **Resource subscriptions**: Clients can subscribe to resource URIs and
-///   receive notifications when resources are updated via `notify_resource_updated`
 /// - **Completions**: Provides context-aware autocompletion suggestions for
 ///   prompt arguments (formats, IRIs, shape labels) and resource URI templates
 /// - **Logging**: Sends structured log messages to MCP clients with
 ///   configurable severity filtering (RFC 5424 levels)
-/// - **Task management**: Supports async operations for long-running
-///   validations (SEP-1686)
 ///
 /// # Thread Safety
 ///
 /// The service is designed to be cloned and shared across async tasks.
 /// All mutable state is protected by `Arc<Mutex<_>>` or `Arc<RwLock<_>>`.
-/// Each cloned instance maintains its own request context, enabling
-/// concurrent tool executions without interference.
+/// Request-scoped context is carried via task-local storage to avoid cross-request contamination.
 #[derive(Clone)]
 pub struct RudofMcpService {
     /// Core Rudof instance wrapped in async-safe synchronization.
-    ///
-    /// This holds the RDF graph, loaded schemas, and validation state.
-    /// All operations that read or modify RDF data must acquire this lock.
     pub rudof: Arc<Mutex<Rudof>>,
 
     /// Router for dispatching tool calls to handler functions.
@@ -93,34 +86,16 @@ pub struct RudofMcpService {
     /// Built at service creation from prompt definitions in the `prompts` module.
     pub prompt_router: PromptRouter<RudofMcpService>,
 
-    /// Tracks resource subscriptions by URI.
-    ///
-    /// Maps resource URIs to lists of subscriber IDs. When a resource
-    /// changes, all subscribers receive update notifications.
-    pub resource_subscriptions: Arc<RwLock<HashMap<String, Vec<String>>>>,
-
     /// Current minimum log level for MCP logging notifications.
     ///
     /// Set via `logging/setLevel` requests. Only log messages at or
     /// above this severity level are sent to the client.
     pub current_min_log_level: Arc<RwLock<Option<LoggingLevel>>>,
 
-    /// Request context for the currently executing tool call.
+    /// Rate limiter for outbound MCP logging notifications.
     ///
-    /// This enables tools to send notifications (e.g., resource updates,
-    /// progress) during execution. Set at the start of `call_tool` and
-    /// cleared on completion.
-    ///
-    /// # Note
-    /// Each cloned service instance maintains its own context, enabling
-    /// concurrent tool executions without interference.
-    pub current_context: Arc<RwLock<Option<RequestContext<RoleServer>>>>,
-
-    /// Store for managing async tasks (SEP-1686).
-    ///
-    /// Tracks long-running operations like large dataset validations,
-    /// allowing clients to poll for status and retrieve results.
-    pub task_store: TaskStore,
+    /// Helps avoid flooding clients with `notifications/message`.
+    pub(crate) log_rate_limiter: Arc<Mutex<LogRateLimiter>>,
 }
 
 impl RudofMcpService {
@@ -173,11 +148,22 @@ impl RudofMcpService {
             rudof: Arc::new(Mutex::new(rudof)),
             tool_router: tools::tool_router_public(),
             prompt_router: prompts::prompt_router_public(),
-            resource_subscriptions: Arc::new(RwLock::new(HashMap::new())),
             current_min_log_level: Arc::new(RwLock::new(None)),
-            current_context: Arc::new(RwLock::new(None)),
-            task_store: TaskStore::new(),
+            log_rate_limiter: Arc::new(Mutex::new(LogRateLimiter::default())),
         })
+    }
+
+    /// Run a future with a request context bound to task-local storage.
+    pub async fn with_request_context<F, T>(context: RequestContext<RoleServer>, future: F) -> T
+    where
+        F: Future<Output = T>,
+    {
+        REQUEST_CONTEXT.scope(context, future).await
+    }
+
+    /// Returns the request context bound to the current async task, if any.
+    pub fn current_request_context() -> Option<RequestContext<RoleServer>> {
+        REQUEST_CONTEXT.try_with(Clone::clone).ok()
     }
 
     /// Persist the current RDF data state to the state file.
@@ -222,99 +208,6 @@ impl RudofMcpService {
 
         tracing::info!("Persisted {} triples to state file", triple_count);
         Ok(true)
-    }
-
-    /// Add a resource subscription
-    pub async fn subscribe_resource(&self, uri: String, subscriber_id: String) {
-        tracing::debug!(
-            uri = %uri,
-            subscriber_id = %subscriber_id,
-            "Subscribing to resource"
-        );
-        let mut subs = self.resource_subscriptions.write().await;
-        subs.entry(uri).or_insert_with(Vec::new).push(subscriber_id);
-    }
-
-    /// Remove a resource subscription
-    pub async fn unsubscribe_resource(&self, uri: &str, subscriber_id: &str) {
-        tracing::debug!(
-            uri = %uri,
-            subscriber_id = %subscriber_id,
-            "Unsubscribing from resource"
-        );
-        let mut subs = self.resource_subscriptions.write().await;
-        if let Some(subscribers) = subs.get_mut(uri) {
-            subscribers.retain(|id| id != subscriber_id);
-            if subscribers.is_empty() {
-                subs.remove(uri);
-            }
-        }
-    }
-
-    /// Get all subscribers for a resource
-    pub async fn get_resource_subscribers(&self, uri: &str) -> Vec<String> {
-        tracing::debug!(uri = %uri, "Getting resource subscribers");
-        let subs = self.resource_subscriptions.read().await;
-        subs.get(uri).cloned().unwrap_or_default()
-    }
-
-    /// Send a notification about resource updates using rmcp's notification system
-    pub async fn notify_resource_updated(&self, uri: String) {
-        tracing::debug!(uri = %uri, "Notifying resource updated");
-        let subscribers = self.get_resource_subscribers(&uri).await;
-
-        if subscribers.is_empty() {
-            tracing::debug!(uri = %uri, "No subscribers for resource update");
-            return;
-        }
-
-        // Use rmcp's notification system via the current RequestContext
-        let context_guard = self.current_context.read().await;
-        if let Some(context) = context_guard.as_ref() {
-            if let Err(e) = context
-                .peer
-                .notify_resource_updated(ResourceUpdatedNotificationParam { uri: uri.clone() })
-                .await
-            {
-                tracing::error!(
-                    uri = %uri,
-                    error = ?e,
-                    "Failed to send resource updated notification"
-                );
-            } else {
-                tracing::debug!(
-                    uri = %uri,
-                    subscriber_count = subscribers.len(),
-                    "Resource updated notification sent via rmcp"
-                );
-            }
-        } else {
-            tracing::debug!(
-                uri = %uri,
-                subscriber_count = subscribers.len(),
-                "Resource updated (no active request context)"
-            );
-        }
-    }
-
-    /// Send a notification that the resources list has changed
-    /// Future work!
-    #[allow(dead_code)]
-    pub async fn notify_resource_list_changed(&self) {
-        tracing::debug!("Notifying resource list changed");
-        let context_guard = self.current_context.read().await;
-        if let Some(context) = context_guard.as_ref() {
-            if let Err(e) = context.peer.notify_resource_list_changed().await {
-                tracing::error!(
-                    error = ?e,
-                    "Failed to send resource list changed notification"
-                );
-            } else {
-                tracing::debug!("Resource list changed notification sent via rmcp");
-            }
-        } else {
-            tracing::debug!("Resource list changed (no active request context)");
-        }
     }
 
     /// Get completion suggestions for prompt arguments

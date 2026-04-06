@@ -123,14 +123,14 @@ fn get_shacl_formats(uri: &str) -> Result<ReadResourceResult, McpError> {
         "default": "turtle"
     });
 
-    Ok(ReadResourceResult {
-        contents: vec![ResourceContents::TextResourceContents {
+    Ok(ReadResourceResult::new(vec![
+        ResourceContents::TextResourceContents {
             uri: uri.to_string(),
             mime_type: Some("application/json".to_string()),
             text: serde_json::to_string_pretty(&formats).unwrap(),
             meta: None,
-        }],
-    })
+        },
+    ]))
 }
 
 fn get_shacl_validation_result_formats(uri: &str) -> Result<ReadResourceResult, McpError> {
@@ -198,14 +198,14 @@ fn get_shacl_validation_result_formats(uri: &str) -> Result<ReadResourceResult, 
         "default": "details"
     });
 
-    Ok(ReadResourceResult {
-        contents: vec![ResourceContents::TextResourceContents {
+    Ok(ReadResourceResult::new(vec![
+        ResourceContents::TextResourceContents {
             uri: uri.to_string(),
             mime_type: Some("application/json".to_string()),
             text: serde_json::to_string_pretty(&formats).unwrap(),
             meta: None,
-        }],
-    })
+        },
+    ]))
 }
 
 /// Returns the available sort options for SHACL validation results.
@@ -251,12 +251,12 @@ fn get_shacl_validation_sort_options(uri: &str) -> Result<ReadResourceResult, Mc
         "default": "severity"
     });
 
-    Ok(ReadResourceResult {
-        contents: vec![ResourceContents::TextResourceContents {
+    Ok(ReadResourceResult::new(vec![
+        ResourceContents::TextResourceContents {
             uri: uri.to_string(),
             mime_type: Some("application/json".to_string()),
             text: serde_json::to_string_pretty(&options).unwrap(),
             meta: None,
-        }],
-    })
+        },
+    ]))
 }

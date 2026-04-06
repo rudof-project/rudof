@@ -103,8 +103,8 @@ fn test_logging_capability_advertised() {
         .logging
         .expect("Logging capability should be advertised");
     assert!(
-        logging.get("enabled").and_then(|v| v.as_bool()) == Some(true),
-        "Logging should be enabled"
+        logging.is_empty(),
+        "Logging capability should be declared as an object"
     );
 }
 

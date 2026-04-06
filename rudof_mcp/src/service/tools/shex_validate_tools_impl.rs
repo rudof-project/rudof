@@ -11,6 +11,8 @@ use serde_json::json;
 use std::io::Cursor;
 use std::str::FromStr;
 
+use super::helpers::*;
+
 /// Request parameters for ShEx validation.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ValidateShexRequest {
@@ -63,8 +65,6 @@ pub struct ValidateShexResponse {
     pub sort_by: String,
     /// Size of results in bytes
     pub result_size_bytes: usize,
-    /// Number of lines in result
-    pub result_lines: usize,
 }
 
 /// Validate RDF data against a ShEx schema.
@@ -97,65 +97,70 @@ pub async fn validate_shex_impl(
 ) -> Result<CallToolResult, McpError> {
     let mut rudof = service.rudof.lock().await;
 
-    let parsed_schema = InputSpec::from_str(&schema).map_err(|e| {
-        internal_error(
-            "Invalid schema input",
-            e.to_string(),
-            Some(json!({"operation":"validate_shex_impl", "phase":"parse_schema"})),
-        )
-    })?;
+    let shex_format_hint = format!("Supported values: {}", SHEX_FORMATS);
+    let shapemap_format_hint = format!("Supported values: {}", SHAPEMAP_FORMATS);
+    let result_format_hint = format!("Supported values: {}", SHEX_RESULT_FORMATS);
+    let sort_by_hint = format!("Supported values: {}", SHEX_SORT_BY_MODES);
 
-    let mut parsed_schema_format = None;
-    if let Some(schema_format) = &schema_format {
-        parsed_schema_format = Some(ShExFormat::from_str(schema_format).map_err(|e| {
-            internal_error(
-                "Invalid schema format",
-                e.to_string(),
-                Some(json!({"operation":"validate_shex_impl", "phase":"parse_schema_format"})),
-            )
-        })?);
-    }
+    let parsed_schema = match parse_value_with_hint(
+        &schema,
+        "schema",
+        "Provide valid schema content, URL, or file path",
+        InputSpec::from_str,
+    ) {
+        Ok(value) => value,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
 
-    let parsed_shapemap = InputSpec::from_str(&shapemap).map_err(|e| {
-        internal_error(
-            "Invalid shapemap input",
-            e.to_string(),
-            Some(json!({"operation":"validate_shex_impl", "phase":"parse_shapemap"})),
-        )
-    })?;
+    let parsed_schema_format = match parse_optional_value_with_hint(
+        schema_format.as_deref(),
+        "schema format",
+        &shex_format_hint,
+        ShExFormat::from_str,
+    ) {
+        Ok(value) => value,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
 
-    let mut parsed_shapemap_format = None;
-    if let Some(shapemap_format) = &shapemap_format {
-        parsed_shapemap_format = Some(ShapeMapFormat::from_str(shapemap_format).map_err(|e| {
-            internal_error(
-                "Invalid shapemap format",
-                e.to_string(),
-                Some(json!({"operation":"validate_shex_impl", "phase":"parse_shapemap_format"})),
-            )
-        })?);
-    }
+    let parsed_shapemap = match parse_value_with_hint(
+        &shapemap,
+        "shapemap",
+        "Provide a valid ShapeMap value, URL, or file path",
+        InputSpec::from_str,
+    ) {
+        Ok(value) => value,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
 
-    let mut parsed_result_format = None;
-    if let Some(result_format) = &result_format {
-        parsed_result_format = Some(ResultShExValidationFormat::from_str(result_format).map_err(|e| {
-            internal_error(
-                "Invalid result format",
-                e.to_string(),
-                Some(json!({"operation":"validate_shex_impl", "phase":"parse_result_format"})),
-            )
-        })?);
-    }
+    let parsed_shapemap_format = match parse_optional_value_with_hint(
+        shapemap_format.as_deref(),
+        "shapemap format",
+        &shapemap_format_hint,
+        ShapeMapFormat::from_str,
+    ) {
+        Ok(value) => value,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
 
-    let mut parsed_sort_by = None;
-    if let Some(sort_by) = &sort_by {
-        parsed_sort_by = Some(ShExValidationSortByMode::from_str(sort_by).map_err(|e| {
-            internal_error(
-                "Invalid sort order",
-                e.to_string(),
-                Some(json!({"operation":"validate_shex_impl", "phase":"parse_sort_by"})),
-            )
-        })?);
-    }
+    let parsed_result_format = match parse_optional_value_with_hint(
+        result_format.as_deref(),
+        "result format",
+        &result_format_hint,
+        ResultShExValidationFormat::from_str,
+    ) {
+        Ok(value) => value,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
+
+    let parsed_sort_by = match parse_optional_value_with_hint(
+        sort_by.as_deref(),
+        "sort_by",
+        &sort_by_hint,
+        ShExValidationSortByMode::from_str,
+    ) {
+        Ok(value) => value,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
 
     let mut shex_schema_loading = rudof.load_shex_schema(&parsed_schema);
     if let Some(base_schema) = base_schema.as_deref() {
@@ -224,7 +229,6 @@ pub async fn validate_shex_impl(
     })?;
     // Calculate metadata
     let result_size_bytes = output_str.len();
-    let result_lines = output_str.lines().count();
 
     let result_format_str = if let Some(result_format) = &parsed_result_format {
         result_format.to_string()
@@ -241,7 +245,6 @@ pub async fn validate_shex_impl(
         result_format: result_format_str.clone(),
         sort_by: sort_by_str.clone(),
         result_size_bytes,
-        result_lines,
     };
 
     let structured = serde_json::to_value(&response).map_err(|e| {
@@ -253,40 +256,35 @@ pub async fn validate_shex_impl(
     })?;
 
     let mut summary = format!(
-        "# ShEx Validation Results\n\n\
-        **Result Format:** {}\n\
-        **Sort By:** {}\n\
-        **Result Size:** {} bytes\n\
-        **Result Lines:** {}\n",
-        result_format_str, sort_by_str, result_size_bytes, result_lines
+        "ShEx validation completed.\nResult format: {}\nSort by: {}\nResult size: {} bytes",
+        result_format_str, sort_by_str, result_size_bytes,
     );
 
     // Add validation parameters if provided
     if let Some(node) = &maybe_node {
-        summary.push_str(&format!("**Node:** {}\n", node));
+        summary.push_str(&format!("\nNode: {}", node));
     }
     if let Some(shape) = &maybe_shape {
-        summary.push_str(&format!("**Shape:** {}\n", shape));
+        summary.push_str(&format!("\nShape: {}", shape));
     }
 
-    let schema_display = format!("## ShEx Schema\n\n```shex\n{}\n```", schema);
+    let schema_preview = code_block_preview("shex", &schema, 600);
 
-    // Format results based on the format type
-    let results_display = match result_format_str.to_lowercase().as_str() {
-        "turtle" | "n3" => format!("## Validation Results\n\n```turtle\n{}\n```", output_str),
-        "ntriples" | "nquads" => {
-            format!("## Validation Results\n\n```ntriples\n{}\n```", output_str)
-        },
-        "rdfxml" => format!("## Validation Results\n\n```xml\n{}\n```", output_str),
-        "trig" => format!("## Validation Results\n\n```trig\n{}\n```", output_str),
-        "json" | "jsonld" => format!("## Validation Results\n\n```json\n{}\n```", output_str),
-        _ => format!("## Validation Results\n\n```\n{}\n```", output_str),
+    let results_language = match result_format_str.to_lowercase().as_str() {
+        "csv" => "csv",
+        "json" | "jsonld" => "json",
+        "turtle" | "n3" => "turtle",
+        "ntriples" | "nquads" => "ntriples",
+        "rdfxml" => "xml",
+        "trig" => "trig",
+        _ => "text",
     };
+    let results_preview = code_block_preview(results_language, &output_str, DEFAULT_CONTENT_PREVIEW_CHARS);
 
     let mut result = CallToolResult::success(vec![
         Content::text(summary),
-        Content::text(schema_display),
-        Content::text(results_display),
+        Content::text(format!("## Schema Preview\n\n{}", schema_preview)),
+        Content::text(format!("## Results Preview\n\n{}", results_preview)),
     ]);
     result.structured_content = Some(structured);
 

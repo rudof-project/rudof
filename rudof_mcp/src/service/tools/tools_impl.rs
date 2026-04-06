@@ -15,6 +15,8 @@ use rmcp::{
     ErrorData as McpError, handler::server::router::tool::ToolRouter, handler::server::wrapper::Parameters,
     model::CallToolResult, tool, tool_router,
 };
+use schemars::JsonSchema;
+use std::sync::Arc;
 
 // Import the public helper functions from the implementation files
 use crate::service::tools::data_tools_impl::*;
@@ -146,7 +148,6 @@ pub fn tool_router_public() -> ToolRouter<RudofMcpService> {
 }
 
 /// Return the tools list annotated with helpful metadata
-/// Return the tools list annotated with helpful metadata.
 ///
 /// This function adds MCP tool annotations to each tool, providing clients
 /// with information about tool behavior:
@@ -159,109 +160,135 @@ pub fn tool_router_public() -> ToolRouter<RudofMcpService> {
 /// # Returns
 ///
 /// A vector of `Tool` definitions with annotations for all registered tools.
+fn output_schema_for<T: JsonSchema + 'static>(tool_name: &str) -> Arc<rmcp::model::JsonObject> {
+    rmcp::handler::server::tool::schema_for_output::<T>().unwrap_or_else(|e| {
+        tracing::error!(
+            tool_name = %tool_name,
+            error = %e,
+            "Invalid tool output schema; falling back to empty schema"
+        );
+        Arc::new(rmcp::model::JsonObject::default())
+    })
+}
+
+fn read_only_annotations() -> rmcp::model::ToolAnnotations {
+    rmcp::model::ToolAnnotations::new()
+        .read_only(true)
+        .destructive(false)
+        .idempotent(true)
+        .open_world(false)
+}
+
+fn apply_tool_metadata(
+    tool: &mut rmcp::model::Tool,
+    title: &str,
+    annotations: rmcp::model::ToolAnnotations,
+    task_support: rmcp::model::TaskSupport,
+    output_schema: Arc<rmcp::model::JsonObject>,
+) {
+    tool.title = Some(title.to_string());
+    tool.annotations = Some(annotations);
+    tool.execution = Some(rmcp::model::ToolExecution::from_raw(Some(task_support)));
+    tool.output_schema = Some(output_schema);
+}
+
 pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
     let mut tools = tool_router_public().list_all();
 
     for tool in tools.iter_mut() {
         match tool.name.as_ref() {
             "load_rdf_data_from_sources" => {
-                tool.title = Some("Load RDF Data from Sources".to_string());
-                tool.annotations = Some(
+                apply_tool_metadata(
+                    tool,
+                    "Load RDF Data from Sources",
                     rmcp::model::ToolAnnotations::new()
                         .read_only(false)
                         .destructive(false)
                         .idempotent(false)
                         .open_world(true),
+                    rmcp::model::TaskSupport::Forbidden,
+                    output_schema_for::<LoadRdfDataFromSourcesResponse>("load_rdf_data_from_sources"),
                 );
             },
             "export_rdf_data" => {
-                tool.title = Some("Export RDF Data".to_string());
-                tool.annotations = Some(
-                    rmcp::model::ToolAnnotations::new()
-                        .read_only(true)
-                        .destructive(false)
-                        .idempotent(true)
-                        .open_world(false),
+                apply_tool_metadata(
+                    tool,
+                    "Export RDF Data",
+                    read_only_annotations(),
+                    rmcp::model::TaskSupport::Forbidden,
+                    output_schema_for::<ExportRdfDataResponse>("export_rdf_data"),
                 );
             },
             "export_plantuml" => {
-                tool.title = Some("Export PlantUML Diagram".to_string());
-                tool.annotations = Some(
-                    rmcp::model::ToolAnnotations::new()
-                        .read_only(true)
-                        .destructive(false)
-                        .idempotent(true)
-                        .open_world(false),
+                apply_tool_metadata(
+                    tool,
+                    "Export PlantUML Diagram",
+                    read_only_annotations(),
+                    rmcp::model::TaskSupport::Forbidden,
+                    output_schema_for::<ExportPlantUmlResponse>("export_plantuml"),
                 );
             },
             "export_image" => {
-                tool.title = Some("Export RDF Image Visualization".to_string());
-                tool.annotations = Some(
-                    rmcp::model::ToolAnnotations::new()
-                        .read_only(true)
-                        .destructive(false)
-                        .idempotent(true)
-                        .open_world(false),
+                apply_tool_metadata(
+                    tool,
+                    "Export RDF Image Visualization",
+                    read_only_annotations(),
+                    rmcp::model::TaskSupport::Forbidden,
+                    output_schema_for::<ExportImageResponse>("export_image"),
                 );
             },
             "node_info" => {
-                tool.title = Some("Inspect RDF Node".to_string());
-                tool.annotations = Some(
-                    rmcp::model::ToolAnnotations::new()
-                        .read_only(true)
-                        .destructive(false)
-                        .idempotent(true)
-                        .open_world(false),
+                apply_tool_metadata(
+                    tool,
+                    "Inspect RDF Node",
+                    read_only_annotations(),
+                    rmcp::model::TaskSupport::Forbidden,
+                    output_schema_for::<NodeInfoResponse>("node_info"),
                 );
             },
             "execute_sparql_query" => {
-                tool.title = Some("Execute SPARQL Query".to_string());
-                tool.annotations = Some(
-                    rmcp::model::ToolAnnotations::new()
-                        .read_only(true)
-                        .destructive(false)
-                        .idempotent(true)
-                        .open_world(false),
+                apply_tool_metadata(
+                    tool,
+                    "Execute SPARQL Query",
+                    read_only_annotations(),
+                    rmcp::model::TaskSupport::Forbidden,
+                    output_schema_for::<QueryExecutionResponse>("execute_sparql_query"),
                 );
             },
             "show_shex" => {
-                tool.title = Some("Parse and Display ShEx Schema".to_string());
-                tool.annotations = Some(
-                    rmcp::model::ToolAnnotations::new()
-                        .read_only(true)
-                        .destructive(false)
-                        .idempotent(true)
-                        .open_world(false),
+                apply_tool_metadata(
+                    tool,
+                    "Parse and Display ShEx Schema",
+                    read_only_annotations(),
+                    rmcp::model::TaskSupport::Forbidden,
+                    output_schema_for::<ShowShexResponse>("show_shex"),
                 );
             },
             "check_shex" => {
-                tool.title = Some("Check ShEx Schema Well-Formedness".to_string());
-                tool.annotations = Some(
-                    rmcp::model::ToolAnnotations::new()
-                        .read_only(true)
-                        .destructive(false)
-                        .idempotent(true)
-                        .open_world(false),
+                apply_tool_metadata(
+                    tool,
+                    "Check ShEx Schema Well-Formedness",
+                    read_only_annotations(),
+                    rmcp::model::TaskSupport::Forbidden,
+                    output_schema_for::<CheckShexResponse>("check_shex"),
                 );
             },
             "validate_shex" => {
-                tool.title = Some("Validate RDF with ShEx".to_string());
-                tool.annotations = Some(
-                    rmcp::model::ToolAnnotations::new()
-                        .read_only(true)
-                        .destructive(false)
-                        .idempotent(true)
-                        .open_world(false),
+                apply_tool_metadata(
+                    tool,
+                    "Validate RDF with ShEx",
+                    read_only_annotations(),
+                    rmcp::model::TaskSupport::Forbidden,
+                    output_schema_for::<ValidateShexResponse>("validate_shex"),
                 );
             },
             "validate_shacl" => {
-                tool.title = Some("Validate RDF with SHACL".to_string());
-                tool.annotations = Some(
-                    rmcp::model::ToolAnnotations::new()
-                        .read_only(true)
-                        .destructive(false)
-                        .idempotent(true)
-                        .open_world(false),
+                apply_tool_metadata(
+                    tool,
+                    "Validate RDF with SHACL",
+                    read_only_annotations(),
+                    rmcp::model::TaskSupport::Forbidden,
+                    output_schema_for::<ValidateShaclResponse>("validate_shacl"),
                 );
             },
             _ => {
