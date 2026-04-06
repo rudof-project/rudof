@@ -210,13 +210,7 @@ pub async fn validate_shacl_impl(
         result_size_bytes,
     };
 
-    let structured = serde_json::to_value(&response).map_err(|e| {
-        internal_error(
-            "Serialization error",
-            e.to_string(),
-            Some(json!({"operation":"validate_shacl_impl", "phase":"serialize_response"})),
-        )
-    })?;
+    let structured = serialize_structured(&response, "validate_shacl_impl")?;
 
     let summary = format!(
         "# SHACL Validation Results\n\n\

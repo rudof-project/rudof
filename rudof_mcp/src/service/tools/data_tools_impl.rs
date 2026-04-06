@@ -42,6 +42,8 @@ pub struct LoadRdfDataFromSourcesResponse {
     pub sources_count: usize,
     /// RDF format that was used for parsing
     pub format: String,
+    /// Total number of triples currently loaded in the datastore
+    pub triple_count: usize,
 }
 
 /// Request parameters for exporting RDF data.
@@ -75,10 +77,12 @@ pub struct ExportImageRequest {
 /// Response containing the generated image.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ExportImageResponse {
-    /// Base64 encoded image data
-    pub image_data_base64: String,
     /// Image format used (svg or png)
     pub image_format: String,
+    /// MIME type for the generated image
+    pub mime_type: String,
+    /// Binary image size in bytes
+    pub size_bytes: usize,
 }
 
 /// Response containing a PlantUML diagram.
@@ -169,23 +173,46 @@ pub async fn load_rdf_data_from_sources_impl(
         )
     })?;
 
+    let mut count_buffer = Vec::new();
+    rudof
+        .serialize_data(&mut count_buffer)
+        .with_result_data_format(&ResultDataFormat::NTriples)
+        .execute()
+        .map_err(|e| {
+            internal_error(
+                "RDF count error",
+                e.to_string(),
+                Some(json!({"operation":"load_rdf_data_from_sources_impl","phase":"serialize_for_count"})),
+            )
+        })?;
+
+    let ntriples = String::from_utf8(count_buffer).map_err(|e| {
+        internal_error(
+            "Conversion error",
+            e.to_string(),
+            Some(json!({"operation":"load_rdf_data_from_sources_impl","phase":"utf8_count_conversion"})),
+        )
+    })?;
+    let triple_count = ntriples
+        .lines()
+        .filter(|line| {
+            let trimmed = line.trim();
+            !trimmed.is_empty() && !trimmed.starts_with('#')
+        })
+        .count();
+
     let sources_count = data_specs.len();
     let response = LoadRdfDataFromSourcesResponse {
         sources_count,
         format: data_format_str.to_string(),
+        triple_count,
     };
 
-    let structured = serde_json::to_value(&response).map_err(|e| {
-        internal_error(
-            "Serialization error",
-            e.to_string(),
-            Some(json!({"operation":"load_rdf_data_from_sources_impl", "phase":"serialize_response"})),
-        )
-    })?;
+    let structured = serialize_structured(&response, "load_rdf_data_from_sources_impl")?;
 
     let summary = format!(
-        "Successfully loaded RDF data from {} source(s) in {} format",
-        sources_count, data_format_str
+        "Successfully loaded RDF data from {} source(s) in {} format. Total triples: {}",
+        sources_count, data_format_str, triple_count
     );
 
     let mut result = CallToolResult::success(vec![
@@ -257,13 +284,7 @@ pub async fn export_rdf_data_impl(
         size_bytes,
     };
 
-    let structured = serde_json::to_value(&response).map_err(|e| {
-        internal_error(
-            "Serialization error",
-            e.to_string(),
-            Some(json!({"operation":"export_rdf_data_impl", "phase":"serialize_response"})),
-        )
-    })?;
+    let structured = serialize_structured(&response, "export_rdf_data_impl")?;
 
     let preview = code_block_preview(format_str, &str, DEFAULT_CONTENT_PREVIEW_CHARS);
     let summary = format!(
@@ -315,13 +336,7 @@ pub async fn export_plantuml_impl(
         size,
     };
 
-    let structured = serde_json::to_value(&response).map_err(|e| {
-        internal_error(
-            "Serialization error",
-            e.to_string(),
-            Some(json!({"operation":"export_plantuml_impl", "phase":"serialize_response"})),
-        )
-    })?;
+    let structured = serialize_structured(&response, "export_plantuml_impl")?;
 
     let preview = code_block_preview("plantuml", &str, DEFAULT_CONTENT_PREVIEW_CHARS);
     let summary = format!("PlantUML export completed. Size: {} chars", size);
@@ -384,17 +399,12 @@ pub async fn export_image_impl(
     };
 
     let response = ExportImageResponse {
-        image_data_base64: base64_data.clone(),
         image_format: image_format.clone(),
+        mime_type: mime_type.to_string(),
+        size_bytes,
     };
 
-    let structured = serde_json::to_value(&response).map_err(|e| {
-        internal_error(
-            "Serialization error",
-            e.to_string(),
-            Some(json!({"operation":"export_image_impl", "phase":"serialize_response"})),
-        )
-    })?;
+    let structured = serialize_structured(&response, "export_image_impl")?;
 
     let summary = format!(
         "Image generated successfully ({} format, {} bytes)",

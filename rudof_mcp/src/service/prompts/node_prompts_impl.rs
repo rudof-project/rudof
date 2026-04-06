@@ -48,7 +48,7 @@ pub async fn explore_rdf_node_prompt_impl(
         PromptMessage::new_text(
             PromptMessageRole::Assistant,
             format!(
-                "# 🔍 Exploring RDF Node: `{}`\n\n\
+                "# Exploring RDF Node: `{}`\n\n\
                 I'll analyze this node in the loaded RDF graph to discover its relationships and structure.\n\n\
                 ## Query Configuration\n\
                 - **Node:** `{}`\n\

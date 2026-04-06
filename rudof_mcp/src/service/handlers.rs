@@ -14,41 +14,14 @@
 
 use crate::service::logging::{LogData, send_log};
 use crate::service::mcp_service::RudofMcpService;
-use crate::service::pagination::parse_cursor;
-use crate::service::{errors::*, resource_templates, resources::*};
+use crate::service::pagination::{DEFAULT_PAGE_SIZE, parse_cursor};
+use crate::service::{resource_templates, resources::*};
 use rmcp::{
     ErrorData as McpError, RoleServer, ServerHandler,
     handler::server::tool::ToolCallContext,
     model::*,
     service::{NotificationContext, RequestContext},
 };
-use serde_json::json;
-
-fn task_not_found_error(task_id: &str) -> McpError {
-    invalid_params_error(
-        "Invalid task id",
-        format!("Task not found: {task_id}"),
-        Some(json!({"param":"task_id","value":task_id})),
-    )
-}
-
-fn task_result_not_ready_error(task_id: &str, status: TaskStatus) -> McpError {
-    invalid_request_error(
-        "Task result is not available yet",
-        format!(
-            "Task status is {status:?}. Poll tasks/get until status is Completed or Failed."
-        ),
-        Some(json!({"task_id":task_id, "status":format!("{status:?}")})),
-    )
-}
-
-fn task_cancel_not_allowed_error(task_id: &str, status: TaskStatus) -> McpError {
-    invalid_request_error(
-        "Task cannot be cancelled",
-        format!("Task {task_id} is already in terminal state {status:?}"),
-        Some(json!({"task_id":task_id, "status":format!("{status:?}")})),
-    )
-}
 
 impl ServerHandler for RudofMcpService {
     /// Returns server metadata including protocol version, capabilities, and implementation info.
@@ -97,7 +70,7 @@ impl ServerHandler for RudofMcpService {
 
         // Handle pagination if requested
         let (tools, next_cursor) = if let Some(params) = request {
-            let page_size = 20;
+            let page_size = DEFAULT_PAGE_SIZE;
             let cursor = parse_cursor(params.cursor, all_tools.len(), "tools/list")?;
 
             let start = cursor.min(all_tools.len());
@@ -133,7 +106,7 @@ impl ServerHandler for RudofMcpService {
 
         // Handle pagination if requested
         let (prompts, next_cursor) = if let Some(params) = request {
-            let page_size = 20;
+            let page_size = DEFAULT_PAGE_SIZE;
             let cursor = parse_cursor(params.cursor, all_prompts.len(), "prompts/list")?;
 
             let start = cursor.min(all_prompts.len());
@@ -161,13 +134,13 @@ impl ServerHandler for RudofMcpService {
     /// Return a list of available resources
     async fn list_resources(
         &self,
-        _request: Option<PaginatedRequestParams>,
+        request: Option<PaginatedRequestParams>,
         context: RequestContext<RoleServer>,
     ) -> Result<ListResourcesResult, McpError> {
         tracing::debug!("Listing available resources");
 
         // Delegate to resources module
-        list_resources(_request, context).await
+        list_resources(request, context).await
     }
 
     /// Read a resource by URI
@@ -323,7 +296,10 @@ impl ServerHandler for RudofMcpService {
         request: CompleteRequestParams,
         _context: RequestContext<RoleServer>,
     ) -> Result<CompleteResult, McpError> {
-        // Extract the reference information and argument name
+        // Extract the reference information and argument name.
+        // Note: rmcp 0.14 Reference only exposes Prompt and Resource variants.
+        // Tool argument completions are handled via get_tool_argument_completions
+        // when rmcp adds a Reference::Tool variant.
         let completions = match &request.r#ref {
             Reference::Prompt(prompt_ref) => {
                 self.get_prompt_argument_completions(&prompt_ref.name, &request.argument.name)

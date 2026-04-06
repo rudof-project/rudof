@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ValidationGuidePromptArgs {
     /// Validation technology to use: 'shex' or 'shacl'
-    pub technology: String,
+    pub technology: ValidationTechnology,
 
     /// Optional: specific node to validate (IRI or prefixed name)
     pub node: Option<String>,
@@ -23,19 +23,34 @@ pub struct ValidationGuidePromptArgs {
     pub shape: Option<String>,
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum ValidationTechnology {
+    Shex,
+    Shacl,
+}
+
 /// Guide users through validating RDF data against schemas.
 pub async fn validation_guide_prompt_impl(
     Parameters(args): Parameters<ValidationGuidePromptArgs>,
 ) -> Result<GetPromptResult, McpError> {
-    let technology = args.technology.to_lowercase();
-    let node_display = args.node.as_deref().unwrap_or("<not specified>");
-    let shape_display = args.shape.as_deref().unwrap_or("<not specified>");
+    let ValidationGuidePromptArgs {
+        technology,
+        node,
+        shape,
+    } = args;
 
-    let (tool_name, schema_formats, example_schema, result_formats) = match technology.as_str() {
-        "shex" => (
-            "validate_shex",
-            "shexc, shexj, turtle",
-            r#"prefix : <http://example.org/>
+    let node_display = node.as_deref().unwrap_or("<not specified>");
+    let shape_display = shape.as_deref().unwrap_or("<not specified>");
+
+    let (technology_key, technology_label, tool_name, schema_formats, example_schema, result_formats) =
+        match technology {
+            ValidationTechnology::Shex => (
+                "shex",
+                "SHEX",
+                "validate_shex",
+                "shexc, shexj, turtle",
+                r#"prefix : <http://example.org/>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
 :Person {
@@ -43,12 +58,14 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
   :age xsd:integer ? ;
   :knows @:Person *
 }"#,
-            "compact, details, json, csv",
-        ),
-        "shacl" => (
-            "validate_shacl",
-            "turtle, ntriples, rdfxml, jsonld",
-            r#"@prefix sh: <http://www.w3.org/ns/shacl#> .
+                "compact, details, json, csv",
+            ),
+            ValidationTechnology::Shacl => (
+                "shacl",
+                "SHACL",
+                "validate_shacl",
+                "turtle, ntriples, rdfxml, jsonld",
+                r#"@prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix : <http://example.org/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
@@ -64,22 +81,16 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
     sh:datatype xsd:integer ;
     sh:maxCount 1 ;
   ] ."#,
-            "compact, details, minimal, json, csv, turtle",
-        ),
-        _ => {
-            return Err(McpError::invalid_params(
-                "Unsupported validation technology. Use 'shex' or 'shacl'.",
-                None,
-            ));
-        },
-    };
+                "compact, details, minimal, json, csv, turtle",
+            ),
+        };
 
     let messages = vec![
         PromptMessage::new_text(
             PromptMessageRole::User,
             format!(
                 "Guide me through {} validation.\nNode: {}\nShape: {}",
-                technology.to_uppercase(),
+                technology_label,
                 node_display,
                 shape_display
             ),
@@ -87,7 +98,7 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
         PromptMessage::new_text(
             PromptMessageRole::Assistant,
             format!(
-                "# ✅ {} Validation Guide\n\n\
+                "# {} Validation Guide\n\n\
                 I'll help you validate your RDF data using **{}**.\n\n\
                 ## Prerequisites\n\n\
                 1. **Load your RDF data first** using `load_rdf_data_from_sources`\n\
@@ -119,19 +130,19 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
                 - Use `compact` for machine-readable summaries\n\
                 - Check specific nodes with the `node` parameter\n\n\
                 Would you like me to help you write a schema or run the validation?",
-                technology.to_uppercase(),
-                technology.to_uppercase(),
-                technology,
-                if technology == "shex" { "shexc" } else { "turtle" },
+                technology_label,
+                technology_label,
+                technology_key,
+                if technology_key == "shex" { "shexc" } else { "turtle" },
                 example_schema,
                 tool_name,
-                if technology == "shex" { "shexc" } else { "turtle" },
-                if let Some(n) = args.node.as_deref() {
+                if technology_key == "shex" { "shexc" } else { "turtle" },
+                if let Some(n) = node.as_deref() {
                     format!(",\n  \"maybe_node\": \"{n}\"")
                 } else {
                     String::new()
                 },
-                if let Some(s) = args.shape.as_deref() {
+                if let Some(s) = shape.as_deref() {
                     format!(",\n  \"maybe_shape\": \"{s}\",\n",)
                 } else {
                     ",\n".to_string()
@@ -144,13 +155,13 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
     Ok(GetPromptResult::new(messages).with_description(format!(
         "{} validation guide{}{}",
-        technology.to_uppercase(),
-        if let Some(n) = args.node.as_deref() {
+        technology_label,
+        if let Some(n) = node.as_deref() {
             format!(" for node {n}")
         } else {
             String::new()
         },
-        if let Some(s) = args.shape.as_deref() {
+        if let Some(s) = shape.as_deref() {
             format!(" against shape {s}")
         } else {
             String::new()
@@ -158,131 +169,11 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
     )))
 }
 
-/// Arguments for the SPARQL query builder prompt.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-pub struct SparqlBuilderPromptArgs {
-    /// What kind of query to build: 'select', 'construct', 'ask', 'describe', or describe your goal
-    pub query_type: String,
-
-    /// Optional: natural language description of what you want to query
-    pub description: Option<String>,
-}
-
-/// Guide users through building SPARQL queries.
-pub async fn sparql_builder_prompt_impl(
-    Parameters(args): Parameters<SparqlBuilderPromptArgs>,
-) -> Result<GetPromptResult, McpError> {
-    let query_type = args.query_type.to_lowercase();
-    let description = args.description.unwrap_or_else(|| "explore the data".to_string());
-
-    let (query_template, explanation) = match query_type.as_str() {
-        "select" => (
-            r#"SELECT ?subject ?predicate ?object
-WHERE {
-  ?subject ?predicate ?object .
-  # Add filters here
-  # FILTER(?predicate = <http://example.org/name>)
-}
-LIMIT 100"#,
-            "SELECT queries return tabular results (variable bindings).",
-        ),
-        "construct" => (
-            r#"CONSTRUCT {
-  ?s ?p ?o .
-}
-WHERE {
-  ?s ?p ?o .
-  # Add patterns to match
-}
-LIMIT 100"#,
-            "CONSTRUCT queries return new RDF triples.",
-        ),
-        "ask" => (
-            r#"ASK {
-  ?s a <http://example.org/Person> .
-}"#,
-            "ASK queries return true/false based on pattern existence.",
-        ),
-        "describe" => (
-            r#"DESCRIBE <http://example.org/resource>"#,
-            "DESCRIBE queries return all triples about a resource.",
-        ),
-        _ => (
-            r#"# Based on your description, here are some useful patterns:
-
-# Find all types
-SELECT DISTINCT ?type WHERE { ?s a ?type }
-
-# Find instances of a type
-SELECT ?instance WHERE { ?instance a <Type> }
-
-# Find properties of a subject
-SELECT ?p ?o WHERE { <Subject> ?p ?o }
-
-# Count triples
-SELECT (COUNT(*) AS ?count) WHERE { ?s ?p ?o }"#,
-            "Here are common query patterns you can adapt.",
-        ),
-    };
-
-    let messages = vec![
-        PromptMessage::new_text(
-            PromptMessageRole::User,
-            format!(
-                "Help me build a SPARQL query.\nType: {}\nGoal: {}",
-                query_type, description
-            ),
-        ),
-        PromptMessage::new_text(
-            PromptMessageRole::Assistant,
-            format!(
-                "# 🔍 SPARQL Query Builder\n\n\
-                I'll help you build a **{}** query to **{}**.\n\n\
-                ## Query Template\n\n\
-                {}\n\n\
-                ```sparql\n\
-                {}\n\
-                ```\n\n\
-                ## How to Execute\n\n\
-                Use the `execute_sparql_query` tool:\n\
-                ```json\n\
-                {{\n\
-                  \"query\": \"<your SPARQL query>\",\n\
-                  \"result_format\": \"internal\"\n\
-                }}\n\
-                ```\n\n\
-                Or describe your query in natural language:\n\
-                ```json\n\
-                {{\n\
-                  \"query_natural_language\": \"{}\"\n\
-                }}\n\
-                ```\n\n\
-                ## Result Format Options\n\
-                - `internal`: Human-readable format (default)\n\
-                - `csv`: Comma-separated values\n\
-                - `json-ld`: JSON-LD format\n\
-                - `turtle`: Turtle format (for CONSTRUCT)\n\n\
-                ## Common SPARQL Patterns\n\n\
-                | Pattern | Description |\n\
-                |---------|-------------|\n\
-                | `?s a ?type` | Find types |\n\
-                | `?s ?p ?o` | Match any triple |\n\
-                | `FILTER(...)` | Add conditions |\n\
-                | `OPTIONAL {{...}}` | Optional patterns |\n\
-                | `UNION {{...}}` | Alternative patterns |\n\
-                | `GROUP BY` | Aggregate results |\n\n\
-                Would you like me to refine this query or help with a specific pattern?",
-                query_type.to_uppercase(),
-                description,
-                explanation,
-                query_template,
-                description,
-            ),
-        ),
-    ];
-
-    Ok(GetPromptResult::new(messages).with_description(format!(
-        "SPARQL {} query builder: {}",
-        query_type, description
-    )))
+#[serde(rename_all = "lowercase")]
+pub enum StandardSparqlQueryType {
+    Select,
+    Construct,
+    Ask,
+    Describe,
 }

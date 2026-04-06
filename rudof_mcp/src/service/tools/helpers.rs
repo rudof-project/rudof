@@ -1,4 +1,7 @@
-use rmcp::{model::CallToolResult, model::Content};
+use crate::service::errors::internal_error;
+use rmcp::{ErrorData as McpError, model::CallToolResult, model::Content};
+use serde::Serialize;
+use serde_json::{Map, Value, json};
 use std::str::FromStr;
 
 /// Result type for parsing operations that may produce tool execution errors.
@@ -123,6 +126,108 @@ where
         .transpose()
 }
 
+/// Serialize tool response objects into MCP structured content.
+pub fn serialize_structured<T: Serialize>(value: &T, operation: &str) -> Result<Value, McpError> {
+    serde_json::to_value(value).map_err(|e| {
+        internal_error(
+            "Serialization error",
+            e.to_string(),
+            Some(json!({
+                "operation": operation,
+                "phase": "serialize_response"
+            })),
+        )
+    })
+}
+
+/// Shared metadata for URI format resources.
+#[derive(Debug, Clone, Copy)]
+pub struct FormatEntry {
+    pub value: &'static str,
+    pub name: &'static str,
+    pub mime_type: Option<&'static str>,
+    pub extensions: &'static [&'static str],
+    pub description: &'static str,
+}
+
+/// Shared metadata for mode/sort option resources.
+#[derive(Debug, Clone, Copy)]
+pub struct OptionEntry {
+    pub value: &'static str,
+    pub name: &'static str,
+    pub description: &'static str,
+}
+
+/// Shared metadata for query type resources.
+#[derive(Debug, Clone, Copy)]
+pub struct QueryTypeEntry {
+    pub name: &'static str,
+    pub description: &'static str,
+    pub example: &'static str,
+}
+
+fn format_entry_to_json(entry: &FormatEntry) -> Value {
+    let mut obj = Map::new();
+    obj.insert("name".to_string(), json!(entry.name));
+    obj.insert("value".to_string(), json!(entry.value));
+    obj.insert("description".to_string(), json!(entry.description));
+    if let Some(mime_type) = entry.mime_type {
+        obj.insert("mime_type".to_string(), json!(mime_type));
+    }
+    if !entry.extensions.is_empty() {
+        obj.insert("extensions".to_string(), json!(entry.extensions));
+    }
+    Value::Object(obj)
+}
+
+fn option_entry_to_json(entry: &OptionEntry) -> Value {
+    json!({
+        "name": entry.name,
+        "value": entry.value,
+        "description": entry.description,
+    })
+}
+
+fn query_type_entry_to_json(entry: &QueryTypeEntry) -> Value {
+    json!({
+        "name": entry.name,
+        "description": entry.description,
+        "example": entry.example,
+    })
+}
+
+pub fn format_entries_json(entries: &[FormatEntry], default: &str) -> Value {
+    let formats = entries
+        .iter()
+        .map(format_entry_to_json)
+        .collect::<Vec<_>>();
+    json!({
+        "formats": formats,
+        "default": default,
+    })
+}
+
+pub fn option_entries_json(key: &str, entries: &[OptionEntry], default: &str) -> Value {
+    let values = entries
+        .iter()
+        .map(option_entry_to_json)
+        .collect::<Vec<_>>();
+    json!({
+        key: values,
+        "default": default,
+    })
+}
+
+pub fn query_type_entries_json(entries: &[QueryTypeEntry]) -> Value {
+    let values = entries
+        .iter()
+        .map(query_type_entry_to_json)
+        .collect::<Vec<_>>();
+    json!({
+        "query_types": values,
+    })
+}
+
 /// Default maximum characters included in text previews sent in `content`.
 pub const DEFAULT_CONTENT_PREVIEW_CHARS: usize = 1200;
 
@@ -146,13 +251,207 @@ pub fn code_block_preview(language: &str, text: &str, max_chars: usize) -> Strin
     block
 }
 
+/// Supported RDF formats as a slice for completions.
+pub const RDF_FORMAT_LIST: &[&str] = &["turtle", "ntriples", "rdfxml", "jsonld", "trig", "nquads", "n3"];
+
+pub const RDF_FORMAT_ENTRIES: &[FormatEntry] = &[
+    FormatEntry {
+        name: "Turtle",
+        value: "turtle",
+        mime_type: Some("text/turtle"),
+        extensions: &[".ttl"],
+        description: "Terse RDF Triple Language - human-readable format",
+    },
+    FormatEntry {
+        name: "N-Triples",
+        value: "ntriples",
+        mime_type: Some("application/n-triples"),
+        extensions: &[".nt"],
+        description: "Line-based plain text format for RDF",
+    },
+    FormatEntry {
+        name: "RDF/XML",
+        value: "rdfxml",
+        mime_type: Some("application/rdf+xml"),
+        extensions: &[".rdf", ".xml"],
+        description: "XML-based RDF serialization",
+    },
+    FormatEntry {
+        name: "JSON-LD",
+        value: "jsonld",
+        mime_type: Some("application/ld+json"),
+        extensions: &[".jsonld"],
+        description: "JSON format with linked data support",
+    },
+    FormatEntry {
+        name: "TriG",
+        value: "trig",
+        mime_type: Some("application/trig"),
+        extensions: &[".trig"],
+        description: "Extension of Turtle for named graphs",
+    },
+    FormatEntry {
+        name: "N-Quads",
+        value: "nquads",
+        mime_type: Some("application/n-quads"),
+        extensions: &[".nq"],
+        description: "Extension of N-Triples for named graphs",
+    },
+    FormatEntry {
+        name: "N3",
+        value: "n3",
+        mime_type: Some("text/n3"),
+        extensions: &[".n3"],
+        description: "Notation3 - superset of Turtle",
+    },
+];
+
 /// Supported RDF formats as a constant for documentation and hints.
 pub const RDF_FORMATS: &str = "turtle, ntriples, rdfxml, jsonld, trig, nquads, n3";
+
+/// Supported ShEx formats as a slice for completions.
+pub const SHEX_FORMAT_LIST: &[&str] =
+    &["shexc", "shexj", "turtle", "ntriples", "rdfxml", "jsonld", "trig", "n3", "nquads"];
+
+pub const SHEX_FORMAT_ENTRIES: &[FormatEntry] = &[
+    FormatEntry {
+        name: "ShExC",
+        value: "shexc",
+        mime_type: Some("text/shex"),
+        extensions: &[".shex"],
+        description: "ShEx Compact Syntax - human-readable format (default)",
+    },
+    FormatEntry {
+        name: "ShExJ",
+        value: "shexj",
+        mime_type: Some("application/shex+json"),
+        extensions: &[".json"],
+        description: "ShEx JSON format",
+    },
+    FormatEntry {
+        name: "Internal",
+        value: "internal",
+        mime_type: None,
+        extensions: &[],
+        description: "Internal format for ShEx schemas",
+    },
+    FormatEntry {
+        name: "Simple",
+        value: "simple",
+        mime_type: None,
+        extensions: &[],
+        description: "Simplified ShEx format",
+    },
+    FormatEntry {
+        name: "JSON",
+        value: "json",
+        mime_type: Some("application/json"),
+        extensions: &[".json"],
+        description: "Plain JSON format",
+    },
+    FormatEntry {
+        name: "JSON-LD",
+        value: "jsonld",
+        mime_type: Some("application/ld+json"),
+        extensions: &[".jsonld"],
+        description: "JSON-LD format with linked data support",
+    },
+    FormatEntry {
+        name: "Turtle",
+        value: "turtle",
+        mime_type: Some("text/turtle"),
+        extensions: &[".ttl"],
+        description: "Terse RDF Triple Language",
+    },
+    FormatEntry {
+        name: "N-Triples",
+        value: "ntriples",
+        mime_type: Some("application/n-triples"),
+        extensions: &[".nt"],
+        description: "Line-based plain text format for RDF",
+    },
+    FormatEntry {
+        name: "RDF/XML",
+        value: "rdfxml",
+        mime_type: Some("application/rdf+xml"),
+        extensions: &[".rdf", ".xml"],
+        description: "XML-based RDF serialization",
+    },
+    FormatEntry {
+        name: "TriG",
+        value: "trig",
+        mime_type: Some("application/trig"),
+        extensions: &[".trig"],
+        description: "Extension of Turtle for named graphs",
+    },
+    FormatEntry {
+        name: "N3",
+        value: "n3",
+        mime_type: Some("text/n3"),
+        extensions: &[".n3"],
+        description: "Notation3 - superset of Turtle with additional features",
+    },
+    FormatEntry {
+        name: "N-Quads",
+        value: "nquads",
+        mime_type: Some("application/n-quads"),
+        extensions: &[".nq"],
+        description: "Extension of N-Triples for named graphs",
+    },
+];
 
 /// Supported ShEx formats as a constant for documentation and hints.
 #[allow(dead_code)]
 pub const SHEX_FORMATS: &str =
     "shexc, shexj, turtle, ntriples, rdfxml, trig, n3, nquads, json, jsonld, internal, simple";
+
+/// Supported SHACL formats as a slice for completions.
+pub const SHACL_FORMAT_LIST: &[&str] = &["turtle", "jsonld", "rdfxml", "trig", "nquads", "json"];
+
+pub const SHACL_FORMAT_ENTRIES: &[FormatEntry] = &[
+    FormatEntry {
+        name: "Turtle",
+        value: "turtle",
+        mime_type: Some("text/turtle"),
+        extensions: &[".ttl"],
+        description: "Turtle serialization for SHACL shapes (default)",
+    },
+    FormatEntry {
+        name: "JSON-LD",
+        value: "jsonld",
+        mime_type: Some("application/ld+json"),
+        extensions: &[".jsonld"],
+        description: "JSON-LD representation of SHACL shapes",
+    },
+    FormatEntry {
+        name: "RDF/XML",
+        value: "rdfxml",
+        mime_type: Some("application/rdf+xml"),
+        extensions: &[".rdf", ".xml"],
+        description: "RDF/XML serialization",
+    },
+    FormatEntry {
+        name: "TriG",
+        value: "trig",
+        mime_type: Some("application/trig"),
+        extensions: &[".trig"],
+        description: "TriG format for named graphs",
+    },
+    FormatEntry {
+        name: "N-Quads",
+        value: "nquads",
+        mime_type: Some("application/n-quads"),
+        extensions: &[".nq"],
+        description: "N-Quads format",
+    },
+    FormatEntry {
+        name: "JSON",
+        value: "json",
+        mime_type: Some("application/json"),
+        extensions: &[".json"],
+        description: "Plain JSON (when applicable)",
+    },
+];
 
 /// Supported SHACL formats as a constant for documentation and hints.
 #[allow(dead_code)]
@@ -168,6 +467,229 @@ pub const IMAGE_FORMATS: &str = "svg, png";
 /// Supported SPARQL result formats as a constant for documentation and hints.
 pub const SPARQL_RESULT_FORMATS: &str = "internal, turtle, ntriples, json-ld, rdf-xml, csv, trig, n3, nquads";
 
+pub const SPARQL_QUERY_RESULT_FORMAT_ENTRIES: &[FormatEntry] = &[
+    FormatEntry {
+        name: "Internal",
+        value: "internal",
+        mime_type: None,
+        extensions: &[],
+        description: "Internal format for query results",
+    },
+    FormatEntry {
+        name: "JSON",
+        value: "json",
+        mime_type: Some("application/sparql-results+json"),
+        extensions: &[".srj", ".json"],
+        description: "SPARQL JSON Results format",
+    },
+    FormatEntry {
+        name: "XML",
+        value: "xml",
+        mime_type: Some("application/sparql-results+xml"),
+        extensions: &[".srx", ".xml"],
+        description: "SPARQL XML Results format",
+    },
+    FormatEntry {
+        name: "CSV",
+        value: "csv",
+        mime_type: Some("text/csv"),
+        extensions: &[".csv"],
+        description: "Comma-separated values format",
+    },
+    FormatEntry {
+        name: "TSV",
+        value: "tsv",
+        mime_type: Some("text/tab-separated-values"),
+        extensions: &[".tsv"],
+        description: "Tab-separated values format",
+    },
+    FormatEntry {
+        name: "Turtle",
+        value: "turtle",
+        mime_type: Some("text/turtle"),
+        extensions: &[".ttl"],
+        description: "Terse RDF Triple Language (for CONSTRUCT/DESCRIBE)",
+    },
+    FormatEntry {
+        name: "N-Triples",
+        value: "ntriples",
+        mime_type: Some("application/n-triples"),
+        extensions: &[".nt"],
+        description: "N-Triples format (for CONSTRUCT/DESCRIBE)",
+    },
+    FormatEntry {
+        name: "RDF/XML",
+        value: "rdfxml",
+        mime_type: Some("application/rdf+xml"),
+        extensions: &[".rdf"],
+        description: "RDF/XML format (for CONSTRUCT/DESCRIBE)",
+    },
+    FormatEntry {
+        name: "TriG",
+        value: "trig",
+        mime_type: Some("application/trig"),
+        extensions: &[".trig"],
+        description: "Extension of Turtle for named graphs",
+    },
+];
+
+/// Supported validation result formats as a slice for completions (shared by ShEx and SHACL).
+pub const RESULT_FORMAT_LIST: &[&str] =
+    &["details", "compact", "json", "turtle", "ntriples", "rdfxml", "trig", "n3", "nquads"];
+
+pub const SHEX_VALIDATION_RESULT_FORMAT_ENTRIES: &[FormatEntry] = &[
+    FormatEntry {
+        name: "Details",
+        value: "details",
+        mime_type: None,
+        extensions: &[],
+        description: "Detailed validation results with full error information (default)",
+    },
+    FormatEntry {
+        name: "Compact",
+        value: "compact",
+        mime_type: None,
+        extensions: &[],
+        description: "Compact human-readable validation results",
+    },
+    FormatEntry {
+        name: "JSON",
+        value: "json",
+        mime_type: Some("application/json"),
+        extensions: &[],
+        description: "Structured JSON validation results",
+    },
+    FormatEntry {
+        name: "CSV",
+        value: "csv",
+        mime_type: Some("text/csv"),
+        extensions: &[".csv"],
+        description: "Validation results in CSV format",
+    },
+    FormatEntry {
+        name: "Turtle",
+        value: "turtle",
+        mime_type: Some("text/turtle"),
+        extensions: &[".ttl"],
+        description: "Validation results in Turtle format",
+    },
+    FormatEntry {
+        name: "N-Triples",
+        value: "ntriples",
+        mime_type: Some("application/n-triples"),
+        extensions: &[".nt"],
+        description: "Validation results in N-Triples format",
+    },
+    FormatEntry {
+        name: "RDF/XML",
+        value: "rdfxml",
+        mime_type: Some("application/rdf+xml"),
+        extensions: &[".rdf", ".xml"],
+        description: "Validation results in RDF/XML format",
+    },
+    FormatEntry {
+        name: "TriG",
+        value: "trig",
+        mime_type: Some("application/trig"),
+        extensions: &[".trig"],
+        description: "Validation results in TriG format",
+    },
+    FormatEntry {
+        name: "N3",
+        value: "n3",
+        mime_type: Some("text/n3"),
+        extensions: &[".n3"],
+        description: "Validation results in Notation3 format",
+    },
+    FormatEntry {
+        name: "N-Quads",
+        value: "nquads",
+        mime_type: Some("application/n-quads"),
+        extensions: &[".nq"],
+        description: "Validation results in N-Quads format",
+    },
+];
+
+pub const SHACL_VALIDATION_RESULT_FORMAT_ENTRIES: &[FormatEntry] = &[
+    FormatEntry {
+        name: "Details",
+        value: "details",
+        mime_type: None,
+        extensions: &[],
+        description: "Detailed validation results with full error information (default)",
+    },
+    FormatEntry {
+        name: "Compact",
+        value: "compact",
+        mime_type: None,
+        extensions: &[],
+        description: "Compact human-readable validation results",
+    },
+    FormatEntry {
+        name: "Minimal",
+        value: "minimal",
+        mime_type: None,
+        extensions: &[],
+        description: "Minimal validation output",
+    },
+    FormatEntry {
+        name: "JSON",
+        value: "json",
+        mime_type: Some("application/json"),
+        extensions: &[],
+        description: "Structured JSON validation results",
+    },
+    FormatEntry {
+        name: "CSV",
+        value: "csv",
+        mime_type: Some("text/csv"),
+        extensions: &[".csv"],
+        description: "Validation results in CSV format",
+    },
+    FormatEntry {
+        name: "Turtle",
+        value: "turtle",
+        mime_type: Some("text/turtle"),
+        extensions: &[".ttl"],
+        description: "Validation results in Turtle format",
+    },
+    FormatEntry {
+        name: "N-Triples",
+        value: "ntriples",
+        mime_type: Some("application/n-triples"),
+        extensions: &[".nt"],
+        description: "Validation results in N-Triples format",
+    },
+    FormatEntry {
+        name: "RDF/XML",
+        value: "rdfxml",
+        mime_type: Some("application/rdf+xml"),
+        extensions: &[".rdf", ".xml"],
+        description: "Validation results in RDF/XML format",
+    },
+    FormatEntry {
+        name: "TriG",
+        value: "trig",
+        mime_type: Some("application/trig"),
+        extensions: &[".trig"],
+        description: "Validation results in TriG format",
+    },
+    FormatEntry {
+        name: "N3",
+        value: "n3",
+        mime_type: Some("text/n3"),
+        extensions: &[".n3"],
+        description: "Validation results in Notation3 format",
+    },
+    FormatEntry {
+        name: "N-Quads",
+        value: "nquads",
+        mime_type: Some("application/n-quads"),
+        extensions: &[".nq"],
+        description: "Validation results in N-Quads format",
+    },
+];
+
 /// Supported ShEx validation result formats as a constant.
 #[allow(dead_code)]
 pub const SHEX_RESULT_FORMATS: &str = "compact, details, json, csv, turtle, ntriples, rdfxml, trig, n3, nquads";
@@ -181,6 +703,27 @@ pub const SHACL_RESULT_FORMATS: &str =
 #[allow(dead_code)]
 pub const READER_MODES: &str = "strict, lax";
 
+/// Supported node info modes as a slice for completions.
+pub const NODE_INFO_MODE_LIST: &[&str] = &["both", "outgoing", "incoming"];
+
+pub const NODE_MODE_ENTRIES: &[OptionEntry] = &[
+    OptionEntry {
+        name: "Both",
+        value: "both",
+        description: "Show both incoming and outgoing relationships",
+    },
+    OptionEntry {
+        name: "Incoming",
+        value: "incoming",
+        description: "Show only relationships pointing to this node",
+    },
+    OptionEntry {
+        name: "Outgoing",
+        value: "outgoing",
+        description: "Show only relationships originating from this node",
+    },
+];
+
 /// Supported node info modes as a constant.
 pub const NODE_INFO_MODES: &str = "outgoing, incoming, both";
 
@@ -188,6 +731,103 @@ pub const NODE_INFO_MODES: &str = "outgoing, incoming, both";
 #[allow(dead_code)]
 pub const SHEX_SORT_BY_MODES: &str = "node, shape, status, details";
 
+pub const READER_MODE_ENTRIES: &[OptionEntry] = &[
+    OptionEntry {
+        name: "Strict",
+        value: "strict",
+        description: "Stops validation when there is an error (default)",
+    },
+    OptionEntry {
+        name: "Lax",
+        value: "lax",
+        description: "Emits a warning and continues processing when errors occur",
+    },
+];
+
+pub const SHEX_VALIDATION_SORT_OPTION_ENTRIES: &[OptionEntry] = &[
+    OptionEntry {
+        name: "Node",
+        value: "node",
+        description: "Sort validation results by RDF node (default)",
+    },
+    OptionEntry {
+        name: "Shape",
+        value: "shape",
+        description: "Sort validation results by ShEx shape",
+    },
+    OptionEntry {
+        name: "Status",
+        value: "status",
+        description: "Sort validation results by validation status (conformant/non-conformant)",
+    },
+    OptionEntry {
+        name: "Details",
+        value: "details",
+        description: "Sort validation results by detail level or error information",
+    },
+];
+
 /// Supported SHACL validation result sort modes as a constant.
 #[allow(dead_code)]
 pub const SHACL_SORT_BY_MODES: &str = "severity, node, component, value, path, sourceshape, details";
+
+pub const SHACL_VALIDATION_SORT_OPTION_ENTRIES: &[OptionEntry] = &[
+    OptionEntry {
+        name: "Severity",
+        value: "severity",
+        description: "Sort by violation severity: Violation > Warning > Info (default)",
+    },
+    OptionEntry {
+        name: "Node",
+        value: "node",
+        description: "Sort by the focus node that was validated",
+    },
+    OptionEntry {
+        name: "Component",
+        value: "component",
+        description: "Sort by SHACL constraint component type",
+    },
+    OptionEntry {
+        name: "Value",
+        value: "value",
+        description: "Sort by the value that caused the violation",
+    },
+    OptionEntry {
+        name: "Path",
+        value: "path",
+        description: "Sort by the property path involved in the violation",
+    },
+    OptionEntry {
+        name: "Source Shape",
+        value: "sourceshape",
+        description: "Sort by the shape that produced the result",
+    },
+    OptionEntry {
+        name: "Details",
+        value: "details",
+        description: "Sort by result message/details",
+    },
+];
+
+pub const SPARQL_QUERY_TYPE_ENTRIES: &[QueryTypeEntry] = &[
+    QueryTypeEntry {
+        name: "SELECT",
+        description: "Returns a table of variable bindings",
+        example: "SELECT ?subject ?predicate ?object WHERE { ?subject ?predicate ?object }",
+    },
+    QueryTypeEntry {
+        name: "CONSTRUCT",
+        description: "Returns an RDF graph constructed by substituting variables",
+        example: "CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o }",
+    },
+    QueryTypeEntry {
+        name: "ASK",
+        description: "Returns a boolean indicating whether a query pattern matches",
+        example: "ASK WHERE { ?s ?p ?o }",
+    },
+    QueryTypeEntry {
+        name: "DESCRIBE",
+        description: "Returns an RDF graph describing resources",
+        example: "DESCRIBE <http://example.org/resource>",
+    },
+];

@@ -1,5 +1,5 @@
 mod data_tools_impl;
-mod helpers;
+pub(crate) mod helpers;
 mod node_tools_impl;
 mod query_tools_impl;
 mod shacl_validate_tools_impl;

@@ -238,7 +238,7 @@ pub async fn execute_sparql_query_impl(
     let result_format_str = if let Some(fmt) = result_format_parsed {
         fmt.to_string()
     } else {
-        "turtle".to_string()
+        "internal".to_string()
     };
     let response = QueryExecutionResponse {
         query: sparql_query.clone(),
@@ -247,13 +247,7 @@ pub async fn execute_sparql_query_impl(
         result_size_bytes,
     };
 
-    let structured = serde_json::to_value(&response).map_err(|e| {
-        internal_error(
-            "Serialization error",
-            e.to_string(),
-            Some(json!({"operation":"execute_sparql_query_impl", "phase":"serialize_response"})),
-        )
-    })?;
+    let structured = serialize_structured(&response, "execute_sparql_query_impl")?;
 
     let summary = format!(
         "SPARQL query executed.\nResult format: {}\nResult size: {} bytes",

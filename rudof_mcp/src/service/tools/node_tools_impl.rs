@@ -246,19 +246,15 @@ pub async fn node_info_impl(
     let mode_str = mode.clone().unwrap_or_else(|| "both".to_string());
 
     // Parse mode - return Tool Execution Error for invalid mode
-    let mut parsed_mode = None;
-    if let Some(mode) = mode.as_deref() {
-        match NodeInspectionMode::from_str(mode) {
-            Ok(mode) => parsed_mode = Some(mode),
-            Err(e) => {
-                return Ok(ToolExecutionError::with_hint(
-                    format!("Invalid mode '{}': {}", mode, e),
-                    format!("Supported modes: {}", NODE_INFO_MODES),
-                )
-                .into_call_tool_result());
-            },
-        };
-    }
+    let parsed_mode = match parse_optional_value_with_hint(
+        mode.as_deref(),
+        "mode",
+        &format!("Supported modes: {}", NODE_INFO_MODES),
+        NodeInspectionMode::from_str,
+    ) {
+        Ok(value) => value,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
 
     let mut output_buffer = Cursor::new(Vec::new());
     let mut showing_node_info = rudof.show_node_info(&node, &mut output_buffer);
@@ -313,13 +309,7 @@ pub async fn node_info_impl(
         parsed,
     };
 
-    let structured = serde_json::to_value(&response).map_err(|e| {
-        internal_error(
-            "Serialization error",
-            e.to_string(),
-            Some(json!({"operation":"node_info_impl", "phase":"serialize_response"})),
-        )
-    })?;
+    let structured = serialize_structured(&response, "node_info_impl")?;
 
     let results_preview = code_block_preview("text", &output_str, DEFAULT_CONTENT_PREVIEW_CHARS);
 

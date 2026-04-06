@@ -247,13 +247,7 @@ pub async fn validate_shex_impl(
         result_size_bytes,
     };
 
-    let structured = serde_json::to_value(&response).map_err(|e| {
-        internal_error(
-            "Serialization error",
-            e.to_string(),
-            Some(json!({"operation":"validate_shex_impl", "phase":"serialize_response"})),
-        )
-    })?;
+    let structured = serialize_structured(&response, "validate_shex_impl")?;
 
     let mut summary = format!(
         "ShEx validation completed.\nResult format: {}\nSort by: {}\nResult size: {} bytes",

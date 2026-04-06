@@ -1,5 +1,8 @@
 use rmcp::ErrorData as McpError;
 
+/// Default number of items returned per page in paginated listings.
+pub const DEFAULT_PAGE_SIZE: usize = 20;
+
 /// Parse and validate an opaque cursor token.
 ///
 /// This implementation currently stores cursors as numeric offsets.

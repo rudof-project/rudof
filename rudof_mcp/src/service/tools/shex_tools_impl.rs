@@ -160,13 +160,7 @@ pub async fn show_shex_impl(
         result_size_bytes,
     };
 
-    let structured = serde_json::to_value(&response).map_err(|e| {
-        internal_error(
-            "Serialization error",
-            e.to_string(),
-            Some(json!({"operation":"show_shex_impl","phase":"serialize_response"})),
-        )
-    })?;
+    let structured = serialize_structured(&response, "show_shex_impl")?;
 
     let summary = format!(
         "ShEx schema serialized.\nResult format: {}\nResult size: {} bytes",
@@ -276,7 +270,7 @@ pub async fn check_shex_impl(
         internal_error(
             "Conversion error",
             e.to_string(),
-            Some(json!({"operation":"show_shex_impl","phase":"utf8_conversion"})),
+            Some(json!({"operation":"check_shex_impl","phase":"utf8_conversion"})),
         )
     })?;
 
@@ -284,13 +278,7 @@ pub async fn check_shex_impl(
         result: output_str.clone(),
     };
 
-    let structured = serde_json::to_value(&response).map_err(|e| {
-        internal_error(
-            "Serialization error",
-            e.to_string(),
-            Some(json!({"operation":"show_shex_impl","phase":"serialize_response"})),
-        )
-    })?;
+    let structured = serialize_structured(&response, "check_shex_impl")?;
 
     let result_size_chars = output_str.chars().count();
     let summary = format!(

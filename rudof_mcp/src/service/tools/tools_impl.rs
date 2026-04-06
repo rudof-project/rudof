@@ -35,7 +35,14 @@ impl RudofMcpService {
     /// Load RDF data into the server's in-memory datastore.
     #[tool(
         name = "load_rdf_data_from_sources",
-        description = "Load RDF data from remote sources (URLs, files, raw text) or SPARQL endpoint into the server's datastore"
+        description = "Load RDF data from remote sources (URLs, files, raw text) or SPARQL endpoint into the server's datastore",
+        annotations(
+            title = "Load RDF Data from Sources",
+            read_only_hint = false,
+            destructive_hint = false,
+            idempotent_hint = false,
+            open_world_hint = true,
+        )
     )]
     pub async fn load_rdf_data_from_sources(
         &self,
@@ -47,7 +54,14 @@ impl RudofMcpService {
     /// Serialize the current RDF data to a specified format.
     #[tool(
         name = "export_rdf_data",
-        description = "Serialize and return the RDF stored on the server in the requested format"
+        description = "Serialize and return the RDF stored on the server in the requested format",
+        annotations(
+            title = "Export RDF Data",
+            read_only_hint = true,
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false,
+        )
     )]
     pub async fn export_rdf_data(&self, params: Parameters<ExportRdfDataRequest>) -> Result<CallToolResult, McpError> {
         export_rdf_data_impl(self, params).await
@@ -56,7 +70,14 @@ impl RudofMcpService {
     /// Generate a PlantUML diagram representing the RDF graph structure.
     #[tool(
         name = "export_plantuml",
-        description = "Generate a PlantUML diagram of the RDF stored on the server"
+        description = "Generate a PlantUML diagram of the RDF stored on the server",
+        annotations(
+            title = "Export PlantUML Diagram",
+            read_only_hint = true,
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false,
+        )
     )]
     pub async fn export_plantuml(&self, params: Parameters<EmptyRequest>) -> Result<CallToolResult, McpError> {
         export_plantuml_impl(self, params).await
@@ -65,7 +86,14 @@ impl RudofMcpService {
     /// Generate a visual image of the RDF graph.
     #[tool(
         name = "export_image",
-        description = "Generate an image (SVG or PNG) visualization of the RDF stored on the server"
+        description = "Generate an image (SVG or PNG) visualization of the RDF stored on the server",
+        annotations(
+            title = "Export RDF Image Visualization",
+            read_only_hint = true,
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false,
+        )
     )]
     pub async fn export_image(&self, params: Parameters<ExportImageRequest>) -> Result<CallToolResult, McpError> {
         export_image_impl(self, params).await
@@ -78,7 +106,14 @@ impl RudofMcpService {
     /// Retrieve detailed information about an RDF node.
     #[tool(
         name = "node_info",
-        description = "Show information about a node (outgoing/incoming arcs) from the RDF stored on the server"
+        description = "Show information about a node (outgoing/incoming arcs) from the RDF stored on the server",
+        annotations(
+            title = "Inspect RDF Node",
+            read_only_hint = true,
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false,
+        )
     )]
     pub async fn node_info(&self, params: Parameters<NodeInfoRequest>) -> Result<CallToolResult, McpError> {
         node_info_impl(self, params).await
@@ -91,7 +126,14 @@ impl RudofMcpService {
     /// Execute a SPARQL query against the loaded RDF data.
     #[tool(
         name = "execute_sparql_query",
-        description = "Execute a SPARQL query (SELECT, CONSTRUCT, ASK, DESCRIBE) against the RDF stored on the server. You can provide either a direct SPARQL query or a natural language description that will be converted to SPARQL using an LLM."
+        description = "Execute a SPARQL query (SELECT, CONSTRUCT, ASK, DESCRIBE) against the RDF stored on the server. You can provide either a direct SPARQL query or a natural language description that will be converted to SPARQL using an LLM.",
+        annotations(
+            title = "Execute SPARQL Query",
+            read_only_hint = true,
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false,
+        )
     )]
     pub async fn execute_sparql_query(
         &self,
@@ -107,14 +149,31 @@ impl RudofMcpService {
     /// Validate RDF data against a ShEx schema.
     #[tool(
         name = "validate_shex",
-        description = "Validate the RDF data stored on the server against a ShEx schema"
+        description = "Validate the RDF data stored on the server against a ShEx schema",
+        annotations(
+            title = "Validate RDF with ShEx",
+            read_only_hint = true,
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false,
+        )
     )]
     pub async fn validate_shex(&self, params: Parameters<ValidateShexRequest>) -> Result<CallToolResult, McpError> {
         validate_shex_impl(self, params).await
     }
 
     /// Check if a ShEx schema is syntactically valid and well-formed.
-    #[tool(name = "check_shex", description = "Check if a ShEx schema is well-formed")]
+    #[tool(
+        name = "check_shex",
+        description = "Check if a ShEx schema is well-formed",
+        annotations(
+            title = "Check ShEx Schema Well-Formedness",
+            read_only_hint = true,
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false,
+        )
+    )]
     pub async fn check_shex(&self, params: Parameters<CheckShexRequest>) -> Result<CallToolResult, McpError> {
         check_shex_impl(self, params).await
     }
@@ -122,20 +181,30 @@ impl RudofMcpService {
     /// Parse and display a ShEx schema with optional analysis features.
     #[tool(
         name = "show_shex",
-        description = "Parse a ShEx schema and display it with optional compilation, statistics, and dependency analysis"
+        description = "Parse a ShEx schema and display it with optional compilation, statistics, and dependency analysis",
+        annotations(
+            title = "Parse and Display ShEx Schema",
+            read_only_hint = true,
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false,
+        )
     )]
     pub async fn show_shex(&self, params: Parameters<ShowShexRequest>) -> Result<CallToolResult, McpError> {
         show_shex_impl(self, params).await
     }
 
-    // -------------------------------------------------------------------------
-    // SHACL Tools
-    // -------------------------------------------------------------------------
-
     /// Validate RDF data against a SHACL schema.
     #[tool(
         name = "validate_shacl",
-        description = "Validate the RDF data stored on the server against a SHACL schema"
+        description = "Validate the RDF data stored on the server against a SHACL schema",
+        annotations(
+            title = "Validate RDF with SHACL",
+            read_only_hint = true,
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false,
+        )
     )]
     pub async fn validate_shacl(&self, params: Parameters<ValidateShaclRequest>) -> Result<CallToolResult, McpError> {
         validate_shacl_impl(self, params).await
@@ -147,15 +216,10 @@ pub fn tool_router_public() -> ToolRouter<RudofMcpService> {
     RudofMcpService::tool_router()
 }
 
-/// Return the tools list annotated with helpful metadata
+/// Return the tools list enriched with output schema and task execution metadata.
 ///
-/// This function adds MCP tool annotations to each tool, providing clients
-/// with information about tool behavior:
-///
-/// - `read_only`: Whether the tool only reads data without modifying state
-/// - `destructive`: Whether the tool may cause irreversible changes
-/// - `idempotent`: Whether calling the tool multiple times has the same effect
-/// - `open_world`: Whether the tool may interact with external resources
+/// Behavioral annotations (title/read_only/destructive/idempotent/open_world)
+/// are declared inline in each `#[tool]` attribute.
 ///
 /// # Returns
 ///
@@ -171,23 +235,11 @@ fn output_schema_for<T: JsonSchema + 'static>(tool_name: &str) -> Arc<rmcp::mode
     })
 }
 
-fn read_only_annotations() -> rmcp::model::ToolAnnotations {
-    rmcp::model::ToolAnnotations::new()
-        .read_only(true)
-        .destructive(false)
-        .idempotent(true)
-        .open_world(false)
-}
-
 fn apply_tool_metadata(
     tool: &mut rmcp::model::Tool,
-    title: &str,
-    annotations: rmcp::model::ToolAnnotations,
     task_support: rmcp::model::TaskSupport,
     output_schema: Arc<rmcp::model::JsonObject>,
 ) {
-    tool.title = Some(title.to_string());
-    tool.annotations = Some(annotations);
     tool.execution = Some(rmcp::model::ToolExecution::from_raw(Some(task_support)));
     tool.output_schema = Some(output_schema);
 }
@@ -196,106 +248,54 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
     let mut tools = tool_router_public().list_all();
 
     for tool in tools.iter_mut() {
-        match tool.name.as_ref() {
-            "load_rdf_data_from_sources" => {
-                apply_tool_metadata(
-                    tool,
-                    "Load RDF Data from Sources",
-                    rmcp::model::ToolAnnotations::new()
-                        .read_only(false)
-                        .destructive(false)
-                        .idempotent(false)
-                        .open_world(true),
-                    rmcp::model::TaskSupport::Forbidden,
-                    output_schema_for::<LoadRdfDataFromSourcesResponse>("load_rdf_data_from_sources"),
-                );
-            },
-            "export_rdf_data" => {
-                apply_tool_metadata(
-                    tool,
-                    "Export RDF Data",
-                    read_only_annotations(),
-                    rmcp::model::TaskSupport::Forbidden,
-                    output_schema_for::<ExportRdfDataResponse>("export_rdf_data"),
-                );
-            },
-            "export_plantuml" => {
-                apply_tool_metadata(
-                    tool,
-                    "Export PlantUML Diagram",
-                    read_only_annotations(),
-                    rmcp::model::TaskSupport::Forbidden,
-                    output_schema_for::<ExportPlantUmlResponse>("export_plantuml"),
-                );
-            },
-            "export_image" => {
-                apply_tool_metadata(
-                    tool,
-                    "Export RDF Image Visualization",
-                    read_only_annotations(),
-                    rmcp::model::TaskSupport::Forbidden,
-                    output_schema_for::<ExportImageResponse>("export_image"),
-                );
-            },
-            "node_info" => {
-                apply_tool_metadata(
-                    tool,
-                    "Inspect RDF Node",
-                    read_only_annotations(),
-                    rmcp::model::TaskSupport::Forbidden,
-                    output_schema_for::<NodeInfoResponse>("node_info"),
-                );
-            },
-            "execute_sparql_query" => {
-                apply_tool_metadata(
-                    tool,
-                    "Execute SPARQL Query",
-                    read_only_annotations(),
-                    rmcp::model::TaskSupport::Forbidden,
-                    output_schema_for::<QueryExecutionResponse>("execute_sparql_query"),
-                );
-            },
-            "show_shex" => {
-                apply_tool_metadata(
-                    tool,
-                    "Parse and Display ShEx Schema",
-                    read_only_annotations(),
-                    rmcp::model::TaskSupport::Forbidden,
-                    output_schema_for::<ShowShexResponse>("show_shex"),
-                );
-            },
-            "check_shex" => {
-                apply_tool_metadata(
-                    tool,
-                    "Check ShEx Schema Well-Formedness",
-                    read_only_annotations(),
-                    rmcp::model::TaskSupport::Forbidden,
-                    output_schema_for::<CheckShexResponse>("check_shex"),
-                );
-            },
-            "validate_shex" => {
-                apply_tool_metadata(
-                    tool,
-                    "Validate RDF with ShEx",
-                    read_only_annotations(),
-                    rmcp::model::TaskSupport::Forbidden,
-                    output_schema_for::<ValidateShexResponse>("validate_shex"),
-                );
-            },
-            "validate_shacl" => {
-                apply_tool_metadata(
-                    tool,
-                    "Validate RDF with SHACL",
-                    read_only_annotations(),
-                    rmcp::model::TaskSupport::Forbidden,
-                    output_schema_for::<ValidateShaclResponse>("validate_shacl"),
-                );
-            },
+        let (output_schema, task_support) = match tool.name.as_ref() {
+            "load_rdf_data_from_sources" => (
+                output_schema_for::<LoadRdfDataFromSourcesResponse>("load_rdf_data_from_sources"),
+                rmcp::model::TaskSupport::Forbidden,
+            ),
+            "export_rdf_data" => (
+                output_schema_for::<ExportRdfDataResponse>("export_rdf_data"),
+                rmcp::model::TaskSupport::Forbidden,
+            ),
+            "export_plantuml" => (
+                output_schema_for::<ExportPlantUmlResponse>("export_plantuml"),
+                rmcp::model::TaskSupport::Forbidden,
+            ),
+            "export_image" => (
+                output_schema_for::<ExportImageResponse>("export_image"),
+                rmcp::model::TaskSupport::Forbidden,
+            ),
+            "node_info" => (
+                output_schema_for::<NodeInfoResponse>("node_info"),
+                rmcp::model::TaskSupport::Forbidden,
+            ),
+            "execute_sparql_query" => (
+                output_schema_for::<QueryExecutionResponse>("execute_sparql_query"),
+                rmcp::model::TaskSupport::Forbidden,
+            ),
+            "show_shex" => (
+                output_schema_for::<ShowShexResponse>("show_shex"),
+                rmcp::model::TaskSupport::Forbidden,
+            ),
+            "check_shex" => (
+                output_schema_for::<CheckShexResponse>("check_shex"),
+                rmcp::model::TaskSupport::Forbidden,
+            ),
+            "validate_shex" => (
+                output_schema_for::<ValidateShexResponse>("validate_shex"),
+                rmcp::model::TaskSupport::Forbidden,
+            ),
+            "validate_shacl" => (
+                output_schema_for::<ValidateShaclResponse>("validate_shacl"),
+                rmcp::model::TaskSupport::Forbidden,
+            ),
             _ => {
-                // Log warning for unhandled tools to catch missing annotations
-                tracing::warn!(tool_name = %tool.name, "Tool missing annotations");
+                tracing::warn!(tool_name = %tool.name, "Tool missing output schema");
+                continue;
             },
-        }
+        };
+
+        apply_tool_metadata(tool, task_support, output_schema);
     }
 
     tools

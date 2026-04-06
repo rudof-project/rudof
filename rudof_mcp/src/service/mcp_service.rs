@@ -7,6 +7,9 @@ use std::{future::Future, sync::Arc};
 use tokio::sync::{Mutex, RwLock};
 
 use crate::service::{logging::LogRateLimiter, prompts, state, tools};
+use crate::service::tools::helpers::{
+    NODE_INFO_MODE_LIST, RDF_FORMAT_LIST, RESULT_FORMAT_LIST, SHACL_FORMAT_LIST, SHEX_FORMAT_LIST,
+};
 use rmcp::{
     RoleServer,
     handler::server::router::{prompt::PromptRouter, tool::ToolRouter},
@@ -210,6 +213,19 @@ impl RudofMcpService {
         Ok(true)
     }
 
+    /// Get completion suggestions for format-related arguments (shared by prompts and tools).
+    pub fn get_format_argument_completions(argument_name: &str) -> Vec<String> {
+        let list: &[&str] = match argument_name {
+            "format" | "input_format" | "output_format" | "rdf_format" => RDF_FORMAT_LIST,
+            "schema_format" | "shex_format" => SHEX_FORMAT_LIST,
+            "shacl_format" | "shapes_format" => SHACL_FORMAT_LIST,
+            "result_format" => RESULT_FORMAT_LIST,
+            "mode" => NODE_INFO_MODE_LIST,
+            _ => return vec![],
+        };
+        list.iter().map(|s| s.to_string()).collect()
+    }
+
     /// Get completion suggestions for prompt arguments
     pub fn get_prompt_argument_completions(&self, prompt_name: &str, argument_name: &str) -> Vec<String> {
         tracing::debug!(
@@ -218,59 +234,13 @@ impl RudofMcpService {
             "Getting prompt argument completions"
         );
 
-        // Provide context-aware completions based on prompt and argument
+        // Delegate format arguments to the shared helper first
+        let format_completions = Self::get_format_argument_completions(argument_name);
+        if !format_completions.is_empty() {
+            return format_completions;
+        }
+
         match (prompt_name, argument_name) {
-            // Format-related arguments (RDF formats from rudof://formats/rdf)
-            (_, "format") | (_, "input_format") | (_, "output_format") | (_, "rdf_format") => {
-                vec![
-                    "turtle".to_string(),
-                    "ntriples".to_string(),
-                    "rdfxml".to_string(),
-                    "trig".to_string(),
-                    "nquads".to_string(),
-                    "n3".to_string(),
-                    "jsonld".to_string(),
-                ]
-            },
-            // ShEx schema format arguments (from rudof://formats/shex)
-            (_, "schema_format") | (_, "shex_format") => {
-                vec![
-                    "shexc".to_string(),
-                    "shexj".to_string(),
-                    "turtle".to_string(),
-                    "ntriples".to_string(),
-                    "rdfxml".to_string(),
-                    "jsonld".to_string(),
-                    "trig".to_string(),
-                    "n3".to_string(),
-                    "nquads".to_string(),
-                ]
-            },
-            // SHACL format arguments (from rudof://formats/shacl)
-            (_, "shacl_format") | (_, "shapes_format") => {
-                vec![
-                    "turtle".to_string(),
-                    "jsonld".to_string(),
-                    "rdfxml".to_string(),
-                    "trig".to_string(),
-                    "nquads".to_string(),
-                    "json".to_string(),
-                ]
-            },
-            // Validation result format arguments (from rudof://formats/shex-validation-result and rudof://formats/shacl-validation-result)
-            (_, "result_format") => {
-                vec![
-                    "details".to_string(),
-                    "compact".to_string(),
-                    "json".to_string(),
-                    "turtle".to_string(),
-                    "ntriples".to_string(),
-                    "rdfxml".to_string(),
-                    "trig".to_string(),
-                    "n3".to_string(),
-                    "nquads".to_string(),
-                ]
-            },
             // Common boolean arguments
             (_, "verbose") | (_, "debug") | (_, "strict") => {
                 vec!["true".to_string(), "false".to_string()]
@@ -296,10 +266,6 @@ impl RudofMcpService {
             // Node selector suggestions
             (_, "node") | (_, "focus_node") => {
                 vec![":node1".to_string(), "<http://example.org/resource>".to_string()]
-            },
-            // Mode argument for explore_rdf_node prompt (from rudof://formats/node-modes)
-            (_, "mode") => {
-                vec!["both".to_string(), "outgoing".to_string(), "incoming".to_string()]
             },
             // Focus argument for analyze_rdf_data prompt
             ("analyze_rdf_data", "focus") | (_, "focus") => {
@@ -327,6 +293,19 @@ impl RudofMcpService {
         }
     }
 
+    /// Get completion suggestions for tool arguments.
+    ///
+    /// Tool argument names follow the same conventions as prompt argument names,
+    /// so this delegates to the shared format helper for format-related arguments.
+    pub fn get_tool_argument_completions(&self, _tool_name: &str, argument_name: &str) -> Vec<String> {
+        tracing::debug!(
+            tool_name = %_tool_name,
+            argument_name = %argument_name,
+            "Getting tool argument completions"
+        );
+        Self::get_format_argument_completions(argument_name)
+    }
+
     /// Get completion suggestions for resource URI templates
     pub fn get_resource_uri_completions(&self, uri: &str, argument_name: &str) -> Vec<String> {
         tracing::debug!(
@@ -335,77 +314,36 @@ impl RudofMcpService {
             "Getting resource URI completions"
         );
 
-        // Provide completions based on resource URI patterns
-        if uri.starts_with("rudof://") {
-            match argument_name {
-                // RDF formats (from rudof://formats/rdf and rudof://current-data/*)
-                "format" => {
-                    vec![
-                        "turtle".to_string(),
-                        "ntriples".to_string(),
-                        "rdfxml".to_string(),
-                        "jsonld".to_string(),
-                        "trig".to_string(),
-                        "nquads".to_string(),
-                        "n3".to_string(),
-                    ]
-                },
-                // SPARQL endpoint suggestions
-                "endpoint" => {
-                    vec![
-                        "https://query.wikidata.org/sparql".to_string(),
-                        "https://dbpedia.org/sparql".to_string(),
-                        "http://localhost:3030/sparql".to_string(),
-                    ]
-                },
-                // Node inspection modes (from rudof://formats/node-modes)
-                "mode" => {
-                    vec!["both".to_string(), "outgoing".to_string(), "incoming".to_string()]
-                },
-                // Query result formats (from rudof://formats/query-results)
-                "result_format" => {
-                    vec![
-                        "internal".to_string(),
-                        "json".to_string(),
-                        "xml".to_string(),
-                        "csv".to_string(),
-                        "tsv".to_string(),
-                        "turtle".to_string(),
-                        "ntriples".to_string(),
-                        "rdfxml".to_string(),
-                        "trig".to_string(),
-                    ]
-                },
-                // ShEx schema formats (from rudof://formats/shex)
-                "shex_format" | "schema_format" => {
-                    vec![
-                        "shexc".to_string(),
-                        "shexj".to_string(),
-                        "turtle".to_string(),
-                        "ntriples".to_string(),
-                        "rdfxml".to_string(),
-                        "jsonld".to_string(),
-                    ]
-                },
-                // SHACL formats (from rudof://formats/shacl)
-                "shacl_format" | "shapes_format" => {
-                    vec![
-                        "turtle".to_string(),
-                        "jsonld".to_string(),
-                        "rdfxml".to_string(),
-                        "trig".to_string(),
-                        "nquads".to_string(),
-                        "json".to_string(),
-                    ]
-                },
-                // Validation reader modes (from rudof://formats/validation-reader-modes)
-                "reader_mode" => {
-                    vec!["strict".to_string(), "lax".to_string()]
-                },
-                _ => vec![],
-            }
-        } else {
-            vec![]
+        if !uri.starts_with("rudof://") {
+            return vec![];
+        }
+
+        match argument_name {
+            "format" => RDF_FORMAT_LIST.iter().map(|s| s.to_string()).collect(),
+            "shex_format" | "schema_format" => SHEX_FORMAT_LIST.iter().map(|s| s.to_string()).collect(),
+            "shacl_format" | "shapes_format" => SHACL_FORMAT_LIST.iter().map(|s| s.to_string()).collect(),
+            "mode" => NODE_INFO_MODE_LIST.iter().map(|s| s.to_string()).collect(),
+            // SPARQL endpoint suggestions
+            "endpoint" => vec![
+                "https://query.wikidata.org/sparql".to_string(),
+                "https://dbpedia.org/sparql".to_string(),
+                "http://localhost:3030/sparql".to_string(),
+            ],
+            // Query result formats (from rudof://formats/query-results)
+            "result_format" => vec![
+                "internal".to_string(),
+                "json".to_string(),
+                "xml".to_string(),
+                "csv".to_string(),
+                "tsv".to_string(),
+                "turtle".to_string(),
+                "ntriples".to_string(),
+                "rdfxml".to_string(),
+                "trig".to_string(),
+            ],
+            // Validation reader modes (from rudof://formats/validation-reader-modes)
+            "reader_mode" => vec!["strict".to_string(), "lax".to_string()],
+            _ => vec![],
         }
     }
 }
