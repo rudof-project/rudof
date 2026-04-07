@@ -59,7 +59,8 @@ fn build_node_info<R>(rdf: &R, node: &R::Term, config: &NodeDisplayConfig) -> Re
 where
     R: NeighsRDF + Debug + QueryRDF,
 {
-    let subject = R::term_as_subject(node).map_err(|e| Box::new(DataError::FailedQualification { error: e.to_string() }))?;
+    let subject =
+        R::term_as_subject(node).map_err(|e| Box::new(DataError::FailedQualification { error: e.to_string() }))?;
 
     let subject_qualified = qualify_subject(rdf, &subject, config.show_colors)?;
 
@@ -272,7 +273,8 @@ fn write_node_information<S: NeighsRDF, W: io::Write>(
 ) -> Result<()> {
     // Display outgoing arcs if requested and present
     if config.mode.show_outgoing() && !node_info.outgoing.is_empty() {
-        writeln!(writer, "Outgoing arcs").map_err(|e| Box::new(DataError::FailedIoOperation { error: e.to_string() }))?;
+        writeln!(writer, "Outgoing arcs")
+            .map_err(|e| Box::new(DataError::FailedIoOperation { error: e.to_string() }))?;
 
         let mut tree = Tree::new(node_info.subject_qualified.clone()).with_glyphs(create_outgoing_glyphs());
 
@@ -282,7 +284,8 @@ fn write_node_information<S: NeighsRDF, W: io::Write>(
     }
 
     if config.mode.show_incoming() && !node_info.incoming.is_empty() {
-        writeln!(writer, "Incoming arcs").map_err(|e| Box::new(DataError::FailedIoOperation { error: e.to_string() }))?;
+        writeln!(writer, "Incoming arcs")
+            .map_err(|e| Box::new(DataError::FailedIoOperation { error: e.to_string() }))?;
 
         let subject_qualified = qualify_subject(rdf, &node_info.subject, config.show_colors)?;
         let root_label = format!("{}\n▲", subject_qualified);
@@ -462,8 +465,8 @@ fn qualify_subject<S: NeighsRDF>(rdf: &S, subject: &S::Subject, show_colors: boo
         let prefixmap = rdf.prefixmap().unwrap_or_default().clone().without_colors();
 
         let subject_term = S::subject_as_term(subject);
-        let node =
-            S::term_as_object(&subject_term).map_err(|e| Box::new(DataError::FailedQualification { error: e.to_string() }))?;
+        let node = S::term_as_object(&subject_term)
+            .map_err(|e| Box::new(DataError::FailedQualification { error: e.to_string() }))?;
 
         Ok(node.show_qualified(&prefixmap))
     }
@@ -488,7 +491,8 @@ fn qualify_term<S: NeighsRDF>(rdf: &S, term: &S::Term, show_colors: bool) -> Res
     } else {
         let prefixmap = rdf.prefixmap().unwrap_or_default().clone().without_colors();
 
-        let node = S::term_as_object(term).map_err(|e| Box::new(DataError::FailedQualification { error: e.to_string() }))?;
+        let node =
+            S::term_as_object(term).map_err(|e| Box::new(DataError::FailedQualification { error: e.to_string() }))?;
 
         Ok(node.show_qualified(&prefixmap))
     }

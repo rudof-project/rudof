@@ -96,14 +96,12 @@ pub async fn export_rdf_data(
         _ => "text/plain",
     };
 
-    Ok(ReadResourceResult::new(vec![
-        ResourceContents::TextResourceContents {
-            uri: uri.to_string(),
-            mime_type: Some(mime_type.to_string()),
-            text,
-            meta: None,
-        },
-    ]))
+    Ok(ReadResourceResult::new(vec![ResourceContents::TextResourceContents {
+        uri: uri.to_string(),
+        mime_type: Some(mime_type.to_string()),
+        text,
+        meta: None,
+    }]))
 }
 
 fn get_rdf_formats(uri: &str) -> Result<ReadResourceResult, McpError> {

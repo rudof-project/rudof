@@ -46,7 +46,14 @@ fn test_load_shex_schema_shexc_success() {
     )
     .unwrap();
 
-    load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), Some(&"http://example.org/"), None).unwrap();
+    load_shex_schema(
+        &mut rudof,
+        &schema,
+        Some(&ShExFormat::ShExC),
+        Some("http://example.org/"),
+        None,
+    )
+    .unwrap();
 
     let serialized = serialize_to_string(&mut rudof, Some(ShExFormat::ShExC));
 

@@ -17,9 +17,8 @@ pub mod pyrudof {
     pub use super::{
         PyCardinalityStrategy, PyDCTapFormat, PyDataGenerator, PyDataQuality, PyEntityDistribution, PyGeneratorConfig,
         PyOutputFormat, PyQueryResultFormat, PyQueryType, PyRDFFormat, PyReaderMode, PyResultDataFormat,
-        PyResultShexValidationFormat, PyRudof, PyRudofConfig, PyRudofError, PySchemaFormat,
-        PyServiceDescriptionFormat, PyShExFormat, PyShaclFormat, PyShaclValidationMode, PyShapeMapFormat,
-        PyShapesGraphSource, PySortModeResultMap,
+        PyResultShexValidationFormat, PyRudof, PyRudofConfig, PyRudofError, PySchemaFormat, PyServiceDescriptionFormat,
+        PyShExFormat, PyShaclFormat, PyShaclValidationMode, PyShapeMapFormat, PyShapesGraphSource, PySortModeResultMap,
     };
 
     #[pymodule_init]

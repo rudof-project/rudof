@@ -102,10 +102,7 @@ fn test_logging_capability_advertised() {
         .capabilities
         .logging
         .expect("Logging capability should be advertised");
-    assert!(
-        logging.is_empty(),
-        "Logging capability should be declared as an object"
-    );
+    assert!(logging.is_empty(), "Logging capability should be declared as an object");
 }
 
 /// Test that completions capability is advertised

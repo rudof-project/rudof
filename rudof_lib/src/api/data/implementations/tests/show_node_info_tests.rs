@@ -1,7 +1,5 @@
 use crate::{
-    Rudof, RudofConfig,
-    api::data::implementations::show_node_info::show_node_info,
-    formats::InputSpec,
+    Rudof, RudofConfig, api::data::implementations::show_node_info::show_node_info, formats::InputSpec,
     formats::NodeInspectionMode,
 };
 use std::{io::Cursor, str::FromStr};

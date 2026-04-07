@@ -1,6 +1,6 @@
 //! The `api` module provides operation-specific submodules that constitute the Rudof builder pattern API.
 //!
-//! Each submodule contains traits and builders for a specific domain (like RDF data, SHACL, ShEx, SPARQL queries), 
+//! Each submodule contains traits and builders for a specific domain (like RDF data, SHACL, ShEx, SPARQL queries),
 //! separating concerns while keeping the main [`crate::Rudof`] struct cohesive.
 
 pub mod comparison;

@@ -38,12 +38,16 @@ impl ServerHandler for RudofMcpService {
 
         let capabilities = ServerCapabilities::builder()
             .enable_logging_with(serde_json::Map::new())
-            .enable_prompts_with(PromptsCapability { list_changed: Some(false) })
+            .enable_prompts_with(PromptsCapability {
+                list_changed: Some(false),
+            })
             .enable_resources_with(ResourcesCapability {
                 subscribe: Some(false),
                 list_changed: Some(false),
             })
-            .enable_tools_with(ToolsCapability { list_changed: Some(false) })
+            .enable_tools_with(ToolsCapability {
+                list_changed: Some(false),
+            })
             .enable_completions_with(serde_json::Map::new())
             .build();
 
@@ -309,8 +313,7 @@ impl ServerHandler for RudofMcpService {
             },
         };
 
-        let completion = CompletionInfo::with_all_values(completions)
-            .map_err(|e| McpError::invalid_params(e, None))?;
+        let completion = CompletionInfo::with_all_values(completions).map_err(|e| McpError::invalid_params(e, None))?;
 
         Ok(CompleteResult::new(completion))
     }

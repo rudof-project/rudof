@@ -7,21 +7,14 @@ pub const DEFAULT_PAGE_SIZE: usize = 20;
 ///
 /// This implementation currently stores cursors as numeric offsets.
 /// Invalid format or out-of-range values are reported as Invalid Params (-32602).
-pub fn parse_cursor(
-    cursor: Option<String>,
-    upper_bound: usize,
-    operation: &str,
-) -> Result<usize, McpError> {
+pub fn parse_cursor(cursor: Option<String>, upper_bound: usize, operation: &str) -> Result<usize, McpError> {
     let Some(cursor) = cursor else {
         return Ok(0);
     };
 
-    let parsed = cursor.parse::<usize>().map_err(|_| {
-        McpError::invalid_params(
-            format!("Invalid cursor for {}: '{}'", operation, cursor),
-            None,
-        )
-    })?;
+    let parsed = cursor
+        .parse::<usize>()
+        .map_err(|_| McpError::invalid_params(format!("Invalid cursor for {}: '{}'", operation, cursor), None))?;
 
     if parsed > upper_bound {
         return Err(McpError::invalid_params(

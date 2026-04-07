@@ -143,13 +143,7 @@ fn show_schema_conversion_shex_to_shex<W: io::Write>(
     show_time: Option<bool>,
     writer: &mut W,
 ) -> Result<()> {
-    load_shex_schema(
-        rudof,
-        schema,
-        Some(&(*input_format).try_into()?),
-        base,
-        reader_mode,
-    )?;
+    load_shex_schema(rudof, schema, Some(&(*input_format).try_into()?), base, reader_mode)?;
 
     serialize_shex_schema(
         rudof,
@@ -191,13 +185,7 @@ fn show_schema_conversion_shex_to_sparql<W: io::Write>(
         },
     };
 
-    load_shex_schema(
-        rudof,
-        schema,
-        Some(&(*input_format).try_into()?),
-        base,
-        reader_mode,
-    )?;
+    load_shex_schema(rudof, schema, Some(&(*input_format).try_into()?), base, reader_mode)?;
 
     let converter = ShEx2Sparql::new(&rudof.config.shex2sparql_config());
     let sparql = converter
@@ -231,13 +219,7 @@ fn show_schema_conversion_shex_to_uml<W: io::Write>(
     shape: Option<&str>,
     writer: &mut W,
 ) -> Result<()> {
-    load_shex_schema(
-        rudof,
-        schema,
-        Some(&(*input_format).try_into()?),
-        base,
-        reader_mode,
-    )?;
+    load_shex_schema(rudof, schema, Some(&(*input_format).try_into()?), base, reader_mode)?;
 
     let mut converter = ShEx2Uml::new(&rudof.config.shex2uml_config());
     converter
@@ -330,13 +312,7 @@ fn show_schema_conversion_shex_to_html<P: AsRef<Path>>(
     templates_folder: Option<&Path>,
     output_folder: P,
 ) -> Result<()> {
-    load_shex_schema(
-        rudof,
-        schema,
-        Some(&(*input_format).try_into()?),
-        base,
-        reader_mode,
-    )?;
+    load_shex_schema(rudof, schema, Some(&(*input_format).try_into()?), base, reader_mode)?;
 
     let mut shex2html_config = rudof.config.shex2html_config();
     shex2html_config = shex2html_config.with_target_folder(output_folder);

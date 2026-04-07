@@ -25,7 +25,7 @@ use crate::{
         },
         rdf_config::builders::{LoadRdfConfigBuilder, ResetRdfConfigBuilder, SerializeRdfConfigBuilder},
         shacl::builders::{
-            LoadShaclShapesBuilder, ResetShaclShapesBuilder, ResetShaclBuilder, SerializeShaclShapesBuilder,
+            LoadShaclShapesBuilder, ResetShaclBuilder, ResetShaclShapesBuilder, SerializeShaclShapesBuilder,
             SerializeShaclValidationResultsBuilder, ValidateShaclBuilder,
         },
         shex::builders::{
@@ -61,7 +61,7 @@ use std::io;
 pub type Result<T> = std::result::Result<T, RudofError>;
 
 /// The central `Rudof` struct acts as the main context and state machine.
-/// 
+///
 /// It encapsulates everything needed for operations, holding references to currently loaded data, schemas
 /// and processing results.
 #[derive(Debug)]
@@ -130,7 +130,7 @@ impl Rudof {
     // ========================================================================
 
     /// Create a new `Rudof` instance from the provided `RudofConfig`.
-    /// 
+    ///
     /// # Parameters
     /// - `config`: `Rudof` configuration settings (`RudofConfig`).
     pub fn new(config: RudofConfig) -> Self {
@@ -148,7 +148,7 @@ impl Rudof {
     }
 
     /// Returns an `UpdateConfigBuilder` to replace/update the current config.
-    /// 
+    ///
     /// # Parameters
     /// - `config`: new configuration to replace the current one.
     pub fn update_config<'a>(&'a mut self, config: RudofConfig) -> UpdateConfigBuilder<'a> {
@@ -183,7 +183,7 @@ impl Rudof {
     }
 
     /// Returns a `LoadServiceDescriptionBuilder` to load a service description described by `service` (`InputSpec`).
-    /// 
+    ///
     /// # Parameters
     /// - `service`: input specification for the service description.
     pub fn load_service_description<'a>(&'a mut self, service: &'a InputSpec) -> LoadServiceDescriptionBuilder<'a> {
@@ -191,7 +191,7 @@ impl Rudof {
     }
 
     /// Returns a `SerializeServiceDescriptionBuilder` to write the currentservice description to `writer`.
-    /// 
+    ///
     /// # Parameters
     /// - `writer`: output target for the serialized service description.
     pub fn serialize_service_description<'a, W: io::Write>(
@@ -208,7 +208,7 @@ impl Rudof {
 
     /// Returns a `ShowNodeInfoBuilder` that writes structural inspection information
     /// about the given `node` (within the loaded data) to `writer`.
-    /// 
+    ///
     /// # Parameters
     /// - `node`: the IRI or ID of the node to inspect.
     /// - `writer`: output target for the formatted node information.
@@ -230,7 +230,7 @@ impl Rudof {
     // ========================================================================
 
     /// Returns a `LoadShexSchemaBuilder` to load a ShEx schema from `schema` (`InputSpec`) into the internal state.
-    /// 
+    ///
     /// # Parameters
     /// - `schema`: input specification for the ShEx schema to load.
     pub fn load_shex_schema<'a>(&'a mut self, schema: &'a InputSpec) -> LoadShexSchemaBuilder<'a> {
@@ -239,7 +239,7 @@ impl Rudof {
 
     /// Returns a `CheckShexSchemaBuilder` to perform syntactic/semantic checks on a ShEx schema described by `schema` and write results to
     /// `writer`.
-    /// 
+    ///
     /// # Parameters
     /// - `schema`: input specification for the ShEx schema to check.
     /// - `writer`: output target for the check results.
@@ -252,7 +252,7 @@ impl Rudof {
     }
 
     /// Returns a `SerializeShexSchemaBuilder` that writes the currently loaded ShEx schema to `writer`.
-    /// 
+    ///
     /// # Parameters
     /// - `writer`: output target for the serialized ShEx schema.
     pub fn serialize_shex_schema<'a, W: io::Write>(&'a self, writer: &'a mut W) -> SerializeShexSchemaBuilder<'a, W> {
@@ -265,7 +265,7 @@ impl Rudof {
     }
 
     /// Returns a `LoadShapemapBuilder` to load a ShEx shapemap from `shapemap` (`InputSpec`).
-    /// 
+    ///
     /// # Parameters
     /// - `shapemap`: input specification for the ShEx shapemap to load.
     pub fn load_shapemap<'a>(&'a mut self, shapemap: &'a InputSpec) -> LoadShapemapBuilder<'a> {
@@ -273,7 +273,7 @@ impl Rudof {
     }
 
     /// Returns a `SerializeShapemapBuilder` that writes the current shapemap to `writer`.
-    /// 
+    ///
     /// # Parameters
     /// - `writer`: output target for the serialized shapemap.
     pub fn serialize_shapemap<'a, W: io::Write>(&'a self, writer: &'a mut W) -> SerializeShapemapBuilder<'a, W> {
@@ -313,7 +313,7 @@ impl Rudof {
     }
 
     /// Returns a `SerializeShaclShapesBuilder` that writes loaded SHACL shapes to `writer`.
-    /// 
+    ///
     /// # Parameters
     /// - `writer`: output target for the serialized SHACL shapes.
     pub fn serialize_shacl_shapes<'a, W: io::Write>(&'a self, writer: &'a mut W) -> SerializeShaclShapesBuilder<'a, W> {
@@ -333,7 +333,7 @@ impl Rudof {
 
     /// Returns a `SerializeShaclValidationResultsBuilder` to write SHACL
     /// validation results to `writer`.
-    /// 
+    ///
     /// # Parameters
     /// - `writer`: output target for the serialized SHACL validation results.
     pub fn serialize_shacl_validation_results<'a, W: io::Write>(
@@ -355,7 +355,7 @@ impl Rudof {
 
     /// Returns a `LoadQueryBuilder` to load a SPARQL query into state from
     /// `query` (`InputSpec`).
-    /// 
+    ///
     /// # Parameters
     /// - `query`: input specification for the SPARQL query to load.
     pub fn load_query<'a>(&'a mut self, query: &'a InputSpec) -> LoadQueryBuilder<'a> {
@@ -364,7 +364,7 @@ impl Rudof {
 
     /// Returns a `SerializeQueryBuilder` that writes the currently-loaded
     /// query to `writer`.
-    /// 
+    ///
     /// # Parameters
     /// - `writer`: output target for the serialized SPARQL query.
     pub fn serialize_query<'a, W: io::Write>(&'a self, writer: &'a mut W) -> SerializeQueryBuilder<'a, W> {
@@ -384,7 +384,7 @@ impl Rudof {
 
     /// Returns a `SerializeQueryResultsBuilder` that writes query results
     /// to `writer`.
-    /// 
+    ///
     /// # Parameters
     /// - `writer`: output target for the serialized query results.
     pub fn serialize_query_results<'a, W: io::Write>(
@@ -458,7 +458,7 @@ impl Rudof {
     // ========================================================================
 
     /// Returns a `LoadDctapBuilder` to load a DCTAP model from `dctap`.
-    /// 
+    ///
     /// # Parameters
     /// - `dctap`: input specification for the DCTAP model to load.
     pub fn load_dctap<'a>(&'a mut self, dctap: &'a InputSpec) -> LoadDctapBuilder<'a> {
@@ -467,7 +467,7 @@ impl Rudof {
 
     /// Returns a `SerializeDctapBuilder` that writes the loaded DCTAP
     /// model to `writer`.
-    /// 
+    ///
     /// # Parameters
     /// - `writer`: output target for the serialized DCTAP model.
     pub fn serialize_dctap<'a, W: io::Write>(&'a self, writer: &'a mut W) -> SerializeDctapBuilder<'a, W> {
@@ -506,7 +506,7 @@ impl Rudof {
     // ========================================================================
 
     /// Returns a `LoadPgSchemaBuilder` to load a PGSchema from `pg_schema`.
-    /// 
+    ///
     /// # Parameters
     /// - `pg_schema`: input specification for the PGSchema to load.
     pub fn load_pg_schema<'a>(&'a mut self, pg_schema: &'a InputSpec) -> LoadPgSchemaBuilder<'a> {
@@ -515,7 +515,7 @@ impl Rudof {
 
     /// Returns a `SerializePgSchemaBuilder` that writes the loaded
     /// PGSchema to `writer`.
-    /// 
+    ///
     /// # Parameters
     /// - `writer`: output target for the serialized PGSchema.
     pub fn serialize_pg_schema<'a, W: io::Write>(&'a self, writer: &'a mut W) -> SerializePgSchemaBuilder<'a, W> {
@@ -528,7 +528,7 @@ impl Rudof {
     }
 
     /// Returns a `LoadTypemapBuilder` to load a typemap into state.
-    /// 
+    ///
     /// # Parameters
     /// - `typemap`: input specification for the typemap to load.
     pub fn load_typemap<'a>(&'a mut self, typemap: &'a InputSpec) -> LoadTypemapBuilder<'a> {
@@ -548,7 +548,7 @@ impl Rudof {
 
     /// Returns a `SerializePgSchemaValidationResultsBuilder` to write PG
     /// schema validation results to `writer`.
-    /// 
+    ///
     /// # Parameters
     /// - `writer`: output target for the serialized PGSchema validation results.
     pub fn serialize_pgschema_validation_results<'a, W: io::Write>(

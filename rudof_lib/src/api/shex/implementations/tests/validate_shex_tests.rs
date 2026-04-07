@@ -41,7 +41,7 @@ fn test_validate_shex_success() {
         &mut rudof,
         Some(&[data]),
         Some(&DataFormat::Turtle),
-        Some(&"http://example.org/"),
+        Some("http://example.org/"),
         None,
         None,
         None,
@@ -58,12 +58,26 @@ fn test_validate_shex_success() {
     )
     .unwrap();
 
-    load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), Some(&"http://example.org/"), None).unwrap();
+    load_shex_schema(
+        &mut rudof,
+        &schema,
+        Some(&ShExFormat::ShExC),
+        Some("http://example.org/"),
+        None,
+    )
+    .unwrap();
 
     // Load ShapeMap
     let shapemap = InputSpec::from_str(r#"<alice>@<PersonShape>"#).unwrap();
 
-    load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), Some(&"http://example.org/"), Some(&"http://example.org/")).unwrap();
+    load_shapemap(
+        &mut rudof,
+        &shapemap,
+        Some(&ShapeMapFormat::Compact),
+        Some("http://example.org/"),
+        Some("http://example.org/"),
+    )
+    .unwrap();
 
     // Validate
     validate_shex(&mut rudof).unwrap();

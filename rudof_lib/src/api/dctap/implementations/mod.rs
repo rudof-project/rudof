@@ -10,4 +10,3 @@ pub use serialize_dctap::serialize_dctap;
 mod tests {
     mod load_dctap_tests;
 }
-

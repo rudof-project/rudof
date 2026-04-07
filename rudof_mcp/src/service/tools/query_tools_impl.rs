@@ -49,9 +49,7 @@ pub struct QueryExecutionResponse {
 ///
 /// Uses the MCP sampling capability to request LLM assistance in
 /// converting natural language to SPARQL.
-async fn generate_sparql_from_natural_language(
-    natural_language: &str,
-) -> Result<String, McpError> {
+async fn generate_sparql_from_natural_language(natural_language: &str) -> Result<String, McpError> {
     let system_message = r#"You are a SPARQL query expert. Convert natural language questions into valid SPARQL queries.
                                     - Only output the SPARQL query, no explanations or markdown formatting
                                     - Use standard SPARQL syntax (SELECT, CONSTRUCT, ASK, or DESCRIBE)
@@ -71,12 +69,9 @@ async fn generate_sparql_from_natural_language(
     })?;
 
     // Create sampling request with system prompt and user message.
-    let sampling_request = CreateMessageRequestParams::new(
-        vec![SamplingMessage::user_text(user_message.clone())],
-        512,
-    )
-    .with_system_prompt(system_message)
-    .with_temperature(0.1); // Low temperature for more deterministic output
+    let sampling_request = CreateMessageRequestParams::new(vec![SamplingMessage::user_text(user_message.clone())], 512)
+        .with_system_prompt(system_message)
+        .with_temperature(0.1); // Low temperature for more deterministic output
 
     // Send sampling request through rmcp
     let response = context.peer.create_message(sampling_request).await.map_err(|e| {
@@ -97,9 +92,7 @@ async fn generate_sparql_from_natural_language(
             internal_error(
                 "Sampling response error",
                 "Expected text response from LLM",
-                Some(
-                    json!({"operation":"generate_sparql_from_natural_language","phase":"extract_response_text"}),
-                ),
+                Some(json!({"operation":"generate_sparql_from_natural_language","phase":"extract_response_text"})),
             )
         })?;
 

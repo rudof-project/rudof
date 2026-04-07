@@ -64,22 +64,12 @@ impl std::fmt::Display for ToolExecutionError {
 impl std::error::Error for ToolExecutionError {}
 
 /// Parse a required input value and return a recoverable tool error when invalid.
-pub fn parse_value_with_hint<T, E, F>(
-    value: &str,
-    value_name: &str,
-    hint: &str,
-    parser: F,
-) -> ToolResult<T>
+pub fn parse_value_with_hint<T, E, F>(value: &str, value_name: &str, hint: &str, parser: F) -> ToolResult<T>
 where
     F: FnOnce(&str) -> Result<T, E>,
     E: std::fmt::Display,
 {
-    parser(value).map_err(|e| {
-        ToolExecutionError::with_hint(
-            format!("Invalid {}: {}", value_name, e),
-            hint.to_string(),
-        )
-    })
+    parser(value).map_err(|e| ToolExecutionError::with_hint(format!("Invalid {}: {}", value_name, e), hint.to_string()))
 }
 
 /// Parse an optional input value and return a recoverable tool error when invalid.
@@ -234,8 +224,9 @@ pub const RDF_FORMAT_ENTRIES: &[FormatEntry] = &[
 pub const RDF_FORMATS: &str = "turtle, ntriples, rdfxml, jsonld, trig, nquads, n3";
 
 /// Supported ShEx formats as a slice for completions.
-pub const SHEX_FORMAT_LIST: &[&str] =
-    &["shexc", "shexj", "turtle", "ntriples", "rdfxml", "jsonld", "trig", "n3", "nquads", "internal", "simple", "json"];
+pub const SHEX_FORMAT_LIST: &[&str] = &[
+    "shexc", "shexj", "turtle", "ntriples", "rdfxml", "jsonld", "trig", "n3", "nquads", "internal", "simple", "json",
+];
 
 pub const SHEX_FORMAT_ENTRIES: &[FormatEntry] = &[
     FormatEntry {
@@ -455,13 +446,15 @@ pub const SPARQL_QUERY_RESULT_FORMAT_ENTRIES: &[FormatEntry] = &[
 ];
 
 /// Supported SPARQL query result formats as a slice for completions.
-pub const SPARQL_RESULT_FORMAT_LIST: &[&str] =
-    &["internal", "json", "xml", "csv", "tsv", "turtle", "ntriples", "rdfxml", "trig"];
+pub const SPARQL_RESULT_FORMAT_LIST: &[&str] = &[
+    "internal", "json", "xml", "csv", "tsv", "turtle", "ntriples", "rdfxml", "trig",
+];
 
 /// Supported validation result formats as a slice for completions (shared by ShEx and SHACL).
 /// Includes all values from both validators: `csv` is valid for ShEx, `minimal` for SHACL.
-pub const RESULT_FORMAT_LIST: &[&str] =
-    &["details", "compact", "json", "csv", "minimal", "turtle", "ntriples", "rdfxml", "trig", "n3", "nquads"];
+pub const RESULT_FORMAT_LIST: &[&str] = &[
+    "details", "compact", "json", "csv", "minimal", "turtle", "ntriples", "rdfxml", "trig", "n3", "nquads",
+];
 
 pub const SHEX_VALIDATION_RESULT_FORMAT_ENTRIES: &[FormatEntry] = &[
     FormatEntry {

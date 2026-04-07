@@ -43,14 +43,14 @@ pub async fn validation_guide_prompt_impl(
     let node_display = node.as_deref().unwrap_or("<not specified>");
     let shape_display = shape.as_deref().unwrap_or("<not specified>");
 
-    let (technology_key, technology_label, tool_name, schema_formats, example_schema, result_formats) =
-        match technology {
-            ValidationTechnology::Shex => (
-                "shex",
-                "SHEX",
-                "validate_shex",
-                "shexc, shexj, turtle",
-                r#"prefix : <http://example.org/>
+    let (technology_key, technology_label, tool_name, schema_formats, example_schema, result_formats) = match technology
+    {
+        ValidationTechnology::Shex => (
+            "shex",
+            "SHEX",
+            "validate_shex",
+            "shexc, shexj, turtle",
+            r#"prefix : <http://example.org/>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 
 :Person {
@@ -58,14 +58,14 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
   :age xsd:integer ? ;
   :knows @:Person *
 }"#,
-                "compact, details, json, csv",
-            ),
-            ValidationTechnology::Shacl => (
-                "shacl",
-                "SHACL",
-                "validate_shacl",
-                "turtle, ntriples, rdfxml, jsonld",
-                r#"@prefix sh: <http://www.w3.org/ns/shacl#> .
+            "compact, details, json, csv",
+        ),
+        ValidationTechnology::Shacl => (
+            "shacl",
+            "SHACL",
+            "validate_shacl",
+            "turtle, ntriples, rdfxml, jsonld",
+            r#"@prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix : <http://example.org/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
@@ -81,18 +81,16 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
     sh:datatype xsd:integer ;
     sh:maxCount 1 ;
   ] ."#,
-                "compact, details, minimal, json, csv, turtle",
-            ),
-        };
+            "compact, details, minimal, json, csv, turtle",
+        ),
+    };
 
     let messages = vec![
         PromptMessage::new_text(
             PromptMessageRole::User,
             format!(
                 "Guide me through {} validation.\nNode: {}\nShape: {}",
-                technology_label,
-                node_display,
-                shape_display
+                technology_label, node_display, shape_display
             ),
         ),
         PromptMessage::new_text(
@@ -169,4 +167,3 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
         },
     )))
 }
-

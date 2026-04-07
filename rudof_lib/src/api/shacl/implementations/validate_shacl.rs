@@ -6,7 +6,8 @@ use crate::{
 };
 use shacl_ir::compiled::schema_ir::SchemaIR as ShaclSchemaIR;
 use shacl_validation::{
-    shacl_processor::{GraphValidation, ShaclProcessor}, store::Graph,
+    shacl_processor::{GraphValidation, ShaclProcessor},
+    store::Graph,
 };
 
 pub fn validate_shacl(rudof: &mut Rudof, mode: Option<&ShaclValidationMode>) -> Result<()> {

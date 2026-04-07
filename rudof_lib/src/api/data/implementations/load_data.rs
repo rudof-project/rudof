@@ -59,9 +59,11 @@ fn load_data_from_specs_pg(rudof: &mut Rudof, data: &[InputSpec], merge: bool) -
     for input_spec in data {
         let mut data_reader = input_spec
             .open_read(Some(DataFormat::Pg.mime_type()), "PG data")
-            .map_err(|error| Box::new(DataError::DataSourceSpec {
-                message: format!("Failed to open data source '{}': {error}", input_spec.source_name()),
-            }))?;
+            .map_err(|error| {
+                Box::new(DataError::DataSourceSpec {
+                    message: format!("Failed to open data source '{}': {error}", input_spec.source_name()),
+                })
+            })?;
 
         read_pg_data(rudof, &mut data_reader, input_spec.source_name().as_str(), merge)?;
     }
@@ -80,9 +82,11 @@ fn load_data_from_specs_rdf(
     for input_spec in data {
         let mut data_reader = input_spec
             .open_read(Some(data_format.mime_type()), "RDF data")
-            .map_err(|error| Box::new(DataError::DataSourceSpec {
-                message: format!("Failed to open data source '{}': {error}", input_spec.source_name()),
-            }))?;
+            .map_err(|error| {
+                Box::new(DataError::DataSourceSpec {
+                    message: format!("Failed to open data source '{}': {error}", input_spec.source_name()),
+                })
+            })?;
 
         read_rdf_data(
             rudof,
@@ -123,13 +127,15 @@ fn read_rdf_data<R: io::Read>(
             Some(base.as_str()),
             &(*reader_mode).into(),
         )
-        .map_err(|error| Box::new(DataError::FailedParsingRdfData {
-            source_name: source_name.to_string(),
-            format: data_format.to_string(),
-            base: base.to_string(),
-            reader_mode: reader_mode.to_string(),
-            error: error.to_string(),
-        }))?;
+        .map_err(|error| {
+            Box::new(DataError::FailedParsingRdfData {
+                source_name: source_name.to_string(),
+                format: data_format.to_string(),
+                base: base.to_string(),
+                reader_mode: reader_mode.to_string(),
+                error: error.to_string(),
+            })
+        })?;
 
     Ok(())
 }
@@ -141,11 +147,11 @@ fn read_pg_data<R: io::Read>(rudof: &mut Rudof, data_reader: &mut R, source_name
 
     let mut data_content = String::new();
 
-    data_reader
-        .read_to_string(&mut data_content)
-        .map_err(|error| Box::new(DataError::DataSourceSpec {
+    data_reader.read_to_string(&mut data_content).map_err(|error| {
+        Box::new(DataError::DataSourceSpec {
             message: format!("Failed to read data from '{}': {error}", source_name),
-        }))?;
+        })
+    })?;
 
     let pg = match PgBuilder::new().parse_pg(data_content.as_str()) {
         Ok(pg) => pg,
@@ -182,16 +188,19 @@ fn get_endpoint_name(rudof: &mut Rudof, endpoint_str: &str) -> Result<SparqlEndp
     {
         Some(endpoint) => Ok(endpoint),
         None => {
-            let iri = IriS::from_str(endpoint_str).map_err(|error| Box::new(DataError::InvalidEndpoint {
-                endpoint: (endpoint_str.to_string()),
-                error: (error.to_string()),
-            }))?;
+            let iri = IriS::from_str(endpoint_str).map_err(|error| {
+                Box::new(DataError::InvalidEndpoint {
+                    endpoint: (endpoint_str.to_string()),
+                    error: (error.to_string()),
+                })
+            })?;
 
-            let endpoint =
-                SparqlEndpoint::new(&iri, &PrefixMap::new()).map_err(|error| Box::new(DataError::InvalidEndpoint {
+            let endpoint = SparqlEndpoint::new(&iri, &PrefixMap::new()).map_err(|error| {
+                Box::new(DataError::InvalidEndpoint {
                     endpoint: endpoint_str.to_string(),
                     error: error.to_string(),
-                }))?;
+                })
+            })?;
 
             Ok(endpoint)
         },

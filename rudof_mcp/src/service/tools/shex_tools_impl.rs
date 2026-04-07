@@ -282,10 +282,7 @@ pub async fn check_shex_impl(
     let structured = serialize_structured(&response, "check_shex_impl")?;
 
     let result_size_chars = output_str.chars().count();
-    let summary = format!(
-        "ShEx schema checked.\nResult size: {} chars",
-        result_size_chars
-    );
+    let summary = format!("ShEx schema checked.\nResult size: {} chars", result_size_chars);
 
     let results_preview = code_block_preview("text", &output_str, DEFAULT_CONTENT_PREVIEW_CHARS);
 

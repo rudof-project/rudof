@@ -34,10 +34,12 @@ fn serialize_pg_data<W: io::Write>(
 
     let graph = data.unwrap_pg_mut();
 
-    write!(writer, "{graph}").map_err(|e| Box::new(DataError::FailedSerializingData {
-        format: result_data_format.to_string(),
-        error: e.to_string(),
-    }))?;
+    write!(writer, "{graph}").map_err(|e| {
+        Box::new(DataError::FailedSerializingData {
+            format: result_data_format.to_string(),
+            error: e.to_string(),
+        })
+    })?;
 
     Ok(())
 }
@@ -56,10 +58,12 @@ fn serialize_rdf_data<W: io::Write>(
     if result_data_format.is_rdf_format() {
         data.unwrap_rdf_mut()
             .serialize(&result_data_format.try_into()?, writer)
-            .map_err(|e| Box::new(DataError::FailedSerializingData {
-                format: result_data_format.to_string(),
-                error: e.to_string(),
-            }))?;
+            .map_err(|e| {
+                Box::new(DataError::FailedSerializingData {
+                    format: result_data_format.to_string(),
+                    error: e.to_string(),
+                })
+            })?;
     } else {
         let visualization_config = rudof.config.rdf_data_config().rdf_visualization_config();
         let converter = VisualRDFGraph::from_rdf(data.unwrap_rdf_mut(), visualization_config).map_err(|e| {
@@ -77,17 +81,21 @@ fn serialize_rdf_data<W: io::Write>(
                     &UmlGenerationMode::all(),
                     rudof.config.plantuml_path(),
                 )
-                .map_err(|e| Box::new(DataError::FailedSerializingData {
-                    format: result_data_format.to_string(),
-                    error: e.to_string(),
-                }))?;
+                .map_err(|e| {
+                    Box::new(DataError::FailedSerializingData {
+                        format: result_data_format.to_string(),
+                        error: e.to_string(),
+                    })
+                })?;
         } else {
             converter
                 .as_plantuml(writer, &UmlGenerationMode::AllNodes)
-                .map_err(|e| Box::new(DataError::FailedSerializingData {
-                    format: result_data_format.to_string(),
-                    error: e.to_string(),
-                }))?
+                .map_err(|e| {
+                    Box::new(DataError::FailedSerializingData {
+                        format: result_data_format.to_string(),
+                        error: e.to_string(),
+                    })
+                })?
         }
     }
 

@@ -8,11 +8,7 @@ use rudof_lib::formats::NodeInspectionMode;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::{
-    collections::HashSet,
-    io::Cursor,
-    str::FromStr,
-};
+use std::{collections::HashSet, io::Cursor, str::FromStr};
 
 use super::helpers::*;
 

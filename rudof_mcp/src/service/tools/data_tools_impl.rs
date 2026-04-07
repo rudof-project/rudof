@@ -210,9 +210,7 @@ pub async fn load_rdf_data_from_sources_impl(
         sources_count, data_format_str, triple_count
     );
 
-    let mut result = CallToolResult::success(vec![
-        Content::text(summary),
-    ]);
+    let mut result = CallToolResult::success(vec![Content::text(summary)]);
     result.structured_content = Some(structured);
 
     // Explicitly release the Mutex lock before the async persist_state_with() call.

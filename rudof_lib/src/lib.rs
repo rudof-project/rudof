@@ -8,8 +8,8 @@
 //!
 //! ## Overview
 //!
-//! The main entry point to this library is the [`Rudof`] struct, which maintains 
-//! context across multiple semantic operations. 
+//! The main entry point to this library is the [`Rudof`] struct, which maintains
+//! context across multiple semantic operations.
 //!
 //! Configuration is handled via the [`RudofConfig`] struct, which offers
 //! fine-grained settings across RDF formats, SHACL validation, schema conversion,

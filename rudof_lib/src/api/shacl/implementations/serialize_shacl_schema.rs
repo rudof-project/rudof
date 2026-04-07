@@ -10,10 +10,7 @@ pub fn serialize_shacl_schema<W: io::Write>(
 ) -> Result<()> {
     let shacl_format = shacl_format.copied().unwrap_or_default();
 
-    let shacl_shapes = rudof
-        .shacl_shapes
-        .as_ref()
-        .ok_or(ShaclError::NoShaclShapesLoaded)?;
+    let shacl_shapes = rudof.shacl_shapes.as_ref().ok_or(ShaclError::NoShaclShapesLoaded)?;
 
     match shacl_format {
         ShaclFormat::Internal => {

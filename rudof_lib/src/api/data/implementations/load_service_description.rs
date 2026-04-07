@@ -18,9 +18,11 @@ pub fn load_service_description(
 
     let mut data_reader = service
         .open_read(Some(data_format.mime_type()), "Service description")
-        .map_err(|error| Box::new(DataError::DataSourceSpec {
-            message: format!("Failed to open data source '{}': {error}", service.source_name()),
-        }))?;
+        .map_err(|error| {
+            Box::new(DataError::DataSourceSpec {
+                message: format!("Failed to open data source '{}': {error}", service.source_name()),
+            })
+        })?;
 
     let service_description = ServiceDescription::from_reader(
         &mut data_reader,
@@ -29,13 +31,15 @@ pub fn load_service_description(
         Some(base.as_str()),
         &reader_mode.into(),
     )
-    .map_err(|error| Box::new(DataError::FailedParsingServiceDescriptionData {
-        source_name: service.source_name().to_string(),
-        format: data_format.to_string(),
-        base: base.to_string(),
-        reader_mode: reader_mode.to_string(),
-        error: error.to_string(),
-    }))?;
+    .map_err(|error| {
+        Box::new(DataError::FailedParsingServiceDescriptionData {
+            source_name: service.source_name().to_string(),
+            format: data_format.to_string(),
+            base: base.to_string(),
+            reader_mode: reader_mode.to_string(),
+            error: error.to_string(),
+        })
+    })?;
 
     rudof.service_description = Some(service_description);
 

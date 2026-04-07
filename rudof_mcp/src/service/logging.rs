@@ -26,7 +26,7 @@
 use rmcp::model::LoggingLevel;
 use serde_json::{Value, json};
 use std::{sync::Arc, time::Duration};
-use tokio::{sync::RwLock, sync::Mutex, time::Instant};
+use tokio::{sync::Mutex, sync::RwLock, time::Instant};
 
 /// Mapping of MCP log levels to RFC 5424 numeric severity values.
 ///

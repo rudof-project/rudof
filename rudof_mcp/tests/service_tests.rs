@@ -142,11 +142,7 @@ mod prompt_router_tests {
         let prompts = service.prompt_router.list_all();
         let prompt_names: Vec<_> = prompts.iter().map(|p| p.name.to_string()).collect();
 
-        let expected_prompts = vec![
-            "explore_rdf_node",
-            "analyze_rdf_data",
-            "validation_guide",
-        ];
+        let expected_prompts = vec!["explore_rdf_node", "analyze_rdf_data", "validation_guide"];
 
         for expected in expected_prompts {
             assert!(
