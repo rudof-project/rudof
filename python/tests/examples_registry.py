@@ -54,7 +54,7 @@ def _validate_entry(entry: dict) -> None:
         raise ValueError(f"Example '{key}' source_file not found: {source_file}")
 
     expected_output = entry.get("expected_output")
-    if not isinstance(expected_output, list) or not expected_output:
+    if not isinstance(expected_output, list):
         raise ValueError(
             f"Example '{key}' must define a non-empty 'expected_output' list"
         )

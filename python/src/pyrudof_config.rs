@@ -50,6 +50,10 @@ impl PyRudofConfig {
         let rudof_config = RudofConfig::from_path(path).map_err(cnv_config_err)?;
         Ok(PyRudofConfig { inner: rudof_config })
     }
+
+    pub fn __repr__(&self) -> String {
+        "RudofConfig()".to_string()
+    }
 }
 
 /// Convert a `ConfigError` into a Python exception by first turning it

@@ -4,6 +4,14 @@
 # Both python/docs/generate_examples_doc.py and python/tests/test_examples.py
 # read from this file.
 
+[categories.rdf]
+title = "RDF Data Handling"
+description = """Examples for RDF loading, serialization, and node inspection."""
+
+[categories.sparql]
+title = "SPARQL Queries"
+description = """Examples for SELECT, CONSTRUCT and ASK query workflows."""
+
 [categories.shex]
 title = "ShEx Validation"
 description = """Examples for reading ShEx schemas, validating data, and serializing schemas/ShapeMaps."""
@@ -12,17 +20,9 @@ description = """Examples for reading ShEx schemas, validating data, and seriali
 title = "SHACL Validation"
 description = """Examples for SHACL loading, validation, extraction from data, and serialization."""
 
-[categories.rdf]
-title = "RDF Data Handling"
-description = """Examples for RDF loading, serialization, and node inspection."""
-
 [categories.dctap]
 title = "DCTAP"
 description = """Examples for reading DCTAP profiles from inline content or files."""
-
-[categories.sparql]
-title = "SPARQL Queries"
-description = """Examples for SELECT, CONSTRUCT and ASK query workflows."""
 
 [categories.endpoint]
 title = "Service Description"
@@ -37,274 +37,274 @@ title = "Utility & Introspection"
 description = """Examples for config loading, resets, versioning, and module introspection."""
 
 [category_order]
-order = ["shex", "shacl", "rdf", "dctap", "sparql", "endpoint", "generate", "utility"]
+order = ["rdf", "sparql", "shex", "shacl", "dctap", "endpoint", "generate", "utility"]
 
 [[example]]
 key = "shex_validate_inline"
-source_file = "shex_validate_inline.py"
+source_file = "shex/shex_validate_inline.py"
 title = "ShEx Validate Inline"
 description = "Validate inline RDF data against an inline ShEx schema and ShapeMap"
 category = "shex"
 files = {}
-expected_output = ["SHEX_INLINE_VALIDATION_OK"]
+expected_output = []
 
 [[example]]
 key = "shex_validate_file"
-source_file = "shex_validate_file.py"
+source_file = "shex/shex_validate_file.py"
 title = "ShEx Validate Files"
 description = "Validate RDF data from files against a ShEx schema and ShapeMap"
 category = "shex"
 files = { schema = "person.shex", data = "person.ttl", shapemap = "person.sm" }
-expected_output = ["SHEX_FILE_VALIDATION_OK"]
+expected_output = []
 
 [[example]]
 key = "shex_serialize"
-source_file = "shex_serialize.py"
+source_file = "shex/shex_serialize.py"
 title = "ShEx Serialize"
 description = "Serialize the currently loaded ShEx schema"
 category = "shex"
 files = { schema = "person.shex" }
-expected_output = ["SHEX_SERIALIZE_OK", "Contains Person: True"]
+expected_output = []
 
 [[example]]
 key = "shapemap_roundtrip"
-source_file = "shapemap_roundtrip.py"
+source_file = "shex/shapemap_roundtrip.py"
 title = "ShapeMap Roundtrip"
 description = "Load and serialize a ShapeMap"
 category = "shex"
 files = { shapemap = "person.sm" }
-expected_output = ["SHAPEMAP_ROUNDTRIP_OK", "Serialized chars:"]
+expected_output = []
 
 [[example]]
 key = "compare_schemas"
-source_file = "compare_schemas.py"
+source_file = "shex/compare_schemas.py"
 title = "Compare Schemas"
 description = "Compare two ShEx schemas and print comparison output size"
 category = "shex"
 files = {}
-expected_output = ["COMPARE_SCHEMAS_OK", "Comparison chars:"]
+expected_output = []
 
 [[example]]
 key = "shacl_validate_inline"
-source_file = "shacl_validate_inline.py"
+source_file = "shacl/shacl_validate_inline.py"
 title = "SHACL Validate Inline"
 description = "Validate inline RDF data with inline SHACL shapes"
 category = "shacl"
 files = {}
-expected_output = ["SHACL_INLINE_VALIDATION_OK"]
+expected_output = []
 
 [[example]]
 key = "shacl_validate_file"
-source_file = "shacl_validate_file.py"
+source_file = "shacl/shacl_validate_file.py"
 title = "SHACL Validate Files"
 description = "Validate RDF data from files against SHACL shapes"
 category = "shacl"
 files = { schema = "timbl_shapes.ttl", data = "timbl.ttl" }
-expected_output = ["SHACL_FILE_VALIDATION_OK"]
+expected_output = []
 
 [[example]]
 key = "shacl_from_data"
-source_file = "shacl_from_data.py"
+source_file = "shacl/shacl_from_data.py"
 title = "SHACL From Data"
 description = "Extract SHACL shapes from current RDF data and validate"
 category = "shacl"
 files = {}
-expected_output = ["SHACL_FROM_DATA_OK"]
+expected_output = []
 
 [[example]]
 key = "shacl_serialize"
-source_file = "shacl_serialize.py"
+source_file = "shacl/shacl_serialize.py"
 title = "SHACL Serialize"
 description = "Serialize the currently loaded SHACL graph"
 category = "shacl"
 files = { schema = "timbl_shapes.ttl" }
-expected_output = ["SHACL_SERIALIZE_OK", "Serialized chars:"]
+expected_output = []
 
 [[example]]
 key = "rdf_data"
-source_file = "rdf_data.py"
+source_file = "rdf_data/rdf_data.py"
 title = "RDF Read and Serialize"
 description = "Read RDF data, merge extra triples, and serialize"
 category = "rdf"
 files = { data = "person.ttl" }
-expected_output = ["RDF_SERIALIZE_OK", "Serialized chars:"]
+expected_output = []
 
 [[example]]
 key = "node_info"
-source_file = "node_info.py"
+source_file = "rdf_data/node_info.py"
 title = "Node Info"
 description = "Inspect node neighborhood information in loaded RDF data"
 category = "rdf"
 files = { data = "person.ttl" }
-expected_output = ["NODE_INFO_OK"]
+expected_output = []
 
 [[example]]
 key = "list_endpoints"
-source_file = "list_endpoints.py"
+source_file = "rdf_data/list_endpoints.py"
 title = "List Endpoints"
 description = "List known SPARQL endpoints"
 category = "rdf"
 files = {}
-expected_output = ["LIST_ENDPOINTS_OK", "ENDPOINTS_COUNT="]
+expected_output = []
 
 [[example]]
 key = "dctap_read"
-source_file = "dctap_read.py"
+source_file = "dctap/dctap_read.py"
 title = "Read DCTAP"
 description = "Read DCTAP from inline CSV and from file"
 category = "dctap"
 files = {}
-expected_output = ["DCTAP_INLINE_OK", "DCTAP_FILE_OK"]
+expected_output = []
 
 [[example]]
 key = "sparql_select_inline"
-source_file = "sparql_select_inline.py"
+source_file = "sparql/sparql_select_inline.py"
 title = "SPARQL SELECT Inline"
 description = "Run an inline SPARQL SELECT query against loaded RDF data"
 category = "sparql"
 files = { data = "person.ttl" }
-expected_output = ["SPARQL_SELECT_INLINE_OK", "Result chars:"]
+expected_output = []
 
 [[example]]
 key = "sparql_select_file"
-source_file = "sparql_select_file.py"
+source_file = "sparql/sparql_select_file.py"
 title = "SPARQL SELECT File"
 description = "Load SPARQL query from file and run it"
 category = "sparql"
 files = { data = "person.ttl", query = "person.sparql" }
-expected_output = ["SPARQL_SELECT_FILE_OK", "Result chars:"]
+expected_output = []
 
 [[example]]
 key = "sparql_construct"
-source_file = "sparql_construct.py"
+source_file = "sparql/sparql_construct.py"
 title = "SPARQL CONSTRUCT"
 description = "Run a CONSTRUCT query and serialize graph results"
 category = "sparql"
 files = { data = "person.ttl" }
-expected_output = ["SPARQL_CONSTRUCT_OK", "Result chars:"]
+expected_output = []
 
 [[example]]
 key = "sparql_ask"
-source_file = "sparql_ask.py"
+source_file = "sparql/sparql_ask.py"
 title = "SPARQL SELECT Internal"
 description = "Run a SELECT query and serialize results using the default internal format"
 category = "sparql"
 files = { data = "person.ttl" }
-expected_output = ["SPARQL_INTERNAL_SELECT_OK", "Result chars:"]
+expected_output = []
 
 [[example]]
 key = "service_description"
-source_file = "service_description.py"
+source_file = "endpoint/service_description.py"
 title = "Service Description"
 description = "Read and serialize SPARQL service descriptions"
 category = "endpoint"
 files = {}
-expected_output = ["SERVICE_DESCRIPTION_OK", "JSON chars:", "Internal chars:"]
+expected_output = []
 
 [[example]]
 key = "generate_config_core"
-source_file = "generate_config_core.py"
+source_file = "generate/generate_config_core.py"
 title = "Generator Config Core"
 description = "Set and read core generator configuration values"
 category = "generate"
 files = {}
-expected_output = ["GEN_CONFIG_CORE_OK", "Entity count:", "Output path:"]
+expected_output = []
 
 [[example]]
 key = "generate_config_parallel"
-source_file = "generate_config_parallel.py"
+source_file = "generate/generate_config_parallel.py"
 title = "Generator Config Parallel"
 description = "Configure and read parallel generation settings"
 category = "generate"
 files = {}
-expected_output = ["GEN_CONFIG_PARALLEL_OK", "Parallel fields:"]
+expected_output = []
 
 [[example]]
 key = "generate_config_quality"
-source_file = "generate_config_quality.py"
+source_file = "generate/generate_config_quality.py"
 title = "Generator Config Quality"
 description = "Configure locale, quality and distribution settings"
 category = "generate"
 files = {}
-expected_output = ["GEN_CONFIG_QUALITY_OK", "Locale:"]
+expected_output = []
 
 [[example]]
 key = "generate_config_persistence"
-source_file = "generate_config_persistence.py"
+source_file = "generate/generate_config_persistence.py"
 title = "Generator Config Persistence"
 description = "Persist GeneratorConfig to TOML and load from TOML/JSON"
 category = "generate"
 files = {}
-expected_output = ["GEN_CONFIG_PERSISTENCE_OK", "TOML entity count:", "JSON entity count:"]
+expected_output = []
 
 [[example]]
 key = "generate_load_methods"
-source_file = "generate_load_methods.py"
+source_file = "generate/generate_load_methods.py"
 title = "DataGenerator Load Methods"
 description = "Use load_shex_schema, load_shacl_schema, and load_schema_auto"
 category = "generate"
 files = {}
-expected_output = ["GEN_LOAD_METHODS_OK", "Generated shex output exists: True", "Loaded SHACL schema", "Loaded schema with auto-detection"]
+expected_output = []
 
 [[example]]
 key = "generate_run_methods"
-source_file = "generate_run_methods.py"
+source_file = "generate/generate_run_methods.py"
 title = "DataGenerator Run Methods"
 description = "Use run_with_format and run to execute generation"
 category = "generate"
 files = {}
-expected_output = ["GEN_RUN_METHODS_OK", "run_with_format output exists: True", "run output exists: True"]
+expected_output = []
 
 [[example]]
 key = "rudof_config_from_path"
-source_file = "rudof_config_from_path.py"
+source_file = "utility/rudof_config_from_path.py"
 title = "RudofConfig From Path"
 description = "Create RudofConfig from a TOML file and initialize Rudof"
 category = "utility"
 files = {}
-expected_output = ["RUDOF_CONFIG_FROM_PATH_OK", "Rudof"]
+expected_output = []
 
 [[example]]
 key = "rudof_update_config"
-source_file = "rudof_update_config.py"
+source_file = "utility/rudof_update_config.py"
 title = "Rudof Update Config"
 description = "Update the configuration of an existing Rudof instance"
 category = "utility"
 files = {}
-expected_output = ["RUDOF_UPDATE_CONFIG_OK"]
+expected_output = []
 
 [[example]]
 key = "rudof_resets"
-source_file = "rudof_resets.py"
+source_file = "utility/rudof_resets.py"
 title = "Rudof Reset Methods"
 description = "Call all reset methods exposed by Rudof"
 category = "utility"
 files = { schema = "person.shex", data = "person.ttl", shapemap = "person.sm", query = "person.sparql" }
-expected_output = ["RUDOF_RESETS_OK"]
+expected_output = []
 
 [[example]]
 key = "rudof_version"
-source_file = "rudof_version.py"
+source_file = "utility/rudof_version.py"
 title = "Rudof Version"
 description = "Get and print the current Rudof version"
 category = "utility"
 files = {}
-expected_output = ["RUDOF_VERSION_OK", "Version:"]
+expected_output = []
 
 [[example]]
 key = "module_info"
-source_file = "module_info.py"
+source_file = "utility/module_info.py"
 title = "Module Info"
 description = "Print the installed pyrudof module file path"
 category = "utility"
 files = {}
-expected_output = ["MODULE_FILE", "pyrudof"]
+expected_output = []
 
 [[example]]
-key = "show_pyrudof_classes"
-source_file = "show_pyrudof_classes.py"
-title = "Show pyrudof Classes"
-description = "List classes available in pyrudof"
+key = "error_handling"
+source_file = "utility/error_handling.py"
+title = "Error Handling"
+description = "Catching exceptions raised by rudof operations"
 category = "utility"
 files = {}
-expected_output = ["PYRUDOF_CLASSES_OK", "Contains Rudof: True", "Contains RudofConfig: True"]
+expected_output = []

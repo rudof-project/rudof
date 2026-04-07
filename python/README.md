@@ -1,63 +1,96 @@
-# pyrudof — Python bindings for Rudof
+# pyrudof - Python bindings for Rudof
 
-[![PyPI](https://img.shields.io/pypi/v/pyrudof)](https://pypi.org/project/pyrudof/)
-[![Docs](https://readthedocs.org/projects/pyrudof/badge/?version=latest)](https://pyrudof.readthedocs.io/en/latest/)
+`pyrudof` provides Python bindings for [rudof](https://rudof-project.github.io/rudof),
+a Rust library for Semantic Web operations.
 
-`pyrudof` provides Python bindings for [rudof](https://rudof-project.github.io/rudof), a Rust library for working with RDF data validation and related Semantic Web technologies.
+At a high level it supports:
 
-**Key features:**
+- Loading and serializing **RDF** and **PG** data.
+- Loading, checking, serializing and validating **ShEx** schemas.
+- Loading, serializing and validating **SHACL** shapes.
+- Loading, serializing and validating **PGSchemas**.
+- Loading, running and serializing **SPARQL** queries and query results.
+- Converting and comparing schemas between supported formats.
+- Loading and serializing **DCTAP** and **Service Descriptions**.
+- Generating synthetic data from schemas.
 
-- **ShEx & SHACL validation** — validate RDF graphs against Shape Expressions and SHACL shapes.
-- **DCTAP conversion** — read Dublin Core Tabular Application Profiles and convert them to ShEx.
-- **SPARQL queries** — run SELECT / CONSTRUCT queries against local data or remote endpoints.
-- **Schema comparison** — compare two schemas for structural equivalence.
-- **UML visualization** — generate PlantUML diagrams from schemas and data.
-- **Synthetic data generation** — create RDF data from ShEx or SHACL schemas via `rudof_generate`.
+## Installation
 
-**Links:**
-[PyPI](https://pypi.org/project/pyrudof/) ·
-[Documentation](https://pyrudof.readthedocs.io/en/latest/) ·
-[Tutorials (Jupyter)](https://rudof-project.github.io/tutorials)
+### Install from PyPI (recommended)
 
-## Building from source
+```sh
+pip install pyrudof
+```
 
-`pyrudof` is built with [PyO3](https://pyo3.rs/) and [maturin](https://www.maturin.rs/).
+`pyrudof` is built with [PyO3](https://pyo3.rs/) using abi3 wheels (Python 3.7+ compatible).
+
+### Build from source
+
+Building from source requires a working Rust toolchain and Python.
 
 ```sh
 # Clone the repository
 git clone https://github.com/rudof-project/rudof.git
 cd rudof/python
 
-# (Optional) create a virtual environment
-python3 -m venv .venv
-source .venv/bin/activate   # Linux/macOS
-# .venv\Scripts\Activate.ps1  # Windows PowerShell
+# Optional but recommended: virtual environment
+python -m venv .venv
+# Linux/macOS:
+source .venv/bin/activate
+# Windows PowerShell:
+# .\.venv\Scripts\Activate.ps1
 
-# Install maturin and build
+# Build and install editable package
 pip install maturin
 pip install -e .
 ```
 
-For a release-optimised wheel:
+For a release wheel:
 
 ```sh
 maturin build --release
 pip install --force-reinstall target/wheels/pyrudof-*.whl
 ```
 
+## Architecture and package structure
+
+### Package layout
+
+| Path | Purpose |
+|---|---|
+| `src/` | Rust implementation of the Python bindings (`Rudof`, `RudofConfig`, generator APIs, enums, and error mappings). |
+| `stubs/pyrudof/` | Hand-maintained `.pyi` type stubs for static type checking and editor support. |
+| `examples/` | Runnable example scripts organized by category, plus `examples.toml` manifest metadata. |
+| `tests/` | Python `unittest` suite and manifest registry loader for example-based tests. |
+| `docs/` | Sphinx docs, including the examples page generator (`generate_examples_doc.py`). |
+| `Cargo.toml` / `pyproject.toml` | Rust crate and Python build configuration (`maturin` + PyO3). |
+
+### Test architecture
+
+Tests are dynamically generated from `examples/examples.toml`.
+
+Each generated test:
+
+1. Executes the registered Python example as a subprocess.
+2. Asserts a zero exit code.
+3. Checks configured `expected_output` substrings (if any).
+
+| Component | Purpose |
+|---|---|
+| `tests/test_examples.py` | Builds dynamic `unittest.TestCase` classes per category/example. |
+| `tests/examples_registry.py` | Loads and validates `examples/examples.toml` entries. |
+| `examples/examples.toml` | Single source of truth for metadata and category order. |
+| `examples/**/*.py` | Executable example scripts run by tests and referenced by docs. |
+
 ## Testing
 
-### Run the full test suite
+All test commands are run from `python/tests`.
+
+### Run the full suite
 
 ```sh
 cd python/tests
 python -m unittest discover -vvv
-```
-
-### Run only the example tests
-
-```sh
-python -m unittest test_examples -v
 ```
 
 ### Run a specific category or test
@@ -66,156 +99,77 @@ python -m unittest test_examples -v
 # All ShEx examples
 python -m unittest test_examples.TestShexExamples -v
 
+# All SHACL examples
+python -m unittest test_examples.TestShaclExamples -v
+
+# All data generation examples
+python -m unittest test_examples.TestGenerateExamples -v
+
 # A single example
-python -m unittest test_examples.TestShexExamples.test_shex_validate -v
-
-# SHACL API tests
-python -m unittest test_shacl -v
-
-# Data generation tests
-python -m unittest test_generate -v
+python -m unittest test_examples.TestShexExamples.test_shex_validate_inline -v
 ```
 
-### Test architecture
+### Run skipped examples
 
-Tests are **auto-generated** from `examples/examples.toml`. When `test_examples.py` is loaded, it reads the manifest and dynamically creates one `unittest.TestCase` class per category, with one test method per example. Each test:
+Examples marked with `skip_test = true` in the manifest are skipped by default.
 
-1. Launches the `.py` file as a **subprocess** (exactly as a user would run it).
-2. Asserts a zero exit code and non-empty stdout.
-3. Checks any `expected_output` substrings declared in the manifest.
+```sh
+# Linux/macOS
+RUN_SKIPPED_EXAMPLES=1 python -m unittest test_examples -v
 
-Examples that require network access, a PlantUML JAR, or special runtimes are marked with `skip_test = true` in the TOML and are automatically skipped.
-
-| Test file | What it covers |
-|---|---|
-| `test_examples.py` | All examples from the manifest |
-| `test_shacl.py` | SHACL validation API |
-| `test_generate.py` | `GeneratorConfig` / `DataGenerator` API |
+# Windows PowerShell
+$env:RUN_SKIPPED_EXAMPLES="1"; python -m unittest test_examples -v
+```
 
 ## Examples and documentation
 
-### Single source of truth
+The examples system is intentionally centralized:
 
-The example system is designed to **eliminate duplication**. Code lives in one place only:
-
-- **examples/*.py**: the executable code (authoritative)
-- **examples/examples.toml**: metadata: title, description, category, files, expected_output, skip_test
-
-Both the test suite and the documentation generator read from these two sources. There is no inline code in the registry or in the RST file.
-
-### Adding a new example
-
-1. **Create** a `.py` file in `python/examples/` (it must be a runnable script that prints output).
-
-2. **Register** it in `examples/examples.toml`:
-
-   ```toml
-   [[example]]
-   key = "my_example"
-   source_file = "my_example.py"
-   title = "My Example"
-   description = "What this example demonstrates"
-   category = "shex"          # shex | shacl | rdf | dctap | sparql | endpoint | generate | uml | utility
-   files = {data = "my_data.ttl"}   # optional: referenced files
-   expected_output = ["some expected string"]  # optional: substrings to check
-   # skip_test = true         # uncomment if it needs network, PlantUML, etc.
-   ```
-
-3. **Run tests** to verify:
-
-   ```sh
-   cd python/tests
-   python -m unittest test_examples -v
-   ```
-
-4. **Regenerate** the documentation:
-
-   ```sh
-   python python/docs/generate_examples_doc.py --update
-   ```
-
-5. **Verify** the docs are in sync:
-
-   ```sh
-   python python/docs/generate_examples_doc.py --check
-   ```
+- `examples/examples.toml` stores metadata (`key`, `source_file`, `title`, `description`, `category`, `files`, `expected_output`, `skip_test`).
+- `examples/**/*.py` stores the executable code.
+- `tests/test_examples.py` and `docs/generate_examples_doc.py` both read from that same manifest.
 
 ### Available categories
 
 | Category | Description |
 |---|---|
-| `shex` | ShEx validation |
-| `shacl` | SHACL validation |
-| `rdf` | RDF parsing and serialization |
-| `dctap` | DCTAP profiles and conversion |
-| `sparql` | SPARQL queries (local data) |
-| `endpoint` | Remote endpoints (skipped in CI) |
-| `generate` | Synthetic data generation |
-| `uml` | PlantUML visualization (skipped in CI) |
-| `utility` | Module introspection and testing |
+| `rdf` | RDF loading, serialization, node inspection |
+| `sparql` | SELECT / CONSTRUCT query workflows |
+| `shex` | ShEx loading, validation, and serialization |
+| `shacl` | SHACL loading, validation, extraction, serialization |
+| `dctap` | DCTAP profile handling |
+| `endpoint` | Service description examples |
+| `generate` | Synthetic data generation APIs |
+| `utility` | Config, resets, version, module/error helpers |
 
-### Building the documentation locally
+### Add a new example
+
+1. Create a runnable script under `python/examples/` (recommended: place it inside a category subfolder, for example `python/examples/shex/my_example.py`).
+2. Register it in `python/examples/examples.toml`.
+3. Run tests from `python/tests`.
+4. Regenerate and check docs in `python/docs`.
+
+Manifest template:
+
+```toml
+[[example]]
+key = "my_example"
+source_file = "shex/my_example.py"
+title = "My Example"
+description = "What this example demonstrates"
+category = "shex"  # rdf | sparql | shex | shacl | dctap | endpoint | generate | utility
+files = { data = "person.ttl" }  # optional referenced files
+expected_output = ["Alice"]       # optional substrings (can be empty list)
+# skip_test = true                 # optional (network/special runtime)
+```
+
+### Build docs locally
 
 ```sh
 cd python/docs
+python generate_examples_doc.py --update
+python generate_examples_doc.py --check
 python -m sphinx -b html . _build/html
 ```
 
-Then open `_build/html/index.html` in a browser.
-
-## Using `rudof_generate`
-
-`pyrudof` includes bindings for synthetic RDF data generation.
-
-### Basic usage
-
-```python
-import pyrudof
-
-config = pyrudof.GeneratorConfig()
-config.set_entity_count(100)
-config.set_seed(42)
-config.set_output_path("output.ttl")
-config.set_output_format(pyrudof.OutputFormat.Turtle)
-
-generator = pyrudof.DataGenerator(config)
-generator.run("schema.shex")
-```
-
-### Configuration options
-
-```python
-config = pyrudof.GeneratorConfig()
-
-# Generation
-config.set_entity_count(1000)
-config.set_seed(42)
-config.set_schema_format(pyrudof.SchemaFormat.ShEx)   # or .Shacl
-config.set_cardinality_strategy(pyrudof.CardinalityStrategy.Balanced)
-# Strategies: Minimum, Maximum, Random, Balanced
-
-# Output
-config.set_output_path("data.ttl")
-config.set_output_format(pyrudof.OutputFormat.Turtle)  # or .NTriples
-config.set_compress(False)
-config.set_write_stats(True)
-
-# Parallelism
-config.set_worker_threads(4)
-config.set_batch_size(100)
-config.set_parallel_writing(True)
-config.set_parallel_file_count(4)
-```
-
-### Configuration files
-
-```python
-# Load / save TOML
-config = pyrudof.GeneratorConfig.from_toml_file("config.toml")
-config.to_toml_file("saved.toml")
-
-# Load / save JSON
-config = pyrudof.GeneratorConfig.from_json_file("config.json")
-```
-
-See the advanced examples in `examples/advanced_generate_example.py` and `examples/config_file_example.py` for more patterns.
+Then open `python/docs/_build/html/index.html`.

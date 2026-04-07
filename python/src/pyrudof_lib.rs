@@ -17,25 +17,18 @@ use rudof_lib::{
 };
 use std::{io::BufWriter, str::FromStr};
 
-/// Main interface for working with RDF data, schemas, and validation.
+/// Main interface for working with Semantic Web operations.
 ///
-/// The ``Rudof`` class provides a unified interface for:
+/// Provides a unified interface for:
 ///
-/// * Reading and manipulating RDF data in multiple formats
-/// * Working with ShEx and SHACL schemas
-/// * Validating RDF data against schemas
-/// * Executing SPARQL queries (local and remote)
-/// * Converting between schema formats (ShEx, SHACL, DCTAP)
-/// * Generating visualizations (UML diagrams)
-///
-/// *State Management*: A single ``Rudof`` instance maintains:
-///
-/// * RDF data graph
-/// * ShEx schema
-/// * SHACL shapes graph
-/// * ShapeMap for validation
-/// * DCTAP application profiles
-/// * Current SPARQL query
+/// - Loading and serializing **RDF** and **PG** data.
+/// - Loading, checking, serializing and validating **ShEx** schemas.
+/// - Loading, serializing and validating **SHACL** shapes.
+/// - Loading, serializing and validating **PGSchemas**.
+/// - Loading, running and serializing **SPARQL** queries and query results.
+/// - Converting and comparing schemas between supported formats.
+/// - Loading and serializing **DCTAP** and **Service Descriptions**.
+/// - Generating synthetic data from schemas.
 #[pyclass(name = "Rudof")]
 pub struct PyRudof {
     inner: Rudof,
@@ -102,7 +95,7 @@ impl PyRudof {
     ///
     /// Removes the stored query from memory.
     pub fn reset_query(&mut self) {
-        self.inner.reset_all().execute();
+        self.inner.reset_query().execute();
     }
 
     /// Resets all current state (data, schemas, queries, validation results).
@@ -188,7 +181,7 @@ impl PyRudof {
     ///     input (str): String, file path or URL to the RDF data. Defaults to ``None``.
     ///         Examples: ``"data.ttl"``, ``"http://example.org/data.rdf"``
     ///     format (RDFFormat, optional): Serialization format. Defaults to ``RDFFormat.Turtle``.
-    ///         Available: Turtle, NTriples, Rdfxml, TriG, N3, NQuads, JsonLd
+    ///         Available: Turtle, NTriples, RdfXml, TriG, N3, NQuads, JsonLd
     ///     base (str, optional): Base IRI for resolving relative IRIs. Defaults to ``None``.
     ///     reader_mode (&ReaderMode, optional): Error handling strategy. Defaults to ``ReaderMode.Lax``.
     ///         - ``Lax``: Continue on errors (recommended for real-world data)
@@ -575,7 +568,7 @@ impl PyRudof {
     ///
     /// Args:
     ///     input (str): String, file path or URL to the ShapeMap.
-    ///     format (DCTapFormat, optional): Data format. Defaults to ``DCTapFormat.CSV``.
+    ///     format (DCTapFormat, optional): Data format. Defaults to ``DCTapFormat.Csv``.
     ///
     /// Raises:
     ///     RudofError: If DCTAP data is malformed.
@@ -852,6 +845,10 @@ impl PyRudof {
     pub fn reset_validation_results(&mut self) {
         self.inner.reset_shex().execute();
     }
+
+    pub fn __repr__(&self) -> String {
+        format!("Rudof(version='{}')", self.inner.version().execute())
+    }
 }
 
 /// Declares the reader mode used when parsing RDF data.
@@ -922,13 +919,12 @@ impl From<&PySortModeResultMap> for ShExValidationSortByMode {
 }
 
 /// RDF data serialization formats supported when reading or writing graphs.
-#[allow(clippy::upper_case_acronyms)]
 #[pyclass(eq, eq_int, name = "RDFFormat")]
 #[derive(PartialEq)]
 pub enum PyRDFFormat {
     Turtle,
     NTriples,
-    Rdfxml,
+    RdfXml,
     TriG,
     N3,
     NQuads,
@@ -953,30 +949,27 @@ pub enum PyResultDataFormat {
 }
 
 /// Output formats for SPARQL CONSTRUCT query results.
-#[allow(clippy::upper_case_acronyms)]
 #[pyclass(eq, eq_int, name = "QueryResultFormat")]
 #[derive(PartialEq)]
 pub enum PyQueryResultFormat {
     Turtle,
     NTriples,
-    Rdfxml,
+    RdfXml,
     TriG,
     N3,
     NQuads,
-    CSV,
+    Csv,
 }
 
 /// DCTAP input formats.
-#[allow(clippy::upper_case_acronyms)]
 #[pyclass(eq, eq_int, name = "DCTapFormat")]
 #[derive(PartialEq)]
 pub enum PyDCTapFormat {
-    CSV,
-    XLSX,
+    Csv,
+    Xlsx,
 }
 
 /// Service Description serialization format.
-#[allow(clippy::upper_case_acronyms)]
 #[pyclass(eq, eq_int, name = "ServiceDescriptionFormat")]
 #[derive(PartialEq)]
 pub enum PyServiceDescriptionFormat {
@@ -986,16 +979,14 @@ pub enum PyServiceDescriptionFormat {
 }
 
 /// ShapeMap serialization formats.
-#[allow(clippy::upper_case_acronyms)]
 #[pyclass(eq, eq_int, name = "ShapeMapFormat")]
 #[derive(PartialEq)]
 pub enum PyShapeMapFormat {
     Compact,
-    JSON,
+    Json,
 }
 
 /// ShEx schema serialization formats.
-#[allow(clippy::upper_case_acronyms)]
 #[pyclass(eq, eq_int, name = "ShExFormat")]
 #[derive(PartialEq)]
 pub enum PyShExFormat {
@@ -1005,13 +996,12 @@ pub enum PyShExFormat {
 }
 
 /// SHACL shapes graph serialization formats.
-#[allow(clippy::upper_case_acronyms)]
 #[pyclass(eq, eq_int, name = "ShaclFormat")]
 #[derive(PartialEq)]
 pub enum PyShaclFormat {
     Turtle,
     NTriples,
-    Rdfxml,
+    RdfXml,
     TriG,
     N3,
     NQuads,
@@ -1085,6 +1075,17 @@ impl PyRudofError {
     }
 }
 
+#[pymethods]
+impl PyRudofError {
+    pub fn __repr__(&self) -> String {
+        format!("RudofError('{}')", self.error)
+    }
+
+    pub fn __str__(&self) -> String {
+        format!("{}", self.error)
+    }
+}
+
 impl From<PyRudofError> for PyErr {
     fn from(e: PyRudofError) -> Self {
         PyValueError::new_err(format!("{}", e.error))
@@ -1093,7 +1094,6 @@ impl From<PyRudofError> for PyErr {
 
 impl From<RudofError> for PyRudofError {
     fn from(error: RudofError) -> Self {
-        println!("From<RudofError>: {error}");
         Self { error: Box::new(error) }
     }
 }
@@ -1122,8 +1122,8 @@ fn cnv_dctap_format(format: Option<&PyDCTapFormat>) -> Option<&DCTapFormat> {
     format?;
 
     match format.unwrap() {
-        PyDCTapFormat::CSV => Some(&DCTapFormat::Csv),
-        PyDCTapFormat::XLSX => Some(&DCTapFormat::Xlsx),
+        PyDCTapFormat::Csv => Some(&DCTapFormat::Csv),
+        PyDCTapFormat::Xlsx => Some(&DCTapFormat::Xlsx),
     }
 }
 
@@ -1173,7 +1173,7 @@ fn cnv_rdf_format(format: Option<&PyRDFFormat>) -> Option<&DataFormat> {
     match format.unwrap() {
         PyRDFFormat::Turtle => Some(&DataFormat::Turtle),
         PyRDFFormat::NTriples => Some(&DataFormat::NTriples),
-        PyRDFFormat::Rdfxml => Some(&DataFormat::RdfXml),
+        PyRDFFormat::RdfXml => Some(&DataFormat::RdfXml),
         PyRDFFormat::TriG => Some(&DataFormat::TriG),
         PyRDFFormat::N3 => Some(&DataFormat::N3),
         PyRDFFormat::NQuads => Some(&DataFormat::NQuads),
@@ -1210,7 +1210,7 @@ fn cnv_shapemap_format(format: Option<&PyShapeMapFormat>) -> Option<&ShapeMapFor
 
     match format.unwrap() {
         PyShapeMapFormat::Compact => Some(&ShapeMapFormat::Compact),
-        PyShapeMapFormat::JSON => Some(&ShapeMapFormat::Json),
+        PyShapeMapFormat::Json => Some(&ShapeMapFormat::Json),
     }
 }
 
@@ -1244,7 +1244,7 @@ fn cnv_shacl_format(format: Option<&PyShaclFormat>) -> Option<&ShaclFormat> {
     match format.unwrap() {
         PyShaclFormat::Turtle => Some(&ShaclFormat::Turtle),
         PyShaclFormat::NTriples => Some(&ShaclFormat::NTriples),
-        PyShaclFormat::Rdfxml => Some(&ShaclFormat::RdfXml),
+        PyShaclFormat::RdfXml => Some(&ShaclFormat::RdfXml),
         PyShaclFormat::TriG => Some(&ShaclFormat::TriG),
         PyShaclFormat::N3 => Some(&ShaclFormat::N3),
         PyShaclFormat::NQuads => Some(&ShaclFormat::NQuads),
@@ -1291,8 +1291,8 @@ fn cnv_query_result_format(format: Option<&PyQueryResultFormat>) -> Option<&Resu
     match format.unwrap() {
         PyQueryResultFormat::Turtle => Some(&ResultQueryFormat::Turtle),
         PyQueryResultFormat::NTriples => Some(&ResultQueryFormat::NTriples),
-        PyQueryResultFormat::Rdfxml => Some(&ResultQueryFormat::RdfXml),
-        PyQueryResultFormat::CSV => Some(&ResultQueryFormat::Csv),
+        PyQueryResultFormat::RdfXml => Some(&ResultQueryFormat::RdfXml),
+        PyQueryResultFormat::Csv => Some(&ResultQueryFormat::Csv),
         PyQueryResultFormat::TriG => Some(&ResultQueryFormat::TriG),
         PyQueryResultFormat::N3 => Some(&ResultQueryFormat::N3),
         PyQueryResultFormat::NQuads => Some(&ResultQueryFormat::NQuads),

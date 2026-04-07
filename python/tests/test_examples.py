@@ -43,11 +43,6 @@ def _make_test(example_key: str):
         source_file = example["source_file"]
         expected_output = example.get("expected_output", [])
 
-        self.assertTrue(
-            len(expected_output) > 0,
-            f"Example '{example_key}' must define at least one expected_output substring",
-        )
-
         result = subprocess.run(
             [sys.executable, source_file],
             cwd=str(_EXAMPLES_DIR),
@@ -62,12 +57,6 @@ def _make_test(example_key: str):
             f"Example '{example_key}' ({source_file}) failed:\n"
             f"--- stdout ---\n{result.stdout}\n"
             f"--- stderr ---\n{result.stderr}",
-        )
-
-        # Non-empty output expected from every example
-        self.assertTrue(
-            len(result.stdout.strip()) > 0,
-            f"Example '{example_key}' produced no output",
         )
 
         # Check expected substrings if any

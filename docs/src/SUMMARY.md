@@ -33,7 +33,6 @@
 - [Docs](./library/docs.md)
 - [Processing RDF](./library/rdf_processing.md)
 - [Parsing RDF](./library/parsing_processing.md)
-- [Python-bindings](./library/python.md)
 
 # `rudof` internals
 
@@ -41,6 +40,7 @@
 - [Architecture](./internals/architecture.md)
   - [`iri_s`](./internals/crates/iri_s.md)
   - [`prefixmap`](./internals/crates/prefixmap.md)
+  - [`python`](./internals/crates/python.md)
   - [`rudof_cli`](./internals/crates/rudof_cli.md)
   - [`rudof_lib`](./internals/crates/rudof_lib.md)
   - [`rudof_rdf`](./internals/crates/rudof_rdf.md)
