@@ -258,7 +258,7 @@ impl Display for ResultConversionFormat {
             ResultConversionFormat::ShExC => write!(dest, "shexc"),
             ResultConversionFormat::ShExJ => write!(dest, "shexj"),
             ResultConversionFormat::Turtle => write!(dest, "turtle"),
-            ResultConversionFormat::PlantUML => write!(dest, "uml"),
+            ResultConversionFormat::PlantUML => write!(dest, "plantuml"),
             ResultConversionFormat::Html => write!(dest, "html"),
             ResultConversionFormat::Png => write!(dest, "png"),
             ResultConversionFormat::Svg => write!(dest, "svg"),
