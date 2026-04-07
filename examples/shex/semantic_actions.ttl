@@ -1,8 +1,4 @@
-PREFIX fhir: <http://hl7.org/fhir-rdf/>
-PREFIX sct: <http://snomed.info/sct/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 prefix : <http://example.org/>
 
-:alice :name "Alice"; :age 23; :knows :bob .
-:bob :name "Robert"; :age 45; :knows :alice, :carol .
-:carol :name "Carol"; :age 24 .
+:alice :name "Alice"; :age 23; :address [ :name "Any street"; :city "Anytown" ] .

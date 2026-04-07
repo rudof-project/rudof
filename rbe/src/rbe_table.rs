@@ -1,5 +1,6 @@
 use crate::Bag;
 use crate::Component;
+use crate::Context;
 use crate::EmptyIter;
 use crate::Key;
 use crate::MatchCond;
@@ -20,11 +21,12 @@ use std::vec::IntoIter;
 use tracing::trace;
 
 #[derive(Default, PartialEq, Eq, Clone)]
-pub struct RbeTable<K, V, R>
+pub struct RbeTable<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
+    Ctx: Context,
 {
     // A regular bag expression of components
     rbe: Rbe<Component>,
@@ -33,7 +35,7 @@ where
     key_components: IndexMap<K, IndexSet<Component>>,
 
     // TODO: Unify in a single table component_cond and component_key
-    component_cond: IndexMap<Component, MatchCond<K, V, R>>,
+    component_cond: IndexMap<Component, MatchCond<K, V, R, Ctx>>,
     component_key: HashMap<Component, K>,
 
     // Indicates if the RBE is open or closed
@@ -43,17 +45,18 @@ where
     component_counter: usize,
 }
 
-impl<K, V, R> RbeTable<K, V, R>
+impl<K, V, R, Ctx> RbeTable<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
+    Ctx: Context,
 {
-    pub fn new() -> RbeTable<K, V, R> {
+    pub fn new() -> RbeTable<K, V, R, Ctx> {
         RbeTable::default()
     }
 
-    pub fn get_condition(&self, c: &Component) -> Option<&MatchCond<K, V, R>> {
+    pub fn get_condition(&self, c: &Component) -> Option<&MatchCond<K, V, R, Ctx>> {
         self.component_cond.get(c)
     }
 
@@ -65,7 +68,7 @@ where
         self.key_components.keys()
     }
 
-    pub fn add_component(&mut self, k: K, cond: &MatchCond<K, V, R>) -> Component {
+    pub fn add_component(&mut self, k: K, cond: &MatchCond<K, V, R, Ctx>) -> Component {
         let c = Component::from(self.component_counter);
         let key = k.clone();
         self.key_components
@@ -88,16 +91,16 @@ where
         self.rbe = rbe;
     }
 
-    pub fn matches(&self, values: Vec<(K, V)>) -> Result<MatchTableIter<K, V, R>, RbeError<K, V, R>> {
+    pub fn matches(&self, values: Vec<(K, V, Ctx)>) -> Result<MatchTableIter<K, V, R, Ctx>, RbeError<K, V, R, Ctx>> {
         trace!(
             "Checking if RbeTable {} matches [{}]",
             &self,
-            values.iter().map(|(k, v)| format!("({k} {v})")).join(", ")
+            values.iter().map(|(k, v, ctx)| format!("({k} {v} {ctx})")).join(", ")
         );
         let mut pairs_found = 0;
         let mut candidates = Vec::new();
         let cs_empty = IndexSet::new();
-        for (key, value) in &values {
+        for (key, value, ctx) in &values {
             let components = self.key_components.get(key).unwrap_or(&cs_empty);
             let mut pairs = Vec::new();
             if components.len() > 1 {
@@ -107,10 +110,10 @@ where
                 let mut last_err = None;
                 for component in components {
                     let cond = self.component_cond.get(component).unwrap();
-                    match cond.matches(value) {
+                    match cond.matches(value, ctx) {
                         Ok(_) => {
                             pairs_found += 1;
-                            pairs.push((key.clone(), value.clone(), *component, cond.clone()));
+                            pairs.push((key.clone(), value.clone(), ctx.clone(), *component, cond.clone()));
                         },
                         Err(err) => {
                             trace!("Pre-filter: condition {cond} rejected value {value} for component {component}");
@@ -127,7 +130,7 @@ where
                 for component in components {
                     let cond = self.component_cond.get(component).unwrap();
                     pairs_found += 1;
-                    pairs.push((key.clone(), value.clone(), *component, cond.clone()));
+                    pairs.push((key.clone(), value.clone(), ctx.clone(), *component, cond.clone()));
                 }
             }
             candidates.push(pairs);
@@ -167,14 +170,14 @@ where
         }
     }
 
-    pub fn components(&self) -> ComponentsIter<'_, K, V, R> {
+    pub fn components(&self) -> ComponentsIter<'_, K, V, R, Ctx> {
         ComponentsIter {
             current: 0,
             table: self,
         }
     }
 
-    pub fn find_cond(&self, key: &K) -> Option<&MatchCond<K, V, R>> {
+    pub fn find_cond(&self, key: &K) -> Option<&MatchCond<K, V, R, Ctx>> {
         self.key_components.get(key).and_then(|cs| {
             if let Some(c) = cs.iter().next() {
                 self.component_cond.get(c)
@@ -192,7 +195,7 @@ where
         let rbe_str = self.rbe.map(&|c| {
             let key = self.component_key.get(c).unwrap();
             let cond = self.component_cond.get(c).unwrap();
-            format!("{} {}", show_key(key), cond.show(&show_key, &show_value))
+            format!("{} {}", show_key(key), cond.show())
         });
         rbe_str.pretty(width)
     }
@@ -209,23 +212,25 @@ where
     }
 }
 
-pub struct ComponentsIter<'a, K, V, R>
+pub struct ComponentsIter<'a, K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
+    Ctx: Context,
 {
     current: usize,
-    table: &'a RbeTable<K, V, R>,
+    table: &'a RbeTable<K, V, R, Ctx>,
 }
 
-impl<K, V, R> Iterator for ComponentsIter<'_, K, V, R>
+impl<K, V, R, Ctx> Iterator for ComponentsIter<'_, K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
+    Ctx: Context,
 {
-    type Item = (Component, K, MatchCond<K, V, R>);
+    type Item = (Component, K, MatchCond<K, V, R, Ctx>);
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.current < self.table.component_counter {
@@ -240,11 +245,12 @@ where
     }
 }
 
-impl<K, V, R> Debug for ComponentsIter<'_, K, V, R>
+impl<K, V, R, Ctx> Debug for ComponentsIter<'_, K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
+    Ctx: Context,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ComponentsIter")
@@ -254,11 +260,12 @@ where
     }
 }
 
-impl<K, V, R> Debug for RbeTable<K, V, R>
+impl<K, V, R, Ctx> Debug for RbeTable<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
+    Ctx: Context,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("RbeTable")
@@ -273,23 +280,25 @@ where
 }
 
 #[derive(Debug, Clone)]
-pub enum MatchTableIter<K, V, R>
+pub enum MatchTableIter<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
+    Ctx: Context,
 {
-    Empty(EmptyIter<K, V, R>),
-    NonEmpty(IterCartesianProduct<K, V, R>),
+    Empty(EmptyIter<K, V, R, Ctx>),
+    NonEmpty(IterCartesianProduct<K, V, R, Ctx>),
 }
 
-impl<K, V, R> Iterator for MatchTableIter<K, V, R>
+impl<K, V, R, Ctx> Iterator for MatchTableIter<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
+    Ctx: Context,
 {
-    type Item = Result<Pending<V, R>, rbe_error::RbeError<K, V, R>>;
+    type Item = Result<Pending<V, R>, rbe_error::RbeError<K, V, R, Ctx>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
@@ -299,28 +308,30 @@ where
     }
 }
 
-type State<K, V, R> = MultiProduct<IntoIter<(K, V, Component, MatchCond<K, V, R>)>>;
+type State<K, V, R, Ctx> = MultiProduct<IntoIter<(K, V, Ctx, Component, MatchCond<K, V, R, Ctx>)>>;
 
 #[derive(Debug, Clone)]
-pub struct IterCartesianProduct<K, V, R>
+pub struct IterCartesianProduct<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
+    Ctx: Context,
 {
     is_first: bool,
-    state: State<K, V, R>,
+    state: State<K, V, R, Ctx>,
     rbe: Rbe<Component>,
     open: bool,
 }
 
-impl<K, V, R> Iterator for IterCartesianProduct<K, V, R>
+impl<K, V, R, Ctx> Iterator for IterCartesianProduct<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
+    Ctx: Context,
 {
-    type Item = Result<Pending<V, R>, rbe_error::RbeError<K, V, R>>;
+    type Item = Result<Pending<V, R>, rbe_error::RbeError<K, V, R, Ctx>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let next_state = self.state.next();
@@ -340,8 +351,8 @@ where
                 // trace!("Next state: ({k} {v}) should match component {c} with cond: {cond})");
                 //}
                 let mut pending: Pending<V, R> = Pending::new();
-                for (_k, v, _, cond) in &vs {
-                    match cond.matches(v) {
+                for (_k, v, ctx, _, cond) in &vs {
+                    match cond.matches(v, ctx) {
                         Ok(new_pending) => {
                             //trace!(
                             //    "Condition passed: {cond} with value: {v}, new pending: {new_pending}"
@@ -356,7 +367,7 @@ where
                     }
                 }
                 // trace!("Pending after checking conditions: {pending}");
-                let bag = Bag::from_iter(vs.into_iter().map(|(_, _, c, _)| c));
+                let bag = Bag::from_iter(vs.into_iter().map(|(_, _, _, c, _)| c));
                 match self.rbe.match_bag(&bag, self.open) {
                     Ok(()) => {
                         trace!("Rbe {} matches bag {}", self.rbe, bag);
@@ -374,11 +385,12 @@ where
     }
 }
 
-impl<K, V, R> Display for RbeTable<K, V, R>
+impl<K, V, R, Ctx> Display for RbeTable<K, V, R, Ctx>
 where
     K: Key + Display,
     V: Value + Display,
     R: Ref + Display,
+    Ctx: Context + Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "RBE [{}]", self.rbe)?;
@@ -403,15 +415,16 @@ where
 }
 
 #[allow(clippy::type_complexity)]
-pub fn show_candidate<K, V, R>(candidate: &[(K, V, Component, MatchCond<K, V, R>)]) -> String
+pub fn show_candidate<K, V, R, Ctx>(candidate: &[(K, V, Ctx, Component, MatchCond<K, V, R, Ctx>)]) -> String
 where
     K: Key + Display,
     V: Value + Display,
     R: Ref + Display,
+    Ctx: Context + Display,
 {
     candidate
         .iter()
-        .map(|(k, v, c, cond)| format!("({k} {v})@{c} {cond}"))
+        .map(|(k, v, ctx, c, cond)| format!("({k} {v} {ctx})@{c} {cond}"))
         .collect::<Vec<_>>()
         .join(", ")
 }
@@ -430,8 +443,8 @@ mod tests {
     fn test_rbe_table_1() {
         // { p a; q y; q z } == { p is_a; q @t ; q @u }
         //     Pending y/@t, z/@u | y@u, z@t
-        let is_a: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("is_a").with_cond(move |v| {
+        let is_a: MatchCond<char, char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("is_a").with_cond(move |v, _ctx| {
                 if *v == 'a' {
                     Ok(Pending::new())
                 } else {
@@ -441,21 +454,21 @@ mod tests {
                 }
             }));
 
-        let ref_t: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("ref_t").with_cond(move |v| {
+        let ref_t: MatchCond<char, char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("ref_t").with_cond(move |v, _ctx| {
                 let mut pending = Pending::new();
                 pending.insert(*v, 't');
                 Ok(pending)
             }));
 
-        let ref_u: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("ref_u").with_cond(move |v| {
+        let ref_u: MatchCond<char, char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("ref_u").with_cond(move |v, _ctx| {
                 let mut pending = Pending::new();
                 pending.insert(*v, 'u');
                 Ok(pending)
             }));
 
-        let vs = vec![('p', 'a'), ('q', 'y'), ('q', 'z')];
+        let vs = vec![('p', 'a', ' '), ('q', 'y', ' '), ('q', 'z', ' ')];
 
         // rbe_table = { p is_a ; q @t ; q @u+ }
         let mut rbe_table = RbeTable::new();
@@ -485,8 +498,8 @@ mod tests {
     fn test_rbe_table_2_fail() {
         // { p a; q y } != { p is_a; q @t ; q @u }
         //     Pending y/@t, z/@u | y@u, z@t
-        let is_a: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("is_a").with_cond(move |v| {
+        let is_a: MatchCond<char, char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("is_a").with_cond(move |v, _ctx| {
                 if *v == 'a' {
                     Ok(Pending::new())
                 } else {
@@ -496,21 +509,21 @@ mod tests {
                 }
             }));
 
-        let ref_t: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("ref_t").with_cond(move |v| {
+        let ref_t: MatchCond<char, char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("ref_t").with_cond(move |v, _ctx| {
                 let mut pending = Pending::new();
                 pending.insert(*v, 't');
                 Ok(pending)
             }));
 
-        let ref_u: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("ref_u").with_cond(move |v| {
+        let ref_u: MatchCond<char, char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("ref_u").with_cond(move |v, _ctx| {
                 let mut pending = Pending::new();
                 pending.insert(*v, 'u');
                 Ok(pending)
             }));
 
-        let vs = vec![('p', 'a'), ('q', 'y')];
+        let vs = vec![('p', 'a', ' '), ('q', 'y', ' ')];
 
         // rbe_table = { p is_a ; q @t ; q @u+ }
         let mut rbe_table = RbeTable::new();
@@ -532,8 +545,8 @@ mod tests {
     fn test_rbe_table_3_basic() {
         // { p a; q a } == { p is_a; q is_a }
         //     Ok
-        let is_a: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("is_a").with_cond(move |v| {
+        let is_a: MatchCond<char, char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("is_a").with_cond(move |v, _ctx| {
                 if *v == 'a' {
                     Ok(Pending::new())
                 } else {
@@ -543,7 +556,7 @@ mod tests {
                 }
             }));
 
-        let vs = vec![('p', 'a'), ('q', 'a')];
+        let vs = vec![('p', 'a', ' '), ('q', 'a', ' ')];
 
         // rbe_table = { p is_a ; q is_a }
         let mut rbe_table = RbeTable::new();
@@ -564,8 +577,8 @@ mod tests {
     fn test_rbe_table_4_basic_fail() {
         // { p a; q b } == { p is_a; q is_a }
         //     Ok
-        let is_a: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("is_a").with_cond(move |v| {
+        let is_a: MatchCond<char, char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("is_a").with_cond(move |v, _ctx| {
                 if *v == 'a' {
                     Ok(Pending::new())
                 } else {
@@ -575,7 +588,7 @@ mod tests {
                 }
             }));
 
-        let vs = vec![('p', 'a'), ('q', 'b')];
+        let vs = vec![('p', 'a', ' '), ('q', 'b', ' ')];
 
         // rbe_table = { p is_a ; q is_a }
         let mut rbe_table = RbeTable::new();
@@ -603,8 +616,8 @@ mod tests {
     fn test_rbe_table_5_same_key_strict_conditions() {
         // { p x; p y } == { p is_x; p is_y }
         // Each value should match exactly one condition.
-        let is_x: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("is_x").with_cond(move |v| {
+        let is_x: MatchCond<char, char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("is_x").with_cond(move |v, _ctx| {
                 if *v == 'x' {
                     Ok(Pending::new())
                 } else {
@@ -614,8 +627,8 @@ mod tests {
                 }
             }));
 
-        let is_y: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("is_y").with_cond(move |v| {
+        let is_y: MatchCond<char, char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("is_y").with_cond(move |v, _ctx| {
                 if *v == 'y' {
                     Ok(Pending::new())
                 } else {
@@ -625,7 +638,7 @@ mod tests {
                 }
             }));
 
-        let vs = vec![('p', 'x'), ('p', 'y')];
+        let vs = vec![('p', 'x', ' '), ('p', 'y', ' ')];
 
         // rbe_table = { p is_x ; p is_y }
         let mut rbe_table = RbeTable::new();
@@ -645,8 +658,8 @@ mod tests {
     /// Same key, two strict conditions, but one value doesn't match any.
     #[test]
     fn test_rbe_table_6_same_key_strict_no_match() {
-        let is_x: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("is_x").with_cond(move |v| {
+        let is_x: MatchCond<char, char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("is_x").with_cond(move |v, _ctx| {
                 if *v == 'x' {
                     Ok(Pending::new())
                 } else {
@@ -656,8 +669,8 @@ mod tests {
                 }
             }));
 
-        let is_y: MatchCond<char, char, char> =
-            MatchCond::single(SingleCond::new().with_name("is_y").with_cond(move |v| {
+        let is_y: MatchCond<char, char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("is_y").with_cond(move |v, _ctx| {
                 if *v == 'y' {
                     Ok(Pending::new())
                 } else {
@@ -668,7 +681,7 @@ mod tests {
             }));
 
         // Value 'z' doesn't match is_x or is_y
-        let vs = vec![('p', 'x'), ('p', 'z')];
+        let vs = vec![('p', 'x', ' '), ('p', 'z', ' ')];
 
         let mut rbe_table = RbeTable::new();
         let c1 = rbe_table.add_component('p', &is_x);

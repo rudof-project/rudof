@@ -4,7 +4,12 @@ prefix : <http://example.org/>
 
 
 :Person {
-  :name  xsd:string    %Map:{ :name %} ;
-  :age   xsd:integer ? %Map:{ :age %} ;
-  :knows @:Person *
+  :name    xsd:string    %Map:{ :name %} ;
+  :age     xsd:integer ? %Map:{ :age %} ;
+  :address @:Address ? ;
+}
+
+:Address {
+  :name   xsd:string %Map:{ :addressName %} ;
+  :city   xsd:string %Map:{ :addressCity %} ;
 }
