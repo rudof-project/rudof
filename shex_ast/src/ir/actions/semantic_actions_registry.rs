@@ -1,5 +1,6 @@
-use crate::ir::actions::{
-    semantic_action_error::SemanticActionError, semantic_action_extension::SemanticActionExtension,
+use crate::ir::{
+    actions::{semantic_action_error::SemanticActionError, semantic_action_extension::SemanticActionExtension},
+    semantic_action_context::SemanticActionContext,
 };
 use iri_s::IriS;
 use std::{fmt, sync::Arc};
@@ -47,9 +48,7 @@ impl SemanticActionsRegistry {
         &self,
         action_iri: &IriS,
         parameter: Option<&str>,
-        s: Option<&str>,
-        p: Option<&str>,
-        o: Option<&str>,
+        context: &SemanticActionContext,
     ) -> Result<(), SemanticActionError> {
         let ext = self
             .extensions
@@ -58,7 +57,7 @@ impl SemanticActionsRegistry {
             .ok_or_else(|| SemanticActionError::UnknownExtension {
                 iri: action_iri.to_string(),
             })?;
-        ext.run_action(parameter, s, p, o)
+        ext.run_action(parameter, context)
     }
 }
 
@@ -80,9 +79,12 @@ impl Default for SemanticActionsRegistry {
 mod tests {
     use iri_s::{IriS, iri};
 
-    use crate::ir::actions::{
-        semantic_action_error::SemanticActionError, semantic_actions_registry::SemanticActionsRegistry,
-        test_action_extension::TestActionExtension,
+    use crate::ir::{
+        actions::{
+            semantic_action_error::SemanticActionError, semantic_actions_registry::SemanticActionsRegistry,
+            test_action_extension::TestActionExtension,
+        },
+        semantic_action_context::SemanticActionContext,
     };
 
     fn test_iri() -> IriS {
@@ -98,14 +100,14 @@ mod tests {
     #[test]
     fn print_dispatches_to_test_extension() {
         registry_with_test()
-            .run_action(&test_iri(), Some(r#"print("ok")"#), None, None, None)
+            .run_action(&test_iri(), Some(r#"print("ok")"#), &SemanticActionContext::default())
             .unwrap();
     }
 
     #[test]
     fn fail_dispatches_to_test_extension() {
         let err = registry_with_test()
-            .run_action(&test_iri(), Some(r#"fail("bad")"#), None, None, None)
+            .run_action(&test_iri(), Some(r#"fail("bad")"#), &SemanticActionContext::default())
             .unwrap_err();
         assert!(matches!(err, SemanticActionError::FailAction { message } if message == "bad"));
     }
@@ -114,7 +116,7 @@ mod tests {
     fn unknown_iri_returns_error() {
         let unknown = iri!("http://example.org/unknown/");
         let err = registry_with_test()
-            .run_action(&unknown, Some(r#"print("x")"#), None, None, None)
+            .run_action(&unknown, Some(r#"print("x")"#), &SemanticActionContext::default())
             .unwrap_err();
         assert!(matches!(err, SemanticActionError::UnknownExtension { .. }));
     }
@@ -122,7 +124,7 @@ mod tests {
     #[test]
     fn empty_registry_returns_error() {
         let err = SemanticActionsRegistry::new()
-            .run_action(&test_iri(), Some(r#"print("x")"#), None, None, None)
+            .run_action(&test_iri(), Some(r#"print("x")"#), &SemanticActionContext::default())
             .unwrap_err();
         assert!(matches!(err, SemanticActionError::UnknownExtension { .. }));
     }

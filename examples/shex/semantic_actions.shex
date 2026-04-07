@@ -1,15 +1,15 @@
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-PREFIX Map: <http://shex.io/extensions/Map/>
+PREFIX Test: <http://shex.io/extensions/Test/>
 prefix : <http://example.org/>
 
 
 :Person {
-  :name    xsd:string    %Map:{ :name %} ;
-  :age     xsd:integer ? %Map:{ :age %} ;
+  :name    xsd:string    %Test:{ print(s) %} %Test:{ print(p) %} %Test:{ print(o) %} ;
+  :age     xsd:integer ? %Test:{ print(s) %} %Test:{ print(p) %} %Test:{ print(o) %} ;
   :address @:Address ? ;
 }
 
 :Address {
-  :name   xsd:string %Map:{ :addressName %} ;
-  :city   xsd:string %Map:{ :addressCity %} ;
+  :name   xsd:string %Test:{ print(s) %} %Test:{ print(p) %} %Test:{ print(o) %} ;
+  :city   xsd:string %Test:{ print(s) %} %Test:{ print(p) %} %Test:{ print(o) %} ;
 }

@@ -27,17 +27,17 @@ impl SemanticActionExtension for MapActionExtension {
     fn run_action(
         &self,
         _parameter: Option<&str>,
-        s: Option<&str>,
-        _p: Option<&str>,
-        _o: Option<&str>,
+        context: &crate::ir::semantic_action_context::SemanticActionContext,
     ) -> Result<(), SemanticActionError> {
-        println!("Node: {}", s.unwrap_or("None"));
+        println!("Node: {}", context.s().unwrap_or("None".to_string()));
         Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::ir::semantic_action_context::SemanticActionContext;
+
     use super::*;
 
     fn ext() -> MapActionExtension {
@@ -47,54 +47,29 @@ mod tests {
     #[test]
     fn print_literal() {
         ext()
-            .run_action(Some(r#"print("hello world")"#), None, None, None)
+            .run_action(Some(r#"print("hello world")"#), &SemanticActionContext::default())
             .unwrap();
     }
 
     #[test]
     fn print_escaped_literal() {
         ext()
-            .run_action(Some(r#"print("say \"hi\"")"#), None, None, None)
+            .run_action(Some(r#"print("say \"hi\"")"#), &SemanticActionContext::default())
             .unwrap();
     }
 
     #[test]
     fn print_subject() {
         ext()
-            .run_action(Some("print(s)"), Some("http://example.org/s"), None, None)
+            .run_action(
+                Some("print(s)"),
+                &SemanticActionContext::subject("http://example.org/s"),
+            )
             .unwrap();
     }
 
     #[test]
-    fn fail_literal() {
-        let err = ext()
-            .run_action(Some(r#"fail("bad value")"#), None, None, None)
-            .unwrap_err();
-        assert!(matches!(err, SemanticActionError::FailAction { message } if message == "bad value"));
-    }
-
-    #[test]
-    fn fail_object() {
-        let err = ext()
-            .run_action(Some("fail(o)"), None, None, Some("http://example.org/bad"))
-            .unwrap_err();
-        assert!(matches!(err, SemanticActionError::FailAction { message } if message == "http://example.org/bad"));
-    }
-
-    /*#[test]
-    fn unresolved_variable() {
-        let err = ext().run_action(Some("print(p)"), None, None, None).unwrap_err();
-        assert!(matches!(err, SemanticActionError::UnresolvedVariable { variable } if variable == "p"));
-    }*/
-
-    #[test]
-    fn invalid_parameter() {
-        let err = ext().run_action(Some("unknown(s)"), None, None, None).unwrap_err();
-        assert!(matches!(err, SemanticActionError::InvalidTestParameter { .. }));
-    }
-
-    #[test]
     fn empty_parameter() {
-        ext().run_action(None, None, None, None).unwrap();
+        ext().run_action(None, &SemanticActionContext::default()).unwrap();
     }
 }

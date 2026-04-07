@@ -187,7 +187,7 @@ where
         })
     }
 
-    pub fn show_rbe_table<SK, SV>(&self, show_key: SK, show_value: SV, width: usize) -> String
+    pub fn show_rbe_table<SK, SV>(&self, show_key: SK, _show_value: SV, width: usize) -> String
     where
         SK: Fn(&K) -> String,
         SV: Fn(&V) -> String,

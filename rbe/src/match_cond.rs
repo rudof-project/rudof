@@ -346,7 +346,7 @@ mod tests {
 
     #[test]
     fn test_even_cond_2_pass() {
-        let cond_even: SingleCond<char, i32, String, char> = SingleCond::new().with_cond(|v, ctx| {
+        let cond_even: SingleCond<char, i32, String, char> = SingleCond::new().with_cond(|v, _ctx| {
             if v % 2 == 0 {
                 Ok(Pending::new())
             } else {
@@ -361,7 +361,7 @@ mod tests {
 
     #[test]
     fn test_even_cond_3_fail() {
-        let cond_even: SingleCond<char, i32, String, char> = SingleCond::new().with_cond(|v, ctx| {
+        let cond_even: SingleCond<char, i32, String, char> = SingleCond::new().with_cond(|v, _ctx| {
             if v % 2 == 0 {
                 Ok(Pending::new())
             } else {
@@ -377,7 +377,7 @@ mod tests {
     #[test]
     fn test_name_fail() {
         fn cond_name(name: String) -> SingleCond<char, String, String, char> {
-            SingleCond::new().with_cond(move |v: &String, ctx: &char| {
+            SingleCond::new().with_cond(move |v: &String, _ctx: &char| {
                 if *v == name {
                     Ok(Pending::new())
                 } else {
@@ -396,7 +396,7 @@ mod tests {
         fn cond_name(name: String) -> SingleCond<char, String, String, char> {
             SingleCond::new()
                 .with_name("name")
-                .with_cond(move |v: &String, ctx: &char| {
+                .with_cond(move |v: &String, _ctx: &char| {
                     if *v == name {
                         Ok(Pending::new())
                     } else {
