@@ -1,5 +1,4 @@
 use rudof_rdf::rdf_core::term::literal::Lang;
-use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
 use std::{result, str::FromStr};
 use thiserror::Error;
@@ -44,11 +43,7 @@ impl Serialize for LangOrWildcard {
     {
         match self {
             LangOrWildcard::Lang(lang) => serializer.serialize_str(&lang.to_string()),
-            LangOrWildcard::Wildcard => {
-                let mut map = serializer.serialize_map(Some(1))?;
-                map.serialize_entry("type", "Wildcard")?;
-                map.end()
-            },
+            LangOrWildcard::Wildcard => serializer.serialize_str(""),
         }
     }
 }

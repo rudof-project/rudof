@@ -322,7 +322,7 @@ rmcp = { version = "=1.3.0", features = [
 ] }
 rmcp-macros = "1.3.0"
 rudof_cli = { version = "0.2.0", path = "./rudof_cli" }
-rudof_rdf = { version = "0.2.2", path = "./rudof_rdf" }
+rudof_rdf = { version = "0.2.2", path = "./rudof_rdf", default-features = false }
 rudof_generate = { version = "0.2.1", path = "./rudof_generate" }
 rudof_lib = { version = "0.2.0", path = "./rudof_lib" }
 rudof_mcp = { version = "0.2.0", path = "./rudof_mcp" }
@@ -342,7 +342,7 @@ shex_testsuite = { version = "0.2.1", path = "./shex_testsuite" }
 shex_validation = { version = "0.2.1", path = "./shex_validation" }
 sparesults = { version = "0.3.0", features = ["sparql-12"] }
 spargebra = { version = "0.4.0", features = ["sparql-12"] }
-sparql_service = { version = "0.2.2", path = "./sparql_service" }
+sparql_service = { version = "0.2.2", path = "./sparql_service", default-features = false }
 supports-color = "3.0.0"
 tabled = { version = "0.20.0", features = ["ansi"] }
 tempfile = "3.10.1"

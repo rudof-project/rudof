@@ -4,6 +4,7 @@ use crate::focus_nodes::FocusNodes;
 use crate::helpers::sparql::select;
 use crate::shacl_engine::engine::Engine;
 use crate::validate_error::ValidateError;
+use crate::validation_cache::ValidationCache;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
@@ -19,11 +20,15 @@ use shacl_ir::schema_ir::SchemaIR;
 use shacl_ir::shape_label_idx::ShapeLabelIdx;
 use std::fmt::Debug;
 
-pub struct SparqlEngine;
+pub struct SparqlEngine {
+    cache: ValidationCache,
+}
 
 impl SparqlEngine {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            cache: ValidationCache::new(),
+        }
     }
 }
 
@@ -166,14 +171,16 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
         }))
     }
 
-    fn record_validation(&mut self, _node: Object, _shape_idx: ShapeLabelIdx, _results: Vec<ValidationResult>) {
-        // Nothing to do by now...
+    fn record_validation(&mut self, node: Object, shape_idx: ShapeLabelIdx, results: Vec<ValidationResult>) {
+        self.cache.record(node, shape_idx, results);
     }
 
-    fn has_validated(&self, _node: &Object, _shape_idx: ShapeLabelIdx) -> bool {
-        // By default, always return false so it forces re-validation
-        // This behavious can be a problem for recursive shapes
-        false
+    fn has_validated(&self, node: &Object, shape_idx: ShapeLabelIdx) -> bool {
+        self.cache.has_validated(node, shape_idx)
+    }
+
+    fn get_cached_results(&self, node: &Object, shape_idx: ShapeLabelIdx) -> Option<&Vec<ValidationResult>> {
+        self.cache.get_results(node, shape_idx)
     }
 
     /*fn predicate(

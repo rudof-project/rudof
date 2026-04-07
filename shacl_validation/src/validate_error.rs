@@ -7,6 +7,7 @@ use rudof_rdf::rdf_impl::InMemoryGraphError;
 use shacl_ir::compiled::compiled_shacl_error::CompiledShaclError;
 use shacl_ir::shape_label_idx::ShapeLabelIdx;
 use shacl_rdf::error::ShaclParserError;
+#[cfg(feature = "sparql")]
 use sparql_service::RdfDataError;
 use thiserror::Error;
 
@@ -85,6 +86,7 @@ pub enum ValidateError {
     #[error("Not yet implemented: {msg}")]
     NotImplemented { msg: String },
 
+    #[cfg(feature = "sparql")]
     #[error(transparent)]
     RdfDataError(#[from] RdfDataError),
 
@@ -99,4 +101,7 @@ pub enum ValidateError {
         predicate: String,
         error: String,
     },
+
+    #[error("Error building class instance index: {error}")]
+    ClassIndexBuild { error: String },
 }

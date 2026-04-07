@@ -7,17 +7,85 @@ use super::UmlEntry;
 use super::UmlError;
 use super::UmlLink;
 use super::ValueConstraint;
+use serde::Deserialize;
+use serde::Serialize;
+use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::hash_map::*;
 use std::hash::Hash;
 use std::io::Write;
 
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+pub enum UmlLabelType {
+    Class,
+    Or,
+    Not,
+    And,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize, Default)]
+pub enum LineType {
+    Orthogonal,
+    Polyline,
+    #[default]
+    Default,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize, Default)]
+pub enum Direction {
+    LeftToRight,
+    #[default]
+    TopToBottom,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+pub enum UmlLabel {
+    Class(String),
+    Or(usize),
+    Not(usize),
+    And(usize),
+}
+
+impl UmlLabel {
+    pub fn label_type(&self) -> UmlLabelType {
+        match self {
+            UmlLabel::Class(_) => UmlLabelType::Class,
+            UmlLabel::Or(_) => UmlLabelType::Or,
+            UmlLabel::Not(_) => UmlLabelType::Not,
+            UmlLabel::And(_) => UmlLabelType::And,
+        }
+    }
+
+    pub fn mk_logical_label(label_type: &UmlLabelType, idx: usize) -> UmlLabel {
+        match label_type {
+            UmlLabelType::Class => panic!("Cannot create a logical label with type Class for idx {idx}"),
+            UmlLabelType::Or => UmlLabel::Or(idx),
+            UmlLabelType::Not => UmlLabel::Not(idx),
+            UmlLabelType::And => UmlLabel::And(idx),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+struct LogicalComponent {
+    label_type: UmlLabelType,
+    members: BTreeSet<NodeId>,
+}
+
 #[derive(Debug, PartialEq, Default)]
 pub struct Uml {
+    /// Counter to generate new node ids
     labels_counter: usize,
 
-    labels: HashMap<String, NodeId>,
+    /// Counter to generate new node ids for logical components
+    logical_components_counter: usize,
+
+    /// Logical components store
+    logical_components: HashMap<LogicalComponent, usize>,
+
+    /// Associates a label with a node
+    labels: HashMap<UmlLabel, NodeId>,
 
     /// Associates a node with an UmlComponent
     components: HashMap<NodeId, UmlComponent>,
@@ -40,9 +108,24 @@ impl Uml {
         Default::default()
     }
 
+    pub fn get_logical_component_idx(&mut self, nodes: &BTreeSet<NodeId>, label_type: &UmlLabelType) -> usize {
+        let logical_component = LogicalComponent {
+            label_type: label_type.clone(),
+            members: nodes.clone(),
+        };
+        match self.logical_components.entry(logical_component.clone()) {
+            Entry::Occupied(c) => *c.get(),
+            Entry::Vacant(v) => {
+                self.logical_components_counter += 1;
+                v.insert(self.logical_components_counter);
+                self.logical_components_counter
+            },
+        }
+    }
+
     /// Tries to get a node from a label. If it exists returns the node and true, otherwise, adds the node and returns false
-    pub fn get_node_adding_label(&mut self, label: &str) -> (NodeId, bool) {
-        match self.labels.entry(label.to_string()) {
+    pub fn get_node_adding_label(&mut self, label: &UmlLabel) -> (NodeId, bool) {
+        match self.labels.entry(label.clone()) {
             Entry::Occupied(c) => (*c.get(), true),
             Entry::Vacant(v) => {
                 self.labels_counter += 1;
@@ -54,7 +137,7 @@ impl Uml {
     }
 
     /// Search a node from a label. If it does not exist, returno `None``
-    pub fn get_node(&self, label: &str) -> Option<NodeId> {
+    pub fn get_node(&self, label: &UmlLabel) -> Option<NodeId> {
         self.labels.get(label).copied()
     }
 
@@ -66,6 +149,10 @@ impl Uml {
                 Ok(())
             },
         }
+    }
+
+    pub fn get_component(&self, node: &NodeId) -> Option<&UmlComponent> {
+        self.components.get(node)
     }
 
     pub fn update_component(&mut self, node: NodeId, component: UmlComponent) -> Result<(), UmlError> {
@@ -90,11 +177,11 @@ impl Uml {
     pub fn add_link(
         &mut self,
         source: NodeId,
-        target: Name,
+        target: UmlLabel,
         link_name: Name,
         card: UmlCardinality,
     ) -> Result<(), UmlError> {
-        match self.labels.entry(target.name()) {
+        match self.labels.entry(target) {
             Entry::Occupied(entry) => {
                 let target = *entry.get();
                 self.make_link(source, target, link_name, card);
@@ -191,7 +278,24 @@ impl Uml {
     fn preamble(&self, writer: &mut impl Write, config: &ShEx2UmlConfig) -> Result<(), UmlError> {
         writeln!(writer, "hide empty members")?;
 
-        writeln!(writer, "skinparam linetype ortho")?;
+        match config.direction.clone().unwrap_or_default() {
+            Direction::LeftToRight => {
+                writeln!(writer, "left to right direction")?;
+            },
+            Direction::TopToBottom => {
+                writeln!(writer, "top to bottom direction")?;
+            },
+        }
+
+        match config.line_type.clone().unwrap_or_default() {
+            LineType::Orthogonal => {
+                writeln!(writer, "skinparam linetype ortho")?;
+            },
+            LineType::Polyline => {
+                writeln!(writer, "skinparam linetype polyline")?;
+            },
+            LineType::Default => {},
+        }
 
         // Hide the class attribute icon
         writeln!(writer, "hide circles")?;
@@ -238,8 +342,12 @@ fn component2plantuml<W: Write>(
         UmlComponent::Or { exprs: _ } => {
             writeln!(writer, "class \"OR\" as {node_id} {{}}")?;
         },
-        UmlComponent::Not { expr: _ } => todo!(),
-        UmlComponent::And { exprs: _ } => todo!(),
+        UmlComponent::Not { expr: _ } => {
+            writeln!(writer, "class \"NOT\" as {node_id} {{}}")?;
+        },
+        UmlComponent::And { exprs: _ } => {
+            writeln!(writer, "class \"AND\" as {node_id} {{}}")?;
+        },
     }
     Ok(())
 }
@@ -313,11 +421,23 @@ fn value_constraint2plantuml(vc: &ValueConstraint, config: &ShEx2UmlConfig) -> S
         ValueConstraint::And { values } => values.iter().fold(String::new(), |mut acc, vc| {
             let vc_str = value_constraint2plantuml(vc, config);
             if !acc.is_empty() {
-                acc.push(' ');
+                acc.push_str(" AND ");
             }
             acc.push_str(vc_str.as_str());
             acc
         }),
+        ValueConstraint::Or { values } => values.iter().fold(String::new(), |mut acc, vc| {
+            let vc_str = value_constraint2plantuml(vc, config);
+            if !acc.is_empty() {
+                acc.push_str(" OR ");
+            }
+            acc.push_str(vc_str.as_str());
+            acc
+        }),
+        ValueConstraint::Not { value } => {
+            let vc_str = value_constraint2plantuml(value, config);
+            format!("NOT {vc_str}")
+        },
     }
 }
 

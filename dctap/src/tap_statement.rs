@@ -20,8 +20,8 @@ pub struct TapStatement {
     #[serde(rename = "valueNodeType", skip_serializing_if = "Option::is_none")]
     value_nodetype: Option<NodeType>,
 
-    #[serde(rename = "valueDataType", skip_serializing_if = "Option::is_none")]
-    value_datatype: Option<DatatypeId>,
+    #[serde(rename = "valueDataType", skip_serializing_if = "Vec::is_empty")]
+    value_datatype: Vec<DatatypeId>,
 
     #[serde(rename = "valueConstraint", skip_serializing_if = "Option::is_none")]
     value_constraint: Option<ValueConstraint>,
@@ -63,8 +63,8 @@ impl TapStatement {
         self.mandatory = Some(mandatory);
     }
 
-    pub fn set_value_datatype(&mut self, datatype: &DatatypeId) {
-        self.value_datatype = Some(datatype.clone());
+    pub fn set_value_datatype(&mut self, datatype: &[DatatypeId]) {
+        self.value_datatype = datatype.to_vec();
     }
 
     pub fn set_value_nodetype(&mut self, nodetype: &NodeType) {
@@ -97,8 +97,8 @@ impl TapStatement {
     pub fn repeatable(&self) -> Option<bool> {
         self.repeatable
     }
-    pub fn value_datatype(&self) -> Option<DatatypeId> {
-        self.value_datatype.clone()
+    pub fn value_datatype(&self) -> &[DatatypeId] {
+        &self.value_datatype
     }
     pub fn value_shape(&self) -> Option<ShapeId> {
         self.value_shape.clone()
@@ -142,7 +142,7 @@ fn show_property(property_id: &PropertyId, property_label: &Option<String>) -> S
 
 fn show_node_constraints(
     value_node_type: &Option<NodeType>,
-    datatype: &Option<DatatypeId>,
+    datatypes: &[DatatypeId],
     value_constraint: &Option<ValueConstraint>,
     value_shape: &Option<ShapeId>,
 ) -> String {
@@ -150,7 +150,7 @@ fn show_node_constraints(
     if let Some(node_type) = value_node_type {
         result.push_str(format!("{node_type} ").as_str());
     }
-    if let Some(datatype) = datatype {
+    for datatype in datatypes {
         result.push_str(format!("{datatype} ").as_str());
     }
     if let Some(value_constraint) = value_constraint {

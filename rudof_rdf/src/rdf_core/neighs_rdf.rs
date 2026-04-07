@@ -15,7 +15,7 @@ use std::{
 pub type IncomingArcs<R> = HashMap<<R as Rdf>::IRI, HashSet<<R as Rdf>::Subject>>;
 /// Maps predicates to sets of objects (forward navigation)
 pub type OutgoingArcs<R> = HashMap<<R as Rdf>::IRI, HashSet<<R as Rdf>::Term>>;
-/// Filtered outgoing arcs with remainder predicates
+/// Filtered outgoing arcs with reminder predicates
 pub type OutgoingArcsFromList<R> = (OutgoingArcs<R>, Vec<<R as Rdf>::IRI>);
 
 /// Trait for navigating RDF graphs and querying triples.
@@ -79,7 +79,7 @@ pub trait NeighsRDF: Rdf {
         subject: &S,
         predicate: &P,
         object: &O,
-    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err>
+    ) -> Result<impl Iterator<Item = Self::Triple> + '_, Self::Err>
     where
         S: Matcher<Self::Subject>,
         P: Matcher<Self::IRI>,
@@ -92,7 +92,10 @@ pub trait NeighsRDF: Rdf {
     /// # Arguments
     ///
     /// * `subject` - The subject to match
-    fn triples_with_subject(&self, subject: &Self::Subject) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
+    fn triples_with_subject(
+        &self,
+        subject: &Self::Subject,
+    ) -> Result<impl Iterator<Item = Self::Triple> + '_, Self::Err> {
         self.triples_matching(subject, &Any, &Any)
     }
 
@@ -108,7 +111,7 @@ pub trait NeighsRDF: Rdf {
         &self,
         subject: &Self::Subject,
         predicate: &Self::IRI,
-    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
+    ) -> Result<impl Iterator<Item = Self::Triple> + '_, Self::Err> {
         self.triples_matching(subject, predicate, &Any)
     }
 
@@ -119,7 +122,10 @@ pub trait NeighsRDF: Rdf {
     /// # Arguments
     ///
     /// * `predicate` - The predicate to match
-    fn triples_with_predicate(&self, predicate: &Self::IRI) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
+    fn triples_with_predicate(
+        &self,
+        predicate: &Self::IRI,
+    ) -> Result<impl Iterator<Item = Self::Triple> + '_, Self::Err> {
         self.triples_matching(&Any, predicate, &Any)
     }
 
@@ -135,7 +141,7 @@ pub trait NeighsRDF: Rdf {
         &self,
         predicate: &Self::IRI,
         object: &Self::Term,
-    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
+    ) -> Result<impl Iterator<Item = Self::Triple> + '_, Self::Err> {
         self.triples_matching(&Any, predicate, object)
     }
 
@@ -146,7 +152,7 @@ pub trait NeighsRDF: Rdf {
     /// # Arguments
     ///
     /// * `object` - The object to match
-    fn triples_with_object(&self, object: &Self::Term) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
+    fn triples_with_object(&self, object: &Self::Term) -> Result<impl Iterator<Item = Self::Triple> + '_, Self::Err> {
         self.triples_matching(&Any, &Any, object)
     }
 
@@ -200,18 +206,19 @@ pub trait NeighsRDF: Rdf {
         preds: &[Self::IRI],
     ) -> Result<OutgoingArcsFromList<Self>, Self::Err> {
         let mut results = OutgoingArcs::<Self>::new();
-        let mut remainder = Vec::new();
+        let mut reminder = Vec::new();
 
         for triple in self.triples_with_subject(subject)? {
             let (_, p, o) = triple.into_components();
+
             if preds.contains(&p) {
                 results.entry(p).or_default().insert(o);
             } else {
-                remainder.push(p)
+                reminder.push(p);
             }
         }
 
-        Ok((results, remainder))
+        Ok((results, reminder))
     }
 
     /// Returns all subjects that are instances of the specified class.

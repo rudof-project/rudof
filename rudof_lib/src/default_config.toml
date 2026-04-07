@@ -84,16 +84,34 @@ base = "http://base/"    # Base IRI to resolve relative IRIs
 
 # [shex_validator.shapemap]
 
-shex_validator.check_negation_requirement = true
+[shex_validator]
+# Checks whether the schema is well-formed before validation
+check_negation_requirement = true
 
 # Default width for pretty printing results of validation
-shex_validator.width = 80
+width = 80
+# Maximum number of validation steps (if None, no limit)
+# max_steps = 30
 
-# [shex2uml]
+# [shex_validator.rdf_data]
+# Configuration for RDF data readers of ShExR
+
+# [shex_validators.shex]
+# Configuration of ShEx schemas for validation
+
+# [shex_validator.shapemap]
+# Configuration for Shapemap schemas for validation
+
+[shex2uml]
+# The line type can be "Orthogonal", "Polyline" or "Default". If `None`, the default value is `Default`.
+line_type = "Polyline"
+
 # shex2uml.plantuml_path = "path/to/plantuml.jar"
-# annotation_label = "iri"
-# replace_iri_by_label = false
-# shadowing = false
+annotation_label = ["http://www.w3.org/2000/01/rdf-schema#label"]
+replace_iri_by_label = false
+
+shadowing = true
+
 # [shex2uml.shex] # ShExConfig
 
 # [shex2html]
@@ -116,11 +134,12 @@ title = "Title"
 # [shacl2shex.shacl] # ShaclConfig
 # add_target_class = true/false # if true, add rdf:type for sh:targetClass declarations
 
-# [tap]
-# delimiter = ','
-# quote = '"'
-# flexible = true/false
-picklist_delimiter = '|'
+[tap]
+delimiter = ','
+quote = '"'
+flexible = true
+picklist_delimiter = ' '
+
 # [tap.property_place_holders]
 # empty_property_placeholder = "stem"
 

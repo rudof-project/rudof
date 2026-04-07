@@ -1,6 +1,6 @@
 [package]
 name = "shapes_converter"
-version = "0.2.6"
+version = "0.2.8"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shapes_converter"
@@ -12,9 +12,10 @@ repository.workspace = true
 [dependencies]
 chrono = "0.4.42"
 dctap.workspace = true
+either.workspace = true
 iri_s.workspace = true
 mie.workspace = true
-minijinja = { version = "2.12.0", features = ["loader"] }
+minijinja = { version = "=2.12.0", features = ["loader"] }
 prefixmap.workspace = true
 rdf_config.workspace = true
 serde.workspace = true
@@ -29,3 +30,6 @@ tempfile.workspace = true
 thiserror.workspace = true
 toml.workspace = true
 tracing.workspace = true
+
+[dev-dependencies]
+tracing-test.workspace = true

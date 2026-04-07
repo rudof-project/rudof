@@ -13,7 +13,7 @@ const DEFAULT_WIDTH: usize = 80;
 
 pub struct ValidatorConfig {
     /// Maximum numbers of validation steps
-    pub max_steps: usize,
+    pub max_steps: Option<usize>,
 
     /// Configuration of RDF data readers
     pub rdf_data: Option<RdfDataConfig>,
@@ -34,7 +34,7 @@ pub struct ValidatorConfig {
 impl Default for ValidatorConfig {
     fn default() -> Self {
         Self {
-            max_steps: MAX_STEPS,
+            max_steps: None,
             rdf_data: Some(RdfDataConfig::default()),
             shex: Some(ShExConfig::default()),
             shapemap: Some(ShapemapConfig::default()),
@@ -68,11 +68,11 @@ impl ValidatorConfig {
     }
 
     pub fn set_max_steps(&mut self, max_steps: usize) {
-        self.max_steps = max_steps;
+        self.max_steps = Some(max_steps);
     }
 
     pub fn max_steps(&self) -> usize {
-        self.max_steps
+        self.max_steps.unwrap_or(MAX_STEPS)
     }
 
     pub fn rdf_data_config(&self) -> RdfDataConfig {

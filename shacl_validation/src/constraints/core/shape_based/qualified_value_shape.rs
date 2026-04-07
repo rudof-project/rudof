@@ -1,11 +1,9 @@
 use crate::constraints::NativeValidator;
-use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::get_shape_from_idx;
 use crate::focus_nodes::FocusNodes;
 use crate::shacl_engine::Engine;
-use crate::shacl_engine::sparql::SparqlEngine;
 use crate::shape_validation::Validate;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
@@ -17,6 +15,9 @@ use shacl_ir::schema_ir::SchemaIR;
 use std::collections::HashSet;
 use std::fmt::Debug;
 use tracing::trace;
+
+#[cfg(feature = "sparql")]
+use {crate::constraints::SparqlValidator, crate::shacl_engine::sparql::SparqlEngine};
 
 impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
     fn validate(
@@ -39,7 +40,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
             let mut valid_counter = 0;
             // Count how many nodes conform to the shape
             for node in nodes.iter() {
-                let focus_nodes = FocusNodes::from_iter(std::iter::once(node.clone()));
+                let focus_nodes = FocusNodes::single(node.clone());
                 let shape = get_shape_from_idx(shapes_graph, self.shape())?;
                 let inner_results = shape.validate(store, engine, Some(&focus_nodes), Some(&shape), shapes_graph);
                 let mut is_valid = match inner_results {
@@ -147,6 +148,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for QualifiedValueShape 
     }
 }
 
+#[cfg(feature = "sparql")]
 impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for QualifiedValueShape {
     fn validate_sparql(
         &self,

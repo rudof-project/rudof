@@ -8,3 +8,11 @@ pub enum ManifestMode {
     NegativeSyntax,
     NegativeStructure,
 }
+
+/// The syntax mode to use when parsing the manifest. This is only relevant for the Validation tests
+#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+#[value(rename_all = "lowercase")]
+pub enum ManifestShExSyntaxMode {
+    ShExJ,
+    ShExC,
+}

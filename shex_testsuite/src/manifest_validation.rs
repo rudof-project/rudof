@@ -1,9 +1,9 @@
-use crate::context_entry_value::ContextEntryValue;
 use crate::manifest::Manifest;
 use crate::manifest_error::ManifestError;
 use crate::manifest_map::ManifestMap;
 #[cfg(target_family = "wasm")]
 use crate::wasm_stubs::path_to_iri;
+use crate::{context_entry_value::ContextEntryValue, manifest_mode::ManifestShExSyntaxMode};
 use ValidationType::*;
 use iri_s::IriS;
 use prefixmap::IriRef;
@@ -16,11 +16,11 @@ use rudof_rdf::{
 };
 use serde::de::{self};
 use serde::{Deserialize, Deserializer, Serialize};
-use shex_ast::ResolveMethod;
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::shape_label::ShapeLabel;
 use shex_ast::shapemap::ValidationStatus;
 use shex_ast::{Node, ast::Schema as SchemaJson, ir::ast2ir::AST2IR};
+use shex_ast::{ResolveMethod, ShExParser};
 use shex_validation::Validator;
 use shex_validation::ValidatorConfig;
 use std::collections::HashMap;
@@ -174,17 +174,45 @@ fn change_extension(name: String, old_extension: String, new_extension: String) 
     }
 }
 
-fn parse_schema(path: &Path, _base: Option<&str>, entry_name: &String) -> Result<SchemaJson, Box<ManifestError>> {
-    SchemaJson::parse_schema(path).map_err(|e| {
-        Box::new(ManifestError::SchemaJsonError {
-            error: Box::new(e),
-            entry_name: entry_name.to_string(),
-        })
-    })
+fn parse_schema(
+    path: &Path,
+    _base: Option<&str>,
+    entry_name: &String,
+    manifest_shex_syntax_mode: ManifestShExSyntaxMode,
+) -> Result<SchemaJson, Box<ManifestError>> {
+    match manifest_shex_syntax_mode {
+        ManifestShExSyntaxMode::ShExJ => SchemaJson::parse_schema(path).map_err(|e| {
+            Box::new(ManifestError::SchemaJsonError {
+                error: Box::new(e),
+                entry_name: entry_name.to_string(),
+            })
+        }),
+        ManifestShExSyntaxMode::ShExC => {
+            let base = path_to_iri(path)?;
+            ShExParser::parse_buf(path, Some(base)).map_err(|e| {
+                Box::new(ManifestError::ShExCParsingError {
+                    error: Box::new(e),
+                    entry_name: entry_name.to_string(),
+                    shex_path: Box::new(path.to_path_buf()),
+                })
+            })
+        },
+    }
 }
 
 impl ValidationEntry {
-    pub fn run(&self, folder: &Path) -> Result<(), Box<ManifestError>> {
+    pub fn traits(&self) -> Vec<String> {
+        match &self.trait_ {
+            None => Vec::new(),
+            Some(traits) => traits.clone(),
+        }
+    }
+
+    pub fn run(
+        &self,
+        folder: &Path,
+        manifest_shex_syntax_mode: ManifestShExSyntaxMode,
+    ) -> Result<(), Box<ManifestError>> {
         let path_absolute = folder.canonicalize().map_err(|err| ManifestError::AbsolutePathError {
             base: folder.to_string_lossy().to_string().into(),
             error: err,
@@ -202,9 +230,9 @@ impl ValidationEntry {
         .map_err(|e| Box::new(ManifestError::SRDFError(e)))?;
         trace!("Data obtained from: {}", self.action.data);
 
-        let path_schema = get_path_schema(&self.action.schema, folder);
+        let path_schema = get_path_schema(&self.action.schema, folder, manifest_shex_syntax_mode);
         trace!("Path schema: {}", path_schema.display());
-        let schema = parse_schema(&path_schema, base_str, &self.name)?;
+        let schema = parse_schema(&path_schema, base_str, &self.name, manifest_shex_syntax_mode)?;
         trace!("Schema obtained from: {}", self.action.schema);
 
         trace!("Entry action: {:?}", self.action);
@@ -369,7 +397,6 @@ fn parse_type(str: &str) -> Result<ValidationType, Box<ManifestError>> {
 
 #[cfg(not(target_family = "wasm"))]
 fn path_to_iri(path: &Path) -> Result<IriS, Box<ManifestError>> {
-    trace!("Converting path to IRI: {}", path.display());
     let canonical = path.canonicalize().map_err(|err| {
         Box::new(ManifestError::AbsolutePathError {
             base: path.to_string_lossy().to_string().into(),
@@ -380,12 +407,14 @@ fn path_to_iri(path: &Path) -> Result<IriS, Box<ManifestError>> {
         path: path.to_path_buf(),
     })?;
     let iri = IriS::new_unchecked(url.as_str());
-    trace!("IRI converted: {iri}");
     Ok(iri)
 }
 
-fn get_path_schema(schema: &String, folder: &Path) -> PathBuf {
-    let new_schema_name = change_extension(schema.to_string(), ".shex".to_string(), ".json".to_string());
+fn get_path_schema(schema: &String, folder: &Path, manifest_shex_syntax_mode: ManifestShExSyntaxMode) -> PathBuf {
+    let new_schema_name = match manifest_shex_syntax_mode {
+        ManifestShExSyntaxMode::ShExJ => change_extension(schema.to_string(), ".shex".to_string(), ".json".to_string()),
+        ManifestShExSyntaxMode::ShExC => schema.to_string(),
+    };
     let json_path = Path::new(&new_schema_name);
     let mut attempt = PathBuf::from(folder);
     attempt.push(json_path);
@@ -411,10 +440,22 @@ impl Manifest for ManifestValidation {
         self.entry_names.clone() // iter().map(|n| n.clone()).collect()
     }
 
-    fn run_entry(&self, name: &str, base: &Path) -> Result<(), Box<ManifestError>> {
+    fn run_entry(
+        &self,
+        name: &str,
+        base: &Path,
+        manifest_shex_syntax_mode: ManifestShExSyntaxMode,
+    ) -> Result<(), Box<ManifestError>> {
         match self.map.get(name) {
             None => Err(Box::new(ManifestError::NotFoundEntry { name: name.to_string() })),
-            Some(entry) => entry.run(base),
+            Some(entry) => entry.run(base, manifest_shex_syntax_mode),
+        }
+    }
+
+    fn has_traits(&self, name: &str) -> Result<Vec<String>, Box<ManifestError>> {
+        match self.map.get(name) {
+            None => Err(Box::new(ManifestError::NotFoundEntry { name: name.to_string() })),
+            Some(entry) => Ok(entry.traits().clone()),
         }
     }
 }

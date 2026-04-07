@@ -222,7 +222,7 @@ impl Engine {
             let references = se.references(schema);
             // trace!("References in shape expr: {:?}", references);
             let preds = references.keys().cloned().collect::<Vec<_>>();
-            let (neighs, _remainder) = self.neighs(node, preds, rdf)?;
+            let (neighs, _) = self.neighs(node, preds, rdf)?;
             for (pred, neigh_node) in neighs {
                 if let Some(idx_list) = references.get(&pred) {
                     for idx in idx_list {
@@ -568,17 +568,15 @@ impl Engine {
     where
         R: QueryRDF + NeighsRDF,
     {
-        debug!("check_node_shape: node = {node}, shape = {idx} [No extends]");
-        let (values, remainder) = self.neighs(node, shape.preds(), rdf)?;
-        if shape.is_closed() && !remainder.is_empty() {
-            trace!("Closed shape with remainder preds: {remainder:?}");
-            fail(ValidatorError::ClosedShapeWithRemainderPreds {
-                remainder: Preds::new(remainder),
+        trace!("check_node_shape: node = {node}, shape = {idx} [No extends]");
+        let (values, reminder) = self.neighs(node, shape.preds(), rdf)?;
+        if shape.is_closed() && !reminder.is_empty() {
+            return fail(ValidatorError::ClosedShapeWithRemainderPreds {
+                remainder: Preds::new(reminder),
                 declared: Preds::new(shape.preds().into_iter().collect()),
-            })
-        } else {
-            check_expr_neigh(shape.triple_expr(), &values, node, shape, idx, typing)
+            });
         }
+        check_expr_neigh(shape.triple_expr(), &values, node, shape, idx, typing)
     }
 
     pub(crate) fn check_node_shape_extends<R>(
@@ -593,17 +591,16 @@ impl Engine {
     where
         R: NeighsRDF + QueryRDF,
     {
-        debug!("check_node_shape_extends: node={node}, shape={idx}");
+        trace!("check_node_shape_extends: node={node}, shape={idx}");
         let preds_extends = Vec::from_iter(schema.get_preds_extends(idx));
         trace!(
             "Predicates in this shape with extends: [{}]",
             preds_extends.iter().map(|p| p.to_string()).join(", ")
         );
-        let (values, remainder) = self.neighs(node, preds_extends, rdf)?;
-        if shape.is_closed() && !remainder.is_empty() {
-            trace!("Closed shape with remainder preds: {remainder:?}");
+        let (values, reminder) = self.neighs(node, preds_extends, rdf)?;
+        if shape.is_closed() && !reminder.is_empty() {
             return fail(ValidatorError::ClosedShapeWithRemainderPreds {
-                remainder: Preds::new(remainder),
+                remainder: Preds::new(reminder),
                 declared: Preds::new(shape.preds().into_iter().collect()),
             });
         }
@@ -704,7 +701,7 @@ impl Engine {
         let node = self.get_rdf_node(node, rdf);
         let list: Vec<_> = preds.iter().map(|pred| pred.iri().clone().into()).collect();
         if let Ok(subject) = S::term_as_subject(&node) {
-            let (outgoing_arcs, remainder) = rdf
+            let (outgoing_arcs, reminder) = rdf
                 .outgoing_arcs_from_list(&subject, &list)
                 .map_err(|e| self.cnv_err::<S>(e))?;
             let mut result = Vec::new();
@@ -715,12 +712,12 @@ impl Engine {
                     result.push((iri.clone(), object))
                 }
             }
-            let mut remainder_preds = Vec::new();
-            for r in remainder {
+            let mut reminder_preds = Vec::new();
+            for r in reminder {
                 let iri_r = self.cnv_iri::<S>(r.clone());
-                remainder_preds.push(iri_r)
+                reminder_preds.push(iri_r);
             }
-            Ok((result, remainder_preds))
+            Ok((result, reminder_preds))
         } else {
             Ok((Vec::new(), Vec::new()))
         }
@@ -768,38 +765,6 @@ fn fail(err: ValidatorError) -> Result<ValidationResult> {
     Ok(Either::Left(vec![err]))
 }
 
-fn show_result(
-    result: &Either<Vec<ValidatorError>, Vec<Reason>>,
-    nodes_prefixmap: &PrefixMap,
-    schema: &SchemaIR,
-    width: usize,
-) -> Result<String> {
-    match result {
-        Either::Left(errors) => {
-            let es: Vec<Result<String>> = errors
-                .iter()
-                .map(|e| {
-                    e.show_qualified(nodes_prefixmap, schema)
-                        .map_err(ValidatorError::PrefixMapError)
-                })
-                .collect();
-            let vs: Vec<String> = es.into_iter().collect::<Result<Vec<_>>>()?;
-            Ok(vs.join(", "))
-        },
-        Either::Right(reasons) => {
-            let rs: Vec<Result<String>> = reasons
-                .iter()
-                .map(|r| {
-                    r.show_qualified(nodes_prefixmap, schema, width)
-                        .map_err(ValidatorError::PrefixMapError)
-                })
-                .collect();
-            let vs: Vec<String> = rs.into_iter().collect::<Result<Vec<_>>>()?;
-            Ok(vs.join(", "))
-        },
-    }
-}
-
 fn check_exprs_neigh(
     exprs: &[Expr],
     neighs: &[(Pred, Node)],
@@ -834,7 +799,7 @@ fn check_expr_neigh(
     idx: &ShapeLabelIdx,
     typing: &Typing,
 ) -> Result<ValidationResult> {
-    debug!(
+    trace!(
         "Checking expr {} with neighs: [{}]",
         expr,
         neighs.iter().map(|(p, o)| format!("{p} {o}")).join(", ")
@@ -842,7 +807,7 @@ fn check_expr_neigh(
     let result_iter = expr.matches(neighs.to_vec())?;
     let mut errors = Vec::new();
     for result in result_iter {
-        debug!(
+        trace!(
             "Result of {expr} with neighs: {}: {:?}",
             neighs.iter().map(|(p, o)| format!("{p} {o}")).join(", "),
             result
@@ -911,4 +876,36 @@ fn show_partition(partition: &[PartitionInfo]) -> String {
             format!("{} -> [{}]", label_str, neighs_str)
         })
         .join(" | ")
+}
+
+fn show_result(
+    result: &Either<Vec<ValidatorError>, Vec<Reason>>,
+    nodes_prefixmap: &PrefixMap,
+    schema: &SchemaIR,
+    width: usize,
+) -> Result<String> {
+    match result {
+        Either::Left(errors) => {
+            let es: Vec<Result<String>> = errors
+                .iter()
+                .map(|e| {
+                    e.show_qualified(nodes_prefixmap, schema)
+                        .map_err(ValidatorError::PrefixMapError)
+                })
+                .collect();
+            let vs: Vec<String> = es.into_iter().collect::<Result<Vec<_>>>()?;
+            Ok(vs.join(", "))
+        },
+        Either::Right(reasons) => {
+            let rs: Vec<Result<String>> = reasons
+                .iter()
+                .map(|r| {
+                    r.show_qualified(nodes_prefixmap, schema, width)
+                        .map_err(ValidatorError::PrefixMapError)
+                })
+                .collect();
+            let vs: Vec<String> = rs.into_iter().collect::<Result<Vec<_>>>()?;
+            Ok(vs.join(", "))
+        },
+    }
 }

@@ -8,10 +8,6 @@ use crate::rdf_core::vocabs::RdfVocab;
 use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
-use oxigraph::{
-    sparql::{QueryResults, SparqlEvaluator},
-    store::Store,
-};
 use oxjsonld::JsonLdParser;
 use oxrdf::{
     BlankNode as OxBlankNode, Graph, GraphName, Literal as OxLiteral, NamedNode as OxNamedNode, NamedNodeRef,
@@ -23,14 +19,22 @@ use oxrdfxml::RdfXmlParser;
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
 use prefixmap::{PrefixMapError, map::*};
 use serde::{Serialize, ser::SerializeStruct};
-use sparesults::QuerySolution as SparQuerySolution;
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 use std::{
     fmt::{Debug, Display, Formatter},
-    fs::File,
     io::{self, BufReader, Cursor, Write},
-    path::Path,
     str::FromStr,
+};
+#[cfg(not(target_family = "wasm"))]
+use std::{fs::File, path::Path};
+#[cfg(feature = "sparql")]
+use {
+    oxigraph::{
+        sparql::{QueryResults, SparqlEvaluator},
+        store::Store,
+    },
+    sparesults::QuerySolution as SparQuerySolution,
 };
 
 /// An RDF graph stored entirely in memory.
@@ -44,7 +48,7 @@ pub struct InMemoryGraph {
     focus: Option<OxTerm>,
 
     /// Underlying RDF graph.
-    graph: Graph,
+    graph: Arc<Graph>,
 
     /// Prefix map used for CURIE resolution and qualification.
     pm: PrefixMap,
@@ -56,6 +60,7 @@ pub struct InMemoryGraph {
     bnode_counter: usize,
 
     /// Optional Oxigraph store used for SPARQL evaluation.
+    #[cfg(feature = "sparql")]
     store: Option<Store>,
 }
 
@@ -192,7 +197,7 @@ impl InMemoryGraph {
                     Some(t) => t,
                     None => continue,
                 };
-            self.graph.insert(triple.as_ref());
+            Arc::make_mut(&mut self.graph).insert(triple.as_ref());
         }
 
         let prefixes: HashMap<&str, &str> = turtle_reader.prefixes().collect();
@@ -233,7 +238,7 @@ impl InMemoryGraph {
                 Some(t) => t,
                 None => continue,
             };
-            self.graph.insert(triple.as_ref());
+            Arc::make_mut(&mut self.graph).insert(triple.as_ref());
         }
 
         Ok(())
@@ -266,7 +271,7 @@ impl InMemoryGraph {
                 None => continue,
             };
             let triple_ref = cnv_triple(&triple);
-            self.graph.insert(triple_ref);
+            Arc::make_mut(&mut self.graph).insert(triple_ref);
         }
 
         Ok(())
@@ -298,7 +303,7 @@ impl InMemoryGraph {
                 Some(t) => t,
                 None => continue,
             };
-            self.graph.insert(triple.as_ref());
+            Arc::make_mut(&mut self.graph).insert(triple.as_ref());
         }
 
         Ok(())
@@ -330,7 +335,7 @@ impl InMemoryGraph {
                 Some(t) => t,
                 None => continue,
             };
-            self.graph.insert(triple.as_ref());
+            Arc::make_mut(&mut self.graph).insert(triple.as_ref());
         }
 
         Ok(())
@@ -470,10 +475,13 @@ impl InMemoryGraph {
         O: Into<TermRef<'a>>,
     {
         let triple = TripleRef::new(subj.into(), pred.into(), obj.into());
-        self.graph.insert(triple);
+        Arc::make_mut(&mut self.graph).insert(triple);
         Ok(())
     }
+}
 
+#[cfg(not(target_family = "wasm"))]
+impl InMemoryGraph {
     /// Merges RDF data from a filesystem path.
     ///
     /// Opens the file and delegates to [`merge_from_reader`](Self::merge_from_reader).
@@ -558,7 +566,9 @@ impl InMemoryGraph {
         let data_path = folder.join(data);
         Self::from_path(&data_path, format, base, reader_mode)
     }
+}
 
+impl InMemoryGraph {
     /// Returns a reference to the prefix map.
     pub fn prefixmap(&self) -> &PrefixMap {
         &self.pm
@@ -681,27 +691,10 @@ impl NeighsRDF for InMemoryGraph {
         Ok(self.graph.iter().map(TripleRef::into_owned))
     }
 
-    /// Returns an iterator over triples with a specific subject.
-    ///
-    /// This is optimized to use the underlying graph's subject index.
-    ///
-    /// # Parameters
-    ///
-    /// * `subject` - The subject to filter by
-    fn triples_with_subject(&self, subject: &Self::Subject) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
-        // Collect the triples into a Vec to avoid the lifetime dependency on subject
-        let triples: Vec<_> = self
-            .graph
-            .triples_for_subject(subject)
-            .map(TripleRef::into_owned)
-            .collect();
-        Ok(triples.into_iter())
-    }
-
     /// Returns an iterator over triples matching a pattern.
     ///
-    /// This method filters triples based on patterns for subject, predicate, and object.
-    /// Each pattern can be a specific value or a wildcard matcher.
+    /// Uses the appropriate oxrdf index based on which positions are concrete
+    /// vs wildcard, giving O(k) complexity instead of a full O(n) table scan.
     ///
     /// # Parameters
     ///
@@ -717,20 +710,72 @@ impl NeighsRDF for InMemoryGraph {
         subject: &S,
         predicate: &P,
         object: &O,
-    ) -> Result<impl Iterator<Item = Self::Triple>, Self::Err>
+    ) -> Result<impl Iterator<Item = Self::Triple> + '_, Self::Err>
     where
         S: Matcher<Self::Subject>,
         P: Matcher<Self::IRI>,
         O: Matcher<Self::Term>,
     {
-        // TODO: Implement this function in a way that it does not retrieve all triples
-        let triples = self.triples()?.filter_map(move |triple| {
-            match subject == &triple.subject && predicate == &triple.predicate && object == &triple.object {
-                true => Some(triple),
-                false => None,
-            }
-        });
-        Ok(triples)
+        // Dispatch to the tightest available index to avoid full scans.
+        let result: Box<dyn Iterator<Item = OxTriple> + '_> = match (subject.value(), predicate.value(), object.value())
+        {
+            (Some(s), Some(p), Some(o)) => {
+                let found = self.graph.contains(TripleRef::new(
+                    OxSubjectRef::from(s),
+                    NamedNodeRef::from(p),
+                    TermRef::from(o),
+                ));
+                let s = s.clone();
+                let p = p.clone();
+                let o = o.clone();
+                Box::new(found.then(|| OxTriple::new(s, p, o)).into_iter())
+            },
+            (Some(s), Some(p), None) => {
+                let s_owned = s.clone();
+                let p_owned = p.clone();
+                Box::new(
+                    self.graph
+                        .objects_for_subject_predicate(OxSubjectRef::from(s), NamedNodeRef::from(p))
+                        .map(move |o| OxTriple::new(s_owned.clone(), p_owned.clone(), o.into_owned())),
+                )
+            },
+            (Some(s), None, Some(o)) => {
+                let o_owned = o.clone();
+                Box::new(
+                    self.graph
+                        .triples_for_subject(OxSubjectRef::from(s))
+                        .map(TripleRef::into_owned)
+                        .filter(move |t| t.object == o_owned),
+                )
+            },
+            (Some(s), None, None) => Box::new(
+                self.graph
+                    .triples_for_subject(OxSubjectRef::from(s))
+                    .map(TripleRef::into_owned),
+            ),
+            (None, Some(p), Some(o)) => {
+                let p_owned = p.clone();
+                let o_owned = o.clone();
+                Box::new(
+                    self.graph
+                        .subjects_for_predicate_object(NamedNodeRef::from(p), TermRef::from(o))
+                        .map(move |s| OxTriple::new(s.into_owned(), p_owned.clone(), o_owned.clone())),
+                )
+            },
+            (None, Some(p), None) => Box::new(
+                self.graph
+                    .triples_for_predicate(NamedNodeRef::from(p))
+                    .map(TripleRef::into_owned),
+            ),
+            (None, None, Some(o)) => Box::new(
+                self.graph
+                    .triples_for_object(TermRef::from(o))
+                    .map(TripleRef::into_owned),
+            ),
+            (None, None, None) => Box::new(self.graph.iter().map(TripleRef::into_owned)),
+        };
+
+        Ok(result)
     }
 }
 
@@ -913,7 +958,7 @@ impl BuildRDF for InMemoryGraph {
         O: Into<Self::Term>,
     {
         let triple = OxTriple::new(subj.into(), pred.into(), obj.into());
-        self.graph.insert(&triple);
+        Arc::make_mut(&mut self.graph).insert(&triple);
         Ok(())
     }
 
@@ -931,7 +976,7 @@ impl BuildRDF for InMemoryGraph {
         O: Into<Self::Term>,
     {
         let triple = OxTriple::new(subj.into(), pred.into(), obj.into());
-        self.graph.remove(&triple);
+        Arc::make_mut(&mut self.graph).remove(&triple);
         Ok(())
     }
 
@@ -949,7 +994,7 @@ impl BuildRDF for InMemoryGraph {
         T: Into<Self::Term>,
     {
         let triple = OxTriple::new(node.into(), rdf_type(), type_.into());
-        self.graph.insert(&triple);
+        Arc::make_mut(&mut self.graph).insert(&triple);
         Ok(())
     }
 
@@ -961,10 +1006,11 @@ impl BuildRDF for InMemoryGraph {
     fn empty() -> Self {
         InMemoryGraph {
             focus: None,
-            graph: Graph::new(),
+            graph: Graph::new().into(),
             pm: PrefixMap::new(),
             base: None,
             bnode_counter: 0,
+            #[cfg(feature = "sparql")]
             store: None,
         }
     }
@@ -1142,6 +1188,7 @@ fn cnv_triple(t: &OxTriple) -> TripleRef<'_> {
     )
 }
 
+#[cfg(feature = "sparql")]
 impl QueryRDF for InMemoryGraph {
     fn query_construct(&self, _query_str: &str, _format: &QueryResultFormat) -> Result<String, InMemoryGraphError>
     where
@@ -1220,6 +1267,7 @@ impl QueryRDF for InMemoryGraph {
 /// # Returns
 ///
 /// A vector of query solutions.
+#[cfg(feature = "sparql")]
 fn cnv_query_results(query_results: QueryResults) -> Result<Vec<QuerySolution<InMemoryGraph>>, InMemoryGraphError> {
     let QueryResults::Solutions(solutions) = query_results else {
         return Ok(Vec::new());
@@ -1247,6 +1295,7 @@ fn cnv_query_results(query_results: QueryResults) -> Result<Vec<QuerySolution<In
 /// # Returns
 ///
 /// An internal query solution with variables and values.
+#[cfg(feature = "sparql")]
 fn cnv_query_solution(qs: SparQuerySolution) -> QuerySolution<InMemoryGraph> {
     let mut variables = Vec::new();
     let mut values = Vec::new();

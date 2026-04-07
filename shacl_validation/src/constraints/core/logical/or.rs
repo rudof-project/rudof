@@ -1,11 +1,9 @@
 use crate::constraints::NativeValidator;
-use crate::constraints::SparqlValidator;
 use crate::constraints::Validator;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::constraints::get_shape_from_idx;
 use crate::focus_nodes::FocusNodes;
 use crate::shacl_engine::Engine;
-use crate::shacl_engine::sparql::SparqlEngine;
 use crate::shape_validation::Validate;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
@@ -16,6 +14,9 @@ use shacl_ir::components::Or;
 use shacl_ir::schema_ir::SchemaIR;
 use std::fmt::Debug;
 use tracing::debug;
+
+#[cfg(feature = "sparql")]
+use {crate::constraints::SparqlValidator, crate::shacl_engine::sparql::SparqlEngine};
 
 impl<S: NeighsRDF + Debug> Validator<S> for Or {
     fn validate(
@@ -32,7 +33,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Or {
         let mut validation_results = Vec::new();
         for (_focus_node, nodes) in value_nodes.iter() {
             for node in nodes.iter() {
-                let focus_nodes = FocusNodes::from_iter(std::iter::once(node.clone()));
+                let focus_nodes = FocusNodes::single(node.clone());
                 let mut conforms = false;
                 for shape_idx in self.shapes().iter() {
                     let or_shape = get_shape_from_idx(shapes_graph, shape_idx)?;
@@ -125,6 +126,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Or {
     }
 }
 
+#[cfg(feature = "sparql")]
 impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for Or {
     fn validate_sparql(
         &self,

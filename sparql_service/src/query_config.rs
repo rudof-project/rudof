@@ -1,7 +1,8 @@
 use rudof_rdf::rdf_core::RdfDataConfig;
 use serde::{Deserialize, Serialize};
 use std::io::Read;
-use std::{io, path::Path};
+#[cfg(not(target_family = "wasm"))]
+use std::path::Path;
 use thiserror::Error;
 
 /// This struct can be used to define configuration of RDF data readers
@@ -18,6 +19,7 @@ impl QueryConfig {
         }
     }
 
+    #[cfg(not(target_family = "wasm"))]
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<QueryConfig, QueryConfigError> {
         let path_name = path.as_ref().display().to_string();
         let mut f = std::fs::File::open(path).map_err(|e| QueryConfigError::ReadingConfigError {
@@ -46,8 +48,9 @@ impl Default for QueryConfig {
 
 #[derive(Error, Debug)]
 pub enum QueryConfigError {
+    #[cfg(not(target_family = "wasm"))]
     #[error("Reading path {path_name:?} error: {error:?}")]
-    ReadingConfigError { path_name: String, error: io::Error },
+    ReadingConfigError { path_name: String, error: std::io::Error },
 
     #[error("Reading TOML from {path_name:?}. Error: {error:?}")]
     TomlError { path_name: String, error: toml::de::Error },

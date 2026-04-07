@@ -1,5 +1,4 @@
 use crate::constraints::NativeValidator;
-use crate::constraints::SparqlValidator;
 use crate::constraints::constraint_error::ConstraintError;
 use crate::helpers::constraint::validate_ask_with;
 use crate::helpers::constraint::validate_with;
@@ -8,12 +7,15 @@ use crate::shacl_engine::Engine;
 use crate::validation_report::result::ValidationResult;
 use crate::value_nodes::ValueNodes;
 use indoc::formatdoc;
-use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF};
+use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use shacl_ir::compiled::component_ir::ComponentIR;
 use shacl_ir::compiled::shape::ShapeIR;
 use shacl_ir::components::MaxInclusive;
 use shacl_ir::schema_ir::SchemaIR;
 use std::fmt::Debug;
+
+#[cfg(feature = "sparql")]
+use {crate::constraints::SparqlValidator, rudof_rdf::rdf_core::query::QueryRDF};
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxInclusive {
     fn validate_native(
@@ -44,6 +46,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxInclusive {
     }
 }
 
+#[cfg(feature = "sparql")]
 impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MaxInclusive {
     fn validate_sparql(
         &self,

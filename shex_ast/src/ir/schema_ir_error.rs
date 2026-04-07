@@ -194,6 +194,9 @@ pub enum SchemaIRError {
     #[error("Label not found: {shape_label}")]
     LabelNotFound { shape_label: ShapeLabel },
 
+    #[error("Semantic action error: {error}")]
+    SemanticActionError { error: String },
+
     #[error("Internal: {msg}")]
     Internal { msg: String },
 

@@ -5,7 +5,7 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum UmlError {
-    #[error("NodeId has already a component")]
+    #[error("NodeId {node_id} has already a component")]
     NodeIdHasComponent { node_id: NodeId },
 
     #[error(transparent)]
