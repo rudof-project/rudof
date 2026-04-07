@@ -9,6 +9,7 @@ use tokio::sync::{Mutex, RwLock};
 use crate::service::{logging::LogRateLimiter, prompts, state, tools};
 use crate::service::tools::helpers::{
     NODE_INFO_MODE_LIST, RDF_FORMAT_LIST, RESULT_FORMAT_LIST, SHACL_FORMAT_LIST, SHEX_FORMAT_LIST,
+    SPARQL_RESULT_FORMAT_LIST, READER_MODES_LIST,
 };
 use rmcp::{
     RoleServer,
@@ -169,48 +170,69 @@ impl RudofMcpService {
         REQUEST_CONTEXT.try_with(Clone::clone).ok()
     }
 
+    /// Count the number of triples in an N-Triples string.
+    ///
+    /// Skips empty lines and comment lines (starting with `#`).
+    pub fn count_triples_in_ntriples(ntriples: &str) -> usize {
+        ntriples
+            .lines()
+            .filter(|line| {
+                let trimmed = line.trim();
+                !trimmed.is_empty() && !trimmed.starts_with('#')
+            })
+            .count()
+    }
+
     /// Persist the current RDF data state to the state file.
     ///
     /// This method is called after state-modifying operations to ensure
     /// data survives Docker container restarts. Only saves if persistence
     /// is available (i.e., the state directory exists).
     ///
+    /// If `prebuilt_ntriples` is provided the Rudof lock is not re-acquired
+    /// and the data is not re-serialized — this avoids a redundant round-trip
+    /// when the caller has already serialized the data (e.g., for triple counting).
+    ///
     /// # Returns
     /// - `Ok(true)` if state was saved successfully
     /// - `Ok(false)` if persistence is not available (no state directory)
     /// - `Err` if an error occurred during saving
-    pub async fn persist_state(&self) -> Result<bool, state::StatePersistenceError> {
+    pub async fn persist_state_with(
+        &self,
+        prebuilt_ntriples: Option<String>,
+    ) -> Result<bool, state::StatePersistenceError> {
         if !state::is_persistence_available() {
             tracing::debug!("State persistence not available (no state directory)");
             return Ok(false);
         }
 
-        let mut rudof = self.rudof.lock().await;
+        let rdf_ntriples = if let Some(ntriples) = prebuilt_ntriples {
+            ntriples
+        } else {
+            let mut rudof = self.rudof.lock().await;
+            let mut v = Vec::new();
+            rudof
+                .serialize_data(&mut v)
+                .with_result_data_format(&ResultDataFormat::NTriples)
+                .execute()
+                .map_err(|e| state::StatePersistenceError::RdfSerialization(e.to_string()))?;
+            String::from_utf8(v).map_err(|e| state::StatePersistenceError::Json(e.to_string()))?
+        };
 
-        // Serialize RDF data to N-Triples format
-        let mut v = Vec::new();
-        rudof
-            .serialize_data(&mut v)
-            .with_result_data_format(&ResultDataFormat::NTriples)
-            .execute()
-            .map_err(|e| state::StatePersistenceError::RdfSerialization(e.to_string()))?;
-
-        let rdf_ntriples = String::from_utf8(v).map_err(|e| state::StatePersistenceError::Json(e.to_string()))?;
-
-        // Count triples (count lines that aren't empty or comments)
-        let triple_count = rdf_ntriples
-            .lines()
-            .filter(|line| {
-                let trimmed = line.trim();
-                !trimmed.is_empty() && !trimmed.starts_with('#')
-            })
-            .count();
-
+        let triple_count = Self::count_triples_in_ntriples(&rdf_ntriples);
         let persisted_state = state::PersistedState::with_rdf_data(rdf_ntriples, triple_count);
         state::save_state(&persisted_state)?;
 
         tracing::info!("Persisted {} triples to state file", triple_count);
         Ok(true)
+    }
+
+    /// Persist the current RDF data state to the state file.
+    ///
+    /// Convenience wrapper around [`persist_state_with`](Self::persist_state_with)
+    /// that always re-serializes from the Rudof engine.
+    pub async fn persist_state(&self) -> Result<bool, state::StatePersistenceError> {
+        self.persist_state_with(None).await
     }
 
     /// Get completion suggestions for format-related arguments (shared by prompts and tools).
@@ -241,10 +263,6 @@ impl RudofMcpService {
         }
 
         match (prompt_name, argument_name) {
-            // Common boolean arguments
-            (_, "verbose") | (_, "debug") | (_, "strict") => {
-                vec!["true".to_string(), "false".to_string()]
-            },
             // Base IRI suggestions
             (_, "base") | (_, "base_iri") => {
                 vec![
@@ -252,20 +270,6 @@ impl RudofMcpService {
                     "https://schema.org/".to_string(),
                     "http://www.w3.org/2001/XMLSchema#".to_string(),
                 ]
-            },
-            // Shape label suggestions (common patterns)
-            (_, "shape") | (_, "shape_label") | (_, "start_shape") => {
-                vec![
-                    ":Person".to_string(),
-                    ":Thing".to_string(),
-                    ":Organization".to_string(),
-                    "schema:Person".to_string(),
-                    "foaf:Person".to_string(),
-                ]
-            },
-            // Node selector suggestions
-            (_, "node") | (_, "focus_node") => {
-                vec![":node1".to_string(), "<http://example.org/resource>".to_string()]
             },
             // Focus argument for analyze_rdf_data prompt
             ("analyze_rdf_data", "focus") | (_, "focus") => {
@@ -280,30 +284,8 @@ impl RudofMcpService {
             ("validation_guide", "technology") | (_, "technology") => {
                 vec!["shex".to_string(), "shacl".to_string()]
             },
-            // Query type argument for sparql_builder prompt (from rudof://formats/query-types)
-            ("sparql_builder", "query_type") | (_, "query_type") => {
-                vec![
-                    "select".to_string(),
-                    "construct".to_string(),
-                    "ask".to_string(),
-                    "describe".to_string(),
-                ]
-            },
             _ => vec![],
         }
-    }
-
-    /// Get completion suggestions for tool arguments.
-    ///
-    /// Tool argument names follow the same conventions as prompt argument names,
-    /// so this delegates to the shared format helper for format-related arguments.
-    pub fn get_tool_argument_completions(&self, _tool_name: &str, argument_name: &str) -> Vec<String> {
-        tracing::debug!(
-            tool_name = %_tool_name,
-            argument_name = %argument_name,
-            "Getting tool argument completions"
-        );
-        Self::get_format_argument_completions(argument_name)
     }
 
     /// Get completion suggestions for resource URI templates
@@ -319,31 +301,16 @@ impl RudofMcpService {
         }
 
         match argument_name {
-            "format" => RDF_FORMAT_LIST.iter().map(|s| s.to_string()).collect(),
-            "shex_format" | "schema_format" => SHEX_FORMAT_LIST.iter().map(|s| s.to_string()).collect(),
-            "shacl_format" | "shapes_format" => SHACL_FORMAT_LIST.iter().map(|s| s.to_string()).collect(),
-            "mode" => NODE_INFO_MODE_LIST.iter().map(|s| s.to_string()).collect(),
             // SPARQL endpoint suggestions
             "endpoint" => vec![
                 "https://query.wikidata.org/sparql".to_string(),
                 "https://dbpedia.org/sparql".to_string(),
-                "http://localhost:3030/sparql".to_string(),
             ],
-            // Query result formats (from rudof://formats/query-results)
-            "result_format" => vec![
-                "internal".to_string(),
-                "json".to_string(),
-                "xml".to_string(),
-                "csv".to_string(),
-                "tsv".to_string(),
-                "turtle".to_string(),
-                "ntriples".to_string(),
-                "rdfxml".to_string(),
-                "trig".to_string(),
-            ],
-            // Validation reader modes (from rudof://formats/validation-reader-modes)
-            "reader_mode" => vec!["strict".to_string(), "lax".to_string()],
-            _ => vec![],
+            // SPARQL query result formats — distinct from validation RESULT_FORMAT_LIST
+            "result_format" => SPARQL_RESULT_FORMAT_LIST.iter().map(|s| s.to_string()).collect(),
+            // Validation reader modes
+            "reader_mode" => READER_MODES_LIST.iter().map(|s| s.to_string()).collect(),
+            _ => Self::get_format_argument_completions(argument_name),
         }
     }
 }

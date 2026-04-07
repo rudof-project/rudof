@@ -1,8 +1,7 @@
 use crate::service::errors::internal_error;
 use rmcp::{ErrorData as McpError, model::CallToolResult, model::Content};
 use serde::Serialize;
-use serde_json::{Map, Value, json};
-use std::str::FromStr;
+use serde_json::{Value, json};
 
 /// Result type for parsing operations that may produce tool execution errors.
 ///
@@ -64,33 +63,6 @@ impl std::fmt::Display for ToolExecutionError {
 
 impl std::error::Error for ToolExecutionError {}
 
-/// Parse a required format string into a typed format.
-///
-/// Returns a `ToolExecutionError` if the format is invalid or missing.
-///
-/// # Type Parameters
-///
-/// * `F` - The format type to parse into (must implement `FromStr`)
-///
-/// # Arguments
-///
-/// * `format` - Format string to parse
-/// * `format_name` - Human-readable name for error messages
-/// * `valid_values` - Comma-separated list of valid values for hints
-#[allow(dead_code)]
-pub fn parse_required_format<F>(format: &str, format_name: &str, valid_values: &str) -> ToolResult<F>
-where
-    F: FromStr,
-    F::Err: std::fmt::Display,
-{
-    F::from_str(format).map_err(|e| {
-        ToolExecutionError::with_hint(
-            format!("Invalid {}: {}", format_name, e),
-            format!("Supported values: {}", valid_values),
-        )
-    })
-}
-
 /// Parse a required input value and return a recoverable tool error when invalid.
 pub fn parse_value_with_hint<T, E, F>(
     value: &str,
@@ -141,17 +113,19 @@ pub fn serialize_structured<T: Serialize>(value: &T, operation: &str) -> Result<
 }
 
 /// Shared metadata for URI format resources.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub struct FormatEntry {
     pub value: &'static str,
     pub name: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub mime_type: Option<&'static str>,
+    #[serde(skip_serializing_if = "<[_]>::is_empty")]
     pub extensions: &'static [&'static str],
     pub description: &'static str,
 }
 
 /// Shared metadata for mode/sort option resources.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub struct OptionEntry {
     pub value: &'static str,
     pub name: &'static str,
@@ -159,92 +133,42 @@ pub struct OptionEntry {
 }
 
 /// Shared metadata for query type resources.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub struct QueryTypeEntry {
     pub name: &'static str,
     pub description: &'static str,
     pub example: &'static str,
 }
 
-fn format_entry_to_json(entry: &FormatEntry) -> Value {
-    let mut obj = Map::new();
-    obj.insert("name".to_string(), json!(entry.name));
-    obj.insert("value".to_string(), json!(entry.value));
-    obj.insert("description".to_string(), json!(entry.description));
-    if let Some(mime_type) = entry.mime_type {
-        obj.insert("mime_type".to_string(), json!(mime_type));
-    }
-    if !entry.extensions.is_empty() {
-        obj.insert("extensions".to_string(), json!(entry.extensions));
-    }
-    Value::Object(obj)
-}
-
-fn option_entry_to_json(entry: &OptionEntry) -> Value {
-    json!({
-        "name": entry.name,
-        "value": entry.value,
-        "description": entry.description,
-    })
-}
-
-fn query_type_entry_to_json(entry: &QueryTypeEntry) -> Value {
-    json!({
-        "name": entry.name,
-        "description": entry.description,
-        "example": entry.example,
-    })
-}
-
 pub fn format_entries_json(entries: &[FormatEntry], default: &str) -> Value {
-    let formats = entries
-        .iter()
-        .map(format_entry_to_json)
-        .collect::<Vec<_>>();
     json!({
-        "formats": formats,
+        "formats": entries,
         "default": default,
     })
 }
 
 pub fn option_entries_json(key: &str, entries: &[OptionEntry], default: &str) -> Value {
-    let values = entries
-        .iter()
-        .map(option_entry_to_json)
-        .collect::<Vec<_>>();
     json!({
-        key: values,
+        key: entries,
         "default": default,
     })
 }
 
 pub fn query_type_entries_json(entries: &[QueryTypeEntry]) -> Value {
-    let values = entries
-        .iter()
-        .map(query_type_entry_to_json)
-        .collect::<Vec<_>>();
     json!({
-        "query_types": values,
+        "query_types": entries,
     })
 }
 
 /// Default maximum characters included in text previews sent in `content`.
 pub const DEFAULT_CONTENT_PREVIEW_CHARS: usize = 1200;
 
-/// Build a bounded preview of a potentially large text payload.
-pub fn preview_text(text: &str, max_chars: usize) -> (String, bool) {
-    let total_chars = text.chars().count();
-    if total_chars <= max_chars {
-        (text.to_string(), false)
-    } else {
-        (text.chars().take(max_chars).collect(), true)
-    }
-}
-
 /// Build a Markdown code block preview and append truncation notice when needed.
 pub fn code_block_preview(language: &str, text: &str, max_chars: usize) -> String {
-    let (preview, truncated) = preview_text(text, max_chars);
-    let mut block = format!("```{}\n{}\n```", language, preview);
+    let truncated = text.chars().count() > max_chars;
+    let preview: String = text.chars().take(max_chars).collect();
+    let display = if truncated { preview.as_str() } else { text };
+    let mut block = format!("```{}\n{}\n```", language, display);
     if truncated {
         block.push_str("\n\nPreview truncated. Full output is available in structuredContent.");
     }
@@ -311,7 +235,7 @@ pub const RDF_FORMATS: &str = "turtle, ntriples, rdfxml, jsonld, trig, nquads, n
 
 /// Supported ShEx formats as a slice for completions.
 pub const SHEX_FORMAT_LIST: &[&str] =
-    &["shexc", "shexj", "turtle", "ntriples", "rdfxml", "jsonld", "trig", "n3", "nquads"];
+    &["shexc", "shexj", "turtle", "ntriples", "rdfxml", "jsonld", "trig", "n3", "nquads", "internal", "simple", "json"];
 
 pub const SHEX_FORMAT_ENTRIES: &[FormatEntry] = &[
     FormatEntry {
@@ -401,7 +325,6 @@ pub const SHEX_FORMAT_ENTRIES: &[FormatEntry] = &[
 ];
 
 /// Supported ShEx formats as a constant for documentation and hints.
-#[allow(dead_code)]
 pub const SHEX_FORMATS: &str =
     "shexc, shexj, turtle, ntriples, rdfxml, trig, n3, nquads, json, jsonld, internal, simple";
 
@@ -454,11 +377,9 @@ pub const SHACL_FORMAT_ENTRIES: &[FormatEntry] = &[
 ];
 
 /// Supported SHACL formats as a constant for documentation and hints.
-#[allow(dead_code)]
-pub const SHACL_FORMATS: &str = "turtle, ntriples, rdfxml, jsonld, trig, n3, nquads, internal";
+pub const SHACL_FORMATS: &str = "turtle, rdfxml, jsonld, trig, nquads, json";
 
 /// Supported ShapeMap formats as a constant for documentation and hints.
-#[allow(dead_code)]
 pub const SHAPEMAP_FORMATS: &str = "compact, json, internal, details, csv";
 
 /// Supported image formats as a constant for documentation and hints.
@@ -533,9 +454,14 @@ pub const SPARQL_QUERY_RESULT_FORMAT_ENTRIES: &[FormatEntry] = &[
     },
 ];
 
+/// Supported SPARQL query result formats as a slice for completions.
+pub const SPARQL_RESULT_FORMAT_LIST: &[&str] =
+    &["internal", "json", "xml", "csv", "tsv", "turtle", "ntriples", "rdfxml", "trig"];
+
 /// Supported validation result formats as a slice for completions (shared by ShEx and SHACL).
+/// Includes all values from both validators: `csv` is valid for ShEx, `minimal` for SHACL.
 pub const RESULT_FORMAT_LIST: &[&str] =
-    &["details", "compact", "json", "turtle", "ntriples", "rdfxml", "trig", "n3", "nquads"];
+    &["details", "compact", "json", "csv", "minimal", "turtle", "ntriples", "rdfxml", "trig", "n3", "nquads"];
 
 pub const SHEX_VALIDATION_RESULT_FORMAT_ENTRIES: &[FormatEntry] = &[
     FormatEntry {
@@ -691,17 +617,14 @@ pub const SHACL_VALIDATION_RESULT_FORMAT_ENTRIES: &[FormatEntry] = &[
 ];
 
 /// Supported ShEx validation result formats as a constant.
-#[allow(dead_code)]
 pub const SHEX_RESULT_FORMATS: &str = "compact, details, json, csv, turtle, ntriples, rdfxml, trig, n3, nquads";
 
 /// Supported SHACL validation result formats as a constant.
-#[allow(dead_code)]
 pub const SHACL_RESULT_FORMATS: &str =
     "compact, details, minimal, json, csv, turtle, ntriples, rdfxml, trig, n3, nquads";
 
 /// Supported reader modes as a constant.
-#[allow(dead_code)]
-pub const READER_MODES: &str = "strict, lax";
+pub const READER_MODES_LIST: &[&str] = &["strict", "lax"];
 
 /// Supported node info modes as a slice for completions.
 pub const NODE_INFO_MODE_LIST: &[&str] = &["both", "outgoing", "incoming"];
@@ -728,7 +651,6 @@ pub const NODE_MODE_ENTRIES: &[OptionEntry] = &[
 pub const NODE_INFO_MODES: &str = "outgoing, incoming, both";
 
 /// Supported ShEx validation result sort modes as a constant.
-#[allow(dead_code)]
 pub const SHEX_SORT_BY_MODES: &str = "node, shape, status, details";
 
 pub const READER_MODE_ENTRIES: &[OptionEntry] = &[
@@ -768,7 +690,6 @@ pub const SHEX_VALIDATION_SORT_OPTION_ENTRIES: &[OptionEntry] = &[
 ];
 
 /// Supported SHACL validation result sort modes as a constant.
-#[allow(dead_code)]
 pub const SHACL_SORT_BY_MODES: &str = "severity, node, component, value, path, sourceshape, details";
 
 pub const SHACL_VALIDATION_SORT_OPTION_ENTRIES: &[OptionEntry] = &[

@@ -85,7 +85,7 @@ impl ServerHandler for RudofMcpService {
 
             (page_tools, cursor_value)
         } else {
-            (all_tools, None)
+            (all_tools.to_vec(), None)
         };
 
         Ok(ListToolsResult {
@@ -297,9 +297,9 @@ impl ServerHandler for RudofMcpService {
         _context: RequestContext<RoleServer>,
     ) -> Result<CompleteResult, McpError> {
         // Extract the reference information and argument name.
-        // Note: rmcp 0.14 Reference only exposes Prompt and Resource variants.
-        // Tool argument completions are handled via get_tool_argument_completions
-        // when rmcp adds a Reference::Tool variant.
+        // Note: rmcp 1.3.0 Reference only exposes Prompt and Resource variants —
+        // there is no Reference::Tool yet, so tool-argument completions are not
+        // served via this endpoint. See get_tool_argument_completions in mcp_service.rs.
         let completions = match &request.r#ref {
             Reference::Prompt(prompt_ref) => {
                 self.get_prompt_argument_completions(&prompt_ref.name, &request.argument.name)
@@ -309,7 +309,7 @@ impl ServerHandler for RudofMcpService {
             },
         };
 
-        let completion = CompletionInfo::with_pagination(completions, None, false)
+        let completion = CompletionInfo::with_all_values(completions)
             .map_err(|e| McpError::invalid_params(e, None))?;
 
         Ok(CompleteResult::new(completion))

@@ -16,7 +16,7 @@ use rmcp::{
     model::CallToolResult, tool, tool_router,
 };
 use schemars::JsonSchema;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 // Import the public helper functions from the implementation files
 use crate::service::tools::data_tools_impl::*;
@@ -244,7 +244,7 @@ fn apply_tool_metadata(
     tool.output_schema = Some(output_schema);
 }
 
-pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
+fn build_annotated_tools() -> Vec<rmcp::model::Tool> {
     let mut tools = tool_router_public().list_all();
 
     for tool in tools.iter_mut() {
@@ -299,4 +299,13 @@ pub fn annotated_tools() -> Vec<rmcp::model::Tool> {
     }
 
     tools
+}
+
+/// Return the cached annotated tools list.
+///
+/// Output schemas and task support metadata are static — computed once on first
+/// call via [`OnceLock`] and reused for every subsequent `tools/list` request.
+pub fn annotated_tools() -> &'static [rmcp::model::Tool] {
+    static TOOLS: OnceLock<Vec<rmcp::model::Tool>> = OnceLock::new();
+    TOOLS.get_or_init(build_annotated_tools)
 }

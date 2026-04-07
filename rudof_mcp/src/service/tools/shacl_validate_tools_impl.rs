@@ -145,25 +145,25 @@ pub async fn validate_shacl_impl(
     if let Some(base_shape) = base.as_deref() {
         loading_shacl_schema = loading_shacl_schema.with_base(base_shape);
     }
-    loading_shacl_schema.execute().map_err(|e| {
-        internal_error(
-            "Shacl validation error",
-            e.to_string(),
-            Some(json!({"operation":"validate_shacl","phase":"load_shacl_schema"})),
+    if let Err(e) = loading_shacl_schema.execute() {
+        return Ok(ToolExecutionError::with_hint(
+            format!("Failed to load SHACL shapes: {}", e),
+            "Check the shapes content and shapes_format parameter",
         )
-    })?;
+        .into_call_tool_result());
+    }
 
     let mut validation = rudof.validate_shacl();
     if let Some(mode) = &parsed_mode {
         validation = validation.with_shacl_validation_mode(mode);
     }
-    validation.execute().map_err(|e| {
-        internal_error(
-            "Shacl validation error",
-            e.to_string(),
-            Some(json!({"operation":"validate_shacl","phase":"execute_validation"})),
+    if let Err(e) = validation.execute() {
+        return Ok(ToolExecutionError::with_hint(
+            format!("SHACL validation failed: {}", e),
+            "Ensure the RDF data is loaded and the SHACL shapes are correct",
         )
-    })?;
+        .into_call_tool_result());
+    }
 
     let mut output_buffer = Cursor::new(Vec::new());
     let mut serialization = rudof.serialize_shacl_validation_results(&mut output_buffer);
@@ -196,7 +196,7 @@ pub async fn validate_shacl_impl(
     let result_format_str = if let Some(format) = &parsed_result_format {
         format.to_string()
     } else {
-        "turtle".to_string()
+        "details".to_string()
     };
     let sort_by_str = if let Some(sort_by) = &parsed_sort_by {
         sort_by.to_string()
@@ -204,7 +204,7 @@ pub async fn validate_shacl_impl(
         "severity".to_string()
     };
     let response = ValidateShaclResponse {
-        results: output_str.to_string(),
+        results: output_str.clone(),
         result_format: result_format_str.clone(),
         sort_by: sort_by_str.clone(),
         result_size_bytes,
@@ -222,7 +222,7 @@ pub async fn validate_shacl_impl(
 
     let mut result = CallToolResult::success(vec![
         Content::text(summary),
-        Content::text(format!("## Validation Results\n\n{}", {output_str})),
+        Content::text(format!("## Validation Results\n\n{}", output_str)),
     ]);
     result.structured_content = Some(structured);
 

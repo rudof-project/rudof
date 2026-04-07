@@ -173,9 +173,10 @@ pub async fn load_rdf_data_from_sources_impl(
         )
     })?;
 
-    let mut count_buffer = Vec::new();
+    // Serialize to N-Triples once — reused for triple counting AND state persistence.
+    let mut ntriples_buffer = Vec::new();
     rudof
-        .serialize_data(&mut count_buffer)
+        .serialize_data(&mut ntriples_buffer)
         .with_result_data_format(&ResultDataFormat::NTriples)
         .execute()
         .map_err(|e| {
@@ -186,20 +187,14 @@ pub async fn load_rdf_data_from_sources_impl(
             )
         })?;
 
-    let ntriples = String::from_utf8(count_buffer).map_err(|e| {
+    let ntriples = String::from_utf8(ntriples_buffer).map_err(|e| {
         internal_error(
             "Conversion error",
             e.to_string(),
             Some(json!({"operation":"load_rdf_data_from_sources_impl","phase":"utf8_count_conversion"})),
         )
     })?;
-    let triple_count = ntriples
-        .lines()
-        .filter(|line| {
-            let trimmed = line.trim();
-            !trimmed.is_empty() && !trimmed.starts_with('#')
-        })
-        .count();
+    let triple_count = RudofMcpService::count_triples_in_ntriples(&ntriples);
 
     let sources_count = data_specs.len();
     let response = LoadRdfDataFromSourcesResponse {
@@ -220,11 +215,13 @@ pub async fn load_rdf_data_from_sources_impl(
     ]);
     result.structured_content = Some(structured);
 
-    // Release the lock before async operations (persistence)
+    // Explicitly release the Mutex lock before the async persist_state_with() call.
+    // persist_state_with() re-acquires the lock internally; holding it here would deadlock.
     drop(rudof);
 
-    // Persist state for Docker ephemeral container support
-    if let Err(e) = service.persist_state().await {
+    // Persist state for Docker ephemeral container support, reusing the N-Triples
+    // string we already serialized above to avoid a redundant serialization pass.
+    if let Err(e) = service.persist_state_with(Some(ntriples)).await {
         tracing::warn!("Failed to persist state after loading RDF data: {}", e);
     }
 
@@ -271,7 +268,7 @@ pub async fn export_rdf_data_impl(
         })?;
 
     let size_bytes = v.len();
-    let str = String::from_utf8(v).map_err(|e| {
+    let serialized = String::from_utf8(v).map_err(|e| {
         internal_error(
             "Conversion error",
             e.to_string(),
@@ -279,14 +276,14 @@ pub async fn export_rdf_data_impl(
         )
     })?;
     let response = ExportRdfDataResponse {
-        data: str.clone(),
+        data: serialized.clone(),
         format: format_str.to_string(),
         size_bytes,
     };
 
     let structured = serialize_structured(&response, "export_rdf_data_impl")?;
 
-    let preview = code_block_preview(format_str, &str, DEFAULT_CONTENT_PREVIEW_CHARS);
+    let preview = code_block_preview(format_str, &serialized, DEFAULT_CONTENT_PREVIEW_CHARS);
     let summary = format!(
         "RDF export completed.\nFormat: {}\nSize: {} bytes",
         format_str, size_bytes

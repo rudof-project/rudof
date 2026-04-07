@@ -128,7 +128,8 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
                 ## Tips\n\n\
                 - Start with `result_format: \"details\"` for verbose output\n\
                 - Use `compact` for machine-readable summaries\n\
-                - Check specific nodes with the `node` parameter\n\n\
+                - Use `maybe_node` + `maybe_shape` to validate a specific node — a ShapeMap is auto-generated\n\
+                - Or supply `shapemap` directly (e.g. \":alice@:Person, :bob@:Person\")\n\n\
                 Would you like me to help you write a schema or run the validation?",
                 technology_label,
                 technology_label,
@@ -169,11 +170,3 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
     )))
 }
 
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "lowercase")]
-pub enum StandardSparqlQueryType {
-    Select,
-    Construct,
-    Ask,
-    Describe,
-}

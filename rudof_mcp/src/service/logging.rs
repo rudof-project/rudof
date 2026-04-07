@@ -48,35 +48,8 @@ const DEFAULT_MAX_LOGS_PER_WINDOW: u32 = 50;
 /// Time window used for log rate limiting.
 const DEFAULT_LOG_WINDOW: Duration = Duration::from_secs(1);
 
-/// Marker used when sensitive log data is removed.
-const REDACTED_FIELD_VALUE: &str = "[REDACTED]";
-
 /// Maximum characters retained for free-text log fields.
 const MAX_TEXT_FIELD_CHARS: usize = 2048;
-
-const SENSITIVE_FIELD_KEYS: &[&str] = &[
-    "password",
-    "passwd",
-    "secret",
-    "token",
-    "api_key",
-    "apikey",
-    "authorization",
-    "cookie",
-    "credential",
-    "private_key",
-];
-
-const SENSITIVE_TEXT_MARKERS: &[&str] = &[
-    "bearer ",
-    "password=",
-    "token=",
-    "secret=",
-    "apikey=",
-    "api_key=",
-    "authorization:",
-    "cookie:",
-];
 
 /// Convert a [`LoggingLevel`] to its numeric RFC 5424 value.
 fn level_to_value(level: LoggingLevel) -> u8 {
@@ -141,18 +114,6 @@ impl LogRateLimiter {
     }
 }
 
-fn is_sensitive_key(key: &str) -> bool {
-    let lower = key.to_ascii_lowercase();
-    SENSITIVE_FIELD_KEYS.iter().any(|needle| lower.contains(needle))
-}
-
-fn looks_sensitive_text(text: &str) -> bool {
-    let lower = text.to_ascii_lowercase();
-    SENSITIVE_TEXT_MARKERS
-        .iter()
-        .any(|needle| lower.contains(needle))
-}
-
 fn truncate_text(text: &str) -> String {
     let char_count = text.chars().count();
     if char_count <= MAX_TEXT_FIELD_CHARS {
@@ -160,33 +121,6 @@ fn truncate_text(text: &str) -> String {
     } else {
         let truncated: String = text.chars().take(MAX_TEXT_FIELD_CHARS).collect();
         format!("{}...[truncated]", truncated)
-    }
-}
-
-fn sanitize_json_value(value: Value) -> Value {
-    match value {
-        Value::Object(map) => {
-            let sanitized = map
-                .into_iter()
-                .map(|(key, nested_value)| {
-                    if is_sensitive_key(&key) {
-                        (key, Value::String(REDACTED_FIELD_VALUE.to_string()))
-                    } else {
-                        (key, sanitize_json_value(nested_value))
-                    }
-                })
-                .collect();
-            Value::Object(sanitized)
-        },
-        Value::Array(values) => Value::Array(values.into_iter().map(sanitize_json_value).collect()),
-        Value::String(text) => {
-            if looks_sensitive_text(&text) {
-                Value::String(REDACTED_FIELD_VALUE.to_string())
-            } else {
-                Value::String(truncate_text(&text))
-            }
-        },
-        other => other,
     }
 }
 
@@ -222,18 +156,9 @@ impl LogData {
     /// Convert the log data to a JSON value for the MCP notification.
     pub fn to_json(&self) -> Value {
         let mut map = serde_json::Map::new();
-        let message = if looks_sensitive_text(&self.message) {
-            REDACTED_FIELD_VALUE.to_string()
-        } else {
-            truncate_text(&self.message)
-        };
-        map.insert("message".to_string(), json!(message));
+        map.insert("message".to_string(), json!(truncate_text(&self.message)));
         for (key, value) in &self.fields {
-            if is_sensitive_key(key) {
-                map.insert(key.clone(), Value::String(REDACTED_FIELD_VALUE.to_string()));
-            } else {
-                map.insert(key.clone(), sanitize_json_value(value.clone()));
-            }
+            map.insert(key.clone(), value.clone());
         }
         json!(map)
     }

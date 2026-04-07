@@ -39,7 +39,9 @@ pub struct ValidateShexRequest {
 
     /// ShapeMap content mapping nodes to shapes.
     /// Example: ":alice@:Person, :bob@:Person"
-    pub shapemap: String,
+    /// Optional when `maybe_node` is provided — a compact ShapeMap will be
+    /// generated automatically (e.g., `<node>@<shape>` or `<node>@START`).
+    pub shapemap: Option<String>,
 
     /// ShapeMap format.
     /// Supported: compact, json, internal, details, csv
@@ -122,8 +124,23 @@ pub async fn validate_shex_impl(
         Err(e) => return Ok(e.into_call_tool_result()),
     };
 
+    // Build effective ShapeMap: explicit shapemap wins; fall back to auto-generating
+    // a compact ShapeMap from maybe_node + maybe_shape when only those are provided.
+    let effective_shapemap = match (shapemap, maybe_node.as_deref(), maybe_shape.as_deref()) {
+        (Some(sm), _, _) => sm,
+        (None, Some(node), Some(shape)) => format!("{}@{}", node, shape),
+        (None, Some(node), None) => format!("{}@START", node),
+        (None, None, _) => {
+            return Ok(ToolExecutionError::with_hint(
+                "No shapemap provided",
+                "Supply 'shapemap' (e.g. ':alice@:Person'), or 'maybe_node' with an optional 'maybe_shape'",
+            )
+            .into_call_tool_result());
+        },
+    };
+
     let parsed_shapemap = match parse_value_with_hint(
-        &shapemap,
+        &effective_shapemap,
         "shapemap",
         "Provide a valid ShapeMap value, URL, or file path",
         InputSpec::from_str,
@@ -169,13 +186,13 @@ pub async fn validate_shex_impl(
     if let Some(schema_format) = &parsed_schema_format {
         shex_schema_loading = shex_schema_loading.with_shex_schema_format(schema_format);
     }
-    shex_schema_loading.execute().map_err(|e| {
-        internal_error(
-            "Failed to load ShEx schema",
-            e.to_string(),
-            Some(json!({"operation":"validate_shex_impl", "phase":"load_schema"})),
+    if let Err(e) = shex_schema_loading.execute() {
+        return Ok(ToolExecutionError::with_hint(
+            format!("Failed to load ShEx schema: {}", e),
+            "Check the schema content and schema_format parameter",
         )
-    })?;
+        .into_call_tool_result());
+    }
 
     let mut shapemap_loading = rudof.load_shapemap(&parsed_shapemap);
     if let Some(shapemap_format) = &parsed_shapemap_format {
@@ -187,21 +204,21 @@ pub async fn validate_shex_impl(
     if let Some(base_schema) = base_schema.as_deref() {
         shapemap_loading = shapemap_loading.with_base_shapes(base_schema);
     }
-    shapemap_loading.execute().map_err(|e| {
-        internal_error(
-            "Failed to load ShapeMap",
-            e.to_string(),
-            Some(json!({"operation":"validate_shex_impl", "phase":"load_shapemap"})),
+    if let Err(e) = shapemap_loading.execute() {
+        return Ok(ToolExecutionError::with_hint(
+            format!("Failed to load ShapeMap: {}", e),
+            "Check shapemap syntax (e.g. ':alice@:Person') or the auto-generated ShapeMap from maybe_node/maybe_shape",
         )
-    })?;
+        .into_call_tool_result());
+    }
 
-    rudof.validate_shex().execute().map_err(|e| {
-        internal_error(
-            "ShEx validation failed",
-            e.to_string(),
-            Some(json!({"operation":"validate_shex_impl", "phase":"validate_shex"})),
+    if let Err(e) = rudof.validate_shex().execute() {
+        return Ok(ToolExecutionError::with_hint(
+            format!("ShEx validation failed: {}", e),
+            "Ensure the RDF data is loaded and the schema/shapemap are correct",
         )
-    })?;
+        .into_call_tool_result());
+    }
 
     let mut output_buffer = Cursor::new(Vec::new());
     let mut serialization = rudof.serialize_shex_validation_results(&mut output_buffer);
@@ -241,7 +258,7 @@ pub async fn validate_shex_impl(
         "node".to_string()
     };
     let response = ValidateShexResponse {
-        results: output_str.to_string(),
+        results: output_str.clone(),
         result_format: result_format_str.clone(),
         sort_by: sort_by_str.clone(),
         result_size_bytes,
@@ -254,12 +271,9 @@ pub async fn validate_shex_impl(
         result_format_str, sort_by_str, result_size_bytes,
     );
 
-    // Add validation parameters if provided
-    if let Some(node) = &maybe_node {
-        summary.push_str(&format!("\nNode: {}", node));
-    }
-    if let Some(shape) = &maybe_shape {
-        summary.push_str(&format!("\nShape: {}", shape));
+    // Add ShapeMap source info
+    if maybe_node.is_some() || maybe_shape.is_some() {
+        summary.push_str(&format!("\nShapeMap (auto-generated): {}", effective_shapemap));
     }
 
     let schema_preview = code_block_preview("shex", &schema, 600);

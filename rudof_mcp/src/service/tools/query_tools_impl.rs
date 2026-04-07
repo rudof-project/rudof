@@ -243,7 +243,7 @@ pub async fn execute_sparql_query_impl(
     let response = QueryExecutionResponse {
         query: sparql_query.clone(),
         result_format: result_format_str.clone(),
-        results: output_str.to_string(),
+        results: output_str.clone(),
         result_size_bytes,
     };
 

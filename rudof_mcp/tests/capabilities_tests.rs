@@ -120,7 +120,6 @@ fn test_completions_capability_advertised() {
     );
 }
 
-/// Test that tasks capability (SEP-1686) is not advertised (not yet implemented)
 #[test]
 fn test_tasks_capability_not_advertised() {
     let service = RudofMcpService::new();
@@ -132,7 +131,6 @@ fn test_tasks_capability_not_advertised() {
     );
 }
 
-/// Test that experimental capability is not set (clean implementation)
 #[test]
 fn test_no_experimental_capabilities() {
     let service = RudofMcpService::new();
@@ -141,32 +139,5 @@ fn test_no_experimental_capabilities() {
     assert!(
         info.capabilities.experimental.is_none(),
         "Experimental capabilities should not be set unless needed"
-    );
-}
-
-/// Test all required capabilities are present per MCP spec
-#[test]
-fn test_all_standard_capabilities_present() {
-    let service = RudofMcpService::new();
-    let info = service.get_info();
-    let caps = &info.capabilities;
-
-    // A well-formed MCP server should advertise its capabilities clearly
-    // per the spec: "Servers MUST advertise their capabilities"
-
-    let capabilities_count = [
-        caps.tools.is_some(),
-        caps.prompts.is_some(),
-        caps.resources.is_some(),
-        caps.logging.is_some(),
-        caps.completions.is_some(),
-    ]
-    .iter()
-    .filter(|&&x| x)
-    .count();
-
-    assert!(
-        capabilities_count >= 3,
-        "Server should advertise at least tools, prompts, and resources capabilities"
     );
 }

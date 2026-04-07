@@ -110,13 +110,13 @@ pub async fn show_shex_impl(
     if let Some(schema_format) = &parsed_schema_format {
         shex_schema_loading = shex_schema_loading.with_shex_schema_format(schema_format);
     }
-    shex_schema_loading.execute().map_err(|e| {
-        internal_error(
-            "ShEx error",
-            e.to_string(),
-            Some(json!({"operation":"show_shex","phase":"load_schema"})),
+    if let Err(e) = shex_schema_loading.execute() {
+        return Ok(ToolExecutionError::with_hint(
+            format!("Failed to parse ShEx schema: {}", e),
+            "Check the schema content and schema_format parameter",
         )
-    })?;
+        .into_call_tool_result());
+    }
 
     let mut output_buffer = Cursor::new(Vec::new());
     let mut serialization = rudof.serialize_shex_schema(&mut output_buffer);
@@ -126,17 +126,18 @@ pub async fn show_shex_impl(
     if let Some(shape_selector) = shape.as_deref() {
         serialization = serialization.with_shape(shape_selector);
     }
-    serialization
+    if let Err(e) = serialization
         .with_show_schema(true)
         .with_show_dependencies(true)
         .with_show_statistics(true)
-        .execute().map_err(|e| {
-            internal_error(
-                "ShEx error",
-                e.to_string(),
-                Some(json!({"operation":"show_shex","phase":"serialize_schema"})),
-            )
-        })?;
+        .execute()
+    {
+        return Ok(ToolExecutionError::with_hint(
+            format!("Failed to serialize ShEx schema: {}", e),
+            "Try a different result_schema_format or verify the shape selector",
+        )
+        .into_call_tool_result());
+    }
 
     let output_bytes = output_buffer.into_inner();
     let output_str = String::from_utf8(output_bytes).map_err(|e| {
@@ -257,13 +258,13 @@ pub async fn check_shex_impl(
     if let Some(schema_format) = &parsed_schema_format {
         checking = checking.with_shex_schema_format(schema_format);
     }
-    checking.execute().map_err(|e| {
-        internal_error(
-            "ShEx error",
-            e.to_string(),
-            Some(json!({"operation":"check_shex_impl","phase":"check_schema"})),
+    if let Err(e) = checking.execute() {
+        return Ok(ToolExecutionError::with_hint(
+            format!("ShEx schema is not well-formed: {}", e),
+            "Review the schema syntax and correct the reported errors",
         )
-    })?;
+        .into_call_tool_result());
+    }
 
     let output_bytes = output_buffer.into_inner();
     let output_str = String::from_utf8(output_bytes).map_err(|e| {

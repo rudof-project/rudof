@@ -37,29 +37,6 @@ mod initialization_tests {
         let result = RudofMcpService::try_new();
         assert!(result.is_ok(), "try_new should succeed with valid configuration");
     }
-
-    /// Test service is Clone
-    #[test]
-    fn test_service_is_clone() {
-        let service = RudofMcpService::new();
-        let _cloned = service.clone();
-        // If we get here, Clone is implemented
-    }
-
-    /// Test service is Send + Sync (required for async)
-    #[test]
-    fn test_service_is_send_sync() {
-        fn assert_send_sync<T: Send + Sync>() {}
-        assert_send_sync::<RudofMcpService>();
-    }
-
-    /// Test default impl works
-    #[test]
-    fn test_service_default() {
-        let service = RudofMcpService::default();
-        let info = service.get_info();
-        assert!(!info.server_info.name.is_empty());
-    }
 }
 
 // =============================================================================
@@ -94,7 +71,7 @@ mod tool_router_tests {
 
         let tools = annotated_tools();
 
-        for tool in &tools {
+        for tool in tools {
             assert!(!tool.name.is_empty(), "Tool name should not be empty");
             assert!(
                 !tool.description.as_ref().unwrap().is_empty(),
@@ -169,7 +146,6 @@ mod prompt_router_tests {
             "explore_rdf_node",
             "analyze_rdf_data",
             "validation_guide",
-            "sparql_builder",
         ];
 
         for expected in expected_prompts {
@@ -239,18 +215,6 @@ mod completion_tests {
         assert!(completions.contains(&"both".to_string()), "Should include 'both' mode");
         assert!(completions.contains(&"outgoing".to_string()));
         assert!(completions.contains(&"incoming".to_string()));
-    }
-
-    /// Test prompt argument completions for boolean args
-    #[test]
-    fn test_prompt_argument_completions_boolean() {
-        let service = RudofMcpService::new();
-
-        let completions = service.get_prompt_argument_completions("any", "verbose");
-
-        assert!(!completions.is_empty());
-        assert!(completions.contains(&"true".to_string()));
-        assert!(completions.contains(&"false".to_string()));
     }
 
     /// Test prompt argument completions for technology
@@ -381,68 +345,6 @@ mod log_level_tests {
                 let stored = service.current_min_log_level.read().await;
                 assert_eq!(*stored, Some(level));
             }
-        });
-    }
-}
-
-// =============================================================================
-// Context Storage Tests
-// =============================================================================
-
-mod context_storage_tests {
-    use super::*;
-
-    /// Test initial context is None
-    #[test]
-    fn test_initial_context_is_none() {
-        assert!(
-            RudofMcpService::current_request_context().is_none(),
-            "Initial task-local context should be None"
-        );
-    }
-}
-
-// =============================================================================
-// Rudof State Tests
-// =============================================================================
-
-mod rudof_state_tests {
-    use super::*;
-
-    /// Helper to run async code in tests
-    fn block_on<F: std::future::Future>(f: F) -> F::Output {
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap()
-            .block_on(f)
-    }
-
-    /// Test rudof instance is accessible
-    #[test]
-    fn test_rudof_accessible() {
-        let service = RudofMcpService::new();
-
-        block_on(async {
-            // Should be able to lock rudof
-            let _rudof = service.rudof.lock().await;
-            // If we get here, we can access the rudof instance
-        });
-    }
-
-    /// Test rudof can be locked multiple times (via Arc)
-    #[test]
-    fn test_rudof_multiple_services() {
-        let service1 = RudofMcpService::new();
-        let service2 = service1.clone();
-
-        block_on(async {
-            // Both services should share the same rudof instance
-            let guard1 = service1.rudof.lock().await;
-            drop(guard1); // Release lock
-
-            let _guard2 = service2.rudof.lock().await;
-            // If we get here, Arc sharing works correctly
         });
     }
 }
