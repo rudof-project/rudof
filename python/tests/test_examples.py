@@ -43,6 +43,11 @@ def _make_test(example_key: str):
         source_file = example["source_file"]
         expected_output = example.get("expected_output", [])
 
+        self.assertTrue(
+            len(expected_output) > 0,
+            f"Example '{example_key}' must define at least one expected_output substring",
+        )
+
         result = subprocess.run(
             [sys.executable, source_file],
             cwd=str(_EXAMPLES_DIR),

@@ -1,43 +1,39 @@
-from pyrudof import Rudof, RudofConfig, ShExFormatter
+from pyrudof import ReaderMode, Rudof, RudofConfig
 
 rudof = Rudof(RudofConfig())
 
 schema1 = """
- PREFIX : <http://example.org/>
- PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
- :Person {
-    :name xsd:string ;
-    :age xsd:integer ;
-    :weight xsd:float ;
-    :worksFor @:Company
- }
- :Company {
-    :name xsd:string ;
-    :employee @:Person
- }"""
+PREFIX : <http://example.org/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
-# rudof.read_data_str(schema1)
-
-schema2 = """
- PREFIX ex: <http://example.org/>
- PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
- ex:Person {
-    ex:name xsd:string ;
-    ex:birthDate xsd:date ;
-    ex:worksFor @ex:Company
-}
-ex:Company {
-   ex:name xsd:string
+:Person {
+  :name xsd:string
 }
 """
-print("Comparing schemas:");
-result = rudof.compare_schemas_str(
-    schema1, schema2,
-    "shex", "shex",
-    "shexc", "shexc",
-    None, None,
-    "http://example.org/Person", "http://example.org/Person",
-    None,
-    )
 
-print(f"Schemas compared: {result.as_json()}")
+schema2 = """
+PREFIX : <http://example.org/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+:Person {
+  :name xsd:string ;
+  :age xsd:integer ?
+}
+"""
+
+comparison = rudof.compare_schemas(
+    schema1,
+    schema2,
+    "shex",
+    "shex",
+    "shexc",
+    "shexc",
+    None,
+    None,
+    "http://example.org/Person",
+    "http://example.org/Person",
+    ReaderMode.Lax,
+)
+
+print("COMPARE_SCHEMAS_OK")
+print(f"Comparison chars: {len(comparison)}")

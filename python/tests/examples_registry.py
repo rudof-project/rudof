@@ -41,6 +41,44 @@ def _load_manifest() -> dict:
         return tomllib.load(f)
 
 
+def _validate_entry(entry: dict) -> None:
+    """Validate a single [[example]] entry from examples.toml."""
+    key = entry.get("key", "<missing-key>")
+
+    source_file = entry.get("source_file")
+    if not source_file:
+        raise ValueError(f"Example '{key}' is missing required field 'source_file'")
+
+    source_path = _EXAMPLES_DIR / source_file
+    if not source_path.exists():
+        raise ValueError(f"Example '{key}' source_file not found: {source_file}")
+
+    expected_output = entry.get("expected_output")
+    if not isinstance(expected_output, list) or not expected_output:
+        raise ValueError(
+            f"Example '{key}' must define a non-empty 'expected_output' list"
+        )
+
+    for i, item in enumerate(expected_output):
+        if not isinstance(item, str) or not item.strip():
+            raise ValueError(
+                f"Example '{key}' has invalid expected_output[{i}]: {item!r}"
+            )
+
+    files = entry.get("files", {})
+    if not isinstance(files, dict):
+        raise ValueError(f"Example '{key}' field 'files' must be a table/dict")
+
+    for field_name, rel_path in files.items():
+        if rel_path is None:
+            continue
+        path = _EXAMPLES_DIR / rel_path
+        if not path.exists():
+            raise ValueError(
+                f"Example '{key}' references missing file '{field_name}': {rel_path}"
+            )
+
+
 def _build_catalog() -> tuple[dict[str, Example], dict, list[str]]:
     """Build the examples catalog, categories info, and category order."""
     manifest = _load_manifest()
@@ -50,6 +88,8 @@ def _build_catalog() -> tuple[dict[str, Example], dict, list[str]]:
 
     catalog: dict[str, Example] = {}
     for entry in manifest.get("example", []):
+        _validate_entry(entry)
+
         key = entry["key"]
         source_file = entry["source_file"]
         code_path = _EXAMPLES_DIR / source_file

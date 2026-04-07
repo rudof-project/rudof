@@ -1,251 +1,192 @@
-"""
-Unit tests for rudof_generate Python bindings
-"""
-
-import unittest
+import json
 import tempfile
-import os
+import unittest
 from pathlib import Path
 
 import pyrudof
 
 
 class TestGeneratorConfig(unittest.TestCase):
-    """Test cases for GeneratorConfig class"""
-
-    def test_default_config(self):
-        """Test creating a default configuration"""
+    def test_core_settings(self):
         config = pyrudof.GeneratorConfig()
-        self.assertIsNotNone(config)
-
-    def test_entity_count(self):
-        """Test setting and getting entity count"""
-        config = pyrudof.GeneratorConfig()
-        config.set_entity_count(100)
-        self.assertEqual(config.get_entity_count(), 100)
-
-    def test_seed(self):
-        """Test setting and getting random seed"""
-        config = pyrudof.GeneratorConfig()
-        config.set_seed(42)
-        self.assertEqual(config.get_seed(), 42)
-
-        # Test None seed
-        config.set_seed(None)
-        self.assertIsNone(config.get_seed())
-
-    def test_output_path(self):
-        """Test setting and getting output path"""
-        config = pyrudof.GeneratorConfig()
-        test_path = "/tmp/test_output.ttl"
-        config.set_output_path(test_path)
-        self.assertEqual(config.get_output_path(), test_path)
-
-    def test_output_format(self):
-        """Test setting output format"""
-        config = pyrudof.GeneratorConfig()
-        config.set_output_format(pyrudof.OutputFormat.Turtle)
-        # No getter for format, just ensure it doesn't raise
-
-        config.set_output_format(pyrudof.OutputFormat.NTriples)
-
-    def test_schema_format(self):
-        """Test setting schema format"""
-        config = pyrudof.GeneratorConfig()
-        config.set_schema_format(pyrudof.SchemaFormat.ShEx)
-        config.set_schema_format(pyrudof.SchemaFormat.Shacl)
-        config.set_schema_format(None)
-
-    def test_cardinality_strategy(self):
-        """Test setting cardinality strategy"""
-        config = pyrudof.GeneratorConfig()
-        strategies = [
-            pyrudof.CardinalityStrategy.Minimum,
-            pyrudof.CardinalityStrategy.Maximum,
-            pyrudof.CardinalityStrategy.Random,
-            pyrudof.CardinalityStrategy.Balanced,
-        ]
-        for strategy in strategies:
-            config.set_cardinality_strategy(strategy)
-
-    def test_compress(self):
-        """Test setting compress option"""
-        config = pyrudof.GeneratorConfig()
-        config.set_compress(True)
-        config.set_compress(False)
-
-    def test_write_stats(self):
-        """Test setting write_stats option"""
-        config = pyrudof.GeneratorConfig()
-        config.set_write_stats(True)
-        config.set_write_stats(False)
-
-    def test_parallel_writing(self):
-        """Test setting parallel_writing option"""
-        config = pyrudof.GeneratorConfig()
-        config.set_parallel_writing(True)
-        config.set_parallel_writing(False)
-
-    def test_parallel_file_count(self):
-        """Test setting parallel file count"""
-        config = pyrudof.GeneratorConfig()
-        config.set_parallel_file_count(4)
-
-    def test_worker_threads(self):
-        """Test setting worker threads"""
-        config = pyrudof.GeneratorConfig()
-        config.set_worker_threads(4)
-        config.set_worker_threads(None)
-
-    def test_batch_size(self):
-        """Test setting batch size"""
-        config = pyrudof.GeneratorConfig()
-        config.set_batch_size(100)
-
-    def test_show(self):
-        """Test configuration string representation"""
-        config = pyrudof.GeneratorConfig()
-        config.set_entity_count(50)
-        config.set_seed(123)
-
-        config_str = config.show()
-        self.assertIsInstance(config_str, str)
-        self.assertIn("GeneratorConfig", config_str)
-
-    def test_config_from_toml_file_nonexistent(self):
-        """Test loading from non-existent TOML file"""
-        with self.assertRaises(Exception):
-            pyrudof.GeneratorConfig.from_toml_file("/nonexistent/path.toml")
-
-    def test_config_from_json_file_nonexistent(self):
-        """Test loading from non-existent JSON file"""
-        with self.assertRaises(Exception):
-            pyrudof.GeneratorConfig.from_json_file("/nonexistent/path.json")
-
-    def test_config_to_toml_file(self):
-        """Test saving configuration to TOML file"""
-        config = pyrudof.GeneratorConfig()
-        config.set_entity_count(100)
-        config.set_seed(42)
-
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.toml', delete=False) as f:
-            temp_path = f.name
-
-        try:
-            config.to_toml_file(temp_path)
-            self.assertTrue(os.path.exists(temp_path))
-
-            # Load it back
-            loaded_config = pyrudof.GeneratorConfig.from_toml_file(temp_path)
-            self.assertEqual(loaded_config.get_entity_count(), 100)
-            self.assertEqual(loaded_config.get_seed(), 42)
-        finally:
-            if os.path.exists(temp_path):
-                os.unlink(temp_path)
-
-
-class TestDataGenerator(unittest.TestCase):
-    """Test cases for DataGenerator class"""
-
-    def test_create_generator(self):
-        """Test creating a data generator"""
-        config = pyrudof.GeneratorConfig()
-        config.set_entity_count(10)
-
-        generator = pyrudof.DataGenerator(config)
-        self.assertIsNotNone(generator)
-
-    def test_create_generator_with_custom_config(self):
-        """Test creating generator with custom configuration"""
-        config = pyrudof.GeneratorConfig()
-        config.set_entity_count(50)
-        config.set_seed(12345)
-        config.set_output_path("/tmp/test.ttl")
-        config.set_output_format(pyrudof.OutputFormat.Turtle)
-
-        generator = pyrudof.DataGenerator(config)
-        self.assertIsNotNone(generator)
-
-    def test_load_nonexistent_schema(self):
-        """Test loading a non-existent schema file"""
-        config = pyrudof.GeneratorConfig()
-        generator = pyrudof.DataGenerator(config)
-
-        with self.assertRaises(Exception):
-            generator.load_shex_schema("/nonexistent/schema.shex")
-
-    def test_load_schema_auto_nonexistent(self):
-        """Test auto-loading a non-existent schema file"""
-        config = pyrudof.GeneratorConfig()
-        generator = pyrudof.DataGenerator(config)
-
-        with self.assertRaises(Exception):
-            generator.load_schema_auto("/nonexistent/schema.shex")
-
-
-class TestEnums(unittest.TestCase):
-    """Test cases for enum types"""
-
-    def test_schema_format_enum(self):
-        """Test SchemaFormat enum values"""
-        self.assertNotEqual(pyrudof.SchemaFormat.ShEx, pyrudof.SchemaFormat.Shacl)
-
-        # Test equality
-        self.assertEqual(pyrudof.SchemaFormat.ShEx, pyrudof.SchemaFormat.ShEx)
-        self.assertEqual(pyrudof.SchemaFormat.Shacl, pyrudof.SchemaFormat.Shacl)
-
-    def test_output_format_enum(self):
-        """Test OutputFormat enum values"""
-        self.assertNotEqual(pyrudof.OutputFormat.Turtle, pyrudof.OutputFormat.NTriples)
-
-        # Test equality
-        self.assertEqual(pyrudof.OutputFormat.Turtle, pyrudof.OutputFormat.Turtle)
-        self.assertEqual(pyrudof.OutputFormat.NTriples, pyrudof.OutputFormat.NTriples)
-
-    def test_cardinality_strategy_enum(self):
-        """Test CardinalityStrategy enum values"""
-        strategies = [
-            pyrudof.CardinalityStrategy.Minimum,
-            pyrudof.CardinalityStrategy.Maximum,
-            pyrudof.CardinalityStrategy.Random,
-            pyrudof.CardinalityStrategy.Balanced,
-        ]
-
-        # All strategies should be unique
-        for i, s1 in enumerate(strategies):
-            for j, s2 in enumerate(strategies):
-                if i == j:
-                    self.assertEqual(s1, s2)
-                else:
-                    self.assertNotEqual(s1, s2)
-
-
-class TestIntegration(unittest.TestCase):
-    """Integration tests for the complete workflow"""
-
-    def test_complete_configuration_workflow(self):
-        """Test a complete configuration and setup workflow"""
-        # Create and configure
-        config = pyrudof.GeneratorConfig()
-        config.set_entity_count(20)
-        config.set_seed(42)
-        config.set_output_path("/tmp/integration_test.ttl")
+        config.set_entity_count(12)
+        config.set_seed(99)
+        config.set_output_path("output.ttl")
         config.set_output_format(pyrudof.OutputFormat.Turtle)
         config.set_schema_format(pyrudof.SchemaFormat.ShEx)
         config.set_cardinality_strategy(pyrudof.CardinalityStrategy.Balanced)
+
+        self.assertEqual(config.get_entity_count(), 12)
+        self.assertEqual(config.get_seed(), 99)
+        self.assertEqual(config.get_output_path(), "output.ttl")
+
+    def test_parallel_settings(self):
+        config = pyrudof.GeneratorConfig()
+        config.set_compress(True)
         config.set_write_stats(True)
-        config.set_compress(False)
-        config.set_worker_threads(2)
-        config.set_batch_size(10)
+        config.set_parallel_writing(True)
+        config.set_parallel_file_count(3)
+        config.set_worker_threads(4)
+        config.set_batch_size(64)
+        config.set_parallel_shapes(True)
+        config.set_parallel_fields(True)
 
-        # Create generator
-        generator = pyrudof.DataGenerator(config)
-        self.assertIsNotNone(generator)
+        self.assertTrue(config.get_compress())
+        self.assertTrue(config.get_write_stats())
+        self.assertTrue(config.get_parallel_writing())
+        self.assertEqual(config.get_parallel_file_count(), 3)
+        self.assertEqual(config.get_worker_threads(), 4)
+        self.assertEqual(config.get_batch_size(), 64)
+        self.assertTrue(config.get_parallel_shapes())
+        self.assertTrue(config.get_parallel_fields())
 
-        # Verify configuration
-        self.assertEqual(config.get_entity_count(), 20)
-        self.assertEqual(config.get_seed(), 42)
+    def test_quality_and_locale_settings(self):
+        config = pyrudof.GeneratorConfig()
+        config.set_entity_distribution(pyrudof.EntityDistribution.Equal)
+        config.set_locale("en")
+        config.set_data_quality(pyrudof.DataQuality.Medium)
+
+        self.assertEqual(config.get_locale(), "en")
+
+    def test_persistence_toml_and_json(self):
+        config = pyrudof.GeneratorConfig()
+        config.set_entity_count(7)
+        config.set_seed(123)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+
+            toml_path = tmp / "config.toml"
+            config.to_toml_file(str(toml_path))
+            loaded_toml = pyrudof.GeneratorConfig.from_toml_file(str(toml_path))
+
+            self.assertEqual(loaded_toml.get_entity_count(), 7)
+            self.assertEqual(loaded_toml.get_seed(), 123)
+
+            json_path = tmp / "config.json"
+            json_path.write_text(
+                json.dumps(
+                    {
+                        "generation": {
+                            "entity_count": 4,
+                            "seed": 1,
+                            "schema_format": "ShEx",
+                            "cardinality_strategy": "Minimum",
+                            "entity_distribution": "Equal",
+                        },
+                        "output": {
+                            "path": str(tmp / "out.nt"),
+                            "format": "NTriples",
+                            "compress": False,
+                            "write_stats": False,
+                            "parallel_writing": False,
+                            "parallel_file_count": 1,
+                        },
+                        "parallel": {
+                            "worker_threads": 1,
+                            "batch_size": 8,
+                            "parallel_shapes": False,
+                            "parallel_fields": False,
+                        },
+                        "field_generators": {
+                            "default": {
+                                "locale": "en",
+                                "quality": "Low",
+                            }
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            loaded_json = pyrudof.GeneratorConfig.from_json_file(str(json_path))
+
+            self.assertEqual(loaded_json.get_entity_count(), 4)
+
+    def test_validate_and_show(self):
+        config = pyrudof.GeneratorConfig()
+        config.validate()
+        shown = config.show()
+
+        self.assertIsInstance(shown, str)
+        self.assertIn("GeneratorConfig", shown)
+
+    def test_loading_nonexistent_files_raises(self):
+        with self.assertRaises(Exception):
+            pyrudof.GeneratorConfig.from_toml_file("/no/such/config.toml")
+
+        with self.assertRaises(Exception):
+            pyrudof.GeneratorConfig.from_json_file("/no/such/config.json")
 
 
-if __name__ == '__main__':
+class TestDataGenerator(unittest.TestCase):
+    def _make_config(self, output_path: str, schema_format=None):
+        config = pyrudof.GeneratorConfig()
+        config.set_entity_count(1)
+        config.set_output_path(output_path)
+        config.set_output_format(pyrudof.OutputFormat.Turtle)
+        if schema_format is not None:
+            config.set_schema_format(schema_format)
+        return config
+
+    def test_load_shex_schema_and_generate(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output = Path(tmpdir) / "from_shex.ttl"
+            config = self._make_config(str(output), pyrudof.SchemaFormat.ShEx)
+            generator = pyrudof.DataGenerator(config)
+
+            generator.load_shex_schema("../../examples/simple.shex")
+            generator.generate()
+
+            self.assertTrue(output.exists())
+
+    def test_load_shacl_schema(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output = Path(tmpdir) / "from_shacl.ttl"
+            config = self._make_config(str(output), pyrudof.SchemaFormat.Shacl)
+            generator = pyrudof.DataGenerator(config)
+
+            generator.load_shacl_schema("../../examples/simple_shacl.ttl")
+
+    def test_load_schema_auto(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output = Path(tmpdir) / "auto.ttl"
+            config = self._make_config(str(output))
+            generator = pyrudof.DataGenerator(config)
+
+            generator.load_schema_auto("../../examples/simple.shex")
+
+    def test_run_with_format(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output = Path(tmpdir) / "run_with_format.ttl"
+            config = self._make_config(str(output))
+            generator = pyrudof.DataGenerator(config)
+
+            generator.run_with_format("../../examples/simple.shex", pyrudof.SchemaFormat.ShEx)
+
+            self.assertTrue(output.exists())
+
+    def test_run(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output = Path(tmpdir) / "run_auto.ttl"
+            config = self._make_config(str(output))
+            generator = pyrudof.DataGenerator(config)
+
+            generator.run("../../examples/simple.shex")
+
+            self.assertTrue(output.exists())
+
+    def test_nonexistent_schema_raises(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output = Path(tmpdir) / "none.ttl"
+            config = self._make_config(str(output), pyrudof.SchemaFormat.ShEx)
+            generator = pyrudof.DataGenerator(config)
+
+            with self.assertRaises(Exception):
+                generator.load_shex_schema("/no/such/schema.shex")
+
+            with self.assertRaises(Exception):
+                generator.load_schema_auto("/no/such/schema.shex")
+
+
+if __name__ == "__main__":
     unittest.main(verbosity=2)
