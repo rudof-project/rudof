@@ -2,9 +2,11 @@ use std::sync::Arc;
 
 use super::node_constraint::NodeConstraint;
 use crate::ir::annotation::Annotation;
+use crate::ir::map_action_extension::MapActionExtension;
 use crate::ir::object_value::ObjectValue;
 use crate::ir::schema_ir::SchemaIR;
 use crate::ir::sem_act::SemAct;
+use crate::ir::semantic_action_context::SemanticActionContext;
 use crate::ir::semantic_action_extension::SemanticActionExtension;
 use crate::ir::semantic_actions_registry::SemanticActionsRegistry;
 use crate::ir::shape::Shape;
@@ -38,8 +40,10 @@ pub struct AST2IR {
 
 impl AST2IR {
     pub fn new(resolve_method: &ResolveMethod) -> Self {
-        let mut semantic_actions_registry = SemanticActionsRegistry::new();
-        semantic_actions_registry.register(Box::new(TestActionExtension::new()));
+        let semantic_actions_registry = SemanticActionsRegistry::new().with(vec![
+            Box::new(TestActionExtension::new()),
+            Box::new(MapActionExtension::new()),
+        ]);
         Self {
             resolve_method: resolve_method.clone(),
             shape_decls_counter: 0,
@@ -345,18 +349,6 @@ impl AST2IR {
         }
     }
 
-    /*fn cnv_sem_acts(sem_acts: &Option<Vec<ast::SemAct>>) -> Vec<SemAct> {
-        let mut actions = Vec::new();
-        if let Some(actions) = sem_acts {
-            info!("Converting semantic actions: {actions:?}");
-            for a in actions {
-                let action = cnv_sem_action(a);
-                actions.push(action);
-            }
-        }
-        actions
-    }*/
-
     fn cnv_annotations(annotations: &Option<Vec<ast::Annotation>>) -> Vec<Annotation> {
         if let Some(_anns) = annotations {
             // TODO
@@ -370,7 +362,7 @@ impl AST2IR {
         &self,
         triple_expr: &ast::TripleExpr,
         compiled_schema: &mut SchemaIR,
-        current_table: &mut RbeTable<Pred, Node, ShapeLabelIdx>,
+        current_table: &mut RbeTable<Pred, Node, ShapeLabelIdx, SemanticActionContext>,
         source_iri: &IriS,
     ) -> CResult<Rbe<Component>> {
         match triple_expr {
@@ -388,7 +380,13 @@ impl AST2IR {
                     cs.push(c)
                 }
                 let card = self.cnv_min_max(min, max)?;
-                info!("Semantic actions in EachOf: {sem_acts:?}");
+                if sem_acts.is_some() {
+                    info!("Semantic actions in EachOf ignored: {sem_acts:?}");
+                    let actions = self.cnv_sem_actions(sem_acts, &compiled_schema.prefixmap())?;
+                    let _conds = self.sem_acts_to_conds(actions)?;
+                    // cs.extend(actions);
+                    // TODO: how to combine semantic actions with the triple expressions in EachOf?
+                };
                 Ok(Self::mk_card_group(Rbe::and(cs), card))
             },
             ast::TripleExpr::OneOf {
@@ -405,7 +403,9 @@ impl AST2IR {
                     cs.push(c)
                 }
                 let card = self.cnv_min_max(min, max)?;
-                info!("Semantic actions in OneOf: {sem_acts:?}");
+                if sem_acts.is_some() {
+                    info!("Semantic actions in OneOf ignored: {sem_acts:?}");
+                }
                 Ok(Self::mk_card_group(Rbe::or(cs), card))
             },
             ast::TripleExpr::TripleConstraint {
@@ -424,8 +424,8 @@ impl AST2IR {
                 let iri = Self::cnv_predicate(predicate)?;
                 let actions = self.cnv_sem_actions(sem_acts, &compiled_schema.prefixmap())?;
                 let (cond, _display) = self.value_expr2match_cond(value_expr, actions, compiled_schema, source_iri)?;
-                let c = current_table.add_component(iri, &cond);
-                Ok(Rbe::symbol(c, min.value, max))
+                let component = current_table.add_component(iri, &cond);
+                Ok(Rbe::symbol(component, min.value, max))
             },
             ast::TripleExpr::Ref(r) => Err(Box::new(SchemaIRError::Todo {
                 msg: format!("TripleExprRef {r:?}"),
@@ -435,7 +435,6 @@ impl AST2IR {
 
     fn cnv_sem_actions(&self, sem_acts: &Option<Vec<ast::SemAct>>, prefixmap: &PrefixMap) -> CResult<Vec<SemAct>> {
         if let Some(actions) = sem_acts {
-            info!("Converting semantic actions: {actions:?}");
             actions.iter().map(|a| self.cnv_sem_action(a, prefixmap)).collect()
         } else {
             Ok(Vec::new())
@@ -498,20 +497,7 @@ impl AST2IR {
         compiled_schema: &mut SchemaIR,
         source_iri: &IriS,
     ) -> CResult<(Cond, String)> {
-        let mut sem_actions_conds = actions
-            .iter()
-            .map(|a| {
-                let semantic_action_code = self
-                    .semantic_actions_registry
-                    .find_code(a.name())
-                    .map_err(|e| Box::new(SchemaIRError::SemanticActionError { error: e.to_string() }))?;
-                Ok(mk_cond_sem_act(
-                    a.name().clone(),
-                    semantic_action_code,
-                    a.code().cloned(),
-                ))
-            })
-            .collect::<Result<Vec<_>, Box<SchemaIRError>>>()?;
+        let mut sem_actions_conds = self.sem_acts_to_conds(actions)?;
         let (cond, display) = if let Some(se) = value_expr.as_deref() {
             match se {
                 ast::ShapeExpr::NodeConstraint(nc) => self.cnv_node_constraint(
@@ -624,6 +610,23 @@ impl AST2IR {
             ast::TripleExpr::Ref(_) => todo!(),
         }
     }
+
+    fn sem_acts_to_conds(&self, actions: Vec<SemAct>) -> CResult<Vec<Cond>> {
+        actions
+            .iter()
+            .map(|a| {
+                let semantic_action_code = self
+                    .semantic_actions_registry
+                    .find_code(a.name())
+                    .map_err(|e| Box::new(SchemaIRError::SemanticActionError { error: e.to_string() }))?;
+                Ok(mk_cond_sem_act(
+                    a.name().clone(),
+                    semantic_action_code,
+                    a.code().cloned(),
+                ))
+            })
+            .collect::<Result<Vec<_>, Box<SchemaIRError>>>()
+    }
 }
 
 fn iri_ref2iri_s(iri_ref: &IriRef) -> IriS {
@@ -734,19 +737,16 @@ fn mk_cond_sem_act(
     semantic_action_code: Arc<dyn SemanticActionExtension + Send + Sync>,
     code: Option<String>,
 ) -> Cond {
-    MatchCond::single(
-        SingleCond::new()
-            .with_name(name.as_str())
-            .with_cond(move |value: &Node| {
-                let s = value.to_string();
-                semantic_action_code
-                    .run_action(code.as_deref(), Some(s.as_str()), None, None)
-                    .map(|()| Pending::new())
-                    .map_err(|e| RbeError::MsgError {
-                        msg: format!("Semantic action error for {name}: {e}"),
-                    })
-            }),
-    )
+    MatchCond::single(SingleCond::new().with_name(name.as_str()).with_cond(
+        move |_value: &Node, ctx: &SemanticActionContext| {
+            semantic_action_code
+                .run_action(code.as_deref(), ctx)
+                .map(|()| Pending::new())
+                .map_err(|e| RbeError::MsgError {
+                    msg: format!("Semantic action error for {name}: {e}"),
+                })
+        },
+    ))
 }
 
 fn mk_cond_datatype(datatype: &IriS, prefixmap: &PrefixMap) -> Cond {
@@ -754,12 +754,14 @@ fn mk_cond_datatype(datatype: &IriS, prefixmap: &PrefixMap) -> Cond {
     MatchCond::single(
         SingleCond::new()
             .with_name(prefixmap.qualify(&dt).to_string().as_str())
-            .with_cond(move |value: &Node| match check_node_datatype(value, &dt) {
-                Ok(_) => Ok(Pending::new()),
-                Err(err) => Err(RbeError::MsgError {
-                    msg: format!("Datatype error: {err}"),
-                }),
-            }),
+            .with_cond(
+                move |value: &Node, _ctx: &SemanticActionContext| match check_node_datatype(value, &dt) {
+                    Ok(_) => Ok(Pending::new()),
+                    Err(err) => Err(RbeError::MsgError {
+                        msg: format!("Datatype error: {err}"),
+                    }),
+                },
+            ),
     )
 }
 
@@ -767,12 +769,14 @@ fn mk_cond_length(len: usize) -> Cond {
     MatchCond::single(
         SingleCond::new()
             .with_name(format!("length({len})").as_str())
-            .with_cond(move |value: &Node| match check_node_length(value, len) {
-                Ok(_) => Ok(Pending::new()),
-                Err(err) => Err(RbeError::MsgError {
-                    msg: format!("Length error: {err}"),
-                }),
-            }),
+            .with_cond(
+                move |value: &Node, _ctx: &SemanticActionContext| match check_node_length(value, len) {
+                    Ok(_) => Ok(Pending::new()),
+                    Err(err) => Err(RbeError::MsgError {
+                        msg: format!("Length error: {err}"),
+                    }),
+                },
+            ),
     )
 }
 
@@ -781,11 +785,13 @@ fn mk_cond_min_inclusive(min: NumericLiteral) -> Cond {
     MatchCond::single(
         SingleCond::new()
             .with_name(format!("minInclusive({min_str})").as_str())
-            .with_cond(move |value: &Node| match check_node_min_inclusive(value, min.clone()) {
-                Ok(_) => Ok(Pending::new()),
-                Err(err) => Err(RbeError::MsgError {
-                    msg: format!("MinInclusive: {err}"),
-                }),
+            .with_cond(move |value: &Node, _ctx: &SemanticActionContext| {
+                match check_node_min_inclusive(value, min.clone()) {
+                    Ok(_) => Ok(Pending::new()),
+                    Err(err) => Err(RbeError::MsgError {
+                        msg: format!("MinInclusive: {err}"),
+                    }),
+                }
             }),
     )
 }
@@ -795,11 +801,13 @@ fn mk_cond_min_exclusive(min: NumericLiteral) -> Cond {
     MatchCond::single(
         SingleCond::new()
             .with_name(format!("minExclusive({min_str})").as_str())
-            .with_cond(move |value: &Node| match check_node_min_exclusive(value, min.clone()) {
-                Ok(_) => Ok(Pending::new()),
-                Err(err) => Err(RbeError::MsgError {
-                    msg: format!("MinExclusive: {err}"),
-                }),
+            .with_cond(move |value: &Node, _ctx: &SemanticActionContext| {
+                match check_node_min_exclusive(value, min.clone()) {
+                    Ok(_) => Ok(Pending::new()),
+                    Err(err) => Err(RbeError::MsgError {
+                        msg: format!("MinExclusive: {err}"),
+                    }),
+                }
             }),
     )
 }
@@ -809,12 +817,14 @@ fn mk_cond_total_digits(total: usize) -> Cond {
     MatchCond::single(
         SingleCond::new()
             .with_name(format!("totalDigits({total_str})").as_str())
-            .with_cond(move |value: &Node| match check_node_total_digits(value, total) {
-                Ok(_) => Ok(Pending::new()),
-                Err(err) => Err(RbeError::MsgError {
-                    msg: format!("MaxExclusive: {err}"),
-                }),
-            }),
+            .with_cond(
+                move |value: &Node, _ctx: &SemanticActionContext| match check_node_total_digits(value, total) {
+                    Ok(_) => Ok(Pending::new()),
+                    Err(err) => Err(RbeError::MsgError {
+                        msg: format!("MaxExclusive: {err}"),
+                    }),
+                },
+            ),
     )
 }
 
@@ -823,11 +833,13 @@ fn mk_cond_fraction_digits(total: usize) -> Cond {
     MatchCond::single(
         SingleCond::new()
             .with_name(format!("fractionDigits({total_str})").as_str())
-            .with_cond(move |value: &Node| match check_node_fraction_digits(value, total) {
-                Ok(_) => Ok(Pending::new()),
-                Err(err) => Err(RbeError::MsgError {
-                    msg: format!("MaxExclusive: {err}"),
-                }),
+            .with_cond(move |value: &Node, _ctx: &SemanticActionContext| {
+                match check_node_fraction_digits(value, total) {
+                    Ok(_) => Ok(Pending::new()),
+                    Err(err) => Err(RbeError::MsgError {
+                        msg: format!("MaxExclusive: {err}"),
+                    }),
+                }
             }),
     )
 }
@@ -837,11 +849,13 @@ fn mk_cond_max_exclusive(max: NumericLiteral) -> Cond {
     MatchCond::single(
         SingleCond::new()
             .with_name(format!("maxExclusive({max_str})").as_str())
-            .with_cond(move |value: &Node| match check_node_max_exclusive(value, max.clone()) {
-                Ok(_) => Ok(Pending::new()),
-                Err(err) => Err(RbeError::MsgError {
-                    msg: format!("MaxExclusive: {err}"),
-                }),
+            .with_cond(move |value: &Node, _ctx: &SemanticActionContext| {
+                match check_node_max_exclusive(value, max.clone()) {
+                    Ok(_) => Ok(Pending::new()),
+                    Err(err) => Err(RbeError::MsgError {
+                        msg: format!("MaxExclusive: {err}"),
+                    }),
+                }
             }),
     )
 }
@@ -851,11 +865,13 @@ fn mk_cond_max_inclusive(max: NumericLiteral) -> Cond {
     MatchCond::single(
         SingleCond::new()
             .with_name(format!("maxInclusive({max_str})").as_str())
-            .with_cond(move |value: &Node| match check_node_max_inclusive(value, max.clone()) {
-                Ok(_) => Ok(Pending::new()),
-                Err(err) => Err(RbeError::MsgError {
-                    msg: format!("MaxInclusive: {err}"),
-                }),
+            .with_cond(move |value: &Node, _ctx: &SemanticActionContext| {
+                match check_node_max_inclusive(value, max.clone()) {
+                    Ok(_) => Ok(Pending::new()),
+                    Err(err) => Err(RbeError::MsgError {
+                        msg: format!("MaxInclusive: {err}"),
+                    }),
+                }
             }),
     )
 }
@@ -864,19 +880,21 @@ fn mk_cond_min_length(len: usize) -> Cond {
     MatchCond::single(
         SingleCond::new()
             .with_name(format!("minLength({len})").as_str())
-            .with_cond(move |value: &Node| match check_node_min_length(value, len) {
-                Ok(_) => Ok(Pending::new()),
-                Err(err) => Err(RbeError::MsgError {
-                    msg: format!("MinLength error: {err}"),
-                }),
-            }),
+            .with_cond(
+                move |value: &Node, _ctx: &SemanticActionContext| match check_node_min_length(value, len) {
+                    Ok(_) => Ok(Pending::new()),
+                    Err(err) => Err(RbeError::MsgError {
+                        msg: format!("MinLength error: {err}"),
+                    }),
+                },
+            ),
     )
 }
 
 fn mk_cond_max_length(len: usize) -> Cond {
     MatchCond::simple(
         format!("maxLength({len})").as_str(),
-        move |value: &Node| match check_node_max_length(value, len) {
+        move |value: &Node, _ctx: &SemanticActionContext| match check_node_max_length(value, len) {
             Ok(_) => Ok(Pending::new()),
             Err(err) => Err(RbeError::MsgError {
                 msg: format!("MaxLength error: {err}"),
@@ -889,11 +907,13 @@ fn mk_cond_nodekind(nodekind: ast::NodeKind) -> Cond {
     MatchCond::single(
         SingleCond::new()
             .with_name(format!("nodekind({nodekind})").as_str())
-            .with_cond(move |value: &Node| match check_node_node_kind(value, &nodekind) {
-                Ok(_) => Ok(Pending::empty()),
-                Err(err) => Err(RbeError::MsgError {
-                    msg: format!("NodeKind Error: {err}"),
-                }),
+            .with_cond(move |value: &Node, _ctx: &SemanticActionContext| {
+                match check_node_node_kind(value, &nodekind) {
+                    Ok(_) => Ok(Pending::empty()),
+                    Err(err) => Err(RbeError::MsgError {
+                        msg: format!("NodeKind Error: {err}"),
+                    }),
+                }
             }),
     )
 }
@@ -903,7 +923,7 @@ fn mk_cond_pattern(regex: &str, flags: Option<&str>) -> Cond {
     let regex = regex.to_string();
     let flags = flags.map(|f| f.to_string());
     MatchCond::single(SingleCond::new().with_name(regex_str.as_str()).with_cond(
-        move |value: &Node| match check_pattern(value, &regex, flags.as_deref()) {
+        move |value: &Node, _ctx: &SemanticActionContext| match check_pattern(value, &regex, flags.as_deref()) {
             Ok(_) => Ok(Pending::new()),
             Err(err) => Err(RbeError::MsgError {
                 msg: format!("Pattern error: {err}"),
@@ -927,7 +947,7 @@ fn mk_cond_value_set(value_set: ValueSet, prefixmap: &PrefixMap) -> Cond {
     MatchCond::single(
         SingleCond::new()
             .with_name(value_set.show_qualified(prefixmap).as_str())
-            .with_cond(move |node: &Node| {
+            .with_cond(move |node: &Node, _ctx: &SemanticActionContext| {
                 if value_set.check_value(node.as_object()) {
                     Ok(Pending::empty())
                 } else {

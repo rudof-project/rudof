@@ -1,4 +1,4 @@
-use crate::ir::actions::semantic_action_error::SemanticActionError;
+use crate::ir::{actions::semantic_action_error::SemanticActionError, semantic_action_context::SemanticActionContext};
 use iri_s::IriS;
 
 /// A Semantic Action Extension represents an Extension of the ShEx extension
@@ -7,16 +7,6 @@ use iri_s::IriS;
 pub trait SemanticActionExtension {
     fn action_iri(&self) -> IriS;
 
-    /// Execute the semact body `parameter`.
-    ///
-    /// `s`, `p`, `o` are the optional subject, predicate, and object bindings
-    /// available for TripleExpression semacts. For ShapeExpression semacts only
-    /// `s` (focus node) is defined. For Start semacts all three are `None`.
-    fn run_action(
-        &self,
-        parameter: Option<&str>,
-        s: Option<&str>,
-        p: Option<&str>,
-        o: Option<&str>,
-    ) -> Result<(), SemanticActionError>;
+    /// Run the semantic action body, which has been passed as `parameter` using the context provided in `context`.
+    fn run_action(&self, parameter: Option<&str>, context: &SemanticActionContext) -> Result<(), SemanticActionError>;
 }
