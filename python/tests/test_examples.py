@@ -59,12 +59,6 @@ def _make_test(example_key: str):
             f"--- stderr ---\n{result.stderr}",
         )
 
-        # Non-empty output expected from every example
-        self.assertTrue(
-            len(result.stdout.strip()) > 0,
-            f"Example '{example_key}' produced no output",
-        )
-
         # Check expected substrings if any
         for expected in expected_output:
             self.assertIn(

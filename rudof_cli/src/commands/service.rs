@@ -1,8 +1,6 @@
 use crate::cli::parser::ServiceArgs;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::Result;
-use iri_s::MimeType;
-use rudof_lib::{ReaderMode, data::data_format2rdf_format, data_format::DataFormat, rdf_reader_mode::RDFReaderMode};
 
 /// Implementation of the `service` command.
 ///
@@ -27,27 +25,24 @@ impl Command for ServiceCommand {
 
     /// Executes the Service command logic.
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
-        let mut reader = self
-            .args
-            .service
-            .open_read(Some(self.args.service_format.mime_type()), "Service")?;
+        let reader_mode = self.args.reader_mode.into();
+        let format = self.args.service_format.into();
+        let result_format = self.args.result_service_format.into();
 
-        let data_format: DataFormat = (&self.args.service_format).into();
-        let rdf_format = data_format2rdf_format(&data_format)?;
+        let mut load_service_description = ctx
+            .rudof
+            .load_service_description(&self.args.service)
+            .with_data_format(&format)
+            .with_reader_mode(&reader_mode);
+        if let Some(base) = &self.args.base_data.as_deref() {
+            load_service_description = load_service_description.with_base(base);
+        }
+        load_service_description.execute()?;
 
-        let service_config = ctx.rudof.config().service_config();
-        let base = service_config.base.as_ref().map(|i| i.as_str());
-
-        let reader_mode: RDFReaderMode = (&self.args.reader_mode).into();
-        let reader_mode: ReaderMode = reader_mode.into();
-
-        ctx.rudof.read_service_description(
-            &mut reader,
-            self.args.service.source_name().as_str(),
-            Some(&rdf_format),
-            base,
-            Some(&reader_mode),
-        )?;
+        ctx.rudof
+            .serialize_service_description(&mut ctx.writer)
+            .with_result_service_format(&result_format)
+            .execute()?;
 
         Ok(())
     }

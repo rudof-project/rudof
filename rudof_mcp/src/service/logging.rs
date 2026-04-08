@@ -7,17 +7,14 @@
 //!
 //! Log levels follow RFC 5424 (syslog) severity levels, from most to
 //! least severe:
-//!
-//! | Level     | Value | Description                              |
-//! |-----------|-------|------------------------------------------|
-//! | Emergency | 0     | System is unusable                       |
-//! | Alert     | 1     | Action must be taken immediately         |
-//! | Critical  | 2     | Critical conditions                      |
-//! | Error     | 3     | Error conditions                         |
-//! | Warning   | 4     | Warning conditions                       |
-//! | Notice    | 5     | Normal but significant condition         |
-//! | Info      | 6     | Informational messages                   |
-//! | Debug     | 7     | Debug-level messages                     |
+//! - Emergency (0) - System is unusable
+//! - Alert (1) - Action must be taken immediately
+//! - Critical (2) - Critical conditions
+//! - Error (3) - Error conditions
+//! - Warning (4) - Warning conditions
+//! - Notice (5) - Normal but significant condition
+//! - Info (6) - Informational messages
+//! - Debug (7) - Debug-level messages
 //!
 //! # Filtering
 //!
@@ -28,8 +25,8 @@
 
 use rmcp::model::LoggingLevel;
 use serde_json::{Value, json};
-use std::sync::Arc;
-use tokio::sync::RwLock;
+use std::{sync::Arc, time::Duration};
+use tokio::{sync::Mutex, sync::RwLock, time::Instant};
 
 /// Mapping of MCP log levels to RFC 5424 numeric severity values.
 ///
@@ -44,6 +41,15 @@ const LOG_LEVEL_MAP: &[(LoggingLevel, u8)] = &[
     (LoggingLevel::Info, 6),
     (LoggingLevel::Debug, 7),
 ];
+
+/// Maximum number of MCP logging notifications per time window.
+const DEFAULT_MAX_LOGS_PER_WINDOW: u32 = 50;
+
+/// Time window used for log rate limiting.
+const DEFAULT_LOG_WINDOW: Duration = Duration::from_secs(1);
+
+/// Maximum characters retained for free-text log fields.
+const MAX_TEXT_FIELD_CHARS: usize = 2048;
 
 /// Convert a [`LoggingLevel`] to its numeric RFC 5424 value.
 fn level_to_value(level: LoggingLevel) -> u8 {
@@ -66,6 +72,56 @@ pub fn should_log(level: LoggingLevel, min_level: LoggingLevel) -> bool {
     let numeric_level = level_to_value(level);
     let min_numeric_level = level_to_value(min_level);
     numeric_level <= min_numeric_level
+}
+
+/// Simple fixed-window limiter for outbound MCP log notifications.
+#[derive(Debug)]
+pub(crate) struct LogRateLimiter {
+    window_started_at: Instant,
+    emitted_in_window: u32,
+    max_per_window: u32,
+    window: Duration,
+}
+
+impl Default for LogRateLimiter {
+    fn default() -> Self {
+        Self::new(DEFAULT_MAX_LOGS_PER_WINDOW, DEFAULT_LOG_WINDOW)
+    }
+}
+
+impl LogRateLimiter {
+    pub(crate) fn new(max_per_window: u32, window: Duration) -> Self {
+        Self {
+            window_started_at: Instant::now(),
+            emitted_in_window: 0,
+            max_per_window,
+            window,
+        }
+    }
+
+    pub(crate) fn should_emit(&mut self) -> bool {
+        if self.window_started_at.elapsed() >= self.window {
+            self.window_started_at = Instant::now();
+            self.emitted_in_window = 0;
+        }
+
+        if self.emitted_in_window < self.max_per_window {
+            self.emitted_in_window += 1;
+            true
+        } else {
+            false
+        }
+    }
+}
+
+fn truncate_text(text: &str) -> String {
+    let char_count = text.chars().count();
+    if char_count <= MAX_TEXT_FIELD_CHARS {
+        text.to_string()
+    } else {
+        let truncated: String = text.chars().take(MAX_TEXT_FIELD_CHARS).collect();
+        format!("{}...[truncated]", truncated)
+    }
 }
 
 /// Builder for structured log message data.
@@ -100,7 +156,7 @@ impl LogData {
     /// Convert the log data to a JSON value for the MCP notification.
     pub fn to_json(&self) -> Value {
         let mut map = serde_json::Map::new();
-        map.insert("message".to_string(), json!(self.message));
+        map.insert("message".to_string(), json!(truncate_text(&self.message)));
         for (key, value) in &self.fields {
             map.insert(key.clone(), value.clone());
         }
@@ -119,12 +175,14 @@ impl LogData {
 /// * `logger` - Optional logger name (e.g., "tools", "validation")
 /// * `data` - Structured log data with message and fields
 /// * `min_level` - Shared state holding the current minimum level
+/// * `rate_limiter` - Shared limiter to avoid flooding clients
 /// * `peer` - The rmcp peer connection to send notifications through
 pub async fn send_log(
     level: LoggingLevel,
     logger: Option<String>,
     data: LogData,
     min_level: Arc<RwLock<Option<LoggingLevel>>>,
+    rate_limiter: Arc<Mutex<LogRateLimiter>>,
     peer: &rmcp::service::Peer<rmcp::RoleServer>,
 ) {
     tracing::debug!(
@@ -144,6 +202,14 @@ pub async fn send_log(
         return;
     }
     drop(current_min);
+
+    {
+        let mut limiter = rate_limiter.lock().await;
+        if !limiter.should_emit() {
+            tracing::debug!(level = ?level, "MCP log rate limit reached, dropping notification");
+            return;
+        }
+    }
 
     if let Err(e) = peer
         .notify_logging_message(rmcp::model::LoggingMessageNotificationParam {

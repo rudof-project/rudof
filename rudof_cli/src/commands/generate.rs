@@ -31,20 +31,26 @@ impl Command for GenerateCommand {
 
         runtime.block_on(async {
             // Create a temporary Rudof instance for generation (doesn't need existing state)
-            let rudof = Rudof::new(&RudofConfig::default_config()?)?;
+            let rudof = Rudof::new(RudofConfig::default());
 
-            rudof
-                .generate_data(
-                    &self.args.schema,
-                    &(&self.args.schema_format).into(),
-                    self.args.entity_count,
-                    &self.args.common.output,
-                    &(&self.args.result_format).into(),
-                    self.args.seed,
-                    self.args.parallel,
-                    &self.args.common.config,
-                )
-                .await
+            let schema_format = self.args.schema_format.into();
+            let result_format = self.args.result_format.into();
+
+            let mut generation = rudof
+                .generate_data(&self.args.schema, &schema_format, self.args.entity_count)
+                .with_result_generation_format(&result_format);
+
+            if let Some(seed) = self.args.seed {
+                generation = generation.with_seed(seed);
+            }
+            if let Some(parallel) = self.args.parallel {
+                generation = generation.with_parallel(parallel);
+            }
+            if let Some(output) = &self.args.common.output {
+                generation = generation.with_output(output);
+            }
+
+            generation.execute().await
         })?;
 
         Ok(())

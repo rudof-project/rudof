@@ -1,16 +1,6 @@
 use crate::cli::parser::DataArgs;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::Result;
-use rudof_lib::{
-    ReaderMode,
-    rdf_core::visualizer::{
-        VisualRDFGraph,
-        uml_converter::{ImageFormat, UmlGenerationMode},
-    },
-    rdf_reader_mode::RDFReaderMode,
-    result_data_format::{CheckResultDataFormat, ResultDataFormat, VisualFormat},
-};
-use rudof_rdf::rdf_core::visualizer::uml_converter::UmlConverter;
 
 /// Implementation of the `data` command.
 ///
@@ -35,48 +25,28 @@ impl Command for DataCommand {
 
     /// Executes the Data command logic.
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
-        // Convert CLI types to library types
-        let reader_mode: RDFReaderMode = (&self.args.reader_mode).into();
-        let reader_mode: ReaderMode = reader_mode.into();
-        let result_format: ResultDataFormat = (&self.args.result_format).into();
-        let check_result_format: CheckResultDataFormat = result_format.try_into().unwrap();
+        let data_format = self.args.data_format.into();
+        let reader_mode = self.args.reader_mode.into();
+        let result_format = self.args.result_format.into();
 
-        // Load RDF data into rudof
-        ctx.rudof.load_data(
-            &self.args.data,
-            &(&self.args.data_format).into(),
-            &self.args.base,
-            &None,
-            &reader_mode,
-            false,
-        )?;
-
-        // Write the RDF data to output
-        match check_result_format {
-            CheckResultDataFormat::RDFFormat(rdf_format) => {
-                ctx.rudof.get_rdf_data().serialize(&rdf_format, &mut ctx.writer)?;
-            },
-            CheckResultDataFormat::VisualFormat(VisualFormat::PlantUML) => {
-                ctx.rudof.data2plant_uml(&mut ctx.writer)?;
-            },
-            CheckResultDataFormat::VisualFormat(VisualFormat::Svg)
-            | CheckResultDataFormat::VisualFormat(VisualFormat::Png) => {
-                let rdf = ctx.rudof.get_rdf_data();
-                let uml_converter =
-                    VisualRDFGraph::from_rdf(rdf, ctx.rudof.config().rdf_data_config().rdf_visualization_config())?;
-                let format = match result_format {
-                    ResultDataFormat::Svg => ImageFormat::SVG,
-                    ResultDataFormat::Png => ImageFormat::PNG,
-                    _ => unreachable!(),
-                };
-                uml_converter.as_image(
-                    &mut ctx.writer,
-                    format,
-                    &UmlGenerationMode::all(),
-                    ctx.rudof.config().plantuml_path(),
-                )?;
-            },
+        let mut loading = ctx
+            .rudof
+            .load_data()
+            .with_data(&self.args.data)
+            .with_data_format(&data_format)
+            .with_reader_mode(&reader_mode);
+        if let Some(base) = self.args.base.as_deref() {
+            loading = loading.with_base(base);
         }
+        if let Some(endpoint) = self.args.endpoint.as_deref() {
+            loading = loading.with_endpoint(endpoint);
+        }
+        loading.execute()?;
+
+        ctx.rudof
+            .serialize_data(&mut ctx.writer)
+            .with_result_data_format(&result_format)
+            .execute()?;
 
         Ok(())
     }

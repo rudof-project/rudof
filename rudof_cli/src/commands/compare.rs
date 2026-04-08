@@ -1,7 +1,6 @@
-use crate::cli::{parser::CompareArgs, wrappers::ResultCompareFormatCli};
+use crate::cli::parser::CompareArgs;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::{Ok, Result};
-use iri_s::MimeType;
 
 /// Implementation of the `compare` command.
 ///
@@ -26,40 +25,42 @@ impl Command for CompareCommand {
 
     /// Executes the Compare command logic.
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
-        let mut reader1 = self
-            .args
-            .schema1
-            .open_read(Some(self.args.format1.mime_type()), "Compare1")?;
-        let mut reader2 = self
-            .args
-            .schema2
-            .open_read(Some(self.args.format2.mime_type()), "Compare2")?;
+        let format1 = self.args.format1.into();
+        let format2 = self.args.format2.into();
+        let input_mode1 = self.args.input_mode1.into();
+        let input_mode2 = self.args.input_mode2.into();
+        let result_format = self.args.result_format.into();
 
-        let shaco = ctx.rudof.compare_schemas(
-            &mut reader1,
-            &mut reader2,
-            (&self.args.input_mode1).into(),
-            (&self.args.input_mode2).into(),
-            (&self.args.format1).into(),
-            (&self.args.format2).into(),
-            self.args.base1.as_ref().map(|i| i.as_str()),
-            self.args.base2.as_ref().map(|i| i.as_str()),
-            &(&self.args.reader_mode).into(),
-            self.args.shape1.as_deref(),
-            self.args.shape2.as_deref(),
-            Some(&self.args.schema1.source_name()),
-            Some(&self.args.schema2.source_name()),
-        )?;
+        let mut comparison = ctx
+            .rudof
+            .show_schema_comparison(
+                &self.args.schema1,
+                &self.args.schema2,
+                &format1,
+                &format2,
+                &input_mode1,
+                &input_mode2,
+                &mut ctx.writer,
+            )
+            .with_result_format(&result_format);
 
-        match self.args.result_format {
-            ResultCompareFormatCli::Internal => {
-                writeln!(ctx.writer, "{shaco}")?;
-            },
-            ResultCompareFormatCli::Json => {
-                let json = serde_json::to_string_pretty(&shaco)?;
-                writeln!(ctx.writer, "{json}")?;
-            },
+        if let Some(base1) = self.args.base1.as_deref() {
+            comparison = comparison.with_base1(base1);
         }
+        if let Some(base2) = self.args.base2.as_deref() {
+            comparison = comparison.with_base2(base2);
+        }
+        if let Some(shape1) = self.args.shape1.as_deref() {
+            comparison = comparison.with_shape1(shape1);
+        }
+        if let Some(shape2) = self.args.shape2.as_deref() {
+            comparison = comparison.with_shape2(shape2);
+        }
+        if let Some(show_time) = self.args.show_time {
+            comparison = comparison.with_show_time(show_time);
+        }
+
+        comparison.execute()?;
 
         Ok(())
     }

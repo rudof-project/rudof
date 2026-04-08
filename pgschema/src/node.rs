@@ -40,6 +40,25 @@ impl Node {
     pub fn content(&self) -> &Record {
         &self.properties
     }
+
+    /// Update Node with a new ID
+    pub fn with_id(mut self, new_id: NodeId) -> Self {
+        self.id = new_id;
+        self
+    }
+
+    /// Merge content from another node (labels + record)
+    pub fn merge(&mut self, other: &Node) {
+        // Merge labels
+        self.labels.extend(other.labels.iter().cloned());
+
+        // Merge properties
+        for (key, values) in other.properties.iter() {
+            for value in values {
+                self.properties = self.properties.clone().with_key_value(key.str(), value.clone());
+            }
+        }
+    }
 }
 
 impl Display for Node {

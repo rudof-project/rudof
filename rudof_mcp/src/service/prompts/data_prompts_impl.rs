@@ -10,19 +10,28 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct AnalyzeRdfDataPromptArgs {
     /// Focus area for analysis: 'structure', 'quality', 'statistics', or 'all' (default).
-    pub focus: Option<String>,
+    pub focus: Option<AnalysisFocus>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum AnalysisFocus {
+    Structure,
+    Quality,
+    Statistics,
+    All,
 }
 
 pub async fn analyze_rdf_data_prompt_impl(
     Parameters(args): Parameters<AnalyzeRdfDataPromptArgs>,
 ) -> Result<GetPromptResult, McpError> {
-    let focus = args.focus.unwrap_or_else(|| "all".to_string());
+    let focus = args.focus.unwrap_or(AnalysisFocus::All);
 
-    let focus_description = match focus.as_str() {
-        "structure" => "graph structure and relationships",
-        "quality" => "data quality and consistency",
-        "statistics" => "quantitative statistics",
-        _ => "comprehensive overview",
+    let focus_description = match focus {
+        AnalysisFocus::Structure => "graph structure and relationships",
+        AnalysisFocus::Quality => "data quality and consistency",
+        AnalysisFocus::Statistics => "quantitative statistics",
+        AnalysisFocus::All => "comprehensive overview",
     };
 
     let messages = vec![
@@ -33,7 +42,7 @@ pub async fn analyze_rdf_data_prompt_impl(
         PromptMessage::new_text(
             PromptMessageRole::Assistant,
             format!(
-                "# 📊 RDF Data Analysis Guide\n\n\
+                "# RDF Data Analysis Guide\n\n\
                 I'll help you analyze the RDF data currently loaded in Rudof, focusing on **{}**.\n\n\
                 ## Recommended Analysis Steps\n\n\
                 ### 1. Overview - Export and Inspect Data\n\
@@ -91,8 +100,6 @@ pub async fn analyze_rdf_data_prompt_impl(
         ),
     ];
 
-    Ok(GetPromptResult {
-        description: Some(format!("RDF data analysis guide focusing on {}", focus_description)),
-        messages,
-    })
+    Ok(GetPromptResult::new(messages)
+        .with_description(format!("RDF data analysis guide focusing on {}", focus_description)))
 }

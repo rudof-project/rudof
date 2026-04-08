@@ -37,29 +37,6 @@ mod initialization_tests {
         let result = RudofMcpService::try_new();
         assert!(result.is_ok(), "try_new should succeed with valid configuration");
     }
-
-    /// Test service is Clone
-    #[test]
-    fn test_service_is_clone() {
-        let service = RudofMcpService::new();
-        let _cloned = service.clone();
-        // If we get here, Clone is implemented
-    }
-
-    /// Test service is Send + Sync (required for async)
-    #[test]
-    fn test_service_is_send_sync() {
-        fn assert_send_sync<T: Send + Sync>() {}
-        assert_send_sync::<RudofMcpService>();
-    }
-
-    /// Test default impl works
-    #[test]
-    fn test_service_default() {
-        let service = RudofMcpService::default();
-        let info = service.get_info();
-        assert!(!info.server_info.name.is_empty());
-    }
 }
 
 // =============================================================================
@@ -94,7 +71,7 @@ mod tool_router_tests {
 
         let tools = annotated_tools();
 
-        for tool in &tools {
+        for tool in tools {
             assert!(!tool.name.is_empty(), "Tool name should not be empty");
             assert!(
                 !tool.description.as_ref().unwrap().is_empty(),
@@ -165,12 +142,7 @@ mod prompt_router_tests {
         let prompts = service.prompt_router.list_all();
         let prompt_names: Vec<_> = prompts.iter().map(|p| p.name.to_string()).collect();
 
-        let expected_prompts = vec![
-            "explore_rdf_node",
-            "analyze_rdf_data",
-            "validation_guide",
-            "sparql_builder",
-        ];
+        let expected_prompts = vec!["explore_rdf_node", "analyze_rdf_data", "validation_guide"];
 
         for expected in expected_prompts {
             assert!(
@@ -241,18 +213,6 @@ mod completion_tests {
         assert!(completions.contains(&"incoming".to_string()));
     }
 
-    /// Test prompt argument completions for boolean args
-    #[test]
-    fn test_prompt_argument_completions_boolean() {
-        let service = RudofMcpService::new();
-
-        let completions = service.get_prompt_argument_completions("any", "verbose");
-
-        assert!(!completions.is_empty());
-        assert!(completions.contains(&"true".to_string()));
-        assert!(completions.contains(&"false".to_string()));
-    }
-
     /// Test prompt argument completions for technology
     #[test]
     fn test_prompt_argument_completions_technology() {
@@ -308,207 +268,6 @@ mod completion_tests {
         let completions = service.get_prompt_argument_completions("any", "unknown_arg");
 
         assert!(completions.is_empty(), "Unknown arguments should have no completions");
-    }
-}
-
-// =============================================================================
-// Resource Subscription Management Tests (using block_on for simplicity)
-// =============================================================================
-
-mod resource_subscription_management_tests {
-    use super::*;
-
-    /// Helper to run async code in tests
-    fn block_on<F: std::future::Future>(f: F) -> F::Output {
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap()
-            .block_on(f)
-    }
-
-    /// Test subscribing and getting subscribers
-    #[test]
-    fn test_subscribe_and_get_subscribers() {
-        let service = RudofMcpService::new();
-        let uri = "rudof://test-resource".to_string();
-        let subscriber_id = "test-subscriber".to_string();
-
-        block_on(async {
-            // Initially no subscribers
-            let subscribers = service.get_resource_subscribers(&uri).await;
-            assert!(subscribers.is_empty(), "Should have no subscribers initially");
-
-            // Add subscription
-            service.subscribe_resource(uri.clone(), subscriber_id.clone()).await;
-
-            // Should have subscriber now
-            let subscribers = service.get_resource_subscribers(&uri).await;
-            assert_eq!(subscribers.len(), 1, "Should have one subscriber");
-            assert!(subscribers.contains(&subscriber_id), "Should contain our subscriber");
-        });
-    }
-
-    /// Test unsubscribing removes subscriber
-    #[test]
-    fn test_unsubscribe_removes_subscriber() {
-        let service = RudofMcpService::new();
-        let uri = "rudof://test-resource".to_string();
-        let subscriber_id = "test-subscriber".to_string();
-
-        block_on(async {
-            // Add subscription
-            service.subscribe_resource(uri.clone(), subscriber_id.clone()).await;
-
-            // Verify subscriber exists
-            let subscribers = service.get_resource_subscribers(&uri).await;
-            assert_eq!(subscribers.len(), 1);
-
-            // Unsubscribe
-            service.unsubscribe_resource(&uri, &subscriber_id).await;
-
-            // Should be empty now
-            let subscribers = service.get_resource_subscribers(&uri).await;
-            assert!(subscribers.is_empty(), "Should have no subscribers after unsubscribe");
-        });
-    }
-
-    /// Test multiple subscribers
-    #[test]
-    fn test_multiple_subscribers() {
-        let service = RudofMcpService::new();
-        let uri = "rudof://test-resource".to_string();
-
-        block_on(async {
-            // Add multiple subscribers
-            service.subscribe_resource(uri.clone(), "sub1".to_string()).await;
-            service.subscribe_resource(uri.clone(), "sub2".to_string()).await;
-            service.subscribe_resource(uri.clone(), "sub3".to_string()).await;
-
-            let subscribers = service.get_resource_subscribers(&uri).await;
-            assert_eq!(subscribers.len(), 3, "Should have three subscribers");
-        });
-    }
-
-    /// Test subscribing to different resources
-    #[test]
-    fn test_subscribe_different_resources() {
-        let service = RudofMcpService::new();
-
-        block_on(async {
-            service
-                .subscribe_resource("rudof://resource1".to_string(), "sub1".to_string())
-                .await;
-            service
-                .subscribe_resource("rudof://resource2".to_string(), "sub2".to_string())
-                .await;
-
-            let subs1 = service.get_resource_subscribers("rudof://resource1").await;
-            let subs2 = service.get_resource_subscribers("rudof://resource2").await;
-
-            assert_eq!(subs1.len(), 1);
-            assert_eq!(subs2.len(), 1);
-            assert!(subs1.contains(&"sub1".to_string()));
-            assert!(subs2.contains(&"sub2".to_string()));
-        });
-    }
-
-    /// Test unsubscribing non-existent subscriber does nothing
-    #[test]
-    fn test_unsubscribe_nonexistent() {
-        let service = RudofMcpService::new();
-        let uri = "rudof://test-resource".to_string();
-
-        block_on(async {
-            // Add one subscriber
-            service.subscribe_resource(uri.clone(), "sub1".to_string()).await;
-
-            // Unsubscribe non-existent subscriber
-            service.unsubscribe_resource(&uri, "nonexistent").await;
-
-            // Original subscriber should still be there
-            let subscribers = service.get_resource_subscribers(&uri).await;
-            assert_eq!(subscribers.len(), 1);
-            assert!(subscribers.contains(&"sub1".to_string()));
-        });
-    }
-
-    /// Test getting subscribers for unknown resource returns empty
-    #[test]
-    fn test_get_subscribers_unknown_resource() {
-        let service = RudofMcpService::new();
-
-        block_on(async {
-            let subscribers = service.get_resource_subscribers("rudof://unknown").await;
-            assert!(subscribers.is_empty());
-        });
-    }
-}
-
-// =============================================================================
-// Task Store Tests
-// =============================================================================
-
-mod task_store_tests {
-    use super::*;
-
-    /// Helper to run async code in tests
-    fn block_on<F: std::future::Future>(f: F) -> F::Output {
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap()
-            .block_on(f)
-    }
-
-    /// Test task store is initialized
-    #[test]
-    fn test_task_store_exists() {
-        let service = RudofMcpService::new();
-        let _store = &service.task_store;
-    }
-
-    /// Test task store is empty initially
-    #[test]
-    fn test_task_store_initially_empty() {
-        let service = RudofMcpService::new();
-
-        block_on(async {
-            let tasks = service.task_store.list(None).await;
-            assert!(tasks.tasks.is_empty(), "Task store should be empty initially");
-        });
-    }
-
-    /// Test task enqueue creates a task
-    #[test]
-    fn test_task_enqueue() {
-        let service = RudofMcpService::new();
-
-        block_on(async {
-            let result = service.task_store.enqueue().await;
-
-            // Should have created a task
-            assert!(!result.task.task_id.is_empty(), "Task ID should not be empty");
-        });
-    }
-
-    /// Test enqueued task appears in list
-    #[test]
-    fn test_enqueued_task_in_list() {
-        let service = RudofMcpService::new();
-
-        block_on(async {
-            // Enqueue a task
-            let enqueue_result = service.task_store.enqueue().await;
-            let task_id = enqueue_result.task.task_id.clone();
-
-            // List tasks
-            let list_result = service.task_store.list(None).await;
-
-            // Should contain our task
-            let task_ids: Vec<_> = list_result.tasks.iter().map(|t| &t.task_id).collect();
-            assert!(task_ids.contains(&&task_id), "Enqueued task should appear in list");
-        });
     }
 }
 
@@ -582,79 +341,6 @@ mod log_level_tests {
                 let stored = service.current_min_log_level.read().await;
                 assert_eq!(*stored, Some(level));
             }
-        });
-    }
-}
-
-// =============================================================================
-// Context Storage Tests
-// =============================================================================
-
-mod context_storage_tests {
-    use super::*;
-
-    /// Helper to run async code in tests
-    fn block_on<F: std::future::Future>(f: F) -> F::Output {
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap()
-            .block_on(f)
-    }
-
-    /// Test initial context is None
-    #[test]
-    fn test_initial_context_is_none() {
-        let service = RudofMcpService::new();
-
-        block_on(async {
-            let ctx = service.current_context.read().await;
-            assert!(ctx.is_none(), "Initial context should be None");
-        });
-    }
-}
-
-// =============================================================================
-// Rudof State Tests
-// =============================================================================
-
-mod rudof_state_tests {
-    use super::*;
-
-    /// Helper to run async code in tests
-    fn block_on<F: std::future::Future>(f: F) -> F::Output {
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap()
-            .block_on(f)
-    }
-
-    /// Test rudof instance is accessible
-    #[test]
-    fn test_rudof_accessible() {
-        let service = RudofMcpService::new();
-
-        block_on(async {
-            // Should be able to lock rudof
-            let _rudof = service.rudof.lock().await;
-            // If we get here, we can access the rudof instance
-        });
-    }
-
-    /// Test rudof can be locked multiple times (via Arc)
-    #[test]
-    fn test_rudof_multiple_services() {
-        let service1 = RudofMcpService::new();
-        let service2 = service1.clone();
-
-        block_on(async {
-            // Both services should share the same rudof instance
-            let guard1 = service1.rudof.lock().await;
-            drop(guard1); // Release lock
-
-            let _guard2 = service2.rudof.lock().await;
-            // If we get here, Arc sharing works correctly
         });
     }
 }

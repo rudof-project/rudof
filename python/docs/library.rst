@@ -15,7 +15,7 @@ Rudof
 .. autoclass:: Rudof
    :members:
    :undoc-members:
-   :special-members: __init__
+   :special-members: __init__, __repr__
 
 RudofConfig
 ~~~~~~~~~~~
@@ -23,7 +23,15 @@ RudofConfig
 .. autoclass:: RudofConfig
    :members:
    :undoc-members:
-   :special-members: __init__
+   :special-members: __init__, __repr__
+
+RudofError
+~~~~~~~~~~
+
+.. autoclass:: RudofError
+   :members:
+   :undoc-members:
+   :special-members: __str__, __repr__
 
 
 Data Formats
@@ -40,11 +48,29 @@ RDF Formats
 
    * ``RDFFormat.Turtle`` - Terse RDF Triple Language (.ttl)
    * ``RDFFormat.NTriples`` - Line-based RDF format (.nt)
-   * ``RDFFormat.Rdfxml`` - XML-based RDF syntax (.rdf, .owl)
+   * ``RDFFormat.RdfXml`` - XML-based RDF syntax (.rdf, .owl)
    * ``RDFFormat.TriG`` - Turtle with named graphs (.trig)
    * ``RDFFormat.N3`` - Notation3 (.n3)
    * ``RDFFormat.NQuads`` - N-Triples with named graphs (.nq)
    * ``RDFFormat.JsonLd`` - JSON-LD format (.jsonld)
+
+.. autoclass:: ResultDataFormat
+   :members:
+   :undoc-members:
+
+   Output formats for serialized RDF data:
+
+   * ``ResultDataFormat.Turtle`` - Turtle
+   * ``ResultDataFormat.NTriples`` - N-Triples
+   * ``ResultDataFormat.RdfXml`` - RDF/XML
+   * ``ResultDataFormat.TriG`` - TriG
+   * ``ResultDataFormat.N3`` - Notation3
+   * ``ResultDataFormat.NQuads`` - N-Quads
+   * ``ResultDataFormat.Compact`` - Compact representation (default)
+   * ``ResultDataFormat.Json`` - JSON
+   * ``ResultDataFormat.PlantUML`` - PlantUML diagram
+   * ``ResultDataFormat.Svg`` - SVG image
+   * ``ResultDataFormat.Png`` - PNG image
 
 ShEx Formats
 ~~~~~~~~~~~~
@@ -59,6 +85,23 @@ ShEx Formats
    * ``ShExFormat.ShExJ`` - ShEx JSON format (.json)
    * ``ShExFormat.Turtle`` - ShEx in RDF/Turtle (.ttl)
 
+.. autoclass:: ResultShexValidationFormat
+   :members:
+   :undoc-members:
+
+   Output formats for ShEx validation results:
+
+   * ``ResultShexValidationFormat.Details`` - Human-readable details (default)
+   * ``ResultShexValidationFormat.Turtle`` - Turtle
+   * ``ResultShexValidationFormat.NTriples`` - N-Triples
+   * ``ResultShexValidationFormat.RdfXml`` - RDF/XML
+   * ``ResultShexValidationFormat.TriG`` - TriG
+   * ``ResultShexValidationFormat.N3`` - Notation3
+   * ``ResultShexValidationFormat.NQuads`` - N-Quads
+   * ``ResultShexValidationFormat.Compact`` - Compact
+   * ``ResultShexValidationFormat.Json`` - JSON
+   * ``ResultShexValidationFormat.Csv`` - CSV
+
 SHACL Formats
 ~~~~~~~~~~~~~
 
@@ -70,7 +113,7 @@ SHACL Formats
 
    * ``ShaclFormat.Turtle`` - Turtle format (.ttl)
    * ``ShaclFormat.NTriples`` - N-Triples format (.nt)
-   * ``ShaclFormat.Rdfxml`` - RDF/XML format (.rdf)
+   * ``ShaclFormat.RdfXml`` - RDF/XML format (.rdf)
    * ``ShaclFormat.TriG`` - TriG format (.trig)
    * ``ShaclFormat.N3`` - Notation3 format (.n3)
    * ``ShaclFormat.NQuads`` - N-Quads format (.nq)
@@ -85,7 +128,7 @@ ShapeMap Formats
    ShapeMap serialization formats:
 
    * ``ShapeMapFormat.Compact`` - Compact ShapeMap syntax (human-readable)
-   * ``ShapeMapFormat.JSON`` - JSON representation
+   * ``ShapeMapFormat.Json`` - JSON representation
 
 Other Formats
 ~~~~~~~~~~~~~
@@ -96,8 +139,8 @@ Other Formats
 
    DCTAP (Dublin Core Tabular Application Profiles) formats:
 
-   * ``DCTapFormat.CSV`` - Comma-separated values (.csv)
-   * ``DCTapFormat.XLSX`` - Excel spreadsheet (.xlsx)
+   * ``DCTapFormat.Csv`` - Comma-separated values (.csv)
+   * ``DCTapFormat.Xlsx`` - Excel spreadsheet (.xlsx)
 
 .. autoclass:: QueryResultFormat
    :members:
@@ -107,11 +150,22 @@ Other Formats
 
    * ``QueryResultFormat.Turtle`` - Turtle format (.ttl)
    * ``QueryResultFormat.NTriples`` - N-Triples format (.nt)
-   * ``QueryResultFormat.Rdfxml`` - RDF/XML format (.rdf)
+   * ``QueryResultFormat.RdfXml`` - RDF/XML format (.rdf)
    * ``QueryResultFormat.TriG`` - TriG format (.trig)
    * ``QueryResultFormat.N3`` - Notation3 format (.n3)
    * ``QueryResultFormat.NQuads`` - N-Quads format (.nq)
-   * ``QueryResultFormat.CSV`` - CSV table format (.csv)
+   * ``QueryResultFormat.Csv`` - CSV table format (.csv)
+
+.. autoclass:: QueryType
+   :members:
+   :undoc-members:
+
+   SPARQL query type:
+
+   * ``QueryType.Select`` - SELECT query
+   * ``QueryType.Construct`` - CONSTRUCT query
+   * ``QueryType.Ask`` - ASK query
+   * ``QueryType.Describe`` - DESCRIBE query
 
 .. autoclass:: ServiceDescriptionFormat
    :members:
@@ -122,25 +176,6 @@ Other Formats
    * ``ServiceDescriptionFormat.Internal`` - Internal representation
    * ``ServiceDescriptionFormat.Json`` - JSON format
    * ``ServiceDescriptionFormat.Mie`` - MIE specification format
-
-Formatters
-----------
-
-ShExFormatter
-~~~~~~~~~~~~~
-
-.. autoclass:: ShExFormatter
-   :members:
-   :undoc-members:
-   :special-members: __init__
-
-ShapeMapFormatter
-~~~~~~~~~~~~~~~~~
-
-.. autoclass:: ShapeMapFormatter
-   :members:
-   :undoc-members:
-   :special-members: __init__
 
 
 Reader Configuration
@@ -179,132 +214,24 @@ SHACL Validation
    * ``ShapesGraphSource.CurrentData`` - Extract shapes from the current RDF data graph
    * ``ShapesGraphSource.CurrentSchema`` - Use the currently loaded SHACL schema
 
-.. autoclass:: ValidationReport
-   :members:
-   :undoc-members:
-   :special-members: __init__
-
-.. autoclass:: ValidationResult
-   :members:
-   :undoc-members:
-
 ShEx Validation
 ~~~~~~~~~~~~~~~
-
-.. autoclass:: ResultShapeMap
-   :members:
-   :undoc-members:
-   :special-members: __init__
-
-.. autoclass:: ValidationStatus
-   :members:
-   :undoc-members:
-   :special-members: __init__
 
 .. autoclass:: SortModeResultMap
    :members:
    :undoc-members:
 
-   Sort modes for ResultShapeMap table display:
+   Sort modes for validation result table display:
 
    * ``SortModeResultMap.Node`` - Sort by focus node
    * ``SortModeResultMap.Shape`` - Sort by shape label
    * ``SortModeResultMap.Status`` - Sort by validation status
    * ``SortModeResultMap.Details`` - Sort by detailed information
 
-Schema Representations
-----------------------
 
-.. autoclass:: ShExSchema
-   :members:
-   :undoc-members:
+Data Generation
+---------------
 
-.. autoclass:: ShaclSchema
-   :members:
-   :undoc-members:
-
-.. autoclass:: DCTAP
-   :members:
-   :undoc-members:
-
-.. autoclass:: ServiceDescription
-   :members:
-   :undoc-members:
-
-
-Schema Comparison
------------------
-
-.. autoclass:: CoShaMo
-   :members:
-   :undoc-members:
-
-.. autoclass:: ShaCo
-   :members:
-   :undoc-members:
-
-.. autoclass:: CompareSchemaFormat
-   :members:
-   :undoc-members:
-
-.. autoclass:: CompareSchemaMode
-   :members:
-   :undoc-members:
-
-
-Query Results
--------------
-
-.. autoclass:: QueryShapeMap
-   :members:
-   :undoc-members:
-
-.. autoclass:: QuerySolutions
-   :members:
-   :undoc-members:
-   :special-members: __init__, __iter__
-
-.. autoclass:: QuerySolution
-   :members:
-   :undoc-members:
-
-
-Visualization
--------------
-
-.. autoclass:: UmlGenerationMode
-   :members:
-   :undoc-members:
-
-   UML generation modes for PlantUML exports:
-
-   * ``UmlGenerationMode.all()`` - Generate UML for all shapes in the model
-   * ``UmlGenerationMode.neighs(node)`` - Generate UML only for neighbors of specified node
-
-
-Utilities
----------
-
-.. autoclass:: Mie
-   :members:
-   :undoc-members:
-
-.. autoclass:: PrefixMap
-   :members:
-   :undoc-members:
-
-.. autoclass:: Node
-   :members:
-   :undoc-members:
-
-.. autoclass:: ShapeLabel
-   :members:
-   :undoc-members:
-
-
-Exceptions
-----------
-
-.. autoclass:: RudofError
-   :members:
-   :undoc-members:
+For the complete data generation API reference (``GeneratorConfig``,
+``DataGenerator``, ``SchemaFormat``, ``OutputFormat``, ``CardinalityStrategy``,
+``EntityDistribution``, ``DataQuality``), see :doc:`generate`.

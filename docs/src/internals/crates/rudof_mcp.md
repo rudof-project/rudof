@@ -31,16 +31,16 @@ The Rudof MCP server exposes the following capabilities:
 
 | Capability    | Description                                           |
 |--------------|-------------------------------------------------------|
-| `tools`       | 12 tools for validation, querying, and data operations |
+| `tools`       | 10 tools for validation, querying, and data operations |
 | `prompts`     | Guided templates for common workflows                  |
 | `resources`   | Access to RDF data and format metadata                 |
+| `resource templates` | URI template for accessing RDF data in any supported format |
 | `logging`     | Real-time log notifications with level filtering       |
-| `completions` | Argument completion for tools and prompts              |
-| `tasks`       | Asynchronous task support for long-running operations  |
+| `completions` | Argument completion for prompts and resources          |
 
 ## Available Tools
 
-The MCP server provides 12 tools grouped by functionality.
+The MCP server provides 10 tools grouped by functionality.
 
 ### Data Management
 
@@ -51,7 +51,7 @@ The MCP server provides 12 tools grouped by functionality.
 | `export_plantuml` | Generate a PlantUML diagram of the RDF graph |
 | `export_image` | Generate SVG or PNG visualizations of the RDF graph |
 
-> ⚠️ **IMPORTANT**: The `export_image` tool generates SVG or PNG visualizations of the RDF graph using [plantuml.jar](https://github.com/plantuml/plantuml/releases).
+> ⚠️ **IMPORTANT**: The `export_image` tool require [plantuml.jar](https://github.com/plantuml/plantuml/releases). Set the `PLANTUML` environment variable to its path before using them.
 
 ### Node Inspection
 
@@ -63,7 +63,7 @@ The MCP server provides 12 tools grouped by functionality.
 
 | Tool | Description |
 |------|-------------|
-| `execute_sparql_query` | Execute SPARQL queries (SELECT, CONSTRUCT, ASK) |
+| `execute_sparql_query` | Execute SPARQL queries (SELECT, CONSTRUCT, ASK, DESCRIBE) |
 
 ### ShEx Tools
 
@@ -71,8 +71,6 @@ The MCP server provides 12 tools grouped by functionality.
 |------|-------------|
 | `validate_shex` | Validate RDF data against a ShEx schema |
 | `check_shex` | Verify whether a ShEx schema is well-formed |
-| `shape_info` | Retrieve information about a specific ShEx shape |
-| `convert_shex` | Convert ShEx schemas between formats (ShExC, ShExJ, Turtle) |
 | `show_shex` | Parse and display ShEx schemas with optional analysis |
 
 ### SHACL Tools
@@ -90,21 +88,16 @@ The MCP server includes guided templates for common workflows:
 | `explore_rdf_node` | Interactive guide for exploring RDF nodes and their relationships |
 | `analyze_rdf_data` | Comprehensive guide for analyzing RDF data structure and quality |
 | `validation_guide` | Step-by-step guide for validating RDF data with ShEx or SHACL |
-| `sparql_builder` | Interactive assistant for building and understanding SPARQL queries |
 
 ## Available Resources
 
 The server exposes resources for accessing RDF data and format metadata.
 
-### Current RDF Data (multiple formats)
+### Current RDF Data
 
-- `rudof://current-data` — Turtle format
-- `rudof://current-data/ntriples` — N-Triples format
-- `rudof://current-data/rdfxml` — RDF/XML format
-- `rudof://current-data/jsonld` — JSON-LD format
-- `rudof://current-data/trig` — TriG format
-- `rudof://current-data/nquads` — N-Quads format
-- `rudof://current-data/n3` — Notation3 format
+- `rudof://current-data` — Turtle format (listed resource)
+
+Additional formats are accessible via the resource template `rudof://current-data/{format}`, where `{format}` is one of: `turtle`, `ntriples`, `rdfxml`, `jsonld`, `trig`, `nquads`, `n3`.
 
 ### Format Information
 

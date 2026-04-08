@@ -6,13 +6,25 @@ use rmcp::{
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+/// Node traversal mode for RDF node exploration.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum NodeTraversalMode {
+    /// Show relationships from this node to others
+    Outgoing,
+    /// Show relationships from other nodes to this node
+    Incoming,
+    /// Show both outgoing and incoming relationships (default)
+    Both,
+}
+
 /// Arguments for the RDF node exploration prompt.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ExplorerRdfNodePromptArgs {
     /// RDF node URI/IRI to analyze (e.g., 'http://example.org/resource/123' or 'ex:Person1')
     pub node: String,
     /// Query mode: 'outgoing' (properties of this node), 'incoming' (nodes referencing this), or 'both' (default)
-    pub mode: Option<String>,
+    pub mode: Option<NodeTraversalMode>,
     /// Optional list of predicate URIs/IRIs to filter the results (e.g., 'foaf:knows')
     pub predicates: Option<Vec<String>>,
 }
@@ -21,7 +33,12 @@ pub async fn explore_rdf_node_prompt_impl(
     Parameters(args): Parameters<ExplorerRdfNodePromptArgs>,
 ) -> Result<GetPromptResult, McpError> {
     let node = args.node;
-    let mode = args.mode.unwrap_or_else(|| "both".to_string());
+    let mode = args.mode.unwrap_or(NodeTraversalMode::Both);
+    let mode_str = match mode {
+        NodeTraversalMode::Outgoing => "outgoing",
+        NodeTraversalMode::Incoming => "incoming",
+        NodeTraversalMode::Both => "both",
+    };
     let predicates = args.predicates.unwrap_or_default();
 
     let predicates_display = if predicates.is_empty() {
@@ -31,10 +48,10 @@ pub async fn explore_rdf_node_prompt_impl(
     };
 
     // Build mode description
-    let mode_description = match mode.as_str() {
-        "outgoing" => "outgoing relationships only (what this node points to)",
-        "incoming" => "incoming relationships only (what points to this node)",
-        _ => "both outgoing and incoming relationships",
+    let mode_description = match mode {
+        NodeTraversalMode::Outgoing => "outgoing relationships only (what this node points to)",
+        NodeTraversalMode::Incoming => "incoming relationships only (what points to this node)",
+        NodeTraversalMode::Both => "both outgoing and incoming relationships",
     };
 
     let messages = vec![
@@ -42,13 +59,13 @@ pub async fn explore_rdf_node_prompt_impl(
             PromptMessageRole::User,
             format!(
                 "Explore RDF node `{}` with mode: **{}**, predicates: {}",
-                node, mode, predicates_display
+                node, mode_str, predicates_display
             ),
         ),
         PromptMessage::new_text(
             PromptMessageRole::Assistant,
             format!(
-                "# 🔍 Exploring RDF Node: `{}`\n\n\
+                "# Exploring RDF Node: `{}`\n\n\
                 I'll analyze this node in the loaded RDF graph to discover its relationships and structure.\n\n\
                 ## Query Configuration\n\
                 - **Node:** `{}`\n\
@@ -95,31 +112,28 @@ pub async fn explore_rdf_node_prompt_impl(
                 - **Change mode** to `outgoing`, `incoming`, or `both`\n\
                 - **Filter by predicates** (e.g., `[\"rdf:type\", \"foaf:knows\"]`)\n\
                 - **Explore a different node** in the graph\n\
-                - **Visualize** the neighborhood using `export_rdf_plantuml`\n\n\
+                - **Visualize** the neighborhood using `export_plantuml`\n\n\
                 Let me know how you'd like to proceed!",
                 node,
                 node,
-                mode,
+                mode_str,
                 mode_description,
                 predicates_display,
                 node,
                 node,
                 node,
-                mode,
+                mode_str,
                 serde_json::to_string(&predicates).unwrap_or_else(|_| "[]".to_string()),
                 node,
                 node,
                 node,
-                mode
+                mode_str
             ),
         ),
     ];
 
-    Ok(GetPromptResult {
-        description: Some(format!(
-            "Explore RDF node {} ({}, predicates: {})",
-            node, mode_description, predicates_display
-        )),
-        messages,
-    })
+    Ok(GetPromptResult::new(messages).with_description(format!(
+        "Explore RDF node {} ({}, predicates: {})",
+        node, mode_description, predicates_display
+    )))
 }

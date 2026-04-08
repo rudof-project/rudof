@@ -31,3 +31,5 @@ python/temp/
 python/docs/_build/
 
 **/proptest-regressions
+
+**/CLAUDE.md

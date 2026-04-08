@@ -66,11 +66,11 @@ impl CommandContext {
         // Load config
         let config = match &common.config() {
             Some(path) => RudofConfig::from_path(path)?,
-            None => RudofConfig::default_config()?,
+            None => RudofConfig::default(),
         };
 
         // Initialize Rudof with the loaded configuration
-        let rudof = Rudof::new(&config)?;
+        let rudof = Rudof::new(config);
 
         // Determine the appropriate writer and detect color support
         let (writer, color) = get_writer(&common.output().cloned(), common.force_overwrite())?;

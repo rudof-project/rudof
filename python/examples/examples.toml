@@ -1,369 +1,310 @@
 # Examples manifest for pyrudof documentation and testing.
 #
-# This is the single source of truth for which examples are documented and tested.
-# Both `python/docs/generate_examples_doc.py` and `python/tests/test_examples.py`
+# This file is the single source of truth for documented examples.
+# Both python/docs/generate_examples_doc.py and python/tests/test_examples.py
 # read from this file.
-#
-# To add a new documented example:
-#   1. Create a `.py` file in python/examples/
-#   2. Add an [[example]] entry below
-#   3. Run: python docs/generate_examples_doc.py --update
-#   4. Tests are picked up automatically
-
-# ===========================================================================
-# Category descriptions (used to generate section headers in examples.rst)
-# ===========================================================================
-
-[categories.shex]
-title = "ShEx Validation"
-description = """ShEx (Shape Expressions) is a language for describing and validating RDF data structures.
-These examples show how to use pyrudof for ShEx validation tasks."""
-
-[categories.shacl]
-title = "SHACL Validation"
-description = """SHACL (Shapes Constraint Language) is a W3C standard for validating RDF graphs.
-These examples demonstrate SHACL validation with pyrudof."""
 
 [categories.rdf]
 title = "RDF Data Handling"
-description = """These examples show how to parse, manipulate, and serialize RDF data using pyrudof."""
-
-[categories.dctap]
-title = "DCTAP Conversion"
-description = """DCTAP (Dublin Core Tabular Application Profiles) is a simple tabular format for
-describing data models. These examples show how to convert DCTAP profiles to ShEx schemas."""
+description = """Examples for RDF loading, serialization, and node inspection."""
 
 [categories.sparql]
 title = "SPARQL Queries"
-description = """SPARQL is the standard query language for RDF. These examples demonstrate
-how to execute SPARQL queries using pyrudof."""
+description = """Examples for SELECT, CONSTRUCT and ASK query workflows."""
+
+[categories.shex]
+title = "ShEx Validation"
+description = """Examples for reading ShEx schemas, validating data, and serializing schemas/ShapeMaps."""
+
+[categories.shacl]
+title = "SHACL Validation"
+description = """Examples for SHACL loading, validation, extraction from data, and serialization."""
+
+[categories.dctap]
+title = "DCTAP"
+description = """Examples for reading DCTAP profiles from inline content or files."""
+
+[categories.endpoint]
+title = "Service Description"
+description = """Examples for service description parsing and serialization."""
 
 [categories.generate]
 title = "Data Generation"
-description = """These examples show how to configure and use rudof_generate to create
-synthetic RDF data from ShEx or SHACL schemas."""
-
-[categories.endpoint]
-title = "Endpoints & Service Descriptions"
-description = """These examples demonstrate how to interact with remote SPARQL endpoints,
-retrieve service descriptions, and query node information.
-They require network access and are not executed during automated testing."""
-
-[categories.uml]
-title = "UML Visualization"
-description = """These examples show how to convert RDF data, ShEx schemas, and DCTAP
-profiles into PlantUML diagrams for visualization.
-They require plantuml jar and are not executed during automated testing."""
+description = """Examples for GeneratorConfig and DataGenerator APIs."""
 
 [categories.utility]
 title = "Utility & Introspection"
-description = """Miscellaneous utilities: inspecting the pyrudof module and listing available
-classes."""
-
-# ===========================================================================
-# Category order (controls the order in which sections appear in the docs)
-# ===========================================================================
+description = """Examples for config loading, resets, versioning, and module introspection."""
 
 [category_order]
-order = ["shex", "shacl", "rdf", "dctap", "sparql", "endpoint", "generate", "uml", "utility"]
-
-# ===========================================================================
-# Examples
-# ===========================================================================
+order = ["rdf", "sparql", "shex", "shacl", "dctap", "endpoint", "generate", "utility"]
 
 [[example]]
-key = "shex_validate"
-source_file = "shex_validate.py"
-title = "Shex Validate"
-description = "Basic ShEx validation with inline schema and data"
+key = "shex_validate_inline"
+source_file = "shex/shex_validate_inline.py"
+title = "ShEx Validate Inline"
+description = "Validate inline RDF data against an inline ShEx schema and ShapeMap"
 category = "shex"
 files = {}
 expected_output = []
 
 [[example]]
 key = "shex_validate_file"
-source_file = "shex_validate_file.py"
-title = "Shex Validate File"
-description = "ShEx validation using external files"
+source_file = "shex/shex_validate_file.py"
+title = "ShEx Validate Files"
+description = "Validate RDF data from files against a ShEx schema and ShapeMap"
 category = "shex"
-files = {schema = "person.shex", data = "person.ttl", shapemap = "person.sm"}
+files = { schema = "person.shex", data = "person.ttl", shapemap = "person.sm" }
 expected_output = []
 
 [[example]]
-key = "shacl_validate"
-source_file = "shacl_validate.py"
-title = "Shacl Validate"
-description = "Basic SHACL validation with inline shapes and data"
+key = "shex_serialize"
+source_file = "shex/shex_serialize.py"
+title = "ShEx Serialize"
+description = "Serialize the currently loaded ShEx schema"
+category = "shex"
+files = { schema = "person.shex" }
+expected_output = []
+
+[[example]]
+key = "shapemap_roundtrip"
+source_file = "shex/shapemap_roundtrip.py"
+title = "ShapeMap Roundtrip"
+description = "Load and serialize a ShapeMap"
+category = "shex"
+files = { shapemap = "person.sm" }
+expected_output = []
+
+[[example]]
+key = "compare_schemas"
+source_file = "shex/compare_schemas.py"
+title = "Compare Schemas"
+description = "Compare two ShEx schemas and print comparison output size"
+category = "shex"
+files = {}
+expected_output = []
+
+[[example]]
+key = "shacl_validate_inline"
+source_file = "shacl/shacl_validate_inline.py"
+title = "SHACL Validate Inline"
+description = "Validate inline RDF data with inline SHACL shapes"
 category = "shacl"
 files = {}
 expected_output = []
 
 [[example]]
 key = "shacl_validate_file"
-source_file = "shacl_file.py"
-title = "Shacl Validate File"
-description = "SHACL validation using external files"
+source_file = "shacl/shacl_validate_file.py"
+title = "SHACL Validate Files"
+description = "Validate RDF data from files against SHACL shapes"
 category = "shacl"
-files = {schema = "timbl_shapes.ttl", data = "timbl.ttl"}
+files = { schema = "timbl_shapes.ttl", data = "timbl.ttl" }
+expected_output = []
+
+[[example]]
+key = "shacl_from_data"
+source_file = "shacl/shacl_from_data.py"
+title = "SHACL From Data"
+description = "Extract SHACL shapes from current RDF data and validate"
+category = "shacl"
+files = {}
+expected_output = []
+
+[[example]]
+key = "shacl_serialize"
+source_file = "shacl/shacl_serialize.py"
+title = "SHACL Serialize"
+description = "Serialize the currently loaded SHACL graph"
+category = "shacl"
+files = { schema = "timbl_shapes.ttl" }
 expected_output = []
 
 [[example]]
 key = "rdf_data"
-source_file = "rdf_data.py"
-title = "Rdf Data"
-description = "RDF data parsing and serialization"
+source_file = "rdf_data/rdf_data.py"
+title = "RDF Read and Serialize"
+description = "Read RDF data, merge extra triples, and serialize"
 category = "rdf"
-files = {}
-expected_output = ["<http://example.org/"]
-
-[[example]]
-key = "dctap2shex"
-source_file = "dctap2shex.py"
-title = "Dctap2Shex"
-description = "Convert DCTAP application profile to ShEx schema"
-category = "dctap"
-files = {}
-expected_output = ["Person", "Course"]
-
-[[example]]
-key = "query"
-source_file = "query.py"
-title = "Query"
-description = "SPARQL SELECT query execution"
-category = "sparql"
-files = {}
+files = { data = "person.ttl" }
 expected_output = []
-
-[[example]]
-key = "sparql_file"
-source_file = "sparql_file.py"
-title = "Sparql File"
-description = "SPARQL query from external file"
-category = "sparql"
-files = {data = "person.ttl", query = "person.sparql"}
-expected_output = []
-
-[[example]]
-key = "generate_config"
-source_file = "generate_example.py"
-title = "Generate Config"
-description = "Configure data generator with various options"
-category = "generate"
-files = {}
-expected_output = ["Generator configured", "50 entities"]
-
-# ---------------------------------------------------------------------------
-# ShEx – additional examples
-# ---------------------------------------------------------------------------
-
-[[example]]
-key = "compare_schemas"
-source_file = "compare_schemas.py"
-title = "Compare Schemas"
-description = "Compare two ShEx schemas and show the differences as JSON"
-category = "shex"
-files = {}
-expected_output = ["Comparing schemas", "Schemas compared"]
-
-# ---------------------------------------------------------------------------
-# SHACL – additional examples
-# ---------------------------------------------------------------------------
-
-[[example]]
-key = "shacl_validate_only_data"
-source_file = "shacl_validate_only_data.py"
-title = "SHACL Validate (Inline Data)"
-description = "SHACL validation where shapes and data are loaded from inline strings"
-category = "shacl"
-files = {}
-expected_output = []
-
-# ---------------------------------------------------------------------------
-# RDF – additional examples
-# ---------------------------------------------------------------------------
-
-[[example]]
-key = "data_visualization"
-source_file = "data_visualization.py"
-title = "Data Visualization"
-description = "Convert RDF data into a PlantUML diagram for visualization"
-category = "rdf"
-files = {}
-expected_output = ["Finished conversion to UML"]
-skip_test = true
-
-# ---------------------------------------------------------------------------
-# DCTAP – additional examples
-# ---------------------------------------------------------------------------
-
-[[example]]
-key = "dctap"
-source_file = "dctap.py"
-title = "DCTAP Parse"
-description = "Read a DCTAP (Dublin Core Tabular Application Profile) from a CSV string"
-category = "dctap"
-files = {}
-expected_output = ["DCTAP read"]
-
-[[example]]
-key = "dctap2uml"
-source_file = "dctap2uml.py"
-title = "DCTAP to UML"
-description = "Convert a DCTAP profile to ShEx and then to a PlantUML diagram"
-category = "dctap"
-files = {}
-expected_output = ["DCTAP converted to UML"]
-skip_test = true
-
-# ---------------------------------------------------------------------------
-# SPARQL – additional examples
-# ---------------------------------------------------------------------------
-
-[[example]]
-key = "sparql_inline"
-source_file = "sparql.py"
-title = "SPARQL Inline"
-description = "Run a SPARQL SELECT query against inline RDF data"
-category = "sparql"
-files = {}
-expected_output = []
-
-[[example]]
-key = "sparql12"
-source_file = "sparql12.py"
-title = "SPARQL 1.2 (RDF Reification)"
-description = "Query RDF 1.2 reified triples using SPARQL"
-category = "sparql"
-files = {}
-expected_output = []
-
-# ---------------------------------------------------------------------------
-# Endpoints & service descriptions (network-dependent)
-# ---------------------------------------------------------------------------
-
-[[example]]
-key = "endpoint"
-source_file = "endpoint.py"
-title = "Endpoint CONSTRUCT Query"
-description = "Run a SPARQL CONSTRUCT query against a remote endpoint and display results as Turtle (requires network)"
-category = "endpoint"
-files = {}
-expected_output = []
-skip_test = true
-
-[[example]]
-key = "service"
-source_file = "service.py"
-title = "Service Description to MIE"
-description = "Read a SPARQL service description and convert it to MIE format (requires network)"
-category = "endpoint"
-files = {}
-expected_output = ["Service description"]
-skip_test = true
 
 [[example]]
 key = "node_info"
-source_file = "node_info.py"
+source_file = "rdf_data/node_info.py"
 title = "Node Info"
-description = "Retrieve information about specific nodes from SPARQL endpoints (requires network)"
-category = "endpoint"
-files = {}
-expected_output = ["Available endpoints"]
-skip_test = true
+description = "Inspect node neighborhood information in loaded RDF data"
+category = "rdf"
+files = { data = "person.ttl" }
+expected_output = []
 
 [[example]]
-key = "wikidata"
-source_file = "wikidata.py"
-title = "Wikidata SELECT"
-description = "Run a SELECT query against the Wikidata SPARQL endpoint (requires network)"
+key = "list_endpoints"
+source_file = "rdf_data/list_endpoints.py"
+title = "List Endpoints"
+description = "List known SPARQL endpoints"
+category = "rdf"
+files = {}
+expected_output = []
+
+[[example]]
+key = "dctap_read"
+source_file = "dctap/dctap_read.py"
+title = "Read DCTAP"
+description = "Read DCTAP from inline CSV and from file"
+category = "dctap"
+files = {}
+expected_output = []
+
+[[example]]
+key = "sparql_select_inline"
+source_file = "sparql/sparql_select_inline.py"
+title = "SPARQL SELECT Inline"
+description = "Run an inline SPARQL SELECT query against loaded RDF data"
+category = "sparql"
+files = { data = "person.ttl" }
+expected_output = []
+
+[[example]]
+key = "sparql_select_file"
+source_file = "sparql/sparql_select_file.py"
+title = "SPARQL SELECT File"
+description = "Load SPARQL query from file and run it"
+category = "sparql"
+files = { data = "person.ttl", query = "person.sparql" }
+expected_output = []
+
+[[example]]
+key = "sparql_construct"
+source_file = "sparql/sparql_construct.py"
+title = "SPARQL CONSTRUCT"
+description = "Run a CONSTRUCT query and serialize graph results"
+category = "sparql"
+files = { data = "person.ttl" }
+expected_output = []
+
+[[example]]
+key = "sparql_ask"
+source_file = "sparql/sparql_ask.py"
+title = "SPARQL SELECT Internal"
+description = "Run a SELECT query and serialize results using the default internal format"
+category = "sparql"
+files = { data = "person.ttl" }
+expected_output = []
+
+[[example]]
+key = "service_description"
+source_file = "endpoint/service_description.py"
+title = "Service Description"
+description = "Read and serialize SPARQL service descriptions"
 category = "endpoint"
 files = {}
 expected_output = []
-skip_test = true
 
 [[example]]
-key = "construct_query"
-source_file = "construct_query.py"
-title = "CONSTRUCT Query"
-description = "Run a SPARQL CONSTRUCT query against a remote endpoint (requires network)"
-category = "endpoint"
+key = "generate_config_core"
+source_file = "generate/generate_config_core.py"
+title = "Generator Config Core"
+description = "Set and read core generator configuration values"
+category = "generate"
 files = {}
 expected_output = []
-skip_test = true
 
 [[example]]
-key = "construct_query_wikidata"
-source_file = "construct_query_wikidata.py"
-title = "CONSTRUCT Query (Wikidata)"
-description = "Run a SPARQL CONSTRUCT query against the Wikidata endpoint (requires network)"
-category = "endpoint"
+key = "generate_config_parallel"
+source_file = "generate/generate_config_parallel.py"
+title = "Generator Config Parallel"
+description = "Configure and read parallel generation settings"
+category = "generate"
 files = {}
 expected_output = []
-skip_test = true
-
-# ---------------------------------------------------------------------------
-# Data Generation – additional examples
-# ---------------------------------------------------------------------------
 
 [[example]]
-key = "advanced_generate"
-source_file = "advanced_generate_example.py"
-title = "Advanced Generate"
-description = "Advanced data generator configuration: parallel processing, cardinality strategies, output formats, and error handling"
+key = "generate_config_quality"
+source_file = "generate/generate_config_quality.py"
+title = "Generator Config Quality"
+description = "Configure locale, quality and distribution settings"
 category = "generate"
 files = {}
-expected_output = ["All examples completed successfully"]
+expected_output = []
 
 [[example]]
-key = "config_file"
-source_file = "config_file_example.py"
-title = "Config File"
-description = "Use TOML and JSON configuration files with the data generator"
+key = "generate_config_persistence"
+source_file = "generate/generate_config_persistence.py"
+title = "Generator Config Persistence"
+description = "Persist GeneratorConfig to TOML and load from TOML/JSON"
 category = "generate"
 files = {}
-expected_output = ["All configuration file examples completed"]
+expected_output = []
 
 [[example]]
-key = "generate_from_schema"
-source_file = "generate_from_schema.py"
-title = "Generate From Schema"
-description = "Generate synthetic RDF data from a ShEx schema file"
+key = "generate_load_methods"
+source_file = "generate/generate_load_methods.py"
+title = "DataGenerator Load Methods"
+description = "Use load_shex_schema, load_shacl_schema, and load_schema_auto"
 category = "generate"
 files = {}
-expected_output = ["Example completed"]
-
-# ---------------------------------------------------------------------------
-# UML Visualization
-# ---------------------------------------------------------------------------
+expected_output = []
 
 [[example]]
-key = "shex2uml"
-source_file = "shex2uml.py"
-title = "ShEx to UML"
-description = "Convert a ShEx schema into a PlantUML class diagram"
-category = "uml"
+key = "generate_run_methods"
+source_file = "generate/generate_run_methods.py"
+title = "DataGenerator Run Methods"
+description = "Use run_with_format and run to execute generation"
+category = "generate"
 files = {}
-expected_output = ["@startuml"]
-skip_test = true
+expected_output = []
 
-# ---------------------------------------------------------------------------
-# Utility & Introspection
-# ---------------------------------------------------------------------------
+[[example]]
+key = "rudof_config_from_path"
+source_file = "utility/rudof_config_from_path.py"
+title = "RudofConfig From Path"
+description = "Create RudofConfig from a TOML file and initialize Rudof"
+category = "utility"
+files = {}
+expected_output = []
+
+[[example]]
+key = "rudof_update_config"
+source_file = "utility/rudof_update_config.py"
+title = "Rudof Update Config"
+description = "Update the configuration of an existing Rudof instance"
+category = "utility"
+files = {}
+expected_output = []
+
+[[example]]
+key = "rudof_resets"
+source_file = "utility/rudof_resets.py"
+title = "Rudof Reset Methods"
+description = "Call all reset methods exposed by Rudof"
+category = "utility"
+files = { schema = "person.shex", data = "person.ttl", shapemap = "person.sm", query = "person.sparql" }
+expected_output = []
+
+[[example]]
+key = "rudof_version"
+source_file = "utility/rudof_version.py"
+title = "Rudof Version"
+description = "Get and print the current Rudof version"
+category = "utility"
+files = {}
+expected_output = []
 
 [[example]]
 key = "module_info"
-source_file = "module_info.py"
+source_file = "utility/module_info.py"
 title = "Module Info"
-description = "Display the file path of the pyrudof module"
+description = "Print the installed pyrudof module file path"
 category = "utility"
 files = {}
 expected_output = []
 
 [[example]]
-key = "show_pyrudof_classes"
-source_file = "show_pyrydof_classes.py"
-title = "Show Pyrudof Classes"
-description = "List all classes available in the pyrudof package"
+key = "error_handling"
+source_file = "utility/error_handling.py"
+title = "Error Handling"
+description = "Catching exceptions raised by rudof operations"
 category = "utility"
 files = {}
-expected_output = ["Rudof"]
+expected_output = []

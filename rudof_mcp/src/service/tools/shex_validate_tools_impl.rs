@@ -1,15 +1,10 @@
 use crate::service::{errors::*, mcp_service::RudofMcpService};
-use iri_s::IriS;
 use rmcp::{
     ErrorData as McpError,
     handler::server::wrapper::Parameters,
     model::{CallToolResult, Content},
 };
-use rudof_lib::{
-    InputSpec, RudofConfig, result_shex_validation_format::ResultShExValidationFormat, shapemap_format::ShapeMapFormat,
-    shex::validate_shex, shex_format::ShExFormat, sort_by_result_shape_map::SortByResultShapeMap,
-};
-use rudof_rdf::rdf_impl::ReaderMode;
+use rudof_lib::formats::{InputSpec, ResultShExValidationFormat, ShExFormat, ShExValidationSortByMode, ShapeMapFormat};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -34,10 +29,6 @@ pub struct ValidateShexRequest {
     /// Base IRI for resolving relative IRIs in data/nodes (new)
     pub base_data: Option<String>,
 
-    /// Reader mode for parsing.
-    /// Supported: strict, lax
-    pub reader_mode: Option<String>,
-
     /// Node to validate (IRI, prefixed name, or blank node).
     /// If not provided, uses shapemap to determine nodes.
     pub maybe_node: Option<String>,
@@ -48,6 +39,8 @@ pub struct ValidateShexRequest {
 
     /// ShapeMap content mapping nodes to shapes.
     /// Example: ":alice@:Person, :bob@:Person"
+    /// Optional when `maybe_node` is provided — a compact ShapeMap will be
+    /// generated automatically (e.g., `<node>@<shape>` or `<node>@START`).
     pub shapemap: Option<String>,
 
     /// ShapeMap format.
@@ -74,8 +67,6 @@ pub struct ValidateShexResponse {
     pub sort_by: String,
     /// Size of results in bytes
     pub result_size_bytes: usize,
-    /// Number of lines in result
-    pub result_lines: usize,
 }
 
 /// Validate RDF data against a ShEx schema.
@@ -98,7 +89,6 @@ pub async fn validate_shex_impl(
         schema_format,
         base_schema,
         base_data,
-        reader_mode,
         maybe_node,
         maybe_shape,
         shapemap,
@@ -107,143 +97,142 @@ pub async fn validate_shex_impl(
         sort_by,
     }): Parameters<ValidateShexRequest>,
 ) -> Result<CallToolResult, McpError> {
-    let result_format_str = result_format.clone().unwrap_or_else(|| "compact".to_string());
-    let sort_by_str = sort_by.clone().unwrap_or_else(|| "node".to_string());
-
-    let shcema_spec = Some(InputSpec::Str(schema.clone()));
-
-    // Parse schema format - return Tool Execution Error for invalid format
-    let parsed_schema_format: Option<ShExFormat> = match schema_format.as_deref() {
-        Some(s) => match ShExFormat::from_str(s) {
-            Ok(fmt) => Some(fmt),
-            Err(e) => {
-                return Ok(ToolExecutionError::with_hint(
-                    format!("Invalid schema format '{}': {}", s, e),
-                    format!("Supported formats: {}", SHEX_FORMATS),
-                )
-                .into_call_tool_result());
-            },
-        },
-        None => None,
-    };
-
-    // Parse base IRI - return Tool Execution Error for malformed IRI
-    let parsed_base_schema: Option<IriS> = match base_schema.as_deref() {
-        Some(s) => match IriS::from_str(s) {
-            Ok(iri) => Some(iri),
-            Err(e) => {
-                return Ok(ToolExecutionError::with_hint(
-                    format!("Invalid base IRI '{}': {}", s, e),
-                    "Provide a valid absolute IRI (e.g., 'http://example.org/base/')",
-                )
-                .into_call_tool_result());
-            },
-        },
-        None => None,
-    };
-
-    let parsed_base_data: Option<IriS> = match base_data.as_deref() {
-        Some(s) => match IriS::from_str(s) {
-            Ok(iri) => Some(iri),
-            Err(e) => {
-                return Ok(ToolExecutionError::with_hint(
-                    format!("Invalid base_data IRI '{}': {}", s, e),
-                    "Provide a valid absolute IRI (e.g., 'http://example.org/data/')",
-                )
-                .into_call_tool_result());
-            },
-        },
-        None => None,
-    };
-
-    // Parse reader mode - return Tool Execution Error for invalid mode
-    let parsed_reader_mode: ReaderMode = match reader_mode.as_deref() {
-        Some(s) => match ReaderMode::from_str(s) {
-            Ok(mode) => mode,
-            Err(e) => {
-                return Ok(ToolExecutionError::with_hint(
-                    format!("Invalid reader mode '{}': {}", s, e),
-                    format!("Supported modes: {}", READER_MODES),
-                )
-                .into_call_tool_result());
-            },
-        },
-        None => ReaderMode::Strict,
-    };
-
-    let shapemap_spec: Option<InputSpec> = shapemap.map(|s| InputSpec::Str(s.clone()));
-
-    // Parse shapemap format - return Tool Execution Error for invalid format
-    let parsed_shapemap_format: ShapeMapFormat = match shapemap_format.as_deref() {
-        Some(s) => match ShapeMapFormat::from_str(s) {
-            Ok(fmt) => fmt,
-            Err(e) => {
-                return Ok(ToolExecutionError::with_hint(
-                    format!("Invalid shapemap format '{}': {}", s, e),
-                    format!("Supported formats: {}", SHAPEMAP_FORMATS),
-                )
-                .into_call_tool_result());
-            },
-        },
-        None => ShapeMapFormat::Compact,
-    };
-
-    // Parse result format - return Tool Execution Error for invalid format
-    let parsed_result_format: ResultShExValidationFormat = match result_format.as_deref() {
-        Some(s) => match ResultShExValidationFormat::from_str(s) {
-            Ok(fmt) => fmt,
-            Err(e) => {
-                return Ok(ToolExecutionError::with_hint(
-                    format!("Invalid result format '{}': {}", s, e),
-                    format!("Supported formats: {}", SHEX_RESULT_FORMATS),
-                )
-                .into_call_tool_result());
-            },
-        },
-        None => ResultShExValidationFormat::Compact,
-    };
-
-    // Parse sort order - return Tool Execution Error for invalid order
-    let parsed_sort_by: SortByResultShapeMap = match sort_by.as_deref() {
-        Some(s) => match SortByResultShapeMap::from_str(s) {
-            Ok(sort) => sort,
-            Err(e) => {
-                return Ok(ToolExecutionError::with_hint(
-                    format!("Invalid sort order '{}': {}", s, e),
-                    format!("Supported values: {}", SHEX_SORT_BY_MODES),
-                )
-                .into_call_tool_result());
-            },
-        },
-        None => SortByResultShapeMap::Node,
-    };
-
-    let rudof_config = RudofConfig::new().unwrap();
-
     let mut rudof = service.rudof.lock().await;
-    let mut output_buffer = Cursor::new(Vec::new());
 
-    validate_shex(
-        &mut rudof,
-        &shcema_spec,
-        &parsed_schema_format,
-        &parsed_base_schema,
-        &parsed_base_data,
-        &parsed_reader_mode,
-        &maybe_node,
-        &maybe_shape,
-        &shapemap_spec,
-        &parsed_shapemap_format,
-        &parsed_result_format,
-        &parsed_sort_by,
-        &rudof_config,
-        &mut output_buffer,
-    )
-    .map_err(|e| {
+    let shex_format_hint = format!("Supported values: {}", SHEX_FORMATS);
+    let shapemap_format_hint = format!("Supported values: {}", SHAPEMAP_FORMATS);
+    let result_format_hint = format!("Supported values: {}", SHEX_RESULT_FORMATS);
+    let sort_by_hint = format!("Supported values: {}", SHEX_SORT_BY_MODES);
+
+    let parsed_schema = match parse_value_with_hint(
+        &schema,
+        "schema",
+        "Provide valid schema content, URL, or file path",
+        InputSpec::from_str,
+    ) {
+        Ok(value) => value,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
+
+    let parsed_schema_format = match parse_optional_value_with_hint(
+        schema_format.as_deref(),
+        "schema format",
+        &shex_format_hint,
+        ShExFormat::from_str,
+    ) {
+        Ok(value) => value,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
+
+    // Build effective ShapeMap: explicit shapemap wins; fall back to auto-generating
+    // a compact ShapeMap from maybe_node + maybe_shape when only those are provided.
+    let effective_shapemap = match (shapemap, maybe_node.as_deref(), maybe_shape.as_deref()) {
+        (Some(sm), _, _) => sm,
+        (None, Some(node), Some(shape)) => format!("{}@{}", node, shape),
+        (None, Some(node), None) => format!("{}@START", node),
+        (None, None, _) => {
+            return Ok(ToolExecutionError::with_hint(
+                "No shapemap provided",
+                "Supply 'shapemap' (e.g. ':alice@:Person'), or 'maybe_node' with an optional 'maybe_shape'",
+            )
+            .into_call_tool_result());
+        },
+    };
+
+    let parsed_shapemap = match parse_value_with_hint(
+        &effective_shapemap,
+        "shapemap",
+        "Provide a valid ShapeMap value, URL, or file path",
+        InputSpec::from_str,
+    ) {
+        Ok(value) => value,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
+
+    let parsed_shapemap_format = match parse_optional_value_with_hint(
+        shapemap_format.as_deref(),
+        "shapemap format",
+        &shapemap_format_hint,
+        ShapeMapFormat::from_str,
+    ) {
+        Ok(value) => value,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
+
+    let parsed_result_format = match parse_optional_value_with_hint(
+        result_format.as_deref(),
+        "result format",
+        &result_format_hint,
+        ResultShExValidationFormat::from_str,
+    ) {
+        Ok(value) => value,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
+
+    let parsed_sort_by = match parse_optional_value_with_hint(
+        sort_by.as_deref(),
+        "sort_by",
+        &sort_by_hint,
+        ShExValidationSortByMode::from_str,
+    ) {
+        Ok(value) => value,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
+
+    let mut shex_schema_loading = rudof.load_shex_schema(&parsed_schema);
+    if let Some(base_schema) = base_schema.as_deref() {
+        shex_schema_loading = shex_schema_loading.with_base(base_schema);
+    }
+    if let Some(schema_format) = &parsed_schema_format {
+        shex_schema_loading = shex_schema_loading.with_shex_schema_format(schema_format);
+    }
+    if let Err(e) = shex_schema_loading.execute() {
+        return Ok(ToolExecutionError::with_hint(
+            format!("Failed to load ShEx schema: {}", e),
+            "Check the schema content and schema_format parameter",
+        )
+        .into_call_tool_result());
+    }
+
+    let mut shapemap_loading = rudof.load_shapemap(&parsed_shapemap);
+    if let Some(shapemap_format) = &parsed_shapemap_format {
+        shapemap_loading = shapemap_loading.with_shapemap_format(shapemap_format);
+    }
+    if let Some(base_data) = base_data.as_deref() {
+        shapemap_loading = shapemap_loading.with_base_nodes(base_data);
+    }
+    if let Some(base_schema) = base_schema.as_deref() {
+        shapemap_loading = shapemap_loading.with_base_shapes(base_schema);
+    }
+    if let Err(e) = shapemap_loading.execute() {
+        return Ok(ToolExecutionError::with_hint(
+            format!("Failed to load ShapeMap: {}", e),
+            "Check shapemap syntax (e.g. ':alice@:Person') or the auto-generated ShapeMap from maybe_node/maybe_shape",
+        )
+        .into_call_tool_result());
+    }
+
+    if let Err(e) = rudof.validate_shex().execute() {
+        return Ok(ToolExecutionError::with_hint(
+            format!("ShEx validation failed: {}", e),
+            "Ensure the RDF data is loaded and the schema/shapemap are correct",
+        )
+        .into_call_tool_result());
+    }
+
+    let mut output_buffer = Cursor::new(Vec::new());
+    let mut serialization = rudof.serialize_shex_validation_results(&mut output_buffer);
+    if let Some(sort_by) = &parsed_sort_by {
+        serialization = serialization.with_shex_validation_sort_order_mode(sort_by);
+    }
+    if let Some(result_format) = &parsed_result_format {
+        serialization = serialization.with_result_shex_validation_format(result_format);
+    }
+    serialization.execute().map_err(|e| {
         internal_error(
-            "Validation failed",
+            "Failed to serialize validation results",
             e.to_string(),
-            Some(json!({"operation":"validate_shex_impl", "phase":"validate_shex"})),
+            Some(json!({"operation":"validate_shex_impl", "phase":"serialize_results"})),
         )
     })?;
 
@@ -257,59 +246,53 @@ pub async fn validate_shex_impl(
     })?;
     // Calculate metadata
     let result_size_bytes = output_str.len();
-    let result_lines = output_str.lines().count();
 
+    let result_format_str = if let Some(result_format) = &parsed_result_format {
+        result_format.to_string()
+    } else {
+        "details".to_string()
+    };
+    let sort_by_str = if let Some(sort_by) = &parsed_sort_by {
+        sort_by.to_string()
+    } else {
+        "node".to_string()
+    };
     let response = ValidateShexResponse {
-        results: output_str.to_string(),
+        results: output_str.clone(),
         result_format: result_format_str.clone(),
         sort_by: sort_by_str.clone(),
         result_size_bytes,
-        result_lines,
     };
 
-    let structured = serde_json::to_value(&response).map_err(|e| {
-        internal_error(
-            "Serialization error",
-            e.to_string(),
-            Some(json!({"operation":"validate_shex_impl", "phase":"serialize_response"})),
-        )
-    })?;
+    let structured = serialize_structured(&response, "validate_shex_impl")?;
 
     let mut summary = format!(
-        "# ShEx Validation Results\n\n\
-        **Result Format:** {}\n\
-        **Sort By:** {}\n\
-        **Result Size:** {} bytes\n\
-        **Result Lines:** {}\n",
-        result_format_str, sort_by_str, result_size_bytes, result_lines
+        "ShEx validation completed.\nResult format: {}\nSort by: {}\nResult size: {} bytes",
+        result_format_str, sort_by_str, result_size_bytes,
     );
 
-    // Add validation parameters if provided
-    if let Some(node) = &maybe_node {
-        summary.push_str(&format!("**Node:** {}\n", node));
-    }
-    if let Some(shape) = &maybe_shape {
-        summary.push_str(&format!("**Shape:** {}\n", shape));
+    // Add ShapeMap source info
+    if maybe_node.is_some() || maybe_shape.is_some() {
+        summary.push_str(&format!("\nShapeMap (auto-generated): {}", effective_shapemap));
     }
 
-    let schema_display = format!("## ShEx Schema\n\n```shex\n{}\n```", schema);
+    let schema_preview = code_block_preview("shex", &schema, 600);
 
-    // Format results based on the format type
-    let results_display = match result_format_str.to_lowercase().as_str() {
-        "turtle" | "n3" => format!("## Validation Results\n\n```turtle\n{}\n```", output_str),
-        "ntriples" | "nquads" => {
-            format!("## Validation Results\n\n```ntriples\n{}\n```", output_str)
-        },
-        "rdfxml" => format!("## Validation Results\n\n```xml\n{}\n```", output_str),
-        "trig" => format!("## Validation Results\n\n```trig\n{}\n```", output_str),
-        "json" | "jsonld" => format!("## Validation Results\n\n```json\n{}\n```", output_str),
-        _ => format!("## Validation Results\n\n```\n{}\n```", output_str),
+    let results_language = match result_format_str.to_lowercase().as_str() {
+        "csv" => "csv",
+        "json" | "jsonld" => "json",
+        "turtle" | "n3" => "turtle",
+        "ntriples" | "nquads" => "ntriples",
+        "rdfxml" => "xml",
+        "trig" => "trig",
+        _ => "text",
     };
+    let results_preview = code_block_preview(results_language, &output_str, DEFAULT_CONTENT_PREVIEW_CHARS);
 
     let mut result = CallToolResult::success(vec![
         Content::text(summary),
-        Content::text(schema_display),
-        Content::text(results_display),
+        Content::text(format!("## Schema Preview\n\n{}", schema_preview)),
+        Content::text(format!("## Results Preview\n\n{}", results_preview)),
     ]);
     result.structured_content = Some(structured);
 

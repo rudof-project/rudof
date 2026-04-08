@@ -49,18 +49,6 @@ impl RudofMcpService {
     ) -> Result<GetPromptResult, McpError> {
         validation_guide_prompt_impl(Parameters(args)).await
     }
-
-    /// Helper for building SPARQL queries
-    #[prompt(
-        name = "sparql_builder",
-        description = "Interactive helper for building and understanding SPARQL queries"
-    )]
-    async fn sparql_builder_prompt(
-        &self,
-        Parameters(args): Parameters<SparqlBuilderPromptArgs>,
-    ) -> Result<GetPromptResult, McpError> {
-        sparql_builder_prompt_impl(Parameters(args)).await
-    }
 }
 
 /// Public wrapper to expose the generated prompt router

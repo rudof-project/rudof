@@ -1,14 +1,6 @@
 use crate::cli::parser::ShexArgs;
 use crate::commands::base::{Command, CommandContext};
-use crate::output::ColorSupport;
 use anyhow::Result;
-use rudof_lib::{
-    ReaderMode, ShExFormat as ShExAstShExFormat, ShExFormatter, rdf_reader_mode::RDFReaderMode, shex_format::ShExFormat,
-};
-use std::{
-    io::{self, Write},
-    time::Instant,
-};
 
 /// Implementation of the `shex` command.
 ///
@@ -23,110 +15,6 @@ impl ShexCommand {
     pub fn new(args: ShexArgs) -> Self {
         Self { args }
     }
-
-    /// Configures the ShEx-specific runtime settings.
-    fn configure_shex_settings(&self, ctx: &mut CommandContext) {
-        if let Some(show_dependencies) = self.args.show_dependencies {
-            ctx.rudof
-                .config()
-                .shex_config()
-                .with_show_dependencies(show_dependencies);
-        }
-
-        if let Some(flag) = self.args.show_statistics {
-            ctx.rudof.config().shex_config().set_show_extends(flag);
-        }
-    }
-
-    /// Writes a specific shape to the output if requested.
-    fn write_shape_if_requested(
-        &self,
-        ctx: &mut CommandContext,
-        format: &shex_ast::shex_format::ShExFormat,
-    ) -> Result<()> {
-        if let Some(shape_label) = &self.args.shape {
-            let formatter = Self::get_formatter(&ctx.color);
-            ctx.rudof
-                .serialize_shape_by_label(shape_label, format, &formatter, &mut ctx.writer)?;
-        }
-        Ok(())
-    }
-
-    /// Writes the entire schema to the output if requested.
-    fn write_schema_if_requested(
-        &self,
-        ctx: &mut CommandContext,
-        format: &shex_ast::shex_format::ShExFormat,
-    ) -> Result<()> {
-        if self.args.show_schema {
-            let formatter = Self::get_formatter(&ctx.color);
-            ctx.rudof
-                .serialize_current_shex(Some(format), &formatter, &mut ctx.writer)?;
-        }
-        Ok(())
-    }
-
-    /// Displays compilation details including IR, statistics, and dependencies.
-    fn write_compilation_details(&self, ctx: &mut CommandContext) -> Result<()> {
-        if self.args.compile != Some(true) || !ctx.rudof.config().show_ir() {
-            return Ok(());
-        }
-
-        let stats = ctx.rudof.get_shex_statistics()?;
-        let mut out = io::stdout();
-
-        // Show IR representation
-        if let Some(shex_ir) = ctx.rudof.get_shex_ir() {
-            writeln!(out, "ShEx Internal Representation:\n{shex_ir}")?;
-        }
-
-        // Show extends statistics
-        if ctx.rudof.config().show_extends() {
-            for (key, value) in stats.extends_count.iter() {
-                writeln!(ctx.writer, "Shapes with {key} extends = {value}")?;
-            }
-        }
-
-        // Show import statistics
-        if ctx.rudof.config().show_imports() {
-            writeln!(
-                ctx.writer,
-                "Local shapes: {}/Total shapes {}",
-                stats.local_shapes_count, stats.total_shapes_count
-            )?;
-        }
-
-        // Show shape labels
-        if ctx.rudof.config().show_shapes() {
-            for (label, source, _) in &stats.shapes {
-                let from_msg = if stats.has_imports {
-                    format!(" from {source}")
-                } else {
-                    String::new()
-                };
-                writeln!(ctx.writer, "{label}{from_msg}")?;
-            }
-        }
-
-        // Show dependencies
-        if ctx.rudof.config().show_dependencies() {
-            writeln!(ctx.writer, "\nDependencies:")?;
-            for (source, posneg, target) in &stats.dependencies {
-                writeln!(out, "{source}-{posneg}->{target}")?;
-            }
-            writeln!(ctx.writer, "---end dependencies\n")?;
-        }
-
-        Ok(())
-    }
-
-    /// Gets the appropriate formatter based on color support.
-    fn get_formatter(color: &ColorSupport) -> ShExFormatter {
-        match color {
-            ColorSupport::NoColor => ShExFormatter::default().without_colors(),
-            _ => ShExFormatter::default(),
-        }
-    }
 }
 
 impl Command for ShexCommand {
@@ -135,46 +23,41 @@ impl Command for ShexCommand {
     }
 
     /// Executes the ShEx command.
-    ///
-    /// The workflow:
-    /// 1. Configure runtime settings
-    /// 2. Load and parse the schema
-    /// 3. Validate schema well-formedness
-    /// 4. Output requested information (shape, schema, statistics)
-    /// 5. Show timing information if requested
     #[allow(clippy::unnecessary_fallible_conversions)]
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
-        let timer = Instant::now();
+        let schema_format = self.args.schema_format.into();
+        let reader_mode = self.args.reader_mode.into();
+        let result_schema_format = self.args.result_schema_format.into();
 
-        // Configure runtime
-        self.configure_shex_settings(ctx);
-
-        // Load schema
-        let schema_format: ShExFormat = (&self.args.schema_format).into();
-        let schema_format: ShExAstShExFormat = schema_format.try_into()?;
-        let result_format: ShExFormat = (&self.args.result_schema_format).into();
-        let result_format: ShExAstShExFormat = result_format.try_into()?;
-        let reader_mode: ReaderMode = RDFReaderMode::from(&self.args.reader_mode).into();
-
-        ctx.rudof.load_shex_schema(
-            &self.args.schema,
-            &schema_format.try_into()?,
-            &self.args.base,
-            &reader_mode,
-        )?;
-
-        // Validate well-formedness
-        ctx.rudof.validate_shex_schema_well_formed()?;
-
-        // Output information
-        self.write_shape_if_requested(ctx, &result_format)?;
-        self.write_schema_if_requested(ctx, &result_format)?;
-        self.write_compilation_details(ctx)?;
-
-        // Show timing
-        if self.args.show_time == Some(true) {
-            writeln!(io::stdout(), "elapsed: {:.03?} sec", timer.elapsed().as_secs_f64())?;
+        let mut shex_schema_loading = ctx
+            .rudof
+            .load_shex_schema(&self.args.schema)
+            .with_reader_mode(&reader_mode)
+            .with_shex_schema_format(&schema_format);
+        if let Some(base) = &self.args.base {
+            shex_schema_loading = shex_schema_loading.with_base(base);
         }
+        shex_schema_loading.execute()?;
+
+        let mut shex_serialization = ctx
+            .rudof
+            .serialize_shex_schema(&mut ctx.writer)
+            .with_show_schema(self.args.show_schema)
+            .with_result_shex_format(&result_schema_format);
+
+        if let Some(shape_label) = self.args.shape.as_deref() {
+            shex_serialization = shex_serialization.with_shape(shape_label);
+        }
+        if let Some(show_statistics) = self.args.show_statistics {
+            shex_serialization = shex_serialization.with_show_statistics(show_statistics);
+        }
+        if let Some(show_dependencies) = self.args.show_dependencies {
+            shex_serialization = shex_serialization.with_show_dependencies(show_dependencies);
+        }
+        if let Some(show_time) = self.args.show_time {
+            shex_serialization = shex_serialization.with_show_time(show_time);
+        }
+        shex_serialization.execute()?;
 
         Ok(())
     }
