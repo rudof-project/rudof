@@ -14,14 +14,18 @@ pub fn check_shex_schema<W: io::Write>(
     writer: &mut W,
 ) -> Result<bool> {
     // Step 1: Check well-formedness by attempting to load the schema
-    let mut temp_rudof = Rudof::new(rudof.config.clone());
+    let mut temp_config = rudof.config.clone();
+    let mut validator_cfg = temp_config.validator_config();
+    validator_cfg.set_check_negation_requirement(false);
+    temp_config.shex_validator = Some(validator_cfg);
+    let mut temp_rudof = Rudof::new(temp_config);
 
     let is_schema_well_formed = match load_shex_schema(
         &mut temp_rudof,
         schema,
         schema_format,
         base_schema,
-        Some(&DataReaderMode::default()),
+        Some(&DataReaderMode::Lax),
     ) {
         Ok(_) => true,
         Err(e) => {

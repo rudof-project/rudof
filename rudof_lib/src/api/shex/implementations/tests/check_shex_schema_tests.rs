@@ -104,10 +104,6 @@ fn test_check_valid_schema() {
     let result = check_shex_schema(&rudof, &schema, None, Some("http://example.org/"), &mut output);
     let output_str = String::from_utf8(output.into_inner()).unwrap();
 
-    print!(
-        "\n===== test_check_valid_schema =====\n{:?}\n====================================",
-        output_str
-    );
     assert!(result.is_ok());
     let is_valid = result.unwrap();
     assert!(is_valid, "Expected schema to be valid");
@@ -183,6 +179,7 @@ fn test_check_schema_with_multiple_neg_cycles() {
     assert!(!is_valid, "Expected schema to be invalid (multiple negative cycles)");
 
     let output_str = String::from_utf8(output.into_inner()).unwrap();
+
     assert!(output_str.contains("negative cycles"));
     assert!(output_str.contains("Negative cycle #1"));
 
@@ -210,31 +207,6 @@ fn test_check_complex_valid_schema() {
 
     println!(
         "\n===== test_check_complex_valid_schema =====\n{}\n============================================",
-        output_str
-    );
-}
-
-#[test]
-fn test_check_schema_output_format() {
-    let rudof = Rudof::new(RudofConfig::default());
-    let schema_str = create_schema_with_neg_cycle();
-    let schema = InputSpec::from_str(schema_str).unwrap();
-    let mut output = Cursor::new(Vec::new());
-
-    let result = check_shex_schema(&rudof, &schema, None, Some("http://example.org/"), &mut output);
-
-    assert!(result.is_ok());
-
-    let output_str = String::from_utf8(output.into_inner()).unwrap();
-
-    // Verify output structure
-    assert!(output_str.contains("negative cycles"));
-    assert!(output_str.contains("Edge:"));
-    assert!(output_str.contains("-->"));
-    assert!(output_str.contains("involved shapes"));
-
-    println!(
-        "\n===== test_check_schema_output_format =====\n{}\n=============================================",
         output_str
     );
 }

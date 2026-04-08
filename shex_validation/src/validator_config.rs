@@ -102,4 +102,8 @@ impl ValidatorConfig {
             Some(w) => w,
         }
     }
+
+    pub fn set_check_negation_requirement(&mut self, check: bool) {
+        self.check_negation_requirement = Some(check);
+    }
 }
