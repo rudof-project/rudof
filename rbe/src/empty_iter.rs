@@ -1,26 +1,29 @@
 use crate::{
-    Component, Key, MatchCond, Pending, Rbe as Rbe1, RbeError, RbeTable, Ref, Value, Values, rbe::Rbe, rbe_error,
+    Component, Context, Key, MatchCond, Pending, Rbe as Rbe1, RbeError, RbeTable, Ref, Value, Values, rbe::Rbe,
+    rbe_error,
 };
 
 #[derive(Debug, Clone)]
-pub struct EmptyIter<K, V, R>
+pub struct EmptyIter<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
+    Ctx: Context,
 {
     is_first: bool,
-    rbe: Rbe1<K, V, R>,
-    values: Values<K, V>,
+    rbe: Rbe1<K, V, R, Ctx>,
+    values: Values<K, V, Ctx>,
 }
 
-impl<K, V, R> EmptyIter<K, V, R>
+impl<K, V, R, Ctx> EmptyIter<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
+    Ctx: Context,
 {
-    pub fn new(rbe: &Rbe<Component>, table: &RbeTable<K, V, R>, values: &Values<K, V>) -> Self {
+    pub fn new(rbe: &Rbe<Component>, table: &RbeTable<K, V, R, Ctx>, values: &Values<K, V, Ctx>) -> Self {
         let rbe1 = cnv_rbe(rbe, table);
         Self {
             is_first: true,
@@ -30,13 +33,14 @@ where
     }
 }
 
-impl<K, V, R> Iterator for EmptyIter<K, V, R>
+impl<K, V, R, Ctx> Iterator for EmptyIter<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
+    Ctx: Context,
 {
-    type Item = Result<Pending<V, R>, rbe_error::RbeError<K, V, R>>;
+    type Item = Result<Pending<V, R>, rbe_error::RbeError<K, V, R, Ctx>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.is_first {
@@ -55,11 +59,12 @@ where
     }
 }
 
-fn cnv_rbe<K, V, R>(rbe: &Rbe<Component>, table: &RbeTable<K, V, R>) -> Rbe1<K, V, R>
+fn cnv_rbe<K, V, R, Ctx>(rbe: &Rbe<Component>, table: &RbeTable<K, V, R, Ctx>) -> Rbe1<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
+    Ctx: Context,
 {
     match rbe {
         Rbe::Empty => Rbe1::Empty,
@@ -98,20 +103,22 @@ where
     }
 }
 
-fn cnv_cond<K, V, R>(c: &Component, table: &RbeTable<K, V, R>) -> MatchCond<K, V, R>
+fn cnv_cond<K, V, R, Ctx>(c: &Component, table: &RbeTable<K, V, R, Ctx>) -> MatchCond<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
+    Ctx: Context,
 {
     table.get_condition(c).unwrap().clone()
 }
 
-fn cnv_key<K, V, R>(c: &Component, table: &RbeTable<K, V, R>) -> K
+fn cnv_key<K, V, R, Ctx>(c: &Component, table: &RbeTable<K, V, R, Ctx>) -> K
 where
     K: Key,
     V: Value,
     R: Ref,
+    Ctx: Context,
 {
     table.get_key(c).unwrap().clone()
 }
@@ -128,18 +135,22 @@ mod tests {
     type K = u8;
     type V = u16;
     type R = u32;
+    type Ctx = char;
 
-    fn make_table_with_symbol() -> (RbeTable<K, V, R>, Component) {
+    fn make_table_with_symbol() -> (RbeTable<K, V, R, Ctx>, Component) {
         let mut table = RbeTable::new();
-        let cond: MatchCond<K, V, R> =
-            MatchCond::single(SingleCond::new().with_name("any").with_cond(|_v| Ok(Pending::new())));
+        let cond: MatchCond<K, V, R, Ctx> = MatchCond::single(
+            SingleCond::new()
+                .with_name("any")
+                .with_cond(|_v, _c| Ok(Pending::new())),
+        );
         let c = table.add_component(1, &cond);
         (table, c)
     }
 
     #[test]
     fn cnv_rbe_empty() {
-        let table: RbeTable<K, V, R> = RbeTable::new();
+        let table: RbeTable<K, V, R, Ctx> = RbeTable::new();
         let rbe = Rbe::Empty;
         let result = cnv_rbe(&rbe, &table);
         assert_eq!(result, Rbe1::Empty);
@@ -231,7 +242,7 @@ mod tests {
 
     #[test]
     fn cnv_rbe_fail() {
-        let table: RbeTable<K, V, R> = RbeTable::new();
+        let table: RbeTable<K, V, R, Ctx> = RbeTable::new();
         let rbe = Rbe::Fail {
             error: crate::deriv_error::DerivError::MkOrValuesFail,
         };

@@ -3,6 +3,7 @@ use lazy_regex::regex;
 
 use crate::ir::actions::semantic_action_error::SemanticActionError;
 use crate::ir::actions::semantic_action_extension::SemanticActionExtension;
+use crate::ir::semantic_action_context::SemanticActionContext;
 
 /// Represents the Test action extension documented [here](http://shex.io/extensions/Test/)
 ///
@@ -33,13 +34,7 @@ impl SemanticActionExtension for TestActionExtension {
         iri!("http://shex.io/extensions/Test/")
     }
 
-    fn run_action(
-        &self,
-        parameter: Option<&str>,
-        s: Option<&str>,
-        p: Option<&str>,
-        o: Option<&str>,
-    ) -> Result<(), SemanticActionError> {
+    fn run_action(&self, parameter: Option<&str>, context: &SemanticActionContext) -> Result<(), SemanticActionError> {
         let code = if let Some(parameter) = parameter {
             parameter
         } else {
@@ -67,9 +62,9 @@ impl SemanticActionExtension for TestActionExtension {
             // Particle: s, p, or o
             let particle = &caps[3];
             let binding = match particle {
-                "s" => s,
-                "p" => p,
-                "o" => o,
+                "s" => context.s(),
+                "p" => context.p(),
+                "o" => context.o(),
                 _ => unreachable!("regex only matches s, p, or o"),
             };
             /* TODO:
@@ -111,28 +106,31 @@ mod tests {
     #[test]
     fn print_literal() {
         ext()
-            .run_action(Some(r#"print("hello world")"#), None, None, None)
+            .run_action(Some(r#"print("hello world")"#), &SemanticActionContext::default())
             .unwrap();
     }
 
     #[test]
     fn print_escaped_literal() {
         ext()
-            .run_action(Some(r#"print("say \"hi\"")"#), None, None, None)
+            .run_action(Some(r#"print("say \"hi\"")"#), &SemanticActionContext::default())
             .unwrap();
     }
 
     #[test]
     fn print_subject() {
         ext()
-            .run_action(Some("print(s)"), Some("http://example.org/s"), None, None)
+            .run_action(
+                Some("print(s)"),
+                &SemanticActionContext::subject("http://example.org/s"),
+            )
             .unwrap();
     }
 
     #[test]
     fn fail_literal() {
         let err = ext()
-            .run_action(Some(r#"fail("bad value")"#), None, None, None)
+            .run_action(Some(r#"fail("bad value")"#), &SemanticActionContext::default())
             .unwrap_err();
         assert!(matches!(err, SemanticActionError::FailAction { message } if message == "bad value"));
     }
@@ -140,7 +138,10 @@ mod tests {
     #[test]
     fn fail_object() {
         let err = ext()
-            .run_action(Some("fail(o)"), None, None, Some("http://example.org/bad"))
+            .run_action(
+                Some("fail(o)"),
+                &SemanticActionContext::object("http://example.org/bad"),
+            )
             .unwrap_err();
         assert!(matches!(err, SemanticActionError::FailAction { message } if message == "http://example.org/bad"));
     }
@@ -153,12 +154,14 @@ mod tests {
 
     #[test]
     fn invalid_parameter() {
-        let err = ext().run_action(Some("unknown(s)"), None, None, None).unwrap_err();
+        let err = ext()
+            .run_action(Some("unknown(s)"), &SemanticActionContext::default())
+            .unwrap_err();
         assert!(matches!(err, SemanticActionError::InvalidTestParameter { .. }));
     }
 
     #[test]
     fn empty_parameter() {
-        ext().run_action(None, None, None, None).unwrap();
+        ext().run_action(None, &SemanticActionContext::default()).unwrap();
     }
 }

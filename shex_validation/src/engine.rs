@@ -19,6 +19,7 @@ use shex_ast::Pred;
 use shex_ast::ShapeLabelIdx;
 use shex_ast::ir::preds::Preds;
 use shex_ast::ir::schema_ir::SchemaIR;
+use shex_ast::ir::semantic_action_context::SemanticActionContext;
 use shex_ast::ir::shape::Shape;
 use shex_ast::ir::shape_expr::ShapeExpr;
 use std::collections::HashMap;
@@ -506,9 +507,11 @@ impl Engine {
                 }
             },
             ShapeExpr::NodeConstraint(nc) => {
-                match nc.cond().matches(node) {
+                // TODO: In the case of a node constraint...is the context only the subject?
+                let ctx = SemanticActionContext::subject(&node.to_string());
+                match nc.cond().matches(node, &ctx) {
                     Ok(_pending) => {
-                        // We ignore pending nodes here, because node constraints are not expected to generate pending nodes
+                        // We ignore pending nodes here, as node constraints are not expected to generate pending nodes
                         pass(Reason::NodeConstraint {
                             node: node.clone(),
                             nc: nc.clone(),
@@ -570,13 +573,23 @@ impl Engine {
     {
         trace!("check_node_shape: node = {node}, shape = {idx} [No extends]");
         let (values, reminder) = self.neighs(node, shape.preds(), rdf)?;
+        let values_ctx = values
+            .iter()
+            .map(|(p, v)| {
+                (
+                    p.clone(),
+                    v.clone(),
+                    SemanticActionContext::triple(node.to_string(), p.to_string(), v.to_string()),
+                )
+            })
+            .collect::<Vec<_>>();
         if shape.is_closed() && !reminder.is_empty() {
             return fail(ValidatorError::ClosedShapeWithRemainderPreds {
                 remainder: Preds::new(reminder),
                 declared: Preds::new(shape.preds().into_iter().collect()),
             });
         }
-        check_expr_neigh(shape.triple_expr(), &values, node, shape, idx, typing)
+        check_expr_neigh(shape.triple_expr(), &values_ctx, node, shape, idx, typing)
     }
 
     pub(crate) fn check_node_shape_extends<R>(
@@ -620,31 +633,41 @@ impl Engine {
                 ))
                 .join("| ")
         );
+        let values_ctx = values
+            .iter()
+            .map(|(p, v)| {
+                (
+                    p.clone(),
+                    v.clone(),
+                    SemanticActionContext::triple(node.to_string(), p.to_string(), v.to_string()),
+                )
+            })
+            .collect::<Vec<_>>();
 
-        let parts_iter = crate::partitions_iter(&values, &triple_exprs);
+        let parts_iter = crate::partitions_iter(&values_ctx, &triple_exprs);
         for (npart, partition) in parts_iter.enumerate() {
             debug!("Partition {npart}: {}", show_partition(&partition));
             let mut ok_partition = true;
             for (maybe_label, rbes, neighs_subset) in partition.iter() {
-                debug!(
+                /*debug!(
                     " Part {npart}| Trying component: {}, neighs [{}] ",
                     maybe_label.map(|l| l.to_string()).unwrap_or("[]".to_string()),
                     neighs_subset.iter().map(|(p, v)| format!("{p} {v}")).join(", ")
-                );
+                );*/
                 let result = check_exprs_neigh(rbes, neighs_subset, node, shape, idx, typing)?;
                 if result.is_right() {
                     // TODO: Accumulate reasons from each triple expr
                     debug!(
                         " Part {npart}| Success component {}: neighs {}",
                         maybe_label.map(|l| l.to_string()).unwrap_or("[]".to_string()),
-                        neighs_subset.iter().map(|(p, v)| format!("{p} {v}")).join(", ")
+                        neighs_subset.iter().map(|(p, v, _ctx)| format!("{p} {v}")).join(", ")
                     );
                 } else {
                     ok_partition = false;
                     debug!(
                         " Part {npart}| Failed component {}: neighs {}",
                         maybe_label.map(|l| l.to_string()).unwrap_or("[]".to_string()),
-                        neighs_subset.iter().map(|(p, v)| format!("{p} {v}")).join(", ")
+                        neighs_subset.iter().map(|(p, v, _ctx)| format!("{p} {v}")).join(", ")
                     );
                     break;
                 }
@@ -767,7 +790,7 @@ fn fail(err: ValidatorError) -> Result<ValidationResult> {
 
 fn check_exprs_neigh(
     exprs: &[Expr],
-    neighs: &[(Pred, Node)],
+    neighs: &[(Pred, Node, SemanticActionContext)],
     node: &Node,
     shape: &Shape,
     idx: &ShapeLabelIdx,
@@ -793,7 +816,7 @@ fn check_exprs_neigh(
 
 fn check_expr_neigh(
     expr: &Expr,
-    neighs: &[(Pred, Node)],
+    neighs: &[(Pred, Node, SemanticActionContext)],
     node: &Node,
     shape: &Shape,
     idx: &ShapeLabelIdx,
@@ -802,14 +825,14 @@ fn check_expr_neigh(
     trace!(
         "Checking expr {} with neighs: [{}]",
         expr,
-        neighs.iter().map(|(p, o)| format!("{p} {o}")).join(", ")
+        neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", ")
     );
     let result_iter = expr.matches(neighs.to_vec())?;
     let mut errors = Vec::new();
     for result in result_iter {
         trace!(
             "Result of {expr} with neighs: {}: {:?}",
-            neighs.iter().map(|(p, o)| format!("{p} {o}")).join(", "),
+            neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", "),
             result
         );
         match result {
@@ -854,7 +877,7 @@ fn check_expr_neigh(
     }
     debug!(
         "expr failed {expr} with neighs: [{}], errors: [{}]",
-        neighs.iter().map(|(p, o)| format!("{p} {o}")).join(", "),
+        neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", "),
         errors.iter().map(|e| format!("{e}")).join(", ")
     );
     fail(ValidatorError::ShapeFailed {
@@ -865,14 +888,18 @@ fn check_expr_neigh(
     })
 }
 
-type PartitionInfo = (Option<ShapeLabelIdx>, Vec<Expr>, Vec<(Pred, Node)>);
+type PartitionInfo = (
+    Option<ShapeLabelIdx>,
+    Vec<Expr>,
+    Vec<(Pred, Node, SemanticActionContext)>,
+);
 
 fn show_partition(partition: &[PartitionInfo]) -> String {
     partition
         .iter()
         .map(|(maybe_label, _rbes, neighs_subset)| {
             let label_str = maybe_label.map(|l| l.to_string()).unwrap_or("[]".to_string());
-            let neighs_str = neighs_subset.iter().map(|(p, o)| format!("{p} {o}")).join(", ");
+            let neighs_str = neighs_subset.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", ");
             format!("{} -> [{}]", label_str, neighs_str)
         })
         .join(" | ")
