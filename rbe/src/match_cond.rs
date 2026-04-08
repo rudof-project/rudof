@@ -76,7 +76,7 @@ where
 
     pub fn simple(
         name: &str,
-        cond: impl Fn(&V, &Ctx) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx>> + Clone + 'static + Sync,
+        cond: impl Fn(&V, &Ctx) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx>> + Clone + 'static + Send + Sync,
     ) -> Self {
         MatchCond::single(SingleCond::new().with_name(name).with_cond(cond))
     }
@@ -142,7 +142,7 @@ where
     name: Option<String>,
 
     #[serde(skip)]
-    cond: Vec<Box<dyn Cond<K, V, R, Ctx>>>,
+    cond: Vec<Box<dyn Cond<K, V, R, Ctx> + Send + Sync>>,
 }
 
 unsafe impl<K, V, R, Ctx> Sync for SingleCond<K, V, R, Ctx>
@@ -158,14 +158,14 @@ where
 /// capture some values in the condition closure.
 /// This pattern is inspired by the answer in this thread:
 /// https://users.rust-lang.org/t/how-to-clone-a-boxed-closure/31035
-trait Cond<K, V, R, Ctx>: Sync
+trait Cond<K, V, R, Ctx>: Send + Sync
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
 {
-    fn clone_box(&self) -> Box<dyn Cond<K, V, R, Ctx> + Sync>;
+    fn clone_box(&self) -> Box<dyn Cond<K, V, R, Ctx> + Send + Sync>;
     fn call(&self, v: &V, ctx: &Ctx) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx>>;
 }
 
@@ -175,9 +175,9 @@ where
     V: Value,
     R: Ref,
     Ctx: Context,
-    F: 'static + Fn(&V, &Ctx) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx>> + Clone + Sync,
+    F: 'static + Fn(&V, &Ctx) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx>> + Clone + Send + Sync,
 {
-    fn clone_box(&self) -> Box<dyn Cond<K, V, R, Ctx> + Sync> {
+    fn clone_box(&self) -> Box<dyn Cond<K, V, R, Ctx> + Send + Sync> {
         Box::new(self.clone())
     }
 
@@ -186,7 +186,7 @@ where
     }
 }
 
-impl<K, V, R, Ctx> Clone for Box<dyn Cond<K, V, R, Ctx>>
+impl<K, V, R, Ctx> Clone for Box<dyn Cond<K, V, R, Ctx> + Send + Sync>
 where
     K: Key,
     V: Value,
@@ -258,7 +258,7 @@ where
 
     pub fn with_cond(
         mut self,
-        cond: impl Fn(&V, &Ctx) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx>> + Clone + 'static + Sync,
+        cond: impl Fn(&V, &Ctx) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx>> + Clone + 'static + Send + Sync,
     ) -> Self {
         self.cond.push(Box::new(cond));
         self
