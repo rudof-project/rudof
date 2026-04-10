@@ -1,0 +1,8 @@
+prefix : <http://example.org/>
+prefix schema: <http://schema.org/>
+
+:a schema:name  "Alice" .
+
+:b schema:name  "Bob"    ;
+   schema:knows :a ;
+   schema:email "bob@example.com" .

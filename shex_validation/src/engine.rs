@@ -199,6 +199,11 @@ impl Engine {
         }
     }
 
+    /// Returns the set of pairs `(node, shape_idx)` that are dependencies of `node@idx`,
+    /// i.e. all pairs `(node1, idx1)` such that:
+    /// - `node1@idx1` is a direct reference in the shape expression of `idx`, or
+    /// - there is a triple constraint `(pred, ref)` in the shape expression of `idx` and
+    ///   the neighbours of `node` are `(pred, node1)`
     pub(crate) fn dep<R>(
         &self,
         node: &Node,
@@ -218,8 +223,8 @@ impl Engine {
                 dep.insert((node.clone(), *idx));
             }
 
-            // Search all pairs (node1, idx1) in the shape expr referenced by idx such that there is a triple constraint (pred, ref)
-            // and the neighbours of node are (pred, node1)
+            // Search all pairs `(node1, idx1)` in the shape expr referenced by `idx` such that there is a triple constraint `(pred, ref)`
+            // and the neighbours of `node` are `(pred, node1)`
             let references = se.references(schema);
             // trace!("References in shape expr: {:?}", references);
             let preds = references.keys().cloned().collect::<Vec<_>>();

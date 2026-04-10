@@ -74,14 +74,10 @@ startCode1startReffail_abort
 startCode3fail_abort
 vitals-RESTRICTS-pass_lie-BP
 vitals-RESTRICTS-pass_lie-Posture
-vitals-RESTRICTS-pass_lie-PostureBP
 vitals-RESTRICTS-pass_lie-PostureVital
 vitals-RESTRICTS-pass_lie-Reclined
 vitals-RESTRICTS-pass_lie-ReclinedBP
 vitals-RESTRICTS-pass_lie-ReclinedVital
-vitals-RESTRICTS-pass_lie-Vital
 vitals-RESTRICTS-pass_sit-BP
 vitals-RESTRICTS-pass_sit-Posture
-vitals-RESTRICTS-pass_sit-PostureBP
 vitals-RESTRICTS-pass_sit-PostureVital
-vitals-RESTRICTS-pass_sit-Vital
