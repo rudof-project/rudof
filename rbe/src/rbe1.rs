@@ -177,7 +177,7 @@ where
         symbol: &K,
         value: &V,
         ctx: &Ctx,
-        st: &St,
+        st: &mut St,
         n: usize,
         open: bool,
         controlled: &HashSet<K>,
@@ -237,9 +237,7 @@ where
                     }
                 }
             },
-            Rbe::And { ref exprs } => {
-                Self::deriv_and(exprs, symbol, value, ctx, st, n, open, controlled, pending)
-            },
+            Rbe::And { ref exprs } => Self::deriv_and(exprs, symbol, value, ctx, st, n, open, controlled, pending),
             Rbe::Or { ref exprs } => Self::mk_or_values(
                 exprs
                     .iter()
@@ -277,7 +275,7 @@ where
         symbol: &K,
         value: &V,
         ctx: &Ctx,
-        st: &St,
+        st: &mut St,
         n: usize,
         open: bool,
         controlled: &HashSet<K>,
@@ -286,19 +284,16 @@ where
         let mut or_values: Vec<Rbe<K, V, R, Ctx, St>> = Vec::new();
         let mut failures = Failures::new();
 
-        for vs in deriv_n(
-            cloned((*values).iter()).collect(),
-            |expr: &Rbe<K, V, R, Ctx, St>| {
-                let d = expr.deriv(symbol, value, ctx, st, n, open, controlled, pending);
-                match d {
-                    Rbe::Fail { error } => {
-                        failures.push(expr.clone(), error);
-                        None
-                    },
-                    _ => Some(d),
-                }
-            },
-        ) {
+        for vs in deriv_n(cloned((*values).iter()).collect(), |expr: &Rbe<K, V, R, Ctx, St>| {
+            let d = expr.deriv(symbol, value, ctx, st, n, open, controlled, pending);
+            match d {
+                Rbe::Fail { error } => {
+                    failures.push(expr.clone(), error);
+                    None
+                },
+                _ => Some(d),
+            }
+        }) {
             or_values.push(Rbe::And { exprs: vs });
         }
         match or_values.len() {
@@ -466,8 +461,6 @@ mod tests {
 
     impl Context for char {}
 
-    impl State for char {}
-
     #[test]
     fn deriv_a_1_1_and_b_opt_with_a() {
         // a?|b? #= b/2
@@ -481,8 +474,18 @@ mod tests {
             Rbe::symbol('a', 0, Max::IntMax(0)),
             Rbe::symbol('b', 0, Max::IntMax(1)),
         ]);
+        let mut st = 'z';
         assert_eq!(
-            rbe.deriv(&'a', &23, &'a', &'z', 1, false, &HashSet::from(['a', 'b']), &mut pending),
+            rbe.deriv(
+                &'a',
+                &23,
+                &'a',
+                &mut st,
+                1,
+                false,
+                &HashSet::from(['a', 'b']),
+                &mut pending
+            ),
             expected
         );
     }
@@ -491,7 +494,8 @@ mod tests {
     fn deriv_symbol() {
         let rbe: Rbe<char, i32, i32, char, char> = Rbe::symbol('x', 1, Max::IntMax(1));
         let mut pending = Pending::new();
-        let d = rbe.deriv(&'x', &2, &'a', &'z', 1, true, &HashSet::new(), &mut pending);
+        let mut st = 'z';
+        let d = rbe.deriv(&'x', &2, &'a', &mut st, 1, true, &HashSet::new(), &mut pending);
         assert_eq!(d, Rbe::symbol('x', 0, Max::IntMax(0)));
     }
 
@@ -499,11 +503,12 @@ mod tests {
     fn deriv_symbol_b_2_3() {
         let rbe: Rbe<String, String, String, char, char> = Rbe::symbol("b".to_string(), 2, Max::IntMax(3));
         let mut pending = Pending::new();
+        let mut st = 'z';
         let d = rbe.deriv(
             &"b".to_string(),
             &"vb2".to_string(),
             &'a',
-            &'z',
+            &mut st,
             1,
             true,
             &HashSet::new(),

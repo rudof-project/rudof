@@ -103,7 +103,7 @@ where
             &self,
             values.iter().map(|(k, v, ctx)| format!("({k} {v} {ctx})")).join(", ")
         );
-        let st = St::default();
+        let mut st = St::default();
         let mut pairs_found = 0;
         let mut candidates = Vec::new();
         let cs_empty = IndexSet::new();
@@ -117,7 +117,7 @@ where
                 let mut last_err = None;
                 for component in components {
                     let cond = self.component_cond.get(component).unwrap();
-                    match cond.matches(value, ctx, &st) {
+                    match cond.matches(value, ctx, &mut st) {
                         Ok(_) => {
                             pairs_found += 1;
                             pairs.push((key.clone(), value.clone(), ctx.clone(), *component, cond.clone()));
@@ -362,10 +362,10 @@ where
                 }
             },
             Some(vs) => {
-                let st = St::default();
+                let mut st = St::default();
                 let mut pending: Pending<V, R> = Pending::new();
                 for (_k, v, ctx, _, cond) in &vs {
-                    match cond.matches(v, ctx, &st) {
+                    match cond.matches(v, ctx, &mut st) {
                         Ok(new_pending) => {
                             pending.merge(new_pending);
                         },
@@ -448,7 +448,6 @@ mod tests {
     impl Key for char {}
     impl Value for char {}
     impl Ref for char {}
-    impl State for char {}
 
     #[test]
     fn test_rbe_table_1() {
@@ -457,7 +456,7 @@ mod tests {
         let is_a: MatchCond<char, char, char, char, char> = MatchCond::single(
             SingleCond::new()
                 .with_name("is_a")
-                .with_cond(move |v, _ctx, _st: &char| {
+                .with_cond(move |v, _ctx, _st: &mut char| {
                     if *v == 'a' {
                         Ok(Pending::new())
                     } else {
@@ -471,7 +470,7 @@ mod tests {
         let ref_t: MatchCond<char, char, char, char, char> = MatchCond::single(
             SingleCond::new()
                 .with_name("ref_t")
-                .with_cond(move |v, _ctx, _st: &char| {
+                .with_cond(move |v, _ctx, _st: &mut char| {
                     let mut pending = Pending::new();
                     pending.insert(*v, 't');
                     Ok(pending)
@@ -481,7 +480,7 @@ mod tests {
         let ref_u: MatchCond<char, char, char, char, char> = MatchCond::single(
             SingleCond::new()
                 .with_name("ref_u")
-                .with_cond(move |v, _ctx, _st: &char| {
+                .with_cond(move |v, _ctx, _st: &mut char| {
                     let mut pending = Pending::new();
                     pending.insert(*v, 'u');
                     Ok(pending)
@@ -521,7 +520,7 @@ mod tests {
         let is_a: MatchCond<char, char, char, char, char> = MatchCond::single(
             SingleCond::new()
                 .with_name("is_a")
-                .with_cond(move |v, _ctx, _st: &char| {
+                .with_cond(move |v, _ctx, _st: &mut char| {
                     if *v == 'a' {
                         Ok(Pending::new())
                     } else {
@@ -535,7 +534,7 @@ mod tests {
         let ref_t: MatchCond<char, char, char, char, char> = MatchCond::single(
             SingleCond::new()
                 .with_name("ref_t")
-                .with_cond(move |v, _ctx, _st: &char| {
+                .with_cond(move |v, _ctx, _st: &mut char| {
                     let mut pending = Pending::new();
                     pending.insert(*v, 't');
                     Ok(pending)
@@ -545,7 +544,7 @@ mod tests {
         let ref_u: MatchCond<char, char, char, char, char> = MatchCond::single(
             SingleCond::new()
                 .with_name("ref_u")
-                .with_cond(move |v, _ctx, _st: &char| {
+                .with_cond(move |v, _ctx, _st: &mut char| {
                     let mut pending = Pending::new();
                     pending.insert(*v, 'u');
                     Ok(pending)
@@ -577,7 +576,7 @@ mod tests {
         let is_a: MatchCond<char, char, char, char, char> = MatchCond::single(
             SingleCond::new()
                 .with_name("is_a")
-                .with_cond(move |v, _ctx, _st: &char| {
+                .with_cond(move |v, _ctx, _st: &mut char| {
                     if *v == 'a' {
                         Ok(Pending::new())
                     } else {
@@ -612,7 +611,7 @@ mod tests {
         let is_a: MatchCond<char, char, char, char, char> = MatchCond::single(
             SingleCond::new()
                 .with_name("is_a")
-                .with_cond(move |v, _ctx, _st: &char| {
+                .with_cond(move |v, _ctx, _st: &mut char| {
                     if *v == 'a' {
                         Ok(Pending::new())
                     } else {
@@ -654,7 +653,7 @@ mod tests {
         let is_x: MatchCond<char, char, char, char, char> = MatchCond::single(
             SingleCond::new()
                 .with_name("is_x")
-                .with_cond(move |v, _ctx, _st: &char| {
+                .with_cond(move |v, _ctx, _st: &mut char| {
                     if *v == 'x' {
                         Ok(Pending::new())
                     } else {
@@ -668,7 +667,7 @@ mod tests {
         let is_y: MatchCond<char, char, char, char, char> = MatchCond::single(
             SingleCond::new()
                 .with_name("is_y")
-                .with_cond(move |v, _ctx, _st: &char| {
+                .with_cond(move |v, _ctx, _st: &mut char| {
                     if *v == 'y' {
                         Ok(Pending::new())
                     } else {
@@ -702,7 +701,7 @@ mod tests {
         let is_x: MatchCond<char, char, char, char, char> = MatchCond::single(
             SingleCond::new()
                 .with_name("is_x")
-                .with_cond(move |v, _ctx, _st: &char| {
+                .with_cond(move |v, _ctx, _st: &mut char| {
                     if *v == 'x' {
                         Ok(Pending::new())
                     } else {
@@ -716,7 +715,7 @@ mod tests {
         let is_y: MatchCond<char, char, char, char, char> = MatchCond::single(
             SingleCond::new()
                 .with_name("is_y")
-                .with_cond(move |v, _ctx, _st: &char| {
+                .with_cond(move |v, _ctx, _st: &mut char| {
                     if *v == 'y' {
                         Ok(Pending::new())
                     } else {

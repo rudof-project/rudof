@@ -61,7 +61,7 @@ where
         MatchCond::Ref(r)
     }
 
-    pub fn matches(&self, value: &V, ctx: &Ctx, state: &St) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx, St>> {
+    pub fn matches(&self, value: &V, ctx: &Ctx, state: &mut St) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx, St>> {
         match self {
             MatchCond::Single(single) => single.matches(value, ctx, state),
             MatchCond::Ref(r) => Ok(Pending::from_pair(value.clone(), r.clone())),
@@ -79,7 +79,11 @@ where
 
     pub fn simple(
         name: &str,
-        cond: impl Fn(&V, &Ctx, &St) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx, St>> + Clone + 'static + Send + Sync,
+        cond: impl Fn(&V, &Ctx, &mut St) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx, St>>
+        + Clone
+        + 'static
+        + Send
+        + Sync,
     ) -> Self {
         MatchCond::single(SingleCond::new().with_name(name).with_cond(cond))
     }
@@ -169,7 +173,7 @@ where
     St: State,
 {
     fn clone_box(&self) -> Box<dyn Cond<K, V, R, Ctx, St> + Send + Sync>;
-    fn call(&self, v: &V, ctx: &Ctx, st: &St) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx, St>>;
+    fn call(&self, v: &V, ctx: &Ctx, st: &mut St) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx, St>>;
 }
 
 impl<K, V, R, F, Ctx, St> Cond<K, V, R, Ctx, St> for F
@@ -179,13 +183,13 @@ where
     R: Ref,
     Ctx: Context,
     St: State,
-    F: 'static + Fn(&V, &Ctx, &St) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx, St>> + Clone + Send + Sync,
+    F: 'static + Fn(&V, &Ctx, &mut St) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx, St>> + Clone + Send + Sync,
 {
     fn clone_box(&self) -> Box<dyn Cond<K, V, R, Ctx, St> + Send + Sync> {
         Box::new(self.clone())
     }
 
-    fn call(&self, v: &V, ctx: &Ctx, st: &St) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx, St>> {
+    fn call(&self, v: &V, ctx: &Ctx, st: &mut St) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx, St>> {
         self(v, ctx, st)
     }
 }
@@ -233,7 +237,7 @@ where
     Ctx: Context,
     St: State,
 {
-    pub fn matches(&self, value: &V, ctx: &Ctx, st: &St) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx, St>> {
+    pub fn matches(&self, value: &V, ctx: &Ctx, st: &mut St) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx, St>> {
         self.cond.iter().try_fold(Pending::new(), |mut current, f| {
             let pending = f.call(value, ctx, st)?;
             current.merge(pending);
@@ -255,7 +259,11 @@ where
 
     pub fn with_cond(
         mut self,
-        cond: impl Fn(&V, &Ctx, &St) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx, St>> + Clone + 'static + Send + Sync,
+        cond: impl Fn(&V, &Ctx, &mut St) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx, St>>
+        + Clone
+        + 'static
+        + Send
+        + Sync,
     ) -> Self {
         self.cond.push(Box::new(cond));
         self
@@ -347,12 +355,59 @@ where
 mod tests {
     use super::*;
 
-    impl State for char {}
+    impl State for i32 {}
+
+    // --- TDD tests for mutable state ---
+
+    /// State (i32 counter) is incremented on each successful match call.
+    #[test]
+    fn test_mutable_state_counter() {
+        let cond: SingleCond<char, i32, String, char, i32> = SingleCond::new().with_cond(|_v, _ctx, st: &mut i32| {
+            *st += 1;
+            Ok(Pending::new())
+        });
+        let mut state: i32 = 0;
+        assert_eq!(cond.matches(&42, &'a', &mut state), Ok(Pending::new()));
+        assert_eq!(state, 1);
+        assert_eq!(cond.matches(&42, &'a', &mut state), Ok(Pending::new()));
+        assert_eq!(state, 2);
+    }
+
+    /// State accumulates across And conditions — both branches mutate the same state.
+    #[test]
+    fn test_mutable_state_and_accumulates() {
+        let cond1: MatchCond<char, i32, String, char, i32> = MatchCond::simple("inc_a", |_v, _ctx, st: &mut i32| {
+            *st += 1;
+            Ok(Pending::new())
+        });
+        let cond2: MatchCond<char, i32, String, char, i32> = MatchCond::simple("inc_b", |_v, _ctx, st: &mut i32| {
+            *st += 10;
+            Ok(Pending::new())
+        });
+        let and_cond = MatchCond::and(vec![cond1, cond2]);
+        let mut state: i32 = 0;
+        assert_eq!(and_cond.matches(&1, &'a', &mut state), Ok(Pending::new()));
+        assert_eq!(state, 11);
+    }
+
+    /// MatchCond::simple accepts a closure with &mut St and mutates state.
+    #[test]
+    fn test_simple_with_mutable_state() {
+        let cond: MatchCond<char, i32, String, char, i32> = MatchCond::simple("mark", |_v, _ctx, st: &mut i32| {
+            *st = 99;
+            Ok(Pending::new())
+        });
+        let mut state: i32 = 0;
+        assert_eq!(cond.matches(&7, &'a', &mut state), Ok(Pending::new()));
+        assert_eq!(state, 99);
+    }
+
+    // --- Existing tests updated to use &mut St ---
 
     #[test]
     fn test_even_cond_2_pass() {
         let cond_even: SingleCond<char, i32, String, char, char> =
-            SingleCond::new().with_cond(|v, _ctx, _st: &char| {
+            SingleCond::new().with_cond(|v, _ctx, _st: &mut char| {
                 if v % 2 == 0 {
                     Ok(Pending::new())
                 } else {
@@ -361,14 +416,14 @@ mod tests {
                     })
                 }
             });
-
-        assert_eq!(cond_even.matches(&2, &'a', &'z'), Ok(Pending::new()));
+        let mut st = 'z';
+        assert_eq!(cond_even.matches(&2, &'a', &mut st), Ok(Pending::new()));
     }
 
     #[test]
     fn test_even_cond_3_fail() {
         let cond_even: SingleCond<char, i32, String, char, char> =
-            SingleCond::new().with_cond(|v, _ctx, _st: &char| {
+            SingleCond::new().with_cond(|v, _ctx, _st: &mut char| {
                 if v % 2 == 0 {
                     Ok(Pending::new())
                 } else {
@@ -377,14 +432,14 @@ mod tests {
                     })
                 }
             });
-
-        assert!(cond_even.matches(&3, &'a', &'z').is_err());
+        let mut st = 'z';
+        assert!(cond_even.matches(&3, &'a', &mut st).is_err());
     }
 
     #[test]
     fn test_name_fail() {
         fn cond_name(name: String) -> SingleCond<char, String, String, char, char> {
-            SingleCond::new().with_cond(move |v: &String, _ctx: &char, _st: &char| {
+            SingleCond::new().with_cond(move |v: &String, _ctx: &char, _st: &mut char| {
                 if *v == name {
                     Ok(Pending::new())
                 } else {
@@ -394,10 +449,10 @@ mod tests {
                 }
             })
         }
-
+        let mut st = 'z';
         assert!(
             cond_name("foo".to_string())
-                .matches(&"baz".to_string(), &'a', &'z')
+                .matches(&"baz".to_string(), &'a', &mut st)
                 .is_err()
         );
     }
@@ -407,7 +462,7 @@ mod tests {
         fn cond_name(name: String) -> SingleCond<char, String, String, char, char> {
             SingleCond::new()
                 .with_name("name")
-                .with_cond(move |v: &String, _ctx: &char, _st: &char| {
+                .with_cond(move |v: &String, _ctx: &char, _st: &mut char| {
                     if *v == name {
                         Ok(Pending::new())
                     } else {
@@ -417,9 +472,9 @@ mod tests {
                     }
                 })
         }
-
+        let mut st = 'z';
         assert_eq!(
-            cond_name("foo".to_string()).matches(&"foo".to_string(), &'a', &'z'),
+            cond_name("foo".to_string()).matches(&"foo".to_string(), &'a', &mut st),
             Ok(Pending::new())
         );
     }

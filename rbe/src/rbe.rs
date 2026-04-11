@@ -7,7 +7,23 @@ use std::collections::HashSet;
 use std::fmt;
 use std::fmt::{Debug, Display};
 
-/// Implementation of Regular Bag Expressions
+/// Simple Implementation of Regular Bag Expressions
+/// The implementation is based on [Brzozowski derivatives of regular expressions](https://dl.acm.org/doi/10.1145/321239.321249),
+/// adapted to bags and cardinalities.
+///
+/// The main idea is that we can compute the derivative of a regular bag expression with respect to a symbol, and this derivative will represent the remaining expression after
+/// consuming that symbol. By iterating this process for all symbols in a bag, we can determine if the bag matches the original expression by checking if the final derivative
+/// is nullable (i.e., can match the empty bag).
+///
+/// The Rbe enum represents the different types of regular bag expressions, including failure cases, empty expressions, symbols with cardinalities, conjunctions (And), disjunctions (Or),
+/// and repetitions (Star, Plus, Repeat).
+///
+/// The match_bag method uses the deriv_bag method to compute the derivative of the expression with respect to the input bag and checks if the resulting expression is nullable
+/// to determine if the match is successful. The implementation also includes error handling through the DerivError enum, which captures various failure scenarios during the derivative computation.
+///
+/// This implementation allows for efficient matching of bags against complex regular bag expressions, leveraging the power of derivatives to handle the combinatorial nature of the problem.
+/// The Rbe struct is designed to be flexible and extensible, allowing for various operations such as mapping over symbols, pretty-printing, and more. The use of generics allows it to work with any type of symbol that implements the necessary traits (Hash, Eq, Display). Overall, this implementation provides a robust foundation for working with regular bag expressions in Rust.
+///
 #[derive(Clone, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Rbe<A>
 where

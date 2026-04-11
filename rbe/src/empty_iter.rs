@@ -150,7 +150,7 @@ mod tests {
         let cond: MatchCond<K, V, R, Ctx, St> = MatchCond::single(
             SingleCond::new()
                 .with_name("any")
-                .with_cond(|_v, _c, _st: &char| Ok(Pending::new())),
+                .with_cond(|_v, _c, _st: &mut char| Ok(Pending::new())),
         );
         let c = table.add_component(1, &cond);
         (table, c)

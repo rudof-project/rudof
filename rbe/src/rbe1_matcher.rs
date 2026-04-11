@@ -1,9 +1,8 @@
-use std::collections::HashSet;
-use tracing::debug;
-
 use crate::{Context, State};
 use crate::{Key, Ref, Value, rbe1::Rbe};
 use crate::{Pending, rbe_error::RbeError};
+use std::collections::HashSet;
+use tracing::debug;
 
 #[derive(Default)]
 pub struct RbeMatcher<K, V, R, Ctx, St>
@@ -75,8 +74,8 @@ where
         processed: &mut Vec<(K, V, Ctx, St)>,
     ) -> Rbe<K, V, R, Ctx, St> {
         let mut current = self.rbe.clone();
-        for (key, value, ctx, st) in iter {
-            let deriv = current.deriv(&key, &value, &ctx, &st, 1, self.open, &self.controlled, pending);
+        for (key, value, ctx, mut st) in iter {
+            let deriv = current.deriv(&key, &value, &ctx, &mut st, 1, self.open, &self.controlled, pending);
             match deriv {
                 Rbe::Fail { error } => {
                     current = Rbe::Fail {
@@ -105,16 +104,15 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{MatchCond, Max, Min, SingleCond, State};
+    use crate::{MatchCond, Max, Min, SingleCond};
 
     impl Value for i32 {}
     impl Ref for String {}
-    impl State for char {}
 
     fn is_even(
         v: &i32,
         _ctx: &char,
-        _st: &char,
+        _st: &mut char,
     ) -> Result<Pending<i32, String>, RbeError<char, i32, String, char, char>> {
         if v % 2 == 0 {
             Ok(Pending::new())
@@ -128,7 +126,7 @@ mod tests {
     fn ref_x(
         v: &i32,
         _ctx: &char,
-        _st: &char,
+        _st: &mut char,
     ) -> Result<Pending<i32, String>, RbeError<char, i32, String, char, char>> {
         let ps = vec![(*v, vec!["X".to_string()])].into_iter();
         Ok(Pending::from(ps))
@@ -137,27 +135,31 @@ mod tests {
     impl Value for String {}
 
     fn cond_name(name: String) -> MatchCond<char, String, String, char, char> {
-        MatchCond::single(SingleCond::new().with_cond(move |v: &String, _ctx: &char, _st: &char| {
-            if *v == name {
-                Ok(Pending::new())
-            } else {
-                Err(RbeError::MsgError {
-                    msg: format!("Value {v} is not equal to {name}"),
-                })
-            }
-        }))
+        MatchCond::single(
+            SingleCond::new().with_cond(move |v: &String, _ctx: &char, _st: &mut char| {
+                if *v == name {
+                    Ok(Pending::new())
+                } else {
+                    Err(RbeError::MsgError {
+                        msg: format!("Value {v} is not equal to {name}"),
+                    })
+                }
+            }),
+        )
     }
 
     fn cond_len(len: usize) -> MatchCond<char, String, String, char, char> {
-        MatchCond::single(SingleCond::new().with_cond(move |v: &String, _ctx: &char, _st: &char| {
-            if v.len() == len {
-                Ok(Pending::new())
-            } else {
-                Err(RbeError::MsgError {
-                    msg: format!("Value {v} has no length {len}"),
-                })
-            }
-        }))
+        MatchCond::single(
+            SingleCond::new().with_cond(move |v: &String, _ctx: &char, _st: &mut char| {
+                if v.len() == len {
+                    Ok(Pending::new())
+                } else {
+                    Err(RbeError::MsgError {
+                        msg: format!("Value {v} has no length {len}"),
+                    })
+                }
+            }),
+        )
     }
 
     #[test]
