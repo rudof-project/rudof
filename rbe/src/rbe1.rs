@@ -1,6 +1,6 @@
 use crate::failures::Failures;
 use crate::{Cardinality, MatchCond, Max, Min, Pending, deriv_n, rbe_error::RbeError};
-use crate::{Context, Key, Ref, Value};
+use crate::{Context, Key, Ref, State, Value};
 use core::hash::Hash;
 use itertools::cloned;
 use serde::{Deserialize, Serialize};
@@ -9,57 +9,60 @@ use std::fmt;
 use std::fmt::{Debug, Display};
 
 #[derive(Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub enum Rbe<K, V, R, Ctx>
+pub enum Rbe<K, V, R, Ctx, St>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    St: State,
 {
     Fail {
-        error: RbeError<K, V, R, Ctx>,
+        error: RbeError<K, V, R, Ctx, St>,
     },
+
     #[default]
     Empty,
 
     Symbol {
         key: K,
-        cond: MatchCond<K, V, R, Ctx>,
+        cond: MatchCond<K, V, R, Ctx, St>,
         card: Cardinality,
     },
 
     And {
-        exprs: Vec<Rbe<K, V, R, Ctx>>,
+        exprs: Vec<Rbe<K, V, R, Ctx, St>>,
     },
     Or {
-        exprs: Vec<Rbe<K, V, R, Ctx>>,
+        exprs: Vec<Rbe<K, V, R, Ctx, St>>,
     },
     Star {
-        expr: Box<Rbe<K, V, R, Ctx>>,
+        expr: Box<Rbe<K, V, R, Ctx, St>>,
     },
     Plus {
-        expr: Box<Rbe<K, V, R, Ctx>>,
+        expr: Box<Rbe<K, V, R, Ctx, St>>,
     },
     Repeat {
-        expr: Box<Rbe<K, V, R, Ctx>>,
+        expr: Box<Rbe<K, V, R, Ctx, St>>,
         card: Cardinality,
     },
 }
 
 type NullableResult = bool;
 
-impl<K, V, R, Ctx> Rbe<K, V, R, Ctx>
+impl<K, V, R, Ctx, St> Rbe<K, V, R, Ctx, St>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    St: State,
 {
-    pub fn empty() -> Rbe<K, V, R, Ctx> {
+    pub fn empty() -> Rbe<K, V, R, Ctx, St> {
         Rbe::Empty
     }
 
-    pub fn symbol(key: K, min: usize, max: Max) -> Rbe<K, V, R, Ctx> {
+    pub fn symbol(key: K, min: usize, max: Max) -> Rbe<K, V, R, Ctx, St> {
         Rbe::Symbol {
             key,
             cond: MatchCond::default(),
@@ -70,7 +73,7 @@ where
         }
     }
 
-    pub fn symbol_cond(key: K, cond: MatchCond<K, V, R, Ctx>, min: Min, max: Max) -> Rbe<K, V, R, Ctx> {
+    pub fn symbol_cond(key: K, cond: MatchCond<K, V, R, Ctx, St>, min: Min, max: Max) -> Rbe<K, V, R, Ctx, St> {
         Rbe::Symbol {
             key,
             cond,
@@ -78,37 +81,37 @@ where
         }
     }
 
-    pub fn or<I>(exprs: I) -> Rbe<K, V, R, Ctx>
+    pub fn or<I>(exprs: I) -> Rbe<K, V, R, Ctx, St>
     where
-        I: IntoIterator<Item = Rbe<K, V, R, Ctx>>,
+        I: IntoIterator<Item = Rbe<K, V, R, Ctx, St>>,
     {
         let rs = exprs.into_iter().collect();
         Rbe::Or { exprs: rs }
     }
 
-    pub fn and<I>(exprs: I) -> Rbe<K, V, R, Ctx>
+    pub fn and<I>(exprs: I) -> Rbe<K, V, R, Ctx, St>
     where
-        I: IntoIterator<Item = Rbe<K, V, R, Ctx>>,
+        I: IntoIterator<Item = Rbe<K, V, R, Ctx, St>>,
     {
         let rs = exprs.into_iter().collect();
         Rbe::And { exprs: rs }
     }
 
-    pub fn opt(v: Rbe<K, V, R, Ctx>) -> Rbe<K, V, R, Ctx> {
+    pub fn opt(v: Rbe<K, V, R, Ctx, St>) -> Rbe<K, V, R, Ctx, St> {
         Rbe::Or {
             exprs: vec![v, Rbe::Empty],
         }
     }
 
-    pub fn plus(expr: Rbe<K, V, R, Ctx>) -> Rbe<K, V, R, Ctx> {
+    pub fn plus(expr: Rbe<K, V, R, Ctx, St>) -> Rbe<K, V, R, Ctx, St> {
         Rbe::Plus { expr: Box::new(expr) }
     }
 
-    pub fn star(expr: Rbe<K, V, R, Ctx>) -> Rbe<K, V, R, Ctx> {
+    pub fn star(expr: Rbe<K, V, R, Ctx, St>) -> Rbe<K, V, R, Ctx, St> {
         Rbe::Star { expr: Box::new(expr) }
     }
 
-    pub fn repeat(expr: Rbe<K, V, R, Ctx>, min: usize, max: Max) -> Rbe<K, V, R, Ctx> {
+    pub fn repeat(expr: Rbe<K, V, R, Ctx, St>, min: usize, max: Max) -> Rbe<K, V, R, Ctx, St> {
         Rbe::Repeat {
             expr: Box::new(expr),
             card: Cardinality::from(Min::from(min), max),
@@ -174,11 +177,12 @@ where
         symbol: &K,
         value: &V,
         ctx: &Ctx,
+        st: &St,
         n: usize,
         open: bool,
         controlled: &HashSet<K>,
         pending: &mut Pending<V, R>,
-    ) -> Rbe<K, V, R, Ctx>
+    ) -> Rbe<K, V, R, Ctx, St>
     where
         K: Eq + Hash + Clone,
     {
@@ -202,7 +206,7 @@ where
                 ref card,
             } => {
                 if *key == *symbol {
-                    match cond.matches(value, ctx) {
+                    match cond.matches(value, ctx, st) {
                         Err(err) => Rbe::Fail { error: err },
                         Ok(new_pending) => {
                             if card.max == Max::IntMax(0) {
@@ -233,18 +237,20 @@ where
                     }
                 }
             },
-            Rbe::And { ref exprs } => Self::deriv_and(exprs, symbol, value, ctx, n, open, controlled, pending),
+            Rbe::And { ref exprs } => {
+                Self::deriv_and(exprs, symbol, value, ctx, st, n, open, controlled, pending)
+            },
             Rbe::Or { ref exprs } => Self::mk_or_values(
                 exprs
                     .iter()
-                    .map(|rbe| rbe.deriv(symbol, value, ctx, n, open, controlled, pending)),
+                    .map(|rbe| rbe.deriv(symbol, value, ctx, st, n, open, controlled, pending)),
             ),
             Rbe::Plus { ref expr } => {
-                let d = expr.deriv(symbol, value, ctx, n, open, controlled, pending);
+                let d = expr.deriv(symbol, value, ctx, st, n, open, controlled, pending);
                 Self::mk_and(&d, &Rbe::Star { expr: expr.clone() })
             },
             Rbe::Repeat { ref expr, ref card } if card.is_0_0() => {
-                let d = expr.deriv(symbol, value, ctx, n, open, controlled, pending);
+                let d = expr.deriv(symbol, value, ctx, st, n, open, controlled, pending);
                 if d.nullable() {
                     Rbe::Fail {
                         error: RbeError::CardinalityZeroZeroDeriv { symbol: symbol.clone() },
@@ -254,41 +260,45 @@ where
                 }
             },
             Rbe::Repeat { ref expr, ref card } => {
-                let d = expr.deriv(symbol, value, ctx, n, open, controlled, pending);
+                let d = expr.deriv(symbol, value, ctx, st, n, open, controlled, pending);
                 let card = card.minus(n);
                 let rest = Self::mk_range(expr, &card);
                 Self::mk_and(&d, &rest)
             },
             Rbe::Star { ref expr } => {
-                let d = expr.deriv(symbol, value, ctx, n, open, controlled, pending);
+                let d = expr.deriv(symbol, value, ctx, st, n, open, controlled, pending);
                 Self::mk_and(&d, expr)
             },
         }
     }
 
     fn deriv_and(
-        values: &Vec<Rbe<K, V, R, Ctx>>,
+        values: &Vec<Rbe<K, V, R, Ctx, St>>,
         symbol: &K,
         value: &V,
         ctx: &Ctx,
+        st: &St,
         n: usize,
         open: bool,
         controlled: &HashSet<K>,
         pending: &mut Pending<V, R>,
-    ) -> Rbe<K, V, R, Ctx> {
-        let mut or_values: Vec<Rbe<K, V, R, Ctx>> = Vec::new();
+    ) -> Rbe<K, V, R, Ctx, St> {
+        let mut or_values: Vec<Rbe<K, V, R, Ctx, St>> = Vec::new();
         let mut failures = Failures::new();
 
-        for vs in deriv_n(cloned((*values).iter()).collect(), |expr: &Rbe<K, V, R, Ctx>| {
-            let d = expr.deriv(symbol, value, ctx, n, open, controlled, pending);
-            match d {
-                Rbe::Fail { error } => {
-                    failures.push(expr.clone(), error);
-                    None
-                },
-                _ => Some(d),
-            }
-        }) {
+        for vs in deriv_n(
+            cloned((*values).iter()).collect(),
+            |expr: &Rbe<K, V, R, Ctx, St>| {
+                let d = expr.deriv(symbol, value, ctx, st, n, open, controlled, pending);
+                match d {
+                    Rbe::Fail { error } => {
+                        failures.push(expr.clone(), error);
+                        None
+                    },
+                    _ => Some(d),
+                }
+            },
+        ) {
             or_values.push(Rbe::And { exprs: vs });
         }
         match or_values.len() {
@@ -305,7 +315,7 @@ where
         }
     }
 
-    fn mk_range(e: &Rbe<K, V, R, Ctx>, card: &Cardinality) -> Rbe<K, V, R, Ctx>
+    fn mk_range(e: &Rbe<K, V, R, Ctx, St>, card: &Cardinality) -> Rbe<K, V, R, Ctx, St>
     where
         K: Clone,
     {
@@ -330,7 +340,7 @@ where
         }
     }
 
-    fn mk_range_symbol(x: &K, cond: &MatchCond<K, V, R, Ctx>, card: &Cardinality) -> Rbe<K, V, R, Ctx>
+    fn mk_range_symbol(x: &K, cond: &MatchCond<K, V, R, Ctx, St>, card: &Cardinality) -> Rbe<K, V, R, Ctx, St>
     where
         K: Clone,
     {
@@ -350,7 +360,7 @@ where
         }
     }
 
-    fn mk_and(v1: &Rbe<K, V, R, Ctx>, v2: &Rbe<K, V, R, Ctx>) -> Rbe<K, V, R, Ctx>
+    fn mk_and(v1: &Rbe<K, V, R, Ctx, St>, v2: &Rbe<K, V, R, Ctx, St>) -> Rbe<K, V, R, Ctx, St>
     where
         K: Clone,
     {
@@ -365,9 +375,9 @@ where
         }
     }
 
-    fn mk_or_values<I>(values: I) -> Rbe<K, V, R, Ctx>
+    fn mk_or_values<I>(values: I) -> Rbe<K, V, R, Ctx, St>
     where
-        I: IntoIterator<Item = Rbe<K, V, R, Ctx>>,
+        I: IntoIterator<Item = Rbe<K, V, R, Ctx, St>>,
     {
         let init = Rbe::Fail {
             error: RbeError::MkOrValuesFail,
@@ -378,7 +388,7 @@ where
             .fold(init, |result, value| Self::mk_or(&result, &value))
     }
 
-    fn mk_or(v1: &Rbe<K, V, R, Ctx>, v2: &Rbe<K, V, R, Ctx>) -> Rbe<K, V, R, Ctx> {
+    fn mk_or(v1: &Rbe<K, V, R, Ctx, St>, v2: &Rbe<K, V, R, Ctx, St>) -> Rbe<K, V, R, Ctx, St> {
         match (v1, v2) {
             (Rbe::Fail { .. }, _) => (*v2).clone(),
             (_, Rbe::Fail { .. }) => (*v1).clone(),
@@ -402,12 +412,13 @@ where
     }
 }
 
-impl<K, V, R, Ctx> Debug for Rbe<K, V, R, Ctx>
+impl<K, V, R, Ctx, St> Debug for Rbe<K, V, R, Ctx, St>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    St: State,
 {
     fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
         match &self {
@@ -423,12 +434,13 @@ where
     }
 }
 
-impl<K, V, R, Ctx> Display for Rbe<K, V, R, Ctx>
+impl<K, V, R, Ctx, St> Display for Rbe<K, V, R, Ctx, St>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    St: State,
 {
     fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
         match &self {
@@ -454,11 +466,13 @@ mod tests {
 
     impl Context for char {}
 
+    impl State for char {}
+
     #[test]
     fn deriv_a_1_1_and_b_opt_with_a() {
         // a?|b? #= b/2
 
-        let rbe: Rbe<char, i32, i32, char> = Rbe::and(vec![
+        let rbe: Rbe<char, i32, i32, char, char> = Rbe::and(vec![
             Rbe::symbol('a', 1, Max::IntMax(1)),
             Rbe::symbol('b', 0, Max::IntMax(1)),
         ]);
@@ -468,27 +482,28 @@ mod tests {
             Rbe::symbol('b', 0, Max::IntMax(1)),
         ]);
         assert_eq!(
-            rbe.deriv(&'a', &23, &'a', 1, false, &HashSet::from(['a', 'b']), &mut pending),
+            rbe.deriv(&'a', &23, &'a', &'z', 1, false, &HashSet::from(['a', 'b']), &mut pending),
             expected
         );
     }
 
     #[test]
     fn deriv_symbol() {
-        let rbe: Rbe<char, i32, i32, char> = Rbe::symbol('x', 1, Max::IntMax(1));
+        let rbe: Rbe<char, i32, i32, char, char> = Rbe::symbol('x', 1, Max::IntMax(1));
         let mut pending = Pending::new();
-        let d = rbe.deriv(&'x', &2, &'a', 1, true, &HashSet::new(), &mut pending);
+        let d = rbe.deriv(&'x', &2, &'a', &'z', 1, true, &HashSet::new(), &mut pending);
         assert_eq!(d, Rbe::symbol('x', 0, Max::IntMax(0)));
     }
 
     #[test]
     fn deriv_symbol_b_2_3() {
-        let rbe: Rbe<String, String, String, char> = Rbe::symbol("b".to_string(), 2, Max::IntMax(3));
+        let rbe: Rbe<String, String, String, char, char> = Rbe::symbol("b".to_string(), 2, Max::IntMax(3));
         let mut pending = Pending::new();
         let d = rbe.deriv(
             &"b".to_string(),
             &"vb2".to_string(),
             &'a',
+            &'z',
             1,
             true,
             &HashSet::new(),
@@ -499,7 +514,7 @@ mod tests {
 
     #[test]
     fn symbols() {
-        let rbe: Rbe<char, i32, i32, char> = Rbe::and(vec![
+        let rbe: Rbe<char, i32, i32, char, char> = Rbe::and(vec![
             Rbe::symbol('x', 1, Max::IntMax(1)),
             Rbe::symbol('y', 1, Max::IntMax(1)),
         ]);
@@ -509,7 +524,7 @@ mod tests {
 
     #[test]
     fn symbols2() {
-        let rbe: Rbe<char, i32, i32, char> = Rbe::and(vec![
+        let rbe: Rbe<char, i32, i32, char, char> = Rbe::and(vec![
             Rbe::or(vec![
                 Rbe::symbol('x', 1, Max::IntMax(1)),
                 Rbe::symbol('y', 2, Max::Unbounded),

@@ -1,29 +1,31 @@
 use crate::{
-    Component, Context, Key, MatchCond, Pending, Rbe as Rbe1, RbeError, RbeTable, Ref, Value, Values, rbe::Rbe,
+    Component, Context, Key, MatchCond, Pending, Rbe as Rbe1, RbeError, RbeTable, Ref, State, Value, Values, rbe::Rbe,
     rbe_error,
 };
 
 #[derive(Debug, Clone)]
-pub struct EmptyIter<K, V, R, Ctx>
+pub struct EmptyIter<K, V, R, Ctx, St>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    St: State,
 {
     is_first: bool,
-    rbe: Rbe1<K, V, R, Ctx>,
-    values: Values<K, V, Ctx>,
+    rbe: Rbe1<K, V, R, Ctx, St>,
+    values: Values<K, V, Ctx, St>,
 }
 
-impl<K, V, R, Ctx> EmptyIter<K, V, R, Ctx>
+impl<K, V, R, Ctx, St> EmptyIter<K, V, R, Ctx, St>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    St: State,
 {
-    pub fn new(rbe: &Rbe<Component>, table: &RbeTable<K, V, R, Ctx>, values: &Values<K, V, Ctx>) -> Self {
+    pub fn new(rbe: &Rbe<Component>, table: &RbeTable<K, V, R, Ctx, St>, values: &Values<K, V, Ctx, St>) -> Self {
         let rbe1 = cnv_rbe(rbe, table);
         Self {
             is_first: true,
@@ -33,14 +35,15 @@ where
     }
 }
 
-impl<K, V, R, Ctx> Iterator for EmptyIter<K, V, R, Ctx>
+impl<K, V, R, Ctx, St> Iterator for EmptyIter<K, V, R, Ctx, St>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    St: State,
 {
-    type Item = Result<Pending<V, R>, rbe_error::RbeError<K, V, R, Ctx>>;
+    type Item = Result<Pending<V, R>, rbe_error::RbeError<K, V, R, Ctx, St>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.is_first {
@@ -59,12 +62,13 @@ where
     }
 }
 
-fn cnv_rbe<K, V, R, Ctx>(rbe: &Rbe<Component>, table: &RbeTable<K, V, R, Ctx>) -> Rbe1<K, V, R, Ctx>
+fn cnv_rbe<K, V, R, Ctx, St>(rbe: &Rbe<Component>, table: &RbeTable<K, V, R, Ctx, St>) -> Rbe1<K, V, R, Ctx, St>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    St: State,
 {
     match rbe {
         Rbe::Empty => Rbe1::Empty,
@@ -103,22 +107,24 @@ where
     }
 }
 
-fn cnv_cond<K, V, R, Ctx>(c: &Component, table: &RbeTable<K, V, R, Ctx>) -> MatchCond<K, V, R, Ctx>
+fn cnv_cond<K, V, R, Ctx, St>(c: &Component, table: &RbeTable<K, V, R, Ctx, St>) -> MatchCond<K, V, R, Ctx, St>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    St: State,
 {
     table.get_condition(c).unwrap().clone()
 }
 
-fn cnv_key<K, V, R, Ctx>(c: &Component, table: &RbeTable<K, V, R, Ctx>) -> K
+fn cnv_key<K, V, R, Ctx, St>(c: &Component, table: &RbeTable<K, V, R, Ctx, St>) -> K
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    St: State,
 {
     table.get_key(c).unwrap().clone()
 }
@@ -131,18 +137,20 @@ mod tests {
     impl Key for u8 {}
     impl Value for u16 {}
     impl Ref for u32 {}
+    impl State for char {}
 
     type K = u8;
     type V = u16;
     type R = u32;
     type Ctx = char;
+    type St = char;
 
-    fn make_table_with_symbol() -> (RbeTable<K, V, R, Ctx>, Component) {
+    fn make_table_with_symbol() -> (RbeTable<K, V, R, Ctx, St>, Component) {
         let mut table = RbeTable::new();
-        let cond: MatchCond<K, V, R, Ctx> = MatchCond::single(
+        let cond: MatchCond<K, V, R, Ctx, St> = MatchCond::single(
             SingleCond::new()
                 .with_name("any")
-                .with_cond(|_v, _c| Ok(Pending::new())),
+                .with_cond(|_v, _c, _st: &char| Ok(Pending::new())),
         );
         let c = table.add_component(1, &cond);
         (table, c)
@@ -150,7 +158,7 @@ mod tests {
 
     #[test]
     fn cnv_rbe_empty() {
-        let table: RbeTable<K, V, R, Ctx> = RbeTable::new();
+        let table: RbeTable<K, V, R, Ctx, St> = RbeTable::new();
         let rbe = Rbe::Empty;
         let result = cnv_rbe(&rbe, &table);
         assert_eq!(result, Rbe1::Empty);
@@ -242,7 +250,7 @@ mod tests {
 
     #[test]
     fn cnv_rbe_fail() {
-        let table: RbeTable<K, V, R, Ctx> = RbeTable::new();
+        let table: RbeTable<K, V, R, Ctx, St> = RbeTable::new();
         let rbe = Rbe::Fail {
             error: crate::deriv_error::DerivError::MkOrValuesFail,
         };

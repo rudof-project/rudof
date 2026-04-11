@@ -1,6 +1,6 @@
 use prefixmap::PrefixMap;
 use prefixmap::error::PrefixMapError;
-use rbe::RbeError;
+use rbe::{NoState, RbeError};
 use rudof_rdf::rdf_core::term::Object;
 use serde::Serialize;
 use serde::ser::SerializeMap;
@@ -91,7 +91,7 @@ pub enum ValidatorError {
     ClosedShapeWithRemainderPreds { remainder: Preds, declared: Preds },
 
     #[error(transparent)]
-    RbeError(#[from] RbeError<Pred, Node, ShapeLabelIdx, SemanticActionContext>),
+    RbeError(#[from] RbeError<Pred, Node, ShapeLabelIdx, SemanticActionContext, NoState>),
 
     #[error(transparent)]
     PrefixMapError(#[from] PrefixMapError),

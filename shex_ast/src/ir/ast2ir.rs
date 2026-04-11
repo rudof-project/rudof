@@ -22,7 +22,7 @@ use core::panic;
 use iri_s::IriS;
 use iri_s::error::IriSError;
 use prefixmap::{IriRef, PrefixMap};
-use rbe::{Cardinality, Pending, RbeError, SingleCond};
+use rbe::{Cardinality, NoState, Pending, RbeError, SingleCond};
 use rbe::{Component, MatchCond, Max, Min, RbeTable, rbe::Rbe};
 use rudof_rdf::rdf_core::term::{
     Object,
@@ -362,7 +362,7 @@ impl AST2IR {
         &self,
         triple_expr: &ast::TripleExpr,
         compiled_schema: &mut SchemaIR,
-        current_table: &mut RbeTable<Pred, Node, ShapeLabelIdx, SemanticActionContext>,
+        current_table: &mut RbeTable<Pred, Node, ShapeLabelIdx, SemanticActionContext, NoState>,
         source_iri: &IriS,
     ) -> CResult<Rbe<Component>> {
         match triple_expr {
@@ -738,7 +738,7 @@ fn mk_cond_sem_act(
     code: Option<String>,
 ) -> Cond {
     MatchCond::single(SingleCond::new().with_name(name.as_str()).with_cond(
-        move |_value: &Node, ctx: &SemanticActionContext| {
+        move |_value: &Node, ctx: &SemanticActionContext, _st: &NoState| {
             semantic_action_code
                 .run_action(code.as_deref(), ctx)
                 .map(|()| Pending::new())
@@ -755,7 +755,7 @@ fn mk_cond_datatype(datatype: &IriS, prefixmap: &PrefixMap) -> Cond {
         SingleCond::new()
             .with_name(prefixmap.qualify(&dt).to_string().as_str())
             .with_cond(
-                move |value: &Node, _ctx: &SemanticActionContext| match check_node_datatype(value, &dt) {
+                move |value: &Node, _ctx: &SemanticActionContext, _st: &NoState| match check_node_datatype(value, &dt) {
                     Ok(_) => Ok(Pending::new()),
                     Err(err) => Err(RbeError::MsgError {
                         msg: format!("Datatype error: {err}"),
@@ -770,7 +770,7 @@ fn mk_cond_length(len: usize) -> Cond {
         SingleCond::new()
             .with_name(format!("length({len})").as_str())
             .with_cond(
-                move |value: &Node, _ctx: &SemanticActionContext| match check_node_length(value, len) {
+                move |value: &Node, _ctx: &SemanticActionContext, _st: &NoState| match check_node_length(value, len) {
                     Ok(_) => Ok(Pending::new()),
                     Err(err) => Err(RbeError::MsgError {
                         msg: format!("Length error: {err}"),
@@ -785,7 +785,7 @@ fn mk_cond_min_inclusive(min: NumericLiteral) -> Cond {
     MatchCond::single(
         SingleCond::new()
             .with_name(format!("minInclusive({min_str})").as_str())
-            .with_cond(move |value: &Node, _ctx: &SemanticActionContext| {
+            .with_cond(move |value: &Node, _ctx: &SemanticActionContext, _st: &NoState| {
                 match check_node_min_inclusive(value, min.clone()) {
                     Ok(_) => Ok(Pending::new()),
                     Err(err) => Err(RbeError::MsgError {
@@ -801,7 +801,7 @@ fn mk_cond_min_exclusive(min: NumericLiteral) -> Cond {
     MatchCond::single(
         SingleCond::new()
             .with_name(format!("minExclusive({min_str})").as_str())
-            .with_cond(move |value: &Node, _ctx: &SemanticActionContext| {
+            .with_cond(move |value: &Node, _ctx: &SemanticActionContext, _st: &NoState| {
                 match check_node_min_exclusive(value, min.clone()) {
                     Ok(_) => Ok(Pending::new()),
                     Err(err) => Err(RbeError::MsgError {
@@ -818,11 +818,13 @@ fn mk_cond_total_digits(total: usize) -> Cond {
         SingleCond::new()
             .with_name(format!("totalDigits({total_str})").as_str())
             .with_cond(
-                move |value: &Node, _ctx: &SemanticActionContext| match check_node_total_digits(value, total) {
-                    Ok(_) => Ok(Pending::new()),
-                    Err(err) => Err(RbeError::MsgError {
-                        msg: format!("MaxExclusive: {err}"),
-                    }),
+                move |value: &Node, _ctx: &SemanticActionContext, _st: &NoState| {
+                    match check_node_total_digits(value, total) {
+                        Ok(_) => Ok(Pending::new()),
+                        Err(err) => Err(RbeError::MsgError {
+                            msg: format!("MaxExclusive: {err}"),
+                        }),
+                    }
                 },
             ),
     )
@@ -833,7 +835,7 @@ fn mk_cond_fraction_digits(total: usize) -> Cond {
     MatchCond::single(
         SingleCond::new()
             .with_name(format!("fractionDigits({total_str})").as_str())
-            .with_cond(move |value: &Node, _ctx: &SemanticActionContext| {
+            .with_cond(move |value: &Node, _ctx: &SemanticActionContext, _st: &NoState| {
                 match check_node_fraction_digits(value, total) {
                     Ok(_) => Ok(Pending::new()),
                     Err(err) => Err(RbeError::MsgError {
@@ -849,7 +851,7 @@ fn mk_cond_max_exclusive(max: NumericLiteral) -> Cond {
     MatchCond::single(
         SingleCond::new()
             .with_name(format!("maxExclusive({max_str})").as_str())
-            .with_cond(move |value: &Node, _ctx: &SemanticActionContext| {
+            .with_cond(move |value: &Node, _ctx: &SemanticActionContext, _st: &NoState| {
                 match check_node_max_exclusive(value, max.clone()) {
                     Ok(_) => Ok(Pending::new()),
                     Err(err) => Err(RbeError::MsgError {
@@ -865,7 +867,7 @@ fn mk_cond_max_inclusive(max: NumericLiteral) -> Cond {
     MatchCond::single(
         SingleCond::new()
             .with_name(format!("maxInclusive({max_str})").as_str())
-            .with_cond(move |value: &Node, _ctx: &SemanticActionContext| {
+            .with_cond(move |value: &Node, _ctx: &SemanticActionContext, _st: &NoState| {
                 match check_node_max_inclusive(value, max.clone()) {
                     Ok(_) => Ok(Pending::new()),
                     Err(err) => Err(RbeError::MsgError {
@@ -881,11 +883,13 @@ fn mk_cond_min_length(len: usize) -> Cond {
         SingleCond::new()
             .with_name(format!("minLength({len})").as_str())
             .with_cond(
-                move |value: &Node, _ctx: &SemanticActionContext| match check_node_min_length(value, len) {
-                    Ok(_) => Ok(Pending::new()),
-                    Err(err) => Err(RbeError::MsgError {
-                        msg: format!("MinLength error: {err}"),
-                    }),
+                move |value: &Node, _ctx: &SemanticActionContext, _st: &NoState| {
+                    match check_node_min_length(value, len) {
+                        Ok(_) => Ok(Pending::new()),
+                        Err(err) => Err(RbeError::MsgError {
+                            msg: format!("MinLength error: {err}"),
+                        }),
+                    }
                 },
             ),
     )
@@ -894,7 +898,7 @@ fn mk_cond_min_length(len: usize) -> Cond {
 fn mk_cond_max_length(len: usize) -> Cond {
     MatchCond::simple(
         format!("maxLength({len})").as_str(),
-        move |value: &Node, _ctx: &SemanticActionContext| match check_node_max_length(value, len) {
+        move |value: &Node, _ctx: &SemanticActionContext, _st: &NoState| match check_node_max_length(value, len) {
             Ok(_) => Ok(Pending::new()),
             Err(err) => Err(RbeError::MsgError {
                 msg: format!("MaxLength error: {err}"),
@@ -907,7 +911,7 @@ fn mk_cond_nodekind(nodekind: ast::NodeKind) -> Cond {
     MatchCond::single(
         SingleCond::new()
             .with_name(format!("nodekind({nodekind})").as_str())
-            .with_cond(move |value: &Node, _ctx: &SemanticActionContext| {
+            .with_cond(move |value: &Node, _ctx: &SemanticActionContext, _st: &NoState| {
                 match check_node_node_kind(value, &nodekind) {
                     Ok(_) => Ok(Pending::empty()),
                     Err(err) => Err(RbeError::MsgError {
@@ -923,11 +927,13 @@ fn mk_cond_pattern(regex: &str, flags: Option<&str>) -> Cond {
     let regex = regex.to_string();
     let flags = flags.map(|f| f.to_string());
     MatchCond::single(SingleCond::new().with_name(regex_str.as_str()).with_cond(
-        move |value: &Node, _ctx: &SemanticActionContext| match check_pattern(value, &regex, flags.as_deref()) {
-            Ok(_) => Ok(Pending::new()),
-            Err(err) => Err(RbeError::MsgError {
-                msg: format!("Pattern error: {err}"),
-            }),
+        move |value: &Node, _ctx: &SemanticActionContext, _st: &NoState| {
+            match check_pattern(value, &regex, flags.as_deref()) {
+                Ok(_) => Ok(Pending::new()),
+                Err(err) => Err(RbeError::MsgError {
+                    msg: format!("Pattern error: {err}"),
+                }),
+            }
         },
     ))
 }
@@ -947,7 +953,7 @@ fn mk_cond_value_set(value_set: ValueSet, prefixmap: &PrefixMap) -> Cond {
     MatchCond::single(
         SingleCond::new()
             .with_name(value_set.show_qualified(prefixmap).as_str())
-            .with_cond(move |node: &Node, _ctx: &SemanticActionContext| {
+            .with_cond(move |node: &Node, _ctx: &SemanticActionContext, _st: &NoState| {
                 if value_set.check_value(node.as_object()) {
                     Ok(Pending::empty())
                 } else {

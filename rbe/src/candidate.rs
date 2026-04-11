@@ -1,27 +1,29 @@
 use std::{fmt::Display, ops::Deref};
 
-use crate::{Component, Context, Key, MatchCond, Ref, Value};
+use crate::{Component, Context, Key, MatchCond, Ref, State, Value};
 
-type CandidateItem<K, V, R, Ctx> = (K, V, Component, MatchCond<K, V, R, Ctx>);
+type CandidateItem<K, V, R, Ctx, St> = (K, V, Component, MatchCond<K, V, R, Ctx, St>);
 
 // TODO: We are not using the struct yet
 #[derive(Debug, Clone)]
-pub struct Candidate<K, V, R, Ctx>
+pub struct Candidate<K, V, R, Ctx, St>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    St: State,
 {
-    values: Vec<CandidateItem<K, V, R, Ctx>>,
+    values: Vec<CandidateItem<K, V, R, Ctx, St>>,
 }
 
-impl<K, V, R, Ctx> Display for Candidate<K, V, R, Ctx>
+impl<K, V, R, Ctx, St> Display for Candidate<K, V, R, Ctx, St>
 where
     K: Key + Display,
     V: Value + Display,
     R: Ref + Display,
     Ctx: Context + Display,
+    St: State + Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str("Candidate")?;
@@ -46,14 +48,15 @@ where
     }
 }*/
 
-impl<K, V, R, Ctx> Deref for Candidate<K, V, R, Ctx>
+impl<K, V, R, Ctx, St> Deref for Candidate<K, V, R, Ctx, St>
 where
     K: Key + Display,
     V: Value + Display,
     R: Ref + Display,
     Ctx: Context + Display,
+    St: State + Display,
 {
-    type Target = Vec<(K, V, Component, MatchCond<K, V, R, Ctx>)>;
+    type Target = Vec<(K, V, Component, MatchCond<K, V, R, Ctx, St>)>;
 
     fn deref(&self) -> &Self::Target {
         &self.values

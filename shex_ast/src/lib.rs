@@ -21,7 +21,7 @@ pub use ir::schema_ir_error::*;
 pub use ir::shape_label_idx::*;
 pub use node::*;
 pub use pred::*;
-use rbe::MatchCond;
+use rbe::{MatchCond, NoState};
 pub use resolve_method::*;
 pub use shex_format::*;
 pub use shexr::*;
@@ -29,8 +29,8 @@ pub use shexr::*;
 /// The result type used in this crate, which is a `Result` that can contain any error that implements the `SchemaIRError` trait.
 type CResult<T> = Result<T, Box<SchemaIRError>>;
 
-/// The type of conditions used in this crate, which is a `MatchCond` that takes `Pred`, `Node`, `ShapeLabelIdx`, and `SemanticActionContext` as type parameters.
-type Cond = MatchCond<Pred, Node, ShapeLabelIdx, SemanticActionContext>;
+/// The type of conditions used in this crate, which is a `MatchCond` that takes `Pred`, `Node`, `ShapeLabelIdx`, `SemanticActionContext`, and `NoState` as type parameters.
+type Cond = MatchCond<Pred, Node, ShapeLabelIdx, SemanticActionContext, NoState>;
 
-/// The type of expressions used in this crate, which is a `RbeTable` that takes `Pred`, `Node`, `ShapeLabelIdx`, and `SemanticActionContext` as type parameters.
-pub type Expr = rbe::RbeTable<Pred, Node, ShapeLabelIdx, SemanticActionContext>;
+/// The type of expressions used in this crate, which is a `RbeTable` that takes `Pred`, `Node`, `ShapeLabelIdx`, `SemanticActionContext`, and `NoState` as type parameters.
+pub type Expr = rbe::RbeTable<Pred, Node, ShapeLabelIdx, SemanticActionContext, NoState>;

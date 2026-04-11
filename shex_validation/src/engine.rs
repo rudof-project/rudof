@@ -13,6 +13,7 @@ use rudof_rdf::rdf_core::{
     query::QueryRDF,
     term::{BlankNode, Iri as _, Object},
 };
+use rbe::NoState;
 use shex_ast::Expr;
 use shex_ast::Node;
 use shex_ast::Pred;
@@ -514,7 +515,7 @@ impl Engine {
             ShapeExpr::NodeConstraint(nc) => {
                 // TODO: In the case of a node constraint...is the context only the subject?
                 let ctx = SemanticActionContext::subject(&node.to_string());
-                match nc.cond().matches(node, &ctx) {
+                match nc.cond().matches(node, &ctx, &NoState::default()) {
                     Ok(_pending) => {
                         // We ignore pending nodes here, as node constraints are not expected to generate pending nodes
                         pass(Reason::NodeConstraint {
