@@ -75,6 +75,7 @@ impl ShapeExpr {
         }
     }
 
+    /// Get the references in this shape expression.
     pub fn references(&self, schema: &SchemaIR) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
         match self {
             ShapeExpr::ShapeOr { exprs, .. } => exprs.iter().fold(HashMap::new(), |mut acc, expr| {
@@ -102,7 +103,7 @@ impl ShapeExpr {
                 .map(|info| info.expr().references(schema))
                 .unwrap_or_default(),
             ShapeExpr::NodeConstraint(_nc) => HashMap::new(),
-            ShapeExpr::Shape(s) => s.references().clone(),
+            ShapeExpr::Shape(s) => s.references(schema).clone(),
             ShapeExpr::External {} => HashMap::new(),
             ShapeExpr::Ref { idx } => {
                 let mut map = HashMap::new();

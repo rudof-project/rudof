@@ -3,7 +3,7 @@ use super::{
     dependency_graph::{DependencyGraph, PosNeg},
     sem_act::SemAct,
 };
-use crate::{Expr, Pred, ShapeLabelIdx};
+use crate::{Expr, Pred, ShapeLabelIdx, ir::schema_ir::SchemaIR};
 use itertools::Itertools;
 use std::{collections::HashMap, fmt::Display};
 
@@ -54,8 +54,17 @@ impl Shape {
         &self.extra
     }
 
-    pub fn references(&self) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
-        self.get_value_expr_references()
+    /// Get the references in this shape expression.
+    pub fn references(&self, schema: &SchemaIR) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
+        let mut result = self.get_value_expr_references();
+        for e in &self.extends {
+            let info = schema.find_shape_idx(e).unwrap();
+            let refs = info.expr().references(schema);
+            for (p, v) in refs {
+                result.entry(p).or_default().extend(v);
+            }
+        }
+        result
     }
 
     /// Regular Bag expression that corresponds to the triple expression of the shape
@@ -124,14 +133,14 @@ impl Display for Shape {
         write!(f, "Shape {extends}{closed}{extra} ")?;
         write!(f, "Preds: {preds}")?;
         write!(f, ", TripleExpr: {}", self.expr)?;
-        write!(
+        /*write!(
             f,
             ", References: [{}]",
             self.references()
                 .iter()
                 .map(|(p, ls)| format!("{}->{}", p, ls.iter().join(" ")))
                 .join(", ")
-        )?;
+        )?;*/
         Ok(())
     }
 }
