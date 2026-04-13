@@ -66,6 +66,30 @@ class ShaclValidationMode(IntEnum):
     Native = 0
     Sparql = 1
 
+class ShaclValidationSortMode(IntEnum):
+    """Sort order for SHACL validation result rows."""
+    Severity = 0
+    Node = 1
+    Component = 2
+    Value = 3
+    Path = 4
+    SourceShape = 5
+    Details = 6
+
+class ResultShaclValidationFormat(IntEnum):
+    """Output format for SHACL validation results."""
+    Details = 0
+    Turtle = 1
+    NTriples = 2
+    RdfXml = 3
+    TriG = 4
+    N3 = 5
+    NQuads = 6
+    Minimal = 7
+    Compact = 8
+    Json = 9
+    Csv = 10
+
 class ShapeMapFormat(IntEnum):
     """ShapeMap serialization format."""
     Compact = 0
@@ -75,6 +99,46 @@ class DCTapFormat(IntEnum):
     """DCTAP input format."""
     Csv = 0
     Xlsx = 1
+
+class ResultDCTapFormat(IntEnum):
+    """Output format for DCTAP serialization."""
+    Internal = 0
+    Json = 1
+
+class ConversionMode(IntEnum):
+    """Input schema language used during conversion."""
+    Shacl = 0
+    ShEx = 1
+    Dctap = 2
+
+class ResultConversionMode(IntEnum):
+    """Target representation produced by schema conversion."""
+    Sparql = 0
+    ShEx = 1
+    Uml = 2
+    Html = 3
+    Shacl = 4
+
+class ConversionFormat(IntEnum):
+    """Input serialization format used during conversion."""
+    Csv = 0
+    ShExC = 1
+    ShExJ = 2
+    Turtle = 3
+    Xlsx = 4
+
+class ResultConversionFormat(IntEnum):
+    """Output serialization format produced by conversion."""
+    Default = 0
+    Internal = 1
+    Json = 2
+    ShExC = 3
+    ShExJ = 4
+    Turtle = 5
+    PlantUML = 6
+    Html = 7
+    Svg = 8
+    Png = 9
 
 class ServiceDescriptionFormat(IntEnum):
     """Service Description serialization format."""
@@ -463,6 +527,25 @@ class Rudof:
         """
         ...
 
+    def serialize_shacl_validation_results(
+        self,
+        format: Optional[ResultShaclValidationFormat] = None,
+        sort_mode: Optional[ShaclValidationSortMode] = None,
+    ) -> str:
+        """Serialize the results of the last SHACL validation to a string.
+
+        Args:
+            format: Output format. Default: ``ResultShaclValidationFormat.Details``.
+            sort_mode: Sort order. Default: ``ShaclValidationSortMode.Severity``.
+
+        Returns:
+            Serialized SHACL validation results.
+
+        Raises:
+            RudofError: If no validation results are available or serialization fails.
+        """
+        ...
+
     # -- DCTAP ---------------------------------------------------------------
 
     def read_dctap(self, input: str, format: Optional[DCTapFormat] = None) -> None:
@@ -474,6 +557,20 @@ class Rudof:
 
         Raises:
             RudofError: If the DCTAP data is malformed.
+        """
+        ...
+
+    def serialize_dctap(self, format: Optional[ResultDCTapFormat] = None) -> str:
+        """Serialize the loaded DCTAP profile to a string.
+
+        Args:
+            format: Output format. Default: ``ResultDCTapFormat.Internal``.
+
+        Returns:
+            Serialized DCTAP profile.
+
+        Raises:
+            RudofError: If no DCTAP profile is loaded or serialization fails.
         """
         ...
 
@@ -564,6 +661,41 @@ class Rudof:
         ...
 
     # -- Schema comparison ---------------------------------------------------
+
+    def convert_schemas(
+        self,
+        schema: str,
+        base: Optional[str],
+        reader_mode: Optional[ReaderMode],
+        input_mode: ConversionMode,
+        output_mode: ResultConversionMode,
+        input_format: ConversionFormat,
+        output_format: ResultConversionFormat,
+        shape: Optional[str],
+        templates_folder: Optional[str],
+        output_folder: Optional[str],
+    ) -> str:
+        """Convert a schema to a target representation/format.
+
+        Args:
+            schema: Input schema (inline string, file path, or URL).
+            base: Base IRI used to resolve relative IRIs.
+            reader_mode: Error-handling strategy while reading input.
+            input_mode: Input schema language.
+            output_mode: Target representation.
+            input_format: Input schema format.
+            output_format: Result format.
+            shape: Optional shape label to focus conversion.
+            templates_folder: Optional templates folder path (for HTML output).
+            output_folder: Optional output folder path.
+
+        Returns:
+            Conversion output as string.
+
+        Raises:
+            RudofError: If parsing or conversion fails.
+        """
+        ...
 
     def compare_schemas(
         self,
