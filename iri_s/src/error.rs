@@ -56,4 +56,7 @@ pub enum IriSError {
     /// Error reading from a file obtained from a [`url::Url`]
     #[error("Error reading from file {path} obtained from url {url}. Error: {error}")]
     IOErrorFile { path: String, url: String, error: String },
+
+    #[error("Error parsing Turtle string `{str}` as IRI: {error}")]
+    TurtleParseError { str: String, error: String },
 }

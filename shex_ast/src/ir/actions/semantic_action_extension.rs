@@ -7,6 +7,9 @@ use iri_s::IriS;
 pub trait SemanticActionExtension {
     fn action_iri(&self) -> IriS;
 
-    /// Run the semantic action body, which has been passed as `parameter` using the context provided in `context`.
+    /// Run the semantic action body, which has been passed as `parameter` using the context provided
+    /// in `context`.
     fn run_action(&self, parameter: Option<&str>, context: &SemanticActionContext) -> Result<(), SemanticActionError>;
+
+    fn as_any(&self) -> &dyn std::any::Any;
 }

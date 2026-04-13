@@ -8,7 +8,6 @@ use indexmap::IndexSet;
 use iri_s::iri;
 use itertools::Itertools;
 use prefixmap::PrefixMap;
-use rbe::NoState;
 use rudof_rdf::rdf_core::{
     NeighsRDF,
     query::QueryRDF,
@@ -514,8 +513,8 @@ impl Engine {
             },
             ShapeExpr::NodeConstraint(nc) => {
                 // TODO: In the case of a node constraint...is the context only the subject?
-                let ctx = SemanticActionContext::subject(&node.to_string());
-                match nc.cond().matches(node, &ctx, &mut NoState) {
+                let ctx = SemanticActionContext::subject(&node);
+                match nc.cond().matches(node, &ctx) {
                     Ok(_pending) => {
                         // We ignore pending nodes here, as node constraints are not expected to generate pending nodes
                         pass(Reason::NodeConstraint {
@@ -581,13 +580,7 @@ impl Engine {
         let (values, reminder) = self.neighs(node, shape.preds(), rdf)?;
         let values_ctx = values
             .iter()
-            .map(|(p, v)| {
-                (
-                    p.clone(),
-                    v.clone(),
-                    SemanticActionContext::triple(node.to_string(), p.to_string(), v.to_string()),
-                )
-            })
+            .map(|(p, v)| (p.clone(), v.clone(), SemanticActionContext::triple(node, p, v)))
             .collect::<Vec<_>>();
         if shape.is_closed() && !reminder.is_empty() {
             return fail(ValidatorError::ClosedShapeWithRemainderPreds {
@@ -641,13 +634,7 @@ impl Engine {
         );
         let values_ctx = values
             .iter()
-            .map(|(p, v)| {
-                (
-                    p.clone(),
-                    v.clone(),
-                    SemanticActionContext::triple(node.to_string(), p.to_string(), v.to_string()),
-                )
-            })
+            .map(|(p, v)| (p.clone(), v.clone(), SemanticActionContext::triple(node, p, v)))
             .collect::<Vec<_>>();
 
         let parts_iter = crate::partitions_iter(&values_ctx, &triple_exprs);

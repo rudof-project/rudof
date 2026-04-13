@@ -1,29 +1,27 @@
 use std::{fmt::Display, ops::Deref};
 
-use crate::{Component, Context, Key, MatchCond, Ref, State, Value};
+use crate::{Component, Context, Key, MatchCond, Ref, Value};
 
-type CandidateItem<K, V, R, Ctx, St> = (K, V, Component, MatchCond<K, V, R, Ctx, St>);
+type CandidateItem<K, V, R, Ctx> = (K, V, Component, MatchCond<K, V, R, Ctx>);
 
 // TODO: We are not using the struct yet
 #[derive(Debug, Clone)]
-pub struct Candidate<K, V, R, Ctx, St>
+pub struct Candidate<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
-    St: State,
 {
-    values: Vec<CandidateItem<K, V, R, Ctx, St>>,
+    values: Vec<CandidateItem<K, V, R, Ctx>>,
 }
 
-impl<K, V, R, Ctx, St> Display for Candidate<K, V, R, Ctx, St>
+impl<K, V, R, Ctx> Display for Candidate<K, V, R, Ctx>
 where
     K: Key + Display,
     V: Value + Display,
     R: Ref + Display,
     Ctx: Context + Display,
-    St: State + Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str("Candidate")?;
@@ -34,29 +32,14 @@ where
     }
 }
 
-/*impl <K,V,R> IntoIterator for Candidate<K,V,R>
-where
-  K: Key + Display,
-  V: Value + Display,
-  R: Ref + Display, {
-    type Item = (K, V, Component, MatchCond<K, V, R>);
-
-    type IntoIter = ;
-
-    fn into_iter(self) -> Self::IntoIter {
-        todo!()
-    }
-}*/
-
-impl<K, V, R, Ctx, St> Deref for Candidate<K, V, R, Ctx, St>
+impl<K, V, R, Ctx> Deref for Candidate<K, V, R, Ctx>
 where
     K: Key + Display,
     V: Value + Display,
     R: Ref + Display,
     Ctx: Context + Display,
-    St: State + Display,
 {
-    type Target = Vec<(K, V, Component, MatchCond<K, V, R, Ctx, St>)>;
+    type Target = Vec<(K, V, Component, MatchCond<K, V, R, Ctx>)>;
 
     fn deref(&self) -> &Self::Target {
         &self.values

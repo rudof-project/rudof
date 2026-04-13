@@ -2,70 +2,72 @@ use rbe::Context;
 use serde::Serialize;
 use std::fmt::Display;
 
+use crate::{Node, Pred};
+
 /// Context passed to semantic actions when they are executed.
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Default, Serialize)]
 pub struct SemanticActionContext {
-    subject: Option<String>,
-    predicate: Option<String>,
-    object: Option<String>,
+    subject: Option<Node>,
+    predicate: Option<Pred>,
+    object: Option<Node>,
 }
 
 impl SemanticActionContext {
-    pub fn s(&self) -> Option<String> {
+    pub fn s(&self) -> Option<Node> {
         self.subject.clone()
     }
 
-    pub fn p(&self) -> Option<String> {
+    pub fn p(&self) -> Option<Pred> {
         self.predicate.clone()
     }
 
-    pub fn o(&self) -> Option<String> {
+    pub fn o(&self) -> Option<Node> {
         self.object.clone()
     }
 
-    pub fn triple(subject: String, predicate: String, object: String) -> Self {
+    pub fn triple(subject: &Node, predicate: &Pred, object: &Node) -> Self {
         SemanticActionContext {
-            subject: Some(subject),
-            predicate: Some(predicate),
-            object: Some(object),
+            subject: Some(subject.clone()),
+            predicate: Some(predicate.clone()),
+            object: Some(object.clone()),
         }
     }
 
-    pub fn subject(subject: &str) -> Self {
+    pub fn subject(subject: &Node) -> Self {
         SemanticActionContext {
-            subject: Some(subject.to_string()),
+            subject: Some(subject.clone()),
             predicate: None,
             object: None,
         }
     }
 
-    pub fn object(object: &str) -> Self {
+    pub fn object(object: &Node) -> Self {
         SemanticActionContext {
             subject: None,
             predicate: None,
-            object: Some(object.to_string()),
+            object: Some(object.clone()),
         }
     }
 
-    pub fn predicate(predicate: &str) -> Self {
+    pub fn predicate(predicate: &Pred) -> Self {
         SemanticActionContext {
             subject: None,
-            predicate: Some(predicate.to_string()),
+            predicate: Some(predicate.clone()),
             object: None,
         }
     }
 
-    pub fn with_subject(mut self, subject: String) -> Self {
+    pub fn with_subject(mut self, subject: Node) -> Self {
         self.subject = Some(subject);
         self
     }
 
-    pub fn with_predicate(mut self, predicate: String) -> Self {
+    pub fn with_predicate(mut self, predicate: Pred) -> Self {
         self.predicate = Some(predicate);
         self
     }
 
-    pub fn with_object(mut self, object: String) -> Self {
+    pub fn with_object(mut self, object: Node) -> Self {
         self.object = Some(object);
         self
     }

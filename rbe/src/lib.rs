@@ -68,7 +68,7 @@ pub trait Ref: Eq + Hash + Debug + Default + Display + Clone {}
 pub trait Context: Eq + Hash + Debug + Default + Display + Clone {}
 
 /// The `State` trait represents the type of states that can be used in the conditions. It must implement `Eq`, `Hash`, `Debug`, `Default`, `Display`, and `Clone`.
-pub trait State: Eq + Hash + Debug + Default + Display + Clone {}
+pub trait State: Eq + Debug + Default + Display + Clone {}
 
 /// A no-op state type for when no state is needed.
 #[derive(Clone, Debug, Default, Deserialize, Eq, Hash, PartialEq, Serialize)]

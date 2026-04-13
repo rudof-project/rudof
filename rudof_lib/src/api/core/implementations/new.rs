@@ -21,5 +21,6 @@ pub fn new(config: RudofConfig) -> Rudof {
         rdf_config: None,
         shex_validator: None,
         typemap: None,
+        map_state: None,
     }
 }

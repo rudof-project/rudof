@@ -116,6 +116,9 @@ pub struct ShexValidateArgs {
     )]
     pub result_format: ResultShExValidationFormatCli,
 
+    #[arg(long = "map-state", value_name = "FILE", help = "MapState file name")]
+    pub map_state: Option<String>,
+
     #[command(flatten)]
     pub common: CommonArgsAll,
 }

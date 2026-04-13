@@ -48,9 +48,9 @@ use rudof_rdf::rdf_core::query::SparqlQuery;
 use shacl_ast::ast::ShaclSchema;
 use shacl_ir::compiled::schema_ir::SchemaIR as ShaclSchemaIR;
 use shacl_validation::validation_report::report::ValidationReport;
-use shex_ast::Schema as ShExSchema;
 use shex_ast::ir::schema_ir::SchemaIR as ShExSchemaIR;
 use shex_ast::shapemap::{QueryShapeMap, ResultShapeMap};
+use shex_ast::{Schema as ShExSchema, ir::map_action_extension::MapState};
 use shex_validation::Validator as ShExValidator;
 use sparql_service::RdfData;
 use sparql_service::ServiceDescription;
@@ -122,6 +122,9 @@ pub struct Rudof {
 
     /// Current rdf_config model
     pub(crate) rdf_config: Option<RdfConfigModel>,
+
+    /// Current map state for ShEx validation used by Map Semantic Actions and materialize option
+    pub(crate) map_state: Option<MapState>,
 }
 
 impl Rudof {

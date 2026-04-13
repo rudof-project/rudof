@@ -3,7 +3,6 @@ use crate::Context;
 use crate::Key;
 use crate::Keys;
 use crate::Ref;
-use crate::State;
 use crate::Value;
 use crate::Values;
 use crate::failures::Failures;
@@ -13,13 +12,12 @@ use thiserror::Error;
 
 /// Represents a regular bag expression error.
 #[derive(Clone, Debug, Error, Eq, PartialEq, Serialize, Deserialize)]
-pub enum RbeError<K, V, R, Ctx, St>
+pub enum RbeError<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
-    St: State,
 {
     #[error("Symbol {x} doesn't match with empty. Open: {open}")]
     UnexpectedEmpty { x: K, open: bool },
@@ -39,14 +37,14 @@ where
 
     #[error("Min > Max in cardinality {card} for {expr}")]
     RangeLowerBoundBiggerMaxExpr {
-        expr: Box<Rbe<K, V, R, Ctx, St>>,
+        expr: Box<Rbe<K, V, R, Ctx>>,
         card: Cardinality,
     },
 
     #[error("Derived expr: {non_nullable_rbe} is not nullable\nExpr {expr}")]
     NonNullableMatch {
-        non_nullable_rbe: Box<Rbe<K, V, R, Ctx, St>>,
-        expr: Box<Rbe<K, V, R, Ctx, St>>,
+        non_nullable_rbe: Box<Rbe<K, V, R, Ctx>>,
+        expr: Box<Rbe<K, V, R, Ctx>>,
     },
 
     #[error(
@@ -74,8 +72,8 @@ where
 
     #[error("Or values failed {e}\n {failures}")]
     OrValuesFail {
-        e: Box<Rbe<K, V, R, Ctx, St>>,
-        failures: Failures<K, V, R, Ctx, St>,
+        e: Box<Rbe<K, V, R, Ctx>>,
+        failures: Failures<K, V, R, Ctx>,
     },
 
     #[error("All values in or branch failed")]
@@ -84,9 +82,9 @@ where
     #[error("Error matching iterator: {error_msg}\nExpr: {expr}\nCurrent:{current}\nkey: {key}\nopen: {open}")]
     DerivIterError {
         error_msg: String,
-        processed: Vec<(K, V, Ctx, St)>,
-        expr: Box<Rbe<K, V, R, Ctx, St>>,
-        current: Box<Rbe<K, V, R, Ctx, St>>,
+        processed: Vec<(K, V, Ctx)>,
+        expr: Box<Rbe<K, V, R, Ctx>>,
+        current: Box<Rbe<K, V, R, Ctx>>,
         key: K,
         open: bool,
     },
@@ -96,8 +94,8 @@ where
 
     #[error("Empty candidates for regular expression: {rbe} and values: {values}")]
     EmptyCandidates {
-        rbe: Box<Rbe<K, V, R, Ctx, St>>,
-        values: Values<K, V, Ctx, St>,
+        rbe: Box<Rbe<K, V, R, Ctx>>,
+        values: Values<K, V, Ctx>,
     },
 
     #[error("RbeTable: Key {key} has no component associated. Available keys: {available_keys}")]

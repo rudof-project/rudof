@@ -5,9 +5,19 @@ use crate::{
     utils::get_base_iri,
 };
 use iri_s::{IriS, MimeType};
-use shex_ast::{ResolveMethod, Schema as ShExSchema, compact::ShExParser, ir::schema_ir::SchemaIR};
+use shex_ast::{
+    ResolveMethod, Schema as ShExSchema,
+    compact::ShExParser,
+    ir::{
+        map_action_extension::MapActionExtension,
+        schema_ir::SchemaIR,
+        semantic_actions_registry::SemanticActionsRegistry,
+        test_action_extension::TestActionExtension,
+    },
+};
 use shex_validation::Validator as ShExValidator;
 use std::{env, io};
+use tracing::trace;
 #[cfg(not(target_family = "wasm"))]
 use url::Url;
 
@@ -120,7 +130,16 @@ fn load_shex_schema_shexj<R: io::Read>(
 }
 
 fn compile_shex_schema(rudof: &mut Rudof, base: IriS, schema: ShExSchema, reader_mode: &DataReaderMode) -> Result<()> {
-    let mut schema_ir = SchemaIR::new();
+    // Build the registry with all extensions pre-registered so that the Arc<Mutex<MapState>>
+    // inside MapActionExtension is shared with every closure compiled from the schema.
+    let map_state = rudof.map_state.clone().unwrap_or_default();
+    let registry = SemanticActionsRegistry::new().with(vec![
+        Box::new(TestActionExtension::new()),
+        Box::new(MapActionExtension::new(map_state.clone())),
+    ]);
+    trace!("Initialized SemanticActionsRegistry with MapState: {map_state:#?}");
+
+    let mut schema_ir = SchemaIR::new(registry);
 
     schema_ir
         .populate_from_schema_json(&schema, &ResolveMethod::default(), &Some(base))
@@ -145,11 +164,13 @@ fn compile_shex_schema(rudof: &mut Rudof, base: IriS, schema: ShExSchema, reader
         DataReaderMode::Lax => {},
     }
 
-    let validator = ShExValidator::new(schema_ir.clone(), &rudof.config.validator_config()).map_err(|_| {
+    let validator = ShExValidator::new(&schema_ir, &rudof.config.validator_config()).map_err(|_| {
         ShExError::FailedCompilingShExSchema {
             error: "Failed to create ShEx validator.".to_string(),
         }
     })?;
+
+    // schema_ir.set_map_state(&mut map_state);
 
     rudof.shex_schema = Some(schema);
     rudof.shex_schema_ir = Some(schema_ir);

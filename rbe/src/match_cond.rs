@@ -1,4 +1,4 @@
-use crate::{Context, Key, Ref, State, Value};
+use crate::{Context, Key, Ref, Value};
 use crate::{Pending, rbe_error::RbeError};
 use core::hash::Hash;
 use serde::{Deserialize, Serialize};
@@ -14,72 +14,69 @@ use std::hash::Hasher;
 /// The `RbeError` struct is used to represent errors that can occur during the matching process.
 /// The `Key`, `Value`, and `Ref` traits are used to represent the types of keys, values, and references that can be used in the conditions.
 #[derive(PartialEq, Eq, Hash, Clone, Serialize, Debug, Deserialize)]
-pub enum MatchCond<K, V, R, Ctx, St>
+pub enum MatchCond<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
-    St: State,
 {
-    Single(SingleCond<K, V, R, Ctx, St>),
+    Single(SingleCond<K, V, R, Ctx>),
     Ref(R),
-    And(Vec<MatchCond<K, V, R, Ctx, St>>),
+    And(Vec<MatchCond<K, V, R, Ctx>>),
 }
 
-unsafe impl<K, V, R, Ctx, St> Sync for MatchCond<K, V, R, Ctx, St>
+unsafe impl<K, V, R, Ctx> Sync for MatchCond<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
-    St: State,
 {
 }
 
-impl<K, V, R, Ctx, St> MatchCond<K, V, R, Ctx, St>
+impl<K, V, R, Ctx> MatchCond<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
-    St: State,
 {
-    pub fn new() -> MatchCond<K, V, R, Ctx, St> {
+    pub fn new() -> MatchCond<K, V, R, Ctx> {
         MatchCond::Single(SingleCond::new())
     }
 
-    pub fn and(conds: Vec<MatchCond<K, V, R, Ctx, St>>) -> MatchCond<K, V, R, Ctx, St> {
+    pub fn and(conds: Vec<MatchCond<K, V, R, Ctx>>) -> MatchCond<K, V, R, Ctx> {
         MatchCond::And(conds)
     }
 
-    pub fn empty() -> MatchCond<K, V, R, Ctx, St> {
+    pub fn empty() -> MatchCond<K, V, R, Ctx> {
         MatchCond::Single(SingleCond::new().with_name("empty"))
     }
 
-    pub fn ref_(r: R) -> MatchCond<K, V, R, Ctx, St> {
+    pub fn ref_(r: R) -> MatchCond<K, V, R, Ctx> {
         MatchCond::Ref(r)
     }
 
-    pub fn matches(&self, value: &V, ctx: &Ctx, state: &mut St) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx, St>> {
+    pub fn matches(&self, value: &V, ctx: &Ctx) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx>> {
         match self {
-            MatchCond::Single(single) => single.matches(value, ctx, state),
+            MatchCond::Single(single) => single.matches(value, ctx),
             MatchCond::Ref(r) => Ok(Pending::from_pair(value.clone(), r.clone())),
             MatchCond::And(vs) => vs.iter().try_fold(Pending::new(), |mut current, cond| {
-                let new_pending = cond.matches(value, ctx, state)?;
+                let new_pending = cond.matches(value, ctx)?;
                 current.merge(new_pending);
                 Ok(current)
             }),
         }
     }
 
-    pub fn single(single: SingleCond<K, V, R, Ctx, St>) -> Self {
+    pub fn single(single: SingleCond<K, V, R, Ctx>) -> Self {
         MatchCond::Single(single)
     }
 
     pub fn simple(
         name: &str,
-        cond: impl Fn(&V, &Ctx, &mut St) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx, St>>
+        cond: impl Fn(&V, &Ctx) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx>>
         + Clone
         + 'static
         + Send
@@ -93,13 +90,12 @@ where
     }
 }
 
-impl<K, V, R, Ctx, St> Display for MatchCond<K, V, R, Ctx, St>
+impl<K, V, R, Ctx> Display for MatchCond<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
-    St: State,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -120,13 +116,12 @@ where
     }
 }
 
-impl<K, V, R, Ctx, St> Default for MatchCond<K, V, R, Ctx, St>
+impl<K, V, R, Ctx> Default for MatchCond<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
-    St: State,
 {
     fn default() -> Self {
         MatchCond::Single(SingleCond::default())
@@ -135,28 +130,26 @@ where
 
 /// Represents a simple condition
 #[derive(Serialize, Deserialize)]
-pub struct SingleCond<K, V, R, Ctx, St>
+pub struct SingleCond<K, V, R, Ctx>
 where
     K: Hash + Eq + Display + Default,
     V: Hash + Eq + Default + PartialEq + Clone,
     R: Hash + Default + PartialEq + Clone,
     Ctx: Hash + Default + PartialEq + Clone,
-    St: State,
 {
     #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
 
     #[serde(skip)]
-    cond: Vec<Box<dyn Cond<K, V, R, Ctx, St> + Send + Sync>>,
+    cond: Vec<Box<dyn Cond<K, V, R, Ctx> + Send + Sync>>,
 }
 
-unsafe impl<K, V, R, Ctx, St> Sync for SingleCond<K, V, R, Ctx, St>
+unsafe impl<K, V, R, Ctx> Sync for SingleCond<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
-    St: State,
 {
 }
 
@@ -164,56 +157,52 @@ where
 /// capture some values in the condition closure.
 /// This pattern is inspired by the answer in this thread:
 /// https://users.rust-lang.org/t/how-to-clone-a-boxed-closure/31035
-trait Cond<K, V, R, Ctx, St>: Send + Sync
+trait Cond<K, V, R, Ctx>: Send + Sync
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
-    St: State,
 {
-    fn clone_box(&self) -> Box<dyn Cond<K, V, R, Ctx, St> + Send + Sync>;
-    fn call(&self, v: &V, ctx: &Ctx, st: &mut St) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx, St>>;
+    fn clone_box(&self) -> Box<dyn Cond<K, V, R, Ctx> + Send + Sync>;
+    fn call(&self, v: &V, ctx: &Ctx) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx>>;
 }
 
-impl<K, V, R, F, Ctx, St> Cond<K, V, R, Ctx, St> for F
+impl<K, V, R, F, Ctx> Cond<K, V, R, Ctx> for F
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
-    St: State,
-    F: 'static + Fn(&V, &Ctx, &mut St) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx, St>> + Clone + Send + Sync,
+    F: 'static + Fn(&V, &Ctx) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx>> + Clone + Send + Sync,
 {
-    fn clone_box(&self) -> Box<dyn Cond<K, V, R, Ctx, St> + Send + Sync> {
+    fn clone_box(&self) -> Box<dyn Cond<K, V, R, Ctx> + Send + Sync> {
         Box::new(self.clone())
     }
 
-    fn call(&self, v: &V, ctx: &Ctx, st: &mut St) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx, St>> {
-        self(v, ctx, st)
+    fn call(&self, v: &V, ctx: &Ctx) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx>> {
+        self(v, ctx)
     }
 }
 
-impl<K, V, R, Ctx, St> Clone for Box<dyn Cond<K, V, R, Ctx, St> + Send + Sync>
+impl<K, V, R, Ctx> Clone for Box<dyn Cond<K, V, R, Ctx> + Send + Sync>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
-    St: State,
 {
     fn clone(&self) -> Self {
         self.clone_box()
     }
 }
 
-impl<K, V, R, Ctx, St> Clone for SingleCond<K, V, R, Ctx, St>
+impl<K, V, R, Ctx> Clone for SingleCond<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
-    St: State,
 {
     fn clone(&self) -> Self {
         SingleCond {
@@ -229,23 +218,22 @@ where
     }
 }
 
-impl<K, V, R, Ctx, St> SingleCond<K, V, R, Ctx, St>
+impl<K, V, R, Ctx> SingleCond<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
-    St: State,
 {
-    pub fn matches(&self, value: &V, ctx: &Ctx, st: &mut St) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx, St>> {
+    pub fn matches(&self, value: &V, ctx: &Ctx) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx>> {
         self.cond.iter().try_fold(Pending::new(), |mut current, f| {
-            let pending = f.call(value, ctx, st)?;
+            let pending = f.call(value, ctx)?;
             current.merge(pending);
             Ok(current)
         })
     }
 
-    pub fn new() -> SingleCond<K, V, R, Ctx, St> {
+    pub fn new() -> SingleCond<K, V, R, Ctx> {
         SingleCond {
             name: None,
             cond: Vec::new(),
@@ -259,7 +247,7 @@ where
 
     pub fn with_cond(
         mut self,
-        cond: impl Fn(&V, &Ctx, &mut St) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx, St>>
+        cond: impl Fn(&V, &Ctx) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx>>
         + Clone
         + 'static
         + Send
@@ -274,62 +262,57 @@ where
     }
 }
 
-impl<K, V, R, Ctx, St> PartialEq for SingleCond<K, V, R, Ctx, St>
+impl<K, V, R, Ctx> PartialEq for SingleCond<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
-    St: State,
 {
     fn eq(&self, other: &Self) -> bool {
         self.name == other.name
     }
 }
 
-impl<K, V, R, Ctx, St> Eq for SingleCond<K, V, R, Ctx, St>
+impl<K, V, R, Ctx> Eq for SingleCond<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
-    St: State,
 {
 }
 
-impl<K, V, R, Ctx, St> Hash for SingleCond<K, V, R, Ctx, St>
+impl<K, V, R, Ctx> Hash for SingleCond<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
-    St: State,
 {
     fn hash<H: Hasher>(&self, hasher: &mut H) {
         self.name.hash(hasher)
     }
 }
 
-impl<K, V, R, Ctx, St> Default for SingleCond<K, V, R, Ctx, St>
+impl<K, V, R, Ctx> Default for SingleCond<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
-    St: State,
 {
     fn default() -> Self {
         SingleCond::new()
     }
 }
 
-impl<K, V, R, Ctx, St> Debug for SingleCond<K, V, R, Ctx, St>
+impl<K, V, R, Ctx> Debug for SingleCond<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
-    St: State,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(f, "{}", self.name.clone().unwrap_or_default())?;
@@ -337,13 +320,12 @@ where
     }
 }
 
-impl<K, V, R, Ctx, St> Display for SingleCond<K, V, R, Ctx, St>
+impl<K, V, R, Ctx> Display for SingleCond<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
-    St: State,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(f, "{}", self.name.clone().unwrap_or_default())?;
@@ -355,59 +337,10 @@ where
 mod tests {
     use super::*;
 
-    impl State for i32 {}
-
-    // --- TDD tests for mutable state ---
-
-    /// State (i32 counter) is incremented on each successful match call.
-    #[test]
-    fn test_mutable_state_counter() {
-        let cond: SingleCond<char, i32, String, char, i32> = SingleCond::new().with_cond(|_v, _ctx, st: &mut i32| {
-            *st += 1;
-            Ok(Pending::new())
-        });
-        let mut state: i32 = 0;
-        assert_eq!(cond.matches(&42, &'a', &mut state), Ok(Pending::new()));
-        assert_eq!(state, 1);
-        assert_eq!(cond.matches(&42, &'a', &mut state), Ok(Pending::new()));
-        assert_eq!(state, 2);
-    }
-
-    /// State accumulates across And conditions — both branches mutate the same state.
-    #[test]
-    fn test_mutable_state_and_accumulates() {
-        let cond1: MatchCond<char, i32, String, char, i32> = MatchCond::simple("inc_a", |_v, _ctx, st: &mut i32| {
-            *st += 1;
-            Ok(Pending::new())
-        });
-        let cond2: MatchCond<char, i32, String, char, i32> = MatchCond::simple("inc_b", |_v, _ctx, st: &mut i32| {
-            *st += 10;
-            Ok(Pending::new())
-        });
-        let and_cond = MatchCond::and(vec![cond1, cond2]);
-        let mut state: i32 = 0;
-        assert_eq!(and_cond.matches(&1, &'a', &mut state), Ok(Pending::new()));
-        assert_eq!(state, 11);
-    }
-
-    /// MatchCond::simple accepts a closure with &mut St and mutates state.
-    #[test]
-    fn test_simple_with_mutable_state() {
-        let cond: MatchCond<char, i32, String, char, i32> = MatchCond::simple("mark", |_v, _ctx, st: &mut i32| {
-            *st = 99;
-            Ok(Pending::new())
-        });
-        let mut state: i32 = 0;
-        assert_eq!(cond.matches(&7, &'a', &mut state), Ok(Pending::new()));
-        assert_eq!(state, 99);
-    }
-
-    // --- Existing tests updated to use &mut St ---
-
     #[test]
     fn test_even_cond_2_pass() {
-        let cond_even: SingleCond<char, i32, String, char, char> =
-            SingleCond::new().with_cond(|v, _ctx, _st: &mut char| {
+        let cond_even: SingleCond<char, i32, String, char> =
+            SingleCond::new().with_cond(|v, _ctx| {
                 if v % 2 == 0 {
                     Ok(Pending::new())
                 } else {
@@ -416,14 +349,13 @@ mod tests {
                     })
                 }
             });
-        let mut st = 'z';
-        assert_eq!(cond_even.matches(&2, &'a', &mut st), Ok(Pending::new()));
+        assert_eq!(cond_even.matches(&2, &'a'), Ok(Pending::new()));
     }
 
     #[test]
     fn test_even_cond_3_fail() {
-        let cond_even: SingleCond<char, i32, String, char, char> =
-            SingleCond::new().with_cond(|v, _ctx, _st: &mut char| {
+        let cond_even: SingleCond<char, i32, String, char> =
+            SingleCond::new().with_cond(|v, _ctx| {
                 if v % 2 == 0 {
                     Ok(Pending::new())
                 } else {
@@ -432,14 +364,13 @@ mod tests {
                     })
                 }
             });
-        let mut st = 'z';
-        assert!(cond_even.matches(&3, &'a', &mut st).is_err());
+        assert!(cond_even.matches(&3, &'a').is_err());
     }
 
     #[test]
     fn test_name_fail() {
-        fn cond_name(name: String) -> SingleCond<char, String, String, char, char> {
-            SingleCond::new().with_cond(move |v: &String, _ctx: &char, _st: &mut char| {
+        fn cond_name(name: String) -> SingleCond<char, String, String, char> {
+            SingleCond::new().with_cond(move |v: &String, _ctx: &char| {
                 if *v == name {
                     Ok(Pending::new())
                 } else {
@@ -449,20 +380,19 @@ mod tests {
                 }
             })
         }
-        let mut st = 'z';
         assert!(
             cond_name("foo".to_string())
-                .matches(&"baz".to_string(), &'a', &mut st)
+                .matches(&"baz".to_string(), &'a')
                 .is_err()
         );
     }
 
     #[test]
     fn test_name_pass() {
-        fn cond_name(name: String) -> SingleCond<char, String, String, char, char> {
+        fn cond_name(name: String) -> SingleCond<char, String, String, char> {
             SingleCond::new()
                 .with_name("name")
-                .with_cond(move |v: &String, _ctx: &char, _st: &mut char| {
+                .with_cond(move |v: &String, _ctx: &char| {
                     if *v == name {
                         Ok(Pending::new())
                     } else {
@@ -472,9 +402,8 @@ mod tests {
                     }
                 })
         }
-        let mut st = 'z';
         assert_eq!(
-            cond_name("foo".to_string()).matches(&"foo".to_string(), &'a', &mut st),
+            cond_name("foo".to_string()).matches(&"foo".to_string(), &'a'),
             Ok(Pending::new())
         );
     }

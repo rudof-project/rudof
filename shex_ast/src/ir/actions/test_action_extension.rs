@@ -34,6 +34,10 @@ impl SemanticActionExtension for TestActionExtension {
         iri!("http://shex.io/extensions/Test/")
     }
 
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
     fn run_action(&self, parameter: Option<&str>, context: &SemanticActionContext) -> Result<(), SemanticActionError> {
         let code = if let Some(parameter) = parameter {
             parameter
@@ -62,9 +66,9 @@ impl SemanticActionExtension for TestActionExtension {
             // Particle: s, p, or o
             let particle = &caps[3];
             let binding = match particle {
-                "s" => context.s(),
-                "p" => context.p(),
-                "o" => context.o(),
+                "s" => context.s().map(|o| o.to_string()),
+                "p" => context.p().map(|p| p.to_string()),
+                "o" => context.o().map(|o| o.to_string()),
                 _ => unreachable!("regex only matches s, p, or o"),
             };
             /* TODO:
@@ -98,6 +102,7 @@ impl SemanticActionExtension for TestActionExtension {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Node;
 
     fn ext() -> TestActionExtension {
         TestActionExtension {}
@@ -122,7 +127,7 @@ mod tests {
         ext()
             .run_action(
                 Some("print(s)"),
-                &SemanticActionContext::subject("http://example.org/s"),
+                &SemanticActionContext::subject(&Node::iri(iri!("http://example.org/s"))),
             )
             .unwrap();
     }
@@ -140,7 +145,7 @@ mod tests {
         let err = ext()
             .run_action(
                 Some("fail(o)"),
-                &SemanticActionContext::object("http://example.org/bad"),
+                &SemanticActionContext::object(&Node::iri(iri!("http://example.org/bad"))),
             )
             .unwrap_err();
         assert!(matches!(err, SemanticActionError::FailAction { message } if message == "http://example.org/bad"));
