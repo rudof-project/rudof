@@ -17,17 +17,11 @@ pub fn validate_shex(rudof: &mut Rudof) -> Result<()> {
     // Read back the map state that was mutated by MapActionExtension closures during validation.
     // The SchemaIR's registry holds an Arc<Mutex<MapState>> that is shared with every compiled
     // closure, so locking it here gives the fully-populated state.
-    if let Some(schema_ir) = &rudof.shex_schema_ir {
-        if let Some(arc) = schema_ir.get_map_state_arc() {
-            let state = arc.lock().unwrap().clone();
-            rudof.map_state = Some(state);
-        }
-    }
-
-    if let Some(state) = &rudof.map_state
-        && !state.is_empty()
+    if let Some(schema_ir) = &rudof.shex_schema_ir
+        && let Some(arc) = schema_ir.get_map_state_arc()
     {
-        println!("MapState: {}", serde_json::to_string_pretty(state).unwrap());
+        let state = arc.lock().unwrap().clone();
+        rudof.map_state = Some(state);
     }
 
     rudof.shex_validation_results = Some(result);

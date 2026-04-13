@@ -91,10 +91,7 @@ where
         self.rbe = rbe;
     }
 
-    pub fn matches(
-        &self,
-        values: Vec<(K, V, Ctx)>,
-    ) -> Result<MatchTableIter<K, V, R, Ctx>, RbeError<K, V, R, Ctx>> {
+    pub fn matches(&self, values: Vec<(K, V, Ctx)>) -> Result<MatchTableIter<K, V, R, Ctx>, RbeError<K, V, R, Ctx>> {
         trace!(
             "Checking if RbeTable {} matches [{}]",
             &self,
@@ -438,39 +435,30 @@ mod tests {
     fn test_rbe_table_1() {
         // { p a; q y; q z } == { p is_a; q @t ; q @u }
         //     Pending y/@t, z/@u | y@u, z@t
-        let is_a: MatchCond<char, char, char, char> = MatchCond::single(
-            SingleCond::new()
-                .with_name("is_a")
-                .with_cond(move |v, _ctx| {
-                    if *v == 'a' {
-                        Ok(Pending::new())
-                    } else {
-                        Err(rbe_error::RbeError::MsgError {
-                            msg: format!("Value {v}!='a'"),
-                        })
-                    }
-                }),
-        );
+        let is_a: MatchCond<char, char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("is_a").with_cond(move |v, _ctx| {
+                if *v == 'a' {
+                    Ok(Pending::new())
+                } else {
+                    Err(rbe_error::RbeError::MsgError {
+                        msg: format!("Value {v}!='a'"),
+                    })
+                }
+            }));
 
-        let ref_t: MatchCond<char, char, char, char> = MatchCond::single(
-            SingleCond::new()
-                .with_name("ref_t")
-                .with_cond(move |v, _ctx| {
-                    let mut pending = Pending::new();
-                    pending.insert(*v, 't');
-                    Ok(pending)
-                }),
-        );
+        let ref_t: MatchCond<char, char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("ref_t").with_cond(move |v, _ctx| {
+                let mut pending = Pending::new();
+                pending.insert(*v, 't');
+                Ok(pending)
+            }));
 
-        let ref_u: MatchCond<char, char, char, char> = MatchCond::single(
-            SingleCond::new()
-                .with_name("ref_u")
-                .with_cond(move |v, _ctx| {
-                    let mut pending = Pending::new();
-                    pending.insert(*v, 'u');
-                    Ok(pending)
-                }),
-        );
+        let ref_u: MatchCond<char, char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("ref_u").with_cond(move |v, _ctx| {
+                let mut pending = Pending::new();
+                pending.insert(*v, 'u');
+                Ok(pending)
+            }));
 
         let vs = vec![('p', 'a', ' '), ('q', 'y', ' '), ('q', 'z', ' ')];
 
@@ -502,39 +490,30 @@ mod tests {
     fn test_rbe_table_2_fail() {
         // { p a; q y } != { p is_a; q @t ; q @u }
         //     Pending y/@t, z/@u | y@u, z@t
-        let is_a: MatchCond<char, char, char, char> = MatchCond::single(
-            SingleCond::new()
-                .with_name("is_a")
-                .with_cond(move |v, _ctx| {
-                    if *v == 'a' {
-                        Ok(Pending::new())
-                    } else {
-                        Err(rbe_error::RbeError::MsgError {
-                            msg: format!("Value {v}!='a'"),
-                        })
-                    }
-                }),
-        );
+        let is_a: MatchCond<char, char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("is_a").with_cond(move |v, _ctx| {
+                if *v == 'a' {
+                    Ok(Pending::new())
+                } else {
+                    Err(rbe_error::RbeError::MsgError {
+                        msg: format!("Value {v}!='a'"),
+                    })
+                }
+            }));
 
-        let ref_t: MatchCond<char, char, char, char> = MatchCond::single(
-            SingleCond::new()
-                .with_name("ref_t")
-                .with_cond(move |v, _ctx| {
-                    let mut pending = Pending::new();
-                    pending.insert(*v, 't');
-                    Ok(pending)
-                }),
-        );
+        let ref_t: MatchCond<char, char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("ref_t").with_cond(move |v, _ctx| {
+                let mut pending = Pending::new();
+                pending.insert(*v, 't');
+                Ok(pending)
+            }));
 
-        let ref_u: MatchCond<char, char, char, char> = MatchCond::single(
-            SingleCond::new()
-                .with_name("ref_u")
-                .with_cond(move |v, _ctx| {
-                    let mut pending = Pending::new();
-                    pending.insert(*v, 'u');
-                    Ok(pending)
-                }),
-        );
+        let ref_u: MatchCond<char, char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("ref_u").with_cond(move |v, _ctx| {
+                let mut pending = Pending::new();
+                pending.insert(*v, 'u');
+                Ok(pending)
+            }));
 
         let vs = vec![('p', 'a', ' '), ('q', 'y', ' ')];
 
@@ -558,19 +537,16 @@ mod tests {
     fn test_rbe_table_3_basic() {
         // { p a; q a } == { p is_a; q is_a }
         //     Ok
-        let is_a: MatchCond<char, char, char, char> = MatchCond::single(
-            SingleCond::new()
-                .with_name("is_a")
-                .with_cond(move |v, _ctx| {
-                    if *v == 'a' {
-                        Ok(Pending::new())
-                    } else {
-                        Err(rbe_error::RbeError::MsgError {
-                            msg: format!("Value {v}!='a'"),
-                        })
-                    }
-                }),
-        );
+        let is_a: MatchCond<char, char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("is_a").with_cond(move |v, _ctx| {
+                if *v == 'a' {
+                    Ok(Pending::new())
+                } else {
+                    Err(rbe_error::RbeError::MsgError {
+                        msg: format!("Value {v}!='a'"),
+                    })
+                }
+            }));
 
         let vs = vec![('p', 'a', ' '), ('q', 'a', ' ')];
 
@@ -593,19 +569,16 @@ mod tests {
     fn test_rbe_table_4_basic_fail() {
         // { p a; q b } == { p is_a; q is_a }
         //     Ok
-        let is_a: MatchCond<char, char, char, char> = MatchCond::single(
-            SingleCond::new()
-                .with_name("is_a")
-                .with_cond(move |v, _ctx| {
-                    if *v == 'a' {
-                        Ok(Pending::new())
-                    } else {
-                        Err(rbe_error::RbeError::MsgError {
-                            msg: format!("Value {v}!='a'"),
-                        })
-                    }
-                }),
-        );
+        let is_a: MatchCond<char, char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("is_a").with_cond(move |v, _ctx| {
+                if *v == 'a' {
+                    Ok(Pending::new())
+                } else {
+                    Err(rbe_error::RbeError::MsgError {
+                        msg: format!("Value {v}!='a'"),
+                    })
+                }
+            }));
 
         let vs = vec![('p', 'a', ' '), ('q', 'b', ' ')];
 
@@ -635,33 +608,27 @@ mod tests {
     fn test_rbe_table_5_same_key_strict_conditions() {
         // { p x; p y } == { p is_x; p is_y }
         // Each value should match exactly one condition.
-        let is_x: MatchCond<char, char, char, char> = MatchCond::single(
-            SingleCond::new()
-                .with_name("is_x")
-                .with_cond(move |v, _ctx| {
-                    if *v == 'x' {
-                        Ok(Pending::new())
-                    } else {
-                        Err(rbe_error::RbeError::MsgError {
-                            msg: format!("Value {v}!='x'"),
-                        })
-                    }
-                }),
-        );
+        let is_x: MatchCond<char, char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("is_x").with_cond(move |v, _ctx| {
+                if *v == 'x' {
+                    Ok(Pending::new())
+                } else {
+                    Err(rbe_error::RbeError::MsgError {
+                        msg: format!("Value {v}!='x'"),
+                    })
+                }
+            }));
 
-        let is_y: MatchCond<char, char, char, char> = MatchCond::single(
-            SingleCond::new()
-                .with_name("is_y")
-                .with_cond(move |v, _ctx| {
-                    if *v == 'y' {
-                        Ok(Pending::new())
-                    } else {
-                        Err(rbe_error::RbeError::MsgError {
-                            msg: format!("Value {v}!='y'"),
-                        })
-                    }
-                }),
-        );
+        let is_y: MatchCond<char, char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("is_y").with_cond(move |v, _ctx| {
+                if *v == 'y' {
+                    Ok(Pending::new())
+                } else {
+                    Err(rbe_error::RbeError::MsgError {
+                        msg: format!("Value {v}!='y'"),
+                    })
+                }
+            }));
 
         let vs = vec![('p', 'x', ' '), ('p', 'y', ' ')];
 
@@ -683,33 +650,27 @@ mod tests {
     /// Same key, two strict conditions, but one value doesn't match any.
     #[test]
     fn test_rbe_table_6_same_key_strict_no_match() {
-        let is_x: MatchCond<char, char, char, char> = MatchCond::single(
-            SingleCond::new()
-                .with_name("is_x")
-                .with_cond(move |v, _ctx| {
-                    if *v == 'x' {
-                        Ok(Pending::new())
-                    } else {
-                        Err(rbe_error::RbeError::MsgError {
-                            msg: format!("Value {v}!='x'"),
-                        })
-                    }
-                }),
-        );
+        let is_x: MatchCond<char, char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("is_x").with_cond(move |v, _ctx| {
+                if *v == 'x' {
+                    Ok(Pending::new())
+                } else {
+                    Err(rbe_error::RbeError::MsgError {
+                        msg: format!("Value {v}!='x'"),
+                    })
+                }
+            }));
 
-        let is_y: MatchCond<char, char, char, char> = MatchCond::single(
-            SingleCond::new()
-                .with_name("is_y")
-                .with_cond(move |v, _ctx| {
-                    if *v == 'y' {
-                        Ok(Pending::new())
-                    } else {
-                        Err(rbe_error::RbeError::MsgError {
-                            msg: format!("Value {v}!='y'"),
-                        })
-                    }
-                }),
-        );
+        let is_y: MatchCond<char, char, char, char> =
+            MatchCond::single(SingleCond::new().with_name("is_y").with_cond(move |v, _ctx| {
+                if *v == 'y' {
+                    Ok(Pending::new())
+                } else {
+                    Err(rbe_error::RbeError::MsgError {
+                        msg: format!("Value {v}!='y'"),
+                    })
+                }
+            }));
 
         // Value 'z' doesn't match is_x or is_y
         let vs = vec![('p', 'x', ' '), ('p', 'z', ' ')];

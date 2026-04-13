@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::cli::parser::CommonArgsAll;
 use crate::cli::wrappers::{
     DataFormatCli, DataReaderModeCli, ResultValidationFormatCli, ShExFormatCli, ShaclValidationModeCli,
@@ -139,7 +141,7 @@ pub struct ValidateArgs {
     pub result_format: ResultValidationFormatCli,
 
     #[arg(long = "map-state", value_name = "FILE", help = "MapState file name")]
-    pub map_state: Option<String>,
+    pub map_state: Option<PathBuf>,
 
     #[command(flatten)]
     pub common: CommonArgsAll,

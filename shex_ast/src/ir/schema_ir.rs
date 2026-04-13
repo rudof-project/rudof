@@ -2,9 +2,8 @@ use super::dependency_graph::{DependencyGraph, PosNeg};
 use super::shape_expr::ShapeExpr;
 use super::shape_label::ShapeLabel;
 use crate::ir::inheritance_graph::InheritanceGraph;
-use crate::ir::map_action_extension::MapState;
+use crate::ir::map_state::MapState;
 use crate::ir::semantic_actions_registry::SemanticActionsRegistry;
-use std::sync::Mutex;
 use crate::ir::shape::Shape;
 use crate::ir::shape_expr_info::ShapeExprInfo;
 use crate::ir::source_idx::SourceIdx;
@@ -16,6 +15,7 @@ use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 use std::sync::Arc;
+use std::sync::Mutex;
 use tracing::trace;
 
 type Result<A> = std::result::Result<A, Box<SchemaIRError>>;

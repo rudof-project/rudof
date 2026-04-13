@@ -513,7 +513,7 @@ impl Engine {
             },
             ShapeExpr::NodeConstraint(nc) => {
                 // TODO: In the case of a node constraint...is the context only the subject?
-                let ctx = SemanticActionContext::subject(&node);
+                let ctx = SemanticActionContext::subject(node);
                 match nc.cond().matches(node, &ctx) {
                     Ok(_pending) => {
                         // We ignore pending nodes here, as node constraints are not expected to generate pending nodes

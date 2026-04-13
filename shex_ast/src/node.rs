@@ -8,7 +8,7 @@ use rudof_rdf::rdf_core::{
         literal::{ConcreteLiteral, NumericLiteral},
     },
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use tracing::trace;
 
@@ -17,7 +17,7 @@ use crate::SchemaJsonError;
 
 impl Value for Node {}
 
-#[derive(PartialEq, Eq, Hash, Debug, Default, Clone, PartialOrd, Ord)]
+#[derive(PartialEq, Eq, Hash, Debug, Default, Deserialize, Clone, PartialOrd, Ord)]
 pub struct Node {
     node: Object,
 }

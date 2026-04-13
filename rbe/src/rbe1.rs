@@ -469,15 +469,7 @@ mod tests {
             Rbe::symbol('b', 0, Max::IntMax(1)),
         ]);
         assert_eq!(
-            rbe.deriv(
-                &'a',
-                &23,
-                &'a',
-                1,
-                false,
-                &HashSet::from(['a', 'b']),
-                &mut pending
-            ),
+            rbe.deriv(&'a', &23, &'a', 1, false, &HashSet::from(['a', 'b']), &mut pending),
             expected
         );
     }

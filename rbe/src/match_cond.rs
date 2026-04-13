@@ -76,11 +76,7 @@ where
 
     pub fn simple(
         name: &str,
-        cond: impl Fn(&V, &Ctx) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx>>
-        + Clone
-        + 'static
-        + Send
-        + Sync,
+        cond: impl Fn(&V, &Ctx) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx>> + Clone + 'static + Send + Sync,
     ) -> Self {
         MatchCond::single(SingleCond::new().with_name(name).with_cond(cond))
     }
@@ -247,11 +243,7 @@ where
 
     pub fn with_cond(
         mut self,
-        cond: impl Fn(&V, &Ctx) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx>>
-        + Clone
-        + 'static
-        + Send
-        + Sync,
+        cond: impl Fn(&V, &Ctx) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx>> + Clone + 'static + Send + Sync,
     ) -> Self {
         self.cond.push(Box::new(cond));
         self
@@ -339,31 +331,29 @@ mod tests {
 
     #[test]
     fn test_even_cond_2_pass() {
-        let cond_even: SingleCond<char, i32, String, char> =
-            SingleCond::new().with_cond(|v, _ctx| {
-                if v % 2 == 0 {
-                    Ok(Pending::new())
-                } else {
-                    Err(RbeError::MsgError {
-                        msg: format!("Value {v} is not even"),
-                    })
-                }
-            });
+        let cond_even: SingleCond<char, i32, String, char> = SingleCond::new().with_cond(|v, _ctx| {
+            if v % 2 == 0 {
+                Ok(Pending::new())
+            } else {
+                Err(RbeError::MsgError {
+                    msg: format!("Value {v} is not even"),
+                })
+            }
+        });
         assert_eq!(cond_even.matches(&2, &'a'), Ok(Pending::new()));
     }
 
     #[test]
     fn test_even_cond_3_fail() {
-        let cond_even: SingleCond<char, i32, String, char> =
-            SingleCond::new().with_cond(|v, _ctx| {
-                if v % 2 == 0 {
-                    Ok(Pending::new())
-                } else {
-                    Err(RbeError::MsgError {
-                        msg: format!("Value {v} is not even"),
-                    })
-                }
-            });
+        let cond_even: SingleCond<char, i32, String, char> = SingleCond::new().with_cond(|v, _ctx| {
+            if v % 2 == 0 {
+                Ok(Pending::new())
+            } else {
+                Err(RbeError::MsgError {
+                    msg: format!("Value {v} is not even"),
+                })
+            }
+        });
         assert!(cond_even.matches(&3, &'a').is_err());
     }
 
@@ -380,11 +370,7 @@ mod tests {
                 }
             })
         }
-        assert!(
-            cond_name("foo".to_string())
-                .matches(&"baz".to_string(), &'a')
-                .is_err()
-        );
+        assert!(cond_name("foo".to_string()).matches(&"baz".to_string(), &'a').is_err());
     }
 
     #[test]

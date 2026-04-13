@@ -1,38 +1,10 @@
-use crate::Node;
 use crate::ir::actions::semantic_action_error::SemanticActionError;
 use crate::ir::actions::semantic_action_extension::SemanticActionExtension;
+use crate::ir::map_state::MapState;
 use crate::ir::semantic_action_context::SemanticActionContext;
 use iri_s::{IriS, iri};
-use serde::Serialize;
-use std::collections::HashMap;
-use std::fmt::Display;
 use std::sync::{Arc, Mutex};
 use tracing::trace;
-
-#[derive(Debug, Clone, Serialize, Default, PartialEq, Eq)]
-pub struct MapState {
-    map: HashMap<IriS, Node>,
-}
-
-impl MapState {
-    pub fn insert(&mut self, key: IriS, value: Node) {
-        self.map.insert(key, value);
-    }
-
-    pub fn get(&self, key: &IriS) -> Option<&Node> {
-        self.map.get(key)
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.map.is_empty()
-    }
-}
-
-impl Display for MapState {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "MapState {{ map: {:?} }}", self.map)
-    }
-}
 
 /// Represents the ShExMap action extension documented [here](http://shex.io/extensions/Map/)
 ///
@@ -77,7 +49,7 @@ impl SemanticActionExtension for MapActionExtension {
             if let Some(object) = context.o() {
                 trace!("Object from context: {}", object);
                 let mut st = self.state.lock().unwrap();
-                st.map.insert(iri, object);
+                st.insert(iri, object);
                 trace!("Updated state: {}", *st);
             } else {
                 return Err(SemanticActionError::NoObjectInContext {
@@ -95,6 +67,8 @@ impl SemanticActionExtension for MapActionExtension {
 
 #[cfg(test)]
 mod tests {
+    use crate::Node;
+
     use super::*;
 
     fn ext() -> MapActionExtension {
@@ -129,6 +103,6 @@ mod tests {
         let state = ext.get_state();
         let guard = state.lock().unwrap();
         let iri = IriS::new("http://example.org/map").unwrap();
-        assert!(guard.map.contains_key(&iri));
+        assert!(guard.get(&iri).is_some());
     }
 }

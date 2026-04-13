@@ -9,10 +9,8 @@ use shex_ast::{
     ResolveMethod, Schema as ShExSchema,
     compact::ShExParser,
     ir::{
-        map_action_extension::MapActionExtension,
-        schema_ir::SchemaIR,
-        semantic_actions_registry::SemanticActionsRegistry,
-        test_action_extension::TestActionExtension,
+        map_action_extension::MapActionExtension, schema_ir::SchemaIR,
+        semantic_actions_registry::SemanticActionsRegistry, test_action_extension::TestActionExtension,
     },
 };
 use shex_validation::Validator as ShExValidator;

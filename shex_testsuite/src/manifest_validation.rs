@@ -16,8 +16,8 @@ use rudof_rdf::{
 };
 use serde::de::{self};
 use serde::{Deserialize, Deserializer, Serialize};
-use shex_ast::ir::schema_ir::SchemaIR;
-use shex_ast::ir::shape_label::ShapeLabel;
+use shex_ast::ir::{map_state::MapState, schema_ir::SchemaIR};
+use shex_ast::ir::{semantic_actions_registry::SemanticActionsRegistry, shape_label::ShapeLabel};
 use shex_ast::shapemap::ValidationStatus;
 use shex_ast::{Node, ast::Schema as SchemaJson, ir::ast2ir::AST2IR};
 use shex_ast::{ResolveMethod, ShExParser};
@@ -237,8 +237,11 @@ impl ValidationEntry {
 
         trace!("Entry action: {:?}", self.action);
 
-        let mut compiler = AST2IR::new(&ResolveMethod::default());
-        let mut compiled_schema = SchemaIR::new();
+        let mut map_state = MapState::default();
+        let mut registry = SemanticActionsRegistry::default();
+        registry.set_map_state(&mut map_state);
+        let mut compiler = AST2IR::new(&ResolveMethod::default(), map_state);
+        let mut compiled_schema = SchemaIR::new(registry);
         let base_iri = path_to_iri(&path_schema)?;
         trace!("Compiling schema, base: {base_iri}");
         compiler
@@ -246,7 +249,7 @@ impl ValidationEntry {
             .map_err(|e| Box::new(ManifestError::SchemaIRError(e)))?;
         let schema = compiled_schema.clone();
         let mut validator =
-            Validator::new(compiled_schema, &ValidatorConfig::default()).map_err(ManifestError::ValidationError)?;
+            Validator::new(&compiled_schema, &ValidatorConfig::default()).map_err(ManifestError::ValidationError)?;
         let expected_type = parse_type(&self.type_)?;
         debug!("Schema compiled...expected type: {:?}", expected_type);
         trace!("Schema: {}", schema);

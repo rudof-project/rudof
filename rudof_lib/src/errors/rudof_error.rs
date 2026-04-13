@@ -72,6 +72,10 @@ pub enum RudofError {
     #[error("IRI error: {0}")]
     Iri(#[from] IriError),
 
+    /// Map state errors.
+    #[error("MapState error: {0}")]
+    MapState(#[from] MapStateError),
+
     /// The requested operation is not yet implemented.
     #[error("Not implemented: {msg}")]
     NotImplemented { msg: String },

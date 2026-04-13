@@ -31,6 +31,7 @@ impl Command for ShexValidateCommand {
         let shapemap_format = self.args.shapemap_format.into();
         let sort_order = self.args.sort_by.into();
         let result_format = self.args.result_format.into();
+        let map_state = self.args.map_state.clone();
 
         let mut loading = ctx
             .rudof
@@ -75,6 +76,12 @@ impl Command for ShexValidateCommand {
             .with_shex_validation_sort_order_mode(&sort_order)
             .with_result_shex_validation_format(&result_format)
             .execute()?;
+
+        if let Some(map_state_path) = map_state {
+            ctx.rudof
+                .serialize_map_state(&mut std::fs::File::create(map_state_path)?)
+                .execute()?;
+        }
 
         Ok(())
     }

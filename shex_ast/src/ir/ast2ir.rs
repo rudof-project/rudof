@@ -1,6 +1,7 @@
 use super::node_constraint::NodeConstraint;
 use crate::ir::annotation::Annotation;
-use crate::ir::map_action_extension::{MapActionExtension, MapState};
+use crate::ir::map_action_extension::MapActionExtension;
+use crate::ir::map_state::MapState;
 use crate::ir::object_value::ObjectValue;
 use crate::ir::schema_ir::SchemaIR;
 use crate::ir::sem_act::SemAct;
