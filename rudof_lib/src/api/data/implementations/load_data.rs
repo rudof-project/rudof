@@ -9,6 +9,7 @@ use iri_s::{IriS, MimeType};
 use pgschema::parser::pg_builder::PgBuilder;
 use prefixmap::PrefixMap;
 use rudof_rdf::rdf_impl::SparqlEndpoint;
+use sparql_service::RdfData;
 use std::{io, str::FromStr};
 
 pub fn load_data(
@@ -112,7 +113,8 @@ fn read_rdf_data<R: io::Read>(
     merge: bool,
 ) -> Result<()> {
     if !merge || rudof.data.is_none() || matches!(rudof.data, Some(ref data) if data.is_pg()) {
-        rudof.data = Some(Data::empty_rdf());
+        let rdf_data = init_rdf_data_with_config(rudof)?;
+        rudof.data = Some(rdf_data);
     }
 
     rudof
@@ -169,7 +171,8 @@ fn read_pg_data<R: io::Read>(rudof: &mut Rudof, data_reader: &mut R, source_name
 }
 
 fn load_data_from_endpoint(rudof: &mut Rudof, endpoint_str: &str) -> Result<()> {
-    rudof.data = Some(Data::empty_rdf());
+    let rdf_data = init_rdf_data_with_config(rudof)?;
+    rudof.data = Some(rdf_data);
 
     let enpoint = get_endpoint_name(rudof, endpoint_str)?;
 
@@ -179,15 +182,25 @@ fn load_data_from_endpoint(rudof: &mut Rudof, endpoint_str: &str) -> Result<()> 
 }
 
 fn get_endpoint_name(rudof: &mut Rudof, endpoint_str: &str) -> Result<SparqlEndpoint> {
-    match rudof
-        .data
-        .as_mut()
-        .unwrap()
-        .unwrap_rdf_mut()
-        .find_endpoint(endpoint_str)
-    {
+    let rdf_data = rudof.data.as_mut().unwrap().unwrap_rdf_mut();
+
+    match rdf_data.find_endpoint(endpoint_str) {
         Some(endpoint) => Ok(endpoint),
         None => {
+            let normalized_endpoint = normalize_endpoint_id(endpoint_str);
+            if let Some(endpoint) = rdf_data.endpoints().iter().find_map(|(name, endpoint)| {
+                let endpoint_iri = endpoint.iri().as_str();
+                let matches_name = normalize_endpoint_id(name) == normalized_endpoint;
+                let matches_iri = normalize_endpoint_id(endpoint_iri) == normalized_endpoint;
+                if matches_name || matches_iri {
+                    Some(endpoint.clone())
+                } else {
+                    None
+                }
+            }) {
+                return Ok(endpoint);
+            }
+
             let iri = IriS::from_str(endpoint_str).map_err(|error| {
                 Box::new(DataError::InvalidEndpoint {
                     endpoint: (endpoint_str.to_string()),
@@ -213,5 +226,27 @@ fn use_endpoint(rudof: &mut Rudof, endpoint_str: &str, endpoint: SparqlEndpoint)
         .as_mut()
         .unwrap()
         .unwrap_rdf_mut()
-        .add_endpoint(endpoint_str, endpoint);
+        .use_endpoint(endpoint_str, endpoint);
+}
+
+fn init_rdf_data_with_config(rudof: &Rudof) -> Result<Data> {
+    let rdf_data = RdfData::new()
+        .with_rdf_data_config(&rudof.config.rdf_data_config())
+        .map_err(|error| {
+            Box::new(DataError::RdfDataConfig {
+                error: error.to_string(),
+            })
+        })?;
+
+    Ok(Data::RDFData(Box::new(rdf_data)))
+}
+
+fn normalize_endpoint_id(value: &str) -> String {
+    let trimmed = value.trim().trim_end_matches('/');
+    let without_scheme = trimmed
+        .strip_prefix("http://")
+        .or_else(|| trimmed.strip_prefix("https://"))
+        .unwrap_or(trimmed);
+
+    without_scheme.to_ascii_lowercase()
 }

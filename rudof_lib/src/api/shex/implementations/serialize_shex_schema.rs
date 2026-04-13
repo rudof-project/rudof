@@ -154,8 +154,8 @@ fn serialize_schema(
     writer: &mut impl io::Write,
 ) -> Result<()> {
     let formatter = match show_colors {
-        true => ShExFormatter::default().without_colors(),
-        false => ShExFormatter::default(),
+        true => ShExFormatter::default(),
+        false => ShExFormatter::default().without_colors(),
     };
 
     let shex_schema = rudof.shex_schema.as_ref().ok_or(ShExError::NoShExSchemaLoaded)?;

@@ -10,12 +10,14 @@ use rudof_lib::{
     Rudof,
     errors::{InputSpecError, RudofError},
     formats::{
-        ComparisonFormat, ComparisonMode, DCTapFormat, DataFormat, DataReaderMode, InputSpec, NodeInspectionMode,
-        QueryType, ResultDataFormat, ResultQueryFormat, ResultServiceFormat, ShExFormat, ShExValidationSortByMode,
-        ShaclFormat, ShaclValidationMode, ShapeMapFormat,
+        ComparisonFormat, ComparisonMode, ConversionFormat, ConversionMode, DCTapFormat, DataFormat, DataReaderMode,
+        InputSpec, NodeInspectionMode, QueryType, ResultConversionFormat, ResultConversionMode, ResultDCTapFormat,
+        ResultDataFormat, ResultQueryFormat, ResultServiceFormat, ResultShExValidationFormat,
+        ResultShaclValidationFormat, ShExFormat, ShExValidationSortByMode, ShaclFormat, ShaclValidationMode,
+        ShaclValidationSortByMode, ShapeMapFormat,
     },
 };
-use std::{io::BufWriter, str::FromStr};
+use std::{io::BufWriter, path::Path, str::FromStr};
 
 /// Main interface for working with Semantic Web operations.
 ///
@@ -175,7 +177,7 @@ impl PyRudof {
         Ok(output)
     }
 
-    /// Loads RDF data from a string, file path or URL.
+    /// Loads RDF data from a string, file path or URL. If a SPARQL endpoint is specified, it loads data from the endpoint instead.
     ///
     /// Args:
     ///     input (str): String, file path or URL to the RDF data. Defaults to ``None``.
@@ -188,10 +190,11 @@ impl PyRudof {
     ///         - ``Strict``: Fail on first error
     ///     merge (bool, optional): If ``True``, merge with existing data; if ``False``,
     ///         replace current data. Defaults to ``False``.
+    ///    endpoint (str, optional): SPARQL endpoint URL to load data from. If provided, it overrides the `input` parameter. Defaults to ``None``.
     ///
     /// Raises:
     ///     RudofError: If String/file/URL cannot be read or data is malformed (in Strict mode).
-    #[pyo3(signature = (input = None, format=None, base=None, reader_mode=None, merge=None))]
+    #[pyo3(signature = (input = None, format=None, base=None, reader_mode=None, merge=None, endpoint=None))]
     pub fn read_data(
         &mut self,
         input: Option<&str>,
@@ -199,6 +202,7 @@ impl PyRudof {
         base: Option<&str>,
         reader_mode: Option<&PyReaderMode>,
         merge: Option<bool>,
+        endpoint: Option<&str>,
     ) -> PyResult<()> {
         let reader_mode = cnv_reader_mode(reader_mode);
         let format = cnv_rdf_format(format);
@@ -229,6 +233,9 @@ impl PyRudof {
         }
         if let Some(merge) = merge {
             load_data = load_data.with_merge(merge);
+        }
+        if let Some(endpoint) = endpoint {
+            load_data = load_data.with_endpoint(endpoint);
         }
         load_data.execute().map_err(cnv_err)?;
 
@@ -352,6 +359,46 @@ impl PyRudof {
             serialize_shex_schema = serialize_shex_schema.with_show_time(show_time);
         }
         serialize_shex_schema.execute().map_err(cnv_err)?;
+
+        let bytes = writer
+            .into_inner()
+            .map_err(|e| RudofError::Generic { error: e.to_string() })
+            .map_err(cnv_err)?;
+        let output = String::from_utf8(bytes)
+            .map_err(|e| RudofError::Generic { error: e.to_string() })
+            .map_err(cnv_err)?;
+
+        Ok(output)
+    }
+
+    /// Serializes the results of the last ShEx validation operation to a string.
+    ///
+    /// Args:
+    ///   format (ResultShExValidationFormat, optional): Output format. Defaults to ``ResultShExValidationFormat.Details``.
+    ///   sort_mode (PyShexValidationSortMode, optional): Sorting mode for validation results. Defaults to ``PyShexValidationSortMode.Node``.
+    ///
+    /// Returns:
+    ///  str: Serialized validation results.
+    #[pyo3(signature = (format=None, sort_mode=None))]
+    fn serialize_shex_validation_results(
+        &self,
+        format: Option<&PyResultShexValidationFormat>,
+        sort_mode: Option<&PyShexValidationSortMode>,
+    ) -> PyResult<String> {
+        let mut writer = BufWriter::new(Vec::new());
+
+        let mut serialize_shex_validation_results = self.inner.serialize_shex_validation_results(&mut writer);
+        if let Some(format) = format {
+            let format = cnv_shex_validation_format(format);
+            serialize_shex_validation_results =
+                serialize_shex_validation_results.with_result_shex_validation_format(format);
+        }
+        if let Some(sort_mode) = sort_mode {
+            let sort_mode = cnv_shex_validation_sort_mode(sort_mode);
+            serialize_shex_validation_results =
+                serialize_shex_validation_results.with_shex_validation_sort_order_mode(sort_mode);
+        }
+        serialize_shex_validation_results.execute().map_err(cnv_err)?;
 
         let bytes = writer
             .into_inner()
@@ -564,6 +611,46 @@ impl PyRudof {
         Ok(())
     }
 
+    /// Serializes the results of the last SHACL validation operation to a string.
+    ///
+    /// Args:
+    ///   format (ResultShaclValidationFormat, optional): Output format. Defaults to ``ResultShaclValidationFormat.Details``.
+    ///   sort_mode (ShaclValidationSortMode, optional): Sorting mode for validation results. Defaults to ``ShaclValidationSortMode.Severity``.
+    ///
+    /// Returns:
+    ///  str: Serialized validation results.
+    #[pyo3(signature = (format=None, sort_mode=None))]
+    pub fn serialize_shacl_validation_results(
+        &self,
+        format: Option<&PyResultShaclValidationFormat>,
+        sort_mode: Option<&PyShaclValidationSortMode>,
+    ) -> PyResult<String> {
+        let mut writer = BufWriter::new(Vec::new());
+
+        let mut serialize_shacl_validation_results = self.inner.serialize_shacl_validation_results(&mut writer);
+        if let Some(format) = format {
+            let format = cnv_shacl_validation_format(format);
+            serialize_shacl_validation_results =
+                serialize_shacl_validation_results.with_result_shacl_validation_format(format);
+        }
+        if let Some(sort_mode) = sort_mode {
+            let sort_mode = cnv_shacl_validation_sort_mode(sort_mode);
+            serialize_shacl_validation_results =
+                serialize_shacl_validation_results.with_shacl_validation_sort_order_mode(sort_mode);
+        }
+        serialize_shacl_validation_results.execute().map_err(cnv_err)?;
+
+        let bytes = writer
+            .into_inner()
+            .map_err(|e| RudofError::Generic { error: e.to_string() })
+            .map_err(cnv_err)?;
+        let output = String::from_utf8(bytes)
+            .map_err(|e| RudofError::Generic { error: e.to_string() })
+            .map_err(cnv_err)?;
+
+        Ok(output)
+    }
+
     /// Loads a ShapeMap from a string, file path or URL.
     ///
     /// Args:
@@ -589,6 +676,38 @@ impl PyRudof {
         load_dctap.execute().map_err(cnv_err)?;
 
         Ok(())
+    }
+
+    /// Serializes the current DCTAP profile to a string.
+    ///
+    /// Args:
+    ///     format (ResultDCTapFormat, optional): Output format. Defaults to ``ResultDCTapFormat.Internal``.
+    ///
+    /// Returns:
+    ///     str: Serialized DCTAP profile.
+    ///
+    /// Raises:
+    ///     RudofError: If no DCTAP profile is loaded or serialization fails.
+    #[pyo3(signature = (format=None))]
+    pub fn serialize_dctap(&self, format: Option<&PyResultDCTapFormat>) -> PyResult<String> {
+        let mut writer = BufWriter::new(Vec::new());
+        let format = cnv_result_dctap_format(format);
+
+        let mut serialize_dctap = self.inner.serialize_dctap(&mut writer);
+        if let Some(format) = format {
+            serialize_dctap = serialize_dctap.with_result_dctap_format(format);
+        }
+        serialize_dctap.execute().map_err(cnv_err)?;
+
+        let bytes = writer
+            .into_inner()
+            .map_err(|e| RudofError::Generic { error: e.to_string() })
+            .map_err(cnv_err)?;
+        let output = String::from_utf8(bytes)
+            .map_err(|e| RudofError::Generic { error: e.to_string() })
+            .map_err(cnv_err)?;
+
+        Ok(output)
     }
 
     /// Loads a SPARQL query from a string, file path or URL.
@@ -833,6 +952,75 @@ impl PyRudof {
         Ok(output)
     }
 
+    #[allow(clippy::too_many_arguments)]
+    #[pyo3(signature = (schema, input_mode, output_mode, input_format, output_format, base=None, reader_mode=None, shape=None, templates_folder=None, output_folder=None))]
+    pub fn convert_schemas(
+        &mut self,
+        schema: &str,
+        input_mode: &PyConversionMode,
+        output_mode: &PyResultConversionMode,
+        input_format: &PyConversionFormat,
+        output_format: &PyResultConversionFormat,
+        base: Option<&str>,
+        reader_mode: Option<&PyReaderMode>,
+        shape: Option<&str>,
+        templates_folder: Option<&str>,
+        output_folder: Option<&str>,
+    ) -> PyResult<String> {
+        let schema = InputSpec::from_str(schema)
+            .map_err(|e| InputSpecError::InvalidInput {
+                error: { e.to_string() },
+            })
+            .map_err(|e| cnv_err(e.into()))?;
+
+        let input_mode = cnv_conversion_mode(input_mode);
+        let output_mode = cnv_result_conversion_mode(output_mode);
+        let input_format = cnv_conversion_format(input_format);
+        let output_format = cnv_result_conversion_format(output_format);
+
+        let mut parsed_reader_mode = None;
+        if let Some(reader_mode) = reader_mode {
+            parsed_reader_mode = cnv_reader_mode(Some(reader_mode));
+        }
+
+        let mut writer = BufWriter::new(Vec::new());
+
+        let mut show_schema_conversion = self.inner.show_schema_conversion(
+            &schema,
+            input_mode,
+            output_mode,
+            input_format,
+            output_format,
+            &mut writer,
+        );
+        if let Some(base) = base {
+            show_schema_conversion = show_schema_conversion.with_base(base);
+        }
+        if let Some(reader_mode) = parsed_reader_mode {
+            show_schema_conversion = show_schema_conversion.with_reader_mode(reader_mode);
+        }
+        if let Some(shape) = shape {
+            show_schema_conversion = show_schema_conversion.with_shape(shape);
+        }
+        if let Some(templates_folder) = templates_folder {
+            show_schema_conversion = show_schema_conversion.with_templates_folder(Path::new(templates_folder));
+        }
+        if let Some(output_folder) = output_folder {
+            show_schema_conversion = show_schema_conversion.with_output_folder(Path::new(output_folder));
+        }
+        show_schema_conversion.execute().map_err(cnv_err)?;
+
+        let bytes = writer
+            .into_inner()
+            .map_err(|e| RudofError::Generic { error: e.to_string() })
+            .map_err(cnv_err)?;
+        let output = String::from_utf8(bytes)
+            .map_err(|e| RudofError::Generic { error: e.to_string() })
+            .map_err(cnv_err)?;
+
+        Ok(output)
+    }
+
     /// Alias for :meth:`version`. Returns the current Rudof version.
     ///
     /// Returns:
@@ -883,12 +1071,9 @@ impl From<&PyReaderMode> for DataReaderMode {
 }
 
 /// Sort mode for displaying a ShEx validation ResultShapeMap as a table.
-///
-/// This controls how rows are ordered when calling
-/// :meth:`ResultShapeMap.show_as_table`.
-#[pyclass(eq, eq_int, name = "SortModeResultMap")]
+#[pyclass(eq, eq_int, name = "ShexValidationSortMode")]
 #[derive(PartialEq, Clone)]
-pub enum PySortModeResultMap {
+pub enum PyShexValidationSortMode {
     /// Sort rows by focus node.
     Node,
     /// Sort rows by shape label.
@@ -900,21 +1085,10 @@ pub enum PySortModeResultMap {
 }
 
 #[pymethods]
-impl PySortModeResultMap {
+impl PyShexValidationSortMode {
     #[new]
     pub fn __init__(py: Python<'_>) -> Self {
-        py.detach(|| PySortModeResultMap::Node)
-    }
-}
-
-impl From<&PySortModeResultMap> for ShExValidationSortByMode {
-    fn from(mode: &PySortModeResultMap) -> Self {
-        match mode {
-            PySortModeResultMap::Node => Self::Node,
-            PySortModeResultMap::Shape => Self::Shape,
-            PySortModeResultMap::Status => Self::Status,
-            PySortModeResultMap::Details => Self::Details,
-        }
+        py.detach(|| PyShexValidationSortMode::Node)
     }
 }
 
@@ -937,6 +1111,7 @@ pub enum PyRDFFormat {
 pub enum PyResultDataFormat {
     Turtle,
     NTriples,
+    JsonLd,
     RdfXml,
     TriG,
     N3,
@@ -967,6 +1142,61 @@ pub enum PyQueryResultFormat {
 pub enum PyDCTapFormat {
     Csv,
     Xlsx,
+}
+
+/// DCTAP output formats.
+#[pyclass(eq, eq_int, name = "ResultDCTapFormat")]
+#[derive(PartialEq)]
+pub enum PyResultDCTapFormat {
+    Internal,
+    Json,
+}
+
+/// Conversion input modes.
+#[pyclass(eq, eq_int, name = "ConversionMode")]
+#[derive(PartialEq)]
+pub enum PyConversionMode {
+    Shacl,
+    ShEx,
+    Dctap,
+}
+
+/// Conversion output modes.
+#[pyclass(eq, eq_int, name = "ResultConversionMode")]
+#[derive(PartialEq)]
+pub enum PyResultConversionMode {
+    Sparql,
+    ShEx,
+    Uml,
+    Html,
+    Shacl,
+}
+
+/// Conversion input formats.
+#[pyclass(eq, eq_int, name = "ConversionFormat")]
+#[derive(PartialEq)]
+pub enum PyConversionFormat {
+    Csv,
+    ShExC,
+    ShExJ,
+    Turtle,
+    Xlsx,
+}
+
+/// Conversion output formats.
+#[pyclass(eq, eq_int, name = "ResultConversionFormat")]
+#[derive(PartialEq)]
+pub enum PyResultConversionFormat {
+    Default,
+    Internal,
+    Json,
+    ShExC,
+    ShExJ,
+    Turtle,
+    PlantUML,
+    Html,
+    Svg,
+    Png,
 }
 
 /// Service Description serialization format.
@@ -1013,6 +1243,42 @@ pub enum PyShaclFormat {
 pub enum PyShaclValidationMode {
     Native,
     Sparql,
+}
+
+#[pyclass(eq, eq_int, name = "ShaclValidationSortMode")]
+#[derive(PartialEq, Clone)]
+pub enum PyShaclValidationSortMode {
+    Severity,
+    Node,
+    Component,
+    Value,
+    Path,
+    SourceShape,
+    Details,
+}
+
+#[pymethods]
+impl PyShaclValidationSortMode {
+    #[new]
+    pub fn __init__(py: Python<'_>) -> Self {
+        py.detach(|| PyShaclValidationSortMode::Severity)
+    }
+}
+
+#[pyclass(eq, eq_int, name = "ResultShaclValidationFormat")]
+#[derive(PartialEq)]
+pub enum PyResultShaclValidationFormat {
+    Details,
+    Turtle,
+    NTriples,
+    RdfXml,
+    TriG,
+    N3,
+    NQuads,
+    Minimal,
+    Compact,
+    Json,
+    Csv,
 }
 
 #[pyclass(eq, eq_int, name = "ResultShexValidationFormat")]
@@ -1127,6 +1393,110 @@ fn cnv_dctap_format(format: Option<&PyDCTapFormat>) -> Option<&DCTapFormat> {
     }
 }
 
+fn cnv_result_dctap_format(format: Option<&PyResultDCTapFormat>) -> Option<&ResultDCTapFormat> {
+    format?;
+
+    match format.unwrap() {
+        PyResultDCTapFormat::Internal => Some(&ResultDCTapFormat::Internal),
+        PyResultDCTapFormat::Json => Some(&ResultDCTapFormat::Json),
+    }
+}
+
+fn cnv_conversion_mode(mode: &PyConversionMode) -> &ConversionMode {
+    match mode {
+        PyConversionMode::Shacl => &ConversionMode::Shacl,
+        PyConversionMode::ShEx => &ConversionMode::ShEx,
+        PyConversionMode::Dctap => &ConversionMode::Dctap,
+    }
+}
+
+fn cnv_result_conversion_mode(mode: &PyResultConversionMode) -> &ResultConversionMode {
+    match mode {
+        PyResultConversionMode::Sparql => &ResultConversionMode::Sparql,
+        PyResultConversionMode::ShEx => &ResultConversionMode::ShEx,
+        PyResultConversionMode::Uml => &ResultConversionMode::Uml,
+        PyResultConversionMode::Html => &ResultConversionMode::Html,
+        PyResultConversionMode::Shacl => &ResultConversionMode::Shacl,
+    }
+}
+
+fn cnv_conversion_format(format: &PyConversionFormat) -> &ConversionFormat {
+    match format {
+        PyConversionFormat::Csv => &ConversionFormat::Csv,
+        PyConversionFormat::ShExC => &ConversionFormat::ShExC,
+        PyConversionFormat::ShExJ => &ConversionFormat::ShExJ,
+        PyConversionFormat::Turtle => &ConversionFormat::Turtle,
+        PyConversionFormat::Xlsx => &ConversionFormat::Xlsx,
+    }
+}
+
+fn cnv_result_conversion_format(format: &PyResultConversionFormat) -> &ResultConversionFormat {
+    match format {
+        PyResultConversionFormat::Default => &ResultConversionFormat::Default,
+        PyResultConversionFormat::Internal => &ResultConversionFormat::Internal,
+        PyResultConversionFormat::Json => &ResultConversionFormat::Json,
+        PyResultConversionFormat::ShExC => &ResultConversionFormat::ShExC,
+        PyResultConversionFormat::ShExJ => &ResultConversionFormat::ShExJ,
+        PyResultConversionFormat::Turtle => &ResultConversionFormat::Turtle,
+        PyResultConversionFormat::PlantUML => &ResultConversionFormat::PlantUML,
+        PyResultConversionFormat::Html => &ResultConversionFormat::Html,
+        PyResultConversionFormat::Svg => &ResultConversionFormat::Svg,
+        PyResultConversionFormat::Png => &ResultConversionFormat::Png,
+    }
+}
+
+fn cnv_shex_validation_format(format: &PyResultShexValidationFormat) -> &ResultShExValidationFormat {
+    match format {
+        PyResultShexValidationFormat::Details => &ResultShExValidationFormat::Details,
+        PyResultShexValidationFormat::Turtle => &ResultShExValidationFormat::Turtle,
+        PyResultShexValidationFormat::NTriples => &ResultShExValidationFormat::NTriples,
+        PyResultShexValidationFormat::RdfXml => &ResultShExValidationFormat::RdfXml,
+        PyResultShexValidationFormat::TriG => &ResultShExValidationFormat::TriG,
+        PyResultShexValidationFormat::N3 => &ResultShExValidationFormat::N3,
+        PyResultShexValidationFormat::NQuads => &ResultShExValidationFormat::NQuads,
+        PyResultShexValidationFormat::Compact => &ResultShExValidationFormat::Compact,
+        PyResultShexValidationFormat::Json => &ResultShExValidationFormat::Json,
+        PyResultShexValidationFormat::Csv => &ResultShExValidationFormat::Csv,
+    }
+}
+
+fn cnv_shex_validation_sort_mode(format: &PyShexValidationSortMode) -> &ShExValidationSortByMode {
+    match format {
+        PyShexValidationSortMode::Node => &ShExValidationSortByMode::Node,
+        PyShexValidationSortMode::Shape => &ShExValidationSortByMode::Shape,
+        PyShexValidationSortMode::Status => &ShExValidationSortByMode::Status,
+        PyShexValidationSortMode::Details => &ShExValidationSortByMode::Details,
+    }
+}
+
+fn cnv_shacl_validation_format(format: &PyResultShaclValidationFormat) -> &ResultShaclValidationFormat {
+    match format {
+        PyResultShaclValidationFormat::Details => &ResultShaclValidationFormat::Details,
+        PyResultShaclValidationFormat::Turtle => &ResultShaclValidationFormat::Turtle,
+        PyResultShaclValidationFormat::NTriples => &ResultShaclValidationFormat::NTriples,
+        PyResultShaclValidationFormat::RdfXml => &ResultShaclValidationFormat::RdfXml,
+        PyResultShaclValidationFormat::TriG => &ResultShaclValidationFormat::TriG,
+        PyResultShaclValidationFormat::N3 => &ResultShaclValidationFormat::N3,
+        PyResultShaclValidationFormat::NQuads => &ResultShaclValidationFormat::NQuads,
+        PyResultShaclValidationFormat::Minimal => &ResultShaclValidationFormat::Minimal,
+        PyResultShaclValidationFormat::Compact => &ResultShaclValidationFormat::Compact,
+        PyResultShaclValidationFormat::Json => &ResultShaclValidationFormat::Json,
+        PyResultShaclValidationFormat::Csv => &ResultShaclValidationFormat::Csv,
+    }
+}
+
+fn cnv_shacl_validation_sort_mode(format: &PyShaclValidationSortMode) -> &ShaclValidationSortByMode {
+    match format {
+        PyShaclValidationSortMode::Severity => &ShaclValidationSortByMode::Severity,
+        PyShaclValidationSortMode::Node => &ShaclValidationSortByMode::Node,
+        PyShaclValidationSortMode::Component => &ShaclValidationSortByMode::Component,
+        PyShaclValidationSortMode::Value => &ShaclValidationSortByMode::Value,
+        PyShaclValidationSortMode::Path => &ShaclValidationSortByMode::Path,
+        PyShaclValidationSortMode::SourceShape => &ShaclValidationSortByMode::SourceShape,
+        PyShaclValidationSortMode::Details => &ShaclValidationSortByMode::Details,
+    }
+}
+
 /// Converts a Python reader mode enum into the corresponding Rust `ReaderMode`.
 ///
 /// Args:
@@ -1195,6 +1565,7 @@ fn cnv_result_data_format(format: Option<&PyResultDataFormat>) -> Option<&Result
         PyResultDataFormat::Png => Some(&ResultDataFormat::Png),
         PyResultDataFormat::Svg => Some(&ResultDataFormat::Svg),
         PyResultDataFormat::Compact => Some(&ResultDataFormat::Compact),
+        PyResultDataFormat::JsonLd => Some(&ResultDataFormat::JsonLd),
     }
 }
 
