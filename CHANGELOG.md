@@ -7,6 +7,22 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.2.9
+
+### Added
+- Added documentation for the `rudof_lib` crate (#455)
+- Added documentation for the `python` crate (#430)
+
+### Fixed
+- Fixed issue #577: MCP server failed to initialize in VS Code due to a strict initialization sequence
+- Fixed issue #530: Reviewed and refactored Python examples
+- Fixed issue #548: Corrected `NumericLiteral` equality to compare numeric values instead of variant types (resolves ShEx test suite failures)
+- Fixed issue #550: Resolved ShEx lexer bug where floats were tokenized as integers, breaking parsing
+
+### Changed
+- Refactored `rudof_lib` crate (#455); updated Python and `rudof_mcp` crates to use the new API
+- Updated `pyrudof` Jupyter notebook tutorials to align with the new API (#577)
+
 ## v0.2.8
 
 ### Added
