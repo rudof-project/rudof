@@ -13,60 +13,6 @@ use shacl::ir::components::MinExclusive;
 use shacl::ir::{IRComponent, IRSchema, IRShape};
 use std::fmt::Debug;
 
-impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinExclusive {
-    fn validate_native(
-        &self,
-        component: &IRComponent,
-        shape: &IRShape,
-        _store: &S,
-        _engine: &mut dyn Engine<S>,
-        value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&IRShape>,
-        maybe_path: Option<&SHACLPath>,
-        _shapes_graph: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        let min_exclusive = |node: &S::Term| match S::term_as_sliteral(node) {
-            Ok(lit) => lit.partial_cmp(self.min_exclusive()).map(|o| o.is_le()).unwrap_or(true),
-            Err(_) => true,
-        };
-        let message = format!("MinExclusive({}) not satisfied", self.min_exclusive());
-        validate_with(
-            component,
-            shape,
-            value_nodes,
-            ValueNodeIteration,
-            min_exclusive,
-            &message,
-            maybe_path,
-        )
-    }
-}
-
-impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MinExclusive {
-    fn validate_sparql(
-        &self,
-        component: &IRComponent,
-        shape: &IRShape,
-        store: &S,
-        value_nodes: &ValueNodes<S>,
-        _source_shape: Option<&IRShape>,
-        maybe_path: Option<&SHACLPath>,
-        _shapes_graph: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        let min_exclusive_value = self.min_exclusive().clone();
-
-        let query = |value_node: &S::Term| {
-            formatdoc! {
-                " ASK {{ FILTER ({} < {}) }} ",
-                value_node, min_exclusive_value
-            }
-        };
-
-        let message = format!("MinExclusive({}) not satisfied", self.min_exclusive());
-        validate_ask_with(component, shape, store, value_nodes, query, &message, maybe_path)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::shacl_processor::{RdfDataValidation, ShaclValidationMode};
