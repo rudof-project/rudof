@@ -16,9 +16,11 @@ impl Endpoint {
             Err(_) => Err(ValidationError::SparqlCreation)
         }
     }
+}
 
-    pub fn from_sparql(sparql: SparqlEndpoint) -> Self {
-        Self { store: sparql }
+impl From<SparqlEndpoint> for Endpoint {
+    fn from(value: SparqlEndpoint) -> Self {
+        Self { store: value }
     }
 }
 
