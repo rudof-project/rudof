@@ -32,20 +32,6 @@ where
     }
 }
 
-/*impl <K,V,R> IntoIterator for Candidate<K,V,R>
-where
-  K: Key + Display,
-  V: Value + Display,
-  R: Ref + Display, {
-    type Item = (K, V, Component, MatchCond<K, V, R>);
-
-    type IntoIter = ;
-
-    fn into_iter(self) -> Self::IntoIter {
-        todo!()
-    }
-}*/
-
 impl<K, V, R, Ctx> Deref for Candidate<K, V, R, Ctx>
 where
     K: Key + Display,

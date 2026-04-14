@@ -7,19 +7,29 @@ use shex_ast::{ir::schema_ir::SchemaIR as ShExSchemaIR, shapemap::QueryShapeMap}
 use shex_validation::Validator as ShExValidator;
 
 pub fn validate_shex(rudof: &mut Rudof) -> Result<()> {
-    let (data, shex_schema, shapemap, shex_validator) = validate_loaded_data_schema_and_shapemap(rudof)?;
+    let (data, shex_schema, shapemap, shex_validator) = prepare_loaded_data_schema_and_shapemap(rudof)?;
     let rdf_data = data.unwrap_rdf_mut();
 
     let result = shex_validator
         .validate_shapemap(shapemap, rdf_data, shex_schema, &Some(rdf_data.prefixmap_in_memory()))
         .map_err(|e| ShExError::FailedShExValidation { error: e.to_string() })?;
 
+    // Read back the map state that was mutated by MapActionExtension closures during validation.
+    // The SchemaIR's registry holds an Arc<Mutex<MapState>> that is shared with every compiled
+    // closure, so locking it here gives the fully-populated state.
+    if let Some(schema_ir) = &rudof.shex_schema_ir
+        && let Some(arc) = schema_ir.get_map_state_arc()
+    {
+        let state = arc.lock().unwrap().clone();
+        rudof.map_state = Some(state);
+    }
+
     rudof.shex_validation_results = Some(result);
 
     Ok(())
 }
 
-fn validate_loaded_data_schema_and_shapemap(
+fn prepare_loaded_data_schema_and_shapemap(
     rudof: &mut Rudof,
 ) -> Result<(&mut Data, &ShExSchemaIR, &QueryShapeMap, &ShExValidator)> {
     let data = rudof.data.as_mut().ok_or(Box::new(DataError::NoDataLoaded))?;

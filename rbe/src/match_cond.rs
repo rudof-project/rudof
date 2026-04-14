@@ -107,12 +107,7 @@ where
                 write!(f, "And(")?;
                 cs.iter().try_fold((), |_, c| write!(f, "|{c}"))?;
                 write!(f, ")")
-            }, /* MatchCond::Or(cs) => {
-                   write!(f, "Or")?;
-                   cs.iter().try_fold((), |_, c| write!(f, "|{c}"))?;
-                   write!(f, ")")
-               }
-               MatchCond::Not(c) => write!(f, "Not({c})"),*/
+            },
         }
     }
 }
@@ -197,16 +192,6 @@ where
         self.clone_box()
     }
 }
-
-/*impl <K, V, R> PartialEq for Box<dyn Cond<K, V, R>>
-where  K: Hash + Eq + Display + Default,
-       V: Hash + Eq + Default + PartialEq + Clone,
-       R: Default + PartialEq + Clone,
-{
-    fn eq(&self, other: &Box<dyn Cond<K, V, R>>) -> bool {
-        todo!()
-    }
-}*/
 
 impl<K, V, R, Ctx> Clone for SingleCond<K, V, R, Ctx>
 where
@@ -355,7 +340,6 @@ mod tests {
                 })
             }
         });
-
         assert_eq!(cond_even.matches(&2, &'a'), Ok(Pending::new()));
     }
 
@@ -370,7 +354,6 @@ mod tests {
                 })
             }
         });
-
         assert!(cond_even.matches(&3, &'a').is_err());
     }
 
@@ -387,7 +370,6 @@ mod tests {
                 }
             })
         }
-
         assert!(cond_name("foo".to_string()).matches(&"baz".to_string(), &'a').is_err());
     }
 
@@ -406,7 +388,6 @@ mod tests {
                     }
                 })
         }
-
         assert_eq!(
             cond_name("foo".to_string()).matches(&"foo".to_string(), &'a'),
             Ok(Pending::new())

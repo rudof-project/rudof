@@ -1,9 +1,8 @@
-use std::collections::HashSet;
-use tracing::debug;
-
 use crate::Context;
 use crate::{Key, Ref, Value, rbe1::Rbe};
 use crate::{Pending, rbe_error::RbeError};
+use std::collections::HashSet;
+use tracing::debug;
 
 #[derive(Default)]
 pub struct RbeMatcher<K, V, R, Ctx>
@@ -31,7 +30,7 @@ where
 
     pub fn with_rbe(mut self, rbe: &Rbe<K, V, R, Ctx>) -> Self {
         self.rbe = (*rbe).clone();
-        self.controlled = rbe.symbols();
+        self.controlled = self.rbe.symbols();
         self
     }
 

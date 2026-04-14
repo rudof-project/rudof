@@ -1,10 +1,16 @@
 use crate::ir::{
     actions::{semantic_action_error::SemanticActionError, semantic_action_extension::SemanticActionExtension},
+    map_action_extension::MapActionExtension,
+    map_state::MapState,
     semantic_action_context::SemanticActionContext,
 };
 use iri_s::IriS;
-use std::{fmt, sync::Arc};
+use std::{
+    fmt,
+    sync::{Arc, Mutex},
+};
 
+#[derive(Clone)]
 pub struct SemanticActionsRegistry {
     extensions: Vec<Arc<dyn SemanticActionExtension + Send + Sync>>,
 }
@@ -24,6 +30,30 @@ impl SemanticActionsRegistry {
 
     pub fn register(&mut self, extension: Box<dyn SemanticActionExtension + Send + Sync>) {
         self.extensions.push(Arc::from(extension));
+    }
+
+    pub fn set_map_state(&mut self, map_state: &mut MapState) {
+        for ext in &self.extensions {
+            if let Some(map_ext) = ext.as_any().downcast_ref::<MapActionExtension>() {
+                map_ext.set_state(map_state.clone());
+            }
+        }
+    }
+
+    /// Return a shared reference to the live `MapState` held by the registered
+    /// `MapActionExtension`, if one is present.
+    ///
+    /// Because `MapActionExtension` stores its state inside an `Arc<Mutex<MapState>>`, any
+    /// mutations performed by validation closures are immediately visible through the returned
+    /// Arc — even when the registry or the `SchemaIR` has been cloned, since Arc-clone is
+    /// reference-counted rather than deep-copied.
+    pub fn get_map_state_arc(&self) -> Option<Arc<Mutex<MapState>>> {
+        for ext in &self.extensions {
+            if let Some(map_ext) = ext.as_any().downcast_ref::<MapActionExtension>() {
+                return Some(map_ext.get_state());
+            }
+        }
+        None
     }
 
     /// Find the extension registered for `action_iri`.

@@ -1,8 +1,7 @@
-use std::sync::Arc;
-
 use super::node_constraint::NodeConstraint;
 use crate::ir::annotation::Annotation;
 use crate::ir::map_action_extension::MapActionExtension;
+use crate::ir::map_state::MapState;
 use crate::ir::object_value::ObjectValue;
 use crate::ir::schema_ir::SchemaIR;
 use crate::ir::sem_act::SemAct;
@@ -28,6 +27,7 @@ use rudof_rdf::rdf_core::term::{
     Object,
     literal::{ConcreteLiteral, NumericLiteral},
 };
+use std::sync::Arc;
 use tracing::{debug, info, trace};
 
 #[derive(Debug, Default)]
@@ -39,15 +39,28 @@ pub struct AST2IR {
 }
 
 impl AST2IR {
-    pub fn new(resolve_method: &ResolveMethod) -> Self {
+    pub fn new(resolve_method: &ResolveMethod, map_state: MapState) -> Self {
         let semantic_actions_registry = SemanticActionsRegistry::new().with(vec![
             Box::new(TestActionExtension::new()),
-            Box::new(MapActionExtension::new()),
+            Box::new(MapActionExtension::new(map_state)),
         ]);
         Self {
             resolve_method: resolve_method.clone(),
             shape_decls_counter: 0,
             semantic_actions_registry,
+        }
+    }
+
+    /// Build an `AST2IR` from an existing registry.
+    ///
+    /// This is the preferred constructor when the registry (and its `MapActionExtension` Arc) has
+    /// already been set up by the caller, so that all closures compiled here share the same
+    /// `Arc<Mutex<MapState>>` as the registry stored in the `SchemaIR`.
+    pub fn with_registry(resolve_method: &ResolveMethod, registry: SemanticActionsRegistry) -> Self {
+        Self {
+            resolve_method: resolve_method.clone(),
+            shape_decls_counter: 0,
+            semantic_actions_registry: registry,
         }
     }
 

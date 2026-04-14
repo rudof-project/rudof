@@ -308,7 +308,7 @@ where
     }
 }
 
-type State<K, V, R, Ctx> = MultiProduct<IntoIter<(K, V, Ctx, Component, MatchCond<K, V, R, Ctx>)>>;
+type IterState<K, V, R, Ctx> = MultiProduct<IntoIter<(K, V, Ctx, Component, MatchCond<K, V, R, Ctx>)>>;
 
 #[derive(Debug, Clone)]
 pub struct IterCartesianProduct<K, V, R, Ctx>
@@ -319,7 +319,7 @@ where
     Ctx: Context,
 {
     is_first: bool,
-    state: State<K, V, R, Ctx>,
+    state: IterState<K, V, R, Ctx>,
     rbe: Rbe<Component>,
     open: bool,
 }
@@ -347,18 +347,11 @@ where
                 }
             },
             Some(vs) => {
-                //for (k, v, c, cond) in &vs {
-                // trace!("Next state: ({k} {v}) should match component {c} with cond: {cond})");
-                //}
                 let mut pending: Pending<V, R> = Pending::new();
                 for (_k, v, ctx, _, cond) in &vs {
                     match cond.matches(v, ctx) {
                         Ok(new_pending) => {
-                            //trace!(
-                            //    "Condition passed: {cond} with value: {v}, new pending: {new_pending}"
-                            //);
                             pending.merge(new_pending);
-                            // trace!("Pending merged: {pending}");
                         },
                         Err(err) => {
                             trace!("Failed condition: {cond} with value: {v}");
@@ -366,7 +359,6 @@ where
                         },
                     }
                 }
-                // trace!("Pending after checking conditions: {pending}");
                 let bag = Bag::from_iter(vs.into_iter().map(|(_, _, _, c, _)| c));
                 match self.rbe.match_bag(&bag, self.open) {
                     Ok(()) => {
@@ -471,7 +463,7 @@ mod tests {
         let vs = vec![('p', 'a', ' '), ('q', 'y', ' '), ('q', 'z', ' ')];
 
         // rbe_table = { p is_a ; q @t ; q @u+ }
-        let mut rbe_table = RbeTable::new();
+        let mut rbe_table: RbeTable<char, char, char, char> = RbeTable::new();
         let c1 = rbe_table.add_component('p', &is_a);
         let c2 = rbe_table.add_component('q', &ref_t);
         let c3 = rbe_table.add_component('q', &ref_u);
@@ -526,7 +518,7 @@ mod tests {
         let vs = vec![('p', 'a', ' '), ('q', 'y', ' ')];
 
         // rbe_table = { p is_a ; q @t ; q @u+ }
-        let mut rbe_table = RbeTable::new();
+        let mut rbe_table: RbeTable<char, char, char, char> = RbeTable::new();
         let c1 = rbe_table.add_component('p', &is_a);
         let c2 = rbe_table.add_component('q', &ref_t);
         let c3 = rbe_table.add_component('q', &ref_u);
@@ -559,7 +551,7 @@ mod tests {
         let vs = vec![('p', 'a', ' '), ('q', 'a', ' ')];
 
         // rbe_table = { p is_a ; q is_a }
-        let mut rbe_table = RbeTable::new();
+        let mut rbe_table: RbeTable<char, char, char, char> = RbeTable::new();
         let c1 = rbe_table.add_component('p', &is_a);
         let c2 = rbe_table.add_component('q', &is_a);
         rbe_table.with_rbe(Rbe::and(vec![
@@ -591,7 +583,7 @@ mod tests {
         let vs = vec![('p', 'a', ' '), ('q', 'b', ' ')];
 
         // rbe_table = { p is_a ; q is_a }
-        let mut rbe_table = RbeTable::new();
+        let mut rbe_table: RbeTable<char, char, char, char> = RbeTable::new();
         let c1 = rbe_table.add_component('p', &is_a);
         let c2 = rbe_table.add_component('q', &is_a);
         rbe_table.with_rbe(Rbe::and(vec![
@@ -641,7 +633,7 @@ mod tests {
         let vs = vec![('p', 'x', ' '), ('p', 'y', ' ')];
 
         // rbe_table = { p is_x ; p is_y }
-        let mut rbe_table = RbeTable::new();
+        let mut rbe_table: RbeTable<char, char, char, char> = RbeTable::new();
         let c1 = rbe_table.add_component('p', &is_x);
         let c2 = rbe_table.add_component('p', &is_y);
         rbe_table.with_rbe(Rbe::and(vec![
@@ -683,7 +675,7 @@ mod tests {
         // Value 'z' doesn't match is_x or is_y
         let vs = vec![('p', 'x', ' '), ('p', 'z', ' ')];
 
-        let mut rbe_table = RbeTable::new();
+        let mut rbe_table: RbeTable<char, char, char, char> = RbeTable::new();
         let c1 = rbe_table.add_component('p', &is_x);
         let c2 = rbe_table.add_component('p', &is_y);
         rbe_table.with_rbe(Rbe::and(vec![

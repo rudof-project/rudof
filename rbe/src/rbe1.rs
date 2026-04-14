@@ -19,6 +19,7 @@ where
     Fail {
         error: RbeError<K, V, R, Ctx>,
     },
+
     #[default]
     Empty,
 

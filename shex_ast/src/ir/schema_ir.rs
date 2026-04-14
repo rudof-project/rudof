@@ -2,6 +2,8 @@ use super::dependency_graph::{DependencyGraph, PosNeg};
 use super::shape_expr::ShapeExpr;
 use super::shape_label::ShapeLabel;
 use crate::ir::inheritance_graph::InheritanceGraph;
+use crate::ir::map_state::MapState;
+use crate::ir::semantic_actions_registry::SemanticActionsRegistry;
 use crate::ir::shape::Shape;
 use crate::ir::shape_expr_info::ShapeExprInfo;
 use crate::ir::source_idx::SourceIdx;
@@ -12,6 +14,8 @@ use prefixmap::{IriRef, PrefixMap};
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
+use std::sync::Arc;
+use std::sync::Mutex;
 use tracing::trace;
 
 type Result<A> = std::result::Result<A, Box<SchemaIRError>>;
@@ -32,10 +36,11 @@ pub struct SchemaIR {
     dependency_graph: DependencyGraph,
     inheritance_graph: InheritanceGraph,
     abstract_shapes: HashSet<ShapeLabelIdx>,
+    semantic_actions_registry: SemanticActionsRegistry,
 }
 
 impl SchemaIR {
-    pub fn new() -> SchemaIR {
+    pub fn new(registry: SemanticActionsRegistry) -> SchemaIR {
         SchemaIR {
             labels_idx_map: HashMap::new(),
             idx_labels_map: HashMap::new(),
@@ -51,7 +56,21 @@ impl SchemaIR {
             dependency_graph: DependencyGraph::new(),
             inheritance_graph: InheritanceGraph::new(),
             abstract_shapes: HashSet::new(),
+            semantic_actions_registry: registry,
         }
+    }
+
+    pub fn set_map_state(&mut self, map_state: &mut MapState) {
+        self.semantic_actions_registry.set_map_state(map_state);
+    }
+
+    /// Return the live `Arc<Mutex<MapState>>` from the registered `MapActionExtension`, if any.
+    ///
+    /// All validation closures compiled into the RBE table share this same Arc (because
+    /// `SemanticActionsRegistry::clone` clones the `Arc`s by reference, not by value), so
+    /// locking it after validation yields the fully-populated map state.
+    pub fn get_map_state_arc(&self) -> Option<Arc<Mutex<MapState>>> {
+        self.semantic_actions_registry.get_map_state_arc()
     }
 
     pub fn set_prefixmap(&mut self, prefixmap: Option<PrefixMap>) {
@@ -188,7 +207,11 @@ impl SchemaIR {
         resolve_method: &ResolveMethod,
         base: &Option<IriS>,
     ) -> Result<()> {
-        let mut compiler = AST2IR::new(resolve_method);
+        // Reuse the registry that was already set up on this SchemaIR (cloning it shares the
+        // same Arc<dyn SemanticActionExtension> instances, so closures compiled below hold the
+        // same Arc<Mutex<MapState>> that callers can later read back via get_map_state_arc).
+        let registry = self.semantic_actions_registry.clone();
+        let mut compiler = AST2IR::with_registry(resolve_method, registry);
         compiler.compile(schema_json, &schema_json.source_iri(), base, self)?;
         Ok(())
     }
@@ -656,7 +679,11 @@ mod tests {
     use iri_s::iri;
 
     use super::SchemaIR;
-    use crate::{Pred, ResolveMethod, ShapeLabelIdx, ast::Schema as SchemaJson, ir::shape_label::ShapeLabel};
+    use crate::{
+        Pred, ResolveMethod, ShapeLabelIdx,
+        ast::Schema as SchemaJson,
+        ir::{semantic_actions_registry::SemanticActionsRegistry, shape_label::ShapeLabel},
+    };
 
     #[test]
     fn test_find_component() {
@@ -678,7 +705,7 @@ mod tests {
             ]
         }"#;
         let schema_json: SchemaJson = serde_json::from_str::<SchemaJson>(str).unwrap();
-        let mut ir = SchemaIR::new();
+        let mut ir = SchemaIR::new(SemanticActionsRegistry::default());
         ir.populate_from_schema_json(&schema_json, &ResolveMethod::default(), &None)
             .unwrap();
         println!("Schema IR: {ir}");
@@ -731,7 +758,7 @@ mod tests {
   "@context": "http://www.w3.org/ns/shex.jsonld"
 }"#;
         let schema: SchemaJson = serde_json::from_str(str).unwrap();
-        let mut ir = SchemaIR::new();
+        let mut ir = SchemaIR::new(SemanticActionsRegistry::default());
         ir.populate_from_schema_json(&schema, &ResolveMethod::default(), &None)
             .unwrap();
         println!("Schema IR: {ir}");
@@ -798,7 +825,7 @@ mod tests {
   "@context": "http://www.w3.org/ns/shex.jsonld"
 }"#;
         let schema: SchemaJson = serde_json::from_str(str).unwrap();
-        let mut ir = SchemaIR::new();
+        let mut ir = SchemaIR::new(SemanticActionsRegistry::default());
         ir.populate_from_schema_json(&schema, &ResolveMethod::default(), &None)
             .unwrap();
         let s: ShapeLabel = ShapeLabel::iri(iri!("http://example.org/S"));

@@ -139,6 +139,19 @@ impl IriS {
         })
     }
 
+    pub fn parse_turtle(str: &str) -> Result<Self, IriSError> {
+        let str = str.trim();
+        if str.starts_with('<') && str.ends_with('>') {
+            let inner_str = &str[1..str.len() - 1];
+            IriS::new(inner_str)
+        } else {
+            Err(IriSError::TurtleParseError {
+                str: str.to_string(),
+                error: "IRI must be enclosed in angle brackets".to_string(),
+            })
+        }
+    }
+
     /// [Dereference](https://www.w3.org/wiki/DereferenceURI) the IRI and get the content available from it.
     /// It handles also IRIs with the `file` scheme as local file names. For example: `file:///person.txt`
     #[cfg(not(target_family = "wasm"))]
@@ -306,5 +319,44 @@ impl From<IriS> for Term {
 impl Default for IriS {
     fn default() -> Self {
         IriS::new_unchecked(&String::default())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_iri_creation() {
+        let iri = IriS::new("http://example.org/test").unwrap();
+        assert_eq!(iri.as_str(), "http://example.org/test");
+    }
+
+    #[test]
+    fn test_iri_join() {
+        let base = IriS::new("http://example.org/").unwrap();
+        let joined = base.join("test").unwrap();
+        assert_eq!(joined.as_str(), "http://example.org/test");
+    }
+
+    #[test]
+    fn test_iri_extend() {
+        let base = IriS::new("http://example.org").unwrap();
+        let extended = base.extend("test").unwrap();
+        assert_eq!(extended.as_str(), "http://example.org/test");
+    }
+
+    #[test]
+    fn test_iri_resolve() {
+        let base = IriS::new("http://example.org/").unwrap();
+        let resolved = base.resolve_str("test").unwrap();
+        assert_eq!(resolved.as_str(), "http://example.org/test");
+    }
+
+    #[test]
+    fn parse_iri_turtle() {
+        let str = "<http://example.org/test>";
+        let iri = IriS::parse_turtle(str).unwrap();
+        assert_eq!(iri.as_str(), "http://example.org/test");
     }
 }

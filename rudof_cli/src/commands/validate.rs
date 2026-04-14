@@ -51,6 +51,7 @@ impl ValidateCommand {
             reader_mode: self.args.reader_mode,
             endpoint: self.args.endpoint.clone(),
             result_format: self.args.result_format.into(),
+            map_state: self.args.map_state.clone(),
             common: self.args.common.clone(),
         })
     }

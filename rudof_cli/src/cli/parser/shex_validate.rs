@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::cli::parser::CommonArgsAll;
 use crate::cli::wrappers::{
     DataFormatCli, DataReaderModeCli, ResultShExValidationFormatCli, ShExFormatCli, ShExValidationSortByModeCli,
@@ -115,6 +117,9 @@ pub struct ShexValidateArgs {
         default_value_t = ResultShExValidationFormatCli::Details
     )]
     pub result_format: ResultShExValidationFormatCli,
+
+    #[arg(long = "map-state", value_name = "FILE", help = "MapState file name")]
+    pub map_state: Option<PathBuf>,
 
     #[command(flatten)]
     pub common: CommonArgsAll,

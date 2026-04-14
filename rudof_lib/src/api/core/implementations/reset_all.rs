@@ -16,4 +16,5 @@ pub fn reset_all(rudof: &mut Rudof) {
     rudof.dctap = None;
     rudof.service_description = None;
     rudof.rdf_config = None;
+    rudof.map_state = None;
 }

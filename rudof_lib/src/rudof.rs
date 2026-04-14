@@ -14,6 +14,7 @@ use crate::{
         },
         dctap::builders::{LoadDctapBuilder, ResetDctapBuilder, SerializeDctapBuilder},
         generation::builders::GenerateDataBuilder,
+        map_state::builders::SerializeMapStateBuilder,
         pgschema::builders::{
             LoadPgSchemaBuilder, LoadTypemapBuilder, PgSchemaValidationBuilder, ResetPgSchemaBuilder,
             ResetPgSchemaValidationBuilder, ResetTypemapBuilder, SerializePgSchemaBuilder,
@@ -48,9 +49,9 @@ use rudof_rdf::rdf_core::query::SparqlQuery;
 use shacl_ast::ast::ShaclSchema;
 use shacl_ir::compiled::schema_ir::SchemaIR as ShaclSchemaIR;
 use shacl_validation::validation_report::report::ValidationReport;
-use shex_ast::Schema as ShExSchema;
 use shex_ast::ir::schema_ir::SchemaIR as ShExSchemaIR;
 use shex_ast::shapemap::{QueryShapeMap, ResultShapeMap};
+use shex_ast::{Schema as ShExSchema, ir::map_state::MapState};
 use shex_validation::Validator as ShExValidator;
 use sparql_service::RdfData;
 use sparql_service::ServiceDescription;
@@ -122,6 +123,9 @@ pub struct Rudof {
 
     /// Current rdf_config model
     pub(crate) rdf_config: Option<RdfConfigModel>,
+
+    /// Current map state for ShEx validation used by Map Semantic Actions and materialize option
+    pub(crate) map_state: Option<MapState>,
 }
 
 impl Rudof {
@@ -175,6 +179,10 @@ impl Rudof {
     /// - `writer`: output target for the serialized data (e.g., file, stdout, in-memory buffer).
     pub fn serialize_data<'a, W: io::Write>(&'a mut self, writer: &'a mut W) -> SerializeDataBuilder<'a, W> {
         SerializeDataBuilder::new(self, writer)
+    }
+
+    pub fn serialize_map_state<'a, W: io::Write>(&'a mut self, writer: &'a mut W) -> SerializeMapStateBuilder<'a, W> {
+        SerializeMapStateBuilder::new(self, writer)
     }
 
     /// Returns a `ResetDataBuilder` to clear loaded data from `Rudof`.
