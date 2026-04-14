@@ -5,6 +5,7 @@ mod mode;
 mod report;
 mod store;
 mod error;
+mod engine;
 mod focus_nodes;
 mod value_nodes;
 mod cache;
