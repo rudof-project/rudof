@@ -281,7 +281,6 @@ tests:
     open: false
     match_result: !Fail
 
-    # /a{1,1}|b{1,1}/(closed) != ac
   - name: a_1_1_and_b_1_1_and_c_0_1_with_a_1_c_1_b_1_closed_pass
     rbe: !And
       values:
@@ -309,3 +308,4 @@ tests:
         - 1
     open: false
     match_result: !Pass
+

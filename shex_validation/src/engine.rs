@@ -821,6 +821,18 @@ fn check_expr_neigh(
         neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", ")
     );
     let result_iter = expr.matches(neighs.to_vec())?;
+    let mut result_iter = result_iter.peekable();
+    if result_iter.peek().is_none() {
+        debug!(
+            "expr {expr} produced no candidates for neighs: [{}]",
+            neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", ")
+        );
+        return fail(ValidatorError::NoMatchesFound {
+            node: Box::new(node.clone()),
+            shape: Box::new(shape.clone()),
+            idx: *idx,
+        });
+    }
     let mut errors = Vec::new();
     for result in result_iter {
         trace!(
@@ -868,8 +880,10 @@ fn check_expr_neigh(
             },
         }
     }
+    // If we reach this point, all results have been processed and all of them have pending values that are not in typing, so the shape failed
+    // We can collect all the failed pending values from all the results and return them as errors
     debug!(
-        "expr failed {expr} with neighs: [{}], errors: [{}]",
+        "expr failed {expr} with neighs: [{}]. No matching found. Errors: [{}]",
         neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", "),
         errors.iter().map(|e| format!("{e}")).join(", ")
     );

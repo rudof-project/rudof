@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fmt;
 use std::fmt::{Debug, Display};
+use tracing::trace;
 
 /// Simple Implementation of Regular Bag Expressions
 /// The implementation is based on [Brzozowski derivatives of regular expressions](https://dl.acm.org/doi/10.1145/321239.321249),
@@ -171,27 +172,33 @@ where
     pub fn deriv_bag(&self, bag: &Bag<A>, open: bool, controlled: &HashSet<A>) -> Rbe<A> {
         let mut current = (*self).clone();
         let mut processed = Bag::new();
-        for (x, card) in bag.iter() {
-            let deriv = current.deriv(x, card, open, controlled);
-            match deriv {
-                Rbe::Fail { error } => {
-                    current = Rbe::Fail {
-                        error: DerivError::DerivBagError {
-                            error_msg: format!("{error}"),
-                            processed: Box::new(processed),
-                            bag: Box::new((*bag).clone()),
-                            expr: Box::new((*self).clone()),
-                            current: Box::new(current.clone()),
-                            value: (*x).clone(),
-                            open,
-                        },
-                    };
-                    break;
-                },
-                _ => {
-                    processed.insert((*x).clone());
-                    current = deriv;
-                },
+        for (x, count) in bag.iter() {
+            for _ in 0..count {
+                let deriv = current.deriv(x, 1, open, controlled);
+                trace!("Deriv of RBE {current} with symbol {x} and open={open} is {deriv}");
+                match deriv {
+                    Rbe::Fail { error } => {
+                        current = Rbe::Fail {
+                            error: DerivError::DerivBagError {
+                                error_msg: format!("{error}"),
+                                processed: Box::new(processed.clone()),
+                                bag: Box::new((*bag).clone()),
+                                expr: Box::new((*self).clone()),
+                                current: Box::new(current.clone()),
+                                value: (*x).clone(),
+                                open,
+                            },
+                        };
+                        break;
+                    },
+                    _ => {
+                        processed.insert((*x).clone());
+                        current = deriv;
+                    },
+                }
+            }
+            if matches!(current, Rbe::Fail { .. }) {
+                break;
             }
         }
         current
@@ -233,7 +240,7 @@ where
                         Rbe::Fail {
                             error: DerivError::MaxCardinalityZeroFoundValue { x: (*x).clone() },
                         }
-                    } else if card.contains(n) {
+                    } else if card.max.greater_or_equal(n) {
                         let card = card.minus(n);
                         Self::mk_range_symbol(x, &card)
                     } else {
@@ -681,6 +688,42 @@ mod tests {
             Rbe::symbol('b', 1, Max::IntMax(1)),
         ]));
         assert_eq!(rbe.match_bag(&Bag::from(['a', 'b']), true), Ok(()));
+    }
+
+    #[traced_test]
+    #[test]
+    fn match_group_a_and_b_star_or_c_with_a2_b2() {
+        // (a;b)+ #= a;b
+        let rbe = Rbe::or(vec![
+            Rbe::star(Rbe::and(vec![
+                Rbe::symbol('a', 1, Max::IntMax(1)),
+                Rbe::symbol('b', 1, Max::IntMax(1)),
+            ])),
+            Rbe::symbol('c', 1, Max::IntMax(1)),
+        ]);
+        assert_eq!(rbe.match_bag(&Bag::from(['a', 'a', 'b', 'b']), false), Ok(()));
+    }
+
+    #[traced_test]
+    #[test]
+    fn match_group_a_and_b_star_or_c_with_a_b() {
+        // (a;b)+ #= a;b
+        let rbe = Rbe::or(vec![
+            Rbe::star(Rbe::and(vec![
+                Rbe::symbol('a', 1, Max::IntMax(1)),
+                Rbe::symbol('b', 1, Max::IntMax(1)),
+            ])),
+            Rbe::symbol('c', 1, Max::IntMax(1)),
+        ]);
+        assert_eq!(rbe.match_bag(&Bag::from(['a', 'b']), false), Ok(()));
+    }
+
+    #[traced_test]
+    #[test]
+    fn match_a_25_with_a_2() {
+        // (a;b)+ #= a;b
+        let rbe = Rbe::symbol('a', 2, Max::IntMax(5));
+        assert_eq!(rbe.match_bag(&Bag::from(['a', 'a']), false), Ok(()));
     }
 
     /* I comment this test because it fails with

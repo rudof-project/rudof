@@ -61,12 +61,6 @@ extends-abstract-multi-empty_pass
 extends-abstract-multi-empty_pass-missingOptRef1
 float-pINF_fail
 nonNegativeInteger-n0_pass
-open2Eachdotclosecard25c1dot
-open3Eachdotclosecard23Annot3Code2-p1p2p3X3
-open3Eachdotclosecard23_pass-p1p2p3X3
-open3Onedotclosecard23_pass-p1X2
-open3Onedotclosecard23_pass-p1X3
-open3Onedotclosecard2_pass-p1X2
 shapeExternRef_fail
 shapeExtern_fail
 startCode1fail_abort

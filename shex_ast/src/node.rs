@@ -1,3 +1,5 @@
+use crate::ObjectValue;
+use crate::SchemaJsonError;
 use iri_s::IriS;
 use prefixmap::IriRef;
 use rbe::Value;
@@ -10,10 +12,6 @@ use rudof_rdf::rdf_core::{
 };
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
-use tracing::trace;
-
-use crate::ObjectValue;
-use crate::SchemaJsonError;
 
 impl Value for Node {}
 
@@ -50,7 +48,6 @@ impl Node {
     /// but have a lexical form that is not an integer
     /// In that case, this function will return a WrongDatatypeLiteral
     pub fn as_checked_object(&self) -> Result<Object, SchemaJsonError> {
-        trace!("as_checked_object: {:?}", self.node);
         match &self.node {
             Object::Literal(sliteral) => {
                 let checked_literal = sliteral

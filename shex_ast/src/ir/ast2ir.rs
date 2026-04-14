@@ -1240,7 +1240,6 @@ fn check_node_datatype(node: &Node, dt: &IriS) -> CResult<()> {
             msg: format!("check_node_datatype: as_checked_object error: {e}"),
         })
     })?;
-    trace!("check_node_datatype: {object:?} datatype: {dt}");
     match object {
         Object::Literal(sliteral) => check_literal_datatype(&sliteral, dt, node),
         Object::Iri(_) | Object::BlankNode(_) | Object::Triple { .. } => {

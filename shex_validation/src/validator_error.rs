@@ -146,6 +146,13 @@ pub enum ValidatorError {
         errors: Vec<ValidatorError>,
     },
 
+    #[error("Shape {idx} failed for node {node}: no candidates matched the expression against the given neighbors")]
+    NoMatchesFound {
+        node: Box<Node>,
+        shape: Box<Shape>,
+        idx: ShapeLabelIdx,
+    },
+
     #[error("ShapeRef fails for node {node} with idx: {idx}")]
     ShapeRefFailed { node: Box<Node>, idx: ShapeLabelIdx },
 }
