@@ -78,7 +78,7 @@ mod tests {
     #[test]
     fn map_valid_iri_with_object() {
         let ctx = SemanticActionContext::object(&Node::iri(iri!("http://example.org/value")));
-        ext().run_action(Some("http://example.org/map"), &ctx).unwrap();
+        ext().run_action(Some("<http://example.org/x>"), &ctx).unwrap();
     }
 
     #[test]
@@ -90,7 +90,7 @@ mod tests {
     #[test]
     fn map_no_object_in_context_returns_error() {
         let err = ext()
-            .run_action(Some("http://example.org/map"), &SemanticActionContext::default())
+            .run_action(Some("<http://example.org/x>"), &SemanticActionContext::default())
             .unwrap_err();
         assert!(matches!(err, SemanticActionError::NoObjectInContext { .. }));
     }
@@ -99,10 +99,10 @@ mod tests {
     fn map_state_is_updated() {
         let ext = MapActionExtension::new(MapState::default());
         let ctx = SemanticActionContext::object(&Node::iri(iri!("http://example.org/value")));
-        ext.run_action(Some("http://example.org/map"), &ctx).unwrap();
+        ext.run_action(Some("<http://example.org/x>"), &ctx).unwrap();
         let state = ext.get_state();
         let guard = state.lock().unwrap();
-        let iri = IriS::new("http://example.org/map").unwrap();
+        let iri = IriS::new("http://example.org/x").unwrap();
         assert!(guard.get(&iri).is_some());
     }
 }
