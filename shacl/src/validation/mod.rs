@@ -1,9 +1,15 @@
+//! SHACL validation
+//! This module contains the code for SHACL validation
+
 mod mode;
 mod report;
 mod store;
+mod error;
 mod focus_nodes;
 mod value_nodes;
 mod cache;
 mod class_index;
+mod constraints;
 mod utils;
 mod iteration;
+mod config;
