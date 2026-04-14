@@ -169,11 +169,18 @@ fn serialize_schema(
                     error: e.to_string(),
                 })?;
         },
-        ShExFormat::ShExJ => {
+        ShExFormat::ShExJ | ShExFormat::Json | ShExFormat::JsonLd => {
             serde_json::to_writer_pretty(writer, &shex_schema).map_err(|e| ShExError::FailedSerializingShExSchema {
                 format: shex_format.to_string(),
                 error: e.to_string(),
             })?;
+        },
+        ShExFormat::Internal => {
+            let shex_schema_ir = rudof.shex_schema_ir.as_ref().ok_or(ShExError::NoShExSchemaLoaded)?;
+            writeln!(writer, "# ShEx Schema Internal Representation (IR):")
+                .map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
+            writeln!(writer, "{}", shex_schema_ir)
+                .map_err(|e| ShExError::FailedIoOperation { error: e.to_string() })?;
         },
         _ => {
             todo!("Implement serialization for ShEx format '{}'", shex_format);

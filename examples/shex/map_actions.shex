@@ -6,11 +6,11 @@ prefix : <http://example.org/>
 
 :Person {
   :name    xsd:string    %Map:{ <http://example/name> %} ;
-  :age     xsd:integer ? ;
+  :age     xsd:integer ? %Map:{ <http://example/age> %};
   :address @:Address ? ;
 }
 
 :Address {
-  :name   xsd:string %Test:{ print(o) %} ;
-  :city   xsd:string %Test:{ print(o) %} ;
+  :name   xsd:string %Map:{ <http://example/address_name> %} ;
+  :city   xsd:string %Map:{ <http://example/city> %} ;
 }
