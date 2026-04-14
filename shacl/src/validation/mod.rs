@@ -12,6 +12,7 @@ mod class_index;
 mod constraints;
 mod utils;
 mod iteration;
+mod validator;
 mod config;
 mod processor;
 mod rdf_data;
