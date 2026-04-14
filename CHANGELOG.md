@@ -7,6 +7,12 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.3.0
+
+### Fixed
+
+- Solved issue #582 with an error in RBE
+
 ## v0.2.9
 
 ### Added
