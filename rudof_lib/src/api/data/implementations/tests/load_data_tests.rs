@@ -302,6 +302,34 @@ fn test_load_data_endpoint_success() {
 }
 
 #[test]
+fn test_load_data_endpoint_uses_configured_prefixmap_for_known_endpoint() {
+    let mut rudof = Rudof::new(RudofConfig::default());
+
+    load_data(
+        &mut rudof,
+        None,
+        None,
+        None,
+        Some("https://dbpedia.org/sparql"),
+        None,
+        None,
+    )
+    .unwrap();
+
+    let endpoint = rudof
+        .data
+        .as_mut()
+        .unwrap()
+        .unwrap_rdf_mut()
+        .use_endpoints()
+        .get("https://dbpedia.org/sparql")
+        .expect("Configured DBpedia endpoint should be active");
+
+    assert!(endpoint.prefixmap().resolve_prefix_local("dbr", "Oviedo").is_ok());
+    assert!(endpoint.prefixmap().resolve_prefix_local("foaf", "depiction").is_ok());
+}
+
+#[test]
 fn test_load_data_conflicting_sources() {
     let mut rudof = Rudof::new(RudofConfig::default());
 

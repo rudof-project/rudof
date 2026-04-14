@@ -8,10 +8,6 @@ pub enum Data {
 }
 
 impl Data {
-    pub fn empty_rdf() -> Self {
-        Data::RDFData(Box::new(RdfData::new()))
-    }
-
     pub fn empty_pg() -> Self {
         Data::PGData(Box::new(PropertyGraph::new()))
     }

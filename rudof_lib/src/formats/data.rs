@@ -58,6 +58,8 @@ pub enum ResultDataFormat {
     Turtle,
     /// N-Triples - a line-based RDF format with one triple per line
     NTriples,
+    /// JSON-LD - JSON format for Linked Data
+    JsonLd,
     /// RDF/XML - XML-based RDF serialization format
     RdfXml,
     /// TriG - extends Turtle with support for named graphs
@@ -242,6 +244,7 @@ impl ResultDataFormat {
                 | ResultDataFormat::TriG
                 | ResultDataFormat::N3
                 | ResultDataFormat::NQuads
+                | ResultDataFormat::JsonLd
         )
     }
 }
@@ -272,6 +275,7 @@ impl Display for ResultDataFormat {
         match self {
             ResultDataFormat::Turtle => write!(dest, "turtle"),
             ResultDataFormat::NTriples => write!(dest, "ntriples"),
+            ResultDataFormat::JsonLd => write!(dest, "jsonld"),
             ResultDataFormat::RdfXml => write!(dest, "rdfxml"),
             ResultDataFormat::TriG => write!(dest, "trig"),
             ResultDataFormat::N3 => write!(dest, "n3"),
@@ -296,6 +300,7 @@ impl TryFrom<ResultDataFormat> for RDFFormat {
             ResultDataFormat::TriG => Ok(RDFFormat::TriG),
             ResultDataFormat::N3 => Ok(RDFFormat::N3),
             ResultDataFormat::NQuads => Ok(RDFFormat::NQuads),
+            ResultDataFormat::JsonLd => Ok(RDFFormat::JsonLd),
             _ => Err(Box::new(DataError::NonRdfFormat {
                 format: value.to_string(),
             })),

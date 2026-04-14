@@ -1,13 +1,14 @@
 use crate::{
     Result, Rudof,
-    api::dctap::implementations::load_dctap,
-    api::shacl::implementations::load_shacl_schema,
-    api::shacl::implementations::serialize_shacl_schema,
-    api::shex::implementations::load_shex_schema,
-    api::shex::implementations::serialize_shex_schema,
+    api::{
+        dctap::implementations::load_dctap,
+        shacl::implementations::{load_shacl_schema, serialize_shacl_schema},
+        shex::implementations::{load_shex_schema, serialize_shex_schema},
+    },
     errors::ConversionError,
     formats::{
         ConversionFormat, ConversionMode, DataReaderMode, InputSpec, ResultConversionFormat, ResultConversionMode,
+        ShExFormat,
     },
 };
 use rudof_rdf::rdf_core::visualizer::uml_converter::{ImageFormat, UmlConverter, UmlGenerationMode};
@@ -458,13 +459,7 @@ fn show_schema_conversion_dctap_to_shex<W: io::Write>(
             })?;
 
     let shex_schema = InputSpec::Str(shex_schema.to_string());
-    load_shex_schema(
-        rudof,
-        &shex_schema,
-        Some(&(*input_format).try_into()?),
-        base,
-        reader_mode,
-    )?;
+    load_shex_schema(rudof, &shex_schema, Some(&ShExFormat::ShExJ), base, reader_mode)?;
 
     serialize_shex_schema(
         rudof,
@@ -473,7 +468,7 @@ fn show_schema_conversion_dctap_to_shex<W: io::Write>(
         None,
         None,
         show_time,
-        None,
+        Some(false),
         Some(&(*output_format).try_into()?),
         writer,
     )?;
