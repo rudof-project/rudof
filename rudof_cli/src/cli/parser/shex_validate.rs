@@ -33,16 +33,15 @@ pub struct ShexValidateArgs {
     pub schema_format: ShExFormatCli,
 
     #[arg(short = 'm', long = "shapemap", value_name = "INPUT", help = "ShapeMap")]
-    pub shapemap: InputSpec,
+    pub shapemap: Option<InputSpec>,
 
     #[arg(
         long = "shapemap-format",
         value_name = "FORMAT",
         ignore_case = true,
         help = "ShapeMap format",
-        default_value_t = ShapeMapFormatCli::Compact,
     )]
-    pub shapemap_format: ShapeMapFormatCli,
+    pub shapemap_format: Option<ShapeMapFormatCli>,
 
     #[arg(short = 'n', long = "node", value_name = "NODE", help = "Node to validate")]
     pub node: Option<String>,

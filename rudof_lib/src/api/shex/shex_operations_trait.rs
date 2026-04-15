@@ -1,8 +1,8 @@
 use crate::{
     Result,
     api::shex::implementations::{
-        check_shex_schema, load_shapemap, load_shex_schema, reset_shapemap, reset_shex, reset_shex_schema,
-        serialize_shapemap, serialize_shex_schema, serialize_shex_validation_results, validate_shex,
+        add_node_shape_to_shapemap, check_shex_schema, load_shapemap, load_shex_schema, reset_shapemap, reset_shex,
+        reset_shex_schema, serialize_shapemap, serialize_shex_schema, serialize_shex_validation_results, validate_shex,
     },
     formats::{
         DataReaderMode, InputSpec, ResultShExValidationFormat, ShExFormat, ShExValidationSortByMode, ShapeMapFormat,
@@ -81,6 +81,26 @@ pub trait ShExOperations {
     /// Resets the ShEx schema.
     fn reset_shex_schema(&mut self);
 
+    /// Adds a node/shape association to the current shapemap, creating it if none is loaded.
+    ///
+    /// # Arguments
+    ///
+    /// * `node` - Node selector string (e.g. `<http://example.org/node>`)
+    /// * `shape` - Optional shape label string; defaults to START if None
+    /// * `base_nodes` - Optional base IRI for resolving node IRIs
+    /// * `base_shapes` - Optional base IRI for resolving shape IRIs
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the node or shape selector cannot be parsed.
+    fn add_node_shape_to_shapemap(
+        &mut self,
+        node: &str,
+        shape: Option<&str>,
+        base_nodes: Option<&str>,
+        base_shapes: Option<&str>,
+    ) -> Result<()>;
+
     /// Loads a shape map from an input specification.
     ///
     /// # Arguments
@@ -152,6 +172,16 @@ pub trait ShExOperations {
 }
 
 impl ShExOperations for crate::Rudof {
+    fn add_node_shape_to_shapemap(
+        &mut self,
+        node: &str,
+        shape: Option<&str>,
+        base_nodes: Option<&str>,
+        base_shapes: Option<&str>,
+    ) -> Result<()> {
+        add_node_shape_to_shapemap(self, node, shape, base_nodes, base_shapes)
+    }
+
     fn load_shex_schema(
         &mut self,
         schema: &InputSpec,

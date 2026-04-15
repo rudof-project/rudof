@@ -28,7 +28,6 @@ impl Command for ShexValidateCommand {
         let data_format = self.args.data_format.into();
         let reader_mode = self.args.reader_mode.into();
         let schema_format = self.args.schema_format.into();
-        let shapemap_format = self.args.shapemap_format.into();
         let sort_order = self.args.sort_by.into();
         let result_format = self.args.result_format.into();
         let map_state = self.args.map_state.clone();
@@ -55,19 +54,41 @@ impl Command for ShexValidateCommand {
         if let Some(base) = self.args.base_schema.as_deref() {
             shex_schema_loading = shex_schema_loading.with_base(base);
         }
+        
         shex_schema_loading.execute()?;
 
-        let mut shapemap_loading = ctx
-            .rudof
-            .load_shapemap(&self.args.shapemap)
-            .with_shapemap_format(&shapemap_format);
-        if let Some(base_nodes) = self.args.base_data.as_deref() {
-            shapemap_loading = shapemap_loading.with_base_nodes(base_nodes);
+        if let Some(shapemap) = &self.args.shapemap {
+            let mut shapemap_loading = ctx
+                .rudof
+                .load_shapemap(&shapemap);
+
+            if let Some(base_nodes) = self.args.base_data.as_deref() {
+                shapemap_loading = shapemap_loading.with_base_nodes(base_nodes);
+            }
+            if let Some(base_shapes) = self.args.base_schema.as_deref() {
+                shapemap_loading = shapemap_loading.with_base_shapes(base_shapes);
+            }
+            let aux_shapemap_format;
+            if let Some(shapemap_format) = self.args.shapemap_format {
+                aux_shapemap_format = shapemap_format.into();
+                shapemap_loading = shapemap_loading.with_shapemap_format(&aux_shapemap_format);
+            }
+            shapemap_loading.execute()?;
         }
-        if let Some(base_shapes) = self.args.base_schema.as_deref() {
-            shapemap_loading = shapemap_loading.with_base_shapes(base_shapes);
+
+        if let Some(node) = self.args.node.as_deref() {
+            let mut node_shape = ctx.rudof.add_node_shape_to_shapemap(node);
+            if let Some(shape) = self.args.shape.as_deref() {
+                node_shape = node_shape.with_shape(shape);
+            }
+            if let Some(base) = self.args.base_data.as_deref() {
+                node_shape = node_shape.with_base_nodes(base);
+            }
+            if let Some(base) = self.args.base_schema.as_deref() {
+                node_shape = node_shape.with_base_shapes(base);
+            }
+            node_shape.execute()?;
         }
-        shapemap_loading.execute()?;
 
         ctx.rudof.validate_shex().execute()?;
 

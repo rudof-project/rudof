@@ -30,9 +30,9 @@ use crate::{
             SerializeShaclValidationResultsBuilder, ValidateShaclBuilder,
         },
         shex::builders::{
-            CheckShexSchemaBuilder, LoadShapemapBuilder, LoadShexSchemaBuilder, ResetShapemapBuilder, ResetShexBuilder,
-            ResetShexSchemaBuilder, SerializeShapemapBuilder, SerializeShexSchemaBuilder,
-            SerializeShexValidationResultsBuilder, ValidateShexBuilder,
+            AddNodeShapeToShapemapBuilder, CheckShexSchemaBuilder, LoadShapemapBuilder, LoadShexSchemaBuilder,
+            ResetShapemapBuilder, ResetShexBuilder, ResetShexSchemaBuilder, SerializeShapemapBuilder,
+            SerializeShexSchemaBuilder, SerializeShexValidationResultsBuilder, ValidateShexBuilder,
         },
     },
     errors::RudofError,
@@ -278,6 +278,16 @@ impl Rudof {
     /// - `shapemap`: input specification for the ShEx shapemap to load.
     pub fn load_shapemap<'a>(&'a mut self, shapemap: &'a InputSpec) -> LoadShapemapBuilder<'a> {
         LoadShapemapBuilder::new(self, shapemap)
+    }
+
+    /// Returns an `AddNodeShapeToShapemapBuilder` to add a node/shape association to the shapemap.
+    ///
+    /// Creates the shapemap if none is currently loaded.
+    ///
+    /// # Parameters
+    /// - `node`: node selector string (e.g. `<http://example.org/node>`).
+    pub fn add_node_shape_to_shapemap<'a>(&'a mut self, node: &'a str) -> AddNodeShapeToShapemapBuilder<'a> {
+        AddNodeShapeToShapemapBuilder::new(self, node)
     }
 
     /// Returns a `SerializeShapemapBuilder` that writes the current shapemap to `writer`.
