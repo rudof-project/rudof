@@ -92,11 +92,11 @@ where
     }
 
     pub fn matches(&self, values: Vec<(K, V, Ctx)>) -> Result<MatchTableIter<K, V, R, Ctx>, RbeError<K, V, R, Ctx>> {
-        trace!(
+        /*trace!(
             "Checking if RbeTable {} matches [{}]",
             &self,
-            values.iter().map(|(k, v, ctx)| format!("({k} {v} {ctx})")).join(", ")
-        );
+            values.iter().map(|(k, v, _ctx)| format!("({k} {v})")).join(", ")
+        );*/
         let mut pairs_found = 0;
         let mut candidates = Vec::new();
         let cs_empty = IndexSet::new();
@@ -159,7 +159,7 @@ where
                 result
             }
         } else {
-            trace!("Candidates not empty rbe: {:?}", self.rbe);
+            trace!("Some candidates found for rbe: {:?}", self.rbe);
             let mp = candidates.into_iter().multi_cartesian_product();
             Ok(MatchTableIter::NonEmpty(IterCartesianProduct {
                 is_first: true,

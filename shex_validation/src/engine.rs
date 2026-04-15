@@ -261,7 +261,7 @@ impl Engine {
     {
         // Implements algorithm presented in page 14 of this paper:
         // https://labra.weso.es/publication/2017_semantics-validation-shapes-schemas/
-        debug!(
+        trace!(
             "Proving {node}@{label} with hyp: [{}]",
             hyp.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
         );

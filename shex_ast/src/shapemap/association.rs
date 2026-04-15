@@ -6,7 +6,6 @@ use rudof_rdf::rdf_core::query::QueryRDF;
 use serde::Serialize;
 use std::fmt::Display;
 use std::iter::once;
-use tracing::trace;
 
 /// Combines a [`NodeSelector`] with a [`ShapeExprLabel`]
 #[derive(Debug, PartialEq, Clone, Serialize)]
@@ -41,7 +40,6 @@ impl Association {
         S: QueryRDF,
     {
         let nodes = self.node_selector.nodes(rdf)?;
-        trace!("Association nodes: {:?}", nodes);
         let iter = nodes.into_iter().flat_map(move |node| {
             self.shape_selector
                 .iter_shape()
