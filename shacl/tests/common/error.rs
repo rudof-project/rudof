@@ -1,29 +1,30 @@
+use std::io;
 use oxrdf::TryFromTermError;
-use shacl::error::{IRError, ShaclParserError};
-use shacl_validation::validation_report::validation_report_error::ReportError;
-use sparql_service::RdfDataError;
-use std::io::Error;
 use thiserror::Error;
+use shacl::error::{IRError, ShaclParserError};
+use shacl::validation::ReportError;
+use sparql_service::RdfDataError;
 
-#[derive(Error, Debug)]
-pub enum TestSuiteError {
-    #[error("Error compiling shapes: {error}")]
-    TestShapesCompilation { error: String },
+#[derive(Debug, Error)]
+pub(crate) enum TestSuiteError {
+    #[error("Error compiling shapes: {0}")]
+    TestShapesCompilation(String),
 
     #[error(transparent)]
     ReportParsing(#[from] ReportError),
 
     #[error(transparent)]
-    InputOutput(#[from] Error),
+    InputOutput(#[from] io::Error),
 
     #[error(transparent)]
     RdfData(#[from] RdfDataError),
 
+    // TODO - Maybe remove TestShapesCompilation variant?
     #[error(transparent)]
     CompilingShapes(#[from] IRError),
 
-    #[error("Validation error: {error}")]
-    Validation { error: String },
+    #[error("Validation error: {0}")]
+    Validation(String),
 
     #[error(transparent)]
     ParsingShape(#[from] ShaclParserError),

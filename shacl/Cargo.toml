@@ -22,3 +22,6 @@ sparql_service.workspace = true
 thiserror.workspace = true
 toml.workspace = true
 tracing.workspace = true
+
+[dev-dependencies]
+oxrdf = { workspace = true, features = [ "oxsdatatypes" ] }
