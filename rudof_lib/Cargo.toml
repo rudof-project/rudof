@@ -33,7 +33,6 @@ reqwest.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 shacl.workspace = true
-shacl_validation.workspace = true
 shapes_comparator.workspace = true
 shapes_converter.workspace = true
 shex_ast.workspace = true

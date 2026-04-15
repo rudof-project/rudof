@@ -19,7 +19,6 @@ prefixmap.workspace = true
 rdf_config.workspace = true
 serde.workspace = true
 shacl.workspace = true
-shacl_validation.workspace = true
 shex_ast.workspace = true
 shex_validation.workspace = true
 spargebra.workspace = true
