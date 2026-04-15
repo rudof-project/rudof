@@ -1,5 +1,6 @@
 mod error;
 mod core;
+mod test;
 
 use std::fmt::Debug;
 use std::marker::PhantomData;
