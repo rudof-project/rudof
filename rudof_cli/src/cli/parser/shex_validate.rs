@@ -39,7 +39,7 @@ pub struct ShexValidateArgs {
         long = "shapemap-format",
         value_name = "FORMAT",
         ignore_case = true,
-        help = "ShapeMap format",
+        help = "ShapeMap format"
     )]
     pub shapemap_format: Option<ShapeMapFormatCli>,
 

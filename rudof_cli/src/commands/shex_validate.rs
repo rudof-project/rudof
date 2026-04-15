@@ -54,13 +54,11 @@ impl Command for ShexValidateCommand {
         if let Some(base) = self.args.base_schema.as_deref() {
             shex_schema_loading = shex_schema_loading.with_base(base);
         }
-        
+
         shex_schema_loading.execute()?;
 
         if let Some(shapemap) = &self.args.shapemap {
-            let mut shapemap_loading = ctx
-                .rudof
-                .load_shapemap(&shapemap);
+            let mut shapemap_loading = ctx.rudof.load_shapemap(shapemap);
 
             if let Some(base_nodes) = self.args.base_data.as_deref() {
                 shapemap_loading = shapemap_loading.with_base_nodes(base_nodes);
