@@ -10,7 +10,6 @@ use rudof_rdf::rdf_core::term::{IriOrBlankNode, Object};
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use crate::types::Severity;
 use crate::validation::report::error::ReportError;
-use crate::validation::report::result::error_mapper;
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct ValidationReport {
@@ -304,5 +303,13 @@ fn show_path_opt(object: Option<&SHACLPath>, pm: &PrefixMap) -> String {
             path.to_string()
         }
         Some(path) => path.to_string(),
+    }
+}
+
+fn error_mapper<RDF: BuildRDF>(msg: &str) -> impl FnOnce(RDF::Err) -> ReportError {
+    move |e| {
+        ReportError::ValidationError {
+            msg: format!("{}: {}", msg, e.to_string())
+        }
     }
 }

@@ -5,6 +5,7 @@ use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use crate::types::Severity;
 use crate::validation::report::error::{ReportError, ResultError};
+use crate::validation::report::error_mapper;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct ValidationResult {
@@ -213,14 +214,6 @@ impl ValidationResult {
         }
 
         Ok(())
-    }
-}
-
-pub(super) fn error_mapper<RDF: BuildRDF>(msg: &str) -> impl FnOnce(RDF::Err) -> ReportError {
-    move |e: RDF::Err| {
-        ReportError::ValidationError {
-            msg: format!("{}: {}", msg, e.to_string())
-        }
     }
 }
 
