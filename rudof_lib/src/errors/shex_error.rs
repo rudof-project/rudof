@@ -41,6 +41,10 @@ pub enum ShExError {
     #[error("Failed I/O operation: {error}")]
     FailedIoOperation { error: String },
 
+    /// Failed to parse a node selector.
+    #[error("Failed to parse node selector '{node_selector}': {error}")]
+    NodeSelectorParseError { node_selector: String, error: String },
+
     /// Failed to parse a shape selector.
     #[error("Failed to parse shape selector '{shape_selector}': {error}")]
     ShapeSelectorParseError { shape_selector: String, error: String },

@@ -36,12 +36,8 @@ impl ValidateCommand {
                 .clone()
                 .ok_or_else(|| anyhow!("schema is required for ShEx validation"))?,
             schema_format: self.args.schema_format,
-            shapemap: self
-                .args
-                .shapemap
-                .clone()
-                .ok_or_else(|| anyhow!("shapemap is required for ShEx validation"))?,
-            shapemap_format: self.args.shapemap_format,
+            shapemap: self.args.shapemap.clone(),
+            shapemap_format: Some(self.args.shapemap_format),
             node: self.args.node.clone(),
             sort_by: self.args.sort_by.into(),
             shape: self.args.shape.clone(),
