@@ -7,7 +7,7 @@ use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use rudof_rdf::rdf_core::term::{Object, Term};
 use crate::ir::{IRComponent, IRSchema, IRShape, ShapeLabelIdx};
 use crate::validation::cache::ValidationCache;
-use crate::validation::constraints::{ShaclComponent, SparqlDeref};
+use crate::validation::constraints::{ShaclComponent, SparqlValidator, ValidatorDeref};
 use crate::validation::engine::Engine;
 use crate::validation::error::ValidationError;
 use crate::validation::focus_nodes::FocusNodes;
@@ -28,7 +28,7 @@ impl SparqlEngine {
 impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
     fn evaluate(&mut self, store: &S, shape: &IRShape, component: &IRComponent, value_nodes: &ValueNodes<S>, source_shape: Option<&IRShape>, maybe_path: Option<&SHACLPath>, shapes_graph: &IRSchema) -> Result<Vec<ValidationResult>, ValidationError> {
         let shacl_component = ShaclComponent::new(component);
-        let validator = shacl_component.deref();
+        let validator: &dyn SparqlValidator<S> = shacl_component.deref();
 
         validator
             .validate_sparql(

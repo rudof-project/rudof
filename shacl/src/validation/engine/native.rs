@@ -7,7 +7,7 @@ use crate::ast::ASTComponent;
 use crate::ir::{IRComponent, IRSchema, IRShape, ShapeLabelIdx};
 use crate::validation::cache::ValidationCache;
 use crate::validation::class_index::ClassIndex;
-use crate::validation::constraints::{NativeDeref, ShaclComponent};
+use crate::validation::constraints::{NativeValidator, ShaclComponent, ValidatorDeref};
 use crate::validation::engine::Engine;
 use crate::validation::error::ValidationError;
 use crate::validation::focus_nodes::FocusNodes;
@@ -38,7 +38,7 @@ impl<RDF: NeighsRDF + Debug + 'static> Engine<RDF> for NativeEngine {
 
     fn evaluate(&mut self, store: &RDF, shape: &IRShape, component: &IRComponent, value_nodes: &ValueNodes<RDF>, source_shape: Option<&IRShape>, maybe_path: Option<&SHACLPath>, shapes_graph: &IRSchema) -> Result<Vec<ValidationResult>, ValidationError> {
         let shacl_component = ShaclComponent::new(component);
-        let validator = shacl_component.deref();
+        let validator: &dyn NativeValidator<RDF> = shacl_component.deref();
 
         validator
             .validate_native(

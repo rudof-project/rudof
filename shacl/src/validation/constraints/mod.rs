@@ -106,12 +106,6 @@ impl_validators_via_validate!(LanguageIn);
 impl_validators_via_validate!(UniqueLang);
 impl_validators_via_validate!(Datatype);
 
-// TODO - Move to crate::deref
-pub(crate) trait NativeDeref {
-    type Target: ?Sized;
-    fn deref(&self) -> &Self::Target;
-}
-
 // TODO - move to crate::shacl_component
 pub(crate) struct ShaclComponent<'a, S> {
     component: &'a IRComponent,
@@ -127,16 +121,18 @@ impl<'a, S> ShaclComponent<'a, S> {
         }
     }
 
-    pub fn component(&self) -> &IRComponent {
+    pub fn component(&self) -> &'a IRComponent {
         self.component
     }
 }
 
-// TODO - move to crate::shacl_component
-impl<S: NeighsRDF + Debug + 'static> NativeDeref for ShaclComponent<'_, S> {
-    type Target = dyn NativeValidator<S>;
+// TODO - Move to crate::deref
+pub(crate) trait ValidatorDeref<'a, V: ?Sized + 'a> {
+    fn deref(&self) -> &'a V;
+}
 
-    fn deref(&self) -> &Self::Target {
+impl<'a, S: NeighsRDF + Debug + 'static> ValidatorDeref<'a, dyn NativeValidator<S> + 'a> for ShaclComponent<'a, S> {
+    fn deref(&self) -> &'a dyn NativeValidator<S> {
         match self.component() {
             IRComponent::Class(inner) => inner,
             IRComponent::Datatype(inner) => inner,
@@ -170,17 +166,8 @@ impl<S: NeighsRDF + Debug + 'static> NativeDeref for ShaclComponent<'_, S> {
     }
 }
 
-// TODO - Move to crate::deref
-pub(crate) trait SparqlDeref {
-    type Target: ?Sized;
-
-    fn deref(&self) -> &Self::Target;
-}
-
-impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlDeref for ShaclComponent<'_, S> {
-    type Target = dyn SparqlValidator<S>;
-
-    fn deref(&self) -> &Self::Target {
+impl<'a, S: QueryRDF + NeighsRDF + Debug + 'static> ValidatorDeref<'a, dyn SparqlValidator<S> + 'a> for ShaclComponent<'a, S> {
+    fn deref(&self) -> &'a dyn SparqlValidator<S> {
         match self.component() {
             IRComponent::Class(inner) => inner,
             IRComponent::Datatype(inner) => inner,
