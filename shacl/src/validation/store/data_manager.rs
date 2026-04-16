@@ -1,6 +1,7 @@
 use std::io::BufRead;
 use rudof_rdf::rdf_core::RDFFormat;
 use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+use crate::error::{ASTError, ShaclParserError};
 use crate::ir::IRSchema;
 use crate::rdf::ShaclParser;
 use crate::validation::error::ValidationError;
@@ -19,7 +20,7 @@ impl ShaclDataManager {
 
         match ShaclParser::new(graph).parse() {
             Ok(ast) => Ok(IRSchema::compile(&ast)?),
-            Err(err) => Err(err.into()),
+            Err(err) => Err(Into::<ShaclParserError>::into(err).into()),
         }
     }
 }

@@ -6,7 +6,7 @@ use crate::validation::utils::error::SparqlError;
 pub(crate) fn select<S: QueryRDF>(store: &S, query: &String, index: &str) -> Result<HashSet<S::Term>, SparqlError> {
     let mut out = HashSet::new();
 
-    let q = match store.query_select(&query) {
+    let query = match store.query_select(&query) {
         Ok(sol) => sol,
         Err(e) => {
             return Err(SparqlError::Query {
