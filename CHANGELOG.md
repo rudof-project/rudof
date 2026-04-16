@@ -7,12 +7,16 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
-## v0.2.10
+## v0.2.11
 
 ### Fixed
 
 - Solved issue #582 with an error in RBE
 - Solved issue #583 about a regression in CLI accepting shapemap as optional parameter
+
+## v0.2.10
+
+- This release was not done because there was a change quickfix in the middle
 
 ## v0.2.9
 
