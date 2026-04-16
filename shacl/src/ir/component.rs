@@ -1,6 +1,6 @@
 use crate::ast::{ASTComponent, ASTSchema};
 use crate::ir::components::{And, Class, Closed, Datatype, Deactivated, Disjoint, Equals, HasValue, In, LanguageIn, LessThan, LessThanOrEquals, MaxCount, MaxExclusive, MaxInclusive, MaxLength, MinCount, MinExclusive, MinInclusive, MinLength, Node, Nodekind, Not, Or, Pattern, QualifiedValueShape, UniqueLang, Xone};
-use crate::ir::dependency_graph::{DependencyGraph, PosNeg};
+use crate::ir::dg::{DependencyGraph, PosNeg};
 use crate::ir::error::IRError;
 use crate::ir::schema::IRSchema;
 use crate::ir::shape::IRShape;

@@ -1,6 +1,6 @@
 use crate::ast::{ASTNodeShape, ASTSchema};
 use crate::ir::component::IRComponent;
-use crate::ir::dependency_graph::{DependencyGraph, PosNeg};
+use crate::ir::dg::{DependencyGraph, PosNeg};
 use crate::ir::error::IRError;
 use crate::ir::schema::IRSchema;
 use crate::ir::shape::IRShape;

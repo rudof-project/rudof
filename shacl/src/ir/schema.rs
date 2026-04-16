@@ -1,5 +1,5 @@
 use crate::ast::{ASTSchema, ASTShape};
-use crate::ir::dependency_graph::{DependencyGraph, PosNeg};
+use crate::ir::dg::{DependencyGraph, PosNeg};
 use crate::ir::error::IRError;
 use crate::ir::shape::IRShape;
 use crate::ir::shape_label_idx::ShapeLabelIdx;

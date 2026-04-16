@@ -1,7 +1,7 @@
 use crate::ast::{ASTSchema, ASTShape};
 use crate::ir::ReifierInfo;
 use crate::ir::component::IRComponent;
-use crate::ir::dependency_graph::{DependencyGraph, PosNeg};
+use crate::ir::dg::{DependencyGraph, PosNeg};
 use crate::ir::error::IRError;
 use crate::ir::node_shape::IRNodeShape;
 use crate::ir::property_shape::IRPropertyShape;

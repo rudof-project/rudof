@@ -9,7 +9,6 @@ use rudof_rdf::rdf_core::term::Object;
 
 mod component;
 pub mod components;
-mod dependency_graph;
 pub(crate) mod error;
 mod node_shape;
 mod property_shape;
@@ -18,11 +17,9 @@ mod schema;
 mod shape;
 mod shape_label_idx;
 mod test;
+pub mod dg;
 
 pub use component::IRComponent;
-pub use dependency_graph::DependencyGraph;
-pub use dependency_graph::DependencyGraphIter;
-pub use dependency_graph::PosNeg;
 pub use node_shape::IRNodeShape;
 pub use property_shape::IRPropertyShape;
 pub use reifier_info::ReifierInfo;
