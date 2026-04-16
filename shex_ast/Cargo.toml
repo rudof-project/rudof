@@ -34,3 +34,4 @@ toml.workspace = true
 tracing.workspace = true
 
 [dev-dependencies]
+oxrdf.workspace = true

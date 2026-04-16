@@ -7,6 +7,7 @@
 pub mod ast;
 pub mod compact;
 pub mod ir;
+pub mod materialize;
 pub mod node;
 pub mod pred;
 pub mod resolve_method;

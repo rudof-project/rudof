@@ -26,6 +26,7 @@
 - [compare](./cli_usage/compare.md)
 - [rdf-config](./cli_usage/rdf-config.md)
 - [generate](./cli_usage/generate.md)
+- [materialize](./cli_usage/materialize.md)
 - [mcp](./cli_usage/mcp.md)
 
 # `rudof` as a library

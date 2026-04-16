@@ -14,7 +14,8 @@ use crate::{
         },
         dctap::builders::{LoadDctapBuilder, ResetDctapBuilder, SerializeDctapBuilder},
         generation::builders::GenerateDataBuilder,
-        map_state::builders::SerializeMapStateBuilder,
+        map_state::builders::{LoadMapStateBuilder, SerializeMapStateBuilder},
+        materialize::builders::MaterializeBuilder,
         pgschema::builders::{
             LoadPgSchemaBuilder, LoadTypemapBuilder, PgSchemaValidationBuilder, ResetPgSchemaBuilder,
             ResetPgSchemaValidationBuilder, ResetTypemapBuilder, SerializePgSchemaBuilder,
@@ -181,8 +182,25 @@ impl Rudof {
         SerializeDataBuilder::new(self, writer)
     }
 
+    /// Returns a `LoadMapStateBuilder` to load a MapState from a JSON file at `path`.
+    ///
+    /// # Parameters
+    /// - `path`: filesystem path to the JSON-encoded MapState file.
+    pub fn load_map_state<'a>(&'a mut self, path: &'a std::path::Path) -> LoadMapStateBuilder<'a> {
+        LoadMapStateBuilder::new(self, path)
+    }
+
     pub fn serialize_map_state<'a, W: io::Write>(&'a mut self, writer: &'a mut W) -> SerializeMapStateBuilder<'a, W> {
         SerializeMapStateBuilder::new(self, writer)
+    }
+
+    /// Returns a `MaterializeBuilder` to generate an RDF graph from the current
+    /// ShEx schema and Map semantic-action state.
+    ///
+    /// # Parameters
+    /// - `writer`: output target for the serialized RDF graph.
+    pub fn materialize<'a, W: io::Write>(&'a self, writer: &'a mut W) -> MaterializeBuilder<'a, W> {
+        MaterializeBuilder::new(self, writer)
     }
 
     /// Returns a `ResetDataBuilder` to clear loaded data from `Rudof`.

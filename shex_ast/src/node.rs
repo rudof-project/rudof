@@ -15,7 +15,8 @@ use std::fmt::Display;
 
 impl Value for Node {}
 
-#[derive(PartialEq, Eq, Hash, Debug, Default, Deserialize, Clone, PartialOrd, Ord)]
+#[derive(PartialEq, Eq, Hash, Debug, Default, Serialize, Deserialize, Clone, PartialOrd, Ord)]
+#[serde(transparent)]
 pub struct Node {
     node: Object,
 }
@@ -98,14 +99,6 @@ impl From<IriS> for Node {
     }
 }
 
-impl Serialize for Node {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        self.node.serialize(serializer)
-    }
-}
 
 impl TryFrom<&Node> for ObjectValue {
     type Error = crate::SchemaJsonError;

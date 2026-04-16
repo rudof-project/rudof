@@ -384,6 +384,104 @@ Compare two ShEx schemas and print comparison output size
     )
 
 
+Materialize
+-----------
+
+Examples for materializing RDF graphs from ShEx schemas with Map semantic actions.
+
+The ``materialize`` operation produces an RDF graph by combining a ShEx schema
+(which describes the graph structure via Map semantic actions) with a MapState
+(a JSON file that maps each Map-extension IRI key to its concrete RDF node value).
+
+
+Materialize Inline
+^^^^^^^^^^^^^^^^^^
+
+Materialize an RDF graph from an inline ShEx schema and a MapState built in Python
+
+**Source**: `materialize/materialize_inline.py <https://github.com/rudof-project/rudof/blob/master/python/examples/materialize/materialize_inline.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    import json
+    import os
+    import tempfile
+
+    from pyrudof import ResultDataFormat, Rudof, RudofConfig, ShExFormat
+
+    rudof = Rudof(RudofConfig())
+
+    schema = json.dumps({
+        "@context": "http://www.w3.org/ns/shex.jsonld",
+        "type": "Schema",
+        "shapes": [{
+            "type": "ShapeDecl",
+            "id": "http://example.org/PersonShape",
+            "shapeExpr": {
+                "type": "Shape",
+                "expression": {
+                    "type": "TripleConstraint",
+                    "predicate": "http://example.org/name",
+                    "semActs": [{
+                        "type": "SemAct",
+                        "name": "http://shex.io/extensions/Map/",
+                        "code": "<http://example.org/name>"
+                    }]
+                }
+            }
+        }]
+    })
+
+    map_state = {
+        "http://example.org/name": {"Iri": "http://example.org/Alice"}
+    }
+
+    rudof.read_shex(schema, ShExFormat.ShExJ)
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
+        json.dump(map_state, tmp)
+        map_state_path = tmp.name
+
+    try:
+        rudof.read_map_state(map_state_path)
+        result = rudof.materialize(ResultDataFormat.NTriples)
+        print(result)
+    finally:
+        os.unlink(map_state_path)
+
+
+Materialize from Files
+^^^^^^^^^^^^^^^^^^^^^^
+
+Load a ShExJ schema and a MapState file, then materialize with an explicit root subject IRI
+
+**Source**: `materialize/materialize_file.py <https://github.com/rudof-project/rudof/blob/master/python/examples/materialize/materialize_file.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    from pyrudof import ResultDataFormat, Rudof, RudofConfig, ShExFormat
+
+    rudof = Rudof(RudofConfig())
+
+    rudof.read_shex("person_map.shexj", ShExFormat.ShExJ)
+    rudof.read_map_state("person_map_state.json")
+
+    result = rudof.materialize(
+        format=ResultDataFormat.Turtle,
+        node="http://example.org/Alice",
+    )
+    print(result)
+
+**Referenced Files:**
+
+- **Schema**: `materialize/person_map.shexj <https://github.com/rudof-project/rudof/blob/master/python/examples/materialize/person_map.shexj>`_
+- **MapState**: `materialize/person_map_state.json <https://github.com/rudof-project/rudof/blob/master/python/examples/materialize/person_map_state.json>`_
+
+
 SHACL Validation
 ----------------
 
