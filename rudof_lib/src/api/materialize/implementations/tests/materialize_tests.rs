@@ -135,8 +135,14 @@ fn test_materialize_single_leaf_property() {
 
     let output = materialize_to_string(&rudof, None, Some(&ResultDataFormat::NTriples));
 
-    assert!(output.contains("<http://example.org/name>"), "missing predicate: {output}");
-    assert!(output.contains("<http://example.org/Alice>"), "missing object: {output}");
+    assert!(
+        output.contains("<http://example.org/name>"),
+        "missing predicate: {output}"
+    );
+    assert!(
+        output.contains("<http://example.org/Alice>"),
+        "missing object: {output}"
+    );
 
     println!("\n===== test_materialize_single_leaf_property =====\n{output}\n=====");
 }
@@ -180,7 +186,10 @@ fn test_materialize_with_explicit_initial_iri() {
     );
 
     assert!(output.contains("<http://example.org/Bob>"), "missing subject: {output}");
-    assert!(output.contains("<http://example.org/Thing>"), "missing object: {output}");
+    assert!(
+        output.contains("<http://example.org/Thing>"),
+        "missing object: {output}"
+    );
 
     println!("\n===== test_materialize_with_explicit_initial_iri =====\n{output}\n=====");
 }
@@ -364,4 +373,3 @@ fn test_materialize_via_rudof_builder() {
 
     println!("\n===== test_materialize_via_rudof_builder =====\n{output}\n=====");
 }
-

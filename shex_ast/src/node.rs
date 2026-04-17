@@ -99,7 +99,6 @@ impl From<IriS> for Node {
     }
 }
 
-
 impl TryFrom<&Node> for ObjectValue {
     type Error = crate::SchemaJsonError;
 

@@ -1,8 +1,4 @@
-use crate::{
-    Result, Rudof,
-    api::materialize::MaterializeOperations,
-    formats::ResultDataFormat,
-};
+use crate::{Result, Rudof, api::materialize::MaterializeOperations, formats::ResultDataFormat};
 use std::io;
 
 /// Builder for `materialize` operation.

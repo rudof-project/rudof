@@ -105,10 +105,10 @@ impl Materializer {
         if let Some(start) = schema.start() {
             return Ok(start);
         }
-        if let Some(shapes) = schema.shapes() {
-            if let Some(first) = shapes.into_iter().next() {
-                return Ok(first.shape_expr);
-            }
+        if let Some(shapes) = schema.shapes()
+            && let Some(first) = shapes.into_iter().next()
+        {
+            return Ok(first.shape_expr);
         }
         Err(MaterializeError::NoStartShape)
     }
@@ -271,23 +271,23 @@ impl Materializer {
     {
         for act in acts {
             let act_iri = schema.resolve_iriref(&act.name());
-            if act_iri.as_str() == MAP_EXTENSION_IRI {
-                if let Some(code) = act.code() {
-                    let trimmed = code.trim();
-                    // ShExJ encodes the map key as a Turtle IRI (<http://...>).
-                    // ShExC encodes it as a raw prefixed name (:local or prefix:local).
-                    // Try Turtle angle-bracket syntax first, then fall back to prefix map resolution.
-                    let map_iri = IriS::parse_turtle(trimmed)
-                        .ok()
-                        .or_else(|| schema.prefixmap().and_then(|pm| pm.resolve(trimmed).ok()));
-                    if let Some(map_iri) = map_iri {
-                        if let Some(value) = map_state.get(&map_iri) {
-                            let obj: G::Term = G::Term::from(value.as_object().clone());
-                            graph
-                                .add_triple(subject.clone(), pred.clone(), obj)
-                                .map_err(|e| MaterializeError::RdfError { error: e.to_string() })?;
-                        }
-                    }
+            if act_iri.as_str() == MAP_EXTENSION_IRI
+                && let Some(code) = act.code()
+            {
+                let trimmed = code.trim();
+                // ShExJ encodes the map key as a Turtle IRI (<http://...>).
+                // ShExC encodes it as a raw prefixed name (:local or prefix:local).
+                // Try Turtle angle-bracket syntax first, then fall back to prefix map resolution.
+                let map_iri = IriS::parse_turtle(trimmed)
+                    .ok()
+                    .or_else(|| schema.prefixmap().and_then(|pm| pm.resolve(trimmed).ok()));
+                if let Some(map_iri) = map_iri
+                    && let Some(value) = map_state.get(&map_iri)
+                {
+                    let obj: G::Term = G::Term::from(value.as_object().clone());
+                    graph
+                        .add_triple(subject.clone(), pred.clone(), obj)
+                        .map_err(|e| MaterializeError::RdfError { error: e.to_string() })?;
                 }
             }
         }
