@@ -268,7 +268,7 @@ where
                     Some(shape),
                     shapes_graph,
                 )?;
-                results.extend(vr_iter.into_iter());
+                results.extend(vr_iter);
             }
         }
     }

@@ -76,6 +76,10 @@ pub enum RudofError {
     #[error("MapState error: {0}")]
     MapState(#[from] MapStateError),
 
+    /// Materialization errors.
+    #[error("Materialize error: {0}")]
+    Materialize(#[from] MaterializeError),
+
     /// The requested operation is not yet implemented.
     #[error("Not implemented: {msg}")]
     NotImplemented { msg: String },

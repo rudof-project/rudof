@@ -10,6 +10,7 @@ pub mod data;
 pub mod dctap;
 pub mod generation;
 pub mod map_state;
+pub mod materialize;
 pub mod pgschema;
 pub mod query;
 pub mod rdf_config;

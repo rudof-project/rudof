@@ -258,8 +258,8 @@ impl RdfData {
         let graph_triples = self.graph.iter().flat_map(NeighsRDF::triples).flatten();
         let endpoints_triples = self
             .use_endpoints
-            .iter()
-            .flat_map(|(_name, e)| NeighsRDF::triples(e))
+            .values()
+            .flat_map(|e| NeighsRDF::triples(e))
             .flatten();
         Ok(graph_triples.chain(endpoints_triples))
     }

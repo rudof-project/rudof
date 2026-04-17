@@ -1034,6 +1034,65 @@ impl PyRudof {
         self.inner.reset_shex().execute();
     }
 
+    /// Loads a MapState from a JSON file.
+    ///
+    /// The MapState records the bindings produced by ShEx validation with Map
+    /// semantic actions. It is required before calling :meth:`materialize`.
+    ///
+    /// Args:
+    ///     path (str): Path to the JSON file containing the serialized MapState.
+    ///
+    /// Raises:
+    ///     RudofError: If the file cannot be read or the JSON is malformed.
+    pub fn read_map_state(&mut self, path: &str) -> PyResult<()> {
+        let path = Path::new(path);
+        self.inner.load_map_state(path).execute().map_err(cnv_err)?;
+        Ok(())
+    }
+
+    /// Materializes an RDF graph from the current ShEx schema and MapState.
+    ///
+    /// Uses the Map semantic-action state (loaded via :meth:`read_map_state` or
+    /// set after ShEx validation) to populate the triples defined by the ShEx
+    /// schema's Map extensions.
+    ///
+    /// Args:
+    ///     format (ResultDataFormat, optional): RDF serialization format for the
+    ///         output graph. Defaults to ``ResultDataFormat.Turtle``.
+    ///     node (str, optional): IRI string used as the root subject node of the
+    ///         materialized graph. A fresh blank node is minted when omitted.
+    ///
+    /// Returns:
+    ///     str: Serialized RDF graph.
+    ///
+    /// Raises:
+    ///     RudofError: If no ShEx schema or MapState is loaded, if the node IRI
+    ///         is invalid, or if materialization or serialization fails.
+    #[pyo3(signature = (format=None, node=None))]
+    pub fn materialize(&self, format: Option<&PyResultDataFormat>, node: Option<&str>) -> PyResult<String> {
+        let mut writer = BufWriter::new(Vec::new());
+        let format = cnv_result_data_format(format);
+
+        let mut materialize = self.inner.materialize(&mut writer);
+        if let Some(format) = format {
+            materialize = materialize.with_result_format(format);
+        }
+        if let Some(node) = node {
+            materialize = materialize.with_initial_node_iri(node);
+        }
+        materialize.execute().map_err(cnv_err)?;
+
+        let bytes = writer
+            .into_inner()
+            .map_err(|e| RudofError::Generic { error: e.to_string() })
+            .map_err(cnv_err)?;
+        let output = String::from_utf8(bytes)
+            .map_err(|e| RudofError::Generic { error: e.to_string() })
+            .map_err(cnv_err)?;
+
+        Ok(output)
+    }
+
     pub fn __repr__(&self) -> String {
         format!("Rudof(version='{}')", self.inner.version().execute())
     }

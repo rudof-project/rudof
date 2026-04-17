@@ -1,5 +1,5 @@
 use crate::cli::parser::{
-    CompareArgs, CompletionArgs, ConvertArgs, DCTapArgs, DataArgs, GenerateArgs, McpArgs, NodeArgs,
+    CompareArgs, CompletionArgs, ConvertArgs, DCTapArgs, DataArgs, GenerateArgs, MaterializeArgs, McpArgs, NodeArgs,
     PgSchemaValidateArgs, PgschemaArgs, QueryArgs, RdfConfigArgs, ServiceArgs, ShaclArgs, ShaclValidateArgs,
     ShapemapArgs, ShexArgs, ShexValidateArgs, ValidateArgs,
 };
@@ -66,6 +66,8 @@ pub enum Command {
     Query(QueryArgs),
     /// Generate synthetic RDF data from ShEx or SHACL schemas
     Generate(GenerateArgs),
+    /// Materialize an RDF graph from a ShEx schema and Map semantic-action state
+    Materialize(MaterializeArgs),
     /// Validate Property Graph data using PGSchema
     PgSchemaValidate(PgSchemaValidateArgs),
     /// Generates a shell completion script for the specified shell

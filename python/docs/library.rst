@@ -229,6 +229,36 @@ ShEx Validation
    * ``SortModeResultMap.Details`` - Sort by detailed information
 
 
+Materialize
+-----------
+
+The ``materialize`` operation generates an RDF graph by combining a ShEx schema
+(which describes the graph structure via Map semantic actions) with a MapState
+that supplies the concrete node values.
+
+**Workflow:**
+
+1. Load a ShEx schema with Map semantic actions using :meth:`Rudof.read_shex`.
+2. Load the MapState (produced by running ShEx validation with Map extensions,
+   or built manually as a JSON file) using :meth:`Rudof.read_map_state`.
+3. Call :meth:`Rudof.materialize` to produce the serialized RDF graph.
+
+**MapState JSON format:**
+
+The MapState file is a JSON object that maps each Map-extension IRI key
+(the ``code`` value in a ``SemAct`` of type ``http://shex.io/extensions/Map/``)
+to an RDF node value. IRI nodes use ``{"Iri": "<iri-string>"}``:
+
+.. code-block:: json
+
+   {
+     "http://example.org/name": {"Iri": "http://example.org/Alice"},
+     "http://example.org/email": {"Iri": "mailto:alice@example.org"}
+   }
+
+See the :doc:`examples` page for full working examples.
+
+
 Data Generation
 ---------------
 

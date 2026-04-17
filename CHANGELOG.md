@@ -7,6 +7,17 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.2.12
+
+### Added
+
+- Support to materialize #574 which now can be used in combination with the Map extension in ShEx to transform RDF data into other RDF data using source and target shapes.
+
+### Fixed
+### Changed
+### Removed
+
+
 ## v0.2.11
 
 ### Fixed

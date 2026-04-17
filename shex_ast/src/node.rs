@@ -15,7 +15,8 @@ use std::fmt::Display;
 
 impl Value for Node {}
 
-#[derive(PartialEq, Eq, Hash, Debug, Default, Deserialize, Clone, PartialOrd, Ord)]
+#[derive(PartialEq, Eq, Hash, Debug, Default, Serialize, Deserialize, Clone, PartialOrd, Ord)]
+#[serde(transparent)]
 pub struct Node {
     node: Object,
 }
@@ -95,15 +96,6 @@ impl From<Object> for Node {
 impl From<IriS> for Node {
     fn from(iri: IriS) -> Self {
         Node { node: iri.into() }
-    }
-}
-
-impl Serialize for Node {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        self.node.serialize(serializer)
     }
 }
 
