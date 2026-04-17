@@ -256,11 +256,7 @@ impl RdfData {
     /// This operation can be very expensive if the endpoints contain a lot of data
     pub fn all_triples(&self) -> Result<impl Iterator<Item = OxTriple>, RdfDataError> {
         let graph_triples = self.graph.iter().flat_map(NeighsRDF::triples).flatten();
-        let endpoints_triples = self
-            .use_endpoints
-            .iter()
-            .flat_map(|(_name, e)| NeighsRDF::triples(e))
-            .flatten();
+        let endpoints_triples = self.use_endpoints.values().flat_map(|e| NeighsRDF::triples(e)).flatten();
         Ok(graph_triples.chain(endpoints_triples))
     }
 }

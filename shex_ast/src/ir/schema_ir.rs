@@ -287,7 +287,7 @@ impl SchemaIR {
     }
 
     pub fn shapes(&self) -> impl Iterator<Item = (&ShapeLabel, &IriS, &ShapeExpr)> {
-        self.shapes.iter().filter_map(|(_, info)| {
+        self.shapes.values().filter_map(|info| {
             info.label().map(|label| {
                 let source = self.get_source(info.source_idx()).unwrap();
                 (label, source, info.expr())

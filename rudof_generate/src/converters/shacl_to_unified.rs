@@ -130,15 +130,11 @@ impl ShaclToUnified {
 
         for component in components {
             match component {
-                Component::MinCount(min) => {
-                    if *min >= 0 {
-                        min_cardinality = Some(*min as u32);
-                    }
+                Component::MinCount(min) if *min >= 0 => {
+                    min_cardinality = Some(*min as u32);
                 },
-                Component::MaxCount(max) => {
-                    if *max >= 0 {
-                        max_cardinality = Some(*max as u32);
-                    }
+                Component::MaxCount(max) if *max >= 0 => {
+                    max_cardinality = Some(*max as u32);
                 },
                 _ => {},
             }
