@@ -1,7 +1,7 @@
 
 #[cfg(test)]
 mod tests {
-    use shacl::validation::ShaclValidationMode;
+    use shacl::validator::ShaclValidationMode;
     use crate::common::TestSuiteError;
     use crate::test;
 

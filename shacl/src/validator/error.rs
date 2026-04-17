@@ -150,8 +150,8 @@ pub enum ValidationError {
 }
 
 #[derive(Error, Debug)]
-    #[error("Readiing SHACL Config path {path_name:?} error: {error:?}")]
 pub enum ShaclConfigError {
+    #[error("Reading SHACL Config path {path_name:?} error: {error:?}")]
     ReadingConfig {
         path_name: String,
         error: io::Error,

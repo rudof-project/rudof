@@ -2,7 +2,6 @@ use anyhow::{Result as AnyhowResult, bail};
 use clap::ValueEnum;
 use iri_s::MimeType;
 use rudof_lib::{
-    ShaclValidationMode,
     compare::{InputCompareFormat, InputCompareMode, ResultCompareFormat},
     convert::{InputConvertFormat, InputConvertMode, OutputConvertFormat, OutputConvertMode},
     data_format::DataFormat,
@@ -28,6 +27,7 @@ use rudof_lib::{
     validation_mode::ValidationMode,
 };
 use std::fmt::{Display, Formatter, Result};
+use shacl::validator::ShaclValidationMode;
 
 /// CLI wrapper macro for rudof_lib types.
 ///

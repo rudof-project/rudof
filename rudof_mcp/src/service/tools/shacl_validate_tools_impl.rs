@@ -6,7 +6,7 @@ use rmcp::{
     model::{CallToolResult, Content},
 };
 use rudof_lib::{
-    InputSpec, RudofConfig, ShaclValidationMode,
+    InputSpec, RudofConfig,
     result_shacl_validation_format::{ResultShaclValidationFormat, SortByShaclValidationReport},
     shacl::{add_shacl_schema_rudof, write_validation_report},
     shacl_format::ShaclFormat,
@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::io::Cursor;
 use std::str::FromStr;
-
+use rudof_lib::shacl::validator::ShaclValidationMode;
 use super::helpers::*;
 
 /// Request parameters for SHACL validation.

@@ -2,7 +2,7 @@ use crate::cli::parser::ShaclValidateArgs;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::{Result, anyhow};
 use rudof_lib::{
-    InMemoryGraph, ReaderMode, ShaclFormat as ShaclAstShaclFormat, ShaclValidationMode, ShapesGraphSource,
+    InMemoryGraph, ReaderMode, ShaclFormat as ShaclAstShaclFormat, ShapesGraphSource,
     ValidationReport,
     rdf_reader_mode::RDFReaderMode,
     result_shacl_validation_format::{ResultShaclValidationFormat, SortByShaclValidationReport},
@@ -12,6 +12,8 @@ use rudof_lib::{
 };
 use rudof_rdf::rdf_core::BuildRDF;
 use std::io::Write;
+use shacl::types::Severity;
+use shacl::validator::ShaclValidationMode;
 
 /// Implementation of the `shacl-validate` command.
 ///
@@ -45,18 +47,20 @@ impl ShaclValidateCommand {
                     writeln!(
                         writer,
                         "Does not conform, {} violations, {} warnings",
-                        report.count_violations(),
-                        report.count_warnings()
+                        report.get_count_of(&Severity::Violation),
+                        report.get_count_of(&Severity::Warning)
                     )?;
                 }
                 Ok(())
             },
             ResultShaclValidationFormat::Compact => {
-                report.show_as_table(writer, sort_mode, Some(false), Some(terminal_width))?;
+                // TODO - Move to rudof_cli
+                // report.show_as_table(writer, sort_mode, Some(false), Some(terminal_width))?;
                 Ok(())
             },
             ResultShaclValidationFormat::Details => {
-                report.show_as_table(writer, sort_mode, Some(true), Some(terminal_width))?;
+                // TODO - Move to rudof_cli
+                // report.show_as_table(writer, sort_mode, Some(true), Some(terminal_width))?;
                 Ok(())
             },
             ResultShaclValidationFormat::Json => Err(anyhow!(

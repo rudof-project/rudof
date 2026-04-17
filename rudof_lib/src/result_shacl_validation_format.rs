@@ -1,8 +1,7 @@
 use rudof_rdf::rdf_core::RDFFormat;
-use shacl_validation::validation_report::report::SortModeReport;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
-
+use shacl::validator::report::ValidationReportSorting;
 use crate::RudofError;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
@@ -101,15 +100,15 @@ impl Display for SortByShaclValidationReport {
     }
 }
 
-pub fn cnv_sort_mode_report(sort_by: &SortByShaclValidationReport) -> SortModeReport {
+pub fn cnv_sort_mode_report(sort_by: &SortByShaclValidationReport) -> ValidationReportSorting {
     match sort_by {
-        SortByShaclValidationReport::Severity => SortModeReport::Severity,
-        SortByShaclValidationReport::Node => SortModeReport::Node,
-        SortByShaclValidationReport::Component => SortModeReport::Component,
-        SortByShaclValidationReport::Value => SortModeReport::Value,
-        SortByShaclValidationReport::Path => SortModeReport::Path,
-        SortByShaclValidationReport::SourceShape => SortModeReport::Source,
-        SortByShaclValidationReport::Details => SortModeReport::Details,
+        SortByShaclValidationReport::Severity => ValidationReportSorting::Severity,
+        SortByShaclValidationReport::Node => ValidationReportSorting::Node,
+        SortByShaclValidationReport::Component => ValidationReportSorting::Component,
+        SortByShaclValidationReport::Value => ValidationReportSorting::Value,
+        SortByShaclValidationReport::Path => ValidationReportSorting::Path,
+        SortByShaclValidationReport::SourceShape => ValidationReportSorting::Source,
+        SortByShaclValidationReport::Details => ValidationReportSorting::Details,
     }
 }
 

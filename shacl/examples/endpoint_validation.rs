@@ -2,7 +2,9 @@ use std::io::Cursor;
 use anyhow::Result;
 use prefixmap::PrefixMap;
 use rudof_rdf::rdf_core::RDFFormat;
-use shacl::validation::{EndpointValidation, ShaclDataManager, ShaclProcessor, ShaclValidationMode};
+use shacl::validator::processor::{EndpointValidation, ShaclProcessor};
+use shacl::validator::ShaclValidationMode;
+use shacl::validator::store::ShaclDataManager;
 
 fn main() -> Result<()> {
     let shacl = r#"

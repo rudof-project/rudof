@@ -1,5 +1,7 @@
 use std::path::Path;
-use shacl::validation::{ShaclProcessor, ShaclValidationMode, ValidationData};
+use shacl::error::IRError;
+use shacl::validator::processor::{DataValidation, ShaclProcessor};
+use shacl::validator::ShaclValidationMode;
 use crate::common::{Manifest, TestSuiteError};
 
 mod common;
@@ -13,14 +15,14 @@ fn test(
     let tests = manifest.collect_tests()?;
 
     for test in tests {
-        let mut validator: ValidationData = test.data.into();
+        let mut validator: DataValidation = test.data.into();
         let test_shapes = test
             .shapes
             .try_into()
-            .map_err(|e| TestSuiteError::TestShapesCompilation(e.to_string()))?;
+            .map_err(|e: IRError| TestSuiteError::TestShapesCompilation(e.to_string()))?;
 
         let report = validator
-            .validate(&test_shapes, mode)
+            .validate(&test_shapes, &mode)
             .map_err(|e| TestSuiteError::Validation(e.to_string()))?;
 
         if report != test.report {

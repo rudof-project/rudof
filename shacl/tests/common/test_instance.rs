@@ -1,6 +1,6 @@
 use rudof_rdf::rdf_core::Rdf;
 use shacl::ast::ASTSchema;
-use shacl::validation::ValidationReport;
+use shacl::validator::report::ValidationReport;
 
 pub(crate) struct TestInstance<RDF: Rdf> {
     pub data: RDF,

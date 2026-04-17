@@ -13,8 +13,7 @@ pub use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 pub use shacl::ast::ASTSchema;
 pub use shacl::ir::IRSchema;
 pub use shacl::types::ShaclFormat;
-pub use shacl_validation::shacl_processor::ShaclValidationMode;
-pub use shacl_validation::validation_report::report::ValidationReport;
+pub use shacl::validator::report::ValidationReport;
 pub use shapes_comparator::{CoShaMo, ComparatorError, CompareSchemaFormat, CompareSchemaMode, ShaCo};
 pub use shex_ast::Node;
 pub use shex_ast::Schema as ShExSchema;
@@ -58,8 +57,6 @@ use rudof_rdf::rdf_core::{FocusRDF, Rdf, query::QueryRDF, visualizer::VisualRDFG
 use rudof_rdf::rdf_impl::SparqlEndpoint;
 use shacl::error::IRError;
 use shacl::rdf::{ShaclParser, ShaclWriter};
-use shacl_validation::shacl_processor::{GraphValidation, ShaclProcessor};
-use shacl_validation::store::graph::Graph;
 use shapes_comparator::CoShaMoConverter;
 use shapes_converter::{ShEx2Uml, Tap2ShEx};
 use shex_ast::compact::ShExParser;
@@ -75,6 +72,9 @@ use std::{env, io, path::PathBuf, result};
 use tracing::trace;
 #[cfg(not(target_family = "wasm"))]
 use url::Url;
+use shacl::validator::processor::{GraphValidation, ShaclProcessor};
+use shacl::validator::ShaclValidationMode;
+use shacl::validator::store::Graph;
 
 /// This represents the public API to interact with `rudof`
 #[derive(Debug)]
@@ -1039,8 +1039,8 @@ impl Rudof {
         self.compile_shacl(shapes_graph_source)?;
         let compiled_schema = self.shacl_schema_ir.as_ref().ok_or(RudofError::NoShaclSchema {})?;
         let shacl_schema = self.shacl_schema.as_ref().ok_or(RudofError::NoShaclSchema {})?;
-        let mut validator = GraphValidation::from_graph(Graph::from_data(self.rdf_data.clone()), *mode);
-        let result = ShaclProcessor::validate(&mut validator, compiled_schema).map_err(|e| {
+        let mut validator: GraphValidation = Graph::from_data(self.rdf_data.clone()).into();
+        let result = ShaclProcessor::validate(&mut validator, compiled_schema, mode).map_err(|e| {
             RudofError::SHACLValidationError {
                 error: format!("{e}"),
                 schema: Box::new(shacl_schema.to_owned()),
@@ -2297,7 +2297,6 @@ pub struct ShExStatistics {
 mod tests {
     use iri_s::{IriS, iri};
     use shacl::types::ShaclFormat;
-    use shacl_validation::shacl_processor::ShaclValidationMode;
     use shex_ast::ShExFormat;
     use shex_ast::shapemap::ShapeMapFormat;
     use shex_ast::{Node, ir::shape_label::ShapeLabel};
@@ -2306,6 +2305,7 @@ mod tests {
     use crate::RudofConfig;
     use rudof_rdf::rdf_core::RDFFormat;
     use rudof_rdf::rdf_impl::ReaderMode;
+    use shacl::validator::ShaclValidationMode;
 
     #[test]
     fn test_single_shex() {

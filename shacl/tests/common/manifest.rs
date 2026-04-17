@@ -5,7 +5,8 @@ use rudof_rdf::rdf_core::{Any, NeighsRDF, RDFFormat};
 use rudof_rdf::rdf_core::term::Triple;
 use rudof_rdf::rdf_core::vocabs::{RdfVocab, ShaclTestVocab, TestManifestVocab};
 use shacl::rdf::ShaclParser;
-use shacl::validation::{Graph, Store, ValidationReport};
+use shacl::validator::report::ValidationReport;
+use shacl::validator::store::{Graph, Store};
 use sparql_service::RdfData;
 use crate::common::error::TestSuiteError;
 use crate::common::test_instance::TestInstance;
@@ -68,7 +69,7 @@ impl Manifest {
                     .next() {
                     None => break,
                     Some(terms) => entry_terms.insert(terms),
-                }
+                };
 
                 let rdf_rest: NamedNode = RdfVocab::rdf_rest().into();
                 subject = match store.triples_matching(&inner_subject, &rdf_rest, &Any)?
@@ -83,7 +84,7 @@ impl Manifest {
         Ok(entry_terms)
     }
 
-    pub fn collect_tests(&mut self) -> Result<Vec<TestInstance<&RdfData>>, TestSuiteError> {
+    pub fn collect_tests(&mut self) -> Result<Vec<TestInstance<RdfData>>, TestSuiteError> {
         let mut entries = Vec::new();
 
         for entry in &self.entries {
@@ -97,7 +98,7 @@ impl Manifest {
             let action: Subject = match self
                 .store
                 .triples_matching(&entry, &mf_action, &Any)
-                .map_err(|e| e.into())?
+                .map_err(|e| <sparql_service::RdfDataError as Into<TestSuiteError>>::into(e))?
                 .map(Triple::into_object)
                 .next()
                 .unwrap() {
@@ -110,7 +111,7 @@ impl Manifest {
             let results = self
                 .store
                 .triples_with_subject_predicate(&entry, &mf_result)
-                .map_err(|e| e.into())?
+                .map_err(|e| <sparql_service::RdfDataError as Into<TestSuiteError>>::into(e))?
                 .map(Triple::into_object)
                 .next()
                 .unwrap();
@@ -122,7 +123,7 @@ impl Manifest {
             let data_graph_iri = self
                 .store
                 .triples_with_subject_predicate(&action, &sht_data_graph)
-                .map_err(|e| e.into())?
+                .map_err(|e| <sparql_service::RdfDataError as Into<TestSuiteError>>::into(e))?
                 .map(Triple::into_object)
                 .next()
                 .unwrap();
@@ -131,7 +132,7 @@ impl Manifest {
             let shapes_graph_iri = self
                 .store
                 .triples_with_subject_predicate(&action, &sht_shapes_graph)
-                .map_err(|e| e.into())?
+                .map_err(|e| <sparql_service::RdfDataError as Into<TestSuiteError>>::into(e))?
                 .map(Triple::into_object)
                 .next()
                 .unwrap();
@@ -153,11 +154,11 @@ impl Manifest {
             )
                 .map_err(|e| TestSuiteError::Validation(e.to_string()))?;
 
-            let schema = ShaclParser::new(shapes.store())
+            let schema = ShaclParser::new(shapes.store().clone())
                 .parse()
                 .map_err(|e| TestSuiteError::Validation(e.to_string()))?;
 
-            entries.push(TestInstance::new(graph.store(), schema, report));
+            entries.push(TestInstance::new(graph.store().clone(), schema, report));
         }
 
         Ok(entries)

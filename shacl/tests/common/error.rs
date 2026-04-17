@@ -1,8 +1,7 @@
 use std::io;
 use oxrdf::TryFromTermError;
 use thiserror::Error;
-use shacl::error::{IRError, ShaclParserError};
-use shacl::validation::ReportError;
+use shacl::error::{IRError, ReportError, ShaclParserError};
 use sparql_service::RdfDataError;
 
 #[derive(Debug, Error)]

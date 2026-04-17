@@ -11,12 +11,11 @@ use rudof_lib::{
     CoShaMo, CompareSchemaFormat, CompareSchemaMode, DCTAP, DCTAPFormat, IRSchema, InputSpec, InputSpecError,
     InputSpecReader, IriS, Mie, MimeType, Object, QueryResultFormat, QueryShapeMap, QuerySolution, QuerySolutions,
     RDFFormat, RdfData, ReaderMode, ResultShapeMap, Rudof, RudofError, ServiceDescription, ServiceDescriptionFormat,
-    ShExFormat, ShExFormatter, ShExSchema, ShaCo, ShaclFormat, ShaclValidationMode, ShapeLabel, ShapeMapFormat,
+    ShExFormat, ShExFormatter, ShExSchema, ShaCo, ShaclFormat, ShapeLabel, ShapeMapFormat,
     ShapeMapFormatter, ShapesGraphSource, SortMode, UmlGenerationMode, ValidationReport, ValidationStatus, VarName,
     compare::{InputCompareFormat, InputCompareMode},
     node_info::{format_node_info_list, get_node_info},
     parse_node_selector,
-    shacl_validation::validation_report::{report::SortModeReport, result::ValidationResult},
 };
 use std::{
     ffi::OsStr,
@@ -27,6 +26,8 @@ use std::{
     str::FromStr,
     sync::{Arc, Mutex},
 };
+use rudof_lib::shacl::validator::report::{ValidationReportSorting, ValidationResult};
+use rudof_lib::shacl::validator::ShaclValidationMode;
 
 /// Main interface for working with RDF data, schemas, and validation.
 ///
@@ -2162,8 +2163,9 @@ impl PyValidationReport {
         let capture = CaptureWriter::new();
         let capture_clone = capture.clone();
         let boxed: Box<dyn Write> = Box::new(capture);
-        let sort_mode = SortModeReport::default();
-        result.show_as_table(boxed, sort_mode, with_details, terminal_width)?;
+        let sort_mode = ValidationReportSorting::default();
+        // TODO - Move to rudof_lib
+        // result.show_as_table(boxed, sort_mode, with_details, terminal_width)?;
         let result = capture_clone.to_string();
         Ok(result)
     }
@@ -2234,7 +2236,7 @@ impl PyValidationResult {
     /// Returns:
     ///     str: The SHACL constraint component that was violated or passed.
     pub fn constraint_component(&self) -> String {
-        self.inner.component().to_string()
+        self.inner.constraint_component().to_string()
     }
 
     /// Returns the value of the validation result, if any.
