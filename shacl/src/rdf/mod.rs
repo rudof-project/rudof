@@ -1,7 +1,7 @@
 //! SHACL RDF
 //! Contains the code that converts SHACL AST / IR to and from RDF
 
-pub mod error;
+pub(crate) mod error;
 mod parser;
 mod parsers;
 mod test;

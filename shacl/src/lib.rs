@@ -5,10 +5,11 @@ pub mod ast;
 pub mod ir;
 pub mod rdf;
 pub mod types;
-pub mod validation;
+pub mod validator;
 
 pub mod error {
     pub use crate::ast::error::*;
     pub use crate::ir::error::*;
     pub use crate::rdf::error::*;
+    pub use crate::validator::error::*;
 }
