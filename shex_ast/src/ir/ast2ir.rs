@@ -425,7 +425,13 @@ impl AST2IR {
         source_iri: &IriS,
     ) -> CResult<Rbe<Component>> {
         let mut visited_refs = Vec::new();
-        self.triple_expr2rbe_with_refs(triple_expr, compiled_schema, current_table, source_iri, &mut visited_refs)
+        self.triple_expr2rbe_with_refs(
+            triple_expr,
+            compiled_schema,
+            current_table,
+            source_iri,
+            &mut visited_refs,
+        )
     }
 
     fn triple_expr2rbe_with_refs(
@@ -767,21 +773,14 @@ impl AST2IR {
 
     fn collect_triple_expr_labels_triple_expr(&mut self, triple_expr: &ast::TripleExpr) -> CResult<()> {
         match triple_expr {
-            ast::TripleExpr::EachOf {
-                id, expressions, ..
-            }
-            | ast::TripleExpr::OneOf {
-                id, expressions, ..
-            } => {
+            ast::TripleExpr::EachOf { id, expressions, .. } | ast::TripleExpr::OneOf { id, expressions, .. } => {
                 self.register_triple_expr_label(id, triple_expr)?;
                 for tew in expressions {
                     self.collect_triple_expr_labels_triple_expr(&tew.te)?;
                 }
                 Ok(())
             },
-            ast::TripleExpr::TripleConstraint { id, .. } => {
-                self.register_triple_expr_label(id, triple_expr)
-            },
+            ast::TripleExpr::TripleConstraint { id, .. } => self.register_triple_expr_label(id, triple_expr),
             ast::TripleExpr::Ref(_) => Ok(()),
         }
     }
