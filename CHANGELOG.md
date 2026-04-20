@@ -3,8 +3,14 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ## [Unreleased]
 ### Added
+- `rudof_generate`: Added generation-time conformance metrics in `*.stats.json` with:
+  - `triple_validity_percentage`
+  - `shape_translation_loss_percentage`
+- `rudof_generate`: Added conversion coverage accounting for ShEx/SHACL to unified constraints (`original_schema_constraints` and `represented_constraints_in_unified`).
+- `rudof_generate`: Added new runnable conformance scenarios under `rudof_generate/examples/conformance_cases`.
 ### Fixed
 ### Changed
+- `rudof_generate`: Updated README statistics example and coverage notes to document the new conformance metrics output.
 ### Removed
 
 ## v0.2.12
