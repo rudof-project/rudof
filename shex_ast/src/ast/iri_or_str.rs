@@ -39,7 +39,10 @@ impl IriOrStr {
                 },
             },
             IriOrStr::IriRef(iri_ref) => match iri_ref {
-                IriRef::Iri(iri_s) => Ok(iri_s.clone()),
+                IriRef::Iri(iri_s) => match base {
+                    None => Ok(iri_s.clone()),
+                    Some(base_iri) => base_iri.resolve_str(iri_s.as_str()),
+                },
                 IriRef::Prefixed { prefix: _, local: _ } => todo!(),
             },
         }

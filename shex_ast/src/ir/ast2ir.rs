@@ -27,6 +27,7 @@ use rudof_rdf::rdf_core::term::{
     Object,
     literal::{ConcreteLiteral, NumericLiteral},
 };
+use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::{debug, info, trace};
 
@@ -36,6 +37,7 @@ pub struct AST2IR {
     shape_decls_counter: usize,
     resolve_method: ResolveMethod,
     semantic_actions_registry: SemanticActionsRegistry,
+    triple_expr_labels: HashMap<ast::TripleExprLabel, ast::TripleExpr>,
 }
 
 impl AST2IR {
@@ -48,6 +50,7 @@ impl AST2IR {
             resolve_method: resolve_method.clone(),
             shape_decls_counter: 0,
             semantic_actions_registry,
+            triple_expr_labels: HashMap::new(),
         }
     }
 
@@ -61,6 +64,7 @@ impl AST2IR {
             resolve_method: resolve_method.clone(),
             shape_decls_counter: 0,
             semantic_actions_registry: registry,
+            triple_expr_labels: HashMap::new(),
         }
     }
 
@@ -72,12 +76,37 @@ impl AST2IR {
         compiled_schema: &mut SchemaIR,
     ) -> CResult<()> {
         let mut visited = Vec::new();
+        let mut imported_asts: Vec<(SchemaAST, IriS)> = Vec::new();
         trace!(
             "Compiling schema from {source_iri}. Base: {}",
             base.as_ref().map(|b| b.as_str()).unwrap_or("None")
         );
-        let (local_shapes, _total_shapes) =
-            self.compile_visited(schema_ast, source_iri, compiled_schema, &mut visited, base)?;
+        // Phase 1: register shape labels for every schema in the import tree (bottom-up).
+        // Labels of all imported schemas must be known before compiling any shape expressions,
+        // since references may cross schema boundaries.
+        self.collect_imports_labels(
+            schema_ast,
+            source_iri,
+            compiled_schema,
+            &mut visited,
+            base,
+            &mut imported_asts,
+        )?;
+        // Root schema prefixmap wins (imported schemas' prefix maps are scoped to their own file).
+        compiled_schema.set_prefixmap(schema_ast.prefixmap());
+        // Root labels (may include `start`).
+        let local_shapes = self.collect_shape_labels(schema_ast, compiled_schema, source_iri)?;
+        self.triple_expr_labels.clear();
+        for (ast, _) in imported_asts.iter() {
+            self.collect_triple_expr_labels_schema(ast)?;
+        }
+        self.collect_triple_expr_labels_schema(schema_ast)?;
+        // Phase 2: compile shape expressions in the order they were collected
+        // (imports bottom-up, then root).
+        for (ast, src) in imported_asts.iter() {
+            self.collect_shape_exprs(ast, compiled_schema, src)?;
+        }
+        self.collect_shape_exprs(schema_ast, compiled_schema, source_iri)?;
         compiled_schema.set_local_shapes_counter(local_shapes);
         compiled_schema.set_imported_schemas(visited);
         compiled_schema.increment_total_shapes(local_shapes);
@@ -86,44 +115,68 @@ impl AST2IR {
         Ok(())
     }
 
-    // Returns the number of local shapes compiled
-    fn compile_visited(
+    fn collect_imports_labels(
         &mut self,
         schema_ast: &SchemaAST,
         source_iri: &IriS,
         compiled_schema: &mut SchemaIR,
         visited_sources: &mut Vec<IriS>,
         base: &Option<IriS>,
-    ) -> CResult<(usize, usize)> {
-        let mut total_imported = 0;
+        imported_asts: &mut Vec<(SchemaAST, IriS)>,
+    ) -> CResult<()> {
         let imports = schema_ast
             .imports_resolved(base)
             .map_err(|e| Box::new(SchemaIRError::ImportIriError { error: e.to_string() }))?;
         for import_iri in imports {
-            // trace!("Resolving import {import:?} with base: {base:?}");
-            // let import_iri = cnv_iri_ref(&import, &compiled_schema.prefixmap())?;
             trace!("Import IRI resolved to {import_iri}");
             if !visited_sources.contains(&import_iri) {
                 visited_sources.push(import_iri.clone());
-                // For imported schemas, the base is the source IRI of the schema that imports them
+                // For imported schemas, the base for dereferencing is the source IRI of the importer.
                 let imported_schema = self.resolve(&import_iri, Some(source_iri))?;
-                let (_local, total) =
-                    self.compile_visited(&imported_schema, &import_iri, compiled_schema, visited_sources, base)?;
-                compiled_schema.increment_total_shapes(total);
-                total_imported += total;
+                // Spec: an imported schema must not declare startActs.
+                if imported_schema.start_actions().is_some() {
+                    return Err(Box::new(SchemaIRError::ImportIriError {
+                        error: format!("Imported schema {import_iri} declares startActs (disallowed by ShEx spec)"),
+                    }));
+                }
+                // Nested imports must resolve relative to the imported schema's URL (RFC 3986).
+                let nested_base = Some(import_iri.clone());
+                self.collect_imports_labels(
+                    &imported_schema,
+                    &import_iri,
+                    compiled_schema,
+                    visited_sources,
+                    &nested_base,
+                    imported_asts,
+                )?;
+                // Register labels of this imported schema. Per spec, the imported schema's
+                // `start` is ignored — only shape declarations contribute.
+                self.collect_imported_shape_labels(&imported_schema, compiled_schema, &import_iri)?;
+                imported_asts.push((imported_schema, import_iri));
             }
         }
-        trace!("Compiling schema to IR");
-        compiled_schema.set_prefixmap(schema_ast.prefixmap());
-        trace!("Collecting shape labels...");
-        let local = self.collect_shape_labels(schema_ast, compiled_schema, source_iri)?;
-        trace!("Collecting shape expressions...");
-        self.collect_shape_exprs(schema_ast, compiled_schema, source_iri)?;
-        trace!(
-            "Schema compilation completed with {} shapes. {local}/{total_imported}",
-            compiled_schema.shapes_counter()
-        );
-        Ok((local, total_imported + local))
+        Ok(())
+    }
+
+    fn collect_imported_shape_labels(
+        &mut self,
+        schema_ast: &SchemaAST,
+        compiled_schema: &mut SchemaIR,
+        source_iri: &IriS,
+    ) -> CResult<usize> {
+        let mut shape_labels_counter = 0;
+        if let Some(shape_decls) = &schema_ast.shapes() {
+            for shape_decl in shape_decls {
+                let label = self.shape_expr_label_to_shape_label(&shape_decl.id)?;
+                let idx = compiled_schema.add_shape(label, ShapeExpr::Empty, source_iri);
+                if shape_decl.is_abstract {
+                    compiled_schema.add_abstract_shape(idx);
+                }
+                self.shape_decls_counter += 1;
+                shape_labels_counter += 1;
+            }
+        }
+        Ok(shape_labels_counter)
     }
 
     fn resolve(&self, iri: &IriS, base: Option<&IriS>) -> CResult<SchemaAST> {
@@ -133,13 +186,6 @@ impl AST2IR {
             ResolveMethod::ByContentNegotiation => todo!(),
         }?;
         Ok(new_schema)
-    }
-
-    pub fn compile_import(&self, import: &IriRef, compiled_schema: &mut SchemaIR) -> CResult<()> {
-        let iri = cnv_iri_ref(import, &compiled_schema.prefixmap())?;
-        debug!("Importing schema from {iri}");
-        // TODO
-        Ok(())
     }
 
     pub fn collect_shape_labels(
@@ -286,7 +332,7 @@ impl AST2IR {
                         table
                     },
                 };
-                let preds = Self::get_preds_shape(shape);
+                let preds = self.get_preds_shape(shape)?;
                 let extends = shape
                     .extends()
                     .iter()
@@ -378,6 +424,18 @@ impl AST2IR {
         current_table: &mut RbeTable<Pred, Node, ShapeLabelIdx, SemanticActionContext>,
         source_iri: &IriS,
     ) -> CResult<Rbe<Component>> {
+        let mut visited_refs = Vec::new();
+        self.triple_expr2rbe_with_refs(triple_expr, compiled_schema, current_table, source_iri, &mut visited_refs)
+    }
+
+    fn triple_expr2rbe_with_refs(
+        &self,
+        triple_expr: &ast::TripleExpr,
+        compiled_schema: &mut SchemaIR,
+        current_table: &mut RbeTable<Pred, Node, ShapeLabelIdx, SemanticActionContext>,
+        source_iri: &IriS,
+        visited_refs: &mut Vec<ast::TripleExprLabel>,
+    ) -> CResult<Rbe<Component>> {
         match triple_expr {
             ast::TripleExpr::EachOf {
                 id: _,
@@ -389,7 +447,13 @@ impl AST2IR {
             } => {
                 let mut cs = Vec::new();
                 for e in expressions {
-                    let c = self.triple_expr2rbe(&e.te, compiled_schema, current_table, source_iri)?;
+                    let c = self.triple_expr2rbe_with_refs(
+                        &e.te,
+                        compiled_schema,
+                        current_table,
+                        source_iri,
+                        visited_refs,
+                    )?;
                     cs.push(c)
                 }
                 let card = self.cnv_min_max(min, max)?;
@@ -412,7 +476,13 @@ impl AST2IR {
             } => {
                 let mut cs = Vec::new();
                 for e in expressions {
-                    let c = self.triple_expr2rbe(&e.te, compiled_schema, current_table, source_iri)?;
+                    let c = self.triple_expr2rbe_with_refs(
+                        &e.te,
+                        compiled_schema,
+                        current_table,
+                        source_iri,
+                        visited_refs,
+                    )?;
                     cs.push(c)
                 }
                 let card = self.cnv_min_max(min, max)?;
@@ -440,9 +510,28 @@ impl AST2IR {
                 let component = current_table.add_component(iri, &cond);
                 Ok(Rbe::symbol(component, min.value, max))
             },
-            ast::TripleExpr::Ref(r) => Err(Box::new(SchemaIRError::Todo {
-                msg: format!("TripleExprRef {r:?}"),
-            })),
+            ast::TripleExpr::Ref(r) => {
+                if visited_refs.contains(r) {
+                    return Err(Box::new(SchemaIRError::Internal {
+                        msg: format!("Cyclic TripleExprRef detected while compiling: {r}"),
+                    }));
+                }
+                let referenced = self.triple_expr_labels.get(r).cloned().ok_or_else(|| {
+                    Box::new(SchemaIRError::Internal {
+                        msg: format!("TripleExprRef not found in schema imports closure: {r}"),
+                    })
+                })?;
+                visited_refs.push(r.clone());
+                let rbe = self.triple_expr2rbe_with_refs(
+                    &referenced,
+                    compiled_schema,
+                    current_table,
+                    source_iri,
+                    visited_refs,
+                )?;
+                visited_refs.pop();
+                Ok(rbe)
+            },
         }
     }
 
@@ -599,29 +688,118 @@ impl AST2IR {
         }
     }
 
-    fn get_preds_shape(shape: &ast::Shape) -> Vec<Pred> {
+    fn get_preds_shape(&self, shape: &ast::Shape) -> CResult<Vec<Pred>> {
+        let mut visited_refs = Vec::new();
         match shape.triple_expr() {
-            None => Vec::new(),
-            Some(te) => Self::get_preds_triple_expr(&te),
+            None => Ok(Vec::new()),
+            Some(te) => self.get_preds_triple_expr(&te, &mut visited_refs),
         }
     }
 
-    fn get_preds_triple_expr(te: &ast::TripleExpr) -> Vec<Pred> {
+    fn get_preds_triple_expr(
+        &self,
+        te: &ast::TripleExpr,
+        visited_refs: &mut Vec<ast::TripleExprLabel>,
+    ) -> CResult<Vec<Pred>> {
         match te {
             ast::TripleExpr::EachOf { expressions, .. } => expressions
                 .iter()
-                .flat_map(|te| Self::get_preds_triple_expr(&te.te))
-                .collect(),
+                .map(|te| self.get_preds_triple_expr(&te.te, visited_refs))
+                .collect::<CResult<Vec<Vec<Pred>>>>()
+                .map(|vss| vss.into_iter().flatten().collect()),
             ast::TripleExpr::OneOf { expressions, .. } => expressions
                 .iter()
-                .flat_map(|te| Self::get_preds_triple_expr(&te.te))
-                .collect(),
+                .map(|te| self.get_preds_triple_expr(&te.te, visited_refs))
+                .collect::<CResult<Vec<Vec<Pred>>>>()
+                .map(|vss| vss.into_iter().flatten().collect()),
             ast::TripleExpr::TripleConstraint { predicate, .. } => {
                 let pred = iri_ref2iri_s(predicate);
-                vec![Pred::new(pred)]
+                Ok(vec![Pred::new(pred)])
             },
-            ast::TripleExpr::Ref(_) => todo!(),
+            ast::TripleExpr::Ref(r) => {
+                if visited_refs.contains(r) {
+                    // Ignore already visited references while collecting predicates to avoid loops.
+                    return Ok(Vec::new());
+                }
+                let referenced = self.triple_expr_labels.get(r).cloned().ok_or_else(|| {
+                    Box::new(SchemaIRError::Internal {
+                        msg: format!("TripleExprRef not found while collecting predicates: {r}"),
+                    })
+                })?;
+                visited_refs.push(r.clone());
+                let preds = self.get_preds_triple_expr(&referenced, visited_refs)?;
+                visited_refs.pop();
+                Ok(preds)
+            },
         }
+    }
+
+    fn collect_triple_expr_labels_schema(&mut self, schema_ast: &SchemaAST) -> CResult<()> {
+        if let Some(start) = schema_ast.start() {
+            self.collect_triple_expr_labels_shape_expr(&start)?;
+        }
+        if let Some(shape_decls) = schema_ast.shapes() {
+            for shape_decl in shape_decls {
+                self.collect_triple_expr_labels_shape_expr(&shape_decl.shape_expr)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn collect_triple_expr_labels_shape_expr(&mut self, shape_expr: &ast::ShapeExpr) -> CResult<()> {
+        match shape_expr {
+            ast::ShapeExpr::ShapeOr { shape_exprs } | ast::ShapeExpr::ShapeAnd { shape_exprs } => {
+                for sew in shape_exprs {
+                    self.collect_triple_expr_labels_shape_expr(&sew.se)?;
+                }
+                Ok(())
+            },
+            ast::ShapeExpr::ShapeNot { shape_expr } => self.collect_triple_expr_labels_shape_expr(&shape_expr.se),
+            ast::ShapeExpr::Shape(shape) => {
+                if let Some(expr) = shape.triple_expr() {
+                    self.collect_triple_expr_labels_triple_expr(&expr)?;
+                }
+                Ok(())
+            },
+            ast::ShapeExpr::NodeConstraint(_) | ast::ShapeExpr::External | ast::ShapeExpr::Ref(_) => Ok(()),
+        }
+    }
+
+    fn collect_triple_expr_labels_triple_expr(&mut self, triple_expr: &ast::TripleExpr) -> CResult<()> {
+        match triple_expr {
+            ast::TripleExpr::EachOf {
+                id, expressions, ..
+            }
+            | ast::TripleExpr::OneOf {
+                id, expressions, ..
+            } => {
+                self.register_triple_expr_label(id, triple_expr)?;
+                for tew in expressions {
+                    self.collect_triple_expr_labels_triple_expr(&tew.te)?;
+                }
+                Ok(())
+            },
+            ast::TripleExpr::TripleConstraint { id, .. } => {
+                self.register_triple_expr_label(id, triple_expr)
+            },
+            ast::TripleExpr::Ref(_) => Ok(()),
+        }
+    }
+
+    fn register_triple_expr_label(
+        &mut self,
+        maybe_label: &Option<ast::TripleExprLabel>,
+        triple_expr: &ast::TripleExpr,
+    ) -> CResult<()> {
+        if let Some(label) = maybe_label {
+            if self.triple_expr_labels.contains_key(label) {
+                return Err(Box::new(SchemaIRError::DuplicatedTripleExprLabel {
+                    label: Box::new(label.clone()),
+                }));
+            }
+            self.triple_expr_labels.insert(label.clone(), triple_expr.clone());
+        }
+        Ok(())
     }
 
     fn sem_acts_to_conds(&self, actions: Vec<SemAct>) -> CResult<Vec<Cond>> {
