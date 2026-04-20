@@ -479,6 +479,8 @@ When you run the generator with `write_stats = true`, you'll get:
    - Entity counts per shape type
    - Generation performance metrics
    - Data distribution information
+   - Triple validity percentage
+   - Shape translation loss percentage
 
 Example statistics:
 ```json
@@ -489,6 +491,14 @@ Example statistics:
     "http://example.org/Person": 334,
     "http://example.org/Organization": 333,
     "http://example.org/Course": 333
+  },
+  "conformance_metrics": {
+    "total_generated_triples": 15248,
+    "valid_triples": 14991,
+    "triple_validity_percentage": 98.31,
+    "original_schema_constraints": 42,
+    "represented_constraints_in_unified": 38,
+    "shape_translation_loss_percentage": 9.52
   }
 }
 ```
