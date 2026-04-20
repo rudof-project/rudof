@@ -1,9 +1,10 @@
 use crate::unified_constraints::{
     NodeKind, UnifiedConstraint, UnifiedConstraintModel, UnifiedPropertyConstraint, UnifiedShape,
 };
+use crate::conformance_metrics::TranslationMetrics;
 use crate::{DataGeneratorError, Result};
 use iri_s::IriS;
-use shex_ast::ast::{NodeConstraint, ShapeDecl, ShapeExpr, TripleExpr};
+use shex_ast::ast::{NodeConstraint, ShapeDecl, ShapeExpr, TripleExpr, XsFacet};
 use shex_ast::compact::ShExParser;
 use std::path::Path;
 
@@ -16,7 +17,7 @@ impl Default for ShExToUnified {
 }
 
 impl ShExToUnified {
-    pub async fn convert_file<P: AsRef<Path>>(&self, shex_path: P) -> Result<UnifiedConstraintModel> {
+    pub async fn convert_file<P: AsRef<Path>>(&self, shex_path: P) -> Result<(UnifiedConstraintModel, TranslationMetrics)> {
         let path = shex_path.as_ref().to_path_buf();
 
         let shapes = tokio::task::spawn_blocking(move || {
@@ -32,7 +33,7 @@ impl ShExToUnified {
         self.convert_shapes(&shapes).await
     }
 
-    pub async fn convert_schema(&self, schema_data: String) -> Result<UnifiedConstraintModel> {
+    pub async fn convert_schema(&self, schema_data: String) -> Result<(UnifiedConstraintModel, TranslationMetrics)> {
         let shapes = tokio::task::spawn_blocking(move || {
             // Create a default base IRI for parsing
             let default_base = IriS::new_unchecked("http://example.org/");
@@ -48,25 +49,26 @@ impl ShExToUnified {
         self.convert_shapes(&shapes).await
     }
 
-    async fn convert_shapes(&self, shapes: &[ShapeDecl]) -> Result<UnifiedConstraintModel> {
+    async fn convert_shapes(&self, shapes: &[ShapeDecl]) -> Result<(UnifiedConstraintModel, TranslationMetrics)> {
         let mut model = UnifiedConstraintModel::new();
+        let mut metrics = TranslationMetrics::default();
 
         for shape_decl in shapes {
-            let unified_shape = self.convert_shape_decl(shape_decl);
+            let unified_shape = self.convert_shape_decl(shape_decl, &mut metrics);
             model.add_shape(unified_shape);
         }
 
-        Ok(model)
+        Ok((model, metrics))
     }
 
-    fn convert_shape_decl(&self, shape_decl: &ShapeDecl) -> UnifiedShape {
+    fn convert_shape_decl(&self, shape_decl: &ShapeDecl, metrics: &mut TranslationMetrics) -> UnifiedShape {
         let shape_id = shape_decl.id.to_string();
         let mut properties = Vec::new();
 
         if let ShapeExpr::Shape(s) = &shape_decl.shape_expr
             && let Some(expr) = &s.expression
         {
-            self.extract_properties(&expr.te, &mut properties);
+            self.extract_properties(&expr.te, &mut properties, metrics);
         }
 
         UnifiedShape {
@@ -77,11 +79,16 @@ impl ShExToUnified {
         }
     }
 
-    fn extract_properties(&self, expr: &TripleExpr, properties: &mut Vec<UnifiedPropertyConstraint>) {
+    fn extract_properties(
+        &self,
+        expr: &TripleExpr,
+        properties: &mut Vec<UnifiedPropertyConstraint>,
+        metrics: &mut TranslationMetrics,
+    ) {
         match expr {
             TripleExpr::EachOf { expressions, .. } | TripleExpr::OneOf { expressions, .. } => {
                 for e in expressions {
-                    self.extract_properties(&e.te, properties);
+                    self.extract_properties(&e.te, properties, metrics);
                 }
             },
             TripleExpr::TripleConstraint {
@@ -95,26 +102,30 @@ impl ShExToUnified {
                 let (min_card, max_card) = self.convert_cardinality(*min, *max);
                 let mut constraints = Vec::new();
 
+                if min.is_some() {
+                    metrics.original_schema_constraints += 1;
+                    metrics.represented_constraints_in_unified += 1;
+                }
+                if max.is_some() {
+                    metrics.original_schema_constraints += 1;
+                    metrics.represented_constraints_in_unified += 1;
+                }
+
                 if let Some(val_expr) = value_expr {
                     match &**val_expr {
                         ShapeExpr::Ref(ref_to) => {
+                            metrics.original_schema_constraints += 1;
+                            metrics.represented_constraints_in_unified += 1;
                             constraints.push(UnifiedConstraint::ShapeReference(ref_to.to_string()));
                         },
                         ShapeExpr::NodeConstraint(node_constraint) => {
-                            self.convert_node_constraint(node_constraint, &mut constraints);
+                            self.convert_node_constraint(node_constraint, &mut constraints, metrics);
                         },
                         _ => {
-                            // Default to string for other cases
-                            constraints.push(UnifiedConstraint::Datatype(
-                                "http://www.w3.org/2001/XMLSchema#string".to_string(),
-                            ));
+                            // Unsupported complex value expression contributes to original constraints.
+                            metrics.original_schema_constraints += 1;
                         },
                     }
-                } else {
-                    // No value expression - default to string
-                    constraints.push(UnifiedConstraint::Datatype(
-                        "http://www.w3.org/2001/XMLSchema#string".to_string(),
-                    ));
                 }
 
                 properties.push(UnifiedPropertyConstraint {
@@ -130,14 +141,23 @@ impl ShExToUnified {
         }
     }
 
-    fn convert_node_constraint(&self, node_constraint: &NodeConstraint, constraints: &mut Vec<UnifiedConstraint>) {
+    fn convert_node_constraint(
+        &self,
+        node_constraint: &NodeConstraint,
+        constraints: &mut Vec<UnifiedConstraint>,
+        metrics: &mut TranslationMetrics,
+    ) {
         // Convert datatype
         if let Some(dt) = node_constraint.datatype() {
+            metrics.original_schema_constraints += 1;
+            metrics.represented_constraints_in_unified += 1;
             constraints.push(UnifiedConstraint::Datatype(dt.to_string()));
         }
 
         // Convert node kind
         if let Some(nk) = node_constraint.node_kind() {
+            metrics.original_schema_constraints += 1;
+            metrics.represented_constraints_in_unified += 1;
             let unified_nk = match nk {
                 shex_ast::ast::NodeKind::Iri => NodeKind::Iri,
                 shex_ast::ast::NodeKind::BNode => NodeKind::BlankNode,
@@ -147,8 +167,73 @@ impl ShExToUnified {
             constraints.push(UnifiedConstraint::NodeKind(unified_nk));
         }
 
+        if let Some(values) = node_constraint.values() {
+            // Value set constraints are currently not translated in this converter.
+            metrics.original_schema_constraints += values.len();
+        }
+
+        if let Some(facets) = node_constraint.facets() {
+            for facet in facets {
+                metrics.original_schema_constraints += 1;
+                if self.try_convert_xs_facet(&facet, constraints) {
+                    metrics.represented_constraints_in_unified += 1;
+                }
+            }
+        }
+
         // Basic constraint extraction - simplified for now
         // TODO: Add proper facet and value extraction when needed
+    }
+
+    fn try_convert_xs_facet(&self, facet: &XsFacet, constraints: &mut Vec<UnifiedConstraint>) -> bool {
+        match facet {
+            XsFacet::StringFacet(sf) => match sf {
+                shex_ast::ast::StringFacet::Pattern(pattern) => {
+                    constraints.push(UnifiedConstraint::Pattern(pattern.regex().to_string()));
+                    true
+                },
+                shex_ast::ast::StringFacet::MinLength(min) => {
+                    constraints.push(UnifiedConstraint::MinLength(*min as u32));
+                    true
+                },
+                shex_ast::ast::StringFacet::MaxLength(max) => {
+                    constraints.push(UnifiedConstraint::MaxLength(*max as u32));
+                    true
+                },
+                shex_ast::ast::StringFacet::Length(_) => false,
+            },
+            XsFacet::NumericFacet(nf) => match nf {
+                shex_ast::ast::NumericFacet::MinInclusive(val) => {
+                    constraints.push(UnifiedConstraint::MinInclusive(crate::unified_constraints::Value::Literal(
+                        val.to_string(),
+                        None,
+                    )));
+                    true
+                },
+                shex_ast::ast::NumericFacet::MaxInclusive(val) => {
+                    constraints.push(UnifiedConstraint::MaxInclusive(crate::unified_constraints::Value::Literal(
+                        val.to_string(),
+                        None,
+                    )));
+                    true
+                },
+                shex_ast::ast::NumericFacet::MinExclusive(val) => {
+                    constraints.push(UnifiedConstraint::MinExclusive(crate::unified_constraints::Value::Literal(
+                        val.to_string(),
+                        None,
+                    )));
+                    true
+                },
+                shex_ast::ast::NumericFacet::MaxExclusive(val) => {
+                    constraints.push(UnifiedConstraint::MaxExclusive(crate::unified_constraints::Value::Literal(
+                        val.to_string(),
+                        None,
+                    )));
+                    true
+                },
+                shex_ast::ast::NumericFacet::TotalDigits(_) | shex_ast::ast::NumericFacet::FractionDigits(_) => false,
+            },
+        }
     }
 
     fn convert_cardinality(&self, min: Option<i32>, max: Option<i32>) -> (Option<u32>, Option<u32>) {

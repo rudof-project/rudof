@@ -1,4 +1,5 @@
 use crate::config::OutputConfig;
+use crate::conformance_metrics::ConformanceMetrics;
 use crate::{DataGeneratorError, Result};
 use rudof_rdf::rdf_core::{BuildRDF, NeighsRDF, RDFFormat};
 use rudof_rdf::rdf_impl::InMemoryGraph;
@@ -17,7 +18,7 @@ impl OutputWriter {
 
     /// Write the generated graph to the configured output
     pub async fn write_graph(&self, graph: &InMemoryGraph) -> Result<()> {
-        self.write_graph_with_timing(graph, None).await
+        self.write_graph_with_timing(graph, None, None).await
     }
 
     /// Write the generated graph to the configured output with timing information
@@ -25,11 +26,14 @@ impl OutputWriter {
         &self,
         graph: &InMemoryGraph,
         generation_time: Option<std::time::Duration>,
+        conformance_metrics: Option<&ConformanceMetrics>,
     ) -> Result<()> {
         if self.config.parallel_writing {
-            self.write_graph_parallel(graph, generation_time).await
+            self.write_graph_parallel(graph, generation_time, conformance_metrics)
+                .await
         } else {
-            self.write_graph_sequential(graph, generation_time).await
+            self.write_graph_sequential(graph, generation_time, conformance_metrics)
+                .await
         }
     }
 
@@ -38,6 +42,7 @@ impl OutputWriter {
         &self,
         graph: &InMemoryGraph,
         generation_time: Option<std::time::Duration>,
+        conformance_metrics: Option<&ConformanceMetrics>,
     ) -> Result<()> {
         let format = self.get_rdf_format();
 
@@ -56,7 +61,7 @@ impl OutputWriter {
 
         // Write statistics if requested
         if self.config.write_stats {
-            self.write_statistics(graph, generation_time).await?;
+            self.write_statistics(graph, generation_time, conformance_metrics).await?;
         }
 
         // Compress output if requested
@@ -72,6 +77,7 @@ impl OutputWriter {
         &self,
         graph: &InMemoryGraph,
         generation_time: Option<std::time::Duration>,
+        conformance_metrics: Option<&ConformanceMetrics>,
     ) -> Result<()> {
         let start_time = std::time::Instant::now();
 
@@ -136,7 +142,7 @@ impl OutputWriter {
 
         // Write statistics if requested
         if self.config.write_stats {
-            self.write_statistics(graph, generation_time).await?;
+            self.write_statistics(graph, generation_time, conformance_metrics).await?;
         }
 
         // Compress output files if requested
@@ -224,6 +230,7 @@ impl OutputWriter {
         &self,
         graph: &InMemoryGraph,
         generation_time: Option<std::time::Duration>,
+        conformance_metrics: Option<&ConformanceMetrics>,
     ) -> Result<()> {
         let stats_path = self.config.path.with_extension("stats.json");
         let mut stats = GenerationStatistics::from_graph(graph);
@@ -231,6 +238,10 @@ impl OutputWriter {
         // Add timing information if provided
         if let Some(duration) = generation_time {
             stats = stats.with_timing(duration);
+        }
+
+        if let Some(metrics) = conformance_metrics {
+            stats = stats.with_conformance_metrics(metrics.clone());
         }
 
         let stats_json = serde_json::to_string_pretty(&stats)?;
@@ -265,6 +276,7 @@ pub struct GenerationStatistics {
     pub total_objects: usize,
     pub generation_time: Option<String>,
     pub shape_counts: std::collections::HashMap<String, usize>,
+    pub conformance_metrics: Option<ConformanceMetrics>,
 }
 
 impl GenerationStatistics {
@@ -305,11 +317,17 @@ impl GenerationStatistics {
             total_objects: objects.len(),
             generation_time: None,
             shape_counts,
+            conformance_metrics: None,
         }
     }
 
     pub fn with_timing(mut self, duration: std::time::Duration) -> Self {
         self.generation_time = Some(format!("{}ms", duration.as_millis()));
+        self
+    }
+
+    pub fn with_conformance_metrics(mut self, metrics: ConformanceMetrics) -> Self {
+        self.conformance_metrics = Some(metrics);
         self
     }
 }
