@@ -13,8 +13,10 @@ use crate::validator::report::ValidationResult;
 impl<S: NeighsRDF + Debug> Validator<S> for Xone {
     fn validate(&self, component: &IRComponent, shape: &IRShape, store: &S, engine: &mut dyn Engine<S>, value_nodes: &ValueNodes<S>, source_shape: Option<&IRShape>, maybe_path: Option<&SHACLPath>, shapes_graph: &IRSchema) -> Result<Vec<ValidationResult>, ConstraintError> {
         let mut validation_results = Vec::new();
+        let component = Object::iri(component.into());
 
-        for (_, nodes) in value_nodes.iter() {
+        for (fnode, nodes) in value_nodes.iter() {
+            let fnode_obj = S::term_as_object(fnode)?;
             for node in nodes.iter() {
                 let focus_nodes = FocusNodes::single(node.clone());
                 let mut conforming_shapes = 0;
@@ -29,13 +31,14 @@ impl<S: NeighsRDF + Debug> Validator<S> for Xone {
                     }
                 }
                 if conforming_shapes != 1 {
+                    let node_obj = S::term_as_object(node).ok();
                     let msg = format!("Shape {}: Xone constraint not satisfied for node {node}. Number of conforming shapes: {conforming_shapes}", shape.id());
-                    let component = Object::iri(component.into());
-                    validation_results.push(
-                        ValidationResult::new(shape.id().clone(), component.clone(), shape.severity())
+                    let vr = ValidationResult::new(fnode_obj.clone(), component.clone(), shape.severity())
                             .with_message(Some(msg))
-                            .with_path(maybe_path.cloned()),
-                    )
+                            .with_path(maybe_path.cloned())
+                            .with_value(node_obj)
+                            .with_source(Some(shape.id().clone()));
+                    validation_results.push(vr);
                 }
             }
         }

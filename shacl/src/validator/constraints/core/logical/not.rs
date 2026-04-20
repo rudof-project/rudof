@@ -15,6 +15,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Not {
         let mut validation_results = Vec::new();
 
         for (fnode, nodes) in value_nodes.iter() {
+            let fnode_obj = S::term_as_object(fnode)?;
             for node in nodes.iter() {
                 let focus_nodes = FocusNodes::single(node.clone());
                 let not_shape = get_shape_from_idx(shapes_graph, self.shape())?;
@@ -26,12 +27,13 @@ impl<S: NeighsRDF + Debug> Validator<S> for Not {
                 if is_valid_inside {
                     let msg = format!("Shape: {}. NOT constraint not satisfied for focus node {fnode} and internal shape {}", shape.id(), not_shape.id());
                     let component = Object::iri(component.into());
-                    let node_object = S::term_as_object(node)?;
-                    validation_results.push(
-                        ValidationResult::new(node_object, component.clone(), shape.severity())
+                    let node_object = S::term_as_object(node).ok();
+                    let vr = ValidationResult::new(fnode_obj.clone(), component.clone(), shape.severity())
                             .with_message(Some(msg))
-                            .with_path(maybe_path.cloned()),
-                    );
+                            .with_path(maybe_path.cloned())
+                            .with_source(Some(shape.id().clone()))
+                            .with_value(node_object);
+                    validation_results.push(vr);
                 }
             }
         }

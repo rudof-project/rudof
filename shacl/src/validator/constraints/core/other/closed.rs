@@ -24,23 +24,27 @@ impl<S: NeighsRDF + Debug> Validator<S> for Closed {
                 Err(_) => continue,
             };
 
-            let used_props = store
+            let triples = store
                 .triples_with_subject(&subject)
-                .map_err(|e| ConstraintError::Internal { err: e.to_string() })?
-                .map(|t| t.pred().clone().into())
-                .collect::<HashSet<_>>();
+                .map_err(|e| ConstraintError::Internal { err: e.to_string() })?;
 
-            let focus_obj = S::term_as_object(fnode).map_err(ConstraintError::RDF)?;
+            let focus_obj = S::term_as_object(fnode)?;
 
-            for extra in used_props.difference(&allowed_props) {
-                let vr = ValidationResult::new(
-                    focus_obj.clone(),
-                    component_obj.clone(),
-                    shape.severity(),
-                )
-                    .with_source(Some(shape.id().clone()))
-                    .with_path(Some(SHACLPath::iri(extra.clone())));
-                results.push(vr);
+            for triple in triples {
+                let (_, pred, obj) = triple.into_components();
+                let pred_iri = pred.into();
+                if !allowed_props.contains(&pred_iri) {
+                    let value = S::term_as_object(&obj).ok();
+                    let vr = ValidationResult::new(
+                        focus_obj.clone(),
+                        component_obj.clone(),
+                        shape.severity(),
+                    )
+                        .with_source(Some(shape.id().clone()))
+                        .with_path(Some(SHACLPath::iri(pred_iri)))
+                        .with_value(value);
+                    results.push(vr);
+                }
             }
         }
 

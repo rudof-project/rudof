@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use rudof_rdf::rdf_core::query::QueryRDF;
+use rudof_rdf::rdf_core::term::Object;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::ir::components::And;
 use crate::validator::constraints::{get_shape_from_idx, ConstraintError, NativeValidator, SparqlValidator, Validator};
@@ -12,22 +13,41 @@ use crate::validator::nodes::{ValueNodes, FocusNodes};
 impl<S: NeighsRDF + Debug> Validator<S> for And {
     fn validate(&self, component: &IRComponent, shape: &IRShape, store: &S, engine: &mut dyn Engine<S>, value_nodes: &ValueNodes<S>, source_shape: Option<&IRShape>, maybe_path: Option<&SHACLPath>, shapes_graph: &IRSchema) -> Result<Vec<ValidationResult>, ConstraintError> {
         let mut validation_results = Vec::new();
+        let componet_obj = Object::iri(component.into());
 
-        for (_, nodes) in value_nodes.iter() {
+        for (fnode, nodes) in value_nodes.iter() {
+            let fnode_obj = S::term_as_object(fnode)?;
             for node in nodes.iter() {
                 let focus_nodes = FocusNodes::single(node.clone());
-                let mut all_conform = true;
+                let mut conforms = true;
+
                 for idx in self.shapes().iter() {
                     let shape = get_shape_from_idx(shapes_graph, idx)?;
                     let inner_results = shape.validate(store, engine, Some(&focus_nodes), Some(&shape), shapes_graph);
                     match inner_results {
                         Ok(results) => if !results.is_empty() {
-                            all_conform = false;
-                            validation_results.extend(results);
+                            conforms = false;
+                            break;
                         },
-                        Err(_) => all_conform = false,
+                        Err(_) => {
+                            conforms = false;
+                            break;
+                        },
                     }
-                    if !all_conform { break; }
+                }
+
+                if !conforms {
+                    let node_obj = S::term_as_object(node).ok();
+
+                    let vr = ValidationResult::new(
+                        fnode_obj.clone(),
+                        componet_obj.clone(),
+                        shape.severity(),
+                    )
+                        .with_source(Some(shape.id().clone()))
+                        .with_path(maybe_path.cloned())
+                        .with_value(node_obj);
+                    validation_results.push(vr);
                 }
             }
         }

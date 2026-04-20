@@ -18,9 +18,11 @@ impl<S: NeighsRDF + Debug> Validator<S> for UniqueLang {
         if !self.unique_lang() { return Ok(Default::default()) }
 
         let mut validation_results = Vec::new();
+        let component = Object::iri(component.into());
 
         // Collect langs
-        for (_, nodes) in value_nodes.iter() {
+        for (fnode, nodes) in value_nodes.iter() {
+            let fnode_obj = S::term_as_object(fnode)?;
             let mut langs_map: HashMap<String, Vec<S::Term>> = HashMap::new();
             for node in nodes.iter() {
                 if let Ok(lit) = S::term_as_literal(node) {
@@ -31,14 +33,14 @@ impl<S: NeighsRDF + Debug> Validator<S> for UniqueLang {
             }
 
             for (k, v) in langs_map {
-                if nodes.len() > 1 {
+                if v.len() > 1 {
                     // If there are multiple nodes with the same language, report a violation
-                    let component = Object::iri(component.into());
                     let msg = format!("Unique lang failed for lang {k} with values: {}", v.iter().map(|n| n.to_string()).collect::<Vec<_>>().join(", "));
-                    let validation_result = ValidationResult::new(shape.id().clone(), component, shape.severity())
+                    let vr = ValidationResult::new(fnode_obj.clone(), component.clone(), shape.severity())
                         .with_path(maybe_path.cloned())
-                        .with_message(Some(msg));
-                    validation_results.push(validation_result);
+                        .with_message(Some(msg))
+                        .with_source(Some(shape.id().clone()));
+                    validation_results.push(vr);
                 }
             }
         }

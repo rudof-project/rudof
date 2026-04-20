@@ -15,8 +15,10 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
         let mut validation_results = Vec::new();
         let shape_idx = self.shape();
         let node_shape = get_shape_from_idx(shapes_graph, shape_idx)?;
+        let component_obj = Object::iri(component.into());
 
-        for (_, nodes) in value_nodes.iter() {
+        for (fnode, nodes) in value_nodes.iter() {
+            let fnode_obj = S::term_as_object(fnode)?;
             for node in nodes.iter() {
                 let node_object = S::term_as_object(node)?;
                 let focus_nodes = FocusNodes::single(node.clone());
@@ -29,12 +31,14 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
                 };
 
                 if !is_valid {
-                        let msg = format!("Shape {}: Node({node_shape}) constraint not satisfied for {node}", shape.id());
-                    let validation_result = ValidationResult::new(node_object.clone(), Object::iri(component.into()), shape.severity())
+                    let msg = format!("Shape {}: Node({node_shape}) constraint not satisfied for {node}", shape.id());
+                    let vr = ValidationResult::new(fnode_obj.clone(), component_obj.clone(), shape.severity())
                         .with_path(maybe_path.cloned())
-                        .with_message(Some(msg));
-                    validation_results.push(validation_result.clone());
-                    engine.record_validation(node_object, *shape_idx, vec![validation_result]);
+                        .with_message(Some(msg))
+                        .with_value(Some(node_object.clone()))
+                        .with_source(Some(shape.id().clone()));
+                    validation_results.push(vr.clone());
+                    engine.record_validation(node_object, *shape_idx, vec![vr]);
                 } else {
                     engine.record_validation(node_object, *shape_idx, Vec::new());
                 }

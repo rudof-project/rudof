@@ -18,6 +18,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThanOrEquals {
         for (fnode, nodes) in value_nodes.iter() {
             let subject = S::term_as_subject(fnode)?;
             let iri: S::IRI = self.iri().clone().into();
+            let fnode_obj = S::term_as_object(fnode)?;
 
             match store.triples_with_subject_predicate(&subject, &iri) {
                 Ok(triples_iter) => {
@@ -33,9 +34,12 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThanOrEquals {
                             };
 
                             if let Some(msg) = msg {
-                                let validation_result = ValidationResult::new(shape.id().clone(), component.clone(), shape.severity())
+                                let node_obj = S::term_as_object(value).ok();
+                                let validation_result = ValidationResult::new(fnode_obj.clone(), component.clone(), shape.severity())
                                     .with_message(Some(msg))
-                                    .with_path(maybe_path.cloned());
+                                    .with_path(maybe_path.cloned())
+                                    .with_value(node_obj)
+                                    .with_source(Some(shape.id().clone()));
                                 validation_results.push(validation_result);
                             }
                         }
@@ -43,9 +47,10 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThanOrEquals {
                 }
                 Err(e) => {
                     let msg = format!("LessThanOrEquals: Error trying to find triples for subject {subject} and predicate {}: {e}", self.iri());
-                    let validation_result = ValidationResult::new(shape.id().clone(), component.clone(), shape.severity())
+                    let validation_result = ValidationResult::new(fnode_obj, component.clone(), shape.severity())
                         .with_message(Some(msg))
-                        .with_path(maybe_path.cloned());
+                        .with_path(maybe_path.cloned())
+                        .with_source(Some(shape.id().clone()));
                     validation_results.push(validation_result);
                 }
             }
