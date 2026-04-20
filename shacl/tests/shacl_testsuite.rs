@@ -27,8 +27,8 @@ fn test(
 
         if report != test.report {
             println!("❌ Test failed");
-            println!("Expected report:\n{:#?}", test.report);
-            println!("Actual report:\n{:#?}", report);
+            println!("Expected report:\n{:#?}", test.report.results());
+            println!("Actual report:\n{:#?}", report.results());
             return Err(TestSuiteError::NotEquals);
         }
     }
