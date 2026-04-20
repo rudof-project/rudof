@@ -24,7 +24,7 @@ impl Manifest {
             .map_err(|e| TestSuiteError::Validation(e.to_string()))?;
         let base = match base.to_str() {
             None => panic!("Path not found!!"),
-            Some(path) => format!("file://{path}"),
+            Some(path) => format!("file:/{path}"),
         };
 
         let subject = Subject::NamedNode(NamedNode::new_unchecked(base.clone()));
@@ -48,7 +48,7 @@ impl Manifest {
         chars
             .as_str()
             .to_string()
-            .replace("file://", "")
+            .replace("file:/", "")
     }
 
     fn parse_entries(store: &mut RdfData, subject: Subject) -> Result<HashSet<Term>, TestSuiteError> {
