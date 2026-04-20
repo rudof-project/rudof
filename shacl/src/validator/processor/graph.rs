@@ -33,9 +33,9 @@ impl GraphValidation {
     /// ```
     /// use std::path::Path;
     ///
-    /// use shacl_validation::shacl_processor::GraphValidation;
-    /// use shacl_validation::shacl_processor::ShaclValidationMode;
-    /// use shacl_validation::shacl_processor::ShaclProcessor;
+    /// use shacl::validator::processor::GraphValidation;
+    /// use shacl::validator::ShaclValidationMode;
+    /// use shacl::validator::processor::ShaclProcessor;
     /// use rudof_rdf::rdf_core::RDFFormat;
     ///
     /// let graph_validation = GraphValidation::from_path(

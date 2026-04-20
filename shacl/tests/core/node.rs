@@ -135,19 +135,19 @@ mod tests {
 
     #[test]
     fn min_length_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "minLength-003");
+        let path = format!("{}/{}.ttl", PATH, "minLength-001");
         test(path, ShaclValidationMode::Native)
     }
 
     #[test]
     fn node_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "node-003");
+        let path = format!("{}/{}.ttl", PATH, "node-001");
         test(path, ShaclValidationMode::Native)
     }
 
     #[test]
     fn node_kind_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}/{}.ttl", PATH, "nodeKind-003");
+        let path = format!("{}/{}.ttl", PATH, "nodeKind-001");
         test(path, ShaclValidationMode::Native)
     }
 
