@@ -22,7 +22,13 @@ impl<S: NeighsRDF + Debug> Validator<S> for LanguageIn {
                 if let Ok(lit) = S::term_as_literal(vn) {
                     return match lit.lang() {
                         None => true,
-                        Some(lang) => !self.langs().contains(&lang),
+                        Some(lang) => {
+                            let lang_str = lang.to_string().to_lowercase();
+                            !self.langs().iter().any(|l| {
+                                let l_str = l.to_string().to_lowercase();
+                                lang_str == l_str || lang_str.starts_with(&format!("{}-", l_str))
+                            })
+                        },
                     }
                 }
                 true
