@@ -517,7 +517,10 @@ impl PartialOrd for Object {
     /// Since `Object` implements total ordering via [`Ord`], this always returns
     /// `Some(ordering)`.
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
+        match (self, other) {
+            (Object::Literal(a), Object::Literal(b)) => a.partial_cmp(b),
+            _ => Some(self.cmp(other)),
+        }
     }
 }
 
