@@ -481,13 +481,13 @@ impl TryFrom<&str> for NumericLiteral {
         if let Ok(i) = value.parse::<i128>() {
             return Ok(NumericLiteral::Integer(i));
         }
-        // Then try float
-        if let Ok(f) = value.parse::<f64>() {
-            return Ok(NumericLiteral::Double(f));
-        }
-        // Finally try decimal
+        // Then try decimal
         if let Ok(d) = Decimal::from_str_exact(value) {
             return Ok(NumericLiteral::Decimal(d));
+        }
+        // Finally try float
+        if let Ok(f) = value.parse::<f64>() {
+            return Ok(NumericLiteral::Double(f));
         }
 
         Err(format!("Cannot parse '{value}' as NumericLiteral"))
@@ -499,13 +499,7 @@ impl From<NumericLiteral> for oxrdf::Literal {
     fn from(n: NumericLiteral) -> Self {
         match n {
             NumericLiteral::Integer(i) => oxrdf::Literal::new_typed_literal(i.to_string(), oxrdf::vocab::xsd::INTEGER),
-            NumericLiteral::Decimal(d) => {
-                // Try converting to f64, otherwise use typed literal
-                match d.to_f64() {
-                    Some(decimal) => oxrdf::Literal::from(decimal),
-                    None => oxrdf::Literal::new_typed_literal(d.to_string(), oxrdf::vocab::xsd::DECIMAL),
-                }
-            },
+            NumericLiteral::Decimal(d) => oxrdf::Literal::new_typed_literal(d.to_string(), oxrdf::vocab::xsd::DECIMAL),
             NumericLiteral::Double(d) => oxrdf::Literal::from(d),
             NumericLiteral::Long(l) => oxrdf::Literal::new_typed_literal(l.to_string(), oxrdf::vocab::xsd::LONG),
             NumericLiteral::Float(f) => oxrdf::Literal::from(f),
