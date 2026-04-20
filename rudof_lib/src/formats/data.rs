@@ -70,7 +70,7 @@ pub enum ResultDataFormat {
     NQuads,
     /// Compact - condensed output format for results
     Compact,
-    /// JSON - JavaScript Object Notation format for structured output
+    /// JSON - alias for JSON-LD when serializing RDF data
     Json,
     /// PlantUML - text-based UML diagram format for visualization
     PlantUML,
@@ -245,6 +245,7 @@ impl ResultDataFormat {
                 | ResultDataFormat::N3
                 | ResultDataFormat::NQuads
                 | ResultDataFormat::JsonLd
+                | ResultDataFormat::Json
         )
     }
 }
@@ -256,6 +257,7 @@ impl FromStr for ResultDataFormat {
         match s.to_lowercase().as_str() {
             "turtle" => Ok(ResultDataFormat::Turtle),
             "ntriples" => Ok(ResultDataFormat::NTriples),
+            "jsonld" | "json-ld" => Ok(ResultDataFormat::JsonLd),
             "rdfxml" => Ok(ResultDataFormat::RdfXml),
             "trig" => Ok(ResultDataFormat::TriG),
             "n3" => Ok(ResultDataFormat::N3),
@@ -301,6 +303,7 @@ impl TryFrom<ResultDataFormat> for RDFFormat {
             ResultDataFormat::N3 => Ok(RDFFormat::N3),
             ResultDataFormat::NQuads => Ok(RDFFormat::NQuads),
             ResultDataFormat::JsonLd => Ok(RDFFormat::JsonLd),
+            ResultDataFormat::Json => Ok(RDFFormat::JsonLd),
             _ => Err(Box::new(DataError::NonRdfFormat {
                 format: value.to_string(),
             })),
