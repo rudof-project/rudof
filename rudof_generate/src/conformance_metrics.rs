@@ -83,9 +83,7 @@ impl ConformanceMetrics {
         let shape_translation_loss_percentage = if original_schema_constraints == 0 {
             0.0
         } else {
-            100.0
-                * (1.0
-                    - (represented_constraints_in_unified as f64 / original_schema_constraints as f64))
+            100.0 * (1.0 - (represented_constraints_in_unified as f64 / original_schema_constraints as f64))
         };
 
         Ok(Self {
@@ -166,9 +164,7 @@ fn evaluate_constraint(
             NodeKind::IriOrLiteral => matches!(object, Term::NamedNode(_) | Term::Literal(_)),
         },
         UnifiedConstraint::Pattern(pattern) => match object {
-            Term::Literal(lit) => Regex::new(pattern)
-                .map(|re| re.is_match(lit.value()))
-                .unwrap_or(false),
+            Term::Literal(lit) => Regex::new(pattern).map(|re| re.is_match(lit.value())).unwrap_or(false),
             _ => false,
         },
         UnifiedConstraint::MinInclusive(bound) => compare_numeric(object, bound, |v, b| v >= b),

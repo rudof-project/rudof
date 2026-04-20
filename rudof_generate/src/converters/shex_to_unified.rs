@@ -1,7 +1,7 @@
+use crate::conformance_metrics::TranslationMetrics;
 use crate::unified_constraints::{
     NodeKind, UnifiedConstraint, UnifiedConstraintModel, UnifiedPropertyConstraint, UnifiedShape,
 };
-use crate::conformance_metrics::TranslationMetrics;
 use crate::{DataGeneratorError, Result};
 use iri_s::IriS;
 use shex_ast::ast::{NodeConstraint, ShapeDecl, ShapeExpr, TripleExpr, XsFacet};
@@ -17,7 +17,10 @@ impl Default for ShExToUnified {
 }
 
 impl ShExToUnified {
-    pub async fn convert_file<P: AsRef<Path>>(&self, shex_path: P) -> Result<(UnifiedConstraintModel, TranslationMetrics)> {
+    pub async fn convert_file<P: AsRef<Path>>(
+        &self,
+        shex_path: P,
+    ) -> Result<(UnifiedConstraintModel, TranslationMetrics)> {
         let path = shex_path.as_ref().to_path_buf();
 
         let shapes = tokio::task::spawn_blocking(move || {
@@ -204,31 +207,27 @@ impl ShExToUnified {
             },
             XsFacet::NumericFacet(nf) => match nf {
                 shex_ast::ast::NumericFacet::MinInclusive(val) => {
-                    constraints.push(UnifiedConstraint::MinInclusive(crate::unified_constraints::Value::Literal(
-                        val.to_string(),
-                        None,
-                    )));
+                    constraints.push(UnifiedConstraint::MinInclusive(
+                        crate::unified_constraints::Value::Literal(val.to_string(), None),
+                    ));
                     true
                 },
                 shex_ast::ast::NumericFacet::MaxInclusive(val) => {
-                    constraints.push(UnifiedConstraint::MaxInclusive(crate::unified_constraints::Value::Literal(
-                        val.to_string(),
-                        None,
-                    )));
+                    constraints.push(UnifiedConstraint::MaxInclusive(
+                        crate::unified_constraints::Value::Literal(val.to_string(), None),
+                    ));
                     true
                 },
                 shex_ast::ast::NumericFacet::MinExclusive(val) => {
-                    constraints.push(UnifiedConstraint::MinExclusive(crate::unified_constraints::Value::Literal(
-                        val.to_string(),
-                        None,
-                    )));
+                    constraints.push(UnifiedConstraint::MinExclusive(
+                        crate::unified_constraints::Value::Literal(val.to_string(), None),
+                    ));
                     true
                 },
                 shex_ast::ast::NumericFacet::MaxExclusive(val) => {
-                    constraints.push(UnifiedConstraint::MaxExclusive(crate::unified_constraints::Value::Literal(
-                        val.to_string(),
-                        None,
-                    )));
+                    constraints.push(UnifiedConstraint::MaxExclusive(
+                        crate::unified_constraints::Value::Literal(val.to_string(), None),
+                    ));
                     true
                 },
                 shex_ast::ast::NumericFacet::TotalDigits(_) | shex_ast::ast::NumericFacet::FractionDigits(_) => false,

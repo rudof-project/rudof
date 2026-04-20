@@ -1,7 +1,7 @@
+use crate::conformance_metrics::TranslationMetrics;
 use crate::unified_constraints::{
     NodeKind, UnifiedConstraint, UnifiedConstraintModel, UnifiedPropertyConstraint, UnifiedShape, Value,
 };
-use crate::conformance_metrics::TranslationMetrics;
 use crate::{DataGeneratorError, Result};
 use rudof_rdf::rdf_core::{RDFFormat, term::literal::ConcreteLiteral};
 use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};

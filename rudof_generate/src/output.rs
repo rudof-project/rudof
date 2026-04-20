@@ -61,7 +61,8 @@ impl OutputWriter {
 
         // Write statistics if requested
         if self.config.write_stats {
-            self.write_statistics(graph, generation_time, conformance_metrics).await?;
+            self.write_statistics(graph, generation_time, conformance_metrics)
+                .await?;
         }
 
         // Compress output if requested
@@ -142,7 +143,8 @@ impl OutputWriter {
 
         // Write statistics if requested
         if self.config.write_stats {
-            self.write_statistics(graph, generation_time, conformance_metrics).await?;
+            self.write_statistics(graph, generation_time, conformance_metrics)
+                .await?;
         }
 
         // Compress output files if requested
