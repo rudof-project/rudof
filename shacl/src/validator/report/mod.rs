@@ -100,8 +100,14 @@ impl ValidationReport {
             results.push(ValidationResult::parse(store, &result)?);
         }
 
-        Ok(Self::new()
-            .with_results(results))
+        let mut report = Self::new()
+            .with_results(results);
+
+        if let Some(pm) = store.prefixmap() {
+            report = report.with_prefixmap(pm);
+        }
+
+        Ok(report)
     }
 
     pub fn to_rdf<RDF: BuildRDF + Sized>(&self, writer: &mut RDF) -> Result<(), ReportError> {
