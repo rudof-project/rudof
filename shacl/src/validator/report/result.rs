@@ -7,7 +7,7 @@ use crate::error::{ReportError, ResultError};
 use crate::types::Severity;
 use crate::validator::report::error_mapper;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Eq, Hash)]
 pub struct ValidationResult {
     // Required
     focus_node: Object,
@@ -243,5 +243,17 @@ impl Display for ValidationResult {
             self.source,
             self.details
         )
+    }
+}
+
+impl PartialEq for ValidationResult {
+    fn eq(&self, other: &Self) -> bool {
+        self.focus_node == other.focus_node &&
+            self.constraint_component == other.constraint_component &&
+            self.severity == other.severity &&
+            self.path == other.path &&
+            self.value == other.value &&
+            self.source == other.source &&
+            self.details == other.details
     }
 }

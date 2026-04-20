@@ -13,7 +13,7 @@ pub use sorting::ValidationReportSorting;
 use rudof_rdf::rdf_core::term::{IriOrBlankNode, Object};
 use crate::error::ReportError;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct ValidationReport {
     results: Vec<ValidationResult>,
     nodes_pm: PrefixMap,
@@ -235,6 +235,13 @@ impl ValidationReport {
 impl Default for ValidationReport {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl PartialEq for ValidationReport {
+    fn eq(&self, other: &Self) -> bool {
+        self.results.len() == other.results.len() &&
+            self.results.iter().all(|r| other.results.contains(r))
     }
 }
 
