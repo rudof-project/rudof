@@ -44,6 +44,56 @@ fn test_load_data_rdf_success() {
 }
 
 #[test]
+fn test_serialize_data_rdf_jsonld() {
+    let mut rudof = Rudof::new(RudofConfig::default());
+
+    let rdf = InputSpec::from_str(r#"@prefix ex: <http://example.org/> . ex:alice a ex:Person ."#).unwrap();
+
+    load_data(
+        &mut rudof,
+        Some(&[rdf]),
+        Some(&DataFormat::Turtle),
+        None,
+        None,
+        Some(&DataReaderMode::Strict),
+        Some(false),
+    )
+    .unwrap();
+
+    let serialized = serialize_to_string(&mut rudof, Some(ResultDataFormat::JsonLd));
+
+    let parsed = serde_json::from_str::<serde_json::Value>(&serialized).expect("jsonld output must be valid JSON");
+
+    assert!(parsed.is_object() || parsed.is_array());
+    assert!(serialized.contains("http://example.org/alice"));
+}
+
+#[test]
+fn test_serialize_data_rdf_json_alias() {
+    let mut rudof = Rudof::new(RudofConfig::default());
+
+    let rdf = InputSpec::from_str(r#"@prefix ex: <http://example.org/> . ex:alice a ex:Person ."#).unwrap();
+
+    load_data(
+        &mut rudof,
+        Some(&[rdf]),
+        Some(&DataFormat::Turtle),
+        None,
+        None,
+        Some(&DataReaderMode::Strict),
+        Some(false),
+    )
+    .unwrap();
+
+    let serialized = serialize_to_string(&mut rudof, Some(ResultDataFormat::Json));
+
+    let parsed = serde_json::from_str::<serde_json::Value>(&serialized).expect("json output must be valid JSON");
+
+    assert!(parsed.is_object() || parsed.is_array());
+    assert!(serialized.contains("http://example.org/alice"));
+}
+
+#[test]
 fn test_load_data_rdf_merge() {
     let mut rudof = Rudof::new(RudofConfig::default());
 

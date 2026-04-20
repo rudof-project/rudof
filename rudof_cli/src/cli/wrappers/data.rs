@@ -33,6 +33,7 @@ cli_wrapper!(
     {
         Turtle,
         NTriples,
+        JsonLd,
         RdfXml,
         TriG,
         N3,
