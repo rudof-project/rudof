@@ -44,14 +44,15 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
         // and collect their cached results
         let mut cached_results = Vec::new();
         let uncached_focus_nodes = if let Some(idx) = idx {
-            let uncached = Vec::new();
-            for node in focus_nodes.iter() {
-                let node_object = RDF::term_as_object(node);
+            let mut uncached = Vec::new();
+            for fnode in focus_nodes.iter() {
+                let node_object = RDF::term_as_object(fnode);
                 if let Ok(ref obj) = node_object
                     && let Some(results) = runner.get_cached_results(obj, *idx) {
                     cached_results.extend(results.iter().cloned());
                     continue;
                 }
+                uncached.push(fnode.clone());
             }
             FocusNodes::from_iter(uncached)
         } else {
