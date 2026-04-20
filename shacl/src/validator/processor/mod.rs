@@ -44,9 +44,14 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug> {
             )
         }
 
+        let mut pm = shapes_graph.prefix_map().clone();
+        if let Some(store_pm) = self.store().prefixmap() {
+            _ = pm.merge(store_pm);
+        }
+
         Ok(ValidationReport::new()
             .with_results(results)
-            .with_prefixmap(shapes_graph.prefix_map().clone())
+            .with_prefixmap(pm)
         )
     }
 }
