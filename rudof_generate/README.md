@@ -479,6 +479,8 @@ When you run the generator with `write_stats = true`, you'll get:
    - Entity counts per shape type
    - Generation performance metrics
    - Data distribution information
+   - Triple validity percentage
+   - Shape translation loss percentage
 
 Example statistics:
 ```json
@@ -489,6 +491,14 @@ Example statistics:
     "http://example.org/Person": 334,
     "http://example.org/Organization": 333,
     "http://example.org/Course": 333
+  },
+  "conformance_metrics": {
+    "total_generated_triples": 15248,
+    "valid_triples": 14991,
+    "triple_validity_percentage": 98.31,
+    "original_schema_constraints": 42,
+    "represented_constraints_in_unified": 38,
+    "shape_translation_loss_percentage": 9.52
   }
 }
 ```
@@ -502,3 +512,27 @@ The generator is built with a modular, functional architecture:
 - `shape_processing/`: ShEx schema parsing and analysis
 - `parallel_generation/`: Parallel data generation engine
 - `output/`: Multiple format output writers
+
+
+## ShEx And SHACL Coverage Matrix
+
+This matrix summarizes what the current generator can translate into the unified model and therefore use for generation and metric computation.
+
+| Feature | ShEx | SHACL | Status | Notes |
+| --- | --- | --- | --- | --- |
+| Shape declarations | Yes | Yes | Supported | Core shape IDs are preserved |
+| Property constraints | Yes | Yes | Supported | Property IRI and associated constraints are extracted |
+| Cardinality | Yes | Yes | Supported | `min`/`max` in ShEx, `sh:minCount`/`sh:maxCount` in SHACL |
+| Datatype | Yes | Yes | Supported | Mapped to unified datatype constraints |
+| Node kind | Yes | Yes | Supported | Basic node kinds are mapped |
+| Pattern | Yes | Yes | Supported | Regex patterns are extracted when present |
+| Length facets | Yes | Yes | Partially supported | `minLength`/`maxLength` supported; exact length is not translated |
+| Numeric range facets | Yes | Yes | Supported | Inclusive/exclusive bounds are extracted |
+| Value set / enumeration | Yes | Yes | Supported | `in` and `hasValue` are represented |
+| Shape references | Yes | Yes | Supported | Recursive or referenced shapes are mapped |
+| Closed shapes | Partial | Partial | Partially supported | Present in the model, but not fully extracted from schemas |
+| Triple expression composition | Yes | Partial | Partially supported | `EachOf` / `OneOf` are handled; some advanced references are not |
+| Logical combinators | Limited | No | Not fully supported | SHACL `sh:or`, `sh:and`, `sh:not`, `sh:xone` are not fully translated |
+| Qualified value shapes | Limited | No | Not fully supported | Not mapped in the unified model |
+| SPARQL-based constraints | No | No | Not supported | Outside current generator scope |
+| Semantic actions / imports | Limited | Limited | Not supported | Not preserved in the unified model |

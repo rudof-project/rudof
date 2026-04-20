@@ -25,6 +25,7 @@ prefixmap = { workspace = true }
 # Data generation and utilities
 rand.workspace = true
 rayon.workspace = true
+regex.workspace = true
 rust_decimal.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -42,7 +43,6 @@ tracing.workspace = true
 tracing-subscriber.workspace = true
 
 [dev-dependencies]
-regex.workspace = true
 tempfile.workspace = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
