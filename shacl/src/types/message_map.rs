@@ -1,8 +1,11 @@
 use rudof_rdf::rdf_core::term::literal::Lang;
 use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
+use std::ops::Deref;
 use std::str::FromStr;
+use itertools::Itertools;
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct MessageMap {
     messages: HashMap<Option<Lang>, String>,
 }
@@ -24,14 +27,40 @@ impl MessageMap {
     pub fn iter(&self) -> impl Iterator<Item = (&Option<Lang>, &String)> {
         self.messages.iter()
     }
+
+    pub fn get(&self, lang: Option<&Lang>) -> Option<&String> {
+        self.messages.get(&lang.cloned())
+    }
 }
 
-impl FromStr for MessageMap {
-    type Err = ();
+impl From<&str> for MessageMap {
+    fn from(value: &str) -> Self {
+        Self {
+            messages: HashMap::from([(None, value.to_string())])
+        }
+    }
+}
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self {
-            messages: HashMap::from([(None, s.to_string())]),
-        })
+impl From<String> for MessageMap {
+    fn from(value: String) -> Self {
+        Self {
+            messages: HashMap::from([(None, value)])
+        }
+    }
+}
+
+impl Display for MessageMap {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "MessageMap {{")?;
+
+        let data = self
+            .iter()
+            .map(|(l, msg)| match l {
+                None => format!("default: {:?}", msg),
+                Some(l) => format!("{:?}: {:?}", l, msg),
+            })
+            .join(", ");
+
+        write!(f, "{data}}}")
     }
 }
