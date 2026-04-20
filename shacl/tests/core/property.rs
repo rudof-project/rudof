@@ -68,7 +68,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn language_in_001() -> Result<(), TestSuiteError> {
         let path = format!("{}/{}.ttl", PATH, "languageIn-001");
         test(path, ShaclValidationMode::Native)
@@ -81,7 +80,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn less_than_002() -> Result<(), TestSuiteError> {
         let path = format!("{}/{}.ttl", PATH, "lessThan-002");
         test(path, ShaclValidationMode::Native)
@@ -209,7 +207,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn qualified_min_count_disjoint_001() -> Result<(), TestSuiteError> {
         let path = format!("{}/{}.ttl", PATH, "qualifiedMinCountDisjoint-001");
         test(path, ShaclValidationMode::Native)
@@ -222,7 +219,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn qualified_value_shapes_disjoint_001() -> Result<(), TestSuiteError> {
         let path = format!("{}/{}.ttl", PATH, "qualifiedValueShapesDisjoint-001");
         test(path, ShaclValidationMode::Native)

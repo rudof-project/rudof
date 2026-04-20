@@ -8,7 +8,6 @@ mod tests {
     const PATH: &'static str = "tests/data-shapes/data-shapes-test-suite/tests/core/complex/";
 
     #[test]
-    #[ignore]
     fn personexample() -> Result<(), TestSuiteError> {
         let path = format!("{}/{}.ttl", PATH, "personexample");
         test(path, ShaclValidationMode::Native)
