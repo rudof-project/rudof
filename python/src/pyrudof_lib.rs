@@ -26,6 +26,9 @@ use std::{
     str::FromStr,
     sync::{Arc, Mutex},
 };
+use std::collections::HashMap;
+use rudof_lib::rdf_core::term::literal::Lang;
+use rudof_lib::shacl::types::MessageMap;
 use rudof_lib::shacl::validator::report::{ValidationReportSorting, ValidationResult};
 use rudof_lib::shacl::validator::ShaclValidationMode;
 
@@ -2263,12 +2266,22 @@ impl PyValidationResult {
         self.inner.source().map(|s| s.to_string()).unwrap_or_default()
     }
 
-    /// Returns a natural language message describing the validation result.
+    /// Returns a natural language message map describing the validation result.
     ///
     /// Returns:
-    ///     str: Optional human-readable message explaining the result, or empty string if none.
-    pub fn message(&self) -> String {
-        self.inner.message().map(|m| m.to_string()).unwrap_or_default()
+    ///     str: Optional human-readable message map explaining the result, or empty if none.
+    pub fn message(&self) -> HashMap<String, String> {
+        self.inner
+            .message()
+            .iter()
+            .fold(HashMap::new(),|mut acc, (lang, msg)| {
+                let lang = match lang {
+                    None => "".to_string(),
+                    Some(l) => l.to_string(),
+                };
+                acc.insert(lang, msg.to_string());
+                acc
+            })
     }
 }
 

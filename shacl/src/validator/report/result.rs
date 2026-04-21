@@ -1,13 +1,15 @@
 use std::fmt::{Display, Formatter};
+use std::hash::{Hash, Hasher};
 use iri_s::IriS;
 use rudof_rdf::rdf_core::{BuildRDF, FocusRDF, NeighsRDF, SHACLPath};
+use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, Lang};
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use crate::error::{ReportError, ResultError};
-use crate::types::Severity;
+use crate::types::{MessageMap, Severity};
 use crate::validator::report::error_mapper;
 
-#[derive(Debug, Clone, Eq, Hash)]
+#[derive(Debug, Clone, Eq)]
 pub struct ValidationResult {
     // Required
     focus_node: Object,
@@ -19,7 +21,7 @@ pub struct ValidationResult {
     value: Option<Object>,
     source: Option<Object>,
     details: Option<Vec<Object>>,
-    message: Option<String>,
+    message: MessageMap,
 }
 
 impl ValidationResult {
@@ -33,7 +35,7 @@ impl ValidationResult {
             value: None,
             source: None,
             details: None,
-            message: None,
+            message: Default::default(),
         }
     }
 
@@ -54,7 +56,7 @@ impl ValidationResult {
         self.details = details;
         self
     }
-    pub fn with_message(mut self, message: Option<String>) -> Self {
+    pub fn with_message(mut self, message: MessageMap) -> Self {
         self.message = message;
         self
     }
@@ -67,8 +69,8 @@ impl ValidationResult {
         &self.constraint_component
     }
 
-    pub fn message(&self) -> Option<&str> {
-        self.message.as_deref()
+    pub fn message(&self) -> &MessageMap {
+        &self.message
     }
 
     pub fn source(&self) -> Option<&Object> {
@@ -184,13 +186,16 @@ impl ValidationResult {
             .add_triple(report_node.clone(), ShaclVocab::sh_result_severity(), severity)
             .map_err(error_mapper::<RDF>("Error adding severity to validation result"))?;
 
-        let msg = match self.message {
-            None => Object::str("No message"),
-            Some(ref msg) => Object::str(msg),
-        };
-        writer
-            .add_triple(report_node.clone(), ShaclVocab::sh_result_message(), msg)
-            .map_err(error_mapper::<RDF>("Error result message to validation result"))?;
+        for (lang, text) in self.message.iter() {
+            let lit: RDF::Literal = ConcreteLiteral::StringLiteral {
+                lang: lang.clone(), lexical_form: text.clone()
+            }.into();
+            let term: RDF::Term = lit.into();
+
+            writer
+                .add_triple(report_node.clone(), ShaclVocab::sh_result_message(), term)
+                .map_err(error_mapper::<RDF>("Error result message to validation result"))?;
+        }
 
         if let Some(source) = &self.source {
             let term: RDF::Term = source.clone().into();
@@ -255,5 +260,17 @@ impl PartialEq for ValidationResult {
             self.value == other.value &&
             self.source == other.source &&
             self.details == other.details
+    }
+}
+
+impl Hash for ValidationResult {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.focus_node.hash(state);
+        self.constraint_component.hash(state);
+        self.severity.hash(state);
+        self.path.hash(state);
+        self.value.hash(state);
+        self.source.hash(state);
+        self.details.hash(state);
     }
 }

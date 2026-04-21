@@ -266,7 +266,7 @@ impl Display for ValidationReport {
                     " node: {} {}\n{}{}{}{}",
                     show_object(result.focus_node(), &self.nodes_pm),
                     show_object(result.constraint_component(), &self.shapes_pm),
-                    result.message().unwrap_or(""),
+                    result.message(),
                     show_path_opt(result.path(), &self.shapes_pm),
                     show_object_opt(result.source(), &self.shapes_pm),
                     show_object_opt(result.value(), &self.nodes_pm),

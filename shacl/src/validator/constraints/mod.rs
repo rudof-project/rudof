@@ -230,11 +230,15 @@ fn apply<S: Rdf, I: IterationStrategy<S>>(
             let shape_id = shape.id();
             let source = Some(shape_id);
             let value = strategy.to_object(item);
+            let mut msg = MessageMap::from(msg);
+            if let Some(m) = shape.message() {
+                msg = msg.merge(m.to_owned(), true);
+            }
             if let Ok(condition) = evaluator(item) && condition {
                 return Some(
                     ValidationResult::new(focus, component, shape.severity())
                         .with_source(source.cloned())
-                        .with_message(Some(msg.to_string()))
+                        .with_message(msg)
                         .with_path(maybe_path.cloned())
                         .with_value(value)
                 )
