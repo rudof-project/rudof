@@ -1,3 +1,4 @@
+use std::collections::hash_map::IntoIter;
 use rudof_rdf::rdf_core::term::literal::Lang;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
@@ -30,6 +31,24 @@ impl MessageMap {
 
     pub fn get(&self, lang: Option<&Lang>) -> Option<&String> {
         self.messages.get(&lang.cloned())
+    }
+
+    pub fn merge(mut self, other: Self, over: bool) -> Self {
+        other.into_iter().for_each(|(lang, msg)| {
+            if over || !self.messages.contains_key(&lang) {
+                self.messages.insert(lang, msg);
+            }
+        });
+        self
+    }
+}
+
+impl IntoIterator for MessageMap {
+    type Item = (Option<Lang>, String);
+    type IntoIter = IntoIter<Option<Lang>, String>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.messages.into_iter()
     }
 }
 
