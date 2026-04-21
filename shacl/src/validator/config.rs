@@ -16,6 +16,7 @@ impl ShaclConfig {
         Self { data: Some(RdfDataConfig::default()) }
     }
 
+    #[cfg(not(target_family = "wasm"))]
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, ShaclConfigError> {
         let path_name = path.as_ref().display().to_string();
         let mut f = File::open(path).map_err(|e| ShaclConfigError::ReadingConfig {

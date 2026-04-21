@@ -1,7 +1,9 @@
-use shacl_rdf::ShaclWriter;
+use shacl::rdf::ShaclWriter;
 
 use crate::{Result, Rudof, errors::ShaclError, formats::ShaclFormat};
 use std::io;
+use rudof_rdf::rdf_impl::InMemoryGraph;
+use shacl::error::IRError;
 
 pub fn serialize_shacl_schema<W: io::Write>(
     rudof: &Rudof,
@@ -18,10 +20,12 @@ pub fn serialize_shacl_schema<W: io::Write>(
         },
         _ => {
             let rdf_format = shacl_format.try_into()?;
-            let mut shacl_writer = ShaclWriter::new();
+            let mut shacl_writer: ShaclWriter<InMemoryGraph> = ShaclWriter::new();
 
             shacl_writer
-                .write(shacl_shapes)
+                .register(&shacl_shapes.try_into().map_err(|e: IRError| ShaclError::FailedCompilingShaclSchema {
+                    error: e.to_string(),
+                })?)
                 .map_err(|e| ShaclError::FailedIoOperation { error: e.to_string() })?;
 
             shacl_writer

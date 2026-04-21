@@ -1,10 +1,14 @@
+#[cfg(feature = "sparql")]
 mod endpoint;
 mod graph;
+#[cfg(feature = "sparql")]
 mod rdf_data;
 
 use std::fmt::Debug;
+#[cfg(feature = "sparql")]
 pub use endpoint::EndpointValidation;
 pub use graph::GraphValidation;
+#[cfg(feature = "sparql")]
 pub use rdf_data::DataValidation;
 use rudof_rdf::rdf_core::NeighsRDF;
 use crate::error::ValidationError;

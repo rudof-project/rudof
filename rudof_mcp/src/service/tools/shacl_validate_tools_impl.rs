@@ -12,7 +12,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::io::Cursor;
 use std::str::FromStr;
-use rudof_lib::shacl::validator::ShaclValidationMode;
 use super::helpers::*;
 
 /// Request parameters for SHACL validation.

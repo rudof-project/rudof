@@ -47,9 +47,6 @@ use dctap::DCTap as DCTAP;
 use pgschema::{pgs::PropertyGraphSchema, type_map::TypeMap, validation_result::ValidationResult};
 use rdf_config::RdfConfigModel;
 use rudof_rdf::rdf_core::query::SparqlQuery;
-use shacl_ast::ast::ShaclSchema;
-use shacl_ir::compiled::schema_ir::SchemaIR as ShaclSchemaIR;
-use shacl_validation::validation_report::report::ValidationReport;
 use shex_ast::ir::schema_ir::SchemaIR as ShExSchemaIR;
 use shex_ast::shapemap::{QueryShapeMap, ResultShapeMap};
 use shex_ast::{Schema as ShExSchema, ir::map_state::MapState};
@@ -57,6 +54,9 @@ use shex_validation::Validator as ShExValidator;
 use sparql_service::RdfData;
 use sparql_service::ServiceDescription;
 use std::io;
+use shacl::ast::ASTSchema;
+use shacl::ir::IRSchema;
+use shacl::validator::report::ValidationReport;
 
 /// Typedef for `Result` returned by Rudof operations, where errors are boxed into `RudofError`.
 /// Allows easier error handling across library-specific subsystems.

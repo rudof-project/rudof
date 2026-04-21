@@ -25,6 +25,7 @@ pub trait NativeValidator<RDF: NeighsRDF> {
     fn validate_native(&self, component: &IRComponent, shape: &IRShape, store: &RDF, engine: &mut dyn Engine<RDF>, value_nodes: &ValueNodes<RDF>, source_shape: Option<&IRShape>, maybe_path: Option<&SHACLPath>, shapes_graph: &IRSchema) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 // TODO - Move to crate::validator
+#[cfg(feature = "sparql")]
 pub trait SparqlValidator<RDF: QueryRDF + Debug> {
     fn validate_sparql(&self, component: &IRComponent, shape: &IRShape, store: &RDF, value_nodes: &ValueNodes<RDF>, source_shape: Option<&IRShape>, maybe_path: Option<&SHACLPath>, shapes_graph: &IRSchema) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
@@ -59,6 +60,7 @@ macro_rules! impl_validators_via_validate {
             }
         }
 
+        #[cfg(feature = "sparql")]
         impl<S> crate::validator::constraints::SparqlValidator<S> for $ty
         where
             S: rudof_rdf::rdf_core::query::QueryRDF +
@@ -169,6 +171,7 @@ impl<'a, S: NeighsRDF + Debug + 'static> ValidatorDeref<'a, dyn NativeValidator<
     }
 }
 
+#[cfg(feature = "sparql")]
 impl<'a, S: QueryRDF + NeighsRDF + Debug + 'static> ValidatorDeref<'a, dyn SparqlValidator<S> + 'a> for ShaclComponent<'a, S> {
     fn deref(&self) -> &'a dyn SparqlValidator<S> {
         match self.component() {

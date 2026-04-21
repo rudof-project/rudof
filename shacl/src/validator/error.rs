@@ -82,12 +82,15 @@ pub enum ValidationError {
     #[error("Error loading the Shapes")]
     Shapes(#[from] RDFError),
 
+    #[cfg(feature = "sparql")]
     #[error("Error creating the SPARQL endpoint")]
     SparqlCreation,
 
+    #[cfg(feature = "sparql")]
     #[error("Error during the SPARQL operation")]
     Sparql(#[from] SparqlError),
 
+    #[cfg(feature = "sparql")]
     #[error("Error during the SPARQL operation: {msg}, source: {source}")]
     SparqlError {
         msg: String,

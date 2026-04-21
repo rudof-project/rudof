@@ -5,8 +5,9 @@ use crate::{
     utils::terminal_width,
 };
 use rudof_rdf::{rdf_core::BuildRDF, rdf_impl::InMemoryGraph};
-use shacl_validation::validation_report::report::ValidationReport;
+use shacl::validator::report::ValidationReport;
 use std::io;
+use shacl::types::Severity;
 
 pub fn serialize_shacl_validation_results<W: io::Write>(
     rudof: &Rudof,
@@ -81,8 +82,8 @@ fn serialize_shacl_validation_results_minimal<W: io::Write>(
         writeln!(
             writer,
             "Does not conform, {} violations, {} warnings",
-            shacl_validation_results.count_violations(),
-            shacl_validation_results.count_warnings()
+            shacl_validation_results.get_count_of(&Severity::Violation),
+            shacl_validation_results.get_count_of(&Severity::Warning)
         )
         .map_err(|e| ShaclError::FailedIoOperation { error: e.to_string() })?;
     }

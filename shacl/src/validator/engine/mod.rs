@@ -1,4 +1,5 @@
 mod native;
+#[cfg(feature = "sparql")]
 mod sparql;
 pub(crate) mod error;
 mod validate;
@@ -14,8 +15,11 @@ use crate::types::Target;
 
 pub use native::NativeEngine;
 use rudof_rdf::rdf_core::query::QueryRDF;
+#[cfg(feature = "sparql")]
 pub use sparql::SparqlEngine;
-use crate::error::{SparqlError, ValidationError};
+use crate::error::ValidationError;
+#[cfg(feature = "sparql")]
+use crate::error::SparqlError;
 use crate::validator::nodes::{FocusNodes, ValueNodes};
 use crate::validator::report::ValidationResult;
 pub use validate::Validate;

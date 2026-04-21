@@ -6,8 +6,8 @@ use crate::{
 };
 use iri_s::{IriS, MimeType};
 use rudof_rdf::rdf_impl::InMemoryGraph;
-use shacl_ir::compiled::schema_ir::SchemaIR as ShaclSchemaIR;
-use shacl_rdf::ShaclParser;
+use shacl::ir::IRSchema;
+use shacl::rdf::ShaclParser;
 use sparql_service::RdfData;
 
 pub fn load_shacl_schema(
@@ -87,7 +87,7 @@ fn read_shacl_schema(
 
 fn compile_shacl_schema(rudof: &mut Rudof) -> Result<()> {
     let shacl_schema = rudof.shacl_shapes.as_ref().unwrap();
-    let shacl_schema_ir = ShaclSchemaIR::compile(shacl_schema)
+    let shacl_schema_ir = IRSchema::compile(shacl_schema)
         .map_err(|e| ShaclError::FailedCompilingShaclSchema { error: e.to_string() })?;
 
     rudof.shacl_shapes_ir = Some(shacl_schema_ir);

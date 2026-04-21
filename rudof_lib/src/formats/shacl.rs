@@ -1,7 +1,7 @@
 use crate::errors::ShaclError;
 use iri_s::MimeType;
 use rudof_rdf::rdf_core::RDFFormat;
-use shacl_ast::ShaclFormat as InnerShaclFormat;
+use shacl::types::ShaclFormat as InnerShaclFormat;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 

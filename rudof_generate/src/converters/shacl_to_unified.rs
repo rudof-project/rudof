@@ -206,7 +206,7 @@ impl ShaclToUnified {
                 constraints.push(UnifiedConstraint::MaxInclusive(unified_val));
                 true
             },
-            Component::MinExclusive(val) => {
+            ASTComponent::MinExclusive(val) => {
                 let unified_val = self.convert_literal_to_value(val);
                 constraints.push(UnifiedConstraint::MinExclusive(unified_val));
                 true
@@ -231,7 +231,7 @@ impl ShaclToUnified {
                 constraints.push(UnifiedConstraint::ShapeReference(shape.to_string()));
                 true
             },
-            Component::MinCount(_) | Component::MaxCount(_) => false,
+            ASTComponent::MinCount(_) | ASTComponent::MaxCount(_) => false,
             _ => {
                 // For other components, we might add basic string datatype
                 // or handle them based on specific needs

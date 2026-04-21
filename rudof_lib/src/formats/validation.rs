@@ -1,7 +1,7 @@
 use crate::{errors::ValidationError, formats::ShapeMapFormat};
 use rudof_rdf::rdf_core::RDFFormat;
-use shacl_validation::shacl_processor::ShaclValidationMode as ShaclValidationModeReport;
-use shacl_validation::validation_report::report::SortModeReport;
+use shacl::validator::report::ValidationReportSorting;
+use shacl::validator::ShaclValidationMode as InnerShaclValidationMode;
 use shex_ast::shapemap::result_shape_map::SortMode;
 use std::{
     fmt::{Display, Formatter},
@@ -232,11 +232,11 @@ impl FromStr for ShaclValidationMode {
     }
 }
 
-impl From<ShaclValidationMode> for ShaclValidationModeReport {
+impl From<ShaclValidationMode> for InnerShaclValidationMode {
     fn from(mode: ShaclValidationMode) -> Self {
         match mode {
-            ShaclValidationMode::Native => ShaclValidationModeReport::Native,
-            ShaclValidationMode::Sparql => ShaclValidationModeReport::Sparql,
+            ShaclValidationMode::Native => InnerShaclValidationMode::Native,
+            ShaclValidationMode::Sparql => InnerShaclValidationMode::Sparql,
         }
     }
 }
@@ -334,16 +334,16 @@ impl Display for ShaclValidationSortByMode {
     }
 }
 
-impl From<ShaclValidationSortByMode> for SortModeReport {
+impl From<ShaclValidationSortByMode> for ValidationReportSorting {
     fn from(sort_by: ShaclValidationSortByMode) -> Self {
         match sort_by {
-            ShaclValidationSortByMode::Severity => SortModeReport::Severity,
-            ShaclValidationSortByMode::Node => SortModeReport::Node,
-            ShaclValidationSortByMode::Component => SortModeReport::Component,
-            ShaclValidationSortByMode::Value => SortModeReport::Value,
-            ShaclValidationSortByMode::Path => SortModeReport::Path,
-            ShaclValidationSortByMode::SourceShape => SortModeReport::Source,
-            ShaclValidationSortByMode::Details => SortModeReport::Details,
+            ShaclValidationSortByMode::Severity => ValidationReportSorting::Severity,
+            ShaclValidationSortByMode::Node => ValidationReportSorting::Node,
+            ShaclValidationSortByMode::Component => ValidationReportSorting::Component,
+            ShaclValidationSortByMode::Value => ValidationReportSorting::Value,
+            ShaclValidationSortByMode::Path => ValidationReportSorting::Path,
+            ShaclValidationSortByMode::SourceShape => ValidationReportSorting::Source,
+            ShaclValidationSortByMode::Details => ValidationReportSorting::Details,
         }
     }
 }

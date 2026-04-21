@@ -30,6 +30,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxInclusive {
     }
 }
 
+#[cfg(feature = "sparql")]
 impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MaxInclusive {
     fn validate_sparql(&self, component: &IRComponent, shape: &IRShape, store: &S, value_nodes: &ValueNodes<S>, source_shape: Option<&IRShape>, maybe_path: Option<&SHACLPath>, shapes_graph: &IRSchema) -> Result<Vec<ValidationResult>, ConstraintError> {
         let query_fn = |vn: &S::Term| {
