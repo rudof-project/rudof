@@ -18,16 +18,6 @@ pub struct ValidationReport {
     results: Vec<ValidationResult>,
     nodes_pm: PrefixMap,
     shapes_pm: PrefixMap,
-
-    // TODO - This should be handled by the CLI crate
-    // TODO - This could also be wrapped in the CLI with some severity wrapper for validation results
-    // ok_color: Option<Color>, // Green
-    // info_color: Option<Color>, // Blue
-    // warning_color: Option<Color>, // Yellow
-    // debug_color: Option<Color>, // Magenta
-    // trace_color: Option<Color>, // Cyan
-    // fail_color: Option<Color>, // Red
-    // display_with_colors: Option<Color>, // true
 }
 
 impl ValidationReport {
@@ -156,87 +146,6 @@ impl ValidationReport {
         Ok(())
     }
 }
-
-// TODO - This needs to be moved probably to rudof_cli or some kind of I/O crate
-// impl ValidationReport {
-    /*pub fn show_as_table<W: Write>(
-        &self,
-        mut writer: W,
-        _sort_mode: SortModeReport,
-        with_details: Option<bool>,
-        terminal_width: Option<usize>,
-    ) -> Result<(), Error> {
-        let with_details = with_details.unwrap_or(false);
-        let terminal_width = terminal_width.unwrap_or(80);
-
-        let mut builder = Builder::default();
-        if with_details {
-            builder.push_record([
-                "Severity",
-                "Node",
-                "Component",
-                "Path",
-                "Value",
-                "Source shape",
-                "Details",
-            ]);
-        } else {
-            builder.push_record(["Severity", "node", "Component", "Path", "value", "Source shape"]);
-        }
-        if self.results.is_empty() {
-            let str = "No Errors found";
-            if self.display_with_colors {
-                if let Some(ok_color) = self.ok_color {
-                    write!(writer, "{}", str.color(ok_color))?;
-                } else {
-                    write!(writer, "{str}")?;
-                }
-            } else {
-                write!(writer, "{str}")?;
-            }
-            Ok(())
-        } else {
-            let shacl_prefixmap = if self.display_with_colors {
-                PrefixMap::basic()
-            } else {
-                PrefixMap::basic().with_hyperlink(true).without_default_colors()
-            };
-            for result in self.results.iter() {
-                let severity_str = show_severity(result.severity(), &shacl_prefixmap);
-                let severity = if self.display_with_colors {
-                    let color = calculate_color(result.severity(), self);
-                    severity_str.color(color)
-                } else {
-                    ColoredString::from(severity_str)
-                };
-                let node = show_object(result.focus_node(), &self.nodes_prefixmap);
-                let component = show_object(result.component(), &shacl_prefixmap);
-                let path = show_path_opt(result.path(), &self.shapes_prefixmap);
-                let source = show_object_opt(result.source(), &self.shapes_prefixmap);
-                let value = show_object_opt(result.value(), &self.nodes_prefixmap);
-                let details = result.message().unwrap_or("").to_string();
-                if with_details {
-                    builder.push_record([
-                        &severity.to_string(),
-                        &node,
-                        &component,
-                        &path,
-                        &value,
-                        &source,
-                        &details,
-                    ]);
-                } else {
-                    builder.push_record([&severity.to_string(), &node, &component, &path, &value, &source]);
-                }
-            }
-            let mut table = builder.build();
-            table.with(Style::modern_rounded());
-            table.with(Modify::new(Segment::all()).with(Width::wrap(terminal_width)));
-            writeln!(writer, "{table}")?;
-            Ok(())
-        }
-    } */
-// }
 
 impl Default for ValidationReport {
     fn default() -> Self {
