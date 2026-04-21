@@ -21,7 +21,7 @@ pub struct IRNodeShape {
     closed_info: ClosedInfo,
     deactivated: bool,
 
-    // message: MessageMap,
+    message: Option<MessageMap>,
     severity: Option<Severity>,
     name: MessageMap,
     description: MessageMap,
@@ -38,6 +38,7 @@ impl IRNodeShape {
             property_shapes: Vec::new(),
             closed_info: ClosedInfo::No,
             deactivated: false,
+            message: None,
             severity: None,
             name: MessageMap::new(),
             description: MessageMap::new(),
@@ -90,6 +91,11 @@ impl IRNodeShape {
         self
     }
 
+    pub fn with_message(mut self, message: Option<MessageMap>) -> Self {
+        self.message = message;
+        self
+    }
+
     pub fn id(&self) -> &Object {
         &self.id
     }
@@ -125,16 +131,9 @@ impl IRNodeShape {
         self.closed_info.is_closed()
     }
 
-    // pub(crate) fn add_edges(
-    //     &self,
-    //     shape_idx: ShapeLabelIdx,
-    //     dg: &mut DependencyGraph,
-    //     posneg: PosNeg,
-    //     schema: &IRSchema,
-    //     visited: &mut HashSet<ShapeLabelIdx>
-    // ) {
-    //
-    // }
+    pub fn message(&self) -> Option<&MessageMap> {
+        self.message.as_ref()
+    }
 }
 
 impl IRNodeShape {
@@ -164,7 +163,8 @@ impl IRNodeShape {
             .with_severity(shape.severity().cloned())
             .with_name(shape.name().to_owned())
             .with_description(shape.description().to_owned())
-            .with_group(shape.group().cloned());
+            .with_group(shape.group().cloned())
+            .with_message(shape.message().cloned());
 
         Ok(compiled_node_shape)
     }

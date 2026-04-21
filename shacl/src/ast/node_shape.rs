@@ -14,7 +14,7 @@ pub struct ASTNodeShape {
     property_shapes: Vec<Object>,
     // closed: bool,
     // ignored_properties: Vec<IriRef>,
-    // message: MessageMap,
+    message: Option<MessageMap>,
     severity: Option<Severity>,
     name: MessageMap,
     description: MessageMap,
@@ -29,6 +29,7 @@ impl ASTNodeShape {
             components: Vec::new(),
             targets: Vec::new(),
             property_shapes: Vec::new(),
+            message: None,
             severity: None,
             name: MessageMap::new(),
             description: MessageMap::new(),
@@ -53,6 +54,11 @@ impl ASTNodeShape {
 
     pub fn with_components(mut self, components: Vec<ASTComponent>) -> Self {
         self.components = components;
+        self
+    }
+
+    pub fn with_message(mut self, message: Option<MessageMap>) -> Self {
+        self.message = message;
         self
     }
 
@@ -82,6 +88,10 @@ impl ASTNodeShape {
 
     pub fn description(&self) -> &MessageMap {
         &self.description
+    }
+
+    pub fn message(&self) -> Option<&MessageMap> {
+        self.message.as_ref()
     }
 
     pub fn is_deactivated(&self) -> bool {

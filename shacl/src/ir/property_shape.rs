@@ -23,7 +23,7 @@ pub struct IRPropertyShape {
     property_shapes: Vec<ShapeLabelIdx>,
     closed_info: ClosedInfo,
     deactivated: bool,
-    // message: MessageMap
+    message: Option<MessageMap>,
     severity: Option<Severity>,
 
     // SHACL 1.2: Reifier info is only present for property shapes
@@ -46,6 +46,7 @@ impl IRPropertyShape {
             property_shapes: Vec::new(),
             closed_info,
             deactivated: false,
+            message: None,
             severity: None,
             reifier_info: None,
             name: MessageMap::new(),
@@ -98,6 +99,11 @@ impl IRPropertyShape {
         self
     }
 
+    pub fn with_message(mut self, message: Option<MessageMap>) -> Self {
+        self.message = message;
+        self
+    }
+
     pub fn id(&self) -> &Object {
         &self.id
     }
@@ -140,6 +146,10 @@ impl IRPropertyShape {
     pub fn property_shapes(&self) -> &Vec<ShapeLabelIdx> {
         &self.property_shapes
     }
+
+    pub fn message(&self) -> Option<&MessageMap> {
+        self.message.as_ref()
+    }
 }
 
 impl IRPropertyShape {
@@ -170,7 +180,8 @@ impl IRPropertyShape {
             .with_name(shape.name().to_owned())
             .with_description(shape.description().to_owned())
             .with_order(shape.order().cloned())
-            .with_group(shape.group().cloned());
+            .with_group(shape.group().cloned())
+            .with_message(shape.message().cloned());
 
         Ok(compiled_prop_shape)
     }

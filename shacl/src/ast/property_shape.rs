@@ -20,7 +20,7 @@ pub struct ASTPropertyShape {
     closed: bool,
     // ignored_properties: Vec<IriRef>,
     deactivated: bool,
-    // message: MessageMap,
+    message: Option<MessageMap>,
     severity: Option<Severity>,
     name: MessageMap,
     description: MessageMap,
@@ -44,6 +44,7 @@ impl ASTPropertyShape {
             property_shapes: Vec::new(),
             closed: false,
             deactivated: false,
+            message: None,
             severity: None,
             name: MessageMap::new(),
             description: MessageMap::new(),
@@ -107,6 +108,11 @@ impl ASTPropertyShape {
 
     pub fn with_closed(mut self, closed: bool) -> Self {
         self.closed = closed;
+        self
+    }
+
+    pub fn with_message(mut self, message: Option<MessageMap>) -> Self {
+        self.message = message;
         self
     }
 
@@ -176,6 +182,10 @@ impl ASTPropertyShape {
 
     pub fn group(&self) -> Option<&Object> {
         self.group.as_ref()
+    }
+
+    pub fn message(&self) -> Option<&MessageMap> {
+        self.message.as_ref()
     }
 
     fn closed_component(&self) -> (bool, HashSet<IriS>) {

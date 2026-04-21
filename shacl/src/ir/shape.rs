@@ -7,7 +7,7 @@ use crate::ir::node_shape::IRNodeShape;
 use crate::ir::property_shape::IRPropertyShape;
 use crate::ir::schema::IRSchema;
 use crate::ir::shape_label_idx::ShapeLabelIdx;
-use crate::types::{Severity, Target};
+use crate::types::{MessageMap, Severity, Target};
 use iri_s::IriS;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::{BuildRDF, SHACLPath};
@@ -96,6 +96,13 @@ impl IRShape {
         match self {
             IRShape::NodeShape(ns) => ns.allowed_properties(),
             IRShape::PropertyShape(ps) => ps.allowed_properties(),
+        }
+    }
+
+    pub fn message(&self) -> Option<&MessageMap> {
+        match self {
+            IRShape::NodeShape(ns) => ns.message(),
+            IRShape::PropertyShape(ps) => ps.message(),
         }
     }
 }
