@@ -52,7 +52,7 @@ fn init_defaults(
         data_format.copied().unwrap_or_default(),
         reader_mode.copied().unwrap_or_default(),
         base,
-        merge.unwrap_or(false),
+        merge.unwrap_or(true),
     ))
 }
 
