@@ -538,7 +538,7 @@ impl TryFrom<&str> for NumericLiteral {
             return Ok(NumericLiteral::Decimal(d));
         }
         // Finally try float
-        if let Ok(f) = value.parse::<f64>() {
+        if let Ok(f) = value.parse::<f64>() && f.is_finite() {
             return Ok(NumericLiteral::Double(f));
         }
 
