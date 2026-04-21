@@ -1,0 +1,20 @@
+use crate::{Result, Rudof, api::pgschema::PgSchemaOperations};
+
+/// Builder for the `run_pgschema_validation` operation.
+pub struct PgSchemaValidationBuilder<'a> {
+    rudof: &'a mut Rudof,
+}
+
+impl<'a> PgSchemaValidationBuilder<'a> {
+    /// Create a new run-validation builder.
+    ///
+    /// Internal: constructed by `Rudof::run_pgschema_validation()`.
+    pub(crate) fn new(rudof: &'a mut Rudof) -> Self {
+        Self { rudof }
+    }
+
+    /// Execute the validation run.
+    pub fn execute(self) -> Result<()> {
+        <Rudof as PgSchemaOperations>::validate_pgschema(self.rudof)
+    }
+}

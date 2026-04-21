@@ -6,56 +6,266 @@ Each example includes executable Python code that can be copied and pasted into 
 Jupyter notebook or Python script, along with links to any referenced files.
 
 
-ShEx Validation
----------------
+RDF Data Handling
+-----------------
 
-ShEx (Shape Expressions) is a language for describing and validating RDF data structures.
-These examples show how to use pyrudof for ShEx validation tasks.
+Examples for RDF loading, serialization, and node inspection.
 
 
-Shex Validate
-^^^^^^^^^^^^^
+RDF Read and Serialize
+^^^^^^^^^^^^^^^^^^^^^^
 
-Basic ShEx validation with inline schema and data
+Read RDF data, merge extra triples, and serialize
 
-**Source**: `shex_validate.py <https://github.com/rudof-project/rudof/blob/master/python/examples/shex_validate.py>`_
+**Source**: `rdf_data/rdf_data.py <https://github.com/rudof-project/rudof/blob/master/python/examples/rdf_data/rdf_data.py>`_
 
 **Python Code:**
 
 .. code-block:: python
 
-    from pyrudof import Rudof, RudofConfig
+    from pyrudof import RDFFormat, Rudof, RudofConfig
+    
+    rudof = Rudof(RudofConfig())
+    rudof.read_data(input="person.ttl", format=RDFFormat.Turtle)
+    rudof.read_data(
+        input='prefix : <http://example.org/>\n:extra :name "Extra" .\n',
+        format=RDFFormat.Turtle,
+        merge=True,
+    )
+    
+    serialized = rudof.serialize_data()
+
+**Referenced Files:**
+
+- **Data**: `person.ttl <https://github.com/rudof-project/rudof/blob/master/python/examples/person.ttl>`_
+
+
+Node Info
+^^^^^^^^^
+
+Inspect node neighborhood information in loaded RDF data
+
+**Source**: `rdf_data/node_info.py <https://github.com/rudof-project/rudof/blob/master/python/examples/rdf_data/node_info.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    from pyrudof import RDFFormat, Rudof, RudofConfig
+    
+    rudof = Rudof(RudofConfig())
+    rudof.read_data("person.ttl", RDFFormat.Turtle)
+    
+    info = rudof.node_info(":alice", [":name"], "outgoing", False, 1)
+
+**Referenced Files:**
+
+- **Data**: `person.ttl <https://github.com/rudof-project/rudof/blob/master/python/examples/person.ttl>`_
+
+
+List Endpoints
+^^^^^^^^^^^^^^
+
+List known SPARQL endpoints
+
+**Source**: `rdf_data/list_endpoints.py <https://github.com/rudof-project/rudof/blob/master/python/examples/rdf_data/list_endpoints.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    from pyrudof import RDFFormat, Rudof, RudofConfig
+    
+    rudof = Rudof(RudofConfig())
+    rudof.read_data("person.ttl", RDFFormat.Turtle)
+    endpoints = rudof.list_endpoints()
+
+
+SPARQL Queries
+--------------
+
+Examples for SELECT, CONSTRUCT and ASK query workflows.
+
+
+SPARQL SELECT Inline
+^^^^^^^^^^^^^^^^^^^^
+
+Run an inline SPARQL SELECT query against loaded RDF data
+
+**Source**: `sparql/sparql_select_inline.py <https://github.com/rudof-project/rudof/blob/master/python/examples/sparql/sparql_select_inline.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    from pyrudof import RDFFormat, Rudof, RudofConfig
+    
+    rudof = Rudof(RudofConfig())
+    rudof.read_data("person.ttl", RDFFormat.Turtle)
+    
+    query = """
+    PREFIX : <http://example.org/>
+    
+    SELECT ?person ?name
+    WHERE {
+      ?person :name ?name .
+    }
+    """
+    
+    rudof.read_query(query)
+    rudof.run_query()
+    results = rudof.serialize_query_results()
+
+**Referenced Files:**
+
+- **Data**: `person.ttl <https://github.com/rudof-project/rudof/blob/master/python/examples/person.ttl>`_
+
+
+SPARQL SELECT File
+^^^^^^^^^^^^^^^^^^
+
+Load SPARQL query from file and run it
+
+**Source**: `sparql/sparql_select_file.py <https://github.com/rudof-project/rudof/blob/master/python/examples/sparql/sparql_select_file.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    from pyrudof import RDFFormat, Rudof, RudofConfig
+    
+    rudof = Rudof(RudofConfig())
+    rudof.read_data("person.ttl", RDFFormat.Turtle)
+    rudof.read_query("person.sparql")
+    rudof.run_query()
+    results = rudof.serialize_query_results()
+
+**Referenced Files:**
+
+- **Data**: `person.ttl <https://github.com/rudof-project/rudof/blob/master/python/examples/person.ttl>`_
+- **Query**: `person.sparql <https://github.com/rudof-project/rudof/blob/master/python/examples/person.sparql>`_
+
+
+SPARQL CONSTRUCT
+^^^^^^^^^^^^^^^^
+
+Run a CONSTRUCT query and serialize graph results
+
+**Source**: `sparql/sparql_construct.py <https://github.com/rudof-project/rudof/blob/master/python/examples/sparql/sparql_construct.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    from pyrudof import QueryResultFormat, RDFFormat, Rudof, RudofConfig
+    
+    rudof = Rudof(RudofConfig())
+    rudof.read_data("person.ttl", RDFFormat.Turtle)
+    
+    query = """
+    PREFIX : <http://example.org/>
+    
+    CONSTRUCT {
+      ?person :name ?name .
+    }
+    WHERE {
+      ?person :name ?name .
+    }
+    """
+    
+    rudof.read_query(query)
+    rudof.run_query()
+    results = rudof.serialize_query_results(QueryResultFormat.Turtle)
+
+**Referenced Files:**
+
+- **Data**: `person.ttl <https://github.com/rudof-project/rudof/blob/master/python/examples/person.ttl>`_
+
+
+SPARQL SELECT Internal
+^^^^^^^^^^^^^^^^^^^^^^
+
+Run a SELECT query and serialize results using the default internal format
+
+**Source**: `sparql/sparql_ask.py <https://github.com/rudof-project/rudof/blob/master/python/examples/sparql/sparql_ask.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    from pyrudof import RDFFormat, Rudof, RudofConfig
+    
+    rudof = Rudof(RudofConfig())
+    rudof.read_data("person.ttl", RDFFormat.Turtle)
+    
+    query = """
+    PREFIX : <http://example.org/>
+    
+    SELECT ?person ?name
+    WHERE {
+      ?person :name ?name .
+    }
+    """
+    
+    rudof.read_query(query)
+    rudof.run_query()
+    results = rudof.serialize_query_results()
+
+**Referenced Files:**
+
+- **Data**: `person.ttl <https://github.com/rudof-project/rudof/blob/master/python/examples/person.ttl>`_
+
+
+ShEx Validation
+---------------
+
+Examples for reading ShEx schemas, validating data, and serializing schemas/ShapeMaps.
+
+
+ShEx Validate Inline
+^^^^^^^^^^^^^^^^^^^^
+
+Validate inline RDF data against an inline ShEx schema and ShapeMap
+
+**Source**: `shex/shex_validate_inline.py <https://github.com/rudof-project/rudof/blob/master/python/examples/shex/shex_validate_inline.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    from pyrudof import RDFFormat, ShapeMapFormat, ShExFormat, Rudof, RudofConfig
     
     rudof = Rudof(RudofConfig())
     
-    rudof.read_shex_str("""
-    prefix : <http://example.org/>
-    prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+    schema = """
+    PREFIX : <http://example.org/>
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     
-    :S { :p xsd:integer }
-    """)
+    :Person {
+      :name xsd:string
+    }
+    """
     
-    rudof.read_data_str("""
-    prefix : <http://example.org/>
+    data = """
+    PREFIX : <http://example.org/>
     
-    :x :p 1 .
-    :y :q 2 .
-    """)
+    :alice :name "Alice" .
+    """
     
-    rudof.read_shapemap_str("""
-    :x@:S, :y@:S
-    """)
+    shapemap = ":alice@:Person"
     
-    results = rudof.validate_shex()
-    print(results.show_as_table())
+    rudof.read_shex(schema, ShExFormat.ShExC)
+    rudof.read_data(data, RDFFormat.Turtle)
+    rudof.read_shapemap(shapemap, ShapeMapFormat.Compact)
+    rudof.validate_shex()
 
 
-Shex Validate File
-^^^^^^^^^^^^^^^^^^
+ShEx Validate Files
+^^^^^^^^^^^^^^^^^^^
 
-ShEx validation using external files
+Validate RDF data from files against a ShEx schema and ShapeMap
 
-**Source**: `shex_validate_file.py <https://github.com/rudof-project/rudof/blob/master/python/examples/shex_validate_file.py>`_
+**Source**: `shex/shex_validate_file.py <https://github.com/rudof-project/rudof/blob/master/python/examples/shex/shex_validate_file.py>`_
 
 **Python Code:**
 
@@ -69,8 +279,7 @@ ShEx validation using external files
     rudof.read_data("person.ttl", RDFFormat.Turtle)
     rudof.read_shapemap("person.sm", ShapeMapFormat.Compact)
     
-    result = rudof.validate_shex()
-    print(result.show_as_table())
+    rudof.validate_shex()
 
 **Referenced Files:**
 
@@ -79,131 +288,264 @@ ShEx validation using external files
 - **Shapemap**: `person.sm <https://github.com/rudof-project/rudof/blob/master/python/examples/person.sm>`_
 
 
-Compare Schemas
-^^^^^^^^^^^^^^^
+ShEx Serialize
+^^^^^^^^^^^^^^
 
-Compare two ShEx schemas and show the differences as JSON
+Serialize the currently loaded ShEx schema
 
-**Source**: `compare_schemas.py <https://github.com/rudof-project/rudof/blob/master/python/examples/compare_schemas.py>`_
+**Source**: `shex/shex_serialize.py <https://github.com/rudof-project/rudof/blob/master/python/examples/shex/shex_serialize.py>`_
 
 **Python Code:**
 
 .. code-block:: python
 
-    from pyrudof import Rudof, RudofConfig, ShExFormatter
+    from pyrudof import ShExFormat, Rudof, RudofConfig
+    
+    rudof = Rudof(RudofConfig())
+    rudof.read_shex("person.shex", ShExFormat.ShExC)
+    
+    serialized = rudof.serialize_current_shex()
+
+**Referenced Files:**
+
+- **Schema**: `person.shex <https://github.com/rudof-project/rudof/blob/master/python/examples/person.shex>`_
+
+
+ShapeMap Roundtrip
+^^^^^^^^^^^^^^^^^^
+
+Load and serialize a ShapeMap
+
+**Source**: `shex/shapemap_roundtrip.py <https://github.com/rudof-project/rudof/blob/master/python/examples/shex/shapemap_roundtrip.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    from pyrudof import RDFFormat, ShapeMapFormat, ShExFormat, Rudof, RudofConfig
+    
+    rudof = Rudof(RudofConfig())
+    rudof.read_data("person.ttl", RDFFormat.Turtle)
+    rudof.read_shex("person.shex", ShExFormat.ShExC)
+    rudof.read_shapemap("person.sm", ShapeMapFormat.Compact)
+    serialized = rudof.serialize_shapemap()
+
+**Referenced Files:**
+
+- **Shapemap**: `person.sm <https://github.com/rudof-project/rudof/blob/master/python/examples/person.sm>`_
+
+
+Compare Schemas
+^^^^^^^^^^^^^^^
+
+Compare two ShEx schemas and print comparison output size
+
+**Source**: `shex/compare_schemas.py <https://github.com/rudof-project/rudof/blob/master/python/examples/shex/compare_schemas.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    from pyrudof import ReaderMode, Rudof, RudofConfig
     
     rudof = Rudof(RudofConfig())
     
     schema1 = """
-     PREFIX : <http://example.org/>
-     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-     :Person {
-        :name xsd:string ;
-        :age xsd:integer ;
-        :weight xsd:float ;
-        :worksFor @:Company
-     }
-     :Company {
-        :name xsd:string ;
-        :employee @:Person
-     }"""
+    PREFIX : <http://example.org/>
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     
-    # rudof.read_data_str(schema1)
-    
-    schema2 = """
-     PREFIX ex: <http://example.org/>
-     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-     ex:Person {
-        ex:name xsd:string ;
-        ex:birthDate xsd:date ;
-        ex:worksFor @ex:Company
-    }
-    ex:Company {
-       ex:name xsd:string
+    :Person {
+      :name xsd:string
     }
     """
-    print("Comparing schemas:");
-    result = rudof.compare_schemas_str(
-        schema1, schema2,
-        "shex", "shex",
-        "shexc", "shexc",
-        None, None,
-        "http://example.org/Person", "http://example.org/Person",
-        None,
-        )
     
-    print(f"Schemas compared: {result.as_json()}")
+    schema2 = """
+    PREFIX : <http://example.org/>
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    
+    :Person {
+      :name xsd:string ;
+      :age xsd:integer ?
+    }
+    """
+    
+    comparison = rudof.compare_schemas(
+        schema1,
+        schema2,
+        "shex",
+        "shex",
+        "shexc",
+        "shexc",
+        None,
+        None,
+        "http://example.org/Person",
+        "http://example.org/Person",
+        ReaderMode.Lax,
+    )
+
+
+Materialize
+-----------
+
+Examples for materializing RDF graphs from ShEx schemas with Map semantic actions.
+
+The ``materialize`` operation produces an RDF graph by combining a ShEx schema
+(which describes the graph structure via Map semantic actions) with a MapState
+(a JSON file that maps each Map-extension IRI key to its concrete RDF node value).
+
+
+Materialize Inline
+^^^^^^^^^^^^^^^^^^
+
+Materialize an RDF graph from an inline ShEx schema and a MapState built in Python
+
+**Source**: `materialize/materialize_inline.py <https://github.com/rudof-project/rudof/blob/master/python/examples/materialize/materialize_inline.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    import json
+    import os
+    import tempfile
+
+    from pyrudof import ResultDataFormat, Rudof, RudofConfig, ShExFormat
+
+    rudof = Rudof(RudofConfig())
+
+    schema = json.dumps({
+        "@context": "http://www.w3.org/ns/shex.jsonld",
+        "type": "Schema",
+        "shapes": [{
+            "type": "ShapeDecl",
+            "id": "http://example.org/PersonShape",
+            "shapeExpr": {
+                "type": "Shape",
+                "expression": {
+                    "type": "TripleConstraint",
+                    "predicate": "http://example.org/name",
+                    "semActs": [{
+                        "type": "SemAct",
+                        "name": "http://shex.io/extensions/Map/",
+                        "code": "<http://example.org/name>"
+                    }]
+                }
+            }
+        }]
+    })
+
+    map_state = {
+        "http://example.org/name": {"Iri": "http://example.org/Alice"}
+    }
+
+    rudof.read_shex(schema, ShExFormat.ShExJ)
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
+        json.dump(map_state, tmp)
+        map_state_path = tmp.name
+
+    try:
+        rudof.read_map_state(map_state_path)
+        result = rudof.materialize(ResultDataFormat.NTriples)
+        print(result)
+    finally:
+        os.unlink(map_state_path)
+
+
+Materialize from Files
+^^^^^^^^^^^^^^^^^^^^^^
+
+Load a ShExJ schema and a MapState file, then materialize with an explicit root subject IRI
+
+**Source**: `materialize/materialize_file.py <https://github.com/rudof-project/rudof/blob/master/python/examples/materialize/materialize_file.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    from pyrudof import ResultDataFormat, Rudof, RudofConfig, ShExFormat
+
+    rudof = Rudof(RudofConfig())
+
+    rudof.read_shex("person_map.shexj", ShExFormat.ShExJ)
+    rudof.read_map_state("person_map_state.json")
+
+    result = rudof.materialize(
+        format=ResultDataFormat.Turtle,
+        node="http://example.org/Alice",
+    )
+    print(result)
+
+**Referenced Files:**
+
+- **Schema**: `materialize/person_map.shexj <https://github.com/rudof-project/rudof/blob/master/python/examples/materialize/person_map.shexj>`_
+- **MapState**: `materialize/person_map_state.json <https://github.com/rudof-project/rudof/blob/master/python/examples/materialize/person_map_state.json>`_
 
 
 SHACL Validation
 ----------------
 
-SHACL (Shapes Constraint Language) is a W3C standard for validating RDF graphs.
-These examples demonstrate SHACL validation with pyrudof.
+Examples for SHACL loading, validation, extraction from data, and serialization.
 
 
-Shacl Validate
-^^^^^^^^^^^^^^
+SHACL Validate Inline
+^^^^^^^^^^^^^^^^^^^^^
 
-Basic SHACL validation with inline shapes and data
+Validate inline RDF data with inline SHACL shapes
 
-**Source**: `shacl_validate.py <https://github.com/rudof-project/rudof/blob/master/python/examples/shacl_validate.py>`_
+**Source**: `shacl/shacl_validate_inline.py <https://github.com/rudof-project/rudof/blob/master/python/examples/shacl/shacl_validate_inline.py>`_
 
 **Python Code:**
 
 .. code-block:: python
 
-    from pyrudof import Rudof, RudofConfig
+    from pyrudof import RDFFormat, ShaclFormat, ShaclValidationMode, Rudof, RudofConfig
     
     rudof = Rudof(RudofConfig())
     
-    rudof.read_shacl_str("""
-    prefix : <http://example.org/>
-    prefix sh:     <http://www.w3.org/ns/shacl#>
-    prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
+    shapes = """
+    PREFIX : <http://example.org/>
+    PREFIX sh: <http://www.w3.org/ns/shacl#>
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     
-    :Person a sh:NodeShape;
-       sh:targetNode :ok, :ko ;
-       sh:property [
-        sh:path     :name ;
-        sh:minCount 1;
-        sh:maxCount 1;
+    :PersonShape a sh:NodeShape ;
+      sh:targetClass :Person ;
+      sh:property [
+        sh:path :name ;
         sh:datatype xsd:string ;
+        sh:minCount 1
       ] .
-    """)
+    """
     
-    rudof.read_data_str("""
-    prefix : <http://example.org/>
+    data = """
+    PREFIX : <http://example.org/>
     
-    :ok :name "alice" .
-    :ko :name 1 .
-    """)
+    :alice a :Person ;
+      :name "Alice" .
+    """
     
-    result = rudof.validate_shacl()
-    
-    print(result.show_as_table())
+    rudof.read_shacl(shapes, ShaclFormat.Turtle)
+    rudof.read_data(data, RDFFormat.Turtle)
+    rudof.validate_shacl(ShaclValidationMode.Native)
 
 
-Shacl Validate File
-^^^^^^^^^^^^^^^^^^^
+SHACL Validate Files
+^^^^^^^^^^^^^^^^^^^^
 
-SHACL validation using external files
+Validate RDF data from files against SHACL shapes
 
-**Source**: `shacl_file.py <https://github.com/rudof-project/rudof/blob/master/python/examples/shacl_file.py>`_
+**Source**: `shacl/shacl_validate_file.py <https://github.com/rudof-project/rudof/blob/master/python/examples/shacl/shacl_validate_file.py>`_
 
 **Python Code:**
 
 .. code-block:: python
 
-    from pyrudof import Rudof, RudofConfig, ShaclFormat, RDFFormat
+    from pyrudof import RDFFormat, ShaclFormat, ShaclValidationMode, Rudof, RudofConfig
     
     rudof = Rudof(RudofConfig())
-    
     rudof.read_shacl("timbl_shapes.ttl", ShaclFormat.Turtle)
     rudof.read_data("timbl.ttl", RDFFormat.Turtle)
-    
-    result = rudof.validate_shacl()
-    print(result.show_as_table())
+    rudof.validate_shacl(ShaclValidationMode.Native)
 
 **Referenced Files:**
 
@@ -211,1534 +553,462 @@ SHACL validation using external files
 - **Data**: `timbl.ttl <https://github.com/rudof-project/rudof/blob/master/python/examples/timbl.ttl>`_
 
 
-SHACL Validate (Inline Data)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+SHACL From Data
+^^^^^^^^^^^^^^^
 
-SHACL validation where shapes and data are loaded from inline strings
+Extract SHACL shapes from current RDF data and validate
 
-**Source**: `shacl_validate_only_data.py <https://github.com/rudof-project/rudof/blob/master/python/examples/shacl_validate_only_data.py>`_
+**Source**: `shacl/shacl_from_data.py <https://github.com/rudof-project/rudof/blob/master/python/examples/shacl/shacl_from_data.py>`_
 
 **Python Code:**
 
 .. code-block:: python
 
-    from pyrudof import Rudof, RudofConfig
+    from pyrudof import RDFFormat, ShaclValidationMode, Rudof, RudofConfig
     
     rudof = Rudof(RudofConfig())
     
-    rudof.read_data_str("""
-    prefix : <http://example.org/>
-    prefix sh:     <http://www.w3.org/ns/shacl#>
-    prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
+    shapes_and_data = """
+    PREFIX : <http://example.org/>
+    PREFIX sh: <http://www.w3.org/ns/shacl#>
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     
-    :Person a sh:NodeShape;
-       sh:targetNode :ok, :ko ;
-       sh:property [
-        sh:path     :name ;
-        sh:minCount 1;
-        sh:maxCount 1;
+    :PersonShape a sh:NodeShape ;
+      sh:targetClass :Person ;
+      sh:property [
+        sh:path :name ;
         sh:datatype xsd:string ;
+        sh:minCount 1
       ] .
-    """)
     
-    rudof.read_data_str("""
-    prefix : <http://example.org/>
-    
-    :ok :name "alice" .
-    :ko :name 1 .
-    """, merge = True)
-    
-    result = rudof.validate_shacl()
-    
-    print(result.show_as_table())
-
-
-RDF Data Handling
------------------
-
-These examples show how to parse, manipulate, and serialize RDF data using pyrudof.
-
-
-Rdf Data
-^^^^^^^^
-
-RDF data parsing and serialization
-
-**Source**: `rdf_data.py <https://github.com/rudof-project/rudof/blob/master/python/examples/rdf_data.py>`_
-
-**Python Code:**
-
-.. code-block:: python
-
-    from pyrudof import Rudof, RudofConfig, RDFFormat
-    
-    data_str = """prefix xsd: <http://www.w3.org/2001/XMLSchema#>
-    prefix : <http://example.org/>
-    
-    :alice :name "Alice" ;
-      :birthdate "1980-03-02"^^xsd:date ;
-      :enrolledIn :cs101 ;
-      :knows :bob .
-    
-    :bob :name "Robert" ;
-      :birthdate "1981-03-02"^^xsd:date ;
-      :enrolledIn :cs101 ;
-      :knows :alice .
-    
-    :cs101 :name "Computer Science 101";
-      :student :alice, :bob .
-    """
-    rudof = Rudof(RudofConfig())
-    
-    rudof.read_data_str(data_str)
-    
-    result = rudof.serialize_data(format = RDFFormat.NTriples)
-    
-    print(result)
-
-
-Data Visualization
-^^^^^^^^^^^^^^^^^^
-
-Convert RDF data into a PlantUML diagram for visualization
-
-**Source**: `data_visualization.py <https://github.com/rudof-project/rudof/blob/master/python/examples/data_visualization.py>`_
-
-**Python Code:**
-
-.. code-block:: python
-
-    from pyrudof import Rudof, RudofConfig, RDFFormat
-    config = RudofConfig()
-    rudof = Rudof(config)
-    
-    print(config)
-    data_str = """
-    prefix : <http://example.org/>
-    :a :name "Alice" .
-    """
-    data_str1 = """prefix xsd: <http://www.w3.org/2001/XMLSchema#>
-    prefix : <http://example.org/>
-    :alice :name "Alice" ;
-      :birthdate "1980-03-02"^^xsd:date ;
-      :enrolledIn :cs101 ;
-      :knows :bob .
-    
-    :bob :name "Robert" ;
-      :birthdate "1981-03-02"^^xsd:date ;
-      :enrolledIn :cs101 ;
-      :knows :alice .
-    
-    :cs101 :name "Computer Science 101";
-      :student :alice, :bob .
-    """
-    
-    rudof.read_data_str(data_str)
-    
-    print("RDF Data in PlantUML format:")
-    uml = rudof.data2plantuml()
-    print("Finished conversion to UML.")
-    print(uml)
-
-
-DCTAP Conversion
-----------------
-
-DCTAP (Dublin Core Tabular Application Profiles) is a simple tabular format for
-describing data models. These examples show how to convert DCTAP profiles to ShEx schemas.
-
-
-Dctap2Shex
-^^^^^^^^^^
-
-Convert DCTAP application profile to ShEx schema
-
-**Source**: `dctap2shex.py <https://github.com/rudof-project/rudof/blob/master/python/examples/dctap2shex.py>`_
-
-**Python Code:**
-
-.. code-block:: python
-
-    from pyrudof import Rudof, RudofConfig, ShExFormatter
-    
-    rudof = Rudof(RudofConfig())
-    
-    
-    dctap_str = """
-    shapeId,propertyId,Mandatory,Repeatable,valueDatatype,valueShape
-    Person,name,true,false,xsd:string,
-    ,birthdate,false,false,xsd:date,
-    ,enrolledIn,false,true,,Course
-    Course,name,true,false,xsd:string,
-    ,student,false,true,,Person
-    """
-    
-    rudof.read_dctap_str(dctap_str)
-    
-    dctap = rudof.get_dctap()
-    
-    print(f"DCTAP\n{dctap}")
-    
-    rudof.dctap2shex()
-    result = rudof.serialize_current_shex(ShExFormatter())
-    print(f"DCTAP converted to ShEx\n{result}")
-
-
-DCTAP Parse
-^^^^^^^^^^^
-
-Read a DCTAP (Dublin Core Tabular Application Profile) from a CSV string
-
-**Source**: `dctap.py <https://github.com/rudof-project/rudof/blob/master/python/examples/dctap.py>`_
-
-**Python Code:**
-
-.. code-block:: python
-
-    from pyrudof import Rudof, RudofConfig
-    
-    dctap = """
-    shapeID,propertyID,propertyLabel,mandatory,repeatable,valueNodeType,valueDataType,valueConstraint,valueConstraintType,valueShape,note,severity
-    BookShape,dct:title,Title,TRUE,FALSE,Literal,rdf:langString,,,,,Violation
-    BookShape,dct:creator,Author,FALSE,TRUE,IRI BNODE,,,,AuthorShape,,Warning
-    BookShape,sdo:isbn,ISBN-13,FALSE,FALSE,Literal,xsd:string,,,,"Just the 13 numbers, no spaces or separators.",Violation
-    BookShape,rdf:type,Type,TRUE,FALSE,IRI,,sdo:Book,,,,Warning
-    AuthorShape,rdf:type,Type,TRUE,TRUE,IRI,,foaf:Person,,,,Warning
-    AuthorShape,foaf:givenName,Given name,FALSE,TRUE,Literal,xsd:string,,,,,
-    AuthorShape,foaf:familyName,Family name,FALSE,TRUE,Literal,xsd:string,,,,,
-    """
-    
-    rudof = Rudof(RudofConfig())
-    
-    rudof.read_dctap_str(dctap)
-    
-    dctap_read = rudof.get_dctap()
-    
-    print(f"DCTAP read: {dctap_read}")
-
-
-DCTAP to UML
-^^^^^^^^^^^^
-
-Convert a DCTAP profile to ShEx and then to a PlantUML diagram
-
-**Source**: `dctap2uml.py <https://github.com/rudof-project/rudof/blob/master/python/examples/dctap2uml.py>`_
-
-**Python Code:**
-
-.. code-block:: python
-
-    from pyrudof import Rudof, RudofConfig, ShExFormatter, UmlGenerationMode
-    
-    rudof = Rudof(RudofConfig())
-    dctap_str = """shapeId,propertyId,Mandatory,Repeatable,valueDatatype,valueShape
-    Person,name,true,false,xsd:string,
-    ,birthdate,false,false,xsd:date,
-    ,enrolledIn,false,true,,Course
-    Course,name,true,false,xsd:string,
-    ,student,false,true,,Person
-    """
-    rudof.read_dctap_str(dctap_str)
-    
-    dctap = rudof.get_dctap()
-    print(f"DCTAP\n{dctap}")
-    
-    rudof.dctap2shex()
-    result = rudof.serialize_current_shex(ShExFormatter())
-    print(f"DCTAP converted to ShEx\n{result}")
-    
-    uml = rudof.shex2plantuml(UmlGenerationMode.all())
-    print(f"DCTAP converted to UML\n{uml}")
-
-
-SPARQL Queries
---------------
-
-SPARQL is the standard query language for RDF. These examples demonstrate
-how to execute SPARQL queries using pyrudof.
-
-
-Query
-^^^^^
-
-SPARQL SELECT query execution
-
-**Source**: `query.py <https://github.com/rudof-project/rudof/blob/master/python/examples/query.py>`_
-
-**Python Code:**
-
-.. code-block:: python
-
-    from pyrudof import Rudof, RudofConfig
-    
-    rudof = Rudof(RudofConfig())
-    rdf = """prefix : <http://example.org/>
     :alice a :Person ;
-     :name "Alice"   ;
-     :knows :bob     .
-    :bob a :Person   ;
-     :name "Robert"  .
-    """
-    rudof.read_data_str(rdf)
-    
-    query = """prefix : <http://example.org/>
-    select * where {
-      ?x a :Person
-    }
+      :name "Alice" .
     """
     
-    results = rudof.run_query_str(query)
-    for result in iter(results):
-        print(result.show())
+    rudof.read_data(shapes_and_data, RDFFormat.Turtle)
+    rudof.read_shacl()
+    rudof.validate_shacl(ShaclValidationMode.Native)
 
 
-Sparql File
-^^^^^^^^^^^
+SHACL Serialize
+^^^^^^^^^^^^^^^
 
-SPARQL query from external file
+Serialize the currently loaded SHACL graph
 
-**Source**: `sparql_file.py <https://github.com/rudof-project/rudof/blob/master/python/examples/sparql_file.py>`_
+**Source**: `shacl/shacl_serialize.py <https://github.com/rudof-project/rudof/blob/master/python/examples/shacl/shacl_serialize.py>`_
 
 **Python Code:**
 
 .. code-block:: python
 
-    from pyrudof import Rudof, RudofConfig
+    from pyrudof import ShaclFormat, Rudof, RudofConfig
     
     rudof = Rudof(RudofConfig())
-    
-    rudof.read_data("person.ttl")
-    
-    results = rudof.run_query_path("person.sparql")
-    for result in iter(results):
-        print(result.show())
+    rudof.read_shacl("timbl_shapes.ttl", ShaclFormat.Turtle)
+    serialized = rudof.serialize_shacl()
 
 **Referenced Files:**
 
-- **Data**: `person.ttl <https://github.com/rudof-project/rudof/blob/master/python/examples/person.ttl>`_
-- **Query**: `person.sparql <https://github.com/rudof-project/rudof/blob/master/python/examples/person.sparql>`_
+- **Schema**: `timbl_shapes.ttl <https://github.com/rudof-project/rudof/blob/master/python/examples/timbl_shapes.ttl>`_
 
 
-SPARQL Inline
-^^^^^^^^^^^^^
+DCTAP
+-----
 
-Run a SPARQL SELECT query against inline RDF data
+Examples for reading DCTAP profiles from inline content or files.
 
-**Source**: `sparql.py <https://github.com/rudof-project/rudof/blob/master/python/examples/sparql.py>`_
+
+Read DCTAP
+^^^^^^^^^^
+
+Read DCTAP from inline CSV and from file
+
+**Source**: `dctap/dctap_read.py <https://github.com/rudof-project/rudof/blob/master/python/examples/dctap/dctap_read.py>`_
 
 **Python Code:**
 
 .. code-block:: python
 
-    from pyrudof import Rudof, RudofConfig, RDFFormat
+    from pathlib import Path
+    from tempfile import TemporaryDirectory
     
-    data_str = """prefix xsd: <http://www.w3.org/2001/XMLSchema#>
-    prefix : <http://example.org/>
+    from pyrudof import DCTapFormat, Rudof, RudofConfig
     
-    :alice :name "Alice" ;
-      :birthdate "1980-03-02"^^xsd:date ;
-      :enrolledIn :cs101 ;
-      :knows :bob .
+    rudof = Rudof(RudofConfig())
     
-    :bob :name "Robert" ;
-      :birthdate "1981-03-02"^^xsd:date ;
-      :enrolledIn :cs101 ;
-      :knows :alice .
+    csv_text = "shapeId,propertyId\n:Person,:name\n"
+    rudof.read_dctap(csv_text)
     
-    :cs101 :name "Computer Science 101";
-      :student :alice, :bob .
+    with TemporaryDirectory() as tmpdir:
+        csv_path = Path(tmpdir) / "profile.csv"
+        csv_path.write_text(csv_text, encoding="utf-8")
+        rudof.read_dctap(str(csv_path), DCTapFormat.Csv)
+
+
+Service Description
+-------------------
+
+Examples for service description parsing and serialization.
+
+
+Service Description
+^^^^^^^^^^^^^^^^^^^
+
+Read and serialize SPARQL service descriptions
+
+**Source**: `endpoint/service_description.py <https://github.com/rudof-project/rudof/blob/master/python/examples/endpoint/service_description.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    from pyrudof import RDFFormat, ReaderMode, Rudof, RudofConfig, ServiceDescriptionFormat
+    
+    rudof = Rudof(RudofConfig())
+    
+    service_ttl = """
+    @prefix sd: <http://www.w3.org/ns/sparql-service-description#> .
+    @prefix : <http://example.org/> .
+    
+    :svc a sd:Service ;
+      sd:endpoint <http://example.org/sparql> ;
+      sd:feature sd:BasicFederatedQuery ;
+      sd:defaultDataset [ a sd:Dataset ] .
     """
-    rudof = Rudof(RudofConfig())
     
-    rudof.read_data_str(data_str)
-    
-    results = rudof.run_query_str("""
-    PREFIX : <http://example.org/>
-    SELECT ?person ?name WHERE {
-      ?person :name ?name .
-    }
-    """)
-    
-    print(results.show())
-
-
-SPARQL 1.2 (RDF Reification)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Query RDF 1.2 reified triples using SPARQL
-
-**Source**: `sparql12.py <https://github.com/rudof-project/rudof/blob/master/python/examples/sparql12.py>`_
-
-**Python Code:**
-
-.. code-block:: python
-
-    from pyrudof import Rudof, RudofConfig
-    
-    rudof = Rudof(RudofConfig())
-    
-    '''
-    rudof.read_data_str("""
-    prefix : <http://example.org/>
-    prefix sh:     <http://www.w3.org/ns/shacl#>
-    prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
-    prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#>
-    
-    :timbl rdfs:label "Tim Berners Lee" ;
-           :employer :CERN {| :start "1984" ;
-                              :end   "1994" |}
-                           {| :start "1980" ;
-                              :end   "1980" |} ;
-           :award :PA {| :time "2002" ;
-                         :togetherWith :vint |} .
-    :vint  rdfs:label "Vinton Cerf" .
-    """)
-    '''
-    
-    rudof.read_data_str("""
-    prefix : <http://example.org/>
-    prefix sh:     <http://www.w3.org/ns/shacl#>
-    prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
-    prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#>
-    prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    
-    :timbl rdfs:label "Tim Berners Lee" .
-    _:r rdf:reifies   <<( :timbl :employer :CERN )>> ;
-        :start        "1984" ;
-        :end          "1994" .
-    _:s rdf:reifies   <<( :timbl :employer :CERN )>> ;
-        :start        "1980" ;
-        :end          "1980" .
-    _:t rdf:reifies   <<( :timbl :employer :CERN )>> ;
-        :time         "2002" ;
-        :togetherWith :vint  .
-    :vint rdfs:label  "Vinton Cerf" .
-    """)
-    
-    results = rudof.run_query_str("""
-    prefix : <http://example.org/>
-    prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#>
-    prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    
-    SELECT ?person ?employer ?start ?end WHERE {
-      ?r rdf:reifies <<( ?person :employer ?employer )>> ;
-         :start ?start ;
-         :end ?end .
-     }
-    """)
-    print(results.show())
-    # print(rudof.node_info(":timbl"))
-
-
-Endpoints & Service Descriptions
---------------------------------
-
-These examples demonstrate how to interact with remote SPARQL endpoints,
-retrieve service descriptions, and query node information.
-They require network access and are not executed during automated testing.
-
-
-Endpoint CONSTRUCT Query
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-Run a SPARQL CONSTRUCT query against a remote endpoint and display results as Turtle (requires network)
-
-**Source**: `endpoint.py <https://github.com/rudof-project/rudof/blob/master/python/examples/endpoint.py>`_
-
-**Python Code:**
-
-.. code-block:: python
-
-    from pyrudof import Rudof, RudofConfig, RDFFormat, QueryResultFormat
-    
-    endpoint = "https://plod.dbcls.jp/repositories/RDFPortal_VoID"
-    
-    sparql_query = """
-    PREFIX void: <http://rdfs.org/ns/void#>
-    PREFIX sd: <http://www.w3.org/ns/sparql-service-description#>
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-    
-    CONSTRUCT WHERE {
-      [
-        a sd:Service ;
-        sd:defaultDataset [
-           a sd:Dataset ;
-           sd:namedGraph [
-             sd:name <http://sparql.uniprot.org/uniprot> ;
-             a sd:NamedGraph ;
-             sd:endpoint ?ep_url ;
-             sd:graph [
-               a void:Dataset ;
-               void:triples ?total_count ;
-               void:classes ?class_count ;
-               void:properties ?property_count ;
-               void:distinctObjects ?uniq_object_count ;
-               void:distinctSubjects ?uniq_subject_count ;
-               void:classPartition [
-                 void:class ?class_name ;
-                 void:entities ?class_triple_count
-               ] ;
-               void:propertyPartition [
-                 void:property ?property_name ;
-                 void:triples ?property_triple_count
-               ]
-             ]
-           ]
-         ]
-      ] .
-    }
-    """
-    rudof = Rudof(RudofConfig())
-    rudof.use_endpoint(endpoint)
-    
-    result = rudof.run_query_construct_str(sparql_query, QueryResultFormat.Turtle)
-    
-    print(result)
-
-
-Service Description to MIE
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Read a SPARQL service description and convert it to MIE format (requires network)
-
-**Source**: `service.py <https://github.com/rudof-project/rudof/blob/master/python/examples/service.py>`_
-
-**Python Code:**
-
-.. code-block:: python
-
-    from pyrudof import Rudof, RudofConfig, RDFFormat, ReaderMode, ServiceDescriptionFormat
-    
-    rudof = Rudof(RudofConfig())
-    
-    service = "https://sparql.uniprot.org/sparql"
-    
-    rudof.read_service_description(service, RDFFormat.Turtle, None, ReaderMode.Strict)
-    service = rudof.get_service_description()
-    service_str = service.serialize(ServiceDescriptionFormat.Json)
-    print(f"Service description in JSON:\n{service_str}")
-    
-    # Converting service description to MIE
-    mie = service.as_mie()
-    print(f"Service description in MIE format as YAML:\n{mie.as_yaml()}")
-
-
-Node Info
-^^^^^^^^^
-
-Retrieve information about specific nodes from SPARQL endpoints (requires network)
-
-**Source**: `node_info.py <https://github.com/rudof-project/rudof/blob/master/python/examples/node_info.py>`_
-
-**Python Code:**
-
-.. code-block:: python
-
-    from pyrudof import Rudof, RudofConfig
-    
-    rudof = Rudof(RudofConfig())
-    
-    rudof.use_endpoint("dbpedia")
-    node_info = rudof.node_info("dbr:Oviedo", [])
-    print(node_info)
-    
-    rudof.reset_all()
-    
-    rudof.use_endpoint("wikidata")
-    node_info = rudof.node_info("wd:Q42", ["wdt:P31", "wdt:P19"])
-    print(node_info)
-    
-    endpoints = rudof.list_endpoints()
-    print(f"Available endpoints: {endpoints}")
-
-
-Wikidata SELECT
-^^^^^^^^^^^^^^^
-
-Run a SELECT query against the Wikidata SPARQL endpoint (requires network)
-
-**Source**: `wikidata.py <https://github.com/rudof-project/rudof/blob/master/python/examples/wikidata.py>`_
-
-**Python Code:**
-
-.. code-block:: python
-
-    from pyrudof import Rudof, RudofConfig, RDFFormat
-    
-    query = """
-    PREFIX wd: <http://www.wikidata.org/entity/>
-    PREFIX wdt: <http://www.wikidata.org/prop/direct/>
-    SELECT ?person ?occupation WHERE {
-        ?p wdt:P31 wd:Q5 ;
-              wdt:P106 ?o ;
-              rdfs:label ?person ;
-              wdt:P19 wd:Q14317 .
-      ?o rdfs:label ?occupation
-      FILTER (lang(?person) = "en" && lang(?occupation) = "en")
-    }
-    LIMIT 10
-    """
-    rudof = Rudof(RudofConfig())
-    rudof.use_endpoint("wikidata")
-    results = rudof.run_query_str(query)
-    print(results.show())
-
-
-CONSTRUCT Query
-^^^^^^^^^^^^^^^
-
-Run a SPARQL CONSTRUCT query against a remote endpoint (requires network)
-
-**Source**: `construct_query.py <https://github.com/rudof-project/rudof/blob/master/python/examples/construct_query.py>`_
-
-**Python Code:**
-
-.. code-block:: python
-
-    from pyrudof import Rudof, RudofConfig, RDFFormat, QueryResultFormat
-    
-    endpoint = "https://plod.dbcls.jp/repositories/RDFPortal_VoID"
-    
-    sparql_query = """
-    PREFIX void: <http://rdfs.org/ns/void#>
-    PREFIX sd: <http://www.w3.org/ns/sparql-service-description#>
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-    
-    CONSTRUCT WHERE {
-      [
-        a sd:Service ;
-        sd:defaultDataset [
-           a sd:Dataset ;
-           sd:namedGraph [
-             sd:name <http://sparql.uniprot.org/uniprot> ;
-             a sd:NamedGraph ;
-             sd:endpoint ?ep_url ;
-             sd:graph [
-               a void:Dataset ;
-               void:triples ?total_count ;
-               void:classes ?class_count ;
-               void:properties ?property_count ;
-               void:distinctObjects ?uniq_object_count ;
-               void:distinctSubjects ?uniq_subject_count ;
-               void:classPartition [
-                 void:class ?class_name ;
-                 void:entities ?class_triple_count
-               ] ;
-               void:propertyPartition [
-                 void:property ?property_name ;
-                 void:triples ?property_triple_count
-               ]
-             ]
-           ]
-         ]
-      ] .
-    }
-    """
-    rudof = Rudof(RudofConfig())
-    rudof.use_endpoint(endpoint)
-    
-    result = rudof.run_query_construct_str(sparql_query, QueryResultFormat.Turtle)
-    
-    print(result)
-
-
-CONSTRUCT Query (Wikidata)
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Run a SPARQL CONSTRUCT query against the Wikidata endpoint (requires network)
-
-**Source**: `construct_query_wikidata.py <https://github.com/rudof-project/rudof/blob/master/python/examples/construct_query_wikidata.py>`_
-
-**Python Code:**
-
-.. code-block:: python
-
-    from pyrudof import Rudof, RudofConfig, RDFFormat, QueryResultFormat
-    
-    endpoint = "https://query.wikidata.org/sparql"
-    
-    sparql_query = """
-    PREFIX wd:  <http://www.wikidata.org/entity/>
-    PREFIX wdt: <http://www.wikidata.org/prop/direct/>
-    PREFIX :    <http://example.org/>
-    
-    CONSTRUCT {
-       ?p a     :Person ;
-          :name ?person ;
-          :occupation ?occupation
-    } WHERE {
-        ?p wdt:P31 wd:Q5 ;
-              wdt:P106 ?o ;
-              rdfs:label ?person ;
-              wdt:P19 wd:Q14317 .
-      ?o rdfs:label ?occupation
-      FILTER (lang(?person) = "en" && lang(?occupation) = "en")
-    }
-    LIMIT 10
-    """
-    rudof = Rudof(RudofConfig())
-    rudof.use_endpoint(endpoint)
-    
-    result = rudof.run_query_construct_str(sparql_query, QueryResultFormat.Turtle)
-    
-    print(result)
+    rudof.read_service_description(service_ttl, RDFFormat.Turtle, None, ReaderMode.Lax)
+    as_json = rudof.serialize_service_description(ServiceDescriptionFormat.Json)
+    as_internal = rudof.serialize_service_description(ServiceDescriptionFormat.Internal)
 
 
 Data Generation
 ---------------
 
-These examples show how to configure and use rudof_generate to create
-synthetic RDF data from ShEx or SHACL schemas.
+Examples for GeneratorConfig and DataGenerator APIs.
 
 
-Generate Config
-^^^^^^^^^^^^^^^
+Generator Config Core
+^^^^^^^^^^^^^^^^^^^^^
 
-Configure data generator with various options
+Set and read core generator configuration values
 
-**Source**: `generate_example.py <https://github.com/rudof-project/rudof/blob/master/python/examples/generate_example.py>`_
+**Source**: `generate/generate_config_core.py <https://github.com/rudof-project/rudof/blob/master/python/examples/generate/generate_config_core.py>`_
 
 **Python Code:**
 
 .. code-block:: python
 
-    import pyrudof
+    from pyrudof import CardinalityStrategy, GeneratorConfig, OutputFormat, SchemaFormat
     
-    # Create configuration
-    config = pyrudof.GeneratorConfig()
+    config = GeneratorConfig()
+    config.set_entity_count(5)
+    config.set_seed(7)
+    config.set_output_path("core_output.ttl")
+    config.set_output_format(OutputFormat.Turtle)
+    config.set_schema_format(SchemaFormat.ShEx)
+    config.set_cardinality_strategy(CardinalityStrategy.Balanced)
+
+
+Generator Config Parallel
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Configure and read parallel generation settings
+
+**Source**: `generate/generate_config_parallel.py <https://github.com/rudof-project/rudof/blob/master/python/examples/generate/generate_config_parallel.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    from pyrudof import GeneratorConfig
     
-    # Configure generation parameters
-    config.set_entity_count(50)
-    config.set_seed(12345)  # For reproducible results
+    config = GeneratorConfig()
     
-    # Configure output
-    config.set_output_path("generated_data.ttl")
-    config.set_output_format(pyrudof.OutputFormat.Turtle)
+    config.set_compress(True)
     config.set_write_stats(True)
-    
-    # Configure schema
-    config.set_schema_format(pyrudof.SchemaFormat.ShEx)
-    config.set_cardinality_strategy(pyrudof.CardinalityStrategy.Balanced)
-    
-    # Configure parallelism
-    config.set_worker_threads(4)
-    config.set_batch_size(10)
-    
-    # Create generator
-    generator = pyrudof.DataGenerator(config)
-    print(f"Generator configured: {config.get_entity_count()} entities")
+    config.set_parallel_writing(True)
+    config.set_parallel_file_count(2)
+    config.set_worker_threads(2)
+    config.set_batch_size(16)
+    config.set_parallel_shapes(True)
+    config.set_parallel_fields(True)
 
 
-Advanced Generate
-^^^^^^^^^^^^^^^^^
+Generator Config Quality
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-Advanced data generator configuration: parallel processing, cardinality strategies, output formats, and error handling
+Configure locale, quality and distribution settings
 
-**Source**: `advanced_generate_example.py <https://github.com/rudof-project/rudof/blob/master/python/examples/advanced_generate_example.py>`_
+**Source**: `generate/generate_config_quality.py <https://github.com/rudof-project/rudof/blob/master/python/examples/generate/generate_config_quality.py>`_
 
 **Python Code:**
 
 .. code-block:: python
 
-    #!/usr/bin/env python3
-    """
-    Advanced example: Using rudof_generate Python bindings
+    from pyrudof import DataQuality, EntityDistribution, GeneratorConfig
     
-    This example demonstrates advanced usage patterns for the rudof_generate
-    Python bindings, including:
-    - Configuration from files
-    - Different schema formats (ShEx and SHACL)
-    - Parallel processing
-    - Error handling
-    """
-    
-    import pyrudof
-    import tempfile
-    import os
-    
-    
-    def example_basic_generation():
-        """Most basic example - minimal configuration"""
-        print("\n" + "=" * 70)
-        print("Example 1: Basic Data Generation")
-        print("=" * 70)
-    
-        config = pyrudof.GeneratorConfig()
-        config.set_entity_count(10)
-        config.set_output_path("/tmp/basic_output.ttl")
-        config.set_output_format(pyrudof.OutputFormat.Turtle)
-    
-        generator = pyrudof.DataGenerator(config)
-        print("✓ Created basic generator configuration")
-        print(f"  Entities: {config.get_entity_count()}")
-        print(f"  Output: {config.get_output_path()}")
-    
-    
-    def example_reproducible_generation():
-        """Example with random seed for reproducible results"""
-        print("\n" + "=" * 70)
-        print("Example 2: Reproducible Generation")
-        print("=" * 70)
-    
-        config = pyrudof.GeneratorConfig()
-        config.set_entity_count(100)
-        config.set_seed(42)  # Fixed seed for reproducibility
-        config.set_output_path("/tmp/reproducible_output.ttl")
-        config.set_output_format(pyrudof.OutputFormat.Turtle)
-    
-        generator = pyrudof.DataGenerator(config)
-        print("✓ Generator with fixed seed for reproducible results")
-        print(f"  Seed: {config.get_seed()}")
-        print("  Running this configuration multiple times will produce identical output")
-    
-    
-    def example_parallel_generation():
-        """Example using parallel processing"""
-        print("\n" + "=" * 70)
-        print("Example 3: Parallel Generation")
-        print("=" * 70)
-    
-        config = pyrudof.GeneratorConfig()
-        config.set_entity_count(1000)
-    
-        # Configure parallel processing
-        config.set_worker_threads(4)
-        config.set_batch_size(100)
-        config.set_parallel_writing(True)
-        config.set_parallel_file_count(4)
-    
-        config.set_output_path("/tmp/parallel_output")
-        config.set_output_format(pyrudof.OutputFormat.Turtle)
-    
-        generator = pyrudof.DataGenerator(config)
-        print("✓ Generator configured for parallel processing")
-        print(f"  Worker threads: 4")
-        print(f"  Batch size: 100")
-        print(f"  Parallel files: 4")
-        print("  This will generate 4 separate output files")
-    
-    
-    def example_with_stats():
-        """Example that writes generation statistics"""
-        print("\n" + "=" * 70)
-        print("Example 4: Generation with Statistics")
-        print("=" * 70)
-    
-        config = pyrudof.GeneratorConfig()
-        config.set_entity_count(50)
-        config.set_output_path("/tmp/output_with_stats.ttl")
-        config.set_output_format(pyrudof.OutputFormat.Turtle)
-        config.set_write_stats(True)
-    
-        generator = pyrudof.DataGenerator(config)
-        print("✓ Generator will write statistics file")
-        print(f"  Data output: {config.get_output_path()}")
-        print(f"  Stats output: {config.get_output_path().replace('.ttl', '_stats.json')}")
-    
-    
-    def example_cardinality_strategies():
-        """Example showing different cardinality strategies"""
-        print("\n" + "=" * 70)
-        print("Example 5: Cardinality Strategies")
-        print("=" * 70)
-    
-        strategies = {
-            "Minimum": pyrudof.CardinalityStrategy.Minimum,
-            "Maximum": pyrudof.CardinalityStrategy.Maximum,
-            "Random": pyrudof.CardinalityStrategy.Random,
-            "Balanced": pyrudof.CardinalityStrategy.Balanced,
-        }
-    
-        for name, strategy in strategies.items():
-            config = pyrudof.GeneratorConfig()
-            config.set_entity_count(20)
-            config.set_cardinality_strategy(strategy)
-            config.set_output_path(f"/tmp/output_{name.lower()}.ttl")
-            config.set_output_format(pyrudof.OutputFormat.Turtle)
-    
-            generator = pyrudof.DataGenerator(config)
-            print(f"  ✓ {name:10} - Uses {name.lower()} cardinality for relationships")
-    
-    
-    def example_different_output_formats():
-        """Example showing different output formats"""
-        print("\n" + "=" * 70)
-        print("Example 6: Output Formats")
-        print("=" * 70)
-    
-        # Turtle format (more readable)
-        config_turtle = pyrudof.GeneratorConfig()
-        config_turtle.set_entity_count(10)
-        config_turtle.set_output_path("/tmp/output.ttl")
-        config_turtle.set_output_format(pyrudof.OutputFormat.Turtle)
-        gen1 = pyrudof.DataGenerator(config_turtle)
-        print("  ✓ Turtle format - Human-readable, with prefixes")
-    
-        # NTriples format (more compact)
-        config_ntriples = pyrudof.GeneratorConfig()
-        config_ntriples.set_entity_count(10)
-        config_ntriples.set_output_path("/tmp/output.nt")
-        config_ntriples.set_output_format(pyrudof.OutputFormat.NTriples)
-        gen2 = pyrudof.DataGenerator(config_ntriples)
-        print("  ✓ NTriples format - Simple, one triple per line")
-    
-    
-    def example_schema_formats():
-        """Example showing different schema formats"""
-        print("\n" + "=" * 70)
-        print("Example 7: Schema Formats")
-        print("=" * 70)
-    
-        # ShEx schema
-        config_shex = pyrudof.GeneratorConfig()
-        config_shex.set_schema_format(pyrudof.SchemaFormat.ShEx)
-        config_shex.set_entity_count(20)
-        config_shex.set_output_path("/tmp/shex_output.ttl")
-        gen1 = pyrudof.DataGenerator(config_shex)
-        print("  ✓ ShEx schema format")
-        print("    Use with: generator.load_shex_schema('schema.shex')")
-    
-        # SHACL schema
-        config_shacl = pyrudof.GeneratorConfig()
-        config_shacl.set_schema_format(pyrudof.SchemaFormat.Shacl)
-        config_shacl.set_entity_count(20)
-        config_shacl.set_output_path("/tmp/shacl_output.ttl")
-        gen2 = pyrudof.DataGenerator(config_shacl)
-        print("  ✓ SHACL schema format")
-        print("    Use with: generator.load_shacl_schema('shapes.ttl')")
-    
-    
-    def example_config_persistence():
-        """Example showing configuration save/load"""
-        print("\n" + "=" * 70)
-        print("Example 8: Configuration Persistence")
-        print("=" * 70)
-    
-        # Create a configuration
-        config = pyrudof.GeneratorConfig()
-        config.set_entity_count(100)
-        config.set_seed(42)
-        config.set_output_path("/tmp/saved_config_output.ttl")
-        config.set_output_format(pyrudof.OutputFormat.Turtle)
-        config.set_cardinality_strategy(pyrudof.CardinalityStrategy.Balanced)
-        config.set_write_stats(True)
-    
-        # Save to TOML file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.toml', delete=False) as f:
-            config_path = f.name
-    
-        try:
-            config.to_toml_file(config_path)
-            print(f"✓ Configuration saved to: {config_path}")
-    
-            # Load it back
-            loaded_config = pyrudof.GeneratorConfig.from_toml_file(config_path)
-            print(f"✓ Configuration loaded from file")
-            print(f"  Entity count: {loaded_config.get_entity_count()}")
-            print(f"  Random seed: {loaded_config.get_seed()}")
-            print(f"  Output path: {loaded_config.get_output_path()}")
-    
-            # Can also load from JSON (if you create a JSON config)
-            print("\n  Supported formats:")
-            print("    - TOML: GeneratorConfig.from_toml_file(path)")
-            print("    - JSON: GeneratorConfig.from_json_file(path)")
-        finally:
-            if os.path.exists(config_path):
-                os.unlink(config_path)
-    
-    
-    def example_error_handling():
-        """Example showing proper error handling"""
-        print("\n" + "=" * 70)
-        print("Example 9: Error Handling")
-        print("=" * 70)
-    
-        config = pyrudof.GeneratorConfig()
-        config.set_entity_count(10)
-        config.set_output_path("/tmp/error_test.ttl")
-    
-        generator = pyrudof.DataGenerator(config)
-    
-        # Try to load a non-existent schema
-        try:
-            generator.load_shex_schema("/nonexistent/schema.shex")
-            print("  This shouldn't print")
-        except Exception as e:
-            print(f"✓ Caught expected error when loading non-existent schema:")
-            print(f"  Error type: {type(e).__name__}")
-            print(f"  Error message: {str(e)[:60]}...")
-    
-        # Try to load invalid config file
-        try:
-            config = pyrudof.GeneratorConfig.from_toml_file("/nonexistent/config.toml")
-            print("  This shouldn't print")
-        except Exception as e:
-            print(f"✓ Caught expected error when loading non-existent config:")
-            print(f"  Error type: {type(e).__name__}")
-    
-    
-    def example_complete_workflow():
-        """Example of a complete workflow (conceptual)"""
-        print("\n" + "=" * 70)
-        print("Example 10: Complete Workflow (Conceptual)")
-        print("=" * 70)
-    
-        print("""
-    A complete workflow would look like:
-    
-    1. Create and configure:
-       config = pyrudof.GeneratorConfig()
-       config.set_entity_count(1000)
-       config.set_seed(42)
-       config.set_output_path("output.ttl")
-       config.set_output_format(pyrudof.OutputFormat.Turtle)
-       config.set_schema_format(pyrudof.SchemaFormat.ShEx)
-       config.set_write_stats(True)
-    
-    2. Create generator:
-       generator = pyrudof.DataGenerator(config)
-    
-    3. Load schema and generate (option A - separate steps):
-       generator.load_shex_schema("schema.shex")
-       generator.generate()
-    
-    4. OR use the convenience method (option B - one step):
-       generator.run("schema.shex")
-    
-    5. Check output:
-       - Data file: output.ttl
-       - Stats file: output_stats.json
-    
-    Note: This example shows the API structure. To actually run it,
-          you need a valid ShEx or SHACL schema file.
-        """)
-    
-    
-    def main():
-        """Run all examples"""
-        print("\n" + "=" * 70)
-        print(" RUDOF_GENERATE Python Bindings - Advanced Examples")
-        print("=" * 70)
-        print("\nThese examples demonstrate the Python API for rudof_generate.")
-        print("They show configuration patterns without actually generating data.")
-    
-        try:
-            example_basic_generation()
-            example_reproducible_generation()
-            example_parallel_generation()
-            example_with_stats()
-            example_cardinality_strategies()
-            example_different_output_formats()
-            example_schema_formats()
-            example_config_persistence()
-            example_error_handling()
-            example_complete_workflow()
-    
-            print("\n" + "=" * 70)
-            print("✓ All examples completed successfully!")
-            print("=" * 70)
-            print("\nFor actual data generation, you need:")
-            print("  1. A valid ShEx schema (.shex file)")
-            print("  2. OR a valid SHACL schema (.ttl file with SHACL shapes)")
-            print("\nSee the repository examples/ directory for sample schemas.")
-            print("\n")
-    
-        except Exception as e:
-            print(f"\n✗ Error running examples: {e}")
-            import traceback
-            traceback.print_exc()
-            return 1
-    
-        return 0
-    
-    
-    if __name__ == "__main__":
-        exit(main())
+    config = GeneratorConfig()
+    config.set_entity_distribution(EntityDistribution.Equal)
+    config.set_locale("en")
+    config.set_data_quality(DataQuality.Medium)
 
 
-Config File
-^^^^^^^^^^^
+Generator Config Persistence
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Use TOML and JSON configuration files with the data generator
+Persist GeneratorConfig to TOML and load from TOML/JSON
 
-**Source**: `config_file_example.py <https://github.com/rudof-project/rudof/blob/master/python/examples/config_file_example.py>`_
+**Source**: `generate/generate_config_persistence.py <https://github.com/rudof-project/rudof/blob/master/python/examples/generate/generate_config_persistence.py>`_
 
 **Python Code:**
 
 .. code-block:: python
 
-    #!/usr/bin/env python3
-    """
-    Example: Using configuration files with rudof_generate Python bindings
-    
-    This example demonstrates how to use TOML and JSON configuration files,
-    similar to the CLI interface.
-    """
-    
-    import pyrudof
-    import tempfile
-    import os
     import json
+    from pathlib import Path
+    from tempfile import TemporaryDirectory
     
+    from pyrudof import GeneratorConfig
     
-    def example_toml_config():
-        """Example creating and using a TOML configuration file"""
-        print("=" * 70)
-        print("Example 1: TOML Configuration File")
-        print("=" * 70)
+    base = GeneratorConfig()
+    base.set_entity_count(3)
+    base.set_seed(11)
+    base.set_output_path("persist_output.ttl")
     
-        # Create a comprehensive configuration
-        config = pyrudof.GeneratorConfig()
+    with TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir)
     
-        # Generation settings
-        config.set_entity_count(1000)
-        config.set_seed(42)
-        config.set_entity_distribution(pyrudof.EntityDistribution.Equal)
-        config.set_cardinality_strategy(pyrudof.CardinalityStrategy.Balanced)
-        config.set_schema_format(pyrudof.SchemaFormat.ShEx)
+        toml_path = tmp_path / "generator.toml"
+        base.to_toml_file(str(toml_path))
+        loaded_toml = GeneratorConfig.from_toml_file(str(toml_path))
+        loaded_toml.validate()
     
-        # Field generation settings
-        config.set_locale("en")
-        config.set_data_quality(pyrudof.DataQuality.High)
-    
-        # Output settings
-        config.set_output_path("output/data.ttl")
-        config.set_output_format(pyrudof.OutputFormat.Turtle)
-        config.set_compress(False)
-        config.set_write_stats(True)
-        config.set_parallel_writing(True)
-        config.set_parallel_file_count(4)
-    
-        # Parallel processing settings
-        config.set_worker_threads(8)
-        config.set_batch_size(100)
-        config.set_parallel_shapes(True)
-        config.set_parallel_fields(True)
-    
-        # Save to TOML file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.toml', delete=False) as f:
-            toml_path = f.name
-    
-        try:
-            config.to_toml_file(toml_path)
-            print(f"✓ Configuration saved to: {toml_path}\n")
-    
-            # Show the TOML content
-            with open(toml_path, 'r') as f:
-                content = f.read()
-                print("TOML Configuration:")
-                print("-" * 70)
-                print(content)
-                print("-" * 70)
-    
-            # Load the configuration back
-            loaded_config = pyrudof.GeneratorConfig.from_toml_file(toml_path)
-            print(f"\n✓ Configuration loaded from TOML file")
-            print(f"  Entity count: {loaded_config.get_entity_count()}")
-            print(f"  Seed: {loaded_config.get_seed()}")
-            print(f"  Locale: {loaded_config.get_locale()}")
-            print(f"  Worker threads: {loaded_config.get_worker_threads()}")
-    
-            # Use it to create a generator
-            generator = pyrudof.DataGenerator(loaded_config)
-            print(f"✓ DataGenerator created from loaded config\n")
-    
-        finally:
-            if os.path.exists(toml_path):
-                os.unlink(toml_path)
-    
-    
-    def example_json_config():
-        """Example creating and using a JSON configuration file"""
-        print("\n" + "=" * 70)
-        print("Example 2: JSON Configuration File (Manual)")
-        print("=" * 70)
-    
-        # Create a JSON configuration manually
-        json_config = {
-            "generation": {
-                "entity_count": 500,
-                "seed": 12345,
-                "entity_distribution": "Equal",
-                "cardinality_strategy": "Random",
-                "schema_format": "ShEx"
-            },
-            "field_generators": {
-                "default": {
-                    "locale": "es",
-                    "quality": "Medium"
-                },
-                "datatypes": {},
-                "properties": {}
-            },
-            "output": {
-                "path": "output/spanish_data.ttl",
-                "format": "Turtle",
-                "compress": False,
-                "write_stats": True,
-                "parallel_writing": False,
-                "parallel_file_count": 0
-            },
-            "parallel": {
-                "worker_threads": None,
-                "batch_size": 50,
-                "parallel_shapes": True,
-                "parallel_fields": True
-            }
-        }
-    
-        # Save to JSON file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-            json_path = f.name
-            json.dump(json_config, f, indent=2)
-    
-        try:
-            print(f"✓ JSON configuration created: {json_path}\n")
-    
-            # Show the JSON content
-            with open(json_path, 'r') as f:
-                content = f.read()
-                print("JSON Configuration:")
-                print("-" * 70)
-                print(content)
-                print("-" * 70)
-    
-            # Load the configuration
-            loaded_config = pyrudof.GeneratorConfig.from_json_file(json_path)
-            print(f"\n✓ Configuration loaded from JSON file")
-            print(f"  Entity count: {loaded_config.get_entity_count()}")
-            print(f"  Seed: {loaded_config.get_seed()}")
-            print(f"  Locale: {loaded_config.get_locale()}")
-            print(f"  Batch size: {loaded_config.get_batch_size()}")
-    
-            # Validate
-            loaded_config.validate()
-            print(f"✓ Configuration validated successfully")
-    
-            # Use it to create a generator
-            generator = pyrudof.DataGenerator(loaded_config)
-            print(f"✓ DataGenerator created from loaded config\n")
-    
-        finally:
-            if os.path.exists(json_path):
-                os.unlink(json_path)
-    
-    
-    def example_cli_like_workflow():
-        """Example simulating CLI-like workflow with config file + overrides"""
-        print("\n" + "=" * 70)
-        print("Example 3: CLI-like Workflow (Config File + Overrides)")
-        print("=" * 70)
-    
-        # Create a base configuration file (like --config in CLI)
-        base_config = pyrudof.GeneratorConfig()
-        base_config.set_locale("en")
-        base_config.set_data_quality(pyrudof.DataQuality.High)
-        base_config.set_batch_size(100)
-        base_config.set_parallel_shapes(True)
-        base_config.set_parallel_fields(True)
-    
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.toml', delete=False) as f:
-            config_path = f.name
-    
-        try:
-            base_config.to_toml_file(config_path)
-            print(f"✓ Base configuration saved to: {config_path}")
-    
-            # Load base configuration (like --config myconfig.toml)
-            config = pyrudof.GeneratorConfig.from_toml_file(config_path)
-            print(f"✓ Base configuration loaded")
-    
-            # Apply command-line style overrides
-            config.set_entity_count(2000)  # Like --entities 2000
-            config.set_output_path("/tmp/custom_output.ttl")  # Like --output /tmp/custom_output.ttl
-            config.set_seed(99999)  # Like --seed 99999
-            config.set_worker_threads(16)  # Like --parallel 16
-    
-            print(f"\n  Applied overrides:")
-            print(f"    --entities {config.get_entity_count()}")
-            print(f"    --output {config.get_output_path()}")
-            print(f"    --seed {config.get_seed()}")
-            print(f"    --parallel {config.get_worker_threads()}")
-    
-            # Validate merged configuration
-            config.validate()
-            print(f"\n✓ Merged configuration validated")
-    
-            # Create generator (like running the CLI)
-            generator = pyrudof.DataGenerator(config)
-            print(f"✓ DataGenerator ready to run")
-            print(f"\n  To generate data, you would call:")
-            print(f"    generator.run('schema.shex')")
-            print(f"  Or:")
-            print(f"    generator.load_shex_schema('schema.shex')")
-            print(f"    generator.generate()\n")
-    
-        finally:
-            if os.path.exists(config_path):
-                os.unlink(config_path)
-    
-    
-    def example_different_locales():
-        """Example showing different locale configurations"""
-        print("\n" + "=" * 70)
-        print("Example 4: Different Locale Configurations")
-        print("=" * 70)
-    
-        locales = ["en", "es", "fr", "de", "it"]
-    
-        for locale in locales:
-            config = pyrudof.GeneratorConfig()
-            config.set_entity_count(100)
-            config.set_locale(locale)
-            config.set_output_path(f"output/data_{locale}.ttl")
-    
-            generator = pyrudof.DataGenerator(config)
-            print(f"  ✓ Generator configured for locale '{locale}' -> {config.get_output_path()}")
-    
-    
-    def example_quality_levels():
-        """Example showing different data quality levels"""
-        print("\n" + "=" * 70)
-        print("Example 5: Data Quality Levels")
-        print("=" * 70)
-    
-        qualities = [
-            (pyrudof.DataQuality.Low, "Fast, simple data"),
-            (pyrudof.DataQuality.Medium, "Realistic patterns"),
-            (pyrudof.DataQuality.High, "Complex, correlated data"),
-        ]
-    
-        for quality, description in qualities:
-            config = pyrudof.GeneratorConfig()
-            config.set_entity_count(100)
-            config.set_data_quality(quality)
-    
-            generator = pyrudof.DataGenerator(config)
-            print(f"  ✓ {quality}: {description}")
-    
-    
-    def main():
-        """Run all configuration file examples"""
-        print("\n" + "=" * 70)
-        print(" RUDOF_GENERATE - Configuration File Examples")
-        print("=" * 70)
-        print("\nThese examples show how to use configuration files,")
-        print("similar to the CLI interface.\n")
-    
-        try:
-            example_toml_config()
-            example_json_config()
-            example_cli_like_workflow()
-            example_different_locales()
-            example_quality_levels()
-    
-            print("\n" + "=" * 70)
-            print("✓ All configuration file examples completed!")
-            print("=" * 70)
-            print("\nKey takeaways:")
-            print("  1. Save configurations to TOML/JSON files for reuse")
-            print("  2. Load configurations from files: from_toml_file() / from_json_file()")
-            print("  3. Override specific settings after loading (like CLI --options)")
-            print("  4. Use validate() to check configuration before running")
-            print("  5. Set locale and quality for customized data generation")
-            print("\n")
-    
-        except Exception as e:
-            print(f"\n✗ Error running examples: {e}")
-            import traceback
-            traceback.print_exc()
-            return 1
-    
-        return 0
-    
-    
-    if __name__ == "__main__":
-        exit(main())
+        json_path = tmp_path / "generator.json"
+        json_path.write_text(
+            json.dumps(
+                {
+                    "generation": {
+                        "entity_count": 4,
+                        "seed": 5,
+                        "schema_format": "ShEx",
+                        "cardinality_strategy": "Minimum",
+                        "entity_distribution": "Equal",
+                    },
+                    "output": {
+                        "path": str(tmp_path / "out.nt"),
+                        "format": "NTriples",
+                        "compress": False,
+                        "write_stats": False,
+                        "parallel_writing": False,
+                        "parallel_file_count": 1,
+                    },
+                    "parallel": {
+                        "worker_threads": 1,
+                        "batch_size": 8,
+                        "parallel_shapes": False,
+                        "parallel_fields": False,
+                    },
+                    "field_generators": {
+                        "default": {
+                            "locale": "en",
+                            "quality": "Low",
+                        }
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        loaded_json = GeneratorConfig.from_json_file(str(json_path))
 
 
-Generate From Schema
-^^^^^^^^^^^^^^^^^^^^
+DataGenerator Load Methods
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Generate synthetic RDF data from a ShEx schema file
+Use load_shex_schema, load_shacl_schema, and load_schema_auto
 
-**Source**: `generate_from_schema.py <https://github.com/rudof-project/rudof/blob/master/python/examples/generate_from_schema.py>`_
+**Source**: `generate/generate_load_methods.py <https://github.com/rudof-project/rudof/blob/master/python/examples/generate/generate_load_methods.py>`_
 
 **Python Code:**
 
 .. code-block:: python
 
-    #!/usr/bin/env python3
-    """
-    Practical example: Generate synthetic data from a ShEx schema
+    from pathlib import Path
+    from tempfile import TemporaryDirectory
     
-    This example demonstrates how to generate synthetic RDF data from
-    the example ShEx schema in the repository.
-    """
+    from pyrudof import DataGenerator, GeneratorConfig, OutputFormat, SchemaFormat
     
-    import pyrudof
-    import os
-    import sys
+    with TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir)
     
-    def generate_from_schema():
-        """Generate data from the simple.shex example schema"""
+        shex_out = tmp_path / "from_shex.ttl"
+        config_shex = GeneratorConfig()
+        config_shex.set_entity_count(1)
+        config_shex.set_output_path(str(shex_out))
+        config_shex.set_output_format(OutputFormat.Turtle)
+        config_shex.set_schema_format(SchemaFormat.ShEx)
+        gen_shex = DataGenerator(config_shex)
+        gen_shex.load_shex_schema("../../examples/simple.shex")
+        gen_shex.generate()
     
-        # Path to example schema
-        schema_path = "../../examples/simple.shex"
+        config_shacl = GeneratorConfig()
+        config_shacl.set_entity_count(1)
+        config_shacl.set_output_path(str(tmp_path / "from_shacl.ttl"))
+        config_shacl.set_output_format(OutputFormat.Turtle)
+        config_shacl.set_schema_format(SchemaFormat.Shacl)
+        gen_shacl = DataGenerator(config_shacl)
+        gen_shacl.load_shacl_schema("../../examples/simple_shacl.ttl")
     
-        # Check if schema exists
-        if not os.path.exists(schema_path):
-            print(f"Warning: Schema file not found at {schema_path}")
-            print("This is a demonstration of the API, even without the actual file.")
-            schema_exists = False
-        else:
-            schema_exists = True
-            print(f"✓ Found schema: {schema_path}")
-    
-        # Create configuration
-        config = pyrudof.GeneratorConfig()
-    
-        # Configure generation
-        config.set_entity_count(20)
-        config.set_seed(42)  # For reproducible results
-    
-        # Configure output
-        output_dir = "/tmp/pyrudof_generate"
-        os.makedirs(output_dir, exist_ok=True)
-        output_file = os.path.join(output_dir, "generated_simple.ttl")
-        stats_file = os.path.join(output_dir, "generated_simple_stats.json")
-    
-        config.set_output_path(output_file)
-        config.set_output_format(pyrudof.OutputFormat.Turtle)
-        config.set_write_stats(True)
-        config.set_compress(False)
-    
-        # Configure schema
-        config.set_schema_format(pyrudof.SchemaFormat.ShEx)
-        config.set_cardinality_strategy(pyrudof.CardinalityStrategy.Balanced)
-    
-        print("\nConfiguration:")
-        print(f"  Entities to generate: {config.get_entity_count()}")
-        print(f"  Random seed: {config.get_seed()}")
-        print(f"  Output file: {config.get_output_path()}")
-        print(f"  Statistics file: {stats_file}")
-    
-        # Create generator
-        print("\n✓ Creating DataGenerator...")
-        generator = pyrudof.DataGenerator(config)
-        print("✓ DataGenerator created successfully")
-    
-        if schema_exists:
-            try:
-                # Load schema and generate
-                print(f"\nLoading schema from: {schema_path}")
-                generator.run(schema_path)
-    
-                print(f"\n✓ Data generation completed!")
-                print(f"  Output written to: {output_file}")
-    
-                if os.path.exists(stats_file):
-                    print(f"  Statistics written to: {stats_file}")
-    
-                # Show file size
-                if os.path.exists(output_file):
-                    size = os.path.getsize(output_file)
-                    print(f"  Generated file size: {size} bytes")
-    
-                    # Show first few lines
-                    print(f"\nFirst 10 lines of generated data:")
-                    print("-" * 60)
-                    with open(output_file, 'r') as f:
-                        for i, line in enumerate(f):
-                            if i >= 10:
-                                break
-                            print(line.rstrip())
-                    print("-" * 60)
-    
-            except Exception as e:
-                print(f"\n✗ Error during generation: {e}")
-                import traceback
-                traceback.print_exc()
-                return 1
-        else:
-            print("\nSkipping actual generation (schema file not found)")
-            print("To run with a real schema, provide a valid ShEx or SHACL file.")
-    
-        return 0
-    
-    if __name__ == "__main__":
-        print("=" * 60)
-        print("Practical Example: Generate Synthetic RDF Data")
-        print("=" * 60)
-    
-        result = generate_from_schema()
-    
-        print("\n" + "=" * 60)
-        if result == 0:
-            print("Example completed successfully!")
-        else:
-            print("Example completed with errors.")
-        print("=" * 60)
-    
-        sys.exit(result)
+        config_auto = GeneratorConfig()
+        config_auto.set_entity_count(1)
+        config_auto.set_output_path(str(tmp_path / "auto.ttl"))
+        config_auto.set_output_format(OutputFormat.Turtle)
+        gen_auto = DataGenerator(config_auto)
+        gen_auto.load_schema_auto("../../examples/simple.shex")
 
 
-UML Visualization
------------------
+DataGenerator Run Methods
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
-These examples show how to convert RDF data, ShEx schemas, and DCTAP
-profiles into PlantUML diagrams for visualization.
-They require plantuml jar and are not executed during automated testing.
+Use run_with_format and run to execute generation
 
-
-ShEx to UML
-^^^^^^^^^^^
-
-Convert a ShEx schema into a PlantUML class diagram
-
-**Source**: `shex2uml.py <https://github.com/rudof-project/rudof/blob/master/python/examples/shex2uml.py>`_
+**Source**: `generate/generate_run_methods.py <https://github.com/rudof-project/rudof/blob/master/python/examples/generate/generate_run_methods.py>`_
 
 **Python Code:**
 
 .. code-block:: python
 
-    from pyrudof import Rudof, RudofConfig, UmlGenerationMode, ShExFormat
-    rudof = Rudof(RudofConfig())
+    from pathlib import Path
+    from tempfile import TemporaryDirectory
     
-    rudof.read_shex_str("""
-    prefix : <http://example.org/>
-    prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
+    from pyrudof import DataGenerator, GeneratorConfig, OutputFormat, SchemaFormat
     
-    :Person {
-     :name xsd:string  ;
-     :knows @:Person * ;
-     :worksFor @:Company
-    }
+    with TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir)
     
-    :Company {
-      :name xsd:string     ;
-      :employee @:Person * ;
-    }
-    """)
+        out_with_format = tmp_path / "run_with_format.ttl"
+        config1 = GeneratorConfig()
+        config1.set_entity_count(1)
+        config1.set_output_path(str(out_with_format))
+        config1.set_output_format(OutputFormat.Turtle)
+        generator1 = DataGenerator(config1)
+        generator1.run_with_format("../../examples/simple.shex", SchemaFormat.ShEx)
     
-    uml_str = rudof.shex2plantuml(UmlGenerationMode.all())
-    
-    print(uml_str)
+        out_auto = tmp_path / "run_auto.ttl"
+        config2 = GeneratorConfig()
+        config2.set_entity_count(1)
+        config2.set_output_path(str(out_auto))
+        config2.set_output_format(OutputFormat.Turtle)
+        generator2 = DataGenerator(config2)
+        generator2.run("../../examples/simple.shex")
 
 
 Utility & Introspection
 -----------------------
 
-Miscellaneous utilities: inspecting the pyrudof module and listing available
-classes.
+Examples for config loading, resets, versioning, and module introspection.
+
+
+RudofConfig From Path
+^^^^^^^^^^^^^^^^^^^^^
+
+Create RudofConfig from a TOML file and initialize Rudof
+
+**Source**: `utility/rudof_config_from_path.py <https://github.com/rudof-project/rudof/blob/master/python/examples/utility/rudof_config_from_path.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    from pyrudof import Rudof, RudofConfig
+    
+    config = RudofConfig.from_path("../../rudof_lib/src/default_config.toml")
+    rudof = Rudof(config)
+    
+    print("RUDOF_CONFIG_FROM_PATH_OK")
+    print(type(rudof).__name__)
+
+
+Rudof Update Config
+^^^^^^^^^^^^^^^^^^^
+
+Update the configuration of an existing Rudof instance
+
+**Source**: `utility/rudof_update_config.py <https://github.com/rudof-project/rudof/blob/master/python/examples/utility/rudof_update_config.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    from pyrudof import Rudof, RudofConfig
+    
+    initial = RudofConfig()
+    updated = RudofConfig.from_path("../../rudof_lib/src/default_config.toml")
+    
+    rudof = Rudof(initial)
+    rudof.update_config(updated)
+
+
+Rudof Reset Methods
+^^^^^^^^^^^^^^^^^^^
+
+Call all reset methods exposed by Rudof
+
+**Source**: `utility/rudof_resets.py <https://github.com/rudof-project/rudof/blob/master/python/examples/utility/rudof_resets.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    from pyrudof import RDFFormat, ShaclFormat, ShapeMapFormat, ShExFormat, Rudof, RudofConfig
+    
+    rudof = Rudof(RudofConfig())
+    
+    rudof.read_data("person.ttl", RDFFormat.Turtle)
+    rudof.read_shex("person.shex", ShExFormat.ShExC)
+    rudof.read_shacl("timbl_shapes.ttl", ShaclFormat.Turtle)
+    rudof.read_shapemap("person.sm", ShapeMapFormat.Compact)
+    rudof.read_query("person.sparql")
+    
+    rudof.reset_data()
+    rudof.reset_shex()
+    rudof.reset_shacl()
+    rudof.reset_shapemap()
+    rudof.reset_query()
+    rudof.reset_validation_results()
+    rudof.reset_all()
+
+**Referenced Files:**
+
+- **Schema**: `person.shex <https://github.com/rudof-project/rudof/blob/master/python/examples/person.shex>`_
+- **Data**: `person.ttl <https://github.com/rudof-project/rudof/blob/master/python/examples/person.ttl>`_
+- **Shapemap**: `person.sm <https://github.com/rudof-project/rudof/blob/master/python/examples/person.sm>`_
+- **Query**: `person.sparql <https://github.com/rudof-project/rudof/blob/master/python/examples/person.sparql>`_
+
+
+Rudof Version
+^^^^^^^^^^^^^
+
+Get and print the current Rudof version
+
+**Source**: `utility/rudof_version.py <https://github.com/rudof-project/rudof/blob/master/python/examples/utility/rudof_version.py>`_
+
+**Python Code:**
+
+.. code-block:: python
+
+    from pyrudof import Rudof, RudofConfig
+    
+    rudof = Rudof(RudofConfig())
+    
+    print(f"Version: {rudof.get_version()}")
 
 
 Module Info
 ^^^^^^^^^^^
 
-Display the file path of the pyrudof module
+Print the installed pyrudof module file path
 
-**Source**: `module_info.py <https://github.com/rudof-project/rudof/blob/master/python/examples/module_info.py>`_
+**Source**: `utility/module_info.py <https://github.com/rudof-project/rudof/blob/master/python/examples/utility/module_info.py>`_
 
 **Python Code:**
 
@@ -1749,21 +1019,33 @@ Display the file path of the pyrudof module
     print(pyrudof.__file__)
 
 
-Show Pyrudof Classes
-^^^^^^^^^^^^^^^^^^^^
+Error Handling
+^^^^^^^^^^^^^^
 
-List all classes available in the pyrudof package
+Catching exceptions raised by rudof operations
 
-**Source**: `show_pyrydof_classes.py <https://github.com/rudof-project/rudof/blob/master/python/examples/show_pyrydof_classes.py>`_
+**Source**: `utility/error_handling.py <https://github.com/rudof-project/rudof/blob/master/python/examples/utility/error_handling.py>`_
 
 **Python Code:**
 
 .. code-block:: python
 
-    import pyrudof
-    import inspect
+    """Demonstrate catching RudofError exceptions."""
+    from pyrudof import RDFFormat, Rudof, RudofConfig
     
-    classes = [cls_name for cls_name, cls_obj in inspect.getmembers(pyrudof)
-              if inspect.isclass(cls_obj)]
-    print(classes)
+    rudof = Rudof(RudofConfig())
+    
+    # Trying to parse invalid NTriples raises a ValueError (wrapping RudofError).
+    try:
+        rudof.read_data("this is not valid RDF at all!!!", RDFFormat.NTriples)
+    except Exception as e:
+        msg = str(e)
+        print(f"Caught RudofError: {msg[:60]}")
+    
+    # A second attempt with valid data succeeds normally.
+    rudof2 = Rudof(RudofConfig())
+    rudof2.read_data(
+        "<http://example.org/alice> <http://example.org/name> \"Alice\" .\n",
+        RDFFormat.NTriples,
+    )
 

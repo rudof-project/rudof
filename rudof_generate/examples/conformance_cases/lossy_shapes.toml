@@ -1,0 +1,27 @@
+# Lossy case: SHACL schema includes unsupported constructs like sh:or and sh:not.
+# Expected: higher shape translation loss than the baseline ShEx case.
+
+[generation]
+entity_count = 20
+seed = 20260422
+entity_distribution = "Equal"
+cardinality_strategy = "Maximum"
+schema_format = "Shacl"
+
+[field_generators.default]
+locale = "en"
+quality = "Medium"
+
+[output]
+path = "target/conformance_cases/lossy_shapes.ttl"
+format = "Turtle"
+compress = false
+write_stats = true
+parallel_writing = false
+parallel_file_count = 0
+
+[parallel]
+worker_threads = 2
+batch_size = 50
+parallel_shapes = true
+parallel_fields = true

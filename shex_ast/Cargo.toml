@@ -1,6 +1,6 @@
 [package]
 name = "shex_ast"
-version = "0.2.7"
+version = "0.2.11"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shex_ast"
@@ -34,3 +34,4 @@ toml.workspace = true
 tracing.workspace = true
 
 [dev-dependencies]
+oxrdf.workspace = true

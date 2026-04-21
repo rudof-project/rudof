@@ -480,6 +480,9 @@ impl PrefixMap {
 
         match self.find(prefix.as_str()) {
             Some(iri) => {
+                if local.is_empty() {
+                    return Ok(iri.clone());
+                }
                 let new_iri = iri.extend(local.as_str())?;
                 Ok(new_iri)
             },

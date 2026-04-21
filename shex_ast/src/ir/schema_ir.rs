@@ -2,6 +2,8 @@ use super::dependency_graph::{DependencyGraph, PosNeg};
 use super::shape_expr::ShapeExpr;
 use super::shape_label::ShapeLabel;
 use crate::ir::inheritance_graph::InheritanceGraph;
+use crate::ir::map_state::MapState;
+use crate::ir::semantic_actions_registry::SemanticActionsRegistry;
 use crate::ir::shape::Shape;
 use crate::ir::shape_expr_info::ShapeExprInfo;
 use crate::ir::source_idx::SourceIdx;
@@ -12,6 +14,8 @@ use prefixmap::{IriRef, PrefixMap};
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
+use std::sync::Arc;
+use std::sync::Mutex;
 use tracing::trace;
 
 type Result<A> = std::result::Result<A, Box<SchemaIRError>>;
@@ -32,10 +36,11 @@ pub struct SchemaIR {
     dependency_graph: DependencyGraph,
     inheritance_graph: InheritanceGraph,
     abstract_shapes: HashSet<ShapeLabelIdx>,
+    semantic_actions_registry: SemanticActionsRegistry,
 }
 
 impl SchemaIR {
-    pub fn new() -> SchemaIR {
+    pub fn new(registry: SemanticActionsRegistry) -> SchemaIR {
         SchemaIR {
             labels_idx_map: HashMap::new(),
             idx_labels_map: HashMap::new(),
@@ -51,7 +56,21 @@ impl SchemaIR {
             dependency_graph: DependencyGraph::new(),
             inheritance_graph: InheritanceGraph::new(),
             abstract_shapes: HashSet::new(),
+            semantic_actions_registry: registry,
         }
+    }
+
+    pub fn set_map_state(&mut self, map_state: &mut MapState) {
+        self.semantic_actions_registry.set_map_state(map_state);
+    }
+
+    /// Return the live `Arc<Mutex<MapState>>` from the registered `MapActionExtension`, if any.
+    ///
+    /// All validation closures compiled into the RBE table share this same Arc (because
+    /// `SemanticActionsRegistry::clone` clones the `Arc`s by reference, not by value), so
+    /// locking it after validation yields the fully-populated map state.
+    pub fn get_map_state_arc(&self) -> Option<Arc<Mutex<MapState>>> {
+        self.semantic_actions_registry.get_map_state_arc()
     }
 
     pub fn set_prefixmap(&mut self, prefixmap: Option<PrefixMap>) {
@@ -188,7 +207,11 @@ impl SchemaIR {
         resolve_method: &ResolveMethod,
         base: &Option<IriS>,
     ) -> Result<()> {
-        let mut compiler = AST2IR::new(resolve_method);
+        // Reuse the registry that was already set up on this SchemaIR (cloning it shares the
+        // same Arc<dyn SemanticActionExtension> instances, so closures compiled below hold the
+        // same Arc<Mutex<MapState>> that callers can later read back via get_map_state_arc).
+        let registry = self.semantic_actions_registry.clone();
+        let mut compiler = AST2IR::with_registry(resolve_method, registry);
         compiler.compile(schema_json, &schema_json.source_iri(), base, self)?;
         Ok(())
     }
@@ -264,7 +287,7 @@ impl SchemaIR {
     }
 
     pub fn shapes(&self) -> impl Iterator<Item = (&ShapeLabel, &IriS, &ShapeExpr)> {
-        self.shapes.iter().filter_map(|(_, info)| {
+        self.shapes.values().filter_map(|info| {
             info.label().map(|label| {
                 let source = self.get_source(info.source_idx()).unwrap();
                 (label, source, info.expr())
@@ -408,7 +431,8 @@ impl SchemaIR {
 
     pub fn show_shape_idx(&self, idx: &ShapeLabelIdx, width: usize) -> String {
         let mut result = String::new();
-        if let Some(info) = self.find_shape_idx(idx) {
+        let idx_resolved = self.resolve_shape_ref(idx);
+        if let Some(info) = self.find_shape_idx(&idx_resolved) {
             match info.label() {
                 Some(label) => {
                     result.push_str(
@@ -490,6 +514,117 @@ impl SchemaIR {
         let rbe = shape.triple_expr().show_rbe_table(show_pred, show_cond, width);
         format!("{extends}{closed}{extra}{{{rbe}}}")
     }
+
+    pub fn format_cycle_details(
+        &self,
+        cycle_edges: &[(ShapeLabelIdx, ShapeLabelIdx, Vec<ShapeLabelIdx>)],
+    ) -> (Vec<String>, Vec<String>) {
+        use std::collections::HashSet;
+
+        if cycle_edges.is_empty() {
+            return (Vec::new(), Vec::new());
+        }
+
+        let mut labeled_shapes = HashSet::new();
+        for (_, _, shapes) in cycle_edges {
+            for shape_idx in shapes {
+                if self.shape_label_from_idx(shape_idx).is_some() {
+                    labeled_shapes.insert(*shape_idx);
+                }
+            }
+        }
+
+        let mut shapes_list: Vec<_> = labeled_shapes
+            .iter()
+            .map(|idx| {
+                if let Some(label) = self.shape_label_from_idx(idx) {
+                    self.show_label(label)
+                } else {
+                    format!("@{}", idx)
+                }
+            })
+            .collect();
+        shapes_list.sort();
+
+        let mut edges = Vec::new();
+        for (from_idx, to_idx, shapes_in_path) in cycle_edges {
+            let from_resolved = self.resolve_shape_ref(from_idx);
+            let to_resolved = self.resolve_shape_ref(to_idx);
+
+            let from_str = if let Some(label) = self.shape_label_from_idx(&from_resolved) {
+                self.show_label(label)
+            } else {
+                format!("@{}", from_resolved)
+            };
+
+            let to_str = if let Some(label) = self.shape_label_from_idx(&to_resolved) {
+                self.show_label(label)
+            } else {
+                format!("@{}", to_resolved)
+            };
+
+            let mut path_parts = vec![from_str.clone()];
+
+            for shape_idx in shapes_in_path {
+                let resolved = self.resolve_shape_ref(shape_idx);
+                if resolved == from_resolved || resolved == to_resolved {
+                    continue;
+                }
+
+                let shape_str = if let Some(label) = self.shape_label_from_idx(&resolved) {
+                    self.show_label(label)
+                } else {
+                    format!("@{}", resolved)
+                };
+                path_parts.push(shape_str);
+            }
+
+            path_parts.push(to_str.clone());
+
+            let first_part = format!("{} <--[NOT]-- {}", path_parts[0], path_parts[1]);
+            let positive_path = path_parts[2..path_parts.len()].join(" <-- ");
+
+            let path = format!("{} <-- {}", first_part, positive_path);
+
+            edges.push(path);
+        }
+
+        (shapes_list, edges)
+    }
+
+    fn resolve_shape_ref(&self, idx: &ShapeLabelIdx) -> ShapeLabelIdx {
+        if self.shape_label_from_idx(idx).is_some() {
+            return *idx;
+        }
+
+        if let Some(info) = self.find_shape_idx(idx) {
+            match info.expr() {
+                ShapeExpr::Ref { idx: ref_idx } => self.resolve_shape_ref(ref_idx),
+                ShapeExpr::ShapeNot { expr } => self.resolve_shape_ref(expr),
+                ShapeExpr::ShapeAnd { exprs } => {
+                    for e in exprs {
+                        let resolved = self.resolve_shape_ref(e);
+                        if self.shape_label_from_idx(&resolved).is_some() {
+                            return resolved;
+                        }
+                    }
+                    *idx
+                },
+                ShapeExpr::ShapeOr { exprs } => {
+                    for e in exprs {
+                        let resolved = self.resolve_shape_ref(e);
+                        if self.shape_label_from_idx(&resolved).is_some() {
+                            return resolved;
+                        }
+                    }
+                    *idx
+                },
+                _ => *idx,
+            }
+        } else {
+            *idx
+        }
+    }
 }
 
 impl Display for SchemaIR {
@@ -544,7 +679,11 @@ mod tests {
     use iri_s::iri;
 
     use super::SchemaIR;
-    use crate::{Pred, ResolveMethod, ShapeLabelIdx, ast::Schema as SchemaJson, ir::shape_label::ShapeLabel};
+    use crate::{
+        Pred, ResolveMethod, ShapeLabelIdx,
+        ast::Schema as SchemaJson,
+        ir::{semantic_actions_registry::SemanticActionsRegistry, shape_label::ShapeLabel},
+    };
 
     #[test]
     fn test_find_component() {
@@ -566,7 +705,7 @@ mod tests {
             ]
         }"#;
         let schema_json: SchemaJson = serde_json::from_str::<SchemaJson>(str).unwrap();
-        let mut ir = SchemaIR::new();
+        let mut ir = SchemaIR::new(SemanticActionsRegistry::default());
         ir.populate_from_schema_json(&schema_json, &ResolveMethod::default(), &None)
             .unwrap();
         println!("Schema IR: {ir}");
@@ -619,7 +758,7 @@ mod tests {
   "@context": "http://www.w3.org/ns/shex.jsonld"
 }"#;
         let schema: SchemaJson = serde_json::from_str(str).unwrap();
-        let mut ir = SchemaIR::new();
+        let mut ir = SchemaIR::new(SemanticActionsRegistry::default());
         ir.populate_from_schema_json(&schema, &ResolveMethod::default(), &None)
             .unwrap();
         println!("Schema IR: {ir}");
@@ -686,7 +825,7 @@ mod tests {
   "@context": "http://www.w3.org/ns/shex.jsonld"
 }"#;
         let schema: SchemaJson = serde_json::from_str(str).unwrap();
-        let mut ir = SchemaIR::new();
+        let mut ir = SchemaIR::new(SemanticActionsRegistry::default());
         ir.populate_from_schema_json(&schema, &ResolveMethod::default(), &None)
             .unwrap();
         let s: ShapeLabel = ShapeLabel::iri(iri!("http://example.org/S"));

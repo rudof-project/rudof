@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 
 use super::stdio_server::run_mcp_stdio;
 use super::streamable_http::run_mcp_http;
@@ -53,18 +53,28 @@ pub async fn run_mcp(config: McpConfig) -> Result<()> {
     run_mcp_async(config).await
 }
 
+fn validate_http_config(config: &McpConfig) -> Result<(&str, u16, &str)> {
+    let bind = config
+        .bind_address
+        .as_deref()
+        .ok_or_else(|| anyhow!("bind_address is required when using StreamableHTTP transport"))?;
+    let port = config
+        .port
+        .ok_or_else(|| anyhow!("port is required when using StreamableHTTP transport"))?;
+    let route = config
+        .route_path
+        .as_deref()
+        .ok_or_else(|| anyhow!("route_path is required when using StreamableHTTP transport"))?;
+    Ok((bind, port, route))
+}
+
 /// Async version of `run_mcp` for use within an existing Tokio runtime.
 pub async fn run_mcp_async(config: McpConfig) -> Result<()> {
     match config.transport {
         TransportType::Stdio => run_mcp_stdio().await,
         TransportType::StreamableHTTP => {
-            run_mcp_http(
-                config.bind_address.as_ref().expect("bind_address required for HTTP"),
-                config.port.expect("port required for HTTP"),
-                config.route_path.as_ref().expect("route_path required for HTTP"),
-                config.allowed_networks.clone(),
-            )
-            .await
+            let (bind, port, route) = validate_http_config(&config)?;
+            run_mcp_http(bind, port, route, config.allowed_networks.clone()).await
         },
     }
 }

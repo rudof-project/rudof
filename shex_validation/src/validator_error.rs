@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use prefixmap::PrefixMap;
 use prefixmap::error::PrefixMapError;
 use rbe::RbeError;
@@ -8,9 +6,11 @@ use serde::Serialize;
 use serde::ser::SerializeMap;
 use shex_ast::ir::preds::Preds;
 use shex_ast::ir::schema_ir::SchemaIR;
+use shex_ast::ir::semantic_action_context::SemanticActionContext;
 use shex_ast::ir::shape::Shape;
 use shex_ast::ir::shape_expr::ShapeExpr;
 use shex_ast::{Node, Pred, ShapeExprLabel, ShapeLabelIdx, ir::shape_label::ShapeLabel};
+use std::fmt::Display;
 use thiserror::Error;
 
 use crate::Reasons;
@@ -91,7 +91,7 @@ pub enum ValidatorError {
     ClosedShapeWithRemainderPreds { remainder: Preds, declared: Preds },
 
     #[error(transparent)]
-    RbeError(#[from] RbeError<Pred, Node, ShapeLabelIdx>),
+    RbeError(#[from] RbeError<Pred, Node, ShapeLabelIdx, SemanticActionContext>),
 
     #[error(transparent)]
     PrefixMapError(#[from] PrefixMapError),
@@ -144,6 +144,13 @@ pub enum ValidatorError {
         shape: Box<Shape>,
         idx: ShapeLabelIdx,
         errors: Vec<ValidatorError>,
+    },
+
+    #[error("Shape {idx} failed for node {node}: no candidates matched the expression against the given neighbors")]
+    NoMatchesFound {
+        node: Box<Node>,
+        shape: Box<Shape>,
+        idx: ShapeLabelIdx,
     },
 
     #[error("ShapeRef fails for node {node} with idx: {idx}")]

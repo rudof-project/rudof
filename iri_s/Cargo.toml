@@ -1,6 +1,6 @@
 [package]
 name = "iri_s"
-version = "0.1.147"
+version = "0.2.9"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/iri_s"
@@ -13,10 +13,13 @@ repository.workspace = true
 getrandom.workspace = true
 oxiri.workspace = true
 oxrdf.workspace = true
-reqwest.workspace = true
 serde.workspace = true
 thiserror.workspace = true
 url.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 proptest.workspace = true
+reqwest.workspace = true
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+getrandom = { version = "0.3", features = ["wasm_js"] }

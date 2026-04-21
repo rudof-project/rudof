@@ -25,6 +25,13 @@ impl Tap2ShExConfig {
         }
     }
 
+    pub fn tap_config(&self) -> TapConfig {
+        match &self.dctap {
+            Some(tc) => tc.clone(),
+            None => TapConfig::default(),
+        }
+    }
+
     // TOOD: Refactor Tap2ShExError to reduce its size and avoid the result_large_err warning
     #[allow(clippy::result_large_err)]
     pub fn resolve_iri(&self, str: &str, line: u64) -> Result<IriS, Tap2ShExError> {

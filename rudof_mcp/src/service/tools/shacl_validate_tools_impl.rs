@@ -1,18 +1,12 @@
 use crate::service::{errors::*, mcp_service::RudofMcpService};
-use iri_s::IriS;
 use rmcp::{
     ErrorData as McpError,
     handler::server::wrapper::Parameters,
     model::{CallToolResult, Content},
 };
-use rudof_lib::{
-    InputSpec, RudofConfig,
-    result_shacl_validation_format::{ResultShaclValidationFormat, SortByShaclValidationReport},
-    shacl::{add_shacl_schema_rudof, write_validation_report},
-    shacl_format::ShaclFormat,
-    shapes_graph_source::ShapesGraphSource,
+use rudof_lib::formats::{
+    InputSpec, ResultShaclValidationFormat, ShaclFormat, ShaclValidationMode, ShaclValidationSortByMode,
 };
-use rudof_rdf::rdf_impl::ReaderMode;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -25,18 +19,14 @@ use super::helpers::*;
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ValidateShaclRequest {
     /// SHACL shapes content. If not provided, uses shapes from current data.
-    pub shape: Option<String>,
+    pub shapes: Option<String>,
 
     /// SHACL shapes format.
     /// Supported: turtle, ntriples, rdfxml, jsonld, trig, n3, nquads, internal
-    pub shape_format: Option<String>,
+    pub shapes_format: Option<String>,
 
     /// Base IRI for resolving relative IRIs in shapes
-    pub base_shape: Option<String>,
-
-    /// Reader mode for parsing.
-    /// Supported: strict, lax
-    pub reader_mode: Option<String>,
+    pub base: Option<String>,
 
     /// Validation engine mode.
     /// Supported: native, sparql
@@ -62,8 +52,6 @@ pub struct ValidateShaclResponse {
     pub sort_by: String,
     /// Size of results in bytes
     pub result_size_bytes: usize,
-    /// Number of lines in result
-    pub result_lines: usize,
 }
 
 /// Validate RDF data against SHACL shapes.
@@ -82,133 +70,117 @@ pub struct ValidateShaclResponse {
 pub async fn validate_shacl_impl(
     service: &RudofMcpService,
     Parameters(ValidateShaclRequest {
-        shape,
-        shape_format,
-        base_shape,
-        reader_mode,
+        shapes,
+        shapes_format,
+        base,
         mode,
         result_format,
         sort_by,
     }): Parameters<ValidateShaclRequest>,
 ) -> Result<CallToolResult, McpError> {
-    let result_format_str = result_format.clone().unwrap_or_else(|| "compact".to_string());
-    let sort_by_str = sort_by.clone().unwrap_or_else(|| "node".to_string());
-
-    let shape_spec: Option<InputSpec> = shape.as_ref().map(|s| InputSpec::Str(s.clone()));
-
-    let parsed_shape_format: Option<ShaclFormat> = match shape_format {
-        Some(s) => match ShaclFormat::from_str(&s) {
-            Ok(fmt) => Some(fmt),
-            Err(e) => {
-                return Ok(ToolExecutionError::with_hint(
-                    format!("Invalid shape format '{}': {}", s, e),
-                    format!("Supported formats: {}", SHACL_FORMATS),
-                )
-                .into_call_tool_result());
-            },
-        },
-        None => None,
-    };
-
-    let parsed_base_shape: Option<IriS> = match parse_optional_iri(base_shape.as_deref(), "base shape IRI") {
-        Ok(iri) => iri,
-        Err(e) => return Ok(e.into_call_tool_result()),
-    };
-
-    let parsed_reader_mode: ReaderMode = match parse_optional_reader_mode(reader_mode.as_deref()) {
-        Ok(mode) => mode,
-        Err(e) => return Ok(e.into_call_tool_result()),
-    };
-
-    let parsed_mode: ShaclValidationMode = match mode {
-        Some(s) => match ShaclValidationMode::from_str(&s) {
-            Ok(m) => m,
-            Err(e) => {
-                return Ok(ToolExecutionError::with_hint(
-                    format!("Invalid validation mode '{}': {}", s, e),
-                    "Supported modes: native, sparql",
-                )
-                .into_call_tool_result());
-            },
-        },
-        None => ShaclValidationMode::Native,
-    };
-
-    let parsed_result_format: ResultShaclValidationFormat = match result_format {
-        Some(s) => match ResultShaclValidationFormat::from_str(&s) {
-            Ok(fmt) => fmt,
-            Err(e) => {
-                return Ok(ToolExecutionError::with_hint(
-                    format!("Invalid result format '{}': {}", s, e),
-                    format!("Supported formats: {}", SHACL_RESULT_FORMATS),
-                )
-                .into_call_tool_result());
-            },
-        },
-        None => ResultShaclValidationFormat::Details,
-    };
-
-    let parsed_sort_by: SortByShaclValidationReport = match sort_by {
-        Some(s) => match SortByShaclValidationReport::from_str(&s) {
-            Ok(order) => order,
-            Err(e) => {
-                return Ok(ToolExecutionError::with_hint(
-                    format!("Invalid sort order '{}': {}", s, e),
-                    format!("Supported sort orders: {}", SHACL_SORT_BY_MODES),
-                )
-                .into_call_tool_result());
-            },
-        },
-        None => SortByShaclValidationReport::Severity,
-    };
-
-    let rudof_config = RudofConfig::new().unwrap();
-
     let mut rudof = service.rudof.lock().await;
 
-    let validation_report = if let Some(shape_spec) = shape_spec {
-        let shapes_format = parsed_shape_format.unwrap_or_default();
-        add_shacl_schema_rudof(
-            &mut rudof,
-            &shape_spec,
-            &shapes_format,
-            &parsed_base_shape,
-            &parsed_reader_mode,
-            &rudof_config,
-        )
-        .map_err(|e| {
-            internal_error(
-                "Add SHACL Schema error",
-                e.to_string(),
-                Some(json!({"operation":"validate_shacl_impl", "phase":"add_shacl_schema"})),
-            )
-        })?;
-        rudof.validate_shacl(Some(&parsed_mode), Some(&ShapesGraphSource::current_schema()))
-    } else {
-        rudof.validate_shacl(Some(&parsed_mode), Some(&ShapesGraphSource::current_data()))
-    }
-    .map_err(|e| {
-        internal_error(
-            "Validate SHACL error",
-            e.to_string(),
-            Some(json!({"operation":"validate_shacl_impl", "phase":"validate_shacl"})),
-        )
-    })?;
-    let mut output_buffer = Cursor::new(Vec::new());
+    let shape_format_hint = format!("Supported values: {}", SHACL_FORMATS);
+    let mode_hint = "Supported values: native, sparql";
+    let result_format_hint = format!("Supported values: {}", SHACL_RESULT_FORMATS);
+    let sort_by_hint = format!("Supported values: {}", SHACL_SORT_BY_MODES);
 
-    write_validation_report(
-        &mut output_buffer,
-        &parsed_result_format,
-        validation_report,
-        &parsed_sort_by,
-    )
-    .map_err(|e| {
+    let parsed_shapes = match parse_optional_value_with_hint(
+        shapes.as_deref(),
+        "shapes",
+        "Provide valid SHACL shapes content, URL, or file path",
+        InputSpec::from_str,
+    ) {
+        Ok(value) => value,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
+
+    let parsed_shapes_format = match parse_optional_value_with_hint(
+        shapes_format.as_deref(),
+        "shapes format",
+        &shape_format_hint,
+        ShaclFormat::from_str,
+    ) {
+        Ok(value) => value,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
+
+    let parsed_mode = match parse_optional_value_with_hint(
+        mode.as_deref(),
+        "validation mode",
+        mode_hint,
+        ShaclValidationMode::from_str,
+    ) {
+        Ok(value) => value,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
+
+    let parsed_result_format = match parse_optional_value_with_hint(
+        result_format.as_deref(),
+        "result format",
+        &result_format_hint,
+        ResultShaclValidationFormat::from_str,
+    ) {
+        Ok(value) => value,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
+
+    let parsed_sort_by = match parse_optional_value_with_hint(
+        sort_by.as_deref(),
+        "sort_by",
+        &sort_by_hint,
+        ShaclValidationSortByMode::from_str,
+    ) {
+        Ok(value) => value,
+        Err(e) => return Ok(e.into_call_tool_result()),
+    };
+
+    let mut loading_shacl_schema = rudof.load_shacl_shapes();
+    if let Some(shape) = &parsed_shapes {
+        loading_shacl_schema = loading_shacl_schema.with_shacl_schema(shape)
+    }
+    if let Some(shape_format) = &parsed_shapes_format {
+        loading_shacl_schema = loading_shacl_schema.with_shacl_schema_format(shape_format);
+    }
+    if let Some(base_shape) = base.as_deref() {
+        loading_shacl_schema = loading_shacl_schema.with_base(base_shape);
+    }
+    if let Err(e) = loading_shacl_schema.execute() {
+        return Ok(ToolExecutionError::with_hint(
+            format!("Failed to load SHACL shapes: {}", e),
+            "Check the shapes content and shapes_format parameter",
+        )
+        .into_call_tool_result());
+    }
+
+    let mut validation = rudof.validate_shacl();
+    if let Some(mode) = &parsed_mode {
+        validation = validation.with_shacl_validation_mode(mode);
+    }
+    if let Err(e) = validation.execute() {
+        return Ok(ToolExecutionError::with_hint(
+            format!("SHACL validation failed: {}", e),
+            "Ensure the RDF data is loaded and the SHACL shapes are correct",
+        )
+        .into_call_tool_result());
+    }
+
+    let mut output_buffer = Cursor::new(Vec::new());
+    let mut serialization = rudof.serialize_shacl_validation_results(&mut output_buffer);
+    if let Some(result_format) = &parsed_result_format {
+        serialization = serialization.with_result_shacl_validation_format(result_format);
+    }
+    if let Some(sort_by) = &parsed_sort_by {
+        serialization = serialization.with_shacl_validation_sort_order_mode(sort_by);
+    }
+    serialization.execute().map_err(|e| {
         internal_error(
-            "Write validation report error",
+            "Shacl validation error",
             e.to_string(),
-            Some(json!({"operation":"validate_shacl_impl", "phase":"write_validation_report"})),
+            Some(json!({"operation":"validate_shacl","phase":"serialize_validation_results"})),
         )
     })?;
+
     let output_bytes = output_buffer.into_inner();
     let output_str = String::from_utf8(output_bytes).map_err(|e| {
         internal_error(
@@ -220,51 +192,37 @@ pub async fn validate_shacl_impl(
 
     // Calculate metadata
     let result_size_bytes = output_str.len();
-    let result_lines = output_str.lines().count();
 
+    let result_format_str = if let Some(format) = &parsed_result_format {
+        format.to_string()
+    } else {
+        "details".to_string()
+    };
+    let sort_by_str = if let Some(sort_by) = &parsed_sort_by {
+        sort_by.to_string()
+    } else {
+        "severity".to_string()
+    };
     let response = ValidateShaclResponse {
-        results: output_str.to_string(),
+        results: output_str.clone(),
         result_format: result_format_str.clone(),
         sort_by: sort_by_str.clone(),
         result_size_bytes,
-        result_lines,
     };
 
-    let structured = serde_json::to_value(&response).map_err(|e| {
-        internal_error(
-            "Serialization error",
-            e.to_string(),
-            Some(json!({"operation":"validate_shacl_impl", "phase":"serialize_response"})),
-        )
-    })?;
+    let structured = serialize_structured(&response, "validate_shacl_impl")?;
 
     let summary = format!(
         "# SHACL Validation Results\n\n\
         **Result Format:** {}\n\
         **Sort By:** {}\n\
-        **Result Size:** {} bytes\n\
-        **Result Lines:** {}\n",
-        result_format_str, sort_by_str, result_size_bytes, result_lines
+        **Result Size:** {} bytes\n",
+        result_format_str, sort_by_str, result_size_bytes
     );
-
-    let shape_display = format!("## SHACL Shape\n\n```shacl\n{}\n```", shape.clone().unwrap_or_default());
-
-    // Format results based on the format type
-    let results_display = match result_format_str.to_lowercase().as_str() {
-        "turtle" | "n3" => format!("## Validation Results\n\n```turtle\n{}\n```", output_str),
-        "ntriples" | "nquads" => {
-            format!("## Validation Results\n\n```ntriples\n{}\n```", output_str)
-        },
-        "rdfxml" => format!("## Validation Results\n\n```xml\n{}\n```", output_str),
-        "trig" => format!("## Validation Results\n\n```trig\n{}\n```", output_str),
-        "json" => format!("## Validation Results\n\n```json\n{}\n```", output_str),
-        _ => format!("## Validation Results\n\n```\n{}\n```", output_str),
-    };
 
     let mut result = CallToolResult::success(vec![
         Content::text(summary),
-        Content::text(shape_display),
-        Content::text(results_display),
+        Content::text(format!("## Validation Results\n\n{}", output_str)),
     ]);
     result.structured_content = Some(structured);
 

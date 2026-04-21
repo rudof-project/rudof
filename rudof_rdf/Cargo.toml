@@ -1,6 +1,6 @@
 [package]
 name = "rudof_rdf"
-version = "0.2.7"
+version = "0.2.9"
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/rdf"
@@ -9,13 +9,17 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
+[features]
+default = ["sparql"]
+sparql = ["dep:oxigraph", "dep:reqwest", "dep:tokio", "dep:spargebra", "dep:sparesults"]
+
 [dependencies]
 async-trait.workspace = true
 colored.workspace = true
 const_format.workspace = true
 iri_s.workspace = true
 once_cell.workspace = true
-oxigraph.workspace = true
+oxigraph = { workspace = true, optional = true }
 oxjsonld.workspace = true
 oxiri.workspace = true
 oxilangtag.workspace = true
@@ -26,17 +30,22 @@ oxsdatatypes.workspace = true
 oxttl.workspace = true
 paste.workspace = true
 prefixmap.workspace = true
-proptest.workspace = true
 regex.workspace = true
-reqwest.workspace = true
+reqwest = { workspace = true, optional = true }
 rust_decimal.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-sparesults.workspace = true
-spargebra.workspace = true
-tempfile.workspace = true
+sparesults = { workspace = true, optional = true }
+spargebra = { workspace = true, optional = true }
 tabled.workspace = true
 thiserror.workspace = true
-tokio.workspace = true
+tokio = { workspace = true, optional = true }
 toml.workspace = true
 url.workspace = true
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+proptest.workspace = true
+tempfile.workspace = true
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+getrandom = { version = "0.3", features = ["wasm_js"] }

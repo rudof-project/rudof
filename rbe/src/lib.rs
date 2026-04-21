@@ -52,9 +52,32 @@ pub mod rbe1_matcher;
 // pub use crate::deriv_error::*;
 pub use crate::bag::*;
 use core::hash::Hash;
+use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display};
 
+/// The `Key`trait represents the type of keys that can be used in the conditions. It must implement `Eq`, `Hash`, `Debug`, `Default`, `Display`, and `Clone`.
 pub trait Key: Eq + Hash + Debug + Default + Display + Clone {}
+
+/// The `Value` trait represents the type of values that can be used in the conditions. It must implement `Eq`, `Hash`, `Debug`, `Default`, `Display`, and `Clone`.
 pub trait Value: Eq + Hash + Debug + Default + Display + Clone {}
 
+/// The `Ref` trait represents the type of references that can be used in the conditions. It must implement `Eq`, `Hash`, `Debug`, `Default`, `Display`, and `Clone`.
 pub trait Ref: Eq + Hash + Debug + Default + Display + Clone {}
+
+/// The `Context` trait represents the type of contexts that can be used in the conditions. It must implement `Eq`, `Hash`, `Debug`, `Default`, `Display`, and `Clone`.
+pub trait Context: Eq + Hash + Debug + Default + Display + Clone {}
+
+/// The `State` trait represents the type of states that can be used in the conditions. It must implement `Eq`, `Hash`, `Debug`, `Default`, `Display`, and `Clone`.
+pub trait State: Eq + Debug + Default + Display + Clone {}
+
+/// A no-op state type for when no state is needed.
+#[derive(Clone, Debug, Default, Deserialize, Eq, Hash, PartialEq, Serialize)]
+pub struct NoState;
+
+impl State for NoState {}
+
+impl std::fmt::Display for NoState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "")
+    }
+}

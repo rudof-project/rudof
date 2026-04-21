@@ -1,0 +1,81 @@
+use crate::constraints::NativeValidator;
+#[cfg(feature = "sparql")]
+use crate::constraints::SparqlValidator;
+use crate::constraints::constraint_error::ConstraintError;
+use crate::helpers::constraint::validate_ask_with;
+use crate::helpers::constraint::validate_with;
+use crate::iteration_strategy::ValueNodeIteration;
+use crate::shacl_engine::engine;
+use crate::validation_report::result::ValidationResult;
+use crate::value_nodes::ValueNodes;
+use indoc::formatdoc;
+use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath, query::QueryRDF, term::Term};
+use shacl_ir::compiled::component_ir::ComponentIR;
+use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::components::Pattern;
+use shacl_ir::schema_ir::SchemaIR;
+use std::fmt::Debug;
+
+impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Pattern {
+    fn validate_native<'a>(
+        &self,
+        component: &ComponentIR,
+        shape: &ShapeIR,
+        _: &S,
+        _engine: &mut dyn engine::Engine<S>,
+        value_nodes: &ValueNodes<S>,
+        _source_shape: Option<&ShapeIR>,
+        maybe_path: Option<SHACLPath>,
+        _shapes_graph: &SchemaIR,
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+        let pattern_check = |value_node: &S::Term| {
+            if value_node.is_blank_node() {
+                true
+            } else {
+                let lexical_form = value_node.lexical_form();
+                !self.match_str(lexical_form.as_str())
+            }
+        };
+        let message = format!("Pattern({}) not satisfied", self.pattern());
+        validate_with(
+            component,
+            shape,
+            value_nodes,
+            ValueNodeIteration,
+            pattern_check,
+            &message,
+            maybe_path,
+        )
+    }
+}
+
+#[cfg(feature = "sparql")]
+impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Pattern {
+    fn validate_sparql(
+        &self,
+        component: &ComponentIR,
+        shape: &ShapeIR,
+        store: &S,
+        value_nodes: &ValueNodes<S>,
+        _source_shape: Option<&ShapeIR>,
+        maybe_path: Option<SHACLPath>,
+        _shapes_graph: &SchemaIR,
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+        let flags = self.flags().clone();
+        let pattern = self.pattern().clone();
+
+        let query = |value_node: &S::Term| match &flags {
+            Some(flags) => formatdoc! {
+                "ASK {{ FILTER (regex(str({}), {}, {})) }}",
+                value_node, pattern, flags
+            },
+            None => formatdoc! {
+                "ASK {{ FILTER (regex(str({}), {})) }}",
+                value_node, pattern
+            },
+        };
+
+        let message = format!("Pattern({}) not satisfied", self.pattern());
+        validate_ask_with(component, shape, store, value_nodes, query, &message, maybe_path)
+    }
+}

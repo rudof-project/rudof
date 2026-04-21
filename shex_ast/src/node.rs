@@ -1,3 +1,5 @@
+use crate::ObjectValue;
+use crate::SchemaJsonError;
 use iri_s::IriS;
 use prefixmap::IriRef;
 use rbe::Value;
@@ -8,16 +10,13 @@ use rudof_rdf::rdf_core::{
         literal::{ConcreteLiteral, NumericLiteral},
     },
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
-use tracing::trace;
-
-use crate::ObjectValue;
-use crate::SchemaJsonError;
 
 impl Value for Node {}
 
-#[derive(PartialEq, Eq, Hash, Debug, Default, Clone, PartialOrd, Ord)]
+#[derive(PartialEq, Eq, Hash, Debug, Default, Serialize, Deserialize, Clone, PartialOrd, Ord)]
+#[serde(transparent)]
 pub struct Node {
     node: Object,
 }
@@ -50,7 +49,6 @@ impl Node {
     /// but have a lexical form that is not an integer
     /// In that case, this function will return a WrongDatatypeLiteral
     pub fn as_checked_object(&self) -> Result<Object, SchemaJsonError> {
-        trace!("as_checked_object: {:?}", self.node);
         match &self.node {
             Object::Literal(sliteral) => {
                 let checked_literal = sliteral
@@ -98,15 +96,6 @@ impl From<Object> for Node {
 impl From<IriS> for Node {
     fn from(iri: IriS) -> Self {
         Node { node: iri.into() }
-    }
-}
-
-impl Serialize for Node {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        self.node.serialize(serializer)
     }
 }
 

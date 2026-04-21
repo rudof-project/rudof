@@ -12,7 +12,7 @@ const DEFAULT_OBJECT_TEXT: &str = "obj";
 
 /// Enum representing the available UML node shapes for visualization.
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-enum UmlShape {
+pub enum UmlShape {
     /// Cloud shape.
     Cloud,
     /// Rectangle shape.

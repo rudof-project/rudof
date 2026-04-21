@@ -29,7 +29,6 @@ use nom::{
 use nom_locate::LocatedSpan;
 use prefixmap::IriRef;
 use regex::Regex;
-// use shex_ast::IriOrStr;
 use rudof_rdf::rdf_core::{
     RDFError,
     term::literal::{ConcreteLiteral, Lang, NumericLiteral},
@@ -1183,9 +1182,8 @@ fn language_range2<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ValueSetValue> {
             move |i| {
                 let (i, (_, _, exclusions)) = tuple((token_tws("@"), token_tws("~"), language_exclusions))(i)?;
                 let v = if exclusions.is_empty() {
-                    ValueSetValue::LanguageStemRange {
+                    ValueSetValue::LanguageStem {
                         stem: LangOrWildcard::wildcard(),
-                        exclusions: None,
                     }
                 } else {
                     ValueSetValue::LanguageStemRange {
@@ -1317,8 +1315,10 @@ fn numeric_literal(i: Span) -> IRes<NumericLiteral> {
 fn raw_numeric_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NumericLiteral> {
     map_error(
         move |i| {
+            // Prefer parsing doubles and decimals before integer to avoid
+            // integer consuming the leading digits of a floating-point literal
+            // (e.g., `5.5E0`) and leaving trailing characters that break parsing.
             alt((
-                integer_literal(), // Asegúrate de que este no devuelva Result interno
                 |i| {
                     let (i, val) = double(i)?;
                     match NumericLiteral::decimal_from_f64(val) {
@@ -1327,6 +1327,7 @@ fn raw_numeric_literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NumericLiteral>
                     }
                 },
                 decimal,
+                integer_literal(),
             ))(i)
         },
         || ShExParseError::NumericLiteral,

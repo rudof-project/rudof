@@ -38,16 +38,16 @@ The Rudof MCP server exposes the following capabilities:
 
 | Capability    | Feature                                              |
 |---------------|------------------------------------------------------|
-| `tools`       | 12 tools for validation, querying, and data ops      |
+| `tools`       | 10 tools for validation, querying, and data ops      |
 | `prompts`     | Guided templates for common workflows                |
 | `resources`   | Access to RDF data and format information            |
+| `resource templates` | URI template for accessing RDF data in any supported format |
 | `logging`     | Real-time log notifications with level filtering     |
-| `completions` | Argument completions for tools and prompts           |
-| `tasks`       | Async task support for long-running operations       |
+| `completions` | Argument completions for prompts and resources       |
 
 ### Available Tools
 
-The MCP server provides 12 tools organized by functionality:
+The MCP server provides 10 tools organized by functionality:
 
 **Data Management:**
 
@@ -76,8 +76,6 @@ The MCP server provides 12 tools organized by functionality:
 |------|-------------|
 | `validate_shex` | Validate RDF data against a ShEx schema |
 | `check_shex` | Check if a ShEx schema is well-formed |
-| `shape_info` | Get information about a specific ShEx shape |
-| `convert_shex` | Convert ShEx schema between formats (shexc, shexj, turtle) |
 | `show_shex` | Parse and display ShEx schema with optional analysis |
 
 **SHACL Tools:**
@@ -95,21 +93,16 @@ The MCP server provides guided templates for common workflows:
 | `explore_rdf_node` | Interactive guide for exploring RDF node information and relationships |
 | `analyze_rdf_data` | Comprehensive guide for analyzing RDF data structure and quality |
 | `validation_guide` | Step-by-step guide for validating RDF data against ShEx or SHACL schemas |
-| `sparql_builder` | Interactive helper for building and understanding SPARQL queries |
 
 ### Available Resources
 
 The server exposes resources for accessing RDF data and format information:
 
-**Current RDF Data (multiple formats):**
+**Current RDF Data:**
 
-- `rudof://current-data` - Turtle format
-- `rudof://current-data/ntriples` - N-Triples format
-- `rudof://current-data/rdfxml` - RDF/XML format
-- `rudof://current-data/jsonld` - JSON-LD format
-- `rudof://current-data/trig` - TriG format
-- `rudof://current-data/nquads` - N-Quads format
-- `rudof://current-data/n3` - Notation3 format
+- `rudof://current-data` - Turtle format (listed resource)
+
+Additional formats are accessible via the resource template `rudof://current-data/{format}`, where `{format}` is one of: `turtle`, `ntriples`, `rdfxml`, `jsonld`, `trig`, `nquads`, `n3`.
 
 **Format Information:**
 
@@ -367,21 +360,3 @@ ex:PersonShape a sh:NodeShape ;
   ] .
 ```
 
-#### Convert ShEx Schema Formats
-
-You can convert ShEx schemas between different formats:
-
-```
-Convert this ShEx schema to JSON format:
-
-prefix : <http://example.org/>
-:Person { :name . ; :age . }
-```
-
-#### Get Shape Information
-
-Retrieve detailed information about a specific shape in a schema:
-
-```
-Show me information about the :Person shape in the previously loaded ShEx schema.
-```

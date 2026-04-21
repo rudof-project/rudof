@@ -5,11 +5,11 @@
 //! Each subset of the partition must satisfy the predicate associated to the corresponding
 //! triple expression.
 
-use rbe::{Key, RbeTable, Ref, Value};
+use rbe::{Context, Key, RbeTable, Ref, Value};
 use std::collections::{HashMap, HashSet};
 
-pub type Partitions<T, K, V, R> = Vec<Partition<T, K, V, R>>;
-pub type Partition<T, K, V, R> = (T, Vec<RbeTable<K, V, R>>, Vec<(K, V)>);
+pub type Partitions<T, K, V, R, Ctx> = Vec<Partition<T, K, V, R, Ctx>>;
+pub type Partition<T, K, V, R, Ctx> = (T, Vec<RbeTable<K, V, R, Ctx>>, Vec<(K, V, Ctx)>);
 
 pub struct KPartitionIteratorMultiPredicate<T, F> {
     items: Vec<T>,
@@ -83,15 +83,16 @@ where
     }
 }
 
-/// Creates an iterator of all possible combinations of neighbours that can be assigned to eash triple expression in the `triple_exprs` map
-pub fn partitions_iter<'a, T, K, V, R>(
-    neighs: &'a [(K, V)],
-    exprs: &'a HashMap<T, Vec<RbeTable<K, V, R>>>,
-) -> impl Iterator<Item = Partitions<T, K, V, R>> + 'a
+/// Creates an iterator of all possible combinations of neighbours that can be assigned to each triple expression in the `triple_exprs` map
+pub fn partitions_iter<'a, T, K, V, R, Ctx>(
+    neighs: &'a [(K, V, Ctx)],
+    exprs: &'a HashMap<T, Vec<RbeTable<K, V, R, Ctx>>>,
+) -> impl Iterator<Item = Partitions<T, K, V, R, Ctx>> + 'a
 where
     K: Key,
     V: Value,
     R: Ref,
+    Ctx: Context,
     T: std::hash::Hash + Eq + Clone,
 {
     let conditions = build_conditions(exprs).collect::<Vec<_>>();
@@ -105,13 +106,14 @@ where
     })
 }
 
-fn build_conditions<'a, T, K, V, R>(
-    triple_exprs: &'a HashMap<T, Vec<RbeTable<K, V, R>>>,
-) -> impl Iterator<Item = impl Fn(&Vec<(K, V)>) -> bool> + 'a
+fn build_conditions<'a, T, K, V, R, Ctx>(
+    triple_exprs: &'a HashMap<T, Vec<RbeTable<K, V, R, Ctx>>>,
+) -> impl Iterator<Item = impl Fn(&Vec<(K, V, Ctx)>) -> bool> + 'a
 where
     K: Key,
     V: Value,
     R: Ref,
+    Ctx: Context,
     T: std::hash::Hash + Eq + Clone,
 {
     triple_exprs.values().map(|rbes| {
@@ -121,7 +123,7 @@ where
             .collect::<HashSet<_>>()
             .into_iter()
             .collect();
-        move |subset: &Vec<(K, V)>| subset.iter().all(|(p, _)| preds.contains(p))
+        move |subset: &Vec<(K, V, Ctx)>| subset.iter().all(|(p, _, _)| preds.contains(p))
     })
 }
 

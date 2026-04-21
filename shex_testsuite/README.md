@@ -30,17 +30,54 @@ Options:
           Print version
 ```
 
-## Examples
+### Validation tests
 
 By default it runs the validation tests and shows some statistics
 
-```
+```sh
 cargo run -p shex_testsuite
-Passed: 244, Failed: 340, Skipped: 24, Not implemented: 558
+Passed: 1062, Failed: 82, Skipped: 22, Not implemented: 0
 ```
 
-Run testsuite to check that the well-formed schemas are read
+### Check that the well-formed schemas are read
 
-```
+```sh
 cargo run -p shex_testsuite -- -p failed -m shex_testsuite/shexTest/schemas/manifest.jsonld -f schemas
+```
+
+### Run a concrete test by name
+
+```sh
+cargo run -p shex_testsuite -- -m shex_testsuite/shexTest/validation/manifest.jsonld -e nPlus1
+```
+
+
+### Run tests of some specific trait
+
+```sh
+cargo run -p shex_testsuite -- -m shex_testsuite/shexTest/validation/manifest.jsonld -t sht:TriplePattern
+```
+
+### To choose between running the tests with JSON-LD or Compact syntax
+
+ShExC syntax
+
+```sh
+cargo run -p shex_testsuite -- -m shex_testsuite/shexTest/validation/manifest.jsonld -p failed-simple --shex_syntax shexc
+. . .
+Passed: 1063, Failed: 81, Skipped: 22, Not implemented: 0
+```
+
+JSON-LD syntax
+
+```sh
+cargo run -p shex_testsuite -- -m shex_testsuite/shexTest/validation/manifest.jsonld -p failed-simple --shex_syntax shexj
+. . .
+Passed: 1062, Failed: 82, Skipped: 22, Not implemented: 0
+```
+
+At this moment the main difference between both is:
+
+```
+nPlus1
 ```

@@ -2,6 +2,7 @@
 compile_error!("The `rudof_generate` crate is not supported in WebAssembly environments");
 
 pub mod config;
+pub mod conformance_metrics;
 pub mod converters;
 pub mod errors;
 pub mod field_generators;
@@ -13,6 +14,7 @@ pub mod unified_constraints;
 mod wasm_stubs;
 
 pub use config::{GeneratorConfig, SchemaFormat};
+pub use conformance_metrics::{ConformanceMetrics, TranslationMetrics};
 pub use errors::{DataGeneratorError, Result};
 
 use crate::output::OutputWriter;
@@ -101,8 +103,21 @@ impl DataGenerator {
         let graph = self.generator.generate_data(&self.config.generation).await?;
         let generation_time = start_time.elapsed();
 
+        let conformance_metrics = if let (Some(unified_model), Some(translation_metrics)) = (
+            self.processor.get_unified_model(),
+            self.processor.get_translation_metrics(),
+        ) {
+            Some(crate::conformance_metrics::ConformanceMetrics::from_graph_and_model(
+                &graph,
+                unified_model,
+                translation_metrics.clone(),
+            )?)
+        } else {
+            None
+        };
+
         self.writer
-            .write_graph_with_timing(&graph, Some(generation_time))
+            .write_graph_with_timing(&graph, Some(generation_time), conformance_metrics.as_ref())
             .await?;
         Ok(())
     }

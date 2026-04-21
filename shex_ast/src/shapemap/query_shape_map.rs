@@ -5,7 +5,6 @@ use prefixmap::{DerefError, PrefixMap};
 use rudof_rdf::rdf_core::query::QueryRDF;
 use serde::Serialize;
 use std::fmt::Display;
-use tracing::trace;
 
 #[derive(Debug, Default, PartialEq, Clone, Serialize)]
 pub struct QueryShapeMap {
@@ -64,10 +63,8 @@ impl QueryShapeMap {
     where
         R: QueryRDF,
     {
-        trace!("node_shapes, pairs from QueryShapeMap: {}", self);
         let mut result = Vec::new();
         for assoc in self.iter() {
-            trace!("Processing association: {}", assoc);
             let node_shapes = assoc.iter_node_shape(rdf)?;
             for pair in node_shapes {
                 result.push(pair)

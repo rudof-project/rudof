@@ -25,12 +25,18 @@ impl Command for RdfConfigCommand {
 
     /// Executes the RdfConfig command logic.
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
-        let reader = self.args.input.open_read(None, "rdf-config")?;
+        let format = self.args.format.into();
+        let result_format = self.args.result_format.into();
 
-        ctx.rudof.read_rdf_config(reader, self.args.input.to_string())?;
+        ctx.rudof
+            .load_rdf_config(&self.args.input)
+            .with_rdf_config_format(&format)
+            .execute()?;
 
-        let format = (&self.args.result_format).into();
-        ctx.rudof.serialize_rdf_config(&format, &mut ctx.writer)?;
+        ctx.rudof
+            .serialize_rdf_config(&mut ctx.writer)
+            .with_result_rdf_config_format(&result_format)
+            .execute()?;
 
         Ok(())
     }

@@ -1,0 +1,24 @@
+[package]
+name = "shacl_ast"
+version = "0.2.9"
+authors.workspace = true
+description.workspace = true
+documentation = "https://docs.rs/shacl_ast"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+#[features]
+#rdf-star = [
+# "oxrdf/rdf-star",
+#    "srdf/rdf-star",
+#]
+
+[dependencies]
+const_format.workspace = true
+iri_s.workspace = true
+itertools.workspace = true
+prefixmap.workspace = true
+rudof_rdf.workspace = true
+thiserror.workspace = true

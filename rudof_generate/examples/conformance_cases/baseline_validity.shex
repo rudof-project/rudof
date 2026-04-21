@@ -1,0 +1,10 @@
+PREFIX ex: <http://example.org/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+start = @ex:Person
+
+ex:Person {
+  ex:name xsd:string ;
+  ex:age xsd:integer ;
+  ex:email xsd:string ?
+}

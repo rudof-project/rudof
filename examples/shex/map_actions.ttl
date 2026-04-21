@@ -1,0 +1,8 @@
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+prefix : <http://example.org/>
+
+:alice :name "Alice"; :age 23; 
+       :address [ 
+          :name "Any street"; 
+          :city "Anytown" 
+        ] .

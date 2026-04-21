@@ -1,19 +1,6 @@
 use crate::cli::parser::ShaclValidateArgs;
 use crate::commands::base::{Command, CommandContext};
-use anyhow::{Result, anyhow};
-use rudof_lib::{
-    InMemoryGraph, ReaderMode, ShaclFormat as ShaclAstShaclFormat, ShapesGraphSource,
-    ValidationReport,
-    rdf_reader_mode::RDFReaderMode,
-    result_shacl_validation_format::{ResultShaclValidationFormat, SortByShaclValidationReport},
-    result_shacl_validation_format::{cnv_sort_mode_report, result_format_to_rdf_format},
-    shacl_format::ShaclFormat,
-    terminal_width::terminal_width,
-};
-use rudof_rdf::rdf_core::BuildRDF;
-use std::io::Write;
-use shacl::types::Severity;
-use shacl::validator::ShaclValidationMode;
+use anyhow::Result;
 
 /// Implementation of the `shacl-validate` command.
 ///
@@ -28,57 +15,6 @@ impl ShaclValidateCommand {
     pub fn new(args: ShaclValidateArgs) -> Self {
         Self { args }
     }
-
-    fn write_validation_report<W: Write>(
-        &self,
-        mut writer: W,
-        format: &ResultShaclValidationFormat,
-        report: ValidationReport,
-        sort_by: &SortByShaclValidationReport,
-    ) -> Result<(), anyhow::Error> {
-        let terminal_width = terminal_width();
-        let sort_mode = cnv_sort_mode_report(sort_by);
-
-        match format {
-            ResultShaclValidationFormat::Minimal => {
-                if report.conforms() {
-                    writeln!(writer, "Conforms")?;
-                } else {
-                    writeln!(
-                        writer,
-                        "Does not conform, {} violations, {} warnings",
-                        report.get_count_of(&Severity::Violation),
-                        report.get_count_of(&Severity::Warning)
-                    )?;
-                }
-                Ok(())
-            },
-            ResultShaclValidationFormat::Compact => {
-                // TODO - Move to rudof_cli
-                // report.show_as_table(writer, sort_mode, Some(false), Some(terminal_width))?;
-                Ok(())
-            },
-            ResultShaclValidationFormat::Details => {
-                // TODO - Move to rudof_cli
-                // report.show_as_table(writer, sort_mode, Some(true), Some(terminal_width))?;
-                Ok(())
-            },
-            ResultShaclValidationFormat::Json => Err(anyhow!(
-                "Generation of JSON for SHACL validation report is not implemented yet"
-            )),
-            _ => {
-                let mut rdf_writer = InMemoryGraph::new();
-                report
-                    .to_rdf(&mut rdf_writer)
-                    .map_err(|e| anyhow!("Error converting SHACL validation report to RDF: {}", e))?;
-                let rdf_format = result_format_to_rdf_format(format)?;
-                rdf_writer
-                    .serialize(&rdf_format, &mut writer)
-                    .map_err(|e| anyhow!("Error serializing SHACL validation report to RDF: {}", e))?;
-                Ok(())
-            },
-        }
-    }
 }
 
 impl Command for ShaclValidateCommand {
@@ -88,46 +24,51 @@ impl Command for ShaclValidateCommand {
     }
 
     /// Executes the shacl-validate logic.
-    #[allow(clippy::unnecessary_fallible_conversions)]
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
-        // Convert CLI types to library types
-        let reader_mode: RDFReaderMode = (&self.args.reader_mode).into();
-        let reader_mode: ReaderMode = reader_mode.into();
-        let schema_format: Option<ShaclFormat> = self.args.shapes_format.as_ref().map(|f| f.into());
-        let schema_format: Option<ShaclAstShaclFormat> = schema_format.as_ref().map(|f| f.try_into()).transpose()?;
-        let shacl_validation_mode: ShaclValidationMode = (&self.args.mode).into();
-        let result_format: ResultShaclValidationFormat = (&self.args.result_format).into();
-        let sort_by: SortByShaclValidationReport = (&self.args.sort_by).into();
+        let data_format = self.args.data_format.into();
+        let reader_mode = self.args.reader_mode.into();
+        let shacl_schema_format = self.args.shapes_format.into();
+        let shacl_validation_mode = self.args.mode.into();
+        let sort_order = self.args.sort_by.into();
+        let result_format = self.args.result_format.into();
 
-        // Load RDF data into rudof
-        ctx.rudof.load_data(
-            &self.args.data,
-            &(&self.args.data_format).into(),
-            &self.args.base_data,
-            &self.args.endpoint,
-            &reader_mode,
-            false, // allow_no_data = false for validation
-        )?;
-
-        // Load SHACL schema if provided, otherwise use data as schema
-        let shapes_graph_source = if let Some(ref schema_input) = self.args.shapes {
-            // Load schema from external source
-            let format = schema_format.unwrap_or_default();
-            ctx.rudof
-                .load_shacl_schema(schema_input, &format, &self.args.base_shapes, &reader_mode)?;
-            ShapesGraphSource::CurrentSchema
-        } else {
-            // Use current data as schema source
-            ShapesGraphSource::CurrentData
-        };
-
-        // Perform SHACL validation
-        let validation_report = ctx
+        let mut loading = ctx
             .rudof
-            .validate_shacl(Some(&shacl_validation_mode), Some(&shapes_graph_source))?;
+            .load_data()
+            .with_data(&self.args.data)
+            .with_data_format(&data_format)
+            .with_reader_mode(&reader_mode);
+        if let Some(base) = self.args.base_data.as_deref() {
+            loading = loading.with_base(base);
+        }
+        if let Some(endpoint) = self.args.endpoint.as_deref() {
+            loading = loading.with_endpoint(endpoint);
+        }
+        loading.execute()?;
 
-        // Write the validation report to output
-        self.write_validation_report(&mut ctx.writer, &result_format, validation_report, &sort_by)?;
+        let mut loading_schema = ctx
+            .rudof
+            .load_shacl_shapes()
+            .with_shacl_schema_format(&shacl_schema_format)
+            .with_reader_mode(&reader_mode);
+        if let Some(shacl_schema) = &self.args.shapes {
+            loading_schema = loading_schema.with_shacl_schema(shacl_schema);
+        }
+        if let Some(base) = self.args.base_shapes.as_deref() {
+            loading_schema = loading_schema.with_base(base);
+        }
+        loading_schema.execute()?;
+
+        ctx.rudof
+            .validate_shacl()
+            .with_shacl_validation_mode(&shacl_validation_mode)
+            .execute()?;
+
+        ctx.rudof
+            .serialize_shacl_validation_results(&mut ctx.writer)
+            .with_shacl_validation_sort_order_mode(&sort_order)
+            .with_result_shacl_validation_format(&result_format)
+            .execute()?;
 
         Ok(())
     }

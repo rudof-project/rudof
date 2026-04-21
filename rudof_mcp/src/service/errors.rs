@@ -18,7 +18,7 @@ pub enum ErrorKind {
     ResourceNotFound,
 
     /// The request parameters were invalid or malformed.
-    InvalidRequest,
+    InvalidParams,
 
     /// An internal server error occurred.
     Internal,
@@ -38,18 +38,12 @@ pub fn internal_error(message: &'static str, cause: impl Into<String>, context: 
     mk_error(ErrorKind::Internal, message, Some(cause.into()), context)
 }
 
-/// Create an invalid request error response.
+/// Create an invalid params error response.
 ///
-/// Use this when client-provided parameters are invalid, such as
-/// unknown formats, malformed IRIs, or missing required fields.
-///
-/// # Arguments
-///
-/// * `message` - A brief, user-facing error description
-/// * `cause` - Specific details about what was invalid
-/// * `context` - Optional JSON object with debugging context
-pub fn invalid_request_error(message: &'static str, cause: impl Into<String>, context: Option<Value>) -> McpError {
-    mk_error(ErrorKind::InvalidRequest, message, Some(cause.into()), context)
+/// Use this when a specific request parameter value is invalid,
+/// malformed, or unsupported.
+pub fn invalid_params_error(message: &'static str, cause: impl Into<String>, context: Option<Value>) -> McpError {
+    mk_error(ErrorKind::InvalidParams, message, Some(cause.into()), context)
 }
 
 /// Create a resource not found error response.
@@ -89,13 +83,23 @@ fn mk_error(kind: ErrorKind, message: &'static str, cause: Option<String>, conte
         map.insert("cause".to_string(), json!(c));
     }
 
-    tracing::error!(?message, ?map, "MCP error occurred");
+    match kind {
+        ErrorKind::Internal => {
+            tracing::error!(?message, ?map, "MCP internal error occurred");
+        },
+        ErrorKind::InvalidParams => {
+            tracing::warn!(?message, ?map, "MCP client request error occurred");
+        },
+        ErrorKind::ResourceNotFound => {
+            tracing::warn!(?message, ?map, "MCP resource not found");
+        },
+    }
 
     let value = Some(Value::Object(map));
 
     match kind {
         ErrorKind::ResourceNotFound => McpError::resource_not_found(message, value),
-        ErrorKind::InvalidRequest => McpError::invalid_request(message, value),
+        ErrorKind::InvalidParams => McpError::invalid_params(message, value),
         ErrorKind::Internal => McpError::internal_error(message, value),
     }
 }

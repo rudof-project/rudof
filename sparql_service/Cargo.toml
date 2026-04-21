@@ -1,6 +1,6 @@
 [package]
 name = "sparql_service"
-version = "0.2.6"
+version = "0.2.9"
 authors.workspace = true
 description.workspace = true
 edition.workspace = true
@@ -9,22 +9,26 @@ documentation = "https://docs.rs/sparql_service"
 homepage.workspace = true
 repository.workspace = true
 
+[features]
+default = ["sparql"]
+sparql = ["dep:oxigraph", "dep:sparesults", "rudof_rdf/sparql"]
+
 [dependencies]
 colored.workspace = true
 const_format = "0.2"
 iri_s.workspace = true
 itertools.workspace = true
 mie.workspace = true
-oxigraph = { workspace = true, default-features = false }
+oxigraph = { workspace = true, default-features = false, optional = true }
 oxrdf = { workspace = true, features = ["oxsdatatypes", "rdf-12"] }
 oxrdfio = { workspace = true, features = ["rdf-12"] }
 oxsdatatypes.workspace = true
 prefixmap.workspace = true
-rudof_rdf.workspace = true
+rudof_rdf = { workspace = true, default-features = false }
 rust_decimal = "1.38"
 serde.workspace = true
 serde_json.workspace = true
-sparesults.workspace = true
+sparesults = { workspace = true, optional = true }
 thiserror.workspace = true
 toml.workspace = true
 tracing.workspace = true

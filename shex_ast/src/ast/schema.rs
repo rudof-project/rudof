@@ -197,8 +197,12 @@ impl Schema {
         Ok(schema)
     }
 
-    pub fn from_reader<R: io::Read>(rdr: R) -> Result<Schema, SchemaJsonError> {
-        let schema = serde_json::from_reader::<R, Schema>(rdr)
+    pub fn from_reader<R: io::Read>(mut rdr: R) -> Result<Schema, SchemaJsonError> {
+        let mut schema_str = String::new();
+        rdr.read_to_string(&mut schema_str)
+            .map_err(|e| SchemaJsonError::JsonErrorFromReader { error: e.to_string() })?;
+
+        let schema = serde_json::from_str::<Schema>(&schema_str)
             .map_err(|e| SchemaJsonError::JsonErrorFromReader { error: e.to_string() })?;
         Ok(schema)
     }

@@ -1,0 +1,125 @@
+use crate::constraints::NativeValidator;
+use crate::constraints::Validator;
+use crate::constraints::constraint_error::ConstraintError;
+use crate::helpers::constraint::validate_with;
+use crate::iteration_strategy::ValueNodeIteration;
+use crate::shacl_engine::Engine;
+use crate::validation_report::result::ValidationResult;
+use crate::value_nodes::ValueNodes;
+use rudof_rdf::rdf_core::{
+    NeighsRDF, SHACLPath,
+    query::QueryRDF,
+    term::literal::{ConcreteLiteral, Literal as _},
+};
+use shacl_ir::compiled::component_ir::ComponentIR;
+use shacl_ir::compiled::shape::ShapeIR;
+use shacl_ir::components::Datatype;
+use shacl_ir::schema_ir::SchemaIR;
+use std::fmt::Debug;
+use tracing::trace;
+
+#[cfg(feature = "sparql")]
+use {crate::constraints::SparqlValidator, crate::shacl_engine::sparql::SparqlEngine};
+
+impl<R: NeighsRDF + Debug> Validator<R> for Datatype {
+    fn validate(
+        &self,
+        component: &ComponentIR,
+        shape: &ShapeIR,
+        _: &R,
+        _: &mut dyn Engine<R>,
+        value_nodes: &ValueNodes<R>,
+        _source_shape: Option<&ShapeIR>,
+        maybe_path: Option<SHACLPath>,
+        shapes_graph: &SchemaIR,
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+        let check = |value_node: &R::Term| {
+            trace!("sh:datatype: Checking {value_node} as datatype {}", self.datatype());
+            if let Ok(literal) = R::term_as_literal(value_node) {
+                match TryInto::<ConcreteLiteral>::try_into(literal.clone()) {
+                    Ok(ConcreteLiteral::WrongDatatypeLiteral {
+                        lexical_form,
+                        datatype,
+                        error,
+                    }) => {
+                        trace!(
+                            "Wrong datatype for value node: {value_node}. Expected datatype: {datatype}, found: {lexical_form}. Error: {error}"
+                        );
+                        true
+                    },
+                    Ok(_slit) => literal.datatype().get_iri().unwrap().as_str() != self.datatype().as_str(),
+                    Err(_) => {
+                        trace!("Failed to convert literal to ConcreteLiteral: {literal}");
+                        true
+                    },
+                }
+            } else {
+                true
+            }
+        };
+
+        let message = format!(
+            "Expected datatype: {}",
+            shapes_graph.prefix_map().qualify(self.datatype())
+        );
+        validate_with(
+            component,
+            shape,
+            value_nodes,
+            ValueNodeIteration,
+            check,
+            &message,
+            maybe_path,
+        )
+    }
+}
+
+impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Datatype {
+    fn validate_native(
+        &self,
+        component: &ComponentIR,
+        shape: &ShapeIR,
+        store: &S,
+        engine: &mut dyn Engine<S>,
+        value_nodes: &ValueNodes<S>,
+        source_shape: Option<&ShapeIR>,
+        maybe_path: Option<SHACLPath>,
+        shapes_graph: &SchemaIR,
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+        self.validate(
+            component,
+            shape,
+            store,
+            engine,
+            value_nodes,
+            source_shape,
+            maybe_path,
+            shapes_graph,
+        )
+    }
+}
+
+#[cfg(feature = "sparql")]
+impl<S: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<S> for Datatype {
+    fn validate_sparql(
+        &self,
+        component: &ComponentIR,
+        shape: &ShapeIR,
+        store: &S,
+        value_nodes: &ValueNodes<S>,
+        source_shape: Option<&ShapeIR>,
+        maybe_path: Option<SHACLPath>,
+        shapes_graph: &SchemaIR,
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+        self.validate(
+            component,
+            shape,
+            store,
+            &mut SparqlEngine::new(),
+            value_nodes,
+            source_shape,
+            maybe_path,
+            shapes_graph,
+        )
+    }
+}

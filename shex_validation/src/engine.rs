@@ -17,7 +17,9 @@ use shex_ast::Expr;
 use shex_ast::Node;
 use shex_ast::Pred;
 use shex_ast::ShapeLabelIdx;
+use shex_ast::ir::preds::Preds;
 use shex_ast::ir::schema_ir::SchemaIR;
+use shex_ast::ir::semantic_action_context::SemanticActionContext;
 use shex_ast::ir::shape::Shape;
 use shex_ast::ir::shape_expr::ShapeExpr;
 use std::collections::HashMap;
@@ -30,6 +32,7 @@ type Result<T> = std::result::Result<T, ValidatorError>;
 type Atom = atom::Atom<(Node, ShapeLabelIdx)>;
 type NegAtom = (Node, ShapeLabelIdx);
 type PosAtom = (Node, ShapeLabelIdx);
+type Neighs = (Vec<(Pred, Node)>, Vec<Pred>);
 type ValidationResult = Either<Vec<ValidatorError>, Vec<Reason>>;
 type Typing = HashSet<(Node, ShapeLabelIdx)>;
 
@@ -196,6 +199,11 @@ impl Engine {
         }
     }
 
+    /// Returns the set of pairs `(node, shape_idx)` that are dependencies of `node@idx`,
+    /// i.e. all pairs `(node1, idx1)` such that:
+    /// - `node1@idx1` is a direct reference in the shape expression of `idx`, or
+    /// - there is a triple constraint `(pred, ref)` in the shape expression of `idx` and
+    ///   the neighbours of `node` are `(pred, node1)`
     pub(crate) fn dep<R>(
         &self,
         node: &Node,
@@ -215,12 +223,12 @@ impl Engine {
                 dep.insert((node.clone(), *idx));
             }
 
-            // Search all pairs (node1, idx1) in the shape expr referenced by idx such that there is a triple constraint (pred, ref)
-            // and the neighbours of node are (pred, node1)
+            // Search all pairs `(node1, idx1)` in the shape expr referenced by `idx` such that there is a triple constraint `(pred, ref)`
+            // and the neighbours of `node` are `(pred, node1)`
             let references = se.references(schema);
             // trace!("References in shape expr: {:?}", references);
             let preds = references.keys().cloned().collect::<Vec<_>>();
-            let neighs = self.neighs(node, preds, rdf)?;
+            let (neighs, _) = self.neighs(node, preds, rdf)?;
             for (pred, neigh_node) in neighs {
                 if let Some(idx_list) = references.get(&pred) {
                     for idx in idx_list {
@@ -253,7 +261,7 @@ impl Engine {
     {
         // Implements algorithm presented in page 14 of this paper:
         // https://labra.weso.es/publication/2017_semantics-validation-shapes-schemas/
-        debug!(
+        trace!(
             "Proving {node}@{label} with hyp: [{}]",
             hyp.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
         );
@@ -504,9 +512,11 @@ impl Engine {
                 }
             },
             ShapeExpr::NodeConstraint(nc) => {
-                match nc.cond().matches(node) {
+                // TODO: In the case of a node constraint...is the context only the subject?
+                let ctx = SemanticActionContext::subject(node);
+                match nc.cond().matches(node, &ctx) {
                     Ok(_pending) => {
-                        // We ignore pending nodes here, because node constraints are not expected to generate pending nodes
+                        // We ignore pending nodes here, as node constraints are not expected to generate pending nodes
                         pass(Reason::NodeConstraint {
                             node: node.clone(),
                             nc: nc.clone(),
@@ -566,9 +576,19 @@ impl Engine {
     where
         R: QueryRDF + NeighsRDF,
     {
-        debug!("check_node_shape: node = {node}, shape = {idx} [No extends]");
-        let values = self.neighs(node, shape.preds(), rdf)?;
-        check_expr_neigh(shape.triple_expr(), &values, node, shape, idx, typing)
+        trace!("check_node_shape: node = {node}, shape = {idx} [No extends]");
+        let (values, reminder) = self.neighs(node, shape.preds(), rdf)?;
+        let values_ctx = values
+            .iter()
+            .map(|(p, v)| (p.clone(), v.clone(), SemanticActionContext::triple(node, p, v)))
+            .collect::<Vec<_>>();
+        if shape.is_closed() && !reminder.is_empty() {
+            return fail(ValidatorError::ClosedShapeWithRemainderPreds {
+                remainder: Preds::new(reminder),
+                declared: Preds::new(shape.preds().into_iter().collect()),
+            });
+        }
+        check_expr_neigh(shape.triple_expr(), &values_ctx, node, shape, idx, typing)
     }
 
     pub(crate) fn check_node_shape_extends<R>(
@@ -583,13 +603,19 @@ impl Engine {
     where
         R: NeighsRDF + QueryRDF,
     {
-        debug!("check_node_shape_extends: node={node}, shape={idx}");
+        trace!("check_node_shape_extends: node={node}, shape={idx}");
         let preds_extends = Vec::from_iter(schema.get_preds_extends(idx));
         trace!(
             "Predicates in this shape with extends: [{}]",
             preds_extends.iter().map(|p| p.to_string()).join(", ")
         );
-        let values = self.neighs(node, preds_extends, rdf)?;
+        let (values, reminder) = self.neighs(node, preds_extends, rdf)?;
+        if shape.is_closed() && !reminder.is_empty() {
+            return fail(ValidatorError::ClosedShapeWithRemainderPreds {
+                remainder: Preds::new(reminder),
+                declared: Preds::new(shape.preds().into_iter().collect()),
+            });
+        }
         trace!(
             "Neighs of {node} [{}]",
             values.iter().map(|(p, v)| format!("{p} {v}")).join(", ")
@@ -606,31 +632,35 @@ impl Engine {
                 ))
                 .join("| ")
         );
+        let values_ctx = values
+            .iter()
+            .map(|(p, v)| (p.clone(), v.clone(), SemanticActionContext::triple(node, p, v)))
+            .collect::<Vec<_>>();
 
-        let parts_iter = crate::partitions_iter(&values, &triple_exprs);
+        let parts_iter = crate::partitions_iter(&values_ctx, &triple_exprs);
         for (npart, partition) in parts_iter.enumerate() {
             debug!("Partition {npart}: {}", show_partition(&partition));
             let mut ok_partition = true;
             for (maybe_label, rbes, neighs_subset) in partition.iter() {
-                debug!(
+                /*debug!(
                     " Part {npart}| Trying component: {}, neighs [{}] ",
                     maybe_label.map(|l| l.to_string()).unwrap_or("[]".to_string()),
                     neighs_subset.iter().map(|(p, v)| format!("{p} {v}")).join(", ")
-                );
+                );*/
                 let result = check_exprs_neigh(rbes, neighs_subset, node, shape, idx, typing)?;
                 if result.is_right() {
                     // TODO: Accumulate reasons from each triple expr
                     debug!(
                         " Part {npart}| Success component {}: neighs {}",
                         maybe_label.map(|l| l.to_string()).unwrap_or("[]".to_string()),
-                        neighs_subset.iter().map(|(p, v)| format!("{p} {v}")).join(", ")
+                        neighs_subset.iter().map(|(p, v, _ctx)| format!("{p} {v}")).join(", ")
                     );
                 } else {
                     ok_partition = false;
                     debug!(
                         " Part {npart}| Failed component {}: neighs {}",
                         maybe_label.map(|l| l.to_string()).unwrap_or("[]".to_string()),
-                        neighs_subset.iter().map(|(p, v)| format!("{p} {v}")).join(", ")
+                        neighs_subset.iter().map(|(p, v, _ctx)| format!("{p} {v}")).join(", ")
                     );
                     break;
                 }
@@ -680,14 +710,14 @@ impl Engine {
     /// Returns a tuple (values, remainder) where:
     /// - values is a list of pairs (pred, obj) where obj is an object of the node for the given pred
     /// - remainder is a list of predicates for which there are no objects
-    pub(crate) fn neighs<S>(&self, node: &Node, preds: Vec<Pred>, rdf: &S) -> Result<Vec<(Pred, Node)>>
+    pub(crate) fn neighs<S>(&self, node: &Node, preds: Vec<Pred>, rdf: &S) -> Result<Neighs>
     where
         S: QueryRDF + NeighsRDF,
     {
         let node = self.get_rdf_node(node, rdf);
         let list: Vec<_> = preds.iter().map(|pred| pred.iri().clone().into()).collect();
         if let Ok(subject) = S::term_as_subject(&node) {
-            let outgoing_arcs = rdf
+            let (outgoing_arcs, reminder) = rdf
                 .outgoing_arcs_from_list(&subject, &list)
                 .map_err(|e| self.cnv_err::<S>(e))?;
             let mut result = Vec::new();
@@ -698,9 +728,14 @@ impl Engine {
                     result.push((iri.clone(), object))
                 }
             }
-            Ok(result)
+            let mut reminder_preds = Vec::new();
+            for r in reminder {
+                let iri_r = self.cnv_iri::<S>(r.clone());
+                reminder_preds.push(iri_r);
+            }
+            Ok((result, reminder_preds))
         } else {
-            Ok(Vec::new())
+            Ok((Vec::new(), Vec::new()))
         }
     }
 
@@ -746,41 +781,9 @@ fn fail(err: ValidatorError) -> Result<ValidationResult> {
     Ok(Either::Left(vec![err]))
 }
 
-fn show_result(
-    result: &Either<Vec<ValidatorError>, Vec<Reason>>,
-    nodes_prefixmap: &PrefixMap,
-    schema: &SchemaIR,
-    width: usize,
-) -> Result<String> {
-    match result {
-        Either::Left(errors) => {
-            let es: Vec<Result<String>> = errors
-                .iter()
-                .map(|e| {
-                    e.show_qualified(nodes_prefixmap, schema)
-                        .map_err(ValidatorError::PrefixMapError)
-                })
-                .collect();
-            let vs: Vec<String> = es.into_iter().collect::<Result<Vec<_>>>()?;
-            Ok(vs.join(", "))
-        },
-        Either::Right(reasons) => {
-            let rs: Vec<Result<String>> = reasons
-                .iter()
-                .map(|r| {
-                    r.show_qualified(nodes_prefixmap, schema, width)
-                        .map_err(ValidatorError::PrefixMapError)
-                })
-                .collect();
-            let vs: Vec<String> = rs.into_iter().collect::<Result<Vec<_>>>()?;
-            Ok(vs.join(", "))
-        },
-    }
-}
-
 fn check_exprs_neigh(
     exprs: &[Expr],
-    neighs: &[(Pred, Node)],
+    neighs: &[(Pred, Node, SemanticActionContext)],
     node: &Node,
     shape: &Shape,
     idx: &ShapeLabelIdx,
@@ -806,23 +809,35 @@ fn check_exprs_neigh(
 
 fn check_expr_neigh(
     expr: &Expr,
-    neighs: &[(Pred, Node)],
+    neighs: &[(Pred, Node, SemanticActionContext)],
     node: &Node,
     shape: &Shape,
     idx: &ShapeLabelIdx,
     typing: &Typing,
 ) -> Result<ValidationResult> {
-    debug!(
+    trace!(
         "Checking expr {} with neighs: [{}]",
         expr,
-        neighs.iter().map(|(p, o)| format!("{p} {o}")).join(", ")
+        neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", ")
     );
     let result_iter = expr.matches(neighs.to_vec())?;
+    let mut result_iter = result_iter.peekable();
+    if result_iter.peek().is_none() {
+        debug!(
+            "expr {expr} produced no candidates for neighs: [{}]",
+            neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", ")
+        );
+        return fail(ValidatorError::NoMatchesFound {
+            node: Box::new(node.clone()),
+            shape: Box::new(shape.clone()),
+            idx: *idx,
+        });
+    }
     let mut errors = Vec::new();
     for result in result_iter {
-        debug!(
+        trace!(
             "Result of {expr} with neighs: {}: {:?}",
-            neighs.iter().map(|(p, o)| format!("{p} {o}")).join(", "),
+            neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", "),
             result
         );
         match result {
@@ -865,9 +880,11 @@ fn check_expr_neigh(
             },
         }
     }
+    // If we reach this point, all results have been processed and all of them have pending values that are not in typing, so the shape failed
+    // We can collect all the failed pending values from all the results and return them as errors
     debug!(
-        "expr failed {expr} with neighs: [{}], errors: [{}]",
-        neighs.iter().map(|(p, o)| format!("{p} {o}")).join(", "),
+        "expr failed {expr} with neighs: [{}]. No matching found. Errors: [{}]",
+        neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", "),
         errors.iter().map(|e| format!("{e}")).join(", ")
     );
     fail(ValidatorError::ShapeFailed {
@@ -878,15 +895,51 @@ fn check_expr_neigh(
     })
 }
 
-type PartitionInfo = (Option<ShapeLabelIdx>, Vec<Expr>, Vec<(Pred, Node)>);
+type PartitionInfo = (
+    Option<ShapeLabelIdx>,
+    Vec<Expr>,
+    Vec<(Pred, Node, SemanticActionContext)>,
+);
 
 fn show_partition(partition: &[PartitionInfo]) -> String {
     partition
         .iter()
         .map(|(maybe_label, _rbes, neighs_subset)| {
             let label_str = maybe_label.map(|l| l.to_string()).unwrap_or("[]".to_string());
-            let neighs_str = neighs_subset.iter().map(|(p, o)| format!("{p} {o}")).join(", ");
+            let neighs_str = neighs_subset.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", ");
             format!("{} -> [{}]", label_str, neighs_str)
         })
         .join(" | ")
+}
+
+fn show_result(
+    result: &Either<Vec<ValidatorError>, Vec<Reason>>,
+    nodes_prefixmap: &PrefixMap,
+    schema: &SchemaIR,
+    width: usize,
+) -> Result<String> {
+    match result {
+        Either::Left(errors) => {
+            let es: Vec<Result<String>> = errors
+                .iter()
+                .map(|e| {
+                    e.show_qualified(nodes_prefixmap, schema)
+                        .map_err(ValidatorError::PrefixMapError)
+                })
+                .collect();
+            let vs: Vec<String> = es.into_iter().collect::<Result<Vec<_>>>()?;
+            Ok(vs.join(", "))
+        },
+        Either::Right(reasons) => {
+            let rs: Vec<Result<String>> = reasons
+                .iter()
+                .map(|r| {
+                    r.show_qualified(nodes_prefixmap, schema, width)
+                        .map_err(ValidatorError::PrefixMapError)
+                })
+                .collect();
+            let vs: Vec<String> = rs.into_iter().collect::<Result<Vec<_>>>()?;
+            Ok(vs.join(", "))
+        },
+    }
 }

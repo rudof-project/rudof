@@ -39,31 +39,70 @@ impl PropertyGraph {
         }
     }
 
-    // TODO: Review merge behavior for name conflicts
+    /// Merges another PropertyGraph into self.
+    /// Nodes are merged by name. New nodes get new IDs.
+    /// Edges are remapped to the new node IDs to avoid conflicts.
     pub fn merge(&mut self, other: &PropertyGraph) {
-        for (node_id, node) in other.nodes.iter() {
-            self.nodes.insert(node_id.clone(), node.clone());
+        // Map old node IDs in `other` to new IDs in `self`
+        let mut id_map: std::collections::HashMap<NodeId, NodeId> = HashMap::new();
+
+        // Merge nodes
+        for (name, other_id) in &other.node_names {
+            let other_node = &other.nodes[other_id];
+
+            if let Some(existing_id) = self.node_names.get(name) {
+                // Node with this name exists: merge content
+                if let Some(existing_node) = self.nodes.get_mut(existing_id) {
+                    existing_node.merge(other_node);
+                }
+                id_map.insert(other_id.clone(), existing_id.clone());
+            } else {
+                // New node: assign a new ID
+                let new_id = NodeId::new(self.node_id_counter);
+                self.node_id_counter += 1;
+
+                // Insert new node
+                self.node_names.insert(name.clone(), new_id.clone());
+                self.nodes
+                    .insert(new_id.clone(), other_node.clone().with_id(new_id.clone()));
+
+                id_map.insert(other_id.clone(), new_id);
+            }
         }
-        for (edge_id, edge) in other.edges.iter() {
-            self.edges.insert(edge_id.clone(), edge.clone());
-        }
-        for (name, node_id) in other.node_names.iter() {
-            self.node_names.insert(name.clone(), node_id.clone());
-        }
-        for (name, edge_id) in other.edge_names.iter() {
-            self.edge_names.insert(name.clone(), edge_id.clone());
+
+        // Merge edges
+        for (other_edge_id, other_edge) in &other.edges {
+            // Remap source/target IDs
+            let id_map = id_map.clone();
+            let new_source = id_map
+                .get(&other_edge.source)
+                .expect("Source node must exist in merged graph");
+            let new_target = id_map
+                .get(&other_edge.target)
+                .expect("Target node must exist in merged graph");
+
+            // Assign new edge ID
+            let new_edge_id = EdgeId::new(self.edge_id_counter);
+            self.edge_id_counter += 1;
+
+            let new_edge = Edge {
+                id: new_edge_id.clone(),
+                source: new_source.clone(),
+                target: new_target.clone(),
+                labels: other_edge.labels.clone(),
+                properties: other_edge.properties.clone(),
+            };
+
+            self.edges.insert(new_edge_id.clone(), new_edge);
+
+            // Insert into edge_names if a name exists
+            for (name, edge_id) in &other.edge_names {
+                if *edge_id == *other_edge_id {
+                    self.edge_names.insert(name.clone(), new_edge_id.clone());
+                }
+            }
         }
     }
-
-    /* TODO: It gives an error because PgBuilder is not in scope
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, PgsError> {
-        let content =
-            std::fs::read_to_string(&path).map_err(|e| PgsError::TypeMapFileReadError {
-                path: path.as_ref().to_str().unwrap().to_string(),
-                error: e.to_string(),
-            })?;
-        PgBuilder::new().parse_pg(content.as_str())
-    }*/
 
     pub fn get_node_by_label(&self, label: &str) -> Result<&Node, PgsError> {
         let id = self.node_names.get(label).ok_or(PgsError::MissingNodeLabel {

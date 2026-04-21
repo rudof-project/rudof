@@ -10,15 +10,12 @@
 //! ## MCP Capabilities
 //!
 //! This server advertises the following MCP capabilities:
-//!
-//! | Capability    | Feature                                              |
-//! |---------------|------------------------------------------------------|
-//! | `tools`       | 10+ tools for validation, querying, and data ops     |
-//! | `prompts`     | Guided templates for common validation workflows     |
-//! | `resources`   | Access to current RDF data in multiple formats       |
-//! | `logging`     | Real-time log notifications with level filtering     |
-//! | `completions` | Argument completions for tools and prompts           |
-//! | `tasks`       | Async task support for long-running operations       |
+//! - `tools`: Access to Rudof's tools for validation, querying, and RDF data operations.
+//! - `prompts`: Guided templates for common validation workflows.
+//! - `resources`: Access to up-to-date RDF data and supported formats for operations.
+//! - `logging`: Real-time log notifications with level filtering.
+//! - `completions`: Argument completions for tools and prompts.
+//! - `pagination`: Support for paginated resource, prompt and tool listings with opaque cursors.
 //!
 //! ## Docker State Persistence
 //!
@@ -30,11 +27,11 @@ mod errors;
 mod handlers;
 mod logging;
 mod mcp_service;
+mod pagination;
 mod prompts;
 mod resource_templates;
 mod resources;
 mod state;
-mod tasks;
 mod tools;
 
 pub use mcp_service::RudofMcpService;

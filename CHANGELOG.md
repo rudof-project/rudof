@@ -3,9 +3,69 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ## [Unreleased]
 ### Added
+- `rudof_generate`: Added generation-time conformance metrics in `*.stats.json` with:
+  - `triple_validity_percentage`
+  - `shape_translation_loss_percentage`
+- `rudof_generate`: Added conversion coverage accounting for ShEx/SHACL to unified constraints (`original_schema_constraints` and `represented_constraints_in_unified`).
+- `rudof_generate`: Added new runnable conformance scenarios under `rudof_generate/examples/conformance_cases`.
+### Fixed
+### Changed
+- `rudof_generate`: Updated README statistics example and coverage notes to document the new conformance metrics output.
+### Removed
+
+## v0.2.12
+
+### Added
+
+- Support to materialize #574 which now can be used in combination with the Map extension in ShEx to transform RDF data into other RDF data using source and target shapes.
+
 ### Fixed
 ### Changed
 ### Removed
+
+
+## v0.2.11
+
+### Fixed
+
+- Solved issue #582 with an error in RBE
+- Solved issue #583 about a regression in CLI accepting shapemap as optional parameter
+
+## v0.2.10
+
+- This release was not done because there was a change quickfix in the middle
+
+## v0.2.9
+
+### Added
+- Added documentation for the `rudof_lib` crate (#455)
+- Added documentation for the `python` crate (#430)
+- Added option to visualize ShEx internal representation
+- Added option to visualize ShEx as JSON and JSONLD (the same as ShExJ)
+- First implementation of semantic actions with two extensions: Test (https://shex.io/extensions/Test/) and Map (http://shex.io/extensions/Map), issue #570
+- Integrated SHEx testsuite in CI #563
+
+### Fixed
+- Fixed issue #577: MCP server failed to initialize in VS Code due to a strict initialization sequence
+- Fixed issue #530: Reviewed and refactored Python examples
+- Fixed issue #548: Corrected `NumericLiteral` equality to compare numeric values instead of variant types (resolves ShEx test suite failures)
+- Fixed issue #550: Resolved ShEx lexer bug where floats were tokenized as integers, breaking parsing
+- Fixed issue #575: Where inheritance between shapes that had recursion were not taken into account
+- Fixed issue #571 allowing to pass a context with subject, predicate and object in semantic actions
+
+### Changed
+- Refactored `rudof_lib` crate (#455); updated Python and `rudof_mcp` crates to use the new API
+- Updated `pyrudof` Jupyter notebook tutorials to align with the new API (#577)
+
+## v0.2.8
+
+### Added
+- Support for more than one value in ValueShape in DCTAP
+- Added support to visualizing more comples Shapes wihch can have references in ShEx and DCTAP
+
+### Fixed
+- Small error in DCTAP with prefix maps in value shapes 
+- Removed 2 unwraps in convert that panicked when the formats to convert to ShEx were wrong
 
 ## v0.2.7 
 

@@ -145,7 +145,11 @@ pub fn save_state(state: &PersistedState) -> io::Result<()> {
     save_state_to_path(state, &state_path)
 }
 
-/// Save state to a specific path.
+/// Save state to a specific path using a write-then-rename pattern for atomicity.
+///
+/// On POSIX systems, `rename()` is atomic. On Windows it is best-effort but still
+/// safer than truncating the target file in-place, because the original file is
+/// preserved until the rename succeeds.
 pub fn save_state_to_path(state: &PersistedState, path: &Path) -> io::Result<()> {
     // Create parent directories if needed
     if let Some(parent) = path.parent()
@@ -154,9 +158,16 @@ pub fn save_state_to_path(state: &PersistedState, path: &Path) -> io::Result<()>
         fs::create_dir_all(parent)?;
     }
 
-    let file = fs::File::create(path)?;
-    let writer = BufWriter::new(file);
-    serde_json::to_writer_pretty(writer, state).map_err(io::Error::other)?;
+    // Write to a temporary file in the same directory so the rename is same-filesystem
+    let tmp_path = path.with_extension("tmp");
+    {
+        let file = fs::File::create(&tmp_path)?;
+        let writer = BufWriter::new(file);
+        serde_json::to_writer_pretty(writer, state).map_err(io::Error::other)?;
+    }
+
+    // Atomically replace the target (POSIX atomic; Windows best-effort)
+    fs::rename(&tmp_path, path)?;
 
     info!("Saved state to {:?} (triples: {:?})", path, state.triple_count);
     Ok(())

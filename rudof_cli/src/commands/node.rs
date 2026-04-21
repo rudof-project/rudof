@@ -1,7 +1,6 @@
 use crate::cli::parser::NodeArgs;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::Result;
-use rudof_lib::{ReaderMode, rdf_reader_mode::RDFReaderMode};
 
 /// Implementation of the `node` command.
 ///
@@ -26,28 +25,36 @@ impl Command for NodeCommand {
 
     /// Executes the Node command logic.
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
-        // Convert CLI types to library types
-        let reader_mode: RDFReaderMode = (&self.args.reader_mode).into();
-        let reader_mode: ReaderMode = reader_mode.into();
+        let data_format = self.args.data_format.into();
+        let reader_mode = self.args.reader_mode.into();
+        let show_node_mode = self.args.show_node_mode.into();
 
-        // Load RDF data into rudof
-        ctx.rudof.load_data(
-            &self.args.data,
-            &(&self.args.data_format).into(),
-            &self.args.base,
-            &None,
-            &reader_mode,
-            false,
-        )?;
+        let mut loading = ctx
+            .rudof
+            .load_data()
+            .with_data(&self.args.data)
+            .with_data_format(&data_format)
+            .with_reader_mode(&reader_mode);
+        if let Some(base) = self.args.base.as_deref() {
+            loading = loading.with_base(base);
+        }
+        if let Some(endpoint) = self.args.endpoint.as_deref() {
+            loading = loading.with_endpoint(endpoint);
+        }
+        loading.execute()?;
 
-        // Get node info and write to output
-        ctx.rudof.show_node_info(
-            &self.args.node,
-            &self.args.predicates,
-            &self.args.show_node_mode.to_string(),
-            self.args.depth,
-            &mut ctx.writer,
-        )?;
+        let mut showing_node_info = ctx
+            .rudof
+            .show_node_info(self.args.node.as_ref(), &mut ctx.writer)
+            .with_show_node_mode(&show_node_mode)
+            .with_depth(self.args.depth);
+        if let Some(predicates) = self.args.predicates.as_deref() {
+            showing_node_info = showing_node_info.with_predicates(predicates);
+        }
+        if let Some(show_hyperlinks) = self.args.show_hyperlinks {
+            showing_node_info = showing_node_info.with_show_hyperlinks(show_hyperlinks);
+        }
+        showing_node_info.execute()?;
 
         Ok(())
     }

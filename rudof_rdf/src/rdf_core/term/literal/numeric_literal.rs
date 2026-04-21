@@ -15,7 +15,7 @@ use std::hash::Hash;
 /// This enum supports all XSD numeric types and provides type-safe
 /// conversions between them. Uses `#[serde(untagged)]` for flexible
 /// deserialization from JSON/other formats.
-#[derive(Debug, PartialEq, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(untagged)]
 pub enum NumericLiteral {
     Integer(i128),
@@ -372,13 +372,67 @@ impl NumericLiteral {
 /// the exact variant type + value, not normalized decimal values.
 impl Eq for NumericLiteral {}
 
-/// Hash implementation that hashes both the variant type and the value.
+/// PartialEq that compares numeric value when possible (canonicalizing to Decimal).
+impl PartialEq for NumericLiteral {
+    fn eq(&self, other: &Self) -> bool {
+        // If both can be represented as Decimal, compare by decimal value.
+        if let (Some(d1), Some(d2)) = (self.to_decimal(), other.to_decimal()) {
+            return d1 == d2;
+        }
+
+        // Fall back to matching exact variants for cases that cannot be normalized.
+        match (self, other) {
+            (NumericLiteral::Double(a), NumericLiteral::Double(b)) => a.to_bits() == b.to_bits(),
+            (NumericLiteral::Float(a), NumericLiteral::Float(b)) => a.to_bits() == b.to_bits(),
+            _ => {
+                // Same variant and same value
+                core::mem::discriminant(self) == core::mem::discriminant(other)
+                    && match (self, other) {
+                        (NumericLiteral::Integer(a), NumericLiteral::Integer(b)) => a == b,
+                        (NumericLiteral::Byte(a), NumericLiteral::Byte(b)) => a == b,
+                        (NumericLiteral::Short(a), NumericLiteral::Short(b)) => a == b,
+                        (NumericLiteral::NonNegativeInteger(a), NumericLiteral::NonNegativeInteger(b)) => a == b,
+                        (NumericLiteral::UnsignedLong(a), NumericLiteral::UnsignedLong(b)) => a == b,
+                        (NumericLiteral::UnsignedInt(a), NumericLiteral::UnsignedInt(b)) => a == b,
+                        (NumericLiteral::UnsignedShort(a), NumericLiteral::UnsignedShort(b)) => a == b,
+                        (NumericLiteral::UnsignedByte(a), NumericLiteral::UnsignedByte(b)) => a == b,
+                        (NumericLiteral::PositiveInteger(a), NumericLiteral::PositiveInteger(b)) => a == b,
+                        (NumericLiteral::NegativeInteger(a), NumericLiteral::NegativeInteger(b)) => a == b,
+                        (NumericLiteral::NonPositiveInteger(a), NumericLiteral::NonPositiveInteger(b)) => a == b,
+                        (NumericLiteral::Long(a), NumericLiteral::Long(b)) => a == b,
+                        (NumericLiteral::Decimal(a), NumericLiteral::Decimal(b)) => a == b,
+                        _ => false,
+                    }
+            },
+        }
+    }
+}
+
+/// Hash implementation consistent with the numeric-value-based equality above.
 impl Hash for NumericLiteral {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        // First hash the discriminant to distinguish between variants
-        core::mem::discriminant(self).hash(state);
+        // If convertible to Decimal, hash the normalized Decimal value (ignores variant)
+        if let Some(d) = self.to_decimal() {
+            // normalize to remove trailing zeros that would change string form
+            d.normalize().hash(state);
+            return;
+        }
 
-        // Then hash the actual value
+        // For floating types that couldn't be converted, hash bit representation
+        match self {
+            NumericLiteral::Double(d) => {
+                d.to_bits().hash(state);
+                return;
+            },
+            NumericLiteral::Float(f) => {
+                f.to_bits().hash(state);
+                return;
+            },
+            _ => {},
+        }
+
+        // Otherwise, hash discriminant and concrete value
+        core::mem::discriminant(self).hash(state);
         match self {
             NumericLiteral::Integer(n) => n.hash(state),
             NumericLiteral::Byte(b) => b.hash(state),
@@ -393,9 +447,7 @@ impl Hash for NumericLiteral {
             NumericLiteral::NonPositiveInteger(n) => n.hash(state),
             NumericLiteral::Long(l) => l.hash(state),
             NumericLiteral::Decimal(d) => d.hash(state),
-            // For floats, hash the bit representation to ensure consistency
-            NumericLiteral::Double(d) => d.to_bits().hash(state),
-            NumericLiteral::Float(f) => f.to_bits().hash(state),
+            _ => {},
         }
     }
 }

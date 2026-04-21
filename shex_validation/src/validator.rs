@@ -26,7 +26,7 @@ pub struct Validator {
 }
 
 impl Validator {
-    pub fn new(schema: SchemaIR, config: &ValidatorConfig) -> Result<Validator> {
+    pub fn new(schema: &SchemaIR, config: &ValidatorConfig) -> Result<Validator> {
         trace!("Creating Validator...");
         if config.check_negation_requirement.unwrap_or(true) && schema.has_neg_cycle() {
             trace!("Checking negation cycles...");
@@ -64,7 +64,7 @@ impl Validator {
             });
         }
         Ok(Validator {
-            schema,
+            schema: schema.clone(),
             config: config.clone(),
         })
     }
@@ -115,7 +115,6 @@ impl Validator {
     {
         let mut engine = Engine::new(&self.config);
         let failures = self.fill_pending(&mut engine, shapemap, rdf, schema)?;
-        trace!("Filled pending atoms: {:?}", engine.pending());
         engine.validate_pending(rdf, schema)?;
         let mut result = self.result_map(&mut engine, maybe_nodes_prefixmap)?;
         for (node, shape_label, error_msg) in failures {
@@ -146,10 +145,7 @@ impl Validator {
         let pairs = shapemap
             .node_shapes(rdf)
             .map_err(|e| ValidatorError::ShapeMapError { error: e.to_string() })?;
-        trace!(
-            "fill_pending: After filling pending atoms from QueryShapeMap: {}",
-            shapemap
-        );
+        trace!("Pending atoms from QueryShapeMap:\n{}", shapemap);
         let mut failures = Vec::new();
         for (node, label) in pairs.iter() {
             match self.get_shape_expr_label(label, schema) {

@@ -1,0 +1,16 @@
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX Map: <http://shex.io/extensions/Map/>
+PREFIX Test: <http://shex.io/extensions/Test/>
+prefix : <http://example.org/>
+
+
+:Person {
+  :name    xsd:string    %Map:{ <http://example/name> %} ;
+  :age     xsd:integer ? %Map:{ <http://example/age> %};
+  :address @:Address ? ;
+}
+
+:Address {
+  :name   xsd:string %Map:{ <http://example/address_name> %} ;
+  :city   xsd:string %Map:{ <http://example/city> %} ;
+}

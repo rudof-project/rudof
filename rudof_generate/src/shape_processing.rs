@@ -1,3 +1,4 @@
+use crate::conformance_metrics::TranslationMetrics;
 use crate::converters::{ShExToUnified, ShaclToUnified};
 use crate::unified_constraints::{UnifiedConstraint, UnifiedConstraintModel};
 use crate::{DataGeneratorError, Result};
@@ -39,6 +40,7 @@ pub struct ShapeProcessor {
     shapes: HashMap<String, ShapeInfo>,
     dependency_graph: HashMap<String, Vec<String>>,
     unified_model: Option<UnifiedConstraintModel>,
+    translation_metrics: Option<TranslationMetrics>,
     shex_converter: ShExToUnified,
     shacl_converter: ShaclToUnified,
 }
@@ -55,6 +57,7 @@ impl ShapeProcessor {
             shapes: HashMap::new(),
             dependency_graph: HashMap::new(),
             unified_model: None,
+            translation_metrics: None,
             shex_converter: ShExToUnified,
             shacl_converter: ShaclToUnified,
         }
@@ -243,15 +246,17 @@ impl ShapeProcessor {
 
     /// Load and process a ShEx schema file
     pub async fn load_shex_schema<P: AsRef<Path>>(&mut self, path: P) -> Result<()> {
-        let unified_model = self.shex_converter.convert_file(path).await?;
+        let (unified_model, translation_metrics) = self.shex_converter.convert_file(path).await?;
         self.unified_model = Some(unified_model);
+        self.translation_metrics = Some(translation_metrics);
         Ok(())
     }
 
     /// Load and process a SHACL schema file
     pub async fn load_shacl_schema<P: AsRef<Path>>(&mut self, path: P) -> Result<()> {
-        let unified_model = self.shacl_converter.convert_file(path).await?;
+        let (unified_model, translation_metrics) = self.shacl_converter.convert_file(path).await?;
         self.unified_model = Some(unified_model);
+        self.translation_metrics = Some(translation_metrics);
         Ok(())
     }
 
@@ -274,6 +279,11 @@ impl ShapeProcessor {
     /// Get the unified constraint model
     pub fn get_unified_model(&self) -> Option<&UnifiedConstraintModel> {
         self.unified_model.as_ref()
+    }
+
+    /// Get translation metrics from the latest schema conversion.
+    pub fn get_translation_metrics(&self) -> Option<&TranslationMetrics> {
+        self.translation_metrics.as_ref()
     }
 }
 

@@ -1,0 +1,34 @@
+@prefix ex: <http://example.org/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+ex:PersonShape a sh:NodeShape ;
+  sh:targetClass ex:Person ;
+  sh:property [
+    sh:path ex:name ;
+    sh:datatype xsd:string ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:path ex:age ;
+    sh:datatype xsd:integer ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:minInclusive 0 ;
+    sh:maxInclusive 130 ;
+  ] ;
+  sh:property [
+    sh:path ex:status ;
+    sh:or (
+      [ sh:datatype xsd:string ]
+      [ sh:datatype xsd:integer ]
+    ) ;
+  ] ;
+  sh:not [
+    sh:property [
+      sh:path ex:blocked ;
+      sh:minCount 1 ;
+    ]
+  ] .
