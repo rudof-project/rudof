@@ -73,18 +73,6 @@ impl PrefixMap {
         self.map.get(str)
     }
 
-    /// Creates a [`PrefixMap`] from a [`HashMap`]
-    ///
-    /// Returns an error if any of the IRIs in the [`HashMap`] are invalid.
-    pub fn from_hashmap(hm: HashMap<&str, &str>) -> Result<PrefixMap, PrefixMapError> {
-        let mut pm = PrefixMap::new();
-        for (a, s) in hm.iter() {
-            let iri = IriS::from_str(s)?;
-            pm.add_prefix(a, iri)?;
-        }
-        Ok(pm)
-    }
-
     /// Merges another [`PrefixMap`] into this one.
     ///
     /// Returns an error if any of the aliases in the other [`PrefixMap`] already exist in this one.
@@ -101,6 +89,7 @@ impl PrefixMap {
     }
 }
 
+// TODO - Probably should be a good idea to move this to rudof_lib
 /// Formatting for [`PrefixMap`] outputs
 impl PrefixMap {
     /// Disable all colors when qualifying IRIs
@@ -196,21 +185,22 @@ impl PrefixMap {
     /// - `sh`
     /// - `xsd`
     pub fn basic() -> PrefixMap {
-        PrefixMap::from_hashmap(HashMap::from([
+        HashMap::from([
             ("", "https://example.org/"),
             ("dc", "https://purl.org/dc/elements/1.1/"),
             ("rdf", "https://www.w3.org/1999/02/22-rdf-syntax-ns#"),
             ("rdfs", "https://www.w3.org/2000/01/rdf-schema#"),
             ("sh", "https://www.w3.org/ns/shacl#"),
             ("xsd", "https://www.w3.org/2001/XMLSchema#"),
-        ]))
-        .unwrap()
+        ])
+            .try_into()
+            .unwrap()
     }
 
     /// Default Wikidata prefix map
     /// This source of this list is <https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Full_list_of_prefixes>
     pub fn wikidata() -> PrefixMap {
-        PrefixMap::from_hashmap(HashMap::from([
+        let pm: PrefixMap = HashMap::from([
             ("bd", "https://www.bigdata.com/rdf#"),
             ("cc", "https://creativecommons.org/ns#"),
             ("dct", "https://purl.org/dc/terms/"),
@@ -243,10 +233,12 @@ impl PrefixMap {
             ("wdtn", "https://www.wikidata.org/prop/direct-normalized/"),
             ("wdv", "https://www.wikidata.org/value/"),
             ("wikibase", "https://wikiba.se/ontology#"),
-        ]))
-        .unwrap()
-        .without_default_colors()
-        .with_hyperlink(true)
+        ])
+            .try_into()
+            .unwrap();
+        pm
+            .without_default_colors()
+            .with_hyperlink(true)
     }
 }
 
@@ -261,11 +253,10 @@ impl PrefixMap {
     /// # use prefixmap::error::PrefixMapError;
     /// # use iri_s::*;
     /// # use std::str::FromStr;
-    /// let pm = PrefixMap::from_hashmap(
-    ///   HashMap::from([
+    /// let pm: PrefixMap = HashMap::from([
     ///     ("", "https://example.org/"),
     ///     ("schema", "https://schema.org/")])
-    /// )?;
+    /// .try_into()?;
     /// let a = IriS::from_str("https://example.org/a")?;
     /// assert_eq!(pm.qualify(&a), ":a");
     ///
@@ -290,11 +281,10 @@ impl PrefixMap {
     /// # use prefixmap::error::PrefixMapError;
     /// # use iri_s::*;
     /// # use std::str::FromStr;
-    /// let pm = PrefixMap::from_hashmap(
-    ///   HashMap::from([
+    /// let pm: PrefixMap = HashMap::from([
     ///     ("", "https://example.org/"),
     ///     ("schema", "https://schema.org/")])
-    /// )?;
+    /// .try_into()?;
     /// let a = IriS::from_str("https://example.org/a")?;
     /// assert_eq!(pm.qualify_optional(&a), Some(":a".to_string()));
     ///
@@ -324,11 +314,10 @@ impl PrefixMap {
     /// # use prefixmap::error::PrefixMapError;
     /// # use iri_s::*;
     /// # use std::str::FromStr;
-    /// let pm = PrefixMap::from_hashmap(
-    ///   HashMap::from([
+    /// let pm: PrefixMap = HashMap::from([
     ///     ("", "https://example.org/"),
     ///     ("schema", "https://schema.org/")])
-    /// )?;
+    /// .try_into()?;
     /// let a = IriS::from_str("https://example.org/a")?;
     /// assert_eq!(pm.qualify_and_length(&a), (":a".to_string(), 2));
     ///
@@ -368,11 +357,10 @@ impl PrefixMap {
     /// # use prefixmap::error::PrefixMapError;
     /// # use iri_s::*;
     /// # use std::str::FromStr;
-    /// let pm = PrefixMap::from_hashmap(
-    ///   HashMap::from([
+    /// let pm: PrefixMap = HashMap::from([
     ///     ("", "https://example.org/"),
     ///     ("schema", "https://schema.org/")])
-    /// )?;
+    /// .try_into()?;
     /// let a = IriS::from_str("https://example.org/a")?;
     /// assert_eq!(pm.qualify_local(&a), Some("a".to_string()));
     ///
@@ -415,11 +403,10 @@ impl PrefixMap {
     /// # use iri_s::*;
     /// # use std::str::FromStr;
     ///
-    /// let pm: PrefixMap = PrefixMap::from_hashmap(
-    ///   HashMap::from([
+    /// let pm: PrefixMap = HashMap::from([
     ///     ("", "https://example.org/"),
     ///     ("schema", "https://schema.org/")])
-    /// )?;
+    /// .try_into()?;
     ///
     /// let a = pm.resolve(":a")?;
     /// let a_resolved = IriS::from_str("https://example.org/a")?;
@@ -458,12 +445,11 @@ impl PrefixMap {
     /// # use iri_s::*;
     /// # use std::str::FromStr;
     ///
-    /// let pm = PrefixMap::from_hashmap(
-    ///   HashMap::from([
+    /// let pm: PrefixMap = HashMap::from([
     ///     ("", "https://example.org/"),
     ///     ("schema", "https://schema.org/"),
-    ///     ("xsd", "https://www.w3.org/2001/XMLSchema#")
-    /// ]))?;
+    ///     ("xsd", "https://www.w3.org/2001/XMLSchema#")])
+    /// .try_into()?;
     ///
     /// let a = pm.resolve_prefix_local("", "a")?;
     /// let a_resolved = IriS::from_str("https://example.org/a")?;
@@ -518,5 +504,18 @@ impl Iterator for PrefixMap {
                 Some((k, v))
             },
         }
+    }
+}
+
+impl TryFrom<HashMap<&str, &str>> for PrefixMap {
+    type Error = PrefixMapError;
+
+    fn try_from(value: HashMap<&str, &str>) -> Result<Self, Self::Error> {
+        let mut pm = PrefixMap::new();
+        for (a, s) in value {
+            let iri = IriS::from_str(s)?;
+            pm.add_prefix(a, iri)?;
+        }
+        Ok(pm)
     }
 }
