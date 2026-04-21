@@ -5,6 +5,7 @@ use rudof_rdf::rdf_core::term::Object;
 use crate::error::ConstraintError;
 use crate::ir::components::Xone;
 use crate::ir::{IRComponent, IRSchema, IRShape};
+use crate::types::MessageMap;
 use crate::validator::constraints::{get_shape_from_idx, Validator};
 use crate::validator::engine::{Engine, Validate};
 use crate::validator::nodes::{FocusNodes, ValueNodes};
@@ -34,10 +35,10 @@ impl<S: NeighsRDF + Debug> Validator<S> for Xone {
                     let node_obj = S::term_as_object(node).ok();
                     let msg = format!("Shape {}: Xone constraint not satisfied for node {node}. Number of conforming shapes: {conforming_shapes}", shape.id());
                     let vr = ValidationResult::new(fnode_obj.clone(), component.clone(), shape.severity())
-                            .with_message(Some(msg))
-                            .with_path(maybe_path.cloned())
-                            .with_value(node_obj)
-                            .with_source(Some(shape.id().clone()));
+                        .with_message(MessageMap::from(msg))
+                        .with_path(maybe_path.cloned())
+                        .with_value(node_obj)
+                        .with_source(Some(shape.id().clone()));
                     validation_results.push(vr);
                 }
             }

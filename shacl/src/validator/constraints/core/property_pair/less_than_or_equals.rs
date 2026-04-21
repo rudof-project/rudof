@@ -5,6 +5,7 @@ use rudof_rdf::rdf_core::query::QueryRDF;
 use rudof_rdf::rdf_core::term::{Object, Triple};
 use crate::ir::components::LessThanOrEquals;
 use crate::ir::{IRComponent, IRSchema, IRShape};
+use crate::types::MessageMap;
 use crate::validator::constraints::{ConstraintError, NativeValidator, SparqlValidator};
 use crate::validator::engine::Engine;
 use crate::validator::report::ValidationResult;
@@ -36,7 +37,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThanOrEquals {
                             if let Some(msg) = msg {
                                 let node_obj = S::term_as_object(value).ok();
                                 let validation_result = ValidationResult::new(fnode_obj.clone(), component.clone(), shape.severity())
-                                    .with_message(Some(msg))
+                                    .with_message(MessageMap::from(msg))
                                     .with_path(maybe_path.cloned())
                                     .with_value(node_obj)
                                     .with_source(Some(shape.id().clone()));
@@ -48,7 +49,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThanOrEquals {
                 Err(e) => {
                     let msg = format!("LessThanOrEquals: Error trying to find triples for subject {subject} and predicate {}: {e}", self.iri());
                     let validation_result = ValidationResult::new(fnode_obj, component.clone(), shape.severity())
-                        .with_message(Some(msg))
+                        .with_message(MessageMap::from(msg))
                         .with_path(maybe_path.cloned())
                         .with_source(Some(shape.id().clone()));
                     validation_results.push(validation_result);

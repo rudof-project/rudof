@@ -6,6 +6,7 @@ use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use crate::ir::components::QualifiedValueShape;
 use crate::ir::{IRComponent, IRSchema, IRShape};
+use crate::types::MessageMap;
 use crate::validator::constraints::{get_shape_from_idx, ConstraintError, NativeValidator, SparqlValidator, Validator};
 use crate::validator::engine::{Engine, SparqlEngine, Validate};
 use crate::validator::error::ValidationError;
@@ -58,7 +59,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                 let component = Object::iri(ShaclVocab::sh_qualified_min_count_constraint_component());
                 let msg = format!("QualifiedValueShape: only {valid_counter} nodes conform to shape {}, which is less than minCount: {min_count}. Focus node: {fnode}", shape.id());
                 let vr = ValidationResult::new(fnode_obj.clone(), component, shape.severity())
-                    .with_message(Some(msg))
+                    .with_message(MessageMap::from(msg))
                     .with_path(maybe_path.cloned())
                     .with_source(Some(shape.id().clone()));
                 validation_results.insert(vr);
@@ -69,7 +70,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                 let msg = format!("QualifiedValueShape: {valid_counter} nodes conform to shape {}, which is grater than maxCount: {max_count}. Focus node: {fnode}", shape.id());
                 let vr = ValidationResult::new(fnode_obj, component, shape.severity())
                     .with_path(maybe_path.cloned())
-                    .with_message(Some(msg))
+                    .with_message(MessageMap::from(msg))
                     .with_source(Some(shape.id().clone()));
                 validation_results.insert(vr);
             }

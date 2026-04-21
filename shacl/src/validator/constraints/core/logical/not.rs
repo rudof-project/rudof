@@ -4,6 +4,7 @@ use rudof_rdf::rdf_core::query::QueryRDF;
 use rudof_rdf::rdf_core::term::Object;
 use crate::ir::components::Not;
 use crate::ir::{IRComponent, IRSchema, IRShape};
+use crate::types::MessageMap;
 use crate::validator::constraints::{get_shape_from_idx, ConstraintError, NativeValidator, SparqlValidator, Validator};
 use crate::validator::engine::{Engine, SparqlEngine, Validate};
 use crate::validator::error::ValidationError;
@@ -29,10 +30,10 @@ impl<S: NeighsRDF + Debug> Validator<S> for Not {
                     let component = Object::iri(component.into());
                     let node_object = S::term_as_object(node).ok();
                     let vr = ValidationResult::new(fnode_obj.clone(), component.clone(), shape.severity())
-                            .with_message(Some(msg))
-                            .with_path(maybe_path.cloned())
-                            .with_source(Some(shape.id().clone()))
-                            .with_value(node_object);
+                        .with_message(MessageMap::from(msg))
+                        .with_path(maybe_path.cloned())
+                        .with_source(Some(shape.id().clone()))
+                        .with_value(node_object);
                     validation_results.push(vr);
                 }
             }

@@ -7,6 +7,7 @@ use rudof_rdf::rdf_core::term::literal::Literal;
 use rudof_rdf::rdf_core::term::Object;
 use crate::ir::components::UniqueLang;
 use crate::ir::{IRComponent, IRSchema, IRShape};
+use crate::types::MessageMap;
 use crate::validator::constraints::{ConstraintError, NativeValidator, SparqlValidator, Validator};
 use crate::validator::engine::{Engine, SparqlEngine};
 use crate::validator::report::ValidationResult;
@@ -38,7 +39,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for UniqueLang {
                     let msg = format!("Unique lang failed for lang {k} with values: {}", v.iter().map(|n| n.to_string()).collect::<Vec<_>>().join(", "));
                     let vr = ValidationResult::new(fnode_obj.clone(), component.clone(), shape.severity())
                         .with_path(maybe_path.cloned())
-                        .with_message(Some(msg))
+                        .with_message(MessageMap::from(msg))
                         .with_source(Some(shape.id().clone()));
                     validation_results.push(vr);
                 }

@@ -5,6 +5,7 @@ use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use crate::error::ValidationError;
 use crate::ir::{IRSchema, IRShape, ReifierInfo};
+use crate::types::MessageMap;
 use crate::validator::constraints::get_shape_from_idx;
 use crate::validator::engine::Engine;
 use crate::validator::engine::focus_nodes_ops::FocusNodesOps;
@@ -171,7 +172,7 @@ fn validate_reifiers<RDF: NeighsRDF + Debug>(shape: &IRShape, store: &RDF, runne
                         Object::iri(ShaclVocab::sh_reifier_shape_constraint_component()),
                         shape.severity(),
                     )
-                        .with_message(Some(format!("Reification required but no reifier found for triple {triple} with predicate {pred}")))
+                        .with_message(MessageMap::from("Reification required but no reifier found for triple {triple} with predicate {pred}"))
                         .with_path(Some(SHACLPath::iri(pred.clone())))
                         .with_source(source_shape.map(|s| s.id()).cloned());
                     results.push(vr_single);

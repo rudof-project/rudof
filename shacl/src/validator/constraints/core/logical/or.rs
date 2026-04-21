@@ -4,6 +4,7 @@ use rudof_rdf::rdf_core::query::QueryRDF;
 use rudof_rdf::rdf_core::term::Object;
 use crate::ir::components::Or;
 use crate::ir::{IRComponent, IRSchema, IRShape};
+use crate::types::MessageMap;
 use crate::validator::constraints::{get_shape_from_idx, ConstraintError, NativeValidator, SparqlValidator, Validator};
 use crate::validator::engine::{Engine, SparqlEngine, Validate};
 use crate::validator::nodes::FocusNodes;
@@ -35,7 +36,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Or {
                     let node_obj = S::term_as_object(node).ok();
                     let msg = "OR not satisfied".to_string();
                     let vr = ValidationResult::new(fnode_obj.clone(), component.clone(), shape.severity())
-                        .with_message(Some(msg))
+                        .with_message(MessageMap::from(msg))
                         .with_path(maybe_path.cloned())
                         .with_value(node_obj)
                         .with_source(Some(shape.id().clone()));

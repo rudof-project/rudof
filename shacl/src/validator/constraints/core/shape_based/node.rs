@@ -4,6 +4,7 @@ use rudof_rdf::rdf_core::query::QueryRDF;
 use rudof_rdf::rdf_core::term::Object;
 use crate::ir::components::Node;
 use crate::ir::{IRComponent, IRSchema, IRShape};
+use crate::types::MessageMap;
 use crate::validator::constraints::{get_shape_from_idx, ConstraintError, NativeValidator, SparqlValidator, Validator};
 use crate::validator::engine::{Engine, SparqlEngine, Validate};
 use crate::validator::error::ValidationError;
@@ -34,7 +35,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
                     let msg = format!("Shape {}: Node({node_shape}) constraint not satisfied for {node}", shape.id());
                     let vr = ValidationResult::new(fnode_obj.clone(), component_obj.clone(), shape.severity())
                         .with_path(maybe_path.cloned())
-                        .with_message(Some(msg))
+                        .with_message(MessageMap::from(msg))
                         .with_value(Some(node_object.clone()))
                         .with_source(Some(shape.id().clone()));
                     validation_results.push(vr.clone());

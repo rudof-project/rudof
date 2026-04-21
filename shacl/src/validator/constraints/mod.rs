@@ -10,6 +10,7 @@ use rudof_rdf::rdf_core::term::Object;
 use crate::error::ConstraintError;
 use crate::ir::{IRComponent, IRSchema, IRShape, ShapeLabelIdx};
 use crate::ir::components::{And, Closed, Datatype, Deactivated, HasValue, In, LanguageIn, MaxCount, MinCount, Node, Not, Or, QualifiedValueShape, UniqueLang, Xone};
+use crate::types::MessageMap;
 use crate::validator::engine::Engine;
 use crate::validator::iteration::{IterationStrategy, ValueNodeIteration};
 use crate::validator::nodes::ValueNodes;
@@ -266,7 +267,7 @@ fn apply_with_focus<S: Rdf, I: IterationStrategy<S>>(
                 Ok(true) => Some(
                     ValidationResult::new(focus, component, shape.severity())
                         .with_source(source.cloned())
-                        .with_message(Some(msg.to_string()))
+                        .with_message(MessageMap::from(msg))
                         .with_path(maybe_path.cloned())
                         .with_value(value)
                 ),
