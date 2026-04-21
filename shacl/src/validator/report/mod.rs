@@ -173,60 +173,17 @@ impl Display for ValidationReport {
                 writeln!(
                     f,
                     " node: {} {}\n{}{}{}{}",
-                    show_object(result.focus_node(), &self.nodes_pm),
-                    show_object(result.constraint_component(), &self.shapes_pm),
+                    &self.nodes_pm.show(result.focus_node()),
+                    &self.shapes_pm.show(result.constraint_component()),
                     result.message(),
-                    show_path_opt(result.path(), &self.shapes_pm),
-                    show_object_opt(result.source(), &self.shapes_pm),
-                    show_object_opt(result.value(), &self.nodes_pm),
+                    &self.shapes_pm.show(&result.path()),
+                    &self.shapes_pm.show(&result.source()),
+                    &self.nodes_pm.show(&result.value()),
                 )?;
             }
 
             Ok(())
         }
-    }
-}
-
-fn show_object(object: &Object, pm: &PrefixMap) -> String {
-    match object {
-        Object::Iri(iri) => pm.qualify(iri),
-        Object::BlankNode(n) => format!("_:{n}"),
-        Object::Literal(lit) => lit.to_string(),
-        Object::Triple {
-            subject,
-            predicate,
-            object
-        } => format!(
-            "<<{} {} {}>>",
-            show_subject(subject, pm),
-            pm.qualify(predicate),
-            show_object(object, pm)
-        )
-    }
-}
-
-fn show_object_opt(object: Option<&Object>, pm: &PrefixMap) -> String {
-    match object {
-        None => String::new(),
-        Some(o) => show_object(o, pm),
-    }
-}
-
-fn show_subject(subject: &IriOrBlankNode, pm: &PrefixMap) -> String {
-    match subject {
-        IriOrBlankNode::BlankNode(bnode) => format!("_:{bnode}"),
-        IriOrBlankNode::Iri(iri) => pm.qualify(iri),
-    }
-}
-
-fn show_path_opt(object: Option<&SHACLPath>, pm: &PrefixMap) -> String {
-    match object {
-        None => String::new(),
-        Some(SHACLPath::Predicate { pred }) => {
-            let path = pm.qualify(pred);
-            path.to_string()
-        }
-        Some(path) => path.to_string(),
     }
 }
 
