@@ -1,4 +1,4 @@
-use crate::IriRef;
+use crate::{IriRef, Show};
 use crate::error::PrefixMapError;
 use colored::*;
 use indexmap::IndexMap;
@@ -178,6 +178,10 @@ impl PrefixMap {
     /// Disable all rich qualifying (colors and hyperlinks)
     pub fn without_rich_qualifying(self) -> Self {
         self.with_hyperlink(false).without_colors()
+    }
+
+    pub fn show<S: Show>(&self, item: &S) -> String {
+        item.show(self)
     }
 }
 

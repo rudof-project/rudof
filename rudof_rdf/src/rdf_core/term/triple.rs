@@ -6,7 +6,7 @@ use crate::rdf_core::{
     },
 };
 use iri_s::IriS;
-use prefixmap::IriRef;
+use prefixmap::{IriRef, PrefixMap, Show};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{Debug, Display},
@@ -587,3 +587,24 @@ impl Ord for Object {
         }
     }
 }
+
+// ============================================================================
+// Trait Implementations - Other
+// ============================================================================
+
+impl Show for Object {
+    fn show(&self, pm: &PrefixMap) -> String {
+        match self {
+            Object::Iri(iri) => pm.qualify(iri),
+            Object::BlankNode(n) => format!("_:{n}"),
+            Object::Literal(lit) => lit.to_string(),
+            Object::Triple { subject, predicate, object } => format!(
+                "<<{} {} {}>>",
+                pm.show(subject.as_ref()),
+                pm.qualify(predicate),
+                pm.show(object.as_ref())
+            )
+        }
+    }
+}
+
