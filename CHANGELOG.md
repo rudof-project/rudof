@@ -7,6 +7,10 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.2.13
+### Fixed
+- Problem with MCP panicking, issue 604
+
 ## v0.2.12
 
 ### Added
