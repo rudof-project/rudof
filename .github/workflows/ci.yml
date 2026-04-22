@@ -4,31 +4,30 @@
 name: CI
 
 on:
-  workflow_dispatch:
-#  push:
-#    paths-ignore:
-#      - "docs/**"
-#      - "examples/**"
-#      - ".github/**"
-#      - "**/LICENSE*"
-#      - "**/README*"
-#      - "**/CHANGELOG*"
-#      - "**/.dockerignore"
-#      - "**/Dockerfile*"
-#      - "**/*.md"
-#      - .readthedocs.yml
-#  pull_request:
-#    paths-ignore:
-#      - "docs/**"
-#      - "examples/**"
-#      - ".github/**"
-#      - "**/LICENSE*"
-#      - "**/README*"
-#      - "**/CHANGELOG*"
-#      - "**/.dockerignore"
-#      - "**/Dockerfile*"
-#      - "**/*.md"
-#      - .readthedocs.yml
+  push:
+    paths-ignore:
+      - "docs/**"
+      - "examples/**"
+      - ".github/**"
+      - "**/LICENSE*"
+      - "**/README*"
+      - "**/CHANGELOG*"
+      - "**/.dockerignore"
+      - "**/Dockerfile*"
+      - "**/*.md"
+      - .readthedocs.yml
+  pull_request:
+    paths-ignore:
+      - "docs/**"
+      - "examples/**"
+      - ".github/**"
+      - "**/LICENSE*"
+      - "**/README*"
+      - "**/CHANGELOG*"
+      - "**/.dockerignore"
+      - "**/Dockerfile*"
+      - "**/*.md"
+      - .readthedocs.yml
 
 jobs:
   check:
