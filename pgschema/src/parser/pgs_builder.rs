@@ -9,8 +9,8 @@ use crate::{
     parser::{
         pgs::PgsParser,
         pgs_actions::{
-            BaseProperty, Card, Cond, LabelPropertySpec, Labels, Max, MoreLabels, MoreTypes, Properties, Property,
-            PropertySpec, Range, SimpleType, SingleLabel, SingleValue, TypeSpec,
+            BaseProperty, Card, Cond, LabelPropertySpec, Labels, Max, MoreTypes, Properties, Property, PropertySpec,
+            Range, SimpleType, SingleLabel, SingleValue, TypeSpec,
         },
     },
     pgs::PropertyGraphSchema,
@@ -89,11 +89,26 @@ fn get_label_property_spec(label_property_spec: LabelPropertySpec) -> Result<PGL
 }
 
 fn get_labels(labels: Labels) -> Result<PGLabelPropertySpec, PgsError> {
-    let mut label_spec = get_single_label(labels.single_label)?;
+    /*let mut label_spec = get_single_label(labels.single_label)?;
     if let Some(more_labels) = labels.more_labels_opt {
         get_more_labels(more_labels, &mut label_spec)?;
     }
-    Ok(label_spec)
+    Ok(label_spec)*/
+    match labels {
+        Labels::ConjLabel(conj) => {
+            let left_spec = get_labels(*conj.left)?;
+            let right_spec = get_labels(*conj.right)?;
+            Ok(PGLabelPropertySpec::and(left_spec, right_spec))
+        },
+        Labels::DisjLabels(disj) => {
+            let left_spec = get_labels(*disj.left)?;
+            let right_spec = get_labels(*disj.right)?;
+            Ok(PGLabelPropertySpec::or(left_spec, right_spec))
+        },
+        Labels::Paren(labels) => get_labels(*labels),
+        Labels::ParenSquare(labels) => get_labels(*labels),
+        Labels::SingleLabel(single_label) => get_single_label(single_label),
+    }
 }
 
 fn get_single_label(single_label: SingleLabel) -> Result<PGLabelPropertySpec, PgsError> {
@@ -103,7 +118,7 @@ fn get_single_label(single_label: SingleLabel) -> Result<PGLabelPropertySpec, Pg
     }
 }
 
-fn get_more_labels(more_labels: MoreLabels, label_spec: &mut PGLabelPropertySpec) -> Result<(), PgsError> {
+/*fn get_more_labels(more_labels: MoreLabels, label_spec: &mut PGLabelPropertySpec) -> Result<(), PgsError> {
     match more_labels {
         MoreLabels::AndLabels(and_labels) => {
             let label_spec2 = get_single_label(and_labels.single_label)?;
@@ -126,7 +141,7 @@ fn get_more_labels(more_labels: MoreLabels, label_spec: &mut PGLabelPropertySpec
             }
         },
     }
-}
+}*/
 
 fn get_property_value_spec(property_value_spec: Properties) -> Result<PGPropertyValue, PgsError> {
     get_property_value(property_value_spec)

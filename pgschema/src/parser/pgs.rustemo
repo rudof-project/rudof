@@ -47,13 +47,17 @@ LabelSpec:
     ":" Labels ;
 
 Labels:
-    SingleLabel MoreLabels?
-    ;
+     left=Labels AMPERSAND right=Labels {ConjLabel, 1, left} 
+  |  left=Labels BAR right=Labels {DisjLabels, 2, left}
+  |  '(' Labels ')' {Paren}
+  |  '[' Labels ']' {ParenSquare}
+  |  SingleLabel
+  ;
 
-MoreLabels:
+/*MoreLabels:
     AMPERSAND SingleLabel MoreLabels? {AndLabels}
   | BAR SingleLabel MoreLabels? {OrLabels}
-  ;
+  ;*/
 
 SingleLabel:
     IDENTIFIER {SingleLabel}
@@ -173,6 +177,12 @@ OPEN_PAREN:
 
 CLOSE_PAREN:
     ")" ;
+
+OPEN_SQUARE:
+    "[" ;
+
+CLOSE_SQUARE:
+    "]" ;
 
 OPEN_ARROW:
     "-[" ;

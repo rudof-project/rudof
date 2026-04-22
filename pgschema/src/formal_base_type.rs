@@ -1,7 +1,3 @@
-use std::collections::HashSet;
-
-use either::Either;
-
 use crate::{
     evidence::Evidence,
     pgs_error::PgsError,
@@ -9,6 +5,8 @@ use crate::{
     record_type::RecordType,
     type_name::{LabelName, Name},
 };
+use either::Either;
+use std::{collections::HashSet, fmt::Display};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FormalBaseType {
@@ -150,4 +148,46 @@ fn combine_set_records(set1: &HashSet<RecordType>, set2: &HashSet<RecordType>) -
         }
     }
     combined
+}
+
+impl Display for FormalBaseType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FormalBaseType { labels, content, .. } if labels.is_empty() && content.is_empty() => write!(f, "Empty"),
+            FormalBaseType { labels, content, .. } if !labels.is_empty() && content.is_empty() => {
+                write!(f, "Labels({})", labels.iter().cloned().collect::<Vec<_>>().join(", "))
+            },
+            FormalBaseType { labels, content, .. } if labels.is_empty() && !content.is_empty() => {
+                write!(
+                    f,
+                    "Content({})",
+                    content.iter().map(|c| format!("{}", c)).collect::<Vec<_>>().join(", ")
+                )
+            },
+            FormalBaseType { labels, content, .. } => {
+                let spec = if !labels.is_empty() {
+                    format!("Labels({})", labels.iter().cloned().collect::<Vec<_>>().join(", "))
+                } else {
+                    String::new()
+                };
+                let value_spec = if !content.is_empty() {
+                    format!(
+                        "Content({})",
+                        content.iter().map(|c| format!("{}", c)).collect::<Vec<_>>().join(", ")
+                    )
+                } else {
+                    String::new()
+                };
+                if !spec.is_empty() && !value_spec.is_empty() {
+                    write!(f, "{}, {}", spec, value_spec)
+                } else if !spec.is_empty() {
+                    write!(f, "{}", spec)
+                } else if !value_spec.is_empty() {
+                    write!(f, "{}", value_spec)
+                } else {
+                    write!(f, "Empty")
+                }
+            },
+        }
+    }
 }

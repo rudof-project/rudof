@@ -113,6 +113,7 @@ mod tests {
     use crate::{
         card::Card,
         key::Key,
+        node::Node,
         property_value_spec::{PropertyValue, TypeSpec},
         record_type::RecordType,
         value_type::ValueType,
@@ -142,6 +143,25 @@ mod tests {
                 .with_key_value("age", ValueType::integer(Card::One))
                 .with_key_value("name", ValueType::string(Card::One)),
         );
+        assert_eq!(semantics, expected);
+    }
+
+    #[test]
+    fn test_semantics_rbe_labels() {
+        let mut graph = PropertyGraphSchema::new();
+        let a = LabelPropertySpec::Label("A".to_string());
+        let b = LabelPropertySpec::Label("B".to_string());
+        let expr = LabelPropertySpec::And(
+            Box::new(LabelPropertySpec::Or(Box::new(a.clone()), Box::new(b.clone()))),
+            Box::new(LabelPropertySpec::Or(Box::new(a), Box::new(b))),
+        );
+        let _ = graph.add_node_spec(
+            "NodeType",
+            LabelPropertySpec::content(expr, PropertyValueSpec::closed(PropertyValue::empty())),
+        );
+
+        let semantics = graph.get_node_semantics("NodeType").unwrap().semantics(&graph).unwrap();
+        let expected = FormalBaseType::new().with_label("A");
         assert_eq!(semantics, expected);
     }
 }
