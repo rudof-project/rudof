@@ -47,14 +47,13 @@ use dctap::DCTap as DCTAP;
 use pgschema::{pgs::PropertyGraphSchema, type_map::TypeMap, validation_result::ValidationResult};
 use rdf_config::RdfConfigModel;
 use rudof_rdf::rdf_core::query::SparqlQuery;
-use shacl_ast::ast::ShaclSchema;
-use shacl_ir::compiled::schema_ir::SchemaIR as ShaclSchemaIR;
-use shacl_validation::validation_report::report::ValidationReport;
+use shacl::ast::ASTSchema;
+use shacl::ir::IRSchema;
+use shacl::validator::report::ValidationReport;
 use shex_ast::ir::schema_ir::SchemaIR as ShExSchemaIR;
 use shex_ast::shapemap::{QueryShapeMap, ResultShapeMap};
 use shex_ast::{Schema as ShExSchema, ir::map_state::MapState};
 use shex_validation::Validator as ShExValidator;
-use sparql_service::RdfData;
 use sparql_service::ServiceDescription;
 use std::io;
 
@@ -78,10 +77,10 @@ pub struct Rudof {
     pub(crate) data: Option<Data>,
 
     /// Current SHACL Shapes
-    pub(crate) shacl_shapes: Option<ShaclSchema<RdfData>>,
+    pub(crate) shacl_shapes: Option<ASTSchema>,
 
     /// Current SHACL Schema Internal Representation
-    pub(crate) shacl_shapes_ir: Option<ShaclSchemaIR>,
+    pub(crate) shacl_shapes_ir: Option<IRSchema>,
 
     /// Current SHACL validation results
     pub(crate) shacl_validation_results: Option<ValidationReport>,

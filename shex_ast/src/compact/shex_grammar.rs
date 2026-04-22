@@ -1702,7 +1702,7 @@ fn integer_or_star(i: Span) -> IRes<i32> {
 /// `[69] <RDF_TYPE> ::= "a"`
 fn rdf_type(i: Span) -> IRes<IriRef> {
     let (i, _) = tag("a")(i)?;
-    let rdf_type: IriRef = IriRef::iri(RdfVocab::rdf_type().clone());
+    let rdf_type: IriRef = IriRef::iri(RdfVocab::rdf_type());
     Ok((i, rdf_type))
 }
 

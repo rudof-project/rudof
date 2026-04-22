@@ -42,7 +42,7 @@ impl Default for ShEx2HtmlConfig {
             css_file_name: Some("shex2html.css".to_string()),
             target_folder: None,
             color_property_name: Some(DEFAULT_COLOR_PROPERTY_NAME.to_string()),
-            annotation_label: vec![RdfsVocab::rdfs_label().clone()],
+            annotation_label: vec![RdfsVocab::rdfs_label()],
             replace_iri_by_label: None,
             embed_svg_schema: true,
             embed_svg_shape: true,

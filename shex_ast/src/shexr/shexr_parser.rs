@@ -1,12 +1,11 @@
 use super::shexr_error::ShExRError;
-use super::*;
 use crate::{
     BNode, NodeConstraint, NodeKind, ObjectValue, Schema, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel, ValueSetValue,
 };
-use iri_s::IriS;
 use iri_s::iri;
 use prefixmap::IriRef;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::ParserExt;
+use rudof_rdf::rdf_core::vocabs::ShexRVocab;
 use rudof_rdf::{
     rdf_core::{
         FocusRDF, RDFError, Rdf,
@@ -51,7 +50,7 @@ where
     }
 
     pub fn schema_parser() -> impl RDFNodeParse<RDF, Output = Schema> {
-        let iri = ShExRVocab::sx_schema();
+        let iri = ShexRVocab::sx_schema();
         SingleInstanceParser::new(iri).then(|node: <RDF as Rdf>::Subject| {
             let term: <RDF as Rdf>::Term = node.clone().into();
             SetFocusParser::new(term).then(|_| Self::schema())
@@ -59,7 +58,7 @@ where
     }
 
     fn schema() -> impl RDFNodeParse<RDF, Output = Schema> {
-        SingleValuePropertyParser::new(sx_shapes()).then(move |node| {
+        SingleValuePropertyParser::new(ShexRVocab::sx_shapes()).then(move |node| {
             SetFocusParser::new(node)
                 .and(Self::shape_decl().list())
                 .map(|(_, vs)| Schema::new(&iri!("http://default/")).with_shapes(Some(vs)))
@@ -91,7 +90,8 @@ where
     }
 
     fn parse_shape_expr() -> impl RDFNodeParse<RDF, Output = ShapeExpr> {
-        SingleValuePropertyParser::new(sx_shape_expr()).then(|node| SetFocusParser::new(node).then(|_| shape_expr()))
+        SingleValuePropertyParser::new(ShexRVocab::sx_shape_expr())
+            .then(|node| SetFocusParser::new(node).then(|_| shape_expr()))
     }
 }
 
@@ -106,7 +106,7 @@ fn shape<RDF>() -> impl RDFNodeParse<RDF, Output = ShapeExpr>
 where
     RDF: FocusRDF,
 {
-    HasTypeParser::new(sx_shape()).with({
+    HasTypeParser::new(ShexRVocab::sx_shape()).with({
         closed().then(|maybe_closed| {
             let extra = None; // TODO
             let expression = None; // TODO
@@ -119,13 +119,13 @@ fn closed<RDF>() -> impl RDFNodeParse<RDF, Output = Option<bool>>
 where
     RDF: FocusRDF,
 {
-    SingleBoolPropertyParser::new(sx_closed()).optional()
+    SingleBoolPropertyParser::new(ShexRVocab::sx_closed()).optional()
 }
 
 rdf_parser! {
     pub fn shape_and[RDF]()(RDF) -> ShapeExpr where [] {
-        HasTypeParser::new(sx_shape_and()).with(
-        SingleValuePropertyParser::new(sx_shape_exprs()).then(|node| {
+        HasTypeParser::new(ShexRVocab::sx_shape_and()).with(
+        SingleValuePropertyParser::new(ShexRVocab::sx_shape_exprs()).then(|node| {
             SetFocusParser::new(node).and(shape_expr().list()).map(|(_,vs)| { ShapeExpr::and(vs) })
            }))
     }
@@ -133,8 +133,8 @@ rdf_parser! {
 
 rdf_parser! {
     pub fn shape_or[RDF]()(RDF) -> ShapeExpr where [] {
-        HasTypeParser::new(sx_shape_or()).with(
-        SingleValuePropertyParser::new(sx_shape_exprs().clone()).then(|node| {
+        HasTypeParser::new(ShexRVocab::sx_shape_or()).with(
+        SingleValuePropertyParser::new(ShexRVocab::sx_shape_exprs()).then(|node| {
             SetFocusParser::new(node).and(shape_expr().list()).map(|(_,vs)| { ShapeExpr::or(vs) })
         }))
     }
@@ -144,47 +144,6 @@ rdf_parser! {
     pub fn shape_expr[RDF]()(RDF) -> ShapeExpr where [] {
        shape_expr_()
     }
-}
-
-#[inline]
-fn sx_shapes() -> IriS {
-    IriS::new_unchecked(SX_SHAPES)
-}
-
-fn sx_shape_expr() -> IriS {
-    IriS::new_unchecked(SX_SHAPE_EXPR)
-}
-
-fn sx_closed() -> IriS {
-    IriS::new_unchecked(SX_CLOSED)
-}
-
-#[inline]
-fn sx_values() -> IriS {
-    IriS::new_unchecked(SX_VALUES)
-}
-
-#[inline]
-fn sx_shape() -> IriS {
-    IriS::new_unchecked(SX_SHAPE)
-}
-
-#[inline]
-fn sx_shape_exprs() -> IriS {
-    IriS::new_unchecked(SX_SHAPE_EXPRS)
-}
-
-#[inline]
-fn sx_node_kind() -> IriS {
-    IriS::new_unchecked(SX_NODEKIND)
-}
-
-fn sx_shape_and() -> IriS {
-    IriS::new_unchecked(SX_SHAPE_AND)
-}
-
-fn sx_shape_or() -> IriS {
-    IriS::new_unchecked(SX_SHAPE_OR)
 }
 
 fn node_constraint<RDF>() -> impl RDFNodeParse<RDF, Output = ShapeExpr>
@@ -209,7 +168,7 @@ fn parse_nodekind<RDF>() -> impl RDFNodeParse<RDF, Output = Option<NodeKind>>
 where
     RDF: FocusRDF,
 {
-    SingleValuePropertyParser::new(sx_node_kind())
+    SingleValuePropertyParser::new(ShexRVocab::sx_node_kind())
         .then(|node| SetFocusParser::new(node).and(nodekind()).map(|(_, vs)| vs))
         .optional()
 }
@@ -225,35 +184,35 @@ fn iri_kind<RDF>() -> impl RDFNodeParse<RDF, Output = NodeKind>
 where
     RDF: FocusRDF,
 {
-    IsIriParser::new(ShExRVocab::sx_iri()).map(|_| NodeKind::Iri)
+    IsIriParser::new(ShexRVocab::sx_iri()).map(|_| NodeKind::Iri)
 }
 
 fn literal_kind<RDF>() -> impl RDFNodeParse<RDF, Output = NodeKind>
 where
     RDF: FocusRDF,
 {
-    IsIriParser::new(ShExRVocab::sx_literal()).map(|_| NodeKind::Literal)
+    IsIriParser::new(ShexRVocab::sx_literal()).map(|_| NodeKind::Literal)
 }
 
 fn bnode_kind<RDF>() -> impl RDFNodeParse<RDF, Output = NodeKind>
 where
     RDF: FocusRDF,
 {
-    IsIriParser::new(ShExRVocab::sx_bnode()).map(|_| NodeKind::BNode)
+    IsIriParser::new(ShexRVocab::sx_bnode()).map(|_| NodeKind::BNode)
 }
 
 fn nonliteral_kind<RDF>() -> impl RDFNodeParse<RDF, Output = NodeKind>
 where
     RDF: FocusRDF,
 {
-    IsIriParser::new(ShExRVocab::sx_nonliteral()).map(|_| NodeKind::NonLiteral)
+    IsIriParser::new(ShexRVocab::sx_non_literal()).map(|_| NodeKind::NonLiteral)
 }
 
 fn parse_value_set<RDF>() -> impl RDFNodeParse<RDF, Output = Option<Vec<ValueSetValue>>>
 where
     RDF: FocusRDF,
 {
-    SingleValuePropertyParser::new(sx_values())
+    SingleValuePropertyParser::new(ShexRVocab::sx_values())
         .then(|node| SetFocusParser::new(node).and(parse_value().list()).map(|(_, vs)| vs))
         .optional()
 }

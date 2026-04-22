@@ -18,6 +18,7 @@ include = [
 ]
 
 [dependencies]
+colored.workspace = true
 dctap.workspace = true
 either.workspace = true
 oxrdf = { workspace = true, features = ["oxsdatatypes"] }
@@ -30,15 +31,13 @@ rudof_generate.workspace = true
 rudof_rdf.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-shacl_ast.workspace = true
-shacl_ir.workspace = true
-shacl_rdf.workspace = true
-shacl_validation.workspace = true
+shacl.workspace = true
 shapes_comparator.workspace = true
 shapes_converter.workspace = true
 shex_ast.workspace = true
 shex_validation.workspace = true
 sparql_service.workspace = true
+tabled.workspace = true
 tracing.workspace = true
 termtree.workspace = true
 thiserror.workspace = true

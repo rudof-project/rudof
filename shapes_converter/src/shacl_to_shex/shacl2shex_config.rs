@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use shacl_validation::shacl_config::ShaclConfig;
+use shacl::validator::ShaclConfig;
 
 /// Defines the configuration of the converter
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Default)]

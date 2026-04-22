@@ -2,11 +2,9 @@ use super::{Shacl2ShExConfig, Shacl2ShExError};
 use iri_s::IriS;
 use iri_s::iri;
 use prefixmap::IriRef;
-use rudof_rdf::rdf_core::{Rdf, SHACLPath, term::Object};
-use shacl_ast::{
-    ShaclSchema, component::Component, node_shape::NodeShape, property_shape::PropertyShape,
-    shape::Shape as ShaclShape, target::Target,
-};
+use rudof_rdf::rdf_core::{SHACLPath, term::Object};
+use shacl::ast::{ASTComponent, ASTNodeShape, ASTPropertyShape, ASTSchema, ASTShape};
+use shacl::types::Target;
 use shex_ast::{
     BNode, NodeConstraint, Schema as ShExSchema, Shape as ShExShape, ShapeExpr, ShapeExprLabel, TripleExpr,
     TripleExprWrapper, ValueSetValue,
@@ -31,16 +29,16 @@ impl Shacl2ShEx {
         &self.current_shex
     }
 
-    pub fn convert<RDF: Rdf>(&mut self, schema: &ShaclSchema<RDF>) -> Result<(), Shacl2ShExError> {
-        let prefixmap = schema.prefix_map().without_rich_qualifying();
+    pub fn convert(&mut self, schema: &ASTSchema) -> Result<(), Shacl2ShExError> {
+        let prefixmap = schema.prefixmap().clone().without_rich_qualifying();
         self.current_shex = ShExSchema::new(&iri!("http://default/")).with_prefixmap(Some(prefixmap));
         for (_, shape) in schema.iter() {
             match &shape {
-                shacl_ast::shape::Shape::NodeShape(ns) => {
+                ASTShape::NodeShape(ns) => {
                     let (label, shape_expr, is_abstract) = self.convert_shape(ns, schema)?;
                     self.current_shex.add_shape(label, shape_expr, is_abstract)
                 },
-                shacl_ast::shape::Shape::PropertyShape(_) => {
+                ASTShape::PropertyShape(_) => {
                     // Ignoring property shapes at top level conversion
                 },
             }
@@ -48,10 +46,10 @@ impl Shacl2ShEx {
         Ok(())
     }
 
-    pub fn convert_shape<RDF: Rdf>(
+    pub fn convert_shape(
         &self,
-        shape: &NodeShape<RDF>,
-        schema: &ShaclSchema<RDF>,
+        shape: &ASTNodeShape,
+        schema: &ASTSchema,
     ) -> Result<(ShapeExprLabel, ShapeExpr, bool), Shacl2ShExError> {
         let label = self.rdfnode2label(shape.id())?;
         let shape_expr = self.node_shape2shape_expr(shape, schema)?;
@@ -68,22 +66,22 @@ impl Shacl2ShEx {
         }
     }
 
-    pub fn node_shape2shape_expr<RDF: Rdf>(
+    pub fn node_shape2shape_expr(
         &self,
-        shape: &NodeShape<RDF>,
-        schema: &ShaclSchema<RDF>,
+        shape: &ASTNodeShape,
+        schema: &ASTSchema,
     ) -> Result<ShapeExpr, Shacl2ShExError> {
         let mut exprs = Vec::new();
         for node in shape.property_shapes() {
             match schema.get_shape(node) {
                 None => todo!(),
                 Some(shape) => match shape {
-                    ShaclShape::PropertyShape(ps) => {
+                    ASTShape::PropertyShape(ps) => {
                         let tc = self.property_shape2triple_constraint(ps)?;
                         exprs.push(tc);
                         Ok(())
                     },
-                    ShaclShape::NodeShape(ns) => Err(Shacl2ShExError::NotExpectedNodeShape {
+                    ASTShape::NodeShape(ns) => Err(Shacl2ShExError::NotExpectedNodeShape {
                         node_shape: ns.to_string(),
                     }),
                 },
@@ -110,10 +108,10 @@ impl Shacl2ShEx {
     }
 
     /// Collect targetClass declarations and add a rdf:type constraint for each
-    pub fn convert_target_decls<RDF: Rdf>(
+    pub fn convert_target_decls(
         &self,
-        targets: &Vec<Target<RDF>>,
-        schema: &ShaclSchema<RDF>,
+        targets: &Vec<Target>,
+        schema: &ASTSchema,
     ) -> Result<Option<TripleExpr>, Shacl2ShExError> {
         let mut values = Vec::new();
         for target in targets {
@@ -126,10 +124,10 @@ impl Shacl2ShEx {
         Ok(Some(tc))
     }
 
-    pub fn target2value_set_value<RDF: Rdf>(
+    pub fn target2value_set_value(
         &self,
-        target: &Target<RDF>,
-        _schema: &ShaclSchema<RDF>,
+        target: &Target,
+        _schema: &ASTSchema,
     ) -> Result<Option<ValueSetValue>, Shacl2ShExError> {
         match target {
             Target::Node(_) => Ok(None),
@@ -266,10 +264,7 @@ impl Shacl2ShEx {
         es
     }
 
-    pub fn property_shape2triple_constraint<RDF: Rdf>(
-        &self,
-        shape: &PropertyShape<RDF>,
-    ) -> Result<TripleExpr, Shacl2ShExError> {
+    pub fn property_shape2triple_constraint(&self, shape: &ASTPropertyShape) -> Result<TripleExpr, Shacl2ShExError> {
         let predicate = self.shacl_path2predicate(shape.path())?;
         let negated = None;
         let inverse = None;
@@ -279,7 +274,7 @@ impl Shacl2ShEx {
         Ok(TripleExpr::triple_constraint(negated, inverse, predicate, se, min, max))
     }
 
-    pub fn components2shape_expr(&self, components: &Vec<Component>) -> Result<Option<ShapeExpr>, Shacl2ShExError> {
+    pub fn components2shape_expr(&self, components: &Vec<ASTComponent>) -> Result<Option<ShapeExpr>, Shacl2ShExError> {
         let mut ses = Vec::new();
         for c in components {
             let se = self.component2shape_expr(c)?;
@@ -317,56 +312,56 @@ impl Shacl2ShEx {
         Ok(se)
     }
 
-    pub fn component2shape_expr(&self, component: &Component) -> Result<ShapeExpr, Shacl2ShExError> {
+    pub fn component2shape_expr(&self, component: &ASTComponent) -> Result<ShapeExpr, Shacl2ShExError> {
         match component {
-            Component::Class(cls) => {
+            ASTComponent::Class(cls) => {
                 debug!(
                     "TODO: Converting Class components for {cls:?} doesn't match rdfs:subClassOf semantics of SHACL yet"
                 );
                 let se = self.create_class_constraint(cls)?;
                 Ok(se)
             },
-            Component::Datatype(dt) => Ok(ShapeExpr::node_constraint(
+            ASTComponent::Datatype(dt) => Ok(ShapeExpr::node_constraint(
                 NodeConstraint::new().with_datatype(dt.clone()),
             )),
-            Component::NodeKind(_) => todo!(),
-            Component::MinCount(_) => todo!(),
-            Component::MaxCount(_) => todo!(),
-            Component::MinExclusive(_) => todo!(),
-            Component::MaxExclusive(_) => todo!(),
-            Component::MinInclusive(_) => todo!(),
-            Component::MaxInclusive(_) => todo!(),
-            Component::MinLength(_) => todo!(),
-            Component::MaxLength(_) => todo!(),
-            Component::Pattern { pattern: _, flags: _ } => todo!(),
-            Component::UniqueLang(_) => todo!(),
-            Component::LanguageIn(_) => todo!(),
-            Component::Equals(_) => todo!(),
-            Component::Disjoint(_) => todo!(),
-            Component::LessThan(_) => todo!(),
-            Component::LessThanOrEquals(_) => todo!(),
-            Component::Or(_) => {
+            ASTComponent::NodeKind(_) => todo!(),
+            ASTComponent::MinCount(_) => todo!(),
+            ASTComponent::MaxCount(_) => todo!(),
+            ASTComponent::MinExclusive(_) => todo!(),
+            ASTComponent::MaxExclusive(_) => todo!(),
+            ASTComponent::MinInclusive(_) => todo!(),
+            ASTComponent::MaxInclusive(_) => todo!(),
+            ASTComponent::MinLength(_) => todo!(),
+            ASTComponent::MaxLength(_) => todo!(),
+            ASTComponent::Pattern { pattern: _, flags: _ } => todo!(),
+            ASTComponent::UniqueLang(_) => todo!(),
+            ASTComponent::LanguageIn(_) => todo!(),
+            ASTComponent::Equals(_) => todo!(),
+            ASTComponent::Disjoint(_) => todo!(),
+            ASTComponent::LessThan(_) => todo!(),
+            ASTComponent::LessThanOrEquals(_) => todo!(),
+            ASTComponent::Or(_) => {
                 debug!("Not implemented OR Shapes");
                 Ok(ShapeExpr::empty_shape())
             },
-            Component::And(_) => todo!(),
-            Component::Not(_) => todo!(),
-            Component::Xone(_) => todo!(),
-            Component::Closed {
+            ASTComponent::And(_) => todo!(),
+            ASTComponent::Not(_) => todo!(),
+            ASTComponent::Xone(_) => todo!(),
+            ASTComponent::Closed {
                 is_closed: _,
                 ignored_properties: _,
             } => todo!(),
-            Component::Node(_) => todo!(),
-            Component::HasValue(_) => todo!(),
-            Component::In(_) => todo!(),
-            Component::QualifiedValueShape {
+            ASTComponent::Node(_) => todo!(),
+            ASTComponent::HasValue(_) => todo!(),
+            ASTComponent::In(_) => todo!(),
+            ASTComponent::QualifiedValueShape {
                 shape: _,
                 q_min_count: _,
                 q_max_count: _,
                 disjoint: _,
                 siblings: _,
             } => todo!(),
-            Component::Deactivated(_) => todo!(),
+            ASTComponent::Deactivated(_) => todo!(),
         }
     }
 

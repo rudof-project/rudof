@@ -206,8 +206,7 @@ impl InMemoryGraph {
             (Some(b), None) => Some(b.clone()),
             (_, Some(b)) => Some(IriS::new_unchecked(b)),
         };
-        let pm = PrefixMap::from_hashmap(prefixes)?;
-        self.merge_prefixes(pm)?;
+        self.merge_prefixes(prefixes.try_into()?)?;
 
         Ok(())
     }

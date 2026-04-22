@@ -50,7 +50,6 @@ vocab_term!(ShaclVocab, SH_RESULT_SEVERITY, "resultSeverity");
 vocab_term!(ShaclVocab, SH_RESULT_MESSAGE, "resultMessage");
 vocab_term!(ShaclVocab, SH_SHAPES_GRAPH, "shapesGraph");
 vocab_term!(ShaclVocab, SH_SEVERITY, "severity");
-vocab_term!(ShaclVocab, SH_SOURCE_CONSTRAINT_COMPONENT, "sourceConstraintComponent");
 vocab_term!(ShaclVocab, SH_SOURCE_SHAPE, "sourceShape");
 vocab_term!(ShaclVocab, SH_VALUE, "value");
 
@@ -112,11 +111,6 @@ vocab_term!(
 );
 vocab_term!(ShaclVocab, SH_REIFICATION_REQUIRED, "reificationRequired"); // SHACL 1.2
 vocab_term!(ShaclVocab, SH_REIFIER_SHAPE, "reifierShape"); // SHACL 1.2
-vocab_term!(
-    ShaclVocab,
-    SH_REIFIER_SHAPE_CONSTRAINT_COMPONENT,
-    "ReifierShapeConstraintComponent"
-); // SHACL 1.2
 
 // TODO - For node expressions, do not delete
 // vocab_term!(ShaclVocab, SH_DEFAULT_VALUE, "defaultValue");
@@ -130,7 +124,6 @@ vocab_term!(ShaclVocab, SH_TARGET_OBJECTS_OF, "targetObjectsOf");
 
 // SPARQL
 vocab_term!(ShaclVocab, SH_SOURCE_CONSTRAINT, "sourceConstraint");
-vocab_term!(ShaclVocab, SH_CLOSED_CONSTRAINT_COMPONENT, "ClosedConstraintComponent");
 
 // SHACL Paths
 vocab_term!(ShaclVocab, SH_ALTERNATIVE_PATH, "alternativePath");
@@ -138,3 +131,134 @@ vocab_term!(ShaclVocab, SH_ZERO_OR_ONE_PATH, "zeroOrOnePath");
 vocab_term!(ShaclVocab, SH_ZERO_OR_MORE_PATH, "zeroOrMorePath");
 vocab_term!(ShaclVocab, SH_ONE_OR_MORE_PATH, "oneOrMorePath");
 vocab_term!(ShaclVocab, SH_INVERSE_PATH, "inversePath");
+
+// Constraint Components
+vocab_term!(
+    ShaclVocab,
+    SH_NODE_KIND_CONSTRAINT_COMPONENT,
+    "NodeKindConstraintComponent"
+);
+vocab_term!(ShaclVocab, SH_CLASS_CONSTRAINT_COMPONENT, "ClassConstraintComponent");
+vocab_term!(
+    ShaclVocab,
+    SH_DATATYPE_CONSTRAINT_COMPONENT,
+    "DatatypeConstraintComponent"
+);
+
+vocab_term!(
+    ShaclVocab,
+    SH_DEACTIVATED_CONSTRAINT_COMPONENT,
+    "DeactivatedConstraintComponent"
+);
+
+vocab_term!(ShaclVocab, SH_AND_CONSTRAINT_COMPONENT, "AndConstraintComponent");
+vocab_term!(ShaclVocab, SH_NOT_CONSTRAINT_COMPONENT, "NotConstraintComponent");
+vocab_term!(ShaclVocab, SH_OR_CONSTRAINT_COMPONENT, "OrConstraintComponent");
+vocab_term!(ShaclVocab, SH_XONE_CONSTRAINT_COMPONENT, "XoneConstraintComponent");
+
+vocab_term!(
+    ShaclVocab,
+    SH_DISJOINT_CONSTRAINT_COMPONENT,
+    "DisjointConstraintComponent"
+);
+vocab_term!(ShaclVocab, SH_EQUALS_CONSTRAINT_COMPONENT, "EqualsConstraintComponent");
+vocab_term!(
+    ShaclVocab,
+    SH_LESS_THAN_CONSTRAINT_COMPONENT,
+    "LessThanConstraintComponent"
+);
+vocab_term!(
+    ShaclVocab,
+    SH_LESS_THAN_OR_EQUALS_CONSTRAINT_COMPONENT,
+    "LessThanOrEqualsConstraintComponent"
+);
+
+vocab_term!(ShaclVocab, SH_CLOSED_CONSTRAINT_COMPONENT, "ClosedConstraintComponent");
+vocab_term!(
+    ShaclVocab,
+    SH_HAS_VALUE_CONSTRAINT_COMPONENT,
+    "HasValueConstraintComponent"
+);
+vocab_term!(ShaclVocab, SH_IN_CONSTRAINT_COMPONENT, "InConstraintComponent");
+
+vocab_term!(
+    ShaclVocab,
+    SH_PATTERN_CONSTRAINT_COMPONENT,
+    "PatternConstraintComponent"
+);
+vocab_term!(
+    ShaclVocab,
+    SH_LANGUAGE_IN_CONSTRAINT_COMPONENT,
+    "LanguageInConstraintComponent"
+);
+vocab_term!(
+    ShaclVocab,
+    SH_MIN_LENGTH_CONSTRAINT_COMPONENT,
+    "MinLengthConstraintComponent"
+);
+vocab_term!(
+    ShaclVocab,
+    SH_MAX_LENGTH_CONSTRAINT_COMPONENT,
+    "MaxLengthConstraintComponent"
+);
+vocab_term!(
+    ShaclVocab,
+    SH_UNIQUE_LANG_CONSTRAINT_COMPONENT,
+    "UniqueLangConstraintComponent"
+);
+
+vocab_term!(
+    ShaclVocab,
+    SH_MIN_COUNT_CONSTRAINT_COMPONENT,
+    "MinCountConstraintComponent"
+);
+vocab_term!(
+    ShaclVocab,
+    SH_MAX_COUNT_CONSTRAINT_COMPONENT,
+    "MaxCountConstraintComponent"
+);
+
+vocab_term!(
+    ShaclVocab,
+    SH_MIN_INCLUSIVE_CONSTRAINT_COMPONENT,
+    "MinInclusiveConstraintComponent"
+);
+vocab_term!(
+    ShaclVocab,
+    SH_MIN_EXCLUSIVE_CONSTRAINT_COMPONENT,
+    "MinExclusiveConstraintComponent"
+);
+vocab_term!(
+    ShaclVocab,
+    SH_MAX_INCLUSIVE_CONSTRAINT_COMPONENT,
+    "MaxInclusiveConstraintComponent"
+);
+vocab_term!(
+    ShaclVocab,
+    SH_MAX_EXCLUSIVE_CONSTRAINT_COMPONENT,
+    "MaxExclusiveConstraintComponent"
+);
+
+vocab_term!(ShaclVocab, SH_NODE_CONSTRAINT_COMPONENT, "NodeConstraintComponent");
+vocab_term!(
+    ShaclVocab,
+    SH_QUALIFIED_VALUE_SHAPE_CONSTRAINT_COMPONENT,
+    "QualifiedValueShapeConstraintComponent"
+);
+vocab_term!(
+    ShaclVocab,
+    SH_QUALIFIED_MIN_COUNT_CONSTRAINT_COMPONENT,
+    "QualifiedMinCountConstraintComponent"
+);
+vocab_term!(
+    ShaclVocab,
+    SH_QUALIFIED_MAX_COUNT_CONSTRAINT_COMPONENT,
+    "QualifiedMaxCountConstraintComponent"
+);
+vocab_term!(
+    ShaclVocab,
+    SH_REIFIER_SHAPE_CONSTRAINT_COMPONENT,
+    "ReifierShapeConstraintComponent"
+); // SHACL 1.2
+
+vocab_term!(ShaclVocab, SH_SOURCE_CONSTRAINT_COMPONENT, "sourceConstraintComponent");

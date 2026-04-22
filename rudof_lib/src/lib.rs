@@ -16,6 +16,7 @@
 //! and more.
 
 pub(crate) mod api;
+pub mod display;
 pub mod errors;
 pub mod formats;
 mod rudof;

@@ -15,10 +15,7 @@ members = [
     "rudof_lib",
     "rudof_mcp",
     "rudof_generate",
-    "shacl_ast",
-    "shacl_ir",
-    "shacl_rdf",
-    "shacl_validation",
+    "shacl",
     "shapes_comparator",
     "shapes_converter",
     "shex_ast",
@@ -331,10 +328,7 @@ rust_decimal_macros = "1.38"
 schemars = "1.0.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0"
-shacl_ast = { version = "0.2.2", path = "./shacl_ast" }
-shacl_ir = { version = "0.2.2", path = "./shacl_ir" }
-shacl_rdf = { version = "0.2.2", path = "./shacl_rdf" }
-shacl_validation = { version = "0.2.2", path = "./shacl_validation" }
+shacl = { version = "0.2.6", path = "./shacl" }
 shapes_comparator = { version = "0.2.1", path = "./shapes_comparator" }
 shapes_converter = { version = "0.2.0", path = "./shapes_converter" }
 shex_ast = { version = "0.2.1", path = "./shex_ast" }
