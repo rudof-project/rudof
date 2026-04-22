@@ -1,12 +1,20 @@
+#[cfg(not(target_family = "wasm"))]
 use crate::common::{Manifest, TestSuiteError};
+#[cfg(not(target_family = "wasm"))]
 use shacl::error::IRError;
+#[cfg(not(target_family = "wasm"))]
 use shacl::validator::ShaclValidationMode;
+#[cfg(not(target_family = "wasm"))]
 use shacl::validator::processor::{DataValidation, ShaclProcessor};
+#[cfg(not(target_family = "wasm"))]
 use std::path::Path;
 
+#[cfg(not(target_family = "wasm"))]
 mod common;
+#[cfg(not(target_family = "wasm"))]
 mod core;
 
+#[cfg(not(target_family = "wasm"))]
 fn test(path: String, mode: ShaclValidationMode) -> Result<(), TestSuiteError> {
     let mut manifest = Manifest::new(Path::new(&path))?;
     let tests = manifest.collect_tests()?;

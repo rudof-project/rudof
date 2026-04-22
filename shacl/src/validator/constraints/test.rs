@@ -1,4 +1,4 @@
-#[cfg(test)]
+#[cfg(all(not(target_family = "wasm"), test))]
 mod tests {
     use crate::ir::IRSchema;
     use crate::rdf::ShaclParser;

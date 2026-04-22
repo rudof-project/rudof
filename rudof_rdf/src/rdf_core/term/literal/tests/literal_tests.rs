@@ -1,10 +1,17 @@
+#[cfg(not(target_arch = "wasm32"))]
 use proptest::prelude::*;
+#[cfg(not(target_arch = "wasm32"))]
 use rust_decimal::Decimal;
+#[cfg(not(target_arch = "wasm32"))]
 use std::collections::hash_map::DefaultHasher;
+#[cfg(not(target_arch = "wasm32"))]
 use std::hash::{Hash, Hasher};
 
+#[cfg(not(target_arch = "wasm32"))]
 use crate::rdf_core::term::literal::{ConcreteLiteral, Lang, NumericLiteral};
+#[cfg(not(target_arch = "wasm32"))]
 use iri_s::IriS;
+#[cfg(not(target_arch = "wasm32"))]
 use prefixmap::IriRef;
 
 // ============================================================================
@@ -12,12 +19,14 @@ use prefixmap::IriRef;
 // ============================================================================
 
 /// Strategy for generating valid language tags
+#[cfg(not(target_arch = "wasm32"))]
 fn lang_strategy() -> impl Strategy<Value = Lang> {
     prop::option::of("[a-z]{2}(-[A-Z]{2})?")
         .prop_filter_map("valid lang tag", |s| s.and_then(|tag| Lang::new(tag).ok()))
 }
 
 /// Strategy for generating string literals (plain and language-tagged)
+#[cfg(not(target_arch = "wasm32"))]
 fn string_literal_strategy() -> impl Strategy<Value = ConcreteLiteral> {
     prop_oneof![
         // Plain string literals
@@ -28,6 +37,7 @@ fn string_literal_strategy() -> impl Strategy<Value = ConcreteLiteral> {
 }
 
 /// Strategy for generating numeric literals
+#[cfg(not(target_arch = "wasm32"))]
 fn numeric_literal_strategy() -> impl Strategy<Value = ConcreteLiteral> {
     prop_oneof![
         any::<i128>().prop_map(ConcreteLiteral::integer),
@@ -59,11 +69,13 @@ fn numeric_literal_strategy() -> impl Strategy<Value = ConcreteLiteral> {
 }
 
 /// Strategy for generating boolean literals
+#[cfg(not(target_arch = "wasm32"))]
 fn boolean_literal_strategy() -> impl Strategy<Value = ConcreteLiteral> {
     any::<bool>().prop_map(ConcreteLiteral::boolean)
 }
 
 /// Strategy for generating XSD datatype IRIs
+#[cfg(not(target_arch = "wasm32"))]
 fn xsd_datatype_strategy() -> impl Strategy<Value = IriRef> {
     prop_oneof![
         Just(IriRef::iri(IriS::new_unchecked(
@@ -88,11 +100,13 @@ fn xsd_datatype_strategy() -> impl Strategy<Value = IriRef> {
 }
 
 /// Strategy for generating datatype literals
+#[cfg(not(target_arch = "wasm32"))]
 fn datatype_literal_strategy() -> impl Strategy<Value = ConcreteLiteral> {
     (".*", xsd_datatype_strategy()).prop_map(|(lexical, datatype)| ConcreteLiteral::lit_datatype(&lexical, &datatype))
 }
 
 /// Main strategy for generating arbitrary ConcreteLiterals
+#[cfg(not(target_arch = "wasm32"))]
 fn concrete_literal_strategy() -> impl Strategy<Value = ConcreteLiteral> {
     prop_oneof![
         string_literal_strategy(),
@@ -106,6 +120,7 @@ fn concrete_literal_strategy() -> impl Strategy<Value = ConcreteLiteral> {
 // Property Tests: Basic Invariants
 // ============================================================================
 
+#[cfg(not(target_arch = "wasm32"))]
 proptest! {
     /// datatype should always return a valid IRI
     #[test]
@@ -139,6 +154,7 @@ proptest! {
 // Property Tests: Equality and Hash
 // ============================================================================
 
+#[cfg(not(target_arch = "wasm32"))]
 proptest! {
     /// Equality should be reflexive: a == a
     #[test]
@@ -220,6 +236,7 @@ proptest! {
 // Property Tests: Type Constructors
 // ============================================================================
 
+#[cfg(not(target_arch = "wasm32"))]
 proptest! {
     /// String literal construction should preserve lexical form
     #[test]
@@ -298,6 +315,7 @@ proptest! {
 // Property Tests: Parsing
 // ============================================================================
 
+#[cfg(not(target_arch = "wasm32"))]
 proptest! {
     /// parse_bool should reject invalid strings
     #[test]
@@ -401,6 +419,7 @@ proptest! {
 // Property Tests: Comparison and Ordering
 // ============================================================================
 
+#[cfg(not(target_arch = "wasm32"))]
 proptest! {
     /// PartialOrd should be reflexive for comparable literals
     #[test]
@@ -466,6 +485,7 @@ proptest! {
 // Property Tests: Conversion
 // ============================================================================
 
+#[cfg(not(target_arch = "wasm32"))]
 proptest! {
     /// Conversion to oxrdf::Literal should always succeed
     #[test]
@@ -495,6 +515,7 @@ proptest! {
 // Property Tests: into_checked_literal
 // ============================================================================
 
+#[cfg(not(target_arch = "wasm32"))]
 proptest! {
     /// into_checked_literal should not modify non-datatype literals
     #[test]
@@ -526,6 +547,7 @@ proptest! {
 // Property Tests: Accessor Methods
 // ============================================================================
 
+#[cfg(not(target_arch = "wasm32"))]
 proptest! {
     /// lang() should return None for non-language-tagged literals
     #[test]
@@ -556,7 +578,7 @@ proptest! {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(not(target_arch = "wasm32"), test))]
 mod edge_case_tests {
     use super::*;
 

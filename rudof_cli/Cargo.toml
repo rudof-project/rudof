@@ -13,7 +13,7 @@ repository.workspace = true
 path = "src/main.rs"
 name = "rudof"
 
-[dependencies]
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
 anyhow.workspace = true
 clap.workspace = true
 clap_complete_command.workspace = true

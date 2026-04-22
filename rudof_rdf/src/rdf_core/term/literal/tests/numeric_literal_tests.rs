@@ -1,9 +1,15 @@
+#[cfg(not(target_arch = "wasm32"))]
 use proptest::prelude::*;
+#[cfg(not(target_arch = "wasm32"))]
 use rust_decimal::Decimal;
+#[cfg(not(target_arch = "wasm32"))]
 use rust_decimal::prelude::ToPrimitive;
+#[cfg(not(target_arch = "wasm32"))]
 use std::collections::hash_map::DefaultHasher;
+#[cfg(not(target_arch = "wasm32"))]
 use std::hash::{Hash, Hasher};
 
+#[cfg(not(target_arch = "wasm32"))]
 use crate::rdf_core::term::literal::NumericLiteral;
 
 // ============================================================================
@@ -11,36 +17,43 @@ use crate::rdf_core::term::literal::NumericLiteral;
 // ============================================================================
 
 /// Strategy for generating valid positive integers (> 0)
+#[cfg(not(target_arch = "wasm32"))]
 fn positive_integer_strategy() -> impl Strategy<Value = NumericLiteral> {
     (1u128..=u128::MAX).prop_map(|n| NumericLiteral::positive_integer(n).unwrap())
 }
 
 /// Strategy for generating valid negative integers (< 0)
+#[cfg(not(target_arch = "wasm32"))]
 fn negative_integer_strategy() -> impl Strategy<Value = NumericLiteral> {
     (i128::MIN..=-1i128).prop_map(|n| NumericLiteral::negative_integer(n).unwrap())
 }
 
 /// Strategy for generating valid non-positive integers (<= 0)
+#[cfg(not(target_arch = "wasm32"))]
 fn non_positive_integer_strategy() -> impl Strategy<Value = NumericLiteral> {
     (i128::MIN..=0i128).prop_map(|n| NumericLiteral::non_positive_integer(n).unwrap())
 }
 
 /// Strategy for generating non-negative integers (>= 0)
+#[cfg(not(target_arch = "wasm32"))]
 fn non_negative_integer_strategy() -> impl Strategy<Value = NumericLiteral> {
     any::<u128>().prop_map(NumericLiteral::non_negative_integer)
 }
 
 /// Strategy for generating finite floats (no NaN or Infinity)
+#[cfg(not(target_arch = "wasm32"))]
 fn finite_float_strategy() -> impl Strategy<Value = f32> {
     any::<f32>().prop_filter("must be finite", |f| f.is_finite())
 }
 
 /// Strategy for generating finite doubles (no NaN or Infinity)
+#[cfg(not(target_arch = "wasm32"))]
 fn finite_double_strategy() -> impl Strategy<Value = f64> {
     any::<f64>().prop_filter("must be finite", |d| d.is_finite())
 }
 
 /// Main strategy for generating arbitrary NumericLiterals
+#[cfg(not(target_arch = "wasm32"))]
 fn numeric_literal_strategy() -> impl Strategy<Value = NumericLiteral> {
     prop_oneof![
         any::<i128>().prop_map(NumericLiteral::integer),
@@ -66,6 +79,7 @@ fn numeric_literal_strategy() -> impl Strategy<Value = NumericLiteral> {
 // Property Tests: Type Constraints
 // ============================================================================
 
+#[cfg(not(target_arch = "wasm32"))]
 proptest! {
     /// PositiveInteger must reject 0 and accept all positive values
     #[test]
@@ -109,6 +123,7 @@ proptest! {
 // Property Tests: Comparison Properties
 // ============================================================================
 
+#[cfg(not(target_arch = "wasm32"))]
 proptest! {
     /// Comparison should be reflexive: a == a
     #[test]
@@ -190,6 +205,7 @@ proptest! {
 // Property Tests: Conversion Round-trips
 // ============================================================================
 
+#[cfg(not(target_arch = "wasm32"))]
 proptest! {
     /// Integer to Decimal conversion should preserve value
     #[test]
@@ -278,6 +294,7 @@ proptest! {
 // Property Tests: Hash and Equality
 // ============================================================================
 
+#[cfg(not(target_arch = "wasm32"))]
 proptest! {
     /// Hash should be deterministic
     #[test]
@@ -323,6 +340,7 @@ proptest! {
 // Property Tests: Digit Counting
 // ============================================================================
 
+#[cfg(not(target_arch = "wasm32"))]
 proptest! {
     /// total_digits should be >= fraction_digits
     #[test]
@@ -378,6 +396,7 @@ proptest! {
 // Property Tests: Datatype IRIs
 // ============================================================================
 
+#[cfg(not(target_arch = "wasm32"))]
 proptest! {
     /// All NumericLiterals should have valid datatype IRIs
     #[test]
@@ -400,6 +419,7 @@ proptest! {
 // Property Tests: Cross-type Consistency
 // ============================================================================
 
+#[cfg(not(target_arch = "wasm32"))]
 proptest! {
     /// Integer(n) and Long(n) should have same decimal representation for i64 range
     #[test]
@@ -444,6 +464,7 @@ proptest! {
 // Property Tests: String Parsing
 // ============================================================================
 
+#[cfg(not(target_arch = "wasm32"))]
 proptest! {
     /// TryFrom<&str> should successfully parse valid integer strings
     #[test]
@@ -477,6 +498,7 @@ proptest! {
 // Property Tests: Conversion to oxrdf::Literal
 // ============================================================================
 
+#[cfg(not(target_arch = "wasm32"))]
 proptest! {
     /// Conversion to oxrdf::Literal should always succeed
     #[test]
@@ -498,6 +520,7 @@ proptest! {
 // Property Tests: Display and Serialization
 // ============================================================================
 
+#[cfg(not(target_arch = "wasm32"))]
 proptest! {
     /// Display output should match lexical_form
     #[test]
@@ -512,7 +535,7 @@ proptest! {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(not(target_arch = "wasm32"), test))]
 mod edge_case_tests {
     use super::*;
 

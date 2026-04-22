@@ -19,15 +19,15 @@ use oxrdfxml::RdfXmlParser;
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
 use prefixmap::{PrefixMapError, map::*};
 use serde::{Serialize, ser::SerializeStruct};
-use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
 use std::{
+    collections::{HashMap, HashSet},
     fmt::{Debug, Display, Formatter},
-    io::{self, BufReader, Cursor, Write},
+    io::{self, Cursor, Write},
     str::FromStr,
+    sync::Arc,
 };
 #[cfg(not(target_family = "wasm"))]
-use std::{fs::File, path::Path};
+use std::{fs::File, io::BufReader, path::Path};
 #[cfg(feature = "sparql")]
 use {
     oxigraph::{
