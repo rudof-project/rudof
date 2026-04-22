@@ -8,6 +8,7 @@ use crate::rdf_core::{
 use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap, Show};
 use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
 use std::{
     fmt::{Debug, Display},
     hash::Hash,
@@ -510,78 +511,39 @@ impl Debug for Object {
 // Trait Implementations - Ordering
 // ============================================================================
 
+#[allow(clippy::non_canonical_partial_ord_impl)]
 impl PartialOrd for Object {
     /// Implements partial ordering for objects.
-    ///
-    /// Since `Object` implements total ordering via [`Ord`], this always returns
-    /// `Some(ordering)`.
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for Object {
-    /// Implements total ordering for objects according to RDF semantics.
     ///
     /// The ordering priority is: IRIs < Blank Nodes < Literals.
     /// Within each category, standard comparison applies:
     /// - IRIs: lexicographic ordering of IRI strings
     /// - Blank nodes: lexicographic ordering of identifiers
     /// - Literals: ordering defined by `ConcreteLiteral::cmp`
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (self, other) {
-            (Object::Iri(a), Object::Iri(b)) => a.cmp(b),
-            (Object::BlankNode(a), Object::BlankNode(b)) => a.cmp(b),
-            (Object::Literal(a), Object::Literal(b)) => a.cmp(b),
-            (Object::Iri(_), _) => std::cmp::Ordering::Less,
-            (Object::BlankNode(_), Object::Iri(_)) => std::cmp::Ordering::Greater,
-            (Object::BlankNode(_), Object::Literal(_)) => std::cmp::Ordering::Less,
-            (Object::Literal(_), _) => std::cmp::Ordering::Greater,
-            (
-                Object::BlankNode(_),
-                Object::Triple {
-                    subject: _,
-                    predicate: _,
-                    object: _,
-                },
-            ) => todo!(),
-            (
-                Object::Triple {
-                    subject: _,
-                    predicate: _,
-                    object: _,
-                },
-                Object::Iri(_iri_s),
-            ) => todo!(),
-            (
-                Object::Triple {
-                    subject: _,
-                    predicate: _,
-                    object: _,
-                },
-                Object::BlankNode(_),
-            ) => todo!(),
-            (
-                Object::Triple {
-                    subject: _,
-                    predicate: _,
-                    object: _,
-                },
-                Object::Literal(_sliteral),
-            ) => todo!(),
-            (
-                Object::Triple {
-                    subject: _subject1,
-                    predicate: _predicate1,
-                    object: _object1,
-                },
-                Object::Triple {
-                    subject: _subject2,
-                    predicate: _predicate2,
-                    object: _object2,
-                },
-            ) => todo!(),
+            (Object::Iri(a), Object::Iri(b)) => Some(a.cmp(b)),
+            (Object::BlankNode(a), Object::BlankNode(b)) => Some(a.cmp(b)),
+            (Object::Literal(a), Object::Literal(b)) => a.partial_cmp(b),
+            (Object::Iri(_), _) => Some(Ordering::Less),
+            (Object::BlankNode(_), Object::Iri(_)) => Some(Ordering::Greater),
+            (Object::BlankNode(_), Object::Literal(_)) => Some(Ordering::Less),
+            (Object::Literal(_), _) => Some(Ordering::Greater),
+            (Object::BlankNode(_), Object::Triple { .. }) => None,
+            (Object::Triple { .. }, Object::Iri(_)) => None,
+            (Object::Triple { .. }, Object::BlankNode(_)) => None,
+            (Object::Triple { .. }, Object::Literal(_)) => None,
+            (Object::Triple { .. }, Object::Triple { .. }) => None,
         }
+    }
+}
+
+impl Ord for Object {
+    /// Implements total ordering for objects according to RDF semantics.
+    ///
+    /// If elements are not comparable, [`Ordering::Less`] is returned
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.partial_cmp(other).unwrap_or(Ordering::Less)
     }
 }
 
