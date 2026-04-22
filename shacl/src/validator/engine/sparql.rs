@@ -1,16 +1,16 @@
-use std::fmt::Debug;
-use indoc::formatdoc;
-use iri_s::IriS;
-use rudof_rdf::rdf_core::query::QueryRDF;
-use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
-use rudof_rdf::rdf_core::term::{Object, Term};
 use crate::error::ValidationError;
 use crate::ir::{IRComponent, IRSchema, IRShape, ShapeLabelIdx};
 use crate::validator::cache::ValidationCache;
 use crate::validator::constraints::{ShaclComponent, SparqlValidator, ValidatorDeref};
-use crate::validator::engine::{select, Engine};
+use crate::validator::engine::{Engine, select};
 use crate::validator::nodes::{FocusNodes, ValueNodes};
 use crate::validator::report::ValidationResult;
+use indoc::formatdoc;
+use iri_s::IriS;
+use rudof_rdf::rdf_core::query::QueryRDF;
+use rudof_rdf::rdf_core::term::{Object, Term};
+use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
+use std::fmt::Debug;
 
 pub struct SparqlEngine {
     cache: ValidationCache,
@@ -18,12 +18,23 @@ pub struct SparqlEngine {
 
 impl SparqlEngine {
     pub fn new() -> Self {
-        Self { cache: ValidationCache::new() }
+        Self {
+            cache: ValidationCache::new(),
+        }
     }
 }
 
 impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
-    fn evaluate(&mut self, store: &S, shape: &IRShape, component: &IRComponent, value_nodes: &ValueNodes<S>, source_shape: Option<&IRShape>, maybe_path: Option<&SHACLPath>, shapes_graph: &IRSchema) -> Result<Vec<ValidationResult>, ValidationError> {
+    fn evaluate(
+        &mut self,
+        store: &S,
+        shape: &IRShape,
+        component: &IRComponent,
+        value_nodes: &ValueNodes<S>,
+        source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        shapes_graph: &IRSchema,
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
         let shacl_component = ShaclComponent::new(component);
         let validator: &dyn SparqlValidator<S> = shacl_component.deref();
 
@@ -35,11 +46,11 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
                 value_nodes,
                 source_shape,
                 maybe_path,
-                shapes_graph
+                shapes_graph,
             )
             .map_err(|e| ValidationError::ConstraintError {
                 component: component.to_string(),
-                source: e
+                source: Box::new(e),
             })
     }
 
@@ -58,15 +69,13 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
             }}
         ", node};
 
-        select(store, &query, "this").map_err(|e| {
-            ValidationError::SparqlError {
-                msg: "target_node".to_string(),
-                source: e
-            }
+        select(store, &query, "this").map_err(|e| ValidationError::SparqlError {
+            msg: "target_node".to_string(),
+            source: Box::new(e),
         })?;
 
         Err(ValidationError::NotImplemented {
-            msg: "target_node not implemented".to_string()
+            msg: "target_node not implemented".to_string(),
         })
     }
 
@@ -86,11 +95,9 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
             }}
         ", class};
 
-        select(store, &query, "this").map_err(|e| {
-            ValidationError::SparqlError {
-                msg: "target_class".to_string(),
-                source: e,
-            }
+        select(store, &query, "this").map_err(|e| ValidationError::SparqlError {
+            msg: "target_class".to_string(),
+            source: Box::new(e),
         })?;
 
         Err(ValidationError::NotImplemented {
@@ -108,11 +115,11 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
 
         select(store, &query, "this").map_err(|e| ValidationError::SparqlError {
             msg: "target_subject_of".to_string(),
-            source: e
+            source: Box::new(e),
         })?;
 
         Err(ValidationError::NotImplemented {
-            msg: "target_subject_of not implemented".to_string()
+            msg: "target_subject_of not implemented".to_string(),
         })
     }
 
@@ -124,21 +131,19 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
             }}
         ", predicate};
 
-        select(store, &query, "this").map_err(|e| {
-            ValidationError::SparqlError {
-                msg: "target_object_of".to_string(),
-                source: e
-            }
+        select(store, &query, "this").map_err(|e| ValidationError::SparqlError {
+            msg: "target_object_of".to_string(),
+            source: Box::new(e),
         })?;
 
         Err(ValidationError::NotImplemented {
-            msg: "target_object_of not implemented".to_string()
+            msg: "target_object_of not implemented".to_string(),
         })
     }
 
-    fn implicit_target_class(&self, store: &S, shape: &Object) -> Result<FocusNodes<S>, ValidationError> {
+    fn implicit_target_class(&self, _: &S, _: &Object) -> Result<FocusNodes<S>, ValidationError> {
         Err(ValidationError::NotImplemented {
-            msg: "implicit_target_class not implemented".to_string()
+            msg: "implicit_target_class not implemented".to_string(),
         })
     }
 

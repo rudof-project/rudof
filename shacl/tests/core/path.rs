@@ -1,11 +1,10 @@
-
 #[cfg(test)]
 mod tests {
-    use shacl::validator::ShaclValidationMode;
     use crate::common::TestSuiteError;
     use crate::test;
+    use shacl::validator::ShaclValidationMode;
 
-    const PATH: &'static str = "tests/data-shapes/data-shapes-test-suite/tests/core/path/";
+    const PATH: &str = "tests/data-shapes/data-shapes-test-suite/tests/core/path/";
 
     #[test]
     fn path_alternative_001() -> Result<(), TestSuiteError> {
@@ -108,5 +107,4 @@ mod tests {
         let path = format!("{}/{}.ttl", PATH, "path-zeroOrOne-001");
         test(path, ShaclValidationMode::Native)
     }
-
 }

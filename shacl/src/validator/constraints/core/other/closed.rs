@@ -1,18 +1,28 @@
-use std::collections::HashSet;
-use std::fmt::Debug;
-use rudof_rdf::rdf_core::{NeighsRDF, RDFError, Rdf, SHACLPath};
-use rudof_rdf::rdf_core::query::QueryRDF;
-use rudof_rdf::rdf_core::term::{Object, Triple};
 use crate::ir::components::Closed;
 use crate::ir::{IRComponent, IRSchema, IRShape};
-use crate::validator::constraints::{ConstraintError, NativeValidator, SparqlValidator, Validator};
-use crate::validator::engine::{Engine, SparqlEngine};
-use crate::validator::report::ValidationResult;
+use crate::validator::constraints::{ConstraintError, Validator};
+use crate::validator::engine::{Engine};
 use crate::validator::nodes::ValueNodes;
+use crate::validator::report::ValidationResult;
+use rudof_rdf::rdf_core::term::{Object, Triple};
+use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
+use std::fmt::Debug;
 
 impl<S: NeighsRDF + Debug> Validator<S> for Closed {
-    fn validate(&self, component: &IRComponent, shape: &IRShape, store: &S, engine: &mut dyn Engine<S>, value_nodes: &ValueNodes<S>, source_shape: Option<&IRShape>, maybe_path: Option<&SHACLPath>, shapes_graph: &IRSchema) -> Result<Vec<ValidationResult>, ConstraintError> {
-        if !self.is_closed() { return Ok(Vec::new()); }
+    fn validate(
+        &self,
+        component: &IRComponent,
+        shape: &IRShape,
+        store: &S,
+        _: &mut dyn Engine<S>,
+        value_nodes: &ValueNodes<S>,
+        _: Option<&IRShape>,
+        _: Option<&SHACLPath>,
+        _: &IRSchema,
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+        if !self.is_closed() {
+            return Ok(Vec::new());
+        }
 
         let allowed_props = shape.allowed_properties();
         let component_obj = Object::iri(component.into());
@@ -35,11 +45,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Closed {
                 let pred_iri = pred.into();
                 if !allowed_props.contains(&pred_iri) {
                     let value = S::term_as_object(&obj).ok();
-                    let vr = ValidationResult::new(
-                        focus_obj.clone(),
-                        component_obj.clone(),
-                        shape.severity(),
-                    )
+                    let vr = ValidationResult::new(focus_obj.clone(), component_obj.clone(), shape.severity())
                         .with_source(Some(shape.id().clone()))
                         .with_path(Some(SHACLPath::iri(pred_iri)))
                         .with_value(value);

@@ -1,13 +1,12 @@
-
 #[cfg(test)]
 mod tests {
+    use crate::ir::IRSchema;
+    use crate::rdf::ShaclParser;
+    use crate::validator::ShaclValidationMode;
+    use crate::validator::processor::{DataValidation, ShaclProcessor};
     use rudof_rdf::rdf_core::RDFFormat;
     use rudof_rdf::rdf_impl::ReaderMode;
     use sparql_service::RdfData;
-    use crate::ir::IRSchema;
-    use crate::rdf::ShaclParser;
-    use crate::validator::processor::{DataValidation, ShaclProcessor};
-    use crate::validator::ShaclValidationMode;
 
     #[test]
     fn test_min_exclusive_native() {

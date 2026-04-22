@@ -1,7 +1,7 @@
-use std::collections::HashMap;
-use rudof_rdf::rdf_core::term::Object;
 use crate::ir::ShapeLabelIdx;
 use crate::validator::report::ValidationResult;
+use rudof_rdf::rdf_core::term::Object;
+use std::collections::HashMap;
 
 // TODO - Review visibility and make trait
 /// Shared cache for SHACL validation results

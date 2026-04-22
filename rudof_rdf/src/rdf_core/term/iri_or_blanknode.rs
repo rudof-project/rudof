@@ -2,8 +2,8 @@ use std::fmt::Display;
 
 use crate::rdf_core::{RDFError, term::Object};
 use iri_s::IriS;
-use serde::{Deserialize, Serialize};
 use prefixmap::{PrefixMap, Show};
+use serde::{Deserialize, Serialize};
 
 /// Represents an RDF resource that is either an IRI or a blank node.
 ///

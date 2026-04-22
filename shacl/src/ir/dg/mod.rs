@@ -1,13 +1,13 @@
-use std::fmt::{Display, Formatter};
-use petgraph::algo::{is_cyclic_directed, tarjan_scc};
-use petgraph::{Directed, Outgoing};
-use petgraph::prelude::{EdgeRef, GraphMap};
+use crate::ir::ShapeLabelIdx;
 pub(crate) use crate::ir::dg::iterator::DependencyGraphIter;
 pub(crate) use crate::ir::dg::pos_neg::PosNeg;
-use crate::ir::ShapeLabelIdx;
+use petgraph::algo::{is_cyclic_directed, tarjan_scc};
+use petgraph::prelude::{EdgeRef, GraphMap};
+use petgraph::{Directed, Outgoing};
+use std::fmt::{Display, Formatter};
 
-mod pos_neg;
 mod iterator;
+mod pos_neg;
 
 #[derive(Default, Debug, Clone)]
 pub struct DependencyGraph {

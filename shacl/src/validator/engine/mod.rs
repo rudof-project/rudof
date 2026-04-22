@@ -1,27 +1,27 @@
+pub(crate) mod error;
+mod focus_nodes_ops;
 mod native;
 #[cfg(feature = "sparql")]
 mod sparql;
-pub(crate) mod error;
 mod validate;
-mod focus_nodes_ops;
 mod value_nodes_ops;
 
-use std::collections::HashSet;
-use iri_s::IriS;
-use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
-use rudof_rdf::rdf_core::term::Object;
 use crate::ir::{IRComponent, IRPropertyShape, IRSchema, IRShape, ShapeLabelIdx};
 use crate::types::Target;
+use iri_s::IriS;
+use rudof_rdf::rdf_core::term::Object;
+use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
+use std::collections::HashSet;
 
+#[cfg(feature = "sparql")]
+use crate::error::SparqlError;
+use crate::error::ValidationError;
+use crate::validator::nodes::{FocusNodes, ValueNodes};
+use crate::validator::report::ValidationResult;
 pub use native::NativeEngine;
 use rudof_rdf::rdf_core::query::QueryRDF;
 #[cfg(feature = "sparql")]
 pub use sparql::SparqlEngine;
-use crate::error::ValidationError;
-#[cfg(feature = "sparql")]
-use crate::error::SparqlError;
-use crate::validator::nodes::{FocusNodes, ValueNodes};
-use crate::validator::report::ValidationResult;
 pub use validate::Validate;
 
 pub trait Engine<S: NeighsRDF> {
@@ -40,7 +40,7 @@ pub trait Engine<S: NeighsRDF> {
         value_nodes: &ValueNodes<S>,
         source_shape: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
-        shapes_graph: &IRSchema
+        shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ValidationError>;
 
     fn focus_nodes(&self, store: &S, targets: &[Target]) -> Result<FocusNodes<S>, ValidationError> {
@@ -77,13 +77,14 @@ pub trait Engine<S: NeighsRDF> {
     fn implicit_target_class(&self, store: &S, shape: &Object) -> Result<FocusNodes<S>, ValidationError>;
 
     fn path(&self, store: &S, shape: &IRPropertyShape, focus_node: &S::Term) -> Result<FocusNodes<S>, ValidationError> {
-        let nodes = store
-            .objects_for_shacl_path(focus_node, shape.path())
-            .map_err(|e| ValidationError::ObjectsShaclPath {
-                focus_node: focus_node.to_string(),
-                shacl_path: shape.path().to_string(),
-                error: e.to_string(),
-            })?;
+        let nodes =
+            store
+                .objects_for_shacl_path(focus_node, shape.path())
+                .map_err(|e| ValidationError::ObjectsShaclPath {
+                    focus_node: focus_node.to_string(),
+                    shacl_path: shape.path().to_string(),
+                    error: e.to_string(),
+                })?;
 
         Ok(FocusNodes::new(nodes))
     }
@@ -99,14 +100,14 @@ pub trait Engine<S: NeighsRDF> {
 fn select<S: QueryRDF>(store: &S, query: &String, index: &str) -> Result<HashSet<S::Term>, SparqlError> {
     let mut out = HashSet::new();
 
-    let query = match store.query_select(&query) {
+    let query = match store.query_select(query) {
         Ok(sol) => sol,
         Err(e) => {
             return Err(SparqlError::Query {
                 query: query.to_string(),
                 err: e.to_string(),
-            })
-        }
+            });
+        },
     };
 
     for sol in query.iter() {

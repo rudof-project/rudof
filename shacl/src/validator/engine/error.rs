@@ -1,45 +1,38 @@
-use thiserror::Error;
 use rudof_rdf::rdf_core::RDFError;
 use rudof_rdf::rdf_impl::InMemoryGraphError;
+use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum SparqlError {
     #[error("Query could not be performed")]
-    Query {
-        query: String,
-        err: String,
-    }
+    Query { query: String, err: String },
 }
 
 #[derive(Debug, Error)]
 pub enum SrdfError {
     #[error("Error during the SRDF operation: {err}")]
-    Srdf {
-        err: String
-    },
+    Srdf { err: String },
 
     #[error("Error during the creation of the SRDFGraph: {err}")]
     SrdfGraph {
         #[from]
-        err: InMemoryGraphError
+        err: InMemoryGraphError,
     },
 
     #[error("RDFError: {err}")]
     RdfError {
         #[from]
-        err: RDFError
+        err: RDFError,
     },
 
     #[error("Converting term {subj} to subject")]
-    SrdfTermAsSubject {
-        subj: String
-    },
+    SrdfTermAsSubject { subj: String },
 
     #[error("Error finding values for subject {subject} with predicate {predicate}: {err}")]
     ObjectsWithSubjectPredicate {
         subject: String,
         predicate: String,
-        err: String
+        err: String,
     },
 
     #[error("Error finding values for object {object} with predicate {predicate}: {err}")]
@@ -50,7 +43,5 @@ pub enum SrdfError {
     },
 
     #[error("Unexpected literal {lit} as a SHACL path")]
-    ShaclUnexpectedLiteral {
-        lit: String
-    }
+    ShaclUnexpectedLiteral { lit: String },
 }

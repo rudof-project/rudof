@@ -1,7 +1,7 @@
-use sparql_service::RdfData;
+use crate::validator::ShaclValidationMode;
 use crate::validator::engine::{Engine, NativeEngine, SparqlEngine};
 use crate::validator::processor::ShaclProcessor;
-use crate::validator::ShaclValidationMode;
+use sparql_service::RdfData;
 
 // TODO - move to validation::algorithms module
 #[derive(Debug)]

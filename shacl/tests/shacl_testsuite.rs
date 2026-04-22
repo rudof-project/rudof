@@ -1,16 +1,13 @@
-use std::path::Path;
-use shacl::error::IRError;
-use shacl::validator::processor::{DataValidation, ShaclProcessor};
-use shacl::validator::ShaclValidationMode;
 use crate::common::{Manifest, TestSuiteError};
+use shacl::error::IRError;
+use shacl::validator::ShaclValidationMode;
+use shacl::validator::processor::{DataValidation, ShaclProcessor};
+use std::path::Path;
 
 mod common;
 mod core;
 
-fn test(
-    path: String,
-    mode: ShaclValidationMode,
-) -> Result<(), TestSuiteError> {
+fn test(path: String, mode: ShaclValidationMode) -> Result<(), TestSuiteError> {
     let mut manifest = Manifest::new(Path::new(&path))?;
     let tests = manifest.collect_tests()?;
 

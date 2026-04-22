@@ -1,5 +1,5 @@
-use std::fmt::{Display, Formatter};
 use iri_s::IriS;
+use std::fmt::{Display, Formatter};
 
 /// Closed Constraint Component.
 ///
@@ -41,8 +41,7 @@ impl Display for Closed {
             f,
             "Closed: is_closed: {}, ignored_properties: [{}]",
             self.is_closed,
-            self
-                .ignored_properties()
+            self.ignored_properties()
                 .iter()
                 .map(|p| p.to_string())
                 .collect::<Vec<_>>()

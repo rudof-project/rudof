@@ -1,19 +1,21 @@
+use crate::error::ShaclConfigError;
+use rudof_rdf::rdf_core::RdfDataConfig;
+use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
-use rudof_rdf::rdf_core::RdfDataConfig;
-use serde::{Deserialize, Serialize};
-use crate::error::ShaclConfigError;
 
 /// This struct can be used to define the configuration of SHACLco
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct ShaclConfig {
-    data: Option<RdfDataConfig>
+    data: Option<RdfDataConfig>,
 }
 
 impl ShaclConfig {
     pub fn new() -> Self {
-        Self { data: Some(RdfDataConfig::default()) }
+        Self {
+            data: Some(RdfDataConfig::default()),
+        }
     }
 
     #[cfg(not(target_family = "wasm"))]
@@ -25,12 +27,11 @@ impl ShaclConfig {
         })?;
 
         let mut s = String::new();
-        f.read_to_string(&mut s)
-            .map_err(|e| ShaclConfigError::ReadingConfig {
-                path_name: path_name.clone(),
-                error: e,
-            })?;
-        
+        f.read_to_string(&mut s).map_err(|e| ShaclConfigError::ReadingConfig {
+            path_name: path_name.clone(),
+            error: e,
+        })?;
+
         toml::from_str(s.as_str()).map_err(|e| ShaclConfigError::Toml {
             path_name: path_name.clone(),
             error: e,

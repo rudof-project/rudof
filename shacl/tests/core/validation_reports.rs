@@ -1,11 +1,10 @@
-
 #[cfg(test)]
 mod tests {
-    use shacl::validator::ShaclValidationMode;
     use crate::common::TestSuiteError;
     use crate::test;
+    use shacl::validator::ShaclValidationMode;
 
-    const PATH: &'static str = "tests/data-shapes/data-shapes-test-suite/tests/core/validation-reports/";
+    const PATH: &str = "tests/data-shapes/data-shapes-test-suite/tests/core/validation-reports/";
 
     #[test]
     #[ignore]
@@ -13,5 +12,4 @@ mod tests {
         let path = format!("{}/{}.ttl", PATH, "shared");
         test(path, ShaclValidationMode::Native)
     }
-
 }

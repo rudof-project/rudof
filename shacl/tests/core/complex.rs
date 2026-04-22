@@ -1,11 +1,10 @@
-
 #[cfg(test)]
 mod tests {
-    use shacl::validator::ShaclValidationMode;
     use crate::common::TestSuiteError;
     use crate::test;
+    use shacl::validator::ShaclValidationMode;
 
-    const PATH: &'static str = "tests/data-shapes/data-shapes-test-suite/tests/core/complex/";
+    const PATH: &str = "tests/data-shapes/data-shapes-test-suite/tests/core/complex/";
 
     #[test]
     fn personexample() -> Result<(), TestSuiteError> {
@@ -26,4 +25,3 @@ mod tests {
         test(path, ShaclValidationMode::Native)
     }
 }
-

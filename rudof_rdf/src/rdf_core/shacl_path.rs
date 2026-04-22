@@ -1,7 +1,7 @@
 use iri_s::IriS;
+use prefixmap::{PrefixMap, Show};
 use serde::Serialize;
 use std::fmt::Display;
-use prefixmap::{PrefixMap, Show};
 
 /// Represents a SHACL property path for navigating RDF graphs.
 ///

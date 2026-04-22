@@ -1,7 +1,7 @@
 use crate::{errors::ValidationError, formats::ShapeMapFormat};
 use rudof_rdf::rdf_core::RDFFormat;
-use shacl::validator::report::ValidationReportSorting;
 use shacl::validator::ShaclValidationMode as InnerShaclValidationMode;
+use shacl::validator::report::ValidationReportSorting;
 use shex_ast::shapemap::result_shape_map::SortMode;
 use std::{
     fmt::{Display, Formatter},

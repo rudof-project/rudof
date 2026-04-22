@@ -1,40 +1,72 @@
-pub(crate) mod error;
 mod core;
+pub(crate) mod error;
 mod test;
 
-use std::fmt::Debug;
-use std::marker::PhantomData;
-use rudof_rdf::rdf_core::{NeighsRDF, Rdf, SHACLPath};
-use rudof_rdf::rdf_core::query::QueryRDF;
-use rudof_rdf::rdf_core::term::Object;
 use crate::error::ConstraintError;
+use crate::ir::components::{
+    And, Closed, Datatype, Deactivated, HasValue, In, LanguageIn, MaxCount, MinCount, Node, Not, Or,
+    QualifiedValueShape, UniqueLang, Xone,
+};
 use crate::ir::{IRComponent, IRSchema, IRShape, ShapeLabelIdx};
-use crate::ir::components::{And, Closed, Datatype, Deactivated, HasValue, In, LanguageIn, MaxCount, MinCount, Node, Not, Or, QualifiedValueShape, UniqueLang, Xone};
 use crate::types::MessageMap;
 use crate::validator::engine::Engine;
 use crate::validator::iteration::{IterationStrategy, ValueNodeIteration};
 use crate::validator::nodes::ValueNodes;
 use crate::validator::report::ValidationResult;
+use rudof_rdf::rdf_core::query::QueryRDF;
+use rudof_rdf::rdf_core::term::Object;
+use rudof_rdf::rdf_core::{NeighsRDF, Rdf, SHACLPath};
+use std::fmt::Debug;
+use std::marker::PhantomData;
 
 // TODO - Move to crate::validator
 pub trait Validator<RDF: NeighsRDF + Debug> {
-    fn validate(&self, component: &IRComponent, shape: &IRShape, store: &RDF, engine: &mut dyn Engine<RDF>, value_nodes: &ValueNodes<RDF>, source_shape: Option<&IRShape>, maybe_path: Option<&SHACLPath>, shapes_graph: &IRSchema) -> Result<Vec<ValidationResult>, ConstraintError>;
+    fn validate(
+        &self,
+        component: &IRComponent,
+        shape: &IRShape,
+        store: &RDF,
+        engine: &mut dyn Engine<RDF>,
+        value_nodes: &ValueNodes<RDF>,
+        source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        shapes_graph: &IRSchema,
+    ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 // TODO - Move to crate::validator
 pub trait NativeValidator<RDF: NeighsRDF> {
-    fn validate_native(&self, component: &IRComponent, shape: &IRShape, store: &RDF, engine: &mut dyn Engine<RDF>, value_nodes: &ValueNodes<RDF>, source_shape: Option<&IRShape>, maybe_path: Option<&SHACLPath>, shapes_graph: &IRSchema) -> Result<Vec<ValidationResult>, ConstraintError>;
+    fn validate_native(
+        &self,
+        component: &IRComponent,
+        shape: &IRShape,
+        store: &RDF,
+        engine: &mut dyn Engine<RDF>,
+        value_nodes: &ValueNodes<RDF>,
+        source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        shapes_graph: &IRSchema,
+    ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 // TODO - Move to crate::validator
 #[cfg(feature = "sparql")]
 pub trait SparqlValidator<RDF: QueryRDF + Debug> {
-    fn validate_sparql(&self, component: &IRComponent, shape: &IRShape, store: &RDF, value_nodes: &ValueNodes<RDF>, source_shape: Option<&IRShape>, maybe_path: Option<&SHACLPath>, shapes_graph: &IRSchema) -> Result<Vec<ValidationResult>, ConstraintError>;
+    fn validate_sparql(
+        &self,
+        component: &IRComponent,
+        shape: &IRShape,
+        store: &RDF,
+        value_nodes: &ValueNodes<RDF>,
+        source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        shapes_graph: &IRSchema,
+    ) -> Result<Vec<ValidationResult>, ConstraintError>;
 }
 
 macro_rules! impl_validators_via_validate {
     ($ty:ty) => {
         impl<S> crate::validator::constraints::NativeValidator<S> for $ty
         where
-            S: rudof_rdf::rdf_core::NeighsRDF + std::fmt::Debug + 'static
+            S: rudof_rdf::rdf_core::NeighsRDF + std::fmt::Debug + 'static,
         {
             fn validate_native(
                 &self,
@@ -45,7 +77,7 @@ macro_rules! impl_validators_via_validate {
                 value_nodes: &crate::validator::nodes::ValueNodes<S>,
                 source_shape: Option<&crate::ir::IRShape>,
                 maybe_path: Option<&rudof_rdf::rdf_core::SHACLPath>,
-                shapes_graph: &crate::ir::IRSchema
+                shapes_graph: &crate::ir::IRSchema,
             ) -> Result<Vec<crate::validator::report::ValidationResult>, crate::validator::error::ConstraintError> {
                 self.validate(
                     component,
@@ -55,7 +87,7 @@ macro_rules! impl_validators_via_validate {
                     value_nodes,
                     source_shape,
                     maybe_path,
-                    shapes_graph
+                    shapes_graph,
                 )
             }
         }
@@ -63,10 +95,7 @@ macro_rules! impl_validators_via_validate {
         #[cfg(feature = "sparql")]
         impl<S> crate::validator::constraints::SparqlValidator<S> for $ty
         where
-            S: rudof_rdf::rdf_core::query::QueryRDF +
-                rudof_rdf::rdf_core::NeighsRDF +
-                std::fmt::Debug +
-                'static
+            S: rudof_rdf::rdf_core::query::QueryRDF + rudof_rdf::rdf_core::NeighsRDF + std::fmt::Debug + 'static,
         {
             fn validate_sparql(
                 &self,
@@ -76,7 +105,7 @@ macro_rules! impl_validators_via_validate {
                 value_nodes: &crate::validator::nodes::ValueNodes<S>,
                 source_shape: Option<&crate::ir::IRShape>,
                 maybe_path: Option<&rudof_rdf::rdf_core::SHACLPath>,
-                shapes_graph: &crate::ir::IRSchema
+                shapes_graph: &crate::ir::IRSchema,
             ) -> Result<Vec<crate::validator::report::ValidationResult>, crate::validator::error::ConstraintError> {
                 self.validate(
                     component,
@@ -86,7 +115,7 @@ macro_rules! impl_validators_via_validate {
                     value_nodes,
                     source_shape,
                     maybe_path,
-                    shapes_graph
+                    shapes_graph,
                 )
             }
         }
@@ -114,7 +143,7 @@ impl_validators_via_validate!(Datatype);
 // TODO - move to crate::shacl_component
 pub(crate) struct ShaclComponent<'a, S> {
     component: &'a IRComponent,
-    _marker: PhantomData<S>
+    _marker: PhantomData<S>,
 }
 
 // TODO - move to crate::shacl_component
@@ -122,7 +151,7 @@ impl<'a, S> ShaclComponent<'a, S> {
     pub fn new(component: &'a IRComponent) -> Self {
         Self {
             component,
-            _marker: PhantomData
+            _marker: PhantomData,
         }
     }
 
@@ -172,7 +201,9 @@ impl<'a, S: NeighsRDF + Debug + 'static> ValidatorDeref<'a, dyn NativeValidator<
 }
 
 #[cfg(feature = "sparql")]
-impl<'a, S: QueryRDF + NeighsRDF + Debug + 'static> ValidatorDeref<'a, dyn SparqlValidator<S> + 'a> for ShaclComponent<'a, S> {
+impl<'a, S: QueryRDF + NeighsRDF + Debug + 'static> ValidatorDeref<'a, dyn SparqlValidator<S> + 'a>
+    for ShaclComponent<'a, S>
+{
     fn deref(&self) -> &'a dyn SparqlValidator<S> {
         match self.component() {
             IRComponent::Class(inner) => inner,
@@ -207,7 +238,10 @@ impl<'a, S: QueryRDF + NeighsRDF + Debug + 'static> ValidatorDeref<'a, dyn Sparq
     }
 }
 
-pub(crate) fn get_shape_from_idx(shapes_graph: &IRSchema, shape_idx: &ShapeLabelIdx) -> Result<IRShape, ConstraintError> {
+pub(crate) fn get_shape_from_idx(
+    shapes_graph: &IRSchema,
+    shape_idx: &ShapeLabelIdx,
+) -> Result<IRShape, ConstraintError> {
     shapes_graph
         .get_shape_from_idx(shape_idx)
         .ok_or_else(|| ConstraintError::Internal {
@@ -237,14 +271,16 @@ fn apply<S: Rdf, I: IterationStrategy<S>>(
             if let Some(m) = shape.message() {
                 msg = msg.merge(m.to_owned(), true);
             }
-            if let Ok(condition) = evaluator(item) && condition {
+            if let Ok(condition) = evaluator(item)
+                && condition
+            {
                 return Some(
                     ValidationResult::new(focus, component, shape.severity())
                         .with_source(source.cloned())
                         .with_message(msg)
                         .with_path(maybe_path.cloned())
-                        .with_value(value)
-                )
+                        .with_value(value),
+                );
             }
             None
         })
@@ -260,7 +296,7 @@ fn apply_with_focus<S: Rdf, I: IterationStrategy<S>>(
     strategy: I,
     evaluator: impl Fn(&S::Term, &I::Item) -> Result<bool, ConstraintError>,
     msg: &str,
-    maybe_path: Option<&SHACLPath>
+    maybe_path: Option<&SHACLPath>,
 ) -> Result<Vec<ValidationResult>, ConstraintError> {
     let results = strategy
         .iterate(value_nodes)
@@ -276,7 +312,7 @@ fn apply_with_focus<S: Rdf, I: IterationStrategy<S>>(
                         .with_source(source.cloned())
                         .with_message(MessageMap::from(msg))
                         .with_path(maybe_path.cloned())
-                        .with_value(value)
+                        .with_value(value),
                 ),
                 Ok(false) => None,
                 Err(_) => None,
@@ -304,7 +340,7 @@ fn validate_with<S: Rdf, I: IterationStrategy<S>>(
         strategy,
         |item| Ok(evaluator(item)),
         msg,
-        maybe_path
+        maybe_path,
     )
 }
 
@@ -316,7 +352,7 @@ fn validate_with_focus<S: Rdf, I: IterationStrategy<S>>(
     strategy: I,
     evaluator: impl Fn(&S::Term, &I::Item) -> bool,
     msg: &str,
-    maybe_path: Option<&SHACLPath>
+    maybe_path: Option<&SHACLPath>,
 ) -> Result<Vec<ValidationResult>, ConstraintError> {
     apply_with_focus(
         component,
@@ -325,7 +361,7 @@ fn validate_with_focus<S: Rdf, I: IterationStrategy<S>>(
         strategy,
         |f, i| Ok(evaluator(f, i)),
         msg,
-        maybe_path
+        maybe_path,
     )
 }
 
@@ -346,10 +382,10 @@ fn validate_ask_with<S: QueryRDF>(
         |vn| match store.query_ask(&eval_query(vn)) {
             Ok(ask) => Ok(!ask),
             Err(err) => Err(ConstraintError::Query {
-                err: format!("ASK query failed: {err}")
-            })
+                err: format!("ASK query failed: {err}"),
+            }),
         },
         msg,
-        maybe_path
+        maybe_path,
     )
 }

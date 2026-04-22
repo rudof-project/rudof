@@ -1,3 +1,4 @@
+use crate::display::Table;
 use crate::{
     Result, Rudof,
     errors::ShaclError,
@@ -5,10 +6,9 @@ use crate::{
     utils::terminal_width,
 };
 use rudof_rdf::{rdf_core::BuildRDF, rdf_impl::InMemoryGraph};
+use shacl::types::Severity;
 use shacl::validator::report::ValidationReport;
 use std::io;
-use shacl::types::Severity;
-use crate::display::Table;
 
 pub fn serialize_shacl_validation_results<W: io::Write>(
     rudof: &Rudof,
@@ -30,22 +30,12 @@ pub fn serialize_shacl_validation_results<W: io::Write>(
         },
         ResultShaclValidationFormat::Compact => {
             serialize_shacl_validation_results
-                .table(
-                    writer,
-                    Some(false),
-                    Some(true),
-                    Some(terminal_width()),
-                )
+                .table(writer, Some(false), Some(true), Some(terminal_width()))
                 .map_err(|e| ShaclError::FailedIoOperation { error: e.to_string() })?;
         },
         ResultShaclValidationFormat::Details => {
             serialize_shacl_validation_results
-                .table(
-                    writer,
-                    Some(true),
-                    Some(true),
-                    Some(terminal_width()),
-                )
+                .table(writer, Some(true), Some(true), Some(terminal_width()))
                 .map_err(|e| ShaclError::FailedIoOperation { error: e.to_string() })?;
         },
         ResultShaclValidationFormat::Json => {

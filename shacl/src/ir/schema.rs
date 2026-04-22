@@ -6,7 +6,6 @@ use crate::ir::shape_label_idx::ShapeLabelIdx;
 use crate::rdf::ShaclParser;
 use crate::rdf::error::ShaclWriterError;
 use iri_s::IriS;
-use tracing::warn;
 use prefixmap::PrefixMap;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::vocabs::{RdfVocab, RdfVocabulary, ShaclVocab, XsdVocab};
@@ -15,6 +14,7 @@ use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
 use std::io::{Cursor, Read};
+use tracing::warn;
 
 #[derive(Clone, Debug)]
 pub struct IRSchema {

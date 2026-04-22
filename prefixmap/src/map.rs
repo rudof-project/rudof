@@ -1,5 +1,5 @@
-use crate::{IriRef, Show};
 use crate::error::PrefixMapError;
+use crate::{IriRef, Show};
 use colored::*;
 use indexmap::IndexMap;
 use iri_s::*;
@@ -193,8 +193,8 @@ impl PrefixMap {
             ("sh", "https://www.w3.org/ns/shacl#"),
             ("xsd", "https://www.w3.org/2001/XMLSchema#"),
         ])
-            .try_into()
-            .unwrap()
+        .try_into()
+        .unwrap()
     }
 
     /// Default Wikidata prefix map
@@ -234,11 +234,9 @@ impl PrefixMap {
             ("wdv", "https://www.wikidata.org/value/"),
             ("wikibase", "https://wikiba.se/ontology#"),
         ])
-            .try_into()
-            .unwrap();
-        pm
-            .without_default_colors()
-            .with_hyperlink(true)
+        .try_into()
+        .unwrap();
+        pm.without_default_colors().with_hyperlink(true)
     }
 }
 

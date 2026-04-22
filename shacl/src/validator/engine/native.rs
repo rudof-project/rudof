@@ -1,9 +1,3 @@
-use std::fmt::Debug;
-use iri_s::IriS;
-use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
-use rudof_rdf::rdf_core::term::{Object, Term, Triple};
-use rudof_rdf::rdf_core::vocabs::{RdfVocab, RdfsVocab};
-use crate::ast::ASTComponent;
 use crate::error::ValidationError;
 use crate::ir::{IRComponent, IRSchema, IRShape, ShapeLabelIdx};
 use crate::validator::cache::ValidationCache;
@@ -12,6 +6,11 @@ use crate::validator::engine::Engine;
 use crate::validator::index::ClassIndex;
 use crate::validator::nodes::{FocusNodes, ValueNodes};
 use crate::validator::report::ValidationResult;
+use iri_s::IriS;
+use rudof_rdf::rdf_core::term::{Object, Term, Triple};
+use rudof_rdf::rdf_core::vocabs::{RdfVocab, RdfsVocab};
+use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
+use std::fmt::Debug;
 
 pub struct NativeEngine {
     cache: ValidationCache,
@@ -35,7 +34,16 @@ impl<RDF: NeighsRDF + Debug + 'static> Engine<RDF> for NativeEngine {
         Ok(())
     }
 
-    fn evaluate(&mut self, store: &RDF, shape: &IRShape, component: &IRComponent, value_nodes: &ValueNodes<RDF>, source_shape: Option<&IRShape>, maybe_path: Option<&SHACLPath>, shapes_graph: &IRSchema) -> Result<Vec<ValidationResult>, ValidationError> {
+    fn evaluate(
+        &mut self,
+        store: &RDF,
+        shape: &IRShape,
+        component: &IRComponent,
+        value_nodes: &ValueNodes<RDF>,
+        source_shape: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        shapes_graph: &IRSchema,
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
         let shacl_component = ShaclComponent::new(component);
         let validator: &dyn NativeValidator<RDF> = shacl_component.deref();
 
@@ -52,12 +60,12 @@ impl<RDF: NeighsRDF + Debug + 'static> Engine<RDF> for NativeEngine {
             )
             .map_err(|e| ValidationError::ConstraintError {
                 component: component.to_string(),
-                source: e,
+                source: Box::new(e),
             })
     }
 
     /// https://www.w3.org/TR/shacl/#targetNode
-    fn target_node(&self, store: &RDF, node: &Object) -> Result<FocusNodes<RDF>, ValidationError> {
+    fn target_node(&self, _: &RDF, node: &Object) -> Result<FocusNodes<RDF>, ValidationError> {
         let node: RDF::Term = node.clone().into();
         if node.is_blank_node() {
             Err(ValidationError::TargetNodeBNode)
@@ -69,11 +77,8 @@ impl<RDF: NeighsRDF + Debug + 'static> Engine<RDF> for NativeEngine {
     fn target_class(&self, store: &RDF, class: &Object) -> Result<FocusNodes<RDF>, ValidationError> {
         // use the pre-built class index (O(1) lookup)
         if let Some(index) = &self.class_index {
-            let focus_nodes = index.instances_of(class)
-                .map(|obj| -> RDF::Term {
-                    obj.clone().into()
-                });
-            return Ok(FocusNodes::from_iter(focus_nodes))
+            let focus_nodes = index.instances_of(class).map(|obj| -> RDF::Term { obj.clone().into() });
+            return Ok(FocusNodes::from_iter(focus_nodes));
         }
 
         // Fallback: full graph scan (for backwards compatibility if index wasn't built)
@@ -117,12 +122,13 @@ impl<RDF: NeighsRDF + Debug + 'static> Engine<RDF> for NativeEngine {
 
         // Fallback: full graph scan (for backwards compatibility if index wasn't built)
         let term: RDF::Term = shape.clone().into();
-        let targets = store
-            .subjects_for(&RdfVocab::rdf_type().into(), &term)
-            .map_err(|e| ValidationError::InstanceOf {
-                term: term.to_string(),
-                error: e.to_string(),
-            })?;
+        let targets =
+            store
+                .subjects_for(&RdfVocab::rdf_type().into(), &term)
+                .map_err(|e| ValidationError::InstanceOf {
+                    term: term.to_string(),
+                    error: e.to_string(),
+                })?;
 
         let subclass_targets = store
             .subjects_for(&RdfsVocab::rdfs_subclass_of_str().into(), &term)

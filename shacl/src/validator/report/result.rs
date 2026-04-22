@@ -1,13 +1,13 @@
-use std::fmt::{Display, Formatter};
-use std::hash::{Hash, Hasher};
-use iri_s::IriS;
-use rudof_rdf::rdf_core::{BuildRDF, FocusRDF, NeighsRDF, SHACLPath};
-use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, Lang};
-use rudof_rdf::rdf_core::term::Object;
-use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use crate::error::{ReportError, ResultError};
 use crate::types::{MessageMap, Severity};
 use crate::validator::report::error_mapper;
+use iri_s::IriS;
+use rudof_rdf::rdf_core::term::Object;
+use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral};
+use rudof_rdf::rdf_core::vocabs::ShaclVocab;
+use rudof_rdf::rdf_core::{BuildRDF, FocusRDF, NeighsRDF, SHACLPath};
+use std::fmt::{Display, Formatter};
+use std::hash::{Hash, Hasher};
 
 #[derive(Debug, Clone, Eq)]
 pub struct ValidationResult {
@@ -105,9 +105,11 @@ impl ValidationResult {
                 predicate: ShaclVocab::SH_FOCUS_NODE.to_string(),
             })? {
             Some(fnode) => fnode,
-            None => return Err(ResultError::MissingRequiredField {
-                field: "FocusNode".to_string()
-            }),
+            None => {
+                return Err(ResultError::MissingRequiredField {
+                    field: "FocusNode".to_string(),
+                });
+            },
         };
 
         let severity = match store
@@ -118,13 +120,17 @@ impl ValidationResult {
                 predicate: ShaclVocab::SH_RESULT_SEVERITY.to_string(),
             })? {
             Some(Object::Iri(severity)) => (&severity).into(),
-            Some(other) => return Err(ResultError::WrongNodeForSeverity {
-                field: "Severity".to_string(),
-                value: other.to_string(),
-            }),
-            None => return Err(ResultError::MissingRequiredField {
-                field: "Severity".to_string(),
-            }),
+            Some(other) => {
+                return Err(ResultError::WrongNodeForSeverity {
+                    field: "Severity".to_string(),
+                    value: other.to_string(),
+                });
+            },
+            None => {
+                return Err(ResultError::MissingRequiredField {
+                    field: "Severity".to_string(),
+                });
+            },
         };
 
         let constraint_component = match store
@@ -135,9 +141,11 @@ impl ValidationResult {
                 predicate: ShaclVocab::SH_SOURCE_CONSTRAINT_COMPONENT.to_string(),
             })? {
             Some(component) => component,
-            None => return Err(ResultError::MissingRequiredField {
-                field: "SourceConstraintComponent".to_string(),
-            })
+            None => {
+                return Err(ResultError::MissingRequiredField {
+                    field: "SourceConstraintComponent".to_string(),
+                });
+            },
         };
 
         // Process the optional fields
@@ -170,16 +178,30 @@ impl ValidationResult {
             .with_value(value))
     }
 
-    pub fn to_rdf<RDF: BuildRDF + Sized>(&self, writer: &mut RDF, report_node: RDF::Subject) -> Result<(), ReportError> {
+    pub fn to_rdf<RDF: BuildRDF + Sized>(
+        &self,
+        writer: &mut RDF,
+        report_node: RDF::Subject,
+    ) -> Result<(), ReportError> {
         writer
             .add_type(report_node.clone(), ShaclVocab::sh_validation_result())
             .map_err(error_mapper::<RDF>(""))?;
         writer
-            .add_triple(report_node.clone(), ShaclVocab::sh_focus_node(), self.focus_node.clone())
+            .add_triple(
+                report_node.clone(),
+                ShaclVocab::sh_focus_node(),
+                self.focus_node.clone(),
+            )
             .map_err(error_mapper::<RDF>("Error adding focus node to validation result"))?;
         writer
-            .add_triple(report_node.clone(), ShaclVocab::sh_source_constraint_component(), self.constraint_component.clone())
-            .map_err(error_mapper::<RDF>("Error adding source constraint component to validation result"))?;
+            .add_triple(
+                report_node.clone(),
+                ShaclVocab::sh_source_constraint_component(),
+                self.constraint_component.clone(),
+            )
+            .map_err(error_mapper::<RDF>(
+                "Error adding source constraint component to validation result",
+            ))?;
 
         let severity: RDF::Term = <&Severity as Into<IriS>>::into(&self.severity).into();
         writer
@@ -188,8 +210,10 @@ impl ValidationResult {
 
         for (lang, text) in self.message.iter() {
             let lit: RDF::Literal = ConcreteLiteral::StringLiteral {
-                lang: lang.clone(), lexical_form: text.clone()
-            }.into();
+                lang: lang.clone(),
+                lexical_form: text.clone(),
+            }
+            .into();
             let term: RDF::Term = lit.into();
 
             writer
@@ -253,13 +277,13 @@ impl Display for ValidationResult {
 
 impl PartialEq for ValidationResult {
     fn eq(&self, other: &Self) -> bool {
-        self.focus_node == other.focus_node &&
-            self.constraint_component == other.constraint_component &&
-            self.severity == other.severity &&
-            self.path == other.path &&
-            self.value == other.value &&
-            self.source == other.source &&
-            self.details == other.details
+        self.focus_node == other.focus_node
+            && self.constraint_component == other.constraint_component
+            && self.severity == other.severity
+            && self.path == other.path
+            && self.value == other.value
+            && self.source == other.source
+            && self.details == other.details
     }
 }
 

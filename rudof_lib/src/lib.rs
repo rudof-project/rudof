@@ -16,13 +16,13 @@
 //! and more.
 
 pub(crate) mod api;
+pub mod display;
 pub mod errors;
 pub mod formats;
 mod rudof;
 mod rudof_config;
 pub mod types;
 pub(crate) mod utils;
-pub mod display;
 
 pub use rudof::*;
 pub use rudof_config::RudofConfig;

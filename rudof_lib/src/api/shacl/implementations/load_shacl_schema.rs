@@ -87,8 +87,8 @@ fn read_shacl_schema(
 
 fn compile_shacl_schema(rudof: &mut Rudof) -> Result<()> {
     let shacl_schema = rudof.shacl_shapes.as_ref().unwrap();
-    let shacl_schema_ir = IRSchema::compile(shacl_schema)
-        .map_err(|e| ShaclError::FailedCompilingShaclSchema { error: e.to_string() })?;
+    let shacl_schema_ir =
+        IRSchema::compile(shacl_schema).map_err(|e| ShaclError::FailedCompilingShaclSchema { error: e.to_string() })?;
 
     rudof.shacl_shapes_ir = Some(shacl_schema_ir);
 

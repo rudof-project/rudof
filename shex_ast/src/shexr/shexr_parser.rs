@@ -5,6 +5,7 @@ use crate::{
 use iri_s::iri;
 use prefixmap::IriRef;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::ParserExt;
+use rudof_rdf::rdf_core::vocabs::ShexRVocab;
 use rudof_rdf::{
     rdf_core::{
         FocusRDF, RDFError, Rdf,
@@ -22,7 +23,6 @@ use rudof_rdf::{
     },
     rdf_parser,
 };
-use rudof_rdf::rdf_core::vocabs::ShexRVocab;
 
 pub struct ShExRParser<RDF>
 where
@@ -90,7 +90,8 @@ where
     }
 
     fn parse_shape_expr() -> impl RDFNodeParse<RDF, Output = ShapeExpr> {
-        SingleValuePropertyParser::new(ShexRVocab::sx_shape_expr()).then(|node| SetFocusParser::new(node).then(|_| shape_expr()))
+        SingleValuePropertyParser::new(ShexRVocab::sx_shape_expr())
+            .then(|node| SetFocusParser::new(node).then(|_| shape_expr()))
     }
 }
 

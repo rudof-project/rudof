@@ -1,7 +1,7 @@
+use crate::ir::ShapeLabelIdx;
+use crate::ir::dg::pos_neg::PosNeg;
 use petgraph::Directed;
 use petgraph::graphmap::AllEdges;
-use crate::ir::dg::pos_neg::PosNeg;
-use crate::ir::ShapeLabelIdx;
 
 /// Iterator over the edges of the dependency graph
 /// The iterator yields tuples of the form (from, posneg, to)

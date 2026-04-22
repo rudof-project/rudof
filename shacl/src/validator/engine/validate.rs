@@ -1,8 +1,3 @@
-use std::collections::HashSet;
-use std::fmt::Debug;
-use rudof_rdf::rdf_core::{NeighsRDF, Rdf, SHACLPath};
-use rudof_rdf::rdf_core::term::Object;
-use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use crate::error::ValidationError;
 use crate::ir::{IRSchema, IRShape, ReifierInfo};
 use crate::types::MessageMap;
@@ -12,6 +7,11 @@ use crate::validator::engine::focus_nodes_ops::FocusNodesOps;
 use crate::validator::engine::value_nodes_ops::ValueNodesOps;
 use crate::validator::nodes::FocusNodes;
 use crate::validator::report::ValidationResult;
+use rudof_rdf::rdf_core::term::Object;
+use rudof_rdf::rdf_core::vocabs::ShaclVocab;
+use rudof_rdf::rdf_core::{NeighsRDF, Rdf, SHACLPath};
+use std::collections::HashSet;
+use std::fmt::Debug;
 
 /// Validate RDF data using SHACL
 pub trait Validate<RDF: Rdf> {
@@ -21,15 +21,22 @@ pub trait Validate<RDF: Rdf> {
         runner: &mut dyn Engine<RDF>,
         targets: Option<&FocusNodes<RDF>>,
         source_shape: Option<&IRShape>, // TODO - Review if this is needed since its probably the same as self
-        shapes_graph: &IRSchema
+        shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ValidationError>;
 }
 
 impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
-    fn validate(&self, store: &RDF, runner: &mut dyn Engine<RDF>, targets: Option<&FocusNodes<RDF>>, source_shape: Option<&IRShape>, shapes_graph: &IRSchema) -> Result<Vec<ValidationResult>, ValidationError> {
+    fn validate(
+        &self,
+        store: &RDF,
+        runner: &mut dyn Engine<RDF>,
+        targets: Option<&FocusNodes<RDF>>,
+        source_shape: Option<&IRShape>,
+        shapes_graph: &IRSchema,
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
         // Skips validation if shape is deactivated
         if self.deactivated() {
-            return Ok(Vec::new())
+            return Ok(Vec::new());
         }
 
         // Get focus nodes
@@ -49,7 +56,8 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
             for fnode in focus_nodes.iter() {
                 let node_object = RDF::term_as_object(fnode);
                 if let Ok(ref obj) = node_object
-                    && let Some(results) = runner.get_cached_results(obj, *idx) {
+                    && let Some(results) = runner.get_cached_results(obj, *idx)
+                {
                     cached_results.extend(results.iter().cloned());
                     continue;
                 }
@@ -91,9 +99,9 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
         // The validation needs to occur over the focus_nodes that have been computed for the current shape
         let mut property_shapes_validation_results = Vec::new();
         for ps in self.property_shapes().iter() {
-            let shape = shapes_graph.get_shape_from_idx(ps).unwrap_or_else(|| {
-                panic!("Internal error: Property shape for idx: {ps} not found in schema")
-            });
+            let shape = shapes_graph
+                .get_shape_from_idx(ps)
+                .unwrap_or_else(|| panic!("Internal error: Property shape for idx: {ps} not found in schema"));
             let results = shape.validate(store, runner, Some(&uncached_focus_nodes), Some(self), shapes_graph)?;
             property_shapes_validation_results.extend(results);
         }
@@ -106,7 +114,7 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
                 source_shape,
                 reifier_info,
                 &uncached_focus_nodes,
-                shapes_graph
+                shapes_graph,
             )?
         } else {
             Vec::new()
@@ -141,7 +149,15 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
     }
 }
 
-fn validate_reifiers<RDF: NeighsRDF + Debug>(shape: &IRShape, store: &RDF, runner: &mut dyn Engine<RDF>, source_shape: Option<&IRShape>, reifier_info: &ReifierInfo, focus_nodes: &FocusNodes<RDF>, shapes_graph: &IRSchema) -> Result<Vec<ValidationResult>, ValidationError> {
+fn validate_reifiers<RDF: NeighsRDF + Debug>(
+    shape: &IRShape,
+    store: &RDF,
+    runner: &mut dyn Engine<RDF>,
+    source_shape: Option<&IRShape>,
+    reifier_info: &ReifierInfo,
+    focus_nodes: &FocusNodes<RDF>,
+    shapes_graph: &IRSchema,
+) -> Result<Vec<ValidationResult>, ValidationError> {
     let mut results = Vec::new();
 
     for node in focus_nodes.iter() {
@@ -152,10 +168,12 @@ fn validate_reifiers<RDF: NeighsRDF + Debug>(shape: &IRShape, store: &RDF, runne
                 subject: format!("{node:?}"),
                 error: "Cannot convert to subject".to_string(),
             })?;
-            let triples = store.triples_with_subject_predicate(&subject, &pred_iri).map_err(|e| ValidationError::TriplesWithSubjectPredicate {
-                subject: node.to_string(),
-                predicate: pred.to_string(),
-                error: e.to_string(),
+            let triples = store.triples_with_subject_predicate(&subject, &pred_iri).map_err(|e| {
+                ValidationError::TriplesWithSubjectPredicate {
+                    subject: node.to_string(),
+                    predicate: pred.to_string(),
+                    error: e.to_string(),
+                }
             })?;
 
             for triple in triples {
@@ -172,9 +190,11 @@ fn validate_reifiers<RDF: NeighsRDF + Debug>(shape: &IRShape, store: &RDF, runne
                         Object::iri(ShaclVocab::sh_reifier_shape_constraint_component()),
                         shape.severity(),
                     )
-                        .with_message(MessageMap::from("Reification required but no reifier found for triple {triple} with predicate {pred}"))
-                        .with_path(Some(SHACLPath::iri(pred.clone())))
-                        .with_source(source_shape.map(|s| s.id()).cloned());
+                    .with_message(MessageMap::from(
+                        "Reification required but no reifier found for triple {triple} with predicate {pred}",
+                    ))
+                    .with_path(Some(SHACLPath::iri(pred.clone())))
+                    .with_source(source_shape.map(|s| s.id()).cloned());
                     results.push(vr_single);
                     continue;
                 }
@@ -182,10 +202,11 @@ fn validate_reifiers<RDF: NeighsRDF + Debug>(shape: &IRShape, store: &RDF, runne
                     .iter()
                     .map(RDF::subject_as_term)
                     .collect::<HashSet<_>>();
-                let reifier_shape = get_shape_from_idx(shapes_graph, reifier_shape).map_err(|e| ValidationError::ShapeNotFound {
-                    idx: *reifier_shape,
-                    error: e.to_string(),
-                })?;
+                let reifier_shape =
+                    get_shape_from_idx(shapes_graph, reifier_shape).map_err(|e| ValidationError::ShapeNotFound {
+                        idx: *reifier_shape,
+                        error: e.to_string(),
+                    })?;
                 let vr_iter = reifier_shape.validate(
                     store,
                     runner,

@@ -1,10 +1,8 @@
-use std::collections::hash_map::IntoIter;
+use itertools::Itertools;
 use rudof_rdf::rdf_core::term::literal::Lang;
 use std::collections::HashMap;
+use std::collections::hash_map::IntoIter;
 use std::fmt::{Display, Formatter};
-use std::ops::Deref;
-use std::str::FromStr;
-use itertools::Itertools;
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct MessageMap {
@@ -55,7 +53,7 @@ impl IntoIterator for MessageMap {
 impl From<&str> for MessageMap {
     fn from(value: &str) -> Self {
         Self {
-            messages: HashMap::from([(None, value.to_string())])
+            messages: HashMap::from([(None, value.to_string())]),
         }
     }
 }
@@ -63,7 +61,7 @@ impl From<&str> for MessageMap {
 impl From<String> for MessageMap {
     fn from(value: String) -> Self {
         Self {
-            messages: HashMap::from([(None, value)])
+            messages: HashMap::from([(None, value)]),
         }
     }
 }

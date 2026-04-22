@@ -52,10 +52,7 @@ impl ShaclToUnified {
         self.convert_shacl_schema(&schema).await
     }
 
-    async fn convert_shacl_schema(
-        &self,
-        schema: &ASTSchema,
-    ) -> Result<(UnifiedConstraintModel, TranslationMetrics)> {
+    async fn convert_shacl_schema(&self, schema: &ASTSchema) -> Result<(UnifiedConstraintModel, TranslationMetrics)> {
         let mut model = UnifiedConstraintModel::new();
         let mut metrics = TranslationMetrics::default();
 

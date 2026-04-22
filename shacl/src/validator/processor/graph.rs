@@ -1,12 +1,11 @@
-use std::path::Path;
-use std::str::FromStr;
-use rudof_rdf::rdf_core::RDFFormat;
-use sparql_service::RdfData;
 use crate::error::ValidationError;
+use crate::validator::ShaclValidationMode;
 use crate::validator::engine::{Engine, NativeEngine, SparqlEngine};
 use crate::validator::processor::ShaclProcessor;
-use crate::validator::ShaclValidationMode;
 use crate::validator::store::{Graph, Store};
+use rudof_rdf::rdf_core::RDFFormat;
+use sparql_service::RdfData;
+use std::path::Path;
 
 // TODO - move to validation::algorithm module
 /// The In-Memory Graph Validation algorithm

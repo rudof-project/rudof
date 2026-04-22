@@ -1,18 +1,27 @@
-use std::cmp::Ordering;
-use std::fmt::Debug;
-use rudof_rdf::rdf_core::{NeighsRDF, Rdf, SHACLPath};
-use rudof_rdf::rdf_core::query::QueryRDF;
-use rudof_rdf::rdf_core::term::{Object, Triple};
 use crate::ir::components::LessThan;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::types::MessageMap;
 use crate::validator::constraints::{ConstraintError, NativeValidator, SparqlValidator};
 use crate::validator::engine::Engine;
-use crate::validator::report::ValidationResult;
 use crate::validator::nodes::ValueNodes;
+use crate::validator::report::ValidationResult;
+use rudof_rdf::rdf_core::query::QueryRDF;
+use rudof_rdf::rdf_core::term::{Object, Triple};
+use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
+use std::fmt::Debug;
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThan {
-    fn validate_native(&self, component: &IRComponent, shape: &IRShape, store: &S, engine: &mut dyn Engine<S>, value_nodes: &ValueNodes<S>, source_shape: Option<&IRShape>, maybe_path: Option<&SHACLPath>, shapes_graph: &IRSchema) -> Result<Vec<ValidationResult>, ConstraintError> {
+    fn validate_native(
+        &self,
+        component: &IRComponent,
+        shape: &IRShape,
+        store: &S,
+        _: &mut dyn Engine<S>,
+        value_nodes: &ValueNodes<S>,
+        _: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        _: &IRSchema,
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let mut validation_results = Vec::new();
         let component = Object::Iri(component.into());
 
@@ -29,8 +38,12 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThan {
                         for value in nodes.iter() {
                             let node2 = S::term_as_object(value)?;
                             let msg = match node2.partial_cmp(&node1) {
-                                None => Some(format!("LessThan constraint violated: {node1} is not comparable to {node2}")),
-                                Some(ord) if ord.is_ge() => Some(format!("LessThan constraint violated: {node1} is not less than {node2}")),
+                                None => Some(format!(
+                                    "LessThan constraint violated: {node1} is not comparable to {node2}"
+                                )),
+                                Some(ord) if ord.is_ge() => Some(format!(
+                                    "LessThan constraint violated: {node1} is not less than {node2}"
+                                )),
                                 _ => None,
                             };
 
@@ -47,13 +60,16 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThan {
                     }
                 },
                 Err(e) => {
-                    let msg = format!("LessThan: Error trying to find triples for subject {subject} and predicate {}: {e}", self.iri());
+                    let msg = format!(
+                        "LessThan: Error trying to find triples for subject {subject} and predicate {}: {e}",
+                        self.iri()
+                    );
                     let vr = ValidationResult::new(fnode_obj, component.clone(), shape.severity())
                         .with_path(maybe_path.cloned())
                         .with_message(MessageMap::from(msg))
                         .with_source(Some(shape.id().clone()));
                     validation_results.push(vr);
-                }
+                },
             }
         }
 
@@ -63,9 +79,18 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThan {
 
 #[cfg(feature = "sparql")]
 impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for LessThan {
-    fn validate_sparql(&self, component: &IRComponent, shape: &IRShape, store: &S, value_nodes: &ValueNodes<S>, source_shape: Option<&IRShape>, maybe_path: Option<&SHACLPath>, shapes_graph: &IRSchema) -> Result<Vec<ValidationResult>, ConstraintError> {
+    fn validate_sparql(
+        &self,
+        _: &IRComponent,
+        _: &IRShape,
+        _: &S,
+        _: &ValueNodes<S>,
+        _: Option<&IRShape>,
+        _: Option<&SHACLPath>,
+        _: &IRSchema,
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented {
-            err: "LessThan not implemented".to_string()
+            err: "LessThan not implemented".to_string(),
         })
     }
 }

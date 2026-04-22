@@ -1,8 +1,8 @@
-use std::collections::hash_set::IntoIter;
+use rudof_rdf::rdf_core::Rdf;
 use std::collections::HashSet;
+use std::collections::hash_set::IntoIter;
 use std::fmt::{Display, Formatter};
 use std::rc::Rc;
-use rudof_rdf::rdf_core::Rdf;
 
 /// Contains the set of focus nodes.
 ///
@@ -13,7 +13,7 @@ use rudof_rdf::rdf_core::Rdf;
 /// a full [`HashSet`] via an iterator.
 #[derive(Debug)]
 pub struct FocusNodes<RDF: Rdf> {
-    set: Rc<HashSet<RDF::Term>>
+    set: Rc<HashSet<RDF::Term>>,
 }
 
 impl<RDF: Rdf> FocusNodes<RDF> {
@@ -43,19 +43,25 @@ impl<RDF: Rdf> FocusNodes<RDF> {
 
 impl<RDF: Rdf> Clone for FocusNodes<RDF> {
     fn clone(&self) -> Self {
-        Self { set: Rc::clone(&self.set) }
+        Self {
+            set: Rc::clone(&self.set),
+        }
     }
 }
 
 impl<RDF: Rdf> Default for FocusNodes<RDF> {
     fn default() -> Self {
-        Self { set: Rc::new(HashSet::new()) }
+        Self {
+            set: Rc::new(HashSet::new()),
+        }
     }
 }
 
 impl<RDF: Rdf> FromIterator<RDF::Term> for FocusNodes<RDF> {
-    fn from_iter<T: IntoIterator<Item=RDF::Term>>(iter: T) -> Self {
-        Self { set: Rc::new(HashSet::from_iter(iter)) }
+    fn from_iter<T: IntoIterator<Item = RDF::Term>>(iter: T) -> Self {
+        Self {
+            set: Rc::new(HashSet::from_iter(iter)),
+        }
     }
 }
 
@@ -78,8 +84,7 @@ impl<RDF: Rdf> Display for FocusNodes<RDF> {
         write!(
             f,
             "FocusNodes[{}]",
-            self
-                .set
+            self.set
                 .iter()
                 .map(|node| node.to_string())
                 .collect::<Vec<_>>()

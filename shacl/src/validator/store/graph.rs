@@ -1,9 +1,9 @@
-use std::path::Path;
-use rudof_rdf::rdf_core::RDFFormat;
-use rudof_rdf::rdf_impl::{InMemoryGraph, InMemoryGraphError, ReaderMode};
-use sparql_service::RdfData;
 use crate::error::ValidationError;
 use crate::validator::store::Store;
+use rudof_rdf::rdf_core::RDFFormat;
+use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+use sparql_service::RdfData;
+use std::path::Path;
 
 pub struct Graph {
     #[cfg(feature = "sparql")]
@@ -28,15 +28,15 @@ impl Graph {
             path,
             rdf_format,
             base,
-            &ReaderMode::default() // TODO - This should revisited
+            &ReaderMode::default(), // TODO - This should revisited
         ) {
             Ok(store) => Ok(Self {
                 #[cfg(feature = "sparql")]
                 store: RdfData::from_graph(store)?,
                 #[cfg(not(feature = "sparql"))]
-                store
+                store,
             }),
-            Err(err) => Err(err.into())
+            Err(err) => Err(err.into()),
         }
     }
 }
@@ -52,7 +52,9 @@ impl TryFrom<InMemoryGraph> for Graph {
     type Error = ValidationError;
 
     fn try_from(value: InMemoryGraph) -> Result<Self, Self::Error> {
-        Ok(Self { store: RdfData::from_graph(value)? })
+        Ok(Self {
+            store: RdfData::from_graph(value)?,
+        })
     }
 }
 

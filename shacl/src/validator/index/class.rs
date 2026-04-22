@@ -1,8 +1,8 @@
-use std::collections::{HashMap, HashSet};
+use crate::error::ValidationError;
 use rudof_rdf::rdf_core::NeighsRDF;
 use rudof_rdf::rdf_core::term::{Object, Triple};
 use rudof_rdf::rdf_core::vocabs::{RdfVocab, RdfsVocab};
-use crate::error::ValidationError;
+use std::collections::{HashMap, HashSet};
 
 /// Pre-computed inverted index for class-based target resolution.
 ///
@@ -33,9 +33,10 @@ impl ClassIndex {
         let rdf_type: RDF::IRI = RdfVocab::rdf_type().into();
         let rdfs_subclass_of: RDF::IRI = RdfsVocab::rdfs_subclass_of_str().into();
 
-        for triple in store.triples().map_err(|e| ValidationError::ClassIndexBuild {
-            err: e.to_string(),
-        })? {
+        for triple in store
+            .triples()
+            .map_err(|e| ValidationError::ClassIndexBuild { err: e.to_string() })?
+        {
             let (subj, pred, obj) = triple.into_components();
 
             if pred == rdf_type {
@@ -54,7 +55,10 @@ impl ClassIndex {
                 }
             }
         }
-        Ok(ClassIndex { class_instances, subclass_map })
+        Ok(ClassIndex {
+            class_instances,
+            subclass_map,
+        })
     }
 
     /// Returns the set of direct instances of the given class

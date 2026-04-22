@@ -1,17 +1,17 @@
-use std::fmt::{Display, Formatter};
-use prefixmap::PrefixMap;
-use rudof_rdf::rdf_core::{BuildRDF, FocusRDF, SHACLPath};
-use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use crate::types::Severity;
+use prefixmap::PrefixMap;
+use rudof_rdf::rdf_core::vocabs::ShaclVocab;
+use rudof_rdf::rdf_core::{BuildRDF, FocusRDF};
+use std::fmt::{Display, Formatter};
 
-mod result;
 pub(crate) mod error;
+mod result;
 mod sorting;
 
-pub use result::ValidationResult;
-pub use sorting::ValidationReportSorting;
-use rudof_rdf::rdf_core::term::{IriOrBlankNode, Object};
 use crate::error::ReportError;
+pub use result::ValidationResult;
+use rudof_rdf::rdf_core::term::{Object};
+pub use sorting::ValidationReportSorting;
 
 #[derive(Debug, Clone)]
 pub struct ValidationReport {
@@ -70,10 +70,7 @@ impl ValidationReport {
     }
 
     pub fn get_count_of(&self, severity: &Severity) -> usize {
-        self.results
-            .iter()
-            .filter(|r| r.severity() == severity)
-            .count()
+        self.results.iter().filter(|r| r.severity() == severity).count()
     }
 }
 
@@ -81,17 +78,18 @@ impl ValidationReport {
     pub fn parse<S: FocusRDF>(store: &mut S, subject: S::Term) -> Result<Self, ReportError> {
         let mut results = Vec::new();
 
-        for result in store.objects_for(&subject, &ShaclVocab::sh_result().into())
+        for result in store
+            .objects_for(&subject, &ShaclVocab::sh_result().into())
             .map_err(|e| ReportError::ObjectsFor {
                 subject: subject.to_string(),
                 predicate: ShaclVocab::SH_RESULT.to_string(),
                 error: e.to_string(),
-            })? {
+            })?
+        {
             results.push(ValidationResult::parse(store, &result)?);
         }
 
-        let mut report = Self::new()
-            .with_results(results);
+        let mut report = Self::new().with_results(results);
 
         if let Some(pm) = store.prefixmap() {
             report = report.with_prefixmap(pm);
@@ -105,7 +103,8 @@ impl ValidationReport {
             .add_prefix("sh", ShaclVocab::sh_ref())
             .map_err(error_mapper::<RDF>("Error adding prefix to writer"))?;
 
-        let report_node: RDF::Subject = writer.add_bnode()
+        let report_node: RDF::Subject = writer
+            .add_bnode()
             .map_err(error_mapper::<RDF>("Error creating bnode"))?
             .into();
         writer
@@ -135,8 +134,8 @@ impl ValidationReport {
                     .add_triple(report_node.clone(), result.clone(), result_node_term.clone())
                     .map_err(error_mapper::<RDF>("Error adding result to bnode"))?;
 
-                let result_node_subject: RDF::Subject = RDF::Subject::try_from(result_node_term)
-                    .map_err(|_| ReportError::ValidationError {
+                let result_node_subject: RDF::Subject =
+                    RDF::Subject::try_from(result_node_term).map_err(|_| ReportError::ValidationError {
                         msg: "Cannot convert term to subject".to_string(),
                     })?;
                 vr.to_rdf(writer, result_node_subject)?;
@@ -155,8 +154,7 @@ impl Default for ValidationReport {
 
 impl PartialEq for ValidationReport {
     fn eq(&self, other: &Self) -> bool {
-        self.results.len() == other.results.len() &&
-            self.results.iter().all(|r| other.results.contains(r))
+        self.results.len() == other.results.len() && self.results.iter().all(|r| other.results.contains(r))
     }
 }
 
@@ -188,9 +186,7 @@ impl Display for ValidationReport {
 }
 
 fn error_mapper<RDF: BuildRDF>(msg: &str) -> impl FnOnce(RDF::Err) -> ReportError {
-    move |e| {
-        ReportError::ValidationError {
-            msg: format!("{}: {}", msg, e.to_string())
-        }
+    move |e| ReportError::ValidationError {
+        msg: format!("{}: {}", msg, e),
     }
 }

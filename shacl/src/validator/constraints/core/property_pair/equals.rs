@@ -1,18 +1,27 @@
-use std::collections::HashSet;
-use std::fmt::Debug;
-use rudof_rdf::rdf_core::{NeighsRDF, RDFError, Rdf, SHACLPath};
-use rudof_rdf::rdf_core::query::QueryRDF;
-use rudof_rdf::rdf_core::term::{Object, Triple};
 use crate::ir::components::Equals;
 use crate::ir::{IRComponent, IRSchema, IRShape};
-use crate::validator::constraints::{validate_with_focus, ConstraintError, NativeValidator, SparqlValidator};
+use crate::validator::constraints::{ConstraintError, NativeValidator, SparqlValidator};
 use crate::validator::engine::Engine;
-use crate::validator::iteration::ValueNodeIteration;
-use crate::validator::report::ValidationResult;
 use crate::validator::nodes::ValueNodes;
+use crate::validator::report::ValidationResult;
+use rudof_rdf::rdf_core::query::QueryRDF;
+use rudof_rdf::rdf_core::term::{Object, Triple};
+use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
+use std::collections::HashSet;
+use std::fmt::Debug;
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Equals {
-    fn validate_native(&self, component: &IRComponent, shape: &IRShape, store: &S, engine: &mut dyn Engine<S>, value_nodes: &ValueNodes<S>, source_shape: Option<&IRShape>, maybe_path: Option<&SHACLPath>, shapes_graph: &IRSchema) -> Result<Vec<ValidationResult>, ConstraintError> {
+    fn validate_native(
+        &self,
+        component: &IRComponent,
+        shape: &IRShape,
+        store: &S,
+        _: &mut dyn Engine<S>,
+        value_nodes: &ValueNodes<S>,
+        _: Option<&IRShape>,
+        maybe_path: Option<&SHACLPath>,
+        _: &IRSchema,
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         let component_obj = Object::iri(component.into());
         let mut results = Vec::new();
 
@@ -26,7 +35,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Equals {
 
             let prop_values = store
                 .triples_with_subject_predicate(&subject, &iri)
-                .map_err(|e| ConstraintError::Internal { err: e.to_string(), })?
+                .map_err(|e| ConstraintError::Internal { err: e.to_string() })?
                 .map(|t| t.obj().clone())
                 .collect::<HashSet<_>>();
 
@@ -63,7 +72,16 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Equals {
 
 #[cfg(feature = "sparql")]
 impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Equals {
-    fn validate_sparql(&self, component: &IRComponent, shape: &IRShape, store: &S, value_nodes: &ValueNodes<S>, source_shape: Option<&IRShape>, maybe_path: Option<&SHACLPath>, shapes_graph: &IRSchema) -> Result<Vec<ValidationResult>, ConstraintError> {
+    fn validate_sparql(
+        &self,
+        _: &IRComponent,
+        _: &IRShape,
+        _: &S,
+        _: &ValueNodes<S>,
+        _: Option<&IRShape>,
+        _: Option<&SHACLPath>,
+        _: &IRSchema,
+    ) -> Result<Vec<ValidationResult>, ConstraintError> {
         Err(ConstraintError::NotImplemented {
             err: "Equals not implemented".to_string(),
         })

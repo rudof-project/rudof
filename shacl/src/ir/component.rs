@@ -1,5 +1,9 @@
 use crate::ast::{ASTComponent, ASTSchema};
-use crate::ir::components::{And, Class, Closed, Datatype, Deactivated, Disjoint, Equals, HasValue, In, LanguageIn, LessThan, LessThanOrEquals, MaxCount, MaxExclusive, MaxInclusive, MaxLength, MinCount, MinExclusive, MinInclusive, MinLength, Node, Nodekind, Not, Or, Pattern, QualifiedValueShape, UniqueLang, Xone};
+use crate::ir::components::{
+    And, Class, Closed, Datatype, Deactivated, Disjoint, Equals, HasValue, In, LanguageIn, LessThan, LessThanOrEquals,
+    MaxCount, MaxExclusive, MaxInclusive, MaxLength, MinCount, MinExclusive, MinInclusive, MinLength, Node, Nodekind,
+    Not, Or, Pattern, QualifiedValueShape, UniqueLang, Xone,
+};
 use crate::ir::dg::{DependencyGraph, PosNeg};
 use crate::ir::error::IRError;
 use crate::ir::schema::IRSchema;
@@ -8,13 +12,13 @@ use crate::ir::shape_label_idx::ShapeLabelIdx;
 use crate::ir::{convert_iri_ref, convert_value};
 use crate::types::NodeKind;
 use iri_s::IriS;
+use itertools::Itertools;
 use rudof_rdf::rdf_core::BuildRDF;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
-use itertools::Itertools;
 
 #[derive(Debug, Clone)]
 pub enum IRComponent {
@@ -77,9 +81,9 @@ impl IRComponent {
             ASTComponent::Equals(iri) => IRComponent::Equals(Equals::new(convert_iri_ref(iri)?)),
             ASTComponent::Disjoint(iri) => IRComponent::Disjoint(Disjoint::new(convert_iri_ref(iri)?)),
             ASTComponent::LessThan(iri) => IRComponent::LessThan(LessThan::new(convert_iri_ref(iri)?)),
-            ASTComponent::LessThanOrEquals(iri) => IRComponent::LessThanOrEquals(LessThanOrEquals::new(
-                convert_iri_ref(iri)?,
-            )),
+            ASTComponent::LessThanOrEquals(iri) => {
+                IRComponent::LessThanOrEquals(LessThanOrEquals::new(convert_iri_ref(iri)?))
+            },
             ASTComponent::Or(objs) => {
                 let idxs = ir.register_shapes(objs, ast)?;
                 IRComponent::Or(Or::new(idxs))
@@ -96,9 +100,10 @@ impl IRComponent {
                 let idxs = ir.register_shapes(objs, ast)?;
                 IRComponent::Xone(Xone::new(idxs))
             },
-            ASTComponent::Closed { is_closed, ignored_properties } => {
-                IRComponent::Closed(Closed::new(is_closed, ignored_properties.into_iter().collect_vec()))
-            },
+            ASTComponent::Closed {
+                is_closed,
+                ignored_properties,
+            } => IRComponent::Closed(Closed::new(is_closed, ignored_properties.into_iter().collect_vec())),
             ASTComponent::Node(obj) => {
                 let idx = ir.register_shape(&obj, None, ast)?;
                 IRComponent::Node(Node::new(idx))
@@ -129,7 +134,8 @@ impl IRComponent {
                     compiled_siblings,
                 ))
             },
-            ASTComponent::Deactivated(d) => { // TODO - Change for node expr
+            ASTComponent::Deactivated(d) => {
+                // TODO - Change for node expr
                 IRComponent::Deactivated(Deactivated::new(d))
             },
         };
@@ -147,12 +153,7 @@ impl IRComponent {
         shape_map: &HashMap<ShapeLabelIdx, IRShape>,
     ) -> Result<(), RDF::Err> {
         match self {
-            IRComponent::Class(c) => register_term(
-                &c.class_rule().clone().into(),
-                ShaclVocab::sh_class(),
-                id,
-                graph,
-            ),
+            IRComponent::Class(c) => register_term(&c.class_rule().clone().into(), ShaclVocab::sh_class(), id, graph),
             IRComponent::Datatype(iri) => register_iri(iri.datatype(), ShaclVocab::sh_datatype(), id, graph),
             IRComponent::NodeKind(nk) => {
                 let iri = match nk.node_kind() {
@@ -179,26 +180,15 @@ impl IRComponent {
             IRComponent::MaxInclusive(mi) => {
                 register_literal(mi.max_inclusive(), ShaclVocab::sh_max_inclusive(), id, graph)
             },
-            IRComponent::MinLength(ml) => {
-                register_integer(ml.min_length(), ShaclVocab::sh_min_length(), id, graph)
-            },
-            IRComponent::MaxLength(ml) => {
-                register_integer(ml.max_length(), ShaclVocab::sh_max_length(), id, graph)
-            },
+            IRComponent::MinLength(ml) => register_integer(ml.min_length(), ShaclVocab::sh_min_length(), id, graph),
+            IRComponent::MaxLength(ml) => register_integer(ml.max_length(), ShaclVocab::sh_max_length(), id, graph),
             IRComponent::Pattern(p) => {
                 if let Some(flags) = p.flags() {
                     register_literal(&ConcreteLiteral::str(flags), ShaclVocab::sh_flags(), id, graph)?;
                 }
-                register_literal(
-                    &ConcreteLiteral::str(p.pattern()),
-                    ShaclVocab::sh_pattern(),
-                    id,
-                    graph,
-                )
+                register_literal(&ConcreteLiteral::str(p.pattern()), ShaclVocab::sh_pattern(), id, graph)
             },
-            IRComponent::UniqueLang(ul) => {
-                register_boolean(ul.unique_lang(), ShaclVocab::sh_unique_lang(), id, graph)
-            },
+            IRComponent::UniqueLang(ul) => register_boolean(ul.unique_lang(), ShaclVocab::sh_unique_lang(), id, graph),
             IRComponent::LanguageIn(li) => li.langs().iter().try_for_each(|l| {
                 register_literal(
                     &ConcreteLiteral::str(&l.to_string()),
@@ -271,12 +261,7 @@ impl IRComponent {
                 }
 
                 if let Some(value) = qvs.qualified_value_shapes_disjoint() {
-                    register_boolean(
-                        value,
-                        ShaclVocab::sh_qualified_value_shapes_disjoint(),
-                        id,
-                        graph,
-                    )?;
+                    register_boolean(value, ShaclVocab::sh_qualified_value_shapes_disjoint(), id, graph)?;
                 }
 
                 // TODO - Throw error instead of unwrap
@@ -291,12 +276,13 @@ impl IRComponent {
             IRComponent::Closed(closed) => {
                 register_boolean(closed.is_closed(), ShaclVocab::sh_closed(), id, graph)?;
 
-                closed.ignored_properties()
-                    .iter().try_for_each(|iri| {
-                    register_iri(iri, ShaclVocab::sh_ignored_properties(), id, graph)
-                })
+                closed
+                    .ignored_properties()
+                    .iter()
+                    .try_for_each(|iri| register_iri(iri, ShaclVocab::sh_ignored_properties(), id, graph))
             },
-            IRComponent::Deactivated(deactivated) => { // TODO - Adapt for node expression
+            IRComponent::Deactivated(deactivated) => {
+                // TODO - Adapt for node expression
                 register_boolean(deactivated.is_deactivated(), ShaclVocab::sh_deactivated(), id, graph)
             },
         }

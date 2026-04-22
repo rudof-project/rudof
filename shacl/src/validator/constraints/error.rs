@@ -1,5 +1,5 @@
-use thiserror::Error;
 use rudof_rdf::rdf_core::RDFError;
+use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum ConstraintError {
@@ -13,8 +13,8 @@ pub enum ConstraintError {
     ExpectedIri { term: String },
 
     #[error(transparent)]
-    RDF(#[from] RDFError),
+    Rdf(#[from] RDFError),
 
     #[error("Internal error: {err}")]
-    Internal { err: String }
+    Internal { err: String },
 }

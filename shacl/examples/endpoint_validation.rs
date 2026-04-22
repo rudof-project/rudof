@@ -1,10 +1,10 @@
-use std::io::Cursor;
 use anyhow::Result;
 use prefixmap::PrefixMap;
 use rudof_rdf::rdf_core::RDFFormat;
-use shacl::validator::processor::{EndpointValidation, ShaclProcessor};
 use shacl::validator::ShaclValidationMode;
+use shacl::validator::processor::{EndpointValidation, ShaclProcessor};
 use shacl::validator::store::ShaclDataManager;
+use std::io::Cursor;
 
 fn main() -> Result<()> {
     let shacl = r#"
@@ -27,12 +27,10 @@ fn main() -> Result<()> {
 
     let schema = ShaclDataManager::load(&mut Cursor::new(shacl), "Test", &RDFFormat::Turtle, None)?;
 
-    let mut endpoint_validation = EndpointValidation::new(
-        "https://query.wikidata.org/sparql",
-        &PrefixMap::default(),
-    )?;
+    let mut endpoint_validation = EndpointValidation::new("https://query.wikidata.org/sparql", &PrefixMap::default())?;
 
     let report = endpoint_validation.validate(&schema, &ShaclValidationMode::Native)?;
-    
-    Ok(println!("{report}"))
+
+    println!("{report}");
+    Ok(())
 }

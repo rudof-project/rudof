@@ -1,10 +1,10 @@
-use prefixmap::PrefixMap;
-use rudof_rdf::rdf_impl::SparqlEndpoint;
 use crate::error::ValidationError;
+use crate::validator::ShaclValidationMode;
 use crate::validator::engine::{Engine, NativeEngine, SparqlEngine};
 use crate::validator::processor::ShaclProcessor;
-use crate::validator::ShaclValidationMode;
 use crate::validator::store::{Endpoint, Store};
+use prefixmap::PrefixMap;
+use rudof_rdf::rdf_impl::SparqlEndpoint;
 
 // TODO - Move to validation::algorithms module
 /// The endpoint Graph Validation Algorithm
@@ -14,7 +14,9 @@ pub struct EndpointValidation {
 
 impl EndpointValidation {
     pub fn new(iri: &str, pm: &PrefixMap) -> Result<Self, ValidationError> {
-        Ok(Self { store: Endpoint::new(iri, pm)? })
+        Ok(Self {
+            store: Endpoint::new(iri, pm)?,
+        })
     }
 }
 

@@ -1,4 +1,3 @@
-
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
 pub enum ValidationReportSorting {
     #[default]
@@ -9,5 +8,5 @@ pub enum ValidationReportSorting {
     Source,
     Path,
     Value,
-    Details
+    Details,
 }

@@ -4,18 +4,18 @@ mod graph;
 #[cfg(feature = "sparql")]
 mod rdf_data;
 
-use std::fmt::Debug;
+use crate::error::ValidationError;
+use crate::ir::IRSchema;
+use crate::validator::ShaclValidationMode;
+use crate::validator::engine::{Engine, Validate};
+use crate::validator::report::ValidationReport;
 #[cfg(feature = "sparql")]
 pub use endpoint::EndpointValidation;
 pub use graph::GraphValidation;
 #[cfg(feature = "sparql")]
 pub use rdf_data::DataValidation;
 use rudof_rdf::rdf_core::NeighsRDF;
-use crate::error::ValidationError;
-use crate::ir::IRSchema;
-use crate::validator::engine::{Engine, Validate};
-use crate::validator::report::ValidationReport;
-use crate::validator::ShaclValidationMode;
+use std::fmt::Debug;
 
 /// The basic operations of the SHACL Processor.
 ///
@@ -36,16 +36,18 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug> {
     ///
     /// * `shapes_graph` - A compiled SHACL shapes graph
     /// * `mode` - The validation mode to be applied during the validation process
-    fn validate(&mut self, shapes_graph: &IRSchema, mode: &ShaclValidationMode) -> Result<ValidationReport, ValidationError> {
+    fn validate(
+        &mut self,
+        shapes_graph: &IRSchema,
+        mode: &ShaclValidationMode,
+    ) -> Result<ValidationReport, ValidationError> {
         let mut results = Vec::new();
         let mut runner = Self::runner(mode);
 
         runner.build_indexes(self.store())?;
 
         for (_, shape) in shapes_graph.iter_with_targets() {
-            results.extend(
-                shape.validate(self.store(), &mut (*runner), None, Some(shape), shapes_graph)?
-            )
+            results.extend(shape.validate(self.store(), &mut (*runner), None, Some(shape), shapes_graph)?)
         }
 
         let mut pm = shapes_graph.prefix_map().clone();
@@ -53,9 +55,6 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug> {
             _ = pm.merge(store_pm);
         }
 
-        Ok(ValidationReport::new()
-            .with_results(results)
-            .with_prefixmap(pm)
-        )
+        Ok(ValidationReport::new().with_results(results).with_prefixmap(pm))
     }
 }

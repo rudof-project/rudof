@@ -9,6 +9,7 @@ use rudof_rdf::rdf_core::term::Object;
 
 mod component;
 pub mod components;
+pub mod dg;
 pub(crate) mod error;
 mod node_shape;
 mod property_shape;
@@ -17,7 +18,6 @@ mod schema;
 mod shape;
 mod shape_label_idx;
 mod test;
-pub mod dg;
 
 pub use component::IRComponent;
 pub use node_shape::IRNodeShape;
