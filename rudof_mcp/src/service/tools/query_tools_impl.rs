@@ -193,16 +193,15 @@ pub async fn execute_sparql_query_impl(
     }
 
     // Guard: SELECT queries only support the 'internal' result format.
-    if matches!(query_type, Some("SELECT")) {
-        if let Some(fmt) = &result_format_parsed {
-            if !matches!(fmt, ResultQueryFormat::Internal) {
-                return Ok(ToolExecutionError::with_hint(
-                    format!("Format '{}' is not yet supported for SELECT queries", fmt),
-                    "SELECT queries only support 'internal' format. Omit result_format or use 'internal'.",
-                )
-                .into_call_tool_result());
-            }
-        }
+    if matches!(query_type, Some("SELECT"))
+        && let Some(fmt) = &result_format_parsed
+        && !matches!(fmt, ResultQueryFormat::Internal)
+    {
+        return Ok(ToolExecutionError::with_hint(
+            format!("Format '{}' is not yet supported for SELECT queries", fmt),
+            "SELECT queries only support 'internal' format. Omit result_format or use 'internal'.",
+        )
+        .into_call_tool_result());
     }
 
     let query_spec = InputSpec::Str(sparql_query.clone());

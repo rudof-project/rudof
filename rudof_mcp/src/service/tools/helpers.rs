@@ -619,8 +619,7 @@ pub const SHEX_OUTPUT_FORMATS_SUPPORTED: &str = "shexc, shexj, json, jsonld, int
 pub const SHEX_RESULT_FORMATS: &str = "compact, details, json, csv";
 
 /// Supported SHACL validation result formats as a constant.
-pub const SHACL_RESULT_FORMATS: &str =
-    "compact, details, minimal, csv, turtle, ntriples, rdfxml, trig, n3, nquads";
+pub const SHACL_RESULT_FORMATS: &str = "compact, details, minimal, csv, turtle, ntriples, rdfxml, trig, n3, nquads";
 
 /// Supported reader modes as a constant.
 pub const READER_MODES_LIST: &[&str] = &["strict", "lax"];

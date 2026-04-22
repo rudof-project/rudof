@@ -104,30 +104,30 @@ pub async fn show_shex_impl(
     };
 
     // Guard: only shexc/shexj are implemented for loading ShEx schemas.
-    if let Some(fmt) = &parsed_schema_format {
-        if !matches!(fmt, ShExFormat::ShExC | ShExFormat::ShExJ) {
-            return Ok(unsupported_format_error(
-                "ShEx schema input",
-                schema_format.as_deref().unwrap_or(""),
-                SHEX_INPUT_FORMATS_SUPPORTED,
-            )
-            .into_call_tool_result());
-        }
+    if let Some(fmt) = &parsed_schema_format
+        && !matches!(fmt, ShExFormat::ShExC | ShExFormat::ShExJ)
+    {
+        return Ok(unsupported_format_error(
+            "ShEx schema input",
+            schema_format.as_deref().unwrap_or(""),
+            SHEX_INPUT_FORMATS_SUPPORTED,
+        )
+        .into_call_tool_result());
     }
 
     // Guard: only shexc/shexj/json/jsonld/internal are implemented for serializing ShEx schemas.
-    if let Some(fmt) = &parsed_result_format {
-        if !matches!(
+    if let Some(fmt) = &parsed_result_format
+        && !matches!(
             fmt,
             ShExFormat::ShExC | ShExFormat::ShExJ | ShExFormat::Json | ShExFormat::JsonLd | ShExFormat::Internal
-        ) {
-            return Ok(unsupported_format_error(
-                "ShEx schema output",
-                result_schema_format.as_deref().unwrap_or(""),
-                SHEX_OUTPUT_FORMATS_SUPPORTED,
-            )
-            .into_call_tool_result());
-        }
+        )
+    {
+        return Ok(unsupported_format_error(
+            "ShEx schema output",
+            result_schema_format.as_deref().unwrap_or(""),
+            SHEX_OUTPUT_FORMATS_SUPPORTED,
+        )
+        .into_call_tool_result());
     }
 
     let mut shex_schema_loading = rudof.load_shex_schema(&parsed_schema);
@@ -278,15 +278,15 @@ pub async fn check_shex_impl(
     };
 
     // Guard: only shexc/shexj are implemented for loading ShEx schemas.
-    if let Some(fmt) = &parsed_schema_format {
-        if !matches!(fmt, ShExFormat::ShExC | ShExFormat::ShExJ) {
-            return Ok(unsupported_format_error(
-                "ShEx schema input",
-                schema_format.as_deref().unwrap_or(""),
-                SHEX_INPUT_FORMATS_SUPPORTED,
-            )
-            .into_call_tool_result());
-        }
+    if let Some(fmt) = &parsed_schema_format
+        && !matches!(fmt, ShExFormat::ShExC | ShExFormat::ShExJ)
+    {
+        return Ok(unsupported_format_error(
+            "ShEx schema input",
+            schema_format.as_deref().unwrap_or(""),
+            SHEX_INPUT_FORMATS_SUPPORTED,
+        )
+        .into_call_tool_result());
     }
 
     let mut output_buffer = Cursor::new(Vec::new());

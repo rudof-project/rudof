@@ -137,12 +137,9 @@ pub async fn validate_shacl_impl(
 
     // Guard: JSON result format is not yet implemented for SHACL validation.
     if matches!(parsed_result_format, Some(ResultShaclValidationFormat::Json)) {
-        return Ok(unsupported_format_error(
-            "SHACL validation result",
-            "json",
-            SHACL_RESULT_FORMATS,
-        )
-        .into_call_tool_result());
+        return Ok(
+            unsupported_format_error("SHACL validation result", "json", SHACL_RESULT_FORMATS).into_call_tool_result(),
+        );
     }
 
     let mut loading_shacl_schema = rudof.load_shacl_shapes();
