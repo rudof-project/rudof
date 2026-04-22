@@ -1,6 +1,6 @@
 ﻿# `rudof_lib`
 
-`rudof_lib` is the centralized, programmatic facade for the entire Rudof ecosystem. It exposes a stable entry point (`Rudof`) that hides the complexity of dealing with numerous specialized underlying subcrates (`shacl_validation`, `shex_validation`, `rudof_rdf`, `pgschema`, etc.).
+`rudof_lib` is the centralized, programmatic facade for the entire Rudof ecosystem. It exposes a stable entry point (`Rudof`) that hides the complexity of dealing with numerous specialized underlying subcrates (`shacl`, `shex_validation`, `rudof_rdf`, `pgschema`, etc.).
 
 At a high level, it provides robust, builder-style interfaces for:
 - Loading and serializing RDF and PG data.

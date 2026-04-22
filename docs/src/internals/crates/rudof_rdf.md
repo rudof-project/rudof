@@ -43,7 +43,7 @@ This crate is a foundational dependency for many other Rudof crates, including:
 
 - [`rudof_lib`](./rudof_lib.md)
 - [`rudof_cli`](./rudof_cli.md)
-- [`shacl_ast`](./shacl_ast.md), [`shacl_ir`](./shacl_ir.md), [`shacl_rdf`](./shacl_rdf.md), [`shacl_validation`](./shacl_validation.md)
+- [`shacl`](./shacl.md)
 - [`shex_ast`](./shex_ast.md), [`shex_validation`](./shex_validation.md)
 - [`shex_testsuite`](./shex_testsuite.md), [`shapes_comparator`](./shapes_comparator.md), [`shapes_converter`](./shapes_converter.md), [`sparql_service`](./sparql_service.md), and others.
 

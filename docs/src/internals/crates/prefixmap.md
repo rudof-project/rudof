@@ -61,10 +61,7 @@ This create depends mostly on the [`iri_s`](https://crates.io/crates/iri_s) and 
 
 This create is also used by other rudof modules that needs IRIs functionality, such as:
 - [`rudof_lib`](./rudof_lib.md)
-- [`shacl_ast`](./shacl_ast.md)
-- [`shacl_ir`](./shacl_ir.md)
-- [`shacl_validation`](./shacl_validation.md)
-- [`shacl_rdf`](./shacl_rdf.md)
+- [`shacl`](./shacl.md)
 - [`shapes_converter`](./shapes_converter.md)
 - [`shapes_comparator`](./shapes_comparator.md)
 - [`shex_ast`](./shex_ast.md)

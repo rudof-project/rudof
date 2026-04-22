@@ -17,10 +17,7 @@ subgraph rudof
     shex_compact[<a href='https://crates.io/crates/shex_compact'>shex_compact</a>];
     shex_ir[<a href='https://crates.io/crates/shex_ir'>shex_ir</a>];
     shex_validation[<a href='https://crates.io/crates/shex_validation'>shex_validation</a>];
-    shacl_validation[<a href='https://crates.io/crates/shacl_validation'>shacl_validation</a>];
-    shacl_ast[<a href='https://crates.io/crates/shacl_ast'>shacl_ast</a>];
-    shacl_rdf[<a href='https://crates.io/crates/shacl_rdf'>shacl_rdf</a>];
-    shacl_ir[<a href='https://crates.io/crates/shacl_ir'>shacl_ir</a>];
+    shacl[<a href='https://crates.io/crates/shacl'>shacl</a>];
     iri_s[<a href='https://crates.io/crates/iri_s'>iri_s</a>];
     prefixmap[<a href='https://crates.io/crates/prefixmap'>prefixmap</a>];
     shapemap[<a href='https://crates.io/crates/shapemap'>shapemap</a>];
@@ -35,10 +32,7 @@ subgraph rudof
  shex_ir-->shex_ast;
  shex_validation-->shex_ir;
  srdf-->iri_s;
- shacl_ast-->srdf;
- shacl_rdf-->shacl_ast;
- shacl_ir-->shacl_ast;
- shacl_validation-->shacl_ir;
+ shacl-->srdf;
  shex_validation-->shapemap;
  shapemap-->prefixmap;
  shex_ast-->prefixmap;
@@ -46,14 +40,14 @@ subgraph rudof
  shex_validation-->rbe;
  dctap-->prefixmap;
  dctap --> iri_s;
- shapes_converter-->shacl_ast;
+ shapes_converter-->shacl;
  shapes_converter-->shex_ast;
  shapes_converter-->dctap;
  prefixmap --> iri_s ;
  shex_validation --> shex_compact
  sparql_service --> iri_s ;
  rudof_lib --> shex_validation ;
- rudof_lib --> shacl_validation ;
+ rudof_lib --> shacl ;
  rudof_lib --> shapes_converter ;
 end
 subgraph external dependencies

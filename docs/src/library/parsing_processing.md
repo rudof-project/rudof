@@ -13,6 +13,6 @@ Some of the combinators are:
 
 You can see more information and examples in [RDFNodeParse](https://docs.rs/srdf/latest/srdf/srdf_parser/trait.RDFNodeParse.html) trait.
 
-This library has been used to implement the [SHACL parser](https://github.com/rudof-project/rudof/blob/master/shacl_ast/src/converter/rdf_to_shacl/shacl_parser.rs) that reads RDF data as input and converts it to a [SHACL abstract syntax tree](https://github.com/rudof-project/rudof/blob/master/shacl_ast/src/ast/schema.rs).
+This library has been used to implement the [SHACL parser](https://github.com/rudof-project/rudof/blob/master/shacl/src/rdf/parser.rs) that reads RDF data as input and converts it to a [SHACL abstract syntax tree](https://github.com/rudof-project/rudof/blob/master/shacl/src/ast/schema.rs).
 
 One advantage of this approach is that `rudof` doesn't depend on any specific RDF format as it works directly with the RDF data model, which can in fact be obtained from RDf data in syntaxes like Turtle, RDF/XML, etc. or as a set of triples from an SPARQL endpoint.
