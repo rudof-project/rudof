@@ -3,24 +3,26 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ## [Unreleased]
 ### Added
-- `rudof_generate`: Added generation-time conformance metrics in `*.stats.json` with:
-  - `triple_validity_percentage`
-  - `shape_translation_loss_percentage`
-- `rudof_generate`: Added conversion coverage accounting for ShEx/SHACL to unified constraints (`original_schema_constraints` and `represented_constraints_in_unified`).
-- `rudof_generate`: Added new runnable conformance scenarios under `rudof_generate/examples/conformance_cases`.
 ### Fixed
 ### Changed
-- `rudof_generate`: Updated README statistics example and coverage notes to document the new conformance metrics output.
 ### Removed
 
 ## v0.2.12
 
 ### Added
-
+- `rudof_generate`: Added generation-time conformance metrics in `*.stats.json` with:
+  - `triple_validity_percentage`
+  - `shape_translation_loss_percentage`
+- `rudof_generate`: Added conversion coverage accounting for ShEx/SHACL to unified constraints (`original_schema_constraints` and `represented_constraints_in_unified`).
+- `rudof_generate`: Added new runnable conformance scenarios under `rudof_generate/examples/conformance_cases`.
+- Implemented import in ShEx solving issue #589
 - Support to materialize #574 which now can be used in combination with the Map extension in ShEx to transform RDF data into other RDF data using source and target shapes.
-
 ### Fixed
+- Regression in command line that didn't accept either data or endpoint
+- Regression in CLI that didn't merge RDF files by default. Solves also issue #595
+
 ### Changed
+- `rudof_generate`: Updated README statistics example and coverage notes to document the new conformance metrics output.
 ### Removed
 
 
