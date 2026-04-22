@@ -10,7 +10,7 @@ use crate::validator::report::ValidationResult;
 use indoc::formatdoc;
 use rudof_rdf::rdf_core::query::QueryRDF;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
-use std::fmt::{Debug};
+use std::fmt::Debug;
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinExclusive {
     fn validate_native(

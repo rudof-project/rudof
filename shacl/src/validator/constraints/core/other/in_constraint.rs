@@ -1,7 +1,7 @@
 use crate::ir::components::In;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::validator::constraints::{ConstraintError, Validator, validate_with};
-use crate::validator::engine::{Engine};
+use crate::validator::engine::Engine;
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;
 use crate::validator::report::ValidationResult;

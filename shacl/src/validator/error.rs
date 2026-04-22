@@ -81,7 +81,10 @@ pub enum ValidationError {
     SparqlError { msg: String, source: Box<SparqlError> },
 
     #[error("Constraint error in component {component}: {source}")]
-    ConstraintError { component: String, source: Box<ConstraintError> },
+    ConstraintError {
+        component: String,
+        source: Box<ConstraintError>,
+    },
 
     #[error("Implicit class not found")]
     ImplicitClassNotFound,
@@ -125,25 +128,19 @@ pub enum ValidationError {
 
 impl From<IRError> for ValidationError {
     fn from(value: IRError) -> Self {
-        Self::CompiledShacl {
-            err: Box::new(value),
-        }
+        Self::CompiledShacl { err: Box::new(value) }
     }
 }
 
 impl From<InMemoryGraphError> for ValidationError {
     fn from(value: InMemoryGraphError) -> Self {
-        Self::Graph {
-            err: Box::new(value),
-        }
+        Self::Graph { err: Box::new(value) }
     }
 }
 
 impl From<ShaclParserError> for ValidationError {
     fn from(value: ShaclParserError) -> Self {
-        Self::ShaclParser {
-            err: Box::new(value),
-        }
+        Self::ShaclParser { err: Box::new(value) }
     }
 }
 

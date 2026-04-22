@@ -3,7 +3,7 @@ use crate::types::{MessageMap, Severity};
 use crate::validator::report::error_mapper;
 use iri_s::IriS;
 use rudof_rdf::rdf_core::term::Object;
-use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral};
+use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{BuildRDF, FocusRDF, NeighsRDF, SHACLPath};
 use std::fmt::{Display, Formatter};

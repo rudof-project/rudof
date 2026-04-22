@@ -34,7 +34,9 @@ impl<S: NeighsRDF + Debug> Validator<S> for Xone {
                     let internal_shape = get_shape_from_idx(shapes_graph, idx)?;
                     let inner_results =
                         internal_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
-                    if let Ok(results) = inner_results && results.is_empty() {
+                    if let Ok(results) = inner_results
+                        && results.is_empty()
+                    {
                         conforming_shapes += 1;
                     }
                 }

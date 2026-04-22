@@ -10,7 +10,7 @@ mod sorting;
 
 use crate::error::ReportError;
 pub use result::ValidationResult;
-use rudof_rdf::rdf_core::term::{Object};
+use rudof_rdf::rdf_core::term::Object;
 pub use sorting::ValidationReportSorting;
 
 #[derive(Debug, Clone)]

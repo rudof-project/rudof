@@ -12,7 +12,7 @@ use rudof_rdf::rdf_core::query::QueryRDF;
 use rudof_rdf::rdf_core::term::literal::Literal;
 use rudof_rdf::rdf_core::term::{Iri, Term};
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
-use std::fmt::{Debug};
+use std::fmt::Debug;
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinLength {
     fn validate_native(
