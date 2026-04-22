@@ -1,7 +1,7 @@
 use crate::error::ValidationError;
 use crate::validator::store::Store;
-use rudof_iri::iri;
 use prefixmap::PrefixMap;
+use rudof_iri::iri;
 use rudof_rdf::rdf_impl::SparqlEndpoint;
 
 #[derive(Debug, Clone)]

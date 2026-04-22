@@ -1,7 +1,7 @@
 use crate::types::{NodeKind, Value};
-use rudof_iri::IriS;
 use itertools::Itertools;
 use prefixmap::IriRef;
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, Lang};
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;

@@ -1,5 +1,5 @@
-use rudof_iri::IriS;
 use prefixmap::IriRef;
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
 use std::fmt::{Display, Formatter};
 

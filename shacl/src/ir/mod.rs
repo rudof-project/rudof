@@ -3,8 +3,8 @@
 
 use crate::ir::error::IRError;
 use crate::types::Value;
-use rudof_iri::IriS;
 use prefixmap::IriRef;
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
 
 mod component;
