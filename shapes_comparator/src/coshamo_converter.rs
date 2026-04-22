@@ -1,5 +1,5 @@
-use rudof_iri::IriS;
 use prefixmap::IriRef;
+use rudof_iri::IriS;
 use shex_ast::{Schema, ShapeExpr, TripleExpr};
 use sparql_service::ServiceDescription;
 use tracing::{debug, trace};

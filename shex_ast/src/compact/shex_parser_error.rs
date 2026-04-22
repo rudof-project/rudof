@@ -1,5 +1,5 @@
-use rudof_iri::error::IriSError;
 use prefixmap::error::{DerefError, PrefixMapError};
+use rudof_iri::error::IriSError;
 use rudof_rdf::rdf_core::RDFError;
 use std::{
     io,

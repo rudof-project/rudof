@@ -150,7 +150,11 @@ impl NodeConstraint {
 }
 
 impl DerefIri for NodeConstraint {
-    fn deref_iri(self, base: Option<&rudof_iri::IriS>, prefixmap: Option<&prefixmap::PrefixMap>) -> Result<Self, DerefError>
+    fn deref_iri(
+        self,
+        base: Option<&rudof_iri::IriS>,
+        prefixmap: Option<&prefixmap::PrefixMap>,
+    ) -> Result<Self, DerefError>
     where
         Self: Sized,
     {

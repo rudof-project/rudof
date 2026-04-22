@@ -8,8 +8,8 @@ use crate::rdf_core::{
         },
     },
 };
-use rudof_iri::IriS;
 use prefixmap::PrefixMap;
+use rudof_iri::IriS;
 use std::collections::HashSet;
 
 /// Execution context for RDF parsing operations.

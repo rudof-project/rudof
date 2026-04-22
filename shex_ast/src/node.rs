@@ -1,8 +1,8 @@
 use crate::ObjectValue;
 use crate::SchemaJsonError;
-use rudof_iri::IriS;
 use prefixmap::IriRef;
 use rbe::Value;
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::{
     RDFError,
     term::{

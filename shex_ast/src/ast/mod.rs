@@ -80,8 +80,8 @@ mod tests {
 
     use std::str::FromStr;
 
-    use rudof_iri::IriS;
     use prefixmap::IriRef;
+    use rudof_iri::IriS;
 
     use super::*;
 

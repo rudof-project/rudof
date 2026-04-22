@@ -1,9 +1,9 @@
 use std::{result, str::FromStr};
 
-use rudof_iri::IriS;
-use rudof_iri::error::IriSError;
 use prefixmap::error::DerefError;
 use prefixmap::{DerefIri, IriRef, PrefixMap};
+use rudof_iri::IriS;
+use rudof_iri::error::IriSError;
 use serde::{Deserialize, Serialize, Serializer};
 
 use crate::ast::serde_string_or_struct::*;

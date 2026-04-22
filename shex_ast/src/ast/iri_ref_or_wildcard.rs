@@ -1,5 +1,5 @@
-use rudof_iri::error::IriSError;
 use prefixmap::IriRef;
+use rudof_iri::error::IriSError;
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
 use std::{result, str::FromStr};

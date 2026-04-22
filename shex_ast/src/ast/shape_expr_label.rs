@@ -1,8 +1,8 @@
 use std::{fmt::Display, str::FromStr};
 
+use regex::Regex;
 use rudof_iri::IriS;
 use rudof_iri::error::IriSError;
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 use prefixmap::error::DerefError;

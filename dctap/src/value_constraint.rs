@@ -1,5 +1,5 @@
-use rudof_iri::IriS;
 use itertools::Itertools;
+use rudof_iri::IriS;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display};
 

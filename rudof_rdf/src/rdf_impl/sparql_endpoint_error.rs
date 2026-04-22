@@ -1,7 +1,7 @@
 use crate::rdf_impl::SparqlVars;
-use rudof_iri::error::IriSError;
 use oxiri::IriParseError;
 use oxrdf::Term;
+use rudof_iri::error::IriSError;
 use thiserror::Error;
 
 /// Represents all possible errors that can occur when interacting with SPARQL endpoints.

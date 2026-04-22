@@ -1,7 +1,7 @@
 use crate::ShapeExprLabel;
 use crate::shapemap::{NodeSelector, ShapeSelector, ShapemapError};
-use rudof_iri::IriS;
 use prefixmap::{DerefError, DerefIri, PrefixMap};
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::query::QueryRDF;
 use serde::Serialize;
 use std::fmt::Display;

@@ -4,8 +4,8 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
 use crate::rdf_core::term::literal::{ConcreteLiteral, Lang, NumericLiteral};
-use rudof_iri::IriS;
 use prefixmap::IriRef;
+use rudof_iri::IriS;
 
 // ============================================================================
 // Arbitrary Strategies for ConcreteLiteral Generation

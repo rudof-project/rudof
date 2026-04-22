@@ -1,5 +1,5 @@
-use rudof_iri::IriS;
 use prefixmap::PrefixMap;
+use rudof_iri::IriS;
 use serde::{Deserialize, Serialize};
 
 use crate::{Annotation, SemAct, ShapeExprLabel, TripleExpr, TripleExprWrapper};

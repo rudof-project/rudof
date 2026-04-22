@@ -7,9 +7,9 @@ use crate::{
     },
 };
 use colored::*;
-use rudof_iri::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use pretty::{Arena, DocAllocator, DocBuilder, RefDoc};
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, Lang, NumericLiteral};
 use rust_decimal::Decimal;
 use std::{borrow::Cow, io, marker::PhantomData};
@@ -920,9 +920,9 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use prefixmap::PrefixMap;
     use rudof_iri::IriS;
     use rudof_iri::iri;
-    use prefixmap::PrefixMap;
 
     #[test]
     fn empty_schema() {

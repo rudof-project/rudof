@@ -3,8 +3,8 @@
 use crate::PrefixMap;
 use crate::iri::IriRef;
 use crate::iri::deref_iri::DerefIri;
-use rudof_iri::IriS;
 use proptest::prelude::*;
+use rudof_iri::IriS;
 use std::borrow::Cow;
 
 const PREFIX_REGEX: &str = r"[a-zA-Z]{1,3}";

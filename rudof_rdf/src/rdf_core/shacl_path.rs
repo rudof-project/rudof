@@ -1,5 +1,5 @@
-use rudof_iri::IriS;
 use prefixmap::{PrefixMap, Show};
+use rudof_iri::IriS;
 use serde::Serialize;
 use std::fmt::Display;
 

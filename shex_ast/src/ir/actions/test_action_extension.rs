@@ -1,5 +1,5 @@
-use rudof_iri::iri;
 use lazy_regex::regex;
+use rudof_iri::iri;
 
 use crate::ir::actions::semantic_action_error::SemanticActionError;
 use crate::ir::actions::semantic_action_extension::SemanticActionExtension;

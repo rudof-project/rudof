@@ -1,6 +1,6 @@
 use crate::{Shape, ShapeExprLabel};
-use rudof_iri::IriS;
 use prefixmap::IriRef;
+use rudof_iri::IriS;
 use serde::{Deserialize, Serialize};
 
 use super::{Schema, ShapeDecl, ShapeExpr, TripleExpr, ValueSetValue};

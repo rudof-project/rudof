@@ -5,9 +5,9 @@ use crate::rdf_core::{
         literal::{ConcreteLiteral, Lang, Literal},
     },
 };
-use rudof_iri::IriS;
 use prefixmap::PrefixMap;
 use prefixmap::PrefixMapError;
+use rudof_iri::IriS;
 use rust_decimal::Decimal;
 use std::cmp::Ordering;
 use std::fmt::Display;

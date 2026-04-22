@@ -7,7 +7,6 @@ use crate::{
 };
 use async_trait::async_trait;
 use colored::*;
-use rudof_iri::IriS;
 use oxrdf::{
     BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, NamedOrBlankNode as OxSubject,
     Term as OxTerm, Triple as OxTriple,
@@ -15,6 +14,7 @@ use oxrdf::{
 use prefixmap::PrefixMap;
 use regex::Regex;
 use reqwest::header::{ACCEPT, HeaderMap, HeaderValue, USER_AGENT};
+use rudof_iri::IriS;
 use serde::{Serialize, ser::SerializeStruct};
 use sparesults::{
     QueryResultsFormat, QueryResultsParser, QuerySolution as OxQuerySolution, ReaderQueryResultsParserOutput,

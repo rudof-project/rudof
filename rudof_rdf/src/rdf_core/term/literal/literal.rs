@@ -10,8 +10,8 @@ use std::{
 };
 
 use crate::rdf_core::vocabs::{RdfVocab, XsdVocab};
-use rudof_iri::IriS;
 use prefixmap::{DerefError, DerefIri, IriRef, PrefixMap};
+use rudof_iri::IriS;
 use serde::{Deserialize, Serialize, Serializer};
 
 /// Types that implement this trait can be used as RDF Literals.

@@ -3,10 +3,10 @@ use crate::errors::InputSpecError;
 #[cfg(target_family = "wasm")]
 use crate::wasm_stubs::{Client, ClientBuilder, Response};
 use either::Either;
-use rudof_iri::IriS;
 #[cfg(not(target_family = "wasm"))]
 use reqwest::blocking::{Client, ClientBuilder, Response};
 use reqwest::header::{ACCEPT, HeaderValue, USER_AGENT};
+use rudof_iri::IriS;
 use std::io::Cursor;
 use std::{
     fmt::Display,

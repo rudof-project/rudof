@@ -4,9 +4,9 @@ use crate::exclusion::Exclusion;
 use crate::iri_exclusion::IriExclusion;
 use crate::language_exclusion::LanguageExclusion;
 use crate::literal_exclusion::LiteralExclusion;
-use rudof_iri::error::IriSError;
 use prefixmap::error::DerefError;
 use prefixmap::{DerefIri, IriRef};
+use rudof_iri::error::IriSError;
 use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, Lang};
 use rust_decimal::Decimal;
 use serde::ser::SerializeMap;
@@ -92,7 +92,11 @@ impl ValueSetValue {
 }
 
 impl DerefIri for ValueSetValue {
-    fn deref_iri(self, base: Option<&rudof_iri::IriS>, prefixmap: Option<&prefixmap::PrefixMap>) -> Result<Self, DerefError>
+    fn deref_iri(
+        self,
+        base: Option<&rudof_iri::IriS>,
+        prefixmap: Option<&prefixmap::PrefixMap>,
+    ) -> Result<Self, DerefError>
     where
         Self: Sized,
     {

@@ -11,9 +11,9 @@ pub mod shex_to_sparql;
 pub mod shex_to_uml;
 pub mod tap_to_shex;
 
-use rudof_iri::IriS;
 use prefixmap::PrefixMap;
 use prefixmap::error::PrefixMapError;
+use rudof_iri::IriS;
 use shex_ast::Annotation;
 use shex_ast::ObjectValue;
 

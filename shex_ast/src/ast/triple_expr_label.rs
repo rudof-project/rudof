@@ -15,7 +15,11 @@ pub enum TripleExprLabel {
 }
 
 impl DerefIri for TripleExprLabel {
-    fn deref_iri(self, base: Option<&rudof_iri::IriS>, prefixmap: Option<&prefixmap::PrefixMap>) -> Result<Self, DerefError>
+    fn deref_iri(
+        self,
+        base: Option<&rudof_iri::IriS>,
+        prefixmap: Option<&prefixmap::PrefixMap>,
+    ) -> Result<Self, DerefError>
     where
         Self: Sized,
     {
