@@ -8,7 +8,7 @@ use crate::rdf_core::{
         },
     },
 };
-use iri_s::IriS;
+use rudof_iri::IriS;
 use prefixmap::PrefixMap;
 use std::collections::HashSet;
 

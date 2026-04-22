@@ -2,7 +2,7 @@ use crate::{
     errors::ComparisonError,
     formats::{DCTapFormat, ShExFormat, ShaclFormat},
 };
-use iri_s::MimeType;
+use rudof_iri::MimeType;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 

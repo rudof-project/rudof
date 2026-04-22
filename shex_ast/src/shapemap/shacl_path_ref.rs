@@ -63,7 +63,7 @@ impl SHACLPathRef {
 }
 
 impl DerefIri for SHACLPathRef {
-    fn deref_iri(self, base: Option<&iri_s::IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, prefixmap::DerefError>
+    fn deref_iri(self, base: Option<&rudof_iri::IriS>, prefixmap: Option<&PrefixMap>) -> Result<Self, prefixmap::DerefError>
     where
         Self: Sized,
     {

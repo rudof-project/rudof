@@ -5,7 +5,7 @@ use crate::rdf_core::{
         literal::{ConcreteLiteral, Lang, NumericLiteral},
     },
 };
-use iri_s::IriS;
+use rudof_iri::IriS;
 use prefixmap::{IriRef, PrefixMap, Show};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;

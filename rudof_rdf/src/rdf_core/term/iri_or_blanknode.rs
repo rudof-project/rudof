@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use crate::rdf_core::{RDFError, term::Object};
-use iri_s::IriS;
+use rudof_iri::IriS;
 use prefixmap::{PrefixMap, Show};
 use serde::{Deserialize, Serialize};
 

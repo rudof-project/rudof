@@ -5,7 +5,7 @@ use crate::rdf_core::{
         literal::{ConcreteLiteral, Lang, Literal},
     },
 };
-use iri_s::IriS;
+use rudof_iri::IriS;
 use prefixmap::PrefixMap;
 use prefixmap::PrefixMapError;
 use rust_decimal::Decimal;

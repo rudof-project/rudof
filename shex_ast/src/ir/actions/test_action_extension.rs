@@ -1,4 +1,4 @@
-use iri_s::iri;
+use rudof_iri::iri;
 use lazy_regex::regex;
 
 use crate::ir::actions::semantic_action_error::SemanticActionError;
@@ -30,7 +30,7 @@ impl Default for TestActionExtension {
 }
 
 impl SemanticActionExtension for TestActionExtension {
-    fn action_iri(&self) -> iri_s::IriS {
+    fn action_iri(&self) -> rudof_iri::IriS {
         iri!("http://shex.io/extensions/Test/")
     }
 

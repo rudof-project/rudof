@@ -12,7 +12,7 @@ use crate::{
     language_exclusion::LanguageExclusion, literal_exclusion::LiteralExclusion, object_value::ObjectValue,
     value_set_value::ValueSetValue,
 };
-use iri_s::IriS;
+use rudof_iri::IriS;
 use lazy_regex::{Lazy, regex};
 use nom::bytes::complete::tag_no_case;
 use nom::{

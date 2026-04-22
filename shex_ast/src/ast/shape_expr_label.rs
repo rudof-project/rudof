@@ -1,7 +1,7 @@
 use std::{fmt::Display, str::FromStr};
 
-use iri_s::IriS;
-use iri_s::error::IriSError;
+use rudof_iri::IriS;
+use rudof_iri::error::IriSError;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 

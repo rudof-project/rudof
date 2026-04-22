@@ -1,4 +1,4 @@
-use iri_s::IriS;
+use rudof_iri::IriS;
 use prefixmap::DerefIri;
 use prefixmap::IriRef;
 use prefixmap::error::DerefError;

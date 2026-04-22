@@ -4,7 +4,7 @@ use crate::ast::Schema;
 use crate::compact::grammar_structs::ShExStatement;
 use crate::shex_statement;
 use crate::tws0;
-use iri_s::IriS;
+use rudof_iri::IriS;
 use nom::Err;
 use prefixmap::DerefIri;
 use std::fs;
@@ -151,7 +151,7 @@ mod tests {
     use crate::ast::{Shape, ShapeExpr, ShapeExprLabel};
 
     use super::*;
-    use iri_s::iri;
+    use rudof_iri::iri;
 
     #[test]
     fn test_prefix() {

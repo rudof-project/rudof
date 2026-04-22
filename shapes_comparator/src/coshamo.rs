@@ -1,5 +1,5 @@
 use crate::{ComparatorError, ShaCo};
-use iri_s::IriS;
+use rudof_iri::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display};

@@ -1,5 +1,5 @@
-use iri_s::IriS;
-use iri_s::error::IriSError;
+use rudof_iri::IriS;
+use rudof_iri::error::IriSError;
 use prefixmap::error::DerefError;
 use prefixmap::{DerefIri, IriRef};
 use rudof_rdf::rdf_core::term::{

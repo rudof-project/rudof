@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::path::Path;
 #[cfg(not(target_family = "wasm"))]
 use {
-    iri_s::IriS, shex_ast::ast::Schema as SchemaJson, shex_ast::compact::ShExParser, std::path::PathBuf,
+    rudof_iri::IriS, shex_ast::ast::Schema as SchemaJson, shex_ast::compact::ShExParser, std::path::PathBuf,
     tracing::debug, url::Url,
 };
 

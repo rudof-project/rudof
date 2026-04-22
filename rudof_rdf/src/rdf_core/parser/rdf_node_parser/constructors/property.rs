@@ -7,7 +7,7 @@ use crate::rdf_core::{
     },
     term::{IriOrBlankNode, Object, Triple, literal::ConcreteLiteral},
 };
-use iri_s::IriS;
+use rudof_iri::IriS;
 use std::collections::HashSet;
 use std::marker::PhantomData;
 

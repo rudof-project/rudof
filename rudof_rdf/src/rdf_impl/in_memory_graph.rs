@@ -7,7 +7,7 @@ use crate::rdf_impl::in_memory_graph_error::InMemoryGraphError;
 use crate::rdf_core::vocabs::RdfVocab;
 use async_trait::async_trait;
 use colored::*;
-use iri_s::IriS;
+use rudof_iri::IriS;
 use oxjsonld::JsonLdParser;
 use oxrdf::{
     BlankNode as OxBlankNode, Graph, GraphName, Literal as OxLiteral, NamedNode as OxNamedNode, NamedNodeRef,

@@ -1,9 +1,9 @@
 [package]
-name = "iri_s"
+name = "rudof_iri"
 version = "0.2.9"
 authors.workspace = true
 description.workspace = true
-documentation = "https://docs.rs/iri_s"
+documentation = "https://docs.rs/rudof_iri"
 edition.workspace = true
 license.workspace = true
 homepage.workspace = true

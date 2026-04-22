@@ -1,5 +1,5 @@
 use crate::{Result, Rudof, errors::MaterializeError, formats::ResultDataFormat};
-use iri_s::IriS;
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::BuildRDF;
 use rudof_rdf::rdf_impl::InMemoryGraph;
 use shex_ast::Node;

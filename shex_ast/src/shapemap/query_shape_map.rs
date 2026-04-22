@@ -1,6 +1,6 @@
 use crate::shapemap::{Association, NodeSelector, ShapeSelector, ShapemapError};
 use crate::{Node, ShapeExprLabel, ir::shape_label::ShapeLabel, object_value::ObjectValue};
-use iri_s::IriS;
+use rudof_iri::IriS;
 use prefixmap::{DerefError, PrefixMap};
 use rudof_rdf::rdf_core::query::QueryRDF;
 use serde::Serialize;

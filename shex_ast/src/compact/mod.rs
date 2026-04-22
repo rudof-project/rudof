@@ -3,7 +3,7 @@
 //! Example
 //!
 //! ```
-//! # use iri_s::{iri, IriS};
+//! # use rudof_iri::{iri, IriS};
 //!
 //! use shex_ast::{Schema, Shape, ShapeExpr, ShapeExprLabel};
 //! use shex_ast::compact::ShExParser;

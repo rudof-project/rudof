@@ -668,7 +668,7 @@ mod tests {
     use std::collections::BTreeSet;
 
     use super::*;
-    use iri_s::iri;
+    use rudof_iri::iri;
     use shex_ast::ShExParser;
     use tracing_test::traced_test;
 

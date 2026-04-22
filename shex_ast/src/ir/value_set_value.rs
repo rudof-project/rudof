@@ -1,6 +1,6 @@
 use super::object_value::ObjectValue;
 use crate::ir::exclusion::{IriExclusion, LanguageExclusion, LiteralExclusion};
-use iri_s::IriS;
+use rudof_iri::IriS;
 use prefixmap::PrefixMap;
 use rudof_rdf::rdf_core::term::{
     Object,

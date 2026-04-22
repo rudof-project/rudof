@@ -5,7 +5,7 @@ use crate::manifest_map::ManifestMap;
 use crate::wasm_stubs::path_to_iri;
 use crate::{context_entry_value::ContextEntryValue, manifest_mode::ManifestShExSyntaxMode};
 use ValidationType::*;
-use iri_s::IriS;
+use rudof_iri::IriS;
 use prefixmap::IriRef;
 use rudof_rdf::{
     rdf_core::{

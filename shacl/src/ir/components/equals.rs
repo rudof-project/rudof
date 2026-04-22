@@ -1,4 +1,4 @@
-use iri_s::IriS;
+use rudof_iri::IriS;
 use std::fmt::{Display, Formatter};
 
 /// sh:equals specifies the condition that the set of all value nodes is equal

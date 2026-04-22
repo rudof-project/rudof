@@ -5,7 +5,7 @@ use crate::ir::shape::IRShape;
 use crate::ir::shape_label_idx::ShapeLabelIdx;
 use crate::rdf::ShaclParser;
 use crate::rdf::error::ShaclWriterError;
-use iri_s::IriS;
+use rudof_iri::IriS;
 use prefixmap::PrefixMap;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::vocabs::{RdfVocab, RdfVocabulary, ShaclVocab, XsdVocab};

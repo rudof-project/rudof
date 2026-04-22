@@ -3,7 +3,7 @@
 
 use crate::ir::error::IRError;
 use crate::types::Value;
-use iri_s::IriS;
+use rudof_iri::IriS;
 use prefixmap::IriRef;
 use rudof_rdf::rdf_core::term::Object;
 

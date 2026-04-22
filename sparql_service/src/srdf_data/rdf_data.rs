@@ -1,6 +1,6 @@
 use super::RdfDataError;
 use colored::*;
-use iri_s::IriS;
+use rudof_iri::IriS;
 use oxigraph::sparql::{QueryResults, SparqlEvaluator};
 use oxigraph::store::Store;
 use oxrdf::{
@@ -628,7 +628,7 @@ impl BuildRDF for RdfData {
 
 #[cfg(test)]
 mod tests {
-    use iri_s::iri;
+    use rudof_iri::iri;
 
     use super::*;
 

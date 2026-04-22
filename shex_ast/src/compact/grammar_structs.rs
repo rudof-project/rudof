@@ -1,5 +1,5 @@
 use crate::{SemAct, ShapeExpr, ShapeExprLabel};
-use iri_s::IriS;
+use rudof_iri::IriS;
 use prefixmap::IriRef;
 
 #[derive(Debug, PartialEq)]

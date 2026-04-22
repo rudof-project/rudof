@@ -218,11 +218,11 @@ impl DataGenerator {
             }
 
             // Create a minimal ShapeDecl for backward compatibility
-            let shape_iri = match iri_s::IriS::from_str(shape_id) {
+            let shape_iri = match rudof_iri::IriS::from_str(shape_id) {
                 Ok(iri) => prefixmap::IriRef::Iri(iri),
                 Err(_) => {
                     // Fallback to a simple IRI if parsing fails
-                    prefixmap::IriRef::Iri(iri_s::IriS::new_unchecked("http://example.org/shape"))
+                    prefixmap::IriRef::Iri(rudof_iri::IriS::new_unchecked("http://example.org/shape"))
                 },
             };
 

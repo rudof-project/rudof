@@ -1,6 +1,6 @@
 use super::{Shacl2ShExConfig, Shacl2ShExError};
-use iri_s::IriS;
-use iri_s::iri;
+use rudof_iri::IriS;
+use rudof_iri::iri;
 use prefixmap::IriRef;
 use rudof_rdf::rdf_core::{SHACLPath, term::Object};
 use shacl::ast::{ASTComponent, ASTNodeShape, ASTPropertyShape, ASTSchema, ASTShape};

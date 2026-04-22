@@ -8,7 +8,7 @@ mod value_nodes_ops;
 
 use crate::ir::{IRComponent, IRPropertyShape, IRSchema, IRShape, ShapeLabelIdx};
 use crate::types::Target;
-use iri_s::IriS;
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::collections::HashSet;

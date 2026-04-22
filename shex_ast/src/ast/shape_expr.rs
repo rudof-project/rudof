@@ -1,4 +1,4 @@
-use iri_s::IriS;
+use rudof_iri::IriS;
 use prefixmap::error::DerefError;
 use prefixmap::{DerefIri, IriRef, PrefixMap};
 use serde::{Deserialize, Serialize, Serializer};

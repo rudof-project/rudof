@@ -1,4 +1,4 @@
-use iri_s::IriS;
+use rudof_iri::IriS;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display};

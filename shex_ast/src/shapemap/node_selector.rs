@@ -2,7 +2,7 @@ use crate::object_value::ObjectValue;
 use crate::shapemap::Pattern;
 use crate::shapemap::SHACLPathRef;
 use crate::shapemap::ShapemapError;
-use iri_s::IriS;
+use rudof_iri::IriS;
 use prefixmap::DerefIri;
 use prefixmap::IriRef;
 use prefixmap::PrefixMap;

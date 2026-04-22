@@ -5,7 +5,7 @@ use crate::{
     types::Data,
     utils::get_base_iri,
 };
-use iri_s::{IriS, MimeType};
+use rudof_iri::{IriS, MimeType};
 use pgschema::parser::pg_builder::PgBuilder;
 use prefixmap::PrefixMap;
 use rudof_rdf::rdf_impl::SparqlEndpoint;

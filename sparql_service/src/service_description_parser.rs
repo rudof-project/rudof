@@ -7,7 +7,7 @@ use crate::{
     sd_service, sd_supported_language, void_class, void_class_partition, void_classes, void_property,
     void_property_partition, void_triples,
 };
-use iri_s::IriS;
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::{
     FocusRDF, RDFError,
     parser::{

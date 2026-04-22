@@ -1,4 +1,4 @@
-use iri_s::error::IriSError;
+use rudof_iri::error::IriSError;
 use oxiri::IriParseError;
 use oxttl::TurtleParseError;
 use prefixmap::PrefixMapError;

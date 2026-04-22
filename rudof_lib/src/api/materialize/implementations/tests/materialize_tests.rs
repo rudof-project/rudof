@@ -3,7 +3,7 @@ use crate::{
     api::materialize::implementations::materialize::materialize,
     formats::{InputSpec, ResultDataFormat, ShExFormat},
 };
-use iri_s::{IriS, iri};
+use rudof_iri::{IriS, iri};
 use shex_ast::Node;
 use shex_ast::ir::map_state::MapState;
 

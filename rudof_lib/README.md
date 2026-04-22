@@ -63,7 +63,7 @@
   The following dependencies provide the foundational building blocks that rudof_lib composes to deliver its functionality. By delegating specialized tasks to these well-defined components, the library maintains a clean architecture, promotes reuse, and ensures that each concern remains independently extensible.
 
   - `dctap`
-  - `iri_s`
+  - `rudof_iri`
   - `prefixmap`
   - `pgschema`
   - `rdf_config`

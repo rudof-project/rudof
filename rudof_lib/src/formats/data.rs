@@ -1,5 +1,5 @@
 use crate::errors::DataError;
-use iri_s::MimeType;
+use rudof_iri::MimeType;
 use rudof_generate::config::OutputFormat;
 use rudof_rdf::{
     rdf_core::{RDFFormat, visualizer::uml_converter::ImageFormat},

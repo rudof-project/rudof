@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use iri_s::IriS;
+use rudof_iri::IriS;
 use prefixmap::PrefixMap;
 
 use crate::shex_to_sparql::TriplePattern;

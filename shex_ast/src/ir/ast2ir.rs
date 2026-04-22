@@ -18,8 +18,8 @@ use crate::{CResult, Cond, Node, Pred, ResolveMethod, ShExFormat, ShExParser, ir
 use crate::{SchemaIRError, ShapeLabelIdx, ast, ast::Schema as SchemaAST};
 use crate::{ShapeExprLabel, ast::iri_exclusion::IriExclusion};
 use core::panic;
-use iri_s::IriS;
-use iri_s::error::IriSError;
+use rudof_iri::IriS;
+use rudof_iri::error::IriSError;
 use prefixmap::{IriRef, PrefixMap};
 use rbe::{Cardinality, Pending, RbeError, SingleCond};
 use rbe::{Component, MatchCond, Max, Min, RbeTable, rbe::Rbe};

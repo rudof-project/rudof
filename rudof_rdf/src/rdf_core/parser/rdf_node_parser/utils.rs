@@ -7,7 +7,7 @@ use crate::rdf_core::{
         literal::{ConcreteLiteral, Literal, NumericLiteral},
     },
 };
-use iri_s::{IriS, iri};
+use rudof_iri::{IriS, iri};
 
 /// Converts an RDF term to an IRI string.
 ///

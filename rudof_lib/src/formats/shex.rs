@@ -1,5 +1,5 @@
 use crate::errors::{RudofError, ShExError};
-use iri_s::MimeType;
+use rudof_iri::MimeType;
 use shex_ast::ShExFormat as ShExAstShExFormat;
 use std::{
     fmt::{Display, Formatter},

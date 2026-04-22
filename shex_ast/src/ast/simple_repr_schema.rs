@@ -1,5 +1,5 @@
 use crate::{Shape, ShapeExprLabel};
-use iri_s::IriS;
+use rudof_iri::IriS;
 use prefixmap::IriRef;
 use serde::{Deserialize, Serialize};
 

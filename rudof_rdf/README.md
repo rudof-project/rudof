@@ -32,7 +32,7 @@ The crate is organized into several key modules:
 The `rudof_rdf` crate depends on several key libraries, both internal and external:
 
 - Main Internal Rudof crates dependecies:
-  - `iri_s`: IRI handling
+  - `rudof_iri`: IRI handling
   - `prefixmap`: Prefix mapping for compact IRI representation
 - Main External dependencies:
   - `oxigraph`, `oxrdf`, `oxjsonld`, `oxiri`, `oxilangtag`, `oxrdfio`, `oxrdfxml`, `oxsdatatypes`, `oxttl`: Libraries for RDF parsing, serialization, and datatype support

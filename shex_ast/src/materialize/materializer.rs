@@ -1,4 +1,4 @@
-use iri_s::IriS;
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::BuildRDF;
 use thiserror::Error;
 
@@ -297,7 +297,7 @@ impl Materializer {
 
 #[cfg(test)]
 mod tests {
-    use iri_s::{IriS, iri};
+    use rudof_iri::{IriS, iri};
     use oxrdf::{NamedNode as OxNamedNode, NamedOrBlankNode as OxSubject, Term as OxTerm};
     use rudof_rdf::rdf_core::{Any, NeighsRDF};
     use rudof_rdf::rdf_impl::InMemoryGraph;

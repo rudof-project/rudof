@@ -4,7 +4,7 @@ use crate::exclusion::Exclusion;
 use crate::iri_exclusion::IriExclusion;
 use crate::language_exclusion::LanguageExclusion;
 use crate::literal_exclusion::LiteralExclusion;
-use iri_s::error::IriSError;
+use rudof_iri::error::IriSError;
 use prefixmap::error::DerefError;
 use prefixmap::{DerefIri, IriRef};
 use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, Lang};
@@ -92,7 +92,7 @@ impl ValueSetValue {
 }
 
 impl DerefIri for ValueSetValue {
-    fn deref_iri(self, base: Option<&iri_s::IriS>, prefixmap: Option<&prefixmap::PrefixMap>) -> Result<Self, DerefError>
+    fn deref_iri(self, base: Option<&rudof_iri::IriS>, prefixmap: Option<&prefixmap::PrefixMap>) -> Result<Self, DerefError>
     where
         Self: Sized,
     {

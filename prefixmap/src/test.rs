@@ -1,7 +1,7 @@
 #![allow(unused_imports, dead_code)]
 
 use crate::PrefixMap;
-use iri_s::IriS;
+use rudof_iri::IriS;
 use proptest::prelude::*;
 use std::fmt::Write;
 use std::str::FromStr;

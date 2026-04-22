@@ -1,5 +1,5 @@
-use iri_s::IriS;
-use iri_s::error::IriSError;
+use rudof_iri::IriS;
+use rudof_iri::error::IriSError;
 use prefixmap::IriRef;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;

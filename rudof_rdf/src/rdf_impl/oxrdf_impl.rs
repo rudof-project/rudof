@@ -5,7 +5,7 @@ use crate::rdf_core::{
         literal::{ConcreteLiteral, Lang, Literal},
     },
 };
-use iri_s::IriS;
+use rudof_iri::IriS;
 use oxrdf::{
     BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, NamedOrBlankNode as OxSubject,
     NamedOrBlankNodeRef as OxSubjectRef, Term as OxTerm, Triple as OxTriple,

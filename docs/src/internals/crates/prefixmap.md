@@ -1,6 +1,6 @@
 # `prefixmap`
 
-The `prefixmap` crate contains an RDF prefix map implementation, where a prefix map is a list of alias declarations associated with [IRIs](./iri_s.md).
+The `prefixmap` crate contains an RDF prefix map implementation, where a prefix map is a list of alias declarations associated with [IRIs](./rudof_iri.md).
 For example, in Turtle syntax, a prefix map can be declared as follows:
 
 ```turtle
@@ -28,7 +28,7 @@ let other_map = PrefixMap::from_hashmap(
 And then register some prefixes:
 
 ```rust
-use iri_s::IriS;
+use rudof_iri::IriS;
 
 prefix_map.add_prefix("schema", "https://schema.org/");
 prefix_map.add_prefix("ex", "https://example.org/");
@@ -57,7 +57,7 @@ PrefixMap::wikidata();
 
 ## Dependents and dependencies
 
-This create depends mostly on the [`iri_s`](https://crates.io/crates/iri_s) and [`indexmap`](https://crates.io/crates/indexmap) crates.
+This create depends mostly on the [`rudof_iri`](https://crates.io/crates/rudof_iri) and [`indexmap`](https://crates.io/crates/indexmap) crates.
 
 This create is also used by other rudof modules that needs IRIs functionality, such as:
 - [`rudof_lib`](./rudof_lib.md)

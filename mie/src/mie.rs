@@ -1,5 +1,5 @@
 use hashlink::LinkedHashMap;
-use iri_s::IriS;
+use rudof_iri::IriS;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Display;
@@ -310,7 +310,7 @@ impl Display for Mie {
 
 #[cfg(test)]
 mod tests {
-    use iri_s::iri;
+    use rudof_iri::iri;
     use yaml_rust2::YamlEmitter;
 
     use super::*;

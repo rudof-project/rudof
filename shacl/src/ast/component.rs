@@ -1,5 +1,5 @@
 use crate::types::{NodeKind, Value};
-use iri_s::IriS;
+use rudof_iri::IriS;
 use itertools::Itertools;
 use prefixmap::IriRef;
 use rudof_rdf::rdf_core::term::Object;

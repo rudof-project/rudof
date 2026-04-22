@@ -1,6 +1,6 @@
 use crate::ObjectValue;
 use crate::SchemaJsonError;
-use iri_s::IriS;
+use rudof_iri::IriS;
 use prefixmap::IriRef;
 use rbe::Value;
 use rudof_rdf::rdf_core::{

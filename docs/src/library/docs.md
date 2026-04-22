@@ -14,7 +14,7 @@ The library is published as Rust crates, with the following ones:
 
 - [data_generator](https://docs.rs/data_generator)
 - [dctap](https://docs.rs/dctap)
-- [iri_s](https://docs.rs/iri_s)
+- [rudof_iri](https://docs.rs/rudof_iri)
 - [mie](https://docs.rs/mie)
 - [prefixmap](https://docs.rs/prefixmap)
 - [rbe](https://docs.rs/rbe)

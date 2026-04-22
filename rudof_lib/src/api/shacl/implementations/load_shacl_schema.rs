@@ -4,7 +4,7 @@ use crate::{
     formats::{DataReaderMode, InputSpec, ShaclFormat},
     utils::get_base_iri,
 };
-use iri_s::{IriS, MimeType};
+use rudof_iri::{IriS, MimeType};
 use rudof_rdf::rdf_impl::InMemoryGraph;
 use shacl::ir::IRSchema;
 use shacl::rdf::ShaclParser;

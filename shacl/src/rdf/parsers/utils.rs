@@ -1,6 +1,6 @@
 use crate::ast::ASTComponent;
 use crate::types::Value;
-use iri_s::IriS;
+use rudof_iri::IriS;
 use prefixmap::IriRef;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
 use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;

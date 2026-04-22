@@ -11,7 +11,7 @@ use crate::ir::shape::IRShape;
 use crate::ir::shape_label_idx::ShapeLabelIdx;
 use crate::ir::{convert_iri_ref, convert_value};
 use crate::types::NodeKind;
-use iri_s::IriS;
+use rudof_iri::IriS;
 use itertools::Itertools;
 use rudof_rdf::rdf_core::BuildRDF;
 use rudof_rdf::rdf_core::term::Object;

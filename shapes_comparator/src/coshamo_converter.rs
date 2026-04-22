@@ -1,4 +1,4 @@
-use iri_s::IriS;
+use rudof_iri::IriS;
 use prefixmap::IriRef;
 use shex_ast::{Schema, ShapeExpr, TripleExpr};
 use sparql_service::ServiceDescription;

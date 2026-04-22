@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use iri_s::IriS;
+use rudof_iri::IriS;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Var {

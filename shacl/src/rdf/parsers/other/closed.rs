@@ -1,5 +1,5 @@
 use crate::ast::ASTComponent;
-use iri_s::IriS;
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{
     SingleBoolPropertyParser, SingleValuePropertyAsListParser,
 };

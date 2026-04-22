@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use iri_s::IriS;
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::vocabs::RdfsVocab;
 use serde::{Deserialize, Serialize};
 use shex_validation::ShExConfig;

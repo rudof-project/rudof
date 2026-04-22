@@ -7,7 +7,7 @@ use crate::{
     },
 };
 use colored::*;
-use iri_s::IriS;
+use rudof_iri::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use pretty::{Arena, DocAllocator, DocBuilder, RefDoc};
 use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, Lang, NumericLiteral};
@@ -23,7 +23,7 @@ use crate::pp_object_value;
 /// ```
 /// use shex_ast::compact::ShExFormatter;
 /// use shex_ast::{Schema, ShapeExprLabel, ShapeExpr};
-/// use iri_s::{IriS, iri};
+/// use rudof_iri::{IriS, iri};
 ///
 /// let mut schema = Schema::new(&iri!("http://default/"));
 /// schema.add_prefix("ex", &IriS::new_unchecked("http://example.org/"));
@@ -920,8 +920,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use iri_s::IriS;
-    use iri_s::iri;
+    use rudof_iri::IriS;
+    use rudof_iri::iri;
     use prefixmap::PrefixMap;
 
     #[test]

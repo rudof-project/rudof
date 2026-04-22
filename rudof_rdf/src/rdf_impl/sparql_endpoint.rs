@@ -7,7 +7,7 @@ use crate::{
 };
 use async_trait::async_trait;
 use colored::*;
-use iri_s::IriS;
+use rudof_iri::IriS;
 use oxrdf::{
     BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, NamedOrBlankNode as OxSubject,
     Term as OxTerm, Triple as OxTriple,
@@ -103,7 +103,7 @@ impl SparqlEndpoint {
     ///
     /// ```
     /// use rudof_rdf::rdf_impl::SparqlEndpoint;
-    /// use iri_s::IriS;
+    /// use rudof_iri::IriS;
     /// use prefixmap::PrefixMap;
     ///
     /// let iri = IriS::new_unchecked("https://dbpedia.org/sparql");

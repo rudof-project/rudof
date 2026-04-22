@@ -4,7 +4,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
 use crate::rdf_core::term::literal::{ConcreteLiteral, Lang, NumericLiteral};
-use iri_s::IriS;
+use rudof_iri::IriS;
 use prefixmap::IriRef;
 
 // ============================================================================

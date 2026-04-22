@@ -1,4 +1,4 @@
-use iri_s::IriS;
+use rudof_iri::IriS;
 use prefixmap::PrefixMap;
 use rudof_rdf::rdf_core::term::{Object, literal::ConcreteLiteral};
 use std::fmt::Display;

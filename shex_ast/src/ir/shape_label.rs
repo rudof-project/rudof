@@ -1,6 +1,6 @@
 use crate::{BNode, SchemaJsonError, ShapeExprLabel};
-use iri_s::IriS;
-use iri_s::error::IriSError;
+use rudof_iri::IriS;
+use rudof_iri::error::IriSError;
 use prefixmap::PrefixMap;
 use prefixmap::error::PrefixMapError;
 use rudof_rdf::rdf_core::term::Object;

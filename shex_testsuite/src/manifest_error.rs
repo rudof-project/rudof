@@ -1,4 +1,4 @@
-use iri_s::error::IriSError;
+use rudof_iri::error::IriSError;
 use rudof_rdf::{rdf_core::RDFError, rdf_impl::InMemoryGraphError};
 use shex_ast::compact::ParseError;
 use shex_ast::shapemap::ValidationStatus;

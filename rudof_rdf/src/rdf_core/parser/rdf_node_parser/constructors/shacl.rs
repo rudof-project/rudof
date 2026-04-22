@@ -7,7 +7,7 @@ use crate::rdf_core::{
     },
     term::Iri,
 };
-use iri_s::IriS;
+use rudof_iri::IriS;
 
 /// Parser that interprets an RDF term as a SHACL path expression.
 #[derive(Debug, Clone)]

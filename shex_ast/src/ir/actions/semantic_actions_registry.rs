@@ -4,7 +4,7 @@ use crate::ir::{
     map_state::MapState,
     semantic_action_context::SemanticActionContext,
 };
-use iri_s::IriS;
+use rudof_iri::IriS;
 use std::{
     fmt,
     sync::{Arc, Mutex},
@@ -107,7 +107,7 @@ impl Default for SemanticActionsRegistry {
 
 #[cfg(test)]
 mod tests {
-    use iri_s::{IriS, iri};
+    use rudof_iri::{IriS, iri};
 
     use crate::ir::{
         actions::{

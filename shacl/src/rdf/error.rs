@@ -1,5 +1,5 @@
 use crate::ast::error::ASTError;
-use iri_s::error::IriSError;
+use rudof_iri::error::IriSError;
 use prefixmap::PrefixMapError;
 use rudof_rdf::rdf_core::RDFError;
 use thiserror::Error;

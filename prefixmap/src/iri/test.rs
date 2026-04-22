@@ -3,7 +3,7 @@
 use crate::PrefixMap;
 use crate::iri::IriRef;
 use crate::iri::deref_iri::DerefIri;
-use iri_s::IriS;
+use rudof_iri::IriS;
 use proptest::prelude::*;
 use std::borrow::Cow;
 

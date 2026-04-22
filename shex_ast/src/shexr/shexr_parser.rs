@@ -2,7 +2,7 @@ use super::shexr_error::ShExRError;
 use crate::{
     BNode, NodeConstraint, NodeKind, ObjectValue, Schema, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel, ValueSetValue,
 };
-use iri_s::iri;
+use rudof_iri::iri;
 use prefixmap::IriRef;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::ParserExt;
 use rudof_rdf::rdf_core::vocabs::ShexRVocab;

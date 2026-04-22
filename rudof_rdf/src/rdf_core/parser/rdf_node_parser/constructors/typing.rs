@@ -7,7 +7,7 @@ use crate::rdf_core::{
     },
     term::Iri,
 };
-use iri_s::IriS;
+use rudof_iri::IriS;
 use std::{collections::HashMap, marker::PhantomData};
 
 /// Parser that extracts the `rdf:type` value from the focus node.
@@ -119,7 +119,7 @@ where
             })?;
 
         let type_str = type_iri.as_str();
-        let type_iri_s = iri_s::iri!(type_str);
+        let type_iri_s = rudof_iri::iri!(type_str);
 
         match self.type_map.get(&type_iri_s) {
             Some(parser) => parser.parse_focused(rdf),

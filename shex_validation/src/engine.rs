@@ -5,7 +5,7 @@ use crate::atom;
 use crate::validator_error::*;
 use either::Either;
 use indexmap::IndexSet;
-use iri_s::iri;
+use rudof_iri::iri;
 use itertools::Itertools;
 use prefixmap::PrefixMap;
 use rudof_rdf::rdf_core::{
