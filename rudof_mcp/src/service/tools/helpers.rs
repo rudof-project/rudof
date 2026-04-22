@@ -371,7 +371,7 @@ pub const SHACL_FORMAT_ENTRIES: &[FormatEntry] = &[
 pub const SHACL_FORMATS: &str = "turtle, rdfxml, jsonld, trig, nquads, json";
 
 /// Supported ShapeMap formats as a constant for documentation and hints.
-pub const SHAPEMAP_FORMATS: &str = "compact, json, internal, details, csv";
+pub const SHAPEMAP_FORMATS: &str = "compact";
 
 /// Supported image formats as a constant for documentation and hints.
 pub const IMAGE_FORMATS: &str = "svg, png";
@@ -609,12 +609,18 @@ pub const SHACL_VALIDATION_RESULT_FORMAT_ENTRIES: &[FormatEntry] = &[
     },
 ];
 
+/// Supported ShEx schema input formats (loading).
+pub const SHEX_INPUT_FORMATS_SUPPORTED: &str = "shexc, shexj";
+
+/// Supported ShEx schema output formats (serialization).
+pub const SHEX_OUTPUT_FORMATS_SUPPORTED: &str = "shexc, shexj, json, jsonld, internal";
+
 /// Supported ShEx validation result formats as a constant.
-pub const SHEX_RESULT_FORMATS: &str = "compact, details, json, csv, turtle, ntriples, rdfxml, trig, n3, nquads";
+pub const SHEX_RESULT_FORMATS: &str = "compact, details, json, csv";
 
 /// Supported SHACL validation result formats as a constant.
 pub const SHACL_RESULT_FORMATS: &str =
-    "compact, details, minimal, json, csv, turtle, ntriples, rdfxml, trig, n3, nquads";
+    "compact, details, minimal, csv, turtle, ntriples, rdfxml, trig, n3, nquads";
 
 /// Supported reader modes as a constant.
 pub const READER_MODES_LIST: &[&str] = &["strict", "lax"];
@@ -745,3 +751,28 @@ pub const SPARQL_QUERY_TYPE_ENTRIES: &[QueryTypeEntry] = &[
         example: "DESCRIBE <http://example.org/resource>",
     },
 ];
+
+/// Build a `ToolExecutionError` for a format that is recognised but not yet implemented.
+pub fn unsupported_format_error(format_name: &str, requested: &str, supported: &str) -> ToolExecutionError {
+    ToolExecutionError::with_hint(
+        format!("Format '{}' is not yet implemented for {}", requested, format_name),
+        format!("Currently supported: {}", supported),
+    )
+}
+
+/// Detect the SPARQL query type by scanning for the first keyword token.
+///
+/// Returns `Some("SELECT")`, `Some("CONSTRUCT")`, `Some("ASK")`, `Some("DESCRIBE")`,
+/// or `None` when no type keyword is found.
+pub fn sparql_query_type(query: &str) -> Option<&'static str> {
+    for token in query.split_whitespace() {
+        match token.to_uppercase().as_str() {
+            "SELECT" => return Some("SELECT"),
+            "CONSTRUCT" => return Some("CONSTRUCT"),
+            "ASK" => return Some("ASK"),
+            "DESCRIBE" => return Some("DESCRIBE"),
+            _ => {},
+        }
+    }
+    None
+}

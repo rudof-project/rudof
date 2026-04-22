@@ -182,6 +182,29 @@ pub async fn execute_sparql_query_impl(
         }
     }
 
+    // Guard: DESCRIBE is not yet implemented in rudof_lib.
+    let query_type = sparql_query_type(&sparql_query);
+    if matches!(query_type, Some("DESCRIBE")) {
+        return Ok(ToolExecutionError::with_hint(
+            "DESCRIBE queries are not yet supported",
+            "Use SELECT, CONSTRUCT, or ASK queries instead",
+        )
+        .into_call_tool_result());
+    }
+
+    // Guard: SELECT queries only support the 'internal' result format.
+    if matches!(query_type, Some("SELECT")) {
+        if let Some(fmt) = &result_format_parsed {
+            if !matches!(fmt, ResultQueryFormat::Internal) {
+                return Ok(ToolExecutionError::with_hint(
+                    format!("Format '{}' is not yet supported for SELECT queries", fmt),
+                    "SELECT queries only support 'internal' format. Omit result_format or use 'internal'.",
+                )
+                .into_call_tool_result());
+            }
+        }
+    }
+
     let query_spec = InputSpec::Str(sparql_query.clone());
 
     let mut rudof = service.rudof.lock().await;
