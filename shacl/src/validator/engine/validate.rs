@@ -214,7 +214,7 @@ fn validate_reifiers<RDF: NeighsRDF + Debug>(
                     Some(shape),
                     shapes_graph,
                 )?;
-                results.extend(vr_iter.into_iter())
+                results.extend(vr_iter)
             }
         }
     }
