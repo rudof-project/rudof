@@ -275,8 +275,8 @@ itertools = "0.14"
 josekit = "0.10.3"
 lazy-regex = "3.4"
 mie = { version = "0.2.9", path = "./mie" }
-nom = "7"
-nom_locate = "4"
+nom = "8.0"
+nom_locate = "5.0"
 once_cell = "1.18.0"
 openssl = { version = "0.10", features = ["vendored"] }
 oxigraph = { version = "0.5.2", default-features = false, features = [
