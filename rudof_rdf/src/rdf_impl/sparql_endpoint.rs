@@ -5,7 +5,6 @@ use crate::{
     },
     rdf_impl::SparqlEndpointError,
 };
-use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
 use oxrdf::{
@@ -442,7 +441,6 @@ impl Rdf for SparqlEndpoint {
     }
 }
 
-#[async_trait]
 impl AsyncRDF for SparqlEndpoint {
     type IRI = OxNamedNode;
     type BNode = OxBlankNode;
