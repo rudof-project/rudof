@@ -190,6 +190,9 @@ jobs:
 
   docker:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Allow the workflow to access the files of the repository
         uses: actions/checkout@v4
@@ -202,6 +205,12 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
@@ -209,4 +218,8 @@ jobs:
           context: .
           file: ./Dockerfile_rudof
           no-cache: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ vars.BINARY_NAME }}:latest
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ vars.BINARY_NAME }}:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ vars.BINARY_NAME }}:${{ github.event.release.tag_name }}
+            ghcr.io/${{ github.repository_owner }}/${{ vars.BINARY_NAME }}:latest
+            ghcr.io/${{ github.repository_owner }}/${{ vars.BINARY_NAME }}:${{ github.event.release.tag_name }}
