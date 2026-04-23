@@ -1,16 +1,22 @@
+#[cfg(not(target_family = "wasm"))]
 use rudof_generate::config::{
     CardinalityStrategy, DataQuality, DatatypeConfig, EntityDistribution, GeneratorConfig, OutputFormat,
     PropertyConfig, PropertySelectionStrategy,
 };
+#[cfg(not(target_family = "wasm"))]
 use std::collections::HashMap;
+#[cfg(not(target_family = "wasm"))]
 use std::path::PathBuf;
+#[cfg(not(target_family = "wasm"))]
 use tempfile::TempDir;
 
 /// Helper function to create a temporary directory for test outputs
+#[cfg(not(target_family = "wasm"))]
 fn create_test_dir() -> TempDir {
     tempfile::tempdir().expect("Failed to create temp directory")
 }
 
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_configuration_loading_toml() {
     let temp_dir = create_test_dir();
@@ -75,6 +81,7 @@ parallel_fields = true
     assert!(config.parallel.parallel_fields);
 }
 
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_configuration_loading_json() {
     let temp_dir = create_test_dir();
@@ -139,6 +146,7 @@ async fn test_configuration_loading_json() {
     assert!(config.parallel.parallel_fields);
 }
 
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_default_configuration() {
     let config = GeneratorConfig::default();
@@ -163,6 +171,7 @@ async fn test_default_configuration() {
     assert!(config.parallel.parallel_fields);
 }
 
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_configuration_validation() {
     // Test valid configuration
@@ -179,6 +188,7 @@ async fn test_configuration_validation() {
     assert!(config.validate().is_err(), "Zero batch size should be invalid");
 }
 
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_configuration_merge() {
     let mut config = GeneratorConfig::default();
@@ -191,6 +201,7 @@ async fn test_configuration_merge() {
     assert_eq!(config.generation.seed, Some(98765));
 }
 
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_configuration_serialization() {
     let config = GeneratorConfig::default();
@@ -216,6 +227,7 @@ async fn test_configuration_serialization() {
     );
 }
 
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_datatype_configuration() {
     let mut config = GeneratorConfig::default();
@@ -249,6 +261,7 @@ async fn test_datatype_configuration() {
     assert_eq!(int_config.parameters["max"].as_i64(), Some(65));
 }
 
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_property_configuration() {
     let mut config = GeneratorConfig::default();
@@ -281,6 +294,7 @@ async fn test_property_configuration() {
     assert_eq!(name_config.templates.as_ref().unwrap()[0], "{{name}}");
 }
 
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_complex_configuration_toml() {
     let temp_dir = create_test_dir();
@@ -361,6 +375,7 @@ parallel_fields = true
     assert!(templates.contains(&"Jane Smith".to_string()));
 }
 
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_coherence_configuration_toml() {
     let temp_dir = create_test_dir();

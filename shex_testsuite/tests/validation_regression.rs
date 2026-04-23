@@ -1,11 +1,16 @@
+#[cfg(not(target_family = "wasm"))]
 use shex_testsuite::{
     config::Config, manifest::Manifest, manifest_mode::ManifestShExSyntaxMode, manifest_run_mode::ManifestRunMode,
     manifest_validation::ManifestValidation,
 };
+#[cfg(not(target_family = "wasm"))]
 use std::{collections::BTreeSet, fs, path::Path};
 
+#[cfg(not(target_family = "wasm"))]
 const MANIFEST: &str = "shexTest/validation/manifest.jsonld";
+#[cfg(not(target_family = "wasm"))]
 const CONFIG: &str = "config.toml";
+#[cfg(not(target_family = "wasm"))]
 const BASELINE: &str = "tests/baseline_failing.txt";
 
 /// Regression test for the ShEx validation test suite.
@@ -18,6 +23,7 @@ const BASELINE: &str = "tests/baseline_failing.txt";
 ///
 /// To initialise the baseline for the first time, simply run the test — it will
 /// create `tests/baseline_failing.txt` and then fail asking you to commit the file.
+#[cfg(not(target_family = "wasm"))]
 #[test]
 fn validation_regression() {
     let pkg = Path::new(env!("CARGO_MANIFEST_DIR"));

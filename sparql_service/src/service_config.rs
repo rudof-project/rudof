@@ -1,6 +1,5 @@
-use std::io::Read;
 #[cfg(not(target_family = "wasm"))]
-use std::path::Path;
+use std::{io::Read, path::Path};
 
 use thiserror::Error;
 

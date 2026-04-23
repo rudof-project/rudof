@@ -1,12 +1,20 @@
+#[cfg(not(target_family = "wasm"))]
 use rudof_generate::config::OutputFormat;
+#[cfg(not(target_family = "wasm"))]
 use rudof_generate::{DataGenerator, GeneratorConfig};
+#[cfg(not(target_family = "wasm"))]
 use rudof_rdf::rdf_core::{NeighsRDF, RDFFormat};
+#[cfg(not(target_family = "wasm"))]
 use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+#[cfg(not(target_family = "wasm"))]
 use std::collections::HashMap;
+#[cfg(not(target_family = "wasm"))]
 use std::io::Write;
+#[cfg(not(target_family = "wasm"))]
 use tempfile::NamedTempFile;
 
 /// Debug test to see what datatypes are actually being generated
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn debug_shex_datatype_generation() {
     // Create a simple ShEx schema with datatypes
@@ -93,6 +101,7 @@ async fn debug_shex_datatype_generation() {
 }
 
 /// Debug test for SHACL datatype generation
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn debug_shacl_datatype_generation() {
     let shacl_schema = r#"

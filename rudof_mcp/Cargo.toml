@@ -9,8 +9,7 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
-
-[dependencies]
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
 anyhow.workspace = true
 axum.workspace = true
 axum-server.workspace = true
@@ -32,13 +31,7 @@ tracing.workspace = true
 uuid.workspace = true
 chrono.workspace = true
 
-[target.'cfg(target_family = "wasm")'.dependencies]
-tokio = { workspace = true, features = [] }
-
-[target.'cfg(not(target_family = "wasm"))'.dependencies]
-tokio.workspace = true
-
-[dev-dependencies]
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 tokio-test.workspace = true
 tracing-test.workspace = true
 tower = { version = "0.5", features = ["util"] }

@@ -1,8 +1,12 @@
+#[cfg(not(target_family = "wasm"))]
 use rudof_generate::GeneratorConfig;
+#[cfg(not(target_family = "wasm"))]
 use std::io::Write;
+#[cfg(not(target_family = "wasm"))]
 use tempfile::NamedTempFile;
 
 /// Test that the basic DataGenerator can be created and configured
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_basic_generator_creation() {
     // Test that we can create a config and generator
@@ -17,6 +21,7 @@ async fn test_basic_generator_creation() {
 }
 
 /// Test that ShEx schemas can be loaded
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_shex_schema_loading() {
     // Create a simple ShEx schema
@@ -48,6 +53,7 @@ ex:PersonShape {
 }
 
 /// Test that SHACL schemas can be loaded
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_shacl_schema_loading() {
     // Create a simple SHACL schema
@@ -85,6 +91,7 @@ ex:PersonShape a sh:NodeShape ;
 }
 
 /// Test that data generation produces output files
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_data_generation_produces_output() {
     // Create a simple SHACL schema

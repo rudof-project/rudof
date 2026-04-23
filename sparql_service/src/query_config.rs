@@ -1,5 +1,6 @@
 use rudof_rdf::rdf_core::RdfDataConfig;
 use serde::{Deserialize, Serialize};
+#[cfg(not(target_family = "wasm"))]
 use std::io::Read;
 #[cfg(not(target_family = "wasm"))]
 use std::path::Path;

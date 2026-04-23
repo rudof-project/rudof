@@ -19,6 +19,9 @@ url.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 proptest.workspace = true
+reqwest = { workspace = true, features = ["blocking"] }
+
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 reqwest.workspace = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]

@@ -12,7 +12,7 @@ pub mod graph_description;
 pub mod named_graph_description;
 pub mod property_partition;
 pub mod query_config;
-#[cfg(feature = "sparql")]
+#[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
 pub mod query_processor;
 pub mod service_config;
 pub mod service_description;
@@ -21,7 +21,7 @@ pub mod service_description_format;
 pub mod service_description_parser;
 pub mod service_description_vocab;
 pub mod sparql_result_format;
-#[cfg(feature = "sparql")]
+#[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
 pub mod srdf_data;
 pub mod supported_language;
 
@@ -36,7 +36,7 @@ pub use crate::graph_description::*;
 pub use crate::named_graph_description::*;
 pub use crate::property_partition::*;
 pub use crate::query_config::*;
-#[cfg(feature = "sparql")]
+#[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
 pub use crate::query_processor::*;
 pub use crate::service_config::*;
 pub use crate::service_description::*;
@@ -45,6 +45,6 @@ pub use crate::service_description_format::*;
 pub use crate::service_description_parser::*;
 pub use crate::service_description_vocab::*;
 pub use crate::sparql_result_format::*;
-#[cfg(feature = "sparql")]
+#[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
 pub use crate::srdf_data::*;
 pub use crate::supported_language::*;

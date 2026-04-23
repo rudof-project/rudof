@@ -18,7 +18,9 @@ include = [
 ]
 
 [dependencies]
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
 colored.workspace = true
+crossterm.workspace = true
 dctap.workspace = true
 either.workspace = true
 oxrdf = { workspace = true, features = ["oxsdatatypes"] }
@@ -42,7 +44,4 @@ tracing.workspace = true
 termtree.workspace = true
 thiserror.workspace = true
 toml.workspace = true
-
-[target.'cfg(not(target_family = "wasm"))'.dependencies]
-crossterm.workspace = true
 url.workspace = true

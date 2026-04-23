@@ -44,8 +44,12 @@ toml.workspace = true
 url.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-proptest.workspace = true
+oxigraph = { workspace = true, features = ["http-client-rustls-native"] }
 tempfile.workspace = true
+tokio = {workspace = true, features = ["full"] }
+
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
+proptest.workspace = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 getrandom = { version = "0.3", features = ["wasm_js"] }

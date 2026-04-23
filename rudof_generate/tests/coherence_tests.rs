@@ -1,9 +1,15 @@
+#[cfg(not(target_family = "wasm"))]
 use rudof_generate::config::OutputFormat;
+#[cfg(not(target_family = "wasm"))]
 use rudof_generate::{DataGenerator, GeneratorConfig};
+#[cfg(not(target_family = "wasm"))]
 use std::collections::HashMap;
+#[cfg(not(target_family = "wasm"))]
 use std::io::Write;
+#[cfg(not(target_family = "wasm"))]
 use tempfile::NamedTempFile;
 
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_property_fill_probability() {
     // 1. Create a SHACL schema with many optional properties
@@ -75,6 +81,7 @@ ex:PersonShape a sh:NodeShape ;
     );
 }
 
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_ignore_min_cardinality() {
     // 1. Create a SHACL schema with REQUIRED properties (minCount 1)
@@ -128,6 +135,7 @@ ex:RequiredShape a sh:NodeShape ;
     );
 }
 
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_max_properties_per_instance() {
     // 1. Create a SHACL schema with MANY optional properties
@@ -188,6 +196,7 @@ ex:ManyPropsShape a sh:NodeShape ;
     );
 }
 
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_property_selection_strategy_random() {
     // 1. Create a SHACL schema with 10 optional properties
@@ -261,6 +270,7 @@ ex:RandomPropsShape a sh:NodeShape ;
     }
 }
 
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_property_count_variance() {
     // 1. Create a SHACL schema with 20 optional properties
@@ -354,6 +364,7 @@ ex:VariancePropsShape a sh:NodeShape ;
     // Let's just check they are not all equal to 10.
 }
 
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_excluded_properties() {
     // 1. Create a SHACL schema with 2 REQUIRED properties
@@ -398,6 +409,7 @@ ex:ExcludeShape a sh:NodeShape ;
     );
 }
 
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_type_overrides() {
     // 1. Create a SHACL schema with 2 Shapes having the same property structure
