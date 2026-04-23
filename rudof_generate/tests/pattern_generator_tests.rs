@@ -1,17 +1,27 @@
 #![allow(clippy::regex_creation_in_loops)]
 #![allow(clippy::manual_strip)]
 
+#[cfg(not(target_family = "wasm"))]
 use regex::Regex;
+#[cfg(not(target_family = "wasm"))]
 use rudof_generate::config::{DatatypeConfig, PropertyConfig};
+#[cfg(not(target_family = "wasm"))]
 use rudof_generate::field_generators::pattern::PatternGenerator;
+#[cfg(not(target_family = "wasm"))]
 use rudof_generate::field_generators::{FieldGenerator, GenerationContext};
+#[cfg(not(target_family = "wasm"))]
 use rudof_generate::{DataGenerator, GeneratorConfig};
+#[cfg(not(target_family = "wasm"))]
 use serde_json::json;
+#[cfg(not(target_family = "wasm"))]
 use std::collections::HashMap;
+#[cfg(not(target_family = "wasm"))]
 use std::io::Write;
+#[cfg(not(target_family = "wasm"))]
 use tempfile::NamedTempFile;
 
 /// Test the PatternGenerator directly with common patterns
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_phone_numbers() {
     let generator = PatternGenerator;
@@ -55,6 +65,7 @@ async fn test_pattern_generator_phone_numbers() {
 }
 
 /// Test international phone number pattern
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_international_phone() {
     let generator = PatternGenerator;
@@ -83,6 +94,7 @@ async fn test_pattern_generator_international_phone() {
 }
 
 /// Test email pattern generation
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_email() {
     let generator = PatternGenerator;
@@ -114,6 +126,7 @@ async fn test_pattern_generator_email() {
 }
 
 /// Test student ID pattern
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_student_id() {
     let generator = PatternGenerator;
@@ -155,6 +168,7 @@ async fn test_pattern_generator_student_id() {
 }
 
 /// Test date pattern generation
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_date() {
     let generator = PatternGenerator;
@@ -193,6 +207,7 @@ async fn test_pattern_generator_date() {
 }
 
 /// Test IP address pattern
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_ip_address() {
     let generator = PatternGenerator;
@@ -226,6 +241,7 @@ async fn test_pattern_generator_ip_address() {
 }
 
 /// Test URL pattern generation
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_url() {
     let generator = PatternGenerator;
@@ -263,6 +279,7 @@ async fn test_pattern_generator_url() {
 }
 
 /// Test heuristic generation based on property names
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_heuristics() {
     let generator = PatternGenerator;
@@ -320,6 +337,7 @@ async fn test_pattern_generator_heuristics() {
 }
 
 /// Test pattern generator integration with configuration (without schema)
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_integration_config() {
     // Skip ShEx integration due to parser compatibility issues
@@ -388,6 +406,7 @@ async fn test_pattern_generator_integration_config() {
 }
 
 /// Test pattern generator with SHACL schema
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_integration_shacl() {
     // Create a SHACL schema with pattern constraints
@@ -456,6 +475,7 @@ ex:PersonShape a sh:NodeShape ;
 }
 
 /// Test error handling for invalid patterns
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_error_handling() {
     let generator = PatternGenerator;
@@ -480,6 +500,7 @@ async fn test_pattern_generator_error_handling() {
 }
 
 /// Test pattern generator with multiple iterations for randomness
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_randomness() {
     let generator = PatternGenerator;

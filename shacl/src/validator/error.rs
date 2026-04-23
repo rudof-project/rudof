@@ -107,6 +107,7 @@ pub enum ValidationError {
     #[error("Not yet implemented: {msg}")]
     NotImplemented { msg: String },
 
+    #[cfg(not(target_family = "wasm"))]
     #[error(transparent)]
     RdfDataError(#[from] Box<RdfDataError>),
 
@@ -144,6 +145,7 @@ impl From<ShaclParserError> for ValidationError {
     }
 }
 
+#[cfg(not(target_family = "wasm"))]
 impl From<RdfDataError> for ValidationError {
     fn from(value: RdfDataError) -> Self {
         Self::RdfDataError(Box::new(value))

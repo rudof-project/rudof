@@ -9,13 +9,16 @@
 //! - Internal helper methods (completions, subscriptions)
 //! - Tool/prompt router availability
 
+#[cfg(not(target_family = "wasm"))]
 use rmcp::ServerHandler;
+#[cfg(not(target_family = "wasm"))]
 use rudof_mcp::service::RudofMcpService;
 
 // =============================================================================
 // Service Initialization Tests
 // =============================================================================
 
+#[cfg(not(target_family = "wasm"))]
 mod initialization_tests {
     use super::*;
 
@@ -43,6 +46,7 @@ mod initialization_tests {
 // Tool Router Tests
 // =============================================================================
 
+#[cfg(not(target_family = "wasm"))]
 mod tool_router_tests {
     use super::*;
 
@@ -105,6 +109,7 @@ mod tool_router_tests {
 // Prompt Router Tests
 // =============================================================================
 
+#[cfg(not(target_family = "wasm"))]
 mod prompt_router_tests {
     use super::*;
 
@@ -158,6 +163,7 @@ mod prompt_router_tests {
 // Completion Tests
 // =============================================================================
 
+#[cfg(not(target_family = "wasm"))]
 mod completion_tests {
     use super::*;
 
@@ -275,6 +281,7 @@ mod completion_tests {
 // Log Level Tests
 // =============================================================================
 
+#[cfg(not(target_family = "wasm"))]
 mod log_level_tests {
     use super::*;
     use rmcp::model::LoggingLevel;

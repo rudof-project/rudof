@@ -15,14 +15,31 @@
 //! fine-grained settings across RDF formats, SHACL validation, schema conversion,
 //! and more.
 
+#[cfg(not(target_family = "wasm"))]
 pub(crate) mod api;
+
+#[cfg(not(target_family = "wasm"))]
 pub mod display;
+
+#[cfg(not(target_family = "wasm"))]
 pub mod errors;
+
+#[cfg(not(target_family = "wasm"))]
 pub mod formats;
+
+#[cfg(not(target_family = "wasm"))]
 mod rudof;
+
+#[cfg(not(target_family = "wasm"))]
 mod rudof_config;
+
+#[cfg(not(target_family = "wasm"))]
 pub mod types;
+
+#[cfg(not(target_family = "wasm"))]
 pub(crate) mod utils;
 
+#[cfg(not(target_family = "wasm"))]
 pub use rudof::*;
+#[cfg(not(target_family = "wasm"))]
 pub use rudof_config::RudofConfig;

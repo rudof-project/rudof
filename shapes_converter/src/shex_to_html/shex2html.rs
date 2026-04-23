@@ -3,10 +3,12 @@ use minijinja::Template;
 use minijinja::{Environment, path_loader};
 use prefixmap::error::PrefixMapError;
 use prefixmap::{IriRef, PrefixMap};
+#[cfg(not(target_family = "wasm"))]
 use rudof_rdf::rdf_core::visualizer::uml_converter::{ImageFormat, UmlConverter, UmlGenerationMode};
 use shex_ast::{Annotation, Schema, Shape, ShapeExpr, ShapeExprLabel, TripleExpr};
 use std::ffi::OsStr;
 use std::fs::OpenOptions;
+#[cfg(not(target_family = "wasm"))]
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
@@ -67,9 +69,16 @@ impl ShEx2Html {
         Ok(())
     }
 
+    #[cfg(target_family = "wasm")]
+    pub fn create_svg_schema(&self) -> Result<String, ShEx2HtmlError> {
+        Ok(String::new())
+    }
+
+    #[cfg(not(target_family = "wasm"))]
     #[allow(clippy::result_large_err)]
     pub fn create_svg_schema(&self) -> Result<String, ShEx2HtmlError> {
         let mut str_writer = BufWriter::new(Vec::new());
+        #[cfg(not(target_family = "wasm"))]
         self.current_uml_converter.as_image(
             str_writer.by_ref(),
             ImageFormat::SVG,
@@ -80,6 +89,13 @@ impl ShEx2Html {
         Ok(str)
     }
 
+    #[cfg(target_family = "wasm")]
+    #[allow(clippy::result_large_err)]
+    pub fn create_svg_shape(&self, _name: &str) -> Result<String, ShEx2HtmlError> {
+        Ok(String::new())
+    }
+
+    #[cfg(not(target_family = "wasm"))]
     #[allow(clippy::result_large_err)]
     pub fn create_svg_shape(&self, name: &str) -> Result<String, ShEx2HtmlError> {
         let mut str_writer = BufWriter::new(Vec::new());
@@ -430,6 +446,17 @@ fn get_label(
     Ok(None)
 }
 
+#[cfg(target_family = "wasm")]
+#[allow(clippy::result_large_err)]
+fn create_svg_shape<P: AsRef<Path>>(
+    _converter: &ShEx2Uml,
+    _name: &str,
+    _plantuml_path: P,
+) -> Result<String, ShEx2HtmlError> {
+    Ok(String::default())
+}
+
+#[cfg(not(target_family = "wasm"))]
 #[allow(clippy::result_large_err)]
 fn create_svg_shape<P: AsRef<Path>>(
     converter: &ShEx2Uml,

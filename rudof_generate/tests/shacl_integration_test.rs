@@ -1,14 +1,20 @@
+#[cfg(not(target_family = "wasm"))]
 use rudof_generate::config::GeneratorConfig;
-use rudof_generate::{DataGenerator, Result};
+#[cfg(not(target_family = "wasm"))]
+use rudof_generate::{DataGenerator, errors::Result};
+#[cfg(not(target_family = "wasm"))]
 use std::path::PathBuf;
+#[cfg(not(target_family = "wasm"))]
 use tempfile::TempDir;
 
 /// Helper function to create a temporary directory for test outputs
+#[cfg(not(target_family = "wasm"))]
 fn create_test_dir() -> TempDir {
     tempfile::tempdir().expect("Failed to create temp directory")
 }
 
 /// Helper function to create a simple SHACL schema file
+#[cfg(not(target_family = "wasm"))]
 fn create_simple_shacl_schema(temp_dir: &TempDir) -> PathBuf {
     let schema_path = temp_dir.path().join("test_shacl.ttl");
     std::fs::write(
@@ -37,6 +43,7 @@ fn create_simple_shacl_schema(temp_dir: &TempDir) -> PathBuf {
     schema_path
 }
 
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_shacl_schema_loading() -> Result<()> {
     let temp_dir = create_test_dir();
@@ -56,6 +63,7 @@ async fn test_shacl_schema_loading() -> Result<()> {
     Ok(())
 }
 
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_shacl_data_generation() -> Result<()> {
     let temp_dir = create_test_dir();
@@ -83,6 +91,7 @@ async fn test_shacl_data_generation() -> Result<()> {
     Ok(())
 }
 
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_shacl_auto_detection() -> Result<()> {
     let temp_dir = create_test_dir();
