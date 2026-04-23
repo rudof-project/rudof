@@ -244,7 +244,6 @@ zero_sized_map_values = "warn"
 
 [workspace.dependencies]
 anyhow = "1.0"
-async-trait = "0.1.89"
 axum = "0.8.4"
 axum-server = "0.7"
 base64 = "0.22.1"

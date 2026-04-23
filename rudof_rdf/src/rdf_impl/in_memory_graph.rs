@@ -5,7 +5,6 @@ use crate::rdf_core::{
 use crate::rdf_impl::in_memory_graph_error::InMemoryGraphError;
 
 use crate::rdf_core::vocabs::RdfVocab;
-use async_trait::async_trait;
 use colored::*;
 use iri_s::IriS;
 use oxjsonld::JsonLdParser;
@@ -778,7 +777,6 @@ impl NeighsRDF for InMemoryGraph {
     }
 }
 
-#[async_trait]
 impl AsyncRDF for InMemoryGraph {
     type IRI = OxNamedNode;
     type BNode = OxBlankNode;

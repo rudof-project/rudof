@@ -14,7 +14,6 @@ default = ["sparql"]
 sparql = ["dep:oxigraph", "dep:reqwest", "dep:tokio", "dep:spargebra", "dep:sparesults"]
 
 [dependencies]
-async-trait.workspace = true
 colored.workspace = true
 const_format.workspace = true
 iri_s.workspace = true
