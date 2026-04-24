@@ -7,6 +7,12 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.2.14
+
+### Changed
+- Updated some dependencies
+- Now `iri_s` crate has been moved to `rudof_iri`
+
 ## v0.2.13
 ### Fixed
 - Problem with MCP panicking, issue #604
