@@ -27,7 +27,7 @@ members = [
 default-members = ["rudof_cli"]
 
 [workspace.package]
-version = "0.2.13"
+version = "0.2.14"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 description = "RDF data shapes implementation in Rust"
