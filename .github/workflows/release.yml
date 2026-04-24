@@ -21,6 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.RELEASE_TOKEN }}
       - name: Compute new version
         id: version
         run: |
@@ -43,9 +45,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Cargo.toml
-          git commit -m "Release ${{ steps.version.outputs.new }}"
+          git commit -m "chore: release ${{ steps.version.outputs.new }} [skip ci]"
           git push
       - name: Create GitHub release
         run: gh release create "${{ steps.version.outputs.new }}" --title "${{ steps.version.outputs.new }}" --generate-notes
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
