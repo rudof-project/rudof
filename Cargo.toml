@@ -300,6 +300,7 @@ proptest = "1.9.0"
 pyrudof = { path = "./python" }
 rand = "0.8"
 rayon = "1.7"
+dashmap = "6"
 rbe = { path = "./rbe" }
 rbe_testsuite = { path = "./rbe_testsuite" }
 rdf_config = { path = "./rdf_config" }

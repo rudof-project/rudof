@@ -16,6 +16,7 @@ sparql = ["sparql_service/sparql", "rudof_rdf/sparql" ]
 
 [dependencies]
 anyhow.workspace = true
+dashmap.workspace = true
 indoc.workspace = true
 itertools.workspace = true
 rudof_iri.workspace = true
