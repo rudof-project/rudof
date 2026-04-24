@@ -15,7 +15,7 @@ repository.workspace = true
 [dependencies]
 either.workspace = true # "1"
 indexmap.workspace = true # { version = "2" }
-iri_s.workspace = true
+rudof_iri.workspace = true
 itertools.workspace = true
 prefixmap.workspace = true
 rbe.workspace = true

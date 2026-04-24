@@ -10,8 +10,8 @@ use std::{
 };
 
 use crate::rdf_core::vocabs::{RdfVocab, XsdVocab};
-use iri_s::IriS;
 use prefixmap::{DerefError, DerefIri, IriRef, PrefixMap};
+use rudof_iri::IriS;
 use serde::{Deserialize, Serialize, Serializer};
 
 /// Types that implement this trait can be used as RDF Literals.
@@ -304,7 +304,7 @@ impl ConcreteLiteral {
     ///
     /// ```
     /// use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
-    /// use iri_s::IriS;
+    /// use rudof_iri::IriS;
     /// use prefixmap::IriRef;
     ///
     /// // Create a datatype literal with an integer value

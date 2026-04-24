@@ -2,7 +2,7 @@ use crate::ast::{ASTPropertyShape, ASTSchema};
 use crate::ir::error::IRError;
 use crate::ir::schema::IRSchema;
 use crate::ir::shape_label_idx::ShapeLabelIdx;
-use iri_s::IriS;
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::SHACLPath;
 use std::fmt::{Display, Formatter};
 

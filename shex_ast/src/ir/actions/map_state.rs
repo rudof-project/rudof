@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt::Display};
 
-use iri_s::IriS;
+use rudof_iri::IriS;
 use serde::{Deserialize, Serialize};
 
 use crate::Node;

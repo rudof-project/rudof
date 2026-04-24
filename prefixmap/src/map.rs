@@ -2,7 +2,7 @@ use crate::error::PrefixMapError;
 use crate::{IriRef, Show};
 use colored::*;
 use indexmap::IndexMap;
-use iri_s::*;
+use rudof_iri::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::str::FromStr;
@@ -249,7 +249,7 @@ impl PrefixMap {
     /// # use std::collections::HashMap;
     /// # use prefixmap::PrefixMap;
     /// # use prefixmap::error::PrefixMapError;
-    /// # use iri_s::*;
+    /// # use rudof_iri::*;
     /// # use std::str::FromStr;
     /// let pm: PrefixMap = HashMap::from([
     ///     ("", "https://example.org/"),
@@ -277,7 +277,7 @@ impl PrefixMap {
     /// # use std::collections::HashMap;
     /// # use prefixmap::PrefixMap;
     /// # use prefixmap::error::PrefixMapError;
-    /// # use iri_s::*;
+    /// # use rudof_iri::*;
     /// # use std::str::FromStr;
     /// let pm: PrefixMap = HashMap::from([
     ///     ("", "https://example.org/"),
@@ -310,7 +310,7 @@ impl PrefixMap {
     /// # use std::collections::HashMap;
     /// # use prefixmap::PrefixMap;
     /// # use prefixmap::error::PrefixMapError;
-    /// # use iri_s::*;
+    /// # use rudof_iri::*;
     /// # use std::str::FromStr;
     /// let pm: PrefixMap = HashMap::from([
     ///     ("", "https://example.org/"),
@@ -353,7 +353,7 @@ impl PrefixMap {
     /// # use std::collections::HashMap;
     /// # use prefixmap::PrefixMap;
     /// # use prefixmap::error::PrefixMapError;
-    /// # use iri_s::*;
+    /// # use rudof_iri::*;
     /// # use std::str::FromStr;
     /// let pm: PrefixMap = HashMap::from([
     ///     ("", "https://example.org/"),
@@ -398,7 +398,7 @@ impl PrefixMap {
     /// # use std::collections::HashMap;
     /// # use prefixmap::PrefixMap;
     /// # use prefixmap::error::PrefixMapError;
-    /// # use iri_s::*;
+    /// # use rudof_iri::*;
     /// # use std::str::FromStr;
     ///
     /// let pm: PrefixMap = HashMap::from([
@@ -440,7 +440,7 @@ impl PrefixMap {
     /// # use std::collections::HashMap;
     /// # use prefixmap::PrefixMap;
     /// # use prefixmap::error::PrefixMapError;
-    /// # use iri_s::*;
+    /// # use rudof_iri::*;
     /// # use std::str::FromStr;
     ///
     /// let pm: PrefixMap = HashMap::from([

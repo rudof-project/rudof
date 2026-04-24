@@ -1,6 +1,6 @@
 use crate::ast::error::ASTError;
 use crate::ast::{ASTSchema, ASTShape};
-use iri_s::IriS;
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
 use std::collections::HashSet;
 

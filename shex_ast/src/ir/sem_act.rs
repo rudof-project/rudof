@@ -1,4 +1,4 @@
-use iri_s::IriS;
+use rudof_iri::IriS;
 use serde::Serialize;
 
 #[derive(Debug, PartialEq, Eq, Clone, Serialize)]

@@ -1,6 +1,6 @@
 use crate::{Result, Rudof, errors::IriError, formats::QueryType};
 use crossterm::terminal;
-use iri_s::IriS;
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::query::SparqlQuery;
 use std::{env, str::FromStr};
 #[cfg(not(target_family = "wasm"))]

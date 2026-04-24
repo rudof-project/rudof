@@ -3,7 +3,7 @@ use crate::unified_constraints::{
     NodeKind, UnifiedConstraint, UnifiedConstraintModel, UnifiedPropertyConstraint, UnifiedShape,
 };
 use crate::{DataGeneratorError, Result};
-use iri_s::IriS;
+use rudof_iri::IriS;
 use shex_ast::ast::{NodeConstraint, ShapeDecl, ShapeExpr, TripleExpr, XsFacet};
 use shex_ast::compact::ShExParser;
 use std::path::Path;

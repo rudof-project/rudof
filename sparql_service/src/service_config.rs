@@ -3,7 +3,7 @@ use std::{io::Read, path::Path};
 
 use thiserror::Error;
 
-use iri_s::IriS;
+use rudof_iri::IriS;
 use serde::{Deserialize, Serialize};
 
 /// This struct can be used to define configuration of RDF data readers

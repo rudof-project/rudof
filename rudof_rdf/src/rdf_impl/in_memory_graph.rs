@@ -6,7 +6,6 @@ use crate::rdf_impl::in_memory_graph_error::InMemoryGraphError;
 
 use crate::rdf_core::vocabs::RdfVocab;
 use colored::*;
-use iri_s::IriS;
 use oxjsonld::JsonLdParser;
 use oxrdf::{
     BlankNode as OxBlankNode, Graph, GraphName, Literal as OxLiteral, NamedNode as OxNamedNode, NamedNodeRef,
@@ -17,6 +16,7 @@ use oxrdfio::{JsonLdProfileSet, RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
 use prefixmap::{PrefixMapError, map::*};
+use rudof_iri::IriS;
 use serde::{Serialize, ser::SerializeStruct};
 use std::{
     collections::{HashMap, HashSet},

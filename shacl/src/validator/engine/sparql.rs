@@ -6,7 +6,7 @@ use crate::validator::engine::{Engine, select};
 use crate::validator::nodes::{FocusNodes, ValueNodes};
 use crate::validator::report::ValidationResult;
 use indoc::formatdoc;
-use iri_s::IriS;
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::query::QueryRDF;
 use rudof_rdf::rdf_core::term::{Object, Term};
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};

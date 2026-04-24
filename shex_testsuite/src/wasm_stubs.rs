@@ -1,6 +1,6 @@
 use crate::manifest_error::ManifestError;
 use crate::manifest_schemas::SchemasEntry;
-use iri_s::IriS;
+use rudof_iri::IriS;
 use std::path::Path;
 
 #[allow(dead_code)]

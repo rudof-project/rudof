@@ -2,7 +2,7 @@
 resolver = "2"
 members = [
     "dctap",
-    "iri_s",
+    "rudof_iri",
     "mie",
     "pgschema",
     "prefixmap",
@@ -269,7 +269,7 @@ hashlink = { version = "0.10" }
 indexmap = { version = "2", features = ["serde"] }
 indoc = "2"
 ipnetwork = "0.21"
-iri_s = { version = "0.2.9", path = "./iri_s" }
+rudof_iri = { version = "0.2.9", path = "rudof_iri" }
 is_ci = "1.0"
 itertools = "0.14"
 josekit = "0.10.3"

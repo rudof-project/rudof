@@ -10,9 +10,9 @@ use std::hash::{Hash, Hasher};
 #[cfg(not(target_arch = "wasm32"))]
 use crate::rdf_core::term::literal::{ConcreteLiteral, Lang, NumericLiteral};
 #[cfg(not(target_arch = "wasm32"))]
-use iri_s::IriS;
-#[cfg(not(target_arch = "wasm32"))]
 use prefixmap::IriRef;
+#[cfg(not(target_arch = "wasm32"))]
+use rudof_iri::IriS;
 
 // ============================================================================
 // Arbitrary Strategies for ConcreteLiteral Generation

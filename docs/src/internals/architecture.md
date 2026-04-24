@@ -4,8 +4,8 @@ The following diagram presents the main modules (called crates in Rust) and thei
 
 ```mermaid
 graph TD;
- iri_s --> oxigraph;
- iri_s --> reqwest ;
+ rudof_iri --> oxigraph;
+ rudof_iri --> reqwest ;
  dctap --> calamine ;
  dctap --> csv ;
  sparql_service --> oxigraph ;
@@ -21,7 +21,7 @@ subgraph rudof
     shacl_ast[<a href='https://crates.io/crates/shacl_ast'>shacl_ast</a>];
     shacl_rdf[<a href='https://crates.io/crates/shacl_rdf'>shacl_rdf</a>];
     shacl_ir[<a href='https://crates.io/crates/shacl_ir'>shacl_ir</a>];
-    iri_s[<a href='https://crates.io/crates/iri_s'>iri_s</a>];
+    rudof_iri[<a href='https://crates.io/crates/rudof_iri'>rudof_iri</a>];
     prefixmap[<a href='https://crates.io/crates/prefixmap'>prefixmap</a>];
     shapemap[<a href='https://crates.io/crates/shapemap'>shapemap</a>];
     rbe[<a href='https://crates.io/crates/rbe'>rbe</a>];
@@ -34,7 +34,7 @@ subgraph rudof
  shex_compact-->shex_ast;
  shex_ir-->shex_ast;
  shex_validation-->shex_ir;
- srdf-->iri_s;
+ srdf-->rudof_iri;
  shacl_ast-->srdf;
  shacl_rdf-->shacl_ast;
  shacl_ir-->shacl_ast;
@@ -45,13 +45,13 @@ subgraph rudof
  srdf-->prefixmap;
  shex_validation-->rbe;
  dctap-->prefixmap;
- dctap --> iri_s;
+ dctap --> rudof_iri;
  shapes_converter-->shacl_ast;
  shapes_converter-->shex_ast;
  shapes_converter-->dctap;
- prefixmap --> iri_s ;
+ prefixmap --> rudof_iri ;
  shex_validation --> shex_compact
- sparql_service --> iri_s ;
+ sparql_service --> rudof_iri ;
  rudof_lib --> shex_validation ;
  rudof_lib --> shacl_validation ;
  rudof_lib --> shapes_converter ;

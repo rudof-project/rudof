@@ -10,9 +10,9 @@ use crate::manifest_mode::ManifestShExSyntaxMode;
 #[cfg(not(target_family = "wasm"))]
 use ValidationType::*;
 #[cfg(not(target_family = "wasm"))]
-use iri_s::IriS;
-#[cfg(not(target_family = "wasm"))]
 use prefixmap::IriRef;
+#[cfg(not(target_family = "wasm"))]
+use rudof_iri::IriS;
 #[cfg(not(target_family = "wasm"))]
 use rudof_rdf::rdf_core::term::{Object, literal::ConcreteLiteral};
 #[cfg(not(target_family = "wasm"))]

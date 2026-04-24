@@ -1,7 +1,7 @@
 use crate::ast::error::ASTError;
 use crate::ast::{ASTComponent, ASTSchema};
 use crate::types::{ClosedInfo, MessageMap, Severity, Target, defined_properties_for};
-use iri_s::IriS;
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};

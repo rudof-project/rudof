@@ -1,4 +1,4 @@
-use iri_s::IriS;
+use rudof_iri::IriS;
 use std::fmt::{Display, Formatter};
 
 /// sh:disjoint specifies the condition that the set of value nodes is disjoint
