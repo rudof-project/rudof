@@ -1,6 +1,6 @@
 use crate::error::ValidationError;
 use crate::ir::{IRComponent, IRSchema, IRShape, ShapeLabelIdx};
-use crate::validator::cache::ValidationCache;
+use crate::validator::cache::{SharedValidationCache, ValidationCache};
 use crate::validator::constraints::{NativeValidator, ShaclComponent, ValidatorDeref};
 use crate::validator::engine::Engine;
 use crate::validator::index::ClassIndex;
@@ -11,18 +11,19 @@ use rudof_rdf::rdf_core::term::{Object, Term, Triple};
 use rudof_rdf::rdf_core::vocabs::{RdfVocab, RdfsVocab};
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
+use std::sync::Arc;
 
 pub struct NativeEngine {
-    cache: ValidationCache,
-    /// Pre-built inverted index mapping classes to their instances and subclasses
-    /// Built once via `build_indexes()` before validation starts
-    class_index: Option<ClassIndex>,
+    /// Shared, thread-safe validation cache.
+    cache: SharedValidationCache,
+    /// Pre-built inverted index mapping classes to their instances and subclasses.
+    class_index: Option<Arc<ClassIndex>>,
 }
 
 impl NativeEngine {
     pub fn new() -> Self {
         Self {
-            cache: ValidationCache::new(),
+            cache: SharedValidationCache::new(),
             class_index: None,
         }
     }
@@ -30,8 +31,15 @@ impl NativeEngine {
 
 impl<RDF: NeighsRDF + Debug + 'static> Engine<RDF> for NativeEngine {
     fn build_indexes(&mut self, store: &RDF) -> Result<(), ValidationError> {
-        self.class_index = Some(ClassIndex::build(store)?);
+        self.class_index = Some(Arc::new(ClassIndex::build(store)?));
         Ok(())
+    }
+
+    fn fork(&self) -> Box<dyn Engine<RDF>> {
+        Box::new(NativeEngine {
+            cache: self.cache.clone(),
+            class_index: self.class_index.clone(),
+        })
     }
 
     fn evaluate(

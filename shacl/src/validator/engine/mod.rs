@@ -32,6 +32,12 @@ pub trait Engine<S: NeighsRDF>: Send {
         Ok(())
     }
 
+    /// Creates a new engine instance that shares pre-built indexes and cache.
+    ///
+    /// This is used by the parallel validator to cheaply spin up per-shape
+    /// engines without rebuilding expensive indexes for every thread.
+    fn fork(&self) -> Box<dyn Engine<S>>;
+
     fn evaluate(
         &mut self,
         store: &S,

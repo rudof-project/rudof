@@ -1,6 +1,6 @@
 use crate::error::ValidationError;
 use crate::ir::{IRComponent, IRSchema, IRShape, ShapeLabelIdx};
-use crate::validator::cache::ValidationCache;
+use crate::validator::cache::{SharedValidationCache, SingleValidationCache, ValidationCache};
 use crate::validator::constraints::{ShaclComponent, SparqlValidator, ValidatorDeref};
 use crate::validator::engine::{Engine, select};
 use crate::validator::nodes::{FocusNodes, ValueNodes};
@@ -13,13 +13,13 @@ use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
 
 pub struct SparqlEngine {
-    cache: ValidationCache,
+    cache: SharedValidationCache,
 }
 
 impl SparqlEngine {
     pub fn new() -> Self {
         Self {
-            cache: ValidationCache::new(),
+            cache: SharedValidationCache::new(),
         }
     }
 }
@@ -157,6 +157,12 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
 
     fn get_cached_results(&self, node: &Object, shape_idx: ShapeLabelIdx) -> Option<Vec<ValidationResult>> {
         self.cache.get_results(node, shape_idx)
+    }
+
+    fn fork(&self) -> Box<dyn Engine<S>> {
+        Box::new(SparqlEngine {
+            cache: self.cache.clone()
+        })
     }
 }
 
