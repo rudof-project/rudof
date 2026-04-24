@@ -58,7 +58,7 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
                 if let Ok(ref obj) = node_object
                     && let Some(results) = runner.get_cached_results(obj, *idx)
                 {
-                    cached_results.extend(results.iter().cloned());
+                    cached_results.extend(results);
                     continue;
                 }
                 uncached.push(fnode.clone());

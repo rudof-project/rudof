@@ -155,7 +155,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
         self.cache.has_validated(node, shape_idx)
     }
 
-    fn get_cached_results(&self, node: &Object, shape_idx: ShapeLabelIdx) -> Option<&Vec<ValidationResult>> {
+    fn get_cached_results(&self, node: &Object, shape_idx: ShapeLabelIdx) -> Option<Vec<ValidationResult>> {
         self.cache.get_results(node, shape_idx)
     }
 }
