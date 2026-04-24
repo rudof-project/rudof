@@ -50,7 +50,7 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v4
       - name: Install stable toolchain
-        uses: dtolnay/rust-toolchain@vstable
+        uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
