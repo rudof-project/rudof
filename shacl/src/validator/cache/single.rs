@@ -9,11 +9,13 @@ use crate::validator::report::ValidationResult;
 ///
 /// Use [`crate::validator::cache::ParallelValidationCache`] when cache must
 /// be shared across threads
+#[allow(dead_code)]
 #[derive(Debug, Default)]
 pub(crate) struct SingleValidationCache {
     cache: Mutex<HashMap<(Object, ShapeLabelIdx), Vec<ValidationResult>>>,
 }
 
+#[allow(dead_code)]
 impl SingleValidationCache {
     pub fn new() -> Self {
         Self { cache: Mutex::new(HashMap::new()) }

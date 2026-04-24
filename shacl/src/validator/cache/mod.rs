@@ -6,9 +6,7 @@ mod parallel;
 mod shared;
 mod single;
 
-pub(crate) use parallel::ParallelValidationCache;
 pub(crate) use shared::SharedValidationCache;
-pub(crate) use single::SingleValidationCache;
 
 /// Validation cache trait
 pub(crate) trait ValidationCache: Send + Sync {
