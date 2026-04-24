@@ -8,7 +8,7 @@ use crate::ir::property_shape::IRPropertyShape;
 use crate::ir::schema::IRSchema;
 use crate::ir::shape_label_idx::ShapeLabelIdx;
 use crate::types::{MessageMap, Severity, Target};
-use iri_s::IriS;
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::{BuildRDF, SHACLPath};
 use std::collections::{HashMap, HashSet};

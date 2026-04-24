@@ -1,6 +1,6 @@
 use crate::{Result, Rudof, errors::DataError, formats::NodeInspectionMode};
-use iri_s::IriS;
 use prefixmap::IriRef;
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::{NeighsRDF, query::QueryRDF};
 use shex_ast::{ShapeMapParser, shapemap::NodeSelector};
 use std::{collections::HashMap, fmt::Debug, io};

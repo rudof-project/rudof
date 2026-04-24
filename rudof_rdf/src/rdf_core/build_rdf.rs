@@ -1,5 +1,5 @@
-use iri_s::IriS;
 use prefixmap::PrefixMap;
+use rudof_iri::IriS;
 use std::io::Write;
 
 use crate::rdf_core::{NeighsRDF, RDFFormat};

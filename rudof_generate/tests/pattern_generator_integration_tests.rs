@@ -1,12 +1,18 @@
 #![allow(clippy::regex_creation_in_loops)]
 
+#[cfg(not(target_family = "wasm"))]
 use regex::Regex;
+#[cfg(not(target_family = "wasm"))]
 use rudof_generate::field_generators::pattern::PatternGenerator;
+#[cfg(not(target_family = "wasm"))]
 use rudof_generate::field_generators::{FieldGenerator, GenerationContext};
+#[cfg(not(target_family = "wasm"))]
 use serde_json::json;
+#[cfg(not(target_family = "wasm"))]
 use std::collections::HashSet;
 
 /// Test pattern generator with various constraint combinations (adjusted for current implementation)
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_with_length_constraints() {
     let generator = PatternGenerator;
@@ -52,6 +58,7 @@ async fn test_pattern_with_length_constraints() {
 }
 
 /// Test pattern generator with basic patterns (enumeration not supported in current implementation)
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_with_enumeration() {
     let generator = PatternGenerator;
@@ -88,6 +95,7 @@ async fn test_pattern_with_enumeration() {
 }
 
 /// Test pattern generator with different datatype contexts
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_with_different_datatypes() {
     let generator = PatternGenerator;
@@ -132,6 +140,7 @@ async fn test_pattern_with_different_datatypes() {
 }
 
 /// Test pattern generator with SHACL-like patterns (configuration-based)
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_shacl_constraint_integration() {
     // Test SHACL-like patterns directly since schema parsing may not extract patterns correctly
@@ -194,6 +203,7 @@ async fn test_pattern_shacl_constraint_integration() {
 }
 
 /// Test pattern generator with multiple patterns (simplified without ShEx schema)
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_shex_cardinality_integration() {
     // Test multiple pattern generation without ShEx schema (since regex patterns in ShEx don't parse)
@@ -265,6 +275,7 @@ async fn test_pattern_shex_cardinality_integration() {
 }
 
 /// Test pattern generator robustness with malformed patterns
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_robustness() {
     let generator = PatternGenerator;
@@ -318,6 +329,7 @@ async fn test_pattern_generator_robustness() {
 }
 
 /// Test pattern generator with complex nested structures (configuration-based)
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_complex_integration() {
     // Test complex pattern generation without schema (since ShEx parsing with patterns fails)
@@ -391,6 +403,7 @@ async fn test_pattern_generator_complex_integration() {
 }
 
 /// Test pattern generator consistency across multiple invocations
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_consistency() {
     let generator = PatternGenerator;
@@ -440,6 +453,7 @@ async fn test_pattern_generator_consistency() {
 }
 
 /// Test pattern generator memory usage and cleanup
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_memory_efficiency() {
     let generator = PatternGenerator;

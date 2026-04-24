@@ -1,6 +1,6 @@
-# iri_s
+# rudof_iri
 
-The `iri_s` crate contains a simple wrapper to work with IRIs (Internationalized Resource Identifiers). The main goal is that we can use a simple interface to work with IRIs without having to deal with the complexity of the underlying implementation.
+The `rudof_iri` crate contains a simple wrapper to work with IRIs (Internationalized Resource Identifiers). The main goal is that we can use a simple interface to work with IRIs without having to deal with the complexity of the underlying implementation.
 This allows us to easily switch between different IRI implementations if needed.
 
 ## Usage
@@ -8,7 +8,7 @@ This allows us to easily switch between different IRI implementations if needed.
 For example, we can create IRIs from URLs, Paths or Strings:
 
 ```rust
-use iri_s::IriS;
+use rudof_iri::IriS;
 
 let iri2 = IriS::from_str_base("https://example.org/name", None).unwrap();
 println!("IRI: {}", iri.as_str());
@@ -17,7 +17,7 @@ println!("IRI: {}", iri.as_str());
 Or extend a base IRI with a suffix:
 
 ```rust
-use iri_s::IriS;
+use rudof_iri::IriS;
 
 let iri2 = IriS::from_str_base("https://example.org/name", None).unwrap();
 let extended = base.extend("subrecurso").unwrap();
@@ -45,4 +45,4 @@ This create is also used by other rudof modules that needs IRIs functionality, s
 
 ## Documentation
 
-The crate documentation can be found [here](https://docs.rs/iri_s).
+The crate documentation can be found [here](https://docs.rs/rudof_iri).

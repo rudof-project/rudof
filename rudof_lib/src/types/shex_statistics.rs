@@ -1,4 +1,4 @@
-use iri_s::IriS;
+use rudof_iri::IriS;
 use shex_ast::ShapeLabelIdx;
 use shex_ast::ir::dependency_graph::PosNeg;
 use shex_ast::ir::shape_expr::ShapeExpr;

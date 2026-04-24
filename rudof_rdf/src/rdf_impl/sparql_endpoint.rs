@@ -5,9 +5,7 @@ use crate::{
     },
     rdf_impl::SparqlEndpointError,
 };
-use async_trait::async_trait;
 use colored::*;
-use iri_s::IriS;
 use oxrdf::{
     BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, NamedOrBlankNode as OxSubject,
     Term as OxTerm, Triple as OxTriple,
@@ -15,6 +13,7 @@ use oxrdf::{
 use prefixmap::PrefixMap;
 use regex::Regex;
 use reqwest::header::{ACCEPT, HeaderMap, HeaderValue, USER_AGENT};
+use rudof_iri::IriS;
 use serde::{Serialize, ser::SerializeStruct};
 use sparesults::{
     QueryResultsFormat, QueryResultsParser, QuerySolution as OxQuerySolution, ReaderQueryResultsParserOutput,
@@ -103,7 +102,7 @@ impl SparqlEndpoint {
     ///
     /// ```
     /// use rudof_rdf::rdf_impl::SparqlEndpoint;
-    /// use iri_s::IriS;
+    /// use rudof_iri::IriS;
     /// use prefixmap::PrefixMap;
     ///
     /// let iri = IriS::new_unchecked("https://dbpedia.org/sparql");
@@ -442,7 +441,6 @@ impl Rdf for SparqlEndpoint {
     }
 }
 
-#[async_trait]
 impl AsyncRDF for SparqlEndpoint {
     type IRI = OxNamedNode;
     type BNode = OxBlankNode;
@@ -737,7 +735,8 @@ async fn make_sparql_query_select_async(
     let url = Url::parse_with_params(endpoint_iri.as_str(), &[("query", query_str)])?;
 
     // Execute request and get response body
-    let body = client.get(url).send().await?.text().await?;
+    let response = client.get(url).send().await?;
+    let body = response.text().await.unwrap();
     parse_sparql_json_results(&body)
 }
 

@@ -228,7 +228,7 @@ You can see the [manual](https://rudof-project.github.io/rudof/)
 
 The repo is divided in the following modules:
 
-- [iri_s](https://github.com/rudof-project/rudof/tree/master/iri_s) defines simple IRIs.
+- [rudof_iri](https://github.com/rudof-project/rudof/tree/master/rudof_iri) defines simple IRIs.
 - [srdf](https://github.com/rudof-project/rudof/tree/master/srdf) simple RDF model which will be used for validation.
 - [prefixmap](https://github.com/rudof-project/rudof/tree/master/prefixmap) Prefix maps implementation.
 - [shapemap](https://github.com/rudof-project/rudof/tree/master/shapemap) ShapeMap implementation.

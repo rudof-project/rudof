@@ -9,7 +9,10 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ## v0.2.13
 ### Fixed
-- Problem with MCP panicking, issue 604
+- Problem with MCP panicking, issue #604
+
+### Changed
+- Unified `shacl_ast`, `shacl_ir`, `shacl_rdf` and `shacl_validation` crates into a single `shacl` crate 
 
 ## v0.2.12
 

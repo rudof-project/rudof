@@ -1,8 +1,9 @@
 use crate::manifest_error::ManifestError;
 use crate::manifest_schemas::SchemasEntry;
-use iri_s::IriS;
+use rudof_iri::IriS;
 use std::path::Path;
 
+#[allow(dead_code)]
 pub(super) fn path_to_iri(_: &Path) -> Result<IriS, Box<ManifestError>> {
     Err(Box::new(ManifestError::WASMError(
         "Unable to convert path to IRI".to_string(),

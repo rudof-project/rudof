@@ -7,7 +7,7 @@ use crate::ir::schema::IRSchema;
 use crate::ir::shape::IRShape;
 use crate::ir::shape_label_idx::ShapeLabelIdx;
 use crate::types::{ClosedInfo, MessageMap, Severity, Target};
-use iri_s::IriS;
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::term::literal::NumericLiteral;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;

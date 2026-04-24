@@ -4,7 +4,7 @@
 //! commonly used IRIs from the RDF, XML Schema (XSD) and SHACL vocabularies. These constants
 //! represent standard properties and datatypes used throughout RDF processing.
 
-use iri_s::IriS;
+use rudof_iri::IriS;
 use std::sync::OnceLock;
 
 mod rdf;
@@ -32,13 +32,13 @@ macro_rules! vocab_term {
             pub const $name: &'static str = const_format::concatcp!($voc::BASE, $suffix);
 
             paste::paste! {
-                pub fn [<$name:lower _ref>]() -> &'static iri_s::IriS {
-                    static IRI: std::sync::OnceLock<iri_s::IriS> = std::sync::OnceLock::new();
-                    IRI.get_or_init(|| iri_s::IriS::new_unchecked(Self::$name))
+                pub fn [<$name:lower _ref>]() -> &'static rudof_iri::IriS {
+                    static IRI: std::sync::OnceLock<rudof_iri::IriS> = std::sync::OnceLock::new();
+                    IRI.get_or_init(|| rudof_iri::IriS::new_unchecked(Self::$name))
                 }
 
                 #[inline]
-                pub fn [<$name:lower>]() -> iri_s::IriS {
+                pub fn [<$name:lower>]() -> rudof_iri::IriS {
                     Self::[<$name:lower _ref>]().clone()
                 }
             }

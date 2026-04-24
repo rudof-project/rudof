@@ -22,7 +22,7 @@
 
 // #[test]
 // fn test_endpoint_creation() {
-//     let iri = iri_s::IriS::new_unchecked("https://example.org/sparql");
+//     let iri = rudof_iri::IriS::new_unchecked("https://example.org/sparql");
 //     let prefixmap = prefixmap::PrefixMap::new();
 //     let endpoint = SparqlEndpoint::new(&iri, &prefixmap).unwrap();
 //     assert_eq!(endpoint.iri().as_str(), "https://example.org/sparql");
@@ -37,7 +37,7 @@
 // #[test]
 // fn test_with_prefixmap() {
 //     let mut prefixmap = prefixmap::PrefixMap::new();
-//     let iri = iri_s::IriS::new_unchecked("https://example.org/");
+//     let iri = rudof_iri::IriS::new_unchecked("https://example.org/");
 //     prefixmap.add_prefix("", iri.clone()).unwrap();
 //     let endpoint = SparqlEndpoint::wikidata().unwrap().with_prefixmap(prefixmap);
 //     // Check that the prefixmap was set by trying to resolve

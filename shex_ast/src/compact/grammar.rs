@@ -1,6 +1,6 @@
-use crate::{IRes, Span, shex_parser_error::ParseError as ShExParseError};
+use crate::{IRes, LocatedParseError, Span, shex_parser_error::ParseError as ShExParseError};
 use nom::{
-    Err,
+    Err, Parser,
     branch::alt,
     bytes::complete::{is_not, tag, tag_no_case},
     character::complete::multispace1,
@@ -20,11 +20,11 @@ use std::fmt::Debug;
 
 /// A combinator that modifies the associated error.
 pub(crate) fn map_error<'a, T: 'a>(
-    mut parser: impl FnMut(Span<'a>) -> IRes<'a, T> + 'a,
+    mut parser: impl Parser<Span<'a>, Output = T, Error = LocatedParseError> + 'a,
     mut error: impl FnMut() -> ShExParseError + 'a,
 ) -> impl FnMut(Span<'a>) -> IRes<'a, T> + 'a {
     move |input| {
-        parser(input).map_err(|e| match e {
+        parser.parse(input).map_err(|e| match e {
             Err::Incomplete(_) => e,
             Err::Error(context) => {
                 let mut err = error().at(input);
@@ -72,17 +72,18 @@ fn comment(input: Span) -> IRes<()> {
         // this must come after the normal line comment above
         value((), tag("#")),
         value((), multi_comment),
-    ))(input)
+    ))
+    .parse(input)
 }
 
 fn multi_comment(i: Span) -> IRes<()> {
-    value((), delimited(tag("/*"), is_not("*/"), tag("*/")))(i)
+    value((), delimited(tag("/*"), is_not("*/"), tag("*/"))).parse(i)
 }
 
 /// A combinator that recognises an arbitrary amount of whitespace and
 /// comments.
 pub(crate) fn tws0(input: Span) -> IRes<()> {
-    value((), many0(alt((value((), multispace1), comment))))(input)
+    value((), many0(alt((value((), multispace1), comment)))).parse(input)
 }
 
 /*

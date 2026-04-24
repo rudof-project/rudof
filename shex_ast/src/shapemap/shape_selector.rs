@@ -1,6 +1,6 @@
 use crate::ShapeExprLabel;
-use iri_s::IriS;
 use prefixmap::{DerefIri, IriRef};
+use rudof_iri::IriS;
 use serde::Serialize;
 use std::fmt::Display;
 

@@ -16,7 +16,7 @@ sparql = ["dep:oxigraph", "dep:sparesults", "rudof_rdf/sparql"]
 [dependencies]
 colored.workspace = true
 const_format = "0.2"
-iri_s.workspace = true
+rudof_iri.workspace = true
 itertools.workspace = true
 mie.workspace = true
 oxigraph = { workspace = true, default-features = false, optional = true }

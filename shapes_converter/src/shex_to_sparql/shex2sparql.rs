@@ -169,7 +169,7 @@ fn var_from_predicate(predicate: &IriRef, schema: &Schema, var_builder: &mut Var
 #[cfg(test)]
 mod tests {
     use super::*;
-    use iri_s::iri;
+    use rudof_iri::iri;
     use spargebra::SparqlParser;
 
     #[test]

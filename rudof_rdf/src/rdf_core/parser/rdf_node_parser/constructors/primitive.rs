@@ -3,7 +3,7 @@ use crate::rdf_core::{
     parser::rdf_node_parser::RDFNodeParse,
     term::{Iri, IriOrBlankNode, Object, literal::Literal},
 };
-use iri_s::{IriS, iri};
+use rudof_iri::{IriS, iri};
 use std::marker::PhantomData;
 
 /// A parser that extracts the focus node as an RDF object.

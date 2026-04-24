@@ -2,7 +2,7 @@ use crate::ir::actions::semantic_action_error::SemanticActionError;
 use crate::ir::actions::semantic_action_extension::SemanticActionExtension;
 use crate::ir::map_state::MapState;
 use crate::ir::semantic_action_context::SemanticActionContext;
-use iri_s::{IriS, iri};
+use rudof_iri::{IriS, iri};
 use std::sync::{Arc, Mutex};
 use tracing::trace;
 
@@ -32,7 +32,7 @@ impl MapActionExtension {
 }
 
 impl SemanticActionExtension for MapActionExtension {
-    fn action_iri(&self) -> iri_s::IriS {
+    fn action_iri(&self) -> rudof_iri::IriS {
         iri!("http://shex.io/extensions/Map/")
     }
 

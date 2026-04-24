@@ -18,11 +18,13 @@ include = [
 ]
 
 [dependencies]
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
 colored.workspace = true
+crossterm.workspace = true
 dctap.workspace = true
 either.workspace = true
 oxrdf = { workspace = true, features = ["oxsdatatypes"] }
-iri_s.workspace = true
+rudof_iri.workspace = true
 prefixmap.workspace = true
 pgschema.workspace = true
 rdf_config.workspace = true
@@ -42,7 +44,4 @@ tracing.workspace = true
 termtree.workspace = true
 thiserror.workspace = true
 toml.workspace = true
-
-[target.'cfg(not(target_family = "wasm"))'.dependencies]
-crossterm.workspace = true
 url.workspace = true

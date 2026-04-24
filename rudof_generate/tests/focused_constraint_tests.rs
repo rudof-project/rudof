@@ -1,11 +1,18 @@
+#[cfg(not(target_family = "wasm"))]
 use rudof_generate::{DataGenerator, GeneratorConfig};
+#[cfg(not(target_family = "wasm"))]
 use rudof_rdf::rdf_core::{NeighsRDF, RDFFormat};
+#[cfg(not(target_family = "wasm"))]
 use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+#[cfg(not(target_family = "wasm"))]
 use std::collections::HashMap;
+#[cfg(not(target_family = "wasm"))]
 use std::io::Write;
+#[cfg(not(target_family = "wasm"))]
 use tempfile::NamedTempFile;
 
 /// Test that ShEx datatype constraints are passed down to generated data
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_shex_datatype_passthrough() {
     // Create a ShEx schema with specific datatypes
@@ -55,6 +62,7 @@ ex:PersonShape {
 }
 
 /// Test that SHACL datatype constraints are passed down to generated data
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_shacl_datatype_passthrough() {
     // Create a SHACL schema with specific datatypes
@@ -120,6 +128,7 @@ ex:PersonShape a sh:NodeShape ;
 }
 
 /// Test that SHACL cardinality constraints are passed down to generated data
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_shacl_cardinality_passthrough() {
     // Create a SHACL schema with cardinality constraints
@@ -194,6 +203,7 @@ ex:PersonShape a sh:NodeShape ;
 }
 
 /// Test that basic constraints are correctly passed from schema to generated data
+#[cfg(not(target_family = "wasm"))]
 #[allow(clippy::cmp_owned)]
 #[tokio::test]
 async fn test_constraint_pipeline_verification() {

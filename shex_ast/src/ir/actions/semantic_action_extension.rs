@@ -1,5 +1,5 @@
 use crate::ir::{actions::semantic_action_error::SemanticActionError, semantic_action_context::SemanticActionContext};
-use iri_s::IriS;
+use rudof_iri::IriS;
 
 /// A Semantic Action Extension represents an Extension of the ShEx extension
 /// Some examples of semantic action extensions are [here](http://shex.io/extensions/)

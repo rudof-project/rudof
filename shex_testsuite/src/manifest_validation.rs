@@ -1,36 +1,53 @@
+use crate::context_entry_value::ContextEntryValue;
+#[cfg(not(target_family = "wasm"))]
 use crate::manifest::Manifest;
+#[cfg(not(target_family = "wasm"))]
 use crate::manifest_error::ManifestError;
+#[cfg(not(target_family = "wasm"))]
 use crate::manifest_map::ManifestMap;
-#[cfg(target_family = "wasm")]
-use crate::wasm_stubs::path_to_iri;
-use crate::{context_entry_value::ContextEntryValue, manifest_mode::ManifestShExSyntaxMode};
+#[cfg(not(target_family = "wasm"))]
+use crate::manifest_mode::ManifestShExSyntaxMode;
+#[cfg(not(target_family = "wasm"))]
 use ValidationType::*;
-use iri_s::IriS;
+#[cfg(not(target_family = "wasm"))]
 use prefixmap::IriRef;
+#[cfg(not(target_family = "wasm"))]
+use rudof_iri::IriS;
+#[cfg(not(target_family = "wasm"))]
+use rudof_rdf::rdf_core::term::{Object, literal::ConcreteLiteral};
+#[cfg(not(target_family = "wasm"))]
 use rudof_rdf::{
-    rdf_core::{
-        RDFFormat,
-        term::{Object, literal::ConcreteLiteral},
-    },
+    rdf_core::RDFFormat,
     rdf_impl::{InMemoryGraph, ReaderMode},
 };
 use serde::de::{self};
 use serde::{Deserialize, Deserializer, Serialize};
-use shex_ast::ir::{map_state::MapState, schema_ir::SchemaIR};
-use shex_ast::ir::{semantic_actions_registry::SemanticActionsRegistry, shape_label::ShapeLabel};
+#[cfg(not(target_family = "wasm"))]
+use shex_ast::ir::shape_label::ShapeLabel;
+#[cfg(not(target_family = "wasm"))]
+use shex_ast::ir::{map_state::MapState, schema_ir::SchemaIR, semantic_actions_registry::SemanticActionsRegistry};
+#[cfg(not(target_family = "wasm"))]
 use shex_ast::shapemap::ValidationStatus;
-use shex_ast::{Node, ast::Schema as SchemaJson, ir::ast2ir::AST2IR};
-use shex_ast::{ResolveMethod, ShExParser};
-use shex_validation::Validator;
-use shex_validation::ValidatorConfig;
+#[cfg(not(target_family = "wasm"))]
+use shex_ast::{Node, ShExParser, ast::Schema as SchemaJson};
+#[cfg(not(target_family = "wasm"))]
+use shex_ast::{ResolveMethod, ir::ast2ir::AST2IR};
+#[cfg(not(target_family = "wasm"))]
+use shex_validation::{Validator, ValidatorConfig};
 use std::collections::HashMap;
 use std::fmt::{self, Display};
-use std::path::{Path, PathBuf};
+#[cfg(not(target_family = "wasm"))]
+use std::path::Path;
+#[cfg(not(target_family = "wasm"))]
+use std::path::PathBuf;
+#[cfg(not(target_family = "wasm"))]
 use std::str::FromStr;
+#[cfg(not(target_family = "wasm"))]
 use tracing::{debug, trace};
 #[cfg(not(target_family = "wasm"))]
 use url::Url;
 
+#[allow(unused)]
 #[derive(Deserialize, Debug)]
 #[serde(from = "ManifestValidationJson")]
 pub struct ManifestValidation {
@@ -165,6 +182,7 @@ impl Display for Focus {
     }
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn change_extension(name: String, old_extension: String, new_extension: String) -> String {
     if name.ends_with(&old_extension) {
         let (first, _) = name.split_at(name.len() - old_extension.len());
@@ -174,6 +192,7 @@ fn change_extension(name: String, old_extension: String, new_extension: String) 
     }
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn parse_schema(
     path: &Path,
     _base: Option<&str>,
@@ -201,6 +220,7 @@ fn parse_schema(
 }
 
 impl ValidationEntry {
+    #[cfg(not(target_family = "wasm"))]
     pub fn traits(&self) -> Vec<String> {
         match &self.trait_ {
             None => Vec::new(),
@@ -208,6 +228,7 @@ impl ValidationEntry {
         }
     }
 
+    #[cfg(not(target_family = "wasm"))]
     pub fn run(
         &self,
         folder: &Path,
@@ -322,6 +343,7 @@ impl ValidationEntry {
     }
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn parse_maybe_shape(shape: &Option<String>) -> Result<ShapeLabel, Box<ManifestError>> {
     match &shape {
         None => Ok(ShapeLabel::Start),
@@ -350,6 +372,7 @@ fn parse_maybe_focus(
 }
 */
 
+#[cfg(not(target_family = "wasm"))]
 fn parse_focus(focus: &Focus, base: Option<&str>) -> Result<Node, Box<ManifestError>> {
     match focus {
         Focus::Single(str) => {
@@ -365,6 +388,7 @@ fn parse_focus(focus: &Focus, base: Option<&str>) -> Result<Node, Box<ManifestEr
     }
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn parse_node(str: &str, base: Option<&str>) -> Result<Node, Box<ManifestError>> {
     Node::parse(str, base).map_err(|e| {
         Box::new(ManifestError::ParsingFocusNode {
@@ -374,6 +398,7 @@ fn parse_node(str: &str, base: Option<&str>) -> Result<Node, Box<ManifestError>>
     })
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn parse_shape(str: &str) -> Result<ShapeLabel, Box<ManifestError>> {
     let node = Node::parse(str, None).map_err(|e| {
         Box::new(ManifestError::ParsingShapeLabel {
@@ -388,6 +413,7 @@ fn parse_shape(str: &str) -> Result<ShapeLabel, Box<ManifestError>> {
     Ok(shape_label)
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn parse_type(str: &str) -> Result<ValidationType, Box<ManifestError>> {
     match str {
         "sht:ValidationTest" => Ok(Validation),
@@ -413,6 +439,7 @@ fn path_to_iri(path: &Path) -> Result<IriS, Box<ManifestError>> {
     Ok(iri)
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn get_path_schema(schema: &String, folder: &Path, manifest_shex_syntax_mode: ManifestShExSyntaxMode) -> PathBuf {
     let new_schema_name = match manifest_shex_syntax_mode {
         ManifestShExSyntaxMode::ShExJ => change_extension(schema.to_string(), ".shex".to_string(), ".json".to_string()),
@@ -424,12 +451,14 @@ fn get_path_schema(schema: &String, folder: &Path, manifest_shex_syntax_mode: Ma
     attempt
 }
 
+#[cfg(not(target_family = "wasm"))]
 #[derive(Debug, PartialEq)]
 enum ValidationType {
     Validation,
     Failure,
 }
 
+#[cfg(not(target_family = "wasm"))]
 impl Manifest for ManifestValidation {
     fn len(&self) -> usize {
         self.entry_names.len()
@@ -463,7 +492,7 @@ impl Manifest for ManifestValidation {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(not(target_family = "wasm"), test))]
 mod tests {
     use super::*;
     use std::fs;

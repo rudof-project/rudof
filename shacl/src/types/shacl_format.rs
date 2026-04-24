@@ -1,4 +1,4 @@
-use iri_s::MimeType;
+use rudof_iri::MimeType;
 
 /// SHACL Formats supported
 // Mostly RDF formats

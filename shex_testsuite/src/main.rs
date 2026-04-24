@@ -1,23 +1,37 @@
+#[cfg(not(target_family = "wasm"))]
 use anyhow::{Context, Result, bail};
+#[cfg(not(target_family = "wasm"))]
 use clap::Parser;
-use shex_testsuite::manifest_mode::{ManifestMode, ManifestShExSyntaxMode};
-use shex_testsuite::manifest_schemas::ManifestSchemas;
-use shex_testsuite::print_result_mode::PrintResultMode;
+#[cfg(not(target_family = "wasm"))]
 use shex_testsuite::{
-    config::Config, config::ConfigError, manifest::Manifest, manifest_negative_structure::ManifestNegativeStructure,
-    manifest_negative_syntax::ManifestNegativeSyntax, manifest_run_mode::ManifestRunMode,
+    config::Config,
+    config::ConfigError,
+    manifest::Manifest,
+    manifest_mode::{ManifestMode, ManifestShExSyntaxMode},
+    manifest_negative_structure::ManifestNegativeStructure,
+    manifest_negative_syntax::ManifestNegativeSyntax,
+    manifest_run_mode::ManifestRunMode,
+    manifest_schemas::ManifestSchemas,
     manifest_validation::ManifestValidation,
+    print_result_mode::PrintResultMode,
 };
+#[cfg(not(target_family = "wasm"))]
 use std::fmt::Debug;
+#[cfg(not(target_family = "wasm"))]
 use std::io;
+#[cfg(not(target_family = "wasm"))]
 use std::{
     fs,
     path::{Path, PathBuf},
 };
+#[cfg(not(target_family = "wasm"))]
 use tracing::trace;
+#[cfg(not(target_family = "wasm"))]
 use tracing_subscriber::prelude::*;
+#[cfg(not(target_family = "wasm"))]
 use tracing_subscriber::{filter::EnvFilter, fmt};
 
+#[cfg(not(target_family = "wasm"))]
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
@@ -67,6 +81,7 @@ struct Cli {
     trait_name: Option<Vec<String>>,
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn get_base(path: &Path) -> Result<PathBuf> {
     let mut base = PathBuf::from(path);
     if base.pop() {
@@ -76,6 +91,7 @@ fn get_base(path: &Path) -> Result<PathBuf> {
     }
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn parse_manifest(manifest_str: String, mode: ManifestMode) -> Result<Box<dyn Manifest>> {
     match mode {
         ManifestMode::Schemas => {
@@ -97,6 +113,7 @@ fn parse_manifest(manifest_str: String, mode: ManifestMode) -> Result<Box<dyn Ma
     }
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn main() -> Result<()> {
     let fmt_layer = fmt::layer()
         .with_file(true)
@@ -157,6 +174,10 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn parse_config(file_name: String) -> Result<Config, ConfigError> {
     Config::from_file(file_name.as_str())
 }
+
+#[cfg(target_family = "wasm")]
+fn main() {}

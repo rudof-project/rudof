@@ -1,9 +1,9 @@
 use crate::ast::{SchemaJsonError, serde_string_or_struct::*};
 use crate::{BNode, IriOrStr, ShapeExprLabel};
-use iri_s::error::IriSError;
-use iri_s::{IriS, iri};
 use prefixmap::error::PrefixMapError;
 use prefixmap::{IriRef, PrefixMap};
+use rudof_iri::error::IriSError;
+use rudof_iri::{IriS, iri};
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::path::{Path, PathBuf};

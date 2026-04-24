@@ -1,6 +1,6 @@
 use crate::ast::shape::ASTShape;
-use iri_s::IriS;
 use prefixmap::PrefixMap;
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
 use std::collections::HashMap;
 use std::collections::hash_map::IntoIter;

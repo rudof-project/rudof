@@ -4,7 +4,7 @@ use crate::{
     formats::{DataFormat, DataReaderMode, InputSpec},
     utils::get_base_iri,
 };
-use iri_s::{IriS, MimeType};
+use rudof_iri::{IriS, MimeType};
 pub use sparql_service::ServiceDescription;
 
 pub fn load_service_description(

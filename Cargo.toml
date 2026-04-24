@@ -2,7 +2,7 @@
 resolver = "2"
 members = [
     "dctap",
-    "iri_s",
+    "rudof_iri",
     "mie",
     "pgschema",
     "prefixmap",
@@ -245,7 +245,6 @@ zero_sized_map_values = "warn"
 
 [workspace.dependencies]
 anyhow = "1.0"
-async-trait = "0.1.89"
 axum = "0.8.4"
 axum-server = "0.7"
 base64 = "0.22.1"
@@ -265,25 +264,24 @@ csv = "1.3.1"
 dctap = { path = "./dctap" }
 either = { version = "1.13", features = ["serde"] }
 futures = "0.3"
-getrandom = { version = ">=0.3, <=0.4", features = ["wasm_js"] }
+getrandom = { version = ">=0.3, <0.4", features = ["wasm_js"] }
 hashbag = { version = "0.1.12" }
 hashlink = { version = "0.10" }
 indexmap = { version = "2", features = ["serde"] }
 indoc = "2"
 ipnetwork = "0.21"
-iri_s = { path = "./iri_s" }
+rudof_iri = { path = "rudof_iri" }
 is_ci = "1.0"
 itertools = "0.14"
 josekit = "0.10.3"
 lazy-regex = "3.4"
 mie = { path = "./mie" }
-nom = "7"
-nom_locate = "4"
+nom = "8.0"
+nom_locate = "5.0"
 once_cell = "1.18.0"
 openssl = { version = "0.10", features = ["vendored"] }
 oxigraph = { version = "0.5.2", default-features = false, features = [
     "rdf-12",
-    "http-client-rustls-native",
 ] }
 oxilangtag = { version = "0.1.5", features = ["serde"] }
 oxiri = { version = "0.2.11" }
@@ -307,7 +305,6 @@ rbe_testsuite = { path = "./rbe_testsuite" }
 rdf_config = { path = "./rdf_config" }
 regex = "1.11"
 reqwest = { version = "0.12", default-features = false, features = [
-    "blocking",
     "json",
     "rustls-tls",
     "rustls-tls-native-roots",
@@ -345,7 +342,7 @@ term_size = "0.3.2"
 termtree = { version = "0.4" }
 thiserror = "2.0"
 time = { version = "0.3", features = ["macros", "parsing", "serde"] }
-tokio = { version = "1.47.1", features = ["full"] }
+tokio = "1.47.1"
 tokio-util = "0.7"
 tokio-test = "0.4"
 toml = "0.9"

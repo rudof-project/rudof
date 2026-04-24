@@ -1,10 +1,19 @@
+#[cfg(not(target_family = "wasm"))]
 use anyhow::*;
+#[cfg(not(target_family = "wasm"))]
 use clap::Parser;
+#[cfg(not(target_family = "wasm"))]
 use pgschema::cli::{Cli, Command};
+#[cfg(not(target_family = "wasm"))]
 use pgschema::parser::{map_builder::MapBuilder, pg_builder::PgBuilder, pgs_builder::PgsBuilder};
+#[cfg(not(target_family = "wasm"))]
 use std::result::Result::Ok;
 
 // src/main.rs
+#[cfg(target_family = "wasm")]
+fn main() {}
+
+#[cfg(not(target_family = "wasm"))]
 fn main() -> Result<()> {
     // Load environment variables from `.env`:
     clientele::dotenv().ok();
@@ -26,24 +35,28 @@ fn main() -> Result<()> {
     }
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn run_pgs(schema: &str) -> Result<()> {
     let schema = get_schema(schema)?;
     println!("Property graph schema: {}", schema);
     Ok(())
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn run_pg(graph: &str) -> Result<()> {
     let pg = get_graph(graph)?;
     println!("Property graph: {}", pg);
     Ok(())
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn run_map(map: &str) -> Result<()> {
     let map = get_map(map)?;
     println!("Type map associations:\n{}", map);
     Ok(())
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn run_validate(graph_path: &str, schema_path: &str, map_path: &str) -> Result<()> {
     let schema = get_schema(schema_path)?;
     let graph = get_graph(graph_path)?;
@@ -53,6 +66,7 @@ fn run_validate(graph_path: &str, schema_path: &str, map_path: &str) -> Result<(
     Ok(())
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn get_schema(path: &str) -> Result<pgschema::pgs::PropertyGraphSchema> {
     let schema_content =
         std::fs::read_to_string(path).with_context(|| format!("Failed to read schema file: {}", path))?;
@@ -65,6 +79,7 @@ fn get_schema(path: &str) -> Result<pgschema::pgs::PropertyGraphSchema> {
     Ok(schema)
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn get_graph(path: &str) -> Result<pgschema::pg::PropertyGraph> {
     let graph_content =
         std::fs::read_to_string(path).with_context(|| format!("Failed to read graph file: {}", path))?;
@@ -77,6 +92,7 @@ fn get_graph(path: &str) -> Result<pgschema::pg::PropertyGraph> {
     Ok(graph)
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn get_map(path: &str) -> Result<pgschema::type_map::TypeMap> {
     let map_content =
         std::fs::read_to_string(path).with_context(|| format!("Failed to read type map file: {}", path))?;
@@ -89,7 +105,7 @@ fn get_map(path: &str) -> Result<pgschema::type_map::TypeMap> {
     Ok(map)
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(target_family = "wasm")))]
 mod tests {
     use super::*;
 

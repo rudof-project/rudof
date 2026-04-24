@@ -2,9 +2,9 @@
 //!
 //!
 use dctap::{DCTap, DatatypeId, ExtendsId, PropertyId, ShapeId, TapShape, TapStatement, Value, ValueConstraint};
-use iri_s::IriS;
-use iri_s::iri;
 use prefixmap::IriRef;
+use rudof_iri::IriS;
+use rudof_iri::iri;
 use shex_ast::{
     Annotation, NodeConstraint, ObjectValue, Schema, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel, TripleExpr,
     ValueSetValue,

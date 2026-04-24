@@ -1,6 +1,6 @@
 use crate::SchemaWithoutImportsError;
-use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
+use rudof_iri::IriS;
 use serde::{Deserialize, Serialize};
 use shex_ast::compact::ShExParser;
 use shex_ast::{ResolveMethod, Schema, SchemaJsonError, ShExFormat, Shape, ShapeDecl, ShapeExpr, ShapeExprLabel};

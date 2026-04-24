@@ -1,5 +1,5 @@
 use crate::PropertyPartition;
-use iri_s::IriS;
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::IriOrBlankNode;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;

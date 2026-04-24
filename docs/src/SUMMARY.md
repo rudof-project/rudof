@@ -39,7 +39,7 @@
 
 - [Scope of the project](./internals/scope.md)
 - [Architecture](./internals/architecture.md)
-  - [`iri_s`](./internals/crates/iri_s.md)
+  - [`rudof_iri`](./internals/crates/rudof_iri.md)
   - [`prefixmap`](./internals/crates/prefixmap.md)
   - [`python`](./internals/crates/python.md)
   - [`rudof_cli`](./internals/crates/rudof_cli.md)

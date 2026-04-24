@@ -4,7 +4,7 @@ use crate::rdf_core::{
     parser::rdf_node_parser::{RDFNodeParse, constructors::TypeParser},
     term::Iri,
 };
-use iri_s::IriS;
+use rudof_iri::IriS;
 use std::marker::PhantomData;
 
 /// Parser that validates the focus node against a custom predicate.

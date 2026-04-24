@@ -44,7 +44,7 @@ impl Display for Pattern {
 impl DerefIri for Pattern {
     fn deref_iri(
         self,
-        base: Option<&iri_s::IriS>,
+        base: Option<&rudof_iri::IriS>,
         prefixmap: Option<&prefixmap::PrefixMap>,
     ) -> Result<Self, prefixmap::DerefError>
     where

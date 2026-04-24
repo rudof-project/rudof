@@ -41,7 +41,21 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Run cargo check
-        run: cargo check
+        run: cargo check --workspace
+
+  check-wasm:
+    name: Check wasm
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@vstable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - name: Run cargo check
+        run: cargo check --workspace --target wasm32-unknown-unknown
 
   rustfmt:
     name: Rustfmt
@@ -83,3 +97,19 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Run cargo test
         run: cargo test --workspace
+
+  wasm-test:
+    name: Test Suite on Wasm
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - name: Run cargo test
+        run: cargo test --workspace --target wasm32-unknown-unknown

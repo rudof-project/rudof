@@ -1,6 +1,6 @@
 use dctap::{PrefixCC, TapConfig};
-use iri_s::{IriS, iri};
 use prefixmap::PrefixMap;
+use rudof_iri::{IriS, iri};
 use serde::{Deserialize, Serialize};
 
 use super::Tap2ShExError;
