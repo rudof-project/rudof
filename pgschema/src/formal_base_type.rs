@@ -37,12 +37,6 @@ impl FormalBaseType {
         self
     }
 
-    /// Adds a label to the FormalBaseType.
-    /*pub fn with_label(mut self, label: &str) -> Self {
-        self.labels.insert(label.to_string());
-        self
-    }*/
-
     /// Sets the labels for the FormalBaseType.
     pub fn with_labels(mut self, label_sets: impl IntoIterator<Item = impl IntoIterator<Item = LabelName>>) -> Self {
         for labels in label_sets {
