@@ -54,11 +54,6 @@ Labels:
   |  SingleLabel
   ;
 
-/*MoreLabels:
-    AMPERSAND SingleLabel MoreLabels? {AndLabels}
-  | BAR SingleLabel MoreLabels? {OrLabels}
-  ;*/
-
 SingleLabel:
     IDENTIFIER {SingleLabel}
    | "@" IDENTIFIER {TypeName} ;

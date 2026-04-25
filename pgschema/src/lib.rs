@@ -23,6 +23,8 @@ pub mod key;
 #[cfg(not(target_family = "wasm"))]
 pub mod label_property_spec;
 #[cfg(not(target_family = "wasm"))]
+pub mod label_set;
+#[cfg(not(target_family = "wasm"))]
 pub mod node;
 #[cfg(not(target_family = "wasm"))]
 pub mod node_id;

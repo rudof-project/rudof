@@ -113,7 +113,6 @@ mod tests {
     use crate::{
         card::Card,
         key::Key,
-        node::Node,
         property_value_spec::{PropertyValue, TypeSpec},
         record_type::RecordType,
         value_type::ValueType,
@@ -138,7 +137,8 @@ mod tests {
             .unwrap()
             .semantics(&graph)
             .unwrap();
-        let expected = FormalBaseType::new().with_label("Person").with_record_type(
+        let labels = vec![vec!["Person".to_string()]];
+        let expected = FormalBaseType::new().with_labels(labels).with_record_type(
             RecordType::new()
                 .with_key_value("age", ValueType::integer(Card::One))
                 .with_key_value("name", ValueType::string(Card::One)),
@@ -149,6 +149,7 @@ mod tests {
     #[test]
     fn test_semantics_rbe_labels() {
         let mut graph = PropertyGraphSchema::new();
+        // (a|b) & (a|b) should simplify to a&b | a | b
         let a = LabelPropertySpec::Label("A".to_string());
         let b = LabelPropertySpec::Label("B".to_string());
         let expr = LabelPropertySpec::And(
@@ -161,7 +162,13 @@ mod tests {
         );
 
         let semantics = graph.get_node_semantics("NodeType").unwrap().semantics(&graph).unwrap();
-        let expected = FormalBaseType::new().with_label("A");
+        let expected = FormalBaseType::new()
+            .with_labels(vec![
+                vec!["A".to_string(), "B".to_string()],
+                vec!["A".to_string()],
+                vec!["B".to_string()],
+            ])
+            .with_record_type(RecordType::empty());
         assert_eq!(semantics, expected);
     }
 }

@@ -1,11 +1,10 @@
-use std::{collections::HashSet, fmt::Display};
-
-use crate::{node_id::NodeId, record::Record, type_name::LabelName};
+use crate::{label_set::LabelSet, node_id::NodeId, record::Record, type_name::LabelName};
+use std::fmt::Display;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Node {
     pub id: NodeId,
-    pub labels: HashSet<LabelName>,
+    pub labels: LabelSet,
     pub properties: Record,
 }
 
@@ -13,7 +12,7 @@ impl Node {
     pub fn new(id: NodeId) -> Self {
         Node {
             id,
-            labels: HashSet::new(),
+            labels: LabelSet::new(),
             properties: Record::new(),
         }
     }
@@ -23,8 +22,8 @@ impl Node {
         self
     }
 
-    pub fn with_labels(mut self, labels: HashSet<LabelName>) -> Self {
-        self.labels = labels;
+    pub fn with_labels(mut self, labels: impl IntoIterator<Item = LabelName>) -> Self {
+        self.labels = LabelSet::from(labels);
         self
     }
 
@@ -33,7 +32,7 @@ impl Node {
         self
     }
 
-    pub fn labels(&self) -> &HashSet<LabelName> {
+    pub fn labels(&self) -> &LabelSet {
         &self.labels
     }
 
