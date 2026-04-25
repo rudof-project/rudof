@@ -145,7 +145,7 @@ impl PropertyGraph {
     }
 
     /// Adds a node to the PropertyGraph.
-    pub fn add_node(&mut self, name_id: String, labels: HashSet<LabelName>, record: Record) {
+    pub fn add_node(&mut self, name_id: String, labels: impl IntoIterator<Item = LabelName>, record: Record) {
         let id = NodeId::new(self.node_id_counter);
         self.node_id_counter += 1;
         self.node_names.insert(name_id, id.clone());

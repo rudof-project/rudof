@@ -120,6 +120,36 @@ mod tests {
     }
 
     #[test]
+    fn a_or_b_and_a_or_c_content() {
+        test_case(
+            "tests/a_or_b_and_a_or_c_content.pg",
+            "tests/a_or_b_and_a_or_c_content.pgs",
+            "tests/a_or_b_and_a_or_c_content.map",
+            "tests/a_or_b_and_a_or_c_content.result_map",
+        );
+    }
+
+    #[test]
+    fn a_or_b_and_a_or_c_labels_content() {
+        test_case(
+            "tests/a_or_b_and_a_or_c_labels_content.pg",
+            "tests/a_or_b_and_a_or_c_labels_content.pgs",
+            "tests/a_or_b_and_a_or_c_labels_content.map",
+            "tests/a_or_b_and_a_or_c_labels_content.result_map",
+        );
+    }
+
+    #[test]
+    fn a_or_b_and_a_or_c_labels() {
+        test_case(
+            "tests/a_or_b_and_a_or_c.pg",
+            "tests/a_or_b_and_a_or_c.pgs",
+            "tests/a_or_b_and_a_or_c.map",
+            "tests/a_or_b_and_a_or_c.result_map",
+        );
+    }
+
+    #[test]
     fn user() {
         test_case(
             "tests/user.pg",

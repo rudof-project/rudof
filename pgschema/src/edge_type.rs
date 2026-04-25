@@ -45,3 +45,13 @@ impl EdgeSemantics {
         Either::Right(vec![]) // Return empty evidence for now
     }
 }
+
+impl Display for EdgeSemantics {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "EdgeSemantics(Source: {}, Edge: {}, Target: {})",
+            self.source, self.edge, self.target
+        )
+    }
+}

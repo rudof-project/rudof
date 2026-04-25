@@ -1,0 +1,5 @@
+CREATE NODE TYPE ( A: L { a: STRING });
+CREATE NODE TYPE ( B: L { b: STRING });
+CREATE NODE TYPE ( C: L { c: STRING });
+CREATE NODE TYPE ( T: (@A | @B) & (@A | @C) )
+

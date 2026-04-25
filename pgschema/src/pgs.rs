@@ -1,6 +1,7 @@
 use std::{collections::HashMap, fmt::Display};
 
 use either::Either;
+use tracing::trace;
 
 use crate::{
     edge::Edge, edge_id::EdgeId, edge_type::EdgeType, evidence::Evidence, label_property_spec::LabelPropertySpec,
@@ -128,7 +129,10 @@ impl PropertyGraphSchema {
         if let Some(node_id) = self.node_names.get(type_name) {
             if let Some(spec) = self.node_types.get(node_id) {
                 match spec.semantics(self) {
-                    Ok(semantics) => semantics.conforms(node.labels(), node.content()),
+                    Ok(semantics) => {
+                        trace!("Semantics of node type {}: {:?}", type_name, semantics);
+                        semantics.conforms(node.labels(), node.content())
+                    },
                     Err(e) => Either::Left(vec![e]),
                 }
             } else {
@@ -155,6 +159,32 @@ impl PropertyGraphSchema {
             Either::Left(vec![PgsError::MissingEdgeLabel {
                 label: type_name.to_string(),
             }])
+        }
+    }
+
+    pub fn show_semantics(&self, type_name: &TypeName) -> Result<String, PgsError> {
+        if let Some(node_id) = self.node_names.get(type_name) {
+            if let Some(spec) = self.node_types.get(node_id) {
+                match spec.semantics(self) {
+                    Ok(semantics) => Ok(format!("Semantics of {}: {}", type_name, semantics)),
+                    Err(e) => Err(e),
+                }
+            } else {
+                Err(PgsError::MissingType(type_name.clone()))
+            }
+        } else if let Some(edge_id) = self.edge_names.get(type_name) {
+            if let Some(spec) = self.edge_types.get(edge_id) {
+                match spec.semantics(self) {
+                    Ok(semantics) => Ok(format!("Semantics of {}: {}", type_name, semantics)),
+                    Err(e) => Err(e),
+                }
+            } else {
+                Err(PgsError::MissingType(type_name.clone()))
+            }
+        } else {
+            Err(PgsError::MissingNodeEdgeLabel {
+                label: type_name.to_string(),
+            })
         }
     }
 }
