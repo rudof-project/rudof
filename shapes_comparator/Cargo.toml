@@ -1,6 +1,6 @@
 [package]
 name = "shapes_comparator"
-version = "0.2.9"
+version.workspace = true
 authors.workspace = true
 description.workspace = true
 edition.workspace = true
@@ -10,11 +10,11 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-iri_s.workspace = true
+rudof_iri.workspace = true
 prefixmap.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-shacl_ast.workspace = true
+shacl.workspace = true
 shex_ast.workspace = true
 shex_validation.workspace = true
 sparql_service.workspace = true

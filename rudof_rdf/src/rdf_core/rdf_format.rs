@@ -1,5 +1,5 @@
 use crate::rdf_core::RDFError;
-use iri_s::MimeType;
+use rudof_iri::MimeType;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::str::FromStr;

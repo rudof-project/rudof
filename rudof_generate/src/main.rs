@@ -1,8 +1,16 @@
+#[cfg(not(target_family = "wasm"))]
 use clap::{Arg, Command};
+#[cfg(not(target_family = "wasm"))]
 use rudof_generate::{DataGenerator, GeneratorConfig};
+#[cfg(not(target_family = "wasm"))]
 use std::path::PathBuf;
+#[cfg(not(target_family = "wasm"))]
 use tracing::{error, info};
 
+#[cfg(target_family = "wasm")]
+fn main() {}
+
+#[cfg(not(target_family = "wasm"))]
 #[tokio::main]
 async fn main() {
     // Initialize logging
@@ -133,9 +141,10 @@ async fn main() {
 }
 
 /// Load configuration from file
-async fn load_config(config_path: &PathBuf) -> rudof_generate::Result<GeneratorConfig> {
+#[cfg(not(target_family = "wasm"))]
+async fn load_config(config_path: &PathBuf) -> rudof_generate::errors::Result<GeneratorConfig> {
     if !config_path.exists() {
-        return Err(rudof_generate::DataGeneratorError::Config(format!(
+        return Err(rudof_generate::errors::DataGeneratorError::Config(format!(
             "Configuration file does not exist: {}",
             config_path.display()
         )));

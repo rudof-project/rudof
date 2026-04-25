@@ -1,8 +1,8 @@
 use crate::{BNode, ShapeExprLabel, object_value::ObjectValue};
 use colored::*;
-use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
 use pretty::{Arena, DocAllocator, DocBuilder};
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, NumericLiteral};
 use std::borrow::Cow;
 

@@ -1,3 +1,4 @@
+use crate::display::Table;
 use crate::{
     Result, Rudof,
     errors::ShaclError,
@@ -5,7 +6,8 @@ use crate::{
     utils::terminal_width,
 };
 use rudof_rdf::{rdf_core::BuildRDF, rdf_impl::InMemoryGraph};
-use shacl_validation::validation_report::report::ValidationReport;
+use shacl::types::Severity;
+use shacl::validator::report::ValidationReport;
 use std::io;
 
 pub fn serialize_shacl_validation_results<W: io::Write>(
@@ -14,7 +16,7 @@ pub fn serialize_shacl_validation_results<W: io::Write>(
     result_shacl_validation_format: Option<&ResultShaclValidationFormat>,
     writer: &mut W,
 ) -> Result<()> {
-    let (shacl_validation_sort_order_mode, result_shacl_validation_format) =
+    let (_shacl_validation_sort_order_mode, result_shacl_validation_format) =
         init_defaults(shacl_validation_sort_order_mode, result_shacl_validation_format);
 
     let serialize_shacl_validation_results = rudof
@@ -28,22 +30,12 @@ pub fn serialize_shacl_validation_results<W: io::Write>(
         },
         ResultShaclValidationFormat::Compact => {
             serialize_shacl_validation_results
-                .show_as_table(
-                    writer,
-                    shacl_validation_sort_order_mode.into(),
-                    Some(false),
-                    Some(terminal_width()),
-                )
+                .table(writer, Some(false), Some(true), Some(terminal_width()))
                 .map_err(|e| ShaclError::FailedIoOperation { error: e.to_string() })?;
         },
         ResultShaclValidationFormat::Details => {
             serialize_shacl_validation_results
-                .show_as_table(
-                    writer,
-                    shacl_validation_sort_order_mode.into(),
-                    Some(true),
-                    Some(terminal_width()),
-                )
+                .table(writer, Some(true), Some(true), Some(terminal_width()))
                 .map_err(|e| ShaclError::FailedIoOperation { error: e.to_string() })?;
         },
         ResultShaclValidationFormat::Json => {
@@ -81,8 +73,8 @@ fn serialize_shacl_validation_results_minimal<W: io::Write>(
         writeln!(
             writer,
             "Does not conform, {} violations, {} warnings",
-            shacl_validation_results.count_violations(),
-            shacl_validation_results.count_warnings()
+            shacl_validation_results.get_count_of(&Severity::Violation),
+            shacl_validation_results.get_count_of(&Severity::Warning)
         )
         .map_err(|e| ShaclError::FailedIoOperation { error: e.to_string() })?;
     }

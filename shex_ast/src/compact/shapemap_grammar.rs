@@ -8,11 +8,11 @@ use crate::{
 use crate::{ObjectValue, string};
 use nom::bytes::complete::tag;
 use nom::{
+    Parser,
     branch::alt,
     character::complete::char,
     combinator::{all_consuming, map, opt},
     multi::many0,
-    sequence::tuple,
 };
 use prefixmap::IriRef;
 use rudof_rdf::rdf_core::vocabs::RdfVocab;
@@ -30,14 +30,8 @@ pub(crate) fn shapemap_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Vec<S
         "shapemap_statement",
         map_error(
             move |i| {
-                let (i, (a, _, ass, _, _, _)) = all_consuming(tuple((
-                    association,
-                    tws0,
-                    rest_associations,
-                    tws0,
-                    opt(char(',')),
-                    tws0,
-                )))(i)?;
+                let (i, (a, _, ass, _, _, _)) =
+                    all_consuming((association, tws0, rest_associations, tws0, opt(char(',')), tws0)).parse(i)?;
                 let mut rs = vec![a];
                 for a in ass {
                     rs.push(a);
@@ -51,7 +45,7 @@ pub(crate) fn shapemap_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Vec<S
 
 /// `association ::= node_spec @ shape_spec`
 fn association(i: Span) -> IRes<ShapeMapStatement> {
-    let (i, (ns, _, sl)) = tuple((node_selector(), token_tws("@"), shape_spec()))(i)?;
+    let (i, (ns, _, sl)) = (node_selector(), token_tws("@"), shape_spec()).parse(i)?;
     let s = ShapeMapStatement::Association {
         node_selector: ns,
         shape_selector: sl,
@@ -60,7 +54,7 @@ fn association(i: Span) -> IRes<ShapeMapStatement> {
 }
 
 fn rest_associations(i: Span) -> IRes<Vec<ShapeMapStatement>> {
-    let (i, ass) = many0(tuple((token_tws(","), tws0, association)))(i)?;
+    let (i, ass) = many0((token_tws(","), tws0, association)).parse(i)?;
     let r = ass.into_iter().map(|(_, _, a)| a).collect();
     Ok((i, r))
 }
@@ -73,7 +67,8 @@ pub(crate) fn shape_spec<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeSelector
                 alt((
                     map(shape_expr_label, ShapeSelector::Label),
                     map(tag_no_case_tws("START"), |_| ShapeSelector::Start),
-                ))(i)
+                ))
+                .parse(i)
             },
             || ParseError::ExpectedShapeSpec,
         ),
@@ -85,38 +80,39 @@ pub(crate) fn node_selector<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NodeSelect
     traced(
         "node_selector",
         map_error(
-            move |i| alt((object_term, triple_pattern, extended))(i),
+            move |i| alt((object_term, triple_pattern, extended)).parse(i),
             || ParseError::ExpectedNodeSpec,
         ),
     )
 }
 
 fn object_term(i: Span) -> IRes<NodeSelector> {
-    alt((subject_term, literal_selector))(i)
+    alt((subject_term, literal_selector)).parse(i)
 }
 
 fn object_value<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ObjectValue> {
-    move |i| alt((map(iri, ObjectValue::iri_ref), map(literal(), ObjectValue::literal)))(i)
+    move |i| alt((map(iri, ObjectValue::iri_ref), map(literal(), ObjectValue::literal))).parse(i)
 }
 
 fn triple_pattern(i: Span) -> IRes<NodeSelector> {
-    let (i, (_, _, triple, _, _)) = tuple((open_curly, tws0, triple_pattern_inner, tws0, close_curly))(i)?;
+    let (i, (_, _, triple, _, _)) = (open_curly, tws0, triple_pattern_inner, tws0, close_curly).parse(i)?;
     Ok((i, triple))
 }
 
 fn triple_pattern_inner(i: Span) -> IRes<NodeSelector> {
-    alt((focus_object, subject_focus))(i)
+    alt((focus_object, subject_focus)).parse(i)
 }
 
 fn node_or_wildcard(i: Span) -> IRes<Pattern> {
     alt((
         map(object_value(), Pattern::Node),
         map(token_tws("_"), |_| Pattern::wildcard()),
-    ))(i)
+    ))
+    .parse(i)
 }
 
 fn focus_object(i: Span) -> IRes<NodeSelector> {
-    let (i, (_, _, path, _, pattern)) = tuple((focus, tws0, shacl_path, tws0, node_or_wildcard))(i)?;
+    let (i, (_, _, path, _, pattern)) = (focus, tws0, shacl_path, tws0, node_or_wildcard).parse(i)?;
     Ok((
         i,
         NodeSelector::TriplePattern {
@@ -128,7 +124,7 @@ fn focus_object(i: Span) -> IRes<NodeSelector> {
 }
 
 fn subject_focus(i: Span) -> IRes<NodeSelector> {
-    let (i, (pattern, _, path, _, _)) = tuple((node_or_wildcard, tws0, shacl_path, tws0, focus))(i)?;
+    let (i, (pattern, _, path, _, _)) = (node_or_wildcard, tws0, shacl_path, tws0, focus).parse(i)?;
     Ok((
         i,
         NodeSelector::TriplePattern {
@@ -140,16 +136,16 @@ fn subject_focus(i: Span) -> IRes<NodeSelector> {
 }
 
 fn shacl_path(i: Span) -> IRes<SHACLPathRef> {
-    map(predicate, SHACLPathRef::predicate)(i)
+    map(predicate, SHACLPathRef::predicate).parse(i)
 }
 
 fn predicate(i: Span) -> IRes<IriRef> {
-    alt((iri, rdf_type))(i)
+    alt((iri, rdf_type)).parse(i)
 }
 
 fn rdf_type(i: Span) -> IRes<IriRef> {
     let (i, _) = tag("a")(i)?;
-    let rdf_type: IriRef = IriRef::iri(RdfVocab::rdf_type().clone());
+    let rdf_type: IriRef = IriRef::iri(RdfVocab::rdf_type());
     Ok((i, rdf_type))
 }
 
@@ -159,7 +155,7 @@ fn focus(i: Span) -> IRes<Pattern> {
 }
 
 fn extended(i: Span) -> IRes<NodeSelector> {
-    let (i, (_keyword, _, query)) = tuple((tag_no_case_tws("SPARQL"), tws0, string()))(i)?;
+    let (i, (_keyword, _, query)) = (tag_no_case_tws("SPARQL"), tws0, string()).parse(i)?;
     Ok((i, NodeSelector::Sparql { query }))
 }
 
@@ -223,7 +219,7 @@ mod tests {
         let expected = ShapeMapStatement::Association {
             node_selector: NodeSelector::triple_pattern(
                 Pattern::focus(),
-                SHACLPathRef::predicate(IriRef::iri(RdfVocab::rdf_type().clone())),
+                SHACLPathRef::predicate(IriRef::iri(RdfVocab::rdf_type())),
                 Pattern::prefixed("", "Person"),
             ),
             shape_selector: ShapeSelector::prefixed("", "label"),
@@ -237,7 +233,7 @@ mod tests {
         let (_, tp) = triple_pattern(input).unwrap();
         let expected = NodeSelector::triple_pattern(
             Pattern::focus(),
-            SHACLPathRef::predicate(IriRef::iri(RdfVocab::rdf_type().clone())),
+            SHACLPathRef::predicate(IriRef::iri(RdfVocab::rdf_type())),
             Pattern::prefixed("", "Person"),
         );
         assert_eq!(tp, expected);
@@ -249,7 +245,7 @@ mod tests {
         let (_, value) = triple_pattern_inner(input).unwrap();
         let expected = NodeSelector::triple_pattern(
             Pattern::focus(),
-            SHACLPathRef::predicate(IriRef::iri(RdfVocab::rdf_type().clone())),
+            SHACLPathRef::predicate(IriRef::iri(RdfVocab::rdf_type())),
             Pattern::prefixed("", "Person"),
         );
         assert_eq!(value, expected);
@@ -261,7 +257,7 @@ mod tests {
         let (_, value) = focus_object(input).unwrap();
         let expected = NodeSelector::triple_pattern(
             Pattern::focus(),
-            SHACLPathRef::predicate(IriRef::iri(RdfVocab::rdf_type().clone())),
+            SHACLPathRef::predicate(IriRef::iri(RdfVocab::rdf_type())),
             Pattern::prefixed("", "Person"),
         );
         assert_eq!(value, expected);

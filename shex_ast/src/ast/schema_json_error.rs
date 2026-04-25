@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
-use iri_s::IriS;
-use iri_s::error::IriSError;
+use rudof_iri::IriS;
+use rudof_iri::error::IriSError;
 use thiserror::Error;
 
 #[derive(Error, Debug, Clone)]

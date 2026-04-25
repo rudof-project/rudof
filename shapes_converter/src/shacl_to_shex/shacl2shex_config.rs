@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
-use shacl_validation::shacl_config::ShaclConfig;
+#[cfg(not(target_family = "wasm"))]
+use shacl::validator::ShaclConfig;
 
 /// Defines the configuration of the converter
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Default)]
@@ -11,6 +12,7 @@ pub struct Shacl2ShExConfig {
     pub embed_bnodes: Option<bool>,
 
     /// SHACL configuration
+    #[cfg(not(target_family = "wasm"))]
     pub shacl: Option<ShaclConfig>,
 
     /// Add an `rdf:type` constraint for `sh:targetClass` declarations

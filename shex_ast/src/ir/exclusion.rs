@@ -1,4 +1,4 @@
-use iri_s::IriS;
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::literal::Lang;
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Serialize, Serializer};

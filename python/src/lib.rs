@@ -1,14 +1,19 @@
 #![allow(clippy::useless_conversion)]
+
+#[cfg(not(target_family = "wasm"))]
 use pyo3::prelude::*;
+#[cfg(not(target_family = "wasm"))]
 mod pyrudof_config;
+#[cfg(not(target_family = "wasm"))]
 mod pyrudof_generate;
+#[cfg(not(target_family = "wasm"))]
 mod pyrudof_lib;
 
-pub use crate::pyrudof_config::*;
-pub use crate::pyrudof_generate::*;
-pub use crate::pyrudof_lib::*;
+#[cfg(not(target_family = "wasm"))]
+pub use crate::{pyrudof_config::*, pyrudof_generate::*, pyrudof_lib::*};
 
 // Rudof Python bindings
+#[cfg(not(target_family = "wasm"))]
 #[pymodule]
 pub mod pyrudof {
     use super::*;

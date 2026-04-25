@@ -2,10 +2,13 @@
 //!
 //! These tests verify that the server correctly advertises its capabilities
 
+#[cfg(not(target_family = "wasm"))]
 use rmcp::{ServerHandler, model::ProtocolVersion};
+#[cfg(not(target_family = "wasm"))]
 use rudof_mcp::service::RudofMcpService;
 
 /// Test that the server can be created successfully
+#[cfg(not(target_family = "wasm"))]
 #[test]
 fn test_service_creation() {
     let service = RudofMcpService::try_new();
@@ -13,6 +16,7 @@ fn test_service_creation() {
 }
 
 /// Test that the server can be created with default
+#[cfg(not(target_family = "wasm"))]
 #[test]
 fn test_service_default() {
     let _service = RudofMcpService::default();
@@ -20,6 +24,7 @@ fn test_service_default() {
 }
 
 /// Test server info contains required fields per MCP spec
+#[cfg(not(target_family = "wasm"))]
 #[test]
 fn test_server_info_has_required_fields() {
     let service = RudofMcpService::new();
@@ -46,6 +51,7 @@ fn test_server_info_has_required_fields() {
 }
 
 /// Test that tools capability is advertised
+#[cfg(not(target_family = "wasm"))]
 #[test]
 fn test_tools_capability_advertised() {
     let service = RudofMcpService::new();
@@ -58,6 +64,7 @@ fn test_tools_capability_advertised() {
 }
 
 /// Test that prompts capability is advertised
+#[cfg(not(target_family = "wasm"))]
 #[test]
 fn test_prompts_capability_advertised() {
     let service = RudofMcpService::new();
@@ -70,6 +77,7 @@ fn test_prompts_capability_advertised() {
 }
 
 /// Test that resources capability is advertised
+#[cfg(not(target_family = "wasm"))]
 #[test]
 fn test_resources_capability_advertised() {
     let service = RudofMcpService::new();
@@ -93,6 +101,7 @@ fn test_resources_capability_advertised() {
 }
 
 /// Test that logging capability is enabled
+#[cfg(not(target_family = "wasm"))]
 #[test]
 fn test_logging_capability_advertised() {
     let service = RudofMcpService::new();
@@ -106,6 +115,7 @@ fn test_logging_capability_advertised() {
 }
 
 /// Test that completions capability is advertised
+#[cfg(not(target_family = "wasm"))]
 #[test]
 fn test_completions_capability_advertised() {
     let service = RudofMcpService::new();
@@ -117,6 +127,7 @@ fn test_completions_capability_advertised() {
     );
 }
 
+#[cfg(not(target_family = "wasm"))]
 #[test]
 fn test_tasks_capability_not_advertised() {
     let service = RudofMcpService::new();
@@ -128,6 +139,7 @@ fn test_tasks_capability_not_advertised() {
     );
 }
 
+#[cfg(not(target_family = "wasm"))]
 #[test]
 fn test_no_experimental_capabilities() {
     let service = RudofMcpService::new();

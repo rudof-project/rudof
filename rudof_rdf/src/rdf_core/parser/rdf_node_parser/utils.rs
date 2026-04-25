@@ -7,7 +7,7 @@ use crate::rdf_core::{
         literal::{ConcreteLiteral, Literal, NumericLiteral},
     },
 };
-use iri_s::{IriS, iri};
+use rudof_iri::{IriS, iri};
 
 /// Converts an RDF term to an IRI string.
 ///
@@ -299,18 +299,18 @@ where
     }
 
     // Recursive case: extract first and rest
-    let first = SingleValuePropertyParser::new(RdfVocab::rdf_first().clone())
+    let first = SingleValuePropertyParser::new(RdfVocab::rdf_first())
         .parse_focused(rdf)
         .map_err(|e| RDFError::PropertyNotFoundError {
-            property: RdfVocab::rdf_first().to_string(),
+            property: RdfVocab::RDF_FIRST.to_string(),
             subject: focus.to_string(),
             err: Box::new(e),
         })?;
 
-    let rest = SingleValuePropertyParser::new(RdfVocab::rdf_rest().clone())
+    let rest = SingleValuePropertyParser::new(RdfVocab::rdf_rest())
         .parse_focused(rdf)
         .map_err(|e| RDFError::PropertyNotFoundError {
-            property: RdfVocab::rdf_rest().to_string(),
+            property: RdfVocab::RDF_REST.to_string(),
             subject: focus.to_string(),
             err: Box::new(e),
         })?;

@@ -11,11 +11,11 @@ use crate::rdf_core::{
 };
 use crate::rdf_impl::{InMemoryGraph, ReaderMode};
 use crate::rdf_parser;
-use iri_s::IriS;
 use oxrdf::Literal as OxLiteral;
 use oxrdf::NamedNode as OxNamedNode;
 use oxrdf::NamedOrBlankNode as OxSubject;
 use oxrdf::Term as OxTerm;
+use rudof_iri::IriS;
 use std::collections::HashSet;
 
 const DUMMY_GRAPH: &str = r#"

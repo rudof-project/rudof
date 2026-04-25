@@ -4,7 +4,7 @@ use std::{
     path::PathBuf,
 };
 
-use iri_s::IriS;
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::vocabs::RdfsVocab;
 use serde::{Deserialize, Serialize};
 use shex_validation::ShExConfig;
@@ -40,7 +40,7 @@ pub struct ShEx2UmlConfig {
 impl ShEx2UmlConfig {
     pub fn new() -> ShEx2UmlConfig {
         Self {
-            annotation_label: vec![RdfsVocab::rdfs_label().clone()],
+            annotation_label: vec![RdfsVocab::rdfs_label()],
             replace_iri_by_label: None,
             shex: Some(ShExConfig::default()),
             shadowing: Some(true),

@@ -1,4 +1,5 @@
-use iri_s::IriS;
+use prefixmap::{PrefixMap, Show};
+use rudof_iri::IriS;
 use serde::Serialize;
 use std::fmt::Display;
 
@@ -146,6 +147,15 @@ impl Display for SHACLPath {
             SHACLPath::ZeroOrOne { path } => {
                 write!(f, "({path})?")
             },
+        }
+    }
+}
+
+impl Show for SHACLPath {
+    fn show(&self, pm: &PrefixMap) -> String {
+        match self {
+            SHACLPath::Predicate { pred } => pm.qualify(pred),
+            path => path.to_string(),
         }
     }
 }

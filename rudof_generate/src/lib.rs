@@ -1,28 +1,37 @@
-#[cfg(target_family = "wasm")]
-compile_error!("The `rudof_generate` crate is not supported in WebAssembly environments");
-
+#[cfg(not(target_family = "wasm"))]
 pub mod config;
+#[cfg(not(target_family = "wasm"))]
 pub mod conformance_metrics;
+#[cfg(not(target_family = "wasm"))]
 pub mod converters;
+#[cfg(not(target_family = "wasm"))]
 pub mod errors;
+#[cfg(not(target_family = "wasm"))]
 pub mod field_generators;
+#[cfg(not(target_family = "wasm"))]
 pub mod output;
+#[cfg(not(target_family = "wasm"))]
 pub mod parallel_generation;
+#[cfg(not(target_family = "wasm"))]
 pub mod shape_processing;
+#[cfg(not(target_family = "wasm"))]
 pub mod unified_constraints;
-#[cfg(target_family = "wasm")]
-mod wasm_stubs;
+// #[cfg(target_family = "wasm")]
+// mod wasm_stubs;
 
+#[cfg(not(target_family = "wasm"))]
 pub use config::{GeneratorConfig, SchemaFormat};
+#[cfg(not(target_family = "wasm"))]
 pub use conformance_metrics::{ConformanceMetrics, TranslationMetrics};
-pub use errors::{DataGeneratorError, Result};
+#[cfg(not(target_family = "wasm"))]
+use errors::{DataGeneratorError, Result};
 
-use crate::output::OutputWriter;
-use crate::parallel_generation::ParallelGenerator;
-use crate::shape_processing::ShapeProcessor;
-use std::path::Path;
-use std::str::FromStr;
+#[cfg(not(target_family = "wasm"))]
+use crate::{output::OutputWriter, parallel_generation::ParallelGenerator, shape_processing::ShapeProcessor};
+#[cfg(not(target_family = "wasm"))]
+use std::{path::Path, str::FromStr};
 
+#[cfg(not(target_family = "wasm"))]
 /// Main data generator interface
 pub struct DataGenerator {
     config: GeneratorConfig,
@@ -31,6 +40,7 @@ pub struct DataGenerator {
     writer: OutputWriter,
 }
 
+#[cfg(not(target_family = "wasm"))]
 impl DataGenerator {
     /// Create a new data generator with the given configuration
     pub fn new(config: GeneratorConfig) -> Result<Self> {
@@ -218,11 +228,11 @@ impl DataGenerator {
             }
 
             // Create a minimal ShapeDecl for backward compatibility
-            let shape_iri = match iri_s::IriS::from_str(shape_id) {
+            let shape_iri = match rudof_iri::IriS::from_str(shape_id) {
                 Ok(iri) => prefixmap::IriRef::Iri(iri),
                 Err(_) => {
                     // Fallback to a simple IRI if parsing fails
-                    prefixmap::IriRef::Iri(iri_s::IriS::new_unchecked("http://example.org/shape"))
+                    prefixmap::IriRef::Iri(rudof_iri::IriS::new_unchecked("http://example.org/shape"))
                 },
             };
 

@@ -1,6 +1,5 @@
 use super::RdfDataError;
 use colored::*;
-use iri_s::IriS;
 use oxigraph::sparql::{QueryResults, SparqlEvaluator};
 use oxigraph::store::Store;
 use oxrdf::{
@@ -8,6 +7,7 @@ use oxrdf::{
     Term as OxTerm, Triple as OxTriple,
 };
 use prefixmap::PrefixMap;
+use rudof_iri::IriS;
 use rudof_rdf::{
     rdf_core::{
         BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf, RdfDataConfig,
@@ -628,7 +628,7 @@ impl BuildRDF for RdfData {
 
 #[cfg(test)]
 mod tests {
-    use iri_s::iri;
+    use rudof_iri::iri;
 
     use super::*;
 

@@ -124,6 +124,18 @@ pub async fn validate_shex_impl(
         Err(e) => return Ok(e.into_call_tool_result()),
     };
 
+    // Guard: only shexc/shexj are implemented for loading ShEx schemas.
+    if let Some(fmt) = &parsed_schema_format
+        && !matches!(fmt, ShExFormat::ShExC | ShExFormat::ShExJ)
+    {
+        return Ok(unsupported_format_error(
+            "ShEx schema input",
+            schema_format.as_deref().unwrap_or(""),
+            SHEX_INPUT_FORMATS_SUPPORTED,
+        )
+        .into_call_tool_result());
+    }
+
     // Build effective ShapeMap: explicit shapemap wins; fall back to auto-generating
     // a compact ShapeMap from maybe_node + maybe_shape when only those are provided.
     let effective_shapemap = match (shapemap, maybe_node.as_deref(), maybe_shape.as_deref()) {
@@ -169,6 +181,24 @@ pub async fn validate_shex_impl(
         Err(e) => return Ok(e.into_call_tool_result()),
     };
 
+    // Guard: only compact/details/json/csv are implemented for ShEx validation results.
+    if let Some(fmt) = &parsed_result_format
+        && !matches!(
+            fmt,
+            ResultShExValidationFormat::Compact
+                | ResultShExValidationFormat::Details
+                | ResultShExValidationFormat::Json
+                | ResultShExValidationFormat::Csv
+        )
+    {
+        return Ok(unsupported_format_error(
+            "ShEx validation result",
+            result_format.as_deref().unwrap_or(""),
+            SHEX_RESULT_FORMATS,
+        )
+        .into_call_tool_result());
+    }
+
     let parsed_sort_by = match parse_optional_value_with_hint(
         sort_by.as_deref(),
         "sort_by",
@@ -178,6 +208,18 @@ pub async fn validate_shex_impl(
         Ok(value) => value,
         Err(e) => return Ok(e.into_call_tool_result()),
     };
+
+    // Guard: only compact is implemented for loading ShapeMaps.
+    if let Some(fmt) = &parsed_shapemap_format
+        && !matches!(fmt, ShapeMapFormat::Compact)
+    {
+        return Ok(unsupported_format_error(
+            "ShapeMap input",
+            shapemap_format.as_deref().unwrap_or(""),
+            SHAPEMAP_FORMATS,
+        )
+        .into_call_tool_result());
+    }
 
     let mut shex_schema_loading = rudof.load_shex_schema(&parsed_schema);
     if let Some(base_schema) = base_schema.as_deref() {

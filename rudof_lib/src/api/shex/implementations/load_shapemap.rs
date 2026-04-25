@@ -7,7 +7,7 @@ use crate::{
     types::Data,
     utils::get_base_iri,
 };
-use iri_s::IriS;
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::Rdf;
 use shex_ast::{ShapeMapParser, shapemap::QueryShapeMap};
 use shex_validation::Validator as ShExValidator;

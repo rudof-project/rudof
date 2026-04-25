@@ -1,5 +1,5 @@
 use crate::rdf_core::{FocusRDF, RDFError};
-use iri_s::IriS;
+use rudof_iri::IriS;
 
 /// A trait for parsing RDF data.
 ///

@@ -8,10 +8,10 @@ use crate::shapemap::NodeSelector;
 use crate::shapemap::ShapeSelector;
 use crate::shapemap::query_shape_map::QueryShapeMap;
 use crate::tws0;
-use iri_s::IriS;
 use nom::Err;
 use prefixmap::IriRef;
 use prefixmap::PrefixMap;
+use rudof_iri::IriS;
 use std::fs;
 use std::path::Path;
 use tracing::debug;
@@ -178,7 +178,7 @@ impl Iterator for ShapeMapStatementIterator<'_> {
 mod tests {
 
     use crate::shapemap::{NodeSelector, ShapeSelector};
-    use iri_s::IriS;
+    use rudof_iri::IriS;
 
     use super::*;
 

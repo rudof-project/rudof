@@ -1,6 +1,6 @@
 use const_format::concatcp;
-use iri_s::IriS;
-use iri_s::iri_once;
+use rudof_iri::IriS;
+use rudof_iri::iri_once;
 
 pub const DCT_STR: &str = "http://purl.org/dc/terms/";
 pub const DCT_TITLE_STR: &str = concatcp!(DCT_STR, "title");

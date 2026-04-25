@@ -1,0 +1,28 @@
+[package]
+name = "rudof_iri"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+documentation = "https://docs.rs/rudof_iri"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+getrandom.workspace = true
+oxiri.workspace = true
+oxrdf.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+url.workspace = true
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+proptest.workspace = true
+reqwest = { workspace = true, features = ["blocking"] }
+
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
+reqwest.workspace = true
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+getrandom = { version = "0.3", features = ["wasm_js"] }

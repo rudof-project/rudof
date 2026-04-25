@@ -1,14 +1,14 @@
 use crate::PrefixMap;
 use crate::error::{DerefError, IriRefError, PrefixMapError};
 use crate::iri::deref_iri::DerefIri;
-use iri_s::IriS;
-use iri_s::error::IriSError;
+use rudof_iri::IriS;
+use rudof_iri::error::IriSError;
 use serde::Serialize;
 use std::borrow::Cow;
 use std::{fmt::Display, str::FromStr};
 
 /// An IRI reference, which can be either a full IRI or a prefixed name
-// TODO - Move to iri_s crate
+// TODO - Move to rudof_iri crate
 #[derive(Serialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
 #[serde(into = "String")]
 pub enum IriRef {

@@ -1,4 +1,4 @@
-use iri_s::error::IriSError;
+use rudof_iri::error::IriSError;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
@@ -15,7 +15,11 @@ pub enum TripleExprLabel {
 }
 
 impl DerefIri for TripleExprLabel {
-    fn deref_iri(self, base: Option<&iri_s::IriS>, prefixmap: Option<&prefixmap::PrefixMap>) -> Result<Self, DerefError>
+    fn deref_iri(
+        self,
+        base: Option<&rudof_iri::IriS>,
+        prefixmap: Option<&prefixmap::PrefixMap>,
+    ) -> Result<Self, DerefError>
     where
         Self: Sized,
     {

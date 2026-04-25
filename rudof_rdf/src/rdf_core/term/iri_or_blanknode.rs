@@ -1,7 +1,8 @@
 use std::fmt::Display;
 
 use crate::rdf_core::{RDFError, term::Object};
-use iri_s::IriS;
+use prefixmap::{PrefixMap, Show};
+use rudof_iri::IriS;
 use serde::{Deserialize, Serialize};
 
 /// Represents an RDF resource that is either an IRI or a blank node.
@@ -173,6 +174,15 @@ impl TryFrom<Object> for IriOrBlankNode {
                 predicate: predicate.to_string(),
                 object: object.to_string(),
             }),
+        }
+    }
+}
+
+impl Show for IriOrBlankNode {
+    fn show(&self, pm: &PrefixMap) -> String {
+        match self {
+            IriOrBlankNode::BlankNode(bnode) => format!("_:{bnode}"),
+            IriOrBlankNode::Iri(iri) => pm.qualify(iri),
         }
     }
 }

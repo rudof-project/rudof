@@ -13,7 +13,7 @@
 //!
 //! ```
 //! # use std::str::FromStr;
-//! # use iri_s::{IriS, error::IriSError};
+//! # use rudof_iri::{IriS, error::IriSError};
 //! # use prefixmap::PrefixMap;
 //!
 //! # fn main() -> Result<(), IriSError> {
@@ -30,6 +30,7 @@ pub mod error;
 pub mod iri;
 pub mod map;
 
+mod show;
 #[cfg(all(test, not(target_family = "wasm")))]
 mod test;
 
@@ -37,3 +38,4 @@ pub use crate::error::*;
 pub use crate::iri::DerefIri;
 pub use crate::iri::IriRef;
 pub use crate::map::PrefixMap;
+pub use show::Show;

@@ -4,7 +4,7 @@ use crate::{
     formats::{DataReaderMode, InputSpec, ShExFormat},
     utils::get_base_iri,
 };
-use iri_s::{IriS, MimeType};
+use rudof_iri::{IriS, MimeType};
 use shex_ast::{
     ResolveMethod, Schema as ShExSchema,
     compact::ShExParser,

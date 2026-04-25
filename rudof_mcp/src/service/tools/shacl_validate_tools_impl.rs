@@ -1,3 +1,4 @@
+use super::helpers::*;
 use crate::service::{errors::*, mcp_service::RudofMcpService};
 use rmcp::{
     ErrorData as McpError,
@@ -12,8 +13,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::io::Cursor;
 use std::str::FromStr;
-
-use super::helpers::*;
 
 /// Request parameters for SHACL validation.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -134,6 +133,13 @@ pub async fn validate_shacl_impl(
         Ok(value) => value,
         Err(e) => return Ok(e.into_call_tool_result()),
     };
+
+    // Guard: JSON result format is not yet implemented for SHACL validation.
+    if matches!(parsed_result_format, Some(ResultShaclValidationFormat::Json)) {
+        return Ok(
+            unsupported_format_error("SHACL validation result", "json", SHACL_RESULT_FORMATS).into_call_tool_result(),
+        );
+    }
 
     let mut loading_shacl_schema = rudof.load_shacl_shapes();
     if let Some(shape) = &parsed_shapes {

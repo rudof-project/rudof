@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-use iri_s::MimeType;
+use rudof_iri::MimeType;
 use rudof_rdf::rdf_core::RDFFormat;
 use serde::{Deserialize, Serialize};
 

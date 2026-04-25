@@ -5,9 +5,7 @@ use crate::rdf_core::{
 use crate::rdf_impl::in_memory_graph_error::InMemoryGraphError;
 
 use crate::rdf_core::vocabs::RdfVocab;
-use async_trait::async_trait;
 use colored::*;
-use iri_s::IriS;
 use oxjsonld::JsonLdParser;
 use oxrdf::{
     BlankNode as OxBlankNode, Graph, GraphName, Literal as OxLiteral, NamedNode as OxNamedNode, NamedNodeRef,
@@ -18,16 +16,17 @@ use oxrdfio::{JsonLdProfileSet, RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
 use prefixmap::{PrefixMapError, map::*};
+use rudof_iri::IriS;
 use serde::{Serialize, ser::SerializeStruct};
-use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
 use std::{
+    collections::{HashMap, HashSet},
     fmt::{Debug, Display, Formatter},
-    io::{self, BufReader, Cursor, Write},
+    io::{self, Cursor, Write},
     str::FromStr,
+    sync::Arc,
 };
 #[cfg(not(target_family = "wasm"))]
-use std::{fs::File, path::Path};
+use std::{fs::File, io::BufReader, path::Path};
 #[cfg(feature = "sparql")]
 use {
     oxigraph::{
@@ -206,8 +205,7 @@ impl InMemoryGraph {
             (Some(b), None) => Some(b.clone()),
             (_, Some(b)) => Some(IriS::new_unchecked(b)),
         };
-        let pm = PrefixMap::from_hashmap(prefixes)?;
-        self.merge_prefixes(pm)?;
+        self.merge_prefixes(prefixes.try_into()?)?;
 
         Ok(())
     }
@@ -779,7 +777,6 @@ impl NeighsRDF for InMemoryGraph {
     }
 }
 
-#[async_trait]
 impl AsyncRDF for InMemoryGraph {
     type IRI = OxNamedNode;
     type BNode = OxBlankNode;

@@ -1,6 +1,6 @@
 [package]
 name = "shapes_converter"
-version = "0.2.9"
+version.workspace = true
 authors.workspace = true
 description.workspace = true
 documentation = "https://docs.rs/shapes_converter"
@@ -13,14 +13,13 @@ repository.workspace = true
 chrono = "0.4.42"
 dctap.workspace = true
 either.workspace = true
-iri_s.workspace = true
+rudof_iri.workspace = true
 mie.workspace = true
 minijinja = { version = "=2.12.0", features = ["loader"] }
 prefixmap.workspace = true
 rdf_config.workspace = true
 serde.workspace = true
-shacl_ast.workspace = true
-shacl_validation.workspace = true
+shacl.workspace = true
 shex_ast.workspace = true
 shex_validation.workspace = true
 spargebra.workspace = true

@@ -9,8 +9,8 @@ use crate::ir::shape_expr_info::ShapeExprInfo;
 use crate::ir::source_idx::SourceIdx;
 use crate::{CResult, SchemaIRError, ShapeExprLabel, ShapeLabelIdx, ast::Schema as SchemaJson, ir::ast2ir::AST2IR};
 use crate::{Expr, Node, Pred, ResolveMethod};
-use iri_s::IriS;
 use prefixmap::{IriRef, PrefixMap};
+use rudof_iri::IriS;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
@@ -676,7 +676,7 @@ impl Display for SchemaIR {
 mod tests {
     use std::collections::HashMap;
 
-    use iri_s::iri;
+    use rudof_iri::iri;
 
     use super::SchemaIR;
     use crate::{

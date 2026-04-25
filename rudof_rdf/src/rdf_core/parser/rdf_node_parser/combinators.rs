@@ -2,7 +2,7 @@ use crate::rdf_core::{
     FocusRDF, RDFError,
     parser::rdf_node_parser::{RDFNodeParse, constructors::ValuesPropertyParser, utils::parse_list_recursive},
 };
-use iri_s::IriS;
+use rudof_iri::IriS;
 use std::{cell::RefCell, fmt::Debug, marker::PhantomData};
 
 // ============================================================================

@@ -1,5 +1,5 @@
 use crate::{ComparatorError, ValueDescription};
-use iri_s::IriS;
+use rudof_iri::IriS;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display};
 

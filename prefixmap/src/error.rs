@@ -1,11 +1,11 @@
 use crate::PrefixMap;
-use iri_s::error::IriSError;
+use rudof_iri::error::IriSError;
 use thiserror::Error;
 
 /// Errors that can occur when working with [`PrefixMap`]
 #[derive(Debug, Error, Clone)]
 pub enum PrefixMapError {
-    /// Error originating from the [`iri_s`] crate
+    /// Error originating from the [`rudof_iri`] crate
     #[error(transparent)]
     IriSError(#[from] IriSError),
 
@@ -37,7 +37,7 @@ pub struct IriRefError {
 /// Represents all the possible errors that can occur when dereferencing IRIs
 #[derive(Debug, Error, Clone)]
 pub enum DerefError {
-    /// An error originating from the [`iri_s`] crate
+    /// An error originating from the [`rudof_iri`] crate
     #[error(transparent)]
     IriSError(#[from] IriSError),
 

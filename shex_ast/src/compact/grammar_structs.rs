@@ -1,6 +1,6 @@
 use crate::{SemAct, ShapeExpr, ShapeExprLabel};
-use iri_s::IriS;
 use prefixmap::IriRef;
+use rudof_iri::IriS;
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum ShExStatement<'a> {

@@ -4,7 +4,7 @@ use crate::{
     formats::{ComparisonFormat, ComparisonMode, DataReaderMode, InputSpec, ResultComparisonFormat, ShExFormat},
     utils::get_base_iri,
 };
-use iri_s::{IriS, MimeType};
+use rudof_iri::{IriS, MimeType};
 use shapes_comparator::{CoShaMo, CoShaMoConverter};
 use shex_ast::{Schema, ShExParser};
 use std::{env, io};

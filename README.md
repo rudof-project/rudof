@@ -32,6 +32,9 @@ as well as Python bindings.
 - [How to guides](https://github.com/rudof-project/rudof/wiki/How%E2%80%90to-guides)
 - [Roadmap](https://github.com/rudof-project/rudof/issues/1)
 
+>[!NOTE]
+>Starting from version 0.2.15, all `rudof` dependencies are version-aligned. Therefore, if you need to use a specific dependency, it must match the same version used by rudof.
+
 ## Features
 
 `rudof` currently supports the following:
@@ -228,7 +231,7 @@ You can see the [manual](https://rudof-project.github.io/rudof/)
 
 The repo is divided in the following modules:
 
-- [iri_s](https://github.com/rudof-project/rudof/tree/master/iri_s) defines simple IRIs.
+- [rudof_iri](https://github.com/rudof-project/rudof/tree/master/rudof_iri) defines simple IRIs.
 - [srdf](https://github.com/rudof-project/rudof/tree/master/srdf) simple RDF model which will be used for validation.
 - [prefixmap](https://github.com/rudof-project/rudof/tree/master/prefixmap) Prefix maps implementation.
 - [shapemap](https://github.com/rudof-project/rudof/tree/master/shapemap) ShapeMap implementation.

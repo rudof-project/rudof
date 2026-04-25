@@ -1,5 +1,5 @@
-use iri_s::IriS;
 use rbe::Key;
+use rudof_iri::IriS;
 use serde::Serialize;
 use std::fmt::Display;
 

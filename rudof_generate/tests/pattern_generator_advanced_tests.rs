@@ -1,10 +1,16 @@
+#[cfg(not(target_family = "wasm"))]
 use regex::Regex;
+#[cfg(not(target_family = "wasm"))]
 use rudof_generate::field_generators::pattern::PatternGenerator;
+#[cfg(not(target_family = "wasm"))]
 use rudof_generate::field_generators::{FieldGenerator, GenerationContext};
+#[cfg(not(target_family = "wasm"))]
 use serde_json::json;
+#[cfg(not(target_family = "wasm"))]
 use std::time::Instant;
 
 /// Test pattern generator with various alphanumeric patterns
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_alphanumeric_patterns() {
     let generator = PatternGenerator;
@@ -47,6 +53,7 @@ async fn test_pattern_generator_alphanumeric_patterns() {
 }
 
 /// Test pattern generator with optional groups and quantifiers
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_optional_groups() {
     let generator = PatternGenerator;
@@ -97,6 +104,7 @@ async fn test_pattern_generator_optional_groups() {
 }
 
 /// Test pattern generator with character classes and ranges
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_character_classes() {
     let generator = PatternGenerator;
@@ -133,6 +141,7 @@ async fn test_pattern_generator_character_classes() {
 }
 
 /// Test pattern generator with word boundaries and anchors
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_anchors() {
     let generator = PatternGenerator;
@@ -162,6 +171,7 @@ async fn test_pattern_generator_anchors() {
 }
 
 /// Test pattern generator with custom ranges and special characters
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_special_characters() {
     let generator = PatternGenerator;
@@ -195,6 +205,7 @@ async fn test_pattern_generator_special_characters() {
 }
 
 /// Test pattern generator with escape sequences
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_escape_sequences() {
     let generator = PatternGenerator;
@@ -228,6 +239,7 @@ async fn test_pattern_generator_escape_sequences() {
 }
 
 /// Test pattern generator performance with multiple generations
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_performance() {
     let generator = PatternGenerator;
@@ -265,6 +277,7 @@ async fn test_pattern_generator_performance() {
 }
 
 /// Test pattern generator with edge case patterns
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_edge_cases() {
     let generator = PatternGenerator;
@@ -314,6 +327,7 @@ async fn test_pattern_generator_edge_cases() {
 }
 
 /// Test pattern generator with mixed case requirements
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_case_sensitivity() {
     let generator = PatternGenerator;
@@ -360,6 +374,7 @@ async fn test_pattern_generator_case_sensitivity() {
 }
 
 /// Test pattern generator with complex real-world patterns
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_real_world_patterns() {
     let generator = PatternGenerator;
@@ -410,6 +425,7 @@ async fn test_pattern_generator_real_world_patterns() {
 }
 
 /// Test pattern generator fallback behavior
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_fallback_behavior() {
     let generator = PatternGenerator;
@@ -443,6 +459,7 @@ async fn test_pattern_generator_fallback_behavior() {
 }
 
 /// Test pattern generator with comprehensive pattern coverage (config-based)
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_pattern_generator_comprehensive_coverage() {
     // Test comprehensive pattern coverage using configuration instead of problematic ShEx parsing

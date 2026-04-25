@@ -24,7 +24,7 @@ The crate is organized into several key modules:
 This create depends mostly on:
 
 - Internal Rudof crates:
-  - [`iri_s`](./iri_s.md)
+  - [`rudof_iri`](./rudof_iri.md)
   - [`prefixmap`](./prefixmap.md)
 - External:
   - `oxigraph`
@@ -72,7 +72,7 @@ use rudof_rdf::rdf_core::{
 };
 use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use rudof_rdf::rdf_core::RDFFormat;
-use iri_s::IriS;
+use rudof_iri::IriS;
 
 // The domain type we want to build from the RDF graph.
 #[derive(Debug, Clone)]

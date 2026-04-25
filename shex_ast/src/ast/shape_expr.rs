@@ -1,6 +1,6 @@
-use iri_s::IriS;
 use prefixmap::error::DerefError;
 use prefixmap::{DerefIri, IriRef, PrefixMap};
+use rudof_iri::IriS;
 use serde::{Deserialize, Serialize, Serializer};
 use std::str::FromStr;
 

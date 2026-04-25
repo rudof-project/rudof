@@ -1,11 +1,18 @@
+#[cfg(not(target_family = "wasm"))]
 use rudof_generate::{DataGenerator, GeneratorConfig};
+#[cfg(not(target_family = "wasm"))]
 use rudof_rdf::rdf_core::{NeighsRDF, RDFFormat};
+#[cfg(not(target_family = "wasm"))]
 use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+#[cfg(not(target_family = "wasm"))]
 use std::collections::HashMap;
+#[cfg(not(target_family = "wasm"))]
 use std::io::Write;
+#[cfg(not(target_family = "wasm"))]
 use tempfile::NamedTempFile;
 
 /// Test that ShEx cardinality constraints are respected in generated data
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_shex_cardinality_constraints() {
     // Create a simple ShEx schema with cardinality constraints using ShEx Compact syntax
@@ -44,6 +51,7 @@ ex:PersonShape {
 }
 
 /// Test that SHACL cardinality constraints are respected in generated data
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_shacl_cardinality_constraints() {
     // Create a SHACL schema with cardinality constraints
@@ -93,6 +101,7 @@ async fn test_shacl_cardinality_constraints() {
 }
 
 /// Test that datatype constraints are respected in generated data
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_datatype_constraints() {
     // Create a schema with different datatypes
@@ -154,6 +163,7 @@ async fn test_datatype_constraints() {
 }
 
 /// Test that value constraints (length, range) are respected
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_value_constraints() {
     // Create a SHACL schema with value constraints
@@ -203,6 +213,7 @@ async fn test_value_constraints() {
 }
 
 /// Test that ShEx datatype constraints are respected in generated data
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_shex_datatype_constraints() {
     // Create a ShEx schema with different datatypes
@@ -243,6 +254,7 @@ ex:PersonShape {
 }
 
 /// Test that ShEx value constraints are respected
+#[cfg(not(target_family = "wasm"))]
 #[tokio::test]
 async fn test_shex_value_constraints() {
     // Create a ShEx schema with basic value constraints
@@ -282,6 +294,7 @@ ex:PersonShape {
 
 // Helper functions for verification
 
+#[cfg(not(target_family = "wasm"))]
 fn verify_shex_cardinality(graph: &InMemoryGraph) {
     let mut entity_properties: HashMap<String, HashMap<String, Vec<String>>> = HashMap::new();
 
@@ -322,6 +335,7 @@ fn verify_shex_cardinality(graph: &InMemoryGraph) {
     }
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn verify_shacl_cardinality(graph: &InMemoryGraph) {
     let mut entity_properties: HashMap<String, HashMap<String, Vec<String>>> = HashMap::new();
 
@@ -362,6 +376,7 @@ fn verify_shacl_cardinality(graph: &InMemoryGraph) {
     }
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn verify_datatypes(graph: &InMemoryGraph) {
     for triple in graph.triples().unwrap() {
         let literal = triple.object.clone();
@@ -404,6 +419,7 @@ fn verify_datatypes(graph: &InMemoryGraph) {
     }
 }
 
+#[cfg(not(target_family = "wasm"))]
 fn verify_value_constraints(graph: &InMemoryGraph) {
     // Only verify that basic datatypes are respected (no range/length constraints since they're not supported)
     for triple in graph.triples().unwrap() {

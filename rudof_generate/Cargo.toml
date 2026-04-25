@@ -1,6 +1,6 @@
 [package]
 name = "rudof_generate"
-version = "0.2.9"
+version.workspace = true
 readme = "README.md"
 edition.workspace = true
 license.workspace = true
@@ -11,14 +11,14 @@ keywords.workspace = true
 categories.workspace = true
 authors.workspace = true
 
-[dependencies]
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
 anyhow.workspace = true
 chrono.workspace = true
 
 # CLI and configuration
 clap.workspace = true
 futures.workspace = true
-iri_s = { workspace = true }
+rudof_iri.workspace = true
 oxrdf = { workspace = true, features = ["oxsdatatypes"] }
 prefixmap = { workspace = true }
 
@@ -29,10 +29,10 @@ regex.workspace = true
 rust_decimal.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-shacl_ast.workspace = true
-shacl_rdf.workspace = true 
+shacl.workspace = true
 shex_ast.workspace = true 
 rudof_rdf.workspace = true
+tokio.workspace = true
 thiserror.workspace = true
 
 # Async and parallelism
@@ -42,11 +42,6 @@ toml.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 
-[dev-dependencies]
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
+regex.workspace = true
 tempfile.workspace = true
-
-[target.'cfg(target_family = "wasm")'.dependencies]
-tokio = { workspace = true, features = [] }
-
-[target.'cfg(not(target_family = "wasm"))'.dependencies]
-tokio.workspace = true
