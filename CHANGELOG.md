@@ -7,12 +7,17 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.2.15
+
+### Changed
+
+- Semantics of labels in `pgschema` now works as a set of sets of labels which is converted to disjunctive normal form. The pgschema parser has been adapted to use groupings in labels like `(A | B) & (B | C)`.
+
 ## v0.2.14
 
 ### Changed
 - Updated some dependencies
 - Now `iri_s` crate has been moved to `rudof_iri`
-- Semantics of labels in `pgschema` now works as a set of sets of labels which is converted to disjunctive normal form. The pgschema parser has been adapted to use groupings in labels like `(A | B) & (B | C)`.
 
 ## v0.2.13
 ### Fixed
