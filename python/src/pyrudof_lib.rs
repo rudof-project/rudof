@@ -210,7 +210,7 @@ impl PyRudof {
         let mut parsed_input = None;
         if let Some(input) = input {
             parsed_input = Some(vec![
-                InputSpec::from_str(input)
+                InputSpec::parse_from_str(input)
                     .map_err(|e| InputSpecError::InvalidInput {
                         error: { e.to_string() },
                     })
@@ -295,7 +295,7 @@ impl PyRudof {
         let format = cnv_shex_format(format);
         let reader_mode = cnv_reader_mode(reader_mode);
 
-        let input = InputSpec::from_str(input)
+        let input = InputSpec::parse_from_str(input)
             .map_err(|e| InputSpecError::InvalidInput {
                 error: { e.to_string() },
             })
@@ -435,7 +435,7 @@ impl PyRudof {
         let mut parsed_input = None;
         if let Some(input) = input {
             parsed_input = Some(
-                InputSpec::from_str(input)
+                InputSpec::parse_from_str(input)
                     .map_err(|e| InputSpecError::InvalidInput {
                         error: { e.to_string() },
                     })
@@ -513,7 +513,7 @@ impl PyRudof {
     ) -> PyResult<()> {
         let format = cnv_shapemap_format(format);
 
-        let input = InputSpec::from_str(input)
+        let input = InputSpec::parse_from_str(input)
             .map_err(|e| InputSpecError::InvalidInput {
                 error: { e.to_string() },
             })
@@ -663,7 +663,7 @@ impl PyRudof {
     pub fn read_dctap(&mut self, input: &str, format: Option<&PyDCTapFormat>) -> PyResult<()> {
         let format = cnv_dctap_format(format);
 
-        let input = InputSpec::from_str(input)
+        let input = InputSpec::parse_from_str(input)
             .map_err(|e| InputSpecError::InvalidInput {
                 error: { e.to_string() },
             })
@@ -722,7 +722,7 @@ impl PyRudof {
     pub fn read_query(&mut self, input: &str, query_type: Option<&PyQueryType>) -> PyResult<()> {
         let query_type = cnv_query_type(query_type);
 
-        let input = InputSpec::from_str(input)
+        let input = InputSpec::parse_from_str(input)
             .map_err(|e| InputSpecError::InvalidInput {
                 error: { e.to_string() },
             })
@@ -810,7 +810,7 @@ impl PyRudof {
         let reader_mode = cnv_reader_mode(reader_mode);
         let format = cnv_rdf_format(format);
 
-        let input = InputSpec::from_str(input)
+        let input = InputSpec::parse_from_str(input)
             .map_err(|e| InputSpecError::InvalidInput {
                 error: { e.to_string() },
             })
@@ -897,13 +897,13 @@ impl PyRudof {
         label2: Option<&str>,
         reader_mode: Option<&PyReaderMode>,
     ) -> PyResult<String> {
-        let schema1 = InputSpec::from_str(schema1)
+        let schema1 = InputSpec::parse_from_str(schema1)
             .map_err(|e| InputSpecError::InvalidInput {
                 error: { e.to_string() },
             })
             .map_err(|e| cnv_err(e.into()))?;
 
-        let schema2 = InputSpec::from_str(schema2)
+        let schema2 = InputSpec::parse_from_str(schema2)
             .map_err(|e| InputSpecError::InvalidInput {
                 error: { e.to_string() },
             })
@@ -967,7 +967,7 @@ impl PyRudof {
         templates_folder: Option<&str>,
         output_folder: Option<&str>,
     ) -> PyResult<String> {
-        let schema = InputSpec::from_str(schema)
+        let schema = InputSpec::parse_from_str(schema)
             .map_err(|e| InputSpecError::InvalidInput {
                 error: { e.to_string() },
             })

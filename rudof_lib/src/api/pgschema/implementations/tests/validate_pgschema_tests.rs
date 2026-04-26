@@ -7,7 +7,6 @@ use crate::{
     api::pgschema::implementations::validate_pgschema::validate_pgschema,
     formats::{DataFormat, InputSpec, ResultPgSchemaValidationFormat},
 };
-use std::str::FromStr;
 
 /// Helper: serialize validation results to string
 fn serialize_validation_to_string(
@@ -27,14 +26,13 @@ fn test_validate_and_serialize_pgschema() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     // Load PG data
-    let pg_data = InputSpec::from_str(
+    let pg_data = InputSpec::str(
         r#"
 (n1 {"Student"}["name": "Alice", "age": 23])
 (n2_wrong {"Student"}["name": "Bob", "age": 12])
 (n3_wrong {"Student"}["name": "Carol", "age": "unknown"])
         "#,
-    )
-    .unwrap();
+    );
 
     load_data(
         &mut rudof,
@@ -48,27 +46,25 @@ fn test_validate_and_serialize_pgschema() {
     .unwrap();
 
     // Load PG schema
-    let pg_schema = InputSpec::from_str(
+    let pg_schema = InputSpec::str(
         r#"
 CREATE NODE TYPE ( AdultStudentType: Student {
     name: STRING ,
     age: INTEGER CHECK > 18
 })
         "#,
-    )
-    .unwrap();
+    );
 
     load_pgschema(&mut rudof, &pg_schema, None).unwrap();
 
     // Load typemap
-    let typemap = InputSpec::from_str(
+    let typemap = InputSpec::str(
         r#"
 n1: AdultStudentType,
 n2_wrong: AdultStudentType,
 n3_wrong: AdultStudentType
         "#,
-    )
-    .unwrap();
+    );
 
     load_typemap(&mut rudof, &typemap).unwrap();
 

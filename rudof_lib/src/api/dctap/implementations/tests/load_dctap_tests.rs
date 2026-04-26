@@ -4,7 +4,7 @@ use crate::{
     api::dctap::implementations::serialize_dctap::serialize_dctap,
     formats::{InputSpec, ResultDCTapFormat},
 };
-use std::str::FromStr;
+//use std::str::FromStr;
 
 /// Helper: serialize current DCTap to string
 fn serialize_to_string(rudof: &Rudof, format: Option<ResultDCTapFormat>) -> String {
@@ -19,7 +19,7 @@ fn serialize_to_string(rudof: &Rudof, format: Option<ResultDCTapFormat>) -> Stri
 fn test_load_and_serialize_basic_dctap_csv() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let dctap_input = InputSpec::from_str(
+    let dctap_input = InputSpec::str(
         r#"shapeID,propertyID,mandatory,repeatable,valueDataType
 :Person,rdf:type,true,false,
 :Person,schema:name,true,false,xsd:string
@@ -28,8 +28,7 @@ fn test_load_and_serialize_basic_dctap_csv() {
 :Organization,rdf:type,true,false,
 :Organization,schema:name,true,false,xsd:string
 :Organization,schema:location,false,false,xsd:string"#,
-    )
-    .unwrap();
+    );
 
     load_dctap(&mut rudof, &dctap_input, None).unwrap();
 
@@ -50,13 +49,12 @@ fn test_load_and_serialize_basic_dctap_csv() {
 fn test_serialize_dctap_json_format() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let dctap_input = InputSpec::from_str(
+    let dctap_input = InputSpec::str(
         r#"shapeID,propertyID,mandatory,repeatable
 :Book,dc:title,true,false
 :Book,dc:creator,true,true
 :Book,dc:date,false,false"#,
-    )
-    .unwrap();
+    );
 
     load_dctap(&mut rudof, &dctap_input, None).unwrap();
 

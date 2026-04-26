@@ -350,7 +350,6 @@ mod tests {
         let mut str = String::new();
         let mut emitter = YamlEmitter::new(&mut str);
         emitter.dump(&mie.to_yaml()).unwrap();
-        println!("YAML Output:\n{str}");
         assert_eq!(mie.schema_info.title.unwrap(), "Example Schema");
     }
 }

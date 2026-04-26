@@ -5,6 +5,11 @@ use thiserror::Error;
 /// Errors that can occur when working with input specifications.
 #[derive(Error, Debug)]
 pub enum InputSpecError {
+    /// The specified file does not exist.
+    /// This error is returned when a string input is expected to be a file path, but the file cannot be found.
+    #[error("The specified file does not exist: '{str}'")]
+    FileDoesntExist { str: String },
+
     /// The input data is invalid or cannot be processed.
     #[error("The input data is invalid or cannot be processed: {error}")]
     InvalidInput { error: String },

@@ -38,14 +38,14 @@ fn main() -> Result<()> {
 #[cfg(not(target_family = "wasm"))]
 fn run_pgs(schema: &str) -> Result<()> {
     let schema = get_schema(schema)?;
-    println!("Property graph schema: {}", schema);
+    println!("PGSchema:\n{}", schema);
     Ok(())
 }
 
 #[cfg(not(target_family = "wasm"))]
 fn run_pg(graph: &str) -> Result<()> {
     let pg = get_graph(graph)?;
-    println!("Property graph: {}", pg);
+    println!("Proprety graph:\n{}", pg);
     Ok(())
 }
 
@@ -62,7 +62,7 @@ fn run_validate(graph_path: &str, schema_path: &str, map_path: &str) -> Result<(
     let graph = get_graph(graph_path)?;
     let map = get_map(map_path)?;
     let result = map.validate(&schema, &graph)?;
-    println!("Validation result: {}", result);
+    println!("Validation result:\n{}", result);
     Ok(())
 }
 

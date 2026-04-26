@@ -7,7 +7,6 @@ use either::Either;
 use reqwest::blocking::{Client, ClientBuilder, Response};
 use reqwest::header::{ACCEPT, HeaderValue, USER_AGENT};
 use rudof_iri::IriS;
-use std::fs::File;
 use std::io::Cursor;
 use std::{
     fmt::Display,
@@ -70,6 +69,10 @@ impl InputSpec {
         }
     }
 
+    pub fn str(s: &str) -> InputSpec {
+        InputSpec::Str(s.to_string())
+    }
+
     /// Converts the InputSpec to an IRI (Internationalized Resource Identifier).
     ///
     /// File paths are converted to file:// URLs, and other sources get appropriate IRI representations.
@@ -107,21 +110,16 @@ impl InputSpec {
     /// # Note
     /// The initial version of this code was inspired by [patharg](https://github.com/jwodder/patharg/blob/edd912e865143646fd7bb4c7796aa919fa5622b3/src/lib.rs#L264)
     pub fn open_read(&self, accept: Option<&str>, context_error: &str) -> Result<InputSpecReader, InputSpecError> {
+        println!("Opening input source: {:?}", self);
         match self {
             InputSpec::Stdin => Ok(Either::Left(io::stdin().lock())),
-            InputSpec::Path(p) => {
-                println!("Opening file path: {}", p.display());
-                match fs::File::open(p) {
-                    Ok(reader) => Ok(Either::Right(Either::Left(BufReader::new(reader)))),
-                    Err(e) => {
-                        println!("Error opening file path: {}", e);
-                        Err(InputSpecError::OpenPathError {
-                            msg: context_error.to_string(),
-                            path: p.to_path_buf(),
-                            err: e,
-                        })
-                    },
-                }
+            InputSpec::Path(p) => match fs::File::open(p) {
+                Ok(reader) => Ok(Either::Right(Either::Left(BufReader::new(reader)))),
+                Err(e) => Err(InputSpecError::OpenPathError {
+                    msg: context_error.to_string(),
+                    path: p.to_path_buf(),
+                    err: e,
+                }),
             },
             InputSpec::Url(url_spec) => {
                 let url = url_spec.url.clone();
@@ -155,15 +153,20 @@ impl InputSpec {
                 Ok(Either::Right(Either::Right(Either::Left(reader))))
             },
             InputSpec::Str(s) => {
+                println!(
+                    "Warning: Using raw string input. This is intended for testing and may not be suitable for large inputs."
+                );
                 // The following code had the problem that it didn't detect properly if the file didn't exist
-                // let cursor = Cursor::new(s.clone().into_bytes());
-                // let reader = BufReader::new(cursor);
-                let file = File::open(&s).map_err(|e| InputSpecError::OpenPathError {
+                let cursor = Cursor::new(s.clone().into_bytes());
+                let reader = BufReader::new(cursor);
+                /*let path = Path::new(s);
+                let file = File::open(&path).map_err(|e| InputSpecError::OpenPathError {
                     msg: context_error.to_string(),
-                    path: s.to_path_buf(),
+                    path: path.to_path_buf(),
                     err: e,
-                })?;
-                let reader = BufReader::new(file);
+                })?; */
+                // let reader = BufReader::new(file);
+                // Ok(Either::Right(Either::Left(reader)))
                 Ok(Either::Right(Either::Right(Either::Right(reader))))
             },
         }
@@ -194,30 +197,8 @@ impl InputSpec {
             InputSpec::Str(_) => Ok("string://".to_string()),
         }
     }
-}
 
-impl Display for InputSpec {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self {
-            InputSpec::Path(path_buf) => write!(f, "Path: {}", path_buf.display()),
-            InputSpec::Stdin => write!(f, "Stdin"),
-            InputSpec::Url(url_spec) => write!(f, "Url: {url_spec}"),
-            InputSpec::Str(s) => write!(f, "String: {s}"),
-        }
-    }
-}
-
-impl FromStr for InputSpec {
-    type Err = InputSpecError;
-
-    /// Parses a string into an InputSpec.
-    ///
-    /// # Logic
-    /// - "-" becomes Stdin
-    /// - Strings starting with "http://" or "https://" become URLs
-    /// - Existing file paths become Path
-    /// - Everything else becomes a raw string (Str)
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    /*     pub fn parse_from_str(s: &str) -> Result<Self, InputSpecError> {
         match s {
             _ if s == "-" => Ok(InputSpec::Stdin),
             _ if s.starts_with("http://") => {
@@ -235,11 +216,38 @@ impl FromStr for InputSpec {
                 })?;
                 Ok(InputSpec::Path(pb))
             },
-            _ => Ok(InputSpec::Str(s.to_string())),
+            _ => Err(InputSpecError::FileDoesntExist { str: s.to_string() }),
+        }
+    }*/
+}
+
+impl Display for InputSpec {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            InputSpec::Path(path_buf) => write!(f, "Path: {}", path_buf.display()),
+            InputSpec::Stdin => write!(f, "Stdin"),
+            InputSpec::Url(url_spec) => write!(f, "Url: {url_spec}"),
+            InputSpec::Str(s) => write!(f, "String: {s}"),
         }
     }
 }
 
+/*
+impl FromStr for InputSpec {
+    type Err = InputSpecError;
+
+    /// Parses a string into an InputSpec.
+    ///
+    /// # Logic
+    /// - "-" becomes Stdin
+    /// - Strings starting with "http://" or "https://" become URLs
+    /// - Existing file paths become Path
+    /// - Everything else becomes a raw string (Str)
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::parse_from_str(s)
+    }
+}
+*/
 // ============================================================================
 // UrlSpec
 // ============================================================================

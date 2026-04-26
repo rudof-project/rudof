@@ -19,9 +19,12 @@ pub(crate) struct Manifest {
 
 impl Manifest {
     pub fn new(path: &Path) -> Result<Self, TestSuiteError> {
+        println!("...Loading manifest from path: {path:?}");
         let base = path
             .canonicalize()
             .map_err(|e| TestSuiteError::Validation(e.to_string()))?;
+        println!("Base path canonicalized successfully: {base:?}");
+
         let base = match base.to_str() {
             None => panic!("Path not found!!"),
             Some(path) => format!("file:/{path}"),
@@ -29,12 +32,16 @@ impl Manifest {
 
         let subject = NamedOrBlankNode::NamedNode(NamedNode::new_unchecked(base.clone()));
 
+        println!("Base IRI for manifest: {base}");
         let graph = Graph::from_path(path, &RDFFormat::Turtle, Some(&base))
             .map_err(|e| TestSuiteError::Validation(e.to_string()))?;
+
+        println!("Graph loaded successfully");
 
         let mut store = graph.store().clone();
 
         let entries = Manifest::parse_entries(&mut store, subject)?;
+        println!("Entries parsed successfully: {entries:#?}");
         Ok(Self { base, store, entries })
     }
 

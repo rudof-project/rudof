@@ -1,5 +1,5 @@
 use crate::{Rudof, RudofConfig, api::shex::implementations::check_shex_schema::check_shex_schema, formats::InputSpec};
-use std::{io::Cursor, str::FromStr};
+use std::io::Cursor;
 
 /// Helper function to create a valid ShEx schema
 fn create_valid_schema() -> &'static str {
@@ -98,7 +98,7 @@ ex:OrganizationShape {
 fn test_check_valid_schema() {
     let rudof = Rudof::new(RudofConfig::default());
     let schema_str = create_valid_schema();
-    let schema = InputSpec::from_str(schema_str).unwrap();
+    let schema = InputSpec::str(schema_str);
     let mut output = Cursor::new(Vec::new());
 
     let result = check_shex_schema(&rudof, &schema, None, Some("http://example.org/"), &mut output);
@@ -122,7 +122,7 @@ fn test_check_valid_schema() {
 fn test_check_malformed_schema() {
     let rudof = Rudof::new(RudofConfig::default());
     let schema_str = create_malformed_schema();
-    let schema = InputSpec::from_str(schema_str).unwrap();
+    let schema = InputSpec::str(schema_str);
     let mut output = Cursor::new(Vec::new());
 
     let result = check_shex_schema(&rudof, &schema, None, Some("http://example.org/"), &mut output);
@@ -145,7 +145,7 @@ fn test_check_malformed_schema() {
 fn test_check_schema_with_neg_cycle() {
     let rudof = Rudof::new(RudofConfig::default());
     let schema_str = create_schema_with_neg_cycle();
-    let schema = InputSpec::from_str(schema_str).unwrap();
+    let schema = InputSpec::str(schema_str);
     let mut output = Cursor::new(Vec::new());
 
     let result = check_shex_schema(&rudof, &schema, None, Some("http://example.org/"), &mut output);
@@ -169,7 +169,7 @@ fn test_check_schema_with_neg_cycle() {
 fn test_check_schema_with_multiple_neg_cycles() {
     let rudof = Rudof::new(RudofConfig::default());
     let schema_str = create_schema_with_multiple_neg_cycles();
-    let schema = InputSpec::from_str(schema_str).unwrap();
+    let schema = InputSpec::str(schema_str);
     let mut output = Cursor::new(Vec::new());
 
     let result = check_shex_schema(&rudof, &schema, None, Some("http://example.org/"), &mut output);
@@ -193,7 +193,7 @@ fn test_check_schema_with_multiple_neg_cycles() {
 fn test_check_complex_valid_schema() {
     let rudof = Rudof::new(RudofConfig::default());
     let schema_str = create_complex_valid_schema();
-    let schema = InputSpec::from_str(schema_str).unwrap();
+    let schema = InputSpec::str(schema_str);
     let mut output = Cursor::new(Vec::new());
 
     let result = check_shex_schema(&rudof, &schema, None, Some("http://example.org/"), &mut output);
