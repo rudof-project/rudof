@@ -7,6 +7,7 @@ use either::Either;
 use reqwest::blocking::{Client, ClientBuilder, Response};
 use reqwest::header::{ACCEPT, HeaderValue, USER_AGENT};
 use rudof_iri::IriS;
+use std::fs::File;
 use std::io::Cursor;
 use std::{
     fmt::Display,
@@ -108,13 +109,19 @@ impl InputSpec {
     pub fn open_read(&self, accept: Option<&str>, context_error: &str) -> Result<InputSpecReader, InputSpecError> {
         match self {
             InputSpec::Stdin => Ok(Either::Left(io::stdin().lock())),
-            InputSpec::Path(p) => match fs::File::open(p) {
-                Ok(reader) => Ok(Either::Right(Either::Left(BufReader::new(reader)))),
-                Err(e) => Err(InputSpecError::OpenPathError {
-                    msg: context_error.to_string(),
-                    path: p.to_path_buf(),
-                    err: e,
-                }),
+            InputSpec::Path(p) => {
+                println!("Opening file path: {}", p.display());
+                match fs::File::open(p) {
+                    Ok(reader) => Ok(Either::Right(Either::Left(BufReader::new(reader)))),
+                    Err(e) => {
+                        println!("Error opening file path: {}", e);
+                        Err(InputSpecError::OpenPathError {
+                            msg: context_error.to_string(),
+                            path: p.to_path_buf(),
+                            err: e,
+                        })
+                    },
+                }
             },
             InputSpec::Url(url_spec) => {
                 let url = url_spec.url.clone();
@@ -148,8 +155,15 @@ impl InputSpec {
                 Ok(Either::Right(Either::Right(Either::Left(reader))))
             },
             InputSpec::Str(s) => {
-                let cursor = Cursor::new(s.clone().into_bytes());
-                let reader = BufReader::new(cursor);
+                // The following code had the problem that it didn't detect properly if the file didn't exist
+                // let cursor = Cursor::new(s.clone().into_bytes());
+                // let reader = BufReader::new(cursor);
+                let file = File::open(&s).map_err(|e| InputSpecError::OpenPathError {
+                    msg: context_error.to_string(),
+                    path: s.to_path_buf(),
+                    err: e,
+                })?;
+                let reader = BufReader::new(file);
                 Ok(Either::Right(Either::Right(Either::Right(reader))))
             },
         }

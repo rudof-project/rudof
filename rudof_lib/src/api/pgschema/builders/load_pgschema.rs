@@ -35,6 +35,10 @@ impl<'a> LoadPgSchemaBuilder<'a> {
 
     /// Execute the `load_pg_schema` operation with the configured parameters.
     pub fn execute(self) -> Result<()> {
+        println!(
+            "Executing load_pg_schema with pg_schema: {:?} and pg_schema_format: {:?}",
+            self.pg_schema, self.pg_schema_format
+        );
         <Rudof as PgSchemaOperations>::load_pgschema(self.rudof, self.pg_schema, self.pg_schema_format)
     }
 }

@@ -7,6 +7,7 @@ pub fn load_pgschema(
     pg_schema: &InputSpec,
     _pg_schema_format: Option<&PgSchemaFormat>,
 ) -> Result<()> {
+    println!("Loading Property Graph schema from: {:?}", pg_schema);
     let mut pg_schema_reader =
         pg_schema
             .open_read(None, "Property Graph schema")
