@@ -31,17 +31,21 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
             for node in nodes.iter() {
                 let node_object = S::term_as_object(node)?;
                 let focus_nodes = FocusNodes::single(node.clone());
-                if engine.has_validated(&node_object, *shape_idx) {
-                    continue;
-                }
 
-                let inner_results = node_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
-                let is_valid = match inner_results {
-                    Ok(results) => results.is_empty(),
-                    Err(_) => false,
+                let had_violations = if engine.has_validated(&node_object, *shape_idx) {
+                    engine
+                        .get_cached_results(&node_object, *shape_idx)
+                        .map(|r| !r.is_empty())
+                        .unwrap_or(false)
+                } else {
+                    let inner_results = node_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
+                    match inner_results {
+                        Ok(results) => !results.is_empty(),
+                        Err(e) => return Err(ConstraintError::Internal { err: e.to_string() }),
+                    }
                 };
 
-                if !is_valid {
+                if had_violations {
                     let msg = format!(
                         "Shape {}: Node({node_shape}) constraint not satisfied for {node}",
                         shape.id()
@@ -51,10 +55,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
                         .with_message(MessageMap::from(msg))
                         .with_value(Some(node_object.clone()))
                         .with_source(Some(shape.id().clone()));
-                    validation_results.push(vr.clone());
-                    engine.record_validation(node_object, *shape_idx, vec![vr]);
-                } else {
-                    engine.record_validation(node_object, *shape_idx, Vec::new());
+                    validation_results.push(vr);
                 }
             }
         }
