@@ -33,7 +33,7 @@ as well as Python bindings.
 - [Roadmap](https://github.com/rudof-project/rudof/issues/1)
 
 >[!NOTE]
->Starting from version 0.2.15, all `rudof` dependencies are version-aligned. Therefore, if you need to use a specific dependency, it must match the same version used by rudof.
+>Starting from version 0.2.17, all `rudof` dependencies are version-aligned. Therefore, if you need to use a specific dependency, it must match the same version used by rudof.
 
 ## Features
 
