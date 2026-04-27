@@ -110,7 +110,6 @@ impl InputSpec {
     /// # Note
     /// The initial version of this code was inspired by [patharg](https://github.com/jwodder/patharg/blob/edd912e865143646fd7bb4c7796aa919fa5622b3/src/lib.rs#L264)
     pub fn open_read(&self, accept: Option<&str>, context_error: &str) -> Result<InputSpecReader, InputSpecError> {
-        println!("Opening input source: {:?}", self);
         match self {
             InputSpec::Stdin => Ok(Either::Left(io::stdin().lock())),
             InputSpec::Path(p) => match fs::File::open(p) {
@@ -153,9 +152,6 @@ impl InputSpec {
                 Ok(Either::Right(Either::Right(Either::Left(reader))))
             },
             InputSpec::Str(s) => {
-                println!(
-                    "Warning: Using raw string input. This is intended for testing and may not be suitable for large inputs."
-                );
                 // The following code had the problem that it didn't detect properly if the file didn't exist
                 let cursor = Cursor::new(s.clone().into_bytes());
                 let reader = BufReader::new(cursor);

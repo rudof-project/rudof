@@ -45,7 +45,7 @@ fn run_pgs(schema: &str) -> Result<()> {
 #[cfg(not(target_family = "wasm"))]
 fn run_pg(graph: &str) -> Result<()> {
     let pg = get_graph(graph)?;
-    println!("Proprety graph:\n{}", pg);
+    println!("Property graph:\n{}", pg);
     Ok(())
 }
 
