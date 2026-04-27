@@ -203,11 +203,14 @@ impl Display for NodeSelector {
                 write!(f, "{object_value}")?;
                 Ok(())
             },
-            NodeSelector::TriplePattern {
-                subject: _,
-                path: _,
-                object: _,
-            } => todo!(),
+            NodeSelector::TriplePattern { subject, path, object } => {
+                write!(
+                    f,
+                    "TriplePattern {{ subject: {}, path: {}, object: {} }}",
+                    subject, path, object
+                )?;
+                Ok(())
+            },
             NodeSelector::Sparql { query } => {
                 write!(f, "SPARQL \"\"\"{query}\"\"\"")?;
                 Ok(())

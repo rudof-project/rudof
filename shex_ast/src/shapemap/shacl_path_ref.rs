@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use prefixmap::error::PrefixMapError;
 use prefixmap::{DerefIri, IriRef, PrefixMap};
 use rudof_rdf::rdf_core::SHACLPath;
@@ -106,6 +108,26 @@ impl DerefIri for SHACLPathRef {
                 let path = path.deref_iri(base, prefixmap)?;
                 Ok(SHACLPathRef::ZeroOrOne { path })
             },
+        }
+    }
+}
+
+impl Display for SHACLPathRef {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SHACLPathRef::Predicate { pred } => write!(f, "{}", pred),
+            SHACLPathRef::Alternative { paths } => {
+                let path_strs: Vec<String> = paths.iter().map(|p| p.to_string()).collect();
+                write!(f, "({})", path_strs.join(" | "))
+            },
+            SHACLPathRef::Sequence { paths } => {
+                let path_strs: Vec<String> = paths.iter().map(|p| p.to_string()).collect();
+                write!(f, "({})", path_strs.join(" / "))
+            },
+            SHACLPathRef::Inverse { path } => write!(f, "^{}", path),
+            SHACLPathRef::ZeroOrMore { path } => write!(f, "{}*", path),
+            SHACLPathRef::OneOrMore { path } => write!(f, "{}+", path),
+            SHACLPathRef::ZeroOrOne { path } => write!(f, "{}?", path),
         }
     }
 }

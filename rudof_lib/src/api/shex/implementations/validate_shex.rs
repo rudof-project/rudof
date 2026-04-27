@@ -9,6 +9,9 @@ use shex_validation::Validator as ShExValidator;
 pub fn validate_shex(rudof: &mut Rudof) -> Result<()> {
     let (data, shex_schema, shapemap, shex_validator) = prepare_loaded_data_schema_and_shapemap(rudof)?;
     let rdf_data = data.unwrap_rdf_mut();
+    rdf_data
+        .check_store()
+        .map_err(|e| ShExError::FailedInitializingQueryStore { error: e.to_string() })?;
 
     let result = shex_validator
         .validate_shapemap(shapemap, rdf_data, shex_schema, &Some(rdf_data.prefixmap_in_memory()))
