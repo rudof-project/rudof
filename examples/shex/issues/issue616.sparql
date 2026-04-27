@@ -1,0 +1,6 @@
+prefix : <http://example.org/>
+prefix usr: <http://example2.org/>
+
+SELECT * where {
+    ?x a usr:Person
+}

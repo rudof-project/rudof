@@ -1,0 +1,6 @@
+prefix : <http://example.org/>
+prefix usr: <http://example2.org/>
+prefix schema: <http://schema.org/>
+
+:a a usr:Person;
+    schema:name  "Alice".
