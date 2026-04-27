@@ -94,16 +94,30 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
             component_validation_results.extend(results);
         }
 
-        // After validating the constraints that are defined in the current Shape,
-        // it is important to also perform the validation over those nested PropertyShapes.
-        // The validation needs to occur over the focus_nodes that have been computed for the current shape
+        // After validating the constraints of the current shape, validate any nested
+        // property shapes.
+        //
+        // Per the SHACL spec, each value node of the current shape becomes a focus node
+        // for the nested property shapes:
+        //   - For a NodeShape: value_nodes[F] = {F}, so nested targets == focus nodes.
+        //   - For a PropertyShape (path P): value_nodes[F] = objects(F, P), so nested
+        //     targets are the nodes reachable via P — NOT the original focus nodes.
+        //
+        // We iterate per-focus-node (not with a flattened unique set) so that multiplicity
+        // is preserved: if the same value node is reached from N different focus nodes,
+        // the nested property shape is invoked N times. The shared cache ensures each
+        // unique (value-node, shape) pair is only truly validated once; subsequent
+        // invocations for the same pair return the cached results, correctly producing
+        // one violation entry per path that led to the offending node.
         let mut property_shapes_validation_results = Vec::new();
         for ps in self.property_shapes().iter() {
             let shape = shapes_graph
                 .get_shape_from_idx(ps)
                 .unwrap_or_else(|| panic!("Internal error: Property shape for idx: {ps} not found in schema"));
-            let results = shape.validate(store, runner, Some(&uncached_focus_nodes), Some(self), shapes_graph)?;
-            property_shapes_validation_results.extend(results);
+            for (_, vn) in value_nodes.iter() {
+                let results = shape.validate(store, runner, Some(vn), Some(self), shapes_graph)?;
+                property_shapes_validation_results.extend(results);
+            }
         }
 
         let reification_results = if let Some(reifier_info) = self.reifier_info() {
