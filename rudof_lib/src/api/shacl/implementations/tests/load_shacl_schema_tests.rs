@@ -5,7 +5,6 @@ use crate::{
     api::shacl::implementations::serialize_shacl_schema::serialize_shacl_schema,
     formats::{DataFormat, InputSpec, ShaclFormat},
 };
-use std::str::FromStr;
 
 /// Helper: serialize current SHACL schema to string
 fn serialize_to_string(rudof: &Rudof, format: Option<ShaclFormat>) -> String {
@@ -21,7 +20,7 @@ fn test_extract_shacl_shapes_from_loaded_data() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     // Load RDF data that contains SHACL shapes
-    let data_with_shapes = InputSpec::from_str(
+    let data_with_shapes = InputSpec::str(
         r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
@@ -48,8 +47,7 @@ fn test_extract_shacl_shapes_from_loaded_data() {
                 sh:datatype xsd:string ;
             ] .
         "#,
-    )
-    .unwrap();
+    );
 
     // Load data into rudof
     load_data(
@@ -83,7 +81,7 @@ fn test_extract_shacl_shapes_mixed_data() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     // Load RDF data that contains both SHACL shapes and instance data
-    let mixed_data = InputSpec::from_str(
+    let mixed_data = InputSpec::str(
         r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
@@ -110,8 +108,7 @@ fn test_extract_shacl_shapes_mixed_data() {
             ex:name "Bob Jones" ;
             ex:age 25 .
         "#,
-    )
-    .unwrap();
+    );
 
     load_data(
         &mut rudof,
@@ -143,7 +140,7 @@ fn test_extract_shacl_shapes_from_data_no_shapes() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     // Load RDF data without SHACL shapes (just instance data)
-    let data_no_shapes = InputSpec::from_str(
+    let data_no_shapes = InputSpec::str(
         r#"
         @prefix ex: <http://example.org/> .
 
@@ -152,8 +149,7 @@ fn test_extract_shacl_shapes_from_data_no_shapes() {
             ex:name "Alice Smith" ;
             ex:age 30 .
         "#,
-    )
-    .unwrap();
+    );
 
     load_data(
         &mut rudof,
@@ -191,7 +187,7 @@ fn test_extract_shacl_shapes_no_data_loaded() {
 fn test_extract_and_serialize_complex_shapes() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let complex_data = InputSpec::from_str(
+    let complex_data = InputSpec::str(
         r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
@@ -242,8 +238,7 @@ fn test_extract_and_serialize_complex_shapes() {
                 sh:pattern "^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$" ;
             ] .
         "#,
-    )
-    .unwrap();
+    );
 
     load_data(
         &mut rudof,
@@ -275,7 +270,7 @@ fn test_extract_shapes_then_load_separate_schema() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     // First load data with shapes
-    let data_with_shapes = InputSpec::from_str(
+    let data_with_shapes = InputSpec::str(
         r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
@@ -289,8 +284,7 @@ fn test_extract_shapes_then_load_separate_schema() {
                 sh:datatype xsd:string ;
             ] .
         "#,
-    )
-    .unwrap();
+    );
 
     load_data(
         &mut rudof,
@@ -309,7 +303,7 @@ fn test_extract_shapes_then_load_separate_schema() {
     assert!(serialized1.contains("Shape1") || serialized1.contains("Class1"));
 
     // Now load a separate schema - should replace the extracted one
-    let separate_schema = InputSpec::from_str(
+    let separate_schema = InputSpec::str(
         r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
@@ -323,8 +317,7 @@ fn test_extract_shapes_then_load_separate_schema() {
                 sh:datatype xsd:integer ;
             ] .
         "#,
-    )
-    .unwrap();
+    );
 
     load_shacl_schema(
         &mut rudof,
@@ -350,7 +343,7 @@ fn test_extract_shapes_then_load_separate_schema() {
 fn test_extract_shacl_shapes_with_lists() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let data_with_lists = InputSpec::from_str(
+    let data_with_lists = InputSpec::str(
         r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
@@ -368,8 +361,7 @@ fn test_extract_shacl_shapes_with_lists() {
                 sh:in ( "admin" "user" "guest" ) ;
             ] .
         "#,
-    )
-    .unwrap();
+    );
 
     load_data(
         &mut rudof,
@@ -399,7 +391,7 @@ fn test_extract_shacl_shapes_with_lists() {
 fn test_extract_shapes_multiple_data_sources() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let data_source1 = InputSpec::from_str(
+    let data_source1 = InputSpec::str(
         r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
@@ -413,10 +405,9 @@ fn test_extract_shapes_multiple_data_sources() {
                 sh:datatype xsd:string ;
             ] .
         "#,
-    )
-    .unwrap();
+    );
 
-    let data_source2 = InputSpec::from_str(
+    let data_source2 = InputSpec::str(
         r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
@@ -430,8 +421,7 @@ fn test_extract_shapes_multiple_data_sources() {
                 sh:datatype xsd:string ;
             ] .
         "#,
-    )
-    .unwrap();
+    );
 
     // Load multiple data sources
     load_data(
@@ -463,7 +453,7 @@ fn test_extract_shapes_multiple_data_sources() {
 fn test_extract_shapes_with_merge() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let data_source1 = InputSpec::from_str(
+    let data_source1 = InputSpec::str(
         r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
@@ -477,8 +467,7 @@ fn test_extract_shapes_with_merge() {
                 sh:datatype xsd:string ;
             ] .
         "#,
-    )
-    .unwrap();
+    );
 
     // Load first data source
     load_data(
@@ -492,7 +481,7 @@ fn test_extract_shapes_with_merge() {
     )
     .unwrap();
 
-    let data_source2 = InputSpec::from_str(
+    let data_source2 = InputSpec::str(
         r#"
         @prefix ex: <http://example.org/> .
         @prefix sh: <http://www.w3.org/ns/shacl#> .
@@ -506,8 +495,7 @@ fn test_extract_shapes_with_merge() {
                 sh:datatype xsd:string ;
             ] .
         "#,
-    )
-    .unwrap();
+    );
 
     // Load second data source with merge=true
     load_data(

@@ -69,6 +69,10 @@ impl InputSpec {
         }
     }
 
+    pub fn str(s: &str) -> InputSpec {
+        InputSpec::Str(s.to_string())
+    }
+
     /// Converts the InputSpec to an IRI (Internationalized Resource Identifier).
     ///
     /// File paths are converted to file:// URLs, and other sources get appropriate IRI representations.
@@ -148,8 +152,17 @@ impl InputSpec {
                 Ok(Either::Right(Either::Right(Either::Left(reader))))
             },
             InputSpec::Str(s) => {
+                // The following code had the problem that it didn't detect properly if the file didn't exist
                 let cursor = Cursor::new(s.clone().into_bytes());
                 let reader = BufReader::new(cursor);
+                /*let path = Path::new(s);
+                let file = File::open(&path).map_err(|e| InputSpecError::OpenPathError {
+                    msg: context_error.to_string(),
+                    path: path.to_path_buf(),
+                    err: e,
+                })?; */
+                // let reader = BufReader::new(file);
+                // Ok(Either::Right(Either::Left(reader)))
                 Ok(Either::Right(Either::Right(Either::Right(reader))))
             },
         }
@@ -180,6 +193,34 @@ impl InputSpec {
             InputSpec::Str(_) => Ok("string://".to_string()),
         }
     }
+
+    // Get an `InputSpec` from a string
+    // The `allow_plain_str` parameter controls whether arbitrary strings that don't match
+    // other patterns should be treated as raw strings (Str) instead of resulting in an error.
+    // This is used to provide flexibility in contexts where raw string input is expected like in Python bindings,
+    // while still allowing for strict parsing in other contexts.
+    pub fn parse_from_str(s: &str, allow_plain_str: bool) -> Result<Self, InputSpecError> {
+        match s {
+            _ if s == "-" => Ok(InputSpec::Stdin),
+            _ if s.starts_with("http://") => {
+                let url_spec = UrlSpec::parse(s)?;
+                Ok(InputSpec::Url(url_spec))
+            },
+            _ if s.starts_with("https://") => {
+                let url_spec = UrlSpec::parse(s)?;
+                Ok(InputSpec::Url(url_spec))
+            },
+            _ if Path::new(s).exists() => {
+                let pb: PathBuf = PathBuf::from_str(s).map_err(|e| InputSpecError::ParsingPathError {
+                    str: s.to_string(),
+                    error: format!("{e}"),
+                })?;
+                Ok(InputSpec::Path(pb))
+            },
+            _ if allow_plain_str => Ok(InputSpec::Str(s.to_string())),
+            _ => Err(InputSpecError::FileDoesntExist { str: s.to_string() }),
+        }
+    }
 }
 
 impl Display for InputSpec {
@@ -204,25 +245,9 @@ impl FromStr for InputSpec {
     /// - Existing file paths become Path
     /// - Everything else becomes a raw string (Str)
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            _ if s == "-" => Ok(InputSpec::Stdin),
-            _ if s.starts_with("http://") => {
-                let url_spec = UrlSpec::parse(s)?;
-                Ok(InputSpec::Url(url_spec))
-            },
-            _ if s.starts_with("https://") => {
-                let url_spec = UrlSpec::parse(s)?;
-                Ok(InputSpec::Url(url_spec))
-            },
-            _ if Path::new(s).exists() => {
-                let pb: PathBuf = PathBuf::from_str(s).map_err(|e| InputSpecError::ParsingPathError {
-                    str: s.to_string(),
-                    error: format!("{e}"),
-                })?;
-                Ok(InputSpec::Path(pb))
-            },
-            _ => Ok(InputSpec::Str(s.to_string())),
-        }
+        // The `allow_plain_str` parameter is set to false here to prevent treating arbitrary strings as file paths,
+        // which could lead to confusing errors if the string doesn't exist as a file.
+        Self::parse_from_str(s, false)
     }
 }
 

@@ -4,7 +4,7 @@ use crate::{
     api::shex::implementations::serialize_shex_schema::serialize_shex_schema,
     formats::{InputSpec, ShExFormat},
 };
-use std::str::FromStr;
+//use std::str::FromStr;
 
 /// Helper: serialize current ShEx schema to string
 fn serialize_to_string(rudof: &mut Rudof, format: Option<ShExFormat>) -> String {
@@ -30,7 +30,7 @@ fn serialize_to_string(rudof: &mut Rudof, format: Option<ShExFormat>) -> String 
 fn test_load_shex_schema_shexc_success() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let schema = InputSpec::from_str(
+    let schema = InputSpec::str(
         r#"
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            <PersonShape> {
@@ -43,8 +43,7 @@ fn test_load_shex_schema_shexc_success() {
              <worksFor> <PersonShape>
            }
         "#,
-    )
-    .unwrap();
+    );
 
     load_shex_schema(
         &mut rudof,
@@ -71,19 +70,17 @@ fn test_load_shex_schema_shexc_success() {
 fn test_load_shex_schema_replace() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let schema1 = InputSpec::from_str(
+    let schema1 = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            ex:Shape1 { ex:prop1 xsd:string }"#,
-    )
-    .unwrap();
+    );
 
-    let schema2 = InputSpec::from_str(
+    let schema2 = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            ex:Shape2 { ex:prop2 xsd:integer }"#,
-    )
-    .unwrap();
+    );
 
     load_shex_schema(&mut rudof, &schema1, Some(&ShExFormat::ShExC), None, None).unwrap();
 
@@ -104,7 +101,7 @@ fn test_load_shex_schema_replace() {
 fn test_load_shex_schema_invalid_shexc() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let invalid = InputSpec::from_str("not valid shexc syntax {{{").unwrap();
+    let invalid = InputSpec::str("not valid shexc syntax {{{");
 
     let result = load_shex_schema(&mut rudof, &invalid, Some(&ShExFormat::ShExC), None, None);
 
@@ -115,14 +112,13 @@ fn test_load_shex_schema_invalid_shexc() {
 fn test_load_shex_schema_with_base() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let schema = InputSpec::from_str(
+    let schema = InputSpec::str(
         r#"
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
         <PersonShape> {
              <name> xsd:string
            }"#,
-    )
-    .unwrap();
+    );
 
     load_shex_schema(
         &mut rudof,
@@ -148,12 +144,11 @@ fn test_load_shex_schema_negative_cycles() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     // Schema con ciclos negativos
-    let schema = InputSpec::from_str(
+    let schema = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
            ex:Shape1 NOT @ex:Shape2
            ex:Shape2 NOT @ex:Shape1"#,
-    )
-    .unwrap();
+    );
 
     let result = load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None);
 

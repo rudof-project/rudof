@@ -3,7 +3,6 @@ use crate::{
     api::comparison::implementations::show_schema_comparison::show_schema_comparison,
     formats::{ComparisonFormat, ComparisonMode, InputSpec, ResultComparisonFormat},
 };
-use std::str::FromStr;
 
 /// Helper: serialize comparison to string with shape labels
 fn serialize_comparison_to_string(
@@ -46,7 +45,7 @@ fn serialize_comparison_to_string(
 fn test_compare_identical_shex_schemas() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let schema = InputSpec::from_str(
+    let schema = InputSpec::str(
         r#"
 PREFIX : <http://example.org/>
 PREFIX schema: <http://schema.org/>
@@ -57,8 +56,7 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     schema:age xsd:integer ?
 }
         "#,
-    )
-    .unwrap();
+    );
 
     let serialized = serialize_comparison_to_string(
         &mut rudof,
@@ -86,7 +84,7 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 fn test_compare_different_shex_schemas() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let schema1 = InputSpec::from_str(
+    let schema1 = InputSpec::str(
         r#"
 PREFIX : <http://example.org/>
 PREFIX schema: <http://schema.org/>
@@ -97,10 +95,9 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     schema:age xsd:integer ?
 }
         "#,
-    )
-    .unwrap();
+    );
 
-    let schema2 = InputSpec::from_str(
+    let schema2 = InputSpec::str(
         r#"
 PREFIX : <http://example.org/>
 PREFIX schema: <http://schema.org/>
@@ -111,8 +108,7 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     schema:email xsd:string
 }
         "#,
-    )
-    .unwrap();
+    );
 
     let serialized = serialize_comparison_to_string(
         &mut rudof,
@@ -140,7 +136,7 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 fn test_compare_shex_schemas_json_output() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let schema1 = InputSpec::from_str(
+    let schema1 = InputSpec::str(
         r#"
 PREFIX : <http://example.org/>
 PREFIX schema: <http://schema.org/>
@@ -150,10 +146,9 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     schema:name xsd:string
 }
         "#,
-    )
-    .unwrap();
+    );
 
-    let schema2 = InputSpec::from_str(
+    let schema2 = InputSpec::str(
         r#"
 PREFIX : <http://example.org/>
 PREFIX schema: <http://schema.org/>
@@ -164,8 +159,7 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     schema:age xsd:integer
 }
         "#,
-    )
-    .unwrap();
+    );
 
     let serialized = serialize_comparison_to_string(
         &mut rudof,
@@ -193,7 +187,7 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 fn test_compare_complex_shex_schemas() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let schema1 = InputSpec::from_str(
+    let schema1 = InputSpec::str(
         r#"
 PREFIX : <http://example.org/>
 PREFIX schema: <http://schema.org/>
@@ -210,10 +204,9 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     schema:employee @:Person +
 }
         "#,
-    )
-    .unwrap();
+    );
 
-    let schema2 = InputSpec::from_str(
+    let schema2 = InputSpec::str(
         r#"
 PREFIX : <http://example.org/>
 PREFIX schema: <http://schema.org/>
@@ -230,8 +223,7 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     schema:member @:Person +
 }
         "#,
-    )
-    .unwrap();
+    );
 
     let serialized = serialize_comparison_to_string(
         &mut rudof,

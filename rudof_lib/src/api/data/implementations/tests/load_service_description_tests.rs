@@ -6,7 +6,6 @@ use crate::{
     },
     formats::{DataFormat, DataReaderMode, InputSpec, ResultServiceFormat},
 };
-use std::str::FromStr;
 
 #[test]
 fn test_load_service_description() {
@@ -22,7 +21,7 @@ fn test_load_service_description() {
             sd:defaultEntailmentRegime ent:Simple .
     "#;
 
-    let input_spec = InputSpec::from_str(service_desc_ttl).unwrap();
+    let input_spec = InputSpec::str(service_desc_ttl);
 
     // Load
     load_service_description(
