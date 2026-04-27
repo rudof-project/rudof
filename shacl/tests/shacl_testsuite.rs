@@ -16,9 +16,7 @@ mod core;
 
 #[cfg(not(target_family = "wasm"))]
 fn test(path: String, mode: ShaclValidationMode) -> Result<(), TestSuiteError> {
-    println!("Running test: {path}");
     let mut manifest = Manifest::new(Path::new(&path))?;
-    println!("Manifest loaded successfully");
     let tests = manifest.collect_tests()?;
 
     for test in tests {

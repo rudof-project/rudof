@@ -198,7 +198,7 @@ impl InputSpec {
         }
     }
 
-    /*     pub fn parse_from_str(s: &str) -> Result<Self, InputSpecError> {
+    pub fn parse_from_str(s: &str) -> Result<Self, InputSpecError> {
         match s {
             _ if s == "-" => Ok(InputSpec::Stdin),
             _ if s.starts_with("http://") => {
@@ -218,7 +218,7 @@ impl InputSpec {
             },
             _ => Err(InputSpecError::FileDoesntExist { str: s.to_string() }),
         }
-    }*/
+    }
 }
 
 impl Display for InputSpec {
@@ -232,7 +232,6 @@ impl Display for InputSpec {
     }
 }
 
-/*
 impl FromStr for InputSpec {
     type Err = InputSpecError;
 
@@ -247,7 +246,7 @@ impl FromStr for InputSpec {
         Self::parse_from_str(s)
     }
 }
-*/
+
 // ============================================================================
 // UrlSpec
 // ============================================================================
