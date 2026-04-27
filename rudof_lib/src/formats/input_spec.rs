@@ -198,8 +198,11 @@ impl InputSpec {
         }
     }
 
-    // Get an `InputSpec` from a string, using the same logic as `from_str`
-    // but without the `FromStr` trait requirement.
+    // Get an `InputSpec` from a string
+    // The `allow_plain_str` parameter controls whether arbitrary strings that don't match
+    // other patterns should be treated as raw strings (Str) instead of resulting in an error.
+    // This is used to provide flexibility in contexts where raw string input is expected like in Python bindings,
+    // while still allowing for strict parsing in other contexts.
     pub fn parse_from_str(s: &str, allow_plain_str: bool) -> Result<Self, InputSpecError> {
         match s {
             _ if s == "-" => Ok(InputSpec::Stdin),
@@ -246,6 +249,8 @@ impl FromStr for InputSpec {
     /// - Existing file paths become Path
     /// - Everything else becomes a raw string (Str)
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // The `allow_plain_str` parameter is set to false here to prevent treating arbitrary strings as file paths,
+        // which could lead to confusing errors if the string doesn't exist as a file.
         Self::parse_from_str(s, false)
     }
 }
