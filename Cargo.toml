@@ -27,7 +27,7 @@ members = [
 default-members = ["rudof_cli"]
 
 [workspace.package]
-version = "0.2.16"
+version = "0.2.17-rc.1"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 description = "RDF data shapes implementation in Rust"
@@ -261,7 +261,7 @@ crossterm = "0.27"
 colored = "3"
 const_format = "0.2"
 csv = "1.3.1"
-dctap = { version = "0.2.16", path = "./dctap" }
+dctap = { version = "0.2.17-rc.1", path = "./dctap" }
 either = { version = "1.13", features = ["serde"] }
 futures = "0.3"
 getrandom = { version = ">=0.3, <0.4", features = ["wasm_js"] }
@@ -274,7 +274,7 @@ is_ci = "1.0"
 itertools = "0.14"
 josekit = "0.10.3"
 lazy-regex = "3.4"
-mie = { version = "0.2.16", path = "./mie" }
+mie = { version = "0.2.17-rc.1", path = "./mie" }
 nom = "8.0"
 nom_locate = "5.0"
 once_cell = "1.18.0"
@@ -291,17 +291,17 @@ oxrdfxml = { version = "0.2.0" }
 oxsdatatypes = "0.2.2"
 oxttl = { version = "0.2.0", features = ["rdf-12"] }
 paste = "1.0.15"
-pgschema = { version = "0.2.16", path = "./pgschema" }
+pgschema = { version = "0.2.17-rc.1", path = "./pgschema" }
 petgraph = { version = "0.8" }
-prefixmap = { version = "0.2.16", path = "./prefixmap" }
+prefixmap = { version = "0.2.17-rc.1", path = "./prefixmap" }
 pretty = { version = "0.12" }
 proptest = "1.9.0"
-pyrudof = { version = "0.2.16", path = "./python" }
+pyrudof = { version = "0.2.17-rc.1", path = "./python" }
 rand = "0.8"
 rayon = "1.7"
-rbe = { version = "0.2.16", path = "./rbe" }
-rbe_testsuite = { version = "0.2.16", path = "./rbe_testsuite" }
-rdf_config = { version = "0.2.16", path = "./rdf_config" }
+rbe = { version = "0.2.17-rc.1", path = "./rbe" }
+rbe_testsuite = { version = "0.2.17-rc.1", path = "./rbe_testsuite" }
+rdf_config = { version = "0.2.17-rc.1", path = "./rdf_config" }
 regex = "1.11"
 reqwest = { version = "0.12", default-features = false, features = [
     "json",
@@ -315,26 +315,26 @@ rmcp = { version = "=1.3.0", features = [
     "transport-streamable-http-server",
 ] }
 rmcp-macros = "1.3.0"
-rudof_cli = { version = "0.2.16", path = "./rudof_cli" }
-rudof_iri = { version = "0.2.16", path = "./rudof_iri" }
-rudof_rdf = { version = "0.2.16", path = "./rudof_rdf", default-features = false }
-rudof_generate = { version = "0.2.16", path = "./rudof_generate" }
-rudof_lib = { version = "0.2.16", path = "./rudof_lib" }
-rudof_mcp = { version = "0.2.16", path = "./rudof_mcp" }
+rudof_cli = { version = "0.2.17-rc.1", path = "./rudof_cli" }
+rudof_iri = { version = "0.2.17-rc.1", path = "./rudof_iri" }
+rudof_rdf = { version = "0.2.17-rc.1", path = "./rudof_rdf", default-features = false }
+rudof_generate = { version = "0.2.17-rc.1", path = "./rudof_generate" }
+rudof_lib = { version = "0.2.17-rc.1", path = "./rudof_lib" }
+rudof_mcp = { version = "0.2.17-rc.1", path = "./rudof_mcp" }
 rust_decimal = "1.38"
 rust_decimal_macros = "1.38"
 schemars = "1.0.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0"
-shacl = { version = "0.2.16", path = "./shacl" }
-shapes_comparator = { version = "0.2.16", path = "./shapes_comparator" }
-shapes_converter = { version = "0.2.16", path = "./shapes_converter" }
-shex_ast = { version = "0.2.16", path = "./shex_ast" }
-shex_testsuite = { version = "0.2.16", path = "./shex_testsuite" }
-shex_validation = { version = "0.2.16", path = "./shex_validation" }
+shacl = { version = "0.2.17-rc.1", path = "./shacl" }
+shapes_comparator = { version = "0.2.17-rc.1", path = "./shapes_comparator" }
+shapes_converter = { version = "0.2.17-rc.1", path = "./shapes_converter" }
+shex_ast = { version = "0.2.17-rc.1", path = "./shex_ast" }
+shex_testsuite = { version = "0.2.17-rc.1", path = "./shex_testsuite" }
+shex_validation = { version = "0.2.17-rc.1", path = "./shex_validation" }
 sparesults = { version = "0.3.0", features = ["sparql-12"] }
 spargebra = { version = "0.4.0", features = ["sparql-12"] }
-sparql_service = { version = "0.2.16", path = "./sparql_service", default-features = false }
+sparql_service = { version = "0.2.17-rc.1", path = "./sparql_service", default-features = false }
 supports-color = "3.0.0"
 tabled = { version = "0.20.0", features = ["ansi"] }
 tempfile = "3.10.1"
