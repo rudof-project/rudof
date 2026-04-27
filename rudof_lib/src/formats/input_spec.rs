@@ -198,7 +198,9 @@ impl InputSpec {
         }
     }
 
-    pub fn parse_from_str(s: &str) -> Result<Self, InputSpecError> {
+    // Get an `InputSpec` from a string, using the same logic as `from_str`
+    // but without the `FromStr` trait requirement.
+    pub fn parse_from_str(s: &str, allow_plain_str: bool) -> Result<Self, InputSpecError> {
         match s {
             _ if s == "-" => Ok(InputSpec::Stdin),
             _ if s.starts_with("http://") => {
@@ -216,6 +218,7 @@ impl InputSpec {
                 })?;
                 Ok(InputSpec::Path(pb))
             },
+            _ if allow_plain_str => Ok(InputSpec::Str(s.to_string())),
             _ => Err(InputSpecError::FileDoesntExist { str: s.to_string() }),
         }
     }
@@ -243,7 +246,7 @@ impl FromStr for InputSpec {
     /// - Existing file paths become Path
     /// - Everything else becomes a raw string (Str)
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::parse_from_str(s)
+        Self::parse_from_str(s, false)
     }
 }
 

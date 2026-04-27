@@ -129,7 +129,7 @@ pub async fn load_rdf_data_from_sources_impl(
     // Parse data specifications - return Tool Execution Error for invalid input
     let data_specs: Vec<InputSpec> = match data
         .iter()
-        .map(|s| InputSpec::parse_from_str(s))
+        .map(|s| InputSpec::parse_from_str(s, false))
         .collect::<Result<Vec<_>, _>>()
     {
         Ok(specs) => specs,
