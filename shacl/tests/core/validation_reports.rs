@@ -7,7 +7,6 @@ mod tests {
     const PATH: &str = "tests/data-shapes/data-shapes-test-suite/tests/core/validation-reports/";
 
     #[test]
-    #[ignore]
     fn shared() -> Result<(), TestSuiteError> {
         let path = format!("{}/{}.ttl", PATH, "shared");
         test(path, ShaclValidationMode::Native)

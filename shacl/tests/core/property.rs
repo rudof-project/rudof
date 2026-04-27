@@ -199,7 +199,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn property_001() -> Result<(), TestSuiteError> {
         let path = format!("{}/{}.ttl", PATH, "property-001");
         test(path, ShaclValidationMode::Native)
