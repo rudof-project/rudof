@@ -11,6 +11,10 @@ on:
           - patch
           - minor
           - major
+      prerelease:
+        description: "Release candidate (creates X.Y.Z-rc.N tag without bumping stable)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -23,18 +27,33 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.RELEASE_TOKEN }}
+          fetch-tags: true
       - name: Compute new version
         id: version
         run: |
           current=$(grep '^version' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
-          IFS='.' read -r major minor patch <<< "$current"
+          # Strip any existing -rc.N suffix to get the base version
+          base=$(echo "$current" | sed 's/-rc\.[0-9]*//')
+          IFS='.' read -r major minor patch <<< "$base"
           case "${{ inputs.bump }}" in
-            major) new="$((major + 1)).0.0" ;;
-            minor) new="$major.$((minor + 1)).0" ;;
-            patch) new="$major.$minor.$((patch + 1))" ;;
+            major) bumped="$((major + 1)).0.0" ;;
+            minor) bumped="$major.$((minor + 1)).0" ;;
+            patch) bumped="$major.$minor.$((patch + 1))" ;;
           esac
+
+          if [ "${{ inputs.prerelease }}" = "true" ]; then
+            # Find highest existing rc number for this base version
+            last_rc=$(git tag --list "${bumped}-rc.*" | grep -oP 'rc\.\K[0-9]+' | sort -n | tail -1)
+            next_rc=$(( ${last_rc:-0} + 1 ))
+            new="${bumped}-rc.${next_rc}"
+          else
+            new="$bumped"
+          fi
+
           echo "current=$current" >> "$GITHUB_OUTPUT"
           echo "new=$new" >> "$GITHUB_OUTPUT"
+          echo "prerelease=${{ inputs.prerelease }}" >> "$GITHUB_OUTPUT"
+
       - name: Update version in Cargo.toml
         run: |
           OLD="${{ steps.version.outputs.current }}"
@@ -44,8 +63,10 @@ jobs:
           # Bump only internal workspace crates in [workspace.dependencies]
           INTERNAL_CRATES="dctap|mie|pgschema|prefixmap|pyrudof|rbe|rbe_testsuite|rdf_config|rudof_cli|rudof_iri|rudof_rdf|rudof_generate|rudof_lib|rudof_mcp|shacl|shapes_comparator|shapes_converter|shex_ast|shex_testsuite|shex_validation|sparql_service"
           sed -i -E "/^(${INTERNAL_CRATES}) = \{/{s/version = \"${OLD}\"/version = \"${NEW}\"/}" Cargo.toml
+
       - name: Verify version was updated
         run: grep '^version = "${{ steps.version.outputs.new }}"' Cargo.toml
+
       - name: Commit and push
         run: |
           git config user.name "github-actions[bot]"
@@ -53,7 +74,16 @@ jobs:
           git add Cargo.toml
           git commit -m "chore: release ${{ steps.version.outputs.new }} [skip ci]"
           git push
+
       - name: Create GitHub release
-        run: gh release create "${{ steps.version.outputs.new }}" --title "${{ steps.version.outputs.new }}" --generate-notes
+        run: |
+          EXTRA_FLAGS=""
+          if [ "${{ steps.version.outputs.prerelease }}" = "true" ]; then
+            EXTRA_FLAGS="--prerelease"
+          fi
+          gh release create "${{ steps.version.outputs.new }}" \
+            --title "${{ steps.version.outputs.new }}" \
+            --generate-notes \
+            $EXTRA_FLAGS
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
