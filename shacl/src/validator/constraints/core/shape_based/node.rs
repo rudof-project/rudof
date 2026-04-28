@@ -38,7 +38,8 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
                         .map(|r| !r.is_empty())
                         .unwrap_or(false)
                 } else {
-                    let inner_results = node_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
+                    let inner_results =
+                        node_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
                     match inner_results {
                         Ok(results) => !results.is_empty(),
                         Err(e) => return Err(ConstraintError::Internal { err: e.to_string() }),

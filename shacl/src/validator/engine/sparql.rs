@@ -161,7 +161,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
 
     fn fork(&self) -> Box<dyn Engine<S>> {
         Box::new(SparqlEngine {
-            cache: self.cache.clone()
+            cache: self.cache.clone(),
         })
     }
 }

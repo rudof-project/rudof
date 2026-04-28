@@ -12,9 +12,9 @@ use crate::validator::report::ValidationReport;
 #[cfg(feature = "sparql")]
 pub use endpoint::EndpointValidation;
 pub use graph::GraphValidation;
+use rayon::prelude::*;
 #[cfg(feature = "sparql")]
 pub use rdf_data::DataValidation;
-use rayon::prelude::*;
 use rudof_rdf::rdf_core::NeighsRDF;
 use std::fmt::Debug;
 
@@ -64,8 +64,7 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug + Send + Sync> {
         for level in levels {
             // Fork one engine per shape in this level. Each fork shares the
             // pre-built class index and cache.
-            let mut forked_runners: Vec<Box<dyn Engine<S>>> =
-                level.iter().map(|_| master_runner.fork()).collect();
+            let mut forked_runners: Vec<Box<dyn Engine<S>>> = level.iter().map(|_| master_runner.fork()).collect();
 
             // Validate all shapes in the level in parallel.
             let level_results: Vec<Result<Vec<_>, ValidationError>> = forked_runners

@@ -1,6 +1,6 @@
-use rudof_rdf::rdf_core::term::Object;
 use crate::ir::ShapeLabelIdx;
 use crate::validator::report::ValidationResult;
+use rudof_rdf::rdf_core::term::Object;
 
 mod parallel;
 mod shared;

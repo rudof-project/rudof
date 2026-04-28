@@ -130,7 +130,7 @@ impl IRSchema {
             .values()
             .copied()
             .filter(|idx| !in_graph.contains(idx))
-            .filter(|idx| self.shapes.get(idx).map_or(false, |s| !s.targets().is_empty()))
+            .filter(|idx| self.shapes.get(idx).is_some_and(|s| !s.targets().is_empty()))
             .collect();
         level0.sort_unstable();
 
@@ -140,7 +140,7 @@ impl IRSchema {
                 graph_l0
                     .iter()
                     .copied()
-                    .filter(|idx| self.shapes.get(idx).map_or(false, |s| !s.targets().is_empty())),
+                    .filter(|idx| self.shapes.get(idx).is_some_and(|s| !s.targets().is_empty())),
             );
         }
 
@@ -154,7 +154,7 @@ impl IRSchema {
             let level_with_targets: Vec<ShapeLabelIdx> = graph_level
                 .iter()
                 .copied()
-                .filter(|idx| self.shapes.get(idx).map_or(false, |s| !s.targets().is_empty()))
+                .filter(|idx| self.shapes.get(idx).is_some_and(|s| !s.targets().is_empty()))
                 .collect();
             if !level_with_targets.is_empty() {
                 result.push(level_with_targets);

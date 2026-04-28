@@ -1,9 +1,9 @@
-use std::sync::Arc;
-use rudof_rdf::rdf_core::term::Object;
 use crate::ir::ShapeLabelIdx;
-use crate::validator::cache::parallel::ParallelValidationCache;
 use crate::validator::cache::ValidationCache;
+use crate::validator::cache::parallel::ParallelValidationCache;
 use crate::validator::report::ValidationResult;
+use rudof_rdf::rdf_core::term::Object;
+use std::sync::Arc;
 
 /// A cheapy-cloneable wrapper for [`ParallelValidationCache`] shared behind an [`Arc`]
 #[derive(Debug, Clone, Default)]
