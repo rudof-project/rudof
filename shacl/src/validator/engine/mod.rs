@@ -24,13 +24,19 @@ use rudof_rdf::rdf_core::query::QueryRDF;
 pub use sparql::SparqlEngine;
 pub use validate::Validate;
 
-pub trait Engine<S: NeighsRDF> {
+pub trait Engine<S: NeighsRDF>: Send {
     /// Pre-builds internal indexes from the data graph for faster target resolution
     ///
     /// This should be called **once** before the validation loop starts
     fn build_indexes(&mut self, _store: &S) -> Result<(), ValidationError> {
         Ok(())
     }
+
+    /// Creates a new engine instance that shares pre-built indexes and cache.
+    ///
+    /// This is used by the parallel validator to cheaply spin up per-shape
+    /// engines without rebuilding expensive indexes for every thread.
+    fn fork(&self) -> Box<dyn Engine<S>>;
 
     fn evaluate(
         &mut self,
@@ -94,7 +100,11 @@ pub trait Engine<S: NeighsRDF> {
     fn has_validated(&self, node: &Object, shape_idx: ShapeLabelIdx) -> bool;
 
     /// Returns the cached validation results for a given `(node, shape_idx)` pair, if any.
-    fn get_cached_results(&self, node: &Object, shape_idx: ShapeLabelIdx) -> Option<&Vec<ValidationResult>>;
+    ///
+    /// Returns an owned [`Vec`] so that implementations backed by concurrent data
+    /// structures can return data without tying the lifetime to
+    /// an internal lock guard.
+    fn get_cached_results(&self, node: &Object, shape_idx: ShapeLabelIdx) -> Option<Vec<ValidationResult>>;
 }
 
 fn select<S: QueryRDF>(store: &S, query: &String, index: &str) -> Result<HashSet<S::Term>, SparqlError> {

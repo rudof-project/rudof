@@ -16,11 +16,13 @@ sparql = ["sparql_service/sparql", "rudof_rdf/sparql" ]
 
 [dependencies]
 anyhow.workspace = true
+dashmap.workspace = true
 indoc.workspace = true
 itertools.workspace = true
 rudof_iri.workspace = true
 petgraph.workspace = true
 prefixmap.workspace = true
+rayon.workspace = true
 rudof_rdf.workspace = true
 serde.workspace = true
 sparql_service.workspace = true

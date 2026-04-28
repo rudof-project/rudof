@@ -19,7 +19,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn shacl_shacl() -> Result<(), TestSuiteError> {
         let path = format!("{}/{}.ttl", PATH, "shacl-shacl");
         test(path, ShaclValidationMode::Native)

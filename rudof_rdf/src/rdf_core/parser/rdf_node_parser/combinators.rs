@@ -630,6 +630,7 @@ where
     ///
     /// Returns errors from the value retrieval or element parsing.
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
+        let saved_focus = rdf.get_focus().cloned();
         let values = ValuesPropertyParser::new(self.property.clone()).parse_focused(rdf)?;
         let mut results = Vec::new();
 
@@ -637,6 +638,12 @@ where
             rdf.set_focus(&node);
             results.push(self.parser.parse_focused(rdf)?);
         }
+
+        // Restore focus node
+        if let Some(ref focus) = saved_focus {
+            rdf.set_focus(focus);
+        }
+
         Ok(results)
     }
 }

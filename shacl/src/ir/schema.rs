@@ -107,6 +107,62 @@ impl IRSchema {
     pub fn iter_with_targets(&self) -> impl Iterator<Item = (&Object, &IRShape)> {
         self.iter().filter(|(_, shape)| !shape.targets().is_empty())
     }
+
+    /// Returns the indices of shapes with targets, grouped into topological levels.
+    ///
+    /// Shapes in the same level have no dependency relationship with each other and
+    /// can therefore be validated in parallel. Dependencies are placed at lower
+    /// levels than the shapes that reference them, so iterating from level 0 upward
+    /// ensures that a shape's sub-shapes are validated (and cached) before the
+    /// shape itself runs.
+    ///
+    /// Shapes that do not appear in the dependency graph at all (isolated shapes
+    /// with no `sh:node`/`sh:and`/etc. references) are treated as level-0 shapes.
+    pub(crate) fn shapes_with_targets_by_level(&self) -> Vec<Vec<ShapeLabelIdx>> {
+        let graph_levels = self.dependency_graph.topological_levels();
+
+        // Track which indices appear in the dependency graph
+        let in_graph: HashSet<ShapeLabelIdx> = graph_levels.iter().flatten().copied().collect();
+
+        // Shapes not in the graph are fully independent -> level 0
+        let mut level0: Vec<ShapeLabelIdx> = self
+            .labels_idx_map
+            .values()
+            .copied()
+            .filter(|idx| !in_graph.contains(idx))
+            .filter(|idx| self.shapes.get(idx).is_some_and(|s| !s.targets().is_empty()))
+            .collect();
+        level0.sort_unstable();
+
+        // Add graph level-0 shapes that have targets
+        if let Some(graph_l0) = graph_levels.first() {
+            level0.extend(
+                graph_l0
+                    .iter()
+                    .copied()
+                    .filter(|idx| self.shapes.get(idx).is_some_and(|s| !s.targets().is_empty())),
+            );
+        }
+
+        let mut result: Vec<Vec<ShapeLabelIdx>> = Vec::new();
+        if !level0.is_empty() {
+            result.push(level0);
+        }
+
+        // Remaining levels (skip index 0, already handled above)
+        for graph_level in graph_levels.iter().skip(1) {
+            let level_with_targets: Vec<ShapeLabelIdx> = graph_level
+                .iter()
+                .copied()
+                .filter(|idx| self.shapes.get(idx).is_some_and(|s| !s.targets().is_empty()))
+                .collect();
+            if !level_with_targets.is_empty() {
+                result.push(level_with_targets);
+            }
+        }
+
+        result
+    }
 }
 
 impl IRSchema {

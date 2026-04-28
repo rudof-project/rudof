@@ -6,7 +6,6 @@ pub fn new(config: RudofConfig) -> Rudof {
         config,
         data: None,
         shacl_shapes: None,
-        shacl_shapes_ir: None,
         shacl_validation_results: None,
         shex_schema: None,
         shex_schema_ir: None,

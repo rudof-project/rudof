@@ -6,7 +6,7 @@ use crate::{
 };
 use rudof_iri::{IriS, MimeType};
 use rudof_rdf::rdf_impl::InMemoryGraph;
-use shacl::ir::IRSchema;
+use shacl::error::IRError;
 use shacl::rdf::ShaclParser;
 use sparql_service::RdfData;
 
@@ -23,8 +23,6 @@ pub fn load_shacl_schema(
     } else {
         extract_shacl_shapes_from_data(rudof)?;
     }
-
-    compile_shacl_schema(rudof)?;
 
     Ok(())
 }
@@ -80,17 +78,15 @@ fn read_shacl_schema(
             error: error.to_string(),
         })?;
 
-    rudof.shacl_shapes = Some(shacl_schema);
-
-    Ok(())
-}
-
-fn compile_shacl_schema(rudof: &mut Rudof) -> Result<()> {
-    let shacl_schema = rudof.shacl_shapes.as_ref().unwrap();
-    let shacl_schema_ir =
-        IRSchema::compile(shacl_schema).map_err(|e| ShaclError::FailedCompilingShaclSchema { error: e.to_string() })?;
-
-    rudof.shacl_shapes_ir = Some(shacl_schema_ir);
+    rudof.shacl_shapes = Some(
+        shacl_schema
+            .try_into()
+            .map_err(|e: IRError| ShaclError::FailedParsingShaclSchema {
+                source_name: schema.source_name(),
+                format: schema_format.to_string(),
+                error: e.to_string(),
+            })?,
+    );
 
     Ok(())
 }
@@ -113,7 +109,15 @@ fn extract_shacl_shapes_from_data(rudof: &mut Rudof) -> Result<()> {
                 error: error.to_string(),
             })?;
 
-    rudof.shacl_shapes = Some(shacl_schema);
+    rudof.shacl_shapes = Some(
+        shacl_schema
+            .try_into()
+            .map_err(|e: IRError| ShaclError::FailedParsingShaclSchema {
+                source_name: "loaded RDF data".to_string(),
+                format: "loaded RDF data format".to_string(),
+                error: e.to_string(),
+            })?,
+    );
 
     Ok(())
 }

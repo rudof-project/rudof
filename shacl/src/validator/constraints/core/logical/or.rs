@@ -40,7 +40,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Or {
                                 break;
                             }
                         },
-                        Err(_) => conforms = true,
+                        Err(e) => return Err(ConstraintError::Internal { err: e.to_string() }),
                     }
                 }
                 if !conforms {
