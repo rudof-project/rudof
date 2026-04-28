@@ -12,7 +12,7 @@ use std::sync::Mutex;
 #[allow(dead_code)]
 #[derive(Debug, Default)]
 pub(crate) struct SingleValidationCache {
-    cache: Mutex<HashMap<(Object, ShapeLabelIdx), Vec<ValidationResult>>>,
+    cache: Mutex<HashMap<ShapeLabelIdx, HashMap<Object, Vec<ValidationResult>>>>,
 }
 
 #[allow(dead_code)]
@@ -29,21 +29,25 @@ impl ValidationCache for SingleValidationCache {
         self.cache
             .lock()
             .expect("SingleValidationCache lock poisoned")
-            .insert((node, shape_idx), results);
+            .entry(shape_idx)
+            .or_default()
+            .insert(node, results);
     }
 
     fn has_validated(&self, node: &Object, shape_idx: ShapeLabelIdx) -> bool {
         self.cache
             .lock()
             .expect("SingleValidationCache lock poisoned")
-            .contains_key(&(node.clone(), shape_idx))
+            .get(&shape_idx)
+            .map_or(false, |m| m.contains_key(node))
     }
 
     fn get_results(&self, node: &Object, shape_idx: ShapeLabelIdx) -> Option<Vec<ValidationResult>> {
         self.cache
             .lock()
             .expect("SingleValidationCache lock poisoned")
-            .get(&(node.clone(), shape_idx))
+            .get(&shape_idx)?
+            .get(node)
             .cloned()
     }
 }
