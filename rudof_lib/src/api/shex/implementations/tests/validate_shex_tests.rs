@@ -9,7 +9,7 @@ use crate::{
         DataFormat, InputSpec, ResultShExValidationFormat, ShExFormat, ShExValidationSortByMode, ShapeMapFormat,
     },
 };
-use std::str::FromStr;
+//use std::str::FromStr;
 
 /// Helper: serialize validation results to string
 fn serialize_validation_results_to_string(
@@ -29,13 +29,12 @@ fn test_validate_shex_success() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     // Load RDF data
-    let data = InputSpec::from_str(
+    let data = InputSpec::str(
         r#"
             <alice> <name> "Alice" ;
                 <age> 30 .
         "#,
-    )
-    .unwrap();
+    );
 
     load_data(
         &mut rudof,
@@ -49,14 +48,13 @@ fn test_validate_shex_success() {
     .unwrap();
 
     // Load ShEx schema
-    let schema = InputSpec::from_str(
+    let schema = InputSpec::str(
         r#"PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            <PersonShape> {
              <name> xsd:string ;
              <age> xsd:integer
            }"#,
-    )
-    .unwrap();
+    );
 
     load_shex_schema(
         &mut rudof,
@@ -68,7 +66,7 @@ fn test_validate_shex_success() {
     .unwrap();
 
     // Load ShapeMap
-    let shapemap = InputSpec::from_str(r#"<alice>@<PersonShape>"#).unwrap();
+    let shapemap = InputSpec::str(r#"<alice>@<PersonShape>"#);
 
     load_shapemap(
         &mut rudof,
@@ -110,11 +108,10 @@ fn test_validate_shex_no_schema_error() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     // Load data but no schema
-    let data = InputSpec::from_str(
+    let data = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
            ex:alice ex:name "Alice" ."#,
-    )
-    .unwrap();
+    );
 
     load_data(
         &mut rudof,
@@ -138,11 +135,10 @@ fn test_validate_shex_no_shapemap_error() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     // Load data and schema but no shapemap
-    let data = InputSpec::from_str(
+    let data = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
            ex:alice ex:name "Alice" ."#,
-    )
-    .unwrap();
+    );
 
     load_data(
         &mut rudof,
@@ -155,12 +151,11 @@ fn test_validate_shex_no_shapemap_error() {
     )
     .unwrap();
 
-    let schema = InputSpec::from_str(
+    let schema = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            ex:PersonShape { ex:name xsd:string }"#,
-    )
-    .unwrap();
+    );
 
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
@@ -175,12 +170,11 @@ fn test_validate_shex_validation_failure() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     // Load RDF data that doesn't conform to schema
-    let data = InputSpec::from_str(
+    let data = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
            ex:alice ex:name "Alice" ;
                     ex:age "not an integer" ."#,
-    )
-    .unwrap();
+    );
 
     load_data(
         &mut rudof,
@@ -194,20 +188,19 @@ fn test_validate_shex_validation_failure() {
     .unwrap();
 
     // Load ShEx schema expecting integer
-    let schema = InputSpec::from_str(
+    let schema = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            ex:PersonShape {
              ex:name xsd:string ;
              ex:age xsd:integer
            }"#,
-    )
-    .unwrap();
+    );
 
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
     // Load ShapeMap
-    let shapemap = InputSpec::from_str(r#"ex:alice@ex:PersonShape"#).unwrap();
+    let shapemap = InputSpec::str(r#"ex:alice@ex:PersonShape"#);
 
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
@@ -230,12 +223,11 @@ fn test_serialize_validation_results_compact() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     // Setup and validate
-    let data = InputSpec::from_str(
+    let data = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
            ex:alice ex:name "Alice" ;
                     ex:age 30 ."#,
-    )
-    .unwrap();
+    );
 
     load_data(
         &mut rudof,
@@ -248,19 +240,18 @@ fn test_serialize_validation_results_compact() {
     )
     .unwrap();
 
-    let schema = InputSpec::from_str(
+    let schema = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            ex:PersonShape {
              ex:name xsd:string ;
              ex:age xsd:integer
            }"#,
-    )
-    .unwrap();
+    );
 
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
-    let shapemap = InputSpec::from_str(r#"ex:alice@ex:PersonShape"#).unwrap();
+    let shapemap = InputSpec::str(r#"ex:alice@ex:PersonShape"#);
 
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
@@ -283,12 +274,11 @@ fn test_serialize_validation_results_json() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     // Setup and validate
-    let data = InputSpec::from_str(
+    let data = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
            ex:alice ex:name "Alice" ;
                     ex:age 30 ."#,
-    )
-    .unwrap();
+    );
 
     load_data(
         &mut rudof,
@@ -301,19 +291,18 @@ fn test_serialize_validation_results_json() {
     )
     .unwrap();
 
-    let schema = InputSpec::from_str(
+    let schema = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            ex:PersonShape {
              ex:name xsd:string ;
              ex:age xsd:integer
            }"#,
-    )
-    .unwrap();
+    );
 
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
-    let shapemap = InputSpec::from_str(r#"ex:alice@ex:PersonShape"#).unwrap();
+    let shapemap = InputSpec::str(r#"ex:alice@ex:PersonShape"#);
 
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
@@ -337,12 +326,11 @@ fn test_serialize_validation_results_csv() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     // Setup and validate
-    let data = InputSpec::from_str(
+    let data = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
            ex:alice ex:name "Alice" ;
                     ex:age 30 ."#,
-    )
-    .unwrap();
+    );
 
     load_data(
         &mut rudof,
@@ -355,19 +343,18 @@ fn test_serialize_validation_results_csv() {
     )
     .unwrap();
 
-    let schema = InputSpec::from_str(
+    let schema = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            ex:PersonShape {
              ex:name xsd:string ;
              ex:age xsd:integer
            }"#,
-    )
-    .unwrap();
+    );
 
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
-    let shapemap = InputSpec::from_str(r#"ex:alice@ex:PersonShape"#).unwrap();
+    let shapemap = InputSpec::str(r#"ex:alice@ex:PersonShape"#);
 
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
@@ -390,12 +377,11 @@ fn test_serialize_validation_results_details() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     // Setup and validate
-    let data = InputSpec::from_str(
+    let data = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
            ex:alice ex:name "Alice" ;
                     ex:age 30 ."#,
-    )
-    .unwrap();
+    );
 
     load_data(
         &mut rudof,
@@ -408,19 +394,18 @@ fn test_serialize_validation_results_details() {
     )
     .unwrap();
 
-    let schema = InputSpec::from_str(
+    let schema = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            ex:PersonShape {
              ex:name xsd:string ;
              ex:age xsd:integer
            }"#,
-    )
-    .unwrap();
+    );
 
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
-    let shapemap = InputSpec::from_str(r#"ex:alice@ex:PersonShape"#).unwrap();
+    let shapemap = InputSpec::str(r#"ex:alice@ex:PersonShape"#);
 
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
@@ -455,14 +440,13 @@ fn test_validate_shex_multiple_nodes() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     // Load RDF data with multiple nodes
-    let data = InputSpec::from_str(
+    let data = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
            ex:alice ex:name "Alice" ;
                     ex:age 30 .
            ex:bob ex:name "Bob" ;
                   ex:age 25 ."#,
-    )
-    .unwrap();
+    );
 
     load_data(
         &mut rudof,
@@ -476,24 +460,22 @@ fn test_validate_shex_multiple_nodes() {
     .unwrap();
 
     // Load ShEx schema
-    let schema = InputSpec::from_str(
+    let schema = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            ex:PersonShape {
              ex:name xsd:string ;
              ex:age xsd:integer
            }"#,
-    )
-    .unwrap();
+    );
 
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
     // Load ShapeMap with multiple associations
-    let shapemap = InputSpec::from_str(
+    let shapemap = InputSpec::str(
         r#"ex:alice@ex:PersonShape,
            ex:bob@ex:PersonShape"#,
-    )
-    .unwrap();
+    );
 
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 

@@ -6,7 +6,7 @@ use crate::{
     api::shex::implementations::serialize_shapemap::serialize_shapemap,
     formats::{DataFormat, InputSpec, ShExFormat, ShapeMapFormat},
 };
-use std::str::FromStr;
+//use std::str::FromStr;
 
 /// Helper: serialize current ShapeMap to string
 fn serialize_shapemap_to_string(rudof: &mut Rudof, format: Option<ShapeMapFormat>) -> String {
@@ -22,12 +22,11 @@ fn test_load_shapemap_compact_success() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     // Load RDF data
-    let data = InputSpec::from_str(
+    let data = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
            ex:alice ex:name "Alice" ;
                     ex:age 30 ."#,
-    )
-    .unwrap();
+    );
 
     load_data(
         &mut rudof,
@@ -41,20 +40,19 @@ fn test_load_shapemap_compact_success() {
     .unwrap();
 
     // Load ShEx schema
-    let schema = InputSpec::from_str(
+    let schema = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            ex:PersonShape {
              ex:name xsd:string ;
              ex:age xsd:integer
            }"#,
-    )
-    .unwrap();
+    );
 
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
     // Load ShapeMap
-    let shapemap = InputSpec::from_str(r#"ex:alice@ex:PersonShape"#).unwrap();
+    let shapemap = InputSpec::str(r#"ex:alice@ex:PersonShape"#);
 
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
@@ -74,12 +72,11 @@ fn test_load_shapemap_replace() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     // Load RDF data
-    let data = InputSpec::from_str(
+    let data = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
            ex:alice ex:name "Alice" .
            ex:bob ex:name "Bob" ."#,
-    )
-    .unwrap();
+    );
 
     load_data(
         &mut rudof,
@@ -93,23 +90,22 @@ fn test_load_shapemap_replace() {
     .unwrap();
 
     // Load ShEx schema
-    let schema = InputSpec::from_str(
+    let schema = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            ex:PersonShape { ex:name xsd:string }
            ex:EmployeeShape { ex:name xsd:string }"#,
-    )
-    .unwrap();
+    );
 
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
     // Load first shapemap
-    let shapemap1 = InputSpec::from_str(r#"ex:alice@ex:PersonShape"#).unwrap();
+    let shapemap1 = InputSpec::str(r#"ex:alice@ex:PersonShape"#);
 
     load_shapemap(&mut rudof, &shapemap1, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
     // Load second shapemap (should replace)
-    let shapemap2 = InputSpec::from_str(r#"ex:bob@ex:EmployeeShape"#).unwrap();
+    let shapemap2 = InputSpec::str(r#"ex:bob@ex:EmployeeShape"#);
 
     load_shapemap(&mut rudof, &shapemap2, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 
@@ -130,17 +126,16 @@ fn test_load_shapemap_no_data_error() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     // Load schema but no data
-    let schema = InputSpec::from_str(
+    let schema = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            ex:PersonShape { ex:name xsd:string }"#,
-    )
-    .unwrap();
+    );
 
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
     // Try to load shapemap without data
-    let shapemap = InputSpec::from_str(r#"ex:alice@ex:PersonShape"#).unwrap();
+    let shapemap = InputSpec::str(r#"ex:alice@ex:PersonShape"#);
 
     let result = load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None);
 
@@ -152,11 +147,10 @@ fn test_load_shapemap_no_schema_error() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     // Load data but no schema
-    let data = InputSpec::from_str(
+    let data = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
            ex:alice ex:name "Alice" ."#,
-    )
-    .unwrap();
+    );
 
     load_data(
         &mut rudof,
@@ -170,7 +164,7 @@ fn test_load_shapemap_no_schema_error() {
     .unwrap();
 
     // Try to load shapemap without schema
-    let shapemap = InputSpec::from_str(r#"ex:alice@ex:PersonShape"#).unwrap();
+    let shapemap = InputSpec::str(r#"ex:alice@ex:PersonShape"#);
 
     let result = load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None);
 
@@ -182,11 +176,10 @@ fn test_load_shapemap_invalid_syntax() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     // Load data and schema
-    let data = InputSpec::from_str(
+    let data = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
            ex:alice ex:name "Alice" ."#,
-    )
-    .unwrap();
+    );
 
     load_data(
         &mut rudof,
@@ -199,17 +192,16 @@ fn test_load_shapemap_invalid_syntax() {
     )
     .unwrap();
 
-    let schema = InputSpec::from_str(
+    let schema = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            ex:PersonShape { ex:name xsd:string }"#,
-    )
-    .unwrap();
+    );
 
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
     // Invalid shapemap syntax
-    let invalid_shapemap = InputSpec::from_str("not valid shapemap @@@").unwrap();
+    let invalid_shapemap = InputSpec::str("not valid shapemap @@@");
 
     let result = load_shapemap(
         &mut rudof,
@@ -227,7 +219,7 @@ fn test_load_shapemap_with_base_nodes() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     // Load data
-    let data = InputSpec::from_str(r#"<alice> <http://example.org/name> "Alice" ."#).unwrap();
+    let data = InputSpec::str(r#"<alice> <http://example.org/name> "Alice" ."#);
 
     load_data(
         &mut rudof,
@@ -241,17 +233,16 @@ fn test_load_shapemap_with_base_nodes() {
     .unwrap();
 
     // Load schema
-    let schema = InputSpec::from_str(
+    let schema = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            ex:PersonShape { ex:name xsd:string }"#,
-    )
-    .unwrap();
+    );
 
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
     // Load shapemap with base for nodes
-    let shapemap = InputSpec::from_str(r#"<alice>@ex:PersonShape"#).unwrap();
+    let shapemap = InputSpec::str(r#"<alice>@ex:PersonShape"#);
 
     load_shapemap(
         &mut rudof,
@@ -277,11 +268,10 @@ fn test_serialize_shapemap_json() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
     // Load data
-    let data = InputSpec::from_str(
+    let data = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
            ex:alice ex:name "Alice" ."#,
-    )
-    .unwrap();
+    );
 
     load_data(
         &mut rudof,
@@ -295,17 +285,16 @@ fn test_serialize_shapemap_json() {
     .unwrap();
 
     // Load schema
-    let schema = InputSpec::from_str(
+    let schema = InputSpec::str(
         r#"PREFIX ex: <http://example.org/>
            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
            ex:PersonShape { ex:name xsd:string }"#,
-    )
-    .unwrap();
+    );
 
     load_shex_schema(&mut rudof, &schema, Some(&ShExFormat::ShExC), None, None).unwrap();
 
     // Load shapemap
-    let shapemap = InputSpec::from_str(r#"ex:alice@ex:PersonShape"#).unwrap();
+    let shapemap = InputSpec::str(r#"ex:alice@ex:PersonShape"#);
 
     load_shapemap(&mut rudof, &shapemap, Some(&ShapeMapFormat::Compact), None, None).unwrap();
 

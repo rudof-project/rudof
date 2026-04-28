@@ -2,7 +2,6 @@ use crate::{
     Rudof, RudofConfig, api::query::implementations::load_query::load_query,
     api::query::implementations::serialize_query::serialize_query, formats::InputSpec,
 };
-use std::str::FromStr;
 
 /// Helper: serialize current query to string
 fn serialize_to_string(rudof: &Rudof) -> String {
@@ -17,7 +16,7 @@ fn serialize_to_string(rudof: &Rudof) -> String {
 fn test_load_and_serialize_basic_select_query() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let query_input = InputSpec::from_str(
+    let query_input = InputSpec::str(
         r#"
 PREFIX ex: <http://example.org/>
 PREFIX schema: <http://schema.org/>
@@ -28,8 +27,7 @@ WHERE {
     ?person schema:name ?name .
 }
         "#,
-    )
-    .unwrap();
+    );
 
     load_query(&mut rudof, &query_input, None).unwrap();
 
@@ -50,7 +48,7 @@ WHERE {
 fn test_load_and_serialize_construct_query() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let query_input = InputSpec::from_str(
+    let query_input = InputSpec::str(
         r#"
 PREFIX ex: <http://example.org/>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
@@ -65,8 +63,7 @@ WHERE {
     ?person ex:age ?age .
 }
         "#,
-    )
-    .unwrap();
+    );
 
     load_query(&mut rudof, &query_input, None).unwrap();
 
@@ -86,7 +83,7 @@ WHERE {
 fn test_load_and_serialize_query_with_filter() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let query_input = InputSpec::from_str(
+    let query_input = InputSpec::str(
         r#"
 PREFIX ex: <http://example.org/>
 PREFIX schema: <http://schema.org/>
@@ -98,8 +95,7 @@ WHERE {
     FILTER (?age > 18)
 }
         "#,
-    )
-    .unwrap();
+    );
 
     load_query(&mut rudof, &query_input, None).unwrap();
 
@@ -119,7 +115,7 @@ WHERE {
 fn test_load_and_serialize_query_with_optional() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let query_input = InputSpec::from_str(
+    let query_input = InputSpec::str(
         r#"
 PREFIX ex: <http://example.org/>
 PREFIX schema: <http://schema.org/>
@@ -133,8 +129,7 @@ WHERE {
     }
 }
         "#,
-    )
-    .unwrap();
+    );
 
     load_query(&mut rudof, &query_input, None).unwrap();
 
@@ -154,7 +149,7 @@ WHERE {
 fn test_load_and_serialize_ask_query() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let query_input = InputSpec::from_str(
+    let query_input = InputSpec::str(
         r#"
 PREFIX ex: <http://example.org/>
 PREFIX schema: <http://schema.org/>
@@ -164,8 +159,7 @@ ASK {
     ?person schema:name "Alice" .
 }
         "#,
-    )
-    .unwrap();
+    );
 
     load_query(&mut rudof, &query_input, None).unwrap();
 

@@ -5,7 +5,6 @@ use crate::{
     api::query::implementations::serialize_query_results::serialize_query_results,
     formats::{InputSpec, ResultQueryFormat},
 };
-use std::str::FromStr;
 
 /// Helper: load RDF data into Rudof instance
 fn setup_test_rudof_with_data() -> Rudof {
@@ -31,7 +30,7 @@ prefix schema: <http://schema.org/>
    schema:knows :d      .
     "#;
 
-    let rdf_data = InputSpec::from_str(rdf_data_str).unwrap();
+    let rdf_data = InputSpec::str(rdf_data_str);
     rudof
         .load_data()
         .with_data(&[rdf_data])
@@ -54,7 +53,7 @@ fn serialize_results_to_string(rudof: &Rudof, format: Option<ResultQueryFormat>)
 fn test_run_and_serialize_select_query() {
     let mut rudof = setup_test_rudof_with_data();
 
-    let query_input = InputSpec::from_str(
+    let query_input = InputSpec::str(
         r#"
 prefix : <http://example.org/>
 prefix schema: <http://schema.org/>
@@ -63,8 +62,7 @@ select ?person ?name ?status where {
   ?person schema:name ?name ;
           :status ?status .
 }"#,
-    )
-    .unwrap();
+    );
 
     load_query(&mut rudof, &query_input, None).unwrap();
     run_query(&mut rudof, None).unwrap();

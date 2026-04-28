@@ -2,7 +2,7 @@ use crate::{
     Rudof, RudofConfig, api::data::implementations::show_node_info::show_node_info, formats::InputSpec,
     formats::NodeInspectionMode,
 };
-use std::{io::Cursor, str::FromStr};
+use std::io::Cursor;
 
 // Helper function to create a test Rudof instance with sample RDF data
 fn setup_test_rudof() -> Rudof {
@@ -27,7 +27,7 @@ fn setup_test_rudof() -> Rudof {
                 foaf:knows ex:alice .
         "#;
 
-    let rdf_data = InputSpec::from_str(rdf_data_str).unwrap();
+    let rdf_data = InputSpec::str(rdf_data_str);
 
     rudof
         .load_data()
@@ -55,7 +55,7 @@ fn setup_deep_graph_rudof() -> Rudof {
             ex:level1b rel:child ex:level2b .
         "#;
 
-    let rdf_data = InputSpec::from_str(rdf_data_str).unwrap();
+    let rdf_data = InputSpec::str(rdf_data_str);
 
     rudof
         .load_data()

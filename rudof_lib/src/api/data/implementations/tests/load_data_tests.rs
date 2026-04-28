@@ -4,7 +4,6 @@ use crate::{
     api::data::implementations::serialize_data::serialize_data,
     formats::{DataFormat, DataReaderMode, InputSpec, ResultDataFormat},
 };
-use std::str::FromStr;
 
 /// Helper: serialize current data to string
 fn serialize_to_string(rudof: &mut Rudof, format: Option<ResultDataFormat>) -> String {
@@ -19,7 +18,7 @@ fn serialize_to_string(rudof: &mut Rudof, format: Option<ResultDataFormat>) -> S
 fn test_load_data_rdf_success() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let rdf = InputSpec::from_str(r#"@prefix ex: <http://example.org/> . ex:alice a ex:Person ."#).unwrap();
+    let rdf = InputSpec::str(r#"@prefix ex: <http://example.org/> . ex:alice a ex:Person ."#);
 
     load_data(
         &mut rudof,
@@ -47,7 +46,7 @@ fn test_load_data_rdf_success() {
 fn test_serialize_data_rdf_jsonld() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let rdf = InputSpec::from_str(r#"@prefix ex: <http://example.org/> . ex:alice a ex:Person ."#).unwrap();
+    let rdf = InputSpec::str(r#"@prefix ex: <http://example.org/> . ex:alice a ex:Person ."#);
 
     load_data(
         &mut rudof,
@@ -72,7 +71,7 @@ fn test_serialize_data_rdf_jsonld() {
 fn test_serialize_data_rdf_json_alias() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let rdf = InputSpec::from_str(r#"@prefix ex: <http://example.org/> . ex:alice a ex:Person ."#).unwrap();
+    let rdf = InputSpec::str(r#"@prefix ex: <http://example.org/> . ex:alice a ex:Person ."#);
 
     load_data(
         &mut rudof,
@@ -97,9 +96,9 @@ fn test_serialize_data_rdf_json_alias() {
 fn test_load_data_rdf_merge() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let data1 = InputSpec::from_str(r#"@prefix ex: <http://example.org/> . ex:a a ex:Person ."#).unwrap();
+    let data1 = InputSpec::str(r#"@prefix ex: <http://example.org/> . ex:a a ex:Person ."#);
 
-    let data2 = InputSpec::from_str(r#"@prefix ex: <http://example.org/> . ex:b a ex:Person ."#).unwrap();
+    let data2 = InputSpec::str(r#"@prefix ex: <http://example.org/> . ex:b a ex:Person ."#);
 
     load_data(
         &mut rudof,
@@ -138,9 +137,9 @@ fn test_load_data_rdf_merge() {
 fn test_load_data_rdf_replace() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let data1 = InputSpec::from_str(r#"@prefix ex: <http://example.org/> . ex:a a ex:Person ."#).unwrap();
+    let data1 = InputSpec::str(r#"@prefix ex: <http://example.org/> . ex:a a ex:Person ."#);
 
-    let data2 = InputSpec::from_str(r#"@prefix ex: <http://example.org/> . ex:b a ex:Person ."#).unwrap();
+    let data2 = InputSpec::str(r#"@prefix ex: <http://example.org/> . ex:b a ex:Person ."#);
 
     load_data(
         &mut rudof,
@@ -179,7 +178,7 @@ fn test_load_data_rdf_replace() {
 fn test_load_data_invalid_rdf() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let invalid = InputSpec::from_str("not valid rdf").unwrap();
+    let invalid = InputSpec::str("not valid rdf");
 
     let result = load_data(
         &mut rudof,
@@ -198,13 +197,12 @@ fn test_load_data_invalid_rdf() {
 fn test_load_data_pg_success() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let pg_data = InputSpec::from_str(
+    let pg_data = InputSpec::str(
         r#"
         (alice {Person} [ name: "Alice", age: 23, aliases: "Ally" ])
         (bob   {Person} [ name: "Robert", aliases: ["Bob", "Bobby"] ])
         "#,
-    )
-    .unwrap();
+    );
 
     load_data(
         &mut rudof,
@@ -235,9 +233,9 @@ fn test_load_data_pg_success() {
 fn test_load_data_pg_merge() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let pg1 = InputSpec::from_str(r#"(alice {Person} [ name: "Alice" ])"#).unwrap();
+    let pg1 = InputSpec::str(r#"(alice {Person} [ name: "Alice" ])"#);
 
-    let pg2 = InputSpec::from_str(r#"(bob {Person} [ name: "Bob" ])"#).unwrap();
+    let pg2 = InputSpec::str(r#"(bob {Person} [ name: "Bob" ])"#);
 
     load_data(
         &mut rudof,
@@ -276,9 +274,9 @@ fn test_load_data_pg_merge() {
 fn test_load_data_pg_replace() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let pg1 = InputSpec::from_str(r#"(alice {Person} [ name: "Alice" ])"#).unwrap();
+    let pg1 = InputSpec::str(r#"(alice {Person} [ name: "Alice" ])"#);
 
-    let pg2 = InputSpec::from_str(r#"(bob {Person} [ name: "Bob" ])"#).unwrap();
+    let pg2 = InputSpec::str(r#"(bob {Person} [ name: "Bob" ])"#);
 
     load_data(
         &mut rudof,
@@ -317,7 +315,7 @@ fn test_load_data_pg_replace() {
 fn test_load_data_pg_invalid_syntax() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let invalid_pg = InputSpec::from_str(r#"(alice {Person} name: "missing brackets")"#).unwrap();
+    let invalid_pg = InputSpec::str(r#"(alice {Person} name: "missing brackets")"#);
 
     let result = load_data(
         &mut rudof,
@@ -383,7 +381,7 @@ fn test_load_data_endpoint_uses_configured_prefixmap_for_known_endpoint() {
 fn test_load_data_conflicting_sources() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let rdf = InputSpec::from_str(r#"@prefix ex: <http://example.org/> . ex:a a ex:Person ."#).unwrap();
+    let rdf = InputSpec::str(r#"@prefix ex: <http://example.org/> . ex:a a ex:Person ."#);
 
     let result = load_data(
         &mut rudof,

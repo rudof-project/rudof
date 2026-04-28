@@ -4,7 +4,6 @@ use crate::{
     api::rdf_config::implementations::serialize_rdf_config::serialize_rdf_config,
     formats::{InputSpec, ResultRdfConfigFormat},
 };
-use std::str::FromStr;
 
 /// Helper: serialize current RDF config to string
 fn serialize_to_string(rudof: &Rudof, format: Option<ResultRdfConfigFormat>) -> String {
@@ -19,7 +18,7 @@ fn serialize_to_string(rudof: &Rudof, format: Option<ResultRdfConfigFormat>) -> 
 fn test_load_and_serialize_basic_rdf_config() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let rdf_config_input = InputSpec::from_str(
+    let rdf_config_input = InputSpec::str(
         r#"
 - Person ex:person1 ex:person2:
   - a: ex:Person
@@ -36,8 +35,7 @@ fn test_load_and_serialize_basic_rdf_config() {
   - ex:location:
     - city: "Oviedo"
         "#,
-    )
-    .unwrap();
+    );
 
     load_rdf_config(&mut rudof, &rdf_config_input, None).unwrap();
 

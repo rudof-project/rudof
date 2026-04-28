@@ -20,8 +20,8 @@ Or extend a base IRI with a suffix:
 use rudof_iri::IriS;
 
 let iri2 = IriS::from_str_base("https://example.org/name", None).unwrap();
-let extended = base.extend("subrecurso").unwrap();
-println!("IRI extendido: {}", extended.as_str());
+let extended = base.extend("course").unwrap();
+println!("Extended iri: {}", extended.as_str());
 ```
 
 ## Dependents and dependencies

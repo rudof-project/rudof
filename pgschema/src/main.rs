@@ -38,14 +38,14 @@ fn main() -> Result<()> {
 #[cfg(not(target_family = "wasm"))]
 fn run_pgs(schema: &str) -> Result<()> {
     let schema = get_schema(schema)?;
-    println!("Property graph schema: {}", schema);
+    println!("PGSchema:\n{}", schema);
     Ok(())
 }
 
 #[cfg(not(target_family = "wasm"))]
 fn run_pg(graph: &str) -> Result<()> {
     let pg = get_graph(graph)?;
-    println!("Property graph: {}", pg);
+    println!("Property graph:\n{}", pg);
     Ok(())
 }
 
@@ -62,7 +62,7 @@ fn run_validate(graph_path: &str, schema_path: &str, map_path: &str) -> Result<(
     let graph = get_graph(graph_path)?;
     let map = get_map(map_path)?;
     let result = map.validate(&schema, &graph)?;
-    println!("Validation result: {}", result);
+    println!("Validation result:\n{}", result);
     Ok(())
 }
 
@@ -116,6 +116,36 @@ mod tests {
             "tests/adult.pgs",
             "tests/adult.map",
             "tests/adult.result_map",
+        );
+    }
+
+    #[test]
+    fn a_or_b_and_a_or_c_content() {
+        test_case(
+            "tests/a_or_b_and_a_or_c_content.pg",
+            "tests/a_or_b_and_a_or_c_content.pgs",
+            "tests/a_or_b_and_a_or_c_content.map",
+            "tests/a_or_b_and_a_or_c_content.result_map",
+        );
+    }
+
+    #[test]
+    fn a_or_b_and_a_or_c_labels_content() {
+        test_case(
+            "tests/a_or_b_and_a_or_c_labels_content.pg",
+            "tests/a_or_b_and_a_or_c_labels_content.pgs",
+            "tests/a_or_b_and_a_or_c_labels_content.map",
+            "tests/a_or_b_and_a_or_c_labels_content.result_map",
+        );
+    }
+
+    #[test]
+    fn a_or_b_and_a_or_c_labels() {
+        test_case(
+            "tests/a_or_b_and_a_or_c.pg",
+            "tests/a_or_b_and_a_or_c.pgs",
+            "tests/a_or_b_and_a_or_c.map",
+            "tests/a_or_b_and_a_or_c.result_map",
         );
     }
 

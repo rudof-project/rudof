@@ -7,6 +7,20 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.2.16
+
+### Fixed
+- Solves issue #584 by changing `InputSpec` and allowing three different behaviours:
+    - Function `InputSpec::str(...)` can be used to create a plain string
+    - Function `parse_from_str` can be used to get an `InputSpec` from a string. It has a new parameter `allow_plain_str` which if `false` will complain if the file doesn't exist, and if `true` allows a plain string. 
+    - Implements `FromStr` assuming but not allowing plain strings to avoid confusing errors.
+
+## v0.2.15
+
+### Changed
+
+- Semantics of labels in `pgschema` now works as a set of sets of labels which is converted to disjunctive normal form. The pgschema parser has been adapted to use groupings in labels like `(A | B) & (B | C)`.
+
 ## v0.2.14
 
 ### Changed

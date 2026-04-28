@@ -22,6 +22,7 @@ impl Manifest {
         let base = path
             .canonicalize()
             .map_err(|e| TestSuiteError::Validation(e.to_string()))?;
+
         let base = match base.to_str() {
             None => panic!("Path not found!!"),
             Some(path) => format!("file:/{path}"),

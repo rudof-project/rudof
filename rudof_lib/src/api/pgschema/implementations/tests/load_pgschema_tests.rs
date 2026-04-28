@@ -4,7 +4,6 @@ use crate::{
     api::pgschema::implementations::serialize_pgschema::serialize_pgschema,
     formats::{InputSpec, PgSchemaFormat},
 };
-use std::str::FromStr;
 
 /// Helper: serialize current PG schema to string
 fn serialize_to_string(rudof: &Rudof, format: Option<PgSchemaFormat>) -> String {
@@ -19,15 +18,14 @@ fn serialize_to_string(rudof: &Rudof, format: Option<PgSchemaFormat>) -> String 
 fn test_load_and_serialize_pgschema() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let pgschema_input = InputSpec::from_str(
+    let pgschema_input = InputSpec::str(
         r#"
 CREATE NODE TYPE ( AdultStudentType: Student {
     name: STRING ,
     age: INTEGER CHECK > 18
 })
         "#,
-    )
-    .unwrap();
+    );
 
     load_pgschema(&mut rudof, &pgschema_input, None).unwrap();
 
