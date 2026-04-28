@@ -41,6 +41,13 @@ jobs:
             patch) bumped="$major.$minor.$((patch + 1))" ;;
           esac
 
+          # If current version already had an RC suffix AND this is a stable release,
+          # promote the RC base version directly instead of bumping again.
+          # e.g. 0.1.17-rc.1 + patch (stable) → 0.1.17, not 0.1.18
+          if [ "$current" != "$base" ] && [ "${{ inputs.prerelease }}" = "false" ]; then
+            bumped="$base"
+          fi
+
           if [ "${{ inputs.prerelease }}" = "true" ]; then
             # Find highest existing rc number for this base version
             last_rc=$(git tag --list "${bumped}-rc.*" | grep -oP 'rc\.\K[0-9]+' | sort -n | tail -1)
