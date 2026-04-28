@@ -388,13 +388,11 @@ pub trait NeighsRDF: Rdf {
     /// subject term cannot be converted to a valid subject.
     fn objects_for(&self, subject: &Self::Term, predicate: &Self::IRI) -> Result<HashSet<Self::Term>, RDFError> {
         let subject_node: Self::Subject = Self::term_as_subject(subject)?;
-        let subject_str = format!("{subject}");
-        let predicate_str = format!("{predicate}");
         let triples = self
             .triples_matching(&subject_node, predicate, &Any)
             .map_err(|e| RDFError::ErrorObjectsFor {
-                subject: subject_str,
-                predicate: predicate_str,
+                subject: subject.to_string(),
+                predicate: predicate.to_string(),
                 error: e.to_string(),
             })?
             .map(Triple::into_object)

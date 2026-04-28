@@ -2,30 +2,24 @@ use rudof_rdf::rdf_core::Rdf;
 use std::collections::HashSet;
 use std::collections::hash_set::IntoIter;
 use std::fmt::{Display, Formatter};
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// Contains the set of focus nodes.
-///
-/// Internally uses [`Rc<HashSet<RDF::Term>>`] so that cloning is O(1)
-/// (reference-count bump) instead of deep-copying the entire set.
-/// A specialized `single()` constructor is provided for the case
-/// of wrapping a single node, avoiding the overhead of building
-/// a full [`HashSet`] via an iterator.
 #[derive(Debug)]
 pub struct FocusNodes<RDF: Rdf> {
-    set: Rc<HashSet<RDF::Term>>,
+    set: Arc<HashSet<RDF::Term>>,
 }
 
 impl<RDF: Rdf> FocusNodes<RDF> {
     pub fn new(set: HashSet<RDF::Term>) -> Self {
-        Self { set: Rc::new(set) }
+        Self { set: Arc::new(set) }
     }
 
     /// Creates a [`FocusNodes`] containing exactly one node.
     pub fn single(node: RDF::Term) -> Self {
         let mut set = HashSet::with_capacity(1);
         set.insert(node);
-        Self { set: Rc::new(set) }
+        Self { set: Arc::new(set) }
     }
 
     pub fn is_empty(&self) -> bool {
@@ -44,7 +38,7 @@ impl<RDF: Rdf> FocusNodes<RDF> {
 impl<RDF: Rdf> Clone for FocusNodes<RDF> {
     fn clone(&self) -> Self {
         Self {
-            set: Rc::clone(&self.set),
+            set: Arc::clone(&self.set),
         }
     }
 }
@@ -52,7 +46,7 @@ impl<RDF: Rdf> Clone for FocusNodes<RDF> {
 impl<RDF: Rdf> Default for FocusNodes<RDF> {
     fn default() -> Self {
         Self {
-            set: Rc::new(HashSet::new()),
+            set: Arc::new(HashSet::new()),
         }
     }
 }
@@ -60,7 +54,7 @@ impl<RDF: Rdf> Default for FocusNodes<RDF> {
 impl<RDF: Rdf> FromIterator<RDF::Term> for FocusNodes<RDF> {
     fn from_iter<T: IntoIterator<Item = RDF::Term>>(iter: T) -> Self {
         Self {
-            set: Rc::new(HashSet::from_iter(iter)),
+            set: Arc::new(HashSet::from_iter(iter)),
         }
     }
 }
@@ -72,7 +66,7 @@ impl<RDF: Rdf> IntoIterator for FocusNodes<RDF> {
     fn into_iter(self) -> Self::IntoIter {
         // If this is the only reference, unwrap without cloning.
         // Otherwise, clone the inner HashSet so we can consume it.
-        match Rc::try_unwrap(self.set) {
+        match Arc::try_unwrap(self.set) {
             Ok(set) => set.into_iter(),
             Err(rc) => (*rc).clone().into_iter(),
         }
