@@ -3,7 +3,6 @@ use crate::Rudof;
 pub fn reset_all(rudof: &mut Rudof) {
     rudof.data = None;
     rudof.shacl_shapes = None;
-    rudof.shacl_shapes_ir = None;
     rudof.shacl_validation_results = None;
     rudof.shex_schema = None;
     rudof.shex_schema_ir = None;

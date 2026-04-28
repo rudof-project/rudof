@@ -47,7 +47,6 @@ use dctap::DCTap as DCTAP;
 use pgschema::{pgs::PropertyGraphSchema, type_map::TypeMap, validation_result::ValidationResult};
 use rdf_config::RdfConfigModel;
 use rudof_rdf::rdf_core::query::SparqlQuery;
-use shacl::ast::ASTSchema;
 use shacl::ir::IRSchema;
 use shacl::validator::report::ValidationReport;
 use shex_ast::ir::schema_ir::SchemaIR as ShExSchemaIR;
@@ -76,11 +75,8 @@ pub struct Rudof {
     /// Current Data
     pub(crate) data: Option<Data>,
 
-    /// Current SHACL Shapes
-    pub(crate) shacl_shapes: Option<ASTSchema>,
-
     /// Current SHACL Schema Internal Representation
-    pub(crate) shacl_shapes_ir: Option<IRSchema>,
+    pub(crate) shacl_shapes: Option<IRSchema>,
 
     /// Current SHACL validation results
     pub(crate) shacl_validation_results: Option<ValidationReport>,
