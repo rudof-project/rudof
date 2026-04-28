@@ -78,16 +78,15 @@ fn read_shacl_schema(
             error: error.to_string(),
         })?;
 
-    rudof.shacl_shapes =
-        Some(
-            shacl_schema
-                .try_into()
-                .map_err(|e: IRError| ShaclError::FailedParsingShaclSchema {
-                    source_name: schema.source_name(),
-                    format: schema_format.to_string(),
-                    error: e.to_string(),
-                })?,
-        );
+    rudof.shacl_shapes = Some(
+        shacl_schema
+            .try_into()
+            .map_err(|e: IRError| ShaclError::FailedParsingShaclSchema {
+                source_name: schema.source_name(),
+                format: schema_format.to_string(),
+                error: e.to_string(),
+            })?,
+    );
 
     Ok(())
 }
@@ -110,16 +109,15 @@ fn extract_shacl_shapes_from_data(rudof: &mut Rudof) -> Result<()> {
                 error: error.to_string(),
             })?;
 
-    rudof.shacl_shapes =
-        Some(
-            shacl_schema
-                .try_into()
-                .map_err(|e: IRError| ShaclError::FailedParsingShaclSchema {
-                    source_name: "loaded RDF data".to_string(),
-                    format: "loaded RDF data format".to_string(),
-                    error: e.to_string(),
-                })?,
-        );
+    rudof.shacl_shapes = Some(
+        shacl_schema
+            .try_into()
+            .map_err(|e: IRError| ShaclError::FailedParsingShaclSchema {
+                source_name: "loaded RDF data".to_string(),
+                format: "loaded RDF data format".to_string(),
+                error: e.to_string(),
+            })?,
+    );
 
     Ok(())
 }
