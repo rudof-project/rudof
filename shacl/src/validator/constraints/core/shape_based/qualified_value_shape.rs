@@ -33,8 +33,8 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
             // Count how many nodes conform to the shape
             for node in nodes.iter() {
                 let focus_nodes = FocusNodes::single(node.clone());
-                let shape = get_shape_from_idx(shapes_graph, self.shape())?;
-                let inner_results = shape.validate(store, engine, Some(&focus_nodes), Some(&shape), shapes_graph);
+                let qv_shape = get_shape_from_idx(shapes_graph, self.shape())?;
+                let inner_results = qv_shape.validate(store, engine, Some(&focus_nodes), Some(&shape), shapes_graph);
                 let mut is_valid = match inner_results {
                     Ok(results) => results.is_empty(),
                     Err(_) => false,
@@ -48,7 +48,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                             store,
                             engine,
                             Some(&focus_nodes),
-                            Some(&sibling_shape),
+                            Some(shape),
                             shapes_graph,
                         );
                         let sibling_is_valid = sibling_results.is_ok() && sibling_results.unwrap().is_empty();
