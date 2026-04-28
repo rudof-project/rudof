@@ -31,7 +31,8 @@ impl<S: NeighsRDF + Debug> Validator<S> for And {
 
                 for idx in self.shapes().iter() {
                     let and_shape = get_shape_from_idx(shapes_graph, idx)?;
-                    let inner_results = and_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
+                    let inner_results =
+                        and_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
                     match inner_results {
                         Ok(results) => {
                             if !results.is_empty() {

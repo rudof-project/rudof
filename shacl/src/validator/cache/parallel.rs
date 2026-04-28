@@ -25,7 +25,7 @@ impl ValidationCache for ParallelValidationCache {
     }
 
     fn has_validated(&self, node: &Object, shape_idx: ShapeLabelIdx) -> bool {
-        self.cache.get(&shape_idx).map_or(false, |m| m.contains_key(node))
+        self.cache.get(&shape_idx).is_some_and(|m| m.contains_key(node))
     }
 
     fn get_results(&self, node: &Object, shape_idx: ShapeLabelIdx) -> Option<Vec<ValidationResult>> {

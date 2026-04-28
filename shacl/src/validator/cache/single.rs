@@ -39,7 +39,7 @@ impl ValidationCache for SingleValidationCache {
             .lock()
             .expect("SingleValidationCache lock poisoned")
             .get(&shape_idx)
-            .map_or(false, |m| m.contains_key(node))
+            .is_some_and(|m| m.contains_key(node))
     }
 
     fn get_results(&self, node: &Object, shape_idx: ShapeLabelIdx) -> Option<Vec<ValidationResult>> {
