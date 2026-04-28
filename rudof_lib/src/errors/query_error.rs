@@ -3,6 +3,9 @@ use thiserror::Error;
 /// Errors that can occur when working with SPARQL queries.
 #[derive(Error, Debug)]
 pub enum QueryError {
+    #[error("Failed to initialize query store: {error}")]
+    FailedInitializingQueryStore { error: String },
+
     /// The SPARQL query result format is not supported by Rudof.
     #[error(
         "Unsupported SPARQL query result format: '{format}'. Valid formats are: 'internal', 'turtle', 'ntriples', 'json-ld', 'rdf-xml', 'csv', 'trig', 'n3', 'nquads'"

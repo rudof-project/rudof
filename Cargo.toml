@@ -322,6 +322,7 @@ rudof_rdf = { version = "0.2.17-rc.1", path = "./rudof_rdf", default-features = 
 rudof_generate = { version = "0.2.17-rc.1", path = "./rudof_generate" }
 rudof_lib = { version = "0.2.17-rc.1", path = "./rudof_lib" }
 rudof_mcp = { version = "0.2.17-rc.1", path = "./rudof_mcp" }
+rustemo = "0.9.1"
 rust_decimal = "1.38"
 rust_decimal_macros = "1.38"
 schemars = "1.0.4"

@@ -3,6 +3,9 @@ use thiserror::Error;
 /// Errors that can occur when working with ShEx schemas.
 #[derive(Error, Debug)]
 pub enum ShExError {
+    #[error("Failed to initialize query store: {error}")]
+    FailedInitializingQueryStore { error: String },
+
     /// The ShEx format specified is not supported by Rudof.
     #[error(
         "Unsupported ShEx format: '{format}'. Valid formats are: 'internal', 'simple', 'shexc', 'shexj', 'json', 'jsonld', 'turtle', 'ntriples', 'rdfxml', 'trig', 'n3', 'nquads'"

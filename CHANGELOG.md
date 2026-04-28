@@ -7,6 +7,10 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.2.17
+- Solves issues #617, #618 and #618 about updating rustemo in PGSchema, the old documentation of pgschema binary and an un-needed dependency on test-digg in PGSchema. We renamed the `pgschema/src/main.rs` as a candidate to be removed because in principle we should unify the CLI for PGSchema features in the rudof binary to avoid a multiplication of binaries. The `pgschema/src/docs` should be removed or integrated in the `docs` folder.
+- Solves issue #616 initializing the store using `check_store` so it is possible to do SPARQL queries to resolve shape maps when validating ShEx. 
+
 ## v0.2.16
 
 ### Fixed

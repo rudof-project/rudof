@@ -1,0 +1,9 @@
+prefix : <http://example.org/>
+prefix usr: <http://example2.org/>
+prefix schema: <http://schema.org/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+:User {
+  a [usr:Person] ;
+  schema:name xsd:string
+  }

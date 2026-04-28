@@ -23,17 +23,18 @@ csv.workspace = true
 either.workspace = true
 itertools.workspace = true
 regex.workspace = true
-rustemo = "0.7.1"
+rustemo.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-text-diff = "0.4.0"
 thiserror.workspace = true
 time.workspace = true
 tracing = "0.1"
 
 [dev-dependencies]
 tracing-test = "0.2"
-rustemo-compiler = "0.7"
+
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
+rustemo-compiler = "0.9.1"
 
 [build-dependencies]
-rustemo-compiler = "0.7"
+rustemo-compiler = "0.9.1"
