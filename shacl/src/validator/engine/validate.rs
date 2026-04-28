@@ -10,7 +10,7 @@ use crate::validator::report::ValidationResult;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{NeighsRDF, Rdf, SHACLPath};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 
 /// Validate RDF data using SHACL
@@ -143,16 +143,19 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
 
         // Record new results in the cache per focus node
         if let Some(idx) = idx {
-            // Group results by focus node for caching
-            for focus_node in uncached_focus_nodes.iter() {
-                if let Ok(node_object) = RDF::term_as_object(focus_node) {
-                    let node_results = new_results
-                        .iter()
-                        .filter(|r| r.focus_node() == &node_object)
-                        .cloned()
-                        .collect();
-                    runner.record_validation(node_object, *idx, node_results);
+            // Group results by focus node in O(M), then record each in O(1)
+            let mut by_focus: HashMap<Object, Vec<ValidationResult>> = uncached_focus_nodes
+                .iter()
+                .filter_map(|n| RDF::term_as_object(n).ok())
+                .map(|obj| (obj, Vec::new()))
+                .collect();
+            for r in &new_results {
+                if let Some(bucket) = by_focus.get_mut(r.focus_node()) {
+                    bucket.push(r.clone());
                 }
+            }
+            for (node_object, node_results) in by_focus {
+                runner.record_validation(node_object, *idx, node_results);
             }
         }
 
