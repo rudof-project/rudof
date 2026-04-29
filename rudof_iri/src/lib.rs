@@ -9,6 +9,7 @@
 pub mod error;
 mod iri;
 mod mime_type;
+pub mod registry;
 
 pub use crate::iri::{Iri, IriS};
 pub use crate::mime_type::MimeType;

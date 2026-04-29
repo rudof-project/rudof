@@ -11,6 +11,7 @@ repository.workspace = true
 
 [dependencies]
 getrandom.workspace = true
+indexmap.workspace = true
 oxiri.workspace = true
 oxrdf.workspace = true
 serde.workspace = true
