@@ -1,8 +1,9 @@
 use crate::IriS;
 use crate::registry::{IriRegistry, IriRegistryIdx};
 use indexmap::IndexSet;
-use std::collections::hash_map::IntoIter;
+use indexmap::set::IntoIter;
 use std::fmt::{Display, Formatter};
+use std::iter::Enumerate;
 
 /// A single-threaded IRI registry.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -48,11 +49,10 @@ impl Display for SimpleIriSRegistry {
 
 impl IntoIterator for SimpleIriSRegistry {
     type Item = (IriRegistryIdx, IriS);
-    type IntoIter = IntoIter<IriRegistryIdx, IriS>;
+    type IntoIter = Enumerate<IntoIter<IriS>>;
 
     fn into_iter(self) -> Self::IntoIter {
-        // self.registry.into_iter()
-        todo!()
+        self.registry.into_iter().enumerate()
     }
 }
 
