@@ -1,0 +1,63 @@
+use crate::IriS;
+use crate::registry::{IriRegistry, IriRegistryIdx};
+use indexmap::IndexSet;
+use indexmap::set::IntoIter;
+use std::fmt::{Display, Formatter};
+use std::iter::Enumerate;
+
+/// A single-threaded IRI registry.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SimpleIriSRegistry {
+    registry: IndexSet<IriS>,
+}
+
+impl SimpleIriSRegistry {
+    pub fn new() -> Self {
+        Self {
+            registry: IndexSet::new(),
+        }
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (IriRegistryIdx, &IriS)> {
+        self.registry.iter().enumerate()
+    }
+}
+
+impl IriRegistry for SimpleIriSRegistry {
+    type IRI = IriS;
+    type RET<'a> = &'a IriS;
+
+    fn register(&mut self, iri: Self::IRI) -> IriRegistryIdx {
+        let (idx, _) = self.registry.insert_full(iri);
+        idx
+    }
+
+    fn get(&self, id: &IriRegistryIdx) -> Option<Self::RET<'_>> {
+        self.registry.get_index(*id)
+    }
+}
+
+impl Display for SimpleIriSRegistry {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "SimpleIriRegistry {{")?;
+        for (idx, iri) in self.registry.iter().enumerate() {
+            write!(f, " {}: {},", idx, iri)?;
+        }
+        write!(f, " }}")
+    }
+}
+
+impl IntoIterator for SimpleIriSRegistry {
+    type Item = (IriRegistryIdx, IriS);
+    type IntoIter = Enumerate<IntoIter<IriS>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.registry.into_iter().enumerate()
+    }
+}
+
+impl Default for SimpleIriSRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
