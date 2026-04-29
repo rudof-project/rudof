@@ -1,8 +1,8 @@
-use std::collections::hash_map::IntoIter;
-use crate::registry::{IriRegistry, IriRegistryIdx};
 use crate::IriS;
-use std::fmt::{Display, Formatter};
+use crate::registry::{IriRegistry, IriRegistryIdx};
 use indexmap::IndexSet;
+use std::collections::hash_map::IntoIter;
+use std::fmt::{Display, Formatter};
 
 /// A single-threaded IRI registry.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -12,15 +12,13 @@ pub struct SimpleIriSRegistry {
 
 impl SimpleIriSRegistry {
     pub fn new() -> Self {
-        Self { registry: IndexSet::new() }
+        Self {
+            registry: IndexSet::new(),
+        }
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (IriRegistryIdx, &IriS)> {
-        self
-            .registry
-            .iter()
-            .enumerate()
-            .map(|(idx, iri)| (idx, iri))
+        self.registry.iter().enumerate()
     }
 }
 

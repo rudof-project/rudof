@@ -1,14 +1,16 @@
-mod simple;
 mod parallel;
+mod simple;
 
-pub use simple::SimpleIriSRegistry;
 pub use parallel::ParallelIriSRegistry;
+pub use simple::SimpleIriSRegistry;
 
 pub type IriRegistryIdx = usize;
 
 pub trait IriRegistry {
     type IRI;
-    type RET<'a> where Self: 'a;
+    type RET<'a>
+    where
+        Self: 'a;
 
     /// Register an IRI and return its index.
     fn register(&mut self, iri: Self::IRI) -> IriRegistryIdx;
