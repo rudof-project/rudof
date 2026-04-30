@@ -72,7 +72,7 @@ show_dependencies = false
 show_ir = false
 # shex_format = ShExC
 check_well_formed = true # Check is schema is well formed
-base = "http://base/"    # Base IRI to resolve relative IRIs
+# base = "http://base/"    # Base IRI to resolve relative IRIs
 
 # [shex_validator]
 

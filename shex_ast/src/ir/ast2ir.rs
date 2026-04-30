@@ -1729,7 +1729,7 @@ pub fn get_schema_from_iri(
     match format {
         ShExFormat::ShExC => {
             let content = find_content_from_iris(candidates, base)?;
-            let schema = ShExParser::parse(content.as_str(), None, iri).map_err(|e| {
+            let schema = ShExParser::parse(content.as_str(), Some(iri.clone()), iri).map_err(|e| {
                 Box::new(SchemaIRError::ShExCError {
                     iri: iri.clone(),
                     error: e.to_string(),
