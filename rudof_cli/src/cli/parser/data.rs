@@ -10,6 +10,15 @@ pub struct DataArgs {
     pub data: Vec<InputSpec>,
 
     #[arg(
+        short = 'p',
+        long = "prefix",
+        value_name = "PREFIX-SOURCE",
+        help = "Prefix source (can be a string, a path or an URL)",
+        value_parser = clap::value_parser!(InputSpec)
+    )]
+    pub prefixes: Vec<InputSpec>,
+
+    #[arg(
         short = 't',
         long = "data-format",
         value_name = "FORMAT",

@@ -16,6 +16,7 @@ pub struct LoadDataBuilder<'a> {
     endpoint: Option<&'a str>,
     reader_mode: Option<&'a DataReaderMode>,
     merge: Option<bool>,
+    prefixes: Option<&'a [InputSpec]>,
 }
 
 impl<'a> LoadDataBuilder<'a> {
@@ -32,6 +33,7 @@ impl<'a> LoadDataBuilder<'a> {
             endpoint: None,
             reader_mode: None,
             merge: None,
+            prefixes: None,
         }
     }
 
@@ -95,6 +97,11 @@ impl<'a> LoadDataBuilder<'a> {
         self
     }
 
+    pub fn with_prefixes(mut self, prefixes: &'a [InputSpec]) -> Self {
+        self.prefixes = Some(prefixes);
+        self
+    }
+
     /// Executes the data loading operation with the configured parameters.
     pub fn execute(self) -> Result<()> {
         <Rudof as DataOperations>::load_data(
@@ -105,6 +112,7 @@ impl<'a> LoadDataBuilder<'a> {
             self.endpoint,
             self.reader_mode,
             self.merge,
+            self.prefixes
         )
     }
 }

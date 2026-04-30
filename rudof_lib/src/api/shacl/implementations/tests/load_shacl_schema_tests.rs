@@ -58,6 +58,7 @@ fn test_extract_shacl_shapes_from_loaded_data() {
         None,
         None,
         None,
+        None,
     )
     .unwrap();
 
@@ -118,6 +119,7 @@ fn test_extract_shacl_shapes_mixed_data() {
         None,
         None,
         None,
+        None,
     )
     .unwrap();
 
@@ -159,6 +161,7 @@ fn test_extract_shacl_shapes_from_data_no_shapes() {
         None,
         None,
         None,
+        None
     )
     .unwrap();
 
@@ -248,6 +251,7 @@ fn test_extract_and_serialize_complex_shapes() {
         None,
         None,
         None,
+        None,
     )
     .unwrap();
 
@@ -290,6 +294,7 @@ fn test_extract_shapes_then_load_separate_schema() {
         &mut rudof,
         Some(&[data_with_shapes]),
         Some(&DataFormat::Turtle),
+        None,
         None,
         None,
         None,
@@ -371,6 +376,7 @@ fn test_extract_shacl_shapes_with_lists() {
         None,
         None,
         None,
+        None,
     )
     .unwrap();
 
@@ -432,6 +438,7 @@ fn test_extract_shapes_multiple_data_sources() {
         None,
         None,
         Some(true),
+        None
     )
     .unwrap();
 
@@ -478,6 +485,7 @@ fn test_extract_shapes_with_merge() {
         None,
         None,
         None,
+        None
     )
     .unwrap();
 
@@ -506,6 +514,7 @@ fn test_extract_shapes_with_merge() {
         None,
         None,
         Some(true),
+        None
     )
     .unwrap();
 

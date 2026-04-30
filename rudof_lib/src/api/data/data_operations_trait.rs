@@ -31,6 +31,7 @@ pub trait DataOperations {
         endpoint: Option<&str>,
         reader_mode: Option<&DataReaderMode>,
         merge: Option<bool>,
+        prefixes: Option<&[InputSpec]>
     ) -> Result<()>;
 
     /// Serializes the current RDF data to a writer.
@@ -133,8 +134,9 @@ impl DataOperations for Rudof {
         endpoint: Option<&str>,
         reader_mode: Option<&DataReaderMode>,
         merge: Option<bool>,
+        prefixes: Option<&[InputSpec]>
     ) -> Result<()> {
-        load_data(self, data, data_format, base, endpoint, reader_mode, merge)
+        load_data(self, data, data_format, base, endpoint, reader_mode, merge, prefixes)
     }
 
     fn serialize_data<W: io::Write>(
