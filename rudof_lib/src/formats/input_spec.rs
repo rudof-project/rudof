@@ -15,6 +15,7 @@ use std::{
     path::{Path, PathBuf},
     str::FromStr,
 };
+use regex::Regex;
 use url::Url;
 
 /// Specification for different input sources in Rudof.
@@ -193,34 +194,6 @@ impl InputSpec {
             InputSpec::Str(_) => Ok("string://".to_string()),
         }
     }
-
-    // Get an `InputSpec` from a string
-    // The `allow_plain_str` parameter controls whether arbitrary strings that don't match
-    // other patterns should be treated as raw strings (Str) instead of resulting in an error.
-    // This is used to provide flexibility in contexts where raw string input is expected like in Python bindings,
-    // while still allowing for strict parsing in other contexts.
-    pub fn parse_from_str(s: &str, allow_plain_str: bool) -> Result<Self, InputSpecError> {
-        match s {
-            _ if s == "-" => Ok(InputSpec::Stdin),
-            _ if s.starts_with("http://") => {
-                let url_spec = UrlSpec::parse(s)?;
-                Ok(InputSpec::Url(url_spec))
-            },
-            _ if s.starts_with("https://") => {
-                let url_spec = UrlSpec::parse(s)?;
-                Ok(InputSpec::Url(url_spec))
-            },
-            _ if Path::new(s).exists() => {
-                let pb: PathBuf = PathBuf::from_str(s).map_err(|e| InputSpecError::ParsingPathError {
-                    str: s.to_string(),
-                    error: format!("{e}"),
-                })?;
-                Ok(InputSpec::Path(pb))
-            },
-            _ if allow_plain_str => Ok(InputSpec::Str(s.to_string())),
-            _ => Err(InputSpecError::FileDoesntExist { str: s.to_string() }),
-        }
-    }
 }
 
 impl Display for InputSpec {
@@ -245,9 +218,46 @@ impl FromStr for InputSpec {
     /// - Existing file paths become Path
     /// - Everything else becomes a raw string (Str)
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // The `allow_plain_str` parameter is set to false here to prevent treating arbitrary strings as file paths,
-        // which could lead to confusing errors if the string doesn't exist as a file.
-        Self::parse_from_str(s, false)
+        // TODO - This probably needs some improvements
+        let filepath_regex = Regex::new(r"^[.~/a-zA-Z0-9]?[/\\a-zA-Z0-9._-]*$").unwrap();
+
+        if s.is_empty() {
+            return Err(InputSpecError::InvalidInput {
+                error: "The provided input is empty".to_string(),
+            })
+        }
+
+        match s {
+            _ if s == "-" => Ok(InputSpec::Stdin),
+            _ if s.starts_with("http://") => {
+                let url_spec = UrlSpec::parse(s)?;
+                Ok(InputSpec::Url(url_spec))
+            },
+            _ if s.starts_with("https://") => {
+                let url_spec = UrlSpec::parse(s)?;
+                Ok(InputSpec::Url(url_spec))
+            },
+            _ if filepath_regex.is_match(s) => {
+                let path = Path::new(s);
+                if !path.exists() {
+                    return Err(InputSpecError::FileDoesntExist {
+                        str: s.to_string(),
+                    })
+                }
+                if path.is_dir() {
+                    return Err(InputSpecError::PathIsDir {
+                        str: s.to_string(),
+                    })
+                }
+
+                let pb: PathBuf = PathBuf::from_str(s).map_err(|e| InputSpecError::ParsingPathError {
+                    str: s.to_string(),
+                    error: format!("{e}"),
+                })?;
+                Ok(InputSpec::Path(pb))
+            },
+            _ => Ok(InputSpec::Str(s.to_string())),
+        }
     }
 }
 
