@@ -3,7 +3,7 @@ use crate::cli::wrappers::{DataFormatCli, DataReaderModeCli, ResultDataFormatCli
 use clap::Args;
 use rudof_lib::formats::InputSpec;
 
-/// Arguments for the `shacl-validate` command
+/// Arguments for the `data` command
 #[derive(Debug, Clone, Args)]
 pub struct DataArgs {
     #[clap(value_parser = clap::value_parser!(InputSpec))]
