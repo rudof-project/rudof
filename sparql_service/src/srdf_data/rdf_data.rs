@@ -297,7 +297,7 @@ impl Rdf for RdfData {
     type Triple = OxTriple;
     type Err = RdfDataError;
 
-    fn prefixmap(&self) -> std::option::Option<PrefixMap> {
+    fn prefixmap(&self) -> Option<PrefixMap> {
         match &self.graph {
             Some(g) => Some(g.prefixmap().clone()),
             None => {
