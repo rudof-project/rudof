@@ -905,7 +905,7 @@ impl BuildRDF for InMemoryGraph {
     /// # Parameters
     ///
     /// * `prefix_map` - The new prefix map to use
-    fn add_prefix_map(&mut self, prefix_map: PrefixMap) {
+    fn set_prefix_map(&mut self, prefix_map: PrefixMap) {
         self.pm = prefix_map;
     }
 

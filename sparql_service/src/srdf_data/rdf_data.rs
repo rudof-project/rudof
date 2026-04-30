@@ -517,9 +517,9 @@ impl BuildRDF for RdfData {
         }
     }
 
-    fn add_prefix_map(&mut self, prefix_map: PrefixMap) {
+    fn set_prefix_map(&mut self, prefix_map: PrefixMap) {
         if let Some(graph) = &mut self.graph {
-            graph.add_prefix_map(prefix_map)
+            graph.set_prefix_map(prefix_map)
         }
     }
 

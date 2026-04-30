@@ -32,12 +32,12 @@ pub trait BuildRDF: NeighsRDF {
     /// * `iri` - The full namespace IRI this prefix represents
     fn add_prefix(&mut self, alias: &str, iri: &IriS);
 
-    /// Adds multiple prefix declarations from a prefix map.
+    /// Replaces the graph prefixmap.
     ///
     /// # Arguments
     ///
     /// * `prefix_map` - A map of prefix aliases to namespace IRIs
-    fn add_prefix_map(&mut self, prefix_map: PrefixMap);
+    fn set_prefix_map(&mut self, prefix_map: PrefixMap);
 
     /// Merges the graph prefixmap with another given.
     ///
