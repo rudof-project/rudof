@@ -44,6 +44,7 @@ fn test_validate_shex_success() {
         None,
         None,
         None,
+        None,
     )
     .unwrap();
 
@@ -121,6 +122,7 @@ fn test_validate_shex_no_schema_error() {
         None,
         None,
         None,
+        None,
     )
     .unwrap();
 
@@ -144,6 +146,7 @@ fn test_validate_shex_no_shapemap_error() {
         &mut rudof,
         Some(&[data]),
         Some(&DataFormat::Turtle),
+        None,
         None,
         None,
         None,
@@ -180,6 +183,7 @@ fn test_validate_shex_validation_failure() {
         &mut rudof,
         Some(&[data]),
         Some(&DataFormat::Turtle),
+        None,
         None,
         None,
         None,
@@ -237,6 +241,7 @@ fn test_serialize_validation_results_compact() {
         None,
         None,
         None,
+        None,
     )
     .unwrap();
 
@@ -284,6 +289,7 @@ fn test_serialize_validation_results_json() {
         &mut rudof,
         Some(&[data]),
         Some(&DataFormat::Turtle),
+        None,
         None,
         None,
         None,
@@ -340,6 +346,7 @@ fn test_serialize_validation_results_csv() {
         None,
         None,
         None,
+        None,
     )
     .unwrap();
 
@@ -387,6 +394,7 @@ fn test_serialize_validation_results_details() {
         &mut rudof,
         Some(&[data]),
         Some(&DataFormat::Turtle),
+        None,
         None,
         None,
         None,
@@ -452,6 +460,7 @@ fn test_validate_shex_multiple_nodes() {
         &mut rudof,
         Some(&[data]),
         Some(&DataFormat::Turtle),
+        None,
         None,
         None,
         None,

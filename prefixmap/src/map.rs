@@ -52,7 +52,7 @@ impl PrefixMap {
     /// Inserts an alias association to an IRI
     ///
     // Returns an [`PrefixMapError`] if the alias already exists.
-    pub fn add_prefix<A, I>(&mut self, alias: A, iri: I) -> Result<(), PrefixMapError>
+    pub fn add_prefix<A, I>(&mut self, alias: A, iri: I)
     where
         A: AsRef<str>,
         I: Into<IriS>,
@@ -65,7 +65,6 @@ impl PrefixMap {
         //     });
         // }
         self.map.insert(key.to_string(), iri.into());
-        Ok(())
     }
 
     /// Finds an IRI associated with a given alias
@@ -75,12 +74,11 @@ impl PrefixMap {
 
     /// Merges another [`PrefixMap`] into this one.
     ///
-    /// Returns an error if any of the aliases in the other [`PrefixMap`] already exist in this one.
-    pub fn merge(&mut self, other: PrefixMap) -> Result<(), PrefixMapError> {
+    // Returns an error if any of the aliases in the other [`PrefixMap`] already exist in this one.
+    pub fn merge(&mut self, other: PrefixMap) {
         for (alias, iri) in other.into_iter() {
-            self.add_prefix(alias, iri)?
+            self.add_prefix(alias, iri)
         }
-        Ok(())
     }
 
     /// Returns an iterator over the aliases in the [`PrefixMap`]
@@ -512,7 +510,7 @@ impl TryFrom<HashMap<&str, &str>> for PrefixMap {
         let mut pm = PrefixMap::new();
         for (a, s) in value {
             let iri = IriS::from_str(s)?;
-            pm.add_prefix(a, iri)?;
+            pm.add_prefix(a, iri);
         }
         Ok(pm)
     }

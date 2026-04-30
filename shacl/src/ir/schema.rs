@@ -262,16 +262,12 @@ impl IRSchema {
     pub fn build_graph<RDF: BuildRDF>(&self) -> Result<RDF, ShaclWriterError> {
         let mut graph = RDF::empty();
 
-        graph
-            .add_prefix_map(self.prefixmap.clone())
-            .map_err(|err| ShaclWriterError::AddPrefixMap { msg: err.to_string() })?;
-        let _ = graph.add_prefix("rdf", RdfVocab::base_iri());
-        let _ = graph.add_prefix("xsd", XsdVocab::base_iri());
-        let _ = graph.add_prefix("sh", ShaclVocab::base_iri());
+        graph.set_prefix_map(self.prefixmap.clone());
+        graph.add_prefix("rdf", RdfVocab::base_iri());
+        graph.add_prefix("xsd", XsdVocab::base_iri());
+        graph.add_prefix("sh", ShaclVocab::base_iri());
 
-        graph
-            .add_base(&self.base().cloned())
-            .map_err(|err| ShaclWriterError::AddBase { msg: err.to_string() })?;
+        graph.add_base(&self.base().cloned());
 
         self.labels_idx_map.iter().try_for_each(|(id, idx)| {
             let shape = self.shapes.get(idx).ok_or(ShaclWriterError::Write {

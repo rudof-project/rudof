@@ -43,6 +43,9 @@ impl Command for DataCommand {
         if let Some(endpoint) = self.args.endpoint.as_deref() {
             loading = loading.with_endpoint(endpoint);
         }
+        if !self.args.prefixes.is_empty() {
+            loading = loading.with_prefixes(&self.args.prefixes);
+        }
         loading.execute()?;
 
         ctx.rudof

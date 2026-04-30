@@ -77,7 +77,7 @@ pub async fn show_shex_impl(
         &schema,
         "schema",
         "Provide valid schema content, URL, or file path",
-        |s| InputSpec::parse_from_str(s, true),
+        InputSpec::from_str,
     ) {
         Ok(value) => value,
         Err(e) => return Ok(e.into_call_tool_result()),
@@ -261,7 +261,7 @@ pub async fn check_shex_impl(
         &schema,
         "schema",
         "Provide valid schema content, URL, or file path",
-        |s| InputSpec::parse_from_str(s, true),
+        InputSpec::from_str,
     ) {
         Ok(value) => value,
         Err(e) => return Ok(e.into_call_tool_result()),

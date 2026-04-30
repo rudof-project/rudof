@@ -16,7 +16,7 @@ impl QueryProcessor {
     }
 
     pub fn prefix_map(&self) -> Option<PrefixMap> {
-        Some(self.rdf_data.prefixmap_in_memory())
+        Some(self.rdf_data.graph_prefixmap())
     }
 
     pub fn query_select<S: NeighsRDF>(_str: &str) -> QuerySolutions<S> {

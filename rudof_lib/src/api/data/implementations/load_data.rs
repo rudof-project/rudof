@@ -1,3 +1,4 @@
+use crate::errors::{InputSpecError, RudofError};
 use crate::{
     Result, Rudof,
     errors::DataError,
@@ -7,9 +8,12 @@ use crate::{
 };
 use pgschema::parser::pg_builder::PgBuilder;
 use prefixmap::PrefixMap;
+use regex::Regex;
 use rudof_iri::{IriS, MimeType};
+use rudof_rdf::rdf_core::BuildRDF;
 use rudof_rdf::rdf_impl::SparqlEndpoint;
 use sparql_service::RdfData;
+use std::io::Read;
 use std::{io, str::FromStr};
 
 pub fn load_data(
@@ -20,6 +24,7 @@ pub fn load_data(
     endpoint: Option<&str>,
     reader_mode: Option<&DataReaderMode>,
     merge: Option<bool>,
+    prefixes: Option<&[InputSpec]>,
 ) -> Result<()> {
     let (data_format, reader_mode, base, merge) = init_defaults(rudof, data_format, reader_mode, base, merge)?;
 
@@ -30,7 +35,7 @@ pub fn load_data(
         .into()),
         (Some(data), None) => match data_format {
             DataFormat::Pg => load_data_from_specs_pg(rudof, data, merge),
-            _ => load_data_from_specs_rdf(rudof, data, data_format, base, reader_mode, merge),
+            _ => load_data_from_specs_rdf(rudof, data, data_format, base, reader_mode, merge, prefixes),
         },
         (None, Some(endpoint)) => load_data_from_endpoint(rudof, endpoint),
         (None, None) => Err(Box::new(DataError::DataSourceSpec {
@@ -79,6 +84,7 @@ fn load_data_from_specs_rdf(
     base: IriS,
     reader_mode: DataReaderMode,
     merge: bool,
+    prefixes: Option<&[InputSpec]>,
 ) -> Result<()> {
     for input_spec in data {
         let mut data_reader = input_spec
@@ -100,10 +106,77 @@ fn load_data_from_specs_rdf(
         )?;
     }
 
+    if let Some(prefixes) = prefixes {
+        let mut pm = PrefixMap::new();
+
+        for prefix in prefixes {
+            pm.merge(load_user_prefixes(prefix)?)
+        }
+
+        rudof.data.as_mut().unwrap().unwrap_rdf_mut().merge_prefixes(pm);
+    }
     Ok(())
 }
 
-fn read_rdf_data<R: io::Read>(
+fn load_user_prefixes(input_spec: &InputSpec) -> Result<PrefixMap> {
+    if matches!(input_spec, InputSpec::Stdin) {
+        return Err(RudofError::InputSpec(InputSpecError::InvalidInput {
+            error: "Stdin is not supported".to_string(),
+        }));
+    }
+    let mut pm = PrefixMap::new();
+
+    let mut reader = input_spec.open_read(Some("text/plain"), "Prefix error")?;
+    let mut buffer = Vec::new();
+    reader
+        .read_to_end(&mut buffer)
+        .map_err(|e| RudofError::InputSpec(InputSpecError::InvalidInput { error: e.to_string() }))?;
+
+    let content = String::from_utf8(buffer)
+        .map_err(|e| RudofError::InputSpec(InputSpecError::InvalidInput { error: e.to_string() }))?;
+
+    // Maybe replace with https://www.w3.org/TR/turtle/#grammar-production-PN_PREFIX
+    let prefix_regex = Regex::new(r"^(.*) *: *<(.*)>$").unwrap();
+
+    let mut add_prefix = |content: &str| {
+        if let Some(captures) = prefix_regex.captures(content) {
+            let prefix = captures.get(1).unwrap().as_str().trim();
+            let iri = captures.get(2).unwrap().as_str().trim();
+            pm.add_prefix(
+                prefix,
+                IriS::from_str(iri)
+                    .map_err(|e| RudofError::InputSpec(InputSpecError::InvalidInput { error: e.to_string() }))?,
+            );
+            Ok(())
+        } else {
+            Err(RudofError::InputSpec(InputSpecError::InvalidInput {
+                error: format!("Invalid prefix declaration: '{}'", content),
+            }))
+        }
+    };
+
+    match input_spec {
+        InputSpec::Path(_) | InputSpec::Url(_) => {
+            let lines = content.split("\n");
+            for line in lines {
+                let line = line.trim();
+                if line.is_empty() {
+                    continue;
+                }
+                add_prefix(line)?
+            }
+        },
+        InputSpec::Stdin => unreachable!(),
+        InputSpec::Str(_) => {
+            let content = content.trim();
+            add_prefix(content)?
+        },
+    }
+
+    Ok(pm)
+}
+
+fn read_rdf_data<R: Read>(
     rudof: &mut Rudof,
     data_reader: &mut R,
     source_name: &str,

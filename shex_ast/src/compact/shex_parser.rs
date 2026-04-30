@@ -39,7 +39,7 @@ impl ShExParser<'_> {
                     schema = schema.with_base(Some(iri));
                 },
                 ShExStatement::PrefixDecl { alias, iri } => {
-                    schema.add_prefix(alias, &iri)?;
+                    schema.add_prefix(alias, &iri);
                 },
                 ShExStatement::StartDecl { shape_expr } => schema = schema.with_start(Some(shape_expr)),
                 ShExStatement::ImportDecl { iri } => {
@@ -161,9 +161,7 @@ mod tests {
  "#;
         let schema = ShExParser::parse(str, None, &iri!("http://default/")).unwrap();
         let mut expected = Schema::new(&iri!("http://default/"));
-        expected
-            .add_prefix("e", &IriS::new_unchecked("http://example.org/"))
-            .unwrap();
+        expected.add_prefix("e", &IriS::new_unchecked("http://example.org/"));
         expected.add_shape(
             ShapeExprLabel::iri_unchecked("http://example.org/S"),
             ShapeExpr::Shape(Shape::new(None, None, None)),

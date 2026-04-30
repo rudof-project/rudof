@@ -88,7 +88,7 @@ pub async fn validate_shacl_impl(
         shapes.as_deref(),
         "shapes",
         "Provide valid SHACL shapes content, URL, or file path",
-        |s| InputSpec::parse_from_str(s, true),
+        InputSpec::from_str,
     ) {
         Ok(value) => value,
         Err(e) => return Ok(e.into_call_tool_result()),

@@ -28,6 +28,7 @@ fn test_load_data_rdf_success() {
         None,
         Some(&DataReaderMode::Strict),
         Some(false),
+        None,
     )
     .unwrap();
 
@@ -56,6 +57,7 @@ fn test_serialize_data_rdf_jsonld() {
         None,
         Some(&DataReaderMode::Strict),
         Some(false),
+        None,
     )
     .unwrap();
 
@@ -81,6 +83,7 @@ fn test_serialize_data_rdf_json_alias() {
         None,
         Some(&DataReaderMode::Strict),
         Some(false),
+        None,
     )
     .unwrap();
 
@@ -108,6 +111,7 @@ fn test_load_data_rdf_merge() {
         None,
         None,
         Some(false),
+        None,
     )
     .unwrap();
 
@@ -119,6 +123,7 @@ fn test_load_data_rdf_merge() {
         None,
         None,
         Some(true),
+        None,
     )
     .unwrap();
 
@@ -149,6 +154,7 @@ fn test_load_data_rdf_replace() {
         None,
         None,
         Some(false),
+        None,
     )
     .unwrap();
 
@@ -160,6 +166,7 @@ fn test_load_data_rdf_replace() {
         None,
         None,
         Some(false),
+        None,
     )
     .unwrap();
 
@@ -188,6 +195,7 @@ fn test_load_data_invalid_rdf() {
         None,
         None,
         None,
+        None,
     );
 
     assert!(result.is_err());
@@ -212,6 +220,7 @@ fn test_load_data_pg_success() {
         None,
         None,
         Some(false),
+        None,
     )
     .unwrap();
 
@@ -245,6 +254,7 @@ fn test_load_data_pg_merge() {
         None,
         None,
         Some(true),
+        None,
     )
     .unwrap();
 
@@ -256,6 +266,7 @@ fn test_load_data_pg_merge() {
         None,
         None,
         Some(true),
+        None,
     )
     .unwrap();
 
@@ -286,6 +297,7 @@ fn test_load_data_pg_replace() {
         None,
         None,
         Some(false),
+        None,
     )
     .unwrap();
 
@@ -297,6 +309,7 @@ fn test_load_data_pg_replace() {
         None,
         None,
         Some(false),
+        None,
     )
     .unwrap();
 
@@ -325,6 +338,7 @@ fn test_load_data_pg_invalid_syntax() {
         None,
         None,
         None,
+        None,
     );
 
     assert!(result.is_err());
@@ -340,6 +354,7 @@ fn test_load_data_endpoint_success() {
         None,
         None,
         Some("http://example.org/sparql"),
+        None,
         None,
         None,
     )
@@ -359,6 +374,7 @@ fn test_load_data_endpoint_uses_configured_prefixmap_for_known_endpoint() {
         None,
         None,
         Some("https://dbpedia.org/sparql"),
+        None,
         None,
         None,
     )
@@ -391,6 +407,7 @@ fn test_load_data_conflicting_sources() {
         Some("http://example.org/sparql"),
         None,
         None,
+        None,
     );
 
     assert!(result.is_err());
@@ -400,7 +417,7 @@ fn test_load_data_conflicting_sources() {
 fn test_load_data_no_source() {
     let mut rudof = Rudof::new(RudofConfig::default());
 
-    let result = load_data(&mut rudof, None, None, None, None, None, None);
+    let result = load_data(&mut rudof, None, None, None, None, None, None, None);
 
     assert!(result.is_err());
 }

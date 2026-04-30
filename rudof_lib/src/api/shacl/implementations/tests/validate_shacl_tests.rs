@@ -77,6 +77,7 @@ fn test_validate_shacl_conforming_data() {
         None,
         None,
         None,
+        None,
     )
     .unwrap();
 
@@ -141,6 +142,7 @@ fn test_validate_shacl_non_conforming_data() {
         &mut rudof,
         Some(&[data]),
         Some(&DataFormat::Turtle),
+        None,
         None,
         None,
         None,
@@ -214,6 +216,7 @@ fn test_validate_shacl_without_schema() {
         None,
         None,
         None,
+        None,
     )
     .unwrap();
 
@@ -260,6 +263,7 @@ fn test_validate_shacl_datatype_violations() {
         &mut rudof,
         Some(&[data]),
         Some(&DataFormat::Turtle),
+        None,
         None,
         None,
         None,
@@ -326,6 +330,7 @@ fn test_validate_shacl_min_max_violations() {
         None,
         None,
         None,
+        None,
     )
     .unwrap();
 
@@ -384,6 +389,7 @@ fn test_validate_shacl_pattern_violations() {
         &mut rudof,
         Some(&[data]),
         Some(&DataFormat::Turtle),
+        None,
         None,
         None,
         None,
@@ -457,6 +463,7 @@ fn test_validate_shacl_node_shape_violations() {
         None,
         None,
         None,
+        None,
     )
     .unwrap();
 
@@ -508,6 +515,7 @@ fn test_serialize_validation_results_compact() {
         &mut rudof,
         Some(&[data]),
         Some(&DataFormat::Turtle),
+        None,
         None,
         None,
         None,
@@ -568,6 +576,7 @@ fn test_serialize_validation_results_details() {
         None,
         None,
         None,
+        None,
     )
     .unwrap();
 
@@ -621,6 +630,7 @@ fn test_serialize_validation_results_turtle() {
         &mut rudof,
         Some(&[data]),
         Some(&DataFormat::Turtle),
+        None,
         None,
         None,
         None,
@@ -694,6 +704,7 @@ fn test_validate_shacl_with_validation_mode() {
         None,
         None,
         None,
+        None,
     )
     .unwrap();
 
@@ -762,6 +773,7 @@ fn test_validate_multiple_violations() {
         &mut rudof,
         Some(&[data]),
         Some(&DataFormat::Turtle),
+        None,
         None,
         None,
         None,

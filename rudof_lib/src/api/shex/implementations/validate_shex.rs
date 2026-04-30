@@ -24,7 +24,7 @@ pub fn validate_shex(rudof: &mut Rudof) -> Result<()> {
     }
 
     let result = shex_validator
-        .validate_shapemap(shapemap, rdf_data, shex_schema, &Some(rdf_data.prefixmap_in_memory()))
+        .validate_shapemap(shapemap, rdf_data, shex_schema, &Some(rdf_data.graph_prefixmap()))
         .map_err(|e| ShExError::FailedShExValidation { error: e.to_string() })?;
 
     // Read back the map state that was mutated by MapActionExtension closures during validation.

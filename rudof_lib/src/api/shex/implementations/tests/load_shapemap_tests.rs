@@ -36,6 +36,7 @@ fn test_load_shapemap_compact_success() {
         None,
         None,
         None,
+        None,
     )
     .unwrap();
 
@@ -82,6 +83,7 @@ fn test_load_shapemap_replace() {
         &mut rudof,
         Some(&[data]),
         Some(&DataFormat::Turtle),
+        None,
         None,
         None,
         None,
@@ -160,6 +162,7 @@ fn test_load_shapemap_no_schema_error() {
         None,
         None,
         None,
+        None,
     )
     .unwrap();
 
@@ -185,6 +188,7 @@ fn test_load_shapemap_invalid_syntax() {
         &mut rudof,
         Some(&[data]),
         Some(&DataFormat::Turtle),
+        None,
         None,
         None,
         None,
@@ -225,6 +229,7 @@ fn test_load_shapemap_with_base_nodes() {
         &mut rudof,
         Some(&[data]),
         Some(&DataFormat::Turtle),
+        None,
         None,
         None,
         None,
@@ -277,6 +282,7 @@ fn test_serialize_shapemap_json() {
         &mut rudof,
         Some(&[data]),
         Some(&DataFormat::Turtle),
+        None,
         None,
         None,
         None,

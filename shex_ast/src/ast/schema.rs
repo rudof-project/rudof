@@ -1,6 +1,5 @@
 use crate::ast::{SchemaJsonError, serde_string_or_struct::*};
 use crate::{BNode, IriOrStr, ShapeExprLabel};
-use prefixmap::error::PrefixMapError;
 use prefixmap::{IriRef, PrefixMap};
 use rudof_iri::error::IriSError;
 use rudof_iri::{IriS, iri};
@@ -115,16 +114,15 @@ impl Schema {
         self
     }
 
-    pub fn add_prefix(&mut self, alias: &str, iri: &IriS) -> Result<(), PrefixMapError> {
+    pub fn add_prefix(&mut self, alias: &str, iri: &IriS) {
         match self.prefixmap {
             None => {
                 let mut pm = PrefixMap::new();
-                pm.add_prefix(alias, iri.clone())?;
+                pm.add_prefix(alias, iri.clone());
                 self.prefixmap = Some(pm);
             },
-            Some(ref mut pm) => pm.add_prefix(alias, iri.clone())?,
+            Some(ref mut pm) => pm.add_prefix(alias, iri.clone()),
         };
-        Ok(())
     }
 
     pub fn with_prefixmap(mut self, prefixmap: Option<PrefixMap>) -> Self {
