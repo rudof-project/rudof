@@ -127,6 +127,7 @@ impl RdfData {
         self.graph.as_ref()
     }
 
+    /// Gets the PrefixMap from the in-memory graph
     pub fn graph_prefixmap(&self) -> PrefixMap {
         self.graph.as_ref().map(|g| g.prefixmap().clone()).unwrap_or_default()
     }
@@ -210,11 +211,6 @@ impl RdfData {
         self.use_endpoints
             .iter()
             .map(|(name, endpoint)| (name.as_str(), endpoint))
-    }
-
-    /// Gets the PrefixMap from the in-memory graph
-    pub fn prefixmap_in_memory(&self) -> PrefixMap {
-        self.graph.as_ref().map(|g| g.prefixmap().clone()).unwrap_or_default()
     }
 
     pub fn show_blanknode(&self, bn: &OxBlankNode) -> String {
