@@ -105,7 +105,7 @@ mod iri_ref_tests {
         #[test]
         fn get_iri_prefixmap_owned_for_resolvable_prefixed(prefix in PREFIX_REGEX, uri in URI_REGEX, local in LOCAL_REGEX) {
             let mut pm = PrefixMap::new();
-            pm.add_prefix(prefix.clone(), IriS::new(&uri)?)?;
+            pm.add_prefix(prefix.clone(), IriS::new(&uri)?);
 
             let iri_ref = IriRef::Prefixed {
                 prefix, local: local.clone(),

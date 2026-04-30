@@ -119,10 +119,10 @@ impl Schema {
         match self.prefixmap {
             None => {
                 let mut pm = PrefixMap::new();
-                pm.add_prefix(alias, iri.clone())?;
+                pm.add_prefix(alias, iri.clone());
                 self.prefixmap = Some(pm);
             },
-            Some(ref mut pm) => pm.add_prefix(alias, iri.clone())?,
+            Some(ref mut pm) => pm.add_prefix(alias, iri.clone()),
         };
         Ok(())
     }

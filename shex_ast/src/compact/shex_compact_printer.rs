@@ -927,9 +927,8 @@ mod tests {
     #[test]
     fn empty_schema() {
         let mut pm = PrefixMap::new();
-        pm.add_prefix("", IriS::new_unchecked("http://example.org/")).unwrap();
-        pm.add_prefix("schema", IriS::new_unchecked("https://schema.org/"))
-            .unwrap();
+        pm.add_prefix("", IriS::new_unchecked("http://example.org/"));
+        pm.add_prefix("schema", IriS::new_unchecked("https://schema.org/"));
         let schema = Schema::new(&iri!("http://default/")).with_prefixmap(Some(pm));
         let s = ShExFormatter::default().without_colors().format_schema(&schema);
         assert_eq!(

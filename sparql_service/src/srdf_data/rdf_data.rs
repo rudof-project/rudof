@@ -306,13 +306,7 @@ impl Rdf for RdfData {
                 } else {
                     let mut pm = PrefixMap::new();
                     for e in self.use_endpoints.values() {
-                        match pm.merge(e.prefixmap().clone()) {
-                            Ok(_) => {},
-                            Err(e) => {
-                                eprintln!("Warning: cannot merge prefixmap from endpoint: {}", e);
-                                return None;
-                            },
-                        }
+                        pm.merge(e.prefixmap().clone())
                     }
                     Some(pm)
                 }

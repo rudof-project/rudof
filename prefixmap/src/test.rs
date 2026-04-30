@@ -18,7 +18,7 @@ mod prefixmap_tests {
         fn prefix_map_add(prefix in PREFIX_REGEX, uri in URI_REGEX, local in LOCAL_REGEX) {
             let mut pm = PrefixMap::new();
             let binding = IriS::from_str(&uri)?;
-            pm.add_prefix(prefix.clone(), binding)?;
+            pm.add_prefix(prefix.clone(), binding);
             let expected = IriS::from_str(&format!("{uri}{local}"))?;
             assert_eq!(pm.resolve(&format!("{prefix}:{local}"))?, expected);
 
@@ -35,7 +35,7 @@ mod prefixmap_tests {
 
             for i in 0..5 {
                 let iri = IriS::from_str(&uris[i])?;
-                pm.add_prefix(&prefix_vec[i], iri)?;
+                pm.add_prefix(&prefix_vec[i], iri);
                 writeln!(expected, "prefix {}: <{}>", &prefix_vec[i], &uris[i]).unwrap();
             }
 
@@ -46,7 +46,7 @@ mod prefixmap_tests {
         fn prefixmap_resolve(prefix in PREFIX_REGEX, uri in URI_REGEX, local in LOCAL_REGEX) {
             let mut pm = PrefixMap::new();
             let ex_iri = IriS::from_str(&uri)?;
-            pm.add_prefix(prefix.clone(), ex_iri)?;
+            pm.add_prefix(prefix.clone(), ex_iri);
             assert_eq!(
                 pm.resolve(&format!("{prefix}:{local}"))?,
                 IriS::from_str(&format!("{uri}{local}"))?
@@ -63,7 +63,7 @@ mod prefixmap_tests {
             let prefix_vec: Vec<String> = prefix.iter().cloned().collect();
 
             for i in 0..5 {
-                pm.add_prefix(&prefix_vec[i], IriS::from_str(&uri[i])?)?;
+                pm.add_prefix(&prefix_vec[i], IriS::from_str(&uri[i])?);
             }
             for i in 0..5 {
                 assert_eq!(

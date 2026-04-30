@@ -912,8 +912,8 @@ impl BuildRDF for InMemoryGraph {
     ///
     /// Returns an error if the prefix cannot be added to the prefix map.
     fn add_prefix(&mut self, alias: &str, iri: &IriS) -> Result<(), Self::Err> {
-        self.pm.add_prefix(alias, iri.clone())?;
         Ok(())
+        self.pm.add_prefix(alias, iri.clone());
     }
 
     /// Replaces the entire prefix map with a new one.

@@ -63,8 +63,8 @@ impl<S: Rdf> QuerySolutions<S> {
     /// the same prefix (same prefix bound to different namespaces).
     pub fn extend(&mut self, solutions: Vec<QuerySolution<S>>, prefixmap: PrefixMap) -> Result<(), PrefixMapError> {
         self.solutions.extend(solutions);
-        self.prefixmap.merge(prefixmap)?;
         Ok(())
+        self.prefixmap.merge(prefixmap);
     }
 
     /// Returns an iterator over the query solutions.
