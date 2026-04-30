@@ -3,6 +3,7 @@ use crate::errors::InputSpecError;
 #[cfg(target_family = "wasm")]
 use crate::wasm_stubs::{Client, ClientBuilder, Response};
 use either::Either;
+use regex::Regex;
 #[cfg(not(target_family = "wasm"))]
 use reqwest::blocking::{Client, ClientBuilder, Response};
 use reqwest::header::{ACCEPT, HeaderValue, USER_AGENT};
@@ -15,7 +16,6 @@ use std::{
     path::{Path, PathBuf},
     str::FromStr,
 };
-use regex::Regex;
 use url::Url;
 
 /// Specification for different input sources in Rudof.
@@ -224,7 +224,7 @@ impl FromStr for InputSpec {
         if s.is_empty() {
             return Err(InputSpecError::InvalidInput {
                 error: "The provided input is empty".to_string(),
-            })
+            });
         }
 
         match s {
@@ -240,14 +240,10 @@ impl FromStr for InputSpec {
             _ if filepath_regex.is_match(s) => {
                 let path = Path::new(s);
                 if !path.exists() {
-                    return Err(InputSpecError::FileDoesntExist {
-                        str: s.to_string(),
-                    })
+                    return Err(InputSpecError::FileDoesntExist { str: s.to_string() });
                 }
                 if path.is_dir() {
-                    return Err(InputSpecError::PathIsDir {
-                        str: s.to_string(),
-                    })
+                    return Err(InputSpecError::PathIsDir { str: s.to_string() });
                 }
 
                 let pb: PathBuf = PathBuf::from_str(s).map_err(|e| InputSpecError::ParsingPathError {

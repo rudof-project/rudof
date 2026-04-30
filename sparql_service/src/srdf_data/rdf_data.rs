@@ -626,8 +626,7 @@ mod tests {
     #[test]
     fn test_build_rdf_data() {
         let mut rdf_data = RdfData::new();
-        rdf_data
-            .add_prefix("ex", &IriS::from_str("http://example.org/").unwrap());
+        rdf_data.add_prefix("ex", &IriS::from_str("http://example.org/").unwrap());
         rdf_data
             .add_triple(
                 iri!("http://example.org/alice"),

@@ -108,7 +108,7 @@ pub async fn validate_shex_impl(
         &schema,
         "schema",
         "Provide valid schema content, URL, or file path",
-        |s| InputSpec::from_str(s),
+        InputSpec::from_str,
     ) {
         Ok(value) => value,
         Err(e) => return Ok(e.into_call_tool_result()),
@@ -155,7 +155,7 @@ pub async fn validate_shex_impl(
         &effective_shapemap,
         "shapemap",
         "Provide a valid ShapeMap value, URL, or file path",
-        |s| InputSpec::from_str(s),
+        InputSpec::from_str,
     ) {
         Ok(value) => value,
         Err(e) => return Ok(e.into_call_tool_result()),

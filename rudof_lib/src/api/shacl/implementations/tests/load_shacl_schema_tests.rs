@@ -161,7 +161,7 @@ fn test_extract_shacl_shapes_from_data_no_shapes() {
         None,
         None,
         None,
-        None
+        None,
     )
     .unwrap();
 
@@ -438,7 +438,7 @@ fn test_extract_shapes_multiple_data_sources() {
         None,
         None,
         Some(true),
-        None
+        None,
     )
     .unwrap();
 
@@ -485,7 +485,7 @@ fn test_extract_shapes_with_merge() {
         None,
         None,
         None,
-        None
+        None,
     )
     .unwrap();
 
@@ -514,7 +514,7 @@ fn test_extract_shapes_with_merge() {
         None,
         None,
         Some(true),
-        None
+        None,
     )
     .unwrap();
 

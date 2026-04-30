@@ -28,7 +28,7 @@ fn test_load_data_rdf_success() {
         None,
         Some(&DataReaderMode::Strict),
         Some(false),
-        None
+        None,
     )
     .unwrap();
 
@@ -57,7 +57,7 @@ fn test_serialize_data_rdf_jsonld() {
         None,
         Some(&DataReaderMode::Strict),
         Some(false),
-        None
+        None,
     )
     .unwrap();
 
@@ -83,7 +83,7 @@ fn test_serialize_data_rdf_json_alias() {
         None,
         Some(&DataReaderMode::Strict),
         Some(false),
-        None
+        None,
     )
     .unwrap();
 
@@ -111,7 +111,7 @@ fn test_load_data_rdf_merge() {
         None,
         None,
         Some(false),
-        None
+        None,
     )
     .unwrap();
 
@@ -123,7 +123,7 @@ fn test_load_data_rdf_merge() {
         None,
         None,
         Some(true),
-        None
+        None,
     )
     .unwrap();
 
@@ -154,7 +154,7 @@ fn test_load_data_rdf_replace() {
         None,
         None,
         Some(false),
-        None
+        None,
     )
     .unwrap();
 

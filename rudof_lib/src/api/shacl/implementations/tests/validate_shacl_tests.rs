@@ -77,7 +77,7 @@ fn test_validate_shacl_conforming_data() {
         None,
         None,
         None,
-        None
+        None,
     )
     .unwrap();
 
@@ -146,7 +146,7 @@ fn test_validate_shacl_non_conforming_data() {
         None,
         None,
         None,
-        None
+        None,
     )
     .unwrap();
 
@@ -216,7 +216,7 @@ fn test_validate_shacl_without_schema() {
         None,
         None,
         None,
-        None
+        None,
     )
     .unwrap();
 
@@ -267,7 +267,7 @@ fn test_validate_shacl_datatype_violations() {
         None,
         None,
         None,
-        None
+        None,
     )
     .unwrap();
 
@@ -330,7 +330,7 @@ fn test_validate_shacl_min_max_violations() {
         None,
         None,
         None,
-        None
+        None,
     )
     .unwrap();
 
@@ -393,7 +393,7 @@ fn test_validate_shacl_pattern_violations() {
         None,
         None,
         None,
-        None
+        None,
     )
     .unwrap();
 
@@ -463,7 +463,7 @@ fn test_validate_shacl_node_shape_violations() {
         None,
         None,
         None,
-        None
+        None,
     )
     .unwrap();
 
@@ -519,7 +519,7 @@ fn test_serialize_validation_results_compact() {
         None,
         None,
         None,
-        None
+        None,
     )
     .unwrap();
 
@@ -576,7 +576,7 @@ fn test_serialize_validation_results_details() {
         None,
         None,
         None,
-        None
+        None,
     )
     .unwrap();
 
@@ -634,7 +634,7 @@ fn test_serialize_validation_results_turtle() {
         None,
         None,
         None,
-        None
+        None,
     )
     .unwrap();
 
@@ -704,7 +704,7 @@ fn test_validate_shacl_with_validation_mode() {
         None,
         None,
         None,
-        None
+        None,
     )
     .unwrap();
 
@@ -777,7 +777,7 @@ fn test_validate_multiple_violations() {
         None,
         None,
         None,
-        None
+        None,
     )
     .unwrap();
 

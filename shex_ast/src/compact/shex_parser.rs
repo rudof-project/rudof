@@ -161,8 +161,7 @@ mod tests {
  "#;
         let schema = ShExParser::parse(str, None, &iri!("http://default/")).unwrap();
         let mut expected = Schema::new(&iri!("http://default/"));
-        expected
-            .add_prefix("e", &IriS::new_unchecked("http://example.org/"));
+        expected.add_prefix("e", &IriS::new_unchecked("http://example.org/"));
         expected.add_shape(
             ShapeExprLabel::iri_unchecked("http://example.org/S"),
             ShapeExpr::Shape(Shape::new(None, None, None)),

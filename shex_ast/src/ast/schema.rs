@@ -1,6 +1,5 @@
 use crate::ast::{SchemaJsonError, serde_string_or_struct::*};
 use crate::{BNode, IriOrStr, ShapeExprLabel};
-use prefixmap::error::PrefixMapError;
 use prefixmap::{IriRef, PrefixMap};
 use rudof_iri::error::IriSError;
 use rudof_iri::{IriS, iri};

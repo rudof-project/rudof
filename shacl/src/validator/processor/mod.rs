@@ -85,7 +85,7 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug + Send + Sync> {
 
         let mut pm = shapes_graph.prefix_map().clone();
         if let Some(store_pm) = store.prefixmap() {
-            _ = pm.merge(store_pm);
+            pm.merge(store_pm);
         }
 
         Ok(ValidationReport::new().with_results(all_results).with_prefixmap(pm))

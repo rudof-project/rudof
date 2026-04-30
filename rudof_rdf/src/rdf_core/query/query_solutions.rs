@@ -1,5 +1,5 @@
 use crate::rdf_core::{RDFError, Rdf, query::QuerySolution, term::Object};
-use prefixmap::{PrefixMap, PrefixMapError};
+use prefixmap::PrefixMap;
 use serde::Serialize;
 use std::fmt::Display;
 use std::io::Write;

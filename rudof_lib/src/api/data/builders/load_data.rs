@@ -112,7 +112,7 @@ impl<'a> LoadDataBuilder<'a> {
             self.endpoint,
             self.reader_mode,
             self.merge,
-            self.prefixes
+            self.prefixes,
         )
     }
 }

@@ -42,7 +42,7 @@ fn test_validate_and_serialize_pgschema() {
         None,
         None,
         None,
-        None
+        None,
     )
     .unwrap();
 
