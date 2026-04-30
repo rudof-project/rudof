@@ -10,6 +10,10 @@ pub enum InputSpecError {
     #[error("The specified file does not exist: '{str}'")]
     FileDoesntExist { str: String },
 
+    /// This error is returned when a given path is a dir, not a file.
+    #[error("The specified path is a directory, not a file: {str}")]
+    PathIsDir { str: String },
+
     /// The input data is invalid or cannot be processed.
     #[error("The input data is invalid or cannot be processed: {error}")]
     InvalidInput { error: String },
