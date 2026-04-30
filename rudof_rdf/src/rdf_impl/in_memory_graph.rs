@@ -205,7 +205,7 @@ impl InMemoryGraph {
             (Some(b), None) => Some(b.clone()),
             (_, Some(b)) => Some(IriS::new_unchecked(b)),
         };
-        self.merge_prefixes(prefixes.try_into()?)?;
+        self.merge_prefixes(prefixes.try_into()?);
 
         Ok(())
     }
@@ -336,20 +336,6 @@ impl InMemoryGraph {
             Arc::make_mut(&mut self.graph).insert(triple.as_ref());
         }
 
-        Ok(())
-    }
-
-    /// Merges a prefix map into the graph's prefix map.
-    ///
-    /// # Parameters
-    ///
-    /// * `prefixmap` - The prefix map to merge
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if merging fails due to conflicting prefixes.
-    pub fn merge_prefixes(&mut self, prefixmap: PrefixMap) -> Result<(), InMemoryGraphError> {
-        self.pm.merge(prefixmap)?;
         Ok(())
     }
 
@@ -894,9 +880,8 @@ impl BuildRDF for InMemoryGraph {
     /// # Parameters
     ///
     /// * `base` - Optional base IRI to set
-    fn add_base(&mut self, base: &Option<IriS>) -> Result<(), Self::Err> {
+    fn add_base(&mut self, base: &Option<IriS>) {
         self.base = base.clone();
-        Ok(())
     }
 
     /// Adds a prefix mapping to the graph's prefix map.
@@ -910,9 +895,8 @@ impl BuildRDF for InMemoryGraph {
     ///
     /// # Errors
     ///
-    /// Returns an error if the prefix cannot be added to the prefix map.
-    fn add_prefix(&mut self, alias: &str, iri: &IriS) -> Result<(), Self::Err> {
-        Ok(())
+    // Returns an error if the prefix cannot be added to the prefix map.
+    fn add_prefix(&mut self, alias: &str, iri: &IriS) {
         self.pm.add_prefix(alias, iri.clone());
     }
 
@@ -921,9 +905,21 @@ impl BuildRDF for InMemoryGraph {
     /// # Parameters
     ///
     /// * `prefix_map` - The new prefix map to use
-    fn add_prefix_map(&mut self, prefix_map: PrefixMap) -> Result<(), Self::Err> {
+    fn add_prefix_map(&mut self, prefix_map: PrefixMap) {
         self.pm = prefix_map;
-        Ok(())
+    }
+
+    /// Merges a prefix map into the graph's prefix map.
+    ///
+    /// # Parameters
+    ///
+    /// * `prefixmap` - The prefix map to merge
+    ///
+    /// # Errors
+    ///
+    // Returns an error if merging fails due to conflicting prefixes.
+    fn merge_prefixes(&mut self, prefix_map: PrefixMap) {
+        self.pm.merge(prefix_map);
     }
 
     /// Generates a new unique blank node.
@@ -1028,7 +1024,7 @@ impl BuildRDF for InMemoryGraph {
         let mut serializer = RdfSerializer::from_format(cnv_rdf_format(format));
 
         for (prefix, iri) in &self.pm.map {
-            serializer = serializer.with_prefix(prefix, iri.as_str()).unwrap();
+            serializer = serializer.with_prefix(prefix, iri.as_str())?;
         }
 
         let mut writer = serializer.for_writer(write);
@@ -1235,12 +1231,7 @@ impl QueryRDF for InMemoryGraph {
 
             let solutions = cnv_query_results(query_results)?;
 
-            sols.extend(solutions, self.prefixmap().clone()).map_err(|e| {
-                InMemoryGraphError::ExtendingQuerySolutionsError {
-                    query: query_str.to_string(),
-                    error: e.to_string(),
-                }
-            })?;
+            sols.extend(solutions, self.prefixmap().clone());
         }
 
         Ok(sols)

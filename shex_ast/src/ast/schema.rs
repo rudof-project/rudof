@@ -115,7 +115,7 @@ impl Schema {
         self
     }
 
-    pub fn add_prefix(&mut self, alias: &str, iri: &IriS) -> Result<(), PrefixMapError> {
+    pub fn add_prefix(&mut self, alias: &str, iri: &IriS) {
         match self.prefixmap {
             None => {
                 let mut pm = PrefixMap::new();
@@ -124,7 +124,6 @@ impl Schema {
             },
             Some(ref mut pm) => pm.add_prefix(alias, iri.clone()),
         };
-        Ok(())
     }
 
     pub fn with_prefixmap(mut self, prefixmap: Option<PrefixMap>) -> Self {

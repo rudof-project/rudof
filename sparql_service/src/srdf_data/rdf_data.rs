@@ -393,23 +393,14 @@ impl QueryRDF for RdfData {
                 .execute()?;
             trace!("Got results from in-memory store");
             let sol = cnv_query_results(new_sol)?;
-            sols.extend(sol, self.graph_prefixmap())
-                .map_err(|e| RdfDataError::ExtendingQuerySolutionsError {
-                    query: query_str.to_string(),
-                    error: format!("{e}"),
-                })?;
+            sols.extend(sol, self.graph_prefixmap());
         } else {
             trace!("No in-memory store to query");
         }
-        for (name, endpoint) in self.endpoints_to_use() {
+        for (_, endpoint) in self.endpoints_to_use() {
             let new_sols = endpoint.query_select(query_str)?;
             let new_sols_converted: Vec<QuerySolution<RdfData>> = new_sols.iter().map(cnv_sol).collect();
-            sols.extend(new_sols_converted, endpoint.prefixmap().clone())
-                .map_err(|e| RdfDataError::ExtendingQuerySolutionsErrorEndpoint {
-                    query: query_str.to_string(),
-                    error: format!("{e}"),
-                    endpoint: name.to_string(),
-                })?;
+            sols.extend(new_sols_converted, endpoint.prefixmap().clone());
         }
         Ok(sols)
     }
@@ -514,28 +505,28 @@ impl BuildRDF for RdfData {
         RdfData::new()
     }
 
-    fn add_base(&mut self, _base: &Option<IriS>) -> Result<(), Self::Err> {
-        self.graph
-            .as_mut()
-            .map(|g| g.add_base(_base))
-            .unwrap_or(Ok(()))
-            .map_err(|e| RdfDataError::SRDFGraphError { err: Box::new(e) })
+    fn add_base(&mut self, base: &Option<IriS>) {
+        if let Some(graph) = &mut self.graph {
+            graph.add_base(base)
+        }
     }
 
-    fn add_prefix(&mut self, alias: &str, iri: &IriS) -> Result<(), Self::Err> {
-        self.graph
-            .as_mut()
-            .map(|g| g.add_prefix(alias, iri))
-            .unwrap_or(Ok(()))
-            .map_err(|e| RdfDataError::SRDFGraphError { err: Box::new(e) })
+    fn add_prefix(&mut self, alias: &str, iri: &IriS) {
+        if let Some(graph) = &mut self.graph {
+            graph.add_prefix(alias, iri)
+        }
     }
 
-    fn add_prefix_map(&mut self, prefix_map: PrefixMap) -> Result<(), Self::Err> {
-        self.graph
-            .as_mut()
-            .map(|g| g.add_prefix_map(prefix_map))
-            .unwrap_or(Ok(()))
-            .map_err(|e| RdfDataError::SRDFGraphError { err: Box::new(e) })
+    fn add_prefix_map(&mut self, prefix_map: PrefixMap) {
+        if let Some(graph) = &mut self.graph {
+            graph.add_prefix_map(prefix_map)
+        }
+    }
+
+    fn merge_prefixes(&mut self, prefix_map: PrefixMap) {
+        if let Some(graph) = &mut self.graph {
+            graph.merge_prefixes(prefix_map)
+        }
     }
 
     fn add_triple<S, P, O>(&mut self, subj: S, pred: P, obj: O) -> Result<(), Self::Err>
@@ -636,8 +627,7 @@ mod tests {
     fn test_build_rdf_data() {
         let mut rdf_data = RdfData::new();
         rdf_data
-            .add_prefix("ex", &IriS::from_str("http://example.org/").unwrap())
-            .unwrap();
+            .add_prefix("ex", &IriS::from_str("http://example.org/").unwrap());
         rdf_data
             .add_triple(
                 iri!("http://example.org/alice"),

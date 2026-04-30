@@ -59,11 +59,10 @@ impl<S: Rdf> QuerySolutions<S> {
     ///
     /// # Errors
     ///
-    /// Returns an error if the prefix maps have conflicting definitions for
-    /// the same prefix (same prefix bound to different namespaces).
-    pub fn extend(&mut self, solutions: Vec<QuerySolution<S>>, prefixmap: PrefixMap) -> Result<(), PrefixMapError> {
+    // Returns an error if the prefix maps have conflicting definitions for
+    // the same prefix (same prefix bound to different namespaces).
+    pub fn extend(&mut self, solutions: Vec<QuerySolution<S>>, prefixmap: PrefixMap) {
         self.solutions.extend(solutions);
-        Ok(())
         self.prefixmap.merge(prefixmap);
     }
 
