@@ -20,7 +20,7 @@ use crate::{ShapeExprLabel, ast::iri_exclusion::IriExclusion};
 use core::panic;
 use prefixmap::{IriRef, PrefixMap};
 use rbe::{Cardinality, Pending, RbeError, SingleCond};
-use rbe::{Component, MatchCond, Max, Min, RbeTable, rbe::Rbe};
+use rbe::{Component, MatchCond, Max, Min, RbeStruct, RbeTable};
 use rudof_iri::IriS;
 use rudof_iri::error::IriSError;
 use rudof_rdf::rdf_core::term::{
@@ -423,7 +423,7 @@ impl AST2IR {
         compiled_schema: &mut SchemaIR,
         current_table: &mut RbeTable<Pred, Node, ShapeLabelIdx, SemanticActionContext>,
         source_iri: &IriS,
-    ) -> CResult<Rbe<Component>> {
+    ) -> CResult<RbeStruct<Component>> {
         let mut visited_refs = Vec::new();
         self.triple_expr2rbe_with_refs(
             triple_expr,
@@ -441,7 +441,7 @@ impl AST2IR {
         current_table: &mut RbeTable<Pred, Node, ShapeLabelIdx, SemanticActionContext>,
         source_iri: &IriS,
         visited_refs: &mut Vec<ast::TripleExprLabel>,
-    ) -> CResult<Rbe<Component>> {
+    ) -> CResult<RbeStruct<Component>> {
         match triple_expr {
             ast::TripleExpr::EachOf {
                 id: _,
@@ -470,7 +470,7 @@ impl AST2IR {
                     // cs.extend(actions);
                     // TODO: how to combine semantic actions with the triple expressions in EachOf?
                 };
-                Ok(Self::mk_card_group(Rbe::and(cs), card))
+                Ok(Self::mk_card_group(RbeStruct::and(cs), card))
             },
             ast::TripleExpr::OneOf {
                 id: _,
@@ -495,7 +495,7 @@ impl AST2IR {
                 if sem_acts.is_some() {
                     info!("Semantic actions in OneOf ignored: {sem_acts:?}");
                 }
-                Ok(Self::mk_card_group(Rbe::or(cs), card))
+                Ok(Self::mk_card_group(RbeStruct::or(cs), card))
             },
             ast::TripleExpr::TripleConstraint {
                 id: _,
@@ -514,7 +514,7 @@ impl AST2IR {
                 let actions = self.cnv_sem_actions(sem_acts, &compiled_schema.prefixmap())?;
                 let (cond, _display) = self.value_expr2match_cond(value_expr, actions, compiled_schema, source_iri)?;
                 let component = current_table.add_component(iri, &cond);
-                Ok(Rbe::symbol(component, min.value, max))
+                Ok(RbeStruct::symbol(component, min.value, max))
             },
             ast::TripleExpr::Ref(r) => {
                 if visited_refs.contains(r) {
@@ -569,15 +569,12 @@ impl AST2IR {
         Ok(Cardinality::from(min, max))
     }
 
-    fn mk_card_group(rbe: Rbe<Component>, card: Cardinality) -> Rbe<Component> {
+    fn mk_card_group(rbe: RbeStruct<Component>, card: Cardinality) -> RbeStruct<Component> {
         match &card {
             c if c.is_1_1() => rbe,
-            c if c.is_star() => Rbe::Star { value: Box::new(rbe) },
-            c if c.is_plus() => Rbe::Plus { value: Box::new(rbe) },
-            _c => Rbe::Repeat {
-                value: Box::new(rbe),
-                card,
-            },
+            c if c.is_star() => RbeStruct::star(rbe),
+            c if c.is_plus() => RbeStruct::plus(rbe),
+            _c => RbeStruct::repeat(rbe, card.min.value, card.max.clone()),
         }
     }
 

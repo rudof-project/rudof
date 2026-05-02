@@ -1,34 +1,34 @@
 use crate::Context;
-use crate::{Key, Ref, Value, rbe1::Rbe};
+use crate::{Key, Ref, Value, rbe_cond::RbeCond};
 use crate::{Pending, rbe_error::RbeError};
 use std::collections::HashSet;
 use tracing::debug;
 
 #[derive(Default)]
-pub struct RbeMatcher<K, V, R, Ctx>
+pub struct RbeCondMatcher<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
 {
-    rbe: Rbe<K, V, R, Ctx>,
+    rbe: RbeCond<K, V, R, Ctx>,
     open: bool,
     controlled: HashSet<K>,
 }
 
-impl<K, V, R, Ctx> RbeMatcher<K, V, R, Ctx>
+impl<K, V, R, Ctx> RbeCondMatcher<K, V, R, Ctx>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
 {
-    pub fn new() -> RbeMatcher<K, V, R, Ctx> {
-        RbeMatcher::default()
+    pub fn new() -> RbeCondMatcher<K, V, R, Ctx> {
+        RbeCondMatcher::default()
     }
 
-    pub fn with_rbe(mut self, rbe: &Rbe<K, V, R, Ctx>) -> Self {
+    pub fn with_rbe(mut self, rbe: &RbeCond<K, V, R, Ctx>) -> Self {
         self.rbe = (*rbe).clone();
         self.controlled = self.rbe.symbols();
         self
@@ -51,7 +51,7 @@ where
         let mut pending = Pending::new();
         let mut processed: Vec<(K, V, Ctx)> = Vec::new();
         match self.matches_iter(iter, &mut pending, &mut processed) {
-            Rbe::Fail { error } => Err(error.clone()),
+            RbeCond::Fail { error } => Err(error.clone()),
             d => {
                 if d.nullable() {
                     Ok(pending)
@@ -70,13 +70,13 @@ where
         iter: T,
         pending: &mut Pending<V, R>,
         processed: &mut Vec<(K, V, Ctx)>,
-    ) -> Rbe<K, V, R, Ctx> {
+    ) -> RbeCond<K, V, R, Ctx> {
         let mut current = self.rbe.clone();
         for (key, value, ctx) in iter {
             let deriv = current.deriv(&key, &value, &ctx, 1, self.open, &self.controlled, pending);
             match deriv {
-                Rbe::Fail { error } => {
-                    current = Rbe::Fail {
+                RbeCond::Fail { error } => {
+                    current = RbeCond::Fail {
                         error: RbeError::DerivIterError {
                             error_msg: format!("{error}"),
                             processed: processed.clone(),
@@ -150,12 +150,12 @@ mod tests {
 
     #[test]
     fn test_rbe_matcher_len_name() {
-        let rbe: Rbe<char, String, String, char> = Rbe::and(vec![
-            Rbe::symbol_cond('a', cond_len(3), Min::from(1), Max::IntMax(1)),
-            Rbe::symbol_cond('b', cond_name("foo".to_string()), Min::from(0), Max::IntMax(1)),
+        let rbe: RbeCond<char, String, String, char> = RbeCond::and(vec![
+            RbeCond::symbol_cond('a', cond_len(3), Min::from(1), Max::IntMax(1)),
+            RbeCond::symbol_cond('b', cond_name("foo".to_string()), Min::from(0), Max::IntMax(1)),
         ]);
         let expected = Pending::new();
-        let rbe_matcher = RbeMatcher::new().with_rbe(&rbe);
+        let rbe_matcher = RbeCondMatcher::new().with_rbe(&rbe);
 
         assert_eq!(
             rbe_matcher.matches(vec![('a', "baz".to_string(), 'a')].into_iter()),
@@ -168,12 +168,12 @@ mod tests {
         let cond_even = MatchCond::single(SingleCond::new().with_cond(is_even));
         let cond_ref_x = MatchCond::single(SingleCond::new().with_cond(ref_x));
 
-        let rbe: Rbe<char, i32, String, char> = Rbe::and(vec![
-            Rbe::symbol_cond('a', cond_even, Min::from(1), Max::IntMax(1)),
-            Rbe::symbol_cond('b', cond_ref_x, Min::from(0), Max::IntMax(1)),
+        let rbe: RbeCond<char, i32, String, char> = RbeCond::and(vec![
+            RbeCond::symbol_cond('a', cond_even, Min::from(1), Max::IntMax(1)),
+            RbeCond::symbol_cond('b', cond_ref_x, Min::from(0), Max::IntMax(1)),
         ]);
         let expected = Pending::from(vec![(42, vec!["X".to_string()])]);
-        let rbe_matcher = RbeMatcher::new().with_rbe(&rbe);
+        let rbe_matcher = RbeCondMatcher::new().with_rbe(&rbe);
 
         assert_eq!(
             rbe_matcher.matches(vec![('a', 2, 'a'), ('b', 42, 'b')].into_iter()),
@@ -186,12 +186,12 @@ mod tests {
         let cond_even = MatchCond::single(SingleCond::new().with_cond(is_even));
         let cond_ref_x = MatchCond::single(SingleCond::new().with_cond(ref_x));
 
-        let rbe: Rbe<char, i32, String, char> = Rbe::and(vec![
-            Rbe::symbol_cond('a', cond_even, Min::from(1), Max::IntMax(1)),
-            Rbe::symbol_cond('b', cond_ref_x, Min::from(0), Max::IntMax(1)),
+        let rbe: RbeCond<char, i32, String, char> = RbeCond::and(vec![
+            RbeCond::symbol_cond('a', cond_even, Min::from(1), Max::IntMax(1)),
+            RbeCond::symbol_cond('b', cond_ref_x, Min::from(0), Max::IntMax(1)),
         ]);
         let expected = Pending::from(vec![(42, vec!["X".to_string()])]);
-        let rbe_matcher = RbeMatcher::new().with_rbe(&rbe);
+        let rbe_matcher = RbeCondMatcher::new().with_rbe(&rbe);
 
         assert_eq!(
             rbe_matcher.matches(vec![('b', 42, 'b'), ('a', 2, 'a')].into_iter()),
@@ -204,11 +204,11 @@ mod tests {
         let cond_even = MatchCond::single(SingleCond::new().with_cond(is_even));
         let cond_ref_x = MatchCond::single(SingleCond::new().with_cond(ref_x));
 
-        let rbe: Rbe<char, i32, String, char> = Rbe::and(vec![
-            Rbe::symbol_cond('a', cond_even, Min::from(1), Max::IntMax(1)),
-            Rbe::symbol_cond('b', cond_ref_x, Min::from(0), Max::IntMax(1)),
+        let rbe: RbeCond<char, i32, String, char> = RbeCond::and(vec![
+            RbeCond::symbol_cond('a', cond_even, Min::from(1), Max::IntMax(1)),
+            RbeCond::symbol_cond('b', cond_ref_x, Min::from(0), Max::IntMax(1)),
         ]);
-        let rbe_matcher = RbeMatcher::new().with_rbe(&rbe);
+        let rbe_matcher = RbeCondMatcher::new().with_rbe(&rbe);
         let iter = vec![('b', 42, 'b'), ('a', 3, 'a')].into_iter();
         assert!(rbe_matcher.matches(iter).is_err());
     }

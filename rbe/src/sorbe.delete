@@ -1,0 +1,450 @@
+use crate::{Bag, Cardinality, Max, Min, deriv_error::DerivError};
+use core::hash::Hash;
+use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
+use std::fmt;
+use std::fmt::{Debug, Display};
+
+/// Single-occurrence Regular Bag Expressions
+/// Implementation of regular bag expressions where the symbols are not repeated
+/// The interval checking algorithm is described in the paper: "Complexity and Expressiveness of ShEx for RDF"
+/// by S. Staworko, I. Boneva, J. Labra, S. Hym, E. Prud'hommeaux, H. Solbrig,
+///
+/// Notice that the check of single-occurrence is not enforced by the type system, but it is the responsibility of
+/// the user to ensure that the expressions created with this struct do not contain repeated symbols.
+///
+/// The match_bag function will assume that the expressions are single-occurrence and may not behave correctly
+/// if this assumption is violated.
+///
+/// The Sorbe enum represents the different types of regular bag expressions, including failure cases, empty expressions, symbols with cardinalities, conjunctions (And), disjunctions (Or),
+/// and repetitions (Star, Plus, Repeat).
+///
+/// This implementation allows for efficient matching of bags against complex regular bag expressions, leveraging the power of derivatives to handle the combinatorial nature of the problem.
+/// The Sorbe struct is designed to be flexible and extensible, allowing for various operations such as mapping over symbols, pretty-printing, and more. The use of generics allows it to work with any type of symbol that implements the necessary traits (Hash, Eq, Display). Overall, this implementation provides a robust foundation for working with regular bag expressions in Rust.
+///
+#[derive(Clone, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum Sorbe<A>
+where
+    A: Hash + Eq + Display,
+{
+    Fail {
+        error: DerivError<A>,
+    },
+    #[default]
+    Empty,
+    Symbol {
+        value: A,
+        card: Cardinality,
+    },
+    And {
+        left: Box<Sorbe<A>>,
+        right: Box<Sorbe<A>>,
+    },
+    Or {
+        left: Box<Sorbe<A>>,
+        right: Box<Sorbe<A>>,
+    },
+    Star {
+        value: Box<Sorbe<A>>,
+    },
+    Plus {
+        value: Box<Sorbe<A>>,
+    },
+    Repeat {
+        value: Box<Sorbe<A>>,
+        card: Cardinality,
+    },
+}
+
+impl<A> Sorbe<A>
+where
+    A: PartialEq + Eq + Hash + Clone + fmt::Debug + fmt::Display,
+{
+    pub fn match_bag(&self, bag: &Bag<A>, open: bool) -> Result<(), DerivError<A>> {
+        todo!()
+    }
+
+    pub fn empty() -> Sorbe<A> {
+        Sorbe::Empty
+    }
+
+    pub fn symbol(x: A, min: usize, max: Max) -> Sorbe<A> {
+        Sorbe::Symbol {
+            value: x,
+            card: Cardinality {
+                min: Min::from(min),
+                max,
+            },
+        }
+    }
+
+    pub fn or<I>(values: I) -> Sorbe<A>
+    where
+        I: IntoIterator<Item = Sorbe<A>>,
+    {
+        values.into_iter().fold(Sorbe::Empty, |acc, v| Sorbe::Or {
+            left: Box::new(acc),
+            right: Box::new(v),
+        })
+    }
+
+    pub fn and<I>(values: I) -> Sorbe<A>
+    where
+        I: IntoIterator<Item = Sorbe<A>>,
+    {
+        values.into_iter().fold(Sorbe::Empty, |acc, v| Sorbe::And {
+            left: Box::new(acc),
+            right: Box::new(v),
+        })
+    }
+
+    pub fn opt(v: Sorbe<A>) -> Sorbe<A> {
+        Sorbe::Or {
+            left: Box::new(v),
+            right: Box::new(Sorbe::Empty),
+        }
+    }
+
+    pub fn plus(v: Sorbe<A>) -> Sorbe<A> {
+        Sorbe::Plus { value: Box::new(v) }
+    }
+
+    pub fn star(v: Sorbe<A>) -> Sorbe<A> {
+        Sorbe::Star { value: Box::new(v) }
+    }
+
+    pub fn repeat(v: Sorbe<A>, min: usize, max: Max) -> Sorbe<A> {
+        Sorbe::Repeat {
+            value: Box::new(v),
+            card: Cardinality::from(Min::from(min), max),
+        }
+    }
+
+    pub fn is_fail(&self) -> bool {
+        matches!(self, Sorbe::Fail { .. })
+    }
+
+    pub fn symbols(&self) -> HashSet<A> {
+        let mut set = HashSet::new();
+        self.symbols_aux(&mut set);
+        set
+    }
+
+    fn symbols_aux(&self, set: &mut HashSet<A>) {
+        match &self {
+            Sorbe::Fail { .. } => (),
+            Sorbe::Empty => (),
+            Sorbe::Symbol { value, card: _ } => {
+                set.insert(value.clone());
+            },
+            Sorbe::And { left, right } => {
+                left.symbols_aux(set);
+                right.symbols_aux(set);
+            },
+            Sorbe::Or { left, right } => {
+                left.symbols_aux(set);
+                right.symbols_aux(set);
+            },
+            Sorbe::Plus { value } => {
+                value.symbols_aux(set);
+            },
+            Sorbe::Star { value } => {
+                value.symbols_aux(set);
+            },
+            Sorbe::Repeat { value, card: _ } => {
+                value.symbols_aux(set);
+            },
+        }
+    }
+}
+
+impl<A> Debug for Sorbe<A>
+where
+    A: Debug + Hash + Eq + fmt::Display,
+{
+    fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
+        match &self {
+            Sorbe::Fail { error } => write!(dest, "Fail {{{error:?}}}"),
+            Sorbe::Empty => write!(dest, "Empty"),
+            Sorbe::Symbol { value, card } => write!(dest, "{value:?}{card:?}"),
+            Sorbe::And { left, right } => {
+                write!(dest, "{};{}", left, right)
+            },
+            Sorbe::Or { left, right } => {
+                write!(dest, "{}|{}", left, right)
+            },
+            Sorbe::Star { value } => write!(dest, "({value:?})*"),
+            Sorbe::Plus { value } => write!(dest, "({value:?})+"),
+            Sorbe::Repeat { value, card } => write!(dest, "({value:?}){card:?}"),
+        }
+    }
+}
+
+impl<A> Display for Sorbe<A>
+where
+    A: Display + Hash + Eq,
+{
+    fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
+        match &self {
+            Sorbe::Fail { error } => write!(dest, "Fail {{{error}}}"),
+            Sorbe::Empty => write!(dest, "Empty"),
+            Sorbe::Symbol { value, card } => write!(dest, "{value}{card}"),
+            Sorbe::And { left, right } => {
+                write!(dest, "{};{}", left, right)
+            },
+            Sorbe::Or { left, right } => {
+                write!(dest, "{}|{}", left, right)
+            },
+            Sorbe::Star { value } => write!(dest, "({value})*"),
+            Sorbe::Plus { value } => write!(dest, "({value})+"),
+            Sorbe::Repeat { value, card } => write!(dest, "({value}){card}"),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tracing_test::traced_test;
+    // use indoc::indoc;
+    // use test_log::test;
+
+    #[test]
+    fn symbols() {
+        let rbe = Sorbe::and(vec![
+            Sorbe::symbol('x', 1, Max::IntMax(1)),
+            Sorbe::symbol('y', 1, Max::IntMax(1)),
+        ]);
+        let expected = HashSet::from(['x', 'y']);
+        assert_eq!(rbe.symbols(), expected);
+    }
+
+    #[test]
+    fn symbols2() {
+        let rbe = Sorbe::and(vec![
+            Sorbe::or(vec![
+                Sorbe::symbol('x', 1, Max::IntMax(1)),
+                Sorbe::symbol('y', 2, Max::Unbounded),
+            ]),
+            Sorbe::symbol('y', 1, Max::IntMax(1)),
+        ]);
+        let expected = HashSet::from(['x', 'y']);
+        assert_eq!(rbe.symbols(), expected);
+    }
+
+    #[test]
+    fn match_bag_y1_4_y_2() {
+        // y{1,4} #= y/2
+        let rbe = Sorbe::symbol('y', 1, Max::IntMax(4));
+        assert_eq!(rbe.match_bag(&Bag::from(['y', 'y']), false), Ok(()));
+    }
+
+    #[test]
+    fn match_bag_a_opt_or_b_opt_with_a() {
+        // a?|b? #= a
+        let rbe = Sorbe::or(vec![
+            Sorbe::symbol('a', 0, Max::IntMax(1)),
+            Sorbe::symbol('b', 0, Max::IntMax(1)),
+        ]);
+        assert_eq!(rbe.match_bag(&Bag::from(['a']), false), Ok(()));
+    }
+
+    #[test]
+    fn match_bag_a_opt_or_b_opt_with_b() {
+        // a?|b? #= a
+        let rbe = Sorbe::or(vec![
+            Sorbe::symbol('a', 0, Max::IntMax(1)),
+            Sorbe::symbol('b', 0, Max::IntMax(1)),
+        ]);
+        assert_eq!(rbe.match_bag(&Bag::from(['b']), false), Ok(()));
+    }
+
+    #[test]
+    fn match_bag_a_opt_and_b_opt_with_ba() {
+        // a?|b? #= a
+        let rbe = Sorbe::and(vec![
+            Sorbe::symbol('a', 0, Max::IntMax(1)),
+            Sorbe::symbol('b', 0, Max::IntMax(1)),
+        ]);
+        assert_eq!(rbe.match_bag(&Bag::from(['b', 'a']), false), Ok(()));
+    }
+
+    #[test]
+    fn match_bag_a_and_b_opt_with_ab() {
+        // a?|b? #= b/2
+        let rbe = Sorbe::and(vec![
+            Sorbe::symbol('a', 1, Max::IntMax(1)),
+            Sorbe::symbol('b', 0, Max::IntMax(1)),
+        ]);
+        assert_eq!(rbe.match_bag(&Bag::from(['a', 'b']), false), Ok(()));
+    }
+
+    #[test]
+    fn no_match_bag_a_and_b_opt_with_b_2() {
+        // a?|b? #= b/2
+        let rbe = Sorbe::and(vec![
+            Sorbe::symbol('a', 1, Max::IntMax(1)),
+            Sorbe::symbol('b', 0, Max::IntMax(1)),
+        ]);
+        assert!(rbe.match_bag(&Bag::from(['b', 'b']), false).is_err());
+    }
+
+    #[test]
+    fn no_match_bag_a_and_b_opt_with_c() {
+        // a?|b? #= a
+        let rbe = Sorbe::and(vec![
+            Sorbe::symbol('a', 1, Max::IntMax(1)),
+            Sorbe::symbol('b', 1, Max::IntMax(1)),
+        ]);
+        assert!(rbe.match_bag(&Bag::from(['c']), false).is_err());
+    }
+
+    #[traced_test]
+    #[test]
+    fn match_bag_a_and_b_star_with_a_b() {
+        // (a;b)* #= a;b
+        let rbe = Sorbe::star(Sorbe::and(vec![
+            Sorbe::symbol('a', 1, Max::IntMax(1)),
+            Sorbe::symbol('b', 1, Max::IntMax(1)),
+        ]));
+        assert_eq!(rbe.match_bag(&Bag::from(['a', 'b']), true), Ok(()));
+    }
+
+    #[traced_test]
+    #[test]
+    fn no_match_bag_a_and_b_star_with_a() {
+        // (a;b)* #= a;b
+        let rbe = Sorbe::star(Sorbe::and(vec![
+            Sorbe::symbol('a', 1, Max::IntMax(1)),
+            Sorbe::symbol('b', 1, Max::IntMax(1)),
+        ]));
+        assert!(rbe.match_bag(&Bag::from(['a']), true).is_err());
+    }
+
+    #[traced_test]
+    #[test]
+    fn no_match_bag_a_and_b_star_with_b() {
+        // (a;b)* #= a;b
+        let rbe = Sorbe::star(Sorbe::and(vec![
+            Sorbe::symbol('a', 1, Max::IntMax(1)),
+            Sorbe::symbol('b', 1, Max::IntMax(1)),
+        ]));
+        assert!(rbe.match_bag(&Bag::from(['b']), true).is_err());
+    }
+
+    #[traced_test]
+    #[test]
+    fn match_bag_a_and_b_plus_with_a_b() {
+        // (a;b)+ #= a;b
+        let rbe = Sorbe::plus(Sorbe::and(vec![
+            Sorbe::symbol('a', 1, Max::IntMax(1)),
+            Sorbe::symbol('b', 1, Max::IntMax(1)),
+        ]));
+        assert_eq!(rbe.match_bag(&Bag::from(['a', 'b']), true), Ok(()));
+    }
+
+    #[traced_test]
+    #[test]
+    fn match_group_a_and_b_star_or_c_with_a2_b2() {
+        // (a;b)+ #= a;b
+        let rbe = Sorbe::or(vec![
+            Sorbe::star(Sorbe::and(vec![
+                Sorbe::symbol('a', 1, Max::IntMax(1)),
+                Sorbe::symbol('b', 1, Max::IntMax(1)),
+            ])),
+            Sorbe::symbol('c', 1, Max::IntMax(1)),
+        ]);
+        assert_eq!(rbe.match_bag(&Bag::from(['a', 'a', 'b', 'b']), false), Ok(()));
+    }
+
+    #[traced_test]
+    #[test]
+    fn match_group_a_and_b_star_or_c_with_a_b() {
+        // (a;b)+ #= a;b
+        let rbe = Sorbe::or(vec![
+            Sorbe::star(Sorbe::and(vec![
+                Sorbe::symbol('a', 1, Max::IntMax(1)),
+                Sorbe::symbol('b', 1, Max::IntMax(1)),
+            ])),
+            Sorbe::symbol('c', 1, Max::IntMax(1)),
+        ]);
+        assert_eq!(rbe.match_bag(&Bag::from(['a', 'b']), false), Ok(()));
+    }
+
+    #[traced_test]
+    #[test]
+    fn match_a_25_with_a_2() {
+        // (a;b)+ #= a;b
+        let rbe = Sorbe::symbol('a', 2, Max::IntMax(5));
+        assert_eq!(rbe.match_bag(&Bag::from(['a', 'a']), false), Ok(()));
+    }
+
+    #[test]
+    fn display_or_inside_and_adds_parens() {
+        // (a|b);c  — Or child of And must be parenthesised
+        let rbe: Sorbe<char> = Sorbe::and(vec![
+            Sorbe::or(vec![
+                Sorbe::symbol('a', 1, Max::IntMax(1)),
+                Sorbe::symbol('b', 1, Max::IntMax(1)),
+            ]),
+            Sorbe::symbol('c', 1, Max::IntMax(1)),
+        ]);
+        // Display: card {1,1} renders as "" (empty), so symbols appear bare
+        assert_eq!(format!("{rbe}"), "(a|b);c");
+    }
+
+    #[test]
+    fn debug_or_inside_and_adds_parens() {
+        // Debug variant: card {1,1} renders as {1, 1}, chars as 'a'
+        let rbe: Sorbe<char> = Sorbe::and(vec![
+            Sorbe::or(vec![
+                Sorbe::symbol('a', 1, Max::IntMax(1)),
+                Sorbe::symbol('b', 1, Max::IntMax(1)),
+            ]),
+            Sorbe::symbol('c', 1, Max::IntMax(1)),
+        ]);
+        assert_eq!(format!("{rbe:?}"), "('a'{1, 1}|'b'{1, 1});'c'{1, 1}");
+    }
+
+    #[test]
+    fn display_and_inside_or_no_extra_parens() {
+        // a;b|c  — And child of Or needs no extra parens (And binds tighter than Or)
+        let rbe: Sorbe<char> = Sorbe::or(vec![
+            Sorbe::and(vec![
+                Sorbe::symbol('a', 1, Max::IntMax(1)),
+                Sorbe::symbol('b', 1, Max::IntMax(1)),
+            ]),
+            Sorbe::symbol('c', 1, Max::IntMax(1)),
+        ]);
+        assert_eq!(format!("{rbe}"), "a;b|c");
+    }
+
+    #[test]
+    fn display_nested_or_inside_and_deep() {
+        // (a;b|c);d — nested Or at any depth still gets parens when inside And
+        let rbe: Sorbe<char> = Sorbe::and(vec![
+            Sorbe::or(vec![
+                Sorbe::and(vec![
+                    Sorbe::symbol('a', 1, Max::IntMax(1)),
+                    Sorbe::symbol('b', 1, Max::IntMax(1)),
+                ]),
+                Sorbe::symbol('c', 1, Max::IntMax(1)),
+            ]),
+            Sorbe::symbol('d', 1, Max::IntMax(1)),
+        ]);
+        assert_eq!(format!("{rbe}"), "(a;b|c);d");
+    }
+
+    #[test]
+    fn test_deserialize_rbe() {
+        let str = r#"{
+            "Symbol": {
+                "value": "foo",
+                "card": {"min": 1, "max": 2 }
+            }
+        }"#;
+        let expected = Sorbe::symbol("foo".to_string(), 1, Max::IntMax(2));
+        let rbe: Sorbe<String> = serde_json::from_str(str).unwrap();
+        assert_eq!(rbe, expected);
+    }
+}

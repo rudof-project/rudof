@@ -6,7 +6,7 @@ use crate::Ref;
 use crate::Value;
 use crate::Values;
 use crate::failures::Failures;
-use crate::rbe1::Rbe;
+use crate::rbe_cond::RbeCond;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -37,14 +37,14 @@ where
 
     #[error("Min > Max in cardinality {card} for {expr}")]
     RangeLowerBoundBiggerMaxExpr {
-        expr: Box<Rbe<K, V, R, Ctx>>,
+        expr: Box<RbeCond<K, V, R, Ctx>>,
         card: Cardinality,
     },
 
     #[error("Derived expr: {non_nullable_rbe} is not nullable\nExpr {expr}")]
     NonNullableMatch {
-        non_nullable_rbe: Box<Rbe<K, V, R, Ctx>>,
-        expr: Box<Rbe<K, V, R, Ctx>>,
+        non_nullable_rbe: Box<RbeCond<K, V, R, Ctx>>,
+        expr: Box<RbeCond<K, V, R, Ctx>>,
     },
 
     #[error(
@@ -72,7 +72,7 @@ where
 
     #[error("Or values failed {e}\n {failures}")]
     OrValuesFail {
-        e: Box<Rbe<K, V, R, Ctx>>,
+        e: Box<RbeCond<K, V, R, Ctx>>,
         failures: Failures<K, V, R, Ctx>,
     },
 
@@ -83,8 +83,8 @@ where
     DerivIterError {
         error_msg: String,
         processed: Vec<(K, V, Ctx)>,
-        expr: Box<Rbe<K, V, R, Ctx>>,
-        current: Box<Rbe<K, V, R, Ctx>>,
+        expr: Box<RbeCond<K, V, R, Ctx>>,
+        current: Box<RbeCond<K, V, R, Ctx>>,
         key: K,
         open: bool,
     },
@@ -94,7 +94,7 @@ where
 
     #[error("Empty candidates for regular expression: {rbe} and values: {values}")]
     EmptyCandidates {
-        rbe: Box<Rbe<K, V, R, Ctx>>,
+        rbe: Box<RbeCond<K, V, R, Ctx>>,
         values: Values<K, V, Ctx>,
     },
 

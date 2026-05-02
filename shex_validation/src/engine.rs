@@ -616,21 +616,21 @@ impl Engine {
                 declared: Preds::new(shape.preds().into_iter().collect()),
             });
         }
-        trace!(
+        debug!(
             "Neighs of {node} [{}]",
             values.iter().map(|(p, v)| format!("{p} {v}")).join(", ")
         );
         let triple_exprs = schema.get_triple_exprs(idx).unwrap();
         debug!(
-            "Candidate triple exprs of {node} [{}]",
+            "Candidate triple exprs of {node}:\n{}",
             triple_exprs
                 .iter()
                 .map(|(maybe_label, te)| format!(
-                    "{} -> [{}]",
-                    maybe_label.map(|l| l.to_string()).unwrap_or("[]".to_string()),
-                    te.iter().map(|p| p.show_rbe_simplified()).join(", ")
+                    "   {} -> [{}]",
+                    maybe_label.map(|l| l.to_string()).unwrap_or("_?".to_string()),
+                    te.iter().map(|p| p.show_rbe_simplified()).join("\n")
                 ))
-                .join("| ")
+                .join("\n")
         );
         let values_ctx = values
             .iter()
