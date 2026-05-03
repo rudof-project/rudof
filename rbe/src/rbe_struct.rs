@@ -1,3 +1,4 @@
+use crate::RbeAlgorithm;
 use crate::{Bag, Cardinality, Max, Min, Rbe, deriv_error::DerivError};
 use core::hash::Hash;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -23,6 +24,17 @@ where
 
     pub fn has_repeats(&self) -> bool {
         self.has_repeats
+    }
+
+    pub fn match_bag(&self, bag: &Bag<A>, open: bool, algorithm: RbeAlgorithm) -> Result<(), DerivError<A>> {
+        match algorithm {
+            RbeAlgorithm::Derivatives => self.match_bag_deriv(bag, open),
+            RbeAlgorithm::Interval => self.match_bag_interval(bag, open),
+        }
+    }
+
+    pub fn match_bag_deriv(&self, bag: &Bag<A>, open: bool) -> Result<(), DerivError<A>> {
+        self.rbe.match_bag_deriv(bag, open)
     }
 
     pub fn match_bag_interval(&self, bag: &Bag<A>, open: bool) -> Result<(), DerivError<A>> {

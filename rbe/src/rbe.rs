@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fmt;
 use std::fmt::{Debug, Display};
-use tracing::trace;
+// use tracing::trace;
 
 /// Simple Implementation of Regular Bag Expressions
 /// The implementation is based on [Brzozowski derivatives of regular expressions](https://dl.acm.org/doi/10.1145/321239.321249),
@@ -99,7 +99,7 @@ where
     }
 
     pub fn interval(&self, bag: &Bag<A>) -> Interval {
-        trace!("Computing interval of RBE {self} with bag {bag}");
+        // trace!("Computing interval of RBE {self} with bag {bag}");
         match self {
             Rbe::Fail { error: _ } => Interval::fail(),
             Rbe::Empty => Interval::zero_any(),
@@ -107,21 +107,21 @@ where
                 let wa = bag.contains(value);
                 let n = Max::IntMax(card.min.value);
                 let int = Interval::new(card.max.div_up(&wa), n.div_down(&wa));
-                trace!("Symbol {value} with cardinality {card} and bag {bag} has interval {int}");
+                // trace!("Symbol {value} with cardinality {card} and bag {bag} has interval {int}");
                 int
             },
             Rbe::And { values } => {
                 let and = values
                     .iter()
                     .fold(Interval::zero_any(), |acc, v| acc.intersection(&v.interval(bag)));
-                trace!("And {self} with bag {bag} is {and}");
+                // trace!("And {self} with bag {bag} is {and}");
                 and
             },
             Rbe::Or { values } => {
                 let or = values
                     .iter()
                     .fold(Interval::zero_zero(), |acc, v| acc.addition(&v.interval(bag)));
-                trace!("Or {self} with bag {bag} is {or}");
+                // trace!("Or {self} with bag {bag} is {or}");
                 or
             },
             Rbe::Star { value } => {
@@ -197,7 +197,7 @@ where
         for (x, count) in bag.iter() {
             for _ in 0..count {
                 let deriv = current.deriv(x, 1, open, controlled);
-                trace!("Deriv of RBE {current} with symbol {x} and open={open} is {deriv}");
+                // trace!("Deriv of RBE {current} with symbol {x} and open={open} is {deriv}");
                 match deriv {
                     Rbe::Fail { error } => {
                         current = Rbe::Fail {

@@ -85,3 +85,8 @@ impl std::fmt::Display for NoState {
         write!(f, "")
     }
 }
+
+pub enum RbeAlgorithm {
+    Derivatives,
+    Interval,
+}

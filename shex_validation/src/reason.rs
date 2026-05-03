@@ -1,4 +1,4 @@
-use crate::ValidatorErrors;
+use crate::{PartitionsDisplay, Reasons, ValidatorErrors};
 use prefixmap::PrefixMap;
 use prefixmap::error::PrefixMapError;
 use serde::{Serialize, ser::SerializeMap};
@@ -58,9 +58,28 @@ pub enum Reason {
         node: Node,
         idx: ShapeLabelIdx,
     },
+    PartitionComponent {
+        node: Node,
+        shape: Box<Shape>,
+        idx: ShapeLabelIdx,
+        maybe_label: Option<ShapeLabelIdx>,
+        partition_idx: usize,
+        partition: PartitionsDisplay,
+        neighs: String,
+        reasons: Reasons,
+    },
+    Partition {
+        node: Node,
+        shape: Box<Shape>,
+        idx: ShapeLabelIdx,
+        partition: String,
+        reasons: Reasons,
+    },
 }
 
 impl Reason {
+    // Build a tree representation of the reason,
+    // where the root is the main reason and the leaves are the sub-reasons
     fn build_tree(
         &self,
         tree: &mut Tree<String>,
@@ -228,6 +247,34 @@ impl Display for Reason {
                 f,
                 "Descendant shapes passed. Node {node}, shape: {shape}, reasons: {reasons}"
             ),
+            Reason::PartitionComponent {
+                node,
+                shape,
+                idx,
+                maybe_label,
+                partition_idx,
+                partition,
+                neighs,
+                reasons,
+            } => write!(
+                f,
+                "Partition component passed. Node {node}, shape: {shape}, idx: {idx}, maybe_label: {}, partition_idx: {}, partition: {}, neighs: {}, reasons: {reasons}",
+                maybe_label.map(|l| l.to_string()).unwrap_or("None".to_string()),
+                partition_idx,
+                partition,
+                neighs,
+            ),
+            Reason::Partition {
+                node,
+                shape,
+                idx,
+                partition,
+                reasons,
+            } => write!(
+                f,
+                "Partition passed. Node {node}, shape: {shape}, idx: {idx}, partition: {}, reasons: {reasons}",
+                partition,
+            ),
         }
     }
 }
@@ -235,30 +282,6 @@ impl Display for Reason {
 impl Reason {
     pub fn as_json(&self) -> Result<serde_json::Value, serde_json::Error> {
         serde_json::to_value(self)
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct Reasons {
-    reasons: Vec<Reason>,
-}
-
-impl Reasons {
-    pub fn new(reasons: Vec<Reason>) -> Reasons {
-        Reasons { reasons }
-    }
-
-    pub fn iter(&self) -> std::slice::Iter<'_, Reason> {
-        self.reasons.iter()
-    }
-}
-
-impl Display for Reasons {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for reason in self.reasons.iter() {
-            writeln!(f, "  {reason}")?;
-        }
-        Ok(())
     }
 }
 

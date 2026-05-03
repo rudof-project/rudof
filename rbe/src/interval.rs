@@ -1,7 +1,7 @@
 use crate::Max;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
-use tracing::trace;
+// use tracing::trace;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Interval {
@@ -68,7 +68,7 @@ impl Interval {
     pub fn addition(&self, other: &Interval) -> Interval {
         let n = self.n.plus(&other.n);
         let m = self.m.plus(&other.m);
-        trace!("### Adding intervals: {} + {} = [{}, {}]", self, other, n, m);
+        // trace!("### Adding intervals: {} + {} = [{}, {}]", self, other, n, m);
         Interval { n, m }
     }
 }

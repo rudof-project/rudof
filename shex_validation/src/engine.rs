@@ -1,6 +1,9 @@
+use crate::PartitionDisplay;
+use crate::PartitionsDisplay;
 use crate::Reason;
 use crate::Reasons;
 use crate::ValidatorConfig;
+use crate::ValidatorErrors;
 use crate::atom;
 use crate::validator_error::*;
 use either::Either;
@@ -80,8 +83,8 @@ impl Engine {
                         },
                     }
                 },
-                Atom::Neg((_node, _idx)) => {
-                    todo!()
+                Atom::Neg((node, idx)) => {
+                    todo!("Handle the case where we have a pending negative atom. Node: {node}, shape idx: {idx}")
                 },
             }
         }
@@ -91,12 +94,12 @@ impl Engine {
     pub(crate) fn add_checked_pos(&mut self, atom: Atom, reasons: Vec<Reason>) {
         let new_atom = atom.clone();
         match atom {
-            Atom::Pos(pa) => {
+            Atom::Pos(positive_atom) => {
                 self.checked.insert(new_atom);
-                self.add_reasons(pa, reasons)
+                self.add_reasons(positive_atom, reasons)
             },
-            Atom::Neg(_na) => {
-                todo!()
+            Atom::Neg(negative_atom) => {
+                todo!("Handle the case where we have a checked negative atom {negative_atom:?}")
             },
         }
     }
@@ -153,7 +156,8 @@ impl Engine {
         self.checked.insert(Atom::pos(&pa));
     }
 
-    pub fn add_failed(&mut self, n: Node, s: ShapeLabelIdx, err: ValidatorError) {
+    // TODO: We may remove this method
+    fn _add_failed(&mut self, n: Node, s: ShapeLabelIdx, err: ValidatorError) {
         let atom = (n, s);
         self.checked.insert(Atom::neg(&atom));
         match self.errors.entry(atom) {
@@ -610,11 +614,22 @@ impl Engine {
             preds_extends.iter().map(|p| p.to_string()).join(", ")
         );
         let (values, reminder) = self.neighs(node, preds_extends, rdf)?;
+
         if shape.is_closed() && !reminder.is_empty() {
+            debug!(
+                "Closed shape {idx} with extends has remainder preds: [{}]",
+                reminder.iter().map(|p| p.to_string()).join(", ")
+            );
             return fail(ValidatorError::ClosedShapeWithRemainderPreds {
                 remainder: Preds::new(reminder),
                 declared: Preds::new(shape.preds().into_iter().collect()),
             });
+        }
+        if !reminder.is_empty() {
+            debug!(
+                "Shape {idx} has extra preds: [{}] but is not closed",
+                reminder.iter().map(|p| p.to_string()).join(", ")
+            );
         }
         debug!(
             "Neighs of {node} [{}]",
@@ -638,50 +653,100 @@ impl Engine {
             .collect::<Vec<_>>();
 
         let parts_iter = crate::partitions_iter(&values_ctx, &triple_exprs);
-        for (npart, partition) in parts_iter.enumerate() {
-            debug!("Partition {npart}: {}", show_partition(&partition));
-            let mut ok_partition = true;
-            for (maybe_label, rbes, neighs_subset) in partition.iter() {
-                /*debug!(
-                    " Part {npart}| Trying component: {}, neighs [{}] ",
-                    maybe_label.map(|l| l.to_string()).unwrap_or("[]".to_string()),
-                    neighs_subset.iter().map(|(p, v)| format!("{p} {v}")).join(", ")
-                );*/
-                let result = check_exprs_neigh(rbes, neighs_subset, node, shape, idx, typing)?;
-                if result.is_right() {
-                    // TODO: Accumulate reasons from each triple expr
-                    debug!(
-                        " Part {npart}| Success component {}: neighs {}",
-                        maybe_label.map(|l| l.to_string()).unwrap_or("[]".to_string()),
-                        neighs_subset.iter().map(|(p, v, _ctx)| format!("{p} {v}")).join(", ")
-                    );
-                } else {
-                    ok_partition = false;
-                    debug!(
-                        " Part {npart}| Failed component {}: neighs {}",
-                        maybe_label.map(|l| l.to_string()).unwrap_or("[]".to_string()),
-                        neighs_subset.iter().map(|(p, v, _ctx)| format!("{p} {v}")).join(", ")
-                    );
-                    break;
+        let mut parts_peekable = parts_iter.peekable();
+        if let Some(parts) = parts_peekable.peek() {
+            debug!(
+                "Some partition found for node {node} and shape {idx}, showing the first one:\n{}",
+                parts
+                    .iter()
+                    .enumerate()
+                    .map(|(npart, partition)| format!(" Part {npart}: {}\n", show_partition(partition)))
+                    .join("\n")
+            );
+            let mut errors_in_partitions = Vec::new();
+            for (npart, partition) in parts_peekable.enumerate() {
+                let partition_display = create_partitions_display(&partition);
+                debug!("Partition {npart}: {}", partition_display);
+                let mut ok_partition = true;
+                let mut errors_in_loop = Vec::new();
+                let mut reasons_in_loop = Vec::new();
+                for (maybe_label, rbes, neighs_subset) in partition.iter() {
+                    let result = check_exprs_neigh(rbes, neighs_subset, node, shape, idx, typing)?;
+                    match result {
+                        Either::Right(reasons) => {
+                            debug!(
+                                " Part {npart}| Success component {}: neighs {}",
+                                maybe_label.map(|l| l.to_string()).unwrap_or("[]".to_string()),
+                                neighs_subset.iter().map(|(p, v, _ctx)| format!("{p} {v}")).join(", ")
+                            );
+                            reasons_in_loop.push(Reason::PartitionComponent {
+                                maybe_label: maybe_label.clone(),
+                                node: node.clone(),
+                                shape: Box::new(shape.clone()),
+                                idx: *idx,
+                                partition_idx: npart,
+                                partition: partition_display.clone(),
+                                neighs: neighs_subset.iter().map(|(p, v, _ctx)| format!("{p} {v}")).join(", "),
+                                reasons: Reasons::new(reasons),
+                            });
+                        },
+                        Either::Left(errs) => {
+                            errors_in_loop.push(ValidatorError::PartitionComponentFailed {
+                                maybe_label: maybe_label.clone(),
+                                node: Box::new(node.clone()),
+                                shape: Box::new(shape.clone()),
+                                idx: *idx,
+                                partition_idx: npart,
+                                partition: partition_display.clone(),
+                                neighs: neighs_subset.iter().map(|(p, v, _ctx)| format!("{p} {v}")).join(", "),
+                                errors: ValidatorErrors::new(errs),
+                            });
+                            ok_partition = false;
+                            debug!(
+                                " Part {npart}| Failed component {}: neighs {}",
+                                maybe_label.map(|l| l.to_string()).unwrap_or("[]".to_string()),
+                                neighs_subset.iter().map(|(p, v, _ctx)| format!("{p} {v}")).join(", ")
+                            );
+                            // We could collect errors here to provide more information about why the partition failed, but for now we just
+                            // indicate that the partition failed without going into details about the failure of each triple expr
+                            break;
+                        },
+                    }
                 }
-                // If the partition failed, we search another one
+                if ok_partition {
+                    debug!(" Part {npart}| Partition succeeded",);
+                    return pass(Reason::ShapeExtends {
+                        node: node.clone(),
+                        shape: Box::new(shape.clone()),
+                        reasons: Reasons::new(reasons_in_loop),
+                    });
+                } else {
+                    debug!(" Part {npart}| Partition failed",);
+                    errors_in_partitions.push(ValidatorError::PartitionFailed {
+                        node: Box::new(node.clone()),
+                        shape: Box::new(shape.clone()),
+                        idx: *idx,
+                        partition: partition_display.clone(),
+                        errors: ValidatorErrors::new(errors_in_loop),
+                    });
+                }
             }
-            if ok_partition {
-                debug!(" Part {npart}| Partition succeeded",);
-                return pass(Reason::ShapeExtends {
-                    node: node.clone(),
-                    shape: Box::new(shape.clone()),
-                    reasons: Reasons::new(vec![]), // TODO: Collect reasons from each triple expr
-                });
-            }
+            // If we exhaust all partitions, the shape fails
+            debug!(" Failed shape {idx}. All partitions failed",);
+            fail(ValidatorError::ShapeFailed {
+                node: Box::new(node.clone()),
+                shape: Box::new(shape.clone()),
+                idx: *idx,
+                errors: errors_in_partitions,
+            })
+        } else {
+            debug!("No partitions to check for node {node} and shape {idx}");
+            fail(ValidatorError::ShapeFailedNoPartitions {
+                node: Box::new(node.clone()),
+                shape: Box::new(shape.clone()),
+                idx: *idx,
+            })
         }
-        debug!(" Failed shape {idx}. All partitions failed",);
-        fail(ValidatorError::ShapeFailed {
-            node: Box::new(node.clone()),
-            shape: Box::new(shape.clone()),
-            idx: *idx,
-            errors: Vec::new(),
-        })
     }
 
     fn cnv_iri<S>(&self, iri: S::IRI) -> Pred
@@ -709,7 +774,7 @@ impl Engine {
     /// Get the neighbours of a node for a list of predicates
     /// Returns a tuple (values, remainder) where:
     /// - values is a list of pairs (pred, obj) where obj is an object of the node for the given pred
-    /// - remainder is a list of predicates for which there are no objects
+    /// - remainder is a list of predicates from the neighbours of the node that are not in the given list of predicates
     pub(crate) fn neighs<S>(&self, node: &Node, preds: Vec<Pred>, rdf: &S) -> Result<Neighs>
     where
         S: QueryRDF + NeighsRDF,
@@ -730,6 +795,7 @@ impl Engine {
             }
             let mut reminder_preds = Vec::new();
             for r in reminder {
+                // TODO: We should probably be able to avoid this clone
                 let iri_r = self.cnv_iri::<S>(r.clone());
                 reminder_preds.push(iri_r);
             }
@@ -901,15 +967,11 @@ type PartitionInfo = (
     Vec<(Pred, Node, SemanticActionContext)>,
 );
 
-fn show_partition(partition: &[PartitionInfo]) -> String {
-    partition
-        .iter()
-        .map(|(maybe_label, _rbes, neighs_subset)| {
-            let label_str = maybe_label.map(|l| l.to_string()).unwrap_or("[]".to_string());
-            let neighs_str = neighs_subset.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", ");
-            format!("{} -> [{}]", label_str, neighs_str)
-        })
-        .join(" | ")
+fn show_partition(partition: &PartitionInfo) -> String {
+    let (maybe_label, _rbes, neighs_subset) = partition;
+    let label_str = maybe_label.map(|l| l.to_string()).unwrap_or("[]".to_string());
+    let neighs_str = neighs_subset.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", ");
+    format!("{} -> [{}]", label_str, neighs_str)
 }
 
 fn show_result(
@@ -923,7 +985,7 @@ fn show_result(
             let es: Vec<Result<String>> = errors
                 .iter()
                 .map(|e| {
-                    e.show_qualified(nodes_prefixmap, schema)
+                    e.show_qualified(nodes_prefixmap, schema, width)
                         .map_err(ValidatorError::PrefixMapError)
                 })
                 .collect();
@@ -942,4 +1004,12 @@ fn show_result(
             Ok(vs.join(", "))
         },
     }
+}
+
+fn create_partitions_display(ps: &[PartitionInfo]) -> PartitionsDisplay {
+    let partitions_display: Vec<PartitionDisplay> = ps
+        .iter()
+        .map(|(maybe_label, rbes, neighs_subset)| PartitionDisplay::new(*maybe_label, rbes, neighs_subset))
+        .collect();
+    PartitionsDisplay::new(&partitions_display)
 }
