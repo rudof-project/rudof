@@ -21,6 +21,11 @@ toml.workspace = true
 tracing = { workspace = true }
 
 [dev-dependencies]
+criterion = { workspace = true }
 indoc.workspace = true
 proptest.workspace = true
 tracing-test.workspace = true
+
+[[bench]]
+name = "match_bag"
+harness = false
