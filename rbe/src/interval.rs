@@ -43,9 +43,10 @@ impl Interval {
         }
     }
 
-    /// Returns true if the interval is empty. An interval [n, m] is empty if n is greater than m.
+    /// Returns true if the interval is empty. An interval [n, m] is empty if n is greater than m,
+    /// or if n is Unbounded (no finite value can satisfy t >= Unbounded).
     pub fn is_empty(&self) -> bool {
-        self.n.greater_than(&self.m)
+        matches!(self.n, Max::Unbounded) || self.n.greater_than(&self.m)
     }
 
     /// Returns true if the interval contains the value v: n <= v <= m.

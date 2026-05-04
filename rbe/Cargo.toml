@@ -22,4 +22,5 @@ tracing = { workspace = true }
 
 [dev-dependencies]
 indoc.workspace = true
+proptest.workspace = true
 tracing-test.workspace = true
