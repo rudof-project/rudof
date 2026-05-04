@@ -1,5 +1,6 @@
 use crate::Bag;
 use crate::Cardinality;
+use crate::Interval;
 use crate::rbe::Rbe;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
@@ -121,4 +122,10 @@ where
         value: A,
         open: bool,
     },
+
+    #[error("Extra symbols in closed expression: {extra_symbols}")]
+    ExtraSymbolsClosed { extra_symbols: String },
+
+    #[error("Interval failed with value {v} and interval {interval}")]
+    IntervalFailed { v: usize, interval: Interval },
 }

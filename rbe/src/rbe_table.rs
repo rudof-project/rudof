@@ -8,8 +8,8 @@ use crate::Pending;
 use crate::RbeError;
 use crate::Ref;
 use crate::Value;
-use crate::rbe::Rbe;
 use crate::rbe_error;
+use crate::rbe_struct::RbeStruct;
 use crate::values::Values;
 use indexmap::IndexMap;
 use indexmap::IndexSet;
@@ -29,7 +29,7 @@ where
     Ctx: Context,
 {
     // A regular bag expression of components
-    rbe: Rbe<Component>,
+    rbe: RbeStruct<Component>,
 
     // Each key is associated with a set of components
     key_components: IndexMap<K, IndexSet<Component>>,
@@ -87,16 +87,16 @@ where
         c
     }
 
-    pub fn with_rbe(&mut self, rbe: Rbe<Component>) {
+    pub fn with_rbe(&mut self, rbe: RbeStruct<Component>) {
         self.rbe = rbe;
     }
 
     pub fn matches(&self, values: Vec<(K, V, Ctx)>) -> Result<MatchTableIter<K, V, R, Ctx>, RbeError<K, V, R, Ctx>> {
-        /*trace!(
+        trace!(
             "Checking if RbeTable {} matches [{}]",
             &self,
             values.iter().map(|(k, v, _ctx)| format!("({k} {v})")).join(", ")
-        );*/
+        );
         let mut pairs_found = 0;
         let mut candidates = Vec::new();
         let cs_empty = IndexSet::new();
@@ -192,7 +192,7 @@ where
         SK: Fn(&K) -> String,
         SV: Fn(&V) -> String,
     {
-        let rbe_str = self.rbe.map(&|c| {
+        let rbe_str = self.rbe.inner_rbe().map(&|c| {
             let key = self.component_key.get(c).unwrap();
             let cond = self.component_cond.get(c).unwrap();
             format!("{} {}", show_key(key), cond.show())
@@ -320,7 +320,7 @@ where
 {
     is_first: bool,
     state: IterState<K, V, R, Ctx>,
-    rbe: Rbe<Component>,
+    rbe: RbeStruct<Component>,
     open: bool,
 }
 
@@ -360,14 +360,14 @@ where
                     }
                 }
                 let bag = Bag::from_iter(vs.into_iter().map(|(_, _, _, c, _)| c));
-                match self.rbe.match_bag(&bag, self.open) {
+                match self.rbe.match_bag_interval(&bag, self.open) {
                     Ok(()) => {
                         trace!("Rbe {} matches bag {}", self.rbe, bag);
                         self.is_first = false;
                         Some(Ok(pending))
                     },
                     Err(err) => {
-                        trace!("### Rbe {} does not match bag {}, error: {err}", self.rbe, bag);
+                        trace!("### Rbe {:?} does not match bag {}, error: {err}", self.rbe, bag);
                         trace!("### Skipped error: {err}!\n");
                         self.next()
                     },
@@ -467,10 +467,10 @@ mod tests {
         let c1 = rbe_table.add_component('p', &is_a);
         let c2 = rbe_table.add_component('q', &ref_t);
         let c3 = rbe_table.add_component('q', &ref_u);
-        rbe_table.with_rbe(Rbe::and(vec![
-            Rbe::symbol(c1, 1, Max::IntMax(1)),
-            Rbe::symbol(c2, 1, Max::IntMax(1)),
-            Rbe::symbol(c3, 1, Max::Unbounded),
+        rbe_table.with_rbe(RbeStruct::and(vec![
+            RbeStruct::symbol(c1, 1, Max::IntMax(1)),
+            RbeStruct::symbol(c2, 1, Max::IntMax(1)),
+            RbeStruct::symbol(c3, 1, Max::Unbounded),
         ]));
 
         let mut iter = rbe_table.matches(vs).unwrap();
@@ -522,10 +522,10 @@ mod tests {
         let c1 = rbe_table.add_component('p', &is_a);
         let c2 = rbe_table.add_component('q', &ref_t);
         let c3 = rbe_table.add_component('q', &ref_u);
-        rbe_table.with_rbe(Rbe::and(vec![
-            Rbe::symbol(c1, 1, Max::IntMax(1)),
-            Rbe::symbol(c2, 1, Max::IntMax(1)),
-            Rbe::symbol(c3, 1, Max::Unbounded),
+        rbe_table.with_rbe(RbeStruct::and(vec![
+            RbeStruct::symbol(c1, 1, Max::IntMax(1)),
+            RbeStruct::symbol(c2, 1, Max::IntMax(1)),
+            RbeStruct::symbol(c3, 1, Max::Unbounded),
         ]));
 
         let mut iter = rbe_table.matches(vs).unwrap();
@@ -554,9 +554,9 @@ mod tests {
         let mut rbe_table: RbeTable<char, char, char, char> = RbeTable::new();
         let c1 = rbe_table.add_component('p', &is_a);
         let c2 = rbe_table.add_component('q', &is_a);
-        rbe_table.with_rbe(Rbe::and(vec![
-            Rbe::symbol(c1, 1, Max::IntMax(1)),
-            Rbe::symbol(c2, 1, Max::IntMax(1)),
+        rbe_table.with_rbe(RbeStruct::and(vec![
+            RbeStruct::symbol(c1, 1, Max::IntMax(1)),
+            RbeStruct::symbol(c2, 1, Max::IntMax(1)),
         ]));
 
         let mut iter = rbe_table.matches(vs).unwrap();
@@ -586,9 +586,9 @@ mod tests {
         let mut rbe_table: RbeTable<char, char, char, char> = RbeTable::new();
         let c1 = rbe_table.add_component('p', &is_a);
         let c2 = rbe_table.add_component('q', &is_a);
-        rbe_table.with_rbe(Rbe::and(vec![
-            Rbe::symbol(c1, 1, Max::IntMax(1)),
-            Rbe::symbol(c2, 1, Max::IntMax(1)),
+        rbe_table.with_rbe(RbeStruct::and(vec![
+            RbeStruct::symbol(c1, 1, Max::IntMax(1)),
+            RbeStruct::symbol(c2, 1, Max::IntMax(1)),
         ]));
 
         let mut iter = rbe_table.matches(vs).unwrap();
@@ -636,9 +636,9 @@ mod tests {
         let mut rbe_table: RbeTable<char, char, char, char> = RbeTable::new();
         let c1 = rbe_table.add_component('p', &is_x);
         let c2 = rbe_table.add_component('p', &is_y);
-        rbe_table.with_rbe(Rbe::and(vec![
-            Rbe::symbol(c1, 1, Max::IntMax(1)),
-            Rbe::symbol(c2, 1, Max::IntMax(1)),
+        rbe_table.with_rbe(RbeStruct::and(vec![
+            RbeStruct::symbol(c1, 1, Max::IntMax(1)),
+            RbeStruct::symbol(c2, 1, Max::IntMax(1)),
         ]));
 
         let mut iter = rbe_table.matches(vs).unwrap();
@@ -678,9 +678,9 @@ mod tests {
         let mut rbe_table: RbeTable<char, char, char, char> = RbeTable::new();
         let c1 = rbe_table.add_component('p', &is_x);
         let c2 = rbe_table.add_component('p', &is_y);
-        rbe_table.with_rbe(Rbe::and(vec![
-            Rbe::symbol(c1, 1, Max::IntMax(1)),
-            Rbe::symbol(c2, 1, Max::IntMax(1)),
+        rbe_table.with_rbe(RbeStruct::and(vec![
+            RbeStruct::symbol(c1, 1, Max::IntMax(1)),
+            RbeStruct::symbol(c2, 1, Max::IntMax(1)),
         ]));
 
         // matches() itself returns Err because 'z' matches no component

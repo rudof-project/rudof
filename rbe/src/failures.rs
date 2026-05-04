@@ -2,14 +2,14 @@ use crate::Context;
 use crate::Key;
 use crate::Ref;
 use crate::Value;
+use crate::rbe_cond::RbeCond;
 use crate::rbe_error::RbeError;
-use crate::rbe1::Rbe;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::fmt::Formatter;
 
-type RbeAndRbeError<K, V, R, Ctx> = (Box<Rbe<K, V, R, Ctx>>, RbeError<K, V, R, Ctx>);
+type RbeAndRbeError<K, V, R, Ctx> = (Box<RbeCond<K, V, R, Ctx>>, RbeError<K, V, R, Ctx>);
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct Failures<K, V, R, Ctx>
@@ -33,7 +33,7 @@ where
         Self { fs: Vec::new() }
     }
 
-    pub fn push(&mut self, expr: Rbe<K, V, R, Ctx>, err: RbeError<K, V, R, Ctx>) {
+    pub fn push(&mut self, expr: RbeCond<K, V, R, Ctx>, err: RbeError<K, V, R, Ctx>) {
         self.fs.push((Box::new(expr), err));
     }
 }

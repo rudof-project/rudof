@@ -1,12 +1,12 @@
-use crate::RbePrettyPrinter;
 use crate::{Bag, Cardinality, Max, Min, deriv_error::DerivError, deriv_n};
+use crate::{Interval, RbePrettyPrinter};
 use core::hash::Hash;
 use itertools::cloned;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fmt;
 use std::fmt::{Debug, Display};
-use tracing::trace;
+// use tracing::trace;
 
 /// Simple Implementation of Regular Bag Expressions
 /// The implementation is based on [Brzozowski derivatives of regular expressions](https://dl.acm.org/doi/10.1145/321239.321249),
@@ -63,7 +63,7 @@ impl<A> Rbe<A>
 where
     A: PartialEq + Eq + Hash + Clone + fmt::Debug + fmt::Display,
 {
-    pub fn match_bag(&self, bag: &Bag<A>, open: bool) -> Result<(), DerivError<A>> {
+    pub fn match_bag_deriv(&self, bag: &Bag<A>, open: bool) -> Result<(), DerivError<A>> {
         tracing::trace!("Matching bag {bag} against RBE {self} with open={open}");
         let deriv = self.deriv_bag(bag, open, &self.symbols());
         tracing::trace!("Deriv of RBE {self} with bag {bag} and open={open} is {deriv}");
@@ -83,59 +83,77 @@ where
         }
     }
 
-    pub fn empty() -> Rbe<A> {
-        Rbe::Empty
-    }
-
-    pub fn symbol(x: A, min: usize, max: Max) -> Rbe<A> {
-        Rbe::Symbol {
-            value: x,
-            card: Cardinality {
-                min: Min::from(min),
-                max,
-            },
-        }
-    }
-
-    pub fn or<I>(values: I) -> Rbe<A>
-    where
-        I: IntoIterator<Item = Rbe<A>>,
-    {
-        let rs: Vec<Rbe<A>> = values.into_iter().collect();
-        Rbe::Or { values: rs }
-    }
-
-    pub fn and<I>(values: I) -> Rbe<A>
-    where
-        I: IntoIterator<Item = Rbe<A>>,
-    {
-        let rs: Vec<Rbe<A>> = values.into_iter().collect();
-        Rbe::And { values: rs }
-    }
-
-    pub fn opt(v: Rbe<A>) -> Rbe<A> {
-        Rbe::Or {
-            values: vec![v, Rbe::Empty],
-        }
-    }
-
-    pub fn plus(v: Rbe<A>) -> Rbe<A> {
-        Rbe::Plus { value: Box::new(v) }
-    }
-
-    pub fn star(v: Rbe<A>) -> Rbe<A> {
-        Rbe::Star { value: Box::new(v) }
-    }
-
-    pub fn repeat(v: Rbe<A>, min: usize, max: Max) -> Rbe<A> {
-        Rbe::Repeat {
-            value: Box::new(v),
-            card: Cardinality::from(Min::from(min), max),
+    pub fn has_repeated_symbols(&self) -> bool {
+        match self {
+            Rbe::Fail { .. } => false,
+            Rbe::Empty => false,
+            Rbe::Symbol { .. } => false,
+            Rbe::And { values } | Rbe::Or { values } => values.iter().any(|v| v.has_repeated_symbols()),
+            Rbe::Star { value } | Rbe::Plus { value } => value.has_repeated_symbols(),
+            Rbe::Repeat { .. } => true,
         }
     }
 
     pub fn is_fail(&self) -> bool {
         matches!(self, Rbe::Fail { .. })
+    }
+
+    pub fn interval(&self, bag: &Bag<A>) -> Interval {
+        // trace!("Computing interval of RBE {self} with bag {bag}");
+        match self {
+            Rbe::Fail { error: _ } => Interval::fail(),
+            Rbe::Empty => Interval::zero_any(),
+            Rbe::Symbol { value, card } => {
+                let wa = bag.contains(value);
+                let n = Max::IntMax(card.min.value);
+                let int = Interval::new(card.max.div_up(&wa), n.div_down(&wa));
+                // trace!("Symbol {value} with cardinality {card} and bag {bag} has interval {int}");
+                int
+            },
+            Rbe::And { values } => {
+                let and = values
+                    .iter()
+                    .fold(Interval::zero_any(), |acc, v| acc.intersection(&v.interval(bag)));
+                // trace!("And {self} with bag {bag} is {and}");
+                and
+            },
+            Rbe::Or { values } => {
+                let or = values
+                    .iter()
+                    .fold(Interval::zero_zero(), |acc, v| acc.addition(&v.interval(bag)));
+                // trace!("Or {self} with bag {bag} is {or}");
+                or
+            },
+            Rbe::Star { value } => {
+                if self.no_symbols_in_bag(bag) {
+                    Interval::zero_any()
+                } else {
+                    let interval = value.interval(bag);
+                    if interval.is_empty() {
+                        interval
+                    } else {
+                        Interval::one_any()
+                    }
+                }
+            },
+            Rbe::Plus { value } => {
+                if self.no_symbols_in_bag(bag) {
+                    Interval::zero_zero()
+                } else {
+                    let interval = value.interval(bag);
+                    if interval.is_empty() {
+                        interval
+                    } else {
+                        Interval::new(Max::IntMax(1), interval.m)
+                    }
+                }
+            },
+            Rbe::Repeat { value: _, card: _ } => {
+                // Having repetitions on expressions breaks the single-occurrence bag expression
+                // This case should be handled by detecting repetitions and invoking the derivatives algorithm
+                todo!()
+            },
+        }
     }
 
     pub fn symbols(&self) -> HashSet<A> {
@@ -169,13 +187,17 @@ where
         }
     }
 
+    fn no_symbols_in_bag(&self, bag: &Bag<A>) -> bool {
+        self.symbols().iter().all(|symbol| bag.contains(symbol) == 0)
+    }
+
     pub fn deriv_bag(&self, bag: &Bag<A>, open: bool, controlled: &HashSet<A>) -> Rbe<A> {
         let mut current = (*self).clone();
         let mut processed = Bag::new();
         for (x, count) in bag.iter() {
             for _ in 0..count {
                 let deriv = current.deriv(x, 1, open, controlled);
-                trace!("Deriv of RBE {current} with symbol {x} and open={open} is {deriv}");
+                // trace!("Deriv of RBE {current} with symbol {x} and open={open} is {deriv}");
                 match deriv {
                     Rbe::Fail { error } => {
                         current = Rbe::Fail {
@@ -476,12 +498,12 @@ where
                         }
                     })
                     .collect();
-                write!(dest, "{}", parts.join(";"))
+                write!(dest, "({})", parts.join(";"))
             },
             Rbe::Or { values } => {
                 write!(
                     dest,
-                    "{}",
+                    "({})",
                     values.iter().map(|v| format!("{v:?}")).collect::<Vec<_>>().join("|")
                 )
             },
@@ -531,49 +553,73 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::RbeStruct;
     use tracing_test::traced_test;
     // use indoc::indoc;
     // use test_log::test;
 
+    fn sym<A>(x: A, min: usize, max: Max) -> Rbe<A>
+    where
+        A: Hash + Eq + Display + Clone + Debug,
+    {
+        RbeStruct::symbol(x, min, max).inner_rbe().clone()
+    }
+
+    fn rbe_and<A>(vs: Vec<Rbe<A>>) -> Rbe<A>
+    where
+        A: Hash + Eq + Display + Clone + Debug,
+    {
+        Rbe::And { values: vs }
+    }
+
+    fn rbe_or<A>(vs: Vec<Rbe<A>>) -> Rbe<A>
+    where
+        A: Hash + Eq + Display + Clone + Debug,
+    {
+        Rbe::Or { values: vs }
+    }
+
+    fn rbe_star<A>(v: Rbe<A>) -> Rbe<A>
+    where
+        A: Hash + Eq + Display,
+    {
+        Rbe::Star { value: Box::new(v) }
+    }
+
+    fn rbe_plus<A>(v: Rbe<A>) -> Rbe<A>
+    where
+        A: Hash + Eq + Display,
+    {
+        Rbe::Plus { value: Box::new(v) }
+    }
+
     #[test]
     fn deriv_a_1_1_and_b_opt_with_a() {
         // a?|b? #= b/2
-        let rbe = Rbe::and(vec![
-            Rbe::symbol('a', 1, Max::IntMax(1)),
-            Rbe::symbol('b', 0, Max::IntMax(1)),
-        ]);
-        let expected = Rbe::and(vec![
-            Rbe::symbol('a', 0, Max::IntMax(0)),
-            Rbe::symbol('b', 0, Max::IntMax(1)),
-        ]);
+        let rbe = rbe_and(vec![sym('a', 1, Max::IntMax(1)), sym('b', 0, Max::IntMax(1))]);
+        let expected = rbe_and(vec![sym('a', 0, Max::IntMax(0)), sym('b', 0, Max::IntMax(1))]);
         assert_eq!(rbe.deriv(&'a', 1, false, &HashSet::from(['a', 'b'])), expected);
     }
 
     #[test]
     fn deriv_symbol() {
-        let rbe = Rbe::symbol('x', 1, Max::IntMax(1));
+        let rbe = sym('x', 1, Max::IntMax(1));
         let d = rbe.deriv(&'x', 1, true, &HashSet::new());
-        assert_eq!(d, Rbe::symbol('x', 0, Max::IntMax(0)));
+        assert_eq!(d, sym('x', 0, Max::IntMax(0)));
     }
 
     #[test]
     fn symbols() {
-        let rbe = Rbe::and(vec![
-            Rbe::symbol('x', 1, Max::IntMax(1)),
-            Rbe::symbol('y', 1, Max::IntMax(1)),
-        ]);
+        let rbe = rbe_and(vec![sym('x', 1, Max::IntMax(1)), sym('y', 1, Max::IntMax(1))]);
         let expected = HashSet::from(['x', 'y']);
         assert_eq!(rbe.symbols(), expected);
     }
 
     #[test]
     fn symbols2() {
-        let rbe = Rbe::and(vec![
-            Rbe::or(vec![
-                Rbe::symbol('x', 1, Max::IntMax(1)),
-                Rbe::symbol('y', 2, Max::Unbounded),
-            ]),
-            Rbe::symbol('y', 1, Max::IntMax(1)),
+        let rbe = rbe_and(vec![
+            rbe_or(vec![sym('x', 1, Max::IntMax(1)), sym('y', 2, Max::Unbounded)]),
+            sym('y', 1, Max::IntMax(1)),
         ]);
         let expected = HashSet::from(['x', 'y']);
         assert_eq!(rbe.symbols(), expected);
@@ -581,149 +627,99 @@ mod tests {
 
     #[test]
     fn match_bag_y1_4_y_2() {
-        // y{1,4} #= y/2
-        let rbe = Rbe::symbol('y', 1, Max::IntMax(4));
-        assert_eq!(rbe.match_bag(&Bag::from(['y', 'y']), false), Ok(()));
+        let rbe = sym('y', 1, Max::IntMax(4));
+        assert_eq!(rbe.match_bag_deriv(&Bag::from(['y', 'y']), false), Ok(()));
     }
 
     #[test]
     fn match_bag_a_opt_or_b_opt_with_a() {
-        // a?|b? #= a
-        let rbe = Rbe::or(vec![
-            Rbe::symbol('a', 0, Max::IntMax(1)),
-            Rbe::symbol('b', 0, Max::IntMax(1)),
-        ]);
-        assert_eq!(rbe.match_bag(&Bag::from(['a']), false), Ok(()));
+        let rbe = rbe_or(vec![sym('a', 0, Max::IntMax(1)), sym('b', 0, Max::IntMax(1))]);
+        assert_eq!(rbe.match_bag_deriv(&Bag::from(['a']), false), Ok(()));
     }
 
     #[test]
     fn match_bag_a_opt_or_b_opt_with_b() {
-        // a?|b? #= a
-        let rbe = Rbe::or(vec![
-            Rbe::symbol('a', 0, Max::IntMax(1)),
-            Rbe::symbol('b', 0, Max::IntMax(1)),
-        ]);
-        assert_eq!(rbe.match_bag(&Bag::from(['b']), false), Ok(()));
+        let rbe = rbe_or(vec![sym('a', 0, Max::IntMax(1)), sym('b', 0, Max::IntMax(1))]);
+        assert_eq!(rbe.match_bag_deriv(&Bag::from(['b']), false), Ok(()));
     }
 
     #[test]
     fn match_bag_a_opt_and_b_opt_with_ba() {
-        // a?|b? #= a
-        let rbe = Rbe::and(vec![
-            Rbe::symbol('a', 0, Max::IntMax(1)),
-            Rbe::symbol('b', 0, Max::IntMax(1)),
-        ]);
-        assert_eq!(rbe.match_bag(&Bag::from(['b', 'a']), false), Ok(()));
+        let rbe = rbe_and(vec![sym('a', 0, Max::IntMax(1)), sym('b', 0, Max::IntMax(1))]);
+        assert_eq!(rbe.match_bag_deriv(&Bag::from(['b', 'a']), false), Ok(()));
     }
 
     #[test]
     fn match_bag_a_and_b_opt_with_ab() {
-        // a?|b? #= b/2
-        let rbe = Rbe::and(vec![
-            Rbe::symbol('a', 1, Max::IntMax(1)),
-            Rbe::symbol('b', 0, Max::IntMax(1)),
-        ]);
-        assert_eq!(rbe.match_bag(&Bag::from(['a', 'b']), false), Ok(()));
+        let rbe = rbe_and(vec![sym('a', 1, Max::IntMax(1)), sym('b', 0, Max::IntMax(1))]);
+        assert_eq!(rbe.match_bag_deriv(&Bag::from(['a', 'b']), false), Ok(()));
     }
 
     #[test]
     fn no_match_bag_a_and_b_opt_with_b_2() {
-        // a?|b? #= b/2
-        let rbe = Rbe::and(vec![
-            Rbe::symbol('a', 1, Max::IntMax(1)),
-            Rbe::symbol('b', 0, Max::IntMax(1)),
-        ]);
-        assert!(rbe.match_bag(&Bag::from(['b', 'b']), false).is_err());
+        let rbe = rbe_and(vec![sym('a', 1, Max::IntMax(1)), sym('b', 0, Max::IntMax(1))]);
+        assert!(rbe.match_bag_deriv(&Bag::from(['b', 'b']), false).is_err());
     }
 
     #[test]
     fn no_match_bag_a_and_b_opt_with_c() {
-        // a?|b? #= a
-        let rbe = Rbe::and(vec![
-            Rbe::symbol('a', 1, Max::IntMax(1)),
-            Rbe::symbol('b', 1, Max::IntMax(1)),
-        ]);
-        assert!(rbe.match_bag(&Bag::from(['c']), false).is_err());
+        let rbe = rbe_and(vec![sym('a', 1, Max::IntMax(1)), sym('b', 1, Max::IntMax(1))]);
+        assert!(rbe.match_bag_deriv(&Bag::from(['c']), false).is_err());
     }
 
     #[traced_test]
     #[test]
     fn match_bag_a_and_b_star_with_a_b() {
-        // (a;b)* #= a;b
-        let rbe = Rbe::star(Rbe::and(vec![
-            Rbe::symbol('a', 1, Max::IntMax(1)),
-            Rbe::symbol('b', 1, Max::IntMax(1)),
-        ]));
-        assert_eq!(rbe.match_bag(&Bag::from(['a', 'b']), true), Ok(()));
+        let rbe = rbe_star(rbe_and(vec![sym('a', 1, Max::IntMax(1)), sym('b', 1, Max::IntMax(1))]));
+        assert_eq!(rbe.match_bag_deriv(&Bag::from(['a', 'b']), true), Ok(()));
     }
 
     #[traced_test]
     #[test]
     fn no_match_bag_a_and_b_star_with_a() {
-        // (a;b)* #= a;b
-        let rbe = Rbe::star(Rbe::and(vec![
-            Rbe::symbol('a', 1, Max::IntMax(1)),
-            Rbe::symbol('b', 1, Max::IntMax(1)),
-        ]));
-        assert!(rbe.match_bag(&Bag::from(['a']), true).is_err());
+        let rbe = rbe_star(rbe_and(vec![sym('a', 1, Max::IntMax(1)), sym('b', 1, Max::IntMax(1))]));
+        assert!(rbe.match_bag_deriv(&Bag::from(['a']), true).is_err());
     }
 
     #[traced_test]
     #[test]
     fn no_match_bag_a_and_b_star_with_b() {
-        // (a;b)* #= a;b
-        let rbe = Rbe::star(Rbe::and(vec![
-            Rbe::symbol('a', 1, Max::IntMax(1)),
-            Rbe::symbol('b', 1, Max::IntMax(1)),
-        ]));
-        assert!(rbe.match_bag(&Bag::from(['b']), true).is_err());
+        let rbe = rbe_star(rbe_and(vec![sym('a', 1, Max::IntMax(1)), sym('b', 1, Max::IntMax(1))]));
+        assert!(rbe.match_bag_deriv(&Bag::from(['b']), true).is_err());
     }
 
     #[traced_test]
     #[test]
     fn match_bag_a_and_b_plus_with_a_b() {
-        // (a;b)+ #= a;b
-        let rbe = Rbe::plus(Rbe::and(vec![
-            Rbe::symbol('a', 1, Max::IntMax(1)),
-            Rbe::symbol('b', 1, Max::IntMax(1)),
-        ]));
-        assert_eq!(rbe.match_bag(&Bag::from(['a', 'b']), true), Ok(()));
+        let rbe = rbe_plus(rbe_and(vec![sym('a', 1, Max::IntMax(1)), sym('b', 1, Max::IntMax(1))]));
+        assert_eq!(rbe.match_bag_deriv(&Bag::from(['a', 'b']), true), Ok(()));
     }
 
     #[traced_test]
     #[test]
     fn match_group_a_and_b_star_or_c_with_a2_b2() {
-        // (a;b)+ #= a;b
-        let rbe = Rbe::or(vec![
-            Rbe::star(Rbe::and(vec![
-                Rbe::symbol('a', 1, Max::IntMax(1)),
-                Rbe::symbol('b', 1, Max::IntMax(1)),
-            ])),
-            Rbe::symbol('c', 1, Max::IntMax(1)),
+        let rbe = rbe_or(vec![
+            rbe_star(rbe_and(vec![sym('a', 1, Max::IntMax(1)), sym('b', 1, Max::IntMax(1))])),
+            sym('c', 1, Max::IntMax(1)),
         ]);
-        assert_eq!(rbe.match_bag(&Bag::from(['a', 'a', 'b', 'b']), false), Ok(()));
+        assert_eq!(rbe.match_bag_deriv(&Bag::from(['a', 'a', 'b', 'b']), false), Ok(()));
     }
 
     #[traced_test]
     #[test]
     fn match_group_a_and_b_star_or_c_with_a_b() {
-        // (a;b)+ #= a;b
-        let rbe = Rbe::or(vec![
-            Rbe::star(Rbe::and(vec![
-                Rbe::symbol('a', 1, Max::IntMax(1)),
-                Rbe::symbol('b', 1, Max::IntMax(1)),
-            ])),
-            Rbe::symbol('c', 1, Max::IntMax(1)),
+        let rbe = rbe_or(vec![
+            rbe_star(rbe_and(vec![sym('a', 1, Max::IntMax(1)), sym('b', 1, Max::IntMax(1))])),
+            sym('c', 1, Max::IntMax(1)),
         ]);
-        assert_eq!(rbe.match_bag(&Bag::from(['a', 'b']), false), Ok(()));
+        assert_eq!(rbe.match_bag_deriv(&Bag::from(['a', 'b']), false), Ok(()));
     }
 
     #[traced_test]
     #[test]
     fn match_a_25_with_a_2() {
-        // (a;b)+ #= a;b
-        let rbe = Rbe::symbol('a', 2, Max::IntMax(5));
-        assert_eq!(rbe.match_bag(&Bag::from(['a', 'a']), false), Ok(()));
+        let rbe = sym('a', 2, Max::IntMax(5));
+        assert_eq!(rbe.match_bag_deriv(&Bag::from(['a', 'a']), false), Ok(()));
     }
 
     /* I comment this test because it fails with
@@ -744,56 +740,30 @@ mod tests {
 
     #[test]
     fn display_or_inside_and_adds_parens() {
-        // (a|b);c  — Or child of And must be parenthesised
-        let rbe: Rbe<char> = Rbe::and(vec![
-            Rbe::or(vec![
-                Rbe::symbol('a', 1, Max::IntMax(1)),
-                Rbe::symbol('b', 1, Max::IntMax(1)),
-            ]),
-            Rbe::symbol('c', 1, Max::IntMax(1)),
+        let rbe: Rbe<char> = rbe_and(vec![
+            rbe_or(vec![sym('a', 1, Max::IntMax(1)), sym('b', 1, Max::IntMax(1))]),
+            sym('c', 1, Max::IntMax(1)),
         ]);
-        // Display: card {1,1} renders as "" (empty), so symbols appear bare
         assert_eq!(format!("{rbe}"), "(a|b);c");
     }
 
     #[test]
-    fn debug_or_inside_and_adds_parens() {
-        // Debug variant: card {1,1} renders as {1, 1}, chars as 'a'
-        let rbe: Rbe<char> = Rbe::and(vec![
-            Rbe::or(vec![
-                Rbe::symbol('a', 1, Max::IntMax(1)),
-                Rbe::symbol('b', 1, Max::IntMax(1)),
-            ]),
-            Rbe::symbol('c', 1, Max::IntMax(1)),
-        ]);
-        assert_eq!(format!("{rbe:?}"), "('a'{1, 1}|'b'{1, 1});'c'{1, 1}");
-    }
-
-    #[test]
     fn display_and_inside_or_no_extra_parens() {
-        // a;b|c  — And child of Or needs no extra parens (And binds tighter than Or)
-        let rbe: Rbe<char> = Rbe::or(vec![
-            Rbe::and(vec![
-                Rbe::symbol('a', 1, Max::IntMax(1)),
-                Rbe::symbol('b', 1, Max::IntMax(1)),
-            ]),
-            Rbe::symbol('c', 1, Max::IntMax(1)),
+        let rbe: Rbe<char> = rbe_or(vec![
+            rbe_and(vec![sym('a', 1, Max::IntMax(1)), sym('b', 1, Max::IntMax(1))]),
+            sym('c', 1, Max::IntMax(1)),
         ]);
         assert_eq!(format!("{rbe}"), "a;b|c");
     }
 
     #[test]
     fn display_nested_or_inside_and_deep() {
-        // (a;b|c);d — nested Or at any depth still gets parens when inside And
-        let rbe: Rbe<char> = Rbe::and(vec![
-            Rbe::or(vec![
-                Rbe::and(vec![
-                    Rbe::symbol('a', 1, Max::IntMax(1)),
-                    Rbe::symbol('b', 1, Max::IntMax(1)),
-                ]),
-                Rbe::symbol('c', 1, Max::IntMax(1)),
+        let rbe: Rbe<char> = rbe_and(vec![
+            rbe_or(vec![
+                rbe_and(vec![sym('a', 1, Max::IntMax(1)), sym('b', 1, Max::IntMax(1))]),
+                sym('c', 1, Max::IntMax(1)),
             ]),
-            Rbe::symbol('d', 1, Max::IntMax(1)),
+            sym('d', 1, Max::IntMax(1)),
         ]);
         assert_eq!(format!("{rbe}"), "(a;b|c);d");
     }
@@ -806,7 +776,7 @@ mod tests {
                 "card": {"min": 1, "max": 2 }
             }
         }"#;
-        let expected = Rbe::symbol("foo".to_string(), 1, Max::IntMax(2));
+        let expected = sym("foo".to_string(), 1, Max::IntMax(2));
         let rbe: Rbe<String> = serde_json::from_str(str).unwrap();
         assert_eq!(rbe, expected);
     }

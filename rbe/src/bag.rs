@@ -57,12 +57,6 @@ where
     }
 }
 
-/*impl<T> Default for Bag<T> {
-    fn default() -> Self {
-        Bag::new()
-    }
-}*/
-
 impl<T> Debug for Bag<T>
 where
     T: Hash + Eq + Debug,

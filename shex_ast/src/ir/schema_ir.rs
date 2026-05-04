@@ -429,6 +429,15 @@ impl SchemaIR {
         deps
     }
 
+    pub fn show_idx(&self, idx: &ShapeLabelIdx) -> String {
+        if let Some(label) = self.shape_label_from_idx(idx) {
+            self.show_label(label)
+        } else {
+            format!("_:{}", idx)
+        }
+    }
+
+    /// Returns a string representation of the shape expression corresponding to the given index, including the label if it exists.
     pub fn show_shape_idx(&self, idx: &ShapeLabelIdx, width: usize) -> String {
         let mut result = String::new();
         let idx_resolved = self.resolve_shape_ref(idx);
@@ -476,12 +485,12 @@ impl SchemaIR {
             ShapeExpr::NodeConstraint(nc) => format!("{nc}"),
             ShapeExpr::Shape(shape) => self.show_shape(shape, width),
             ShapeExpr::External {} => "EXTERNAL".to_string(),
-            ShapeExpr::Ref { idx } => format!("@{}", idx),
+            ShapeExpr::Ref { idx } => format!("@{}", self.show_idx(idx)),
             ShapeExpr::Empty => "{}".to_string(),
         }
     }
 
-    fn show_shape(&self, shape: &Shape, width: usize) -> String {
+    pub fn show_shape(&self, shape: &Shape, width: usize) -> String {
         let extends = if shape.extends().is_empty() {
             "".to_string()
         } else {
@@ -490,7 +499,7 @@ impl SchemaIR {
                 shape
                     .extends()
                     .iter()
-                    .map(|e| format!("EXTENDS @{}", e))
+                    .map(|e| format!("EXTENDS @{}", self.show_idx(e)))
                     .collect::<Vec<_>>()
                     .join(" ")
             )
@@ -512,7 +521,7 @@ impl SchemaIR {
         let show_pred = |p: &Pred| self.prefixmap.qualify(p.iri());
         let show_cond = |node: &Node| node.show_qualified(&self.prefixmap()).to_string();
         let rbe = shape.triple_expr().show_rbe_table(show_pred, show_cond, width);
-        format!("{extends}{closed}{extra}{{{rbe}}}")
+        format!("{extends}{closed}{extra} {{{rbe}}}")
     }
 
     pub fn format_cycle_details(

@@ -8,7 +8,7 @@ mod tests {
 
     use crate::{RbeTest, RbeTestResult, RbeTestsResults};
     use indoc::indoc;
-    use rbe::{Bag, Max, rbe::Rbe};
+    use rbe::{Bag, Max, RbeStruct};
 
     /// A collection of rbe tests.
     #[derive(Clone, Debug, Serialize, Deserialize, Default)]
@@ -106,14 +106,14 @@ mod tests {
     #[test]
     fn check_serialization() {
         let values = vec![
-            Rbe::symbol("a".to_string(), 1, Max::IntMax(1)),
-            Rbe::symbol("b".to_string(), 2, Max::IntMax(3)),
+            RbeStruct::symbol("a".to_string(), 1, Max::IntMax(1)),
+            RbeStruct::symbol("b".to_string(), 2, Max::IntMax(3)),
         ];
         let mut rbe_test = RbeTest::default();
         rbe_test.set_group("test".to_string());
         rbe_test.set_name("basic".to_string());
         rbe_test.set_full_name("test/basic".to_string());
-        rbe_test.set_rbe(Rbe::and(values));
+        rbe_test.set_rbe(RbeStruct::and(values));
         rbe_test.set_bag(Bag::from(["a".to_string(), "b".to_string()]));
         let ts = vec![rbe_test];
         let mut rbe_tests = RbeTests::default();

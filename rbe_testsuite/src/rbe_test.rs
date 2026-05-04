@@ -1,5 +1,5 @@
 use crate::{MatchResult, RbeTestResult, TestType};
-use rbe::{Bag, deriv_error::DerivError, rbe::Rbe};
+use rbe::{Bag, RbeStruct, deriv_error::DerivError};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
@@ -13,7 +13,7 @@ pub struct RbeTest {
     #[serde(skip)]
     full_name: String,
 
-    rbe: Rbe<TestType>,
+    rbe: RbeStruct<TestType>,
 
     bag: Bag<TestType>,
 
@@ -49,7 +49,7 @@ impl RbeTest {
         self.full_name = full_name;
     }
 
-    pub fn set_rbe(&mut self, rbe: Rbe<TestType>) {
+    pub fn set_rbe(&mut self, rbe: RbeStruct<TestType>) {
         self.rbe = rbe;
     }
 
@@ -63,7 +63,7 @@ impl RbeTest {
 
     /// Runs this test
     pub fn run(&self) -> RbeTestResult {
-        match (&self.match_result, self.rbe.match_bag(&self.bag, self.open)) {
+        match (&self.match_result, self.rbe.match_bag_interval(&self.bag, self.open)) {
             (MatchResult::Pass, Ok(())) => RbeTestResult::passed(self.name().to_string()),
             (MatchResult::Pass, Err(err)) => RbeTestResult::failed(self.name().to_string(), err),
             (MatchResult::Fail, Ok(())) => RbeTestResult::failed(

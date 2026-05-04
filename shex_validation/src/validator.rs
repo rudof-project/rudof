@@ -114,8 +114,16 @@ impl Validator {
         S: NeighsRDF + QueryRDF,
     {
         let mut engine = Engine::new(&self.config);
+
+        // Fill the engine's pending atoms with the node-shape pairs from the QueryShapeMap,
+        // converting shape labels to indices and nodes to objects as needed.
+        // Collect any failures for node-shape pairs that could not be processed due to missing shape labels or node conversion errors,
+        // so that they can be reported in the final ResultShapeMap.
         let failures = self.fill_pending(&mut engine, shapemap, rdf, schema)?;
+
+        // Validate the pending atoms in the engine, which will process the valid node-shape pairs
         engine.validate_pending(rdf, schema)?;
+
         let mut result = self.result_map(&mut engine, maybe_nodes_prefixmap)?;
         for (node, shape_label, error_msg) in failures {
             let status = ValidationStatus::non_conformant(error_msg, Value::Null);
@@ -132,6 +140,12 @@ impl Validator {
         Ok(result)
     }
 
+    /// Fill the engine's pending atoms with the node-shape pairs from the QueryShapeMap,
+    /// converting shape labels to indices and nodes to objects as needed.
+    ///
+    /// Returns a list of failures for any node-shape pairs that could not be processed
+    /// due to missing shape labels or node conversion errors, so that they can be reported
+    /// in the final ResultShapeMap.
     fn fill_pending<S>(
         &self,
         engine: &mut Engine,
@@ -195,6 +209,8 @@ impl Validator {
         }
     }
 
+    /// Build a ResultShapeMap from the engine's checked and pending atoms, using the provided nodes prefix map and
+    /// the schema's prefix map for shapes.
     pub fn result_map(&self, engine: &mut Engine, maybe_nodes_prefixmap: &Option<PrefixMap>) -> Result<ResultShapeMap> {
         let nodes_prefixmap = match maybe_nodes_prefixmap {
             Some(pm) => pm.clone(),
@@ -207,12 +223,11 @@ impl Validator {
             let (node, idx) = atom.get_value();
             let label = self.get_shape_label(idx)?;
             match atom {
-                Atom::Pos(pa) => {
-                    let reasons = engine.find_reasons(pa);
+                Atom::Pos(positive_atom) => {
+                    let reasons = engine.find_reasons(positive_atom);
                     let json_reasons = json_reasons(&reasons)?;
                     let str_reasons = show_reasons(&reasons, &nodes_prefixmap, &self.schema, self.config.width())?;
                     let status = ValidationStatus::conformant(str_reasons, json_reasons);
-                    // result.add_ok()
                     result.add_result((*node).clone(), label.clone(), status).map_err(|e| {
                         ValidatorError::AddingConformantError {
                             node: node.to_string(),
@@ -221,10 +236,11 @@ impl Validator {
                         }
                     })?;
                 },
-                Atom::Neg(na) => {
-                    let errors = engine.find_errors(na);
+                Atom::Neg(negative_atom) => {
+                    let errors = engine.find_errors(negative_atom);
                     let json_errors = json_errors(&errors)?;
-                    let status = ValidationStatus::non_conformant(show_errors(&errors), json_errors);
+                    let str_errors = show_errors(&errors, &nodes_prefixmap, &self.schema, self.config.width())?;
+                    let status = ValidationStatus::non_conformant(str_errors, json_errors);
                     result.add_result((*node).clone(), label.clone(), status).map_err(|e| {
                         ValidatorError::AddingNonConformantError {
                             node: node.to_string(),
@@ -255,16 +271,34 @@ impl Validator {
     }
 }
 
-fn show_errors(errors: &[ValidatorError]) -> String {
+fn show_errors(
+    errors: &[ValidatorError],
+    nodes_prefixmap: &PrefixMap,
+    schema: &SchemaIR,
+    width: usize,
+) -> Result<String> {
     let mut result = String::new();
-    if errors.len() == 1 {
-        result.push_str(format!("Error {}\n", errors.first().unwrap()).as_str());
-    } else {
-        for (idx, err) in errors.iter().enumerate() {
-            result.push_str(format!("Error #{idx}: {err}\n").as_str());
-        }
+    match errors.len() {
+        0 => {
+            result.push_str("No detailed error provided.\n");
+        },
+        1 => {
+            let str = errors[0].show_qualified(nodes_prefixmap, schema, width)?;
+            result.push_str(&str);
+        },
+        _ => {
+            for (idx, error) in errors.iter().enumerate() {
+                result.push_str(
+                    format!(
+                        "Error #{idx}: {}\n",
+                        error.show_qualified(nodes_prefixmap, schema, width)?
+                    )
+                    .as_str(),
+                );
+            }
+        },
     }
-    result
+    Ok(result)
 }
 
 fn json_errors(errors: &[ValidatorError]) -> Result<Value> {
@@ -303,12 +337,10 @@ fn show_reasons(reasons: &[Reason], nodes_prefixmap: &PrefixMap, schema: &Schema
     match reasons.len() {
         0 => {
             result.push_str("No detailed reason provided.\n");
-            return Ok(result);
         },
         1 => {
             let str = reasons[0].show_qualified(nodes_prefixmap, schema, width)?;
             result.push_str(&str);
-            return Ok(result);
         },
         _ => {
             for (idx, reason) in reasons.iter().enumerate() {

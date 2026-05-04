@@ -103,16 +103,22 @@ impl ResultShapeMap {
                             (
                                 ValidationStatus::Conformant(_conformant_info),
                                 ValidationStatus::NonConformant(_non_conformant_info),
-                            ) => todo!(),
+                            ) => todo!(
+                                "Handle the case where we have a conformant status and a non-conformant status for the same node and shape"
+                            ),
                             (ValidationStatus::Conformant(_conformant_info), ValidationStatus::Pending) => {},
                             (
                                 ValidationStatus::Conformant(_conformant_info),
                                 ValidationStatus::Inconsistent(_conformant_info2, _non_conformant_info2),
-                            ) => todo!(),
+                            ) => todo!(
+                                "Handle the case where we have a conformant status and an inconsistent status for the same node and shape"
+                            ),
                             (
                                 ValidationStatus::NonConformant(_non_conformant_info),
                                 ValidationStatus::Conformant(_conformant_info),
-                            ) => todo!(),
+                            ) => todo!(
+                                "Handle the case where we have a non-conformant status and a conformant status for the same node and shape"
+                            ),
                             (
                                 ValidationStatus::NonConformant(_non_conformant_info),
                                 ValidationStatus::NonConformant(_non_conformant_info2),
@@ -121,7 +127,9 @@ impl ResultShapeMap {
                             (
                                 ValidationStatus::NonConformant(_non_conformant_info),
                                 ValidationStatus::Inconsistent(_conformant_info2, _non_conformant_info2),
-                            ) => todo!(),
+                            ) => todo!(
+                                "Handle the case where we have a non-conformant status and an inconsistent status for the same node and shape"
+                            ),
                             (ValidationStatus::Pending, ValidationStatus::Conformant(conformant_info)) => {
                                 *cell_status = ValidationStatus::Conformant(conformant_info)
                             },
@@ -132,23 +140,33 @@ impl ResultShapeMap {
                             (
                                 ValidationStatus::Pending,
                                 ValidationStatus::Inconsistent(_conformant_info, _non_conformant_info),
-                            ) => todo!(),
+                            ) => todo!(
+                                "Handle the case where we have a pending status and an inconsistent status for the same node and shape"
+                            ),
                             (
                                 ValidationStatus::Inconsistent(_conformant_info, _non_conformant_info),
                                 ValidationStatus::Conformant(_conformant_info2),
-                            ) => todo!(),
+                            ) => todo!(
+                                "Handle the case where we have an inconsistent status and a conformant status for the same node and shape"
+                            ),
                             (
                                 ValidationStatus::Inconsistent(_conformant_info, _non_conformant_info),
                                 ValidationStatus::NonConformant(_non_conformant_info2),
-                            ) => todo!(),
+                            ) => todo!(
+                                "Handle the case where we have an inconsistent status and a non-conformant status for the same node and shape"
+                            ),
                             (
                                 ValidationStatus::Inconsistent(_conformant_info, _non_conformant_info),
                                 ValidationStatus::Pending,
-                            ) => todo!(),
+                            ) => todo!(
+                                "Handle the case where we have an inconsistent status and a pending status for the same node and shape"
+                            ),
                             (
                                 ValidationStatus::Inconsistent(_conformant_info, _non_conformant_info),
                                 ValidationStatus::Inconsistent(_conformant_info2, _non_conformant_info2),
-                            ) => todo!(),
+                            ) => todo!(
+                                "Handle the case where we have two inconsistent statuses for the same node and shape"
+                            ),
                         };
                         ok()
                     },
