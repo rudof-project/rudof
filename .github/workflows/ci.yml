@@ -116,4 +116,4 @@ jobs:
       - name: Run cargo test
         env:
           CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER: wasm-bindgen-test-runner
-        run: cargo test --workspace --target wasm32-unknown-unknown
+        run: cargo test --workspace --target wasm32-unknown-unknown --lib --tests

@@ -118,9 +118,20 @@ where
                 and
             },
             Rbe::Or { values } => {
-                let or = values
-                    .iter()
-                    .fold(Interval::zero_zero(), |acc, v| acc.addition(&v.interval(bag)));
+                // Minkowski sum: every branch must have a valid scale factor.
+                // If any branch interval is empty the whole Or is unsatisfiable.
+                let or = values.iter().fold(Interval::zero_zero(), |acc, v| {
+                    if acc.is_empty() {
+                        acc
+                    } else {
+                        let iv = v.interval(bag);
+                        if iv.is_empty() {
+                            Interval::fail()
+                        } else {
+                            acc.addition(&iv)
+                        }
+                    }
+                });
                 // trace!("Or {self} with bag {bag} is {or}");
                 or
             },
@@ -138,7 +149,12 @@ where
             },
             Rbe::Plus { value } => {
                 if self.no_symbols_in_bag(bag) {
-                    Interval::zero_zero()
+                    // A single nullable repetition satisfies Plus with an empty bag.
+                    if value.nullable() {
+                        Interval::zero_any()
+                    } else {
+                        Interval::zero_zero()
+                    }
                 } else {
                     let interval = value.interval(bag);
                     if interval.is_empty() {
@@ -310,6 +326,11 @@ where
                 Self::mk_and(&d, &rest)
             },
             Rbe::Star { ref value } => {
+                if open && !controlled.contains(x) {
+                    // Extra symbol (not controlled): the Star stays in its current state.
+                    // No iteration is forced; zero-or-more semantics still holds.
+                    return Rbe::Star { value: value.clone() };
+                }
                 let d = value.deriv(x, n, open, controlled);
                 Self::mk_and(&d, &Rbe::Star { value: value.clone() })
             },

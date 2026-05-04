@@ -250,6 +250,7 @@ axum-server = "0.7"
 base64 = "0.22.1"
 calamine = { version = "0.31" }
 chrono = { version = "0.4", features = ["serde"] }
+criterion = { version = "0.5", features = ["html_reports"] }
 clap = { version = "4.5", features = ["derive"] }
 clap_complete_command.version = "0.6.1"
 clientele = { version = "0.3.8", default-features = false, features = [
@@ -296,7 +297,7 @@ pgschema = { version = "0.2.18", path = "./pgschema" }
 petgraph = { version = "0.8" }
 prefixmap = { version = "0.2.18", path = "./prefixmap" }
 pretty = { version = "0.12" }
-proptest = "1.9.0"
+proptest = { version = "1.11.0", default-features = false, features = ["std", "bit-set"] }
 pyrudof = { version = "0.2.18", path = "./python" }
 rand = "0.8"
 rayon = "1.7"

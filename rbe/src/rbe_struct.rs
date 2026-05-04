@@ -38,14 +38,16 @@ where
     }
 
     pub fn match_bag_interval(&self, bag: &Bag<A>, open: bool) -> Result<(), DerivError<A>> {
-        if self.has_repeats || open {
+        if self.has_repeats {
             self.rbe.match_bag_deriv(bag, open)
         } else {
-            let extra_symbols = self.extra_symbols(bag);
-            if !extra_symbols.is_empty() {
-                return Err(DerivError::ExtraSymbolsClosed {
-                    extra_symbols: extra_symbols.into_iter().map(|s| s.to_string()).collect(),
-                });
+            if !open {
+                let extra_symbols = self.extra_symbols(bag);
+                if !extra_symbols.is_empty() {
+                    return Err(DerivError::ExtraSymbolsClosed {
+                        extra_symbols: extra_symbols.into_iter().map(|s| s.to_string()).collect(),
+                    });
+                }
             }
             let interval = self.rbe.interval(bag);
             if interval.contains(1) {
@@ -269,6 +271,83 @@ where
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let rbe = Rbe::<A>::deserialize(deserializer)?;
         Ok(Self::from(rbe))
+    }
+}
+
+#[cfg(test)]
+mod prop_tests {
+    use super::*;
+    use proptest::collection::vec as prop_vec;
+    use proptest::prelude::*;
+
+    fn arb_char() -> impl Strategy<Value = char> {
+        prop_oneof![Just('a'), Just('b'), Just('c')]
+    }
+
+    /// Characters used in bags include 'd' so that bags may contain symbols absent from the RBE,
+    /// exercising the extra-symbol handling in both algorithms.
+    fn arb_bag_char() -> impl Strategy<Value = char> {
+        prop_oneof![Just('a'), Just('b'), Just('c'), Just('d')]
+    }
+
+    /// Generates an `RbeStruct<char>` without `Repeat` nodes (which have a `todo!()` in the
+    /// interval algorithm).  The depth and node-count limits keep generation tractable.
+    fn arb_rbe_struct() -> impl Strategy<Value = RbeStruct<char>> {
+        let leaf = prop_oneof![
+            2 => Just(RbeStruct::<char>::empty()),
+            8 => (arb_char(), 0usize..=2usize, 0usize..=2usize)
+                    .prop_map(|(sym, min, extra)| RbeStruct::symbol(sym, min, Max::IntMax(min + extra))),
+        ];
+        leaf.prop_recursive(3, 32, 3, |inner| {
+            prop_oneof![
+                prop_vec(inner.clone(), 2..=3).prop_map(RbeStruct::and),
+                prop_vec(inner.clone(), 2..=3).prop_map(RbeStruct::or),
+                inner.clone().prop_map(RbeStruct::star),
+                inner.prop_map(RbeStruct::plus),
+            ]
+        })
+    }
+
+    fn arb_bag() -> impl Strategy<Value = Bag<char>> {
+        prop_vec(arb_bag_char(), 0..=4).prop_map(|cs| cs.into_iter().collect::<Bag<char>>())
+    }
+
+    proptest! {
+        /// For every generated RBE and bag the derivatives algorithm and the interval algorithm
+        /// must agree on whether the bag matches (both Ok) or not (both Err), when matching is
+        /// closed (`open = false`).
+        #[test]
+        fn deriv_and_interval_agree_closed(
+            rbe in arb_rbe_struct(),
+            bag in arb_bag(),
+        ) {
+            let deriv    = rbe.match_bag_deriv(&bag, false);
+            let interval = rbe.match_bag_interval(&bag, false);
+            prop_assert_eq!(
+                deriv.is_ok(),
+                interval.is_ok(),
+                "rbe={:?}  bag={:?}\n  deriv={:?}\n  interval={:?}",
+                rbe, bag, deriv, interval
+            );
+        }
+
+        /// Same check with open matching (`open = true`).  In this branch `match_bag_interval`
+        /// uses the interval algorithm directly (skipping the extra-symbol check), so this
+        /// property is a real correctness test and not merely a tautology.
+        #[test]
+        fn deriv_and_interval_agree_open(
+            rbe in arb_rbe_struct(),
+            bag in arb_bag(),
+        ) {
+            let deriv    = rbe.match_bag_deriv(&bag, true);
+            let interval = rbe.match_bag_interval(&bag, true);
+            prop_assert_eq!(
+                deriv.is_ok(),
+                interval.is_ok(),
+                "rbe={:?}  bag={:?}\n  deriv={:?}\n  interval={:?}",
+                rbe, bag, deriv, interval
+            );
+        }
     }
 }
 

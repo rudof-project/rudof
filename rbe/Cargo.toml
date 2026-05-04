@@ -22,4 +22,12 @@ tracing = { workspace = true }
 
 [dev-dependencies]
 indoc.workspace = true
+proptest.workspace = true
 tracing-test.workspace = true
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+criterion = { workspace = true }
+
+[[bench]]
+name = "match_bag"
+harness = false
