@@ -125,7 +125,11 @@ where
                         acc
                     } else {
                         let iv = v.interval(bag);
-                        if iv.is_empty() { Interval::fail() } else { acc.addition(&iv) }
+                        if iv.is_empty() {
+                            Interval::fail()
+                        } else {
+                            acc.addition(&iv)
+                        }
                     }
                 });
                 // trace!("Or {self} with bag {bag} is {or}");
@@ -146,7 +150,11 @@ where
             Rbe::Plus { value } => {
                 if self.no_symbols_in_bag(bag) {
                     // A single nullable repetition satisfies Plus with an empty bag.
-                    if value.nullable() { Interval::zero_any() } else { Interval::zero_zero() }
+                    if value.nullable() {
+                        Interval::zero_any()
+                    } else {
+                        Interval::zero_zero()
+                    }
                 } else {
                     let interval = value.interval(bag);
                     if interval.is_empty() {
