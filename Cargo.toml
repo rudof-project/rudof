@@ -297,7 +297,7 @@ pgschema = { version = "0.2.18", path = "./pgschema" }
 petgraph = { version = "0.8" }
 prefixmap = { version = "0.2.18", path = "./prefixmap" }
 pretty = { version = "0.12" }
-proptest = "1.9.0"
+proptest = "1.11.0"
 pyrudof = { version = "0.2.18", path = "./python" }
 rand = "0.8"
 rayon = "1.7"
