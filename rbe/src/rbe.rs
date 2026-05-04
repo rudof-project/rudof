@@ -326,6 +326,11 @@ where
                 Self::mk_and(&d, &rest)
             },
             Rbe::Star { ref value } => {
+                if open && !controlled.contains(x) {
+                    // Extra symbol (not controlled): the Star stays in its current state.
+                    // No iteration is forced; zero-or-more semantics still holds.
+                    return Rbe::Star { value: value.clone() };
+                }
                 let d = value.deriv(x, n, open, controlled);
                 Self::mk_and(&d, &Rbe::Star { value: value.clone() })
             },

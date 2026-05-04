@@ -38,14 +38,16 @@ where
     }
 
     pub fn match_bag_interval(&self, bag: &Bag<A>, open: bool) -> Result<(), DerivError<A>> {
-        if self.has_repeats || open {
+        if self.has_repeats {
             self.rbe.match_bag_deriv(bag, open)
         } else {
-            let extra_symbols = self.extra_symbols(bag);
-            if !extra_symbols.is_empty() {
-                return Err(DerivError::ExtraSymbolsClosed {
-                    extra_symbols: extra_symbols.into_iter().map(|s| s.to_string()).collect(),
-                });
+            if !open {
+                let extra_symbols = self.extra_symbols(bag);
+                if !extra_symbols.is_empty() {
+                    return Err(DerivError::ExtraSymbolsClosed {
+                        extra_symbols: extra_symbols.into_iter().map(|s| s.to_string()).collect(),
+                    });
+                }
             }
             let interval = self.rbe.interval(bag);
             if interval.contains(1) {
@@ -330,8 +332,8 @@ mod prop_tests {
         }
 
         /// Same check with open matching (`open = true`).  In this branch `match_bag_interval`
-        /// always delegates to `match_bag_deriv`, so the property holds trivially, but the test
-        /// guards against regressions in the dispatch logic.
+        /// uses the interval algorithm directly (skipping the extra-symbol check), so this
+        /// property is a real correctness test and not merely a tautology.
         #[test]
         fn deriv_and_interval_agree_open(
             rbe in arb_rbe_struct(),
