@@ -30,7 +30,7 @@ pub enum ValidatorError {
         errors: ValidatorErrors,
     },
 
-    #[error("Partition failed {node}@{idx}.\nPartition:\n{partition}\nErrors:\n{errors}")]
+    #[error("Partition failed {node}@{idx}.\nErrors:\n{errors}")]
     PartitionFailed {
         node: Box<Node>,
         shape: Box<Shape>,
@@ -190,11 +190,12 @@ fn add_errors_to_tree(
     errors: &ValidatorErrors,
     nodes_prefixmap: &PrefixMap,
     schema: &SchemaIR,
+    width: usize,
 ) -> Result<(), PrefixMapError> {
     for err in errors.iter() {
-        let child_root = err.root_qualified(nodes_prefixmap, schema)?;
+        let child_root = err.root_qualified(nodes_prefixmap, schema, width)?;
         let mut child_tree = Tree::new(child_root);
-        err.build_tree(&mut child_tree, nodes_prefixmap, schema)?;
+        err.build_tree(&mut child_tree, nodes_prefixmap, schema, width)?;
         tree.leaves.push(child_tree);
     }
     Ok(())
@@ -208,7 +209,12 @@ impl ValidatorError {
             .unwrap_or_else(|| idx.to_string())
     }
 
-    fn root_qualified(&self, nodes_prefixmap: &PrefixMap, schema: &SchemaIR) -> Result<String, PrefixMapError> {
+    fn root_qualified(
+        &self,
+        nodes_prefixmap: &PrefixMap,
+        schema: &SchemaIR,
+        width: usize,
+    ) -> Result<String, PrefixMapError> {
         let show_node = |n: &Node| n.show_qualified(nodes_prefixmap);
         let show_idx = |idx: &ShapeLabelIdx| Self::show_idx(idx, schema);
 
@@ -221,14 +227,12 @@ impl ValidatorError {
                 show_idx(idx),
                 show_node(node)
             ),
-            ValidatorError::PartitionComponentFailed {
-                node, idx, partition, ..
-            } => {
+            ValidatorError::PartitionComponentFailed { node, idx, .. } => {
                 format!(
-                    "Partition component failed ({}@{}):\nPartition:\n{}",
+                    "Partition component failed ({}@{})",
                     show_node(node),
                     show_idx(idx),
-                    partition.show_qualified(nodes_prefixmap, schema)?
+                    // partition.show_qualified(nodes_prefixmap, schema, width)?
                 )
             },
             ValidatorError::PartitionFailed {
@@ -238,7 +242,7 @@ impl ValidatorError {
                     "Partition failed {}@{}:\nPartition:\n{}",
                     show_node(node),
                     show_idx(idx),
-                    partition.show_qualified(nodes_prefixmap, schema)?
+                    partition.show_qualified(nodes_prefixmap, schema, width)?
                 )
             },
             ValidatorError::ShapeFailedNoPartitions { node, idx, .. } => {
@@ -295,6 +299,7 @@ impl ValidatorError {
         tree: &mut Tree<String>,
         nodes_prefixmap: &PrefixMap,
         schema: &SchemaIR,
+        width: usize,
     ) -> Result<(), PrefixMapError> {
         match self {
             ValidatorError::PartitionComponentFailed { errors, .. }
@@ -302,12 +307,14 @@ impl ValidatorError {
             | ValidatorError::AbstractShapeError { errors, .. }
             | ValidatorError::DescendantShapeError { errors, .. }
             | ValidatorError::DescendantsShapeError { errors, .. }
-            | ValidatorError::ShapeAndError { errors, .. } => add_errors_to_tree(tree, errors, nodes_prefixmap, schema),
+            | ValidatorError::ShapeAndError { errors, .. } => {
+                add_errors_to_tree(tree, errors, nodes_prefixmap, schema, width)
+            },
             ValidatorError::ShapeOrError { errors, .. } => {
                 for (idx, errs) in errors {
                     let label_str = Self::show_idx(idx, schema);
                     let mut branch_tree = Tree::new(format!("Branch {label_str}:"));
-                    add_errors_to_tree(&mut branch_tree, errs, nodes_prefixmap, schema)?;
+                    add_errors_to_tree(&mut branch_tree, errs, nodes_prefixmap, schema, width)?;
                     tree.leaves.push(branch_tree);
                 }
                 Ok(())
@@ -321,9 +328,9 @@ impl ValidatorError {
             },
             ValidatorError::ShapeFailed { errors, .. } => {
                 for err in errors {
-                    let child_root = err.root_qualified(nodes_prefixmap, schema)?;
+                    let child_root = err.root_qualified(nodes_prefixmap, schema, width)?;
                     let mut child_tree = Tree::new(child_root);
-                    err.build_tree(&mut child_tree, nodes_prefixmap, schema)?;
+                    err.build_tree(&mut child_tree, nodes_prefixmap, schema, width)?;
                     tree.leaves.push(child_tree);
                 }
                 Ok(())
@@ -336,11 +343,11 @@ impl ValidatorError {
         &self,
         nodes_prefixmap: &PrefixMap,
         schema: &SchemaIR,
-        _width: usize,
+        width: usize,
     ) -> Result<String, PrefixMapError> {
-        let root_str = self.root_qualified(nodes_prefixmap, schema)?;
+        let root_str = self.root_qualified(nodes_prefixmap, schema, width)?;
         let mut tree = Tree::new(root_str);
-        self.build_tree(&mut tree, nodes_prefixmap, schema)?;
+        self.build_tree(&mut tree, nodes_prefixmap, schema, width)?;
         Ok(format!("{tree}"))
     }
 }

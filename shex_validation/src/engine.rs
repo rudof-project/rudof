@@ -680,7 +680,7 @@ impl Engine {
                                 neighs_subset.iter().map(|(p, v, _ctx)| format!("{p} {v}")).join(", ")
                             );
                             reasons_in_loop.push(Reason::PartitionComponent {
-                                maybe_label: maybe_label.clone(),
+                                maybe_label: *maybe_label,
                                 node: node.clone(),
                                 shape: Box::new(shape.clone()),
                                 idx: *idx,
@@ -692,7 +692,7 @@ impl Engine {
                         },
                         Either::Left(errs) => {
                             errors_in_loop.push(ValidatorError::PartitionComponentFailed {
-                                maybe_label: maybe_label.clone(),
+                                maybe_label: *maybe_label,
                                 node: Box::new(node.clone()),
                                 shape: Box::new(shape.clone()),
                                 idx: *idx,

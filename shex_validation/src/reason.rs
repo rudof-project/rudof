@@ -83,30 +83,43 @@ impl Reason {
     fn build_tree(
         &self,
         tree: &mut Tree<String>,
-        _nodes_prefixmap: &PrefixMap,
-        _schema: &SchemaIR,
+        nodes_prefixmap: &PrefixMap,
+        schema: &SchemaIR,
+        width: usize,
     ) -> Result<(), PrefixMapError> {
         match self {
-            Reason::NodeConstraint { .. } => Ok(()),
+            Reason::NodeConstraint { .. }
+            | Reason::Empty { .. }
+            | Reason::External { .. }
+            | Reason::Shape { .. }
+            | Reason::ShapeRef { .. } => Ok(()),
             Reason::ShapeAnd { reasons, .. } => {
-                let mut reasons_tree = Tree::new("reasons".to_string());
-                for reason in reasons {
-                    for r in reason {
-                        r.build_tree(&mut reasons_tree, _nodes_prefixmap, _schema)?;
+                for reason_group in reasons {
+                    for r in reason_group {
+                        let child_root = r.root_qualified(nodes_prefixmap, schema, width)?;
+                        let mut child_tree = Tree::new(child_root);
+                        r.build_tree(&mut child_tree, nodes_prefixmap, schema, width)?;
+                        tree.leaves.push(child_tree);
                     }
                 }
-                tree.leaves.push(reasons_tree);
                 Ok(())
             },
-            Reason::ShapeOr { reasons, .. } => {
-                let mut reasons_tree = Tree::new("reasons".to_string());
-                for reason in reasons.iter() {
-                    reason.build_tree(&mut reasons_tree, _nodes_prefixmap, _schema)?;
+            Reason::ShapeOr { reasons, .. } => add_reasons_to_tree(tree, reasons, nodes_prefixmap, schema, width),
+            Reason::ShapeNot { errors_evidences, .. } => {
+                for err in errors_evidences.iter() {
+                    let err_str = err.show_qualified(nodes_prefixmap, schema, width)?;
+                    tree.leaves.push(Tree::new(err_str));
                 }
-                tree.leaves.push(reasons_tree);
                 Ok(())
             },
-            _ => Ok(()),
+            Reason::ShapeExtends { reasons, .. } => add_reasons_to_tree(tree, reasons, nodes_prefixmap, schema, width),
+            Reason::DescendantShape { reasons, .. } => {
+                add_reasons_to_tree(tree, reasons, nodes_prefixmap, schema, width)
+            },
+            Reason::PartitionComponent { reasons, .. } => {
+                add_reasons_to_tree(tree, reasons, nodes_prefixmap, schema, width)
+            },
+            Reason::Partition { reasons, .. } => add_reasons_to_tree(tree, reasons, nodes_prefixmap, schema, width),
         }
     }
 
@@ -118,7 +131,7 @@ impl Reason {
     ) -> Result<String, PrefixMapError> {
         match self {
             Reason::NodeConstraint { node, nc } => Ok(format!(
-                "Node constraint passed. Node: {}, Constraint: {nc}",
+                "Node {} passes node constraint {nc}",
                 node.show_qualified(nodes_prefixmap),
             )),
             Reason::ShapeAnd { node, se, .. } => {
@@ -132,13 +145,65 @@ impl Reason {
             Reason::Shape { node, idx, .. } => {
                 let se_str = schema.show_shape_idx(idx, width);
                 Ok(format!(
-                    "Shape passed. Node {}, shape {}: {}",
+                    "Shape passed {}@{}: {}",
                     node.show_qualified(nodes_prefixmap),
-                    idx,
+                    schema.show_shape_idx(idx, width),
                     se_str
                 ))
             },
-            _ => Ok(format!("{self}",)),
+            Reason::ShapeExtends { node, shape, .. } => Ok(format!(
+                "Extends passed ({}@{})",
+                node.show_qualified(nodes_prefixmap),
+                schema.show_shape(shape, width),
+            )),
+            Reason::DescendantShape { node, shape, .. } => Ok(format!(
+                "Descendant shape passed ({}@{})",
+                node.show_qualified(nodes_prefixmap),
+                schema.show_shape_idx(shape, width),
+            )),
+            Reason::Empty { node } => Ok(format!(
+                "Node {} passes empty shape",
+                node.show_qualified(nodes_prefixmap)
+            )),
+            Reason::External { node } => Ok(format!(
+                "{} passes external shape",
+                node.show_qualified(nodes_prefixmap)
+            )),
+            Reason::ShapeOr { node, shape_expr, .. } => Ok(format!(
+                "OR passed ({}@{})",
+                node.show_qualified(nodes_prefixmap),
+                schema.show_shape_idx(shape_expr, width),
+            )),
+            Reason::ShapeNot { node, shape_expr, .. } => Ok(format!(
+                "NOT passed ({}@{})",
+                node.show_qualified(nodes_prefixmap),
+                schema.show_shape_expr(shape_expr, width),
+            )),
+            Reason::ShapeRef { node, idx } => Ok(format!(
+                "ShapeRef passed ({}@{})",
+                node.show_qualified(nodes_prefixmap),
+                schema.show_shape_idx(idx, width)
+            )),
+            Reason::PartitionComponent {
+                node,
+                // shape,
+                maybe_label,
+                partition,
+                // neighs,
+                ..
+            } => Ok(format!(
+                "Partition component for {} matches {}: {}",
+                node.show_qualified(nodes_prefixmap),
+                // schema.show_shape(shape, width),
+                maybe_label.map(|l| schema.show_idx(&l)).unwrap_or("Base".to_string()),
+                partition.show_qualified(nodes_prefixmap, schema, width)?,
+                // neighs,
+            )),
+            Reason::Partition { node, shape, .. } => Ok(format!(
+                "Partition passed ({}@{})",
+                node.show_qualified(nodes_prefixmap),
+                schema.show_shape(shape, width),
+            )),
         }
     }
 
@@ -151,7 +216,7 @@ impl Reason {
     ) -> Result<(), PrefixMapError> {
         let root_str = self.root_qualified(nodes_prefixmap, schema, width)?;
         let mut tree = Tree::new(root_str);
-        self.build_tree(&mut tree, nodes_prefixmap, schema)?;
+        self.build_tree(&mut tree, nodes_prefixmap, schema, width)?;
         write!(writer, "{}", tree).map_err(|e| PrefixMapError::IOError { error: e.to_string() })?;
         Ok(())
     }
@@ -235,7 +300,7 @@ impl Display for Reason {
                 "Shape NOT passed. Node {node}, shape: {shape_expr}, errors: {errors_evidences}"
             ),
             Reason::External { node } => write!(f, "Shape External passed for node {node}"),
-            Reason::Empty { node } => write!(f, "Shape External passed for node {node}"),
+            Reason::Empty { node } => write!(f, "Shape Empty passed for node {node}"),
             Reason::ShapeRef { node, idx } => {
                 write!(f, "ShapeRef passed. Node {node}, idx: {idx}")
             },
@@ -294,4 +359,20 @@ impl Serialize for Reason {
         map.serialize_entry("reason", &self.to_string())?;
         map.end()
     }
+}
+
+fn add_reasons_to_tree(
+    tree: &mut Tree<String>,
+    reasons: &Reasons,
+    nodes_prefixmap: &PrefixMap,
+    schema: &SchemaIR,
+    width: usize,
+) -> Result<(), PrefixMapError> {
+    for reason in reasons.iter() {
+        let child_root = reason.root_qualified(nodes_prefixmap, schema, width)?;
+        let mut child_tree = Tree::new(child_root);
+        reason.build_tree(&mut child_tree, nodes_prefixmap, schema, width)?;
+        tree.leaves.push(child_tree);
+    }
+    Ok(())
 }
