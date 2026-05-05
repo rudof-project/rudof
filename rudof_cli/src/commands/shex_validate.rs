@@ -75,7 +75,11 @@ impl Command for ShexValidateCommand {
             shapemap_loading.execute()?;
         }
 
-        let iri_mode = if self.args.strict_iris { IriNormalizationMode::Strict } else { IriNormalizationMode::Lax };
+        let iri_mode = if self.args.strict_iris {
+            IriNormalizationMode::Strict
+        } else {
+            IriNormalizationMode::Lax
+        };
 
         if let Some(node) = self.args.node.as_deref() {
             let mut node_shape = ctx.rudof.add_node_shape_to_shapemap(node).with_iri_mode(iri_mode);

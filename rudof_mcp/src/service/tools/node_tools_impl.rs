@@ -259,7 +259,11 @@ pub async fn node_info_impl(
         Err(e) => return Ok(e.into_call_tool_result()),
     };
 
-    let iri_mode = if strict_iris.unwrap_or(false) { IriNormalizationMode::Strict } else { IriNormalizationMode::Lax };
+    let iri_mode = if strict_iris.unwrap_or(false) {
+        IriNormalizationMode::Strict
+    } else {
+        IriNormalizationMode::Lax
+    };
 
     let mut output_buffer = Cursor::new(Vec::new());
     let mut showing_node_info = rudof.show_node_info(&node, &mut output_buffer).with_iri_mode(iri_mode);

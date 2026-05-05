@@ -1,4 +1,8 @@
-use crate::{Result, Rudof, errors::IriError, formats::{IriNormalizationMode, QueryType}};
+use crate::{
+    Result, Rudof,
+    errors::IriError,
+    formats::{IriNormalizationMode, QueryType},
+};
 use crossterm::terminal;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::query::SparqlQuery;
@@ -20,7 +24,11 @@ pub(crate) fn normalize_iri_str(s: &str, mode: IriNormalizationMode) -> String {
                 && !trimmed.starts_with('_')
                 && !trimmed.starts_with('{')
                 && trimmed.contains("://");
-            if is_bare_iri { format!("<{}>", trimmed) } else { trimmed.to_string() }
+            if is_bare_iri {
+                format!("<{}>", trimmed)
+            } else {
+                trimmed.to_string()
+            }
         },
     }
 }

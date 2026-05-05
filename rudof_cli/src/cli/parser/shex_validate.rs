@@ -120,7 +120,10 @@ pub struct ShexValidateArgs {
     #[arg(long = "map-state", value_name = "FILE", help = "MapState file name")]
     pub map_state: Option<PathBuf>,
 
-    #[arg(long = "strict-iris", help = "Require <> brackets around IRIs (strict mode). By default bare http://… IRIs are accepted (lax mode).")]
+    #[arg(
+        long = "strict-iris",
+        help = "Require <> brackets around IRIs (strict mode). By default bare http://… IRIs are accepted (lax mode)."
+    )]
     pub strict_iris: bool,
 
     #[command(flatten)]

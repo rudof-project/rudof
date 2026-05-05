@@ -4,7 +4,7 @@ use std::str::FromStr;
 use crate::errors::NodeInspectionError;
 
 /// Controls how bare IRI strings are handled before being passed to `ShapeMapParser`.
-/// 
+///
 /// Use `Strict` in production pipelines or whenever callers control input format.
 /// Use `Lax` for interactive tools, CLI usage, and MCP where convenience matters more.
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]

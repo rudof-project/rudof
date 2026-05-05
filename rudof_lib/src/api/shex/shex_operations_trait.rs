@@ -5,8 +5,8 @@ use crate::{
         reset_shex_schema, serialize_shapemap, serialize_shex_schema, serialize_shex_validation_results, validate_shex,
     },
     formats::{
-        DataReaderMode, InputSpec, IriNormalizationMode, ResultShExValidationFormat, ShExFormat, ShExValidationSortByMode,
-        ShapeMapFormat,
+        DataReaderMode, InputSpec, IriNormalizationMode, ResultShExValidationFormat, ShExFormat,
+        ShExValidationSortByMode, ShapeMapFormat,
     },
 };
 use std::io;

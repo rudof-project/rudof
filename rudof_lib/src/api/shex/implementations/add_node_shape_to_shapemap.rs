@@ -16,10 +16,11 @@ pub fn add_node_shape_to_shapemap(
     let base_shapes_iri = get_base_iri(rudof, base_shapes)?;
 
     let normalized_node = crate::utils::normalize_iri_str(node, iri_mode);
-    let node_selector = ShapeMapParser::parse_node_selector(&normalized_node).map_err(|e| ShExError::NodeSelectorParseError {
-        node_selector: node.to_string(),
-        error: e.to_string(),
-    })?;
+    let node_selector =
+        ShapeMapParser::parse_node_selector(&normalized_node).map_err(|e| ShExError::NodeSelectorParseError {
+            node_selector: node.to_string(),
+            error: e.to_string(),
+        })?;
 
     let shape_selector: ShapeSelector = match shape {
         Some(s) => {

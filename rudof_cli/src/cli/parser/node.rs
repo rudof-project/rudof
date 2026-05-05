@@ -78,7 +78,10 @@ pub struct NodeArgs {
     )]
     pub depth: usize,
 
-    #[arg(long = "strict-iris", help = "Require <> brackets around IRIs (strict mode). By default bare http://… IRIs are accepted (lax mode).")]
+    #[arg(
+        long = "strict-iris",
+        help = "Require <> brackets around IRIs (strict mode). By default bare http://… IRIs are accepted (lax mode)."
+    )]
     pub strict_iris: bool,
 
     #[command(flatten)]

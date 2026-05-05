@@ -1,4 +1,8 @@
-use crate::{Result, Rudof, errors::DataError, formats::{IriNormalizationMode, NodeInspectionMode}};
+use crate::{
+    Result, Rudof,
+    errors::DataError,
+    formats::{IriNormalizationMode, NodeInspectionMode},
+};
 use prefixmap::IriRef;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::{NeighsRDF, query::QueryRDF};

@@ -1,4 +1,8 @@
-use crate::{Result, Rudof, api::data::DataOperations, formats::{IriNormalizationMode, NodeInspectionMode}};
+use crate::{
+    Result, Rudof,
+    api::data::DataOperations,
+    formats::{IriNormalizationMode, NodeInspectionMode},
+};
 use std::io;
 
 /// Builder for `show_node_info` operation.

@@ -44,7 +44,11 @@ impl Command for NodeCommand {
         }
         loading.execute()?;
 
-        let iri_mode = if self.args.strict_iris { IriNormalizationMode::Strict } else { IriNormalizationMode::Lax };
+        let iri_mode = if self.args.strict_iris {
+            IriNormalizationMode::Strict
+        } else {
+            IriNormalizationMode::Lax
+        };
 
         let mut showing_node_info = ctx
             .rudof

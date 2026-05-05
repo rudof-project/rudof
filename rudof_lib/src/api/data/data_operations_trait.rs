@@ -4,7 +4,10 @@ use crate::{
         list_endpoints, load_data, load_service_description, reset_data, reset_service_description, serialize_data,
         serialize_service_description, show_node_info,
     },
-    formats::{DataFormat, DataReaderMode, InputSpec, IriNormalizationMode, NodeInspectionMode, ResultDataFormat, ResultServiceFormat},
+    formats::{
+        DataFormat, DataReaderMode, InputSpec, IriNormalizationMode, NodeInspectionMode, ResultDataFormat,
+        ResultServiceFormat,
+    },
 };
 use std::io;
 

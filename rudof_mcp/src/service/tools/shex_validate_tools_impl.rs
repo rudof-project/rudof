@@ -18,11 +18,13 @@ fn normalize_iri_str(s: &str, strict: bool) -> String {
     if strict {
         return trimmed.to_string();
     }
-    let is_bare_iri = !trimmed.starts_with('<')
-        && !trimmed.starts_with('_')
-        && !trimmed.starts_with('{')
-        && trimmed.contains("://");
-    if is_bare_iri { format!("<{}>", trimmed) } else { trimmed.to_string() }
+    let is_bare_iri =
+        !trimmed.starts_with('<') && !trimmed.starts_with('_') && !trimmed.starts_with('{') && trimmed.contains("://");
+    if is_bare_iri {
+        format!("<{}>", trimmed)
+    } else {
+        trimmed.to_string()
+    }
 }
 
 /// Request parameters for ShEx validation.
@@ -161,7 +163,11 @@ pub async fn validate_shex_impl(
     // a compact ShapeMap from maybe_node + maybe_shape when only those are provided.
     let effective_shapemap = match (shapemap, maybe_node.as_deref(), maybe_shape.as_deref()) {
         (Some(sm), _, _) => sm,
-        (None, Some(node), Some(shape)) => format!("{}@{}", normalize_iri_str(node, strict), normalize_iri_str(shape, strict)),
+        (None, Some(node), Some(shape)) => format!(
+            "{}@{}",
+            normalize_iri_str(node, strict),
+            normalize_iri_str(shape, strict)
+        ),
         (None, Some(node), None) => format!("{}@START", normalize_iri_str(node, strict)),
         (None, None, _) => {
             return Ok(ToolExecutionError::with_hint(
