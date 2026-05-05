@@ -219,7 +219,7 @@ impl FromStr for InputSpec {
     /// - Everything else becomes a raw string (Str)
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // TODO - This probably needs some improvements
-        let filepath_regex = Regex::new(r"^[.~/a-zA-Z0-9]?[/\\a-zA-Z0-9._-]*$").unwrap();
+        let filepath_regex = Regex::new(r"^[.~/a-zA-Z0-9]?[/\\a-zA-Z0-9._:-]*$").unwrap();
 
         if s.is_empty() {
             return Err(InputSpecError::InvalidInput {
