@@ -400,13 +400,30 @@ fn create_outgoing_glyphs() -> termtree::GlyphPalette {
     }
 }
 
+/// Normalizes a node string to a format accepted by `ShapeMapParser`.
+///
+/// Bare absolute IRIs like `http://example.org/Alice` are wrapped in angle brackets
+/// to produce `<http://example.org/Alice>`. Prefixed names and already-bracketed IRIs
+/// are returned unchanged.
+fn normalize_node_str(node_str: &str) -> String {
+    let trimmed = node_str.trim();
+    let is_bare_iri = !trimmed.starts_with('<') && !trimmed.starts_with('_') && trimmed.contains("://");
+    if is_bare_iri {
+        format!("<{}>", trimmed)
+    } else {
+        trimmed.to_string()
+    }
+}
+
 /// Parses a node selector string into a `NodeSelector` instance.
 ///
 /// Supports various formats:
-/// * Full IRIs: `<http://example.org/node>`
+/// * Full IRIs: `<http://example.org/node>` or `http://example.org/node`
 /// * Prefixed names: `ex:node`
 /// * Blank nodes: `_:b1`
 fn parse_node_selector(node_str: &str) -> Result<NodeSelector> {
+    let normalized = normalize_node_str(node_str);
+    let node_str = normalized.as_str();
     ShapeMapParser::parse_node_selector(node_str).map_err(|e| {
         Box::new(DataError::FailedNodeSelectorParse {
             node: node_str.to_string(),
