@@ -1,10 +1,37 @@
-use crate::{Result, Rudof, errors::IriError, formats::QueryType};
+use crate::{
+    Result, Rudof,
+    errors::IriError,
+    formats::{IriNormalizationMode, QueryType},
+};
 use crossterm::terminal;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::query::SparqlQuery;
 use std::{env, str::FromStr};
 #[cfg(not(target_family = "wasm"))]
 use url::Url;
+
+/// Normalizes a node/shape IRI string for `ShapeMapParser` according to `mode`.
+///
+/// - `Lax`: wraps strings that look like bare absolute IRIs (contain `://`, no leading `<`, `_`,
+///   or `{`) in angle brackets. Heuristic — see [`IriNormalizationMode`] docs for edge cases.
+/// - `Strict`: returns the trimmed string unchanged; bare IRIs will produce a parser error.
+pub(crate) fn normalize_iri_str(s: &str, mode: IriNormalizationMode) -> String {
+    let trimmed = s.trim();
+    match mode {
+        IriNormalizationMode::Strict => trimmed.to_string(),
+        IriNormalizationMode::Lax => {
+            let is_bare_iri = !trimmed.starts_with('<')
+                && !trimmed.starts_with('_')
+                && !trimmed.starts_with('{')
+                && trimmed.contains("://");
+            if is_bare_iri {
+                format!("<{}>", trimmed)
+            } else {
+                trimmed.to_string()
+            }
+        },
+    }
+}
 
 pub fn get_base_iri(rudof: &mut Rudof, base_iri: Option<&str>) -> Result<IriS> {
     if let Some(base_iri) = base_iri {

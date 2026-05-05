@@ -13,6 +13,20 @@ use std::str::FromStr;
 
 use super::helpers::*;
 
+fn normalize_iri_str(s: &str, strict: bool) -> String {
+    let trimmed = s.trim();
+    if strict {
+        return trimmed.to_string();
+    }
+    let is_bare_iri =
+        !trimmed.starts_with('<') && !trimmed.starts_with('_') && !trimmed.starts_with('{') && trimmed.contains("://");
+    if is_bare_iri {
+        format!("<{}>", trimmed)
+    } else {
+        trimmed.to_string()
+    }
+}
+
 /// Request parameters for ShEx validation.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ValidateShexRequest {
@@ -54,6 +68,12 @@ pub struct ValidateShexRequest {
     /// Sort order for results.
     /// Supported: node, shape, status, details
     pub sort_by: Option<String>,
+
+    /// IRI normalization mode for `maybe_node` and `maybe_shape` strings.
+    /// When false (default, lax): bare `http://…` IRIs are automatically wrapped in `<>`.
+    /// When true (strict): bare IRIs produce a parse error; use `<http://…>` explicitly.
+    /// Lax mode is convenient but may mishandle URNs, mailto:, or data: URIs.
+    pub strict_iris: Option<bool>,
 }
 
 /// Response containing ShEx validation results.
@@ -95,6 +115,7 @@ pub async fn validate_shex_impl(
         shapemap_format,
         result_format,
         sort_by,
+        strict_iris,
     }): Parameters<ValidateShexRequest>,
 ) -> Result<CallToolResult, McpError> {
     let mut rudof = service.rudof.lock().await;
@@ -136,12 +157,18 @@ pub async fn validate_shex_impl(
         .into_call_tool_result());
     }
 
+    let strict = strict_iris.unwrap_or(false);
+
     // Build effective ShapeMap: explicit shapemap wins; fall back to auto-generating
     // a compact ShapeMap from maybe_node + maybe_shape when only those are provided.
     let effective_shapemap = match (shapemap, maybe_node.as_deref(), maybe_shape.as_deref()) {
         (Some(sm), _, _) => sm,
-        (None, Some(node), Some(shape)) => format!("{}@{}", node, shape),
-        (None, Some(node), None) => format!("{}@START", node),
+        (None, Some(node), Some(shape)) => format!(
+            "{}@{}",
+            normalize_iri_str(node, strict),
+            normalize_iri_str(shape, strict)
+        ),
+        (None, Some(node), None) => format!("{}@START", normalize_iri_str(node, strict)),
         (None, None, _) => {
             return Ok(ToolExecutionError::with_hint(
                 "No shapemap provided",

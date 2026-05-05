@@ -4,7 +4,7 @@ use rmcp::{
     handler::server::wrapper::Parameters,
     model::{CallToolResult, Content},
 };
-use rudof_lib::formats::NodeInspectionMode;
+use rudof_lib::formats::{IriNormalizationMode, NodeInspectionMode};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -30,6 +30,12 @@ pub struct NodeInfoRequest {
     /// Display mode for node information.
     /// Supported: outgoing, incoming, both (default: both)
     pub mode: Option<String>,
+
+    /// IRI normalization mode for the node string.
+    /// When false (default, lax): bare `http://…` IRIs are automatically wrapped in `<>`.
+    /// When true (strict): bare IRIs produce a parse error; use `<http://…>` explicitly.
+    /// Lax mode is convenient but may mishandle URNs, mailto:, or data: URIs.
+    pub strict_iris: Option<bool>,
 }
 
 /// Response containing node information.
@@ -236,6 +242,7 @@ pub async fn node_info_impl(
         predicates,
         depth,
         mode,
+        strict_iris,
     }): Parameters<NodeInfoRequest>,
 ) -> Result<CallToolResult, McpError> {
     let mut rudof = service.rudof.lock().await;
@@ -252,8 +259,14 @@ pub async fn node_info_impl(
         Err(e) => return Ok(e.into_call_tool_result()),
     };
 
+    let iri_mode = if strict_iris.unwrap_or(false) {
+        IriNormalizationMode::Strict
+    } else {
+        IriNormalizationMode::Lax
+    };
+
     let mut output_buffer = Cursor::new(Vec::new());
-    let mut showing_node_info = rudof.show_node_info(&node, &mut output_buffer);
+    let mut showing_node_info = rudof.show_node_info(&node, &mut output_buffer).with_iri_mode(iri_mode);
     if let Some(mode) = &parsed_mode {
         showing_node_info = showing_node_info.with_show_node_mode(mode);
     }

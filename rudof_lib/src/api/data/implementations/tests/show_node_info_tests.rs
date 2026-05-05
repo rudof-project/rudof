@@ -1,6 +1,8 @@
 use crate::{
-    Rudof, RudofConfig, api::data::implementations::show_node_info::show_node_info, formats::InputSpec,
-    formats::NodeInspectionMode,
+    Rudof, RudofConfig,
+    api::data::implementations::show_node_info::show_node_info,
+    formats::InputSpec,
+    formats::{IriNormalizationMode, NodeInspectionMode},
 };
 use std::io::Cursor;
 
@@ -11,17 +13,17 @@ fn setup_test_rudof() -> Rudof {
     let rdf_data_str = r#"
             @prefix ex: <http://example.org/> .
             @prefix foaf: <http://xmlns.com/foaf/0.1/> .
-            
+
             ex:alice a foaf:Person ;
                 foaf:name "Alice" ;
                 foaf:knows ex:bob ;
                 foaf:age 30 .
-            
+
             ex:bob a foaf:Person ;
                 foaf:name "Bob" ;
                 foaf:knows ex:alice ;
                 foaf:age 25 .
-                
+
             ex:charlie a foaf:Person ;
                 foaf:name "Charlie" ;
                 foaf:knows ex:alice .
@@ -45,12 +47,12 @@ fn setup_deep_graph_rudof() -> Rudof {
     let rdf_data_str = r#"
             @prefix ex: <http://example.org/> .
             @prefix rel: <http://example.org/rel/> .
-            
+
             ex:level0 rel:child ex:level1a .
             ex:level1a rel:child ex:level2a .
             ex:level2a rel:child ex:level3a .
             ex:level3a rel:child ex:level4a .
-            
+
             ex:level0 rel:child ex:level1b .
             ex:level1b rel:child ex:level2b .
         "#;
@@ -79,6 +81,7 @@ fn test_show_node_info_basic_outgoing() {
         Some(1),
         Some(false),
         Some(true),
+        IriNormalizationMode::default(),
         &mut output,
     );
 
@@ -107,6 +110,7 @@ fn test_show_node_info_basic_incoming() {
         Some(1),
         Some(false),
         Some(true),
+        IriNormalizationMode::default(),
         &mut output,
     );
 
@@ -134,6 +138,7 @@ fn test_show_node_info_both_directions() {
         Some(1),
         Some(false),
         Some(true),
+        IriNormalizationMode::default(),
         &mut output,
     );
 
@@ -162,6 +167,7 @@ fn test_show_node_info_with_predicate_filter() {
         Some(1),
         Some(false),
         Some(true),
+        IriNormalizationMode::default(),
         &mut output,
     );
 
@@ -192,6 +198,7 @@ fn test_show_node_info_multiple_predicates_filter() {
         Some(1),
         Some(false),
         Some(true),
+        IriNormalizationMode::default(),
         &mut output,
     );
 
@@ -219,6 +226,7 @@ fn test_show_node_info_depth_1() {
         Some(1),
         Some(false),
         Some(true),
+        IriNormalizationMode::default(),
         &mut output,
     );
 
@@ -248,6 +256,7 @@ fn test_show_node_info_depth_2() {
         Some(2),
         Some(false),
         Some(true),
+        IriNormalizationMode::default(),
         &mut output,
     );
 
@@ -277,6 +286,7 @@ fn test_show_node_info_depth_3() {
         Some(3),
         Some(false),
         Some(true),
+        IriNormalizationMode::default(),
         &mut output,
     );
 
@@ -306,6 +316,7 @@ fn test_show_node_info_incoming_depth_2() {
         Some(2),
         Some(false),
         Some(true),
+        IriNormalizationMode::default(),
         &mut output,
     );
 
@@ -333,6 +344,7 @@ fn test_show_node_info_with_colors() {
         Some(1),
         Some(false),
         Some(true),
+        IriNormalizationMode::default(),
         &mut output,
     );
 
@@ -359,6 +371,7 @@ fn test_show_node_info_without_colors() {
         Some(1),
         Some(false),
         Some(false),
+        IriNormalizationMode::default(),
         &mut output,
     );
 
@@ -385,6 +398,7 @@ fn test_show_node_info_non_existent_node() {
         Some(1),
         Some(false),
         Some(true),
+        IriNormalizationMode::default(),
         &mut output,
     );
 
@@ -401,7 +415,17 @@ fn test_show_node_info_default_values() {
     let mut output = Cursor::new(Vec::new());
 
     // All optional parameters as None to test defaults
-    let result = show_node_info(&mut rudof, "ex:alice", None, None, None, None, None, &mut output);
+    let result = show_node_info(
+        &mut rudof,
+        "ex:alice",
+        None,
+        None,
+        None,
+        None,
+        None,
+        IriNormalizationMode::default(),
+        &mut output,
+    );
 
     assert!(result.is_ok());
 

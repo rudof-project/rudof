@@ -1,6 +1,7 @@
 use crate::cli::parser::ShexValidateArgs;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::Result;
+use rudof_lib::formats::IriNormalizationMode;
 
 /// Implementation of the `shex-validate` command.
 ///
@@ -74,8 +75,14 @@ impl Command for ShexValidateCommand {
             shapemap_loading.execute()?;
         }
 
+        let iri_mode = if self.args.strict_iris {
+            IriNormalizationMode::Strict
+        } else {
+            IriNormalizationMode::Lax
+        };
+
         if let Some(node) = self.args.node.as_deref() {
-            let mut node_shape = ctx.rudof.add_node_shape_to_shapemap(node);
+            let mut node_shape = ctx.rudof.add_node_shape_to_shapemap(node).with_iri_mode(iri_mode);
             if let Some(shape) = self.args.shape.as_deref() {
                 node_shape = node_shape.with_shape(shape);
             }

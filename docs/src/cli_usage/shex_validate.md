@@ -27,6 +27,35 @@ $ rudof shex-validate -s examples/user.shex -n ":a" -l ":User" examples/user.ttl
 ```
 
 
+## IRI normalization modes
+
+The `--node` and `--shape-label` values are parsed as ShapeMap selectors, which normally require IRIs to be enclosed in angle brackets (`<http://example.org/Alice>`). `rudof` supports two modes to control how plain strings are handled.
+
+### Lax mode (default)
+
+In lax mode any string that contains `://` and is not already wrapped in `<>` is automatically wrapped before parsing:
+
+```sh
+# Equivalent in lax mode:
+rudof shex-validate -s schema.shex -n "http://example.org/a" -l "http://example.org/User" data.ttl
+rudof shex-validate -s schema.shex -n "<http://example.org/a>" -l "<http://example.org/User>" data.ttl
+```
+
+**Limitations.** The `://` heuristic will fail for IRIs that do not contain `://` (URNs, `mailto:`, `data:` URIs) and may mis-classify a prefixed local name that happens to contain `://`. See [IRI normalization internals](../internals/iri-normalization.md) for details and planned improvements.
+
+### Strict mode
+
+Pass `--strict-iris` to require angle brackets on every IRI. Bare IRIs produce a parse error immediately.
+
+```sh
+rudof shex-validate -s schema.shex \
+  -n "<http://example.org/a>" \
+  -l "<http://example.org/User>" \
+  data.ttl --strict-iris
+```
+
+Use strict mode in automated pipelines or when the data contains non-`http` IRI schemes.
+
 ## Usage
 
 ```sh

@@ -48,6 +48,7 @@ impl ValidateCommand {
             endpoint: self.args.endpoint.clone(),
             result_format: self.args.result_format.into(),
             map_state: self.args.map_state.clone(),
+            strict_iris: false,
             common: self.args.common.clone(),
         })
     }
