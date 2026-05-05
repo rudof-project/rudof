@@ -183,6 +183,9 @@ pub enum ValidatorError {
 
     #[error("ShapeRef fails for node {node} with idx: {idx}")]
     ShapeRefFailed { node: Box<Node>, idx: ShapeLabelIdx },
+
+    #[error("StartAct failed for node {node} with idx: {idx}")]
+    StartActFailed { node: Box<Node>, idx: ShapeLabelIdx },
 }
 
 fn add_errors_to_tree(

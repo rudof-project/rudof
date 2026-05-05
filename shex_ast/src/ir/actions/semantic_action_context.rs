@@ -13,6 +13,13 @@ pub struct SemanticActionContext {
 }
 
 impl SemanticActionContext {
+    pub fn new_start_act_context() -> Self {
+        SemanticActionContext {
+            subject: None,
+            predicate: None,
+            object: None,
+        }
+    }
     pub fn s(&self) -> Option<Node> {
         self.subject.clone()
     }

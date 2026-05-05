@@ -3,6 +3,7 @@ use super::shape_expr::ShapeExpr;
 use super::shape_label::ShapeLabel;
 use crate::ir::inheritance_graph::InheritanceGraph;
 use crate::ir::map_state::MapState;
+use crate::ir::sem_act::SemAct;
 use crate::ir::semantic_actions_registry::SemanticActionsRegistry;
 use crate::ir::shape::Shape;
 use crate::ir::shape_expr_info::ShapeExprInfo;
@@ -37,6 +38,7 @@ pub struct SchemaIR {
     inheritance_graph: InheritanceGraph,
     abstract_shapes: HashSet<ShapeLabelIdx>,
     semantic_actions_registry: SemanticActionsRegistry,
+    start_acts: Vec<SemAct>,
 }
 
 impl SchemaIR {
@@ -57,11 +59,16 @@ impl SchemaIR {
             inheritance_graph: InheritanceGraph::new(),
             abstract_shapes: HashSet::new(),
             semantic_actions_registry: registry,
+            start_acts: Vec::new(),
         }
     }
 
     pub fn set_map_state(&mut self, map_state: &mut MapState) {
         self.semantic_actions_registry.set_map_state(map_state);
+    }
+
+    pub fn start_acts(&self) -> &Vec<SemAct> {
+        &self.start_acts
     }
 
     /// Return the live `Arc<Mutex<MapState>>` from the registered `MapActionExtension`, if any.

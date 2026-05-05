@@ -76,11 +76,14 @@ impl AST2IR {
         compiled_schema: &mut SchemaIR,
     ) -> CResult<()> {
         let mut visited = Vec::new();
+
         let mut imported_asts: Vec<(SchemaAST, IriS)> = Vec::new();
+
         trace!(
             "Compiling schema from {source_iri}. Base: {}",
             base.as_ref().map(|b| b.as_str()).unwrap_or("None")
         );
+
         // Phase 1: register shape labels for every schema in the import tree (bottom-up).
         // Labels of all imported schemas must be known before compiling any shape expressions,
         // since references may cross schema boundaries.
@@ -92,8 +95,10 @@ impl AST2IR {
             base,
             &mut imported_asts,
         )?;
+
         // Root schema prefixmap wins (imported schemas' prefix maps are scoped to their own file).
         compiled_schema.set_prefixmap(schema_ast.prefixmap());
+
         // Root labels (may include `start`).
         let local_shapes = self.collect_shape_labels(schema_ast, compiled_schema, source_iri)?;
         self.triple_expr_labels.clear();
@@ -101,6 +106,7 @@ impl AST2IR {
             self.collect_triple_expr_labels_schema(ast)?;
         }
         self.collect_triple_expr_labels_schema(schema_ast)?;
+
         // Phase 2: compile shape expressions in the order they were collected
         // (imports bottom-up, then root).
         for (ast, src) in imported_asts.iter() {

@@ -22,6 +22,7 @@ use shex_ast::Pred;
 use shex_ast::ShapeLabelIdx;
 use shex_ast::ir::preds::Preds;
 use shex_ast::ir::schema_ir::SchemaIR;
+use shex_ast::ir::sem_act::SemAct;
 use shex_ast::ir::semantic_action_context::SemanticActionContext;
 use shex_ast::ir::shape::Shape;
 use shex_ast::ir::shape_expr::ShapeExpr;
@@ -73,6 +74,17 @@ impl Engine {
         while let Some(atom) = self.pop_pending() {
             match atom.clone() {
                 Atom::Pos((node, idx)) => {
+                    if check_start_acts(schema.start_acts(), &node, &idx, schema)? == false {
+                        self.add_checked_neg(
+                            atom.clone(),
+                            vec![ValidatorError::StartActFailed {
+                                node: Box::new(node.clone()),
+                                idx,
+                            }],
+                        );
+                        // We can abort validation if start actions failed
+                        continue;
+                    }
                     let mut hyp = Vec::new();
                     match self.prove(&node, &idx, &mut hyp, schema, rdf)? {
                         Either::Right(reasons) => {
@@ -1012,4 +1024,9 @@ fn create_partitions_display(ps: &[PartitionInfo]) -> PartitionsDisplay {
         .map(|(maybe_label, rbes, neighs_subset)| PartitionDisplay::new(*maybe_label, rbes, neighs_subset))
         .collect();
     PartitionsDisplay::new(&partitions_display)
+}
+
+fn check_start_acts(start_acts: &[SemAct], node: &Node, idx: &ShapeLabelIdx, schema: &SchemaIR) -> Result<bool> {
+    for act in start_acts {}
+    Ok(true)
 }
