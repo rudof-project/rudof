@@ -47,6 +47,7 @@
   - [`rudof_rdf`](./internals/crates/rudof_rdf.md)
   - [`rudof_mcp`](./internals/crates/rudof_mcp.md)
 - [ADRs](./internals/ADRs.md)
+- [IRI normalization](./internals/iri-normalization.md)
 
 # More information
 

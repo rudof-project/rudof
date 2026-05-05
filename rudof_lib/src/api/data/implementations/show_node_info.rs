@@ -1,4 +1,4 @@
-use crate::{Result, Rudof, errors::DataError, formats::NodeInspectionMode};
+use crate::{Result, Rudof, errors::DataError, formats::{IriNormalizationMode, NodeInspectionMode}};
 use prefixmap::IriRef;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::{NeighsRDF, query::QueryRDF};
@@ -14,6 +14,7 @@ pub fn show_node_info<W: io::Write>(
     depth: Option<usize>,
     show_hyperlinks: Option<bool>,
     show_colors: Option<bool>,
+    iri_mode: IriNormalizationMode,
     writer: &mut W,
 ) -> Result<()> {
     let config = NodeDisplayConfig::from_options(predicates, show_node_mode, depth, show_hyperlinks, show_colors);
@@ -24,7 +25,7 @@ pub fn show_node_info<W: io::Write>(
         return Err(Box::new(DataError::NoRdfDataLoaded).into());
     }
 
-    let node_selector = parse_node_selector(node)?;
+    let node_selector = parse_node_selector(node, iri_mode)?;
 
     let node_infos = collect_node_information(data.unwrap_rdf_mut(), node_selector, &config)?;
 
@@ -400,29 +401,14 @@ fn create_outgoing_glyphs() -> termtree::GlyphPalette {
     }
 }
 
-/// Normalizes a node string to a format accepted by `ShapeMapParser`.
-///
-/// Bare absolute IRIs like `http://example.org/Alice` are wrapped in angle brackets
-/// to produce `<http://example.org/Alice>`. Prefixed names and already-bracketed IRIs
-/// are returned unchanged.
-fn normalize_node_str(node_str: &str) -> String {
-    let trimmed = node_str.trim();
-    let is_bare_iri = !trimmed.starts_with('<') && !trimmed.starts_with('_') && trimmed.contains("://");
-    if is_bare_iri {
-        format!("<{}>", trimmed)
-    } else {
-        trimmed.to_string()
-    }
-}
-
 /// Parses a node selector string into a `NodeSelector` instance.
 ///
 /// Supports various formats:
-/// * Full IRIs: `<http://example.org/node>` or `http://example.org/node`
+/// * Full IRIs: `<http://example.org/node>` or `http://example.org/node` (lax mode only)
 /// * Prefixed names: `ex:node`
 /// * Blank nodes: `_:b1`
-fn parse_node_selector(node_str: &str) -> Result<NodeSelector> {
-    let normalized = normalize_node_str(node_str);
+fn parse_node_selector(node_str: &str, iri_mode: IriNormalizationMode) -> Result<NodeSelector> {
+    let normalized = crate::utils::normalize_iri_str(node_str, iri_mode);
     let node_str = normalized.as_str();
     ShapeMapParser::parse_node_selector(node_str).map_err(|e| {
         Box::new(DataError::FailedNodeSelectorParse {

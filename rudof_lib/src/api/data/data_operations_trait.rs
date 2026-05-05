@@ -4,7 +4,7 @@ use crate::{
         list_endpoints, load_data, load_service_description, reset_data, reset_service_description, serialize_data,
         serialize_service_description, show_node_info,
     },
-    formats::{DataFormat, DataReaderMode, InputSpec, NodeInspectionMode, ResultDataFormat, ResultServiceFormat},
+    formats::{DataFormat, DataReaderMode, InputSpec, IriNormalizationMode, NodeInspectionMode, ResultDataFormat, ResultServiceFormat},
 };
 use std::io;
 
@@ -102,6 +102,7 @@ pub trait DataOperations {
     /// * `depth` - Optional maximum traversal depth when expanding related nodes (uses 1 by default)
     /// * `show_hyperlinks` - Whether hyperlinks should be included in the output (uses false by default)
     /// * `show_colors` - Whether colored output should be used (uses false by default)
+    /// * `iri_mode` - IRI normalization mode to apply when parsing the node identifier
     /// * `writer` - The destination to write the node information to
     ///
     /// # Errors
@@ -115,6 +116,7 @@ pub trait DataOperations {
         depth: Option<usize>,
         show_hyperlinks: Option<bool>,
         show_colors: Option<bool>,
+        iri_mode: IriNormalizationMode,
         writer: &mut W,
     ) -> Result<()>;
 
@@ -181,6 +183,7 @@ impl DataOperations for Rudof {
         depth: Option<usize>,
         show_hyperlinks: Option<bool>,
         show_colors: Option<bool>,
+        iri_mode: IriNormalizationMode,
         writer: &mut W,
     ) -> Result<()> {
         show_node_info(
@@ -191,6 +194,7 @@ impl DataOperations for Rudof {
             depth,
             show_hyperlinks,
             show_colors,
+            iri_mode,
             writer,
         )
     }

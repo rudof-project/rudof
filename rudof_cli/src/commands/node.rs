@@ -1,6 +1,7 @@
 use crate::cli::parser::NodeArgs;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::Result;
+use rudof_lib::formats::IriNormalizationMode;
 
 /// Implementation of the `node` command.
 ///
@@ -43,11 +44,14 @@ impl Command for NodeCommand {
         }
         loading.execute()?;
 
+        let iri_mode = if self.args.strict_iris { IriNormalizationMode::Strict } else { IriNormalizationMode::Lax };
+
         let mut showing_node_info = ctx
             .rudof
             .show_node_info(self.args.node.as_ref(), &mut ctx.writer)
             .with_show_node_mode(&show_node_mode)
-            .with_depth(self.args.depth);
+            .with_depth(self.args.depth)
+            .with_iri_mode(iri_mode);
         if let Some(predicates) = self.args.predicates.as_deref() {
             showing_node_info = showing_node_info.with_predicates(predicates);
         }

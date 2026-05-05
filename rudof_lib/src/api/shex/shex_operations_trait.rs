@@ -5,7 +5,8 @@ use crate::{
         reset_shex_schema, serialize_shapemap, serialize_shex_schema, serialize_shex_validation_results, validate_shex,
     },
     formats::{
-        DataReaderMode, InputSpec, ResultShExValidationFormat, ShExFormat, ShExValidationSortByMode, ShapeMapFormat,
+        DataReaderMode, InputSpec, IriNormalizationMode, ResultShExValidationFormat, ShExFormat, ShExValidationSortByMode,
+        ShapeMapFormat,
     },
 };
 use std::io;
@@ -99,6 +100,7 @@ pub trait ShExOperations {
         shape: Option<&str>,
         base_nodes: Option<&str>,
         base_shapes: Option<&str>,
+        iri_mode: IriNormalizationMode,
     ) -> Result<()>;
 
     /// Loads a shape map from an input specification.
@@ -178,8 +180,9 @@ impl ShExOperations for crate::Rudof {
         shape: Option<&str>,
         base_nodes: Option<&str>,
         base_shapes: Option<&str>,
+        iri_mode: IriNormalizationMode,
     ) -> Result<()> {
-        add_node_shape_to_shapemap(self, node, shape, base_nodes, base_shapes)
+        add_node_shape_to_shapemap(self, node, shape, base_nodes, base_shapes, iri_mode)
     }
 
     fn load_shex_schema(
