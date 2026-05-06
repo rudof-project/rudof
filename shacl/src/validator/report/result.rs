@@ -165,16 +165,9 @@ impl ValidationResult {
             .add_triple(report_node.clone(), ShaclVocab::sh_result_severity(), severity)
             .map_err(error_mapper::<RDF>("Error adding severity to validation result"))?;
 
-        for (lang, text) in self.message.iter() {
-            let lit: RDF::Literal = ConcreteLiteral::StringLiteral {
-                lang: lang.clone(),
-                lexical_form: text.clone(),
-            }
-            .into();
-            let term: RDF::Term = lit.into();
-
+        for lit in self.message.iter_literals() {
             writer
-                .add_triple(report_node.clone(), ShaclVocab::sh_result_message(), term)
+                .add_triple::<_, _, RDF::Literal>(report_node.clone(), ShaclVocab::sh_result_message(), lit.into())
                 .map_err(error_mapper::<RDF>("Error result message to validation result"))?;
         }
 

@@ -197,22 +197,12 @@ impl IRPropertyShape {
         graph.add_type(id.clone(), ShaclVocab::sh_property_shape())
             .map_err(|e| IRError::from_rdf_err::<RDF>("add type", e))?;
 
-        self.name.iter().try_for_each(|(lang, value)| {
-            let lit = ConcreteLiteral::StringLiteral {
-                lexical_form: value.clone(),
-                lang: lang.clone(),
-            };
-
+        self.name.iter_literals().try_for_each(|lit| {
             graph.add_triple::<_, _, RDF::Literal>(id.clone(), ShaclVocab::sh_name(), lit.into())
                 .map_err(IRError::add_triple::<RDF>)
         })?;
 
-        self.description.iter().try_for_each(|(lang, value)| {
-            let lit = ConcreteLiteral::StringLiteral {
-                lang: lang.clone(),
-                lexical_form: value.clone(),
-            };
-
+        self.description.iter_literals().try_for_each(|lit| {
             graph.add_triple::<_, _, RDF::Literal>(id.clone(), ShaclVocab::sh_description(), lit.into())
                 .map_err(IRError::add_triple::<RDF>)
         })?;
