@@ -182,10 +182,8 @@ impl InMemoryGraph {
             Some(iri) => TurtleParser::new().with_base_iri(iri)?,
         };
 
-        let mut buffer = Vec::new();
-        reader.read_to_end(&mut buffer)?;
-        let reader1 = Cursor::new(&buffer);
-        let mut turtle_reader = turtle_parser.for_reader(reader1);
+        let mut turtle_reader = turtle_parser.for_reader(reader);
+        let graph = Arc::make_mut(&mut self.graph);
 
         for triple_result in turtle_reader.by_ref() {
             let triple =
@@ -196,7 +194,7 @@ impl InMemoryGraph {
                     Some(t) => t,
                     None => continue,
                 };
-            Arc::make_mut(&mut self.graph).insert(triple.as_ref());
+            graph.insert(triple.as_ref());
         }
 
         let prefixes: HashMap<&str, &str> = turtle_reader.prefixes().collect();
@@ -227,6 +225,7 @@ impl InMemoryGraph {
     ) -> Result<(), InMemoryGraphError> {
         let parser = NTriplesParser::new();
         let mut nt_reader = parser.for_reader(reader);
+        let graph = Arc::make_mut(&mut self.graph);
 
         for triple_result in nt_reader.by_ref() {
             let triple = match handle_parse_error(triple_result, reader_mode, |e| InMemoryGraphError::NTriplesError {
@@ -236,7 +235,7 @@ impl InMemoryGraph {
                 Some(t) => t,
                 None => continue,
             };
-            Arc::make_mut(&mut self.graph).insert(triple.as_ref());
+            graph.insert(triple.as_ref());
         }
 
         Ok(())
@@ -259,6 +258,7 @@ impl InMemoryGraph {
     ) -> Result<(), InMemoryGraphError> {
         let parser = RdfXmlParser::new();
         let mut xml_reader = parser.for_reader(reader);
+        let graph = Arc::make_mut(&mut self.graph);
 
         for triple_result in xml_reader.by_ref() {
             let triple = match handle_parse_error(triple_result, reader_mode, |e| InMemoryGraphError::RDFXMLError {
@@ -269,7 +269,7 @@ impl InMemoryGraph {
                 None => continue,
             };
             let triple_ref = cnv_triple(&triple);
-            Arc::make_mut(&mut self.graph).insert(triple_ref);
+            graph.insert(triple_ref);
         }
 
         Ok(())
@@ -292,6 +292,7 @@ impl InMemoryGraph {
     ) -> Result<(), InMemoryGraphError> {
         let parser = NQuadsParser::new();
         let mut nq_reader = parser.for_reader(reader);
+        let graph = Arc::make_mut(&mut self.graph);
 
         for triple_result in nq_reader.by_ref() {
             let triple = match handle_parse_error(triple_result, reader_mode, |e| InMemoryGraphError::NQuadsError {
@@ -301,7 +302,7 @@ impl InMemoryGraph {
                 Some(t) => t,
                 None => continue,
             };
-            Arc::make_mut(&mut self.graph).insert(triple.as_ref());
+            graph.insert(triple.as_ref());
         }
 
         Ok(())
@@ -324,6 +325,7 @@ impl InMemoryGraph {
     ) -> Result<(), InMemoryGraphError> {
         let parser = JsonLdParser::new();
         let mut jsonld_reader = parser.for_reader(reader);
+        let graph = Arc::make_mut(&mut self.graph);
 
         for triple_result in jsonld_reader.by_ref() {
             let triple = match handle_parse_error(triple_result, reader_mode, |e| InMemoryGraphError::JsonLDError {
@@ -333,7 +335,7 @@ impl InMemoryGraph {
                 Some(t) => t,
                 None => continue,
             };
-            Arc::make_mut(&mut self.graph).insert(triple.as_ref());
+            graph.insert(triple.as_ref());
         }
 
         Ok(())
