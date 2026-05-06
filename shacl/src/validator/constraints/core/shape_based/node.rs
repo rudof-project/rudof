@@ -52,7 +52,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
                         "Shape {}: Node({node_shape}) constraint not satisfied for {node}",
                         shape.id()
                     );
-                    let vr = ValidationResult::new(fnode_obj.clone(), component_obj.clone(), shape.severity())
+                    let vr = ValidationResult::new(fnode_obj.clone(), component_obj.clone(), shape.severity().clone())
                         .with_path(maybe_path.cloned())
                         .with_message(MessageMap::from(msg))
                         .with_value(Some(node_object.clone()))

@@ -46,7 +46,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Closed {
                 let pred_iri = pred.into();
                 if !allowed_props.contains(&pred_iri) {
                     let value = S::term_as_object(&obj).ok();
-                    let vr = ValidationResult::new(focus_obj.clone(), component_obj.clone(), shape.severity())
+                    let vr = ValidationResult::new(focus_obj.clone(), component_obj.clone(), shape.severity().clone())
                         .with_source(Some(shape.id().clone()))
                         .with_path(Some(SHACLPath::iri(pred_iri)))
                         .with_value(value);

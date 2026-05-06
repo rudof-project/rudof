@@ -273,7 +273,7 @@ fn apply<S: Rdf, I: IterationStrategy<S>>(
                 && condition
             {
                 return Some(
-                    ValidationResult::new(focus, component, shape.severity())
+                    ValidationResult::new(focus, component, shape.severity().clone())
                         .with_source(source.cloned())
                         .with_message(msg)
                         .with_path(maybe_path.cloned())
@@ -306,7 +306,7 @@ fn apply_with_focus<S: Rdf, I: IterationStrategy<S>>(
             let value = strategy.to_object(item);
             match evaluator(focus_node, item) {
                 Ok(true) => Some(
-                    ValidationResult::new(focus, component, shape.severity())
+                    ValidationResult::new(focus, component, shape.severity().clone())
                         .with_source(source.cloned())
                         .with_message(MessageMap::from(msg))
                         .with_path(maybe_path.cloned())

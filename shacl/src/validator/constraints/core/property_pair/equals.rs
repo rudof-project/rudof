@@ -47,7 +47,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Equals {
             for pv in &prop_values {
                 if !nodes_set.contains(pv) {
                     let value = S::term_as_object(pv).ok();
-                    let vr = ValidationResult::new(fnode_obj.clone(), component_obj.clone(), shape.severity())
+                    let vr = ValidationResult::new(fnode_obj.clone(), component_obj.clone(), shape.severity().clone())
                         .with_source(Some(shape.id().clone()))
                         .with_path(maybe_path.cloned())
                         .with_value(value);
@@ -58,7 +58,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Equals {
             for vn in nodes.iter() {
                 if !prop_values.contains(vn) {
                     let value = S::term_as_object(vn).ok();
-                    let vr = ValidationResult::new(fnode_obj.clone(), component_obj.clone(), shape.severity())
+                    let vr = ValidationResult::new(fnode_obj.clone(), component_obj.clone(), shape.severity().clone())
                         .with_source(Some(shape.id().clone()))
                         .with_path(maybe_path.cloned())
                         .with_value(value);

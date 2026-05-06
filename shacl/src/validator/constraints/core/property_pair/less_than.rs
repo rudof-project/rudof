@@ -50,7 +50,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThan {
 
                             if let Some(msg) = msg {
                                 let node_obj = S::term_as_object(value).ok();
-                                let vr = ValidationResult::new(fnode_obj.clone(), component.clone(), shape.severity())
+                                let vr = ValidationResult::new(fnode_obj.clone(), component.clone(), shape.severity().clone())
                                     .with_message(MessageMap::from(msg))
                                     .with_path(maybe_path.cloned())
                                     .with_source(Some(shape.id().clone()))
@@ -65,7 +65,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThan {
                         "LessThan: Error trying to find triples for subject {subject} and predicate {}: {e}",
                         self.iri()
                     );
-                    let vr = ValidationResult::new(fnode_obj, component.clone(), shape.severity())
+                    let vr = ValidationResult::new(fnode_obj, component.clone(), shape.severity().clone())
                         .with_path(maybe_path.cloned())
                         .with_message(MessageMap::from(msg))
                         .with_source(Some(shape.id().clone()));

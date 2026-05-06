@@ -51,7 +51,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for And {
                 if !conforms {
                     let node_obj = S::term_as_object(node).ok();
 
-                    let vr = ValidationResult::new(fnode_obj.clone(), componet_obj.clone(), shape.severity())
+                    let vr = ValidationResult::new(fnode_obj.clone(), componet_obj.clone(), shape.severity().clone())
                         .with_source(Some(shape.id().clone()))
                         .with_path(maybe_path.cloned())
                         .with_value(node_obj);

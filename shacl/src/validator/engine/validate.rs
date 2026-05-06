@@ -192,7 +192,7 @@ fn validate_reifiers<RDF: NeighsRDF + Debug>(
                     let vr_single = ValidationResult::new(
                         shape.id().clone(),
                         Object::iri(ShaclVocab::sh_reifier_shape_constraint_component()),
-                        shape.severity(),
+                        shape.severity().clone(),
                     )
                     .with_message(MessageMap::from(
                         "Reification required but no reifier found for triple {triple} with predicate {pred}",

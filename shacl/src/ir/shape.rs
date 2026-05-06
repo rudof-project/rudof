@@ -50,7 +50,7 @@ impl IRShape {
         }
     }
 
-    pub fn severity(&self) -> Severity {
+    pub fn severity(&self) -> &Severity {
         match self {
             IRShape::NodeShape(ns) => ns.severity(),
             IRShape::PropertyShape(ps) => ps.severity(),
@@ -148,7 +148,7 @@ impl Display for IRShape {
         if self.deactivated() {
             writeln!(f, " Deactivated: {}", self.deactivated())?;
         }
-        if self.severity() != Severity::Violation {
+        if self.severity() != &Severity::Violation {
             writeln!(f, " Severity: {}", self.severity())?;
         }
         if self.closed() {

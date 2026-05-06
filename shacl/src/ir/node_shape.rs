@@ -104,10 +104,10 @@ impl IRNodeShape {
         self.deactivated
     }
 
-    pub fn severity(&self) -> Severity {
+    pub fn severity(&self) -> &Severity {
         match &self.severity {
-            Some(severity) => severity.clone(),
-            None => Severity::Violation,
+            Some(severity) => severity,
+            None => &Severity::Violation,
         }
     }
 

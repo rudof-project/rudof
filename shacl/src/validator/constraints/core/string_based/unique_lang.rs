@@ -51,7 +51,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for UniqueLang {
                         "Unique lang failed for lang {k} with values: {}",
                         v.iter().map(|n| n.to_string()).collect::<Vec<_>>().join(", ")
                     );
-                    let vr = ValidationResult::new(fnode_obj.clone(), component.clone(), shape.severity())
+                    let vr = ValidationResult::new(fnode_obj.clone(), component.clone(), shape.severity().clone())
                         .with_path(maybe_path.cloned())
                         .with_message(MessageMap::from(msg))
                         .with_source(Some(shape.id().clone()));

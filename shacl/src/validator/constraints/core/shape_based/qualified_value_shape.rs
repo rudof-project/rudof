@@ -68,7 +68,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                     "QualifiedValueShape: only {valid_counter} nodes conform to shape {}, which is less than minCount: {min_count}. Focus node: {fnode}",
                     shape.id()
                 );
-                let vr = ValidationResult::new(fnode_obj.clone(), component, shape.severity())
+                let vr = ValidationResult::new(fnode_obj.clone(), component, shape.severity().clone())
                     .with_message(MessageMap::from(msg))
                     .with_path(maybe_path.cloned())
                     .with_source(Some(shape.id().clone()));
@@ -83,7 +83,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                     "QualifiedValueShape: {valid_counter} nodes conform to shape {}, which is grater than maxCount: {max_count}. Focus node: {fnode}",
                     shape.id()
                 );
-                let vr = ValidationResult::new(fnode_obj, component, shape.severity())
+                let vr = ValidationResult::new(fnode_obj, component, shape.severity().clone())
                     .with_path(maybe_path.cloned())
                     .with_message(MessageMap::from(msg))
                     .with_source(Some(shape.id().clone()));

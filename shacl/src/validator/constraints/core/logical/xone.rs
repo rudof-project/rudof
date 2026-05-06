@@ -46,7 +46,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Xone {
                         "Shape {}: Xone constraint not satisfied for node {node}. Number of conforming shapes: {conforming_shapes}",
                         shape.id()
                     );
-                    let vr = ValidationResult::new(fnode_obj.clone(), component.clone(), shape.severity())
+                    let vr = ValidationResult::new(fnode_obj.clone(), component.clone(), shape.severity().clone())
                         .with_message(MessageMap::from(msg))
                         .with_path(maybe_path.cloned())
                         .with_value(node_obj)
