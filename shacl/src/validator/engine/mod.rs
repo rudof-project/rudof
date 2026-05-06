@@ -97,6 +97,7 @@ pub trait Engine<S: NeighsRDF>: Send {
     fn get_cached_results(&self, node: &Object, shape_idx: ShapeLabelIdx) -> Option<Vec<ValidationResult>>;
 }
 
+#[cfg(feature = "sparql")]
 fn select<S: QueryRDF>(store: &S, query: &String, index: &str) -> Result<HashSet<S::Term>, ValidationError> {
     let mut out = HashSet::new();
 
