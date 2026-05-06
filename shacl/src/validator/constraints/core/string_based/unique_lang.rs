@@ -1,7 +1,8 @@
+use crate::error::ValidationError;
 use crate::ir::components::UniqueLang;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::types::MessageMap;
-use crate::validator::constraints::{Validator};
+use crate::validator::constraints::Validator;
 use crate::validator::engine::Engine;
 use crate::validator::nodes::ValueNodes;
 use crate::validator::report::ValidationResult;
@@ -10,7 +11,6 @@ use rudof_rdf::rdf_core::term::literal::Literal;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::collections::HashMap;
 use std::fmt::Debug;
-use crate::error::ValidationError;
 
 impl<S: NeighsRDF + Debug> Validator<S> for UniqueLang {
     fn validate(

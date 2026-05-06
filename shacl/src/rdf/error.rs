@@ -1,7 +1,7 @@
 use crate::ast::error::ASTError;
+use crate::error::IRError;
 use rudof_rdf::rdf_core::{BuildRDF, RDFError};
 use thiserror::Error;
-use crate::error::IRError;
 
 #[derive(Debug, Error)]
 pub enum ShaclParserError {
@@ -19,10 +19,7 @@ pub enum ShaclParserError {
     },
 
     #[error("Expected term as subject, found {term} in {context}")]
-    ExpectedSubject {
-        term: String,
-        context: String,
-    },
+    ExpectedSubject { term: String, context: String },
 
     #[error("An error occured while searching triples: {0}")]
     TriplesLookupError(String),

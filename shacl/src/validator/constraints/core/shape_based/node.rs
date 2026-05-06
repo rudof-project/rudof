@@ -1,14 +1,14 @@
+use crate::error::ValidationError;
 use crate::ir::components::Node;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::types::MessageMap;
-use crate::validator::constraints::{Validator};
+use crate::validator::constraints::Validator;
 use crate::validator::engine::{Engine, Validate};
 use crate::validator::nodes::{FocusNodes, ValueNodes};
 use crate::validator::report::ValidationResult;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
-use crate::error::ValidationError;
 
 impl<S: NeighsRDF + Debug> Validator<S> for Node {
     fn validate(

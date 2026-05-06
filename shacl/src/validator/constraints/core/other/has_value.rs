@@ -1,3 +1,4 @@
+use crate::error::ValidationError;
 use crate::ir::components::HasValue;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::validator::constraints::{Validator, validate_with};
@@ -7,7 +8,6 @@ use crate::validator::nodes::ValueNodes;
 use crate::validator::report::ValidationResult;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
-use crate::error::ValidationError;
 
 impl<S: NeighsRDF + Debug> Validator<S> for HasValue {
     fn validate(

@@ -266,7 +266,7 @@ impl IRComponent {
 
                 let idx = qvs.shape();
                 let shape = shape_map.get(idx).ok_or(IRError::ShapeNotFound(*idx))?;
-                
+
                 register_term(
                     &shape.id().clone().into(),
                     ShaclVocab::sh_qualified_value_shape(),
@@ -430,7 +430,9 @@ fn register_term<RDF: BuildRDF>(
     graph: &mut RDF,
 ) -> Result<(), IRError> {
     let node: RDF::Subject = node.clone().try_into().unwrap_or_else(|_| unreachable!());
-    graph.add_triple(node, predicate, value.clone()).map_err(|e| IRError::from_rdf_err::<RDF>("add triple", e))
+    graph
+        .add_triple(node, predicate, value.clone())
+        .map_err(|e| IRError::from_rdf_err::<RDF>("add triple", e))
 }
 
 impl From<&IRComponent> for IriS {

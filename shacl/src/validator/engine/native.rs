@@ -55,17 +55,16 @@ impl<RDF: NeighsRDF + Debug + 'static> Engine<RDF> for NativeEngine {
         let shacl_component = ShaclComponent::new(component);
         let validator: &dyn NativeValidator<RDF> = shacl_component.deref();
 
-        validator
-            .validate_native(
-                component,
-                shape,
-                store,
-                self,
-                value_nodes,
-                source_shape,
-                maybe_path,
-                shapes_graph,
-            )
+        validator.validate_native(
+            component,
+            shape,
+            store,
+            self,
+            value_nodes,
+            source_shape,
+            maybe_path,
+            shapes_graph,
+        )
     }
 
     /// https://www.w3.org/TR/shacl/#targetNode
@@ -126,7 +125,8 @@ impl<RDF: NeighsRDF + Debug + 'static> Engine<RDF> for NativeEngine {
         let term: RDF::Term = shape.clone().into();
         let targets = store.subjects_for(&RdfVocab::rdf_type().into(), &term)?;
 
-        let subclass_targets = store.subjects_for(&RdfsVocab::rdfs_subclass_of_str().into(), &term)?
+        let subclass_targets = store
+            .subjects_for(&RdfsVocab::rdfs_subclass_of_str().into(), &term)?
             .into_iter()
             .flat_map(move |subclass| {
                 store

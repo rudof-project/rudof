@@ -1,3 +1,4 @@
+use crate::error::ValidationError;
 use crate::ir::components::LessThanOrEquals;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::types::MessageMap;
@@ -9,7 +10,6 @@ use rudof_rdf::rdf_core::query::QueryRDF;
 use rudof_rdf::rdf_core::term::{Object, Triple};
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
-use crate::error::ValidationError;
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThanOrEquals {
     fn validate_native(
@@ -50,12 +50,15 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThanOrEquals {
 
                             if let Some(msg) = msg {
                                 let node_obj = S::term_as_object(value).ok();
-                                let validation_result =
-                                    ValidationResult::new(fnode_obj.clone(), component.clone(), shape.severity().clone())
-                                        .with_message(MessageMap::from(msg))
-                                        .with_path(maybe_path.cloned())
-                                        .with_value(node_obj)
-                                        .with_source(Some(shape.id().clone()));
+                                let validation_result = ValidationResult::new(
+                                    fnode_obj.clone(),
+                                    component.clone(),
+                                    shape.severity().clone(),
+                                )
+                                .with_message(MessageMap::from(msg))
+                                .with_path(maybe_path.cloned())
+                                .with_value(node_obj)
+                                .with_source(Some(shape.id().clone()));
                                 validation_results.push(validation_result);
                             }
                         }
@@ -66,10 +69,11 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThanOrEquals {
                         "LessThanOrEquals: Error trying to find triples for subject {subject} and predicate {}: {e}",
                         self.iri()
                     );
-                    let validation_result = ValidationResult::new(fnode_obj, component.clone(), shape.severity().clone())
-                        .with_message(MessageMap::from(msg))
-                        .with_path(maybe_path.cloned())
-                        .with_source(Some(shape.id().clone()));
+                    let validation_result =
+                        ValidationResult::new(fnode_obj, component.clone(), shape.severity().clone())
+                            .with_message(MessageMap::from(msg))
+                            .with_path(maybe_path.cloned())
+                            .with_source(Some(shape.id().clone()));
                     validation_results.push(validation_result);
                 },
             }

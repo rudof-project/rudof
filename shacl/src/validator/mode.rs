@@ -1,6 +1,6 @@
+use crate::error::ValidationError;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
-use crate::error::ValidationError;
 
 /// Backend used for the validation.
 ///

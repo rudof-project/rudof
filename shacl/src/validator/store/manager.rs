@@ -1,9 +1,9 @@
+use crate::error::ValidationError;
 use crate::ir::IRSchema;
 use crate::rdf::ShaclParser;
 use rudof_rdf::rdf_core::RDFFormat;
 use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
 use std::io::BufRead;
-use crate::error::ValidationError;
 
 pub struct ShaclDataManager;
 

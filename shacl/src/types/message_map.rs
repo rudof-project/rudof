@@ -28,15 +28,10 @@ impl MessageMap {
     }
 
     pub fn iter_literals(&self) -> impl Iterator<Item = ConcreteLiteral> {
-        self
-            .messages
-            .iter()
-            .map(|(lang, msg)| {
-                ConcreteLiteral::StringLiteral {
-                    lang: lang.clone(),
-                    lexical_form: msg.clone(),
-                }
-            })
+        self.messages.iter().map(|(lang, msg)| ConcreteLiteral::StringLiteral {
+            lang: lang.clone(),
+            lexical_form: msg.clone(),
+        })
     }
 
     pub fn get(&self, lang: Option<&Lang>) -> Option<&String> {

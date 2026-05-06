@@ -41,8 +41,8 @@ impl ReifierInfo {
                 SHACLPath::Predicate { pred } => pred,
                 other => {
                     return Err(IRError::InvalidReifierShapePath {
-                        shape: shape.id().clone(),
-                        path: other.clone(),
+                        shape: shape.id().clone().into(),
+                        path: other.clone().into(),
                     });
                 },
             };

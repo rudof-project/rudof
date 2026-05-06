@@ -1,12 +1,12 @@
 use crate::ast::error::ASTError;
+use crate::ir::ShapeLabelIdx;
 use crate::rdf::error::ShaclParserError;
+use prefixmap::IriRefError;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::utils::RDFRegexError;
+use rudof_rdf::rdf_core::{Rdf, SHACLPath};
 use rudof_rdf::rdf_impl::InMemoryGraphError;
 use thiserror::Error;
-use prefixmap::IriRefError;
-use rudof_rdf::rdf_core::{Rdf, SHACLPath};
-use crate::ir::ShapeLabelIdx;
 
 #[derive(Error, Debug)]
 pub enum IRError {
@@ -17,10 +17,7 @@ pub enum IRError {
     ShapeNotFound(ShapeLabelIdx),
 
     #[error("Failed to {operation}: {error}")]
-    GraphError {
-        operation: String,
-        error: String,
-    },
+    GraphError { operation: String, error: String },
 
     #[error(transparent)]
     ASTError(#[from] Box<ASTError>),
@@ -31,11 +28,10 @@ pub enum IRError {
     #[error(transparent)]
     InMemoryGraphError(#[from] Box<InMemoryGraphError>),
 
-    #[error("Invalid path for property shape with reifier shape {shape}, the path must be a single predicate, but got: {path}")]
-    InvalidReifierShapePath {
-        shape: Object,
-        path: SHACLPath,
-    },
+    #[error(
+        "Invalid path for property shape with reifier shape {shape}, the path must be a single predicate, but got: {path}"
+    )]
+    InvalidReifierShapePath { shape: Box<Object>, path: Box<SHACLPath> },
 
     #[error(transparent)]
     RdfRegexError(#[from] Box<RDFRegexError>),

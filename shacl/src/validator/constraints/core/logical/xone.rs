@@ -1,8 +1,8 @@
-use crate::error::{ValidationError};
+use crate::error::ValidationError;
 use crate::ir::components::Xone;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::types::MessageMap;
-use crate::validator::constraints::{Validator};
+use crate::validator::constraints::Validator;
 use crate::validator::engine::{Engine, Validate};
 use crate::validator::nodes::{FocusNodes, ValueNodes};
 use crate::validator::report::ValidationResult;

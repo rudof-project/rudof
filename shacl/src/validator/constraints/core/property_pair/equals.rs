@@ -1,3 +1,4 @@
+use crate::error::ValidationError;
 use crate::ir::components::Equals;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::validator::constraints::{NativeValidator, SparqlValidator};
@@ -9,7 +10,6 @@ use rudof_rdf::rdf_core::term::{Object, Triple};
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::collections::HashSet;
 use std::fmt::Debug;
-use crate::error::ValidationError;
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Equals {
     fn validate_native(

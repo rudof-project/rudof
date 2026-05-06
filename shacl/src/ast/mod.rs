@@ -11,7 +11,7 @@ mod reifier_info;
 mod schema;
 mod shape;
 
-use std::collections::HashSet;
+use crate::error::ASTError;
 pub use component::ASTComponent;
 pub use node_shape::ASTNodeShape;
 pub use property_shape::ASTPropertyShape;
@@ -20,7 +20,7 @@ use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
 pub use schema::ASTSchema;
 pub use shape::ASTShape;
-use crate::error::ASTError;
+use std::collections::HashSet;
 
 pub fn defined_properties_for(properties: &[Object], ast: &ASTSchema) -> Result<HashSet<IriS>, ASTError> {
     let mut defined_properties = HashSet::new();

@@ -1,4 +1,4 @@
-use crate::error::{ValidationError};
+use crate::error::ValidationError;
 use crate::ir::components::MaxCount;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::validator::constraints::{Validator, validate_with};

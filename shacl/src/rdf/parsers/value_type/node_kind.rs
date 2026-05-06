@@ -22,8 +22,8 @@ pub(crate) fn node_kind<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<
 
 fn term_to_node_kind<RDF: Rdf>(term: RDF::Term) -> Result<NodeKind, ShaclParserError> {
     let term_name = term.to_string();
-    let result_iri: Result<RDF::IRI, ShaclParserError> =
-        <RDF::Term as TryInto<RDF::IRI>>::try_into(term).map_err(|_| ShaclParserError::ExpectedNodeKind(term_name.clone()));
+    let result_iri: Result<RDF::IRI, ShaclParserError> = <RDF::Term as TryInto<RDF::IRI>>::try_into(term)
+        .map_err(|_| ShaclParserError::ExpectedNodeKind(term_name.clone()));
     match result_iri?.as_str() {
         ShaclVocab::SH_IRI => Ok(NodeKind::Iri),
         ShaclVocab::SH_LITERAL => Ok(NodeKind::Lit),

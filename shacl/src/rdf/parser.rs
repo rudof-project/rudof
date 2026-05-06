@@ -1,4 +1,3 @@
-use crate::ast::error::ASTError;
 use crate::ast::{ASTSchema, ASTShape};
 use crate::rdf::State;
 use crate::rdf::error::ShaclParserError;
@@ -29,15 +28,12 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
     pub fn parse(&mut self) -> Result<ASTSchema, ShaclParserError> {
         let pm = self.rdf_parser.prefixmap().unwrap_or_default();
 
-        let mut state: State = self
-            .shapes_candidates()?
-            .into();
+        let mut state: State = self.shapes_candidates()?.into();
 
         while let Some(node) = state.pop_pending() {
             if !self.shapes.contains_key(&node) {
                 self.rdf_parser.rdf_mut().set_focus(&node.clone().into());
-                let shape = shape()
-                    .parse_focused(self.rdf_parser.rdf_mut())?;
+                let shape = shape().parse_focused(self.rdf_parser.rdf_mut())?;
                 self.shapes.insert(node, shape);
             }
         }
@@ -164,8 +160,7 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
         pred: &RDF::IRI,
         context: &str,
         err_fn: impl Fn(RDF::Term, &str) -> ShaclParserError,
-    ) -> Result<HashSet<RDF::Subject>, ShaclParserError>
-    {
+    ) -> Result<HashSet<RDF::Subject>, ShaclParserError> {
         let mut rs = HashSet::new();
 
         for subject in self.objects_with_predicate(pred)? {

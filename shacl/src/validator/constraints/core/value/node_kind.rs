@@ -1,9 +1,8 @@
+use crate::error::ValidationError;
 use crate::ir::components::Nodekind;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::types::NodeKind;
-use crate::validator::constraints::{
-    NativeValidator, SparqlValidator, validate_ask_with, validate_with,
-};
+use crate::validator::constraints::{NativeValidator, SparqlValidator, validate_ask_with, validate_with};
 use crate::validator::engine::Engine;
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;
@@ -14,7 +13,6 @@ use rudof_rdf::rdf_core::term::Term;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
 use std::ops::Not;
-use crate::error::ValidationError;
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Nodekind {
     fn validate_native(

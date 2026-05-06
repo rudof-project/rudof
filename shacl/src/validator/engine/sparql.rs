@@ -38,16 +38,15 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
         let shacl_component = ShaclComponent::new(component);
         let validator: &dyn SparqlValidator<S> = shacl_component.deref();
 
-        validator
-            .validate_sparql(
-                component,
-                shape,
-                store,
-                value_nodes,
-                source_shape,
-                maybe_path,
-                shapes_graph,
-            )
+        validator.validate_sparql(
+            component,
+            shape,
+            store,
+            value_nodes,
+            source_shape,
+            maybe_path,
+            shapes_graph,
+        )
     }
 
     // If s is a shape in a shapes graph SG and s has value t for sh:targetNode

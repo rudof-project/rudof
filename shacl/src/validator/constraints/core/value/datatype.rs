@@ -1,3 +1,4 @@
+use crate::error::ValidationError;
 use crate::ir::components::Datatype;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::validator::constraints::{Validator, validate_with};
@@ -8,7 +9,6 @@ use crate::validator::report::ValidationResult;
 use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, Literal};
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
-use crate::error::ValidationError;
 
 impl<S: NeighsRDF + Debug> Validator<S> for Datatype {
     fn validate(

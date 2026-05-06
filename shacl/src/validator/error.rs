@@ -48,10 +48,7 @@ pub enum ValidationError {
     MissingRequiredField(String),
 
     #[error("Parsing error: the field '{field}' has an invalid IRI value: {value}")]
-    InvalidIriValue {
-        field: String,
-        value: String,
-    },
+    InvalidIriValue { field: String, value: String },
 
     #[error("TargetNode cannot be a Blank Node")]
     TargetNodeBNode,

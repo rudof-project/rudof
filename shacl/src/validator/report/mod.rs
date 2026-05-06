@@ -7,10 +7,10 @@ use std::fmt::{Display, Formatter};
 mod result;
 mod sorting;
 
+use crate::error::ValidationError;
 pub use result::ValidationResult;
 use rudof_rdf::rdf_core::term::Object;
 pub use sorting::ValidationReportSorting;
-use crate::error::ValidationError;
 
 #[derive(Debug, Clone)]
 pub struct ValidationReport {
@@ -124,8 +124,8 @@ impl ValidationReport {
                     .add_triple(report_node.clone(), result.clone(), result_node_term.clone())
                     .map_err(error_mapper::<RDF>("Error adding result to bnode"))?;
 
-                let result_node_subject: RDF::Subject =
-                    RDF::Subject::try_from(result_node_term).map_err(|_| ValidationError::CastError("term".to_string(), "subject".to_string()))?;
+                let result_node_subject: RDF::Subject = RDF::Subject::try_from(result_node_term)
+                    .map_err(|_| ValidationError::CastError("term".to_string(), "subject".to_string()))?;
                 vr.to_rdf(writer, result_node_subject)?;
             }
         }

@@ -71,8 +71,7 @@ pub trait ShaclProcessor<S: NeighsRDF + Debug + Send + Sync> {
                 .par_iter_mut()
                 .zip(level.par_iter())
                 .map(|(runner, idx)| {
-                    let shape = shapes_graph
-                        .get_shape_from_idx_e(idx)?;
+                    let shape = shapes_graph.get_shape_from_idx_e(idx)?;
                     shape.validate(store, runner.as_mut(), None, Some(shape), shapes_graph)
                 })
                 .collect();

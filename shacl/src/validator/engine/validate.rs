@@ -110,8 +110,7 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
         // one violation entry per path that led to the offending node.
         let mut property_shapes_validation_results = Vec::new();
         for ps in self.property_shapes().iter() {
-            let shape = shapes_graph
-                .get_shape_from_idx_e(ps)?;
+            let shape = shapes_graph.get_shape_from_idx_e(ps)?;
             for (_, vn) in value_nodes.iter() {
                 let results = shape.validate(store, runner, Some(vn), Some(self), shapes_graph)?;
                 property_shapes_validation_results.extend(results);
@@ -180,7 +179,9 @@ fn validate_reifiers<RDF: NeighsRDF + Debug>(
             let pred = reifier_info.predicate();
             let pred_iri: RDF::IRI = pred.clone().into();
             let subject = RDF::term_as_subject(node)?;
-            let triples = store.triples_with_subject_predicate(&subject, &pred_iri).map_err(ValidationError::new_graph_error::<RDF>)?;
+            let triples = store
+                .triples_with_subject_predicate(&subject, &pred_iri)
+                .map_err(ValidationError::new_graph_error::<RDF>)?;
 
             for triple in triples {
                 let reifier_subjects = store

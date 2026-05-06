@@ -12,6 +12,7 @@ use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::collections::HashSet;
 
+use crate::error::ValidationError;
 use crate::validator::nodes::{FocusNodes, ValueNodes};
 use crate::validator::report::ValidationResult;
 pub use native::NativeEngine;
@@ -19,7 +20,6 @@ use rudof_rdf::rdf_core::query::QueryRDF;
 #[cfg(feature = "sparql")]
 pub use sparql::SparqlEngine;
 pub use validate::Validate;
-use crate::error::ValidationError;
 
 pub trait Engine<S: NeighsRDF>: Send {
     /// Pre-builds internal indexes from the data graph for faster target resolution
@@ -98,10 +98,12 @@ pub trait Engine<S: NeighsRDF>: Send {
 }
 
 #[cfg(feature = "sparql")]
-fn select<S: QueryRDF>(store: &S, query: &String, index: &str) -> Result<HashSet<S::Term>, ValidationError> {
+fn select<S: QueryRDF>(store: &S, query: &str, index: &str) -> Result<HashSet<S::Term>, ValidationError> {
     let mut out = HashSet::new();
 
-    let query = store.query_select(query).map_err(ValidationError::select_query_error::<S>)?;
+    let query = store
+        .query_select(query)
+        .map_err(ValidationError::select_query_error::<S>)?;
 
     for sol in query.iter() {
         if let Some(sol) = sol.find_solution(index) {

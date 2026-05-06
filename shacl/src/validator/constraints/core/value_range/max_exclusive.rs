@@ -1,8 +1,7 @@
+use crate::error::ValidationError;
 use crate::ir::components::MaxExclusive;
 use crate::ir::{IRComponent, IRSchema, IRShape};
-use crate::validator::constraints::{
-    NativeValidator, SparqlValidator, validate_ask_with, validate_with,
-};
+use crate::validator::constraints::{NativeValidator, SparqlValidator, validate_ask_with, validate_with};
 use crate::validator::engine::Engine;
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;
@@ -11,7 +10,6 @@ use indoc::formatdoc;
 use rudof_rdf::rdf_core::query::QueryRDF;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
-use crate::error::ValidationError;
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxExclusive {
     fn validate_native(

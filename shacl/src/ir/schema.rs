@@ -1,10 +1,10 @@
 use crate::ast::{ASTSchema, ASTShape};
+use crate::error::ASTError;
 use crate::ir::dg::{DependencyGraph, PosNeg};
 use crate::ir::error::IRError;
 use crate::ir::shape::IRShape;
 use crate::ir::shape_label_idx::ShapeLabelIdx;
 use crate::rdf::ShaclParser;
-use crate::rdf::error::ShaclWriterError;
 use prefixmap::PrefixMap;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
@@ -15,7 +15,6 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
 use std::io::{Cursor, Read};
 use tracing::warn;
-use crate::error::ASTError;
 
 #[derive(Clone, Debug)]
 pub struct IRSchema {
@@ -83,7 +82,8 @@ impl IRSchema {
     }
 
     pub fn get_shape_from_idx_e(&self, shape_idx: &ShapeLabelIdx) -> Result<&IRShape, IRError> {
-        self.get_shape_from_idx(shape_idx).ok_or(IRError::ShapeNotFound(*shape_idx))
+        self.get_shape_from_idx(shape_idx)
+            .ok_or(IRError::ShapeNotFound(*shape_idx))
     }
 
     pub fn get_shape(&self, sref: &Object) -> Option<&IRShape> {
