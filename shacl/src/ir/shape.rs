@@ -182,12 +182,11 @@ impl Display for IRShape {
 }
 
 impl IRShape {
-    // TODO - Maybe change error to IRError
     pub fn register<RDF: BuildRDF>(
         &self,
         graph: &mut RDF,
         shapes_map: &HashMap<ShapeLabelIdx, IRShape>,
-    ) -> Result<(), RDF::Err> {
+    ) -> Result<(), IRError> {
         match self {
             IRShape::NodeShape(ns) => ns.register(graph, shapes_map),
             IRShape::PropertyShape(ps) => ps.register(graph, shapes_map),

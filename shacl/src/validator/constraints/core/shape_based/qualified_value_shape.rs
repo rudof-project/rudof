@@ -1,7 +1,7 @@
 use crate::ir::components::QualifiedValueShape;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::types::MessageMap;
-use crate::validator::constraints::{ConstraintError, Validator, get_shape_from_idx};
+use crate::validator::constraints::{Validator};
 use crate::validator::engine::{Engine, Validate};
 use crate::validator::nodes::{FocusNodes, ValueNodes};
 use crate::validator::report::ValidationResult;
@@ -10,6 +10,7 @@ use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::collections::HashSet;
 use std::fmt::Debug;
+use crate::error::{ValidationError};
 
 impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
     fn validate(
@@ -22,7 +23,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         shapes_graph: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
         // TODO - It works but it returns duplicated validation results
         // I tried to use a HashSet but it still doesn't remove duplicates...
         let mut validation_results = HashSet::new();

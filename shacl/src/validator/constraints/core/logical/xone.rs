@@ -1,4 +1,4 @@
-use crate::error::ConstraintError;
+use crate::error::{ValidationError};
 use crate::ir::components::Xone;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::types::MessageMap;
@@ -21,7 +21,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Xone {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         shapes_graph: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
         let mut validation_results = Vec::new();
         let component = Object::iri(component.into());
 

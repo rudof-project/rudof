@@ -1,5 +1,5 @@
 use crate::ast::ASTComponent;
-use rudof_rdf::rdf_core::FocusRDF;
+use rudof_rdf::rdf_core::{FocusRDF, RDFError};
 use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{SingleStringPropertyParser, StringsPropertyParser};
 use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
@@ -15,7 +15,9 @@ pub(crate) fn pattern<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<AS
                     let flags = maybe_flags.clone();
                     Ok(vec![ASTComponent::Pattern { pattern, flags }])
                 },
-                _ => todo!(), // Error...
+                _ => Err(RDFError::ParseFailError {
+                    msg: "Expected exactly one value for sh:pattern".to_string(),
+                }),
             })
         })
 }

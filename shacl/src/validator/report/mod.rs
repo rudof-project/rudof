@@ -1,17 +1,16 @@
 use crate::types::Severity;
 use prefixmap::PrefixMap;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
-use rudof_rdf::rdf_core::{BuildRDF, FocusRDF};
+use rudof_rdf::rdf_core::{BuildRDF, FocusRDF, Rdf};
 use std::fmt::{Display, Formatter};
 
-pub(crate) mod error;
 mod result;
 mod sorting;
 
-use crate::error::ReportError;
 pub use result::ValidationResult;
 use rudof_rdf::rdf_core::term::Object;
 pub use sorting::ValidationReportSorting;
+use crate::error::ValidationError;
 
 #[derive(Debug, Clone)]
 pub struct ValidationReport {
@@ -75,17 +74,10 @@ impl ValidationReport {
 }
 
 impl ValidationReport {
-    pub fn parse<S: FocusRDF>(store: &mut S, subject: S::Term) -> Result<Self, ReportError> {
+    pub fn parse<S: FocusRDF>(store: &mut S, subject: S::Term) -> Result<Self, ValidationError> {
         let mut results = Vec::new();
 
-        for result in store
-            .objects_for(&subject, &ShaclVocab::sh_result().into())
-            .map_err(|e| ReportError::ObjectsFor {
-                subject: subject.to_string(),
-                predicate: ShaclVocab::SH_RESULT.to_string(),
-                error: e.to_string(),
-            })?
-        {
+        for result in store.objects_for(&subject, &ShaclVocab::sh_result().into())? {
             results.push(ValidationResult::parse(store, &result)?);
         }
 
@@ -98,7 +90,7 @@ impl ValidationReport {
         Ok(report)
     }
 
-    pub fn to_rdf<RDF: BuildRDF + Sized>(&self, writer: &mut RDF) -> Result<(), ReportError> {
+    pub fn to_rdf<RDF: BuildRDF + Sized>(&self, writer: &mut RDF) -> Result<(), ValidationError> {
         writer.add_prefix("sh", ShaclVocab::sh_ref());
 
         let report_node: RDF::Subject = writer
@@ -133,9 +125,7 @@ impl ValidationReport {
                     .map_err(error_mapper::<RDF>("Error adding result to bnode"))?;
 
                 let result_node_subject: RDF::Subject =
-                    RDF::Subject::try_from(result_node_term).map_err(|_| ReportError::ValidationError {
-                        msg: "Cannot convert term to subject".to_string(),
-                    })?;
+                    RDF::Subject::try_from(result_node_term).map_err(|_| ValidationError::CastError("term".to_string(), "subject".to_string()))?;
                 vr.to_rdf(writer, result_node_subject)?;
             }
         }
@@ -183,8 +173,6 @@ impl Display for ValidationReport {
     }
 }
 
-fn error_mapper<RDF: BuildRDF>(msg: &str) -> impl FnOnce(RDF::Err) -> ReportError {
-    move |e| ReportError::ValidationError {
-        msg: format!("{}: {}", msg, e),
-    }
+fn error_mapper<RDF: Rdf>(msg: &str) -> impl FnOnce(RDF::Err) -> ValidationError {
+    move |e| ValidationError::new_graph_error_ctx::<RDF>(e, msg)
 }

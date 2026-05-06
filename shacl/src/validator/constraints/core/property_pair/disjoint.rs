@@ -1,6 +1,6 @@
 use crate::ir::components::Disjoint;
 use crate::ir::{IRComponent, IRSchema, IRShape};
-use crate::validator::constraints::{ConstraintError, NativeValidator, SparqlValidator, validate_with_focus};
+use crate::validator::constraints::{ NativeValidator, SparqlValidator, validate_with_focus};
 use crate::validator::engine::Engine;
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;
@@ -9,6 +9,7 @@ use rudof_rdf::rdf_core::query::QueryRDF;
 use rudof_rdf::rdf_core::term::Triple;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
+use crate::error::ValidationError;
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Disjoint {
     fn validate_native(
@@ -21,7 +22,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Disjoint {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
         let check_fn = |f: &S::Term, vn: &S::Term| {
             let subject = S::term_as_subject(f).unwrap();
             let iri: S::IRI = self.iri().clone().into();
@@ -64,9 +65,7 @@ impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Disjoint {
         _: Option<&IRShape>,
         _: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        Err(ConstraintError::NotImplemented {
-            err: "Disjoint not implemented".to_string(),
-        })
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
+        unimplemented!()
     }
 }

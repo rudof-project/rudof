@@ -1,6 +1,6 @@
 use crate::ir::components::LanguageIn;
 use crate::ir::{IRComponent, IRSchema, IRShape};
-use crate::validator::constraints::{ConstraintError, Validator, validate_with};
+use crate::validator::constraints::{Validator, validate_with};
 use crate::validator::engine::Engine;
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;
@@ -8,6 +8,7 @@ use crate::validator::report::ValidationResult;
 use rudof_rdf::rdf_core::term::literal::Literal;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
+use crate::error::ValidationError;
 
 impl<S: NeighsRDF + Debug> Validator<S> for LanguageIn {
     fn validate(
@@ -20,7 +21,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for LanguageIn {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
         validate_with(
             component,
             shape,

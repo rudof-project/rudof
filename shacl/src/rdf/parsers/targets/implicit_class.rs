@@ -21,7 +21,7 @@ pub(crate) fn targets_implicit_class<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, 
                         let obj = t
                             .clone()
                             .try_into()
-                            .map_err(|_| RDFError::FailedTermToRDFNodeError { term: t_name })?;
+                            .map_err(|_| RDFError::FailedTermToObjectError { term: t_name })?;
                         Ok(Target::ImplicitClass(obj))
                     })
                     .collect();

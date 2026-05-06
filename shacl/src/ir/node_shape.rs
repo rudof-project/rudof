@@ -171,14 +171,14 @@ impl IRNodeShape {
 }
 
 impl IRNodeShape {
-    // TODO - Maybe change error type
     pub fn register<RDF: BuildRDF>(
         &self,
         graph: &mut RDF,
         shapes_map: &HashMap<ShapeLabelIdx, IRShape>,
-    ) -> Result<(), RDF::Err> {
-        let id: RDF::Subject = self.id.clone().try_into().map_err(|_| unreachable!())?;
-        graph.add_type(id.clone(), ShaclVocab::sh_node_shape())?;
+    ) -> Result<(), IRError> {
+        let id: RDF::Subject = self.id.clone().try_into().unwrap_or_else(|_| unreachable!());
+        graph.add_type(id.clone(), ShaclVocab::sh_node_shape())
+            .map_err(|e| IRError::from_rdf_err::<RDF>("add type", e))?;
 
         self.name.iter().try_for_each(|(lang, value)| {
             let literal: RDF::Literal = match lang {
@@ -202,21 +202,24 @@ impl IRNodeShape {
             .iter()
             .try_for_each(|c| c.register(&self.id, graph, shapes_map))?;
 
-        self.targets.iter().try_for_each(|t| t.register(&self.id, graph))?;
+        self.targets.iter().try_for_each(|t| t.register(&self.id, graph))
+            .map_err(|e| IRError::from_rdf_err::<RDF>("add target to graph", e))?;
 
         self.property_shapes.iter().try_for_each(|idx| {
-            // TODO - Throw error instead of unwrap
-            let ps = shapes_map.get(idx).unwrap();
+            let ps = shapes_map.get(idx).ok_or(IRError::ShapeNotFound(*idx))?;
 
             graph.add_triple(id.clone(), ShaclVocab::sh_property(), ps.id().clone())
+                .map_err(IRError::add_triple::<RDF>)
         })?;
 
         if let Some(group) = &self.group {
-            graph.add_triple(id.clone(), ShaclVocab::sh_group(), group.clone())?;
+            graph.add_triple(id.clone(), ShaclVocab::sh_group(), group.clone())
+                .map_err(IRError::add_triple::<RDF>)?;
         }
 
         if let Some(severity) = &self.severity {
-            graph.add_triple::<_, _, IriS>(id.clone(), ShaclVocab::sh_severity(), severity.clone().into())?;
+            graph.add_triple::<_, _, IriS>(id.clone(), ShaclVocab::sh_severity(), severity.clone().into())
+                .map_err(IRError::add_triple::<RDF>)?;
         }
 
         Ok(())

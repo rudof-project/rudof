@@ -1,12 +1,13 @@
 use crate::ir::components::HasValue;
 use crate::ir::{IRComponent, IRSchema, IRShape};
-use crate::validator::constraints::{ConstraintError, Validator, validate_with};
+use crate::validator::constraints::{Validator, validate_with};
 use crate::validator::engine::Engine;
 use crate::validator::iteration::FocusNodeIteration;
 use crate::validator::nodes::ValueNodes;
 use crate::validator::report::ValidationResult;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
+use crate::error::ValidationError;
 
 impl<S: NeighsRDF + Debug> Validator<S> for HasValue {
     fn validate(
@@ -19,7 +20,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for HasValue {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
         validate_with(
             component,
             shape,

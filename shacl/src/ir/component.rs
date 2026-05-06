@@ -151,7 +151,7 @@ impl IRComponent {
         id: &Object,
         graph: &mut RDF,
         shape_map: &HashMap<ShapeLabelIdx, IRShape>,
-    ) -> Result<(), RDF::Err> {
+    ) -> Result<(), IRError> {
         match self {
             IRComponent::Class(c) => register_term(&c.class_rule().clone().into(), ShaclVocab::sh_class(), id, graph),
             IRComponent::Datatype(iri) => register_iri(iri.datatype(), ShaclVocab::sh_datatype(), id, graph),
@@ -264,8 +264,9 @@ impl IRComponent {
                     register_boolean(value, ShaclVocab::sh_qualified_value_shapes_disjoint(), id, graph)?;
                 }
 
-                // TODO - Throw error instead of unwrap
-                let shape = shape_map.get(qvs.shape()).unwrap();
+                let idx = qvs.shape();
+                let shape = shape_map.get(idx).ok_or(IRError::ShapeNotFound(*idx))?;
+                
                 register_term(
                     &shape.id().clone().into(),
                     ShaclVocab::sh_qualified_value_shape(),
@@ -392,7 +393,7 @@ fn register_integer<RDF: BuildRDF>(
     predicate: IriS,
     node: &Object,
     graph: &mut RDF,
-) -> Result<(), RDF::Err> {
+) -> Result<(), IRError> {
     let value: i128 = value.try_into().unwrap();
     let literal: RDF::Literal = value.into();
     register_term(&literal.into(), predicate, node, graph)
@@ -403,7 +404,7 @@ fn register_boolean<RDF: BuildRDF>(
     predicate: IriS,
     node: &Object,
     graph: &mut RDF,
-) -> Result<(), RDF::Err> {
+) -> Result<(), IRError> {
     let literal: RDF::Literal = value.into();
     register_term(&literal.into(), predicate, node, graph)
 }
@@ -413,12 +414,12 @@ fn register_literal<RDF: BuildRDF>(
     predicate: IriS,
     node: &Object,
     graph: &mut RDF,
-) -> Result<(), RDF::Err> {
+) -> Result<(), IRError> {
     let literal: RDF::Literal = value.lexical_form().into();
     register_term(&literal.into(), predicate, node, graph)
 }
 
-fn register_iri<RDF: BuildRDF>(value: &IriS, predicate: IriS, node: &Object, graph: &mut RDF) -> Result<(), RDF::Err> {
+fn register_iri<RDF: BuildRDF>(value: &IriS, predicate: IriS, node: &Object, graph: &mut RDF) -> Result<(), IRError> {
     register_term(&value.clone().into(), predicate, node, graph)
 }
 
@@ -427,9 +428,9 @@ fn register_term<RDF: BuildRDF>(
     predicate: IriS,
     node: &Object,
     graph: &mut RDF,
-) -> Result<(), RDF::Err> {
-    let node: RDF::Subject = node.clone().try_into().map_err(|_| unreachable!())?;
-    graph.add_triple(node, predicate, value.clone())
+) -> Result<(), IRError> {
+    let node: RDF::Subject = node.clone().try_into().unwrap_or_else(|_| unreachable!());
+    graph.add_triple(node, predicate, value.clone()).map_err(|e| IRError::from_rdf_err::<RDF>("add triple", e))
 }
 
 impl From<&IRComponent> for IriS {

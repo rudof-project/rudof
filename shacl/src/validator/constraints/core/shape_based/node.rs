@@ -1,13 +1,14 @@
 use crate::ir::components::Node;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::types::MessageMap;
-use crate::validator::constraints::{ConstraintError, Validator, get_shape_from_idx};
+use crate::validator::constraints::{Validator};
 use crate::validator::engine::{Engine, Validate};
 use crate::validator::nodes::{FocusNodes, ValueNodes};
 use crate::validator::report::ValidationResult;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
+use crate::error::ValidationError;
 
 impl<S: NeighsRDF + Debug> Validator<S> for Node {
     fn validate(
@@ -20,7 +21,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         shapes_graph: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
         let mut validation_results = Vec::new();
         let shape_idx = self.shape();
         let node_shape = get_shape_from_idx(shapes_graph, shape_idx)?;
@@ -42,7 +43,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
                         node_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
                     match inner_results {
                         Ok(results) => !results.is_empty(),
-                        Err(e) => return Err(ConstraintError::Internal { err: e.to_string() }),
+                        Err(e) => return Err(e),
                     }
                 };
 

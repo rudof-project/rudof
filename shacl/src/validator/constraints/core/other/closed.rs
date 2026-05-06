@@ -1,12 +1,13 @@
 use crate::ir::components::Closed;
 use crate::ir::{IRComponent, IRSchema, IRShape};
-use crate::validator::constraints::{ConstraintError, Validator};
+use crate::validator::constraints::{Validator};
 use crate::validator::engine::Engine;
 use crate::validator::nodes::ValueNodes;
 use crate::validator::report::ValidationResult;
 use rudof_rdf::rdf_core::term::{Object, Triple};
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
+use crate::error::ValidationError;
 
 impl<S: NeighsRDF + Debug> Validator<S> for Closed {
     fn validate(
@@ -19,7 +20,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Closed {
         _: Option<&IRShape>,
         _: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
         if !self.is_closed() {
             return Ok(Vec::new());
         }
@@ -36,7 +37,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Closed {
 
             let triples = store
                 .triples_with_subject(&subject)
-                .map_err(|e| ConstraintError::Internal { err: e.to_string() })?;
+                .map_err(ValidationError::new_graph_error::<S>)?;
 
             let focus_obj = S::term_as_object(fnode)?;
 

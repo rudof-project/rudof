@@ -26,25 +26,19 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
         }
     }
 
-    pub fn parse(&mut self) -> Result<ASTSchema, ASTError> {
+    pub fn parse(&mut self) -> Result<ASTSchema, ShaclParserError> {
         let pm = self.rdf_parser.prefixmap().unwrap_or_default();
 
         let mut state: State = self
-            .shapes_candidates()
-            .map_err(|_| ASTError::ShapeNotFound {
-                shape: Box::new(Object::BlankNode("TODO".to_string())),
-            })?
+            .shapes_candidates()?
             .into();
 
         while let Some(node) = state.pop_pending() {
             if !self.shapes.contains_key(&node) {
                 self.rdf_parser.rdf_mut().set_focus(&node.clone().into());
                 let shape = shape()
-                    .parse_focused(self.rdf_parser.rdf_mut())
-                    .map_err(|_| ASTError::ShapeNotFound {
-                        shape: Box::new(Object::BlankNode("TODO".to_string())),
-                    });
-                self.shapes.insert(node, shape?);
+                    .parse_focused(self.rdf_parser.rdf_mut())?;
+                self.shapes.insert(node, shape);
             }
         }
 
@@ -94,12 +88,20 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
             self.get_triples::<_, RDF::IRI, _>(&Any, &ShaclVocab::sh_target_node().into(), &Any)?;
         // Search shape expecting parameters: https://www.w3.org/TR/shacl12-core/#dfn-shape-expecting
         // elements of `sh:and` list
-        let sh_and_values = self.get_triples_list(&ShaclVocab::sh_and().into(), "sh:and", |v| {
-            ShaclParserError::AndValueNoSubject { term: v.to_string() }
+        let sh_and_values = self.get_triples_list(&ShaclVocab::sh_and().into(), "sh:and", |v, ctx| {
+            ShaclParserError::ValueNotExpected {
+                iri: ctx.to_string(),
+                expected: "subject".to_string(),
+                found: v.to_string(),
+            }
         })?;
         // elements of `sh:or` list
-        let sh_or_values = self.get_triples_list(&ShaclVocab::sh_or().into(), "sh:or", |v| {
-            ShaclParserError::OrValueNoObject { term: v.to_string() }
+        let sh_or_values = self.get_triples_list(&ShaclVocab::sh_or().into(), "sh:or", |v, ctx| {
+            ShaclParserError::ValueNotExpected {
+                iri: ctx.to_string(),
+                expected: "object".to_string(),
+                found: v.to_string(),
+            }
         })?;
         // elements of `sh:not` list
         let sh_not_values = self.objects_with_predicate(&ShaclVocab::sh_not().into())?;
@@ -111,8 +113,12 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
         // elements of `sh:node` list
         let sh_node_values = self.objects_with_predicate(&ShaclVocab::sh_node().into())?;
         // elements of `sh:xone` list
-        let sh_xone_values = self.get_triples_list(&ShaclVocab::sh_xone().into(), "sh:xone", |v| {
-            ShaclParserError::XOneValueNoSubject { term: v.to_string() }
+        let sh_xone_values = self.get_triples_list(&ShaclVocab::sh_xone().into(), "sh:xone", |v, ctx| {
+            ShaclParserError::ValueNotExpected {
+                iri: ctx.to_string(),
+                expected: "subject".to_string(),
+                found: v.to_string(),
+            }
         })?;
         // elements of `sh:reifierShape` list
         let sh_reifier_shape_values = self.objects_with_predicate(&ShaclVocab::sh_reifier_shape().into())?;
@@ -148,19 +154,17 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
             .rdf_parser
             .rdf()
             .triples_matching(s, p, o)
-            .map_err(|e| ShaclParserError::Custom { msg: e.to_string() })?
+            .map_err(|e| ShaclParserError::TriplesLookupError(e.to_string()))?
             .map(Triple::into_subject)
             .collect())
     }
 
-    fn get_triples_list<ERR>(
+    fn get_triples_list(
         &mut self,
         pred: &RDF::IRI,
         context: &str,
-        err_fn: ERR,
+        err_fn: impl Fn(RDF::Term, &str) -> ShaclParserError,
     ) -> Result<HashSet<RDF::Subject>, ShaclParserError>
-    where
-        ERR: Fn(RDF::Term) -> ShaclParserError,
     {
         let mut rs = HashSet::new();
 
@@ -171,7 +175,7 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
                 if let Ok(subj) = term_to_subject::<RDF>(&v, context) {
                     rs.insert(subj);
                 } else {
-                    return Err(err_fn(v));
+                    return Err(err_fn(v, context));
                 }
             }
         }
@@ -185,7 +189,7 @@ impl<RDF: FocusRDF> ShaclParser<RDF> {
             .rdf_parser
             .rdf()
             .triples_with_predicate(pred)
-            .map_err(|e| ShaclParserError::Custom { msg: e.to_string() })?
+            .map_err(|e| ShaclParserError::TriplesLookupError(e.to_string()))?
             .map(Triple::into_object)
             .flat_map(|t| term_to_subject::<RDF>(&t, msg.as_str()))
             .collect();

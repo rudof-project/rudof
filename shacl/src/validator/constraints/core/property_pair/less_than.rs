@@ -1,7 +1,7 @@
 use crate::ir::components::LessThan;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::types::MessageMap;
-use crate::validator::constraints::{ConstraintError, NativeValidator, SparqlValidator};
+use crate::validator::constraints::{NativeValidator, SparqlValidator};
 use crate::validator::engine::Engine;
 use crate::validator::nodes::ValueNodes;
 use crate::validator::report::ValidationResult;
@@ -9,6 +9,7 @@ use rudof_rdf::rdf_core::query::QueryRDF;
 use rudof_rdf::rdf_core::term::{Object, Triple};
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
+use crate::error::ValidationError;
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThan {
     fn validate_native(
@@ -21,7 +22,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThan {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
         let mut validation_results = Vec::new();
         let component = Object::Iri(component.into());
 
@@ -88,9 +89,7 @@ impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for LessThan {
         _: Option<&IRShape>,
         _: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        Err(ConstraintError::NotImplemented {
-            err: "LessThan not implemented".to_string(),
-        })
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
+        unimplemented!()
     }
 }

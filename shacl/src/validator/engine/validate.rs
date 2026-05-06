@@ -112,8 +112,7 @@ impl<RDF: NeighsRDF + Debug> Validate<RDF> for IRShape {
         let mut property_shapes_validation_results = Vec::new();
         for ps in self.property_shapes().iter() {
             let shape = shapes_graph
-                .get_shape_from_idx(ps)
-                .unwrap_or_else(|| panic!("Internal error: Property shape for idx: {ps} not found in schema"));
+                .get_shape_from_idx_e(ps)?;
             for (_, vn) in value_nodes.iter() {
                 let results = shape.validate(store, runner, Some(vn), Some(self), shapes_graph)?;
                 property_shapes_validation_results.extend(results);
@@ -181,25 +180,13 @@ fn validate_reifiers<RDF: NeighsRDF + Debug>(
         for reifier_shape in reifier_info.reifier_shape() {
             let pred = reifier_info.predicate();
             let pred_iri: RDF::IRI = pred.clone().into();
-            let subject = RDF::term_as_subject(node).map_err(|_| ValidationError::TriplesWithSubject {
-                subject: format!("{node:?}"),
-                error: "Cannot convert to subject".to_string(),
-            })?;
-            let triples = store.triples_with_subject_predicate(&subject, &pred_iri).map_err(|e| {
-                ValidationError::TriplesWithSubjectPredicate {
-                    subject: node.to_string(),
-                    predicate: pred.to_string(),
-                    error: e.to_string(),
-                }
-            })?;
+            let subject = RDF::term_as_subject(node)?;
+            let triples = store.triples_with_subject_predicate(&subject, &pred_iri).map_err(ValidationError::new_graph_error::<RDF>)?;
 
             for triple in triples {
                 let reifier_subjects = store
                     .reifiers_of_triple(&triple)
-                    .map_err(|e| ValidationError::ReifiersOfTriple {
-                        triple: format!("{triple:?}"),
-                        error: e.to_string(),
-                    })?
+                    .map_err(ValidationError::new_graph_error::<RDF>)?
                     .collect::<Vec<_>>();
                 if reifier_subjects.is_empty() && reifier_info.reification_required() {
                     let vr_single = ValidationResult::new(
@@ -219,11 +206,7 @@ fn validate_reifiers<RDF: NeighsRDF + Debug>(
                     .iter()
                     .map(RDF::subject_as_term)
                     .collect::<HashSet<_>>();
-                let reifier_shape =
-                    get_shape_from_idx(shapes_graph, reifier_shape).map_err(|e| ValidationError::ShapeNotFound {
-                        idx: *reifier_shape,
-                        error: e.to_string(),
-                    })?;
+                let reifier_shape = shapes_graph.get_shape_from_idx_e(reifier_shape)?;
                 let vr_iter = reifier_shape.validate(
                     store,
                     runner,

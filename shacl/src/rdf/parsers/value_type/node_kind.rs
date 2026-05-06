@@ -23,17 +23,14 @@ pub(crate) fn node_kind<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<
 fn term_to_node_kind<RDF: Rdf>(term: RDF::Term) -> Result<NodeKind, ShaclParserError> {
     let term_name = term.to_string();
     let result_iri: Result<RDF::IRI, ShaclParserError> =
-        <RDF::Term as TryInto<RDF::IRI>>::try_into(term).map_err(|_| ShaclParserError::ExpectedNodeKind {
-            term: term_name.to_string(),
-        });
-    let iri = result_iri?;
-    match iri.as_str() {
+        <RDF::Term as TryInto<RDF::IRI>>::try_into(term).map_err(|_| ShaclParserError::ExpectedNodeKind(term_name.clone()));
+    match result_iri?.as_str() {
         ShaclVocab::SH_IRI => Ok(NodeKind::Iri),
         ShaclVocab::SH_LITERAL => Ok(NodeKind::Lit),
         ShaclVocab::SH_BLANK_NODE => Ok(NodeKind::BNode),
         ShaclVocab::SH_BLANK_NODE_OR_IRI => Ok(NodeKind::BNodeOrIri),
         ShaclVocab::SH_BLANK_NODE_OR_LITERAL => Ok(NodeKind::BNodeOrLit),
         ShaclVocab::SH_IRI_OR_LITERAL => Ok(NodeKind::IriOrLit),
-        _ => Err(ShaclParserError::UnknownNodeKind { term: term_name }),
+        _ => Err(ShaclParserError::UnknownNodeKind(term_name)),
     }
 }

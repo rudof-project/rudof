@@ -15,6 +15,7 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
 use std::io::{Cursor, Read};
 use tracing::warn;
+use crate::error::ASTError;
 
 #[derive(Clone, Debug)]
 pub struct IRSchema {
@@ -179,9 +180,7 @@ impl IRSchema {
         ast: &ASTSchema,
     ) -> Result<ShapeLabelIdx, IRError> {
         let shape = match shape {
-            None => ast.get_shape(id).ok_or(IRError::ShapeNotFound {
-                shape: Box::new(id.clone()),
-            })?,
+            None => ast.get_shape(id).ok_or::<ASTError>(id.clone().into())?,
             Some(shape) => shape,
         };
 
@@ -259,7 +258,7 @@ impl TryFrom<&ASTSchema> for IRSchema {
 
 impl IRSchema {
     // TODO - Maybe change error type to IRerror
-    pub fn build_graph<RDF: BuildRDF>(&self) -> Result<RDF, ShaclWriterError> {
+    pub fn build_graph<RDF: BuildRDF>(&self) -> Result<RDF, IRError> {
         let mut graph = RDF::empty();
 
         graph.set_prefix_map(self.prefixmap.clone());
@@ -269,16 +268,10 @@ impl IRSchema {
 
         graph.add_base(&self.base().cloned());
 
-        self.labels_idx_map.iter().try_for_each(|(id, idx)| {
-            let shape = self.shapes.get(idx).ok_or(ShaclWriterError::Write {
-                msg: format!("Shape with index {idx} not found for id {id}"),
-            })?;
+        self.labels_idx_map.iter().try_for_each(|(_, idx)| {
+            let shape = self.shapes.get(idx).ok_or(IRError::ShapeNotFound(*idx))?;
 
-            shape
-                .register(&mut graph, &self.shapes)
-                .map_err(|err| ShaclWriterError::Write {
-                    msg: format!("Error registering shape with id {id} and index {idx}: {err}"),
-                })
+            shape.register(&mut graph, &self.shapes)
         })?;
 
         Ok(graph)

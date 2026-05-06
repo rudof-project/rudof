@@ -48,10 +48,6 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
                 maybe_path,
                 shapes_graph,
             )
-            .map_err(|e| ValidationError::ConstraintError {
-                component: component.to_string(),
-                source: Box::new(e),
-            })
     }
 
     // If s is a shape in a shapes graph SG and s has value t for sh:targetNode
@@ -69,14 +65,8 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
             }}
         ", node};
 
-        select(store, &query, "this").map_err(|e| ValidationError::SparqlError {
-            msg: "target_node".to_string(),
-            source: Box::new(e),
-        })?;
-
-        Err(ValidationError::NotImplemented {
-            msg: "target_node not implemented".to_string(),
-        })
+        select(store, &query, "this")?;
+        unimplemented!()
     }
 
     fn target_class(&self, store: &S, class: &Object) -> Result<FocusNodes<S>, ValidationError> {
@@ -95,14 +85,8 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
             }}
         ", class};
 
-        select(store, &query, "this").map_err(|e| ValidationError::SparqlError {
-            msg: "target_class".to_string(),
-            source: Box::new(e),
-        })?;
-
-        Err(ValidationError::NotImplemented {
-            msg: "target_class not implemented".to_string(),
-        })
+        select(store, &query, "this")?;
+        unimplemented!()
     }
 
     fn target_subject_of(&self, store: &S, predicate: &IriS) -> Result<FocusNodes<S>, ValidationError> {
@@ -113,14 +97,8 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
             }}
         ", predicate};
 
-        select(store, &query, "this").map_err(|e| ValidationError::SparqlError {
-            msg: "target_subject_of".to_string(),
-            source: Box::new(e),
-        })?;
-
-        Err(ValidationError::NotImplemented {
-            msg: "target_subject_of not implemented".to_string(),
-        })
+        select(store, &query, "this")?;
+        unimplemented!()
     }
 
     fn target_object_of(&self, store: &S, predicate: &IriS) -> Result<FocusNodes<S>, ValidationError> {
@@ -131,20 +109,12 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
             }}
         ", predicate};
 
-        select(store, &query, "this").map_err(|e| ValidationError::SparqlError {
-            msg: "target_object_of".to_string(),
-            source: Box::new(e),
-        })?;
-
-        Err(ValidationError::NotImplemented {
-            msg: "target_object_of not implemented".to_string(),
-        })
+        select(store, &query, "this")?;
+        unimplemented!()
     }
 
     fn implicit_target_class(&self, _: &S, _: &Object) -> Result<FocusNodes<S>, ValidationError> {
-        Err(ValidationError::NotImplemented {
-            msg: "implicit_target_class not implemented".to_string(),
-        })
+        unimplemented!()
     }
 
     fn record_validation(&mut self, node: Object, shape_idx: ShapeLabelIdx, results: Vec<ValidationResult>) {

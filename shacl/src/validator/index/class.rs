@@ -35,7 +35,7 @@ impl ClassIndex {
 
         for triple in store
             .triples()
-            .map_err(|e| ValidationError::ClassIndexBuild { err: e.to_string() })?
+            .map_err(ValidationError::new_graph_error::<RDF>)?
         {
             let (subj, pred, obj) = triple.into_components();
 
