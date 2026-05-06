@@ -277,11 +277,9 @@ impl ValidatorError {
             ValidatorError::ShapeNotError { node, .. } => {
                 format!("Not error: failed for node {}", show_node(node))
             },
-            ValidatorError::ShapeRefFailed { node, idx } => format!(
-                "ShapeRef fails for node {} with shape {}",
-                show_node(node),
-                show_idx(idx)
-            ),
+            ValidatorError::ShapeRefFailed { node, idx } => {
+                format!("@{} fails for node {}", show_label(idx, schema), show_node(node))
+            },
             ValidatorError::FailedPending { failed_pending } => {
                 let items: Vec<String> = failed_pending
                     .iter()
@@ -361,4 +359,11 @@ impl Serialize for ValidatorError {
         map.serialize_entry("error", &self.to_string())?;
         map.end()
     }
+}
+
+fn show_label(idx: &ShapeLabelIdx, schema: &SchemaIR) -> String {
+    schema
+        .shape_label_from_idx(idx)
+        .map(|l| schema.show_label(l))
+        .unwrap_or_else(|| idx.to_string())
 }

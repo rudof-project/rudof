@@ -9,7 +9,7 @@ use crate::validator_error::*;
 use either::Either;
 use indexmap::IndexSet;
 use itertools::Itertools;
-use prefixmap::PrefixMap;
+// use prefixmap::PrefixMap;
 use rudof_iri::iri;
 use rudof_rdf::rdf_core::{
     NeighsRDF,
@@ -239,13 +239,13 @@ impl Engine {
                         dep.insert((neigh_node.clone(), *idx));
                     }
                 } else {
-                    debug!("No references found for predicate {pred}");
+                    /*debug!("No references found for predicate {pred}");*/
                 }
             }
-            trace!(
+            /*trace!(
                 "Dependencies of {node}@{idx} are: [{}]",
                 dep.iter().map(|(n, i)| format!("{n}@{i}")).join(", ")
-            );
+            );*/
             Ok(dep)
         } else {
             Err(ValidatorError::ShapeExprNotFound { idx: *idx })
@@ -265,10 +265,10 @@ impl Engine {
     {
         // Implements algorithm presented in page 14 of this paper:
         // https://labra.weso.es/publication/2017_semantics-validation-shapes-schemas/
-        trace!(
+        /*trace!(
             "Proving {node}@{label} with hyp: [{}]",
             hyp.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
-        );
+        );*/
         hyp.push((node.clone(), *label));
         let hyp_as_set: HashSet<(Node, ShapeLabelIdx)> =
             hyp.iter().map(|(n, l)| (n.clone(), *l)).collect::<HashSet<_>>();
@@ -278,18 +278,18 @@ impl Engine {
         for (n1, l1) in cleaned_candidates {
             // TODO: Change structure to collect errors and reasons instead of using a HashSet
             match self.prove(&n1, &l1, hyp, schema, rdf)? {
-                Either::Right(rs) => {
-                    debug!(
+                Either::Right(_reasons) => {
+                    /*debug!(
                         "Proved {n1}@{l1} while proving {node}@{label}: {}",
                         rs.iter().map(|r| format!("{r}")).join(", ")
-                    );
+                    );*/
                     matched.insert((n1.clone(), l1));
                 },
-                Either::Left(errors) => {
-                    debug!(
+                Either::Left(_errors) => {
+                    /*debug!(
                         "Failed to prove {n1}@{l1} while proving {node}@{label}: {}",
                         errors.iter().map(|e| format!("{e}")).join(", ")
-                    );
+                    );*/
                     // Should we collect errors here?
                 },
             }
@@ -297,7 +297,7 @@ impl Engine {
         let mut typing: HashSet<_> = matched.union(&hyp_as_set).cloned().collect();
         let result = self.check_node_idx(node, label, schema, rdf, &mut typing)?;
         hyp.pop();
-        debug!(
+        /*debug!(
             "{} {node}@{label} with result: {}, hyp: [{}]",
             if result.is_right() { "Proved" } else { "Failed to prove" },
             show_result(
@@ -307,7 +307,7 @@ impl Engine {
                 self.config.width()
             )?,
             hyp.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
-        );
+        );*/
         Ok(result)
     }
 
@@ -322,10 +322,10 @@ impl Engine {
     where
         R: NeighsRDF + QueryRDF,
     {
-        trace!(
+        /*trace!(
             "Checking {node}@{idx}, typing: [{}]",
             typing.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
-        );
+        );*/
         if let Some(info) = schema.find_shape_idx(idx) {
             if schema.is_abstract(idx) {
                 let descendants = schema.descendants(idx);
@@ -346,7 +346,7 @@ impl Engine {
             } else {
                 let se = info.expr();
                 let result = self.check_node_shape_expr(idx, node, se, schema, rdf, typing)?;
-                tracing::debug!(
+                /*tracing::debug!(
                     "Result of {node}@{idx} is: {}",
                     show_result(
                         &result,
@@ -354,7 +354,7 @@ impl Engine {
                         schema,
                         self.config.width()
                     )?,
-                );
+                );*/
                 if result.is_right() {
                     Ok(result)
                 } else {
@@ -551,20 +551,19 @@ impl Engine {
         idx: &ShapeLabelIdx,
         typing: &mut HashSet<(Node, ShapeLabelIdx)>,
     ) -> Result<ValidationResult> {
-        debug!("Checking node {node} with shape ref {idx}");
-        {
-            // If the node is already in the typing, we can return true
-            if typing.contains(&(node.clone(), *idx)) {
-                pass(Reason::ShapeRef {
-                    node: node.clone(),
-                    idx: *idx,
-                })
-            } else {
-                fail(ValidatorError::ShapeRefFailed {
-                    node: Box::new(node.clone()),
-                    idx: *idx,
-                })
-            }
+        /*debug!("Checking node {node} with shape ref {idx}"); */
+
+        // If the node is already in the typing, we can return true
+        if typing.contains(&(node.clone(), *idx)) {
+            pass(Reason::ShapeRef {
+                node: node.clone(),
+                idx: *idx,
+            })
+        } else {
+            fail(ValidatorError::ShapeRefFailed {
+                node: Box::new(node.clone()),
+                idx: *idx,
+            })
         }
     }
 
@@ -580,7 +579,7 @@ impl Engine {
     where
         R: QueryRDF + NeighsRDF,
     {
-        trace!("check_node_shape: node = {node}, shape = {idx} [No extends]");
+        // trace!("check_node_shape: node = {node}, shape = {idx} [No extends]");
         let (values, reminder) = self.neighs(node, shape.preds(), rdf)?;
         let values_ctx = values
             .iter()
@@ -607,36 +606,36 @@ impl Engine {
     where
         R: NeighsRDF + QueryRDF,
     {
-        trace!("check_node_shape_extends: node={node}, shape={idx}");
+        // trace!("check_node_shape_extends: node={node}, shape={idx}");
         let preds_extends = Vec::from_iter(schema.get_preds_extends(idx));
-        trace!(
+        /*trace!(
             "Predicates in this shape with extends: [{}]",
             preds_extends.iter().map(|p| p.to_string()).join(", ")
-        );
+        );*/
         let (values, reminder) = self.neighs(node, preds_extends, rdf)?;
 
         if shape.is_closed() && !reminder.is_empty() {
-            debug!(
+            /*debug!(
                 "Closed shape {idx} with extends has remainder preds: [{}]",
                 reminder.iter().map(|p| p.to_string()).join(", ")
-            );
+            );*/
             return fail(ValidatorError::ClosedShapeWithRemainderPreds {
                 remainder: Preds::new(reminder),
                 declared: Preds::new(shape.preds().into_iter().collect()),
             });
         }
         if !reminder.is_empty() {
-            debug!(
+            /*debug!(
                 "Shape {idx} has extra preds: [{}] but is not closed",
                 reminder.iter().map(|p| p.to_string()).join(", ")
-            );
+            );*/
         }
-        debug!(
+        /*debug!(
             "Neighs of {node} [{}]",
             values.iter().map(|(p, v)| format!("{p} {v}")).join(", ")
-        );
+        );*/
         let triple_exprs = schema.get_triple_exprs(idx).unwrap();
-        debug!(
+        /*debug!(
             "Candidate triple exprs of {node}:\n{}",
             triple_exprs
                 .iter()
@@ -646,7 +645,7 @@ impl Engine {
                     te.iter().map(|p| p.show_rbe_simplified()).join("\n")
                 ))
                 .join("\n")
-        );
+        );*/
         let values_ctx = values
             .iter()
             .map(|(p, v)| (p.clone(), v.clone(), SemanticActionContext::triple(node, p, v)))
@@ -654,19 +653,19 @@ impl Engine {
 
         let parts_iter = crate::partitions_iter(&values_ctx, &triple_exprs);
         let mut parts_peekable = parts_iter.peekable();
-        if let Some(parts) = parts_peekable.peek() {
-            debug!(
+        if let Some(_parts) = parts_peekable.peek() {
+            /*debug!(
                 "Some partition found for node {node} and shape {idx}, showing the first one:\n{}",
                 parts
                     .iter()
                     .enumerate()
                     .map(|(npart, partition)| format!(" Part {npart}: {}\n", show_partition(partition)))
                     .join("\n")
-            );
+            );*/
             let mut errors_in_partitions = Vec::new();
             for (npart, partition) in parts_peekable.enumerate() {
                 let partition_display = create_partitions_display(&partition);
-                debug!("Partition {npart}: {}", partition_display);
+                //debug!("Partition {npart}: {}", partition_display);
                 let mut ok_partition = true;
                 let mut errors_in_loop = Vec::new();
                 let mut reasons_in_loop = Vec::new();
@@ -674,11 +673,11 @@ impl Engine {
                     let result = check_exprs_neigh(rbes, neighs_subset, node, shape, idx, typing)?;
                     match result {
                         Either::Right(reasons) => {
-                            debug!(
+                            /*debug!(
                                 " Part {npart}| Success component {}: neighs {}",
                                 maybe_label.map(|l| l.to_string()).unwrap_or("[]".to_string()),
                                 neighs_subset.iter().map(|(p, v, _ctx)| format!("{p} {v}")).join(", ")
-                            );
+                            );*/
                             reasons_in_loop.push(Reason::PartitionComponent {
                                 maybe_label: *maybe_label,
                                 node: node.clone(),
@@ -702,11 +701,11 @@ impl Engine {
                                 errors: ValidatorErrors::new(errs),
                             });
                             ok_partition = false;
-                            debug!(
+                            /*debug!(
                                 " Part {npart}| Failed component {}: neighs {}",
                                 maybe_label.map(|l| l.to_string()).unwrap_or("[]".to_string()),
                                 neighs_subset.iter().map(|(p, v, _ctx)| format!("{p} {v}")).join(", ")
-                            );
+                            );*/
                             // We could collect errors here to provide more information about why the partition failed, but for now we just
                             // indicate that the partition failed without going into details about the failure of each triple expr
                             break;
@@ -714,14 +713,14 @@ impl Engine {
                     }
                 }
                 if ok_partition {
-                    debug!(" Part {npart}| Partition succeeded",);
+                    // debug!(" Part {npart}| Partition succeeded",);
                     return pass(Reason::ShapeExtends {
                         node: node.clone(),
                         shape: Box::new(shape.clone()),
                         reasons: Reasons::new(reasons_in_loop),
                     });
                 } else {
-                    debug!(" Part {npart}| Partition failed",);
+                    // debug!(" Part {npart}| Partition failed",);
                     errors_in_partitions.push(ValidatorError::PartitionFailed {
                         node: Box::new(node.clone()),
                         shape: Box::new(shape.clone()),
@@ -967,6 +966,7 @@ type PartitionInfo = (
     Vec<(Pred, Node, SemanticActionContext)>,
 );
 
+/*
 fn show_partition(partition: &PartitionInfo) -> String {
     let (maybe_label, _rbes, neighs_subset) = partition;
     let label_str = maybe_label.map(|l| l.to_string()).unwrap_or("[]".to_string());
@@ -1004,7 +1004,7 @@ fn show_result(
             Ok(vs.join(", "))
         },
     }
-}
+}*/
 
 fn create_partitions_display(ps: &[PartitionInfo]) -> PartitionsDisplay {
     let partitions_display: Vec<PartitionDisplay> = ps

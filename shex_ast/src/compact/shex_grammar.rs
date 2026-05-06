@@ -38,12 +38,9 @@ use thiserror::Error;
 
 /// `[1] shexDoc ::= directive* ((notStartAction | startActions) statement*)?`
 pub(crate) fn shex_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement<'a>> {
-    traced(
-        "shex_statement",
-        map_error(
-            move |i| alt((directive, start(), shape_expr_decl(), start_actions)).parse(i),
-            || ShExParseError::ExpectedStatement,
-        ),
+    map_error(
+        move |i| alt((directive, start(), shape_expr_decl(), start_actions)).parse(i),
+        || ShExParseError::ExpectedStatement,
     )
 }
 
@@ -54,52 +51,43 @@ fn directive(i: Span) -> IRes<ShExStatement> {
 
 /// `[3] baseDecl ::= "BASE" IRIREF`
 fn base_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement<'a>> {
-    traced(
-        "base_decl",
-        map_error(
-            move |i| {
-                let (i, (_, _, iri_ref)) = (tag_no_case("BASE"), tws0, cut(iri_ref)).parse(i)?;
-                Ok((i, ShExStatement::BaseDecl { iri: iri_ref }))
-            },
-            || ShExParseError::ExpectedBaseDecl,
-        ),
+    map_error(
+        move |i| {
+            let (i, (_, _, iri_ref)) = (tag_no_case("BASE"), tws0, cut(iri_ref)).parse(i)?;
+            Ok((i, ShExStatement::BaseDecl { iri: iri_ref }))
+        },
+        || ShExParseError::ExpectedBaseDecl,
     )
 }
 
 /// [4] `prefixDecl ::= "PREFIX" PNAME_NS IRIREF`
 fn prefix_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement<'a>> {
-    traced(
-        "prefix_decl",
-        map_error(
-            move |i| {
-                let (i, (_, _, pname_ns, _, iri_ref)) =
-                    (tag_no_case("PREFIX"), tws0, cut(pname_ns), tws0, cut(iri_ref)).parse(i)?;
-                Ok((
-                    i,
-                    ShExStatement::PrefixDecl {
-                        alias: pname_ns.fragment(),
-                        iri: iri_ref,
-                    },
-                ))
-            },
-            || ShExParseError::ExpectedPrefixDecl,
-        ),
+    map_error(
+        move |i| {
+            let (i, (_, _, pname_ns, _, iri_ref)) =
+                (tag_no_case("PREFIX"), tws0, cut(pname_ns), tws0, cut(iri_ref)).parse(i)?;
+            Ok((
+                i,
+                ShExStatement::PrefixDecl {
+                    alias: pname_ns.fragment(),
+                    iri: iri_ref,
+                },
+            ))
+        },
+        || ShExParseError::ExpectedPrefixDecl,
     )
 }
 
 /// `[4½] importDecl ::= "IMPORT" IRIREF`
 /// I think we could allow also prefixed names in import declarations...
 fn import_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement<'a>> {
-    traced(
-        "import_decl",
-        map_error(
-            move |i| {
-                let (i, (_, _, iri)) = (tag_no_case("IMPORT"), tws0, cut(iri)).parse(i)?;
-                tracing::debug!("grammar: Import {iri:?}");
-                Ok((i, ShExStatement::ImportDecl { iri }))
-            },
-            || ShExParseError::ExpectedImportDecl,
-        ),
+    map_error(
+        move |i| {
+            let (i, (_, _, iri)) = (tag_no_case("IMPORT"), tws0, cut(iri)).parse(i)?;
+            tracing::debug!("grammar: Import {iri:?}");
+            Ok((i, ShExStatement::ImportDecl { iri }))
+        },
+        || ShExParseError::ExpectedImportDecl,
     )
 }
 /*
@@ -139,29 +127,26 @@ fn statement(i: Span) -> IRes<ShExStatement> {
 */
 /// `[9] shapeExprDecl ::= shapeExprLabel (shapeExpression | "EXTERNAL")`
 fn shape_expr_decl<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShExStatement<'a>> {
-    traced(
-        "shape_expr_decl",
-        map_error(
-            move |i| {
-                let (i, (maybe_abstract, shape_label, _, shape_expr)) = (
-                    opt(tag_no_case_tws("abstract")),
-                    shape_expr_label,
-                    tws0,
-                    cut(shape_expr_or_external()),
-                )
-                    .parse(i)?;
-                let is_abstract = maybe_abstract.is_some();
-                Ok((
-                    i,
-                    ShExStatement::ShapeDecl {
-                        is_abstract,
-                        shape_label,
-                        shape_expr,
-                    },
-                ))
-            },
-            || ShExParseError::ExpectedShapeExprDecl,
-        ),
+    map_error(
+        move |i| {
+            let (i, (maybe_abstract, shape_label, _, shape_expr)) = (
+                opt(tag_no_case_tws("abstract")),
+                shape_expr_label,
+                tws0,
+                cut(shape_expr_or_external()),
+            )
+                .parse(i)?;
+            let is_abstract = maybe_abstract.is_some();
+            Ok((
+                i,
+                ShExStatement::ShapeDecl {
+                    is_abstract,
+                    shape_label,
+                    shape_expr,
+                },
+            ))
+        },
+        || ShExParseError::ExpectedShapeExprDecl,
     )
 }
 
@@ -179,18 +164,12 @@ fn external(i: Span) -> IRes<ShapeExpr> {
 
 /// `[10] shapeExpression ::= shapeOr`
 fn shape_expression<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr> {
-    traced(
-        "ShapeExpr",
-        map_error(move |i| shape_or(i), || ShExParseError::ExpectedShapeExpr),
-    )
+    map_error(move |i| shape_or(i), || ShExParseError::ExpectedShapeExpr)
 }
 
 /// `[11] inlineShapeExpression ::= inlineShapeOr`
 fn inline_shape_expression<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr> {
-    traced(
-        "inline_shape_expr",
-        map_error(move |i| inline_shape_or(i), || ShExParseError::ExpectedInlineShapeExpr),
-    )
+    map_error(move |i| inline_shape_or(i), || ShExParseError::ExpectedInlineShapeExpr)
 }
 
 /// `[12] shapeOr ::= shapeAnd ("OR" shapeAnd)*`
@@ -255,21 +234,18 @@ fn inline_shape_not(i: Span) -> IRes<ShapeExpr> {
 /// `| '(' shapeExpression ')'`
 /// `| '.'`
 fn shape_atom<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeExpr> {
-    traced(
-        "shape_atom",
-        map_error(
-            move |i| {
-                alt((
-                    non_lit_opt_shape_or_ref(),
-                    lit_node_constraint_shape_expr(),
-                    shape_opt_non_lit,
-                    paren_shape_expr,
-                    dot,
-                ))
-                .parse(i)
-            },
-            || ShExParseError::ShapeAtom,
-        ),
+    map_error(
+        move |i| {
+            alt((
+                non_lit_opt_shape_or_ref(),
+                lit_node_constraint_shape_expr(),
+                shape_opt_non_lit,
+                paren_shape_expr,
+                dot,
+            ))
+            .parse(i)
+        },
+        || ShExParseError::ShapeAtom,
     )
 }
 
@@ -417,12 +393,9 @@ fn at_shape_expr_label(i: Span) -> IRes<ShapeExprLabel> {
 /// | valueSet xsFacet*
 /// | numericFacet+`
 fn lit_node_constraint<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NodeConstraint> {
-    traced(
-        "lit_node_constraint",
-        map_error(
-            move |i| alt((literal_facets(), datatype_facets(), value_set_facets(), numeric_facets)).parse(i),
-            || ShExParseError::LitNodeConstraint,
-        ),
+    map_error(
+        move |i| alt((literal_facets(), datatype_facets(), value_set_facets(), numeric_facets)).parse(i),
+        || ShExParseError::LitNodeConstraint,
     )
 }
 
@@ -439,28 +412,22 @@ fn literal_facets<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NodeConstraint> {
 }
 
 fn datatype_facets<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NodeConstraint> {
-    traced(
-        "datatype_facets",
-        map_error(
-            move |i| {
-                let (i, (dt, _, facets)) = (datatype, tws0, facets()).parse(i)?;
-                Ok((i, dt.with_xsfacets(facets)))
-            },
-            || ShExParseError::DatatypeFacets,
-        ),
+    map_error(
+        move |i| {
+            let (i, (dt, _, facets)) = (datatype, tws0, facets()).parse(i)?;
+            Ok((i, dt.with_xsfacets(facets)))
+        },
+        || ShExParseError::DatatypeFacets,
     )
 }
 
 fn value_set_facets<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NodeConstraint> {
-    traced(
-        "value_set_facets",
-        map_error(
-            move |i| {
-                let (i, (vs, _, facets)) = (value_set(), tws0, facets()).parse(i)?;
-                Ok((i, vs.with_xsfacets(facets)))
-            },
-            || ShExParseError::ValueSetFacets,
-        ),
+    map_error(
+        move |i| {
+            let (i, (vs, _, facets)) = (value_set(), tws0, facets()).parse(i)?;
+            Ok((i, vs.with_xsfacets(facets)))
+        },
+        || ShExParseError::ValueSetFacets,
     )
 }
 
@@ -470,7 +437,7 @@ fn numeric_facets(i: Span) -> IRes<NodeConstraint> {
 }
 
 fn facets<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Vec<XsFacet>> {
-    traced("facets", move |i| many0(xs_facet()).parse(i))
+    move |i| many0(xs_facet()).parse(i)
 }
 
 /// `[25] nonLitNodeConstraint ::= nonLiteralKind stringFacet* | stringFacet+`
