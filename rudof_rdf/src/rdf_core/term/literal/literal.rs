@@ -231,7 +231,7 @@ impl ConcreteLiteral {
             Self::StringLiteral { lexical_form, lang } => {
                 write!(f, "\"{lexical_form}\"")?;
                 if let Some(lang) = lang {
-                    write!(f, "{lang}")?;
+                    write!(f, "@{lang}")?;
                 }
                 Ok(())
             },
