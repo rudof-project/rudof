@@ -11,6 +11,7 @@ use rudof_rdf::rdf_core::BuildRDF;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use std::collections::{HashMap, HashSet};
+use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
 
 #[derive(Debug, Clone)]
 pub struct IRNodeShape {
@@ -181,21 +182,23 @@ impl IRNodeShape {
             .map_err(|e| IRError::from_rdf_err::<RDF>("add type", e))?;
 
         self.name.iter().try_for_each(|(lang, value)| {
-            let literal: RDF::Literal = match lang {
-                None => value.clone().into(),
-                Some(_) => todo!(),
+            let literal = ConcreteLiteral::StringLiteral {
+                lang: lang.clone(),
+                lexical_form: value.clone(),
             };
 
-            graph.add_triple(id.clone(), ShaclVocab::sh_name(), literal)
+            graph.add_triple::<_, _, RDF::Literal>(id.clone(), ShaclVocab::sh_name(), literal.into())
+                .map_err(IRError::add_triple::<RDF>)
         })?;
 
         self.description.iter().try_for_each(|(lang, value)| {
-            let literal: RDF::Literal = match lang {
-                None => value.clone().into(),
-                Some(_) => todo!(),
+            let literal = ConcreteLiteral::StringLiteral {
+                lexical_form: value.clone(),
+                lang: lang.clone(),
             };
 
-            graph.add_triple(id.clone(), ShaclVocab::sh_description(), literal)
+            graph.add_triple::<_, _, RDF::Literal>(id.clone(), ShaclVocab::sh_description(), literal.into())
+                .map_err(IRError::add_triple::<RDF>)
         })?;
 
         self.components

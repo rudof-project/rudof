@@ -9,7 +9,7 @@ use crate::ir::shape_label_idx::ShapeLabelIdx;
 use crate::types::{ClosedInfo, MessageMap, Severity, Target};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
-use rudof_rdf::rdf_core::term::literal::NumericLiteral;
+use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, NumericLiteral};
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{BuildRDF, SHACLPath};
 use std::collections::{HashMap, HashSet};
@@ -198,21 +198,23 @@ impl IRPropertyShape {
             .map_err(|e| IRError::from_rdf_err::<RDF>("add type", e))?;
 
         self.name.iter().try_for_each(|(lang, value)| {
-            let lit: RDF::Literal = match lang {
-                None => value.clone().into(),
-                Some(_) => todo!(),
+            let lit = ConcreteLiteral::StringLiteral {
+                lexical_form: value.clone(),
+                lang: lang.clone(),
             };
 
-            graph.add_triple(id.clone(), ShaclVocab::sh_name(), lit)
+            graph.add_triple::<_, _, RDF::Literal>(id.clone(), ShaclVocab::sh_name(), lit.into())
+                .map_err(IRError::add_triple::<RDF>)
         })?;
 
         self.description.iter().try_for_each(|(lang, value)| {
-            let lit: RDF::Literal = match lang {
-                None => value.clone().into(),
-                Some(_) => todo!(),
+            let lit = ConcreteLiteral::StringLiteral {
+                lang: lang.clone(),
+                lexical_form: value.clone(),
             };
 
-            graph.add_triple(id.clone(), ShaclVocab::sh_description(), lit)
+            graph.add_triple::<_, _, RDF::Literal>(id.clone(), ShaclVocab::sh_description(), lit.into())
+                .map_err(IRError::add_triple::<RDF>)
         })?;
 
         if let Some(order) = &self.order {
