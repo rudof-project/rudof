@@ -1,7 +1,7 @@
 use crate::ast::error::ASTError;
 use crate::ast::reifier_info::ReifierInfo;
-use crate::ast::{ASTComponent, ASTSchema};
-use crate::types::{ClosedInfo, MessageMap, Severity, Target, defined_properties_for};
+use crate::ast::{ASTComponent, ASTSchema, defined_properties_for};
+use crate::types::{ClosedInfo, MessageMap, Severity, Target};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::SHACLPath;
 use rudof_rdf::rdf_core::term::Object;

@@ -13,7 +13,7 @@ impl Endpoint {
     pub fn new(iri: &str, pm: &PrefixMap) -> Result<Self, ValidationError> {
         match SparqlEndpoint::new(&iri!(iri), pm) {
             Ok(store) => Ok(Self { store }),
-            Err(_) => Err(ValidationError::SparqlCreation),
+            Err(e) => Err(e.into()),
         }
     }
 }

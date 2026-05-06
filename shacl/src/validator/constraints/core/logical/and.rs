@@ -1,6 +1,7 @@
+use crate::error::ValidationError;
 use crate::ir::components::And;
 use crate::ir::{IRComponent, IRSchema, IRShape};
-use crate::validator::constraints::{ConstraintError, Validator, get_shape_from_idx};
+use crate::validator::constraints::Validator;
 use crate::validator::engine::{Engine, Validate};
 use crate::validator::nodes::{FocusNodes, ValueNodes};
 use crate::validator::report::ValidationResult;
@@ -19,7 +20,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for And {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         shapes_graph: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
         let mut validation_results = Vec::new();
         let componet_obj = Object::iri(component.into());
 
@@ -30,7 +31,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for And {
                 let mut conforms = true;
 
                 for idx in self.shapes().iter() {
-                    let and_shape = get_shape_from_idx(shapes_graph, idx)?;
+                    let and_shape = shapes_graph.get_shape_from_idx_e(idx)?;
                     let inner_results =
                         and_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
                     match inner_results {
@@ -50,7 +51,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for And {
                 if !conforms {
                     let node_obj = S::term_as_object(node).ok();
 
-                    let vr = ValidationResult::new(fnode_obj.clone(), componet_obj.clone(), shape.severity())
+                    let vr = ValidationResult::new(fnode_obj.clone(), componet_obj.clone(), shape.severity().clone())
                         .with_source(Some(shape.id().clone()))
                         .with_path(maybe_path.cloned())
                         .with_value(node_obj);

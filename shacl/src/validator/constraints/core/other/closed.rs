@@ -1,6 +1,7 @@
+use crate::error::ValidationError;
 use crate::ir::components::Closed;
 use crate::ir::{IRComponent, IRSchema, IRShape};
-use crate::validator::constraints::{ConstraintError, Validator};
+use crate::validator::constraints::Validator;
 use crate::validator::engine::Engine;
 use crate::validator::nodes::ValueNodes;
 use crate::validator::report::ValidationResult;
@@ -19,7 +20,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Closed {
         _: Option<&IRShape>,
         _: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
         if !self.is_closed() {
             return Ok(Vec::new());
         }
@@ -36,7 +37,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Closed {
 
             let triples = store
                 .triples_with_subject(&subject)
-                .map_err(|e| ConstraintError::Internal { err: e.to_string() })?;
+                .map_err(ValidationError::new_graph_error::<S>)?;
 
             let focus_obj = S::term_as_object(fnode)?;
 
@@ -45,7 +46,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Closed {
                 let pred_iri = pred.into();
                 if !allowed_props.contains(&pred_iri) {
                     let value = S::term_as_object(&obj).ok();
-                    let vr = ValidationResult::new(focus_obj.clone(), component_obj.clone(), shape.severity())
+                    let vr = ValidationResult::new(focus_obj.clone(), component_obj.clone(), shape.severity().clone())
                         .with_source(Some(shape.id().clone()))
                         .with_path(Some(SHACLPath::iri(pred_iri)))
                         .with_value(value);

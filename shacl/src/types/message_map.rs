@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use rudof_rdf::rdf_core::term::literal::Lang;
+use rudof_rdf::rdf_core::term::literal::{ConcreteLiteral, Lang};
 use std::collections::HashMap;
 use std::collections::hash_map::IntoIter;
 use std::fmt::{Display, Formatter};
@@ -25,6 +25,13 @@ impl MessageMap {
 
     pub fn iter(&self) -> impl Iterator<Item = (&Option<Lang>, &String)> {
         self.messages.iter()
+    }
+
+    pub fn iter_literals(&self) -> impl Iterator<Item = ConcreteLiteral> {
+        self.messages.iter().map(|(lang, msg)| ConcreteLiteral::StringLiteral {
+            lang: lang.clone(),
+            lexical_form: msg.clone(),
+        })
     }
 
     pub fn get(&self, lang: Option<&Lang>) -> Option<&String> {

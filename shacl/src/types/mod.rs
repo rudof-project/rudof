@@ -7,7 +7,6 @@ mod target;
 mod value;
 
 pub use closed_info::ClosedInfo;
-pub(crate) use closed_info::defined_properties_for;
 pub use message_map::MessageMap;
 pub use node_kind::NodeKind;
 pub use severity::Severity;

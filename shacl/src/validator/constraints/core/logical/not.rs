@@ -1,7 +1,8 @@
+use crate::error::ValidationError;
 use crate::ir::components::Not;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::types::MessageMap;
-use crate::validator::constraints::{ConstraintError, Validator, get_shape_from_idx};
+use crate::validator::constraints::Validator;
 use crate::validator::engine::{Engine, Validate};
 use crate::validator::nodes::{FocusNodes, ValueNodes};
 use crate::validator::report::ValidationResult;
@@ -20,14 +21,14 @@ impl<S: NeighsRDF + Debug> Validator<S> for Not {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         shapes_graph: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
         let mut validation_results = Vec::new();
 
         for (fnode, nodes) in value_nodes.iter() {
             let fnode_obj = S::term_as_object(fnode)?;
             for node in nodes.iter() {
                 let focus_nodes = FocusNodes::single(node.clone());
-                let not_shape = get_shape_from_idx(shapes_graph, self.shape())?;
+                let not_shape = shapes_graph.get_shape_from_idx_e(self.shape())?;
                 let inner_results = not_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
                 let is_valid_inside = match inner_results {
                     Ok(results) => results.is_empty(),
@@ -41,7 +42,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Not {
                     );
                     let component = Object::iri(component.into());
                     let node_object = S::term_as_object(node).ok();
-                    let vr = ValidationResult::new(fnode_obj.clone(), component.clone(), shape.severity())
+                    let vr = ValidationResult::new(fnode_obj.clone(), component.clone(), shape.severity().clone())
                         .with_message(MessageMap::from(msg))
                         .with_path(maybe_path.cloned())
                         .with_source(Some(shape.id().clone()))

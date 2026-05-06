@@ -1,4 +1,4 @@
-use crate::error::{ShaclParserError, ValidationError};
+use crate::error::ValidationError;
 use crate::ir::IRSchema;
 use crate::rdf::ShaclParser;
 use rudof_rdf::rdf_core::RDFFormat;
@@ -18,7 +18,7 @@ impl ShaclDataManager {
 
         match ShaclParser::new(graph).parse() {
             Ok(ast) => Ok(IRSchema::compile(&ast)?),
-            Err(err) => Err(Box::new(ShaclParserError::from(err)).into()),
+            Err(err) => Err(err.into()),
         }
     }
 }

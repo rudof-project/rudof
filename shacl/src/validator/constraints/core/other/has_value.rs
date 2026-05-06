@@ -1,6 +1,7 @@
+use crate::error::ValidationError;
 use crate::ir::components::HasValue;
 use crate::ir::{IRComponent, IRSchema, IRShape};
-use crate::validator::constraints::{ConstraintError, Validator, validate_with};
+use crate::validator::constraints::{Validator, validate_with};
 use crate::validator::engine::Engine;
 use crate::validator::iteration::FocusNodeIteration;
 use crate::validator::nodes::ValueNodes;
@@ -19,7 +20,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for HasValue {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
         validate_with(
             component,
             shape,

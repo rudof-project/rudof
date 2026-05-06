@@ -1,8 +1,8 @@
-use crate::error::ConstraintError;
+use crate::error::ValidationError;
 use crate::ir::components::Xone;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::types::MessageMap;
-use crate::validator::constraints::{Validator, get_shape_from_idx};
+use crate::validator::constraints::Validator;
 use crate::validator::engine::{Engine, Validate};
 use crate::validator::nodes::{FocusNodes, ValueNodes};
 use crate::validator::report::ValidationResult;
@@ -21,7 +21,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Xone {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         shapes_graph: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
         let mut validation_results = Vec::new();
         let component = Object::iri(component.into());
 
@@ -31,7 +31,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Xone {
                 let focus_nodes = FocusNodes::single(node.clone());
                 let mut conforming_shapes = 0;
                 for idx in self.shapes().iter() {
-                    let internal_shape = get_shape_from_idx(shapes_graph, idx)?;
+                    let internal_shape = shapes_graph.get_shape_from_idx_e(idx)?;
                     let inner_results =
                         internal_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
                     if let Ok(results) = inner_results
@@ -46,7 +46,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Xone {
                         "Shape {}: Xone constraint not satisfied for node {node}. Number of conforming shapes: {conforming_shapes}",
                         shape.id()
                     );
-                    let vr = ValidationResult::new(fnode_obj.clone(), component.clone(), shape.severity())
+                    let vr = ValidationResult::new(fnode_obj.clone(), component.clone(), shape.severity().clone())
                         .with_message(MessageMap::from(msg))
                         .with_path(maybe_path.cloned())
                         .with_value(node_obj)

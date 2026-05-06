@@ -1,8 +1,7 @@
+use crate::error::ValidationError;
 use crate::ir::components::MaxLength;
 use crate::ir::{IRComponent, IRSchema, IRShape};
-use crate::validator::constraints::{
-    ConstraintError, NativeValidator, SparqlValidator, validate_ask_with, validate_with,
-};
+use crate::validator::constraints::{NativeValidator, SparqlValidator, validate_ask_with, validate_with};
 use crate::validator::engine::Engine;
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;
@@ -25,7 +24,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxLength {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
         let max_length_fn = |vn: &S::Term| {
             if vn.is_blank_node() {
                 true
@@ -69,7 +68,7 @@ impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for MaxLength {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
         let query_fn = |vn: &S::Term| {
             formatdoc! {
                 " ASK {{ FILTER (STRLEN(str({})) <= {}) }} ",

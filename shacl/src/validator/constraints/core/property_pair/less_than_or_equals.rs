@@ -1,7 +1,8 @@
+use crate::error::ValidationError;
 use crate::ir::components::LessThanOrEquals;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::types::MessageMap;
-use crate::validator::constraints::{ConstraintError, NativeValidator, SparqlValidator};
+use crate::validator::constraints::{NativeValidator, SparqlValidator};
 use crate::validator::engine::Engine;
 use crate::validator::nodes::ValueNodes;
 use crate::validator::report::ValidationResult;
@@ -21,7 +22,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThanOrEquals {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
         let mut validation_results = Vec::new();
         let component = Object::iri(component.into());
 
@@ -49,12 +50,15 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThanOrEquals {
 
                             if let Some(msg) = msg {
                                 let node_obj = S::term_as_object(value).ok();
-                                let validation_result =
-                                    ValidationResult::new(fnode_obj.clone(), component.clone(), shape.severity())
-                                        .with_message(MessageMap::from(msg))
-                                        .with_path(maybe_path.cloned())
-                                        .with_value(node_obj)
-                                        .with_source(Some(shape.id().clone()));
+                                let validation_result = ValidationResult::new(
+                                    fnode_obj.clone(),
+                                    component.clone(),
+                                    shape.severity().clone(),
+                                )
+                                .with_message(MessageMap::from(msg))
+                                .with_path(maybe_path.cloned())
+                                .with_value(node_obj)
+                                .with_source(Some(shape.id().clone()));
                                 validation_results.push(validation_result);
                             }
                         }
@@ -65,10 +69,11 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThanOrEquals {
                         "LessThanOrEquals: Error trying to find triples for subject {subject} and predicate {}: {e}",
                         self.iri()
                     );
-                    let validation_result = ValidationResult::new(fnode_obj, component.clone(), shape.severity())
-                        .with_message(MessageMap::from(msg))
-                        .with_path(maybe_path.cloned())
-                        .with_source(Some(shape.id().clone()));
+                    let validation_result =
+                        ValidationResult::new(fnode_obj, component.clone(), shape.severity().clone())
+                            .with_message(MessageMap::from(msg))
+                            .with_path(maybe_path.cloned())
+                            .with_source(Some(shape.id().clone()));
                     validation_results.push(validation_result);
                 },
             }
@@ -88,9 +93,7 @@ impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for LessThanOrEquals {
         _: Option<&IRShape>,
         _: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        Err(ConstraintError::NotImplemented {
-            err: "LesssThanOrEquals is not implemented".to_string(),
-        })
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
+        unimplemented!()
     }
 }

@@ -18,7 +18,9 @@ impl<RDF: BuildRDF> ShaclWriter<RDF> {
     }
 
     pub fn serialize<W: Write>(&self, format: &RDFFormat, writer: &mut W) -> Result<(), ShaclWriterError> {
-        self.rdf.serialize(format, writer).map_err(|_| todo!())
+        self.rdf
+            .serialize(format, writer)
+            .map_err(ShaclWriterError::from_rdf_err::<RDF>)
     }
 }
 
