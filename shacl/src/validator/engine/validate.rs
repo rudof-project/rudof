@@ -1,7 +1,6 @@
 use crate::error::ValidationError;
 use crate::ir::{IRSchema, IRShape, ReifierInfo};
 use crate::types::MessageMap;
-use crate::validator::constraints::get_shape_from_idx;
 use crate::validator::engine::Engine;
 use crate::validator::engine::focus_nodes_ops::FocusNodesOps;
 use crate::validator::engine::value_nodes_ops::ValueNodesOps;

@@ -24,7 +24,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
     ) -> Result<Vec<ValidationResult>, ValidationError> {
         let mut validation_results = Vec::new();
         let shape_idx = self.shape();
-        let node_shape = get_shape_from_idx(shapes_graph, shape_idx)?;
+        let node_shape = shapes_graph.get_shape_from_idx_e(shape_idx)?;
         let component_obj = Object::iri(component.into());
 
         for (fnode, nodes) in value_nodes.iter() {

@@ -32,7 +32,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Or {
                 let focus_nodes = FocusNodes::single(node.clone());
                 let mut conforms = false;
                 for idx in self.shapes().iter() {
-                    let or_shape = get_shape_from_idx(shapes_graph, idx)?;
+                    let or_shape = shapes_graph.get_shape_from_idx_e(idx)?;
                     let inner_results = or_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
                     match inner_results {
                         Ok(results) => {

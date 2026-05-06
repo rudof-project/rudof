@@ -28,7 +28,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Not {
             let fnode_obj = S::term_as_object(fnode)?;
             for node in nodes.iter() {
                 let focus_nodes = FocusNodes::single(node.clone());
-                let not_shape = get_shape_from_idx(shapes_graph, self.shape())?;
+                let not_shape = shapes_graph.get_shape_from_idx_e(self.shape())?;
                 let inner_results = not_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
                 let is_valid_inside = match inner_results {
                     Ok(results) => results.is_empty(),

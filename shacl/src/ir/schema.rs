@@ -82,6 +82,10 @@ impl IRSchema {
         self.shapes.get(shape_idx)
     }
 
+    pub fn get_shape_from_idx_e(&self, shape_idx: &ShapeLabelIdx) -> Result<&IRShape, IRError> {
+        self.get_shape_from_idx(shape_idx).ok_or(IRError::ShapeNotFound(*shape_idx))
+    }
+
     pub fn get_shape(&self, sref: &Object) -> Option<&IRShape> {
         let idx = self.labels_idx_map.get(sref)?;
         self.shapes.get(idx)

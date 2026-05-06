@@ -237,17 +237,6 @@ impl<'a, S: QueryRDF + NeighsRDF + Debug + 'static> ValidatorDeref<'a, dyn Sparq
     }
 }
 
-pub(crate) fn get_shape_from_idx<'a>(
-    shapes_graph: &'a IRSchema,
-    shape_idx: &'a ShapeLabelIdx,
-) -> Result<&'a IRShape, ConstraintError> {
-    shapes_graph
-        .get_shape_from_idx(shape_idx)
-        .ok_or_else(|| ConstraintError::Internal {
-            err: format!("Shape idx {} not found in shapes graph", shape_idx),
-        })
-}
-
 fn apply<S: Rdf, I: IterationStrategy<S>>(
     component: &IRComponent,
     shape: &IRShape,
