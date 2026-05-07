@@ -380,7 +380,7 @@ impl SchemaIR {
     /// A well formed schema should not have any cyclic reference that involve a negation
     pub fn has_neg_cycle(&self) -> bool {
         let dep_graph = self.dependency_graph();
-        trace!("Dependency graph: {dep_graph}");
+        // trace!("Dependency graph: {dep_graph}");
         dep_graph.has_neg_cycle()
     }
 
