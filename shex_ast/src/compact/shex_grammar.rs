@@ -1273,14 +1273,7 @@ pub fn literal<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ConcreteLiteral> {
     traced(
         "literal",
         map_error(
-            move |i| {
-                alt((
-                    rdf_literal(),
-                    numeric_literal_datatype,
-                    boolean_literal,
-                ))
-                .parse(i)
-            },
+            move |i| alt((rdf_literal(), numeric_literal_datatype, boolean_literal)).parse(i),
             || ShExParseError::Literal,
         ),
     )
@@ -1302,26 +1295,35 @@ fn double_raw(i: Span) -> IRes<ConcreteLiteral> {
         )),
     ))
     .parse(i)?;
-    Ok((i, ConcreteLiteral::DatatypeLiteral {
-        lexical_form: s.fragment().to_string(),
-        datatype: IriRef::iri(IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#double")),
-    }))
+    Ok((
+        i,
+        ConcreteLiteral::DatatypeLiteral {
+            lexical_form: s.fragment().to_string(),
+            datatype: IriRef::iri(IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#double")),
+        },
+    ))
 }
 
 fn decimal_raw(i: Span) -> IRes<ConcreteLiteral> {
     let (i, s) = recognize((opt(sign), digit0, char('.'), digit1)).parse(i)?;
-    Ok((i, ConcreteLiteral::DatatypeLiteral {
-        lexical_form: s.fragment().to_string(),
-        datatype: IriRef::iri(IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#decimal")),
-    }))
+    Ok((
+        i,
+        ConcreteLiteral::DatatypeLiteral {
+            lexical_form: s.fragment().to_string(),
+            datatype: IriRef::iri(IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#decimal")),
+        },
+    ))
 }
 
 fn integer_raw(i: Span) -> IRes<ConcreteLiteral> {
     let (i, s) = recognize((opt(one_of("+-")), digit1)).parse(i)?;
-    Ok((i, ConcreteLiteral::DatatypeLiteral {
-        lexical_form: s.fragment().to_string(),
-        datatype: IriRef::iri(IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#integer")),
-    }))
+    Ok((
+        i,
+        ConcreteLiteral::DatatypeLiteral {
+            lexical_form: s.fragment().to_string(),
+            datatype: IriRef::iri(IriS::new_unchecked("http://www.w3.org/2001/XMLSchema#integer")),
+        },
+    ))
 }
 
 /// raw_numeric_literal obtains a numeric literal as a JSON
