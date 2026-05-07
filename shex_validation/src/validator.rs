@@ -159,7 +159,6 @@ impl Validator {
         let pairs = shapemap
             .node_shapes(rdf)
             .map_err(|e| ValidatorError::ShapeMapError { error: e.to_string() })?;
-        trace!("Pending atoms from QueryShapeMap:\n{}", shapemap);
         let mut failures = Vec::new();
         for (node, label) in pairs.iter() {
             match self.get_shape_expr_label(label, schema) {

@@ -221,6 +221,29 @@ pub trait NeighsRDF: Rdf {
         Ok((results, reminder))
     }
 
+    /// Returns filtered incoming arcs for a given object node.
+    ///
+    /// Only includes predicates that appear in the provided allowlist.
+    ///
+    /// # Arguments
+    ///
+    /// * `object` - The object term to find incoming relationships for
+    /// * `preds` - A slice of predicates to include in the filtered results
+    fn incoming_arcs_from_list(
+        &self,
+        object: &Self::Term,
+        preds: &[Self::IRI],
+    ) -> Result<IncomingArcs<Self>, Self::Err> {
+        let mut results = IncomingArcs::<Self>::new();
+        for triple in self.triples_with_object(object)? {
+            let (s, p, _) = triple.into_components();
+            if preds.contains(&p) {
+                results.entry(p).or_default().insert(s);
+            }
+        }
+        Ok(results)
+    }
+
     /// Returns all subjects that are instances of the specified class.
     ///
     /// This method queries for subjects that have `rdf:type` relationships

@@ -404,7 +404,7 @@ impl AST2IR {
             let mut vs = Vec::new();
             for iri in extra {
                 let nm = cnv_iri_ref(iri, prefixmap)?;
-                vs.push(Pred::new(nm));
+                vs.push(Pred::new(nm, true));
             }
             Ok(vs)
         } else {
@@ -504,7 +504,7 @@ impl AST2IR {
             ast::TripleExpr::TripleConstraint {
                 id: _,
                 negated: _,
-                inverse: _,
+                inverse,
                 predicate,
                 value_expr,
                 min,
@@ -514,7 +514,7 @@ impl AST2IR {
             } => {
                 let min = self.cnv_min(min)?;
                 let max = self.cnv_max(max)?;
-                let iri = Self::cnv_predicate(predicate)?;
+                let iri = Self::cnv_predicate(predicate, inverse)?;
                 let actions = self.cnv_sem_actions(sem_acts, &compiled_schema.prefixmap())?;
                 let (cond, _display) = self.value_expr2match_cond(value_expr, actions, compiled_schema, source_iri)?;
                 let component = current_table.add_component(iri, &cond);
@@ -558,9 +558,13 @@ impl AST2IR {
         Ok(SemAct::new(iri_s, sem_act.code()))
     }
 
-    fn cnv_predicate(predicate: &IriRef) -> CResult<Pred> {
+    fn cnv_predicate(predicate: &IriRef, inverse: &Option<bool>) -> CResult<Pred> {
+        let is_direct = match inverse {
+            None => true,
+            Some(inverse) => !inverse,
+        };
         match predicate {
-            IriRef::Iri(iri) => Ok(Pred::from(iri.clone())),
+            IriRef::Iri(iri) => Ok(Pred::new(iri.clone(), is_direct)),
             IriRef::Prefixed { prefix, local } => Err(Box::new(SchemaIRError::Internal {
                 msg: format!("Cannot convert prefixed {prefix}:{local} to predicate without context"),
             })),
@@ -718,9 +722,10 @@ impl AST2IR {
                 .map(|te| self.get_preds_triple_expr(&te.te, visited_refs))
                 .collect::<CResult<Vec<Vec<Pred>>>>()
                 .map(|vss| vss.into_iter().flatten().collect()),
-            ast::TripleExpr::TripleConstraint { predicate, .. } => {
+            ast::TripleExpr::TripleConstraint { predicate, inverse, .. } => {
                 let pred = iri_ref2iri_s(predicate);
-                Ok(vec![Pred::new(pred)])
+                let is_direct = if let Some(inverse) = inverse { !inverse } else { true };
+                Ok(vec![Pred::new(pred, is_direct)])
             },
             ast::TripleExpr::Ref(r) => {
                 if visited_refs.contains(r) {
