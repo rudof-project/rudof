@@ -176,9 +176,9 @@ impl Reason {
                 schema.show_shape_expr(shape_expr, width),
             )),
             Reason::ShapeRef { node, idx } => Ok(format!(
-                "ShapeRef passed ({}@{})",
-                node.show_qualified(nodes_prefixmap),
-                schema.show_shape_idx(idx, width)
+                "Reference to {} passes node {}",
+                schema.show_shape_idx(idx, width),
+                node.show_qualified(nodes_prefixmap)
             )),
             Reason::PartitionComponent {
                 node,

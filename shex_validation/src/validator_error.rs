@@ -124,10 +124,10 @@ pub enum ValidatorError {
     #[error(transparent)]
     PrefixMapError(#[from] PrefixMapError),
 
-    #[error("ShapeLabel not found {shape_label}: {error}")]
+    #[error("Shape label {shape_label} not found: {error}")]
     ShapeLabelNotFoundError { shape_label: ShapeExprLabel, error: String },
 
-    #[error("And error: shape expression {shape_expr} failed for node {node}: {errors}")]
+    #[error("And error: {shape_expr} failed for node {node}: {errors}")]
     ShapeAndError {
         shape_expr: ShapeLabelIdx,
         node: Box<Node>,
@@ -209,6 +209,8 @@ impl ValidatorError {
             .unwrap_or_else(|| idx.to_string())
     }
 
+    // This method generates a string representation of the error, showing the root error message
+    // The root message is the main error message, and the tree structure is built from the nested errors in `build_tree`
     fn root_qualified(
         &self,
         nodes_prefixmap: &PrefixMap,
@@ -224,14 +226,14 @@ impl ValidatorError {
             },
             ValidatorError::NoMatchesFound { node, idx, .. } => format!(
                 "Shape {} failed for node {}: no candidates matched the expression",
-                show_idx(idx),
+                show_label(idx, schema),
                 show_node(node)
             ),
             ValidatorError::PartitionComponentFailed { node, idx, .. } => {
                 format!(
                     "Partition component failed ({}@{})",
                     show_node(node),
-                    show_idx(idx),
+                    show_label(idx, schema),
                     // partition.show_qualified(nodes_prefixmap, schema, width)?
                 )
             },
@@ -257,28 +259,36 @@ impl ValidatorError {
                 current, desc, node, ..
             } => format!(
                 "Error in descendant {} of shape {} for node {}",
-                show_idx(desc),
-                show_idx(current),
+                show_label(desc, schema),
+                show_label(current, schema),
                 show_node(node)
             ),
             ValidatorError::DescendantsShapeError { idx, node, .. } => format!(
                 "All descendants of shape {} failed for node {}",
-                show_idx(idx),
+                show_label(idx, schema),
                 show_node(node)
             ),
             ValidatorError::ShapeAndError { shape_expr, node, .. } => format!(
-                "And error: shape expression {} failed for node {}",
-                show_idx(shape_expr),
+                "And error: {} failed for node {}",
+                show_label(shape_expr, schema),
                 show_node(node)
             ),
             ValidatorError::ShapeOrError { node, .. } => {
                 format!("OR error: all branches failed for node {}", show_node(node))
             },
-            ValidatorError::ShapeNotError { node, .. } => {
-                format!("Not error: failed for node {}", show_node(node))
+            ValidatorError::ShapeNotError { node, shape_expr, .. } => {
+                format!(
+                    "Not {}: failed for node {}",
+                    show_shape_expr(shape_expr, schema, width),
+                    show_node(node)
+                )
             },
             ValidatorError::ShapeRefFailed { node, idx } => {
-                format!("@{} fails for node {}", show_label(idx, schema), show_node(node))
+                format!(
+                    "Reference to {} fails for node {}",
+                    show_label(idx, schema),
+                    show_node(node)
+                )
             },
             ValidatorError::FailedPending { failed_pending } => {
                 let items: Vec<String> = failed_pending
@@ -366,4 +376,8 @@ fn show_label(idx: &ShapeLabelIdx, schema: &SchemaIR) -> String {
         .shape_label_from_idx(idx)
         .map(|l| schema.show_label(l))
         .unwrap_or_else(|| idx.to_string())
+}
+
+fn show_shape_expr(shape_expr: &ShapeExpr, schema: &SchemaIR, width: usize) -> String {
+    schema.show_shape_expr(shape_expr, width)
 }

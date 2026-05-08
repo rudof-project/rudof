@@ -451,17 +451,10 @@ impl SchemaIR {
         if let Some(info) = self.find_shape_idx(&idx_resolved) {
             match info.label() {
                 Some(label) => {
-                    result.push_str(
-                        format!(
-                            "{} = {}",
-                            self.show_label(label),
-                            self.show_shape_expr(info.expr(), width)
-                        )
-                        .as_str(),
-                    );
+                    result.push_str(&self.show_label(label));
                 },
                 None => {
-                    result.push_str(self.show_shape_expr(info.expr(), width).to_string().as_str());
+                    result.push_str(&self.show_shape_expr(info.expr(), width).to_string());
                 },
             }
         } else {
