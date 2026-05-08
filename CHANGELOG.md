@@ -4,16 +4,22 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ## [Unreleased]
 ### Added
 ### Fixed
-Bug with min cardinality was not passed down, now is fixed
 ### Changed
 ### Removed
 
 ## v0.2.19
 ### Added
+- #645: Implement ^ inverse in ShEx validator
+- #635: Add IriNormalizationMode with lax/strict parsing
+- #585: Implement the inverval algorithm for optimal RBE checking
 ### Fixed
-
 - Solves issue #647 by adding a method `set_default_base_prefixes` which sets the default base in `PrefixMap`. It also changes the behaviour of `qualify` in `PrefixMap` to use the default base and show the IRIs that belong to the default base in relative mode.
-
+- Solves issue #648: Fix bug min cardinality in rudof generate
+- Solves issue #643: fix(shex_validation): numeric value set term equality + XSD lexical form validation
+- Solves issue #641: Shape label not found in a ShEx with a relative IRI as start
+- Fixed SHACL error handling
+- Enhanced arc references in MemoryGraph
+- Fixed regex in InputSpec builder to accept win absolute paths
 ### Changed
 ### Removed
 
