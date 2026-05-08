@@ -8,6 +8,7 @@ use crate::{
 ///
 /// Provides a fluent interface for configuring and executing data loading
 /// operations with optional parameters.
+#[derive(Debug)]
 pub struct LoadDataBuilder<'a> {
     rudof: &'a mut Rudof,
     data: Option<&'a [InputSpec]>,

@@ -142,15 +142,11 @@ impl Reason {
                 );
                 Ok(s)
             },
-            Reason::Shape { node, idx, .. } => {
-                let se_str = schema.show_shape_idx(idx, width);
-                Ok(format!(
-                    "Shape passed {}@{}: {}",
-                    node.show_qualified(nodes_prefixmap),
-                    schema.show_shape_idx(idx, width),
-                    se_str
-                ))
-            },
+            Reason::Shape { node, idx, .. } => Ok(format!(
+                "Shape passed {}@{}",
+                node.show_qualified(nodes_prefixmap),
+                schema.show_shape_idx(idx, width),
+            )),
             Reason::ShapeExtends { node, shape, .. } => Ok(format!(
                 "Extends passed ({}@{})",
                 node.show_qualified(nodes_prefixmap),

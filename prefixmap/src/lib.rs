@@ -28,7 +28,7 @@
 
 pub mod error;
 pub mod iri;
-pub mod map;
+pub mod prefix_map;
 
 mod show;
 #[cfg(all(test, not(target_family = "wasm")))]
@@ -37,5 +37,5 @@ mod test;
 pub use crate::error::*;
 pub use crate::iri::DerefIri;
 pub use crate::iri::IriRef;
-pub use crate::map::PrefixMap;
+pub use crate::prefix_map::PrefixMap;
 pub use show::Show;

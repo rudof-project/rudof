@@ -68,6 +68,7 @@ impl CommandContext {
             Some(path) => RudofConfig::from_path(path)?,
             None => RudofConfig::default(),
         };
+        //tracing::trace!("Loaded configuration: {:?}", config);
 
         // Initialize Rudof with the loaded configuration
         let rudof = Rudof::new(config);

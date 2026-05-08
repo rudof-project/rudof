@@ -357,7 +357,7 @@ impl Rdf for RdfData {
             }
             Err(prefixmap::error::PrefixMapError::PrefixNotFound {
                 prefix: prefix.to_string(),
-                prefixmap: PrefixMap::new(),
+                prefixmap: Box::new(PrefixMap::new()),
             })
         }
     }
