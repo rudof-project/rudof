@@ -2,11 +2,6 @@
 1dot-relative_pass-short-shape
 1dotNoCode3_pass
 1focusPattern-dot_pass-iri-match
-1inversedotAnnot3_pass
-1inversedotCode1_pass
-1inversedot_pass-noOthers
-1inversedot_pass-over_lexicallyEarlier
-1inversedot_pass-over_lexicallyLater
 1iriPattern_pass-iri-match
 1literalFractiondigits_pass-decimal-equalLeadTrail
 1literalFractiondigits_pass-decimal-equalTrail

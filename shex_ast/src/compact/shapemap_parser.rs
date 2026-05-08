@@ -52,9 +52,7 @@ impl ShapeMapParser<'_> {
                         node_selector,
                         shape_selector,
                     } => {
-                        tracing::debug!(
-                            "Association {node_selector:?}@{shape_selector:?} with base_nodes: {base_nodes:?} and base_shapes: {base_shapes:?}"
-                        );
+                        tracing::debug!("Association {node_selector}@{shape_selector}");
                         query_shapemap.add_association(node_selector, base_nodes, shape_selector, base_shapes)?;
                     },
                 }

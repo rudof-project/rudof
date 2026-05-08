@@ -252,6 +252,8 @@ impl Engine {
         }
     }
 
+    // Implements algorithm presented in page 14 of this paper:
+    // https://labra.weso.es/publication/2017_semantics-validation-shapes-schemas/
     pub(crate) fn prove<R>(
         &self,
         node: &Node,
@@ -263,12 +265,6 @@ impl Engine {
     where
         R: NeighsRDF + QueryRDF,
     {
-        // Implements algorithm presented in page 14 of this paper:
-        // https://labra.weso.es/publication/2017_semantics-validation-shapes-schemas/
-        /*trace!(
-            "Proving {node}@{label} with hyp: [{}]",
-            hyp.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
-        );*/
         hyp.push((node.clone(), *label));
         let hyp_as_set: HashSet<(Node, ShapeLabelIdx)> =
             hyp.iter().map(|(n, l)| (n.clone(), *l)).collect::<HashSet<_>>();
@@ -757,6 +753,15 @@ impl Engine {
         Pred::from(iri_s)
     }
 
+    fn cnv_inverse_iri<S>(&self, iri: S::IRI) -> Pred
+    where
+        S: NeighsRDF,
+    {
+        let iri_string = iri.as_str();
+        let iri_s = iri!(iri_string);
+        Pred::new(iri_s, false)
+    }
+
     fn cnv_object<S>(&self, term: &S::Term) -> Result<Node>
     where
         S: NeighsRDF,
@@ -772,36 +777,54 @@ impl Engine {
 
     /// Get the neighbours of a node for a list of predicates
     /// Returns a tuple (values, remainder) where:
-    /// - values is a list of pairs (pred, obj) where obj is an object of the node for the given pred
-    /// - remainder is a list of predicates from the neighbours of the node that are not in the given list of predicates
+    /// - values is a list of pairs (pred, node) where pred.is_direct() determines direction:
+    ///   if true, node is the outgoing object; if false, node is the incoming subject
+    /// - remainder is the list of outgoing predicates on the node not present in preds as direct predicates
     pub(crate) fn neighs<S>(&self, node: &Node, preds: Vec<Pred>, rdf: &S) -> Result<Neighs>
     where
-        S: QueryRDF + NeighsRDF,
+        S: NeighsRDF,
     {
-        let node = self.get_rdf_node(node, rdf);
-        let list: Vec<_> = preds.iter().map(|pred| pred.iri().clone().into()).collect();
-        if let Ok(subject) = S::term_as_subject(&node) {
+        let node_term = self.get_rdf_node(node, rdf);
+
+        let (outgoing_preds, incoming_preds): (Vec<_>, Vec<_>) = preds.iter().partition(|pred| pred.is_direct());
+        let outgoing_iris: Vec<S::IRI> = outgoing_preds.iter().map(|p| p.iri().clone().into()).collect();
+        let incoming_iris: Vec<S::IRI> = incoming_preds.iter().map(|p| p.iri().clone().into()).collect();
+
+        let mut result = Vec::new();
+        let mut reminder_preds = Vec::new();
+
+        if let Ok(subject) = S::term_as_subject(&node_term) {
             let (outgoing_arcs, reminder) = rdf
-                .outgoing_arcs_from_list(&subject, &list)
+                .outgoing_arcs_from_list(&subject, &outgoing_iris)
                 .map_err(|e| self.cnv_err::<S>(e))?;
-            let mut result = Vec::new();
             for (pred, values) in outgoing_arcs.into_iter() {
                 for obj in values.into_iter() {
-                    let iri = self.cnv_iri::<S>(pred.clone());
+                    let pred_s = self.cnv_iri::<S>(pred.clone());
                     let object = self.cnv_object::<S>(&obj)?;
-                    result.push((iri.clone(), object))
+                    result.push((pred_s, object))
                 }
             }
-            let mut reminder_preds = Vec::new();
             for r in reminder {
-                // TODO: We should probably be able to avoid this clone
                 let iri_r = self.cnv_iri::<S>(r.clone());
                 reminder_preds.push(iri_r);
             }
-            Ok((result, reminder_preds))
-        } else {
-            Ok((Vec::new(), Vec::new()))
         }
+
+        if !incoming_iris.is_empty() {
+            let incoming_arcs = rdf
+                .incoming_arcs_from_list(&node_term, &incoming_iris)
+                .map_err(|e| self.cnv_err::<S>(e))?;
+            for (pred, subjects) in incoming_arcs.into_iter() {
+                for subj in subjects.into_iter() {
+                    let pred_s = self.cnv_inverse_iri::<S>(pred.clone());
+                    let subject_term: S::Term = subj.into();
+                    let subject_node = self.cnv_object::<S>(&subject_term)?;
+                    result.push((pred_s, subject_node))
+                }
+            }
+        }
+
+        Ok((result, reminder_preds))
     }
 
     fn cnv_err<S>(&self, _err: S::Err) -> ValidatorError
@@ -1012,4 +1035,111 @@ fn create_partitions_display(ps: &[PartitionInfo]) -> PartitionsDisplay {
         .map(|(maybe_label, rbes, neighs_subset)| PartitionDisplay::new(*maybe_label, rbes, neighs_subset))
         .collect();
     PartitionsDisplay::new(&partitions_display)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ValidatorConfig;
+    use rudof_iri::IriS;
+    use rudof_rdf::rdf_core::RDFFormat;
+    use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+
+    // :alice :knows :bob .
+    // :carol :knows :alice .
+    // :alice :age  30 .       (outgoing pred not requested in some tests)
+    const TEST_GRAPH: &str = r#"
+        prefix : <http://example.org/>
+        :alice :knows :bob .
+        :carol :knows :alice .
+        :alice :age 30 .
+    "#;
+
+    fn make_graph() -> InMemoryGraph {
+        InMemoryGraph::from_str(TEST_GRAPH, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap()
+    }
+
+    fn engine() -> Engine {
+        Engine::new(&ValidatorConfig::default())
+    }
+
+    fn alice() -> Node {
+        Node::iri(IriS::new_unchecked("http://example.org/alice"))
+    }
+
+    fn bob() -> Node {
+        Node::iri(IriS::new_unchecked("http://example.org/bob"))
+    }
+
+    fn carol() -> Node {
+        Node::iri(IriS::new_unchecked("http://example.org/carol"))
+    }
+
+    fn pred_knows_direct() -> Pred {
+        Pred::new(IriS::new_unchecked("http://example.org/knows"), true)
+    }
+
+    fn pred_knows_inverse() -> Pred {
+        Pred::new(IriS::new_unchecked("http://example.org/knows"), false)
+    }
+
+    fn pred_age_direct() -> Pred {
+        Pred::new(IriS::new_unchecked("http://example.org/age"), true)
+    }
+
+    // Requesting only a direct predicate returns matching outgoing arcs;
+    // the remainder contains all other outgoing predicates on the node.
+    #[test]
+    fn test_neighs_direct_pred() {
+        let (values, remainder) = engine()
+            .neighs(&alice(), vec![pred_knows_direct()], &make_graph())
+            .unwrap();
+
+        assert_eq!(values.len(), 1);
+        assert!(values.contains(&(pred_knows_direct(), bob())));
+        // :age is an outgoing pred of alice that was not requested
+        assert_eq!(remainder.len(), 1);
+        assert!(remainder.contains(&pred_age_direct()));
+    }
+
+    // Requesting only an inverse predicate returns matching incoming arcs
+    // with is_direct = false; all outgoing preds go to the remainder.
+    #[test]
+    fn test_neighs_inverse_pred() {
+        let (values, remainder) = engine()
+            .neighs(&alice(), vec![pred_knows_inverse()], &make_graph())
+            .unwrap();
+
+        assert_eq!(values.len(), 1);
+        assert!(values.contains(&(pred_knows_inverse(), carol())));
+        // Both :knows and :age are outgoing preds of alice and none were requested directly
+        assert!(remainder.contains(&pred_knows_direct()));
+        assert!(remainder.contains(&pred_age_direct()));
+    }
+
+    // Requesting both a direct and an inverse predicate returns both kinds of arcs;
+    // only outgoing preds not explicitly requested as direct end up in remainder.
+    #[test]
+    fn test_neighs_mixed_direct_and_inverse() {
+        let preds = vec![pred_knows_direct(), pred_knows_inverse()];
+        let (values, remainder) = engine().neighs(&alice(), preds, &make_graph()).unwrap();
+
+        // outgoing :knows → bob  +  incoming :knows ← carol
+        assert_eq!(values.len(), 2);
+        assert!(values.contains(&(pred_knows_direct(), bob())));
+        assert!(values.contains(&(pred_knows_inverse(), carol())));
+        // :age was not requested as a direct pred, so it goes to remainder
+        assert_eq!(remainder.len(), 1);
+        assert!(remainder.contains(&pred_age_direct()));
+    }
+
+    // When preds is empty the values list is empty and every outgoing pred is in the remainder.
+    #[test]
+    fn test_neighs_empty_preds() {
+        let (values, remainder) = engine().neighs(&alice(), vec![], &make_graph()).unwrap();
+
+        assert!(values.is_empty());
+        assert!(remainder.contains(&pred_knows_direct()));
+        assert!(remainder.contains(&pred_age_direct()));
+    }
 }

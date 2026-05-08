@@ -164,10 +164,27 @@ where
                     }
                 }
             },
-            Rbe::Repeat { value: _, card: _ } => {
-                // Having repetitions on expressions breaks the single-occurrence bag expression
-                // This case should be handled by detecting repetitions and invoking the derivatives algorithm
-                todo!()
+            Rbe::Repeat { value, card } => {
+                if self.no_symbols_in_bag(bag) {
+                    if card.nullable() || value.nullable() {
+                        Interval::zero_any()
+                    } else {
+                        Interval::zero_zero()
+                    }
+                } else {
+                    let inner = value.interval(bag);
+                    if inner.is_empty() {
+                        inner
+                    } else {
+                        let card_interval = Interval::new(Max::IntMax(card.min.value), card.max.clone());
+                        let intersection = inner.intersection(&card_interval);
+                        if intersection.is_empty() {
+                            Interval::fail()
+                        } else {
+                            Interval::new(Max::IntMax(1), Max::IntMax(1))
+                        }
+                    }
+                }
             },
         }
     }
