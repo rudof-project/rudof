@@ -326,6 +326,7 @@ impl ParallelGenerator {
                 property_info.min_cardinality,
                 property_info.max_cardinality,
                 entity_index,
+                &config,
             );
 
             // If we decided to include it but calculated 0 values (e.g. random 0..X),
@@ -392,8 +393,11 @@ impl ParallelGenerator {
         min_cardinality: Option<i32>,
         max_cardinality: Option<i32>,
         entity_index: usize,
+        config: &GenerationConfig,
     ) -> usize {
-        let min_card = min_cardinality.unwrap_or(1).max(0) as usize;
+        let min_card_raw = min_cardinality.unwrap_or(1).max(0) as usize;
+        // Apply ignore_min_cardinality: if true, treat min as 0
+        let min_card = if config.ignore_min_cardinality { 0 } else { min_card_raw };
         let max_card = match max_cardinality {
             Some(-1) => 5, // Unbounded, but cap at reasonable limit for properties
             Some(max) => (max as usize).max(min_card),
@@ -603,6 +607,7 @@ impl ParallelGenerator {
                     property_info.min_cardinality,
                     property_info.max_cardinality,
                     parent_entity_index,
+                    &self.config,
                 );
 
                 for value_idx in 0..num_values {
