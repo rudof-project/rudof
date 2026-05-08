@@ -15,6 +15,10 @@ pub struct PrefixMap {
     /// Proper prefix map associations of an alias [`String`] to an [`IriS`]
     pub map: IndexMap<String, IriS>,
 
+    /// Default base IRI for resolving relative IRIs
+    #[serde(skip)]
+    pub default_base: Option<IriS>,
+
     /// Color of prefix aliases when qualifying an IRI that has an alias
     #[serde(skip)]
     qualify_prefix_color: Option<Color>,
@@ -37,6 +41,11 @@ impl PrefixMap {
     /// Creates an empty map
     pub fn new() -> PrefixMap {
         PrefixMap::default()
+    }
+
+    /// Sets the default base IRI for resolving relative IRIs
+    pub fn set_default_base(&mut self, default_base: &Option<IriS>) {
+        self.default_base = default_base.clone();
     }
 
     /// Returns the number of prefix associations in the [`PrefixMap`]
@@ -84,6 +93,10 @@ impl PrefixMap {
     /// Returns an iterator over the aliases in the [`PrefixMap`]
     pub fn aliases(&self) -> impl Iterator<Item = &String> {
         self.map.keys()
+    }
+
+    pub fn default_base(&self) -> Option<&IriS> {
+        self.default_base.as_ref()
     }
 }
 
@@ -264,7 +277,16 @@ impl PrefixMap {
     /// # Ok::<(), PrefixMapError>(())
     /// ```
     pub fn qualify(&self, iri: &IriS) -> String {
-        self.qualify_optional(iri).unwrap_or_else(|| format!("<{iri}>"))
+        self.qualify_optional(iri)
+            .unwrap_or_else(|| format!("<{}>", self.relativize(iri)))
+    }
+
+    fn relativize(&self, iri: &IriS) -> String {
+        if let Some(base) = self.default_base() {
+            iri.relative_from(base)
+        } else {
+            iri.as_str().to_string()
+        }
     }
 
     /// Qualifies an IRI against a [`PrefixMap`]
@@ -513,5 +535,31 @@ impl TryFrom<HashMap<&str, &str>> for PrefixMap {
             pm.add_prefix(a, iri);
         }
         Ok(pm)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_qualify_with_base() {
+        let mut pm: PrefixMap = HashMap::from([("", "https://example.org/"), ("schema", "https://schema.org/")])
+            .try_into()
+            .unwrap();
+
+        pm.set_default_base(&Some(IriS::from_str("file:///home/user/src/rust/rudof/").unwrap()));
+
+        let a = IriS::from_str("https://example.org/a").unwrap();
+        assert_eq!(pm.qualify(&a), ":a");
+
+        let knows = IriS::from_str("https://schema.org/knows").unwrap();
+        assert_eq!(pm.qualify(&knows), "schema:knows");
+
+        let other = IriS::from_str("https://other.org/foo").unwrap();
+        assert_eq!(pm.qualify(&other), "<https://other.org/foo>");
+
+        let relative = IriS::from_str("file:///home/user/src/rust/rudof/relative").unwrap();
+        assert_eq!(pm.qualify(&relative), "<relative>");
     }
 }

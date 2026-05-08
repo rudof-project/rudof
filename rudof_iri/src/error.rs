@@ -59,4 +59,7 @@ pub enum IriSError {
 
     #[error("Error parsing Turtle string `{str}` as IRI: {error}")]
     TurtleParseError { str: String, error: String },
+
+    #[error("Error relativizing IRI `{iri}` with base IRI `{base}`: {error}")]
+    RelativizeError { error: String, base: String, iri: String },
 }

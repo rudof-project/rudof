@@ -140,7 +140,7 @@ fn compile_shex_schema(rudof: &mut Rudof, base: IriS, schema: ShExSchema, reader
     let mut schema_ir = SchemaIR::new(registry);
 
     schema_ir
-        .populate_from_schema_json(&schema, &ResolveMethod::default(), &Some(base))
+        .populate_from_schema_json(&schema, &ResolveMethod::default(), &Some(base.clone()))
         .map_err(|error| ShExError::FailedCompilingShExSchema {
             error: error.to_string(),
         })?;

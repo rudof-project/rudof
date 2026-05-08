@@ -15,7 +15,7 @@ use oxrdf::{
 use oxrdfio::{JsonLdProfileSet, RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
-use prefixmap::{PrefixMapError, map::*};
+use prefixmap::{PrefixMapError, prefix_map::*};
 use rudof_iri::IriS;
 use serde::{Serialize, ser::SerializeStruct};
 use std::{
@@ -108,6 +108,10 @@ impl InMemoryGraph {
         self.graph.is_empty()
     }
 
+    pub fn set_default_base_prefixes(&mut self, default_base: &Option<IriS>) {
+        self.pm.set_default_base(default_base);
+    }
+
     /// Merges RDF data from a reader into the current graph.
     ///
     /// The parsing behavior depends on [`RDFFormat`] and [`ReaderMode`].
@@ -154,6 +158,10 @@ impl InMemoryGraph {
             RDFFormat::JsonLd => {
                 self.parse_jsonld(reader, reader_mode)?;
             },
+        }
+        if let Some(base) = base {
+            let default_base = Some(IriS::new_unchecked(base));
+            self.set_default_base_prefixes(&default_base);
         }
         Ok(())
     }

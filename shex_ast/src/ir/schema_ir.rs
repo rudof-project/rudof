@@ -64,6 +64,10 @@ impl SchemaIR {
         self.semantic_actions_registry.set_map_state(map_state);
     }
 
+    pub fn set_default_base_prefixes(&mut self, default_base: &IriS) {
+        self.prefixmap.set_default_base(&Some(default_base.clone()));
+    }
+
     /// Return the live `Arc<Mutex<MapState>>` from the registered `MapActionExtension`, if any.
     ///
     /// All validation closures compiled into the RBE table share this same Arc (because
@@ -213,6 +217,9 @@ impl SchemaIR {
         let registry = self.semantic_actions_registry.clone();
         let mut compiler = AST2IR::with_registry(resolve_method, registry);
         compiler.compile(schema_json, &schema_json.source_iri(), base, self)?;
+        if let Some(base) = base {
+            self.set_default_base_prefixes(base);
+        }
         Ok(())
     }
 
