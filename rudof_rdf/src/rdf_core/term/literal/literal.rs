@@ -377,6 +377,10 @@ impl ConcreteLiteral {
                 },
             ) => lexical_form == expected_lexical_form && datatype == expected_datatype,
             (Self::NumericLiteral(n1), Self::NumericLiteral(n2)) => n1 == n2,
+            // Cross-match: DatatypeLiteral (from data/grammar) vs NumericLiteral (from API).
+            // ShEx value set matching requires term equality, so these never match.
+            (Self::DatatypeLiteral { .. }, Self::NumericLiteral(_))
+            | (Self::NumericLiteral(_), Self::DatatypeLiteral { .. }) => false,
             (Self::DatetimeLiteral(dt1), Self::DatetimeLiteral(dt2)) => dt1 == dt2,
             (Self::BooleanLiteral(b1), Self::BooleanLiteral(b2)) => b1 == b2,
             (
@@ -747,11 +751,24 @@ impl ConcreteLiteral {
 
     /// Parses a non-negative integer from its string representation.
     ///
+    /// XSD nonNegativeInteger allows a leading "+" and also "-0" (negative zero, value 0 >= 0).
+    ///
     /// # Errors
     ///
     /// Returns an error if the string cannot be parsed as a non-negative integer.
     pub fn parse_non_negative_integer(s: &str) -> Result<u128, String> {
-        s.parse::<u128>()
+        let normalized = s.strip_prefix('+').unwrap_or(s);
+        if let Some(rest) = normalized.strip_prefix('-') {
+            let val = rest
+                .parse::<u128>()
+                .map_err(|e| format!("Cannot convert {s} to non-negative integer: {e}"))?;
+            if val == 0 {
+                return Ok(0);
+            }
+            return Err(format!("Cannot convert {s} to non-negative integer: value is negative"));
+        }
+        normalized
+            .parse::<u128>()
             .map_err(|e| format!("Cannot convert {s} to non-negative integer: {e}"))
     }
 
@@ -801,6 +818,10 @@ impl ConcreteLiteral {
     ///
     /// Returns an error if the string cannot be parsed as a `f64`.
     pub fn parse_double(s: &str) -> Result<f64, String> {
+        // XSD double lexical space does not include "+INF"; only "INF", "-INF", "NaN"
+        if s.eq_ignore_ascii_case("+INF") || s.eq_ignore_ascii_case("+infinity") {
+            return Err(format!("{s} is not a valid xsd:double lexical form"));
+        }
         s.parse::<f64>()
             .map_err(|e| format!("Cannot convert {s} to double: {e}"))
     }
@@ -830,6 +851,10 @@ impl ConcreteLiteral {
     ///
     /// Returns an error if the string cannot be parsed as a float.
     pub fn parse_float(s: &str) -> Result<f32, String> {
+        // XSD float lexical space does not include "+INF"; only "INF", "-INF", "NaN"
+        if s.eq_ignore_ascii_case("+INF") || s.eq_ignore_ascii_case("+infinity") {
+            return Err(format!("{s} is not a valid xsd:float lexical form"));
+        }
         s.parse::<f32>()
             .map_err(|e| format!("Cannot convert {s} to float: {e}"))
     }
@@ -899,7 +924,8 @@ impl PartialOrd for ConcreteLiteral {
             (Self::StringLiteral { lexical_form: lf1, .. }, Self::StringLiteral { lexical_form: lf2, .. }) => {
                 Some(lf1.cmp(lf2))
             },
-            // Datatype literals are only comparable if their datatypes match
+            // Datatype literals: try numeric comparison for numeric types (cross-type allowed),
+            // fall back to lexical for same-datatype non-numeric, incomparable otherwise
             (
                 Self::DatatypeLiteral {
                     lexical_form: lf1,
@@ -909,23 +935,17 @@ impl PartialOrd for ConcreteLiteral {
                     lexical_form: lf2,
                     datatype: dt2,
                 },
-            ) if dt1 == dt2 => Some(lf1.cmp(lf2)),
+            ) => match (check_literal_datatype(lf1, dt1), check_literal_datatype(lf2, dt2)) {
+                (Ok(Self::NumericLiteral(n1)), Ok(Self::NumericLiteral(n2))) => n1.partial_cmp(&n2),
+                _ if dt1 == dt2 => Some(lf1.cmp(lf2)),
+                _ => None,
+            },
             // Numeric comparison (may return None for NaN)
             (Self::NumericLiteral(n1), Self::NumericLiteral(n2)) => n1.partial_cmp(n2),
             // Boolean ordering: false < true
             (Self::BooleanLiteral(b1), Self::BooleanLiteral(b2)) => Some(b1.cmp(b2)),
-            // Wrong-datatype literals can still be compared lexically if the expected datatype matches
-            (
-                Self::WrongDatatypeLiteral {
-                    lexical_form: lf1,
-                    datatype: dt1,
-                    ..
-                },
-                Self::DatatypeLiteral {
-                    lexical_form: lf2,
-                    datatype: dt2,
-                },
-            ) if dt1 == dt2 => Some(lf1.cmp(lf2)),
+            // Wrong-datatype literals have an invalid lexical form and are incomparable for ordering
+            (Self::WrongDatatypeLiteral { .. }, _) | (_, Self::WrongDatatypeLiteral { .. }) => None,
             // All other combinations are considered incomparable
             _ => None,
         }
@@ -1026,9 +1046,32 @@ impl TryFrom<oxrdf::Literal> for ConcreteLiteral {
                 }),
 
             (s, Some(dtype), None) => {
-                // Use safe IRI creation if possible
                 let datatype_iri = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
-                check_literal_datatype(s.as_ref(), &datatype_iri)
+                let iri_str = dtype.as_str();
+                // For bare numeric types in Turtle, preserve original lexical form for valid values
+                // (ShEx value set matching requires lexical-form equality, not value equality).
+                // But invalid lexical forms must still produce WrongDatatypeLiteral.
+                if iri_str == XsdVocab::XSD_INTEGER
+                    || iri_str == XsdVocab::XSD_DECIMAL
+                    || iri_str == XsdVocab::XSD_DOUBLE
+                    || iri_str == XsdVocab::XSD_FLOAT
+                {
+                    match check_literal_datatype(s.as_ref(), &datatype_iri) {
+                        Ok(ConcreteLiteral::WrongDatatypeLiteral { error, .. }) => {
+                            Ok(ConcreteLiteral::WrongDatatypeLiteral {
+                                lexical_form: s.to_string(),
+                                datatype: datatype_iri,
+                                error,
+                            })
+                        },
+                        _ => Ok(ConcreteLiteral::DatatypeLiteral {
+                            lexical_form: s.to_string(),
+                            datatype: datatype_iri,
+                        }),
+                    }
+                } else {
+                    check_literal_datatype(s.as_ref(), &datatype_iri)
+                }
             },
 
             _ => Err(RDFError::ConversionError {
