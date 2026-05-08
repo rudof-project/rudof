@@ -935,12 +935,10 @@ impl PartialOrd for ConcreteLiteral {
                     lexical_form: lf2,
                     datatype: dt2,
                 },
-            ) => {
-                match (check_literal_datatype(lf1, dt1), check_literal_datatype(lf2, dt2)) {
-                    (Ok(Self::NumericLiteral(n1)), Ok(Self::NumericLiteral(n2))) => n1.partial_cmp(&n2),
-                    _ if dt1 == dt2 => Some(lf1.cmp(lf2)),
-                    _ => None,
-                }
+            ) => match (check_literal_datatype(lf1, dt1), check_literal_datatype(lf2, dt2)) {
+                (Ok(Self::NumericLiteral(n1)), Ok(Self::NumericLiteral(n2))) => n1.partial_cmp(&n2),
+                _ if dt1 == dt2 => Some(lf1.cmp(lf2)),
+                _ => None,
             },
             // Numeric comparison (may return None for NaN)
             (Self::NumericLiteral(n1), Self::NumericLiteral(n2)) => n1.partial_cmp(n2),
