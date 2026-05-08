@@ -934,23 +934,19 @@ impl PartialOrd for ConcreteLiteral {
                     lexical_form: lf2,
                     datatype: dt2,
                 },
-            ) if dt1 == dt2 => Some(lf1.cmp(lf2)),
+            ) if dt1 == dt2 => {
+                // For known numeric types, compare numerically instead of lexically
+                match (check_literal_datatype(lf1, dt1), check_literal_datatype(lf2, dt2)) {
+                    (Ok(Self::NumericLiteral(n1)), Ok(Self::NumericLiteral(n2))) => n1.partial_cmp(&n2),
+                    _ => Some(lf1.cmp(lf2)),
+                }
+            },
             // Numeric comparison (may return None for NaN)
             (Self::NumericLiteral(n1), Self::NumericLiteral(n2)) => n1.partial_cmp(n2),
             // Boolean ordering: false < true
             (Self::BooleanLiteral(b1), Self::BooleanLiteral(b2)) => Some(b1.cmp(b2)),
-            // Wrong-datatype literals can still be compared lexically if the expected datatype matches
-            (
-                Self::WrongDatatypeLiteral {
-                    lexical_form: lf1,
-                    datatype: dt1,
-                    ..
-                },
-                Self::DatatypeLiteral {
-                    lexical_form: lf2,
-                    datatype: dt2,
-                },
-            ) if dt1 == dt2 => Some(lf1.cmp(lf2)),
+            // Wrong-datatype literals have an invalid lexical form and are incomparable for ordering
+            (Self::WrongDatatypeLiteral { .. }, _) | (_, Self::WrongDatatypeLiteral { .. }) => None,
             // All other combinations are considered incomparable
             _ => None,
         }
@@ -1053,16 +1049,27 @@ impl TryFrom<oxrdf::Literal> for ConcreteLiteral {
             (s, Some(dtype), None) => {
                 let datatype_iri = IriRef::iri(IriS::new_unchecked(dtype.as_str()));
                 let iri_str = dtype.as_str();
-                // For types that appear as bare literals in Turtle (integer, decimal, double, float), preserve the original lexical form
+                // For bare numeric types in Turtle, preserve original lexical form for valid values
+                // (ShEx value set matching requires lexical-form equality, not value equality).
+                // But invalid lexical forms must still produce WrongDatatypeLiteral.
                 if iri_str == XsdVocab::XSD_INTEGER
                     || iri_str == XsdVocab::XSD_DECIMAL
                     || iri_str == XsdVocab::XSD_DOUBLE
                     || iri_str == XsdVocab::XSD_FLOAT
                 {
-                    Ok(ConcreteLiteral::DatatypeLiteral {
-                        lexical_form: s.to_string(),
-                        datatype: datatype_iri,
-                    })
+                    match check_literal_datatype(s.as_ref(), &datatype_iri) {
+                        Ok(ConcreteLiteral::WrongDatatypeLiteral { error, .. }) => {
+                            Ok(ConcreteLiteral::WrongDatatypeLiteral {
+                                lexical_form: s.to_string(),
+                                datatype: datatype_iri,
+                                error,
+                            })
+                        },
+                        _ => Ok(ConcreteLiteral::DatatypeLiteral {
+                            lexical_form: s.to_string(),
+                            datatype: datatype_iri,
+                        }),
+                    }
                 } else {
                     check_literal_datatype(s.as_ref(), &datatype_iri)
                 }
