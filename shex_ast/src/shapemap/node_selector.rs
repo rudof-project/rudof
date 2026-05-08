@@ -11,7 +11,7 @@ use rudof_rdf::rdf_core::{NeighsRDF, query::QueryRDF, term::literal::ConcreteLit
 use serde::Serialize;
 use std::fmt::Display;
 use thiserror::Error;
-use tracing::trace;
+// use tracing::trace;
 
 /// A NodeSelector following [ShapeMap spec](https://shexspec.github.io/shape-map/#shapemap-structure) can be used to select RDF Nodes
 ///
@@ -176,17 +176,17 @@ where
     R: QueryRDF,
 {
     let mut results = Vec::new();
-    trace!("Resolving SPARQL NodeSelector query for rdf\nQuery:\n{query}");
+    //trace!("Resolving SPARQL NodeSelector query for rdf\nQuery:\n{query}");
     let query_solutions = rdf
         .query_select(query)
         .map_err(|e| ShapemapError::NodeSelectorQueryError {
             query: query.to_string(),
             error: e.to_string(),
         })?;
-    trace!("SPARQL NodeSelector query solutions: {}", query_solutions.count());
+    // trace!("SPARQL NodeSelector query solutions: {}", query_solutions.count());
     for solution in query_solutions.iter() {
         let variables = solution.variables();
-        trace!("SPARQL NodeSelector variables: {:?}", variables);
+        // trace!("SPARQL NodeSelector variables: {:?}", variables);
         if let Some(variable) = variables.first()
             && let Some(value) = solution.find_solution(variable)
         {

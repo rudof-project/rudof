@@ -4,15 +4,25 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ## [Unreleased]
 ### Added
 ### Fixed
-Bug with min cardinality was not passed down, now is fixed
 ### Changed
 ### Removed
 
 ## v0.2.19
 ### Added
+
+- Allow prefixes when converting to turtle issue #624
+- Solves issue #645 implementing inverse in ShEx
+
+
 ### Fixed
 
 - Solves issue #647 by adding a method `set_default_base_prefixes` which sets the default base in `PrefixMap`. It also changes the behaviour of `qualify` in `PrefixMap` to use the default base and show the IRIs that belong to the default base in relative mode.
+- Bug with min cardinality was not passed down, now is fixed solving issue #648
+- Solves issue #643 by canonicalizing numeric and datatype literals
+- Solves issue #641 which was giving an error of relative IRIs in START declarations not found
+- Solves issue #635 allowing node parameters without angle brackets
+- Solves issue #626 to allow importing relative IRIs
+- Fixes some dependencies on pgschema issues #619, #618 and #617
 
 ### Changed
 ### Removed

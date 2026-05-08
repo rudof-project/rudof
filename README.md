@@ -45,6 +45,7 @@ as well as Python bindings.
 - ShEx
 - SHACL
 - DCTAP
+- Property graphs and Schemas for Property Graphs (PGSchema)
 
 Future features we are planning to add:
 

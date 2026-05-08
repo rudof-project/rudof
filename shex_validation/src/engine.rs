@@ -438,19 +438,19 @@ impl Engine {
     {
         match se {
             ShapeExpr::ShapeAnd { exprs, .. } => {
-                tracing::debug!(
+                /*tracing::debug!(
                     "Checking node {node} with AND, typing: [{}]",
                     typing.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
-                );
+                );*/
                 let mut reasons_collection = Vec::new();
                 for e in exprs {
                     match self.check_node_ref(node, e, typing)? {
                         Either::Left(errors) => {
-                            trace!(
+                            /*trace!(
                                 "AND failed at component {e} for node {node}\nErrors: {}\nTyping: {}",
                                 errors.iter().map(|err| format!("{err}")).join(", "),
                                 typing.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
-                            );
+                            );*/
                             return Ok(Either::Left(vec![ValidatorError::ShapeAndError {
                                 shape_expr: *e,
                                 node: Box::new(node.clone()),
@@ -473,11 +473,11 @@ impl Engine {
                 for e in exprs {
                     match self.check_node_ref(node, e, typing)? {
                         Either::Left(errors) => {
-                            trace!(
+                            /*trace!(
                                 "OR branch {e} failed for node {node}\nErrors: {}\nTyping: {}",
                                 errors.iter().map(|err| format!("{err}")).join(", "),
                                 typing.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
-                            );
+                            );*/
                             errors_collection.push((*e, ValidatorErrors::new(errors)));
                         },
                         Either::Right(reasons) => {
@@ -727,7 +727,7 @@ impl Engine {
                 }
             }
             // If we exhaust all partitions, the shape fails
-            debug!(" Failed shape {idx}. All partitions failed",);
+            // debug!(" Failed shape {idx}. All partitions failed",);
             fail(ValidatorError::ShapeFailed {
                 node: Box::new(node.clone()),
                 shape: Box::new(shape.clone()),
@@ -903,18 +903,18 @@ fn check_expr_neigh(
     idx: &ShapeLabelIdx,
     typing: &Typing,
 ) -> Result<ValidationResult> {
-    trace!(
+    /*trace!(
         "Checking expr {} with neighs: [{}]",
         expr,
         neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", ")
-    );
+    );*/
     let result_iter = expr.matches(neighs.to_vec())?;
     let mut result_iter = result_iter.peekable();
     if result_iter.peek().is_none() {
-        debug!(
+        /*debug!(
             "expr {expr} produced no candidates for neighs: [{}]",
             neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", ")
-        );
+        );*/
         return fail(ValidatorError::NoMatchesFound {
             node: Box::new(node.clone()),
             shape: Box::new(shape.clone()),
@@ -923,11 +923,11 @@ fn check_expr_neigh(
     }
     let mut errors = Vec::new();
     for result in result_iter {
-        trace!(
+        /*trace!(
             "Result of {expr} with neighs: {}: {:?}",
             neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", "),
             result
-        );
+        );*/
         match result {
             Ok(pending_values) => {
                 if !pending_values.is_empty() {
@@ -948,7 +948,7 @@ fn check_expr_neigh(
                             idx: *idx,
                         });
                     } else {
-                        trace!("Failed pending values: {:?}", failed_pending);
+                        //trace!("Failed pending values: {:?}", failed_pending);
                         errors.push(ValidatorError::FailedPending {
                             failed_pending: failed_pending.clone(),
                         })
@@ -963,18 +963,18 @@ fn check_expr_neigh(
                 }
             },
             Err(err) => {
-                debug!("Result with error: {err}");
+                // debug!("Result with error: {err}");
                 return fail(ValidatorError::RbeError(err));
             },
         }
     }
     // If we reach this point, all results have been processed and all of them have pending values that are not in typing, so the shape failed
     // We can collect all the failed pending values from all the results and return them as errors
-    debug!(
+    /*debug!(
         "expr failed {expr} with neighs: [{}]. No matching found. Errors: [{}]",
         neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", "),
         errors.iter().map(|e| format!("{e}")).join(", ")
-    );
+    );*/
     fail(ValidatorError::ShapeFailed {
         node: Box::new(node.clone()),
         shape: Box::new(shape.clone()),

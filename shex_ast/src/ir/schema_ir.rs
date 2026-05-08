@@ -16,7 +16,7 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 use std::sync::Arc;
 use std::sync::Mutex;
-use tracing::trace;
+// use tracing::trace;
 
 type Result<A> = std::result::Result<A, Box<SchemaIRError>>;
 
@@ -157,7 +157,7 @@ impl SchemaIR {
             let mut result = HashMap::new();
             let current_exprs = info.expr().get_triple_exprs(self);
             result.insert(None, current_exprs);
-            trace!("Checking parents of {idx}: {:?}", self.parents(idx));
+            // trace!("Checking parents of {idx}: {:?}", self.parents(idx));
             for e in &self.parents(idx) {
                 let shape_expr = self.find_shape_idx(e).unwrap();
                 let exprs = shape_expr.expr().get_triple_exprs(self);

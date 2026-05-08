@@ -1,7 +1,7 @@
 use crate::shapemap::{NodeSelector, Pattern, SHACLPathRef, ShapeSelector};
 use crate::{
     IRes, ParseError, Span,
-    compact::grammar::{map_error, tag_no_case_tws, token_tws, traced, tws0},
+    compact::grammar::{map_error, tag_no_case_tws, token_tws, tws0},
     compact::shex_grammar::shape_expr_label,
     iri, literal,
 };
@@ -26,20 +26,17 @@ pub(crate) enum ShapeMapStatement {
 }
 
 pub(crate) fn shapemap_statement<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, Vec<ShapeMapStatement>> {
-    traced(
-        "shapemap_statement",
-        map_error(
-            move |i| {
-                let (i, (a, _, ass, _, _, _)) =
-                    all_consuming((association, tws0, rest_associations, tws0, opt(char(',')), tws0)).parse(i)?;
-                let mut rs = vec![a];
-                for a in ass {
-                    rs.push(a);
-                }
-                Ok((i, rs))
-            },
-            || ParseError::ExpectedShapeMapAssociation,
-        ),
+    map_error(
+        move |i| {
+            let (i, (a, _, ass, _, _, _)) =
+                all_consuming((association, tws0, rest_associations, tws0, opt(char(',')), tws0)).parse(i)?;
+            let mut rs = vec![a];
+            for a in ass {
+                rs.push(a);
+            }
+            Ok((i, rs))
+        },
+        || ParseError::ExpectedShapeMapAssociation,
     )
 }
 
@@ -60,29 +57,23 @@ fn rest_associations(i: Span) -> IRes<Vec<ShapeMapStatement>> {
 }
 
 pub(crate) fn shape_spec<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, ShapeSelector> {
-    traced(
-        "shape_spec",
-        map_error(
-            move |i| {
-                alt((
-                    map(shape_expr_label, ShapeSelector::Label),
-                    map(tag_no_case_tws("START"), |_| ShapeSelector::Start),
-                ))
-                .parse(i)
-            },
-            || ParseError::ExpectedShapeSpec,
-        ),
+    map_error(
+        move |i| {
+            alt((
+                map(shape_expr_label, ShapeSelector::Label),
+                map(tag_no_case_tws("START"), |_| ShapeSelector::Start),
+            ))
+            .parse(i)
+        },
+        || ParseError::ExpectedShapeSpec,
     )
 }
 
 /// nodeSelector     : objectTerm | triplePattern | extended ;
 pub(crate) fn node_selector<'a>() -> impl FnMut(Span<'a>) -> IRes<'a, NodeSelector> {
-    traced(
-        "node_selector",
-        map_error(
-            move |i| alt((object_term, triple_pattern, extended)).parse(i),
-            || ParseError::ExpectedNodeSpec,
-        ),
+    map_error(
+        move |i| alt((object_term, triple_pattern, extended)).parse(i),
+        || ParseError::ExpectedNodeSpec,
     )
 }
 

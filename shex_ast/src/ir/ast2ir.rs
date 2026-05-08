@@ -77,10 +77,10 @@ impl AST2IR {
     ) -> CResult<()> {
         let mut visited = Vec::new();
         let mut imported_asts: Vec<(SchemaAST, IriS)> = Vec::new();
-        trace!(
+        /*trace!(
             "Compiling schema from {source_iri}. Base: {}",
             base.as_ref().map(|b| b.as_str()).unwrap_or("None")
-        );
+        );*/
         // trace!("Schema AST: {schema_ast:#?}");
         // Phase 1: register shape labels for every schema in the import tree (bottom-up).
         // Labels of all imported schemas must be known before compiling any shape expressions,
@@ -631,7 +631,7 @@ impl AST2IR {
                     let idx = compiled_schema.new_index(source_iri);
                     let se = self.compile_shape_expr(se, &idx, compiled_schema, source_iri)?;
                     compiled_schema.replace_shape(&idx, se.clone());
-                    trace!("Returning SHAPE cond with idx {idx}");
+                    // trace!("Returning SHAPE cond with idx {idx}");
                     Ok((mk_cond_ref(idx), format!("Shape {idx}")))
                 },
                 ast::ShapeExpr::ShapeAnd { shape_exprs } => {
@@ -1629,7 +1629,7 @@ fn check_node_max_exclusive(node: &Node, max: NumericLiteral) -> CResult<()> {
 }
 
 fn check_node_max_inclusive(node: &Node, max: NumericLiteral) -> CResult<()> {
-    trace!("check_node_max_inclusive: {node:?} max_inclusive: {max}");
+    // trace!("check_node_max_inclusive: {node:?} max_inclusive: {max}");
     let node_object = node.as_checked_object().map_err(|e| {
         Box::new(SchemaIRError::Internal {
             msg: format!("check_node_max_inclusive: as_checked_object error: {e}"),
@@ -1652,7 +1652,7 @@ fn check_node_max_inclusive(node: &Node, max: NumericLiteral) -> CResult<()> {
 }
 
 fn check_node_min_length(node: &Node, len: usize) -> CResult<()> {
-    debug!("check_node_min_length: {node:?} min_length: {len}");
+    // debug!("check_node_min_length: {node:?} min_length: {len}");
     let node_length = node.length();
     if node_length >= len {
         Ok(())
@@ -1666,7 +1666,7 @@ fn check_node_min_length(node: &Node, len: usize) -> CResult<()> {
 }
 
 fn check_node_max_length(node: &Node, len: usize) -> CResult<()> {
-    debug!("check_node_max_length: {node:?} max_length: {len}");
+    // debug!("check_node_max_length: {node:?} max_length: {len}");
     let node_length = node.length();
     if node_length <= len {
         Ok(())
