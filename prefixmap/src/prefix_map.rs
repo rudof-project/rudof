@@ -496,7 +496,7 @@ impl PrefixMap {
             },
             None => Err(PrefixMapError::PrefixNotFound {
                 prefix,
-                prefixmap: self.clone(),
+                prefixmap: Box::new(self.clone()),
             }),
         }
     }

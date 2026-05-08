@@ -7,6 +7,15 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.2.19
+### Added
+### Fixed
+
+- Solves issue #647 by adding a method `set_default_base_prefixes` which sets the default base in `PrefixMap`. It also changes the behaviour of `qualify` in `PrefixMap` to use the default base and show the IRIs that belong to the default base in relative mode.
+
+### Changed
+### Removed
+
 ## v0.2.18
 ### Added
 - Now its possible to add new prefixes when converting data with the data command
