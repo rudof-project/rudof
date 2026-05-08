@@ -4,6 +4,7 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ## [Unreleased]
 ### Added
 ### Fixed
+Bug with min cardinality was not passed down, now is fixed
 ### Changed
 ### Removed
 
