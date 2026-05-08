@@ -29,6 +29,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxInclusive {
             value_nodes,
             ValueNodeIteration,
             |n| match S::term_as_sliteral(n) {
+                Ok(rudof_rdf::rdf_core::term::literal::ConcreteLiteral::WrongDatatypeLiteral { .. }) => true,
                 Ok(lit) => lit.partial_cmp(self.max_inclusive()).map(|o| o.is_gt()).unwrap_or(true),
                 Err(_) => true,
             },

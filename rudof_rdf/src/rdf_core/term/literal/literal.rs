@@ -945,7 +945,6 @@ impl PartialOrd for ConcreteLiteral {
             // Boolean ordering: false < true
             (Self::BooleanLiteral(b1), Self::BooleanLiteral(b2)) => Some(b1.cmp(b2)),
             // Wrong-datatype literals have an invalid lexical form and are incomparable for ordering
-            (Self::WrongDatatypeLiteral { .. }, _) | (_, Self::WrongDatatypeLiteral { .. }) => None,
             // All other combinations are considered incomparable
             _ => None,
         }
