@@ -29,7 +29,6 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinExclusive {
             value_nodes,
             ValueNodeIteration,
             |n| match S::term_as_sliteral(n) {
-                Ok(rudof_rdf::rdf_core::term::literal::ConcreteLiteral::WrongDatatypeLiteral { .. }) => true,
                 Ok(lit) => lit.partial_cmp(self.min_exclusive()).map(|o| o.is_le()).unwrap_or(true),
                 Err(_) => true,
             },

@@ -29,7 +29,6 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxExclusive {
             value_nodes,
             ValueNodeIteration,
             |n| match S::term_as_sliteral(n) {
-                Ok(rudof_rdf::rdf_core::term::literal::ConcreteLiteral::WrongDatatypeLiteral { .. }) => true,
                 Ok(lit) => lit.partial_cmp(self.max_exclusive()).map(|o| o.is_ge()).unwrap_or(true),
                 Err(_) => true,
             },

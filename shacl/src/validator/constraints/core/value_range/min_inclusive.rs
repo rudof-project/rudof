@@ -29,7 +29,6 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinInclusive {
             value_nodes,
             ValueNodeIteration,
             |n| match S::term_as_sliteral(n) {
-                Ok(rudof_rdf::rdf_core::term::literal::ConcreteLiteral::WrongDatatypeLiteral { .. }) => true,
                 Ok(lit) => lit.partial_cmp(self.min_inclusive()).map(|o| o.is_lt()).unwrap_or(true),
                 Err(_) => true,
             },
