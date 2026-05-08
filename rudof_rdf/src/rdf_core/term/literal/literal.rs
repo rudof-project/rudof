@@ -924,7 +924,8 @@ impl PartialOrd for ConcreteLiteral {
             (Self::StringLiteral { lexical_form: lf1, .. }, Self::StringLiteral { lexical_form: lf2, .. }) => {
                 Some(lf1.cmp(lf2))
             },
-            // Datatype literals are only comparable if their datatypes match
+            // Datatype literals: try numeric comparison for numeric types (cross-type allowed),
+            // fall back to lexical for same-datatype non-numeric, incomparable otherwise
             (
                 Self::DatatypeLiteral {
                     lexical_form: lf1,
@@ -934,11 +935,11 @@ impl PartialOrd for ConcreteLiteral {
                     lexical_form: lf2,
                     datatype: dt2,
                 },
-            ) if dt1 == dt2 => {
-                // For known numeric types, compare numerically instead of lexically
+            ) => {
                 match (check_literal_datatype(lf1, dt1), check_literal_datatype(lf2, dt2)) {
                     (Ok(Self::NumericLiteral(n1)), Ok(Self::NumericLiteral(n2))) => n1.partial_cmp(&n2),
-                    _ => Some(lf1.cmp(lf2)),
+                    _ if dt1 == dt2 => Some(lf1.cmp(lf2)),
+                    _ => None,
                 }
             },
             // Numeric comparison (may return None for NaN)
