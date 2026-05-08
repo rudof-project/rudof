@@ -1,9 +1,8 @@
 use crate::compact::grammar::token_tws_no_case;
 use crate::compact::grammar_structs::{Cardinality, NumericLength, NumericRange, Qualifier, SenseFlags, ShExStatement};
 use crate::compact::{
-    IRes, Span, grammar::map_error, grammar::tag_no_case_tws, grammar::token, grammar::token_tws, grammar::tws0,
-    grammar::traced,
-    shex_parser_error::ParseError as ShExParseError,
+    IRes, Span, grammar::map_error, grammar::tag_no_case_tws, grammar::token, grammar::token_tws, grammar::traced,
+    grammar::tws0, shex_parser_error::ParseError as ShExParseError,
 };
 use crate::iri_ref_or_wildcard::IriRefOrWildcard;
 use crate::string_or_wildcard::StringOrWildcard;
