@@ -226,14 +226,14 @@ impl ValidatorError {
             },
             ValidatorError::NoMatchesFound { node, idx, .. } => format!(
                 "Shape {} failed for node {}: no candidates matched the expression",
-                show_label(idx, schema),
+                show_label(idx, schema, width),
                 show_node(node)
             ),
             ValidatorError::PartitionComponentFailed { node, idx, .. } => {
                 format!(
                     "Partition component failed ({}@{})",
                     show_node(node),
-                    show_label(idx, schema),
+                    show_label(idx, schema, width),
                     // partition.show_qualified(nodes_prefixmap, schema, width)?
                 )
             },
@@ -259,18 +259,18 @@ impl ValidatorError {
                 current, desc, node, ..
             } => format!(
                 "Error in descendant {} of shape {} for node {}",
-                show_label(desc, schema),
-                show_label(current, schema),
+                show_label(desc, schema, width),
+                show_label(current, schema, width),
                 show_node(node)
             ),
             ValidatorError::DescendantsShapeError { idx, node, .. } => format!(
                 "All descendants of shape {} failed for node {}",
-                show_label(idx, schema),
+                show_label(idx, schema, width),
                 show_node(node)
             ),
             ValidatorError::ShapeAndError { shape_expr, node, .. } => format!(
                 "And error: {} failed for node {}",
-                show_label(shape_expr, schema),
+                show_label(shape_expr, schema, width),
                 show_node(node)
             ),
             ValidatorError::ShapeOrError { node, .. } => {
@@ -286,7 +286,7 @@ impl ValidatorError {
             ValidatorError::ShapeRefFailed { node, idx } => {
                 format!(
                     "Reference to {} fails for node {}",
-                    show_label(idx, schema),
+                    show_label(idx, schema, width),
                     show_node(node)
                 )
             },
@@ -371,11 +371,16 @@ impl Serialize for ValidatorError {
     }
 }
 
-fn show_label(idx: &ShapeLabelIdx, schema: &SchemaIR) -> String {
-    schema
-        .shape_label_from_idx(idx)
-        .map(|l| schema.show_label(l))
-        .unwrap_or_else(|| idx.to_string())
+fn show_label(idx: &ShapeLabelIdx, schema: &SchemaIR, width: usize) -> String {
+    if let Some(label) = schema.shape_label_from_idx(idx) {
+        schema.show_label(label)
+    } else {
+        if let Some(info) = schema.find_shape_idx(idx) {
+            show_shape_expr(info.expr(), schema, width)
+        } else {
+            format!("Shape {idx}")
+        }
+    }
 }
 
 fn show_shape_expr(shape_expr: &ShapeExpr, schema: &SchemaIR, width: usize) -> String {
