@@ -1,9 +1,9 @@
 use crate::rdf_core::vocabs::RdfVocabulary;
 use crate::vocab_term;
 
+/// SHACL vocabulary terms
 pub struct ShaclVocab;
 
-/// SHACL vocabulary terms
 impl RdfVocabulary for ShaclVocab {
     const BASE: &'static str = "http://www.w3.org/ns/shacl#";
 }
@@ -124,6 +124,13 @@ vocab_term!(ShaclVocab, SH_TARGET_OBJECTS_OF, "targetObjectsOf");
 
 // SPARQL
 vocab_term!(ShaclVocab, SH_SOURCE_CONSTRAINT, "sourceConstraint");
+vocab_term!(ShaclVocab, SH_SPARQL, "sparql");
+vocab_term!(ShaclVocab, SH_SELECT, "select");
+vocab_term!(ShaclVocab, SH_PREFIXES, "prefixes");
+vocab_term!(ShaclVocab, SH_PREFIX, "prefix");
+vocab_term!(ShaclVocab, SH_DECLARE, "declare");
+vocab_term!(ShaclVocab, SH_NAMESPACE, "namespace");
+vocab_term!(ShaclVocab, SH_SPARQL_CONSTRAINT, "SPARQLConstraint");
 
 // SHACL Paths
 vocab_term!(ShaclVocab, SH_ALTERNATIVE_PATH, "alternativePath");
@@ -262,3 +269,5 @@ vocab_term!(
 ); // SHACL 1.2
 
 vocab_term!(ShaclVocab, SH_SOURCE_CONSTRAINT_COMPONENT, "sourceConstraintComponent");
+
+vocab_term!(ShaclVocab, SH_SPARQL_CONSTRAINT_COMPONENT, "SPARQLConstraintComponent");
