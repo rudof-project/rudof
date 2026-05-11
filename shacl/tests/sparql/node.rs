@@ -8,25 +8,25 @@ mod tests {
 
     #[test]
     fn prefixes_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}{}.ttl", PATH, "");
+        let path = format!("{}{}.ttl", PATH, "prefixes-001");
         test(path, ShaclValidationMode::Native)
     }
 
     #[test]
     fn sparql_001() -> Result<(), TestSuiteError> {
-        let path = format!("{}{}.ttl", PATH, "");
+        let path = format!("{}{}.ttl", PATH, "sparql-001");
         test(path, ShaclValidationMode::Native)
     }
 
     #[test]
     fn sparql_002() -> Result<(), TestSuiteError> {
-        let path = format!("{}{}.ttl", PATH, "");
+        let path = format!("{}{}.ttl", PATH, "sparql-002");
         test(path, ShaclValidationMode::Native)
     }
 
     #[test]
     fn sparql_003() -> Result<(), TestSuiteError> {
-        let path = format!("{}{}.ttl", PATH, "");
+        let path = format!("{}{}.ttl", PATH, "sparql-003");
         test(path, ShaclValidationMode::Native)
     }
 }
