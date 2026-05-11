@@ -3,6 +3,7 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ## [Unreleased]
 ### Added
+Tests for stats on rudof_generate and upgrade stats.json with the information of the dataset #653
 ### Fixed
 ### Changed
 ### Removed
