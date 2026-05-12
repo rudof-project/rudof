@@ -35,6 +35,10 @@ as well as Python bindings.
 >[!NOTE]
 >Starting from version 0.2.17, all `rudof` dependencies are version-aligned. Therefore, if you need to use a specific dependency, it must match the same version used by rudof.
 
+>[!WARNING]
+>The use of versions between 0.2.19 and 0.3.0 (inclusive) is discouraged due to some problems with the CI/CD pipeline.
+>Its possible that some of the published versions in that range may not work as expected, or even does not exist. 
+
 ## Features
 
 `rudof` currently supports the following:
