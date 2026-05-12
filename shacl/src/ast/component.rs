@@ -145,7 +145,10 @@ impl Display for ASTComponent {
                 select
             } => write!(
                 f,
-                "sparql: select: {select}, deactivated: {deactivated:?}{}{}",
+                "sparql: (select: {select}{}{}{})",
+                if let Some(deactivated) = deactivated {
+                    format!(", deactivated: {deactivated}")
+                } else { "".to_string() },
                 if let Some(msg) = message {
                     format!(", message: {msg}")
                 } else { "".to_string() },
