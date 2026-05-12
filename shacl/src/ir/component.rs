@@ -145,7 +145,6 @@ impl IRComponent {
 }
 
 impl IRComponent {
-    // TODO - Add closed and deactivated
     pub fn register<RDF: BuildRDF>(
         &self,
         id: &Object,
