@@ -25,9 +25,16 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
     steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.RUDOF_BOT_ID }}
+          private-key: ${{ secrets.RUDOF_BOT_PK }}
+
       - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.RELEASE_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
           fetch-tags: true
       - name: Compute new version
         id: version
@@ -77,8 +84,8 @@ jobs:
 
       - name: Commit and push
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "rudof-bot[bot]"
+          git config user.email "${{ secrets.RUDOF_BOT_ID }}+rudof-bot[bot]@users.noreply.github.com"
           git add Cargo.toml
           git commit -m "chore: release ${{ steps.version.outputs.new }} [skip ci]"
           git push
@@ -94,4 +101,4 @@ jobs:
             --generate-notes \
             $EXTRA_FLAGS
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
