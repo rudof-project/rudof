@@ -620,12 +620,12 @@ impl Engine {
                 declared: Preds::new(shape.preds().into_iter().collect()),
             });
         }
-        if !reminder.is_empty() {
-            /*debug!(
+        /*if !reminder.is_empty() {
+            debug!(
                 "Shape {idx} has extra preds: [{}] but is not closed",
                 reminder.iter().map(|p| p.to_string()).join(", ")
-            );*/
-        }
+            );
+        }*/
         /*debug!(
             "Neighs of {node} [{}]",
             values.iter().map(|(p, v)| format!("{p} {v}")).join(", ")
@@ -647,9 +647,12 @@ impl Engine {
             .map(|(p, v)| (p.clone(), v.clone(), SemanticActionContext::triple(node, p, v)))
             .collect::<Vec<_>>();
 
+        self.check_node_extends_main_shape(node, idx, shape, schema, rdf, typing);
+
         let parts_iter = crate::partitions_iter(&values_ctx, &triple_exprs);
         let mut parts_peekable = parts_iter.peekable();
         if let Some(_parts) = parts_peekable.peek() {
+            // There are some partitions to check, we will check them one by one until we find one that works or we exhaust all of them. We use peekable to avoid computing the first partition twice (once for the debug message and once for the loop). We could also compute the first partition before the loop and then use a regular iterator, but this way we avoid computing any partition if there are no partitions at all.
             /*debug!(
                 "Some partition found for node {node} and shape {idx}, showing the first one:\n{}",
                 parts
@@ -658,6 +661,7 @@ impl Engine {
                     .map(|(npart, partition)| format!(" Part {npart}: {}\n", show_partition(partition)))
                     .join("\n")
             );*/
+
             let mut errors_in_partitions = Vec::new();
             for (npart, partition) in parts_peekable.enumerate() {
                 let partition_display = create_partitions_display(&partition);
@@ -741,6 +745,27 @@ impl Engine {
                 shape: Box::new(shape.clone()),
                 idx: *idx,
             })
+        }
+    }
+
+    fn check_node_extends_main_shape<R>(
+        &self,
+        node: &Node,
+        idx: &ShapeLabelIdx,
+        shape: &Shape,
+        schema: &SchemaIR,
+        rdf: &R,
+        typing: &mut HashSet<(Node, ShapeLabelIdx)>,
+    ) -> Result<ValidationResult>
+    where
+        R: QueryRDF + NeighsRDF,
+    {
+        if let Some((ncs, maybe_main_shape, rest_exprs)) = schema.get_main_shape_constraints(idx) {
+            if let Some(main_shape) = maybe_main_shape {
+                // Test node with the node constraints and the main shape
+            }
+        } else {
+            tracing::error!("No info for shape {idx}. This is non-extendable");
         }
     }
 

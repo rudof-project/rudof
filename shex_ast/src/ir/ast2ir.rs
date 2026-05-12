@@ -1394,6 +1394,7 @@ fn cnv_object_value(ov: &ast::ObjectValue, prefixmap: &PrefixMap) -> CResult<Obj
 }
 
 fn check_pattern(node: &Node, regex: &str, flags: Option<&str>, base: &Option<IriS>) -> CResult<()> {
+    tracing::trace!("check_pattern: node: {node}, regex: {regex}, flags: {flags:?}, base: {base:?}");
     let lexical_form = match node.as_object() {
         Object::Literal(lit) => Ok(lit.lexical_form()),
         Object::BlankNode(b) => Ok(b.clone()),

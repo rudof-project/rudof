@@ -3,6 +3,7 @@ use super::shape_expr::ShapeExpr;
 use super::shape_label::ShapeLabel;
 use crate::ir::inheritance_graph::InheritanceGraph;
 use crate::ir::map_state::MapState;
+use crate::ir::node_constraint::NodeConstraint;
 use crate::ir::semantic_actions_registry::SemanticActionsRegistry;
 use crate::ir::shape::Shape;
 use crate::ir::shape_expr_info::ShapeExprInfo;
@@ -85,10 +86,16 @@ impl SchemaIR {
         self.abstract_shapes.insert(idx);
     }
 
+    /// Returns a clone of the prefix map used in the schema.
+    /// Cloning the prefix map is necessary to avoid unintended
+    /// side effects from modifying the prefix map outside of the schema IR,
+    /// since the prefix map is shared across the entire schema and is used
+    /// to resolve prefixed names in shape labels and shape expressions.
     pub fn prefixmap(&self) -> PrefixMap {
         self.prefixmap.clone()
     }
 
+    /// Returns true if the shape label corresponding to the given index is marked as abstract in the schema, false otherwise.
     pub fn is_abstract(&self, idx: &ShapeLabelIdx) -> bool {
         self.abstract_shapes.contains(idx)
     }
@@ -105,18 +112,27 @@ impl SchemaIR {
         self.total_shapes_counter += new_counter
     }
 
+    /// Returns the number of shape labels defined in the schema,
+    /// which corresponds to the number of shape expressions that have a label (i.e., are not anonymous).
+    /// This does not include shapes that are imported from other schemas,
+    /// but only those that are defined locally in this schema.
     pub fn shapes_counter(&self) -> usize {
         self.shape_label_counter
     }
 
+    /// Returns the source IRI corresponding to the given source
     pub fn get_source(&self, source_idx: &SourceIdx) -> Option<&IriS> {
         self.sources.get(source_idx)
     }
 
+    /// Returns the total number of shapes in the schema,
+    /// including both local and imported shapes.
     pub fn total_shapes_count(&self) -> usize {
         self.total_shapes_counter
     }
 
+    /// Adds a shape expression to the schema IR, associating it with the given shape label and source IRI.
+    /// Returns the index of the added shape expression.
     pub fn add_shape(&mut self, shape_label: ShapeLabel, se: ShapeExpr, source_iri: &IriS) -> ShapeLabelIdx {
         let idx = ShapeLabelIdx::from(self.shape_label_counter);
         self.labels_idx_map.insert(shape_label.clone(), idx);
@@ -128,6 +144,7 @@ impl SchemaIR {
         idx
     }
 
+    /// Returns the shape expression corresponding to the given shape label, if it exists.
     pub fn get_shape_expr(&self, shape_label: &ShapeLabel) -> Option<&ShapeExpr> {
         if let Some(idx) = self.find_shape_label_idx(shape_label) {
             self.shapes.get(idx).map(|info| info.expr())
@@ -140,18 +157,23 @@ impl SchemaIR {
         self.local_shapes_counter
     }
 
+    /// Returns the list of IRIs of the schemas imported by this schema
     pub fn imported_schemas(&self) -> &Vec<IriS> {
         &self.imported_schemas
     }
 
+    /// Returns the parents of the shape expression corresponding to the given index
     pub fn parents(&self, idx: &ShapeLabelIdx) -> Vec<ShapeLabelIdx> {
         self.inheritance_graph.parents(idx)
     }
 
+    /// Returns the descendants of the shape expression corresponding to the given index
     pub fn descendants(&self, idx: &ShapeLabelIdx) -> Vec<ShapeLabelIdx> {
         self.inheritance_graph.descendants(idx)
     }
 
+    /// Returns a map of shape label indices to the triple expressions of the shape expressions that extend the shape expression corresponding to the given index,
+    /// including the shape expression itself (with key None).
     pub fn get_triple_exprs(&self, idx: &ShapeLabelIdx) -> Option<HashMap<Option<ShapeLabelIdx>, Vec<Expr>>> {
         if let Some(info) = self.find_shape_idx(idx) {
             let mut result = HashMap::new();
@@ -164,6 +186,46 @@ impl SchemaIR {
                 result.insert(Some(*e), exprs);
             }
             Some(result)
+        } else {
+            None
+        }
+    }
+
+    /// Get the list of node constraints, the main shape and the rest of shape expressions
+    pub fn get_main_shape_constraints(
+        &self,
+        idx: &ShapeLabelIdx,
+    ) -> Option<(Vec<NodeConstraint>, Option<Shape>, Vec<ShapeExpr>)> {
+        if let Some(info) = self.find_shape_idx(idx) {
+            let mut ncs = Vec::new();
+            let mut first_shape = None;
+            let mut rest_shapes = Vec::new();
+            match info.expr() {
+                ShapeExpr::Shape(shape) => return Some((ncs, Some(*shape.clone()), rest_shapes)),
+                ShapeExpr::ShapeAnd { exprs } => {
+                    for e in exprs {
+                        if let Some(se) = self.find_shape_idx(e) {
+                            match se.expr() {
+                                ShapeExpr::Shape(s) => {
+                                    if first_shape.is_none() {
+                                        first_shape = Some(*s.clone());
+                                    } else {
+                                        rest_shapes.push(ShapeExpr::Shape(s.clone()));
+                                    }
+                                },
+                                ShapeExpr::NodeConstraint(nc) => {
+                                    ncs.push(nc.clone());
+                                },
+                                _ => {
+                                    rest_shapes.push(se.expr().clone());
+                                },
+                            }
+                        }
+                    }
+                    Some((ncs, first_shape, rest_shapes))
+                },
+                _ => None,
+            }
         } else {
             None
         }
