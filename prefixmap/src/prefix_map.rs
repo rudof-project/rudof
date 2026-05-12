@@ -98,6 +98,10 @@ impl PrefixMap {
     pub fn default_base(&self) -> Option<&IriS> {
         self.default_base.as_ref()
     }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&String, &IriS)> {
+        self.map.iter()
+    }
 }
 
 // TODO - Probably should be a good idea to move this to rudof_lib
