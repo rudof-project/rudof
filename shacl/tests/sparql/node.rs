@@ -1,4 +1,4 @@
-#[cfg(test)]
+#[cfg(all(test, feature = "sparql"))]
 mod tests {
     use shacl::validator::ShaclValidationMode;
     use crate::common::TestSuiteError;
