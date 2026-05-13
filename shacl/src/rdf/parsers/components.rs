@@ -6,6 +6,7 @@ use crate::rdf::parsers::{
 };
 use rudof_rdf::rdf_core::FocusRDF;
 use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
+use crate::rdf::parsers::other::sparql;
 
 pub(crate) fn components<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<ASTComponent>> {
     let parsers: Vec<Box<dyn RDFNodeParse<RDF, Output = Vec<ASTComponent>>>> = vec![
@@ -51,7 +52,7 @@ pub(crate) fn components<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec
         Box::new(has_value()),
         Box::new(in_component()),
         // SPARQL based constraints and SPARQL based constraint components
-        // TODO
+        Box::new(sparql()),
 
         // TODO: deactivated is not a shape component...move this code elsewhere?
         Box::new(deactivated()),
