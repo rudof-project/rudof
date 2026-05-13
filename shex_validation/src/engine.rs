@@ -647,7 +647,40 @@ impl Engine {
             .map(|(p, v)| (p.clone(), v.clone(), SemanticActionContext::triple(node, p, v)))
             .collect::<Vec<_>>();
 
-        self.check_node_extends_main_shape(node, idx, shape, schema, rdf, typing);
+        let mut reasons_parents = Vec::new();
+        tracing::trace!("Checking extends of shape {idx} for node {node}");
+        for e in shape.extends() {
+            tracing::trace!("Checking extends of shape {idx} for node {node} with extends {e}");
+            let result_parents = self.check_node_extends_main_shape(node, e, shape, schema, rdf, typing)?;
+            match result_parents {
+                Either::Left(errors) => {
+                    /*debug!(
+                        "Main shape {idx} or some of its ancestors failed for node {node}\nErrors: {}\nTyping: {}",
+                        errors.iter().map(|err| format!("{err}")).join(", "),
+                        typing.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
+                    );*/
+                    return Ok(Either::Left(vec![ValidatorError::ShapeExtendsError {
+                        node: Box::new(node.clone()),
+                        shape: Box::new(shape.clone()),
+                        idx: *idx,
+                        extends: *e,
+                        errors: ValidatorErrors::new(errors),
+                    }]));
+                },
+                Either::Right(reasons) => {
+                    /*debug!(
+                        "Main shape {idx} and its ancestors succeeded for node {node}\nReasons: {}\nTyping: {}",
+                        reasons.iter().map(|r| format!("{r}")).join(", "),
+                        typing.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
+                    );*/
+                    reasons_parents.push(Reason::ShapeExtends {
+                        node: node.clone(),
+                        shape: Box::new(shape.clone()),
+                        reasons: Reasons::new(reasons),
+                    });
+                },
+            }
+        }
 
         let parts_iter = crate::partitions_iter(&values_ctx, &triple_exprs);
         let mut parts_peekable = parts_iter.peekable();
@@ -760,12 +793,80 @@ impl Engine {
     where
         R: QueryRDF + NeighsRDF,
     {
+        tracing::debug!("Checking node {node} against main shape {idx}, shape: {shape}");
         if let Some((ncs, maybe_main_shape, rest_exprs)) = schema.get_main_shape_constraints(idx) {
+            tracing::debug!(
+                "Main shape {idx} has node constraints: [{}], main shape: {}, rest exprs: [{}]",
+                ncs.iter().map(|nc| nc.to_string()).join(", "),
+                maybe_main_shape
+                    .clone()
+                    .map(|ms| ms.to_string())
+                    .unwrap_or("None".to_string()),
+                rest_exprs.iter().map(|e| e.to_string()).join(", ")
+            );
+            let mut errors = Vec::new();
+            let mut reasons = Vec::new();
+
             if let Some(main_shape) = maybe_main_shape {
                 // Test node with the node constraints and the main shape
+                match self.check_node_shape(idx, node, &main_shape, schema, rdf, typing)? {
+                    Either::Left(errs) => {
+                        errors.push(ValidatorError::ParentShapeMainShapeFailed {
+                            node: Box::new(node.clone()),
+                            shape: Box::new(main_shape.clone()),
+                            idx: *idx,
+                            errors: ValidatorErrors::new(errs),
+                        });
+                    },
+                    Either::Right(rs) => {
+                        reasons.push(Reason::ParentShapeMainShapePassed {
+                            node: node.clone(),
+                            shape: Box::new(main_shape.clone()),
+                            idx: *idx,
+                            reasons: Reasons::new(rs),
+                        });
+                    },
+                }
+            }
+            // We also validate the node constraints of the main shape
+            for nc in ncs {
+                match nc.cond().matches(node, &SemanticActionContext::subject(node)) {
+                    Ok(_pending) => {
+                        reasons.push(Reason::ParentShapeNodeConstraint {
+                            node: node.clone(),
+                            idx: *idx,
+                            nc: nc.clone(),
+                        });
+                    },
+                    Err(error) => {
+                        errors.push(ValidatorError::ParentShapeNodeConstraintFailed {
+                            node: Box::new(node.clone()),
+                            idx: *idx,
+                            nc: Box::new(nc.clone()),
+                            error: error.to_string(),
+                        });
+                    },
+                }
+            }
+            if errors.is_empty() {
+                pass(Reason::ParentShapePassed {
+                    node: node.clone(),
+                    idx: *idx,
+                    reasons: Reasons::new(reasons),
+                })
+            } else {
+                fail(ValidatorError::ParentShapeFailed {
+                    node: Box::new(node.clone()),
+                    idx: *idx,
+                    errors: ValidatorErrors::new(errors),
+                })
             }
         } else {
             tracing::error!("No info for shape {idx}. This is non-extendable");
+            fail(ValidatorError::ShapeExtendsNoMainShape {
+                idx: *idx,
+                node: Box::new(node.clone()),
+            })
         }
     }
 

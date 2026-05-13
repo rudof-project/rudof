@@ -17,6 +17,12 @@ pub enum Reason {
         shape: ShapeLabelIdx,
         reasons: Reasons,
     },
+    ParentShapeMainShapePassed {
+        node: Node,
+        shape: Box<Shape>,
+        idx: ShapeLabelIdx,
+        reasons: Reasons,
+    },
     ShapeExtends {
         node: Node,
         shape: Box<Shape>,
@@ -24,6 +30,11 @@ pub enum Reason {
     },
     NodeConstraint {
         node: Node,
+        nc: NodeConstraint,
+    },
+    ParentShapeNodeConstraint {
+        node: Node,
+        idx: ShapeLabelIdx,
         nc: NodeConstraint,
     },
     ShapeAnd {
@@ -48,6 +59,11 @@ pub enum Reason {
 
         // Errors that are evidences that the negation passess
         errors_evidences: ValidatorErrors,
+    },
+    ParentShapePassed {
+        node: Node,
+        idx: ShapeLabelIdx,
+        reasons: Reasons,
     },
     Shape {
         node: Node,
@@ -89,6 +105,7 @@ impl Reason {
     ) -> Result<(), PrefixMapError> {
         match self {
             Reason::NodeConstraint { .. }
+            | Reason::ParentShapeNodeConstraint { .. }
             | Reason::Empty { .. }
             | Reason::External { .. }
             | Reason::Shape { .. }
@@ -112,8 +129,14 @@ impl Reason {
                 }
                 Ok(())
             },
+            Reason::ParentShapePassed { reasons, .. } => {
+                add_reasons_to_tree(tree, reasons, nodes_prefixmap, schema, width)
+            },
             Reason::ShapeExtends { reasons, .. } => add_reasons_to_tree(tree, reasons, nodes_prefixmap, schema, width),
             Reason::DescendantShape { reasons, .. } => {
+                add_reasons_to_tree(tree, reasons, nodes_prefixmap, schema, width)
+            },
+            Reason::ParentShapeMainShapePassed { reasons, .. } => {
                 add_reasons_to_tree(tree, reasons, nodes_prefixmap, schema, width)
             },
             Reason::PartitionComponent { reasons, .. } => {
@@ -180,6 +203,7 @@ impl Reason {
                 schema.show_shape_idx(idx, width),
                 node.show_qualified(nodes_prefixmap)
             )),
+
             Reason::PartitionComponent {
                 node,
                 // shape,
@@ -199,6 +223,25 @@ impl Reason {
                 "Partition passed ({}@{})",
                 node.show_qualified(nodes_prefixmap),
                 schema.show_shape(shape, width),
+            )),
+            Reason::ParentShapeNodeConstraint { node, idx, nc } => Ok(format!(
+                "Node {} passes node constraint {nc} of shape {}",
+                node.show_qualified(nodes_prefixmap),
+                schema.show_shape_idx(idx, width),
+            )),
+            Reason::ParentShapeMainShapePassed { node, shape, idx, .. } => {
+                let s = format!(
+                    "Parent shape {} of shape {} passed for node {}",
+                    schema.show_shape(shape, width),
+                    schema.show_shape_idx(idx, width),
+                    node.show_qualified(nodes_prefixmap),
+                );
+                Ok(s)
+            },
+            Reason::ParentShapePassed { node, idx, .. } => Ok(format!(
+                "Parent shape {} passed for node {}",
+                schema.show_shape_idx(idx, width),
+                node.show_qualified(nodes_prefixmap),
             )),
         }
     }
@@ -336,6 +379,22 @@ impl Display for Reason {
                 "Partition passed. Node {node}, shape: {shape}, idx: {idx}, partition: {}, reasons: {reasons}",
                 partition,
             ),
+            Reason::ParentShapeNodeConstraint { node, idx, nc } => write!(
+                f,
+                "Node constraint of parent shape passed. Node {node}, idx: {idx}, node constraint: {nc}",
+            ),
+            Reason::ParentShapeMainShapePassed {
+                node,
+                shape,
+                idx,
+                reasons,
+            } => write!(
+                f,
+                "Parent shape main shape passed. Node {node}, parent shape: {shape}, idx: {idx}, reasons: {reasons}",
+            ),
+            Reason::ParentShapePassed { node, idx, reasons } => {
+                write!(f, "Parent shape passed. Node {node}, idx: {idx}, reasons: {reasons}",)
+            },
         }
     }
 }

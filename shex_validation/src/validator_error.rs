@@ -7,6 +7,7 @@ use rbe::RbeError;
 use rudof_rdf::rdf_core::term::Object;
 use serde::Serialize;
 use serde::ser::SerializeMap;
+use shex_ast::ir::node_constraint::NodeConstraint;
 use shex_ast::ir::preds::Preds;
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::semantic_action_context::SemanticActionContext;
@@ -18,6 +19,33 @@ use thiserror::Error;
 
 #[derive(Error, Debug, Clone)]
 pub enum ValidatorError {
+    #[error("Parent shape {idx} failed for node {node} with errors: {errors}")]
+    ParentShapeFailed {
+        node: Box<Node>,
+        idx: ShapeLabelIdx,
+        errors: ValidatorErrors,
+    },
+    #[error(
+        "Shape {idx} failed for node {node}. Shape doesn't have a main shape which indicates this is a non-extendable shape, but it is being extended by another shape."
+    )]
+    ShapeExtendsNoMainShape { idx: ShapeLabelIdx, node: Box<Node> },
+
+    #[error("Parent shape node constraint failed for node {node}@{idx}: Node constraint: {nc}")]
+    ParentShapeNodeConstraintFailed {
+        node: Box<Node>,
+        idx: ShapeLabelIdx,
+        nc: Box<NodeConstraint>,
+        error: String,
+    },
+
+    #[error("Main shape failed for node {node}@{idx}.\nShape: {shape}\nErrors:\n{errors}")]
+    ParentShapeMainShapeFailed {
+        node: Box<Node>,
+        shape: Box<Shape>,
+        idx: ShapeLabelIdx,
+        errors: ValidatorErrors,
+    },
+
     #[error("Partition component failed ({node}@{idx}).\nPartition:\n{partition}\nErrors:\n{errors}")]
     PartitionComponentFailed {
         node: Box<Node>,
@@ -126,6 +154,15 @@ pub enum ValidatorError {
 
     #[error("Shape label {shape_label} not found: {error}")]
     ShapeLabelNotFoundError { shape_label: ShapeExprLabel, error: String },
+
+    #[error("Shape {idx} failed parent {extends} for node {node} with errors: {errors}")]
+    ShapeExtendsError {
+        shape: Box<Shape>,
+        idx: ShapeLabelIdx,
+        node: Box<Node>,
+        extends: ShapeLabelIdx,
+        errors: ValidatorErrors,
+    },
 
     #[error("And error: {shape_expr} failed for node {node}: {errors}")]
     ShapeAndError {
@@ -315,7 +352,10 @@ impl ValidatorError {
             | ValidatorError::AbstractShapeError { errors, .. }
             | ValidatorError::DescendantShapeError { errors, .. }
             | ValidatorError::DescendantsShapeError { errors, .. }
-            | ValidatorError::ShapeAndError { errors, .. } => {
+            | ValidatorError::ShapeAndError { errors, .. }
+            | ValidatorError::ParentShapeMainShapeFailed { errors, .. }
+            | ValidatorError::ParentShapeFailed { errors, .. }
+            | ValidatorError::ShapeExtendsError { errors, .. } => {
                 add_errors_to_tree(tree, errors, nodes_prefixmap, schema, width)
             },
             ValidatorError::ShapeOrError { errors, .. } => {
@@ -343,7 +383,36 @@ impl ValidatorError {
                 }
                 Ok(())
             },
-            _ => Ok(()),
+            ValidatorError::ShapeExtendsNoMainShape { .. }
+            | ValidatorError::ParentShapeNodeConstraintFailed { .. }
+            | ValidatorError::ShapeFailedNoPartitions { .. }
+            | ValidatorError::FillingShapeMapNodes { .. }
+            | ValidatorError::AbstractShapeNoDescendants { .. }
+            | ValidatorError::NodeShapeError { .. }
+            | ValidatorError::TermToRDFNodeFailed { .. }
+            | ValidatorError::ReasonSerializationError { .. }
+            | ValidatorError::ErrorSerializationError { .. }
+            | ValidatorError::FailedPending { .. }
+            | ValidatorError::NegCycleError { .. }
+            | ValidatorError::SRDFError { .. }
+            | ValidatorError::NotFoundShapeLabel { .. }
+            | ValidatorError::NotFoundShapeLabelWithIndex { .. }
+            | ValidatorError::ConversionObjectIri { .. }
+            | ValidatorError::SchemaIRError { .. }
+            | ValidatorError::ShapeMapError { .. }
+            | ValidatorError::RbeFailed()
+            | ValidatorError::ClosedShapeWithRemainderPreds { .. }
+            | ValidatorError::RbeError(..)
+            | ValidatorError::PrefixMapError(..)
+            | ValidatorError::ShapeLabelNotFoundError { .. }
+            | ValidatorError::ValidatorConfigFromPathError { .. }
+            | ValidatorError::ValidatorConfigTomlError { .. }
+            | ValidatorError::AddingNonConformantError { .. }
+            | ValidatorError::AddingConformantError { .. }
+            | ValidatorError::AddingPendingError { .. }
+            | ValidatorError::ShapeExprNotFound { .. }
+            | ValidatorError::NoMatchesFound { .. }
+            | ValidatorError::ShapeRefFailed { .. } => Ok(()),
         }
     }
 

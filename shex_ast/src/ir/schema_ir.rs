@@ -201,7 +201,7 @@ impl SchemaIR {
             let mut first_shape = None;
             let mut rest_shapes = Vec::new();
             match info.expr() {
-                ShapeExpr::Shape(shape) => return Some((ncs, Some(*shape.clone()), rest_shapes)),
+                ShapeExpr::Shape(shape) => Some((ncs, Some(*shape.clone()), rest_shapes)),
                 ShapeExpr::ShapeAnd { exprs } => {
                     for e in exprs {
                         if let Some(se) = self.find_shape_idx(e) {
