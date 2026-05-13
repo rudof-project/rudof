@@ -292,7 +292,7 @@ impl Engine {
             }
         }
         let mut typing: HashSet<_> = matched.union(&hyp_as_set).cloned().collect();
-        let result = self.check_node_idx(node, label, schema, rdf, &mut typing)?;
+        let result = self.check_node_idx(node, label, schema, rdf, &mut typing, hyp)?;
         hyp.pop();
         /*debug!(
             "{} {node}@{label} with result: {}, hyp: [{}]",
@@ -315,6 +315,7 @@ impl Engine {
         schema: &SchemaIR,
         rdf: &R,
         typing: &mut HashSet<(Node, ShapeLabelIdx)>,
+        hyp: &mut Vec<(Node, ShapeLabelIdx)>,
     ) -> Result<ValidationResult>
     where
         R: NeighsRDF + QueryRDF,
@@ -329,7 +330,9 @@ impl Engine {
                 if descendants.is_empty() {
                     return Err(ValidatorError::AbstractShapeNoDescendants { idx: *idx });
                 }
-                let descendants_result = self.check_descendants(node, idx, descendants, schema, rdf, typing)?;
+                // Each descendant gets its own prove call so it builds a fresh typing
+                // with all the dependencies it actually needs (RESTRICTS semantics).
+                let descendants_result = self.check_descendants(node, idx, descendants, schema, rdf, hyp)?;
                 if descendants_result.is_right() {
                     Ok(descendants_result)
                 } else {
@@ -359,8 +362,9 @@ impl Engine {
                     if descendants.is_empty() {
                         return Ok(result);
                     }
-                    // If the shape has descendants, check them too
-                    let descendants_result = self.check_descendants(node, idx, descendants, schema, rdf, typing)?;
+                    // Each descendant gets its own prove call so it builds a fresh typing
+                    // with all the dependencies it actually needs (RESTRICTS semantics).
+                    let descendants_result = self.check_descendants(node, idx, descendants, schema, rdf, hyp)?;
                     if descendants_result.is_right() {
                         Ok(descendants_result)
                     } else {
@@ -388,19 +392,21 @@ impl Engine {
         descendants: Vec<ShapeLabelIdx>,
         schema: &SchemaIR,
         rdf: &R,
-        typing: &mut HashSet<(Node, ShapeLabelIdx)>,
+        hyp: &mut Vec<(Node, ShapeLabelIdx)>,
     ) -> Result<ValidationResult>
     where
         R: NeighsRDF + QueryRDF,
     {
         let mut errors_collection = Vec::new();
         for desc in descendants {
-            match self.check_node_idx(node, &desc, schema, rdf, typing)? {
+            // Use prove (not check_node_idx) so each descendant builds its own complete
+            // typing from its own dependency set.  This implements the ShEx RESTRICTS
+            // property: if the node conforms to a descendant, it conforms to the ancestor.
+            match self.prove(node, &desc, hyp, schema, rdf)? {
                 Either::Left(errors) => {
                     trace!(
-                        "Descendant {desc} failed for node {node}\nErrors: {}\nTyping: {}",
+                        "Descendant {desc} failed for node {node}\nErrors: {}",
                         errors.iter().map(|err| format!("{err}")).join(", "),
-                        typing.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
                     );
                     errors_collection.push(ValidatorError::DescendantShapeError {
                         current: *idx,
