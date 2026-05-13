@@ -16,6 +16,7 @@ use rudof_rdf::rdf_core::{
     query::QueryRDF,
     term::{BlankNode, Iri as _, Object},
 };
+use rbe::MatchCond;
 use shex_ast::Expr;
 use shex_ast::Node;
 use shex_ast::Pred;
@@ -808,24 +809,72 @@ impl Engine {
             let mut reasons = Vec::new();
 
             if let Some(main_shape) = maybe_main_shape {
-                // Test node with the node constraints and the main shape
-                match self.check_node_shape(idx, node, &main_shape, schema, rdf, typing)? {
-                    Either::Left(errs) => {
-                        errors.push(ValidatorError::ParentShapeMainShapeFailed {
-                            node: Box::new(node.clone()),
-                            shape: Box::new(main_shape.clone()),
-                            idx: *idx,
-                            errors: ValidatorErrors::new(errs),
-                        });
-                    },
-                    Either::Right(rs) => {
-                        reasons.push(Reason::ParentShapeMainShapePassed {
-                            node: node.clone(),
-                            shape: Box::new(main_shape.clone()),
-                            idx: *idx,
-                            reasons: Reasons::new(rs),
-                        });
-                    },
+                // For shapes with their own triple expression alongside extends (e.g.,
+                // EXTENDS @<Parent> { <p> [4] }), validate the triple expression using
+                // exhaustive semantics: pre-filter triples to those matching any component's
+                // value condition, then check cardinality. This handles open shapes correctly
+                // since extra values that don't match any constraint are simply ignored.
+                // Skip this check for shapes with shape-reference value conditions (MatchCond::Ref),
+                // which require the partition algorithm to correctly distribute triples.
+                let main_preds = main_shape.preds();
+                let no_shape_refs = main_shape.triple_expr().components()
+                    .all(|(_, _, cond)| !cond_has_ref(&cond));
+                if !main_preds.is_empty() && no_shape_refs {
+                    let (all_values, _) = self.neighs(node, main_preds, rdf)?;
+                    let all_values_ctx: Vec<_> = all_values
+                        .iter()
+                        .map(|(p, v)| (p.clone(), v.clone(), SemanticActionContext::triple(node, p, v)))
+                        .collect();
+                    // Keep only triples where the value satisfies some component's condition
+                    let filtered: Vec<_> = all_values_ctx
+                        .iter()
+                        .filter(|(pred, value, ctx)| {
+                            main_shape.triple_expr().components().any(|(_, key, cond)| {
+                                &key == pred && cond.matches(value, ctx).is_ok()
+                            })
+                        })
+                        .cloned()
+                        .collect();
+                    match check_expr_neigh(main_shape.triple_expr(), &filtered, node, shape, idx, typing)? {
+                        Either::Left(errs) => {
+                            errors.push(ValidatorError::ParentShapeMainShapeFailed {
+                                node: Box::new(node.clone()),
+                                shape: Box::new(main_shape.clone()),
+                                idx: *idx,
+                                errors: ValidatorErrors::new(errs),
+                            });
+                        },
+                        Either::Right(rs) => {
+                            reasons.push(Reason::ParentShapeMainShapePassed {
+                                node: node.clone(),
+                                shape: Box::new(main_shape.clone()),
+                                idx: *idx,
+                                reasons: Reasons::new(rs),
+                            });
+                        },
+                    }
+                }
+                // Recursively check node constraints and triple expressions through the
+                // ancestor extends chain.
+                for e in main_shape.extends() {
+                    match self.check_node_extends_main_shape(node, e, &main_shape, schema, rdf, typing)? {
+                        Either::Left(errs) => {
+                            errors.push(ValidatorError::ParentShapeMainShapeFailed {
+                                node: Box::new(node.clone()),
+                                shape: Box::new(main_shape.clone()),
+                                idx: *idx,
+                                errors: ValidatorErrors::new(errs),
+                            });
+                        },
+                        Either::Right(rs) => {
+                            reasons.push(Reason::ParentShapeMainShapePassed {
+                                node: node.clone(),
+                                shape: Box::new(main_shape.clone()),
+                                idx: *idx,
+                                reasons: Reasons::new(rs),
+                            });
+                        },
+                    }
                 }
             }
             // We also validate the node constraints of the main shape
@@ -1161,6 +1210,17 @@ fn create_partitions_display(ps: &[PartitionInfo]) -> PartitionsDisplay {
         .map(|(maybe_label, rbes, neighs_subset)| PartitionDisplay::new(*maybe_label, rbes, neighs_subset))
         .collect();
     PartitionsDisplay::new(&partitions_display)
+}
+
+/// Returns true if a MatchCond contains a shape reference (MatchCond::Ref),
+/// which means the condition delegates to a shape's typing check rather than
+/// directly verifying a value set.
+fn cond_has_ref(cond: &MatchCond<Pred, Node, ShapeLabelIdx, SemanticActionContext>) -> bool {
+    match cond {
+        MatchCond::Ref(_) => true,
+        MatchCond::And(vs) => vs.iter().any(cond_has_ref),
+        MatchCond::Single(_) => false,
+    }
 }
 
 #[cfg(test)]
