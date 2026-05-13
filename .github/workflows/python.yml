@@ -1,31 +1,32 @@
 name: Python
 
 on:
-  push:
-    paths-ignore:
-      - "docs/**"
-      - ".github/**"
-      - "**/LICENSE*"
-      - "**/README*"
-      - "**/CHANGELOG*"
-      - "**/.dockerignore"
-      - "**/Dockerfile*"
-      - "**/*.md"
-      - .readthedocs.yml
-  pull_request:
-    paths-ignore:
-      - "docs/**"
-      - ".github/**"
-      - "**/LICENSE*"
-      - "**/README*"
-      - "**/CHANGELOG*"
-      - "**/.dockerignore"
-      - "**/Dockerfile*"
-      - "**/*.md"
-      - .readthedocs.yml
-  release:
-    types:
-      - published
+  workflow_dispatch:
+#  push:
+#    paths-ignore:
+#      - "docs/**"
+#      - ".github/**"
+#      - "**/LICENSE*"
+#      - "**/README*"
+#      - "**/CHANGELOG*"
+#      - "**/.dockerignore"
+#      - "**/Dockerfile*"
+#      - "**/*.md"
+#      - .readthedocs.yml
+#  pull_request:
+#    paths-ignore:
+#      - "docs/**"
+#      - ".github/**"
+#      - "**/LICENSE*"
+#      - "**/README*"
+#      - "**/CHANGELOG*"
+#      - "**/.dockerignore"
+#      - "**/Dockerfile*"
+#      - "**/*.md"
+#      - .readthedocs.yml
+#  release:
+#    types:
+#      - published
 
 permissions:
   contents: write
