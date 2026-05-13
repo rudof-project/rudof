@@ -1,5 +1,6 @@
 mod core;
 mod test;
+mod sparql;
 
 use crate::error::ValidationError;
 use crate::ir::components::{
