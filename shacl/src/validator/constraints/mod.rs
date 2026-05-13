@@ -195,6 +195,7 @@ impl<'a, S: NeighsRDF + Debug + 'static> ValidatorDeref<'a, dyn NativeValidator<
             IRComponent::QualifiedValueShape(inner) => inner,
             IRComponent::Closed(inner) => inner,
             IRComponent::Deactivated(inner) => inner,
+            IRComponent::Sparql(inner) => inner,
         }
     }
 }
@@ -233,6 +234,7 @@ impl<'a, S: QueryRDF + NeighsRDF + Debug + 'static> ValidatorDeref<'a, dyn Sparq
             IRComponent::QualifiedValueShape(inner) => inner,
             IRComponent::Closed(inner) => inner,
             IRComponent::Deactivated(inner) => inner,
+            IRComponent::Sparql(inner) => inner,
         }
     }
 }

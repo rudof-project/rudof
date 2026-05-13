@@ -348,6 +348,7 @@ impl Shacl2ShEx {
             IRComponent::In(_) => todo!(),
             IRComponent::QualifiedValueShape(_) => todo!(),
             IRComponent::Deactivated(_) => todo!(),
+            IRComponent::Sparql(_) => todo!(),
         }
     }
 
