@@ -2,7 +2,7 @@ use crate::error::ValidationError;
 use crate::ir::components::LessThan;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::types::MessageMap;
-use crate::validator::constraints::{NativeValidator, SparqlValidator};
+use crate::validator::constraints::{NativeValidator, BasicSparqlValidator};
 use crate::validator::engine::Engine;
 use crate::validator::nodes::ValueNodes;
 use crate::validator::report::ValidationResult;
@@ -83,7 +83,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThan {
 }
 
 #[cfg(feature = "sparql")]
-impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for LessThan {
+impl<S: QueryRDF + Debug + 'static> BasicSparqlValidator<S> for LessThan {
     fn validate_sparql(
         &self,
         _: &IRComponent,

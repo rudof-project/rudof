@@ -3,14 +3,14 @@ use prefixmap::PrefixMap;
 use crate::types::MessageMap;
 
 #[derive(Debug, Clone)]
-pub struct Sparql {
+pub struct BasicSparql {
     select: String,
     message: Option<MessageMap>,
     deactivated: Option<bool>,
     prefixes: Option<PrefixMap>,
 }
 
-impl Sparql {
+impl BasicSparql {
     pub fn new(select: String) -> Self {
         Self {
             select,
@@ -52,7 +52,7 @@ impl Sparql {
     }
 }
 
-impl Display for Sparql {
+impl Display for BasicSparql {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,

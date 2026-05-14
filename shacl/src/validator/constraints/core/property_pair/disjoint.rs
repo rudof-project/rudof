@@ -1,7 +1,7 @@
 use crate::error::ValidationError;
 use crate::ir::components::Disjoint;
 use crate::ir::{IRComponent, IRSchema, IRShape};
-use crate::validator::constraints::{NativeValidator, SparqlValidator, validate_with_focus};
+use crate::validator::constraints::{NativeValidator, BasicSparqlValidator, validate_with_focus};
 use crate::validator::engine::Engine;
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;
@@ -55,7 +55,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Disjoint {
 }
 
 #[cfg(feature = "sparql")]
-impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Disjoint {
+impl<S: QueryRDF + Debug + 'static> BasicSparqlValidator<S> for Disjoint {
     fn validate_sparql(
         &self,
         _: &IRComponent,

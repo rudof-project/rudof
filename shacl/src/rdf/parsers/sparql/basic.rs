@@ -9,9 +9,9 @@ use rudof_rdf::rdf_core::vocabs::{OwlVocab, ShaclVocab};
 use crate::ast::ASTComponent;
 use crate::rdf::parsers::non_shape::message;
 
-struct SparqlConstraintParser<RDF>(PhantomData<RDF>);
+struct BasicSparqlConstraintParser<RDF>(PhantomData<RDF>);
 
-impl<RDF: FocusRDF> RDFNodeParse<RDF> for SparqlConstraintParser<RDF> {
+impl<RDF: FocusRDF> RDFNodeParse<RDF> for BasicSparqlConstraintParser<RDF> {
     type Output = Vec<ASTComponent>;
 
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
@@ -49,7 +49,7 @@ impl<RDF: FocusRDF> RDFNodeParse<RDF> for SparqlConstraintParser<RDF> {
 
             let prefixes_opt = if pm.is_empty() { None } else { Some(pm) };
 
-            result.push(ASTComponent::Sparql {
+            result.push(ASTComponent::BasicSparql {
                 prefixes: prefixes_opt,
                 deactivated,
                 select,
@@ -103,6 +103,6 @@ fn collect_prefixes<RDF: FocusRDF>(
     }
 }
 
-pub(crate) fn sparql<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<ASTComponent>> {
-    SparqlConstraintParser(PhantomData)
+pub(crate) fn basic_sparql<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec<ASTComponent>> {
+    BasicSparqlConstraintParser(PhantomData)
 }

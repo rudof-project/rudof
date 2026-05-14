@@ -1,5 +1,5 @@
 use crate::ast::{ASTComponent, ASTSchema};
-use crate::ir::components::{And, Class, Closed, Datatype, Deactivated, Disjoint, Equals, HasValue, In, LanguageIn, LessThan, LessThanOrEquals, MaxCount, MaxExclusive, MaxInclusive, MaxLength, MinCount, MinExclusive, MinInclusive, MinLength, Node, Nodekind, Not, Or, Pattern, QualifiedValueShape, Sparql, UniqueLang, Xone};
+use crate::ir::components::{And, Class, Closed, Datatype, Deactivated, Disjoint, Equals, HasValue, In, LanguageIn, LessThan, LessThanOrEquals, MaxCount, MaxExclusive, MaxInclusive, MaxLength, MinCount, MinExclusive, MinInclusive, MinLength, Node, Nodekind, Not, Or, Pattern, QualifiedValueShape, BasicSparql, UniqueLang, Xone};
 use crate::ir::dg::{DependencyGraph, PosNeg};
 use crate::ir::error::IRError;
 use crate::ir::schema::IRSchema;
@@ -46,7 +46,7 @@ pub enum IRComponent {
     QualifiedValueShape(QualifiedValueShape),
     Closed(Closed),
     Deactivated(Deactivated),
-    Sparql(Sparql),
+    BasicSparql(BasicSparql),
 }
 
 impl IRComponent {
@@ -135,14 +135,14 @@ impl IRComponent {
                 // TODO - Change for node expr
                 IRComponent::Deactivated(Deactivated::new(d))
             },
-            ASTComponent::Sparql {
+            ASTComponent::BasicSparql {
                 select,
                 deactivated,
                 prefixes,
                 message
             } => {
-                IRComponent::Sparql(
-                    Sparql::new(select)
+                IRComponent::BasicSparql(
+                    BasicSparql::new(select)
                         .with_deactivated(deactivated)
                         .with_prefixes(prefixes)
                         .with_message(message)
@@ -295,7 +295,7 @@ impl IRComponent {
                 // TODO - Adapt for node expression
                 register_boolean(deactivated.is_deactivated(), ShaclVocab::sh_deactivated(), id, graph)
             },
-            IRComponent::Sparql(sparql) => {
+            IRComponent::BasicSparql(sparql) => {
                 // Create a blank node to hold the constraint properties
                 let bn = graph
                     .add_bnode()
@@ -424,7 +424,7 @@ impl IRComponent {
             },
             IRComponent::Closed(_) => {},
             IRComponent::Deactivated(_) => {},
-            IRComponent::Sparql(_) => {},
+            IRComponent::BasicSparql(_) => {},
         }
     }
 }
@@ -507,7 +507,7 @@ impl From<&IRComponent> for IriS {
             IRComponent::QualifiedValueShape(_) => ShaclVocab::sh_qualified_value_shape_constraint_component(),
             IRComponent::Closed(_) => ShaclVocab::sh_closed_constraint_component(),
             IRComponent::Deactivated(_) => ShaclVocab::sh_deactivated_constraint_component(),
-            IRComponent::Sparql(_) => ShaclVocab::sh_sparql_constraint_component()
+            IRComponent::BasicSparql(_) => ShaclVocab::sh_sparql_constraint_component()
         }
     }
 }
@@ -543,7 +543,7 @@ impl Display for IRComponent {
             IRComponent::QualifiedValueShape(qvs) => write!(f, " {qvs}"),
             IRComponent::Closed(closed) => write!(f, "{closed}"),
             IRComponent::Deactivated(deactivated) => write!(f, "{deactivated}"),
-            IRComponent::Sparql(sparql) => write!(f, " {sparql}"),
+            IRComponent::BasicSparql(sparql) => write!(f, " {sparql}"),
         }
     }
 }

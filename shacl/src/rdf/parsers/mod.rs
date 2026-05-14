@@ -12,6 +12,7 @@ mod targets;
 mod utils;
 mod value_range;
 mod value_type;
+mod sparql;
 
 pub(crate) use cardinality::{max_count, min_count};
 pub(crate) use logical::{and, not, or, xone};
@@ -25,3 +26,4 @@ pub(crate) use string_based::{language_in, max_length, min_length, pattern, uniq
 pub(crate) use targets::targets;
 pub(crate) use value_range::{max_exclusive, max_inclusive, min_exclusive, min_inclusive};
 pub(crate) use value_type::{class, datatype, node_kind};
+pub(crate) use sparql::basic_sparql;

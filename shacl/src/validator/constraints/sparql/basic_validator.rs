@@ -4,15 +4,16 @@ use rudof_rdf::rdf_core::query::QueryRDF;
 use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
 use rudof_rdf::rdf_core::term::Object;
 use crate::error::ValidationError;
-use crate::ir::components::Sparql;
+use crate::ir::components::BasicSparql;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::types::MessageMap;
-use crate::validator::constraints::{NativeValidator, SparqlValidator};
+use crate::validator::constraints::{NativeValidator, BasicSparqlValidator};
+use crate::validator::constraints::sparql::{inject_values_into_where, path_to_sparql};
 use crate::validator::engine::Engine;
 use crate::validator::nodes::ValueNodes;
 use crate::validator::report::ValidationResult;
 
-impl<RDF: NeighsRDF + Debug + 'static> NativeValidator<RDF> for Sparql {
+impl<RDF: NeighsRDF + Debug + 'static> NativeValidator<RDF> for BasicSparql {
     fn validate_native(&self, _: &IRComponent, _: &IRShape, _: &RDF, _: &mut dyn Engine<RDF>, _: &ValueNodes<RDF>, _: Option<&IRShape>, _: Option<&SHACLPath>, _: &IRSchema) -> Result<Vec<ValidationResult>, ValidationError> {
         // Silently skip since sh:sparql requires a SPARQL engine
         Ok(Vec::new())
@@ -20,7 +21,7 @@ impl<RDF: NeighsRDF + Debug + 'static> NativeValidator<RDF> for Sparql {
 }
 
 #[cfg(feature = "sparql")]
-impl<RDF: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<RDF> for Sparql {
+impl<RDF: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<RDF> for BasicSparql {
     fn validate_sparql(&self, component: &IRComponent, shape: &IRShape, store: &RDF, value_nodes: &ValueNodes<RDF>, _: Option<&IRShape>, maybe_path: Option<&SHACLPath>, _: &IRSchema) -> Result<Vec<ValidationResult>, ValidationError> {
         if self.deactivated() == Some(true) {
             return Ok(Vec::new());
@@ -114,39 +115,3 @@ impl<RDF: QueryRDF + NeighsRDF + Debug + 'static> SparqlValidator<RDF> for Sparq
     }
 }
 
-/// Converts a [`SHACLPath`] to its SPARQL property path [String] representation.
-///
-/// IRIs are enclosed in angle brackets and path operators follow SPARQL 1.1 property path syntax.
-fn path_to_sparql(path: &SHACLPath) -> String {
-    match path {
-        SHACLPath::Predicate { pred } => format!("<{pred}>"),
-        SHACLPath::Alternative { paths } => {
-            let parts: Vec<_> = paths.iter().map(path_to_sparql).collect();
-            format!("({})", parts.join("|"))
-        },
-        SHACLPath::Sequence { paths } => {
-            let parts: Vec<_> = paths.iter().map(path_to_sparql).collect();
-            format!("({})", parts.join("/"))
-        },
-        SHACLPath::Inverse { path } => format!("^({})", path_to_sparql(path)),
-        SHACLPath::ZeroOrMore { path } => format!("({})*", path_to_sparql(path)),
-        SHACLPath::OneOrMore { path } => format!("({})+", path_to_sparql(path)),
-        SHACLPath::ZeroOrOne { path } => format!("({})?", path_to_sparql(path)),
-    }
-}
-
-fn inject_values_into_where(query: &str, values_clause: &str) -> String {
-    let upper = query.to_uppercase();
-    if let Some(where_pos) = upper.find("WHERE") {
-        if let Some(brace_offset) = query[where_pos..].find('{') {
-            let insert_at = where_pos + brace_offset + 1;
-            let mut result = query[..insert_at].to_string();
-            result.push(' ');
-            result.push_str(values_clause);
-            result.push_str(&query[insert_at..]);
-            return result;
-        }
-    }
-
-    format!("{values_clause} {query}")
-}

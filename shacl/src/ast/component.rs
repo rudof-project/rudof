@@ -51,7 +51,7 @@ pub enum ASTComponent {
         siblings: Vec<Object>,
     },
     Deactivated(bool), // TODO - Replace with node expr
-    Sparql {
+    BasicSparql {
         select: String,
         message: Option<MessageMap>,
         deactivated: Option<bool>,
@@ -138,14 +138,14 @@ impl Display for ASTComponent {
                 )
             },
             ASTComponent::Deactivated(b) => write!(f, "deactivated({b})"),
-            ASTComponent::Sparql {
+            ASTComponent::BasicSparql {
                 prefixes,
                 message,
                 deactivated,
                 select
             } => write!(
                 f,
-                "sparql: (select: {select}{}{}{})",
+                "basic_sparql: (select: {select}{}{}{})",
                 if let Some(deactivated) = deactivated {
                     format!(", deactivated: {deactivated}")
                 } else { "".to_string() },
@@ -191,7 +191,7 @@ impl From<ASTComponent> for IriS {
             ASTComponent::In(_) => ShaclVocab::sh_in(),
             ASTComponent::QualifiedValueShape { .. } => ShaclVocab::sh_qualified_value_shape(),
             ASTComponent::Deactivated(_) => ShaclVocab::sh_deactivated(),
-            ASTComponent::Sparql { .. } => ShaclVocab::sh_sparql(),
+            ASTComponent::BasicSparql { .. } => ShaclVocab::sh_sparql(),
         }
     }
 }

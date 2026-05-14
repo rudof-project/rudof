@@ -1,7 +1,7 @@
 use crate::error::ValidationError;
 use crate::ir::{IRComponent, IRSchema, IRShape, ShapeLabelIdx};
 use crate::validator::cache::{SharedValidationCache, ValidationCache};
-use crate::validator::constraints::{ShaclComponent, SparqlValidator, ValidatorDeref};
+use crate::validator::constraints::{ShaclComponent, BasicSparqlValidator, ValidatorDeref};
 use crate::validator::engine::{Engine, select};
 use crate::validator::nodes::{FocusNodes, ValueNodes};
 use crate::validator::report::ValidationResult;
@@ -36,7 +36,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
         shapes_graph: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ValidationError> {
         let shacl_component = ShaclComponent::new(component);
-        let validator: &dyn SparqlValidator<S> = shacl_component.deref();
+        let validator: &dyn BasicSparqlValidator<S> = shacl_component.deref();
 
         validator.validate_sparql(
             component,
