@@ -131,6 +131,15 @@ vocab_term!(ShaclVocab, SH_PREFIX, "prefix");
 vocab_term!(ShaclVocab, SH_DECLARE, "declare");
 vocab_term!(ShaclVocab, SH_NAMESPACE, "namespace");
 vocab_term!(ShaclVocab, SH_SPARQL_CONSTRAINT, "SPARQLConstraint");
+vocab_term!(ShaclVocab, SH_PARAMETER, "parameter");
+vocab_term!(ShaclVocab, SH_VALIDATOR, "validator");
+vocab_term!(ShaclVocab, SH_NODE_VALIDATOR, "nodeValidator");
+vocab_term!(ShaclVocab, SH_PROPERTY_VALIDATOR, "propertyValidator");
+vocab_term!(ShaclVocab, SH_ASK, "ask");
+vocab_term!(ShaclVocab, SH_OPTIONAL, "optional");
+vocab_term!(ShaclVocab, SH_SPARQL_ASK_VALIDATOR, "SPARQLAskValidator");
+vocab_term!(ShaclVocab, SH_SPARQL_SELECT_VALIDATOR, "SPARQLSelectValidator");
+vocab_term!(ShaclVocab, SH_LABEL_TEMPLATE, "labelTemplate");
 
 // SHACL Paths
 vocab_term!(ShaclVocab, SH_ALTERNATIVE_PATH, "alternativePath");
@@ -140,6 +149,8 @@ vocab_term!(ShaclVocab, SH_ONE_OR_MORE_PATH, "oneOrMorePath");
 vocab_term!(ShaclVocab, SH_INVERSE_PATH, "inversePath");
 
 // Constraint Components
+vocab_term!(ShaclVocab, SH_CONSTRAINT_COMPONENT, "ConstraintComponent");
+
 vocab_term!(
     ShaclVocab,
     SH_NODE_KIND_CONSTRAINT_COMPONENT,
