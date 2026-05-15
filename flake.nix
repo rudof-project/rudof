@@ -11,6 +11,8 @@
     };
   };
 
+  # TODO - if we unify config files across crates, we could generate nix / home-manager
+  # TODO - modules to auto generate config files for users (#659)
   outputs = {
     self,
     fenix,
