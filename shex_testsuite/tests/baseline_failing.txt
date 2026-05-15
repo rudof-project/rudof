@@ -21,8 +21,6 @@
 3Eachdot3Extra_pass-iri2
 3EachdotExtra3NLex_pass-iri2
 3EachdotExtra3_pass-iri2
-Extend3G-pass
-ExtendAND3G-fail_EXTG1ANDG1
 shapeExternRef_fail
 shapeExtern_fail
 startCode1fail_abort
