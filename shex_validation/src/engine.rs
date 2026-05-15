@@ -637,7 +637,7 @@ impl Engine {
             "Neighs of {node} [{}]",
             values.iter().map(|(p, v)| format!("{p} {v}")).join(", ")
         );*/
-        let triple_exprs = schema.get_triple_exprs(idx).unwrap();
+        let triple_exprs = merge_ancestor_exprs(schema.get_triple_exprs(idx).unwrap(), schema);
         /*debug!(
             "Candidate triple exprs of {node}:\n{}",
             triple_exprs
@@ -1040,6 +1040,73 @@ impl Engine {
     pub fn insert_pending(&mut self, atom: &Atom) {
         self.pending.insert((*atom).clone());
     }
+}
+
+/// When a shape S extends parents P1, P2, … and some Pi is a transitive ancestor of Pj,
+/// the partition would create separate buckets for Pi and Pj.  Because each triple can only
+/// go to one bucket, a triple that must satisfy BOTH Pi's and Pj's constraints would fail
+/// (diamond inheritance).
+///
+/// Fix: merge the triple expressions of every "covered" parent (one that is a transitive
+/// ancestor of another parent in the set) into the bucket of its leaf descendant.  Only
+/// leaf parents (those not subsumed by any other parent in the set) become partition buckets.
+fn merge_ancestor_exprs(
+    triple_exprs: HashMap<Option<ShapeLabelIdx>, Vec<Expr>>,
+    schema: &SchemaIR,
+) -> HashMap<Option<ShapeLabelIdx>, Vec<Expr>> {
+    let all_parents: Vec<ShapeLabelIdx> = triple_exprs.keys().filter_map(|k| *k).collect();
+    if all_parents.len() <= 1 {
+        return triple_exprs;
+    }
+
+    // For each parent, collect its transitive ancestors.
+    let parent_ancestors: Vec<(ShapeLabelIdx, HashSet<ShapeLabelIdx>)> = all_parents
+        .iter()
+        .map(|&pi| {
+            let ancestors: HashSet<ShapeLabelIdx> = schema.parents(&pi).into_iter().collect();
+            (pi, ancestors)
+        })
+        .collect();
+
+    // A parent pj is "covered" if some other parent pi has pj as a transitive ancestor
+    // (i.e. pi extends pj directly or transitively).
+    let mut covered: HashSet<ShapeLabelIdx> = HashSet::new();
+    for (pi, pi_ancestors) in &parent_ancestors {
+        for &pj in &all_parents {
+            if pj != *pi && pi_ancestors.contains(&pj) {
+                covered.insert(pj);
+            }
+        }
+    }
+
+    if covered.is_empty() {
+        return triple_exprs;
+    }
+
+    let mut result: HashMap<Option<ShapeLabelIdx>, Vec<Expr>> = HashMap::new();
+
+    // Keep the None (own shape) entry unchanged.
+    if let Some(exprs) = triple_exprs.get(&None) {
+        result.insert(None, exprs.clone());
+    }
+
+    // For each uncovered (leaf) parent, collect its own exprs plus the exprs of every
+    // covered ancestor that is reachable from it.
+    for (pi, pi_ancestors) in &parent_ancestors {
+        if !covered.contains(pi) {
+            let mut merged = triple_exprs.get(&Some(*pi)).cloned().unwrap_or_default();
+            for &pj in &all_parents {
+                if covered.contains(&pj) && pi_ancestors.contains(&pj) {
+                    if let Some(pj_exprs) = triple_exprs.get(&Some(pj)) {
+                        merged.extend(pj_exprs.iter().cloned());
+                    }
+                }
+            }
+            result.insert(Some(*pi), merged);
+        }
+    }
+
+    result
 }
 
 fn pass(reason: Reason) -> Result<ValidationResult> {

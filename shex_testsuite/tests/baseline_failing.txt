@@ -28,6 +28,3 @@ shapeExtern_fail
 startCode1fail_abort
 startCode1startReffail_abort
 startCode3fail_abort
-vitals-RESTRICTS-pass_lie-Reclined
-vitals-RESTRICTS-pass_lie-ReclinedBP
-vitals-RESTRICTS-pass_lie-ReclinedVital
