@@ -16,6 +16,105 @@ curl -o rudof https://github.com/rudof-project/rudof/releases/download/vX.X.X/ru
 chmod +x rudof
 ```
 
+#### Nix
+
+`rudof` ships a [`flake.nix`](https://github.com/rudof-project/rudof/blob/master/flake.nix) that exposes packages, a development shell, and an overlay so it can be consumed by other Nix projects without any extra work.
+
+##### Prerequisites
+
+You need [Nix](https://nixos.org/download) with the `flakes` and `nix-command` experimental features enabled.
+
+##### Try it without installing
+
+You can run `rudof` directly from the flake without permanently installing anything:
+
+```shell
+nix run github:rudof-project/rudof#rudof -- <rudof-flags>
+```
+
+For example, to print the help message:
+
+```shell
+nix run github:rudof-project/rudof#rudof -- --help
+```
+
+##### Install into your profile
+
+To install `rudof` persistently into your user profile, run:
+
+```shell
+nix profile install github:rudof-project/rudof#rudof
+```
+
+After this, `rudof` will be available in your `$PATH` for the current user.
+
+To later upgrade to a newer version, run:
+
+```shell
+nix profile upgrade '.*rudof.*'
+```
+
+##### Available packages
+
+The flake exposes the following packages:
+
+| Package          | Description               |
+|------------------|---------------------------|
+| `rudof`          | The main CLI binary       |
+| `rudof-generate` | Code-generation utilities |
+
+You can list all available outputs with:
+
+```shell
+nix flake show github:rudof-project/rudof
+```
+
+##### Using the flake as an input in your project
+
+The recommended way to consume `rudof` from another Nix project is by adding the flake as an input and applying the provided overlay.
+The overlay injects all `rudof` packages into `pkgs` so they can be referenced as `pkgs.rudof.*`.
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    rudof.url = "github:rudof-project/rudof";
+    rudof.inputs.nixpkgs.follows = "nixpkgs";
+  };
+
+  outputs = { nixpkgs, rudof, ... }:
+    let
+      system = "your-system-architecture";
+      pkgs = import nixpkgs {
+        inherit system;
+        overlays = [
+          rudof.overlays.default
+        ];
+      };
+    in
+    {
+      # Your outputs here
+    };
+}
+```
+
+Once the overlay is applied you can reference `rudof` tools anywhere in your configuration:
+
+```nix
+{ pkgs, ... }:
+{
+  environment.systemPackages = with pkgs.rudof; [
+    rudof
+    rudof-generate
+  ];
+}
+```
+
+##### NixOS / home-manager module
+
+> Support for a dedicated NixOS and home-manager module is planned.
+
+
 ### Windows
 
 You can download the Windows binary from the [releases](https://github.com/rudof-project/rudof/releases/latest) page.
