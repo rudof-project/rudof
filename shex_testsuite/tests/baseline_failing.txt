@@ -3,8 +3,6 @@
 1dotNoCode3_pass
 1literalFractiondigits_pass-decimal-equalLeadTrail
 1literalFractiondigits_pass-decimal-equalTrail
-1literalPatterni_pass-lit-BC
-1literalPatterni_pass-lit-blowercaseC
 1val1IRIREFClosedExtra1_pass-iri2
 1val1IRIREFExtra1Closed_pass-iri2
 1val1IRIREFExtra1One_pass-iri2
