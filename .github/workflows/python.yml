@@ -11,6 +11,7 @@ on:
       - "**/.dockerignore"
       - "**/Dockerfile*"
       - "**/*.md"
+      - "**/*.nix"
       - .readthedocs.yml
   pull_request:
     paths-ignore:
@@ -22,6 +23,7 @@ on:
       - "**/.dockerignore"
       - "**/Dockerfile*"
       - "**/*.md"
+      - "**/*.nix"
       - .readthedocs.yml
   release:
     types:

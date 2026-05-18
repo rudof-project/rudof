@@ -357,7 +357,7 @@ as defined in the Apache-2.0 license,
 shall be dual licensed as above,
 without any additional terms or conditions.
 
-#### Local development
+### Local development
 
 [Precommit](https://pre-commit.com/) has been configured to run formatters and linters before each commit.
 It is recommended to use it to ensure that the code is formatted and linted correctly before pushing it to the repository.
@@ -371,3 +371,26 @@ pip install pre-commit
 # Installs the pre-commit hooks defined in .pre-commit-config.yaml
 pre-commit install
 ```
+
+#### Nix
+
+If you have [Nix](https://nixos.org/download) with flakes enabled, the repository provides a ready-to-use development shell that includes all required dependencies.
+
+Simply run the following command from the root of the repository:
+
+```shell
+nix develop
+```
+
+This drops you into a shell with everything pre-configured.  No manual installation of Rust, `cargo`, or any other tool is needed.
+
+You can also run a one-off command without entering the shell interactively:
+
+```shell
+nix develop --command cargo test
+```
+
+> If you use [direnv](https://direnv.net/), add a `.envrc` file with `use flake` to activate the development environment automatically whenever you `cd` into the repository:
+> ```shell
+> echo "use flake" > .envrc && direnv allow
+> ```
