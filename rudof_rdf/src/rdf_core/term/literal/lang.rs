@@ -27,12 +27,16 @@ impl Lang {
         let s: String = lang.into();
         // Try strict BCP-47 normalization first
         if let Ok(normalized) = oxilangtag::LanguageTag::parse_and_normalize(&s) {
-            return Ok(Lang { lang: normalized.into_inner() });
+            return Ok(Lang {
+                lang: normalized.into_inner(),
+            });
         }
         // Fall back to accepting any syntactically valid lang tag
         // (e.g. non-IANA-registered subtag sequences used in ShEx test data)
         if is_syntactically_valid_lang(&s) {
-            return Ok(Lang { lang: s.to_ascii_lowercase() });
+            return Ok(Lang {
+                lang: s.to_ascii_lowercase(),
+            });
         }
         Err(LangParseError::InvalidLangTag(s))
     }
