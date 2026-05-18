@@ -7,14 +7,6 @@
 1val1IRIREFExtra1Closed_pass-iri2
 1val1IRIREFExtra1One_pass-iri2
 1val1IRIREFExtra1_pass-iri2
-1val1LANGTAG_LabLTen-fr-jura
-1val1emptylanguageStemMinuslanguage3_passLAtfr-be-fbcl
-1val1emptylanguageStemMinuslanguageStem3_LAtfr-be-fbcl
-1val1languageStemMinuslanguage3_passLAtfr-be-fbcl
-1val1languageStemMinuslanguageStem3_LAtfr-be-fbcl
-1val1languageStemMinuslanguageStem3_LAtfrc
-1val1languageStem_failLAtfrc
-1val1languageStem_passLAtfr-be-fbcl
 1val2IRIREFExtra1_pass-iri-bnode
 3Eachdot3Extra_pass-iri2
 3EachdotExtra3NLex_pass-iri2

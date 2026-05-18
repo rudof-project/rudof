@@ -186,8 +186,8 @@ impl InMemoryGraph {
         reader_mode: &ReaderMode,
     ) -> Result<(), InMemoryGraphError> {
         let turtle_parser = match base {
-            None => TurtleParser::new(),
-            Some(iri) => TurtleParser::new().with_base_iri(iri)?,
+            None => TurtleParser::new().lenient(),
+            Some(iri) => TurtleParser::new().lenient().with_base_iri(iri)?,
         };
 
         let mut turtle_reader = turtle_parser.for_reader(reader);
