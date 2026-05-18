@@ -1411,7 +1411,11 @@ fn check_pattern(node: &Node, regex: &str, flags: Option<&str>, base: &Option<Ir
             flags: flags.map(|f| f.to_string()),
         })),
     }?;
-    if let Ok(re) = regex::Regex::new(regex) {
+    let effective_regex = match flags {
+        Some(f) if !f.is_empty() => format!("(?{f}){regex}"),
+        _ => regex.to_string(),
+    };
+    if let Ok(re) = regex::Regex::new(&effective_regex) {
         if re.is_match(&lexical_form) {
             Ok(())
         } else {
