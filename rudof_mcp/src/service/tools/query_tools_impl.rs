@@ -16,19 +16,18 @@ use super::helpers::*;
 /// Request parameters for executing a SPARQL query.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ExecuteSparqlQueryRequest {
-    /// Direct SPARQL query to execute.
-    /// Supports SELECT, CONSTRUCT, ASK queries.
-    /// Either this or `query_natural_language` must be provided.
+    /// Direct SPARQL query string to execute. Supports SELECT, CONSTRUCT, and ASK.
+    /// Mutually exclusive with `query_natural_language` — provide exactly one.
     pub query: Option<String>,
 
-    /// Natural language description of what to query.
-    /// Will be converted to SPARQL using LLM sampling.
-    /// Either this or `query` must be provided.
+    /// Natural language description of what to query (e.g. "find all persons and their names").
+    /// Converted to SPARQL via LLM sampling.
+    /// Mutually exclusive with `query` — provide exactly one.
     pub query_natural_language: Option<String>,
 
-    /// Output format for query results.
-    /// Supported: internal, turtle, ntriples, json-ld, rdf-xml, csv, trig, n3, nquads
-    /// Default: internal
+    /// Output format for results.
+    /// SELECT queries only support "internal".
+    /// CONSTRUCT/ASK support: internal (default), turtle, ntriples, rdfxml, trig, n3, nquads.
     pub result_format: Option<String>,
 }
 
