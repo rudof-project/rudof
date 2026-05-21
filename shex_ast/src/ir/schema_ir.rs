@@ -781,8 +781,13 @@ mod tests {
         }"#;
         let schema_json: SchemaJson = serde_json::from_str::<SchemaJson>(str).unwrap();
         let mut ir = SchemaIR::new(SemanticActionsRegistry::default());
-        ir.populate_from_schema_json(&schema_json, &ExternalShapeResolverRegistry::default(), &ResolveMethod::default(), &None)
-            .unwrap();
+        ir.populate_from_schema_json(
+            &schema_json,
+            &ExternalShapeResolverRegistry::default(),
+            &ResolveMethod::default(),
+            &None,
+        )
+        .unwrap();
         println!("Schema IR: {ir}");
         let s1_label: ShapeLabel = ShapeLabel::iri(iri!("http://a.example/S1"));
         let s1 = ir
@@ -834,8 +839,13 @@ mod tests {
 }"#;
         let schema: SchemaJson = serde_json::from_str(str).unwrap();
         let mut ir = SchemaIR::new(SemanticActionsRegistry::default());
-        ir.populate_from_schema_json(&schema, &ExternalShapeResolverRegistry::default(), &ResolveMethod::default(), &None)
-            .unwrap();
+        ir.populate_from_schema_json(
+            &schema,
+            &ExternalShapeResolverRegistry::default(),
+            &ResolveMethod::default(),
+            &None,
+        )
+        .unwrap();
         println!("Schema IR: {ir}");
         let s: ShapeLabel = ShapeLabel::iri(iri!("http://example.org/S"));
         let idx = ir.get_shape_label_idx(&s).unwrap();
@@ -901,8 +911,13 @@ mod tests {
 }"#;
         let schema: SchemaJson = serde_json::from_str(str).unwrap();
         let mut ir = SchemaIR::new(SemanticActionsRegistry::default());
-        ir.populate_from_schema_json(&schema, &ExternalShapeResolverRegistry::default(), &ResolveMethod::default(), &None)
-            .unwrap();
+        ir.populate_from_schema_json(
+            &schema,
+            &ExternalShapeResolverRegistry::default(),
+            &ResolveMethod::default(),
+            &None,
+        )
+        .unwrap();
         let s: ShapeLabel = ShapeLabel::iri(iri!("http://example.org/S"));
         let idx = ir.get_shape_label_idx(&s).unwrap();
         println!("Schema IR: {ir}");

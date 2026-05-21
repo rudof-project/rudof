@@ -297,9 +297,7 @@ pub fn resolver_from_spec(spec: &str) -> Result<Arc<dyn ExternalShapeResolver>, 
         ("reject-all", Some(_)) => Err(ExternalResolverError::ForbiddenArg {
             kind: "reject-all".to_string(),
         }),
-        ("schema", Some(path)) if !path.is_empty() => {
-            Ok(Arc::new(SchemaExternalResolver::from_path(path)?))
-        },
+        ("schema", Some(path)) if !path.is_empty() => Ok(Arc::new(SchemaExternalResolver::from_path(path)?)),
         ("schema", _) => Err(ExternalResolverError::MissingArg {
             kind: "schema".to_string(),
             expected: "path to a ShEx file".to_string(),
