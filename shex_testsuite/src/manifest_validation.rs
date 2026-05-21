@@ -270,11 +270,12 @@ impl ValidationEntry {
         let mut config = ValidatorConfig::default();
         let schema = if let Some(externs_rel) = &self.action.shape_externs {
             let externs_path = folder.join(externs_rel);
-            let resolver =
-                SchemaExternalResolver::from_path(&externs_path).map_err(|error| ManifestError::ExternalResolverError {
+            let resolver = SchemaExternalResolver::from_path(&externs_path).map_err(|error| {
+                ManifestError::ExternalResolverError {
                     entry_name: self.name.clone(),
                     error,
-                })?;
+                }
+            })?;
             config = config.with_external_resolver(resolver);
             config.external_resolvers().rewrite_ast(schema)
         } else {
@@ -292,8 +293,7 @@ impl ValidationEntry {
             .compile(&schema, &base_iri, &Some(base_iri.clone()), &mut compiled_schema)
             .map_err(|e| Box::new(ManifestError::SchemaIRError(e)))?;
         let schema = compiled_schema.clone();
-        let mut validator =
-            Validator::new(&compiled_schema, &config).map_err(ManifestError::ValidationError)?;
+        let mut validator = Validator::new(&compiled_schema, &config).map_err(ManifestError::ValidationError)?;
         let expected_type = parse_type(&self.type_)?;
         debug!("Schema compiled...expected type: {:?}", expected_type);
         trace!("Schema: {}", schema);

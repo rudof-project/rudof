@@ -79,7 +79,7 @@ impl Default for ExternalShapeResolverRegistry {
     /// terminator always sits at the end of the chain.
     fn default() -> Self {
         Self {
-            resolvers: vec![Arc::new(RejectAllExternalResolver::default())],
+            resolvers: vec![Arc::new(RejectAllExternalResolver)],
         }
     }
 }
@@ -174,12 +174,14 @@ impl SchemaExternalResolver {
     /// source of EXTERNAL definitions. Uses the standard ShExC parser.
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, ExternalResolverError> {
         let path = path.as_ref();
-        let source_iri: IriS = path.try_into().map_err(|e: rudof_iri::error::IriSError| ExternalResolverError::PathToIri {
-            path: path.to_path_buf(),
-            error: e.to_string(),
-        })?;
-        let externs = crate::ShExParser::parse_buf(path, Some(source_iri))
-            .map_err(|e| ExternalResolverError::Parse {
+        let source_iri: IriS =
+            path.try_into()
+                .map_err(|e: rudof_iri::error::IriSError| ExternalResolverError::PathToIri {
+                    path: path.to_path_buf(),
+                    error: e.to_string(),
+                })?;
+        let externs =
+            crate::ShExParser::parse_buf(path, Some(source_iri)).map_err(|e| ExternalResolverError::Parse {
                 path: path.to_path_buf(),
                 error: e.to_string(),
             })?;
@@ -214,10 +216,10 @@ impl ExternalShapeResolver for SchemaExternalResolver {
         };
         if let Some(decls) = schema.shapes_mut() {
             for decl in decls.iter_mut() {
-                if matches!(decl.shape_expr, ast::ShapeExpr::External) {
-                    if let Some(matching) = lookup_decl(&lookups, &decl.id) {
-                        decl.shape_expr = matching.shape_expr.clone();
-                    }
+                if matches!(decl.shape_expr, ast::ShapeExpr::External)
+                    && let Some(matching) = lookup_decl(&lookups, &decl.id)
+                {
+                    decl.shape_expr = matching.shape_expr.clone();
                 }
             }
         }
@@ -225,10 +227,7 @@ impl ExternalShapeResolver for SchemaExternalResolver {
     }
 }
 
-fn lookup_decl<'a>(
-    decls: &'a [ast::ShapeDecl],
-    label: &ShapeExprLabel,
-) -> Option<&'a ast::ShapeDecl> {
+fn lookup_decl<'a>(decls: &'a [ast::ShapeDecl], label: &ShapeExprLabel) -> Option<&'a ast::ShapeDecl> {
     decls.iter().find(|d| &d.id == label)
 }
 
@@ -238,10 +237,7 @@ pub enum ExternalResolverError {
     PathToIri { path: std::path::PathBuf, error: String },
 
     #[error("Could not parse external shapes file {path:?}: {error}")]
-    Parse {
-        path: std::path::PathBuf,
-        error: String,
-    },
+    Parse { path: std::path::PathBuf, error: String },
 }
 
 #[cfg(test)]
@@ -277,10 +273,7 @@ mod tests {
         let node = Node::iri(IriS::new_unchecked("http://example/n"));
         let schema = SchemaIR::new(SemanticActionsRegistry::default());
         let ctx = dummy_ctx(&node, &schema);
-        assert!(matches!(
-            reg.dispatch(&ctx),
-            DispatchOutcome::NonConformant { .. }
-        ));
+        assert!(matches!(reg.dispatch(&ctx), DispatchOutcome::NonConformant { .. }));
     }
 
     #[test]
@@ -336,6 +329,9 @@ mod tests {
         // rewrite_ast: user resolver substitutes the External; reject-all is a no-op for rewrite.
         let main = schema_with(vec![ShapeDecl::new(sext, ShapeExpr::External, false)]);
         let rewritten = reg.rewrite_ast(main);
-        assert!(!matches!(rewritten.shapes().unwrap()[0].shape_expr, ShapeExpr::External));
+        assert!(!matches!(
+            rewritten.shapes().unwrap()[0].shape_expr,
+            ShapeExpr::External
+        ));
     }
 }

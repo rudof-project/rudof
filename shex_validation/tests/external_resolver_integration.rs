@@ -32,8 +32,7 @@ fn compile(schema_src: &str, config: &ValidatorConfig) -> SchemaIR {
 fn validate(focus: &str, config: ValidatorConfig) -> bool {
     let compiled = compile(SCHEMA, &config);
     let mut validator = Validator::new(&compiled, &config).expect("validator");
-    let graph =
-        InMemoryGraph::from_str(DATA, &RDFFormat::Turtle, None, &ReaderMode::Strict).expect("parse graph");
+    let graph = InMemoryGraph::from_str(DATA, &RDFFormat::Turtle, None, &ReaderMode::Strict).expect("parse graph");
     let node = Node::parse(focus, None).expect("parse focus");
     let shape = ShapeLabel::iri(IriS::new_unchecked("http://a.example/Sext"));
     let result = validator
@@ -54,8 +53,7 @@ fn default_config_rejects_external_shape() {
 #[test]
 fn schema_resolver_substitutes_and_validates() {
     let base = IriS::new_unchecked("http://a.example/");
-    let externs_ast =
-        ShExParser::parse(EXTERNS, Some(base.clone()), &base).expect("parse externs");
+    let externs_ast = ShExParser::parse(EXTERNS, Some(base.clone()), &base).expect("parse externs");
     let resolver = SchemaExternalResolver::from_schema("test-externs", externs_ast);
 
     let config_with_externs = || ValidatorConfig::default().with_external_resolver(resolver.clone());

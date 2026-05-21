@@ -230,10 +230,7 @@ pub enum ValidatorError {
     },
 
     #[error("EXTERNAL shape {idx} for node {node} could not be resolved by any registered resolver")]
-    ExternalShapeUnresolved {
-        node: Box<Node>,
-        idx: ShapeLabelIdx,
-    },
+    ExternalShapeUnresolved { node: Box<Node>, idx: ShapeLabelIdx },
 }
 
 fn add_errors_to_tree(
