@@ -141,6 +141,11 @@ impl RudofConfig {
         }
     }
 
+    /// Replace the ShEx validator configuration.
+    pub fn set_validator_config(&mut self, config: ValidatorConfig) {
+        self.shex_validator = Some(config);
+    }
+
     // ---------------------------------------------------------------------------
     // RDF data configuration
     // ---------------------------------------------------------------------------

@@ -139,8 +139,14 @@ fn compile_shex_schema(rudof: &mut Rudof, base: IriS, schema: ShExSchema, reader
 
     let mut schema_ir = SchemaIR::new(registry);
 
+    let validator_config = rudof.config.validator_config();
     schema_ir
-        .populate_from_schema_json(&schema, &ResolveMethod::default(), &Some(base.clone()))
+        .populate_from_schema_json(
+            &schema,
+            validator_config.external_resolvers(),
+            &ResolveMethod::default(),
+            &Some(base.clone()),
+        )
         .map_err(|error| ShExError::FailedCompilingShExSchema {
             error: error.to_string(),
         })?;

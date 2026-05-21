@@ -36,7 +36,7 @@ use crate::{
             SerializeShexSchemaBuilder, SerializeShexValidationResultsBuilder, ValidateShexBuilder,
         },
     },
-    errors::RudofError,
+    errors::{RudofError, ShExError},
     formats::{
         ComparisonFormat, ComparisonMode, ConversionFormat, ConversionMode, GenerationSchemaFormat, InputSpec,
         ResultConversionFormat, ResultConversionMode,
@@ -49,6 +49,9 @@ use rdf_config::RdfConfigModel;
 use rudof_rdf::rdf_core::query::SparqlQuery;
 use shacl::ir::IRSchema;
 use shacl::validator::report::ValidationReport;
+use shex_ast::ir::external_resolver::{
+    ExternalResolverInfo, ExternalShapeResolverRegistry, available_external_resolvers, resolver_from_spec,
+};
 use shex_ast::ir::schema_ir::SchemaIR as ShExSchemaIR;
 use shex_ast::shapemap::{QueryShapeMap, ResultShapeMap};
 use shex_ast::{Schema as ShExSchema, ir::map_state::MapState};
@@ -158,6 +161,43 @@ impl Rudof {
     /// Returns a `ResetAllBuilder` that resets all runtime state in `Rudof`.
     pub fn reset_all<'a>(&'a mut self) -> ResetAllBuilder<'a> {
         ResetAllBuilder::new(self)
+    }
+
+    // ========================================================================
+    // External-shape resolver management
+    // ========================================================================
+
+    /// Register an external-shape resolver from a spec string.
+    ///
+    /// The spec follows the grammar `<kind>[:<arg>]`. Built-in kinds:
+    /// - `reject-all` — reject any EXTERNAL shape not handled by an earlier resolver.
+    /// - `schema:<path>` — substitute EXTERNAL shape declarations using a ShEx file at `<path>`.
+    ///
+    /// Resolvers are prepended to the chain, so the most recently added is consulted first.
+    /// Use [`Self::list_external_resolvers`] to enumerate the built-in kinds.
+    pub fn add_external_resolver(&mut self, spec: &str) -> Result<()> {
+        let resolver = resolver_from_spec(spec).map_err(|e| ShExError::InvalidExternalResolverSpec {
+            spec: spec.to_string(),
+            error: e.to_string(),
+        })?;
+        let vc = self.config.validator_config().with_external_resolver_arc(resolver);
+        self.config.set_validator_config(vc);
+        Ok(())
+    }
+
+    /// Reset the external-shape resolver chain to the default
+    /// (only `RejectAllExternalResolver`).
+    pub fn clear_external_resolvers(&mut self) {
+        let mut vc = self.config.validator_config();
+        vc.external_resolvers = ExternalShapeResolverRegistry::default();
+        self.config.set_validator_config(vc);
+    }
+
+    /// Enumerate the built-in external-shape resolver kinds. Each entry
+    /// describes a `name`, a one-line `description`, and the `spec_syntax`
+    /// accepted by [`Self::add_external_resolver`].
+    pub fn list_external_resolvers() -> Vec<ExternalResolverInfo> {
+        available_external_resolvers()
     }
 
     // ========================================================================

@@ -1,0 +1,12 @@
+prefix :     <http://example.org/>
+prefix xsd:  <http://www.w3.org/2001/XMLSchema#>
+
+# Externs file consumed by the `schema:<path>` external-shape resolver.
+# Loading this with `--external-resolver schema:examples/address.shex`
+# substitutes `:Address EXTERNAL` in `examples/person.shex` with the
+# definition below.
+
+:Address {
+  :street  xsd:string ;
+  :city    xsd:string
+}

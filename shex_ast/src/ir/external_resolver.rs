@@ -238,6 +238,80 @@ pub enum ExternalResolverError {
 
     #[error("Could not parse external shapes file {path:?}: {error}")]
     Parse { path: std::path::PathBuf, error: String },
+
+    #[error("Unknown external resolver kind '{kind}'. Available kinds: {}", available.join(", "))]
+    UnknownKind { kind: String, available: Vec<String> },
+
+    #[error("External resolver kind '{kind}' requires an argument: {expected}")]
+    MissingArg { kind: String, expected: String },
+
+    #[error("External resolver kind '{kind}' does not accept any argument")]
+    ForbiddenArg { kind: String },
+}
+
+/// Static metadata describing a built-in external-shape resolver.
+///
+/// Returned by [`available_external_resolvers`] so that clients (CLI, MCP,
+/// Python) can enumerate the resolvers `rudof` knows how to construct from a
+/// spec string.
+#[derive(Debug, Clone)]
+pub struct ExternalResolverInfo {
+    /// Resolver kind identifier used in spec strings.
+    pub name: &'static str,
+    /// One-line human-readable description.
+    pub description: &'static str,
+    /// Spec-string syntax accepted by [`resolver_from_spec`].
+    pub spec_syntax: &'static str,
+}
+
+/// List of built-in resolver kinds recognised by [`resolver_from_spec`].
+pub fn available_external_resolvers() -> Vec<ExternalResolverInfo> {
+    vec![
+        ExternalResolverInfo {
+            name: "reject-all",
+            description: "Reject any EXTERNAL shape that no earlier resolver claimed",
+            spec_syntax: "reject-all",
+        },
+        ExternalResolverInfo {
+            name: "schema",
+            description: "Substitute EXTERNAL shape declarations using definitions from a ShEx file",
+            spec_syntax: "schema:<path>",
+        },
+    ]
+}
+
+/// Parse a resolver spec string of the form `<kind>[:<arg>]` and construct the
+/// corresponding [`ExternalShapeResolver`].
+///
+/// Recognised kinds (see [`available_external_resolvers`]):
+/// - `reject-all` — no argument; constructs a [`RejectAllExternalResolver`].
+/// - `schema:<path>` — argument is a filesystem path; constructs a
+///   [`SchemaExternalResolver`] loaded from that ShEx file.
+pub fn resolver_from_spec(spec: &str) -> Result<Arc<dyn ExternalShapeResolver>, ExternalResolverError> {
+    let (kind, arg) = match spec.split_once(':') {
+        Some((k, a)) => (k.trim(), Some(a.trim())),
+        None => (spec.trim(), None),
+    };
+    match (kind, arg) {
+        ("reject-all", None) => Ok(Arc::new(RejectAllExternalResolver)),
+        ("reject-all", Some(_)) => Err(ExternalResolverError::ForbiddenArg {
+            kind: "reject-all".to_string(),
+        }),
+        ("schema", Some(path)) if !path.is_empty() => {
+            Ok(Arc::new(SchemaExternalResolver::from_path(path)?))
+        },
+        ("schema", _) => Err(ExternalResolverError::MissingArg {
+            kind: "schema".to_string(),
+            expected: "path to a ShEx file".to_string(),
+        }),
+        (other, _) => Err(ExternalResolverError::UnknownKind {
+            kind: other.to_string(),
+            available: available_external_resolvers()
+                .into_iter()
+                .map(|i| i.name.to_string())
+                .collect(),
+        }),
+    }
 }
 
 #[cfg(test)]
@@ -314,6 +388,46 @@ mod tests {
 
         let decls = rewritten.shapes().unwrap();
         assert!(matches!(decls[0].shape_expr, ShapeExpr::External));
+    }
+
+    #[test]
+    fn spec_reject_all() {
+        let r = resolver_from_spec("reject-all").expect("parses");
+        assert_eq!(r.name(), "reject-all");
+    }
+
+    #[test]
+    fn spec_reject_all_with_arg_is_rejected() {
+        let err = resolver_from_spec("reject-all:foo").expect_err("forbidden arg");
+        assert!(matches!(err, ExternalResolverError::ForbiddenArg { .. }));
+    }
+
+    #[test]
+    fn spec_schema_missing_arg() {
+        let err = resolver_from_spec("schema").expect_err("needs arg");
+        assert!(matches!(err, ExternalResolverError::MissingArg { .. }));
+        let err = resolver_from_spec("schema:").expect_err("needs non-empty arg");
+        assert!(matches!(err, ExternalResolverError::MissingArg { .. }));
+    }
+
+    #[test]
+    fn spec_unknown_kind_reports_available() {
+        let err = resolver_from_spec("bogus").expect_err("unknown kind");
+        match err {
+            ExternalResolverError::UnknownKind { kind, available } => {
+                assert_eq!(kind, "bogus");
+                assert!(available.contains(&"reject-all".to_string()));
+                assert!(available.contains(&"schema".to_string()));
+            },
+            other => panic!("expected UnknownKind, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn available_lists_two_built_ins() {
+        let infos = available_external_resolvers();
+        let names: Vec<_> = infos.iter().map(|i| i.name).collect();
+        assert_eq!(names, vec!["reject-all", "schema"]);
     }
 
     #[test]

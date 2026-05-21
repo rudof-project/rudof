@@ -75,4 +75,8 @@ pub enum ShExError {
     /// Failed to serialize ShEx validation results to the specified format.
     #[error("Failed to serialize ShEx validation results to {format}: {error}")]
     FailedSerializingShExValidationResults { format: String, error: String },
+
+    /// Failed to parse an external-shape resolver spec.
+    #[error("Invalid external-shape resolver spec '{spec}': {error}")]
+    InvalidExternalResolverSpec { spec: String, error: String },
 }

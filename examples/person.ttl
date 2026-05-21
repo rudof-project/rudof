@@ -1,0 +1,14 @@
+prefix : <http://example.org/>
+
+# Alice has a fully-formed address — conforms to :Person once :Address is resolved.
+:alice :name    "Alice" ;
+       :address :alice_addr .
+
+:alice_addr :street "Main 123" ;
+            :city   "Madrid" .
+
+# Bob's address is missing :city — fails :Address, which makes :bob fail :Person.
+:bob :name    "Bob" ;
+     :address :bob_addr .
+
+:bob_addr :street "Oak Avenue" .
