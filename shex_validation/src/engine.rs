@@ -21,6 +21,7 @@ use shex_ast::Expr;
 use shex_ast::Node;
 use shex_ast::Pred;
 use shex_ast::ShapeLabelIdx;
+use shex_ast::ir::external_resolver::{DispatchOutcome, ExternalResolveCtx};
 use shex_ast::ir::preds::Preds;
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::semantic_action_context::SemanticActionContext;
@@ -540,8 +541,39 @@ impl Engine {
                 }
             },
             ShapeExpr::External {} => {
-                debug!("External shape expression encountered for node {node} with shape {se}");
-                pass(Reason::External { node: node.clone() })
+                let label = schema.shape_label_from_idx(idx);
+                let ctx = ExternalResolveCtx {
+                    node,
+                    shape_idx: *idx,
+                    shape_label: label,
+                    schema,
+                };
+                match self.config.external_resolvers().dispatch(&ctx) {
+                    DispatchOutcome::Conformant { resolver, rationale } => {
+                        debug!("EXTERNAL conformant for {node}@{idx} via '{resolver}': {rationale}");
+                        pass(Reason::External {
+                            node: node.clone(),
+                            resolver,
+                            rationale,
+                        })
+                    },
+                    DispatchOutcome::NonConformant { resolver, rationale } => {
+                        debug!("EXTERNAL non-conformant for {node}@{idx} via '{resolver}': {rationale}");
+                        fail(ValidatorError::ExternalShapeRejected {
+                            node: Box::new(node.clone()),
+                            idx: *idx,
+                            resolver,
+                            rationale,
+                        })
+                    },
+                    DispatchOutcome::Abstain => {
+                        debug!("EXTERNAL unresolved for {node}@{idx}: no resolver answered");
+                        fail(ValidatorError::ExternalShapeUnresolved {
+                            node: Box::new(node.clone()),
+                            idx: *idx,
+                        })
+                    },
+                }
             },
             ShapeExpr::Ref { idx } => self.check_node_ref(node, idx, typing),
             ShapeExpr::Empty => pass(Reason::Empty { node: node.clone() }),

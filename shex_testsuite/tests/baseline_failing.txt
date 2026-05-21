@@ -11,8 +11,6 @@
 3Eachdot3Extra_pass-iri2
 3EachdotExtra3NLex_pass-iri2
 3EachdotExtra3_pass-iri2
-shapeExternRef_fail
-shapeExtern_fail
 startCode1fail_abort
 startCode1startReffail_abort
 startCode3fail_abort

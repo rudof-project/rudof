@@ -220,6 +220,17 @@ pub enum ValidatorError {
 
     #[error("ShapeRef fails for node {node} with idx: {idx}")]
     ShapeRefFailed { node: Box<Node>, idx: ShapeLabelIdx },
+
+    #[error("EXTERNAL shape {idx} rejected for node {node} by resolver '{resolver}': {rationale}")]
+    ExternalShapeRejected {
+        node: Box<Node>,
+        idx: ShapeLabelIdx,
+        resolver: String,
+        rationale: String,
+    },
+
+    #[error("EXTERNAL shape {idx} for node {node} could not be resolved by any registered resolver")]
+    ExternalShapeUnresolved { node: Box<Node>, idx: ShapeLabelIdx },
 }
 
 fn add_errors_to_tree(
@@ -412,7 +423,9 @@ impl ValidatorError {
             | ValidatorError::AddingPendingError { .. }
             | ValidatorError::ShapeExprNotFound { .. }
             | ValidatorError::NoMatchesFound { .. }
-            | ValidatorError::ShapeRefFailed { .. } => Ok(()),
+            | ValidatorError::ShapeRefFailed { .. }
+            | ValidatorError::ExternalShapeRejected { .. }
+            | ValidatorError::ExternalShapeUnresolved { .. } => Ok(()),
         }
     }
 

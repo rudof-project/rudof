@@ -698,7 +698,12 @@ impl AST2IR {
                     trace!("Returning NOT cond with idx {idx_not}");
                     Ok((mk_cond_ref(idx_not), display))
                 },
-                ast::ShapeExpr::External => todo("value_expr2match_cond: ShapeExternal"),
+                ast::ShapeExpr::External => {
+                    let idx_ext = compiled_schema.new_index(source_iri);
+                    compiled_schema.replace_shape(&idx_ext, ShapeExpr::External {});
+                    let display = format!("EXTERNAL {idx_ext}");
+                    Ok((mk_cond_ref(idx_ext), display))
+                },
             }
         } else {
             Ok((MatchCond::single(SingleCond::new().with_name(".")), ".".to_string()))
@@ -1707,13 +1712,6 @@ fn check_node_max_length(node: &Node, len: usize) -> CResult<()> {
             node: format!("{node}"),
         }))
     }
-}
-
-fn todo<A>(str: &str) -> CResult<A> {
-    panic!("TODO: {str}");
-    /*Err(Box::new(SchemaIRError::Todo {
-        msg: str.to_string(),
-    }))*/
 }
 
 fn cnv_iri_ref(iri: &IriRef, prefixmap: &PrefixMap) -> Result<IriS, Box<SchemaIRError>> {

@@ -47,6 +47,8 @@ pub enum Reason {
     },
     External {
         node: Node,
+        resolver: String,
+        rationale: String,
     },
     ShapeOr {
         node: Node,
@@ -184,9 +186,13 @@ impl Reason {
                 "Node {} passes empty shape",
                 node.show_qualified(nodes_prefixmap)
             )),
-            Reason::External { node } => Ok(format!(
-                "{} passes external shape",
-                node.show_qualified(nodes_prefixmap)
+            Reason::External {
+                node,
+                resolver,
+                rationale,
+            } => Ok(format!(
+                "{} passes EXTERNAL via '{resolver}': {rationale}",
+                node.show_qualified(nodes_prefixmap),
             )),
             Reason::ShapeOr { node, shape_expr, .. } => Ok(format!(
                 "OR passed ({}@{})",
@@ -338,7 +344,11 @@ impl Display for Reason {
                 f,
                 "Shape NOT passed. Node {node}, shape: {shape_expr}, errors: {errors_evidences}"
             ),
-            Reason::External { node } => write!(f, "Shape External passed for node {node}"),
+            Reason::External {
+                node,
+                resolver,
+                rationale,
+            } => write!(f, "Shape External passed for node {node} via '{resolver}': {rationale}"),
             Reason::Empty { node } => write!(f, "Shape Empty passed for node {node}"),
             Reason::ShapeRef { node, idx } => {
                 write!(f, "ShapeRef passed. Node {node}, idx: {idx}")
