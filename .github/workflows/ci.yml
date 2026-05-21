@@ -1,32 +1,34 @@
 name: CI
 
 on:
-  push:
-    paths-ignore:
-      - "docs/**"
-      - "examples/**"
-      - ".github/**"
-      - "**/LICENSE*"
-      - "**/README*"
-      - "**/CHANGELOG*"
-      - "**/.dockerignore"
-      - "**/Dockerfile*"
-      - "**/*.md"
-      - "**/*.nix"
-      - .readthedocs.yml
-  pull_request:
-    paths-ignore:
-      - "docs/**"
-      - "examples/**"
-      - ".github/**"
-      - "**/LICENSE*"
-      - "**/README*"
-      - "**/CHANGELOG*"
-      - "**/.dockerignore"
-      - "**/Dockerfile*"
-      - "**/*.md"
-      - "**/*.nix"
-      - .readthedocs.yml
+  workflow_dispatch:
+
+#  push:
+#    paths-ignore:
+#      - "docs/**"
+#      - "examples/**"
+#      - ".github/**"
+#      - "**/LICENSE*"
+#      - "**/README*"
+#      - "**/CHANGELOG*"
+#      - "**/.dockerignore"
+#      - "**/Dockerfile*"
+#      - "**/*.md"
+#      - "**/*.nix"
+#      - .readthedocs.yml
+#  pull_request:
+#    paths-ignore:
+#      - "docs/**"
+#      - "examples/**"
+#      - ".github/**"
+#      - "**/LICENSE*"
+#      - "**/README*"
+#      - "**/CHANGELOG*"
+#      - "**/.dockerignore"
+#      - "**/Dockerfile*"
+#      - "**/*.md"
+#      - "**/*.nix"
+#      - .readthedocs.yml
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
