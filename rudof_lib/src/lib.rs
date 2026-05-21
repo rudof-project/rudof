@@ -31,15 +31,15 @@ pub mod formats;
 mod rudof;
 
 #[cfg(not(target_family = "wasm"))]
-mod rudof_config;
-
-#[cfg(not(target_family = "wasm"))]
 pub mod types;
 
 #[cfg(not(target_family = "wasm"))]
 pub(crate) mod utils;
 
 #[cfg(not(target_family = "wasm"))]
+pub mod config;
+
+#[cfg(not(target_family = "wasm"))]
 pub use rudof::*;
 #[cfg(not(target_family = "wasm"))]
-pub use rudof_config::RudofConfig;
+pub use crate::config::RudofConfig;
