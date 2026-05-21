@@ -32,6 +32,7 @@ reqwest.workspace = true
 regex.workspace = true
 rudof_generate.workspace = true
 rudof_rdf.workspace = true
+semver.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 shacl.workspace = true

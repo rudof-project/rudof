@@ -327,6 +327,7 @@ rustemo = "0.9.1"
 rust_decimal = "1.38"
 rust_decimal_macros = "1.38"
 schemars = "1.0.4"
+semver = { version = "1.0", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0"
 shacl = { version = "0.3.1", path = "./shacl" }
