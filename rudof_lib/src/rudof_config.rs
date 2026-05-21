@@ -19,7 +19,7 @@ const DEFAULT_CONFIG: &str = include_str!("default_config.toml");
 /// This structure encapsulates all configuration options for Rudof operations,
 /// including RDF data handling, schema validation (ShEx and SHACL), conversions,
 /// and visualization settings.
-#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct RudofConfig {
     pub(crate) rdf_data: Option<RdfDataConfig>,
     pub(crate) shex: Option<ShExConfig>,
