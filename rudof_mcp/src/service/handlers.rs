@@ -55,10 +55,21 @@ impl ServerHandler for RudofMcpService {
             .with_protocol_version(ProtocolVersion::LATEST)
             .with_server_info(Implementation::from_build_env())
             .with_instructions(
-                "This MCP server exposes Rudof tools and prompts. Rudof is a comprehensive
-            library that implements Shape Expressions (ShEx), SHACL, DCTAP, and other technologies in the
-            RDF ecosystem, enabling schema validation, data transformation, and semantic web
-            operations.",
+                "Rudof MCP server for RDF processing, SPARQL querying and graph validation using ShEx and SHACL.\n\
+                \n\
+                IMPORTANT — stateful datastore: the server holds a single in-memory RDF graph shared \
+                across all tool calls. Call `load_rdf_data_from_sources` before any tool. \
+                Supports URLs, local files, and inline text as data sources — each call merges \
+                triples into the existing store (cumulative). SPARQL endpoints are also supported \
+                as a source via `load_rdf_data_from_sources` but queried live; their results are not merged into the store.\n\
+                \n\
+                Typical call sequences:\n\
+                - Explore data: load → node_info or execute_sparql_query\n\
+                - Validate with ShEx or SHACL: load → validate_shex / validate_shacl\n\
+                - Query data: load → execute_sparql_query (SELECT, CONSTRUCT and ASK)\n\
+                - Visualize graph: load → export_image (SVG/PNG) or export_plantuml\n\
+                - Check a schema without data: check_shex or show_shex (no load needed)\n\
+                ",
             )
     }
 
