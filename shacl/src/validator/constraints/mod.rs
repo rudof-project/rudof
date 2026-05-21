@@ -1,4 +1,5 @@
 mod core;
+mod sparql;
 mod test;
 
 use crate::error::ValidationError;
@@ -48,7 +49,7 @@ pub trait NativeValidator<RDF: NeighsRDF> {
 }
 // TODO - Move to crate::validator
 #[cfg(feature = "sparql")]
-pub trait SparqlValidator<RDF: QueryRDF + Debug> {
+pub trait BasicSparqlValidator<RDF: QueryRDF + Debug> {
     fn validate_sparql(
         &self,
         component: &IRComponent,
@@ -92,7 +93,7 @@ macro_rules! impl_validators_via_validate {
         }
 
         #[cfg(feature = "sparql")]
-        impl<S> crate::validator::constraints::SparqlValidator<S> for $ty
+        impl<S> crate::validator::constraints::BasicSparqlValidator<S> for $ty
         where
             S: rudof_rdf::rdf_core::query::QueryRDF + rudof_rdf::rdf_core::NeighsRDF + std::fmt::Debug + 'static,
         {
@@ -195,15 +196,16 @@ impl<'a, S: NeighsRDF + Debug + 'static> ValidatorDeref<'a, dyn NativeValidator<
             IRComponent::QualifiedValueShape(inner) => inner,
             IRComponent::Closed(inner) => inner,
             IRComponent::Deactivated(inner) => inner,
+            IRComponent::BasicSparql(inner) => inner,
         }
     }
 }
 
 #[cfg(feature = "sparql")]
-impl<'a, S: QueryRDF + NeighsRDF + Debug + 'static> ValidatorDeref<'a, dyn SparqlValidator<S> + 'a>
+impl<'a, S: QueryRDF + NeighsRDF + Debug + 'static> ValidatorDeref<'a, dyn BasicSparqlValidator<S> + 'a>
     for ShaclComponent<'a, S>
 {
-    fn deref(&self) -> &'a dyn SparqlValidator<S> {
+    fn deref(&self) -> &'a dyn BasicSparqlValidator<S> {
         match self.component() {
             IRComponent::Class(inner) => inner,
             IRComponent::Datatype(inner) => inner,
@@ -233,6 +235,7 @@ impl<'a, S: QueryRDF + NeighsRDF + Debug + 'static> ValidatorDeref<'a, dyn Sparq
             IRComponent::QualifiedValueShape(inner) => inner,
             IRComponent::Closed(inner) => inner,
             IRComponent::Deactivated(inner) => inner,
+            IRComponent::BasicSparql(inner) => inner,
         }
     }
 }

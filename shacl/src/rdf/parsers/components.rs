@@ -1,4 +1,5 @@
 use crate::ast::ASTComponent;
+use crate::rdf::parsers::basic_sparql;
 use crate::rdf::parsers::{
     and, class, closed, datatype, deactivated, disjoint, equals, has_value, in_component, language_in, less_than,
     less_than_or_equals, max_count, max_exclusive, max_inclusive, max_length, min_count, min_exclusive, min_inclusive,
@@ -51,8 +52,7 @@ pub(crate) fn components<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = Vec
         Box::new(has_value()),
         Box::new(in_component()),
         // SPARQL based constraints and SPARQL based constraint components
-        // TODO
-
+        Box::new(basic_sparql()),
         // TODO: deactivated is not a shape component...move this code elsewhere?
         Box::new(deactivated()),
     ];
