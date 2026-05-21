@@ -186,8 +186,8 @@ impl InMemoryGraph {
         reader_mode: &ReaderMode,
     ) -> Result<(), InMemoryGraphError> {
         let turtle_parser = match base {
-            None => TurtleParser::new(),
-            Some(iri) => TurtleParser::new().with_base_iri(iri)?,
+            None => TurtleParser::new().lenient(),
+            Some(iri) => TurtleParser::new().lenient().with_base_iri(iri)?,
         };
 
         let mut turtle_reader = turtle_parser.for_reader(reader);
@@ -202,7 +202,17 @@ impl InMemoryGraph {
                     Some(t) => t,
                     None => continue,
                 };
-            graph.insert(triple.as_ref());
+            let triple_ref = triple.as_ref();
+            if let Err(e) = validate_triple_iris(triple_ref) {
+                match handle_parse_error(Err::<(), _>(e), reader_mode, |e| InMemoryGraphError::TurtleParseError {
+                    source_name: source_name.to_string(),
+                    error: format!("Invalid IRI in triple: {e}"),
+                })? {
+                    Some(_) => unreachable!(),
+                    None => continue,
+                }
+            }
+            graph.insert(triple_ref);
         }
 
         let prefixes: HashMap<&str, &str> = turtle_reader.prefixes().collect();
@@ -1111,6 +1121,17 @@ fn triple_to_quad(t: TripleRef, graph_name: GraphName) -> Quad {
 /// * `Ok(Some(value))` - Parsing succeeded
 /// * `Ok(None)` - Parsing failed in lax mode (skip this item)
 /// * `Err(error)` - Parsing failed in strict mode
+fn validate_triple_iris(triple: TripleRef) -> Result<(), String> {
+    if let oxrdf::NamedOrBlankNodeRef::NamedNode(n) = triple.subject {
+        OxNamedNode::new(n.as_str()).map_err(|e| e.to_string())?;
+    }
+    OxNamedNode::new(triple.predicate.as_str()).map_err(|e| e.to_string())?;
+    if let TermRef::NamedNode(n) = triple.object {
+        OxNamedNode::new(n.as_str()).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 fn handle_parse_error<T, E: std::fmt::Display>(
     result: Result<T, E>,
     reader_mode: &ReaderMode,

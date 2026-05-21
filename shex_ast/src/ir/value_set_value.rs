@@ -80,6 +80,18 @@ pub enum StringOrIriStem {
     IriStem { stem: String },
 }
 
+fn lang_stem_matches(stem: &str, tag: &str) -> bool {
+    let stem_parts: Vec<&str> = stem.split('-').collect();
+    let tag_parts: Vec<&str> = tag.split('-').collect();
+    if stem_parts.len() > tag_parts.len() {
+        return false;
+    }
+    stem_parts
+        .iter()
+        .zip(tag_parts.iter())
+        .all(|(s, t)| s.eq_ignore_ascii_case(t))
+}
+
 impl ValueSetValue {
     pub fn match_value(&self, object: &Object) -> bool {
         match self {
@@ -169,7 +181,7 @@ impl ValueSetValue {
             ValueSetValue::LanguageStem { stem } => object
                 .lang()
                 .map(|lang| match stem {
-                    LangOrWildcard::Lang(s) => lang.as_str().starts_with(s.as_str()),
+                    LangOrWildcard::Lang(s) => lang_stem_matches(s.as_str(), lang.as_str()),
                     LangOrWildcard::Wildcard { .. } => true, // Matches everything for now
                 })
                 .unwrap_or(false),
@@ -177,7 +189,7 @@ impl ValueSetValue {
                 let matches_stem = match stem {
                     LangOrWildcard::Lang(lang) => match object {
                         Object::Literal(ConcreteLiteral::StringLiteral { lang: Some(l), .. }) => {
-                            l.as_str().starts_with(lang.as_str())
+                            lang_stem_matches(lang.as_str(), l.as_str())
                         },
                         _ => false,
                     },
@@ -198,7 +210,7 @@ impl ValueSetValue {
                             },
                             LanguageExclusion::LanguageStem(stem) => {
                                 if let Object::Literal(ConcreteLiteral::StringLiteral { lang: Some(l), .. }) = object
-                                    && l.as_str().starts_with(stem.as_str())
+                                    && lang_stem_matches(stem.as_str(), l.as_str())
                                 {
                                     return false;
                                 }

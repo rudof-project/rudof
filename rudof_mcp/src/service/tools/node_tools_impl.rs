@@ -15,26 +15,25 @@ use super::helpers::*;
 /// Request parameters for inspecting an RDF node.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct NodeInfoRequest {
-    /// RDF node to inspect. Can be:
-    /// - A full IRI (e.g., "http://example.org/person/1")
-    /// - A prefixed name (e.g., "ex:person1" or ":localName")
+    /// The RDF node to inspect. Accepted forms:
+    /// - Full IRI in angle brackets: "<http://example.org/alice>"
+    /// - Prefixed name: "ex:alice" or ":localName"
+    /// - Blank node ID: "_:b0"
     pub node: String,
 
-    /// Optional list of predicates to filter the results.
-    /// Only arcs with these predicates will be shown.
+    /// Predicate IRIs to filter results. When provided, only arcs with these predicates
+    /// are shown. When omitted, all arcs are returned.
     pub predicates: Option<Vec<String>>,
 
-    /// Optional maximum depth for traversing connected nodes.
+    /// Maximum traversal depth for the tree output. Default: 1 (direct arcs only).
     pub depth: Option<usize>,
 
-    /// Display mode for node information.
-    /// Supported: outgoing, incoming, both (default: both)
+    /// Which arcs to include. One of: both (default), outgoing (node as subject), incoming (node as object).
     pub mode: Option<String>,
 
-    /// IRI normalization mode for the node string.
-    /// When false (default, lax): bare `http://…` IRIs are automatically wrapped in `<>`.
-    /// When true (strict): bare IRIs produce a parse error; use `<http://…>` explicitly.
-    /// Lax mode is convenient but may mishandle URNs, mailto:, or data: URIs.
+    /// IRI parsing strictness for `node`.
+    /// false (default): bare "http://..." IRIs are auto-wrapped in "<>".
+    /// true: bare IRIs cause a parse error — use "<http://...>" explicitly.
     pub strict_iris: Option<bool>,
 }
 

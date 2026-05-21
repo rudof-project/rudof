@@ -9,8 +9,8 @@ use crate::{Node, ShExFormat, ast};
 
 #[derive(Error, Debug, Clone)]
 pub enum SchemaIRError {
-    #[error("Pattern  /{regex}/{} trying to match node {node}", flags.as_deref().unwrap_or(""))]
-    PatternNodeNotLiteral {
+    #[error("Pattern /{regex}/{} fails over triple term {node}", flags.as_deref().unwrap_or(""))]
+    PatternTripleTerm {
         node: String,
         regex: String,
         flags: Option<String>,

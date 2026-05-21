@@ -7,10 +7,12 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.3.1
+### Added
+Tests for stats on rudof_generate and upgrade stats.json with the information of the dataset #653
+
 ## v0.2.19
 ### Added
-
-
 - #624: Allow prefixes when converting to turtle issue 
 - #645: Implement ^ inverse in ShEx validator
 - #635: Add IriNormalizationMode with lax/strict parsing

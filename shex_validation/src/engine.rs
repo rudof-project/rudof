@@ -10,6 +10,7 @@ use either::Either;
 use indexmap::IndexSet;
 use itertools::Itertools;
 // use prefixmap::PrefixMap;
+use rbe::MatchCond;
 use rudof_iri::iri;
 use rudof_rdf::rdf_core::{
     NeighsRDF,
@@ -291,7 +292,7 @@ impl Engine {
             }
         }
         let mut typing: HashSet<_> = matched.union(&hyp_as_set).cloned().collect();
-        let result = self.check_node_idx(node, label, schema, rdf, &mut typing)?;
+        let result = self.check_node_idx(node, label, schema, rdf, &mut typing, hyp)?;
         hyp.pop();
         /*debug!(
             "{} {node}@{label} with result: {}, hyp: [{}]",
@@ -314,6 +315,7 @@ impl Engine {
         schema: &SchemaIR,
         rdf: &R,
         typing: &mut HashSet<(Node, ShapeLabelIdx)>,
+        hyp: &mut Vec<(Node, ShapeLabelIdx)>,
     ) -> Result<ValidationResult>
     where
         R: NeighsRDF + QueryRDF,
@@ -328,7 +330,9 @@ impl Engine {
                 if descendants.is_empty() {
                     return Err(ValidatorError::AbstractShapeNoDescendants { idx: *idx });
                 }
-                let descendants_result = self.check_descendants(node, idx, descendants, schema, rdf, typing)?;
+                // Each descendant gets its own prove call so it builds a fresh typing
+                // with all the dependencies it actually needs (RESTRICTS semantics).
+                let descendants_result = self.check_descendants(node, idx, descendants, schema, rdf, hyp)?;
                 if descendants_result.is_right() {
                     Ok(descendants_result)
                 } else {
@@ -358,8 +362,9 @@ impl Engine {
                     if descendants.is_empty() {
                         return Ok(result);
                     }
-                    // If the shape has descendants, check them too
-                    let descendants_result = self.check_descendants(node, idx, descendants, schema, rdf, typing)?;
+                    // Each descendant gets its own prove call so it builds a fresh typing
+                    // with all the dependencies it actually needs (RESTRICTS semantics).
+                    let descendants_result = self.check_descendants(node, idx, descendants, schema, rdf, hyp)?;
                     if descendants_result.is_right() {
                         Ok(descendants_result)
                     } else {
@@ -387,19 +392,21 @@ impl Engine {
         descendants: Vec<ShapeLabelIdx>,
         schema: &SchemaIR,
         rdf: &R,
-        typing: &mut HashSet<(Node, ShapeLabelIdx)>,
+        hyp: &mut Vec<(Node, ShapeLabelIdx)>,
     ) -> Result<ValidationResult>
     where
         R: NeighsRDF + QueryRDF,
     {
         let mut errors_collection = Vec::new();
         for desc in descendants {
-            match self.check_node_idx(node, &desc, schema, rdf, typing)? {
+            // Use prove (not check_node_idx) so each descendant builds its own complete
+            // typing from its own dependency set.  This implements the ShEx RESTRICTS
+            // property: if the node conforms to a descendant, it conforms to the ancestor.
+            match self.prove(node, &desc, hyp, schema, rdf)? {
                 Either::Left(errors) => {
                     trace!(
-                        "Descendant {desc} failed for node {node}\nErrors: {}\nTyping: {}",
+                        "Descendant {desc} failed for node {node}\nErrors: {}",
                         errors.iter().map(|err| format!("{err}")).join(", "),
-                        typing.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
                     );
                     errors_collection.push(ValidatorError::DescendantShapeError {
                         current: *idx,
@@ -620,17 +627,17 @@ impl Engine {
                 declared: Preds::new(shape.preds().into_iter().collect()),
             });
         }
-        if !reminder.is_empty() {
-            /*debug!(
+        /*if !reminder.is_empty() {
+            debug!(
                 "Shape {idx} has extra preds: [{}] but is not closed",
                 reminder.iter().map(|p| p.to_string()).join(", ")
-            );*/
-        }
+            );
+        }*/
         /*debug!(
             "Neighs of {node} [{}]",
             values.iter().map(|(p, v)| format!("{p} {v}")).join(", ")
         );*/
-        let triple_exprs = schema.get_triple_exprs(idx).unwrap();
+        let triple_exprs = merge_ancestor_exprs(schema.get_triple_exprs(idx).unwrap(), schema);
         /*debug!(
             "Candidate triple exprs of {node}:\n{}",
             triple_exprs
@@ -642,14 +649,96 @@ impl Engine {
                 ))
                 .join("\n")
         );*/
-        let values_ctx = values
+        let values_ctx_raw: Vec<_> = values
             .iter()
             .map(|(p, v)| (p.clone(), v.clone(), SemanticActionContext::triple(node, p, v)))
-            .collect::<Vec<_>>();
+            .collect();
+
+        // Collect every triple-expression reachable from the parent shapes through the full
+        // extends / ShapeAnd / ShapeRef hierarchy.  This is needed to distinguish two cases:
+        //   (a) A triple that matches no leaf-bucket condition but IS covered by some transitive
+        //       ancestor's condition.  These are validated by check_node_extends_main_shape
+        //       (exhaustive semantics) and must be excluded from the partition to avoid spurious
+        //       partition failures.
+        //   (b) A triple that matches no leaf-bucket condition and is NOT covered by any ancestor
+        //       either.  These are truly invalid and must remain so the partition correctly fails.
+        let all_ancestor_exprs: Vec<Expr> = {
+            let mut exprs = Vec::new();
+            let mut visited = HashSet::new();
+            for pi in triple_exprs.keys().filter_map(|k| *k) {
+                exprs.extend(collect_all_exprs_for_shape(&pi, schema, &mut visited));
+            }
+            // Include None (the shape's own) bucket exprs as well
+            if let Some(none_exprs) = triple_exprs.get(&None) {
+                exprs.extend(none_exprs.iter().cloned());
+            }
+            exprs
+        };
+
+        let values_ctx: Vec<_> = values_ctx_raw
+            .into_iter()
+            .filter(|(pred, value, ctx)| {
+                // Keep if the triple satisfies at least one leaf-bucket condition.
+                let matches_leaf = triple_exprs.values().any(|rbes| {
+                    rbes.iter().any(|rbe| {
+                        rbe.components()
+                            .any(|(_, key, cond)| &key == pred && cond.matches(value, ctx).is_ok())
+                    })
+                });
+                if matches_leaf {
+                    return true;
+                }
+                // Triple is not needed by any leaf bucket.
+                // Keep it only if it is also NOT covered by any ancestor (case b: truly invalid).
+                // If it IS covered by an ancestor (case a), exclude it — the exhaustive check
+                // in check_node_extends_main_shape already handles it.
+                let covered_by_ancestor = all_ancestor_exprs.iter().any(|rbe| {
+                    rbe.components()
+                        .any(|(_, key, cond)| &key == pred && cond.matches(value, ctx).is_ok())
+                });
+                !covered_by_ancestor
+            })
+            .collect();
+
+        let mut reasons_parents = Vec::new();
+        tracing::trace!("Checking extends of shape {idx} for node {node}");
+        for e in shape.extends() {
+            tracing::trace!("Checking extends of shape {idx} for node {node} with extends {e}");
+            let result_parents = self.check_node_extends_main_shape(node, e, shape, schema, rdf, typing)?;
+            match result_parents {
+                Either::Left(errors) => {
+                    /*debug!(
+                        "Main shape {idx} or some of its ancestors failed for node {node}\nErrors: {}\nTyping: {}",
+                        errors.iter().map(|err| format!("{err}")).join(", "),
+                        typing.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
+                    );*/
+                    return Ok(Either::Left(vec![ValidatorError::ShapeExtendsError {
+                        node: Box::new(node.clone()),
+                        shape: Box::new(shape.clone()),
+                        idx: *idx,
+                        extends: *e,
+                        errors: ValidatorErrors::new(errors),
+                    }]));
+                },
+                Either::Right(reasons) => {
+                    /*debug!(
+                        "Main shape {idx} and its ancestors succeeded for node {node}\nReasons: {}\nTyping: {}",
+                        reasons.iter().map(|r| format!("{r}")).join(", "),
+                        typing.iter().map(|(n, l)| format!("{n}@{l}")).join(", ")
+                    );*/
+                    reasons_parents.push(Reason::ShapeExtends {
+                        node: node.clone(),
+                        shape: Box::new(shape.clone()),
+                        reasons: Reasons::new(reasons),
+                    });
+                },
+            }
+        }
 
         let parts_iter = crate::partitions_iter(&values_ctx, &triple_exprs);
         let mut parts_peekable = parts_iter.peekable();
         if let Some(_parts) = parts_peekable.peek() {
+            // There are some partitions to check, we will check them one by one until we find one that works or we exhaust all of them. We use peekable to avoid computing the first partition twice (once for the debug message and once for the loop). We could also compute the first partition before the loop and then use a regular iterator, but this way we avoid computing any partition if there are no partitions at all.
             /*debug!(
                 "Some partition found for node {node} and shape {idx}, showing the first one:\n{}",
                 parts
@@ -658,6 +747,7 @@ impl Engine {
                     .map(|(npart, partition)| format!(" Part {npart}: {}\n", show_partition(partition)))
                     .join("\n")
             );*/
+
             let mut errors_in_partitions = Vec::new();
             for (npart, partition) in parts_peekable.enumerate() {
                 let partition_display = create_partitions_display(&partition);
@@ -740,6 +830,169 @@ impl Engine {
                 node: Box::new(node.clone()),
                 shape: Box::new(shape.clone()),
                 idx: *idx,
+            })
+        }
+    }
+
+    fn check_node_extends_main_shape<R>(
+        &self,
+        node: &Node,
+        idx: &ShapeLabelIdx,
+        shape: &Shape,
+        schema: &SchemaIR,
+        rdf: &R,
+        typing: &mut HashSet<(Node, ShapeLabelIdx)>,
+    ) -> Result<ValidationResult>
+    where
+        R: QueryRDF + NeighsRDF,
+    {
+        tracing::debug!("Checking node {node} against main shape {idx}, shape: {shape}");
+        if let Some((ncs, maybe_main_shape, rest_exprs)) = schema.get_main_shape_constraints(idx) {
+            tracing::debug!(
+                "Main shape {idx} has node constraints: [{}], main shape: {}, rest exprs: [{}]",
+                ncs.iter().map(|nc| nc.to_string()).join(", "),
+                maybe_main_shape
+                    .clone()
+                    .map(|ms| ms.to_string())
+                    .unwrap_or("None".to_string()),
+                rest_exprs.iter().map(|e| e.to_string()).join(", ")
+            );
+            let mut errors = Vec::new();
+            let mut reasons = Vec::new();
+
+            if let Some(main_shape) = maybe_main_shape {
+                // For shapes with their own triple expression alongside extends (e.g.,
+                // EXTENDS @<Parent> { <p> [4] }), validate the triple expression using
+                // exhaustive semantics: pre-filter triples to those matching any component's
+                // value condition, then check cardinality. This handles open shapes correctly
+                // since extra values that don't match any constraint are simply ignored.
+                // Skip this check for shapes with shape-reference value conditions (MatchCond::Ref),
+                // which require the partition algorithm to correctly distribute triples.
+                let main_preds = main_shape.preds();
+                let no_shape_refs = main_shape
+                    .triple_expr()
+                    .components()
+                    .all(|(_, _, cond)| !cond_has_ref(&cond));
+                if !main_preds.is_empty() && no_shape_refs {
+                    let (all_values, _) = self.neighs(node, main_preds, rdf)?;
+                    let all_values_ctx: Vec<_> = all_values
+                        .iter()
+                        .map(|(p, v)| (p.clone(), v.clone(), SemanticActionContext::triple(node, p, v)))
+                        .collect();
+                    // Keep only triples where the value satisfies some component's condition
+                    let filtered: Vec<_> = all_values_ctx
+                        .iter()
+                        .filter(|(pred, value, ctx)| {
+                            main_shape
+                                .triple_expr()
+                                .components()
+                                .any(|(_, key, cond)| &key == pred && cond.matches(value, ctx).is_ok())
+                        })
+                        .cloned()
+                        .collect();
+                    match check_expr_neigh(main_shape.triple_expr(), &filtered, node, shape, idx, typing)? {
+                        Either::Left(errs) => {
+                            errors.push(ValidatorError::ParentShapeMainShapeFailed {
+                                node: Box::new(node.clone()),
+                                shape: Box::new(main_shape.clone()),
+                                idx: *idx,
+                                errors: ValidatorErrors::new(errs),
+                            });
+                        },
+                        Either::Right(rs) => {
+                            reasons.push(Reason::ParentShapeMainShapePassed {
+                                node: node.clone(),
+                                shape: Box::new(main_shape.clone()),
+                                idx: *idx,
+                                reasons: Reasons::new(rs),
+                            });
+                        },
+                    }
+                }
+                // Recursively check node constraints and triple expressions through the
+                // ancestor extends chain.
+                for e in main_shape.extends() {
+                    match self.check_node_extends_main_shape(node, e, &main_shape, schema, rdf, typing)? {
+                        Either::Left(errs) => {
+                            errors.push(ValidatorError::ParentShapeMainShapeFailed {
+                                node: Box::new(node.clone()),
+                                shape: Box::new(main_shape.clone()),
+                                idx: *idx,
+                                errors: ValidatorErrors::new(errs),
+                            });
+                        },
+                        Either::Right(rs) => {
+                            reasons.push(Reason::ParentShapeMainShapePassed {
+                                node: node.clone(),
+                                shape: Box::new(main_shape.clone()),
+                                idx: *idx,
+                                reasons: Reasons::new(rs),
+                            });
+                        },
+                    }
+                }
+            }
+            // We also validate the node constraints of the main shape
+            for nc in ncs {
+                match nc.cond().matches(node, &SemanticActionContext::subject(node)) {
+                    Ok(_pending) => {
+                        reasons.push(Reason::ParentShapeNodeConstraint {
+                            node: node.clone(),
+                            idx: *idx,
+                            nc: nc.clone(),
+                        });
+                    },
+                    Err(error) => {
+                        errors.push(ValidatorError::ParentShapeNodeConstraintFailed {
+                            node: Box::new(node.clone()),
+                            idx: *idx,
+                            nc: Box::new(nc.clone()),
+                            error: error.to_string(),
+                        });
+                    },
+                }
+            }
+            // Validate NodeConstraints from ShapeRef AND-components (e.g. @<C> in a ShapeAnd).
+            // Triple constraints in the referenced shape are already included in the partition's
+            // triple_exprs (via get_triple_exprs → Ref.get_triple_exprs), so only the
+            // NodeConstraint parts need to be checked here.
+            for rest_se in &rest_exprs {
+                if let ShapeExpr::Ref { idx: ref_idx } = rest_se
+                    && let Some((ref_ncs, _, _)) = schema.get_main_shape_constraints(ref_idx)
+                {
+                    for nc in ref_ncs {
+                        match nc.cond().matches(node, &SemanticActionContext::subject(node)) {
+                            Ok(_) => {},
+                            Err(error) => {
+                                errors.push(ValidatorError::ParentShapeNodeConstraintFailed {
+                                    node: Box::new(node.clone()),
+                                    idx: *ref_idx,
+                                    nc: Box::new(nc.clone()),
+                                    error: error.to_string(),
+                                });
+                            },
+                        }
+                    }
+                }
+            }
+            if errors.is_empty() {
+                pass(Reason::ParentShapePassed {
+                    node: node.clone(),
+                    idx: *idx,
+                    reasons: Reasons::new(reasons),
+                })
+            } else {
+                fail(ValidatorError::ParentShapeFailed {
+                    node: Box::new(node.clone()),
+                    idx: *idx,
+                    errors: ValidatorErrors::new(errors),
+                })
+            }
+        } else {
+            tracing::error!("No info for shape {idx}. This is non-extendable");
+            fail(ValidatorError::ShapeExtendsNoMainShape {
+                idx: *idx,
+                node: Box::new(node.clone()),
             })
         }
     }
@@ -859,6 +1112,109 @@ impl Engine {
     pub fn insert_pending(&mut self, atom: &Atom) {
         self.pending.insert((*atom).clone());
     }
+}
+
+/// Recursively collects every `Expr` (triple-expression RbeTable) reachable from `idx` by
+/// traversing ShapeAnd components, ShapeRef references, and extends chains.  This gives the
+/// complete set of conditions declared anywhere in the shape hierarchy rooted at `idx`, which
+/// is used to decide whether a particular triple is "covered" by the extends chain (and thus
+/// handled by check_node_extends_main_shape's exhaustive semantics) or truly undeclared.
+fn collect_all_exprs_for_shape(
+    idx: &ShapeLabelIdx,
+    schema: &SchemaIR,
+    visited: &mut HashSet<ShapeLabelIdx>,
+) -> Vec<Expr> {
+    if !visited.insert(*idx) {
+        return vec![];
+    }
+    if let Some(info) = schema.find_shape_idx(idx) {
+        match info.expr() {
+            ShapeExpr::Shape(shape) => {
+                let mut exprs = vec![shape.triple_expr().clone()];
+                for e in shape.extends() {
+                    exprs.extend(collect_all_exprs_for_shape(e, schema, visited));
+                }
+                exprs
+            },
+            ShapeExpr::ShapeAnd { exprs } => exprs
+                .iter()
+                .flat_map(|e| collect_all_exprs_for_shape(e, schema, visited))
+                .collect(),
+            ShapeExpr::Ref { idx: ref_idx } => collect_all_exprs_for_shape(ref_idx, schema, visited),
+            ShapeExpr::NodeConstraint(_) | ShapeExpr::Empty | ShapeExpr::External {} => vec![],
+            _ => vec![],
+        }
+    } else {
+        vec![]
+    }
+}
+
+/// When a shape S extends parents P1, P2, … and some Pi is a transitive ancestor of Pj,
+/// the partition would create separate buckets for Pi and Pj.  Because each triple can only
+/// go to one bucket, a triple that must satisfy BOTH Pi's and Pj's constraints would fail
+/// (diamond inheritance).
+///
+/// Fix: merge the triple expressions of every "covered" parent (one that is a transitive
+/// ancestor of another parent in the set) into the bucket of its leaf descendant.  Only
+/// leaf parents (those not subsumed by any other parent in the set) become partition buckets.
+fn merge_ancestor_exprs(
+    triple_exprs: HashMap<Option<ShapeLabelIdx>, Vec<Expr>>,
+    schema: &SchemaIR,
+) -> HashMap<Option<ShapeLabelIdx>, Vec<Expr>> {
+    let all_parents: Vec<ShapeLabelIdx> = triple_exprs.keys().filter_map(|k| *k).collect();
+    if all_parents.len() <= 1 {
+        return triple_exprs;
+    }
+
+    // For each parent, collect its transitive ancestors.
+    let parent_ancestors: Vec<(ShapeLabelIdx, HashSet<ShapeLabelIdx>)> = all_parents
+        .iter()
+        .map(|&pi| {
+            let ancestors: HashSet<ShapeLabelIdx> = schema.parents(&pi).into_iter().collect();
+            (pi, ancestors)
+        })
+        .collect();
+
+    // A parent pj is "covered" if some other parent pi has pj as a transitive ancestor
+    // (i.e. pi extends pj directly or transitively).
+    let mut covered: HashSet<ShapeLabelIdx> = HashSet::new();
+    for (pi, pi_ancestors) in &parent_ancestors {
+        for &pj in &all_parents {
+            if pj != *pi && pi_ancestors.contains(&pj) {
+                covered.insert(pj);
+            }
+        }
+    }
+
+    if covered.is_empty() {
+        return triple_exprs;
+    }
+
+    let mut result: HashMap<Option<ShapeLabelIdx>, Vec<Expr>> = HashMap::new();
+
+    // Keep the None (own shape) entry unchanged.
+    if let Some(exprs) = triple_exprs.get(&None) {
+        result.insert(None, exprs.clone());
+    }
+
+    // For each uncovered (leaf) parent, collect its own exprs plus the exprs of every
+    // covered ancestor that is reachable from it.
+    for (pi, pi_ancestors) in &parent_ancestors {
+        if !covered.contains(pi) {
+            let mut merged = triple_exprs.get(&Some(*pi)).cloned().unwrap_or_default();
+            for &pj in &all_parents {
+                if covered.contains(&pj)
+                    && pi_ancestors.contains(&pj)
+                    && let Some(pj_exprs) = triple_exprs.get(&Some(pj))
+                {
+                    merged.extend(pj_exprs.iter().cloned());
+                }
+            }
+            result.insert(Some(*pi), merged);
+        }
+    }
+
+    result
 }
 
 fn pass(reason: Reason) -> Result<ValidationResult> {
@@ -1035,6 +1391,17 @@ fn create_partitions_display(ps: &[PartitionInfo]) -> PartitionsDisplay {
         .map(|(maybe_label, rbes, neighs_subset)| PartitionDisplay::new(*maybe_label, rbes, neighs_subset))
         .collect();
     PartitionsDisplay::new(&partitions_display)
+}
+
+/// Returns true if a MatchCond contains a shape reference (MatchCond::Ref),
+/// which means the condition delegates to a shape's typing check rather than
+/// directly verifying a value set.
+fn cond_has_ref(cond: &MatchCond<Pred, Node, ShapeLabelIdx, SemanticActionContext>) -> bool {
+    match cond {
+        MatchCond::Ref(_) => true,
+        MatchCond::And(vs) => vs.iter().any(cond_has_ref),
+        MatchCond::Single(_) => false,
+    }
 }
 
 #[cfg(test)]
