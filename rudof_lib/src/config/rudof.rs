@@ -10,6 +10,8 @@ use std::env;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use semver::Version;
+use crate::config::CommonConfig;
 
 /// Embedded default configuration in TOML format.
 const DEFAULT_CONFIG: &str = include_str!("default_config.toml");
@@ -21,6 +23,13 @@ const DEFAULT_CONFIG: &str = include_str!("default_config.toml");
 /// and visualization settings.
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 pub struct RudofConfig {
+    #[serde(rename = "version", default = "RudofConfig::default_version", skip_serializing_if = "Option::is_none")]
+    pub(crate) version: Option<Version>,
+
+    #[serde(flatten, default)]
+    pub(crate) common: CommonConfig,
+
+    // ---
     pub(crate) rdf_data: Option<RdfDataConfig>,
     pub(crate) shex: Option<ShExConfig>,
     pub(crate) shex_validator: Option<ValidatorConfig>,
@@ -33,6 +42,12 @@ pub struct RudofConfig {
     pub(crate) service: Option<ServiceConfig>,
     pub(crate) plantuml_path: Option<PathBuf>,
     pub(crate) comparator: Option<ComparatorConfig>,
+}
+
+/// Serde stuff
+#[allow(dead_code)]
+impl RudofConfig {
+    #[inline] fn default_version() -> Option<Version> { None }
 }
 
 impl RudofConfig {
