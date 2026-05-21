@@ -1,4 +1,5 @@
 mod and;
+mod basic_sparql;
 mod class;
 mod closed;
 mod datatype;
@@ -26,9 +27,9 @@ mod pattern;
 mod qualified_value_shape;
 mod unique_lang;
 mod xone;
-mod basic_sparql;
 
 pub use and::And;
+pub use basic_sparql::BasicSparql;
 pub use class::Class;
 pub use closed::Closed;
 pub use datatype::Datatype;
@@ -56,4 +57,3 @@ pub use pattern::Pattern;
 pub use qualified_value_shape::QualifiedValueShape;
 pub use unique_lang::UniqueLang;
 pub use xone::Xone;
-pub use basic_sparql::BasicSparql;

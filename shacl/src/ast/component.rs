@@ -56,7 +56,7 @@ pub enum ASTComponent {
         message: Option<MessageMap>,
         deactivated: Option<bool>,
         prefixes: Option<PrefixMap>,
-    }
+    },
 }
 
 impl Display for ASTComponent {
@@ -142,19 +142,25 @@ impl Display for ASTComponent {
                 prefixes,
                 message,
                 deactivated,
-                select
+                select,
             } => write!(
                 f,
                 "basic_sparql: (select: {select}{}{}{})",
                 if let Some(deactivated) = deactivated {
                     format!(", deactivated: {deactivated}")
-                } else { "".to_string() },
+                } else {
+                    "".to_string()
+                },
                 if let Some(msg) = message {
                     format!(", message: {msg}")
-                } else { "".to_string() },
+                } else {
+                    "".to_string()
+                },
                 if let Some(prefixes) = prefixes {
                     format!(", prefixes: {prefixes}")
-                } else { "".to_string() }
+                } else {
+                    "".to_string()
+                }
             ),
         }
     }

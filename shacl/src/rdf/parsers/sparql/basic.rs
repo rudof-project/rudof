@@ -1,13 +1,15 @@
-use std::collections::HashSet;
-use std::marker::PhantomData;
-use prefixmap::PrefixMap;
-use rudof_iri::IriS;
-use rudof_rdf::rdf_core::{FocusRDF, RDFError};
-use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{SingleBoolPropertyParser, SingleStringPropertyParser, ValuesPropertyParser};
-use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
-use rudof_rdf::rdf_core::vocabs::{OwlVocab, ShaclVocab};
 use crate::ast::ASTComponent;
 use crate::rdf::parsers::non_shape::message;
+use prefixmap::PrefixMap;
+use rudof_iri::IriS;
+use rudof_rdf::rdf_core::parser::rdf_node_parser::constructors::{
+    SingleBoolPropertyParser, SingleStringPropertyParser, ValuesPropertyParser,
+};
+use rudof_rdf::rdf_core::parser::rdf_node_parser::{ParserExt, RDFNodeParse};
+use rudof_rdf::rdf_core::vocabs::{OwlVocab, ShaclVocab};
+use rudof_rdf::rdf_core::{FocusRDF, RDFError};
+use std::collections::HashSet;
+use std::marker::PhantomData;
 
 struct BasicSparqlConstraintParser<RDF>(PhantomData<RDF>);
 
@@ -17,20 +19,16 @@ impl<RDF: FocusRDF> RDFNodeParse<RDF> for BasicSparqlConstraintParser<RDF> {
     fn parse_focused(&self, rdf: &mut RDF) -> Result<Self::Output, RDFError> {
         let fshape = rdf.get_focus().ok_or(RDFError::NoFocusNodeError)?.clone();
 
-        let constraint_nodes = ValuesPropertyParser::new(ShaclVocab::sh_sparql())
-            .parse_focused(rdf)?;
+        let constraint_nodes = ValuesPropertyParser::new(ShaclVocab::sh_sparql()).parse_focused(rdf)?;
 
         let mut result = Vec::new();
 
         for node in constraint_nodes {
             rdf.set_focus(&node);
 
-            let select = SingleStringPropertyParser::new(ShaclVocab::sh_select())
-                .parse_focused(rdf)?;
+            let select = SingleStringPropertyParser::new(ShaclVocab::sh_select()).parse_focused(rdf)?;
 
-            let message = message()
-                .optional()
-                .parse_focused(rdf)?;
+            let message = message().optional().parse_focused(rdf)?;
 
             let deactivated = SingleBoolPropertyParser::new(ShaclVocab::sh_deactivated())
                 .optional()
@@ -85,10 +83,10 @@ fn collect_prefixes<RDF: FocusRDF>(
             rdf.set_focus(&decl);
             let prefix = SingleStringPropertyParser::new(ShaclVocab::sh_prefix()).parse_focused(rdf);
             let ns = SingleStringPropertyParser::new(ShaclVocab::sh_namespace()).parse_focused(rdf);
-            if let (Ok(p), Ok(n)) = (prefix, ns) {
-                if let Ok(iri) = IriS::new(&n) {
-                    out.add_prefix(&p, iri);
-                }
+            if let (Ok(p), Ok(n)) = (prefix, ns)
+                && let Ok(iri) = IriS::new(&n)
+            {
+                out.add_prefix(&p, iri);
             }
         }
         rdf.set_focus(node);

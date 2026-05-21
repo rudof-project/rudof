@@ -7,6 +7,7 @@
 use rudof_iri::IriS;
 use std::sync::OnceLock;
 
+mod owl;
 mod rdf;
 mod rdfs;
 mod shacl;
@@ -15,8 +16,8 @@ mod shacl_test;
 mod shexr;
 mod test_manifest;
 mod xsd;
-mod owl;
 
+pub use owl::OwlVocab;
 pub use rdf::RdfVocab;
 pub use rdfs::RdfsVocab;
 pub use shacl::ShaclVocab;
@@ -25,7 +26,6 @@ pub use shacl_test::ShaclTestVocab;
 pub use shexr::ShexRVocab;
 pub use test_manifest::TestManifestVocab;
 pub use xsd::XsdVocab;
-pub use owl::OwlVocab;
 
 #[macro_export]
 macro_rules! vocab_term {

@@ -1,7 +1,7 @@
 use crate::error::ValidationError;
 use crate::ir::components::Disjoint;
 use crate::ir::{IRComponent, IRSchema, IRShape};
-use crate::validator::constraints::{NativeValidator, BasicSparqlValidator, validate_with_focus};
+use crate::validator::constraints::{BasicSparqlValidator, NativeValidator, validate_with_focus};
 use crate::validator::engine::Engine;
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;

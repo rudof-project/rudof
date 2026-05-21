@@ -1,5 +1,9 @@
 use crate::ast::{ASTComponent, ASTSchema};
-use crate::ir::components::{And, Class, Closed, Datatype, Deactivated, Disjoint, Equals, HasValue, In, LanguageIn, LessThan, LessThanOrEquals, MaxCount, MaxExclusive, MaxInclusive, MaxLength, MinCount, MinExclusive, MinInclusive, MinLength, Node, Nodekind, Not, Or, Pattern, QualifiedValueShape, BasicSparql, UniqueLang, Xone};
+use crate::ir::components::{
+    And, BasicSparql, Class, Closed, Datatype, Deactivated, Disjoint, Equals, HasValue, In, LanguageIn, LessThan,
+    LessThanOrEquals, MaxCount, MaxExclusive, MaxInclusive, MaxLength, MinCount, MinExclusive, MinInclusive, MinLength,
+    Node, Nodekind, Not, Or, Pattern, QualifiedValueShape, UniqueLang, Xone,
+};
 use crate::ir::dg::{DependencyGraph, PosNeg};
 use crate::ir::error::IRError;
 use crate::ir::schema::IRSchema;
@@ -139,15 +143,13 @@ impl IRComponent {
                 select,
                 deactivated,
                 prefixes,
-                message
-            } => {
-                IRComponent::BasicSparql(
-                    BasicSparql::new(select)
-                        .with_deactivated(deactivated)
-                        .with_prefixes(prefixes)
-                        .with_message(message)
-                )
-            },
+                message,
+            } => IRComponent::BasicSparql(
+                BasicSparql::new(select)
+                    .with_deactivated(deactivated)
+                    .with_prefixes(prefixes)
+                    .with_message(message),
+            ),
         };
 
         Ok(result)
@@ -305,7 +307,12 @@ impl IRComponent {
                 let bn_obj = RDF::term_as_object(&bn_term)?;
 
                 // Register bnode stuff
-                register_literal(&ConcreteLiteral::str(sparql.select()), ShaclVocab::sh_select(), &bn_obj, graph)?;
+                register_literal(
+                    &ConcreteLiteral::str(sparql.select()),
+                    ShaclVocab::sh_select(),
+                    &bn_obj,
+                    graph,
+                )?;
 
                 if let Some(message) = sparql.message() {
                     message
@@ -325,7 +332,7 @@ impl IRComponent {
 
                 // Register sh:sparql bnode
                 register_term(&bn_term, ShaclVocab::sh_sparql(), id, graph)
-            }
+            },
         }
     }
 }
@@ -507,7 +514,7 @@ impl From<&IRComponent> for IriS {
             IRComponent::QualifiedValueShape(_) => ShaclVocab::sh_qualified_value_shape_constraint_component(),
             IRComponent::Closed(_) => ShaclVocab::sh_closed_constraint_component(),
             IRComponent::Deactivated(_) => ShaclVocab::sh_deactivated_constraint_component(),
-            IRComponent::BasicSparql(_) => ShaclVocab::sh_sparql_constraint_component()
+            IRComponent::BasicSparql(_) => ShaclVocab::sh_sparql_constraint_component(),
         }
     }
 }

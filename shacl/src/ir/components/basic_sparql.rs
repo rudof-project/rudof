@@ -1,6 +1,6 @@
-use std::fmt::{Display, Formatter};
-use prefixmap::PrefixMap;
 use crate::types::MessageMap;
+use prefixmap::PrefixMap;
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone)]
 pub struct BasicSparql {

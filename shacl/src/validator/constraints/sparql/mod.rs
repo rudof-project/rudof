@@ -25,15 +25,15 @@ fn path_to_sparql(path: &SHACLPath) -> String {
 
 fn inject_values_into_where(query: &str, values_clause: &str) -> String {
     let upper = query.to_uppercase();
-    if let Some(where_pos) = upper.find("WHERE") {
-        if let Some(brace_offset) = query[where_pos..].find('{') {
-            let insert_at = where_pos + brace_offset + 1;
-            let mut result = query[..insert_at].to_string();
-            result.push(' ');
-            result.push_str(values_clause);
-            result.push_str(&query[insert_at..]);
-            return result;
-        }
+    if let Some(where_pos) = upper.find("WHERE")
+        && let Some(brace_offset) = query[where_pos..].find('{')
+    {
+        let insert_at = where_pos + brace_offset + 1;
+        let mut result = query[..insert_at].to_string();
+        result.push(' ');
+        result.push_str(values_clause);
+        result.push_str(&query[insert_at..]);
+        return result;
     }
 
     format!("{values_clause} {query}")

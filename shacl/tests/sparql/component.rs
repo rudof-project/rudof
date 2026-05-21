@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use shacl::validator::ShaclValidationMode;
     use crate::common::TestSuiteError;
     use crate::test;
+    use shacl::validator::ShaclValidationMode;
 
     const PATH: &str = "tests/data-shapes/data-shapes-test-suite/tests/sparql/component/";
 

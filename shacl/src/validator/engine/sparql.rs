@@ -1,7 +1,7 @@
 use crate::error::ValidationError;
 use crate::ir::{IRComponent, IRSchema, IRShape, ShapeLabelIdx};
 use crate::validator::cache::{SharedValidationCache, ValidationCache};
-use crate::validator::constraints::{ShaclComponent, BasicSparqlValidator, ValidatorDeref};
+use crate::validator::constraints::{BasicSparqlValidator, ShaclComponent, ValidatorDeref};
 use crate::validator::engine::{Engine, select};
 use crate::validator::nodes::{FocusNodes, ValueNodes};
 use crate::validator::report::ValidationResult;
