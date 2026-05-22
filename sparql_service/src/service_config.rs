@@ -4,20 +4,23 @@ use std::{io::Read, path::Path};
 use thiserror::Error;
 
 use rudof_iri::IriS;
-use serde::{Deserialize};
+use serde::{Deserialize, Deserializer};
 
 /// This struct can be used to define configuration of RDF data readers
-#[derive(Deserialize, PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct ServiceConfig {
     /// Default base to resolve relative IRIs, if it is `None` relative IRIs will be marked as errors`
-    #[serde(rename = "base_iri", default = "ServiceConfig::default_iri")]
     pub(crate) base: Option<IriS>,
+    /// This will be false if no option is found in the [`ServiceConfig`] section,
+    /// If it's true, it can be overriden by [`rudof_lib`](https://crates.io/rudof_lib).
+    needs_fixup: bool,
 }
 
 impl ServiceConfig {
     pub fn new() -> ServiceConfig {
         Self {
             base: Self::default_iri(),
+            needs_fixup: false
         }
     }
 
@@ -62,7 +65,8 @@ impl ServiceConfig {
     }
 
     pub fn fixup(&mut self, base_iri: Option<IriS>) {
-        if self.base.is_none() {
+        if self.needs_fixup {
+            self.needs_fixup = false;
             self.base = base_iri;
         }
     }
@@ -71,6 +75,26 @@ impl ServiceConfig {
 impl Default for ServiceConfig {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl<'de> Deserialize<'de> for ServiceConfig {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>
+    {
+        #[derive(Deserialize)]
+        struct Raw {
+            #[serde(rename = "base_iri", default = "ServiceConfig::default_iri")]
+            base: Option<IriS>
+        }
+
+        let raw = Raw::deserialize(deserializer)?;
+
+        Ok(Self {
+            needs_fixup: raw.base.is_none(),
+            base: raw.base,
+        })
     }
 }
 
