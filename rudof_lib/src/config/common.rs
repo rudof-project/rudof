@@ -1,17 +1,17 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize};
 use rudof_iri::{iri_once, IriS};
 
 iri_once!(default_base, "http://base");
 
 /// Shared configuration
-#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+#[derive(Deserialize, Debug, Clone, PartialEq)]
 pub struct CommonConfig {
     /// Base IRI
-    #[serde(rename = "base_iri", default = "CommonConfig::default_base", skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "base_iri", default = "CommonConfig::default_base")]
     pub(crate) base: Option<IriS>,
 
     /// If auto_base is true, the base will be http://base if no base is provided
-    #[serde(rename = "auto_base", default = "CommonConfig::default_auto_base", skip_serializing_if = "CommonConfig::check_false")]
+    #[serde(rename = "auto_base", default = "CommonConfig::default_auto_base")]
     pub(crate) auto_base: bool,
 }
 
@@ -65,7 +65,6 @@ impl CommonConfig {
 impl CommonConfig {
     #[inline] fn default_base() -> Option<IriS> { None }
     #[inline] fn default_auto_base() -> bool { false }
-    #[inline] fn check_false(v: &bool) -> bool { *v == false }
 }
 
 impl Default for CommonConfig {

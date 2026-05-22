@@ -21,9 +21,9 @@ const DEFAULT_CONFIG: &str = include_str!("default_config.toml");
 /// This structure encapsulates all configuration options for Rudof operations,
 /// including RDF data handling, schema validation (ShEx and SHACL), conversions,
 /// and visualization settings.
-#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
+#[derive(Deserialize, Debug, PartialEq, Clone)]
 pub struct RudofConfig {
-    #[serde(rename = "version", default = "RudofConfig::default_version", skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "version", default = "RudofConfig::default_version")]
     pub(crate) version: Option<Version>,
 
     #[serde(flatten, default = "RudofConfig::default_common_config")]
@@ -39,7 +39,7 @@ pub struct RudofConfig {
     // pub(crate) tap: Option<TapConfig>,
     // pub(crate) tap2shex: Option<Tap2ShExConfig>,
     // pub(crate) shex2sparql: Option<ShEx2SparqlConfig>,
-    #[serde(rename = "service", default = "RudofConfig::default_service_config", skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "service", default = "RudofConfig::default_service_config")]
     pub(crate) service: Option<ServiceConfig>,
     // pub(crate) plantuml_path: Option<PathBuf>,
     // pub(crate) comparator: Option<ComparatorConfig>,
