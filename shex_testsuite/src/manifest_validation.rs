@@ -263,12 +263,10 @@ impl ValidationEntry {
         trace!("Entry action: {:?}", self.action);
 
         // If the test declares an externs schema (`shapeExterns`), load it as a
-        // `SchemaExternalResolver`, register it in the `ValidatorConfig`, and
-        // run the resolver registry's AST-rewrite pass before compilation. The
-        // default registry's `RejectAllExternalResolver` stays in place as the
-        // terminator for any unsubstituted EXTERNAL shapes.
+        // `SchemaExternalResolver` and register it in the `ValidatorConfig`. The
+        // compiler now applies the registry automatically; no manual rewrite is needed.
         let mut config = ValidatorConfig::default();
-        let schema = if let Some(externs_rel) = &self.action.shape_externs {
+        if let Some(externs_rel) = &self.action.shape_externs {
             let externs_path = folder.join(externs_rel);
             let resolver = SchemaExternalResolver::from_path(&externs_path).map_err(|error| {
                 ManifestError::ExternalResolverError {
@@ -277,10 +275,7 @@ impl ValidationEntry {
                 }
             })?;
             config = config.with_external_resolver(resolver);
-            config.external_resolvers().rewrite_ast(schema)
-        } else {
-            schema
-        };
+        }
 
         let mut map_state = MapState::default();
         let mut registry = SemanticActionsRegistry::default();
@@ -290,7 +285,13 @@ impl ValidationEntry {
         let base_iri = path_to_iri(&path_schema)?;
         trace!("Compiling schema, base: {base_iri}");
         compiler
-            .compile(&schema, &base_iri, &Some(base_iri.clone()), &mut compiled_schema)
+            .compile(
+                &schema,
+                &base_iri,
+                &Some(base_iri.clone()),
+                &mut compiled_schema,
+                config.external_resolvers(),
+            )
             .map_err(|e| Box::new(ManifestError::SchemaIRError(e)))?;
         let schema = compiled_schema.clone();
         let mut validator = Validator::new(&compiled_schema, &config).map_err(ManifestError::ValidationError)?;

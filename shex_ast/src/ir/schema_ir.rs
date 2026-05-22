@@ -1,6 +1,7 @@
 use super::dependency_graph::{DependencyGraph, PosNeg};
 use super::shape_expr::ShapeExpr;
 use super::shape_label::ShapeLabel;
+use crate::ir::external_resolver::ExternalShapeResolverRegistry;
 use crate::ir::inheritance_graph::InheritanceGraph;
 use crate::ir::map_state::MapState;
 use crate::ir::node_constraint::NodeConstraint;
@@ -270,6 +271,7 @@ impl SchemaIR {
     pub fn populate_from_schema_json(
         &mut self,
         schema_json: &SchemaJson,
+        external_resolvers: &ExternalShapeResolverRegistry,
         resolve_method: &ResolveMethod,
         base: &Option<IriS>,
     ) -> Result<()> {
@@ -278,7 +280,8 @@ impl SchemaIR {
         // same Arc<Mutex<MapState>> that callers can later read back via get_map_state_arc).
         let registry = self.semantic_actions_registry.clone();
         let mut compiler = AST2IR::with_registry(resolve_method, registry);
-        compiler.compile(schema_json, &schema_json.source_iri(), base, self)?;
+        // `AST2IR::compile` applies `external_resolvers` to the root and imported schemas.
+        compiler.compile(schema_json, &schema_json.source_iri(), base, self, external_resolvers)?;
         if let Some(base) = base {
             self.set_default_base_prefixes(base);
         }
@@ -750,6 +753,7 @@ mod tests {
     use rudof_iri::iri;
 
     use super::SchemaIR;
+    use crate::ir::external_resolver::ExternalShapeResolverRegistry;
     use crate::{
         Pred, ResolveMethod, ShapeLabelIdx,
         ast::Schema as SchemaJson,
@@ -777,8 +781,13 @@ mod tests {
         }"#;
         let schema_json: SchemaJson = serde_json::from_str::<SchemaJson>(str).unwrap();
         let mut ir = SchemaIR::new(SemanticActionsRegistry::default());
-        ir.populate_from_schema_json(&schema_json, &ResolveMethod::default(), &None)
-            .unwrap();
+        ir.populate_from_schema_json(
+            &schema_json,
+            &ExternalShapeResolverRegistry::default(),
+            &ResolveMethod::default(),
+            &None,
+        )
+        .unwrap();
         println!("Schema IR: {ir}");
         let s1_label: ShapeLabel = ShapeLabel::iri(iri!("http://a.example/S1"));
         let s1 = ir
@@ -830,8 +839,13 @@ mod tests {
 }"#;
         let schema: SchemaJson = serde_json::from_str(str).unwrap();
         let mut ir = SchemaIR::new(SemanticActionsRegistry::default());
-        ir.populate_from_schema_json(&schema, &ResolveMethod::default(), &None)
-            .unwrap();
+        ir.populate_from_schema_json(
+            &schema,
+            &ExternalShapeResolverRegistry::default(),
+            &ResolveMethod::default(),
+            &None,
+        )
+        .unwrap();
         println!("Schema IR: {ir}");
         let s: ShapeLabel = ShapeLabel::iri(iri!("http://example.org/S"));
         let idx = ir.get_shape_label_idx(&s).unwrap();
@@ -897,8 +911,13 @@ mod tests {
 }"#;
         let schema: SchemaJson = serde_json::from_str(str).unwrap();
         let mut ir = SchemaIR::new(SemanticActionsRegistry::default());
-        ir.populate_from_schema_json(&schema, &ResolveMethod::default(), &None)
-            .unwrap();
+        ir.populate_from_schema_json(
+            &schema,
+            &ExternalShapeResolverRegistry::default(),
+            &ResolveMethod::default(),
+            &None,
+        )
+        .unwrap();
         let s: ShapeLabel = ShapeLabel::iri(iri!("http://example.org/S"));
         let idx = ir.get_shape_label_idx(&s).unwrap();
         println!("Schema IR: {ir}");

@@ -1,7 +1,9 @@
 use crate::cli::parser::ShexValidateArgs;
 use crate::commands::base::{Command, CommandContext};
-use anyhow::Result;
+use anyhow::{Result, anyhow};
+use rudof_lib::Rudof;
 use rudof_lib::formats::IriNormalizationMode;
+use std::io::Write;
 
 /// Implementation of the `shex-validate` command.
 ///
@@ -26,12 +28,33 @@ impl Command for ShexValidateCommand {
 
     /// Executes the shex-validate logic.
     fn execute(&self, ctx: &mut CommandContext) -> Result<()> {
+        // Discovery flag short-circuits the rest of the command.
+        if self.args.list_external_resolvers {
+            print_external_resolvers(&mut ctx.writer)?;
+            return Ok(());
+        }
+
         let data_format = self.args.data_format.into();
         let reader_mode = self.args.reader_mode.into();
         let schema_format = self.args.schema_format.into();
         let sort_order = self.args.sort_by.into();
         let result_format = self.args.result_format.into();
         let map_state = self.args.map_state.clone();
+
+        // External-shape resolvers must be registered before `load_shex_schema`
+        // runs, since the compiler reads them from the validator config to
+        // rewrite EXTERNAL declarations during AST→IR.
+        for spec in &self.args.external_resolvers {
+            ctx.rudof.add_external_resolver(spec)?;
+        }
+
+        // `schema` is `required_unless_present = list_external_resolvers`, so we
+        // know it must be Some here (the listing case returned earlier).
+        let schema = self
+            .args
+            .schema
+            .as_ref()
+            .ok_or_else(|| anyhow!("--schema is required for shex-validate"))?;
 
         let mut loading = ctx
             .rudof
@@ -49,7 +72,7 @@ impl Command for ShexValidateCommand {
 
         let mut shex_schema_loading = ctx
             .rudof
-            .load_shex_schema(&self.args.schema)
+            .load_shex_schema(schema)
             .with_reader_mode(&reader_mode)
             .with_shex_schema_format(&schema_format);
         if let Some(base) = self.args.base_schema.as_deref() {
@@ -111,4 +134,13 @@ impl Command for ShexValidateCommand {
 
         Ok(())
     }
+}
+
+fn print_external_resolvers<W: Write>(writer: &mut W) -> Result<()> {
+    writeln!(writer, "Available external-shape resolvers:")?;
+    writeln!(writer)?;
+    for info in Rudof::list_external_resolvers() {
+        writeln!(writer, "  {:<18} {}", info.spec_syntax, info.description)?;
+    }
+    Ok(())
 }

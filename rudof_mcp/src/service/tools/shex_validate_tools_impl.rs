@@ -67,6 +67,13 @@ pub struct ValidateShexRequest {
     /// false (default): bare "http://..." IRIs are auto-wrapped in "<>".
     /// true: bare IRIs cause a parse error — use "<http://...>" explicitly.
     pub strict_iris: Option<bool>,
+
+    /// External-shape resolver specs (applied in order, before schema loading).
+    /// Each entry follows the grammar `<kind>[:<arg>]`. Built-in kinds:
+    /// "reject-all" (rejects any unhandled EXTERNAL) and "schema:<path>"
+    /// (substitutes EXTERNAL declarations from a ShEx file). Read the
+    /// resource at `rudof://shex/external-resolvers` to enumerate.
+    pub external_resolvers: Option<Vec<String>>,
 }
 
 /// Response containing ShEx validation results.
@@ -109,6 +116,7 @@ pub async fn validate_shex_impl(
         result_format,
         sort_by,
         strict_iris,
+        external_resolvers,
     }): Parameters<ValidateShexRequest>,
 ) -> Result<CallToolResult, McpError> {
     let mut rudof = service.rudof.lock().await;
@@ -239,6 +247,21 @@ pub async fn validate_shex_impl(
             SHAPEMAP_FORMATS,
         )
         .into_call_tool_result());
+    }
+
+    // Register external-shape resolver specs before loading the schema so the
+    // compiler can apply them during AST→IR. Bad specs are reported as a tool
+    // execution error with a hint pointing to the resource that enumerates kinds.
+    if let Some(specs) = external_resolvers.as_ref() {
+        for spec in specs {
+            if let Err(e) = rudof.add_external_resolver(spec) {
+                return Ok(ToolExecutionError::with_hint(
+                    format!("Invalid external resolver spec '{}': {}", spec, e),
+                    "Read the rudof://shex/external-resolvers resource to enumerate valid kinds",
+                )
+                .into_call_tool_result());
+            }
+        }
     }
 
     let mut shex_schema_loading = rudof.load_shex_schema(&parsed_schema);

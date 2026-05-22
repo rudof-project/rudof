@@ -1,5 +1,6 @@
 use super::node_constraint::NodeConstraint;
 use crate::ir::annotation::Annotation;
+use crate::ir::external_resolver::ExternalShapeResolverRegistry;
 use crate::ir::map_action_extension::MapActionExtension;
 use crate::ir::map_state::MapState;
 use crate::ir::object_value::ObjectValue;
@@ -74,7 +75,14 @@ impl AST2IR {
         source_iri: &IriS,
         base: &Option<IriS>,
         compiled_schema: &mut SchemaIR,
+        external_resolvers: &ExternalShapeResolverRegistry,
     ) -> CResult<()> {
+        // Apply the external-shape resolver registry to the root schema before any other
+        // processing. Imported schemas are rewritten as they are resolved inside
+        // `collect_imports_labels`. Cloning is necessary because `rewrite_ast` takes ownership;
+        // it is also cheap relative to the rest of compilation.
+        let rewritten_root = external_resolvers.rewrite_ast(schema_ast.clone());
+        let schema_ast = &rewritten_root;
         let mut visited = Vec::new();
         let mut imported_asts: Vec<(SchemaAST, IriS)> = Vec::new();
         /*trace!(
@@ -92,6 +100,7 @@ impl AST2IR {
             &mut visited,
             base,
             &mut imported_asts,
+            external_resolvers,
         )?;
         // Root schema prefixmap wins (imported schemas' prefix maps are scoped to their own file).
         compiled_schema.set_prefixmap(schema_ast.prefixmap());
@@ -127,6 +136,7 @@ impl AST2IR {
         visited_sources: &mut Vec<IriS>,
         base: &Option<IriS>,
         imported_asts: &mut Vec<(SchemaAST, IriS)>,
+        external_resolvers: &ExternalShapeResolverRegistry,
     ) -> CResult<()> {
         let imports = schema_ast
             .imports_resolved(base)
@@ -137,6 +147,9 @@ impl AST2IR {
                 visited_sources.push(import_iri.clone());
                 // For imported schemas, the base for dereferencing is the source IRI of the importer.
                 let imported_schema = self.resolve(&import_iri, Some(source_iri))?;
+                // Apply the external-resolver registry so EXTERNAL decls inside imported schemas are
+                // substituted before their labels are registered.
+                let imported_schema = external_resolvers.rewrite_ast(imported_schema);
                 // Spec: an imported schema must not declare startActs.
                 if imported_schema.start_actions().is_some() {
                     return Err(Box::new(SchemaIRError::ImportIriError {
@@ -152,6 +165,7 @@ impl AST2IR {
                     visited_sources,
                     &nested_base,
                     imported_asts,
+                    external_resolvers,
                 )?;
                 // Register labels of this imported schema. Per spec, the imported schema's
                 // `start` is ignored — only shape declarations contribute.
