@@ -10,13 +10,14 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct ServiceConfig {
     /// Default base to resolve relative IRIs, if it is `None` relative IRIs will be marked as errors`
-    pub base: Option<IriS>,
+    #[serde(rename = "base_iri", default = "ServiceConfig::default_iri", skip_serializing_if = "Option::is_none")]
+    pub(crate) base: Option<IriS>,
 }
 
 impl ServiceConfig {
     pub fn new() -> ServiceConfig {
         Self {
-            base: Some(IriS::new_unchecked("base://")),
+            base: Self::default_iri(),
         }
     }
 
@@ -39,6 +40,31 @@ impl ServiceConfig {
             error: e,
         })?;
         Ok(config)
+    }
+
+    pub fn with_base(mut self, iri: Option<IriS>) -> Self {
+        self.base = iri;
+        self
+    }
+}
+
+impl ServiceConfig {
+    pub fn base(&self) -> Option<&IriS> {
+        self.base.as_ref()
+    }
+}
+
+/// Serde stuff
+impl ServiceConfig {
+    #[inline]
+    fn default_iri() -> Option<IriS> {
+        None
+    }
+
+    pub fn fixup(&mut self, base_iri: Option<IriS>) {
+        if self.base.is_none() {
+            self.base = base_iri;
+        }
     }
 }
 

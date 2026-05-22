@@ -26,7 +26,7 @@ pub struct RudofConfig {
     #[serde(rename = "version", default = "RudofConfig::default_version", skip_serializing_if = "Option::is_none")]
     pub(crate) version: Option<Version>,
 
-    #[serde(flatten, default)]
+    #[serde(flatten, default = "RudofConfig::default_common_config")]
     pub(crate) common: CommonConfig,
 
     // ---
@@ -39,16 +39,22 @@ pub struct RudofConfig {
     // pub(crate) tap: Option<TapConfig>,
     // pub(crate) tap2shex: Option<Tap2ShExConfig>,
     // pub(crate) shex2sparql: Option<ShEx2SparqlConfig>,
-    // pub(crate) service: Option<ServiceConfig>,
+    #[serde(rename = "service", default = "RudofConfig::default_service_config", skip_serializing_if = "Option::is_none")]
+    pub(crate) service: Option<ServiceConfig>,
     // pub(crate) plantuml_path: Option<PathBuf>,
     // pub(crate) comparator: Option<ComparatorConfig>,
 }
 
-// impl RudofConfig {
-//     /// Creates a new [`RudofConfig`] with default settings.
-//     pub fn new() -> Self {
-//         RudofConfig::from_str(DEFAULT_CONFIG).unwrap()
-//     }
+impl RudofConfig {
+    /// Creates a new [`RudofConfig`] with default settings.
+    pub fn new() -> Self {
+        // RudofConfig::from_str(DEFAULT_CONFIG).unwrap()
+        Self {
+            version: Self::default_version(),
+            common: Self::default_common_config(),
+            service: Self::default_service_config(),
+        }
+    }
 //
 //     /// Loads a [`RudofConfig`] from a TOML file.
 //     ///
@@ -101,7 +107,7 @@ pub struct RudofConfig {
 //         self.plantuml_path = Some(path.as_ref().to_owned());
 //         self
 //     }
-// }
+}
 
 // impl RudofConfig {
 //     /// Returns the configuration for Dctap.
@@ -247,12 +253,13 @@ pub struct RudofConfig {
 #[allow(dead_code)]
 impl RudofConfig {
     #[inline] fn default_version() -> Option<Version> { None }
+    #[inline] fn default_common_config() -> CommonConfig { CommonConfig::new() }
+    #[inline] fn default_service_config() -> Option<ServiceConfig> { None }
 }
 
 impl Default for RudofConfig {
     fn default() -> Self {
-        // Self::new()
-        todo!()
+        Self::new()
     }
 }
 
