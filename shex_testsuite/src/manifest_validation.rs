@@ -243,7 +243,10 @@ impl ValidationEntry {
             error: err,
         })?;
         let path_iri = path_to_iri(&path_absolute)?;
-        let base_str = Some(path_iri.as_str());
+        // Append trailing slash so relative IRIs inside the folder resolve correctly
+        // per RFC 3986: without it, the last path segment is stripped on resolution.
+        let folder_iri_str = format!("{}/", path_iri.as_str());
+        let base_str = Some(folder_iri_str.as_str());
 
         let graph = InMemoryGraph::parse_data(
             &self.action.data,
@@ -315,7 +318,7 @@ impl ValidationEntry {
                 })?;
             for entry in manifest_map.entries() {
                 let node = parse_node(entry.node(), base_str)?;
-                let shape = parse_shape(entry.shape())?;
+                let shape = parse_shape(entry.shape(), base_str)?;
                 let result = validator
                     .validate_node_shape(&node, &shape, &graph, &schema, &Some(graph.prefixmap().clone()))
                     .map_err(|e| Box::new(ManifestError::ValidationError(e)))?;
@@ -331,7 +334,7 @@ impl ValidationEntry {
         if let Some(focus) = &self.action.focus {
             trace!("Focus: {}", focus);
             let node = parse_focus(focus, base_str)?;
-            let shape = parse_maybe_shape(&self.action.shape)?;
+            let shape = parse_maybe_shape(&self.action.shape, base_str)?;
             trace!("Focus node: {}, shape: {}", node, shape);
 
             let result = validator
@@ -368,11 +371,11 @@ impl ValidationEntry {
 }
 
 #[cfg(not(target_family = "wasm"))]
-fn parse_maybe_shape(shape: &Option<String>) -> Result<ShapeLabel, Box<ManifestError>> {
+fn parse_maybe_shape(shape: &Option<String>, base: Option<&str>) -> Result<ShapeLabel, Box<ManifestError>> {
     match &shape {
         None => Ok(ShapeLabel::Start),
         Some(str) => {
-            let shape = parse_shape(str)?;
+            let shape = parse_shape(str, base)?;
             Ok(shape)
         },
     }
@@ -423,8 +426,8 @@ fn parse_node(str: &str, base: Option<&str>) -> Result<Node, Box<ManifestError>>
 }
 
 #[cfg(not(target_family = "wasm"))]
-fn parse_shape(str: &str) -> Result<ShapeLabel, Box<ManifestError>> {
-    let node = Node::parse(str, None).map_err(|e| {
+fn parse_shape(str: &str, base: Option<&str>) -> Result<ShapeLabel, Box<ManifestError>> {
+    let node = Node::parse(str, base).map_err(|e| {
         Box::new(ManifestError::ParsingShapeLabel {
             value: str.to_string(),
             error: e.to_string(),
