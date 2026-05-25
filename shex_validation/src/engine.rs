@@ -76,7 +76,7 @@ impl Engine {
         while let Some(atom) = self.pop_pending() {
             match atom.clone() {
                 Atom::Pos((node, idx)) => {
-                    if check_start_acts(schema.start_acts(), &node, &idx, schema)? == false {
+                    if !check_start_acts(schema.start_acts(), &node, &idx, schema)? {
                         self.add_checked_neg(
                             atom.clone(),
                             vec![ValidatorError::StartActFailed {
@@ -1465,10 +1465,16 @@ fn create_partitions_display(ps: &[PartitionInfo]) -> PartitionsDisplay {
     PartitionsDisplay::new(&partitions_display)
 }
 
-fn check_start_acts(start_acts: &[SemAct], node: &Node, idx: &ShapeLabelIdx, schema: &SchemaIR) -> Result<bool> {
-    tracing::trace!("Checking start actions for shape {idx} and node {node}");
+fn check_start_acts(start_acts: &[SemAct], _node: &Node, _idx: &ShapeLabelIdx, schema: &SchemaIR) -> Result<bool> {
+    let registry = schema.semantic_actions_registry();
+    let context = SemanticActionContext::new_start_act_context();
     for act in start_acts {
-        tracing::trace!("Checking start action {act} for node {node}");
+        let parameter = act.code().map(|code| code.as_str());
+        let result = registry.run_action(act.name(), parameter, &context);
+        if let Err(err) = result {
+            tracing::error!("Start action {act} failed with error: {err}");
+            return Ok(false);
+        }
     }
     Ok(true)
 }

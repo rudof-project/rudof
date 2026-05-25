@@ -69,6 +69,10 @@ impl SchemaIR {
         self.semantic_actions_registry.set_map_state(map_state);
     }
 
+    pub fn set_start_actions(&mut self, start_acts: Vec<SemAct>) {
+        self.start_acts = start_acts;
+    }
+
     pub fn start_acts(&self) -> &Vec<SemAct> {
         &self.start_acts
     }
@@ -178,6 +182,10 @@ impl SchemaIR {
     /// Returns the descendants of the shape expression corresponding to the given index
     pub fn descendants(&self, idx: &ShapeLabelIdx) -> Vec<ShapeLabelIdx> {
         self.inheritance_graph.descendants(idx)
+    }
+
+    pub fn set_semantic_actions_registry(&mut self, registry: SemanticActionsRegistry) {
+        self.semantic_actions_registry = registry;
     }
 
     /// Returns a map of shape label indices to the triple expressions of the shape expressions that extend the shape expression corresponding to the given index,
@@ -706,6 +714,10 @@ impl SchemaIR {
             *idx
         }
     }
+
+    pub fn semantic_actions_registry(&self) -> &SemanticActionsRegistry {
+        &self.semantic_actions_registry
+    }
 }
 
 impl Display for SchemaIR {
@@ -722,6 +734,17 @@ impl Display for SchemaIR {
             }
         } else {
             writeln!(dest, "No sources")?;
+        }
+        if !self.start_acts().is_empty() {
+            writeln!(
+                dest,
+                "Start actions: [{}]",
+                self.start_acts()
+                    .iter()
+                    .map(|a| a.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )?;
         }
         writeln!(dest, "SchemaIR with {} shapes", self.shape_label_counter)?;
         writeln!(dest, "Labels to indexes:")?;
@@ -795,7 +818,6 @@ mod tests {
             &None,
         )
         .unwrap();
-        println!("Schema IR: {ir}");
         let s1_label: ShapeLabel = ShapeLabel::iri(iri!("http://a.example/S1"));
         let s1 = ir
             .shape_label_from_idx(&ir.get_shape_label_idx(&s1_label).unwrap())

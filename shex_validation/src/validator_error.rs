@@ -428,7 +428,8 @@ impl ValidatorError {
             | ValidatorError::NoMatchesFound { .. }
             | ValidatorError::ShapeRefFailed { .. }
             | ValidatorError::ExternalShapeRejected { .. }
-            | ValidatorError::ExternalShapeUnresolved { .. } => Ok(()),
+            | ValidatorError::ExternalShapeUnresolved { .. }
+            | ValidatorError::StartActFailed { .. } => Ok(()),
         }
     }
 
