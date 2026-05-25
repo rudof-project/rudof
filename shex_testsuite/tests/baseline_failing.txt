@@ -1,5 +1,3 @@
-1dot-relative_pass-relative-shape
-1dot-relative_pass-short-shape
 1dotNoCode3_pass
 startCode1fail_abort
 startCode1startReffail_abort
