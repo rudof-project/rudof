@@ -1,14 +1,6 @@
 1dot-relative_pass-relative-shape
 1dot-relative_pass-short-shape
 1dotNoCode3_pass
-1val1IRIREFClosedExtra1_pass-iri2
-1val1IRIREFExtra1Closed_pass-iri2
-1val1IRIREFExtra1One_pass-iri2
-1val1IRIREFExtra1_pass-iri2
-1val2IRIREFExtra1_pass-iri-bnode
-3Eachdot3Extra_pass-iri2
-3EachdotExtra3NLex_pass-iri2
-3EachdotExtra3_pass-iri2
 startCode1fail_abort
 startCode1startReffail_abort
 startCode3fail_abort

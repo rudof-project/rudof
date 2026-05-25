@@ -38,3 +38,5 @@ python/docs/_build/
 
 # Nix flake build result
 result
+
+.codegraph/
