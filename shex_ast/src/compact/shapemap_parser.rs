@@ -14,8 +14,8 @@ use prefixmap::PrefixMap;
 use rudof_iri::IriS;
 use std::fs;
 use std::path::Path;
-use tracing::debug;
-use tracing::trace;
+// use tracing::debug;
+// use tracing::trace;
 
 type Result<A> = std::result::Result<A, ParseError>;
 
@@ -33,7 +33,7 @@ impl ShapeMapParser<'_> {
         shapes_prefixmap: &Option<PrefixMap>,
         base_shapes: &Option<IriS>,
     ) -> Result<QueryShapeMap> {
-        trace!("Parsing shapemap with src: {src} and base_nodes: {base_nodes:?} and base_shapes: {base_shapes:?}");
+        // trace!("Parsing shapemap with src: {src} and base_nodes: {base_nodes:?} and base_shapes: {base_shapes:?}");
         let mut query_shapemap = QueryShapeMap::new();
         if let Some(pm) = nodes_prefixmap {
             query_shapemap = query_shapemap.with_nodes_prefixmap(pm)
@@ -52,9 +52,7 @@ impl ShapeMapParser<'_> {
                         node_selector,
                         shape_selector,
                     } => {
-                        tracing::debug!(
-                            "Association {node_selector:?}@{shape_selector:?} with base_nodes: {base_nodes:?} and base_shapes: {base_shapes:?}"
-                        );
+                        // tracing::debug!("Association {node_selector}@{shape_selector}");
                         query_shapemap.add_association(node_selector, base_nodes, shape_selector, base_shapes)?;
                     },
                 }
@@ -153,7 +151,7 @@ impl Iterator for ShapeMapStatementIterator<'_> {
                 self.src = left;
             },
             Err(Err::Incomplete(_)) => {
-                debug!("Incomplete! shapemap_statement");
+                // debug!("Incomplete! shapemap_statement");
                 self.done = true;
                 r = None;
             },

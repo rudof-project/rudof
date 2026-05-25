@@ -23,10 +23,18 @@ jobs:
   release:
     name: Bump version and create release
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
     steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.RUDOF_BOT_ID }}
+          private-key: ${{ secrets.RUDOF_BOT_PK }}
+
       - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.RELEASE_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
           fetch-tags: true
       - name: Compute new version
         id: version
@@ -74,11 +82,17 @@ jobs:
       - name: Verify version was updated
         run: grep '^version = "${{ steps.version.outputs.new }}"' Cargo.toml
 
+      - name: Update version in flake.nix
+        if: ${{ !inputs.prerelease }}
+        run: |
+          NEW="${{ steps.version.outputs.new }}"
+          sed -i "s/rudof_version = \"[^\"]*\"/rudof_version = \"${NEW}\"/" flake.nix
+
       - name: Commit and push
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Cargo.toml
+          git config user.name "rudof-bot[bot]"
+          git config user.email "${{ secrets.RUDOF_BOT_ID }}+rudof-bot[bot]@users.noreply.github.com"
+          git add Cargo.toml flake.nix
           git commit -m "chore: release ${{ steps.version.outputs.new }} [skip ci]"
           git push
 
@@ -93,4 +107,4 @@ jobs:
             --generate-notes \
             $EXTRA_FLAGS
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}

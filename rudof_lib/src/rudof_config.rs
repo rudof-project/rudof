@@ -19,7 +19,7 @@ const DEFAULT_CONFIG: &str = include_str!("default_config.toml");
 /// This structure encapsulates all configuration options for Rudof operations,
 /// including RDF data handling, schema validation (ShEx and SHACL), conversions,
 /// and visualization settings.
-#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct RudofConfig {
     pub(crate) rdf_data: Option<RdfDataConfig>,
     pub(crate) shex: Option<ShExConfig>,
@@ -139,6 +139,11 @@ impl RudofConfig {
             None => ValidatorConfig::default(),
             Some(cfg) => cfg.clone(),
         }
+    }
+
+    /// Replace the ShEx validator configuration.
+    pub fn set_validator_config(&mut self, config: ValidatorConfig) {
+        self.shex_validator = Some(config);
     }
 
     // ---------------------------------------------------------------------------

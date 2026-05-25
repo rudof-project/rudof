@@ -27,7 +27,6 @@ pub fn load_data(
     prefixes: Option<&[InputSpec]>,
 ) -> Result<()> {
     let (data_format, reader_mode, base, merge) = init_defaults(rudof, data_format, reader_mode, base, merge)?;
-
     match (data, endpoint) {
         (Some(_data), Some(_endpoint)) => Err(Box::new(DataError::DataSourceSpec {
             message: "Cannot specify both data and endpoint. Please choose one or the other.".to_string(),

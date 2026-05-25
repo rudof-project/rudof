@@ -27,7 +27,7 @@ pub struct Validator {
 
 impl Validator {
     pub fn new(schema: &SchemaIR, config: &ValidatorConfig) -> Result<Validator> {
-        trace!("Creating Validator...");
+        // trace!("Creating Validator...");
         if config.check_negation_requirement.unwrap_or(true) && schema.has_neg_cycle() {
             trace!("Checking negation cycles...");
             let neg_cycles = schema.neg_cycles();
@@ -159,7 +159,6 @@ impl Validator {
         let pairs = shapemap
             .node_shapes(rdf)
             .map_err(|e| ValidatorError::ShapeMapError { error: e.to_string() })?;
-        trace!("Pending atoms from QueryShapeMap:\n{}", shapemap);
         let mut failures = Vec::new();
         for (node, label) in pairs.iter() {
             match self.get_shape_expr_label(label, schema) {

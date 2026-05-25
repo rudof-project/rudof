@@ -225,6 +225,20 @@ impl IriS {
             error: String::from("rewquest is not enabled"),
         })
     }
+
+    /// Relativize the IRI with respect to a base IRI
+    /// It returns a `String` instead of an `IriS` because IRIs are supposed to be absolute, so the result of relativization is not necessarily a proper IRI,
+    /// but it can be useful to visualize the relative IRI as a string.
+    /// For example, if the base IRI is `http://example.org/`
+    /// and the IRI to relativize is `http://example.org/test`, the result will be `test`.
+    pub fn relative_from(&self, base: &IriS) -> String {
+        if self.as_str().starts_with(base.as_str()) {
+            let relative_str = &self.as_str()[base.as_str().len()..];
+            relative_str.to_string()
+        } else {
+            self.as_str().to_string()
+        }
+    }
 }
 
 impl Display for IriS {
@@ -358,5 +372,14 @@ mod tests {
         let str = "<http://example.org/test>";
         let iri = IriS::parse_turtle(str).unwrap();
         assert_eq!(iri.as_str(), "http://example.org/test");
+    }
+
+    #[test]
+    fn relativize() {
+        let iri = IriS::new("file:///home/user/src/rust/rudof/relative").unwrap();
+        let base = IriS::new("file:///home/user/src/rust/rudof/").unwrap();
+        let relative = "relative";
+        let result = iri.relative_from(&base);
+        assert_eq!(result, relative);
     }
 }

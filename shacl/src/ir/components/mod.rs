@@ -1,4 +1,5 @@
 mod and;
+mod basic_sparql;
 mod class;
 mod closed;
 mod datatype;
@@ -28,6 +29,7 @@ mod unique_lang;
 mod xone;
 
 pub use and::And;
+pub use basic_sparql::BasicSparql;
 pub use class::Class;
 pub use closed::Closed;
 pub use datatype::Datatype;

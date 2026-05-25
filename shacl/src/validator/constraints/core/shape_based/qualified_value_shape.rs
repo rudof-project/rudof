@@ -1,7 +1,8 @@
+use crate::error::ValidationError;
 use crate::ir::components::QualifiedValueShape;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::types::MessageMap;
-use crate::validator::constraints::{ConstraintError, Validator, get_shape_from_idx};
+use crate::validator::constraints::Validator;
 use crate::validator::engine::{Engine, Validate};
 use crate::validator::nodes::{FocusNodes, ValueNodes};
 use crate::validator::report::ValidationResult;
@@ -22,7 +23,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         shapes_graph: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
         // TODO - It works but it returns duplicated validation results
         // I tried to use a HashSet but it still doesn't remove duplicates...
         let mut validation_results = HashSet::new();
@@ -33,7 +34,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
             // Count how many nodes conform to the shape
             for node in nodes.iter() {
                 let focus_nodes = FocusNodes::single(node.clone());
-                let qv_shape = get_shape_from_idx(shapes_graph, self.shape())?;
+                let qv_shape = shapes_graph.get_shape_from_idx_e(self.shape())?;
                 let inner_results = qv_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
                 let mut is_valid = match inner_results {
                     Ok(results) => results.is_empty(),
@@ -43,7 +44,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                 if !self.siblings().is_empty() && is_valid {
                     // If there are siblings, check that none of them validate
                     for sibling in self.siblings().iter() {
-                        let sibling_shape = get_shape_from_idx(shapes_graph, sibling)?;
+                        let sibling_shape = shapes_graph.get_shape_from_idx_e(sibling)?;
                         let sibling_results =
                             sibling_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
                         let sibling_is_valid = sibling_results.is_ok() && sibling_results.unwrap().is_empty();
@@ -67,7 +68,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                     "QualifiedValueShape: only {valid_counter} nodes conform to shape {}, which is less than minCount: {min_count}. Focus node: {fnode}",
                     shape.id()
                 );
-                let vr = ValidationResult::new(fnode_obj.clone(), component, shape.severity())
+                let vr = ValidationResult::new(fnode_obj.clone(), component, shape.severity().clone())
                     .with_message(MessageMap::from(msg))
                     .with_path(maybe_path.cloned())
                     .with_source(Some(shape.id().clone()));
@@ -82,7 +83,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for QualifiedValueShape {
                     "QualifiedValueShape: {valid_counter} nodes conform to shape {}, which is grater than maxCount: {max_count}. Focus node: {fnode}",
                     shape.id()
                 );
-                let vr = ValidationResult::new(fnode_obj, component, shape.severity())
+                let vr = ValidationResult::new(fnode_obj, component, shape.severity().clone())
                     .with_path(maybe_path.cloned())
                     .with_message(MessageMap::from(msg))
                     .with_source(Some(shape.id().clone()));

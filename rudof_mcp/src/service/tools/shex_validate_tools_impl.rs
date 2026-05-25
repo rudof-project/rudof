@@ -13,47 +13,67 @@ use std::str::FromStr;
 
 use super::helpers::*;
 
+fn normalize_iri_str(s: &str, strict: bool) -> String {
+    let trimmed = s.trim();
+    if strict {
+        return trimmed.to_string();
+    }
+    let is_bare_iri =
+        !trimmed.starts_with('<') && !trimmed.starts_with('_') && !trimmed.starts_with('{') && trimmed.contains("://");
+    if is_bare_iri {
+        format!("<{}>", trimmed)
+    } else {
+        trimmed.to_string()
+    }
+}
+
 /// Request parameters for ShEx validation.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ValidateShexRequest {
-    /// ShEx schema content to validate against
+    /// ShEx schema to validate against. Accepts inline ShExC/ShExJ text, a URL, or a local file path.
     pub schema: String,
 
-    /// Schema input format.
-    /// Supported: shexc, shexj, turtle, ntriples, rdfxml, trig, n3, nquads, json, jsonld, internal, simple
+    /// Format of the input schema. Supported for loading: shexc (default), shexj.
     pub schema_format: Option<String>,
 
-    /// Base IRI for resolving relative IRIs in schema
+    /// Base IRI for resolving relative IRIs in the schema. Example: "http://example.org/"
     pub base_schema: Option<String>,
 
-    /// Base IRI for resolving relative IRIs in data/nodes (new)
+    /// Base IRI for resolving relative IRIs in node identifiers.
     pub base_data: Option<String>,
 
-    /// Node to validate (IRI, prefixed name, or blank node).
-    /// If not provided, uses shapemap to determine nodes.
+    /// Node IRI to validate. When set without `shapemap`, auto-generates a compact ShapeMap
+    /// (e.g. "<node>@<shape>" or "<node>@START"). Mutually exclusive with `shapemap`.
     pub maybe_node: Option<String>,
 
-    /// Shape to validate the node against.
-    /// If not provided, uses START or shapemap.
+    /// Shape IRI or prefixed name to validate `maybe_node` against.
+    /// Only used when `maybe_node` is set. When omitted, uses the START shape.
     pub maybe_shape: Option<String>,
 
-    /// ShapeMap content mapping nodes to shapes.
-    /// Example: ":alice@:Person, :bob@:Person"
-    /// Optional when `maybe_node` is provided — a compact ShapeMap will be
-    /// generated automatically (e.g., `<node>@<shape>` or `<node>@START`).
+    /// Explicit ShapeMap mapping nodes to shapes. Example: ":alice@:Person, :bob@:Employee".
+    /// Overrides `maybe_node`/`maybe_shape` when provided. Only compact format is supported.
     pub shapemap: Option<String>,
 
-    /// ShapeMap format.
-    /// Supported: compact, json, internal, details, csv
+    /// Format of the ShapeMap. Only "compact" is currently supported.
     pub shapemap_format: Option<String>,
 
-    /// Output result format.
-    /// Supported: compact, details, json, csv, turtle, ntriples, rdfxml, trig, n3, nquads
+    /// Output format for validation results. Supported: details (default), compact, json, csv.
     pub result_format: Option<String>,
 
-    /// Sort order for results.
-    /// Supported: node, shape, status, details
+    /// Sort order for results. One of: node (default), shape, status, details.
     pub sort_by: Option<String>,
+
+    /// IRI parsing strictness for `maybe_node` and `maybe_shape`.
+    /// false (default): bare "http://..." IRIs are auto-wrapped in "<>".
+    /// true: bare IRIs cause a parse error — use "<http://...>" explicitly.
+    pub strict_iris: Option<bool>,
+
+    /// External-shape resolver specs (applied in order, before schema loading).
+    /// Each entry follows the grammar `<kind>[:<arg>]`. Built-in kinds:
+    /// "reject-all" (rejects any unhandled EXTERNAL) and "schema:<path>"
+    /// (substitutes EXTERNAL declarations from a ShEx file). Read the
+    /// resource at `rudof://shex/external-resolvers` to enumerate.
+    pub external_resolvers: Option<Vec<String>>,
 }
 
 /// Response containing ShEx validation results.
@@ -95,6 +115,8 @@ pub async fn validate_shex_impl(
         shapemap_format,
         result_format,
         sort_by,
+        strict_iris,
+        external_resolvers,
     }): Parameters<ValidateShexRequest>,
 ) -> Result<CallToolResult, McpError> {
     let mut rudof = service.rudof.lock().await;
@@ -136,12 +158,18 @@ pub async fn validate_shex_impl(
         .into_call_tool_result());
     }
 
+    let strict = strict_iris.unwrap_or(false);
+
     // Build effective ShapeMap: explicit shapemap wins; fall back to auto-generating
     // a compact ShapeMap from maybe_node + maybe_shape when only those are provided.
     let effective_shapemap = match (shapemap, maybe_node.as_deref(), maybe_shape.as_deref()) {
         (Some(sm), _, _) => sm,
-        (None, Some(node), Some(shape)) => format!("{}@{}", node, shape),
-        (None, Some(node), None) => format!("{}@START", node),
+        (None, Some(node), Some(shape)) => format!(
+            "{}@{}",
+            normalize_iri_str(node, strict),
+            normalize_iri_str(shape, strict)
+        ),
+        (None, Some(node), None) => format!("{}@START", normalize_iri_str(node, strict)),
         (None, None, _) => {
             return Ok(ToolExecutionError::with_hint(
                 "No shapemap provided",
@@ -219,6 +247,21 @@ pub async fn validate_shex_impl(
             SHAPEMAP_FORMATS,
         )
         .into_call_tool_result());
+    }
+
+    // Register external-shape resolver specs before loading the schema so the
+    // compiler can apply them during AST→IR. Bad specs are reported as a tool
+    // execution error with a hint pointing to the resource that enumerates kinds.
+    if let Some(specs) = external_resolvers.as_ref() {
+        for spec in specs {
+            if let Err(e) = rudof.add_external_resolver(spec) {
+                return Ok(ToolExecutionError::with_hint(
+                    format!("Invalid external resolver spec '{}': {}", spec, e),
+                    "Read the rudof://shex/external-resolvers resource to enumerate valid kinds",
+                )
+                .into_call_tool_result());
+            }
+        }
     }
 
     let mut shex_schema_loading = rudof.load_shex_schema(&parsed_schema);

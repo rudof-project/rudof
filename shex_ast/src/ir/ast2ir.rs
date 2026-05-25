@@ -1,5 +1,6 @@
 use super::node_constraint::NodeConstraint;
 use crate::ir::annotation::Annotation;
+use crate::ir::external_resolver::ExternalShapeResolverRegistry;
 use crate::ir::map_action_extension::MapActionExtension;
 use crate::ir::map_state::MapState;
 use crate::ir::object_value::ObjectValue;
@@ -74,16 +75,22 @@ impl AST2IR {
         source_iri: &IriS,
         base: &Option<IriS>,
         compiled_schema: &mut SchemaIR,
+        external_resolvers: &ExternalShapeResolverRegistry,
     ) -> CResult<()> {
+        // Apply the external-shape resolver registry to the root schema before any other
+        // processing. Imported schemas are rewritten as they are resolved inside
+        // `collect_imports_labels`. Cloning is necessary because `rewrite_ast` takes ownership;
+        // it is also cheap relative to the rest of compilation.
+        let rewritten_root = external_resolvers.rewrite_ast(schema_ast.clone());
+        let schema_ast = &rewritten_root;
         let mut visited = Vec::new();
 
         let mut imported_asts: Vec<(SchemaAST, IriS)> = Vec::new();
-
-        trace!(
+        /*trace!(
             "Compiling schema from {source_iri}. Base: {}",
             base.as_ref().map(|b| b.as_str()).unwrap_or("None")
-        );
-
+        );*/
+        // trace!("Schema AST: {schema_ast:#?}");
         // Phase 1: register shape labels for every schema in the import tree (bottom-up).
         // Labels of all imported schemas must be known before compiling any shape expressions,
         // since references may cross schema boundaries.
@@ -94,13 +101,17 @@ impl AST2IR {
             &mut visited,
             base,
             &mut imported_asts,
+            external_resolvers,
         )?;
 
         // Root schema prefixmap wins (imported schemas' prefix maps are scoped to their own file).
         compiled_schema.set_prefixmap(schema_ast.prefixmap());
 
         // Root labels (may include `start`).
-        let local_shapes = self.collect_shape_labels(schema_ast, compiled_schema, source_iri)?;
+
+        // trace!("Collecting shape labels for root schema {source_iri}");
+        let local_shapes = self.collect_shape_labels(schema_ast, compiled_schema, source_iri, base)?;
+        // trace!("Collected shape labels for root schema {source_iri}: {local_shapes} shapes");
         self.triple_expr_labels.clear();
         for (ast, _) in imported_asts.iter() {
             self.collect_triple_expr_labels_schema(ast)?;
@@ -110,9 +121,9 @@ impl AST2IR {
         // Phase 2: compile shape expressions in the order they were collected
         // (imports bottom-up, then root).
         for (ast, src) in imported_asts.iter() {
-            self.collect_shape_exprs(ast, compiled_schema, src)?;
+            self.collect_shape_exprs(ast, compiled_schema, src, &schema_ast.base())?;
         }
-        self.collect_shape_exprs(schema_ast, compiled_schema, source_iri)?;
+        self.collect_shape_exprs(schema_ast, compiled_schema, source_iri, &schema_ast.base())?;
         compiled_schema.set_local_shapes_counter(local_shapes);
         compiled_schema.set_imported_schemas(visited);
         compiled_schema.increment_total_shapes(local_shapes);
@@ -129,6 +140,7 @@ impl AST2IR {
         visited_sources: &mut Vec<IriS>,
         base: &Option<IriS>,
         imported_asts: &mut Vec<(SchemaAST, IriS)>,
+        external_resolvers: &ExternalShapeResolverRegistry,
     ) -> CResult<()> {
         let imports = schema_ast
             .imports_resolved(base)
@@ -139,6 +151,9 @@ impl AST2IR {
                 visited_sources.push(import_iri.clone());
                 // For imported schemas, the base for dereferencing is the source IRI of the importer.
                 let imported_schema = self.resolve(&import_iri, Some(source_iri))?;
+                // Apply the external-resolver registry so EXTERNAL decls inside imported schemas are
+                // substituted before their labels are registered.
+                let imported_schema = external_resolvers.rewrite_ast(imported_schema);
                 // Spec: an imported schema must not declare startActs.
                 if imported_schema.start_actions().is_some() {
                     return Err(Box::new(SchemaIRError::ImportIriError {
@@ -154,6 +169,7 @@ impl AST2IR {
                     visited_sources,
                     &nested_base,
                     imported_asts,
+                    external_resolvers,
                 )?;
                 // Register labels of this imported schema. Per spec, the imported schema's
                 // `start` is ignored — only shape declarations contribute.
@@ -199,6 +215,7 @@ impl AST2IR {
         schema_ast: &SchemaAST,
         compiled_schema: &mut SchemaIR,
         source_iri: &IriS,
+        base: &Option<IriS>,
     ) -> CResult<usize> {
         let mut shape_labels_counter = 0;
         match &schema_ast.shapes() {
@@ -206,6 +223,7 @@ impl AST2IR {
             Some(shape_decls) => {
                 for shape_decl in shape_decls {
                     let label = self.shape_expr_label_to_shape_label(&shape_decl.id)?;
+                    // trace!("Collecting shape label for {label}");
                     let idx = compiled_schema.add_shape(label, ShapeExpr::Empty, source_iri);
                     if shape_decl.is_abstract {
                         compiled_schema.add_abstract_shape(idx);
@@ -218,7 +236,7 @@ impl AST2IR {
         if let Some(shape_expr_start) = &schema_ast.start() {
             let start_label = ShapeLabel::Start;
             let idx = compiled_schema.add_shape(start_label.clone(), ShapeExpr::Empty, source_iri);
-            let start_compiled = self.compile_shape_expr(shape_expr_start, &idx, compiled_schema, source_iri)?;
+            let start_compiled = self.compile_shape_expr(shape_expr_start, &idx, compiled_schema, source_iri, base)?;
             compiled_schema.replace_shape(&idx, start_compiled);
             self.shape_decls_counter += 1;
             shape_labels_counter += 1;
@@ -231,13 +249,14 @@ impl AST2IR {
         schema_ast: &SchemaAST,
         compiled_schema: &mut SchemaIR,
         source_iri: &IriS,
+        base: &Option<IriS>,
     ) -> CResult<()> {
         match &schema_ast.shapes() {
             None => Ok(()),
             Some(sds) => {
                 for sd in sds {
                     let idx = self.get_shape_label_idx(&sd.id, compiled_schema)?;
-                    let se = self.compile_shape_decl(sd, &idx, compiled_schema, source_iri)?;
+                    let se = self.compile_shape_decl(sd, &idx, compiled_schema, source_iri, base)?;
                     compiled_schema.replace_shape(&idx, se)
                 }
                 Ok(())
@@ -246,6 +265,7 @@ impl AST2IR {
     }
 
     fn shape_expr_label_to_shape_label(&self, id: &ShapeExprLabel) -> CResult<ShapeLabel> {
+        // trace!("Converting shape expression label {id} to shape label");
         match id {
             ShapeExprLabel::IriRef { value } => {
                 let shape_label = iri_ref_2_shape_label(value)?;
@@ -267,8 +287,9 @@ impl AST2IR {
         idx: &ShapeLabelIdx,
         compiled_schema: &mut SchemaIR,
         source_iri: &IriS,
+        base: &Option<IriS>,
     ) -> CResult<ShapeExpr> {
-        let se = self.compile_shape_expr(&sd.shape_expr, idx, compiled_schema, source_iri)?;
+        let se = self.compile_shape_expr(&sd.shape_expr, idx, compiled_schema, source_iri, base)?;
         Ok(se)
     }
 
@@ -283,45 +304,44 @@ impl AST2IR {
         idx: &ShapeLabelIdx,
         compiled_schema: &mut SchemaIR,
         source_iri: &IriS,
+        base: &Option<IriS>,
     ) -> CResult<ShapeExpr> {
+        // trace!("Compiling shape expression {se:?} with index {idx} in schema {source_iri}");
         let result: ShapeExpr = match se {
             ast::ShapeExpr::Ref(se_ref) => {
+                // let label = self.shape_expr_label_to_shape_label(se_ref)?;
+                // trace!("Compiling ShapeRef with label {label}");
                 let new_idx = self.ref2idx(se_ref, compiled_schema)?;
                 let se: ShapeExpr = ShapeExpr::Ref { idx: new_idx };
                 Ok::<ShapeExpr, SchemaIRError>(se)
             },
             ast::ShapeExpr::ShapeOr { shape_exprs: ses } => {
-                tracing::debug!("Compiling ShapeOr with {ses:?}");
                 let mut cnv = Vec::new();
                 for sew in ses {
                     let internal_idx = compiled_schema.new_index(source_iri);
-                    let se = self.compile_shape_expr(&sew.se, &internal_idx, compiled_schema, source_iri)?;
+                    let se = self.compile_shape_expr(&sew.se, &internal_idx, compiled_schema, source_iri, base)?;
                     compiled_schema.replace_shape(&internal_idx, se.clone());
                     cnv.push(internal_idx);
                 }
                 let result = ShapeExpr::ShapeOr { exprs: cnv };
                 compiled_schema.replace_shape(idx, result.clone());
-                tracing::debug!("ShapeOr result: {result:?}");
                 Ok(result)
             },
             ast::ShapeExpr::ShapeAnd { shape_exprs: ses } => {
-                tracing::debug!("Compiling ShapeAnd with {ses:?}");
                 let mut cnv = Vec::new();
                 for sew in ses {
                     let internal_idx = compiled_schema.new_index(source_iri);
-                    let se = self.compile_shape_expr(&sew.se, &internal_idx, compiled_schema, source_iri)?;
+                    let se = self.compile_shape_expr(&sew.se, &internal_idx, compiled_schema, source_iri, base)?;
                     compiled_schema.replace_shape(&internal_idx, se.clone());
                     cnv.push(internal_idx);
                 }
                 let result = ShapeExpr::ShapeAnd { exprs: cnv };
                 compiled_schema.replace_shape(idx, result.clone());
-                tracing::debug!("ShapeAnd result: {result:?}");
                 Ok(result)
             },
             ast::ShapeExpr::ShapeNot { shape_expr: sew } => {
-                trace!("Compiling ShapeNot with {sew:?} and index {idx}");
                 let internal_idx = compiled_schema.new_index(source_iri);
-                let se = self.compile_shape_expr(&sew.se, &internal_idx, compiled_schema, source_iri)?;
+                let se = self.compile_shape_expr(&sew.se, &internal_idx, compiled_schema, source_iri, base)?;
                 compiled_schema.replace_shape(&internal_idx, se.clone());
                 let not_se = ShapeExpr::ShapeNot { expr: internal_idx };
                 compiled_schema.replace_shape(idx, not_se.clone());
@@ -333,7 +353,7 @@ impl AST2IR {
                     None => RbeTable::new(),
                     Some(tew) => {
                         let mut table = RbeTable::new();
-                        let rbe = self.triple_expr2rbe(&tew.te, compiled_schema, &mut table, source_iri)?;
+                        let rbe = self.triple_expr2rbe(&tew.te, compiled_schema, &mut table, source_iri, base)?;
                         table.with_rbe(rbe);
                         table
                     },
@@ -366,13 +386,14 @@ impl AST2IR {
                     &nc.xs_facet(),
                     &nc.values(),
                     &compiled_schema.prefixmap(),
+                    base,
                 )?;
                 let node_constraint = NodeConstraint::new(nc.clone(), cond, display);
                 Ok(ShapeExpr::NodeConstraint(node_constraint))
             },
             ast::ShapeExpr::External => Ok(ShapeExpr::External {}),
         }?;
-        trace!("Result of compilation: {result}");
+        // trace!("Result of compilation: {result}");
         Ok(result)
     }
 
@@ -383,6 +404,7 @@ impl AST2IR {
         xs_facet: &Option<Vec<ast::XsFacet>>,
         values: &Option<Vec<ast::ValueSetValue>>,
         prefixmap: &PrefixMap,
+        base: &Option<IriS>,
     ) -> CResult<(Cond, String)> {
         let maybe_value_set = match values {
             Some(vs) => {
@@ -391,7 +413,7 @@ impl AST2IR {
             },
             None => None,
         };
-        node_constraint2match_cond(nk, dt, xs_facet, &maybe_value_set, prefixmap)
+        node_constraint2match_cond(nk, dt, xs_facet, &maybe_value_set, prefixmap, base)
     }
 
     fn cnv_closed(closed: &Option<bool>) -> bool {
@@ -406,7 +428,7 @@ impl AST2IR {
             let mut vs = Vec::new();
             for iri in extra {
                 let nm = cnv_iri_ref(iri, prefixmap)?;
-                vs.push(Pred::new(nm));
+                vs.push(Pred::new(nm, true));
             }
             Ok(vs)
         } else {
@@ -429,6 +451,7 @@ impl AST2IR {
         compiled_schema: &mut SchemaIR,
         current_table: &mut RbeTable<Pred, Node, ShapeLabelIdx, SemanticActionContext>,
         source_iri: &IriS,
+        base: &Option<IriS>,
     ) -> CResult<RbeStruct<Component>> {
         let mut visited_refs = Vec::new();
         self.triple_expr2rbe_with_refs(
@@ -437,6 +460,7 @@ impl AST2IR {
             current_table,
             source_iri,
             &mut visited_refs,
+            base,
         )
     }
 
@@ -447,6 +471,7 @@ impl AST2IR {
         current_table: &mut RbeTable<Pred, Node, ShapeLabelIdx, SemanticActionContext>,
         source_iri: &IriS,
         visited_refs: &mut Vec<ast::TripleExprLabel>,
+        base: &Option<IriS>,
     ) -> CResult<RbeStruct<Component>> {
         match triple_expr {
             ast::TripleExpr::EachOf {
@@ -465,6 +490,7 @@ impl AST2IR {
                         current_table,
                         source_iri,
                         visited_refs,
+                        base,
                     )?;
                     cs.push(c)
                 }
@@ -494,6 +520,7 @@ impl AST2IR {
                         current_table,
                         source_iri,
                         visited_refs,
+                        base,
                     )?;
                     cs.push(c)
                 }
@@ -506,7 +533,7 @@ impl AST2IR {
             ast::TripleExpr::TripleConstraint {
                 id: _,
                 negated: _,
-                inverse: _,
+                inverse,
                 predicate,
                 value_expr,
                 min,
@@ -516,9 +543,10 @@ impl AST2IR {
             } => {
                 let min = self.cnv_min(min)?;
                 let max = self.cnv_max(max)?;
-                let iri = Self::cnv_predicate(predicate)?;
+                let iri = Self::cnv_predicate(predicate, inverse)?;
                 let actions = self.cnv_sem_actions(sem_acts, &compiled_schema.prefixmap())?;
-                let (cond, _display) = self.value_expr2match_cond(value_expr, actions, compiled_schema, source_iri)?;
+                let (cond, _display) =
+                    self.value_expr2match_cond(value_expr, actions, compiled_schema, source_iri, base)?;
                 let component = current_table.add_component(iri, &cond);
                 Ok(RbeStruct::symbol(component, min.value, max))
             },
@@ -540,6 +568,7 @@ impl AST2IR {
                     current_table,
                     source_iri,
                     visited_refs,
+                    base,
                 )?;
                 visited_refs.pop();
                 Ok(rbe)
@@ -560,9 +589,13 @@ impl AST2IR {
         Ok(SemAct::new(iri_s, sem_act.code()))
     }
 
-    fn cnv_predicate(predicate: &IriRef) -> CResult<Pred> {
+    fn cnv_predicate(predicate: &IriRef, inverse: &Option<bool>) -> CResult<Pred> {
+        let is_direct = match inverse {
+            None => true,
+            Some(inverse) => !inverse,
+        };
         match predicate {
-            IriRef::Iri(iri) => Ok(Pred::from(iri.clone())),
+            IriRef::Iri(iri) => Ok(Pred::new(iri.clone(), is_direct)),
             IriRef::Prefixed { prefix, local } => Err(Box::new(SchemaIRError::Internal {
                 msg: format!("Cannot convert prefixed {prefix}:{local} to predicate without context"),
             })),
@@ -607,6 +640,7 @@ impl AST2IR {
         actions: Vec<SemAct>,
         compiled_schema: &mut SchemaIR,
         source_iri: &IriS,
+        base: &Option<IriS>,
     ) -> CResult<(Cond, String)> {
         let mut sem_actions_conds = self.sem_acts_to_conds(actions)?;
         let (cond, display) = if let Some(se) = value_expr.as_deref() {
@@ -617,6 +651,7 @@ impl AST2IR {
                     &nc.xs_facet(),
                     &nc.values(),
                     &compiled_schema.prefixmap(),
+                    base,
                 ),
 
                 ast::ShapeExpr::Ref(sref) => {
@@ -627,23 +662,22 @@ impl AST2IR {
                     // TODO: avoid recompiling the same shape expression?
                     // I think this code should be reviewed....
                     let idx = compiled_schema.new_index(source_iri);
-                    let se = self.compile_shape_expr(se, &idx, compiled_schema, source_iri)?;
+                    let se = self.compile_shape_expr(se, &idx, compiled_schema, source_iri, base)?;
                     compiled_schema.replace_shape(&idx, se.clone());
-                    trace!("Returning SHAPE cond with idx {idx}");
+                    // trace!("Returning SHAPE cond with idx {idx}");
                     Ok((mk_cond_ref(idx), format!("Shape {idx}")))
                 },
                 ast::ShapeExpr::ShapeAnd { shape_exprs } => {
                     let mut ands = Vec::new();
                     for shape_expr in shape_exprs {
                         let idx_se = compiled_schema.new_index(source_iri);
-                        let se = self.compile_shape_expr(&shape_expr.se, &idx_se, compiled_schema, source_iri)?;
+                        let se = self.compile_shape_expr(&shape_expr.se, &idx_se, compiled_schema, source_iri, base)?;
                         compiled_schema.replace_shape(&idx_se, se.clone());
                         ands.push(idx_se);
                     }
                     let and_se = ShapeExpr::ShapeAnd { exprs: ands.clone() };
                     let idx_and = compiled_schema.new_index(source_iri);
                     compiled_schema.replace_shape(&idx_and, and_se);
-                    trace!("Returning AND cond with idx {idx_and}");
                     let display = format!(
                         "AND({})",
                         ands.iter().map(|i| i.to_string()).collect::<Vec<_>>().join(", ")
@@ -654,7 +688,7 @@ impl AST2IR {
                     let mut ors = Vec::new();
                     for se in shape_exprs {
                         let idx_se = compiled_schema.new_index(source_iri);
-                        let se = self.compile_shape_expr(&se.se, &idx_se, compiled_schema, source_iri)?;
+                        let se = self.compile_shape_expr(&se.se, &idx_se, compiled_schema, source_iri, base)?;
                         compiled_schema.replace_shape(&idx_se, se.clone());
                         ors.push(idx_se);
                     }
@@ -672,7 +706,8 @@ impl AST2IR {
                     trace!(
                         "value_expr2matchcond: Compiling ShapeNot with {shape_expr:?}, idx_shape_expr {idx_shape_expr}"
                     );
-                    let se = self.compile_shape_expr(&shape_expr.se, &idx_shape_expr, compiled_schema, source_iri)?;
+                    let se =
+                        self.compile_shape_expr(&shape_expr.se, &idx_shape_expr, compiled_schema, source_iri, base)?;
                     compiled_schema.replace_shape(&idx_shape_expr, se.clone());
                     let display = format!("NOT {idx_shape_expr}");
                     let not_se = ShapeExpr::ShapeNot { expr: idx_shape_expr };
@@ -681,7 +716,12 @@ impl AST2IR {
                     trace!("Returning NOT cond with idx {idx_not}");
                     Ok((mk_cond_ref(idx_not), display))
                 },
-                ast::ShapeExpr::External => todo("value_expr2match_cond: ShapeExternal"),
+                ast::ShapeExpr::External => {
+                    let idx_ext = compiled_schema.new_index(source_iri);
+                    compiled_schema.replace_shape(&idx_ext, ShapeExpr::External {});
+                    let display = format!("EXTERNAL {idx_ext}");
+                    Ok((mk_cond_ref(idx_ext), display))
+                },
             }
         } else {
             Ok((MatchCond::single(SingleCond::new().with_name(".")), ".".to_string()))
@@ -721,9 +761,10 @@ impl AST2IR {
                 .map(|te| self.get_preds_triple_expr(&te.te, visited_refs))
                 .collect::<CResult<Vec<Vec<Pred>>>>()
                 .map(|vss| vss.into_iter().flatten().collect()),
-            ast::TripleExpr::TripleConstraint { predicate, .. } => {
+            ast::TripleExpr::TripleConstraint { predicate, inverse, .. } => {
                 let pred = iri_ref2iri_s(predicate);
-                Ok(vec![Pred::new(pred)])
+                let is_direct = if let Some(inverse) = inverse { !inverse } else { true };
+                Ok(vec![Pred::new(pred, is_direct)])
             },
             ast::TripleExpr::Ref(r) => {
                 if visited_refs.contains(r) {
@@ -837,13 +878,14 @@ fn node_constraint2match_cond(
     xs_facet: &Option<Vec<ast::XsFacet>>,
     values: &Option<ValueSet>,
     prefixmap: &PrefixMap,
+    base: &Option<IriS>,
 ) -> CResult<(Cond, String)> {
     let c1: Option<(Cond, String)> = node_kind.as_ref().map(node_kind2match_cond);
     let c2 = datatype
         .as_ref()
         .map(|dt| datatype2match_cond(dt, prefixmap))
         .transpose()?;
-    let c3 = xs_facet.as_ref().map(xs_facets2match_cond);
+    let c3 = xs_facet.as_ref().map(|xsd| xs_facets2match_cond(xsd, base));
     let c4 = values.as_ref().map(|vs| valueset2match_cond(vs.clone(), prefixmap));
     let os = vec![c1, c2, c3, c4];
     Ok(options2match_cond(os))
@@ -860,27 +902,27 @@ fn datatype2match_cond(datatype: &IriRef, prefixmap: &PrefixMap) -> CResult<(Con
     Ok((cond, str))
 }
 
-fn xs_facets2match_cond(xs_facets: &Vec<ast::XsFacet>) -> (Cond, String) {
+fn xs_facets2match_cond(xs_facets: &Vec<ast::XsFacet>, base: &Option<IriS>) -> (Cond, String) {
     let mut conds = Vec::new();
     for xs_facet in xs_facets {
-        conds.push(xs_facet2match_cond(xs_facet))
+        conds.push(xs_facet2match_cond(xs_facet, base))
     }
     (MatchCond::And(conds), format!("xs_facets({xs_facets:?})"))
 }
 
-fn xs_facet2match_cond(xs_facet: &ast::XsFacet) -> Cond {
+fn xs_facet2match_cond(xs_facet: &ast::XsFacet, base: &Option<IriS>) -> Cond {
     match xs_facet {
-        ast::XsFacet::StringFacet(sf) => string_facet_to_match_cond(sf),
+        ast::XsFacet::StringFacet(sf) => string_facet_to_match_cond(sf, base),
         ast::XsFacet::NumericFacet(nf) => numeric_facet_to_match_cond(nf),
     }
 }
 
-fn string_facet_to_match_cond(sf: &ast::StringFacet) -> Cond {
+fn string_facet_to_match_cond(sf: &ast::StringFacet, base: &Option<IriS>) -> Cond {
     match sf {
         ast::StringFacet::Length(len) => mk_cond_length(*len),
         ast::StringFacet::MinLength(len) => mk_cond_min_length(*len),
         ast::StringFacet::MaxLength(len) => mk_cond_max_length(*len),
-        ast::StringFacet::Pattern(pat) => mk_cond_pattern(pat.regex(), pat.flags()),
+        ast::StringFacet::Pattern(pat) => mk_cond_pattern(pat.regex(), pat.flags(), base),
     }
 }
 
@@ -1111,12 +1153,13 @@ fn mk_cond_nodekind(nodekind: ast::NodeKind) -> Cond {
     )
 }
 
-fn mk_cond_pattern(regex: &str, flags: Option<&str>) -> Cond {
+fn mk_cond_pattern(regex: &str, flags: Option<&str>, base: &Option<IriS>) -> Cond {
     let regex_str = format!("/{regex}/{}", flags.unwrap_or(""));
     let regex = regex.to_string();
     let flags = flags.map(|f| f.to_string());
+    let base = base.clone();
     MatchCond::single(SingleCond::new().with_name(regex_str.as_str()).with_cond(
-        move |value: &Node, _ctx: &SemanticActionContext| match check_pattern(value, &regex, flags.as_deref()) {
+        move |value: &Node, _ctx: &SemanticActionContext| match check_pattern(value, &regex, flags.as_deref(), &base) {
             Ok(_) => Ok(Pending::new()),
             Err(err) => Err(RbeError::MsgError {
                 msg: format!("Pattern error: {err}"),
@@ -1373,17 +1416,29 @@ fn cnv_object_value(ov: &ast::ObjectValue, prefixmap: &PrefixMap) -> CResult<Obj
     }
 }
 
-fn check_pattern(node: &Node, regex: &str, flags: Option<&str>) -> CResult<()> {
+fn check_pattern(node: &Node, regex: &str, flags: Option<&str>, base: &Option<IriS>) -> CResult<()> {
+    tracing::trace!("check_pattern: node: {node}, regex: {regex}, flags: {flags:?}, base: {base:?}");
     let lexical_form = match node.as_object() {
         Object::Literal(lit) => Ok(lit.lexical_form()),
         Object::BlankNode(b) => Ok(b.clone()),
-        _ => Err(Box::new(SchemaIRError::PatternNodeNotLiteral {
+        Object::Iri(iri) => {
+            if let Some(base) = base {
+                Ok(iri.relative_from(base))
+            } else {
+                Ok(iri.to_string())
+            }
+        },
+        Object::Triple { .. } => Err(Box::new(SchemaIRError::PatternTripleTerm {
             node: node.to_string(),
             regex: regex.to_string(),
             flags: flags.map(|f| f.to_string()),
         })),
     }?;
-    if let Ok(re) = regex::Regex::new(regex) {
+    let effective_regex = match flags {
+        Some(f) if !f.is_empty() => format!("(?{f}){regex}"),
+        _ => regex.to_string(),
+    };
+    if let Ok(re) = regex::Regex::new(&effective_regex) {
         if re.is_match(&lexical_form) {
             Ok(())
         } else {
@@ -1627,7 +1682,7 @@ fn check_node_max_exclusive(node: &Node, max: NumericLiteral) -> CResult<()> {
 }
 
 fn check_node_max_inclusive(node: &Node, max: NumericLiteral) -> CResult<()> {
-    trace!("check_node_max_inclusive: {node:?} max_inclusive: {max}");
+    // trace!("check_node_max_inclusive: {node:?} max_inclusive: {max}");
     let node_object = node.as_checked_object().map_err(|e| {
         Box::new(SchemaIRError::Internal {
             msg: format!("check_node_max_inclusive: as_checked_object error: {e}"),
@@ -1650,7 +1705,7 @@ fn check_node_max_inclusive(node: &Node, max: NumericLiteral) -> CResult<()> {
 }
 
 fn check_node_min_length(node: &Node, len: usize) -> CResult<()> {
-    debug!("check_node_min_length: {node:?} min_length: {len}");
+    // debug!("check_node_min_length: {node:?} min_length: {len}");
     let node_length = node.length();
     if node_length >= len {
         Ok(())
@@ -1664,7 +1719,7 @@ fn check_node_min_length(node: &Node, len: usize) -> CResult<()> {
 }
 
 fn check_node_max_length(node: &Node, len: usize) -> CResult<()> {
-    debug!("check_node_max_length: {node:?} max_length: {len}");
+    // debug!("check_node_max_length: {node:?} max_length: {len}");
     let node_length = node.length();
     if node_length <= len {
         Ok(())
@@ -1675,13 +1730,6 @@ fn check_node_max_length(node: &Node, len: usize) -> CResult<()> {
             node: format!("{node}"),
         }))
     }
-}
-
-fn todo<A>(str: &str) -> CResult<A> {
-    panic!("TODO: {str}");
-    /*Err(Box::new(SchemaIRError::Todo {
-        msg: str.to_string(),
-    }))*/
 }
 
 fn cnv_iri_ref(iri: &IriRef, prefixmap: &PrefixMap) -> Result<IriS, Box<SchemaIRError>> {

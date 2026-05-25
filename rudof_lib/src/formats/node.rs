@@ -3,6 +3,28 @@ use std::str::FromStr;
 
 use crate::errors::NodeInspectionError;
 
+/// Controls how bare IRI strings are handled before being passed to `ShapeMapParser`.
+///
+/// Use `Strict` in production pipelines or whenever callers control input format.
+/// Use `Lax` for interactive tools, CLI usage, and MCP where convenience matters more.
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
+pub enum IriNormalizationMode {
+    /// Auto-wrap bare `://` IRIs in angle brackets (convenient, heuristic-based).
+    #[default]
+    Lax,
+    /// Require angle-bracketed IRIs; refuse to normalize (strict, predictable).
+    Strict,
+}
+
+impl Display for IriNormalizationMode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            IriNormalizationMode::Lax => write!(f, "lax"),
+            IriNormalizationMode::Strict => write!(f, "strict"),
+        }
+    }
+}
+
 /// Node inspection modes supported by Rudof.
 ///
 /// Controls which edges/arcs are displayed when inspecting a specific node in an RDF graph.

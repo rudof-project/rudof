@@ -1,51 +1,90 @@
 use crate::ast::error::ASTError;
+use crate::ir::ShapeLabelIdx;
 use crate::rdf::error::ShaclParserError;
+use prefixmap::IriRefError;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::utils::RDFRegexError;
+use rudof_rdf::rdf_core::{RDFError, Rdf, SHACLPath};
 use rudof_rdf::rdf_impl::InMemoryGraphError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum IRError {
-    #[error("Duplicate shape: {shape}")]
-    DuplicateShape { shape: Box<Object> },
+    #[error(transparent)]
+    IriRef(#[from] Box<IriRefError>),
+
+    #[error("Unable to find shape associated to idx {0}")]
+    ShapeNotFound(ShapeLabelIdx),
+
+    #[error("Failed to {operation}: {error}")]
+    GraphError { operation: String, error: String },
+
+    #[error(transparent)]
+    ASTError(#[from] Box<ASTError>),
+
+    #[error(transparent)]
+    ShaclParserError(#[from] Box<ShaclParserError>),
+
+    #[error(transparent)]
+    InMemoryGraphError(#[from] Box<InMemoryGraphError>),
 
     #[error(
-        "Invalid path for property shape with reifier shape {shape_id}, the path must be a single predicate, but got: {path}"
+        "Invalid path for property shape with reifier shape {shape}, the path must be a single predicate, but got: {path}"
     )]
-    InvalidReifierShapePath { shape_id: Box<Object>, path: String },
+    InvalidReifierShapePath { shape: Box<Object>, path: Box<SHACLPath> },
 
-    #[error("Conversion from IriRef {iri_ref} failed: {err}")]
-    IriRefConversion { iri_ref: String, err: String },
+    #[error(transparent)]
+    RdfRegexError(#[from] Box<RDFRegexError>),
 
-    #[error("Shape not found: {shape}")]
-    ShapeNotFound { shape: Box<Object> },
+    #[error(transparent)]
+    RDFError(#[from] Box<RDFError>),
+}
 
-    #[error("Could not convert to Literal: {node}")]
-    LiteralConversion { node: Box<Object> },
+impl IRError {
+    pub fn from_rdf_err<RDF: Rdf>(op: &str, err: RDF::Err) -> Self {
+        Self::GraphError {
+            error: err.to_string(),
+            operation: op.to_string(),
+        }
+    }
 
-    #[error("RDF error: {err}")]
-    RdfGraphError {
-        #[from]
-        err: InMemoryGraphError,
-    },
+    pub fn add_triple<RDF: Rdf>(err: RDF::Err) -> Self {
+        Self::from_rdf_err::<RDF>("add triple", err)
+    }
+}
 
-    #[error("SHACL parser error: {err}")]
-    ShaclParserError {
-        #[from]
-        err: ShaclParserError,
-    },
+impl From<IriRefError> for IRError {
+    fn from(value: IriRefError) -> Self {
+        Self::IriRef(Box::new(value))
+    }
+}
 
-    #[error("ASTError: {source}")]
-    ASTError {
-        #[from]
-        source: ASTError,
-    },
+impl From<ASTError> for IRError {
+    fn from(value: ASTError) -> Self {
+        Self::ASTError(Box::new(value))
+    }
+}
 
-    #[error("Invalid regex pattern ({pattern}) with flags ({}): {error}", flags.as_deref().unwrap_or("None"))]
-    InvalidRegex {
-        pattern: String,
-        flags: Option<String>,
-        error: Box<RDFRegexError>,
-    },
+impl From<ShaclParserError> for IRError {
+    fn from(value: ShaclParserError) -> Self {
+        Self::ShaclParserError(Box::new(value))
+    }
+}
+
+impl From<InMemoryGraphError> for IRError {
+    fn from(value: InMemoryGraphError) -> Self {
+        Self::InMemoryGraphError(Box::new(value))
+    }
+}
+
+impl From<RDFRegexError> for IRError {
+    fn from(value: RDFRegexError) -> Self {
+        Self::RdfRegexError(Box::new(value))
+    }
+}
+
+impl From<RDFError> for IRError {
+    fn from(value: RDFError) -> Self {
+        Self::RDFError(Box::new(value))
+    }
 }

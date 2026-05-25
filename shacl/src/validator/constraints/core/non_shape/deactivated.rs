@@ -1,6 +1,7 @@
+use crate::error::ValidationError;
 use crate::ir::components::Deactivated;
 use crate::ir::{IRComponent, IRSchema, IRShape};
-use crate::validator::constraints::{ConstraintError, Validator};
+use crate::validator::constraints::Validator;
 use crate::validator::engine::Engine;
 use crate::validator::nodes::ValueNodes;
 use crate::validator::report::ValidationResult;
@@ -18,7 +19,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Deactivated {
         _: Option<&IRShape>,
         _: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
         // If is deactivated this shouldn't be reached
         // If is activated, no error should be raised
         Ok(Vec::new())

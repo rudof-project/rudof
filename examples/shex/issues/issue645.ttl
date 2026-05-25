@@ -1,0 +1,7 @@
+prefix : <http://example.org/>
+
+:alice :name "Alice" ;
+       :worksFor :ACME .
+:ACME :employee :alice .
+
+:BAD1 :employee :alice .

@@ -33,10 +33,7 @@ impl ClassIndex {
         let rdf_type: RDF::IRI = RdfVocab::rdf_type().into();
         let rdfs_subclass_of: RDF::IRI = RdfsVocab::rdfs_subclass_of_str().into();
 
-        for triple in store
-            .triples()
-            .map_err(|e| ValidationError::ClassIndexBuild { err: e.to_string() })?
-        {
+        for triple in store.triples().map_err(ValidationError::new_graph_error::<RDF>)? {
             let (subj, pred, obj) = triple.into_components();
 
             if pred == rdf_type {

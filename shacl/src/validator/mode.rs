@@ -1,3 +1,4 @@
+use crate::error::ValidationError;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
@@ -27,14 +28,14 @@ impl Display for ShaclValidationMode {
 }
 
 impl FromStr for ShaclValidationMode {
-    type Err = String;
+    type Err = ValidationError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "native" => Ok(Self::Native),
             #[cfg(feature = "sparql")]
             "sparql" => Ok(Self::Sparql),
-            other => Err(format!("Unsupported SHACL validation mode: {other}")),
+            other => Err(Self::Err::UnsupportedMode(other.to_string())),
         }
     }
 }

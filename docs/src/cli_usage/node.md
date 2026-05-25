@@ -57,3 +57,31 @@ rudof node -n :a -
 ```
 
 You can type the contents of an RDF file, followed by CTRL-D and rudof will process that as the input.
+
+## IRI normalization modes
+
+The `--node` value is parsed as a ShapeMap node selector, which normally requires IRIs to be enclosed in angle brackets (`<http://example.org/a>`). For convenience, `rudof` supports two modes that control how plain strings are treated.
+
+### Lax mode (default)
+
+In lax mode any string that contains `://` and is not already wrapped in `<>` is automatically wrapped before parsing. This means the following two commands are equivalent:
+
+```sh
+rudof node -n "http://example.org/a" simple.ttl
+rudof node -n "<http://example.org/a>" simple.ttl
+```
+
+**Limitations.** The `://` heuristic is intentionally simple and will fail in some cases:
+
+- **URNs** (`urn:isbn:0451450523`), **`mailto:`**, and **`data:`** URIs do not contain `://` and will *not* be auto-wrapped, causing a parse error. Use angle brackets explicitly for these schemes.
+- A prefixed local name that happens to contain `://` (e.g. `ex:path//resource`) would be incorrectly treated as a full IRI.
+
+See [IRI normalization internals](../internals/iri-normalization.md) for details and planned improvements.
+
+### Strict mode
+
+Pass `--strict-iris` to disable normalization entirely. Bare IRIs produce a clear parse error; angle brackets are always required. Use this in production pipelines or whenever non-`http` IRI schemes appear.
+
+```sh
+rudof node -n "<http://example.org/a>" simple.ttl --strict-iris
+```

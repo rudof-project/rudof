@@ -1,4 +1,4 @@
-use crate::error::ConstraintError;
+use crate::error::ValidationError;
 use crate::ir::components::MaxCount;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::validator::constraints::{Validator, validate_with};
@@ -20,7 +20,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for MaxCount {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
         validate_with(
             component,
             shape,

@@ -15,7 +15,7 @@ use shex_ast::{
 };
 use shex_validation::Validator as ShExValidator;
 use std::{env, io};
-use tracing::trace;
+// use tracing::trace;
 #[cfg(not(target_family = "wasm"))]
 use url::Url;
 
@@ -135,12 +135,18 @@ fn compile_shex_schema(rudof: &mut Rudof, base: IriS, schema: ShExSchema, reader
         Box::new(TestActionExtension::new()),
         Box::new(MapActionExtension::new(map_state.clone())),
     ]);
-    trace!("Initialized SemanticActionsRegistry with MapState: {map_state:#?}");
+    // trace!("Initialized SemanticActionsRegistry with MapState: {map_state:#?}");
 
     let mut schema_ir = SchemaIR::new(registry);
 
+    let validator_config = rudof.config.validator_config();
     schema_ir
-        .populate_from_schema_json(&schema, &ResolveMethod::default(), &Some(base))
+        .populate_from_schema_json(
+            &schema,
+            validator_config.external_resolvers(),
+            &ResolveMethod::default(),
+            &Some(base.clone()),
+        )
         .map_err(|error| ShExError::FailedCompilingShExSchema {
             error: error.to_string(),
         })?;

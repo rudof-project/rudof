@@ -30,11 +30,12 @@ impl ValidateCommand {
     fn to_shex_args(&self) -> Result<ShexValidateArgs> {
         Ok(ShexValidateArgs {
             data: self.args.data.clone(),
-            schema: self
-                .args
-                .schema
-                .clone()
-                .ok_or_else(|| anyhow!("schema is required for ShEx validation"))?,
+            schema: Some(
+                self.args
+                    .schema
+                    .clone()
+                    .ok_or_else(|| anyhow!("schema is required for ShEx validation"))?,
+            ),
             schema_format: self.args.schema_format,
             shapemap: self.args.shapemap.clone(),
             shapemap_format: Some(self.args.shapemap_format),
@@ -48,6 +49,9 @@ impl ValidateCommand {
             endpoint: self.args.endpoint.clone(),
             result_format: self.args.result_format.into(),
             map_state: self.args.map_state.clone(),
+            strict_iris: false,
+            external_resolvers: Vec::new(),
+            list_external_resolvers: false,
             common: self.args.common.clone(),
         })
     }

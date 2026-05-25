@@ -1,13 +1,13 @@
 mod core;
-pub(crate) mod error;
+mod sparql;
 mod test;
 
-use crate::error::ConstraintError;
+use crate::error::ValidationError;
 use crate::ir::components::{
     And, Closed, Datatype, Deactivated, HasValue, In, LanguageIn, MaxCount, MinCount, Node, Not, Or,
     QualifiedValueShape, UniqueLang, Xone,
 };
-use crate::ir::{IRComponent, IRSchema, IRShape, ShapeLabelIdx};
+use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::types::MessageMap;
 use crate::validator::engine::Engine;
 use crate::validator::iteration::{IterationStrategy, ValueNodeIteration};
@@ -31,7 +31,7 @@ pub trait Validator<RDF: NeighsRDF + Debug> {
         source_shape: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         shapes_graph: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError>;
+    ) -> Result<Vec<ValidationResult>, ValidationError>;
 }
 // TODO - Move to crate::validator
 pub trait NativeValidator<RDF: NeighsRDF> {
@@ -45,11 +45,11 @@ pub trait NativeValidator<RDF: NeighsRDF> {
         source_shape: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         shapes_graph: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError>;
+    ) -> Result<Vec<ValidationResult>, ValidationError>;
 }
 // TODO - Move to crate::validator
 #[cfg(feature = "sparql")]
-pub trait SparqlValidator<RDF: QueryRDF + Debug> {
+pub trait BasicSparqlValidator<RDF: QueryRDF + Debug> {
     fn validate_sparql(
         &self,
         component: &IRComponent,
@@ -59,7 +59,7 @@ pub trait SparqlValidator<RDF: QueryRDF + Debug> {
         source_shape: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         shapes_graph: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError>;
+    ) -> Result<Vec<ValidationResult>, ValidationError>;
 }
 
 macro_rules! impl_validators_via_validate {
@@ -78,7 +78,7 @@ macro_rules! impl_validators_via_validate {
                 source_shape: Option<&crate::ir::IRShape>,
                 maybe_path: Option<&rudof_rdf::rdf_core::SHACLPath>,
                 shapes_graph: &crate::ir::IRSchema,
-            ) -> Result<Vec<crate::validator::report::ValidationResult>, crate::validator::error::ConstraintError> {
+            ) -> Result<Vec<crate::validator::report::ValidationResult>, crate::validator::error::ValidationError> {
                 self.validate(
                     component,
                     shape,
@@ -93,7 +93,7 @@ macro_rules! impl_validators_via_validate {
         }
 
         #[cfg(feature = "sparql")]
-        impl<S> crate::validator::constraints::SparqlValidator<S> for $ty
+        impl<S> crate::validator::constraints::BasicSparqlValidator<S> for $ty
         where
             S: rudof_rdf::rdf_core::query::QueryRDF + rudof_rdf::rdf_core::NeighsRDF + std::fmt::Debug + 'static,
         {
@@ -106,7 +106,7 @@ macro_rules! impl_validators_via_validate {
                 source_shape: Option<&crate::ir::IRShape>,
                 maybe_path: Option<&rudof_rdf::rdf_core::SHACLPath>,
                 shapes_graph: &crate::ir::IRSchema,
-            ) -> Result<Vec<crate::validator::report::ValidationResult>, crate::validator::error::ConstraintError> {
+            ) -> Result<Vec<crate::validator::report::ValidationResult>, crate::validator::error::ValidationError> {
                 self.validate(
                     component,
                     shape,
@@ -196,15 +196,16 @@ impl<'a, S: NeighsRDF + Debug + 'static> ValidatorDeref<'a, dyn NativeValidator<
             IRComponent::QualifiedValueShape(inner) => inner,
             IRComponent::Closed(inner) => inner,
             IRComponent::Deactivated(inner) => inner,
+            IRComponent::BasicSparql(inner) => inner,
         }
     }
 }
 
 #[cfg(feature = "sparql")]
-impl<'a, S: QueryRDF + NeighsRDF + Debug + 'static> ValidatorDeref<'a, dyn SparqlValidator<S> + 'a>
+impl<'a, S: QueryRDF + NeighsRDF + Debug + 'static> ValidatorDeref<'a, dyn BasicSparqlValidator<S> + 'a>
     for ShaclComponent<'a, S>
 {
-    fn deref(&self) -> &'a dyn SparqlValidator<S> {
+    fn deref(&self) -> &'a dyn BasicSparqlValidator<S> {
         match self.component() {
             IRComponent::Class(inner) => inner,
             IRComponent::Datatype(inner) => inner,
@@ -234,19 +235,9 @@ impl<'a, S: QueryRDF + NeighsRDF + Debug + 'static> ValidatorDeref<'a, dyn Sparq
             IRComponent::QualifiedValueShape(inner) => inner,
             IRComponent::Closed(inner) => inner,
             IRComponent::Deactivated(inner) => inner,
+            IRComponent::BasicSparql(inner) => inner,
         }
     }
-}
-
-pub(crate) fn get_shape_from_idx<'a>(
-    shapes_graph: &'a IRSchema,
-    shape_idx: &'a ShapeLabelIdx,
-) -> Result<&'a IRShape, ConstraintError> {
-    shapes_graph
-        .get_shape_from_idx(shape_idx)
-        .ok_or_else(|| ConstraintError::Internal {
-            err: format!("Shape idx {} not found in shapes graph", shape_idx),
-        })
 }
 
 fn apply<S: Rdf, I: IterationStrategy<S>>(
@@ -254,10 +245,10 @@ fn apply<S: Rdf, I: IterationStrategy<S>>(
     shape: &IRShape,
     value_nodes: &ValueNodes<S>,
     strategy: I,
-    evaluator: impl Fn(&I::Item) -> Result<bool, ConstraintError>,
+    evaluator: impl Fn(&I::Item) -> Result<bool, ValidationError>,
     msg: &str,
     maybe_path: Option<&SHACLPath>,
-) -> Result<Vec<ValidationResult>, ConstraintError> {
+) -> Result<Vec<ValidationResult>, ValidationError> {
     let results = strategy
         .iterate(value_nodes)
         .flat_map(|(focus_node, item)| {
@@ -274,7 +265,7 @@ fn apply<S: Rdf, I: IterationStrategy<S>>(
                 && condition
             {
                 return Some(
-                    ValidationResult::new(focus, component, shape.severity())
+                    ValidationResult::new(focus, component, shape.severity().clone())
                         .with_source(source.cloned())
                         .with_message(msg)
                         .with_path(maybe_path.cloned())
@@ -293,10 +284,10 @@ fn apply_with_focus<S: Rdf, I: IterationStrategy<S>>(
     shape: &IRShape,
     value_nodes: &ValueNodes<S>,
     strategy: I,
-    evaluator: impl Fn(&S::Term, &I::Item) -> Result<bool, ConstraintError>,
+    evaluator: impl Fn(&S::Term, &I::Item) -> Result<bool, ValidationError>,
     msg: &str,
     maybe_path: Option<&SHACLPath>,
-) -> Result<Vec<ValidationResult>, ConstraintError> {
+) -> Result<Vec<ValidationResult>, ValidationError> {
     let results = strategy
         .iterate(value_nodes)
         .flat_map(|(focus_node, item)| {
@@ -307,7 +298,7 @@ fn apply_with_focus<S: Rdf, I: IterationStrategy<S>>(
             let value = strategy.to_object(item);
             match evaluator(focus_node, item) {
                 Ok(true) => Some(
-                    ValidationResult::new(focus, component, shape.severity())
+                    ValidationResult::new(focus, component, shape.severity().clone())
                         .with_source(source.cloned())
                         .with_message(MessageMap::from(msg))
                         .with_path(maybe_path.cloned())
@@ -331,7 +322,7 @@ fn validate_with<S: Rdf, I: IterationStrategy<S>>(
     evaluator: impl Fn(&I::Item) -> bool,
     msg: &str,
     maybe_path: Option<&SHACLPath>,
-) -> Result<Vec<ValidationResult>, ConstraintError> {
+) -> Result<Vec<ValidationResult>, ValidationError> {
     apply(
         component,
         shape,
@@ -352,7 +343,7 @@ fn validate_with_focus<S: Rdf, I: IterationStrategy<S>>(
     evaluator: impl Fn(&S::Term, &I::Item) -> bool,
     msg: &str,
     maybe_path: Option<&SHACLPath>,
-) -> Result<Vec<ValidationResult>, ConstraintError> {
+) -> Result<Vec<ValidationResult>, ValidationError> {
     apply_with_focus(
         component,
         shape,
@@ -372,7 +363,7 @@ fn validate_ask_with<S: QueryRDF>(
     eval_query: impl Fn(&S::Term) -> String,
     msg: &str,
     maybe_path: Option<&SHACLPath>,
-) -> Result<Vec<ValidationResult>, ConstraintError> {
+) -> Result<Vec<ValidationResult>, ValidationError> {
     apply(
         component,
         shape,
@@ -380,9 +371,7 @@ fn validate_ask_with<S: QueryRDF>(
         ValueNodeIteration,
         |vn| match store.query_ask(&eval_query(vn)) {
             Ok(ask) => Ok(!ask),
-            Err(err) => Err(ConstraintError::Query {
-                err: format!("ASK query failed: {err}"),
-            }),
+            Err(err) => Err(ValidationError::ask_query_error::<S>(err)),
         },
         msg,
         maybe_path,

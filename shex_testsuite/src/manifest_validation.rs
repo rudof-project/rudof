@@ -23,6 +23,8 @@ use rudof_rdf::{
 use serde::de::{self};
 use serde::{Deserialize, Deserializer, Serialize};
 #[cfg(not(target_family = "wasm"))]
+use shex_ast::ir::external_resolver::SchemaExternalResolver;
+#[cfg(not(target_family = "wasm"))]
 use shex_ast::ir::shape_label::ShapeLabel;
 #[cfg(not(target_family = "wasm"))]
 use shex_ast::ir::{map_state::MapState, schema_ir::SchemaIR, semantic_actions_registry::SemanticActionsRegistry};
@@ -117,6 +119,8 @@ struct Action {
     data: String,
     map: Option<String>,
     focus: Option<Focus>,
+    #[serde(rename = "shapeExterns")]
+    shape_externs: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -258,6 +262,21 @@ impl ValidationEntry {
 
         trace!("Entry action: {:?}", self.action);
 
+        // If the test declares an externs schema (`shapeExterns`), load it as a
+        // `SchemaExternalResolver` and register it in the `ValidatorConfig`. The
+        // compiler now applies the registry automatically; no manual rewrite is needed.
+        let mut config = ValidatorConfig::default();
+        if let Some(externs_rel) = &self.action.shape_externs {
+            let externs_path = folder.join(externs_rel);
+            let resolver = SchemaExternalResolver::from_path(&externs_path).map_err(|error| {
+                ManifestError::ExternalResolverError {
+                    entry_name: self.name.clone(),
+                    error,
+                }
+            })?;
+            config = config.with_external_resolver(resolver);
+        }
+
         let mut map_state = MapState::default();
         let mut registry = SemanticActionsRegistry::default();
         registry.set_map_state(&mut map_state);
@@ -266,11 +285,16 @@ impl ValidationEntry {
         let base_iri = path_to_iri(&path_schema)?;
         trace!("Compiling schema, base: {base_iri}");
         compiler
-            .compile(&schema, &base_iri, &Some(base_iri.clone()), &mut compiled_schema)
+            .compile(
+                &schema,
+                &base_iri,
+                &Some(base_iri.clone()),
+                &mut compiled_schema,
+                config.external_resolvers(),
+            )
             .map_err(|e| Box::new(ManifestError::SchemaIRError(e)))?;
         let schema = compiled_schema.clone();
-        let mut validator =
-            Validator::new(&compiled_schema, &ValidatorConfig::default()).map_err(ManifestError::ValidationError)?;
+        let mut validator = Validator::new(&compiled_schema, &config).map_err(ManifestError::ValidationError)?;
         let expected_type = parse_type(&self.type_)?;
         debug!("Schema compiled...expected type: {:?}", expected_type);
         trace!("Schema: {}", schema);

@@ -15,7 +15,7 @@ use oxrdf::{
 use oxrdfio::{JsonLdProfileSet, RdfFormat, RdfSerializer};
 use oxrdfxml::RdfXmlParser;
 use oxttl::{NQuadsParser, NTriplesParser, TurtleParser};
-use prefixmap::{PrefixMapError, map::*};
+use prefixmap::{PrefixMapError, prefix_map::*};
 use rudof_iri::IriS;
 use serde::{Serialize, ser::SerializeStruct};
 use std::{
@@ -108,6 +108,10 @@ impl InMemoryGraph {
         self.graph.is_empty()
     }
 
+    pub fn set_default_base_prefixes(&mut self, default_base: &Option<IriS>) {
+        self.pm.set_default_base(default_base);
+    }
+
     /// Merges RDF data from a reader into the current graph.
     ///
     /// The parsing behavior depends on [`RDFFormat`] and [`ReaderMode`].
@@ -155,6 +159,10 @@ impl InMemoryGraph {
                 self.parse_jsonld(reader, reader_mode)?;
             },
         }
+        if let Some(base) = base {
+            let default_base = Some(IriS::new_unchecked(base));
+            self.set_default_base_prefixes(&default_base);
+        }
         Ok(())
     }
 
@@ -178,14 +186,12 @@ impl InMemoryGraph {
         reader_mode: &ReaderMode,
     ) -> Result<(), InMemoryGraphError> {
         let turtle_parser = match base {
-            None => TurtleParser::new(),
-            Some(iri) => TurtleParser::new().with_base_iri(iri)?,
+            None => TurtleParser::new().lenient(),
+            Some(iri) => TurtleParser::new().lenient().with_base_iri(iri)?,
         };
 
-        let mut buffer = Vec::new();
-        reader.read_to_end(&mut buffer)?;
-        let reader1 = Cursor::new(&buffer);
-        let mut turtle_reader = turtle_parser.for_reader(reader1);
+        let mut turtle_reader = turtle_parser.for_reader(reader);
+        let graph = Arc::make_mut(&mut self.graph);
 
         for triple_result in turtle_reader.by_ref() {
             let triple =
@@ -196,7 +202,17 @@ impl InMemoryGraph {
                     Some(t) => t,
                     None => continue,
                 };
-            Arc::make_mut(&mut self.graph).insert(triple.as_ref());
+            let triple_ref = triple.as_ref();
+            if let Err(e) = validate_triple_iris(triple_ref) {
+                match handle_parse_error(Err::<(), _>(e), reader_mode, |e| InMemoryGraphError::TurtleParseError {
+                    source_name: source_name.to_string(),
+                    error: format!("Invalid IRI in triple: {e}"),
+                })? {
+                    Some(_) => unreachable!(),
+                    None => continue,
+                }
+            }
+            graph.insert(triple_ref);
         }
 
         let prefixes: HashMap<&str, &str> = turtle_reader.prefixes().collect();
@@ -227,6 +243,7 @@ impl InMemoryGraph {
     ) -> Result<(), InMemoryGraphError> {
         let parser = NTriplesParser::new();
         let mut nt_reader = parser.for_reader(reader);
+        let graph = Arc::make_mut(&mut self.graph);
 
         for triple_result in nt_reader.by_ref() {
             let triple = match handle_parse_error(triple_result, reader_mode, |e| InMemoryGraphError::NTriplesError {
@@ -236,7 +253,7 @@ impl InMemoryGraph {
                 Some(t) => t,
                 None => continue,
             };
-            Arc::make_mut(&mut self.graph).insert(triple.as_ref());
+            graph.insert(triple.as_ref());
         }
 
         Ok(())
@@ -259,6 +276,7 @@ impl InMemoryGraph {
     ) -> Result<(), InMemoryGraphError> {
         let parser = RdfXmlParser::new();
         let mut xml_reader = parser.for_reader(reader);
+        let graph = Arc::make_mut(&mut self.graph);
 
         for triple_result in xml_reader.by_ref() {
             let triple = match handle_parse_error(triple_result, reader_mode, |e| InMemoryGraphError::RDFXMLError {
@@ -269,7 +287,7 @@ impl InMemoryGraph {
                 None => continue,
             };
             let triple_ref = cnv_triple(&triple);
-            Arc::make_mut(&mut self.graph).insert(triple_ref);
+            graph.insert(triple_ref);
         }
 
         Ok(())
@@ -292,6 +310,7 @@ impl InMemoryGraph {
     ) -> Result<(), InMemoryGraphError> {
         let parser = NQuadsParser::new();
         let mut nq_reader = parser.for_reader(reader);
+        let graph = Arc::make_mut(&mut self.graph);
 
         for triple_result in nq_reader.by_ref() {
             let triple = match handle_parse_error(triple_result, reader_mode, |e| InMemoryGraphError::NQuadsError {
@@ -301,7 +320,7 @@ impl InMemoryGraph {
                 Some(t) => t,
                 None => continue,
             };
-            Arc::make_mut(&mut self.graph).insert(triple.as_ref());
+            graph.insert(triple.as_ref());
         }
 
         Ok(())
@@ -324,6 +343,7 @@ impl InMemoryGraph {
     ) -> Result<(), InMemoryGraphError> {
         let parser = JsonLdParser::new();
         let mut jsonld_reader = parser.for_reader(reader);
+        let graph = Arc::make_mut(&mut self.graph);
 
         for triple_result in jsonld_reader.by_ref() {
             let triple = match handle_parse_error(triple_result, reader_mode, |e| InMemoryGraphError::JsonLDError {
@@ -333,7 +353,7 @@ impl InMemoryGraph {
                 Some(t) => t,
                 None => continue,
             };
-            Arc::make_mut(&mut self.graph).insert(triple.as_ref());
+            graph.insert(triple.as_ref());
         }
 
         Ok(())
@@ -1101,6 +1121,17 @@ fn triple_to_quad(t: TripleRef, graph_name: GraphName) -> Quad {
 /// * `Ok(Some(value))` - Parsing succeeded
 /// * `Ok(None)` - Parsing failed in lax mode (skip this item)
 /// * `Err(error)` - Parsing failed in strict mode
+fn validate_triple_iris(triple: TripleRef) -> Result<(), String> {
+    if let oxrdf::NamedOrBlankNodeRef::NamedNode(n) = triple.subject {
+        OxNamedNode::new(n.as_str()).map_err(|e| e.to_string())?;
+    }
+    OxNamedNode::new(triple.predicate.as_str()).map_err(|e| e.to_string())?;
+    if let TermRef::NamedNode(n) = triple.object {
+        OxNamedNode::new(n.as_str()).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 fn handle_parse_error<T, E: std::fmt::Display>(
     result: Result<T, E>,
     reader_mode: &ReaderMode,

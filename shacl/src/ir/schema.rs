@@ -1,10 +1,10 @@
 use crate::ast::{ASTSchema, ASTShape};
+use crate::error::ASTError;
 use crate::ir::dg::{DependencyGraph, PosNeg};
 use crate::ir::error::IRError;
 use crate::ir::shape::IRShape;
 use crate::ir::shape_label_idx::ShapeLabelIdx;
 use crate::rdf::ShaclParser;
-use crate::rdf::error::ShaclWriterError;
 use prefixmap::PrefixMap;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
@@ -79,6 +79,11 @@ impl IRSchema {
 
     pub fn get_shape_from_idx(&self, shape_idx: &ShapeLabelIdx) -> Option<&IRShape> {
         self.shapes.get(shape_idx)
+    }
+
+    pub fn get_shape_from_idx_e(&self, shape_idx: &ShapeLabelIdx) -> Result<&IRShape, IRError> {
+        self.get_shape_from_idx(shape_idx)
+            .ok_or(IRError::ShapeNotFound(*shape_idx))
     }
 
     pub fn get_shape(&self, sref: &Object) -> Option<&IRShape> {
@@ -179,9 +184,7 @@ impl IRSchema {
         ast: &ASTSchema,
     ) -> Result<ShapeLabelIdx, IRError> {
         let shape = match shape {
-            None => ast.get_shape(id).ok_or(IRError::ShapeNotFound {
-                shape: Box::new(id.clone()),
-            })?,
+            None => ast.get_shape(id).ok_or::<ASTError>(id.clone().into())?,
             Some(shape) => shape,
         };
 
@@ -259,7 +262,7 @@ impl TryFrom<&ASTSchema> for IRSchema {
 
 impl IRSchema {
     // TODO - Maybe change error type to IRerror
-    pub fn build_graph<RDF: BuildRDF>(&self) -> Result<RDF, ShaclWriterError> {
+    pub fn build_graph<RDF: BuildRDF>(&self) -> Result<RDF, IRError> {
         let mut graph = RDF::empty();
 
         graph.set_prefix_map(self.prefixmap.clone());
@@ -269,16 +272,10 @@ impl IRSchema {
 
         graph.add_base(&self.base().cloned());
 
-        self.labels_idx_map.iter().try_for_each(|(id, idx)| {
-            let shape = self.shapes.get(idx).ok_or(ShaclWriterError::Write {
-                msg: format!("Shape with index {idx} not found for id {id}"),
-            })?;
+        self.labels_idx_map.iter().try_for_each(|(_, idx)| {
+            let shape = self.shapes.get(idx).ok_or(IRError::ShapeNotFound(*idx))?;
 
-            shape
-                .register(&mut graph, &self.shapes)
-                .map_err(|err| ShaclWriterError::Write {
-                    msg: format!("Error registering shape with id {id} and index {idx}: {err}"),
-                })
+            shape.register(&mut graph, &self.shapes)
         })?;
 
         Ok(graph)

@@ -28,10 +28,7 @@ pub use shape::IRShape;
 pub use shape_label_idx::ShapeLabelIdx;
 
 fn convert_iri_ref(iri_ref: IriRef) -> Result<IriS, IRError> {
-    let iri = iri_ref.get_iri().map_err(|err| IRError::IriRefConversion {
-        iri_ref: iri_ref.to_string(),
-        err: err.to_string(),
-    })?;
+    let iri = iri_ref.get_iri()?;
 
     Ok(iri.clone())
 }

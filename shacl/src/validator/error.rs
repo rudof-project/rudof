@@ -1,162 +1,137 @@
 use crate::error::{IRError, ShaclParserError};
-use crate::ir::ShapeLabelIdx;
-use rudof_rdf::rdf_core::RDFError;
-use rudof_rdf::rdf_impl::InMemoryGraphError;
+use rudof_rdf::rdf_core::{RDFError, Rdf};
+use rudof_rdf::rdf_impl::{InMemoryGraphError, SparqlEndpointError};
 use sparql_service::RdfDataError;
 use std::io;
 use std::io::Error;
 use thiserror::Error;
-
-pub use crate::validator::constraints::error::*;
-pub use crate::validator::engine::error::*;
-pub use crate::validator::report::error::*;
 
 // TODO - Maybe move to validation module
 // TODO - Check if all the SPARQL error can be merged in one and if not improve enum variant names for
 // TODO - better readability. Also check with other cases like constraints
 #[derive(Debug, Error)]
 pub enum ValidationError {
-    #[error("Shape not found for shape idx {idx}: {error}")]
-    ShapeNotFound { idx: ShapeLabelIdx, error: String },
+    #[cfg(feature = "sparql")]
+    #[error("Query error: {0}")]
+    QueryError(String),
 
-    #[error("Obtaining rdfs:subClassOf of {term}: {error}")]
-    SubClassOf { term: String, error: String },
+    #[error("Unsupported SHACL validation mode: {0}")]
+    UnsupportedMode(String),
 
-    #[error("Obtaining reifiers of triple {triple}: {error}")]
-    ReifiersOfTriple { triple: String, error: String },
+    #[error(transparent)]
+    IRError(#[from] Box<IRError>),
 
-    #[error("Obtaining instances of {term}: {error}")]
-    InstanceOf { term: String, error: String },
+    #[error("Graph error: {0}")]
+    GraphError(String),
 
-    #[error("Obtaining objects for focus node {focus_node} and SHACL path: {shacl_path}: {error}")]
-    ObjectsShaclPath {
-        focus_node: String,
-        shacl_path: String,
-        error: String,
-    },
+    #[error(transparent)]
+    RDFError(#[from] Box<RDFError>),
 
-    #[error("Error during the SPARQL operation")]
-    Srdf,
+    #[cfg(feature = "sparql")]
+    #[error(transparent)]
+    SparqlEndpointError(#[from] Box<SparqlEndpointError>),
+
+    #[cfg(feature = "sparql")]
+    #[error(transparent)]
+    RdfDataError(#[from] Box<RdfDataError>),
+
+    #[error(transparent)]
+    InMemoryGraphError(#[from] Box<InMemoryGraphError>),
+
+    #[error(transparent)]
+    ShaclParserError(#[from] Box<ShaclParserError>),
+
+    #[error("Cannot convert {0} into {1}")]
+    CastError(String, String),
+
+    #[error("Parsing error: the required field '{0}' is missing")]
+    MissingRequiredField(String),
+
+    #[error("Parsing error: the field '{field}' has an invalid IRI value: {value}")]
+    InvalidIriValue { field: String, value: String },
 
     #[error("TargetNode cannot be a Blank Node")]
     TargetNodeBNode,
 
     #[error("TargetClass should be an IRI")]
     TargetClassNotIri,
+}
 
-    // TODO - Move to store
-    #[error("Error when working with the SRDFGraph: {err}")]
-    Graph {
-        #[from]
-        err: Box<InMemoryGraphError>,
-    },
-
-    // TODO - Move to store
-    #[error("Error when parsing the SHACL graph: {err}")]
-    ShaclParser {
-        #[from]
-        err: Box<ShaclParserError>,
-    },
-
-    #[error("Error during the constraint evaluation")]
-    Constraint(#[from] ConstraintError),
-    // #[error("Error parsing the IRI")]
-    // IriParse(#[from} IriParseError)
-    #[error("Error during some I/O operation")]
-    IO(#[from] Error),
-
-    #[error("Error loading the Shapes")]
-    Shapes(#[from] Box<RDFError>),
+impl ValidationError {
+    #[cfg(feature = "sparql")]
+    pub fn ask_query_error<RDF: Rdf>(error: RDF::Err) -> Self {
+        Self::QueryError(format!("ASK query failed: {error}"))
+    }
 
     #[cfg(feature = "sparql")]
-    #[error("Error creating the SPARQL endpoint")]
-    SparqlCreation,
+    pub fn select_query_error<RDF: Rdf>(error: RDF::Err) -> Self {
+        Self::QueryError(format!("SELECT query failed: {error}"))
+    }
 
-    #[cfg(feature = "sparql")]
-    #[error("Error during the SPARQL operation")]
-    Sparql(#[from] Box<SparqlError>),
+    pub fn new_graph_error<RDF: Rdf>(err: RDF::Err) -> Self {
+        Self::GraphError(err.to_string())
+    }
 
-    #[cfg(feature = "sparql")]
-    #[error("Error during the SPARQL operation: {msg}, source: {source}")]
-    SparqlError { msg: String, source: Box<SparqlError> },
-
-    #[error("Constraint error in component {component}: {source}")]
-    ConstraintError {
-        component: String,
-        source: Box<ConstraintError>,
-    },
-
-    #[error("Implicit class not found")]
-    ImplicitClassNotFound,
-
-    #[error("The provided mode is not supported for the {structure} structure")]
-    UnsupportedMode { structure: String },
-
-    #[error(transparent)]
-    SrdfHelper(#[from] Box<SrdfError>),
-
-    #[error("TargetClass error: {msg}")]
-    TargetClassError { msg: String },
-
-    #[error("Error during the compilation of the AST Schema, {err}")]
-    CompiledShacl {
-        #[from]
-        err: Box<IRError>,
-    },
-
-    #[error("Not yet implemented: {msg}")]
-    NotImplemented { msg: String },
-
-    #[cfg(not(target_family = "wasm"))]
-    #[error(transparent)]
-    RdfDataError(#[from] Box<RdfDataError>),
-
-    #[error("Error obtaining triples with subject {subject} during evaluation: {error}, checking CLOSED")]
-    TriplesWithSubject { subject: String, error: String },
-
-    #[error(
-        "Error obtaining triples with subject {subject} and predicate {predicate} during validation: {error}, checking REIFIER SHAPE"
-    )]
-    TriplesWithSubjectPredicate {
-        subject: String,
-        predicate: String,
-        error: String,
-    },
-
-    #[error("Error building class instance index: {err}")]
-    ClassIndexBuild { err: String },
+    pub fn new_graph_error_ctx<RDF: Rdf>(err: RDF::Err, ctx: &str) -> Self {
+        Self::GraphError(format!("{ctx}: {err}"))
+    }
 }
 
 impl From<IRError> for ValidationError {
     fn from(value: IRError) -> Self {
-        Self::CompiledShacl { err: Box::new(value) }
+        Self::IRError(Box::new(value))
     }
 }
 
-impl From<InMemoryGraphError> for ValidationError {
-    fn from(value: InMemoryGraphError) -> Self {
-        Self::Graph { err: Box::new(value) }
+impl From<RDFError> for ValidationError {
+    fn from(value: RDFError) -> Self {
+        Self::RDFError(Box::new(value))
     }
 }
 
-impl From<ShaclParserError> for ValidationError {
-    fn from(value: ShaclParserError) -> Self {
-        Self::ShaclParser { err: Box::new(value) }
+#[cfg(feature = "sparql")]
+impl From<SparqlEndpointError> for ValidationError {
+    fn from(value: SparqlEndpointError) -> Self {
+        Self::SparqlEndpointError(Box::new(value))
     }
 }
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(feature = "sparql")]
 impl From<RdfDataError> for ValidationError {
     fn from(value: RdfDataError) -> Self {
         Self::RdfDataError(Box::new(value))
     }
 }
 
+impl From<ShaclParserError> for ValidationError {
+    fn from(value: ShaclParserError) -> Self {
+        Self::ShaclParserError(Box::new(value))
+    }
+}
+
+impl From<InMemoryGraphError> for ValidationError {
+    fn from(value: InMemoryGraphError) -> Self {
+        Self::InMemoryGraphError(Box::new(value))
+    }
+}
+
 #[derive(Error, Debug)]
 pub enum ShaclConfigError {
-    #[error("Reading SHACL Config path {path_name:?} error: {error:?}")]
-    ReadingConfig { path_name: String, error: io::Error },
+    #[error(transparent)]
+    IOError(#[from] Box<io::Error>),
 
-    #[error("Reading SHACL config TOML from {path_name:?}. Error: {error:?}")]
-    Toml { path_name: String, error: toml::de::Error },
+    #[error(transparent)]
+    UnmarshallError(#[from] Box<toml::de::Error>),
+}
+
+impl From<io::Error> for ShaclConfigError {
+    fn from(value: Error) -> Self {
+        Self::IOError(Box::new(value))
+    }
+}
+
+impl From<toml::de::Error> for ShaclConfigError {
+    fn from(value: toml::de::Error) -> Self {
+        Self::UnmarshallError(Box::new(value))
+    }
 }

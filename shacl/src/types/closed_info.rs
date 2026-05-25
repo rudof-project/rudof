@@ -1,7 +1,4 @@
-use crate::ast::error::ASTError;
-use crate::ast::{ASTSchema, ASTShape};
 use rudof_iri::IriS;
-use rudof_rdf::rdf_core::term::Object;
 use std::collections::HashSet;
 
 #[derive(Debug, Clone, Default)]
@@ -49,30 +46,4 @@ impl ClosedInfo {
             ClosedInfo::No => None,
         }
     }
-}
-
-pub(crate) fn defined_properties_for(properties: &[Object], ast: &ASTSchema) -> Result<HashSet<IriS>, ASTError> {
-    let mut defined_properties = HashSet::new();
-    for prop_shape_ref in properties {
-        let prop_shape = ast.get_shape(prop_shape_ref).ok_or_else(|| ASTError::ShapeNotFound {
-            shape: Box::new(prop_shape_ref.clone()),
-        })?;
-        match prop_shape {
-            ASTShape::PropertyShape(ps) => {
-                // Better to ignore complex paths then make Rudof crash
-                // Also, paths like [ sh:inversePath ex:path ] should be ignored, as that does not
-                // add an expected property
-                if let Some(pred) = ps.path().pred() {
-                    defined_properties.insert(pred.clone());
-                }
-            },
-            _ => {
-                return Err(ASTError::ShapeNotFound {
-                    shape: Box::new(prop_shape_ref.clone()),
-                });
-            },
-        }
-    }
-
-    Ok(defined_properties)
 }

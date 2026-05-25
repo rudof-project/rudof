@@ -4,7 +4,7 @@ use rmcp::{
     handler::server::wrapper::Parameters,
     model::{CallToolResult, Content},
 };
-use rudof_lib::formats::NodeInspectionMode;
+use rudof_lib::formats::{IriNormalizationMode, NodeInspectionMode};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -15,21 +15,26 @@ use super::helpers::*;
 /// Request parameters for inspecting an RDF node.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct NodeInfoRequest {
-    /// RDF node to inspect. Can be:
-    /// - A full IRI (e.g., "http://example.org/person/1")
-    /// - A prefixed name (e.g., "ex:person1" or ":localName")
+    /// The RDF node to inspect. Accepted forms:
+    /// - Full IRI in angle brackets: "<http://example.org/alice>"
+    /// - Prefixed name: "ex:alice" or ":localName"
+    /// - Blank node ID: "_:b0"
     pub node: String,
 
-    /// Optional list of predicates to filter the results.
-    /// Only arcs with these predicates will be shown.
+    /// Predicate IRIs to filter results. When provided, only arcs with these predicates
+    /// are shown. When omitted, all arcs are returned.
     pub predicates: Option<Vec<String>>,
 
-    /// Optional maximum depth for traversing connected nodes.
+    /// Maximum traversal depth for the tree output. Default: 1 (direct arcs only).
     pub depth: Option<usize>,
 
-    /// Display mode for node information.
-    /// Supported: outgoing, incoming, both (default: both)
+    /// Which arcs to include. One of: both (default), outgoing (node as subject), incoming (node as object).
     pub mode: Option<String>,
+
+    /// IRI parsing strictness for `node`.
+    /// false (default): bare "http://..." IRIs are auto-wrapped in "<>".
+    /// true: bare IRIs cause a parse error — use "<http://...>" explicitly.
+    pub strict_iris: Option<bool>,
 }
 
 /// Response containing node information.
@@ -236,6 +241,7 @@ pub async fn node_info_impl(
         predicates,
         depth,
         mode,
+        strict_iris,
     }): Parameters<NodeInfoRequest>,
 ) -> Result<CallToolResult, McpError> {
     let mut rudof = service.rudof.lock().await;
@@ -252,8 +258,14 @@ pub async fn node_info_impl(
         Err(e) => return Ok(e.into_call_tool_result()),
     };
 
+    let iri_mode = if strict_iris.unwrap_or(false) {
+        IriNormalizationMode::Strict
+    } else {
+        IriNormalizationMode::Lax
+    };
+
     let mut output_buffer = Cursor::new(Vec::new());
-    let mut showing_node_info = rudof.show_node_info(&node, &mut output_buffer);
+    let mut showing_node_info = rudof.show_node_info(&node, &mut output_buffer).with_iri_mode(iri_mode);
     if let Some(mode) = &parsed_mode {
         showing_node_info = showing_node_info.with_show_node_mode(mode);
     }

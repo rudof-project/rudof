@@ -1,4 +1,8 @@
-use crate::{Result, Rudof, api::data::DataOperations, formats::NodeInspectionMode};
+use crate::{
+    Result, Rudof,
+    api::data::DataOperations,
+    formats::{IriNormalizationMode, NodeInspectionMode},
+};
 use std::io;
 
 /// Builder for `show_node_info` operation.
@@ -14,6 +18,7 @@ pub struct ShowNodeInfoBuilder<'a, W: io::Write> {
     depth: Option<usize>,
     show_hyperlinks: Option<bool>,
     show_colors: Option<bool>,
+    iri_mode: IriNormalizationMode,
 }
 
 impl<'a, W: io::Write> ShowNodeInfoBuilder<'a, W> {
@@ -31,6 +36,7 @@ impl<'a, W: io::Write> ShowNodeInfoBuilder<'a, W> {
             depth: None,
             show_hyperlinks: None,
             show_colors: None,
+            iri_mode: IriNormalizationMode::default(),
         }
     }
 
@@ -84,6 +90,15 @@ impl<'a, W: io::Write> ShowNodeInfoBuilder<'a, W> {
         self
     }
 
+    /// Sets the IRI normalization mode for the node selector string.
+    ///
+    /// - [`IriNormalizationMode::Lax`] (default): bare `://` IRIs are auto-wrapped in `<>`.
+    /// - [`IriNormalizationMode::Strict`]: no normalization; bare IRIs produce a parse error.
+    pub fn with_iri_mode(mut self, mode: IriNormalizationMode) -> Self {
+        self.iri_mode = mode;
+        self
+    }
+
     /// Executes the node inspection operation with the configured parameters.
     pub fn execute(self) -> Result<()> {
         <Rudof as DataOperations>::show_node_info(
@@ -94,6 +109,7 @@ impl<'a, W: io::Write> ShowNodeInfoBuilder<'a, W> {
             self.depth,
             self.show_hyperlinks,
             self.show_colors,
+            self.iri_mode,
             self.writer,
         )
     }

@@ -18,7 +18,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::vec::IntoIter;
-use tracing::trace;
+// use tracing::trace;
 
 #[derive(Default, PartialEq, Eq, Clone)]
 pub struct RbeTable<K, V, R, Ctx>
@@ -92,11 +92,11 @@ where
     }
 
     pub fn matches(&self, values: Vec<(K, V, Ctx)>) -> Result<MatchTableIter<K, V, R, Ctx>, RbeError<K, V, R, Ctx>> {
-        trace!(
+        /*trace!(
             "Checking if RbeTable {} matches [{}]",
             &self,
             values.iter().map(|(k, v, _ctx)| format!("({k} {v})")).join(", ")
-        );
+        );*/
         let mut pairs_found = 0;
         let mut candidates = Vec::new();
         let cs_empty = IndexSet::new();
@@ -116,7 +116,7 @@ where
                             pairs.push((key.clone(), value.clone(), ctx.clone(), *component, cond.clone()));
                         },
                         Err(err) => {
-                            trace!("Pre-filter: condition {cond} rejected value {value} for component {component}");
+                            // trace!("Pre-filter: condition {cond} rejected value {value} for component {component}");
                             last_err = Some(err);
                         },
                     }
@@ -137,12 +137,12 @@ where
         }
 
         if candidates.is_empty() || pairs_found == 0 {
-            trace!(
+            /*trace!(
                 "No candidates for rbe: {}, candidates: {:?}, pairs_found: {pairs_found}",
                 self.rbe, candidates,
-            );
+            );*/
             if self.rbe.nullable() {
-                trace!("Rbe is nullable and no candidates...should be sucessful");
+                //trace!("Rbe is nullable and no candidates...should be sucessful");
 
                 Ok(MatchTableIter::Empty(EmptyIter::new(
                     &self.rbe,
@@ -155,11 +155,11 @@ where
                     self,
                     &Values::from(&values),
                 )));
-                trace!("Result of matches: {:?}", result);
+                //trace!("Result of matches: {:?}", result);
                 result
             }
         } else {
-            trace!("Some candidates found for rbe: {:?}", self.rbe);
+            //trace!("Some candidates found for rbe: {:?}", self.rbe);
             let mp = candidates.into_iter().multi_cartesian_product();
             Ok(MatchTableIter::NonEmpty(IterCartesianProduct {
                 is_first: true,
@@ -338,11 +338,11 @@ where
         match next_state {
             None => {
                 if self.is_first {
-                    trace!("Should be internal error? No more candidates");
-                    trace!("RBE: {}", self.rbe);
+                    //trace!("Should be internal error? No more candidates");
+                    //trace!("RBE: {}", self.rbe);
                     None
                 } else {
-                    trace!("No more candidates");
+                    //trace!("No more candidates");
                     None
                 }
             },
@@ -354,7 +354,7 @@ where
                             pending.merge(new_pending);
                         },
                         Err(err) => {
-                            trace!("Failed condition: {cond} with value: {v}");
+                            //trace!("Failed condition: {cond} with value: {v}");
                             return Some(Err(err));
                         },
                     }
@@ -362,13 +362,13 @@ where
                 let bag = Bag::from_iter(vs.into_iter().map(|(_, _, _, c, _)| c));
                 match self.rbe.match_bag_interval(&bag, self.open) {
                     Ok(()) => {
-                        trace!("Rbe {} matches bag {}", self.rbe, bag);
+                        // trace!("Rbe {} matches bag {}", self.rbe, bag);
                         self.is_first = false;
                         Some(Ok(pending))
                     },
-                    Err(err) => {
-                        trace!("### Rbe {:?} does not match bag {}, error: {err}", self.rbe, bag);
-                        trace!("### Skipped error: {err}!\n");
+                    Err(_err) => {
+                        //trace!("### Rbe {:?} does not match bag {}, error: {err}", self.rbe, bag);
+                        //trace!("### Skipped error: {err}!\n");
                         self.next()
                     },
                 }

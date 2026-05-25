@@ -1,9 +1,8 @@
-use crate::error::{ReportError, ResultError};
+use crate::error::ValidationError;
 use crate::types::{MessageMap, Severity};
 use crate::validator::report::error_mapper;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
-use rudof_rdf::rdf_core::term::literal::ConcreteLiteral;
 use rudof_rdf::rdf_core::vocabs::ShaclVocab;
 use rudof_rdf::rdf_core::{BuildRDF, FocusRDF, NeighsRDF, SHACLPath};
 use std::fmt::{Display, Formatter};
@@ -95,82 +94,41 @@ impl ValidationResult {
 }
 
 impl ValidationResult {
-    pub(crate) fn parse<S: FocusRDF>(store: &mut S, validation_result: &S::Term) -> Result<Self, ResultError> {
+    pub(crate) fn parse<S: FocusRDF>(store: &mut S, validation_result: &S::Term) -> Result<Self, ValidationError> {
         // Start processing the required fields
-        let focus_node = match store
-            .object_for(validation_result, &ShaclVocab::sh_focus_node().into())
-            .map_err(|e| ResultError::ObjectFor {
-                error: e.to_string(),
-                subject: validation_result.to_string(),
-                predicate: ShaclVocab::SH_FOCUS_NODE.to_string(),
-            })? {
-            Some(fnode) => fnode,
-            None => {
-                return Err(ResultError::MissingRequiredField {
-                    field: "FocusNode".to_string(),
-                });
-            },
-        };
+        let focus_node = store
+            .object_for(validation_result, &ShaclVocab::sh_focus_node().into())?
+            .ok_or(ValidationError::MissingRequiredField(
+                ShaclVocab::SH_FOCUS_NODE.to_string(),
+            ))?;
 
-        let severity = match store
-            .object_for(validation_result, &ShaclVocab::sh_result_severity().into())
-            .map_err(|e| ResultError::ObjectFor {
-                error: e.to_string(),
-                subject: validation_result.to_string(),
-                predicate: ShaclVocab::SH_RESULT_SEVERITY.to_string(),
-            })? {
+        let severity = match store.object_for(validation_result, &ShaclVocab::sh_result_severity().into())? {
             Some(Object::Iri(severity)) => (&severity).into(),
             Some(other) => {
-                return Err(ResultError::WrongNodeForSeverity {
-                    field: "Severity".to_string(),
+                return Err(ValidationError::InvalidIriValue {
+                    field: ShaclVocab::SH_SEVERITY.to_string(),
                     value: other.to_string(),
                 });
             },
             None => {
-                return Err(ResultError::MissingRequiredField {
-                    field: "Severity".to_string(),
-                });
+                return Err(ValidationError::MissingRequiredField(
+                    ShaclVocab::SH_SEVERITY.to_string(),
+                ));
             },
         };
 
-        let constraint_component = match store
-            .object_for(validation_result, &ShaclVocab::sh_source_constraint_component().into())
-            .map_err(|e| ResultError::ObjectFor {
-                error: e.to_string(),
-                subject: validation_result.to_string(),
-                predicate: ShaclVocab::SH_SOURCE_CONSTRAINT_COMPONENT.to_string(),
-            })? {
-            Some(component) => component,
-            None => {
-                return Err(ResultError::MissingRequiredField {
-                    field: "SourceConstraintComponent".to_string(),
-                });
-            },
-        };
+        let constraint_component = store
+            .object_for(validation_result, &ShaclVocab::sh_source_constraint_component().into())?
+            .ok_or(ValidationError::MissingRequiredField(
+                ShaclVocab::SH_SOURCE_CONSTRAINT_COMPONENT.to_string(),
+            ))?;
 
         // Process the optional fields
-        let path = store
-            .get_path_for(validation_result, &ShaclVocab::sh_result_path().into())
-            .map_err(|e| ResultError::PathFor {
-                subject: validation_result.to_string(),
-                error: e.to_string(),
-            })?;
+        let path = store.get_path_for(validation_result, &ShaclVocab::sh_result_path().into())?;
 
-        let source = store
-            .object_for(validation_result, &ShaclVocab::sh_source_shape().into())
-            .map_err(|e| ResultError::ObjectFor {
-                error: e.to_string(),
-                subject: validation_result.to_string(),
-                predicate: ShaclVocab::SH_SOURCE_SHAPE.to_string(),
-            })?;
+        let source = store.object_for(validation_result, &ShaclVocab::sh_source_shape().into())?;
 
-        let value = store
-            .object_for(validation_result, &ShaclVocab::sh_value().into())
-            .map_err(|e| ResultError::ObjectFor {
-                error: e.to_string(),
-                subject: validation_result.to_string(),
-                predicate: ShaclVocab::SH_VALUE.to_string(),
-            })?;
+        let value = store.object_for(validation_result, &ShaclVocab::sh_value().into())?;
 
         Ok(ValidationResult::new(focus_node, constraint_component, severity)
             .with_path(path)
@@ -182,7 +140,7 @@ impl ValidationResult {
         &self,
         writer: &mut RDF,
         report_node: RDF::Subject,
-    ) -> Result<(), ReportError> {
+    ) -> Result<(), ValidationError> {
         writer
             .add_type(report_node.clone(), ShaclVocab::sh_validation_result())
             .map_err(error_mapper::<RDF>(""))?;
@@ -208,16 +166,9 @@ impl ValidationResult {
             .add_triple(report_node.clone(), ShaclVocab::sh_result_severity(), severity)
             .map_err(error_mapper::<RDF>("Error adding severity to validation result"))?;
 
-        for (lang, text) in self.message.iter() {
-            let lit: RDF::Literal = ConcreteLiteral::StringLiteral {
-                lang: lang.clone(),
-                lexical_form: text.clone(),
-            }
-            .into();
-            let term: RDF::Term = lit.into();
-
+        for lit in self.message.iter_literals() {
             writer
-                .add_triple(report_node.clone(), ShaclVocab::sh_result_message(), term)
+                .add_triple::<_, _, RDF::Literal>(report_node.clone(), ShaclVocab::sh_result_message(), lit.into())
                 .map_err(error_mapper::<RDF>("Error result message to validation result"))?;
         }
 

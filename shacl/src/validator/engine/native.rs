@@ -55,21 +55,16 @@ impl<RDF: NeighsRDF + Debug + 'static> Engine<RDF> for NativeEngine {
         let shacl_component = ShaclComponent::new(component);
         let validator: &dyn NativeValidator<RDF> = shacl_component.deref();
 
-        validator
-            .validate_native(
-                component,
-                shape,
-                store,
-                self,
-                value_nodes,
-                source_shape,
-                maybe_path,
-                shapes_graph,
-            )
-            .map_err(|e| ValidationError::ConstraintError {
-                component: component.to_string(),
-                source: Box::new(e),
-            })
+        validator.validate_native(
+            component,
+            shape,
+            store,
+            self,
+            value_nodes,
+            source_shape,
+            maybe_path,
+            shapes_graph,
+        )
     }
 
     /// https://www.w3.org/TR/shacl/#targetNode
@@ -93,9 +88,7 @@ impl<RDF: NeighsRDF + Debug + 'static> Engine<RDF> for NativeEngine {
         let cls: RDF::Term = class.clone().into();
         let focus_nodes = store
             .shacl_instances_of(&cls)
-            .map_err(|e| ValidationError::TargetClassError {
-                msg: format!("Failed to get instances of class {class}: {e}"),
-            })?
+            .map_err(ValidationError::new_graph_error::<RDF>)?
             .map(|s| RDF::subject_as_term(&s));
 
         Ok(FocusNodes::from_iter(focus_nodes))
@@ -105,7 +98,7 @@ impl<RDF: NeighsRDF + Debug + 'static> Engine<RDF> for NativeEngine {
         let pred: RDF::IRI = predicate.clone().into();
         let subjects = store
             .triples_with_predicate(&pred)
-            .map_err(|_| ValidationError::Srdf)?
+            .map_err(ValidationError::new_graph_error::<RDF>)?
             .map(Triple::into_subject)
             .map(Into::into);
         Ok(FocusNodes::from_iter(subjects))
@@ -115,7 +108,7 @@ impl<RDF: NeighsRDF + Debug + 'static> Engine<RDF> for NativeEngine {
         let pred: RDF::IRI = predicate.clone().into();
         let objects = store
             .triples_with_predicate(&pred)
-            .map_err(|_| ValidationError::Srdf)?
+            .map_err(ValidationError::new_graph_error::<RDF>)?
             .map(Triple::into_object);
         Ok(FocusNodes::from_iter(objects))
     }
@@ -130,28 +123,14 @@ impl<RDF: NeighsRDF + Debug + 'static> Engine<RDF> for NativeEngine {
 
         // Fallback: full graph scan (for backwards compatibility if index wasn't built)
         let term: RDF::Term = shape.clone().into();
-        let targets =
-            store
-                .subjects_for(&RdfVocab::rdf_type().into(), &term)
-                .map_err(|e| ValidationError::InstanceOf {
-                    term: term.to_string(),
-                    error: e.to_string(),
-                })?;
+        let targets = store.subjects_for(&RdfVocab::rdf_type().into(), &term)?;
 
         let subclass_targets = store
-            .subjects_for(&RdfsVocab::rdfs_subclass_of_str().into(), &term)
-            .map_err(|e| ValidationError::SubClassOf {
-                term: term.to_string(),
-                error: e.to_string(),
-            })?
+            .subjects_for(&RdfsVocab::rdfs_subclass_of_str().into(), &term)?
             .into_iter()
             .flat_map(move |subclass| {
                 store
                     .subjects_for(&RdfVocab::rdf_type().into(), &subclass)
-                    .map_err(|e| ValidationError::SubClassOf {
-                        term: subclass.to_string(),
-                        error: e.to_string(),
-                    })
                     .into_iter()
                     .flatten()
             });

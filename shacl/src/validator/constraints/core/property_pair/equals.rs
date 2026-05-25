@@ -1,6 +1,7 @@
+use crate::error::ValidationError;
 use crate::ir::components::Equals;
 use crate::ir::{IRComponent, IRSchema, IRShape};
-use crate::validator::constraints::{ConstraintError, NativeValidator, SparqlValidator};
+use crate::validator::constraints::{BasicSparqlValidator, NativeValidator};
 use crate::validator::engine::Engine;
 use crate::validator::nodes::ValueNodes;
 use crate::validator::report::ValidationResult;
@@ -21,7 +22,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Equals {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
         let component_obj = Object::iri(component.into());
         let mut results = Vec::new();
 
@@ -35,7 +36,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Equals {
 
             let prop_values = store
                 .triples_with_subject_predicate(&subject, &iri)
-                .map_err(|e| ConstraintError::Internal { err: e.to_string() })?
+                .map_err(ValidationError::new_graph_error::<S>)?
                 .map(|t| t.obj().clone())
                 .collect::<HashSet<_>>();
 
@@ -46,7 +47,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Equals {
             for pv in &prop_values {
                 if !nodes_set.contains(pv) {
                     let value = S::term_as_object(pv).ok();
-                    let vr = ValidationResult::new(fnode_obj.clone(), component_obj.clone(), shape.severity())
+                    let vr = ValidationResult::new(fnode_obj.clone(), component_obj.clone(), shape.severity().clone())
                         .with_source(Some(shape.id().clone()))
                         .with_path(maybe_path.cloned())
                         .with_value(value);
@@ -57,7 +58,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Equals {
             for vn in nodes.iter() {
                 if !prop_values.contains(vn) {
                     let value = S::term_as_object(vn).ok();
-                    let vr = ValidationResult::new(fnode_obj.clone(), component_obj.clone(), shape.severity())
+                    let vr = ValidationResult::new(fnode_obj.clone(), component_obj.clone(), shape.severity().clone())
                         .with_source(Some(shape.id().clone()))
                         .with_path(maybe_path.cloned())
                         .with_value(value);
@@ -71,7 +72,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Equals {
 }
 
 #[cfg(feature = "sparql")]
-impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Equals {
+impl<S: QueryRDF + Debug + 'static> BasicSparqlValidator<S> for Equals {
     fn validate_sparql(
         &self,
         _: &IRComponent,
@@ -81,9 +82,7 @@ impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Equals {
         _: Option<&IRShape>,
         _: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
-        Err(ConstraintError::NotImplemented {
-            err: "Equals not implemented".to_string(),
-        })
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
+        unimplemented!()
     }
 }

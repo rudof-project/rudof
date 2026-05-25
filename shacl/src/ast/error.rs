@@ -3,9 +3,15 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum ASTError {
-    #[error("NodeShape has an id which is not an IRI: {id}")]
-    NodeShapeIdNotIri { id: Box<Object> },
+    #[error("A shape of type {expected} was expected, but found {shape}")]
+    UnexpectedShapeType { expected: String, shape: Box<Object> },
 
-    #[error("Not found shape {shape}")]
-    ShapeNotFound { shape: Box<Object> },
+    #[error("Not found shape {0}")]
+    ShapeNotFound(Box<Object>),
+}
+
+impl From<Object> for ASTError {
+    fn from(value: Object) -> Self {
+        Self::ShapeNotFound(Box::new(value))
+    }
 }

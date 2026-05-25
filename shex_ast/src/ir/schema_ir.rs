@@ -1,8 +1,10 @@
 use super::dependency_graph::{DependencyGraph, PosNeg};
 use super::shape_expr::ShapeExpr;
 use super::shape_label::ShapeLabel;
+use crate::ir::external_resolver::ExternalShapeResolverRegistry;
 use crate::ir::inheritance_graph::InheritanceGraph;
 use crate::ir::map_state::MapState;
+use crate::ir::node_constraint::NodeConstraint;
 use crate::ir::sem_act::SemAct;
 use crate::ir::semantic_actions_registry::SemanticActionsRegistry;
 use crate::ir::shape::Shape;
@@ -17,7 +19,7 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 use std::sync::Arc;
 use std::sync::Mutex;
-use tracing::trace;
+// use tracing::trace;
 
 type Result<A> = std::result::Result<A, Box<SchemaIRError>>;
 
@@ -71,6 +73,10 @@ impl SchemaIR {
         &self.start_acts
     }
 
+    pub fn set_default_base_prefixes(&mut self, default_base: &IriS) {
+        self.prefixmap.set_default_base(&Some(default_base.clone()));
+    }
+
     /// Return the live `Arc<Mutex<MapState>>` from the registered `MapActionExtension`, if any.
     ///
     /// All validation closures compiled into the RBE table share this same Arc (because
@@ -88,10 +94,16 @@ impl SchemaIR {
         self.abstract_shapes.insert(idx);
     }
 
+    /// Returns a clone of the prefix map used in the schema.
+    /// Cloning the prefix map is necessary to avoid unintended
+    /// side effects from modifying the prefix map outside of the schema IR,
+    /// since the prefix map is shared across the entire schema and is used
+    /// to resolve prefixed names in shape labels and shape expressions.
     pub fn prefixmap(&self) -> PrefixMap {
         self.prefixmap.clone()
     }
 
+    /// Returns true if the shape label corresponding to the given index is marked as abstract in the schema, false otherwise.
     pub fn is_abstract(&self, idx: &ShapeLabelIdx) -> bool {
         self.abstract_shapes.contains(idx)
     }
@@ -108,18 +120,27 @@ impl SchemaIR {
         self.total_shapes_counter += new_counter
     }
 
+    /// Returns the number of shape labels defined in the schema,
+    /// which corresponds to the number of shape expressions that have a label (i.e., are not anonymous).
+    /// This does not include shapes that are imported from other schemas,
+    /// but only those that are defined locally in this schema.
     pub fn shapes_counter(&self) -> usize {
         self.shape_label_counter
     }
 
+    /// Returns the source IRI corresponding to the given source
     pub fn get_source(&self, source_idx: &SourceIdx) -> Option<&IriS> {
         self.sources.get(source_idx)
     }
 
+    /// Returns the total number of shapes in the schema,
+    /// including both local and imported shapes.
     pub fn total_shapes_count(&self) -> usize {
         self.total_shapes_counter
     }
 
+    /// Adds a shape expression to the schema IR, associating it with the given shape label and source IRI.
+    /// Returns the index of the added shape expression.
     pub fn add_shape(&mut self, shape_label: ShapeLabel, se: ShapeExpr, source_iri: &IriS) -> ShapeLabelIdx {
         let idx = ShapeLabelIdx::from(self.shape_label_counter);
         self.labels_idx_map.insert(shape_label.clone(), idx);
@@ -131,6 +152,7 @@ impl SchemaIR {
         idx
     }
 
+    /// Returns the shape expression corresponding to the given shape label, if it exists.
     pub fn get_shape_expr(&self, shape_label: &ShapeLabel) -> Option<&ShapeExpr> {
         if let Some(idx) = self.find_shape_label_idx(shape_label) {
             self.shapes.get(idx).map(|info| info.expr())
@@ -143,30 +165,75 @@ impl SchemaIR {
         self.local_shapes_counter
     }
 
+    /// Returns the list of IRIs of the schemas imported by this schema
     pub fn imported_schemas(&self) -> &Vec<IriS> {
         &self.imported_schemas
     }
 
+    /// Returns the parents of the shape expression corresponding to the given index
     pub fn parents(&self, idx: &ShapeLabelIdx) -> Vec<ShapeLabelIdx> {
         self.inheritance_graph.parents(idx)
     }
 
+    /// Returns the descendants of the shape expression corresponding to the given index
     pub fn descendants(&self, idx: &ShapeLabelIdx) -> Vec<ShapeLabelIdx> {
         self.inheritance_graph.descendants(idx)
     }
 
+    /// Returns a map of shape label indices to the triple expressions of the shape expressions that extend the shape expression corresponding to the given index,
+    /// including the shape expression itself (with key None).
     pub fn get_triple_exprs(&self, idx: &ShapeLabelIdx) -> Option<HashMap<Option<ShapeLabelIdx>, Vec<Expr>>> {
         if let Some(info) = self.find_shape_idx(idx) {
             let mut result = HashMap::new();
             let current_exprs = info.expr().get_triple_exprs(self);
             result.insert(None, current_exprs);
-            trace!("Checking parents of {idx}: {:?}", self.parents(idx));
+            // trace!("Checking parents of {idx}: {:?}", self.parents(idx));
             for e in &self.parents(idx) {
                 let shape_expr = self.find_shape_idx(e).unwrap();
                 let exprs = shape_expr.expr().get_triple_exprs(self);
                 result.insert(Some(*e), exprs);
             }
             Some(result)
+        } else {
+            None
+        }
+    }
+
+    /// Get the list of node constraints, the main shape and the rest of shape expressions
+    pub fn get_main_shape_constraints(
+        &self,
+        idx: &ShapeLabelIdx,
+    ) -> Option<(Vec<NodeConstraint>, Option<Shape>, Vec<ShapeExpr>)> {
+        if let Some(info) = self.find_shape_idx(idx) {
+            let mut ncs = Vec::new();
+            let mut first_shape = None;
+            let mut rest_shapes = Vec::new();
+            match info.expr() {
+                ShapeExpr::Shape(shape) => Some((ncs, Some(*shape.clone()), rest_shapes)),
+                ShapeExpr::ShapeAnd { exprs } => {
+                    for e in exprs {
+                        if let Some(se) = self.find_shape_idx(e) {
+                            match se.expr() {
+                                ShapeExpr::Shape(s) => {
+                                    if first_shape.is_none() {
+                                        first_shape = Some(*s.clone());
+                                    } else {
+                                        rest_shapes.push(ShapeExpr::Shape(s.clone()));
+                                    }
+                                },
+                                ShapeExpr::NodeConstraint(nc) => {
+                                    ncs.push(nc.clone());
+                                },
+                                _ => {
+                                    rest_shapes.push(se.expr().clone());
+                                },
+                            }
+                        }
+                    }
+                    Some((ncs, first_shape, rest_shapes))
+                },
+                _ => None,
+            }
         } else {
             None
         }
@@ -211,6 +278,7 @@ impl SchemaIR {
     pub fn populate_from_schema_json(
         &mut self,
         schema_json: &SchemaJson,
+        external_resolvers: &ExternalShapeResolverRegistry,
         resolve_method: &ResolveMethod,
         base: &Option<IriS>,
     ) -> Result<()> {
@@ -219,7 +287,11 @@ impl SchemaIR {
         // same Arc<Mutex<MapState>> that callers can later read back via get_map_state_arc).
         let registry = self.semantic_actions_registry.clone();
         let mut compiler = AST2IR::with_registry(resolve_method, registry);
-        compiler.compile(schema_json, &schema_json.source_iri(), base, self)?;
+        // `AST2IR::compile` applies `external_resolvers` to the root and imported schemas.
+        compiler.compile(schema_json, &schema_json.source_iri(), base, self, external_resolvers)?;
+        if let Some(base) = base {
+            self.set_default_base_prefixes(base);
+        }
         Ok(())
     }
 
@@ -387,7 +459,7 @@ impl SchemaIR {
     /// A well formed schema should not have any cyclic reference that involve a negation
     pub fn has_neg_cycle(&self) -> bool {
         let dep_graph = self.dependency_graph();
-        trace!("Dependency graph: {dep_graph}");
+        // trace!("Dependency graph: {dep_graph}");
         dep_graph.has_neg_cycle()
     }
 
@@ -451,17 +523,10 @@ impl SchemaIR {
         if let Some(info) = self.find_shape_idx(&idx_resolved) {
             match info.label() {
                 Some(label) => {
-                    result.push_str(
-                        format!(
-                            "{} = {}",
-                            self.show_label(label),
-                            self.show_shape_expr(info.expr(), width)
-                        )
-                        .as_str(),
-                    );
+                    result.push_str(&self.show_label(label));
                 },
                 None => {
-                    result.push_str(self.show_shape_expr(info.expr(), width).to_string().as_str());
+                    result.push_str(&self.show_shape_expr(info.expr(), width).to_string());
                 },
             }
         } else {
@@ -695,6 +760,7 @@ mod tests {
     use rudof_iri::iri;
 
     use super::SchemaIR;
+    use crate::ir::external_resolver::ExternalShapeResolverRegistry;
     use crate::{
         Pred, ResolveMethod, ShapeLabelIdx,
         ast::Schema as SchemaJson,
@@ -722,8 +788,13 @@ mod tests {
         }"#;
         let schema_json: SchemaJson = serde_json::from_str::<SchemaJson>(str).unwrap();
         let mut ir = SchemaIR::new(SemanticActionsRegistry::default());
-        ir.populate_from_schema_json(&schema_json, &ResolveMethod::default(), &None)
-            .unwrap();
+        ir.populate_from_schema_json(
+            &schema_json,
+            &ExternalShapeResolverRegistry::default(),
+            &ResolveMethod::default(),
+            &None,
+        )
+        .unwrap();
         println!("Schema IR: {ir}");
         let s1_label: ShapeLabel = ShapeLabel::iri(iri!("http://a.example/S1"));
         let s1 = ir
@@ -775,8 +846,13 @@ mod tests {
 }"#;
         let schema: SchemaJson = serde_json::from_str(str).unwrap();
         let mut ir = SchemaIR::new(SemanticActionsRegistry::default());
-        ir.populate_from_schema_json(&schema, &ResolveMethod::default(), &None)
-            .unwrap();
+        ir.populate_from_schema_json(
+            &schema,
+            &ExternalShapeResolverRegistry::default(),
+            &ResolveMethod::default(),
+            &None,
+        )
+        .unwrap();
         println!("Schema IR: {ir}");
         let s: ShapeLabel = ShapeLabel::iri(iri!("http://example.org/S"));
         let idx = ir.get_shape_label_idx(&s).unwrap();
@@ -842,8 +918,13 @@ mod tests {
 }"#;
         let schema: SchemaJson = serde_json::from_str(str).unwrap();
         let mut ir = SchemaIR::new(SemanticActionsRegistry::default());
-        ir.populate_from_schema_json(&schema, &ResolveMethod::default(), &None)
-            .unwrap();
+        ir.populate_from_schema_json(
+            &schema,
+            &ExternalShapeResolverRegistry::default(),
+            &ResolveMethod::default(),
+            &None,
+        )
+        .unwrap();
         let s: ShapeLabel = ShapeLabel::iri(iri!("http://example.org/S"));
         let idx = ir.get_shape_label_idx(&s).unwrap();
         println!("Schema IR: {ir}");

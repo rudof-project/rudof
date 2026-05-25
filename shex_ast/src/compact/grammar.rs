@@ -43,6 +43,8 @@ pub(crate) fn map_error<'a, T: 'a>(
 /// A combinator to add tracing to the parser.
 /// [fun] is an identifier for the parser and [parser] is the actual parser.
 #[inline(always)]
+#[allow(dead_code)] // The dead_code warning is disabled because this combinator is only used in debug mode.
+#[allow(unused_variables)] // The unused_variables warning is disabled in case the tracing code commented out.
 pub(crate) fn traced<'a, T, P>(fun: &'static str, mut parser: P) -> impl FnMut(Span<'a>) -> IRes<'a, T>
 where
     T: Debug,

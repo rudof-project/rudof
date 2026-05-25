@@ -1,4 +1,4 @@
-use crate::{Result, Rudof, api::shex::ShExOperations};
+use crate::{Result, Rudof, api::shex::ShExOperations, formats::IriNormalizationMode};
 
 /// Builder for `add_node_shape_to_shapemap` operation.
 ///
@@ -10,6 +10,7 @@ pub struct AddNodeShapeToShapemapBuilder<'a> {
     shape: Option<&'a str>,
     base_nodes: Option<&'a str>,
     base_shapes: Option<&'a str>,
+    iri_mode: IriNormalizationMode,
 }
 
 impl<'a> AddNodeShapeToShapemapBuilder<'a> {
@@ -20,6 +21,7 @@ impl<'a> AddNodeShapeToShapemapBuilder<'a> {
             shape: None,
             base_nodes: None,
             base_shapes: None,
+            iri_mode: IriNormalizationMode::default(),
         }
     }
 
@@ -41,6 +43,15 @@ impl<'a> AddNodeShapeToShapemapBuilder<'a> {
         self
     }
 
+    /// Sets the IRI normalization mode for node and shape selector strings.
+    ///
+    /// - [`IriNormalizationMode::Lax`] (default): bare `://` IRIs are auto-wrapped in `<>`.
+    /// - [`IriNormalizationMode::Strict`]: no normalization; bare IRIs produce a parse error.
+    pub fn with_iri_mode(mut self, mode: IriNormalizationMode) -> Self {
+        self.iri_mode = mode;
+        self
+    }
+
     /// Executes the operation.
     pub fn execute(self) -> Result<()> {
         <Rudof as ShExOperations>::add_node_shape_to_shapemap(
@@ -49,6 +60,7 @@ impl<'a> AddNodeShapeToShapemapBuilder<'a> {
             self.shape,
             self.base_nodes,
             self.base_shapes,
+            self.iri_mode,
         )
     }
 }

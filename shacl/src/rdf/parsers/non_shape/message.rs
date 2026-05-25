@@ -7,7 +7,7 @@ use rudof_rdf::rdf_core::{FocusRDF, RDFError};
 pub(crate) fn message<RDF: FocusRDF>() -> impl RDFNodeParse<RDF, Output = MessageMap> {
     LiteralsPropertyParser::new(ShaclVocab::sh_message()).flat_map(|lits| {
         if lits.is_empty() {
-            return Err(RDFError::DefaultError {
+            return Err(RDFError::ParseFailError {
                 msg: "No sh:message found".to_string(),
             });
         }

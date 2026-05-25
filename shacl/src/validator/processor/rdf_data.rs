@@ -1,3 +1,4 @@
+use crate::error::ValidationError;
 use crate::validator::ShaclValidationMode;
 use crate::validator::engine::{Engine, NativeEngine, SparqlEngine};
 use crate::validator::processor::ShaclProcessor;
@@ -25,6 +26,10 @@ impl ShaclProcessor<RdfData> for DataValidation {
             ShaclValidationMode::Native => Box::new(NativeEngine::new()),
             ShaclValidationMode::Sparql => Box::new(SparqlEngine::new()),
         }
+    }
+
+    fn prepare_store(&mut self) -> Result<(), ValidationError> {
+        self.data.check_store().map_err(ValidationError::from)
     }
 }
 

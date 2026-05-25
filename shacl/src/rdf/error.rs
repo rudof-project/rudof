@@ -1,80 +1,65 @@
 use crate::ast::error::ASTError;
-use prefixmap::PrefixMapError;
-use rudof_iri::error::IriSError;
-use rudof_rdf::rdf_core::RDFError;
+use crate::error::IRError;
+use rudof_rdf::rdf_core::{BuildRDF, RDFError};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum ShaclParserError {
-    #[error("RDF parse error: {err}")]
-    RDFParseError {
-        #[from]
-        err: RDFError,
+    #[error(transparent)]
+    ASTError(#[from] Box<ASTError>),
+
+    #[error(transparent)]
+    RDFError(#[from] Box<RDFError>),
+
+    #[error("Expected Value of `{iri}` to be a {expected}, but found: {found}")]
+    ValueNotExpected {
+        iri: String,
+        expected: String,
+        found: String,
     },
 
-    #[error("Expected Value of `sh:reifierShape` to be a subject, found: {term}")]
-    ReifierShapeNoSubject { term: String },
-
-    #[error("Error converting Term to RDFNode: {term}")]
-    TermToRDFNodeFailed { term: String },
-
-    #[error("Expected RDFNode parsing node shape, found: {term}")]
-    ExpectedRDFNodeNodeShape { term: String },
-
-    #[error("Expected term as subject, found: {term} in {context}")]
+    #[error("Expected term as subject, found {term} in {context}")]
     ExpectedSubject { term: String, context: String },
 
-    #[error("Expected Value of `sh:or` to be a subject, found: {term}")]
-    OrValueNoSubject { term: String },
+    #[error("An error occured while searching triples: {0}")]
+    TriplesLookupError(String),
 
-    #[error("Expected Value of `sh:or` to be an object, found: {term}")]
-    OrValueNoObject { term: String },
+    #[error("Expected NodeKind, found: {0}")]
+    ExpectedNodeKind(String),
 
-    #[error("Expected Value of `sh:and` to be a subject, found: {term}")]
-    AndValueNoSubject { term: String },
+    #[error("Unknown NodeKind, found: {0}")]
+    UnknownNodeKind(String),
+}
 
-    #[error("Expected Value of `sh:xone` to be a subject, found: {term}")]
-    XOneValueNoSubject { term: String },
+impl From<ASTError> for ShaclParserError {
+    fn from(value: ASTError) -> Self {
+        Self::ASTError(Box::new(value))
+    }
+}
 
-    #[error("Expected Value of `sh:not` to be an object, found: {term}")]
-    NotValueNoObject { term: String },
-
-    #[error("Expected NodeKind, found: {term}")]
-    ExpectedNodeKind { term: String },
-
-    #[error("Unknown NodeKind, found: {term}")]
-    UnknownNodeKind { term: String },
-
-    #[error("SHACL AST error: {err}")]
-    ASTError {
-        #[from]
-        err: ASTError,
-    },
-
-    #[error("Custom error: {msg}")]
-    Custom { msg: String },
+impl From<RDFError> for ShaclParserError {
+    fn from(value: RDFError) -> Self {
+        Self::RDFError(Box::new(value))
+    }
 }
 
 #[derive(Debug, Error)]
 pub enum ShaclWriterError {
-    #[error("IRI parsing error: {err}")]
-    IriS {
-        #[from]
-        err: IriSError,
-    },
+    #[error(transparent)]
+    IRError(#[from] Box<IRError>),
 
-    #[error("Prefix map error: {err}")]
-    PrefixMap {
-        #[from]
-        err: PrefixMapError,
-    },
+    #[error("Unable to serialize RDF: {0}")]
+    SerializationError(String),
+}
 
-    #[error("An error occured while writing RDF: {msg}")]
-    Write { msg: String },
+impl ShaclWriterError {
+    pub fn from_rdf_err<RDF: BuildRDF>(err: RDF::Err) -> Self {
+        Self::SerializationError(err.to_string())
+    }
+}
 
-    #[error("An error occured while adding a prefix map to RDF: {msg}")]
-    AddPrefixMap { msg: String },
-
-    #[error("An error occured while adding a base to RDF: {msg}")]
-    AddBase { msg: String },
+impl From<IRError> for ShaclWriterError {
+    fn from(value: IRError) -> Self {
+        Self::IRError(Box::new(value))
+    }
 }

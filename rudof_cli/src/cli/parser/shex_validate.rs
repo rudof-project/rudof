@@ -18,9 +18,10 @@ pub struct ShexValidateArgs {
         short = 's',
         long = "schema",
         value_name = "INPUT",
-        help = "Schema file name, URI or - (for stdin)"
+        help = "Schema file name, URI or - (for stdin)",
+        required_unless_present = "list_external_resolvers"
     )]
-    pub schema: InputSpec,
+    pub schema: Option<InputSpec>,
 
     #[arg(
         short = 'f',
@@ -119,6 +120,28 @@ pub struct ShexValidateArgs {
 
     #[arg(long = "map-state", value_name = "FILE", help = "MapState file name")]
     pub map_state: Option<PathBuf>,
+
+    #[arg(
+        long = "strict-iris",
+        help = "Require <> brackets around IRIs (strict mode). By default bare http://… IRIs are accepted (lax mode)."
+    )]
+    pub strict_iris: bool,
+
+    #[arg(
+        long = "external-resolver",
+        value_name = "SPEC",
+        help = "External-shape resolver spec. Repeatable. Syntax: <kind>[:<arg>]. \
+                Built-in kinds: 'reject-all', 'schema:<path>'. \
+                Use --list-external-resolvers to enumerate.",
+        action = clap::ArgAction::Append
+    )]
+    pub external_resolvers: Vec<String>,
+
+    #[arg(
+        long = "list-external-resolvers",
+        help = "Print the available external-shape resolver kinds and exit"
+    )]
+    pub list_external_resolvers: bool,
 
     #[command(flatten)]
     pub common: CommonArgsAll,

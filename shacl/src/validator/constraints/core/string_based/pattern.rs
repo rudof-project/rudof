@@ -1,8 +1,7 @@
+use crate::error::ValidationError;
 use crate::ir::components::Pattern;
 use crate::ir::{IRComponent, IRSchema, IRShape};
-use crate::validator::constraints::{
-    ConstraintError, NativeValidator, SparqlValidator, validate_ask_with, validate_with,
-};
+use crate::validator::constraints::{BasicSparqlValidator, NativeValidator, validate_ask_with, validate_with};
 use crate::validator::engine::Engine;
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;
@@ -24,7 +23,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Pattern {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
         validate_with(
             component,
             shape,
@@ -44,7 +43,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Pattern {
 }
 
 #[cfg(feature = "sparql")]
-impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Pattern {
+impl<S: QueryRDF + Debug + 'static> BasicSparqlValidator<S> for Pattern {
     fn validate_sparql(
         &self,
         component: &IRComponent,
@@ -54,7 +53,7 @@ impl<S: QueryRDF + Debug + 'static> SparqlValidator<S> for Pattern {
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
-    ) -> Result<Vec<ValidationResult>, ConstraintError> {
+    ) -> Result<Vec<ValidationResult>, ValidationError> {
         let query_fn = |vn: &S::Term| match self.flags() {
             None => formatdoc! {
                 "ASK {{ FILTER (regex(str({}), {})) }}",

@@ -9,3 +9,5 @@ examples/
 *.md
 Dockerfile*
 LICENSE*
+**/*.nix
+result

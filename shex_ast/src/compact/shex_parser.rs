@@ -41,7 +41,10 @@ impl ShExParser<'_> {
                 ShExStatement::PrefixDecl { alias, iri } => {
                     schema.add_prefix(alias, &iri);
                 },
-                ShExStatement::StartDecl { shape_expr } => schema = schema.with_start(Some(shape_expr)),
+                ShExStatement::StartDecl { shape_expr } => {
+                    let shape_expr = shape_expr.deref_iri(schema.base().as_ref(), schema.prefixmap().as_ref())?;
+                    schema = schema.with_start(Some(shape_expr))
+                },
                 ShExStatement::ImportDecl { iri } => {
                     schema = schema.with_import(iri);
                 },
@@ -52,8 +55,6 @@ impl ShExParser<'_> {
                 } => {
                     let shape_label = shape_label.deref_iri(schema.base().as_ref(), schema.prefixmap().as_ref())?;
                     let shape_expr = shape_expr.deref_iri(schema.base().as_ref(), schema.prefixmap().as_ref())?;
-                    // shapes_counter += 1;
-                    // tracing::debug!("Shape decl #{shapes_counter}: {shape_label} ");
                     schema.add_shape(shape_label, shape_expr, is_abstract);
                 },
                 ShExStatement::StartActions { actions } => {

@@ -87,18 +87,18 @@ impl RdfData {
     /// By default, the RDF Data Store is not initialized as it is expensive and is only required for SPARQL queries
     pub fn check_store(&mut self) -> Result<(), RdfDataError> {
         if let Some(graph) = &self.graph {
-            trace!("Checking RDF store, graph exists, length: {}", graph.len());
+            //trace!("Checking RDF store, graph exists, length: {}", graph.len());
             if self.store.is_none() {
-                trace!("Initializing RDF store from in-memory graph");
+                //trace!("Initializing RDF store from in-memory graph");
                 let store = Store::new()?;
                 let mut loader = store.bulk_loader();
                 loader.load_quads(graph.quads())?;
                 loader.commit()?;
                 self.store = Some(store);
-                trace!(
+                /*trace!(
                     "RDF store initialized with length: {:?}",
                     self.store.as_ref().map(|s| s.len())
-                );
+                );*/
             }
         }
         Ok(())
@@ -357,7 +357,7 @@ impl Rdf for RdfData {
             }
             Err(prefixmap::error::PrefixMapError::PrefixNotFound {
                 prefix: prefix.to_string(),
-                prefixmap: PrefixMap::new(),
+                prefixmap: Box::new(PrefixMap::new()),
             })
         }
     }
@@ -370,7 +370,8 @@ impl QueryRDF for RdfData {
     {
         let mut str = String::new();
         if let Some(_store) = &self.store {
-            tracing::debug!("Querying in-memory store (we ignore it by now");
+            // TODO: Implement querying with CONSTRUCT in the in-memory store
+            tracing::info!("Querying in-memory store (we ignore it by now");
         }
         for (_name, endpoint) in self.endpoints_to_use() {
             let new_str = endpoint.query_construct(query_str, format)?;
@@ -385,17 +386,17 @@ impl QueryRDF for RdfData {
     {
         let mut sols: QuerySolutions<RdfData> = QuerySolutions::empty();
         if let Some(store) = &self.store {
-            trace!("Querying in-memory store of length: {}", store.len()?);
+            //trace!("Querying in-memory store of length: {}", store.len()?);
 
             let new_sol = SparqlEvaluator::new()
                 .parse_query(query_str)?
                 .on_store(store)
                 .execute()?;
-            trace!("Got results from in-memory store");
+            // trace!("Got results from in-memory store");
             let sol = cnv_query_results(new_sol)?;
             sols.extend(sol, self.graph_prefixmap());
         } else {
-            trace!("No in-memory store to query");
+            trace!("No in-memory store to query {}", query_str);
         }
         for (_, endpoint) in self.endpoints_to_use() {
             let new_sols = endpoint.query_select(query_str)?;
@@ -417,11 +418,9 @@ fn cnv_sol(sol: &QuerySolution<SparqlEndpoint>) -> QuerySolution<RdfData> {
 fn cnv_query_results(query_results: QueryResults) -> Result<Vec<QuerySolution<RdfData>>, RdfDataError> {
     let mut results = Vec::new();
     if let QueryResults::Solutions(solutions) = query_results {
-        trace!("Converting query solutions");
-        let mut counter = 0;
+        // trace!("Converting query solutions");
         for solution in solutions {
-            counter += 1;
-            trace!("Converting solution {counter}");
+            // trace!("Converting solution {counter}");
             let result = cnv_query_solution(solution?);
             results.push(result)
         }

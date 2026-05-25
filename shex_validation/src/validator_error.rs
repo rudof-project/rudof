@@ -7,6 +7,7 @@ use rbe::RbeError;
 use rudof_rdf::rdf_core::term::Object;
 use serde::Serialize;
 use serde::ser::SerializeMap;
+use shex_ast::ir::node_constraint::NodeConstraint;
 use shex_ast::ir::preds::Preds;
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::semantic_action_context::SemanticActionContext;
@@ -18,6 +19,33 @@ use thiserror::Error;
 
 #[derive(Error, Debug, Clone)]
 pub enum ValidatorError {
+    #[error("Parent shape {idx} failed for node {node} with errors: {errors}")]
+    ParentShapeFailed {
+        node: Box<Node>,
+        idx: ShapeLabelIdx,
+        errors: ValidatorErrors,
+    },
+    #[error(
+        "Shape {idx} failed for node {node}. Shape doesn't have a main shape which indicates this is a non-extendable shape, but it is being extended by another shape."
+    )]
+    ShapeExtendsNoMainShape { idx: ShapeLabelIdx, node: Box<Node> },
+
+    #[error("Parent shape node constraint failed for node {node}@{idx}: Node constraint: {nc}")]
+    ParentShapeNodeConstraintFailed {
+        node: Box<Node>,
+        idx: ShapeLabelIdx,
+        nc: Box<NodeConstraint>,
+        error: String,
+    },
+
+    #[error("Main shape failed for node {node}@{idx}.\nShape: {shape}\nErrors:\n{errors}")]
+    ParentShapeMainShapeFailed {
+        node: Box<Node>,
+        shape: Box<Shape>,
+        idx: ShapeLabelIdx,
+        errors: ValidatorErrors,
+    },
+
     #[error("Partition component failed ({node}@{idx}).\nPartition:\n{partition}\nErrors:\n{errors}")]
     PartitionComponentFailed {
         node: Box<Node>,
@@ -124,10 +152,19 @@ pub enum ValidatorError {
     #[error(transparent)]
     PrefixMapError(#[from] PrefixMapError),
 
-    #[error("ShapeLabel not found {shape_label}: {error}")]
+    #[error("Shape label {shape_label} not found: {error}")]
     ShapeLabelNotFoundError { shape_label: ShapeExprLabel, error: String },
 
-    #[error("And error: shape expression {shape_expr} failed for node {node}: {errors}")]
+    #[error("Shape {idx} failed parent {extends} for node {node} with errors: {errors}")]
+    ShapeExtendsError {
+        shape: Box<Shape>,
+        idx: ShapeLabelIdx,
+        node: Box<Node>,
+        extends: ShapeLabelIdx,
+        errors: ValidatorErrors,
+    },
+
+    #[error("And error: {shape_expr} failed for node {node}: {errors}")]
     ShapeAndError {
         shape_expr: ShapeLabelIdx,
         node: Box<Node>,
@@ -186,6 +223,17 @@ pub enum ValidatorError {
 
     #[error("StartAct failed for node {node} with idx: {idx}")]
     StartActFailed { node: Box<Node>, idx: ShapeLabelIdx },
+
+    #[error("EXTERNAL shape {idx} rejected for node {node} by resolver '{resolver}': {rationale}")]
+    ExternalShapeRejected {
+        node: Box<Node>,
+        idx: ShapeLabelIdx,
+        resolver: String,
+        rationale: String,
+    },
+
+    #[error("EXTERNAL shape {idx} for node {node} could not be resolved by any registered resolver")]
+    ExternalShapeUnresolved { node: Box<Node>, idx: ShapeLabelIdx },
 }
 
 fn add_errors_to_tree(
@@ -212,6 +260,8 @@ impl ValidatorError {
             .unwrap_or_else(|| idx.to_string())
     }
 
+    // This method generates a string representation of the error, showing the root error message
+    // The root message is the main error message, and the tree structure is built from the nested errors in `build_tree`
     fn root_qualified(
         &self,
         nodes_prefixmap: &PrefixMap,
@@ -227,14 +277,14 @@ impl ValidatorError {
             },
             ValidatorError::NoMatchesFound { node, idx, .. } => format!(
                 "Shape {} failed for node {}: no candidates matched the expression",
-                show_idx(idx),
+                show_label(idx, schema, width),
                 show_node(node)
             ),
             ValidatorError::PartitionComponentFailed { node, idx, .. } => {
                 format!(
                     "Partition component failed ({}@{})",
                     show_node(node),
-                    show_idx(idx),
+                    show_label(idx, schema, width),
                     // partition.show_qualified(nodes_prefixmap, schema, width)?
                 )
             },
@@ -260,31 +310,37 @@ impl ValidatorError {
                 current, desc, node, ..
             } => format!(
                 "Error in descendant {} of shape {} for node {}",
-                show_idx(desc),
-                show_idx(current),
+                show_label(desc, schema, width),
+                show_label(current, schema, width),
                 show_node(node)
             ),
             ValidatorError::DescendantsShapeError { idx, node, .. } => format!(
                 "All descendants of shape {} failed for node {}",
-                show_idx(idx),
+                show_label(idx, schema, width),
                 show_node(node)
             ),
             ValidatorError::ShapeAndError { shape_expr, node, .. } => format!(
-                "And error: shape expression {} failed for node {}",
-                show_idx(shape_expr),
+                "And error: {} failed for node {}",
+                show_label(shape_expr, schema, width),
                 show_node(node)
             ),
             ValidatorError::ShapeOrError { node, .. } => {
                 format!("OR error: all branches failed for node {}", show_node(node))
             },
-            ValidatorError::ShapeNotError { node, .. } => {
-                format!("Not error: failed for node {}", show_node(node))
+            ValidatorError::ShapeNotError { node, shape_expr, .. } => {
+                format!(
+                    "Not {}: failed for node {}",
+                    show_shape_expr(shape_expr, schema, width),
+                    show_node(node)
+                )
             },
-            ValidatorError::ShapeRefFailed { node, idx } => format!(
-                "ShapeRef fails for node {} with shape {}",
-                show_node(node),
-                show_idx(idx)
-            ),
+            ValidatorError::ShapeRefFailed { node, idx } => {
+                format!(
+                    "Reference to {} fails for node {}",
+                    show_label(idx, schema, width),
+                    show_node(node)
+                )
+            },
             ValidatorError::FailedPending { failed_pending } => {
                 let items: Vec<String> = failed_pending
                     .iter()
@@ -310,7 +366,10 @@ impl ValidatorError {
             | ValidatorError::AbstractShapeError { errors, .. }
             | ValidatorError::DescendantShapeError { errors, .. }
             | ValidatorError::DescendantsShapeError { errors, .. }
-            | ValidatorError::ShapeAndError { errors, .. } => {
+            | ValidatorError::ShapeAndError { errors, .. }
+            | ValidatorError::ParentShapeMainShapeFailed { errors, .. }
+            | ValidatorError::ParentShapeFailed { errors, .. }
+            | ValidatorError::ShapeExtendsError { errors, .. } => {
                 add_errors_to_tree(tree, errors, nodes_prefixmap, schema, width)
             },
             ValidatorError::ShapeOrError { errors, .. } => {
@@ -338,7 +397,38 @@ impl ValidatorError {
                 }
                 Ok(())
             },
-            _ => Ok(()),
+            ValidatorError::ShapeExtendsNoMainShape { .. }
+            | ValidatorError::ParentShapeNodeConstraintFailed { .. }
+            | ValidatorError::ShapeFailedNoPartitions { .. }
+            | ValidatorError::FillingShapeMapNodes { .. }
+            | ValidatorError::AbstractShapeNoDescendants { .. }
+            | ValidatorError::NodeShapeError { .. }
+            | ValidatorError::TermToRDFNodeFailed { .. }
+            | ValidatorError::ReasonSerializationError { .. }
+            | ValidatorError::ErrorSerializationError { .. }
+            | ValidatorError::FailedPending { .. }
+            | ValidatorError::NegCycleError { .. }
+            | ValidatorError::SRDFError { .. }
+            | ValidatorError::NotFoundShapeLabel { .. }
+            | ValidatorError::NotFoundShapeLabelWithIndex { .. }
+            | ValidatorError::ConversionObjectIri { .. }
+            | ValidatorError::SchemaIRError { .. }
+            | ValidatorError::ShapeMapError { .. }
+            | ValidatorError::RbeFailed()
+            | ValidatorError::ClosedShapeWithRemainderPreds { .. }
+            | ValidatorError::RbeError(..)
+            | ValidatorError::PrefixMapError(..)
+            | ValidatorError::ShapeLabelNotFoundError { .. }
+            | ValidatorError::ValidatorConfigFromPathError { .. }
+            | ValidatorError::ValidatorConfigTomlError { .. }
+            | ValidatorError::AddingNonConformantError { .. }
+            | ValidatorError::AddingConformantError { .. }
+            | ValidatorError::AddingPendingError { .. }
+            | ValidatorError::ShapeExprNotFound { .. }
+            | ValidatorError::NoMatchesFound { .. }
+            | ValidatorError::ShapeRefFailed { .. }
+            | ValidatorError::ExternalShapeRejected { .. }
+            | ValidatorError::ExternalShapeUnresolved { .. } => Ok(()),
         }
     }
 
@@ -364,4 +454,20 @@ impl Serialize for ValidatorError {
         map.serialize_entry("error", &self.to_string())?;
         map.end()
     }
+}
+
+fn show_label(idx: &ShapeLabelIdx, schema: &SchemaIR, width: usize) -> String {
+    if let Some(label) = schema.shape_label_from_idx(idx) {
+        schema.show_label(label)
+    } else {
+        if let Some(info) = schema.find_shape_idx(idx) {
+            show_shape_expr(info.expr(), schema, width)
+        } else {
+            format!("Shape {idx}")
+        }
+    }
+}
+
+fn show_shape_expr(shape_expr: &ShapeExpr, schema: &SchemaIR, width: usize) -> String {
+    schema.show_shape_expr(shape_expr, width)
 }
