@@ -9,9 +9,14 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ## v0.3.2
 ### Added
-- #663: Pattern flags (shex)
-- #667: Support for ShapeExternal (EXTERN) delegation in the validator (shex)
+- #660: Added support to Nix
+- #672: Support for SPARQL-based constraints in SHACL (SHACL)
+- #685: Validation of edge types in PGSchema (pgschema), changed option to validate pgschema so it is `pgschema-validate` instead of `pg-schema-validate`.
+- #633: Support for Start semantic actions in ShEx (ShEx)
+- #663: Pattern flags (ShEx)
+- #667: Support for ShapeExternal (EXTERN) delegation in the validator (ShEx)
 - #676: External shape resolver selection in CLI / MCP / Python
+- #652: Solved issue with Extends in ShEx (ShEx)
 
 ### Fixed
 - #665: Language stem BCP-47 subtag matching (shex)
