@@ -95,6 +95,21 @@ impl IriS {
         Ok(IriS { iri })
     }
 
+    /// Check if two IRIs are equal without considering the fragment part (the part after `#`)
+    /// This is useful for example in ShEx semantic actions which are identified by IRIs that can have a fragment part with the name of the action,
+    /// but we want to consider them equal if they have the same base IRI without the fragment.
+    /// For example, `http://example.org/action#test` and `http://example.org/action#other` are considered equal without the fragment,
+    /// because they have the same base IRI `http://example.org/action`.
+    pub fn equal_without_fragment(&self, other: &IriS) -> bool {
+        let self_str = self.as_str();
+        let other_str = other.as_str();
+
+        let self_without_fragment = self_str.split('#').next().unwrap_or(self_str);
+        let other_without_fragment = other_str.split('#').next().unwrap_or(other_str);
+
+        self_without_fragment == other_without_fragment
+    }
+
     /// Extend an IRI with a new string without checking for possible syntactic errors
     pub fn extend_unchecked(&self, str: &str) -> Self {
         let extended_str = format!("{}{}", self.iri.as_str(), str);

@@ -1,3 +1,5 @@
+use std::fmt::{self, Display};
+
 use rudof_iri::IriS;
 use serde::Serialize;
 
@@ -18,5 +20,16 @@ impl SemAct {
 
     pub fn code(&self) -> Option<&String> {
         self.code.as_ref()
+    }
+}
+
+impl Display for SemAct {
+    fn fmt(&self, dest: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            dest,
+            "SemAct(name: {}, code: {})",
+            self.name,
+            self.code.as_deref().unwrap_or("None")
+        )
     }
 }

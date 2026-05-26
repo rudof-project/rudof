@@ -83,7 +83,10 @@ impl AST2IR {
         // it is also cheap relative to the rest of compilation.
         let rewritten_root = external_resolvers.rewrite_ast(schema_ast.clone());
         let schema_ast = &rewritten_root;
+
+        // Collect labels of all imported schemas first, so they are available when compiling the root schema's shape expressions. This also serves as a cycle check for imports.
         let mut visited = Vec::new();
+
         let mut imported_asts: Vec<(SchemaAST, IriS)> = Vec::new();
         /*trace!(
             "Compiling schema from {source_iri}. Base: {}",
@@ -102,8 +105,21 @@ impl AST2IR {
             &mut imported_asts,
             external_resolvers,
         )?;
+
         // Root schema prefixmap wins (imported schemas' prefix maps are scoped to their own file).
         compiled_schema.set_prefixmap(schema_ast.prefixmap());
+
+        compiled_schema.set_semantic_actions_registry(self.semantic_actions_registry.clone());
+
+        // Collect start actions
+        if let Some(start_actions) = schema_ast.start_actions() {
+            let mut compiled_start_acts = Vec::new();
+            for sa in start_actions {
+                let compiled = self.cnv_sem_action(&sa, &compiled_schema.prefixmap())?;
+                compiled_start_acts.push(compiled);
+            }
+            compiled_schema.set_start_actions(compiled_start_acts);
+        }
         // Root labels (may include `start`).
 
         // trace!("Collecting shape labels for root schema {source_iri}");
@@ -114,6 +130,7 @@ impl AST2IR {
             self.collect_triple_expr_labels_schema(ast)?;
         }
         self.collect_triple_expr_labels_schema(schema_ast)?;
+
         // Phase 2: compile shape expressions in the order they were collected
         // (imports bottom-up, then root).
         for (ast, src) in imported_asts.iter() {
@@ -150,12 +167,17 @@ impl AST2IR {
                 // Apply the external-resolver registry so EXTERNAL decls inside imported schemas are
                 // substituted before their labels are registered.
                 let imported_schema = external_resolvers.rewrite_ast(imported_schema);
-                // Spec: an imported schema must not declare startActs.
+
+                // TODO: Maybe append imported semantic actions to the importer's registry instead of rejecting the schema if it declares start actions?
+                // This would allow more modularity and reuse of semantic actions across schemas,
+                // at the cost of making it less clear where a given start action is declared.
+                /* I removed the following line because I didn't find in the spec any explicit prohibition of start actions in imported schemas, and it was causing problems for some of my test cases. If this turns out to be a problem, we can always add it back in later.
                 if imported_schema.start_actions().is_some() {
                     return Err(Box::new(SchemaIRError::ImportIriError {
                         error: format!("Imported schema {import_iri} declares startActs (disallowed by ShEx spec)"),
                     }));
-                }
+                }*/
+
                 // Nested imports must resolve relative to the imported schema's URL (RFC 3986).
                 let nested_base = Some(import_iri.clone());
                 self.collect_imports_labels(

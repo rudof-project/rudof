@@ -221,6 +221,9 @@ pub enum ValidatorError {
     #[error("ShapeRef fails for node {node} with idx: {idx}")]
     ShapeRefFailed { node: Box<Node>, idx: ShapeLabelIdx },
 
+    #[error("StartAct failed for node {node} with idx: {idx}")]
+    StartActFailed { node: Box<Node>, idx: ShapeLabelIdx },
+
     #[error("EXTERNAL shape {idx} rejected for node {node} by resolver '{resolver}': {rationale}")]
     ExternalShapeRejected {
         node: Box<Node>,
@@ -425,7 +428,8 @@ impl ValidatorError {
             | ValidatorError::NoMatchesFound { .. }
             | ValidatorError::ShapeRefFailed { .. }
             | ValidatorError::ExternalShapeRejected { .. }
-            | ValidatorError::ExternalShapeUnresolved { .. } => Ok(()),
+            | ValidatorError::ExternalShapeUnresolved { .. }
+            | ValidatorError::StartActFailed { .. } => Ok(()),
         }
     }
 

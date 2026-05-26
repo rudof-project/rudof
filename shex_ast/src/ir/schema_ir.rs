@@ -5,6 +5,7 @@ use crate::ir::external_resolver::ExternalShapeResolverRegistry;
 use crate::ir::inheritance_graph::InheritanceGraph;
 use crate::ir::map_state::MapState;
 use crate::ir::node_constraint::NodeConstraint;
+use crate::ir::sem_act::SemAct;
 use crate::ir::semantic_actions_registry::SemanticActionsRegistry;
 use crate::ir::shape::Shape;
 use crate::ir::shape_expr_info::ShapeExprInfo;
@@ -39,6 +40,7 @@ pub struct SchemaIR {
     inheritance_graph: InheritanceGraph,
     abstract_shapes: HashSet<ShapeLabelIdx>,
     semantic_actions_registry: SemanticActionsRegistry,
+    start_acts: Vec<SemAct>,
 }
 
 impl SchemaIR {
@@ -59,11 +61,20 @@ impl SchemaIR {
             inheritance_graph: InheritanceGraph::new(),
             abstract_shapes: HashSet::new(),
             semantic_actions_registry: registry,
+            start_acts: Vec::new(),
         }
     }
 
     pub fn set_map_state(&mut self, map_state: &mut MapState) {
         self.semantic_actions_registry.set_map_state(map_state);
+    }
+
+    pub fn set_start_actions(&mut self, start_acts: Vec<SemAct>) {
+        self.start_acts = start_acts;
+    }
+
+    pub fn start_acts(&self) -> &Vec<SemAct> {
+        &self.start_acts
     }
 
     pub fn set_default_base_prefixes(&mut self, default_base: &IriS) {
@@ -171,6 +182,10 @@ impl SchemaIR {
     /// Returns the descendants of the shape expression corresponding to the given index
     pub fn descendants(&self, idx: &ShapeLabelIdx) -> Vec<ShapeLabelIdx> {
         self.inheritance_graph.descendants(idx)
+    }
+
+    pub fn set_semantic_actions_registry(&mut self, registry: SemanticActionsRegistry) {
+        self.semantic_actions_registry = registry;
     }
 
     /// Returns a map of shape label indices to the triple expressions of the shape expressions that extend the shape expression corresponding to the given index,
@@ -699,6 +714,10 @@ impl SchemaIR {
             *idx
         }
     }
+
+    pub fn semantic_actions_registry(&self) -> &SemanticActionsRegistry {
+        &self.semantic_actions_registry
+    }
 }
 
 impl Display for SchemaIR {
@@ -715,6 +734,17 @@ impl Display for SchemaIR {
             }
         } else {
             writeln!(dest, "No sources")?;
+        }
+        if !self.start_acts().is_empty() {
+            writeln!(
+                dest,
+                "Start actions: [{}]",
+                self.start_acts()
+                    .iter()
+                    .map(|a| a.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )?;
         }
         writeln!(dest, "SchemaIR with {} shapes", self.shape_label_counter)?;
         writeln!(dest, "Labels to indexes:")?;
@@ -788,7 +818,6 @@ mod tests {
             &None,
         )
         .unwrap();
-        println!("Schema IR: {ir}");
         let s1_label: ShapeLabel = ShapeLabel::iri(iri!("http://a.example/S1"));
         let s1 = ir
             .shape_label_from_idx(&ir.get_shape_label_idx(&s1_label).unwrap())

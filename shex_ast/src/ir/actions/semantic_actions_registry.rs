@@ -66,7 +66,7 @@ impl SemanticActionsRegistry {
     ) -> Result<Arc<dyn SemanticActionExtension + Send + Sync>, SemanticActionError> {
         self.extensions
             .iter()
-            .find(|e| &e.action_iri() == action_iri)
+            .find(|e| e.action_iri().equal_without_fragment(action_iri))
             .cloned()
             .ok_or_else(|| SemanticActionError::UnknownExtension {
                 iri: action_iri.to_string(),
@@ -83,7 +83,7 @@ impl SemanticActionsRegistry {
         let ext = self
             .extensions
             .iter()
-            .find(|e| &e.action_iri() == action_iri)
+            .find(|e| e.action_iri().equal_without_fragment(action_iri))
             .ok_or_else(|| SemanticActionError::UnknownExtension {
                 iri: action_iri.to_string(),
             })?;

@@ -24,6 +24,7 @@ use shex_ast::ShapeLabelIdx;
 use shex_ast::ir::external_resolver::{DispatchOutcome, ExternalResolveCtx};
 use shex_ast::ir::preds::Preds;
 use shex_ast::ir::schema_ir::SchemaIR;
+use shex_ast::ir::sem_act::SemAct;
 use shex_ast::ir::semantic_action_context::SemanticActionContext;
 use shex_ast::ir::shape::Shape;
 use shex_ast::ir::shape_expr::ShapeExpr;
@@ -75,6 +76,17 @@ impl Engine {
         while let Some(atom) = self.pop_pending() {
             match atom.clone() {
                 Atom::Pos((node, idx)) => {
+                    if !check_start_acts(schema.start_acts(), &node, &idx, schema)? {
+                        self.add_checked_neg(
+                            atom.clone(),
+                            vec![ValidatorError::StartActFailed {
+                                node: Box::new(node.clone()),
+                                idx,
+                            }],
+                        );
+                        // We can abort validation if start actions failed
+                        continue;
+                    }
                     let mut hyp = Vec::new();
                     match self.prove(&node, &idx, &mut hyp, schema, rdf)? {
                         Either::Right(reasons) => {
@@ -1451,6 +1463,20 @@ fn create_partitions_display(ps: &[PartitionInfo]) -> PartitionsDisplay {
         .map(|(maybe_label, rbes, neighs_subset)| PartitionDisplay::new(*maybe_label, rbes, neighs_subset))
         .collect();
     PartitionsDisplay::new(&partitions_display)
+}
+
+fn check_start_acts(start_acts: &[SemAct], _node: &Node, _idx: &ShapeLabelIdx, schema: &SchemaIR) -> Result<bool> {
+    let registry = schema.semantic_actions_registry();
+    let context = SemanticActionContext::new_start_act_context();
+    for act in start_acts {
+        let parameter = act.code().map(|code| code.as_str());
+        let result = registry.run_action(act.name(), parameter, &context);
+        if let Err(err) = result {
+            tracing::error!("Start action {act} failed with error: {err}");
+            return Ok(false);
+        }
+    }
+    Ok(true)
 }
 
 /// Returns true if a MatchCond contains a shape reference (MatchCond::Ref),
