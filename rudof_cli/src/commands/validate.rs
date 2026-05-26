@@ -1,12 +1,12 @@
 use crate::{
     cli::{
         parser::{
-            CommonArgsOutputForceOverWrite, PgSchemaValidateArgs, ShaclValidateArgs, ShexValidateArgs, ValidateArgs,
+            CommonArgsOutputForceOverWrite, PgschemaValidateArgs, ShaclValidateArgs, ShexValidateArgs, ValidateArgs,
         },
         wrappers::ValidationModeCli,
     },
     commands::{
-        PgSchemaValidateCommand, ShaclValidateCommand, ShexValidateCommand,
+        PgschemaValidateCommand, ShaclValidateCommand, ShexValidateCommand,
         base::{Command, CommandContext},
     },
 };
@@ -74,9 +74,9 @@ impl ValidateCommand {
         })
     }
 
-    /// Convert ValidateArgs to PgSchemaValidateArgs
-    fn to_pgschema_args(&self) -> Result<PgSchemaValidateArgs> {
-        Ok(PgSchemaValidateArgs {
+    /// Convert ValidateArgs to PgschemaValidateArgs
+    fn to_pgschema_args(&self) -> Result<PgschemaValidateArgs> {
+        Ok(PgschemaValidateArgs {
             schema: self
                 .args
                 .schema
@@ -119,7 +119,7 @@ impl Command for ValidateCommand {
             },
             ValidationModeCli::PGSchema => {
                 let pgschema_args = self.to_pgschema_args()?;
-                let cmd = PgSchemaValidateCommand::new(pgschema_args);
+                let cmd = PgschemaValidateCommand::new(pgschema_args);
                 cmd.execute(ctx)
             },
         }

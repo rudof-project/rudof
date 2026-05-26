@@ -1,13 +1,9 @@
-use std::{
-    collections::{HashMap, HashSet},
-    fmt::Display,
-};
-
-use either::Either;
-
 use crate::{
-    edge::Edge, edge_id::EdgeId, node::Node, node_id::NodeId, pgs_error::PgsError, record::Record, type_name::LabelName,
+    edge::Edge, edge_id::EdgeId, label_set::LabelSet, node::Node, node_id::NodeId, pgs_error::PgsError, record::Record,
+    type_name::LabelName,
 };
+use either::Either;
+use std::{collections::HashMap, fmt::Display};
 
 /// Simple representation of a property graph
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -104,6 +100,14 @@ impl PropertyGraph {
         }
     }
 
+    pub fn node(&self, id: &NodeId) -> Option<&Node> {
+        self.nodes.get(id)
+    }
+
+    pub fn edge(&self, id: &EdgeId) -> Option<&Edge> {
+        self.edges.get(id)
+    }
+
     pub fn get_node_by_label(&self, label: &str) -> Result<&Node, PgsError> {
         let id = self.node_names.get(label).ok_or(PgsError::MissingNodeLabel {
             label: label.to_string(),
@@ -164,7 +168,7 @@ impl PropertyGraph {
         &mut self,
         name_id: Option<String>,
         source: String,
-        labels: HashSet<LabelName>,
+        labels: impl IntoIterator<Item = LabelName>,
         record: Record,
         target: String,
     ) -> Result<(), PgsError> {
@@ -176,7 +180,7 @@ impl PropertyGraph {
         let edge = Edge {
             id: id.clone(),
             source: source_id,
-            labels,
+            labels: LabelSet::from(labels),
             properties: record,
             target: target_id,
         };

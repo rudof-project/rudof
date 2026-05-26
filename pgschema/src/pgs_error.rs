@@ -4,6 +4,8 @@ use thiserror::Error;
 
 #[derive(Error, Serialize, Debug, Clone, PartialEq)]
 pub enum PgsError {
+    #[error("Missing node with id: {id}")]
+    MissingNodeId { id: String },
     #[error("Serialization error: {error}")]
     SerializationError { error: String },
 

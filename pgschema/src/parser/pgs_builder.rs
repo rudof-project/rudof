@@ -4,6 +4,7 @@ use rustemo::Parser;
 use crate::{
     boolean_expr::BooleanExpr,
     card::{Card as PGCard, Max as PGMax},
+    edge_label_property_spec::EdgeLabelPropertySpec,
     key::Key,
     label_property_spec::LabelPropertySpec as PGLabelPropertySpec,
     parser::{
@@ -58,9 +59,10 @@ fn get_create_types(create_types: Vec<CreateType>, schema: &mut PropertyGraphSch
             CreateType::CreateEdgeType(edge_type) => {
                 let source_spec = get_label_property_spec(edge_type.source)?;
                 let target_spec = get_label_property_spec(edge_type.target)?;
-                let label_property_spec = get_label_property_spec(edge_type.label_property_spec)?;
+                let label_property_spec =
+                    EdgeLabelPropertySpec::new(get_label_property_spec(edge_type.label_property_spec)?);
                 if let Some(type_name) = edge_type.type_name_opt {
-                    let _ = schema.add_edge_spec(type_name.as_str(), source_spec, target_spec, label_property_spec)?;
+                    let _ = schema.add_edge_spec(type_name.as_str(), source_spec, label_property_spec, target_spec)?;
                 } else {
                     let _ = schema.add_blank_edge_spec(source_spec, label_property_spec, target_spec);
                 }

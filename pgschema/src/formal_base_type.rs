@@ -60,15 +60,16 @@ impl FormalBaseType {
 
     /// Checks if the FormalBaseType conforms to the given labels and content.
     pub fn conforms(&self, labels: &LabelSet, content: &Record) -> Either<Vec<PgsError>, Vec<Evidence>> {
-        /*let conforms_labels = false;
-        for label_set in &self.labels {
-            // TODO: Check openness of labels
-            return Either::Left::<Vec<PgsError>, Vec<Evidence>>(vec![PgsError::LabelsDifferent {
-                record_labels: labels.iter().cloned().collect::<Vec<_>>().join(", ").to_string(),
-                type_labels: self.labels.iter().cloned().collect::<Vec<_>>().join(", ").to_string(),
-            }]);
-        }*/
         if !self.labels.contains(labels) {
+            tracing::trace!(
+                "Labels do not conform: record labels = [{}], expected labels = [{}]",
+                labels.iter().cloned().collect::<Vec<_>>().join(", "),
+                self.labels
+                    .iter()
+                    .map(|lblset| lblset.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            );
             let expected_labels = format!(
                 "[{}]",
                 labels

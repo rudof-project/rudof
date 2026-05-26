@@ -1,12 +1,10 @@
-use std::{collections::HashMap, fmt::Display};
-
-use either::Either;
-use tracing::trace;
-
 use crate::{
-    edge::Edge, edge_id::EdgeId, edge_type::EdgeType, evidence::Evidence, label_property_spec::LabelPropertySpec,
-    node::Node, node_id::NodeId, pgs_error::PgsError, type_name::TypeName,
+    edge::Edge, edge_id::EdgeId, edge_label_property_spec::EdgeLabelPropertySpec, edge_type::EdgeType,
+    evidence::Evidence, label_property_spec::LabelPropertySpec, node::Node, node_id::NodeId, pg::PropertyGraph,
+    pgs_error::PgsError, type_name::TypeName,
 };
+use either::Either;
+use std::{collections::HashMap, fmt::Display};
 
 /// Simple representation of a property graph
 #[derive(Debug, Clone)]
@@ -98,7 +96,7 @@ impl PropertyGraphSchema {
     pub fn add_blank_edge_spec(
         &mut self,
         source: LabelPropertySpec,
-        edge: LabelPropertySpec,
+        edge: EdgeLabelPropertySpec,
         target: LabelPropertySpec,
     ) -> Result<EdgeId, PgsError> {
         let type_name = format!("{}", self.edge_id_counter);
@@ -109,7 +107,7 @@ impl PropertyGraphSchema {
         &mut self,
         type_name: &str,
         source: LabelPropertySpec,
-        edge: LabelPropertySpec,
+        edge: EdgeLabelPropertySpec,
         target: LabelPropertySpec,
     ) -> Result<EdgeId, PgsError> {
         let edge_id = EdgeId::new(self.edge_id_counter);
@@ -129,10 +127,7 @@ impl PropertyGraphSchema {
         if let Some(node_id) = self.node_names.get(type_name) {
             if let Some(spec) = self.node_types.get(node_id) {
                 match spec.semantics(self) {
-                    Ok(semantics) => {
-                        trace!("Semantics of node type {}: {:?}", type_name, semantics);
-                        semantics.conforms(node.labels(), node.content())
-                    },
+                    Ok(semantics) => semantics.conforms(node.labels(), node.content()),
                     Err(e) => Either::Left(vec![e]),
                 }
             } else {
@@ -145,11 +140,16 @@ impl PropertyGraphSchema {
         }
     }
 
-    pub fn conforms_edge(&self, type_name: &TypeName, edge: &Edge) -> Either<Vec<PgsError>, Vec<Evidence>> {
+    pub fn conforms_edge(
+        &self,
+        type_name: &TypeName,
+        edge: &Edge,
+        graph: &PropertyGraph,
+    ) -> Either<Vec<PgsError>, Vec<Evidence>> {
         if let Some(edge_id) = self.edge_names.get(type_name) {
             if let Some(spec) = self.edge_types.get(edge_id) {
                 match spec.semantics(self) {
-                    Ok(semantics) => semantics.conforms_edge(type_name, edge),
+                    Ok(semantics) => semantics.conforms_edge(type_name, edge, graph),
                     Err(e) => Either::Left(vec![e]),
                 }
             } else {

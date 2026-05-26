@@ -1,13 +1,13 @@
-use std::{collections::HashSet, fmt::Display};
+use std::fmt::Display;
 
-use crate::{edge_id::EdgeId, node_id::NodeId, record::Record, type_name::LabelName};
+use crate::{edge_id::EdgeId, label_set::LabelSet, node_id::NodeId, record::Record, type_name::LabelName};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Edge {
     pub id: EdgeId,
     pub source: NodeId,
     pub target: NodeId,
-    pub labels: HashSet<LabelName>,
+    pub labels: LabelSet,
     pub properties: Record,
 }
 
@@ -17,7 +17,7 @@ impl Edge {
             id,
             source,
             target,
-            labels: HashSet::new(),
+            labels: LabelSet::new(),
             properties: Record::new(),
         }
     }
@@ -27,8 +27,8 @@ impl Edge {
         self
     }
 
-    pub fn with_labels(mut self, labels: HashSet<LabelName>) -> Self {
-        self.labels = labels;
+    pub fn with_labels(mut self, labels: impl IntoIterator<Item = LabelName>) -> Self {
+        self.labels = LabelSet::from(labels);
         self
     }
 
@@ -37,12 +37,20 @@ impl Edge {
         self
     }
 
-    pub fn labels(&self) -> &HashSet<LabelName> {
+    pub fn labels(&self) -> &LabelSet {
         &self.labels
     }
 
     pub fn content(&self) -> &Record {
         &self.properties
+    }
+
+    pub fn source(&self) -> &NodeId {
+        &self.source
+    }
+
+    pub fn target(&self) -> &NodeId {
+        &self.target
     }
 }
 
