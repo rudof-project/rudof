@@ -13,6 +13,8 @@ pub mod edge;
 #[cfg(not(target_family = "wasm"))]
 pub mod edge_id;
 #[cfg(not(target_family = "wasm"))]
+pub mod edge_label_property_spec;
+#[cfg(not(target_family = "wasm"))]
 pub mod edge_type;
 #[cfg(not(target_family = "wasm"))]
 pub mod evidence;

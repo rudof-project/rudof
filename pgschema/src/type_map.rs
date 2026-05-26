@@ -59,7 +59,7 @@ impl TypeMap {
                     })?;
             let conforms_result = match either_node_edge {
                 Left(node) => schema.conforms_node(type_name, node),
-                Right(edge) => schema.conforms_edge(type_name, edge),
+                Right(edge) => schema.conforms_edge(type_name, edge, graph),
             };
             // TODO: Handle when should_conform is false
             result.add_association(ResultAssociation {
