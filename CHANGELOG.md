@@ -7,6 +7,21 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.3.2
+### Added
+- #663: Pattern flags (shex)
+- #667: Support for ShapeExternal (EXTERN) delegation in the validator (shex)
+- #676: External shape resolver selection in CLI / MCP / Python
+
+### Fixed
+- #665: Language stem BCP-47 subtag matching (shex)
+- #676: FRACTIONDIGITS facet rejects decimals with trailing zeros (shex)
+- #678: EXTRA predicates not consulted during ShEx validation (non-matching arcs incorrectly fed to RBE)
+- #680: Relative IRI shape labels not resolved in ShEx validation testsuite
+
+### Changed
+- #669: Improve MCP metadata
+
 ## v0.3.1
 ### Added
 Tests for stats on rudof_generate and upgrade stats.json with the information of the dataset #653
