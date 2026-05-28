@@ -15,9 +15,7 @@ pub struct PrefixMap {
     #[serde(flatten)]
     pub map: IndexMap<String, IriS>,
 
-    /// Default base IRI for resolving relative IRIs
-    #[serde(skip)]
-    pub default_base: Option<IriS>,
+    // TODO - The following properties should be handled by rudof_lib
 
     /// Color of prefix aliases when qualifying an IRI that has an alias
     #[serde(skip)]
@@ -41,11 +39,6 @@ impl PrefixMap {
     /// Creates an empty map
     pub fn new() -> PrefixMap {
         PrefixMap::default()
-    }
-
-    /// Sets the default base IRI for resolving relative IRIs
-    pub fn set_default_base(&mut self, default_base: &Option<IriS>) {
-        self.default_base = default_base.clone();
     }
 
     /// Returns the number of prefix associations in the [`PrefixMap`]
@@ -93,10 +86,6 @@ impl PrefixMap {
     /// Returns an iterator over the aliases in the [`PrefixMap`]
     pub fn aliases(&self) -> impl Iterator<Item = &String> {
         self.map.keys()
-    }
-
-    pub fn default_base(&self) -> Option<&IriS> {
-        self.default_base.as_ref()
     }
 }
 
@@ -278,15 +267,7 @@ impl PrefixMap {
     /// ```
     pub fn qualify(&self, iri: &IriS) -> String {
         self.qualify_optional(iri)
-            .unwrap_or_else(|| format!("<{}>", self.relativize(iri)))
-    }
-
-    fn relativize(&self, iri: &IriS) -> String {
-        if let Some(base) = self.default_base() {
-            iri.relative_from(base)
-        } else {
-            iri.as_str().to_string()
-        }
+            .unwrap_or_else(|| format!("<{}>", iri))
     }
 
     /// Qualifies an IRI against a [`PrefixMap`]
@@ -548,8 +529,6 @@ mod tests {
             .try_into()
             .unwrap();
 
-        pm.set_default_base(&Some(IriS::from_str("file:///home/user/src/rust/rudof/").unwrap()));
-
         let a = IriS::from_str("https://example.org/a").unwrap();
         assert_eq!(pm.qualify(&a), ":a");
 
@@ -559,7 +538,7 @@ mod tests {
         let other = IriS::from_str("https://other.org/foo").unwrap();
         assert_eq!(pm.qualify(&other), "<https://other.org/foo>");
 
-        let relative = IriS::from_str("file:///home/user/src/rust/rudof/relative").unwrap();
-        assert_eq!(pm.qualify(&relative), "<relative>");
+        let relative = IriS::from_str("").unwrap();
+        assert_eq!(pm.qualify(&relative), "<file:///home/user/src/rust/rudof/relative>");
     }
 }
