@@ -10,9 +10,9 @@ use std::{collections::HashMap, fmt};
 
 /// Contains declarations of prefix maps which are used in TURTLE, SPARQL and ShEx
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq, Default)]
-#[serde(transparent)]
 pub struct PrefixMap {
     /// Proper prefix map associations of an alias [`String`] to an [`IriS`]
+    #[serde(flatten)]
     pub map: IndexMap<String, IriS>,
 
     /// Default base IRI for resolving relative IRIs
