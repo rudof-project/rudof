@@ -198,11 +198,23 @@ impl<'de> Deserialize<'de> for RdfDataConfig {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct EndpointDescription {
     /// The URL of the SPARQL query endpoint.
-    query_url: IriS,
+    #[serde(rename = "query_url")]
+    pub(crate) query_url: IriS,
     /// Optional URL for SPARQL update operations.
-    update_url: Option<IriS>,
+    #[serde(rename = "update_url", default = "EndpointDescription::default_update_url", skip_serializing_if = "Option::is_none")]
+    pub(crate) update_url: Option<IriS>,
     /// Optional prefix map for abbreviating IRIs in queries.
-    prefixmap: Option<PrefixMap>,
+    #[serde(rename = "prefixmap", default = "EndpointDescription::default_prefixmap", skip_serializing_if = "PrefixMap::is_empty")]
+    pub(crate) prefixmap: PrefixMap,
+}
+
+/// Serde stuff
+#[allow(dead_code)]
+impl EndpointDescription {
+    #[inline]
+    fn default_update_url() -> Option<IriS> { None }
+    #[inline]
+    fn default_prefixmap() -> PrefixMap { PrefixMap::default() }
 }
 
 impl EndpointDescription {
@@ -213,10 +225,30 @@ impl EndpointDescription {
     pub fn new_unchecked(str: &str) -> Self {
         EndpointDescription {
             query_url: IriS::new_unchecked(str),
-            update_url: None,
-            prefixmap: None,
+            update_url: Self::default_update_url(),
+            prefixmap: Self::default_prefixmap(),
         }
     }
+
+    /// Sets the prefix map for this endpoint.
+    ///
+    /// # Arguments
+    /// * `prefixmap` - The `PrefixMap` to associate with this endpoint.
+    ///
+    /// # Returns
+    /// The modified `EndpointDescription` with the new prefix map.
+    pub fn with_prefixmap(mut self, prefixmap: PrefixMap) -> Self {
+        self.prefixmap = prefixmap;
+        self
+    }
+
+    pub fn with_update_query(mut self, iri: Option<IriS>) -> Self {
+        self.update_url = iri;
+        self
+    }
+}
+
+impl EndpointDescription {
 
     /// Returns the query URL for this endpoint.
     ///
@@ -230,28 +262,12 @@ impl EndpointDescription {
     ///
     /// # Returns
     /// The `PrefixMap` containing IRI prefixes for query abbreviation.
-    pub fn prefixmap(&self) -> PrefixMap {
-        self.prefixmap.clone().unwrap_or_default()
+    pub fn prefixmap(&self) -> &PrefixMap {
+        &self.prefixmap
     }
 
-    /// Sets the prefix map for this endpoint.
-    ///
-    /// # Arguments
-    /// * `prefixmap` - The `PrefixMap` to associate with this endpoint.
-    ///
-    /// # Returns
-    /// The modified `EndpointDescription` with the new prefix map.
-    pub fn with_prefixmap(mut self, prefixmap: PrefixMap) -> Self {
-        self.prefixmap = Some(prefixmap);
-        self
-    }
-
-    /// Adds or replaces the prefix map for this endpoint.
-    ///
-    /// # Arguments
-    /// * `prefixmap` - The `PrefixMap` to set for this endpoint.
-    pub fn add_prefixmap(&mut self, prefixmap: PrefixMap) {
-        self.prefixmap = Some(prefixmap);
+    pub fn update_url(&self) -> Option<&IriS> {
+        self.update_url.as_ref()
     }
 }
 
@@ -271,8 +287,8 @@ impl FromStr for EndpointDescription {
         let iri = IriS::from_str(query_url)?;
         Ok(EndpointDescription {
             query_url: iri,
-            update_url: None,
-            prefixmap: None,
+            update_url: Self::default_update_url(),
+            prefixmap: Self::default_prefixmap(),
         })
     }
 }
