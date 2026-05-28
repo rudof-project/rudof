@@ -4,26 +4,27 @@ use std::{collections::HashMap, io, path::Path, str::FromStr};
 use prefixmap::PrefixMap;
 
 use rudof_iri::{IriS, error::IriSError};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::io::Read;
 
 /// Configuration for RDF data readers and visualization settings.
 ///
 /// This struct defines how RDF data should be processed, including base IRI resolution,
 /// SPARQL endpoints for querying external data, and visualization preferences.
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct RdfDataConfig {
     /// Default base IRI to resolve relative IRIs. If `None`, relative IRIs will be treated as errors.
-    pub base: Option<IriS>,
+    pub(crate) base: Option<IriS>,
+    base_needs_fixup: bool,
 
     /// SPARQL endpoints for querying RDF data. Each endpoint is identified by a unique name.
-    pub endpoints: Option<HashMap<String, EndpointDescription>>,
+    pub(crate) endpoints: HashMap<String, EndpointDescription>,
 
     /// If true, automatically set the base IRI to the local file or URI of the document being processed.
-    pub automatic_base: Option<bool>,
+    pub(crate) automatic_base: bool,
 
     /// Configuration for RDF visualization appearance and styling.
-    pub rdf_visualization: Option<RDFVisualizationConfig>,
+    pub(crate) rdf_visualization: RDFVisualizationConfig,
 }
 
 impl RdfDataConfig {
@@ -33,10 +34,11 @@ impl RdfDataConfig {
     /// and no custom visualization settings.
     pub fn new() -> RdfDataConfig {
         RdfDataConfig {
-            base: None,
-            endpoints: None,
-            automatic_base: Some(true),
-            rdf_visualization: None,
+            base: Self::default_base(),
+            base_needs_fixup: false,
+            endpoints: Self::default_endpoints(),
+            automatic_base: Self::default_automatic_base(),
+            rdf_visualization: Self::default_rdf_visualization(),
         }
     }
 
@@ -50,16 +52,9 @@ impl RdfDataConfig {
     pub fn with_wikidata(mut self) -> Self {
         let wikidata_name = "wikidata";
         let wikidata_iri = "https://query.wikidata.org/sparql";
-        let wikidata = EndpointDescription::new_unchecked(wikidata_iri).with_prefixmap(PrefixMap::wikidata());
+        let wikidata = EndpointDescription::new_unchecked(wikidata_iri).with_prefixmap(PrefixMap::wikidata().into());
 
-        match self.endpoints {
-            None => {
-                self.endpoints = Some(HashMap::from([(wikidata_name.to_string(), wikidata)]));
-            },
-            Some(ref mut map) => {
-                map.insert(wikidata_name.to_string(), wikidata);
-            },
-        };
+        self.endpoints.insert(wikidata_name.to_string(), wikidata);
         self
     }
 
@@ -73,16 +68,19 @@ impl RdfDataConfig {
     ///
     /// # Errors
     /// Returns `RDFError` if the file cannot be read or the TOML is invalid.
+    #[cfg(not(target_family = "wasm"))]
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<RdfDataConfig, RDFError> {
         let path_name = path.as_ref().display().to_string();
-        let f = std::fs::File::open(path).map_err(|e| RDFError::ReadingConfigError {
+        let mut f = std::fs::File::open(path).map_err(|e| RDFError::ReadingConfigError {
             path_name: path_name.clone(),
             error: e,
         })?;
-        let s = read_string(f).map_err(|e| RDFError::ReadingConfigError {
-            path_name: path_name.clone(),
-            error: e,
-        })?;
+        let mut s = String::new();
+        f.read_to_string(&mut s)
+            .map_err(|e| RDFError::ReadingConfigError {
+                path_name: path_name.clone(),
+                error: e,
+            })?;
         let config: RdfDataConfig = toml::from_str(s.as_str()).map_err(|e| RDFError::TomlError {
             path_name: path_name.to_string(),
             error: e,
@@ -90,14 +88,68 @@ impl RdfDataConfig {
         Ok(config)
     }
 
+    pub fn with_base(mut self, iri: Option<IriS>) -> Self {
+        self.base = iri;
+        self
+    }
+
+    pub fn with_endpoints(mut self, endpoints: HashMap<String, EndpointDescription>) -> Self {
+        self.endpoints = endpoints;
+        self
+    }
+
+    pub fn with_automatic_base(mut self, flag: bool) -> Self {
+        self.automatic_base = flag;
+        self
+    }
+
+    pub fn with_rdf_visualization(mut self, cfg: RDFVisualizationConfig) -> Self {
+        self.rdf_visualization = cfg;
+        self
+    }
+}
+
+impl RdfDataConfig {
+    pub fn base(&self) -> Option<&IriS> {
+        self.base.as_ref()
+    }
+
+    pub fn endpoints(&self) -> &HashMap<String, EndpointDescription> {
+        &self.endpoints
+    }
+
+    pub fn automatic_base(&self) -> bool {
+        self.automatic_base
+    }
+
     /// Gets the RDF visualization configuration, using defaults if none is set.
     ///
     /// # Returns
     /// The `RDFVisualizationConfig` to use for visualization, either from this config
     /// or the default configuration if none is specified.
-    pub fn rdf_visualization_config(&self) -> RDFVisualizationConfig {
-        self.rdf_visualization.clone().unwrap_or_default()
+    pub fn rdf_visualization_config(&self) -> &RDFVisualizationConfig {
+        &self.rdf_visualization
     }
+}
+
+/// Serde stuff
+#[allow(dead_code)]
+impl RdfDataConfig {
+    #[inline]
+    fn default_base() -> Option<IriS> { None }
+    #[inline]
+    fn default_endpoints() -> HashMap<String, EndpointDescription> { HashMap::default() }
+    #[inline]
+    fn default_automatic_base() -> bool { true }
+    #[inline]
+    fn default_rdf_visualization() -> RDFVisualizationConfig { RDFVisualizationConfig::default() }
+
+    pub fn fixup(&mut self, iri: Option<IriS>) {
+        if self.base_needs_fixup {
+            self.base = iri;
+        }
+    }
+
 }
 
 impl Default for RdfDataConfig {
@@ -107,6 +159,35 @@ impl Default for RdfDataConfig {
     /// base IRI detection enabled.
     fn default() -> Self {
         Self::new().with_wikidata()
+    }
+}
+
+impl<'de> Deserialize<'de> for RdfDataConfig {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>
+    {
+        #[derive(Deserialize)]
+        struct Raw {
+            #[serde(rename = "base_iri", default = "RdfDataConfig::default_base")]
+            base: Option<IriS>,
+            #[serde(rename = "endpoints", default = "RdfDataConfig::default_endpoints")]
+            endpoints: HashMap<String, EndpointDescription>,
+            #[serde(rename = "local_base", default = "RdfDataConfig::default_automatic_base")]
+            automatic_base: bool,
+            #[serde(rename = "rdf_visualization", default = "RdfDataConfig::default_rdf_visualization")]
+            rdf_visualization: RDFVisualizationConfig,
+        }
+
+        let raw = Raw::deserialize(deserializer)?;
+
+        Ok(Self {
+            base_needs_fixup: raw.base.is_none(),
+            base: raw.base,
+            endpoints: raw.endpoints,
+            automatic_base: raw.automatic_base,
+            rdf_visualization: raw.rdf_visualization
+        })
     }
 }
 
@@ -194,17 +275,4 @@ impl FromStr for EndpointDescription {
             prefixmap: None,
         })
     }
-}
-
-/// Reads the entire contents of a reader into a string.
-///
-/// # Arguments
-/// * `reader` - The reader to read from.
-///
-/// # Returns
-/// A `Result` containing the string content or an I/O error.
-fn read_string<R: Read>(mut reader: R) -> io::Result<String> {
-    let mut buf = String::new();
-    reader.read_to_string(&mut buf)?;
-    Ok(buf)
 }
