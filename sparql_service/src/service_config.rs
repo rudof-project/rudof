@@ -11,16 +11,16 @@ use serde::{Deserialize, Deserializer};
 pub struct ServiceConfig {
     /// Default base to resolve relative IRIs, if it is `None` relative IRIs will be marked as errors`
     pub(crate) base: Option<IriS>,
-    /// This will be false if no option is found in the [`ServiceConfig`] section,
+    /// This will be false if no base option is found in the [`ServiceConfig`] section,
     /// If it's true, it can be overriden by [`rudof_lib`](https://crates.io/rudof_lib).
-    needs_fixup: bool,
+    base_needs_fixup: bool,
 }
 
 impl ServiceConfig {
     pub fn new() -> ServiceConfig {
         Self {
             base: Self::default_iri(),
-            needs_fixup: false
+            base_needs_fixup: false
         }
     }
 
@@ -58,6 +58,7 @@ impl ServiceConfig {
 }
 
 /// Serde stuff
+#[allow(dead_code)]
 impl ServiceConfig {
     #[inline]
     fn default_iri() -> Option<IriS> {
@@ -65,8 +66,8 @@ impl ServiceConfig {
     }
 
     pub fn fixup(&mut self, base_iri: Option<IriS>) {
-        if self.needs_fixup {
-            self.needs_fixup = false;
+        if self.base_needs_fixup {
+            self.base_needs_fixup = false;
             self.base = base_iri;
         }
     }
@@ -92,7 +93,7 @@ impl<'de> Deserialize<'de> for ServiceConfig {
         let raw = Raw::deserialize(deserializer)?;
 
         Ok(Self {
-            needs_fixup: raw.base.is_none(),
+            base_needs_fixup: raw.base.is_none(),
             base: raw.base,
         })
     }

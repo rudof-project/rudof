@@ -40,7 +40,7 @@ pub struct RudofConfig {
     // pub(crate) tap2shex: Option<Tap2ShExConfig>,
     // pub(crate) shex2sparql: Option<ShEx2SparqlConfig>,
     #[serde(rename = "service", default = "RudofConfig::default_service_config")]
-    pub(crate) service: Option<ServiceConfig>,
+    pub(crate) service: ServiceConfig,
     // pub(crate) plantuml_path: Option<PathBuf>,
     // pub(crate) comparator: Option<ComparatorConfig>,
 }
@@ -254,7 +254,7 @@ impl RudofConfig {
 impl RudofConfig {
     #[inline] fn default_version() -> Option<Version> { None }
     #[inline] fn default_common_config() -> CommonConfig { CommonConfig::new() }
-    #[inline] fn default_service_config() -> Option<ServiceConfig> { None }
+    #[inline] fn default_service_config() -> ServiceConfig { ServiceConfig::new() }
 }
 
 impl Default for RudofConfig {
