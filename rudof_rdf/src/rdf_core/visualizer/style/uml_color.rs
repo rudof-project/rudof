@@ -5,9 +5,11 @@ use serde::{Deserialize, Serialize};
 /// # Notes
 /// - The variants must stay in sync with the colors supported by PlantUML.
 /// - See: https://github.com/qywx/PlantUML-colors
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Default)]
+#[serde(rename_all = "snake_case")]
 pub enum UmlColor {
     White,
+    #[default]
     Black,
     Cyan,
     Gray,
@@ -20,6 +22,7 @@ pub enum UmlColor {
     LightCoral,
 }
 
+// REVIEW - This could be a trait?
 impl UmlColor {
     /// Returns the PlantUML-compatible string representation of the color.
     pub fn as_plantuml(&self) -> String {
