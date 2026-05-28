@@ -1,7 +1,7 @@
 use crate::{Result, Rudof, errors::MaterializeError, formats::ResultDataFormat};
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::BuildRDF;
-use rudof_rdf::rdf_impl::InMemoryGraph;
+use rudof_rdf::rdf_impl::OxigraphInMemory;
 use shex_ast::Node;
 use shex_ast::materialize::Materializer;
 use std::io;
@@ -29,7 +29,7 @@ pub fn materialize<W: io::Write>(
     };
 
     let materializer = Materializer::new();
-    let graph: InMemoryGraph = materializer
+    let graph: OxigraphInMemory = materializer
         .materialize(schema, map_state, initial_node)
         .map_err(|e| MaterializeError::FailedMaterialization { error: e.to_string() })?;
 

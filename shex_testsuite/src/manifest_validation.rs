@@ -18,7 +18,7 @@ use rudof_rdf::rdf_core::term::{Object, literal::ConcreteLiteral};
 #[cfg(not(target_family = "wasm"))]
 use rudof_rdf::{
     rdf_core::RDFFormat,
-    rdf_impl::{InMemoryGraph, ReaderMode},
+    rdf_impl::{OxigraphInMemory, ReaderMode},
 };
 use serde::de::{self};
 use serde::{Deserialize, Deserializer, Serialize};
@@ -248,7 +248,7 @@ impl ValidationEntry {
         let folder_iri_str = format!("{}/", path_iri.as_str());
         let base_str = Some(folder_iri_str.as_str());
 
-        let graph = InMemoryGraph::parse_data(
+        let graph = OxigraphInMemory::parse_data(
             &self.action.data,
             &RDFFormat::Turtle,
             folder,

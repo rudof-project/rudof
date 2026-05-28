@@ -1,7 +1,7 @@
 use crate::error::ValidationError;
 use crate::validator::store::Store;
 use rudof_rdf::rdf_core::RDFFormat;
-use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
 use sparql_service::RdfData;
 use std::path::Path;
 
@@ -9,7 +9,7 @@ pub struct Graph {
     #[cfg(feature = "sparql")]
     store: RdfData,
     #[cfg(not(feature = "sparql"))]
-    store: InMemoryGraph,
+    store: OxigraphInMemory,
 }
 
 impl Graph {
@@ -18,13 +18,13 @@ impl Graph {
             #[cfg(feature = "sparql")]
             store: RdfData::new(),
             #[cfg(not(feature = "sparql"))]
-            store: InMemoryGraph::new(),
+            store: OxigraphInMemory::new(),
         }
     }
 
     #[cfg(not(target_family = "wasm"))]
     pub fn from_path(path: &Path, rdf_format: &RDFFormat, base: Option<&str>) -> Result<Self, ValidationError> {
-        match InMemoryGraph::from_path(
+        match OxigraphInMemory::from_path(
             path,
             rdf_format,
             base,
@@ -48,10 +48,10 @@ impl Default for Graph {
 }
 
 #[cfg(feature = "sparql")]
-impl TryFrom<InMemoryGraph> for Graph {
+impl TryFrom<OxigraphInMemory> for Graph {
     type Error = ValidationError;
 
-    fn try_from(value: InMemoryGraph) -> Result<Self, Self::Error> {
+    fn try_from(value: OxigraphInMemory) -> Result<Self, Self::Error> {
         Ok(Self {
             store: RdfData::from_graph(value)?,
         })
@@ -59,8 +59,8 @@ impl TryFrom<InMemoryGraph> for Graph {
 }
 
 #[cfg(not(feature = "sparql"))]
-impl From<InMemoryGraph> for Graph {
-    fn from(value: InMemoryGraph) -> Self {
+impl From<OxigraphInMemory> for Graph {
+    fn from(value: OxigraphInMemory) -> Self {
         Self { store: value }
     }
 }

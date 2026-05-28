@@ -2,7 +2,7 @@ use crate::config::OutputConfig;
 use crate::conformance_metrics::ConformanceMetrics;
 use crate::{DataGeneratorError, Result};
 use rudof_rdf::rdf_core::{BuildRDF, NeighsRDF, RDFFormat};
-use rudof_rdf::rdf_impl::InMemoryGraph;
+use rudof_rdf::rdf_impl::OxigraphInMemory;
 use std::fs::File;
 use std::path::PathBuf;
 
@@ -17,14 +17,14 @@ impl OutputWriter {
     }
 
     /// Write the generated graph to the configured output
-    pub async fn write_graph(&self, graph: &InMemoryGraph) -> Result<()> {
+    pub async fn write_graph(&self, graph: &OxigraphInMemory) -> Result<()> {
         self.write_graph_with_timing(graph, None, None).await
     }
 
     /// Write the generated graph to the configured output with timing information
     pub async fn write_graph_with_timing(
         &self,
-        graph: &InMemoryGraph,
+        graph: &OxigraphInMemory,
         generation_time: Option<std::time::Duration>,
         conformance_metrics: Option<&ConformanceMetrics>,
     ) -> Result<()> {
@@ -40,7 +40,7 @@ impl OutputWriter {
     /// Write the graph using sequential (traditional) method
     async fn write_graph_sequential(
         &self,
-        graph: &InMemoryGraph,
+        graph: &OxigraphInMemory,
         generation_time: Option<std::time::Duration>,
         conformance_metrics: Option<&ConformanceMetrics>,
     ) -> Result<()> {
@@ -76,7 +76,7 @@ impl OutputWriter {
     /// Write the graph using parallel method - splits data across multiple files
     async fn write_graph_parallel(
         &self,
-        graph: &InMemoryGraph,
+        graph: &OxigraphInMemory,
         generation_time: Option<std::time::Duration>,
         conformance_metrics: Option<&ConformanceMetrics>,
     ) -> Result<()> {
@@ -161,7 +161,7 @@ impl OutputWriter {
     /// Write a chunk of triples to a file
     async fn write_triple_chunk(triples: Vec<oxrdf::Triple>, format: RDFFormat, output_path: PathBuf) -> Result<()> {
         // Create a temporary graph for this chunk
-        let mut chunk_graph = InMemoryGraph::default();
+        let mut chunk_graph = OxigraphInMemory::default();
 
         for triple in triples {
             chunk_graph
@@ -230,7 +230,7 @@ impl OutputWriter {
     /// Write generation statistics
     async fn write_statistics(
         &self,
-        graph: &InMemoryGraph,
+        graph: &OxigraphInMemory,
         generation_time: Option<std::time::Duration>,
         conformance_metrics: Option<&ConformanceMetrics>,
     ) -> Result<()> {
@@ -282,7 +282,7 @@ pub struct GenerationStatistics {
 }
 
 impl GenerationStatistics {
-    pub fn from_graph(graph: &InMemoryGraph) -> Self {
+    pub fn from_graph(graph: &OxigraphInMemory) -> Self {
         use std::collections::HashSet;
 
         let total_triples = graph.len();

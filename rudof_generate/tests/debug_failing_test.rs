@@ -3,7 +3,7 @@ use rudof_generate::{DataGenerator, GeneratorConfig};
 #[cfg(not(target_family = "wasm"))]
 use rudof_rdf::rdf_core::{NeighsRDF, RDFFormat};
 #[cfg(not(target_family = "wasm"))]
-use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
 #[cfg(not(target_family = "wasm"))]
 use std::collections::HashMap;
 #[cfg(not(target_family = "wasm"))]
@@ -43,7 +43,7 @@ ex:PersonShape {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = OxigraphInMemory::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
 
     // Read the generated file content

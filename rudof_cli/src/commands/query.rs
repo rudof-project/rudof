@@ -1,4 +1,5 @@
 use crate::cli::parser::QueryArgs;
+use crate::cli::wrappers::resolve_backend;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::Result;
 
@@ -30,19 +31,19 @@ impl Command for QueryCommand {
         let query_type = self.args.query_type.into();
         let result_query_format = self.args.result_query_format.into();
 
+        let backend = resolve_backend(self.args.common.backend.as_ref(), self.args.endpoint.as_deref());
+
         let mut loading = ctx
             .rudof
             .load_data()
             .with_data_format(&data_format)
-            .with_reader_mode(&reader_mode);
+            .with_reader_mode(&reader_mode)
+            .with_backend(backend);
         if !self.args.data.is_empty() {
             loading = loading.with_data(&self.args.data);
         }
         if let Some(base) = self.args.base.as_deref() {
             loading = loading.with_base(base);
-        }
-        if let Some(endpoint) = self.args.endpoint.as_deref() {
-            loading = loading.with_endpoint(endpoint);
         }
         loading.execute()?;
 

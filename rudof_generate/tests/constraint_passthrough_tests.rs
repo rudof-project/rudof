@@ -5,7 +5,7 @@ use rudof_generate::{DataGenerator, GeneratorConfig};
 #[cfg(not(target_family = "wasm"))]
 use rudof_rdf::rdf_core::{NeighsRDF, RDFFormat, term::literal::Literal};
 #[cfg(not(target_family = "wasm"))]
-use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
 #[cfg(not(target_family = "wasm"))]
 use std::collections::HashMap;
 #[cfg(not(target_family = "wasm"))]
@@ -46,7 +46,7 @@ ex:PersonShape {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = OxigraphInMemory::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
 
     // Verify that generated triples respect datatypes
@@ -116,7 +116,7 @@ ex:PersonShape a sh:NodeShape ;
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = OxigraphInMemory::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
 
     // Verify that generated triples respect datatypes
@@ -174,7 +174,7 @@ ex:PersonShape {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = OxigraphInMemory::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
 
     // Count properties per entity to verify cardinality
@@ -258,7 +258,7 @@ ex:PersonShape a sh:NodeShape ;
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = OxigraphInMemory::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
 
     // Count properties per entity to verify cardinality
@@ -335,7 +335,7 @@ ex:AddressShape {
 
     // Read and validate generated data
     let generated_data = std::fs::read_to_string(output_file.path()).unwrap();
-    let graph = InMemoryGraph::from_str(&generated_data, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+    let graph = OxigraphInMemory::from_str(&generated_data, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
 
     // Check that we have both person and address data
     let triples = graph.triples().unwrap();
@@ -417,7 +417,7 @@ ex:AddressShape a sh:NodeShape ;
 
     // Read and validate generated data
     let generated_data = std::fs::read_to_string(output_file.path()).unwrap();
-    let graph = InMemoryGraph::from_str(&generated_data, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+    let graph = OxigraphInMemory::from_str(&generated_data, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
 
     // Check that we have both person and address data
     let triples = graph.triples().unwrap();
@@ -491,7 +491,7 @@ ex:PersonShape a sh:NodeShape ;
 
     // Read and validate generated data
     let generated_data = std::fs::read_to_string(output_file.path()).unwrap();
-    let graph = InMemoryGraph::from_str(&generated_data, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
+    let graph = OxigraphInMemory::from_str(&generated_data, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap();
 
     // Verify that generated values respect constraints
     let triples = graph.triples().unwrap();

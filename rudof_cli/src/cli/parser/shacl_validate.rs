@@ -69,7 +69,7 @@ pub struct ShaclValidateArgs {
         short = 'e',
         long = "endpoint",
         value_name = "ENDPOINT",
-        help = "Endpoint with RDF data (URL or name)"
+        help = "[DEPRECATED] Endpoint with RDF data (URL or name). Use --backend endpoint=<URL_OR_NAME> instead."
     )]
     pub endpoint: Option<String>,
 

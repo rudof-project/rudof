@@ -10,7 +10,7 @@ use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::vocabs::{RdfVocab, RdfVocabulary, ShaclVocab, XsdVocab};
 use rudof_rdf::rdf_core::{BuildRDF, RDFFormat};
-use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
 use std::io::{Cursor, Read};
@@ -48,7 +48,7 @@ impl IRSchema {
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<Self, IRError> {
-        let mut graph = InMemoryGraph::new();
+        let mut graph = OxigraphInMemory::new();
         graph.merge_from_reader(reader, source_name, format, base, reader_mode)?;
         let ast = ShaclParser::new(graph).parse()?;
 

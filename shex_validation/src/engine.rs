@@ -1486,7 +1486,7 @@ mod tests {
     use crate::ValidatorConfig;
     use rudof_iri::IriS;
     use rudof_rdf::rdf_core::RDFFormat;
-    use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+    use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
 
     // :alice :knows :bob .
     // :carol :knows :alice .
@@ -1498,8 +1498,8 @@ mod tests {
         :alice :age 30 .
     "#;
 
-    fn make_graph() -> InMemoryGraph {
-        InMemoryGraph::from_str(TEST_GRAPH, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap()
+    fn make_graph() -> OxigraphInMemory {
+        OxigraphInMemory::from_str(TEST_GRAPH, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap()
     }
 
     fn engine() -> Engine {

@@ -1,6 +1,6 @@
 use crate::error::{IRError, ShaclParserError};
 use rudof_rdf::rdf_core::{RDFError, Rdf};
-use rudof_rdf::rdf_impl::{InMemoryGraphError, SparqlEndpointError};
+use rudof_rdf::rdf_impl::{OxigraphInMemoryError, OxigraphEndpointError};
 use sparql_service::RdfDataError;
 use std::io;
 use std::io::Error;
@@ -29,14 +29,14 @@ pub enum ValidationError {
 
     #[cfg(feature = "sparql")]
     #[error(transparent)]
-    SparqlEndpointError(#[from] Box<SparqlEndpointError>),
+    OxigraphEndpointError(#[from] Box<OxigraphEndpointError>),
 
     #[cfg(feature = "sparql")]
     #[error(transparent)]
     RdfDataError(#[from] Box<RdfDataError>),
 
     #[error(transparent)]
-    InMemoryGraphError(#[from] Box<InMemoryGraphError>),
+    OxigraphInMemoryError(#[from] Box<OxigraphInMemoryError>),
 
     #[error(transparent)]
     ShaclParserError(#[from] Box<ShaclParserError>),
@@ -90,9 +90,9 @@ impl From<RDFError> for ValidationError {
 }
 
 #[cfg(feature = "sparql")]
-impl From<SparqlEndpointError> for ValidationError {
-    fn from(value: SparqlEndpointError) -> Self {
-        Self::SparqlEndpointError(Box::new(value))
+impl From<OxigraphEndpointError> for ValidationError {
+    fn from(value: OxigraphEndpointError) -> Self {
+        Self::OxigraphEndpointError(Box::new(value))
     }
 }
 
@@ -109,9 +109,9 @@ impl From<ShaclParserError> for ValidationError {
     }
 }
 
-impl From<InMemoryGraphError> for ValidationError {
-    fn from(value: InMemoryGraphError) -> Self {
-        Self::InMemoryGraphError(Box::new(value))
+impl From<OxigraphInMemoryError> for ValidationError {
+    fn from(value: OxigraphInMemoryError) -> Self {
+        Self::OxigraphInMemoryError(Box::new(value))
     }
 }
 

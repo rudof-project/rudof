@@ -11,7 +11,7 @@ use std::io::Read;
 ///
 /// This struct defines how RDF data should be processed, including base IRI resolution,
 /// SPARQL endpoints for querying external data, and visualization preferences.
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RdfDataConfig {
     /// Default base IRI to resolve relative IRIs. If `None`, relative IRIs will be treated as errors.
     pub base: Option<IriS>,
@@ -24,6 +24,20 @@ pub struct RdfDataConfig {
 
     /// Configuration for RDF visualization appearance and styling.
     pub rdf_visualization: Option<RDFVisualizationConfig>,
+
+    /// Optional QLever backend configuration. Reading this section from TOML only records the user's preferences, the QLever container is not started
+    /// until the caller explicitly invokes [`QleverGraphContainer::from_path`](crate::rdf_impl::QleverGraphContainer::from_path) or `from_reader`.
+    #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
+    pub qlever: Option<crate::rdf_impl::QleverConfig>,
+}
+
+impl PartialEq for RdfDataConfig {
+    fn eq(&self, other: &Self) -> bool {
+        self.base == other.base
+            && self.endpoints == other.endpoints
+            && self.automatic_base == other.automatic_base
+            && self.rdf_visualization == other.rdf_visualization
+    }
 }
 
 impl RdfDataConfig {
@@ -37,6 +51,8 @@ impl RdfDataConfig {
             endpoints: None,
             automatic_base: Some(true),
             rdf_visualization: None,
+            #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
+            qlever: None,
         }
     }
 

@@ -5,7 +5,7 @@ use crate::{
     formats::{ResultShaclValidationFormat, ShaclValidationSortByMode},
     utils::terminal_width,
 };
-use rudof_rdf::{rdf_core::BuildRDF, rdf_impl::InMemoryGraph};
+use rudof_rdf::{rdf_core::BuildRDF, rdf_impl::OxigraphInMemory};
 use shacl::types::Severity;
 use shacl::validator::report::ValidationReport;
 use std::io;
@@ -87,7 +87,7 @@ fn serialize_shacl_validation_results_rdf<W: io::Write>(
     result_shacl_validation_format: ResultShaclValidationFormat,
     writer: &mut W,
 ) -> Result<()> {
-    let mut rdf_writer = InMemoryGraph::new();
+    let mut rdf_writer = OxigraphInMemory::new();
 
     shacl_validation_results
         .to_rdf(&mut rdf_writer)

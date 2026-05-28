@@ -5,7 +5,7 @@ use rudof_generate::{DataGenerator, GeneratorConfig};
 #[cfg(not(target_family = "wasm"))]
 use rudof_rdf::rdf_core::{NeighsRDF, RDFFormat};
 #[cfg(not(target_family = "wasm"))]
-use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
 #[cfg(not(target_family = "wasm"))]
 use std::collections::HashMap;
 #[cfg(not(target_family = "wasm"))]
@@ -65,7 +65,7 @@ async fn debug_shex_datatype_generation() {
     println!("{content}");
 
     // Parse and analyze the generated RDF
-    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = OxigraphInMemory::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
 
     let mut datatype_counts = HashMap::new();
@@ -167,7 +167,7 @@ async fn debug_shacl_datatype_generation() {
     println!("{content}");
 
     // Parse and analyze the generated RDF
-    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = OxigraphInMemory::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
 
     let mut datatype_counts = HashMap::new();

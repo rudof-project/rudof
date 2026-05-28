@@ -17,7 +17,14 @@ include = [
     "LICENSE-APACHE",
 ]
 
+[features]
+default = []
+# Pull in the QLever Docker backend (sparql_service/qlever + rudof_rdf/qlever).
+qlever = ["sparql_service/qlever", "rudof_rdf/qlever", "dep:tokio"]
+
 [dependencies]
+tokio = { workspace = true, optional = true }
+
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 colored.workspace = true
 crossterm.workspace = true

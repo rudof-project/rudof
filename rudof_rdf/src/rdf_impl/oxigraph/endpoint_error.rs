@@ -6,7 +6,7 @@ use thiserror::Error;
 
 /// Represents all possible errors that can occur when interacting with SPARQL endpoints.
 #[derive(Error, Debug)]
-pub enum SparqlEndpointError {
+pub enum OxigraphEndpointError {
     /// Error parsing a SPARQL query string.
     ///
     /// # Fields
@@ -116,22 +116,22 @@ pub enum SparqlEndpointError {
 }
 
 /// Converts a reqwest error into an HTTPRequestError.
-impl From<reqwest::Error> for SparqlEndpointError {
-    fn from(e: reqwest::Error) -> SparqlEndpointError {
-        SparqlEndpointError::HTTPRequestError { e }
+impl From<reqwest::Error> for OxigraphEndpointError {
+    fn from(e: reqwest::Error) -> OxigraphEndpointError {
+        OxigraphEndpointError::HTTPRequestError { e }
     }
 }
 
 /// Converts a URL parsing error into a URLParseError.
-impl From<url::ParseError> for SparqlEndpointError {
-    fn from(e: url::ParseError) -> SparqlEndpointError {
-        SparqlEndpointError::URLParseError { e }
+impl From<url::ParseError> for OxigraphEndpointError {
+    fn from(e: url::ParseError) -> OxigraphEndpointError {
+        OxigraphEndpointError::URLParseError { e }
     }
 }
 
 /// Converts a SPARQL results parsing error into an SPAResults error.
-impl From<sparesults::QueryResultsParseError> for SparqlEndpointError {
-    fn from(e: sparesults::QueryResultsParseError) -> SparqlEndpointError {
-        SparqlEndpointError::SPAResults { e }
+impl From<sparesults::QueryResultsParseError> for OxigraphEndpointError {
+    fn from(e: sparesults::QueryResultsParseError) -> OxigraphEndpointError {
+        OxigraphEndpointError::SPAResults { e }
     }
 }

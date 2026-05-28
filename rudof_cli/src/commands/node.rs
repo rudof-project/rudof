@@ -1,4 +1,5 @@
 use crate::cli::parser::NodeArgs;
+use crate::cli::wrappers::resolve_backend;
 use crate::commands::base::{Command, CommandContext};
 use anyhow::Result;
 use rudof_lib::formats::IriNormalizationMode;
@@ -30,17 +31,17 @@ impl Command for NodeCommand {
         let reader_mode = self.args.reader_mode.into();
         let show_node_mode = self.args.show_node_mode.into();
 
+        let backend = resolve_backend(self.args.common.backend.as_ref(), self.args.endpoint.as_deref());
+
         let mut loading = ctx
             .rudof
             .load_data()
             .with_data(&self.args.data)
             .with_data_format(&data_format)
-            .with_reader_mode(&reader_mode);
+            .with_reader_mode(&reader_mode)
+            .with_backend(backend);
         if let Some(base) = self.args.base.as_deref() {
             loading = loading.with_base(base);
-        }
-        if let Some(endpoint) = self.args.endpoint.as_deref() {
-            loading = loading.with_endpoint(endpoint);
         }
         loading.execute()?;
 

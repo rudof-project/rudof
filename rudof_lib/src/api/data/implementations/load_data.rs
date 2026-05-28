@@ -11,7 +11,7 @@ use prefixmap::PrefixMap;
 use regex::Regex;
 use rudof_iri::{IriS, MimeType};
 use rudof_rdf::rdf_core::BuildRDF;
-use rudof_rdf::rdf_impl::SparqlEndpoint;
+use rudof_rdf::rdf_impl::OxigraphEndpoint;
 use sparql_service::RdfData;
 use std::io::Read;
 use std::{io, str::FromStr};
@@ -253,7 +253,7 @@ fn load_data_from_endpoint(rudof: &mut Rudof, endpoint_str: &str) -> Result<()> 
     Ok(())
 }
 
-fn get_endpoint_name(rudof: &mut Rudof, endpoint_str: &str) -> Result<SparqlEndpoint> {
+fn get_endpoint_name(rudof: &mut Rudof, endpoint_str: &str) -> Result<OxigraphEndpoint> {
     let rdf_data = rudof.data.as_mut().unwrap().unwrap_rdf_mut();
 
     match rdf_data.find_endpoint(endpoint_str) {
@@ -280,7 +280,7 @@ fn get_endpoint_name(rudof: &mut Rudof, endpoint_str: &str) -> Result<SparqlEndp
                 })
             })?;
 
-            let endpoint = SparqlEndpoint::new(&iri, &PrefixMap::new()).map_err(|error| {
+            let endpoint = OxigraphEndpoint::new(&iri, &PrefixMap::new()).map_err(|error| {
                 Box::new(DataError::InvalidEndpoint {
                     endpoint: endpoint_str.to_string(),
                     error: error.to_string(),
@@ -292,7 +292,7 @@ fn get_endpoint_name(rudof: &mut Rudof, endpoint_str: &str) -> Result<SparqlEndp
     }
 }
 
-fn use_endpoint(rudof: &mut Rudof, endpoint_str: &str, endpoint: SparqlEndpoint) {
+fn use_endpoint(rudof: &mut Rudof, endpoint_str: &str, endpoint: OxigraphEndpoint) {
     rudof
         .data
         .as_mut()
@@ -311,6 +311,120 @@ fn init_rdf_data_with_config(rudof: &Rudof) -> Result<Data> {
         })?;
 
     Ok(Data::RDFData(Box::new(rdf_data)))
+}
+
+/// Load data into the QLever Docker backend instead of the in-memory graph.
+///
+/// Available with `--features qlever`.
+#[cfg(feature = "qlever")]
+pub fn load_data_via_qlever(
+    rudof: &mut Rudof,
+    data: Option<&[InputSpec]>,
+    data_format: Option<&DataFormat>,
+    base: Option<&str>,
+    prefixes: Option<&[InputSpec]>,
+) -> Result<()> {
+    use crate::types::Data;
+    use rudof_rdf::rdf_core::{BuildRDF, RDFFormat};
+    use rudof_rdf::rdf_impl::{QleverConfig, QleverGraphContainer, qlever_runtime};
+    use sparql_service::RdfData;
+
+    // Pg is the only non-RDF DataFormat; reject it before we try anything.
+    if matches!(data_format, Some(DataFormat::Pg)) {
+        return Err(Box::new(DataError::NonRdfFormat {
+            format: "pg".to_string(),
+        })
+        .into());
+    }
+
+    let inputs = data.ok_or_else(|| {
+        Box::new(DataError::DataSourceSpec {
+            message: "--backend qlever requires at least one --data input".to_string(),
+        })
+    })?;
+    if inputs.is_empty() {
+        return Err(Box::new(DataError::DataSourceSpec {
+            message: "--backend qlever requires at least one --data input".to_string(),
+        })
+        .into());
+    }
+
+    // Collect every file-system path; reject other InputSpec variants so the
+    // caller gets a clear error instead of a silently-partial index.
+    let mut paths: Vec<std::path::PathBuf> = Vec::with_capacity(inputs.len());
+    for spec in inputs {
+        match spec {
+            InputSpec::Path(p) => paths.push(p.clone()),
+            other => {
+                let kind = match other {
+                    InputSpec::Stdin => "stdin",
+                    InputSpec::Str(_) => "string",
+                    InputSpec::Url(_) => "URL",
+                    InputSpec::Path(_) => unreachable!(),
+                };
+                return Err(Box::new(DataError::DataSourceSpec {
+                    message: format!(
+                        "--backend qlever only supports file-system inputs; got {kind} for '{}'",
+                        other.source_name()
+                    ),
+                })
+                .into());
+            },
+        }
+    }
+
+    let rdf_format: Option<RDFFormat> = match data_format {
+        Some(f) => Some(RDFFormat::try_from(f).map_err(|e| {
+            Box::new(DataError::DataSourceSpec {
+                message: format!("could not map --data-format to an RDF format: {e}"),
+            })
+        })?),
+        None => None,
+    };
+
+    // Honour any `[qlever]` section in the loaded config.
+    let qlever_config = rudof.config.rdf_data_config().qlever.clone().unwrap_or_else(QleverConfig::new);
+
+    // Drive the async loader on the process-wide QLever runtime so the
+    // reactor outlives the resulting `QleverServer`. If we created a local
+    // `Runtime` here it would be dropped at end of scope, but the
+    // `QleverServer` (stored in `rudof.data`) outlives this function and its
+    // `Drop` impl needs a live reactor to talk to the Docker socket.
+    let graph = qlever_runtime()
+        .block_on(QleverGraphContainer::from_paths(&paths, rdf_format.as_ref(), qlever_config))
+        .map_err(|e| {
+            Box::new(DataError::DataSourceSpec {
+                message: format!("QLever backend failed: {e}"),
+            })
+        })?;
+
+    let mut rdf_data = RdfData::new()
+        .with_rdf_data_config(&rudof.config.rdf_data_config())
+        .map_err(|error| {
+            Box::new(DataError::RdfDataConfig {
+                error: error.to_string(),
+            })
+        })?;
+    rdf_data.set_qlever(graph);
+
+    if let Some(base) = base {
+        let base_iri = IriS::from_str(base).map_err(|e| {
+            Box::new(DataError::DataSourceSpec {
+                message: format!("invalid --base IRI '{base}': {e}"),
+            })
+        })?;
+        rdf_data.add_base(&Some(base_iri));
+    }
+    if let Some(prefixes) = prefixes {
+        let mut pm = PrefixMap::new();
+        for prefix in prefixes {
+            pm.merge(load_user_prefixes(prefix)?);
+        }
+        rdf_data.merge_prefixes(pm);
+    }
+
+    rudof.data = Some(Data::RDFData(Box::new(rdf_data)));
+    Ok(())
 }
 
 fn normalize_endpoint_id(value: &str) -> String {

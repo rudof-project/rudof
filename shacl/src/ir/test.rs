@@ -3,7 +3,7 @@ mod tests {
     use crate::ir::IRSchema;
     use crate::rdf::ShaclParser;
     use rudof_rdf::rdf_core::RDFFormat;
-    use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+    use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
     use std::io::Cursor;
 
     const SCHEMA: &str = r#"
@@ -43,7 +43,7 @@ mod tests {
     "#;
 
     fn load_schema(ast: &str) -> IRSchema {
-        let rdf = InMemoryGraph::from_reader(
+        let rdf = OxigraphInMemory::from_reader(
             &mut Cursor::new(ast),
             "String",
             &RDFFormat::Turtle,

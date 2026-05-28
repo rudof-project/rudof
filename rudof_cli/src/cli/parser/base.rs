@@ -142,6 +142,24 @@ pub struct CommonArgsAll {
         default_value_t = false
     )]
     pub force_overwrite: bool,
+
+    /// Choose which RDF data backend to load the input into.
+    ///
+    /// - `memory` (default): parse into an in-process oxrdf::Graph.
+    /// - `qlever`: launch a local QLever Docker container and index the input on disk.
+    ///    Requires the binary to be built with the `qlever` feature.
+    /// - `endpoint=<URL_OR_NAME>`: query an external SPARQL endpoint by URL or by
+    ///    the name of an endpoint registered in the TOML config.
+    #[arg(
+        long = "backend",
+        value_name = "BACKEND",
+        help = "RDF data backend selection: memory | qlever | endpoint=<URL_OR_NAME>",
+        value_parser = clap::builder::ValueParser::new(|s: &str| {
+            use std::str::FromStr;
+            crate::cli::wrappers::BackendKindCli::from_str(s)
+        }),
+    )]
+    pub backend: Option<crate::cli::wrappers::BackendKindCli>,
 }
 
 /// Partial common arguments for commands that only handle output and overwriting.

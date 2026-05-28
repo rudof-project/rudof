@@ -159,7 +159,7 @@ Options:
       --base-schema <IRI>         Base Schema (used to resolve relative IRIs in Schema)
       --base-data <IRI>           Base RDF Data IRI (used to resolve relative IRIs in RDF data)
       --reader-mode <MODE>        RDF Reader mode [default: strict] [possible values: lax, strict]
-  -e, --endpoint <NAME>           Endpoint with RDF data (name or URL)
+  -e, --endpoint <NAME>           [DEPRECATED] Endpoint with RDF data (name or URL). Use `--backend endpoint=<URL_OR_NAME>` instead.
   -r, --result-format <FORMAT>    Ouput result format [default: details] [possible values: details, turtle, ntriples, rdfxml, trig, n3, nquads, compact, json, csv]
       --map-state <FILE>          MapState file name
       --strict-iris               Require <> brackets around IRIs (strict mode). By default bare http://… IRIs are accepted (lax mode).

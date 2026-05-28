@@ -3,7 +3,7 @@ use rudof_generate::{DataGenerator, GeneratorConfig};
 #[cfg(not(target_family = "wasm"))]
 use rudof_rdf::rdf_core::{NeighsRDF, RDFFormat};
 #[cfg(not(target_family = "wasm"))]
-use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
 #[cfg(not(target_family = "wasm"))]
 use std::collections::HashMap;
 #[cfg(not(target_family = "wasm"))]
@@ -43,7 +43,7 @@ ex:PersonShape {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = OxigraphInMemory::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
 
     // Verify cardinality constraints
@@ -93,7 +93,7 @@ async fn test_shacl_cardinality_constraints() {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = OxigraphInMemory::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
 
     // Verify cardinality constraints
@@ -155,7 +155,7 @@ async fn test_datatype_constraints() {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = OxigraphInMemory::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
 
     // Verify datatype constraints
@@ -205,7 +205,7 @@ async fn test_value_constraints() {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = OxigraphInMemory::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
 
     // Verify value constraints
@@ -246,7 +246,7 @@ ex:PersonShape {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = OxigraphInMemory::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
 
     // Verify datatype constraints (reuse the same verification function)
@@ -285,7 +285,7 @@ ex:PersonShape {
     generator.generate().await.unwrap();
 
     // Parse generated data
-    let graph = InMemoryGraph::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
+    let graph = OxigraphInMemory::from_path(output_file.path(), &RDFFormat::Turtle, None, &ReaderMode::Strict)
         .expect("Failed to parse generated RDF");
 
     // Verify value constraints (reuse the same verification function)
@@ -295,7 +295,7 @@ ex:PersonShape {
 // Helper functions for verification
 
 #[cfg(not(target_family = "wasm"))]
-fn verify_shex_cardinality(graph: &InMemoryGraph) {
+fn verify_shex_cardinality(graph: &OxigraphInMemory) {
     let mut entity_properties: HashMap<String, HashMap<String, Vec<String>>> = HashMap::new();
 
     // Collect properties for each entity
@@ -336,7 +336,7 @@ fn verify_shex_cardinality(graph: &InMemoryGraph) {
 }
 
 #[cfg(not(target_family = "wasm"))]
-fn verify_shacl_cardinality(graph: &InMemoryGraph) {
+fn verify_shacl_cardinality(graph: &OxigraphInMemory) {
     let mut entity_properties: HashMap<String, HashMap<String, Vec<String>>> = HashMap::new();
 
     // Collect properties for each entity
@@ -377,7 +377,7 @@ fn verify_shacl_cardinality(graph: &InMemoryGraph) {
 }
 
 #[cfg(not(target_family = "wasm"))]
-fn verify_datatypes(graph: &InMemoryGraph) {
+fn verify_datatypes(graph: &OxigraphInMemory) {
     for triple in graph.triples().unwrap() {
         let literal = triple.object.clone();
         if let oxrdf::Term::Literal(lit) = literal {
@@ -420,7 +420,7 @@ fn verify_datatypes(graph: &InMemoryGraph) {
 }
 
 #[cfg(not(target_family = "wasm"))]
-fn verify_value_constraints(graph: &InMemoryGraph) {
+fn verify_value_constraints(graph: &OxigraphInMemory) {
     // Only verify that basic datatypes are respected (no range/length constraints since they're not supported)
     for triple in graph.triples().unwrap() {
         let literal = triple.object.clone();

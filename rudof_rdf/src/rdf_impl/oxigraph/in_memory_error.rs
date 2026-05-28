@@ -8,7 +8,7 @@ use thiserror::Error;
 
 /// Represents all possible errors that can occur when working with in-memory RDF graphs.
 #[derive(Error, Debug)]
-pub enum InMemoryGraphError {
+pub enum OxigraphInMemoryError {
     /// Error processing query results.
     ///
     /// # Fields
@@ -161,5 +161,13 @@ pub enum InMemoryGraphError {
     PrefixMapError {
         #[from]
         err: PrefixMapError,
+    },
+
+    /// Error coming from the embedded Oxigraph SPARQL store.
+    #[cfg(feature = "sparql")]
+    #[error(transparent)]
+    StorageError {
+        #[from]
+        err: oxigraph::store::StorageError,
     },
 }

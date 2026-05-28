@@ -99,7 +99,7 @@ pub struct ValidateArgs {
         short = 'e',
         long = "endpoint",
         value_name = "ENDPOINT",
-        help = "Endpoint with RDF data"
+        help = "[DEPRECATED] Endpoint with RDF data. Use --backend endpoint=<URL_OR_NAME> instead."
     )]
     pub endpoint: Option<String>,
 

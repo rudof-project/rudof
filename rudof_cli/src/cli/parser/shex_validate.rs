@@ -104,7 +104,7 @@ pub struct ShexValidateArgs {
         short = 'e',
         long = "endpoint",
         value_name = "NAME",
-        help = "Endpoint with RDF data (name or URL)"
+        help = "[DEPRECATED] Endpoint with RDF data (name or URL). Use --backend endpoint=<URL_OR_NAME> instead."
     )]
     pub endpoint: Option<String>,
 

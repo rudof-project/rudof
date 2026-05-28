@@ -13,6 +13,11 @@ repository.workspace = true
 path = "src/main.rs"
 name = "rudof"
 
+[features]
+default = []
+# Surface the `--backend qlever` flag and wire the QLever Docker backend through rudof_lib.
+qlever = ["rudof_lib/qlever"]
+
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 anyhow.workspace = true
 clap.workspace = true
