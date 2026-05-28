@@ -19,6 +19,86 @@ pub enum UmlShape {
     Rectangle,
 }
 
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct NodeStyle {
+    #[serde(rename = "line_color", default = "NodeStyle::default_line_color", skip_serializing_if = "NodeStyle::is_default_line_color")]
+    pub(crate) line_color: UmlColor,
+    #[serde(rename = "line_thickness", default = "NodeStyle::default_line_thickness", skip_serializing_if = "NodeStyle::is_default_line_thickness")]
+    pub(crate) line_thickness: u32,
+    #[serde(rename = "background_color", default = "NodeStyle::default_background_color", skip_serializing_if = "NodeStyle::is_default_background_color")]
+    pub(crate) background_color: UmlColor,
+    #[serde(rename = "round_corner", default = "NodeStyle::default_round_corner", skip_serializing_if = "NodeStyle::is_default_round_corner")]
+    pub(crate) round_corner: u32,
+}
+
+impl NodeStyle {
+    pub fn new() -> Self {
+        Self {
+            round_corner: Self::default_round_corner(),
+            line_color: Self::default_line_color(),
+            line_thickness: Self::default_line_thickness(),
+            background_color: Self::default_background_color(),
+        }
+    }
+
+    pub fn with_line_color(mut self, color: UmlColor) -> Self {
+        self.line_color = color;
+        self
+    }
+
+    pub fn with_line_thickness(mut self, v: u32) -> Self {
+        self.line_thickness = v;
+        self
+    }
+
+    pub fn with_background_color(mut self, color: UmlColor) -> Self {
+        self.background_color = color;
+        self
+    }
+
+    pub fn with_round_corner(mut self, v: u32) -> Self {
+        self.round_corner = v;
+        self
+    }
+}
+
+impl NodeStyle {
+    pub fn line_color(&self) -> &UmlColor {
+        &self.line_color
+    }
+
+    pub fn line_thickness(&self) -> u32 {
+        self.line_thickness
+    }
+
+    pub fn background_color(&self) -> &UmlColor {
+        &self.background_color
+    }
+
+    pub fn round_corner(&self) -> u32 {
+        self.round_corner
+    }
+}
+
+/// Serde stuff
+#[allow(dead_code)]
+impl NodeStyle {
+    #[inline] fn default_line_color() -> UmlColor { UmlColor::Black }
+    #[inline] fn default_line_thickness() -> u32 { 10 }
+    #[inline] fn default_background_color() -> UmlColor { UmlColor::White }
+    #[inline] fn default_round_corner() -> u32 { 0 }
+    #[inline] fn is_default_line_color(value: &UmlColor) -> bool { value == &Self::default_line_color() }
+    #[inline] fn is_default_line_thickness(value: &u32) -> bool { value == &Self::default_line_thickness() }
+    #[inline] fn is_default_background_color(value: &UmlColor) -> bool { value == &Self::default_background_color() }
+    #[inline] fn is_default_round_corner(value: &u32) -> bool { value == &Self::default_round_corner() }
+}
+
+impl Default for NodeStyle {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Configuration object controlling the visual appearance of RDF graphs.
 ///
 /// This struct allows customization of node and edge styles, labels, and shapes for different RDF term types.
