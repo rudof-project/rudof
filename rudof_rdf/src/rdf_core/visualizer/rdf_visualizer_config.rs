@@ -11,11 +11,13 @@ const DEFAULT_PREDICATE_TEXT: &str = "pred";
 const DEFAULT_OBJECT_TEXT: &str = "obj";
 
 /// Enum representing the available UML node shapes for visualization.
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Default)]
+#[serde(rename = "snake_case")]
 pub enum UmlShape {
     /// Cloud shape.
     Cloud,
     /// Rectangle shape.
+    #[default]
     Rectangle,
 }
 
