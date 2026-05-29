@@ -53,8 +53,9 @@ impl IndexHandle {
 
     /// `true` if the index files already exist on disk (used to skip the indexing step on repeated runs).
     pub fn is_built(&self) -> bool {
-        // QLever writes a `<name>.meta` file at the very end of indexing, along with several `*.permutation` files.
-        self.dir.join(format!("{}.meta", self.name)).exists()
+        // QLever writes `<name>.meta-data.json` last, after every permutation and the vocabulary are flushed,
+        // so its presence is a reliable "indexing finished" marker.
+        self.dir.join(format!("{}.meta-data.json", self.name)).exists()
     }
 }
 
@@ -472,7 +473,7 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let handle = IndexHandle::new(tmp.path(), "default");
         assert!(!handle.is_built());
-        std::fs::write(tmp.path().join("default.meta"), b"").unwrap();
+        std::fs::write(tmp.path().join("default.meta-data.json"), b"{}").unwrap();
         assert!(handle.is_built());
     }
 }
