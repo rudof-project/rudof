@@ -3,7 +3,7 @@ use crate::{
         Any, AsyncRDF, Matcher, NeighsRDF, Rdf,
         query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions, VarName},
     },
-    rdf_impl::SparqlEndpointError,
+    rdf_impl::OxigraphEndpointError,
 };
 use colored::*;
 use oxrdf::{
@@ -23,8 +23,8 @@ use std::{collections::HashSet, fmt::Display, hash::Hash, str::FromStr, sync::Ar
 use tokio::sync::RwLock;
 use url::Url;
 
-/// Type alias for Result with SparqlEndpointError.
-type Result<A> = std::result::Result<A, SparqlEndpointError>;
+/// Type alias for Result with OxigraphEndpointError.
+type Result<A> = std::result::Result<A, OxigraphEndpointError>;
 
 /// A SPARQL endpoint client that implements the SRDF interface.
 ///
@@ -37,7 +37,7 @@ type Result<A> = std::result::Result<A, SparqlEndpointError>;
 /// - Pre-allocates collections when size is known
 /// - Caches HTTP clients with appropriate headers for each format
 #[derive(Debug, Clone)]
-pub struct SparqlEndpoint {
+pub struct OxigraphEndpoint {
     /// The IRI of the SPARQL endpoint.
     endpoint_iri: IriS,
 
@@ -51,7 +51,7 @@ pub struct SparqlEndpoint {
     construct_clients: Arc<RwLock<HashMap<QueryResultFormat, Arc<reqwest::Client>>>>,
 }
 
-impl PartialEq for SparqlEndpoint {
+impl PartialEq for OxigraphEndpoint {
     /// Two endpoints are equal if they have the same IRI.
     ///
     /// Note: This compares only the endpoint IRI, not the prefix maps or clients.
@@ -60,16 +60,16 @@ impl PartialEq for SparqlEndpoint {
     }
 }
 
-impl Hash for SparqlEndpoint {
+impl Hash for OxigraphEndpoint {
     /// Hash based on the endpoint IRI.
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.endpoint_iri.hash(state);
     }
 }
 
-impl Eq for SparqlEndpoint {}
+impl Eq for OxigraphEndpoint {}
 
-impl Serialize for SparqlEndpoint {
+impl Serialize for OxigraphEndpoint {
     /// Serialize only the endpoint IRI and prefix map.
     ///
     /// HTTP clients are not serialized as they cannot be meaningfully serialized.
@@ -84,7 +84,7 @@ impl Serialize for SparqlEndpoint {
     }
 }
 
-impl SparqlEndpoint {
+impl OxigraphEndpoint {
     /// Creates a new SPARQL endpoint with the given IRI and prefix map.
     ///
     /// This initializes HTTP clients with appropriate headers for each result format.
@@ -101,18 +101,18 @@ impl SparqlEndpoint {
     /// # Examples
     ///
     /// ```
-    /// use rudof_rdf::rdf_impl::SparqlEndpoint;
+    /// use rudof_rdf::rdf_impl::OxigraphEndpoint;
     /// use rudof_iri::IriS;
     /// use prefixmap::PrefixMap;
     ///
     /// let iri = IriS::new_unchecked("https://dbpedia.org/sparql");
     /// let prefixmap = PrefixMap::new();
-    /// let endpoint = SparqlEndpoint::new(&iri, &prefixmap);
+    /// let endpoint = OxigraphEndpoint::new(&iri, &prefixmap);
     /// ```
-    pub fn new(iri: &IriS, prefixmap: &PrefixMap) -> Result<SparqlEndpoint> {
+    pub fn new(iri: &IriS, prefixmap: &PrefixMap) -> Result<OxigraphEndpoint> {
         let client = Arc::new(sparql_client()?);
 
-        Ok(SparqlEndpoint {
+        Ok(OxigraphEndpoint {
             endpoint_iri: iri.clone(),
             prefixmap: Arc::new(prefixmap.clone()),
             client,
@@ -142,12 +142,12 @@ impl SparqlEndpoint {
     /// # Examples
     ///
     /// ```
-    /// use rudof_rdf::rdf_impl::SparqlEndpoint;
+    /// use rudof_rdf::rdf_impl::OxigraphEndpoint;
     ///
-    /// let wikidata = SparqlEndpoint::wikidata();
+    /// let wikidata = OxigraphEndpoint::wikidata();
     /// ```
-    pub fn wikidata() -> Result<SparqlEndpoint> {
-        SparqlEndpoint::new(
+    pub fn wikidata() -> Result<OxigraphEndpoint> {
+        OxigraphEndpoint::new(
             &IriS::new_unchecked("https://query.wikidata.org/sparql"),
             &PrefixMap::wikidata(),
         )
@@ -164,14 +164,14 @@ impl SparqlEndpoint {
     /// # Examples
     ///
     /// ```no_run
-    /// use rudof_rdf::rdf_impl::SparqlEndpoint;
+    /// use rudof_rdf::rdf_impl::OxigraphEndpoint;
     /// use prefixmap::PrefixMap;
     ///
-    /// let endpoint = SparqlEndpoint::wikidata();
+    /// let endpoint = OxigraphEndpoint::wikidata();
     /// let custom_prefixmap = PrefixMap::new();
     /// let endpoint = endpoint.unwrap().with_prefixmap(custom_prefixmap);
     /// ```
-    pub fn with_prefixmap(mut self, pm: PrefixMap) -> SparqlEndpoint {
+    pub fn with_prefixmap(mut self, pm: PrefixMap) -> OxigraphEndpoint {
         self.prefixmap = Arc::new(pm);
         self
     }
@@ -214,11 +214,11 @@ impl SparqlEndpoint {
     /// # Examples
     ///
     /// ```no_run
-    /// use rudof_rdf::rdf_impl::SparqlEndpoint;
+    /// use rudof_rdf::rdf_impl::OxigraphEndpoint;
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    ///     let endpoint = SparqlEndpoint::wikidata()?;
+    ///     let endpoint = OxigraphEndpoint::wikidata()?;
     ///     let query = "SELECT ?item WHERE { ?item wdt:P31 wd:Q5 } LIMIT 10";
     ///
     ///     let results = endpoint.query_select_async(query).await?;
@@ -264,12 +264,12 @@ impl SparqlEndpoint {
     /// # Examples
     ///
     /// ```no_run
-    /// use rudof_rdf::rdf_impl::SparqlEndpoint;
+    /// use rudof_rdf::rdf_impl::OxigraphEndpoint;
     /// use rudof_rdf::rdf_core::query::QueryResultFormat;
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    ///     let endpoint = SparqlEndpoint::wikidata()?;
+    ///     let endpoint = OxigraphEndpoint::wikidata()?;
     ///     let query = "CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o } LIMIT 10";
     ///
     ///     let turtle = endpoint
@@ -336,11 +336,11 @@ impl SparqlEndpoint {
     /// # Examples
     ///
     /// ```no_run
-    /// use rudof_rdf::rdf_impl::SparqlEndpoint;
+    /// use rudof_rdf::rdf_impl::OxigraphEndpoint;
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    ///     let endpoint = SparqlEndpoint::wikidata()?;
+    ///     let endpoint = OxigraphEndpoint::wikidata()?;
     ///
     ///     // This should always be true: Wikidata has triples
     ///     let query = "ASK { ?s ?p ?o }";
@@ -356,8 +356,8 @@ impl SparqlEndpoint {
     }
 }
 
-impl FromStr for SparqlEndpoint {
-    type Err = SparqlEndpointError;
+impl FromStr for OxigraphEndpoint {
+    type Err = OxigraphEndpointError;
 
     /// Parses a SPARQL endpoint from a string.
     ///
@@ -379,7 +379,7 @@ impl FromStr for SparqlEndpoint {
             let iri_s = IriS::from_str(&iri_str[1])?;
             let client = Arc::new(sparql_client()?);
 
-            Ok(SparqlEndpoint {
+            Ok(OxigraphEndpoint {
                 endpoint_iri: iri_s,
                 prefixmap: Arc::new(PrefixMap::new()),
                 client,
@@ -388,21 +388,21 @@ impl FromStr for SparqlEndpoint {
         } else {
             // Try to match predefined endpoint names
             match s.to_lowercase().as_str() {
-                "wikidata" => SparqlEndpoint::wikidata(),
-                name => Err(SparqlEndpointError::UnknownEndpointName { name: name.to_string() }),
+                "wikidata" => OxigraphEndpoint::wikidata(),
+                name => Err(OxigraphEndpointError::UnknownEndpointName { name: name.to_string() }),
             }
         }
     }
 }
 
-impl Rdf for SparqlEndpoint {
+impl Rdf for OxigraphEndpoint {
     type IRI = OxNamedNode;
     type BNode = OxBlankNode;
     type Literal = OxLiteral;
     type Subject = OxSubject;
     type Term = OxTerm;
     type Triple = OxTriple;
-    type Err = SparqlEndpointError;
+    type Err = OxigraphEndpointError;
 
     /// Resolves a prefix and local name to a full IRI.
     fn resolve_prefix_local(&self, prefix: &str, local: &str) -> std::result::Result<IriS, prefixmap::PrefixMapError> {
@@ -441,13 +441,13 @@ impl Rdf for SparqlEndpoint {
     }
 }
 
-impl AsyncRDF for SparqlEndpoint {
+impl AsyncRDF for OxigraphEndpoint {
     type IRI = OxNamedNode;
     type BNode = OxBlankNode;
     type Literal = OxLiteral;
     type Subject = OxSubject;
     type Term = OxTerm;
-    type Err = SparqlEndpointError;
+    type Err = OxigraphEndpointError;
 
     /// Retrieves all predicates for a given subject.
     ///
@@ -514,7 +514,7 @@ impl AsyncRDF for SparqlEndpoint {
 // NeighsRDF is only available on non-WASM platforms because it requires
 // synchronous iteration, which is not possible in WASM environments
 #[cfg(not(target_family = "wasm"))]
-impl NeighsRDF for SparqlEndpoint {
+impl NeighsRDF for OxigraphEndpoint {
     /// Returns an iterator over all triples in the endpoint.
     ///
     /// This is equivalent to `SELECT * WHERE { ?s ?p ?o }`.
@@ -535,12 +535,12 @@ impl NeighsRDF for SparqlEndpoint {
     /// # Examples
     ///
     /// ```no_run
-    /// use rudof_rdf::rdf_impl::SparqlEndpoint;
+    /// use rudof_rdf::rdf_impl::OxigraphEndpoint;
     /// use rudof_rdf::rdf_core::{Any, NeighsRDF};
     /// use oxrdf::NamedNode;
     ///
     /// fn main() -> Result<(), Box<dyn std::error::Error>> {
-    ///     let endpoint = SparqlEndpoint::wikidata()?;
+    ///     let endpoint = OxigraphEndpoint::wikidata()?;
     ///
     ///     let predicate = NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")?;
     ///     let mut triples = endpoint.triples_matching(&Any, &predicate, &Any)?;
@@ -618,7 +618,7 @@ impl NeighsRDF for SparqlEndpoint {
 // On native platforms, these sync methods use tokio::runtime to run
 // the async implementations.
 #[cfg(not(target_family = "wasm"))]
-impl QueryRDF for SparqlEndpoint {
+impl QueryRDF for OxigraphEndpoint {
     /// Executes a SPARQL CONSTRUCT query synchronously.
     ///
     /// This is a blocking wrapper around `query_construct_async`.
@@ -629,7 +629,7 @@ impl QueryRDF for SparqlEndpoint {
     /// Creates a new runtime for each call. For better performance in
     /// async contexts, use `query_construct_async` directly.
     fn query_construct(&self, query: &str, format: &QueryResultFormat) -> Result<String> {
-        let runtime = tokio::runtime::Runtime::new().map_err(|e| SparqlEndpointError::ParsingBody {
+        let runtime = tokio::runtime::Runtime::new().map_err(|e| OxigraphEndpointError::ParsingBody {
             body: format!("Failed to create runtime: {}", e),
         })?;
 
@@ -646,7 +646,7 @@ impl QueryRDF for SparqlEndpoint {
     /// Creates a new runtime for each call. For better performance in
     /// async contexts, use `query_select_async` directly.
     fn query_select(&self, query: &str) -> Result<QuerySolutions<Self>> {
-        let runtime = tokio::runtime::Runtime::new().map_err(|e| SparqlEndpointError::ParsingBody {
+        let runtime = tokio::runtime::Runtime::new().map_err(|e| OxigraphEndpointError::ParsingBody {
             body: format!("Failed to create runtime: {}", e),
         })?;
 
@@ -663,7 +663,7 @@ impl QueryRDF for SparqlEndpoint {
     /// Creates a new runtime for each call. For better performance in
     /// async contexts, use `query_ask_async` directly.
     fn query_ask(&self, query: &str) -> Result<bool> {
-        let runtime = tokio::runtime::Runtime::new().map_err(|e| SparqlEndpointError::ParsingBody {
+        let runtime = tokio::runtime::Runtime::new().map_err(|e| OxigraphEndpointError::ParsingBody {
             body: format!("Failed to create runtime: {}", e),
         })?;
 
@@ -677,7 +677,7 @@ impl QueryRDF for SparqlEndpoint {
 ///
 /// Uses iterators with `collect()` for efficient conversion.
 #[inline]
-fn cnv_query_solution(qs: &OxQuerySolution) -> QuerySolution<SparqlEndpoint> {
+fn cnv_query_solution(qs: &OxQuerySolution) -> QuerySolution<OxigraphEndpoint> {
     let vars: Vec<_> = qs.variables().iter().map(|v| VarName::new(v.as_str())).collect();
     let vals: Vec<_> = qs.values().to_vec();
     QuerySolution::new(vars, vals)
@@ -818,7 +818,7 @@ fn parse_sparql_ask_results(body: &str) -> Result<bool> {
 
     match json_parser.for_reader(body.as_bytes())? {
         ReaderQueryResultsParserOutput::Boolean(b) => Ok(b),
-        _ => Err(SparqlEndpointError::ParsingBody {
+        _ => Err(OxigraphEndpointError::ParsingBody {
             body: format!("Expected boolean ASK result, got: {}", body),
         }),
     }
@@ -847,11 +847,11 @@ fn parse_sparql_json_results(body: &str) -> Result<Vec<OxQuerySolution>> {
         // Collect all solutions, propagating any parsing errors
         solutions
             .collect::<std::result::Result<Vec<_>, _>>()
-            .map_err(|e| SparqlEndpointError::ParsingBody {
+            .map_err(|e| OxigraphEndpointError::ParsingBody {
                 body: format!("Error parsing solution: {}", e),
             })
     } else {
-        Err(SparqlEndpointError::ParsingBody { body: body.to_string() })
+        Err(OxigraphEndpointError::ParsingBody { body: body.to_string() })
     }
 }
 
@@ -890,12 +890,12 @@ impl Display for SparqlVars {
 fn get_iri_solution(solution: &OxQuerySolution, name: &str) -> Result<OxNamedNode> {
     solution
         .get(name)
-        .ok_or_else(|| SparqlEndpointError::NotFoundInSolution {
+        .ok_or_else(|| OxigraphEndpointError::NotFoundInSolution {
             value: name.to_string(),
             solution: format!("{solution:?}"),
         })
         .and_then(|v| match v {
             OxTerm::NamedNode(n) => Ok(n.clone()),
-            _ => Err(SparqlEndpointError::SPARQLSolutionErrorNoIRI { value: v.clone() }),
+            _ => Err(OxigraphEndpointError::SPARQLSolutionErrorNoIRI { value: v.clone() }),
         })
 }

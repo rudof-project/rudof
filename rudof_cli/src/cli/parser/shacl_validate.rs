@@ -65,14 +65,6 @@ pub struct ShaclValidateArgs {
     )]
     pub base_shapes: Option<String>,
 
-    #[arg(
-        short = 'e',
-        long = "endpoint",
-        value_name = "ENDPOINT",
-        help = "Endpoint with RDF data (URL or name)"
-    )]
-    pub endpoint: Option<String>,
-
     /// Execution mode
     #[arg(
         short = 'm',

@@ -27,14 +27,6 @@ pub struct NodeArgs {
     )]
     pub data_format: DataFormatCli,
 
-    #[arg(
-        short = 'e',
-        long = "endpoint",
-        value_name = "Endpoint",
-        help = "Endpoint with RDF data (URL or name)"
-    )]
-    pub endpoint: Option<String>,
-
     #[arg(short = 'b', long = "base", value_name = "IRI", help = "Base IRI")]
     pub base: Option<String>,
 

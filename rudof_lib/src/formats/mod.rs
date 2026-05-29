@@ -1,3 +1,4 @@
+mod backend;
 mod comparison;
 mod conversion;
 mod data;
@@ -14,6 +15,7 @@ mod shapemap;
 mod shex;
 mod validation;
 
+pub use backend::*;
 pub use comparison::*;
 pub use conversion::*;
 pub use data::*;

@@ -20,10 +20,14 @@ The crate is organized into several key modules:
   - `utils`: Utilities such as regex helpers
   - `visualizer`: Tools for visualizing RDF graphs (UML, styles, etc.)
   - `matcher`, `focus_rdf`, `neighs_rdf`, etc.: Advanced graph navigation and matching
-- rdf_impl: Implementations of RDF storage and access:
-  - `in_memory_graph`: In-memory RDF graph implementation
-  - `sparql_endpoint`: SPARQL endpoint integration
-  - `oxrdf_impl`: Integration with the oxrdf crate
+- `rdf_impl`: Implementations of RDF storage and access:
+  - `oxigraph`: Oxigraph-based backends
+    - `in_memory`: In-memory RDF graph implementation (`OxigraphInMemory`)
+    - `endpoint`: SPARQL endpoint integration (`OxigraphEndpoint`)
+    - `oxrdf_impl`: Integration with the `oxrdf` crate
+  - `qlever`: Locally-launched QLever Docker container backend (`QleverGraphContainer`)
+  - `backend`: `RdfBackend` strategy enum unifying every backend behind a single
+    set of trait impls (`Rdf`, `NeighsRDF`, `QueryRDF`, `FocusRDF`, `BuildRDF`).
 
 ## Dependencies
 

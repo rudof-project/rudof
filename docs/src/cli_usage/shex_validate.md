@@ -159,7 +159,6 @@ Options:
       --base-schema <IRI>         Base Schema (used to resolve relative IRIs in Schema)
       --base-data <IRI>           Base RDF Data IRI (used to resolve relative IRIs in RDF data)
       --reader-mode <MODE>        RDF Reader mode [default: strict] [possible values: lax, strict]
-  -e, --endpoint <NAME>           Endpoint with RDF data (name or URL)
   -r, --result-format <FORMAT>    Ouput result format [default: details] [possible values: details, turtle, ntriples, rdfxml, trig, n3, nquads, compact, json, csv]
       --map-state <FILE>          MapState file name
       --strict-iris               Require <> brackets around IRIs (strict mode). By default bare http://… IRIs are accepted (lax mode).
@@ -170,3 +169,14 @@ Options:
       --force-overwrite           Force overwrite to output file if it already exists
   -h, --help                      Print help
 ```
+
+## Selecting the RDF backend
+
+By default, validation data is loaded into an in-process `memory` graph. Use `--backend` to switch to a QLever Docker container or a remote SPARQL endpoint:
+
+```sh
+rudof shex-validate -s schema.shex -m shapemap.sm --backend qlever data.ttl
+rudof shex-validate -s schema.shex -m shapemap.sm --backend endpoint=https://my.sparql.server/sparql
+```
+
+See the [RDF backend (`--backend`) reference](./backend.md) for full documentation.

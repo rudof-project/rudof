@@ -19,6 +19,7 @@ vocab_term!(XsdVocab, XSD_NON_POSITIVE_INTEGER, "nonPositiveInteger");
 vocab_term!(XsdVocab, XSD_DECIMAL, "decimal");
 vocab_term!(XsdVocab, XSD_DOUBLE, "double");
 vocab_term!(XsdVocab, XSD_LONG, "long");
+vocab_term!(XsdVocab, XSD_INT, "int");
 vocab_term!(XsdVocab, XSD_BYTE, "byte");
 vocab_term!(XsdVocab, XSD_FLOAT, "float");
 vocab_term!(XsdVocab, XSD_SHORT, "short");

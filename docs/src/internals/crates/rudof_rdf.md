@@ -15,9 +15,11 @@ The crate is organized into several key modules:
   - `visualizer`: Tools for visualizing RDF graphs (UML, styles, etc.)
   - `matcher`, `focus_rdf`, `neighs_rdf`, etc.: Advanced graph navigation and matching
 - **rdf_impl**: Implementations of RDF storage and access:
-  - `in_memory_graph`: In-memory RDF graph implementation
-  - `sparql_endpoint`: SPARQL endpoint integration
-  - `oxrdf_impl`: Integration with the `oxrdf` crate
+  - `oxigraph`: Oxigraph-based backends
+    - `in_memory`: In-memory RDF graph implementation (`OxigraphInMemory`)
+    - `endpoint`: SPARQL endpoint integration (`OxigraphEndpoint`)
+    - `oxrdf_impl`: Integration with the `oxrdf` crate
+  - `qlever`: Locally-launched QLever Docker container backend (`QleverGraphContainer`)
 
 ## Dependents and dependencies
 
@@ -38,6 +40,12 @@ This create depends mostly on:
   - `oxttl`
   - `reqwest`
   - `tokio`
+- External (only when the `qlever` feature is enabled):
+  - `testcontainers`
+  - `bollard`
+  - `nix`
+  - `futures`
+  - `tracing`
 
 This crate is a foundational dependency for many other Rudof crates, including:
 
@@ -47,9 +55,62 @@ This crate is a foundational dependency for many other Rudof crates, including:
 - [`shex_ast`](./shex_ast.md), [`shex_validation`](./shex_validation.md)
 - [`shex_testsuite`](./shex_testsuite.md), [`shapes_comparator`](./shapes_comparator.md), [`shapes_converter`](./shapes_converter.md), [`sparql_service`](./sparql_service.md), and others.
 
+## Cargo features
+
+| Feature              | Pulls in                                                                            | Notes                                                                                                                            |
+|----------------------|-------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| `sparql` (default)   | `oxigraph`, `reqwest`, `tokio`, `spargebra`, `sparesults`                           | Enables `OxigraphEndpoint` (remote SPARQL client).                                                                               |
+| `qlever`             | implies `sparql`; adds `testcontainers`, `bollard`, `nix`, `futures`, `tracing`     | Enables the `qlever` submodule and re-exports (`QleverGraphContainer`, `QleverConfig`, `QleverError`, …).                        |
+| `qlever-docker-tests`| implies `qlever`                                                                    | Gates the Docker-dependent integration tests under `rdf_impl/tests/qlever_docker.rs`. Compiles without Docker; running needs it. |
+
+The `qlever` family of features is gated on `cfg(not(target_family = "wasm"))`.
+
+## Backends in `rdf_impl`
+
+Every backend exposes the same trait surface (`Rdf`, `NeighsRDF`, `QueryRDF`, `FocusRDF`, `BuildRDF`, `AsyncRDF`), so higher-level code can swap one for another with minimal awareness of where the data actually lives.
+
+### `oxigraph` (`OxigraphInMemory` and `OxigraphEndpoint`)
+
+Both backends live under `rdf_impl/oxigraph/`.
+
+- `OxigraphInMemory`: `oxrdf::Graph` plus an optional Oxigraph `Store` for SPARQL evaluation. Default backend everywhere.
+- `OxigraphEndpoint`: read-only client for a remote SPARQL endpoint. Caches HTTP clients per `QueryResultFormat`.
+
+The `oxrdf_impl` submodule provides the `oxrdf`-typed implementations of the `rdf_core` traits that both Oxigraph backends share.
+
+### `qlever` (`QleverGraphContainer`)
+
+Available when the `qlever` feature is enabled (and on non-WASM targets). The backend wraps a locally-launched `QLever` Docker container and exposes it as just another `Rdf` implementation. From the caller's perspective it is interchangeable with `OxigraphInMemory`: it produces the same `oxrdf` types and implements the same trait set, but the data lives in a QLever index on disk and is queried via the container's HTTP SPARQL endpoint.
+
+#### Module layout (`rdf_impl/qlever/`)
+
+| File                | What it owns                                                                                                                                                              |
+|---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `mod.rs`            | Public re-exports.                                                            |
+| `config.rs`         | `QleverConfig`, `InputFile`, `NativeFormat`. The config maps 1:1 onto QLever's `IndexBuilderMain` / `ServerMain` flags (`-m`, `-c`, `-e`, `-j`, `-P`, `-T`, …).           |
+| `cli_probe.rs`      | Detects whether the running image exposes the v1 (`IndexBuilderMain` / `ServerMain`) or v2 (`qlever-index` / `qlever-server`) CLI. Also pings Docker and pulls the image. |
+| `index_builder.rs`  | One-shot `bollard` invocations that build (or skip building) the on-disk index. Implements `IndexHandle::is_built` (checks for `<name>.meta`) and `convert_to_native`.  |
+| `server.rs`         | `QleverServer`, long-running container managed via `testcontainers-rs`. Owns port mapping and the HTTP readiness probe.                                                  |
+| `graph_container.rs`| `QleverGraphContainer`, the public façade. Composes an `OxigraphEndpoint` pointed at the container so the `NeighsRDF` / `QueryRDF` impls are just SPARQL-over-HTTP.      |
+| `error.rs`          | `QleverError` covering pre-flight, Docker, container, HTTP, and format-conversion errors.                                                                                 |
+
+Key choices:
+
+- **Idempotent indexing.** The index dir holds a `<name>.meta` marker file. `IndexHandle::is_built()` checks for it before re-running QLever, so repeated `rudof` invocations skip indexing.
+- **Multi-file support.** The primary constructor is `from_paths(paths, format, config)`: it accepts any number of file-system paths and feeds them to QLever's `IndexBuilderMain` in a single pass (one `-f / -F / -g` triple per file). `from_path` and `from_reader` are thin shims over `from_paths`.
+- **Optional explicit format.** When `from_paths` is called with `Some(&RDFFormat)`, that format overrides the per-file extension sniffing. When `None`, format is guessed per path.
+- **Format coverage by transparent conversion.** QLever's `IndexBuilderMain` only accepts `ttl` / `nt` / `nq` natively (`NativeFormat`). Anything else is streamed through `oxrdfio` via `convert_to_native` into a shared conversion dir (fingerprinted from the input paths), then handed to QLever. The target format is chosen to preserve quad information: quad-bearing sources (`TriG`, `JSON-LD`) are written as N-Quads (`.nq`); triple-only non-native sources (`RDF/XML`, `N3`) are written as N-Triples (`.nt`).
+- **Read-only.** `BuildRDF::add_triple`, `remove_triple`, `add_type` and `add_bnode` all return `QleverError::ReadOnly`. `BuildRDF::empty()` panics by the moment.
+- **Sync trait surface, async work underneath.** Methods on `Rdf` / `NeighsRDF` / `QueryRDF` are synchronous, but the heavy lifting (Docker, HTTP) is async. `QleverGraphContainer` therefore exposes async constructors (`from_paths`, `from_path`, `from_reader`, `open`) and async variants of the SPARQL methods (`query_select_async`, `query_construct_async`, `query_ask_async`) in addition to the trait-required sync methods, which delegate through the shared `OxigraphEndpoint`.
+- **Resource ownership.** The `server` field is wrapped in `Arc` so clones cheaply share both the container and the HTTP keep-alive pool. `Drop` tears down the container automatically (via `testcontainers`); the on-disk index is removed only when `auto_delete_if_created` was set and this run actually created it.
+
+#### Configuring via TOML
+
+Setting `[qlever]` in the rudof config TOML deserializes into a `QleverConfig`. The struct is exposed through `RdfDataConfig::qlever` and is only present when the `qlever` feature is compiled in.
+
 ## Usage
 
-The following examples illustrate just one of the many features `rdf` provides — fluent parser composition:
+The following examples illustrate just one of the many features `rudof_rdf` provides (fluent parser composition):
 
 ### Composing Parsers with Fluent API
 
@@ -70,7 +131,7 @@ use rudof_rdf::rdf_core::{
     },
     term::{Object, literal::Lang},
 };
-use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
 use rudof_rdf::rdf_core::RDFFormat;
 use rudof_iri::IriS;
 
@@ -131,7 +192,7 @@ fn main() {
     "#;
 
     // 1. Parse a Turtle string into an in-memory RDF graph.
-    let graph = InMemoryGraph::from_str(
+    let graph = OxigraphInMemory::from_str(
         turtle,
         &RDFFormat::Turtle,
         None,

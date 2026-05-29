@@ -60,3 +60,14 @@ In the example below, `rudof` will read a SHACL file in Turle and convert it to 
 ```sh
 rudof shacl -s simple_shacl.ttl -r rdfxml -o output.rdf
 ```
+
+## Selecting the RDF backend
+
+By default, SHACL data is loaded into an in-process `memory` graph. Use `--backend` to switch to a QLever Docker container or a remote SPARQL endpoint:
+
+```sh
+rudof shacl -s shapes.ttl --backend qlever data.ttl
+rudof shacl -s shapes.ttl --backend endpoint=https://my.sparql.server/sparql
+```
+
+See the [RDF backend (`--backend`) reference](./backend.md) for full documentation.

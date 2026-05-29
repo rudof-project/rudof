@@ -2,30 +2,30 @@ use crate::error::ValidationError;
 use crate::validator::store::Store;
 use prefixmap::PrefixMap;
 use rudof_iri::iri;
-use rudof_rdf::rdf_impl::SparqlEndpoint;
+use rudof_rdf::rdf_impl::OxigraphEndpoint;
 
 #[derive(Debug, Clone)]
 pub struct Endpoint {
-    store: SparqlEndpoint,
+    store: OxigraphEndpoint,
 }
 
 impl Endpoint {
     pub fn new(iri: &str, pm: &PrefixMap) -> Result<Self, ValidationError> {
-        match SparqlEndpoint::new(&iri!(iri), pm) {
+        match OxigraphEndpoint::new(&iri!(iri), pm) {
             Ok(store) => Ok(Self { store }),
             Err(e) => Err(e.into()),
         }
     }
 }
 
-impl From<SparqlEndpoint> for Endpoint {
-    fn from(value: SparqlEndpoint) -> Self {
+impl From<OxigraphEndpoint> for Endpoint {
+    fn from(value: OxigraphEndpoint) -> Self {
         Self { store: value }
     }
 }
 
-impl Store<SparqlEndpoint> for Endpoint {
-    fn store(&self) -> &SparqlEndpoint {
+impl Store<OxigraphEndpoint> for Endpoint {
+    fn store(&self) -> &OxigraphEndpoint {
         &self.store
     }
 }

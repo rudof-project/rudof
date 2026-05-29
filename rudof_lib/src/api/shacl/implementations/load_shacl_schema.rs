@@ -5,7 +5,7 @@ use crate::{
     utils::get_base_iri,
 };
 use rudof_iri::{IriS, MimeType};
-use rudof_rdf::rdf_impl::InMemoryGraph;
+use rudof_rdf::rdf_impl::OxigraphInMemory;
 use shacl::error::IRError;
 use shacl::rdf::ShaclParser;
 use sparql_service::RdfData;
@@ -55,7 +55,7 @@ fn read_shacl_schema(
             message: format!("Failed to open shacl schema source '{}': {error}", schema.source_name()),
         })?;
 
-    let rdf_graph = InMemoryGraph::from_reader(
+    let rdf_graph = OxigraphInMemory::from_reader(
         &mut schema_reader,
         &schema.source_name(),
         &schema_format.try_into()?,

@@ -1,4 +1,6 @@
-use crate::cli::parser::{Command as CliCommand, CommonArgs, CommonArgsAll, CommonArgsOutputForceOverWrite};
+use crate::cli::parser::{
+    Command as CliCommand, CommonArgs, CommonArgsAll, CommonArgsNoBackend, CommonArgsOutputForceOverWrite,
+};
 use crate::commands::{
     CompareCommand, CompletionCommand, ConvertCommand, DataCommand, DctapCommand, GenerateCommand, MaterializeCommand,
     McpCommand, NodeCommand, PgschemaCommand, PgschemaValidateCommand, QueryCommand, RdfConfigCommand, ServiceCommand,
@@ -137,12 +139,12 @@ fn extract_common(cmd: &CliCommand) -> CommonArgs {
             output: a.common.output.clone(),
             force_overwrite: a.common.force_overwrite,
         }),
-        CliCommand::Shex(a) => CommonArgs::All(CommonArgsAll {
+        CliCommand::Shex(a) => CommonArgs::NoBackend(CommonArgsNoBackend {
             config: a.common.config.clone(),
             output: a.common.output.clone(),
             force_overwrite: a.common.force_overwrite,
         }),
-        CliCommand::Pgschema(a) => CommonArgs::All(CommonArgsAll {
+        CliCommand::Pgschema(a) => CommonArgs::NoBackend(CommonArgsNoBackend {
             config: a.common.config.clone(),
             output: a.common.output.clone(),
             force_overwrite: a.common.force_overwrite,
@@ -151,53 +153,59 @@ fn extract_common(cmd: &CliCommand) -> CommonArgs {
             config: a.common.config.clone(),
             output: a.common.output.clone(),
             force_overwrite: a.common.force_overwrite,
+            backend: a.common.backend.clone(),
         }),
         CliCommand::ShexValidate(a) => CommonArgs::All(CommonArgsAll {
             config: a.common.config.clone(),
             output: a.common.output.clone(),
             force_overwrite: a.common.force_overwrite,
+            backend: a.common.backend.clone(),
         }),
         CliCommand::ShaclValidate(a) => CommonArgs::All(CommonArgsAll {
             config: a.common.config.clone(),
             output: a.common.output.clone(),
             force_overwrite: a.common.force_overwrite,
+            backend: a.common.backend.clone(),
         }),
         CliCommand::Data(a) => CommonArgs::All(CommonArgsAll {
             config: a.common.config.clone(),
             output: a.common.output.clone(),
             force_overwrite: a.common.force_overwrite,
+            backend: a.common.backend.clone(),
         }),
         CliCommand::Node(a) => CommonArgs::All(CommonArgsAll {
             config: a.common.config.clone(),
             output: a.common.output.clone(),
             force_overwrite: a.common.force_overwrite,
+            backend: a.common.backend.clone(),
         }),
         CliCommand::Shacl(a) => CommonArgs::All(CommonArgsAll {
             config: a.common.config.clone(),
             output: a.common.output.clone(),
             force_overwrite: a.common.force_overwrite,
+            backend: a.common.backend.clone(),
         }),
-        CliCommand::DCTap(a) => CommonArgs::All(CommonArgsAll {
+        CliCommand::DCTap(a) => CommonArgs::NoBackend(CommonArgsNoBackend {
             config: a.common.config.clone(),
             output: a.common.output.clone(),
             force_overwrite: a.common.force_overwrite,
         }),
-        CliCommand::Convert(a) => CommonArgs::All(CommonArgsAll {
+        CliCommand::Convert(a) => CommonArgs::NoBackend(CommonArgsNoBackend {
             config: a.common.config.clone(),
             output: a.common.output.clone(),
             force_overwrite: a.common.force_overwrite,
         }),
-        CliCommand::Compare(a) => CommonArgs::All(CommonArgsAll {
+        CliCommand::Compare(a) => CommonArgs::NoBackend(CommonArgsNoBackend {
             config: a.common.config.clone(),
             output: a.common.output.clone(),
             force_overwrite: a.common.force_overwrite,
         }),
-        CliCommand::RdfConfig(a) => CommonArgs::All(CommonArgsAll {
+        CliCommand::RdfConfig(a) => CommonArgs::NoBackend(CommonArgsNoBackend {
             config: a.common.config.clone(),
             output: a.common.output.clone(),
             force_overwrite: a.common.force_overwrite,
         }),
-        CliCommand::Service(a) => CommonArgs::All(CommonArgsAll {
+        CliCommand::Service(a) => CommonArgs::NoBackend(CommonArgsNoBackend {
             config: a.common.config.clone(),
             output: a.common.output.clone(),
             force_overwrite: a.common.force_overwrite,
@@ -206,13 +214,14 @@ fn extract_common(cmd: &CliCommand) -> CommonArgs {
             config: a.common.config.clone(),
             output: a.common.output.clone(),
             force_overwrite: a.common.force_overwrite,
+            backend: a.common.backend.clone(),
         }),
-        CliCommand::Generate(a) => CommonArgs::All(CommonArgsAll {
+        CliCommand::Generate(a) => CommonArgs::NoBackend(CommonArgsNoBackend {
             config: a.common.config.clone(),
             output: a.common.output.clone(),
             force_overwrite: a.common.force_overwrite,
         }),
-        CliCommand::Materialize(a) => CommonArgs::All(CommonArgsAll {
+        CliCommand::Materialize(a) => CommonArgs::NoBackend(CommonArgsNoBackend {
             config: a.common.config.clone(),
             output: a.common.output.clone(),
             force_overwrite: a.common.force_overwrite,

@@ -1,4 +1,4 @@
-use crate::cli::parser::CommonArgsAll;
+use crate::cli::parser::CommonArgsNoBackend;
 use crate::cli::wrappers::{DataReaderModeCli, ShExFormatCli};
 use clap::Args;
 use rudof_lib::formats::InputSpec;
@@ -86,5 +86,5 @@ pub struct ShexArgs {
     pub compile: Option<bool>,
 
     #[command(flatten)]
-    pub common: CommonArgsAll,
+    pub common: CommonArgsNoBackend,
 }

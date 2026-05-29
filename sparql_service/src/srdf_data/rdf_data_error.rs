@@ -1,14 +1,11 @@
 use std::io;
 
-use oxigraph::{
-    sparql::{QueryEvaluationError, SparqlSyntaxError},
-    store::StorageError,
-};
+use oxigraph::sparql::{QueryEvaluationError, SparqlSyntaxError};
 use thiserror::Error;
 
 use rudof_rdf::{
     rdf_core::RDFFormat,
-    rdf_impl::{InMemoryGraphError, SparqlEndpointError},
+    rdf_impl::{OxigraphEndpointError, RdfBackendError},
 };
 
 #[derive(Debug, Error)]
@@ -26,7 +23,7 @@ pub enum RdfDataError {
     #[error(transparent)]
     SRDFSparqlError {
         #[from]
-        err: SparqlEndpointError,
+        err: OxigraphEndpointError,
     },
 
     #[error("Failed to create SPARQL endpoint {name} with {url}: {err}")]
@@ -34,11 +31,16 @@ pub enum RdfDataError {
         name: String,
         url: String,
         #[source]
-        err: Box<SparqlEndpointError>,
+        err: Box<OxigraphEndpointError>,
     },
 
-    #[error("RDF graph error: {err}")]
-    SRDFGraphError { err: Box<InMemoryGraphError> },
+    /// Any failure surfaced through the `RdfBackend` strategy enum. Wraps
+    /// the structured per-backend error so callers can downcast if needed.
+    #[error(transparent)]
+    Backend {
+        #[from]
+        err: Box<RdfBackendError>,
+    },
 
     #[error(transparent)]
     IOError {
@@ -48,12 +50,6 @@ pub enum RdfDataError {
 
     #[error("Serializing RDF Data as {format}: {error}")]
     Serializing { error: String, format: RDFFormat },
-
-    #[error(transparent)]
-    StorageError {
-        #[from]
-        err: StorageError,
-    },
 
     #[error(transparent)]
     SparqlParseError {
@@ -70,6 +66,12 @@ pub enum RdfDataError {
     #[error("Trying to create a BNode on RDF data without a graph")]
     BNodeNoGraph,
 
-    #[error("Store not initialized")]
-    StoreNotInitialized,
+    #[error("RDF data backend is not in-memory; cannot add triples to {backend}")]
+    NotInMemoryBackend { backend: &'static str },
+}
+
+impl From<RdfBackendError> for RdfDataError {
+    fn from(e: RdfBackendError) -> Self {
+        RdfDataError::Backend { err: Box::new(e) }
+    }
 }

@@ -2,7 +2,7 @@
 
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::RDFFormat;
-use rudof_rdf::rdf_impl::{InMemoryGraph, ReaderMode};
+use rudof_rdf::rdf_impl::{OxigraphInMemory, ReaderMode};
 use shex_ast::ir::external_resolver::SchemaExternalResolver;
 use shex_ast::ir::shape_label::ShapeLabel;
 use shex_ast::ir::{map_state::MapState, schema_ir::SchemaIR, semantic_actions_registry::SemanticActionsRegistry};
@@ -39,7 +39,7 @@ fn compile(schema_src: &str, config: &ValidatorConfig) -> SchemaIR {
 fn validate(focus: &str, config: ValidatorConfig) -> bool {
     let compiled = compile(SCHEMA, &config);
     let mut validator = Validator::new(&compiled, &config).expect("validator");
-    let graph = InMemoryGraph::from_str(DATA, &RDFFormat::Turtle, None, &ReaderMode::Strict).expect("parse graph");
+    let graph = OxigraphInMemory::from_str(DATA, &RDFFormat::Turtle, None, &ReaderMode::Strict).expect("parse graph");
     let node = Node::parse(focus, None).expect("parse focus");
     let shape = ShapeLabel::iri(IriS::new_unchecked("http://a.example/Sext"));
     let result = validator

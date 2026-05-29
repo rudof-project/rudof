@@ -92,3 +92,14 @@ rudof query -q wikidata.sparql -e wikidata
 ## Registered endpoints
 
 `rudof` contains a list of registered endpoints like wikidata that can be invoked by their name.
+
+## Selecting the RDF backend
+
+By default, local files are loaded into an in-process `memory` graph. Use `--backend` to load data into a QLever Docker container or to route queries to a remote SPARQL endpoint:
+
+```sh
+rudof query -q my.sparql --backend qlever data.ttl
+rudof query -q my.sparql --backend endpoint=https://my.sparql.server/sparql
+```
+
+See the [RDF backend (`--backend`) reference](./backend.md) for full documentation.

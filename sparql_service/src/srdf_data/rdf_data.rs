@@ -1,140 +1,137 @@
 use super::RdfDataError;
 use colored::*;
-use oxigraph::sparql::{QueryResults, SparqlEvaluator};
-use oxigraph::store::Store;
 use oxrdf::{
     BlankNode as OxBlankNode, Literal as OxLiteral, NamedNode as OxNamedNode, NamedOrBlankNode as OxSubject,
     Term as OxTerm, Triple as OxTriple,
 };
 use prefixmap::PrefixMap;
 use rudof_iri::IriS;
+#[cfg(feature = "qlever")]
+use rudof_rdf::rdf_impl::QleverGraphContainer;
 use rudof_rdf::{
     rdf_core::{
         BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf, RdfDataConfig,
-        query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions, VarName},
+        query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions},
     },
-    rdf_impl::{InMemoryGraph, ReaderMode, SparqlEndpoint},
+    rdf_impl::{OxigraphEndpoint, OxigraphInMemory, RdfBackend, ReaderMode},
 };
 use serde::Serialize;
 use serde::ser::SerializeStruct;
-use sparesults::QuerySolution as SparQuerySolution;
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::io;
 use std::str::FromStr;
-use std::{io, iter};
-use tracing::trace;
 
-/// Generic abstraction that represents RDF Data which can be  behind SPARQL endpoints or an in-memory graph or both
-/// The triples in RdfData are taken as the union of the triples of the endpoints and the in-memory graph
+/// Federation aggregator that pairs a single primary [`RdfBackend`] with an
+/// optional set of secondary SPARQL endpoints.
+///
+/// Triple and SPARQL queries are answered by the primary backend and unioned
+/// with the results of every endpoint registered in `use_endpoints`. The
+/// `endpoints` map is the full catalog (typically populated from
+/// [`RdfDataConfig`]); `use_endpoints` is the subset actually queried.
 #[derive(Clone)]
 pub struct RdfData {
-    /// Current focus node used when parsing
-    focus: Option<OxTerm>,
+    /// Single backend that owns the data. Trait dispatch goes through this.
+    primary: RdfBackend,
 
-    /// A HashMap that associates SPARQL endpoint names with their URLs
-    /// Not all the endpoints in this hashmap are used when querying, one those in `use_endpoints`
-    endpoints: HashMap<String, SparqlEndpoint>,
+    /// Catalog of registered endpoints (e.g. loaded from the TOML config).
+    /// Not queried directly — only those moved into `use_endpoints` are.
+    endpoints: HashMap<String, OxigraphEndpoint>,
 
-    /// Set of endpoints to use when querying
-    use_endpoints: HashMap<String, SparqlEndpoint>,
-
-    /// In-memory graph
-    graph: Option<InMemoryGraph>,
-
-    /// In-memory Store used to access the graph using SPARQL queries
-    store: Option<Store>,
+    /// Endpoints actively unioned with the primary on every query.
+    use_endpoints: HashMap<String, OxigraphEndpoint>,
 }
 
 impl RdfData {
     pub fn new() -> RdfData {
         RdfData {
+            primary: RdfBackend::default(),
             endpoints: HashMap::new(),
             use_endpoints: HashMap::new(),
-            graph: None,
-            store: None,
-            focus: None,
         }
     }
 
+    /// Borrow the primary backend.
+    pub fn backend(&self) -> &RdfBackend {
+        &self.primary
+    }
+
+    /// Mutable borrow of the primary backend.
+    pub fn backend_mut(&mut self) -> &mut RdfBackend {
+        &mut self.primary
+    }
+
+    /// Replace the primary backend.
+    pub fn set_backend(&mut self, backend: RdfBackend) {
+        self.primary = backend;
+    }
+
+    /// Replace the QLever-backed primary. Provided for ergonomic parity with
+    /// `set_backend(RdfBackend::Qlever(g))`.
+    #[cfg(feature = "qlever")]
+    pub fn set_qlever(&mut self, graph: QleverGraphContainer) {
+        self.primary = RdfBackend::Qlever(graph);
+    }
+
     pub fn reset(&mut self) {
-        // We keep the available list of endpoints but we clear the used ones
         self.use_endpoints.clear();
-        self.graph = None;
-        self.store = None;
-        self.focus = None;
+        self.primary = RdfBackend::default();
     }
 
     pub fn with_rdf_data_config(mut self, rdf_data_config: &RdfDataConfig) -> Result<Self, RdfDataError> {
-        // Load endpoints
         if let Some(endpoints) = &rdf_data_config.endpoints {
             for (name, endpoint_description) in endpoints.iter() {
                 let sparql_endpoint =
-                    SparqlEndpoint::new(endpoint_description.query_url(), &endpoint_description.prefixmap()).map_err(
-                        |e| RdfDataError::SRDFSparqlFromEndpointDescriptionError {
+                    OxigraphEndpoint::new(endpoint_description.query_url(), &endpoint_description.prefixmap())
+                        .map_err(|e| RdfDataError::SRDFSparqlFromEndpointDescriptionError {
                             name: name.clone(),
                             url: endpoint_description.query_url().to_string(),
                             err: Box::new(e),
-                        },
-                    )?;
+                        })?;
                 self.add_endpoint(name, sparql_endpoint);
             }
         }
         Ok(self)
     }
 
-    /// Checks if the Store has been initialized
-    ///
-    /// By default, the RDF Data Store is not initialized as it is expensive and is only required for SPARQL queries
+    /// Eagerly populate the embedded SPARQL store on the in-memory primary so
+    /// subsequent `query_select` / `query_ask` calls return real results.
+    /// No-op for SPARQL endpoint and QLever primaries (they answer queries
+    /// over their own remote / on-disk store already).
     pub fn check_store(&mut self) -> Result<(), RdfDataError> {
-        if let Some(graph) = &self.graph {
-            //trace!("Checking RDF store, graph exists, length: {}", graph.len());
-            if self.store.is_none() {
-                //trace!("Initializing RDF store from in-memory graph");
-                let store = Store::new()?;
-                let mut loader = store.bulk_loader();
-                loader.load_quads(graph.quads())?;
-                loader.commit()?;
-                self.store = Some(store);
-                /*trace!(
-                    "RDF store initialized with length: {:?}",
-                    self.store.as_ref().map(|s| s.len())
-                );*/
-            }
+        if let Some(g) = self.primary.as_in_memory_mut() {
+            g.ensure_store().map_err(|e| RdfDataError::Backend {
+                err: Box::new(rudof_rdf::rdf_impl::RdfBackendError::from(e)),
+            })?;
         }
         Ok(())
     }
 
-    /// Creates an RdfData from an in-memory RDF Graph
-    pub fn from_graph(graph: InMemoryGraph) -> Result<RdfData, RdfDataError> {
+    /// Creates an RdfData from an in-memory RDF graph.
+    pub fn from_graph(graph: OxigraphInMemory) -> Result<RdfData, RdfDataError> {
         Ok(RdfData {
+            primary: RdfBackend::InMemory(graph),
             endpoints: HashMap::new(),
-            graph: Some(graph),
-            store: None,
-            focus: None,
             use_endpoints: HashMap::new(),
         })
     }
 
-    // Cleans the values of endpoints and graph
+    /// Cleans the values of endpoints and graph.
     pub fn clean_all(&mut self) {
         self.endpoints.clear();
         self.use_endpoints.clear();
-        self.graph = None
+        self.primary = RdfBackend::default();
     }
 
-    /// Get the in-memory graph
-    pub fn graph(&self) -> Option<&InMemoryGraph> {
-        self.graph.as_ref()
-    }
-
-    /// Gets the PrefixMap from the in-memory graph
+    /// Returns the PrefixMap of the primary backend (empty if the primary
+    /// has no prefixes).
     pub fn graph_prefixmap(&self) -> PrefixMap {
-        self.graph.as_ref().map(|g| g.prefixmap().clone()).unwrap_or_default()
+        <RdfBackend as Rdf>::prefixmap(&self.primary).unwrap_or_default()
     }
 
-    /// Cleans the in-memory graph
+    /// Resets the primary backend to an empty in-memory graph.
     pub fn clean_graph(&mut self) {
-        self.graph = None
+        self.primary = RdfBackend::default();
     }
 
     pub fn from_str(
@@ -148,7 +145,8 @@ impl RdfData {
         Ok(rdf_data)
     }
 
-    /// Merge the in-memory graph with the graph read from a reader
+    /// Merge the in-memory primary with the graph read from a reader.
+    /// Errors if the primary is not an in-memory backend.
     pub fn merge_from_reader<R: io::Read>(
         &mut self,
         read: &mut R,
@@ -157,49 +155,52 @@ impl RdfData {
         base: Option<&str>,
         reader_mode: &ReaderMode,
     ) -> Result<(), RdfDataError> {
-        match &mut self.graph {
-            Some(graph) => graph
-                .merge_from_reader(read, source_name, format, base, reader_mode)
-                .map_err(|e| RdfDataError::SRDFGraphError { err: Box::new(e) }),
-            None => {
-                let mut graph = InMemoryGraph::new();
-                graph
-                    .merge_from_reader(read, source_name, format, base, reader_mode)
-                    .map_err(|e| RdfDataError::SRDFGraphError { err: Box::new(e) })?;
-                self.graph = Some(graph);
-                Ok(())
-            },
-        }
+        let backend_name = match &self.primary {
+            RdfBackend::InMemory(_) => "in-memory",
+            #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+            RdfBackend::Endpoint(_) => "sparql-endpoint",
+            #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
+            RdfBackend::Qlever(_) => "qlever",
+        };
+        let RdfBackend::InMemory(graph) = &mut self.primary else {
+            return Err(RdfDataError::NotInMemoryBackend { backend: backend_name });
+        };
+        graph
+            .merge_from_reader(read, source_name, format, base, reader_mode)
+            .map_err(|e| RdfDataError::Backend {
+                err: Box::new(rudof_rdf::rdf_impl::RdfBackendError::from(e)),
+            })
     }
 
-    /// Creates an RdfData from an endpoint
-    pub fn from_endpoint(name: &str, endpoint: SparqlEndpoint) -> RdfData {
+    /// Creates an RdfData from a single endpoint (registered as both catalog
+    /// and active federation member; primary is left as an empty in-memory
+    /// backend).
+    pub fn from_endpoint(name: &str, endpoint: OxigraphEndpoint) -> RdfData {
         RdfData {
+            primary: RdfBackend::default(),
             endpoints: HashMap::from([(name.to_string(), endpoint.clone())]),
-            graph: None,
-            store: None,
-            focus: None,
-            use_endpoints: HashMap::from([(name.to_string(), endpoint.clone())]),
+            use_endpoints: HashMap::from([(name.to_string(), endpoint)]),
         }
     }
 
-    /// Adds a new endpoint to the list of available endpoints
-    pub fn add_endpoint(&mut self, name: &str, endpoint: SparqlEndpoint) {
+    /// Adds an endpoint to the catalog. Not used at query time until
+    /// `use_endpoint` selects it.
+    pub fn add_endpoint(&mut self, name: &str, endpoint: OxigraphEndpoint) {
         self.endpoints
             .entry(name.to_string())
             .and_modify(|e| *e = endpoint.clone())
             .or_insert(endpoint);
     }
 
-    pub fn use_endpoints(&self) -> &HashMap<String, SparqlEndpoint> {
+    pub fn use_endpoints(&self) -> &HashMap<String, OxigraphEndpoint> {
         &self.use_endpoints
     }
 
-    pub fn endpoints(&self) -> &HashMap<String, SparqlEndpoint> {
+    pub fn endpoints(&self) -> &HashMap<String, OxigraphEndpoint> {
         &self.endpoints
     }
 
-    pub fn use_endpoint(&mut self, name: &str, endpoint: SparqlEndpoint) {
+    pub fn use_endpoint(&mut self, name: &str, endpoint: OxigraphEndpoint) {
         self.use_endpoints.insert(name.to_string(), endpoint);
     }
 
@@ -207,7 +208,7 @@ impl RdfData {
         self.use_endpoints.remove(name);
     }
 
-    pub fn endpoints_to_use(&self) -> impl Iterator<Item = (&str, &SparqlEndpoint)> {
+    pub fn endpoints_to_use(&self) -> impl Iterator<Item = (&str, &OxigraphEndpoint)> {
         self.use_endpoints
             .iter()
             .map(|(name, endpoint)| (name.as_str(), endpoint))
@@ -232,32 +233,34 @@ impl RdfData {
     }
 
     pub fn serialize<W: io::Write>(&self, format: &RDFFormat, writer: &mut W) -> Result<(), RdfDataError> {
-        if let Some(graph) = &self.graph {
-            BuildRDF::serialize(graph, format, writer).map_err(|e| RdfDataError::Serializing {
-                format: *format,
-                error: format!("{e}"),
-            })?
-        }
+        BuildRDF::serialize(&self.primary, format, writer).map_err(|e| RdfDataError::Serializing {
+            format: *format,
+            error: format!("{e}"),
+        })?;
         for (name, e) in self.use_endpoints.iter() {
             writeln!(writer, "Endpoint {}: {}", name, e.iri())?
         }
         Ok(())
     }
 
-    pub fn find_endpoint(&self, name: &str) -> Option<SparqlEndpoint> {
+    pub fn find_endpoint(&self, name: &str) -> Option<OxigraphEndpoint> {
         self.endpoints.get(name).cloned()
     }
 
-    /// Gets all the triples from the in-memory graph and the endpoints
-    /// This operation can be very expensive if the endpoints contain a lot of data
-    pub fn all_triples(&self) -> Result<impl Iterator<Item = OxTriple>, RdfDataError> {
-        let graph_triples = self.graph.iter().flat_map(NeighsRDF::triples).flatten();
-        let endpoints_triples = self
+    /// Gets all the triples from the primary backend and the active endpoints.
+    /// Can be very expensive on remote backends.
+    pub fn all_triples(&self) -> Result<Box<dyn Iterator<Item = OxTriple> + '_>, RdfDataError> {
+        let primary_triples: Vec<OxTriple> = self
+            .primary
+            .triples()
+            .map_err(|e| RdfDataError::Backend { err: Box::new(e) })?
+            .collect();
+        let endpoint_triples = self
             .use_endpoints
             .values()
             .flat_map(|e| NeighsRDF::triples(e))
             .flatten();
-        Ok(graph_triples.chain(endpoints_triples))
+        Ok(Box::new(primary_triples.into_iter().chain(endpoint_triples)))
     }
 }
 
@@ -268,7 +271,11 @@ impl Serialize for RdfData {
     {
         let mut state = serializer.serialize_struct("RdfData", 2)?;
         state.serialize_field("endpoints", &self.endpoints)?;
-        state.serialize_field("graph", &self.graph)?;
+        // Only the in-memory backend has a meaningful serde representation
+        // today; remote backends serialize as nothing.
+        if let RdfBackend::InMemory(g) = &self.primary {
+            state.serialize_field("graph", g)?;
+        }
         state.end()
     }
 }
@@ -276,8 +283,8 @@ impl Serialize for RdfData {
 impl Debug for RdfData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("RdfData")
+            .field("primary", &self.primary)
             .field("endpoints", &self.endpoints)
-            .field("graph", &self.graph)
             .finish()
     }
 }
@@ -298,34 +305,31 @@ impl Rdf for RdfData {
     type Err = RdfDataError;
 
     fn prefixmap(&self) -> Option<PrefixMap> {
-        match &self.graph {
-            Some(g) => Some(g.prefixmap().clone()),
-            None => {
-                if self.use_endpoints.is_empty() {
-                    None
-                } else {
-                    let mut pm = PrefixMap::new();
-                    for e in self.use_endpoints.values() {
-                        pm.merge(e.prefixmap().clone())
-                    }
-                    Some(pm)
-                }
-            },
+        let primary_pm = <RdfBackend as Rdf>::prefixmap(&self.primary);
+        if self.use_endpoints.is_empty() {
+            return primary_pm;
         }
+        let mut pm = primary_pm.unwrap_or_default();
+        for e in self.use_endpoints.values() {
+            pm.merge(e.prefixmap().clone());
+        }
+        Some(pm)
     }
 
     fn qualify_iri(&self, node: &Self::IRI) -> String {
-        let iri = IriS::from_str(node.as_str()).unwrap();
-        if let Some(graph) = &self.graph {
-            graph.prefixmap().qualify(&iri)
-        } else {
-            for (_name, e) in self.use_endpoints.iter() {
-                if let Some(qualified) = e.prefixmap().qualify_optional(&iri) {
-                    return qualified;
-                }
-            }
-            format!("{node}")
+        let iri = IriS::from_str(node.as_str()).unwrap_or_else(|_| IriS::new_unchecked(node.as_str()));
+        // Try the primary's prefixmap, then each active endpoint's.
+        if let Some(pm) = <RdfBackend as Rdf>::prefixmap(&self.primary)
+            && let Some(q) = pm.qualify_optional(&iri)
+        {
+            return q;
         }
+        for endpoint in self.use_endpoints.values() {
+            if let Some(q) = endpoint.prefixmap().qualify_optional(&iri) {
+                return q;
+            }
+        }
+        format!("{node}")
     }
 
     fn qualify_subject(&self, subj: &Self::Subject) -> String {
@@ -340,26 +344,25 @@ impl Rdf for RdfData {
             OxTerm::BlankNode(bn) => self.show_blanknode(bn),
             OxTerm::Literal(lit) => self.show_literal(lit),
             OxTerm::NamedNode(n) => self.qualify_iri(n),
-            // #[cfg(feature = "rdf-star")]
             OxTerm::Triple(_) => unimplemented!(),
         }
     }
 
     fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, prefixmap::error::PrefixMapError> {
-        if let Some(graph) = self.graph() {
-            let iri = graph.prefixmap().resolve_prefix_local(prefix, local)?;
-            Ok(iri.clone())
-        } else {
-            for (_name, e) in self.use_endpoints.iter() {
-                if let Ok(iri) = e.prefixmap().resolve_prefix_local(prefix, local) {
-                    return Ok(iri.clone());
-                }
-            }
-            Err(prefixmap::error::PrefixMapError::PrefixNotFound {
-                prefix: prefix.to_string(),
-                prefixmap: Box::new(PrefixMap::new()),
-            })
+        if let Some(pm) = <RdfBackend as Rdf>::prefixmap(&self.primary)
+            && let Ok(iri) = pm.resolve_prefix_local(prefix, local)
+        {
+            return Ok(iri);
         }
+        for endpoint in self.use_endpoints.values() {
+            if let Ok(iri) = endpoint.prefixmap().resolve_prefix_local(prefix, local) {
+                return Ok(iri);
+            }
+        }
+        Err(prefixmap::error::PrefixMapError::PrefixNotFound {
+            prefix: prefix.to_string(),
+            prefixmap: Box::new(PrefixMap::new()),
+        })
     }
 }
 
@@ -368,16 +371,15 @@ impl QueryRDF for RdfData {
     where
         Self: Sized,
     {
-        let mut str = String::new();
-        if let Some(_store) = &self.store {
-            // TODO: Implement querying with CONSTRUCT in the in-memory store
-            tracing::info!("Querying in-memory store (we ignore it by now");
-        }
+        let mut out = self
+            .primary
+            .query_construct(query_str, format)
+            .map_err(|e| RdfDataError::Backend { err: Box::new(e) })?;
         for (_name, endpoint) in self.endpoints_to_use() {
-            let new_str = endpoint.query_construct(query_str, format)?;
-            str.push_str(&new_str);
+            let extra = endpoint.query_construct(query_str, format)?;
+            out.push_str(&extra);
         }
-        Ok(str)
+        Ok(out)
     }
 
     fn query_select(&self, query_str: &str) -> Result<QuerySolutions<RdfData>, RdfDataError>
@@ -385,79 +387,58 @@ impl QueryRDF for RdfData {
         Self: Sized,
     {
         let mut sols: QuerySolutions<RdfData> = QuerySolutions::empty();
-        if let Some(store) = &self.store {
-            //trace!("Querying in-memory store of length: {}", store.len()?);
 
-            let new_sol = SparqlEvaluator::new()
-                .parse_query(query_str)?
-                .on_store(store)
-                .execute()?;
-            // trace!("Got results from in-memory store");
-            let sol = cnv_query_results(new_sol)?;
-            sols.extend(sol, self.graph_prefixmap());
-        } else {
-            trace!("No in-memory store to query {}", query_str);
-        }
+        // Primary backend.
+        let primary_sols = self
+            .primary
+            .query_select(query_str)
+            .map_err(|e| RdfDataError::Backend { err: Box::new(e) })?;
+        let primary_pm = <RdfBackend as Rdf>::prefixmap(&self.primary).unwrap_or_default();
+        let converted: Vec<QuerySolution<RdfData>> = primary_sols.iter().map(|s| s.convert(|t| t.clone())).collect();
+        sols.extend(converted, primary_pm);
+
+        // Federated endpoints.
         for (_, endpoint) in self.endpoints_to_use() {
             let new_sols = endpoint.query_select(query_str)?;
-            let new_sols_converted: Vec<QuerySolution<RdfData>> = new_sols.iter().map(cnv_sol).collect();
+            let new_sols_converted: Vec<QuerySolution<RdfData>> =
+                new_sols.iter().map(|s| s.convert(|t| t.clone())).collect();
             sols.extend(new_sols_converted, endpoint.prefixmap().clone());
         }
         Ok(sols)
     }
 
-    fn query_ask(&self, _query: &str) -> Result<bool, Self::Err> {
-        todo!()
-    }
-}
-
-fn cnv_sol(sol: &QuerySolution<SparqlEndpoint>) -> QuerySolution<RdfData> {
-    sol.convert(|t| t.clone())
-}
-
-fn cnv_query_results(query_results: QueryResults) -> Result<Vec<QuerySolution<RdfData>>, RdfDataError> {
-    let mut results = Vec::new();
-    if let QueryResults::Solutions(solutions) = query_results {
-        // trace!("Converting query solutions");
-        for solution in solutions {
-            // trace!("Converting solution {counter}");
-            let result = cnv_query_solution(solution?);
-            results.push(result)
+    fn query_ask(&self, query: &str) -> Result<bool, Self::Err> {
+        if self
+            .primary
+            .query_ask(query)
+            .map_err(|e| RdfDataError::Backend { err: Box::new(e) })?
+        {
+            return Ok(true);
         }
+        for (_, endpoint) in self.endpoints_to_use() {
+            if endpoint.query_ask(query)? {
+                return Ok(true);
+            }
+        }
+        Ok(false)
     }
-    Ok(results)
-}
-
-fn cnv_query_solution(qs: SparQuerySolution) -> QuerySolution<RdfData> {
-    let mut variables = Vec::new();
-    let mut values = Vec::new();
-    for v in qs.variables() {
-        let varname = VarName::new(v.as_str());
-        variables.push(varname);
-    }
-    for t in qs.values() {
-        let term = t.clone();
-        values.push(term)
-    }
-    QuerySolution::new(variables, values)
 }
 
 impl NeighsRDF for RdfData {
     fn triples(&self) -> Result<impl Iterator<Item = Self::Triple>, Self::Err> {
-        let iter: Box<dyn Iterator<Item = OxTriple> + '_> = match &self.graph {
-            None => Box::new(iter::empty()),
-            Some(g) => Box::new(
-                g.triples()
-                    .map_err(|e| RdfDataError::SRDFGraphError { err: Box::new(e) })?,
-            ),
-        };
-        // We ignore the triples from the endpoints for now as it can be very expensive
-        /*let endpoints_triples = self
+        // Materialize the primary so the iterator is `'static`; otherwise we
+        // can't chain with the endpoint iterators (which are also lazy).
+        let primary: Vec<OxTriple> = self
+            .primary
+            .triples()
+            .map_err(|e| RdfDataError::Backend { err: Box::new(e) })?
+            .collect();
+        let endpoint_triples: Vec<OxTriple> = self
             .use_endpoints
-            .iter()
-            .flat_map(|(_name, e)| NeighsRDF::triples(e))
-            .flatten();
-        Ok(graph_triples.chain(endpoints_triples))*/
+            .values()
+            .flat_map(|e| NeighsRDF::triples(e).map(|i| i.collect::<Vec<_>>()).unwrap_or_default())
+            .collect();
+        let iter: Box<dyn Iterator<Item = OxTriple> + '_> = Box::new(primary.into_iter().chain(endpoint_triples));
         Ok(iter)
     }
 
@@ -472,30 +453,26 @@ impl NeighsRDF for RdfData {
         P: Matcher<Self::IRI>,
         O: Matcher<Self::Term>,
     {
-        let graph_iter: Box<dyn Iterator<Item = OxTriple> + '_> = match &self.graph {
-            None => Box::new(iter::empty()),
-            Some(g) => Box::new(
-                g.triples_matching(subject, predicate, object)
-                    .map_err(|e| RdfDataError::SRDFGraphError { err: Box::new(e) })?,
-            ),
-        };
-
+        let primary: Vec<OxTriple> = self
+            .primary
+            .triples_matching(subject, predicate, object)
+            .map_err(|e| RdfDataError::Backend { err: Box::new(e) })?
+            .collect();
         let mut endpoint_triples: Vec<OxTriple> = Vec::new();
         for e in self.use_endpoints.values() {
             endpoint_triples.extend(e.triples_matching(subject, predicate, object)?);
         }
-
-        Ok(graph_iter.chain(endpoint_triples))
+        Ok(primary.into_iter().chain(endpoint_triples))
     }
 }
 
 impl FocusRDF for RdfData {
     fn set_focus(&mut self, focus: &Self::Term) {
-        self.focus = Some(focus.clone())
+        self.primary.set_focus(focus);
     }
 
     fn get_focus(&self) -> Option<&Self::Term> {
-        self.focus.as_ref()
+        self.primary.get_focus()
     }
 }
 
@@ -505,27 +482,19 @@ impl BuildRDF for RdfData {
     }
 
     fn add_base(&mut self, base: &Option<IriS>) {
-        if let Some(graph) = &mut self.graph {
-            graph.add_base(base)
-        }
+        self.primary.add_base(base);
     }
 
     fn add_prefix(&mut self, alias: &str, iri: &IriS) {
-        if let Some(graph) = &mut self.graph {
-            graph.add_prefix(alias, iri)
-        }
+        self.primary.add_prefix(alias, iri);
     }
 
     fn set_prefix_map(&mut self, prefix_map: PrefixMap) {
-        if let Some(graph) = &mut self.graph {
-            graph.set_prefix_map(prefix_map)
-        }
+        self.primary.set_prefix_map(prefix_map);
     }
 
     fn merge_prefixes(&mut self, prefix_map: PrefixMap) {
-        if let Some(graph) = &mut self.graph {
-            graph.merge_prefixes(prefix_map)
-        }
+        self.primary.merge_prefixes(prefix_map);
     }
 
     fn add_triple<S, P, O>(&mut self, subj: S, pred: P, obj: O) -> Result<(), Self::Err>
@@ -534,22 +503,9 @@ impl BuildRDF for RdfData {
         P: Into<Self::IRI>,
         O: Into<Self::Term>,
     {
-        match self.graph {
-            Some(ref mut graph) => {
-                graph
-                    .add_triple(subj, pred, obj)
-                    .map_err(|e| RdfDataError::SRDFGraphError { err: Box::new(e) })?;
-                Ok(())
-            },
-            None => {
-                let mut graph = InMemoryGraph::new();
-                graph
-                    .add_triple(subj, pred, obj)
-                    .map_err(|e| RdfDataError::SRDFGraphError { err: Box::new(e) })?;
-                self.graph = Some(graph);
-                Ok(())
-            },
-        }
+        self.primary
+            .add_triple(subj, pred, obj)
+            .map_err(|e| RdfDataError::Backend { err: Box::new(e) })
     }
 
     fn remove_triple<S, P, O>(&mut self, subj: S, pred: P, obj: O) -> Result<(), Self::Err>
@@ -558,11 +514,9 @@ impl BuildRDF for RdfData {
         P: Into<Self::IRI>,
         O: Into<Self::Term>,
     {
-        self.graph
-            .as_mut()
-            .map(|g| g.remove_triple(subj, pred, obj))
-            .unwrap_or(Ok(()))
-            .map_err(|e| RdfDataError::SRDFGraphError { err: Box::new(e) })
+        self.primary
+            .remove_triple(subj, pred, obj)
+            .map_err(|e| RdfDataError::Backend { err: Box::new(e) })
     }
 
     fn add_type<S, T>(&mut self, node: S, type_: T) -> Result<(), Self::Err>
@@ -570,23 +524,16 @@ impl BuildRDF for RdfData {
         S: Into<Self::Subject>,
         T: Into<Self::Term>,
     {
-        self.graph
-            .as_mut()
-            .map(|g| g.add_type(node, type_))
-            .unwrap_or(Ok(()))
-            .map_err(|e| RdfDataError::SRDFGraphError { err: Box::new(e) })
+        self.primary
+            .add_type(node, type_)
+            .map_err(|e| RdfDataError::Backend { err: Box::new(e) })
     }
 
     fn serialize<W: std::io::Write>(&self, format: &RDFFormat, writer: &mut W) -> Result<(), Self::Err> {
-        if let Some(graph) = &self.graph {
-            BuildRDF::serialize(graph, format, writer).map_err(|e| RdfDataError::Serializing {
-                format: *format,
-                error: format!("{e}"),
-            })?;
-            Ok::<(), Self::Err>(())
-        } else {
-            Ok(())
-        }?;
+        BuildRDF::serialize(&self.primary, format, writer).map_err(|e| RdfDataError::Serializing {
+            format: *format,
+            error: format!("{e}"),
+        })?;
         for (name, endpoint) in &self.endpoints {
             writeln!(writer, "Endpoint {}: {}", name, endpoint.iri())?;
         }
@@ -594,15 +541,9 @@ impl BuildRDF for RdfData {
     }
 
     fn add_bnode(&mut self) -> Result<Self::BNode, Self::Err> {
-        match self.graph {
-            Some(ref mut graph) => {
-                let bnode = graph
-                    .add_bnode()
-                    .map_err(|e| RdfDataError::SRDFGraphError { err: Box::new(e) })?;
-                Ok(bnode)
-            },
-            None => Err(RdfDataError::BNodeNoGraph),
-        }
+        self.primary
+            .add_bnode()
+            .map_err(|e| RdfDataError::Backend { err: Box::new(e) })
     }
 }
 
@@ -618,8 +559,7 @@ mod tests {
         let rdf_data = RdfData::from_str(data, &RDFFormat::NTriples, None, &ReaderMode::Lax);
         assert!(rdf_data.is_ok());
         let rdf_data = rdf_data.unwrap();
-        assert!(rdf_data.graph.is_some());
-        assert_eq!(rdf_data.graph.unwrap().triples().unwrap().count(), 1);
+        assert_eq!(rdf_data.backend().as_in_memory().unwrap().triples().unwrap().count(), 1);
     }
 
     #[test]
@@ -633,7 +573,6 @@ mod tests {
                 iri!("http://example.org/bob"),
             )
             .unwrap();
-        assert!(rdf_data.graph.is_some());
-        assert_eq!(rdf_data.graph.unwrap().triples().unwrap().count(), 1);
+        assert_eq!(rdf_data.backend().as_in_memory().unwrap().triples().unwrap().count(), 1);
     }
 }

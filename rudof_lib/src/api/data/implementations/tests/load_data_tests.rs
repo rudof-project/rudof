@@ -1,3 +1,5 @@
+#[cfg(feature = "qlever")]
+use crate::errors::DataError;
 use crate::{
     Rudof, RudofConfig,
     api::data::implementations::load_data::load_data,
@@ -420,4 +422,46 @@ fn test_load_data_no_source() {
     let result = load_data(&mut rudof, None, None, None, None, None, None, None);
 
     assert!(result.is_err());
+}
+
+#[cfg(feature = "qlever")]
+#[test]
+fn test_load_data_via_qlever_rejects_pg_format() {
+    use crate::api::data::implementations::load_data::load_data_via_qlever;
+    use crate::errors::RudofError;
+    use std::path::PathBuf;
+
+    let mut rudof = Rudof::new(RudofConfig::default());
+    let path = InputSpec::Path(PathBuf::from("examples/whatever.pg"));
+
+    let err = load_data_via_qlever(&mut rudof, Some(&[path]), Some(&DataFormat::Pg), None, None)
+        .expect_err("Pg should be rejected up front");
+    match err {
+        RudofError::Data(boxed) => assert!(
+            matches!(*boxed, DataError::NonRdfFormat { ref format } if format == "pg"),
+            "expected NonRdfFormat(pg), got {boxed:?}"
+        ),
+        other => panic!("expected RudofError::Data, got {other:?}"),
+    }
+}
+
+#[cfg(feature = "qlever")]
+#[test]
+fn test_load_data_via_qlever_rejects_non_path_inputs() {
+    use crate::api::data::implementations::load_data::load_data_via_qlever;
+    use crate::errors::RudofError;
+
+    let mut rudof = Rudof::new(RudofConfig::default());
+    // A string input — not a filesystem path.
+    let input = InputSpec::str("@prefix ex: <http://example.org/> . ex:a a ex:B .");
+
+    let err = load_data_via_qlever(&mut rudof, Some(&[input]), Some(&DataFormat::Turtle), None, None)
+        .expect_err("non-Path inputs should be rejected");
+    match err {
+        RudofError::Data(boxed) => assert!(
+            matches!(*boxed, DataError::DataSourceSpec { ref message } if message.contains("file-system inputs")),
+            "expected DataSourceSpec mentioning file-system inputs, got {boxed:?}"
+        ),
+        other => panic!("expected RudofError::Data, got {other:?}"),
+    }
 }

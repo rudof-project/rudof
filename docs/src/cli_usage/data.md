@@ -97,6 +97,16 @@ If you have PLANT_UML available you can use directly:
 rudof data examples/simple.ttl -r svg -o file.svg
 ```
 
+## Selecting the RDF backend
+
+By default, `rudof` parses the input file(s) into an in-process RDF graph (the `memory` backend). The `--backend` flag lets you switch to a local QLever Docker container (`qlever`) or a remote SPARQL endpoint (`endpoint=<URL_OR_NAME>`).
+
+```sh
+rudof data --backend qlever simple.ttl
+rudof data --backend endpoint=https://my.sparql.server/sparql simple.ttl
+```
+
+See the [RDF backend (`--backend`) reference](./backend.md) for full documentation.
 
 ## RDF Config file
 

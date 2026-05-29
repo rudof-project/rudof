@@ -52,17 +52,31 @@ pub trait Literal: Debug + Clone + Display + PartialEq + Eq + Hash {
 
     /// Attempts to convert this literal to an integer value.
     ///
-    /// Returns `Some(isize)` if the literal has datatype `xsd:integer` and
-    /// a valid parseable lexical form.
+    /// Accepts `xsd:integer` and every XSD type derived from it
+    /// (`xsd:int`, `xsd:long`, `xsd:short`, `xsd:byte`, the unsigned
+    /// counterparts, and the `(non)Positive`/`(non)Negative` variants).
+    /// Returns `Some(isize)` when the datatype is in that set and the
+    /// lexical form parses as `isize`.
     fn to_integer(&self) -> Option<isize> {
         let datatype = self.datatype();
         let iri = datatype.get_iri().ok()?;
 
-        if iri.as_str() != "http://www.w3.org/2001/XMLSchema#integer" {
-            return None;
+        match iri.as_str() {
+            "http://www.w3.org/2001/XMLSchema#integer"
+            | "http://www.w3.org/2001/XMLSchema#long"
+            | "http://www.w3.org/2001/XMLSchema#int"
+            | "http://www.w3.org/2001/XMLSchema#short"
+            | "http://www.w3.org/2001/XMLSchema#byte"
+            | "http://www.w3.org/2001/XMLSchema#unsignedLong"
+            | "http://www.w3.org/2001/XMLSchema#unsignedInt"
+            | "http://www.w3.org/2001/XMLSchema#unsignedShort"
+            | "http://www.w3.org/2001/XMLSchema#unsignedByte"
+            | "http://www.w3.org/2001/XMLSchema#nonNegativeInteger"
+            | "http://www.w3.org/2001/XMLSchema#positiveInteger"
+            | "http://www.w3.org/2001/XMLSchema#nonPositiveInteger"
+            | "http://www.w3.org/2001/XMLSchema#negativeInteger" => self.lexical_form().parse().ok(),
+            _ => None,
         }
-
-        self.lexical_form().parse().ok()
     }
 
     /// Attempts to convert this literal to a datetime value.

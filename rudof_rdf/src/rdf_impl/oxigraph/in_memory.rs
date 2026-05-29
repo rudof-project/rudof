@@ -1,8 +1,7 @@
-use crate::rdf_core::{
-    AsyncRDF, BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf,
-    query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions, VarName},
-};
-use crate::rdf_impl::in_memory_graph_error::InMemoryGraphError;
+use super::in_memory_error::OxigraphInMemoryError;
+#[cfg(feature = "sparql")]
+use crate::rdf_core::query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions, VarName};
+use crate::rdf_core::{AsyncRDF, BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf};
 
 use crate::rdf_core::vocabs::RdfVocab;
 use colored::*;
@@ -42,7 +41,7 @@ use {
 /// base IRI support, blank node generation, and optional SPARQL querying via
 /// an Oxigraph [`Store`].
 #[derive(Default, Clone)]
-pub struct InMemoryGraph {
+pub struct OxigraphInMemory {
     /// Optional focus term used by [`FocusRDF`] operations.
     focus: Option<OxTerm>,
 
@@ -63,9 +62,9 @@ pub struct InMemoryGraph {
     store: Option<Store>,
 }
 
-impl Debug for InMemoryGraph {
+impl Debug for OxigraphInMemory {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("InMemoryGraph")
+        f.debug_struct("OxigraphInMemory")
             .field("triples_count", &self.graph.len())
             .field("prefixmap", &self.pm)
             .field("base", &self.base)
@@ -73,7 +72,7 @@ impl Debug for InMemoryGraph {
     }
 }
 
-impl Serialize for InMemoryGraph {
+impl Serialize for OxigraphInMemory {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -86,7 +85,7 @@ impl Serialize for InMemoryGraph {
     }
 }
 
-impl InMemoryGraph {
+impl OxigraphInMemory {
     /// Creates an empty graph.
     pub fn new() -> Self {
         Self::default()
@@ -135,7 +134,7 @@ impl InMemoryGraph {
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
-    ) -> Result<(), InMemoryGraphError> {
+    ) -> Result<(), OxigraphInMemoryError> {
         match format {
             RDFFormat::Turtle => {
                 self.parse_turtle(reader, source_name, base, reader_mode)?;
@@ -184,7 +183,7 @@ impl InMemoryGraph {
         source_name: &str,
         base: Option<&str>,
         reader_mode: &ReaderMode,
-    ) -> Result<(), InMemoryGraphError> {
+    ) -> Result<(), OxigraphInMemoryError> {
         let turtle_parser = match base {
             None => TurtleParser::new().lenient(),
             Some(iri) => TurtleParser::new().lenient().with_base_iri(iri)?,
@@ -194,19 +193,22 @@ impl InMemoryGraph {
         let graph = Arc::make_mut(&mut self.graph);
 
         for triple_result in turtle_reader.by_ref() {
-            let triple =
-                match handle_parse_error(triple_result, reader_mode, |e| InMemoryGraphError::TurtleParseError {
+            let triple = match handle_parse_error(triple_result, reader_mode, |e| {
+                OxigraphInMemoryError::TurtleParseError {
                     source_name: source_name.to_string(),
                     error: e,
-                })? {
-                    Some(t) => t,
-                    None => continue,
-                };
+                }
+            })? {
+                Some(t) => t,
+                None => continue,
+            };
             let triple_ref = triple.as_ref();
             if let Err(e) = validate_triple_iris(triple_ref) {
-                match handle_parse_error(Err::<(), _>(e), reader_mode, |e| InMemoryGraphError::TurtleParseError {
-                    source_name: source_name.to_string(),
-                    error: format!("Invalid IRI in triple: {e}"),
+                match handle_parse_error(Err::<(), _>(e), reader_mode, |e| {
+                    OxigraphInMemoryError::TurtleParseError {
+                        source_name: source_name.to_string(),
+                        error: format!("Invalid IRI in triple: {e}"),
+                    }
                 })? {
                     Some(_) => unreachable!(),
                     None => continue,
@@ -240,19 +242,20 @@ impl InMemoryGraph {
         &mut self,
         reader: &mut R,
         reader_mode: &ReaderMode,
-    ) -> Result<(), InMemoryGraphError> {
+    ) -> Result<(), OxigraphInMemoryError> {
         let parser = NTriplesParser::new();
         let mut nt_reader = parser.for_reader(reader);
         let graph = Arc::make_mut(&mut self.graph);
 
         for triple_result in nt_reader.by_ref() {
-            let triple = match handle_parse_error(triple_result, reader_mode, |e| InMemoryGraphError::NTriplesError {
-                data: "Reading N-Triples".to_string(),
-                error: e,
-            })? {
-                Some(t) => t,
-                None => continue,
-            };
+            let triple =
+                match handle_parse_error(triple_result, reader_mode, |e| OxigraphInMemoryError::NTriplesError {
+                    data: "Reading N-Triples".to_string(),
+                    error: e,
+                })? {
+                    Some(t) => t,
+                    None => continue,
+                };
             graph.insert(triple.as_ref());
         }
 
@@ -273,13 +276,13 @@ impl InMemoryGraph {
         &mut self,
         reader: &mut R,
         reader_mode: &ReaderMode,
-    ) -> Result<(), InMemoryGraphError> {
+    ) -> Result<(), OxigraphInMemoryError> {
         let parser = RdfXmlParser::new();
         let mut xml_reader = parser.for_reader(reader);
         let graph = Arc::make_mut(&mut self.graph);
 
         for triple_result in xml_reader.by_ref() {
-            let triple = match handle_parse_error(triple_result, reader_mode, |e| InMemoryGraphError::RDFXMLError {
+            let triple = match handle_parse_error(triple_result, reader_mode, |e| OxigraphInMemoryError::RDFXMLError {
                 data: "Reading RDF/XML".to_string(),
                 error: e,
             })? {
@@ -307,13 +310,13 @@ impl InMemoryGraph {
         &mut self,
         reader: &mut R,
         reader_mode: &ReaderMode,
-    ) -> Result<(), InMemoryGraphError> {
+    ) -> Result<(), OxigraphInMemoryError> {
         let parser = NQuadsParser::new();
         let mut nq_reader = parser.for_reader(reader);
         let graph = Arc::make_mut(&mut self.graph);
 
         for triple_result in nq_reader.by_ref() {
-            let triple = match handle_parse_error(triple_result, reader_mode, |e| InMemoryGraphError::NQuadsError {
+            let triple = match handle_parse_error(triple_result, reader_mode, |e| OxigraphInMemoryError::NQuadsError {
                 data: "Reading NQuads".to_string(),
                 error: e,
             })? {
@@ -340,13 +343,13 @@ impl InMemoryGraph {
         &mut self,
         reader: &mut R,
         reader_mode: &ReaderMode,
-    ) -> Result<(), InMemoryGraphError> {
+    ) -> Result<(), OxigraphInMemoryError> {
         let parser = JsonLdParser::new();
         let mut jsonld_reader = parser.for_reader(reader);
         let graph = Arc::make_mut(&mut self.graph);
 
         for triple_result in jsonld_reader.by_ref() {
-            let triple = match handle_parse_error(triple_result, reader_mode, |e| InMemoryGraphError::JsonLDError {
+            let triple = match handle_parse_error(triple_result, reader_mode, |e| OxigraphInMemoryError::JsonLDError {
                 data: "Reading JSON-LD".to_string(),
                 error: e,
             })? {
@@ -381,8 +384,8 @@ impl InMemoryGraph {
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
-    ) -> Result<InMemoryGraph, InMemoryGraphError> {
-        let mut srdf_graph = InMemoryGraph::new();
+    ) -> Result<OxigraphInMemory, OxigraphInMemoryError> {
+        let mut srdf_graph = OxigraphInMemory::new();
         srdf_graph.merge_from_reader(read, source_name, format, base, reader_mode)?;
         Ok(srdf_graph)
     }
@@ -398,7 +401,7 @@ impl InMemoryGraph {
     /// # Errors
     ///
     /// Returns an error if the prefix is not defined or if the string format is invalid.
-    pub fn resolve(&self, str: &str) -> Result<OxNamedNode, InMemoryGraphError> {
+    pub fn resolve(&self, str: &str) -> Result<OxNamedNode, OxigraphInMemoryError> {
         let r = self.pm.resolve(str)?;
         Ok(Self::cnv_iri(r))
     }
@@ -442,7 +445,7 @@ impl InMemoryGraph {
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
-    ) -> Result<InMemoryGraph, InMemoryGraphError> {
+    ) -> Result<OxigraphInMemory, OxigraphInMemoryError> {
         Self::from_reader(&mut Cursor::new(data), "String", format, base, reader_mode)
     }
 
@@ -472,7 +475,7 @@ impl InMemoryGraph {
     /// # Errors
     ///
     /// This method currently always returns `Ok(())`.
-    pub fn add_triple_ref<'a, S, P, O>(&mut self, subj: S, pred: P, obj: O) -> Result<(), InMemoryGraphError>
+    pub fn add_triple_ref<'a, S, P, O>(&mut self, subj: S, pred: P, obj: O) -> Result<(), OxigraphInMemoryError>
     where
         S: Into<OxSubjectRef<'a>>,
         P: Into<NamedNodeRef<'a>>,
@@ -485,7 +488,7 @@ impl InMemoryGraph {
 }
 
 #[cfg(not(target_family = "wasm"))]
-impl InMemoryGraph {
+impl OxigraphInMemory {
     /// Merges RDF data from a filesystem path.
     ///
     /// Opens the file and delegates to [`merge_from_reader`](Self::merge_from_reader).
@@ -506,9 +509,9 @@ impl InMemoryGraph {
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
-    ) -> Result<(), InMemoryGraphError> {
+    ) -> Result<(), OxigraphInMemoryError> {
         let path_ref = path.as_ref();
-        let file = File::open(path_ref).map_err(|e| InMemoryGraphError::ReadingPathError {
+        let file = File::open(path_ref).map_err(|e| OxigraphInMemoryError::ReadingPathError {
             path_name: path_ref.display().to_string(),
             error: e,
         })?;
@@ -535,9 +538,9 @@ impl InMemoryGraph {
         format: &RDFFormat,
         base: Option<&str>,
         reader_mode: &ReaderMode,
-    ) -> Result<InMemoryGraph, InMemoryGraphError> {
+    ) -> Result<OxigraphInMemory, OxigraphInMemoryError> {
         let path_ref = path.as_ref();
-        let file = File::open(path_ref).map_err(|e| InMemoryGraphError::ReadingPathError {
+        let file = File::open(path_ref).map_err(|e| OxigraphInMemoryError::ReadingPathError {
             path_name: path_ref.display().to_string(),
             error: e,
         })?;
@@ -566,16 +569,35 @@ impl InMemoryGraph {
         folder: &Path,
         base: Option<&str>,
         reader_mode: &ReaderMode,
-    ) -> Result<InMemoryGraph, InMemoryGraphError> {
+    ) -> Result<OxigraphInMemory, OxigraphInMemoryError> {
         let data_path = folder.join(data);
         Self::from_path(&data_path, format, base, reader_mode)
     }
 }
 
-impl InMemoryGraph {
+impl OxigraphInMemory {
     /// Returns a reference to the prefix map.
     pub fn prefixmap(&self) -> &PrefixMap {
         &self.pm
+    }
+
+    /// Lazily build the embedded SPARQL store from the in-memory graph.
+    ///
+    /// SPARQL evaluation on the in-memory backend goes through an
+    /// `oxigraph::store::Store`. It is not built eagerly because indexing the
+    /// quads costs memory and most callers never run SPARQL. Run this once
+    /// before issuing `query_select`, `query_ask`, or `query_construct`.
+    #[cfg(feature = "sparql")]
+    pub fn ensure_store(&mut self) -> Result<(), OxigraphInMemoryError> {
+        if self.store.is_some() {
+            return Ok(());
+        }
+        let store = Store::new()?;
+        let mut loader = store.bulk_loader();
+        loader.load_quads(self.quads())?;
+        loader.commit()?;
+        self.store = Some(store);
+        Ok(())
     }
 }
 
@@ -583,14 +605,14 @@ impl InMemoryGraph {
 ///
 /// This implementation provides the fundamental RDF operations including type definitions,
 /// prefix resolution, and term qualification (converting full IRIs to prefixed names).
-impl Rdf for InMemoryGraph {
+impl Rdf for OxigraphInMemory {
     type IRI = OxNamedNode;
     type BNode = OxBlankNode;
     type Literal = OxLiteral;
     type Subject = OxSubject;
     type Term = OxTerm;
     type Triple = OxTriple;
-    type Err = InMemoryGraphError;
+    type Err = OxigraphInMemoryError;
 
     /// Resolves a prefix and local name to a full IRI.
     ///
@@ -685,7 +707,7 @@ impl Rdf for InMemoryGraph {
 ///
 /// This implementation provides methods to iterate over triples in the graph,
 /// optionally filtered by subject, predicate, or object patterns.
-impl NeighsRDF for InMemoryGraph {
+impl NeighsRDF for OxigraphInMemory {
     /// Returns an iterator over all triples in the graph.
     ///
     /// # Returns
@@ -783,13 +805,13 @@ impl NeighsRDF for InMemoryGraph {
     }
 }
 
-impl AsyncRDF for InMemoryGraph {
+impl AsyncRDF for OxigraphInMemory {
     type IRI = OxNamedNode;
     type BNode = OxBlankNode;
     type Literal = OxLiteral;
     type Subject = OxSubject;
     type Term = OxTerm;
-    type Err = InMemoryGraphError;
+    type Err = OxigraphInMemoryError;
 
     /// Returns all predicates associated with a given subject.
     ///
@@ -800,7 +822,7 @@ impl AsyncRDF for InMemoryGraph {
     /// # Errors
     ///
     /// This method currently always returns `Ok`.
-    async fn get_predicates_subject(&self, subject: &OxSubject) -> Result<HashSet<OxNamedNode>, InMemoryGraphError> {
+    async fn get_predicates_subject(&self, subject: &OxSubject) -> Result<HashSet<OxNamedNode>, OxigraphInMemoryError> {
         let mut results = HashSet::new();
         for triple in self.graph.triples_for_subject(subject) {
             let predicate: OxNamedNode = triple.predicate.to_owned().into();
@@ -823,7 +845,7 @@ impl AsyncRDF for InMemoryGraph {
         &self,
         subject: &OxSubject,
         pred: &OxNamedNode,
-    ) -> Result<HashSet<OxTerm>, InMemoryGraphError> {
+    ) -> Result<HashSet<OxTerm>, OxigraphInMemoryError> {
         let mut results = HashSet::new();
         for triple in self.graph.triples_for_subject(subject) {
             let predicate: OxNamedNode = triple.predicate.to_owned().into();
@@ -849,7 +871,7 @@ impl AsyncRDF for InMemoryGraph {
         &self,
         object: &OxTerm,
         pred: &OxNamedNode,
-    ) -> Result<HashSet<OxSubject>, InMemoryGraphError> {
+    ) -> Result<HashSet<OxSubject>, OxigraphInMemoryError> {
         let mut results = HashSet::new();
         for triple in self.graph.triples_for_object(object) {
             let predicate: OxNamedNode = triple.predicate.to_owned().into();
@@ -866,7 +888,7 @@ impl AsyncRDF for InMemoryGraph {
 ///
 /// The focus term is used to track a specific RDF term of interest during graph operations.
 /// This can be useful for navigation, querying, or maintaining context during traversals.
-impl FocusRDF for InMemoryGraph {
+impl FocusRDF for OxigraphInMemory {
     /// Sets the focus term for this graph.
     ///
     /// # Parameters
@@ -892,7 +914,7 @@ impl FocusRDF for InMemoryGraph {
 /// This implementation provides methods to build RDF graphs programmatically by adding
 /// prefixes, base IRIs, blank nodes, triples, and types. It also supports serialization
 /// to various RDF formats.
-impl BuildRDF for InMemoryGraph {
+impl BuildRDF for OxigraphInMemory {
     /// Sets the base IRI for the graph.
     ///
     /// The base IRI is used to resolve relative IRIs during parsing and serialization.
@@ -951,7 +973,7 @@ impl BuildRDF for InMemoryGraph {
     /// Returns an error if the blank node counter overflows (extremely unlikely).
     fn add_bnode(&mut self) -> Result<Self::BNode, Self::Err> {
         self.bnode_counter += 1;
-        let bn = u128::try_from(self.bnode_counter).map_err(|_| InMemoryGraphError::BlankNodeId {
+        let bn = u128::try_from(self.bnode_counter).map_err(|_| OxigraphInMemoryError::BlankNodeId {
             msg: format!("Blank node counter overflow: {}", self.bnode_counter),
         })?;
         Ok(OxBlankNode::new_from_unique_id(bn))
@@ -1015,9 +1037,9 @@ impl BuildRDF for InMemoryGraph {
     ///
     /// # Returns
     ///
-    /// A new `InMemoryGraph` with no triples, prefixes, or base IRI.
+    /// A new `OxigraphInMemory` with no triples, prefixes, or base IRI.
     fn empty() -> Self {
-        InMemoryGraph {
+        OxigraphInMemory {
             focus: None,
             graph: Graph::new().into(),
             pm: PrefixMap::new(),
@@ -1135,8 +1157,8 @@ fn validate_triple_iris(triple: TripleRef) -> Result<(), String> {
 fn handle_parse_error<T, E: std::fmt::Display>(
     result: Result<T, E>,
     reader_mode: &ReaderMode,
-    error_constructor: impl FnOnce(String) -> InMemoryGraphError,
-) -> Result<Option<T>, InMemoryGraphError> {
+    error_constructor: impl FnOnce(String) -> OxigraphInMemoryError,
+) -> Result<Option<T>, OxigraphInMemoryError> {
     match result {
         Ok(val) => Ok(Some(val)),
         Err(e) => {
@@ -1213,49 +1235,81 @@ fn cnv_triple(t: &OxTriple) -> TripleRef<'_> {
 }
 
 #[cfg(feature = "sparql")]
-impl QueryRDF for InMemoryGraph {
-    fn query_construct(&self, _query_str: &str, _format: &QueryResultFormat) -> Result<String, InMemoryGraphError>
+impl QueryRDF for OxigraphInMemory {
+    fn query_construct(&self, query_str: &str, _format: &QueryResultFormat) -> Result<String, OxigraphInMemoryError>
     where
         Self: Sized,
     {
-        Ok(String::new())
+        // CONSTRUCT against the embedded store. Returns empty when no store
+        // has been built yet; callers should `ensure_store` first if they
+        // need real results.
+        let Some(store) = &self.store else {
+            return Ok(String::new());
+        };
+        let results = SparqlEvaluator::new()
+            .parse_query(query_str)
+            .map_err(|e| OxigraphInMemoryError::ParsingQueryError {
+                msg: format!("Error parsing query: {e}"),
+            })?
+            .on_store(store)
+            .execute()
+            .map_err(|e| OxigraphInMemoryError::RunningQueryError {
+                query: query_str.to_string(),
+                msg: format!("Error executing query: {e}"),
+            })?;
+
+        // Serialize CONSTRUCT output as Turtle. The QueryResultFormat parameter
+        // is forwarded by the trait but Oxigraph's CONSTRUCT path emits triples,
+        // not solutions, so we pin the wire format here.
+        match results {
+            QueryResults::Graph(triples) => {
+                use oxrdfio::{RdfFormat, RdfSerializer};
+                let mut buffer = Vec::new();
+                let mut writer = RdfSerializer::from_format(RdfFormat::Turtle).for_writer(&mut buffer);
+                for triple in triples {
+                    let triple = triple.map_err(|e| OxigraphInMemoryError::RunningQueryError {
+                        query: query_str.to_string(),
+                        msg: format!("Error iterating CONSTRUCT results: {e}"),
+                    })?;
+                    writer
+                        .serialize_triple(triple.as_ref())
+                        .map_err(|e| OxigraphInMemoryError::RunningQueryError {
+                            query: query_str.to_string(),
+                            msg: format!("Error serializing CONSTRUCT triple: {e}"),
+                        })?;
+                }
+                writer.finish().map_err(|e| OxigraphInMemoryError::RunningQueryError {
+                    query: query_str.to_string(),
+                    msg: format!("Error finalizing CONSTRUCT output: {e}"),
+                })?;
+                Ok(String::from_utf8(buffer).unwrap_or_default())
+            },
+            _ => Ok(String::new()),
+        }
     }
 
-    /// Executes a SPARQL SELECT query against the graph.
+    /// Executes a SPARQL SELECT query against the embedded store.
     ///
-    /// # Parameters
-    ///
-    /// * `query_str` - The SPARQL SELECT query string
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if:
-    /// * The query cannot be parsed
-    /// * The query execution fails
-    /// * The results cannot be processed
-    ///
-    /// # Returns
-    ///
-    /// Query solutions containing the results of the SELECT query.
-    fn query_select(&self, query_str: &str) -> Result<QuerySolutions<InMemoryGraph>, InMemoryGraphError>
+    /// Returns empty solutions if no store has been built. Run
+    /// [`OxigraphInMemory::ensure_store`] first to populate it.
+    fn query_select(&self, query_str: &str) -> Result<QuerySolutions<OxigraphInMemory>, OxigraphInMemoryError>
     where
         Self: Sized,
     {
         let mut sols = QuerySolutions::empty();
 
         if let Some(store) = &self.store {
-            let parsed_query =
-                SparqlEvaluator::new()
-                    .parse_query(query_str)
-                    .map_err(|e| InMemoryGraphError::ParsingQueryError {
-                        msg: format!("Error parsing query: {}", e),
-                    })?;
+            let parsed_query = SparqlEvaluator::new().parse_query(query_str).map_err(|e| {
+                OxigraphInMemoryError::ParsingQueryError {
+                    msg: format!("Error parsing query: {}", e),
+                }
+            })?;
 
             let query_results =
                 parsed_query
                     .on_store(store)
                     .execute()
-                    .map_err(|e| InMemoryGraphError::RunningQueryError {
+                    .map_err(|e| OxigraphInMemoryError::RunningQueryError {
                         query: query_str.to_string(),
                         msg: format!("Error executing query: {}", e),
                     })?;
@@ -1268,8 +1322,27 @@ impl QueryRDF for InMemoryGraph {
         Ok(sols)
     }
 
-    fn query_ask(&self, _query: &str) -> Result<bool, Self::Err> {
-        todo!()
+    fn query_ask(&self, query_str: &str) -> Result<bool, Self::Err> {
+        // Same lazy-store behaviour as SELECT: empty store ⇒ no match.
+        let Some(store) = &self.store else {
+            return Ok(false);
+        };
+        let result = SparqlEvaluator::new()
+            .parse_query(query_str)
+            .map_err(|e| OxigraphInMemoryError::ParsingQueryError {
+                msg: format!("Error parsing query: {e}"),
+            })?
+            .on_store(store)
+            .execute()
+            .map_err(|e| OxigraphInMemoryError::RunningQueryError {
+                query: query_str.to_string(),
+                msg: format!("Error executing query: {e}"),
+            })?;
+        if let QueryResults::Boolean(b) = result {
+            Ok(b)
+        } else {
+            Ok(false)
+        }
     }
 }
 
@@ -1287,7 +1360,9 @@ impl QueryRDF for InMemoryGraph {
 ///
 /// A vector of query solutions.
 #[cfg(feature = "sparql")]
-fn cnv_query_results(query_results: QueryResults) -> Result<Vec<QuerySolution<InMemoryGraph>>, InMemoryGraphError> {
+fn cnv_query_results(
+    query_results: QueryResults,
+) -> Result<Vec<QuerySolution<OxigraphInMemory>>, OxigraphInMemoryError> {
     let QueryResults::Solutions(solutions) = query_results else {
         return Ok(Vec::new());
     };
@@ -1298,7 +1373,7 @@ fn cnv_query_results(query_results: QueryResults) -> Result<Vec<QuerySolution<In
         .map(|(_, solution_result)| {
             solution_result
                 .map(cnv_query_solution)
-                .map_err(|e| InMemoryGraphError::QueryResultError {
+                .map_err(|e| OxigraphInMemoryError::QueryResultError {
                     msg: format!("Error getting query solution: {}", e),
                 })
         })
@@ -1315,7 +1390,7 @@ fn cnv_query_results(query_results: QueryResults) -> Result<Vec<QuerySolution<In
 ///
 /// An internal query solution with variables and values.
 #[cfg(feature = "sparql")]
-fn cnv_query_solution(qs: SparQuerySolution) -> QuerySolution<InMemoryGraph> {
+fn cnv_query_solution(qs: SparQuerySolution) -> QuerySolution<OxigraphInMemory> {
     let mut variables = Vec::new();
     let mut values = Vec::new();
     for v in qs.variables() {

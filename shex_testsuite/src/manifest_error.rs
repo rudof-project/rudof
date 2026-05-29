@@ -1,5 +1,5 @@
 use rudof_iri::error::IriSError;
-use rudof_rdf::{rdf_core::RDFError, rdf_impl::InMemoryGraphError};
+use rudof_rdf::{rdf_core::RDFError, rdf_impl::OxigraphInMemoryError};
 use shex_ast::compact::ParseError;
 use shex_ast::ir::external_resolver::ExternalResolverError;
 use shex_ast::shapemap::ValidationStatus;
@@ -62,7 +62,7 @@ pub enum ManifestError {
     Unknown,
 
     #[error(transparent)]
-    SRDFError(#[from] InMemoryGraphError),
+    SRDFError(#[from] OxigraphInMemoryError),
 
     #[error(transparent)]
     ParseError(#[from] ParseError),

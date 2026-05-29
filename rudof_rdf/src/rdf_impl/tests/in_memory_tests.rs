@@ -9,7 +9,7 @@ use crate::rdf_core::{
     },
     term::Triple,
 };
-use crate::rdf_impl::{InMemoryGraph, ReaderMode};
+use crate::rdf_impl::{OxigraphInMemory, ReaderMode};
 use crate::rdf_parser;
 use oxrdf::Literal as OxLiteral;
 use oxrdf::NamedNode as OxNamedNode;
@@ -81,8 +81,8 @@ enum A {
     Bool(bool),
 }
 
-fn graph_from_str(s: &str) -> InMemoryGraph {
-    InMemoryGraph::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap()
+fn graph_from_str(s: &str) -> OxigraphInMemory {
+    OxigraphInMemory::from_str(s, &RDFFormat::Turtle, None, &ReaderMode::Strict).unwrap()
 }
 
 #[test]
@@ -182,7 +182,7 @@ fn test_outgoing_arcs() {
 
 #[test]
 fn test_add_triple() {
-    let mut graph = InMemoryGraph::default();
+    let mut graph = OxigraphInMemory::default();
 
     let alice = OxSubject::NamedNode(OxNamedNode::new_unchecked("http://example.org/alice"));
     let knows = OxNamedNode::new_unchecked("http://example.org/knows");
@@ -334,7 +334,7 @@ fn test_not() {
 
 #[test]
 fn test_iri() {
-    let mut graph = InMemoryGraph::default();
+    let mut graph = OxigraphInMemory::default();
     let x = OxNamedNode::new_unchecked("http://example.org/x");
     let x_iri = x.clone().into();
     assert_eq!(IriParser::new().parse(&x_iri, &mut graph).unwrap(), x)
@@ -342,7 +342,7 @@ fn test_iri() {
 
 #[test]
 fn test_add_triple_ref() {
-    let mut graph = InMemoryGraph::default();
+    let mut graph = OxigraphInMemory::default();
     let s = OxNamedNode::new_unchecked("http://example.org/x");
     let p = OxNamedNode::new_unchecked("http://example.org/p");
     let o = OxNamedNode::new_unchecked("http://example.org/y");

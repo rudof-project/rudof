@@ -5,7 +5,7 @@ use prefixmap::IriRefError;
 use rudof_rdf::rdf_core::term::Object;
 use rudof_rdf::rdf_core::utils::RDFRegexError;
 use rudof_rdf::rdf_core::{RDFError, Rdf, SHACLPath};
-use rudof_rdf::rdf_impl::InMemoryGraphError;
+use rudof_rdf::rdf_impl::OxigraphInMemoryError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -26,7 +26,7 @@ pub enum IRError {
     ShaclParserError(#[from] Box<ShaclParserError>),
 
     #[error(transparent)]
-    InMemoryGraphError(#[from] Box<InMemoryGraphError>),
+    OxigraphInMemoryError(#[from] Box<OxigraphInMemoryError>),
 
     #[error(
         "Invalid path for property shape with reifier shape {shape}, the path must be a single predicate, but got: {path}"
@@ -71,9 +71,9 @@ impl From<ShaclParserError> for IRError {
     }
 }
 
-impl From<InMemoryGraphError> for IRError {
-    fn from(value: InMemoryGraphError) -> Self {
-        Self::InMemoryGraphError(Box::new(value))
+impl From<OxigraphInMemoryError> for IRError {
+    fn from(value: OxigraphInMemoryError) -> Self {
+        Self::OxigraphInMemoryError(Box::new(value))
     }
 }
 

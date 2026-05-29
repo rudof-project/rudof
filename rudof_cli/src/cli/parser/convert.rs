@@ -1,4 +1,4 @@
-use crate::cli::parser::CommonArgsAll;
+use crate::cli::parser::CommonArgsNoBackend;
 use crate::cli::wrappers::{
     ConversionFormatCli, ConversionModeCli, DataReaderModeCli, ResultConversionFormatCli, ResultConversionModeCli,
 };
@@ -97,5 +97,5 @@ pub struct ConvertArgs {
     pub show_time: Option<bool>,
 
     #[command(flatten)]
-    pub common: CommonArgsAll,
+    pub common: CommonArgsNoBackend,
 }
