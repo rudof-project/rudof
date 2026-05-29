@@ -101,14 +101,6 @@ pub struct ShexValidateArgs {
     pub reader_mode: DataReaderModeCli,
 
     #[arg(
-        short = 'e',
-        long = "endpoint",
-        value_name = "NAME",
-        help = "[DEPRECATED] Endpoint with RDF data (name or URL). Use --backend endpoint=<URL_OR_NAME> instead."
-    )]
-    pub endpoint: Option<String>,
-
-    #[arg(
         short = 'r',
         long = "result-format",
         value_name = "FORMAT",

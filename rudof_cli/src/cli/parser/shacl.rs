@@ -30,14 +30,6 @@ pub struct ShaclArgs {
     pub reader_mode: DataReaderModeCli,
 
     #[arg(
-        short = 'e',
-        long = "endpoint",
-        value_name = "Endpoint",
-        help = "[DEPRECATED] Endpoint with RDF data (URL or name). Use --backend endpoint=<URL_OR_NAME> instead."
-    )]
-    pub endpoint: Option<String>,
-
-    #[arg(
         short = 's',
         long = "shapes",
         value_name = "INPUT",

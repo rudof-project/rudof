@@ -42,26 +42,12 @@ impl BackendKindCli {
 
 /// Resolve the effective [`BackendSpec`] for a subcommand.
 ///
-/// Merges the new `--backend …` form with the legacy `--endpoint URL` flag,
-/// emitting a deprecation warning when only the legacy flag is used. This is
-/// the single point of dispatch every subcommand goes through; downstream
+/// The single point of dispatch every subcommand goes through; downstream
 /// commands hand the result to `LoadDataBuilder::with_backend`.
-pub fn resolve_backend(backend: Option<&BackendKindCli>, legacy_endpoint: Option<&str>) -> BackendSpec {
-    match (backend, legacy_endpoint) {
-        // New flag wins, legacy ignored (with warning if both were set).
-        (Some(b), legacy) => {
-            if legacy.is_some() && b.endpoint().is_none() {
-                tracing::warn!(
-                    "--endpoint is deprecated and ignored when --backend is set; use --backend endpoint=<URL_OR_NAME>"
-                );
-            }
-            b.clone().into()
-        },
-        (None, Some(ep)) => {
-            tracing::warn!("--endpoint is deprecated; use --backend endpoint=<URL_OR_NAME> instead");
-            BackendSpec::Endpoint(ep.to_string())
-        },
-        (None, None) => BackendSpec::default(),
+pub fn resolve_backend(backend: Option<&BackendKindCli>) -> BackendSpec {
+    match backend {
+        Some(b) => b.clone().into(),
+        None => BackendSpec::default(),
     }
 }
 

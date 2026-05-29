@@ -28,9 +28,6 @@ Options:
 
   -t, --data-format <RDF Data format>
           [default: turtle] [possible values: turtle, ntriples, rdfxml, trig, n3, nquads]
-  -e, --endpoint <Endpoint with RDF data>
-          [DEPRECATED] Use `--backend endpoint=<URL_OR_NAME>` instead.
-
       --max-steps <max steps to run>
           [default: 100]
   -S, --shacl-mode <SHACL validation mode>

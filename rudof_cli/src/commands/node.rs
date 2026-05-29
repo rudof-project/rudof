@@ -31,7 +31,7 @@ impl Command for NodeCommand {
         let reader_mode = self.args.reader_mode.into();
         let show_node_mode = self.args.show_node_mode.into();
 
-        let backend = resolve_backend(self.args.common.backend.as_ref(), self.args.endpoint.as_deref());
+        let backend = resolve_backend(self.args.common.backend.as_ref());
 
         let mut loading = ctx
             .rudof

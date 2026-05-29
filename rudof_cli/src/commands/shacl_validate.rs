@@ -33,7 +33,7 @@ impl Command for ShaclValidateCommand {
         let sort_order = self.args.sort_by.into();
         let result_format = self.args.result_format.into();
 
-        let backend = resolve_backend(self.args.common.backend.as_ref(), self.args.endpoint.as_deref());
+        let backend = resolve_backend(self.args.common.backend.as_ref());
 
         let mut loading = ctx
             .rudof

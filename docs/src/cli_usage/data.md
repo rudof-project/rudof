@@ -108,8 +108,6 @@ By default, `rudof` parses the input file(s) into an in-process RDF graph (the `
 | `qlever`                       | Launches a local `QLever` Docker container, builds an on-disk index from the input(s), and serves SPARQL via the container's HTTP endpoint. |
 | `endpoint=<URL_OR_NAME>`       | Query a remote SPARQL endpoint by URL, or by the name of an endpoint registered in the TOML config. |
 
-> The legacy `-e` / `--endpoint <URL>` flag still works but is deprecated; prefer `--backend endpoint=<URL>`. Passing both `--backend endpoint=…` and `--endpoint …` will use the `--backend` value (with a deprecation warning when only `--endpoint` is set).
-
 ### The QLever Docker backend
 
 The `qlever` value routes data loading through a locally-launched QLever container. QLever builds a compact on-disk index once and then answers SPARQL queries against it from a long-running container, so memory usage on subsequent runs is bounded by QLever's server cache (not by the dataset size).
@@ -209,7 +207,7 @@ All `[qlever]` fields are optional (an empty section is enough to bring QLever u
 - The backend is **read-only**: `add_triple`, `remove_triple` and `add_bnode` all return errors. Use `memory` for write-heavy workflows.
 - Only file-system paths are accepted as inputs (no URLs / stdin). Mixed input sets produce a clear error rather than a silently partial index.
 - The non-RDF `pg` data format is rejected up front (`--data-format pg` is incompatible with `--backend qlever`).
-- Combining `--backend qlever` with `--endpoint <URL>` (or `--backend endpoint=…`) is an error — pick one.
+- QLever's index builder is **strict about Turtle syntax**: SPARQL-style header declarations (`prefix : <…>` without `@` and without a trailing `.`) are rejected even though oxigraph accepts them. Use Turtle-conformant `@prefix : <…> .` declarations (or run files through a normalizer) before passing them to `--backend qlever`.
 - The `[qlever]` section in the config is recognized only when `rudof` is built with the `qlever` feature.
 
 ## RDF Config file

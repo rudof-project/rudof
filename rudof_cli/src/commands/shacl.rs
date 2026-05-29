@@ -32,7 +32,7 @@ impl Command for ShaclCommand {
         let shacl_schema_format = self.args.shapes_format.into();
         let result_format = self.args.result_shapes_format.into();
 
-        let backend = resolve_backend(self.args.common.backend.as_ref(), self.args.endpoint.as_deref());
+        let backend = resolve_backend(self.args.common.backend.as_ref());
 
         let mut loading = ctx
             .rudof

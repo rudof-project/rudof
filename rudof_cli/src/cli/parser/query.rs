@@ -50,14 +50,6 @@ pub struct QueryArgs {
     pub query: InputSpec,
 
     #[arg(
-        short = 'e',
-        long = "endpoint",
-        value_name = "Endpoint",
-        help = "[DEPRECATED] Endpoint with RDF data (URL or name). Use --backend endpoint=<URL_OR_NAME> instead."
-    )]
-    pub endpoint: Option<String>,
-
-    #[arg(
         short = 'r',
         long = "result-format",
         ignore_case = true,
