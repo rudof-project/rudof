@@ -30,9 +30,10 @@ pub struct RudofConfig {
     pub(crate) common: CommonConfig,
 
     // ---
-    // pub(crate) shex: Option<ShExConfig>,
     #[serde(rename = "rdf", default = "RudofConfig::default_rdf_data_config")]
     pub(crate) rdf_data: RdfDataConfig,
+    #[serde(rename = "shex", default = "RudofConfig::default_shex_config")]
+    pub(crate) shex: ShExConfig,
     // pub(crate) shex_validator: Option<ValidatorConfig>,
     // pub(crate) shex2uml: Option<ShEx2UmlConfig>,
     // pub(crate) shex2html: Option<ShEx2HtmlConfig>,
@@ -55,6 +56,7 @@ impl RudofConfig {
             common: Self::default_common_config(),
             service: Self::default_service_config(),
             rdf_data: Self::default_rdf_data_config(),
+            shex: Self::default_shex_config(),
         }
     }
 //
@@ -258,6 +260,7 @@ impl RudofConfig {
     #[inline] fn default_common_config() -> CommonConfig { CommonConfig::new() }
     #[inline] fn default_service_config() -> ServiceConfig { ServiceConfig::new() }
     #[inline] fn default_rdf_data_config() -> RdfDataConfig { RdfDataConfig::new() }
+    #[inline] fn default_shex_config() -> ShExConfig { ShExConfig::new() }
 }
 
 impl Default for RudofConfig {
