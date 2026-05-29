@@ -1,11 +1,11 @@
+#[cfg(feature = "qlever")]
+use crate::errors::DataError;
 use crate::{
     Rudof, RudofConfig,
     api::data::implementations::load_data::load_data,
     api::data::implementations::serialize_data::serialize_data,
     formats::{DataFormat, DataReaderMode, InputSpec, ResultDataFormat},
 };
-#[cfg(feature = "qlever")]
-use crate::errors::DataError;
 
 /// Helper: serialize current data to string
 fn serialize_to_string(rudof: &mut Rudof, format: Option<ResultDataFormat>) -> String {

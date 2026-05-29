@@ -6,6 +6,8 @@ use oxrdf::{
 };
 use prefixmap::PrefixMap;
 use rudof_iri::IriS;
+#[cfg(feature = "qlever")]
+use rudof_rdf::rdf_impl::QleverGraphContainer;
 use rudof_rdf::{
     rdf_core::{
         BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf, RdfDataConfig,
@@ -13,14 +15,12 @@ use rudof_rdf::{
     },
     rdf_impl::{OxigraphEndpoint, OxigraphInMemory, RdfBackend, ReaderMode},
 };
-#[cfg(feature = "qlever")]
-use rudof_rdf::rdf_impl::QleverGraphContainer;
 use serde::Serialize;
 use serde::ser::SerializeStruct;
 use std::collections::HashMap;
 use std::fmt::Debug;
-use std::str::FromStr;
 use std::io;
+use std::str::FromStr;
 
 /// Federation aggregator that pairs a single primary [`RdfBackend`] with an
 /// optional set of secondary SPARQL endpoints.
@@ -82,13 +82,12 @@ impl RdfData {
         if let Some(endpoints) = &rdf_data_config.endpoints {
             for (name, endpoint_description) in endpoints.iter() {
                 let sparql_endpoint =
-                    OxigraphEndpoint::new(endpoint_description.query_url(), &endpoint_description.prefixmap()).map_err(
-                        |e| RdfDataError::SRDFSparqlFromEndpointDescriptionError {
+                    OxigraphEndpoint::new(endpoint_description.query_url(), &endpoint_description.prefixmap())
+                        .map_err(|e| RdfDataError::SRDFSparqlFromEndpointDescriptionError {
                             name: name.clone(),
                             url: endpoint_description.query_url().to_string(),
                             err: Box::new(e),
-                        },
-                    )?;
+                        })?;
                 self.add_endpoint(name, sparql_endpoint);
             }
         }
@@ -101,10 +100,9 @@ impl RdfData {
     /// over their own remote / on-disk store already).
     pub fn check_store(&mut self) -> Result<(), RdfDataError> {
         if let Some(g) = self.primary.as_in_memory_mut() {
-            g.ensure_store()
-                .map_err(|e| RdfDataError::Backend {
-                    err: Box::new(rudof_rdf::rdf_impl::RdfBackendError::from(e)),
-                })?;
+            g.ensure_store().map_err(|e| RdfDataError::Backend {
+                err: Box::new(rudof_rdf::rdf_impl::RdfBackendError::from(e)),
+            })?;
         }
         Ok(())
     }
@@ -321,10 +319,10 @@ impl Rdf for RdfData {
     fn qualify_iri(&self, node: &Self::IRI) -> String {
         let iri = IriS::from_str(node.as_str()).unwrap_or_else(|_| IriS::new_unchecked(node.as_str()));
         // Try the primary's prefixmap, then each active endpoint's.
-        if let Some(pm) = <RdfBackend as Rdf>::prefixmap(&self.primary) {
-            if let Some(q) = pm.qualify_optional(&iri) {
-                return q;
-            }
+        if let Some(pm) = <RdfBackend as Rdf>::prefixmap(&self.primary)
+            && let Some(q) = pm.qualify_optional(&iri)
+        {
+            return q;
         }
         for endpoint in self.use_endpoints.values() {
             if let Some(q) = endpoint.prefixmap().qualify_optional(&iri) {
@@ -351,10 +349,10 @@ impl Rdf for RdfData {
     }
 
     fn resolve_prefix_local(&self, prefix: &str, local: &str) -> Result<IriS, prefixmap::error::PrefixMapError> {
-        if let Some(pm) = <RdfBackend as Rdf>::prefixmap(&self.primary) {
-            if let Ok(iri) = pm.resolve_prefix_local(prefix, local) {
-                return Ok(iri);
-            }
+        if let Some(pm) = <RdfBackend as Rdf>::prefixmap(&self.primary)
+            && let Ok(iri) = pm.resolve_prefix_local(prefix, local)
+        {
+            return Ok(iri);
         }
         for endpoint in self.use_endpoints.values() {
             if let Ok(iri) = endpoint.prefixmap().resolve_prefix_local(prefix, local) {
@@ -440,8 +438,7 @@ impl NeighsRDF for RdfData {
             .values()
             .flat_map(|e| NeighsRDF::triples(e).map(|i| i.collect::<Vec<_>>()).unwrap_or_default())
             .collect();
-        let iter: Box<dyn Iterator<Item = OxTriple> + '_> =
-            Box::new(primary.into_iter().chain(endpoint_triples));
+        let iter: Box<dyn Iterator<Item = OxTriple> + '_> = Box::new(primary.into_iter().chain(endpoint_triples));
         Ok(iter)
     }
 

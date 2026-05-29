@@ -4,9 +4,9 @@
 
 use thiserror::Error;
 
-use super::OxigraphInMemoryError;
 #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
 use super::OxigraphEndpointError;
+use super::OxigraphInMemoryError;
 #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
 use super::QleverError;
 

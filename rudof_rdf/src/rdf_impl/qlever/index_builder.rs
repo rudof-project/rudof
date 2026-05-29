@@ -23,8 +23,8 @@ use tokio::io::AsyncWriteExt;
 use tracing::{debug, info};
 
 use super::cli_probe;
-use super::{InputFile, NativeFormat, QleverConfig, QleverError};
 use super::config::CONTAINER_WORKING_DIR;
+use super::{InputFile, NativeFormat, QleverConfig, QleverError};
 
 /// Handle to a (possibly pre-existing) QLever on-disk index.
 #[derive(Debug, Clone)]
@@ -63,9 +63,7 @@ impl IndexHandle {
 /// Idempotent: if the on-disk index files are already present, this returns without doing any Docker work.
 pub async fn build_index(inputs: &[InputFile], config: &QleverConfig) -> Result<IndexHandle, QleverError> {
     if inputs.is_empty() {
-        return Err(QleverError::PreFlight(
-            "build_index called with no inputs".to_string(),
-        ));
+        return Err(QleverError::PreFlight("build_index called with no inputs".to_string()));
     }
 
     let fingerprint = fingerprint_inputs(inputs);
@@ -126,9 +124,7 @@ fn build_argv_and_binds(
         let parent = input
             .host_path
             .parent()
-            .ok_or_else(|| {
-                QleverError::PreFlight(format!("input has no parent dir: {}", input.host_path.display()))
-            })?
+            .ok_or_else(|| QleverError::PreFlight(format!("input has no parent dir: {}", input.host_path.display())))?
             .to_path_buf();
 
         let container_dir = match dir_mounts.get(&parent) {
@@ -352,9 +348,7 @@ pub async fn convert_to_native(
     })?;
 
     let (target_native, target_ox, target_ext) = match source_format {
-        RDFFormat::NQuads | RDFFormat::TriG | RDFFormat::JsonLd => {
-            (NativeFormat::NQuads, OxRdfFormat::NQuads, "nq")
-        },
+        RDFFormat::NQuads | RDFFormat::TriG | RDFFormat::JsonLd => (NativeFormat::NQuads, OxRdfFormat::NQuads, "nq"),
         _ => (NativeFormat::NTriples, OxRdfFormat::NTriples, "nt"),
     };
 
@@ -379,10 +373,12 @@ pub async fn convert_to_native(
             source_name: source.display().to_string(),
             error: format!("{e}"),
         })?;
-        writer.serialize_quad(&quad).map_err(|e| QleverError::FormatConversion {
-            source_name: source.display().to_string(),
-            error: format!("{e}"),
-        })?;
+        writer
+            .serialize_quad(&quad)
+            .map_err(|e| QleverError::FormatConversion {
+                source_name: source.display().to_string(),
+                error: format!("{e}"),
+            })?;
     }
     writer.finish().map_err(|e| QleverError::FormatConversion {
         source_name: source.display().to_string(),
@@ -394,6 +390,23 @@ pub async fn convert_to_native(
     out.flush().await?;
 
     Ok((target, target_native))
+}
+
+pub(super) fn rdf_format_to_oxrdfio(f: &crate::rdf_core::RDFFormat) -> oxrdfio::RdfFormat {
+    use crate::rdf_core::RDFFormat;
+    use oxrdfio::RdfFormat as Ox;
+    match f {
+        RDFFormat::Turtle => Ox::Turtle,
+        RDFFormat::NTriples => Ox::NTriples,
+        RDFFormat::Rdfxml => Ox::RdfXml,
+        RDFFormat::NQuads => Ox::NQuads,
+        RDFFormat::TriG => Ox::TriG,
+        RDFFormat::JsonLd => Ox::JsonLd {
+            profile: Default::default(),
+        },
+        // N3 is not in oxrdfio (fall back to Turtle).
+        RDFFormat::N3 => Ox::Turtle,
+    }
 }
 
 #[cfg(test)]
@@ -438,7 +451,8 @@ mod tests {
     fn argv_passes_dash_for_default_graph() {
         let config = QleverConfig::default();
         let inputs = vec![input("/tmp/data.ttl", NativeFormat::Turtle)];
-        let (argv, _) = build_argv_and_binds(super::super::CliKind::V1, &inputs, &config, Path::new("/tmp/idx")).unwrap();
+        let (argv, _) =
+            build_argv_and_binds(super::super::CliKind::V1, &inputs, &config, Path::new("/tmp/idx")).unwrap();
         // Find the -g and confirm next arg is "-"
         let g_pos = argv.iter().position(|a| a == "-g").unwrap();
         assert_eq!(argv[g_pos + 1], "-");
@@ -448,7 +462,8 @@ mod tests {
     fn cli_kind_v2_uses_qlever_index_subcommand() {
         let config = QleverConfig::default();
         let inputs = vec![input("/tmp/data.ttl", NativeFormat::Turtle)];
-        let (argv, _) = build_argv_and_binds(super::super::CliKind::V2, &inputs, &config, Path::new("/tmp/idx")).unwrap();
+        let (argv, _) =
+            build_argv_and_binds(super::super::CliKind::V2, &inputs, &config, Path::new("/tmp/idx")).unwrap();
         assert_eq!(argv[0], "qlever-index");
     }
 
@@ -459,20 +474,5 @@ mod tests {
         assert!(!handle.is_built());
         std::fs::write(tmp.path().join("default.meta"), b"").unwrap();
         assert!(handle.is_built());
-    }
-}
-
-pub(super) fn rdf_format_to_oxrdfio(f: &crate::rdf_core::RDFFormat) -> oxrdfio::RdfFormat {
-    use crate::rdf_core::RDFFormat;
-    use oxrdfio::RdfFormat as Ox;
-    match f {
-        RDFFormat::Turtle => Ox::Turtle,
-        RDFFormat::NTriples => Ox::NTriples,
-        RDFFormat::Rdfxml => Ox::RdfXml,
-        RDFFormat::NQuads => Ox::NQuads,
-        RDFFormat::TriG => Ox::TriG,
-        RDFFormat::JsonLd => Ox::JsonLd { profile: Default::default() },
-        // N3 is not in oxrdfio (fall back to Turtle).
-        RDFFormat::N3 => Ox::Turtle,
     }
 }

@@ -2,7 +2,7 @@
 //!
 //! `QleverServer` holds a [`tokio::runtime::Handle`] so its [`Drop`] impl can remove the container asynchronously.
 //!
-//! Routing every QLever async call through this one [`OnceLock<Runtime>`] guarantees the reactor outlives every `QleverServer` instance. 
+//! Routing every QLever async call through this one [`OnceLock<Runtime>`] guarantees the reactor outlives every `QleverServer` instance.
 
 use std::sync::OnceLock;
 

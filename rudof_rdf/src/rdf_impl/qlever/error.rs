@@ -29,11 +29,7 @@ pub enum QleverError {
 
     /// The QLever container exited with a non-zero status while running a one-shot command (typically index building).
     #[error("Container exit {status} running {what}\nlogs:\n{logs}")]
-    ContainerNonZeroExit {
-        what: String,
-        status: i64,
-        logs: String,
-    },
+    ContainerNonZeroExit { what: String, status: i64, logs: String },
 
     /// The server failed to become responsive within the configured timeout.
     #[error("QLever server at {endpoint} did not respond within {timeout_secs}s")]

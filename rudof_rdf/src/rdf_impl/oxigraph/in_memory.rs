@@ -1,7 +1,7 @@
-use crate::rdf_core::{AsyncRDF, BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf};
+use super::in_memory_error::OxigraphInMemoryError;
 #[cfg(feature = "sparql")]
 use crate::rdf_core::query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions, VarName};
-use super::in_memory_error::OxigraphInMemoryError;
+use crate::rdf_core::{AsyncRDF, BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf};
 
 use crate::rdf_core::vocabs::RdfVocab;
 use colored::*;
@@ -193,19 +193,22 @@ impl OxigraphInMemory {
         let graph = Arc::make_mut(&mut self.graph);
 
         for triple_result in turtle_reader.by_ref() {
-            let triple =
-                match handle_parse_error(triple_result, reader_mode, |e| OxigraphInMemoryError::TurtleParseError {
+            let triple = match handle_parse_error(triple_result, reader_mode, |e| {
+                OxigraphInMemoryError::TurtleParseError {
                     source_name: source_name.to_string(),
                     error: e,
-                })? {
-                    Some(t) => t,
-                    None => continue,
-                };
+                }
+            })? {
+                Some(t) => t,
+                None => continue,
+            };
             let triple_ref = triple.as_ref();
             if let Err(e) = validate_triple_iris(triple_ref) {
-                match handle_parse_error(Err::<(), _>(e), reader_mode, |e| OxigraphInMemoryError::TurtleParseError {
-                    source_name: source_name.to_string(),
-                    error: format!("Invalid IRI in triple: {e}"),
+                match handle_parse_error(Err::<(), _>(e), reader_mode, |e| {
+                    OxigraphInMemoryError::TurtleParseError {
+                        source_name: source_name.to_string(),
+                        error: format!("Invalid IRI in triple: {e}"),
+                    }
                 })? {
                     Some(_) => unreachable!(),
                     None => continue,
@@ -245,13 +248,14 @@ impl OxigraphInMemory {
         let graph = Arc::make_mut(&mut self.graph);
 
         for triple_result in nt_reader.by_ref() {
-            let triple = match handle_parse_error(triple_result, reader_mode, |e| OxigraphInMemoryError::NTriplesError {
-                data: "Reading N-Triples".to_string(),
-                error: e,
-            })? {
-                Some(t) => t,
-                None => continue,
-            };
+            let triple =
+                match handle_parse_error(triple_result, reader_mode, |e| OxigraphInMemoryError::NTriplesError {
+                    data: "Reading N-Triples".to_string(),
+                    error: e,
+                })? {
+                    Some(t) => t,
+                    None => continue,
+                };
             graph.insert(triple.as_ref());
         }
 
@@ -1295,12 +1299,11 @@ impl QueryRDF for OxigraphInMemory {
         let mut sols = QuerySolutions::empty();
 
         if let Some(store) = &self.store {
-            let parsed_query =
-                SparqlEvaluator::new()
-                    .parse_query(query_str)
-                    .map_err(|e| OxigraphInMemoryError::ParsingQueryError {
-                        msg: format!("Error parsing query: {}", e),
-                    })?;
+            let parsed_query = SparqlEvaluator::new().parse_query(query_str).map_err(|e| {
+                OxigraphInMemoryError::ParsingQueryError {
+                    msg: format!("Error parsing query: {}", e),
+                }
+            })?;
 
             let query_results =
                 parsed_query
@@ -1357,7 +1360,9 @@ impl QueryRDF for OxigraphInMemory {
 ///
 /// A vector of query solutions.
 #[cfg(feature = "sparql")]
-fn cnv_query_results(query_results: QueryResults) -> Result<Vec<QuerySolution<OxigraphInMemory>>, OxigraphInMemoryError> {
+fn cnv_query_results(
+    query_results: QueryResults,
+) -> Result<Vec<QuerySolution<OxigraphInMemory>>, OxigraphInMemoryError> {
     let QueryResults::Solutions(solutions) = query_results else {
         return Ok(Vec::new());
     };

@@ -70,9 +70,13 @@ pub(crate) fn connect() -> Result<Docker, QleverError> {
 
 /// Ping the daemon (used as a pre-flight check before any operation that would otherwise fail confusingly).
 pub(crate) async fn ping(docker: &Docker) -> Result<(), QleverError> {
-    docker.ping().await.map(|_| ()).map_err(|e| QleverError::DockerUnreachable {
-        message: format!("{e}"),
-    })
+    docker
+        .ping()
+        .await
+        .map(|_| ())
+        .map_err(|e| QleverError::DockerUnreachable {
+            message: format!("{e}"),
+        })
 }
 
 /// Pull `image` if it's not already present locally.
@@ -92,11 +96,11 @@ pub(crate) async fn ensure_image(docker: &Docker, image: &str) -> Result<(), Qle
     let mut stream = docker.create_image(Some(options), None, None);
     let mut last_status = String::new();
     while let Some(item) = stream.try_next().await? {
-        if let Some(status) = item.status {
-            if status != last_status {
-                tracing::info!("docker pull: {}", status);
-                last_status = status;
-            }
+        if let Some(status) = item.status
+            && status != last_status
+        {
+            tracing::info!("docker pull: {}", status);
+            last_status = status;
         }
     }
     Ok(())

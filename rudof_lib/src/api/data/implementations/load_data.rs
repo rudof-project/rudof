@@ -326,7 +326,7 @@ pub fn load_data_via_qlever(
 ) -> Result<()> {
     use crate::types::Data;
     use rudof_rdf::rdf_core::{BuildRDF, RDFFormat};
-    use rudof_rdf::rdf_impl::{QleverConfig, QleverGraphContainer, qlever_runtime};
+    use rudof_rdf::rdf_impl::{QleverGraphContainer, qlever_runtime};
     use sparql_service::RdfData;
 
     // Pg is the only non-RDF DataFormat; reject it before we try anything.
@@ -383,7 +383,7 @@ pub fn load_data_via_qlever(
     };
 
     // Honour any `[qlever]` section in the loaded config.
-    let qlever_config = rudof.config.rdf_data_config().qlever.clone().unwrap_or_else(QleverConfig::new);
+    let qlever_config = rudof.config.rdf_data_config().qlever.clone().unwrap_or_default();
 
     // Drive the async loader on the process-wide QLever runtime so the
     // reactor outlives the resulting `QleverServer`. If we created a local
@@ -391,7 +391,11 @@ pub fn load_data_via_qlever(
     // `QleverServer` (stored in `rudof.data`) outlives this function and its
     // `Drop` impl needs a live reactor to talk to the Docker socket.
     let graph = qlever_runtime()
-        .block_on(QleverGraphContainer::from_paths(&paths, rdf_format.as_ref(), qlever_config))
+        .block_on(QleverGraphContainer::from_paths(
+            &paths,
+            rdf_format.as_ref(),
+            qlever_config,
+        ))
         .map_err(|e| {
             Box::new(DataError::DataSourceSpec {
                 message: format!("QLever backend failed: {e}"),

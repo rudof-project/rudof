@@ -68,9 +68,7 @@ impl QleverGraphContainer {
         config: QleverConfig,
     ) -> Result<Self, QleverError> {
         if paths.is_empty() {
-            return Err(QleverError::PreFlight(
-                "from_paths called with no paths".to_string(),
-            ));
+            return Err(QleverError::PreFlight("from_paths called with no paths".to_string()));
         }
 
         // Shared dir for any conversion output, hashed from all input paths so repeated runs reuse the same converted files.
@@ -112,10 +110,7 @@ impl QleverGraphContainer {
 
     /// Open an EXISTING QLever index (skip indexing) and serve it.
     pub async fn open(index_dir: PathBuf, index_name: String, config: QleverConfig) -> Result<Self, QleverError> {
-        let config = QleverConfig {
-            index_name,
-            ..config
-        };
+        let config = QleverConfig { index_name, ..config };
         let handle = IndexHandle::new(index_dir, &config.index_name);
         if !handle.is_built() {
             return Err(QleverError::PreFlight(format!(
@@ -431,20 +426,15 @@ async fn input_file_from_path(
     format: Option<&RDFFormat>,
     convert_dir: &Path,
 ) -> Result<InputFile, QleverError> {
-    let canonical = path
-        .canonicalize()
-        .map_err(|error| QleverError::IndexDirIo {
-            path: path.to_path_buf(),
-            error,
-        })?;
+    let canonical = path.canonicalize().map_err(|error| QleverError::IndexDirIo {
+        path: path.to_path_buf(),
+        error,
+    })?;
 
     let source_format = match format {
-        Some(f) => f.clone(),
+        Some(f) => *f,
         None => guess_format(&canonical).ok_or_else(|| {
-            QleverError::PreFlight(format!(
-                "could not detect RDF format from path {}",
-                canonical.display()
-            ))
+            QleverError::PreFlight(format!("could not detect RDF format from path {}", canonical.display()))
         })?,
     };
 
@@ -633,11 +623,7 @@ mod tests {
     async fn nquads_is_passed_through_without_conversion() {
         let tmp = tempfile::tempdir().unwrap();
         let src = tmp.path().join("data.nq");
-        std::fs::write(
-            &src,
-            b"<http://x/a> <http://x/p> <http://x/b> <http://x/g> .\n",
-        )
-        .unwrap();
+        std::fs::write(&src, b"<http://x/a> <http://x/p> <http://x/b> <http://x/g> .\n").unwrap();
 
         let input = input_file_from_path(&src, None, tmp.path()).await.unwrap();
         assert_eq!(input.format_ext, NativeFormat::NQuads);
@@ -650,11 +636,7 @@ mod tests {
     async fn trig_converts_to_nquads_preserving_graph() {
         let tmp = tempfile::tempdir().unwrap();
         let src = tmp.path().join("data.trig");
-        std::fs::write(
-            &src,
-            b"@prefix : <http://x/> .\n:g { :a :p :b . }\n",
-        )
-        .unwrap();
+        std::fs::write(&src, b"@prefix : <http://x/> .\n:g { :a :p :b . }\n").unwrap();
 
         let input = input_file_from_path(&src, None, tmp.path()).await.unwrap();
         assert_eq!(

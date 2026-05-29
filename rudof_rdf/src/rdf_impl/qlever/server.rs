@@ -40,12 +40,12 @@ impl Drop for QleverServer {
         // The `ContainerAsync` `Drop` impl tears down the container itself.
         // We may additionally need to wipe the on-disk index if the user
         // opted into auto-delete and we created it.
-        if self.config.auto_delete_if_created && self.created_index_dir {
-            if let Some(p) = &self.index_dir_path {
-                if let Err(e) = std::fs::remove_dir_all(p) {
-                    tracing::warn!("could not remove QLever index dir {}: {}", p.display(), e);
-                }
-            }
+        if self.config.auto_delete_if_created
+            && self.created_index_dir
+            && let Some(p) = &self.index_dir_path
+            && let Err(e) = std::fs::remove_dir_all(p)
+        {
+            tracing::warn!("could not remove QLever index dir {}: {}", p.display(), e);
         }
     }
 }
@@ -92,10 +92,10 @@ impl QleverServer {
         }
         request = request.with_label("rudof.qlever", "true");
 
-        if config.run_as_host_user {
-            if let Some(user) = host_uid_gid() {
-                request = request.with_user(user);
-            }
+        if config.run_as_host_user
+            && let Some(user) = host_uid_gid()
+        {
+            request = request.with_user(user);
         }
 
         let host_port_opt = config.host_port;
@@ -214,14 +214,12 @@ pub(crate) fn build_server_cmd(cli: CliKind, index_name: &str, config: &QleverCo
         argv.push("true".into());
     }
 
-    argv.iter().map(shell_quote).collect::<Vec<_>>().join(" ")
+    argv.iter().map(|s| shell_quote(s)).collect::<Vec<_>>().join(" ")
 }
 
 /// Block until a SPARQL `ASK` against `endpoint` returns 200 OK, or `timeout_secs` elapses.
 async fn wait_until_responsive(endpoint: &str, timeout_secs: u64) -> Result<(), QleverError> {
-    let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(5))
-        .build()?;
+    let client = reqwest::Client::builder().timeout(Duration::from_secs(5)).build()?;
     let deadline = std::time::Instant::now() + Duration::from_secs(timeout_secs);
     let probe_query = "ASK { ?s ?p ?o }";
 
@@ -260,13 +258,13 @@ fn host_uid_gid() -> Option<String> {
     None
 }
 
-fn shell_quote(s: &String) -> String {
+fn shell_quote(s: &str) -> String {
     if s.bytes().all(|b| {
         matches!(b,
             b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'/' | b':' | b'='
         )
     }) {
-        s.clone()
+        s.to_string()
     } else {
         let escaped = s.replace('\'', "'\\''");
         format!("'{escaped}'")
@@ -292,10 +290,12 @@ mod tests {
 
     #[test]
     fn server_cmd_omits_unset_flags() {
-        let mut config = QleverConfig::default();
-        config.memory_max_size = None;
-        config.cache_max_size = None;
-        config.cache_max_size_single_entry = None;
+        let config = QleverConfig {
+            memory_max_size: None,
+            cache_max_size: None,
+            cache_max_size_single_entry: None,
+            ..Default::default()
+        };
         let cmd = build_server_cmd(CliKind::V1, "default", &config);
         assert!(!cmd.contains("-m"), "leaked memory flag: {cmd}");
         // -c is a valid prefix of nothing else; check space.
@@ -304,10 +304,11 @@ mod tests {
 
     #[test]
     fn server_cmd_includes_throw_on_unbound() {
-        let mut config = QleverConfig::default();
-        config.throw_on_unbound_variables = true;
+        let config = QleverConfig {
+            throw_on_unbound_variables: true,
+            ..Default::default()
+        };
         let cmd = build_server_cmd(CliKind::V1, "default", &config);
         assert!(cmd.contains("--throw-on-unbound-variables true"), "got: {cmd}");
     }
 }
-

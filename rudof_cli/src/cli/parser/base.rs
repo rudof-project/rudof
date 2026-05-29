@@ -147,9 +147,9 @@ pub struct CommonArgsAll {
     ///
     /// - `memory` (default): parse into an in-process oxrdf::Graph.
     /// - `qlever`: launch a local QLever Docker container and index the input on disk.
-    ///    Requires the binary to be built with the `qlever` feature.
+    ///   Requires the binary to be built with the `qlever` feature.
     /// - `endpoint=<URL_OR_NAME>`: query an external SPARQL endpoint by URL or by
-    ///    the name of an endpoint registered in the TOML config.
+    ///   the name of an endpoint registered in the TOML config.
     #[arg(
         long = "backend",
         value_name = "BACKEND",

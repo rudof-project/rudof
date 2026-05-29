@@ -10,17 +10,12 @@ use rudof_lib::formats::BackendSpec;
 /// - `qlever` — local QLever Docker container. Requires the `qlever` feature.
 /// - `endpoint=<URL_OR_NAME>` — remote SPARQL endpoint. The value is either a
 ///   full URL or the name of an endpoint registered in the rudof TOML config.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum BackendKindCli {
+    #[default]
     Memory,
     Qlever,
     Endpoint(String),
-}
-
-impl Default for BackendKindCli {
-    fn default() -> Self {
-        BackendKindCli::Memory
-    }
 }
 
 /// Helpers used by every CLI subcommand that loads RDF data, so the
@@ -98,7 +93,10 @@ impl FromStr for BackendKindCli {
             )),
             _ => {
                 // Preserve the original (non-lowercased) value for endpoint URLs.
-                if let Some(rest) = trimmed.strip_prefix("endpoint=").or_else(|| trimmed.strip_prefix("endpoint:")) {
+                if let Some(rest) = trimmed
+                    .strip_prefix("endpoint=")
+                    .or_else(|| trimmed.strip_prefix("endpoint:"))
+                {
                     if rest.is_empty() {
                         Err(ParseBackendError(
                             "missing endpoint URL or name after 'endpoint='".to_string(),

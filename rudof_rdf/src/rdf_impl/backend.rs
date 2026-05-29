@@ -9,14 +9,14 @@ use oxrdf::{
 use prefixmap::{PrefixMap, PrefixMapError};
 use rudof_iri::IriS;
 
-use super::{OxigraphInMemory, RdfBackendError};
 #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
 use super::OxigraphEndpoint;
 #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
 use super::QleverGraphContainer;
-use crate::rdf_core::{BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf};
+use super::{OxigraphInMemory, RdfBackendError};
 #[cfg(feature = "sparql")]
 use crate::rdf_core::query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions};
+use crate::rdf_core::{BuildRDF, FocusRDF, Matcher, NeighsRDF, RDFFormat, Rdf};
 
 /// Strategy enum that owns one concrete RDF backend.
 #[derive(Debug, Clone)]

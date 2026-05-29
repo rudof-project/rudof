@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
-/// Default upstream image 
+/// Default upstream image
 const DEFAULT_IMAGE_NAME: &str = "adfreiburg/qlever";
 const DEFAULT_IMAGE_TAG: &str = "commit-a307781";
 
