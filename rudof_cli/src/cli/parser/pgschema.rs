@@ -1,4 +1,4 @@
-use crate::cli::parser::CommonArgsAll;
+use crate::cli::parser::CommonArgsNoBackend;
 use crate::cli::wrappers::PgSchemaFormatCli;
 use clap::Args;
 use rudof_lib::formats::InputSpec;
@@ -50,5 +50,5 @@ pub struct PgschemaArgs {
     pub show_schema: Option<bool>,
 
     #[command(flatten)]
-    pub common: CommonArgsAll,
+    pub common: CommonArgsNoBackend,
 }

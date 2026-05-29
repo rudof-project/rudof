@@ -92,3 +92,14 @@ Refer to the [Example in the book](https://book.validatingrdf.com/bookHtml011.ht
 ```sh
 rudof shacl-validate --shapes shapes.ttl non-conformant.ttl
 ```
+
+## Selecting the RDF backend
+
+By default, validation data is loaded into an in-process `memory` graph. Use `--backend` to switch to a QLever Docker container or a remote SPARQL endpoint:
+
+```sh
+rudof shacl-validate --shapes shapes.ttl --backend qlever data.ttl
+rudof shacl-validate --shapes shapes.ttl --backend endpoint=https://my.sparql.server/sparql
+```
+
+See the [RDF backend (`--backend`) reference](./backend.md) for full documentation.

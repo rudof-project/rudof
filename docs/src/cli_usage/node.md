@@ -85,3 +85,14 @@ Pass `--strict-iris` to disable normalization entirely. Bare IRIs produce a clea
 ```sh
 rudof node -n "<http://example.org/a>" simple.ttl --strict-iris
 ```
+
+## Selecting the RDF backend
+
+By default, node information is looked up in an in-process `memory` graph. Use `--backend` to query a QLever Docker container or a remote SPARQL endpoint instead:
+
+```sh
+rudof node -n :a --backend qlever simple.ttl
+rudof node -n :a --backend endpoint=https://my.sparql.server/sparql
+```
+
+See the [RDF backend (`--backend`) reference](./backend.md) for full documentation.

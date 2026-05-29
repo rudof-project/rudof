@@ -1,4 +1,4 @@
-use crate::cli::parser::CommonArgsAll;
+use crate::cli::parser::CommonArgsNoBackend;
 use crate::cli::wrappers::{RdfConfigFormatCli, ResultRdfConfigFormatCli};
 use clap::Args;
 use rudof_lib::formats::InputSpec;
@@ -35,5 +35,5 @@ pub struct RdfConfigArgs {
     pub format: RdfConfigFormatCli,
 
     #[command(flatten)]
-    pub common: CommonArgsAll,
+    pub common: CommonArgsNoBackend,
 }

@@ -9,6 +9,12 @@
 
 `rudof` supports the following commands:
 
+## Common options
+
+- [RDF backend (`--backend`)](./cli_usage/backend.md)
+
+## Commands
+
 - [node](./cli_usage/node.md)
 - [data](./cli_usage/data.md)
 - [query](./cli_usage/sparql.md)

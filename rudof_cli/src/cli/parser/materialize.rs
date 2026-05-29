@@ -1,4 +1,4 @@
-use crate::cli::parser::CommonArgsAll;
+use crate::cli::parser::CommonArgsNoBackend;
 use crate::cli::wrappers::{DataReaderModeCli, ResultDataFormatCli, ShExFormatCli};
 use clap::Args;
 use rudof_lib::formats::InputSpec;
@@ -65,5 +65,5 @@ pub struct MaterializeArgs {
     pub result_format: ResultDataFormatCli,
 
     #[command(flatten)]
-    pub common: CommonArgsAll,
+    pub common: CommonArgsNoBackend,
 }

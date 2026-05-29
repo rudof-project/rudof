@@ -1,4 +1,4 @@
-use crate::cli::parser::CommonArgsAll;
+use crate::cli::parser::CommonArgsNoBackend;
 use crate::cli::wrappers::{DCTapFormatCli, ResultDCTapFormatCli};
 use clap::Args;
 use rudof_lib::formats::InputSpec;
@@ -30,5 +30,5 @@ pub struct DCTapArgs {
     pub result_format: ResultDCTapFormatCli,
 
     #[command(flatten)]
-    pub common: CommonArgsAll,
+    pub common: CommonArgsNoBackend,
 }

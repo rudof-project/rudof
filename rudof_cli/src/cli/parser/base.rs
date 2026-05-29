@@ -84,9 +84,11 @@ pub enum Command {
 /// and configuration management.
 #[derive(Debug, Clone)]
 pub enum CommonArgs {
-    /// Contains all common arguments including config, output, and force overwrite.
+    /// Config, output, force-overwrite, and backend.
     All(CommonArgsAll),
-    /// Contains only output and force overwrite arguments.            
+    /// Config, output, and force-overwrite (no backend).
+    NoBackend(CommonArgsNoBackend),
+    /// Output and force-overwrite only.
     OutputForceOverWrite(CommonArgsOutputForceOverWrite),
     /// Represents the absence of common arguments.
     None,
@@ -97,6 +99,7 @@ impl CommonArgs {
     pub fn config(&self) -> Option<&PathBuf> {
         match self {
             CommonArgs::All(args) => args.config.as_ref(),
+            CommonArgs::NoBackend(args) => args.config.as_ref(),
             CommonArgs::OutputForceOverWrite(_) => None,
             CommonArgs::None => None,
         }
@@ -106,6 +109,7 @@ impl CommonArgs {
     pub fn output(&self) -> Option<&PathBuf> {
         match self {
             CommonArgs::All(args) => args.output.as_ref(),
+            CommonArgs::NoBackend(args) => args.output.as_ref(),
             CommonArgs::OutputForceOverWrite(args) => args.output.as_ref(),
             CommonArgs::None => None,
         }
@@ -115,6 +119,7 @@ impl CommonArgs {
     pub fn force_overwrite(&self) -> bool {
         match self {
             CommonArgs::All(args) => args.force_overwrite,
+            CommonArgs::NoBackend(args) => args.force_overwrite,
             CommonArgs::OutputForceOverWrite(args) => args.force_overwrite,
             CommonArgs::None => false,
         }
@@ -160,6 +165,29 @@ pub struct CommonArgsAll {
         }),
     )]
     pub backend: Option<crate::cli::wrappers::BackendKindCli>,
+}
+
+/// Common arguments for commands that need config and output but not a backend.
+#[derive(Debug, Clone, Args)]
+pub struct CommonArgsNoBackend {
+    #[arg(short = 'c', long = "config-file", value_name = "FILE", help = "Config file name")]
+    pub config: Option<PathBuf>,
+
+    #[arg(
+        short = 'o',
+        long = "output-file",
+        value_name = "FILE",
+        help = "Output file name, default = terminal"
+    )]
+    pub output: Option<PathBuf>,
+
+    #[arg(
+        long = "force-overwrite",
+        value_name = "BOOL",
+        help = "Force overwrite to output file if it already exists",
+        default_value_t = false
+    )]
+    pub force_overwrite: bool,
 }
 
 /// Partial common arguments for commands that only handle output and overwriting.
