@@ -1,4 +1,6 @@
-use crate::cli::parser::{Command as CliCommand, CommonArgs, CommonArgsAll, CommonArgsNoBackend, CommonArgsOutputForceOverWrite};
+use crate::cli::parser::{
+    Command as CliCommand, CommonArgs, CommonArgsAll, CommonArgsNoBackend, CommonArgsOutputForceOverWrite,
+};
 use crate::commands::{
     CompareCommand, CompletionCommand, ConvertCommand, DataCommand, DctapCommand, GenerateCommand, MaterializeCommand,
     McpCommand, NodeCommand, PgSchemaValidateCommand, PgschemaCommand, QueryCommand, RdfConfigCommand, ServiceCommand,
