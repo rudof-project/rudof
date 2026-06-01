@@ -169,7 +169,7 @@ impl<'de> Deserialize<'de> for RdfDataConfig {
     {
         #[derive(Deserialize)]
         struct Raw {
-            #[serde(rename = "base_iri", default = "RdfDataConfig::default_base")]
+            #[serde(rename = "base_iri", default)]
             base: Option<IriS>,
             #[serde(rename = "endpoints", default = "RdfDataConfig::default_endpoints")]
             endpoints: HashMap<String, EndpointDescription>,

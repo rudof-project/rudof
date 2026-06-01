@@ -84,9 +84,9 @@ impl<'de> Deserialize<'de> for ShExConfig {
             shex_format: ShExFormat,
             #[serde(rename = "check_well_formed", default = "ShExConfig::default_check_well_formed")]
             check_well_formed: bool,
-            #[serde(rename = "rdf", default = "ShExConfig::default_rdf_config_shex")]
+            #[serde(rename = "rdf", default)]
             rdf_config_shex: Option<RdfDataConfig>,
-            #[serde(rename = "base_iri", default = "ShExConfig::default_base")]
+            #[serde(rename = "base_iri", default)]
             base: Option<IriS>,
         }
 

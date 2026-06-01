@@ -86,7 +86,7 @@ impl<'de> Deserialize<'de> for ServiceConfig {
     {
         #[derive(Deserialize)]
         struct Raw {
-            #[serde(rename = "base_iri", default = "ServiceConfig::default_iri")]
+            #[serde(rename = "base_iri", default)]
             base: Option<IriS>
         }
 
