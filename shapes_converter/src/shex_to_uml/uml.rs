@@ -25,6 +25,7 @@ pub enum UmlLabelType {
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
 pub enum LineType {
     Orthogonal,
     Polyline,
@@ -33,6 +34,7 @@ pub enum LineType {
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
 pub enum Direction {
     LeftToRight,
     #[default]
