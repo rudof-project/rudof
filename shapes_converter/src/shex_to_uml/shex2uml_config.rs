@@ -138,7 +138,7 @@ impl ShEx2UmlConfig {
 #[allow(dead_code)]
 impl ShEx2UmlConfig {
     #[inline] fn default_plantuml_path() -> Option<PathBuf> { None }
-    #[inline] fn default_annotation_label() -> Vec<IriS> { Vec::default() }
+    #[inline] fn default_annotation_label() -> Vec<IriS> { vec![RdfsVocab::rdfs_label()] }
     #[inline] fn default_replace_iri_by_label() -> bool { true }
     #[inline] fn default_shadowing() -> bool { true }
     #[inline] fn default_line_type() -> LineType { LineType::default() }
