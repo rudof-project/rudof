@@ -34,7 +34,8 @@ pub struct RudofConfig {
     pub(crate) rdf_data: RdfDataConfig,
     #[serde(rename = "shex", default = "RudofConfig::default_shex_config")]
     pub(crate) shex: ShExConfig,
-    // pub(crate) shex_validator: Option<ValidatorConfig>,
+    #[serde(rename = "shex_validator", default = "RudofConfig::default_shex_validator_config")]
+    pub(crate) shex_validator: ValidatorConfig,
     // pub(crate) shex2uml: Option<ShEx2UmlConfig>,
     // pub(crate) shex2html: Option<ShEx2HtmlConfig>,
     // pub(crate) shacl2shex: Option<Shacl2ShExConfig>,
@@ -57,6 +58,7 @@ impl RudofConfig {
             service: Self::default_service_config(),
             rdf_data: Self::default_rdf_data_config(),
             shex: Self::default_shex_config(),
+            shex_validator: Self::default_shex_validator_config(),
         }
     }
 //
@@ -261,6 +263,7 @@ impl RudofConfig {
     #[inline] fn default_service_config() -> ServiceConfig { ServiceConfig::new() }
     #[inline] fn default_rdf_data_config() -> RdfDataConfig { RdfDataConfig::new() }
     #[inline] fn default_shex_config() -> ShExConfig { ShExConfig::new() }
+    #[inline] fn default_shex_validator_config() -> ValidatorConfig { ValidatorConfig::new() }
 }
 
 impl Default for RudofConfig {
