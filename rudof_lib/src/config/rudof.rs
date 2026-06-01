@@ -36,7 +36,8 @@ pub struct RudofConfig {
     pub(crate) shex: ShExConfig,
     #[serde(rename = "shex_validator", default = "RudofConfig::default_shex_validator_config")]
     pub(crate) shex_validator: ValidatorConfig,
-    // pub(crate) shex2uml: Option<ShEx2UmlConfig>,
+    #[serde(rename = "shex2uml", default = "RudofConfig::default_shex2uml_config")]
+    pub(crate) shex2uml: ShEx2UmlConfig,
     // pub(crate) shex2html: Option<ShEx2HtmlConfig>,
     // pub(crate) shacl2shex: Option<Shacl2ShExConfig>,
     // pub(crate) tap: Option<TapConfig>,
@@ -59,6 +60,7 @@ impl RudofConfig {
             rdf_data: Self::default_rdf_data_config(),
             shex: Self::default_shex_config(),
             shex_validator: Self::default_shex_validator_config(),
+            shex2uml: Self::default_shex2uml_config(),
         }
     }
 //
@@ -264,6 +266,7 @@ impl RudofConfig {
     #[inline] fn default_rdf_data_config() -> RdfDataConfig { RdfDataConfig::new() }
     #[inline] fn default_shex_config() -> ShExConfig { ShExConfig::new() }
     #[inline] fn default_shex_validator_config() -> ValidatorConfig { ValidatorConfig::new() }
+    #[inline] fn default_shex2uml_config() -> ShEx2UmlConfig { ShEx2UmlConfig::new() }
 }
 
 impl Default for RudofConfig {
