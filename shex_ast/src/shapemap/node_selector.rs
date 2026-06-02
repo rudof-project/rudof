@@ -7,7 +7,7 @@ use prefixmap::IriRef;
 use prefixmap::PrefixMap;
 use prefixmap::error::PrefixMapError;
 use rudof_iri::IriS;
-use rudof_rdf::rdf_core::{NeighsRDF, query::QueryRDF, term::literal::ConcreteLiteral};
+use rudof_rdf::rdf_core::{NeighsRDF, query::QueryRDF, term::Object, term::literal::ConcreteLiteral};
 use serde::Serialize;
 use std::fmt::Display;
 use thiserror::Error;
@@ -18,6 +18,7 @@ use thiserror::Error;
 #[derive(Debug, PartialEq, Clone, Serialize)]
 pub enum NodeSelector {
     Node(ObjectValue),
+    BNode(String),
     TriplePattern {
         subject: Pattern,
         path: SHACLPathRef,
@@ -52,6 +53,10 @@ impl NodeSelector {
         NodeSelector::Node(ObjectValue::prefixed(alias, local))
     }
 
+    pub fn bnode(label: impl Into<String>) -> NodeSelector {
+        NodeSelector::BNode(label.into())
+    }
+
     pub fn nodes<R>(&self, rdf: &R) -> Result<Vec<R::Term>, ShapemapError>
     where
         R: QueryRDF,
@@ -75,6 +80,10 @@ impl NodeSelector {
                         Ok(lit.into())
                     },
                 }?;
+                Ok(vec![term])
+            },
+            NodeSelector::BNode(label) => {
+                let term = R::Term::from(Object::BlankNode(label.clone()));
                 Ok(vec![term])
             },
             NodeSelector::Sparql { query } => {
@@ -151,6 +160,7 @@ impl NodeSelect for NodeSelector {
             NodeSelector::Node(_node) => {
                 todo!()
             },
+            NodeSelector::BNode(_) => todo!(),
             NodeSelector::TriplePattern { subject, path, object } => match (subject, path, object) {
                 (Pattern::Focus, _pred, Pattern::Wildcard) => todo!(),
                 (Pattern::Focus, _pred, Pattern::Node(_node)) => todo!(),
@@ -203,6 +213,10 @@ impl Display for NodeSelector {
                 write!(f, "{object_value}")?;
                 Ok(())
             },
+            NodeSelector::BNode(label) => {
+                write!(f, "_:{label}")?;
+                Ok(())
+            },
             NodeSelector::TriplePattern { subject, path, object } => {
                 write!(
                     f,
@@ -230,6 +244,7 @@ impl DerefIri for NodeSelector {
                 let deref = object_value.deref_iri(base, prefixmap)?;
                 Ok(NodeSelector::Node(deref))
             },
+            NodeSelector::BNode(label) => Ok(NodeSelector::BNode(label)),
             NodeSelector::TriplePattern { subject, path, object } => {
                 let subject = subject.deref_iri(base, prefixmap)?;
                 let path = path.deref_iri(base, prefixmap)?;

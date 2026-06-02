@@ -1439,13 +1439,7 @@ fn check_pattern(node: &Node, regex: &str, flags: Option<&str>, base: &Option<Ir
     let lexical_form = match node.as_object() {
         Object::Literal(lit) => Ok(lit.lexical_form()),
         Object::BlankNode(b) => Ok(b.clone()),
-        Object::Iri(iri) => {
-            if let Some(base) = base {
-                Ok(iri.relative_from(base))
-            } else {
-                Ok(iri.to_string())
-            }
-        },
+        Object::Iri(iri) => Ok(iri.to_string()),
         Object::Triple { .. } => Err(Box::new(SchemaIRError::PatternTripleTerm {
             node: node.to_string(),
             regex: regex.to_string(),

@@ -478,8 +478,8 @@ impl SchemaIR {
 
     pub(crate) fn build_dependency_graph(&mut self) {
         let mut dep_graph = DependencyGraph::new();
-        let mut visited = Vec::new();
         for (idx, info) in self.shapes.iter() {
+            let mut visited = Vec::new();
             info.expr()
                 .add_edges(*idx, &mut dep_graph, PosNeg::pos(), self, &mut visited);
         }

@@ -180,6 +180,7 @@ where
     fn pp_node_selector(&self, ns: &NodeSelector) -> DocBuilder<'a, Arena<'a, A>, A> {
         match ns {
             NodeSelector::Node(v) => pp_object_value(v, self.doc, &self.nodes_prefixmap),
+            NodeSelector::BNode(label) => self.doc.text(format!("_:{label}")),
             NodeSelector::TriplePattern { subject, path, object } => self
                 .doc
                 .text("{")
