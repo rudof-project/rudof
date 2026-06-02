@@ -11,6 +11,10 @@ impl BNode {
     pub fn new(s: &str) -> BNode {
         BNode { value: s.to_string() }
     }
+
+    pub fn value(&self) -> &str {
+        &self.value
+    }
 }
 
 impl From<&str> for BNode {

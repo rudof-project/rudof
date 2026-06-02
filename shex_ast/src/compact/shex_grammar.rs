@@ -1771,7 +1771,7 @@ fn pname_ns_iri_ref(i: Span) -> IRes<IriRef> {
 }
 
 /// `[138s] blankNode ::= BLANK_NODE_LABEL`
-fn blank_node(i: Span) -> IRes<BNode> {
+pub(crate) fn blank_node(i: Span) -> IRes<BNode> {
     map(blank_node_label, BNode::new).parse(i)
 }
 

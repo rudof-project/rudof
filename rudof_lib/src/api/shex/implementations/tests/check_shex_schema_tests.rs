@@ -189,6 +189,37 @@ fn test_check_schema_with_multiple_neg_cycles() {
     );
 }
 
+/// Regression test for non-deterministic negative cycle detection.
+#[test]
+fn test_check_schema_with_neg_cycle_is_deterministic() {
+    let schema_str = r#"
+PREFIX : <http://example.org/>
+:S ( (NOT @:T) AND @:U )
+:T { :a NOT @:S }
+:U { :b @:S }
+    "#;
+
+    for run in 0..30 {
+        let rudof = Rudof::new(RudofConfig::default());
+        let schema = InputSpec::str(schema_str);
+        let mut output = Cursor::new(Vec::new());
+
+        let result = check_shex_schema(&rudof, &schema, None, Some("http://example.org/"), &mut output);
+        let output_str = String::from_utf8(output.into_inner()).unwrap();
+
+        assert!(result.is_ok(), "run {run}: check_shex_schema errored: {output_str}");
+        let is_valid = result.unwrap();
+        assert!(
+            !is_valid,
+            "run {run}: expected schema to be invalid (negative cycle), got valid. output:\n{output_str}",
+        );
+        assert!(
+            output_str.contains("negative cycles"),
+            "run {run}: output missing 'negative cycles':\n{output_str}",
+        );
+    }
+}
+
 #[test]
 fn test_check_complex_valid_schema() {
     let rudof = Rudof::new(RudofConfig::default());
