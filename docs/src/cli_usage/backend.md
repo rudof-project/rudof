@@ -45,16 +45,66 @@ The `qlever` backend routes data loading through a locally-launched QLever Docke
 
 - A running Docker daemon. The first run will pull the `adfreiburg/qlever` image (~1 GB).
 - Every input must be a file-system path (remote URLs and stdin are not supported for this backend).
+- *(Optional, only if you pass compressed dumps)* A decompressor binary on `$PATH` for each compression family you intend to use:
+  - **bzip2 (`.bz2`)**: install `lbzip2` (parallel, recommended) or fall back to `bzip2` (single-threaded).
+  - **xz (`.xz`)**: `xz`.
 
 ### What happens under the hood
 
-1. The `adfreiburg/qlever` image is pulled if not already present locally.
-2. An index directory is created under the platform cache dir (typically `~/.cache/rudof/qlever/<fingerprint>/`), unless a directory is explicitly configured.
-3. If the input is in a non-native format (anything other than `ttl`, `nt`, `nq`), it is transparently converted to N-Triples before indexing.
-4. A QLever container is started, mapped to an ephemeral host port, and a readiness probe waits until it answers SPARQL queries.
-5. Subsequent `rudof` commands targeting the same input reuse the existing index (the indexing step is skipped when the on-disk index files are already present).
+A QLever run has two phases, **build the index** (once) and **serve it** (every time). The build phase is idempotent: if the on-disk index already exists, it is skipped and the serve phase starts immediately.
 
-The index is **persisted by default** across `rudof` invocations so repeated runs skip indexing. See `auto_delete_if_created` below to change that.
+1. **Resolve the index directory.** Either `[qlever].index_dir` from the TOML config, or a per-input fingerprint under the platform cache dir (typically `~/.cache/rudof/qlever/<fingerprint>/`). The fingerprint is derived from each input's path, format, graph IRI, and compression family, so different inputs get different directories and unrelated runs don't collide.
+2. **Skip if already built.** QLever writes a `<name>.meta-data.json` marker last; if it's there, `rudof` jumps straight to step 6.
+3. **Docker pre-flight.** Connect to the local Docker daemon, ping it, and pull the `adfreiburg/qlever` image if it isn't present locally (~1 GB on first run).
+4. **Probe the image's CLI.** The upstream image has shipped two generations of binaries — v1 (`IndexBuilderMain` / `ServerMain`) and v2 (`qlever-index` / `qlever-server`). `rudof` runs each candidate with `-h` once to pick the one that works for the pinned image tag.
+5. **Build the index.** A one-shot container runs the index builder with the right `-f` / `-F` / `-g` triples. Each input takes one of three paths:
+   - **Native (`.ttl`, `.nt`, `.nq`)**: the file's parent directory is bind-mounted read-only into the container under `/inputs/<n>/`, and the file is passed as `-f /inputs/<n>/file -F <fmt>`. No copying, no parsing on the host.
+   - **Compressed-native (`.nt.bz2`, `.ttl.xz`, …)**: no bind-mount. `rudof` spawns a host-side decompressor (see *Streaming compressed dumps below) and pipes its stdout into the container's stdin via Docker attach, with `-f -` on the QLever side. Nothing decompressed ever hits disk.
+   - **Non-native (`.rdf`, `.jsonld`, `.trig`, `.n3`)**: transparently converted via `oxrdfio` into a shared conversion directory and then bind-mounted as in the native case. Quad-bearing sources (`TriG`, `JSON-LD`) are written as **N-Quads** to preserve graph info; triple-only sources (`RDF/XML`, `N3`) are written as **N-Triples**.
+6. **Serve the index.** A long-running container is started, the QLever HTTP port is mapped to an ephemeral host port (or to `host_port` if configured), and `rudof` polls a SPARQL readiness probe until it succeeds.
+7. **Query.** All subsequent `rudof` operations go over SPARQL-over-HTTP against the running container.
+
+The index is **persisted by default** across `rudof` invocations, so the next run with the same inputs short-circuits at step 2 and goes straight to serving. Set `auto_delete_if_created = true` in the `[qlever]` config to wipe the index on shutdown when the current run created it.
+
+### Streaming compressed dumps
+
+The QLever backend can ingest compressed RDF dumps **without ever materialising the decompressed form on disk**.
+
+When you pass a compressed file, `rudof`:
+
+1. Probes `$PATH` for a decompressor for that family (preferring parallel implementations).
+2. Spawns it on the host with the compressed file as input.
+3. Pipes its stdout straight into the QLever container's stdin, where `IndexBuilderMain` reads it via `-f -`.
+
+Nothing decompressed ever touches disk; the decompressor uses host CPU cores (not the container's), so multi-threaded `lbzip2` / `pigz`-style binaries get full benefit of your machine.
+
+**Supported compression families** and the decompressors `rudof` looks for, in priority order:
+
+| Extension | Tries (parallel first)           | Fallback (single-threaded) |
+|-----------|----------------------------------|----------------------------|
+| `.bz2`    | `lbzip2 -dc`, `lbzcat -dc`       | `bzip2 -dc`                |
+| `.xz`     | `xz -dc -T0`, `xzcat -T0`        | *(same; `-T0` is harmless when the file isn't parallelisable)* |
+
+**Accepted inner formats** are the QLever-native ones — `.nt`, `.ttl`, `.nq` — so the file must look like `dump.nt.bz2`, `data.ttl.xz`, etc. Non-native compressed inputs (e.g. `dump.jsonld.bz2`) are rejected with a clear error; decompress or pre-convert them to a native format first.
+
+**Usage** is identical to the uncompressed flow, `rudof` notices the suffix automatically:
+
+```sh
+rudof data latest-truthy.nt.bz2 --backend qlever
+rudof query -q my.sparql data.nt.xz --backend qlever
+```
+
+On startup, `rudof` logs which decompressor it picked:
+
+```
+streaming compressed input (bz2) via /usr/bin/lbzip2 (parallel)
+```
+
+**Limitations of the compressed-dump path:**
+
+- **At most one compressed input per index build.** You can mix one compressed file with any number of uncompressed files in the same invocation, but two compressed inputs in the same build are rejected (the index builder reads at most one stream via stdin).
+- **Native inner format only.** As above: `.jsonld.bz2`, `.trig.xz`, etc. are rejected.
+- **Decompressor must be on `$PATH`.** If no decompressor for the input's family is found, `rudof` errors with the list of binaries it tried so you know what to install.
 
 ### Configuring the QLever backend
 

@@ -10,8 +10,9 @@ pub use oxigraph::{OxigraphEndpoint, OxigraphEndpointError, SparqlVars};
 pub use oxigraph::{OxigraphInMemory, OxigraphInMemoryError, ReaderMode};
 #[cfg(all(not(target_family = "wasm"), feature = "qlever"))]
 pub use qlever::{
-    CliKind, IndexHandle, InputFile, NativeFormat, QleverConfig, QleverError, QleverGraphContainer, QleverServer,
-    build_index, qlever_probe_cli, runtime as qlever_runtime,
+    Bzip2Strategy, CliKind, Compression, CompressionStrategy, DecompressorCandidate, DecompressorProbe, IndexHandle,
+    InputFile, NativeFormat, QleverConfig, QleverError, QleverGraphContainer, QleverServer, ResolvedDecompressor,
+    XzStrategy, build_index, decompressor_probe, qlever_probe_cli, runtime as qlever_runtime, strip_compression_suffix,
 };
 
 pub use backend::RdfBackend;
