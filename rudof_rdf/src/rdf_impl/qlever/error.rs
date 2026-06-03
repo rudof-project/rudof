@@ -96,6 +96,27 @@ pub enum QleverError {
     /// A SPARQL solution contained a term that was not an IRI where one was expected.
     #[error("SPARQL solution: expected IRI, got {value}")]
     SolutionNotIri { value: Term },
+
+    /// A compressed input was supplied but no decompressor for that family
+    /// was found on `$PATH`.
+    #[error("no decompressor for {family} on PATH (tried {tried})")]
+    DecompressorMissing { family: &'static str, tried: String },
+
+    /// The host decompressor process exited with a non-zero status while
+    /// streaming bytes into the index builder.
+    #[error("decompressor {program} exited {status}\nstderr tail:\n{stderr_tail}")]
+    DecompressorExit {
+        program: String,
+        status: i32,
+        stderr_tail: String,
+    },
+
+    /// A compressed input has an inner extension QLever cannot index
+    /// natively (e.g. `.jsonld.bz2`).
+    #[error(
+        "compressed input {path} has unsupported inner extension {suffix} (need .nt/.ttl/.nq before the compression suffix)"
+    )]
+    UnsupportedCompressedFormat { path: PathBuf, suffix: String },
 }
 
 impl QleverError {

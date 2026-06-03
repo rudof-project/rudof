@@ -16,6 +16,7 @@ use oxrdf::{
 use prefixmap::{PrefixMap, PrefixMapError};
 use rudof_iri::IriS;
 
+use super::decompressor::strip_compression_suffix;
 use super::index_builder::{build_index, convert_to_native, fingerprint_inputs};
 use super::server::QleverServer;
 use super::{IndexHandle, InputFile, NativeFormat, QleverConfig, QleverError};
@@ -426,6 +427,39 @@ async fn input_file_from_path(
     format: Option<&RDFFormat>,
     convert_dir: &Path,
 ) -> Result<InputFile, QleverError> {
+    // Compressed inputs are streamed through a host-side decompressor into
+    // the index builder's stdin (`-f -`). The decompressed bytes never hit
+    // disk, so no canonicalisation of an "inner" path is needed: we just
+    // need to recognise the inner format from the extension before the
+    // compression suffix.
+    if let Some((inner_virtual, compression)) = strip_compression_suffix(path) {
+        let native = NativeFormat::from_path(&inner_virtual).ok_or_else(|| {
+            let suffix = inner_virtual
+                .extension()
+                .map(|e| e.to_string_lossy().into_owned())
+                .unwrap_or_default();
+            QleverError::UnsupportedCompressedFormat {
+                path: path.to_path_buf(),
+                suffix,
+            }
+        })?;
+        let canonical = path.canonicalize().map_err(|error| QleverError::IndexDirIo {
+            path: path.to_path_buf(),
+            error,
+        })?;
+        let in_container_name = canonical
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_else(|| "data".to_string());
+        return Ok(InputFile {
+            host_path: canonical,
+            in_container_name,
+            format_ext: native,
+            graph_iri: None,
+            compression: Some(compression),
+        });
+    }
+
     let canonical = path.canonicalize().map_err(|error| QleverError::IndexDirIo {
         path: path.to_path_buf(),
         error,
@@ -447,6 +481,7 @@ async fn input_file_from_path(
                 .unwrap_or_else(|| "data".to_string()),
             format_ext: native,
             graph_iri: None,
+            compression: None,
         });
     }
 
@@ -463,6 +498,7 @@ async fn input_file_from_path(
             .unwrap_or_else(|| fallback_name.to_string()),
         format_ext: native,
         graph_iri: None,
+        compression: None,
     })
 }
 

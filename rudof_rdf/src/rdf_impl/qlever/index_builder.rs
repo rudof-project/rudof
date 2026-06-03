@@ -11,19 +11,21 @@
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::process::Stdio;
 
 use bollard::Docker;
 use bollard::models::{ContainerCreateBody, HostConfig};
 use bollard::query_parameters::{
-    CreateContainerOptions, LogsOptionsBuilder, RemoveContainerOptionsBuilder, StartContainerOptions,
-    WaitContainerOptionsBuilder,
+    AttachContainerOptionsBuilder, CreateContainerOptions, LogsOptionsBuilder, RemoveContainerOptionsBuilder,
+    StartContainerOptions, WaitContainerOptionsBuilder,
 };
-use futures::TryStreamExt;
-use tokio::io::AsyncWriteExt;
+use futures::{StreamExt, TryStreamExt};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tracing::{debug, info};
 
 use super::cli_probe;
 use super::config::CONTAINER_WORKING_DIR;
+use super::decompressor::{ResolvedDecompressor, decompressor_probe};
 use super::{InputFile, NativeFormat, QleverConfig, QleverError};
 
 /// Handle to a (possibly pre-existing) QLever on-disk index.
@@ -90,7 +92,44 @@ pub async fn build_index(inputs: &[InputFile], config: &QleverConfig) -> Result<
     let cmd_string = shell_join(&argv);
     info!("running QLever index builder: {}", cmd_string);
 
-    run_one_shot(&docker, config, binds, &cmd_string, "index-builder").await?;
+    let streamable: Vec<&InputFile> = inputs.iter().filter(|i| i.compression.is_some()).collect();
+    match streamable.len() {
+        0 => {
+            run_one_shot(&docker, config, binds, &cmd_string, "index-builder").await?;
+        },
+        1 => {
+            let compression = streamable[0].compression.expect("filtered by is_some");
+            let probe = decompressor_probe();
+            let decomp = probe.for_compression(compression).ok_or_else(|| {
+                let tried: Vec<&str> = compression.strategy().candidates().iter().map(|c| c.program).collect();
+                QleverError::DecompressorMissing {
+                    family: compression.strategy().family_name(),
+                    tried: tried.join(", "),
+                }
+            })?;
+            info!(
+                "streaming compressed input ({}) via {}{}",
+                decomp.family,
+                decomp.program.display(),
+                if decomp.parallel {
+                    " (parallel)"
+                } else {
+                    " (single-threaded)"
+                }
+            );
+            run_one_shot_with_stdin(
+                &docker,
+                config,
+                binds,
+                &cmd_string,
+                "index-builder",
+                &streamable[0].host_path,
+                decomp,
+            )
+            .await?;
+        },
+        _ => unreachable!("rejected earlier in build_argv_and_binds"),
+    }
 
     Ok(handle)
 }
@@ -102,6 +141,15 @@ fn build_argv_and_binds(
     config: &QleverConfig,
     index_dir: &Path,
 ) -> Result<(Vec<String>, Vec<String>), QleverError> {
+    // Only one compressed input can be streamed per build, `IndexBuilderMain`
+    // accepts at most one `-f -` (stdin) argument per invocation, and the
+    // index is built once-and-for-all from all `-f` inputs in a single pass.
+    if inputs.iter().filter(|i| i.compression.is_some()).count() > 1 {
+        return Err(QleverError::PreFlight(
+            "only one compressed input per build is supported".into(),
+        ));
+    }
+
     let mut argv: Vec<String> = vec![cli.index_builder_cmd().to_string()];
     argv.push("-i".into());
     argv.push(config.index_name.clone());
@@ -122,6 +170,17 @@ fn build_argv_and_binds(
     // never have to copy possibly-huge files into the index dir.
     let mut dir_mounts: HashMap<PathBuf, String> = HashMap::new();
     for input in inputs {
+        if input.compression.is_some() {
+            // Streamed via stdin, no bind mount, container reads from `-`.
+            argv.push("-f".into());
+            argv.push("-".into());
+            argv.push("-F".into());
+            argv.push(input.format_ext.cli_arg().to_string());
+            argv.push("-g".into());
+            argv.push(input.graph_arg().to_string());
+            continue;
+        }
+
         let parent = input
             .host_path
             .parent()
@@ -232,6 +291,148 @@ pub(crate) async fn run_one_shot(
     Ok(())
 }
 
+/// Cap for the bounded decompressor-stderr ring buffer (4 KiB tail).
+const STDERR_TAIL_LIMIT: usize = 4 * 1024;
+
+/// Run `cmd` inside `config.image()` once, streaming the decompressed bytes
+/// of `compressed_host_path` into the container's stdin via a spawned host
+/// decompressor (`decomp.program`).
+pub(crate) async fn run_one_shot_with_stdin(
+    docker: &Docker,
+    config: &QleverConfig,
+    binds: Vec<String>,
+    cmd: &str,
+    what: &'static str,
+    compressed_host_path: &Path,
+    decomp: &ResolvedDecompressor,
+) -> Result<(), QleverError> {
+    let host_config = HostConfig {
+        binds: Some(binds),
+        auto_remove: Some(false),
+        ..Default::default()
+    };
+
+    let body = ContainerCreateBody {
+        image: Some(config.image()),
+        cmd: Some(vec!["-c".into(), cmd.to_string()]),
+        working_dir: Some(CONTAINER_WORKING_DIR.to_string()),
+        user: user_string(config),
+        host_config: Some(host_config),
+        open_stdin: Some(true),
+        attach_stdin: Some(true),
+        attach_stdout: Some(true),
+        attach_stderr: Some(true),
+        stdin_once: Some(true),
+        tty: Some(false),
+        ..Default::default()
+    };
+
+    let create_options: Option<CreateContainerOptions> = None;
+    let container = docker.create_container(create_options, body).await?;
+    let id = container.id;
+
+    // Attach BEFORE start: otherwise the first bytes the container reads
+    // from stdin race with our attach pipe being wired up.
+    let attach_opts = AttachContainerOptionsBuilder::new()
+        .stdin(true)
+        .stdout(true)
+        .stderr(true)
+        .stream(true)
+        .build();
+    let attach = docker.attach_container(&id, Some(attach_opts)).await?;
+    let mut input = attach.input;
+    let mut output = attach.output;
+
+    docker.start_container(&id, None::<StartContainerOptions>).await?;
+
+    // Spawn the host decompressor.
+    let mut child = tokio::process::Command::new(&decomp.program)
+        .args(decomp.args)
+        .arg(compressed_host_path)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .kill_on_drop(true)
+        .spawn()?;
+    let mut child_stdout = child.stdout.take().expect("requested stdout pipe");
+    let mut child_stderr = child.stderr.take().expect("requested stderr pipe");
+
+    // 1. Copy decompressor stdout → container stdin, then close stdin.
+    let copy_task = async move {
+        tokio::io::copy(&mut child_stdout, &mut input).await?;
+        input.shutdown().await?;
+        Ok::<(), std::io::Error>(())
+    };
+
+    // 2. Drain container output into the log buffer.
+    let output_task = async move {
+        let mut log_buf = String::new();
+        while let Some(item) = output.next().await {
+            match item {
+                Ok(chunk) => {
+                    let s = String::from_utf8_lossy(chunk.as_ref());
+                    debug!(target: "rudof_rdf::qlever", "{}", s.trim_end());
+                    log_buf.push_str(&s);
+                },
+                Err(_) => break,
+            }
+        }
+        Ok::<String, std::io::Error>(log_buf)
+    };
+
+    // 3. Drain decompressor stderr into a bounded ring buffer.
+    let stderr_task = async move {
+        let mut tail: Vec<u8> = Vec::with_capacity(STDERR_TAIL_LIMIT);
+        let mut buf = [0u8; 4096];
+        loop {
+            let n = child_stderr.read(&mut buf).await?;
+            if n == 0 {
+                break;
+            }
+            tail.extend_from_slice(&buf[..n]);
+            if tail.len() > STDERR_TAIL_LIMIT {
+                let drop = tail.len() - STDERR_TAIL_LIMIT;
+                tail.drain(..drop);
+            }
+        }
+        Ok::<String, std::io::Error>(String::from_utf8_lossy(&tail).into_owned())
+    };
+
+    let (_copy_done, log_buf, stderr_tail) = tokio::try_join!(copy_task, output_task, stderr_task)?;
+
+    let child_status = child.wait().await?;
+    if !child_status.success() {
+        let _ = docker
+            .remove_container(&id, Some(RemoveContainerOptionsBuilder::new().force(true).build()))
+            .await;
+        return Err(QleverError::DecompressorExit {
+            program: decomp.program.display().to_string(),
+            status: child_status.code().unwrap_or(-1),
+            stderr_tail,
+        });
+    }
+
+    let wait_opts = WaitContainerOptionsBuilder::new().condition("not-running").build();
+    let wait_result: Vec<_> = docker
+        .wait_container(&id, Some(wait_opts))
+        .try_collect::<Vec<_>>()
+        .await
+        .unwrap_or_default();
+    let exit_code = wait_result.into_iter().next().map(|r| r.status_code).unwrap_or(-1);
+
+    let remove_opts = RemoveContainerOptionsBuilder::new().force(true).build();
+    let _ = docker.remove_container(&id, Some(remove_opts)).await;
+
+    if exit_code != 0 {
+        return Err(QleverError::ContainerNonZeroExit {
+            what: what.to_string(),
+            status: exit_code,
+            logs: log_buf,
+        });
+    }
+    Ok(())
+}
+
 /// On Linux, format `<uid>:<gid>` so the QLever container writes index files owned by the host user. No-op on non-Unix.
 fn user_string(config: &QleverConfig) -> Option<String> {
     if !config.run_as_host_user {
@@ -261,6 +462,9 @@ pub(crate) fn fingerprint_inputs(inputs: &[InputFile]) -> String {
         h.write_bytes(input.format_ext.cli_arg().as_bytes());
         if let Some(iri) = &input.graph_iri {
             h.write_bytes(iri.as_bytes());
+        }
+        if let Some(c) = input.compression {
+            h.write_bytes(c.strategy().family_name().as_bytes());
         }
     }
     format!("{:016x}", h.finish())
@@ -421,6 +625,17 @@ mod tests {
             in_container_name: host.rsplit('/').next().unwrap().to_string(),
             format_ext: fmt,
             graph_iri: None,
+            compression: None,
+        }
+    }
+
+    fn input_compressed(host: &str, fmt: NativeFormat, c: super::super::decompressor::Compression) -> InputFile {
+        InputFile {
+            host_path: PathBuf::from(host),
+            in_container_name: host.rsplit('/').next().unwrap().to_string(),
+            format_ext: fmt,
+            graph_iri: None,
+            compression: Some(c),
         }
     }
 
@@ -475,5 +690,103 @@ mod tests {
         assert!(!handle.is_built());
         std::fs::write(tmp.path().join("default.meta-data.json"), b"{}").unwrap();
         assert!(handle.is_built());
+    }
+
+    #[test]
+    fn argv_uses_stdin_dash_for_compressed_bz2() {
+        use super::super::decompressor::Compression;
+        let config = QleverConfig::default();
+        let inputs = vec![input_compressed(
+            "/tmp/work/dump.nt.bz2",
+            NativeFormat::NTriples,
+            Compression::Bzip2,
+        )];
+        let (argv, binds) =
+            build_argv_and_binds(super::super::CliKind::V1, &inputs, &config, Path::new("/tmp/idx")).unwrap();
+
+        // Exactly one `-f -` pair, no `-f /inputs/...` for this input.
+        let f_positions: Vec<usize> = argv
+            .iter()
+            .enumerate()
+            .filter(|(_, a)| *a == "-f")
+            .map(|(i, _)| i)
+            .collect();
+        assert_eq!(f_positions.len(), 1);
+        assert_eq!(argv[f_positions[0] + 1], "-");
+
+        // The compressed file's parent dir must NOT be bind-mounted —
+        // bytes come over stdin, the file is read directly on the host.
+        assert!(
+            !binds.iter().any(|b| b.starts_with("/tmp/work")),
+            "compressed input parent should not be bind-mounted, got: {binds:?}"
+        );
+        // The index_dir bind is still present.
+        assert!(binds[0].starts_with("/tmp/idx:/data"));
+    }
+
+    #[test]
+    fn argv_uses_stdin_dash_for_compressed_xz() {
+        use super::super::decompressor::Compression;
+        let config = QleverConfig::default();
+        let inputs = vec![input_compressed(
+            "/tmp/work/dump.nt.xz",
+            NativeFormat::NTriples,
+            Compression::Xz,
+        )];
+        let (argv, _) =
+            build_argv_and_binds(super::super::CliKind::V1, &inputs, &config, Path::new("/tmp/idx")).unwrap();
+        let f_pos = argv.iter().position(|a| a == "-f").unwrap();
+        assert_eq!(argv[f_pos + 1], "-");
+    }
+
+    #[test]
+    fn argv_mixes_stdin_dash_with_mounted_inputs() {
+        use super::super::decompressor::Compression;
+        let config = QleverConfig::default();
+        let inputs = vec![
+            input("/tmp/work/extra.ttl", NativeFormat::Turtle),
+            input_compressed("/tmp/big/dump.nt.bz2", NativeFormat::NTriples, Compression::Bzip2),
+        ];
+        let (argv, binds) =
+            build_argv_and_binds(super::super::CliKind::V1, &inputs, &config, Path::new("/tmp/idx")).unwrap();
+
+        // Two `-f`: one mounted path, one `-`.
+        assert_eq!(argv.iter().filter(|a| *a == "-f").count(), 2);
+        assert!(argv.iter().any(|a| a == "-"));
+        assert!(argv.iter().any(|a| a.starts_with("/inputs/")));
+
+        // Only the uncompressed input's parent is bind-mounted.
+        assert!(binds.iter().any(|b| b.starts_with("/tmp/work")));
+        assert!(!binds.iter().any(|b| b.starts_with("/tmp/big")));
+    }
+
+    #[test]
+    fn rejects_two_compressed_inputs() {
+        use super::super::decompressor::Compression;
+        let config = QleverConfig::default();
+        let inputs = vec![
+            input_compressed("/tmp/a.nt.bz2", NativeFormat::NTriples, Compression::Bzip2),
+            input_compressed("/tmp/b.nt.xz", NativeFormat::NTriples, Compression::Xz),
+        ];
+        let err = build_argv_and_binds(super::super::CliKind::V1, &inputs, &config, Path::new("/tmp/idx")).unwrap_err();
+        match err {
+            QleverError::PreFlight(msg) => assert!(msg.contains("one compressed input"), "got: {msg}"),
+            other => panic!("expected PreFlight, got: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn fingerprint_distinguishes_compressed_from_uncompressed() {
+        use super::super::decompressor::Compression;
+        // Same host_path on purpose — the compression salt must still flip the fingerprint.
+        let a = input("/tmp/dump.nt", NativeFormat::NTriples);
+        let b = input_compressed("/tmp/dump.nt", NativeFormat::NTriples, Compression::Bzip2);
+        let c = input_compressed("/tmp/dump.nt", NativeFormat::NTriples, Compression::Xz);
+        let fa = fingerprint_inputs(&[a]);
+        let fb = fingerprint_inputs(&[b]);
+        let fc = fingerprint_inputs(&[c]);
+        assert_ne!(fa, fb);
+        assert_ne!(fa, fc);
+        assert_ne!(fb, fc);
     }
 }

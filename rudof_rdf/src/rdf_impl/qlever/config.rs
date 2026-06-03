@@ -3,6 +3,8 @@
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
+use super::decompressor::Compression;
+
 /// Default upstream image
 const DEFAULT_IMAGE_NAME: &str = "adfreiburg/qlever";
 const DEFAULT_IMAGE_TAG: &str = "commit-a307781";
@@ -245,11 +247,18 @@ pub struct InputFile {
     /// E.g. `"data.ttl"` or `"input-0.nt"`.
     pub in_container_name: String,
 
-    /// QLever's `-F` flag (must be `"ttl"`, `"nt"`, or `"nq"`).
+    /// QLever's `-F` flag (must be `"ttl"`, `"nt"`, or `"nq"`). When
+    /// [`compression`] is set, this refers to the format of the DECOMPRESSED
+    /// stream (e.g. `NTriples` for `dump.nt.bz2`).
     pub format_ext: NativeFormat,
 
     /// Optional `-g` graph IRI. `None` means default graph (passes `-`).
     pub graph_iri: Option<String>,
+
+    /// `Some` if [`host_path`] is a compressed dump that must be decompressed
+    /// on the host and streamed into the index builder via stdin. `None`
+    /// (the default) means the file is fed via the usual bind-mount path.
+    pub compression: Option<Compression>,
 }
 
 impl InputFile {
