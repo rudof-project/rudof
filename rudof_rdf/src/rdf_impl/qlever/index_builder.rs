@@ -431,8 +431,7 @@ pub(crate) async fn run_one_shot_with_stdin(
         code
     };
 
-    let (copy_res, log_buf_res, stderr_res, exit_code) =
-        tokio::join!(copy_task, output_task, stderr_task, wait_task);
+    let (copy_res, log_buf_res, stderr_res, exit_code) = tokio::join!(copy_task, output_task, stderr_task, wait_task);
 
     if let Err(e) = copy_res
         && exit_code == 0
@@ -482,15 +481,17 @@ pub(crate) async fn run_one_shot_with_stdin(
 /// Returns a `PreFlight` error if the strings can't be parsed.
 fn host_config_with_limits(config: &QleverConfig, binds: Vec<String>) -> Result<HostConfig, QleverError> {
     let memory = match &config.container_memory {
-        Some(s) => Some(parse_size_to_bytes(s).map_err(|e| {
-            QleverError::PreFlight(format!("invalid container_memory={s:?}: {e}"))
-        })?),
+        Some(s) => Some(
+            parse_size_to_bytes(s)
+                .map_err(|e| QleverError::PreFlight(format!("invalid container_memory={s:?}: {e}")))?,
+        ),
         None => None,
     };
     let memory_swap = match &config.container_memory_swap {
-        Some(s) => Some(parse_size_to_bytes(s).map_err(|e| {
-            QleverError::PreFlight(format!("invalid container_memory_swap={s:?}: {e}"))
-        })?),
+        Some(s) => Some(
+            parse_size_to_bytes(s)
+                .map_err(|e| QleverError::PreFlight(format!("invalid container_memory_swap={s:?}: {e}")))?,
+        ),
         None => None,
     };
     Ok(HostConfig {
@@ -920,7 +921,10 @@ mod tests {
         let inputs = vec![input("/tmp/data.ttl", NativeFormat::Turtle)];
         let (argv, _) =
             build_argv_and_binds(super::super::CliKind::V1, &inputs, &config, Path::new("/tmp/idx")).unwrap();
-        let pos = argv.iter().position(|a| a == "--parse-parallel").expect("--parse-parallel missing");
+        let pos = argv
+            .iter()
+            .position(|a| a == "--parse-parallel")
+            .expect("--parse-parallel missing");
         assert_eq!(argv[pos + 1], "false");
     }
 
@@ -930,7 +934,10 @@ mod tests {
         let inputs = vec![input("/tmp/data.ttl", NativeFormat::Turtle)];
         let (argv, _) =
             build_argv_and_binds(super::super::CliKind::V1, &inputs, &config, Path::new("/tmp/idx")).unwrap();
-        let pos = argv.iter().position(|a| a == "--parser-batch-size").expect("--parser-batch-size missing");
+        let pos = argv
+            .iter()
+            .position(|a| a == "--parser-batch-size")
+            .expect("--parser-batch-size missing");
         assert_eq!(argv[pos + 1], "100000");
     }
 
@@ -952,7 +959,10 @@ mod tests {
         assert_eq!(parse_size_to_bytes("2GiB").unwrap(), 2 * 1024 * 1024 * 1024);
         assert_eq!(parse_size_to_bytes("2GB").unwrap(), 2_000_000_000);
         assert_eq!(parse_size_to_bytes("512M").unwrap(), 512 * 1024 * 1024);
-        assert_eq!(parse_size_to_bytes("1.5G").unwrap(), (1.5_f64 * 1024.0 * 1024.0 * 1024.0) as i64);
+        assert_eq!(
+            parse_size_to_bytes("1.5G").unwrap(),
+            (1.5_f64 * 1024.0 * 1024.0 * 1024.0) as i64
+        );
         assert!(parse_size_to_bytes("").is_err());
         assert!(parse_size_to_bytes("nope").is_err());
         assert!(parse_size_to_bytes("-1G").is_err());
@@ -993,7 +1003,10 @@ mod tests {
             QleverError::ContainerNonZeroExit { logs, status, .. } => {
                 assert_eq!(status, 137);
                 assert!(logs.contains("OOM-killed"), "logs missing hint: {logs}");
-                assert!(logs.contains("parser_parallel"), "logs missing remediation hint: {logs}");
+                assert!(
+                    logs.contains("parser_parallel"),
+                    "logs missing remediation hint: {logs}"
+                );
             },
             other => panic!("expected ContainerNonZeroExit, got: {other:?}"),
         }
