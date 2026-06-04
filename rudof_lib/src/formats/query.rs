@@ -15,10 +15,14 @@ pub enum ResultQueryFormat {
     NTriples,
     /// JSON-LD - JSON format for Linked Data (for CONSTRUCT/DESCRIBE)
     JsonLd,
+    /// JSON - JSON format for tabular results (for SELECT)
+    Json,
     /// RDF/XML - XML-based RDF serialization (for CONSTRUCT/DESCRIBE)
     RdfXml,
     /// CSV - comma-separated values (for SELECT)
     Csv,
+    /// Markdown - markdown format (for SELECT)
+    Markdown,
     /// TriG - Turtle with named graphs (for CONSTRUCT/DESCRIBE)
     TriG,
     /// Notation3 - superset of Turtle (for CONSTRUCT/DESCRIBE)
@@ -51,8 +55,10 @@ impl Display for ResultQueryFormat {
             ResultQueryFormat::Turtle => write!(dest, "turtle"),
             ResultQueryFormat::NTriples => write!(dest, "ntriples"),
             ResultQueryFormat::JsonLd => write!(dest, "json-ld"),
+            ResultQueryFormat::Json => write!(dest, "json"),
             ResultQueryFormat::RdfXml => write!(dest, "rdf-xml"),
             ResultQueryFormat::Csv => write!(dest, "csv"),
+            ResultQueryFormat::Markdown => write!(dest, "markdown"),
             ResultQueryFormat::TriG => write!(dest, "trig"),
             ResultQueryFormat::N3 => write!(dest, "n3"),
             ResultQueryFormat::NQuads => write!(dest, "nquads"),
@@ -67,8 +73,10 @@ impl From<ResultQueryFormat> for QueryResultFormat {
             ResultQueryFormat::Turtle => QueryResultFormat::Turtle,
             ResultQueryFormat::NTriples => QueryResultFormat::NTriples,
             ResultQueryFormat::JsonLd => QueryResultFormat::JsonLd,
+            ResultQueryFormat::Json => QueryResultFormat::Json,
             ResultQueryFormat::RdfXml => QueryResultFormat::RdfXml,
             ResultQueryFormat::Csv => QueryResultFormat::Csv,
+            ResultQueryFormat::Markdown => QueryResultFormat::Markdown,
             ResultQueryFormat::TriG => QueryResultFormat::TriG,
             ResultQueryFormat::N3 => QueryResultFormat::N3,
             ResultQueryFormat::NQuads => QueryResultFormat::NQuads,
@@ -81,12 +89,14 @@ impl FromStr for ResultQueryFormat {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "internal" => Ok(ResultQueryFormat::Internal),
+            "internal" | "asciitable" => Ok(ResultQueryFormat::Internal),
             "turtle" => Ok(ResultQueryFormat::Turtle),
             "ntriples" => Ok(ResultQueryFormat::NTriples),
-            "json-ld" => Ok(ResultQueryFormat::JsonLd),
-            "rdf-xml" => Ok(ResultQueryFormat::RdfXml),
+            "json-ld" | "jsonld" => Ok(ResultQueryFormat::JsonLd),
+            "json" => Ok(ResultQueryFormat::Json),
+            "rdf-xml" | "rdfxml" => Ok(ResultQueryFormat::RdfXml),
             "csv" => Ok(ResultQueryFormat::Csv),
+            "markdown" => Ok(ResultQueryFormat::Markdown),
             "trig" => Ok(ResultQueryFormat::TriG),
             "n3" => Ok(ResultQueryFormat::N3),
             "nquads" => Ok(ResultQueryFormat::NQuads),

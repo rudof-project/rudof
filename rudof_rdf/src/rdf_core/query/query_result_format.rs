@@ -9,6 +9,8 @@ pub enum QueryResultFormat {
     NTriples,
     /// JSON-LD (JSON for Linking Data) format.
     JsonLd,
+    /// JSON format (for tabular query results).
+    Json,
     /// RDF/XML format.
     RdfXml,
     /// CSV (Comma-Separated Values) format.
@@ -19,6 +21,8 @@ pub enum QueryResultFormat {
     N3,
     /// N-Quads format.
     NQuads,
+    /// Markdown format (for Tabled query results).
+    Markdown,
 }
 
 impl QueryResultFormat {
@@ -29,6 +33,8 @@ impl QueryResultFormat {
             QueryResultFormat::JsonLd => "application/ld+json",
             QueryResultFormat::RdfXml => "application/rdf+xml",
             QueryResultFormat::Csv => "text/csv",
+            QueryResultFormat::Markdown => "text/markdown",
+            QueryResultFormat::Json => "application/json",
             QueryResultFormat::TriG => "application/trig",
             QueryResultFormat::N3 => "text/n3",
             QueryResultFormat::NQuads => "application/n-quads",
@@ -59,6 +65,8 @@ impl Display for QueryResultFormat {
             QueryResultFormat::TriG => "TriG",
             QueryResultFormat::N3 => "N3",
             QueryResultFormat::NQuads => "NQuads",
+            QueryResultFormat::Markdown => "Markdown",
+            QueryResultFormat::Json => "JSON",
         };
         write!(f, "{s}")
     }

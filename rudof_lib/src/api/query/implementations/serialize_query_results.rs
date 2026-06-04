@@ -1,3 +1,5 @@
+use rudof_rdf::rdf_core::query::{TableFormat, TableOptions};
+
 use crate::{Result, Rudof, errors::QueryError, formats::ResultQueryFormat, types::QueryResult};
 use std::io;
 
@@ -15,14 +17,30 @@ pub fn serialize_query_results<W: io::Write>(
 
     match query_results {
         QueryResult::Select(results) => match result_query_format {
-            ResultQueryFormat::Internal => {
-                results
-                    .write_table(writer)
-                    .map_err(|error| QueryError::FailedSerializingQueryResults {
-                        error: error.to_string(),
-                    })?
+            ResultQueryFormat::Internal => results
+                .write_table(writer, &TableFormat::default(), &TableOptions::default())
+                .map_err(|error| QueryError::FailedSerializingQueryResults {
+                    error: error.to_string(),
+                })?,
+            ResultQueryFormat::Csv => results
+                .write_table(writer, &TableFormat::Csv, &TableOptions::default())
+                .map_err(|error| QueryError::FailedSerializingQueryResults {
+                    error: error.to_string(),
+                })?,
+            ResultQueryFormat::Markdown => results
+                .write_table(writer, &TableFormat::Markdown, &TableOptions::default())
+                .map_err(|error| QueryError::FailedSerializingQueryResults {
+                    error: error.to_string(),
+                })?,
+            ResultQueryFormat::Json => {
+                serde_json::to_writer(writer, results).map_err(|error| QueryError::FailedSerializingQueryResults {
+                    error: error.to_string(),
+                })?
             },
-            _ => todo!("Implement serialization of SELECT query results in formats other than Internal"),
+            _ => todo!(
+                "Not yet implemented serialization for SELECT results in format: {}",
+                result_query_format
+            ),
         },
         QueryResult::Construct(results) => {
             writeln!(writer, "{}", results).map_err(|error| QueryError::FailedSerializingQueryResults {
