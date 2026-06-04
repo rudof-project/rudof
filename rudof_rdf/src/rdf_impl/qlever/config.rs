@@ -65,21 +65,13 @@ pub struct QleverConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub parser_buffer_size: Option<String>,
 
-    /// `--parse-parallel` for the index builder.
+    /// `--parse-parallel` (alias `-p`) for the index builder.
     ///
     /// Default (when `None`): QLever's own default, which is `true` for a
     /// single input file. Set to `Some(false)` to drastically reduce the
     /// peak RAM of the indexing pass.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub parser_parallel: Option<bool>,
-
-    /// `--parser-batch-size` for the index builder.
-    ///
-    /// With the parallel parser, peak RAM is roughly
-    /// `parser_batch_size * n_threads`. Lowering this is the second-best
-    /// lever after `parser_parallel = Some(false)`.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub parser_batch_size: Option<u64>,
 
     /// Hard cap on the QLever container's RAM (Docker `--memory`).
     ///
@@ -181,7 +173,6 @@ impl Default for QleverConfig {
             stxxl_memory: None,
             parser_buffer_size: None,
             parser_parallel: None,
-            parser_batch_size: None,
             container_memory: None,
             container_memory_swap: None,
             host_port: None,
@@ -265,12 +256,6 @@ impl QleverConfig {
     /// way to reduce the index builder's peak RAM.
     pub fn with_parser_parallel(mut self, parallel: bool) -> Self {
         self.parser_parallel = Some(parallel);
-        self
-    }
-
-    /// Builder: `--parser-batch-size`.
-    pub fn with_parser_batch_size(mut self, batch_size: u64) -> Self {
-        self.parser_batch_size = Some(batch_size);
         self
     }
 

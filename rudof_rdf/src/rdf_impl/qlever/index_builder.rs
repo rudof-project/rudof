@@ -163,13 +163,8 @@ fn build_argv_and_binds(
         argv.push(b.clone());
     }
     if let Some(parallel) = config.parser_parallel {
-        // QLever accepts `--parse-parallel <true|false>`.
         argv.push("--parse-parallel".into());
         argv.push(if parallel { "true".into() } else { "false".into() });
-    }
-    if let Some(bs) = config.parser_batch_size {
-        argv.push("--parser-batch-size".into());
-        argv.push(bs.to_string());
     }
 
     // index_dir → /data (read-write)
@@ -281,8 +276,9 @@ pub(crate) async fn run_one_shot(
         .try_collect::<Vec<_>>()
         .await
         .unwrap_or_default();
-    let exit_code = wait_result.into_iter().next().map(|r| r.status_code).unwrap_or(-1);
-    let oom_killed = inspect_oom_killed(docker, &id).await;
+    let wait_code = wait_result.into_iter().next().map(|r| r.status_code);
+    let (oom_killed, inspect_code) = inspect_post_exit(docker, &id).await;
+    let exit_code = wait_code.or(inspect_code).unwrap_or(-1);
 
     let remove_opts = RemoveContainerOptionsBuilder::new().force(true).build();
     let _ = docker.remove_container(&id, Some(remove_opts)).await;
@@ -425,13 +421,15 @@ pub(crate) async fn run_one_shot_with_stdin(
             .try_collect::<Vec<_>>()
             .await
             .unwrap_or_default();
-        let code = wait_result.into_iter().next().map(|r| r.status_code).unwrap_or(-1);
+        let code = wait_result.into_iter().next().map(|r| r.status_code);
         // Unblock the stdin pump regardless of how the container exited.
         stdin_cancel_watcher.cancel();
         code
     };
 
-    let (copy_res, log_buf_res, stderr_res, exit_code) = tokio::join!(copy_task, output_task, stderr_task, wait_task);
+    let (copy_res, log_buf_res, stderr_res, wait_code) = tokio::join!(copy_task, output_task, stderr_task, wait_task);
+    let (oom_killed, inspect_code) = inspect_post_exit(docker, &id).await;
+    let exit_code = wait_code.or(inspect_code).unwrap_or(-1);
 
     if let Err(e) = copy_res
         && exit_code == 0
@@ -455,8 +453,6 @@ pub(crate) async fn run_one_shot_with_stdin(
             std::process::ExitStatus::default()
         },
     };
-
-    let oom_killed = inspect_oom_killed(docker, &id).await;
 
     let remove_opts = RemoveContainerOptionsBuilder::new().force(true).build();
     let _ = docker.remove_container(&id, Some(remove_opts)).await;
@@ -503,14 +499,17 @@ fn host_config_with_limits(config: &QleverConfig, binds: Vec<String>) -> Result<
     })
 }
 
-/// Best-effort lookup of `State.OOMKilled` after the container has exited.
-///
-/// Returns `false` if the inspect call fails (we don't want a missing field
-/// to mask the underlying exit code).
-async fn inspect_oom_killed(docker: &Docker, id: &str) -> bool {
+/// Best-effort lookup of `State.OOMKilled` and `State.ExitCode` after the
+/// container has exited.
+async fn inspect_post_exit(docker: &Docker, id: &str) -> (bool, Option<i64>) {
     match docker.inspect_container(id, None).await {
-        Ok(resp) => resp.state.and_then(|s| s.oom_killed).unwrap_or(false),
-        Err(_) => false,
+        Ok(resp) => {
+            let state = resp.state;
+            let oom = state.as_ref().and_then(|s| s.oom_killed).unwrap_or(false);
+            let code = state.and_then(|s| s.exit_code);
+            (oom, code)
+        },
+        Err(_) => (false, None),
     }
 }
 
@@ -520,7 +519,7 @@ fn container_nonzero_exit(what: &str, status: i64, oom_killed: bool, mut logs: S
     if oom_killed {
         let hint = "OOM-killed: the QLever container was terminated by the OOM killer. \
             Lower memory usage with QleverConfig::parser_parallel=Some(false), \
-            QleverConfig::parser_batch_size, and/or cap with QleverConfig::container_memory.\n\
+            QleverConfig::stxxl_memory, and/or cap with QleverConfig::container_memory.\n\
             ---\n";
         logs.insert_str(0, hint);
     }
@@ -929,26 +928,12 @@ mod tests {
     }
 
     #[test]
-    fn argv_passes_parser_batch_size_when_set() {
-        let config = QleverConfig::default().with_parser_batch_size(100_000);
-        let inputs = vec![input("/tmp/data.ttl", NativeFormat::Turtle)];
-        let (argv, _) =
-            build_argv_and_binds(super::super::CliKind::V1, &inputs, &config, Path::new("/tmp/idx")).unwrap();
-        let pos = argv
-            .iter()
-            .position(|a| a == "--parser-batch-size")
-            .expect("--parser-batch-size missing");
-        assert_eq!(argv[pos + 1], "100000");
-    }
-
-    #[test]
     fn argv_omits_parser_flags_when_unset() {
         let config = QleverConfig::default();
         let inputs = vec![input("/tmp/data.ttl", NativeFormat::Turtle)];
         let (argv, _) =
             build_argv_and_binds(super::super::CliKind::V1, &inputs, &config, Path::new("/tmp/idx")).unwrap();
         assert!(!argv.iter().any(|a| a == "--parse-parallel"));
-        assert!(!argv.iter().any(|a| a == "--parser-batch-size"));
     }
 
     #[test]
