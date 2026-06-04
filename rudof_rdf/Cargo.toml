@@ -19,6 +19,7 @@ qlever = [
     "dep:nix",
     "dep:futures",
     "dep:tracing",
+    "dep:tokio-util",
 ]
 qlever-docker-tests = ["qlever"]
 
@@ -48,6 +49,7 @@ spargebra = { workspace = true, optional = true }
 tabled.workspace = true
 thiserror.workspace = true
 tokio = { workspace = true, optional = true }
+tokio-util = { workspace = true, optional = true }
 toml.workspace = true
 url.workspace = true
 tracing = { workspace = true, optional = true }

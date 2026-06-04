@@ -65,6 +65,38 @@ pub struct QleverConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub parser_buffer_size: Option<String>,
 
+    /// `--parse-parallel` for the index builder.
+    ///
+    /// Default (when `None`): QLever's own default, which is `true` for a
+    /// single input file. Set to `Some(false)` to drastically reduce the
+    /// peak RAM of the indexing pass.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parser_parallel: Option<bool>,
+
+    /// `--parser-batch-size` for the index builder.
+    ///
+    /// With the parallel parser, peak RAM is roughly
+    /// `parser_batch_size * n_threads`. Lowering this is the second-best
+    /// lever after `parser_parallel = Some(false)`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parser_batch_size: Option<u64>,
+
+    /// Hard cap on the QLever container's RAM (Docker `--memory`).
+    ///
+    /// Accepts the usual human-readable suffixes (`"2G"`, `"512M"`,
+    /// `"1.5GiB"`, `"1073741824"`). `None` means no cgroup limit, the
+    /// container can consume the whole hosst.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub container_memory: Option<String>,
+
+    /// Hard cap on RAM + swap (Docker `--memory-swap`).
+    ///
+    /// Set to the same value as [`container_memory`] to disable swap for
+    /// this container (recommended on machines where swap is slow). `None`
+    /// uses Docker's default (no swap cap).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub container_memory_swap: Option<String>,
+
     /// If `Some`, pin the host port to this value. `None` asks Docker for an
     /// ephemeral host port.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -148,6 +180,10 @@ impl Default for QleverConfig {
             auto_delete_if_created: false,
             stxxl_memory: None,
             parser_buffer_size: None,
+            parser_parallel: None,
+            parser_batch_size: None,
+            container_memory: None,
+            container_memory_swap: None,
             host_port: None,
             container_port: DEFAULT_CONTAINER_PORT,
             access_token: None,
@@ -210,6 +246,43 @@ impl QleverConfig {
     /// Builder: opt into auto-deleting the index on Drop.
     pub fn with_auto_delete(mut self, yes: bool) -> Self {
         self.auto_delete_if_created = yes;
+        self
+    }
+
+    /// Builder: `-m` STXXL memory budget for the index builder.
+    pub fn with_stxxl_memory(mut self, m: impl Into<String>) -> Self {
+        self.stxxl_memory = Some(m.into());
+        self
+    }
+
+    /// Builder: `--parser-buffer-size` for the index builder.
+    pub fn with_parser_buffer_size(mut self, b: impl Into<String>) -> Self {
+        self.parser_buffer_size = Some(b.into());
+        self
+    }
+
+    /// Builder: `--parse-parallel`. Passing `false` is the most effective
+    /// way to reduce the index builder's peak RAM.
+    pub fn with_parser_parallel(mut self, parallel: bool) -> Self {
+        self.parser_parallel = Some(parallel);
+        self
+    }
+
+    /// Builder: `--parser-batch-size`.
+    pub fn with_parser_batch_size(mut self, batch_size: u64) -> Self {
+        self.parser_batch_size = Some(batch_size);
+        self
+    }
+
+    /// Builder: cap the container's RAM (Docker `--memory`).
+    pub fn with_container_memory(mut self, m: impl Into<String>) -> Self {
+        self.container_memory = Some(m.into());
+        self
+    }
+
+    /// Builder: cap the container's RAM + swap (Docker `--memory-swap`).
+    pub fn with_container_memory_swap(mut self, m: impl Into<String>) -> Self {
+        self.container_memory_swap = Some(m.into());
         self
     }
 

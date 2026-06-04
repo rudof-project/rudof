@@ -21,7 +21,7 @@ use bollard::query_parameters::{
 };
 use futures::{StreamExt, TryStreamExt};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 use super::cli_probe;
 use super::config::CONTAINER_WORKING_DIR;
@@ -162,6 +162,15 @@ fn build_argv_and_binds(
         argv.push("--parser-buffer-size".into());
         argv.push(b.clone());
     }
+    if let Some(parallel) = config.parser_parallel {
+        // QLever accepts `--parse-parallel <true|false>`.
+        argv.push("--parse-parallel".into());
+        argv.push(if parallel { "true".into() } else { "false".into() });
+    }
+    if let Some(bs) = config.parser_batch_size {
+        argv.push("--parser-batch-size".into());
+        argv.push(bs.to_string());
+    }
 
     // index_dir → /data (read-write)
     let mut binds = vec![format!("{}:{}:rw", index_dir.display(), CONTAINER_WORKING_DIR)];
@@ -230,11 +239,7 @@ pub(crate) async fn run_one_shot(
     cmd: &str,
     what: &'static str,
 ) -> Result<(), QleverError> {
-    let host_config = HostConfig {
-        binds: Some(binds),
-        auto_remove: Some(false),
-        ..Default::default()
-    };
+    let host_config = host_config_with_limits(config, binds)?;
 
     // The upstream `adfreiburg/qlever` image's entrypoint forwards `-c <cmd>`
     // to a login shell that has `/qlever` on PATH (so `IndexBuilderMain`
@@ -277,16 +282,13 @@ pub(crate) async fn run_one_shot(
         .await
         .unwrap_or_default();
     let exit_code = wait_result.into_iter().next().map(|r| r.status_code).unwrap_or(-1);
+    let oom_killed = inspect_oom_killed(docker, &id).await;
 
     let remove_opts = RemoveContainerOptionsBuilder::new().force(true).build();
     let _ = docker.remove_container(&id, Some(remove_opts)).await;
 
     if exit_code != 0 {
-        return Err(QleverError::ContainerNonZeroExit {
-            what: what.to_string(),
-            status: exit_code,
-            logs: log_buf,
-        });
+        return Err(container_nonzero_exit(what, exit_code, oom_killed, log_buf));
     }
     Ok(())
 }
@@ -306,11 +308,7 @@ pub(crate) async fn run_one_shot_with_stdin(
     compressed_host_path: &Path,
     decomp: &ResolvedDecompressor,
 ) -> Result<(), QleverError> {
-    let host_config = HostConfig {
-        binds: Some(binds),
-        auto_remove: Some(false),
-        ..Default::default()
-    };
+    let host_config = host_config_with_limits(config, binds)?;
 
     let body = ContainerCreateBody {
         image: Some(config.image()),
@@ -357,11 +355,27 @@ pub(crate) async fn run_one_shot_with_stdin(
     let mut child_stdout = child.stdout.take().expect("requested stdout pipe");
     let mut child_stderr = child.stderr.take().expect("requested stderr pipe");
 
-    // 1. Copy decompressor stdout → container stdin, then close stdin.
+    let stdin_cancel = tokio_util::sync::CancellationToken::new();
+    let stdin_cancel_watcher = stdin_cancel.clone();
+
     let copy_task = async move {
-        tokio::io::copy(&mut child_stdout, &mut input).await?;
-        input.shutdown().await?;
-        Ok::<(), std::io::Error>(())
+        let pump = async {
+            tokio::io::copy(&mut child_stdout, &mut input).await?;
+            input.shutdown().await?;
+            Ok::<(), std::io::Error>(())
+        };
+        tokio::select! {
+            biased;
+            _ = stdin_cancel.cancelled() => Ok(()),
+            res = pump => match res {
+                Ok(()) => Ok(()),
+                Err(e) if matches!(e.kind(), std::io::ErrorKind::BrokenPipe | std::io::ErrorKind::WriteZero) => {
+                    debug!(target: "rudof_rdf::qlever", "stdin pump: container closed pipe ({})", e.kind());
+                    Ok(())
+                },
+                Err(e) => Err(e),
+            },
+        }
     };
 
     // 2. Drain container output into the log buffer.
@@ -398,39 +412,164 @@ pub(crate) async fn run_one_shot_with_stdin(
         Ok::<String, std::io::Error>(String::from_utf8_lossy(&tail).into_owned())
     };
 
-    let (_copy_done, log_buf, stderr_tail) = tokio::try_join!(copy_task, output_task, stderr_task)?;
+    // 4. Wait for the container to exit. As soon as it does, fire the cancel
+    //    token so the stdin pump unblocks even if the daemon socket is
+    //    backlogged. Run in parallel with the I/O tasks so a dead container
+    //    never wedges us.
+    let docker_for_wait = docker.clone();
+    let id_for_wait = id.clone();
+    let wait_task = async move {
+        let wait_opts = WaitContainerOptionsBuilder::new().condition("not-running").build();
+        let wait_result: Vec<_> = docker_for_wait
+            .wait_container(&id_for_wait, Some(wait_opts))
+            .try_collect::<Vec<_>>()
+            .await
+            .unwrap_or_default();
+        let code = wait_result.into_iter().next().map(|r| r.status_code).unwrap_or(-1);
+        // Unblock the stdin pump regardless of how the container exited.
+        stdin_cancel_watcher.cancel();
+        code
+    };
 
-    let child_status = child.wait().await?;
+    let (copy_res, log_buf_res, stderr_res, exit_code) =
+        tokio::join!(copy_task, output_task, stderr_task, wait_task);
+
+    if let Err(e) = copy_res
+        && exit_code == 0
+    {
+        return Err(QleverError::Io(e));
+    }
+    let log_buf = log_buf_res.unwrap_or_default();
+    let stderr_tail = stderr_res.unwrap_or_default();
+
+    let child_status = match tokio::time::timeout(std::time::Duration::from_secs(5), child.wait()).await {
+        Ok(Ok(s)) => s,
+        Ok(Err(e)) => {
+            warn!(target: "rudof_rdf::qlever", "decompressor wait failed: {e}");
+            let _ = child.kill().await;
+            std::process::ExitStatus::default()
+        },
+        Err(_) => {
+            warn!(target: "rudof_rdf::qlever", "decompressor did not exit within 5s after container exit; killing");
+            let _ = child.kill().await;
+            let _ = child.wait().await;
+            std::process::ExitStatus::default()
+        },
+    };
+
+    let oom_killed = inspect_oom_killed(docker, &id).await;
+
+    let remove_opts = RemoveContainerOptionsBuilder::new().force(true).build();
+    let _ = docker.remove_container(&id, Some(remove_opts)).await;
+
+    // If the container exited non-zero, that's the headline error: the
+    // decompressor's BrokenPipe is just downstream noise.
+    if exit_code != 0 {
+        return Err(container_nonzero_exit(what, exit_code, oom_killed, log_buf));
+    }
     if !child_status.success() {
-        let _ = docker
-            .remove_container(&id, Some(RemoveContainerOptionsBuilder::new().force(true).build()))
-            .await;
         return Err(QleverError::DecompressorExit {
             program: decomp.program.display().to_string(),
             status: child_status.code().unwrap_or(-1),
             stderr_tail,
         });
     }
-
-    let wait_opts = WaitContainerOptionsBuilder::new().condition("not-running").build();
-    let wait_result: Vec<_> = docker
-        .wait_container(&id, Some(wait_opts))
-        .try_collect::<Vec<_>>()
-        .await
-        .unwrap_or_default();
-    let exit_code = wait_result.into_iter().next().map(|r| r.status_code).unwrap_or(-1);
-
-    let remove_opts = RemoveContainerOptionsBuilder::new().force(true).build();
-    let _ = docker.remove_container(&id, Some(remove_opts)).await;
-
-    if exit_code != 0 {
-        return Err(QleverError::ContainerNonZeroExit {
-            what: what.to_string(),
-            status: exit_code,
-            logs: log_buf,
-        });
-    }
     Ok(())
+}
+
+/// Build a `HostConfig` with the user-supplied container memory limits applied.
+///
+/// Returns a `PreFlight` error if the strings can't be parsed.
+fn host_config_with_limits(config: &QleverConfig, binds: Vec<String>) -> Result<HostConfig, QleverError> {
+    let memory = match &config.container_memory {
+        Some(s) => Some(parse_size_to_bytes(s).map_err(|e| {
+            QleverError::PreFlight(format!("invalid container_memory={s:?}: {e}"))
+        })?),
+        None => None,
+    };
+    let memory_swap = match &config.container_memory_swap {
+        Some(s) => Some(parse_size_to_bytes(s).map_err(|e| {
+            QleverError::PreFlight(format!("invalid container_memory_swap={s:?}: {e}"))
+        })?),
+        None => None,
+    };
+    Ok(HostConfig {
+        binds: Some(binds),
+        auto_remove: Some(false),
+        memory,
+        memory_swap,
+        ..Default::default()
+    })
+}
+
+/// Best-effort lookup of `State.OOMKilled` after the container has exited.
+///
+/// Returns `false` if the inspect call fails (we don't want a missing field
+/// to mask the underlying exit code).
+async fn inspect_oom_killed(docker: &Docker, id: &str) -> bool {
+    match docker.inspect_container(id, None).await {
+        Ok(resp) => resp.state.and_then(|s| s.oom_killed).unwrap_or(false),
+        Err(_) => false,
+    }
+}
+
+/// Build a `ContainerNonZeroExit`, prefixing logs with a one-line OOM hint
+/// when the kernel killed the container so the error surfaces the cause.
+fn container_nonzero_exit(what: &str, status: i64, oom_killed: bool, mut logs: String) -> QleverError {
+    if oom_killed {
+        let hint = "OOM-killed: the QLever container was terminated by the OOM killer. \
+            Lower memory usage with QleverConfig::parser_parallel=Some(false), \
+            QleverConfig::parser_batch_size, and/or cap with QleverConfig::container_memory.\n\
+            ---\n";
+        logs.insert_str(0, hint);
+    }
+    QleverError::ContainerNonZeroExit {
+        what: what.to_string(),
+        status,
+        logs,
+    }
+}
+
+/// Parse a human-readable byte count (`"2G"`, `"512M"`, `"1.5GiB"`, raw `"1073741824"`).
+fn parse_size_to_bytes(s: &str) -> Result<i64, String> {
+    let s = s.trim();
+    if s.is_empty() {
+        return Err("empty".into());
+    }
+    let (num_str, mult): (&str, u64) = if let Some(rest) = s.strip_suffix("GiB").or_else(|| s.strip_suffix("Gi")) {
+        (rest, 1024u64.pow(3))
+    } else if let Some(rest) = s.strip_suffix("MiB").or_else(|| s.strip_suffix("Mi")) {
+        (rest, 1024u64.pow(2))
+    } else if let Some(rest) = s.strip_suffix("KiB").or_else(|| s.strip_suffix("Ki")) {
+        (rest, 1024)
+    } else if let Some(rest) = s.strip_suffix("TiB").or_else(|| s.strip_suffix("Ti")) {
+        (rest, 1024u64.pow(4))
+    } else if let Some(rest) = s.strip_suffix("GB") {
+        (rest, 1_000_000_000)
+    } else if let Some(rest) = s.strip_suffix("MB") {
+        (rest, 1_000_000)
+    } else if let Some(rest) = s.strip_suffix("KB") {
+        (rest, 1_000)
+    } else if let Some(rest) = s.strip_suffix("TB") {
+        (rest, 1_000_000_000_000)
+    } else if let Some(rest) = s.strip_suffix('G').or_else(|| s.strip_suffix('g')) {
+        (rest, 1024u64.pow(3))
+    } else if let Some(rest) = s.strip_suffix('M').or_else(|| s.strip_suffix('m')) {
+        (rest, 1024u64.pow(2))
+    } else if let Some(rest) = s.strip_suffix('K').or_else(|| s.strip_suffix('k')) {
+        (rest, 1024)
+    } else if let Some(rest) = s.strip_suffix('T').or_else(|| s.strip_suffix('t')) {
+        (rest, 1024u64.pow(4))
+    } else {
+        (s, 1)
+    };
+    let num_str = num_str.trim();
+    let value: f64 = num_str.parse().map_err(|e| format!("{e}"))?;
+    if value < 0.0 || !value.is_finite() {
+        return Err(format!("must be a finite, non-negative number, got {value}"));
+    }
+    let bytes = (value * mult as f64) as u64;
+    i64::try_from(bytes).map_err(|_| format!("overflows i64: {bytes}"))
 }
 
 /// On Linux, format `<uid>:<gid>` so the QLever container writes index files owned by the host user. No-op on non-Unix.
@@ -772,6 +911,102 @@ mod tests {
         match err {
             QleverError::PreFlight(msg) => assert!(msg.contains("one compressed input"), "got: {msg}"),
             other => panic!("expected PreFlight, got: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn argv_passes_parse_parallel_false_when_set() {
+        let config = QleverConfig::default().with_parser_parallel(false);
+        let inputs = vec![input("/tmp/data.ttl", NativeFormat::Turtle)];
+        let (argv, _) =
+            build_argv_and_binds(super::super::CliKind::V1, &inputs, &config, Path::new("/tmp/idx")).unwrap();
+        let pos = argv.iter().position(|a| a == "--parse-parallel").expect("--parse-parallel missing");
+        assert_eq!(argv[pos + 1], "false");
+    }
+
+    #[test]
+    fn argv_passes_parser_batch_size_when_set() {
+        let config = QleverConfig::default().with_parser_batch_size(100_000);
+        let inputs = vec![input("/tmp/data.ttl", NativeFormat::Turtle)];
+        let (argv, _) =
+            build_argv_and_binds(super::super::CliKind::V1, &inputs, &config, Path::new("/tmp/idx")).unwrap();
+        let pos = argv.iter().position(|a| a == "--parser-batch-size").expect("--parser-batch-size missing");
+        assert_eq!(argv[pos + 1], "100000");
+    }
+
+    #[test]
+    fn argv_omits_parser_flags_when_unset() {
+        let config = QleverConfig::default();
+        let inputs = vec![input("/tmp/data.ttl", NativeFormat::Turtle)];
+        let (argv, _) =
+            build_argv_and_binds(super::super::CliKind::V1, &inputs, &config, Path::new("/tmp/idx")).unwrap();
+        assert!(!argv.iter().any(|a| a == "--parse-parallel"));
+        assert!(!argv.iter().any(|a| a == "--parser-batch-size"));
+    }
+
+    #[test]
+    fn parse_size_to_bytes_understands_common_suffixes() {
+        assert_eq!(parse_size_to_bytes("0").unwrap(), 0);
+        assert_eq!(parse_size_to_bytes("1024").unwrap(), 1024);
+        assert_eq!(parse_size_to_bytes("2G").unwrap(), 2 * 1024 * 1024 * 1024);
+        assert_eq!(parse_size_to_bytes("2GiB").unwrap(), 2 * 1024 * 1024 * 1024);
+        assert_eq!(parse_size_to_bytes("2GB").unwrap(), 2_000_000_000);
+        assert_eq!(parse_size_to_bytes("512M").unwrap(), 512 * 1024 * 1024);
+        assert_eq!(parse_size_to_bytes("1.5G").unwrap(), (1.5_f64 * 1024.0 * 1024.0 * 1024.0) as i64);
+        assert!(parse_size_to_bytes("").is_err());
+        assert!(parse_size_to_bytes("nope").is_err());
+        assert!(parse_size_to_bytes("-1G").is_err());
+    }
+
+    #[test]
+    fn host_config_propagates_memory_limit() {
+        let config = QleverConfig::default()
+            .with_container_memory("2G")
+            .with_container_memory_swap("2G");
+        let hc = host_config_with_limits(&config, vec![]).unwrap();
+        assert_eq!(hc.memory, Some(2 * 1024 * 1024 * 1024));
+        assert_eq!(hc.memory_swap, Some(2 * 1024 * 1024 * 1024));
+    }
+
+    #[test]
+    fn host_config_leaves_memory_unset_by_default() {
+        let config = QleverConfig::default();
+        let hc = host_config_with_limits(&config, vec![]).unwrap();
+        assert_eq!(hc.memory, None);
+        assert_eq!(hc.memory_swap, None);
+    }
+
+    #[test]
+    fn host_config_rejects_invalid_memory_string() {
+        let config = QleverConfig::default().with_container_memory("not-a-size");
+        let err = host_config_with_limits(&config, vec![]).unwrap_err();
+        match err {
+            QleverError::PreFlight(msg) => assert!(msg.contains("container_memory"), "got: {msg}"),
+            other => panic!("expected PreFlight, got: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn container_nonzero_exit_prepends_oom_hint() {
+        let err = container_nonzero_exit("index-builder", 137, true, "WARN: parallel parser\n".to_string());
+        match err {
+            QleverError::ContainerNonZeroExit { logs, status, .. } => {
+                assert_eq!(status, 137);
+                assert!(logs.contains("OOM-killed"), "logs missing hint: {logs}");
+                assert!(logs.contains("parser_parallel"), "logs missing remediation hint: {logs}");
+            },
+            other => panic!("expected ContainerNonZeroExit, got: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn container_nonzero_exit_no_hint_when_not_oom() {
+        let err = container_nonzero_exit("index-builder", 1, false, "boom\n".to_string());
+        match err {
+            QleverError::ContainerNonZeroExit { logs, .. } => {
+                assert!(!logs.contains("OOM-killed"), "unexpected OOM hint: {logs}");
+            },
+            other => panic!("expected ContainerNonZeroExit, got: {other:?}"),
         }
     }
 

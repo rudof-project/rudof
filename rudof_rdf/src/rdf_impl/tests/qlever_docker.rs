@@ -8,6 +8,7 @@
 
 use crate::rdf_impl::{CliKind, Compression, QleverConfig, QleverGraphContainer, decompressor_probe, qlever_probe_cli};
 use std::path::PathBuf;
+use std::time::Duration;
 
 /// `probe` should return either v1 or v2 against the real upstream image.
 #[tokio::test]
@@ -99,6 +100,54 @@ async fn index_and_query_small_nt_bz2() {
         .expect("variable `n` missing");
     let s = format!("{term}");
     assert!(s.contains('2'), "expected COUNT(*) = 2, got: {s}");
+}
+
+/// Regression: when the container exits non-zero mid-stdin-stream
+/// (simulating an OOM-kill of `IndexBuilderMain`), `build_index` must
+/// return Err in seconds rather than hanging forever waiting for the
+/// container to accept more stdin bytes.
+#[tokio::test]
+async fn stdin_stream_does_not_hang_when_container_oom_killed() {
+    if decompressor_probe().for_compression(Compression::Bzip2).is_none() {
+        eprintln!("skipping: no bzip2-family decompressor on PATH");
+        return;
+    }
+
+    // Build a >2 MiB N-Triples file so the container has plenty to chew on.
+    let tmp = tempfile::tempdir().unwrap();
+    let nt_path = tmp.path().join("data.nt");
+    {
+        use std::io::Write;
+        let mut f = std::fs::File::create(&nt_path).unwrap();
+        for i in 0..200_000 {
+            writeln!(
+                f,
+                "<http://example.org/s{i}> <http://example.org/p> <http://example.org/o{i}> ."
+            )
+            .unwrap();
+        }
+    }
+    let status = tokio::process::Command::new("bzip2")
+        .arg(&nt_path)
+        .status()
+        .await
+        .expect("bzip2 on PATH");
+    assert!(status.success());
+    let bz2_path = tmp.path().join("data.nt.bz2");
+
+    let index_dir: PathBuf = tmp.path().join("idx");
+    let config = QleverConfig::default()
+        .with_index_dir(&index_dir)
+        .with_container_memory("4M")
+        .with_container_memory_swap("4M");
+
+    let fut = QleverGraphContainer::from_path(&bz2_path, config);
+    let res = tokio::time::timeout(Duration::from_secs(60), fut).await;
+    match res {
+        Err(_) => panic!("build_index hung > 60s on dying container — regression of the OOM-stdin-hang bug"),
+        Ok(Ok(_)) => panic!("build_index unexpectedly succeeded with a 4 MiB container cap"),
+        Ok(Err(e)) => eprintln!("ok — got expected error in bounded time: {e}"),
+    }
 }
 
 /// End-to-end: same as above but `.xz` instead of `.bz2`. Confirms the

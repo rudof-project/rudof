@@ -170,6 +170,39 @@ impl RudofConfig {
         }
     }
 
+    /// Builder: replace the RDF data configuration.
+    ///
+    /// Useful when the caller wants to programmatically configure the
+    /// QLever backend instead of round-tripping through TOML.
+    pub fn with_rdf_data_config(mut self, config: RdfDataConfig) -> Self {
+        self.rdf_data = Some(config);
+        self
+    }
+
+    /// Replace the RDF data configuration in place.
+    pub fn set_rdf_data_config(&mut self, config: RdfDataConfig) {
+        self.rdf_data = Some(config);
+    }
+
+    /// Returns a reference to the current RDF data configuration, if any.
+    pub fn rdf_data(&self) -> Option<&RdfDataConfig> {
+        self.rdf_data.as_ref()
+    }
+
+    /// Returns a mutable reference to the current RDF data configuration,
+    /// creating a default one if no section was set yet.
+    ///
+    /// Lets callers tweak individual fields without rebuilding the whole `RdfDataConfig`, e.g.:
+    ///
+    /// ```ignore
+    /// rudof_config.rdf_data_mut().qlever = Some(
+    ///     QleverConfig::default().with_container_memory("8G")
+    /// );
+    /// ```
+    pub fn rdf_data_mut(&mut self) -> &mut RdfDataConfig {
+        self.rdf_data.get_or_insert_with(RdfDataConfig::default)
+    }
+
     /// Sets the PlantUML executable path using the builder pattern.
     ///
     /// # Arguments
