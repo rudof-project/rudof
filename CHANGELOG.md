@@ -1,21 +1,19 @@
 # CHANGE LOG
 This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.com/).
 
-## v0.3.3
+## [Unreleased]
 ### Added
-- #682: QLever Docker backend + RdfBackend strategy pattern
 ### Fixed
-- #688: Issues with negative cycles, blank node focus nodes, and IRI regex matching in ShEx
 ### Changed
 ### Removed
 
-## v0.3.2
+## v0.3.3
 ### Added
+- #682: QLever Docker backend + RdfBackend strategy pattern
 
 ### Fixed
+- #688: Issues with negative cycles, blank node focus nodes, and IRI regex matching in ShEx
 - #655: Support for JSON and CSV formats in SPARQL SELECT Queries
-
-### Changed
 
 ## v0.3.2
 ### Added
