@@ -1,6 +1,11 @@
 use rudof_rdf::rdf_core::query::{TableFormat, TableOptions};
 
-use crate::{Result, Rudof, errors::QueryError, formats::ResultQueryFormat, types::QueryResult};
+use crate::{
+    Result, Rudof,
+    errors::{QueryError, RudofError},
+    formats::ResultQueryFormat,
+    types::QueryResult,
+};
 use std::io;
 
 pub fn serialize_query_results<W: io::Write>(
@@ -37,10 +42,18 @@ pub fn serialize_query_results<W: io::Write>(
                     error: error.to_string(),
                 })?
             },
-            _ => todo!(
-                "Not yet implemented serialization for SELECT results in format: {}",
-                result_query_format
-            ),
+            _ => Err(RudofError::UnsupportedResultQueryFormatSelect {
+                format: result_query_format.to_string(),
+                formats: [
+                    ResultQueryFormat::Internal,
+                    ResultQueryFormat::Csv,
+                    ResultQueryFormat::Markdown,
+                    ResultQueryFormat::Json,
+                ]
+                .iter()
+                .map(|a| a.to_string())
+                .collect(),
+            })?,
         },
         QueryResult::Construct(results) => {
             writeln!(writer, "{}", results).map_err(|error| QueryError::FailedSerializingQueryResults {

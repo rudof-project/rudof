@@ -8,13 +8,13 @@ pub enum QueryError {
 
     /// The SPARQL query result format is not supported by Rudof.
     #[error(
-        "Unsupported SPARQL query result format: '{format}'. Valid formats are: 'internal', 'turtle', 'ntriples', 'json-ld', 'json', 'rdf-xml', 'csv', 'markdown', 'asciitable', 'trig', 'n3', 'nquads'"
+        "Unsupported SPARQL query result format: '{format}'. Valid formats are: {}", .formats.join(", ") 
     )]
-    UnsupportedResultQueryFormat { format: String },
+    UnsupportedResultQueryFormat { format: String, formats: Vec<String> },
 
     /// The SPARQL query type is not supported by Rudof.
-    #[error("Unsupported SPARQL query type: '{query_type}'. Valid types are: 'select', 'construct', 'ask', 'describe'")]
-    UnsupportedQueryType { query_type: String },
+    #[error("Unsupported SPARQL query type: '{query_type}'. Valid types are: {}", .variants.join(", "))]
+    UnsupportedQueryType { query_type: String, variants: Vec<String> },
 
     /// Errors related to specifying the data source.
     #[error("Data source specification error: {message}")]

@@ -183,9 +183,9 @@ fn write_csv_table<S: Rdf>(
                             object,
                         } => format!(
                             "<<{} {} {}>>",
-                            subject.show_qualified(&prefixmap),
+                            subject.show_qualified(prefixmap),
                             prefixmap.qualify(&predicate),
-                            object.show_qualified(&prefixmap)
+                            object.show_qualified(prefixmap)
                         ),
                     }
                 },
@@ -238,9 +238,9 @@ fn write_ascii_table<S: Rdf>(
                             object,
                         } => format!(
                             "<<{} {} {}>>",
-                            subject.show_qualified(&prefixmap),
+                            subject.show_qualified(prefixmap),
                             prefixmap.qualify(&predicate),
-                            object.show_qualified(&prefixmap)
+                            object.show_qualified(prefixmap)
                         ),
                     }
                 },
