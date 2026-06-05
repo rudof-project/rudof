@@ -1,9 +1,11 @@
 # CHANGE LOG
 This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.com/).
 
-## [Unreleased]
+## v0.3.3
 ### Added
+- #682: QLever Docker backend + RdfBackend strategy pattern
 ### Fixed
+- #688: Issues with negative cycles, blank node focus nodes, and IRI regex matching in ShEx
 ### Changed
 ### Removed
 
