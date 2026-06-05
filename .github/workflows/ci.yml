@@ -98,7 +98,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Run cargo test
-        run: cargo test --workspace
+        run: cargo test --workspace --features qlever
 
   wasm-test:
     name: Test Suite on Wasm
