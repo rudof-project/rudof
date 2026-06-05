@@ -14,8 +14,8 @@ mod server;
 pub use cli_probe::{CliKind, probe as qlever_probe_cli};
 pub use config::{InputFile, NativeFormat, QleverConfig};
 pub use decompressor::{
-    Bzip2Strategy, Compression, CompressionStrategy, DecompressorCandidate, DecompressorProbe, ResolvedDecompressor,
-    XzStrategy, decompressor_probe, strip_compression_suffix,
+    Bzip2Strategy, Compression, CompressionStrategy, DecompressorCandidate, DecompressorProbe, GzipStrategy,
+    ResolvedDecompressor, XzStrategy, decompressor_probe, strip_compression_suffix,
 };
 pub use error::QleverError;
 pub use graph_container::QleverGraphContainer;

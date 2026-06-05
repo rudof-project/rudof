@@ -48,6 +48,7 @@ The `qlever` backend routes data loading through a locally-launched QLever Docke
 - *(Optional, only if you pass compressed dumps)* A decompressor binary on `$PATH` for each compression family you intend to use:
   - **bzip2 (`.bz2`)**: install `lbzip2` (parallel, recommended) or fall back to `bzip2` (single-threaded).
   - **xz (`.xz`)**: `xz`.
+  - **gzip (`.gz`)**: install `pigz` (parallel, recommended) or fall back to `gzip` (single-threaded).
 
 ### What happens under the hood
 
@@ -84,6 +85,7 @@ Nothing decompressed ever touches disk; the decompressor uses host CPU cores (no
 |-----------|----------------------------------|----------------------------|
 | `.bz2`    | `lbzip2 -dc`, `lbzcat -dc`       | `bzip2 -dc`                |
 | `.xz`     | `xz -dc -T0`, `xzcat -T0`        | *(same; `-T0` is harmless when the file isn't parallelisable)* |
+| `.gz`     | `pigz -dc`                       | `gzip -dc`, `zcat`         |
 
 **Accepted inner formats** are the QLever-native ones — `.nt`, `.ttl`, `.nq` — so the file must look like `dump.nt.bz2`, `data.ttl.xz`, etc. Non-native compressed inputs (e.g. `dump.jsonld.bz2`) are rejected with a clear error; decompress or pre-convert them to a native format first.
 

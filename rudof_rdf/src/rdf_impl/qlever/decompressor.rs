@@ -33,6 +33,7 @@ pub struct DecompressorCandidate {
 pub enum Compression {
     Bzip2,
     Xz,
+    Gzip,
 }
 
 impl Compression {
@@ -41,13 +42,14 @@ impl Compression {
         match self {
             Compression::Bzip2 => &Bzip2Strategy,
             Compression::Xz => &XzStrategy,
+            Compression::Gzip => &GzipStrategy,
         }
     }
 }
 
 /// All registered strategies.
 fn strategies() -> &'static [&'static dyn CompressionStrategy] {
-    &[&Bzip2Strategy, &XzStrategy]
+    &[&Bzip2Strategy, &XzStrategy, &GzipStrategy]
 }
 
 /// bzip2 family: `lbzip2` (parallel) → `lbzcat` (parallel) → `bzip2`(single-threaded).
@@ -105,6 +107,38 @@ impl CompressionStrategy for XzStrategy {
                 program: "xzcat",
                 args: &["-T0"],
                 parallel: true,
+            },
+        ]
+    }
+}
+
+/// gzip family: `pigz` (parallel) → `gzip` (single-threaded) → `zcat` (alias for `gzip -dc` on most distros).
+#[derive(Debug)]
+pub struct GzipStrategy;
+
+impl CompressionStrategy for GzipStrategy {
+    fn family_name(&self) -> &'static str {
+        "gz"
+    }
+    fn extension(&self) -> &'static str {
+        "gz"
+    }
+    fn candidates(&self) -> &'static [DecompressorCandidate] {
+        &[
+            DecompressorCandidate {
+                program: "pigz",
+                args: &["-dc"],
+                parallel: true,
+            },
+            DecompressorCandidate {
+                program: "gzip",
+                args: &["-dc"],
+                parallel: false,
+            },
+            DecompressorCandidate {
+                program: "zcat",
+                args: &[],
+                parallel: false,
             },
         ]
     }
@@ -171,7 +205,7 @@ pub fn decompressor_probe() -> &'static DecompressorProbe {
 /// extension.
 pub fn strip_compression_suffix(path: &Path) -> Option<(PathBuf, Compression)> {
     let s = path.to_str()?;
-    for compression in [Compression::Bzip2, Compression::Xz] {
+    for compression in [Compression::Bzip2, Compression::Xz, Compression::Gzip] {
         let suffix = format!(".{}", compression.strategy().extension());
         if let Some(stem) = s.strip_suffix(&suffix) {
             return Some((PathBuf::from(stem), compression));
@@ -225,6 +259,10 @@ mod tests {
         assert_eq!(inner, Path::new("/data/dump.nq"));
         assert_eq!(c, Compression::Xz);
 
+        let (inner, c) = strip_compression_suffix(Path::new("/data/dump.nt.gz")).unwrap();
+        assert_eq!(inner, Path::new("/data/dump.nt"));
+        assert_eq!(c, Compression::Gzip);
+
         // Non-compressed paths return None.
         assert!(strip_compression_suffix(Path::new("/data/dump.nt")).is_none());
         assert!(strip_compression_suffix(Path::new("/data/dump.txt")).is_none());
@@ -238,11 +276,12 @@ mod tests {
     }
 
     #[test]
-    fn strategy_registry_contains_bz2_and_xz_with_unique_extensions() {
+    fn strategy_registry_contains_bz2_xz_and_gz_with_unique_extensions() {
         let all = strategies();
         let families: Vec<_> = all.iter().map(|s| s.family_name()).collect();
         assert!(families.contains(&"bz2"));
         assert!(families.contains(&"xz"));
+        assert!(families.contains(&"gz"));
 
         let mut exts: Vec<_> = all.iter().map(|s| s.extension()).collect();
         exts.sort_unstable();
@@ -255,12 +294,13 @@ mod tests {
     fn compression_strategy_round_trip() {
         assert_eq!(Compression::Bzip2.strategy().family_name(), "bz2");
         assert_eq!(Compression::Xz.strategy().family_name(), "xz");
+        assert_eq!(Compression::Gzip.strategy().family_name(), "gz");
     }
 
     #[test]
     #[cfg(target_os = "linux")]
-    fn probe_finds_bzip2_and_xz_on_linux() {
-        // bzip2 and xz ship on every standard Linux base image and CI runner.
+    fn probe_finds_bzip2_xz_and_gzip_on_linux() {
+        // bzip2, xz, and gzip ship on every standard Linux base image and CI runner.
         let probe = decompressor_probe();
         assert!(
             probe.for_compression(Compression::Bzip2).is_some(),
@@ -269,6 +309,10 @@ mod tests {
         assert!(
             probe.for_compression(Compression::Xz).is_some(),
             "expected at least one xz-family decompressor on PATH"
+        );
+        assert!(
+            probe.for_compression(Compression::Gzip).is_some(),
+            "expected at least one gzip-family decompressor on PATH"
         );
     }
 }

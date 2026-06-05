@@ -25,7 +25,7 @@ The crate is organized into several key modules:
     - `in_memory`: In-memory RDF graph implementation (`OxigraphInMemory`)
     - `endpoint`: SPARQL endpoint integration (`OxigraphEndpoint`)
     - `oxrdf_impl`: Integration with the `oxrdf` crate
-  - `qlever`: Locally-launched QLever Docker container backend (`QleverGraphContainer`)
+  - `qlever`: Locally-launched QLever Docker container backend (`QleverGraphContainer`). Compressed RDF dumps are streamed through a host-side decompressor into the index builder; supported families are `bz2`, `xz`, and `gz`.
   - `backend`: `RdfBackend` strategy enum unifying every backend behind a single
     set of trait impls (`Rdf`, `NeighsRDF`, `QueryRDF`, `FocusRDF`, `BuildRDF`).
 
