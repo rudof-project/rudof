@@ -1,4 +1,8 @@
-use crate::rdf_core::{RDFError, Rdf, query::QuerySolution, term::Object};
+use crate::rdf_core::{
+    RDFError, Rdf,
+    query::{QuerySolution, TableFormat, TableOptions, TableStyle},
+    term::Object,
+};
 use prefixmap::PrefixMap;
 use serde::Serialize;
 use std::fmt::Display;
@@ -96,58 +100,18 @@ impl<S: Rdf> QuerySolutions<S> {
     /// Returns an error if:
     /// - Writing to the output fails
     /// - Term conversion fails when processing solutions
-    pub fn write_table(&self, writer: &mut dyn Write) -> Result<(), RDFError> {
-        if self.solutions.is_empty() {
-            return write!(writer, "No results").map_err(|e| RDFError::WritingTableError { error: format!("{e}") });
+    pub fn write_table(
+        &self,
+        writer: &mut dyn Write,
+        output_format: &TableFormat,
+        options: &TableOptions,
+    ) -> Result<(), RDFError> {
+        match output_format {
+            TableFormat::Ascii | TableFormat::Markdown => write_ascii_table(self, writer, options, self.prefixmap()),
+            /*TableFormat::Json => serde_json::to_writer(writer, &self.solutions)
+            .map_err(|e| RDFError::WritingTableError { error: format!("{e}") }),*/
+            TableFormat::Csv => write_csv_table(self, writer, self.prefixmap()),
         }
-
-        let first = &self.solutions[0];
-        let mut builder = Builder::default();
-
-        // Build header row with pre-allocated capacity
-        let variable_count = first.variables_iter().count();
-        let mut variables = Vec::with_capacity(variable_count + 1);
-        variables.push(String::new()); // First column = index
-        variables.extend(first.variables_iter().map(|v| v.to_string()));
-        builder.push_record(variables);
-
-        // Build data rows
-        for (idx, result) in self.solutions.iter().enumerate() {
-            let mut record = Vec::with_capacity(variable_count + 1);
-            record.push((idx + 1).to_string()); // First column = index
-
-            for (var_idx, _variable) in result.variables_iter().enumerate() {
-                let str = match result.find_solution(var_idx) {
-                    Some(term) => {
-                        let object = S::term_as_object(term)?;
-                        match object {
-                            Object::Iri(iri) => self.prefixmap.qualify(&iri),
-                            Object::BlankNode(blank_node) => format!("_:{}", blank_node),
-                            Object::Literal(literal) => literal.to_string(),
-                            Object::Triple {
-                                subject,
-                                predicate,
-                                object,
-                            } => format!(
-                                "<<{} {} {}>>",
-                                subject.show_qualified(&self.prefixmap),
-                                self.prefixmap.qualify(&predicate),
-                                object.show_qualified(&self.prefixmap)
-                            ),
-                        }
-                    },
-                    None => String::new(),
-                };
-                record.push(str);
-            }
-            builder.push_record(record);
-        }
-
-        let mut table = builder.build();
-        table.with(Style::modern_rounded());
-        writeln!(writer, "{table}").map_err(|e| RDFError::WritingTableError { error: format!("{e}") })?;
-
-        Ok(())
     }
 }
 
@@ -186,4 +150,113 @@ impl<S: Rdf> IntoIterator for QuerySolutions<S> {
     fn into_iter(self) -> Self::IntoIter {
         self.solutions.into_iter()
     }
+}
+
+fn write_csv_table<S: Rdf>(
+    query_solutions: &QuerySolutions<S>,
+    writer: &mut dyn Write,
+    prefixmap: &PrefixMap,
+) -> Result<(), RDFError> {
+    if query_solutions.solutions.is_empty() {
+        return write!(writer, "No results").map_err(|e| RDFError::WritingTableError { error: format!("{e}") });
+    }
+    let mut wtr = csv::Writer::from_writer(writer);
+    let first = &query_solutions.solutions[0];
+    let variable_count = first.variables_iter().count();
+    let mut variables = Vec::with_capacity(variable_count);
+    variables.extend(first.variables_iter().map(|v| v.to_string()));
+    wtr.write_record(variables)
+        .map_err(|e| RDFError::WritingTableError { error: format!("{e}") })?;
+    for result in &query_solutions.solutions {
+        let mut record = Vec::with_capacity(variable_count);
+        for (var_idx, _variable) in result.variables_iter().enumerate() {
+            let str = match result.find_solution(var_idx) {
+                Some(term) => {
+                    let object = S::term_as_object(term)?;
+                    match object {
+                        Object::Iri(iri) => prefixmap.qualify(&iri),
+                        Object::BlankNode(blank_node) => format!("_:{}", blank_node),
+                        Object::Literal(literal) => literal.to_string(),
+                        Object::Triple {
+                            subject,
+                            predicate,
+                            object,
+                        } => format!(
+                            "<<{} {} {}>>",
+                            subject.show_qualified(prefixmap),
+                            prefixmap.qualify(&predicate),
+                            object.show_qualified(prefixmap)
+                        ),
+                    }
+                },
+                None => String::new(),
+            };
+            record.push(str);
+        }
+        wtr.write_record(record)
+            .map_err(|e| RDFError::WritingTableError { error: format!("{e}") })?;
+    }
+    Ok(())
+}
+
+fn write_ascii_table<S: Rdf>(
+    query_solutions: &QuerySolutions<S>,
+    writer: &mut dyn Write,
+    options: &TableOptions,
+    prefixmap: &PrefixMap,
+) -> Result<(), RDFError> {
+    if query_solutions.solutions.is_empty() {
+        return write!(writer, "No results").map_err(|e| RDFError::WritingTableError { error: format!("{e}") });
+    }
+
+    let first = &query_solutions.solutions[0];
+    let mut builder = Builder::default();
+
+    // Build header row with pre-allocated capacity
+    let variable_count = first.variables_iter().count();
+    let mut variables = Vec::with_capacity(variable_count + 1);
+    variables.push(String::new()); // First column = index
+    variables.extend(first.variables_iter().map(|v| v.to_string()));
+    builder.push_record(variables);
+
+    // Build data rows
+    for (idx, result) in query_solutions.solutions.iter().enumerate() {
+        let mut record = Vec::with_capacity(variable_count + 1);
+        record.push((idx + 1).to_string()); // First column = index
+
+        for (var_idx, _variable) in result.variables_iter().enumerate() {
+            let str = match result.find_solution(var_idx) {
+                Some(term) => {
+                    let object = S::term_as_object(term)?;
+                    match object {
+                        Object::Iri(iri) => prefixmap.qualify(&iri),
+                        Object::BlankNode(blank_node) => format!("_:{}", blank_node),
+                        Object::Literal(literal) => literal.to_string(),
+                        Object::Triple {
+                            subject,
+                            predicate,
+                            object,
+                        } => format!(
+                            "<<{} {} {}>>",
+                            subject.show_qualified(prefixmap),
+                            prefixmap.qualify(&predicate),
+                            object.show_qualified(prefixmap)
+                        ),
+                    }
+                },
+                None => String::new(),
+            };
+            record.push(str);
+        }
+        builder.push_record(record);
+    }
+
+    let mut table = builder.build();
+    match options.style.unwrap_or_default() {
+        TableStyle::ModernRounded => table.with(Style::modern_rounded()),
+        TableStyle::Ascii => table.with(Style::ascii()),
+        TableStyle::Markdown => table.with(Style::markdown()),
+    };
+    writeln!(writer, "{table}").map_err(|e| RDFError::WritingTableError { error: format!("{e}") })?;
+    Ok(())
 }

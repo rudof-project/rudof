@@ -15,10 +15,14 @@ pub enum ResultQueryFormat {
     NTriples,
     /// JSON-LD - JSON format for Linked Data (for CONSTRUCT/DESCRIBE)
     JsonLd,
+    /// JSON - JSON format for tabular results (for SELECT)
+    Json,
     /// RDF/XML - XML-based RDF serialization (for CONSTRUCT/DESCRIBE)
     RdfXml,
     /// CSV - comma-separated values (for SELECT)
     Csv,
+    /// Markdown - markdown format (for SELECT)
+    Markdown,
     /// TriG - Turtle with named graphs (for CONSTRUCT/DESCRIBE)
     TriG,
     /// Notation3 - superset of Turtle (for CONSTRUCT/DESCRIBE)
@@ -51,8 +55,10 @@ impl Display for ResultQueryFormat {
             ResultQueryFormat::Turtle => write!(dest, "turtle"),
             ResultQueryFormat::NTriples => write!(dest, "ntriples"),
             ResultQueryFormat::JsonLd => write!(dest, "json-ld"),
+            ResultQueryFormat::Json => write!(dest, "json"),
             ResultQueryFormat::RdfXml => write!(dest, "rdf-xml"),
             ResultQueryFormat::Csv => write!(dest, "csv"),
+            ResultQueryFormat::Markdown => write!(dest, "markdown"),
             ResultQueryFormat::TriG => write!(dest, "trig"),
             ResultQueryFormat::N3 => write!(dest, "n3"),
             ResultQueryFormat::NQuads => write!(dest, "nquads"),
@@ -67,8 +73,10 @@ impl From<ResultQueryFormat> for QueryResultFormat {
             ResultQueryFormat::Turtle => QueryResultFormat::Turtle,
             ResultQueryFormat::NTriples => QueryResultFormat::NTriples,
             ResultQueryFormat::JsonLd => QueryResultFormat::JsonLd,
+            ResultQueryFormat::Json => QueryResultFormat::Json,
             ResultQueryFormat::RdfXml => QueryResultFormat::RdfXml,
             ResultQueryFormat::Csv => QueryResultFormat::Csv,
+            ResultQueryFormat::Markdown => QueryResultFormat::Markdown,
             ResultQueryFormat::TriG => QueryResultFormat::TriG,
             ResultQueryFormat::N3 => QueryResultFormat::N3,
             ResultQueryFormat::NQuads => QueryResultFormat::NQuads,
@@ -76,27 +84,40 @@ impl From<ResultQueryFormat> for QueryResultFormat {
     }
 }
 
+impl ResultQueryFormat {
+    const FORMATS: &'static [(&'static [&'static str], ResultQueryFormat)] = &[
+        (&["internal", "asciitable"], ResultQueryFormat::Internal),
+        (&["turtle"], ResultQueryFormat::Turtle),
+        (&["ntriples"], ResultQueryFormat::NTriples),
+        (&["json-ld", "jsonld"], ResultQueryFormat::JsonLd),
+        (&["json"], ResultQueryFormat::Json),
+        (&["rdf-xml", "rdfxml"], ResultQueryFormat::RdfXml),
+        (&["csv"], ResultQueryFormat::Csv),
+        (&["markdown"], ResultQueryFormat::Markdown),
+        (&["trig"], ResultQueryFormat::TriG),
+        (&["n3"], ResultQueryFormat::N3),
+        (&["nquads"], ResultQueryFormat::NQuads),
+    ];
+}
+
 impl FromStr for ResultQueryFormat {
     type Err = QueryError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "internal" => Ok(ResultQueryFormat::Internal),
-            "turtle" => Ok(ResultQueryFormat::Turtle),
-            "ntriples" => Ok(ResultQueryFormat::NTriples),
-            "json-ld" => Ok(ResultQueryFormat::JsonLd),
-            "rdf-xml" => Ok(ResultQueryFormat::RdfXml),
-            "csv" => Ok(ResultQueryFormat::Csv),
-            "trig" => Ok(ResultQueryFormat::TriG),
-            "n3" => Ok(ResultQueryFormat::N3),
-            "nquads" => Ok(ResultQueryFormat::NQuads),
-            other => Err(QueryError::UnsupportedResultQueryFormat {
-                format: other.to_string(),
-            }),
-        }
+        Self::FORMATS
+            .iter()
+            .find(|(aliases, _)| aliases.iter().any(|a| a.eq_ignore_ascii_case(s)))
+            .map(|(_, format)| *format)
+            .ok_or_else(|| QueryError::UnsupportedResultQueryFormat {
+                format: s.to_string(),
+                formats: Self::FORMATS
+                    .iter()
+                    .flat_map(|(aliases, _)| aliases.iter())
+                    .map(|a| a.to_string())
+                    .collect(),
+            })
     }
 }
-
 // ============================================================================
 // QueryType
 // ============================================================================
@@ -113,18 +134,26 @@ impl Display for QueryType {
     }
 }
 
+impl QueryType {
+    const VARIANTS: &'static [(&'static str, QueryType)] = &[
+        ("select", QueryType::Select),
+        ("construct", QueryType::Construct),
+        ("ask", QueryType::Ask),
+        ("describe", QueryType::Describe),
+    ];
+}
+
 impl FromStr for QueryType {
     type Err = QueryError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "select" => Ok(QueryType::Select),
-            "construct" => Ok(QueryType::Construct),
-            "ask" => Ok(QueryType::Ask),
-            "describe" => Ok(QueryType::Describe),
-            other => Err(QueryError::UnsupportedQueryType {
-                query_type: other.to_string(),
-            }),
-        }
+        QueryType::VARIANTS
+            .iter()
+            .find(|(name, _)| name.eq_ignore_ascii_case(s))
+            .map(|(_, variant)| *variant)
+            .ok_or_else(|| QueryError::UnsupportedQueryType {
+                query_type: s.to_string(),
+                variants: QueryType::VARIANTS.iter().map(|(name, _)| name.to_string()).collect(),
+            })
     }
 }

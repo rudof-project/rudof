@@ -11,6 +11,14 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ## v0.3.2
 ### Added
+
+### Fixed
+- #655: Support for JSON and CSV formats in SPARQL SELECT Queries
+
+### Changed
+
+## v0.3.2
+### Added
 - #660: Added support to Nix
 - #672: Support for SPARQL-based constraints in SHACL (SHACL)
 - #685: Validation of edge types in PGSchema (pgschema), changed option to validate pgschema so it is `pgschema-validate` instead of `pg-schema-validate`.

@@ -11,7 +11,13 @@ repository.workspace = true
 
 [features]
 default = ["sparql"]
-sparql = ["dep:oxigraph", "dep:reqwest", "dep:tokio", "dep:spargebra", "dep:sparesults"]
+sparql = [
+    "dep:oxigraph",
+    "dep:reqwest",
+    "dep:tokio",
+    "dep:spargebra",
+    "dep:sparesults",
+]
 qlever = [
     "sparql",
     "dep:testcontainers",
@@ -26,6 +32,7 @@ qlever-docker-tests = ["qlever"]
 [dependencies]
 colored.workspace = true
 const_format.workspace = true
+csv.workspace = true
 rudof_iri.workspace = true
 once_cell.workspace = true
 oxigraph = { workspace = true, optional = true }
@@ -61,7 +68,7 @@ nix = { workspace = true, optional = true }
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 oxigraph = { workspace = true, features = ["http-client-rustls-native"] }
 tempfile.workspace = true
-tokio = {workspace = true, features = ["full"] }
+tokio = { workspace = true, features = ["full"] }
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 proptest.workspace = true
