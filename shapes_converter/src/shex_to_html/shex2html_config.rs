@@ -98,7 +98,7 @@ impl ShEx2HtmlConfig {
     }
 
     pub fn with_target_folder<P: AsRef<Path>>(mut self, folder: P) -> Self {
-        self.target_folder = folder.as_ref().to_path_buf();
+        self.target_folder = folder;
         self
     }
 

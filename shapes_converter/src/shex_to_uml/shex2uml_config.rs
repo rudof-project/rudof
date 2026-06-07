@@ -15,7 +15,7 @@ use crate::shex_to_uml::{Direction, LineType};
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct ShEx2UmlConfig {
-    pub(crate) plantuml_path: Option<PathBuf>,
+    pub(crate) plantuml_path: PathBuf,
 
     /// A list of IRIs to use as annotation labels in the generated PlantUML diagram. If empty, the default is `rdfs:label`.
     pub(crate) annotation_label: Vec<IriS>,
@@ -72,7 +72,7 @@ impl ShEx2UmlConfig {
         Ok(config)
     }
 
-    pub fn with_plantuml_path(mut self, path: Option<PathBuf>) -> Self {
+    pub fn with_plantuml_path<P: AsRef<Path>>(mut self, path: P) -> Self {
         self.plantuml_path = path;
         self
     }
@@ -110,8 +110,8 @@ impl ShEx2UmlConfig {
 }
 
 impl ShEx2UmlConfig {
-    pub fn plantuml_path(&self) -> Option<&PathBuf> {
-        self.plantuml_path.as_ref()
+    pub fn plantuml_path(&self) -> &PathBuf {
+        &self.plantuml_path
     }
     pub fn annotation_label(&self) -> Vec<&IriS> {
         self.annotation_label.iter().collect()
@@ -137,7 +137,7 @@ impl ShEx2UmlConfig {
 /// Serde stuff
 #[allow(dead_code)]
 impl ShEx2UmlConfig {
-    #[inline] fn default_plantuml_path() -> Option<PathBuf> { None }
+    #[inline] fn default_plantuml_path() -> PathBuf { discover_puml_path(None) }
     #[inline] fn default_annotation_label() -> Vec<IriS> { vec![RdfsVocab::rdfs_label()] }
     #[inline] fn default_replace_iri_by_label() -> bool { true }
     #[inline] fn default_shadowing() -> bool { true }
@@ -178,7 +178,7 @@ impl<'de> Deserialize<'de> for ShEx2UmlConfig {
         let raw = Raw::deserialize(deserializer)?;
 
         Ok(Self {
-            plantuml_path: raw.plantuml_path,
+            plantuml_path: discover_puml_path(raw.plantuml_path),
             annotation_label: raw.annotation_label,
             replace_iri_by_label: raw.replace_iri_by_label,
             shadowing: raw.shadowing,
@@ -194,6 +194,15 @@ impl Default for ShEx2UmlConfig {
     fn default() -> Self {
         Self::new()
     }
+}
+
+fn discover_puml_path(path: Option<PathBuf>) -> PathBuf {
+    path.unwrap_or_else(|| {
+        match env::var("RUDOF_PUML") {
+            Ok(value) => Path::new(value.as_str()).to_path_buf(),
+            Err(_) => Path::new("plantuml.jar").to_path_buf(),
+        }
+    })
 }
 
 #[derive(Error, Debug)]
