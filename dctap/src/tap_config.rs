@@ -4,42 +4,18 @@ use std::io::Read;
 use std::str::FromStr;
 use std::{collections::HashMap, path::Path};
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Default)]
-pub struct DCTapConfig {
-    pub dctap: Option<TapConfig>,
-}
-
-impl DCTapConfig {
-    /// Obtain a DCTapConfig from a path file in TOML
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<DCTapConfig, TapError> {
-        let path_name = path.as_ref().display().to_string();
-        let mut f = std::fs::File::open(path).map_err(|e| TapError::TapConfigFromPathError {
-            path: path_name.clone(),
-            error: e,
-        })?;
-        let mut s = String::new();
-        f.read_to_string(&mut s).map_err(|e| TapError::TapConfigFromPathError {
-            path: path_name.clone(),
-            error: e,
-        })?;
-        let config: DCTapConfig = toml::from_str(s.as_str()).map_err(|e| TapError::TapConfigTomlError {
-            path: path_name.clone(),
-            error: e,
-        })?;
-        Ok(config)
-    }
-}
-
 /// Represents configuration file structure of DCTAP files
-#[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Default)]
+#[derive(Deserialize, Debug, PartialEq, Clone)]
 pub struct TapConfig {
     /// Character that is used to separate columns in CSV
-    delimiter: Option<char>,
+    #[serde(rename = "delimiter", default = "TapConfig::default_delimiter")]
+    delimiter: char,
 
     /// The quote character to use when parsing CSV.
     /// The default is `"`.
     /// It can be used to indicate single quotes instead of double quotes.
-    quote: Option<char>,
+    #[serde(rename = "quote", default = "TapConfig::default_quote")]
+    quote: char,
 
     /// Whether the number of fields in records is allowed to change or not.
     ///
@@ -48,10 +24,12 @@ pub struct TapConfig {
     /// number of fields in a previous record.
     ///
     /// When enabled, this error checking is turned off. It is enabled by default.
-    flexible: Option<bool>,
+    #[serde(rename = "flexible", default = "TapConfig::default_flexible")]
+    flexible: bool,
 
     /// Character that is used to separate values in a picklist cell. The default value is `|`
-    picklist_delimiter: Option<char>,
+    #[serde(rename = "picklist_delimiter", default = "TapConfig::default_picklist_delimiter")]
+    picklist_delimiter: char,
 
     /// Table that can be used to generate values for some keys.
     /// When the processor finds a cell with some of those keys,
@@ -65,7 +43,8 @@ pub struct TapConfig {
     ///
     /// <div class="warning">This field is experimental and the syntax may change</div>
     ///
-    property_placeholders: Option<HashMap<String, PlaceholderResolver>>,
+    #[serde(rename = "property_placeholders", default = "TapConfig::default_property_placeholders")]
+    property_placeholders: HashMap<String, PlaceholderResolver>,
 
     /// Indicates how to generate a value for a row whose property ID is empty.
     ///
@@ -73,76 +52,129 @@ pub struct TapConfig {
     ///
     /// <div class="warning">This field is experimental and the syntax may change</div>
     ///
+    #[serde(rename = "empty_property_placeholder", default = "TapConfig::default_empty_property_placeholder")]
     empty_property_placeholder: Option<PlaceholderResolver>,
 
     /// String that is used to separate values in a value shape cell. The default value is whitespace.
     ///
     /// <div class="warning">This field is experimental and the syntax may change</div>
     ///
-    value_shape_delimiter: Option<String>,
+    #[serde(rename = "value_shape_delimiter", default = "TapConfig::default_value_shape_delimiter")]
+    value_shape_delimiter: char,
 }
 
 impl TapConfig {
-    pub fn picklist_delimiter(&self) -> &char {
-        match &self.picklist_delimiter {
-            None => &'|',
-            Some(c) => c,
+    pub fn new() -> Self {
+        Self {
+            delimiter: Self::default_delimiter(),
+            quote: Self::default_quote(),
+            flexible: Self::default_flexible(),
+            picklist_delimiter: Self::default_picklist_delimiter(),
+            property_placeholders: Self::default_property_placeholders(),
+            empty_property_placeholder: Self::default_empty_property_placeholder(),
+            value_shape_delimiter: Self::default_value_shape_delimiter(),
         }
     }
 
-    pub fn delimiter(&self) -> u8 {
-        match self.delimiter {
-            None => b',',
-            Some(c) => c as u8,
-        }
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Self {
+        let mut f = std::fs::File::open(path).unwrap();
+        let mut s = String::new();
+        f.read_to_string(&mut s).unwrap();
+        toml::from_str(s.as_str()).unwrap()
     }
 
-    pub fn quote(&self) -> u8 {
-        match self.quote {
-            None => b'"',
-            Some(c) => c as u8,
-        }
+    pub fn with_delimiter(mut self, c: char) -> Self {
+        self.delimiter = c;
+        self
     }
 
-    pub fn flexible(&self) -> bool {
-        self.flexible.unwrap_or(true)
+    pub fn with_quote(mut self, c: char) -> Self {
+        self.quote = c;
+        self
     }
 
-    pub fn with_property_placeholders(mut self, property_place_holders: HashMap<String, PlaceholderResolver>) -> Self {
-        self.property_placeholders = Some(property_place_holders);
+    pub fn with_flexible(mut self, flag: bool) -> Self {
+        self.flexible = flag;
         self
     }
 
     pub fn with_picklist_delimiter(mut self, c: char) -> Self {
-        self.picklist_delimiter = Some(c);
+        self.picklist_delimiter = c;
         self
     }
 
-    pub fn with_empty_property_placeholder(mut self, placeholder: PlaceholderResolver) -> Self {
-        self.empty_property_placeholder = Some(placeholder);
+    pub fn with_property_placeholders(mut self, placeholders: HashMap<String, PlaceholderResolver>) -> Self {
+        self.property_placeholders = placeholders;
         self
     }
 
-    pub fn get_property_placeholder(&self, str: &str) -> Option<PlaceholderResolver> {
-        if str.is_empty() {
-            self.empty_property_placeholder.clone()
-        } else {
-            match &self.property_placeholders {
-                Some(ph) => ph.get(str).cloned(),
-                None => None,
-            }
-        }
+    pub fn with_empty_property_placeholder(mut self, placeholder: Option<PlaceholderResolver>) -> Self {
+        self.empty_property_placeholder = placeholder;
+        self
     }
 
-    pub fn empty_property_placeholder(&self) -> Option<PlaceholderResolver> {
-        self.empty_property_placeholder.clone()
+    pub fn with_value_shape_delimiter(mut self, c: char) -> Self {
+        self.value_shape_delimiter = c;
+        self
     }
 
-    pub fn value_shape_delimiter(&self) -> &str {
-        match &self.value_shape_delimiter {
-            None => " ",
-            Some(s) => s.as_str(),
-        }
+    pub fn add_property_placeholder(&mut self, k: String, v: PlaceholderResolver) -> Option<PlaceholderResolver> {
+        self.property_placeholders.insert(k, v)
+    }
+    pub fn remove_property_placeholder(&mut self, k: &String) -> Option<PlaceholderResolver> {
+        self.property_placeholders.remove(k)
+    }
+}
+
+impl TapConfig {
+    pub fn delimiter(&self) -> char {
+        self.delimiter
+    }
+
+    pub fn quote(&self) -> char {
+        self.quote
+    }
+
+    pub fn flexible(&self) -> bool {
+        self.flexible
+    }
+
+    pub fn picklist_delimiter(&self) -> char {
+        self.picklist_delimiter
+    }
+
+    pub fn property_placeholders(&self) -> &HashMap<String, PlaceholderResolver> {
+        &self.property_placeholders
+    }
+
+    pub fn empty_property_placeholder(&self) -> Option<&PlaceholderResolver> {
+        self.empty_property_placeholder.as_ref()
+    }
+
+    pub fn value_shape_delimiter(&self) -> char {
+        self.value_shape_delimiter
+    }
+
+    pub fn get_property_placeholder(&self, k: &String) -> Option<&PlaceholderResolver> {
+        self.property_placeholders.get(k)
+    }
+}
+
+/// Serde stuff
+#[allow(dead_code)]
+impl TapConfig {
+    #[inline] fn default_delimiter() -> char { ',' }
+    #[inline] fn default_quote() -> char { '"' }
+    #[inline] fn default_flexible() -> bool { true }
+    #[inline] fn default_picklist_delimiter() -> char { '|' }
+    #[inline] fn default_property_placeholders() -> HashMap<String, PlaceholderResolver> { HashMap::new() }
+    #[inline] fn default_empty_property_placeholder() -> Option<PlaceholderResolver> { None }
+    #[inline] fn default_value_shape_delimiter() -> char { ' ' }
+}
+
+impl Default for TapConfig {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -173,9 +205,9 @@ mod tests {
         ph.insert(key.to_string(), resolver.clone());
         let config = TapConfig::default()
             .with_property_placeholders(ph)
-            .with_empty_property_placeholder(resolver.clone());
-        assert_eq!(config.get_property_placeholder("nalt"), Some(resolver.clone()));
-        assert_eq!(config.get_property_placeholder(""), Some(resolver.clone()))
+            .with_empty_property_placeholder(resolver.clone().into());
+        assert_eq!(config.get_property_placeholder(&"nalt".to_string()), Some(&resolver));
+        assert_eq!(config.get_property_placeholder(&"".to_string()), Some(&resolver))
     }
 
     #[test]
@@ -185,7 +217,7 @@ delimiter = ","
 picklist_delimiter = " "
 "#;
         let config = TapConfig::from_str(s).unwrap();
-        assert_eq!(config.delimiter(), b',');
+        assert_eq!(config.delimiter(), ',');
     }
 
     #[test]
@@ -210,8 +242,8 @@ picklist_delimiter = " "
             .with_property_placeholders(property_placeholders)
             .with_empty_property_placeholder(PlaceholderResolver::stem("empty")); */
         assert_eq!(
-            config.get_property_placeholder("x").unwrap(),
-            PlaceholderResolver::stem("pending")
+            config.get_property_placeholder(&"x".to_string()).unwrap(),
+            &PlaceholderResolver::stem("pending")
         );
         // let str = toml::to_string_pretty(&config).unwrap();
         // assert_eq!(str, "what?".to_string());
