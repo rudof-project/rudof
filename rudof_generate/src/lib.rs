@@ -29,7 +29,7 @@ use errors::{DataGeneratorError, Result};
 #[cfg(not(target_family = "wasm"))]
 use crate::{output::OutputWriter, parallel_generation::ParallelGenerator, shape_processing::ShapeProcessor};
 #[cfg(not(target_family = "wasm"))]
-use std::{path::Path, str::FromStr};
+use std::path::Path;
 
 #[cfg(not(target_family = "wasm"))]
 /// Main data generator interface
@@ -185,19 +185,32 @@ impl DataGenerator {
     ) -> Vec<crate::shape_processing::ShapeInfo> {
         use crate::shape_processing::{PropertyInfo, ShapeDependency, ShapeInfo};
 
+        // Relative IRI references (e.g. "Encounter" from <Encounter> in ShEx) are not valid
+        // absolute IRIs. Absolutize them so they can be used as NamedNode subjects/objects in
+        // RDF output and as consistent HashMap keys throughout the generation pipeline.
+        let absolutize = |id: &str| -> String {
+            if id.starts_with("http://") || id.starts_with("https://") || id.starts_with("urn:") {
+                id.to_string()
+            } else {
+                let clean = id.trim_matches(|c: char| c == '<' || c == '>');
+                format!("http://example.org/{clean}")
+            }
+        };
+
         let mut shape_infos = Vec::new();
 
         for (shape_id, unified_shape) in &unified_model.shapes {
+            let absolute_shape_id = absolutize(shape_id);
             let mut dependencies = Vec::new();
             let mut properties = Vec::new();
 
             // Convert properties
             for prop in &unified_shape.properties {
-                // Extract dependencies from shape references
+                // Extract dependencies from shape references, absolutizing target IRIs
                 for constraint in &prop.constraints {
                     if let crate::unified_constraints::UnifiedConstraint::ShapeReference(target_shape) = constraint {
                         dependencies.push(ShapeDependency {
-                            target_shape: target_shape.clone(),
+                            target_shape: absolutize(target_shape),
                             property: prop.property_iri.clone(),
                             min_cardinality: prop.min_cardinality.map(|c| c as i32),
                             max_cardinality: prop.max_cardinality.map(|c| c as i32),
@@ -211,9 +224,9 @@ impl DataGenerator {
                     _ => None,
                 });
 
-                // Extract shape reference
+                // Extract shape reference, absolutizing so it matches the HashMap key
                 let shape_ref = prop.constraints.iter().find_map(|c| match c {
-                    crate::unified_constraints::UnifiedConstraint::ShapeReference(sr) => Some(sr.clone()),
+                    crate::unified_constraints::UnifiedConstraint::ShapeReference(sr) => Some(absolutize(sr)),
                     _ => None,
                 });
 
@@ -227,17 +240,13 @@ impl DataGenerator {
                 });
             }
 
-            // Create a minimal ShapeDecl for backward compatibility
-            let shape_iri = match rudof_iri::IriS::from_str(shape_id) {
-                Ok(iri) => prefixmap::IriRef::Iri(iri),
-                Err(_) => {
-                    // Fallback to a simple IRI if parsing fails
-                    prefixmap::IriRef::Iri(rudof_iri::IriS::new_unchecked("http://example.org/shape"))
-                },
-            };
+            // Create a minimal ShapeDecl for backward compatibility.
+            // Use the absolutized IRI so that declaration.id.to_string() yields a valid
+            // absolute IRI usable as an RDF NamedNode and as a consistent HashMap key.
+            let shape_iri = rudof_iri::IriS::new_unchecked(&absolute_shape_id);
 
             let dummy_decl = shex_ast::ast::ShapeDecl {
-                id: shex_ast::ast::ShapeExprLabel::IriRef { value: shape_iri },
+                id: shex_ast::ast::ShapeExprLabel::iri(shape_iri),
                 shape_expr: shex_ast::ast::ShapeExpr::Shape(shex_ast::ast::Shape {
                     expression: None,
                     extra: None,
@@ -246,7 +255,7 @@ impl DataGenerator {
                     annotations: None,
                     extends: None,
                 }),
-                type_: "".to_string(), // Empty string for type
+                type_: "".to_string(),
                 is_abstract: false,
             };
 
