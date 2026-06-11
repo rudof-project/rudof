@@ -6,10 +6,17 @@ use rand::seq::SliceRandom;
 // XSD datatypes constants
 pub const XSD_STRING: &str = "http://www.w3.org/2001/XMLSchema#string";
 pub const XSD_INTEGER: &str = "http://www.w3.org/2001/XMLSchema#integer";
+pub const XSD_INT: &str = "http://www.w3.org/2001/XMLSchema#int";
+pub const XSD_LONG: &str = "http://www.w3.org/2001/XMLSchema#long";
 pub const XSD_DECIMAL: &str = "http://www.w3.org/2001/XMLSchema#decimal";
+pub const XSD_DOUBLE: &str = "http://www.w3.org/2001/XMLSchema#double";
 pub const XSD_BOOLEAN: &str = "http://www.w3.org/2001/XMLSchema#boolean";
 pub const XSD_DATE: &str = "http://www.w3.org/2001/XMLSchema#date";
 pub const XSD_DATETIME: &str = "http://www.w3.org/2001/XMLSchema#dateTime";
+pub const XSD_TIME: &str = "http://www.w3.org/2001/XMLSchema#time";
+pub const XSD_GYEAR: &str = "http://www.w3.org/2001/XMLSchema#gYear";
+pub const XSD_GYEARMONTH: &str = "http://www.w3.org/2001/XMLSchema#gYearMonth";
+pub const XSD_BASE64BINARY: &str = "http://www.w3.org/2001/XMLSchema#base64Binary";
 pub const XSD_ANYURI: &str = "http://www.w3.org/2001/XMLSchema#anyURI";
 
 /// Basic string generator
@@ -18,6 +25,10 @@ pub struct StringGenerator;
 impl FieldGenerator for StringGenerator {
     fn generate(&self, context: &GenerationContext) -> Result<String> {
         let mut rng = rand::thread_rng();
+
+        if context.datatype == XSD_BASE64BINARY {
+            return Ok(generate_base64(&mut rng));
+        }
 
         // Generate based on property context
         let value = if context.property.contains("name") || context.property.contains("Name") {
@@ -40,7 +51,7 @@ impl FieldGenerator for StringGenerator {
     }
 
     fn supported_datatypes(&self) -> Vec<String> {
-        vec![XSD_STRING.to_string()]
+        vec![XSD_STRING.to_string(), XSD_BASE64BINARY.to_string()]
     }
 }
 
@@ -65,7 +76,12 @@ impl FieldGenerator for IntegerGenerator {
     }
 
     fn supported_datatypes(&self) -> Vec<String> {
-        vec![XSD_INTEGER.to_string()]
+        vec![
+            XSD_INTEGER.to_string(),
+            XSD_INT.to_string(),
+            XSD_LONG.to_string(),
+            XSD_GYEAR.to_string(),
+        ]
     }
 }
 
@@ -95,7 +111,7 @@ impl FieldGenerator for DecimalGenerator {
     }
 
     fn supported_datatypes(&self) -> Vec<String> {
-        vec![XSD_DECIMAL.to_string()]
+        vec![XSD_DECIMAL.to_string(), XSD_DOUBLE.to_string()]
     }
 }
 
@@ -233,6 +249,19 @@ impl FieldGenerator for UriGenerator {
 }
 
 // Helper functions for generating realistic data
+
+fn generate_base64(rng: &mut impl Rng) -> String {
+    const CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    // Choose a data length that is a multiple of 3 so no padding is needed.
+    let byte_count = rng.gen_range(3..=15usize) * 3;
+    let mut out = String::with_capacity((byte_count / 3) * 4);
+    for _ in 0..(byte_count / 3) {
+        for _ in 0..4 {
+            out.push(CHARS[rng.gen_range(0..64)] as char);
+        }
+    }
+    out
+}
 
 fn generate_name(rng: &mut impl Rng, locale: &str) -> String {
     let first_names = match locale {

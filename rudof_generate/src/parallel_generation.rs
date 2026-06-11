@@ -453,15 +453,23 @@ impl ParallelGenerator {
                 value,
                 NamedNode::new_unchecked(datatype),
             ))),
-            "http://www.w3.org/2001/XMLSchema#anyURI" => Ok(Term::Literal(Literal::new_typed_literal(
+            "http://www.w3.org/2001/XMLSchema#anyURI"
+            | "http://www.w3.org/2001/XMLSchema#int"
+            | "http://www.w3.org/2001/XMLSchema#long"
+            | "http://www.w3.org/2001/XMLSchema#double"
+            | "http://www.w3.org/2001/XMLSchema#base64Binary"
+            | "http://www.w3.org/2001/XMLSchema#time"
+            | "http://www.w3.org/2001/XMLSchema#gYear"
+            | "http://www.w3.org/2001/XMLSchema#gYearMonth" => Ok(Term::Literal(Literal::new_typed_literal(
                 value,
                 NamedNode::new_unchecked(datatype),
             ))),
             _ => {
-                // Default to string literal for unknown types
+                // Preserve the original datatype IRI so unknown XSD types are not silently
+                // downgraded to xsd:string.
                 Ok(Term::Literal(Literal::new_typed_literal(
                     value,
-                    NamedNode::new_unchecked("http://www.w3.org/2001/XMLSchema#string"),
+                    NamedNode::new_unchecked(datatype),
                 )))
             },
         }
