@@ -716,7 +716,7 @@ async fn make_sparql_query_select_async(
 
     // Execute request and get response body
     let response = client.get(url).send().await?;
-    let body = response.text().await.unwrap();
+    let body = response.text().await?;
     parse_sparql_json_results(&body)
 }
 
