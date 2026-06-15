@@ -1,7 +1,7 @@
 use crate::{
     rdf_core::{
-        query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions, VarName}, Any, AsyncRDF, Matcher, NeighsRDF,
-        Rdf,
+        Any, AsyncRDF, Matcher, NeighsRDF, Rdf,
+        query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions, VarName},
     },
     rdf_impl::OxigraphEndpointError,
 };
@@ -12,9 +12,9 @@ use oxrdf::{
 };
 use prefixmap::PrefixMap;
 use regex::Regex;
-use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, USER_AGENT};
+use reqwest::header::{ACCEPT, HeaderMap, HeaderValue, USER_AGENT};
 use rudof_iri::IriS;
-use serde::{ser::SerializeStruct, Serialize};
+use serde::{Serialize, ser::SerializeStruct};
 use sparesults::{
     QueryResultsFormat, QueryResultsParser, QuerySolution as OxQuerySolution, ReaderQueryResultsParserOutput,
 };
