@@ -1,7 +1,7 @@
 use crate::{
     rdf_core::{
-        Any, AsyncRDF, Matcher, NeighsRDF, Rdf,
-        query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions, VarName},
+        query::{QueryRDF, QueryResultFormat, QuerySolution, QuerySolutions, VarName}, Any, AsyncRDF, Matcher, NeighsRDF,
+        Rdf,
     },
     rdf_impl::OxigraphEndpointError,
 };
@@ -12,9 +12,9 @@ use oxrdf::{
 };
 use prefixmap::PrefixMap;
 use regex::Regex;
-use reqwest::header::{ACCEPT, HeaderMap, HeaderValue, USER_AGENT};
+use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, USER_AGENT};
 use rudof_iri::IriS;
-use serde::{Serialize, ser::SerializeStruct};
+use serde::{ser::SerializeStruct, Serialize};
 use sparesults::{
     QueryResultsFormat, QueryResultsParser, QuerySolution as OxQuerySolution, ReaderQueryResultsParserOutput,
 };
@@ -614,60 +614,40 @@ impl NeighsRDF for OxigraphEndpoint {
     }
 }
 
+// Shared tokio runtime used by the blocking SPARQL methods.
+#[cfg(not(target_family = "wasm"))]
+static SPARQL_RUNTIME: once_cell::sync::Lazy<tokio::runtime::Runtime> = once_cell::sync::Lazy::new(|| {
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .thread_name("rudof-sparql")
+        .build()
+        .expect("failed to build shared tokio runtime for SPARQL queries")
+});
+
 // QueryRDF is only available on non-WASM platforms.
-// On native platforms, these sync methods use tokio::runtime to run
-// the async implementations.
+// On native platforms, these sync methods bridge to the async implementations
+// through a shared tokio runtime (see `SPARQL_RUNTIME`).
 #[cfg(not(target_family = "wasm"))]
 impl QueryRDF for OxigraphEndpoint {
     /// Executes a SPARQL CONSTRUCT query synchronously.
     ///
     /// This is a blocking wrapper around `query_construct_async`.
-    /// It creates a tokio runtime to run the async method.
-    ///
-    /// # Performance Note
-    ///
-    /// Creates a new runtime for each call. For better performance in
-    /// async contexts, use `query_construct_async` directly.
     fn query_construct(&self, query: &str, format: &QueryResultFormat) -> Result<String> {
-        let runtime = tokio::runtime::Runtime::new().map_err(|e| OxigraphEndpointError::ParsingBody {
-            body: format!("Failed to create runtime: {}", e),
-        })?;
-
-        runtime.block_on(self.query_construct_async(query, format))
+        SPARQL_RUNTIME.block_on(self.query_construct_async(query, format))
     }
 
     /// Executes a SPARQL SELECT query synchronously.
     ///
     /// This is a blocking wrapper around `query_select_async`.
-    /// It creates a tokio runtime to run the async method.
-    ///
-    /// # Performance Note
-    ///
-    /// Creates a new runtime for each call. For better performance in
-    /// async contexts, use `query_select_async` directly.
     fn query_select(&self, query: &str) -> Result<QuerySolutions<Self>> {
-        let runtime = tokio::runtime::Runtime::new().map_err(|e| OxigraphEndpointError::ParsingBody {
-            body: format!("Failed to create runtime: {}", e),
-        })?;
-
-        runtime.block_on(self.query_select_async(query))
+        SPARQL_RUNTIME.block_on(self.query_select_async(query))
     }
 
     /// Executes a SPARQL ASK query synchronously.
     ///
     /// This is a blocking wrapper around `query_ask_async`.
-    /// It creates a tokio runtime to run the async method.
-    ///
-    /// # Performance Note
-    ///
-    /// Creates a new runtime for each call. For better performance in
-    /// async contexts, use `query_ask_async` directly.
     fn query_ask(&self, query: &str) -> Result<bool> {
-        let runtime = tokio::runtime::Runtime::new().map_err(|e| OxigraphEndpointError::ParsingBody {
-            body: format!("Failed to create runtime: {}", e),
-        })?;
-
-        runtime.block_on(self.query_ask_async(query))
+        SPARQL_RUNTIME.block_on(self.query_ask_async(query))
     }
 }
 
