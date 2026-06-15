@@ -59,3 +59,11 @@ The CLI relies on the following external crates:
 - **`tabled`**: Table formatting for output
 - **`supports-color`**: Terminal color capability detection
 - **`clientele`**: CLI utility helpers
+
+## MCP Registry
+
+The `rudof` binary embeds an MCP (Model Context Protocol) server, invoked as `rudof mcp`, that exposes Rudof's RDF, ShEx, SHACL, and SPARQL capabilities to MCP-compatible clients. See the [`rudof_mcp` crate](https://crates.io/crates/rudof_mcp) for the full feature list.
+
+The line below is a verification token used by the [Official MCP Registry](https://registry.modelcontextprotocol.io) to prove that this crate is the package that backs the published server metadata. The registry parses the rendered crates.io README looking for a `mcp-name: <server-name>` token, and the value must exactly match the `name` field in the published `server.json`. Do not remove or modify it without coordinating a registry re-publish.
+
+- MCP Registry name: `mcp-name: io.github.rudof-project/rudof_mcp`
