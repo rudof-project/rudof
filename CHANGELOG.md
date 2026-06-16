@@ -7,6 +7,12 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.3.4
+### Added
+- #533: Add rudof MCP server to Model Context Protocol registry
+### Fixed
+- #703: Replaced independent tokio runtimes with a shared one
+
 ## v0.3.3
 ### Added
 - #682: QLever Docker backend + RdfBackend strategy pattern
