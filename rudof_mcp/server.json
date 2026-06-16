@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.rudof-project/rudof_mcp",
   "title": "rudofMCP",
-  "description": "An MCP server exposing the main capabilities of the rudof library: RDF validation (ShEx and SHACL), SPARQL querying, and RDF data management (serialization conversion and visualization).",
+  "description": "MCP server for RDF validation (ShEx, SHACL), SPARQL, RDF serialization conversion and visualization.",
   "websiteUrl": "https://rudof-project.github.io/rudof",
   "repository": {
     "url": "https://github.com/rudof-project/rudof",
