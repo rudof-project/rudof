@@ -55,7 +55,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for Disjoint {
 }
 
 #[cfg(feature = "sparql")]
-impl<S: QueryRDF + Debug + 'static> BasicSparqlValidator<S> for Disjoint {
+impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Disjoint {
     fn validate_sparql(
         &self,
         _: &IRComponent,

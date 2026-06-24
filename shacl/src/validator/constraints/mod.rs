@@ -49,12 +49,13 @@ pub trait NativeValidator<RDF: NeighsRDF> {
 }
 // TODO - Move to crate::validator
 #[cfg(feature = "sparql")]
-pub trait BasicSparqlValidator<RDF: QueryRDF + Debug> {
+pub trait BasicSparqlValidator<RDF: QueryRDF + NeighsRDF + Debug> {
     fn validate_sparql(
         &self,
         component: &IRComponent,
         shape: &IRShape,
         store: &RDF,
+        engine: &mut dyn Engine<RDF>,
         value_nodes: &ValueNodes<RDF>,
         source_shape: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,
@@ -102,6 +103,7 @@ macro_rules! impl_validators_via_validate {
                 component: &crate::ir::IRComponent,
                 shape: &crate::ir::IRShape,
                 store: &S,
+                engine: &mut dyn crate::validator::engine::Engine<S>,
                 value_nodes: &crate::validator::nodes::ValueNodes<S>,
                 source_shape: Option<&crate::ir::IRShape>,
                 maybe_path: Option<&rudof_rdf::rdf_core::SHACLPath>,
@@ -111,7 +113,7 @@ macro_rules! impl_validators_via_validate {
                     component,
                     shape,
                     store,
-                    &mut crate::validator::engine::SparqlEngine::new(),
+                    engine,
                     value_nodes,
                     source_shape,
                     maybe_path,

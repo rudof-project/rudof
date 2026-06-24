@@ -58,12 +58,13 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinLength {
 }
 
 #[cfg(feature = "sparql")]
-impl<S: QueryRDF + Debug + 'static> BasicSparqlValidator<S> for MinLength {
+impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for MinLength {
     fn validate_sparql(
         &self,
         component: &IRComponent,
         shape: &IRShape,
         store: &S,
+        _: &mut dyn Engine<S>,
         value_nodes: &ValueNodes<S>,
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,

@@ -83,7 +83,7 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThan {
 }
 
 #[cfg(feature = "sparql")]
-impl<S: QueryRDF + Debug + 'static> BasicSparqlValidator<S> for LessThan {
+impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for LessThan {
     fn validate_sparql(
         &self,
         _: &IRComponent,
