@@ -1,17 +1,22 @@
 use crate::error::ValidationError;
 use crate::ir::components::MinLength;
 use crate::ir::{IRComponent, IRSchema, IRShape};
-use crate::validator::constraints::{validate_ask_with, validate_with, BasicSparqlValidator, NativeValidator};
+use crate::validator::constraints::{validate_with, NativeValidator};
 use crate::validator::engine::Engine;
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;
 use crate::validator::report::ValidationResult;
-use indoc::formatdoc;
-use rudof_rdf::rdf_core::query::QueryRDF;
 use rudof_rdf::rdf_core::term::literal::Literal;
 use rudof_rdf::rdf_core::term::{Iri, Term};
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
+
+#[cfg(feature = "sparql")]
+use crate::validator::constraints::{term_as_sparql, validate_ask_with_opt, BasicSparqlValidator};
+#[cfg(feature = "sparql")]
+use indoc::formatdoc;
+#[cfg(feature = "sparql")]
+use rudof_rdf::rdf_core::query::QueryRDF;
 
 impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinLength {
     fn validate_native(
@@ -63,20 +68,25 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for MinL
         maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ValidationError> {
-        let query_fn = |vn: &S::Term| {
-            formatdoc! {
-                " ASK {{ FILTER (STRLEN(str({})) >= {}) }} ",
-                vn, self.min_length()
+        let min = self.min_length();
+
+        let query_fn = |vn: &S::Term| -> Option<String> {
+            if vn.is_blank_node() {
+                return Some("ASK { FILTER(false) }".to_string());
             }
+            let vn_sparql = term_as_sparql::<S>(vn)?;
+            Some(formatdoc! {"
+                ASK {{ FILTER(STRLEN(STR({vn_sparql})) >= {min}) }}
+            "})
         };
 
-        validate_ask_with(
+        validate_ask_with_opt(
             component,
             shape,
             store,
             value_nodes,
             query_fn,
-            &format!("MinLength({}) not satisfied", self.min_length()),
+            &format!("MinLength({min}) not satisfied"),
             maybe_path,
         )
     }
