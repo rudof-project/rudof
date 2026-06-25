@@ -42,6 +42,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> Engine<S> for SparqlEngine {
             component,
             shape,
             store,
+            self,
             value_nodes,
             source_shape,
             maybe_path,
