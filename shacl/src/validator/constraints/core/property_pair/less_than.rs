@@ -6,6 +6,7 @@ use crate::validator::constraints::{BasicSparqlValidator, NativeValidator};
 use crate::validator::engine::Engine;
 use crate::validator::nodes::ValueNodes;
 use crate::validator::report::ValidationResult;
+use indoc::formatdoc;
 use rudof_rdf::rdf_core::query::QueryRDF;
 use rudof_rdf::rdf_core::term::{Object, Triple};
 use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
@@ -86,14 +87,53 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for LessThan {
 impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for LessThan {
     fn validate_sparql(
         &self,
-        _: &IRComponent,
-        _: &IRShape,
-        _: &S,
-        _: &ValueNodes<S>,
+        component: &IRComponent,
+        shape: &IRShape,
+        store: &S,
+        _: &mut dyn Engine<S>,
+        value_nodes: &ValueNodes<S>,
         _: Option<&IRShape>,
-        _: Option<&SHACLPath>,
+        maybe_path: Option<&SHACLPath>,
         _: &IRSchema,
     ) -> Result<Vec<ValidationResult>, ValidationError> {
-        unimplemented!()
+        let component_obj = Object::iri(component.into());
+        let mut results = Vec::new();
+
+        for (fnode, nodes) in value_nodes.iter() {
+            let fnode_obj = S::term_as_object(fnode)?;
+
+            // emit one violation per (value_node, comparator) pair where
+            // value_node is not strictly less than the comparator. COALESCE(?, false)
+            // treats incomparable terms (e.g. cross-datatype) as violations.
+            for vn in nodes.iter() {
+                let query = formatdoc! {"
+                    SELECT ?other WHERE {{
+                        {} <{}> ?other .
+                        BIND (COALESCE({} < ?other, false) AS ?lt)
+                        FILTER (!?lt)
+                    }}
+                ", fnode, self.iri(), vn};
+
+                let solutions = store
+                    .query_select(&query)
+                    .map_err(ValidationError::select_query_error::<S>)?;
+
+                let value = S::term_as_object(vn).ok();
+                for _ in solutions.iter() {
+                    let msg = format!(
+                        "LessThan constraint violated for property {}: value is not strictly less than every comparator",
+                        self.iri()
+                    );
+                    let vr = ValidationResult::new(fnode_obj.clone(), component_obj.clone(), shape.severity().clone())
+                        .with_source(Some(shape.id().clone()))
+                        .with_path(maybe_path.cloned())
+                        .with_value(value.clone())
+                        .with_message(MessageMap::from(msg));
+                    results.push(vr);
+                }
+            }
+        }
+
+        Ok(results)
     }
 }
