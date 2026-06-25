@@ -1,8 +1,8 @@
 use crate::error::ValidationError;
+use crate::validator::ShaclValidationMode;
 use crate::validator::engine::{Engine, NativeEngine, SparqlEngine};
 use crate::validator::processor::ShaclProcessor;
 use crate::validator::store::{Graph, Store};
-use crate::validator::ShaclValidationMode;
 use rudof_rdf::rdf_core::RDFFormat;
 use sparql_service::RdfData;
 use std::path::Path;
