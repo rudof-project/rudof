@@ -78,3 +78,10 @@ impl Store<RdfData> for Graph {
         &self.store
     }
 }
+
+#[cfg(feature = "sparql")]
+impl Graph {
+    pub(crate) fn store_mut(&mut self) -> &mut RdfData {
+        &mut self.store
+    }
+}
