@@ -356,12 +356,18 @@ fn validate_with_focus<S: Rdf, I: IterationStrategy<S>>(
     )
 }
 
-fn validate_ask_with<S: QueryRDF>(
+/// Runs an ASK query per value node and emits a violation when the query
+/// returns `false`. If the closure returns `None` for a value node, that node
+/// is treated as conforming (use this for cases where the value node can't be
+/// rendered into a SPARQL query — e.g. blank nodes that the SPARQL engine
+/// would otherwise alias-match).
+#[cfg(feature = "sparql")]
+fn validate_ask_with_opt<S: QueryRDF>(
     component: &IRComponent,
     shape: &IRShape,
     store: &S,
     value_nodes: &ValueNodes<S>,
-    eval_query: impl Fn(&S::Term) -> String,
+    eval_query: impl Fn(&S::Term) -> Option<String>,
     msg: &str,
     maybe_path: Option<&SHACLPath>,
 ) -> Result<Vec<ValidationResult>, ValidationError> {
@@ -370,11 +376,63 @@ fn validate_ask_with<S: QueryRDF>(
         shape,
         value_nodes,
         ValueNodeIteration,
-        |vn| match store.query_ask(&eval_query(vn)) {
-            Ok(ask) => Ok(!ask),
-            Err(err) => Err(ValidationError::ask_query_error::<S>(err)),
+        |vn| match eval_query(vn) {
+            None => Ok(false),
+            Some(query) => match store.query_ask(&query) {
+                Ok(ask) => Ok(!ask),
+                Err(err) => Err(ValidationError::ask_query_error::<S>(err)),
+            },
         },
         msg,
         maybe_path,
     )
+}
+
+/// Format an [`Object`] as SPARQL term syntax.
+/// Returns `None` for blank nodes, which can't be
+/// referenced by label in a SPARQL query — bare `_:foo`
+/// text is treated by the SPARQL engine as a fresh
+/// existential variable, not a reference to the concrete
+/// blank node in the data graph.
+#[cfg(feature = "sparql")]
+pub(crate) fn object_as_sparql(object: &Object) -> Option<String> {
+    match object {
+        Object::Iri(iri) => Some(format!("<{}>", iri.as_str())),
+        Object::BlankNode(_) => None,
+        Object::Literal(lit) => {
+            let lex = escape_sparql_string(lit.lexical_form());
+            if let Some(lang) = lit.lang() {
+                Some(format!("\"{lex}\"@{lang}"))
+            } else {
+                let dt = lit.datatype();
+                let dt_iri = dt.get_iri().ok()?;
+                Some(format!("\"{lex}\"^^<{}>", dt_iri.as_str()))
+            }
+        },
+        Object::Triple { .. } => None,
+    }
+}
+
+/// Formats a Term as SPARQL term syntax.
+#[cfg(feature = "sparql")]
+pub(crate) fn term_as_sparql<S: Rdf>(term: &S::Term) -> Option<String> {
+    let obj = S::term_as_object(term).ok()?;
+    object_as_sparql(&obj)
+}
+
+/// Escape a string for inclusion in a SPARQL double-quoted literal.
+#[cfg(feature = "sparql")]
+fn escape_sparql_string(s: impl AsRef<str>) -> String {
+    let mut out = String::with_capacity(s.as_ref().len());
+    for ch in s.as_ref().chars() {
+        match ch {
+            '\\' => out.push_str("\\\\"),
+            '"' => out.push_str("\\\""),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            c => out.push(c),
+        }
+    }
+    out
 }
