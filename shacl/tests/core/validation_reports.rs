@@ -9,6 +9,7 @@ mod tests {
     #[test]
     fn shared() -> Result<(), TestSuiteError> {
         let path = format!("{}/{}.ttl", PATH, "shared");
-        test(path, ShaclValidationMode::Native)
+        test(path.clone(), ShaclValidationMode::Native)?;
+        test(path, ShaclValidationMode::Sparql)
     }
 }
