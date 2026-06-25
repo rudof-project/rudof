@@ -69,7 +69,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43d5b281e737544384e969a5ccad3f1cdd24b48086a0fc1b2a5262a26b8f4f4a"
 dependencies = [
  "anstyle",
- "anstyle-parse",
+ "anstyle-parse 0.2.7",
+ "anstyle-query",
+ "anstyle-wincon",
+ "colorchoice",
+ "is_terminal_polyfill",
+ "utf8parse",
+]
+
+[[package]]
+name = "anstream"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "824a212faf96e9acacdbd09febd34438f8f711fb84e09a8916013cd7815ca28d"
+dependencies = [
+ "anstyle",
+ "anstyle-parse 1.0.0",
  "anstyle-query",
  "anstyle-wincon",
  "colorchoice",
@@ -88,6 +103,15 @@ name = "anstyle-parse"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4e7644824f0aa2c7b9384579234ef10eb7efb6a0deb83f9630a49594dd9c15c2"
+dependencies = [
+ "utf8parse",
+]
+
+[[package]]
+name = "anstyle-parse"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "52ce7f38b242319f7cabaa6813055467063ecdc9d355bbb4ce0c68908cd8130e"
 dependencies = [
  "utf8parse",
 ]
@@ -380,7 +404,7 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "serde_urlencoded",
- "thiserror",
+ "thiserror 2.0.17",
  "time",
  "tokio",
  "tokio-stream",
@@ -611,10 +635,10 @@ version = "4.5.54"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fa42cf4d2b7a41bc8f663a7cab4031ebafa1bf3875705bfaf8466dc60ab52c00"
 dependencies = [
- "anstream",
+ "anstream 0.6.21",
  "anstyle",
  "clap_lex",
- "strsim",
+ "strsim 0.11.1",
  "terminal_size",
 ]
 
@@ -915,13 +939,47 @@ dependencies = [
 ]
 
 [[package]]
+name = "ctor"
+version = "0.1.26"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d2301688392eb071b0bf1a37be05c469d3cc4dbbd95df672fe28ab021e6a096"
+dependencies = [
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "darling"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0d706e75d87e35569db781a9b5e2416cff1236a47ed380831f959382ccd5f858"
+dependencies = [
+ "darling_core 0.10.2",
+ "darling_macro 0.10.2",
+]
+
+[[package]]
 name = "darling"
 version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "25ae13da2f202d56bd7f91c25fba009e7717a1e4a1cc98a76d844b65ae912e9d"
 dependencies = [
- "darling_core",
- "darling_macro",
+ "darling_core 0.23.0",
+ "darling_macro 0.23.0",
+]
+
+[[package]]
+name = "darling_core"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f0c960ae2da4de88a91b2d920c2a7233b400bc33cb28453a2987822d8392519b"
+dependencies = [
+ "fnv",
+ "ident_case",
+ "proc-macro2",
+ "quote",
+ "strsim 0.9.3",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -933,8 +991,19 @@ dependencies = [
  "ident_case",
  "proc-macro2",
  "quote",
- "strsim",
+ "strsim 0.11.1",
  "syn 2.0.114",
+]
+
+[[package]]
+name = "darling_macro"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d9b5a2f4ac4969822c62224815d069952656cadc7084fdca9751e6d959189b72"
+dependencies = [
+ "darling_core 0.10.2",
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -943,7 +1012,7 @@ version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ac3984ec7bd6cfa798e62b4a642426a5be0e68f9401cfc2a01e3fa9ea2fcdb8d"
 dependencies = [
- "darling_core",
+ "darling_core 0.23.0",
  "quote",
  "syn 2.0.114",
 ]
@@ -970,7 +1039,7 @@ checksum = "be1e0bca6c3637f992fc1cc7cbc52a78c1ef6db076dbf1059c4323d6a2048376"
 
 [[package]]
 name = "dctap"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "calamine",
  "csv",
@@ -978,7 +1047,7 @@ dependencies = [
  "rudof_iri",
  "serde",
  "serde_json",
- "thiserror",
+ "thiserror 2.0.17",
  "toml",
  "tracing",
  "tracing-test",
@@ -1082,6 +1151,40 @@ dependencies = [
 ]
 
 [[package]]
+name = "emacs"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7c086f6bd8f5191266ed9a29aa380c155466959057558a3f11d8993317b0b8e1"
+dependencies = [
+ "anyhow",
+ "ctor",
+ "emacs-macros",
+ "emacs_module",
+ "libc",
+ "once_cell",
+ "rustc_version 0.2.3",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "emacs-macros"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "69656fdfe7c2608b87164964db848b5c3795de7302e3130cce7131552c6be161"
+dependencies = [
+ "darling 0.10.2",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "emacs_module"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "288020fbdb901ce8d3f1dcaa6be8876fd14291ee664136bd1b29fcdb1d99777a"
+
+[[package]]
 name = "encoding_rs"
 version = "0.8.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1113,8 +1216,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe413319145d1063f080f27556fd30b1d70b01e2ba10c2a6e40d4be982ffc5d1"
 dependencies = [
  "anyhow",
- "rustc_version",
+ "rustc_version 0.4.1",
 ]
+
+[[package]]
+name = "escape8259"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5692dd7b5a1978a5aeb0ce83b7655c58ca8efdcb79d21036ea249da95afec2c6"
 
 [[package]]
 name = "etcetera"
@@ -1396,7 +1505,7 @@ dependencies = [
  "data-url",
  "dogma",
  "percent-encoding",
- "thiserror",
+ "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -1905,7 +2014,7 @@ dependencies = [
  "jni-sys",
  "log",
  "simd_cesu8",
- "thiserror",
+ "thiserror 2.0.17",
  "walkdir",
  "windows-link",
 ]
@@ -1918,7 +2027,7 @@ checksum = "a00109accc170f0bdb141fed3e393c565b6f5e072365c3bd58f5b062591560a3"
 dependencies = [
  "proc-macro2",
  "quote",
- "rustc_version",
+ "rustc_version 0.4.1",
  "simd_cesu8",
  "syn 2.0.114",
 ]
@@ -2016,6 +2125,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bcc35a38544a891a5f7c865aca548a982ccb3b8650a5b06d0fd33a10283c56fc"
 
 [[package]]
+name = "libtest-mimic"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14e6ba06f0ade6e504aff834d7c34298e5155c6baca353cc6a4aaff2f9fd7f33"
+dependencies = [
+ "anstream 1.0.0",
+ "anstyle",
+ "clap",
+ "escape8259",
+]
+
+[[package]]
 name = "linux-raw-sys"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2096,13 +2217,13 @@ dependencies = [
 
 [[package]]
 name = "mie"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "hashlink",
  "rudof_iri",
  "serde",
  "serde_json",
- "thiserror",
+ "thiserror 2.0.17",
  "tracing",
  "yaml-rust2",
 ]
@@ -2351,7 +2472,7 @@ dependencies = [
  "sparesults",
  "spareval",
  "spargebra",
- "thiserror",
+ "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -2378,7 +2499,7 @@ dependencies = [
  "json-event-parser",
  "oxiri",
  "oxrdf",
- "thiserror",
+ "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -2391,7 +2512,7 @@ dependencies = [
  "oxiri",
  "oxsdatatypes",
  "rand 0.9.2",
- "thiserror",
+ "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -2404,7 +2525,7 @@ dependencies = [
  "oxrdf",
  "oxrdfxml",
  "oxttl",
- "thiserror",
+ "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -2417,7 +2538,7 @@ dependencies = [
  "oxiri",
  "oxrdf",
  "quick-xml 0.37.5",
- "thiserror",
+ "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -2426,7 +2547,7 @@ version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06fa874d87eae638daae9b4e3198864fe2cce68589f227c0b2cf5b62b1530516"
 dependencies = [
- "thiserror",
+ "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -2439,7 +2560,7 @@ dependencies = [
  "oxilangtag",
  "oxiri",
  "oxrdf",
- "thiserror",
+ "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -2572,7 +2693,7 @@ dependencies = [
 
 [[package]]
 name = "pgschema"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "anyhow",
  "clap",
@@ -2586,7 +2707,7 @@ dependencies = [
  "rustemo-compiler",
  "serde",
  "serde_json",
- "thiserror",
+ "thiserror 2.0.17",
  "time",
  "tracing",
  "tracing-test",
@@ -2684,14 +2805,14 @@ dependencies = [
 
 [[package]]
 name = "prefixmap"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "colored",
  "indexmap 2.13.0",
  "proptest",
  "rudof_iri",
  "serde",
- "thiserror",
+ "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -2907,7 +3028,7 @@ dependencies = [
 
 [[package]]
 name = "pyrudof"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "pyo3",
  "pythonize",
@@ -2959,7 +3080,7 @@ dependencies = [
  "rustc-hash",
  "rustls",
  "socket2",
- "thiserror",
+ "thiserror 2.0.17",
  "tokio",
  "tracing",
  "web-time",
@@ -2980,7 +3101,7 @@ dependencies = [
  "rustls",
  "rustls-pki-types",
  "slab",
- "thiserror",
+ "thiserror 2.0.17",
  "tinyvec",
  "tracing",
  "web-time",
@@ -3134,7 +3255,7 @@ dependencies = [
 
 [[package]]
 name = "rbe"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "criterion",
  "hashbag",
@@ -3145,7 +3266,7 @@ dependencies = [
  "proptest",
  "serde",
  "serde_json",
- "thiserror",
+ "thiserror 2.0.17",
  "toml",
  "tracing",
  "tracing-test",
@@ -3153,7 +3274,7 @@ dependencies = [
 
 [[package]]
 name = "rbe_testsuite"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "anyhow",
  "indoc",
@@ -3166,7 +3287,7 @@ dependencies = [
 
 [[package]]
 name = "rdf_config"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "hashlink",
  "indexmap 2.13.0",
@@ -3174,7 +3295,7 @@ dependencies = [
  "itertools 0.14.0",
  "serde",
  "serde_json",
- "thiserror",
+ "thiserror 2.0.17",
  "toml",
  "tracing",
  "yaml-rust2",
@@ -3353,7 +3474,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sse-stream",
- "thiserror",
+ "thiserror 2.0.17",
  "tokio",
  "tokio-stream",
  "tokio-util",
@@ -3368,7 +3489,7 @@ version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7caa6743cc0888e433105fe1bc551a7f607940b126a37bc97b478e86064627eb"
 dependencies = [
- "darling",
+ "darling 0.23.0",
  "proc-macro2",
  "quote",
  "serde_json",
@@ -3377,7 +3498,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_cli"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "anyhow",
  "clap",
@@ -3403,7 +3524,7 @@ dependencies = [
  "sparql_service",
  "supports-color",
  "tabled",
- "thiserror",
+ "thiserror 2.0.17",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -3411,8 +3532,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "rudof_emacs"
+version = "0.3.4"
+dependencies = [
+ "anyhow",
+ "emacs",
+ "libtest-mimic",
+ "rudof_lib",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "rudof_generate"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3431,7 +3564,7 @@ dependencies = [
  "shacl",
  "shex_ast",
  "tempfile",
- "thiserror",
+ "thiserror 2.0.17",
  "tokio",
  "toml",
  "tracing",
@@ -3440,7 +3573,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_iri"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "getrandom 0.3.4",
  "indexmap 2.13.0",
@@ -3449,13 +3582,13 @@ dependencies = [
  "proptest",
  "reqwest",
  "serde",
- "thiserror",
+ "thiserror 2.0.17",
  "url",
 ]
 
 [[package]]
 name = "rudof_lib"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "colored",
  "crossterm",
@@ -3480,7 +3613,7 @@ dependencies = [
  "sparql_service",
  "tabled",
  "termtree",
- "thiserror",
+ "thiserror 2.0.17",
  "tokio",
  "toml",
  "tracing",
@@ -3489,7 +3622,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_mcp"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "anyhow",
  "axum",
@@ -3519,7 +3652,7 @@ dependencies = [
 
 [[package]]
 name = "rudof_rdf"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "bollard",
  "colored",
@@ -3552,7 +3685,7 @@ dependencies = [
  "tabled",
  "tempfile",
  "testcontainers",
- "thiserror",
+ "thiserror 2.0.17",
  "tokio",
  "tokio-util",
  "toml",
@@ -3584,11 +3717,20 @@ checksum = "357703d41365b4b27c590e3ed91eabb1b663f07c4c084095e60cbed4362dff0d"
 
 [[package]]
 name = "rustc_version"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "138e3e0acb6c9fb258b19b67cb8abd63c00679d2851805ea151465464fe9030a"
+dependencies = [
+ "semver 0.9.0",
+]
+
+[[package]]
+name = "rustc_version"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cfcb3a22ef46e85b45de6ee7e79d063319ebb6594faafcf1c225ea92ab6e9b92"
 dependencies = [
- "semver",
+ "semver 1.0.27",
 ]
 
 [[package]]
@@ -3602,7 +3744,7 @@ dependencies = [
  "once_cell",
  "petgraph 0.6.5",
  "regex",
- "thiserror",
+ "thiserror 2.0.17",
  "unicode-width",
  "yansi",
 ]
@@ -3621,7 +3763,7 @@ dependencies = [
  "quote",
  "rustemo",
  "syn 1.0.109",
- "thiserror",
+ "thiserror 2.0.17",
  "yansi",
 ]
 
@@ -3833,9 +3975,24 @@ checksum = "b12e76d157a900eb52e81bc6e9f3069344290341720e9178cde2407113ac8d89"
 
 [[package]]
 name = "semver"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1d7eb9ef2c18661902cc47e535f9bc51b78acd254da71d375c2f6720d9a40403"
+dependencies = [
+ "semver-parser",
+]
+
+[[package]]
+name = "semver"
 version = "1.0.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d767eb0aabc880b29956c35734170f26ed551a859dbd361d140cdbeca61ab1e2"
+
+[[package]]
+name = "semver-parser"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
 
 [[package]]
 name = "serde"
@@ -3960,7 +4117,7 @@ version = "3.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b90c488738ecb4fb0262f41f43bc40efc5868d9fb744319ddf5f5317f417bfac"
 dependencies = [
- "darling",
+ "darling 0.23.0",
  "proc-macro2",
  "quote",
  "syn 2.0.114",
@@ -3990,7 +4147,7 @@ dependencies = [
 
 [[package]]
 name = "shacl"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "anyhow",
  "dashmap",
@@ -4004,14 +4161,14 @@ dependencies = [
  "rudof_rdf",
  "serde",
  "sparql_service",
- "thiserror",
+ "thiserror 2.0.17",
  "toml",
  "tracing",
 ]
 
 [[package]]
 name = "shapes_comparator"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "prefixmap",
  "rudof_iri",
@@ -4022,13 +4179,13 @@ dependencies = [
  "shex_ast",
  "shex_validation",
  "sparql_service",
- "thiserror",
+ "thiserror 2.0.17",
  "tracing",
 ]
 
 [[package]]
 name = "shapes_converter"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "chrono",
  "dctap",
@@ -4046,7 +4203,7 @@ dependencies = [
  "spargebra",
  "sparql_service",
  "tempfile",
- "thiserror",
+ "thiserror 2.0.17",
  "toml",
  "tracing",
  "tracing-test",
@@ -4063,7 +4220,7 @@ dependencies = [
 
 [[package]]
 name = "shex_ast"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "colored",
  "const_format",
@@ -4085,14 +4242,14 @@ dependencies = [
  "serde_json",
  "tabled",
  "term_size",
- "thiserror",
+ "thiserror 2.0.17",
  "toml",
  "tracing",
 ]
 
 [[package]]
 name = "shex_testsuite"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "anyhow",
  "clap",
@@ -4103,7 +4260,7 @@ dependencies = [
  "serde_json",
  "shex_ast",
  "shex_validation",
- "thiserror",
+ "thiserror 2.0.17",
  "toml",
  "tracing",
  "tracing-subscriber",
@@ -4112,7 +4269,7 @@ dependencies = [
 
 [[package]]
 name = "shex_validation"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "either",
  "indexmap 2.13.0",
@@ -4125,7 +4282,7 @@ dependencies = [
  "serde_json",
  "shex_ast",
  "termtree",
- "thiserror",
+ "thiserror 2.0.17",
  "toml",
  "tracing",
  "tracing-test",
@@ -4181,7 +4338,7 @@ version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94f90157bb87cddf702797c5dadfa0be7d266cdf49e22da2fcaa32eff75b2c33"
 dependencies = [
- "rustc_version",
+ "rustc_version 0.4.1",
  "simdutf8",
 ]
 
@@ -4229,7 +4386,7 @@ dependencies = [
  "memchr",
  "oxrdf",
  "quick-xml 0.37.5",
- "thiserror",
+ "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -4252,7 +4409,7 @@ dependencies = [
  "sparesults",
  "spargebra",
  "sparopt",
- "thiserror",
+ "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -4266,7 +4423,7 @@ dependencies = [
  "oxrdf",
  "peg",
  "rand 0.9.2",
- "thiserror",
+ "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -4282,7 +4439,7 @@ dependencies = [
 
 [[package]]
 name = "sparql_service"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "colored",
  "const_format",
@@ -4299,7 +4456,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sparesults",
- "thiserror",
+ "thiserror 2.0.17",
  "toml",
  "tracing",
 ]
@@ -4322,6 +4479,12 @@ name = "stable_deref_trait"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
+
+[[package]]
+name = "strsim"
+version = "0.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6446ced80d6c486436db5c078dde11a9f73d42b57fb273121e160b84f63d894c"
 
 [[package]]
 name = "strsim"
@@ -4510,7 +4673,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
- "thiserror",
+ "thiserror 2.0.17",
  "tokio",
  "tokio-stream",
  "tokio-util",
@@ -4529,11 +4692,31 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
+version = "1.0.69"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b6aaf5339b578ea85b50e080feb250a3e8ae8cfcdff9a461c9ec2904bc923f52"
+dependencies = [
+ "thiserror-impl 1.0.69",
+]
+
+[[package]]
+name = "thiserror"
 version = "2.0.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f63587ca0f12b72a0600bcba1d40081f830876000bb46dd2337a3051618f4fc8"
 dependencies = [
- "thiserror-impl",
+ "thiserror-impl 2.0.17",
+]
+
+[[package]]
+name = "thiserror-impl"
+version = "1.0.69"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4fee6c4efc90059e10f81e6d42c60a18f76588c3d74cb83a0b242a2b6c7504c1"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.114",
 ]
 
 [[package]]
@@ -5213,7 +5396,7 @@ dependencies = [
  "bitflags",
  "hashbrown 0.15.5",
  "indexmap 2.13.0",
- "semver",
+ "semver 1.0.27",
 ]
 
 [[package]]
@@ -5670,7 +5853,7 @@ dependencies = [
  "id-arena",
  "indexmap 2.13.0",
  "log",
- "semver",
+ "semver 1.0.27",
  "serde",
  "serde_derive",
  "serde_json",

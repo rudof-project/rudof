@@ -12,6 +12,7 @@ members = [
     "rdf_config",
     "rudof_rdf",
     "rudof_cli",
+    "rudof_emacs",
     "rudof_lib",
     "rudof_mcp",
     "rudof_generate",
