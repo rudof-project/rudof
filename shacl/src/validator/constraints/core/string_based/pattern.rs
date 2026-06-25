@@ -1,7 +1,7 @@
 use crate::error::ValidationError;
 use crate::ir::components::Pattern;
 use crate::ir::{IRComponent, IRSchema, IRShape};
-use crate::validator::constraints::{escape_sparql_string, validate_with, NativeValidator};
+use crate::validator::constraints::{NativeValidator, escape_sparql_string, validate_with};
 use crate::validator::engine::Engine;
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;
@@ -11,7 +11,7 @@ use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
 
 #[cfg(feature = "sparql")]
-use crate::validator::constraints::{term_as_sparql, validate_ask_with_opt, BasicSparqlValidator};
+use crate::validator::constraints::{BasicSparqlValidator, term_as_sparql, validate_ask_with_opt};
 #[cfg(feature = "sparql")]
 use indoc::formatdoc;
 #[cfg(feature = "sparql")]

@@ -79,9 +79,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Disj
                     ASK {{ {} <{}> {} }}
                 ", fnode, self.iri(), vn};
 
-                let ask = store
-                    .query_ask(&query)
-                    .map_err(ValidationError::ask_query_error::<S>)?;
+                let ask = store.query_ask(&query).map_err(ValidationError::ask_query_error::<S>)?;
 
                 if ask {
                     let value = S::term_as_object(vn).ok();

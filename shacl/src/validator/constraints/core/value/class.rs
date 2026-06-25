@@ -2,7 +2,7 @@ use crate::error::ValidationError;
 use crate::ir::components::Class;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::types::MessageMap;
-use crate::validator::constraints::{validate_with, NativeValidator};
+use crate::validator::constraints::{NativeValidator, validate_with};
 use crate::validator::engine::Engine;
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;
@@ -13,7 +13,7 @@ use rudof_rdf::rdf_core::{NeighsRDF, SHACLPath};
 use std::fmt::Debug;
 
 #[cfg(feature = "sparql")]
-use crate::validator::constraints::{object_as_sparql, term_as_sparql, BasicSparqlValidator};
+use crate::validator::constraints::{BasicSparqlValidator, object_as_sparql, term_as_sparql};
 #[cfg(feature = "sparql")]
 use indoc::formatdoc;
 #[cfg(feature = "sparql")]
@@ -100,9 +100,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Clas
                         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
                         ASK {{ {vn_sparql} rdf:type/rdfs:subClassOf* {class_sparql} }}
                     "};
-                    store
-                        .query_ask(&query)
-                        .map_err(ValidationError::ask_query_error::<S>)?
+                    store.query_ask(&query).map_err(ValidationError::ask_query_error::<S>)?
                 };
 
                 if !conforms {
@@ -123,9 +121,7 @@ impl<S: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<S> for Clas
 
 #[cfg(feature = "sparql")]
 fn blank_is_instance<S: NeighsRDF>(store: &S, vn: &S::Term, class_term: &S::Term) -> Result<bool, ValidationError> {
-    let types = store
-        .objects_for(vn, &RdfVocab::rdf_type().into())
-        .unwrap_or_default();
+    let types = store.objects_for(vn, &RdfVocab::rdf_type().into()).unwrap_or_default();
     Ok(types.iter().any(|ctype| {
         ctype == class_term
             || store

@@ -2,7 +2,7 @@ use crate::error::ValidationError;
 use crate::ir::components::Nodekind;
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::types::NodeKind;
-use crate::validator::constraints::{validate_with, NativeValidator};
+use crate::validator::constraints::{NativeValidator, validate_with};
 use crate::validator::engine::Engine;
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;
@@ -13,7 +13,7 @@ use std::fmt::Debug;
 use std::ops::Not;
 
 #[cfg(feature = "sparql")]
-use crate::validator::constraints::{term_as_sparql, validate_ask_with_opt, BasicSparqlValidator};
+use crate::validator::constraints::{BasicSparqlValidator, term_as_sparql, validate_ask_with_opt};
 #[cfg(feature = "sparql")]
 use indoc::formatdoc;
 #[cfg(feature = "sparql")]

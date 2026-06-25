@@ -38,7 +38,10 @@ impl NativeEngine {
         Ok(())
     }
 
-    fn target_node_impl<RDF: NeighsRDF + Debug + 'static>(&self, node: &Object) -> Result<FocusNodes<RDF>, ValidationError> {
+    fn target_node_impl<RDF: NeighsRDF + Debug + 'static>(
+        &self,
+        node: &Object,
+    ) -> Result<FocusNodes<RDF>, ValidationError> {
         let node: RDF::Term = node.clone().into();
         if node.is_blank_node() {
             Err(ValidationError::TargetNodeBNode)
