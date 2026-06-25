@@ -1,7 +1,7 @@
 use crate::error::ValidationError;
 use crate::ir::components::MaxLength;
 use crate::ir::{IRComponent, IRSchema, IRShape};
-use crate::validator::constraints::{BasicSparqlValidator, NativeValidator, validate_ask_with, validate_with};
+use crate::validator::constraints::{validate_ask_with, validate_with, BasicSparqlValidator, NativeValidator};
 use crate::validator::engine::Engine;
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;
@@ -27,22 +27,15 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MaxLength {
     ) -> Result<Vec<ValidationResult>, ValidationError> {
         let max_length_fn = |vn: &S::Term| {
             if vn.is_blank_node() {
-                true
-            } else if vn.is_iri() {
-                let iri: S::IRI = match S::term_as_iri(vn) {
-                    Ok(iri) => iri,
-                    Err(_) => todo!(),
-                };
-                iri.as_str().len() > self.max_length() as usize
-            } else if vn.is_literal() {
-                let lit: S::Literal = match S::term_as_literal(vn) {
-                    Ok(lit) => lit,
-                    Err(_) => todo!(),
-                };
-                lit.lexical_form().len() > self.max_length() as usize
-            } else {
-                todo!()
+                return true;
             }
+            if let Ok(iri) = S::term_as_iri(vn) {
+                return iri.as_str().len() > self.max_length() as usize;
+            }
+            if let Ok(lit) = S::term_as_literal(vn) {
+                return lit.lexical_form().len() > self.max_length() as usize;
+            }
+            true
         };
 
         validate_with(

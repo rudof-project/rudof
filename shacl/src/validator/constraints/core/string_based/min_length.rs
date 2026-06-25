@@ -1,7 +1,7 @@
 use crate::error::ValidationError;
 use crate::ir::components::MinLength;
 use crate::ir::{IRComponent, IRSchema, IRShape};
-use crate::validator::constraints::{BasicSparqlValidator, NativeValidator, validate_ask_with, validate_with};
+use crate::validator::constraints::{validate_ask_with, validate_with, BasicSparqlValidator, NativeValidator};
 use crate::validator::engine::Engine;
 use crate::validator::iteration::ValueNodeIteration;
 use crate::validator::nodes::ValueNodes;
@@ -27,22 +27,15 @@ impl<S: NeighsRDF + Debug + 'static> NativeValidator<S> for MinLength {
     ) -> Result<Vec<ValidationResult>, ValidationError> {
         let min_length_fn = |vn: &S::Term| {
             if vn.is_blank_node() {
-                true
-            } else if vn.is_iri() {
-                let iri = match S::term_as_iri(vn) {
-                    Ok(iri) => iri,
-                    Err(_) => todo!(),
-                };
-                iri.as_str().len() < self.min_length() as usize
-            } else if vn.is_literal() {
-                let lit = match S::term_as_literal(vn) {
-                    Ok(lit) => lit,
-                    Err(_) => todo!(),
-                };
-                lit.lexical_form().len() < self.min_length() as usize
-            } else {
-                true
+                return true;
             }
+            if let Ok(iri) = S::term_as_iri(vn) {
+                return iri.as_str().len() < self.min_length() as usize;
+            }
+            if let Ok(lit) = S::term_as_literal(vn) {
+                return lit.lexical_form().len() < self.min_length() as usize;
+            }
+            true
         };
 
         validate_with(
