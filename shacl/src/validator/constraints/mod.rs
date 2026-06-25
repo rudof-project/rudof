@@ -4,8 +4,8 @@ mod test;
 
 use crate::error::ValidationError;
 use crate::ir::components::{
-    And, Closed, Datatype, Deactivated, HasValue, In, LanguageIn, MaxCount, MinCount, Node, Not, Or,
-    QualifiedValueShape, UniqueLang, Xone,
+    And, Datatype, Deactivated, HasValue, In, LanguageIn, MaxCount, MinCount, Node, Not, Or, QualifiedValueShape,
+    UniqueLang, Xone,
 };
 use crate::ir::{IRComponent, IRSchema, IRShape};
 use crate::types::MessageMap;
@@ -133,7 +133,6 @@ impl_validators_via_validate!(And);
 impl_validators_via_validate!(Not);
 impl_validators_via_validate!(Xone);
 impl_validators_via_validate!(Deactivated);
-impl_validators_via_validate!(Closed);
 impl_validators_via_validate!(In);
 impl_validators_via_validate!(HasValue);
 impl_validators_via_validate!(Node);
