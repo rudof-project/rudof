@@ -1,0 +1,34 @@
+[package]
+name = "rudof_emacs"
+version.workspace = true
+authors.workspace = true
+description = "Emacs dynamic module exposing rudof's ShEx conformance validation"
+documentation = "https://rudof-project.github.io/rudof/"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+readme = "README.md"
+publish = false
+
+[lib]
+name = "rudof_emacs"
+# "rlib" is only needed so `tests/shextest.rs` (an integration test, compiled
+# as a separate crate) can link against this crate's `pub` test-support
+# functions; the Emacs module itself is loaded as the "cdylib" artifact.
+crate-type = ["cdylib", "rlib"]
+doctest = false
+
+[[test]]
+name = "shextest"
+harness = false
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+anyhow.workspace = true
+emacs = { version = "0.21", features = ["emacs-28"] }
+rudof_lib.workspace = true
+
+[dev-dependencies]
+libtest-mimic = "0.8"
+serde = { workspace = true }
+serde_json.workspace = true
