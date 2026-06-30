@@ -4,6 +4,7 @@ use crate::ValidatorErrors;
 use prefixmap::PrefixMap;
 use prefixmap::error::PrefixMapError;
 use rbe::RbeError;
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
 use serde::Serialize;
 use serde::ser::SerializeMap;
@@ -113,8 +114,10 @@ pub enum ValidatorError {
     #[error("Serialization of error failed: {source_error} with error: {error}")]
     ErrorSerializationError { source_error: String, error: String },
 
-    #[error("References failed: Shape pattern matches, but references failed: {}", failed_pending.iter().map(|(n, s)| format!("({n}, {s})")).collect::<Vec<_>>().join(", "))]
-    FailedPending { failed_pending: Vec<(Node, ShapeLabelIdx)> },
+    #[error("References failed: Shape pattern matches, but references failed: {}", failed_pending.iter().map(|(n, s, ks)| format!("({n}, {s}, preds: [{:?}])", ks.iter().map(|k| k.to_string()).collect::<Vec<_>>().join(", "))).collect::<Vec<_>>().join(", "))]
+    FailedPending {
+        failed_pending: Vec<(Node, ShapeLabelIdx, Vec<Pred>)>,
+    },
     #[error("Negation cycle error: {neg_cycles:?}")]
     NegCycleError {
         neg_cycles: Vec<Vec<(String, String, Vec<String>)>>,
@@ -269,6 +272,7 @@ impl ValidatorError {
         width: usize,
     ) -> Result<String, PrefixMapError> {
         let show_node = |n: &Node| n.show_qualified(nodes_prefixmap);
+        let show_pred = |p: &IriS| nodes_prefixmap.qualify(p);
         let show_idx = |idx: &ShapeLabelIdx| Self::show_idx(idx, schema);
 
         let s = match self {
@@ -344,7 +348,17 @@ impl ValidatorError {
             ValidatorError::FailedPending { failed_pending } => {
                 let items: Vec<String> = failed_pending
                     .iter()
-                    .map(|(n, s)| format!("({}@{})", show_node(n), show_idx(s)))
+                    .map(|(n, s, ks)| {
+                        let keys = match ks.len() {
+                            0 => String::new(),
+                            1 => format!("Predicate {}", show_pred(&ks[0].iri())),
+                            _ => format!(
+                                "Predicates {}",
+                                ks.iter().map(|k| show_pred(k.iri())).collect::<Vec<_>>().join(", ")
+                            ),
+                        };
+                        format!("{} -> {} as {}", keys, show_node(n), show_idx(s))
+                    })
                     .collect();
                 format!("References failed: {}", items.join(", "))
             },

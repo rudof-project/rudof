@@ -92,11 +92,11 @@ where
     }
 
     pub fn matches(&self, values: Vec<(K, V, Ctx)>) -> Result<MatchTableIter<K, V, R, Ctx>, RbeError<K, V, R, Ctx>> {
-        /*trace!(
+        tracing::trace!(
             "Checking if RbeTable {} matches [{}]",
             &self,
             values.iter().map(|(k, v, _ctx)| format!("({k} {v})")).join(", ")
-        );*/
+        );
         let mut pairs_found = 0;
         let mut candidates = Vec::new();
         let cs_empty = IndexSet::new();
@@ -137,10 +137,11 @@ where
         }
 
         if candidates.is_empty() || pairs_found == 0 {
-            /*trace!(
+            tracing::trace!(
                 "No candidates for rbe: {}, candidates: {:?}, pairs_found: {pairs_found}",
-                self.rbe, candidates,
-            );*/
+                self.rbe,
+                candidates,
+            );
             if self.rbe.nullable() {
                 //trace!("Rbe is nullable and no candidates...should be sucessful");
 
@@ -155,11 +156,19 @@ where
                     self,
                     &Values::from(&values),
                 )));
-                //trace!("Result of matches: {:?}", result);
+                tracing::trace!("Result of matches: {:?}", result);
                 result
             }
         } else {
-            //trace!("Some candidates found for rbe: {:?}", self.rbe);
+            tracing::trace!(
+                "Some candidates found for rbe: {}\nCandidates:\n{}",
+                self.rbe,
+                candidates
+                    .iter()
+                    .enumerate()
+                    .map(|(i, c)| format!("[Candidate {i}: {}]", show_candidate(c)))
+                    .join("\n")
+            );
             let mp = candidates.into_iter().multi_cartesian_product();
             Ok(MatchTableIter::NonEmpty(IterCartesianProduct {
                 is_first: true,
@@ -298,7 +307,7 @@ where
     R: Ref,
     Ctx: Context,
 {
-    type Item = Result<Pending<V, R>, rbe_error::RbeError<K, V, R, Ctx>>;
+    type Item = Result<Pending<K, V, R>, rbe_error::RbeError<K, V, R, Ctx>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
@@ -331,7 +340,7 @@ where
     R: Ref,
     Ctx: Context,
 {
-    type Item = Result<Pending<V, R>, rbe_error::RbeError<K, V, R, Ctx>>;
+    type Item = Result<Pending<K, V, R>, rbe_error::RbeError<K, V, R, Ctx>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let next_state = self.state.next();
@@ -347,14 +356,22 @@ where
                 }
             },
             Some(vs) => {
-                let mut pending: Pending<V, R> = Pending::new();
-                for (_k, v, ctx, _, cond) in &vs {
+                let mut pending: Pending<K, V, R> = Pending::empty();
+                for (k, v, ctx, _, cond) in &vs {
                     match cond.matches(v, ctx) {
-                        Ok(new_pending) => {
+                        Ok(mut new_pending) => {
+                            tracing::trace!(
+                                "Condition {} matches value {}, pending: {} for key {}",
+                                cond,
+                                v,
+                                pending,
+                                k
+                            );
+                            new_pending.annotate_key(k);
                             pending.merge(new_pending);
                         },
                         Err(err) => {
-                            //trace!("Failed condition: {cond} with value: {v}");
+                            tracing::trace!("Failed condition: {cond} with value: {v} and key {k}, error: {err}");
                             return Some(Err(err));
                         },
                     }
@@ -362,12 +379,12 @@ where
                 let bag = Bag::from_iter(vs.into_iter().map(|(_, _, _, c, _)| c));
                 match self.rbe.match_bag_interval(&bag, self.open) {
                     Ok(()) => {
-                        // trace!("Rbe {} matches bag {}", self.rbe, bag);
+                        tracing::trace!("### Rbe {} matches bag {}", self.rbe, bag);
                         self.is_first = false;
                         Some(Ok(pending))
                     },
-                    Err(_err) => {
-                        //trace!("### Rbe {:?} does not match bag {}, error: {err}", self.rbe, bag);
+                    Err(err) => {
+                        tracing::trace!("### Rbe {} does not match bag {}, error: {err}", self.rbe, bag);
                         //trace!("### Skipped error: {err}!\n");
                         self.next()
                     },
@@ -416,7 +433,8 @@ where
 {
     candidate
         .iter()
-        .map(|(k, v, ctx, c, cond)| format!("({k} {v} {ctx})@{c} {cond}"))
+        .enumerate()
+        .map(|(i, (k, v, _ctx, c, cond))| format!("[{i}: ({k} {v})@{c} {cond}]"))
         .collect::<Vec<_>>()
         .join(", ")
 }
@@ -438,7 +456,7 @@ mod tests {
         let is_a: MatchCond<char, char, char, char> =
             MatchCond::single(SingleCond::new().with_name("is_a").with_cond(move |v, _ctx| {
                 if *v == 'a' {
-                    Ok(Pending::new())
+                    Ok(Pending::empty())
                 } else {
                     Err(rbe_error::RbeError::MsgError {
                         msg: format!("Value {v}!='a'"),
@@ -448,14 +466,14 @@ mod tests {
 
         let ref_t: MatchCond<char, char, char, char> =
             MatchCond::single(SingleCond::new().with_name("ref_t").with_cond(move |v, _ctx| {
-                let mut pending = Pending::new();
+                let mut pending = Pending::empty();
                 pending.insert(*v, 't');
                 Ok(pending)
             }));
 
         let ref_u: MatchCond<char, char, char, char> =
             MatchCond::single(SingleCond::new().with_name("ref_u").with_cond(move |v, _ctx| {
-                let mut pending = Pending::new();
+                let mut pending = Pending::empty();
                 pending.insert(*v, 'u');
                 Ok(pending)
             }));
@@ -475,14 +493,16 @@ mod tests {
 
         let mut iter = rbe_table.matches(vs).unwrap();
 
-        assert_eq!(
-            iter.next(),
-            Some(Ok(Pending::from(vec![('y', vec!['t']), ('z', vec!['u'])].into_iter())))
-        );
-        assert_eq!(
-            iter.next(),
-            Some(Ok(Pending::from(vec![('y', vec!['u']), ('z', vec!['t'])].into_iter())))
-        );
+        let mut expected1 = Pending::new();
+        expected1.insert_with_key('y', 't', 'q');
+        expected1.insert_with_key('z', 'u', 'q');
+        assert_eq!(iter.next(), Some(Ok(expected1)));
+
+        let mut expected2 = Pending::new();
+        expected2.insert_with_key('y', 'u', 'q');
+        expected2.insert_with_key('z', 't', 'q');
+        assert_eq!(iter.next(), Some(Ok(expected2)));
+
         assert_eq!(iter.next(), None);
     }
 
@@ -493,7 +513,7 @@ mod tests {
         let is_a: MatchCond<char, char, char, char> =
             MatchCond::single(SingleCond::new().with_name("is_a").with_cond(move |v, _ctx| {
                 if *v == 'a' {
-                    Ok(Pending::new())
+                    Ok(Pending::empty())
                 } else {
                     Err(rbe_error::RbeError::MsgError {
                         msg: format!("Value {v}!='a'"),
@@ -503,14 +523,14 @@ mod tests {
 
         let ref_t: MatchCond<char, char, char, char> =
             MatchCond::single(SingleCond::new().with_name("ref_t").with_cond(move |v, _ctx| {
-                let mut pending = Pending::new();
+                let mut pending = Pending::empty();
                 pending.insert(*v, 't');
                 Ok(pending)
             }));
 
         let ref_u: MatchCond<char, char, char, char> =
             MatchCond::single(SingleCond::new().with_name("ref_u").with_cond(move |v, _ctx| {
-                let mut pending = Pending::new();
+                let mut pending = Pending::empty();
                 pending.insert(*v, 'u');
                 Ok(pending)
             }));
@@ -540,7 +560,7 @@ mod tests {
         let is_a: MatchCond<char, char, char, char> =
             MatchCond::single(SingleCond::new().with_name("is_a").with_cond(move |v, _ctx| {
                 if *v == 'a' {
-                    Ok(Pending::new())
+                    Ok(Pending::empty())
                 } else {
                     Err(rbe_error::RbeError::MsgError {
                         msg: format!("Value {v}!='a'"),
@@ -561,7 +581,7 @@ mod tests {
 
         let mut iter = rbe_table.matches(vs).unwrap();
 
-        assert_eq!(iter.next(), Some(Ok(Pending::new())));
+        assert_eq!(iter.next(), Some(Ok(Pending::empty())));
         assert_eq!(iter.next(), None);
     }
 
@@ -572,7 +592,7 @@ mod tests {
         let is_a: MatchCond<char, char, char, char> =
             MatchCond::single(SingleCond::new().with_name("is_a").with_cond(move |v, _ctx| {
                 if *v == 'a' {
-                    Ok(Pending::new())
+                    Ok(Pending::empty())
                 } else {
                     Err(rbe_error::RbeError::MsgError {
                         msg: format!("Value {v}!='a'"),
@@ -611,7 +631,7 @@ mod tests {
         let is_x: MatchCond<char, char, char, char> =
             MatchCond::single(SingleCond::new().with_name("is_x").with_cond(move |v, _ctx| {
                 if *v == 'x' {
-                    Ok(Pending::new())
+                    Ok(Pending::empty())
                 } else {
                     Err(rbe_error::RbeError::MsgError {
                         msg: format!("Value {v}!='x'"),
@@ -622,7 +642,7 @@ mod tests {
         let is_y: MatchCond<char, char, char, char> =
             MatchCond::single(SingleCond::new().with_name("is_y").with_cond(move |v, _ctx| {
                 if *v == 'y' {
-                    Ok(Pending::new())
+                    Ok(Pending::empty())
                 } else {
                     Err(rbe_error::RbeError::MsgError {
                         msg: format!("Value {v}!='y'"),
@@ -643,7 +663,7 @@ mod tests {
 
         let mut iter = rbe_table.matches(vs).unwrap();
 
-        assert_eq!(iter.next(), Some(Ok(Pending::new())));
+        assert_eq!(iter.next(), Some(Ok(Pending::empty())));
         assert_eq!(iter.next(), None);
     }
 
@@ -653,7 +673,7 @@ mod tests {
         let is_x: MatchCond<char, char, char, char> =
             MatchCond::single(SingleCond::new().with_name("is_x").with_cond(move |v, _ctx| {
                 if *v == 'x' {
-                    Ok(Pending::new())
+                    Ok(Pending::empty())
                 } else {
                     Err(rbe_error::RbeError::MsgError {
                         msg: format!("Value {v}!='x'"),
@@ -664,7 +684,7 @@ mod tests {
         let is_y: MatchCond<char, char, char, char> =
             MatchCond::single(SingleCond::new().with_name("is_y").with_cond(move |v, _ctx| {
                 if *v == 'y' {
-                    Ok(Pending::new())
+                    Ok(Pending::empty())
                 } else {
                     Err(rbe_error::RbeError::MsgError {
                         msg: format!("Value {v}!='y'"),
