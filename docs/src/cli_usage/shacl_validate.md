@@ -99,7 +99,7 @@ By default, validation data is loaded into an in-process `memory` graph. Use `--
 
 ```sh
 rudof shacl-validate --shapes shapes.ttl --backend qlever data.ttl
-rudof shacl-validate --shapes shapes.ttl --backend endpoint=https://my.sparql.server/sparql
+rudof shacl-validate --shapes shapes.ttl --endpoint https://my.sparql.server/sparql
 ```
 
 See the [RDF backend (`--backend`) reference](./backend.md) for full documentation.

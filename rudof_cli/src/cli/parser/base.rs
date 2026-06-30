@@ -154,7 +154,8 @@ pub struct CommonArgsAll {
     /// - `qlever`: launch a local QLever Docker container and index the input on disk.
     ///   Requires the binary to be built with the `qlever` feature.
     /// - `endpoint=<URL_OR_NAME>`: query an external SPARQL endpoint by URL or by
-    ///   the name of an endpoint registered in the TOML config.
+    ///   the name of an endpoint registered in the TOML config. See also the
+    ///   `--endpoint` / `-e` shortcut.
     #[arg(
         long = "backend",
         value_name = "BACKEND",
@@ -163,8 +164,22 @@ pub struct CommonArgsAll {
             use std::str::FromStr;
             crate::cli::wrappers::BackendKindCli::from_str(s)
         }),
+        conflicts_with = "endpoint",
     )]
     pub backend: Option<crate::cli::wrappers::BackendKindCli>,
+
+    /// Shortcut for `--backend endpoint=<URL_OR_NAME>`.
+    ///
+    /// Accepts either a full SPARQL endpoint URL or the name of an endpoint
+    /// registered in the TOML config. Mutually exclusive with `--backend`.
+    #[arg(
+        short = 'e',
+        long = "endpoint",
+        value_name = "URL_OR_NAME",
+        help = "SPARQL endpoint URL or named endpoint (shortcut for --backend endpoint=…)",
+        conflicts_with = "backend",
+    )]
+    pub endpoint: Option<String>,
 }
 
 /// Common arguments for commands that need config and output but not a backend.

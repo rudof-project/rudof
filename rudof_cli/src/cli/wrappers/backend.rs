@@ -3,6 +3,8 @@ use std::str::FromStr;
 
 use rudof_lib::formats::BackendSpec;
 
+use crate::cli::parser::CommonArgsAll;
+
 /// Choice of RDF data backend.
 ///
 /// Parsed from the `--backend` CLI flag. Accepted forms:
@@ -38,9 +40,14 @@ impl BackendKindCli {
 /// Resolve the effective [`BackendSpec`] for a subcommand.
 ///
 /// The single point of dispatch every subcommand goes through; downstream
-/// commands hand the result to `LoadDataBuilder::with_backend`.
-pub fn resolve_backend(backend: Option<&BackendKindCli>) -> BackendSpec {
-    match backend {
+/// commands hand the result to `LoadDataBuilder::with_backend`. The
+/// `--endpoint` shortcut takes precedence over `--backend`, but clap's
+/// `conflicts_with` prevents both from being set at the same time.
+pub fn resolve_backend(args: &CommonArgsAll) -> BackendSpec {
+    if let Some(url) = args.endpoint.as_deref() {
+        return BackendSpec::Endpoint(url.to_string());
+    }
+    match args.backend.as_ref() {
         Some(b) => b.clone().into(),
         None => BackendSpec::default(),
     }
@@ -175,5 +182,36 @@ mod tests {
             let parsed: BackendKindCli = s.parse().unwrap();
             assert_eq!(parsed, c);
         }
+    }
+
+    fn args(backend: Option<BackendKindCli>, endpoint: Option<&str>) -> CommonArgsAll {
+        CommonArgsAll {
+            config: None,
+            output: None,
+            force_overwrite: false,
+            backend,
+            endpoint: endpoint.map(|s| s.to_string()),
+        }
+    }
+
+    #[test]
+    fn resolve_backend_prefers_endpoint_shortcut() {
+        let spec = resolve_backend(&args(None, Some("https://query.wikidata.org/sparql")));
+        assert_eq!(
+            spec,
+            BackendSpec::Endpoint("https://query.wikidata.org/sparql".to_string())
+        );
+    }
+
+    #[test]
+    fn resolve_backend_uses_backend_when_endpoint_absent() {
+        let spec = resolve_backend(&args(Some(BackendKindCli::Qlever), None));
+        assert_eq!(spec, BackendSpec::Qlever);
+    }
+
+    #[test]
+    fn resolve_backend_defaults_to_memory_when_both_absent() {
+        let spec = resolve_backend(&args(None, None));
+        assert_eq!(spec, BackendSpec::Memory);
     }
 }

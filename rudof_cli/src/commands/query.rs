@@ -31,7 +31,7 @@ impl Command for QueryCommand {
         let query_type = self.args.query_type.into();
         let result_query_format = self.args.result_query_format.into();
 
-        let backend = resolve_backend(self.args.common.backend.as_ref());
+        let backend = resolve_backend(&self.args.common);
 
         let mut loading = ctx
             .rudof
