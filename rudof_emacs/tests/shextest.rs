@@ -36,6 +36,23 @@
 //! up, ignored or otherwise, in normal test listings/runs), just an
 //! env-var-gated early exit from `main` before any `libtest_mimic`
 //! involvement, mirroring how `RUDOF_SHEXTEST_FULL` is checked below.
+//!
+//! Not built on `wasm32` targets: this suite depends on `rudof_lib` and
+//! `anyhow`, both of which `rudof_emacs` declares only for non-wasm targets
+//! (Emacs dynamic modules are native shared libraries). The whole body of
+//! this file is wrapped in `mod imp` so the wasm build still has a valid
+//! (empty) `main` and the binary compiles.
+
+#[cfg(target_family = "wasm")]
+fn main() {}
+
+#[cfg(not(target_family = "wasm"))]
+fn main() {
+    imp::entry();
+}
+
+#[cfg(not(target_family = "wasm"))]
+mod imp {
 
 use libtest_mimic::{Arguments, Failed, Trial};
 use rudof_emacs::validate::{read_data, read_shapemap, read_shex, validate_shex_quadruples};
@@ -343,7 +360,7 @@ fn generate_ranking() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn main() {
+pub fn entry() {
     // Deliberately checked *before* touching `libtest_mimic`/`Arguments` at
     // all, so this never shows up as a test (ignored or otherwise) -- see
     // this file's top doc comment.
@@ -400,3 +417,5 @@ fn main() {
 
     libtest_mimic::run(&args, trials).exit();
 }
+
+} // mod imp
