@@ -994,7 +994,7 @@ fn mk_cond_sem_act(
         move |_value: &Node, ctx: &SemanticActionContext| {
             semantic_action_code
                 .run_action(code.as_deref(), ctx)
-                .map(|()| Pending::new())
+                .map(|()| Pending::empty())
                 .map_err(|e| RbeError::MsgError {
                     msg: format!("Semantic action error for {name}: {e}"),
                 })
@@ -1009,7 +1009,7 @@ fn mk_cond_datatype(datatype: &IriS, prefixmap: &PrefixMap) -> Cond {
             .with_name(prefixmap.qualify(&dt).to_string().as_str())
             .with_cond(
                 move |value: &Node, _ctx: &SemanticActionContext| match check_node_datatype(value, &dt) {
-                    Ok(_) => Ok(Pending::new()),
+                    Ok(_) => Ok(Pending::empty()),
                     Err(err) => Err(RbeError::MsgError {
                         msg: format!("Datatype error: {err}"),
                     }),
@@ -1024,7 +1024,7 @@ fn mk_cond_length(len: usize) -> Cond {
             .with_name(format!("length({len})").as_str())
             .with_cond(
                 move |value: &Node, _ctx: &SemanticActionContext| match check_node_length(value, len) {
-                    Ok(_) => Ok(Pending::new()),
+                    Ok(_) => Ok(Pending::empty()),
                     Err(err) => Err(RbeError::MsgError {
                         msg: format!("Length error: {err}"),
                     }),
@@ -1040,7 +1040,7 @@ fn mk_cond_min_inclusive(min: NumericLiteral) -> Cond {
             .with_name(format!("minInclusive({min_str})").as_str())
             .with_cond(move |value: &Node, _ctx: &SemanticActionContext| {
                 match check_node_min_inclusive(value, min.clone()) {
-                    Ok(_) => Ok(Pending::new()),
+                    Ok(_) => Ok(Pending::empty()),
                     Err(err) => Err(RbeError::MsgError {
                         msg: format!("MinInclusive: {err}"),
                     }),
@@ -1056,7 +1056,7 @@ fn mk_cond_min_exclusive(min: NumericLiteral) -> Cond {
             .with_name(format!("minExclusive({min_str})").as_str())
             .with_cond(move |value: &Node, _ctx: &SemanticActionContext| {
                 match check_node_min_exclusive(value, min.clone()) {
-                    Ok(_) => Ok(Pending::new()),
+                    Ok(_) => Ok(Pending::empty()),
                     Err(err) => Err(RbeError::MsgError {
                         msg: format!("MinExclusive: {err}"),
                     }),
@@ -1072,7 +1072,7 @@ fn mk_cond_total_digits(total: usize) -> Cond {
             .with_name(format!("totalDigits({total_str})").as_str())
             .with_cond(
                 move |value: &Node, _ctx: &SemanticActionContext| match check_node_total_digits(value, total) {
-                    Ok(_) => Ok(Pending::new()),
+                    Ok(_) => Ok(Pending::empty()),
                     Err(err) => Err(RbeError::MsgError {
                         msg: format!("MaxExclusive: {err}"),
                     }),
@@ -1088,7 +1088,7 @@ fn mk_cond_fraction_digits(total: usize) -> Cond {
             .with_name(format!("fractionDigits({total_str})").as_str())
             .with_cond(move |value: &Node, _ctx: &SemanticActionContext| {
                 match check_node_fraction_digits(value, total) {
-                    Ok(_) => Ok(Pending::new()),
+                    Ok(_) => Ok(Pending::empty()),
                     Err(err) => Err(RbeError::MsgError {
                         msg: format!("MaxExclusive: {err}"),
                     }),
@@ -1104,7 +1104,7 @@ fn mk_cond_max_exclusive(max: NumericLiteral) -> Cond {
             .with_name(format!("maxExclusive({max_str})").as_str())
             .with_cond(move |value: &Node, _ctx: &SemanticActionContext| {
                 match check_node_max_exclusive(value, max.clone()) {
-                    Ok(_) => Ok(Pending::new()),
+                    Ok(_) => Ok(Pending::empty()),
                     Err(err) => Err(RbeError::MsgError {
                         msg: format!("MaxExclusive: {err}"),
                     }),
@@ -1120,7 +1120,7 @@ fn mk_cond_max_inclusive(max: NumericLiteral) -> Cond {
             .with_name(format!("maxInclusive({max_str})").as_str())
             .with_cond(move |value: &Node, _ctx: &SemanticActionContext| {
                 match check_node_max_inclusive(value, max.clone()) {
-                    Ok(_) => Ok(Pending::new()),
+                    Ok(_) => Ok(Pending::empty()),
                     Err(err) => Err(RbeError::MsgError {
                         msg: format!("MaxInclusive: {err}"),
                     }),
@@ -1135,7 +1135,7 @@ fn mk_cond_min_length(len: usize) -> Cond {
             .with_name(format!("minLength({len})").as_str())
             .with_cond(
                 move |value: &Node, _ctx: &SemanticActionContext| match check_node_min_length(value, len) {
-                    Ok(_) => Ok(Pending::new()),
+                    Ok(_) => Ok(Pending::empty()),
                     Err(err) => Err(RbeError::MsgError {
                         msg: format!("MinLength error: {err}"),
                     }),
@@ -1148,7 +1148,7 @@ fn mk_cond_max_length(len: usize) -> Cond {
     MatchCond::simple(
         format!("maxLength({len})").as_str(),
         move |value: &Node, _ctx: &SemanticActionContext| match check_node_max_length(value, len) {
-            Ok(_) => Ok(Pending::new()),
+            Ok(_) => Ok(Pending::empty()),
             Err(err) => Err(RbeError::MsgError {
                 msg: format!("MaxLength error: {err}"),
             }),
@@ -1178,7 +1178,7 @@ fn mk_cond_pattern(regex: &str, flags: Option<&str>, base: &Option<IriS>) -> Con
     let base = base.clone();
     MatchCond::single(SingleCond::new().with_name(regex_str.as_str()).with_cond(
         move |value: &Node, _ctx: &SemanticActionContext| match check_pattern(value, &regex, flags.as_deref(), &base) {
-            Ok(_) => Ok(Pending::new()),
+            Ok(_) => Ok(Pending::empty()),
             Err(err) => Err(RbeError::MsgError {
                 msg: format!("Pattern error: {err}"),
             }),

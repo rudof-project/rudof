@@ -9,9 +9,10 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ## v0.3.5
 ### Added
-- #706: add emacs bindings
+- #706: added emacs bindings by @ericprud
 ### Fixed
 - #708: allow node command with endpoint backend and no data input, and add --endpoint/-e shortcut for endpoint backend
+- #698: Add more information about error messages in ShEx validation
 
 ## v0.3.4
 ### Added

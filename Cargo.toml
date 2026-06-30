@@ -317,7 +317,7 @@ rmcp = { version = "=1.3.0", features = [
     "transport-io",
     "transport-streamable-http-server",
 ] }
-rmcp-macros = "1.3.0"
+rmcp-macros = "=1.3.0"
 rudof_cli = { version = "0.3.4", path = "./rudof_cli" }
 rudof_iri = { version = "0.3.4", path = "./rudof_iri" }
 rudof_rdf = { version = "0.3.4", path = "./rudof_rdf", default-features = false }

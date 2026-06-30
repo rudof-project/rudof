@@ -47,8 +47,8 @@ where
     pub fn matches<T: IntoIterator<Item = (K, V, Ctx)>>(
         &self,
         iter: T,
-    ) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx>> {
-        let mut pending = Pending::new();
+    ) -> Result<Pending<K, V, R>, RbeError<K, V, R, Ctx>> {
+        let mut pending = Pending::empty();
         let mut processed: Vec<(K, V, Ctx)> = Vec::new();
         match self.matches_iter(iter, &mut pending, &mut processed) {
             RbeCond::Fail { error } => Err(error.clone()),
@@ -68,7 +68,7 @@ where
     fn matches_iter<T: IntoIterator<Item = (K, V, Ctx)>>(
         &self,
         iter: T,
-        pending: &mut Pending<V, R>,
+        pending: &mut Pending<K, V, R>,
         processed: &mut Vec<(K, V, Ctx)>,
     ) -> RbeCond<K, V, R, Ctx> {
         let mut current = self.rbe.clone();
@@ -107,9 +107,9 @@ mod tests {
     impl Value for i32 {}
     impl Ref for String {}
 
-    fn is_even(v: &i32, _ctx: &char) -> Result<Pending<i32, String>, RbeError<char, i32, String, char>> {
+    fn is_even(v: &i32, _ctx: &char) -> Result<Pending<char, i32, String>, RbeError<char, i32, String, char>> {
         if v % 2 == 0 {
-            Ok(Pending::new())
+            Ok(Pending::empty())
         } else {
             Err(RbeError::MsgError {
                 msg: format!("Value {v} is not even"),
@@ -117,9 +117,8 @@ mod tests {
         }
     }
 
-    fn ref_x(v: &i32, _ctx: &char) -> Result<Pending<i32, String>, RbeError<char, i32, String, char>> {
-        let ps = vec![(*v, vec!["X".to_string()])].into_iter();
-        Ok(Pending::from(ps))
+    fn ref_x(v: &i32, _ctx: &char) -> Result<Pending<char, i32, String>, RbeError<char, i32, String, char>> {
+        Ok(Pending::from_pair(*v, "X".to_string()))
     }
 
     impl Value for String {}
@@ -127,7 +126,7 @@ mod tests {
     fn cond_name(name: String) -> MatchCond<char, String, String, char> {
         MatchCond::single(SingleCond::new().with_cond(move |v: &String, _ctx: &char| {
             if *v == name {
-                Ok(Pending::new())
+                Ok(Pending::empty())
             } else {
                 Err(RbeError::MsgError {
                     msg: format!("Value {v} is not equal to {name}"),
@@ -139,7 +138,7 @@ mod tests {
     fn cond_len(len: usize) -> MatchCond<char, String, String, char> {
         MatchCond::single(SingleCond::new().with_cond(move |v: &String, _ctx: &char| {
             if v.len() == len {
-                Ok(Pending::new())
+                Ok(Pending::empty())
             } else {
                 Err(RbeError::MsgError {
                     msg: format!("Value {v} has no length {len}"),
@@ -154,7 +153,7 @@ mod tests {
             RbeCond::symbol_cond('a', cond_len(3), Min::from(1), Max::IntMax(1)),
             RbeCond::symbol_cond('b', cond_name("foo".to_string()), Min::from(0), Max::IntMax(1)),
         ]);
-        let expected = Pending::new();
+        let expected = Pending::empty();
         let rbe_matcher = RbeCondMatcher::new().with_rbe(&rbe);
 
         assert_eq!(
@@ -172,7 +171,8 @@ mod tests {
             RbeCond::symbol_cond('a', cond_even, Min::from(1), Max::IntMax(1)),
             RbeCond::symbol_cond('b', cond_ref_x, Min::from(0), Max::IntMax(1)),
         ]);
-        let expected = Pending::from(vec![(42, vec!["X".to_string()])]);
+        let mut expected = Pending::new();
+        expected.insert_with_key(42, "X".to_string(), 'b');
         let rbe_matcher = RbeCondMatcher::new().with_rbe(&rbe);
 
         assert_eq!(
@@ -190,7 +190,8 @@ mod tests {
             RbeCond::symbol_cond('a', cond_even, Min::from(1), Max::IntMax(1)),
             RbeCond::symbol_cond('b', cond_ref_x, Min::from(0), Max::IntMax(1)),
         ]);
-        let expected = Pending::from(vec![(42, vec!["X".to_string()])]);
+        let mut expected = Pending::new();
+        expected.insert_with_key(42, "X".to_string(), 'b');
         let rbe_matcher = RbeCondMatcher::new().with_rbe(&rbe);
 
         assert_eq!(

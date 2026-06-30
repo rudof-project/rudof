@@ -1359,24 +1359,42 @@ fn check_expr_neigh(
         match result {
             Ok(pending_values) => {
                 if !pending_values.is_empty() {
+                    /*tracing::trace!(
+                        "Pending values for expr {expr} with neighs: [{}]:\n{pending_values}",
+                        neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", "),
+                    );*/
                     let mut failed_pending = Vec::new();
                     // Check if all pending values are in typing
-                    for (n, idx) in pending_values.iter() {
+                    for (n, idx, ks) in pending_values.iter_vr() {
                         let pair = (n.clone(), *idx);
                         if !typing.contains(&pair) {
-                            failed_pending.push(pair)
+                            /*tracing::trace!(
+                                "Pending value ({},{}) is not in typing, keys: [{}]",
+                                n.clone(),
+                                *idx,
+                                ks.iter().map(|k| k.to_string()).join(", ")
+                            );*/
+                            failed_pending.push((n.clone(), *idx, ks.iter().cloned().collect::<Vec<_>>()))
                             // TODO: if (stop_at_first) break
                             // We don't need to compute all the failed pending values once we find the first pair
                         }
                     }
                     if failed_pending.is_empty() {
+                        //tracing::trace!("All pending values were in typing {pending_values}");
                         return pass(Reason::Shape {
                             node: node.clone(),
                             shape: Box::new(shape.clone()),
                             idx: *idx,
+                            // TODO: Add pending_values to reason
                         });
                     } else {
-                        //trace!("Failed pending values: {:?}", failed_pending);
+                        /*tracing::trace!(
+                            "Failed pending values: {}",
+                            failed_pending
+                                .iter()
+                                .map(|(n, idx, _ks)| format!("{n}@{idx}"))
+                                .join(", ")
+                        );*/
                         errors.push(ValidatorError::FailedPending {
                             failed_pending: failed_pending.clone(),
                         })

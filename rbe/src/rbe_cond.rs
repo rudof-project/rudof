@@ -178,7 +178,7 @@ where
         n: usize,
         open: bool,
         controlled: &HashSet<K>,
-        pending: &mut Pending<V, R>,
+        pending: &mut Pending<K, V, R>,
     ) -> RbeCond<K, V, R, Ctx>
     where
         K: Eq + Hash + Clone,
@@ -205,13 +205,14 @@ where
                 if *key == *symbol {
                     match cond.matches(value, ctx) {
                         Err(err) => RbeCond::Fail { error: err },
-                        Ok(new_pending) => {
+                        Ok(mut new_pending) => {
                             if card.max == Max::IntMax(0) {
                                 RbeCond::Fail {
                                     error: RbeError::MaxCardinalityZeroFoundValue { x: (*symbol).clone() },
                                 }
                             } else {
                                 let new_card = card.minus(n);
+                                new_pending.annotate_key(symbol);
                                 (*pending).merge(new_pending);
                                 Self::mk_range_symbol(symbol, cond, &new_card)
                             }
@@ -275,7 +276,7 @@ where
         n: usize,
         open: bool,
         controlled: &HashSet<K>,
-        pending: &mut Pending<V, R>,
+        pending: &mut Pending<K, V, R>,
     ) -> RbeCond<K, V, R, Ctx> {
         let mut or_values: Vec<RbeCond<K, V, R, Ctx>> = Vec::new();
         let mut failures = Failures::new();
@@ -463,7 +464,7 @@ mod tests {
             RbeCond::symbol('a', 1, Max::IntMax(1)),
             RbeCond::symbol('b', 0, Max::IntMax(1)),
         ]);
-        let mut pending = Pending::new();
+        let mut pending = Pending::empty();
         let expected = RbeCond::and(vec![
             RbeCond::symbol('a', 0, Max::IntMax(0)),
             RbeCond::symbol('b', 0, Max::IntMax(1)),
@@ -477,7 +478,7 @@ mod tests {
     #[test]
     fn deriv_symbol() {
         let rbe: RbeCond<char, i32, i32, char> = RbeCond::symbol('x', 1, Max::IntMax(1));
-        let mut pending = Pending::new();
+        let mut pending = Pending::empty();
         let d = rbe.deriv(&'x', &2, &'a', 1, true, &HashSet::new(), &mut pending);
         assert_eq!(d, RbeCond::symbol('x', 0, Max::IntMax(0)));
     }
@@ -485,7 +486,7 @@ mod tests {
     #[test]
     fn deriv_symbol_b_2_3() {
         let rbe: RbeCond<String, String, String, char> = RbeCond::symbol("b".to_string(), 2, Max::IntMax(3));
-        let mut pending = Pending::new();
+        let mut pending = Pending::empty();
         let d = rbe.deriv(
             &"b".to_string(),
             &"vb2".to_string(),
