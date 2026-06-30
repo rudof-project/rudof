@@ -861,7 +861,7 @@ impl ConcreteLiteral {
     /// Returns an error if the string cannot be parsed as a `Decimal`.
     pub fn parse_decimal(s: &str) -> Result<Decimal, String> {
         if s.contains('e') || s.contains('E') {
-            return Err(format!("Invalid decimal: unknown character"));
+            return Err("Invalid decimal: unknown character".to_string());
         }
         s.parse::<Decimal>()
             .map_err(|e| format!("Cannot convert {s} to decimal: {e}"))
