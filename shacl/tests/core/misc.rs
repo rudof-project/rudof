@@ -9,30 +9,35 @@ mod tests {
     #[test]
     fn deactivated_001() -> Result<(), TestSuiteError> {
         let path = format!("{}{}.ttl", PATH, "deactivated-001");
-        test(path, ShaclValidationMode::Native)
+        test(path.clone(), ShaclValidationMode::Native)?;
+        test(path, ShaclValidationMode::Sparql)
     }
 
     #[test]
     fn deactivated_002() -> Result<(), TestSuiteError> {
         let path = format!("{}{}.ttl", PATH, "deactivated-002");
-        test(path, ShaclValidationMode::Native)
+        test(path.clone(), ShaclValidationMode::Native)?;
+        test(path, ShaclValidationMode::Sparql)
     }
 
     #[test]
     fn message_001() -> Result<(), TestSuiteError> {
         let path = format!("{}{}.ttl", PATH, "message-001");
-        test(path, ShaclValidationMode::Native)
+        test(path.clone(), ShaclValidationMode::Native)?;
+        test(path, ShaclValidationMode::Sparql)
     }
 
     #[test]
     fn severity_001() -> Result<(), TestSuiteError> {
         let path = format!("{}{}.ttl", PATH, "severity-001");
-        test(path, ShaclValidationMode::Native)
+        test(path.clone(), ShaclValidationMode::Native)?;
+        test(path, ShaclValidationMode::Sparql)
     }
 
     #[test]
     fn severity_002() -> Result<(), TestSuiteError> {
         let path = format!("{}{}.ttl", PATH, "severity-002");
-        test(path, ShaclValidationMode::Native)
+        test(path.clone(), ShaclValidationMode::Native)?;
+        test(path, ShaclValidationMode::Sparql)
     }
 }
