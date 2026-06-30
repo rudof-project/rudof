@@ -351,7 +351,7 @@ impl ValidatorError {
                     .map(|(n, s, ks)| {
                         let keys = match ks.len() {
                             0 => String::new(),
-                            1 => format!("Predicate {}", show_pred(&ks[0].iri())),
+                            1 => format!("Predicate {}", show_pred(ks[0].iri())),
                             _ => format!(
                                 "Predicates {}",
                                 ks.iter().map(|k| show_pred(k.iri())).collect::<Vec<_>>().join(", ")

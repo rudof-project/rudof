@@ -383,7 +383,7 @@ where
                         self.is_first = false;
                         Some(Ok(pending))
                     },
-                    Err(err) => {
+                    Err(_err) => {
                         //tracing::trace!("### Rbe {} does not match bag {}, error: {err}", self.rbe, bag);
                         //trace!("### Skipped error: {err}!\n");
                         self.next()

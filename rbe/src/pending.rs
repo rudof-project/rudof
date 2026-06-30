@@ -186,19 +186,20 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            if let Some((r, k_it)) = self.current_r.as_mut() {
-                if let Some(k) = k_it.next() {
-                    let v = self.current_v.as_ref().unwrap().0;
-                    return Some((v, *r, k));
-                }
+            if let Some((r, k_it)) = self.current_r.as_mut()
+                && let Some(k) = k_it.next()
+            {
+                let v = self.current_v.as_ref().unwrap().0;
+                return Some((v, *r, k));
             }
+
             self.current_r = None;
 
-            if let Some((_, r_it)) = self.current_v.as_mut() {
-                if let Some((r, ks)) = r_it.next() {
-                    self.current_r = Some((r, ks.iter()));
-                    continue;
-                }
+            if let Some((_, r_it)) = self.current_v.as_mut()
+                && let Some((r, ks)) = r_it.next()
+            {
+                self.current_r = Some((r, ks.iter()));
+                continue;
             }
             self.current_v = None;
 

@@ -1,0 +1,5865 @@
+{
+  "generate_with": "RUDOF_SHEXTEST_GENERATE_RANKING=1 cargo test -p rudof_emacs --test shextest",
+  "run_full_suite_with": "RUDOF_SHEXTEST_FULL=1 cargo test -p rudof_emacs --release",
+  "default_fast_tier_size": 25,
+  "rankings": [
+    {
+      "rank": 0,
+      "name": "1dotOne2dotExtra-someOf_pass_p1p2p3",
+      "new_traits": [
+        "EachOf",
+        "Extra",
+        "MissedMatchables",
+        "OneOf"
+      ]
+    },
+    {
+      "rank": 1,
+      "name": "1focusBNODELength_dot_fail-long",
+      "new_traits": [
+        "FocusConstraint",
+        "LengthFacet",
+        "LexicalBNode",
+        "ToldBNode"
+      ]
+    },
+    {
+      "rank": 2,
+      "name": "extends-abstract-multi-empty_fail-Ref1ExtraOR",
+      "new_traits": [
+        "Abstract",
+        "Closed",
+        "Extends",
+        "MultiExtends"
+      ]
+    },
+    {
+      "rank": 3,
+      "name": "open3Eachdotclosecard23Annot3Code2-p1p2p3X3",
+      "new_traits": [
+        "Annotation",
+        "RepeatedGroup",
+        "SemanticAction"
+      ]
+    },
+    {
+      "rank": 4,
+      "name": "1bnodeRef1_fail-iri",
+      "new_traits": [
+        "NodeKind",
+        "ShapeReference"
+      ]
+    },
+    {
+      "rank": 5,
+      "name": "1dotRefAND3_failAll",
+      "new_traits": [
+        "OrValueExpression",
+        "ValueReference"
+      ]
+    },
+    {
+      "rank": 6,
+      "name": "1list0PlusDot-empty_pass",
+      "new_traits": [
+        "Import",
+        "Include"
+      ]
+    },
+    {
+      "rank": 7,
+      "name": "1literalPattern_with_REGEXP_escapes_bare_fail_escaped",
+      "new_traits": [
+        "NumericEquivalence",
+        "OutsideBMP"
+      ]
+    },
+    {
+      "rank": 8,
+      "name": "1val1dotMinusiri3_pass",
+      "new_traits": [
+        "Stem",
+        "ValueSet"
+      ]
+    },
+    {
+      "rank": 9,
+      "name": "bnode1dot_fail-missing",
+      "new_traits": [
+        "BNodeShapeLabel",
+        "TriplePattern"
+      ]
+    },
+    {
+      "rank": 10,
+      "name": "0_empty",
+      "new_traits": [
+        "Empty"
+      ]
+    },
+    {
+      "rank": 11,
+      "name": "1NOTdot_failempty",
+      "new_traits": [
+        "Wildcard"
+      ]
+    },
+    {
+      "rank": 12,
+      "name": "1bnodePattern_fail-bnode-long",
+      "new_traits": [
+        "PaternFacet"
+      ]
+    },
+    {
+      "rank": 13,
+      "name": "1card25_fail0",
+      "new_traits": [
+        "DotCardinality"
+      ]
+    },
+    {
+      "rank": 14,
+      "name": "1datatype_langString",
+      "new_traits": [
+        "Datatype"
+      ]
+    },
+    {
+      "rank": 15,
+      "name": "1decimalMaxexclusiveDECIMAL_fail-decimal-equal",
+      "new_traits": [
+        "ComparatorFacet"
+      ]
+    },
+    {
+      "rank": 16,
+      "name": "1dot-relative_pass-relative-shape",
+      "new_traits": [
+        "relativeIRI"
+      ]
+    },
+    {
+      "rank": 17,
+      "name": "1dotCode3_pass",
+      "new_traits": [
+        "OrderedSemanticActions"
+      ]
+    },
+    {
+      "rank": 18,
+      "name": "1dotExtra1_fail-iri2",
+      "new_traits": [
+        "VapidExtra"
+      ]
+    },
+    {
+      "rank": 19,
+      "name": "1dotNoCode1_pass",
+      "new_traits": [
+        "ExternalSemanticAction"
+      ]
+    },
+    {
+      "rank": 20,
+      "name": "1dotOne2dot-oneOf_fail_p1p2p3",
+      "new_traits": [
+        "EachOf-unvisited"
+      ]
+    },
+    {
+      "rank": 21,
+      "name": "1dot_fail-empty-err",
+      "new_traits": [
+        "ErrorReport"
+      ]
+    },
+    {
+      "rank": 22,
+      "name": "1focusvsANDdatatype_fail",
+      "new_traits": [
+        "Unsatisfiable"
+      ]
+    },
+    {
+      "rank": 23,
+      "name": "1literalFractiondigits_fail-bnode",
+      "new_traits": [
+        "FractionDigitsFacet"
+      ]
+    },
+    {
+      "rank": 24,
+      "name": "1literalPlus_Is1_Ip1_La,Io1",
+      "new_traits": [
+        "NonDotCardinality"
+      ]
+    },
+    {
+      "rank": 25,
+      "name": "1literalTotaldigits_fail-bnode",
+      "new_traits": [
+        "TotalDigitsFacet"
+      ]
+    },
+    {
+      "rank": 26,
+      "name": "1val1IRIREFDatatype_LaDTbloodType",
+      "new_traits": [
+        "DatatypedLiteralEquivalence"
+      ]
+    },
+    {
+      "rank": 27,
+      "name": "1val1IRIREFExtra1One_pass-iri1",
+      "new_traits": [
+        "IriEquivalence"
+      ]
+    },
+    {
+      "rank": 28,
+      "name": "1val1LANGTAG_LaLTen-fr",
+      "new_traits": [
+        "LanguageTagEquivalence"
+      ]
+    },
+    {
+      "rank": 29,
+      "name": "1val1false_ab",
+      "new_traits": [
+        "BooleanEquivalence"
+      ]
+    },
+    {
+      "rank": 30,
+      "name": "1val1vExpr1AND1AND1Ref3_failvc1",
+      "new_traits": [
+        "AndValueExpression"
+      ]
+    },
+    {
+      "rank": 31,
+      "name": "1val1vShapeANDRef3_pass",
+      "new_traits": [
+        "AndShapeShapeession"
+      ]
+    },
+    {
+      "rank": 32,
+      "name": "3circRefPlus1_pass-recursiveData",
+      "new_traits": [
+        "RecursiveData"
+      ]
+    },
+    {
+      "rank": 33,
+      "name": "Extend3G-pass",
+      "new_traits": [
+        "Exhaustive"
+      ]
+    },
+    {
+      "rank": 34,
+      "name": "NOT1dotOR2dotX3AND1_fail-NoShape1",
+      "new_traits": [
+        "NotValueExpression"
+      ]
+    },
+    {
+      "rank": 35,
+      "name": "boolean-01_fail",
+      "new_traits": [
+        "ValidLexicalForm"
+      ]
+    },
+    {
+      "rank": 36,
+      "name": "open3Onedotclosecard23_fail-p1",
+      "new_traits": [
+        "RepeatedOneOf"
+      ]
+    },
+    {
+      "rank": 37,
+      "name": "start2RefS1-IstartS2",
+      "new_traits": [
+        "Start"
+      ]
+    },
+    {
+      "rank": 38,
+      "name": "0_other",
+      "new_traits": []
+    },
+    {
+      "rank": 39,
+      "name": "0_otherbnode",
+      "new_traits": []
+    },
+    {
+      "rank": 40,
+      "name": "0focusBNODE_empty",
+      "new_traits": []
+    },
+    {
+      "rank": 41,
+      "name": "0focusBNODE_empty_fail-iriFocusLabel",
+      "new_traits": []
+    },
+    {
+      "rank": 42,
+      "name": "0focusBNODE_other",
+      "new_traits": []
+    },
+    {
+      "rank": 43,
+      "name": "0focusBNODE_other_fail-iriFocusLabel",
+      "new_traits": []
+    },
+    {
+      "rank": 44,
+      "name": "0focusIRI_empty",
+      "new_traits": []
+    },
+    {
+      "rank": 45,
+      "name": "0focusIRI_empty_fail-bnodeFocusLabel",
+      "new_traits": []
+    },
+    {
+      "rank": 46,
+      "name": "0focusIRI_other",
+      "new_traits": []
+    },
+    {
+      "rank": 47,
+      "name": "0focusIRI_other_fail-bnodeFocusLabel",
+      "new_traits": []
+    },
+    {
+      "rank": 48,
+      "name": "1Adot_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 49,
+      "name": "1Length_fail-lit-long",
+      "new_traits": []
+    },
+    {
+      "rank": 50,
+      "name": "1Length_fail-lit-short",
+      "new_traits": []
+    },
+    {
+      "rank": 51,
+      "name": "1Length_pass-lit-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 52,
+      "name": "1NOTIRI_failIo1",
+      "new_traits": []
+    },
+    {
+      "rank": 53,
+      "name": "1NOTIRI_failempty",
+      "new_traits": []
+    },
+    {
+      "rank": 54,
+      "name": "1NOTIRI_passLv",
+      "new_traits": []
+    },
+    {
+      "rank": 55,
+      "name": "1NOTNOTIRI_failLv",
+      "new_traits": []
+    },
+    {
+      "rank": 56,
+      "name": "1NOTNOTIRI_passIo1",
+      "new_traits": []
+    },
+    {
+      "rank": 57,
+      "name": "1NOTNOTdot_passIo1",
+      "new_traits": []
+    },
+    {
+      "rank": 58,
+      "name": "1NOTNOTdot_passIv1",
+      "new_traits": []
+    },
+    {
+      "rank": 59,
+      "name": "1NOTNOTvs_failIo1",
+      "new_traits": []
+    },
+    {
+      "rank": 60,
+      "name": "1NOTNOTvs_passIv1",
+      "new_traits": []
+    },
+    {
+      "rank": 61,
+      "name": "1NOTRefOR1dot_fail-inNOT",
+      "new_traits": []
+    },
+    {
+      "rank": 62,
+      "name": "1NOTRefOR1dot_pass-inOR",
+      "new_traits": []
+    },
+    {
+      "rank": 63,
+      "name": "1NOTRefOR1dot_pass-other",
+      "new_traits": []
+    },
+    {
+      "rank": 64,
+      "name": "1NOT_literalANDvs__passIv1",
+      "new_traits": []
+    },
+    {
+      "rank": 65,
+      "name": "1NOT_literalANDvs__passLv",
+      "new_traits": []
+    },
+    {
+      "rank": 66,
+      "name": "1NOT_literalORvs__failIv1",
+      "new_traits": []
+    },
+    {
+      "rank": 67,
+      "name": "1NOT_literalORvs__failLv",
+      "new_traits": []
+    },
+    {
+      "rank": 68,
+      "name": "1NOT_literalORvs__passIo1",
+      "new_traits": []
+    },
+    {
+      "rank": 69,
+      "name": "1NOT_vsANDvs__passIv1",
+      "new_traits": []
+    },
+    {
+      "rank": 70,
+      "name": "1NOT_vsANDvs__passIv2",
+      "new_traits": []
+    },
+    {
+      "rank": 71,
+      "name": "1NOT_vsANDvs__passIv3",
+      "new_traits": []
+    },
+    {
+      "rank": 72,
+      "name": "1NOT_vsORvs__failIv1",
+      "new_traits": []
+    },
+    {
+      "rank": 73,
+      "name": "1NOT_vsORvs__failIv2",
+      "new_traits": []
+    },
+    {
+      "rank": 74,
+      "name": "1NOT_vsORvs__passIv3",
+      "new_traits": []
+    },
+    {
+      "rank": 75,
+      "name": "1NOTdot_failIo1",
+      "new_traits": []
+    },
+    {
+      "rank": 76,
+      "name": "1NOTdot_failIv1",
+      "new_traits": []
+    },
+    {
+      "rank": 77,
+      "name": "1NOTliteralANDvs_failIo1",
+      "new_traits": []
+    },
+    {
+      "rank": 78,
+      "name": "1NOTliteralANDvs_failLv",
+      "new_traits": []
+    },
+    {
+      "rank": 79,
+      "name": "1NOTliteralANDvs_passIv1",
+      "new_traits": []
+    },
+    {
+      "rank": 80,
+      "name": "1NOTliteralORvs_failLv",
+      "new_traits": []
+    },
+    {
+      "rank": 81,
+      "name": "1NOTliteralORvs_passIo1",
+      "new_traits": []
+    },
+    {
+      "rank": 82,
+      "name": "1NOTliteralORvs_passIv1",
+      "new_traits": []
+    },
+    {
+      "rank": 83,
+      "name": "1NOTvsANDvs_failIv1",
+      "new_traits": []
+    },
+    {
+      "rank": 84,
+      "name": "1NOTvsANDvs_failIv3",
+      "new_traits": []
+    },
+    {
+      "rank": 85,
+      "name": "1NOTvsANDvs_passIv2",
+      "new_traits": []
+    },
+    {
+      "rank": 86,
+      "name": "1NOTvsORvs_failIv1",
+      "new_traits": []
+    },
+    {
+      "rank": 87,
+      "name": "1NOTvsORvs_passIv2",
+      "new_traits": []
+    },
+    {
+      "rank": 88,
+      "name": "1NOTvsORvs_passIv3",
+      "new_traits": []
+    },
+    {
+      "rank": 89,
+      "name": "1NOTvs_failIv1",
+      "new_traits": []
+    },
+    {
+      "rank": 90,
+      "name": "1NOTvs_failempty",
+      "new_traits": []
+    },
+    {
+      "rank": 91,
+      "name": "1NOTvs_passIo1",
+      "new_traits": []
+    },
+    {
+      "rank": 92,
+      "name": "1_NOTliteral_ANDvs_failIo1",
+      "new_traits": []
+    },
+    {
+      "rank": 93,
+      "name": "1_NOTliteral_ANDvs_failLv",
+      "new_traits": []
+    },
+    {
+      "rank": 94,
+      "name": "1_NOTliteral_ANDvs_passIv1",
+      "new_traits": []
+    },
+    {
+      "rank": 95,
+      "name": "1_NOTliteral_ORvs_failLv",
+      "new_traits": []
+    },
+    {
+      "rank": 96,
+      "name": "1_NOTliteral_ORvs_passIo1",
+      "new_traits": []
+    },
+    {
+      "rank": 97,
+      "name": "1_NOTliteral_ORvs_passIv1",
+      "new_traits": []
+    },
+    {
+      "rank": 98,
+      "name": "1_NOTvs_ANDvs_failIv1",
+      "new_traits": []
+    },
+    {
+      "rank": 99,
+      "name": "1_NOTvs_ANDvs_failIv3",
+      "new_traits": []
+    },
+    {
+      "rank": 100,
+      "name": "1_NOTvs_ANDvs_passIv2",
+      "new_traits": []
+    },
+    {
+      "rank": 101,
+      "name": "1_NOTvs_ORvs_failIv1",
+      "new_traits": []
+    },
+    {
+      "rank": 102,
+      "name": "1_NOTvs_ORvs_passIv2",
+      "new_traits": []
+    },
+    {
+      "rank": 103,
+      "name": "1_NOTvs_ORvs_passIv3",
+      "new_traits": []
+    },
+    {
+      "rank": 104,
+      "name": "1bnodeLength_fail-bnode-long",
+      "new_traits": []
+    },
+    {
+      "rank": 105,
+      "name": "1bnodeLength_fail-bnode-short",
+      "new_traits": []
+    },
+    {
+      "rank": 106,
+      "name": "1bnodeLength_fail-iri-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 107,
+      "name": "1bnodeLength_fail-lit-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 108,
+      "name": "1bnodeLength_pass-bnode-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 109,
+      "name": "1bnodeMaxlength_fail-bnode-long",
+      "new_traits": []
+    },
+    {
+      "rank": 110,
+      "name": "1bnodeMaxlength_pass-bnode-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 111,
+      "name": "1bnodeMaxlength_pass-bnode-short",
+      "new_traits": []
+    },
+    {
+      "rank": 112,
+      "name": "1bnodeMinlength_fail-bnode-short",
+      "new_traits": []
+    },
+    {
+      "rank": 113,
+      "name": "1bnodeMinlength_pass-bnode-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 114,
+      "name": "1bnodeMinlength_pass-bnode-long",
+      "new_traits": []
+    },
+    {
+      "rank": 115,
+      "name": "1bnodePattern_fail-bnode-short",
+      "new_traits": []
+    },
+    {
+      "rank": 116,
+      "name": "1bnodePattern_fail-iri-match",
+      "new_traits": []
+    },
+    {
+      "rank": 117,
+      "name": "1bnodePattern_fail-lit-match",
+      "new_traits": []
+    },
+    {
+      "rank": 118,
+      "name": "1bnodePattern_pass-bnode-match",
+      "new_traits": []
+    },
+    {
+      "rank": 119,
+      "name": "1bnodeRef1_pass-bnode",
+      "new_traits": []
+    },
+    {
+      "rank": 120,
+      "name": "1bnode_fail-iri",
+      "new_traits": []
+    },
+    {
+      "rank": 121,
+      "name": "1bnode_fail-literal",
+      "new_traits": []
+    },
+    {
+      "rank": 122,
+      "name": "1bnode_pass-bnode",
+      "new_traits": []
+    },
+    {
+      "rank": 123,
+      "name": "1card25_fail1",
+      "new_traits": []
+    },
+    {
+      "rank": 124,
+      "name": "1card25_fail6",
+      "new_traits": []
+    },
+    {
+      "rank": 125,
+      "name": "1card25_pass2",
+      "new_traits": []
+    },
+    {
+      "rank": 126,
+      "name": "1card25_pass3",
+      "new_traits": []
+    },
+    {
+      "rank": 127,
+      "name": "1card25_pass4",
+      "new_traits": []
+    },
+    {
+      "rank": 128,
+      "name": "1card25_pass5",
+      "new_traits": []
+    },
+    {
+      "rank": 129,
+      "name": "1card2Star_fail0",
+      "new_traits": []
+    },
+    {
+      "rank": 130,
+      "name": "1card2Star_fail1",
+      "new_traits": []
+    },
+    {
+      "rank": 131,
+      "name": "1card2Star_pass2",
+      "new_traits": []
+    },
+    {
+      "rank": 132,
+      "name": "1card2Star_pass3",
+      "new_traits": []
+    },
+    {
+      "rank": 133,
+      "name": "1card2Star_pass6",
+      "new_traits": []
+    },
+    {
+      "rank": 134,
+      "name": "1card2_fail0",
+      "new_traits": []
+    },
+    {
+      "rank": 135,
+      "name": "1card2_fail1",
+      "new_traits": []
+    },
+    {
+      "rank": 136,
+      "name": "1card2_fail3",
+      "new_traits": []
+    },
+    {
+      "rank": 137,
+      "name": "1card2_pass2",
+      "new_traits": []
+    },
+    {
+      "rank": 138,
+      "name": "1cardOpt_fail2",
+      "new_traits": []
+    },
+    {
+      "rank": 139,
+      "name": "1cardOpt_pass0",
+      "new_traits": []
+    },
+    {
+      "rank": 140,
+      "name": "1cardOpt_pass1",
+      "new_traits": []
+    },
+    {
+      "rank": 141,
+      "name": "1cardOpt_pass6",
+      "new_traits": []
+    },
+    {
+      "rank": 142,
+      "name": "1cardPlus_fail0",
+      "new_traits": []
+    },
+    {
+      "rank": 143,
+      "name": "1cardPlus_pass1",
+      "new_traits": []
+    },
+    {
+      "rank": 144,
+      "name": "1cardPlus_pass2",
+      "new_traits": []
+    },
+    {
+      "rank": 145,
+      "name": "1cardPlus_pass6",
+      "new_traits": []
+    },
+    {
+      "rank": 146,
+      "name": "1cardStar_pass0",
+      "new_traits": []
+    },
+    {
+      "rank": 147,
+      "name": "1cardStar_pass1",
+      "new_traits": []
+    },
+    {
+      "rank": 148,
+      "name": "1cardStar_pass2",
+      "new_traits": []
+    },
+    {
+      "rank": 149,
+      "name": "1cardStar_pass6",
+      "new_traits": []
+    },
+    {
+      "rank": 150,
+      "name": "1datatypeLength_fail-long",
+      "new_traits": []
+    },
+    {
+      "rank": 151,
+      "name": "1datatypeLength_fail-missing",
+      "new_traits": []
+    },
+    {
+      "rank": 152,
+      "name": "1datatypeLength_fail-short",
+      "new_traits": []
+    },
+    {
+      "rank": 153,
+      "name": "1datatypeLength_fail-wrongDatatype",
+      "new_traits": []
+    },
+    {
+      "rank": 154,
+      "name": "1datatypeLength_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 155,
+      "name": "1datatype_missing",
+      "new_traits": []
+    },
+    {
+      "rank": 156,
+      "name": "1datatype_nonLiteral",
+      "new_traits": []
+    },
+    {
+      "rank": 157,
+      "name": "1datatype_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 158,
+      "name": "1datatype_wrongDatatype",
+      "new_traits": []
+    },
+    {
+      "rank": 159,
+      "name": "1datatypelangString_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 160,
+      "name": "1decimalMaxexclusiveDECIMAL_fail-decimal-high",
+      "new_traits": []
+    },
+    {
+      "rank": 161,
+      "name": "1decimalMaxexclusiveDECIMAL_fail-double-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 162,
+      "name": "1decimalMaxexclusiveDECIMAL_fail-float-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 163,
+      "name": "1decimalMaxexclusiveDECIMAL_pass-decimal-low",
+      "new_traits": []
+    },
+    {
+      "rank": 164,
+      "name": "1decimalMaxexclusiveDOUBLE_fail-decimal-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 165,
+      "name": "1decimalMaxexclusiveDOUBLE_fail-decimal-high",
+      "new_traits": []
+    },
+    {
+      "rank": 166,
+      "name": "1decimalMaxexclusiveDOUBLE_pass-decimal-low",
+      "new_traits": []
+    },
+    {
+      "rank": 167,
+      "name": "1decimalMaxexclusiveINTEGER_fail-decimal-high",
+      "new_traits": []
+    },
+    {
+      "rank": 168,
+      "name": "1decimalMaxexclusiveINTEGER_pass-decimal-low",
+      "new_traits": []
+    },
+    {
+      "rank": 169,
+      "name": "1decimalMaxexclusivexsd-byte_fail-byte-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 170,
+      "name": "1decimalMaxinclusiveDECIMAL_fail-decimal-high",
+      "new_traits": []
+    },
+    {
+      "rank": 171,
+      "name": "1decimalMaxinclusiveDECIMAL_fail-double-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 172,
+      "name": "1decimalMaxinclusiveDECIMAL_fail-float-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 173,
+      "name": "1decimalMaxinclusiveDECIMAL_pass-decimal-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 174,
+      "name": "1decimalMaxinclusiveDECIMAL_pass-decimal-low",
+      "new_traits": []
+    },
+    {
+      "rank": 175,
+      "name": "1decimalMaxinclusiveDOUBLE_fail-decimal-high",
+      "new_traits": []
+    },
+    {
+      "rank": 176,
+      "name": "1decimalMaxinclusiveDOUBLE_pass-decimal-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 177,
+      "name": "1decimalMaxinclusiveDOUBLE_pass-decimal-low",
+      "new_traits": []
+    },
+    {
+      "rank": 178,
+      "name": "1decimalMaxinclusiveINTEGER_fail-decimal-high",
+      "new_traits": []
+    },
+    {
+      "rank": 179,
+      "name": "1decimalMaxinclusiveINTEGER_pass-decimal-low",
+      "new_traits": []
+    },
+    {
+      "rank": 180,
+      "name": "1decimalMinexclusiveDECIMAL_fail-decimal-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 181,
+      "name": "1decimalMinexclusiveDECIMAL_fail-decimal-low",
+      "new_traits": []
+    },
+    {
+      "rank": 182,
+      "name": "1decimalMinexclusiveDECIMAL_fail-double-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 183,
+      "name": "1decimalMinexclusiveDECIMAL_fail-float-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 184,
+      "name": "1decimalMinexclusiveDECIMAL_pass-decimal-high",
+      "new_traits": []
+    },
+    {
+      "rank": 185,
+      "name": "1decimalMinexclusiveDOUBLE_fail-decimal-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 186,
+      "name": "1decimalMinexclusiveDOUBLE_fail-decimal-low",
+      "new_traits": []
+    },
+    {
+      "rank": 187,
+      "name": "1decimalMinexclusiveDOUBLE_pass-decimal-high",
+      "new_traits": []
+    },
+    {
+      "rank": 188,
+      "name": "1decimalMinexclusiveINTEGER_fail-decimal-low",
+      "new_traits": []
+    },
+    {
+      "rank": 189,
+      "name": "1decimalMinexclusiveINTEGER_pass-decimal-high",
+      "new_traits": []
+    },
+    {
+      "rank": 190,
+      "name": "1decimalMininclusiveDECIMALLeadTrail_fail-decimal-low",
+      "new_traits": []
+    },
+    {
+      "rank": 191,
+      "name": "1decimalMininclusiveDECIMALLeadTrail_pass-decimal-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 192,
+      "name": "1decimalMininclusiveDECIMALLeadTrail_pass-decimal-equalLeadTrail",
+      "new_traits": []
+    },
+    {
+      "rank": 193,
+      "name": "1decimalMininclusiveDECIMALLeadTrail_pass-decimal-high",
+      "new_traits": []
+    },
+    {
+      "rank": 194,
+      "name": "1decimalMininclusiveDECIMAL_fail-decimal-low",
+      "new_traits": []
+    },
+    {
+      "rank": 195,
+      "name": "1decimalMininclusiveDECIMAL_fail-double-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 196,
+      "name": "1decimalMininclusiveDECIMAL_fail-float-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 197,
+      "name": "1decimalMininclusiveDECIMAL_pass-decimal-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 198,
+      "name": "1decimalMininclusiveDECIMAL_pass-decimal-equalLeadTrail",
+      "new_traits": []
+    },
+    {
+      "rank": 199,
+      "name": "1decimalMininclusiveDECIMAL_pass-decimal-high",
+      "new_traits": []
+    },
+    {
+      "rank": 200,
+      "name": "1decimalMininclusiveDECIMALintLeadTrail_fail-decimal-low",
+      "new_traits": []
+    },
+    {
+      "rank": 201,
+      "name": "1decimalMininclusiveDECIMALintLeadTrail_pass-decimal-high",
+      "new_traits": []
+    },
+    {
+      "rank": 202,
+      "name": "1decimalMininclusiveDOUBLELeadTrail_fail-decimal-low",
+      "new_traits": []
+    },
+    {
+      "rank": 203,
+      "name": "1decimalMininclusiveDOUBLELeadTrail_pass-decimal-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 204,
+      "name": "1decimalMininclusiveDOUBLELeadTrail_pass-decimal-equalLeadTrail",
+      "new_traits": []
+    },
+    {
+      "rank": 205,
+      "name": "1decimalMininclusiveDOUBLELeadTrail_pass-decimal-high",
+      "new_traits": []
+    },
+    {
+      "rank": 206,
+      "name": "1decimalMininclusiveDOUBLE_fail-decimal-low",
+      "new_traits": []
+    },
+    {
+      "rank": 207,
+      "name": "1decimalMininclusiveDOUBLE_pass-decimal-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 208,
+      "name": "1decimalMininclusiveDOUBLE_pass-decimal-equalLeadTrail",
+      "new_traits": []
+    },
+    {
+      "rank": 209,
+      "name": "1decimalMininclusiveDOUBLEintLeadTrail_fail-decimal-low",
+      "new_traits": []
+    },
+    {
+      "rank": 210,
+      "name": "1decimalMininclusiveDOUBLEintLeadTrail_pass-decimal-high",
+      "new_traits": []
+    },
+    {
+      "rank": 211,
+      "name": "1decimalMininclusiveINTEGERLead_fail-decimal-low",
+      "new_traits": []
+    },
+    {
+      "rank": 212,
+      "name": "1decimalMininclusiveINTEGERLead_pass-decimal-high",
+      "new_traits": []
+    },
+    {
+      "rank": 213,
+      "name": "1decimalMininclusiveINTEGER_fail-decimal-low",
+      "new_traits": []
+    },
+    {
+      "rank": 214,
+      "name": "1decimalMininclusiveINTEGER_pass-decimal-high",
+      "new_traits": []
+    },
+    {
+      "rank": 215,
+      "name": "1dot-base_fail-empty",
+      "new_traits": []
+    },
+    {
+      "rank": 216,
+      "name": "1dot-base_fail-missing",
+      "new_traits": []
+    },
+    {
+      "rank": 217,
+      "name": "1dot-base_pass-noOthers",
+      "new_traits": []
+    },
+    {
+      "rank": 218,
+      "name": "1dot-relative_pass-short-shape",
+      "new_traits": []
+    },
+    {
+      "rank": 219,
+      "name": "1dotAnnot3_missing",
+      "new_traits": []
+    },
+    {
+      "rank": 220,
+      "name": "1dotAnnot3_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 221,
+      "name": "1dotAnnotAIRIREF_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 222,
+      "name": "1dotAnnotIRIREF_missing",
+      "new_traits": []
+    },
+    {
+      "rank": 223,
+      "name": "1dotAnnotIRIREF_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 224,
+      "name": "1dotAnnotSTRING_LITERAL1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 225,
+      "name": "1dotClosed_fail_higher",
+      "new_traits": []
+    },
+    {
+      "rank": 226,
+      "name": "1dotClosed_fail_lower",
+      "new_traits": []
+    },
+    {
+      "rank": 227,
+      "name": "1dotClosed_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 228,
+      "name": "1dotCode1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 229,
+      "name": "1dotCode3fail_abort",
+      "new_traits": []
+    },
+    {
+      "rank": 230,
+      "name": "1dotCodeWithEscapes1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 231,
+      "name": "1dotExtra1_pass-iri1",
+      "new_traits": []
+    },
+    {
+      "rank": 232,
+      "name": "1dotInline1_missingReferent",
+      "new_traits": []
+    },
+    {
+      "rank": 233,
+      "name": "1dotInline1_missingSelfReference",
+      "new_traits": []
+    },
+    {
+      "rank": 234,
+      "name": "1dotInline1_overMatchesReferent",
+      "new_traits": []
+    },
+    {
+      "rank": 235,
+      "name": "1dotInline1_overReferrer",
+      "new_traits": []
+    },
+    {
+      "rank": 236,
+      "name": "1dotInline1_overReferrer,overReferent",
+      "new_traits": []
+    },
+    {
+      "rank": 237,
+      "name": "1dotInline1_referrer,referent",
+      "new_traits": []
+    },
+    {
+      "rank": 238,
+      "name": "1dotInline1_selfReference",
+      "new_traits": []
+    },
+    {
+      "rank": 239,
+      "name": "1dotLNdefault_pass-noOthers",
+      "new_traits": []
+    },
+    {
+      "rank": 240,
+      "name": "1dotLNex-HYPHEN_MINUS_pass-noOthers",
+      "new_traits": []
+    },
+    {
+      "rank": 241,
+      "name": "1dotLNexSingleComment_pass-noOthers",
+      "new_traits": []
+    },
+    {
+      "rank": 242,
+      "name": "1dotLNex_pass-noOthers",
+      "new_traits": []
+    },
+    {
+      "rank": 243,
+      "name": "1dotNS2SingleComment_pass-noOthers",
+      "new_traits": []
+    },
+    {
+      "rank": 244,
+      "name": "1dotNS2_pass-noOthers",
+      "new_traits": []
+    },
+    {
+      "rank": 245,
+      "name": "1dotNSdefault_pass-noOthers",
+      "new_traits": []
+    },
+    {
+      "rank": 246,
+      "name": "1dotNoCode3_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 247,
+      "name": "1dotOne2dot-someOf_fail_p1p2p3",
+      "new_traits": []
+    },
+    {
+      "rank": 248,
+      "name": "1dotOne2dot_pass_p1",
+      "new_traits": []
+    },
+    {
+      "rank": 249,
+      "name": "1dotOne2dot_pass_p2p3",
+      "new_traits": []
+    },
+    {
+      "rank": 250,
+      "name": "1dotPlusAnnotIRIREF_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 251,
+      "name": "1dotRef1_missingReferent",
+      "new_traits": []
+    },
+    {
+      "rank": 252,
+      "name": "1dotRef1_missingSelfReference",
+      "new_traits": []
+    },
+    {
+      "rank": 253,
+      "name": "1dotRef1_overMatchesReferent",
+      "new_traits": []
+    },
+    {
+      "rank": 254,
+      "name": "1dotRef1_overReferrer",
+      "new_traits": []
+    },
+    {
+      "rank": 255,
+      "name": "1dotRef1_overReferrer,overReferent",
+      "new_traits": []
+    },
+    {
+      "rank": 256,
+      "name": "1dotRef1_referent,referrer",
+      "new_traits": []
+    },
+    {
+      "rank": 257,
+      "name": "1dotRef1_referrer,referent",
+      "new_traits": []
+    },
+    {
+      "rank": 258,
+      "name": "1dotRef1_selfReference",
+      "new_traits": []
+    },
+    {
+      "rank": 259,
+      "name": "1dotRefAND3_failShape1Shape2",
+      "new_traits": []
+    },
+    {
+      "rank": 260,
+      "name": "1dotRefAND3_failShape1Shape3",
+      "new_traits": []
+    },
+    {
+      "rank": 261,
+      "name": "1dotRefAND3_failShape2Shape3",
+      "new_traits": []
+    },
+    {
+      "rank": 262,
+      "name": "1dotRefAND3_passShape1Shape2Shape3",
+      "new_traits": []
+    },
+    {
+      "rank": 263,
+      "name": "1dotRefOR3_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 264,
+      "name": "1dotRefOR3_passShape1",
+      "new_traits": []
+    },
+    {
+      "rank": 265,
+      "name": "1dotRefOR3_passShape1Shape2Shape3",
+      "new_traits": []
+    },
+    {
+      "rank": 266,
+      "name": "1dotRefOR3_passShape2",
+      "new_traits": []
+    },
+    {
+      "rank": 267,
+      "name": "1dotRefOR3_passShape3",
+      "new_traits": []
+    },
+    {
+      "rank": 268,
+      "name": "1dotSemi_pass-noOthers",
+      "new_traits": []
+    },
+    {
+      "rank": 269,
+      "name": "1dotShapeAND1dot3X_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 270,
+      "name": "1dotShapeAND1dot3X_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 271,
+      "name": "1dotShapeAnnotAIRIREF_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 272,
+      "name": "1dotShapeAnnotIRIREF_missing",
+      "new_traits": []
+    },
+    {
+      "rank": 273,
+      "name": "1dotShapeAnnotIRIREF_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 274,
+      "name": "1dotShapeAnnotSTRING_LITERAL1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 275,
+      "name": "1dotShapeCode1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 276,
+      "name": "1dotShapeNoCode1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 277,
+      "name": "1dotShapePlusAnnotIRIREF_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 278,
+      "name": "1dot_fail-empty",
+      "new_traits": []
+    },
+    {
+      "rank": 279,
+      "name": "1dot_fail-missing",
+      "new_traits": []
+    },
+    {
+      "rank": 280,
+      "name": "1dot_pass-noOthers",
+      "new_traits": []
+    },
+    {
+      "rank": 281,
+      "name": "1dot_pass-others_lexicallyEarlier",
+      "new_traits": []
+    },
+    {
+      "rank": 282,
+      "name": "1dot_pass-others_lexicallyLater",
+      "new_traits": []
+    },
+    {
+      "rank": 283,
+      "name": "1doubleMaxexclusiveDECIMALLeadTrail_fail-double-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 284,
+      "name": "1doubleMaxexclusiveDECIMAL_fail-double-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 285,
+      "name": "1doubleMaxexclusiveDECIMAL_fail-double-high",
+      "new_traits": []
+    },
+    {
+      "rank": 286,
+      "name": "1doubleMaxexclusiveDECIMAL_pass-double-low",
+      "new_traits": []
+    },
+    {
+      "rank": 287,
+      "name": "1doubleMaxexclusiveDECIMALintLeadTrail_fail-double-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 288,
+      "name": "1doubleMaxexclusiveDECIMALint_fail-double-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 289,
+      "name": "1doubleMaxexclusiveDOUBLELeadTrail_fail-double-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 290,
+      "name": "1doubleMaxexclusiveDOUBLE_fail-double-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 291,
+      "name": "1doubleMaxexclusiveDOUBLE_fail-double-high",
+      "new_traits": []
+    },
+    {
+      "rank": 292,
+      "name": "1doubleMaxexclusiveDOUBLE_pass-double-low",
+      "new_traits": []
+    },
+    {
+      "rank": 293,
+      "name": "1doubleMaxexclusiveDOUBLEintLeadTrail_fail-double-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 294,
+      "name": "1doubleMaxexclusiveDOUBLEint_fail-double-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 295,
+      "name": "1doubleMaxexclusiveINTEGERLead_fail-double-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 296,
+      "name": "1doubleMaxexclusiveINTEGER_fail-double-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 297,
+      "name": "1doubleMaxexclusiveINTEGER_fail-double-high",
+      "new_traits": []
+    },
+    {
+      "rank": 298,
+      "name": "1doubleMaxexclusiveINTEGER_pass-double-low",
+      "new_traits": []
+    },
+    {
+      "rank": 299,
+      "name": "1doubleMaxinclusiveDECIMAL_fail-double-high",
+      "new_traits": []
+    },
+    {
+      "rank": 300,
+      "name": "1doubleMaxinclusiveDECIMAL_fail-float-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 301,
+      "name": "1doubleMaxinclusiveDECIMAL_pass-double-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 302,
+      "name": "1doubleMaxinclusiveDECIMAL_pass-double-low",
+      "new_traits": []
+    },
+    {
+      "rank": 303,
+      "name": "1doubleMaxinclusiveDOUBLE_fail-double-high",
+      "new_traits": []
+    },
+    {
+      "rank": 304,
+      "name": "1doubleMaxinclusiveDOUBLE_pass-double-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 305,
+      "name": "1doubleMaxinclusiveDOUBLE_pass-double-low",
+      "new_traits": []
+    },
+    {
+      "rank": 306,
+      "name": "1doubleMaxinclusiveINTEGER_fail-double-high",
+      "new_traits": []
+    },
+    {
+      "rank": 307,
+      "name": "1doubleMaxinclusiveINTEGER_pass-double-low",
+      "new_traits": []
+    },
+    {
+      "rank": 308,
+      "name": "1doubleMinexclusiveDECIMAL_fail-double-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 309,
+      "name": "1doubleMinexclusiveDECIMAL_fail-double-low",
+      "new_traits": []
+    },
+    {
+      "rank": 310,
+      "name": "1doubleMinexclusiveDECIMAL_fail-float-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 311,
+      "name": "1doubleMinexclusiveDECIMAL_pass-double-high",
+      "new_traits": []
+    },
+    {
+      "rank": 312,
+      "name": "1doubleMinexclusiveDOUBLE_fail-double-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 313,
+      "name": "1doubleMinexclusiveDOUBLE_fail-double-low",
+      "new_traits": []
+    },
+    {
+      "rank": 314,
+      "name": "1doubleMinexclusiveDOUBLE_pass-double-high",
+      "new_traits": []
+    },
+    {
+      "rank": 315,
+      "name": "1doubleMinexclusiveINTEGER_fail-double-low",
+      "new_traits": []
+    },
+    {
+      "rank": 316,
+      "name": "1doubleMinexclusiveINTEGER_pass-double-high",
+      "new_traits": []
+    },
+    {
+      "rank": 317,
+      "name": "1doubleMininclusiveDECIMALLeadTrail_fail-double-low",
+      "new_traits": []
+    },
+    {
+      "rank": 318,
+      "name": "1doubleMininclusiveDECIMALLeadTrail_pass-double-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 319,
+      "name": "1doubleMininclusiveDECIMALLeadTrail_pass-double-equalLeadTrail",
+      "new_traits": []
+    },
+    {
+      "rank": 320,
+      "name": "1doubleMininclusiveDECIMALLeadTrail_pass-double-high",
+      "new_traits": []
+    },
+    {
+      "rank": 321,
+      "name": "1doubleMininclusiveDECIMAL_pass-double-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 322,
+      "name": "1doubleMininclusiveDECIMAL_pass-double-equalLeadTrail",
+      "new_traits": []
+    },
+    {
+      "rank": 323,
+      "name": "1doubleMininclusiveDECIMALintLeadTrail_fail-double-low",
+      "new_traits": []
+    },
+    {
+      "rank": 324,
+      "name": "1doubleMininclusiveDECIMALintLeadTrail_pass-double-high",
+      "new_traits": []
+    },
+    {
+      "rank": 325,
+      "name": "1doubleMininclusiveDOUBLELeadTrail_fail-double-low",
+      "new_traits": []
+    },
+    {
+      "rank": 326,
+      "name": "1doubleMininclusiveDOUBLELeadTrail_pass-double-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 327,
+      "name": "1doubleMininclusiveDOUBLELeadTrail_pass-double-equalLeadTrail",
+      "new_traits": []
+    },
+    {
+      "rank": 328,
+      "name": "1doubleMininclusiveDOUBLELeadTrail_pass-double-high",
+      "new_traits": []
+    },
+    {
+      "rank": 329,
+      "name": "1doubleMininclusiveDOUBLE_pass-double-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 330,
+      "name": "1doubleMininclusiveDOUBLE_pass-double-equalLeadTrail",
+      "new_traits": []
+    },
+    {
+      "rank": 331,
+      "name": "1doubleMininclusiveDOUBLEintLeadTrail_fail-double-low",
+      "new_traits": []
+    },
+    {
+      "rank": 332,
+      "name": "1doubleMininclusiveDOUBLEintLeadTrail_pass-double-high",
+      "new_traits": []
+    },
+    {
+      "rank": 333,
+      "name": "1doubleMininclusiveINTEGERLead_fail-double-low",
+      "new_traits": []
+    },
+    {
+      "rank": 334,
+      "name": "1doubleMininclusiveINTEGERLead_pass-double-high",
+      "new_traits": []
+    },
+    {
+      "rank": 335,
+      "name": "1floatMaxexclusiveDECIMAL_fail-float-high",
+      "new_traits": []
+    },
+    {
+      "rank": 336,
+      "name": "1floatMaxexclusiveDECIMAL_pass-float-low",
+      "new_traits": []
+    },
+    {
+      "rank": 337,
+      "name": "1floatMaxexclusiveDOUBLE_fail-float-high",
+      "new_traits": []
+    },
+    {
+      "rank": 338,
+      "name": "1floatMaxexclusiveDOUBLE_pass-float-low",
+      "new_traits": []
+    },
+    {
+      "rank": 339,
+      "name": "1floatMaxexclusiveINTEGER_fail-float-high",
+      "new_traits": []
+    },
+    {
+      "rank": 340,
+      "name": "1floatMaxexclusiveINTEGER_pass-float-low",
+      "new_traits": []
+    },
+    {
+      "rank": 341,
+      "name": "1floatMaxinclusiveDECIMAL_fail-float-high",
+      "new_traits": []
+    },
+    {
+      "rank": 342,
+      "name": "1floatMaxinclusiveDECIMAL_pass-float-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 343,
+      "name": "1floatMaxinclusiveDECIMAL_pass-float-low",
+      "new_traits": []
+    },
+    {
+      "rank": 344,
+      "name": "1floatMaxinclusiveDOUBLE_fail-float-high",
+      "new_traits": []
+    },
+    {
+      "rank": 345,
+      "name": "1floatMaxinclusiveDOUBLE_pass-float-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 346,
+      "name": "1floatMaxinclusiveDOUBLE_pass-float-low",
+      "new_traits": []
+    },
+    {
+      "rank": 347,
+      "name": "1floatMaxinclusiveINTEGER_fail-float-high",
+      "new_traits": []
+    },
+    {
+      "rank": 348,
+      "name": "1floatMaxinclusiveINTEGER_pass-float-low",
+      "new_traits": []
+    },
+    {
+      "rank": 349,
+      "name": "1floatMinexclusiveDECIMAL_fail-float-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 350,
+      "name": "1floatMinexclusiveDECIMAL_fail-float-low",
+      "new_traits": []
+    },
+    {
+      "rank": 351,
+      "name": "1floatMinexclusiveDECIMAL_pass-float-high",
+      "new_traits": []
+    },
+    {
+      "rank": 352,
+      "name": "1floatMinexclusiveDOUBLE_fail-float-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 353,
+      "name": "1floatMinexclusiveDOUBLE_fail-float-low",
+      "new_traits": []
+    },
+    {
+      "rank": 354,
+      "name": "1floatMinexclusiveDOUBLE_pass-float-high",
+      "new_traits": []
+    },
+    {
+      "rank": 355,
+      "name": "1floatMinexclusiveINTEGER_fail-float-low",
+      "new_traits": []
+    },
+    {
+      "rank": 356,
+      "name": "1floatMinexclusiveINTEGER_pass-float-high",
+      "new_traits": []
+    },
+    {
+      "rank": 357,
+      "name": "1floatMininclusiveDECIMALLeadTrail_fail-float-low",
+      "new_traits": []
+    },
+    {
+      "rank": 358,
+      "name": "1floatMininclusiveDECIMALLeadTrail_pass-float-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 359,
+      "name": "1floatMininclusiveDECIMALLeadTrail_pass-float-equalLeadTrail",
+      "new_traits": []
+    },
+    {
+      "rank": 360,
+      "name": "1floatMininclusiveDECIMALLeadTrail_pass-float-high",
+      "new_traits": []
+    },
+    {
+      "rank": 361,
+      "name": "1floatMininclusiveDECIMAL_pass-float-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 362,
+      "name": "1floatMininclusiveDECIMAL_pass-float-equalLeadTrail",
+      "new_traits": []
+    },
+    {
+      "rank": 363,
+      "name": "1floatMininclusiveDECIMALintLeadTrail_fail-float-low",
+      "new_traits": []
+    },
+    {
+      "rank": 364,
+      "name": "1floatMininclusiveDECIMALintLeadTrail_pass-float-high",
+      "new_traits": []
+    },
+    {
+      "rank": 365,
+      "name": "1floatMininclusiveDOUBLELeadTrail_fail-float-low",
+      "new_traits": []
+    },
+    {
+      "rank": 366,
+      "name": "1floatMininclusiveDOUBLELeadTrail_pass-float-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 367,
+      "name": "1floatMininclusiveDOUBLELeadTrail_pass-float-equalLeadTrail",
+      "new_traits": []
+    },
+    {
+      "rank": 368,
+      "name": "1floatMininclusiveDOUBLELeadTrail_pass-float-high",
+      "new_traits": []
+    },
+    {
+      "rank": 369,
+      "name": "1floatMininclusiveDOUBLE_pass-float-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 370,
+      "name": "1floatMininclusiveDOUBLE_pass-float-equalLeadTrail",
+      "new_traits": []
+    },
+    {
+      "rank": 371,
+      "name": "1floatMininclusiveDOUBLEintLeadTrail_fail-float-low",
+      "new_traits": []
+    },
+    {
+      "rank": 372,
+      "name": "1floatMininclusiveDOUBLEintLeadTrail_pass-float-high",
+      "new_traits": []
+    },
+    {
+      "rank": 373,
+      "name": "1floatMininclusiveINTEGERLead_fail-float-low",
+      "new_traits": []
+    },
+    {
+      "rank": 374,
+      "name": "1floatMininclusiveINTEGERLead_pass-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 375,
+      "name": "1floatMininclusiveINTEGERLead_pass-float-high",
+      "new_traits": []
+    },
+    {
+      "rank": 376,
+      "name": "1floatMininclusiveINTEGER_fail-low",
+      "new_traits": []
+    },
+    {
+      "rank": 377,
+      "name": "1floatMininclusiveINTEGER_pass-equalLead",
+      "new_traits": []
+    },
+    {
+      "rank": 378,
+      "name": "1floatMininclusiveINTEGER_pass-equalTrail",
+      "new_traits": []
+    },
+    {
+      "rank": 379,
+      "name": "1floatMininclusiveINTEGER_pass-high",
+      "new_traits": []
+    },
+    {
+      "rank": 380,
+      "name": "1focusBNODELength_dot_fail-iriFocusLabel-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 381,
+      "name": "1focusBNODELength_dot_fail-short",
+      "new_traits": []
+    },
+    {
+      "rank": 382,
+      "name": "1focusBNODELength_dot_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 383,
+      "name": "1focusBNODE_dot_fail-iriFocusLabel-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 384,
+      "name": "1focusBNODE_dot_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 385,
+      "name": "1focusIRILength_dot_fail-bnodeFocusLabel-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 386,
+      "name": "1focusIRILength_dot_fail-long",
+      "new_traits": []
+    },
+    {
+      "rank": 387,
+      "name": "1focusIRILength_dot_fail-short",
+      "new_traits": []
+    },
+    {
+      "rank": 388,
+      "name": "1focusIRILength_dot_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 389,
+      "name": "1focusIRI_dot_fail-bnodeFocusLabel",
+      "new_traits": []
+    },
+    {
+      "rank": 390,
+      "name": "1focusIRI_dot_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 391,
+      "name": "1focusLength-dot_fail-bnode-long",
+      "new_traits": []
+    },
+    {
+      "rank": 392,
+      "name": "1focusLength-dot_fail-bnode-short",
+      "new_traits": []
+    },
+    {
+      "rank": 393,
+      "name": "1focusLength-dot_fail-iri-long",
+      "new_traits": []
+    },
+    {
+      "rank": 394,
+      "name": "1focusLength-dot_fail-iri-short",
+      "new_traits": []
+    },
+    {
+      "rank": 395,
+      "name": "1focusLength-dot_pass-bnode-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 396,
+      "name": "1focusLength-dot_pass-iri-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 397,
+      "name": "1focusMaxLength-dot_fail-bnode-long",
+      "new_traits": []
+    },
+    {
+      "rank": 398,
+      "name": "1focusMaxLength-dot_fail-iri-long",
+      "new_traits": []
+    },
+    {
+      "rank": 399,
+      "name": "1focusMaxLength-dot_pass-bnode-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 400,
+      "name": "1focusMaxLength-dot_pass-bnode-short",
+      "new_traits": []
+    },
+    {
+      "rank": 401,
+      "name": "1focusMaxLength-dot_pass-iri-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 402,
+      "name": "1focusMaxLength-dot_pass-iri-short",
+      "new_traits": []
+    },
+    {
+      "rank": 403,
+      "name": "1focusMinLength-dot_fail-bnode-short",
+      "new_traits": []
+    },
+    {
+      "rank": 404,
+      "name": "1focusMinLength-dot_fail-iri-short",
+      "new_traits": []
+    },
+    {
+      "rank": 405,
+      "name": "1focusMinLength-dot_pass-bnode-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 406,
+      "name": "1focusMinLength-dot_pass-bnode-long",
+      "new_traits": []
+    },
+    {
+      "rank": 407,
+      "name": "1focusMinLength-dot_pass-iri-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 408,
+      "name": "1focusMinLength-dot_pass-iri-long",
+      "new_traits": []
+    },
+    {
+      "rank": 409,
+      "name": "1focusPattern-dot_fail-iri-long",
+      "new_traits": []
+    },
+    {
+      "rank": 410,
+      "name": "1focusPattern-dot_fail-iri-match",
+      "new_traits": []
+    },
+    {
+      "rank": 411,
+      "name": "1focusPattern-dot_fail-iri-short",
+      "new_traits": []
+    },
+    {
+      "rank": 412,
+      "name": "1focusPattern-dot_pass-iri-match",
+      "new_traits": []
+    },
+    {
+      "rank": 413,
+      "name": "1focusPatternB-dot_fail-bnode-short",
+      "new_traits": []
+    },
+    {
+      "rank": 414,
+      "name": "1focusPatternB-dot_fail-iri-match",
+      "new_traits": []
+    },
+    {
+      "rank": 415,
+      "name": "1focusPatternB-dot_pass-bnode-long",
+      "new_traits": []
+    },
+    {
+      "rank": 416,
+      "name": "1focusPatternB-dot_pass-bnode-match",
+      "new_traits": []
+    },
+    {
+      "rank": 417,
+      "name": "1focusnonLiteral-dot_pass-iri-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 418,
+      "name": "1focusnonLiteralLength-dot_pass-iri-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 419,
+      "name": "1focusnonLiteralLength-nonLiteralLength_fail-short",
+      "new_traits": []
+    },
+    {
+      "rank": 420,
+      "name": "1focusnonLiteralLength-nonLiteralLength_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 421,
+      "name": "1focusvsANDIRI_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 422,
+      "name": "1focusvsANDIRI_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 423,
+      "name": "1focusvsORdatatype_fail-val",
+      "new_traits": []
+    },
+    {
+      "rank": 424,
+      "name": "1focusvsORdatatype_pass-val",
+      "new_traits": []
+    },
+    {
+      "rank": 425,
+      "name": "1integerMaxexclusiveDECIMALint_fail-integer-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 426,
+      "name": "1integerMaxexclusiveDECIMALint_fail-integer-high",
+      "new_traits": []
+    },
+    {
+      "rank": 427,
+      "name": "1integerMaxexclusiveDECIMALint_pass-integer-low",
+      "new_traits": []
+    },
+    {
+      "rank": 428,
+      "name": "1integerMaxexclusiveDOUBLEint_fail-integer-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 429,
+      "name": "1integerMaxexclusiveDOUBLEint_fail-integer-high",
+      "new_traits": []
+    },
+    {
+      "rank": 430,
+      "name": "1integerMaxexclusiveDOUBLEint_pass-integer-low",
+      "new_traits": []
+    },
+    {
+      "rank": 431,
+      "name": "1integerMaxexclusiveINTEGER_fail-integer-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 432,
+      "name": "1integerMaxexclusiveINTEGER_fail-integer-high",
+      "new_traits": []
+    },
+    {
+      "rank": 433,
+      "name": "1integerMaxexclusiveINTEGER_pass-integer-low",
+      "new_traits": []
+    },
+    {
+      "rank": 434,
+      "name": "1integerMaxinclusiveDECIMALint_fail-integer-high",
+      "new_traits": []
+    },
+    {
+      "rank": 435,
+      "name": "1integerMaxinclusiveDECIMALint_pass-integer-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 436,
+      "name": "1integerMaxinclusiveDECIMALint_pass-integer-low",
+      "new_traits": []
+    },
+    {
+      "rank": 437,
+      "name": "1integerMaxinclusiveDOUBLEint_fail-integer-high",
+      "new_traits": []
+    },
+    {
+      "rank": 438,
+      "name": "1integerMaxinclusiveDOUBLEint_pass-integer-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 439,
+      "name": "1integerMaxinclusiveDOUBLEint_pass-integer-low",
+      "new_traits": []
+    },
+    {
+      "rank": 440,
+      "name": "1integerMaxinclusiveINTEGER_fail-integer-high",
+      "new_traits": []
+    },
+    {
+      "rank": 441,
+      "name": "1integerMaxinclusiveINTEGER_pass-integer-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 442,
+      "name": "1integerMaxinclusiveINTEGER_pass-integer-low",
+      "new_traits": []
+    },
+    {
+      "rank": 443,
+      "name": "1integerMinexclusiveDECIMALint_fail-integer-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 444,
+      "name": "1integerMinexclusiveDECIMALint_fail-integer-low",
+      "new_traits": []
+    },
+    {
+      "rank": 445,
+      "name": "1integerMinexclusiveDECIMALint_pass-integer-high",
+      "new_traits": []
+    },
+    {
+      "rank": 446,
+      "name": "1integerMinexclusiveDOUBLEint_fail-integer-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 447,
+      "name": "1integerMinexclusiveDOUBLEint_fail-integer-low",
+      "new_traits": []
+    },
+    {
+      "rank": 448,
+      "name": "1integerMinexclusiveDOUBLEint_pass-integer-high",
+      "new_traits": []
+    },
+    {
+      "rank": 449,
+      "name": "1integerMinexclusiveINTEGER_fail-integer-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 450,
+      "name": "1integerMinexclusiveINTEGER_fail-integer-low",
+      "new_traits": []
+    },
+    {
+      "rank": 451,
+      "name": "1integerMinexclusiveINTEGER_pass-integer-high",
+      "new_traits": []
+    },
+    {
+      "rank": 452,
+      "name": "1integerMininclusiveDECIMALLeadTrail_fail-integer-low",
+      "new_traits": []
+    },
+    {
+      "rank": 453,
+      "name": "1integerMininclusiveDECIMALLeadTrail_pass-integer-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 454,
+      "name": "1integerMininclusiveDECIMALLeadTrail_pass-integer-equalLead",
+      "new_traits": []
+    },
+    {
+      "rank": 455,
+      "name": "1integerMininclusiveDECIMALLeadTrail_pass-integer-high",
+      "new_traits": []
+    },
+    {
+      "rank": 456,
+      "name": "1integerMininclusiveDECIMAL_pass-integer-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 457,
+      "name": "1integerMininclusiveDECIMALintLeadTrail_fail-integer-low",
+      "new_traits": []
+    },
+    {
+      "rank": 458,
+      "name": "1integerMininclusiveDECIMALintLeadTrail_pass-integer-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 459,
+      "name": "1integerMininclusiveDECIMALintLeadTrail_pass-integer-equalLead",
+      "new_traits": []
+    },
+    {
+      "rank": 460,
+      "name": "1integerMininclusiveDECIMALintLeadTrail_pass-integer-high",
+      "new_traits": []
+    },
+    {
+      "rank": 461,
+      "name": "1integerMininclusiveDECIMALint_fail-integer-low",
+      "new_traits": []
+    },
+    {
+      "rank": 462,
+      "name": "1integerMininclusiveDECIMALint_pass-integer-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 463,
+      "name": "1integerMininclusiveDECIMALint_pass-integer-high",
+      "new_traits": []
+    },
+    {
+      "rank": 464,
+      "name": "1integerMininclusiveDOUBLELeadTrail_fail-integer-low",
+      "new_traits": []
+    },
+    {
+      "rank": 465,
+      "name": "1integerMininclusiveDOUBLELeadTrail_pass-integer-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 466,
+      "name": "1integerMininclusiveDOUBLELeadTrail_pass-integer-equalLead",
+      "new_traits": []
+    },
+    {
+      "rank": 467,
+      "name": "1integerMininclusiveDOUBLELeadTrail_pass-integer-high",
+      "new_traits": []
+    },
+    {
+      "rank": 468,
+      "name": "1integerMininclusiveDOUBLE_pass-integer-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 469,
+      "name": "1integerMininclusiveDOUBLEintLeadTrail_fail-integer-low",
+      "new_traits": []
+    },
+    {
+      "rank": 470,
+      "name": "1integerMininclusiveDOUBLEintLeadTrail_pass-integer-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 471,
+      "name": "1integerMininclusiveDOUBLEintLeadTrail_pass-integer-equalLead",
+      "new_traits": []
+    },
+    {
+      "rank": 472,
+      "name": "1integerMininclusiveDOUBLEintLeadTrail_pass-integer-high",
+      "new_traits": []
+    },
+    {
+      "rank": 473,
+      "name": "1integerMininclusiveDOUBLEint_pass-integer-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 474,
+      "name": "1integerMininclusiveINTEGERLead_fail-integer-low",
+      "new_traits": []
+    },
+    {
+      "rank": 475,
+      "name": "1integerMininclusiveINTEGERLead_pass-integer-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 476,
+      "name": "1integerMininclusiveINTEGERLead_pass-integer-equalLead",
+      "new_traits": []
+    },
+    {
+      "rank": 477,
+      "name": "1integerMininclusiveINTEGERLead_pass-integer-high",
+      "new_traits": []
+    },
+    {
+      "rank": 478,
+      "name": "1integerMininclusiveINTEGER_fail-byte-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 479,
+      "name": "1integerMininclusiveINTEGER_fail-dateTime-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 480,
+      "name": "1integerMininclusiveINTEGER_fail-decimal-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 481,
+      "name": "1integerMininclusiveINTEGER_fail-double-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 482,
+      "name": "1integerMininclusiveINTEGER_fail-float-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 483,
+      "name": "1integerMininclusiveINTEGER_fail-integer-low",
+      "new_traits": []
+    },
+    {
+      "rank": 484,
+      "name": "1integerMininclusiveINTEGER_fail-low",
+      "new_traits": []
+    },
+    {
+      "rank": 485,
+      "name": "1integerMininclusiveINTEGER_fail-string-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 486,
+      "name": "1integerMininclusiveINTEGER_pass-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 487,
+      "name": "1integerMininclusiveINTEGER_pass-equalLead",
+      "new_traits": []
+    },
+    {
+      "rank": 488,
+      "name": "1integerMininclusiveINTEGER_pass-high",
+      "new_traits": []
+    },
+    {
+      "rank": 489,
+      "name": "1integerMininclusiveINTEGER_pass-integer-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 490,
+      "name": "1integerMininclusiveINTEGER_pass-integer-high",
+      "new_traits": []
+    },
+    {
+      "rank": 491,
+      "name": "1inversedotAnnot3_missing",
+      "new_traits": []
+    },
+    {
+      "rank": 492,
+      "name": "1inversedotAnnot3_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 493,
+      "name": "1inversedotCode1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 494,
+      "name": "1inversedot_fail-empty",
+      "new_traits": []
+    },
+    {
+      "rank": 495,
+      "name": "1inversedot_fail-missing",
+      "new_traits": []
+    },
+    {
+      "rank": 496,
+      "name": "1inversedot_pass-noOthers",
+      "new_traits": []
+    },
+    {
+      "rank": 497,
+      "name": "1inversedot_pass-over_lexicallyEarlier",
+      "new_traits": []
+    },
+    {
+      "rank": 498,
+      "name": "1inversedot_pass-over_lexicallyLater",
+      "new_traits": []
+    },
+    {
+      "rank": 499,
+      "name": "1iriLength_fail-bnode-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 500,
+      "name": "1iriLength_fail-iri-long",
+      "new_traits": []
+    },
+    {
+      "rank": 501,
+      "name": "1iriLength_fail-iri-short",
+      "new_traits": []
+    },
+    {
+      "rank": 502,
+      "name": "1iriLength_fail-lit-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 503,
+      "name": "1iriLength_pass-iri-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 504,
+      "name": "1iriMaxlength_fail-iri-long",
+      "new_traits": []
+    },
+    {
+      "rank": 505,
+      "name": "1iriMaxlength_pass-iri-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 506,
+      "name": "1iriMaxlength_pass-iri-short",
+      "new_traits": []
+    },
+    {
+      "rank": 507,
+      "name": "1iriMinlength_fail-iri-short",
+      "new_traits": []
+    },
+    {
+      "rank": 508,
+      "name": "1iriMinlength_pass-iri-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 509,
+      "name": "1iriMinlength_pass-iri-long",
+      "new_traits": []
+    },
+    {
+      "rank": 510,
+      "name": "1iriPattern_fail-bnode-match",
+      "new_traits": []
+    },
+    {
+      "rank": 511,
+      "name": "1iriPattern_fail-iri-long",
+      "new_traits": []
+    },
+    {
+      "rank": 512,
+      "name": "1iriPattern_fail-iri-short",
+      "new_traits": []
+    },
+    {
+      "rank": 513,
+      "name": "1iriPattern_fail-lit-match",
+      "new_traits": []
+    },
+    {
+      "rank": 514,
+      "name": "1iriPattern_pass-iri-match",
+      "new_traits": []
+    },
+    {
+      "rank": 515,
+      "name": "1iriRef1_fail-bnode",
+      "new_traits": []
+    },
+    {
+      "rank": 516,
+      "name": "1iriRef1_pass-iri",
+      "new_traits": []
+    },
+    {
+      "rank": 517,
+      "name": "1iriRefLength1_fail-bnode-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 518,
+      "name": "1iriRefLength1_fail-iri-long",
+      "new_traits": []
+    },
+    {
+      "rank": 519,
+      "name": "1iriRefLength1_fail-iri-short",
+      "new_traits": []
+    },
+    {
+      "rank": 520,
+      "name": "1iriRefLength1_fail-lit-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 521,
+      "name": "1iriRefLength1_pass-iri-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 522,
+      "name": "1iri_fail-bnode",
+      "new_traits": []
+    },
+    {
+      "rank": 523,
+      "name": "1iri_fail-literal",
+      "new_traits": []
+    },
+    {
+      "rank": 524,
+      "name": "1iri_pass-iri",
+      "new_traits": []
+    },
+    {
+      "rank": 525,
+      "name": "1list0PlusDot-list_Iv1,Iv2,Iv3_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 526,
+      "name": "1list0PlusDot-list_Iv1,Iv2,Lx_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 527,
+      "name": "1list0PlusDot-manualList_2firsts_Iv1,Iv2,Iv3_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 528,
+      "name": "1list0PlusDot-manualList_Iv1,Iv2,Iv3_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 529,
+      "name": "1list0PlusDot-manualList_extraArc_Iv1,Iv2,Iv3_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 530,
+      "name": "1list0PlusIri-empty_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 531,
+      "name": "1list0PlusIri-list_Iv1,Iv2,Iv3_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 532,
+      "name": "1list0PlusIri-list_Iv1,Iv2,Lx_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 533,
+      "name": "1list1PlusIri-empty_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 534,
+      "name": "1list1PlusIri-list_Iv1,Iv2,Iv3_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 535,
+      "name": "1list1PlusIri-list_Iv1,Iv2,Lx_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 536,
+      "name": "1literalCarrotPatternDollar_pass-CarrotbcDollar",
+      "new_traits": []
+    },
+    {
+      "rank": 537,
+      "name": "1literalCarrotPatternDollar_pass-bc",
+      "new_traits": []
+    },
+    {
+      "rank": 538,
+      "name": "1literalFractiondigits_fail-decimal-long",
+      "new_traits": []
+    },
+    {
+      "rank": 539,
+      "name": "1literalFractiondigits_fail-decimal-longLead",
+      "new_traits": []
+    },
+    {
+      "rank": 540,
+      "name": "1literalFractiondigits_fail-decimal-longLeadTrail",
+      "new_traits": []
+    },
+    {
+      "rank": 541,
+      "name": "1literalFractiondigits_fail-decimal-longTrail",
+      "new_traits": []
+    },
+    {
+      "rank": 542,
+      "name": "1literalFractiondigits_fail-double-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 543,
+      "name": "1literalFractiondigits_fail-float-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 544,
+      "name": "1literalFractiondigits_fail-iri",
+      "new_traits": []
+    },
+    {
+      "rank": 545,
+      "name": "1literalFractiondigits_fail-malformedxsd_decimal-1_2345ab",
+      "new_traits": []
+    },
+    {
+      "rank": 546,
+      "name": "1literalFractiondigits_fail-malformedxsd_decimal-1_23ab",
+      "new_traits": []
+    },
+    {
+      "rank": 547,
+      "name": "1literalFractiondigits_fail-malformedxsd_integer-1_2345",
+      "new_traits": []
+    },
+    {
+      "rank": 548,
+      "name": "1literalFractiondigits_pass-decimal-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 549,
+      "name": "1literalFractiondigits_pass-decimal-equalLead",
+      "new_traits": []
+    },
+    {
+      "rank": 550,
+      "name": "1literalFractiondigits_pass-decimal-equalLeadTrail",
+      "new_traits": []
+    },
+    {
+      "rank": 551,
+      "name": "1literalFractiondigits_pass-decimal-equalTrail",
+      "new_traits": []
+    },
+    {
+      "rank": 552,
+      "name": "1literalFractiondigits_pass-decimal-short",
+      "new_traits": []
+    },
+    {
+      "rank": 553,
+      "name": "1literalFractiondigits_pass-integer-short",
+      "new_traits": []
+    },
+    {
+      "rank": 554,
+      "name": "1literalFractiondigits_pass-xsd_integer-short",
+      "new_traits": []
+    },
+    {
+      "rank": 555,
+      "name": "1literalLength_fail-bnode-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 556,
+      "name": "1literalLength_fail-iri-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 557,
+      "name": "1literalLength_fail-lit-long",
+      "new_traits": []
+    },
+    {
+      "rank": 558,
+      "name": "1literalLength_fail-lit-short",
+      "new_traits": []
+    },
+    {
+      "rank": 559,
+      "name": "1literalLength_pass-lit-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 560,
+      "name": "1literalMaxexclusiveINTEGER_fail-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 561,
+      "name": "1literalMaxexclusiveINTEGER_fail-high",
+      "new_traits": []
+    },
+    {
+      "rank": 562,
+      "name": "1literalMaxexclusiveINTEGER_pass-low",
+      "new_traits": []
+    },
+    {
+      "rank": 563,
+      "name": "1literalMaxinclusiveINTEGER_fail-high",
+      "new_traits": []
+    },
+    {
+      "rank": 564,
+      "name": "1literalMaxinclusiveINTEGER_pass-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 565,
+      "name": "1literalMaxinclusiveINTEGER_pass-low",
+      "new_traits": []
+    },
+    {
+      "rank": 566,
+      "name": "1literalMaxlength_fail-lit-long",
+      "new_traits": []
+    },
+    {
+      "rank": 567,
+      "name": "1literalMaxlength_pass-lit-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 568,
+      "name": "1literalMaxlength_pass-lit-short",
+      "new_traits": []
+    },
+    {
+      "rank": 569,
+      "name": "1literalMinexclusiveINTEGER_fail-low",
+      "new_traits": []
+    },
+    {
+      "rank": 570,
+      "name": "1literalMinexclusiveINTEGER_pass-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 571,
+      "name": "1literalMinexclusiveINTEGER_pass-high",
+      "new_traits": []
+    },
+    {
+      "rank": 572,
+      "name": "1literalMininclusiveINTEGER_fail-low",
+      "new_traits": []
+    },
+    {
+      "rank": 573,
+      "name": "1literalMininclusiveINTEGER_pass-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 574,
+      "name": "1literalMininclusiveINTEGER_pass-high",
+      "new_traits": []
+    },
+    {
+      "rank": 575,
+      "name": "1literalMinlength_fail-lit-short",
+      "new_traits": []
+    },
+    {
+      "rank": 576,
+      "name": "1literalMinlength_pass-lit-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 577,
+      "name": "1literalMinlength_pass-lit-long",
+      "new_traits": []
+    },
+    {
+      "rank": 578,
+      "name": "1literalPattern19_fail-iri-match",
+      "new_traits": []
+    },
+    {
+      "rank": 579,
+      "name": "1literalPatternDollar_pass-litDollar-match",
+      "new_traits": []
+    },
+    {
+      "rank": 580,
+      "name": "1literalPatternEnd_fail-litEnd",
+      "new_traits": []
+    },
+    {
+      "rank": 581,
+      "name": "1literalPatternEnd_pass-CarrotbcDollar",
+      "new_traits": []
+    },
+    {
+      "rank": 582,
+      "name": "1literalPatternEnd_pass-bc",
+      "new_traits": []
+    },
+    {
+      "rank": 583,
+      "name": "1literalPattern_fail-ab",
+      "new_traits": []
+    },
+    {
+      "rank": 584,
+      "name": "1literalPattern_fail-bnode-match",
+      "new_traits": []
+    },
+    {
+      "rank": 585,
+      "name": "1literalPattern_fail-cd",
+      "new_traits": []
+    },
+    {
+      "rank": 586,
+      "name": "1literalPattern_fail-lit-short",
+      "new_traits": []
+    },
+    {
+      "rank": 587,
+      "name": "1literalPattern_pass-CarrotbcDollar",
+      "new_traits": []
+    },
+    {
+      "rank": 588,
+      "name": "1literalPattern_pass-StartlitEnd-match",
+      "new_traits": []
+    },
+    {
+      "rank": 589,
+      "name": "1literalPattern_pass-bcDollar",
+      "new_traits": []
+    },
+    {
+      "rank": 590,
+      "name": "1literalPattern_pass-lit-into",
+      "new_traits": []
+    },
+    {
+      "rank": 591,
+      "name": "1literalPattern_pass-lit-match",
+      "new_traits": []
+    },
+    {
+      "rank": 592,
+      "name": "1literalPattern_with_REGEXP_escapes_bare_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 593,
+      "name": "1literalPattern_with_REGEXP_escapes_bare_pass_escapes",
+      "new_traits": []
+    },
+    {
+      "rank": 594,
+      "name": "1literalPattern_with_REGEXP_escapes_escaped_fail_escapes",
+      "new_traits": []
+    },
+    {
+      "rank": 595,
+      "name": "1literalPattern_with_REGEXP_escapes_escaped_fail_escapes_bare",
+      "new_traits": []
+    },
+    {
+      "rank": 596,
+      "name": "1literalPattern_with_REGEXP_escapes_escaped_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 597,
+      "name": "1literalPattern_with_REGEXP_escapes_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 598,
+      "name": "1literalPattern_with_REGEXP_escapes_fail_escaped",
+      "new_traits": []
+    },
+    {
+      "rank": 599,
+      "name": "1literalPattern_with_REGEXP_escapes_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 600,
+      "name": "1literalPattern_with_REGEXP_escapes_pass_bare",
+      "new_traits": []
+    },
+    {
+      "rank": 601,
+      "name": "1literalPattern_with_UTF8_boundaries_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 602,
+      "name": "1literalPattern_with_UTF8_boundaries_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 603,
+      "name": "1literalPattern_with_all_controls_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 604,
+      "name": "1literalPattern_with_all_controls_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 605,
+      "name": "1literalPattern_with_all_meta_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 606,
+      "name": "1literalPattern_with_all_meta_pass-NA",
+      "new_traits": []
+    },
+    {
+      "rank": 607,
+      "name": "1literalPattern_with_all_punctuation_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 608,
+      "name": "1literalPattern_with_all_punctuation_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 609,
+      "name": "1literalPattern_with_ascii_boundaries_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 610,
+      "name": "1literalPattern_with_ascii_boundaries_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 611,
+      "name": "1literalPatternabEnd_fail-bnode-match",
+      "new_traits": []
+    },
+    {
+      "rank": 612,
+      "name": "1literalPatterni_pass-lit-BC",
+      "new_traits": []
+    },
+    {
+      "rank": 613,
+      "name": "1literalPatterni_pass-lit-blowercaseC",
+      "new_traits": []
+    },
+    {
+      "rank": 614,
+      "name": "1literalPatterni_pass-lit-match",
+      "new_traits": []
+    },
+    {
+      "rank": 615,
+      "name": "1literalStarPatternEnd_pass-bc",
+      "new_traits": []
+    },
+    {
+      "rank": 616,
+      "name": "1literalStartPatternEnd_CarrotbcDollar",
+      "new_traits": []
+    },
+    {
+      "rank": 617,
+      "name": "1literalStartPattern_fail-CarrotbcDollar",
+      "new_traits": []
+    },
+    {
+      "rank": 618,
+      "name": "1literalStartPattern_pass-bc",
+      "new_traits": []
+    },
+    {
+      "rank": 619,
+      "name": "1literalTotaldigits_fail-byte-long",
+      "new_traits": []
+    },
+    {
+      "rank": 620,
+      "name": "1literalTotaldigits_fail-decimal-long",
+      "new_traits": []
+    },
+    {
+      "rank": 621,
+      "name": "1literalTotaldigits_fail-decimal-longLead",
+      "new_traits": []
+    },
+    {
+      "rank": 622,
+      "name": "1literalTotaldigits_fail-decimal-longLeadTrail",
+      "new_traits": []
+    },
+    {
+      "rank": 623,
+      "name": "1literalTotaldigits_fail-decimal-longTrail",
+      "new_traits": []
+    },
+    {
+      "rank": 624,
+      "name": "1literalTotaldigits_fail-double-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 625,
+      "name": "1literalTotaldigits_fail-float-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 626,
+      "name": "1literalTotaldigits_fail-integer-longLead",
+      "new_traits": []
+    },
+    {
+      "rank": 627,
+      "name": "1literalTotaldigits_fail-integer-longLeadTrail",
+      "new_traits": []
+    },
+    {
+      "rank": 628,
+      "name": "1literalTotaldigits_fail-integer-longTrail",
+      "new_traits": []
+    },
+    {
+      "rank": 629,
+      "name": "1literalTotaldigits_fail-iri",
+      "new_traits": []
+    },
+    {
+      "rank": 630,
+      "name": "1literalTotaldigits_fail-malformedxsd_decimal-1_2345ab",
+      "new_traits": []
+    },
+    {
+      "rank": 631,
+      "name": "1literalTotaldigits_fail-malformedxsd_decimal-1_23ab",
+      "new_traits": []
+    },
+    {
+      "rank": 632,
+      "name": "1literalTotaldigits_fail-malformedxsd_integer-1_2345",
+      "new_traits": []
+    },
+    {
+      "rank": 633,
+      "name": "1literalTotaldigits_pass-byte-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 634,
+      "name": "1literalTotaldigits_pass-byte-short",
+      "new_traits": []
+    },
+    {
+      "rank": 635,
+      "name": "1literalTotaldigits_pass-decimal-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 636,
+      "name": "1literalTotaldigits_pass-decimal-equalLead",
+      "new_traits": []
+    },
+    {
+      "rank": 637,
+      "name": "1literalTotaldigits_pass-decimal-equalLeadTrail",
+      "new_traits": []
+    },
+    {
+      "rank": 638,
+      "name": "1literalTotaldigits_pass-decimal-equalTrail",
+      "new_traits": []
+    },
+    {
+      "rank": 639,
+      "name": "1literalTotaldigits_pass-decimal-short",
+      "new_traits": []
+    },
+    {
+      "rank": 640,
+      "name": "1literalTotaldigits_pass-integer-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 641,
+      "name": "1literalTotaldigits_pass-integer-equalLead",
+      "new_traits": []
+    },
+    {
+      "rank": 642,
+      "name": "1literalTotaldigits_pass-integer-equalLeadTrail",
+      "new_traits": []
+    },
+    {
+      "rank": 643,
+      "name": "1literalTotaldigits_pass-integer-equalTrail",
+      "new_traits": []
+    },
+    {
+      "rank": 644,
+      "name": "1literalTotaldigits_pass-xsd_integer-short",
+      "new_traits": []
+    },
+    {
+      "rank": 645,
+      "name": "1literal_fail-bnode",
+      "new_traits": []
+    },
+    {
+      "rank": 646,
+      "name": "1literal_fail-iri",
+      "new_traits": []
+    },
+    {
+      "rank": 647,
+      "name": "1literal_pass-literal",
+      "new_traits": []
+    },
+    {
+      "rank": 648,
+      "name": "1nonliteralLength_fail-bnode-long",
+      "new_traits": []
+    },
+    {
+      "rank": 649,
+      "name": "1nonliteralLength_fail-bnode-short",
+      "new_traits": []
+    },
+    {
+      "rank": 650,
+      "name": "1nonliteralLength_fail-iri-long",
+      "new_traits": []
+    },
+    {
+      "rank": 651,
+      "name": "1nonliteralLength_fail-iri-short",
+      "new_traits": []
+    },
+    {
+      "rank": 652,
+      "name": "1nonliteralLength_fail-lit-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 653,
+      "name": "1nonliteralLength_pass-bnode-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 654,
+      "name": "1nonliteralLength_pass-iri-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 655,
+      "name": "1nonliteralMaxlength_fail-bnode-long",
+      "new_traits": []
+    },
+    {
+      "rank": 656,
+      "name": "1nonliteralMaxlength_fail-iri-long",
+      "new_traits": []
+    },
+    {
+      "rank": 657,
+      "name": "1nonliteralMaxlength_pass-bnode-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 658,
+      "name": "1nonliteralMaxlength_pass-bnode-short",
+      "new_traits": []
+    },
+    {
+      "rank": 659,
+      "name": "1nonliteralMaxlength_pass-iri-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 660,
+      "name": "1nonliteralMaxlength_pass-iri-short",
+      "new_traits": []
+    },
+    {
+      "rank": 661,
+      "name": "1nonliteralMinlength_fail-bnode-short",
+      "new_traits": []
+    },
+    {
+      "rank": 662,
+      "name": "1nonliteralMinlength_fail-iri-short",
+      "new_traits": []
+    },
+    {
+      "rank": 663,
+      "name": "1nonliteralMinlength_pass-bnode-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 664,
+      "name": "1nonliteralMinlength_pass-bnode-long",
+      "new_traits": []
+    },
+    {
+      "rank": 665,
+      "name": "1nonliteralMinlength_pass-iri-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 666,
+      "name": "1nonliteralMinlength_pass-iri-long",
+      "new_traits": []
+    },
+    {
+      "rank": 667,
+      "name": "1nonliteralPattern_fail-bnode-short",
+      "new_traits": []
+    },
+    {
+      "rank": 668,
+      "name": "1nonliteralPattern_fail-iri-short",
+      "new_traits": []
+    },
+    {
+      "rank": 669,
+      "name": "1nonliteralPattern_fail-lit-match",
+      "new_traits": []
+    },
+    {
+      "rank": 670,
+      "name": "1nonliteralPattern_pass-bnode-long",
+      "new_traits": []
+    },
+    {
+      "rank": 671,
+      "name": "1nonliteralPattern_pass-bnode-match",
+      "new_traits": []
+    },
+    {
+      "rank": 672,
+      "name": "1nonliteralPattern_pass-iri-long",
+      "new_traits": []
+    },
+    {
+      "rank": 673,
+      "name": "1nonliteralPattern_pass-iri-match",
+      "new_traits": []
+    },
+    {
+      "rank": 674,
+      "name": "1nonliteral_fail-literal",
+      "new_traits": []
+    },
+    {
+      "rank": 675,
+      "name": "1nonliteral_pass-bnode",
+      "new_traits": []
+    },
+    {
+      "rank": 676,
+      "name": "1nonliteral_pass-iri",
+      "new_traits": []
+    },
+    {
+      "rank": 677,
+      "name": "1refbnode1_fail-g1-arc",
+      "new_traits": []
+    },
+    {
+      "rank": 678,
+      "name": "1refbnode1_fail-g2-arc",
+      "new_traits": []
+    },
+    {
+      "rank": 679,
+      "name": "1refbnode1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 680,
+      "name": "1val1DECIMAL_00",
+      "new_traits": []
+    },
+    {
+      "rank": 681,
+      "name": "1val1DECIMAL_Lab",
+      "new_traits": []
+    },
+    {
+      "rank": 682,
+      "name": "1val1DECIMAL_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 683,
+      "name": "1val1DOUBLE_0_0e0",
+      "new_traits": []
+    },
+    {
+      "rank": 684,
+      "name": "1val1DOUBLE_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 685,
+      "name": "1val1DOUBLElowercase_0_0e0",
+      "new_traits": []
+    },
+    {
+      "rank": 686,
+      "name": "1val1DOUBLElowercase_fail-0E0",
+      "new_traits": []
+    },
+    {
+      "rank": 687,
+      "name": "1val1DOUBLElowercase_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 688,
+      "name": "1val1INTEGER_00",
+      "new_traits": []
+    },
+    {
+      "rank": 689,
+      "name": "1val1INTEGER_Lab",
+      "new_traits": []
+    },
+    {
+      "rank": 690,
+      "name": "1val1INTEGER_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 691,
+      "name": "1val1IRIREFClosedExtra1_fail-iri2_higher",
+      "new_traits": []
+    },
+    {
+      "rank": 692,
+      "name": "1val1IRIREFClosedExtra1_pass-iri1",
+      "new_traits": []
+    },
+    {
+      "rank": 693,
+      "name": "1val1IRIREFClosedExtra1_pass-iri2",
+      "new_traits": []
+    },
+    {
+      "rank": 694,
+      "name": "1val1IRIREFDatatype_Lab",
+      "new_traits": []
+    },
+    {
+      "rank": 695,
+      "name": "1val1IRIREFDatatype_LabDTbloodType999",
+      "new_traits": []
+    },
+    {
+      "rank": 696,
+      "name": "1val1IRIREFDatatype_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 697,
+      "name": "1val1IRIREFExtra1Closed_fail-iri2_higher",
+      "new_traits": []
+    },
+    {
+      "rank": 698,
+      "name": "1val1IRIREFExtra1Closed_pass-iri1",
+      "new_traits": []
+    },
+    {
+      "rank": 699,
+      "name": "1val1IRIREFExtra1Closed_pass-iri2",
+      "new_traits": []
+    },
+    {
+      "rank": 700,
+      "name": "1val1IRIREFExtra1One_pass-iri2",
+      "new_traits": []
+    },
+    {
+      "rank": 701,
+      "name": "1val1IRIREFExtra1_pass-iri1",
+      "new_traits": []
+    },
+    {
+      "rank": 702,
+      "name": "1val1IRIREFExtra1_pass-iri2",
+      "new_traits": []
+    },
+    {
+      "rank": 703,
+      "name": "1val1IRIREFExtra1p2_fail-iri2",
+      "new_traits": []
+    },
+    {
+      "rank": 704,
+      "name": "1val1IRIREFExtra1p2_pass-iri1",
+      "new_traits": []
+    },
+    {
+      "rank": 705,
+      "name": "1val1IRIREF_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 706,
+      "name": "1val1IRIREF_v1v2",
+      "new_traits": []
+    },
+    {
+      "rank": 707,
+      "name": "1val1IRIREF_v2",
+      "new_traits": []
+    },
+    {
+      "rank": 708,
+      "name": "1val1LANGTAG_Lab",
+      "new_traits": []
+    },
+    {
+      "rank": 709,
+      "name": "1val1LANGTAG_LabLTen",
+      "new_traits": []
+    },
+    {
+      "rank": 710,
+      "name": "1val1LANGTAG_LabLTen-fr-jura",
+      "new_traits": []
+    },
+    {
+      "rank": 711,
+      "name": "1val1LANGTAG_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 712,
+      "name": "1val1STRING_LITERAL1_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 713,
+      "name": "1val1STRING_LITERAL1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 714,
+      "name": "1val1STRING_LITERAL1_with_ECHAR_escapes_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 715,
+      "name": "1val1STRING_LITERAL1_with_ECHAR_escapes_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 716,
+      "name": "1val1STRING_LITERAL1_with_UTF8_boundaries_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 717,
+      "name": "1val1STRING_LITERAL1_with_UTF8_boundaries_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 718,
+      "name": "1val1STRING_LITERAL1_with_all_controls_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 719,
+      "name": "1val1STRING_LITERAL1_with_all_controls_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 720,
+      "name": "1val1STRING_LITERAL1_with_all_punctuation_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 721,
+      "name": "1val1STRING_LITERAL1_with_all_punctuation_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 722,
+      "name": "1val1STRING_LITERAL1_with_ascii_boundaries_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 723,
+      "name": "1val1STRING_LITERAL1_with_ascii_boundaries_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 724,
+      "name": "1val1dotMinusiri3_v1",
+      "new_traits": []
+    },
+    {
+      "rank": 725,
+      "name": "1val1dotMinusiri3_v2",
+      "new_traits": []
+    },
+    {
+      "rank": 726,
+      "name": "1val1dotMinusiri3_v3",
+      "new_traits": []
+    },
+    {
+      "rank": 727,
+      "name": "1val1dotMinusiriStem3_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 728,
+      "name": "1val1dotMinusiriStem3_v1",
+      "new_traits": []
+    },
+    {
+      "rank": 729,
+      "name": "1val1dotMinusiriStem3_v1a",
+      "new_traits": []
+    },
+    {
+      "rank": 730,
+      "name": "1val1dotMinusiriStem3_v2",
+      "new_traits": []
+    },
+    {
+      "rank": 731,
+      "name": "1val1dotMinusiriStem3_v3",
+      "new_traits": []
+    },
+    {
+      "rank": 732,
+      "name": "1val1emptylanguageStemMinuslanguage3_failLAtfr-be",
+      "new_traits": []
+    },
+    {
+      "rank": 733,
+      "name": "1val1emptylanguageStemMinuslanguage3_passLAtfr",
+      "new_traits": []
+    },
+    {
+      "rank": 734,
+      "name": "1val1emptylanguageStemMinuslanguage3_passLAtfr-be-fbcl",
+      "new_traits": []
+    },
+    {
+      "rank": 735,
+      "name": "1val1emptylanguageStemMinuslanguageStem3_LAtfr",
+      "new_traits": []
+    },
+    {
+      "rank": 736,
+      "name": "1val1emptylanguageStemMinuslanguageStem3_LAtfr-be-fbcl",
+      "new_traits": []
+    },
+    {
+      "rank": 737,
+      "name": "1val1emptylanguageStemMinuslanguageStem3_LAtfrc",
+      "new_traits": []
+    },
+    {
+      "rank": 738,
+      "name": "1val1emptylanguageStemMinuslanguageStem3_failLAtfr-be",
+      "new_traits": []
+    },
+    {
+      "rank": 739,
+      "name": "1val1emptylanguageStem_fail-empty",
+      "new_traits": []
+    },
+    {
+      "rank": 740,
+      "name": "1val1emptylanguageStem_fail-integer",
+      "new_traits": []
+    },
+    {
+      "rank": 741,
+      "name": "1val1emptylanguageStem_fail-literal",
+      "new_traits": []
+    },
+    {
+      "rank": 742,
+      "name": "1val1emptylanguageStem_passLAtfr",
+      "new_traits": []
+    },
+    {
+      "rank": 743,
+      "name": "1val1false_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 744,
+      "name": "1val1false_true",
+      "new_traits": []
+    },
+    {
+      "rank": 745,
+      "name": "1val1iriStemMinusiri3_fail-literalIv1",
+      "new_traits": []
+    },
+    {
+      "rank": 746,
+      "name": "1val1iriStemMinusiri3_fail-literalIv4",
+      "new_traits": []
+    },
+    {
+      "rank": 747,
+      "name": "1val1iriStemMinusiri3_passIv",
+      "new_traits": []
+    },
+    {
+      "rank": 748,
+      "name": "1val1iriStemMinusiri3_passIv1a",
+      "new_traits": []
+    },
+    {
+      "rank": 749,
+      "name": "1val1iriStemMinusiri3_passIv4",
+      "new_traits": []
+    },
+    {
+      "rank": 750,
+      "name": "1val1iriStemMinusiri3_v1",
+      "new_traits": []
+    },
+    {
+      "rank": 751,
+      "name": "1val1iriStemMinusiri3_v2",
+      "new_traits": []
+    },
+    {
+      "rank": 752,
+      "name": "1val1iriStemMinusiri3_v3",
+      "new_traits": []
+    },
+    {
+      "rank": 753,
+      "name": "1val1iriStemMinusiriStem3_passIv",
+      "new_traits": []
+    },
+    {
+      "rank": 754,
+      "name": "1val1iriStemMinusiriStem3_passIv4",
+      "new_traits": []
+    },
+    {
+      "rank": 755,
+      "name": "1val1iriStemMinusiriStem3_v1",
+      "new_traits": []
+    },
+    {
+      "rank": 756,
+      "name": "1val1iriStemMinusiriStem3_v1a",
+      "new_traits": []
+    },
+    {
+      "rank": 757,
+      "name": "1val1iriStemMinusiriStem3_v2",
+      "new_traits": []
+    },
+    {
+      "rank": 758,
+      "name": "1val1iriStemMinusiriStem3_v3",
+      "new_traits": []
+    },
+    {
+      "rank": 759,
+      "name": "1val1iriStem_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 760,
+      "name": "1val1iriStem_fail-literalIv1",
+      "new_traits": []
+    },
+    {
+      "rank": 761,
+      "name": "1val1iriStem_passv1",
+      "new_traits": []
+    },
+    {
+      "rank": 762,
+      "name": "1val1iriStem_passv1a",
+      "new_traits": []
+    },
+    {
+      "rank": 763,
+      "name": "1val1iri_failv1a",
+      "new_traits": []
+    },
+    {
+      "rank": 764,
+      "name": "1val1iri_passv1",
+      "new_traits": []
+    },
+    {
+      "rank": 765,
+      "name": "1val1languageStemMinuslanguage3_failLAtfr-be",
+      "new_traits": []
+    },
+    {
+      "rank": 766,
+      "name": "1val1languageStemMinuslanguage3_failLAtfr-cd",
+      "new_traits": []
+    },
+    {
+      "rank": 767,
+      "name": "1val1languageStemMinuslanguage3_failLAtfr-ch",
+      "new_traits": []
+    },
+    {
+      "rank": 768,
+      "name": "1val1languageStemMinuslanguage3_passLAtfr",
+      "new_traits": []
+    },
+    {
+      "rank": 769,
+      "name": "1val1languageStemMinuslanguage3_passLAtfr-FR",
+      "new_traits": []
+    },
+    {
+      "rank": 770,
+      "name": "1val1languageStemMinuslanguage3_passLAtfr-be-fbcl",
+      "new_traits": []
+    },
+    {
+      "rank": 771,
+      "name": "1val1languageStemMinuslanguageStem3_LAtfr-be",
+      "new_traits": []
+    },
+    {
+      "rank": 772,
+      "name": "1val1languageStemMinuslanguageStem3_LAtfr-be-fbcl",
+      "new_traits": []
+    },
+    {
+      "rank": 773,
+      "name": "1val1languageStemMinuslanguageStem3_LAtfr-cd",
+      "new_traits": []
+    },
+    {
+      "rank": 774,
+      "name": "1val1languageStemMinuslanguageStem3_LAtfr-ch",
+      "new_traits": []
+    },
+    {
+      "rank": 775,
+      "name": "1val1languageStemMinuslanguageStem3_LAtfrc",
+      "new_traits": []
+    },
+    {
+      "rank": 776,
+      "name": "1val1languageStemMinuslanguageStem3_passLAtfr",
+      "new_traits": []
+    },
+    {
+      "rank": 777,
+      "name": "1val1languageStemMinuslanguageStem3_passLAtfr-FR",
+      "new_traits": []
+    },
+    {
+      "rank": 778,
+      "name": "1val1languageStemMinuslanguageStem3_passLAtfr-bel",
+      "new_traits": []
+    },
+    {
+      "rank": 779,
+      "name": "1val1languageStem_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 780,
+      "name": "1val1languageStem_failLAtfrc",
+      "new_traits": []
+    },
+    {
+      "rank": 781,
+      "name": "1val1languageStem_passLAtfr",
+      "new_traits": []
+    },
+    {
+      "rank": 782,
+      "name": "1val1languageStem_passLAtfr-be",
+      "new_traits": []
+    },
+    {
+      "rank": 783,
+      "name": "1val1languageStem_passLAtfr-be-fbcl",
+      "new_traits": []
+    },
+    {
+      "rank": 784,
+      "name": "1val1language_failLAtfr-be",
+      "new_traits": []
+    },
+    {
+      "rank": 785,
+      "name": "1val1language_passLAtfr",
+      "new_traits": []
+    },
+    {
+      "rank": 786,
+      "name": "1val1literalStemMinusliteral3_passLv",
+      "new_traits": []
+    },
+    {
+      "rank": 787,
+      "name": "1val1literalStemMinusliteral3_passLv1a",
+      "new_traits": []
+    },
+    {
+      "rank": 788,
+      "name": "1val1literalStemMinusliteral3_passLv4",
+      "new_traits": []
+    },
+    {
+      "rank": 789,
+      "name": "1val1literalStemMinusliteral3_v1",
+      "new_traits": []
+    },
+    {
+      "rank": 790,
+      "name": "1val1literalStemMinusliteral3_v2",
+      "new_traits": []
+    },
+    {
+      "rank": 791,
+      "name": "1val1literalStemMinusliteral3_v3",
+      "new_traits": []
+    },
+    {
+      "rank": 792,
+      "name": "1val1literalStemMinusliteralStem3_passLv",
+      "new_traits": []
+    },
+    {
+      "rank": 793,
+      "name": "1val1literalStemMinusliteralStem3_passLv4",
+      "new_traits": []
+    },
+    {
+      "rank": 794,
+      "name": "1val1literalStemMinusliteralStem3_v1",
+      "new_traits": []
+    },
+    {
+      "rank": 795,
+      "name": "1val1literalStemMinusliteralStem3_v1a",
+      "new_traits": []
+    },
+    {
+      "rank": 796,
+      "name": "1val1literalStemMinusliteralStem3_v2",
+      "new_traits": []
+    },
+    {
+      "rank": 797,
+      "name": "1val1literalStemMinusliteralStem3_v3",
+      "new_traits": []
+    },
+    {
+      "rank": 798,
+      "name": "1val1literalStem_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 799,
+      "name": "1val1literalStem_passv1",
+      "new_traits": []
+    },
+    {
+      "rank": 800,
+      "name": "1val1literalStem_passv1a",
+      "new_traits": []
+    },
+    {
+      "rank": 801,
+      "name": "1val1literal_failv1",
+      "new_traits": []
+    },
+    {
+      "rank": 802,
+      "name": "1val1literal_passv",
+      "new_traits": []
+    },
+    {
+      "rank": 803,
+      "name": "1val1literaliriStemMinusliteraliri3_fail-Iv1",
+      "new_traits": []
+    },
+    {
+      "rank": 804,
+      "name": "1val1literaliriStemMinusliteraliri3_fail-Iv4",
+      "new_traits": []
+    },
+    {
+      "rank": 805,
+      "name": "1val1literaliriStem_fail-Iv1",
+      "new_traits": []
+    },
+    {
+      "rank": 806,
+      "name": "1val1literallanguageStemMinusliterallanguage3_failLAtfr-BE",
+      "new_traits": []
+    },
+    {
+      "rank": 807,
+      "name": "1val1literallanguageStemMinusliterallanguage3_failLAtfr-FR",
+      "new_traits": []
+    },
+    {
+      "rank": 808,
+      "name": "1val1literallanguageStem_failLAtfr",
+      "new_traits": []
+    },
+    {
+      "rank": 809,
+      "name": "1val1refvsMinusiri3_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 810,
+      "name": "1val1refvsMinusiri3_v1",
+      "new_traits": []
+    },
+    {
+      "rank": 811,
+      "name": "1val1refvsMinusiri3_v2",
+      "new_traits": []
+    },
+    {
+      "rank": 812,
+      "name": "1val1refvsMinusiri3_v3",
+      "new_traits": []
+    },
+    {
+      "rank": 813,
+      "name": "1val1true_ab",
+      "new_traits": []
+    },
+    {
+      "rank": 814,
+      "name": "1val1true_false",
+      "new_traits": []
+    },
+    {
+      "rank": 815,
+      "name": "1val1true_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 816,
+      "name": "1val1vExpr1AND1AND1Ref3_failvc2",
+      "new_traits": []
+    },
+    {
+      "rank": 817,
+      "name": "1val1vExpr1AND1AND1Ref3_failvc3",
+      "new_traits": []
+    },
+    {
+      "rank": 818,
+      "name": "1val1vExpr1AND1AND1Ref3_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 819,
+      "name": "1val1vExpr1AND1OR1Ref3_failvc1vc2vc3",
+      "new_traits": []
+    },
+    {
+      "rank": 820,
+      "name": "1val1vExpr1AND1OR1Ref3_failvc1vc3",
+      "new_traits": []
+    },
+    {
+      "rank": 821,
+      "name": "1val1vExpr1AND1OR1Ref3_failvc2vc3",
+      "new_traits": []
+    },
+    {
+      "rank": 822,
+      "name": "1val1vExpr1AND1OR1Ref3_pass-vc1vc2",
+      "new_traits": []
+    },
+    {
+      "rank": 823,
+      "name": "1val1vExpr1AND1OR1Ref3_pass-vc1vc2vc3",
+      "new_traits": []
+    },
+    {
+      "rank": 824,
+      "name": "1val1vExpr1AND1OR1Ref3_pass-vc1vc3",
+      "new_traits": []
+    },
+    {
+      "rank": 825,
+      "name": "1val1vExpr1OR1AND1Ref3_failvc1vc2",
+      "new_traits": []
+    },
+    {
+      "rank": 826,
+      "name": "1val1vExpr1OR1AND1Ref3_failvc1vc2vc3",
+      "new_traits": []
+    },
+    {
+      "rank": 827,
+      "name": "1val1vExpr1OR1AND1Ref3_failvc1vc3",
+      "new_traits": []
+    },
+    {
+      "rank": 828,
+      "name": "1val1vExpr1OR1AND1Ref3_pass-vc1",
+      "new_traits": []
+    },
+    {
+      "rank": 829,
+      "name": "1val1vExpr1OR1AND1Ref3_pass-vc1vc3",
+      "new_traits": []
+    },
+    {
+      "rank": 830,
+      "name": "1val1vExpr1OR1AND1Ref3_pass-vc2vc3",
+      "new_traits": []
+    },
+    {
+      "rank": 831,
+      "name": "1val1vExpr1OR1OR1Ref3_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 832,
+      "name": "1val1vExpr1OR1OR1Ref3_passvc1",
+      "new_traits": []
+    },
+    {
+      "rank": 833,
+      "name": "1val1vExpr1OR1OR1Ref3_passvc1vc2vc3",
+      "new_traits": []
+    },
+    {
+      "rank": 834,
+      "name": "1val1vExpr1OR1OR1Ref3_passvc2",
+      "new_traits": []
+    },
+    {
+      "rank": 835,
+      "name": "1val1vExpr1OR1OR1Ref3_passvc3",
+      "new_traits": []
+    },
+    {
+      "rank": 836,
+      "name": "1val1vExprAND3_failvc1",
+      "new_traits": []
+    },
+    {
+      "rank": 837,
+      "name": "1val1vExprAND3_failvc2",
+      "new_traits": []
+    },
+    {
+      "rank": 838,
+      "name": "1val1vExprAND3_failvc3",
+      "new_traits": []
+    },
+    {
+      "rank": 839,
+      "name": "1val1vExprAND3_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 840,
+      "name": "1val1vExprOR3_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 841,
+      "name": "1val1vExprOR3_passvc1",
+      "new_traits": []
+    },
+    {
+      "rank": 842,
+      "name": "1val1vExprOR3_passvc1vc2vc3",
+      "new_traits": []
+    },
+    {
+      "rank": 843,
+      "name": "1val1vExprOR3_passvc2",
+      "new_traits": []
+    },
+    {
+      "rank": 844,
+      "name": "1val1vExprOR3_passvc3",
+      "new_traits": []
+    },
+    {
+      "rank": 845,
+      "name": "1val1vExprRefAND3_failvc1",
+      "new_traits": []
+    },
+    {
+      "rank": 846,
+      "name": "1val1vExprRefAND3_failvc2",
+      "new_traits": []
+    },
+    {
+      "rank": 847,
+      "name": "1val1vExprRefAND3_failvc3",
+      "new_traits": []
+    },
+    {
+      "rank": 848,
+      "name": "1val1vExprRefAND3_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 849,
+      "name": "1val1vExprRefIRIREF1_fail-lit-short",
+      "new_traits": []
+    },
+    {
+      "rank": 850,
+      "name": "1val1vExprRefIRIREF1_pass-lit-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 851,
+      "name": "1val1vExprRefOR3_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 852,
+      "name": "1val1vExprRefOR3_passvc1",
+      "new_traits": []
+    },
+    {
+      "rank": 853,
+      "name": "1val1vExprRefOR3_passvc1vc2vc3",
+      "new_traits": []
+    },
+    {
+      "rank": 854,
+      "name": "1val1vExprRefOR3_passvc2",
+      "new_traits": []
+    },
+    {
+      "rank": 855,
+      "name": "1val1vExprRefOR3_passvc3",
+      "new_traits": []
+    },
+    {
+      "rank": 856,
+      "name": "1val1vExprRefbnode1_fail-lit-short",
+      "new_traits": []
+    },
+    {
+      "rank": 857,
+      "name": "1val1vExprRefbnode1_pass-lit-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 858,
+      "name": "1val2IRIREFExtra1_fail-iri2",
+      "new_traits": []
+    },
+    {
+      "rank": 859,
+      "name": "1val2IRIREFExtra1_pass-iri-bnode",
+      "new_traits": []
+    },
+    {
+      "rank": 860,
+      "name": "1val2IRIREFPlusExtra1_pass-iri2",
+      "new_traits": []
+    },
+    {
+      "rank": 861,
+      "name": "1valExprRef-IV1_fail-lit-short",
+      "new_traits": []
+    },
+    {
+      "rank": 862,
+      "name": "1valExprRef-IV1_pass-lit-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 863,
+      "name": "1valExprRefbnode-IV1_fail-lit-short",
+      "new_traits": []
+    },
+    {
+      "rank": 864,
+      "name": "1valExprRefbnode-IV1_pass-lit-equal",
+      "new_traits": []
+    },
+    {
+      "rank": 865,
+      "name": "2EachInclude1-IS2_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 866,
+      "name": "2EachInclude1-after_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 867,
+      "name": "2EachInclude1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 868,
+      "name": "2Eachdot",
+      "new_traits": []
+    },
+    {
+      "rank": 869,
+      "name": "2OneInclude1-after_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 870,
+      "name": "2OneInclude1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 871,
+      "name": "2RefS1-IS2",
+      "new_traits": []
+    },
+    {
+      "rank": 872,
+      "name": "2RefS1-IS2_fail-p2",
+      "new_traits": []
+    },
+    {
+      "rank": 873,
+      "name": "2RefS1-Icirc",
+      "new_traits": []
+    },
+    {
+      "rank": 874,
+      "name": "2RefS1-Icirc_fail-p2",
+      "new_traits": []
+    },
+    {
+      "rank": 875,
+      "name": "2RefS2-IS1",
+      "new_traits": []
+    },
+    {
+      "rank": 876,
+      "name": "2dot_fail-empty-err",
+      "new_traits": []
+    },
+    {
+      "rank": 877,
+      "name": "3Eachdot3Extra_pass-iri1",
+      "new_traits": []
+    },
+    {
+      "rank": 878,
+      "name": "3Eachdot3Extra_pass-iri2",
+      "new_traits": []
+    },
+    {
+      "rank": 879,
+      "name": "3EachdotExtra3NLex_pass-iri1",
+      "new_traits": []
+    },
+    {
+      "rank": 880,
+      "name": "3EachdotExtra3NLex_pass-iri2",
+      "new_traits": []
+    },
+    {
+      "rank": 881,
+      "name": "3EachdotExtra3_pass-iri1",
+      "new_traits": []
+    },
+    {
+      "rank": 882,
+      "name": "3EachdotExtra3_pass-iri2",
+      "new_traits": []
+    },
+    {
+      "rank": 883,
+      "name": "3circRefPlus1_pass-open",
+      "new_traits": []
+    },
+    {
+      "rank": 884,
+      "name": "3circRefS1-IS2-IS3",
+      "new_traits": []
+    },
+    {
+      "rank": 885,
+      "name": "3circRefS1-IS2-IS3-IS3",
+      "new_traits": []
+    },
+    {
+      "rank": 886,
+      "name": "3circRefS1-IS23",
+      "new_traits": []
+    },
+    {
+      "rank": 887,
+      "name": "3circRefS1-IS23_pass-p1",
+      "new_traits": []
+    },
+    {
+      "rank": 888,
+      "name": "3circRefS1-Icirc",
+      "new_traits": []
+    },
+    {
+      "rank": 889,
+      "name": "3circRefS123",
+      "new_traits": []
+    },
+    {
+      "rank": 890,
+      "name": "3circRefS123-Icirc",
+      "new_traits": []
+    },
+    {
+      "rank": 891,
+      "name": "3circRefS3-IS12",
+      "new_traits": []
+    },
+    {
+      "rank": 892,
+      "name": "AND3G-fail_G1Bpattern",
+      "new_traits": []
+    },
+    {
+      "rank": 893,
+      "name": "AND3G-fail_G2pattern",
+      "new_traits": []
+    },
+    {
+      "rank": 894,
+      "name": "AND3G-pass",
+      "new_traits": []
+    },
+    {
+      "rank": 895,
+      "name": "ANDAbstract-fail_G1pattern",
+      "new_traits": []
+    },
+    {
+      "rank": 896,
+      "name": "ANDAbstract-fail_pattern",
+      "new_traits": []
+    },
+    {
+      "rank": 897,
+      "name": "ANDAbstract-pass",
+      "new_traits": []
+    },
+    {
+      "rank": 898,
+      "name": "Extend3G-t16",
+      "new_traits": []
+    },
+    {
+      "rank": 899,
+      "name": "Extend3G-t17",
+      "new_traits": []
+    },
+    {
+      "rank": 900,
+      "name": "Extend3G-t18",
+      "new_traits": []
+    },
+    {
+      "rank": 901,
+      "name": "Extend3G-t19",
+      "new_traits": []
+    },
+    {
+      "rank": 902,
+      "name": "Extend3G-t20",
+      "new_traits": []
+    },
+    {
+      "rank": 903,
+      "name": "Extend3G-t21",
+      "new_traits": []
+    },
+    {
+      "rank": 904,
+      "name": "ExtendAND3G-fail_EXTG1",
+      "new_traits": []
+    },
+    {
+      "rank": 905,
+      "name": "ExtendAND3G-fail_EXTG1ANDG1",
+      "new_traits": []
+    },
+    {
+      "rank": 906,
+      "name": "ExtendAND3G-fail_EXTG1pattern",
+      "new_traits": []
+    },
+    {
+      "rank": 907,
+      "name": "ExtendAND3G-fail_ExtraP",
+      "new_traits": []
+    },
+    {
+      "rank": 908,
+      "name": "ExtendAND3G-fail_G0",
+      "new_traits": []
+    },
+    {
+      "rank": 909,
+      "name": "ExtendAND3G-fail_G3pattern",
+      "new_traits": []
+    },
+    {
+      "rank": 910,
+      "name": "ExtendAND3G-pass",
+      "new_traits": []
+    },
+    {
+      "rank": 911,
+      "name": "ExtendANDExtend3GAND3G-pass",
+      "new_traits": []
+    },
+    {
+      "rank": 912,
+      "name": "ExtendANDExtend3GAND3G-t23",
+      "new_traits": []
+    },
+    {
+      "rank": 913,
+      "name": "ExtendANDExtend3GAND3G-t24",
+      "new_traits": []
+    },
+    {
+      "rank": 914,
+      "name": "ExtendANDExtend3GAND3G-t25",
+      "new_traits": []
+    },
+    {
+      "rank": 915,
+      "name": "ExtendANDExtend3GAND3G-t26",
+      "new_traits": []
+    },
+    {
+      "rank": 916,
+      "name": "ExtendANDExtend3GAND3G-t27",
+      "new_traits": []
+    },
+    {
+      "rank": 917,
+      "name": "ExtendANDExtend3GAND3G-t28",
+      "new_traits": []
+    },
+    {
+      "rank": 918,
+      "name": "ExtendANDExtend3GAND3G-t29",
+      "new_traits": []
+    },
+    {
+      "rank": 919,
+      "name": "ExtendANDExtend3GAND3G-t30",
+      "new_traits": []
+    },
+    {
+      "rank": 920,
+      "name": "ExtendANDExtend3GAND3G-t31",
+      "new_traits": []
+    },
+    {
+      "rank": 921,
+      "name": "ExtendANDExtend3GAND3G-t32",
+      "new_traits": []
+    },
+    {
+      "rank": 922,
+      "name": "ExtendANDExtend3GAND3G-t33",
+      "new_traits": []
+    },
+    {
+      "rank": 923,
+      "name": "ExtendANDExtend3GAND3G-t34",
+      "new_traits": []
+    },
+    {
+      "rank": 924,
+      "name": "ExtendANDExtend3GAND3G-t35",
+      "new_traits": []
+    },
+    {
+      "rank": 925,
+      "name": "ExtendsRepeatedP-fail_vs",
+      "new_traits": []
+    },
+    {
+      "rank": 926,
+      "name": "ExtendsRepeatedP-pass",
+      "new_traits": []
+    },
+    {
+      "rank": 927,
+      "name": "FocusIRI2EachBnodeNested2EachIRIRef_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 928,
+      "name": "FocusIRI2EachBnodeNested2EachIRIRef_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 929,
+      "name": "NOT1NOTvs_failIv3",
+      "new_traits": []
+    },
+    {
+      "rank": 930,
+      "name": "NOT1NOTvs_passIv1",
+      "new_traits": []
+    },
+    {
+      "rank": 931,
+      "name": "NOT1NOTvs_passIv2",
+      "new_traits": []
+    },
+    {
+      "rank": 932,
+      "name": "NOT1dotOR2dotX3AND1_fail-Shape2",
+      "new_traits": []
+    },
+    {
+      "rank": 933,
+      "name": "NOT1dotOR2dotX3AND1_fail-empty",
+      "new_traits": []
+    },
+    {
+      "rank": 934,
+      "name": "NOT1dotOR2dotX3AND1_pass-Shape2",
+      "new_traits": []
+    },
+    {
+      "rank": 935,
+      "name": "NOT1dotOR2dotX3_fail-Shape2",
+      "new_traits": []
+    },
+    {
+      "rank": 936,
+      "name": "NOT1dotOR2dotX3_pass-NoShape1",
+      "new_traits": []
+    },
+    {
+      "rank": 937,
+      "name": "NOT1dotOR2dotX3_pass-Shape2",
+      "new_traits": []
+    },
+    {
+      "rank": 938,
+      "name": "NOT1dotOR2dotX3_pass-empty",
+      "new_traits": []
+    },
+    {
+      "rank": 939,
+      "name": "NOT1dotOR2dot_fail-Shape2",
+      "new_traits": []
+    },
+    {
+      "rank": 940,
+      "name": "NOT1dotOR2dot_pass-NoShape1",
+      "new_traits": []
+    },
+    {
+      "rank": 941,
+      "name": "NOT1dotOR2dot_pass-Shape2",
+      "new_traits": []
+    },
+    {
+      "rank": 942,
+      "name": "NOT1dotOR2dot_pass-empty",
+      "new_traits": []
+    },
+    {
+      "rank": 943,
+      "name": "P2T2",
+      "new_traits": []
+    },
+    {
+      "rank": 944,
+      "name": "PTstar",
+      "new_traits": []
+    },
+    {
+      "rank": 945,
+      "name": "PTstar-greedy-rewrite",
+      "new_traits": []
+    },
+    {
+      "rank": 946,
+      "name": "PstarT",
+      "new_traits": []
+    },
+    {
+      "rank": 947,
+      "name": "PstarTstar",
+      "new_traits": []
+    },
+    {
+      "rank": 948,
+      "name": "bnode1dot_pass-others_lexicallyEarlier",
+      "new_traits": []
+    },
+    {
+      "rank": 949,
+      "name": "boolean-0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 950,
+      "name": "boolean-10_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 951,
+      "name": "boolean-1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 952,
+      "name": "boolean-2_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 953,
+      "name": "boolean-FALSE_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 954,
+      "name": "boolean-TRUE_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 955,
+      "name": "boolean-empty_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 956,
+      "name": "boolean-fAlSe_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 957,
+      "name": "boolean-false_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 958,
+      "name": "boolean-n1_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 959,
+      "name": "boolean-tRuE_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 960,
+      "name": "boolean-true_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 961,
+      "name": "byte-0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 962,
+      "name": "byte-127_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 963,
+      "name": "byte-128_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 964,
+      "name": "byte-empty_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 965,
+      "name": "byte-n128_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 966,
+      "name": "byte-n129_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 967,
+      "name": "dateTime-dT_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 968,
+      "name": "dateTime-d_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 969,
+      "name": "dateTime-dt_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 970,
+      "name": "dateTime-empty_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 971,
+      "name": "decimal-0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 972,
+      "name": "decimal-1E0_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 973,
+      "name": "decimal-1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 974,
+      "name": "decimal-INF_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 975,
+      "name": "decimal-NaN_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 976,
+      "name": "decimal-empty_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 977,
+      "name": "decimal-n1.0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 978,
+      "name": "decimal-n1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 979,
+      "name": "decimal-p1.0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 980,
+      "name": "decimal-p1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 981,
+      "name": "double-0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 982,
+      "name": "double-1E0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 983,
+      "name": "double-1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 984,
+      "name": "double-1e0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 985,
+      "name": "double-INF_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 986,
+      "name": "double-NaN_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 987,
+      "name": "double-empty_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 988,
+      "name": "double-n1.0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 989,
+      "name": "double-n1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 990,
+      "name": "double-nINF_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 991,
+      "name": "double-p1.0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 992,
+      "name": "double-p1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 993,
+      "name": "double-pINF_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 994,
+      "name": "extends-abstract-multi-empty_fail-Ref1ExtraP",
+      "new_traits": []
+    },
+    {
+      "rank": 995,
+      "name": "extends-abstract-multi-empty_fail-Ref2ExtraP",
+      "new_traits": []
+    },
+    {
+      "rank": 996,
+      "name": "extends-abstract-multi-empty_fail-ReferrerExtraP",
+      "new_traits": []
+    },
+    {
+      "rank": 997,
+      "name": "extends-abstract-multi-empty_fail-missingRef2",
+      "new_traits": []
+    },
+    {
+      "rank": 998,
+      "name": "extends-abstract-multi-empty_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 999,
+      "name": "extends-abstract-multi-empty_pass-missingOptRef1",
+      "new_traits": []
+    },
+    {
+      "rank": 1000,
+      "name": "false-lead-excluding-value-shape",
+      "new_traits": []
+    },
+    {
+      "rank": 1001,
+      "name": "float-0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1002,
+      "name": "float-1E0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1003,
+      "name": "float-1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1004,
+      "name": "float-1elowercase0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1005,
+      "name": "float-INF_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1006,
+      "name": "float-NaN_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1007,
+      "name": "float-empty_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1008,
+      "name": "float-n1.0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1009,
+      "name": "float-n1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1010,
+      "name": "float-nINF_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1011,
+      "name": "float-p1.0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1012,
+      "name": "float-p1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1013,
+      "name": "float-pINF_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1014,
+      "name": "focusNOTRefOR1dot_fail-inNOT",
+      "new_traits": []
+    },
+    {
+      "rank": 1015,
+      "name": "focusNOTRefOR1dot_pass-inOR",
+      "new_traits": []
+    },
+    {
+      "rank": 1016,
+      "name": "focusNOTRefOR1dot_pass-other",
+      "new_traits": []
+    },
+    {
+      "rank": 1017,
+      "name": "focusvs_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1018,
+      "name": "focusvs_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1019,
+      "name": "int-0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1020,
+      "name": "int-1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1021,
+      "name": "int-n1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1022,
+      "name": "int-p1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1023,
+      "name": "integer-0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1024,
+      "name": "integer-1E0_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1025,
+      "name": "integer-1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1026,
+      "name": "integer-INF_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1027,
+      "name": "integer-NaN_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1028,
+      "name": "integer-empty_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1029,
+      "name": "integer-n1.0_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1030,
+      "name": "integer-n1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1031,
+      "name": "integer-p1.0_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1032,
+      "name": "integer-p1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1033,
+      "name": "long-0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1034,
+      "name": "long-1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1035,
+      "name": "long-n1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1036,
+      "name": "long-p1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1037,
+      "name": "nPlus1",
+      "new_traits": []
+    },
+    {
+      "rank": 1038,
+      "name": "nPlus1-greedy-rewrite",
+      "new_traits": []
+    },
+    {
+      "rank": 1039,
+      "name": "negativeInteger-0_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1040,
+      "name": "negativeInteger-1_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1041,
+      "name": "negativeInteger-n0_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1042,
+      "name": "negativeInteger-n1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1043,
+      "name": "negativeInteger-p0_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1044,
+      "name": "nonNegativeInteger-0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1045,
+      "name": "nonNegativeInteger-1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1046,
+      "name": "nonNegativeInteger-n0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1047,
+      "name": "nonNegativeInteger-n1_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1048,
+      "name": "nonNegativeInteger-p0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1049,
+      "name": "nonNegativeInteger-p1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1050,
+      "name": "nonPositiveInteger-0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1051,
+      "name": "nonPositiveInteger-1_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1052,
+      "name": "nonPositiveInteger-1a_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1053,
+      "name": "nonPositiveInteger-a1_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1054,
+      "name": "nonPositiveInteger-n0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1055,
+      "name": "nonPositiveInteger-n1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1056,
+      "name": "nonPositiveInteger-p0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1057,
+      "name": "nonPositiveInteger-p1_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1058,
+      "name": "open1dotOneopen2dotcloseclose_fail_p1p2p3",
+      "new_traits": []
+    },
+    {
+      "rank": 1059,
+      "name": "open1dotOneopen2dotcloseclose_pass_p1",
+      "new_traits": []
+    },
+    {
+      "rank": 1060,
+      "name": "open1dotOneopen2dotcloseclose_pass_p2p3",
+      "new_traits": []
+    },
+    {
+      "rank": 1061,
+      "name": "open2Eachdotclosecard25c1dot",
+      "new_traits": []
+    },
+    {
+      "rank": 1062,
+      "name": "open3EachdotcloseCode1-p1p2p3",
+      "new_traits": []
+    },
+    {
+      "rank": 1063,
+      "name": "open3Eachdotclosecard23_pass-p1p2p3X3",
+      "new_traits": []
+    },
+    {
+      "rank": 1064,
+      "name": "open3Onedotclosecard23_fail-p1X4",
+      "new_traits": []
+    },
+    {
+      "rank": 1065,
+      "name": "open3Onedotclosecard23_pass-p1X2",
+      "new_traits": []
+    },
+    {
+      "rank": 1066,
+      "name": "open3Onedotclosecard23_pass-p1X3",
+      "new_traits": []
+    },
+    {
+      "rank": 1067,
+      "name": "open3Onedotclosecard23_pass-p1p2",
+      "new_traits": []
+    },
+    {
+      "rank": 1068,
+      "name": "open3Onedotclosecard23_pass-p1p2p3",
+      "new_traits": []
+    },
+    {
+      "rank": 1069,
+      "name": "open3Onedotclosecard23_pass-p1p3",
+      "new_traits": []
+    },
+    {
+      "rank": 1070,
+      "name": "open3Onedotclosecard23_pass-p2p3",
+      "new_traits": []
+    },
+    {
+      "rank": 1071,
+      "name": "open3Onedotclosecard2_fail-p1",
+      "new_traits": []
+    },
+    {
+      "rank": 1072,
+      "name": "open3Onedotclosecard2_fail-p1X3",
+      "new_traits": []
+    },
+    {
+      "rank": 1073,
+      "name": "open3Onedotclosecard2_fail-p1X4",
+      "new_traits": []
+    },
+    {
+      "rank": 1074,
+      "name": "open3Onedotclosecard2_fail-p1p2p3",
+      "new_traits": []
+    },
+    {
+      "rank": 1075,
+      "name": "open3Onedotclosecard2_pass-p1X2",
+      "new_traits": []
+    },
+    {
+      "rank": 1076,
+      "name": "open3Onedotclosecard2_pass-p1p2",
+      "new_traits": []
+    },
+    {
+      "rank": 1077,
+      "name": "open3Onedotclosecard2_pass-p1p3",
+      "new_traits": []
+    },
+    {
+      "rank": 1078,
+      "name": "open3Onedotclosecard2_pass-p2p3",
+      "new_traits": []
+    },
+    {
+      "rank": 1079,
+      "name": "open4Onedotclosecard23_fail-p1p2p3p4",
+      "new_traits": []
+    },
+    {
+      "rank": 1080,
+      "name": "openopen1dotOne1dotclose1dotclose_fail_p1",
+      "new_traits": []
+    },
+    {
+      "rank": 1081,
+      "name": "openopen1dotOne1dotclose1dotclose_fail_p1p2",
+      "new_traits": []
+    },
+    {
+      "rank": 1082,
+      "name": "openopen1dotOne1dotclose1dotclose_fail_p3",
+      "new_traits": []
+    },
+    {
+      "rank": 1083,
+      "name": "openopen1dotOne1dotclose1dotclose_pass_p1p3",
+      "new_traits": []
+    },
+    {
+      "rank": 1084,
+      "name": "openopen1dotOne1dotclose1dotclose_pass_p2p3",
+      "new_traits": []
+    },
+    {
+      "rank": 1085,
+      "name": "positiveInteger-0_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1086,
+      "name": "positiveInteger-1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1087,
+      "name": "positiveInteger-n1_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1088,
+      "name": "refBNodeORrefIRI_CyclicIRI_BNode",
+      "new_traits": []
+    },
+    {
+      "rank": 1089,
+      "name": "refBNodeORrefIRI_CyclicIRI_IRI",
+      "new_traits": []
+    },
+    {
+      "rank": 1090,
+      "name": "refBNodeORrefIRI_CyclicIRI_ShortIRI",
+      "new_traits": []
+    },
+    {
+      "rank": 1091,
+      "name": "refBNodeORrefIRI_IntoReflexiveBNode",
+      "new_traits": []
+    },
+    {
+      "rank": 1092,
+      "name": "refBNodeORrefIRI_IntoReflexiveIRI",
+      "new_traits": []
+    },
+    {
+      "rank": 1093,
+      "name": "refBNodeORrefIRI_ReflexiveIRI",
+      "new_traits": []
+    },
+    {
+      "rank": 1094,
+      "name": "refBNodeORrefIRI_ReflexiveShortIRI",
+      "new_traits": []
+    },
+    {
+      "rank": 1095,
+      "name": "short-0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1096,
+      "name": "short-32767_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1097,
+      "name": "short-32768_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1098,
+      "name": "short-n32768_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1099,
+      "name": "short-n32769_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1100,
+      "name": "skipped",
+      "new_traits": []
+    },
+    {
+      "rank": 1101,
+      "name": "start2RefS2-IstartS1",
+      "new_traits": []
+    },
+    {
+      "rank": 1102,
+      "name": "startCode1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1103,
+      "name": "startCode1fail_abort",
+      "new_traits": []
+    },
+    {
+      "rank": 1104,
+      "name": "startCode1startRef_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1105,
+      "name": "startCode1startReffail_abort",
+      "new_traits": []
+    },
+    {
+      "rank": 1106,
+      "name": "startCode3_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1107,
+      "name": "startCode3fail_abort",
+      "new_traits": []
+    },
+    {
+      "rank": 1108,
+      "name": "startEqualSpaceInline_pass-noOthers",
+      "new_traits": []
+    },
+    {
+      "rank": 1109,
+      "name": "startInline_fail-missing",
+      "new_traits": []
+    },
+    {
+      "rank": 1110,
+      "name": "startInline_pass-noOthers",
+      "new_traits": []
+    },
+    {
+      "rank": 1111,
+      "name": "startNoCode1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1112,
+      "name": "startRefIRIREF_fail-missing",
+      "new_traits": []
+    },
+    {
+      "rank": 1113,
+      "name": "startRefIRIREF_pass-noOthers",
+      "new_traits": []
+    },
+    {
+      "rank": 1114,
+      "name": "startRefIRIREF_pass-others_lexicallyEarlier",
+      "new_traits": []
+    },
+    {
+      "rank": 1115,
+      "name": "startRefbnode_fail-missing",
+      "new_traits": []
+    },
+    {
+      "rank": 1116,
+      "name": "startRefbnode_pass-noOthers",
+      "new_traits": []
+    },
+    {
+      "rank": 1117,
+      "name": "startSpaceEqualInline_pass-noOthers",
+      "new_traits": []
+    },
+    {
+      "rank": 1118,
+      "name": "string-0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1119,
+      "name": "string-a_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1120,
+      "name": "string-empty_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1121,
+      "name": "unsignedByte-0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1122,
+      "name": "unsignedByte-255_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1123,
+      "name": "unsignedByte-256_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1124,
+      "name": "unsignedByte-n1_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1125,
+      "name": "unsignedInt-0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1126,
+      "name": "unsignedInt-1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1127,
+      "name": "unsignedInt-n1_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1128,
+      "name": "unsignedLong-0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1129,
+      "name": "unsignedLong-1_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1130,
+      "name": "unsignedLong-n1_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1131,
+      "name": "unsignedShort-0_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1132,
+      "name": "unsignedShort-65535_pass",
+      "new_traits": []
+    },
+    {
+      "rank": 1133,
+      "name": "unsignedShort-65536_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1134,
+      "name": "unsignedShort-n1_fail",
+      "new_traits": []
+    },
+    {
+      "rank": 1135,
+      "name": "vitals-RESTRICTS-fail_sit-Reclined",
+      "new_traits": []
+    },
+    {
+      "rank": 1136,
+      "name": "vitals-RESTRICTS-fail_sit-ReclinedBP",
+      "new_traits": []
+    },
+    {
+      "rank": 1137,
+      "name": "vitals-RESTRICTS-fail_sit-ReclinedVital",
+      "new_traits": []
+    },
+    {
+      "rank": 1138,
+      "name": "vitals-RESTRICTS-pass_lie-BP",
+      "new_traits": []
+    },
+    {
+      "rank": 1139,
+      "name": "vitals-RESTRICTS-pass_lie-Observation",
+      "new_traits": []
+    },
+    {
+      "rank": 1140,
+      "name": "vitals-RESTRICTS-pass_lie-Posture",
+      "new_traits": []
+    },
+    {
+      "rank": 1141,
+      "name": "vitals-RESTRICTS-pass_lie-PostureBP",
+      "new_traits": []
+    },
+    {
+      "rank": 1142,
+      "name": "vitals-RESTRICTS-pass_lie-PostureVital",
+      "new_traits": []
+    },
+    {
+      "rank": 1143,
+      "name": "vitals-RESTRICTS-pass_lie-Reclined",
+      "new_traits": []
+    },
+    {
+      "rank": 1144,
+      "name": "vitals-RESTRICTS-pass_lie-ReclinedBP",
+      "new_traits": []
+    },
+    {
+      "rank": 1145,
+      "name": "vitals-RESTRICTS-pass_lie-ReclinedVital",
+      "new_traits": []
+    },
+    {
+      "rank": 1146,
+      "name": "vitals-RESTRICTS-pass_lie-Vital",
+      "new_traits": []
+    },
+    {
+      "rank": 1147,
+      "name": "vitals-RESTRICTS-pass_sit-BP",
+      "new_traits": []
+    },
+    {
+      "rank": 1148,
+      "name": "vitals-RESTRICTS-pass_sit-Observation",
+      "new_traits": []
+    },
+    {
+      "rank": 1149,
+      "name": "vitals-RESTRICTS-pass_sit-Posture",
+      "new_traits": []
+    },
+    {
+      "rank": 1150,
+      "name": "vitals-RESTRICTS-pass_sit-PostureBP",
+      "new_traits": []
+    },
+    {
+      "rank": 1151,
+      "name": "vitals-RESTRICTS-pass_sit-PostureVital",
+      "new_traits": []
+    },
+    {
+      "rank": 1152,
+      "name": "vitals-RESTRICTS-pass_sit-Vital",
+      "new_traits": []
+    }
+  ]
+}

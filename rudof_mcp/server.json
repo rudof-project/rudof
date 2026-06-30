@@ -1,0 +1,35 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.rudof-project/rudof_mcp",
+  "title": "rudofMCP",
+  "description": "MCP server for RDF validation (ShEx, SHACL), SPARQL, RDF serialization conversion and visualization.",
+  "websiteUrl": "https://rudof-project.github.io/rudof",
+  "repository": {
+    "url": "https://github.com/rudof-project/rudof",
+    "source": "github",
+    "subfolder": "rudof_mcp"
+  },
+  "version": "0.3.4",
+  "packages": [
+    {
+      "registryType": "cargo",
+      "registryBaseUrl": "https://crates.io",
+      "identifier": "rudof_cli",
+      "version": "0.3.4",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        { "type": "positional", "value": "mcp"}
+      ],
+      "environmentVariables": [
+        {
+          "name": "PLANTUML",
+          "description": "Absolute path to plantuml.jar. Optional; only required by the export_image tool, which uses PlantUML to render RDF graph visualizations as SVG or PNG.",
+          "isRequired": false,
+          "format": "filepath"
+        }
+      ]
+    }
+  ]
+}
