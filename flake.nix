@@ -32,7 +32,7 @@
           ];
         };
         common = import ./nix/common.nix {inherit pkgs inputs system lib rudof_version;};
-        rudof_version = "0.3.4";
+        rudof_version = "0.3.5";
       in {
         packages = import ./nix/packages.nix {inherit common;};
         apps = import ./nix/apps.nix {inherit pkgs;};
