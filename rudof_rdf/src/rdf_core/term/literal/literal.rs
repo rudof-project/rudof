@@ -851,10 +851,18 @@ impl ConcreteLiteral {
 
     /// Parses a decimal from its string representation using `rust_decimal::Decimal`.
     ///
+    /// Explicitly rejects scientific notation (e.g. `1E0`) because the XSD
+    /// `decimal` lexical space forbids it — only `[+-]?[0-9]*(\.[0-9]+)?` is
+    /// valid. Some versions of `rust_decimal` accept E-notation, which would
+    /// silently produce the wrong datatype.
+    ///
     /// # Errors
     ///
     /// Returns an error if the string cannot be parsed as a `Decimal`.
     pub fn parse_decimal(s: &str) -> Result<Decimal, String> {
+        if s.contains('e') || s.contains('E') {
+            return Err(format!("Invalid decimal: unknown character"));
+        }
         s.parse::<Decimal>()
             .map_err(|e| format!("Cannot convert {s} to decimal: {e}"))
     }
