@@ -31,6 +31,17 @@ rudof query -q my.sparql --backend endpoint=wikidata
 rudof node -n :a --backend endpoint=https://my.sparql.server/sparql
 ```
 
+### Shortcut: `--endpoint` / `-e`
+
+Since the endpoint backend is the most frequently used non-default option, every command that accepts `--backend` also accepts a dedicated `--endpoint <URL_OR_NAME>` (short form `-e`) flag. It is exactly equivalent to `--backend endpoint=<URL_OR_NAME>` and accepts the same URL-or-named-endpoint values:
+
+```sh
+rudof query -q my.sparql -e wikidata
+rudof node -n :a --endpoint https://my.sparql.server/sparql
+```
+
+`--endpoint` and `--backend` are mutually exclusive, passing both is rejected at the command line.
+
 ## The `qlever` backend
 
 The `qlever` backend routes data loading through a locally-launched QLever Docker container. QLever builds a compact on-disk index once and then answers SPARQL queries against it, so memory usage on subsequent runs is bounded by QLever's server cache rather than the dataset size. It is well-suited for large, read-heavy workloads.

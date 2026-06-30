@@ -92,7 +92,7 @@ By default, node information is looked up in an in-process `memory` graph. Use `
 
 ```sh
 rudof node -n :a --backend qlever simple.ttl
-rudof node -n :a --backend endpoint=https://my.sparql.server/sparql
+rudof node -n :a --endpoint https://my.sparql.server/sparql
 ```
 
 See the [RDF backend (`--backend`) reference](./backend.md) for full documentation.
