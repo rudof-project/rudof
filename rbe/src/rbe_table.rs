@@ -92,11 +92,11 @@ where
     }
 
     pub fn matches(&self, values: Vec<(K, V, Ctx)>) -> Result<MatchTableIter<K, V, R, Ctx>, RbeError<K, V, R, Ctx>> {
-        tracing::trace!(
+        /*tracing::trace!(
             "Checking if RbeTable {} matches [{}]",
             &self,
             values.iter().map(|(k, v, _ctx)| format!("({k} {v})")).join(", ")
-        );
+        );*/
         let mut pairs_found = 0;
         let mut candidates = Vec::new();
         let cs_empty = IndexSet::new();
@@ -137,11 +137,11 @@ where
         }
 
         if candidates.is_empty() || pairs_found == 0 {
-            tracing::trace!(
+            /*tracing::trace!(
                 "No candidates for rbe: {}, candidates: {:?}, pairs_found: {pairs_found}",
                 self.rbe,
                 candidates,
-            );
+            );*/
             if self.rbe.nullable() {
                 //trace!("Rbe is nullable and no candidates...should be sucessful");
 
@@ -156,11 +156,11 @@ where
                     self,
                     &Values::from(&values),
                 )));
-                tracing::trace!("Result of matches: {:?}", result);
+                //tracing::trace!("Result of matches: {:?}", result);
                 result
             }
         } else {
-            tracing::trace!(
+            /*tracing::trace!(
                 "Some candidates found for rbe: {}\nCandidates:\n{}",
                 self.rbe,
                 candidates
@@ -168,7 +168,7 @@ where
                     .enumerate()
                     .map(|(i, c)| format!("[Candidate {i}: {}]", show_candidate(c)))
                     .join("\n")
-            );
+            );*/
             let mp = candidates.into_iter().multi_cartesian_product();
             Ok(MatchTableIter::NonEmpty(IterCartesianProduct {
                 is_first: true,
@@ -360,18 +360,18 @@ where
                 for (k, v, ctx, _, cond) in &vs {
                     match cond.matches(v, ctx) {
                         Ok(mut new_pending) => {
-                            tracing::trace!(
+                            /*tracing::trace!(
                                 "Condition {} matches value {}, pending: {} for key {}",
                                 cond,
                                 v,
                                 pending,
                                 k
-                            );
+                            );*/
                             new_pending.annotate_key(k);
                             pending.merge(new_pending);
                         },
                         Err(err) => {
-                            tracing::trace!("Failed condition: {cond} with value: {v} and key {k}, error: {err}");
+                            //tracing::trace!("Failed condition: {cond} with value: {v} and key {k}, error: {err}");
                             return Some(Err(err));
                         },
                     }
@@ -379,12 +379,12 @@ where
                 let bag = Bag::from_iter(vs.into_iter().map(|(_, _, _, c, _)| c));
                 match self.rbe.match_bag_interval(&bag, self.open) {
                     Ok(()) => {
-                        tracing::trace!("### Rbe {} matches bag {}", self.rbe, bag);
+                        //tracing::trace!("### Rbe {} matches bag {}", self.rbe, bag);
                         self.is_first = false;
                         Some(Ok(pending))
                     },
                     Err(err) => {
-                        tracing::trace!("### Rbe {} does not match bag {}, error: {err}", self.rbe, bag);
+                        //tracing::trace!("### Rbe {} does not match bag {}, error: {err}", self.rbe, bag);
                         //trace!("### Skipped error: {err}!\n");
                         self.next()
                     },
