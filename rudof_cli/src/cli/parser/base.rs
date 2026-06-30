@@ -177,7 +177,7 @@ pub struct CommonArgsAll {
         long = "endpoint",
         value_name = "URL_OR_NAME",
         help = "SPARQL endpoint URL or named endpoint (shortcut for --backend endpoint=…)",
-        conflicts_with = "backend",
+        conflicts_with = "backend"
     )]
     pub endpoint: Option<String>,
 }
