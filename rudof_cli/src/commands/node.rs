@@ -31,15 +31,17 @@ impl Command for NodeCommand {
         let reader_mode = self.args.reader_mode.into();
         let show_node_mode = self.args.show_node_mode.into();
 
-        let backend = resolve_backend(self.args.common.backend.as_ref());
+        let backend = resolve_backend(&self.args.common);
 
         let mut loading = ctx
             .rudof
             .load_data()
-            .with_data(&self.args.data)
             .with_data_format(&data_format)
             .with_reader_mode(&reader_mode)
             .with_backend(backend);
+        if !self.args.data.is_empty() {
+            loading = loading.with_data(&self.args.data);
+        }
         if let Some(base) = self.args.base.as_deref() {
             loading = loading.with_base(base);
         }

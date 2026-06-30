@@ -57,7 +57,7 @@ impl Command for ShexValidateCommand {
             .as_ref()
             .ok_or_else(|| anyhow!("--schema is required for shex-validate"))?;
 
-        let backend = resolve_backend(self.args.common.backend.as_ref());
+        let backend = resolve_backend(&self.args.common);
 
         let mut loading = ctx
             .rudof

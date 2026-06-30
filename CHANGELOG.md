@@ -7,6 +7,12 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.3.5
+### Added
+- #706: add emacs bindings
+### Fixed
+- #708: allow node command with endpoint backend and no data input, and add --endpoint/-e shortcut for endpoint backend
+
 ## v0.3.4
 ### Added
 - #533: Add rudof MCP server to Model Context Protocol registry
