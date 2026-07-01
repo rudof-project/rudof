@@ -40,7 +40,37 @@ type NegAtom = (Node, ShapeLabelIdx);
 type PosAtom = (Node, ShapeLabelIdx);
 type Neighs = (Vec<(Pred, Node)>, Vec<Pred>);
 type ValidationResult = Either<Vec<ValidatorError>, Vec<Reason>>;
-type Typing = HashSet<(Node, ShapeLabelIdx)>;
+/// Tracks which `(Node, ShapeLabelIdx)` pairs have already been proved (`passed`),
+/// and, for pairs whose proof was attempted and failed, the errors that caused
+/// the failure. This lets callers that consume a failed pending reference (e.g.
+/// `FailedPending`) explain *why* the reference failed, not just that it did.
+#[derive(Debug, Clone, Default)]
+pub(crate) struct RefTyping {
+    passed: HashSet<(Node, ShapeLabelIdx)>,
+    errors: HashMap<(Node, ShapeLabelIdx), Vec<ValidatorError>>,
+}
+
+impl RefTyping {
+    fn new() -> Self {
+        RefTyping::default()
+    }
+
+    fn contains(&self, pair: &(Node, ShapeLabelIdx)) -> bool {
+        self.passed.contains(pair)
+    }
+
+    fn insert_passed(&mut self, node: Node, idx: ShapeLabelIdx) {
+        self.passed.insert((node, idx));
+    }
+
+    fn insert_failed(&mut self, node: Node, idx: ShapeLabelIdx, errors: Vec<ValidatorError>) {
+        self.errors.entry((node, idx)).or_default().extend(errors);
+    }
+
+    fn errors_for(&self, pair: &(Node, ShapeLabelIdx)) -> Vec<ValidatorError> {
+        self.errors.get(pair).cloned().unwrap_or_default()
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Engine {
@@ -282,29 +312,30 @@ impl Engine {
         hyp.push((node.clone(), *label));
         let hyp_as_set: HashSet<(Node, ShapeLabelIdx)> =
             hyp.iter().map(|(n, l)| (n.clone(), *l)).collect::<HashSet<_>>();
-        let mut matched = HashSet::new();
+        let mut typing = RefTyping::new();
         let candidates = self.dep(node, label, schema, rdf)?;
         let cleaned_candidates: HashSet<_> = candidates.difference(&hyp_as_set).cloned().collect();
         for (n1, l1) in cleaned_candidates {
-            // TODO: Change structure to collect errors and reasons instead of using a HashSet
             match self.prove(&n1, &l1, hyp, schema, rdf)? {
                 Either::Right(_reasons) => {
                     /*debug!(
                         "Proved {n1}@{l1} while proving {node}@{label}: {}",
                         rs.iter().map(|r| format!("{r}")).join(", ")
                     );*/
-                    matched.insert((n1.clone(), l1));
+                    typing.insert_passed(n1.clone(), l1);
                 },
-                Either::Left(_errors) => {
+                Either::Left(errors) => {
                     /*debug!(
                         "Failed to prove {n1}@{l1} while proving {node}@{label}: {}",
                         errors.iter().map(|e| format!("{e}")).join(", ")
                     );*/
-                    // Should we collect errors here?
+                    typing.insert_failed(n1.clone(), l1, errors);
                 },
             }
         }
-        let mut typing: HashSet<_> = matched.union(&hyp_as_set).cloned().collect();
+        for (n, l) in hyp_as_set.iter() {
+            typing.insert_passed(n.clone(), *l);
+        }
         let result = self.check_node_idx(node, label, schema, rdf, &mut typing, hyp)?;
         hyp.pop();
         /*debug!(
@@ -327,7 +358,7 @@ impl Engine {
         idx: &ShapeLabelIdx,
         schema: &SchemaIR,
         rdf: &R,
-        typing: &mut HashSet<(Node, ShapeLabelIdx)>,
+        typing: &mut RefTyping,
         hyp: &mut Vec<(Node, ShapeLabelIdx)>,
     ) -> Result<ValidationResult>
     where
@@ -451,7 +482,7 @@ impl Engine {
         se: &ShapeExpr,
         schema: &SchemaIR,
         rdf: &R,
-        typing: &mut HashSet<(Node, ShapeLabelIdx)>,
+        typing: &mut RefTyping,
     ) -> Result<ValidationResult>
     where
         R: NeighsRDF + QueryRDF,
@@ -596,7 +627,7 @@ impl Engine {
         &self,
         node: &Node,
         idx: &ShapeLabelIdx,
-        typing: &mut HashSet<(Node, ShapeLabelIdx)>,
+        typing: &mut RefTyping,
     ) -> Result<ValidationResult> {
         /*debug!("Checking node {node} with shape ref {idx}"); */
 
@@ -621,7 +652,7 @@ impl Engine {
         shape: &Shape,
         _schema: &SchemaIR,
         rdf: &R,
-        typing: &mut Typing,
+        typing: &mut RefTyping,
     ) -> Result<ValidationResult>
     where
         R: QueryRDF + NeighsRDF,
@@ -664,7 +695,7 @@ impl Engine {
         shape: &Shape,
         schema: &SchemaIR,
         rdf: &R,
-        typing: &mut HashSet<(Node, ShapeLabelIdx)>,
+        typing: &mut RefTyping,
     ) -> Result<ValidationResult>
     where
         R: NeighsRDF + QueryRDF,
@@ -913,7 +944,7 @@ impl Engine {
         shape: &Shape,
         schema: &SchemaIR,
         rdf: &R,
-        typing: &mut HashSet<(Node, ShapeLabelIdx)>,
+        typing: &mut RefTyping,
     ) -> Result<ValidationResult>
     where
         R: QueryRDF + NeighsRDF,
@@ -1304,7 +1335,7 @@ fn check_exprs_neigh(
     node: &Node,
     shape: &Shape,
     idx: &ShapeLabelIdx,
-    typing: &Typing,
+    typing: &RefTyping,
 ) -> Result<ValidationResult> {
     for rbe in exprs.iter() {
         let result = check_expr_neigh(rbe, neighs, node, shape, idx, typing)?;
@@ -1330,7 +1361,7 @@ fn check_expr_neigh(
     node: &Node,
     shape: &Shape,
     idx: &ShapeLabelIdx,
-    typing: &Typing,
+    typing: &RefTyping,
 ) -> Result<ValidationResult> {
     /*trace!(
         "Checking expr {} with neighs: [{}]",
@@ -1375,7 +1406,12 @@ fn check_expr_neigh(
                                 *idx,
                                 ks.iter().map(|k| k.to_string()).join(", ")
                             );*/
-                            failed_pending.push((n.clone(), *idx, ks.iter().cloned().collect::<Vec<_>>()))
+                            failed_pending.push((
+                                n.clone(),
+                                *idx,
+                                ks.iter().cloned().collect::<Vec<_>>(),
+                                typing.errors_for(&pair),
+                            ))
                             // TODO: if (stop_at_first) break
                             // We don't need to compute all the failed pending values once we find the first pair
                         }

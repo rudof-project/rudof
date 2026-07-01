@@ -114,9 +114,9 @@ pub enum ValidatorError {
     #[error("Serialization of error failed: {source_error} with error: {error}")]
     ErrorSerializationError { source_error: String, error: String },
 
-    #[error("References failed: Shape pattern matches, but references failed: {}", failed_pending.iter().map(|(n, s, ks)| format!("({n}, {s}, preds: [{:?}])", ks.iter().map(|k| k.to_string()).collect::<Vec<_>>().join(", "))).collect::<Vec<_>>().join(", "))]
+    #[error("References failed: Shape pattern matches, but references failed: {}", failed_pending.iter().map(|(n, s, ks, _errs)| format!("({n}, {s}, preds: [{:?}])", ks.iter().map(|k| k.to_string()).collect::<Vec<_>>().join(", "))).collect::<Vec<_>>().join(", "))]
     FailedPending {
-        failed_pending: Vec<(Node, ShapeLabelIdx, Vec<Pred>)>,
+        failed_pending: Vec<(Node, ShapeLabelIdx, Vec<Pred>, Vec<ValidatorError>)>,
     },
     #[error("Negation cycle error: {neg_cycles:?}")]
     NegCycleError {
@@ -272,7 +272,6 @@ impl ValidatorError {
         width: usize,
     ) -> Result<String, PrefixMapError> {
         let show_node = |n: &Node| n.show_qualified(nodes_prefixmap);
-        let show_pred = |p: &IriS| nodes_prefixmap.qualify(p);
         let show_idx = |idx: &ShapeLabelIdx| Self::show_idx(idx, schema);
 
         let s = match self {
@@ -345,23 +344,7 @@ impl ValidatorError {
                     show_node(node)
                 )
             },
-            ValidatorError::FailedPending { failed_pending } => {
-                let items: Vec<String> = failed_pending
-                    .iter()
-                    .map(|(n, s, ks)| {
-                        let keys = match ks.len() {
-                            0 => String::new(),
-                            1 => format!("Predicate {}", show_pred(ks[0].iri())),
-                            _ => format!(
-                                "Predicates {}",
-                                ks.iter().map(|k| show_pred(k.iri())).collect::<Vec<_>>().join(", ")
-                            ),
-                        };
-                        format!("{} -> {} as {}", keys, show_node(n), show_idx(s))
-                    })
-                    .collect();
-                format!("References failed: {}", items.join(", "))
-            },
+            ValidatorError::FailedPending { .. } => "References failed:".to_string(),
             _ => format!("{self}"),
         };
         Ok(s)
@@ -411,6 +394,35 @@ impl ValidatorError {
                 }
                 Ok(())
             },
+            ValidatorError::FailedPending { failed_pending } => {
+                let show_pred = |p: &IriS| nodes_prefixmap.qualify(p);
+                for (n, s, ks, errs) in failed_pending {
+                    let keys = match ks.len() {
+                        0 => String::new(),
+                        1 => format!("Predicate {}", show_pred(ks[0].iri())),
+                        _ => format!(
+                            "Predicates {}",
+                            ks.iter().map(|k| show_pred(k.iri())).collect::<Vec<_>>().join(", ")
+                        ),
+                    };
+                    let ref_root = format!(
+                        "{} -> {} as {}",
+                        keys,
+                        n.show_qualified(nodes_prefixmap),
+                        Self::show_idx(s, schema)
+                    );
+                    let mut ref_tree = Tree::new(ref_root);
+                    add_errors_to_tree(
+                        &mut ref_tree,
+                        &ValidatorErrors::new(errs.clone()),
+                        nodes_prefixmap,
+                        schema,
+                        width,
+                    )?;
+                    tree.leaves.push(ref_tree);
+                }
+                Ok(())
+            },
             ValidatorError::ShapeExtendsNoMainShape { .. }
             | ValidatorError::ParentShapeNodeConstraintFailed { .. }
             | ValidatorError::ShapeFailedNoPartitions { .. }
@@ -420,7 +432,6 @@ impl ValidatorError {
             | ValidatorError::TermToRDFNodeFailed { .. }
             | ValidatorError::ReasonSerializationError { .. }
             | ValidatorError::ErrorSerializationError { .. }
-            | ValidatorError::FailedPending { .. }
             | ValidatorError::NegCycleError { .. }
             | ValidatorError::SRDFError { .. }
             | ValidatorError::NotFoundShapeLabel { .. }
