@@ -180,7 +180,7 @@ mod imp {
 
     fn manifest_dir() -> PathBuf {
         Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../shex_testsuite/shexTest/validation")
+            .join("../../shex_testsuite/shexTest/validation")
             .canonicalize()
             .expect("shexTest submodule not checked out -- run `git submodule update --init shex_testsuite/shexTest`")
     }

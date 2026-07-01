@@ -1,18 +1,17 @@
 [workspace]
 resolver = "2"
 members = [
+    "bindings/*",
     "dctap",
     "rudof_iri",
     "mie",
     "pgschema",
     "prefixmap",
-    "python",
     "rbe",
     "rbe_testsuite",
     "rdf_config",
     "rudof_rdf",
     "rudof_cli",
-    "rudof_emacs",
     "rudof_lib",
     "rudof_mcp",
     "rudof_generate",
@@ -299,7 +298,7 @@ petgraph = { version = "0.8" }
 prefixmap = { version = "0.3.5", path = "./prefixmap" }
 pretty = { version = "0.12" }
 proptest = { version = "1.11.0", default-features = false, features = ["std", "bit-set"] }
-pyrudof = { version = "0.3.5", path = "./python" }
+pyrudof = { version = "0.3.5", path = "./bindings/python" }
 rand = "0.8"
 rayon = "1.7"
 rbe = { version = "0.3.5", path = "./rbe" }

@@ -84,12 +84,12 @@ Each generated test:
 
 ## Testing
 
-All test commands are run from `python/tests`.
+All test commands are run from `bindings/python/tests`.
 
 ### Run the full suite
 
 ```sh
-cd python/tests
+cd bindings/python/tests
 python -m unittest discover -vvv
 ```
 
@@ -144,10 +144,10 @@ The examples system is intentionally centralized:
 
 ### Add a new example
 
-1. Create a runnable script under `python/examples/` (recommended: place it inside a category subfolder, for example `python/examples/shex/my_example.py`).
-2. Register it in `python/examples/examples.toml`.
-3. Run tests from `python/tests`.
-4. Regenerate and check docs in `python/docs`.
+1. Create a runnable script under `bindings/python/examples/` (recommended: place it inside a category subfolder, for example `bindings/python/examples/shex/my_example.py`).
+2. Register it in `bindings/python/examples/examples.toml`.
+3. Run tests from `bindings/python/tests`.
+4. Regenerate and check docs in `bindings/python/docs`.
 
 Manifest template:
 
@@ -166,10 +166,10 @@ expected_output = ["Alice"]       # optional substrings (can be empty list)
 ### Build docs locally
 
 ```sh
-cd python/docs
+cd bindings/python/docs
 python generate_examples_doc.py --update
 python generate_examples_doc.py --check
 python -m sphinx -b html . _build/html
 ```
 
-Then open `python/docs/_build/html/index.html`.
+Then open `bindings/python/docs/_build/html/index.html`.

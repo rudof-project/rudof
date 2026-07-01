@@ -2,7 +2,7 @@
 """
 Generate examples.rst from examples.toml + .py source files.
 
-The examples.toml manifest and the .py files in python/examples/ are the
+The examples.toml manifest and the .py files in bindings/python/examples/ are the
 single source of truth.  This script reads both (via examples_registry) and
 produces structured RST documentation.
 
@@ -27,7 +27,7 @@ from examples_registry import (
     get_category_info,
 )
 
-GITHUB_BASE = "https://github.com/rudof-project/rudof/blob/master/python/examples"
+GITHUB_BASE = "https://github.com/rudof-project/rudof/blob/master/bindings/python/examples"
 
 
 # ---------------------------------------------------------------------------

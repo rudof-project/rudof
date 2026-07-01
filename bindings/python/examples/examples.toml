@@ -1,7 +1,7 @@
 # Examples manifest for pyrudof documentation and testing.
 #
 # This file is the single source of truth for documented examples.
-# Both python/docs/generate_examples_doc.py and python/tests/test_examples.py
+# Both bindings/python/docs/generate_examples_doc.py and bindings/python/tests/test_examples.py
 # read from this file.
 
 [categories.rdf]
