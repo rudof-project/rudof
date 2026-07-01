@@ -17,7 +17,7 @@ RDF Read and Serialize
 
 Read RDF data, merge extra triples, and serialize
 
-**Source**: `rdf_data/rdf_data.py <https://github.com/rudof-project/rudof/blob/master/python/examples/rdf_data/rdf_data.py>`_
+**Source**: `rdf_data/rdf_data.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/rdf_data/rdf_data.py>`_
 
 **Python Code:**
 
@@ -37,7 +37,7 @@ Read RDF data, merge extra triples, and serialize
 
 **Referenced Files:**
 
-- **Data**: `person.ttl <https://github.com/rudof-project/rudof/blob/master/python/examples/person.ttl>`_
+- **Data**: `person.ttl <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/person.ttl>`_
 
 
 Node Info
@@ -45,7 +45,7 @@ Node Info
 
 Inspect node neighborhood information in loaded RDF data
 
-**Source**: `rdf_data/node_info.py <https://github.com/rudof-project/rudof/blob/master/python/examples/rdf_data/node_info.py>`_
+**Source**: `rdf_data/node_info.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/rdf_data/node_info.py>`_
 
 **Python Code:**
 
@@ -60,7 +60,7 @@ Inspect node neighborhood information in loaded RDF data
 
 **Referenced Files:**
 
-- **Data**: `person.ttl <https://github.com/rudof-project/rudof/blob/master/python/examples/person.ttl>`_
+- **Data**: `person.ttl <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/person.ttl>`_
 
 
 List Endpoints
@@ -68,7 +68,7 @@ List Endpoints
 
 List known SPARQL endpoints
 
-**Source**: `rdf_data/list_endpoints.py <https://github.com/rudof-project/rudof/blob/master/python/examples/rdf_data/list_endpoints.py>`_
+**Source**: `rdf_data/list_endpoints.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/rdf_data/list_endpoints.py>`_
 
 **Python Code:**
 
@@ -92,7 +92,7 @@ SPARQL SELECT Inline
 
 Run an inline SPARQL SELECT query against loaded RDF data
 
-**Source**: `sparql/sparql_select_inline.py <https://github.com/rudof-project/rudof/blob/master/python/examples/sparql/sparql_select_inline.py>`_
+**Source**: `sparql/sparql_select_inline.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/sparql/sparql_select_inline.py>`_
 
 **Python Code:**
 
@@ -118,7 +118,7 @@ Run an inline SPARQL SELECT query against loaded RDF data
 
 **Referenced Files:**
 
-- **Data**: `person.ttl <https://github.com/rudof-project/rudof/blob/master/python/examples/person.ttl>`_
+- **Data**: `person.ttl <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/person.ttl>`_
 
 
 SPARQL SELECT File
@@ -126,7 +126,7 @@ SPARQL SELECT File
 
 Load SPARQL query from file and run it
 
-**Source**: `sparql/sparql_select_file.py <https://github.com/rudof-project/rudof/blob/master/python/examples/sparql/sparql_select_file.py>`_
+**Source**: `sparql/sparql_select_file.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/sparql/sparql_select_file.py>`_
 
 **Python Code:**
 
@@ -142,8 +142,8 @@ Load SPARQL query from file and run it
 
 **Referenced Files:**
 
-- **Data**: `person.ttl <https://github.com/rudof-project/rudof/blob/master/python/examples/person.ttl>`_
-- **Query**: `person.sparql <https://github.com/rudof-project/rudof/blob/master/python/examples/person.sparql>`_
+- **Data**: `person.ttl <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/person.ttl>`_
+- **Query**: `person.sparql <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/person.sparql>`_
 
 
 SPARQL CONSTRUCT
@@ -151,7 +151,7 @@ SPARQL CONSTRUCT
 
 Run a CONSTRUCT query and serialize graph results
 
-**Source**: `sparql/sparql_construct.py <https://github.com/rudof-project/rudof/blob/master/python/examples/sparql/sparql_construct.py>`_
+**Source**: `sparql/sparql_construct.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/sparql/sparql_construct.py>`_
 
 **Python Code:**
 
@@ -179,7 +179,7 @@ Run a CONSTRUCT query and serialize graph results
 
 **Referenced Files:**
 
-- **Data**: `person.ttl <https://github.com/rudof-project/rudof/blob/master/python/examples/person.ttl>`_
+- **Data**: `person.ttl <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/person.ttl>`_
 
 
 SPARQL SELECT Internal
@@ -187,7 +187,7 @@ SPARQL SELECT Internal
 
 Run a SELECT query and serialize results using the default internal format
 
-**Source**: `sparql/sparql_ask.py <https://github.com/rudof-project/rudof/blob/master/python/examples/sparql/sparql_ask.py>`_
+**Source**: `sparql/sparql_ask.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/sparql/sparql_ask.py>`_
 
 **Python Code:**
 
@@ -213,7 +213,7 @@ Run a SELECT query and serialize results using the default internal format
 
 **Referenced Files:**
 
-- **Data**: `person.ttl <https://github.com/rudof-project/rudof/blob/master/python/examples/person.ttl>`_
+- **Data**: `person.ttl <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/person.ttl>`_
 
 
 ShEx Validation
@@ -227,7 +227,7 @@ ShEx Validate Inline
 
 Validate inline RDF data against an inline ShEx schema and ShapeMap
 
-**Source**: `shex/shex_validate_inline.py <https://github.com/rudof-project/rudof/blob/master/python/examples/shex/shex_validate_inline.py>`_
+**Source**: `shex/shex_validate_inline.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/shex/shex_validate_inline.py>`_
 
 **Python Code:**
 
@@ -265,7 +265,7 @@ ShEx Validate Files
 
 Validate RDF data from files against a ShEx schema and ShapeMap
 
-**Source**: `shex/shex_validate_file.py <https://github.com/rudof-project/rudof/blob/master/python/examples/shex/shex_validate_file.py>`_
+**Source**: `shex/shex_validate_file.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/shex/shex_validate_file.py>`_
 
 **Python Code:**
 
@@ -283,9 +283,9 @@ Validate RDF data from files against a ShEx schema and ShapeMap
 
 **Referenced Files:**
 
-- **Schema**: `person.shex <https://github.com/rudof-project/rudof/blob/master/python/examples/person.shex>`_
-- **Data**: `person.ttl <https://github.com/rudof-project/rudof/blob/master/python/examples/person.ttl>`_
-- **Shapemap**: `person.sm <https://github.com/rudof-project/rudof/blob/master/python/examples/person.sm>`_
+- **Schema**: `person.shex <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/person.shex>`_
+- **Data**: `person.ttl <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/person.ttl>`_
+- **Shapemap**: `person.sm <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/person.sm>`_
 
 
 ShEx Serialize
@@ -293,7 +293,7 @@ ShEx Serialize
 
 Serialize the currently loaded ShEx schema
 
-**Source**: `shex/shex_serialize.py <https://github.com/rudof-project/rudof/blob/master/python/examples/shex/shex_serialize.py>`_
+**Source**: `shex/shex_serialize.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/shex/shex_serialize.py>`_
 
 **Python Code:**
 
@@ -308,7 +308,7 @@ Serialize the currently loaded ShEx schema
 
 **Referenced Files:**
 
-- **Schema**: `person.shex <https://github.com/rudof-project/rudof/blob/master/python/examples/person.shex>`_
+- **Schema**: `person.shex <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/person.shex>`_
 
 
 ShapeMap Roundtrip
@@ -316,7 +316,7 @@ ShapeMap Roundtrip
 
 Load and serialize a ShapeMap
 
-**Source**: `shex/shapemap_roundtrip.py <https://github.com/rudof-project/rudof/blob/master/python/examples/shex/shapemap_roundtrip.py>`_
+**Source**: `shex/shapemap_roundtrip.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/shex/shapemap_roundtrip.py>`_
 
 **Python Code:**
 
@@ -332,7 +332,7 @@ Load and serialize a ShapeMap
 
 **Referenced Files:**
 
-- **Shapemap**: `person.sm <https://github.com/rudof-project/rudof/blob/master/python/examples/person.sm>`_
+- **Shapemap**: `person.sm <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/person.sm>`_
 
 
 Compare Schemas
@@ -340,7 +340,7 @@ Compare Schemas
 
 Compare two ShEx schemas and print comparison output size
 
-**Source**: `shex/compare_schemas.py <https://github.com/rudof-project/rudof/blob/master/python/examples/shex/compare_schemas.py>`_
+**Source**: `shex/compare_schemas.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/shex/compare_schemas.py>`_
 
 **Python Code:**
 
@@ -384,104 +384,6 @@ Compare two ShEx schemas and print comparison output size
     )
 
 
-Materialize
------------
-
-Examples for materializing RDF graphs from ShEx schemas with Map semantic actions.
-
-The ``materialize`` operation produces an RDF graph by combining a ShEx schema
-(which describes the graph structure via Map semantic actions) with a MapState
-(a JSON file that maps each Map-extension IRI key to its concrete RDF node value).
-
-
-Materialize Inline
-^^^^^^^^^^^^^^^^^^
-
-Materialize an RDF graph from an inline ShEx schema and a MapState built in Python
-
-**Source**: `materialize/materialize_inline.py <https://github.com/rudof-project/rudof/blob/master/python/examples/materialize/materialize_inline.py>`_
-
-**Python Code:**
-
-.. code-block:: python
-
-    import json
-    import os
-    import tempfile
-
-    from pyrudof import ResultDataFormat, Rudof, RudofConfig, ShExFormat
-
-    rudof = Rudof(RudofConfig())
-
-    schema = json.dumps({
-        "@context": "http://www.w3.org/ns/shex.jsonld",
-        "type": "Schema",
-        "shapes": [{
-            "type": "ShapeDecl",
-            "id": "http://example.org/PersonShape",
-            "shapeExpr": {
-                "type": "Shape",
-                "expression": {
-                    "type": "TripleConstraint",
-                    "predicate": "http://example.org/name",
-                    "semActs": [{
-                        "type": "SemAct",
-                        "name": "http://shex.io/extensions/Map/",
-                        "code": "<http://example.org/name>"
-                    }]
-                }
-            }
-        }]
-    })
-
-    map_state = {
-        "http://example.org/name": {"Iri": "http://example.org/Alice"}
-    }
-
-    rudof.read_shex(schema, ShExFormat.ShExJ)
-
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
-        json.dump(map_state, tmp)
-        map_state_path = tmp.name
-
-    try:
-        rudof.read_map_state(map_state_path)
-        result = rudof.materialize(ResultDataFormat.NTriples)
-        print(result)
-    finally:
-        os.unlink(map_state_path)
-
-
-Materialize from Files
-^^^^^^^^^^^^^^^^^^^^^^
-
-Load a ShExJ schema and a MapState file, then materialize with an explicit root subject IRI
-
-**Source**: `materialize/materialize_file.py <https://github.com/rudof-project/rudof/blob/master/python/examples/materialize/materialize_file.py>`_
-
-**Python Code:**
-
-.. code-block:: python
-
-    from pyrudof import ResultDataFormat, Rudof, RudofConfig, ShExFormat
-
-    rudof = Rudof(RudofConfig())
-
-    rudof.read_shex("person_map.shexj", ShExFormat.ShExJ)
-    rudof.read_map_state("person_map_state.json")
-
-    result = rudof.materialize(
-        format=ResultDataFormat.Turtle,
-        node="http://example.org/Alice",
-    )
-    print(result)
-
-**Referenced Files:**
-
-- **Schema**: `materialize/person_map.shexj <https://github.com/rudof-project/rudof/blob/master/python/examples/materialize/person_map.shexj>`_
-- **MapState**: `materialize/person_map_state.json <https://github.com/rudof-project/rudof/blob/master/python/examples/materialize/person_map_state.json>`_
-
-
 SHACL Validation
 ----------------
 
@@ -493,7 +395,7 @@ SHACL Validate Inline
 
 Validate inline RDF data with inline SHACL shapes
 
-**Source**: `shacl/shacl_validate_inline.py <https://github.com/rudof-project/rudof/blob/master/python/examples/shacl/shacl_validate_inline.py>`_
+**Source**: `shacl/shacl_validate_inline.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/shacl/shacl_validate_inline.py>`_
 
 **Python Code:**
 
@@ -534,7 +436,7 @@ SHACL Validate Files
 
 Validate RDF data from files against SHACL shapes
 
-**Source**: `shacl/shacl_validate_file.py <https://github.com/rudof-project/rudof/blob/master/python/examples/shacl/shacl_validate_file.py>`_
+**Source**: `shacl/shacl_validate_file.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/shacl/shacl_validate_file.py>`_
 
 **Python Code:**
 
@@ -549,8 +451,8 @@ Validate RDF data from files against SHACL shapes
 
 **Referenced Files:**
 
-- **Schema**: `timbl_shapes.ttl <https://github.com/rudof-project/rudof/blob/master/python/examples/timbl_shapes.ttl>`_
-- **Data**: `timbl.ttl <https://github.com/rudof-project/rudof/blob/master/python/examples/timbl.ttl>`_
+- **Schema**: `timbl_shapes.ttl <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/timbl_shapes.ttl>`_
+- **Data**: `timbl.ttl <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/timbl.ttl>`_
 
 
 SHACL From Data
@@ -558,7 +460,7 @@ SHACL From Data
 
 Extract SHACL shapes from current RDF data and validate
 
-**Source**: `shacl/shacl_from_data.py <https://github.com/rudof-project/rudof/blob/master/python/examples/shacl/shacl_from_data.py>`_
+**Source**: `shacl/shacl_from_data.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/shacl/shacl_from_data.py>`_
 
 **Python Code:**
 
@@ -595,7 +497,7 @@ SHACL Serialize
 
 Serialize the currently loaded SHACL graph
 
-**Source**: `shacl/shacl_serialize.py <https://github.com/rudof-project/rudof/blob/master/python/examples/shacl/shacl_serialize.py>`_
+**Source**: `shacl/shacl_serialize.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/shacl/shacl_serialize.py>`_
 
 **Python Code:**
 
@@ -609,7 +511,7 @@ Serialize the currently loaded SHACL graph
 
 **Referenced Files:**
 
-- **Schema**: `timbl_shapes.ttl <https://github.com/rudof-project/rudof/blob/master/python/examples/timbl_shapes.ttl>`_
+- **Schema**: `timbl_shapes.ttl <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/timbl_shapes.ttl>`_
 
 
 DCTAP
@@ -623,7 +525,7 @@ Read DCTAP
 
 Read DCTAP from inline CSV and from file
 
-**Source**: `dctap/dctap_read.py <https://github.com/rudof-project/rudof/blob/master/python/examples/dctap/dctap_read.py>`_
+**Source**: `dctap/dctap_read.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/dctap/dctap_read.py>`_
 
 **Python Code:**
 
@@ -656,7 +558,7 @@ Service Description
 
 Read and serialize SPARQL service descriptions
 
-**Source**: `endpoint/service_description.py <https://github.com/rudof-project/rudof/blob/master/python/examples/endpoint/service_description.py>`_
+**Source**: `endpoint/service_description.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/endpoint/service_description.py>`_
 
 **Python Code:**
 
@@ -692,7 +594,7 @@ Generator Config Core
 
 Set and read core generator configuration values
 
-**Source**: `generate/generate_config_core.py <https://github.com/rudof-project/rudof/blob/master/python/examples/generate/generate_config_core.py>`_
+**Source**: `generate/generate_config_core.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/generate/generate_config_core.py>`_
 
 **Python Code:**
 
@@ -714,7 +616,7 @@ Generator Config Parallel
 
 Configure and read parallel generation settings
 
-**Source**: `generate/generate_config_parallel.py <https://github.com/rudof-project/rudof/blob/master/python/examples/generate/generate_config_parallel.py>`_
+**Source**: `generate/generate_config_parallel.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/generate/generate_config_parallel.py>`_
 
 **Python Code:**
 
@@ -739,7 +641,7 @@ Generator Config Quality
 
 Configure locale, quality and distribution settings
 
-**Source**: `generate/generate_config_quality.py <https://github.com/rudof-project/rudof/blob/master/python/examples/generate/generate_config_quality.py>`_
+**Source**: `generate/generate_config_quality.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/generate/generate_config_quality.py>`_
 
 **Python Code:**
 
@@ -758,7 +660,7 @@ Generator Config Persistence
 
 Persist GeneratorConfig to TOML and load from TOML/JSON
 
-**Source**: `generate/generate_config_persistence.py <https://github.com/rudof-project/rudof/blob/master/python/examples/generate/generate_config_persistence.py>`_
+**Source**: `generate/generate_config_persistence.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/generate/generate_config_persistence.py>`_
 
 **Python Code:**
 
@@ -826,7 +728,7 @@ DataGenerator Load Methods
 
 Use load_shex_schema, load_shacl_schema, and load_schema_auto
 
-**Source**: `generate/generate_load_methods.py <https://github.com/rudof-project/rudof/blob/master/python/examples/generate/generate_load_methods.py>`_
+**Source**: `generate/generate_load_methods.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/generate/generate_load_methods.py>`_
 
 **Python Code:**
 
@@ -847,7 +749,7 @@ Use load_shex_schema, load_shacl_schema, and load_schema_auto
         config_shex.set_output_format(OutputFormat.Turtle)
         config_shex.set_schema_format(SchemaFormat.ShEx)
         gen_shex = DataGenerator(config_shex)
-        gen_shex.load_shex_schema("../../examples/simple.shex")
+        gen_shex.load_shex_schema("../../../examples/simple.shex")
         gen_shex.generate()
     
         config_shacl = GeneratorConfig()
@@ -856,14 +758,14 @@ Use load_shex_schema, load_shacl_schema, and load_schema_auto
         config_shacl.set_output_format(OutputFormat.Turtle)
         config_shacl.set_schema_format(SchemaFormat.Shacl)
         gen_shacl = DataGenerator(config_shacl)
-        gen_shacl.load_shacl_schema("../../examples/simple_shacl.ttl")
+        gen_shacl.load_shacl_schema("../../../examples/simple_shacl.ttl")
     
         config_auto = GeneratorConfig()
         config_auto.set_entity_count(1)
         config_auto.set_output_path(str(tmp_path / "auto.ttl"))
         config_auto.set_output_format(OutputFormat.Turtle)
         gen_auto = DataGenerator(config_auto)
-        gen_auto.load_schema_auto("../../examples/simple.shex")
+        gen_auto.load_schema_auto("../../../examples/simple.shex")
 
 
 DataGenerator Run Methods
@@ -871,7 +773,7 @@ DataGenerator Run Methods
 
 Use run_with_format and run to execute generation
 
-**Source**: `generate/generate_run_methods.py <https://github.com/rudof-project/rudof/blob/master/python/examples/generate/generate_run_methods.py>`_
+**Source**: `generate/generate_run_methods.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/generate/generate_run_methods.py>`_
 
 **Python Code:**
 
@@ -891,7 +793,7 @@ Use run_with_format and run to execute generation
         config1.set_output_path(str(out_with_format))
         config1.set_output_format(OutputFormat.Turtle)
         generator1 = DataGenerator(config1)
-        generator1.run_with_format("../../examples/simple.shex", SchemaFormat.ShEx)
+        generator1.run_with_format("../../../examples/simple.shex", SchemaFormat.ShEx)
     
         out_auto = tmp_path / "run_auto.ttl"
         config2 = GeneratorConfig()
@@ -899,7 +801,7 @@ Use run_with_format and run to execute generation
         config2.set_output_path(str(out_auto))
         config2.set_output_format(OutputFormat.Turtle)
         generator2 = DataGenerator(config2)
-        generator2.run("../../examples/simple.shex")
+        generator2.run("../../../examples/simple.shex")
 
 
 Utility & Introspection
@@ -913,7 +815,7 @@ RudofConfig From Path
 
 Create RudofConfig from a TOML file and initialize Rudof
 
-**Source**: `utility/rudof_config_from_path.py <https://github.com/rudof-project/rudof/blob/master/python/examples/utility/rudof_config_from_path.py>`_
+**Source**: `utility/rudof_config_from_path.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/utility/rudof_config_from_path.py>`_
 
 **Python Code:**
 
@@ -921,7 +823,7 @@ Create RudofConfig from a TOML file and initialize Rudof
 
     from pyrudof import Rudof, RudofConfig
     
-    config = RudofConfig.from_path("../../rudof_lib/src/default_config.toml")
+    config = RudofConfig.from_path("../../../rudof_lib/src/default_config.toml")
     rudof = Rudof(config)
     
     print("RUDOF_CONFIG_FROM_PATH_OK")
@@ -933,7 +835,7 @@ Rudof Update Config
 
 Update the configuration of an existing Rudof instance
 
-**Source**: `utility/rudof_update_config.py <https://github.com/rudof-project/rudof/blob/master/python/examples/utility/rudof_update_config.py>`_
+**Source**: `utility/rudof_update_config.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/utility/rudof_update_config.py>`_
 
 **Python Code:**
 
@@ -942,7 +844,7 @@ Update the configuration of an existing Rudof instance
     from pyrudof import Rudof, RudofConfig
     
     initial = RudofConfig()
-    updated = RudofConfig.from_path("../../rudof_lib/src/default_config.toml")
+    updated = RudofConfig.from_path("../../../rudof_lib/src/default_config.toml")
     
     rudof = Rudof(initial)
     rudof.update_config(updated)
@@ -953,7 +855,7 @@ Rudof Reset Methods
 
 Call all reset methods exposed by Rudof
 
-**Source**: `utility/rudof_resets.py <https://github.com/rudof-project/rudof/blob/master/python/examples/utility/rudof_resets.py>`_
+**Source**: `utility/rudof_resets.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/utility/rudof_resets.py>`_
 
 **Python Code:**
 
@@ -979,10 +881,10 @@ Call all reset methods exposed by Rudof
 
 **Referenced Files:**
 
-- **Schema**: `person.shex <https://github.com/rudof-project/rudof/blob/master/python/examples/person.shex>`_
-- **Data**: `person.ttl <https://github.com/rudof-project/rudof/blob/master/python/examples/person.ttl>`_
-- **Shapemap**: `person.sm <https://github.com/rudof-project/rudof/blob/master/python/examples/person.sm>`_
-- **Query**: `person.sparql <https://github.com/rudof-project/rudof/blob/master/python/examples/person.sparql>`_
+- **Schema**: `person.shex <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/person.shex>`_
+- **Data**: `person.ttl <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/person.ttl>`_
+- **Shapemap**: `person.sm <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/person.sm>`_
+- **Query**: `person.sparql <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/person.sparql>`_
 
 
 Rudof Version
@@ -990,7 +892,7 @@ Rudof Version
 
 Get and print the current Rudof version
 
-**Source**: `utility/rudof_version.py <https://github.com/rudof-project/rudof/blob/master/python/examples/utility/rudof_version.py>`_
+**Source**: `utility/rudof_version.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/utility/rudof_version.py>`_
 
 **Python Code:**
 
@@ -1008,7 +910,7 @@ Module Info
 
 Print the installed pyrudof module file path
 
-**Source**: `utility/module_info.py <https://github.com/rudof-project/rudof/blob/master/python/examples/utility/module_info.py>`_
+**Source**: `utility/module_info.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/utility/module_info.py>`_
 
 **Python Code:**
 
@@ -1024,7 +926,7 @@ Error Handling
 
 Catching exceptions raised by rudof operations
 
-**Source**: `utility/error_handling.py <https://github.com/rudof-project/rudof/blob/master/python/examples/utility/error_handling.py>`_
+**Source**: `utility/error_handling.py <https://github.com/rudof-project/rudof/blob/master/bindings/python/examples/utility/error_handling.py>`_
 
 **Python Code:**
 

@@ -1,5 +1,5 @@
 """
-Test suite for documented examples from python/examples/.
+Test suite for documented examples from bindings/python/examples/.
 
 Tests are auto-generated from examples.toml.  Each example's .py file is
 executed as a subprocess so it runs exactly as a user would run it.
@@ -21,7 +21,7 @@ from pathlib import Path
 from examples_registry import EXAMPLES_CATALOG, get_all_categories, get_examples_by_category
 
 
-# Resolve once: python/tests/ -> python/ -> python/examples/
+# Resolve once: bindings/python/tests/ -> bindings/python/ -> bindings/python/examples/
 _EXAMPLES_DIR = Path(__file__).resolve().parent.parent / "examples"
 
 # Ensure subprocesses use UTF-8 (avoids cp1252 errors on Windows)

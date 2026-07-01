@@ -1,6 +1,6 @@
 //! Stateful ShEx conformance-checking, exposed to Emacs Lisp as a held,
 //! mutable `Rudof` handle (a `user-ptr`) plus five functions operating on
-//! it -- mirroring `python/src/pyrudof_lib.rs`'s own `read_data`/
+//! it -- mirroring `bindings/python/src/pyrudof_lib.rs`'s own `read_data`/
 //! `read_shex`/`read_shapemap`/`validate_shex` shape: parsing happens
 //! entirely inside Rust, and nothing about the loaded schema/data/
 //! shapemap is ever represented in Lisp -- only the opaque handle is,

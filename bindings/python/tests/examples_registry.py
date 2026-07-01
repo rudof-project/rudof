@@ -8,7 +8,7 @@ from typing import TypedDict, Optional, List
 
 
 class ExampleFiles(TypedDict, total=False):
-    """Files associated with an example (relative to python/examples/)."""
+    """Files associated with an example (relative to bindings/python/examples/)."""
     schema: str
     data: str
     shapemap: Optional[str]
@@ -29,7 +29,7 @@ class Example(TypedDict):
 
 
 # ---------------------------------------------------------------------------
-# Locate the examples directory (works from python/tests/ and python/docs/)
+# Locate the examples directory (works from bindings/python/tests/ and bindings/python/docs/)
 # ---------------------------------------------------------------------------
 _EXAMPLES_DIR = Path(__file__).resolve().parent.parent / "examples"
 _MANIFEST_PATH = _EXAMPLES_DIR / "examples.toml"

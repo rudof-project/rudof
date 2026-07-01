@@ -18,7 +18,7 @@ matches whichever one your build produces).
 
 The module exposes a *stateful* API: `rudof-emacs-new` creates an opaque
 handle (a `user-ptr`) threaded through every other function as their first
-argument, mirroring `python/src/pyrudof_lib.rs`'s own `read_data`/
+argument, mirroring `bindings/python/src/pyrudof_lib.rs`'s own `read_data`/
 `read_shex`/`read_shapemap`/`validate_shex` shape. Nothing about the
 loaded schema/data/ShapeMap is ever represented in Lisp -- only the handle
 is, plus the final, flattened validation-result triples.

@@ -33,6 +33,6 @@ The library is published as Rust crates, with the following ones:
 
 ## Python bindings
 
-The Python bindings are defined in the [python](https://github.com/rudof-project/rudof/tree/master/python).
+The Python bindings are defined in the [python](https://github.com/rudof-project/rudof/tree/master/bindings/python).
 
 - [python documentation](https://pyrudof.readthedocs.io/)

@@ -12,7 +12,7 @@ with TemporaryDirectory() as tmpdir:
     config1.set_output_path(str(out_with_format))
     config1.set_output_format(OutputFormat.Turtle)
     generator1 = DataGenerator(config1)
-    generator1.run_with_format("../../examples/simple.shex", SchemaFormat.ShEx)
+    generator1.run_with_format("../../../examples/simple.shex", SchemaFormat.ShEx)
 
     out_auto = tmp_path / "run_auto.ttl"
     config2 = GeneratorConfig()
@@ -20,4 +20,4 @@ with TemporaryDirectory() as tmpdir:
     config2.set_output_path(str(out_auto))
     config2.set_output_format(OutputFormat.Turtle)
     generator2 = DataGenerator(config2)
-    generator2.run("../../examples/simple.shex")
+    generator2.run("../../../examples/simple.shex")
