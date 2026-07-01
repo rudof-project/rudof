@@ -21,6 +21,7 @@ use sparesults::{
 use std::collections::HashMap;
 use std::{collections::HashSet, fmt::Display, hash::Hash, str::FromStr, sync::Arc};
 use tokio::sync::RwLock;
+use tracing::{debug, trace, warn};
 use url::Url;
 
 /// Type alias for Result with OxigraphEndpointError.
@@ -49,6 +50,20 @@ pub struct OxigraphEndpoint {
 
     /// Cache of HTTP clients for CONSTRUCT queries
     construct_clients: Arc<RwLock<HashMap<QueryResultFormat, Arc<reqwest::Client>>>>,
+
+    /// Proactive rate limiter: records when the last request was dispatched.
+    /// Shared across all clones so concurrent callers coordinate on one endpoint.
+    last_request_at: Arc<tokio::sync::Mutex<std::time::Instant>>,
+
+    /// Per-subject predicate cache: subject → (predicate → objects).
+    ///
+    /// A predicate key present in the inner map (even with an empty set) means
+    /// "already fetched — no SPARQL request needed". A missing key means
+    /// "not yet fetched". This lets `outgoing_arcs_from_list` skip predicates
+    /// that were already queried, so recurring references to the same entity
+    /// (common in recursive ShEx schemas like E10/human) cost one SPARQL
+    /// request instead of one per validation pass.
+    triple_cache: Arc<std::sync::RwLock<HashMap<OxSubject, HashMap<OxNamedNode, HashSet<OxTerm>>>>>,
 }
 
 impl PartialEq for OxigraphEndpoint {
@@ -111,13 +126,36 @@ impl OxigraphEndpoint {
     /// ```
     pub fn new(iri: &IriS, prefixmap: &PrefixMap) -> Result<OxigraphEndpoint> {
         let client = Arc::new(sparql_client()?);
-
+        // Initialise to 1.1 s in the past so the first request fires immediately.
+        let initial = std::time::Instant::now()
+            .checked_sub(std::time::Duration::from_millis(1100))
+            .unwrap_or_else(std::time::Instant::now);
         Ok(OxigraphEndpoint {
             endpoint_iri: iri.clone(),
             prefixmap: Arc::new(prefixmap.clone()),
             client,
             construct_clients: Arc::new(RwLock::new(HashMap::new())),
+            last_request_at: Arc::new(tokio::sync::Mutex::new(initial)),
+            triple_cache: Arc::new(std::sync::RwLock::new(HashMap::new())),
         })
+    }
+
+    /// Waits until at least 1.1 s have elapsed since the previous request, then
+    /// stamps `last_request_at` with the current time.
+    ///
+    /// Holding the `tokio::sync::Mutex` across the `sleep` serialises callers:
+    /// each one waits its turn, so bursts cannot exceed ~1 req/s regardless of
+    /// how many async tasks are running against the same endpoint.
+    async fn enforce_rate_limit(&self) {
+        const MIN_INTERVAL: std::time::Duration = std::time::Duration::from_millis(1100);
+        let mut last = self.last_request_at.lock().await;
+        let elapsed = last.elapsed();
+        if elapsed < MIN_INTERVAL {
+            let wait = MIN_INTERVAL - elapsed;
+            trace!(endpoint = %self.endpoint_iri, wait_ms = wait.as_millis(), "rate-limit: waiting before next request");
+            tokio::time::sleep(wait).await;
+        }
+        *last = std::time::Instant::now();
     }
 
     /// Returns a reference to the endpoint IRI.
@@ -230,6 +268,7 @@ impl OxigraphEndpoint {
     /// }
     /// ```
     pub async fn query_select_async(&self, query: &str) -> Result<QuerySolutions<Self>> {
+        self.enforce_rate_limit().await;
         let solutions = make_sparql_query_select_async(query, &self.client, &self.endpoint_iri).await?;
 
         // Pre-allocate with known capacity for better performance
@@ -289,9 +328,8 @@ impl OxigraphEndpoint {
     /// }
     /// ```
     pub async fn query_construct_async(&self, query: &str, format: &QueryResultFormat) -> Result<String> {
-        // Select the appropriate client based on the requested format
+        self.enforce_rate_limit().await;
         let client = self.get_construct_client(format).await?;
-
         make_sparql_query_construct_async(query, &client, &self.endpoint_iri, format).await
     }
 
@@ -352,6 +390,7 @@ impl OxigraphEndpoint {
     /// }
     /// ```
     pub async fn query_ask_async(&self, query: &str) -> Result<bool> {
+        self.enforce_rate_limit().await;
         make_sparql_query_ask_async(query, &self.client, &self.endpoint_iri).await
     }
 }
@@ -378,12 +417,16 @@ impl FromStr for OxigraphEndpoint {
             // Parse IRI from angle brackets
             let iri_s = IriS::from_str(&iri_str[1])?;
             let client = Arc::new(sparql_client()?);
-
+            let initial = std::time::Instant::now()
+                .checked_sub(std::time::Duration::from_millis(1100))
+                .unwrap_or_else(std::time::Instant::now);
             Ok(OxigraphEndpoint {
                 endpoint_iri: iri_s,
                 prefixmap: Arc::new(PrefixMap::new()),
                 client,
                 construct_clients: Arc::new(RwLock::new(HashMap::new())),
+                last_request_at: Arc::new(tokio::sync::Mutex::new(initial)),
+                triple_cache: Arc::new(std::sync::RwLock::new(HashMap::new())),
             })
         } else {
             // Try to match predefined endpoint names
@@ -564,21 +607,19 @@ impl NeighsRDF for OxigraphEndpoint {
         P: Matcher<Self::IRI>,
         O: Matcher<Self::Term>,
     {
-        // Build SPARQL query from matchers
-        let s_str = subject
-            .value()
-            .map(|s| s.to_string())
-            .unwrap_or_else(|| "?s".to_string());
-        let p_str = predicate
-            .value()
-            .map(|p| p.to_string())
-            .unwrap_or_else(|| "?p".to_string());
-        let o_str = object
-            .value()
-            .map(|o| o.to_string())
-            .unwrap_or_else(|| "?o".to_string());
+        // Build SPARQL query from matchers, only projecting wildcard positions
+        let s_str = subject.value().map(|s| s.to_string()).unwrap_or_else(|| "?s".to_string());
+        let p_str = predicate.value().map(|p| p.to_string()).unwrap_or_else(|| "?p".to_string());
+        let o_str = object.value().map(|o| o.to_string()).unwrap_or_else(|| "?o".to_string());
 
-        let query = format!("SELECT ?s ?p ?o WHERE {{ {} {} {} }}", s_str, p_str, o_str);
+        let mut select_vars = Vec::new();
+        if subject.value().is_none() { select_vars.push("?s"); }
+        if predicate.value().is_none() { select_vars.push("?p"); }
+        if object.value().is_none() { select_vars.push("?o"); }
+        // SELECT * is valid when all positions are bound (returns one empty row if the triple exists)
+        let select_clause = if select_vars.is_empty() { "*".to_string() } else { select_vars.join(" ") };
+
+        let query = format!("SELECT {} WHERE {{ {} {} {} }}", select_clause, s_str, p_str, o_str);
 
         let solutions = self.query_select(&query)?;
 
@@ -587,30 +628,99 @@ impl NeighsRDF for OxigraphEndpoint {
         let predicate_val = predicate.value().cloned();
         let object_val = object.value().cloned();
 
-        // Build iterator that converts query solutions to triples
+        // Build iterator that converts query solutions to triples, using named variable lookup
         let triples = solutions.into_iter().filter_map(move |solution| {
-            // Use matched value if available, otherwise extract from solution
             let subject_res: Self::Subject = match &subject_val {
                 Some(s) => s.clone(),
-                None => solution.find_solution(0).and_then(|s| s.clone().try_into().ok())?,
+                None => solution.find_solution("s").and_then(|s| s.clone().try_into().ok())?,
             };
-
             let predicate_res: Self::IRI = match &predicate_val {
                 Some(p) => p.clone(),
-                None => solution
-                    .find_solution(1)
-                    .and_then(|pred| pred.clone().try_into().ok())?,
+                None => solution.find_solution("p").and_then(|pred| pred.clone().try_into().ok())?,
             };
-
             let object_res = match &object_val {
                 Some(o) => o.clone(),
-                None => solution.find_solution(2)?.clone(),
+                None => solution.find_solution("o")?.clone(),
             };
-
             Some(OxTriple::new(subject_res, predicate_res, object_res))
         });
 
         Ok(triples)
+    }
+
+    fn outgoing_arcs_from_list(
+        &self,
+        subject: &Self::Subject,
+        preds: &[Self::IRI],
+    ) -> Result<(HashMap<Self::IRI, HashSet<Self::Term>>, Vec<Self::IRI>)> {
+        if preds.is_empty() {
+            return Ok((HashMap::new(), Vec::new()));
+        }
+
+        // --- Cache read pass ---
+        // Separate the requested predicates into those already cached and those
+        // that still need a SPARQL request.
+        let mut results: HashMap<OxNamedNode, HashSet<OxTerm>> = HashMap::new();
+        let mut uncached: Vec<&OxNamedNode> = Vec::new();
+        {
+            let cache = self.triple_cache.read().unwrap();
+            if let Some(subject_data) = cache.get(subject) {
+                for pred in preds {
+                    if let Some(objects) = subject_data.get(pred) {
+                        // Predicate is cached (even if the object set is empty).
+                        results.entry(pred.clone()).or_default().extend(objects.iter().cloned());
+                    } else {
+                        uncached.push(pred);
+                    }
+                }
+            } else {
+                uncached.extend(preds.iter());
+            }
+        }
+
+        if uncached.is_empty() {
+            trace!(subject = %subject, "outgoing_arcs_from_list: all {} preds from cache", preds.len());
+            return Ok((results, Vec::new()));
+        }
+
+        // --- SPARQL fetch for uncached predicates ---
+        let filter_in = uncached.iter().map(|p| p.to_string()).collect::<Vec<_>>().join(", ");
+        let query = format!("SELECT ?p ?o WHERE {{ {} ?p ?o FILTER(?p IN ({})) }}", subject, filter_in);
+
+        trace!(
+            subject = %subject,
+            cached = preds.len() - uncached.len(),
+            fetching = uncached.len(),
+            %query,
+            "outgoing_arcs_from_list FILTER query"
+        );
+
+        let solutions = self.query_select(&query)?;
+
+        // --- Cache write pass ---
+        // Write back all fetched predicates, including those with no results
+        // (so we don't re-query them on the next call).
+        let mut cache = self.triple_cache.write().unwrap();
+        let subject_entry = cache.entry(subject.clone()).or_default();
+        // Pre-insert all fetched preds with empty sets to mark them as "queried".
+        for pred in &uncached {
+            subject_entry.entry((*pred).clone()).or_default();
+        }
+        // Fill in actual values.
+        for solution in solutions.into_iter() {
+            let Some(p_term) = solution.find_solution("p") else { continue };
+            let p: OxNamedNode = match p_term.clone().try_into() {
+                Ok(n) => n,
+                Err(_) => continue,
+            };
+            let Some(o) = solution.find_solution("o").cloned() else { continue };
+            subject_entry.entry(p.clone()).or_default().insert(o.clone());
+            results.entry(p).or_default().insert(o);
+        }
+
+        // Remainder predicates (those not in `preds`) are not fetched.
+        // Closed-shape validation against live endpoints is not supported.
+        Ok((results, Vec::new()))
     }
 }
 
@@ -685,53 +795,56 @@ fn sparql_client() -> Result<reqwest::Client> {
     Ok(client)
 }
 
-/// Executes a SPARQL SELECT query asynchronously.
+/// Sends an HTTP GET request to a SPARQL endpoint, retrying on 429 (Too Many Requests).
 ///
-/// This is the core async implementation used by both WASM and native platforms.
-///
-/// # Arguments
-///
-/// * `query_str` - The SPARQL query string
-/// * `client` - The HTTP client to use
-/// * `endpoint_iri` - The endpoint IRI
-///
-/// # Returns
-///
-/// A vector of query solutions.
-///
-/// # Errors
-///
-/// Returns an error if:
-/// - URL construction fails
-/// - HTTP request fails
-/// - Response cannot be parsed as JSON
-/// - JSON cannot be parsed as SPARQL results
+/// Wikidata and other public endpoints enforce rate limits. When a 429 is received this
+/// function waits for the duration indicated by the `Retry-After` header (falling back to
+/// exponential backoff starting at 1 s) and retries up to `MAX_RETRIES` times before
+/// propagating the error.
+async fn sparql_get_with_retry(client: &reqwest::Client, url: &Url) -> Result<String> {
+    // The proactive rate limiter in `enforce_rate_limit` already prevents most 429s.
+    // These retries handle the rare cases where bursts still slip through.
+    const MAX_RETRIES: u32 = 3;
+    debug!(url = %url, "SPARQL request");
+    for retry in 0..=MAX_RETRIES {
+        trace!(url = %url, retry, "SPARQL GET attempt");
+        let response = client.get(url.as_str()).send().await?;
+        let status = response.status();
+        trace!(url = %url, status = %status, "SPARQL response");
+
+        if status == reqwest::StatusCode::TOO_MANY_REQUESTS {
+            if retry == MAX_RETRIES {
+                warn!(url = %url, "SPARQL 429: max retries reached, giving up");
+                return Err(response.error_for_status().unwrap_err().into());
+            }
+            // Honour Retry-After if present; cap at 5 s to avoid hanging indefinitely.
+            let delay_secs = response
+                .headers()
+                .get("Retry-After")
+                .and_then(|v| v.to_str().ok())
+                .and_then(|s| s.parse::<u64>().ok())
+                .unwrap_or(1)
+                .min(5);
+            warn!(url = %url, delay_secs, retry, "SPARQL 429: retrying after delay");
+            tokio::time::sleep(tokio::time::Duration::from_secs(delay_secs)).await;
+            continue;
+        }
+
+        return response.error_for_status()?.text().await.map_err(Into::into);
+    }
+    unreachable!()
+}
+
 async fn make_sparql_query_select_async(
     query_str: &str,
     client: &reqwest::Client,
     endpoint_iri: &IriS,
 ) -> Result<Vec<OxQuerySolution>> {
-    // Build URL with query parameter
     let url = Url::parse_with_params(endpoint_iri.as_str(), &[("query", query_str)])?;
-
-    // Execute request and get response body
-    let response = client.get(url).send().await?;
-    let body = response.text().await?;
+    let body = sparql_get_with_retry(client, &url).await?;
     parse_sparql_json_results(&body)
 }
 
-/// Executes a SPARQL CONSTRUCT query asynchronously.
-///
-/// # Arguments
-///
-/// * `query` - The SPARQL CONSTRUCT query string
-/// * `client` - The HTTP client configured for the desired format
-/// * `endpoint_iri` - The endpoint IRI
-/// * `_format` - The query result format (currently unused, determined by client headers)
-///
-/// # Returns
-///
-/// The query results as a string in the format determined by the client's Accept header.
 async fn make_sparql_query_construct_async(
     query: &str,
     client: &reqwest::Client,
@@ -739,40 +852,12 @@ async fn make_sparql_query_construct_async(
     _format: &QueryResultFormat,
 ) -> Result<String> {
     let url = Url::parse_with_params(endpoint_iri.as_str(), &[("query", query)])?;
-
-    let response = client.get(url).send().await?;
-
-    let body = response.text().await?;
-
-    Ok(body)
+    sparql_get_with_retry(client, &url).await
 }
 
-/// Executes a SPARQL ASK query asynchronously.
-///
-/// ASK queries return a different JSON format than SELECT queries:
-/// `{"head": {}, "boolean": true/false}`
-///
-/// # Arguments
-///
-/// * `query` - The SPARQL ASK query string
-/// * `client` - The HTTP client to use
-/// * `endpoint_iri` - The endpoint IRI
-///
-/// # Returns
-///
-/// A boolean indicating whether the query pattern matched.
-///
-/// # Errors
-///
-/// Returns an error if:
-/// - URL construction fails
-/// - HTTP request fails
-/// - Response cannot be parsed as JSON
-/// - JSON does not contain a boolean field
 async fn make_sparql_query_ask_async(query: &str, client: &reqwest::Client, endpoint_iri: &IriS) -> Result<bool> {
     let url = Url::parse_with_params(endpoint_iri.as_str(), &[("query", query)])?;
-
-    let body = client.get(url).send().await?.text().await?;
+    let body = sparql_get_with_retry(client, &url).await?;
     parse_sparql_ask_results(&body)
 }
 

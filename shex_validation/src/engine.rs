@@ -1152,11 +1152,12 @@ impl Engine {
         Ok((result, reminder_preds))
     }
 
-    fn cnv_err<S>(&self, _err: S::Err) -> ValidatorError
+    fn cnv_err<S>(&self, err: S::Err) -> ValidatorError
     where
         S: NeighsRDF,
     {
-        todo!()
+        tracing::trace!("cnv_err: {err}");
+        ValidatorError::SRDFError { error: err.to_string() }
     }
 
     fn get_rdf_node<S>(&self, node: &Node, _rdf: &S) -> S::Term

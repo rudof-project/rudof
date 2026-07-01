@@ -183,6 +183,37 @@ impl NeighsRDF for RdfBackend {
         };
         Ok(iter)
     }
+
+    fn outgoing_arcs_from_list(
+        &self,
+        subject: &Self::Subject,
+        preds: &[Self::IRI],
+    ) -> std::result::Result<
+        (std::collections::HashMap<Self::IRI, std::collections::HashSet<Self::Term>>, Vec<Self::IRI>),
+        Self::Err,
+    > {
+        #[cfg(all(not(target_family = "wasm"), feature = "sparql"))]
+        if let RdfBackend::Endpoint(b) = self {
+            return b.outgoing_arcs_from_list(subject, preds).map_err(Into::into);
+        }
+        // For InMemory and Qlever: default behavior — fetch all triples and filter in memory
+        if preds.is_empty() {
+            return Ok((std::collections::HashMap::new(), Vec::new()));
+        }
+        let mut results: std::collections::HashMap<OxNamedNode, std::collections::HashSet<OxTerm>> =
+            std::collections::HashMap::new();
+        let mut reminder: Vec<OxNamedNode> = Vec::new();
+        for triple in self.triples_with_subject(subject)? {
+            let p = triple.predicate.clone();
+            let o = triple.object.clone();
+            if preds.contains(&p) {
+                results.entry(p).or_default().insert(o);
+            } else {
+                reminder.push(p);
+            }
+        }
+        Ok((results, reminder))
+    }
 }
 
 #[cfg(feature = "sparql")]
