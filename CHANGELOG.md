@@ -7,6 +7,12 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## v0.3.6
+
+### Fixed
+- fix(sparql): fix SPARQL endpoint validation and add rate limiting and caching
+- fix(cli): fix CLI to allow node command with endpoint backend and no data input, and add --endpoint/-e shortcut for endpoint backend
+
 ## v0.3.5
 ### Added
 - #706: added emacs bindings by @ericprud
