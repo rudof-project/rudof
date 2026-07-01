@@ -1207,7 +1207,8 @@ fn mk_cond_value_set(value_set: ValueSet, prefixmap: &PrefixMap) -> Cond {
                 } else {
                     Err(RbeError::MsgError {
                         msg: format!(
-                            "Values failed: {node} not in {}",
+                            "Values failed: {} not in {}",
+                            node.as_object().show_qualified(&cloned_prefixmap),
                             value_set.show_qualified(&cloned_prefixmap)
                         ),
                     })
