@@ -1,4 +1,5 @@
 use crate::RbeAlgorithm;
+use crate::deriv_error::Failures;
 use crate::{Bag, Cardinality, Max, Min, Rbe, deriv_error::DerivError};
 use core::hash::Hash;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -53,8 +54,62 @@ where
             if interval.contains(1) {
                 Ok(())
             } else {
-                Err(DerivError::IntervalFailed { v: 1, interval })
+                Err(self.diagnose_failure(bag, open, interval))
             }
+        }
+    }
+
+    /// Called only once we already know `bag` doesn't satisfy this expression,
+    /// to recover a precise explanation of why. Cheapest first: compare each
+    /// symbol's own cardinality against how many times it occurs in `bag` —
+    /// this pinpoints the violated predicate(s) directly for the common case
+    /// of a (possibly nested) conjunction of symbols, at O(symbols) cost. Only
+    /// if that finds no direct violation (e.g. the failure comes from how `Or`
+    /// branches interact) do we pay for the slower derivative-based matcher to
+    /// get at least a generic explanation.
+    fn diagnose_failure(&self, bag: &Bag<A>, open: bool, interval: crate::Interval) -> DerivError<A> {
+        let violations: Vec<DerivError<A>> = self
+            .rbe
+            .symbol_cardinalities()
+            .into_iter()
+            .filter_map(|(symbol, card)| {
+                let n = bag.contains(&symbol);
+                if card.contains(n) {
+                    None
+                } else {
+                    Some(DerivError::CardinalityFail {
+                        symbol,
+                        expected_cardinality: card,
+                        current_number: n,
+                    })
+                }
+            })
+            .collect();
+        match violations.len() {
+            0 => self
+                .rbe
+                .match_bag_deriv(bag, open)
+                .err()
+                .unwrap_or(DerivError::IntervalFailed { v: 1, interval }),
+            1 => violations.into_iter().next().unwrap(),
+            _ => {
+                let mut failures = Failures::new();
+                for err in violations {
+                    let expr = match &err {
+                        DerivError::CardinalityFail {
+                            symbol,
+                            expected_cardinality,
+                            ..
+                        } => Rbe::Symbol {
+                            value: symbol.clone(),
+                            card: expected_cardinality.clone(),
+                        },
+                        _ => unreachable!("only CardinalityFail is pushed into `violations`"),
+                    };
+                    failures.push(expr, err);
+                }
+                DerivError::CardinalityFailMulti { failures }
+            },
         }
     }
 

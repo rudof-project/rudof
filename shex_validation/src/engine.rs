@@ -623,12 +623,7 @@ impl Engine {
         }
     }
 
-    fn check_node_ref(
-        &self,
-        node: &Node,
-        idx: &ShapeLabelIdx,
-        typing: &mut RefTyping,
-    ) -> Result<ValidationResult> {
+    fn check_node_ref(&self, node: &Node, idx: &ShapeLabelIdx, typing: &mut RefTyping) -> Result<ValidationResult> {
         /*debug!("Checking node {node} with shape ref {idx}"); */
 
         // If the node is already in the typing, we can return true
@@ -1368,21 +1363,50 @@ fn check_expr_neigh(
         expr,
         neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", ")
     );*/
-    let result_iter = expr.matches(neighs.to_vec())?;
-    let mut result_iter = result_iter.peekable();
-    if result_iter.peek().is_none() {
+    let mut result_iter = expr.matches(neighs.to_vec())?;
+    let first_result = result_iter.next();
+    if first_result.is_none() {
         /*debug!(
             "expr {expr} produced no candidates for neighs: [{}]",
             neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", ")
         );*/
+        let mut reasons: Vec<NoMatchReason> = result_iter
+            .failed_candidates()
+            .iter()
+            .map(|(candidate, predicate, value, error)| NoMatchReason::ConditionFailed {
+                candidate: candidate.clone(),
+                predicate: predicate.clone(),
+                value: value.clone(),
+                error: error.clone(),
+            })
+            .collect();
+        for (candidate, err) in result_iter.failed_cardinality() {
+            match expr.cardinality_violations(err) {
+                Ok(violations) => {
+                    for (predicate, expected, current) in violations {
+                        reasons.push(NoMatchReason::CardinalityFailed {
+                            candidate: candidate.clone(),
+                            predicate,
+                            expected,
+                            current,
+                        });
+                    }
+                },
+                Err(detail) => reasons.push(NoMatchReason::Other {
+                    candidate: candidate.clone(),
+                    detail,
+                }),
+            }
+        }
         return fail(ValidatorError::NoMatchesFound {
             node: Box::new(node.clone()),
             shape: Box::new(shape.clone()),
             idx: *idx,
+            reasons,
         });
     }
     let mut errors = Vec::new();
-    for result in result_iter {
+    for result in first_result.into_iter().chain(result_iter) {
         /*trace!(
             "Result of {expr} with neighs: {}: {:?}",
             neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", "),

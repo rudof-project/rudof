@@ -195,6 +195,33 @@ where
         set
     }
 
+    /// Returns the `(symbol, cardinality)` pair of every `Symbol` node in this
+    /// expression, ignoring how an enclosing `Star`/`Plus`/`Repeat` scales the
+    /// number of times the whole group may repeat. Each symbol's own
+    /// cardinality can then be compared directly against how many times it
+    /// occurs in a bag, to pinpoint precisely which requirement was violated
+    /// (e.g. "predicate P required cardinality {1,1} but got 0") instead of
+    /// only knowing that the overall expression failed to match.
+    pub fn symbol_cardinalities(&self) -> Vec<(A, Cardinality)> {
+        let mut acc = Vec::new();
+        self.symbol_cardinalities_aux(&mut acc);
+        acc
+    }
+
+    fn symbol_cardinalities_aux(&self, acc: &mut Vec<(A, Cardinality)>) {
+        match self {
+            Rbe::Fail { .. } | Rbe::Empty => {},
+            Rbe::Symbol { value, card } => acc.push((value.clone(), card.clone())),
+            Rbe::And { values } | Rbe::Or { values } => {
+                for v in values {
+                    v.symbol_cardinalities_aux(acc);
+                }
+            },
+            Rbe::Star { value } | Rbe::Plus { value } => value.symbol_cardinalities_aux(acc),
+            Rbe::Repeat { value, .. } => value.symbol_cardinalities_aux(acc),
+        }
+    }
+
     fn symbols_aux(&self, set: &mut HashSet<A>) {
         match &self {
             Rbe::Fail { .. } => (),

@@ -1,4 +1,5 @@
 use crate::Bag;
+use crate::Cardinality;
 use crate::Component;
 use crate::Context;
 use crate::EmptyIter;
@@ -8,6 +9,7 @@ use crate::Pending;
 use crate::RbeError;
 use crate::Ref;
 use crate::Value;
+use crate::deriv_error::DerivError;
 use crate::rbe_error;
 use crate::rbe_struct::RbeStruct;
 use crate::values::Values;
@@ -62,6 +64,42 @@ where
 
     pub fn get_key(&self, c: &Component) -> Option<&K> {
         self.component_key.get(c)
+    }
+
+    /// Translates a cardinality-matching error against `Component` ids (as
+    /// produced internally by `RbeStruct<Component>`) into `(key, expected
+    /// cardinality, actual count)` triples naming the real key (e.g.
+    /// predicate) instead of the opaque id, so a caller with more context
+    /// (e.g. a prefix map to qualify the key for display) can render it.
+    /// `Err` is returned for errors that can't be attributed to a single
+    /// key's cardinality (e.g. `Or`-branch interactions); it carries the
+    /// original error's `Display` text as a best-effort fallback.
+    /// Only called once matching has already failed, so the extra lookups
+    /// here don't cost anything on the success path.
+    pub fn cardinality_violations(&self, err: &DerivError<Component>) -> Result<Vec<(K, Cardinality, usize)>, String> {
+        match err {
+            DerivError::CardinalityFail {
+                symbol,
+                expected_cardinality,
+                current_number,
+            } => match self.get_key(symbol) {
+                Some(key) => Ok(vec![(key.clone(), expected_cardinality.clone(), *current_number)]),
+                None => Err(err.to_string()),
+            },
+            DerivError::CardinalityFailMulti { failures } => {
+                let violations: Vec<_> = failures
+                    .iter()
+                    .filter_map(|(_, e)| self.cardinality_violations(e).ok())
+                    .flatten()
+                    .collect();
+                if violations.is_empty() {
+                    Err(err.to_string())
+                } else {
+                    Ok(violations)
+                }
+            },
+            other => Err(other.to_string()),
+        }
     }
 
     pub fn keys(&self) -> impl Iterator<Item = &K> {
@@ -175,6 +213,8 @@ where
                 state: mp,
                 rbe: self.rbe.clone(),
                 open: self.open,
+                failed: Vec::new(),
+                failed_cardinality: Vec::new(),
             }))
         }
     }
@@ -317,6 +357,41 @@ where
     }
 }
 
+impl<K, V, R, Ctx> MatchTableIter<K, V, R, Ctx>
+where
+    K: Key,
+    V: Value,
+    R: Ref,
+    Ctx: Context,
+{
+    /// Candidates rejected because a value failed a key's own condition
+    /// (e.g. a node constraint or shape reference), kept as structured
+    /// `(candidate, key, value, error)` tuples — using the real `K`/`V`
+    /// types, not opaque `Component` ids — so a caller with more display
+    /// context (e.g. a prefix map) can render them. Only `IterCartesianProduct`
+    /// accumulates these; once the iterator is exhausted (`next()` returned
+    /// `None`), this holds an entry for every candidate that was tried.
+    #[allow(clippy::type_complexity)]
+    pub fn failed_candidates(&self) -> &[(Vec<(K, V)>, K, V, RbeError<K, V, R, Ctx>)] {
+        match self {
+            MatchTableIter::Empty(_) => &[],
+            MatchTableIter::NonEmpty(cp) => cp.failed_candidates(),
+        }
+    }
+
+    /// Candidates rejected specifically because their cardinality didn't
+    /// satisfy the expression, kept as structured `(candidate, error)` pairs.
+    /// The error still refers to opaque `Component` ids: the caller, which
+    /// knows how to map a `Component` back to the real key via
+    /// [`RbeTable::cardinality_violations`], must do the final translation.
+    pub fn failed_cardinality(&self) -> &[(Vec<(K, V)>, DerivError<Component>)] {
+        match self {
+            MatchTableIter::Empty(_) => &[],
+            MatchTableIter::NonEmpty(cp) => cp.failed_cardinality(),
+        }
+    }
+}
+
 type IterState<K, V, R, Ctx> = MultiProduct<IntoIter<(K, V, Ctx, Component, MatchCond<K, V, R, Ctx>)>>;
 
 #[derive(Debug, Clone)]
@@ -331,6 +406,32 @@ where
     state: IterState<K, V, R, Ctx>,
     rbe: RbeStruct<Component>,
     open: bool,
+    // Candidates previously rejected by a per-value condition failure.
+    // Grows as the iterator is driven; complete once it returns `None`.
+    #[allow(clippy::type_complexity)]
+    failed: Vec<(Vec<(K, V)>, K, V, RbeError<K, V, R, Ctx>)>,
+    // Candidates rejected because their cardinality didn't satisfy the
+    // expression, kept structured (candidate, raw error over `Component`
+    // ids) since translating `Component` back to the real key requires the
+    // `RbeTable`, which this iterator doesn't hold onto.
+    failed_cardinality: Vec<(Vec<(K, V)>, DerivError<Component>)>,
+}
+
+impl<K, V, R, Ctx> IterCartesianProduct<K, V, R, Ctx>
+where
+    K: Key,
+    V: Value,
+    R: Ref,
+    Ctx: Context,
+{
+    #[allow(clippy::type_complexity)]
+    pub fn failed_candidates(&self) -> &[(Vec<(K, V)>, K, V, RbeError<K, V, R, Ctx>)] {
+        &self.failed
+    }
+
+    pub fn failed_cardinality(&self) -> &[(Vec<(K, V)>, DerivError<Component>)] {
+        &self.failed_cardinality
+    }
 }
 
 impl<K, V, R, Ctx> Iterator for IterCartesianProduct<K, V, R, Ctx>
@@ -356,6 +457,7 @@ where
                 }
             },
             Some(vs) => {
+                let candidate: Vec<(K, V)> = vs.iter().map(|(k, v, _, _, _)| (k.clone(), v.clone())).collect();
                 let mut pending: Pending<K, V, R> = Pending::empty();
                 for (k, v, ctx, _, cond) in &vs {
                     match cond.matches(v, ctx) {
@@ -372,6 +474,7 @@ where
                         },
                         Err(err) => {
                             //tracing::trace!("Failed condition: {cond} with value: {v} and key {k}, error: {err}");
+                            self.failed.push((candidate, k.clone(), v.clone(), err.clone()));
                             return Some(Err(err));
                         },
                     }
@@ -383,9 +486,10 @@ where
                         self.is_first = false;
                         Some(Ok(pending))
                     },
-                    Err(_err) => {
+                    Err(err) => {
                         //tracing::trace!("### Rbe {} does not match bag {}, error: {err}", self.rbe, bag);
                         //trace!("### Skipped error: {err}!\n");
+                        self.failed_cardinality.push((candidate, err));
                         self.next()
                     },
                 }

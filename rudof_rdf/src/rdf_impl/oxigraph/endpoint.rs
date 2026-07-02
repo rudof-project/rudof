@@ -608,16 +608,35 @@ impl NeighsRDF for OxigraphEndpoint {
         O: Matcher<Self::Term>,
     {
         // Build SPARQL query from matchers, only projecting wildcard positions
-        let s_str = subject.value().map(|s| s.to_string()).unwrap_or_else(|| "?s".to_string());
-        let p_str = predicate.value().map(|p| p.to_string()).unwrap_or_else(|| "?p".to_string());
-        let o_str = object.value().map(|o| o.to_string()).unwrap_or_else(|| "?o".to_string());
+        let s_str = subject
+            .value()
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "?s".to_string());
+        let p_str = predicate
+            .value()
+            .map(|p| p.to_string())
+            .unwrap_or_else(|| "?p".to_string());
+        let o_str = object
+            .value()
+            .map(|o| o.to_string())
+            .unwrap_or_else(|| "?o".to_string());
 
         let mut select_vars = Vec::new();
-        if subject.value().is_none() { select_vars.push("?s"); }
-        if predicate.value().is_none() { select_vars.push("?p"); }
-        if object.value().is_none() { select_vars.push("?o"); }
+        if subject.value().is_none() {
+            select_vars.push("?s");
+        }
+        if predicate.value().is_none() {
+            select_vars.push("?p");
+        }
+        if object.value().is_none() {
+            select_vars.push("?o");
+        }
         // SELECT * is valid when all positions are bound (returns one empty row if the triple exists)
-        let select_clause = if select_vars.is_empty() { "*".to_string() } else { select_vars.join(" ") };
+        let select_clause = if select_vars.is_empty() {
+            "*".to_string()
+        } else {
+            select_vars.join(" ")
+        };
 
         let query = format!("SELECT {} WHERE {{ {} {} {} }}", select_clause, s_str, p_str, o_str);
 
@@ -636,7 +655,9 @@ impl NeighsRDF for OxigraphEndpoint {
             };
             let predicate_res: Self::IRI = match &predicate_val {
                 Some(p) => p.clone(),
-                None => solution.find_solution("p").and_then(|pred| pred.clone().try_into().ok())?,
+                None => solution
+                    .find_solution("p")
+                    .and_then(|pred| pred.clone().try_into().ok())?,
             };
             let object_res = match &object_val {
                 Some(o) => o.clone(),
@@ -685,7 +706,10 @@ impl NeighsRDF for OxigraphEndpoint {
 
         // --- SPARQL fetch for uncached predicates ---
         let filter_in = uncached.iter().map(|p| p.to_string()).collect::<Vec<_>>().join(", ");
-        let query = format!("SELECT ?p ?o WHERE {{ {} ?p ?o FILTER(?p IN ({})) }}", subject, filter_in);
+        let query = format!(
+            "SELECT ?p ?o WHERE {{ {} ?p ?o FILTER(?p IN ({})) }}",
+            subject, filter_in
+        );
 
         trace!(
             subject = %subject,
@@ -708,12 +732,16 @@ impl NeighsRDF for OxigraphEndpoint {
         }
         // Fill in actual values.
         for solution in solutions.into_iter() {
-            let Some(p_term) = solution.find_solution("p") else { continue };
+            let Some(p_term) = solution.find_solution("p") else {
+                continue;
+            };
             let p: OxNamedNode = match p_term.clone().try_into() {
                 Ok(n) => n,
                 Err(_) => continue,
             };
-            let Some(o) = solution.find_solution("o").cloned() else { continue };
+            let Some(o) = solution.find_solution("o").cloned() else {
+                continue;
+            };
             subject_entry.entry(p.clone()).or_default().insert(o.clone());
             results.entry(p).or_default().insert(o);
         }

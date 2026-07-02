@@ -36,6 +36,23 @@ where
     pub fn push(&mut self, expr: RbeCond<K, V, R, Ctx>, err: RbeError<K, V, R, Ctx>) {
         self.fs.push((Box::new(expr), err));
     }
+
+    /// Renders these failures the same way `Display` does, except every key
+    /// and value is rendered through the caller-supplied closures instead
+    /// of `Display`. Lets a caller with more context (e.g. a `PrefixMap`)
+    /// show qualified names instead of full IRIs.
+    pub fn show_qualified(&self, show_key: &impl Fn(&K) -> String, show_value: &impl Fn(&V) -> String) -> String {
+        self.fs
+            .iter()
+            .map(|(expr, err)| {
+                format!(
+                    "Error at {}: {}\n",
+                    expr.show_qualified(show_key, show_value),
+                    err.show_qualified(show_key, show_value)
+                )
+            })
+            .collect()
+    }
 }
 
 impl<K, V, R, Ctx> Default for Failures<K, V, R, Ctx>

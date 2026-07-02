@@ -92,7 +92,7 @@ where
     #[error("{msg}")]
     MsgError { msg: String },
 
-    #[error("Empty candidates for regular expression: {rbe} and values: {values}")]
+    #[error("No candidates. Expr: {rbe}, Values: [{values}]")]
     EmptyCandidates {
         rbe: Box<RbeCond<K, V, R, Ctx>>,
         values: Values<K, V, Ctx>,
@@ -100,4 +100,94 @@ where
 
     #[error("RbeTable: Key {key} has no component associated. Available keys: {available_keys}")]
     RbeTableKeyWithoutComponent { key: K, available_keys: Keys<K> },
+}
+
+impl<K, V, R, Ctx> RbeError<K, V, R, Ctx>
+where
+    K: Key,
+    V: Value,
+    R: Ref,
+    Ctx: Context,
+{
+    /// Renders this error the same way `Display` does, except every `key`
+    /// and `value` it mentions is rendered through the caller-supplied
+    /// closures instead of `Display`. Lets a caller with more context (e.g.
+    /// a `PrefixMap`) show qualified names instead of full IRIs, without
+    /// this crate depending on anything IRI/prefix-specific.
+    pub fn show_qualified(&self, show_key: &impl Fn(&K) -> String, show_value: &impl Fn(&V) -> String) -> String {
+        match self {
+            RbeError::UnexpectedEmpty { x, open } => {
+                format!("Symbol {} doesn't match with empty. Open: {open}", show_key(x))
+            },
+            RbeError::UnexpectedSymbol { x, expected, open } => format!(
+                "Symbol {} doesn't match with expected symbol {}. Open: {open}",
+                show_key(x),
+                show_key(expected)
+            ),
+            RbeError::MaxCardinalityZeroFoundValue { x } => {
+                format!("Max cardinality 0, but found symbol {}", show_key(x))
+            },
+            RbeError::RangeNegativeLowerBound { min } => format!("Negative lower bound: {min}"),
+            RbeError::RangeLowerBoundBiggerMax { symbol, card } => {
+                format!("Min > Max in cardinality {card} for {}", show_key(symbol))
+            },
+            RbeError::RangeLowerBoundBiggerMaxExpr { expr, card } => format!(
+                "Min > Max in cardinality {card} for {}",
+                expr.show_qualified(show_key, show_value)
+            ),
+            RbeError::NonNullableMatch { non_nullable_rbe, expr } => format!(
+                "Derived expr: {} is not nullable\nExpr {}",
+                non_nullable_rbe.show_qualified(show_key, show_value),
+                expr.show_qualified(show_key, show_value)
+            ),
+            RbeError::CardinalityFail {
+                symbol,
+                expected_cardinality,
+                current_number,
+            } => format!(
+                "Cardinality failed for symbol {}. Current number: {current_number}, expected cardinality: {expected_cardinality}",
+                show_key(symbol)
+            ),
+            RbeError::CardinalityFailRepeat {
+                expected_cardinality,
+                current_number,
+            } => format!(
+                "Cardinality failed for expr. Current number: {current_number}, expected cardinality: {expected_cardinality}"
+            ),
+            RbeError::CardinalityZeroZeroDeriv { .. } => {
+                "Cardinality(0,0) but found symbol after derivative".to_string()
+            },
+            RbeError::ShouldFailButPassed { name } => format!("Should fail but passed: {name}"),
+            RbeError::OrValuesFail { e, failures } => format!(
+                "Or values failed {}\n {}",
+                e.show_qualified(show_key, show_value),
+                failures.show_qualified(show_key, show_value)
+            ),
+            RbeError::MkOrValuesFail => "All values in or branch failed".to_string(),
+            RbeError::DerivIterError {
+                error_msg,
+                expr,
+                current,
+                key,
+                open,
+                ..
+            } => format!(
+                "Error matching iterator: {error_msg}\nExpr: {}\nCurrent:{}\nkey: {}\nopen: {open}",
+                expr.show_qualified(show_key, show_value),
+                current.show_qualified(show_key, show_value),
+                show_key(key)
+            ),
+            RbeError::MsgError { msg } => msg.clone(),
+            RbeError::EmptyCandidates { rbe, values } => format!(
+                "No candidates. Expr: {}, Values: [{}]",
+                rbe.show_qualified(show_key, show_value),
+                values.show_qualified(show_key, show_value)
+            ),
+            RbeError::RbeTableKeyWithoutComponent { key, available_keys } => format!(
+                "Key {} has no component associated. Available keys: [{}]",
+                show_key(key),
+                available_keys.show_qualified(show_key)
+            ),
+        }
+    }
 }

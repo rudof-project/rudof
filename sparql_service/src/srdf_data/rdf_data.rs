@@ -470,7 +470,10 @@ impl NeighsRDF for RdfData {
         subject: &Self::Subject,
         preds: &[Self::IRI],
     ) -> std::result::Result<
-        (std::collections::HashMap<Self::IRI, std::collections::HashSet<Self::Term>>, Vec<Self::IRI>),
+        (
+            std::collections::HashMap<Self::IRI, std::collections::HashSet<Self::Term>>,
+            Vec<Self::IRI>,
+        ),
         Self::Err,
     > {
         if preds.is_empty() {

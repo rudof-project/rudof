@@ -126,6 +126,30 @@ where
         set
     }
 
+    /// Renders this expression the same way `Display` does, except every
+    /// `key` is rendered through `show_key` instead of `Display`. Lets a
+    /// caller with more context (e.g. a `PrefixMap`) show qualified names
+    /// instead of full IRIs, without this crate depending on anything
+    /// IRI/prefix-specific.
+    pub fn show_qualified(&self, show_key: &impl Fn(&K) -> String, show_value: &impl Fn(&V) -> String) -> String {
+        match self {
+            RbeCond::Fail { error } => format!("Fail {{{}}}", error.show_qualified(show_key, show_value)),
+            RbeCond::Empty => "Empty".to_string(),
+            RbeCond::Symbol { key, cond, card } => format!("{}|{cond}{card}", show_key(key)),
+            RbeCond::And { exprs } => exprs
+                .iter()
+                .map(|value| format!("{};", value.show_qualified(show_key, show_value)))
+                .collect(),
+            RbeCond::Or { exprs } => exprs
+                .iter()
+                .map(|value| format!("{}|", value.show_qualified(show_key, show_value)))
+                .collect(),
+            RbeCond::Star { expr } => format!("{}*", expr.show_qualified(show_key, show_value)),
+            RbeCond::Plus { expr } => format!("{}+", expr.show_qualified(show_key, show_value)),
+            RbeCond::Repeat { expr, card } => format!("({}){card}", expr.show_qualified(show_key, show_value)),
+        }
+    }
+
     fn symbols_aux(&self, set: &mut HashSet<K>) {
         match &self {
             RbeCond::Fail { .. } => (),

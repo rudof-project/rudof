@@ -38,6 +38,7 @@ wdt = "http://www.wikidata.org/prop/direct/"
 wdtn = "http://www.wikidata.org/prop/direct-normalized/"
 wdv = "http://www.wikidata.org/value/"
 wikibase = "http://wikiba.se/ontology#"
+genid = "http://www.wikidata.org/.well-known/genid/"
 
 [rdf_data.endpoints.dbpedia]
 query_url = "http://dbpedia.org/sparql"
