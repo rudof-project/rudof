@@ -48,10 +48,16 @@ where
             if self.rbe.nullable() {
                 Some(Ok(Pending::empty()))
             } else {
-                Some(Err(RbeError::EmptyCandidates {
-                    rbe: Box::new(self.rbe.clone()),
-                    values: self.values.clone(),
-                }))
+                if self.values.is_empty() {
+                    Some(Err(RbeError::EmptyCandidatesNoValues {
+                        rbe: Box::new(self.rbe.clone()),
+                    }))
+                } else {
+                    Some(Err(RbeError::EmptyCandidates {
+                        rbe: Box::new(self.rbe.clone()),
+                        values: self.values.clone(),
+                    }))
+                }
             }
         } else {
             None

@@ -7,6 +7,7 @@ use crate::Value;
 use crate::Values;
 use crate::failures::Failures;
 use crate::rbe_cond::RbeCond;
+use either::Either;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -98,6 +99,9 @@ where
         values: Values<K, V, Ctx>,
     },
 
+    #[error("No values for non-nullable expr: {rbe}")]
+    EmptyCandidatesNoValues { rbe: Box<RbeCond<K, V, R, Ctx>> },
+
     #[error("RbeTable: Key {key} has no component associated. Available keys: {available_keys}")]
     RbeTableKeyWithoutComponent { key: K, available_keys: Keys<K> },
 }
@@ -179,9 +183,13 @@ where
             ),
             RbeError::MsgError { msg } => msg.clone(),
             RbeError::EmptyCandidates { rbe, values } => format!(
-                "No candidates. Expr: {}, Values: [{}]",
-                rbe.show_qualified(show_key, show_value),
+                "No candidates. Mandatory values: [{}], Values: [{}]",
+                show_mandatory_values(rbe, show_key, show_value),
                 values.show_qualified(show_key, show_value)
+            ),
+            RbeError::EmptyCandidatesNoValues { rbe } => format!(
+                "No values to match expression. Mandatory values: [{}]",
+                show_mandatory_values(rbe, show_key, show_value)
             ),
             RbeError::RbeTableKeyWithoutComponent { key, available_keys } => format!(
                 "Key {} has no component associated. Available keys: [{}]",
@@ -189,5 +197,30 @@ where
                 available_keys.show_qualified(show_key)
             ),
         }
+    }
+}
+
+/// Shows only the mandatory keys of `rbe` (the ones that must appear for it
+/// to match), qualified through `show_key`. If `rbe` contains a `Fail` node,
+/// there are no real keys to report, so its underlying error(s) are shown
+/// instead, qualified through `show_key`/`show_value`.
+fn show_mandatory_values<K, V, R, Ctx>(
+    rbe: &RbeCond<K, V, R, Ctx>,
+    show_key: &impl Fn(&K) -> String,
+    show_value: &impl Fn(&V) -> String,
+) -> String
+where
+    K: Key,
+    V: Value,
+    R: Ref,
+    Ctx: Context,
+{
+    match rbe.mandatory_values() {
+        Either::Right(values) => values.iter().map(show_key).collect::<Vec<_>>().join(", "),
+        Either::Left(errors) => errors
+            .iter()
+            .map(|e| e.show_qualified(show_key, show_value))
+            .collect::<Vec<_>>()
+            .join("; "),
     }
 }

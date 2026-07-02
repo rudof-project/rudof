@@ -3216,6 +3216,7 @@ name = "rbe"
 version = "0.3.5"
 dependencies = [
  "criterion",
+ "either",
  "hashbag",
  "indexmap 2.14.0",
  "indoc",

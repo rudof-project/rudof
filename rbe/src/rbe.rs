@@ -1,6 +1,7 @@
 use crate::{Bag, Cardinality, Max, Min, deriv_error::DerivError, deriv_n};
 use crate::{Interval, RbePrettyPrinter};
 use core::hash::Hash;
+use either::Either;
 use itertools::cloned;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -57,7 +58,11 @@ where
     },
 }
 
-type NullableResult = bool;
+/// The result of [`Rbe::mandatory_values`]: `Left` carries the errors found
+/// when the expression contains a `Fail` node (which has no real symbol
+/// value to report), `Right` carries the values that must appear for the
+/// expression to match — empty if the expression is nullable.
+type MandatoryValues<A> = Either<Vec<DerivError<A>>, Vec<A>>;
 
 impl<A> Rbe<A>
 where
@@ -70,7 +75,7 @@ where
         match &deriv {
             Rbe::Fail { error } => Err(error.clone()),
             d => {
-                if d.nullable() {
+                if d.is_nullable() {
                     Ok(())
                 } else {
                     Err(DerivError::NonNullable {
@@ -150,7 +155,7 @@ where
             Rbe::Plus { value } => {
                 if self.no_symbols_in_bag(bag) {
                     // A single nullable repetition satisfies Plus with an empty bag.
-                    if value.nullable() {
+                    if value.is_nullable() {
                         Interval::zero_any()
                     } else {
                         Interval::zero_zero()
@@ -166,7 +171,7 @@ where
             },
             Rbe::Repeat { value, card } => {
                 if self.no_symbols_in_bag(bag) {
-                    if card.nullable() || value.nullable() {
+                    if card.nullable() || value.is_nullable() {
                         Interval::zero_any()
                     } else {
                         Interval::zero_zero()
@@ -286,19 +291,62 @@ where
         current
     }
 
-    pub fn nullable(&self) -> NullableResult {
+    /// Returns the values that must be present for this expression to match
+    /// (i.e. it is not nullable), or an empty `Vec` if the expression is
+    /// nullable (can match the empty bag). A `Fail` node has no symbol value
+    /// of its own, so it reports its error(s) instead via `Either::Left`.
+    pub fn mandatory_values(&self) -> MandatoryValues<A> {
         match &self {
-            Rbe::Fail { .. } => false,
-            Rbe::Empty => true,
-            Rbe::Symbol { card, .. } if card.nullable() => true,
-            Rbe::Symbol { .. } => false,
-            Rbe::And { values } => values.iter().all(|v| v.nullable()),
-            Rbe::Or { values } => values.iter().any(|v| v.nullable()),
-            Rbe::Star { .. } => true,
-            Rbe::Plus { value } => value.nullable(),
-            Rbe::Repeat { value: _, card } if card.min.is_0() => true,
-            Rbe::Repeat { value, card: _ } => value.nullable(),
+            Rbe::Fail { error } => Either::Left(vec![error.clone()]),
+            Rbe::Empty => Either::Right(Vec::new()),
+            Rbe::Symbol { card, .. } if card.nullable() => Either::Right(Vec::new()),
+            Rbe::Symbol { value, .. } => Either::Right(vec![value.clone()]),
+            Rbe::And { values } => {
+                let mut mandatory = Vec::new();
+                let mut errors = Vec::new();
+                for v in values {
+                    match v.mandatory_values() {
+                        Either::Left(es) => errors.extend(es),
+                        Either::Right(vs) => mandatory.extend(vs),
+                    }
+                }
+                if errors.is_empty() {
+                    Either::Right(mandatory)
+                } else {
+                    Either::Left(errors)
+                }
+            },
+            Rbe::Or { values } => {
+                let results: Vec<_> = values.iter().map(|v| v.mandatory_values()).collect();
+                if results.iter().any(|r| matches!(r, Either::Right(vs) if vs.is_empty())) {
+                    Either::Right(Vec::new())
+                } else {
+                    let mut mandatory = Vec::new();
+                    let mut errors = Vec::new();
+                    for r in results {
+                        match r {
+                            Either::Left(es) => errors.extend(es),
+                            Either::Right(vs) => mandatory.extend(vs),
+                        }
+                    }
+                    if mandatory.is_empty() {
+                        Either::Left(errors)
+                    } else {
+                        Either::Right(mandatory)
+                    }
+                }
+            },
+            Rbe::Star { .. } => Either::Right(Vec::new()),
+            Rbe::Plus { value } => value.mandatory_values(),
+            Rbe::Repeat { value: _, card } if card.min.is_0() => Either::Right(Vec::new()),
+            Rbe::Repeat { value, card: _ } => value.mandatory_values(),
         }
+    }
+
+    /// `true` iff this expression is nullable, i.e. `mandatory_values()` is
+    /// `Either::Right` with an empty `Vec`.
+    pub(crate) fn is_nullable(&self) -> bool {
+        matches!(self.mandatory_values(), Either::Right(values) if values.is_empty())
     }
 
     pub fn deriv(&self, x: &A, n: usize, open: bool, controlled: &HashSet<A>) -> Rbe<A>
@@ -355,7 +403,7 @@ where
             },
             Rbe::Repeat { ref value, ref card } if card.is_0_0() => {
                 let d = value.deriv(x, n, open, controlled);
-                if d.nullable() {
+                if d.is_nullable() {
                     Rbe::Fail {
                         error: DerivError::CardinalityZeroZeroDeriv { symbol: x.clone() },
                     }

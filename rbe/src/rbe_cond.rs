@@ -2,6 +2,7 @@ use crate::failures::Failures;
 use crate::{Cardinality, MatchCond, Max, Min, Pending, deriv_n, rbe_error::RbeError};
 use crate::{Context, Key, Ref, Value};
 use core::hash::Hash;
+use either::Either;
 use itertools::cloned;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -48,6 +49,12 @@ where
 }
 
 type NullableResult = bool;
+
+/// The result of [`RbeCond::mandatory_values`]: `Left` carries the errors
+/// found when the expression contains a `Fail` node (which has no real key
+/// to report), `Right` carries the keys that must appear for the expression
+/// to match — empty if the expression is nullable.
+type MandatoryValues<K, V, R, Ctx> = Either<Vec<RbeError<K, V, R, Ctx>>, Vec<K>>;
 
 impl<K, V, R, Ctx> RbeCond<K, V, R, Ctx>
 where
@@ -187,6 +194,58 @@ where
             RbeCond::Plus { expr } => expr.nullable(),
             RbeCond::Repeat { expr: _, card } if card.min.is_0() => true,
             RbeCond::Repeat { expr, card: _ } => expr.nullable(),
+        }
+    }
+
+    /// Returns the keys that must be present for this expression to match
+    /// (i.e. it is not nullable), or an empty `Vec` if the expression is
+    /// nullable (can match with no values). A `Fail` node has no key of its
+    /// own, so it reports its error(s) instead via `Either::Left`.
+    pub fn mandatory_values(&self) -> MandatoryValues<K, V, R, Ctx> {
+        match &self {
+            RbeCond::Fail { error } => Either::Left(vec![error.clone()]),
+            RbeCond::Empty => Either::Right(Vec::new()),
+            RbeCond::Symbol { card, .. } if card.nullable() => Either::Right(Vec::new()),
+            RbeCond::Symbol { key, .. } => Either::Right(vec![key.clone()]),
+            RbeCond::And { exprs } => {
+                let mut mandatory = Vec::new();
+                let mut errors = Vec::new();
+                for v in exprs {
+                    match v.mandatory_values() {
+                        Either::Left(es) => errors.extend(es),
+                        Either::Right(vs) => mandatory.extend(vs),
+                    }
+                }
+                if errors.is_empty() {
+                    Either::Right(mandatory)
+                } else {
+                    Either::Left(errors)
+                }
+            },
+            RbeCond::Or { exprs } => {
+                let results: Vec<_> = exprs.iter().map(|v| v.mandatory_values()).collect();
+                if results.iter().any(|r| matches!(r, Either::Right(vs) if vs.is_empty())) {
+                    Either::Right(Vec::new())
+                } else {
+                    let mut mandatory = Vec::new();
+                    let mut errors = Vec::new();
+                    for r in results {
+                        match r {
+                            Either::Left(es) => errors.extend(es),
+                            Either::Right(vs) => mandatory.extend(vs),
+                        }
+                    }
+                    if mandatory.is_empty() {
+                        Either::Left(errors)
+                    } else {
+                        Either::Right(mandatory)
+                    }
+                }
+            },
+            RbeCond::Star { .. } => Either::Right(Vec::new()),
+            RbeCond::Plus { expr } => expr.mandatory_values(),
+            RbeCond::Repeat { expr: _, card } if card.min.is_0() => Either::Right(Vec::new()),
+            RbeCond::Repeat { expr, card: _ } => expr.mandatory_values(),
         }
     }
 

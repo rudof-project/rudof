@@ -10,6 +10,7 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
+either.workspace = true
 hashbag.workspace = true
 indexmap.workspace = true
 itertools.workspace = true

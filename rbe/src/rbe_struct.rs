@@ -215,7 +215,7 @@ where
     }
 
     pub fn nullable(&self) -> bool {
-        self.rbe.nullable()
+        self.rbe.is_nullable()
     }
 
     /// Returns `true` if any symbol appears in more than one item's symbol set.

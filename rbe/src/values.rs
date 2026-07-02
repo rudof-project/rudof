@@ -24,6 +24,10 @@ where
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.values.is_empty()
+    }
+
     /// Renders these values the same way `Display` does, except every key
     /// and value is rendered through the caller-supplied closures instead
     /// of `Display`. Lets a caller with more context (e.g. a `PrefixMap`)
