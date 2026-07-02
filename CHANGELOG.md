@@ -12,6 +12,14 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Fixed
 - fix(sparql): fix SPARQL endpoint validation and add rate limiting and caching
 - fix(cli): fix CLI to allow node command with endpoint backend and no data input, and add --endpoint/-e shortcut for endpoint backend
+- fix(shex): resolve shapemap prefixes from data/schema sources
+- fix(sparql): fix SPARQL endpoint validation and add rate limiting and caching
+
+### Added
+- feat(rbe): report mandatory values in empty-candidates errors
+- feat(shex,rbe): explain why triple expression matching failed
+- feat(config): add missing `genid` prefix to the default config.
+- feat(shex): report why references failed in FailedPending errors
 
 ## v0.3.5
 ### Added
