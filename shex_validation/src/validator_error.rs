@@ -294,8 +294,12 @@ pub enum ValidatorError {
         reasons: Vec<NoMatchReason>,
     },
 
-    #[error("ShapeRef fails for node {node} with idx: {idx}")]
-    ShapeRefFailed { node: Box<Node>, idx: ShapeLabelIdx },
+    #[error("ShapeRef fails for node {node} with idx: {idx}, errors: {errors}")]
+    ShapeRefFailed {
+        node: Box<Node>,
+        idx: ShapeLabelIdx,
+        errors: ValidatorErrors,
+    },
 
     #[error("StartAct failed for node {node} with idx: {idx}")]
     StartActFailed { node: Box<Node>, idx: ShapeLabelIdx },
@@ -410,7 +414,7 @@ impl ValidatorError {
                     show_node(node)
                 )
             },
-            ValidatorError::ShapeRefFailed { node, idx } => {
+            ValidatorError::ShapeRefFailed { node, idx, .. } => {
                 format!(
                     "Reference to {} fails for node {}",
                     show_label(idx, schema, width),
@@ -438,6 +442,7 @@ impl ValidatorError {
         match self {
             ValidatorError::PartitionComponentFailed { errors, .. }
             | ValidatorError::PartitionFailed { errors, .. }
+            | ValidatorError::ShapeRefFailed { errors, .. }
             | ValidatorError::AbstractShapeError { errors, .. }
             | ValidatorError::DescendantShapeError { errors, .. }
             | ValidatorError::DescendantsShapeError { errors, .. }
@@ -534,7 +539,6 @@ impl ValidatorError {
             | ValidatorError::AddingConformantError { .. }
             | ValidatorError::AddingPendingError { .. }
             | ValidatorError::ShapeExprNotFound { .. }
-            | ValidatorError::ShapeRefFailed { .. }
             | ValidatorError::ExternalShapeRejected { .. }
             | ValidatorError::ExternalShapeUnresolved { .. }
             | ValidatorError::StartActFailed { .. } => Ok(()),

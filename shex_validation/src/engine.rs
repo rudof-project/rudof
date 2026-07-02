@@ -5,6 +5,7 @@ use crate::Reasons;
 use crate::ValidatorConfig;
 use crate::ValidatorErrors;
 use crate::atom;
+use crate::ref_typing::RefTyping;
 use crate::validator_error::*;
 use either::Either;
 use indexmap::IndexSet;
@@ -40,37 +41,6 @@ type NegAtom = (Node, ShapeLabelIdx);
 type PosAtom = (Node, ShapeLabelIdx);
 type Neighs = (Vec<(Pred, Node)>, Vec<Pred>);
 type ValidationResult = Either<Vec<ValidatorError>, Vec<Reason>>;
-/// Tracks which `(Node, ShapeLabelIdx)` pairs have already been proved (`passed`),
-/// and, for pairs whose proof was attempted and failed, the errors that caused
-/// the failure. This lets callers that consume a failed pending reference (e.g.
-/// `FailedPending`) explain *why* the reference failed, not just that it did.
-#[derive(Debug, Clone, Default)]
-pub(crate) struct RefTyping {
-    passed: HashSet<(Node, ShapeLabelIdx)>,
-    errors: HashMap<(Node, ShapeLabelIdx), Vec<ValidatorError>>,
-}
-
-impl RefTyping {
-    fn new() -> Self {
-        RefTyping::default()
-    }
-
-    fn contains(&self, pair: &(Node, ShapeLabelIdx)) -> bool {
-        self.passed.contains(pair)
-    }
-
-    fn insert_passed(&mut self, node: Node, idx: ShapeLabelIdx) {
-        self.passed.insert((node, idx));
-    }
-
-    fn insert_failed(&mut self, node: Node, idx: ShapeLabelIdx, errors: Vec<ValidatorError>) {
-        self.errors.entry((node, idx)).or_default().extend(errors);
-    }
-
-    fn errors_for(&self, pair: &(Node, ShapeLabelIdx)) -> Vec<ValidatorError> {
-        self.errors.get(pair).cloned().unwrap_or_default()
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct Engine {
@@ -633,9 +603,11 @@ impl Engine {
                 idx: *idx,
             })
         } else {
+            let errors = typing.errors_for(&(node.clone(), *idx));
             fail(ValidatorError::ShapeRefFailed {
                 node: Box::new(node.clone()),
                 idx: *idx,
+                errors: ValidatorErrors::new(errors),
             })
         }
     }
