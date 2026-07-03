@@ -1156,6 +1156,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "emacs-rudof"
+version = "0.3.6"
+dependencies = [
+ "anyhow",
+ "emacs",
+ "libtest-mimic",
+ "rudof_lib",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "emacs_module"
 version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3488,18 +3500,6 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "url",
-]
-
-[[package]]
-name = "rudof_emacs"
-version = "0.3.6"
-dependencies = [
- "anyhow",
- "emacs",
- "libtest-mimic",
- "rudof_lib",
- "serde",
- "serde_json",
 ]
 
 [[package]]

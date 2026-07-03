@@ -1,6 +1,6 @@
 {
-  "generate_with": "RUDOF_SHEXTEST_GENERATE_RANKING=1 cargo test -p rudof_emacs --test shextest",
-  "run_full_suite_with": "RUDOF_SHEXTEST_FULL=1 cargo test -p rudof_emacs --release",
+  "generate_with": "RUDOF_SHEXTEST_GENERATE_RANKING=1 cargo test -p emacs-rudof --test shextest",
+  "run_full_suite_with": "RUDOF_SHEXTEST_FULL=1 cargo test -p emacs-rudof --release",
   "default_fast_tier_size": 25,
   "rankings": [
     {

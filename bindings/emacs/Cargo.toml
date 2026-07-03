@@ -1,5 +1,5 @@
 [package]
-name = "rudof_emacs"
+name = "emacs-rudof"
 version.workspace = true
 authors.workspace = true
 description = "Emacs dynamic module exposing rudof's ShEx conformance validation"
@@ -12,7 +12,7 @@ readme = "README.md"
 publish = false
 
 [lib]
-name = "rudof_emacs"
+name = "emacs_rudof"
 # "rlib" is only needed so `tests/shextest.rs` (an integration test, compiled
 # as a separate crate) can link against this crate's `pub` test-support
 # functions; the Emacs module itself is loaded as the "cdylib" artifact.
