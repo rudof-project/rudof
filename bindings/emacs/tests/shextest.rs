@@ -54,8 +54,8 @@ fn main() {
 #[cfg(not(target_family = "wasm"))]
 mod imp {
 
-    use libtest_mimic::{Arguments, Failed, Trial};
     use emacs_rudof::validate::{read_data, read_shapemap, read_shex, validate_shex_quadruples};
+    use libtest_mimic::{Arguments, Failed, Trial};
     use rudof_lib::{Rudof, RudofConfig};
     use std::collections::{HashMap, HashSet};
     use std::path::{Path, PathBuf};
