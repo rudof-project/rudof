@@ -1,4 +1,4 @@
-# rudof_emacs
+# rudof emacs bindings
 
 An [Emacs dynamic module](https://www.gnu.org/software/emacs/manual/html_node/elisp/Dynamic-Modules.html)
 exposing rudof's ShEx conformance validation to Emacs Lisp, built with the
@@ -7,16 +7,16 @@ exposing rudof's ShEx conformance validation to Emacs Lisp, built with the
 ## Building
 
 ```shell
-cargo build --release -p rudof_emacs
+cargo build --release -p emacs-rudof
 ```
 
-This produces `target/release/librudof_emacs.{so,dylib,dll}` (the exact
+This produces `target/release/libemacs_rudof.{so,dylib,dll}` (the exact
 extension depends on the platform; Emacs's `module-file-suffix` already
 matches whichever one your build produces).
 
 ## Usage
 
-The module exposes a *stateful* API: `rudof-emacs-new` creates an opaque
+The module exposes a *stateful* API: `rudof-new` creates an opaque
 handle (a `user-ptr`) threaded through every other function as their first
 argument, mirroring `bindings/python/src/pyrudof_lib.rs`'s own `read_data`/
 `read_shex`/`read_shapemap`/`validate_shex` shape. Nothing about the
@@ -24,24 +24,24 @@ loaded schema/data/ShapeMap is ever represented in Lisp -- only the handle
 is, plus the final, flattened validation-result triples.
 
 ```emacs-lisp
-(module-load "/path/to/target/release/librudof_emacs.dylib")
+(module-load "/path/to/target/release/libemacs_rudof.dylib")
 
-(let ((rudof (rudof-emacs-new)))
-  (rudof-emacs-read-shex
+(let ((rudof (rudof-new)))
+  (rudof-read-shex
    rudof
    "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     <http://example.org/PersonShape> { <http://example.org/age> xsd:integer }"
    "shexc" nil)
-  (rudof-emacs-read-data
+  (rudof-read-data
    rudof "<http://example.org/alice> <http://example.org/age> 30 ." "turtle" nil)
   ;; read-shapemap must come *after* read-shex/read-data -- see below.
-  (rudof-emacs-read-shapemap
+  (rudof-read-shapemap
    rudof "<http://example.org/alice>@<http://example.org/PersonShape>" nil nil nil)
-  (rudof-emacs-validate-shex rudof))
+  (rudof-validate-shex rudof))
 ;; => (("http://example.org/alice" "http://example.org/PersonShape" "conformant" "..."))
 ```
 
-`rudof-emacs-validate-shex` returns a flat list of `(node shape status
+`rudof-validate-shex` returns a flat list of `(node shape status
 reason)` string quadruples (one per ShapeMap association), ready for e.g.
 a flymake backend to walk directly -- no JSON/text parsing needed on the
 Lisp side. `status` is one of `"conformant"`/`"nonconformant"`/`"pending"`/
@@ -70,7 +70,7 @@ unchanged) schema and ShapeMap alone.
 
 ### `read-data` replaces, never accumulates
 
-`rudof-emacs-read-data` always *replaces* whatever data was previously
+`rudof-read-data` always *replaces* whatever data was previously
 loaded into the same handle -- this deliberately differs from
 `rudof_lib::Rudof::load_data`'s own default of merging new data into
 existing data. An editor buffer's *current* text should always become
@@ -79,7 +79,7 @@ silently appended underneath it on every edit.
 
 ## Testing
 
-`cargo test -p rudof_emacs` runs the shexTest `validation/manifest.jsonld`
+`cargo test -p emacs-rudof` runs the shexTest `validation/manifest.jsonld`
 suite (requires the `shex_testsuite/shexTest` submodule: `git submodule
 update --init shex_testsuite/shexTest`) as individually named, parallelized
 tests, by default limited to a fixture subset chosen to exercise every
@@ -95,14 +95,14 @@ For the full 1153-fixture suite (expect several minutes even in
 `--release`, so this isn't run by default):
 
 ```shell
-RUDOF_SHEXTEST_FULL=1 cargo test -p rudof_emacs --release
+RUDOF_SHEXTEST_FULL=1 cargo test -p emacs-rudof --release
 ```
 
 After bumping the shexTest submodule, regenerate the ranking (preserves the
 existing `default_fast_tier_size`):
 
 ```shell
-RUDOF_SHEXTEST_GENERATE_RANKING=1 cargo test -p rudof_emacs --test shextest
+RUDOF_SHEXTEST_GENERATE_RANKING=1 cargo test -p emacs-rudof --test shextest
 ```
 
 ## Why a dynamic module, not a C-ABI library

@@ -25,22 +25,22 @@
 //! "load schema + ShapeMap once, re-read data on every edit" workflow
 //! cheap.
 //!
-//! Build with `cargo build --release -p rudof_emacs`, then from Emacs:
+//! Build with `cargo build --release -p emacs-rudof`, then from Emacs:
 //!
 //! ```emacs-lisp
-//! (module-load "/path/to/target/release/librudof_emacs.dylib") ; .so/.dll elsewhere
-//! (require 'rudof-emacs)
-//! (let ((rudof (rudof-emacs-new)))
-//!   (rudof-emacs-read-shex
+//! (module-load "/path/to/target/release/libemacs_rudof.dylib") ; .so/.dll elsewhere
+//! (require 'rudof-dyn)
+//! (let ((rudof (rudof-new)))
+//!   (rudof-read-shex
 //!    rudof
 //!    "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 //!     <http://example.org/PersonShape> { <http://example.org/age> xsd:integer }"
 //!    "shexc" nil)
-//!   (rudof-emacs-read-data
+//!   (rudof-read-data
 //!    rudof "<http://example.org/alice> <http://example.org/age> 30 ." "turtle" nil)
-//!   (rudof-emacs-read-shapemap
+//!   (rudof-read-shapemap
 //!    rudof "<http://example.org/alice>@<http://example.org/PersonShape>" nil nil nil)
-//!   (rudof-emacs-validate-shex rudof))
+//!   (rudof-validate-shex rudof))
 //! ;; => (("http://example.org/alice" "http://example.org/PersonShape" "conformant"))
 //! ```
 
@@ -49,11 +49,18 @@ use rudof_lib::formats::{DataFormat, InputSpec, ShExFormat, ShapeMapFormat};
 use rudof_lib::{Rudof, RudofConfig};
 use std::str::FromStr;
 
+// `name`/`defun_prefix`: split the feature name from the function prefix,
+// mirroring tree-sitter's `tsc`/`tsc-dyn` -- Lisp code depends on and
+// `require`s the native module as `rudof-dyn`, but calls its functions
+// under the shorter `rudof-` prefix (`rudof-new`, `rudof-read-shex`, ...),
+// leaving room for a future pure-Lisp `rudof.el` to layer on top without a
+// name clash.
+//
 // `mod_in_name = false`: this file's own `mod validate` nesting (an
 // internal Rust organization choice) must not leak into the Lisp names
 // below -- without it, `read_data` would register as
-// `rudof-emacs-validate-read-data`.
-#[emacs::module(mod_in_name = false)]
+// `rudof-validate-read-data`.
+#[emacs::module(name = "rudof-dyn", defun_prefix = "rudof", mod_in_name = false)]
 fn init(_: &Env) -> Result<()> {
     Ok(())
 }

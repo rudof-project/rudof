@@ -13,7 +13,7 @@
 //! which `rudof_lib::load_shapemap`'s `Json` format arm being `todo!()`
 //! can't currently be fed at all):
 //!
-//! - **Default** (`cargo test -p rudof_emacs`): the first
+//! - **Default** (`cargo test -p emacs-rudof`): the first
 //!   `default_fast_tier_size` entries of [`RANKED_MANIFEST_PATH`] (itself
 //!   one of the fields stored in that file, see [`RankedManifest`]), a
 //!   precomputed greedy set-cover ranking over each entry's `trait` tags
@@ -23,7 +23,7 @@
 //!   construct the suite tests at least once, in a couple of seconds.
 //! - **Full**, for the rare occasions the whole, slow suite is actually
 //!   wanted (e.g. before a release, or after a `rudof_lib` validator
-//!   change): `RUDOF_SHEXTEST_FULL=1 cargo test -p rudof_emacs --release`
+//!   change): `RUDOF_SHEXTEST_FULL=1 cargo test -p emacs-rudof --release`
 //!   runs all 1153 eligible entries, each still its own named/parallelized
 //!   test -- expect several minutes even in release mode.
 //!
@@ -31,14 +31,14 @@
 //! at test time, so the ranking (and the fast-tier size, also stored in
 //! that file) is reviewable/diffable like any other fixture. Regenerate
 //! the ranking after bumping the shexTest submodule with
-//! `RUDOF_SHEXTEST_GENERATE_RANKING=1 cargo test -p rudof_emacs --test
+//! `RUDOF_SHEXTEST_GENERATE_RANKING=1 cargo test -p emacs-rudof --test
 //! shextest` -- deliberately *not* a `Trial`/named test (so it never shows
 //! up, ignored or otherwise, in normal test listings/runs), just an
 //! env-var-gated early exit from `main` before any `libtest_mimic`
 //! involvement, mirroring how `RUDOF_SHEXTEST_FULL` is checked below.
 //!
 //! Not built on `wasm32` targets: this suite depends on `rudof_lib` and
-//! `anyhow`, both of which `rudof_emacs` declares only for non-wasm targets
+//! `anyhow`, both of which `emacs-rudof` declares only for non-wasm targets
 //! (Emacs dynamic modules are native shared libraries). The whole body of
 //! this file is wrapped in `mod imp` so the wasm build still has a valid
 //! (empty) `main` and the binary compiles.
@@ -54,8 +54,8 @@ fn main() {
 #[cfg(not(target_family = "wasm"))]
 mod imp {
 
+    use emacs_rudof::validate::{read_data, read_shapemap, read_shex, validate_shex_quadruples};
     use libtest_mimic::{Arguments, Failed, Trial};
-    use rudof_emacs::validate::{read_data, read_shapemap, read_shex, validate_shex_quadruples};
     use rudof_lib::{Rudof, RudofConfig};
     use std::collections::{HashMap, HashSet};
     use std::path::{Path, PathBuf};
@@ -66,8 +66,8 @@ mod imp {
     /// whatever value is already on disk instead of resetting it, so hand-
     /// tuning the tier size only requires editing that file, never this one.
     const BOOTSTRAP_FAST_TIER_SIZE: usize = 25;
-    const GENERATE_WITH: &str = "RUDOF_SHEXTEST_GENERATE_RANKING=1 cargo test -p rudof_emacs --test shextest";
-    const RUN_FULL_SUITE_WITH: &str = "RUDOF_SHEXTEST_FULL=1 cargo test -p rudof_emacs --release";
+    const GENERATE_WITH: &str = "RUDOF_SHEXTEST_GENERATE_RANKING=1 cargo test -p emacs-rudof --test shextest";
+    const RUN_FULL_SUITE_WITH: &str = "RUDOF_SHEXTEST_FULL=1 cargo test -p emacs-rudof --release";
 
     /// Mirrors the handful of fields this crate's tests read off each shexTest
     /// manifest entry, kept deliberately separate from `shex_testsuite` (whose
@@ -133,7 +133,7 @@ mod imp {
     /// a `OneOf`/repeated triple constraint with overlapping predicates or
     /// cardinalities (e.g. `nPlus1`, `1dotOne2dot_pass_p1`,
     /// `open3Onedotclosecard2_pass-p1X2`). Tracked here as known, not fixed, so
-    /// this suite stays a regression guard for `rudof_emacs` itself rather than
+    /// this suite stays a regression guard for `emacs-rudof` itself rather than
     /// perpetually red over an upstream validator gap -- remove an entry once
     /// `rudof_lib` fixes the underlying case.
     const KNOWN_VALIDATOR_DIVERGENCES: &[&str] = &[
