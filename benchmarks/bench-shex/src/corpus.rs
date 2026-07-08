@@ -144,6 +144,5 @@ fn extract_root() -> PathBuf {
     if let Ok(dir) = std::env::var("CARGO_TARGET_DIR") {
         return PathBuf::from(dir).join("bench-shex-corpus");
     }
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../target/bench-shex-corpus")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/bench-shex-corpus")
 }
