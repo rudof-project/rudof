@@ -329,6 +329,10 @@ cargo run -p shex_testsuite -- -m shex_testsuite/shexTest/validation/manifest.js
 cargo run -p shex_testsuite -- -m shex_testsuite/shexTest/schemas/manifest.jsonld -f schemas -p failed
 ```
 
+## Benchmarks
+
+Performance benchmarks live in [`benchmarks/`](./benchmarks/). They are not published to crates.io and are not executed in CI. Run them locally with Criterion.
+
 ## License
 
 Licensed under either of
