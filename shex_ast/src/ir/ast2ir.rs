@@ -7,7 +7,7 @@ use crate::ir::object_value::ObjectValue;
 use crate::ir::schema_ir::SchemaIR;
 use crate::ir::sem_act::SemAct;
 use crate::ir::semantic_action_context::SemanticActionContext;
-use crate::ir::semantic_action_extension::SemanticActionExtension;
+use crate::ast::cond_kind::CondKind;
 use crate::ir::semantic_actions_registry::SemanticActionsRegistry;
 use crate::ir::shape::Shape;
 use crate::ir::shape_expr::ShapeExpr;
@@ -15,29 +15,26 @@ use crate::ir::shape_label::ShapeLabel;
 use crate::ir::test_action_extension::TestActionExtension;
 use crate::ir::value_set::ValueSet;
 use crate::ir::value_set_value::ValueSetValue;
-use crate::{CResult, Cond, Node, Pred, ResolveMethod, ShExFormat, ShExParser, ir};
+use crate::{CResult, Cond, Expr, Node, Pred, ResolveMethod, ShExFormat, ShExParser, ir};
 use crate::{SchemaIRError, ShapeLabelIdx, ast, ast::Schema as SchemaAST};
 use crate::{ShapeExprLabel, ast::iri_exclusion::IriExclusion};
 use core::panic;
 use prefixmap::{IriRef, PrefixMap};
-use rbe::{Cardinality, Pending, RbeError, SingleCond};
+use rbe::{Cardinality, SingleCond};
 use rbe::{Component, MatchCond, Max, Min, RbeStruct, RbeTable};
 use rudof_iri::IriS;
 use rudof_iri::error::IriSError;
-use rudof_rdf::rdf_core::term::{
-    Object,
-    literal::{ConcreteLiteral, NumericLiteral},
-};
+use rudof_rdf::rdf_core::term::literal::NumericLiteral;
 use std::collections::HashMap;
 use std::sync::Arc;
-use tracing::{debug, info, trace};
+use tracing::{info, trace};
 
 #[derive(Debug, Default)]
 /// AST2IR compile a Schema in AST (JSON) to IR (Intermediate Representation).
 pub struct AST2IR {
     shape_decls_counter: usize,
     resolve_method: ResolveMethod,
-    semantic_actions_registry: SemanticActionsRegistry,
+    semantic_actions_registry: Arc<SemanticActionsRegistry>,
     triple_expr_labels: HashMap<ast::TripleExprLabel, ast::TripleExpr>,
 }
 
@@ -50,17 +47,20 @@ impl AST2IR {
         Self {
             resolve_method: resolve_method.clone(),
             shape_decls_counter: 0,
-            semantic_actions_registry,
+            semantic_actions_registry: Arc::new(semantic_actions_registry),
             triple_expr_labels: HashMap::new(),
         }
     }
 
-    /// Build an `AST2IR` from an existing registry.
+    /// Build an `AST2IR` from an existing registry handle.
     ///
     /// This is the preferred constructor when the registry (and its `MapActionExtension` Arc) has
-    /// already been set up by the caller, so that all closures compiled here share the same
+    /// already been set up by the caller, so that all conditions compiled here share the same
     /// `Arc<Mutex<MapState>>` as the registry stored in the `SchemaIR`.
-    pub fn with_registry(resolve_method: &ResolveMethod, registry: SemanticActionsRegistry) -> Self {
+    pub fn with_registry(
+        resolve_method: &ResolveMethod,
+        registry: Arc<SemanticActionsRegistry>,
+    ) -> Self {
         Self {
             resolve_method: resolve_method.clone(),
             shape_decls_counter: 0,
@@ -367,10 +367,10 @@ impl AST2IR {
             },
             ast::ShapeExpr::Shape(shape) => {
                 let new_extra = self.cnv_extra(&shape.extra, &compiled_schema.prefixmap())?;
-                let rbe_table = match &shape.expression {
+                let rbe_table: Expr = match &shape.expression {
                     None => RbeTable::new(),
                     Some(tew) => {
-                        let mut table = RbeTable::new();
+                        let mut table: Expr = RbeTable::new();
                         let rbe = self.triple_expr2rbe(&tew.te, compiled_schema, &mut table, source_iri, base)?;
                         table.with_rbe(rbe);
                         table
@@ -467,7 +467,7 @@ impl AST2IR {
         &self,
         triple_expr: &ast::TripleExpr,
         compiled_schema: &mut SchemaIR,
-        current_table: &mut RbeTable<Pred, Node, ShapeLabelIdx, SemanticActionContext>,
+        current_table: &mut RbeTable<Pred, Node, ShapeLabelIdx, SemanticActionContext, CondKind>,
         source_iri: &IriS,
         base: &Option<IriS>,
     ) -> CResult<RbeStruct<Component>> {
@@ -486,7 +486,7 @@ impl AST2IR {
         &self,
         triple_expr: &ast::TripleExpr,
         compiled_schema: &mut SchemaIR,
-        current_table: &mut RbeTable<Pred, Node, ShapeLabelIdx, SemanticActionContext>,
+        current_table: &mut RbeTable<Pred, Node, ShapeLabelIdx, SemanticActionContext, CondKind>,
         source_iri: &IriS,
         visited_refs: &mut Vec<ast::TripleExprLabel>,
         base: &Option<IriS>,
@@ -742,7 +742,10 @@ impl AST2IR {
                 },
             }
         } else {
-            Ok((MatchCond::single(SingleCond::new().with_name(".")), ".".to_string()))
+            Ok((
+                MatchCond::single(SingleCond::new().with_name(".").with_kind(CondKind::Any)),
+                ".".to_string(),
+            ))
         }?;
         if !sem_actions_conds.is_empty() {
             sem_actions_conds.push(cond);
@@ -867,15 +870,10 @@ impl AST2IR {
         actions
             .iter()
             .map(|a| {
-                let semantic_action_code = self
-                    .semantic_actions_registry
+                self.semantic_actions_registry
                     .find_code(a.name())
                     .map_err(|e| Box::new(SchemaIRError::SemanticActionError { error: e.to_string() }))?;
-                Ok(mk_cond_sem_act(
-                    a.name().clone(),
-                    semantic_action_code,
-                    a.code().cloned(),
-                ))
+                Ok(mk_cond_sem_act(a.name().clone(), a.code().cloned()))
             })
             .collect::<Result<Vec<_>, Box<SchemaIRError>>>()
     }
@@ -985,36 +983,24 @@ fn mk_cond_ref(idx: ShapeLabelIdx) -> Cond {
     MatchCond::ref_(idx)
 }
 
-fn mk_cond_sem_act(
-    name: IriS,
-    semantic_action_code: Arc<dyn SemanticActionExtension + Send + Sync>,
-    code: Option<String>,
-) -> Cond {
-    MatchCond::single(SingleCond::new().with_name(name.as_str()).with_cond(
-        move |_value: &Node, ctx: &SemanticActionContext| {
-            semantic_action_code
-                .run_action(code.as_deref(), ctx)
-                .map(|()| Pending::empty())
-                .map_err(|e| RbeError::MsgError {
-                    msg: format!("Semantic action error for {name}: {e}"),
-                })
-        },
-    ))
+fn mk_cond_sem_act(name: IriS, code: Option<String>) -> Cond {
+    let display = name.as_str().to_string();
+    MatchCond::single(
+        SingleCond::new()
+            .with_name(display.as_str())
+            .with_kind(CondKind::SemAct { name, code }),
+    )
 }
 
 fn mk_cond_datatype(datatype: &IriS, prefixmap: &PrefixMap) -> Cond {
-    let dt = datatype.clone();
+    let qualified = prefixmap.qualify(datatype).to_string();
     MatchCond::single(
         SingleCond::new()
-            .with_name(prefixmap.qualify(&dt).to_string().as_str())
-            .with_cond(
-                move |value: &Node, _ctx: &SemanticActionContext| match check_node_datatype(value, &dt) {
-                    Ok(_) => Ok(Pending::empty()),
-                    Err(err) => Err(RbeError::MsgError {
-                        msg: format!("Datatype error: {err}"),
-                    }),
-                },
-            ),
+            .with_name(qualified.as_str())
+            .with_kind(CondKind::Datatype {
+                iri: datatype.clone(),
+                qualified,
+            }),
     )
 }
 
@@ -1022,110 +1008,59 @@ fn mk_cond_length(len: usize) -> Cond {
     MatchCond::single(
         SingleCond::new()
             .with_name(format!("length({len})").as_str())
-            .with_cond(
-                move |value: &Node, _ctx: &SemanticActionContext| match check_node_length(value, len) {
-                    Ok(_) => Ok(Pending::empty()),
-                    Err(err) => Err(RbeError::MsgError {
-                        msg: format!("Length error: {err}"),
-                    }),
-                },
-            ),
+            .with_kind(CondKind::Length(len)),
     )
 }
 
 fn mk_cond_min_inclusive(min: NumericLiteral) -> Cond {
-    let min_str = min.to_string();
+    let name = format!("minInclusive({min})");
     MatchCond::single(
         SingleCond::new()
-            .with_name(format!("minInclusive({min_str})").as_str())
-            .with_cond(move |value: &Node, _ctx: &SemanticActionContext| {
-                match check_node_min_inclusive(value, min.clone()) {
-                    Ok(_) => Ok(Pending::empty()),
-                    Err(err) => Err(RbeError::MsgError {
-                        msg: format!("MinInclusive: {err}"),
-                    }),
-                }
-            }),
+            .with_name(name.as_str())
+            .with_kind(CondKind::MinInclusive(min)),
     )
 }
 
 fn mk_cond_min_exclusive(min: NumericLiteral) -> Cond {
-    let min_str = min.to_string();
+    let name = format!("minExclusive({min})");
     MatchCond::single(
         SingleCond::new()
-            .with_name(format!("minExclusive({min_str})").as_str())
-            .with_cond(move |value: &Node, _ctx: &SemanticActionContext| {
-                match check_node_min_exclusive(value, min.clone()) {
-                    Ok(_) => Ok(Pending::empty()),
-                    Err(err) => Err(RbeError::MsgError {
-                        msg: format!("MinExclusive: {err}"),
-                    }),
-                }
-            }),
+            .with_name(name.as_str())
+            .with_kind(CondKind::MinExclusive(min)),
     )
 }
 
 fn mk_cond_total_digits(total: usize) -> Cond {
-    let total_str = total.to_string();
     MatchCond::single(
         SingleCond::new()
-            .with_name(format!("totalDigits({total_str})").as_str())
-            .with_cond(
-                move |value: &Node, _ctx: &SemanticActionContext| match check_node_total_digits(value, total) {
-                    Ok(_) => Ok(Pending::empty()),
-                    Err(err) => Err(RbeError::MsgError {
-                        msg: format!("MaxExclusive: {err}"),
-                    }),
-                },
-            ),
+            .with_name(format!("totalDigits({total})").as_str())
+            .with_kind(CondKind::TotalDigits(total)),
     )
 }
 
 fn mk_cond_fraction_digits(total: usize) -> Cond {
-    let total_str = total.to_string();
     MatchCond::single(
         SingleCond::new()
-            .with_name(format!("fractionDigits({total_str})").as_str())
-            .with_cond(move |value: &Node, _ctx: &SemanticActionContext| {
-                match check_node_fraction_digits(value, total) {
-                    Ok(_) => Ok(Pending::empty()),
-                    Err(err) => Err(RbeError::MsgError {
-                        msg: format!("MaxExclusive: {err}"),
-                    }),
-                }
-            }),
+            .with_name(format!("fractionDigits({total})").as_str())
+            .with_kind(CondKind::FractionDigits(total)),
     )
 }
 
 fn mk_cond_max_exclusive(max: NumericLiteral) -> Cond {
-    let max_str = max.to_string();
+    let name = format!("maxExclusive({max})");
     MatchCond::single(
         SingleCond::new()
-            .with_name(format!("maxExclusive({max_str})").as_str())
-            .with_cond(move |value: &Node, _ctx: &SemanticActionContext| {
-                match check_node_max_exclusive(value, max.clone()) {
-                    Ok(_) => Ok(Pending::empty()),
-                    Err(err) => Err(RbeError::MsgError {
-                        msg: format!("MaxExclusive: {err}"),
-                    }),
-                }
-            }),
+            .with_name(name.as_str())
+            .with_kind(CondKind::MaxExclusive(max)),
     )
 }
 
 fn mk_cond_max_inclusive(max: NumericLiteral) -> Cond {
-    let max_str = max.to_string();
+    let name = format!("maxInclusive({max})");
     MatchCond::single(
         SingleCond::new()
-            .with_name(format!("maxInclusive({max_str})").as_str())
-            .with_cond(move |value: &Node, _ctx: &SemanticActionContext| {
-                match check_node_max_inclusive(value, max.clone()) {
-                    Ok(_) => Ok(Pending::empty()),
-                    Err(err) => Err(RbeError::MsgError {
-                        msg: format!("MaxInclusive: {err}"),
-                    }),
-                }
-            }),
+            .with_name(name.as_str())
+            .with_kind(CondKind::MaxInclusive(max)),
     )
 }
 
@@ -1133,26 +1068,15 @@ fn mk_cond_min_length(len: usize) -> Cond {
     MatchCond::single(
         SingleCond::new()
             .with_name(format!("minLength({len})").as_str())
-            .with_cond(
-                move |value: &Node, _ctx: &SemanticActionContext| match check_node_min_length(value, len) {
-                    Ok(_) => Ok(Pending::empty()),
-                    Err(err) => Err(RbeError::MsgError {
-                        msg: format!("MinLength error: {err}"),
-                    }),
-                },
-            ),
+            .with_kind(CondKind::MinLength(len)),
     )
 }
 
 fn mk_cond_max_length(len: usize) -> Cond {
-    MatchCond::simple(
-        format!("maxLength({len})").as_str(),
-        move |value: &Node, _ctx: &SemanticActionContext| match check_node_max_length(value, len) {
-            Ok(_) => Ok(Pending::empty()),
-            Err(err) => Err(RbeError::MsgError {
-                msg: format!("MaxLength error: {err}"),
-            }),
-        },
+    MatchCond::single(
+        SingleCond::new()
+            .with_name(format!("maxLength({len})").as_str())
+            .with_kind(CondKind::MaxLength(len)),
     )
 }
 
@@ -1160,30 +1084,21 @@ fn mk_cond_nodekind(nodekind: ast::NodeKind) -> Cond {
     MatchCond::single(
         SingleCond::new()
             .with_name(format!("nodekind({nodekind})").as_str())
-            .with_cond(move |value: &Node, _ctx: &SemanticActionContext| {
-                match check_node_node_kind(value, &nodekind) {
-                    Ok(_) => Ok(Pending::empty()),
-                    Err(err) => Err(RbeError::MsgError {
-                        msg: format!("NodeKind Error: {err}"),
-                    }),
-                }
-            }),
+            .with_kind(CondKind::NodeKind(nodekind)),
     )
 }
 
 fn mk_cond_pattern(regex: &str, flags: Option<&str>, base: &Option<IriS>) -> Cond {
-    let regex_str = format!("/{regex}/{}", flags.unwrap_or(""));
-    let regex = regex.to_string();
-    let flags = flags.map(|f| f.to_string());
-    let base = base.clone();
-    MatchCond::single(SingleCond::new().with_name(regex_str.as_str()).with_cond(
-        move |value: &Node, _ctx: &SemanticActionContext| match check_pattern(value, &regex, flags.as_deref(), &base) {
-            Ok(_) => Ok(Pending::empty()),
-            Err(err) => Err(RbeError::MsgError {
-                msg: format!("Pattern error: {err}"),
+    let name = format!("/{regex}/{}", flags.unwrap_or(""));
+    MatchCond::single(
+        SingleCond::new()
+            .with_name(name.as_str())
+            .with_kind(CondKind::Pattern {
+                regex: regex.to_string(),
+                flags: flags.map(|f| f.to_string()),
+                base: base.clone(),
             }),
-        },
-    ))
+    )
 }
 
 fn iri_ref_2_shape_label(id: &IriRef) -> CResult<ShapeLabel> {
@@ -1197,23 +1112,10 @@ fn iri_ref_2_shape_label(id: &IriRef) -> CResult<ShapeLabel> {
 }
 
 fn mk_cond_value_set(value_set: ValueSet, prefixmap: &PrefixMap) -> Cond {
-    let cloned_prefixmap = prefixmap.clone();
     MatchCond::single(
         SingleCond::new()
             .with_name(value_set.show_qualified(prefixmap).as_str())
-            .with_cond(move |node: &Node, _ctx: &SemanticActionContext| {
-                if value_set.check_value(node.as_object()) {
-                    Ok(Pending::empty())
-                } else {
-                    Err(RbeError::MsgError {
-                        msg: format!(
-                            "Values failed: {} not in {}",
-                            node.as_object().show_qualified(&cloned_prefixmap),
-                            value_set.show_qualified(&cloned_prefixmap)
-                        ),
-                    })
-                }
-            }),
+            .with_kind(CondKind::ValueSet(value_set)),
     )
 }
 
@@ -1432,316 +1334,6 @@ fn cnv_object_value(ov: &ast::ObjectValue, prefixmap: &PrefixMap) -> CResult<Obj
             Ok(ObjectValue::IriRef(iri))
         },
         ast::ObjectValue::Literal(lit) => Ok(ObjectValue::ObjectLiteral(lit.clone())),
-    }
-}
-
-fn check_pattern(node: &Node, regex: &str, flags: Option<&str>, base: &Option<IriS>) -> CResult<()> {
-    tracing::trace!("check_pattern: node: {node}, regex: {regex}, flags: {flags:?}, base: {base:?}");
-    let lexical_form = match node.as_object() {
-        Object::Literal(lit) => Ok(lit.lexical_form()),
-        Object::BlankNode(b) => Ok(b.clone()),
-        Object::Iri(iri) => Ok(iri.to_string()),
-        Object::Triple { .. } => Err(Box::new(SchemaIRError::PatternTripleTerm {
-            node: node.to_string(),
-            regex: regex.to_string(),
-            flags: flags.map(|f| f.to_string()),
-        })),
-    }?;
-    let effective_regex = match flags {
-        Some(f) if !f.is_empty() => format!("(?{f}){regex}"),
-        _ => regex.to_string(),
-    };
-    if let Ok(re) = regex::Regex::new(&effective_regex) {
-        if re.is_match(&lexical_form) {
-            Ok(())
-        } else {
-            Err(Box::new(SchemaIRError::PatternError {
-                regex: regex.to_string(),
-                flags: flags.unwrap_or("").to_string(),
-                lexical_form: lexical_form.clone(),
-            }))
-        }
-    } else {
-        Err(Box::new(SchemaIRError::InvalidRegex {
-            regex: regex.to_string(),
-        }))
-    }
-}
-
-fn check_node_node_kind(node: &Node, nk: &ast::NodeKind) -> CResult<()> {
-    match (nk, node.as_object()) {
-        (ast::NodeKind::Iri, Object::Iri { .. }) => Ok(()),
-        (ast::NodeKind::Iri, _) => Err(Box::new(SchemaIRError::NodeKindIri { node: node.clone() })),
-        (ast::NodeKind::BNode, Object::BlankNode(_)) => Ok(()),
-        (ast::NodeKind::BNode, _) => Err(Box::new(SchemaIRError::NodeKindBNode { node: node.clone() })),
-        (ast::NodeKind::Literal, Object::Literal(_)) => Ok(()),
-        (ast::NodeKind::Literal, _) => Err(Box::new(SchemaIRError::NodeKindLiteral { node: node.clone() })),
-        (ast::NodeKind::NonLiteral, Object::BlankNode(_)) => Ok(()),
-        (ast::NodeKind::NonLiteral, Object::Iri { .. }) => Ok(()),
-        (ast::NodeKind::NonLiteral, _) => Err(Box::new(SchemaIRError::NodeKindNonLiteral { node: node.clone() })),
-    }
-}
-
-fn check_node_datatype(node: &Node, dt: &IriS) -> CResult<()> {
-    let object = node.as_checked_object().map_err(|e| {
-        Box::new(SchemaIRError::Internal {
-            msg: format!("check_node_datatype: as_checked_object error: {e}"),
-        })
-    })?;
-    match object {
-        Object::Literal(sliteral) => check_literal_datatype(&sliteral, dt, node),
-        Object::Iri(_) | Object::BlankNode(_) | Object::Triple { .. } => {
-            Err(Box::new(SchemaIRError::DatatypeNoLiteral {
-                expected: Box::new(dt.clone()),
-                node: Box::new(node.clone()),
-            }))
-        },
-    }
-}
-
-// Check that the literal has the expected datatype
-// It assumes that the literal has been checked and in case of wrong datatype it is a WrongDatatypeLiteral
-fn check_literal_datatype(sliteral: &ConcreteLiteral, expected: &IriS, node: &Node) -> CResult<()> {
-    let checked_literal = sliteral.clone().into_checked_literal().map_err(|e| {
-        Box::new(SchemaIRError::Internal {
-            msg: format!("check_literal_datatype: into_checked_literal error: {e}"),
-        })
-    })?;
-    match checked_literal {
-        ConcreteLiteral::WrongDatatypeLiteral {
-            lexical_form,
-            datatype,
-            error,
-        } => Err(Box::new(SchemaIRError::WrongDatatypeLiteralMatch {
-            datatype: datatype.clone(),
-            error: error.clone(),
-            expected: expected.clone(),
-            lexical_form: lexical_form.to_string(),
-        })),
-        _ => {
-            let node_dt = checked_literal.datatype();
-            let node_dt_iri = node_dt.get_iri().map_err(|e| {
-                Box::new(SchemaIRError::CheckLiteralDatatypeCnvIriRef2IriError {
-                    iri_ref: node_dt.clone(),
-                    error: e.to_string(),
-                })
-            })?;
-            if node_dt_iri == expected {
-                Ok(())
-            } else {
-                Err(Box::new(SchemaIRError::DatatypeDontMatch {
-                    expected: expected.clone(),
-                    found: node_dt,
-                    lexical_form: node.to_string(),
-                }))
-            }
-        },
-    }
-}
-
-fn check_node_length(node: &Node, len: usize) -> CResult<()> {
-    debug!("check_node_length: {node:?} length: {len}");
-    let node_length = node.length();
-    if node_length == len {
-        Ok(())
-    } else {
-        Err(Box::new(SchemaIRError::LengthError {
-            expected: len,
-            found: node_length,
-            node: format!("{node}"),
-        }))
-    }
-}
-
-fn check_node_min_inclusive(node: &Node, min: NumericLiteral) -> CResult<()> {
-    trace!("check_node_min_inclusive: {node:?} min_inclusive: {min}");
-    let node_object = node.as_checked_object().map_err(|e| {
-        Box::new(SchemaIRError::Internal {
-            msg: format!("check_node_min_inclusive: as_checked_object error: {e}"),
-        })
-    })?;
-    let node_num = node_object.numeric_value().ok_or_else(|| {
-        Box::new(SchemaIRError::Internal {
-            msg: "check_node_min_inclusive: as_numeric error".to_string(),
-        })
-    })?;
-    if !node_num.less_than(&min) {
-        Ok(())
-    } else {
-        Err(Box::new(SchemaIRError::MinInclusiveError {
-            expected: min.clone(),
-            found: node_num,
-            node: node.to_string(),
-        }))
-    }
-}
-
-fn check_node_min_exclusive(node: &Node, min: NumericLiteral) -> CResult<()> {
-    trace!("check_node_min_exclusive: {node:?} min_exclusive: {min}");
-    let node_object = node.as_checked_object().map_err(|e| {
-        Box::new(SchemaIRError::Internal {
-            msg: format!("check_node_min_exclusive: as_checked_object error: {e}"),
-        })
-    })?;
-    let node_num = node_object.numeric_value().ok_or_else(|| {
-        Box::new(SchemaIRError::Internal {
-            msg: "check_node_min_exclusive: as_numeric error".to_string(),
-        })
-    })?;
-    if !node_num.less_than_or_eq(&min) {
-        Ok(())
-    } else {
-        Err(Box::new(SchemaIRError::MinExclusiveError {
-            expected: min.clone(),
-            found: node_num,
-            node: node.to_string(),
-        }))
-    }
-}
-
-fn check_node_total_digits(node: &Node, total: usize) -> CResult<()> {
-    trace!("check_node_total_digits: {node:?} total: {total}");
-    let node_object = node.as_checked_object().map_err(|e| {
-        Box::new(SchemaIRError::Internal {
-            msg: format!("check_node_total_digits: as_checked_object error: {e}"),
-        })
-    })?;
-    let node_num = node_object.numeric_value().ok_or_else(|| {
-        Box::new(SchemaIRError::Internal {
-            msg: "check_node_total_digits: as_numeric error".to_string(),
-        })
-    })?;
-    if let Some(num_digits) = node_num.total_digits() {
-        trace!("check_node_total_digits: node total digits: {num_digits}");
-        if num_digits <= total {
-            trace!("check_node_total_digits: OK {num_digits} <= {total} node [{node_num}]");
-            Ok(())
-        } else {
-            trace!("check_node_total_digits: Failed {num_digits} > {total} node [{node_num}]");
-            Err(Box::new(SchemaIRError::TotalDigitsError {
-                expected: total,
-                found: node_num,
-                node: node.to_string(),
-            }))
-        }
-    } else {
-        trace!("check_node_total_digits: node has no total digits");
-        Err(Box::new(SchemaIRError::TotalDigitsError {
-            expected: total,
-            found: node_num,
-            node: node.to_string(),
-        }))
-    }
-}
-
-fn check_node_fraction_digits(node: &Node, fd: usize) -> CResult<()> {
-    trace!("check_node_fraction_digits: {node:?} total: {fd}");
-    let node_object = node.as_checked_object().map_err(|e| {
-        Box::new(SchemaIRError::Internal {
-            msg: format!("check_node_fraction_digits: as_checked_object error: {e}"),
-        })
-    })?;
-    let node_num = node_object.numeric_value().ok_or_else(|| {
-        Box::new(SchemaIRError::Internal {
-            msg: "check_node_fraction_digits: as_numeric error".to_string(),
-        })
-    })?;
-    if let Some(num_fd) = node_num.fraction_digits() {
-        trace!("check_node_fraction_digits: node fraction digits: {num_fd}");
-        if num_fd <= fd {
-            trace!("check_node_fraction_digits: OK {fd:?} > Fraction digits of {node_num:?} = {num_fd}",);
-            Ok(())
-        } else {
-            trace!("check_node_fraction_digits: Failed {fd} <= fraction digits of {node_num} {num_fd}",);
-            Err(Box::new(SchemaIRError::FractionDigitsError {
-                expected: fd,
-                found: node_num,
-                node: node.to_string(),
-            }))
-        }
-    } else {
-        trace!("check_node_fraction_digits: node has no fraction digits");
-        Err(Box::new(SchemaIRError::FractionDigitsError {
-            expected: fd,
-            found: node_num,
-            node: node.to_string(),
-        }))
-    }
-}
-
-fn check_node_max_exclusive(node: &Node, max: NumericLiteral) -> CResult<()> {
-    trace!("check_node_max_exclusive: {node:?} max_exclusive: {max:?}");
-    let node_object = node.as_checked_object().map_err(|e| {
-        Box::new(SchemaIRError::Internal {
-            msg: format!("check_node_max_exclusive: as_checked_object error: {e}"),
-        })
-    })?;
-    let node_num = node_object.numeric_value().ok_or_else(|| {
-        Box::new(SchemaIRError::Internal {
-            msg: "check_node_min_exclusive: as_numeric error".to_string(),
-        })
-    })?;
-    if node_num.less_than(&max) {
-        trace!("check_node_max_exclusive: OK {node_num:?} < {max:?}");
-        Ok(())
-    } else {
-        trace!("check_node_max_exclusive: Failed {node_num} not less than {max}");
-        Err(Box::new(SchemaIRError::MinExclusiveError {
-            expected: max.clone(),
-            found: node_num,
-            node: node.to_string(),
-        }))
-    }
-}
-
-fn check_node_max_inclusive(node: &Node, max: NumericLiteral) -> CResult<()> {
-    // trace!("check_node_max_inclusive: {node:?} max_inclusive: {max}");
-    let node_object = node.as_checked_object().map_err(|e| {
-        Box::new(SchemaIRError::Internal {
-            msg: format!("check_node_max_inclusive: as_checked_object error: {e}"),
-        })
-    })?;
-    let node_num = node_object.numeric_value().ok_or_else(|| {
-        Box::new(SchemaIRError::Internal {
-            msg: "check_node_max_inclusive: as_numeric error".to_string(),
-        })
-    })?;
-    if node_num.less_than_or_eq(&max) {
-        Ok(())
-    } else {
-        Err(Box::new(SchemaIRError::MaxInclusiveError {
-            expected: max.clone(),
-            found: node_num,
-            node: node.to_string(),
-        }))
-    }
-}
-
-fn check_node_min_length(node: &Node, len: usize) -> CResult<()> {
-    // debug!("check_node_min_length: {node:?} min_length: {len}");
-    let node_length = node.length();
-    if node_length >= len {
-        Ok(())
-    } else {
-        Err(Box::new(SchemaIRError::MinLengthError {
-            expected: len,
-            found: node_length,
-            node: format!("{node}"),
-        }))
-    }
-}
-
-fn check_node_max_length(node: &Node, len: usize) -> CResult<()> {
-    // debug!("check_node_max_length: {node:?} max_length: {len}");
-    let node_length = node.length();
-    if node_length <= len {
-        Ok(())
-    } else {
-        Err(Box::new(SchemaIRError::MaxLengthError {
-            expected: len,
-            found: node_length,
-            node: format!("{node}"),
-        }))
     }
 }
 

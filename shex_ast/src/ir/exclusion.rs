@@ -6,7 +6,7 @@ use std::fmt::Display;
 use std::result;
 use std::str::FromStr;
 
-#[derive(Debug, PartialEq, Eq, Clone, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
 pub enum LiteralExclusion {
     Literal(String),
     LiteralStem(String),
@@ -38,7 +38,7 @@ impl Display for LiteralExclusion {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
 pub enum IriExclusion {
     Iri(IriS),
     IriStem(IriS),
@@ -70,7 +70,7 @@ impl Display for IriExclusion {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Deserialize)]
 pub enum LanguageExclusion {
     Language(Lang),
     LanguageStem(Lang),

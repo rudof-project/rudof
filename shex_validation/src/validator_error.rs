@@ -15,7 +15,7 @@ use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::ir::semantic_action_context::SemanticActionContext;
 use shex_ast::ir::shape::Shape;
 use shex_ast::ir::shape_expr::ShapeExpr;
-use shex_ast::{Node, Pred, ShapeExprLabel, ShapeLabelIdx, ir::shape_label::ShapeLabel};
+use shex_ast::{Node, Pred, ShapeExprLabel, ShapeLabelIdx, ast::cond_kind::CondKind, ir::shape_label::ShapeLabel};
 use termtree::Tree;
 use thiserror::Error;
 
@@ -30,7 +30,7 @@ pub enum NoMatchReason {
         candidate: Vec<(Pred, Node)>,
         predicate: Pred,
         value: Node,
-        error: RbeError<Pred, Node, ShapeLabelIdx, SemanticActionContext>,
+        error: RbeError<Pred, Node, ShapeLabelIdx, SemanticActionContext, CondKind>,
     },
     /// `predicate` needed to occur `expected` times but occurred `current`
     /// times among the candidate's neighbors.
@@ -219,7 +219,7 @@ pub enum ValidatorError {
     ClosedShapeWithRemainderPreds { remainder: Preds, declared: Preds },
 
     #[error(transparent)]
-    RbeError(#[from] RbeError<Pred, Node, ShapeLabelIdx, SemanticActionContext>),
+    RbeError(#[from] RbeError<Pred, Node, ShapeLabelIdx, SemanticActionContext, CondKind>),
 
     #[error(transparent)]
     PrefixMapError(#[from] PrefixMapError),

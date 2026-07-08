@@ -1,29 +1,35 @@
+use crate::match_cond::MatchKind;
 use crate::{
     Component, Context, Key, MatchCond, Pending, RbeError, RbeStruct, RbeTable, Ref, Value, Values, rbe::Rbe,
     rbe_cond::RbeCond, rbe_error,
 };
+use core::hash::Hash;
+use serde::Serialize;
+use std::fmt::Debug;
 
 #[derive(Debug, Clone)]
-pub struct EmptyIter<K, V, R, Ctx>
+pub struct EmptyIter<K, V, R, Ctx, P = ()>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
 {
     is_first: bool,
-    rbe: RbeCond<K, V, R, Ctx>,
+    rbe: RbeCond<K, V, R, Ctx, P>,
     values: Values<K, V, Ctx>,
 }
 
-impl<K, V, R, Ctx> EmptyIter<K, V, R, Ctx>
+impl<K, V, R, Ctx, P> EmptyIter<K, V, R, Ctx, P>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
 {
-    pub fn new(rbe: &RbeStruct<Component>, table: &RbeTable<K, V, R, Ctx>, values: &Values<K, V, Ctx>) -> Self {
+    pub fn new(rbe: &RbeStruct<Component>, table: &RbeTable<K, V, R, Ctx, P>, values: &Values<K, V, Ctx>) -> Self {
         let rbe1 = cnv_rbe(rbe.inner_rbe(), table);
         Self {
             is_first: true,
@@ -33,14 +39,15 @@ where
     }
 }
 
-impl<K, V, R, Ctx> Iterator for EmptyIter<K, V, R, Ctx>
+impl<K, V, R, Ctx, P> Iterator for EmptyIter<K, V, R, Ctx, P>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
 {
-    type Item = Result<Pending<K, V, R>, rbe_error::RbeError<K, V, R, Ctx>>;
+    type Item = Result<Pending<K, V, R>, rbe_error::RbeError<K, V, R, Ctx, P>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.is_first {
@@ -65,12 +72,13 @@ where
     }
 }
 
-fn cnv_rbe<K, V, R, Ctx>(rbe: &Rbe<Component>, table: &RbeTable<K, V, R, Ctx>) -> RbeCond<K, V, R, Ctx>
+fn cnv_rbe<K, V, R, Ctx, P>(rbe: &Rbe<Component>, table: &RbeTable<K, V, R, Ctx, P>) -> RbeCond<K, V, R, Ctx, P>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
 {
     match rbe {
         Rbe::Empty => RbeCond::Empty,
@@ -109,22 +117,24 @@ where
     }
 }
 
-fn cnv_cond<K, V, R, Ctx>(c: &Component, table: &RbeTable<K, V, R, Ctx>) -> MatchCond<K, V, R, Ctx>
+fn cnv_cond<K, V, R, Ctx, P>(c: &Component, table: &RbeTable<K, V, R, Ctx, P>) -> MatchCond<K, V, R, Ctx, P>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
 {
     table.get_condition(c).unwrap().clone()
 }
 
-fn cnv_key<K, V, R, Ctx>(c: &Component, table: &RbeTable<K, V, R, Ctx>) -> K
+fn cnv_key<K, V, R, Ctx, P>(c: &Component, table: &RbeTable<K, V, R, Ctx, P>) -> K
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
 {
     table.get_key(c).unwrap().clone()
 }
@@ -145,11 +155,7 @@ mod tests {
 
     fn make_table_with_symbol() -> (RbeTable<K, V, R, Ctx>, Component) {
         let mut table = RbeTable::new();
-        let cond: MatchCond<K, V, R, Ctx> = MatchCond::single(
-            SingleCond::new()
-                .with_name("any")
-                .with_cond(|_v, _c| Ok(Pending::empty())),
-        );
+        let cond: MatchCond<K, V, R, Ctx> = MatchCond::single(SingleCond::new().with_name("any"));
         let c = table.add_component(1, &cond);
         (table, c)
     }

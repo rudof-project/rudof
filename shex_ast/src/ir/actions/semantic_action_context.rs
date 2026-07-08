@@ -1,15 +1,21 @@
 use rbe::Context;
 use serde::Serialize;
 use std::fmt::Display;
+use std::hash::{Hash, Hasher};
+use std::sync::Arc;
 
+use crate::ir::actions::semantic_actions_registry::SemanticActionsRegistry;
 use crate::{Node, Pred};
 
 /// Context passed to semantic actions when they are executed.
-#[derive(Debug, Clone, Hash, PartialEq, Eq, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize)]
 pub struct SemanticActionContext {
     subject: Option<Node>,
     predicate: Option<Pred>,
     object: Option<Node>,
+
+    #[serde(skip)]
+    registry: Option<Arc<SemanticActionsRegistry>>,
 }
 
 impl SemanticActionContext {
@@ -18,6 +24,7 @@ impl SemanticActionContext {
             subject: None,
             predicate: None,
             object: None,
+            registry: None,
         }
     }
     pub fn s(&self) -> Option<Node> {
@@ -37,6 +44,7 @@ impl SemanticActionContext {
             subject: Some(subject.clone()),
             predicate: Some(predicate.clone()),
             object: Some(object.clone()),
+            registry: None,
         }
     }
 
@@ -45,6 +53,7 @@ impl SemanticActionContext {
             subject: Some(subject.clone()),
             predicate: None,
             object: None,
+            registry: None,
         }
     }
 
@@ -53,6 +62,7 @@ impl SemanticActionContext {
             subject: None,
             predicate: None,
             object: Some(object.clone()),
+            registry: None,
         }
     }
 
@@ -61,6 +71,7 @@ impl SemanticActionContext {
             subject: None,
             predicate: Some(predicate.clone()),
             object: None,
+            registry: None,
         }
     }
 
@@ -77,6 +88,33 @@ impl SemanticActionContext {
     pub fn with_object(mut self, object: Node) -> Self {
         self.object = Some(object);
         self
+    }
+
+    pub fn with_registry(mut self, registry: Arc<SemanticActionsRegistry>) -> Self {
+        self.registry = Some(registry);
+        self
+    }
+
+    pub fn registry(&self) -> Option<&SemanticActionsRegistry> {
+        self.registry.as_deref()
+    }
+}
+
+impl PartialEq for SemanticActionContext {
+    fn eq(&self, other: &Self) -> bool {
+        self.subject == other.subject
+            && self.predicate == other.predicate
+            && self.object == other.object
+    }
+}
+
+impl Eq for SemanticActionContext {}
+
+impl Hash for SemanticActionContext {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.subject.hash(state);
+        self.predicate.hash(state);
+        self.object.hash(state);
     }
 }
 

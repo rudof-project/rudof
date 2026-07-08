@@ -22,6 +22,7 @@ use shex_ast::Expr;
 use shex_ast::Node;
 use shex_ast::Pred;
 use shex_ast::ShapeLabelIdx;
+use shex_ast::ast::cond_kind::CondKind;
 use shex_ast::ir::external_resolver::{DispatchOutcome, ExternalResolveCtx};
 use shex_ast::ir::preds::Preds;
 use shex_ast::ir::schema_ir::SchemaIR;
@@ -534,7 +535,8 @@ impl Engine {
             },
             ShapeExpr::NodeConstraint(nc) => {
                 // TODO: In the case of a node constraint...is the context only the subject?
-                let ctx = SemanticActionContext::subject(node);
+                let ctx = SemanticActionContext::subject(node)
+                    .with_registry(schema.semantic_actions_registry_arc());
                 match nc.cond().matches(node, &ctx) {
                     Ok(_pending) => {
                         // We ignore pending nodes here, as node constraints are not expected to generate pending nodes
@@ -617,7 +619,7 @@ impl Engine {
         idx: &ShapeLabelIdx,
         node: &Node,
         shape: &Shape,
-        _schema: &SchemaIR,
+        schema: &SchemaIR,
         rdf: &R,
         typing: &mut RefTyping,
     ) -> Result<ValidationResult>
@@ -635,7 +637,14 @@ impl Engine {
         let (values, reminder) = self.neighs(node, candidate_preds.clone(), rdf)?;
         let values_ctx = values
             .iter()
-            .map(|(p, v)| (p.clone(), v.clone(), SemanticActionContext::triple(node, p, v)))
+            .map(|(p, v)| {
+                (
+                    p.clone(),
+                    v.clone(),
+                    SemanticActionContext::triple(node, p, v)
+                        .with_registry(schema.semantic_actions_registry_arc()),
+                )
+            })
             .filter(|(pred, value, ctx)| {
                 // Strict predicates (not in EXTRA) always go into M^∈.
                 if !extra_preds.contains(pred) {
@@ -715,7 +724,14 @@ impl Engine {
         );*/
         let values_ctx_raw: Vec<_> = values
             .iter()
-            .map(|(p, v)| (p.clone(), v.clone(), SemanticActionContext::triple(node, p, v)))
+            .map(|(p, v)| {
+                (
+                    p.clone(),
+                    v.clone(),
+                    SemanticActionContext::triple(node, p, v)
+                        .with_registry(schema.semantic_actions_registry_arc()),
+                )
+            })
             .collect();
 
         // Collect every triple-expression reachable from the parent shapes through the full
@@ -947,7 +963,14 @@ impl Engine {
                     let (all_values, _) = self.neighs(node, main_preds, rdf)?;
                     let all_values_ctx: Vec<_> = all_values
                         .iter()
-                        .map(|(p, v)| (p.clone(), v.clone(), SemanticActionContext::triple(node, p, v)))
+                        .map(|(p, v)| {
+                (
+                    p.clone(),
+                    v.clone(),
+                    SemanticActionContext::triple(node, p, v)
+                        .with_registry(schema.semantic_actions_registry_arc()),
+                )
+            })
                         .collect();
                     // Keep only triples where the value satisfies some component's condition
                     let filtered: Vec<_> = all_values_ctx
@@ -1004,7 +1027,11 @@ impl Engine {
             }
             // We also validate the node constraints of the main shape
             for nc in ncs {
-                match nc.cond().matches(node, &SemanticActionContext::subject(node)) {
+                match nc.cond().matches(
+                    node,
+                    &SemanticActionContext::subject(node)
+                        .with_registry(schema.semantic_actions_registry_arc()),
+                ) {
                     Ok(_pending) => {
                         reasons.push(Reason::ParentShapeNodeConstraint {
                             node: node.clone(),
@@ -1031,7 +1058,11 @@ impl Engine {
                     && let Some((ref_ncs, _, _)) = schema.get_main_shape_constraints(ref_idx)
                 {
                     for nc in ref_ncs {
-                        match nc.cond().matches(node, &SemanticActionContext::subject(node)) {
+                        match nc.cond().matches(
+                    node,
+                    &SemanticActionContext::subject(node)
+                        .with_registry(schema.semantic_actions_registry_arc()),
+                ) {
                             Ok(_) => {},
                             Err(error) => {
                                 errors.push(ValidatorError::ParentShapeNodeConstraintFailed {
@@ -1518,7 +1549,8 @@ fn create_partitions_display(ps: &[PartitionInfo]) -> PartitionsDisplay {
 
 fn check_start_acts(start_acts: &[SemAct], _node: &Node, _idx: &ShapeLabelIdx, schema: &SchemaIR) -> Result<bool> {
     let registry = schema.semantic_actions_registry();
-    let context = SemanticActionContext::new_start_act_context();
+    let context = SemanticActionContext::new_start_act_context()
+        .with_registry(schema.semantic_actions_registry_arc());
     for act in start_acts {
         let parameter = act.code().map(|code| code.as_str());
         let result = registry.run_action(act.name(), parameter, &context);
@@ -1533,7 +1565,7 @@ fn check_start_acts(start_acts: &[SemAct], _node: &Node, _idx: &ShapeLabelIdx, s
 /// Returns true if a MatchCond contains a shape reference (MatchCond::Ref),
 /// which means the condition delegates to a shape's typing check rather than
 /// directly verifying a value set.
-fn cond_has_ref(cond: &MatchCond<Pred, Node, ShapeLabelIdx, SemanticActionContext>) -> bool {
+fn cond_has_ref(cond: &MatchCond<Pred, Node, ShapeLabelIdx, SemanticActionContext, CondKind>) -> bool {
     match cond {
         MatchCond::Ref(_) => true,
         MatchCond::And(vs) => vs.iter().any(cond_has_ref),

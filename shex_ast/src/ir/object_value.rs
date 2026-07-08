@@ -2,8 +2,9 @@ use prefixmap::PrefixMap;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::{Object, literal::ConcreteLiteral};
 use std::fmt::Display;
+use serde::{Serialize, Deserialize};
 
-#[derive(PartialEq, Eq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Hash, Debug, Serialize, Deserialize)]
 pub enum ObjectValue {
     IriRef(IriS),
     ObjectLiteral(ConcreteLiteral),

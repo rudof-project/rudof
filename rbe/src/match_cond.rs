@@ -4,7 +4,31 @@ use core::hash::Hash;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::fmt::{Display, Formatter};
-use std::hash::Hasher;
+use std::marker::PhantomData;
+
+/// A payload carried by a `SingleCond`. Implementations decide how a value matches.
+pub trait MatchKind<K, V, R, Ctx>: Sized + Clone + PartialEq + Eq + Hash + Debug + Serialize
+where
+    K: Key,
+    V: Value,
+    R: Ref,
+    Ctx: Context,
+{
+    fn eval(&self, v: &V, ctx: &Ctx) -> Result<Pending<K, V, R>, RbeError<K, V, R, Ctx, Self>>;
+}
+
+/// Default no-op payload.
+impl<K, V, R, Ctx> MatchKind<K, V, R, Ctx> for ()
+where
+    K: Key,
+    V: Value,
+    R: Ref,
+    Ctx: Context,
+{
+    fn eval(&self, _v: &V, _ctx: &Ctx) -> Result<Pending<K, V, R>, RbeError<K, V, R, Ctx, ()>> {
+        Ok(Pending::empty())
+    }
+}
 
 /// A `MatchCond` represents a matching condition
 /// It can be a single condition, a reference to another condition, or several conditions
@@ -14,51 +38,44 @@ use std::hash::Hasher;
 /// The `RbeError` struct is used to represent errors that can occur during the matching process.
 /// The `Key`, `Value`, and `Ref` traits are used to represent the types of keys, values, and references that can be used in the conditions.
 #[derive(PartialEq, Eq, Hash, Clone, Serialize, Debug, Deserialize)]
-pub enum MatchCond<K, V, R, Ctx>
+pub enum MatchCond<K, V, R, Ctx, P = ()>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
 {
-    Single(SingleCond<K, V, R, Ctx>),
+    Single(SingleCond<K, V, R, Ctx, P>),
     Ref(R),
-    And(Vec<MatchCond<K, V, R, Ctx>>),
+    And(Vec<MatchCond<K, V, R, Ctx, P>>),
 }
 
-unsafe impl<K, V, R, Ctx> Sync for MatchCond<K, V, R, Ctx>
+impl<K, V, R, Ctx, P> MatchCond<K, V, R, Ctx, P>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
 {
-}
-
-impl<K, V, R, Ctx> MatchCond<K, V, R, Ctx>
-where
-    K: Key,
-    V: Value,
-    R: Ref,
-    Ctx: Context,
-{
-    pub fn new() -> MatchCond<K, V, R, Ctx> {
+    pub fn new() -> MatchCond<K, V, R, Ctx, P> {
         MatchCond::Single(SingleCond::new())
     }
 
-    pub fn and(conds: Vec<MatchCond<K, V, R, Ctx>>) -> MatchCond<K, V, R, Ctx> {
+    pub fn and(conds: Vec<MatchCond<K, V, R, Ctx, P>>) -> MatchCond<K, V, R, Ctx, P> {
         MatchCond::And(conds)
     }
 
-    pub fn empty() -> MatchCond<K, V, R, Ctx> {
+    pub fn empty() -> MatchCond<K, V, R, Ctx, P> {
         MatchCond::Single(SingleCond::new().with_name("empty"))
     }
 
-    pub fn ref_(r: R) -> MatchCond<K, V, R, Ctx> {
+    pub fn ref_(r: R) -> MatchCond<K, V, R, Ctx, P> {
         MatchCond::Ref(r)
     }
 
-    pub fn matches(&self, value: &V, ctx: &Ctx) -> Result<Pending<K, V, R>, RbeError<K, V, R, Ctx>> {
+    pub fn matches(&self, value: &V, ctx: &Ctx) -> Result<Pending<K, V, R>, RbeError<K, V, R, Ctx, P>> {
         match self {
             MatchCond::Single(single) => single.matches(value, ctx),
             MatchCond::Ref(r) => Ok(Pending::from_pair(value.clone(), r.clone())),
@@ -70,15 +87,8 @@ where
         }
     }
 
-    pub fn single(single: SingleCond<K, V, R, Ctx>) -> Self {
+    pub fn single(single: SingleCond<K, V, R, Ctx, P>) -> Self {
         MatchCond::Single(single)
-    }
-
-    pub fn simple(
-        name: &str,
-        cond: impl Fn(&V, &Ctx) -> Result<Pending<K, V, R>, RbeError<K, V, R, Ctx>> + Clone + 'static + Send + Sync,
-    ) -> Self {
-        MatchCond::single(SingleCond::new().with_name(name).with_cond(cond))
     }
 
     pub fn show(&self) -> String {
@@ -86,12 +96,13 @@ where
     }
 }
 
-impl<K, V, R, Ctx> Display for MatchCond<K, V, R, Ctx>
+impl<K, V, R, Ctx, P> Display for MatchCond<K, V, R, Ctx, P>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -112,12 +123,13 @@ where
     }
 }
 
-impl<K, V, R, Ctx> Default for MatchCond<K, V, R, Ctx>
+impl<K, V, R, Ctx, P> Default for MatchCond<K, V, R, Ctx, P>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
 {
     fn default() -> Self {
         MatchCond::Single(SingleCond::default())
@@ -125,114 +137,38 @@ where
 }
 
 /// Represents a simple condition
-#[derive(Serialize, Deserialize)]
-pub struct SingleCond<K, V, R, Ctx>
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct SingleCond<K, V, R, Ctx, P = ()>
 where
-    K: Hash + Eq + Display + Default,
-    V: Hash + Eq + Default + PartialEq + Clone,
-    R: Hash + Default + PartialEq + Clone,
-    Ctx: Hash + Default + PartialEq + Clone,
+    K: Key,
+    V: Value,
+    R: Ref,
+    Ctx: Context,
+    P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
 {
     #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
+    kind: Option<P>,
+
     #[serde(skip)]
-    cond: Vec<Box<dyn Cond<K, V, R, Ctx> + Send + Sync>>,
+    _phantom: PhantomData<(K, V, R, Ctx)>,
 }
 
-unsafe impl<K, V, R, Ctx> Sync for SingleCond<K, V, R, Ctx>
+impl<K, V, R, Ctx, P> SingleCond<K, V, R, Ctx, P>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
 {
-}
-
-/// We use trait objects instead of function pointers because we need to
-/// capture some values in the condition closure.
-/// This pattern is inspired by the answer in this thread:
-/// https://users.rust-lang.org/t/how-to-clone-a-boxed-closure/31035
-trait Cond<K, V, R, Ctx>: Send + Sync
-where
-    K: Key,
-    V: Value,
-    R: Ref,
-    Ctx: Context,
-{
-    fn clone_box(&self) -> Box<dyn Cond<K, V, R, Ctx> + Send + Sync>;
-    fn call(&self, v: &V, ctx: &Ctx) -> Result<Pending<K, V, R>, RbeError<K, V, R, Ctx>>;
-}
-
-impl<K, V, R, F, Ctx> Cond<K, V, R, Ctx> for F
-where
-    K: Key,
-    V: Value,
-    R: Ref,
-    Ctx: Context,
-    F: 'static + Fn(&V, &Ctx) -> Result<Pending<K, V, R>, RbeError<K, V, R, Ctx>> + Clone + Send + Sync,
-{
-    fn clone_box(&self) -> Box<dyn Cond<K, V, R, Ctx> + Send + Sync> {
-        Box::new(self.clone())
-    }
-
-    fn call(&self, v: &V, ctx: &Ctx) -> Result<Pending<K, V, R>, RbeError<K, V, R, Ctx>> {
-        self(v, ctx)
-    }
-}
-
-impl<K, V, R, Ctx> Clone for Box<dyn Cond<K, V, R, Ctx> + Send + Sync>
-where
-    K: Key,
-    V: Value,
-    R: Ref,
-    Ctx: Context,
-{
-    fn clone(&self) -> Self {
-        self.clone_box()
-    }
-}
-
-impl<K, V, R, Ctx> Clone for SingleCond<K, V, R, Ctx>
-where
-    K: Key,
-    V: Value,
-    R: Ref,
-    Ctx: Context,
-{
-    fn clone(&self) -> Self {
-        SingleCond {
-            name: self.name.clone(),
-            cond: {
-                let mut r = Vec::new();
-                for c in self.cond.iter() {
-                    r.push(c.clone())
-                }
-                r
-            },
-        }
-    }
-}
-
-impl<K, V, R, Ctx> SingleCond<K, V, R, Ctx>
-where
-    K: Key,
-    V: Value,
-    R: Ref,
-    Ctx: Context,
-{
-    pub fn matches(&self, value: &V, ctx: &Ctx) -> Result<Pending<K, V, R>, RbeError<K, V, R, Ctx>> {
-        self.cond.iter().try_fold(Pending::empty(), |mut current, f| {
-            let pending = f.call(value, ctx)?;
-            current.merge(pending);
-            Ok(current)
-        })
-    }
-
-    pub fn new() -> SingleCond<K, V, R, Ctx> {
+    pub fn new() -> Self {
         SingleCond {
             name: None,
-            cond: Vec::new(),
+            kind: None,
+            _phantom: PhantomData,
         }
     }
 
@@ -241,87 +177,68 @@ where
         self
     }
 
-    pub fn with_cond(
-        mut self,
-        cond: impl Fn(&V, &Ctx) -> Result<Pending<K, V, R>, RbeError<K, V, R, Ctx>> + Clone + 'static + Send + Sync,
-    ) -> Self {
-        self.cond.push(Box::new(cond));
+    pub fn with_kind(mut self, kind: P) -> Self {
+        self.kind = Some(kind);
         self
+    }
+
+    pub fn kind(&self) -> Option<&P> {
+        self.kind.as_ref()
     }
 
     pub fn name(&self) -> String {
         self.name.clone().unwrap_or_default()
     }
-}
 
-impl<K, V, R, Ctx> PartialEq for SingleCond<K, V, R, Ctx>
-where
-    K: Key,
-    V: Value,
-    R: Ref,
-    Ctx: Context,
-{
-    fn eq(&self, other: &Self) -> bool {
-        self.name == other.name
+    pub fn matches(&self, value: &V, ctx: &Ctx) -> Result<Pending<K, V, R>, RbeError<K, V, R, Ctx, P>> {
+        match &self.kind {
+            Some(kind) => kind.eval(value, ctx),
+            None => Ok(Pending::empty()),
+        }
     }
 }
 
-impl<K, V, R, Ctx> Eq for SingleCond<K, V, R, Ctx>
+impl<K, V, R, Ctx, P> Default for SingleCond<K, V, R, Ctx, P>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
-{
-}
-
-impl<K, V, R, Ctx> Hash for SingleCond<K, V, R, Ctx>
-where
-    K: Key,
-    V: Value,
-    R: Ref,
-    Ctx: Context,
-{
-    fn hash<H: Hasher>(&self, hasher: &mut H) {
-        self.name.hash(hasher)
-    }
-}
-
-impl<K, V, R, Ctx> Default for SingleCond<K, V, R, Ctx>
-where
-    K: Key,
-    V: Value,
-    R: Ref,
-    Ctx: Context,
+    P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
 {
     fn default() -> Self {
         SingleCond::new()
     }
 }
 
-impl<K, V, R, Ctx> Debug for SingleCond<K, V, R, Ctx>
+impl<K, V, R, Ctx, P> Debug for SingleCond<K, V, R, Ctx, P>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{}", self.name.clone().unwrap_or_default())?;
-        Ok(())
+        match (&self.name, &self.kind) {
+            (Some(name), Some(kind)) => write!(f, "SingleCond {{ name: {name}, kind: {kind:?} }}"),
+            (Some(name), None) => write!(f, "SingleCond {{ name: {name}, kind: None }}"),
+            (None, Some(kind)) => write!(f, "SingleCond {{ name: None, kind: {kind:?} }}"),
+            (None, None) => write!(f, "SingleCond {{ name: None, kind: None }}"),
+        }
     }
 }
 
-impl<K, V, R, Ctx> Display for SingleCond<K, V, R, Ctx>
+impl<K, V, R, Ctx, P> Display for SingleCond<K, V, R, Ctx, P>
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{}", self.name.clone().unwrap_or_default())?;
-        Ok(())
+        write!(f, "{}", self.name.clone().unwrap_or_default())
     }
 }
 
@@ -329,64 +246,76 @@ where
 mod tests {
     use super::*;
 
+    #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+    enum TestKind {
+        Even,
+        EqualsName(String),
+    }
+
+    impl MatchKind<char, i32, String, char> for TestKind {
+        fn eval(&self, v: &i32, _ctx: &char) -> Result<Pending<char, i32, String>, RbeError<char, i32, String, char, Self>> {
+            match self {
+                TestKind::Even => {
+                    if v % 2 == 0 {
+                        Ok(Pending::empty())
+                    } else {
+                        Err(RbeError::MsgError {
+                            msg: format!("Value {v} is not even"),
+                        })
+                    }
+                },
+                TestKind::EqualsName(_) => unreachable!("EqualsName should not be used with i32"),
+            }
+        }
+    }
+
+    impl MatchKind<char, String, String, char> for TestKind {
+        fn eval(
+            &self,
+            v: &String,
+            _ctx: &char,
+        ) -> Result<Pending<char, String, String>, RbeError<char, String, String, char, Self>> {
+            match self {
+                TestKind::EqualsName(name) => {
+                    if v == name {
+                        Ok(Pending::empty())
+                    } else {
+                        Err(RbeError::MsgError {
+                            msg: format!("Value {v} is not equal to {name}"),
+                        })
+                    }
+                },
+                TestKind::Even => unreachable!("Even should not be used with String"),
+            }
+        }
+    }
+
     #[test]
     fn test_even_cond_2_pass() {
-        let cond_even: SingleCond<char, i32, String, char> = SingleCond::new().with_cond(|v, _ctx| {
-            if v % 2 == 0 {
-                Ok(Pending::empty())
-            } else {
-                Err(RbeError::MsgError {
-                    msg: format!("Value {v} is not even"),
-                })
-            }
-        });
+        let cond_even: SingleCond<char, i32, String, char, TestKind> = SingleCond::new().with_kind(TestKind::Even);
         assert_eq!(cond_even.matches(&2, &'a'), Ok(Pending::empty()));
     }
 
     #[test]
     fn test_even_cond_3_fail() {
-        let cond_even: SingleCond<char, i32, String, char> = SingleCond::new().with_cond(|v, _ctx| {
-            if v % 2 == 0 {
-                Ok(Pending::empty())
-            } else {
-                Err(RbeError::MsgError {
-                    msg: format!("Value {v} is not even"),
-                })
-            }
-        });
+        let cond_even: SingleCond<char, i32, String, char, TestKind> = SingleCond::new().with_kind(TestKind::Even);
         assert!(cond_even.matches(&3, &'a').is_err());
     }
 
     #[test]
     fn test_name_fail() {
-        fn cond_name(name: String) -> SingleCond<char, String, String, char> {
-            SingleCond::new().with_cond(move |v: &String, _ctx: &char| {
-                if *v == name {
-                    Ok(Pending::empty())
-                } else {
-                    Err(RbeError::MsgError {
-                        msg: format!("Value {v} is not equal to {name}"),
-                    })
-                }
-            })
+        fn cond_name(name: String) -> SingleCond<char, String, String, char, TestKind> {
+            SingleCond::new().with_kind(TestKind::EqualsName(name))
         }
         assert!(cond_name("foo".to_string()).matches(&"baz".to_string(), &'a').is_err());
     }
 
     #[test]
     fn test_name_pass() {
-        fn cond_name(name: String) -> SingleCond<char, String, String, char> {
+        fn cond_name(name: String) -> SingleCond<char, String, String, char, TestKind> {
             SingleCond::new()
                 .with_name("name")
-                .with_cond(move |v: &String, _ctx: &char| {
-                    if *v == name {
-                        Ok(Pending::empty())
-                    } else {
-                        Err(RbeError::MsgError {
-                            msg: format!("Value {v} failed condition is not equal to {name}",),
-                        })
-                    }
-                })
+                .with_kind(TestKind::EqualsName(name))
         }
         assert_eq!(
             cond_name("foo".to_string()).matches(&"foo".to_string(), &'a'),

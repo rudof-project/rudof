@@ -39,7 +39,7 @@ pub struct SchemaIR {
     dependency_graph: DependencyGraph,
     inheritance_graph: InheritanceGraph,
     abstract_shapes: HashSet<ShapeLabelIdx>,
-    semantic_actions_registry: SemanticActionsRegistry,
+    semantic_actions_registry: Arc<SemanticActionsRegistry>,
     start_acts: Vec<SemAct>,
 }
 
@@ -60,7 +60,7 @@ impl SchemaIR {
             dependency_graph: DependencyGraph::new(),
             inheritance_graph: InheritanceGraph::new(),
             abstract_shapes: HashSet::new(),
-            semantic_actions_registry: registry,
+            semantic_actions_registry: Arc::new(registry),
             start_acts: Vec::new(),
         }
     }
@@ -184,7 +184,7 @@ impl SchemaIR {
         self.inheritance_graph.descendants(idx)
     }
 
-    pub fn set_semantic_actions_registry(&mut self, registry: SemanticActionsRegistry) {
+    pub fn set_semantic_actions_registry(&mut self, registry: Arc<SemanticActionsRegistry>) {
         self.semantic_actions_registry = registry;
     }
 
@@ -717,6 +717,11 @@ impl SchemaIR {
 
     pub fn semantic_actions_registry(&self) -> &SemanticActionsRegistry {
         &self.semantic_actions_registry
+    }
+
+    /// Returns a shared handle to the semantic actions registry.
+    pub fn semantic_actions_registry_arc(&self) -> Arc<SemanticActionsRegistry> {
+        self.semantic_actions_registry.clone()
     }
 }
 

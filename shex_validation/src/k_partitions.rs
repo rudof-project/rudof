@@ -5,11 +5,14 @@
 //! Each subset of the partition must satisfy the predicate associated to the corresponding
 //! triple expression.
 
-use rbe::{Context, Key, RbeTable, Ref, Value};
+use rbe::{Context, Key, MatchKind, RbeTable, Ref, Value};
+use serde::Serialize;
 use std::collections::{HashMap, HashSet};
+use std::fmt::Debug;
+use std::hash::Hash;
 
-pub type Partitions<T, K, V, R, Ctx> = Vec<Partition<T, K, V, R, Ctx>>;
-pub type Partition<T, K, V, R, Ctx> = (T, Vec<RbeTable<K, V, R, Ctx>>, Vec<(K, V, Ctx)>);
+pub type Partitions<T, K, V, R, Ctx, P = ()> = Vec<Partition<T, K, V, R, Ctx, P>>;
+pub type Partition<T, K, V, R, Ctx, P = ()> = (T, Vec<RbeTable<K, V, R, Ctx, P>>, Vec<(K, V, Ctx)>);
 
 /// Iterator over k-partitions of a set with predicates on each subset.
 pub struct KPartitionIteratorMultiPredicate<T, F> {
@@ -88,15 +91,16 @@ where
 
 /// Creates an iterator of all possible combinations of neighbours `neighs`
 /// that can be assigned to each triple expression in the `exprs` map
-pub fn partitions_iter<'a, T, K, V, R, Ctx>(
+pub fn partitions_iter<'a, T, K, V, R, Ctx, P>(
     neighs: &'a [(K, V, Ctx)],
-    exprs: &'a HashMap<T, Vec<RbeTable<K, V, R, Ctx>>>,
-) -> impl Iterator<Item = Partitions<T, K, V, R, Ctx>> + 'a
+    exprs: &'a HashMap<T, Vec<RbeTable<K, V, R, Ctx, P>>>,
+) -> impl Iterator<Item = Partitions<T, K, V, R, Ctx, P>> + 'a
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
     T: std::hash::Hash + Eq + Clone,
 {
     // Build a vector of predicates, one for each triple expression, that checks if a given subset of neighbours satisfies the conditions of the triple expression
@@ -117,14 +121,15 @@ where
 /// of the triple expression.
 /// Each predicate checks if all the predicates in the triple expression
 /// are present in the subset of neighbours.
-fn build_conditions<'a, T, K, V, R, Ctx>(
-    triple_exprs: &'a HashMap<T, Vec<RbeTable<K, V, R, Ctx>>>,
+fn build_conditions<'a, T, K, V, R, Ctx, P>(
+    triple_exprs: &'a HashMap<T, Vec<RbeTable<K, V, R, Ctx, P>>>,
 ) -> impl Iterator<Item = impl Fn(&Vec<(K, V, Ctx)>) -> bool> + 'a
 where
     K: Key,
     V: Value,
     R: Ref,
     Ctx: Context,
+    P: MatchKind<K, V, R, Ctx> + Clone + PartialEq + Eq + Hash + Debug + Serialize,
     T: std::hash::Hash + Eq + Clone,
 {
     triple_exprs.values().map(|rbes| {
