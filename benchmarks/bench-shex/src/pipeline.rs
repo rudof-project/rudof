@@ -3,8 +3,8 @@ use rudof_iri::IriS;
 use rudof_rdf::rdf_core::RDFFormat;
 use rudof_rdf::rdf_impl::OxigraphInMemory;
 use shex_ast::ResolveMethod;
-use shex_ast::ShExParser;
 use shex_ast::Schema;
+use shex_ast::ShExParser;
 use shex_ast::ShapeMapParser;
 use shex_ast::ir::map_action_extension::MapActionExtension;
 use shex_ast::ir::map_state::MapState;
@@ -25,19 +25,12 @@ pub fn parse(src: &str, base: Option<IriS>, source_iri: &IriS) -> Result<Schema>
 /// Stage 2: AST Schema to IR Schema.
 #[inline(never)]
 pub fn compile(schema: &Schema, base: Option<IriS>, cfg: &ValidatorConfig) -> Result<SchemaIR> {
-    let registry = SemanticActionsRegistry::new().with(
-        vec![
-            Box::new(TestActionExtension::new()),
-            Box::new(MapActionExtension::new(MapState::default())),
-        ]
-    );
+    let registry = SemanticActionsRegistry::new().with(vec![
+        Box::new(TestActionExtension::new()),
+        Box::new(MapActionExtension::new(MapState::default())),
+    ]);
     let mut ir_schema = SchemaIR::new(registry);
-    ir_schema.populate_from_schema_json(
-        schema,
-        cfg.external_resolvers(),
-        &ResolveMethod::default(),
-        &base,
-    )?;
+    ir_schema.populate_from_schema_json(schema, cfg.external_resolvers(), &ResolveMethod::default(), &base)?;
     Ok(ir_schema)
 }
 
@@ -61,14 +54,12 @@ pub fn validate(
 // -- Helpers used in bench setup (not measured) --
 
 pub fn load_rdf(data_src: &str, base: &IriS) -> Result<OxigraphInMemory> {
-    Ok(
-        OxigraphInMemory::from_str(
-            data_src,
-            &RDFFormat::Turtle,
-            Some(base.as_str()),
-            &rudof_rdf::rdf_impl::ReaderMode::Strict,
-        )?
-    )
+    Ok(OxigraphInMemory::from_str(
+        data_src,
+        &RDFFormat::Turtle,
+        Some(base.as_str()),
+        &rudof_rdf::rdf_impl::ReaderMode::Strict,
+    )?)
 }
 
 pub fn parse_shapemap(src: &str) -> Result<QueryShapeMap> {

@@ -1,4 +1,7 @@
-use bench_shex::{corpus::{self, Size}, pipeline};
+use bench_shex::{
+    corpus::{self, Size},
+    pipeline,
+};
 use criterion::{BenchmarkId, Criterion};
 use shex_validation::ValidatorConfig;
 
@@ -17,7 +20,7 @@ fn bench_compile(c: &mut Criterion) {
                 &(schema, base, cfg.clone()),
                 |b, (schema, base, cfg)| {
                     b.iter(|| pipeline::compile(schema, Some(base.clone()), cfg).unwrap());
-                }
+                },
             );
         }
         group.finish();

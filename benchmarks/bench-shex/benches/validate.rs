@@ -1,4 +1,7 @@
-use bench_shex::{corpus::{self, Size}, pipeline};
+use bench_shex::{
+    corpus::{self, Size},
+    pipeline,
+};
 use criterion::{BenchmarkId, Criterion};
 use shex_validation::ValidatorConfig;
 
@@ -21,7 +24,7 @@ fn bench_validate(c: &mut Criterion) {
                 &(validator, shapemap, rdf, schema_ir),
                 |b, (validator, shapemap, rdf, schema_ir)| {
                     b.iter(|| pipeline::validate(validator, shapemap, rdf, schema_ir).unwrap());
-                }
+                },
             );
         }
         group.finish();
