@@ -1,0 +1,472 @@
+PREFIX fhir: <http://hl7.org/fhir/>
+PREFIX fhirvs: <http://hl7.org/fhir/ValueSet/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+IMPORT <primitives.shex>
+IMPORT <base.shex>
+IMPORT <datatypes.shex>
+IMPORT <helpers.shex>
+IMPORT <valuesets.shex>
+IMPORT <resources.shex>
+
+start=@<All>
+
+<Resource>  @<Appointment> OR
+	@<Meta> OR
+	@<RequestOrchestration> OR
+	@<DataRequirement> OR
+	@<MessageDefinition> OR
+	@<Endpoint> OR
+	@<RatioRange> OR
+	@<Consent> OR
+	@<ArtifactAssessment> OR
+	@<Measure> OR
+	@<Permission> OR
+	@<SampledData> OR
+	@<PrimitiveType> OR
+	@<ActorDefinition> OR
+	@<ConditionDefinition> OR
+	@<DocumentReference> OR
+	@<GraphDefinition> OR
+	@<Parameters> OR
+	@<MeasureReport> OR
+	@<PractitionerRole> OR
+	@<DeviceUsage> OR
+	@<PackagedProductDefinition> OR
+	@<ProductShelfLife> OR
+	@<ServiceRequest> OR
+	@<BodyStructure> OR
+	@<Slot> OR
+	@<SubscriptionTopic> OR
+	@<Group> OR
+	@<PaymentNotice> OR
+	@<CareTeam> OR
+	@<ImplementationGuide> OR
+	@<ImagingStudy> OR
+	@<ClinicalUseDefinition> OR
+	@<ContactPoint> OR
+	@<FamilyMemberHistory> OR
+	@<ObservationDefinition> OR
+	@<markdown> OR
+	@<DataType> OR
+	@<Substance> OR
+	@<Communication> OR
+	@<ImmunizationEvaluation> OR
+	@<ContactDetail> OR
+	@<BackboneElement> OR
+	@<CodeableReference> OR
+	@<MessageHeader> OR
+	@<ManufacturedItemDefinition> OR
+	@<Provenance> OR
+	@<Questionnaire> OR
+	@<Attachment> OR
+	@<Dosage> OR
+	@<ExplanationOfBenefit> OR
+	@<ResearchStudy> OR
+	@<DeviceAssociation> OR
+	@<CarePlan> OR
+	@<StructureDefinition> OR
+	@<Identifier> OR
+	@<OperationOutcome> OR
+	@<Procedure> OR
+	@<List> OR
+	@<ConceptMap> OR
+	@<ValueSet> OR
+	@<VirtualServiceDetail> OR
+	@<Immunization> OR
+	@<BiologicallyDerivedProduct> OR
+	@<VisionPrescription> OR
+	@<EvidenceVariable> OR
+	@<Duration> OR
+	@<ImagingSelection> OR
+	@<DeviceMetric> OR
+	@<RelatedArtifact> OR
+	@<CodeSystem> OR
+	@<AdverseEvent> OR
+	@<MedicinalProductDefinition> OR
+	@<GuidanceResponse> OR
+	@<Observation> OR
+	@<MedicationAdministration> OR
+	@<EnrollmentResponse> OR
+	@<Binary> OR
+	@<decimal> OR
+	@<CodeableConcept> OR
+	@<TestScript> OR
+	@<GenomicStudy> OR
+	@<InventoryItem> OR
+	@<SubstancePolymer> OR
+	@<string> OR
+	@<ClaimResponse> OR
+	@<MedicationDispense> OR
+	@<Element> OR
+	@<Contributor> OR
+	@<DiagnosticReport> OR
+	@<OrganizationAffiliation> OR
+	@<BackboneType> OR
+	@<Money> OR
+	@<NutritionOrder> OR
+	@<TerminologyCapabilities> OR
+	@<Evidence> OR
+	@<Citation> OR
+	@<Age> OR
+	@<Condition> OR
+	@<Composition> OR
+	@<TriggerDefinition> OR
+	@<Patient> OR
+	@<Coverage> OR
+	@<QuestionnaireResponse> OR
+	@<Extension> OR
+	@<NamingSystem> OR
+	@<ExampleScenario> OR
+	@<Schedule> OR
+	@<SupplyDelivery> OR
+	@<DeviceDefinition> OR
+	@<unsignedInt> OR
+	@<PlanDefinition> OR
+	@<time> OR
+	@<Location> OR
+	@<AdministrableProductDefinition> OR
+	@<Account> OR
+	@<DomainResource> OR
+	@<Invoice> OR
+	@<Address> OR
+	@<Count> OR
+	@<EventDefinition> OR
+	@<FormularyItem> OR
+	@<Goal> OR
+	@<EnrollmentRequest> OR
+	@<Coding> OR
+	@<CapabilityStatement> OR
+	@<Medication> OR
+	@<ElementDefinition> OR
+	@<ResearchSubject> OR
+	@<id> OR
+	@<positiveInt> OR
+	@<Subscription> OR
+	@<Distance> OR
+	@<MetadataResource> OR
+	@<integer64> OR
+	@<CoverageEligibilityResponse> OR
+	@<SubstanceReferenceInformation> OR
+	@<RelatedPerson> OR
+	@<SupplyRequest> OR
+	@<Practitioner> OR
+	@<VerificationResult> OR
+	@<NutritionProduct> OR
+	@<UsageContext> OR
+	@<SubstanceProtein> OR
+	@<Timing> OR
+	@<Transport> OR
+	@<Contract> OR
+	@<Person> OR
+	@<RiskAssessment> OR
+	@<dateTime> OR
+	@<SubstanceDefinition> OR
+	@<Organization> OR
+	@<instant> OR
+	@<MarketingStatus> OR
+	@<ChargeItem> OR
+	@<Encounter> OR
+	@<Ratio> OR
+	@<SearchParameter> OR
+	@<ActivityDefinition> OR
+	@<InsurancePlan> OR
+	@<Linkage> OR
+	@<Reference> OR
+	@<SubstanceSourceMaterial> OR
+	@<uri> OR
+	@<Annotation> OR
+	@<url> OR
+	@<DeviceDispense> OR
+	@<Expression> OR
+	@<Ingredient> OR
+	@<DeviceRequest> OR
+	@<ImmunizationRecommendation> OR
+	@<date> OR
+	@<Task> OR
+	@<TestPlan> OR
+	@<BiologicallyDerivedProductDispense> OR
+	@<integer> OR
+	@<uuid> OR
+	@<Requirements> OR
+	@<Specimen> OR
+	@<AllergyIntolerance> OR
+	@<ChargeItemDefinition> OR
+	@<EpisodeOfCare> OR
+	@<Narrative> OR
+	@<OperationDefinition> OR
+	@<Availability> OR
+	@<MedicationRequest> OR
+	@<Device> OR
+	@<EncounterHistory> OR
+	@<MolecularSequence> OR
+	@<Period> OR
+	@<canonical> OR
+	@<Range> OR
+	@<Flag> OR
+	@<SubstanceNucleicAcid> OR
+	@<AppointmentResponse> OR
+	@<StructureMap> OR
+	@<RegulatedAuthorization> OR
+	@<base64Binary> OR
+	@<Library> OR
+	@<MedicationStatement> OR
+	@<ExtendedContactDetail> OR
+	@<CommunicationRequest> OR
+	@<ParameterDefinition> OR
+	@<Basic> OR
+	@<TestReport> OR
+	@<code> OR
+	@<HealthcareService> OR
+	@<InventoryReport> OR
+	@<oid> OR
+	@<MonetaryComponent> OR
+	@<EvidenceReport> OR
+	@<HumanName> OR
+	@<AuditEvent> OR
+	@<PaymentReconciliation> OR
+	@<SpecimenDefinition> OR
+	@<DetectedIssue> OR
+	@<Bundle> OR
+	@<CompartmentDefinition> OR
+	@<MedicationKnowledge> OR
+	@<Quantity> OR
+	@<CoverageEligibilityRequest> OR
+	@<boolean> OR
+	@<SubscriptionStatus> OR
+	@<Signature> OR
+	@<ClinicalImpression> OR
+	@<NutritionIntake> OR
+	@<CanonicalResource> OR
+	@<Claim>
+
+<All> (NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Appointment] } OR @<Appointment>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Meta] } OR @<Meta>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:RequestOrchestration] } OR @<RequestOrchestration>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:DataRequirement] } OR @<DataRequirement>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:MessageDefinition] } OR @<MessageDefinition>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Endpoint] } OR @<Endpoint>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:RatioRange] } OR @<RatioRange>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Consent] } OR @<Consent>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ArtifactAssessment] } OR @<ArtifactAssessment>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Measure] } OR @<Measure>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Permission] } OR @<Permission>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:SampledData] } OR @<SampledData>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:PrimitiveType] } OR @<PrimitiveType>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ActorDefinition] } OR @<ActorDefinition>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ConditionDefinition] } OR @<ConditionDefinition>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:DocumentReference] } OR @<DocumentReference>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:GraphDefinition] } OR @<GraphDefinition>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Parameters] } OR @<Parameters>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:MeasureReport] } OR @<MeasureReport>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:PractitionerRole] } OR @<PractitionerRole>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:DeviceUsage] } OR @<DeviceUsage>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:PackagedProductDefinition] } OR @<PackagedProductDefinition>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ProductShelfLife] } OR @<ProductShelfLife>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ServiceRequest] } OR @<ServiceRequest>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:BodyStructure] } OR @<BodyStructure>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Slot] } OR @<Slot>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:SubscriptionTopic] } OR @<SubscriptionTopic>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Group] } OR @<Group>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:PaymentNotice] } OR @<PaymentNotice>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:CareTeam] } OR @<CareTeam>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ImplementationGuide] } OR @<ImplementationGuide>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ImagingStudy] } OR @<ImagingStudy>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ClinicalUseDefinition] } OR @<ClinicalUseDefinition>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ContactPoint] } OR @<ContactPoint>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:FamilyMemberHistory] } OR @<FamilyMemberHistory>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ObservationDefinition] } OR @<ObservationDefinition>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:markdown] } OR @<markdown>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:DataType] } OR @<DataType>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Substance] } OR @<Substance>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Communication] } OR @<Communication>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ImmunizationEvaluation] } OR @<ImmunizationEvaluation>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ContactDetail] } OR @<ContactDetail>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:BackboneElement] } OR @<BackboneElement>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:CodeableReference] } OR @<CodeableReference>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:MessageHeader] } OR @<MessageHeader>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ManufacturedItemDefinition] } OR @<ManufacturedItemDefinition>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Provenance] } OR @<Provenance>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Questionnaire] } OR @<Questionnaire>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Attachment] } OR @<Attachment>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Dosage] } OR @<Dosage>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ExplanationOfBenefit] } OR @<ExplanationOfBenefit>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ResearchStudy] } OR @<ResearchStudy>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:DeviceAssociation] } OR @<DeviceAssociation>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:CarePlan] } OR @<CarePlan>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:StructureDefinition] } OR @<StructureDefinition>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Identifier] } OR @<Identifier>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:OperationOutcome] } OR @<OperationOutcome>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Procedure] } OR @<Procedure>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:List] } OR @<List>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ConceptMap] } OR @<ConceptMap>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ValueSet] } OR @<ValueSet>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:VirtualServiceDetail] } OR @<VirtualServiceDetail>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Immunization] } OR @<Immunization>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:BiologicallyDerivedProduct] } OR @<BiologicallyDerivedProduct>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:VisionPrescription] } OR @<VisionPrescription>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:EvidenceVariable] } OR @<EvidenceVariable>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Duration] } OR @<Duration>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ImagingSelection] } OR @<ImagingSelection>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:DeviceMetric] } OR @<DeviceMetric>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:RelatedArtifact] } OR @<RelatedArtifact>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:CodeSystem] } OR @<CodeSystem>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:AdverseEvent] } OR @<AdverseEvent>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:MedicinalProductDefinition] } OR @<MedicinalProductDefinition>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:GuidanceResponse] } OR @<GuidanceResponse>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Observation] } OR @<Observation>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:MedicationAdministration] } OR @<MedicationAdministration>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:EnrollmentResponse] } OR @<EnrollmentResponse>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Binary] } OR @<Binary>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:decimal] } OR @<decimal>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:CodeableConcept] } OR @<CodeableConcept>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:TestScript] } OR @<TestScript>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:GenomicStudy] } OR @<GenomicStudy>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:InventoryItem] } OR @<InventoryItem>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:SubstancePolymer] } OR @<SubstancePolymer>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:string] } OR @<string>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ClaimResponse] } OR @<ClaimResponse>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:MedicationDispense] } OR @<MedicationDispense>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Element] } OR @<Element>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Contributor] } OR @<Contributor>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:DiagnosticReport] } OR @<DiagnosticReport>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:OrganizationAffiliation] } OR @<OrganizationAffiliation>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:BackboneType] } OR @<BackboneType>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Money] } OR @<Money>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:NutritionOrder] } OR @<NutritionOrder>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:TerminologyCapabilities] } OR @<TerminologyCapabilities>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Evidence] } OR @<Evidence>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Citation] } OR @<Citation>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Age] } OR @<Age>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Condition] } OR @<Condition>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Composition] } OR @<Composition>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:TriggerDefinition] } OR @<TriggerDefinition>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Patient] } OR @<Patient>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Coverage] } OR @<Coverage>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:QuestionnaireResponse] } OR @<QuestionnaireResponse>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Extension] } OR @<Extension>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:NamingSystem] } OR @<NamingSystem>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ExampleScenario] } OR @<ExampleScenario>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Schedule] } OR @<Schedule>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:SupplyDelivery] } OR @<SupplyDelivery>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:DeviceDefinition] } OR @<DeviceDefinition>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:unsignedInt] } OR @<unsignedInt>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:PlanDefinition] } OR @<PlanDefinition>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:time] } OR @<time>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Location] } OR @<Location>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:AdministrableProductDefinition] } OR @<AdministrableProductDefinition>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Account] } OR @<Account>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:DomainResource] } OR @<DomainResource>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Invoice] } OR @<Invoice>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Address] } OR @<Address>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Count] } OR @<Count>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:EventDefinition] } OR @<EventDefinition>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:FormularyItem] } OR @<FormularyItem>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Goal] } OR @<Goal>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:EnrollmentRequest] } OR @<EnrollmentRequest>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Coding] } OR @<Coding>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:CapabilityStatement] } OR @<CapabilityStatement>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Medication] } OR @<Medication>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ElementDefinition] } OR @<ElementDefinition>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ResearchSubject] } OR @<ResearchSubject>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:id] } OR @<id>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:positiveInt] } OR @<positiveInt>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Subscription] } OR @<Subscription>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Distance] } OR @<Distance>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:MetadataResource] } OR @<MetadataResource>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:integer64] } OR @<integer64>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:CoverageEligibilityResponse] } OR @<CoverageEligibilityResponse>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:SubstanceReferenceInformation] } OR @<SubstanceReferenceInformation>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:RelatedPerson] } OR @<RelatedPerson>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:SupplyRequest] } OR @<SupplyRequest>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Practitioner] } OR @<Practitioner>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:VerificationResult] } OR @<VerificationResult>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:NutritionProduct] } OR @<NutritionProduct>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:UsageContext] } OR @<UsageContext>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:SubstanceProtein] } OR @<SubstanceProtein>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Timing] } OR @<Timing>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Transport] } OR @<Transport>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Contract] } OR @<Contract>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Person] } OR @<Person>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:RiskAssessment] } OR @<RiskAssessment>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:dateTime] } OR @<dateTime>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:SubstanceDefinition] } OR @<SubstanceDefinition>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Organization] } OR @<Organization>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:instant] } OR @<instant>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:MarketingStatus] } OR @<MarketingStatus>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ChargeItem] } OR @<ChargeItem>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Encounter] } OR @<Encounter>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Ratio] } OR @<Ratio>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:SearchParameter] } OR @<SearchParameter>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ActivityDefinition] } OR @<ActivityDefinition>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:InsurancePlan] } OR @<InsurancePlan>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Linkage] } OR @<Linkage>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Reference] } OR @<Reference>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:SubstanceSourceMaterial] } OR @<SubstanceSourceMaterial>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:uri] } OR @<uri>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Annotation] } OR @<Annotation>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:url] } OR @<url>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:DeviceDispense] } OR @<DeviceDispense>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Expression] } OR @<Expression>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Ingredient] } OR @<Ingredient>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:DeviceRequest] } OR @<DeviceRequest>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ImmunizationRecommendation] } OR @<ImmunizationRecommendation>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:date] } OR @<date>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Task] } OR @<Task>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:TestPlan] } OR @<TestPlan>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:BiologicallyDerivedProductDispense] } OR @<BiologicallyDerivedProductDispense>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:integer] } OR @<integer>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:uuid] } OR @<uuid>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Requirements] } OR @<Requirements>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Specimen] } OR @<Specimen>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:AllergyIntolerance] } OR @<AllergyIntolerance>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ChargeItemDefinition] } OR @<ChargeItemDefinition>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:EpisodeOfCare] } OR @<EpisodeOfCare>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Narrative] } OR @<Narrative>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:OperationDefinition] } OR @<OperationDefinition>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Availability] } OR @<Availability>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:MedicationRequest] } OR @<MedicationRequest>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Device] } OR @<Device>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:EncounterHistory] } OR @<EncounterHistory>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:MolecularSequence] } OR @<MolecularSequence>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Period] } OR @<Period>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:canonical] } OR @<canonical>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Range] } OR @<Range>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Flag] } OR @<Flag>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:SubstanceNucleicAcid] } OR @<SubstanceNucleicAcid>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:AppointmentResponse] } OR @<AppointmentResponse>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:StructureMap] } OR @<StructureMap>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:RegulatedAuthorization] } OR @<RegulatedAuthorization>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:base64Binary] } OR @<base64Binary>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Library] } OR @<Library>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:MedicationStatement] } OR @<MedicationStatement>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ExtendedContactDetail] } OR @<ExtendedContactDetail>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:CommunicationRequest] } OR @<CommunicationRequest>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ParameterDefinition] } OR @<ParameterDefinition>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Basic] } OR @<Basic>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:TestReport] } OR @<TestReport>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:code] } OR @<code>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:HealthcareService] } OR @<HealthcareService>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:InventoryReport] } OR @<InventoryReport>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:oid] } OR @<oid>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:MonetaryComponent] } OR @<MonetaryComponent>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:EvidenceReport] } OR @<EvidenceReport>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:HumanName] } OR @<HumanName>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:AuditEvent] } OR @<AuditEvent>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:PaymentReconciliation] } OR @<PaymentReconciliation>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:SpecimenDefinition] } OR @<SpecimenDefinition>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:DetectedIssue] } OR @<DetectedIssue>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Bundle] } OR @<Bundle>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:CompartmentDefinition] } OR @<CompartmentDefinition>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:MedicationKnowledge] } OR @<MedicationKnowledge>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Quantity] } OR @<Quantity>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:CoverageEligibilityRequest] } OR @<CoverageEligibilityRequest>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:boolean] } OR @<boolean>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:SubscriptionStatus] } OR @<SubscriptionStatus>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Signature] } OR @<Signature>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:ClinicalImpression] } OR @<ClinicalImpression>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:NutritionIntake] } OR @<NutritionIntake>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:CanonicalResource] } OR @<CanonicalResource>) OR
+	(NOT { fhir:nodeRole [fhir:treeRoot] ; a [fhir:Claim] } OR @<Claim>)
+

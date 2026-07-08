@@ -1,0 +1,15 @@
+schema_root = "."
+
+[[case]]
+id = "fhir-r5-inlined_account-example"
+schema = "fhir-r5-inlined.shex"
+data = "data-examples-fhir-r5/account-example.ttl"
+shapemap = "shapemaps/account-example.sm"
+size = "large"
+
+[[case]]
+id = "fhir-r5_account-example"
+schema = "fhir-r5-split/fhir-r5.shex"
+data = "data-examples-fhir-r5/account-example.ttl"
+shapemap = "shapemaps/account-example.sm"
+size = "large"

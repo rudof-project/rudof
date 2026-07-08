@@ -40,3 +40,6 @@ bindings/python/docs/_build/
 result
 
 .codegraph/
+
+# Benchmarks: FHIR TTL examples are shipped as a zip and extracted on demand
+benchmarks/bench-shex/corpus/large/data-examples-fhir-r5/*.ttl

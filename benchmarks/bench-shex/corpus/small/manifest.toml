@@ -1,0 +1,76 @@
+schema_root = "."
+
+# Cases vendored from shexSpec/shexTest (validation/manifest.jsonld).
+# Each case has: <id>/schema.shex, <id>/data.ttl, <id>/shapemap.sm.
+# The shapemap is the compact-format equivalent of the manifest's
+# (focus, shape) pair (or list of pairs).
+
+[[case]]
+id       = "1dot"
+schema   = "1dot/schema.shex"
+data     = "1dot/data.ttl"
+shapemap = "1dot/shapemap.sm"
+size     = "small"
+
+[[case]]
+id       = "1iri"
+schema   = "1iri/schema.shex"
+data     = "1iri/data.ttl"
+shapemap = "1iri/shapemap.sm"
+size     = "small"
+
+[[case]]
+id       = "1literalLength"
+schema   = "1literalLength/schema.shex"
+data     = "1literalLength/data.ttl"
+shapemap = "1literalLength/shapemap.sm"
+size     = "small"
+
+[[case]]
+id       = "1literalPattern"
+schema   = "1literalPattern/schema.shex"
+data     = "1literalPattern/data.ttl"
+shapemap = "1literalPattern/shapemap.sm"
+size     = "small"
+
+[[case]]
+id       = "1card2"
+schema   = "1card2/schema.shex"
+data     = "1card2/data.ttl"
+shapemap = "1card2/shapemap.sm"
+size     = "small"
+
+[[case]]
+id       = "1val1IRIREF"
+schema   = "1val1IRIREF/schema.shex"
+data     = "1val1IRIREF/data.ttl"
+shapemap = "1val1IRIREF/shapemap.sm"
+size     = "small"
+
+[[case]]
+id       = "1NOTIRI"
+schema   = "1NOTIRI/schema.shex"
+data     = "1NOTIRI/data.ttl"
+shapemap = "1NOTIRI/shapemap.sm"
+size     = "small"
+
+[[case]]
+id       = "1dotClosed"
+schema   = "1dotClosed/schema.shex"
+data     = "1dotClosed/data.ttl"
+shapemap = "1dotClosed/shapemap.sm"
+size     = "small"
+
+[[case]]
+id       = "1dotRefOR3"
+schema   = "1dotRefOR3/schema.shex"
+data     = "1dotRefOR3/data.ttl"
+shapemap = "1dotRefOR3/shapemap.sm"
+size     = "small"
+
+[[case]]
+id       = "recursion_example"
+schema   = "recursion_example/schema.shex"
+data     = "recursion_example/data.ttl"
+shapemap = "recursion_example/shapemap.sm"
+size     = "small"

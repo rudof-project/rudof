@@ -1,0 +1,44 @@
+[package]
+name = "bench-shex"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+shex_ast.workspace = true
+shex_validation.workspace = true
+rudof_rdf = { workspace = true, features = ["sparql"] }
+rudof_iri.workspace = true
+serde.workspace = true
+toml.workspace = true
+walkdir.workspace = true
+anyhow.workspace = true
+zip.workspace = true
+
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
+criterion.workspace = true
+rudof_lib.workspace = true
+
+[[bench]]
+name = "parse"
+harness = false
+
+[[bench]]
+name = "compile"
+harness = false
+
+[[bench]]
+name = "validator_init"
+harness = false
+
+[[bench]]
+name = "validate"
+harness = false
+
+[[bench]]
+name = "end_to_end"
+harness = false
