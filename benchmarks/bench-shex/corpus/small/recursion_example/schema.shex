@@ -1,5 +1,0 @@
-PREFIX ex: <http://schema.example/>
-
-ex:IssueShape {
-  ex:related @ex:IssueShape*
-}

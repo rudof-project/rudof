@@ -1,2 +1,0 @@
-<http://a.example/n1>  <http://a.example/p1> <http://a.example/n2> .
-<http://a.example/n2>  <http://a.example/p2> "X" .

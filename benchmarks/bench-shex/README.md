@@ -1,6 +1,6 @@
 # bench-shex
 
-Covers the ShEx pipeline. Cases are vendored under `bench-shex/corpus/{small,large}` with a `manifest.toml` per size:
+Covers the ShEx pipeline. Cases are vendored under `bench-shex/corpus/{small,large}.zip`, each containing a `manifest.toml` and its case files. On first use the zips are extracted into `target/bench-shex-corpus/{small,large}/` (respecting `CARGO_TARGET_TMPDIR` / `CARGO_TARGET_DIR`).
 
 - **small**: minimal cases from [shexTest](https://github.com/shexSpec/shexTest) (single-shape schemas, tiny RDF). Times in the µs–ms range.
 - **large**: real-world schemas (FHIR R5). Times in the ms–s range.

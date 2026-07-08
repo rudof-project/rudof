@@ -112,33 +112,38 @@ fn load_case(spec: CaseSpec, root: &Path) -> anyhow::Result<Case> {
 }
 
 pub fn load_all() -> Result<Vec<Case>> {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    ensure_fhir_examples_extracted(&root.join("corpus/large"))?;
-    let small = load_corpus(&root.join("corpus/small/manifest.toml"))?;
-    let large = load_corpus(&root.join("corpus/large/manifest.toml"))?;
+    let corpus_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("corpus");
+    let extract_root = extract_root();
+
+    let small_dir = ensure_extracted(&corpus_root.join("small.zip"), &extract_root.join("small"))?;
+    let large_dir = ensure_extracted(&corpus_root.join("large.zip"), &extract_root.join("large"))?;
+
+    let small = load_corpus(&small_dir.join("manifest.toml"))?;
+    let large = load_corpus(&large_dir.join("manifest.toml"))?;
     Ok(small.into_iter().chain(large).collect())
 }
 
-/// The FHIR R5 example TTLs ship as a zip to keep the git repo small. Extract
-/// them into `<large>/data-examples-fhir-r5/` on first use if missing.
-fn ensure_fhir_examples_extracted(large_dir: &Path) -> Result<()> {
-    let target_dir = large_dir.join("data-examples-fhir-r5");
-    let zip_path = target_dir.join("examples-ttl.zip");
-
-    let has_extracted = std::fs::read_dir(&target_dir)
-        .map(|iter| {
-            iter.filter_map(std::result::Result::ok)
-                .any(|e| e.path().extension().is_some_and(|ext| ext == "ttl"))
-        })
-        .unwrap_or(false);
-    if has_extracted {
-        return Ok(());
+/// Extract `zip_path` into `target` if the manifest marker is missing. Returns `target`.
+fn ensure_extracted(zip_path: &Path, target: &Path) -> Result<PathBuf> {
+    if target.join("manifest.toml").exists() {
+        return Ok(target.to_path_buf());
     }
-
-    let file = File::open(&zip_path).with_context(|| format!("open {}", zip_path.display()))?;
+    std::fs::create_dir_all(target).with_context(|| format!("create {}", target.display()))?;
+    let file = File::open(zip_path).with_context(|| format!("open {}", zip_path.display()))?;
     let mut archive = zip::ZipArchive::new(file).with_context(|| format!("read zip {}", zip_path.display()))?;
     archive
-        .extract(&target_dir)
-        .with_context(|| format!("extract into {}", target_dir.display()))?;
-    Ok(())
+        .extract(target)
+        .with_context(|| format!("extract into {}", target.display()))?;
+    Ok(target.to_path_buf())
+}
+
+fn extract_root() -> PathBuf {
+    if let Ok(dir) = std::env::var("CARGO_TARGET_TMPDIR") {
+        return PathBuf::from(dir).join("bench-shex-corpus");
+    }
+    if let Ok(dir) = std::env::var("CARGO_TARGET_DIR") {
+        return PathBuf::from(dir).join("bench-shex-corpus");
+    }
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../target/bench-shex-corpus")
 }
