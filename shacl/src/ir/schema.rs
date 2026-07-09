@@ -21,8 +21,9 @@ pub struct IRSchema {
     // imports: Vec<IriS>
     // entailments: Vec<IriS>
     labels_idx_map: HashMap<Object, ShapeLabelIdx>,
-
     shapes: HashMap<ShapeLabelIdx, IRShape>,
+    // This map is used to get the label from the index, but it is not used in the IRSchema itself. It is used in the IRShape to get the label of a shape from its index.
+    idx_labels_map: HashMap<ShapeLabelIdx, Object>,
     prefixmap: PrefixMap,
     base: Option<IriS>,
     dependency_graph: DependencyGraph,
@@ -33,6 +34,7 @@ impl IRSchema {
     pub fn new(prefixmap: PrefixMap) -> Self {
         Self {
             labels_idx_map: HashMap::new(),
+            idx_labels_map: HashMap::new(),
             shapes: HashMap::new(),
             prefixmap,
             base: None,
@@ -192,6 +194,7 @@ impl IRSchema {
             None => {
                 let label_idx = ShapeLabelIdx::new(self.get_next_idx());
                 self.labels_idx_map.insert(id.clone(), label_idx);
+                self.idx_labels_map.insert(label_idx, id.clone());
                 let compiled = IRShape::compile(shape, ast, self)?;
                 self.shapes.insert(label_idx, compiled);
                 Ok(label_idx)
@@ -220,12 +223,31 @@ impl IRSchema {
             warn!(
                 "More information about recursive schemas can be found at https://www.w3.org/TR/shacl/#shapes-recursion"
             );
-        }
-
-        if schema_ir.dependency_graph.has_neg_cycle() {
-            warn!(
-                "Warning: The dependency graph has negative cycles. This may lead to unexpected behavior in SHACL validation due to non-stratified negation"
-            );
+            let cycles: Vec<Vec<Object>> = schema_ir
+                .dependency_graph
+                .cycles()
+                .into_iter()
+                .map(|cycle| {
+                    cycle
+                        .into_iter()
+                        .map(|idx| {
+                            schema_ir.idx_labels_map.get(&idx).cloned().unwrap_or_else(|| {
+                                panic!(
+                                    "Internal error: Shape label index {idx} not found in idx_labels_map: {:?}",
+                                    schema_ir.idx_labels_map
+                                )
+                            })
+                        })
+                        .collect()
+                })
+                .collect();
+            if schema_ir.dependency_graph.has_neg_cycle() {
+                warn!(
+                    "Warning: The dependency graph has negative cycles. This may lead to unexpected behavior in SHACL validation due to non-stratified negation"
+                );
+                return Err(IRError::DependencyGraphHasNegativeCycles { cycles });
+            }
+            return Err(IRError::DependencyGraphHasCycles { cycles });
         }
 
         Ok(schema_ir)
