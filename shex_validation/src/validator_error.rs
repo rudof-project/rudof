@@ -137,6 +137,9 @@ pub enum ValidatorError {
         errors: ValidatorErrors,
     },
 
+    #[error("Shape {idx} refuted for node {node}: no assignment of the neighbourhood can satisfy the triple expressions (feasibility check)")]
+    TripleExprRefuted { node: Box<Node>, idx: ShapeLabelIdx },
+
     #[error("No partitions remaining for {node}@!{idx}")]
     ShapeFailedNoPartitions {
         node: Box<Node>,
@@ -381,6 +384,11 @@ impl ValidatorError {
             ValidatorError::ShapeFailedNoPartitions { node, idx, .. } => {
                 format!("No partitions remaining for {}@!{}", show_node(node), show_idx(idx))
             },
+            ValidatorError::TripleExprRefuted { node, idx } => format!(
+                "Shape {} refuted for node {}: no assignment of the neighbourhood can satisfy the triple expressions",
+                show_idx(idx),
+                show_node(node)
+            ),
             ValidatorError::AbstractShapeError { idx, node, .. } => format!(
                 "Shape {} is abstract and cannot be used in validation for node {}",
                 show_idx(idx),
@@ -515,6 +523,7 @@ impl ValidatorError {
             ValidatorError::ShapeExtendsNoMainShape { .. }
             | ValidatorError::ParentShapeNodeConstraintFailed { .. }
             | ValidatorError::ShapeFailedNoPartitions { .. }
+            | ValidatorError::TripleExprRefuted { .. }
             | ValidatorError::FillingShapeMapNodes { .. }
             | ValidatorError::AbstractShapeNoDescendants { .. }
             | ValidatorError::NodeShapeError { .. }

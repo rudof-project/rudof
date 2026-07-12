@@ -15,6 +15,7 @@ pub mod deriv_error;
 pub mod deriv_n;
 pub mod empty_iter;
 pub mod failures;
+pub mod feasibility;
 pub mod interval;
 pub mod keys;
 pub mod match_cond;

@@ -3,6 +3,7 @@
 //!
 pub mod atom;
 pub mod engine;
+pub mod class_partitions;
 pub mod k_partitions;
 pub mod partition;
 pub mod reason;
@@ -23,6 +24,7 @@ pub mod validator_errors;
 
 pub use crate::atom::*;
 pub use crate::engine::*;
+pub use crate::class_partitions::*;
 pub use crate::k_partitions::*;
 pub use crate::partition::*;
 pub use crate::reason::*;

@@ -23,6 +23,11 @@ where
         &self.symbols
     }
 
+    /// The underlying regular bag expression.
+    pub fn rbe(&self) -> &Rbe<A> {
+        &self.rbe
+    }
+
     pub fn has_repeats(&self) -> bool {
         self.has_repeats
     }
