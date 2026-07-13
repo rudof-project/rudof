@@ -677,7 +677,15 @@ impl Engine {
         let parent_alternatives: Vec<Vec<ExtendAlternative>> =
             shape.extends().iter().map(|e| schema.extend_alternatives(e)).collect();
         if parent_alternatives.iter().any(|alts| alts.len() > 1) {
-            return self.check_node_shape_extends_selections(idx, node, shape, schema, rdf, typing, &parent_alternatives);
+            return self.check_node_shape_extends_selections(
+                idx,
+                node,
+                shape,
+                schema,
+                rdf,
+                typing,
+                &parent_alternatives,
+            );
         }
 
         let extra_preds = shape.extra().clone();
@@ -1040,8 +1048,9 @@ impl Engine {
             .filter(|(pred, value, ctx)| {
                 let matches_leaf = bucket_exprs.values().any(|rbes| {
                     rbes.iter().any(|rbe| {
-                        rbe.components()
-                            .any(|(_, key, cond)| &key == pred && (cond_has_ref(&cond) || cond.matches(value, ctx).is_ok()))
+                        rbe.components().any(|(_, key, cond)| {
+                            &key == pred && (cond_has_ref(&cond) || cond.matches(value, ctx).is_ok())
+                        })
                     })
                 });
                 if matches_leaf {

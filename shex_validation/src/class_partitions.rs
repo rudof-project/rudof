@@ -93,14 +93,15 @@ where
 
         let mut class_map: HashMap<Vec<usize>, Vec<(K, V, Ctx)>> = HashMap::new();
         for (k, v, ctx) in neighs {
-            let eligible: Vec<usize> = (0..buckets.len())
-                .filter(|b| bucket_keys[*b].contains(&k))
-                .collect();
+            let eligible: Vec<usize> = (0..buckets.len()).filter(|b| bucket_keys[*b].contains(&k)).collect();
             if eligible.is_empty() {
                 // No bucket mentions this key: ignored, as in the previous enumerator.
                 continue;
             }
-            class_map.entry(eligible).or_default().push((k.clone(), v.clone(), ctx.clone()));
+            class_map
+                .entry(eligible)
+                .or_default()
+                .push((k.clone(), v.clone(), ctx.clone()));
         }
         let mut classes: Vec<Class<K, V, Ctx>> = class_map
             .into_iter()
@@ -331,7 +332,6 @@ fn next_permutation(a: &mut [usize]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::KPartitionIteratorMultiPredicate;
     use rbe::{MatchCond, Max, Pending, RbeStruct, SingleCond, rbe_error::RbeError};
     use std::collections::{HashMap, HashSet};
 
@@ -352,7 +352,11 @@ mod tests {
     type Table = RbeTable<C, C, C, C>;
 
     fn any(name: &str) -> Cond {
-        MatchCond::single(SingleCond::new().with_name(name).with_cond(|_v: &C, _c: &C| Ok(Pending::empty())))
+        MatchCond::single(
+            SingleCond::new()
+                .with_name(name)
+                .with_cond(|_v: &C, _c: &C| Ok(Pending::empty())),
+        )
     }
 
     fn is(name: &str, expected: char) -> Cond {
@@ -444,7 +448,7 @@ mod tests {
         let neighs: Vec<(C, C, C)> = vec![(C('p'), C('b'), C(' ')), (C('q'), C('x'), C(' '))];
         let new_parts: Vec<_> = class_partitions_iter(&neighs, &exprs).collect();
         assert!(new_parts.is_empty(), "refuted upfront: B cannot be satisfied");
-        let old_valid = crate::partitions_iter(&neighs, &exprs).filter(|p| is_valid(p)).count();
+        let old_valid = crate::partitions_iter(&neighs, &exprs).filter(is_valid).count();
         assert_eq!(old_valid, 0);
     }
 

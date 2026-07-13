@@ -11,7 +11,7 @@
 //! match is expected on some instances. See docs/dev/feasibility-model.md.
 
 use rbe::rbe_error::RbeError;
-use rbe::{Context, Key, MatchCond, Max, Pending, RbeTable, Ref, RbeStruct, SingleCond, Value};
+use rbe::{Context, Key, MatchCond, Max, Pending, RbeStruct, RbeTable, Ref, SingleCond, Value};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Default)]
 struct C(char);
@@ -43,7 +43,11 @@ fn is(name: &str, expected: char) -> Cond {
 
 /// A condition accepting any value.
 fn any(name: &str) -> Cond {
-    MatchCond::single(SingleCond::new().with_name(name).with_cond(move |_v: &C, _ctx: &C| Ok(Pending::empty())))
+    MatchCond::single(
+        SingleCond::new()
+            .with_name(name)
+            .with_cond(move |_v: &C, _ctx: &C| Ok(Pending::empty())),
+    )
 }
 
 /// `{ p [a]{1,2} | p . + ; q . }` — shared key across Or branches (the blowup pattern).
@@ -127,14 +131,7 @@ fn check_sound(table: &Table, pool: &[(char, char)]) {
     }
 }
 
-const POOL: &[(char, char)] = &[
-    ('p', 'a'),
-    ('p', 'a'),
-    ('p', 'b'),
-    ('p', 'b'),
-    ('q', 'x'),
-    ('q', 'y'),
-];
+const POOL: &[(char, char)] = &[('p', 'a'), ('p', 'a'), ('p', 'b'), ('p', 'b'), ('q', 'x'), ('q', 'y')];
 
 #[test]
 fn refutation_sound_shared_key_or() {

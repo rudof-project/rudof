@@ -89,13 +89,10 @@ where
                 lo_ok && self.hi(value) >= card.min.value
             },
             Rbe::And { values } => values.iter().all(|v| self.fx(v)),
-            Rbe::Or { values } => values.iter().enumerate().any(|(i, v)| {
-                self.fx(v)
-                    && values
-                        .iter()
-                        .enumerate()
-                        .all(|(j, other)| j == i || self.zero(other))
-            }),
+            Rbe::Or { values } => values
+                .iter()
+                .enumerate()
+                .any(|(i, v)| self.fx(v) && values.iter().enumerate().all(|(j, other)| j == i || self.zero(other))),
             Rbe::Star { value } => self.zero(value) || (self.fi(value) && self.once(value)),
             Rbe::Plus { value } => self.fi(value) && self.once(value),
             Rbe::Repeat { value, card } => {

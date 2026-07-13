@@ -137,7 +137,9 @@ pub enum ValidatorError {
         errors: ValidatorErrors,
     },
 
-    #[error("Shape {idx} refuted for node {node}: no assignment of the neighbourhood can satisfy the triple expressions (feasibility check)")]
+    #[error(
+        "Shape {idx} refuted for node {node}: no assignment of the neighbourhood can satisfy the triple expressions (feasibility check)"
+    )]
     TripleExprRefuted { node: Box<Node>, idx: ShapeLabelIdx },
 
     #[error("No partitions remaining for {node}@!{idx}")]

@@ -864,8 +864,7 @@ mod tests {
     use rudof_iri::iri;
 
     use super::SchemaIR;
-    use crate::ir::extend_alternative::{ExtendAlternative, cross_merge};
-use crate::ir::external_resolver::ExternalShapeResolverRegistry;
+    use crate::ir::external_resolver::ExternalShapeResolverRegistry;
     use crate::{
         Pred, ResolveMethod, ShapeLabelIdx,
         ast::Schema as SchemaJson,
