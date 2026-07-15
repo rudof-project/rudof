@@ -41,10 +41,7 @@ impl<S: NeighsRDF + Debug> Validator<S> for Node {
                 } else {
                     let inner_results =
                         node_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
-                    match inner_results {
-                        Ok(results) => !results.is_empty(),
-                        Err(e) => return Err(e),
-                    }
+                    !inner_results?.is_empty()
                 };
 
                 if had_violations {

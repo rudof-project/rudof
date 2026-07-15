@@ -34,14 +34,9 @@ impl<S: NeighsRDF + Debug> Validator<S> for Or {
                 for idx in self.shapes().iter() {
                     let or_shape = shapes_graph.get_shape_from_idx_e(idx)?;
                     let inner_results = or_shape.validate(store, engine, Some(&focus_nodes), Some(shape), shapes_graph);
-                    match inner_results {
-                        Ok(results) => {
-                            if results.is_empty() {
-                                conforms = true;
-                                break;
-                            }
-                        },
-                        Err(e) => return Err(e),
+                    if inner_results?.is_empty() {
+                        conforms = true;
+                        break;
                     }
                 }
                 if !conforms {
