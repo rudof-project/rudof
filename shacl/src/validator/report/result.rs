@@ -3,8 +3,8 @@ use crate::types::{MessageMap, Severity};
 use crate::validator::report::error_mapper;
 use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
-use rudof_rdf::rdf_core::vocabs::ShaclVocab;
-use rudof_rdf::rdf_core::{BuildRDF, FocusRDF, NeighsRDF, SHACLPath};
+use rudof_rdf::rdf_core::vocabs::{RdfVocab, ShaclVocab};
+use rudof_rdf::rdf_core::{BuildRDF, FocusRDF, SHACLPath};
 use std::fmt::{Display, Formatter};
 use std::hash::{Hash, Hasher};
 
@@ -180,7 +180,7 @@ impl ValidationResult {
         }
 
         if let Some(path) = &self.path {
-            let result_path = path_to_rdf::<RDF>(path);
+            let result_path = path_to_rdf(writer, path)?;
             writer
                 .add_triple(report_node.clone(), ShaclVocab::sh_result_path(), result_path)
                 .map_err(error_mapper::<RDF>("Error adding result path to validation result"))?;
@@ -197,16 +197,70 @@ impl ValidationResult {
     }
 }
 
-fn path_to_rdf<RDF: NeighsRDF>(path: &SHACLPath) -> RDF::Term {
+/// Serializes a SHACL path returning the term that identifies the path.
+/// Complex paths are encoded as blank node structures
+fn path_to_rdf<RDF: BuildRDF>(writer: &mut RDF, path: &SHACLPath) -> Result<RDF::Term, ValidationError> {
     match path {
-        SHACLPath::Predicate { pred } => pred.clone().into(),
-        SHACLPath::Alternative { .. } => todo!(),
-        SHACLPath::Sequence { .. } => todo!(),
-        SHACLPath::Inverse { .. } => todo!(),
-        SHACLPath::ZeroOrMore { .. } => todo!(),
-        SHACLPath::OneOrMore { .. } => todo!(),
-        SHACLPath::ZeroOrOne { .. } => todo!(),
+        SHACLPath::Predicate { pred } => Ok(pred.clone().into()),
+        SHACLPath::Alternative { paths } => {
+            let list = path_list_to_rdf(writer, paths)?;
+            path_with_predicate_to_rdf(writer, ShaclVocab::sh_alternative_path(), list)
+        },
+        SHACLPath::Sequence { paths } => path_list_to_rdf(writer, paths),
+        SHACLPath::Inverse { path } => {
+            let sub_path = path_to_rdf(writer, path)?;
+            path_with_predicate_to_rdf(writer, ShaclVocab::sh_inverse_path(), sub_path)
+        },
+        SHACLPath::ZeroOrMore { path } => {
+            let sub_path = path_to_rdf(writer, path)?;
+            path_with_predicate_to_rdf(writer, ShaclVocab::sh_zero_or_more_path(), sub_path)
+        },
+        SHACLPath::OneOrMore { path } => {
+            let sub_path = path_to_rdf(writer, path)?;
+            path_with_predicate_to_rdf(writer, ShaclVocab::sh_one_or_more_path(), sub_path)
+        },
+        SHACLPath::ZeroOrOne { path } => {
+            let sub_path = path_to_rdf(writer, path)?;
+            path_with_predicate_to_rdf(writer, ShaclVocab::sh_zero_or_one_path(), sub_path)
+        },
     }
+}
+
+/// Creates a blank node linked to the given object through the given predicate,
+/// as used by alternative, inverse and quantified paths.
+fn path_with_predicate_to_rdf<RDF: BuildRDF>(
+    writer: &mut RDF,
+    predicate: IriS,
+    object: RDF::Term,
+) -> Result<RDF::Term, ValidationError> {
+    let node: RDF::Subject = writer
+        .add_bnode()
+        .map_err(error_mapper::<RDF>("Error creating bnode for path"))?
+        .into();
+    writer
+        .add_triple(node.clone(), predicate, object)
+        .map_err(error_mapper::<RDF>("Error adding path to bnode"))?;
+    Ok(node.into())
+}
+
+/// Serializes a list of SHACL paths as an RDF collection, returning the head of the list.
+fn path_list_to_rdf<RDF: BuildRDF>(writer: &mut RDF, paths: &Vec<SHACLPath>) -> Result<RDF::Term, ValidationError> {
+    let mut rest: RDF::Term = RdfVocab::rdf_nil().into();
+    for path in paths.iter().rev() {
+        let element = path_to_rdf(writer, path)?;
+        let node: RDF::Subject = writer
+            .add_bnode()
+            .map_err(error_mapper::<RDF>("Error creating bnode for path list"))?
+            .into();
+        writer
+            .add_triple(node.clone(), RdfVocab::rdf_first(), element)
+            .map_err(error_mapper::<RDF>("Error adding rdf:first to path list"))?;
+        writer
+            .add_triple(node.clone(), RdfVocab::rdf_rest(), rest)
+            .map_err(error_mapper::<RDF>("Error adding rdf:rest to path list"))?;
+        rest = node.into();
+    }
+    Ok(rest)
 }
 
 impl Display for ValidationResult {
