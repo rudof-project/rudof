@@ -23,7 +23,7 @@
 //! previous enumerator did (the engine keeps genuinely invalid values upstream so that the
 //! partition fails; values whose key no bucket mentions are ignored here).
 //!
-//! See docs/dev/feasibility-model.md §5 (step 4) and the Jena implementation it ports.
+//! See docs/src/internals/feasibility-model.md §5 (step 4) and the Jena implementation it ports.
 
 use crate::Partitions;
 use rbe::{Context, Key, RbeTable, Ref, Value};

@@ -1,6 +1,6 @@
 //! Tests for `SchemaIR::extend_alternatives`: resolution of extended parents that are
 //! references, ShapeAnds and ShapeOrs into selection alternatives.
-//! See docs/dev/feasibility-model.md §3 and docs/dev/extends-over-shapeor-gap.md.
+//! See docs/src/internals/feasibility-model.md §3.
 
 use rudof_iri::iri;
 use shex_ast::ShapeLabelIdx;

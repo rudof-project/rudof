@@ -673,7 +673,7 @@ impl Engine {
         // When some extended parent resolves to several alternatives (it contains a
         // ShapeOr), validate by trying every selection of one alternative per parent.
         // Parents with a single alternative keep the historical code path below.
-        // See docs/dev/feasibility-model.md §3-§4.
+        // See docs/src/internals/feasibility-model.md §3-§4.
         let parent_alternatives: Vec<Vec<ExtendAlternative>> =
             shape.extends().iter().map(|e| schema.extend_alternatives(e)).collect();
         if parent_alternatives.iter().any(|alts| alts.len() > 1) {
@@ -940,7 +940,7 @@ impl Engine {
 
     /// Validates a shape with extends when some extended parent resolves to several
     /// alternatives: tries every selection of one alternative per parent until one
-    /// conforms. See docs/dev/feasibility-model.md §3-§4.
+    /// conforms. See docs/src/internals/feasibility-model.md §3-§4.
     fn check_node_shape_extends_selections<R>(
         &self,
         idx: &ShapeLabelIdx,

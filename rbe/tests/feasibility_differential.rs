@@ -8,7 +8,7 @@
 //!
 //! The converse is deliberately not asserted: the predicate is a necessary condition
 //! only (count coupling and divisibility are ignored), so `feasible == true` with no
-//! match is expected on some instances. See docs/dev/feasibility-model.md.
+//! match is expected on some instances. See docs/src/internals/feasibility-model.md.
 
 use rbe::rbe_error::RbeError;
 use rbe::{Context, Key, MatchCond, Max, Pending, RbeStruct, RbeTable, Ref, SingleCond, Value};

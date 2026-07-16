@@ -15,7 +15,7 @@
 //! be occupiable. What it deliberately ignores: count coupling between symbols of a
 //! repeated group (`(a b)+` with unequal counts passes) and divisibility.
 //!
-//! This is a port of the feasibility layer described in `docs/dev/feasibility-model.md`
+//! This is a port of the feasibility layer described in `docs/src/internals/feasibility-model.md`
 //! (§1 tables and soundness proof), originally implemented and proved for Apache Jena.
 
 use crate::rbe_struct::RbeStruct;

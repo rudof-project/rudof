@@ -1,7 +1,6 @@
 # A feasibility model for EXTENDS, ShapeOr parents, and partition search in rudof
 
-*Companion problem statement: [`extends-over-shapeor-gap.md`](extends-over-shapeor-gap.md).
-Prior art: the same model implemented and proved for Apache Jena
+*Prior art: the same model implemented and proved for Apache Jena
 (`fhircat/jena` branch `extends-validation-error-reporting`,
 `jena-shex/docs/matching-search-optimization.md`), where it is accompanied by a soundness
 proof, a differential test harness, and measurements; this document maps the model onto
@@ -89,7 +88,7 @@ above the virtual root (§3, §4).
 
 ## 2. Worked example A: `person-OneOf.shex` → feasibility structure {#2-worked-example-a}
 
-[`fixtures/person-OneOf.shex`](fixtures/person-OneOf.shex) keeps all disjunction inside one
+[`examples/shex/person-OneOf.shex`](../../../examples/shex/person-OneOf.shex) keeps all disjunction inside one
 triple expression; rudof validates it today via `rbe` derivatives. It grounds the tables on
 a schema rudof already handles, and shows what `F` adds.
 
@@ -107,7 +106,7 @@ EachOf(
   t_badge  ex:badgeNumber xsd:integer      [1,1] )
 ```
 
-**alice** ([`fixtures/person-Engineer.ttl`](fixtures/person-Engineer.ttl)) has 10 triples.
+**alice** ([`examples/shex/person-Engineer.ttl`](../../../examples/shex/person-Engineer.ttl)) has 10 triples.
 Every predicate here belongs to exactly one TC, so candidate sets are singletons and there
 are 9 classes (the two `ex:rolls` triples share the candidate set `{t_rolls}` and form one
 class of size 2). Initial intervals: `hi(t_rolls) = 2`; `hi = 1` for the 7 present
@@ -135,7 +134,7 @@ the choice once — which is precisely why it is worth supporting.
 
 ## 3. Worked example B: `person-extends.shex` → selection alternatives {#3-worked-example-b}
 
-[`fixtures/person-extends.shex`](fixtures/person-extends.shex):
+[`examples/shex/person-extends.shex`](../../../examples/shex/person-extends.shex):
 `<Person> EXTENDS @<Contact1> EXTENDS @<Tools> CLOSED { ex:badgeNumber xsd:integer }`.
 
 **Step 1 — resolve each parent into *alternatives*** (DNF over *shape atoms*), by structural
@@ -310,15 +309,15 @@ Ordered so each step lands independently with tests.
 
 ## 6. Test plan {#6-test-plan}
 
-* `fixtures/direct-parent.shex` — regression: stays OK after every step.
-* `fixtures/ref-parent.shex` — OK after step 1.
-* `fixtures/or-parent.shex` — OK after steps 2–3 (`:x :p 1 ; :q 2 .` conforms via `:A1`,
+* `examples/shex/direct-parent.shex` — regression: stays OK after every step.
+* `examples/shex/ref-parent.shex` — OK after step 1.
+* `examples/shex/or-parent.shex` — OK after steps 2–3 (`:x :p 1 ; :q 2 .` conforms via `:A1`,
   `:x :r 1 ; :q 2 .` via `:A2`) — *verified*.
-* `fixtures/person-extends.shex` + `fixtures/person-Engineer.ttl` — the full example, OK
+* `examples/shex/person-extends.shex` + `examples/shex/person-Engineer.ttl` — the full example, OK
   after steps 2–3. Mutants for each failure mode: add `ex:rolls ex:Robot` (¬X_Robot fails);
   remove `ex:rolls ex:Human` (X_Human fails); add `ex:glovesSize "XL"` (CLOSED under every
   σ — pins selection-dependent matchables, §4.2); replace foaf:name with schema:name only
   (σ flips to C2); remove `ex:badgeNumber` (Person's own bucket fails).
-* `fixtures/person-OneOf.shex` — must keep validating identically; it is the semantic
+* `examples/shex/person-OneOf.shex` — must keep validating identically; it is the semantic
   oracle for the EXTENDS form on shared data.
 * Existing `examples/shex/extends*.shex` and the shexTest suite — unchanged behaviour.

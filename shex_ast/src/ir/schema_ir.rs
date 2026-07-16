@@ -210,7 +210,7 @@ impl SchemaIR {
 
     /// Get the list of node constraints, the main shape and the rest of shape expressions.
     /// Shape expression references are dereferenced first, so that a parent declared as
-    /// `<B> @<A>` behaves like `<A>` when it is extended (see docs/dev/extends-over-shapeor-gap.md).
+    /// `<B> @<A>` behaves like `<A>` when it is extended.
     pub fn get_main_shape_constraints(
         &self,
         idx: &ShapeLabelIdx,
@@ -259,7 +259,7 @@ impl SchemaIR {
     /// role (cf. [`Self::get_main_shape_constraints`]); every other conjunct becomes a
     /// constraint of each alternative. A `Shape` is a bucket, combined with the cross
     /// product of its extends-parents' alternatives. `NodeConstraint`, `ShapeNot` and
-    /// `External` are constraints. See `docs/dev/feasibility-model.md` §3.
+    /// `External` are constraints. See `docs/src/internals/feasibility-model.md` §3.
     pub fn extend_alternatives(&self, idx: &ShapeLabelIdx) -> Vec<ExtendAlternative> {
         let mut path = HashSet::new();
         self.extend_alternatives_rec(idx, &mut path)

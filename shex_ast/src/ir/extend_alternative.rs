@@ -18,7 +18,7 @@ use crate::ShapeLabelIdx;
 ///   node when this alternative is selected. They deliberately contribute no partition
 ///   buckets: a constraint describes triples without consuming them.
 ///
-/// See `docs/dev/feasibility-model.md` §3 for the resolution rules and a worked example.
+/// See `docs/src/internals/feasibility-model.md` §3 for the resolution rules and a worked example.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct ExtendAlternative {
     bucket_shapes: Vec<ShapeLabelIdx>,
