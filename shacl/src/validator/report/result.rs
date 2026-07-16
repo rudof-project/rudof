@@ -303,3 +303,71 @@ impl Hash for ValidationResult {
         self.details.hash(state);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rudof_rdf::rdf_core::Rdf;
+    use rudof_rdf::rdf_impl::OxigraphInMemory;
+
+    fn assert_path_round_trip(path: SHACLPath) {
+        let mut graph = OxigraphInMemory::empty();
+        let node = graph.add_bnode().unwrap();
+        let term = path_to_rdf(&mut graph, &path).unwrap();
+        graph
+            .add_triple(node.clone(), ShaclVocab::sh_result_path(), term)
+            .unwrap();
+
+        let subject: <OxigraphInMemory as Rdf>::Term = node.into();
+        let predicate: <OxigraphInMemory as Rdf>::IRI = ShaclVocab::sh_result_path().into();
+        let parsed = graph.get_path_for(&subject, &predicate).unwrap().unwrap();
+        assert_eq!(parsed, path);
+    }
+
+    fn pred(local: &str) -> SHACLPath {
+        SHACLPath::iri(IriS::new_unchecked(&format!("http://example.org/{local}")))
+    }
+
+    #[test]
+    fn path_to_rdf_predicate() {
+        assert_path_round_trip(pred("knows"));
+    }
+
+    #[test]
+    fn path_to_rdf_inverse() {
+        assert_path_round_trip(SHACLPath::inverse(pred("knows")));
+    }
+
+    #[test]
+    fn path_to_rdf_zero_or_more() {
+        assert_path_round_trip(SHACLPath::zero_or_more(pred("knows")));
+    }
+
+    #[test]
+    fn path_to_rdf_one_or_more() {
+        assert_path_round_trip(SHACLPath::one_or_more(pred("knows")));
+    }
+
+    #[test]
+    fn path_to_rdf_zero_or_one() {
+        assert_path_round_trip(SHACLPath::zero_or_one(pred("knows")));
+    }
+
+    #[test]
+    fn path_to_rdf_sequence() {
+        assert_path_round_trip(SHACLPath::sequence(vec![pred("knows"), pred("name")]));
+    }
+
+    #[test]
+    fn path_to_rdf_alternative() {
+        assert_path_round_trip(SHACLPath::alternative(vec![pred("knows"), pred("name")]));
+    }
+
+    #[test]
+    fn path_to_rdf_nested() {
+        assert_path_round_trip(SHACLPath::sequence(vec![
+            SHACLPath::alternative(vec![pred("knows"), SHACLPath::inverse(pred("name"))]),
+            SHACLPath::zero_or_more(pred("friend")),
+        ]));
+    }
+}
