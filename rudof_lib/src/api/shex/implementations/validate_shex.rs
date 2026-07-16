@@ -3,6 +3,7 @@ use crate::{
     errors::{DataError, ShExError},
     types::Data,
 };
+use rudof_rdf::rdf_core::Rdf;
 use shex_ast::{ir::schema_ir::SchemaIR as ShExSchemaIR, shapemap::NodeSelector, shapemap::QueryShapeMap};
 use shex_validation::Validator as ShExValidator;
 
@@ -23,8 +24,9 @@ pub fn validate_shex(rudof: &mut Rudof) -> Result<()> {
             .map_err(|e| ShExError::FailedInitializingQueryStore { error: e.to_string() })?;
     }
 
+    let nodes_prefixmap = rdf_data.prefixmap().unwrap_or_default();
     let result = shex_validator
-        .validate_shapemap(shapemap, rdf_data, shex_schema, &Some(rdf_data.graph_prefixmap()))
+        .validate_shapemap(shapemap, rdf_data, shex_schema, &Some(nodes_prefixmap))
         .map_err(|e| ShExError::FailedShExValidation { error: e.to_string() })?;
 
     // Read back the map state that was mutated by MapActionExtension closures during validation.

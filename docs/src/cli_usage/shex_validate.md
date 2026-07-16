@@ -176,7 +176,7 @@ By default, validation data is loaded into an in-process `memory` graph. Use `--
 
 ```sh
 rudof shex-validate -s schema.shex -m shapemap.sm --backend qlever data.ttl
-rudof shex-validate -s schema.shex -m shapemap.sm --backend endpoint=https://my.sparql.server/sparql
+rudof shex-validate -s schema.shex -m shapemap.sm --endpoint https://my.sparql.server/sparql
 ```
 
 See the [RDF backend (`--backend`) reference](./backend.md) for full documentation.

@@ -3,7 +3,9 @@ use crate::Reasons;
 use crate::ValidatorErrors;
 use prefixmap::PrefixMap;
 use prefixmap::error::PrefixMapError;
+use rbe::Cardinality;
 use rbe::RbeError;
+use rudof_iri::IriS;
 use rudof_rdf::rdf_core::term::Object;
 use serde::Serialize;
 use serde::ser::SerializeMap;
@@ -16,6 +18,74 @@ use shex_ast::ir::shape_expr::ShapeExpr;
 use shex_ast::{Node, Pred, ShapeExprLabel, ShapeLabelIdx, ir::shape_label::ShapeLabel};
 use termtree::Tree;
 use thiserror::Error;
+
+/// Why a single candidate assignment of neighbors to a triple expression was
+/// rejected, attached as children of a [`ValidatorError::NoMatchesFound`]
+/// error so the user can see, per candidate, why it didn't work.
+#[derive(Debug, Clone)]
+pub enum NoMatchReason {
+    /// `value` didn't satisfy `predicate`'s own condition (e.g. a node
+    /// constraint or shape reference).
+    ConditionFailed {
+        candidate: Vec<(Pred, Node)>,
+        predicate: Pred,
+        value: Node,
+        error: RbeError<Pred, Node, ShapeLabelIdx, SemanticActionContext>,
+    },
+    /// `predicate` needed to occur `expected` times but occurred `current`
+    /// times among the candidate's neighbors.
+    CardinalityFailed {
+        candidate: Vec<(Pred, Node)>,
+        predicate: Pred,
+        expected: Cardinality,
+        current: usize,
+    },
+    /// A candidate was rejected for a reason that couldn't be attributed to
+    /// a single predicate's cardinality (e.g. `Or`-branch interactions).
+    Other {
+        candidate: Vec<(Pred, Node)>,
+        detail: String,
+    },
+}
+
+impl NoMatchReason {
+    fn show_qualified(&self, nodes_prefixmap: &PrefixMap) -> String {
+        let show_pred = |p: &Pred| nodes_prefixmap.qualify(p.iri());
+        let show_candidate = |candidate: &[(Pred, Node)]| {
+            candidate
+                .iter()
+                .map(|(p, v)| format!("{} {}", show_pred(p), v.show_qualified(nodes_prefixmap)))
+                .collect::<Vec<_>>()
+                .join(", ")
+        };
+        match self {
+            NoMatchReason::ConditionFailed {
+                candidate,
+                predicate,
+                value,
+                error,
+            } => format!(
+                "Candidate [{}] rejected: {} {}: {error}",
+                show_candidate(candidate),
+                show_pred(predicate),
+                value.show_qualified(nodes_prefixmap),
+            ),
+            NoMatchReason::CardinalityFailed {
+                candidate,
+                predicate,
+                expected,
+                current,
+            } => format!(
+                "Candidate [{}] rejected: predicate {} required cardinality {expected:?} but got {current}",
+                show_candidate(candidate),
+                show_pred(predicate),
+            ),
+            NoMatchReason::Other { candidate, detail } => {
+                format!("Candidate [{}] rejected: {detail}", show_candidate(candidate))
+            },
+        }
+    }
+}
 
 #[derive(Error, Debug, Clone)]
 pub enum ValidatorError {
@@ -113,8 +183,10 @@ pub enum ValidatorError {
     #[error("Serialization of error failed: {source_error} with error: {error}")]
     ErrorSerializationError { source_error: String, error: String },
 
-    #[error("References failed: Shape pattern matches, but references failed: {}", failed_pending.iter().map(|(n, s)| format!("({n}, {s})")).collect::<Vec<_>>().join(", "))]
-    FailedPending { failed_pending: Vec<(Node, ShapeLabelIdx)> },
+    #[error("References failed: Shape pattern matches, but references failed: {}", failed_pending.iter().map(|(n, s, ks, _errs)| format!("({n}, {s}, preds: [{:?}])", ks.iter().map(|k| k.to_string()).collect::<Vec<_>>().join(", "))).collect::<Vec<_>>().join(", "))]
+    FailedPending {
+        failed_pending: Vec<(Node, ShapeLabelIdx, Vec<Pred>, Vec<ValidatorError>)>,
+    },
     #[error("Negation cycle error: {neg_cycles:?}")]
     NegCycleError {
         neg_cycles: Vec<Vec<(String, String, Vec<String>)>>,
@@ -216,10 +288,18 @@ pub enum ValidatorError {
         node: Box<Node>,
         shape: Box<Shape>,
         idx: ShapeLabelIdx,
+        // Why each candidate assignment of neighbors to the triple expression
+        // was rejected, shown (qualified against the prefix map) as children
+        // of this error in the tree-formatted output.
+        reasons: Vec<NoMatchReason>,
     },
 
-    #[error("ShapeRef fails for node {node} with idx: {idx}")]
-    ShapeRefFailed { node: Box<Node>, idx: ShapeLabelIdx },
+    #[error("ShapeRef fails for node {node} with idx: {idx}, errors: {errors}")]
+    ShapeRefFailed {
+        node: Box<Node>,
+        idx: ShapeLabelIdx,
+        errors: ValidatorErrors,
+    },
 
     #[error("StartAct failed for node {node} with idx: {idx}")]
     StartActFailed { node: Box<Node>, idx: ShapeLabelIdx },
@@ -334,19 +414,18 @@ impl ValidatorError {
                     show_node(node)
                 )
             },
-            ValidatorError::ShapeRefFailed { node, idx } => {
+            ValidatorError::ShapeRefFailed { node, idx, .. } => {
                 format!(
                     "Reference to {} fails for node {}",
                     show_label(idx, schema, width),
                     show_node(node)
                 )
             },
-            ValidatorError::FailedPending { failed_pending } => {
-                let items: Vec<String> = failed_pending
-                    .iter()
-                    .map(|(n, s)| format!("({}@{})", show_node(n), show_idx(s)))
-                    .collect();
-                format!("References failed: {}", items.join(", "))
+            ValidatorError::FailedPending { .. } => "References failed:".to_string(),
+            ValidatorError::RbeError(err) => {
+                let show_pred = |p: &Pred| nodes_prefixmap.qualify(p.iri());
+                let show_node = |n: &Node| n.show_qualified(nodes_prefixmap);
+                err.show_qualified(&show_pred, &show_node)
             },
             _ => format!("{self}"),
         };
@@ -363,6 +442,7 @@ impl ValidatorError {
         match self {
             ValidatorError::PartitionComponentFailed { errors, .. }
             | ValidatorError::PartitionFailed { errors, .. }
+            | ValidatorError::ShapeRefFailed { errors, .. }
             | ValidatorError::AbstractShapeError { errors, .. }
             | ValidatorError::DescendantShapeError { errors, .. }
             | ValidatorError::DescendantsShapeError { errors, .. }
@@ -397,6 +477,41 @@ impl ValidatorError {
                 }
                 Ok(())
             },
+            ValidatorError::NoMatchesFound { reasons, .. } => {
+                for reason in reasons {
+                    tree.leaves.push(Tree::new(reason.show_qualified(nodes_prefixmap)));
+                }
+                Ok(())
+            },
+            ValidatorError::FailedPending { failed_pending } => {
+                let show_pred = |p: &IriS| nodes_prefixmap.qualify(p);
+                for (n, s, ks, errs) in failed_pending {
+                    let keys = match ks.len() {
+                        0 => String::new(),
+                        1 => format!("Predicate {}", show_pred(ks[0].iri())),
+                        _ => format!(
+                            "Predicates {}",
+                            ks.iter().map(|k| show_pred(k.iri())).collect::<Vec<_>>().join(", ")
+                        ),
+                    };
+                    let ref_root = format!(
+                        "{} -> {} as {}",
+                        keys,
+                        n.show_qualified(nodes_prefixmap),
+                        Self::show_idx(s, schema)
+                    );
+                    let mut ref_tree = Tree::new(ref_root);
+                    add_errors_to_tree(
+                        &mut ref_tree,
+                        &ValidatorErrors::new(errs.clone()),
+                        nodes_prefixmap,
+                        schema,
+                        width,
+                    )?;
+                    tree.leaves.push(ref_tree);
+                }
+                Ok(())
+            },
             ValidatorError::ShapeExtendsNoMainShape { .. }
             | ValidatorError::ParentShapeNodeConstraintFailed { .. }
             | ValidatorError::ShapeFailedNoPartitions { .. }
@@ -406,7 +521,6 @@ impl ValidatorError {
             | ValidatorError::TermToRDFNodeFailed { .. }
             | ValidatorError::ReasonSerializationError { .. }
             | ValidatorError::ErrorSerializationError { .. }
-            | ValidatorError::FailedPending { .. }
             | ValidatorError::NegCycleError { .. }
             | ValidatorError::SRDFError { .. }
             | ValidatorError::NotFoundShapeLabel { .. }
@@ -425,8 +539,6 @@ impl ValidatorError {
             | ValidatorError::AddingConformantError { .. }
             | ValidatorError::AddingPendingError { .. }
             | ValidatorError::ShapeExprNotFound { .. }
-            | ValidatorError::NoMatchesFound { .. }
-            | ValidatorError::ShapeRefFailed { .. }
             | ValidatorError::ExternalShapeRejected { .. }
             | ValidatorError::ExternalShapeUnresolved { .. }
             | ValidatorError::StartActFailed { .. } => Ok(()),

@@ -30,7 +30,7 @@ impl Command for DataCommand {
         let reader_mode = self.args.reader_mode.into();
         let result_format = self.args.result_format.into();
 
-        let backend = resolve_backend(self.args.common.backend.as_ref());
+        let backend = resolve_backend(&self.args.common);
 
         let mut loading = ctx
             .rudof

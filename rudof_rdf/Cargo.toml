@@ -17,6 +17,7 @@ sparql = [
     "dep:tokio",
     "dep:spargebra",
     "dep:sparesults",
+    "dep:tracing",
 ]
 qlever = [
     "sparql",

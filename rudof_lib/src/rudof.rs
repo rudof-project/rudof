@@ -369,6 +369,11 @@ impl Rudof {
         SerializeShexValidationResultsBuilder::new(self, writer)
     }
 
+    /// Returns the result of the most recent `validate_shex()` call, if any.
+    pub fn shex_validation_results(&self) -> Option<&ResultShapeMap> {
+        self.shex_validation_results.as_ref()
+    }
+
     /// Returns a `ResetShexBuilder` to clear ShEx validation state and results.
     pub fn reset_shex<'a>(&'a mut self) -> ResetShexBuilder<'a> {
         ResetShexBuilder::new(self)

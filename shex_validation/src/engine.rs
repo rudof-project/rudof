@@ -5,6 +5,7 @@ use crate::Reasons;
 use crate::ValidatorConfig;
 use crate::ValidatorErrors;
 use crate::atom;
+use crate::ref_typing::RefTyping;
 use crate::validator_error::*;
 use either::Either;
 use indexmap::IndexSet;
@@ -40,7 +41,6 @@ type NegAtom = (Node, ShapeLabelIdx);
 type PosAtom = (Node, ShapeLabelIdx);
 type Neighs = (Vec<(Pred, Node)>, Vec<Pred>);
 type ValidationResult = Either<Vec<ValidatorError>, Vec<Reason>>;
-type Typing = HashSet<(Node, ShapeLabelIdx)>;
 
 #[derive(Debug, Clone)]
 pub struct Engine {
@@ -282,29 +282,30 @@ impl Engine {
         hyp.push((node.clone(), *label));
         let hyp_as_set: HashSet<(Node, ShapeLabelIdx)> =
             hyp.iter().map(|(n, l)| (n.clone(), *l)).collect::<HashSet<_>>();
-        let mut matched = HashSet::new();
+        let mut typing = RefTyping::new();
         let candidates = self.dep(node, label, schema, rdf)?;
         let cleaned_candidates: HashSet<_> = candidates.difference(&hyp_as_set).cloned().collect();
         for (n1, l1) in cleaned_candidates {
-            // TODO: Change structure to collect errors and reasons instead of using a HashSet
             match self.prove(&n1, &l1, hyp, schema, rdf)? {
                 Either::Right(_reasons) => {
                     /*debug!(
                         "Proved {n1}@{l1} while proving {node}@{label}: {}",
                         rs.iter().map(|r| format!("{r}")).join(", ")
                     );*/
-                    matched.insert((n1.clone(), l1));
+                    typing.insert_passed(n1.clone(), l1);
                 },
-                Either::Left(_errors) => {
+                Either::Left(errors) => {
                     /*debug!(
                         "Failed to prove {n1}@{l1} while proving {node}@{label}: {}",
                         errors.iter().map(|e| format!("{e}")).join(", ")
                     );*/
-                    // Should we collect errors here?
+                    typing.insert_failed(n1.clone(), l1, errors);
                 },
             }
         }
-        let mut typing: HashSet<_> = matched.union(&hyp_as_set).cloned().collect();
+        for (n, l) in hyp_as_set.iter() {
+            typing.insert_passed(n.clone(), *l);
+        }
         let result = self.check_node_idx(node, label, schema, rdf, &mut typing, hyp)?;
         hyp.pop();
         /*debug!(
@@ -327,7 +328,7 @@ impl Engine {
         idx: &ShapeLabelIdx,
         schema: &SchemaIR,
         rdf: &R,
-        typing: &mut HashSet<(Node, ShapeLabelIdx)>,
+        typing: &mut RefTyping,
         hyp: &mut Vec<(Node, ShapeLabelIdx)>,
     ) -> Result<ValidationResult>
     where
@@ -451,7 +452,7 @@ impl Engine {
         se: &ShapeExpr,
         schema: &SchemaIR,
         rdf: &R,
-        typing: &mut HashSet<(Node, ShapeLabelIdx)>,
+        typing: &mut RefTyping,
     ) -> Result<ValidationResult>
     where
         R: NeighsRDF + QueryRDF,
@@ -592,12 +593,7 @@ impl Engine {
         }
     }
 
-    fn check_node_ref(
-        &self,
-        node: &Node,
-        idx: &ShapeLabelIdx,
-        typing: &mut HashSet<(Node, ShapeLabelIdx)>,
-    ) -> Result<ValidationResult> {
+    fn check_node_ref(&self, node: &Node, idx: &ShapeLabelIdx, typing: &mut RefTyping) -> Result<ValidationResult> {
         /*debug!("Checking node {node} with shape ref {idx}"); */
 
         // If the node is already in the typing, we can return true
@@ -607,9 +603,11 @@ impl Engine {
                 idx: *idx,
             })
         } else {
+            let errors = typing.errors_for(&(node.clone(), *idx));
             fail(ValidatorError::ShapeRefFailed {
                 node: Box::new(node.clone()),
                 idx: *idx,
+                errors: ValidatorErrors::new(errors),
             })
         }
     }
@@ -621,7 +619,7 @@ impl Engine {
         shape: &Shape,
         _schema: &SchemaIR,
         rdf: &R,
-        typing: &mut Typing,
+        typing: &mut RefTyping,
     ) -> Result<ValidationResult>
     where
         R: QueryRDF + NeighsRDF,
@@ -664,7 +662,7 @@ impl Engine {
         shape: &Shape,
         schema: &SchemaIR,
         rdf: &R,
-        typing: &mut HashSet<(Node, ShapeLabelIdx)>,
+        typing: &mut RefTyping,
     ) -> Result<ValidationResult>
     where
         R: NeighsRDF + QueryRDF,
@@ -913,7 +911,7 @@ impl Engine {
         shape: &Shape,
         schema: &SchemaIR,
         rdf: &R,
-        typing: &mut HashSet<(Node, ShapeLabelIdx)>,
+        typing: &mut RefTyping,
     ) -> Result<ValidationResult>
     where
         R: QueryRDF + NeighsRDF,
@@ -1152,11 +1150,12 @@ impl Engine {
         Ok((result, reminder_preds))
     }
 
-    fn cnv_err<S>(&self, _err: S::Err) -> ValidatorError
+    fn cnv_err<S>(&self, err: S::Err) -> ValidatorError
     where
         S: NeighsRDF,
     {
-        todo!()
+        tracing::trace!("cnv_err: {err}");
+        ValidatorError::SRDFError { error: err.to_string() }
     }
 
     fn get_rdf_node<S>(&self, node: &Node, _rdf: &S) -> S::Term
@@ -1303,7 +1302,7 @@ fn check_exprs_neigh(
     node: &Node,
     shape: &Shape,
     idx: &ShapeLabelIdx,
-    typing: &Typing,
+    typing: &RefTyping,
 ) -> Result<ValidationResult> {
     for rbe in exprs.iter() {
         let result = check_expr_neigh(rbe, neighs, node, shape, idx, typing)?;
@@ -1329,28 +1328,57 @@ fn check_expr_neigh(
     node: &Node,
     shape: &Shape,
     idx: &ShapeLabelIdx,
-    typing: &Typing,
+    typing: &RefTyping,
 ) -> Result<ValidationResult> {
     /*trace!(
         "Checking expr {} with neighs: [{}]",
         expr,
         neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", ")
     );*/
-    let result_iter = expr.matches(neighs.to_vec())?;
-    let mut result_iter = result_iter.peekable();
-    if result_iter.peek().is_none() {
+    let mut result_iter = expr.matches(neighs.to_vec())?;
+    let first_result = result_iter.next();
+    if first_result.is_none() {
         /*debug!(
             "expr {expr} produced no candidates for neighs: [{}]",
             neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", ")
         );*/
+        let mut reasons: Vec<NoMatchReason> = result_iter
+            .failed_candidates()
+            .iter()
+            .map(|(candidate, predicate, value, error)| NoMatchReason::ConditionFailed {
+                candidate: candidate.clone(),
+                predicate: predicate.clone(),
+                value: value.clone(),
+                error: error.clone(),
+            })
+            .collect();
+        for (candidate, err) in result_iter.failed_cardinality() {
+            match expr.cardinality_violations(err) {
+                Ok(violations) => {
+                    for (predicate, expected, current) in violations {
+                        reasons.push(NoMatchReason::CardinalityFailed {
+                            candidate: candidate.clone(),
+                            predicate,
+                            expected,
+                            current,
+                        });
+                    }
+                },
+                Err(detail) => reasons.push(NoMatchReason::Other {
+                    candidate: candidate.clone(),
+                    detail,
+                }),
+            }
+        }
         return fail(ValidatorError::NoMatchesFound {
             node: Box::new(node.clone()),
             shape: Box::new(shape.clone()),
             idx: *idx,
+            reasons,
         });
     }
     let mut errors = Vec::new();
-    for result in result_iter {
+    for result in first_result.into_iter().chain(result_iter) {
         /*trace!(
             "Result of {expr} with neighs: {}: {:?}",
             neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", "),
@@ -1359,24 +1387,47 @@ fn check_expr_neigh(
         match result {
             Ok(pending_values) => {
                 if !pending_values.is_empty() {
+                    /*tracing::trace!(
+                        "Pending values for expr {expr} with neighs: [{}]:\n{pending_values}",
+                        neighs.iter().map(|(p, o, _ctx)| format!("{p} {o}")).join(", "),
+                    );*/
                     let mut failed_pending = Vec::new();
                     // Check if all pending values are in typing
-                    for (n, idx) in pending_values.iter() {
+                    for (n, idx, ks) in pending_values.iter_vr() {
                         let pair = (n.clone(), *idx);
                         if !typing.contains(&pair) {
-                            failed_pending.push(pair)
+                            /*tracing::trace!(
+                                "Pending value ({},{}) is not in typing, keys: [{}]",
+                                n.clone(),
+                                *idx,
+                                ks.iter().map(|k| k.to_string()).join(", ")
+                            );*/
+                            failed_pending.push((
+                                n.clone(),
+                                *idx,
+                                ks.iter().cloned().collect::<Vec<_>>(),
+                                typing.errors_for(&pair),
+                            ))
                             // TODO: if (stop_at_first) break
                             // We don't need to compute all the failed pending values once we find the first pair
                         }
                     }
                     if failed_pending.is_empty() {
+                        //tracing::trace!("All pending values were in typing {pending_values}");
                         return pass(Reason::Shape {
                             node: node.clone(),
                             shape: Box::new(shape.clone()),
                             idx: *idx,
+                            // TODO: Add pending_values to reason
                         });
                     } else {
-                        //trace!("Failed pending values: {:?}", failed_pending);
+                        /*tracing::trace!(
+                            "Failed pending values: {}",
+                            failed_pending
+                                .iter()
+                                .map(|(n, idx, _ks)| format!("{n}@{idx}"))
+                                .join(", ")
+                        );*/
                         errors.push(ValidatorError::FailedPending {
                             failed_pending: failed_pending.clone(),
                         })

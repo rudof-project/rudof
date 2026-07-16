@@ -7,6 +7,36 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## 0.3.7
+### Added
+### Fixed
+### Changed
+- Solves issue #721. Change the behaviour with recursive shapes in SHACL to give an error. 
+  In the future we should attempt recursive shapes with non-negative cycles and use least-fixpoint semantics as suggested in the paper.
+
+### Removed
+
+## v0.3.6
+
+### Fixed
+- fix(sparql): fix SPARQL endpoint validation and add rate limiting and caching
+- fix(cli): fix CLI to allow node command with endpoint backend and no data input, and add --endpoint/-e shortcut for endpoint backend
+- fix(shex): resolve shapemap prefixes from data/schema sources
+- fix(sparql): fix SPARQL endpoint validation and add rate limiting and caching
+
+### Added
+- feat(rbe): report mandatory values in empty-candidates errors
+- feat(shex,rbe): explain why triple expression matching failed
+- feat(config): add missing `genid` prefix to the default config.
+- feat(shex): report why references failed in FailedPending errors
+
+## v0.3.5
+### Added
+- #706: added emacs bindings by @ericprud
+### Fixed
+- #708: allow node command with endpoint backend and no data input, and add --endpoint/-e shortcut for endpoint backend
+- #698: Add more information about error messages in ShEx validation
+
 ## v0.3.4
 ### Added
 - #533: Add rudof MCP server to Model Context Protocol registry

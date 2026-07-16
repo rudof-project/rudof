@@ -1,0 +1,52 @@
+/* Custom styling for pyrudof documentation */
+
+/* Improve code block styling */
+div.highlight {
+    margin: 1em 0;
+    border-radius: 4px;
+}
+
+/* Better spacing for parameter lists */
+dl.field-list {
+    margin-top: 1em;
+}
+
+/* Highlight important admonitions */
+.admonition.important {
+    border-left: 4px solid #ff6b6b;
+}
+
+.admonition.tip {
+    border-left: 4px solid #51cf66;
+}
+
+/* Improve table styling */
+table.docutils {
+    border-collapse: collapse;
+    margin: 1em 0;
+}
+
+table.docutils td, table.docutils th {
+    padding: 0.5em;
+}
+
+/* Center footer sphinxawesome_theme */
+footer {
+    text-align: center !important;
+}
+
+footer .container {
+    justify-content: center !important;
+    align-items: center !important;
+    text-align: center !important;
+}
+
+footer p {
+    text-align: center !important;
+}
+
+footer div[class*="flex"] {
+    justify-content: center !important;
+    align-items: center !important;
+    flex-direction: column !important;
+}

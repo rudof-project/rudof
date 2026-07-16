@@ -1,0 +1,17 @@
+# Example with some information about Tim Berners-Lee
+prefix :     <http://example.org/>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix xsd:  <http://www.w3.org/2001/XMLSchema#>
+prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+:timbl  rdf:type    :Human ;
+        :birthPlace :london ;
+        rdfs:label "Tim Berners-Lee" ;
+        :birthDate "1955-06-08"^^xsd:date ;
+        :employer  :CERN ;
+        :knows     _:1 .
+:london rdf:type    :City, :Metropolis ;
+        :country    :UK .
+:CERN   rdf:type    :Organization .
+_:1     :birthPlace :Spain .
+:UK     rdf:type    :Country .

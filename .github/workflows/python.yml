@@ -56,7 +56,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
-          working-directory: python
+          working-directory: bindings/python
           target: ${{ matrix.target }}
           manylinux: auto
           args: --release --out dist --interpreter ${{ matrix.python-version }}
@@ -79,11 +79,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels-linux-${{ matrix.target }}
-          path: python/dist
+          path: bindings/python/dist
       - name: Install Built Wheel
-        run: python3 -m pip install -vv pyrudof --find-links=python/dist --no-index
+        run: python3 -m pip install -vv pyrudof --find-links=bindings/python/dist --no-index
       - name: Test Built Wheel
-        run: cd python/tests && python3 -m unittest discover -vvv
+        run: cd bindings/python/tests && python3 -m unittest discover -vvv
 
   windows:
     runs-on: Windows-2022
@@ -101,7 +101,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
-          working-directory: python
+          working-directory: bindings/python
           target: ${{ matrix.target }}
           args: --release --out dist --interpreter ${{ matrix.python-version }}
           sccache: 'true'
@@ -109,11 +109,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels-windows-${{ matrix.target }}
-          path: python/dist
+          path: bindings/python/dist
       - name: Install Built Wheel
-        run: python3 -m pip install -vv pyrudof --find-links=python/dist --no-index
+        run: python3 -m pip install -vv pyrudof --find-links=bindings/python/dist --no-index
       - name: Test Built Wheel
-        run: cd python/tests && python3 -m unittest discover -vvv
+        run: cd bindings/python/tests && python3 -m unittest discover -vvv
 
   macos:
     runs-on: ${{ matrix.vm }}
@@ -136,7 +136,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
-          working-directory: python
+          working-directory: bindings/python
           target: ${{ matrix.target }}
           args: --release --out dist --interpreter ${{ matrix.python-version }}
           sccache: 'true'
@@ -144,11 +144,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels-macos-${{ matrix.target }}
-          path: python/dist
+          path: bindings/python/dist
       - name: Install Built Wheel
-        run: python3 -m pip install -vv pyrudof --find-links=python/dist --no-index
+        run: python3 -m pip install -vv pyrudof --find-links=bindings/python/dist --no-index
       - name: Test Built Wheel
-        run: cd python/tests && python3 -m unittest discover -vvv
+        run: cd bindings/python/tests && python3 -m unittest discover -vvv
 
 #  sdist:
 #    runs-on: ubuntu-latest
@@ -157,18 +157,18 @@ jobs:
 #      - name: Build sdist
 #        uses: PyO3/maturin-action@v1
 #        with:
-#          working-directory: python
+#          working-directory: bindings/python
 #          command: sdist
 #          args: --out dist
 #      - name: Upload sdist
 #        uses: actions/upload-artifact@v4
 #        with:
 #          name: wheels
-#          path: python/dist
+#          path: bindings/python/dist
 #      - name: Install Built sdist
-#        run: python3 -m pip install -vv pyrudof --find-links=python/dist --no-index
+#        run: python3 -m pip install -vv pyrudof --find-links=bindings/python/dist --no-index
 #      - name: Test Built sdist
-#        run: cd python/tests && python3 -m unittest discover -vvv
+#        run: cd bindings/python/tests && python3 -m unittest discover -vvv
 
   release:
     name: Release

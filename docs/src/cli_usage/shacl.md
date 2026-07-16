@@ -67,7 +67,7 @@ By default, SHACL data is loaded into an in-process `memory` graph. Use `--backe
 
 ```sh
 rudof shacl -s shapes.ttl --backend qlever data.ttl
-rudof shacl -s shapes.ttl --backend endpoint=https://my.sparql.server/sparql
+rudof shacl -s shapes.ttl --endpoint https://my.sparql.server/sparql
 ```
 
 See the [RDF backend (`--backend`) reference](./backend.md) for full documentation.

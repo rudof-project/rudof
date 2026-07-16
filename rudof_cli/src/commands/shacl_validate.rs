@@ -33,15 +33,17 @@ impl Command for ShaclValidateCommand {
         let sort_order = self.args.sort_by.into();
         let result_format = self.args.result_format.into();
 
-        let backend = resolve_backend(self.args.common.backend.as_ref());
+        let backend = resolve_backend(&self.args.common);
 
         let mut loading = ctx
             .rudof
             .load_data()
-            .with_data(&self.args.data)
             .with_data_format(&data_format)
             .with_reader_mode(&reader_mode)
             .with_backend(backend);
+        if !self.args.data.is_empty() {
+            loading = loading.with_data(&self.args.data);
+        }
         if let Some(base) = self.args.base_data.as_deref() {
             loading = loading.with_base(base);
         }

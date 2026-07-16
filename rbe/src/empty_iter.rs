@@ -40,18 +40,24 @@ where
     R: Ref,
     Ctx: Context,
 {
-    type Item = Result<Pending<V, R>, rbe_error::RbeError<K, V, R, Ctx>>;
+    type Item = Result<Pending<K, V, R>, rbe_error::RbeError<K, V, R, Ctx>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.is_first {
             self.is_first = false;
             if self.rbe.nullable() {
-                Some(Ok(Pending::new()))
+                Some(Ok(Pending::empty()))
             } else {
-                Some(Err(RbeError::EmptyCandidates {
-                    rbe: Box::new(self.rbe.clone()),
-                    values: self.values.clone(),
-                }))
+                if self.values.is_empty() {
+                    Some(Err(RbeError::EmptyCandidatesNoValues {
+                        rbe: Box::new(self.rbe.clone()),
+                    }))
+                } else {
+                    Some(Err(RbeError::EmptyCandidates {
+                        rbe: Box::new(self.rbe.clone()),
+                        values: self.values.clone(),
+                    }))
+                }
             }
         } else {
             None
@@ -142,7 +148,7 @@ mod tests {
         let cond: MatchCond<K, V, R, Ctx> = MatchCond::single(
             SingleCond::new()
                 .with_name("any")
-                .with_cond(|_v, _c| Ok(Pending::new())),
+                .with_cond(|_v, _c| Ok(Pending::empty())),
         );
         let c = table.add_component(1, &cond);
         (table, c)

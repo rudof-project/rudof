@@ -1,0 +1,4 @@
+{
+  "http://example.org/name": {"Iri": "http://example.org/Alice"},
+  "http://example.org/email": {"Iri": "mailto:alice@example.org"}
+}

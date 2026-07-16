@@ -1,5 +1,0 @@
-prefix : <http://example.org/>
-
-select ?person ?name where {
-  ?person :name ?name .
-}

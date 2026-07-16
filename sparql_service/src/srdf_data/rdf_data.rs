@@ -464,6 +464,37 @@ impl NeighsRDF for RdfData {
         }
         Ok(primary.into_iter().chain(endpoint_triples))
     }
+
+    fn outgoing_arcs_from_list(
+        &self,
+        subject: &Self::Subject,
+        preds: &[Self::IRI],
+    ) -> std::result::Result<
+        (
+            std::collections::HashMap<Self::IRI, std::collections::HashSet<Self::Term>>,
+            Vec<Self::IRI>,
+        ),
+        Self::Err,
+    > {
+        if preds.is_empty() {
+            return Ok((std::collections::HashMap::new(), Vec::new()));
+        }
+        // Primary backend (in-memory or endpoint-backed): uses its own FILTER query when available
+        let (mut results, _) = self
+            .primary
+            .outgoing_arcs_from_list(subject, preds)
+            .map_err(|e| RdfDataError::Backend { err: Box::new(e) })?;
+        // Active SPARQL endpoints: each issues a single FILTER query for only the needed predicates
+        for endpoint in self.use_endpoints.values() {
+            let (ep_results, _) = endpoint.outgoing_arcs_from_list(subject, preds)?;
+            for (pred, objects) in ep_results {
+                results.entry(pred).or_default().extend(objects);
+            }
+        }
+        // Remainder predicates are not fetched from SPARQL endpoints (expensive).
+        // Closed-shape validation against live endpoints is not supported.
+        Ok((results, Vec::new()))
+    }
 }
 
 impl FocusRDF for RdfData {

@@ -99,7 +99,7 @@ By default, local files are loaded into an in-process `memory` graph. Use `--bac
 
 ```sh
 rudof query -q my.sparql --backend qlever data.ttl
-rudof query -q my.sparql --backend endpoint=https://my.sparql.server/sparql
+rudof query -q my.sparql --endpoint https://my.sparql.server/sparql
 ```
 
 See the [RDF backend (`--backend`) reference](./backend.md) for full documentation.

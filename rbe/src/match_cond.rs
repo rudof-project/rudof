@@ -58,11 +58,11 @@ where
         MatchCond::Ref(r)
     }
 
-    pub fn matches(&self, value: &V, ctx: &Ctx) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx>> {
+    pub fn matches(&self, value: &V, ctx: &Ctx) -> Result<Pending<K, V, R>, RbeError<K, V, R, Ctx>> {
         match self {
             MatchCond::Single(single) => single.matches(value, ctx),
             MatchCond::Ref(r) => Ok(Pending::from_pair(value.clone(), r.clone())),
-            MatchCond::And(vs) => vs.iter().try_fold(Pending::new(), |mut current, cond| {
+            MatchCond::And(vs) => vs.iter().try_fold(Pending::empty(), |mut current, cond| {
                 let new_pending = cond.matches(value, ctx)?;
                 current.merge(new_pending);
                 Ok(current)
@@ -76,7 +76,7 @@ where
 
     pub fn simple(
         name: &str,
-        cond: impl Fn(&V, &Ctx) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx>> + Clone + 'static + Send + Sync,
+        cond: impl Fn(&V, &Ctx) -> Result<Pending<K, V, R>, RbeError<K, V, R, Ctx>> + Clone + 'static + Send + Sync,
     ) -> Self {
         MatchCond::single(SingleCond::new().with_name(name).with_cond(cond))
     }
@@ -161,7 +161,7 @@ where
     Ctx: Context,
 {
     fn clone_box(&self) -> Box<dyn Cond<K, V, R, Ctx> + Send + Sync>;
-    fn call(&self, v: &V, ctx: &Ctx) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx>>;
+    fn call(&self, v: &V, ctx: &Ctx) -> Result<Pending<K, V, R>, RbeError<K, V, R, Ctx>>;
 }
 
 impl<K, V, R, F, Ctx> Cond<K, V, R, Ctx> for F
@@ -170,13 +170,13 @@ where
     V: Value,
     R: Ref,
     Ctx: Context,
-    F: 'static + Fn(&V, &Ctx) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx>> + Clone + Send + Sync,
+    F: 'static + Fn(&V, &Ctx) -> Result<Pending<K, V, R>, RbeError<K, V, R, Ctx>> + Clone + Send + Sync,
 {
     fn clone_box(&self) -> Box<dyn Cond<K, V, R, Ctx> + Send + Sync> {
         Box::new(self.clone())
     }
 
-    fn call(&self, v: &V, ctx: &Ctx) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx>> {
+    fn call(&self, v: &V, ctx: &Ctx) -> Result<Pending<K, V, R>, RbeError<K, V, R, Ctx>> {
         self(v, ctx)
     }
 }
@@ -221,8 +221,8 @@ where
     R: Ref,
     Ctx: Context,
 {
-    pub fn matches(&self, value: &V, ctx: &Ctx) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx>> {
-        self.cond.iter().try_fold(Pending::new(), |mut current, f| {
+    pub fn matches(&self, value: &V, ctx: &Ctx) -> Result<Pending<K, V, R>, RbeError<K, V, R, Ctx>> {
+        self.cond.iter().try_fold(Pending::empty(), |mut current, f| {
             let pending = f.call(value, ctx)?;
             current.merge(pending);
             Ok(current)
@@ -243,7 +243,7 @@ where
 
     pub fn with_cond(
         mut self,
-        cond: impl Fn(&V, &Ctx) -> Result<Pending<V, R>, RbeError<K, V, R, Ctx>> + Clone + 'static + Send + Sync,
+        cond: impl Fn(&V, &Ctx) -> Result<Pending<K, V, R>, RbeError<K, V, R, Ctx>> + Clone + 'static + Send + Sync,
     ) -> Self {
         self.cond.push(Box::new(cond));
         self
@@ -333,21 +333,21 @@ mod tests {
     fn test_even_cond_2_pass() {
         let cond_even: SingleCond<char, i32, String, char> = SingleCond::new().with_cond(|v, _ctx| {
             if v % 2 == 0 {
-                Ok(Pending::new())
+                Ok(Pending::empty())
             } else {
                 Err(RbeError::MsgError {
                     msg: format!("Value {v} is not even"),
                 })
             }
         });
-        assert_eq!(cond_even.matches(&2, &'a'), Ok(Pending::new()));
+        assert_eq!(cond_even.matches(&2, &'a'), Ok(Pending::empty()));
     }
 
     #[test]
     fn test_even_cond_3_fail() {
         let cond_even: SingleCond<char, i32, String, char> = SingleCond::new().with_cond(|v, _ctx| {
             if v % 2 == 0 {
-                Ok(Pending::new())
+                Ok(Pending::empty())
             } else {
                 Err(RbeError::MsgError {
                     msg: format!("Value {v} is not even"),
@@ -362,7 +362,7 @@ mod tests {
         fn cond_name(name: String) -> SingleCond<char, String, String, char> {
             SingleCond::new().with_cond(move |v: &String, _ctx: &char| {
                 if *v == name {
-                    Ok(Pending::new())
+                    Ok(Pending::empty())
                 } else {
                     Err(RbeError::MsgError {
                         msg: format!("Value {v} is not equal to {name}"),
@@ -380,7 +380,7 @@ mod tests {
                 .with_name("name")
                 .with_cond(move |v: &String, _ctx: &char| {
                     if *v == name {
-                        Ok(Pending::new())
+                        Ok(Pending::empty())
                     } else {
                         Err(RbeError::MsgError {
                             msg: format!("Value {v} failed condition is not equal to {name}",),
@@ -390,7 +390,7 @@ mod tests {
         }
         assert_eq!(
             cond_name("foo".to_string()).matches(&"foo".to_string(), &'a'),
-            Ok(Pending::new())
+            Ok(Pending::empty())
         );
     }
 }

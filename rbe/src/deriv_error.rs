@@ -27,6 +27,10 @@ where
     pub fn push(&mut self, expr: Rbe<A>, err: DerivError<A>) {
         self.fs.push((Box::new(expr), err));
     }
+
+    pub fn iter(&self) -> impl Iterator<Item = &(Box<Rbe<A>>, DerivError<A>)> {
+        self.fs.iter()
+    }
 }
 
 impl<A> Default for Failures<A>
@@ -100,6 +104,9 @@ where
 
     #[error("Cardinality(0,0) but found symbol after derivative")]
     CardinalityZeroZeroDeriv { symbol: A },
+
+    #[error("{failures}")]
+    CardinalityFailMulti { failures: Failures<A> },
 
     #[error("Should fail but passed: {name}")]
     ShouldFailButPassed { name: String },

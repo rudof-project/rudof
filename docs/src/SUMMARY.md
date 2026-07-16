@@ -47,7 +47,7 @@
 - [Architecture](./internals/architecture.md)
   - [`rudof_iri`](./internals/crates/rudof_iri.md)
   - [`prefixmap`](./internals/crates/prefixmap.md)
-  - [`python`](./internals/crates/python.md)
+  - [`bindings/python`](./internals/crates/python.md)
   - [`rudof_cli`](./internals/crates/rudof_cli.md)
   - [`rudof_lib`](./internals/crates/rudof_lib.md)
   - [`rudof_rdf`](./internals/crates/rudof_rdf.md)

@@ -1,0 +1,34 @@
+{
+  "@context": "http://www.w3.org/ns/shex.jsonld",
+  "type": "Schema",
+  "shapes": [{
+    "type": "ShapeDecl",
+    "id": "http://example.org/PersonShape",
+    "shapeExpr": {
+      "type": "Shape",
+      "expression": {
+        "type": "EachOf",
+        "expressions": [
+          {
+            "type": "TripleConstraint",
+            "predicate": "http://example.org/name",
+            "semActs": [{
+              "type": "SemAct",
+              "name": "http://shex.io/extensions/Map/",
+              "code": "<http://example.org/name>"
+            }]
+          },
+          {
+            "type": "TripleConstraint",
+            "predicate": "http://example.org/email",
+            "semActs": [{
+              "type": "SemAct",
+              "name": "http://shex.io/extensions/Map/",
+              "code": "<http://example.org/email>"
+            }]
+          }
+        ]
+      }
+    }
+  }]
+}
