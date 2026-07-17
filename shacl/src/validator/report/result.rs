@@ -244,7 +244,7 @@ fn path_with_predicate_to_rdf<RDF: BuildRDF>(
 }
 
 /// Serializes a list of SHACL paths as an RDF collection, returning the head of the list.
-fn path_list_to_rdf<RDF: BuildRDF>(writer: &mut RDF, paths: &Vec<SHACLPath>) -> Result<RDF::Term, ValidationError> {
+fn path_list_to_rdf<RDF: BuildRDF>(writer: &mut RDF, paths: &[SHACLPath]) -> Result<RDF::Term, ValidationError> {
     let mut rest: RDF::Term = RdfVocab::rdf_nil().into();
     for path in paths.iter().rev() {
         let element = path_to_rdf(writer, path)?;
