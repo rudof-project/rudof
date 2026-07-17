@@ -9,6 +9,7 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 
 ## 0.3.7
 ### Added
+- Adds support for disjunctions in ShEx extends
 ### Fixed
 ### Changed
 - Solves issue #721. Change the behaviour with recursive shapes in SHACL to give an error. 
