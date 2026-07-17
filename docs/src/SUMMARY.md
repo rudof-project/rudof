@@ -54,6 +54,7 @@
   - [`rudof_mcp`](./internals/crates/rudof_mcp.md)
 - [ADRs](./internals/ADRs.md)
 - [IRI normalization](./internals/iri-normalization.md)
+- [Feasibility model](./internals/feasibility-model.md)
 
 # More information
 

@@ -480,7 +480,7 @@ impl NeighsRDF for RdfData {
             return Ok((std::collections::HashMap::new(), Vec::new()));
         }
         // Primary backend (in-memory or endpoint-backed): uses its own FILTER query when available
-        let (mut results, _) = self
+        let (mut results, reminder) = self
             .primary
             .outgoing_arcs_from_list(subject, preds)
             .map_err(|e| RdfDataError::Backend { err: Box::new(e) })?;
@@ -491,9 +491,10 @@ impl NeighsRDF for RdfData {
                 results.entry(pred).or_default().extend(objects);
             }
         }
-        // Remainder predicates are not fetched from SPARQL endpoints (expensive).
-        // Closed-shape validation against live endpoints is not supported.
-        Ok((results, Vec::new()))
+        // The remainder comes from the primary backend only: remainder predicates are not
+        // fetched from SPARQL endpoints (expensive), so closed-shape validation sees local
+        // data but not live endpoints.
+        Ok((results, reminder))
     }
 }
 
