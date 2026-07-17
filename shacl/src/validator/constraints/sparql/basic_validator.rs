@@ -37,6 +37,7 @@ impl<RDF: QueryRDF + NeighsRDF + Debug + 'static> BasicSparqlValidator<RDF> for 
         component: &IRComponent,
         shape: &IRShape,
         store: &RDF,
+        _: &mut dyn Engine<RDF>,
         value_nodes: &ValueNodes<RDF>,
         _: Option<&IRShape>,
         maybe_path: Option<&SHACLPath>,

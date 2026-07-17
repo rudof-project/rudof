@@ -71,7 +71,8 @@ pub struct ShaclValidateArgs {
         long = "mode",
         value_name = "MODE",
         ignore_case = true,
-        help = "Execution mode",
+        help = "Validation mode. `native` usually used with the in-memory store and \
+                `sparql` is intended for remote SPARQL endpoints and Qlever.",
         default_value_t = ShaclValidationModeCli::Native,
         value_enum
     )]

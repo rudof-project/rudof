@@ -18,9 +18,10 @@ include = [
 ]
 
 [features]
-default = []
+default = [ "sparql" ]
 # Pull in the QLever Docker backend (sparql_service/qlever + rudof_rdf/qlever).
 qlever = ["sparql_service/qlever", "rudof_rdf/qlever", "dep:tokio"]
+sparql = [ "shacl/sparql", "sparql_service/sparql", "rudof_rdf/sparql" ]
 
 [dependencies]
 tokio = { workspace = true, optional = true }
