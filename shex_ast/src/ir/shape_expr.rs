@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use super::{
     dependency_graph::{DependencyGraph, PosNeg},
     node_constraint::NodeConstraint,
@@ -10,7 +12,7 @@ use std::{
     vec,
 };
 
-#[derive(Debug, PartialEq, Clone, Default)]
+#[derive(Debug, PartialEq, Clone, Default, Serialize, Deserialize)]
 pub enum ShapeExpr {
     ShapeOr {
         exprs: Vec<ShapeLabelIdx>,

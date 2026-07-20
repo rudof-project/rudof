@@ -2,9 +2,10 @@ use crate::ShapeLabelIdx;
 use petgraph::graphmap::GraphMap;
 use petgraph::visit::EdgeRef;
 use petgraph::visit::IntoEdgeReferences;
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct DependencyGraph {
     graph: GraphMap<ShapeLabelIdx, PosNeg, petgraph::Directed>,
 }
@@ -78,7 +79,7 @@ impl Iterator for DependencyGraphIter<'_> {
     }
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PosNeg {
     #[default]
     Pos,

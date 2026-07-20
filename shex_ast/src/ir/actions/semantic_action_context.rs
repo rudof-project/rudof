@@ -1,5 +1,5 @@
 use rbe::Context;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
@@ -8,7 +8,7 @@ use crate::ir::actions::semantic_actions_registry::SemanticActionsRegistry;
 use crate::{Node, Pred};
 
 /// Context passed to semantic actions when they are executed.
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct SemanticActionContext {
     subject: Option<Node>,
     predicate: Option<Pred>,

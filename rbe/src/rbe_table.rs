@@ -18,6 +18,7 @@ use core::hash::Hash;
 use indexmap::IndexMap;
 use indexmap::IndexSet;
 use itertools::*;
+use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -25,7 +26,7 @@ use std::fmt::Display;
 use std::vec::IntoIter;
 // use tracing::trace;
 
-#[derive(PartialEq, Eq, Clone)]
+#[derive(PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct RbeTable<K, V, R, Ctx, P = ()>
 where
     K: Key,

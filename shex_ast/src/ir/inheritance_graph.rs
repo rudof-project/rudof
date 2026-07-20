@@ -5,9 +5,10 @@ use petgraph::algo::toposort;
 use petgraph::graphmap::GraphMap;
 use petgraph::visit::IntoEdgeReferences;
 use petgraph::visit::{Dfs, Reversed};
+use serde::{Deserialize, Serialize};
 use tracing::trace;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct InheritanceGraph {
     graph: GraphMap<ShapeLabelIdx, (), petgraph::Directed>,
 }

@@ -14,6 +14,7 @@ use crate::{CResult, SchemaIRError, ShapeExprLabel, ShapeLabelIdx, ast::Schema a
 use crate::{Expr, Node, Pred, ResolveMethod};
 use prefixmap::{IriRef, PrefixMap};
 use rudof_iri::IriS;
+use serde::{Deserialize, Serialize};
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
@@ -23,7 +24,7 @@ use std::sync::Mutex;
 
 type Result<A> = std::result::Result<A, Box<SchemaIRError>>;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct SchemaIR {
     labels_idx_map: HashMap<ShapeLabel, ShapeLabelIdx>,
     idx_labels_map: HashMap<ShapeLabelIdx, ShapeLabel>,
@@ -39,6 +40,7 @@ pub struct SchemaIR {
     dependency_graph: DependencyGraph,
     inheritance_graph: InheritanceGraph,
     abstract_shapes: HashSet<ShapeLabelIdx>,
+    #[serde(skip)]
     semantic_actions_registry: Arc<SemanticActionsRegistry>,
     start_acts: Vec<SemAct>,
 }
@@ -785,6 +787,7 @@ impl Display for SchemaIR {
 mod tests {
     use std::collections::HashMap;
 
+    use nom::combinator::Consumed;
     use rudof_iri::iri;
 
     use super::SchemaIR;
@@ -967,5 +970,169 @@ mod tests {
         .into_iter()
         .collect();
         assert_eq!(references, expected);
+    }
+
+    fn round_trip_schema_json(name: &str, schema_json_str: &str) {
+        let schema: SchemaJson = serde_json::from_str(schema_json_str)
+            .unwrap_or_else(|e| panic!("[{name}] parse ShEx JSON: {e}"));
+
+        let mut ir = SchemaIR::new(SemanticActionsRegistry::default());
+        ir.populate_from_schema_json(
+            &schema,
+            &ExternalShapeResolverRegistry::default(),
+            &ResolveMethod::default(),
+            &None,
+        )
+        .unwrap_or_else(|e| panic!("[{name}] AST -> IR compile: {e}"));
+
+        let config = bincode::config::standard();
+        let bytes: Vec<u8> = bincode::serde::encode_to_vec(&ir, config)
+            .unwrap_or_else(|e| panic!("[{name}] bincode encode: {e}"));
+        let (restored, consumed): (SchemaIR, usize) =
+            bincode::serde::decode_from_slice(&bytes, config)
+                .unwrap_or_else(|e| panic!("[{name}] bincode decode: {e}"));
+        assert_eq!(
+            consumed,
+            bytes.len(),
+            "[{name}] bincode did not consume every byte"
+        );
+
+        fn sorted_lines(s: &str) -> Vec<String> {
+            let mut lines: Vec<String> = s.lines().map(str::to_string).collect();
+            lines.sort();
+            lines
+        }
+        assert_eq!(
+            sorted_lines(&format!("{ir}")),
+            sorted_lines(&format!("{restored}")),
+            "[{name}] Display differs after bincode round-trip",
+        );
+
+        assert_eq!(
+            ir.shape_label_counter, restored.shape_label_counter,
+            "[{name}] shape_label_counter changed",
+        );
+        assert_eq!(
+            ir.labels_idx_map.len(),
+            restored.labels_idx_map.len(),
+            "[{name}] label count changed",
+        );
+
+        for (label, idx) in ir.labels_idx_map.iter() {
+            let restored_idx = restored
+                .get_shape_label_idx(label)
+                .unwrap_or_else(|_| panic!("[{name}] restored missing label {label}"));
+            assert_eq!(*idx, restored_idx, "[{name}] index for {label} differs");
+            let a_info = ir.find_shape_idx(idx).unwrap();
+            let b_info = restored.find_shape_idx(&restored_idx).unwrap();
+            assert_eq!(
+                format!("{}", a_info.expr()),
+                format!("{}", b_info.expr()),
+                "[{name}] shape expression for {label} differs",
+            );
+        }
+    }
+
+    #[test]
+    fn schema_ir_bincode_round_trip_and_of_two_shapes() {
+        let str = r#"{
+          "type": "Schema",
+          "@context": "http://www.w3.org/ns/shex.jsonld",
+          "shapes": [
+            { "type": "ShapeDecl", "id": "http://example.org/S",
+              "shapeExpr": { "type": "ShapeAnd", "shapeExprs": [
+                { "type": "Shape", "expression": {
+                  "type": "TripleConstraint",
+                  "predicate": "http://example.org/p",
+                  "valueExpr": "http://example.org/T" } },
+                { "type": "Shape", "expression": {
+                  "type": "TripleConstraint",
+                  "predicate": "http://example.org/p",
+                  "valueExpr": "http://example.org/U" } }
+              ] } },
+            { "type": "ShapeDecl", "id": "http://example.org/T",
+              "shapeExpr": { "type": "Shape" } },
+            { "type": "ShapeDecl", "id": "http://example.org/U",
+              "shapeExpr": { "type": "Shape" } }
+          ]
+        }"#;
+        round_trip_schema_json("and_of_two_shapes", str);
+    }
+
+    // Each subsequent test uses a real ShEx test-suite schema so we
+    // exercise the full IR surface (node constraints, value sets,
+    // exclusions, cardinality, extends, closed shapes, negation).
+    // `include_str!` embeds the file at compile time — no runtime I/O.
+
+    #[test]
+    fn schema_ir_bincode_round_trip_cardinality_2_5() {
+        round_trip_schema_json(
+            "1card25",
+            include_str!("../../../shex_testsuite/shexTest/schemas/1card25.json"),
+        );
+    }
+
+    #[test]
+    fn schema_ir_bincode_round_trip_value_set_single_iri() {
+        round_trip_schema_json(
+            "1val1IRIREF",
+            include_str!("../../../shex_testsuite/shexTest/schemas/1val1IRIREF.json"),
+        );
+    }
+
+    #[test]
+    fn schema_ir_bincode_round_trip_literal_pattern() {
+        round_trip_schema_json(
+            "1literalPattern",
+            include_str!("../../../shex_testsuite/shexTest/schemas/1literalPattern.json"),
+        );
+    }
+
+    #[test]
+    fn schema_ir_bincode_round_trip_iri_stem_exclusions() {
+        round_trip_schema_json(
+            "1val1dotMinusiriStem3",
+            include_str!("../../../shex_testsuite/shexTest/schemas/1val1dotMinusiriStem3.json"),
+        );
+    }
+
+    #[test]
+    fn schema_ir_bincode_round_trip_literal_exclusions() {
+        round_trip_schema_json(
+            "1val1dotMinusliteral3",
+            include_str!("../../../shex_testsuite/shexTest/schemas/1val1dotMinusliteral3.json"),
+        );
+    }
+
+    #[test]
+    fn schema_ir_bincode_round_trip_negation() {
+        round_trip_schema_json(
+            "1NOTIRI",
+            include_str!("../../../shex_testsuite/shexTest/schemas/1NOTIRI.json"),
+        );
+    }
+
+    #[test]
+    fn schema_ir_bincode_round_trip_extends() {
+        round_trip_schema_json(
+            "0Extends1",
+            include_str!("../../../shex_testsuite/shexTest/schemas/0Extends1.json"),
+        );
+    }
+
+    #[test]
+    fn schema_ir_bincode_round_trip_closed_shape() {
+        round_trip_schema_json(
+            "1dotClosed",
+            include_str!("../../../shex_testsuite/shexTest/schemas/1dotClosed.json"),
+        );
+    }
+
+    #[test]
+    fn schema_ir_bincode_round_trip_extra() {
+        round_trip_schema_json(
+            "1dotExtra1",
+            include_str!("../../../shex_testsuite/shexTest/schemas/1dotExtra1.json"),
+        );
     }
 }

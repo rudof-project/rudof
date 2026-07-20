@@ -1,11 +1,14 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{Cond, ast::NodeConstraint as AstNodeConstraint};
 use std::fmt::Display;
 
 /// Represents compiled node constraints
-#[derive(Debug, PartialEq, Serialize, Clone)]
+#[derive(Debug, PartialEq, Serialize, Clone, Deserialize)]
 pub struct NodeConstraint {
+    // The runtime uses only `cond` and `display`, and the precompiled-cache path in the plan
+    // explicitly drops the AST after load.
+    #[serde(skip)]
     source: AstNodeConstraint,
     cond: Cond,
     display: String,
