@@ -155,6 +155,29 @@ where
         self.rbe = rbe;
     }
 
+    /// Sound refutation test: returns `false` only if no assignment of the given values to
+    /// this table's components can satisfy the regular bag expression, judged from the
+    /// per-component candidate counts (values whose key and condition match). Values may be
+    /// a superset of what the expression will actually receive (the counts over-approximate),
+    /// which keeps refutation sound. `true` is not a guarantee; use [`Self::matches`] to decide.
+    /// Linear in the number of values times components per key, plus the expression size.
+    pub fn feasible_neighs(&self, values: &[(K, V, Ctx)]) -> bool {
+        let mut hi: HashMap<Component, usize> = HashMap::new();
+        for (key, value, ctx) in values {
+            if let Some(components) = self.key_components.get(key) {
+                for component in components {
+                    if let Some(cond) = self.component_cond.get(component)
+                        && cond.matches(value, ctx).is_ok()
+                    {
+                        *hi.entry(*component).or_insert(0) += 1;
+                    }
+                }
+            }
+        }
+        let lo: HashMap<Component, usize> = HashMap::new();
+        self.rbe.feasible(&lo, &hi)
+    }
+
     pub fn matches(
         &self,
         values: Vec<(K, V, Ctx)>,

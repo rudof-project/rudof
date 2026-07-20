@@ -38,6 +38,12 @@ pub enum IRError {
 
     #[error(transparent)]
     RDFError(#[from] Box<RDFError>),
+
+    #[error("Dependency graph has cycles: {cycles:?}")]
+    DependencyGraphHasCycles { cycles: Vec<Vec<Object>> },
+
+    #[error("Dependency graph has negative cycles (non-stratified): {cycles:?}")]
+    DependencyGraphHasNegativeCycles { cycles: Vec<Vec<Object>> },
 }
 
 impl IRError {

@@ -79,11 +79,20 @@ impl ShapeExpr {
 
     /// Get the references in this shape expression.
     pub fn references(&self, schema: &SchemaIR) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
+        let mut visited = HashSet::new();
+        self.references_visited(schema, &mut visited)
+    }
+
+    fn references_visited(
+        &self,
+        schema: &SchemaIR,
+        visited: &mut HashSet<ShapeLabelIdx>,
+    ) -> HashMap<Pred, Vec<ShapeLabelIdx>> {
         match self {
             ShapeExpr::ShapeOr { exprs, .. } => exprs.iter().fold(HashMap::new(), |mut acc, expr| {
                 let refs = schema
                     .find_shape_idx(expr)
-                    .map(|info| info.expr().references(schema))
+                    .map(|info| info.expr().references_visited(schema, visited))
                     .unwrap_or_default();
                 for (p, v) in refs {
                     acc.entry(p).or_default().extend(v);
@@ -93,7 +102,7 @@ impl ShapeExpr {
             ShapeExpr::ShapeAnd { exprs, .. } => exprs.iter().fold(HashMap::new(), |mut acc, expr| {
                 let refs = schema
                     .find_shape_idx(expr)
-                    .map(|info| info.expr().references(schema))
+                    .map(|info| info.expr().references_visited(schema, visited))
                     .unwrap_or_default();
                 for (p, v) in refs {
                     acc.entry(p).or_default().extend(v);
@@ -102,7 +111,7 @@ impl ShapeExpr {
             }),
             ShapeExpr::ShapeNot { expr, .. } => schema
                 .find_shape_idx(expr)
-                .map(|info| info.expr().references(schema))
+                .map(|info| info.expr().references_visited(schema, visited))
                 .unwrap_or_default(),
             ShapeExpr::NodeConstraint(_nc) => HashMap::new(),
             ShapeExpr::Shape(s) => s.references(schema).clone(),
@@ -110,6 +119,16 @@ impl ShapeExpr {
             ShapeExpr::Ref { idx } => {
                 let mut map = HashMap::new();
                 map.insert(Pred::default(), vec![*idx]);
+                // Also collect the references of the referenced shape expression, so that
+                // value-reference dependencies behind `<B> @<A>` indirections (eg the
+                // branches of an extended ShapeOr) are scheduled for typing.
+                if visited.insert(*idx)
+                    && let Some(info) = schema.find_shape_idx(idx)
+                {
+                    for (p, v) in info.expr().references_visited(schema, visited) {
+                        map.entry(p).or_default().extend(v);
+                    }
+                }
                 map
             },
             ShapeExpr::Empty => HashMap::new(),

@@ -1,0 +1,2 @@
+PREFIX : <http://e/>
+:x :p 1 ; :q 2 .

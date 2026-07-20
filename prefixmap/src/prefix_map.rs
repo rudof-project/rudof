@@ -509,7 +509,7 @@ impl PrefixMap {
 impl Display for PrefixMap {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (alias, iri) in self.map.iter() {
-            writeln!(f, "prefix {}: <{}>", &alias, &iri)?
+            writeln!(f, "prefix {}: <{}>", alias, iri)?
         }
         Ok(())
     }

@@ -7,6 +7,16 @@ This ChangeLog follows the Keep a ChangeLog guidelines](https://keepachangelog.c
 ### Changed
 ### Removed
 
+## 0.3.7
+### Added
+- Adds support for disjunctions in ShEx extends
+### Fixed
+### Changed
+- Solves issue #721. Change the behaviour with recursive shapes in SHACL to give an error. 
+  In the future we should attempt recursive shapes with non-negative cycles and use least-fixpoint semantics as suggested in the paper.
+
+### Removed
+
 ## v0.3.6
 
 ### Fixed

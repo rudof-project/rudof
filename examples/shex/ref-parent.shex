@@ -1,0 +1,4 @@
+PREFIX : <http://e/>
+:A { :p . }
+:B @:A
+:C EXTENDS @:B { :q . }

@@ -22,6 +22,7 @@ use shex_ast::Expr;
 use shex_ast::Node;
 use shex_ast::Pred;
 use shex_ast::ShapeLabelIdx;
+use shex_ast::ir::extend_alternative::ExtendAlternative;
 use shex_ast::ast::cond_kind::CondKind;
 use shex_ast::ir::external_resolver::{DispatchOutcome, ExternalResolveCtx};
 use shex_ast::ir::preds::Preds;
@@ -675,6 +676,25 @@ impl Engine {
         R: NeighsRDF + QueryRDF,
     {
         // trace!("check_node_shape_extends: node={node}, shape={idx}");
+
+        // When some extended parent resolves to several alternatives (it contains a
+        // ShapeOr), validate by trying every selection of one alternative per parent.
+        // Parents with a single alternative keep the historical code path below.
+        // See docs/src/internals/feasibility-model.md §3-§4.
+        let parent_alternatives: Vec<Vec<ExtendAlternative>> =
+            shape.extends().iter().map(|e| schema.extend_alternatives(e)).collect();
+        if parent_alternatives.iter().any(|alts| alts.len() > 1) {
+            return self.check_node_shape_extends_selections(
+                idx,
+                node,
+                shape,
+                schema,
+                rdf,
+                typing,
+                &parent_alternatives,
+            );
+        }
+
         let extra_preds = shape.extra().clone();
         let mut candidate_preds = Vec::from_iter(schema.get_preds_extends(idx));
         for p in &extra_preds {
@@ -818,7 +838,21 @@ impl Engine {
             }
         }
 
-        let parts_iter = crate::partitions_iter(&values_ctx, &triple_exprs);
+        // Feasibility guard: refute in time linear in the expressions when some bucket
+        // cannot be satisfied by any assignment of its candidate triples, instead of
+        // enumerating partitions. Sound: candidate counts over-approximate any share.
+        for rbes in triple_exprs.values() {
+            for rbe in rbes {
+                if !rbe.feasible_neighs(&values_ctx) {
+                    return fail(ValidatorError::TripleExprRefuted {
+                        node: Box::new(node.clone()),
+                        idx: *idx,
+                    });
+                }
+            }
+        }
+
+        let parts_iter = crate::class_partitions_iter(&values_ctx, &triple_exprs);
         let mut parts_peekable = parts_iter.peekable();
         if let Some(_parts) = parts_peekable.peek() {
             // There are some partitions to check, we will check them one by one until we find one that works or we exhaust all of them. We use peekable to avoid computing the first partition twice (once for the debug message and once for the loop). We could also compute the first partition before the loop and then use a regular iterator, but this way we avoid computing any partition if there are no partitions at all.
@@ -914,6 +948,296 @@ impl Engine {
                 shape: Box::new(shape.clone()),
                 idx: *idx,
             })
+        }
+    }
+
+    /// Validates a shape with extends when some extended parent resolves to several
+    /// alternatives: tries every selection of one alternative per parent until one
+    /// conforms. See docs/src/internals/feasibility-model.md §3-§4.
+    fn check_node_shape_extends_selections<R>(
+        &self,
+        idx: &ShapeLabelIdx,
+        node: &Node,
+        shape: &Shape,
+        schema: &SchemaIR,
+        rdf: &R,
+        typing: &mut RefTyping,
+        parent_alternatives: &[Vec<ExtendAlternative>],
+    ) -> Result<ValidationResult>
+    where
+        R: NeighsRDF + QueryRDF,
+    {
+        let mut selector = vec![0usize; parent_alternatives.len()];
+        let mut errors_selections = Vec::new();
+        loop {
+            // The current selection: one alternative per parent, merged (buckets deduplicated,
+            // so an ancestor reached through several parents becomes a single bucket).
+            let mut sigma = ExtendAlternative::default();
+            for (i, alts) in parent_alternatives.iter().enumerate() {
+                sigma = sigma.merge(&alts[selector[i]]);
+            }
+            match self.check_node_selection(idx, node, shape, schema, rdf, typing, &sigma)? {
+                Either::Right(reasons) => {
+                    return pass(Reason::ShapeExtends {
+                        node: node.clone(),
+                        shape: Box::new(shape.clone()),
+                        reasons: Reasons::new(reasons),
+                    });
+                },
+                Either::Left(errors) => errors_selections.extend(errors),
+            }
+            // Advance to the next selection
+            let mut level = 0;
+            loop {
+                if level == selector.len() {
+                    // All selections failed
+                    return fail(ValidatorError::ShapeFailed {
+                        node: Box::new(node.clone()),
+                        shape: Box::new(shape.clone()),
+                        idx: *idx,
+                        errors: errors_selections,
+                    });
+                }
+                selector[level] += 1;
+                if selector[level] < parent_alternatives[level].len() {
+                    break;
+                }
+                selector[level] = 0;
+                level += 1;
+            }
+        }
+    }
+
+    /// Validates the node against one selection: the shape's own triple expression and the
+    /// selection's bucket shapes must be satisfied by a partition of the selection-local
+    /// neighbourhood, and the selection's constraints must hold for the node.
+    fn check_node_selection<R>(
+        &self,
+        idx: &ShapeLabelIdx,
+        node: &Node,
+        shape: &Shape,
+        schema: &SchemaIR,
+        rdf: &R,
+        typing: &mut RefTyping,
+        sigma: &ExtendAlternative,
+    ) -> Result<ValidationResult>
+    where
+        R: NeighsRDF + QueryRDF,
+    {
+        // Partition buckets and matchable predicates are selection-local: an unselected
+        // ShapeOr branch contributes no candidates, and CLOSED is judged against the
+        // selected alphabet only.
+        let mut bucket_exprs: HashMap<Option<ShapeLabelIdx>, Vec<Expr>> = HashMap::new();
+        bucket_exprs.insert(None, vec![shape.triple_expr().clone()]);
+        let mut candidate_preds = shape.preds();
+        for b in sigma.bucket_shapes() {
+            if let Some(ShapeExpr::Shape(bucket_shape)) = schema.find_shape_idx(b).map(|info| info.expr()) {
+                bucket_exprs.insert(Some(*b), vec![bucket_shape.triple_expr().clone()]);
+                for p in bucket_shape.preds() {
+                    if !candidate_preds.contains(&p) {
+                        candidate_preds.push(p);
+                    }
+                }
+            }
+        }
+        let extra_preds = shape.extra().clone();
+        for p in &extra_preds {
+            if !candidate_preds.contains(p) {
+                candidate_preds.push(p.clone());
+            }
+        }
+
+        let (values, reminder) = self.neighs(node, candidate_preds.clone(), rdf)?;
+        if shape.is_closed() && !reminder.is_empty() {
+            return fail(ValidatorError::ClosedShapeWithRemainderPreds {
+                remainder: Preds::new(reminder),
+                declared: Preds::new(candidate_preds),
+            });
+        }
+
+        let values_ctx: Vec<_> = values
+            .iter()
+            .map(|(p, v)| (p.clone(), v.clone(), SemanticActionContext::triple(node, p, v)))
+            .filter(|(pred, value, ctx)| {
+                let matches_leaf = bucket_exprs.values().any(|rbes| {
+                    rbes.iter().any(|rbe| {
+                        rbe.components().any(|(_, key, cond)| {
+                            &key == pred && (cond_has_ref(&cond) || cond.matches(value, ctx).is_ok())
+                        })
+                    })
+                });
+                if matches_leaf {
+                    return true;
+                }
+                // EXTRA predicate with no satisfying leaf goes into M^∉; other non-matching
+                // triples stay so the partition correctly fails (forced assignment).
+                !extra_preds.contains(pred)
+            })
+            .collect();
+
+        // Feasibility guard: refute the selection in time linear in the expressions when
+        // some bucket cannot be satisfied by any assignment of its candidate triples.
+        // Sound: the per-component candidate counts over-approximate any partition's share.
+        for rbes in bucket_exprs.values() {
+            for rbe in rbes {
+                if !rbe.feasible_neighs(&values_ctx) {
+                    return Ok(Either::Left(vec![ValidatorError::TripleExprRefuted {
+                        node: Box::new(node.clone()),
+                        idx: *idx,
+                    }]));
+                }
+            }
+        }
+
+        // The selection's constraint conjuncts must hold for the node
+        let mut reasons = Vec::new();
+        for c in sigma.constraints() {
+            match self.check_node_constraint_expr(c, node, schema, rdf, typing)? {
+                Either::Left(errors) => {
+                    return Ok(Either::Left(vec![ValidatorError::ShapeExtendsError {
+                        node: Box::new(node.clone()),
+                        shape: Box::new(shape.clone()),
+                        idx: *idx,
+                        extends: *c,
+                        errors: ValidatorErrors::new(errors),
+                    }]));
+                },
+                Either::Right(rs) => reasons.extend(rs),
+            }
+        }
+
+        // Partition search over the selection's buckets
+        let parts_iter = crate::class_partitions_iter(&values_ctx, &bucket_exprs);
+        let mut parts_peekable = parts_iter.peekable();
+        if parts_peekable.peek().is_none() {
+            return fail(ValidatorError::ShapeFailedNoPartitions {
+                node: Box::new(node.clone()),
+                shape: Box::new(shape.clone()),
+                idx: *idx,
+            });
+        }
+        let mut errors_in_partitions = Vec::new();
+        for (npart, partition) in parts_peekable.enumerate() {
+            let partition_display = create_partitions_display(&partition);
+            let mut ok_partition = true;
+            let mut errors_in_loop = Vec::new();
+            let mut reasons_in_loop = Vec::new();
+            for (maybe_label, rbes, neighs_subset) in partition.iter() {
+                let result = check_exprs_neigh(rbes, neighs_subset, node, shape, idx, typing)?;
+                match result {
+                    Either::Right(rs) => {
+                        reasons_in_loop.push(Reason::PartitionComponent {
+                            maybe_label: *maybe_label,
+                            node: node.clone(),
+                            shape: Box::new(shape.clone()),
+                            idx: *idx,
+                            partition_idx: npart,
+                            partition: partition_display.clone(),
+                            neighs: neighs_subset.iter().map(|(p, v, _ctx)| format!("{p} {v}")).join(", "),
+                            reasons: Reasons::new(rs),
+                        });
+                    },
+                    Either::Left(errs) => {
+                        errors_in_loop.push(ValidatorError::PartitionComponentFailed {
+                            maybe_label: *maybe_label,
+                            node: Box::new(node.clone()),
+                            shape: Box::new(shape.clone()),
+                            idx: *idx,
+                            partition_idx: npart,
+                            partition: partition_display.clone(),
+                            neighs: neighs_subset.iter().map(|(p, v, _ctx)| format!("{p} {v}")).join(", "),
+                            errors: ValidatorErrors::new(errs),
+                        });
+                        ok_partition = false;
+                        break;
+                    },
+                }
+            }
+            if ok_partition {
+                reasons.extend(reasons_in_loop);
+                return Ok(Either::Right(reasons));
+            } else {
+                errors_in_partitions.push(ValidatorError::PartitionFailed {
+                    node: Box::new(node.clone()),
+                    shape: Box::new(shape.clone()),
+                    idx: *idx,
+                    partition: partition_display.clone(),
+                    errors: ValidatorErrors::new(errors_in_loop),
+                });
+            }
+        }
+        Ok(Either::Left(errors_in_partitions))
+    }
+
+    /// Evaluates a conjunct constraint of a selection directly, without relying on
+    /// precomputed typing for anonymous sub-expressions.
+    fn check_node_constraint_expr<R>(
+        &self,
+        cidx: &ShapeLabelIdx,
+        node: &Node,
+        schema: &SchemaIR,
+        rdf: &R,
+        typing: &mut RefTyping,
+    ) -> Result<ValidationResult>
+    where
+        R: NeighsRDF + QueryRDF,
+    {
+        let Some(se) = schema.find_shape_idx(cidx).map(|info| info.expr().clone()) else {
+            return pass(Reason::Empty { node: node.clone() });
+        };
+        match &se {
+            ShapeExpr::NodeConstraint(nc) => {
+                let ctx = SemanticActionContext::subject(node);
+                match nc.cond().matches(node, &ctx) {
+                    Ok(_pending) => pass(Reason::NodeConstraint {
+                        node: node.clone(),
+                        nc: nc.clone(),
+                    }),
+                    Err(err) => fail(ValidatorError::RbeError(err)),
+                }
+            },
+            ShapeExpr::Shape(s) => {
+                if s.extends().is_empty() {
+                    self.check_node_shape(cidx, node, s, schema, rdf, typing)
+                } else {
+                    self.check_node_shape_extends(cidx, node, s, schema, rdf, typing)
+                }
+            },
+            ShapeExpr::ShapeNot { expr } => match self.check_node_constraint_expr(expr, node, schema, rdf, typing)? {
+                Either::Left(errors) => pass(Reason::ShapeNot {
+                    node: node.clone(),
+                    shape_expr: se.clone(),
+                    errors_evidences: ValidatorErrors::new(errors),
+                }),
+                Either::Right(rs) => fail(ValidatorError::ShapeNotError {
+                    node: Box::new(node.clone()),
+                    shape_expr: Box::new(se.clone()),
+                    reasons: Reasons::new(rs),
+                }),
+            },
+            ShapeExpr::ShapeAnd { exprs } => {
+                let mut reasons = Vec::new();
+                for e in exprs {
+                    match self.check_node_constraint_expr(e, node, schema, rdf, typing)? {
+                        Either::Left(errors) => return Ok(Either::Left(errors)),
+                        Either::Right(rs) => reasons.extend(rs),
+                    }
+                }
+                Ok(Either::Right(reasons))
+            },
+            ShapeExpr::ShapeOr { exprs } => {
+                let mut errors = Vec::new();
+                for e in exprs {
+                    match self.check_node_constraint_expr(e, node, schema, rdf, typing)? {
+                        Either::Right(reasons) => return Ok(Either::Right(reasons)),
+                        Either::Left(errs) => errors.extend(errs),
+                    }
+                }
+                Ok(Either::Left(errors))
+            },
+            ShapeExpr::Ref { idx } => self.check_node_constraint_expr(idx, node, schema, rdf, typing),
+            ShapeExpr::Empty => pass(Reason::Empty { node: node.clone() }),
+            ShapeExpr::External {} => self.check_node_shape_expr(cidx, node, &se, schema, rdf, typing),
         }
     }
 
