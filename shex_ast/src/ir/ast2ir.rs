@@ -1,4 +1,5 @@
 use super::node_constraint::NodeConstraint;
+use crate::ast::cond_kind::CondKind;
 use crate::ir::annotation::Annotation;
 use crate::ir::external_resolver::ExternalShapeResolverRegistry;
 use crate::ir::map_action_extension::MapActionExtension;
@@ -7,7 +8,6 @@ use crate::ir::object_value::ObjectValue;
 use crate::ir::schema_ir::SchemaIR;
 use crate::ir::sem_act::SemAct;
 use crate::ir::semantic_action_context::SemanticActionContext;
-use crate::ast::cond_kind::CondKind;
 use crate::ir::semantic_actions_registry::SemanticActionsRegistry;
 use crate::ir::shape::Shape;
 use crate::ir::shape_expr::ShapeExpr;
@@ -57,10 +57,7 @@ impl AST2IR {
     /// This is the preferred constructor when the registry (and its `MapActionExtension` Arc) has
     /// already been set up by the caller, so that all conditions compiled here share the same
     /// `Arc<Mutex<MapState>>` as the registry stored in the `SchemaIR`.
-    pub fn with_registry(
-        resolve_method: &ResolveMethod,
-        registry: Arc<SemanticActionsRegistry>,
-    ) -> Self {
+    pub fn with_registry(resolve_method: &ResolveMethod, registry: Arc<SemanticActionsRegistry>) -> Self {
         Self {
             resolve_method: resolve_method.clone(),
             shape_decls_counter: 0,
@@ -1090,15 +1087,11 @@ fn mk_cond_nodekind(nodekind: ast::NodeKind) -> Cond {
 
 fn mk_cond_pattern(regex: &str, flags: Option<&str>, base: &Option<IriS>) -> Cond {
     let name = format!("/{regex}/{}", flags.unwrap_or(""));
-    MatchCond::single(
-        SingleCond::new()
-            .with_name(name.as_str())
-            .with_kind(CondKind::Pattern {
-                regex: regex.to_string(),
-                flags: flags.map(|f| f.to_string()),
-                base: base.clone(),
-            }),
-    )
+    MatchCond::single(SingleCond::new().with_name(name.as_str()).with_kind(CondKind::Pattern {
+        regex: regex.to_string(),
+        flags: flags.map(|f| f.to_string()),
+        base: base.clone(),
+    }))
 }
 
 fn iri_ref_2_shape_label(id: &IriRef) -> CResult<ShapeLabel> {

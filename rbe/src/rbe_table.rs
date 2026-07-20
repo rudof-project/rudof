@@ -155,7 +155,10 @@ where
         self.rbe = rbe;
     }
 
-    pub fn matches(&self, values: Vec<(K, V, Ctx)>) -> Result<MatchTableIter<K, V, R, Ctx, P>, RbeError<K, V, R, Ctx, P>> {
+    pub fn matches(
+        &self,
+        values: Vec<(K, V, Ctx)>,
+    ) -> Result<MatchTableIter<K, V, R, Ctx, P>, RbeError<K, V, R, Ctx, P>> {
         /*tracing::trace!(
             "Checking if RbeTable {} matches [{}]",
             &self,

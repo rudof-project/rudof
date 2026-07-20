@@ -253,7 +253,11 @@ mod tests {
     }
 
     impl MatchKind<char, i32, String, char> for TestKind {
-        fn eval(&self, v: &i32, _ctx: &char) -> Result<Pending<char, i32, String>, RbeError<char, i32, String, char, Self>> {
+        fn eval(
+            &self,
+            v: &i32,
+            _ctx: &char,
+        ) -> Result<Pending<char, i32, String>, RbeError<char, i32, String, char, Self>> {
             match self {
                 TestKind::Even => {
                     if v % 2 == 0 {

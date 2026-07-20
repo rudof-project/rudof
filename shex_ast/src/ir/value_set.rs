@@ -1,6 +1,6 @@
-use rudof_rdf::rdf_core::term::Object;
-use serde::{Serialize, Deserialize};
 use super::value_set_value::ValueSetValue;
+use rudof_rdf::rdf_core::term::Object;
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct ValueSet {

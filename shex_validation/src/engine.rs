@@ -535,8 +535,7 @@ impl Engine {
             },
             ShapeExpr::NodeConstraint(nc) => {
                 // TODO: In the case of a node constraint...is the context only the subject?
-                let ctx = SemanticActionContext::subject(node)
-                    .with_registry(schema.semantic_actions_registry_arc());
+                let ctx = SemanticActionContext::subject(node).with_registry(schema.semantic_actions_registry_arc());
                 match nc.cond().matches(node, &ctx) {
                     Ok(_pending) => {
                         // We ignore pending nodes here, as node constraints are not expected to generate pending nodes
@@ -641,8 +640,7 @@ impl Engine {
                 (
                     p.clone(),
                     v.clone(),
-                    SemanticActionContext::triple(node, p, v)
-                        .with_registry(schema.semantic_actions_registry_arc()),
+                    SemanticActionContext::triple(node, p, v).with_registry(schema.semantic_actions_registry_arc()),
                 )
             })
             .filter(|(pred, value, ctx)| {
@@ -728,8 +726,7 @@ impl Engine {
                 (
                     p.clone(),
                     v.clone(),
-                    SemanticActionContext::triple(node, p, v)
-                        .with_registry(schema.semantic_actions_registry_arc()),
+                    SemanticActionContext::triple(node, p, v).with_registry(schema.semantic_actions_registry_arc()),
                 )
             })
             .collect();
@@ -964,13 +961,13 @@ impl Engine {
                     let all_values_ctx: Vec<_> = all_values
                         .iter()
                         .map(|(p, v)| {
-                (
-                    p.clone(),
-                    v.clone(),
-                    SemanticActionContext::triple(node, p, v)
-                        .with_registry(schema.semantic_actions_registry_arc()),
-                )
-            })
+                            (
+                                p.clone(),
+                                v.clone(),
+                                SemanticActionContext::triple(node, p, v)
+                                    .with_registry(schema.semantic_actions_registry_arc()),
+                            )
+                        })
                         .collect();
                     // Keep only triples where the value satisfies some component's condition
                     let filtered: Vec<_> = all_values_ctx
@@ -1029,8 +1026,7 @@ impl Engine {
             for nc in ncs {
                 match nc.cond().matches(
                     node,
-                    &SemanticActionContext::subject(node)
-                        .with_registry(schema.semantic_actions_registry_arc()),
+                    &SemanticActionContext::subject(node).with_registry(schema.semantic_actions_registry_arc()),
                 ) {
                     Ok(_pending) => {
                         reasons.push(Reason::ParentShapeNodeConstraint {
@@ -1059,10 +1055,9 @@ impl Engine {
                 {
                     for nc in ref_ncs {
                         match nc.cond().matches(
-                    node,
-                    &SemanticActionContext::subject(node)
-                        .with_registry(schema.semantic_actions_registry_arc()),
-                ) {
+                            node,
+                            &SemanticActionContext::subject(node).with_registry(schema.semantic_actions_registry_arc()),
+                        ) {
                             Ok(_) => {},
                             Err(error) => {
                                 errors.push(ValidatorError::ParentShapeNodeConstraintFailed {
@@ -1549,8 +1544,7 @@ fn create_partitions_display(ps: &[PartitionInfo]) -> PartitionsDisplay {
 
 fn check_start_acts(start_acts: &[SemAct], _node: &Node, _idx: &ShapeLabelIdx, schema: &SchemaIR) -> Result<bool> {
     let registry = schema.semantic_actions_registry();
-    let context = SemanticActionContext::new_start_act_context()
-        .with_registry(schema.semantic_actions_registry_arc());
+    let context = SemanticActionContext::new_start_act_context().with_registry(schema.semantic_actions_registry_arc());
     for act in start_acts {
         let parameter = act.code().map(|code| code.as_str());
         let result = registry.run_action(act.name(), parameter, &context);

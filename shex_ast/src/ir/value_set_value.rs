@@ -6,8 +6,8 @@ use rudof_rdf::rdf_core::term::{
     Object,
     literal::{ConcreteLiteral, Lang},
 };
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
-use serde::{Serialize, Deserialize};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub enum ValueSetValue {

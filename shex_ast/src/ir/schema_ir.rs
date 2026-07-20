@@ -973,8 +973,8 @@ mod tests {
     }
 
     fn round_trip_schema_json(name: &str, schema_json_str: &str) {
-        let schema: SchemaJson = serde_json::from_str(schema_json_str)
-            .unwrap_or_else(|e| panic!("[{name}] parse ShEx JSON: {e}"));
+        let schema: SchemaJson =
+            serde_json::from_str(schema_json_str).unwrap_or_else(|e| panic!("[{name}] parse ShEx JSON: {e}"));
 
         let mut ir = SchemaIR::new(SemanticActionsRegistry::default());
         ir.populate_from_schema_json(
@@ -986,16 +986,11 @@ mod tests {
         .unwrap_or_else(|e| panic!("[{name}] AST -> IR compile: {e}"));
 
         let config = bincode::config::standard();
-        let bytes: Vec<u8> = bincode::serde::encode_to_vec(&ir, config)
-            .unwrap_or_else(|e| panic!("[{name}] bincode encode: {e}"));
-        let (restored, consumed): (SchemaIR, usize) =
-            bincode::serde::decode_from_slice(&bytes, config)
-                .unwrap_or_else(|e| panic!("[{name}] bincode decode: {e}"));
-        assert_eq!(
-            consumed,
-            bytes.len(),
-            "[{name}] bincode did not consume every byte"
-        );
+        let bytes: Vec<u8> =
+            bincode::serde::encode_to_vec(&ir, config).unwrap_or_else(|e| panic!("[{name}] bincode encode: {e}"));
+        let (restored, consumed): (SchemaIR, usize) = bincode::serde::decode_from_slice(&bytes, config)
+            .unwrap_or_else(|e| panic!("[{name}] bincode decode: {e}"));
+        assert_eq!(consumed, bytes.len(), "[{name}] bincode did not consume every byte");
 
         fn sorted_lines(s: &str) -> Vec<String> {
             let mut lines: Vec<String> = s.lines().map(str::to_string).collect();

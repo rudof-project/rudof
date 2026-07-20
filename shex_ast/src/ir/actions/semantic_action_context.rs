@@ -102,9 +102,7 @@ impl SemanticActionContext {
 
 impl PartialEq for SemanticActionContext {
     fn eq(&self, other: &Self) -> bool {
-        self.subject == other.subject
-            && self.predicate == other.predicate
-            && self.object == other.object
+        self.subject == other.subject && self.predicate == other.predicate && self.object == other.object
     }
 }
 

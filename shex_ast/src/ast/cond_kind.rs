@@ -49,10 +49,8 @@ impl MatchKind<Pred, Node, ShapeLabelIdx, SemanticActionContext> for CondKind {
         &self,
         v: &Node,
         ctx: &SemanticActionContext,
-    ) -> Result<
-        Pending<Pred, Node, ShapeLabelIdx>,
-        RbeError<Pred, Node, ShapeLabelIdx, SemanticActionContext, Self>,
-    > {
+    ) -> Result<Pending<Pred, Node, ShapeLabelIdx>, RbeError<Pred, Node, ShapeLabelIdx, SemanticActionContext, Self>>
+    {
         let empty = || Ok(Pending::empty());
         let error = |msg: String| Err(RbeError::MsgError { msg });
 
@@ -78,11 +76,9 @@ impl MatchKind<Pred, Node, ShapeLabelIdx, SemanticActionContext> for CondKind {
                 Ok(_) => empty(),
                 Err(e) => error(format!("MaxLength error: {e:?}")),
             },
-            CondKind::Pattern { regex, flags, base } => {
-                match check_pattern(v, regex, flags.as_deref(), base) {
-                    Ok(_) => empty(),
-                    Err(e) => error(format!("Pattern error: {e:?}")),
-                }
+            CondKind::Pattern { regex, flags, base } => match check_pattern(v, regex, flags.as_deref(), base) {
+                Ok(_) => empty(),
+                Err(e) => error(format!("Pattern error: {e:?}")),
             },
             CondKind::MinInclusive(n) => match check_node_min_inclusive(v, n.clone()) {
                 Ok(_) => empty(),
@@ -128,12 +124,7 @@ impl MatchKind<Pred, Node, ShapeLabelIdx, SemanticActionContext> for CondKind {
     }
 }
 
-pub(crate) fn check_pattern(
-    node: &Node,
-    regex: &str,
-    flags: Option<&str>,
-    base: &Option<IriS>,
-) -> CResult<()> {
+pub(crate) fn check_pattern(node: &Node, regex: &str, flags: Option<&str>, base: &Option<IriS>) -> CResult<()> {
     trace!("check_pattern: node: {node}, regex: {regex}, flags: {flags:?}, base: {base:?}");
     let lexical_form = match node.as_object() {
         Object::Literal(lit) => Ok(lit.lexical_form()),
