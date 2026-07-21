@@ -1,6 +1,6 @@
-use std::io::{BufRead, Read, Write};
-use serde::{Deserialize, Serialize};
 use crate::{SchemaIRError, ir::schema_ir::SchemaIR};
+use serde::{Deserialize, Serialize};
+use std::io::{BufRead, Read, Write};
 
 pub const CACHE_VERSION: u32 = 1;
 
@@ -18,7 +18,7 @@ impl CacheReaderMode {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CacheFormat {
-    Bincode
+    Bincode,
 }
 
 impl Default for CacheFormat {
@@ -43,7 +43,7 @@ impl CacheFormat {
                 writer
                     .write_all(&bytes)
                     .map_err(|e| Box::new(SchemaIRError::CacheWriteError { msg: e.to_string() }))?;
-            }
+            },
         }
         Ok(())
     }
@@ -59,7 +59,7 @@ impl CacheFormat {
                 let (ir, _consumed): (SchemaIR, usize) = bincode::serde::decode_from_slice(&body, config)
                     .map_err(|e| Box::new(SchemaIRError::CacheReadError { msg: e.to_string() }))?;
                 Ok(ir)
-            }
+            },
         }
     }
 }
@@ -85,15 +85,16 @@ impl CacheHeader {
     pub fn body_format(&self) -> Result<CacheFormat, SchemaIRError> {
         match self.body_format.as_str() {
             "bincode" => Ok(CacheFormat::Bincode),
-            _ => Err(SchemaIRError::CacheReadError { msg: format!("Unknown cache body format: {}", self.body_format) }),
+            _ => Err(SchemaIRError::CacheReadError {
+                msg: format!("Unknown cache body format: {}", self.body_format),
+            }),
         }
     }
 
     pub(crate) fn write_to<W: Write>(&self, writer: &mut W) -> Result<(), Box<SchemaIRError>> {
-        let line = serde_json::to_string(self)
-            .map_err(|e| Box::new(SchemaIRError::CacheWriteError { msg: e.to_string() }))?;
-        writeln!(writer, "{line}")
-            .map_err(|e| Box::new(SchemaIRError::CacheWriteError { msg: e.to_string() }))?;
+        let line =
+            serde_json::to_string(self).map_err(|e| Box::new(SchemaIRError::CacheWriteError { msg: e.to_string() }))?;
+        writeln!(writer, "{line}").map_err(|e| Box::new(SchemaIRError::CacheWriteError { msg: e.to_string() }))?;
         Ok(())
     }
 
@@ -102,7 +103,10 @@ impl CacheHeader {
         reader
             .read_line(&mut line)
             .map_err(|e| Box::new(SchemaIRError::CacheReadError { msg: e.to_string() }))?;
-        serde_json::from_str(line.trim_end())
-            .map_err(|e| Box::new(SchemaIRError::CacheReadError { msg: format!("parsing header: {e}") }))
+        serde_json::from_str(line.trim_end()).map_err(|e| {
+            Box::new(SchemaIRError::CacheReadError {
+                msg: format!("parsing header: {e}"),
+            })
+        })
     }
 }

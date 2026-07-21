@@ -182,10 +182,7 @@ pub trait ShExOperations {
     /// # Errors
     ///
     /// Returns an error if no schema is loaded or serialisation fails.
-    fn compile_shex_schema_to_file<W: io::Write>(
-        &self,
-        writer: &mut W
-    ) -> Result<()>;
+    fn compile_shex_schema_to_file<W: io::Write>(&self, writer: &mut W) -> Result<()>;
 
     /// Loads a precompiled ShEx `SchemaIR` cache from an input specification.
     ///
@@ -197,11 +194,7 @@ pub trait ShExOperations {
     /// # Errors
     ///
     /// Returns an error if the cache cannot be read or is incompatible.
-    fn load_shex_schema_precompiled(
-        &mut self,
-        schema: &InputSpec,
-        reader_mode: Option<&DataReaderMode>,
-    ) -> Result<()>;
+    fn load_shex_schema_precompiled(&mut self, schema: &InputSpec, reader_mode: Option<&DataReaderMode>) -> Result<()>;
 }
 
 impl ShExOperations for crate::Rudof {
@@ -304,18 +297,11 @@ impl ShExOperations for crate::Rudof {
         reset_shex(self)
     }
 
-    fn compile_shex_schema_to_file<W: io::Write>(
-        &self,
-        writer: &mut W
-    ) -> Result<()> {
+    fn compile_shex_schema_to_file<W: io::Write>(&self, writer: &mut W) -> Result<()> {
         compile_shex_schema_to_file(self, writer)
     }
 
-    fn load_shex_schema_precompiled(
-        &mut self,
-        schema: &InputSpec,
-        reader_mode: Option<&DataReaderMode>,
-    ) -> Result<()> {
+    fn load_shex_schema_precompiled(&mut self, schema: &InputSpec, reader_mode: Option<&DataReaderMode>) -> Result<()> {
         load_shex_schema_precompiled(self, schema, reader_mode)
     }
 }

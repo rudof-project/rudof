@@ -62,13 +62,10 @@ impl Command for ShexCommand {
         shex_serialization.execute()?;
 
         if let Some(cache_path) = self.args.compile_to.as_deref() {
-            let file = File::create(cache_path).with_context(|| {
-                format!("Failed to create precompiled cache file '{}'", cache_path.display())
-            })?;
+            let file = File::create(cache_path)
+                .with_context(|| format!("Failed to create precompiled cache file '{}'", cache_path.display()))?;
             let mut writer = BufWriter::new(file);
-            ctx.rudof
-                .compile_shex_schema_to_file(&mut writer)
-                .execute()?;
+            ctx.rudof.compile_shex_schema_to_file(&mut writer).execute()?;
         }
 
         Ok(())

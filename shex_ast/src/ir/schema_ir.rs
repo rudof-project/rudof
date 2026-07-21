@@ -1284,11 +1284,14 @@ mod tests {
         .expect("populate IR from ShExC-parsed schema");
 
         let mut buf = Vec::new();
-        ir.write(&mut buf, CacheFormat::Bincode)
-            .expect("SchemaIR::write");
+        ir.write(&mut buf, CacheFormat::Bincode).expect("SchemaIR::write");
 
-        let _restored = SchemaIR::read(Cursor::new(buf), SemanticActionsRegistry::default(), CacheReaderMode::Strict)
-            .expect("SchemaIR::read");
+        let _restored = SchemaIR::read(
+            Cursor::new(buf),
+            SemanticActionsRegistry::default(),
+            CacheReaderMode::Strict,
+        )
+        .expect("SchemaIR::read");
     }
 
     #[test]

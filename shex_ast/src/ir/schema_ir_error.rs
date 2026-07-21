@@ -229,14 +229,14 @@ pub enum SchemaIRError {
     IncompatibleCacheVersion { found: u32, expected: u32 },
 
     #[error("Unknown cache kind {found:?}, expected {expected:?}")]
-    UnknownCacheKind { found: String, expected: &'static str},
+    UnknownCacheKind { found: String, expected: &'static str },
 
-    #[error("SemAct IRI {iri} referenced by cache has no registered extension")]                                                                                                                         
+    #[error("SemAct IRI {iri} referenced by cache has no registered extension")]
     UnknownSemActInCache { iri: IriS },
-                                                                                                                                                                                                       
-    #[error("Reading ShEx IR cache: {msg}")]                                                                                                                                                             
+
+    #[error("Reading ShEx IR cache: {msg}")]
     CacheReadError { msg: String },
-                                                                                                                                                                                                        
-    #[error("Writing ShEx IR cache: {msg}")]                        
+
+    #[error("Writing ShEx IR cache: {msg}")]
     CacheWriteError { msg: String },
 }

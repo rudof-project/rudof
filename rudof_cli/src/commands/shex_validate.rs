@@ -1,11 +1,11 @@
 use crate::cli::parser::ShexValidateArgs;
 use crate::cli::wrappers::resolve_backend;
 use crate::commands::base::{Command, CommandContext};
-use anyhow::{Result, anyhow, Context};
+use anyhow::{Context, Result, anyhow};
 use rudof_lib::Rudof;
 use rudof_lib::formats::IriNormalizationMode;
-use std::io::{Write, BufWriter};
 use std::fs::File;
+use std::io::{BufWriter, Write};
 
 /// Implementation of the `shex-validate` command.
 ///

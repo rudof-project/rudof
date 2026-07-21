@@ -8,7 +8,7 @@ use crate::{Result, Rudof, api::shex::ShExOperations};
 /// cache. Requires a schema to have been loaded first.
 pub struct CompileShexSchemaToFileBuilder<'a, W: Write> {
     rudof: &'a Rudof,
-    writer: &'a mut W
+    writer: &'a mut W,
 }
 
 impl<'a, W: Write> CompileShexSchemaToFileBuilder<'a, W> {
@@ -17,10 +17,7 @@ impl<'a, W: Write> CompileShexSchemaToFileBuilder<'a, W> {
     /// This is called internally by `Rudof::compile_shex_schema_to_file()`
     /// and should not be constructed directly.
     pub(crate) fn new(rudof: &'a Rudof, writer: &'a mut W) -> Self {
-        Self {
-            rudof,
-            writer
-        }
+        Self { rudof, writer }
     }
 
     /// Executes the compile-to-cache operation.
