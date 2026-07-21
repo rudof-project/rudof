@@ -238,7 +238,7 @@ impl SchemaIR {
                                     }
                                 },
                                 ShapeExpr::NodeConstraint(nc) => {
-                                    ncs.push(nc.clone());
+                                    ncs.push(*nc.clone());
                                 },
                                 _ => {
                                     rest_shapes.push(se.expr().clone());

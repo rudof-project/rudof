@@ -18,7 +18,7 @@ fn compile(schema_src: &str, config: &ValidatorConfig) -> SchemaIR {
     let base = IriS::new_unchecked("http://a.example/");
     let ast = ShExParser::parse(schema_src, Some(base.clone()), &base).expect("parse main schema");
     let mut map_state = MapState::default();
-    let mut registry = SemanticActionsRegistry::default();
+    let registry = SemanticActionsRegistry::default();
     registry.set_map_state(&mut map_state);
     let mut compiler = AST2IR::new(&ResolveMethod::default(), map_state);
     let mut compiled = SchemaIR::new(registry);

@@ -23,7 +23,7 @@ pub enum ShapeExpr {
     ShapeNot {
         expr: ShapeLabelIdx,
     },
-    NodeConstraint(NodeConstraint),
+    NodeConstraint(Box<NodeConstraint>),
     Shape(Box<Shape>),
     External {},
     Ref {

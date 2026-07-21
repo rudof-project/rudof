@@ -542,7 +542,7 @@ impl Engine {
                         // We ignore pending nodes here, as node constraints are not expected to generate pending nodes
                         pass(Reason::NodeConstraint {
                             node: node.clone(),
-                            nc: nc.clone(),
+                            nc: (**nc).clone(),
                         })
                     },
                     Err(err) => fail(ValidatorError::RbeError(err)),
@@ -1191,7 +1191,7 @@ impl Engine {
                 match nc.cond().matches(node, &ctx) {
                     Ok(_pending) => pass(Reason::NodeConstraint {
                         node: node.clone(),
-                        nc: nc.clone(),
+                        nc: (**nc).clone(),
                     }),
                     Err(err) => fail(ValidatorError::RbeError(err)),
                 }

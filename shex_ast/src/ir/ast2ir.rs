@@ -404,7 +404,7 @@ impl AST2IR {
                     base,
                 )?;
                 let node_constraint = NodeConstraint::new(nc.clone(), cond, display);
-                Ok(ShapeExpr::NodeConstraint(node_constraint))
+                Ok(ShapeExpr::NodeConstraint(Box::new(node_constraint)))
             },
             ast::ShapeExpr::External => Ok(ShapeExpr::External {}),
         }?;

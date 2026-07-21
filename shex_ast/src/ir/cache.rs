@@ -16,15 +16,10 @@ impl CacheReaderMode {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum CacheFormat {
+    #[default]
     Bincode,
-}
-
-impl Default for CacheFormat {
-    fn default() -> Self {
-        CacheFormat::Bincode
-    }
 }
 
 impl CacheFormat {
